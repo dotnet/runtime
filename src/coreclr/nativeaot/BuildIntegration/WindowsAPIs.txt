@@ -51,6 +51,7 @@ advapi32!CreatePrivateObjectSecurityEx
 advapi32!CreatePrivateObjectSecurityWithMultipleInheritance
 advapi32!CreateProcessAsUserA
 advapi32!CreateProcessAsUserW
+advapi32!CreateProcessWithLogonW
 advapi32!CreateRestrictedToken
 advapi32!CreateServiceA
 advapi32!CreateServiceW
@@ -819,6 +820,7 @@ kernel32!AllocateUserPhysicalPages
 kernel32!AllocateUserPhysicalPagesNuma
 kernel32!AllocConsole
 kernel32!AreFileApisANSI
+kernel32!AssignProcessToJobObject
 kernel32!AttachConsole
 kernel32!Beep
 kernel32!CallbackMayRunLong
@@ -866,6 +868,8 @@ kernel32!CreateFileW
 kernel32!CreateHardLinkA
 kernel32!CreateHardLinkW
 kernel32!CreateIoCompletionPort
+kernel32!CreateJobObjectA
+kernel32!CreateJobObjectW
 kernel32!CreateMemoryResourceNotification
 kernel32!CreateMutexA
 kernel32!CreateMutexExA
@@ -1415,6 +1419,7 @@ kernel32!SetFileValidData
 kernel32!SetFirmwareEnvironmentVariableA
 kernel32!SetFirmwareEnvironmentVariableW
 kernel32!SetHandleInformation
+kernel32!SetInformationJobObject
 kernel32!SetLastError
 kernel32!SetLocaleInfoW
 kernel32!SetLocalTime
@@ -2339,6 +2344,12 @@ ws2_32!WSCUnInstallNameSpace
 ws2_32!WSCUpdateProvider
 ws2_32!WSCWriteNameSpaceOrder
 ws2_32!WSCWriteProviderOrder
+
+#
+# Synchronization.lib
+#
+api-ms-win-core-synch-l1-2-0!WaitOnAddress
+api-ms-win-core-synch-l1-2-0!WakeByAddressSingle
 
 #
 # Include all memory allocation APIs from ucrt to ensure that all of them use allocator

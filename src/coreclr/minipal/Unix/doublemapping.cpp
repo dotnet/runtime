@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
 
 #include <stddef.h>
 #include <sys/mman.h>
@@ -28,7 +27,9 @@
 #include "minipal/cpufeatures.h"
 
 #ifndef TARGET_APPLE
+#if !defined(TARGET_WASI)
 #include <link.h>
+#endif
 #include <dlfcn.h>
 #endif // TARGET_APPLE
 
@@ -48,6 +49,10 @@ static const off_t MaxDoubleMappedSize = UINT_MAX;
 
 bool VMToOSInterface::CreateDoubleMemoryMapper(void** pHandle, size_t *pMaxExecutableCodeSize)
 {
+#ifdef TARGET_WASM
+    // Double mapping is not supported on Wasm
+    return false;
+#else // TARGET_WASM
     if (minipal_detect_rosetta())
     {
         // Rosetta doesn't support double mapping correctly
@@ -58,7 +63,7 @@ bool VMToOSInterface::CreateDoubleMemoryMapper(void** pHandle, size_t *pMaxExecu
 
 #ifdef TARGET_FREEBSD
     int fd = shm_open(SHM_ANON, O_RDWR | O_CREAT, S_IRWXU);
-#elif defined(TARGET_LINUX) || defined(TARGET_ANDROID)
+#elif defined(TARGET_LINUX)
     int fd = memfd_create("doublemapper", MFD_CLOEXEC);
 #else
     int fd = -1;
@@ -102,6 +107,9 @@ bool VMToOSInterface::CreateDoubleMemoryMapper(void** pHandle, size_t *pMaxExecu
     // Clip the maximum double mapped memory size to 1/4 of the virtual address space limit.
     // When such a limit is set, GC reserves 1/2 of it, so we need to leave something
     // for the rest of the process.
+#ifdef RLIMIT_AS
+    // OpenBSD has no address-space rlimit (RLIMIT_AS), so this clipping is skipped there.
+    // WASI also has no RLIMIT_AS.
     struct rlimit virtualAddressSpaceLimit;
     if ((getrlimit(RLIMIT_AS, &virtualAddressSpaceLimit) == 0) && (virtualAddressSpaceLimit.rlim_cur != RLIM_INFINITY))
     {
@@ -111,8 +119,11 @@ bool VMToOSInterface::CreateDoubleMemoryMapper(void** pHandle, size_t *pMaxExecu
             maxDoubleMappedMemorySize = virtualAddressSpaceLimit.rlim_cur;
         }
     }
+#endif // RLIMIT_AS
 
     // Clip the maximum double mapped memory size to the file size limit
+#ifdef RLIMIT_FSIZE
+    // WASI has no RLIMIT_FSIZE, so this clipping is skipped there.
     struct rlimit fileSizeLimit;
     if ((getrlimit(RLIMIT_FSIZE, &fileSizeLimit) == 0) && (fileSizeLimit.rlim_cur != RLIM_INFINITY))
     {
@@ -121,6 +132,7 @@ bool VMToOSInterface::CreateDoubleMemoryMapper(void** pHandle, size_t *pMaxExecu
             maxDoubleMappedMemorySize = fileSizeLimit.rlim_cur;
         }
     }
+#endif // RLIMIT_FSIZE
 
     if (ftruncate(fd, maxDoubleMappedMemorySize) == -1)
     {
@@ -137,6 +149,7 @@ bool VMToOSInterface::CreateDoubleMemoryMapper(void** pHandle, size_t *pMaxExecu
 #endif // !TARGET_APPLE
 
     return true;
+#endif // TARGET_WASM
 }
 
 void VMToOSInterface::DestroyDoubleMemoryMapper(void *mapperHandle)
@@ -300,7 +313,7 @@ bool VMToOSInterface::ReleaseRWMapping(void* pStart, size_t size)
     return munmap(pStart, size) != -1;
 }
 
-#ifndef TARGET_APPLE
+#if !defined(TARGET_APPLE) && !defined(TARGET_WASM)
 #define MAX_TEMPLATE_THUNK_TYPES 3 // Maximum number of times the CreateTemplate api can be called
 struct TemplateThunkMappingData
 {
@@ -408,7 +421,7 @@ TemplateThunkMappingData *InitializeTemplateThunkMappingData(void* pTemplate)
 
 #ifdef TARGET_FREEBSD
         int fd = shm_open(SHM_ANON, O_RDWR | O_CREAT, S_IRWXU);
-#elif defined(TARGET_LINUX) || defined(TARGET_ANDROID)
+#elif defined(TARGET_LINUX)
         int fd = memfd_create("doublemapper-template", MFD_CLOEXEC);
 #else
         int fd = -1;
@@ -463,7 +476,7 @@ TemplateThunkMappingData *InitializeTemplateThunkMappingData(void* pTemplate)
         return __atomic_load_n(&s_pThunkData, __ATOMIC_ACQUIRE);
     }
 }
-#endif
+#endif // !TARGET_APPLE && !TARGET_WASM
 
 bool VMToOSInterface::AllocateThunksFromTemplateRespectsStartAddress()
 {
@@ -476,7 +489,9 @@ bool VMToOSInterface::AllocateThunksFromTemplateRespectsStartAddress()
 
 void* VMToOSInterface::CreateTemplate(void* pImageTemplate, size_t templateSize, void (*codePageGenerator)(uint8_t* pageBase, uint8_t* pageBaseRX, size_t size))
 {
-#ifdef TARGET_APPLE
+#if defined(TARGET_WASM)
+    return NULL;
+#elif defined(TARGET_APPLE)
     return pImageTemplate;
 #elif defined(TARGET_X86)
     return NULL; // X86 doesn't support high performance relative addressing, which makes the template system not work
@@ -524,7 +539,9 @@ void* VMToOSInterface::CreateTemplate(void* pImageTemplate, size_t templateSize,
 
 void* VMToOSInterface::AllocateThunksFromTemplate(void* pTemplate, size_t templateSize, void* pStartSpecification, void (*dataPageGenerator)(uint8_t* pageBase, size_t size))
 {
-#ifdef TARGET_APPLE
+#if defined(TARGET_WASM)
+    return NULL;
+#elif defined(TARGET_APPLE)
     vm_address_t addr, taddr;
     vm_prot_t prot, max_prot;
     kern_return_t ret;

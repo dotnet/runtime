@@ -3,7 +3,6 @@
 
   <PropertyGroup>
     <AdditionalProjectReferences>
-      Microsoft.Extensions.Options;
       Microsoft.Extensions.DependencyInjection
     </AdditionalProjectReferences>
   </PropertyGroup>

@@ -17,6 +17,7 @@ public class Test_Handles
     public static List<GCHandle> pinnedList = new List<GCHandle>();
     public static int index = -1;
 
+    [SkipOnCoreClr("This test is not compatible with GC stress.", RuntimeTestModes.AnyGCStress)]
     [Fact]
     public static void TestEntryPoint()
     {

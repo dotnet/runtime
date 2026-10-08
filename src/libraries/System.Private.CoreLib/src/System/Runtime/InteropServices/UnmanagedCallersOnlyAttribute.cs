@@ -34,5 +34,10 @@ namespace System.Runtime.InteropServices
         /// Optional. If omitted, no named export is emitted during compilation.
         /// </summary>
         public string? EntryPoint;
+
+        /// <summary>
+        /// Optional. If specified, the entry point is emitted only when the source type is kept.
+        /// </summary>
+        public Type? AssociatedSourceType;
     }
 }

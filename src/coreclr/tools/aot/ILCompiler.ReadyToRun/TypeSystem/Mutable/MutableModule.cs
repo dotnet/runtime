@@ -11,6 +11,7 @@ using System.Diagnostics;
 using System.IO;
 
 using ILCompiler;
+using Internal.Text;
 using System.Runtime.CompilerServices;
 
 namespace Internal.TypeSystem.Ecma
@@ -39,7 +40,8 @@ namespace Internal.TypeSystem.Ecma
                 if (!_mutableModule._moduleToModuleRefString.TryGetValue(module, out moduleRefString))
                 {
                     Debug.Assert(_mutableModule.ModuleThatIsCurrentlyTheSourceOfNewReferences != null &&
-                        _mutableModule._compilationGroup.CrossModuleInlineableModule(_mutableModule.ModuleThatIsCurrentlyTheSourceOfNewReferences));
+                        (_mutableModule._compilationGroup.CrossModuleInlineableModule(_mutableModule.ModuleThatIsCurrentlyTheSourceOfNewReferences)
+                        || _mutableModule.CreatingTokensForAsyncMethod));
 
                     if (module == _typeSystemContext.SystemModule)
                     {
@@ -122,16 +124,76 @@ namespace Internal.TypeSystem.Ecma
                 return result;
             }
 
-            static string GetNameOfAssemblyRefWhichResolvesToType(ModuleDesc module, MetadataType type)
+            internal static bool TryGetAssemblyReferenceNameForTypeReference(
+                ModuleDesc moduleToSearch,
+                MetadataType referencedType,
+                out string assemblyReferenceName)
             {
-                if (!s_assemblyNameFromTypeLookups.TryGetValue(module, out var lookupTable))
+                if (!s_assemblyNameFromTypeLookups.TryGetValue(moduleToSearch, out var lookupTable))
                 {
-                    lookupTable = ComputeTypeLookupTable(module);
-                    s_assemblyNameFromTypeLookups.AddOrUpdate(module, lookupTable);
+                    lookupTable = ComputeTypeLookupTable(moduleToSearch);
+                    s_assemblyNameFromTypeLookups.AddOrUpdate(moduleToSearch, lookupTable);
                 }
 
-                return lookupTable[type];
+                return lookupTable.TryGetValue(referencedType, out assemblyReferenceName);
             }
+
+            static string GetNameOfAssemblyRefWhichResolvesToType(ModuleDesc module, MetadataType type)
+            {
+                if (TryGetAssemblyReferenceNameForTypeReference(module, type, out string assemblyName))
+                {
+                    return assemblyName;
+                }
+
+                // Some producers encode type map custom attributes without emitting matching TypeRef rows
+                // for the referenced types. In that case, fall back to the target type's defining assembly.
+                if (module is EcmaModule && type.Module is EcmaModule targetTypeModule)
+                {
+                    return targetTypeModule.Assembly.GetName().Name;
+                }
+
+                throw new KeyNotFoundException($"Unable to resolve an assembly reference from module '{module}' to type '{type}'.");
+            }
+        }
+
+        internal static bool CanCreateReferenceToType(
+            ModuleDesc sourceModule,
+            MetadataType type,
+            ReadyToRunCompilationModuleGroupBase compilationGroup)
+        {
+            ModuleDesc targetModule = type.Module;
+            if (targetModule == type.Context.SystemModule ||
+                compilationGroup.CrossModuleInlineableModule(targetModule) ||
+                compilationGroup.VersionsWithModule(targetModule))
+            {
+                return true;
+            }
+
+            if (sourceModule is not EcmaModule sourceEcmaModule || targetModule is not EcmaModule targetEcmaModule)
+            {
+                return false;
+            }
+
+            if (ManagedBinaryEmitterForInternalUse.TryGetAssemblyReferenceNameForTypeReference(sourceEcmaModule, type, out _))
+            {
+                return true;
+            }
+
+            return HasAssemblyReference(sourceEcmaModule, targetEcmaModule.Assembly.GetName().Name);
+        }
+
+        private static bool HasAssemblyReference(EcmaModule module, string assemblyName)
+        {
+            foreach (AssemblyReferenceHandle assemblyReferenceHandle in module.MetadataReader.AssemblyReferences)
+            {
+                AssemblyReference assemblyReference = module.MetadataReader.GetAssemblyReference(assemblyReferenceHandle);
+                if (module.MetadataReader.StringComparer.Equals(assemblyReference.Name, assemblyName))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         class Cache
@@ -353,6 +415,8 @@ namespace Internal.TypeSystem.Ecma
 
         public int ModuleTypeSort => 1;
 
+        public bool CreatingTokensForAsyncMethod { get; set; }
+
         public int CompareTo(IEcmaModule other)
         {
             if (other == this)
@@ -400,7 +464,7 @@ namespace Internal.TypeSystem.Ecma
             }
             throw new ArgumentException("Invalid UserStringHandle passed to MutableModule.GetObject");
         }
-        public override object GetType(ReadOnlySpan<byte> nameSpace, ReadOnlySpan<byte> name, NotFoundBehavior notFoundBehavior) => throw new NotImplementedException();
+        public override object GetType(Utf8Span nameSpace, Utf8Span name, NotFoundBehavior notFoundBehavior) => throw new NotImplementedException();
         public TypeDesc GetType(EntityHandle handle)
         {
             TypeDesc type = GetObject(handle, NotFoundBehavior.Throw) as TypeDesc;

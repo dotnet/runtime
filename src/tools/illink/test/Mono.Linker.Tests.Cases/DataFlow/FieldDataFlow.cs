@@ -232,21 +232,21 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
             static AccessReturnedInstanceField GetInstance([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type unused) => null;
 
-            [ExpectedWarning("IL2072", nameof(GetUnknownType), nameof(GetInstance), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/linker/issues/2832")]
+            [ExpectedWarning("IL2072", nameof(GetUnknownType), nameof(GetInstance))]
             [ExpectedWarning("IL2077", nameof(field), nameof(DataFlowTypeExtensions.RequiresAll))]
             static void TestRead()
             {
                 GetInstance(GetUnknownType()).field.RequiresAll();
             }
 
-            [ExpectedWarning("IL2072", nameof(GetUnknownType), nameof(GetInstance), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/linker/issues/2832")]
+            [ExpectedWarning("IL2072", nameof(GetUnknownType), nameof(GetInstance))]
             [ExpectedWarning("IL2074", nameof(GetUnknownType), nameof(field))]
             static void TestWrite()
             {
                 GetInstance(GetUnknownType()).field = GetUnknownType();
             }
 
-            [ExpectedWarning("IL2072", nameof(GetUnknownType), nameof(GetInstance), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/linker/issues/2832")]
+            [ExpectedWarning("IL2072", nameof(GetUnknownType), nameof(GetInstance))]
             [ExpectedWarning("IL2074", nameof(GetUnknownType), nameof(field))]
             static void TestNullCoalescingAssignment()
             {

@@ -19,7 +19,7 @@ namespace System.Text.Json.Serialization.Converters
             Debug.Assert(value is not null);
 
             IEnumerator<TElement> enumerator;
-            if (state.Current.CollectionEnumerator == null)
+            if (state.Current.CollectionEnumerator is null)
             {
                 enumerator = value.GetEnumerator();
                 state.Current.CollectionEnumerator = enumerator;

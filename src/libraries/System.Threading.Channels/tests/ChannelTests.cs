@@ -87,7 +87,7 @@ namespace System.Threading.Channels.Tests
         public void CreateBounded_ValidBufferSizes_Success(int bufferedCapacity) =>
             Assert.NotNull(Channel.CreateBounded<int>(bufferedCapacity));
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task DefaultWriteAsync_UsesWaitToWriteAsyncAndTryWrite()
         {
             var c = new TestChannelWriter<int>(10);

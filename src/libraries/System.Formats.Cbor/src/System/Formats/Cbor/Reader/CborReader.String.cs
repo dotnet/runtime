@@ -101,6 +101,10 @@ namespace System.Formats.Cbor
         /// <para>There was an unexpected end of CBOR encoding data.</para>
         /// <para>-or-</para>
         /// <para>The next value uses a CBOR encoding that is not valid under the current conformance mode.</para></exception>
+        /// <remarks>The returned <see cref="ReadOnlyMemory{T}" /> is a slice over the reader's input buffer. Callers are responsible
+        /// for preserving the integrity of the value for as long as it is persisted. When using <c>CborReader</c> in streaming mode,
+        /// callers are advised to read the value immediately, make a defensive copy, or avoid reusing the same memory
+        /// across calls to <see cref="SlideData" />.</remarks>
         public ReadOnlyMemory<byte> ReadDefiniteLengthByteString()
         {
             CborInitialByte header = PeekInitialByte(expectedType: CborMajorType.ByteString);
@@ -132,6 +136,7 @@ namespace System.Formats.Cbor
         public void ReadStartIndefiniteLengthByteString()
         {
             CborInitialByte header = PeekInitialByte(expectedType: CborMajorType.ByteString);
+            EnsureMaxDepthNotExceeded();
 
             if (header.AdditionalInfo != CborAdditionalInfo.IndefiniteLength)
             {
@@ -261,6 +266,10 @@ namespace System.Formats.Cbor
         /// <para>There was an unexpected end of CBOR encoding data.</para>
         /// <para>-or-</para>
         /// <para>The next value uses a CBOR encoding that is not valid under the current conformance mode.</para></exception>
+        /// <remarks>The returned <see cref="ReadOnlyMemory{T}" /> is a slice over the reader's input buffer. Callers are responsible
+        /// for preserving the integrity of the value for as long as it is persisted. When using <c>CborReader</c> in streaming mode,
+        /// callers are advised to read the value immediately, make a defensive copy, or avoid reusing the same memory
+        /// across calls to <see cref="SlideData" />.</remarks>
         public ReadOnlyMemory<byte> ReadDefiniteLengthTextStringBytes()
         {
             CborInitialByte header = PeekInitialByte(expectedType: CborMajorType.TextString);
@@ -299,6 +308,7 @@ namespace System.Formats.Cbor
         public void ReadStartIndefiniteLengthTextString()
         {
             CborInitialByte header = PeekInitialByte(expectedType: CborMajorType.TextString);
+            EnsureMaxDepthNotExceeded();
 
             if (header.AdditionalInfo != CborAdditionalInfo.IndefiniteLength)
             {
@@ -429,8 +439,8 @@ namespace System.Formats.Cbor
 
             foreach ((int o, int l) in ranges)
             {
-                utf8Encoding.GetChars(buffer.Slice(o, l), destination);
-                destination = destination.Slice(l);
+                int chunkCharsWritten = utf8Encoding.GetChars(buffer.Slice(o, l), destination);
+                destination = destination.Slice(chunkCharsWritten);
             }
 
             charsWritten = concatenatedStringSize;
@@ -445,6 +455,8 @@ namespace System.Formats.Cbor
         // containing the individual chunk payloads
         private List<(int Offset, int Length)> ReadIndefiniteLengthStringChunkRanges(CborMajorType type, out int encodingLength, out int concatenatedBufferSize)
         {
+            EnsureMaxDepthNotExceeded();
+
             List<(int Offset, int Length)> ranges = AcquireIndefiniteLengthStringRangeList();
             ReadOnlySpan<byte> data = GetRemainingBytes();
             concatenatedBufferSize = 0;

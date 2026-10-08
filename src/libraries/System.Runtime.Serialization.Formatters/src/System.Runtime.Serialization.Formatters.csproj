@@ -10,9 +10,8 @@
   <PropertyGroup>
     <NoWarn>$(NoWarn);CA1822;IDE0060</NoWarn>
 
-    <FunctioningBinaryFormatter Condition="'$(TargetFramework)' == '$(NetCoreAppMinimum)' and '$(DotNetBuildSourceOnly)' != 'true'">true</FunctioningBinaryFormatter>
-    <!-- The GenerateNuspec target fails if this property is keyed off of FunctioningBinaryFormatter, so keep it logically in sync --> 
-    <IncludeBuildOutput Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">false</IncludeBuildOutput>
+    <FunctioningBinaryFormatter Condition="'$(TargetFramework)' != '$(NetCoreAppCurrent)'">true</FunctioningBinaryFormatter>
+    <IncludeBuildOutput Condition="'$(FunctioningBinaryFormatter)' != 'true'">false</IncludeBuildOutput>
     <SuppressDependenciesWhenPacking Condition="'$(FunctioningBinaryFormatter)' != 'true'">true</SuppressDependenciesWhenPacking>
   </PropertyGroup>
 
@@ -39,7 +38,7 @@
     <Compile Include="System\Runtime\Serialization\Formatters\Binary\BinaryFormatter.cs" />
     <Compile Include="$(CommonPath)System\Obsoletions.cs"
              Link="Common\System\Obsoletions.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\Collections\HashHelpers.cs"
+    <Compile Include="$(CommonPath)System\Collections\HashHelpers.cs"
              Link="Common\System\Collections\HashHelpers.cs" />
   </ItemGroup>
 

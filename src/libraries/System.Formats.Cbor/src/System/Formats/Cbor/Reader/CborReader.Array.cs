@@ -16,6 +16,7 @@ namespace System.Formats.Cbor
         public int? ReadStartArray()
         {
             CborInitialByte header = PeekInitialByte(expectedType: CborMajorType.Array);
+            EnsureMaxDepthNotExceeded();
 
             if (header.AdditionalInfo == CborAdditionalInfo.IndefiniteLength)
             {
@@ -31,7 +32,7 @@ namespace System.Formats.Cbor
             else
             {
                 ReadOnlySpan<byte> buffer = GetRemainingBytes();
-                int arrayLength = DecodeDefiniteLength(header, buffer, out int bytesRead);
+                int arrayLength = DecodeCollectionLength(header, buffer, out int bytesRead);
 
                 AdvanceBuffer(bytesRead);
                 PushDataItem(CborMajorType.Array, arrayLength);

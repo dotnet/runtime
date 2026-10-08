@@ -201,16 +201,23 @@ namespace System
             int previousState = Interlocked.CompareExchange(ref s_crashInfoPresent, -1, 0);
             if (previousState == 0)
             {
-                CrashInfo crashInfo = new();
-
-                crashInfo.Open(reason, Thread.CurrentOSThreadId, message ?? GetStringForFailFastReason(reason));
-                if (exception != null)
+                try
                 {
-                    crashInfo.WriteException(exception);
+                    CrashInfo crashInfo = new();
+
+                    crashInfo.Open(reason, Thread.CurrentOSThreadId, message ?? GetStringForFailFastReason(reason));
+                    if (exception != null)
+                    {
+                        crashInfo.WriteException(exception);
+                    }
+                    crashInfo.Close();
+                    s_triageBufferAddress = crashInfo.TriageBufferAddress;
+                    s_triageBufferSize = crashInfo.TriageBufferSize;
                 }
-                crashInfo.Close();
-                s_triageBufferAddress = crashInfo.TriageBufferAddress;
-                s_triageBufferSize = crashInfo.TriageBufferSize;
+                catch
+                {
+                    // If crash info serialization fails (for example, due to OOM), proceed without it.
+                }
 
                 s_crashInfoPresent = 1;
             }
@@ -235,8 +242,20 @@ namespace System
             ulong previousThreadId = Interlocked.CompareExchange(ref s_crashingThreadId, currentThreadId, 0);
             if (previousThreadId == 0)
             {
-                bool minimalFailFast = (exception == PreallocatedOutOfMemoryException.Instance);
-                if (!minimalFailFast)
+                bool minimalFailFast = exception == PreallocatedOutOfMemoryException.Instance;
+                if (minimalFailFast)
+                {
+                    // Minimal OOM fail-fast path: avoid heap allocations as much as possible, but still
+                    // report that OOM is the reason for the crash.
+                    try
+                    {
+                        // Try to print the same short message CoreCLR prints.
+                        Internal.Console.Error.Write("Out of memory.");
+                        Internal.Console.Error.WriteLine();
+                    }
+                    catch { }
+                }
+                else
                 {
                     Internal.Console.Error.Write(((exception == null) || (reason is RhFailFastReason.EnvironmentFailFast or RhFailFastReason.AssertionFailure)) ?
                         "Process terminated. " : "Unhandled exception. ");
@@ -266,8 +285,22 @@ namespace System
 
                     if ((exception != null) && (reason is not RhFailFastReason.AssertionFailure))
                     {
-                        Internal.Console.Error.Write(exception.ToString());
-                        Internal.Console.Error.WriteLine();
+                        try
+                        {
+                            Internal.Console.Error.Write(exception.ToString());
+                            Internal.Console.Error.WriteLine();
+                        }
+                        catch
+                        {
+                            // If ToString() fails (for example, due to OOM), fall back to a simpler message.
+                            try
+                            {
+                                // Use an allocation-free MethodTable comparison.
+                                Internal.Console.Error.Write(exception.GetMethodTable() == Internal.Runtime.MethodTable.Of<OutOfMemoryException>() ? "Out of memory." : exception.GetType().FullName);
+                                Internal.Console.Error.WriteLine();
+                            }
+                            catch { }
+                        }
                     }
 
 #if TARGET_WINDOWS

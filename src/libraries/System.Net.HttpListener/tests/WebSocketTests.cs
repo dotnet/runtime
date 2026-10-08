@@ -27,12 +27,6 @@ namespace System.Net.Tests
         [Fact]
         public async Task AcceptWebSocketAsync_NullSubProtocol_Succeeds()
         {
-            if (PlatformDetection.IsWindows7)
-            {
-                // Websockets is supported only from Windows 8+
-                return;
-            }
-
             UriBuilder uriBuilder = new UriBuilder(_factory.ListeningUrl);
             uriBuilder.Scheme = "ws";
 

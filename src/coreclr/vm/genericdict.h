@@ -58,6 +58,9 @@ enum DictionaryEntryKind
     DispatchStubAddrSlot = 5,
     FieldDescSlot = 6,
     DeclaringTypeHandleSlot = 7,
+    // Only used by ReadyToRun signatures (READYTORUN_FIXUP_DeclaringTypeHandle). The signature encodes a
+    // method and the slot is populated with the type which declares that method.
+    DeclaringTypeHandleFromMethodSlot = 8,
 };
 
 enum DictionaryEntrySignatureSource : BYTE
@@ -276,7 +279,6 @@ public:
     static DictionaryEntry PopulateEntry(MethodDesc * pMD,
                                          MethodTable * pMT,
                                          LPVOID signature,
-                                         BOOL nonExpansive,
                                          DictionaryEntry ** ppSlot,
                                          DWORD dictionaryIndexAndSlot = -1,
                                          Module * pModule = NULL);

@@ -11,7 +11,8 @@
 // static
 extern "C" INT_PTR QCALLTYPE NativeLibrary_LoadByName(LPCWSTR name, QCall::AssemblyHandle callingAssembly,
                                                          BOOL hasDllImportSearchPathFlag, DWORD dllImportSearchPathFlag,
-                                                         BOOL throwOnError)
+                                                         BOOL throwOnError,
+                                                         QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 

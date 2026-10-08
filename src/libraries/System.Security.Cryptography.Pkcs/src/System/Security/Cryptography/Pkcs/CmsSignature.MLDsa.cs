@@ -11,18 +11,20 @@ namespace System.Security.Cryptography.Pkcs
     {
         static partial void PrepareRegistrationMLDsa(Dictionary<string, CmsSignature> lookup)
         {
-            lookup.Add(Oids.MLDsa44, new MLDsaCmsSignature(Oids.MLDsa44));
-            lookup.Add(Oids.MLDsa65, new MLDsaCmsSignature(Oids.MLDsa65));
-            lookup.Add(Oids.MLDsa87, new MLDsaCmsSignature(Oids.MLDsa87));
+            lookup.Add(Oids.MLDsa44, new MLDsaCmsSignature(Oids.MLDsa44, MLDsaAlgorithm.MLDsa44));
+            lookup.Add(Oids.MLDsa65, new MLDsaCmsSignature(Oids.MLDsa65, MLDsaAlgorithm.MLDsa65));
+            lookup.Add(Oids.MLDsa87, new MLDsaCmsSignature(Oids.MLDsa87, MLDsaAlgorithm.MLDsa87));
         }
 
         private sealed class MLDsaCmsSignature : CmsSignature
         {
-            private string _signatureAlgorithm;
+            private readonly string _signatureAlgorithm;
+            private readonly MLDsaAlgorithm _parameterSet;
 
-            internal MLDsaCmsSignature(string signatureAlgorithm)
+            internal MLDsaCmsSignature(string signatureAlgorithm, MLDsaAlgorithm parameterSet)
             {
                 _signatureAlgorithm = signatureAlgorithm;
+                _parameterSet = parameterSet;
             }
 
             protected override bool VerifyKeyType(object key) => key is MLDsa;
@@ -48,15 +50,18 @@ namespace System.Security.Cryptography.Pkcs
                         SR.Format(SR.Cryptography_UnknownAlgorithmIdentifier, _signatureAlgorithm));
                 }
 
-                MLDsa? publicKey = certificate.GetMLDsaPublicKey();
-
-                if (publicKey is null)
+                using (MLDsa? publicKey = certificate.GetMLDsaPublicKey())
                 {
-                    return false;
-                }
+                    if (publicKey is null)
+                    {
+                        return false;
+                    }
 
-                using (publicKey)
-                {
+                    if (publicKey.Algorithm != _parameterSet)
+                    {
+                        return false;
+                    }
+
                     return publicKey.VerifyData(
                         valueHash,
 #if NET || NETSTANDARD2_1

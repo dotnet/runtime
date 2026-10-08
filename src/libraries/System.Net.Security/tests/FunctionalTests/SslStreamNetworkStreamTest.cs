@@ -160,7 +160,13 @@ namespace System.Net.Security.Tests
                 certBundle.Add(clientCert);
 
                 // Perform handshake to establish secure connection.
-                await ssl.AuthenticateAsClientAsync(Configuration.Security.TlsRenegotiationServer, certBundle, SslProtocols.Tls12, false);
+                await ssl.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
+                {
+                    TargetHost = Configuration.Security.TlsRenegotiationServer,
+                    ClientCertificates = certBundle,
+                    EnabledSslProtocols = SslProtocols.Tls12,
+                    AllowTlsResume = false,
+                });
                 Assert.True(ssl.IsAuthenticated);
                 Assert.True(ssl.IsEncrypted);
 
@@ -184,7 +190,57 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [ConditionalTheory(nameof(SupportsRenegotiation))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.SupportsTls13))]
+        [PlatformSpecific(TestPlatforms.Linux)]
+        public async Task SslStream_NegotiateClientCertificateAsync_Tls13PhaNotOffered()
+        {
+            using CancellationTokenSource cts = new CancellationTokenSource();
+            cts.CancelAfter(TestConfiguration.PassingTestTimeout);
+
+            (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams();
+            using (client)
+            using (server)
+            using (X509Certificate2 serverCertificate = Configuration.Certificates.GetServerCertificate())
+            {
+                SslClientAuthenticationOptions clientOptions = new SslClientAuthenticationOptions()
+                {
+                    TargetHost = Guid.NewGuid().ToString("N"),
+                    EnabledSslProtocols = SslProtocols.Tls13,
+                    RemoteCertificateValidationCallback = delegate { return true; },
+                    // don't set client certificate
+                };
+
+                SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions() { ServerCertificate = serverCertificate };
+
+                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
+                                client.AuthenticateAsClientAsync(clientOptions, cts.Token),
+                                server.AuthenticateAsServerAsync(serverOptions, cts.Token));
+                // need this to complete TLS 1.3 handshake
+                await TestHelper.PingPong(client, server, cts.Token);
+
+                Assert.Null(server.RemoteCertificate);
+
+                // Client needs to be reading for renegotiation to happen.
+                byte[] buffer = new byte[TestHelper.s_ping.Length];
+                ValueTask<int> t = client.ReadAsync(buffer, cts.Token);
+
+                await server.NegotiateClientCertificateAsync(cts.Token);
+
+                // Finish the client's read.
+                await server.WriteAsync(TestHelper.s_ping, cts.Token);
+                await t;
+
+                // no client certificate is offered/sent
+                Assert.Null(server.RemoteCertificate);
+
+                // Stream should remain usable when post-handshake auth is not offered.
+                await TestHelper.PingPong(client, server, cts.Token);
+                await TestHelper.PingPong(server, client, cts.Token);
+                Assert.Null(server.RemoteCertificate);
+            }
+        }
+
+        [ConditionalTheory(typeof(SslStreamNetworkStreamTest), nameof(SupportsRenegotiation))]
         [InlineData(true)]
         [InlineData(false)]
         [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux)]
@@ -262,7 +318,7 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [ConditionalTheory(nameof(SupportsRenegotiation))]
+        [ConditionalTheory(typeof(SslStreamNetworkStreamTest), nameof(SupportsRenegotiation))]
         [InlineData(true)]
         [InlineData(false)]
         [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux)]
@@ -341,7 +397,7 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [Fact]
         [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux)]
         public async Task SslStream_NegotiateClientCertificateAsync_ClientWriteData()
         {
@@ -380,7 +436,7 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [ConditionalFact(nameof(SupportsRenegotiation))]
+        [ConditionalFact(typeof(SslStreamNetworkStreamTest), nameof(SupportsRenegotiation))]
         [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux)]
         public async Task SslStream_NegotiateClientCertificateAsync_IncompleteIncomingTlsFrame_Throws()
         {
@@ -446,7 +502,7 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [ConditionalFact(nameof(SupportsRenegotiation))]
+        [ConditionalFact(typeof(SslStreamNetworkStreamTest), nameof(SupportsRenegotiation))]
         [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux)]
         public async Task SslStream_NegotiateClientCertificateAsync_PendingDecryptedData_Throws()
         {
@@ -710,7 +766,8 @@ namespace System.Net.Security.Tests
                 Assert.Equal(string.Empty, client.TargetHostName);
                 Assert.Equal(string.Empty, server.TargetHostName);
 
-                SslClientAuthenticationOptions clientOptions = new SslClientAuthenticationOptions() { TargetHost = targetName };
+                // A resumed handshake skips the certificate validation callback.
+                SslClientAuthenticationOptions clientOptions = new SslClientAuthenticationOptions() { TargetHost = targetName, AllowTlsResume = false };
                 clientOptions.RemoteCertificateValidationCallback =
                     (sender, certificate, chain, sslPolicyErrors) =>
                     {
@@ -761,7 +818,7 @@ namespace System.Net.Security.Tests
 
             int split = Random.Shared.Next(0, _certificates.ServerChain.Count - 1);
 
-            var clientOptions = new SslClientAuthenticationOptions() { TargetHost = "localhost" };
+            var clientOptions = new SslClientAuthenticationOptions() { TargetHost = "localhost", AllowTlsResume = false };
             clientOptions.CertificateChainPolicy = new X509ChainPolicy()
             {
                 RevocationMode = X509RevocationMode.NoCheck,
@@ -825,10 +882,13 @@ namespace System.Net.Security.Tests
         {
             List<SslStream> streams = new List<SslStream>();
 
-            var serverOptions = new SslServerAuthenticationOptions() { ClientCertificateRequired = true };
+            int validationCount = 0;
+            // Exercise credential caching, but require the client to send its chain on every connection.
+            var serverOptions = new SslServerAuthenticationOptions() { ClientCertificateRequired = true, AllowTlsResume = false };
             serverOptions.ServerCertificateContext = SslStreamCertificateContext.Create(Configuration.Certificates.GetServerCertificate(), null);
             serverOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) =>
             {
+                validationCount++;
                 // Client should send chain without root CA. There is no good way how to know if the chain was built from certificates
                 // from wire or from system store. However, SslStream adds certificates from wire to ExtraStore in RemoteCertificateValidationCallback.
                 // So we verify the operation by checking the ExtraStore. On Windows, that includes leaf itself.
@@ -855,6 +915,8 @@ namespace System.Net.Security.Tests
                 Task t1 = client.AuthenticateAsClientAsync(clientOptions, CancellationToken.None);
                 Task t2 = server.AuthenticateAsServerAsync(serverOptions, CancellationToken.None);
                 await TestConfiguration.WhenAllOrAnyFailedWithTimeout(t1, t2);
+
+                Assert.Equal(i + 1, validationCount);
 
                 // hold to the streams so they stay in credential cache
                 streams.Add(client);

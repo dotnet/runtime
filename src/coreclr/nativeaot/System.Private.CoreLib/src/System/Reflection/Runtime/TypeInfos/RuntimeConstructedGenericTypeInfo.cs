@@ -10,6 +10,7 @@ using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.TypeInfos;
 using System.Text;
 
+using Internal.Metadata.NativeFormat;
 using Internal.Reflection.Core.Execution;
 
 using StructLayoutAttribute = System.Runtime.InteropServices.StructLayoutAttribute;
@@ -45,13 +46,9 @@ namespace System.Reflection.Runtime.TypeInfos
         }
 
 
-        public sealed override IEnumerable<CustomAttributeData> CustomAttributes
-        {
-            get
-            {
-                return GenericTypeDefinitionTypeInfo.CustomAttributes;
-            }
-        }
+        internal sealed override MetadataReader? GetMetadataReader() => GenericTypeDefinitionTypeInfo.GetMetadataReader();
+
+        internal sealed override CustomAttributeHandleCollection GetCustomAttributeHandles() => GenericTypeDefinitionTypeInfo.GetCustomAttributeHandles();
 
         public sealed override string FullName
         {
@@ -84,6 +81,11 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             return GenericTypeDefinitionTypeInfo.ToType();
         }
+
+        public sealed override Type? GetNullableUnderlyingType() =>
+            GenericTypeDefinitionTypeInfo.ToType() == typeof(Nullable<>)
+                ? _key.GenericTypeArguments[0].ToType()
+                : null;
 
         public sealed override Guid GUID
         {

@@ -3,11 +3,13 @@
 
 using System;
 using System.Buffers;
+using System.Diagnostics;
+using System.IO;
 using System.Numerics;
 
 namespace ILCompiler.ObjectWriter
 {
-    internal static class DwarfHelper
+    public static class DwarfHelper
     {
         public static uint SizeOfULEB128(ulong value)
         {
@@ -78,6 +80,104 @@ namespace ILCompiler.ObjectWriter
         {
             Span<byte> buffer = writer.GetSpan((int)SizeOfSLEB128(value));
             writer.Advance(WriteSLEB128(buffer, value));
+        }
+
+        public static void WritePaddedULEB128(Span<byte> bytes, ulong value)
+        {
+            int actualSize = WriteULEB128(bytes, value);
+            if (actualSize < bytes.Length)
+            {
+                bytes[actualSize - 1] |= 0x80;
+                bytes.Slice(actualSize, bytes.Length - actualSize - 1).Fill(0x80);
+                bytes[bytes.Length - 1] = 0x00;
+            }
+        }
+
+        public static void WritePaddedSLEB128(Span<byte> bytes, long value)
+        {
+            int actualSize = WriteSLEB128(bytes, value);
+            if (actualSize < bytes.Length)
+            {
+                byte padValue = value < 0 ? (byte)0x7f : (byte)0x00;
+                bytes[actualSize - 1] |= 0x80;
+                bytes.Slice(actualSize, bytes.Length - actualSize - 1).Fill((byte)(padValue | 0x80));
+                bytes[bytes.Length - 1] = padValue;
+            }
+        }
+
+        public static ulong ReadULEB128(ReadOnlySpan<byte> buffer) => ReadULEB128(buffer, out _);
+
+        public static ulong ReadULEB128(ReadOnlySpan<byte> buffer, out int bytesRead)
+        {
+            ulong value = 0;
+            byte @byte;
+            int shift = 0, pos = 0;
+
+            do
+            {
+                @byte = buffer[pos++];
+                value |= ((ulong)@byte & 0x7f) << shift;
+                shift += 7;
+            } while ((@byte & 0x80) != 0);
+
+            bytesRead = pos;
+            return value;
+        }
+
+        internal static ulong? ReadULEB128(Stream source, out int bytesRead)
+        {
+            Debug.Assert(source.CanSeek);
+            Debug.Assert(source.Length >= 0);
+
+            ulong value = 0;
+            int shift = 0;
+            bytesRead = 0;
+
+            while (true)
+            {
+                int b = source.ReadByte();
+                if (b < 0)
+                {
+                    if (bytesRead == 0)
+                    {
+                        return null;
+                    }
+
+                    throw new InvalidDataException("Unexpected end of stream while reading a ULEB128 value.");
+                }
+
+                byte @byte = (byte)b;
+                bytesRead++;
+                value |= ((ulong)@byte & 0x7f) << shift;
+                if ((@byte & 0x80) == 0)
+                {
+                    return value;
+                }
+
+                shift += 7;
+            }
+        }
+
+        public static long ReadSLEB128(ReadOnlySpan<byte> buffer) => ReadSLEB128(buffer, out _);
+
+        public static long ReadSLEB128(ReadOnlySpan<byte> buffer, out int bytesRead)
+        {
+            ulong value = 0;
+            byte @byte;
+            int shift = 0, pos = 0;
+
+            do
+            {
+                @byte = buffer[pos++];
+                value |= ((ulong)@byte & 0x7f) << shift;
+                shift += 7;
+            } while ((@byte & 0x80) != 0);
+
+            if (((ulong)shift < (8 * sizeof(ulong))) && ((@byte & 0x40) != 0))
+                value |= unchecked((ulong)(long)-1) << shift;
+
+            bytesRead = pos;
+            return unchecked((long)value);
         }
     }
 }

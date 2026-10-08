@@ -33,6 +33,19 @@ install(TARGETS BrowserHost-Static DESTINATION sharedFramework COMPONENT runtime
 # the executable
 set(DOTNET_PROJECT_NAME "browserhost")
 
+# Memory settings are supplied by eng/native.wasm.targets so that the values baked into
+# dotnet.native.wasm and the runtime-pack defaults consumed by the per-app relink
+# (BrowserHost* properties in native.wasm.targets) cannot drift apart. Fail loudly
+# rather than silently linking with different values than the ones advertised to app builds.
+foreach (_browserhost_required_setting
+         CMAKE_BROWSERHOST_INITIAL_MEMORY
+         CMAKE_BROWSERHOST_MAXIMUM_MEMORY
+         CMAKE_BROWSERHOST_STACK_SIZE)
+    if (NOT DEFINED ${_browserhost_required_setting} OR "${${_browserhost_required_setting}}" STREQUAL "")
+        message(FATAL_ERROR "${_browserhost_required_setting} must be set (see eng/native.wasm.targets).")
+    endif ()
+endforeach ()
+
 set(BROWSERHOST_SOURCES
     empty.c
 )
@@ -40,6 +53,7 @@ set(HEADERS
 )
 
 add_compile_definitions(FEATURE_APPHOST)
+add_definitions(-DGEN_PINVOKE=1)
 add_definitions(-DFEATURE_APPHOST=1)
 add_definitions(-DFEATURE_STATIC_HOST=1)
 
@@ -54,14 +68,19 @@ set(SHARED_LIB_DESTINATION
 set(SHARED_CLR_DESTINATION
     ${CLR_ARTIFACTS_BIN_DIR}/coreclr/browser.wasm.${CMAKE_BUILD_RUNTIME_CONFIGURATION}/sharedFramework)
 
-# these dependencies assume that you built `libs.native+clr.runtime` subsets first
+# CoreCLR runtime .a libraries
 LIST(APPEND NATIVE_LIBS
     ${SHARED_CLR_DESTINATION}/libcoreclr_static.a
+    ${SHARED_CLR_DESTINATION}/libcoreclr_gen_static.a
     ${SHARED_CLR_DESTINATION}/libnativeresourcestring.a
     ${SHARED_CLR_DESTINATION}/libgcinfo_unix_wasm.a
     ${SHARED_CLR_DESTINATION}/libcoreclrminipal.a
     ${SHARED_CLR_DESTINATION}/libcoreclrpal.a
     ${SHARED_CLR_DESTINATION}/libminipal.a
+)
+
+# Shared platform .a libraries
+list(APPEND NATIVE_LIBS
     ${SHARED_LIB_DESTINATION}/libSystem.Native.Browser.a
     ${SHARED_LIB_DESTINATION}/libSystem.Runtime.InteropServices.JavaScript.Native.a
     ${SHARED_LIB_DESTINATION}/libSystem.Native.a
@@ -71,7 +90,7 @@ LIST(APPEND NATIVE_LIBS
     ${CMAKE_ICU_DIR}/lib/libicudata.a
     ${SHARED_LIB_DESTINATION}/libSystem.IO.Compression.Native.a
     ${SHARED_LIB_DESTINATION}/libz.a
-    # WASM-TODO respect  $(InvariantTimezone)
+    # WASM-TODO respect  $(InvariantTimezone) - https://github.com/dotnet/runtime/issues/126101
     # libSystem.Native.TimeZoneData.Invariant.a
     ${SHARED_LIB_DESTINATION}/libSystem.Native.TimeZoneData.a
 )
@@ -79,7 +98,7 @@ LIST(APPEND NATIVE_LIBS
 set(JS_SYSTEM_NATIVE_BROWSER
     "${SHARED_LIB_DESTINATION}/libSystem.Native.Browser.js")
 set(JS_SYSTEM_BROWSER_UTILS
-    "${SHARED_LIB_DESTINATION}/libSystem.Browser.Utils.js")
+    "${SHARED_LIB_DESTINATION}/libSystem.Native.Browser.Utils.js")
 set(JS_SYSTEM_RUNTIME_INTEROPSERVICES_JAVASCRIPT_NATIVE
     "${SHARED_LIB_DESTINATION}/libSystem.Runtime.InteropServices.JavaScript.Native.js")
 set(JS_BROWSER_HOST
@@ -94,36 +113,38 @@ set_target_properties(browserhost PROPERTIES
 
 if (UPPERCASE_CMAKE_BUILD_TYPE STREQUAL DEBUG)
     target_link_options(browserhost PRIVATE
-#        -sVERBOSE
-#        -sASSERTIONS=1
-        --emit-symbol-map
+# add -sVERBOSE=1 to debug linking issues
+        -sASSERTIONS=1
         -sLLD_REPORT_UNDEFINED
         -sERROR_ON_UNDEFINED_SYMBOLS=1
+        # Emscripten's default INCOMING_MODULE_JS_API, kept explicit so a Module property we don't declare
+        # aborts the build early. This is only meaningful with ASSERTIONS=1, so it is Debug-only. The value
+        # comes from GenerateEmccExports in eng/native.wasm.targets.
+        -sINCOMING_MODULE_JS_API=${CMAKE_EMCC_INCOMING_MODULE_JS_API}
     )
 endif ()
 
-# WASM-TODO    -emit-llvm
-# WASM-TODO    --source-map-base http://microsoft.com
 target_link_options(browserhost PRIVATE
-    -sINITIAL_MEMORY=134217728
-    -sMAXIMUM_MEMORY=2147483648
+    -sINITIAL_MEMORY=${CMAKE_BROWSERHOST_INITIAL_MEMORY}
+    -sMAXIMUM_MEMORY=${CMAKE_BROWSERHOST_MAXIMUM_MEMORY}
     -sALLOW_MEMORY_GROWTH=1
-    -sSTACK_SIZE=5MB
+    -sGROWABLE_ARRAYBUFFERS=0
+    -sSTACK_SIZE=${CMAKE_BROWSERHOST_STACK_SIZE}
     -sWASM_BIGINT=1
     -sMODULARIZE=1
     -sEXPORT_ES6=1
-    -sEXIT_RUNTIME=0
+    -sEXIT_RUNTIME=1
+    -sALLOW_TABLE_GROWTH=1
     -sEXPORTED_RUNTIME_METHODS=BROWSER_HOST,${CMAKE_EMCC_EXPORTED_RUNTIME_METHODS}
-    -sEXPORTED_FUNCTIONS=_BrowserHost_InitializeCoreCLR,_BrowserHost_ExecuteAssembly,${CMAKE_EMCC_EXPORTED_FUNCTIONS}
+    -sEXPORTED_FUNCTIONS=${CMAKE_EMCC_EXPORTED_FUNCTIONS}
     -sEXPORT_NAME=createDotnetRuntime
     -sENVIRONMENT=web,webview,worker,node,shell
-    -lnodefs.js
-    -Wl,-error-limit=0)
+    --emit-symbol-map
+    -lexports.js
+    -Wl,--error-limit=0)
 
-target_link_libraries(browserhost PUBLIC
-    BrowserHost-Static
-)
 target_link_libraries(browserhost PRIVATE
+    BrowserHost-Static
     ${NATIVE_LIBS}
 	${START_WHOLE_ARCHIVE}
     ${RUNTIMEINFO_LIB}
@@ -134,5 +155,13 @@ install(TARGETS browserhost DESTINATION corehost COMPONENT runtime)
 install(TARGETS browserhost DESTINATION sharedFramework COMPONENT runtime)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/dotnet.native.wasm DESTINATION corehost COMPONENT runtime)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/dotnet.native.wasm DESTINATION sharedFramework COMPONENT runtime)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/dotnet.native.js.symbols DESTINATION corehost COMPONENT runtime)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/dotnet.native.js.symbols DESTINATION sharedFramework COMPONENT runtime)
 
-add_subdirectory(sample)
+# Headers included by the CoreCLR native relink generated sources (see BrowserWasmApp.CoreCLR.targets).
+install(FILES ${CLR_REPO_ROOT_DIR}/src/coreclr/vm/wasm/callhelpers.hpp DESTINATION sharedFramework/include COMPONENT runtime)
+install(FILES ${CLR_SRC_NATIVE_DIR}/minipal/entrypoints.h DESTINATION sharedFramework/include/minipal COMPONENT runtime)
+install(FILES ${CLR_SRC_NATIVE_DIR}/minipal/utils.h DESTINATION sharedFramework/include/minipal COMPONENT runtime)
+
+set_source_files_properties(${BROWSERHOST_SOURCES} PROPERTIES OBJECT_DEPENDS
+    "${JS_SYSTEM_NATIVE_BROWSER};${JS_SYSTEM_BROWSER_UTILS};${JS_SYSTEM_RUNTIME_INTEROPSERVICES_JAVASCRIPT_NATIVE};${JS_BROWSER_HOST};${JS_SYSTEM_NATIVE_BROWSER_EXPOST}")

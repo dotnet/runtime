@@ -1,8 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.Collections.Tests
@@ -109,16 +111,14 @@ namespace System.Collections.Tests
         [MemberData(nameof(Ctor_BoolArray_TestData))]
         public static void Ctor_BoolArray(bool[] values)
         {
-            BitArray bitArray = new BitArray(values);
-            Assert.Equal(values.Length, bitArray.Length);
-            for (int i = 0; i < bitArray.Length; i++)
-            {
-                Assert.Equal(values[i], bitArray[i]);
-                Assert.Equal(values[i], bitArray.Get(i));
-            }
-            ICollection collection = bitArray;
-            Assert.Equal(values.Length, collection.Count);
-            Assert.False(collection.IsSynchronized);
+            AssertBitArray(new BitArray(values), values);
+        }
+
+        [Theory]
+        [MemberData(nameof(Ctor_BoolArray_TestData))]
+        public static void Ctor_BoolSpan(bool[] values)
+        {
+            AssertBitArray(new BitArray(values.AsSpan()), values);
         }
 
         [Fact]
@@ -195,16 +195,14 @@ namespace System.Collections.Tests
         [MemberData(nameof(Ctor_IntArray_TestData))]
         public static void Ctor_IntArray(int[] array, bool[] expected)
         {
-            BitArray bitArray = new BitArray(array);
-            Assert.Equal(expected.Length, bitArray.Length);
-            for (int i = 0; i < expected.Length; i++)
-            {
-                Assert.Equal(expected[i], bitArray[i]);
-                Assert.Equal(expected[i], bitArray.Get(i));
-            }
-            ICollection collection = bitArray;
-            Assert.Equal(expected.Length, collection.Count);
-            Assert.False(collection.IsSynchronized);
+            AssertBitArray(new BitArray(array), expected);
+        }
+
+        [Theory]
+        [MemberData(nameof(Ctor_IntArray_TestData))]
+        public static void Ctor_IntSpan(int[] array, bool[] expected)
+        {
+            AssertBitArray(new BitArray(array.AsSpan()), expected);
         }
 
         [Fact]
@@ -234,16 +232,14 @@ namespace System.Collections.Tests
         [MemberData(nameof(Ctor_ByteArray_TestData))]
         public static void Ctor_ByteArray(byte[] bytes, bool[] expected)
         {
-            BitArray bitArray = new BitArray(bytes);
-            Assert.Equal(expected.Length, bitArray.Length);
-            for (int i = 0; i < bitArray.Length; i++)
-            {
-                Assert.Equal(expected[i], bitArray[i]);
-                Assert.Equal(expected[i], bitArray.Get(i));
-            }
-            ICollection collection = bitArray;
-            Assert.Equal(expected.Length, collection.Count);
-            Assert.False(collection.IsSynchronized);
+            AssertBitArray(new BitArray(bytes), expected);
+        }
+
+        [Theory]
+        [MemberData(nameof(Ctor_ByteArray_TestData))]
+        public static void Ctor_ByteSpan(byte[] bytes, bool[] expected)
+        {
+            AssertBitArray(new BitArray(bytes.AsSpan()), expected);
         }
 
         [Fact]
@@ -256,6 +252,121 @@ namespace System.Collections.Tests
         public static void Ctor_LargeByteArrayOverflowingBitArray_ThrowsArgumentException()
         {
             AssertExtensions.Throws<ArgumentException>("bytes", () => new BitArray(new byte[int.MaxValue / BitsPerByte + 1 ]));
+        }
+
+        [Fact]
+        public static void Ctor_EmptySpans()
+        {
+            Assert.Empty(new BitArray(default(ReadOnlySpan<bool>)));
+            Assert.Empty(new BitArray(default(ReadOnlySpan<byte>)));
+            Assert.Empty(new BitArray(default(ReadOnlySpan<int>)));
+        }
+
+        [Fact]
+        public static void Ctor_SpanSlices_IgnoreElementsOutsideSlice()
+        {
+            bool[] boolValuesWithSentinels = [false, true, false, true, true, false];
+            AssertBitArray(new BitArray(boolValuesWithSentinels.AsSpan(1, 4)), [true, false, true, true]);
+
+            byte[] byteValuesWithSentinels = [0xFF, 0x01, 0x80, 0xFF];
+            AssertBitArray(
+                new BitArray(byteValuesWithSentinels.AsSpan(1, 2)),
+                [true, false, false, false, false, false, false, false,
+                 false, false, false, false, false, false, false, true]);
+
+            int[] intValuesWithSentinels = [-1, 1, int.MinValue, -1];
+            bool[] expected = new bool[BitsPerInt32 * 2];
+            expected[0] = true;
+            expected[^1] = true;
+            AssertBitArray(new BitArray(intValuesWithSentinels.AsSpan(1, 2)), expected);
+        }
+
+        [Fact]
+        public static void Ctor_StackAllocatedSpans_CopyValuesFromStackMemory()
+        {
+            ReadOnlySpan<bool> boolValues = stackalloc bool[] { true, false, true };
+            AssertBitArray(new BitArray(boolValues), boolValues);
+
+            ReadOnlySpan<byte> byteValues = stackalloc byte[] { 0x01, 0x80 };
+            AssertBitArray(
+                new BitArray(byteValues),
+                [true, false, false, false, false, false, false, false,
+                 false, false, false, false, false, false, false, true]);
+
+            ReadOnlySpan<int> intValues = stackalloc int[] { 1, int.MinValue };
+            bool[] expected = new bool[BitsPerInt32 * 2];
+            expected[0] = true;
+            expected[^1] = true;
+            AssertBitArray(new BitArray(intValues), expected);
+        }
+
+        [Fact]
+        public static void Ctor_SpansAreCopied()
+        {
+            bool[] boolValues = [true];
+            BitArray boolBits = new BitArray(boolValues.AsSpan());
+            boolValues[0] = false;
+            Assert.True(boolBits[0]);
+
+            byte[] byteValues = [0x01];
+            BitArray byteBits = new BitArray(byteValues.AsSpan());
+            byteValues[0] = 0;
+            Assert.True(byteBits[0]);
+
+            int[] intValues = [1];
+            BitArray intBits = new BitArray(intValues.AsSpan());
+            intValues[0] = 0;
+            Assert.True(intBits[0]);
+        }
+
+        [Theory]
+        [InlineData(1)]
+        [InlineData(31)]
+        [InlineData(32)]
+        [InlineData(33)]
+        [InlineData(63)]
+        [InlineData(64)]
+        [InlineData(65)]
+        [InlineData(511)]
+        [InlineData(512)]
+        [InlineData(513)]
+        public static void Ctor_BoolSpan_DoesNotReadPastEnd(int length)
+        {
+            using BoundedMemory<bool> values = BoundedMemory.Allocate<bool>(length);
+            for (int i = 0; i < values.Length; i++)
+            {
+                values[i] = i % 3 == 0;
+            }
+            values.MakeReadonly();
+
+            BitArray bitArray = new BitArray(values.Span);
+            Assert.Equal(length, bitArray.Length);
+            for (int i = 0; i < length; i++)
+            {
+                Assert.Equal(i % 3 == 0, bitArray[i]);
+            }
+        }
+
+        [Theory]
+        [InlineData(3)]
+        [InlineData(35)]
+        [InlineData(64)]
+        [InlineData(67)]
+        [InlineData(100)]
+        public static void Ctor_BoolSpan_NonCanonicalTrueValues(int length)
+        {
+            byte[] underlyingValues = new byte[length];
+            for (int i = 0; i < underlyingValues.Length; i++)
+            {
+                underlyingValues[i] = (byte)(i % 4);
+            }
+
+            BitArray bitArray = new BitArray(MemoryMarshal.Cast<byte, bool>(underlyingValues));
+            Assert.Equal(underlyingValues.Length, bitArray.Length);
+            for (int i = 0; i < underlyingValues.Length; i++)
+            {
+                Assert.Equal(underlyingValues[i] != 0, bitArray[i]);
+            }
         }
 
         [Fact]
@@ -277,6 +388,20 @@ namespace System.Collections.Tests
             BitArray clone = (BitArray)bitArray.Clone();
 
             Assert.Equal(bitArray.Length, clone.Length);
+        }
+
+        private static void AssertBitArray(BitArray bitArray, ReadOnlySpan<bool> expected)
+        {
+            Assert.Equal(expected.Length, bitArray.Length);
+            for (int i = 0; i < bitArray.Length; i++)
+            {
+                Assert.Equal(expected[i], bitArray[i]);
+                Assert.Equal(expected[i], bitArray.Get(i));
+            }
+
+            ICollection collection = bitArray;
+            Assert.Equal(expected.Length, collection.Count);
+            Assert.False(collection.IsSynchronized);
         }
     }
 }

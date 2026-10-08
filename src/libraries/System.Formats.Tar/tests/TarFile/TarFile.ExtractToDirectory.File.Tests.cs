@@ -3,23 +3,50 @@
 
 using System.IO;
 using System.Linq;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Formats.Tar.Tests
 {
-    public partial class TarFile_ExtractToDirectory_File_Tests : TarTestsBase
+    public partial class TarFile_ExtractToDirectory_File_Tests : TarFile_ExtractToDirectory_Tests
     {
-        [Fact]
-        public void InvalidPaths_Throw()
+        protected override Task ExtractArchive(MemoryStream archive, string destinationDirectoryName, bool overwriteFiles, bool useOptions, bool async, CancellationToken cancellationToken = default)
         {
-            Assert.Throws<ArgumentNullException>(() => TarFile.ExtractToDirectory(sourceFileName: null, destinationDirectoryName: "path", overwriteFiles: false));
-            Assert.Throws<ArgumentException>(() => TarFile.ExtractToDirectory(sourceFileName: string.Empty, destinationDirectoryName: "path", overwriteFiles: false));
-            Assert.Throws<ArgumentNullException>(() => TarFile.ExtractToDirectory(sourceFileName: "path", destinationDirectoryName: null, overwriteFiles: false));
-            Assert.Throws<ArgumentException>(() => TarFile.ExtractToDirectory(sourceFileName: "path", destinationDirectoryName: string.Empty, overwriteFiles: false));
+            string archivePath = GetTestFilePath();
+            File.WriteAllBytes(archivePath, archive.ToArray());
+            if (async)
+            {
+                return useOptions
+                    ? TarFile.ExtractToDirectoryAsync(archivePath, destinationDirectoryName, new TarExtractOptions { OverwriteFiles = overwriteFiles }, cancellationToken)
+                    : TarFile.ExtractToDirectoryAsync(archivePath, destinationDirectoryName, overwriteFiles, cancellationToken);
+            }
+
+            if (useOptions)
+            {
+                TarFile.ExtractToDirectory(archivePath, destinationDirectoryName, new TarExtractOptions { OverwriteFiles = overwriteFiles });
+            }
+            else
+            {
+                TarFile.ExtractToDirectory(archivePath, destinationDirectoryName, overwriteFiles);
+            }
+            return Task.CompletedTask;
         }
 
-        [Fact]
-        public void NonExistentFile_Throws()
+        [Theory]
+        [MemberData(nameof(GetBooleanData))]
+        public async Task InvalidPaths_Throw(bool async)
+        {
+            await Assert.ThrowsAsync<ArgumentNullException>(() => ExtractToDirectory(sourceArchiveFileName: null, destinationDirectoryName: "path", overwriteFiles: false, async));
+            await Assert.ThrowsAsync<ArgumentException>(() => ExtractToDirectory(sourceArchiveFileName: string.Empty, destinationDirectoryName: "path", overwriteFiles: false, async));
+            await Assert.ThrowsAsync<ArgumentNullException>(() => ExtractToDirectory(sourceArchiveFileName: "path", destinationDirectoryName: null, overwriteFiles: false, async));
+            await Assert.ThrowsAsync<ArgumentException>(() => ExtractToDirectory(sourceArchiveFileName: "path", destinationDirectoryName: string.Empty, overwriteFiles: false, async));
+        }
+
+        [Theory]
+        [MemberData(nameof(GetBooleanData))]
+        public async Task NonExistentFile_Throws(bool async)
         {
             using TempDirectory root = new TempDirectory();
 
@@ -28,24 +55,12 @@ namespace System.Formats.Tar.Tests
 
             Directory.CreateDirectory(dirPath);
 
-            Assert.Throws<FileNotFoundException>(() => TarFile.ExtractToDirectory(sourceFileName: filePath, destinationDirectoryName: dirPath, overwriteFiles: false));
+            await Assert.ThrowsAsync<FileNotFoundException>(() => ExtractToDirectory(filePath, dirPath, overwriteFiles: false, async));
         }
 
-        [Fact]
-        public void NonExistentDirectory_Throws()
-        {
-            using TempDirectory root = new TempDirectory();
-
-            string filePath = Path.Join(root.Path, "file.tar");
-            string dirPath = Path.Join(root.Path, "dir");
-
-            File.Create(filePath).Dispose();
-
-            Assert.Throws<DirectoryNotFoundException>(() => TarFile.ExtractToDirectory(sourceFileName: filePath, destinationDirectoryName: dirPath, overwriteFiles: false));
-        }
-
-        [Fact]
-        public void SetsLastModifiedTimeOnExtractedFiles()
+        [Theory]
+        [MemberData(nameof(GetBooleanData))]
+        public async Task SetsLastModifiedTimeOnExtractedFiles(bool async)
         {
             using TempDirectory root = new TempDirectory();
 
@@ -62,22 +77,23 @@ namespace System.Formats.Tar.Tests
             var dt = new DateTime(2001, 1, 2, 3, 4, 5, DateTimeKind.Local);
             File.SetLastWriteTime(inFile, dt);
 
-            TarFile.CreateFromDirectory(sourceDirectoryName: inDir, destinationFileName: tarFile, includeBaseDirectory: false);
+            await CreateFromDirectory(inDir, tarFile, includeBaseDirectory: false, async);
 
             Directory.CreateDirectory(outDir);
-            TarFile.ExtractToDirectory(sourceFileName: tarFile, destinationDirectoryName: outDir, overwriteFiles: false);
+            await ExtractToDirectory(tarFile, outDir, overwriteFiles: false, async);
 
             Assert.True(File.Exists(outFile));
             Assert.InRange(File.GetLastWriteTime(outFile).Ticks, dt.AddSeconds(-3).Ticks, dt.AddSeconds(3).Ticks); // include some slop for filesystem granularity
         }
 
-        [Fact]
-        public void SetsLastModifiedTimeOnExtractedDirectories()
+        [Theory]
+        [MemberData(nameof(GetBooleanData))]
+        public async Task SetsLastModifiedTimeOnExtractedDirectories(bool async)
         {
             using TempDirectory root = new TempDirectory();
 
             DirectoryInfo fromDir = Directory.CreateDirectory(Path.Combine(root.Path, "fromdir"));
-            // Create a hierarcy of directories.
+            // Create a hierarchy of directories.
             var directories = new DirectoryInfo[]
             {
                 Directory.CreateDirectory(Path.Combine(fromDir.FullName, "dir")),                      // 'fromdir/dir'
@@ -91,18 +107,17 @@ namespace System.Formats.Tar.Tests
             {
                 // Add a file.
                 File.Create(Path.Combine(directories[i].FullName, "file")).Dispose();
-
                 // Set the directory timestamp.
                 dt[i] = new DateTime(2000 + i, 1 + i, 2 + i, 3 + i, 4 + i, 5 + i, DateTimeKind.Local);
                 directories[i].LastWriteTime = dt[i];
             }
 
             string tarFile = Path.Join(root.Path, "file.tar");
-            TarFile.CreateFromDirectory(sourceDirectoryName: fromDir.FullName, destinationFileName: tarFile, includeBaseDirectory: false);
+            await CreateFromDirectory(fromDir.FullName, tarFile, includeBaseDirectory: false, async);
 
             string toDir = Path.Join(root.Path, "todir");
             Directory.CreateDirectory(toDir);
-            TarFile.ExtractToDirectory(sourceFileName: tarFile, destinationDirectoryName: toDir, overwriteFiles: false);
+            await ExtractToDirectory(tarFile, toDir, overwriteFiles: false, async);
 
             string[] extractedDirectories = Directory.GetDirectories(toDir, "*", new EnumerationOptions() { RecurseSubdirectories = true });
             Array.Sort(extractedDirectories);
@@ -110,18 +125,13 @@ namespace System.Formats.Tar.Tests
             for (int i = 0; i < extractedDirectories.Length; i++)
             {
                 Assert.Equal(Path.GetFileName(directories[i].FullName), Path.GetFileName(extractedDirectories[i]));
-                Assert.InRange(Directory.GetLastWriteTime(extractedDirectories[i]).Ticks, dt[i].AddSeconds(-3).Ticks, dt[i].AddSeconds(3).Ticks); // include some slop for filesystem granularity
+                Assert.InRange(Directory.GetLastWriteTime(extractedDirectories[i]).Ticks, dt[i].AddSeconds(-3).Ticks, dt[i].AddSeconds(3).Ticks);
             }
         }
 
         [Theory]
-        [InlineData(TestTarFormat.v7)]
-        [InlineData(TestTarFormat.ustar)]
-        [InlineData(TestTarFormat.pax)]
-        [InlineData(TestTarFormat.pax_gea)]
-        [InlineData(TestTarFormat.gnu)]
-        [InlineData(TestTarFormat.oldgnu)]
-        public void Extract_Archive_File(TestTarFormat testFormat)
+        [MemberData(nameof(GetTestTarFormatsAndBooleanData))]
+        public async Task Extract_Archive_File(TestTarFormat testFormat, bool async)
         {
             string sourceArchiveFileName = GetTarFilePath(CompressionMethod.Uncompressed, testFormat, "file");
 
@@ -129,13 +139,14 @@ namespace System.Formats.Tar.Tests
 
             string filePath = Path.Join(destination.Path, "file.txt");
 
-            TarFile.ExtractToDirectory(sourceArchiveFileName, destination.Path, overwriteFiles: false);
+            await ExtractToDirectory(sourceArchiveFileName, destination.Path, overwriteFiles: false, async);
 
             Assert.True(File.Exists(filePath));
         }
 
-        [Fact]
-        public void Extract_Archive_File_OverwriteTrue()
+        [Theory]
+        [MemberData(nameof(GetBooleanData))]
+        public async Task Extract_Archive_File_OverwriteTrue(bool async)
         {
             string testCaseName = "file";
             string archivePath = GetTarFilePath(CompressionMethod.Uncompressed, TestTarFormat.pax, testCaseName);
@@ -149,7 +160,7 @@ namespace System.Formats.Tar.Tests
                 writer.WriteLine("Original text");
             }
 
-            TarFile.ExtractToDirectory(archivePath, destination.Path, overwriteFiles: true);
+            await ExtractToDirectory(archivePath, destination.Path, overwriteFiles: true, async);
 
             Assert.True(File.Exists(filePath));
 
@@ -161,22 +172,23 @@ namespace System.Formats.Tar.Tests
             }
         }
 
-        [Fact]
-        public void Extract_Archive_File_OverwriteFalse()
+        [Theory]
+        [MemberData(nameof(GetBooleanData))]
+        public async Task Extract_Archive_File_OverwriteFalse(bool async)
         {
             string sourceArchiveFileName = GetTarFilePath(CompressionMethod.Uncompressed, TestTarFormat.pax, "file");
 
             using TempDirectory destination = new TempDirectory();
 
             string filePath = Path.Join(destination.Path, "file.txt");
-
             File.Create(filePath).Dispose();
 
-            Assert.Throws<IOException>(() => TarFile.ExtractToDirectory(sourceArchiveFileName, destination.Path, overwriteFiles: false));
+            await Assert.ThrowsAsync<IOException>(() => ExtractToDirectory(sourceArchiveFileName, destination.Path, overwriteFiles: false, async));
         }
 
-        [Fact]
-        public void Extract_AllSegmentsOfPath()
+        [Theory]
+        [MemberData(nameof(GetBooleanData))]
+        public async Task Extract_AllSegmentsOfPath(bool async)
         {
             using TempDirectory source = new TempDirectory();
             using TempDirectory destination = new TempDirectory();
@@ -195,7 +207,7 @@ namespace System.Formats.Tar.Tests
                 writer.WriteEntry(file);
             }
 
-            TarFile.ExtractToDirectory(archivePath, destination.Path, overwriteFiles: false);
+            await ExtractToDirectory(archivePath, destination.Path, overwriteFiles: false, async);
 
             string segment1Path = Path.Join(destination.Path, "segment1");
             Assert.True(Directory.Exists(segment1Path), $"{segment1Path}' does not exist.");
@@ -207,19 +219,18 @@ namespace System.Formats.Tar.Tests
             Assert.True(File.Exists(filePath), $"{filePath}' does not exist.");
         }
 
-        [Fact]
-        public void ExtractArchiveWithEntriesThatStartWithSlashDotPrefix()
+        [Theory]
+        [MemberData(nameof(GetBooleanData))]
+        public async Task ExtractArchiveWithEntriesThatStartWithSlashDotPrefix(bool async)
         {
             using TempDirectory root = new TempDirectory();
-
             using MemoryStream archiveStream = GetStrangeTarMemoryStream("prefixDotSlashAndCurrentFolderEntry");
 
-            TarFile.ExtractToDirectory(archiveStream, root.Path, overwriteFiles: true);
+            await ExtractToDirectory(archiveStream, root.Path, overwriteFiles: true, async);
 
             archiveStream.Position = 0;
 
             using TarReader reader = new TarReader(archiveStream, leaveOpen: false);
-
             TarEntry entry;
             while ((entry = reader.GetNextEntry()) != null)
             {
@@ -231,9 +242,8 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public void UnixFileModes(bool overwrite)
+        [MemberData(nameof(GetTwoBooleansData))]
+        public async Task UnixFileModes(bool overwrite, bool async)
         {
             using TempDirectory source = new TempDirectory();
             using TempDirectory destination = new TempDirectory();
@@ -278,7 +288,7 @@ namespace System.Formats.Tar.Tests
                 Directory.CreateDirectory(outOfOrderDirPath);
             }
 
-            TarFile.ExtractToDirectory(archivePath, destination.Path, overwriteFiles: overwrite);
+            await ExtractToDirectory(archivePath, destination.Path, overwriteFiles: overwrite, async);
 
             Assert.True(Directory.Exists(dirPath), $"{dirPath}' does not exist.");
             AssertFileModeEquals(dirPath, TestPermission1);
@@ -299,9 +309,8 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public void UnixFileModes_RestrictiveParentDir(bool overwrite)
+        [MemberData(nameof(GetTwoBooleansData))]
+        public async Task UnixFileModes_RestrictiveParentDir(bool overwrite, bool async)
         {
             using TempDirectory source = new TempDirectory();
             using TempDirectory destination = new TempDirectory();
@@ -328,7 +337,7 @@ namespace System.Formats.Tar.Tests
                 File.OpenWrite(filePath).Dispose();
             }
 
-            TarFile.ExtractToDirectory(archivePath, destination.Path, overwriteFiles: overwrite);
+            await ExtractToDirectory(archivePath, destination.Path, overwriteFiles: overwrite, async);
 
             Assert.True(Directory.Exists(dirPath), $"{dirPath}' does not exist.");
             AssertFileModeEquals(dirPath, UnixFileMode.None);
@@ -340,8 +349,9 @@ namespace System.Formats.Tar.Tests
             AssertFileModeEquals(filePath, TestPermission1);
         }
 
-        [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
-        public void LinkBeforeTarget()
+        [ConditionalTheory(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
+        [MemberData(nameof(GetBooleanData))]
+        public async Task LinkBeforeTarget(bool async)
         {
             using TempDirectory source = new TempDirectory();
             using TempDirectory destination = new TempDirectory();
@@ -363,10 +373,206 @@ namespace System.Formats.Tar.Tests
 
             File.WriteAllText(linkPath, "");
 
-            TarFile.ExtractToDirectory(archivePath, destination.Path, overwriteFiles: true);
+            await ExtractToDirectory(archivePath, destination.Path, overwriteFiles: true, async);
 
             Assert.True(File.Exists(filePath), $"{filePath}' does not exist.");
             Assert.True(File.Exists(linkPath), $"{linkPath}' does not exist.");
+        }
+
+        [ConditionalTheory(typeof(MountHelper), nameof(MountHelper.CanCreateHardLinks))]
+        [InlineData(TarEntryFormat.V7, TarHardLinkMode.PreserveLink)]
+        [InlineData(TarEntryFormat.Ustar, TarHardLinkMode.PreserveLink)]
+        [InlineData(TarEntryFormat.Pax, TarHardLinkMode.PreserveLink)]
+        [InlineData(TarEntryFormat.Gnu, TarHardLinkMode.PreserveLink)]
+        [InlineData(TarEntryFormat.V7, TarHardLinkMode.CopyContents)]
+        [InlineData(TarEntryFormat.Ustar, TarHardLinkMode.CopyContents)]
+        [InlineData(TarEntryFormat.Pax, TarHardLinkMode.CopyContents)]
+        [InlineData(TarEntryFormat.Gnu, TarHardLinkMode.CopyContents)]
+        public void HardLinkExtractionRoundtrip(TarEntryFormat format, TarHardLinkMode linkMode)
+        {
+            // Create hardlinked dir1/file.txt and dir2/linked.txt.
+            using TempDirectory root = new TempDirectory();
+
+            string sourceDir1 = Path.Join(root.Path, "source", "dir1");
+            string sourceDir2 = Path.Join(root.Path, "source", "dir2");
+            Directory.CreateDirectory(sourceDir1);
+            Directory.CreateDirectory(sourceDir2);
+            string sourceFile1 = Path.Join(sourceDir1, "file.txt");
+            File.WriteAllText(sourceFile1, "test content");
+            string sourceFile2 = Path.Join(sourceDir2, "linked.txt");
+            File.CreateHardLink(sourceFile2, sourceFile1);
+
+            string archivePath = Path.Join(root.Path, "archive.tar");
+            // Create archive file.
+            TarWriterOptions options = new TarWriterOptions() { Format = format, HardLinkMode = linkMode };
+            using (FileStream archiveStream = File.Create(archivePath))
+            using (TarWriter writer = new TarWriter(archiveStream, options, leaveOpen: false))
+            {
+                writer.WriteEntry(sourceDir1, "dir1");
+                writer.WriteEntry(sourceFile1, "dir1/file.txt");
+                writer.WriteEntry(sourceDir2, "dir2");
+                writer.WriteEntry(sourceFile2, "dir2/linked.txt");
+            }
+
+            string destination = Path.Join(root.Path, "destination");
+            Directory.CreateDirectory(destination);
+            // Extract archive using ExtractToDirectory.
+            TarFile.ExtractToDirectory(archivePath, destination, overwriteFiles: false);
+            // Verify extracted files
+
+            string targetFile1 = Path.Join(destination, "dir1", "file.txt");
+            string targetFile2 = Path.Join(destination, "dir2", "linked.txt");
+            if (linkMode == TarHardLinkMode.PreserveLink)
+            {
+                AssertPathsAreHardLinked(targetFile1, targetFile2);
+            }
+            else
+            {
+                Assert.True(File.Exists(targetFile1));
+                Assert.True(File.Exists(targetFile2));
+                Assert.Equal("test content", File.ReadAllText(targetFile1));
+                Assert.Equal("test content", File.ReadAllText(targetFile2));
+            }
+        }
+
+        [ConditionalTheory(typeof(MountHelper), nameof(MountHelper.CanCreateHardLinks))]
+        [MemberData(nameof(GetBooleanData))]
+        public async Task HardLinkExtraction_CopyContents(bool async)
+        {
+            using TempDirectory root = new TempDirectory();
+
+            string sourceDir1 = Path.Join(root.Path, "source", "dir1");
+            string sourceDir2 = Path.Join(root.Path, "source", "dir2");
+            Directory.CreateDirectory(sourceDir1);
+            Directory.CreateDirectory(sourceDir2);
+            string sourceFile1 = Path.Join(sourceDir1, "file.txt");
+            File.WriteAllText(sourceFile1, "test content");
+            string sourceFile2 = Path.Join(sourceDir2, "linked.txt");
+            File.CreateHardLink(sourceFile2, sourceFile1);
+
+            string archivePath = Path.Join(root.Path, "archive.tar");
+            // Create archive with hard link preservation.
+            TarWriterOptions writerOptions = new TarWriterOptions() { Format = TarEntryFormat.Pax, HardLinkMode = TarHardLinkMode.PreserveLink };
+            using (FileStream archiveStream = File.Create(archivePath))
+            using (TarWriter writer = new TarWriter(archiveStream, writerOptions, leaveOpen: false))
+            {
+                writer.WriteEntry(sourceDir1, "dir1");
+                writer.WriteEntry(sourceFile1, "dir1/file.txt");
+                writer.WriteEntry(sourceDir2, "dir2");
+                writer.WriteEntry(sourceFile2, "dir2/linked.txt");
+            }
+
+            string destination = Path.Join(root.Path, "destination");
+            Directory.CreateDirectory(destination);
+            // Extract archive with CopyContents mode.
+            TarExtractOptions extractOptions = new TarExtractOptions() { HardLinkMode = TarHardLinkMode.CopyContents };
+            await ExtractToDirectory(archivePath, destination, extractOptions, async);
+
+            // Verify extracted files are independent copies.
+            string targetFile1 = Path.Join(destination, "dir1", "file.txt");
+            string targetFile2 = Path.Join(destination, "dir2", "linked.txt");
+            Assert.True(File.Exists(targetFile1));
+            Assert.True(File.Exists(targetFile2));
+            Assert.Equal("test content", File.ReadAllText(targetFile1));
+            Assert.Equal("test content", File.ReadAllText(targetFile2));
+            AssertPathsAreNotHardLinked(targetFile1, targetFile2);
+        }
+
+        [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
+        public void ExtractToDirectory_RejectsSymlinkDirectoryTraversal_WithNestedFile()
+        {
+            using TempDirectory root = new TempDirectory();
+            string destDir = Path.Combine(root.Path, "dest");
+            Directory.CreateDirectory(destDir);
+
+            // Absolute path outside destDir
+            string linkTarget = "/tmp/outside";
+
+            string tarPath = Path.Combine(root.Path, "symlink_dir_traversal.tar");
+            using (FileStream stream = new FileStream(tarPath, FileMode.Create, FileAccess.Write))
+            using (TarWriter writer = new TarWriter(stream, leaveOpen: false))
+            {
+                // symlink: "link" -> "/tmp/outside"
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.SymbolicLink, "link")
+                {
+                    LinkName = linkTarget
+                });
+
+                // file: "link/test.txt" with "hello"
+                byte[] content = Encoding.UTF8.GetBytes("hello");
+                var fileEntry = new PaxTarEntry(TarEntryType.RegularFile, "link/test.txt")
+                {
+                    DataStream = new MemoryStream(content, writable: false)
+                };
+
+                fileEntry.DataStream.Position = 0;
+                writer.WriteEntry(fileEntry);
+            }
+
+            Assert.Throws<IOException>(() => TarFile.ExtractToDirectory(tarPath, destDir, overwriteFiles: true));
+
+            // Nothing should be created in dest
+            string linkPath = Path.Combine(destDir, "link");
+            string outsideFilePath = Path.Combine(destDir, "link", "test.txt");
+            Assert.False(File.Exists(linkPath) || Directory.Exists(linkPath), "link should not have been created.");
+            Assert.False(File.Exists(outsideFilePath) || Directory.Exists(outsideFilePath), "traversal link should not have been created.");
+        }
+
+        [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
+        public void ExtractToDirectory_RejectsChainedSymlinkDirectoryTraversal_WithNestedFile()
+        {
+            // dir a/
+            // symlink a/b ? .
+            // symlink a/b/c ? .
+            // symlink a/b/c/d ? ../../outside
+            // file a/d/pwned.txt escapes
+            using TempDirectory root = new TempDirectory();
+            string destDir = Path.Combine(root.Path, "dest");
+            Directory.CreateDirectory(destDir);
+
+            string tarPath = Path.Combine(root.Path, "chained_symlink_traversal.tar");
+            using (FileStream stream = new FileStream(tarPath, FileMode.Create, FileAccess.Write))
+            using (TarWriter writer = new TarWriter(stream, leaveOpen: false))
+            {
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.Directory, "a/"));
+
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.SymbolicLink, "a/b") { LinkName = "." });
+
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.SymbolicLink, "a/b/c") { LinkName = "." });
+
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.SymbolicLink, "a/b/c/d") { LinkName = "../../outside" });
+
+                var pwned = new PaxTarEntry(TarEntryType.RegularFile, "a/d/pwned.txt")
+                {
+                    DataStream = new MemoryStream(Encoding.UTF8.GetBytes("pwned"))
+                };
+                writer.WriteEntry(pwned);
+            }
+
+            if (OperatingSystem.IsWindows())
+            {
+                // Windows only creates file symlinks and trying to process a directory symlink will throw
+                // UnauthorizedAccessException instead of IOException.
+                // Windows always creates file symlinks (FileInfo.CreateAsSymbolicLink), so entry "a/b" becomes a
+                // *file* symlink whose target (".") is a *directory*. Processing the nested entries forces the
+                // extractor to resolve/descend through that type-mismatched reparse point, which Windows rejects,
+                // but the surfaced exception depends on the OS build:
+                //   - Some builds throw UnauthorizedAccessException while resolving the link (FileInfo.ResolveLinkTarget
+                //     during the traversal-safety walk in FilePathEscapesDirectory).
+                //   - Others resolve the link successfully, then fail creating a directory where the file symlink
+                //     already exists, throwing IOException ("a file or directory with the same name already exists").
+                // Either way the archive is rejected and nothing escapes (verified below), so accept both.
+                Exception ex = Assert.ThrowsAny<Exception>(() => TarFile.ExtractToDirectory(tarPath, destDir, overwriteFiles: true));
+                Assert.True(ex is IOException or UnauthorizedAccessException, $"Unexpected exception type: {ex}");
+            }
+            else
+            {
+                Assert.Throws<IOException>(() => TarFile.ExtractToDirectory(tarPath, destDir, overwriteFiles: true));
+            }
+
+            string outsideDir = Path.Combine(root.Path, "outside");
+            Assert.False(Directory.Exists(outsideDir), "outside/directory should not have been created.");
+            Assert.False(File.Exists(Path.Combine(outsideDir, "pwned.txt")), "pwned.txt should not have been written outside destination.");
         }
     }
 }

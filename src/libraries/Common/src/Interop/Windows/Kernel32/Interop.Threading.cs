@@ -12,21 +12,26 @@ internal static partial class Interop
         internal const int WAIT_FAILED = unchecked((int)0xFFFFFFFF);
         internal const int WAIT_IO_COMPLETION = 0x000000C0;
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.Kernel32)]
         internal static partial uint WaitForMultipleObjectsEx(uint nCount, IntPtr lpHandles, BOOL bWaitAll, uint dwMilliseconds, BOOL bAlertable);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.Kernel32)]
         internal static partial uint WaitForSingleObject(IntPtr hHandle, uint dwMilliseconds);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.Kernel32)]
         internal static partial uint WaitForSingleObjectEx(IntPtr hHandle, uint dwMilliseconds, BOOL bAlertable);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.Kernel32)]
         internal static partial uint SignalObjectAndWait(IntPtr hObjectToSignal, IntPtr hObjectToWaitOn, uint dwMilliseconds, BOOL bAlertable);
 
         internal const uint CREATE_SUSPENDED = 0x00000004;
         internal const uint STACK_SIZE_PARAM_IS_A_RESERVATION = 0x00010000;
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.Kernel32)]
         internal static unsafe partial SafeWaitHandle CreateThread(
             IntPtr lpThreadAttributes,
@@ -36,14 +41,22 @@ internal static partial class Interop
             uint dwCreationFlags,
             out uint lpThreadId);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.Kernel32)]
         internal static partial uint ResumeThread(SafeWaitHandle hThread);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.Kernel32)]
         internal static partial IntPtr GetCurrentThread();
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+        [LibraryImport(Libraries.Kernel32, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static partial bool SetThreadPriorityBoost(IntPtr hThread, [MarshalAs(UnmanagedType.Bool)] bool bDisablePriorityBoost);
+
         internal const int DUPLICATE_SAME_ACCESS = 2;
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.Kernel32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool DuplicateHandle(
@@ -68,21 +81,26 @@ internal static partial class Interop
             ErrorReturn = 0x7FFFFFFF
         }
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.Kernel32)]
         internal static partial ThreadPriority GetThreadPriority(SafeWaitHandle hThread);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.Kernel32)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool SetThreadPriority(SafeWaitHandle hThread, int nPriority);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.Kernel32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool GetThreadIOPendingFlag(nint hThread, out BOOL lpIOIsPending);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.Kernel32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool QueueUserAPC(delegate* unmanaged<nuint, void> pfnAPC, SafeHandle hThread, nuint dwData);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.Kernel32)]
         internal static partial uint SleepEx(uint dwMilliseconds, [MarshalAs(UnmanagedType.Bool)] bool bAlertable);
     }

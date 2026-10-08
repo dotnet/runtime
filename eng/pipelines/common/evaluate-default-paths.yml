@@ -10,8 +10,6 @@ parameters:
         eng/testing/BrowserVersions.props
         eng/testing/WasmRunner*
         eng/testing/WasiRunner*
-        eng/testing/scenarios/BuildWasiAppsJobsList.txt
-        eng/testing/scenarios/BuildWasmAppsJobsList.txt
         eng/testing/tests.browser.targets
         eng/testing/tests.was*.targets
         eng/testing/was*provisioning.targets
@@ -66,6 +64,11 @@ parameters:
         src/native/libs/Common/JavaScript/*
         src/native/libs/System.Native.Browser/*
         src/native/libs/System.Runtime.InteropServices.JavaScript.Native/*
+        src/native/package.json
+        src/native/package-lock.json
+        src/native/tsconfig.json
+        src/native/.npmrc
+        src/native/rollup.config*
     ]
     _wasm_chrome: [
         eng/testing/bump-chrome-version.proj
@@ -76,15 +79,12 @@ parameters:
         eng/testing/performance/*
     ]
 
-    # src/workloads is only used in runtime-official builds
-    # where evaluate-paths is not used
     _always_exclude: [
         eng/pipelines/common/evaluate-default-paths.yml
         '*.md'
         LICENSE.TXT
         PATENTS.TXT
         THIRD-PARTY-NOTICES.TXT
-        src/workloads/*
         src/mono/wasm/sln/*
     ]
 
@@ -225,9 +225,8 @@ jobs:
       - eng/Version.Details.xml
       - eng/Versions.props
       - eng/AcquireWasiSdk.targets
-      - eng/download-wasi-sdk.ps1
-      - eng/testing/scenarios/BuildWasiAppsJobsList.txt
-      - eng/testing/scenarios/BuildWasmAppsJobsList.txt
+      - eng/AcquireEmscriptenSdk.targets
+      - eng/wasm/*
       - eng/testing/tests.browser.targets
       - eng/testing/tests.was*.targets
       - src/mono/nuget/Microsoft.NET.Runtime.WorkloadTesting.Internal/Sdk/WorkloadTesting.Core.targets
@@ -262,7 +261,6 @@ jobs:
       - src/mono/wasi/build/*
       - src/mono/wasi/runtime/*
       - src/mono/wasi/testassets/*
-      - src/mono/wasi/Wasi.Build.Tests/*
       - ${{ parameters._const_paths._wasm_chrome }}
       - ${{ parameters._const_paths._wasm_src_native }}
       - src/tasks/*
@@ -293,20 +291,39 @@ jobs:
       - ${{ parameters._const_paths._always_exclude }}
       - ${{ parameters._const_paths._perf_pipeline_specific_only }}
 
+    # The checked-in CoreCLR wasm call helpers (src/coreclr/vm/wasm/{browser,wasi}/callhelpers-*.cpp)
+    # are generated from the framework's [UnmanagedCallersOnly] methods, P/Invokes and QCalls, so any
+    # change to that managed code can make them stale. Triggers the wasm CoreCLR build legs that run
+    # wasm-coreclr-callhelpers-check.yml.
+    - subset: wasm_coreclr_callhelpers
+      combined: true
+      include:
+      - src/libraries/*/src/*
+      - src/coreclr/System.Private.CoreLib/*
+      - src/coreclr/tools/aot/ILCompiler.ReadyToRun/*
+      - src/coreclr/tools/Common/*
+      - src/coreclr/vm/wasm/*
+      - eng/wasm/WasmPInvokeModules.props
+      exclude:
+      - ${{ parameters._const_paths._always_exclude }}
+
     # wasm/runtimetests coreCLR need to be run
     - subset: wasm_coreclr_runtimetests
       combined: true
       include:
+      - eng/AcquireWasiR2RTools.targets
+      - src/tests/Common/WasiR2RComposer.proj
+      - src/tasks/Microsoft.NET.WebAssembly.Webcil/*
+      - src/tasks/WasmAppBuilder/*
       - src/tests/*
       - src/coreclr/*
       - ${{ parameters._const_paths._wasm_src_native }}
       exclude:
-      - src/mono/*
       - ${{ parameters._const_paths._wasm_pipelines }}
       - ${{ parameters._const_paths._always_exclude }}
       - ${{ parameters._const_paths._perf_pipeline_specific_only }}
 
-    # Wasm except Wasm.build.Tests, Wasi.build.Tests and debugger
+    # Wasm-specific paths excluding Wasm.Build.Tests, WASI (build/runtime/testassets), and the debugger
     - subset: wasm_specific_except_wbt_dbg
       combined: true
       include:
@@ -315,9 +332,7 @@ jobs:
       # other paths that should also trigger wasm jobs
       - src/mono/*
       exclude:
-      - eng/testing/scenarios/BuildWasiAppsJobsList.txt
-      - eng/testing/scenarios/BuildWasmAppsJobsList.txt
-        src/mono/nuget/Microsoft.NET.Runtime.WorkloadTesting.Internal/Sdk/WorkloadTesting.Core.targets
+      - src/mono/nuget/Microsoft.NET.Runtime.WorkloadTesting.Internal/Sdk/WorkloadTesting.Core.targets
       - eng/testing/workloads-browser.targets
       - eng/testing/workloads-testing.targets
       - eng/testing/workloads-wasi.targets
@@ -331,9 +346,7 @@ jobs:
       - src/mono/wasi/build/*
       - src/mono/wasi/runtime/*
       - src/mono/wasi/testassets/*
-      - src/mono/wasi/Wasi.Build.Tests/*
       - src/mono/nuget/Microsoft.NET.Runtime*
-        src/mono/nuget/Microsoft.NET.Sdk.WebAssembly.Pack/*
       - src/mono/nuget/Microsoft.NET.Workload*
       - src/mono/nuget/Microsoft.NETCore.BrowserDebugHost.Transport/*
       - ${{ parameters._const_paths._always_exclude }}

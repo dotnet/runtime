@@ -926,7 +926,7 @@ namespace System.Formats.Tar.Tests
                 uint digit = (uint)(b - '0');
                 if (digit >= 8)
                 {
-                    throw new InvalidDataException(SR.Format(SR.TarInvalidNumber));
+                    throw new InvalidDataException(SR.TarInvalidNumber);
                 }
 
                 value = checked((value * octalFactor) + T.CreateTruncating(digit));

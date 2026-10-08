@@ -9,9 +9,6 @@ typedef HINSTANCE (PALAPI_NOEXPORT *PFN_REGISTER_MODULE)(LPCSTR);           /* u
 // This is for the PAL_VirtualUnwindOutOfProc read memory adapter.
 CrashInfo* g_crashInfo;
 
-// This is the NativeAOT DotNetRuntimeDebugHeader signature
-uint8_t g_debugHeaderCookie[4] = { 0x44, 0x4E, 0x44, 0x48 };
-
 static bool ModuleInfoCompare(const ModuleInfo* lhs, const ModuleInfo* rhs) { return lhs->BaseAddress() < rhs->BaseAddress(); }
 
 CrashInfo::CrashInfo(const CreateDumpOptions& options) :
@@ -303,7 +300,7 @@ CrashInfo::InitializeDAC(DumpType dumpType)
         printf_error("InitializeDAC: coreclr not found; not using DAC\n");
         return true;
     }
-    ReleaseHolder<DumpDataTarget> dataTarget = new DumpDataTarget(*this);
+    ReleaseHolder<DumpDataTarget> dataTarget{ new DumpDataTarget(*this) };
     PFN_CLRDataCreateInstance pfnCLRDataCreateInstance = nullptr;
     PFN_DLLMAIN pfnDllMain = nullptr;
     bool result = false;
@@ -379,33 +376,9 @@ CrashInfo::EnumerateMemoryRegionsWithDAC(DumpType dumpType)
         TRACE("EnumerateMemoryRegionsWithDAC: Memory enumeration STARTED (%d %d)\n", m_enumMemoryPagesAdded, m_dataTargetPagesAdded);
 
         // CLRDATA_ENUM_MEM_HEAP2 skips the expensive (in both time and memory usage) enumeration of the
-        // low level data structures and adds all the loader allocator heaps instead. The older 'DbgEnableFastHeapDumps'
-        // env var didn't generate a complete enough heap dump on Linux and this new path does.
+        // low level data structures and adds all the loader allocator heaps instead.
         CLRDataEnumMemoryFlags flags = CLRDATA_ENUM_MEM_HEAP2;
         MINIDUMP_TYPE minidumpType = GetMiniDumpType(dumpType);
-        if (dumpType == DumpType::Heap)
-        {
-            // This is the old fast heap env var for backwards compatibility for VS4Mac.
-            CLRConfigNoCache fastHeapDumps = CLRConfigNoCache::Get("DbgEnableFastHeapDumps", /*noprefix*/ false, &getenv);
-            DWORD val = 0;
-            if (fastHeapDumps.IsSet() && fastHeapDumps.TryAsInteger(10, val) && val == 1)
-            {
-                // Since on MacOS all the RW regions will be added for heap dumps by createdump, the
-                // only thing differentiating a MiniDumpNormal and a MiniDumpWithPrivateReadWriteMemory
-                // is that the later uses the EnumMemoryRegions APIs. This is kind of expensive on larger
-                // applications (4 minutes, or even more), and this should already be in RW pages. Change
-                // the dump type to the faster normal one. This one already ensures necessary DAC globals,
-                // etc. without the costly assembly, module, class, type runtime data structures enumeration.
-                minidumpType = MiniDumpNormal;
-                flags = CLRDATA_ENUM_MEM_DEFAULT;
-            }
-            // This env var allows the CLRDATA_ENUM_MEM_HEAP2 fast path to be opt-ed out
-            fastHeapDumps = CLRConfigNoCache::Get("EnableFastHeapDumps", /*noprefix*/ false, &getenv);
-            if (fastHeapDumps.IsSet() && fastHeapDumps.TryAsInteger(10, val) && val == 0)
-            {
-                flags = CLRDATA_ENUM_MEM_DEFAULT;
-            }
-        }
         // Calls CrashInfo::EnumMemoryRegion for each memory region found by the DAC
         HRESULT hr = m_pClrDataEnumRegions->EnumMemoryRegions(this, minidumpType, flags);
         if (FAILED(hr))
@@ -455,7 +428,7 @@ CrashInfo::EnumerateManagedModules()
             }
 
             DacpGetModuleData moduleData;
-            if (SUCCEEDED(hr = moduleData.Request(pClrDataModule.GetPtr())))
+            if (SUCCEEDED(hr = moduleData.Request(pClrDataModule)))
             {
                 uint64_t loadedPEAddress = CONVERT_FROM_SIGN_EXTENDED(moduleData.LoadedPEAddress);
 
@@ -464,10 +437,10 @@ CrashInfo::EnumerateManagedModules()
 
                 if (!moduleData.IsDynamic && loadedPEAddress != 0)
                 {
-                    ArrayHolder<WCHAR> wszUnicodeName = new WCHAR[MAX_LONGPATH + 1];
+                    WStringHolder wszUnicodeName = new WCHAR[MAX_LONGPATH + 1];
                     if (SUCCEEDED(hr = pClrDataModule->GetFileName(MAX_LONGPATH, nullptr, wszUnicodeName)))
                     {
-                        std::string moduleName = ConvertString(wszUnicodeName.GetPtr());
+                        std::string moduleName = ConvertString(wszUnicodeName);
 
                         // Change the module mapping name
                         AddOrReplaceModuleMapping(loadedPEAddress, moduleData.LoadedPESize, moduleName);
@@ -491,7 +464,7 @@ CrashInfo::EnumerateManagedModules()
         if (enumModules != 0) {
             m_pClrDataProcess->EndEnumModules(enumModules);
         }
-        TRACE("EnumerateManagedModules: Module enumeration FINISHED (%d) ModuleMappings %06llx\n", m_dataTargetPagesAdded, m_cbModuleMappings / PAGE_SIZE);
+        TRACE("EnumerateManagedModules: Module enumeration FINISHED (%d) ModuleMappings %06" PRIx64 "\n", m_dataTargetPagesAdded, m_cbModuleMappings / PAGE_SIZE);
     }
     return true;
 }
@@ -507,7 +480,7 @@ CrashInfo::UnwindAllThreads()
     if (m_appModel != AppModelType::NativeAOT)
     {
         TRACE("UnwindAllThreads: STARTED (%d)\n", m_dataTargetPagesAdded);
-        ReleaseHolder<ISOSDacInterface> pSos = nullptr;
+        ReleaseHolder<ISOSDacInterface> pSos;
         if (m_pClrDataProcess != nullptr) {
             m_pClrDataProcess->QueryInterface(__uuidof(ISOSDacInterface), (void**)&pSos);
         }
@@ -818,7 +791,7 @@ CrashInfo::PageMappedToPhysicalMemory(uint64_t start)
         if (seekResult != pagemapOffset)
         {
             int seekErrno = errno;
-            TRACE("Seeking in pagemap file FAILED, addr: %" PRIA PRIx ", pagemap offset: %" PRIA PRIx ", ERRNO %d: %s\n", start, pagemapOffset, seekErrno, strerror(seekErrno));
+            TRACE("Seeking in pagemap file FAILED, addr: %" PRIA PRIx64 ", pagemap offset: %" PRIA PRIx64 ", ERRNO %d: %s\n", start, pagemapOffset, seekErrno, strerror(seekErrno));
             return true;
         }
         uint64_t value;
@@ -826,13 +799,13 @@ CrashInfo::PageMappedToPhysicalMemory(uint64_t start)
         if (readResult == (size_t) -1)
         {
             int readErrno = errno;
-            TRACE("Reading of pagemap file FAILED, addr: %" PRIA PRIx ", pagemap offset: %" PRIA PRIx ", size: %zu, ERRNO %d: %s\n", start, pagemapOffset, sizeof(value), readErrno, strerror(readErrno));
+            TRACE("Reading of pagemap file FAILED, addr: %" PRIA PRIx64 ", pagemap offset: %" PRIA PRIx64 ", size: %zu, ERRNO %d: %s\n", start, pagemapOffset, sizeof(value), readErrno, strerror(readErrno));
             return true;
         }
 
         bool is_page_present = (value & ((uint64_t)1 << 63)) != 0;
         bool is_page_swapped = (value & ((uint64_t)1 << 62)) != 0;
-        TRACE_VERBOSE("Pagemap value for %" PRIA PRIx ", pagemap offset %" PRIA PRIx " is %" PRIA PRIx " -> %s\n", start, pagemapOffset, value, is_page_present ? "in memory" : (is_page_swapped ? "in swap" : "NOT in memory"));
+        TRACE_VERBOSE("Pagemap value for %" PRIA PRIx64 ", pagemap offset %" PRIA PRIx64 " is %" PRIA PRIx64 " -> %s\n", start, pagemapOffset, value, is_page_present ? "in memory" : (is_page_swapped ? "in swap" : "NOT in memory"));
         return is_page_present || is_page_swapped;
     #endif
 }
@@ -1009,7 +982,7 @@ GetDirectory(const std::string& fileName)
 std::string
 FormatString(const char* format, ...)
 {
-    ArrayHolder<char> buffer = new char[MAX_LONGPATH + 1];
+    AStringHolder buffer = new char[MAX_LONGPATH + 1];
     va_list args;
     va_start(args, format);
     int result = vsnprintf(buffer, MAX_LONGPATH, format, args);
@@ -1031,7 +1004,7 @@ ConvertString(const WCHAR* str)
     if (len == 0)
         return { };
 
-    ArrayHolder<char> buffer = new char[len + 1];
+    AStringHolder buffer = new char[len + 1];
     minipal_convert_utf16_to_utf8((CHAR16_T*)str, cch, buffer, len + 1, 0);
     return std::string { buffer };
 }

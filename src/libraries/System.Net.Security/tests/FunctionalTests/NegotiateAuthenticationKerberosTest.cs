@@ -9,7 +9,7 @@ using Xunit.Abstractions;
 namespace System.Net.Security.Tests
 {
     [ConditionalClass(typeof(KerberosExecutor), nameof(KerberosExecutor.IsSupported))]
-    public class NegotiateAuthenticationKerberosTest
+    public partial class NegotiateAuthenticationKerberosTest
     {
         private readonly ITestOutputHelper _testOutputHelper;
 
@@ -78,6 +78,29 @@ namespace System.Net.Security.Tests
                 blob = ntAuth.GetOutgoingBlob(new byte[3], out statusCode);
                 Assert.True(statusCode >= NegotiateAuthenticationStatusCode.GenericFailure);
                 Assert.Null(blob);
+            });
+        }
+
+        [Fact]
+        public async Task Client_UnknownSPN_ReturnsTargetUnknown()
+        {
+            using var kerberosExecutor = new KerberosExecutor(_testOutputHelper, "LINUX.CONTOSO.COM");
+            // Add a registered service to get a non-empty keytab (required on macOS)
+            kerberosExecutor.AddService("HTTP/linux.contoso.com");
+            kerberosExecutor.AddUser("user");
+
+            await kerberosExecutor.Invoke(() =>
+            {
+                // Use an SPN that is not registered in the KDC
+                using NegotiateAuthentication client = new NegotiateAuthentication(new NegotiateAuthenticationClientOptions
+                {
+                    Package = "Kerberos",
+                    Credential = new NetworkCredential("user", KerberosExecutor.DefaultUserPassword, "LINUX.CONTOSO.COM"),
+                    TargetName = "HTTP/nonexistent.linux.contoso.com"
+                });
+
+                client.GetOutgoingBlob((byte[])null, out NegotiateAuthenticationStatusCode statusCode);
+                Assert.Equal(NegotiateAuthenticationStatusCode.TargetUnknown, statusCode);
             });
         }
     }

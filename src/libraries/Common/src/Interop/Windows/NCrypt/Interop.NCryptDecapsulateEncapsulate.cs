@@ -10,6 +10,7 @@ internal static partial class Interop
 {
     internal static partial class NCrypt
     {
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.NCrypt)]
         private static unsafe partial ErrorCode NCryptDecapsulate(
             SafeNCryptKeyHandle hKey,
@@ -20,6 +21,7 @@ internal static partial class Interop
             out uint pcbSecretKey,
             uint dwFlags);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.NCrypt)]
         private static unsafe partial ErrorCode NCryptEncapsulate(
             SafeNCryptKeyHandle hKey,

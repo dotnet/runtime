@@ -222,7 +222,7 @@ namespace System.Configuration
         {
             private const string ClientConfigurationHostTypeName = "System.Configuration.ClientConfigurationHost, " + TypeUtil.ConfigurationManagerAssemblyName;
             private const string InternalConfigConfigurationFactoryTypeName = "System.Configuration.Internal.InternalConfigConfigurationFactory, " + TypeUtil.ConfigurationManagerAssemblyName;
-            private static volatile IInternalConfigConfigurationFactory s_configFactory;
+            private static IInternalConfigConfigurationFactory s_configFactory;
 
             /// <summary>
             /// ClientConfigurationHost implements this - a way of getting some info from it without

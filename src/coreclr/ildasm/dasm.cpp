@@ -456,24 +456,6 @@ void Uninit()
     }
 } // Uninit
 
-HRESULT IsClassRefInScope(mdTypeRef classref)
-{
-    HRESULT     hr = S_OK;
-    const char  *pszNameSpace;
-    const char  *pszClassName;
-    mdTypeDef   classdef;
-    mdToken     tkRes;
-
-    IfFailRet(g_pImport->GetNameOfTypeRef(classref, &pszNameSpace, &pszClassName));
-    MAKE_NAME_IF_NONE(pszClassName,classref);
-    IfFailRet(g_pImport->GetResolutionScopeOfTypeRef(classref, &tkRes));
-
-    hr = g_pImport->FindTypeDef(pszNameSpace, pszClassName,
-        (TypeFromToken(tkRes) == mdtTypeRef) ? tkRes : mdTokenNil, &classdef);
-
-    return hr;
-}
-
 BOOL EnumClasses()
 {
     HRESULT         hr;
@@ -628,7 +610,8 @@ BOOL EnumClasses()
                     }
                 }
             }
-            g_pImport->EnumMethodImplClose(&hBody,&hDecl);
+            g_pImport->EnumClose(&hBody);
+            g_pImport->EnumClose(&hDecl);
         }
         i++;
     }
@@ -6648,9 +6631,6 @@ void DumpVtable(void* GUICookie)
         szptr += sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr),COMMENT(sz));
     }
     printLine(GUICookie,szString);
-
-    sprintf_s(szString,SZSTRING_SIZE,"%s// Image base: 0x%p",g_szAsmCodeIndent,g_pPELoader->base());
-    printLine(GUICookie,COMMENT(szString));
 
     DumpEATEntriesWrapper(GUICookie, pNTHeader32, pOptHeader32, pNTHeader64, pOptHeader64);
 

@@ -573,7 +573,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                     }
 
                     X509ChainStatusFlags leafProblems = X509ChainStatusFlags.NoError;
-                    X509ChainStatusFlags issuerExtraProblems = X509ChainStatusFlags.NoError;
 
                     if (notTimeValid)
                     {
@@ -589,21 +588,14 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                     {
                         chain.ChainPolicy.ApplicationPolicy.Add(s_tlsServerOid);
                         leafProblems |= X509ChainStatusFlags.NotValidForUsage;
-
-                        // [ActiveIssue("https://github.com/dotnet/runtime/issues/31246")]
-                        // Linux reports this code at more levels than Windows does.
-                        if (OperatingSystem.IsLinux())
-                        {
-                            issuerExtraProblems |= X509ChainStatusFlags.NotValidForUsage;
-                        }
                     }
 
                     bool chainBuilt = chain.Build(endEntity);
 
                     AssertChainStatus(
                         chain,
-                        rootStatus: issuerExtraProblems,
-                        issrStatus: issuerExtraProblems | X509ChainStatusFlags.Revoked,
+                        rootStatus: X509ChainStatusFlags.NoError,
+                        issrStatus: X509ChainStatusFlags.NoError | X509ChainStatusFlags.Revoked,
                         leafStatus: leafProblems | ThisOsRevocationStatusUnknown);
 
                     Assert.False(chainBuilt, "Chain built with ExcludeRoot.");
@@ -615,8 +607,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 
                     AssertChainStatus(
                         chain,
-                        rootStatus: issuerExtraProblems,
-                        issrStatus: issuerExtraProblems,
+                        rootStatus: X509ChainStatusFlags.NoError,
+                        issrStatus: X509ChainStatusFlags.NoError,
                         leafStatus: leafProblems);
 
                     Assert.False(chainBuilt, "Chain built with EndCertificateOnly (no ignore flags)");
@@ -630,8 +622,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 
                     AssertChainStatus(
                         chain,
-                        rootStatus: issuerExtraProblems,
-                        issrStatus: issuerExtraProblems,
+                        rootStatus: X509ChainStatusFlags.NoError,
+                        issrStatus: X509ChainStatusFlags.NoError,
                         leafStatus: leafProblems);
 
                     Assert.True(chainBuilt, "Chain built with EndCertificateOnly (with ignore flags)");
@@ -654,7 +646,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                     intermediate.Revoke(endEntity, now);
 
                     X509ChainStatusFlags leafProblems = X509ChainStatusFlags.NoError;
-                    X509ChainStatusFlags issuerExtraProblems = X509ChainStatusFlags.NoError;
 
                     if (notTimeValid)
                     {
@@ -670,21 +661,14 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                     {
                         chain.ChainPolicy.ApplicationPolicy.Add(s_tlsServerOid);
                         leafProblems |= X509ChainStatusFlags.NotValidForUsage;
-
-                        // [ActiveIssue("https://github.com/dotnet/runtime/issues/31246")]
-                        // Linux reports this code at more levels than Windows does.
-                        if (!OperatingSystem.IsWindows())
-                        {
-                            issuerExtraProblems |= X509ChainStatusFlags.NotValidForUsage;
-                        }
                     }
 
                     bool chainBuilt = chain.Build(endEntity);
 
                     AssertChainStatus(
                         chain,
-                        rootStatus: issuerExtraProblems,
-                        issrStatus: issuerExtraProblems,
+                        rootStatus: X509ChainStatusFlags.NoError,
+                        issrStatus: X509ChainStatusFlags.NoError,
                         leafStatus: leafProblems | X509ChainStatusFlags.Revoked);
 
                     Assert.False(chainBuilt, "Chain built with ExcludeRoot.");
@@ -696,8 +680,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 
                     AssertChainStatus(
                         chain,
-                        rootStatus: issuerExtraProblems,
-                        issrStatus: issuerExtraProblems,
+                        rootStatus: X509ChainStatusFlags.NoError,
+                        issrStatus: X509ChainStatusFlags.NoError,
                         leafStatus: leafProblems | X509ChainStatusFlags.Revoked);
 
                     Assert.False(chainBuilt, "Chain built with EndCertificateOnly (no ignore flags)");
@@ -711,8 +695,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 
                     AssertChainStatus(
                         chain,
-                        rootStatus: issuerExtraProblems,
-                        issrStatus: issuerExtraProblems,
+                        rootStatus: X509ChainStatusFlags.NoError,
+                        issrStatus: X509ChainStatusFlags.NoError,
                         leafStatus: leafProblems | X509ChainStatusFlags.Revoked);
 
                     Assert.False(chainBuilt, "Chain built with EndCertificateOnly (with ignore flags)");
@@ -1227,6 +1211,173 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                 });
         }
 
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Linux)]
+        public static void SelfIssuedButNotSelfSignedRevocationUnknown_IgnoreRootUnknown()
+        {
+            SelfIssuedButNotSelfSignedRevocationUnknown(
+                PkiOptions.AllRevocation,
+                static (endEntity, chainHolder) =>
+                {
+                    X509Chain chain = chainHolder.Chain;
+
+                    chain.ChainPolicy.VerificationFlags |=
+                        X509VerificationFlags.IgnoreRootRevocationUnknown;
+
+                    bool success = chain.Build(endEntity);
+
+                    AssertChainStatus(
+                        chain,
+                        rootStatus: X509ChainStatusFlags.NoError,
+                        iss1Status: X509ChainStatusFlags.NoError,
+                        iss2Status: ThisOsRevocationStatusUnknown,
+                        leafStatus: ThisOsNoErrorWithPreviousRevocationError);
+
+                    AssertExtensions.FalseExpression(success, "chain.Build(endEntity)");
+                });
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Linux)]
+        public static void SelfIssuedButNotSelfSignedRevocationUnknown_IgnoreIntermediateUnknown()
+        {
+            SelfIssuedButNotSelfSignedRevocationUnknown(
+                PkiOptions.AllRevocation,
+                static (endEntity, chainHolder) =>
+                {
+                    X509Chain chain = chainHolder.Chain;
+
+                    chain.ChainPolicy.VerificationFlags |=
+                        X509VerificationFlags.IgnoreCertificateAuthorityRevocationUnknown;
+
+                    bool success = chain.Build(endEntity);
+
+                    AssertChainStatus(
+                        chain,
+                        rootStatus: X509ChainStatusFlags.NoError,
+                        iss1Status: X509ChainStatusFlags.NoError,
+                        iss2Status: ThisOsRevocationStatusUnknown,
+                        leafStatus: ThisOsNoErrorWithPreviousRevocationError);
+
+                    if (ThisOsNoErrorWithPreviousRevocationError == X509ChainStatusFlags.NoError)
+                    {
+                        AssertExtensions.TrueExpression(success, "chain.Build(endEntity)");
+                    }
+                    else
+                    {
+                        // On Android, the intermediate yielding a RevocationStatusUnknown
+                        // causes the leaf to also yield a RevocationStatusUnknown,
+                        // which we didn't suppress, so we expect false.
+                        AssertExtensions.FalseExpression(success, "chain.Build(endEntity)");
+                    }
+                });
+        }
+
+        private static void SelfIssuedButNotSelfSignedRevocationUnknown(
+            PkiOptions pkiOptions,
+            Action<X509Certificate2, ChainHolder> callback,
+            [CallerMemberName] string callerName = "")
+        {
+            string rootNameStr = BuildSubject(
+                "Some Root CA",
+                callerName,
+                pkiOptions,
+                true);
+
+            string intermediateNameStr = BuildSubject(
+                "Some Self-Issued CA",
+                callerName,
+                pkiOptions,
+                true);
+
+            string endEntityNameStr = BuildSubject(
+                "Some End-Entity Certificate",
+                callerName,
+                pkiOptions,
+                true);
+
+            X500DistinguishedName rootName = new(rootNameStr);
+            X500DistinguishedName intermediateName = new(intermediateNameStr);
+            X500DistinguishedName endEntityName = new(endEntityNameStr);
+
+            BuildPrivatePki(
+                pkiOptions,
+                out RevocationResponder responder,
+                out CertificateAuthority root,
+                out CertificateAuthority[] intermediates,
+                out X509Certificate2 endEntity,
+                rootName: rootName,
+                intermediateNames: [intermediateName, intermediateName],
+                endEntityName: endEntityName,
+                callerName,
+                registerAuthorities: false);
+
+            using (responder)
+            using (root)
+            using (intermediates[0])
+            using (intermediates[1])
+            using (endEntity)
+            using (X509Certificate2 rootCert = root.CloneIssuerCert())
+            using (X509Certificate2 intermediate1Cert = intermediates[0].CloneIssuerCert())
+            using (X509Certificate2 intermediate2Cert = intermediates[1].CloneIssuerCert())
+            {
+                if (pkiOptions.HasFlag(PkiOptions.RootAuthorityHasDesignatedOcspResponder))
+                {
+                    using (RSA tmpKey = RSA.Create())
+                    using (X509Certificate2 tmp = root.CreateOcspSigner(
+                        BuildSubject("Some Root OCSP Responder", callerName, pkiOptions, true),
+                        tmpKey))
+                    {
+                        root.DesignateOcspResponder(tmp.CopyWithPrivateKey(tmpKey));
+                    }
+                }
+
+                if (pkiOptions.HasFlag(PkiOptions.IssuerAuthorityHasDesignatedOcspResponder))
+                {
+                    using (RSA tmpKey = RSA.Create())
+                    using (X509Certificate2 tmp = intermediates[0].CreateOcspSigner(
+                        BuildSubject("Some Self-Issued CA OCSP Responder", callerName, pkiOptions, true),
+                        tmpKey))
+                    {
+                        intermediates[0].DesignateOcspResponder(tmp.CopyWithPrivateKey(tmpKey));
+                    }
+
+                    using (RSA tmpKey = RSA.Create())
+                    using (X509Certificate2 tmp = intermediates[1].CreateOcspSigner(
+                        BuildSubject("Some Self-Issued CA OCSP Responder", callerName, pkiOptions, true),
+                        tmpKey))
+                    {
+                        intermediates[1].DesignateOcspResponder(tmp.CopyWithPrivateKey(tmpKey));
+                    }
+                }
+
+                // Register the root, which covers itself and the original issuing CA.
+                // Do not register intermediates[0], thus leaving intermediates[1] (the re-key cert) as revocation unknown.
+                // Register intermediates[1] to cover the end-entity cert.
+                responder.AddCertificateAuthority(root);
+                responder.AddCertificateAuthority(intermediates[1]);
+
+                RetryHelper.Execute(
+                    () =>
+                    {
+                        using (ChainHolder holder = new ChainHolder())
+                        {
+                            X509Chain chain = holder.Chain;
+                            chain.ChainPolicy.CustomTrustStore.Add(rootCert);
+                            chain.ChainPolicy.ExtraStore.Add(intermediate1Cert);
+                            chain.ChainPolicy.ExtraStore.Add(intermediate2Cert);
+                            chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
+                            chain.ChainPolicy.VerificationTime = endEntity.NotBefore.AddMinutes(1);
+                            chain.ChainPolicy.UrlRetrievalTimeout = s_urlRetrievalLimit;
+                            chain.ChainPolicy.RevocationFlag = X509RevocationFlag.EntireChain;
+
+                            callback(endEntity, holder);
+                        }
+                    },
+                    maxAttempts: 3);
+            }
+        }
+
         private static void RevokeEndEntityWithInvalidRevocation(
             ChainHolder holder,
             CertificateAuthority intermediate,
@@ -1572,6 +1723,38 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
             }
         }
 
+        private static void AssertChainStatus(
+            X509Chain chain,
+            X509ChainStatusFlags rootStatus,
+            X509ChainStatusFlags iss1Status,
+            X509ChainStatusFlags iss2Status,
+            X509ChainStatusFlags leafStatus)
+        {
+            Assert.Equal(4, chain.ChainElements.Count);
+
+            X509ChainStatusFlags allFlags = rootStatus | iss1Status | iss2Status | leafStatus;
+            X509ChainStatusFlags chainActual = chain.AllStatusFlags();
+
+            X509ChainStatusFlags rootActual = chain.ChainElements[3].AllStatusFlags();
+            X509ChainStatusFlags iss1Actual = chain.ChainElements[2].AllStatusFlags();
+            X509ChainStatusFlags iss2Actual = chain.ChainElements[1].AllStatusFlags();
+            X509ChainStatusFlags leafActual = chain.ChainElements[0].AllStatusFlags();
+
+            // If things don't match, build arrays so the errors pretty print the full chain.
+            if (rootActual != rootStatus ||
+                iss1Actual != iss1Status ||
+                iss2Actual != iss2Status ||
+                leafActual != leafStatus ||
+                chainActual != allFlags)
+            {
+                X509ChainStatusFlags[] expected = { rootStatus, iss1Status, iss2Status, leafStatus };
+                X509ChainStatusFlags[] actual = { rootActual, iss1Actual, iss2Actual, leafActual };
+
+                Assert.Equal(expected, actual);
+                Assert.Equal(allFlags, chainActual);
+            }
+        }
+
         internal static void BuildPrivatePki(
             PkiOptions pkiOptions,
             out RevocationResponder responder,
@@ -1592,7 +1775,50 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                     endEntityRevocationViaCrl || endEntityRevocationViaOcsp,
                 "At least one revocation mode is enabled");
 
-            CertificateAuthority.BuildPrivatePki(pkiOptions, out responder, out rootAuthority, out intermediateAuthority, out endEntityCert, testName, registerAuthorities, pkiOptionsInSubject);
+            CertificateAuthority.BuildPrivatePki(
+                pkiOptions,
+                out responder,
+                out rootAuthority,
+                out intermediateAuthority,
+                out endEntityCert,
+                testName,
+                registerAuthorities,
+                pkiOptionsInSubject);
+        }
+
+        internal static void BuildPrivatePki(
+            PkiOptions pkiOptions,
+            out RevocationResponder responder,
+            out CertificateAuthority rootAuthority,
+            out CertificateAuthority[] intermediateAuthorities,
+            out X509Certificate2 endEntityCert,
+            X500DistinguishedName rootName,
+            X500DistinguishedName[] intermediateNames,
+            X500DistinguishedName endEntityName,
+            [CallerMemberName] string testName = null,
+            bool registerAuthorities = true)
+        {
+            bool issuerRevocationViaCrl = pkiOptions.HasFlag(PkiOptions.IssuerRevocationViaCrl);
+            bool issuerRevocationViaOcsp = pkiOptions.HasFlag(PkiOptions.IssuerRevocationViaOcsp);
+            bool endEntityRevocationViaCrl = pkiOptions.HasFlag(PkiOptions.EndEntityRevocationViaCrl);
+            bool endEntityRevocationViaOcsp = pkiOptions.HasFlag(PkiOptions.EndEntityRevocationViaOcsp);
+
+            Assert.True(
+                issuerRevocationViaCrl || issuerRevocationViaOcsp ||
+                endEntityRevocationViaCrl || endEntityRevocationViaOcsp,
+                "At least one revocation mode is enabled");
+
+            CertificateAuthority.BuildPrivatePki(
+                pkiOptions,
+                out responder,
+                rootName,
+                out rootAuthority,
+                intermediateNames,
+                out intermediateAuthorities,
+                endEntityName,
+                out endEntityCert,
+                testName,
+                registerAuthorities);
         }
 
         private static string BuildSubject(

@@ -14,6 +14,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
+using Internal.Text;
 using Internal.TypeSystem;
 using static ILCompiler.DependencyAnalysis.RelocType;
 using static ILCompiler.ObjectWriter.CoffObjectWriter.CoffRelocationType;
@@ -46,16 +47,16 @@ namespace ILCompiler.ObjectWriter
     /// </remarks>
     internal partial class CoffObjectWriter : ObjectWriter
     {
-        protected sealed record SectionDefinition(CoffSectionHeader Header, Stream Stream, List<CoffRelocation> Relocations, string ComdatName, string SymbolName);
+        protected sealed record SectionDefinition(CoffSectionHeader Header, Stream Stream, List<CoffRelocation> Relocations, Utf8String ComdatName, Utf8String SymbolName);
 
         protected readonly Machine _machine;
         protected readonly List<SectionDefinition> _sections = new();
 
         // Symbol table
         private readonly List<CoffSymbolRecord> _symbols = new();
-        private readonly Dictionary<string, uint> _symbolNameToIndex = new(StringComparer.Ordinal);
+        private readonly Dictionary<Utf8String, uint> _symbolNameToIndex = new();
         private readonly Dictionary<int, CoffSectionSymbol> _sectionNumberToComdatAuxRecord = new();
-        private readonly HashSet<string> _referencedMethods = new();
+        private readonly HashSet<Utf8String> _referencedMethods = new();
 
         private static readonly ObjectNodeSection GfidsSection = new ObjectNodeSection(".gfids$y", SectionType.ReadOnly);
         private static readonly ObjectNodeSection DebugTypesSection = new ObjectNodeSection(".debug$T", SectionType.ReadOnly);
@@ -76,7 +77,7 @@ namespace ILCompiler.ObjectWriter
             };
         }
 
-        private protected override void CreateSection(ObjectNodeSection section, string comdatName, string symbolName, int sectionIndex, Stream sectionStream)
+        private protected override void CreateSection(ObjectNodeSection section, Utf8String comdatName, Utf8String symbolName, int sectionIndex, Stream sectionStream)
         {
             var sectionHeader = new CoffSectionHeader
             {
@@ -87,6 +88,8 @@ namespace ILCompiler.ObjectWriter
                 SectionCharacteristics = section.Type switch
                 {
                     SectionType.ReadOnly =>
+                        SectionCharacteristics.MemRead | SectionCharacteristics.ContainsInitializedData,
+                    SectionType.UnwindData =>
                         SectionCharacteristics.MemRead | SectionCharacteristics.ContainsInitializedData,
                     SectionType.Writeable =>
                         SectionCharacteristics.MemRead | SectionCharacteristics.MemWrite |
@@ -101,14 +104,14 @@ namespace ILCompiler.ObjectWriter
                 }
             };
 
-            if (section == DebugTypesSection || section == ObjectNodeSection.DebugDirectorySection)
+            if (section == DebugTypesSection)
             {
                 sectionHeader.SectionCharacteristics =
                     SectionCharacteristics.MemRead | SectionCharacteristics.ContainsInitializedData |
                     SectionCharacteristics.MemDiscardable;
             }
 
-            if (comdatName is not null)
+            if (!comdatName.IsNull)
             {
                 sectionHeader.SectionCharacteristics |= SectionCharacteristics.LinkerComdat;
 
@@ -132,7 +135,7 @@ namespace ILCompiler.ObjectWriter
                 _sectionNumberToComdatAuxRecord[_sections.Count] = auxRecord;
                 _symbols.Add(new CoffSymbol
                 {
-                    Name = sectionHeader.Name,
+                    Name = new Utf8String(sectionHeader.Name),
                     Value = 0,
                     SectionIndex = coffSectionIndex,
                     StorageClass = CoffSymbolClass.IMAGE_SYM_CLASS_STATIC,
@@ -140,7 +143,7 @@ namespace ILCompiler.ObjectWriter
                 });
                 _symbols.Add(auxRecord);
 
-                if (symbolName is not null)
+                if (!symbolName.IsNull)
                 {
                     _symbolNameToIndex.Add(symbolName, (uint)_symbols.Count);
                     _symbols.Add(new CoffSymbol
@@ -186,7 +189,7 @@ namespace ILCompiler.ObjectWriter
             long offset,
             Span<byte> data,
             RelocType relocType,
-            string symbolName,
+            Utf8String symbolName,
             long addend)
         {
             if (relocType is IMAGE_REL_BASED_RELPTR32)
@@ -206,14 +209,14 @@ namespace ILCompiler.ObjectWriter
             base.EmitRelocation(sectionIndex, offset, data, relocType, symbolName, 0);
         }
 
-        private protected override void EmitReferencedMethod(string symbolName)
+        private protected override void EmitReferencedMethod(Utf8String symbolName)
         {
             _referencedMethods.Add(symbolName);
         }
 
         private protected override void EmitSymbolTable(
-            IDictionary<string, SymbolDefinition> definedSymbols,
-            SortedSet<string> undefinedSymbols)
+            IDictionary<Utf8String, SymbolDefinition> definedSymbols,
+            SortedSet<Utf8String> undefinedSymbols)
         {
             Feat00Flags feat00Flags = _machine is Machine.I386 ? Feat00Flags.SafeSEH : 0;
 
@@ -265,7 +268,7 @@ namespace ILCompiler.ObjectWriter
                 // Emit the feat.00 symbol that controls various linker behaviors
                 _symbols.Add(new CoffSymbol
                 {
-                    Name = "@feat.00",
+                    Name = new Utf8String("@feat.00"u8),
                     StorageClass = CoffSymbolClass.IMAGE_SYM_CLASS_STATIC,
                     SectionIndex = uint.MaxValue, // IMAGE_SYM_ABSOLUTE
                     Value = (uint)feat00Flags,
@@ -288,7 +291,10 @@ namespace ILCompiler.ObjectWriter
                     // Write an overflow relocation with the real count of relocations
                     sectionHeader.NumberOfRelocations = ushort.MaxValue;
                     sectionHeader.SectionCharacteristics |= SectionCharacteristics.LinkerNRelocOvfl;
-                    coffRelocations.Add(new CoffRelocation { VirtualAddress = (uint)(relocationList.Count + 1) });
+                    coffRelocations.Add(new CoffRelocation(
+                        (uint)(relocationList.Count + 1),
+                        symbolTableIndex: 0,
+                        type: 0));
                 }
 
                 switch (_machine)
@@ -296,11 +302,10 @@ namespace ILCompiler.ObjectWriter
                     case Machine.I386:
                         foreach (var relocation in relocationList)
                         {
-                            coffRelocations.Add(new CoffRelocation
-                            {
-                                VirtualAddress = (uint)relocation.Offset,
-                                SymbolTableIndex = _symbolNameToIndex[relocation.SymbolName],
-                                Type = relocation.Type switch
+                            coffRelocations.Add(new CoffRelocation(
+                                (uint)relocation.Offset,
+                                _symbolNameToIndex[relocation.SymbolName],
+                                relocation.Type switch
                                 {
                                     IMAGE_REL_BASED_ABSOLUTE => IMAGE_REL_I386_DIR32NB,
                                     IMAGE_REL_BASED_ADDR32NB => IMAGE_REL_I386_DIR32NB,
@@ -310,19 +315,17 @@ namespace ILCompiler.ObjectWriter
                                     IMAGE_REL_SECREL => IMAGE_REL_I386_SECREL,
                                     IMAGE_REL_SECTION => IMAGE_REL_I386_SECTION,
                                     _ => throw new NotSupportedException($"Unsupported relocation: {relocation.Type}")
-                                },
-                            });
+                                }));
                         }
                         break;
 
                     case Machine.Amd64:
                         foreach (var relocation in relocationList)
                         {
-                            coffRelocations.Add(new CoffRelocation
-                            {
-                                VirtualAddress = (uint)relocation.Offset,
-                                SymbolTableIndex = _symbolNameToIndex[relocation.SymbolName],
-                                Type = relocation.Type switch
+                            coffRelocations.Add(new CoffRelocation(
+                                (uint)relocation.Offset,
+                                _symbolNameToIndex[relocation.SymbolName],
+                                relocation.Type switch
                                 {
                                     IMAGE_REL_BASED_ABSOLUTE => IMAGE_REL_AMD64_ADDR32NB,
                                     IMAGE_REL_BASED_ADDR32NB => IMAGE_REL_AMD64_ADDR32NB,
@@ -333,19 +336,17 @@ namespace ILCompiler.ObjectWriter
                                     IMAGE_REL_SECREL => IMAGE_REL_AMD64_SECREL,
                                     IMAGE_REL_SECTION => IMAGE_REL_AMD64_SECTION,
                                     _ => throw new NotSupportedException($"Unsupported relocation: {relocation.Type}")
-                                },
-                            });
+                                }));
                         }
                         break;
 
                     case Machine.Arm64:
                         foreach (var relocation in relocationList)
                         {
-                            coffRelocations.Add(new CoffRelocation
-                            {
-                                VirtualAddress = (uint)relocation.Offset,
-                                SymbolTableIndex = _symbolNameToIndex[relocation.SymbolName],
-                                Type = relocation.Type switch
+                            coffRelocations.Add(new CoffRelocation(
+                                (uint)relocation.Offset,
+                                _symbolNameToIndex[relocation.SymbolName],
+                                relocation.Type switch
                                 {
                                     IMAGE_REL_BASED_ABSOLUTE => IMAGE_REL_ARM64_ADDR32NB,
                                     IMAGE_REL_BASED_ADDR32NB => IMAGE_REL_ARM64_ADDR32NB,
@@ -362,8 +363,7 @@ namespace ILCompiler.ObjectWriter
                                     IMAGE_REL_SECREL => IMAGE_REL_ARM64_SECREL,
                                     IMAGE_REL_SECTION => IMAGE_REL_ARM64_SECTION,
                                     _ => throw new NotSupportedException($"Unsupported relocation: {relocation.Type}")
-                                },
-                            });
+                                }));
                         }
                         break;
 
@@ -451,7 +451,7 @@ namespace ILCompiler.ObjectWriter
 
                 if (section.Relocations.Count > 0)
                 {
-                    foreach (var relocation in section.Relocations)
+                    foreach (ref readonly CoffRelocation relocation in CollectionsMarshal.AsSpan(section.Relocations))
                     {
                         relocation.Write(outputFileStream);
                     }
@@ -612,7 +612,7 @@ namespace ILCompiler.ObjectWriter
                 {
                     buffer.Clear();
                     buffer[0] = (byte)'/';
-                    uint offset = stringTable.GetStringOffset(Name);
+                    uint offset = stringTable.GetStringOffset(new Utf8String(Name));
                     if (offset <= 9999999)
                     {
                         Span<char> charBuffer = stackalloc char[16];
@@ -697,11 +697,18 @@ namespace ILCompiler.ObjectWriter
             IMAGE_REL_ARM64_REL32 = 17,
         }
 
-        protected sealed class CoffRelocation
+        internal readonly struct CoffRelocation
         {
-            public uint VirtualAddress { get; set; }
-            public uint SymbolTableIndex { get; set; }
-            public CoffRelocationType Type { get; set; }
+            public CoffRelocation(uint virtualAddress, uint symbolTableIndex, CoffRelocationType type)
+            {
+                VirtualAddress = virtualAddress;
+                SymbolTableIndex = symbolTableIndex;
+                Type = type;
+            }
+
+            public uint VirtualAddress { get; }
+            public uint SymbolTableIndex { get; }
+            public CoffRelocationType Type { get; }
 
             public const int Size =
                 sizeof(uint) +  // VirtualAddress
@@ -734,7 +741,7 @@ namespace ILCompiler.ObjectWriter
 
         private sealed class CoffSymbol : CoffSymbolRecord
         {
-            public string Name { get; set; }
+            public Utf8String Name { get; set; }
             public uint Value { get; set; }
             public uint SectionIndex { get; set; }
             public ushort Type { get; set; }
@@ -763,13 +770,12 @@ namespace ILCompiler.ObjectWriter
             {
                 Span<byte> buffer = stackalloc byte[isBigObj ? BigObjSize : RegularSize];
 
-                int nameBytes = Encoding.UTF8.GetByteCount(Name);
-                if (nameBytes <= NameSize)
+                if (Name.Length <= NameSize)
                 {
-                    Encoding.UTF8.GetBytes(Name, buffer);
-                    if (nameBytes < NameSize)
+                    Name.AsSpan().CopyTo(buffer);
+                    if (Name.Length < NameSize)
                     {
-                        buffer.Slice(nameBytes, 8 - nameBytes).Clear();
+                        buffer.Slice(Name.Length, 8 - Name.Length).Clear();
                     }
                 }
                 else
@@ -853,7 +859,7 @@ namespace ILCompiler.ObjectWriter
         {
             public new uint Size => (uint)(base.Size + 4);
 
-            public new uint GetStringOffset(string text)
+            public new uint GetStringOffset(Utf8String text)
             {
                 return base.GetStringOffset(text) + 4;
             }

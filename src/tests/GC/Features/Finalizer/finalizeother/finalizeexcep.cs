@@ -6,6 +6,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using Xunit;
+using TestLibrary;
 
 public class Test_finalizeexcep {
 
@@ -44,6 +45,8 @@ public class Test_finalizeexcep {
         }
     }
 
+    [ActiveIssue("PlatformDetection.IsPreciseGcSupported false on mono", TestRuntimes.Mono)]
+    [SkipOnCoreClr("This test is not compatible with GC stress.", RuntimeTestModes.AnyGCStress)]
     [Fact]
     public static int TestEntryPoint() {
 

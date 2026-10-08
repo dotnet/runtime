@@ -47,28 +47,6 @@ namespace LibraryImportGenerator.UnitTests
             => CustomElementMarshalling(type, marshallerType, preDeclaration);
 
         /// <summary>
-        /// Partially define attribute for pre-.NET 7.0
-        /// </summary>
-        public static readonly string LibraryImportAttributeDeclaration = """
-            namespace System.Runtime.InteropServices
-            {
-                internal enum StringMarshalling
-                {
-                    Custom = 0,
-                    Utf8,
-                    Utf16,
-                }
-
-                sealed class LibraryImportAttribute : System.Attribute
-                {
-                    public LibraryImportAttribute(string a) { }
-                    public StringMarshalling StringMarshalling { get; set; }
-                    public Type StringMarshallingCustomType { get; set; }
-                }
-            }
-            """;
-
-        /// <summary>
         /// Trivial declaration of LibraryImport usage
         /// </summary>
         public static readonly string TrivialClassDeclarations = """
@@ -845,6 +823,15 @@ namespace LibraryImportGenerator.UnitTests
             }
             """;
 
+        public static string GeneratedComInterfaceWithOptions(string options) => BasicParametersAndModifiers("MyInterfaceType", "using System.Runtime.InteropServices.Marshalling;") + $$"""
+            [GeneratedComInterface(Options = {{options}})]
+            [System.Runtime.InteropServices.Guid("D5A6D2DD-F1F1-4DF7-B84F-8A34A6B27CD3")]
+            partial interface MyInterfaceType
+            {
+                void Method();
+            }
+            """;
+
         public static string PreprocessorIfAroundFullFunctionDefinition(string define) =>
             $$"""
             partial class Test
@@ -1524,6 +1511,26 @@ namespace LibraryImportGenerator.UnitTests
 
                     public void Free() { }
                 }
+            }
+            """;
+
+        public static string ComInterfaceWithNativeMarshallingInLibraryImport => """
+            using System.Runtime.InteropServices;
+            using System.Runtime.InteropServices.Marshalling;
+
+            [GeneratedComInterface]
+            [Guid("0E7204B5-4B61-4E06-B872-82BA652F2ECA")]
+            [NativeMarshalling(typeof(UniqueComInterfaceMarshaller<IFoo>))]
+            partial interface IFoo
+            {
+                void DoWork();
+            }
+
+            static partial class PInvokes
+            {
+                [LibraryImport("lib")]
+                [return: MarshalAs(UnmanagedType.I1)]
+                public static partial bool TryGetFoo(out IFoo foo);
             }
             """;
     }

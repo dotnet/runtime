@@ -183,78 +183,90 @@ namespace System.Runtime.Intrinsics
         /// <inheritdoc cref="Vector4.Count(Vector4, float)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static int Count(Vector2 vector, float value) => BitOperations.PopCount(Equals(vector.AsVector128(), Create(value, value, -1, -1)).ExtractMostSignificantBits());
+        internal static int Count(Vector2 vector, float value) => CountMatches(Equals(vector.AsVector128(), Create(value, value, -1, -1)));
 
         /// <inheritdoc cref="Vector4.Count(Vector4, float)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static int Count(Vector3 vector, float value) => BitOperations.PopCount(Equals(vector.AsVector128(), Create(value, value, value, -1)).ExtractMostSignificantBits());
+        internal static int Count(Vector3 vector, float value) => CountMatches(Equals(vector.AsVector128(), Create(value, value, value, -1)));
 
         /// <inheritdoc cref="Vector4.CountWhereAllBitsSet(Vector4)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static int CountWhereAllBitsSet(Vector2 vector) => BitOperations.PopCount(Equals(vector.AsVector128().AsInt32(), Vector128<int>.AllBitsSet).ExtractMostSignificantBits());
+        internal static int CountWhereAllBitsSet(Vector2 vector) => CountWhereAllBitsSet(vector.AsVector128());
 
         /// <inheritdoc cref="Vector4.CountWhereAllBitsSet(Vector4)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static int CountWhereAllBitsSet(Vector3 vector) => BitOperations.PopCount(Equals(vector.AsVector128().AsInt32(), Vector128<int>.AllBitsSet).ExtractMostSignificantBits());
+        internal static int CountWhereAllBitsSet(Vector3 vector) => CountWhereAllBitsSet(vector.AsVector128());
 
-        /// <inheritdoc cref="Vector4.IndexOf(Vector4, float)" />
+        /// <inheritdoc cref="Vector4.Distance(Vector4, Vector4)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static int IndexOf(Vector2 vector, float value)
+        internal static float Distance(Vector128<float> vector1, Vector128<float> vector2)
         {
-            int result = BitOperations.TrailingZeroCount(Equals(vector.AsVector128(), Create(value, value, -1, -1)).ExtractMostSignificantBits());
-            return (result != 32) ? result : -1;
+            Vector128<float> difference = vector1 - vector2;
+            return float.Sqrt(Dot(difference, difference));
+        }
+
+        /// <inheritdoc cref="Vector4.DistanceSquared(Vector4, Vector4)" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static float DistanceSquared(Vector128<float> vector1, Vector128<float> vector2)
+        {
+            Vector128<float> difference = vector1 - vector2;
+            return Dot(difference, difference);
         }
 
         /// <inheritdoc cref="Vector4.IndexOf(Vector4, float)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static int IndexOf(Vector3 vector, float value)
-        {
-            int result = BitOperations.TrailingZeroCount(Equals(vector.AsVector128(), Create(value, value, value, -1)).ExtractMostSignificantBits());
-            return (result != 32) ? result : -1;
-        }
+        internal static int IndexOf(Vector2 vector, float value) => IndexOfFirstMatch(Equals(vector.AsVector128(), Create(value, value, -1, -1)));
+
+        /// <inheritdoc cref="Vector4.IndexOf(Vector4, float)" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static int IndexOf(Vector3 vector, float value) => IndexOfFirstMatch(Equals(vector.AsVector128(), Create(value, value, value, -1)));
 
         /// <inheritdoc cref="Vector4.IndexOfWhereAllBitsSet(Vector4)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static int IndexOfWhereAllBitsSet(Vector2 vector)
-        {
-            int result = BitOperations.TrailingZeroCount(Equals(vector.AsVector128().AsInt32(), Vector128<int>.AllBitsSet).ExtractMostSignificantBits());
-            return (result != 32) ? result : -1;
-        }
+        internal static int IndexOfWhereAllBitsSet(Vector2 vector) => IndexOfWhereAllBitsSet(vector.AsVector128());
 
         /// <inheritdoc cref="Vector4.IndexOfWhereAllBitsSet(Vector4)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static int IndexOfWhereAllBitsSet(Vector3 vector)
-        {
-            int result = BitOperations.TrailingZeroCount(Equals(vector.AsVector128().AsInt32(), Vector128<int>.AllBitsSet).ExtractMostSignificantBits());
-            return (result != 32) ? result : -1;
-        }
+        internal static int IndexOfWhereAllBitsSet(Vector3 vector) => IndexOfWhereAllBitsSet(vector.AsVector128());
 
         /// <inheritdoc cref="Vector4.LastIndexOf(Vector4, float)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static int LastIndexOf(Vector2 vector, float value) => 31 - BitOperations.LeadingZeroCount(Equals(vector.AsVector128(), Create(value, value, -1, -1)).ExtractMostSignificantBits());
+        internal static int LastIndexOf(Vector2 vector, float value) => IndexOfLastMatch(Equals(vector.AsVector128(), Create(value, value, -1, -1)));
 
         /// <inheritdoc cref="Vector4.LastIndexOf(Vector4, float)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static int LastIndexOf(Vector3 vector, float value) => 31 - BitOperations.LeadingZeroCount(Equals(vector.AsVector128(), Create(value, value, value, -1)).ExtractMostSignificantBits());
+        internal static int LastIndexOf(Vector3 vector, float value) => IndexOfLastMatch(Equals(vector.AsVector128(), Create(value, value, value, -1)));
 
         /// <inheritdoc cref="Vector4.LastIndexOfWhereAllBitsSet(Vector4)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static int LastIndexOfWhereAllBitsSet(Vector2 vector) => 31 - BitOperations.LeadingZeroCount(Equals(vector.AsVector128().AsInt32(), Vector128<int>.AllBitsSet).ExtractMostSignificantBits());
+        internal static int LastIndexOfWhereAllBitsSet(Vector2 vector) => LastIndexOfWhereAllBitsSet(vector.AsVector128());
 
         /// <inheritdoc cref="Vector4.LastIndexOfWhereAllBitsSet(Vector4)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static int LastIndexOfWhereAllBitsSet(Vector3 vector) => 31 - BitOperations.LeadingZeroCount(Equals(vector.AsVector128().AsInt32(), Vector128<int>.AllBitsSet).ExtractMostSignificantBits());
+        internal static int LastIndexOfWhereAllBitsSet(Vector3 vector) => LastIndexOfWhereAllBitsSet(vector.AsVector128());
+
+        /// <inheritdoc cref="Vector4.Length()" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static float Length(Vector128<float> vector) => float.Sqrt(Dot(vector, vector));
+
+        /// <inheritdoc cref="Vector4.LengthSquared()" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static float LengthSquared(Vector128<float> vector) => Dot(vector, vector);
 
         /// <inheritdoc cref="Vector4.None(Vector4, float)" />
         [Intrinsic]
@@ -275,5 +287,13 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static bool NoneWhereAllBitsSet(Vector3 vector) => !EqualsAny(vector.AsVector128().AsInt32(), Vector128<int>.AllBitsSet);
+
+        /// <inheritdoc cref="Vector4.Normalize(Vector4)" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Vector128<float> Normalize(Vector128<float> vector)
+        {
+            return vector / Create(float.Sqrt(Dot(vector, vector)));
+        }
     }
 }

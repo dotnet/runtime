@@ -3,7 +3,6 @@
 
 using System.IO;
 using System.Text;
-
 namespace System.Net.ServerSentEvents
 {
     /// <summary>Provides a parser for parsing server-sent events.</summary>
@@ -20,8 +19,13 @@ namespace System.Net.ServerSentEvents
         /// </returns>
         /// <exception cref="ArgumentNullException"><paramref name="sseStream"/> is null.</exception>
         /// <remarks>
+        /// <para>
         /// This overload has behavior equivalent to calling <see cref="Create{T}(Stream, SseItemParser{T})"/> with a delegate
         /// that decodes the data of each event using <see cref="Encoding.UTF8"/>'s GetString method.
+        /// </para>
+        /// <para>
+        /// When parsing data from an untrusted source, use the overload that accepts <see cref="SseParserOptions{T}"/> to limit how much data the parser may buffer.
+        /// </para>
         /// </remarks>
         public static SseParser<string> Create(Stream sseStream) =>
             Create(sseStream, static (_, bytes) => Encoding.UTF8.GetString(bytes));
@@ -32,19 +36,24 @@ namespace System.Net.ServerSentEvents
         /// <param name="itemParser">The parser to use to transform each payload of bytes into a data element.</param>
         /// <returns>The enumerable, which can be enumerated synchronously or asynchronously.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="sseStream"/> or <paramref name="itemParser"/> is null.</exception>
-        public static SseParser<T> Create<T>(Stream sseStream, SseItemParser<T> itemParser)
+        /// <remarks>
+        /// When parsing data from an untrusted source, use the overload that accepts <see cref="SseParserOptions{T}"/> to limit how much data the parser may buffer.
+        /// </remarks>
+        public static SseParser<T> Create<T>(Stream sseStream, SseItemParser<T> itemParser) =>
+            Create(sseStream, new SseParserOptions<T>(itemParser));
+
+        /// <summary>Creates a parser for parsing a <paramref name="sseStream"/> of server-sent events into a sequence of <see cref="SseItem{T}"/> values.</summary>
+        /// <typeparam name="T">Specifies the type of data in each event.</typeparam>
+        /// <param name="sseStream">The stream containing the data to parse.</param>
+        /// <param name="options">The options to use when parsing the stream.</param>
+        /// <returns>The enumerable, which can be enumerated synchronously or asynchronously.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="sseStream"/> or <paramref name="options"/> is null.</exception>
+        public static SseParser<T> Create<T>(Stream sseStream, SseParserOptions<T> options)
         {
-            if (sseStream is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(sseStream));
-            }
+            ThrowHelper.ThrowIfNull(sseStream, nameof(sseStream));
+            ThrowHelper.ThrowIfNull(options, nameof(options));
 
-            if (itemParser is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(itemParser));
-            }
-
-            return new SseParser<T>(sseStream, itemParser);
+            return new SseParser<T>(sseStream, options);
         }
     }
 }

@@ -38,7 +38,6 @@
     </AndroidBuildDependsOn>
     <AndroidBuildDependsOn Condition="'$(UseNativeAOTRuntime)' == 'true'">
       CopyNativeBinary;
-      _CopyAotSymbols;
       $(AndroidBuildDependsOn)
     </AndroidBuildDependsOn>
 

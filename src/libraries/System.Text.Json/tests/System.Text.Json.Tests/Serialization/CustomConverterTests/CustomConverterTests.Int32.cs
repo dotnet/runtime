@@ -48,7 +48,9 @@ namespace System.Text.Json.Serialization.Tests
             }
 
             {
-                int myInt = JsonSerializer.Deserialize<int>(@"""1""", options);
+                int myInt = JsonSerializer.Deserialize<int>("""
+                    "1"
+                    """, options);
                 Assert.Equal(1, myInt);
             }
         }

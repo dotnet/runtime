@@ -11,6 +11,7 @@ using Xunit.Abstractions;
 
 namespace Wasm.Build.NativeRebuild.Tests
 {
+    [TestCategory("native")]
     public class NoopNativeRebuildTest : NativeRebuildTestsBase
     {
         public NoopNativeRebuildTest(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
@@ -36,6 +37,7 @@ namespace Wasm.Build.NativeRebuild.Tests
         }
 
         [Fact]
+        [TestCategory("mono")]
         public void NativeRelinkFailsWithInvariant()
         {
             Configuration config = Configuration.Release;

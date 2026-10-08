@@ -45,8 +45,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             //
             // Result method checking
             // 1. Ensure that the resolved result versions with the code, or is the decl method
-            // 2. Devirtualizing to a default interface method is not currently considered to be useful, and how to check for version
-            //    resilience has not yet been analyzed.
+            // 2. When devirtualizing to a default interface method, the resolved result method must version with the code.
             // 3. When checking that the resolved result versions with the code, validate that all of the types
             //    From implType to the owning type of resolved result method also version with the code.
 
@@ -163,6 +162,17 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             if (resolvedVirtualMethod != null)
             {
+                if (resolvedVirtualMethod.OwningType.IsInterface)
+                {
+                    if (_compilationModuleGroup.VersionsWithMethodBody(resolvedVirtualMethod))
+                    {
+                        return resolvedVirtualMethod;
+                    }
+
+                    devirtualizationDetail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_BUBBLE;
+                    return null;
+                }
+
                 // Validate that the inheritance chain for resolution is within version bubble
                 // The rule is somewhat tricky here.
                 // If the resolved method is the declMethod, then only types which derive from the

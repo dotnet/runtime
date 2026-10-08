@@ -3,13 +3,14 @@
   <Import Project="$(RepositoryEngineeringDir)targetingpacks.targets" />
 
   <PropertyGroup>
-    <BundleDir>$([MSBuild]::NormalizeDirectory('$(MSBuildProjectDirectory)', '$(OutputPath)', 'AppBundle'))</BundleDir>
+    <BundleDir>$([MSBuild]::NormalizeDirectory('$(MSBuildProjectDirectory)', '$(OutputPath)', 'publish', 'wwwroot'))</BundleDir>
     <WasmMainAssemblyFileName>project.dll</WasmMainAssemblyFileName>
+    <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
   </PropertyGroup>
 
   <Target Name="CreateTestWasmAppBundle"
           AfterTargets="Publish"
-          DependsOnTargets="BundleTestWasmApp"
+          DependsOnTargets="PrepareForWasmBuildApp;_WasmGenerateRunV8Script;BundleTestWasmApp"
           Condition="'$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi'" />
 
   <PropertyGroup Condition="'$(PublishAot)' == 'true'">

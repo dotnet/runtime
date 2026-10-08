@@ -11,6 +11,7 @@ using System.Threading;
 
 using Internal.Metadata.NativeFormat;
 using Internal.NativeFormat;
+using Internal.Runtime;
 using Internal.Runtime.Augments;
 using Internal.Runtime.CompilerServices;
 using Internal.TypeSystem;
@@ -50,7 +51,7 @@ namespace Internal.Runtime.TypeLoader
 
         public override RuntimeMethodHandle GetRuntimeMethodHandleForComponents(RuntimeTypeHandle declaringTypeHandle, MethodHandle handle, RuntimeTypeHandle[] genericMethodArgs)
         {
-            return TypeLoaderEnvironment.Instance.GetRuntimeMethodHandleForComponents(declaringTypeHandle, handle, genericMethodArgs, isAsyncVariant: false);
+            return TypeLoaderEnvironment.Instance.GetRuntimeMethodHandleForComponents(declaringTypeHandle, handle, genericMethodArgs);
         }
 
         public override IntPtr TryGetDefaultConstructorForType(RuntimeTypeHandle runtimeTypeHandle)
@@ -58,9 +59,12 @@ namespace Internal.Runtime.TypeLoader
             return TypeLoaderEnvironment.Instance.TryGetDefaultConstructorForType(runtimeTypeHandle);
         }
 
-        public override IntPtr ResolveGenericVirtualMethodTarget(RuntimeTypeHandle targetTypeHandle, RuntimeMethodHandle declMethod)
+        public override unsafe IntPtr ResolveGenericVirtualMethodTarget(RuntimeTypeHandle targetTypeHandle, RuntimeTypeHandle declaringTypeHandle, MethodHandle methodHandle, bool isAsyncVariant, void* methodInstantiation, bool isMethodInstantiationDataRelative)
         {
-            return TypeLoaderEnvironment.Instance.ResolveGenericVirtualMethodTarget(targetTypeHandle, declMethod);
+            if (TypeLoaderEnvironment.GenericVirtualMethodsPresent())
+                return TypeLoaderEnvironment.Instance.ResolveGenericVirtualMethodTarget(targetTypeHandle, declaringTypeHandle, methodHandle, isAsyncVariant, methodInstantiation, isMethodInstantiationDataRelative);
+
+            return 0;
         }
 
         public override RuntimeFieldHandle GetRuntimeFieldHandleForComponents(RuntimeTypeHandle declaringTypeHandle, FieldHandle handle)
@@ -110,6 +114,10 @@ namespace Internal.Runtime.TypeLoader
         // small enough in size (which is the case today).
         [ThreadStatic]
         private static LowLevelDictionary<TypeManagerHandle, NativeReader> t_moduleNativeReaders;
+
+        [Intrinsic]
+        [AnalysisCharacteristic]
+        internal static extern bool GenericVirtualMethodsPresent();
 
         // Eager initialization called from LibraryInitializer for the assembly.
         internal static void Initialize()
@@ -272,12 +280,6 @@ namespace Internal.Runtime.TypeLoader
 
             using (_typeLoaderLock.EnterScope())
             {
-                if (isMdArray && (rank < MDArray.MinRank) && (rank > MDArray.MaxRank))
-                {
-                    arrayTypeHandle = default(RuntimeTypeHandle);
-                    return false;
-                }
-
                 if (TypeSystemContext.GetArrayTypesCache(isMdArray, rank).TryGetValue(elementTypeHandle, out arrayTypeHandle))
                     return true;
 
@@ -288,12 +290,6 @@ namespace Internal.Runtime.TypeLoader
         // Looks up an array RuntimeTypeHandle given an element's RuntimeTypeHandle and rank. A rank of -1 indicates SzArray
         internal static bool TryGetArrayTypeForElementType_LookupOnly(RuntimeTypeHandle elementTypeHandle, bool isMdArray, int rank, out RuntimeTypeHandle arrayTypeHandle)
         {
-            if (isMdArray && (rank < MDArray.MinRank) && (rank > MDArray.MaxRank))
-            {
-                arrayTypeHandle = default(RuntimeTypeHandle);
-                return false;
-            }
-
             if (TypeSystemContext.GetArrayTypesCache(isMdArray, rank).TryGetValue(elementTypeHandle, out arrayTypeHandle))
                 return true;
 
@@ -365,11 +361,11 @@ namespace Internal.Runtime.TypeLoader
             return false;
         }
 
-        public int GetCanonicalHashCode(RuntimeTypeHandle typeHandle, CanonicalFormKind kind)
+        public int GetCanonicalHashCode(RuntimeTypeHandle typeHandle)
         {
             TypeSystemContext context = TypeSystemContextFactory.Create();
             TypeDesc type = context.ResolveRuntimeTypeHandle(typeHandle);
-            int hashCode = type.ConvertToCanonForm(kind).GetHashCode();
+            int hashCode = type.ConvertToCanonForm(CanonicalFormKind.Specific).GetHashCode();
             TypeSystemContextFactory.Recycle(context);
 
             return hashCode;
@@ -380,9 +376,9 @@ namespace Internal.Runtime.TypeLoader
             TypeSystemContext context = TypeSystemContextFactory.Create();
 
             DefType declaringType = (DefType)context.ResolveRuntimeTypeHandle(declaringTypeHandle);
-            InstantiatedMethod methodBeingLoaded = (InstantiatedMethod)context.ResolveGenericMethodInstantiation(false, asyncVariant: false, declaringType, nameAndSignature, context.ResolveRuntimeTypeHandles(genericMethodArgHandles));
+            InstantiatedMethod methodBeingLoaded = (InstantiatedMethod)context.ResolveGenericMethodInstantiation(false, asyncVariant: false, returnDroppingAsyncThunk: false, declaringType, nameAndSignature, context.ResolveRuntimeTypeHandles(genericMethodArgHandles));
 
-            if (TryLookupGenericMethodDictionary(new MethodDescBasedGenericMethodLookup(methodBeingLoaded), out methodDictionary))
+            if (TryLookupGenericMethodDictionary(new GenericMethodLookupData(methodBeingLoaded), out methodDictionary))
             {
                 TypeSystemContextFactory.Recycle(context);
                 return true;
@@ -400,7 +396,7 @@ namespace Internal.Runtime.TypeLoader
             }
         }
 
-        public bool CanInstantiationsShareCode(RuntimeTypeHandle[] genericArgHandles1, RuntimeTypeHandle[] genericArgHandles2, CanonicalFormKind kind)
+        public bool CanInstantiationsShareCode(RuntimeTypeHandle[] genericArgHandles1, RuntimeTypeHandle[] genericArgHandles2)
         {
             if (genericArgHandles1.Length != genericArgHandles2.Length)
                 return false;
@@ -414,7 +410,7 @@ namespace Internal.Runtime.TypeLoader
                 TypeDesc genericArg1 = context.ResolveRuntimeTypeHandle(genericArgHandles1[i]);
                 TypeDesc genericArg2 = context.ResolveRuntimeTypeHandle(genericArgHandles2[i]);
 
-                if (context.ConvertToCanon(genericArg1, kind) != context.ConvertToCanon(genericArg2, kind))
+                if (context.ConvertToCanon(genericArg1, CanonicalFormKind.Specific) != context.ConvertToCanon(genericArg2, CanonicalFormKind.Specific))
                 {
                     match = false;
                     break;

@@ -207,8 +207,8 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             }
 
             var extension = Path.GetExtension(inputFileName);
-            if (string.Compare(extension, ".zip", StringComparison.OrdinalIgnoreCase) == 0 ||
-                string.Compare(extension, ".vspx", StringComparison.OrdinalIgnoreCase) == 0)
+            if (string.Equals(extension, ".zip", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(extension, ".vspx", StringComparison.OrdinalIgnoreCase))
             {
                 string unzipedEtlFile;
                 if (inputFileName.EndsWith(".etl.zip", StringComparison.OrdinalIgnoreCase))
@@ -261,6 +261,15 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             {
                 return InnerDumpMain();
             }
+            if (_command.CreateMibcFromMethodList)
+            {
+                return MethodListMibcWriter.Run(
+                    Get(_command.MethodListFilePath),
+                    Get(_command.OutputFilePath),
+                    Get(_command.Reference),
+                    Get(_command.Compressed),
+                    _command.ValidateOutputFile);
+            }
             if (_inputFilesToMerge.Count > 0)
             {
                 return InnerMergeMain();
@@ -311,8 +320,10 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                         jsonWriter.WriteStartArray("CallWeights");
                         foreach (var callWeight in data.CallWeights)
                         {
+                            jsonWriter.WriteStartObject();
                             jsonWriter.WriteString("Method", callWeight.Key.ToString());
                             jsonWriter.WriteNumber("Weight", callWeight.Value);
+                            jsonWriter.WriteEndObject();
                         }
                         jsonWriter.WriteEndArray();
                     }
@@ -1745,7 +1756,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                         PrintOutput($"Profile is based on {numLbrRecords} LBR records");
                     }
 
-                    correlator.SmoothAllProfiles();
+                    correlator.SmoothAllProfiles(_command.Warnings ? PrintWarning : null);
                 }
 
                 if (_command.DisplayProcessedEvents)

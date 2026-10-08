@@ -18,7 +18,7 @@ namespace System.ComponentModel.Composition.Primitives
         private readonly ExportDefinition? _definition;
         private readonly Func<object?>? _exportedValueGetter;
         private static readonly object _EmptyValue = new object();
-        private volatile object? _exportedValue = Export._EmptyValue;
+        private object? _exportedValue = Export._EmptyValue;
 
         /// <summary>
         ///     Initializes a new instance of the <see cref="Export"/> class.

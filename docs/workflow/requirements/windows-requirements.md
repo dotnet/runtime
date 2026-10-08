@@ -59,7 +59,7 @@ All the tools you need should've been installed by Visual Studio at this point. 
 
 Here are the links where you can download these tools:
 
-- *CMake*: https://cmake.org/download (minimum required version is 3.20)
+- *CMake*: https://cmake.org/download (minimum required version is 3.26)
 - *Ninja*: https://github.com/ninja-build/ninja/releases (latest version is most recommended)
 - *Python*: https://www.python.org/downloads/windows (minimum required version is 3.7.4)
 
@@ -91,11 +91,13 @@ This will set the `DOTNET_ROOT` and `PATH` environment variables to point to the
 All the tools mentioned above can be installed with the [Windows Package Manager](https://learn.microsoft.com/windows/package-manager/winget/):
 ```ps1
 winget install -e --id Kitware.CMake
-winget install -e --id Python.Python.3.11
+winget install -e --id Python.Python.3.14
 winget install -e --id Git.Git
 winget install -e --id Ninja-build.Ninja
-winget install -e --id Microsoft.VisualStudio.2022.Community --override "--add Microsoft.VisualStudio.Workload.NativeDesktop --add Microsoft.VisualStudio.Workload.ManagedDesktop --includeRecommended"
+winget install -e --id Microsoft.VisualStudio.Community --override "--passive --wait --config $PWD\.vsconfig"
 ```
+
+The last command installs the components listed in the repo's [`.vsconfig`](https://github.com/dotnet/runtime/blob/main/.vsconfig), so run it from the root of your clone.
 
 ## Setting Environment Variables on Windows
 

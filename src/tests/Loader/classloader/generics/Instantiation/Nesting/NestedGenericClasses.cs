@@ -5,9 +5,11 @@
 
 using System;
 using Xunit;
+using TestLibrary;
 
 public class Test_NestedGenericClasses
 {
+   [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
    [Fact]
    public static int TestEntryPoint()
    {

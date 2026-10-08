@@ -1,9 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 // ===========================================================================
 // File: ReadyToRunInfo.cpp
-//
-
 //
 // Runtime support for Ready to Run
 // ===========================================================================
@@ -17,10 +16,10 @@
 #include "wellknownattributes.h"
 #include "nativeimage.h"
 #include "dn-stdio.h"
+#include "ilstubcache.h"
+#include "sigbuilder.h"
 
-#ifdef FEATURE_PERFMAP
 #include "perfmap.h"
-#endif
 
 #ifndef DACCESS_COMPILE
 extern "C" PCODE g_pMethodWithSlotAndModule;
@@ -275,12 +274,12 @@ BOOL ReadyToRunInfo::GetEnclosingToken(IMDInternalImport * pImport, ModuleBase* 
 
     case mdtTypeRef:
         if (SUCCEEDED(pImport->GetResolutionScopeOfTypeRef(mdType, pEnclosingToken)))
-            return ((TypeFromToken(*pEnclosingToken) == mdtTypeRef) && (*pEnclosingToken != mdTypeRefNil));
+            return (TypeFromToken(*pEnclosingToken) == mdtTypeRef) && (*pEnclosingToken != mdTypeRefNil);
         break;
 
     case mdtExportedType:
         if (SUCCEEDED(pImport->GetExportedTypeProps(mdType, NULL, NULL, pEnclosingToken, NULL, NULL)))
-            return ((TypeFromToken(*pEnclosingToken) == mdtExportedType) && (*pEnclosingToken != mdExportedTypeNil));
+            return (TypeFromToken(*pEnclosingToken) == mdtExportedType) && (*pEnclosingToken != mdExportedTypeNil);
         break;
     }
 
@@ -366,14 +365,19 @@ PTR_MethodDesc ReadyToRunInfo::GetMethodDescForEntryPointInNativeImage(PCODE ent
     }
     CONTRACTL_END;
 
-#if defined(TARGET_AMD64) || (defined(TARGET_X86) && defined(FEATURE_EH_FUNCLETS))
+#if (defined(TARGET_AMD64) || defined(TARGET_X86)) && !defined(DACCESS_COMPILE)
     // A normal method entry point is always 8 byte aligned, but a funclet can start at an odd address.
-    // Since PtrHashMap can't handle odd pointers, check for this case and return NULL.
+    // The map only contains true method entry points, so a lookup for an odd (funclet) address is
+    // always a miss. Skip the guaranteed-miss lookup as a performance optimization.
+    //
+    // This is intentionally limited to non-DAC builds. The DAC must perform the lookup so that the
+    // hashmap bucket pages it touches are enumerated into triage minidumps; otherwise a consumer
+    // (such as the cDAC) faults when it later probes those not-in-dump pages. See dotnet/diagnostics#5910.
     if ((entryPoint & 0x1) != 0)
         return NULL;
 #endif
 
-    TADDR val = (TADDR)m_entryPointToMethodDescMap.LookupValue(PCODEToPINSTR(entryPoint), (LPVOID)PCODEToPINSTR(entryPoint));
+    TADDR val = (TADDR)m_entryPointToMethodDescMap.LookupValueByUniqueKey(PCODEToPINSTR(entryPoint));
     if (val == (TADDR)INVALIDENTRY)
         return NULL;
 
@@ -382,26 +386,22 @@ PTR_MethodDesc ReadyToRunInfo::GetMethodDescForEntryPointInNativeImage(PCODE ent
 
 #ifndef DACCESS_COMPILE
 
-void ReadyToRunInfo::SetMethodDescForEntryPointInNativeImage(PCODE entryPoint, MethodDesc *methodDesc)
+bool ReadyToRunInfo::SetMethodDescForEntryPointInNativeImage(PCODE entryPoint, MethodDesc *methodDesc)
 {
     CONTRACTL
     {
+        STANDARD_VM_CHECK;
         PRECONDITION(!m_isComponentAssembly);
     }
     CONTRACTL_END;
 
-    // We are entering coop mode here so that we don't do it later inside LookupMap while we are already holding the Crst.
-    // Doing it in the other order can block the debugger from running func-evals. For example thread A would acquire the Crst,
-    // then block at the coop transition inside LookupMap waiting for the debugger to resume from a break state. The debugger then
-    // requests thread B to run a funceval, the funceval tries to load some R2R method calling in here, then it blocks because
-    // thread A is holding the Crst.
-    GCX_COOP();
     CrstHolder ch(&m_Crst);
-
-    if ((TADDR)m_entryPointToMethodDescMap.LookupValue(PCODEToPINSTR(entryPoint), (LPVOID)PCODEToPINSTR(entryPoint)) == (TADDR)INVALIDENTRY)
+    if ((TADDR)m_entryPointToMethodDescMap.LookupValueByUniqueKey(PCODEToPINSTR(entryPoint)) == (TADDR)INVALIDENTRY)
     {
         m_entryPointToMethodDescMap.InsertValue(PCODEToPINSTR(entryPoint), methodDesc);
+        return true;
     }
+    return false;
 }
 
 // A log file to record success/failure of R2R loads. s_r2rLogFile can have the following values:
@@ -455,7 +455,11 @@ static void LogR2r(const char *msg, PEAssembly *pPEAssembly)
         return;
 
     SString assemblyPath{ pPEAssembly->GetPath() };
-    fprintf(r2rLogFile, "%s: \"%s\".\n", msg, assemblyPath.GetUTF8());
+    // On some hosts (e.g. wasm) assemblies are loaded from memory and have no
+    // file path, which would otherwise log as an empty string. Fall back to the
+    // assembly simple name so the log identifies which module the entry is for.
+    LPCUTF8 assemblyName = assemblyPath.IsEmpty() ? pPEAssembly->GetSimpleName() : assemblyPath.GetUTF8();
+    fprintf(r2rLogFile, "%s: \"%s\".\n", msg, assemblyName);
     fflush(r2rLogFile);
 }
 
@@ -530,7 +534,14 @@ static NativeImage *AcquireCompositeImage(Module * pModule, PEImageLayout * pLay
         return NULL;
 
     LPCUTF8 ownerCompositeExecutableName = NULL;
-    if (pLayout->IsMapped())
+    if (pLayout->IsWebcilFormat())
+    {
+        // Webcil is wasm-only and flat-mapped by construction (PointerToRawData == VirtualAddress),
+        // so this is equivalent to GetBase() + virtualAddress; use the decoder's GetRvaData as the
+        // format-correct idiom for resolving an RVA.
+        ownerCompositeExecutableName = (LPCUTF8)pLayout->GetRvaData(virtualAddress);
+    }
+    else if (pLayout->IsMapped())
     {
         ownerCompositeExecutableName = (LPCUTF8)pLayout->GetBase() + virtualAddress;
     }
@@ -593,11 +604,13 @@ PTR_ReadyToRunInfo ReadyToRunInfo::Initialize(Module * pModule, AllocMemTracker 
         return NULL;
     }
 
+#ifdef PROFILING_SUPPORTED
     if (CORProfilerDisableAllNGenImages() || CORProfilerUseProfileImages())
     {
         DoLog("Ready to Run disabled - profiler disabled native images");
         return NULL;
     }
+#endif // PROFILING_SUPPORTED
 
     if (g_pConfig->ExcludeReadyToRun(pModule->GetSimpleName()))
     {
@@ -620,6 +633,20 @@ PTR_ReadyToRunInfo ReadyToRunInfo::Initialize(Module * pModule, AllocMemTracker 
     }
 
     READYTORUN_HEADER * pHeader = pLayout->GetReadyToRunHeader();
+
+#ifdef FEATURE_DYNAMIC_CODE_COMPILED
+    if ((pHeader->CoreHeader.Flags & READYTORUN_FLAG_STRIPPED_IL_BODIES) != 0)
+    {
+        DoLog("Ready to Run load failed - stripped IL bodies are not supported with dynamic code compilation");
+        COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+    }
+
+    if ((pHeader->CoreHeader.Flags & (READYTORUN_FLAG_STRIPPED_INLINING_INFO | READYTORUN_FLAG_STRIPPED_DEBUG_INFO)) != 0)
+    {
+        DoLog("Ready to Run disabled - stripped R2R sections not supported with dynamic code compilation");
+        return NULL;
+    }
+#endif // FEATURE_DYNAMIC_CODE_COMPILED
 
     // Ignore the content if the image major version is higher or lower than the major version currently supported by the runtime
     if (pHeader->MajorVersion < MINIMUM_READYTORUN_MAJOR_VERSION || pHeader->MajorVersion > READYTORUN_MAJOR_VERSION)
@@ -774,8 +801,10 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
     m_pHeader(pHeader),
     m_pNativeImage(pModule != NULL ? pNativeImage: NULL), // m_pNativeImage is only set for composite image components, not the composite R2R info itself
     m_readyToRunCodeDisabled(FALSE),
-    m_Crst(CrstReadyToRunEntryPointToMethodDescMap, CRST_UNSAFE_COOPGC),
+    m_Crst(CrstReadyToRunEntryPointToMethodDescMap),
+#ifdef FEATURE_INLINE_TRACKING
     m_pPersistentInlineTrackingMap(NULL),
+#endif // FEATURE_INLINE_TRACKING
     m_pNextR2RForUnrelatedCode(NULL)
 {
     STANDARD_VM_CONTRACT;
@@ -854,6 +883,7 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
         }
 
         m_pNativeManifestModule = CreateNativeManifestModule(pLoaderAllocator, pNativeMDImport, pModule, pamTracker);
+        m_pLoadedImageBase = m_pComposite->GetLayout()->GetBase();
     }
 
     IMAGE_DATA_DIRECTORY * pRuntimeFunctionsDir = m_pComposite->FindSection(ReadyToRunSectionType::RuntimeFunctions);
@@ -867,6 +897,22 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
         m_nRuntimeFunctions = 0;
     }
 
+#ifdef TARGET_WASM
+    // For WASM, the min function table index is stored as a u32 immediately after the
+    // sentinel entry (0xFFFFFFFF) at the end of the RUNTIME_FUNCTION table.
+    if (m_nRuntimeFunctions > 0)
+    {
+        DWORD* pSentinel = (DWORD*)&m_pRuntimeFunctions[m_nRuntimeFunctions];
+        _ASSERTE(*pSentinel == 0xFFFFFFFF);
+        m_minFunctionTableIndex = *(pSentinel + 1);
+    }
+    else
+    {
+        m_minFunctionTableIndex = 0;
+    }
+#endif // TARGET_WASM
+
+#ifdef FEATURE_COLD_R2R_CODE
     IMAGE_DATA_DIRECTORY * pHotColdMapDir = m_pComposite->FindSection(ReadyToRunSectionType::HotColdMap);
     if (pHotColdMapDir != NULL)
     {
@@ -877,6 +923,7 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
     {
         m_nHotColdMap = 0;
     }
+#endif // FEATURE_COLD_R2R_CODE
 
     IMAGE_DATA_DIRECTORY * pImportSectionsDir = m_pComposite->FindSection(ReadyToRunSectionType::ImportSections);
     if (pImportSectionsDir != NULL)
@@ -897,8 +944,12 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
         m_methodDefEntryPoints = NativeArray(&m_nativeReader, pEntryPointsDir->VirtualAddress);
     }
 
+#ifndef TARGET_WASM
     m_pSectionDelayLoadMethodCallThunks = m_pComposite->FindSection(ReadyToRunSectionType::DelayLoadMethodCallThunks);
+#endif
+
     m_pSectionDebugInfo = m_pComposite->FindSection(ReadyToRunSectionType::DebugInfo);
+    m_pSectionExceptionInfo = m_pComposite->FindSection(ReadyToRunSectionType::ExceptionInfo);
 
     IMAGE_DATA_DIRECTORY * pinstMethodsDir = m_pComposite->FindSection(ReadyToRunSectionType::InstanceMethodEntryPoints);
     if (pinstMethodsDir != NULL)
@@ -914,21 +965,38 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
         m_availableTypesHashtable = NativeHashtable(parser);
     }
 
-    // For format version 5.2 and later, there is an optional table of instrumentation data
 #ifdef FEATURE_PGO
-    if (IsImageVersionAtLeast(5, 2))
+    IMAGE_DATA_DIRECTORY * pPgoInstrumentationDataDir = m_pComposite->FindSection(ReadyToRunSectionType::PgoInstrumentationData);
+    if (pPgoInstrumentationDataDir)
     {
-        IMAGE_DATA_DIRECTORY * pPgoInstrumentationDataDir = m_pComposite->FindSection(ReadyToRunSectionType::PgoInstrumentationData);
-        if (pPgoInstrumentationDataDir)
-        {
-            NativeParser parser = NativeParser(&m_nativeReader, pPgoInstrumentationDataDir->VirtualAddress);
-            m_pgoInstrumentationDataHashtable = NativeHashtable(parser);
-        }
-
-        // Force the Pgo manager infrastructure to be initialized
-        pLoaderAllocator->GetOrCreatePgoManager();
+        NativeParser parser = NativeParser(&m_nativeReader, pPgoInstrumentationDataDir->VirtualAddress);
+        m_pgoInstrumentationDataHashtable = NativeHashtable(parser);
     }
+
+    // Force the Pgo manager infrastructure to be initialized
+    pLoaderAllocator->GetOrCreatePgoManager();
 #endif
+
+    IMAGE_DATA_DIRECTORY* pExternalTypeMapsDir = m_component.FindSection(ReadyToRunSectionType::ExternalTypeMaps);
+    if (pExternalTypeMapsDir != NULL)
+    {
+        NativeParser parser = NativeParser(&m_nativeReader, pExternalTypeMapsDir->VirtualAddress);
+        m_externalTypeMaps = NativeHashtable(parser);
+    }
+
+    IMAGE_DATA_DIRECTORY* pProxyTypeMapsDir = m_component.FindSection(ReadyToRunSectionType::ProxyTypeMaps);
+    if (pProxyTypeMapsDir != NULL)
+    {
+        NativeParser parser = NativeParser(&m_nativeReader, pProxyTypeMapsDir->VirtualAddress);
+        m_proxyTypeMaps = NativeHashtable(parser);
+    }
+
+    IMAGE_DATA_DIRECTORY* pTypeMapAssemblyTargetsDir = m_component.FindSection(ReadyToRunSectionType::TypeMapAssemblyTargets);
+    if (pTypeMapAssemblyTargetsDir != NULL)
+    {
+        NativeParser parser = NativeParser(&m_nativeReader, pTypeMapAssemblyTargetsDir->VirtualAddress);
+        m_typeMapAssemblyTargets = NativeHashtable(parser);
+    }
 
     if (!m_isComponentAssembly)
     {
@@ -939,40 +1007,23 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
         m_entryPointToMethodDescMap.Init(TRUE, &lock);
     }
 
-    if (IsImageVersionAtLeast(6, 3))
+#ifdef FEATURE_INLINE_TRACKING
+    IMAGE_DATA_DIRECTORY* pCrossModuleInlineTrackingInfoDir = m_pComposite->FindSection(ReadyToRunSectionType::CrossModuleInlineInfo);
+    if (pCrossModuleInlineTrackingInfoDir != NULL)
     {
-        IMAGE_DATA_DIRECTORY* pCrossModuleInlineTrackingInfoDir = m_pComposite->FindSection(ReadyToRunSectionType::CrossModuleInlineInfo);
-        if (pCrossModuleInlineTrackingInfoDir != NULL)
-        {
-            const BYTE* pCrossModuleInlineTrackingMapData = (const BYTE*)m_pComposite->GetImage()->GetDirectoryData(pCrossModuleInlineTrackingInfoDir);
-            CrossModulePersistentInlineTrackingMapR2R::TryLoad(pModule, pLoaderAllocator, pCrossModuleInlineTrackingMapData, pCrossModuleInlineTrackingInfoDir->Size,
-                pamTracker, (CrossModulePersistentInlineTrackingMapR2R**)&m_pCrossModulePersistentInlineTrackingMap);
-        }
+        const BYTE* pCrossModuleInlineTrackingMapData = (const BYTE*)m_pComposite->GetImage()->GetDirectoryData(pCrossModuleInlineTrackingInfoDir);
+        CrossModulePersistentInlineTrackingMapR2R::TryLoad(pModule, pLoaderAllocator, pCrossModuleInlineTrackingMapData, pCrossModuleInlineTrackingInfoDir->Size,
+            pamTracker, (CrossModulePersistentInlineTrackingMapR2R**)&m_pCrossModulePersistentInlineTrackingMap);
     }
 
-    // For format version 4.1 and later, there is an optional inlining table
-    if (IsImageVersionAtLeast(4, 1))
+    IMAGE_DATA_DIRECTORY* pInlineTrackingInfoDir = m_component.FindSection(ReadyToRunSectionType::InliningInfo2);
+    if (pInlineTrackingInfoDir != NULL)
     {
-        IMAGE_DATA_DIRECTORY* pInlineTrackingInfoDir = m_component.FindSection(ReadyToRunSectionType::InliningInfo2);
-        if (pInlineTrackingInfoDir != NULL)
-        {
-            const BYTE* pInlineTrackingMapData = (const BYTE*)m_pComposite->GetImage()->GetDirectoryData(pInlineTrackingInfoDir);
-            PersistentInlineTrackingMapR2R2::TryLoad(pModule, pInlineTrackingMapData, pInlineTrackingInfoDir->Size,
-                pamTracker, (PersistentInlineTrackingMapR2R2**)&m_pPersistentInlineTrackingMap);
-        }
+        const BYTE* pInlineTrackingMapData = (const BYTE*)m_pComposite->GetImage()->GetDirectoryData(pInlineTrackingInfoDir);
+        PersistentInlineTrackingMapR2R2::TryLoad(pModule, pInlineTrackingMapData, pInlineTrackingInfoDir->Size,
+            pamTracker, (PersistentInlineTrackingMapR2R2**)&m_pPersistentInlineTrackingMap);
     }
-
-    // For format version 2.1 and later, there is an optional inlining table
-    if (m_pPersistentInlineTrackingMap == nullptr && IsImageVersionAtLeast(2, 1))
-    {
-        IMAGE_DATA_DIRECTORY * pInlineTrackingInfoDir = m_component.FindSection(ReadyToRunSectionType::InliningInfo);
-        if (pInlineTrackingInfoDir != NULL)
-        {
-            const BYTE* pInlineTrackingMapData = (const BYTE*)m_pComposite->GetImage()->GetDirectoryData(pInlineTrackingInfoDir);
-            PersistentInlineTrackingMapR2R::TryLoad(pModule, pInlineTrackingMapData, pInlineTrackingInfoDir->Size,
-                                                    pamTracker, &m_pPersistentInlineTrackingMap);
-        }
-    }
+#endif // FEATURE_INLINE_TRACKING
 
     // For format version 3.1 and later, there is an optional attributes section
     IMAGE_DATA_DIRECTORY *attributesPresenceDataInfoDir = m_component.FindSection(ReadyToRunSectionType::AttributePresence);
@@ -1010,8 +1061,6 @@ static bool SigMatchesMethodDesc(MethodDesc* pMD, SigPointer &sig, ModuleBase * 
 {
     STANDARD_VM_CONTRACT;
 
-    _ASSERTE(!pMD->IsAsyncVariantMethod());
-
     ModuleBase *pOrigModule = pModule;
     ZapSig::Context    zapSigContext(pModule, (void *)pModule, ZapSig::NormalTokens);
     ZapSig::Context *  pZapSigContext = &zapSigContext;
@@ -1019,11 +1068,19 @@ static bool SigMatchesMethodDesc(MethodDesc* pMD, SigPointer &sig, ModuleBase * 
     uint32_t methodFlags;
     IfFailThrow(sig.GetData(&methodFlags));
 
+    bool sigIsAsync = (methodFlags & ENCODE_METHOD_SIG_AsyncVariant) != 0;
+    if (sigIsAsync != pMD->IsAsyncVariantMethod())
+        return false;
+
+    bool sigIsUnboxingStub = (methodFlags & ENCODE_METHOD_SIG_UnboxingStub) != 0;
+    if (sigIsUnboxingStub != pMD->IsUnboxingStub())
+        return false;
+
     _ASSERTE((methodFlags & ENCODE_METHOD_SIG_SlotInsteadOfToken) == 0);
     _ASSERTE(((methodFlags & (ENCODE_METHOD_SIG_MemberRefToken | ENCODE_METHOD_SIG_UpdateContext)) == 0) ||
              ((methodFlags & (ENCODE_METHOD_SIG_MemberRefToken | ENCODE_METHOD_SIG_UpdateContext)) == (ENCODE_METHOD_SIG_MemberRefToken | ENCODE_METHOD_SIG_UpdateContext)));
 
-    if ( methodFlags & ENCODE_METHOD_SIG_UpdateContext)
+    if (methodFlags & ENCODE_METHOD_SIG_UpdateContext)
     {
         uint32_t updatedModuleIndex;
         IfFailThrow(sig.GetData(&updatedModuleIndex));
@@ -1120,7 +1177,7 @@ bool ReadyToRunInfo::GetPgoInstrumentationData(MethodDesc * pMD, BYTE** pAllocat
     if (ReadyToRunCodeDisabled())
         return false;
 
-    // TODO: (async) PGO support for async variants
+    // TODO: (async) PGO support for async variants (https://github.com/dotnet/runtime/issues/121755)
     if (pMD->IsAsyncVariantMethod())
         return false;
 
@@ -1173,6 +1230,54 @@ bool ReadyToRunInfo::GetPgoInstrumentationData(MethodDesc * pMD, BYTE** pAllocat
     return false;
 }
 
+void ReadyToRunInfo::RegisterResumptionStub(PCODE stubEntryPoint)
+{
+    STANDARD_VM_CONTRACT;
+
+    AllocMemTracker amTracker;
+    ILStubCache* pStubCache = m_pModule->GetILStubCache();
+    MethodTable* pStubMT = pStubCache->GetOrCreateStubMethodTable(m_pModule);
+    LoaderAllocator* pLoaderAllocator = m_pModule->GetLoaderAllocator();
+
+    // Resumption stub signature: object(object, ref byte)
+    // This matches BuildResumptionStubSignature in jitinterface.cpp
+    static const BYTE s_resumptionStubSig[] = {
+        IMAGE_CEE_CS_CALLCONV_DEFAULT,   // regular calling convention - continuations are explicitly passed and returned
+        2,                               // 2 arguments
+        ELEMENT_TYPE_OBJECT,             // return type: object (continuation)
+        ELEMENT_TYPE_OBJECT,             // arg0: object (continuation)
+        ELEMENT_TYPE_BYREF,              // arg1: ref byte (result location)
+        ELEMENT_TYPE_U1
+    };
+
+    // Use the entry point hashtable to check if another thread already registered a MethodDesc
+    if (m_pCompositeInfo->GetMethodDescForEntryPointInNativeImage(stubEntryPoint) != NULL)
+        return;
+
+    MethodDesc* pStubMD = pStubCache->CreateR2RBackedILStub(
+        pLoaderAllocator,
+        pStubMT,
+        stubEntryPoint,
+        DynamicMethodDesc::StubAsyncResume,
+        (PCCOR_SIGNATURE)s_resumptionStubSig,
+        sizeof(s_resumptionStubSig),
+        &amTracker);
+
+#ifdef TARGET_WASM
+    // SetMethodDescForEntryPointInNativeImage needs to have the virtual IP
+    uint32_t id = stubEntryPoint - m_pCompositeInfo->GetMinFunctionTableIndex();
+    stubEntryPoint = R2RRelativeFunctionIndexToVirtualIP(id);
+#endif
+    // Register the stub's entry point so GC can find it during stack walks.
+    // SetMethodDescForEntryPointInNativeImage handles the race - if another thread
+    // already registered a MethodDesc for this entry point, ours is simply discarded
+    // and the AllocMemTracker will back out the allocation on destruction.
+    if (m_pCompositeInfo->SetMethodDescForEntryPointInNativeImage(stubEntryPoint, pStubMD))
+    {
+        amTracker.SuppressRelease();
+    }
+}
+
 PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig, BOOL fFixups)
 {
     STANDARD_VM_CONTRACT;
@@ -1196,14 +1301,21 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
     if (ReadyToRunCodeDisabled())
         goto done;
 
-    // TODO: (async) R2R support for async variants
-    if (pMD->IsAsyncVariantMethod())
+    // Return-dropping async thunks are VM-synthesized. They share the same metadata
+    // token and signature shape as a regular async variant, so the R2R lookup below
+    // would incorrectly bind the thunk to the non-thunk's compiled code and bypass
+    // the virtual dispatch the thunk performs. Crossgen2 does not emit R2R code for
+    // these thunks; fall back to transient IL generation in the prestub.
+    if (pMD->IsReturnDroppingThunk())
         goto done;
 
     ETW::MethodLog::GetR2RGetEntryPointStart(pMD);
 
     uint offset;
-    if (pMD->HasClassOrMethodInstantiation())
+    // Async variants and unboxing stubs are stored in the instance methods table.
+    if (pMD->HasClassOrMethodInstantiation()
+        || pMD->IsAsyncVariantMethod()
+        || pMD->IsUnboxingStub())
     {
         if (m_instMethodEntryPoints.IsNull())
             goto done;
@@ -1284,8 +1396,29 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
     }
 
     _ASSERTE(id < m_nRuntimeFunctions);
-    pEntryPoint = dac_cast<TADDR>(GetImage()->GetBase()) + m_pRuntimeFunctions[id].BeginAddress;
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
+    pEntryPoint = dac_cast<TADDR>(GetImage()->GetBase()) + RUNTIME_FUNCTION__BeginAddress(&m_pRuntimeFunctions[id]);
+#ifdef TARGET_ARM
+    pEntryPoint |= THUMB_CODE;
+#endif // TARGET_ARM
     m_pCompositeInfo->SetMethodDescForEntryPointInNativeImage(pEntryPoint, pMD);
+#else
+    // When we have portable entrypoints enabled, the R2R image contains actual entrypoints.
+#ifdef FEATURE_TIERED_COMPILATION
+#error "Portable entry points are not currently supported with tiered compilation, as the interaction between the two is not yet fully worked out."
+#endif
+#ifdef TARGET_WASM
+    void* actualEntryPoint;
+    actualEntryPoint = (void*)(GetMinFunctionTableIndex() + id);
+    PCODE virtualEntrypointIP;
+    virtualEntrypointIP = R2RRelativeFunctionIndexToVirtualIP(id);
+    pEntryPoint = pMD->GetTemporaryEntryPoint();
+    PortableEntryPoint::SetActualCode(pEntryPoint, actualEntryPoint);
+    m_pCompositeInfo->SetMethodDescForEntryPointInNativeImage(virtualEntrypointIP, pMD);
+#else
+#error "ReadyToRun and PortableEntryPoints are not currently compatible on non-WASM targets, as the R2R image layout would need to be changed to support this scenario."
+#endif
+#endif
 
 #ifdef PROFILING_SUPPORTED
         {
@@ -1306,6 +1439,7 @@ done:
     {
         ETW::MethodLog::GetR2RGetEntryPoint(pMD, pEntryPoint);
     }
+
     return pEntryPoint;
 }
 
@@ -1482,7 +1616,11 @@ MethodDesc * ReadyToRunInfo::MethodIterator::GetMethodDesc_NoRestore()
     }
 
     _ASSERTE(id < m_pInfo->m_nRuntimeFunctions);
-    PCODE pEntryPoint = dac_cast<TADDR>(m_pInfo->GetImage()->GetBase()) + m_pInfo->m_pRuntimeFunctions[id].BeginAddress;
+#ifdef TARGET_WASM
+    PCODE pEntryPoint = m_pInfo->R2RRelativeFunctionIndexToVirtualIP(id);
+#else
+    PCODE pEntryPoint = dac_cast<TADDR>(m_pInfo->GetImage()->GetBase()) + RUNTIME_FUNCTION__BeginAddress(&m_pInfo->m_pRuntimeFunctions[id]);
+#endif
 
     return m_pInfo->GetMethodDescForEntryPoint(pEntryPoint);
 }
@@ -1541,7 +1679,7 @@ bool ReadyToRunInfo::MayHaveCustomAttribute(WellKnownAttribute attribute, mdToke
             s_wellKnownAttributeHashes[(DWORD)attribute] = wellKnownHash = ComputeNameHashCode(GetWellKnownAttributeName(attribute));
         }
 
-        hash = CombineTwoValuesIntoHash(wellKnownHash, token);
+        hash = CombineTwoValuesIntoHash<xxHashVersionResilientTraits>(wellKnownHash, token);
         fingerprint = hash >> 16;
     }
 
@@ -1551,6 +1689,334 @@ bool ReadyToRunInfo::MayHaveCustomAttribute(WellKnownAttribute attribute, mdToke
 void ReadyToRunInfo::DisableCustomAttributeFilter()
 {
     m_attributesPresence.DisableFilter();
+}
+
+namespace
+{
+    enum class TypeMapState : uint32_t
+    {
+        RuntimeAttributeFallback = 0,
+        PrecomputedFixups = 1,
+        PrecomputedFixupsAndTypeNames = 2,
+    };
+
+    TypeHandle GetTypeHandleForNativeFormatFixupReference(PTR_ReadyToRunInfo pR2RInfo, PTR_Module pModule, uint32_t importSection, uint32_t fixupIndex)
+    {
+        STANDARD_VM_CONTRACT;
+
+        COUNT_T countImportSections;
+        PTR_READYTORUN_IMPORT_SECTION pImportSections = pR2RInfo->GetImportSections(&countImportSections);
+
+        if (importSection >= countImportSections)
+        {
+            _ASSERTE(!"Malformed PGO type or method handle data");
+            return TypeHandle();
+        }
+
+        PTR_READYTORUN_IMPORT_SECTION pImportSection = &pImportSections[importSection];
+        COUNT_T cbData;
+        TADDR pData = pR2RInfo->GetImage()->GetDirectoryData(&pImportSection->Section, &cbData);
+        if (fixupIndex >= cbData / sizeof(TADDR))
+        {
+            _ASSERTE(!"Malformed type map fixup index out of bounds");
+            return TypeHandle();
+        }
+        PTR_SIZE_T fixupAddress = dac_cast<PTR_SIZE_T>(pData + fixupIndex * sizeof(TADDR));
+        if (!pModule->FixupNativeEntry(pImportSections + importSection, fixupIndex, fixupAddress))
+        {
+            return TypeHandle();
+        }
+
+        return *(TypeHandle*)fixupAddress;
+    }
+
+    bool TryGetPrecachedTypeMap(
+        PTR_ReadyToRunInfo pR2RInfo,
+        PTR_Module pModule,
+        NativeHashtable& typeMaps,
+        MethodTable* pGroupType,
+        NativeHashtable* pTypeMap,
+        NativeParser* pNamedEntries)
+    {
+        STANDARD_VM_CONTRACT;
+
+        _ASSERTE(pGroupType != nullptr);
+        _ASSERTE(pTypeMap != nullptr);
+        _ASSERTE(pNamedEntries != nullptr);
+
+        if (typeMaps.IsNull())
+        {
+            return false;
+        }
+
+        UINT32 hash = GetVersionResilientTypeHashCode(pGroupType);
+        NativeHashtable::Enumerator lookup = typeMaps.Lookup(hash);
+        NativeParser entryParser;
+        while (lookup.GetNext(entryParser))
+        {
+            uint32_t importSection = entryParser.GetUnsigned();
+            uint32_t fixupIndex = entryParser.GetUnsigned();
+            TypeHandle typeHandle = GetTypeHandleForNativeFormatFixupReference(pR2RInfo, pModule, importSection, fixupIndex);
+            if (typeHandle != TypeHandle(pGroupType))
+            {
+                continue;
+            }
+
+            TypeMapState state = static_cast<TypeMapState>(entryParser.GetUnsigned());
+            if (state == TypeMapState::RuntimeAttributeFallback)
+            {
+                return false;
+            }
+
+            if (state != TypeMapState::PrecomputedFixups &&
+                state != TypeMapState::PrecomputedFixupsAndTypeNames)
+            {
+                COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+            }
+
+            *pTypeMap = NativeHashtable(entryParser);
+            *pNamedEntries = state == TypeMapState::PrecomputedFixupsAndTypeNames
+                ? pTypeMap->GetParserAfterTable()
+                : NativeParser();
+            return true;
+        }
+
+        return false;
+    }
+
+    Module* GetModuleForNativeFormatFixupReference(PTR_ReadyToRunInfo pR2RInfo, PTR_Module pModule, uint32_t importSection, uint32_t fixupIndex)
+    {
+        STANDARD_VM_CONTRACT;
+
+        COUNT_T countImportSections;
+        PTR_READYTORUN_IMPORT_SECTION pImportSections = pR2RInfo->GetImportSections(&countImportSections);
+
+        if (importSection >= countImportSections)
+        {
+            _ASSERTE(!"Malformed PGO type or method handle data");
+            return nullptr;
+        }
+
+        PTR_READYTORUN_IMPORT_SECTION pImportSection = &pImportSections[importSection];
+        COUNT_T cbData;
+        TADDR pData = pR2RInfo->GetImage()->GetDirectoryData(&pImportSection->Section, &cbData);
+        if (fixupIndex >= cbData / sizeof(TADDR))
+        {
+            _ASSERTE(!"Malformed type map fixup index out of bounds");
+            return nullptr;
+        }
+        PTR_SIZE_T fixupAddress = dac_cast<PTR_SIZE_T>(pData + fixupIndex * sizeof(TADDR));
+        if (!pModule->FixupNativeEntry(pImportSections + importSection, fixupIndex, fixupAddress))
+        {
+            return nullptr;
+        }
+
+        return *(Module**)fixupAddress;
+    }
+}
+
+bool ReadyToRunInfo::TryGetPrecachedExternalTypeMap(MethodTable* pGroupType, NativeHashtable* pTypeMap, NativeParser* pNamedEntries)
+{
+    STANDARD_VM_CONTRACT;
+    return TryGetPrecachedTypeMap(this, m_pModule, m_externalTypeMaps, pGroupType, pTypeMap, pNamedEntries);
+}
+
+bool ReadyToRunInfo::HasPrecachedExternalTypeMap(MethodTable* pGroupTypeMT)
+{
+    STANDARD_VM_CONTRACT;
+
+    NativeHashtable typeMap;
+    NativeParser namedEntries;
+    return TryGetPrecachedExternalTypeMap(pGroupTypeMT, &typeMap, &namedEntries);
+}
+
+TypeHandle ReadyToRunInfo::FindPrecachedExternalTypeMapEntry(MethodTable* pGroupType, LPCUTF8 pKey)
+{
+    STANDARD_VM_CONTRACT;
+
+    _ASSERTE(pGroupType != nullptr);
+    NativeHashtable typeMapTable;
+    NativeParser namedEntries;
+    if (!TryGetPrecachedExternalTypeMap(pGroupType, &typeMapTable, &namedEntries))
+    {
+        return TypeHandle();
+    }
+
+    uint32_t keyLen = (uint32_t)strlen(pKey);
+    UINT32 typeArgHash = ComputeNameHashCode(pKey, keyLen);
+    NativeHashtable::Enumerator typeMapLookup = typeMapTable.Lookup(typeArgHash);
+    NativeParser typeMapEntryParser;
+    while (typeMapLookup.GetNext(typeMapEntryParser))
+    {
+        if (typeMapEntryParser.StringEquals(pKey, keyLen))
+        {
+            typeMapEntryParser.SkipString();
+            uint32_t importSection = typeMapEntryParser.GetUnsigned();
+            uint32_t fixupIndex = typeMapEntryParser.GetUnsigned();
+            return GetTypeHandleForNativeFormatFixupReference(this, m_pModule, importSection, fixupIndex);
+        }
+    }
+
+    return TypeHandle();
+}
+
+bool ReadyToRunInfo::CheckForUniqueExternalTypeMapKeys(MethodTable* pGroupType, ExternalTypeNameHash* pHash)
+{
+    STANDARD_VM_CONTRACT;
+
+    NativeHashtable typeMapTable;
+    NativeParser namedEntries;
+    if (!TryGetPrecachedExternalTypeMap(pGroupType, &typeMapTable, &namedEntries))
+    {
+        return true;
+    }
+
+    NativeHashtable::AllEntriesEnumerator allEntries(&typeMapTable);
+    for (NativeParser typeMapEntryParser = allEntries.GetNext(); !typeMapEntryParser.IsNull(); typeMapEntryParser = allEntries.GetNext())
+    {
+        LPCUTF8 string;
+        uint32_t stringLength;
+        typeMapEntryParser.GetString((PTR_CBYTE*)&string, &stringLength);
+
+        StringWithLength key = {string, stringLength};
+        if (pHash->LookupPtr(key) != nullptr)
+        {
+            return false;
+        }
+        pHash->Add(key);
+    }
+
+    if (!namedEntries.IsNull())
+    {
+        uint32_t count = namedEntries.GetUnsigned();
+        for (uint32_t i = 0; i < count; i++)
+        {
+            LPCUTF8 string;
+            uint32_t stringLength;
+            namedEntries.GetString((PTR_CBYTE*)&string, &stringLength);
+            namedEntries.SkipString();
+
+            StringWithLength key = {string, stringLength};
+            if (pHash->LookupPtr(key) != nullptr)
+            {
+                return false;
+            }
+            pHash->Add(key);
+        }
+    }
+
+    return true;
+}
+
+bool ReadyToRunInfo::TryGetPrecachedProxyTypeMap(MethodTable* pGroupType, NativeHashtable* pTypeMap, NativeParser* pNamedEntries)
+{
+    STANDARD_VM_CONTRACT;
+    return TryGetPrecachedTypeMap(this, m_pModule, m_proxyTypeMaps, pGroupType, pTypeMap, pNamedEntries);
+}
+
+bool ReadyToRunInfo::HasPrecachedProxyTypeMap(MethodTable* pGroupType)
+{
+    STANDARD_VM_CONTRACT;
+
+    NativeHashtable typeMap;
+    NativeParser namedEntries;
+    return TryGetPrecachedProxyTypeMap(pGroupType, &typeMap, &namedEntries);
+}
+
+TypeHandle ReadyToRunInfo::FindPrecachedProxyTypeMapEntry(MethodTable* pGroupType, TypeHandle key)
+{
+    STANDARD_VM_CONTRACT;
+
+    _ASSERTE(pGroupType != nullptr);
+    NativeHashtable typeMapTable;
+    NativeParser namedEntries;
+    if (!TryGetPrecachedProxyTypeMap(pGroupType, &typeMapTable, &namedEntries))
+    {
+        return TypeHandle();
+    }
+
+    UINT32 typeArgHash = GetVersionResilientTypeHashCode(key);
+    NativeHashtable::Enumerator typeMapLookup = typeMapTable.Lookup(typeArgHash);
+    NativeParser typeMapEntryParser;
+    while (typeMapLookup.GetNext(typeMapEntryParser))
+    {
+        uint32_t keyImportSection = typeMapEntryParser.GetUnsigned();
+        uint32_t keyFixupIndex = typeMapEntryParser.GetUnsigned();
+        TypeHandle keyTypeHandle = GetTypeHandleForNativeFormatFixupReference(this, m_pModule, keyImportSection, keyFixupIndex);
+        if (keyTypeHandle != key)
+        {
+            continue;
+        }
+
+        uint32_t resultImportSection = typeMapEntryParser.GetUnsigned();
+        uint32_t resultFixupIndex = typeMapEntryParser.GetUnsigned();
+        return GetTypeHandleForNativeFormatFixupReference(this, m_pModule, resultImportSection, resultFixupIndex);
+    }
+
+    return TypeHandle();
+}
+
+bool ReadyToRunInfo::HasTypeMapAssemblyTargets(MethodTable* pGroupType, COUNT_T* pCount)
+{
+    STANDARD_VM_CONTRACT;
+    _ASSERTE(pGroupType != nullptr);
+    if (m_typeMapAssemblyTargets.IsNull())
+    {
+        return false;
+    }
+    UINT32 hash = GetVersionResilientTypeHashCode(pGroupType);
+    NativeHashtable::Enumerator lookup = m_typeMapAssemblyTargets.Lookup(hash);
+    NativeParser entryParser;
+    while (lookup.GetNext(entryParser))
+    {
+        uint32_t importSection = entryParser.GetUnsigned();
+        uint32_t fixupIndex = entryParser.GetUnsigned();
+        TypeHandle typeHandle = GetTypeHandleForNativeFormatFixupReference(this, m_pModule, importSection, fixupIndex);
+        if (typeHandle == TypeHandle(pGroupType))
+        {
+            *pCount = entryParser.GetUnsigned();
+            return true;
+        }
+    }
+
+    return false;
+}
+
+COUNT_T ReadyToRunInfo::GetTypeMapAssemblyTargets(MethodTable* pGroupType, Module** pTargetModules, COUNT_T count)
+{
+    STANDARD_VM_CONTRACT;
+    _ASSERTE(pGroupType != nullptr);
+    if (m_typeMapAssemblyTargets.IsNull())
+    {
+        return 0;
+    }
+
+    UINT32 hash = GetVersionResilientTypeHashCode(pGroupType);
+    NativeHashtable::Enumerator lookup = m_typeMapAssemblyTargets.Lookup(hash);
+    NativeParser entryParser;
+    while (lookup.GetNext(entryParser))
+    {
+        uint32_t importSection = entryParser.GetUnsigned();
+        uint32_t fixupIndex = entryParser.GetUnsigned();
+        TypeHandle typeHandle = GetTypeHandleForNativeFormatFixupReference(this, m_pModule, importSection, fixupIndex);
+        if (typeHandle != TypeHandle(pGroupType))
+        {
+            continue;
+        }
+
+        COUNT_T numTargets = entryParser.GetUnsigned();
+        COUNT_T resultCount = min(numTargets, count);
+        for (COUNT_T i = 0; i < resultCount; i++)
+        {
+            uint32_t moduleImportSection = entryParser.GetUnsigned();
+            uint32_t moduleFixupIndex = entryParser.GetUnsigned();
+            pTargetModules[i] = GetModuleForNativeFormatFixupReference(this, m_pModule, moduleImportSection, moduleFixupIndex);
+        }
+
+        return resultCount;
+    }
+
+    return 0;
 }
 
 class NativeManifestModule : public ModuleBase
@@ -1710,7 +2176,7 @@ public:
     }
     Module *GetModuleIfLoaded(mdFile kFile) final
     {
-        CONTRACT(Module *)
+        CONTRACTL
         {
             INSTANCE_CHECK;
             NOTHROW;
@@ -1718,11 +2184,9 @@ public:
             MODE_ANY;
             PRECONDITION(TypeFromToken(kFile) == mdtFile
                         || TypeFromToken(kFile) == mdtModuleRef);
-            POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
-            FORBID_FAULT;
             SUPPORTS_DAC;
         }
-        CONTRACT_END;
+        CONTRACTL_END;
 
         // Native manifest module functionality isn't actually multi-module assemblies, and File tokens are not useable
         if (TypeFromToken(kFile) == mdtFile)
@@ -1731,12 +2195,14 @@ public:
         _ASSERTE(TypeFromToken(kFile) == mdtModuleRef);
         Module* module = m_ModuleReferencesMap.GetElement(RidFromToken(kFile));
         if (module != NULL)
-            RETURN module;
+            {
+                return module;
+            }
 
         LPCSTR moduleName;
         if (FAILED(GetMDImport()->GetModuleRefProps(kFile, &moduleName)))
         {
-            RETURN NULL;
+            return NULL;
         }
 
         LPCSTR assemblyNameInModuleRef;
@@ -1765,7 +2231,7 @@ public:
                     mdToken assemblyRef;
                     if (FAILED(GetAssemblyRefTokenOfIndirectDependency(module, assemblyNameInModuleRef, assemblyNameLen, &assemblyRef)))
                     {
-                        RETURN NULL;
+                        return NULL;
                     }
 
                     if (assemblyRef == mdTokenNil)
@@ -1786,7 +2252,7 @@ public:
         if (module != NULL)
             m_ModuleReferencesMap.TrySetElement(RidFromToken(kFile), module);
 #endif
-        RETURN module;
+        return module;
     }
 
     Module *LoadModule(mdFile kFile) final
@@ -1949,28 +2415,9 @@ bool ReadyToRun_TypeGenericInfoMap::IsGeneric(mdTypeDef input, IMDInternalImport
     {
         HENUMInternalHolder hEnumTyPars(pImport);
         hEnumTyPars.EnumInit(mdtGenericParam, input);
-        return (pImport->EnumGetCount(&hEnumTyPars) != 0);
+        return pImport->EnumGetCount(&hEnumTyPars) != 0;
     }
     return !!((uint8_t)typeGenericInfo & (uint8_t)ReadyToRunTypeGenericInfo::GenericCountMask);
-}
-
-HRESULT ReadyToRun_TypeGenericInfoMap::IsGenericNoThrow(mdTypeDef input, bool *pIsGeneric, IMDInternalImport* pImport) const
-{
-    bool foundResult;
-    bool result;
-    HRESULT hr;
-    ReadyToRunTypeGenericInfo typeGenericInfo = GetTypeGenericInfo(input, &foundResult);
-    if (!foundResult)
-    {
-        HENUMInternalHolder hEnumTyPars(pImport);
-        IfFailRet(hEnumTyPars.EnumInitNoThrow(mdtGenericParam, input));
-        result = (pImport->EnumGetCount(&hEnumTyPars) != 0);
-    }
-    else
-        result = !!((uint8_t)typeGenericInfo & (uint8_t)ReadyToRunTypeGenericInfo::GenericCountMask);
-
-    *pIsGeneric = result;
-    return S_OK;
 }
 
 uint32_t ReadyToRun_TypeGenericInfoMap::GetGenericArgumentCount(mdTypeDef input, IMDInternalImport* pImport) const
@@ -2053,9 +2500,7 @@ PCODE CreateDynamicHelperPrecode(LoaderAllocator *pAllocator, AllocMemTracker *p
 
     FlushCacheForDynamicMappedStub(pPrecode, sizeof(StubPrecode));
 
-#ifdef FEATURE_PERFMAP
     PerfMap::LogStubs(__FUNCTION__, "DynamicHelper", (PCODE)pPrecode, size, PerfMapStubType::IndividualWithinBlock);
-#endif
 
     return ((Precode*)pPrecode)->GetEntryPoint();
 }
@@ -2268,9 +2713,16 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
             else
             {
                 _ASSERTE(pLookup->sizeOffset == CORINFO_NO_SIZE_CHECK);
+                // SecondIndir is in bytes, but actual indirections into the table are always pointer aligned.
+                // A value of 0 indicates that the second indirection is into the first generic dictionary of
+                // the type, which is the most common access pattern for generics. For Dictionary<TKey,TValue>,
+                // a SecondIndir of 0, and a LastIndir of 0 would indicate the MethodTable pointer of TKey,
+                // and if LastIndir was sizeof(TADDR) it would access the MethodTable pointer of TValue and so on.
                 if ((dictLookupData.SecondIndir == 0) && (dictLookupData.LastIndir <= sizeof(TADDR) * 3))
                 {
                     needsDictLookupData = false;
+                    // Since LastIndir is in bytes, but actual indirections into the table are always pointer
+                    // aligned, we can divide by sizeof(TADDR) to compute the possible cases here.
                     switch (dictLookupData.LastIndir / sizeof(TADDR))
                     {
                         case 0:
@@ -2300,6 +2752,7 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
             _ASSERTE(helperAddress == g_pMethodWithSlotAndModule);
             _ASSERTE(pLookup->offsets[0] == offsetof(InstantiatedMethodDesc, m_pPerInstInfo));
             dictLookupData.LastIndir = (UINT32)pLookup->offsets[1];
+            _ASSERTE(dictLookupData.SecondIndir == 0); // There are only 2 indirections, so there is no "SecondIndir" value to set, and it should be 0.
             if (pLookup->testForNull && pLookup->sizeOffset != CORINFO_NO_SIZE_CHECK)
             {
                 helper = (PCODE)DynamicHelper_GenericDictionaryLookup_Method_SizeCheck_TestForNull;
@@ -2313,9 +2766,10 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
             else
             {
                 _ASSERTE(pLookup->sizeOffset == CORINFO_NO_SIZE_CHECK);
-                if ((dictLookupData.SecondIndir == 0) && (dictLookupData.LastIndir <= sizeof(TADDR) * 3))
+                if (dictLookupData.LastIndir <= sizeof(TADDR) * 3)
                 {
                     needsDictLookupData = false;
+                    // Since LastIndir is in bytes, but actual indirections into the table are always pointer aligned, we can divide by sizeof(TADDR) to compute the possible cases here.
                     switch (dictLookupData.LastIndir / sizeof(TADDR))
                     {
                         case 0:
@@ -2365,4 +2819,167 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
     }
 }
 #endif // FEATURE_STUBPRECODE_DYNAMIC_HELPERS
+
+#ifdef TARGET_WASM
+// Decode a ULEB128-encoded value that must fit in a UINT32.
+// Advances *ppData past the encoded bytes. Asserts if the value overflows 32 bits.
+UINT32 DecodeULEB128AsU32(PTR_BYTE* ppData)
+{
+    UINT32 result = 0;
+    int shift = 0;
+    BYTE b;
+    do
+    {
+        b = *(*ppData)++;
+        _ASSERTE(shift < 35); // A valid u32 ULEB128 is at most 5 bytes
+        result |= (UINT32)(b & 0x7F) << shift;
+        shift += 7;
+    } while (b & 0x80);
+    return result;
+}
+
+static bool TryDecodeULEB128AsU32(PTR_BYTE* ppData, PTR_BYTE pEnd, UINT32* pValue)
+{
+    UINT32 result = 0;
+
+    for (int shift = 0; shift < 32; shift += 7)
+    {
+        if (*ppData >= pEnd)
+            return false;
+
+        BYTE b = *(*ppData)++;
+        if ((shift == 28) && ((b & 0xF0) != 0))
+            return false;
+
+        result |= (UINT32)(b & 0x7F) << shift;
+        if ((b & 0x80) == 0)
+        {
+            *pValue = result;
+            return true;
+        }
+    }
+
+    return false;
+}
+
+static void ProcessWasmAsyncResumeInfoFixups(
+    TADDR imageBase,
+    SIZE_T imageSize,
+    IMAGE_DATA_DIRECTORY* pFixupSection,
+    DWORD virtualIPBase,
+    bool applyFixups)
+{
+    SIZE_T sectionRva = pFixupSection->VirtualAddress;
+    SIZE_T sectionSize = pFixupSection->Size;
+    if ((sectionRva > imageSize) || (sectionSize > imageSize - sectionRva))
+        COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+
+    PTR_BYTE pFixupData = dac_cast<PTR_BYTE>(imageBase + sectionRva);
+    PTR_BYTE pFixupEnd = pFixupData + sectionSize;
+    UINT32 chunkCount;
+    if (!TryDecodeULEB128AsU32(&pFixupData, pFixupEnd, &chunkCount))
+        COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+
+    SIZE_T currentFixupRva = 0;
+    for (UINT32 chunkIndex = 0; chunkIndex < chunkCount; chunkIndex++)
+    {
+        UINT32 delta;
+        UINT32 fixupCount;
+        UINT32 fixupStride;
+        if (!TryDecodeULEB128AsU32(&pFixupData, pFixupEnd, &delta) ||
+            !TryDecodeULEB128AsU32(&pFixupData, pFixupEnd, &fixupCount) ||
+            !TryDecodeULEB128AsU32(&pFixupData, pFixupEnd, &fixupStride))
+        {
+            COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+        }
+
+        if ((delta > imageSize - currentFixupRva) ||
+            (fixupCount == 0) ||
+            (fixupStride != sizeof(CORINFO_AsyncResumeInfo)))
+        {
+            COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+        }
+
+        currentFixupRva += delta;
+        if ((currentFixupRva > imageSize) ||
+            (sizeof(DWORD) > imageSize - currentFixupRva))
+        {
+            COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+        }
+
+        SIZE_T maximumFixupCount =
+            1 + (imageSize - currentFixupRva - sizeof(DWORD)) / fixupStride;
+        if (fixupCount > maximumFixupCount)
+            COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+
+        for (UINT32 fixupIndex = 0; fixupIndex < fixupCount; fixupIndex++)
+        {
+            SIZE_T diagnosticIPRva = currentFixupRva + (SIZE_T)fixupIndex * fixupStride;
+            PTR_DWORD pDiagnosticIP = dac_cast<PTR_DWORD>(imageBase + diagnosticIPRva);
+            if (*pDiagnosticIP > UINT32_MAX - virtualIPBase)
+                COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+
+            if (applyFixups)
+                *pDiagnosticIP += virtualIPBase;
+        }
+
+        currentFixupRva += (SIZE_T)(fixupCount - 1) * fixupStride + sizeof(DWORD);
+    }
+}
+
+void ReadyToRunInfo::RegisterVirtualIPRange(Module* pModule)
+{
+    CONTRACTL {
+        THROWS;
+        GC_NOTRIGGER;
+        PRECONDITION(CheckPointer(pModule));
+    } CONTRACTL_END;
+
+    if (m_nRuntimeFunctions == 0)
+        return;
+
+    if (!m_pComposite->MinVirtualIPSet())
+    {
+        TADDR imageBase = dac_cast<TADDR>(m_pComposite->GetLayout()->GetBase());
+
+        // The last RUNTIME_FUNCTION entry's BeginAddress is the virtual IP index of that entry.
+        // Total virtual IPs = lastEntry.BeginAddress + virtualIPCount(lastEntry)
+        T_RUNTIME_FUNCTION* pLastEntry = &m_pRuntimeFunctions[m_nRuntimeFunctions - 1];
+        UINT32 lastEntryVirtualIPIndex = RUNTIME_FUNCTION__BeginAddress(pLastEntry);
+
+        // Decode the virtual IP count from the last entry's unwind data.
+        // Unwind format: ULEB128(frameSize) ULEB128(virtualIPCount)
+        PTR_BYTE pUnwindData = dac_cast<PTR_BYTE>(imageBase + pLastEntry->UnwindData);
+        DecodeULEB128AsU32(&pUnwindData); // skip frame size
+        UINT32 lastEntryVIPCount = DecodeULEB128AsU32(&pUnwindData) * 2; // Multiply by 2 to force all virtual IPs to be an even number.
+
+        UINT32 totalVirtualIPs = lastEntryVirtualIPIndex + lastEntryVIPCount;
+
+        m_pComposite->SetMinVirtualIP(ExecutionManager::AddVirtualIPRange(
+            totalVirtualIPs,
+            ExecutionManager::GetReadyToRunJitManager(),
+            pModule));
+
+        IMAGE_DATA_DIRECTORY* pAsyncResumeInfoFixups =
+            m_pComposite->FindSection(ReadyToRunSectionType::WasmAsyncResumeInfo);
+        if (pAsyncResumeInfoFixups != nullptr)
+        {
+            DWORD virtualIPBase = static_cast<DWORD>(m_pComposite->GetMinVirtualIP());
+            SIZE_T imageSize = m_pComposite->GetLayout()->GetVirtualSize();
+            ProcessWasmAsyncResumeInfoFixups(
+                imageBase, imageSize, pAsyncResumeInfoFixups, virtualIPBase, false);
+            ProcessWasmAsyncResumeInfoFixups(
+                imageBase, imageSize, pAsyncResumeInfoFixups, virtualIPBase, true);
+        }
+
+        ExecutionManager::AddFunctionTableIndexRange(
+            m_minFunctionTableIndex,
+            m_nRuntimeFunctions,
+            pModule);
+    }
+
+    m_minVirtualIP = m_pComposite->GetMinVirtualIP();
+}
+#endif // TARGET_WASM
+
 #endif // DACCESS_COMPILE

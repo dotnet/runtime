@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using Xunit;
+using TestLibrary;
 
 namespace R2RDumpTests
 {
@@ -36,6 +37,9 @@ namespace R2RDumpTests
             return Path.GetFullPath(exe);
         }
 
+        [ActiveIssue("These tests are not supposed to be run with mono.", TestRuntimes.Mono)]
+        [SkipOnCoreClr("This test scans the entire System.Private.CoreLib and times out in GC stress runs; it functionally tests the R2R reader, not runtime stress.", RuntimeTestModes.AnyGCStress)]
+        [SkipOnPlatform(TestPlatforms.Browser, "Process.Start is not supported on browser-wasm")]
         [Fact]
         [SkipOnMono("Ready-To-Run is a CoreCLR-only feature", TestPlatforms.Any)]
         public static void DumpCoreLib()

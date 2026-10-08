@@ -8,6 +8,7 @@ internal static partial class Interop
 {
     internal static partial class Authz
     {
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.Authz, SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool AuthzInitializeResourceManager(
@@ -18,6 +19,7 @@ internal static partial class Interop
             string name,
             out IntPtr rm);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.Authz)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool AuthzFreeResourceManager(IntPtr rm);

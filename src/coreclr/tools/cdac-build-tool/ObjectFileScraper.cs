@@ -319,7 +319,7 @@ public class ObjectFileScraper
     private struct GlobalContractSpec
     {
         public uint NameIdx;
-        public uint Value;
+        public uint VersionIdx;
     }
 
     private sealed class Content
@@ -426,9 +426,9 @@ public class ObjectFileScraper
             foreach (var contract in GlobalContractSpecs)
             {
                 var globalName = GetPoolString(contract.NameIdx);
-                var value = contract.Value;
-                builder.AddOrUpdateContract(globalName, (int)value);
-                WriteVerbose($"Contract {globalName} has value {value}");
+                var version = GetPoolString(contract.VersionIdx);
+                builder.AddOrUpdateContract(globalName, version);
+                WriteVerbose($"Contract {globalName} has version {version}");
             }
         }
 
@@ -627,7 +627,7 @@ public class ObjectFileScraper
             int bytesRead = 0;
             globalSpecs[i].NameIdx = state.ReadUInt32();
             bytesRead += sizeof(uint);
-            globalSpecs[i].Value = state.ReadUInt32();
+            globalSpecs[i].VersionIdx = state.ReadUInt32();
             bytesRead += sizeof(uint);
             // skip padding
             if (bytesRead < header.GlobalPointerSpecSize)

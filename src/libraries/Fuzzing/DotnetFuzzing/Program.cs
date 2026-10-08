@@ -64,6 +64,15 @@ public static class Program
             return;
         }
 
+        if (args.ElementAtOrDefault(1) == "--get-instrumented-assemblies")
+        {
+            foreach ((string assembly, string? prefixes) in GetInstrumentationTargets(fuzzer))
+            {
+                Console.WriteLine($"{assembly} {prefixes}");
+            }
+            return;
+        }
+
         RunFuzzer(fuzzer, inputFiles: args.Length > 1 ? args[1] : null);
     }
 
@@ -71,6 +80,9 @@ public static class Program
     {
         if (!string.IsNullOrEmpty(inputFiles))
         {
+            Console.WriteLine($"PID: {Environment.ProcessId}");
+            Console.WriteLine();
+
             string[] files = Directory.Exists(inputFiles)
                 ? Directory.GetFiles(inputFiles)
                 : [inputFiles];
@@ -388,6 +400,8 @@ public static class Program
         {
             script += " -dict=%~dp0dictionary";
         }
+
+        script += " -timeout=60";
 
         // Pass any additional arguments to the fuzzer.
         script += " %*";

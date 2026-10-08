@@ -307,14 +307,11 @@ namespace System.Text.RegularExpressions.Symbolic
             // in other cases make use of the general serializer to long[]
             long[] serialized = Serialize();
 
+            // make sure this serialization is not applied to MTBDDs
+            Debug.Assert(serialized.AsSpan().Min() > 0);
+
             // get the maximal element from the array
-            long m = 0;
-            for (int i = 0; i < serialized.Length; i++)
-            {
-                // make sure this serialization is not applied to MTBDDs
-                Debug.Assert(serialized[i] > 0);
-                m = Math.Max(serialized[i], m);
-            }
+            long m = serialized.AsSpan().Max();
 
             // k is the number of bytes needed to represent the maximal element
             int k = m <= 0xFFFF ? 2 : (m <= 0xFF_FFFF ? 3 : (m <= 0xFFFF_FFFF ? 4 : (m <= 0xFF_FFFF_FFFF ? 5 : (m <= 0xFFFF_FFFF_FFFF ? 6 : (m <= 0xFF_FFFF_FFFF_FFFF ? 7 : 8)))));

@@ -29,6 +29,7 @@ TypeAttr(typeof(object), name = "TypeAttrSimple")]
 
 namespace System.Reflection.Tests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/134952", TestPlatforms.Wasi)]
     public class AssemblyTests : FileCleanupTestBase
     {
         private const string s_sourceTestAssemblyName = "TestAssembly.dll";
@@ -154,7 +155,11 @@ namespace System.Reflection.Tests
             string assembly = Assembly.GetEntryAssembly().ToString();
 
             bool correct;
-            if (PlatformDetection.IsNativeAot)
+            if (PlatformDetection.IsWasmReadyToRun)
+            {
+                correct = assembly.IndexOf("WasmTestRunner", StringComparison.OrdinalIgnoreCase) != -1;
+            }
+            else if (PlatformDetection.IsNativeAot || (PlatformDetection.IsReadyToRunCompiled && !PlatformDetection.IsAppleMobile))
             {
                 // The single file test runner is not 'xunit.console'.
                 correct = assembly.IndexOf("System.Reflection.Tests", StringComparison.OrdinalIgnoreCase) != -1;
@@ -325,7 +330,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50715", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50715", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsWasm))]
         public void GetType_DefaultsToItself()
         {
             Assembly a = typeof(AssemblyTests).Assembly;
@@ -726,7 +731,6 @@ namespace System.Reflection.Tests
 
         [Theory]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/51673", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69919", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         [MemberData(nameof(GetCallingAssembly_TestData))]
         public void GetCallingAssembly(Assembly assembly1, Assembly assembly2, bool expected)
         {
@@ -735,7 +739,15 @@ namespace System.Reflection.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/51673", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69919", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
+        public void GetCallingAssemblyThroughDelegate()
+        {
+            Func<Assembly> del = static () => Assembly.GetCallingAssembly();
+            Assert.Equal(Assembly.GetExecutingAssembly(), del());
+            Assert.Equal(typeof(System.Reflection.TestAssembly.ClassToInvoke).Assembly, System.Reflection.TestAssembly.ClassToInvoke.InvokeDelegate(del));
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51673", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         public void GetCallingAssemblyInCctor()
         {
             TestGetCallingAssemblyInCctor.Run();
@@ -841,7 +853,9 @@ namespace System.Reflection.Tests
         public void AssemblyLoadFromBytesNeg()
         {
             Assert.Throws<ArgumentNullException>(() => Assembly.Load((byte[])null));
-            Assert.Throws<BadImageFormatException>(() => Assembly.Load(new byte[0]));
+            
+            BadImageFormatException ex = Assert.Throws<BadImageFormatException>(() => Assembly.Load(new byte[0]));
+            Assert.Contains("empty", ex.Message, StringComparison.OrdinalIgnoreCase);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported), nameof(PlatformDetection.HasAssemblyFiles))]
@@ -945,7 +959,6 @@ namespace System.Reflection.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/69919", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/77821", TestPlatforms.Android)]
         public static void AssemblyGetForwardedTypesLoadFailure()
         {
             Assembly a = typeof(TypeInForwardedAssembly).Assembly;

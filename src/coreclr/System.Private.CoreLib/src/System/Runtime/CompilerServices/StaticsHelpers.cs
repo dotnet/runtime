@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 namespace System.Runtime.CompilerServices
@@ -10,9 +11,11 @@ namespace System.Runtime.CompilerServices
     [DebuggerStepThrough]
     internal static unsafe partial class StaticsHelpers
     {
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall)]
         private static partial void GetThreadStaticsByIndex(ByteRefOnStack result, int index, [MarshalAs(UnmanagedType.Bool)] bool gcStatics);
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall)]
         private static partial void GetThreadStaticsByMethodTable(ByteRefOnStack result, MethodTable* pMT, [MarshalAs(UnmanagedType.Bool)] bool gcStatics);
 
@@ -140,7 +143,7 @@ namespace System.Runtime.CompilerServices
         {
             ByteRef result = default;
             GetThreadStaticsByIndex(ByteRefOnStack.Create(ref result), index, false);
-            return ref result.Get();
+            return ref result.Value;
         }
 
         [DebuggerHidden]
@@ -149,7 +152,7 @@ namespace System.Runtime.CompilerServices
         {
             ByteRef result = default;
             GetThreadStaticsByIndex(ByteRefOnStack.Create(ref result), index, true);
-            return ref result.Get();
+            return ref result.Value;
         }
 
         [DebuggerHidden]
@@ -158,7 +161,7 @@ namespace System.Runtime.CompilerServices
         {
             ByteRef result = default;
             GetThreadStaticsByMethodTable(ByteRefOnStack.Create(ref result), mt, false);
-            return ref result.Get();
+            return ref result.Value;
         }
 
         [DebuggerHidden]
@@ -167,7 +170,7 @@ namespace System.Runtime.CompilerServices
         {
             ByteRef result = default;
             GetThreadStaticsByMethodTable(ByteRefOnStack.Create(ref result), mt, true);
-            return ref result.Get();
+            return ref result.Value;
         }
 
         [DebuggerHidden]

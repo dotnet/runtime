@@ -15,7 +15,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
     // it would fail to JIT/run anyway.
 
     [SkipILVerify]
-    [SetupLinkerArgument("--skip-unresolved", "true")]
+    [SkipUnresolved(true)]
     [SetupCompileBefore("UnresolvedLibrary.dll", new[] { "Dependencies/UnresolvedLibrary.cs" }, removeFromLinkerInput: true)]
     [ExpectedNoWarnings]
     class UnresolvedMembers

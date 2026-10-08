@@ -10,6 +10,12 @@ namespace System.Net.NetworkInformation
         private unsafe TcpConnectionInformation[] GetTcpConnections(bool listeners)
         {
             int realCount = Interop.Sys.GetEstimatedTcpConnectionCount();
+            if (realCount == -1)
+            {
+                // The platform (e.g. OpenBSD) does not expose the TCP connection table.
+                throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform);
+            }
+
             int infoCount = realCount * 2;
             Interop.Sys.NativeTcpConnectionInformation[] infos = new Interop.Sys.NativeTcpConnectionInformation[infoCount];
             fixed (Interop.Sys.NativeTcpConnectionInformation* infosPtr = infos)
@@ -32,12 +38,12 @@ namespace System.Net.NetworkInformation
                     continue;
                 }
 
-                IPAddress localIPAddress = new IPAddress(new ReadOnlySpan<byte>(nativeInfo.LocalEndPoint.AddressBytes, checked((int)nativeInfo.LocalEndPoint.NumAddressBytes)));
+                IPAddress localIPAddress = new IPAddress(((ReadOnlySpan<byte>)nativeInfo.LocalEndPoint.AddressBytes)[..checked((int)nativeInfo.LocalEndPoint.NumAddressBytes)]);
                 IPEndPoint local = new IPEndPoint(localIPAddress, (int)nativeInfo.LocalEndPoint.Port);
 
                 IPAddress remoteIPAddress = nativeInfo.RemoteEndPoint.NumAddressBytes == 0 ?
                     IPAddress.Any :
-                    new IPAddress(new ReadOnlySpan<byte>(nativeInfo.RemoteEndPoint.AddressBytes, checked((int)nativeInfo.RemoteEndPoint.NumAddressBytes)));
+                    new IPAddress(((ReadOnlySpan<byte>)nativeInfo.RemoteEndPoint.AddressBytes)[..checked((int)nativeInfo.RemoteEndPoint.NumAddressBytes)]);
 
                 IPEndPoint remote = new IPEndPoint(remoteIPAddress, (int)nativeInfo.RemoteEndPoint.Port);
                 connectionInformations[nextResultIndex++] = new SimpleTcpConnectionInformation(local, remote, state);
@@ -70,6 +76,12 @@ namespace System.Net.NetworkInformation
         public override unsafe IPEndPoint[] GetActiveUdpListeners()
         {
             int realCount = Interop.Sys.GetEstimatedUdpListenerCount();
+            if (realCount == -1)
+            {
+                // The platform (e.g. OpenBSD) does not expose the UDP listener table.
+                throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform);
+            }
+
             int infoCount = realCount * 2;
             Interop.Sys.IPEndPointInfo[] infos = new Interop.Sys.IPEndPointInfo[infoCount];
             fixed (Interop.Sys.IPEndPointInfo* infosPtr = infos)
@@ -87,7 +99,7 @@ namespace System.Net.NetworkInformation
                 int port = (int)endPointInfo.Port;
                 IPAddress ipAddress = endPointInfo.NumAddressBytes == 0 ?
                     IPAddress.Any :
-                    new IPAddress(new ReadOnlySpan<byte>(endPointInfo.AddressBytes, checked((int)endPointInfo.NumAddressBytes)));
+                    new IPAddress(((ReadOnlySpan<byte>)endPointInfo.AddressBytes)[..checked((int)endPointInfo.NumAddressBytes)]);
 
                 endPoints[i] = new IPEndPoint(ipAddress, port);
             }

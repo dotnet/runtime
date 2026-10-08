@@ -16,11 +16,12 @@ export function SystemJS_RandomBytes (bufferPtr: number, bufferLength: number): 
         return -1;
     }
 
+    bufferPtr = bufferPtr >>> 0;
     const memoryView = localHeapViewU8();
     const targetView = memoryView.subarray(bufferPtr, bufferPtr + bufferLength);
 
-    // When threading is enabled, Chrome doesn't want SharedArrayBuffer to be passed to crypto APIs
-    const needsCopy = isSharedArrayBuffer(memoryView.buffer);
+    // When threading is enabled, Chrome doesn't want SharedArrayBuffer or resizable to be passed to crypto APIs
+    const needsCopy = isSharedArrayBuffer(memoryView.buffer) || memoryView.buffer.resizable;
     const targetBuffer = needsCopy
         ? new Uint8Array(bufferLength)
         : targetView;

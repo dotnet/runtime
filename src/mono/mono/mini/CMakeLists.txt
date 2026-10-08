@@ -119,6 +119,8 @@ set(mini_common_sources
     interp-stubs.c
     aot-runtime.h
     ee.h
+    hostinformation.h
+    hostinformation.c
     mini-runtime.h
     llvmonly-runtime.h
     llvmonly-runtime.c
@@ -476,8 +478,8 @@ if(HOST_BROWSER)
 
   add_library(mono-wasm-eh-wasm STATIC llvm-runtime.cpp)
   target_link_libraries (mono-wasm-eh-wasm PRIVATE monoapi eglib_api)
-  set_target_properties(mono-wasm-eh-wasm PROPERTIES COMPILE_FLAGS "-fwasm-exceptions")
-  set_target_properties(mono-wasm-eh-wasm PROPERTIES LINK_FLAGS "-fwasm-exceptions")
+  set_target_properties(mono-wasm-eh-wasm PROPERTIES COMPILE_FLAGS "-fwasm-exceptions -sWASM_LEGACY_EXCEPTIONS=0")
+  set_target_properties(mono-wasm-eh-wasm PROPERTIES LINK_FLAGS "-fwasm-exceptions -sWASM_LEGACY_EXCEPTIONS=0")
   install(TARGETS mono-wasm-eh-wasm LIBRARY)
 endif()
 

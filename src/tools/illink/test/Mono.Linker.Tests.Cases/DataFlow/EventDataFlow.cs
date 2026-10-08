@@ -20,6 +20,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
         class AssignToEvent
         {
             static event EventHandler MyEvent;
+            static event EventHandler InitializedEvent = null!;
 
             static void HandleMyEvent(object sender, EventArgs args) => throw null;
 

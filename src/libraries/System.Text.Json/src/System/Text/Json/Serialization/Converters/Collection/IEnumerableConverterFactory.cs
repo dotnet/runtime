@@ -108,6 +108,14 @@ namespace System.Text.Json.Serialization.Converters
                 converterType = typeof(ISetOfTConverter<,>);
                 elementType = actualTypeToConvert.GetGenericArguments()[0];
             }
+#if NET
+            // IReadOnlySet<>
+            else if ((actualTypeToConvert = typeToConvert.GetCompatibleGenericInterface(typeof(IReadOnlySet<>))) != null)
+            {
+                converterType = typeof(IReadOnlySetOfTConverter<,>);
+                elementType = actualTypeToConvert.GetGenericArguments()[0];
+            }
+#endif
             // ICollection<>
             else if ((actualTypeToConvert = typeToConvert.GetCompatibleGenericInterface(typeof(ICollection<>))) != null)
             {

@@ -5,6 +5,11 @@
 //  A nullable type with a value returns the ToString() from the underlying struct
 //</Description>
 
+namespace JitTest_Directed_nullabletypes_tostring;
+
+using JitTest_Directed_nullabletypes_invokecommon;
+using Xunit;
+
 #pragma warning disable 0649
 
 using System;
@@ -58,8 +63,10 @@ class NullableTest2
     }
 }
 
-class NullableTests
+public class NullableTests
 {
+    [OuterLoop]
+    [Fact]
     public static void Run()
     {
         NullableTest1.Run();

@@ -38,9 +38,7 @@ namespace Mono.Linker.Tests.Cases.LinkXml
             {
             }
 
-            // NativeAOT fails to translate Cecil generic methods
-            // https://github.com/dotnet/runtime/issues/80462
-            [Kept(By = Tool.Trimmer)]
+            [Kept]
             private void PreservedMethod5<T>(T arg)
             {
             }

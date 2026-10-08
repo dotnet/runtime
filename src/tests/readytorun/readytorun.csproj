@@ -7,6 +7,8 @@
     <MergedWrapperProjectReference Include="*/**/*.??proj" />
     <MergedWrapperProjectReference Remove="tests/testv1/*.??proj" />
     <MergedWrapperProjectReference Remove="tests/testv2/*.??proj" />
+    <MergedWrapperProjectReference Remove="ilbody-implflags-versioning/helperv1/*.??proj" />
+    <MergedWrapperProjectReference Remove="ilbody-implflags-versioning/helperv2/*.??proj" />
     <MergedWrapperProjectReference Remove="coreroot_determinism/**/*.??proj" />
   </ItemGroup>
 

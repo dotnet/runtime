@@ -2,6 +2,7 @@
   <Folder Name="/gen/">
     <Project Path="../System.Runtime.InteropServices/gen/DownlevelLibraryImportGenerator/DownlevelLibraryImportGenerator.csproj" />
     <Project Path="../System.Runtime.InteropServices/gen/Microsoft.Interop.SourceGeneration/Microsoft.Interop.SourceGeneration.csproj" />
+    <Project Path="../System.Text.RegularExpressions/gen/System.Text.RegularExpressions.Generator.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Common.Tests.csproj" />

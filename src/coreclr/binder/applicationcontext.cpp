@@ -15,6 +15,7 @@
 #include "assemblyhashtraits.hpp"
 #include "stringarraylist.h"
 #include "failurecache.hpp"
+#include "hostinformation.h"
 #include "utils.hpp"
 #include "ex.h"
 #include "clr/fs/path.h"
@@ -80,89 +81,65 @@ namespace BINDER_SPACE
 
     HRESULT ApplicationContext::SetupBindingPaths(SString &sTrustedPlatformAssemblies,
                                                   SString &sPlatformResourceRoots,
-                                                  SString &sAppPaths,
-                                                  BOOL     fAcquireLock)
+                                                  SString &sAppPaths)
     {
         HRESULT hr = S_OK;
 
-        CRITSEC_Holder contextLock(fAcquireLock ? GetCriticalSectionCookie() : NULL);
-        if (m_pTrustedPlatformAssemblyMap != nullptr)
-        {
-            GO_WITH_HRESULT(S_OK);
-        }
+        _ASSERTE(m_pTrustedPlatformAssemblyMap == nullptr);
 
         //
         // Parse TrustedPlatformAssemblies
         //
         m_pTrustedPlatformAssemblyMap = new SimpleNameToFileNameMap();
 
-        sTrustedPlatformAssemblies.Normalize();
-
-        for (SString::Iterator i = sTrustedPlatformAssemblies.Begin(); i != sTrustedPlatformAssemblies.End(); )
+        const char* const* assemblyNames;
+        size_t assemblyCount;
+        if (HostInformation::GetAssemblyNames(&assemblyNames, &assemblyCount))
         {
-            SString fileName;
-            SString simpleName;
-            bool isNativeImage = false;
-            HRESULT pathResult = S_OK;
-            IF_FAIL_GO(pathResult = GetNextTPAPath(sTrustedPlatformAssemblies, i, /*dllOnly*/ false, fileName, simpleName, isNativeImage));
-            if (pathResult == S_FALSE)
+            for (size_t i = 0; i < assemblyCount; i++)
             {
-                break;
+                StackSString simpleName(SString::Utf8, assemblyNames[i]);
+                _ASSERT(!simpleName.IsEmpty());
+
+                if (m_pTrustedPlatformAssemblyMap->LookupPtr(simpleName.GetUnicode()) != nullptr)
+                    continue;
+
+                LPWSTR wszSimpleName = new WCHAR[simpleName.GetCount() + 1];
+                wcscpy_s(wszSimpleName, simpleName.GetCount() + 1, simpleName.GetUnicode());
+
+                SimpleNameToFileNameMapEntry mapEntry{ wszSimpleName, nullptr };
+                m_pTrustedPlatformAssemblyMap->AddOrReplace(mapEntry);
             }
-
-            const SimpleNameToFileNameMapEntry *pExistingEntry = m_pTrustedPlatformAssemblyMap->LookupPtr(simpleName.GetUnicode());
-
-            if (pExistingEntry != nullptr)
+        }
+        else
+        {
+            sTrustedPlatformAssemblies.Normalize();
+            for (SString::Iterator i = sTrustedPlatformAssemblies.Begin(); i != sTrustedPlatformAssemblies.End(); )
             {
-                //
-                // We want to store only the first entry matching a simple name we encounter.
-                // The exception is if we first store an IL reference and later in the string
-                // we encounter a native image.  Since we don't touch IL in the presence of
-                // native images, we replace the IL entry with the NI.
-                //
-                if ((pExistingEntry->m_wszILFileName != nullptr && !isNativeImage) ||
-                    (pExistingEntry->m_wszNIFileName != nullptr && isNativeImage))
+                SString fileName;
+                SString simpleName;
+                HRESULT pathResult = S_OK;
+                IF_FAIL_GO(pathResult = GetNextTPAPath(sTrustedPlatformAssemblies, i, /*dllOnly*/ false, fileName, simpleName));
+                if (pathResult == S_FALSE)
+                {
+                    break;
+                }
+
+                const SimpleNameToFileNameMapEntry *pExistingEntry = m_pTrustedPlatformAssemblyMap->LookupPtr(simpleName.GetUnicode());
+                if (pExistingEntry != nullptr)
                 {
                     continue;
                 }
-            }
 
-            LPWSTR wszSimpleName = nullptr;
-            if (pExistingEntry == nullptr)
-            {
-                wszSimpleName = new WCHAR[simpleName.GetCount() + 1];
-                if (wszSimpleName == nullptr)
-                {
-                    GO_WITH_HRESULT(E_OUTOFMEMORY);
-                }
+                LPWSTR wszSimpleName = new WCHAR[simpleName.GetCount() + 1];
                 wcscpy_s(wszSimpleName, simpleName.GetCount() + 1, simpleName.GetUnicode());
-            }
-            else
-            {
-                wszSimpleName = pExistingEntry->m_wszSimpleName;
-            }
 
-            LPWSTR wszFileName = new WCHAR[fileName.GetCount() + 1];
-            if (wszFileName == nullptr)
-            {
-                GO_WITH_HRESULT(E_OUTOFMEMORY);
-            }
-            wcscpy_s(wszFileName, fileName.GetCount() + 1, fileName.GetUnicode());
+                LPWSTR wszFileName = new WCHAR[fileName.GetCount() + 1];
+                wcscpy_s(wszFileName, fileName.GetCount() + 1, fileName.GetUnicode());
 
-            SimpleNameToFileNameMapEntry mapEntry;
-            mapEntry.m_wszSimpleName = wszSimpleName;
-            if (isNativeImage)
-            {
-                mapEntry.m_wszNIFileName = wszFileName;
-                mapEntry.m_wszILFileName = pExistingEntry == nullptr ? nullptr : pExistingEntry->m_wszILFileName;
+                SimpleNameToFileNameMapEntry mapEntry{ wszSimpleName, wszFileName };
+                m_pTrustedPlatformAssemblyMap->AddOrReplace(mapEntry);
             }
-            else
-            {
-                mapEntry.m_wszILFileName = wszFileName;
-                mapEntry.m_wszNIFileName = pExistingEntry == nullptr ? nullptr : pExistingEntry->m_wszNIFileName;
-            }
-
-            m_pTrustedPlatformAssemblyMap->AddOrReplace(mapEntry);
         }
 
         //

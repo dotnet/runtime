@@ -181,7 +181,7 @@ namespace System.IO.Hashing
                 ulong* accumulators = stackalloc ulong[AccumulatorCount];
                 CopyAccumulators(ref _state, accumulators);
 
-                fixed (byte* secret = _state.Secret)
+                fixed (byte* secret = &_state.Secret[0])
                 {
                     DigestLong(ref _state, accumulators, secret);
                     current = new Hash128(
@@ -191,7 +191,7 @@ namespace System.IO.Hashing
             }
             else
             {
-                fixed (byte* buffer = _state.Buffer)
+                fixed (byte* buffer = &_state.Buffer[0])
                 {
                     current = HashToHash128(new ReadOnlySpan<byte>(buffer, (int)_state.TotalLength), (long)_state.Seed);
                 }

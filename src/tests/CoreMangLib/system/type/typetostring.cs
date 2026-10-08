@@ -11,6 +11,7 @@ using Xunit;
 /// </summary>
 public class TypeToString
 {
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

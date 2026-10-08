@@ -60,9 +60,9 @@ namespace System.Xml.Xsl.IlGen
         private bool _isReadOnly;            // True if setters are disabled in the case of singleton OptimizerPatterns
         private object? _arg0, _arg1, _arg2;    // Arguments to the matching patterns
 
-        private static volatile OptimizerPatterns? s_zeroOrOneDefault;
-        private static volatile OptimizerPatterns? s_maybeManyDefault;
-        private static volatile OptimizerPatterns? s_dodDefault;
+        private static OptimizerPatterns? s_zeroOrOneDefault;
+        private static OptimizerPatterns? s_maybeManyDefault;
+        private static OptimizerPatterns? s_dodDefault;
 
         /// <summary>
         /// Get OptimizerPatterns annotation for the specified node.  Lazily create if necessary.

@@ -10,6 +10,8 @@ namespace CgTest
     {
         public static string ActualResult;
 
+        [SkipOnCoreClr("This test simply takes too long to complete under HeapVerify; it is not fundamentally incompatible.", RuntimeTestModes.HeapVerify)]
+        [SkipOnCoreClr("This test is not compatible with GC stress.", RuntimeTestModes.AnyGCStress)]
         [Fact]
         public static int TestEntryPoint()
         {

@@ -39,12 +39,6 @@ namespace System.Threading
             return new ThreadPoolBoundHandle(handle, threadPoolHandle);
         }
 
-        private unsafe NativeOverlapped* AllocateNativeOverlappedWindowsThreadPool(IOCompletionCallback callback, object? state, object? pinData) =>
-            AllocateNativeOverlappedWindowsThreadPool(callback, state, pinData, flowExecutionContext: true);
-
-        private unsafe NativeOverlapped* UnsafeAllocateNativeOverlappedWindowsThreadPool(IOCompletionCallback callback, object? state, object? pinData) =>
-            AllocateNativeOverlappedWindowsThreadPool(callback, state, pinData, flowExecutionContext: false);
-
         private unsafe NativeOverlapped* AllocateNativeOverlappedWindowsThreadPool(IOCompletionCallback callback, object? state, object? pinData, bool flowExecutionContext)
         {
             ArgumentNullException.ThrowIfNull(callback);

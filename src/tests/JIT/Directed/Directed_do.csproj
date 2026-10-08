@@ -1,0 +1,111 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <DebugType>Full</DebugType>
+    <Optimize>True</Optimize>
+    <HasMergedInTests>true</HasMergedInTests>
+    <_UseOutOfProcessPhysicalPromotionTests Condition="'$(TargetsMobile)' != 'true' or ('$(TargetsBrowser)' == 'true' and '$(RuntimeFlavor)' == 'coreclr')">true</_UseOutOfProcessPhysicalPromotionTests>
+  </PropertyGroup>
+  <ItemGroup>
+    <MergedWrapperProjectReference Include="aliasing_retbuf\aliasing_retbuf.csproj" />
+    <MergedWrapperProjectReference Include="Convert\out_of_range_fp_to_int_conversions.csproj" />
+    <MergedWrapperProjectReference Include="LoopAlignment\LoopsToProcess.csproj" />
+    <MergedWrapperProjectReference Include="physicalpromotion\addressinterference.csproj" Condition="'$(_UseOutOfProcessPhysicalPromotionTests)' == 'true'" />
+    <MergedWrapperProjectReference Include="physicalpromotion\fuzzlyn1.csproj" Condition="'$(_UseOutOfProcessPhysicalPromotionTests)' == 'true'" />
+    <MergedWrapperProjectReference Include="physicalpromotion\fuzzlyn2.csproj" Condition="'$(_UseOutOfProcessPhysicalPromotionTests)' == 'true'" />
+    <MergedWrapperProjectReference Include="physicalpromotion\mixedpromotion.csproj" Condition="'$(_UseOutOfProcessPhysicalPromotionTests)' == 'true'" />
+    <MergedWrapperProjectReference Include="physicalpromotion\physicalpromotion.csproj" Condition="'$(_UseOutOfProcessPhysicalPromotionTests)' == 'true'" />
+    <MergedWrapperProjectReference Include="physicalpromotion\readbackbeforeqmark.csproj" Condition="'$(_UseOutOfProcessPhysicalPromotionTests)' == 'true'" />
+    <ProjectReference Include="PREFIX\PrimitiveVT\helper.csproj" />
+    <MergedWrapperProjectReference Include="tailcall\mutual_recursion.fsproj" />
+    <MergedWrapperProjectReference Include="UnrollLoop\loop2_cs_do.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="cmov\Bool_And_Op.cs" />
+    <Compile Include="cmov\Bool_No_Op.cs" />
+    <Compile Include="cmov\Bool_Or_Op.cs" />
+    <Compile Include="cmov\Bool_Xor_Op.cs" />
+    <Compile Include="cmov\Double_And_Op.cs" />
+    <Compile Include="cmov\Double_No_Op.cs" />
+    <Compile Include="cmov\Double_Or_Op.cs" />
+    <Compile Include="cmov\Double_Xor_Op.cs" />
+    <Compile Include="cmov\Float_And_Op.cs" />
+    <Compile Include="cmov\Float_No_Op.cs" />
+    <Compile Include="cmov\Float_Or_Op.cs" />
+    <Compile Include="cmov\Float_Xor_Op.cs" />
+    <Compile Include="cmov\Int_And_Op.cs" />
+    <Compile Include="cmov\Int_No_Op.cs" />
+    <Compile Include="cmov\Int_Or_Op.cs" />
+    <Compile Include="cmov\Int_Xor_Op.cs" />
+    <Compile Include="compare\cmp_int32.cs" />
+    <Compile Include="coverage\flowgraph\xaddmuly.cs" />
+    <Compile Include="coverage\oldtests\33objref.cs" />
+    <Compile Include="coverage\oldtests\cse1.cs" />
+    <Compile Include="coverage\oldtests\cse2.cs" />
+    <Compile Include="coverage\oldtests\lclfldadd.cs" />
+    <Compile Include="coverage\oldtests\lclflddiv.cs" />
+    <Compile Include="coverage\oldtests\lclfldmul.cs" />
+    <Compile Include="coverage\oldtests\lclfldrem.cs" />
+    <Compile Include="coverage\oldtests\lclfldsub.cs" />
+    <Compile Include="gettypetypeof\gettypetypeofmatrix.cs" />
+    <Compile Include="intrinsic\pow\pow0.cs" />
+    <Compile Include="intrinsic\pow\pow2.cs" />
+    <Compile Include="intrinsic\pow\pow3.cs" />
+    <Compile Include="localloc\localloc3.cs" />
+    <Compile Include="nullabletypes\boxunboxenum.cs" />
+    <Compile Include="nullabletypes\boxunboxinterface.cs" />
+    <Compile Include="nullabletypes\castclassenum.cs" />
+    <Compile Include="nullabletypes\castclassinterface.cs" />
+    <Compile Include="nullabletypes\castclassvaluetype.cs" />
+    <Compile Include="nullabletypes\constructor.cs" />
+    <Compile Include="nullabletypes\Desktop\boxunboxvaluetype.cs" />
+    <Compile Include="nullabletypes\Desktop\nullcomparaison.cs" />
+    <Compile Include="nullabletypes\Desktop\StructDefinitions.cs" />
+    <Compile Include="nullabletypes\gettype.cs" />
+    <Compile Include="nullabletypes\hashcode.cs" />
+    <Compile Include="nullabletypes\hasvalue.cs" />
+    <Compile Include="nullabletypes\invocation.cs" />
+    <Compile Include="nullabletypes\invokecommon.cs" />
+    <Compile Include="nullabletypes\isinst.cs" />
+    <Compile Include="nullabletypes\isinst2.cs" />
+    <Compile Include="nullabletypes\isinstboxed.cs" />
+    <Compile Include="nullabletypes\isinstenum.cs" />
+    <Compile Include="nullabletypes\isinstgenerics.cs" />
+    <Compile Include="nullabletypes\isinstinterface.cs" />
+    <Compile Include="nullabletypes\isinstvaluetype.cs" />
+    <Compile Include="nullabletypes\tostring.cs" />
+    <Compile Include="nullabletypes\unboxnullable.cs" />
+    <Compile Include="nullabletypes\value.cs" />
+    <Compile Include="perffix\commutativecse\CCSE.cs" />
+    <Compile Include="perffix\primitivevt\callconv1.cs" />
+    <Compile Include="perffix\primitivevt\callconv2.cs" />
+    <Compile Include="perffix\primitivevt\mixed1.cs" />
+    <Compile Include="perffix\primitivevt\mixed2.cs" />
+    <Compile Include="physicalpromotion\addressinterference.cs" Condition="'$(_UseOutOfProcessPhysicalPromotionTests)' != 'true'" />
+    <Compile Include="physicalpromotion\fuzzlyn1.cs" Condition="'$(_UseOutOfProcessPhysicalPromotionTests)' != 'true'" />
+    <Compile Include="physicalpromotion\fuzzlyn2.cs" Condition="'$(_UseOutOfProcessPhysicalPromotionTests)' != 'true'" />
+    <Compile Include="physicalpromotion\mixedpromotion.cs" Condition="'$(_UseOutOfProcessPhysicalPromotionTests)' != 'true'" />
+    <Compile Include="physicalpromotion\physicalpromotion.cs" Condition="'$(_UseOutOfProcessPhysicalPromotionTests)' != 'true'" />
+    <Compile Include="physicalpromotion\readbackbeforeqmark.cs" Condition="'$(_UseOutOfProcessPhysicalPromotionTests)' != 'true'" />
+    <Compile Include="PREFIX\PrimitiveVT\callconv1.cs" />
+    <Compile Include="PREFIX\PrimitiveVT\callconv2.cs" />
+    <Compile Include="shift\int16.cs" />
+    <Compile Include="shift\int32.cs" />
+    <Compile Include="shift\int64.cs" />
+    <Compile Include="shift\uint16.cs" />
+    <Compile Include="shift\uint32.cs" />
+    <Compile Include="shift\uint64.cs" />
+    <Compile Include="shift\uint64Opt.cs" />
+    <Compile Include="shift\uint8.cs" />
+    <Compile Include="StrAccess\straccess1.cs" />
+    <Compile Include="StrAccess\straccess2.cs" />
+    <Compile Include="StrAccess\straccess3.cs" />
+    <Compile Include="UnrollLoop\loop1.cs" />
+    <Compile Include="UnrollLoop\loop4.cs" />
+    <Compile Include="UnrollLoop\loop6.cs" />
+    <Compile Include="VectorABI\VectorMgdMgd.cs" />
+    <Compile Include="VectorABI\VectorMgdMgdArray.cs" />
+    <Compile Include="VectorABI\VectorMgdMgdStatic.cs" />
+  </ItemGroup>
+
+  <Import Project="$(TestSourceDir)MergedTestRunner.targets" />
+</Project>

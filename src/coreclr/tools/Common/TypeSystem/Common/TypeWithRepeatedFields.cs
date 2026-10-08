@@ -6,6 +6,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 
+using Internal.Text;
+
 namespace Internal.TypeSystem
 {
     /// <summary>
@@ -84,16 +86,16 @@ namespace Internal.TypeSystem
         public override ClassLayoutMetadata GetClassLayout() => MetadataType.GetClassLayout();
         public override bool HasCustomAttribute(string attributeNamespace, string attributeName) => MetadataType.HasCustomAttribute(attributeNamespace, attributeName);
         public override IEnumerable<MetadataType> GetNestedTypes() => (IEnumerable<MetadataType>)EmptyTypes;
-        public override MetadataType GetNestedType(string name) => null;
-        public override MethodImplRecord[] FindMethodsImplWithMatchingDeclName(ReadOnlySpan<byte> name) => MetadataType.FindMethodsImplWithMatchingDeclName(name);
+        public override MetadataType GetNestedType(Utf8Span name) => null;
+        public override MethodImplRecord[] FindMethodsImplWithMatchingDeclName(Utf8Span name) => MetadataType.FindMethodsImplWithMatchingDeclName(name);
         public override int GetHashCode() => MetadataType.GetHashCode();
         protected override MethodImplRecord[] ComputeVirtualMethodImplsForType() => Array.Empty<MethodImplRecord>();
 
         protected override TypeFlags ComputeTypeFlags(TypeFlags mask) => MetadataType.GetTypeFlags(mask);
 
-        public override ReadOnlySpan<byte> Namespace => MetadataType.Namespace;
+        public override Utf8Span Namespace => MetadataType.Namespace;
 
-        public override ReadOnlySpan<byte> Name => MetadataType.Name;
+        public override Utf8Span Name => MetadataType.Name;
 
         public override DefType[] ExplicitlyImplementedInterfaces => Array.Empty<DefType>();
 

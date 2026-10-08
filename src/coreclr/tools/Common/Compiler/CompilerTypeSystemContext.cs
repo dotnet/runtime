@@ -11,12 +11,14 @@ using System.Reflection.PortableExecutable;
 
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
+using Internal.TypeSystem.Interop;
 
 namespace ILCompiler
 {
     public partial class CompilerTypeSystemContext : MetadataTypeSystemContext, IMetadataStringDecoderProvider
     {
         private readonly MetadataRuntimeInterfacesAlgorithm _metadataRuntimeInterfacesAlgorithm = new MetadataRuntimeInterfacesAlgorithm();
+        private readonly AsyncAwareVirtualMethodResolutionAlgorithm _virtualMethodAlgorithm;
 
         private MetadataStringDecoder _metadataStringDecoder;
 
@@ -193,13 +195,23 @@ namespace ILCompiler
                     filePath = Path.GetFullPath(filePath);
                     peReader = OpenPEFile(filePath, out mappedViewAccessor);
 
+                    try
+                    {
+                        // Ensure the PEHeaders can be read
+                        _ = peReader.PEHeaders;
+
 #if !READYTORUN
-                if (peReader.HasMetadata && (peReader.PEHeaders.CorHeader.Flags & (CorFlags.ILLibrary | CorFlags.ILOnly)) == 0)
-                    throw new NotSupportedException($"Error: C++/CLI is not supported: '{filePath}'");
+                        if (peReader.HasMetadata && (peReader.PEHeaders.CorHeader.Flags & (CorFlags.ILLibrary | CorFlags.ILOnly)) == 0)
+                            throw new NotSupportedException($"Error: C++/CLI is not supported: '{filePath}'");
 #endif
 
-                    pdbReader = PortablePdbSymbolReader.TryOpenEmbedded(peReader, GetMetadataStringDecoder())
-                                ?? OpenAssociatedSymbolFile(filePath, peReader);
+                        pdbReader = PortablePdbSymbolReader.TryOpenEmbedded(peReader, GetMetadataStringDecoder())
+                                    ?? OpenAssociatedSymbolFile(filePath, peReader);
+                    }
+                    catch (BadImageFormatException ex)
+                    {
+                        throw new BadImageFormatException(ex.Message, filePath);
+                    }
                 }
                 else
                 {
@@ -353,6 +365,37 @@ namespace ILCompiler
             reader ??= UnmanagedPdbSymbolReader.TryOpenSymbolReaderForMetadataFile(peFilePath, Path.GetDirectoryName(pdbFileName));
 
             return reader;
+        }
+
+        /// <summary>
+        /// Managed implementation of CEEInfo::getClassAlignmentRequirementStatic
+        /// </summary>
+        public static int GetClassAlignmentRequirementStatic(DefType type)
+        {
+            int alignment = type.Context.Target.PointerSize;
+
+            if (type is MetadataType metadataType && !metadataType.IsAutoLayout)
+            {
+                if (metadataType.IsSequentialLayout ||
+                    MarshalUtils.IsBlittableType(metadataType))
+                {
+                    alignment = metadataType.InstanceFieldAlignment.AsInt;
+                }
+            }
+            if (type.Context.Target.SupportsAlign8 &&
+                alignment < 8 && type.RequiresAlign8())
+            {
+                // If the structure contains 64-bit primitive fields and the platform requires 8-byte alignment for
+                // such fields then make sure we return at least 8-byte alignment. Note that it's technically possible
+                // to create unmanaged APIs that take unaligned structures containing such fields and this
+                // unconditional alignment bump would cause us to get the calling convention wrong on platforms such
+                // as ARM. If we see such cases in the future we'd need to add another control (such as an alignment
+                // property for the StructLayout attribute or a marshaling directive attribute for p/invoke arguments)
+                // that allows more precise control. For now we'll go with the likely scenario.
+                alignment = 8;
+            }
+
+            return alignment;
         }
     }
 

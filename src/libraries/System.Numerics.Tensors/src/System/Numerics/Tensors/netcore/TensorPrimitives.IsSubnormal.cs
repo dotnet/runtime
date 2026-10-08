@@ -54,26 +54,9 @@ namespace System.Numerics.Tensors
 
             public static bool Invoke(T x) => T.IsSubnormal(x);
 
-#if NET10_0_OR_GREATER
             public static Vector128<T> Invoke(Vector128<T> x) => Vector128.IsSubnormal(x);
             public static Vector256<T> Invoke(Vector256<T> x) => Vector256.IsSubnormal(x);
             public static Vector512<T> Invoke(Vector512<T> x) => Vector512.IsSubnormal(x);
-#else
-            public static Vector128<T> Invoke(Vector128<T> x) =>
-                typeof(T) == typeof(float) ? Vector128.LessThan(Vector128.Abs(x).AsUInt32() - Vector128<uint>.One, Vector128.Create(0x007F_FFFFu)).As<uint, T>() :
-                typeof(T) == typeof(double) ? Vector128.LessThan(Vector128.Abs(x).AsUInt64() - Vector128<ulong>.One, Vector128.Create(0x000F_FFFF_FFFF_FFFFul)).As<ulong, T>() :
-                Vector128<T>.Zero;
-
-            public static Vector256<T> Invoke(Vector256<T> x) =>
-                typeof(T) == typeof(float) ? Vector256.LessThan(Vector256.Abs(x).AsUInt32() - Vector256<uint>.One, Vector256.Create(0x007F_FFFFu)).As<uint, T>() :
-                typeof(T) == typeof(double) ? Vector256.LessThan(Vector256.Abs(x).AsUInt64() - Vector256<ulong>.One, Vector256.Create(0x000F_FFFF_FFFF_FFFFul)).As<ulong, T>() :
-                Vector256<T>.Zero;
-
-            public static Vector512<T> Invoke(Vector512<T> x) =>
-                typeof(T) == typeof(float) ? Vector512.LessThan(Vector512.Abs(x).AsUInt32() - Vector512<uint>.One, Vector512.Create(0x007F_FFFFu)).As<uint, T>() :
-                typeof(T) == typeof(double) ? Vector512.LessThan(Vector512.Abs(x).AsUInt64() - Vector512<ulong>.One, Vector512.Create(0x000F_FFFF_FFFF_FFFFul)).As<ulong, T>() :
-                Vector512<T>.Zero;
-#endif
         }
     }
 }

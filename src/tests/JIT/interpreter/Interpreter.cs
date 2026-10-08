@@ -7,6 +7,7 @@ using System.Runtime.Intrinsics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
+using TestLibrary;
 
 public interface ITest
 {
@@ -916,9 +917,12 @@ public class InterpreterTest
         if (!TestLdtoken())
             Environment.FailFast(null);
 
-        Console.WriteLine("TestMdArray");
-        if (!TestMdArray())
-            Environment.FailFast(null);
+        if (!PlatformDetection.IsWasmReadyToRun)
+        {
+            Console.WriteLine("TestMdArray");
+            if (!TestMdArray())
+                Environment.FailFast(null);
+        }
 
         Console.WriteLine("TestExceptionHandling");
         TestExceptionHandling();
@@ -969,9 +973,12 @@ public class InterpreterTest
 
         Console.WriteLine("IntPtr.Zero: {0}, UIntPtr.Zero: {1}", IntPtr.Zero, UIntPtr.Zero);
 
-        Console.WriteLine("TestPInvoke");
-        if (!TestPInvoke())
-            Environment.FailFast(null);
+        if (!PlatformDetection.IsWasmReadyToRun)
+        {
+            Console.WriteLine("TestPInvoke");
+            if (!TestPInvoke())
+                Environment.FailFast(null);
+        }
 
         // For stackwalking validation
         System.GC.Collect();
@@ -1696,7 +1703,8 @@ public class InterpreterTest
 
     public static bool TestConvBoundaries(double inRangeShort, double outOfRangeShort, double inRangeInt, double outOfRangeInt)
     {
-        // In unchecked mode, the interpreter saturates on float->int conversions if the value is out of range
+        // In unchecked mode, the expected behavior is to saturate on floating-point -> integral conversions
+        // if the value is out of range.
         unchecked
         {
             short a = (short)inRangeShort,
@@ -1704,9 +1712,7 @@ public class InterpreterTest
             int c = (int)inRangeInt,
                 d = (int)outOfRangeInt;
 
-            // See https://github.com/dotnet/runtime/issues/116823 - they should *not* currently match if target size is smaller than int32
-            // if (a != b)
-            if (a == b)
+            if (a != b)
                 return false;
 
             if (c != d)
@@ -2397,7 +2403,7 @@ public class InterpreterTest
     [DllImport("pinvoke", CallingConvention = CallingConvention.Cdecl)]
     public static extern double sumTwoDoubles(double x, double y);
     [DllImport("pinvoke", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
-    public static extern int writeToStdout(string s);
+    public static extern void writeToStdout(string s);
     [DllImport("missingLibrary", CallingConvention = CallingConvention.Cdecl)]
     public static extern void missingPInvoke();
     [DllImport("missingLibrary", CallingConvention = CallingConvention.Cdecl)]
@@ -2405,19 +2411,15 @@ public class InterpreterTest
 
     public static bool TestPInvoke()
     {
-        // WASM-TODO enable once we have generated pinvoke and in-tree native re-link
-        if (RuntimeInformation.ProcessArchitecture != Architecture.Wasm)
-        {
-            if (sumTwoInts(1, 2) != 3)
-                return false;
+        if (sumTwoInts(1, 2) != 3)
+            return false;
 
-            double summed = sumTwoDoubles(1, 2);
-            if (summed != 3)
-                return false;
+        double summed = sumTwoDoubles(1, 2);
+        if (summed != 3)
+            return false;
 
-            // Test marshaling wrappers
-            writeToStdout("Hello world from pinvoke.dll!writeToStdout\n");
-        }
+        // Test marshaling wrappers
+        writeToStdout("Hello world from pinvoke.dll!writeToStdout\n");
 
         bool caught = false;
         try {

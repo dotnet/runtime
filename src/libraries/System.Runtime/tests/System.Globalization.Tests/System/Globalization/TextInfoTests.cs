@@ -61,9 +61,29 @@ namespace System.Globalization.Tests
             AssertExtensions.Throws<ArgumentNullException>("str", () => ti.ToTitleCase(null));
         }
 
+        [Theory]
+        // ASCII apostrophe (U+0027) keeps a contraction/possessive as a single word.
+        [InlineData("Grandma's pictures", "Grandma's Pictures")]
+        [InlineData("can't stop", "Can't Stop")]
+        // U+2019 RIGHT SINGLE QUOTATION MARK (typographic curly apostrophe).
+        [InlineData("Grandma\u2019s pictures", "Grandma\u2019s Pictures")]
+        [InlineData("can\u2019t stop", "Can\u2019t Stop")]
+        // U+2018 LEFT SINGLE QUOTATION MARK and U+FF07 FULLWIDTH APOSTROPHE.
+        [InlineData("Grandma\u2018s pictures", "Grandma\u2018s Pictures")]
+        [InlineData("Grandma\uFF07s pictures", "Grandma\uFF07s Pictures")]
+        // A genuine separator still ends the word and titlecases what follows.
+        [InlineData("Grandma-s pictures", "Grandma-S Pictures")]
+        public void ToTitleCase_Apostrophe(string input, string expected)
+        {
+            TextInfo ti = CultureInfo.GetCultureInfo("en-US").TextInfo;
+            Assert.Equal(expected, ti.ToTitleCase(input));
+        }
+
         public static IEnumerable<object[]> DutchTitleCaseInfo_TestData()
         {
             yield return new object[] { "nl-NL", "IJ IJ IJ IJ", "ij iJ Ij IJ" };
+            yield return new object[] { "nl", "IJ IJ IJ IJ", "ij iJ Ij IJ" };
+            yield return new object[] { "nl", "De IJsvogel", "de ijsvogel" };
             yield return new object[] { "nl-be", "IJzeren Eigenschappen", "ijzeren eigenschappen" };
             yield return new object[] { "NL-NL", "Lake IJssel", "lake iJssel" };
             yield return new object[] { "NL-BE", "Boba N' IJango Fett PEW PEW", "Boba n' Ijango fett PEW PEW" };
@@ -121,7 +141,7 @@ namespace System.Globalization.Tests
             Assert.Equal(expected, new CultureInfo(name).TextInfo.IsRightToLeft);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [Theory]
         [InlineData("ar-SA", ";")]
         [InlineData("as-IN", ",")]
         [InlineData("ba-RU", ";")]
@@ -211,13 +231,13 @@ namespace System.Globalization.Tests
         {
             foreach (string cultureName in s_cultureNames)
             {
-                // DESERT CAPITAL LETTER LONG I has a lower case variant (but not on Windows 7).
-                yield return new object[] { cultureName, "\U00010400", PlatformDetection.IsWindows7 ? "\U00010400" : "\U00010428" };
+                // DESERT CAPITAL LETTER LONG I has a lower case variant.
+                yield return new object[] { cultureName, "\U00010400", "\U00010428" };
             }
 
             if (!PlatformDetection.IsNlsGlobalization)
             {
-                yield return new object[] { "", "\U00010400", PlatformDetection.IsWindows7 ? "\U00010400" : "\U00010428" };
+                yield return new object[] { "", "\U00010400", "\U00010428" };
             }
         }
 
@@ -369,8 +389,8 @@ namespace System.Globalization.Tests
         {
             foreach (string cultureName in s_cultureNames)
             {
-                // DESERT SMALL LETTER LONG I has an upper case variant (but not on Windows 7).
-                yield return new object[] { cultureName, "\U00010428", PlatformDetection.IsWindows7 ? "\U00010428" : "\U00010400" };
+                // DESERT SMALL LETTER LONG I has an upper case variant.
+                yield return new object[] { cultureName, "\U00010428", "\U00010400" };
             }
         }
 

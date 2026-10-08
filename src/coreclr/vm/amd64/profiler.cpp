@@ -179,7 +179,6 @@ LPVOID ProfileArgIterator::CopyStructFromRegisters()
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
     STATIC_CONTRACT_MODE_COOPERATIVE;
 
 
@@ -195,13 +194,12 @@ LPVOID ProfileArgIterator::CopyStructFromRegisters()
     int fieldBytes = th.AsMethodTable()->GetNumInstanceFieldBytes();
     INDEBUG(int remainingBytes = fieldBytes;)
 
-    EEClass* eeClass = argLocDesc->m_eeClass;
-    _ASSERTE(eeClass != NULL);
+    _ASSERTE(argLocDesc->m_eightByteInfo.GetNumEightBytes() > 0);
 
-    for (int i = 0; i < eeClass->GetNumberEightBytes(); i++)
+    for (int i = 0; i < argLocDesc->m_eightByteInfo.GetNumEightBytes(); i++)
     {
-        int eightByteSize = eeClass->GetEightByteSize(i);
-        SystemVClassificationType eightByteClassification = eeClass->GetEightByteClassification(i);
+        int eightByteSize = argLocDesc->m_eightByteInfo.GetEightByteSize(i);
+        SystemVClassificationType eightByteClassification = argLocDesc->m_eightByteInfo.GetEightByteClassification(i);
 
         _ASSERTE(remainingBytes >= eightByteSize);
 
@@ -467,7 +465,7 @@ LPVOID ProfileArgIterator::GetReturnBufferAddr(void)
         EEClass* eeClass = pMT->GetClass();
         UINT fpReturnSize = m_argIterator.GetFPReturnSize();
 
-        if (eeClass->GetNumberEightBytes() == 1)
+        if (eeClass->GetEightByteRegistersInfo().GetNumEightBytes() == 1)
         {
             if (fpReturnSize != 0)
             {

@@ -42,6 +42,9 @@ namespace Microsoft.Extensions.Logging.Generators.Tests.TestClasses
             global::System.Collections.IEnumerator global::System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
         }
 
+        /// <summary>
+        /// <para><b>Message:</b> </para>
+        /// </summary>
         [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Logging.Generators", "%VERSION%")]
         public static partial void M0(global::Microsoft.Extensions.Logging.ILogger logger, global::Microsoft.Extensions.Logging.LogLevel level)
         {

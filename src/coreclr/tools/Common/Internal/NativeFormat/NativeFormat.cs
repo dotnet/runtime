@@ -44,9 +44,9 @@ namespace Internal.NativeFormat
         NonGcStaticData             = 0x42,
         GcStaticData                = 0x43,
         NonGcStaticDataSize         = 0x44,
-        GcStaticDataSize            = 0x45,
+        // unused                   = 0x45,
         GcStaticDesc                = 0x46,
-        ThreadStaticDataSize        = 0x47,
+        // unused                   = 0x47,
         ThreadStaticDesc            = 0x48,
         ThreadStaticIndex           = 0x49,
         ThreadStaticOffset          = 0x4a,
@@ -75,7 +75,7 @@ namespace Internal.NativeFormat
         Null                        = 0x00,
         TypeHandle                  = 0x01,
         InterfaceCall               = 0x02,
-        // unused                   = 0x03,
+        GvmDispatchCell             = 0x03,
         MethodDictionary            = 0x04,
         StaticData                  = 0x05,
         UnwrapNullableType          = 0x06,
@@ -179,6 +179,7 @@ namespace Internal.NativeFormat
         IsUnboxingStub              = 0x2,
         HasFunctionPointer          = 0x4,
         IsAsyncVariant              = 0x8,
+        IsReturnDroppingAsyncThunk  = 0x10,
     };
 
     [Flags]

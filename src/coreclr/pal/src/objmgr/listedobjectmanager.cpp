@@ -157,14 +157,7 @@ CListedObjectManager::AllocateObject(
         ppobjNew
         );
 
-    if (CObjectType::WaitableObject == pot->GetSynchronizationSupport())
-    {
-        pshmobj = new(std::nothrow) CSharedMemoryWaitableObject(pot, &m_csListLock);
-    }
-    else
-    {
-        pshmobj = new(std::nothrow) CListedObject(pot, &m_csListLock);
-    }
+    pshmobj = new(std::nothrow) CListedObject(pot, &m_csListLock);
 
     if (NULL != pshmobj)
     {
@@ -623,121 +616,6 @@ CListedObjectManager::ReferenceObjectByHandle(
 
 /*++
 Function:
-  CListedObjectManager::ReferenceObjectByHandleArray
-
-  Returns the referenced object instances that an array of handles
-  refer to.
-
-Parameters:
-  pthr -- thread data for calling thread
-  rgHandlesToReference -- the array of handles to reference
-  dwHandleCount -- the number of handles in the arrayu
-  paot -- acceptable types for the underlying objects
-  rgpobjs -- on success, receives references to the object instances; will
-    be empty on failures
---*/
-
-PAL_ERROR
-CListedObjectManager::ReferenceMultipleObjectsByHandleArray(
-    CPalThread *pthr,
-    HANDLE rghHandlesToReference[],
-    DWORD dwHandleCount,
-    CAllowedObjectTypes *paot,
-    IPalObject *rgpobjs[]            // OUT (caller allocated)
-    )
-{
-    PAL_ERROR palError = NO_ERROR;
-    IPalObject *pobj = NULL;
-    DWORD dw;
-
-    _ASSERTE(NULL != pthr);
-    _ASSERTE(NULL != rghHandlesToReference);
-    _ASSERTE(0 < dwHandleCount);
-    _ASSERTE(NULL != paot);
-    _ASSERTE(NULL != rgpobjs);
-
-    ENTRY("CListedObjectManager::ReferenceMultipleObjectsByHandleArray "
-        "(this=%p, pthr=%p, rghHandlesToReference=%p, dwHandleCount=%d, "
-        "pAllowedTyped=%d, rgpobjs=%p)\n",
-        this,
-        pthr,
-        rghHandlesToReference,
-        dwHandleCount,
-        paot,
-        rgpobjs
-        );
-
-    m_HandleManager.Lock(pthr);
-
-    for (dw = 0; dw < dwHandleCount; dw += 1)
-    {
-        palError = m_HandleManager.GetObjectFromHandle(
-            pthr,
-            rghHandlesToReference[dw],
-            &pobj
-            );
-
-        if (NO_ERROR == palError)
-        {
-            palError = CheckObjectTypeAndRights(
-                pobj,
-                paot
-                );
-
-            if (NO_ERROR == palError)
-            {
-                //
-                // Transfer reference to out array
-                //
-
-                rgpobjs[dw] = pobj;
-                pobj = NULL;
-            }
-        }
-
-        if (NO_ERROR != palError)
-        {
-            break;
-        }
-    }
-
-    //
-    // The handle manager lock must be released before releasing
-    // any object references, as ReleaseReference will acquire
-    // the object manager list lock (which needs to be acquired before
-    // the handle manager lock)
-    //
-
-    m_HandleManager.Unlock(pthr);
-
-    if (NO_ERROR != palError)
-    {
-        //
-        // dw's current value is the failing index, so we want
-        // to free from dw - 1.
-        //
-
-        while (dw > 0)
-        {
-            rgpobjs[--dw]->ReleaseReference(pthr);
-        }
-
-        if (NULL != pobj)
-        {
-            pobj->ReleaseReference(pthr);
-        }
-    }
-
-    LOGEXIT("CListedObjectManager::ReferenceMultipleObjectsByHandleArray"
-        " returns %d\n",
-        palError
-        );
-
-    return palError;
-}
-
-/*++
-Function:
   CheckObjectTypeAndRights
 
   Helper routine that determines if:
@@ -776,5 +654,3 @@ CheckObjectTypeAndRights(
 
     return palError;
 }
-
-

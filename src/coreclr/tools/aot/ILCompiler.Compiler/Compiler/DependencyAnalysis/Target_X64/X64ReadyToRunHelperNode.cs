@@ -5,6 +5,9 @@ using System;
 using System.Diagnostics;
 
 using ILCompiler.DependencyAnalysis.X64;
+
+using Internal.ReadyToRunConstants;
+using Internal.Text;
 using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
@@ -148,8 +151,8 @@ namespace ILCompiler.DependencyAnalysis
                         MethodDesc targetMethod = (MethodDesc)Target;
                         if (targetMethod.OwningType.IsInterface)
                         {
-                            encoder.EmitLEAQ(encoder.TargetRegister.Arg1, factory.InterfaceDispatchCell(targetMethod));
-                            encoder.EmitJMP(factory.ExternFunctionSymbol("RhpResolveInterfaceMethod"));
+                            encoder.EmitLEAQ(encoder.TargetRegister.Arg1, factory.DispatchCell(targetMethod));
+                            encoder.EmitJMP(factory.ReadyToRunHelper(ReadyToRunHelper.ResolveInterfaceMethod));
                         }
                         else
                         {

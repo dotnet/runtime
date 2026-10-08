@@ -119,6 +119,12 @@ namespace System.Security.Cryptography.Xml
             return GetOutput();
         }
 
+        internal override void ClearState()
+        {
+            _license = null;
+            _namespaceManager = null;
+        }
+
         // License transform has no inner XML elements
         public override void LoadInnerXml(XmlNodeList nodeList)
         {

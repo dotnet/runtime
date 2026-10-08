@@ -1,0 +1,25 @@
+#!/bin/sh
+
+# Licensed to the .NET Foundation under one or more agreements.
+# The .NET Foundation licenses this file to you under the MIT license.
+
+# Resolve symlinks portably (macOS's BSD readlink does not support -f).
+SCRIPT="$0"
+while [ -L "$SCRIPT" ]; do
+  LINK=$(readlink "$SCRIPT")
+  case "$LINK" in
+    /*) SCRIPT="$LINK" ;;
+    *)  SCRIPT="$(dirname "$SCRIPT")/$LINK" ;;
+  esac
+done
+DIR="$(cd "$(dirname "$SCRIPT")" && pwd -P)"
+
+DOTNET="$DIR/dotnet"
+SDK_VERSION=$("$DOTNET" --list-sdks | tail -n 1 | cut -d' ' -f1)
+if [ -z "$SDK_VERSION" ]; then
+  echo "Error: dnx requires a .NET SDK to be installed, but none was found." >&2
+  exit 1
+fi
+SDK_PATH="$DIR/sdk/$SDK_VERSION/dotnet.dll"
+
+exec "$DOTNET" exec "$SDK_PATH" dnx "$@"

@@ -32,12 +32,16 @@ namespace Microsoft.Interop.Analyzers
                 : SR.ConvertToGeneratedComInterfaceTitle;
         }
 
-        protected override Func<DocumentEditor, CancellationToken, Task> CreateFixForSelectedOptions(SyntaxNode node, ImmutableDictionary<string, Option> selectedOptions)
+        protected override Func<SolutionEditor, DocumentId, CancellationToken, Task> CreateFixForSelectedOptions(SyntaxNode node, ImmutableDictionary<string, Option> selectedOptions)
         {
             bool mayRequireAdditionalWork = selectedOptions.TryGetValue(Option.MayRequireAdditionalWork, out Option mayRequireAdditionalWorkOption) && mayRequireAdditionalWorkOption is Option.Bool(true);
             bool addStringMarshalling = selectedOptions.TryGetValue(AddStringMarshallingOption, out Option addStringMarshallingOption) && addStringMarshallingOption is Option.Bool(true);
 
-            return (editor, ct) => ConvertComImportToGeneratedComInterfaceAsync(editor, node, mayRequireAdditionalWork, addStringMarshalling, ct);
+            return async (solutionEditor, documentId, ct) =>
+            {
+                var editor = await solutionEditor.GetDocumentEditorAsync(documentId, ct).ConfigureAwait(false);
+                await ConvertComImportToGeneratedComInterfaceAsync(editor, node, mayRequireAdditionalWork, addStringMarshalling, ct).ConfigureAwait(false);
+            };
         }
 
         protected override ImmutableDictionary<string, Option> ParseOptionsFromDiagnostic(Diagnostic diagnostic)

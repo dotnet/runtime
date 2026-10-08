@@ -42,8 +42,10 @@ namespace ILCompiler
             new("--optimize-space", "--Os") { Description = SR.OptimizeSpaceOption };
         public Option<bool> OptimizeTime { get; } =
             new("--optimize-time", "--Ot") { Description = SR.OptimizeSpeedOption };
-        public Option<bool> EnableCachedInterfaceDispatchSupport { get; } =
+        public Option<bool?> EnableCachedInterfaceDispatchSupport { get; } =
             new("--enable-cached-interface-dispatch-support", "--CID") { Description = SR.EnableCachedInterfaceDispatchSupport };
+        public Option<bool?> GenerateUnboxingStubs { get; } =
+            new("--generate-unboxing-stubs") { Description = SR.GenerateUnboxingStubsOption };
         public Option<TypeValidationRule> TypeValidation { get; } =
             new("--type-validation") { DefaultValueFactory = _ => TypeValidationRule.Automatic, Description = SR.TypeValidation, HelpName = "arg" };
         public Option<bool> InputBubble { get; } =
@@ -54,6 +56,8 @@ namespace ILCompiler
             new("--composite") { Description = SR.CompositeBuildMode };
         public Option<string> CompositeKeyFile { get; } =
             new("--compositekeyfile") { Description = SR.CompositeKeyFile };
+        public Option<string> ReadyToRunHeaderSymbolName { get; } =
+            new("--rtr-header-symbol-name") { Description = SR.ReadyToRunHeaderSymbolName };
         public Option<bool> CompileNoMethods { get; } =
             new("--compile-no-methods") { Description = SR.CompileNoMethodsOption };
         public Option<bool> OutNearInput { get; } =
@@ -84,20 +88,24 @@ namespace ILCompiler
             new("--resilient") { Description = SR.ResilientOption };
         public Option<string> ImageBase { get; } =
             new("--imagebase") { Description = SR.ImageBase };
-        public Option<TargetArchitecture> TargetArchitecture { get; } =
-            new("--targetarch") { CustomParser = MakeTargetArchitecture, DefaultValueFactory = MakeTargetArchitecture, Description = SR.TargetArchOption, Arity = ArgumentArity.OneOrMore, HelpName = "arg" };
-        public Option<bool> EnableGenericCycleDetection { get; } =
-            new("--enable-generic-cycle-detection") { Description = SR.EnableGenericCycleDetection };
+        public Option<string> TargetArchitecture { get; } =
+            new("--targetarch") { Description = SR.TargetArchOption };
         public Option<int> GenericCycleDepthCutoff { get; } =
             new("--maxgenericcycle") { DefaultValueFactory = _ => ReadyToRunCompilerContext.DefaultGenericCycleDepthCutoff, Description = SR.GenericCycleDepthCutoff };
         public Option<int> GenericCycleBreadthCutoff { get; } =
             new("--maxgenericcyclebreadth") { DefaultValueFactory = _ => ReadyToRunCompilerContext.DefaultGenericCycleBreadthCutoff, Description = SR.GenericCycleBreadthCutoff };
-        public Option<TargetOS> TargetOS { get; } =
-            new("--targetos") { CustomParser = result => Helpers.GetTargetOS(result.Tokens.Count > 0 ? result.Tokens[0].Value : null), DefaultValueFactory = result => Helpers.GetTargetOS(result.Tokens.Count > 0 ? result.Tokens[0].Value : null), Description = SR.TargetOSOption, HelpName = "arg" };
+        public Option<string> TargetOS { get; } =
+            new("--targetos") { Description = SR.TargetOSOption };
+        public Option<bool?> TargetAllowsRuntimeCodeGeneration { get; } =
+            new("--target-allows-runtime-code-generation") { Description = SR.TargetAllowsRuntimeCodeGenerationOption };
         public Option<string> JitPath { get; } =
             new("--jitpath") { Description = SR.JitPathOption };
         public Option<bool> PrintReproInstructions { get; } =
             new("--print-repro-instructions") { Description = SR.PrintReproInstructionsOption };
+        public Option<string> GeneratePortableCallHelpers { get; } =
+            new("--generate-portable-callhelpers") { Description = SR.GeneratePortableCallHelpersOption };
+        public Option<string[]> DirectPInvoke { get; } =
+            new("--directpinvoke") { DefaultValueFactory = _ => Array.Empty<string>(), Description = SR.DirectPInvokeOption };
         public Option<string> SingleMethodTypeName { get; } =
             new("--singlemethodtypename") { Description = SR.SingleMethodTypeName };
         public Option<string> SingleMethodName { get; } =
@@ -124,6 +132,8 @@ namespace ILCompiler
             new("--perfmap-path") { Description = SR.PerfMapFilePathOption };
         public Option<int> PerfMapFormatVersion { get; } =
             new("--perfmap-format-version") { DefaultValueFactory = _ => 0, Description = SR.PerfMapFormatVersionOption };
+        public Option<WasmDebugInfo> WasmDebugInfoOption { get; } =
+            new("--wasm-debug-info") { CustomParser = MakeWasmDebugInfo, DefaultValueFactory = MakeWasmDebugInfo, Description = SR.WasmDebugInfoOption, HelpName = "formats" };
         public Option<string[]> CrossModuleInlining { get; } =
             new("--opt-cross-module") { Description = SR.CrossModuleInlining };
         public Option<bool> AsyncMethodOptimization { get; } =
@@ -142,6 +152,14 @@ namespace ILCompiler
             new("--make-repro-path") { Description = "Path where to place a repro package" };
         public Option<bool> HotColdSplitting { get; } =
             new("--hot-cold-splitting") { Description = SR.HotColdSplittingOption };
+        public Option<bool> VerifyGCModeTransitions { get; } =
+            new("--verify-gc-mode-transitions") { Description = SR.VerifyGCModeTransitionsOption };
+        public Option<bool> StripInliningInfo { get; } =
+            new("--strip-inlining-info") { Description = SR.StripInliningInfoOption };
+        public Option<bool> StripDebugInfo { get; } =
+            new("--strip-debug-info") { Description = SR.StripDebugInfoOption };
+        public Option<bool> StripILBodies { get; } =
+            new("--strip-il-bodies") { Description = SR.StripILBodiesOption };
         public Option<bool> SynthesizeRandomMibc { get; } =
             new("--synthesize-random-mibc");
 
@@ -151,8 +169,6 @@ namespace ILCompiler
         public bool CompositeOrInputBubble { get; private set; }
         public OptimizationMode OptimizationMode { get; private set; }
         public ParseResult Result { get; private set; }
-
-        public static bool IsArmel { get; private set; }
 
         public Crossgen2RootCommand(string[] args) : base(SR.Crossgen2BannerText)
         {
@@ -170,11 +186,13 @@ namespace ILCompiler
             Options.Add(OptimizeSpace);
             Options.Add(OptimizeTime);
             Options.Add(EnableCachedInterfaceDispatchSupport);
+            Options.Add(GenerateUnboxingStubs);
             Options.Add(TypeValidation);
             Options.Add(InputBubble);
             Options.Add(InputBubbleReferenceFilePaths);
             Options.Add(Composite);
             Options.Add(CompositeKeyFile);
+            Options.Add(ReadyToRunHeaderSymbolName);
             Options.Add(CompileNoMethods);
             Options.Add(OutNearInput);
             Options.Add(SingleFileCompilation);
@@ -190,13 +208,15 @@ namespace ILCompiler
             Options.Add(SupportIbc);
             Options.Add(Resilient);
             Options.Add(ImageBase);
-            Options.Add(EnableGenericCycleDetection);
             Options.Add(GenericCycleDepthCutoff);
             Options.Add(GenericCycleBreadthCutoff);
             Options.Add(TargetArchitecture);
             Options.Add(TargetOS);
+            Options.Add(TargetAllowsRuntimeCodeGeneration);
             Options.Add(JitPath);
             Options.Add(PrintReproInstructions);
+            Options.Add(GeneratePortableCallHelpers);
+            Options.Add(DirectPInvoke);
             Options.Add(SingleMethodTypeName);
             Options.Add(SingleMethodName);
             Options.Add(SingleMethodIndex);
@@ -210,15 +230,20 @@ namespace ILCompiler
             Options.Add(PerfMap);
             Options.Add(PerfMapPath);
             Options.Add(PerfMapFormatVersion);
+            Options.Add(WasmDebugInfoOption);
             Options.Add(CrossModuleInlining);
             Options.Add(AsyncMethodOptimization);
             Options.Add(NonLocalGenericsModule);
             Options.Add(MethodLayout);
             Options.Add(FileLayout);
             Options.Add(VerifyTypeAndFieldLayout);
+            Options.Add(VerifyGCModeTransitions);
             Options.Add(CallChainProfileFile);
             Options.Add(MakeReproPath);
             Options.Add(HotColdSplitting);
+            Options.Add(StripInliningInfo);
+            Options.Add(StripDebugInfo);
+            Options.Add(StripILBodies);
             Options.Add(SynthesizeRandomMibc);
             Options.Add(DeterminismStress);
 
@@ -296,13 +321,15 @@ namespace ILCompiler
             Console.WriteLine(SR.DashDashHelp);
             Console.WriteLine();
 
-            string[] ValidArchitectures = new string[] {"arm", "armel", "arm64", "x86", "x64", "riscv64", "loongarch64"};
-            string[] ValidOS = new string[] {"windows", "linux", "osx", "ios", "iossimulator", "maccatalyst"};
+            Console.WriteLine(String.Format(SR.SwitchWithDefaultHelp, "--targetos", String.Join("', '", Helpers.ValidOS), Helpers.GetTargetOS(null).ToString().ToLowerInvariant()));
+            Console.WriteLine();
+            Console.WriteLine(String.Format(SR.SwitchWithDefaultHelp, "--targetarch", String.Join("', '", Helpers.ValidArchitectures), Helpers.GetTargetArchitecture(null).ToString().ToLowerInvariant()));
+            Console.WriteLine();
 
-            Console.WriteLine(String.Format(SR.SwitchWithDefaultHelp, "--targetos", String.Join("', '", ValidOS), Helpers.GetTargetOS(null).ToString().ToLowerInvariant()));
+            string[] ValidObjFormats = ["pe", "macho", "wasm"];
+            Console.WriteLine(String.Format(SR.SwitchWithDefaultHelp, "--obj-format", String.Join("', '", ValidObjFormats), "pe"));
             Console.WriteLine();
-            Console.WriteLine(String.Format(SR.SwitchWithDefaultHelp, "--targetarch", String.Join("', '", ValidArchitectures), Helpers.GetTargetArchitecture(null).ToString().ToLowerInvariant()));
-            Console.WriteLine();
+
             Console.WriteLine(String.Format(SR.SwitchWithDefaultHelp, "--type-validation", String.Join("', '", Enum.GetNames<TypeValidationRule>()), nameof(TypeValidationRule.Automatic)));
             Console.WriteLine();
 
@@ -314,7 +341,7 @@ namespace ILCompiler
             Console.WriteLine();
 
             Console.WriteLine(SR.InstructionSetHelp);
-            foreach (string arch in ValidArchitectures)
+            foreach (string arch in Helpers.ValidArchitectures)
             {
                 TargetArchitecture targetArch = Helpers.GetTargetArchitecture(arch);
                 bool first = true;
@@ -345,18 +372,6 @@ namespace ILCompiler
             Console.WriteLine();
             Console.WriteLine(SR.CpuFamilies);
             Console.WriteLine(string.Join(", ", Internal.JitInterface.InstructionSetFlags.AllCpuNames));
-        }
-
-        private static TargetArchitecture MakeTargetArchitecture(ArgumentResult result)
-        {
-            string firstToken = result.Tokens.Count > 0 ? result.Tokens[0].Value : null;
-            if (firstToken != null && firstToken.Equals("armel", StringComparison.OrdinalIgnoreCase))
-            {
-                IsArmel = true;
-                return Internal.TypeSystem.TargetArchitecture.ARM;
-            }
-
-            return Helpers.GetTargetArchitecture(firstToken);
         }
 
         private static int MakeParallelism(ArgumentResult result)
@@ -416,8 +431,37 @@ namespace ILCompiler
             {
                 "pe" => ReadyToRunContainerFormat.PE,
                 "macho" => ReadyToRunContainerFormat.MachO,
+                "wasm" => ReadyToRunContainerFormat.Wasm,
                 _ => throw new CommandLineException(SR.InvalidOutputFormat)
             };
+        }
+
+        private static WasmDebugInfo MakeWasmDebugInfo(ArgumentResult result)
+        {
+            if (result.Tokens.Count == 0)
+                return WasmDebugInfo.NameSection;
+
+            string value = result.Tokens[0].Value;
+            if (value.Equals("none", StringComparison.OrdinalIgnoreCase))
+                return WasmDebugInfo.None;
+            if (value.Equals("all", StringComparison.OrdinalIgnoreCase))
+                return WasmDebugInfo.All;
+
+            WasmDebugInfo debugInfo = WasmDebugInfo.None;
+            foreach (string format in value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            {
+                debugInfo |= format.ToLowerInvariant() switch
+                {
+                    "name" => WasmDebugInfo.NameSection,
+                    "symbol-map" => WasmDebugInfo.SymbolMap,
+                    _ => throw new CommandLineException(SR.InvalidWasmDebugInfo)
+                };
+            }
+
+            if (debugInfo == WasmDebugInfo.None)
+                throw new CommandLineException(SR.InvalidWasmDebugInfo);
+
+            return debugInfo;
         }
 
 #if DEBUG

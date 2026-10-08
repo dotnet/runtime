@@ -36,7 +36,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
-    <Compile Include="System\IO\IsolatedStorage\Helper.Win32.cs" />
+    <Compile Include="System\IO\IsolatedStorage\Helper.Windows.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'windows'">

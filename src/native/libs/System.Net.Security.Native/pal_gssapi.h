@@ -147,6 +147,8 @@ Shims the gss_accept_sec_context method.
 PALEXPORT uint32_t NetSecurityNative_AcceptSecContext(uint32_t* minorStatus,
                                                       GssCredId* acceptorCredHandle,
                                                       GssCtxId** contextHandle,
+                                                      void* cbt,
+                                                      int32_t cbtSize,
                                                       uint8_t* inputBytes,
                                                       uint32_t inputLength,
                                                       PAL_GssBuffer* outBuffer,

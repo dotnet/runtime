@@ -29,7 +29,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .Save();
 
             // RuntimeConfig defined startup hook
-            TestContext.BuiltDotNet.Exec(app.AppDll)
+            HostTestContext.BuiltDotNet.Exec(app.AppDll)
                 .EnableTracingAndCaptureOutputs()
                 .Execute()
                 .Should().Pass()
@@ -55,7 +55,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             const string wildcardPattern = @"[\r\n\s.]*";
 
             // RuntimeConfig and Environment startup hooks in expected order
-            TestContext.BuiltDotNet.Exec(app.AppDll)
+            HostTestContext.BuiltDotNet.Exec(app.AppDll)
                 .EnvironmentVariable(startupHookVarName, startupHook2Dll)
                 .CaptureStdOut()
                 .CaptureStdErr()
@@ -73,7 +73,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         public void Muxer_activation_of_Empty_StartupHook_Variable_Succeeds()
         {
             var startupHookVar = "";
-            TestContext.BuiltDotNet.Exec(sharedTestState.App.AppDll)
+            HostTestContext.BuiltDotNet.Exec(sharedTestState.App.AppDll)
                 .EnvironmentVariable(startupHookVarName, startupHookVar)
                 .CaptureStdOut()
                 .CaptureStdErr()
@@ -90,7 +90,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             var startupHookDll = sharedTestState.StartupHookWithAssemblyResolver.AppDll;
 
             // Startup hook has a dependency not on the TPA list
-            TestContext.BuiltDotNet.Exec(sharedTestState.App.AppDll)
+            HostTestContext.BuiltDotNet.Exec(sharedTestState.App.AppDll)
                 .EnvironmentVariable(startupHookVarName, startupHookDll)
                 // Indicate that the startup hook should try to use a dependency
                 .EnvironmentVariable("TEST_STARTUPHOOK_USE_DEPENDENCY", true.ToString())
@@ -109,7 +109,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             var startupHookDll = sharedTestState.StartupHookWithAssemblyResolver.AppDll;
 
             // Startup hook with assembly resolver results in use of injected dependency
-            TestContext.BuiltDotNet.Exec(sharedTestState.App.AppDll, "load_shared_library")
+            HostTestContext.BuiltDotNet.Exec(sharedTestState.App.AppDll, "load_shared_library")
                 .EnvironmentVariable(startupHookVarName, startupHookDll)
                 // Indicate that the startup hook should add an assembly resolver
                 .EnvironmentVariable("TEST_STARTUPHOOK_ADD_RESOLVER", true.ToString())
@@ -133,7 +133,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
             // Startup hooks are not executed when the StartupHookSupport
             // feature switch is set to false.
-            TestContext.BuiltDotNet.Exec(app.AppDll)
+            HostTestContext.BuiltDotNet.Exec(app.AppDll)
                 .EnvironmentVariable(startupHookVarName, startupHookDll)
                 .CaptureStdOut()
                 .CaptureStdErr()

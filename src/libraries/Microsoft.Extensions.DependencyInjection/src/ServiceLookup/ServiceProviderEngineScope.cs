@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.ExceptionServices;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Internal;
 
@@ -14,11 +15,16 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
     [DebuggerTypeProxy(typeof(ServiceProviderEngineScopeDebugView))]
     internal sealed class ServiceProviderEngineScope : IServiceScope, IServiceProvider, IKeyedServiceProvider, IAsyncDisposable, IServiceScopeFactory
     {
-        // For testing and debugging only
-        internal IList<object> Disposables => _disposables ?? (IList<object>)Array.Empty<object>();
+        // For testing and debugging only.
+        // Entries may be null after BeginDispose nulls out duplicate captures of a shared instance.
+        internal IList<object?> Disposables => _disposables ?? (IList<object?>)Array.Empty<object?>();
+
+        // When BeginDispose has at most this many captured disposables, it deduplicates them
+        // with an inline reference-equality scan rather than allocating a HashSet.
+        private const int MaxDisposablesForLinearDedup = 16;
 
         private bool _disposed;
-        private List<object>? _disposables;
+        private List<object?>? _disposables;
 
         public ServiceProviderEngineScope(ServiceProvider provider, bool isRootScope)
         {
@@ -91,8 +97,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 }
                 else
                 {
-                    _disposables ??= new List<object>();
-
+                    _disposables ??= new List<object?>();
                     _disposables.Add(service);
                 }
             }
@@ -119,84 +124,163 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         public void Dispose()
         {
-            List<object>? toDispose = BeginDispose();
-
-            if (toDispose != null)
+            List<object?>? toDispose = BeginDispose();
+            if (toDispose is null)
             {
-                for (int i = toDispose.Count - 1; i >= 0; i--)
+                return;
+            }
+
+            object? exceptionsCache = null;
+            for (var i = toDispose.Count - 1; i >= 0; i--)
+            {
+                object? disposableEntry = toDispose[i];
+                if (disposableEntry is null)
                 {
-                    if (toDispose[i] is IDisposable disposable)
+                    continue;
+                }
+
+                try
+                {
+                    if (disposableEntry is IDisposable disposable)
                     {
                         disposable.Dispose();
                     }
                     else
                     {
-                        throw new InvalidOperationException(SR.Format(SR.AsyncDisposableServiceDispose, TypeNameHelper.GetTypeDisplayName(toDispose[i])));
+                        throw new InvalidOperationException(SR.Format(SR.AsyncDisposableServiceDispose, TypeNameHelper.GetTypeDisplayName(disposableEntry)));
                     }
                 }
+                catch (Exception exception)
+                {
+                    AddExceptionToCache(ref exceptionsCache, exception);
+                }
             }
+
+            CheckExceptionCache(exceptionsCache);
         }
 
         public ValueTask DisposeAsync()
         {
-            List<object>? toDispose = BeginDispose();
-
-            if (toDispose != null)
+            List<object?>? toDispose = BeginDispose();
+            if (toDispose is null)
             {
-                try
-                {
-                    for (int i = toDispose.Count - 1; i >= 0; i--)
-                    {
-                        object disposable = toDispose[i];
-                        if (disposable is IAsyncDisposable asyncDisposable)
-                        {
-                            ValueTask vt = asyncDisposable.DisposeAsync();
-                            if (!vt.IsCompletedSuccessfully)
-                            {
-                                return Await(i, vt, toDispose);
-                            }
-
-                            // If its a IValueTaskSource backed ValueTask,
-                            // inform it its result has been read so it can reset
-                            vt.GetAwaiter().GetResult();
-                        }
-                        else
-                        {
-                            ((IDisposable)disposable).Dispose();
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    return new ValueTask(Task.FromException(ex));
-                }
+                return default;
             }
 
-            return default;
-
-            static async ValueTask Await(int i, ValueTask vt, List<object> toDispose)
+            object? exceptionsCache = null;
+            for (var i = toDispose.Count - 1; i >= 0; i--)
             {
-                await vt.ConfigureAwait(false);
-                // vt is acting on the disposable at index i,
-                // decrement it and move to the next iteration
-                i--;
-
-                for (; i >= 0; i--)
+                object? disposable = toDispose[i];
+                if (disposable is null)
                 {
-                    object disposable = toDispose[i];
+                    continue;
+                }
+
+                try
+                {
                     if (disposable is IAsyncDisposable asyncDisposable)
                     {
-                        await asyncDisposable.DisposeAsync().ConfigureAwait(false);
+                        ValueTask vt = asyncDisposable.DisposeAsync();
+                        if (!vt.IsCompletedSuccessfully)
+                        {
+                            return Await(i, vt, toDispose, exceptionsCache);
+                        }
+
+                        // If its a IValueTaskSource backed ValueTask,
+                        // inform it its result has been read so it can reset
+                        vt.GetAwaiter().GetResult();
                     }
                     else
                     {
                         ((IDisposable)disposable).Dispose();
                     }
                 }
+                catch (Exception exception)
+                {
+                    AddExceptionToCache(ref exceptionsCache, exception);
+                }
+            }
+
+            CheckExceptionCache(exceptionsCache);
+
+            return default;
+
+            static async ValueTask Await(int i, ValueTask vt, List<object?> toDispose, object? exceptionsCache)
+            {
+                try
+                {
+                    await vt.ConfigureAwait(false);
+                }
+                catch (Exception exception)
+                {
+                    AddExceptionToCache(ref exceptionsCache, exception);
+                }
+
+                // vt is acting on the disposable at index i,
+                // decrement it and move to the next iteration
+                i--;
+
+                for (; i >= 0; i--)
+                {
+                    try
+                    {
+                        object? disposable = toDispose[i];
+                        if (disposable is null)
+                        {
+                            continue;
+                        }
+
+                        if (disposable is IAsyncDisposable asyncDisposable)
+                        {
+                            await asyncDisposable.DisposeAsync().ConfigureAwait(false);
+                        }
+                        else
+                        {
+                            ((IDisposable)disposable).Dispose();
+                        }
+                    }
+                    catch (Exception exception)
+                    {
+                        AddExceptionToCache(ref exceptionsCache, exception);
+                    }
+                }
+
+                CheckExceptionCache(exceptionsCache);
             }
         }
 
-        private List<object>? BeginDispose()
+        private static void AddExceptionToCache(ref object? exceptionsCache, Exception exception)
+        {
+            if (exceptionsCache is null)
+            {
+                exceptionsCache = ExceptionDispatchInfo.Capture(exception);
+            }
+            else if (exceptionsCache is ExceptionDispatchInfo exceptionInfo)
+            {
+                exceptionsCache = new List<Exception> { exceptionInfo.SourceException, exception };
+            }
+            else
+            {
+                ((List<Exception>)exceptionsCache).Add(exception);
+            }
+        }
+
+        private static void CheckExceptionCache(object? exceptionsCache)
+        {
+            if (exceptionsCache is null)
+            {
+                return;
+            }
+
+            if (exceptionsCache is ExceptionDispatchInfo exceptionInfo)
+            {
+                exceptionInfo.Throw();
+            }
+
+            throw new AggregateException((List<Exception>)exceptionsCache);
+        }
+
+        private List<object?>? BeginDispose()
         {
             lock (Sync)
             {
@@ -226,7 +310,64 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             // ResolvedServices is never cleared for singletons because there might be a compilation running in background
             // trying to get a cached singleton service. If it doesn't find it
             // it will try to create a new one which will result in an ObjectDisposedException.
-            return _disposables;
+            if (_disposables is not { Count: > 0 } disposables)
+            {
+                return null;
+            }
+
+            // Lazily deduplicate captured disposables by reference so a shared singleton resolved
+            // via multiple factory registrations is disposed exactly once per scope. Later duplicates
+            // are nulled in place; the disposal loops walk the list in reverse and skip nulls,
+            // which preserves the existing dependent-before-shared ordering.
+            DeduplicateDisposables(disposables);
+
+            return disposables;
+        }
+
+        private static void DeduplicateDisposables(List<object?> disposables)
+        {
+            int count = disposables.Count;
+
+            if (count > MaxDisposablesForLinearDedup)
+            {
+#if NETFRAMEWORK || NETSTANDARD2_0
+                var seen = new HashSet<object>(ReferenceEqualityComparer.Instance);
+#else
+                var seen = new HashSet<object>(count, ReferenceEqualityComparer.Instance);
+#endif
+                for (int i = 0; i < count; i++)
+                {
+                    object? entry = disposables[i];
+                    if (entry is null)
+                    {
+                        continue;
+                    }
+
+                    if (!seen.Add(entry))
+                    {
+                        disposables[i] = null;
+                    }
+                }
+            }
+            else
+            {
+                for (int i = 0; i < count; i++)
+                {
+                    object? entry = disposables[i];
+                    if (entry is null)
+                    {
+                        continue;
+                    }
+
+                    for (int j = i + 1; j < count; j++)
+                    {
+                        if (ReferenceEquals(entry, disposables[j]))
+                        {
+                            disposables[j] = null;
+                        }
+                    }
+                }
+            }
         }
 
         internal string DebuggerToString()
@@ -253,9 +394,22 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             }
 
             public List<ServiceDescriptor> ServiceDescriptors => new List<ServiceDescriptor>(_serviceProvider.RootProvider.CallSiteFactory.Descriptors);
-            public List<object> Disposables => new List<object>(_serviceProvider.Disposables);
+            public List<object> Disposables => FilterDisposables(_serviceProvider.Disposables);
             public bool Disposed => _serviceProvider._disposed;
             public bool IsScope => !_serviceProvider.IsRootScope;
+
+            private static List<object> FilterDisposables(IList<object?> source)
+            {
+                var result = new List<object>(source.Count);
+                for (int i = 0; i < source.Count; i++)
+                {
+                    if (source[i] is object item)
+                    {
+                        result.Add(item);
+                    }
+                }
+                return result;
+            }
         }
     }
 }

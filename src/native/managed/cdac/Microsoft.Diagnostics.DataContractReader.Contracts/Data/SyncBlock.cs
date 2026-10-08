@@ -3,19 +3,42 @@
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal sealed class SyncBlock : IData<SyncBlock>
+[CdacType(nameof(DataType.SyncBlock))]
+internal sealed partial class SyncBlock : IData<SyncBlock>
 {
-    static SyncBlock IData<SyncBlock>.Create(Target target, TargetPointer address)
-        => new SyncBlock(target, address);
+    [Field] public partial uint ThinLock { get; }
+    [Field] public partial TargetPointer LinkNext { get; }
+    [Field] public partial uint HashCode { get; }
+    [CustomInit(nameof(InitInteropInfo))] public partial InteropSyncBlockInfo? InteropInfo { get; }
+    [CustomInit(nameof(InitLock))] public partial ObjectHandle? Lock { get; }
+    [CustomInit(nameof(InitEnCInfo))] public partial TargetPointer? EnCInfo { get; }
 
-    public SyncBlock(Target target, TargetPointer address)
+    [DataDescriptorDependency(nameof(InteropInfo), "pointer")]
+    private partial InteropSyncBlockInfo? InitInteropInfo(Target target, TargetPointer address)
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.SyncBlock);
-
-        TargetPointer interopInfoPointer = target.ReadPointer(address + (ulong)type.Fields[nameof(InteropInfo)].Offset);
-        if (interopInfoPointer != TargetPointer.Null)
-            InteropInfo = target.ProcessedData.GetOrAdd<InteropSyncBlockInfo>(interopInfoPointer);
+        TargetPointer interopInfoPointer = target.ReadPointerField(address, type, nameof(InteropInfo));
+        return interopInfoPointer != TargetPointer.Null
+            ? target.ProcessedData.GetOrAdd<InteropSyncBlockInfo>(interopInfoPointer)
+            : null;
     }
 
-    public InteropSyncBlockInfo? InteropInfo { get; init; }
+    [DataDescriptorDependency(nameof(Lock), "ObjectHandle")]
+    private partial ObjectHandle? InitLock(Target target, TargetPointer address)
+    {
+        Target.TypeInfo type = target.GetTypeInfo(DataType.SyncBlock);
+        ObjectHandle lockHandle = target.ReadDataField<ObjectHandle>(address, type, nameof(Lock));
+        return lockHandle.Handle != TargetPointer.Null ? lockHandle : null;
+    }
+
+    [DataDescriptorDependency(nameof(EnCInfo), "pointer")]
+    private partial TargetPointer? InitEnCInfo(Target target, TargetPointer address)
+    {
+        Target.TypeInfo type = target.GetTypeInfo(DataType.SyncBlock);
+        if (!type.Fields.ContainsKey(nameof(EnCInfo)))
+            return null;
+
+        TargetPointer encInfoPointer = target.ReadPointerField(address, type, nameof(EnCInfo));
+        return encInfoPointer != TargetPointer.Null ? encInfoPointer : null;
+    }
 }

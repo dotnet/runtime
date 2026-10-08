@@ -168,6 +168,15 @@
   <data name="ErrorCompositeKeyFileNotPublicKey" xml:space="preserve">
     <value>--CompositeKeyFile does not specify a valid public key</value>
   </data>
+  <data name="ReadyToRunHeaderSymbolName" xml:space="preserve">
+    <value>For custom hosts only: the name to use for the exported ReadyToRun header symbol (default: RTR_HEADER). Requires --composite.</value>
+  </data>
+  <data name="ErrorReadyToRunHeaderSymbolNameRequiresComposite" xml:space="preserve">
+    <value>Error: --rtr-header-symbol-name requires --composite.</value>
+  </data>
+  <data name="ErrorReadyToRunHeaderSymbolNameEmpty" xml:space="preserve">
+    <value>Error: --rtr-header-symbol-name must not be empty or whitespace.</value>
+  </data>
   <data name="InputFilesToCompile" xml:space="preserve">
     <value>Input file(s) to compile</value>
   </data>
@@ -273,8 +282,20 @@
   <data name="TargetArchOption" xml:space="preserve">
     <value>Target architecture for cross compilation</value>
   </data>
+  <data name="TargetAllowsRuntimeCodeGenerationOption" xml:space="preserve">
+    <value>Override whether the target supports runtime code generation</value>
+  </data>
   <data name="TargetOSOption" xml:space="preserve">
     <value>Target OS for cross compilation</value>
+  </data>
+  <data name="GeneratePortableCallHelpersOption" xml:space="preserve">
+    <value>Generate the portable entry point call helper sources into the given directory instead of compiling</value>
+  </data>
+  <data name="DirectPInvokeOption" xml:space="preserve">
+    <value>Name of a statically linked native module P/Invokes may resolve against</value>
+  </data>
+  <data name="GeneratePortableCallHelpersRequiresWasmTarget" xml:space="preserve">
+    <value>--generate-portable-callhelpers requires --targetarch wasm together with --targetos browser or --targetos wasi</value>
   </data>
   <data name="TargetOSUnsupported" xml:space="preserve">
     <value>Target OS is not supported</value>
@@ -287,6 +308,9 @@
   </data>
   <data name="TypeNotFound" xml:space="preserve">
     <value>Type '{0}' not found</value>
+  </data>
+  <data name="GenerateUnboxingStubsOption" xml:space="preserve">
+    <value>Override whether to generate unboxing stubs</value>
   </data>
   <data name="VerboseLoggingOption" xml:space="preserve">
     <value>Enable verbose logging</value>
@@ -332,6 +356,12 @@
   </data>
   <data name="VerifyTypeAndFieldLayoutOption" xml:space="preserve">
     <value>Verify that struct type layout and field offsets match between compile time and runtime. Use only for diagnostic purposes.</value>
+  </data>
+  <data name="WasmDebugInfoOption" xml:space="preserve">
+    <value>WebAssembly debug information formats to emit: name, symbol-map, none, or all. Multiple formats are comma-separated.</value>
+  </data>
+  <data name="VerifyGCModeTransitionsOption" xml:space="preserve">
+    <value>Emit the diagnostic helpers that verify GC mode transitions are legal, and mark the image as using them. WebAssembly only; has no effect on other targets. Use only for diagnostic purposes.</value>
   </data>
   <data name="HotColdSplittingOption" xml:space="preserve">
     <value>Turn on hot cold splitting optimization.</value>
@@ -414,9 +444,6 @@
   <data name="TypeValidation" xml:space="preserve">
     <value>Configure the runtime's behavior around validating the correctness of types defined in assemblies compiled via crossgen2</value>
   </data>
-  <data name="EnableGenericCycleDetection" xml:space="preserve">
-    <value>Perform generic cycle detection during compilation (incurs longer compilation time)</value>
-  </data>
   <data name="GenericCycleBreadthCutoff" xml:space="preserve">
     <value>Total number of occurrences of potentially cyclic generic types within a generic type to cut off</value>
   </data>
@@ -424,7 +451,7 @@
     <value>Number of nested occurrences of a potentially cyclic generic type to cut off</value>
   </data>
   <data name="EnableCachedInterfaceDispatchSupport" xml:space="preserve">
-    <value>Enable support for cached interface dispatch</value>
+    <value>Enable support for cached interface dispatch. Default is true on platforms which do not support runtime code generation</value>
   </data>
   <data name="OutputFormat" xml:space="preserve">
     <value>Target output format for the ReadyToRun image</value>
@@ -432,7 +459,19 @@
   <data name="InvalidOutputFormat" xml:space="preserve">
     <value>Format must be PE</value>
   </data>
+  <data name="InvalidWasmDebugInfo" xml:space="preserve">
+    <value>Invalid WebAssembly debug information format. Must be one or more of: name, symbol-map; or none, all.</value>
+  </data>
   <data name="ErrorContainerFormatRequiresComposite" xml:space="preserve">
     <value>Error: Producing ReadyToRun output in the {0} format is only supported for Composite ReadyToRun images.</value>
+  </data>
+  <data name="StripInliningInfoOption" xml:space="preserve">
+    <value>Strip inlining info from the R2R image.</value>
+  </data>
+  <data name="StripDebugInfoOption" xml:space="preserve">
+    <value>Strip debug info from the R2R image.</value>
+  </data>
+  <data name="StripILBodiesOption" xml:space="preserve">
+    <value>Replace IL method bodies of compiled methods with a throwing stub in composite R2R output assemblies.</value>
   </data>
 </root>

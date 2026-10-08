@@ -8,6 +8,9 @@
          System.Net.Internals namespace. -->
     <DefineConstants>$(DefineConstants);SYSTEM_NET_PRIMITIVES_DLL</DefineConstants>
     <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
+    <!-- Don't generate [assembly: SupportedOSPlatform] from the TFM.
+         The attribute does not exist on ref assemblies and it causes false CA1416 warnings when projects reference CoreLib directly. -->
+    <GenerateSupportedOSPlatformAttribute>false</GenerateSupportedOSPlatformAttribute>
   </PropertyGroup>
 
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
@@ -87,6 +90,8 @@
              Link="Common\System\Net\Logging\NetEventSource.Common.cs" />
     <Compile Include="$(CommonPath)System\NotImplemented.cs"
              Link="Common\System\NotImplemented.cs" />
+    <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
+             Link="Common\DisableRuntimeMarshalling.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.Alg.cs"
              Link="Common\Interop\Windows\Crypt32\Interop.Alg.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\SChannel\Interop.SchProtocols.cs"
@@ -125,7 +130,8 @@
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'unix' or '$(TargetPlatformIdentifier)' == 'browser' or '$(TargetPlatformIdentifier)' == 'wasi'">
     <Compile Include="System\Net\SocketException.Unix.cs" />
     <Compile Include="$(CommonPath)System\Net\SocketAddressPal.Unix.cs"
-             Link="Common\System\Net\SocketAddressPal.Unix.cs" />
+             Link="Common\System\Net\SocketAddressPal.Unix.cs"
+             Condition="'$(TargetPlatformIdentifier)' != 'browser'" />
     <Compile Include="$(CommonPath)System\Net\Sockets\SocketErrorPal.Unix.cs"
              Link="Common\System\Net\Sockets\SocketErrorPal.Unix.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Errors.cs"
@@ -160,6 +166,11 @@
              Link="Common\System\Net\NetworkInformation\HostInformationPal.Browser.cs" />
     <Compile Include="$(CommonPath)System\Net\NetworkInformation\InterfaceInfoPal.Browser.cs"
              Link="Common\System\Net\NetworkInformation\InterfaceInfoPal.Browser.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'browser'">
+    <Compile Include="$(CommonPath)System\Net\SocketAddressPal.Browser.cs"
+             Link="Common\System\Net\SocketAddressPal.Browser.cs" />
   </ItemGroup>
 
   <ItemGroup>

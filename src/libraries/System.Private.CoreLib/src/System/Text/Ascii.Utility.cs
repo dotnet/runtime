@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 #if NET
@@ -1632,6 +1633,7 @@ namespace System.Text
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Avx))]
+        [CompHasFallback]
         private static bool AllCharsInVectorAreAscii<T>(Vector256<T> vector)
             where T : unmanaged
         {

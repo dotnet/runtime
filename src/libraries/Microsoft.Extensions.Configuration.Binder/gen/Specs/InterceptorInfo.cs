@@ -33,7 +33,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             Debug.Assert((MethodsToGen.ConfigBinder_Bind & interceptor) is 0);
 
             ImmutableEquatableArray<InvocationLocationInfo>? infoList;
-            if ((MethodsToGen.ConfigBinder_Any ^ MethodsToGen.ConfigBinder_Bind & interceptor) is not 0)
+            if (((MethodsToGen.ConfigBinder_Any & ~MethodsToGen.ConfigBinder_Bind) & interceptor) is not 0)
             {
                 infoList = ConfigBinder;
             }
@@ -92,7 +92,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 Debug.Assert((MethodsToGen.ConfigBinder_Bind & overload) is 0);
 
-                if ((MethodsToGen.ConfigBinder_Any ^ MethodsToGen.ConfigBinder_Bind & overload) is not 0)
+                if (((MethodsToGen.ConfigBinder_Any & ~MethodsToGen.ConfigBinder_Bind) & overload) is not 0)
                 {
                     RegisterInterceptor(ref _interceptors_configBinder);
                 }

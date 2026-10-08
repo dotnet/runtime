@@ -28,7 +28,6 @@
 #include "TypeManager.h"
 #include "MethodTable.h"
 #include "ObjectLayout.h"
-#include "slist.inl"
 #include "MethodTable.inl"
 #include "CommonMacros.inl"
 #include "volatile.h"
@@ -43,38 +42,6 @@ FCIMPL0(void, RhDebugBreak)
     PalDebugBreak();
 }
 FCIMPLEND
-
-// Busy spin for the given number of iterations.
-EXTERN_C void QCALLTYPE RhSpinWait(int32_t iterations)
-{
-    ASSERT(iterations > 0);
-
-    // limit the spin count in coop mode.
-    ASSERT_MSG(iterations <= 1024 || !ThreadStore::GetCurrentThread()->IsCurrentThreadInCooperativeMode(),
-        "This is too long wait for coop mode. You must p/invoke with GC transition.");
-
-    YieldProcessorNormalizationInfo normalizationInfo;
-    YieldProcessorNormalized(normalizationInfo, iterations);
-}
-
-// Yield the cpu to another thread ready to process, if one is available.
-EXTERN_C UInt32_BOOL QCALLTYPE RhYield()
-{
-    // This must be called via p/invoke -- it's a wait operation and we don't want to block thread suspension on this.
-    ASSERT_MSG(!ThreadStore::GetCurrentThread()->IsCurrentThreadInCooperativeMode(),
-        "You must p/invoke to RhYield");
-
-    return PalSwitchToThread();
-}
-
-EXTERN_C void QCALLTYPE RhFlushProcessWriteBuffers()
-{
-    // This must be called via p/invoke -- it's a wait operation and we don't want to block thread suspension on this.
-    ASSERT_MSG(!ThreadStore::GetCurrentThread()->IsCurrentThreadInCooperativeMode(),
-        "You must p/invoke to RhFlushProcessWriteBuffers");
-
-    minipal_memory_barrier_process_wide();
-}
 
 // Get the list of currently loaded NativeAOT modules (as OS HMODULE handles). The caller provides a reference
 // to an array of pointer-sized elements and we return the total number of modules currently loaded (whether
@@ -485,13 +452,6 @@ FCIMPL2(uint32_t, RhGetKnobValues, char *** pResultKeys, char *** pResultValues)
     return g_pRhConfig->GetKnobCount();
 }
 FCIMPLEND
-
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
-EXTERN_C void QCALLTYPE RhCpuIdEx(int* cpuInfo, int functionId, int subFunctionId)
-{
-    __cpuidex(cpuInfo, functionId, subFunctionId);
-}
-#endif
 
 FCIMPL3(int32_t, RhpLockCmpXchg32, int32_t * location, int32_t value, int32_t comparand)
 {

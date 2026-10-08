@@ -2,13 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Runtime.InteropServices.JavaScript;
 using Microsoft.CodeAnalysis;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Data;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Microsoft.Interop.JavaScript
 {
@@ -17,7 +17,7 @@ namespace Microsoft.Interop.JavaScript
         public ResolvedGenerator Create(TypePositionInfo info, StubCodeContext context)
         {
             Debug.Assert(context != null);
-            if (!info.IsManagedExceptionPosition && !info.IsManagedReturnPosition && (info.IsByRef || info.ByValueContentsMarshalKind != ByValueContentsMarshalKind.Default))
+            if (!info.IsErrorHandlingPosition && !info.IsManagedReturnPosition && (info.IsByRef || info.ByValueContentsMarshalKind != ByValueContentsMarshalKind.Default))
             {
                 // out of scope for Net7.0
                 return ResolvedGenerator.NotSupported(info, context, new(info)
@@ -55,7 +55,7 @@ namespace Microsoft.Interop.JavaScript
 
                 // primitive
                 case { TypeInfo: JSSimpleTypeInfo simple }:
-                    return Create(info, context, isToJs, simple.KnownType, [], jsMarshalingInfo.JSType, []);
+                    return Create(info, context, isToJs, simple.KnownType, [], jsMarshalingInfo.JSType, new(ImmutableArray<JSTypeFlags>.Empty));
 
                 // nullable
                 case { TypeInfo: JSNullableTypeInfo nullable }:
@@ -74,7 +74,7 @@ namespace Microsoft.Interop.JavaScript
                     return Create(info, context, isToJs, span.KnownType, [span.ElementTypeInfo.KnownType], jsMarshalingInfo.JSType, jsMarshalingInfo.JSTypeArguments);
 
                 // task
-                case { TypeInfo: JSTaskTypeInfo(JSSimpleTypeInfo(KnownManagedType.Void)) task }:
+                case { TypeInfo: JSTaskTypeInfo { ResultTypeInfo.KnownType: KnownManagedType.Void } task }:
                     return Create(info, context, isToJs, task.KnownType, [], jsMarshalingInfo.JSType, jsMarshalingInfo.JSTypeArguments);
                 case { TypeInfo: JSTaskTypeInfo task }:
                     return Create(info, context, isToJs, task.KnownType, [task.ResultTypeInfo.KnownType], jsMarshalingInfo.JSType, jsMarshalingInfo.JSTypeArguments);
@@ -88,7 +88,7 @@ namespace Microsoft.Interop.JavaScript
             }
         }
 
-        private static ResolvedGeneratorAndType Create(TypePositionInfo info, StubCodeContext context, bool isToJs, KnownManagedType marshaledType, KnownManagedType[] argumentTypes, JSTypeFlags jsType, JSTypeFlags[] jsTypeArguments)
+        private static ResolvedGeneratorAndType Create(TypePositionInfo info, StubCodeContext context, bool isToJs, KnownManagedType marshaledType, KnownManagedType[] argumentTypes, JSTypeFlags jsType, SequenceEqualImmutableArray<JSTypeFlags>? jsTypeArguments)
         {
             return (marshaledType, jsType, argumentTypes, jsTypeArguments) switch
             {
@@ -214,6 +214,7 @@ namespace Microsoft.Interop.JavaScript
                 (KnownManagedType.Array, JSTypeFlags.Array, [KnownManagedType.Byte], [JSTypeFlags.Number]) => resolved(new PrimitiveJSGenerator(info, context, MarshalerType.Array), MarshalerType.Array, [MarshalerType.Byte]),
                 (KnownManagedType.Array, JSTypeFlags.Array, [KnownManagedType.String], [JSTypeFlags.String]) => resolved(new PrimitiveJSGenerator(info, context, MarshalerType.Array), MarshalerType.Array, [MarshalerType.String]),
                 (KnownManagedType.Array, JSTypeFlags.Array, [KnownManagedType.Double], [JSTypeFlags.Number]) => resolved(new PrimitiveJSGenerator(info, context, MarshalerType.Array), MarshalerType.Array, [MarshalerType.Double]),
+                (KnownManagedType.Array, JSTypeFlags.Array, [KnownManagedType.Single], [JSTypeFlags.Number]) => resolved(new PrimitiveJSGenerator(info, context, MarshalerType.Array), MarshalerType.Array, [MarshalerType.Single]),
                 (KnownManagedType.Array, JSTypeFlags.Array, [KnownManagedType.Int32], [JSTypeFlags.Number]) => resolved(new PrimitiveJSGenerator(info, context, MarshalerType.Array), MarshalerType.Array, [MarshalerType.Int32]),
                 (KnownManagedType.Array, JSTypeFlags.Array, [KnownManagedType.JSObject], [JSTypeFlags.Object]) => resolved(new PrimitiveJSGenerator(info, context, MarshalerType.Array), MarshalerType.Array, [MarshalerType.JSObject]),
                 (KnownManagedType.Array, JSTypeFlags.Array, [KnownManagedType.Object], [JSTypeFlags.Any]) => resolved(new PrimitiveJSGenerator(info, context, MarshalerType.Array), MarshalerType.Array, [MarshalerType.Object]),
@@ -222,6 +223,7 @@ namespace Microsoft.Interop.JavaScript
                 (KnownManagedType.Array, JSTypeFlags.Missing, [KnownManagedType.Byte], _) => resolved(new PrimitiveJSGenerator(info, context, MarshalerType.Array), MarshalerType.Array, [MarshalerType.Byte]),
                 (KnownManagedType.Array, JSTypeFlags.Missing, [KnownManagedType.String], _) => resolved(new PrimitiveJSGenerator(info, context, MarshalerType.Array), MarshalerType.Array, [MarshalerType.String]),
                 (KnownManagedType.Array, JSTypeFlags.Missing, [KnownManagedType.Double], _) => resolved(new PrimitiveJSGenerator(info, context, MarshalerType.Array), MarshalerType.Array, [MarshalerType.Double]),
+                (KnownManagedType.Array, JSTypeFlags.Missing, [KnownManagedType.Single], _) => resolved(new PrimitiveJSGenerator(info, context, MarshalerType.Array), MarshalerType.Array, [MarshalerType.Single]),
                 (KnownManagedType.Array, JSTypeFlags.Missing, [KnownManagedType.Int32], _) => resolved(new PrimitiveJSGenerator(info, context, MarshalerType.Array), MarshalerType.Array, [MarshalerType.Int32]),
                 (KnownManagedType.Array, JSTypeFlags.Missing, [KnownManagedType.JSObject], _) => resolved(new PrimitiveJSGenerator(info, context, MarshalerType.Array), MarshalerType.Array, [MarshalerType.JSObject]),
 
@@ -235,6 +237,7 @@ namespace Microsoft.Interop.JavaScript
                 (KnownManagedType.Span, JSTypeFlags.MemoryView, [KnownManagedType.Byte], _) => resolved(new PrimitiveJSGenerator(info, context, MarshalerType.Span), MarshalerType.Span, [MarshalerType.Byte]),
                 (KnownManagedType.Span, JSTypeFlags.MemoryView, [KnownManagedType.Int32], _) => resolved(new PrimitiveJSGenerator(info, context, MarshalerType.Span), MarshalerType.Span, [MarshalerType.Int32]),
                 (KnownManagedType.Span, JSTypeFlags.MemoryView, [KnownManagedType.Double], _) => resolved(new PrimitiveJSGenerator(info, context, MarshalerType.Span), MarshalerType.Span, [MarshalerType.Double]),
+                (KnownManagedType.Span, JSTypeFlags.MemoryView, [KnownManagedType.Single], _) => resolved(new PrimitiveJSGenerator(info, context, MarshalerType.Span), MarshalerType.Span, [MarshalerType.Single]),
 
                 (KnownManagedType.Span, JSTypeFlags.MemoryView, _, _) => failWithReason(SR.Format(SR.TypeNotSupportedName, info.ManagedType.FullTypeName)),
 
@@ -242,12 +245,14 @@ namespace Microsoft.Interop.JavaScript
                 (KnownManagedType.Span, JSTypeFlags.Missing, [KnownManagedType.Byte], _) => failWithReason(SR.Format(SR.UseJSMarshalAsAttribute, info.ManagedType.FullTypeName)),
                 (KnownManagedType.Span, JSTypeFlags.Missing, [KnownManagedType.Int32], _) => failWithReason(SR.Format(SR.UseJSMarshalAsAttribute, info.ManagedType.FullTypeName)),
                 (KnownManagedType.Span, JSTypeFlags.Missing, [KnownManagedType.Double], _) => failWithReason(SR.Format(SR.UseJSMarshalAsAttribute, info.ManagedType.FullTypeName)),
+                (KnownManagedType.Span, JSTypeFlags.Missing, [KnownManagedType.Single], _) => failWithReason(SR.Format(SR.UseJSMarshalAsAttribute, info.ManagedType.FullTypeName)),
 
                 // segment view
                 (KnownManagedType.ArraySegment, JSTypeFlags.MemoryView, _, [_]) => failWithReason(null!),
                 (KnownManagedType.ArraySegment, JSTypeFlags.MemoryView, [KnownManagedType.Byte], _) => resolved(new PrimitiveJSGenerator(info, context, MarshalerType.ArraySegment), MarshalerType.ArraySegment, [MarshalerType.Byte]),
                 (KnownManagedType.ArraySegment, JSTypeFlags.MemoryView, [KnownManagedType.Int32], _) => resolved(new PrimitiveJSGenerator(info, context, MarshalerType.ArraySegment), MarshalerType.ArraySegment, [MarshalerType.Int32]),
                 (KnownManagedType.ArraySegment, JSTypeFlags.MemoryView, [KnownManagedType.Double], _) => resolved(new PrimitiveJSGenerator(info, context, MarshalerType.ArraySegment), MarshalerType.ArraySegment, [MarshalerType.Double]),
+                (KnownManagedType.ArraySegment, JSTypeFlags.MemoryView, [KnownManagedType.Single], _) => resolved(new PrimitiveJSGenerator(info, context, MarshalerType.ArraySegment), MarshalerType.ArraySegment, [MarshalerType.Single]),
 
                 (KnownManagedType.ArraySegment, JSTypeFlags.MemoryView, _, _) => failWithReason(SR.Format(SR.TypeNotSupportedName, info.ManagedType.FullTypeName)),
 
@@ -255,15 +260,16 @@ namespace Microsoft.Interop.JavaScript
                 (KnownManagedType.ArraySegment, JSTypeFlags.Missing, [KnownManagedType.Byte], _) => failWithReason(SR.Format(SR.UseJSMarshalAsAttribute, info.ManagedType.FullTypeName)),
                 (KnownManagedType.ArraySegment, JSTypeFlags.Missing, [KnownManagedType.Int32], _) => failWithReason(SR.Format(SR.UseJSMarshalAsAttribute, info.ManagedType.FullTypeName)),
                 (KnownManagedType.ArraySegment, JSTypeFlags.Missing, [KnownManagedType.Double], _) => failWithReason(SR.Format(SR.UseJSMarshalAsAttribute, info.ManagedType.FullTypeName)),
+                (KnownManagedType.ArraySegment, JSTypeFlags.Missing, [KnownManagedType.Single], _) => failWithReason(SR.Format(SR.UseJSMarshalAsAttribute, info.ManagedType.FullTypeName)),
 
                 // function + action
-                (KnownManagedType.Function or KnownManagedType.Action, JSTypeFlags.Function, var argTypes, var argJSTypes) when argTypes.Length != argJSTypes.Length
+                (KnownManagedType.Function or KnownManagedType.Action, JSTypeFlags.Function, var argTypes, { } argJSTypes) when argTypes.Length != argJSTypes.Length
                     => failWithReason(SR.Format(SR.TypeNotSupportedName, info.ManagedType.FullTypeName)),
 
                 (KnownManagedType.Function or KnownManagedType.Action, JSTypeFlags.Function or JSTypeFlags.Missing, var argTypes, _) when FindFirstInvalidArgType(argTypes) is KnownManagedType invalidArgType
                     => failWithReason(SR.Format(SR.FuncArgumentNotSupported, invalidArgType)),
 
-                (KnownManagedType.Function or KnownManagedType.Action, JSTypeFlags.Function, var argTypes, var argJSTypes) => ResolveCallback(marshaledType, argTypes, argJSTypes),
+                (KnownManagedType.Function or KnownManagedType.Action, JSTypeFlags.Function, var argTypes, { } argJSTypes) => ResolveCallback(marshaledType, argTypes, argJSTypes),
 
                 // function + action forced
                 (KnownManagedType.Function or KnownManagedType.Action, JSTypeFlags.Missing, _, _) => failWithReason(SR.Format(SR.UseJSMarshalAsAttribute, info.ManagedType.FullTypeName)),
@@ -295,14 +301,14 @@ namespace Microsoft.Interop.JavaScript
                 return null;
             }
 
-            ResolvedGeneratorAndType ResolveCallback(KnownManagedType managedType, KnownManagedType[] argTypes, JSTypeFlags[] argJSTypes)
+            ResolvedGeneratorAndType ResolveCallback(KnownManagedType managedType, KnownManagedType[] argTypes, SequenceEqualImmutableArray<JSTypeFlags> argJSTypes)
             {
                 var argsMarshalers = new List<MarshalerType>();
                 for (int i = 0; i < argTypes.Length; i++)
                 {
                     var isReturn = managedType == KnownManagedType.Function && i == argJSTypes.Length - 1;
 
-                    var gen = Create(info, context, isToJs ^ (!isReturn), argTypes[i], Array.Empty<KnownManagedType>(), argJSTypes[i], Array.Empty<JSTypeFlags>());
+                    var gen = Create(info, context, isToJs ^ (!isReturn), argTypes[i], Array.Empty<KnownManagedType>(), argJSTypes[i], new(ImmutableArray<JSTypeFlags>.Empty));
                     argsMarshalers.Add(gen.Type);
                 }
                 var maxArgs = managedType == KnownManagedType.Action ? 3 : 4;

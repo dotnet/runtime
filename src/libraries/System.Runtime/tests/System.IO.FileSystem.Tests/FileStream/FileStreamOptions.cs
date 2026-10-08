@@ -192,7 +192,7 @@ namespace System.IO.Tests
                 using (fs)
                 {
                     Assert.Equal(expectedPath, fs.Name);
-                    Assert.Equal(expectedAsync, fs.IsAsync);
+                    Assert.Equal(expectedAsync && IsAsyncIoSupportedForRegularFiles, fs.IsAsync);
                     Assert.Equal(expectedCanRead, fs.CanRead);
                     Assert.Equal(expectedCanWrite, fs.CanWrite);
                 }

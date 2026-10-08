@@ -29,9 +29,18 @@ namespace Internal.IL
 
     class VerifierException : Exception
     {
-        internal VerifierException(string message) : base(message)
+        internal VerifierException(string message)
+            : this(VerifierError.None, message)
         {
         }
+
+        internal VerifierException(VerifierError code, string message)
+            : base(message)
+        {
+            Code = code;
+        }
+
+        internal VerifierError Code { get; }
     }
 
     partial class ILImporter
@@ -209,6 +218,9 @@ namespace Internal.IL
 
         public void Verify()
         {
+            // Check code size before any other processing
+            FatalCheck(_ilBytes.Length > 0, VerifierError.CodeSizeZero);
+
             _instructionBoundaries = new bool[_ilBytes.Length];
 
             FindBasicBlocks();
@@ -286,8 +298,6 @@ namespace Internal.IL
         /// </summary>
         private void InitialPass()
         {
-            FatalCheck(_ilBytes.Length > 0, VerifierError.CodeSizeZero);
-
             _modifiesThisPtr = false;
             _validTargetOffsets = new bool[_ilBytes.Length];
 
@@ -1097,7 +1107,7 @@ namespace Internal.IL
                     VerificationError(VerifierError.DelegatePattern);
                     return;
                 }
-                else
+                if (!ftn.Method.Signature.IsStatic)
                 {
                     // See "Rules for non-virtual call to a non-final virtual method" in ImportCall
                     if (ftn.Method.IsVirtual && !ftn.Method.IsFinal && !obj.IsBoxedValueType)
@@ -1121,7 +1131,7 @@ namespace Internal.IL
                 VerificationError(VerifierError.DelegatePattern);
         }
 
-        bool IsDelegateAssignable(MethodDesc targetMethod, TypeDesc delegateType, TypeDesc firstArg)
+        bool IsDelegateAssignable(MethodDesc targetMethod, TypeDesc delegateType, StackValue firstArg)
         {
             var invokeMethod = delegateType.GetMethod("Invoke"u8, null);
             if (invokeMethod == null)
@@ -1167,23 +1177,19 @@ namespace Internal.IL
 
             int consumedArgs = 0;
 
-            TypeDesc firstInvokeArg;
             if (isOpenDelegate)
             {
                 // If we're looking at an open delegate but the caller has provided a target it's not a match.
-                if (firstArg != null)
+                if (firstArg.Type != null)
                     return false;
 
-                firstInvokeArg = invokeSignature[0];
                 consumedArgs++;
             }
             else
             {
                 // If we're looking at a closed delegate but the caller has not provided a target it's not a match.
-                if (firstArg == null)
+                if (firstArg.Type == null)
                     return false;
-
-                firstInvokeArg = firstArg;
             }
 
             TypeDesc firstTargetArg;
@@ -1209,7 +1215,14 @@ namespace Internal.IL
                     firstTargetArg = firstTargetArg.MakeByRefType();
             }
 
-            if (!IsAssignable(firstInvokeArg, firstTargetArg))
+            // For a closed delegate it is the target pushed on the stack, so compare against the stack value itself:
+            // it keeps track of boxed value types, which are object references and assignable to anything they can be cast to
+            // (e.g. a boxed int32 target for ToString()).
+            bool firstArgAssignable = isOpenDelegate
+                ? IsAssignable(invokeSignature[0], firstTargetArg)
+                : IsAssignable(firstArg, StackValue.CreateObjRef(firstTargetArg));
+
+            if (!firstArgAssignable)
                 return false;
 
             // We better have same number of remaining args
@@ -1543,12 +1556,27 @@ namespace Internal.IL
             TypeDesc constrained = null;
             bool tailCall = false;
 
+            MethodDesc method = ResolveMethodToken(token);
+            MethodSignature sig = method.Signature;
+
             if (opcode != ILOpcode.newobj)
             {
-                if (HasPendingPrefix(Prefix.Constrained) && opcode == ILOpcode.callvirt)
+                if (HasPendingPrefix(Prefix.Constrained))
                 {
-                    ClearPendingPrefix(Prefix.Constrained);
-                    constrained = _constrained;
+                    if (opcode == ILOpcode.callvirt)
+                    {
+                        ClearPendingPrefix(Prefix.Constrained);
+                        constrained = _constrained;
+                    }
+                    else if (opcode == ILOpcode.call && method.IsVirtual && sig.IsStatic && method.OwningType.IsInterface)
+                    {
+                        ClearPendingPrefix(Prefix.Constrained);
+                        constrained = _constrained;
+
+                        // The constrained type must implement the interface declaring the static virtual method
+                        if (!constrained.CanCastTo(method.OwningType))
+                            VerificationError(VerifierError.ConstrainedTypeNoInterfaceImpl, constrained, method.OwningType);
+                    }
                 }
 
                 if (HasPendingPrefix(Prefix.Tail))
@@ -1562,10 +1590,6 @@ namespace Internal.IL
             // if (sig.isVarArg())
             //      eeGetCallSiteSig(memberRef, getCurrentModuleHandle(), getCurrentContext(), &sig, false);
 
-            MethodDesc method = ResolveMethodToken(token);
-
-            MethodSignature sig = method.Signature;
-
             TypeDesc methodType = sig.IsStatic ? null : method.OwningType;
 
             if (opcode == ILOpcode.callvirt)
@@ -1577,7 +1601,9 @@ namespace Internal.IL
             {
                 EcmaMethod ecmaMethod = method.GetTypicalMethodDefinition() as EcmaMethod;
                 if (ecmaMethod != null)
-                    Check(!ecmaMethod.IsAbstract, VerifierError.CallAbstract);
+                {
+                    Check(!ecmaMethod.IsAbstract || (method.OwningType.IsInterface && constrained != null), VerifierError.CallAbstract);
+                }
             }
 
             if (opcode == ILOpcode.newobj && methodType.IsDelegate)
@@ -1598,7 +1624,7 @@ namespace Internal.IL
 
                 CheckDelegateCreation(actualFtn, actualObj);
 
-                if (!IsDelegateAssignable(actualFtn.Method, methodType, actualObj.Type))
+                if (!IsDelegateAssignable(actualFtn.Method, methodType, actualObj))
                     VerificationError(VerifierError.DelegateCtor);
             }
             else
@@ -1810,6 +1836,18 @@ namespace Internal.IL
                 _delegateCreateStart = _currentInstructionOffset;
 
                 instance = null;
+
+                if (HasPendingPrefix(Prefix.Constrained) && method.IsVirtual &&
+                    method.Signature.IsStatic && method.OwningType.IsInterface)
+                {
+                    ClearPendingPrefix(Prefix.Constrained);
+                    if (!_constrained.CanCastTo(method.OwningType))
+                        VerificationError(VerifierError.ConstrainedTypeNoInterfaceImpl, _constrained, method.OwningType);
+                }
+                else
+                {
+                    Check(!method.IsAbstract, VerifierError.CallAbstract);
+                }
             }
             else if (opCode == ILOpcode.ldvirtftn)
             {
@@ -1920,18 +1958,18 @@ namespace Internal.IL
             if (type is not MetadataType metadataType)
                 return false;
 
-            if (!metadataType.Namespace.SequenceEqual("System.Threading.Tasks"u8))
+            if (metadataType.Namespace != "System.Threading.Tasks"u8)
                 return false;
 
             // Check for Task (non-generic)
-            if (metadataType.Name.SequenceEqual("Task"u8) && !metadataType.HasInstantiation)
+            if (metadataType.Name == "Task"u8 && !metadataType.HasInstantiation)
             {
                 unwrappedType = _typeSystemContext.GetWellKnownType(WellKnownType.Void);
                 return true;
             }
 
             // Check for ValueTask (non-generic)
-            if (metadataType.Name.SequenceEqual("ValueTask"u8) && !metadataType.HasInstantiation)
+            if (metadataType.Name == "ValueTask"u8 && !metadataType.HasInstantiation)
             {
                 unwrappedType = _typeSystemContext.GetWellKnownType(WellKnownType.Void);
                 return true;
@@ -1940,8 +1978,8 @@ namespace Internal.IL
             // Check for Task<T> and ValueTask<T>
             if (metadataType.HasInstantiation && metadataType.Instantiation.Length == 1)
             {
-                if (metadataType.Name.SequenceEqual("Task`1"u8) || 
-                    metadataType.Name.SequenceEqual("ValueTask`1"u8))
+                if (metadataType.Name == "Task`1"u8 ||
+                    metadataType.Name == "ValueTask`1"u8)
                 {
                     unwrappedType = metadataType.Instantiation[0];
                     return true;
@@ -2783,7 +2821,7 @@ namespace Internal.IL
             {
                 foreach (var data in signature.GetEmbeddedSignatureData())
                 {
-                    if (data.type is MetadataType mdType && mdType.Namespace.SequenceEqual("System.Runtime.CompilerServices"u8) && mdType.Name.SequenceEqual("IsExternalInit"u8) &&
+                    if (data.type is MetadataType mdType && mdType.Namespace == "System.Runtime.CompilerServices"u8 && mdType.Name == "IsExternalInit"u8 &&
                         data.index == MethodSignature.IndexOfCustomModifiersOnReturnType)
                         return true;
                 }
@@ -2821,6 +2859,12 @@ namespace Internal.IL
         void ReportInvalidInstruction(ILOpcode opcode)
         {
             VerificationError(VerifierError.UnknownOpcode);
+        }
+
+        void ReportInvalidExceptionRegion()
+        {
+            VerificationError(VerifierError.EHClauseOutOfRange);
+            AbortMethodVerification();
         }
 
         //

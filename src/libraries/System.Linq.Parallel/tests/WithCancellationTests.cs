@@ -82,7 +82,7 @@ namespace System.Linq.Parallel.Tests
         //
         // To specifically verify this test, it was checked that the Async channels were blocked in TryEnqueChunk before Dispose() was called
         //  -> this was verified manually, but is not simple to automate
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))] // Exercises blocked producer/consumer threads on the async channel; unsupported on single-threaded platforms.
         [OuterLoop] // explicit timeouts / delays
         [MemberData(nameof(ProducerBlocked_Data))]
         public static void WithCancellation_DisposedEnumerator_ChannelCancellation_ProducerBlocked(Labeled<ParallelQuery<int>> labeled, int count)

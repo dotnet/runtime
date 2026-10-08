@@ -113,6 +113,7 @@ namespace Internal.TypeSystem
                     IsAutoLayoutOrHasAutoLayoutFields = false,
                     IsInt128OrHasInt128Fields = false,
                     IsVectorTOrHasVectorTFields = false,
+                    IsDecimalFloatingPointOrHasDecimalFloatingPointFields = false,
                 };
 
                 if (numInstanceFields > 0)
@@ -325,11 +326,13 @@ namespace Internal.TypeSystem
             bool hasAutoLayoutField = false;
             bool hasInt128Field = false;
             bool hasVectorTField = false;
+            bool hasDecimalField = false;
 
             if (type.BaseType is not null)
             {
                 hasInt128Field = type.BaseType.IsInt128OrHasInt128Fields;
                 hasVectorTField = type.BaseType.IsVectorTOrHasVectorTFields;
+                hasDecimalField = type.BaseType.IsDecimalFloatingPointOrHasDecimalFloatingPointFields;
             }
 
             foreach (FieldDesc field in type.GetFields())
@@ -347,6 +350,8 @@ namespace Internal.TypeSystem
                     hasInt128Field = true;
                 if (fieldData.HasVectorTField)
                     hasVectorTField = true;
+                if (fieldData.HasDecimalField)
+                    hasDecimalField = true;
 
                 largestAlignmentRequired = LayoutInt.Max(fieldSizeAndAlignment.Alignment, largestAlignmentRequired);
 
@@ -401,6 +406,7 @@ namespace Internal.TypeSystem
                 IsAutoLayoutOrHasAutoLayoutFields = hasAutoLayoutField,
                 IsInt128OrHasInt128Fields = hasInt128Field,
                 IsVectorTOrHasVectorTFields = hasVectorTField,
+                IsDecimalFloatingPointOrHasDecimalFloatingPointFields = hasDecimalField,
             };
             computedLayout.FieldAlignment = instanceSizeAndAlignment.Alignment;
             computedLayout.FieldSize = instanceSizeAndAlignment.Size;
@@ -436,11 +442,13 @@ namespace Internal.TypeSystem
             bool hasAutoLayoutField = false;
             bool hasInt128Field = false;
             bool hasVectorTField = false;
+            bool hasDecimalField = false;
 
             if (type.BaseType is not null)
             {
                 hasInt128Field = type.BaseType.IsInt128OrHasInt128Fields;
                 hasVectorTField = type.BaseType.IsVectorTOrHasVectorTFields;
+                hasDecimalField = type.BaseType.IsDecimalFloatingPointOrHasDecimalFloatingPointFields;
             }
 
             foreach (var field in type.GetFields())
@@ -457,6 +465,8 @@ namespace Internal.TypeSystem
                     hasInt128Field = true;
                 if (fieldData.HasVectorTField)
                     hasVectorTField = true;
+                if (fieldData.HasDecimalField)
+                    hasDecimalField = true;
 
                 largestAlignmentRequirement = LayoutInt.Max(fieldSizeAndAlignment.Alignment, largestAlignmentRequirement);
 
@@ -485,6 +495,7 @@ namespace Internal.TypeSystem
                 IsAutoLayoutOrHasAutoLayoutFields = hasAutoLayoutField,
                 IsInt128OrHasInt128Fields = hasInt128Field,
                 IsVectorTOrHasVectorTFields = hasVectorTField,
+                IsDecimalFloatingPointOrHasDecimalFloatingPointFields = hasDecimalField,
             };
             computedLayout.FieldAlignment = instanceSizeAndAlignment.Alignment;
             computedLayout.FieldSize = instanceSizeAndAlignment.Size;
@@ -498,7 +509,7 @@ namespace Internal.TypeSystem
 
         protected ComputedInstanceFieldLayout ComputeCStructFieldLayout(MetadataType type, int numInstanceFields)
         {
-            if (type.ContainsGCPointers || !type.IsValueType)
+            if (type.ContainsGCPointers || type.IsByRefLike || !type.IsValueType)
             {
                 // CStruct layout algorithm does not support GC pointers.
                 ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadBadFormat, type);
@@ -514,6 +525,7 @@ namespace Internal.TypeSystem
             bool hasAutoLayoutField = false;
             bool hasInt128Field = false;
             bool hasVectorTField = false;
+            bool hasDecimalField = false;
 
             foreach (var field in type.GetFields())
             {
@@ -529,6 +541,8 @@ namespace Internal.TypeSystem
                     hasInt128Field = true;
                 if (fieldData.HasVectorTField)
                     hasVectorTField = true;
+                if (fieldData.HasDecimalField)
+                    hasDecimalField = true;
 
                 largestAlignmentRequirement = LayoutInt.Max(fieldSizeAndAlignment.Alignment, largestAlignmentRequirement);
 
@@ -570,6 +584,96 @@ namespace Internal.TypeSystem
                 IsAutoLayoutOrHasAutoLayoutFields = false,
                 IsInt128OrHasInt128Fields = hasInt128Field,
                 IsVectorTOrHasVectorTFields = hasVectorTField,
+                IsDecimalFloatingPointOrHasDecimalFloatingPointFields = hasDecimalField,
+                FieldAlignment = instanceSizeAndAlignment.Alignment,
+                FieldSize = instanceSizeAndAlignment.Size,
+                ByteCountUnaligned = instanceByteSizeAndAlignment.Size,
+                ByteCountAlignment = instanceByteSizeAndAlignment.Alignment,
+                Offsets = offsets,
+                LayoutAbiStable = layoutAbiStable
+            };
+
+            return computedLayout;
+        }
+
+        protected ComputedInstanceFieldLayout ComputeCUnionFieldLayout(MetadataType type, int numInstanceFields)
+        {
+            if (type.ContainsGCPointers || type.IsByRefLike || !type.IsValueType)
+            {
+                // CUnion layout algorithm does not support GC pointers.
+                ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadBadFormat, type);
+            }
+
+            var offsets = new FieldAndOffset[numInstanceFields];
+
+            LayoutInt largestFieldSize = LayoutInt.Zero;
+            LayoutInt largestAlignmentRequirement = LayoutInt.One;
+            int fieldOrdinal = 0;
+            int packingSize = type.Context.Target.MaximumAlignment;
+            bool layoutAbiStable = true;
+            bool hasAutoLayoutField = false;
+            bool hasInt128Field = false;
+            bool hasVectorTField = false;
+            bool hasDecimalField = false;
+
+            foreach (var field in type.GetFields())
+            {
+                if (field.IsStatic)
+                    continue;
+
+                var fieldSizeAndAlignment = ComputeFieldSizeAndAlignment(field.FieldType.UnderlyingType, hasLayout: true, packingSize, out ComputedFieldData fieldData);
+                if (!fieldData.LayoutAbiStable)
+                    layoutAbiStable = false;
+                if (fieldData.HasAutoLayout)
+                    hasAutoLayoutField = true;
+                if (fieldData.HasInt128Field)
+                    hasInt128Field = true;
+                if (fieldData.HasVectorTField)
+                    hasVectorTField = true;
+                if (fieldData.HasDecimalField)
+                    hasDecimalField = true;
+
+                largestAlignmentRequirement = LayoutInt.Max(fieldSizeAndAlignment.Alignment, largestAlignmentRequirement);
+                largestFieldSize = LayoutInt.Max(fieldSizeAndAlignment.Size, largestFieldSize);
+
+                // All fields are placed at offset 0 in a union
+                offsets[fieldOrdinal] = new FieldAndOffset(field, LayoutInt.Zero);
+
+                fieldOrdinal++;
+            }
+
+            if (hasAutoLayoutField)
+            {
+                // CUnion does not support auto layout fields
+                ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadBadFormat, type);
+            }
+
+            if (largestFieldSize == LayoutInt.Zero)
+            {
+                // CUnion cannot have zero size.
+                ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadBadFormat, type);
+            }
+
+            if (type.IsInlineArray)
+            {
+                // CUnion types cannot be inline arrays
+                ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadBadFormat, type);
+            }
+
+            SizeAndAlignment instanceByteSizeAndAlignment;
+            var instanceSizeAndAlignment = ComputeInstanceSize(
+                type,
+                largestFieldSize,
+                largestAlignmentRequirement,
+                classLayoutSize: 0, // CUnion does not use the size from metadata.
+                out instanceByteSizeAndAlignment);
+
+            ComputedInstanceFieldLayout computedLayout = new ComputedInstanceFieldLayout
+            {
+                IsAutoLayoutOrHasAutoLayoutFields = false,
+                IsInt128OrHasInt128Fields = hasInt128Field,
+                IsVectorTOrHasVectorTFields = hasVectorTField,
+                IsDecimalFloatingPointOrHasDecimalFloatingPointFields = hasDecimalField,
                 FieldAlignment = instanceSizeAndAlignment.Alignment,
                 FieldSize = instanceSizeAndAlignment.Size,
                 ByteCountUnaligned = instanceByteSizeAndAlignment.Size,
@@ -651,6 +755,7 @@ namespace Internal.TypeSystem
             int[] instanceNonGCPointerFieldsCount = new int[maxLog2Size + 1];
             bool hasInt128Field = false;
             bool hasVectorTField = false;
+            bool hasDecimalField = false;
 
             foreach (var field in type.GetFields())
             {
@@ -667,6 +772,8 @@ namespace Internal.TypeSystem
                         hasInt128Field = true;
                     if (((DefType)fieldType).IsVectorTOrHasVectorTFields)
                         hasVectorTField = true;
+                    if (((DefType)fieldType).IsDecimalFloatingPointOrHasDecimalFloatingPointFields)
+                        hasDecimalField = true;
                 }
                 else if (fieldType.IsGCPointer)
                 {
@@ -773,7 +880,7 @@ namespace Internal.TypeSystem
             // pointer (the Crossgen2 way) to ensure 8-alignment for longs and doubles as required by the ARM32 ISA. Please note
             // that for 16-alignment used by Vector128 this logic actually ensures that the fields are 16-misaligned
             // (they are 16-aligned after the 4-byte or 8-byte method table pointer).
-            if (!type.IsValueType && cumulativeInstanceFieldPos != LayoutInt.Zero && type.Context.Target.Architecture != TargetArchitecture.ARM)
+            if (!type.IsValueType && cumulativeInstanceFieldPos != LayoutInt.Zero && !type.Context.Target.SupportsAlign8)
             {
                 offsetBias = type.Context.Target.LayoutPointerSize;
                 cumulativeInstanceFieldPos -= offsetBias;
@@ -904,17 +1011,17 @@ namespace Internal.TypeSystem
             }
             else if (cumulativeInstanceFieldPos.AsInt > context.Target.PointerSize)
             {
-                if (requiresAlign8)
-                {
-                    minAlign = new LayoutInt(8);
-                }
-                else if (type.ContainsGCPointers)
+                if (type.ContainsGCPointers)
                 {
                     minAlign = context.Target.LayoutPointerSize;
                 }
                 else
                 {
                     minAlign = largestAlignmentRequired;
+                }
+                if (requiresAlign8 && minAlign.AsInt < 8)
+                {
+                    minAlign = new LayoutInt(8);
                 }
             }
             else
@@ -941,6 +1048,7 @@ namespace Internal.TypeSystem
                 IsAutoLayoutOrHasAutoLayoutFields = true,
                 IsInt128OrHasInt128Fields = hasInt128Field,
                 IsVectorTOrHasVectorTFields = hasVectorTField,
+                IsDecimalFloatingPointOrHasDecimalFloatingPointFields = hasDecimalField,
             };
             computedLayout.FieldAlignment = instanceSizeAndAlignment.Alignment;
             computedLayout.FieldSize = instanceSizeAndAlignment.Size;
@@ -1020,6 +1128,7 @@ namespace Internal.TypeSystem
             public bool HasAutoLayout;
             public bool HasInt128Field;
             public bool HasVectorTField;
+            public bool HasDecimalField;
         }
 
         private static SizeAndAlignment ComputeFieldSizeAndAlignment(TypeDesc fieldType, bool hasLayout, int packingSize, out ComputedFieldData fieldData)
@@ -1031,7 +1140,8 @@ namespace Internal.TypeSystem
                 LayoutAbiStable = true,
                 HasAutoLayout = true,
                 HasInt128Field = false,
-                HasVectorTField = false
+                HasVectorTField = false,
+                HasDecimalField = false
             };
 
             if (fieldType.IsDefType)
@@ -1045,6 +1155,7 @@ namespace Internal.TypeSystem
                     fieldData.HasAutoLayout = defType.IsAutoLayoutOrHasAutoLayoutFields;
                     fieldData.HasInt128Field = defType.IsInt128OrHasInt128Fields;
                     fieldData.HasVectorTField = defType.IsVectorTOrHasVectorTFields;
+                    fieldData.HasDecimalField = defType.IsDecimalFloatingPointOrHasDecimalFloatingPointFields;
                 }
                 else
                 {

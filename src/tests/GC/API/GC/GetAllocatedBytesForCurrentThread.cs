@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Collections.Generic;
 using System.Reflection;
 using Xunit;
+using TestLibrary;
 
 public class Test_GetAllocatedBytesForCurrentThread 
 {
@@ -99,6 +100,9 @@ public class Test_GetAllocatedBytesForCurrentThread
         return true;
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/", typeof(PlatformDetection), nameof(PlatformDetection.IsArmProcess))]
+    [ActiveIssue("needs triage", TestRuntimes.Mono)]
+    [SkipOnCoreClr("This test is not compatible with GC stress.", RuntimeTestModes.AnyGCStress)]
     [Fact]
     public static int TestEntryPoint() 
     {

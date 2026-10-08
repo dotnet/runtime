@@ -9,11 +9,19 @@ namespace Microsoft.Diagnostics.DataContractReader.RuntimeTypeSystemHelpers;
 internal sealed class TypeValidation
 {
     private readonly Target _target;
+    private readonly CachedValue<TargetPointer> _continuationMethodTablePointer;
+    private readonly CachedValue<TargetPointer> _continuationSingletonEEClassPointer;
 
-    internal TypeValidation(Target target)
+    internal TypeValidation(Target target, CachedValue<TargetPointer> continuationMethodTablePointer, CachedValue<TargetPointer> continuationSingletonEEClassPointer)
     {
         _target = target;
+        _continuationMethodTablePointer = continuationMethodTablePointer;
+        _continuationSingletonEEClassPointer = continuationSingletonEEClassPointer;
     }
+
+    private TargetPointer ContinuationMethodTablePointer => _continuationMethodTablePointer;
+
+    private TargetPointer ContinuationSingletonEEClassPointer => _continuationSingletonEEClassPointer;
 
     // This doesn't need as many properties as MethodTable because we don't want to be operating on
     // a NonValidatedMethodTable for too long
@@ -67,6 +75,9 @@ internal sealed class TypeValidation
                 }
             }
         }
+
+        internal readonly bool ValidateReadable() => ValidateDataReadable<MethodTable>(_target, Address);
+        internal TargetPointer ParentMethodTable => _target.ReadPointer(Address + (ulong)_type.Fields[nameof(ParentMethodTable)].Offset);
     }
 
     internal struct NonValidatedEEClass
@@ -84,6 +95,8 @@ internal sealed class TypeValidation
         }
 
         internal TargetPointer MethodTable => _target.ReadPointer(Address + (ulong)_type.Fields[nameof(MethodTable)].Offset);
+
+        internal readonly bool ValidateReadable() => ValidateDataReadable<EEClass>(_target, Address);
     }
 
     internal static NonValidatedMethodTable GetMethodTableData(Target target, TargetPointer methodTablePointer)
@@ -108,6 +121,11 @@ internal sealed class TypeValidation
     {
         try
         {
+            // Make sure that we can read the method table's data.
+            if (!umt.ValidateReadable())
+            {
+                return false;
+            }
             if (!ValidateThrowing(umt))
             {
                 return false;
@@ -146,14 +164,22 @@ internal sealed class TypeValidation
         if (eeClassPtr != TargetPointer.Null)
         {
             NonValidatedEEClass eeClass = GetEEClassData(_target, eeClassPtr);
+            if (!eeClass.ValidateReadable())
+            {
+                return false;
+            }
             TargetPointer methodTablePtrFromClass = eeClass.MethodTable;
             if (methodTable.Address == methodTablePtrFromClass)
             {
                 return true;
             }
-            if (methodTable.Flags.HasInstantiation || methodTable.Flags.IsArray)
+            if (methodTable.Flags.HasInstantiation || methodTable.Flags.IsArray || IsContinuationWithoutMetadata(methodTable))
             {
                 NonValidatedMethodTable methodTableFromClass = GetMethodTableData(_target, methodTablePtrFromClass);
+                if (!methodTableFromClass.ValidateReadable())
+                {
+                    return false;
+                }
                 TargetPointer classFromMethodTable = GetClassThrowing(methodTableFromClass);
                 return classFromMethodTable == eeClassPtr;
             }
@@ -174,6 +200,22 @@ internal sealed class TypeValidation
         return true;
     }
 
+    private static bool ValidateDataReadable<T>(Target target, TargetPointer dataAddress) where T : IData<T>
+    {
+        try
+        {
+            T dataClass = T.Create(target, dataAddress);
+            // Fields are read lazily, so force a full read to validate that the
+            // entire structure is readable (an unreadable field throws below).
+            (dataClass as IReadableData)?.EnsureAllFieldsRead();
+            return true;
+        }
+        catch (VirtualReadException)
+        {
+            return false;
+        }
+    }
+
     private TargetPointer GetClassThrowing(NonValidatedMethodTable methodTable)
     {
         TargetPointer eeClassOrCanonMT = methodTable.EEClassOrCanonMT;
@@ -186,8 +228,24 @@ internal sealed class TypeValidation
         {
             TargetPointer canonicalMethodTablePtr = methodTable.CanonMT;
             NonValidatedMethodTable umt = GetMethodTableData(_target, canonicalMethodTablePtr);
+            if (!umt.ValidateReadable())
+            {
+                throw new InvalidOperationException("canon MT is not readable");
+            }
             return umt.EEClass;
         }
+    }
+
+    // NOTE: The continuation check is duplicated here and in RuntimeTypeSystem_1.IsContinuationWithoutMetadata.
+    // TypeValidation runs before the MethodTable is added to the RuntimeTypeSystem's cache, so we
+    // cannot call into RuntimeTypeSystem_1 — the type handle does not exist yet. Instead we
+    // duplicate the check using the raw ParentMethodTable read from target memory.
+    private bool IsContinuationWithoutMetadata(NonValidatedMethodTable methodTable)
+    {
+        return ContinuationMethodTablePointer != TargetPointer.Null
+            && methodTable.ParentMethodTable == ContinuationMethodTablePointer
+            && ContinuationSingletonEEClassPointer != TargetPointer.Null
+            && GetClassThrowing(methodTable) == ContinuationSingletonEEClassPointer;
     }
 
     internal bool TryValidateMethodTablePointer(TargetPointer methodTablePointer)

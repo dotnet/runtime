@@ -352,6 +352,8 @@ namespace System
             Copy(sourceArray, isourceIndex, destinationArray, idestinationIndex, ilength);
         }
 
+#if !MONO // implementation details of MethodTable
+
         // Provides a strong exception guarantee - either it succeeds, or
         // it throws an exception with no side effects.  The arrays must be
         // compatible array types based on the array element type - this
@@ -359,10 +361,8 @@ namespace System
         // It will up-cast, assuming the array types are correct.
         public static void ConstrainedCopy(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length)
         {
-            CopyImpl(sourceArray, sourceIndex, destinationArray, destinationIndex, length, reliable: true);
+            Copy(sourceArray, sourceIndex, destinationArray, destinationIndex, length, reliable: true);
         }
-
-#if !MONO // implementation details of MethodTable
 
         // Copies length elements from sourceArray, starting at index 0, to
         // destinationArray, starting at index 0.
@@ -396,7 +396,12 @@ namespace System
 
         // Copies length elements from sourceArray, starting at sourceIndex, to
         // destinationArray, starting at destinationIndex.
-        public static unsafe void Copy(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length)
+        public static void Copy(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length)
+        {
+            Copy(sourceArray, sourceIndex, destinationArray, destinationIndex, length, reliable: false);
+        }
+
+        private static unsafe void Copy(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length, bool reliable)
         {
             if (sourceArray != null && destinationArray != null)
             {
@@ -423,7 +428,7 @@ namespace System
             }
 
             // Less common
-            CopyImpl(sourceArray, sourceIndex, destinationArray, destinationIndex, length, reliable: false);
+            CopyImpl(sourceArray, sourceIndex, destinationArray, destinationIndex, length, reliable);
         }
 
         // Reliability-wise, this method will either possibly corrupt your
@@ -810,6 +815,12 @@ namespace System
         {
             if (indices == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.indices);
+
+            return GetValue(new ReadOnlySpan<int>(indices));
+        }
+
+        public object? GetValue(params ReadOnlySpan<int> indices)
+        {
             if (Rank != indices.Length)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_RankIndices);
 
@@ -868,6 +879,12 @@ namespace System
         {
             if (indices == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.indices);
+
+            SetValue(value, new ReadOnlySpan<int>(indices));
+        }
+
+        public void SetValue(object? value, params ReadOnlySpan<int> indices)
+        {
             if (Rank != indices.Length)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_RankIndices);
 
@@ -1548,15 +1565,27 @@ namespace System
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.match);
             }
 
-            List<T> list = new List<T>();
-            for (int i = 0; i < array.Length; i++)
+            InlineArray4<T> stackAllocatedMatches = default;
+            Span<T> span = stackAllocatedMatches;
+            int foundCount = 0;
+            T[]? values = null;
+
+            foreach (T value in array)
             {
-                if (match(array[i]))
+                if (match(value))
                 {
-                    list.Add(array[i]);
+                    if (foundCount >= span.Length)
+                    {
+                        values = new T[Math.Min((uint)span.Length * 2, (uint)array.Length)];
+                        span.CopyTo(values);
+                        span = values;
+                    }
+
+                    span[foundCount++] = value;
                 }
             }
-            return list.ToArray();
+
+            return values?.Length == foundCount ? values : span[..foundCount].ToArray();
         }
 
         public static int FindIndex<T>(T[] array, Predicate<T> match)

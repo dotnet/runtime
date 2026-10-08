@@ -3,7 +3,6 @@
     <NumberOfStripesToUseInStress>8</NumberOfStripesToUseInStress>
 
     <GCStressIncompatible Condition="'$(TargetArchitecture)' == 'arm64' and '$(TargetOS)' == 'osx'">true</GCStressIncompatible>
-    <GCStressIncompatible Condition="'$(TargetArchitecture)' == 'arm'">true</GCStressIncompatible>
 
     <!-- Various platforms will always throw, so we don't want to spend cycles running tests unnecessarily -->
     <!-- We don't need to worry about coverage as we have a number of stress tests that can disable intrinsics per ISA and run on the normally supported platforms -->

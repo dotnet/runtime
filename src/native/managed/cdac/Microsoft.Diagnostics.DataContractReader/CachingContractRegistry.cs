@@ -3,74 +3,132 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 
 namespace Microsoft.Diagnostics.DataContractReader;
 
 /// <summary>
-/// Contract registry that caches contracts for a target
+/// Contract registry that resolves contracts by (type, version) lookup.
+/// Has no knowledge of any specific contracts — all implementations are
+/// registered from outside via <see cref="Register{TContract}"/>.
 /// </summary>
 internal sealed class CachingContractRegistry : ContractRegistry
 {
-    public delegate bool TryGetContractVersionDelegate(string contractName, out int version);
-    // Contracts that have already been created for a target.
-    // Items should not be removed from this, only added.
+    public delegate bool TryGetContractVersionDelegate(string contractName, [NotNullWhen(true)] out string? version);
+
     private readonly Dictionary<Type, IContract> _contracts = [];
-    private readonly Dictionary<Type, IContractFactory<IContract>> _factories;
+    private readonly Dictionary<(Type, string), Func<Target, IContract>> _creators = [];
+    private readonly HashSet<(Type, string)> _unsupportedVersions = [];
     private readonly Target _target;
     private readonly TryGetContractVersionDelegate _tryGetContractVersion;
 
-    public CachingContractRegistry(Target target, TryGetContractVersionDelegate tryGetContractVersion, IEnumerable<IContractFactory<IContract>> additionalFactories, Action<Dictionary<Type, IContractFactory<IContract>>>? configureFactories = null)
+    public CachingContractRegistry(Target target, TryGetContractVersionDelegate tryGetContractVersion, params Action<ContractRegistry>[] contractRegistrations)
     {
         _target = target;
         _tryGetContractVersion = tryGetContractVersion;
-        _factories = new()
-        {
-            [typeof(IException)] = new ExceptionFactory(),
-            [typeof(ILoader)] = new LoaderFactory(),
-            [typeof(IEcmaMetadata)] = new EcmaMetadataFactory(),
-            [typeof(IObject)] = new ObjectFactory(),
-            [typeof(IThread)] = new ThreadFactory(),
-            [typeof(IRuntimeTypeSystem)] = new RuntimeTypeSystemFactory(),
-            [typeof(IDacStreams)] = new DacStreamsFactory(),
-            [typeof(IExecutionManager)] = new ExecutionManagerFactory(),
-            [typeof(ICodeVersions)] = new CodeVersionsFactory(),
-            [typeof(IPlatformMetadata)] = new PlatformMetadataFactory(),
-            [typeof(IPrecodeStubs)] = new PrecodeStubsFactory(),
-            [typeof(IReJIT)] = new ReJITFactory(),
-            [typeof(IStackWalk)] = new StackWalkFactory(),
-            [typeof(IRuntimeInfo)] = new RuntimeInfoFactory(),
-            [typeof(IComWrappers)] = new ComWrappersFactory(),
-            [typeof(IDebugInfo)] = new DebugInfoFactory(),
-            [typeof(ISHash)] = new SHashFactory(),
-            [typeof(IGC)] = new GCFactory(),
-            [typeof(INotifications)] = new NotificationsFactory(),
-            [typeof(ISignatureDecoder)] = new SignatureDecoderFactory(),
-        };
 
-        foreach (IContractFactory<IContract> factory in additionalFactories)
+        foreach (Action<ContractRegistry> register in contractRegistrations)
         {
-            _factories[factory.ContractType] = factory;
+            register(this);
         }
-        configureFactories?.Invoke(_factories);
     }
 
-    public override TContract GetContract<TContract>()
+    public override void Register<TContract>(string version, Func<Target, TContract> creator)
     {
-        if (_contracts.TryGetValue(typeof(TContract), out IContract? contractMaybe))
-            return (TContract)contractMaybe;
+        _creators[(typeof(TContract), version)] = t => creator(t);
+    }
 
-        if (!_tryGetContractVersion(TContract.Name, out int version))
-            throw new NotImplementedException();
+    public override void RegisterUnsupported<TContract>(string version)
+    {
+        _unsupportedVersions.Add((typeof(TContract), version));
+    }
 
-        if (!_factories.TryGetValue(typeof(TContract), out IContractFactory<IContract>? factory))
-            throw new NotImplementedException();
-        // Create and register the contract
-        TContract contract = (TContract)factory.CreateContract(_target, version);
+    public override bool TryGetContract<TContract>([NotNullWhen(true)] out TContract contract, [NotNullWhen(false)] out System.Exception? failureException)
+    {
+        contract = default!;
+        failureException = null;
+        if (_contracts.TryGetValue(typeof(TContract), out IContract? cached))
+        {
+            contract = (TContract)cached;
+            return true;
+        }
+
+        if (!TryResolveCreator(typeof(TContract), TContract.Name, out Func<Target, IContract>? creator, out failureException))
+        {
+            return false;
+        }
+
+        contract = (TContract)creator(_target);
         if (_contracts.TryAdd(typeof(TContract), contract))
-            return contract;
+        {
+            return true;
+        }
 
-        // Contract was already registered by someone else
-        return (TContract)_contracts[typeof(TContract)];
+        contract = (TContract)_contracts[typeof(TContract)];
+        return true;
+    }
+
+    public override bool TryValidate<TContract>([NotNullWhen(false)] out System.Exception? failureException)
+    {
+        failureException = null;
+
+        // An already-instantiated contract is, by definition, supported.
+        if (_contracts.ContainsKey(typeof(TContract)))
+        {
+            return true;
+        }
+
+        // Presence-only validation: confirm this cDAC can provide the contract at the version the
+        // target advertises, but never invoke the creator. Instantiating a contract can read target
+        // memory and chain into other contracts, and a partial capture (for example a minidump) may
+        // legitimately be missing the data a given contract needs while still being fully usable for
+        // others (stack walks and similar). Reading target memory here could spuriously fail
+        // validation and reject an otherwise serviceable dump, so resolve the creator without running it.
+        return TryResolveCreator(typeof(TContract), TContract.Name, out _, out failureException);
+    }
+
+    /// <summary>
+    /// Classifies whether a registered creator exists for the target-advertised version of a
+    /// contract, without invoking it. Shared by <see cref="TryGetContract{TContract}(out TContract, out System.Exception?)"/>
+    /// and <see cref="TryValidate{TContract}(out System.Exception?)"/>.
+    /// </summary>
+    private bool TryResolveCreator(
+        Type contractType,
+        string contractName,
+        [NotNullWhen(true)] out Func<Target, IContract>? creator,
+        [NotNullWhen(false)] out System.Exception? failureException)
+    {
+        creator = null;
+        failureException = null;
+
+        if (!_tryGetContractVersion(contractName, out string? version))
+        {
+            if (_creators.TryGetValue((contractType, string.Empty), out creator))
+            {
+                return true;
+            }
+
+            failureException = new ContractMissingException(contractName);
+            return false;
+        }
+
+        if (!_creators.TryGetValue((contractType, version), out creator))
+        {
+            failureException = _unsupportedVersions.Contains((contractType, version))
+                ? new ContractObsoleteException(contractName, version)
+                : new ContractUnrecognizedException(contractName, version);
+            return false;
+        }
+
+        return true;
+    }
+
+    public override void Flush(FlushScope scope)
+    {
+        foreach (IContract contract in _contracts.Values)
+        {
+            contract.Flush(scope);
+        }
     }
 }

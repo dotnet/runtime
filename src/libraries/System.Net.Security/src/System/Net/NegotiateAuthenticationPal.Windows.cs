@@ -369,6 +369,7 @@ namespace System.Net
                     SecurityStatusPalErrorCode.TimeSkew => NegotiateAuthenticationStatusCode.InvalidToken,
                     SecurityStatusPalErrorCode.AlgorithmMismatch => NegotiateAuthenticationStatusCode.InvalidToken,
                     SecurityStatusPalErrorCode.CertUnknown => NegotiateAuthenticationStatusCode.UnknownCredentials,
+                    SecurityStatusPalErrorCode.TargetUnknown => NegotiateAuthenticationStatusCode.TargetUnknown,
 
                     // Processing partial inputs is not supported, so this is result of incorrect input
                     SecurityStatusPalErrorCode.IncompleteMessage => NegotiateAuthenticationStatusCode.InvalidToken,

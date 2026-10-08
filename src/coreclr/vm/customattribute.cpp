@@ -52,7 +52,7 @@ static HRESULT ParseCaType(
 
         if (!th.IsNull() && th.IsEnum())
         {
-            pCaType->enumType = (CorSerializationType)th.GetVerifierCorElementType();
+            pCaType->enumType = (CorSerializationType)th.GetInternalCorElementType();
 
             // The assembly qualified name of th might not equal pCaType->szEnumName.
             // e.g. th could be "MyEnum, MyAssembly, Version=4.0.0.0" while
@@ -904,18 +904,27 @@ extern "C" void QCALLTYPE CustomAttribute_CreateCustomAttributeInstance(
     BYTE** ppBlob,
     BYTE* pEndBlob,
     INT32* pcNamedArgs,
-    QCall::ObjectHandleOnStack result)
+    QCall::ObjectHandleOnStack result,
+    QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
     BEGIN_QCALL;
 
-    GCX_COOP();
+    GCX_COOP_REGION_BEGIN();
 
     MethodDesc* pCtorMD = ((REFLECTMETHODREF)pMethod.Get())->GetMethod();
     TypeHandle th = ((REFLECTCLASSBASEREF)pCaType.Get())->GetType();
 
-    MethodDescCallSite ctorCallSite(pCtorMD, th);
+    PCODE pCallTarget;
+
+    {
+        GCX_PREEMP_REGION_BEGIN();
+        pCallTarget = pCtorMD->GetSingleCallableAddrOfCode();
+        GCX_PREEMP_REGION_END();
+    }
+
+    MethodDescCallSite ctorCallSite(pCtorMD, pCallTarget, th);
     MetaSig* pSig = ctorCallSite.GetMetaSig();
     BYTE* pBlob = *ppBlob;
 
@@ -1016,6 +1025,8 @@ extern "C" void QCALLTYPE CustomAttribute_CreateCustomAttributeInstance(
 
     ctorCallSite.CallWithValueTypes(args);
 
+    GCX_COOP_REGION_END();
+
     END_QCALL;
 }
 
@@ -1026,7 +1037,8 @@ extern "C" void QCALLTYPE CustomAttribute_CreatePropertyOrFieldData(
     QCall::StringHandleOnStack pName,
     BOOL* pbIsProperty,
     QCall::ObjectHandleOnStack pType,
-    QCall::ObjectHandleOnStack pValue)
+    QCall::ObjectHandleOnStack pValue,
+    QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 

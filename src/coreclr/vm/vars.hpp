@@ -1,11 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //
 // vars.hpp
 //
 // Global variables
 //
-
 
 #ifndef _VARS_HPP
 #define _VARS_HPP
@@ -33,13 +33,30 @@ class LoaderHeap;
 class IGCHeap;
 class Object;
 class StringObject;
-class ArrayClass;
 class MethodTable;
 class MethodDesc;
 class SyncBlockCache;
 class SyncTableEntry;
 class ThreadStore;
 namespace ETW { class CEtwTracer; };
+#ifdef FEATURE_COMWRAPPERS
+inline constexpr size_t g_numKnownQueryInterfaceImplementations = 2;
+namespace InteropLib { namespace ABI {
+    struct ComInterfaceDispatch;
+    using QueryInterfaceMethod = HRESULT (STDMETHODCALLTYPE *)(InteropLib::ABI::ComInterfaceDispatch*, REFIID, void**);
+#ifndef DACCESS_COMPILE
+    extern QueryInterfaceMethod g_knownQueryInterfaceImplementations[g_numKnownQueryInterfaceImplementations];
+#endif // !DACCESS_COMPILE
+} }
+
+GARY_DECL(TADDR, g_knownQueryInterfaceImplementations, g_numKnownQueryInterfaceImplementations);
+
+#endif // FEATURE_COMWRAPPERS
+
+#ifdef FEATURE_OBJCMARSHAL
+GVAL_DECL(OBJECTHANDLE, g_ObjectiveCTrackingInfoTable);
+#endif // FEATURE_OBJCMARSHAL
+
 class DebugInterface;
 class DebugInfoManager;
 class EEDbgInterfaceImpl;
@@ -347,8 +364,10 @@ GPTR_DECL(MethodTable,      g_pWeakReferenceOfTClass);
 
 #ifdef DACCESS_COMPILE
 GPTR_DECL(MethodTable,      g_pContinuationClassIfSubTypeCreated);
+GPTR_DECL(EEClass,          g_singletonContinuationEEClass);
 #else
 GVAL_DECL(Volatile<MethodTable*>, g_pContinuationClassIfSubTypeCreated);
+GVAL_DECL(Volatile<EEClass*>, g_singletonContinuationEEClass);
 #endif
 
 #ifdef FEATURE_COMINTEROP
@@ -365,11 +384,11 @@ GVAL_DECL(DWORD,            g_TlsIndex);
 GVAL_DECL(DWORD,            g_offsetOfCurrentThreadInfo);
 GVAL_DECL(DWORD,            g_gcNotificationFlags);
 
-#ifdef FEATURE_EH_FUNCLETS
 GPTR_DECL(MethodTable,      g_pEHClass);
 GPTR_DECL(MethodTable,      g_pExceptionServicesInternalCallsClass);
 GPTR_DECL(MethodTable,      g_pStackFrameIteratorClass);
-#endif
+
+GPTR_DECL(MethodDesc,       g_pEnvironmentCallEntryPointMethodDesc);
 
 // Full path to the managed entry assembly - stored for ease of identifying the entry asssembly for diagnostics
 GVAL_DECL(PTR_WSTR, g_EntryAssemblyPath);
@@ -377,14 +396,12 @@ GVAL_DECL(PTR_WSTR, g_EntryAssemblyPath);
 // Global System Information
 extern SYSTEM_INFO g_SystemInfo;
 
-// <TODO>@TODO - PROMOTE.</TODO>
-// <TODO>@TODO - I'd like to make these private members of CLRException some day.</TODO>
 EXTERN OBJECTHANDLE         g_pPreallocatedOutOfMemoryException;
 EXTERN OBJECTHANDLE         g_pPreallocatedStackOverflowException;
 EXTERN OBJECTHANDLE         g_pPreallocatedExecutionEngineException;
 
 // we use this as a dummy object to indicate free space in the handle tables -- this object is never visible to the world
-EXTERN OBJECTHANDLE         g_pPreallocatedSentinelObject;
+EXTERN OBJECTREF            g_pPreallocatedSentinelObject;
 
 EXTERN MethodTable*         g_pCastHelpers;
 
@@ -474,7 +491,7 @@ EXTERN PRTLDLLSHUTDOWNINPROGRESS g_pfnRtlDllShutdownInProgress;
 
 // Indicates whether we're executing shut down as a result of DllMain
 // (DLL_PROCESS_DETACH). See comments at code:EEShutDown for details.
-inline bool IsAtProcessExit()
+inline bool IsAtProcessExit() noexcept
 {
     SUPPORTS_DAC;
 #if defined(DACCESS_COMPILE) || !defined(HOST_WINDOWS)
@@ -534,14 +551,8 @@ inline bool CORDebuggerAttached()
     return (g_CORDebuggerControlFlags & DBCF_ATTACHED) && !IsAtProcessExit();
 }
 
-// This only check debugger bits. However JIT optimizations can be disabled by other ways on a module
-// In most cases Module::AreJITOptimizationsDisabled() should be the prefered for checking if JIT optimizations
-// are disabled for a module (it does check both debugger bits and profiler jit deoptimization flag)
 #define CORDebuggerAllowJITOpts(dwDebuggerBits)           \
-    (((dwDebuggerBits) & DACF_ALLOW_JIT_OPTS)             \
-     ||                                                   \
-     ((g_CORDebuggerControlFlags & DBCF_ALLOW_JIT_OPT) && \
-      !((dwDebuggerBits) & DACF_USER_OVERRIDE)))
+    (((dwDebuggerBits) & DACF_ALLOW_JIT_OPTS) != 0)
 
 #define CORDebuggerEnCMode(dwDebuggerBits)                         \
     ((dwDebuggerBits) & DACF_ENC_ENABLED)
@@ -581,11 +592,16 @@ typedef DPTR(GSCookie) PTR_GSCookie;
 #endif
 
 #ifndef DACCESS_COMPILE
-// const is so that it gets placed in the .text section (which is read-only)
+#ifdef FEATURE_READONLY_GS_COOKIE
+
+// const places the cookie in a read-only data section.
 // volatile is so that accesses to it do not get optimized away because of the const
 //
 
 extern "C" RAW_KEYWORD(volatile) READONLY_ATTR const GSCookie s_gsCookie;
+#else
+extern "C" RAW_KEYWORD(volatile) GSCookie s_gsCookie;
+#endif // FEATURE_READONLY_GS_COOKIE
 
 inline
 GSCookie * GetProcessGSCookiePtr() { return  const_cast<GSCookie *>(&s_gsCookie); }

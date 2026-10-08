@@ -79,7 +79,7 @@ namespace NetClient
             return 100;
         }
 
-        private class InterfaceImpl : Server.Contract.IInterface2
+        private class InterfaceImpl : Server.Contract.IInterface1
         {
         }
 
@@ -164,12 +164,10 @@ namespace NetClient
             }
 
             Console.WriteLine("-- Wrappers <=> VARIANT...");
-#pragma warning disable 0618 // CurrencyWrapper is obsolete
             {
                 var expected = 123.456m;
                 Assert.Equal(expected, miscTypeTesting.Marshal_Variant(new CurrencyWrapper(expected)));
             }
-#pragma warning restore 0618
             {
                 var expected = "The quick Fox jumped over the lazy Dog.";
                 Assert.Equal(expected, miscTypeTesting.Marshal_Variant(new BStrWrapper(expected)));
@@ -216,9 +214,11 @@ namespace NetClient
 
             Console.WriteLine("-- Interfaces...");
             {
+                Assert.True(new MiscTypesTestingClass() is Server.Contract.IInterface1);
+                Assert.True(Activator.CreateInstance(typeof(MiscTypesTestingClass)) is Server.Contract.IInterface1);
+
                 var interfaceMaybe = miscTypeTesting.Marshal_Interface(new InterfaceImpl());
                 Assert.True(interfaceMaybe is Server.Contract.IInterface1);
-                Assert.True(interfaceMaybe is Server.Contract.IInterface2);
             }
         }
 

@@ -102,7 +102,7 @@ namespace System.Security.AccessControl
             switch (errorCode)
             {
                 case Interop.Errors.ERROR_FILE_NOT_FOUND:
-                    exception = new IOException(SR.Format(SR.Arg_RegKeyNotFound, errorCode));
+                    exception = new IOException(SR.Arg_RegKeyNotFound);
                     break;
 
                 case Interop.Errors.ERROR_INVALID_NAME:

@@ -247,6 +247,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         {
             using (var microsoftDotCom = new X509Certificate2(TestData.MicrosoftDotComSslCertBytes))
             using (var microsoftDotComIssuer = new X509Certificate2(TestData.MicrosoftDotComIssuerBytes))
+            using (var microsoftDotComRoot = new X509Certificate2(TestData.MicrosoftDotComRootBytes))
             using (var testCert = new X509Certificate2(TestFiles.ChainPfxFile, TestData.ChainPfxPassword))
             using (var chainHolder = new ChainHolder())
             {
@@ -254,7 +255,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
                 chain.ChainPolicy.VerificationTime = microsoftDotCom.NotBefore.AddSeconds(1);
                 chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
+                chain.ChainPolicy.DisableCertificateDownloads = true;
                 chain.ChainPolicy.ExtraStore.Add(microsoftDotComIssuer);
+                chain.ChainPolicy.ExtraStore.Add(microsoftDotComRoot);
 
                 if (addCertificateToCustomRootTrust)
                 {
@@ -609,7 +612,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [ConditionalFact(nameof(TrustsMicrosoftDotComRoot))]
+        [ConditionalFact(typeof(ChainTests), nameof(TrustsMicrosoftDotComRoot))]
         public static void BuildChain_FailOnlyApplicationPolicy()
         {
             using (var microsoftDotCom = new X509Certificate2(TestData.MicrosoftDotComSslCertBytes))
@@ -644,19 +647,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     holder.Chain.ChainElements[1].ChainElementStatus.Aggregate(
                         X509ChainStatusFlags.NoError,
                         (a, status) => a | status.Status));
-
-                if (!PlatformDetection.IsWindows)
-                {
-                    Assert.Equal(
-                        X509ChainStatusFlags.NotValidForUsage,
-                        holder.Chain.ChainElements[2].ChainElementStatus.Aggregate(
-                            X509ChainStatusFlags.NoError,
-                            (a, status) => a | status.Status));
-                }
             }
         }
 
-        [ConditionalFact(nameof(TrustsMicrosoftDotComRoot))]
+        [ConditionalFact(typeof(ChainTests), nameof(TrustsMicrosoftDotComRoot))]
         [OuterLoop("Modifies user certificate store", ~TestPlatforms.Browser)]
         [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "Root certificate store is not accessible")]
         public static void BuildChain_MicrosoftDotCom_WithRootCertInUserAndSystemRootCertStores()

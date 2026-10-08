@@ -6,4 +6,7 @@
   <ItemGroup>
     <Compile Include="struct01_auto.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

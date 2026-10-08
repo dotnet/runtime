@@ -58,7 +58,7 @@ namespace System.Speech.Recognition
             _objectToken = token;
         }
 
-        internal static RecognizerInfo Create(ObjectToken token)
+        internal static RecognizerInfo? Create(ObjectToken token)
         {
             // Token for recognizer should have Attributes.
             if (token.Attributes == null)
@@ -74,7 +74,7 @@ namespace System.Speech.Recognition
             {
                 return null;
             }
-            CultureInfo cultureInfo = SapiAttributeParser.GetCultureInfoFromLanguageString(langId);
+            CultureInfo? cultureInfo = SapiAttributeParser.GetCultureInfoFromLanguageString(langId);
             if (cultureInfo != null)
             {
                 return new RecognizerInfo(token, cultureInfo);

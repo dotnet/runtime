@@ -2,6 +2,8 @@
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <TestRuntime>true</TestRuntime>
+    <!-- https://github.com/dotnet/runtime/issues/126862 -->
+    <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="DefaultLoadContextTest.cs" />
@@ -13,4 +15,10 @@
                       CopyToOutputDirectory="PreserveNewest"
                       TargetPath="System.Runtime.Loader.Noop.Assembly_test.dll" />
   </ItemGroup>
+
+  <Target Name="_PreserveNoopAssemblyFromTrimming" AfterTargets="ConfigureTrimming" Condition="'$(TargetsAppleMobile)' == 'true' and '$(EnableAggressiveTrimming)' == 'true'">
+    <ItemGroup>
+      <ResolvedFileToPublish TrimMode="copy" Condition="'%(FileName)%(Extension)' == 'System.Runtime.Loader.Noop.Assembly_test.dll'" />
+    </ItemGroup>
+  </Target>
 </Project>

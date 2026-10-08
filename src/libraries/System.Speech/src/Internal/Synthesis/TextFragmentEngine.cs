@@ -27,7 +27,7 @@ namespace System.Speech.Internal.Synthesis
 
         #region Internal Methods
 
-        public object ProcessSpeak(string sVersion, string sBaseUri, CultureInfo culture, List<SsmlXmlAttribute> extraNamespace)
+        public object ProcessSpeak(string sVersion, string? sBaseUri, CultureInfo? culture, List<SsmlXmlAttribute> extraNamespace)
         {
             _speakInfo.SetVoice(null, culture, VoiceGender.NotSet, VoiceAge.NotSet, 1);
             return _speakInfo.Voice;
@@ -59,7 +59,7 @@ namespace System.Speech.Internal.Synthesis
             }
         }
 
-        public void ProcessAudio(object voice, string sUri, string baseUri, bool fIgnore)
+        public void ProcessAudio(object voice, string sUri, string? baseUri, bool fIgnore)
         {
             if (!fIgnore)
             {
@@ -103,7 +103,7 @@ namespace System.Speech.Internal.Synthesis
             }
         }
 
-        public void ProcessDesc(CultureInfo culture)
+        public void ProcessDesc(CultureInfo? culture)
         {
         }
 
@@ -122,7 +122,7 @@ namespace System.Speech.Internal.Synthesis
             }
         }
 
-        public object ProcessTextBlock(bool isParagraph, object voice, ref FragmentState fragmentState, CultureInfo culture, bool newCulture, VoiceGender gender, VoiceAge age)
+        public object ProcessTextBlock(bool isParagraph, object voice, ref FragmentState fragmentState, CultureInfo? culture, bool newCulture, VoiceGender gender, VoiceAge age)
         {
             if (culture != null && newCulture)
             {
@@ -154,14 +154,14 @@ namespace System.Speech.Internal.Synthesis
         public void ProcessPhoneme(ref FragmentState fragmentState, AlphabetType alphabet, string ph, char[] phoneIds)
         {
             fragmentState.Action = TtsEngineAction.Pronounce;
-            fragmentState.Phoneme = _speakInfo.Voice.TtsEngine.ConvertPhonemes(phoneIds, alphabet);
+            fragmentState.Phoneme = _speakInfo.Voice.TtsEngine.ConvertPhonemes(phoneIds, alphabet)!;
         }
 
-        public void ProcessProsody(string pitch, string range, string rate, string volume, string duration, string points)
+        public void ProcessProsody(string? pitch, string? range, string? rate, string? volume, string? duration, string? points)
         {
         }
 
-        public void ProcessSayAs(string interpretAs, string format, string detail)
+        public void ProcessSayAs(string interpretAs, string? format, string? detail)
         {
         }
 
@@ -170,13 +170,13 @@ namespace System.Speech.Internal.Synthesis
             ProcessText(alias, voice, ref fragmentState, position, fIgnore);
         }
 
-        public object ProcessVoice(string name, CultureInfo culture, VoiceGender gender, VoiceAge age, int variant, bool fNewCulture, List<SsmlXmlAttribute> extraNamespace)
+        public object ProcessVoice(string? name, CultureInfo? culture, VoiceGender gender, VoiceAge age, int variant, bool fNewCulture, List<SsmlXmlAttribute>? extraNamespace)
         {
             _speakInfo.SetVoice(name, culture, gender, age, variant);
             return _speakInfo.Voice;
         }
 
-        public void ProcessLexicon(Uri uri, string type)
+        public void ProcessLexicon(Uri uri, string? type)
         {
             _lexicons.Add(new LexiconEntry(uri, type));
         }
@@ -192,7 +192,7 @@ namespace System.Speech.Internal.Synthesis
             AddParseUnknownFragment(voice, ref fragmentState, text);
         }
 
-        public void StartProcessUnknownAttributes(object voice, ref FragmentState fragmentState, string element, List<SsmlXmlAttribute> extraAttributes)
+        public void StartProcessUnknownAttributes(object voice, ref FragmentState fragmentState, string? element, List<SsmlXmlAttribute> extraAttributes)
         {
             StringBuilder sb = new();
             sb.AppendFormat(CultureInfo.InvariantCulture, "<{0}", element);
@@ -205,7 +205,7 @@ namespace System.Speech.Internal.Synthesis
             AddParseUnknownFragment(voice, ref fragmentState, sb.ToString());
         }
 
-        public void EndProcessUnknownAttributes(object voice, ref FragmentState fragmentState, string element, List<SsmlXmlAttribute> extraAttributes)
+        public void EndProcessUnknownAttributes(object voice, ref FragmentState fragmentState, string? element, List<SsmlXmlAttribute> extraAttributes)
         {
             AddParseUnknownFragment(voice, ref fragmentState, string.Format(CultureInfo.InvariantCulture, "</{0}>", element));
         }
@@ -225,7 +225,7 @@ namespace System.Speech.Internal.Synthesis
         {
         }
 
-        public bool ProcessPromptEngineDatabase(object voice, string fname, string delta, string idset)
+        public bool ProcessPromptEngineDatabase(object voice, string? fname, string? delta, string? idset)
         {
             return false;
         }
@@ -235,7 +235,7 @@ namespace System.Speech.Internal.Synthesis
             return false;
         }
 
-        public bool ProcessPromptEngineId(object voice, string id)
+        public bool ProcessPromptEngineId(object voice, string? id)
         {
             return false;
         }
@@ -249,21 +249,21 @@ namespace System.Speech.Internal.Synthesis
         {
         }
 
-        public bool BeginPromptEngineWithTag(object voice, string tag)
+        public bool BeginPromptEngineWithTag(object voice, string? tag)
         {
             return false;
         }
 
-        public void EndPromptEngineWithTag(object voice, string tag)
+        public void EndPromptEngineWithTag(object voice, string? tag)
         {
         }
 
-        public bool BeginPromptEngineRule(object voice, string name)
+        public bool BeginPromptEngineRule(object voice, string? name)
         {
             return false;
         }
 
-        public void EndPromptEngineRule(object voice, string name)
+        public void EndPromptEngineRule(object voice, string? name)
         {
         }
         #endregion

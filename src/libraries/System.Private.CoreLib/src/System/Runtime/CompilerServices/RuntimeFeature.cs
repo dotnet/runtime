@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Runtime.Versioning;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Runtime.CompilerServices
 {
@@ -65,8 +67,43 @@ namespace System.Runtime.CompilerServices
 
                 nameof(IsDynamicCodeSupported) => IsDynamicCodeSupported,
                 nameof(IsDynamicCodeCompiled) => IsDynamicCodeCompiled,
+                nameof(IsMultithreadingSupported) => IsMultithreadingSupported,
                 _ => false,
             };
         }
+
+        /// <summary>
+        /// Gets a value that indicates whether the runtime supports multithreading, including
+        /// creating threads and using blocking synchronization primitives. This property
+        /// returns <see langword="false"/> on platforms or configurations where multithreading
+        /// is not supported or is disabled, such as single-threaded browser environments and WASI.
+        /// </summary>
+        [UnsupportedOSPlatformGuard("browser")]
+        [UnsupportedOSPlatformGuard("wasi")]
+        [FeatureSwitchDefinition("System.Runtime.CompilerServices.RuntimeFeature.IsMultithreadingSupported")]
+        public static bool IsMultithreadingSupported
+#if FEATURE_MULTITHREADING
+            => true;
+#else
+            => false;
+#endif
+
+#if FEATURE_WASM_MANAGED_THREADS
+        internal static void ThrowIfMultithreadingIsNotSupported()
+        {
+            System.Threading.Thread.AssureBlockingPossible();
+        }
+#elif !FEATURE_MULTITHREADING
+        [DoesNotReturn]
+        internal static void ThrowIfMultithreadingIsNotSupported()
+        {
+            throw new PlatformNotSupportedException();
+        }
+#else
+        [Conditional("unnecessary")]
+        internal static void ThrowIfMultithreadingIsNotSupported()
+        {
+        }
+#endif
     }
 }

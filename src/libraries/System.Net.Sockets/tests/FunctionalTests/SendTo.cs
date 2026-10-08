@@ -96,6 +96,7 @@ namespace System.Net.Sockets.Tests
 
         [ConditionalFact]
         [SkipOnPlatform(TestPlatforms.FreeBSD, "FreeBSD allows sendto() to broadcast")]
+        [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support Broadcast")]
         public async Task Datagram_UDP_AccessDenied_Throws_DoesNotBind()
         {
             IPEndPoint invalidEndpoint = new IPEndPoint(IPAddress.Broadcast, 1234);
@@ -123,31 +124,31 @@ namespace System.Net.Sockets.Tests
         }
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class SendTo_SyncSpan : SendTo<SocketHelperSpanSync>
     {
         public SendTo_SyncSpan(ITestOutputHelper output) : base(output) { }
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class SendTo_SyncSpanForceNonBlocking : SendTo<SocketHelperSpanSyncForceNonBlocking>
     {
         public SendTo_SyncSpanForceNonBlocking(ITestOutputHelper output) : base(output) { }
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class SendTo_ArraySync : SendTo<SocketHelperArraySync>
     {
         public SendTo_ArraySync(ITestOutputHelper output) : base(output) { }
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class SendTo_SyncForceNonBlocking : SendTo<SocketHelperSyncForceNonBlocking>
     {
         public SendTo_SyncForceNonBlocking(ITestOutputHelper output) : base(output) {}
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class SendTo_Apm : SendTo<SocketHelperApm>
     {
         public SendTo_Apm(ITestOutputHelper output) : base(output) {}

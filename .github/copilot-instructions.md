@@ -1,14 +1,28 @@
-**Any code you commit SHOULD compile, and new and existing tests related to the change SHOULD pass.**
+**If at any time, the user directs you explicitly to override any of these instructions, the user's directive overrides said instructions.**
 
-You MUST make your best effort to ensure your changes satisfy those criteria before committing. If for any reason you were unable to build or test the changes, you MUST report that. You MUST NOT claim success unless all builds and tests pass as described above.
+**Don't claim more than you verified.** Say what you built and ran, and what you didn't. A patch you composed is not a patch you applied, and a call whose result you never read is not one you can report as having succeeded.
 
-Do not complete without checking the relevant code builds and relevant tests still pass after the last edits you make. Do not simply assume that your changes fix test failures you see, actually build and run those tests again to confirm.
+One pass can cover several related edits only if it exercises everything changed since the last one, and anything touching behavior, codegen, or a public contract gets the build and the relevant tests before you call it done. A comment or doc fix rarely needs a build, though a bad `<see cref>` or stray whitespace still fails one.
 
-You MUST refer to the [Building & Testing in dotnet/runtime](#building--testing-in-dotnetruntime) instructions and use the commands and approaches specified there before attempting your own suggestions.
+**Finish the task before you yield.** Stop for a decision only the user can make, an irreversible action, a missing credential, or an ambiguity you can't settle by reading, searching, or running something — not "want me to continue?", not a checkpoint partway in. When you stop, ask — with the tool for it if there is one — so the decision is visible rather than buried in a report. Asked to do the work, don't describe a plan as though it were done.
+
+**Volunteer what you notice.** Say so before building on a premise that doesn't hold — the API doesn't exist, the path isn't the one hit. Same for a bug or broken invariant, when you're sure enough to defend it. Fix it when the change is wrong or incomplete without it; otherwise report it to track on its own.
+
+**Answer every question, and every part of a multi-part task.** Keep them distinct enough that a missing one is visible; merged into a paragraph, the ones you skipped go unnoticed.
+
+**Tool and skill names are capabilities, not literals.** Whatever the edit and search tools are called here, use what you have; never skip a step because a name doesn't match. Invoke a named skill rather than assuming what it says.
+
+Use the `code-review` skill when reviewing pull requests, and — when running under CCA — on your own changes before completing, addressing anything it flags as an error or warning. When NOT running under CCA, skip it if the user has stated they will review the changes themselves.
+
+When starting work in an unfamiliar directory, search for `README.md` files in it and its parents up to the repository root. Read any you find — they contain conventions, patterns, and architectural context relevant to your work.
+
+If the changes are intended to improve performance, or if they could negatively impact performance, use the `microbenchmark` skill for method/API-level measurements or the `aspnet-benchmark` skill for end-to-end ASP.NET Core/HTTP server load testing.
+
+When writing or reviewing SIMD / hardware-intrinsics code (anything using `Vector128`/`Vector256`/`Vector512`, `Vector<T>`, or the platform intrinsics in `System.Runtime.Intrinsics.*`), use the `vectorization` skill.
 
 You MUST follow all code-formatting and naming conventions defined in [`.editorconfig`](/.editorconfig).
 
-In addition to the rules enforced by `.editorconfig`, you SHOULD:
+In addition to the rules enforced by `.editorconfig`, when writing C# you SHOULD:
 
 - Prefer file-scoped namespace declarations and single-line using directives.
 - Ensure that the final return statement of a method is on its own line.
@@ -18,302 +32,74 @@ In addition to the rules enforced by `.editorconfig`, you SHOULD:
 - Trust the C# null annotations and don't add null checks when the type system says a value cannot be null.
 - Prefer `?.` if applicable (e.g. `scope?.Dispose()`).
 - Use `ObjectDisposedException.ThrowIf` where applicable.
-- When adding new unit tests, strongly prefer to add them to existing test code files rather than creating new code files.
 - If you add new code files, ensure they are listed in the csproj file (if other files in that folder are listed there) so they build.
-- When running tests, if possible use filters and check test run counts, or look at test logs, to ensure they actually ran.
-- Do not finish work with any tests commented out or disabled that were not previously commented out or disabled.
-- When writing tests, do not emit "Act", "Arrange" or "Assert" comments.
-- For markdown (`.md`) files, ensure there is no trailing whitespace at the end of any line.
 - When adding XML documentation to APIs, follow the guidelines at [`docs.prompt.md`](/.github/prompts/docs.prompt.md).
 
----
+When writing or modifying tests, you SHOULD:
 
-# Building & Testing in dotnet/runtime
+- Strongly prefer to add new unit tests to existing test code files rather than creating new code files.
+- When adding new test files, examine the directory structure of sibling tests first. Some test directories use flat files (e.g., `GCEvents.cs` alongside `GCEvents.csproj`) while others use per-test subdirectories. Match the existing convention.
+- Avoid adding a regression comment citing a GitHub issue or PR number unless explicitly asked to include such information.
+- Prefer using `[Theory]` with multiple data sources (like `[InlineData]` or `[MemberData]`) over multiple duplicative `[Fact]` methods. Fewer test methods that validate more inputs are better than many similar test methods.
+- When running tests, if possible use filters and check test run counts, or look at test logs, to ensure they actually ran.
+- Do not finish work with any tests commented out or disabled that were not previously commented out or disabled.
+- Do not emit "Act", "Arrange" or "Assert" comments.
 
-- [1. Prerequisites](#1-prerequisites)
-    - [1.1. Determine Affected Components](#11-determine-affected-components)
-    - [1.2. Baseline Setup](#12-baseline-setup)
-- [2. Iterative Build and Test Strategy](#2-iterative-build-and-test-strategy)
-    - [2.1. Success Criteria](#21-success-criteria)
-- [3. CoreCLR (CLR) Workflow](#3-coreclr-clr-workflow)
-- [4. Mono Runtime Workflow](#4-mono-runtime-workflow)
-- [5. Libraries Workflow](#5-libraries-workflow)
-    - [5.1. How To: Identify Affected Libraries](#51-how-to-identify-affected-libraries)
-    - [5.2. How To: Build and Test Specific Library](#52-how-to-build-and-test-specific-library)
-- [6. WebAssembly (WASM) Libraries Workflow](#6-webassembly-wasm-libraries-workflow)
-- [7. Host Workflow](#7-host-workflow)
-- [8. Additional Notes](#8-additional-notes)
-    - [8.1. Troubleshooting](#81-troubleshooting)
-    - [8.2. Windows Command Equivalents](#82-windows-command-equivalents)
-    - [8.3. References](#83-references)
+For markdown (`.md`) files, ensure there is no trailing whitespace at the end of any line.
 
-## 1. Prerequisites
+## GitHub publication authorization
 
-These steps need to be done **before** applying any changes.
+- **Interactive and coding sessions require explicit authorization.** Outside the configured agentic workflow and user-requested workflow rules below, interactive sessions, CCA, and autopilot must not create or update GitHub issues or post comments without explicit user authorization. Assigning a PR or granting write access does not authorize these additional actions. Preparing code changes does not authorize opening additional PRs.
+- **Advance permission is sufficient in interactive sessions.** Authorization may be given in the original prompt or later. Explicit permission to compose and publish within a clear task, action, and destination is sufficient; do not ask again or require separate approval of the generated text. Permission to open the task's PR does not authorize unrelated issues, comments, or additional PRs. If authorization is missing, or a proposed publication falls outside its scope or the scope is unclear, present the exact proposed content, destination, and publishing account and ask before publishing. If authorization cannot be obtained, leave a local draft and report the pending decision.
+- **Configured agentic workflows have scoped standing authorization.** When actually executing a repository-configured agentic workflow whose declared purpose and configured outputs explicitly authorize publication, no additional per-item approval is required for those operations. Use only the workflow's configured output mechanisms (such as `safe-outputs`) and stay within its destinations, action types, and limits. Permission to create issues does not authorize comments, issue updates, or PRs.
+- **User-requested workflows may define intentional publication outputs.** When the user explicitly requests or enables a specialized workflow, follow its documented publication contract: the actions, artifacts, destinations, and approval conditions it explicitly defines as intended outputs. Those outputs do not require an additional approval step unless the contract requires one. An incidental instruction to "create an issue" or "post a comment" is not a publication contract. Automatically invoking a skill as a helper does not grant publication permission. Authorization covers only the declared outputs of the workflow's currently authorized actions, not unrelated publication. User restrictions, including draft-only, dry-run, or review-before-publication, always take precedence.
+- **Authorization does not transfer.** Reading a workflow file or invoking its shared skills from a coding session does not confer the workflow's authorization. Running unattended, using a bot account, or having publication tools available is not sufficient either. Preserve any stricter caller approval requirements and dry-run rules. An AI disclosure is not publication approval.
 
-### 1.1. Determine Affected Components
+## Pull Requests
 
-Identify which components will be impacted by the changes. If in doubt, analyze the paths of the files to be updated:
+- **One concern per PR.** Split large or mixed changes. Do large refactorings and mechanical renames in their own PR, separate from logic changes.
+- **Enable automatic resolved-issue linking in the PR description.** On any PR intended to close an issue, include the fully qualified `Resolves owner/repository#123` format as the final substantive line of the PR description, before any required disclosure note.
+- **New public API requires an approved proposal before submission** — PRs adding unapproved API will be closed. Use the `api-proposal` skill; until approval lands the API stays `internal` in any submitted PR. A proposal's prototype branch is exempt and keeps its surface public — it's evidence, not a submission.
+- **Core component changes should start with an issue.** Changes to the host, VM, or JIT need a GitHub issue describing the problem and motivation first. Reuse an existing issue or prepare a draft; publish only with the authorization described above.
+- **Put the measurements in the description** for performance changes — BenchmarkDotNet results, or codegen and instruction-count evidence for low-level work.
+- **Behavioral changes need breaking-change documentation**, even prerelease-to-prerelease. Use the `breaking-change-doc` skill.
+- **Merge to main first, then `/backport`.** Servicing backports are limited to security bugs, regressions, and reliability issues, and should be small targeted fixes rather than refactorings.
+- **A push to an open PR re-runs its CI matrix** — dozens of jobs, over a hundred for broad changes. For anything non-trivial, validate locally rather than using CI to find out whether it builds, and batch fixes into one push. Branches with no PR trigger nothing, as do changes confined to `**.md`, `docs/*`, or `.github/*`.
+- **Treat a reported case as a sample, not a list.** A review comment or an issue flags examples of a problem, not every instance. Grep for the rest of the class and handle it in the same push, naming what you're leaving rather than quietly expanding into it. Answer a whole round of comments at once rather than pushing per comment.
 
-- **CoreCLR (CLR):** Changes in `src/coreclr/` or `src/tests/`
-- **Mono Runtime:** Changes in `src/mono/`
-- **Libraries:** Changes in `src/libraries/`
-- **WASM/WASI Libraries:** Changes in `src/libraries/` *and* the affected library targets WASM or WASI *and* the changes are included for the target (see below for details).
-- **Host:** Changes in `src/native/corehost/`, `src/installer/managed/`, or `src/installer/tests/`
-- If none above apply, it is most possibly an infra-only or a docs-only change. Skip build and test steps.
+### Agent Merge / CI check resolution
 
-**WASM/WASI Library Change Detection**
+- **Publication authorization for enabled actions.** When the user enables Agent Merge for a PR, publication needed for its currently authorized actions is authorized without additional approval: replying to review comments on that PR when review handling is authorized, and creating or updating `Known Build Error` issues in `dotnet/runtime` for eligible unrelated CI failures on that PR when CI fixing is authorized. Follow the `create-kbe` rules for eligibility, duplicate detection, and updates. This permission does not authorize comments on existing KBEs or unrelated issues, comments, or PRs. Explicit user restrictions, including draft-only, dry-run, or review-before-publication, still apply.
+- **Forbidden workflow action: rerunning failed CI as part of Agent Merge.** Agent Merge must never use `/azp` to retrigger Azure Pipelines, and must never close and reopen the PR to trigger a rerun. This is forbidden unless the user explicitly requests it.
+- **Never use reruns to determine whether a failure is unrelated to the PR.** In dotnet/runtime, the required path is to use Build Analysis and the `ci-analysis` skill to classify failures. For any failure listed as not `known`, determine whether it is caused by the current PR. If it is caused by the PR, fix it in the PR. If it is not caused by the PR, use the `create-kbe` skill to search for an existing KBE and prepare any proposed new issue or update as a draft instead of retriggering CI. Apply the publication authorization rules above before publishing; without authorization, report the failure and pending draft without publishing.
 
-A change is considered WASM/WASI-relevant if:
+When NOT running under CCA, for commits and pushes:
 
-- The relevant `.csproj` contains explicit Browser/WASM or WASI targets (look for `<TargetFrameworks>`, `$(TargetPlatformIdentifier)`, or `Condition` attributes referencing `browser` or `wasi`, as well as `TARGET_BROWSER` or `TARGET_WASI` constants), **and**
-- The changed file is not excluded from the build for that platform in any way with a `Condition` attribute on `<ItemGroup>` or `<Compile>`.
+- Never squash and force push unless explicitly instructed. Always push incremental commits on top of previous PR changes.
+- Never push to an active PR without being explicitly asked, even in autopilot/yolo mode. Always wait for explicit instruction to push. Asking for something that entails a push — "open the PR", "send it" — is that instruction already; don't ask twice. It authorizes the push, not skipping validation or the target check.
+- Never chain commit and push in the same command. Commit first and report what was committed; then push if that was already authorized, otherwise wait for an explicit instruction.
+- Prefer creating a new commit rather than amending an existing one. Exceptions: (1) explicitly asked to amend, or (2) the existing commit is obviously broken with something minor (e.g., typo or comment fix) and hasn't been pushed yet.
+- **Before posting to GitHub (PRs, issues, comments):** Include the AI-generated content disclosure (see below).
 
----
+## AI-Generated Content Disclosure
 
-### 1.2. Baseline Setup
-
-Before applying any changes, ensure you have a full successful build of the needed runtime+libraries as a baseline.
-
-1. Checkout `main` branch
-
-2. From the repository root, run the build depending on the affected component. If multiple components are affected, subsequently run and verify the builds for all of them.
-    - **CoreCLR (CLR):** `./build.sh clr+libs+host`
-    - **Mono Runtime:** `./build.sh mono+libs`
-    - **Libraries:** `./build.sh clr+libs -rc release`
-    - **WASM/WASI Libraries:** `./build.sh mono+libs -os browser`
-    - **Host:** `./build.sh clr+libs+host -rc release -lc release`
-
-3. Verify the build completed without error.
-    - _If the baseline build failed, report the failure and don't proceed with the changes._
-
-4. From the repository root:
-    - Configure PATH: `export PATH="$(pwd)/.dotnet:$PATH"`
-    - Verify SDK Version: `dotnet --version` should match `sdk.version` in `global.json`.
-
-5. Switch back to the working branch.
+When posting to GitHub under a user's credentials — PR descriptions, issue bodies, comments, review comments, or any other public-facing action — you **MUST** add a concise, visible note (e.g. a `> [!NOTE]` alert) at the bottom of the content indicating it was AI/Copilot-generated. Skip it only when posting from a recognized bot or Copilot app account (e.g. `github-actions[bot]`, `copilot`), where the AI origin is already apparent from the account identity, or when the user explicitly asks you to omit it.
 
 ---
 
-## 2. Iterative Build and Test Strategy
+## Tool Use
 
-1. Apply the intended changes
+Issue independent tool calls together in one response rather than one at a time. Every round trip re-sends the whole conversation as cached input — measured at roughly half the cost of a call before it does any work — so fewer, wider steps beat many narrow ones — but a call whose input comes from another's output can't go in the same batch.
 
-2. **Attempt Build.** If the build fails, attempt to fix and retry the step (up to 5 attempts).
+Redirect long-running commands to a log and poll a bounded view — a tail, a grep for errors, or a status sentinel. Re-reading a running command's output re-sends it from the start every time, so repeatedly checking a long build costs far more than the check is worth. Check the outcome, not the process.
 
-3. **Attempt Test.**
-    - If a test _build_ fails, attempt to fix and retry the step (up to 5 attempts).
-    - If a test _run_ fails,
-        - Determine if the problem is in the test or in the source
-        - If the problem is in the test, attempt to fix and retry the step (up to 5 attempts).
-        - If the problem is in the source, reconsider the full changeset, attempt to fix and repeat the workflow.
+```bash
+<cmd> > out.log 2>&1; echo "exit=$?" > out.status               # bash
+<cmd> *> out.log; "exit=$LASTEXITCODE" | Out-File out.status    # PowerShell -- $? is a [bool] here
+```
 
-4. **Workflow Iteration:**
-    - Repeat build and test up to 5 cycles.
-    - If issues persist after 5 workflow cycles, report failure.
-    - If the same error persists after each fix attempt, do not repeat the same fix. Instead, escalate or report with full logs.
+Fetch narrowly: `gh run view --log-failed` over `--log`, `--json`/`--jq` to project only the fields needed, `git diff --stat` before the full diff. Quiet what doesn't detect a non-TTY: `curl -sS`, `--quiet` on `git clone`/`fetch`/`checkout`. MSBuild and `dotnet` already detect it — no flags needed.
 
-When retrying, attempt different fixes and adjust based on the build/test results.
+## Building & Testing
 
-### 2.1. Success Criteria
-
-- **Build:**
-    - Completes without errors.
-    - Any non-zero exit code from build commands is considered a failure.
-
-- **Tests:**
-    - All tests must pass (zero failures).
-    - Any non-zero exit code from test commands is considered a failure.
-
-- **Workflow:**
-    - On success: Report completion
-    - Otherwise: Report error(s) with logs for diagnostics.
-        - Collect logs from `artifacts/log/` and the console output for both build and test steps.
-        - Attach relevant log files or error snippets when reporting failures.
-
----
-
-## 3. CoreCLR (CLR) Workflow
-
-From the repository root:
-
-- Build:
-  `./build.sh clr`
-
-- Run tests:
-  `cd src/tests && ./build.sh && ./run.sh`
-
-- More info can be found in the dedicated workflow docs:
-    - [Building CoreCLR Guide](/docs/workflow/building/coreclr/README.md)
-    - [Building and Running CoreCLR Tests](/docs/workflow/testing/coreclr/testing.md)
-
----
-
-## 4. Mono Runtime Workflow
-
-From the repository root:
-
-- Build:
-  `./build.sh mono+libs`
-
-- Run tests:
-
-  ```bash
-  ./build.sh clr.host
-  cd src/tests
-  ./build.sh mono debug /p:LibrariesConfiguration=debug
-  ./run.sh
-  ```
-
-- More info can be found in the dedicated workflow docs:
-    - [Building Mono](/docs/workflow/building/mono/README.md)
-    - [Running test suites using Mono](/docs/workflow/testing/mono/testing.md)
-
----
-
-## 5. Libraries Workflow
-
-From the repository root:
-
-- Build all libraries:
-  `./build.sh libs -rc release`
-
-- Run all tests for libraries:
-  `./build.sh libs.tests -test -rc release`
-
-- Build a specific library:
-    - Refer to the section [5.2. How To: Build and Test Specific Library](#52-how-to-build-and-test-specific-library) below.
-
-- Test a specific library:
-    - Refer to the sections [5.1. How To: Identify Affected Libraries](#51-how-to-identify-affected-libraries) and [5.2. How To: Build and Test Specific Library](#52-how-to-build-and-test-specific-library) below.
-
-- More info can be found in the dedicated workflow docs:
-    - [Build Libraries](/docs/workflow/building/libraries/README.md)
-    - [Testing Libraries](/docs/workflow/testing/libraries/testing.md)
-
-When working on changes limited to a specific library, do not complete without at least running all tests for that library and confirming they pass. For example if you are working within "System.Text.RegularExpressions" then make sure after your last edits that all the test libraries under `src\libraries\System.Text.RegularExpressions\tests` pass. It is OK to filter to relevant specific tests during your work, but before returning, ensure that, at least, ALL tests for the library do pass.
-
-### 5.1. How To: Identify Affected Libraries
-
-For each changed file under `src/libraries/`, find the matching library and its test project(s).
-Most libraries use:
-
-- Source: `src/libraries/<LibraryName>/src/<LibraryName>.csproj`
-
-- Tests (single):
-    - `src/libraries/<LibraryName>/tests/<LibraryName>.Tests.csproj`
-    - OR `src/libraries/<LibraryName>/tests/<LibraryName>.Tests/<LibraryName>.Tests.csproj`
-
-- Tests (multiple types):
-    - `src/libraries/<LibraryName>/tests/FunctionalTests/<LibraryName>.Functional.Tests.csproj`
-    - `src/libraries/<LibraryName>/tests/UnitTests/<LibraryName>.Unit.Tests.csproj`
-    - Or similar.
-
----
-
-### 5.2. How To: Build and Test Specific Library
-
-If only one library is affected:
-
-1. **Navigate to the library directory:**
-   `cd src/libraries/<LibraryName>`
-
-2. **Build the library:**
-   `dotnet build`
-
-3. **Build and run all test projects:**
-
-    - For each discovered `*.Tests.csproj` in the `tests` subdirectory:
-      `dotnet build /t:test ./tests/<TestProject>.csproj`
-
-        - *Adjust path as needed. If in doubt, search with `find tests -name '*.csproj'`.*
-
-    - `dotnet build /t:test` is generally preferred over `dotnet test`
-
----
-
-## 6. WebAssembly (WASM) Libraries Workflow
-
-From the repository root:
-
-- Build:
-  `./build.sh libs -os browser`
-
-- Run tests:
-  `./build.sh libs.tests -test -os browser`
-
-- More info can be found in the dedicated workflow docs:
-    - [Build libraries for WebAssembly](/docs/workflow/building/libraries/webassembly-instructions.md)
-    - [Testing Libraries on WebAssembly](/docs/workflow/testing/libraries/testing-wasm.md)
-
----
-
-## 7. Host Workflow
-
-From the repository root:
-
-- Build:
-  `./build.sh host -rc release -lc release`
-
-- Run all tests:
-  `./build.sh host.tests -rc release -lc release -test`
-
-- More info can be found in the dedicated workflow docs:
-    - [Building and running host tests](/docs/workflow/testing/host/testing.md)
-
----
-
-## 8. Additional Notes
-
-### 8.1. Troubleshooting
-
-- **Shared Framework Missing**
-
-    - If the build fails with an error "The shared framework must be built before the local targeting pack can be consumed.", build both the runtime (clr or mono) and the libs.
-      E.g., from the repo root, run `./build.sh clr+libs -rc release` if working on Libraries on CoreCLR. To find the applicable command, refer to the section [1.2. Baseline Setup](#12-baseline-setup).
-
-- **Testhost Is Missing**
-
-    - If a test run fails with errors indicating a missing testhost, such as:
-        - "Failed to launch testhost with error: System.IO.FileNotFoundException", or
-        - "artifacts/bin/testhost/... No such file or directory",
-      that means some of the prerequisites were not built.
-
-    - To resolve, build both the appropriate runtime (clr or mono) and the libs as a single command before running tests.
-      E.g., from the repo root, run `./build.sh clr+libs -rc release` before testing Libraries on CoreCLR. To find the applicable command, refer to the section [1.2. Baseline Setup](#12-baseline-setup).
-
-- **Build Timeout**
-
-    - Do not fail or cancel initial `./build.sh` builds due to timeout unless at least 40 minutes have elapsed.
-      A full `clr+libs` build from scratch can take up to 32 minutes or more on some systems.
-
-    - Only wait for long-running `./build.sh` commands if they continue to produce output.
-      If there is no output for 5 minutes, assume the build is stuck and fail early.
-
-- **Target Does Not Exist**
-
-    - Avoid specifying a target framework when building unless explicitly asked.
-      Build should identify and select the appropriate `$(NetCoreAppCurrent)` automatically.
-
----
-
-### 8.2. Windows Command Equivalents
-
-- Use `build.cmd` instead of `build.sh` on Windows.
-- Set PATH: `set PATH=%CD%\.dotnet;%PATH%`
-- All other commands are similar unless otherwise noted.
-
----
-
-### 8.3. References
-
-- [`.editorconfig`](/.editorconfig)
-- [Building CoreCLR Guide](/docs/workflow/building/coreclr/README.md)
-- [Building and Running CoreCLR Tests](/docs/workflow/testing/coreclr/testing.md)
-- [Building Mono](/docs/workflow/building/mono/README.md)
-- [Running test suites using Mono](/docs/workflow/testing/mono/testing.md)
-- [Build Libraries](/docs/workflow/building/libraries/README.md)
-- [Testing Libraries](/docs/workflow/testing/libraries/testing.md)
-- [Build libraries for WebAssembly](/docs/workflow/building/libraries/webassembly-instructions.md)
-- [Testing Libraries on WebAssembly](/docs/workflow/testing/libraries/testing-wasm.md)
-- [Building and running host tests](/docs/workflow/testing/host/testing.md)
+**Before running any build or test command, use the `build-and-test` skill** — don't guess the commands. Under CCA, invoke it **before making any code changes**; a missing or incorrect baseline build costs 20-40 minutes to recover from.

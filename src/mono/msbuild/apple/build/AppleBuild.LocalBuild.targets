@@ -53,7 +53,7 @@
 
       <TrimmerRootAssembly
           Condition="'%(AppleAssembliesToBundle.FileName)%(AppleAssembliesToBundle.Extension)' == '$(AssemblyName).dll'"
-          Include="%(AppleAssembliesToBundle.Identity)" />
+          Include="%(AppleAssembliesToBundle.FileName)" />
       <!-- PrepareForILLink target sets the IntermediateAssembly as an entry point for ILLink
           which doesn't exist at the path when BuildTestsOnHelix -->
       <IntermediateAssembly Remove="@(IntermediateAssembly)" />
@@ -84,6 +84,9 @@
 
     <Error Condition="'$(RuntimeSrcDir)' != '' and '$(RuntimeConfig)' == ''"
            Text="%24(RuntimeSrcDir) is set, but %24(RuntimeConfig) is not" />
+
+    <Error Condition="'$(TargetFramework)' == ''"
+           Text="%24(TargetFramework) is not set. It needs to be set to the TFM the runtime pack was built for, eg. netX.0" />
 
     <PropertyGroup>
       <MicrosoftNetCoreAppRuntimePackDir>$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackLocationToUse)))</MicrosoftNetCoreAppRuntimePackDir>

@@ -614,20 +614,22 @@ namespace System.Text.Json.Nodes.Tests
         [Fact]
         public static void DynamicObject_LINQ_Convert()
         {
-            string json = @"
-            [
-              {
-                ""Title"": ""TITLE."",
-                ""Author"":
-                {
-                  ""Name"": ""NAME."",
-                  ""Mail"": ""MAIL."",
-                  ""Picture"": ""/PICTURE.png""
-                },
-                ""Date"": ""2021-01-20T19:30:00"",
-                ""BodyHtml"": ""Content.""
-              }
-            ]";
+            string json = """
+
+                    [
+                      {
+                        "Title": "TITLE.",
+                        "Author":
+                        {
+                          "Name": "NAME.",
+                          "Mail": "MAIL.",
+                          "Picture": "/PICTURE.png"
+                        },
+                        "Date": "2021-01-20T19:30:00",
+                        "BodyHtml": "Content."
+                      }
+                    ]
+                """;
 
             JsonArray arr = JsonSerializer.Deserialize<JsonArray>(json);
 
@@ -943,7 +945,7 @@ namespace System.Text.Json.Nodes.Tests
             var obj2 = new JsonObject(props, options);
 
             // Create method
-            using JsonDocument doc = JsonDocument.Parse(@"{""Hello"":""World""}");
+            using JsonDocument doc = JsonDocument.Parse("""{"Hello":"World"}""");
             var obj3 = JsonObject.Create(doc.RootElement, options);
 
             Test(obj1);
@@ -1734,9 +1736,9 @@ namespace System.Text.Json.Nodes.Tests
             }
             else
             {
-                AssertExtensions.ThrowsContains<ArgumentException>(
+                AssertExtensions.ThrowsContains<JsonException>(
                     () => JsonSerializer.Deserialize<T>(jsonPayload, JsonTestSerializerOptions.DisallowDuplicateProperties),
-                    "An item with the same key has already been added.");
+                    "Duplicate property");
 
                 // Default options don't throw on deserialize but will throw when accessed
                 T node = JsonSerializer.Deserialize<T>(jsonPayload);
@@ -1754,14 +1756,14 @@ namespace System.Text.Json.Nodes.Tests
             string jsonPayload = """{"a":1,"A":2}""";
 
             _ = JsonSerializer.Deserialize<JsonObject>(jsonPayload); // Assert no throw
-            AssertExtensions.ThrowsContains<ArgumentException>(
+            AssertExtensions.ThrowsContains<JsonException>(
                 () => JsonSerializer.Deserialize<JsonObject>(jsonPayload, options),
-                "An item with the same key has already been added.");
+                "Duplicate property");
 
             _ = JsonSerializer.Deserialize<JsonNode>(jsonPayload); // Assert no throw
-            AssertExtensions.ThrowsContains<ArgumentException>(
+            AssertExtensions.ThrowsContains<JsonException>(
                 () => JsonSerializer.Deserialize<JsonNode>(jsonPayload, options),
-                "An item with the same key has already been added.");
+                "Duplicate property");
         }
 
         [Fact]
@@ -1772,14 +1774,14 @@ namespace System.Text.Json.Nodes.Tests
             string jsonPayload = """[{"a":1,"A":2}]""";
 
             _ = JsonSerializer.Deserialize<JsonArray>(jsonPayload); // Assert no throw
-            AssertExtensions.ThrowsContains<ArgumentException>(
+            AssertExtensions.ThrowsContains<JsonException>(
                 () => JsonSerializer.Deserialize<JsonArray>(jsonPayload, options),
-                "An item with the same key has already been added.");
+                "Duplicate property");
 
             _ = JsonSerializer.Deserialize<JsonNode>(jsonPayload); // Assert no throw
-            AssertExtensions.ThrowsContains<ArgumentException>(
+            AssertExtensions.ThrowsContains<JsonException>(
                 () => JsonSerializer.Deserialize<JsonNode>(jsonPayload, options),
-                "An item with the same key has already been added.");
+                "Duplicate property");
         }
 
         [Theory]

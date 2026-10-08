@@ -5,6 +5,7 @@
   <ItemGroup>
     <!-- NegotiateStream Tests -->
     <Compile Include="NegotiateStreamLoopbackTest.cs" />
+    <Compile Include="NegotiateAuthenticationTest.cs" />
 
     <!-- Common test files -->
     <Compile Include="$(CommonPath)System\Net\ArrayBuffer.cs"

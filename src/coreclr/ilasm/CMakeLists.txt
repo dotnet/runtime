@@ -5,8 +5,7 @@ add_definitions(-D_UNICODE)
 add_definitions(-D_FEATURE_NO_HOST)
 add_definitions(-D__ILASM__)
 add_definitions(-DFEATURE_METADATA_EMIT_PORTABLE_PDB)
-
-add_definitions(-DFEATURE_CORECLR)
+add_definitions(-DSELF_NO_HOST)
 
 include_directories(.)
 
@@ -67,12 +66,7 @@ endif(CLR_CMAKE_HOST_UNIX)
 if(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS OR CLR_CMAKE_HOST_HAIKU)
     # This option is necessary to ensure that the overloaded delete operator defined inside
     # of the utilcode will be used instead of the standard library delete operator.
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Xlinker -Bsymbolic")
-
-    # The following linked options can be inserted into the linker libraries list to
-    # ensure proper resolving of circular references between a subset of the libraries.
-    set(START_LIBRARY_GROUP -Wl,--start-group)
-    set(END_LIBRARY_GROUP -Wl,--end-group)
+    add_link_options(LINKER:-Bsymbolic)
 endif(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS OR CLR_CMAKE_HOST_HAIKU)
 
 add_executable_clr(ilasm
@@ -83,12 +77,9 @@ add_executable_clr(ilasm
 set(ILASM_LINK_LIBRARIES
   utilcodestaticnohost
   mscorpe
-  ${START_LIBRARY_GROUP} # Start group of libraries that have circular references
-  mdcompiler_ppdb
-  mdruntime_ppdb
-  mdruntimerw_ppdb
-  ${END_LIBRARY_GROUP} # End group of libraries that have circular references
-  ceefgen
+  # libraries that have circular references
+  $<LINK_GROUP:RESCAN,mdcompiler_ppdb,mdruntime_ppdb,mdruntimerw_ppdb>
+  ceefgen_nohost
   corguids
 )
 
@@ -105,7 +96,6 @@ if(CLR_CMAKE_TARGET_WIN32)
         version.lib
         shlwapi.lib
         bcrypt.lib
-        RuntimeObject.lib
         coreclrminipal
     )
 else()

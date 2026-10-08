@@ -88,8 +88,10 @@ ASMCONSTANTS_C_ASSERT(CallDescrData__pTarget              == offsetof(CallDescrD
 ASMCONSTANTS_C_ASSERT(CallDescrData__pRetBuffArg          == offsetof(CallDescrData, pRetBuffArg))
 ASMCONSTANTS_C_ASSERT(CallDescrData__returnValue          == offsetof(CallDescrData, returnValue))
 
+#ifdef FEATURE_VARARGS
 #define VASigCookie__pPInvokeILStub 0x8
 ASMCONSTANTS_C_ASSERT(VASigCookie__pPInvokeILStub == offsetof(VASigCookie, pPInvokeILStub))
+#endif // FEATURE_VARARGS
 
 #define SIZEOF__Frame                 0x10
 ASMCONSTANTS_C_ASSERT(SIZEOF__Frame == sizeof(Frame));
@@ -182,18 +184,6 @@ ASMCONSTANTS_C_ASSERT(SZARRAY_BASE_SIZE == OBJECT_BASESIZE + sizeof(DWORD) + siz
 
 //=========================================
 
-
-
-#ifdef FEATURE_COMINTEROP
-
-#define SIZEOF__ComMethodFrame 0x70
-ASMCONSTANTS_C_ASSERT(SIZEOF__ComMethodFrame == sizeof(ComMethodFrame));
-
-#define UnmanagedToManagedFrame__m_pvDatum 0x10
-ASMCONSTANTS_C_ASSERT(UnmanagedToManagedFrame__m_pvDatum == offsetof(UnmanagedToManagedFrame, m_pvDatum));
-
-#endif // FEATURE_COMINTEROP
-
 #ifdef FEATURE_SPECIAL_USER_MODE_APC
 #define OFFSETOF__APC_CALLBACK_DATA__ContextRecord 0x8
 #endif
@@ -227,18 +217,6 @@ ASMCONSTANTS_C_ASSERT(MethodDesc_ALIGNMENT_SHIFT == MethodDesc::ALIGNMENT_SHIFT)
 ASMCONSTANTS_C_ASSERT(ResolveCacheElem__target == offsetof(ResolveCacheElem, target));
 ASMCONSTANTS_C_ASSERT(ResolveCacheElem__pNext == offsetof(ResolveCacheElem, pNext));
 #endif // FEATURE_VIRTUAL_STUB_DISPATCH
-
-#define                OFFSETOF__DynamicStaticsInfo__m_pMethodTable 0x10
-ASMCONSTANTS_C_ASSERT(OFFSETOF__DynamicStaticsInfo__m_pMethodTable
-                    == offsetof(DynamicStaticsInfo, m_pMethodTable));
-
-#define                OFFSETOF__DynamicStaticsInfo__m_pNonGCStatics 0x8
-ASMCONSTANTS_C_ASSERT(OFFSETOF__DynamicStaticsInfo__m_pNonGCStatics
-                    == offsetof(DynamicStaticsInfo, m_pNonGCStatics));
-
-#define                OFFSETOF__DynamicStaticsInfo__m_pGCStatics 0
-ASMCONSTANTS_C_ASSERT(OFFSETOF__DynamicStaticsInfo__m_pGCStatics
-                    == offsetof(DynamicStaticsInfo, m_pGCStatics));
 
 // For JIT_PInvokeBegin and JIT_PInvokeEnd helpers
 #define               Frame__m_Next 0x08
@@ -289,8 +267,14 @@ ASMCONSTANTS_C_ASSERT(CallCountingStubData__TargetForThresholdReached == offseto
 #define OFFSETOF__InterfaceDispatchCache__m_rgEntries 0x20
 ASMCONSTANTS_C_ASSERT(OFFSETOF__InterfaceDispatchCache__m_rgEntries == offsetof(InterfaceDispatchCache, m_rgEntries))
 
+#define OFFSETOF__InterfaceDispatchCache__m_cEntries 0x18
+ASMCONSTANTS_C_ASSERT(OFFSETOF__InterfaceDispatchCache__m_cEntries == offsetof(InterfaceDispatchCache, m_cEntries))
+
 #define OFFSETOF__InterfaceDispatchCell__m_pCache 0x08
 ASMCONSTANTS_C_ASSERT(OFFSETOF__InterfaceDispatchCell__m_pCache == offsetof(InterfaceDispatchCell, m_pCache))
+
+#define IDC_CACHE_POINTER_MASK 0x3
+ASMCONSTANTS_C_ASSERT(IDC_CACHE_POINTER_MASK == ::IDC_CachePointerMask)
 #endif // FEATURE_CACHED_INTERFACE_DISPATCH
 
 #define OFFSETOF__ThreadLocalInfo__m_pThread 0
@@ -304,21 +288,19 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__ThreadLocalInfo__m_pThread == offsetof(ThreadLoc
 #endif
 ASMCONSTANTS_C_ASSERT(OFFSETOF__InterpMethod__pCallStub == offsetof(InterpMethod, pCallStub))
 
-#ifdef TARGET_UNIX
-#ifdef _DEBUG
-#define OFFSETOF__Thread__m_pInterpThreadContext 0xb30
-#else // _DEBUG
-#define OFFSETOF__Thread__m_pInterpThreadContext 0x2c8
-#endif // _DEBUG
-#else // TARGET_UNIX
-#define OFFSETOF__Thread__m_pInterpThreadContext 0xb58
-#endif // TARGET_UNIX
+#define OFFSETOF__Thread__m_pInterpThreadContext 0x30
 ASMCONSTANTS_C_ASSERT(OFFSETOF__Thread__m_pInterpThreadContext == offsetof(Thread, m_pInterpThreadContext))
 
 #define OFFSETOF__InterpThreadContext__pStackPointer 0x10
 ASMCONSTANTS_C_ASSERT(OFFSETOF__InterpThreadContext__pStackPointer == offsetof(InterpThreadContext, pStackPointer))
 
-#define OFFSETOF__CallStubHeader__Routines 0x10
+#define OFFSETOF__CallStubHeader__HasSwiftError 0x0D
+ASMCONSTANTS_C_ASSERT(OFFSETOF__CallStubHeader__HasSwiftError == offsetof(CallStubHeader, HasSwiftError))
+
+#define OFFSETOF__CallStubHeader__HasSwiftReturnLowering 0x0E
+ASMCONSTANTS_C_ASSERT(OFFSETOF__CallStubHeader__HasSwiftReturnLowering == offsetof(CallStubHeader, HasSwiftReturnLowering))
+
+#define OFFSETOF__CallStubHeader__Routines 0x18
 ASMCONSTANTS_C_ASSERT(OFFSETOF__CallStubHeader__Routines == offsetof(CallStubHeader, Routines))
 
 #define SIZEOF__TransitionBlock 0xb0

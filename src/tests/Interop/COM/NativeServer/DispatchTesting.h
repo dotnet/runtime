@@ -184,6 +184,30 @@ public: // IDispatch
                 V_UNKNOWN(pVarResult) = new Enumerator(10);
                 return S_OK;
             }
+            case 8:
+            {
+                return Sum_IntArray_SafeArray_Proxy(pDispParams, pVarResult);
+            }
+            case 9:
+            {
+                return ModifyStaticVariantArray_Proxy(pDispParams);
+            }
+            case 10:
+            {
+                return CreateUnrelatedArrayElement_Proxy(pVarResult);
+            }
+            case 11:
+            {
+                return AcceptExpectedArray_Proxy(pDispParams, pVarResult);
+            }
+            case 1000:
+            {
+                return GetDispIdAsString_Proxy(pVarResult);
+            }
+            case 1001:
+            {
+                return GetDispIdAsString2_Proxy(pVarResult);
+            }
             }
 
             return E_NOTIMPL;
@@ -250,6 +274,13 @@ public: // IDispatchTesting
             return S_FALSE; // Return a success case to indicate failure to trigger a failure.
         }
     }
+    virtual HRESULT STDMETHODCALLTYPE TriggerCustomMarshaler(
+        /*[in]*/ IUnknown* objIn,
+        /*[in,out]*/ IUnknown** objRef,
+        /*[out,retval]*/ IUnknown* pRetVal)
+    {
+        return E_NOTIMPL;
+    }
     virtual HRESULT STDMETHODCALLTYPE DoubleHVAValues (
         /*[in,out]*/ HFA_4 *input,
         /*[out,retval]*/ HFA_4 *pRetVal)
@@ -265,6 +296,132 @@ public: // IDispatchTesting
         /* [retval][out] */ IUnknown** retval)
     {
         *retval = new Enumerator(10);
+        return S_OK;
+    }
+
+    virtual HRESULT STDMETHODCALLTYPE Sum_IntArray_SafeArray(
+        /*[in]*/ SAFEARRAY *d,
+        /*[out,retval]*/ int *pRetVal)
+    {
+        if (d == nullptr || pRetVal == nullptr)
+            return E_POINTER;
+
+        VARTYPE type;
+        HRESULT hr = ::SafeArrayGetVartype(d, &type);
+        if (FAILED(hr))
+            return hr;
+
+        if (type != VT_I4)
+            return E_INVALIDARG;
+
+        LONG lowerBound, upperBound;
+        hr = ::SafeArrayGetLBound(d, 1, &lowerBound);
+        if (FAILED(hr))
+            return hr;
+
+        hr = ::SafeArrayGetUBound(d, 1, &upperBound);
+        if (FAILED(hr))
+            return hr;
+
+        int *data = static_cast<int *>(d->pvData);
+        int result = 0;
+        for (LONG i = lowerBound; i <= upperBound; ++i)
+        {
+            result += data[i - lowerBound];
+        }
+
+        *pRetVal = result;
+        return S_OK;
+    }
+
+    virtual HRESULT STDMETHODCALLTYPE ModifyStaticVariantArray(
+        /*[in,out]*/ SAFEARRAY **values)
+    {
+        if (values == nullptr || *values == nullptr)
+            return E_POINTER;
+
+        HRESULT hr;
+        SAFEARRAY *sa = *values;
+
+        VARTYPE type;
+        RETURN_IF_FAILED(::SafeArrayGetVartype(sa, &type));
+        if (type != VT_VARIANT)
+            return E_INVALIDARG;
+
+        LONG lowerBound, upperBound;
+        RETURN_IF_FAILED(::SafeArrayGetLBound(sa, 1, &lowerBound));
+        RETURN_IF_FAILED(::SafeArrayGetUBound(sa, 1, &upperBound));
+        if (upperBound < lowerBound)
+            return E_INVALIDARG;
+
+        VARIANT *elements;
+        RETURN_IF_FAILED(::SafeArrayAccessData(sa, (void**)&elements));
+
+        if (V_VT(&elements[0]) == (VT_BYREF | VT_I4))
+        {
+            *V_I4REF(&elements[0]) = 7;
+        }
+        else
+        {
+            hr = ::VariantClear(&elements[0]);
+            if (SUCCEEDED(hr))
+            {
+                V_VT(&elements[0]) = VT_I4;
+                V_I4(&elements[0]) = 7;
+            }
+        }
+
+        HRESULT unaccessResult = ::SafeArrayUnaccessData(sa);
+        RETURN_IF_FAILED(hr);
+        return unaccessResult;
+    }
+
+    virtual HRESULT STDMETHODCALLTYPE CreateUnrelatedArrayElement(
+        /*[out,retval]*/ VARIANT *pRetVal)
+    {
+        if (pRetVal == nullptr)
+            return E_POINTER;
+
+        V_VT(pRetVal) = VT_UNKNOWN;
+        V_UNKNOWN(pRetVal) = static_cast<IEnumVARIANT *>(new Enumerator(0));
+        return S_OK;
+    }
+
+    virtual HRESULT STDMETHODCALLTYPE AcceptExpectedArray(
+        /*[in]*/ SAFEARRAY *values,
+        /*[out,retval]*/ VARIANT_BOOL *pRetVal)
+    {
+        if (values == nullptr || pRetVal == nullptr)
+            return E_POINTER;
+
+        HRESULT hr;
+        VARTYPE type;
+        RETURN_IF_FAILED(::SafeArrayGetVartype(values, &type));
+        if (type != VT_UNKNOWN)
+            return E_INVALIDARG;
+
+        LONG lowerBound, upperBound;
+        RETURN_IF_FAILED(::SafeArrayGetLBound(values, 1, &lowerBound));
+        RETURN_IF_FAILED(::SafeArrayGetUBound(values, 1, &upperBound));
+        if (upperBound < lowerBound)
+            return E_INVALIDARG;
+
+        IUnknown **elements = static_cast<IUnknown **>(values->pvData);
+        *pRetVal = elements[0] != nullptr ? VARIANT_TRUE : VARIANT_FALSE;
+        return S_OK;
+    }
+
+    HRESULT STDMETHODCALLTYPE GetDispIdAsString(
+        /* [out,retval] */ BSTR *pRetVal)
+    {
+        *pRetVal = SysAllocString(W("1000"));
+        return S_OK;
+    }
+
+    HRESULT STDMETHODCALLTYPE GetDispIdAsString2(
+        /* [out,retval] */ BSTR *pRetVal)
+    {
+        *pRetVal = SysAllocString(W("1001"));
         return S_OK;
     }
 
@@ -514,6 +671,98 @@ private:
         return S_OK;
     }
 
+    HRESULT Sum_IntArray_SafeArray_Proxy(_In_ DISPPARAMS *pDispParams, _Inout_ VARIANT *pVarResult)
+    {
+        HRESULT hr;
+
+        size_t expectedArgCount = 1;
+        RETURN_IF_FAILED(VerifyValues(uint32_t(expectedArgCount), pDispParams->cArgs));
+
+        if (pVarResult == nullptr)
+            return E_POINTER;
+
+        size_t argIdx = expectedArgCount - 1;
+
+        VARIANTARG *currArg = NextArg(pDispParams->rgvarg, argIdx);
+        RETURN_IF_FAILED(VerifyValues(VARENUM(VT_ARRAY | VT_I4), VARENUM(currArg->vt)));
+        SAFEARRAY *sa = currArg->parray;
+
+        RETURN_IF_FAILED(::VariantChangeType(pVarResult, pVarResult, 0, VT_I4));
+        return Sum_IntArray_SafeArray(sa, (int*)&V_I4(pVarResult));
+    }
+
+    HRESULT ModifyStaticVariantArray_Proxy(_In_ DISPPARAMS *pDispParams)
+    {
+        HRESULT hr;
+
+        size_t expectedArgCount = 1;
+        RETURN_IF_FAILED(VerifyValues(uint32_t(expectedArgCount), pDispParams->cArgs));
+
+        size_t argIdx = expectedArgCount - 1;
+
+        VARIANTARG *currArg = NextArg(pDispParams->rgvarg, argIdx);
+        RETURN_IF_FAILED(VerifyValues(VARENUM(VT_BYREF | VT_ARRAY | VT_VARIANT), VARENUM(currArg->vt)));
+        return ModifyStaticVariantArray(V_ARRAYREF(currArg));
+    }
+
+    HRESULT CreateUnrelatedArrayElement_Proxy(_Inout_ VARIANT *pVarResult)
+    {
+        if (pVarResult == nullptr)
+            return E_POINTER;
+
+        HRESULT hr;
+        RETURN_IF_FAILED(::VariantClear(pVarResult));
+        return CreateUnrelatedArrayElement(pVarResult);
+    }
+
+    HRESULT AcceptExpectedArray_Proxy(_In_ DISPPARAMS *pDispParams, _Inout_ VARIANT *pVarResult)
+    {
+        HRESULT hr;
+
+        size_t expectedArgCount = 1;
+        RETURN_IF_FAILED(VerifyValues(uint32_t(expectedArgCount), pDispParams->cArgs));
+
+        if (pVarResult == nullptr)
+            return E_POINTER;
+
+        size_t argIdx = expectedArgCount - 1;
+
+        VARIANTARG *currArg = NextArg(pDispParams->rgvarg, argIdx);
+        RETURN_IF_FAILED(VerifyValues(VARENUM(VT_ARRAY | VT_UNKNOWN), VARENUM(currArg->vt)));
+
+        RETURN_IF_FAILED(::VariantClear(pVarResult));
+        V_VT(pVarResult) = VT_BOOL;
+        return AcceptExpectedArray(V_ARRAY(currArg), &V_BOOL(pVarResult));
+    }
+
+    HRESULT GetDispIdAsString_Proxy(_Inout_ VARIANT *pVarResult)
+    {
+        if (pVarResult == nullptr)
+            return E_POINTER;
+
+        HRESULT hr = S_OK;
+        RETURN_IF_FAILED(::VariantClear(pVarResult));
+        BSTR result = nullptr;
+        RETURN_IF_FAILED(GetDispIdAsString(&result));
+        V_VT(pVarResult) = VT_BSTR;
+        V_BSTR(pVarResult) = result;
+        return S_OK;
+    }
+
+    HRESULT GetDispIdAsString2_Proxy(_Inout_ VARIANT *pVarResult)
+    {
+        if (pVarResult == nullptr)
+            return E_POINTER;
+
+        HRESULT hr = S_OK;
+        RETURN_IF_FAILED(::VariantClear(pVarResult));
+        BSTR result = nullptr;
+        RETURN_IF_FAILED(GetDispIdAsString2(&result));
+        V_VT(pVarResult) = VT_BSTR;
+        V_BSTR(pVarResult) = result;
+        return S_OK;
+    }
+
 public: // IUnknown
     STDMETHOD(QueryInterface)(
         /* [in] */ REFIID riid,
@@ -534,7 +783,11 @@ const WCHAR * const DispatchTesting::Names[] =
     W("TriggerException"),
     W("DoubleHVAValues"),
     W("PassThroughLCID"),
-    W("ExplicitGetEnumerator")
+    W("ExplicitGetEnumerator"),
+    W("Sum_IntArray_SafeArray"),
+    W("ModifyStaticVariantArray"),
+    W("CreateUnrelatedArrayElement"),
+    W("AcceptExpectedArray")
 };
 
 const int DispatchTesting::NamesCount = ARRAY_SIZE(DispatchTesting::Names);

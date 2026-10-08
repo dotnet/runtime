@@ -20,6 +20,7 @@
 
   <ItemGroup>
     <Compile Include="..\Common\CommandLineHelpers.cs" Link="CommandLineHelpers.cs" />
+    <Compile Include="..\Common\Compiler\ObjectWriter\WasmGlobalImports.cs" Link="Compiler\ObjectWriter\WasmGlobalImports.cs" />
   </ItemGroup>
 
   <ItemGroup>

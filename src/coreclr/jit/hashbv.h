@@ -37,8 +37,6 @@ class hashBvIterator;
 class hashBvGlobalData;
 
 typedef void bitAction(indexType);
-typedef void nodeAction(hashBvNode*);
-typedef void dualNodeAction(hashBv* left, hashBv* right, hashBvNode* a, hashBvNode* b);
 
 #define NOMOREBITS -1
 
@@ -85,34 +83,7 @@ inline int log2(int number)
 // return greatest power of 2 that is less than or equal
 inline int nearest_pow2(unsigned number)
 {
-    int result = 0;
-
-    if (number > 0xffff)
-    {
-        number >>= 16;
-        result += 16;
-    }
-    if (number > 0xff)
-    {
-        number >>= 8;
-        result += 8;
-    }
-    if (number > 0xf)
-    {
-        number >>= 4;
-        result += 4;
-    }
-    if (number > 0x3)
-    {
-        number >>= 2;
-        result += 2;
-    }
-    if (number > 0x1)
-    {
-        number >>= 1;
-        result += 1;
-    }
-    return 1 << result;
+    return 1 << BitOperations::Log2(number);
 }
 
 class hashBvNode
@@ -140,10 +111,8 @@ public:
     bool anySet();
     bool belongsIn(indexType index);
     int  countBits();
-    bool anyBits();
     void foreachBit(bitAction x);
     void freeNode(hashBvGlobalData* glob);
-    bool sameAs(hashBvNode* other);
     void copyFrom(hashBvNode* other);
 
     void AndWith(hashBvNode* other);
@@ -172,12 +141,7 @@ public:
     hashBvNode** nodeArr;
     hashBvNode*  initialVector[1];
 
-    union
-    {
-        Compiler* compiler;
-        // for freelist
-        hashBv* next;
-    };
+    Compiler* m_compiler;
 
     unsigned short log2_hashSize;
     // used for heuristic resizing... could be overflowed in rare circumstances
@@ -188,8 +152,6 @@ public:
     hashBv(Compiler* comp);
     static hashBv* Create(Compiler* comp);
     static void    Init(Compiler* comp);
-    static hashBv* CreateFrom(hashBv* other, Compiler* comp);
-    void           hbvFree();
 #ifdef DEBUG
     void dump();
     void dumpFancy();
@@ -201,15 +163,11 @@ public:
 
     hashBvGlobalData* globalData();
 
-    static hashBvNode*& nodeFreeList(hashBvGlobalData* globalData);
-    static hashBv*&     hbvFreeList(hashBvGlobalData* data);
-
     hashBvNode** getInsertionPointForIndex(indexType index);
 
 private:
     hashBvNode* getNodeForIndexHelper(indexType index, bool canAdd);
     int         getHashForIndex(indexType index, int table_size);
-    int         getRehashForIndex(indexType thisIndex, int thisTableSize, int newTableSize);
 
     // maintain free lists for vectors
     hashBvNode** getNewVector(int vectorLength);
@@ -221,8 +179,6 @@ public:
         hashBvNode* temp = getNodeForIndexHelper(index, true);
         return temp;
     }
-    hashBvNode* getNodeForIndex(indexType index);
-    void        removeNodeAtBase(indexType index);
 
 public:
     void setBit(indexType index);
@@ -233,20 +189,14 @@ public:
     bool anySet();
     void copyFrom(hashBv* other, Compiler* comp);
     void ZeroAll();
-    bool CompareWith(hashBv* other);
 
     void AndWith(hashBv* other);
     void OrWith(hashBv* other);
     void XorWith(hashBv* other);
     void Subtract(hashBv* other);
-    void Subtract3(hashBv* other, hashBv* other2);
-
-    void UnionMinus(hashBv* a, hashBv* b, hashBv* c);
 
     bool AndWithChange(hashBv* other);
     bool OrWithChange(hashBv* other);
-    bool OrWithChangeRight(hashBv* other);
-    bool OrWithChangeLeft(hashBv* other);
     bool XorWithChange(hashBv* other);
     bool SubtractWithChange(hashBv* other);
 
@@ -261,15 +211,8 @@ public:
     template <class Action>
     bool MultiTraverse(hashBv* other);
 
-    void InorderTraverse(nodeAction a);
-    void InorderTraverseTwo(hashBv* other, dualNodeAction a);
-
     void Resize(int newSize);
     void Resize();
-    void MergeLists(hashBvNode** a, hashBvNode** b);
-
-    bool TooSmall();
-    bool TooBig();
     bool IsValid();
 };
 
@@ -290,7 +233,6 @@ public:
     elemType current_data;
 
     hashBvIterator(hashBv* bv);
-    void initFrom(hashBv* bv);
     hashBvIterator();
     indexType nextBit();
 
@@ -304,7 +246,6 @@ class hashBvGlobalData
     friend class hashBvNode;
 
     hashBvNode* hbvNodeFreeList;
-    hashBv*     hbvFreeList;
 };
 
 enum class HbvWalk

@@ -20,7 +20,8 @@
 // Returns:
 //   Suitable phase status
 //
-/* static */ PhaseStatus ProfileSynthesis::AdjustThrowEdgeLikelihoods(Compiler* compiler)
+// static
+PhaseStatus ProfileSynthesis::AdjustThrowEdgeLikelihoods(Compiler* compiler)
 {
     const FlowGraphDfsTree* dfsTree = compiler->m_dfsTree;
     assert(dfsTree != nullptr);
@@ -149,14 +150,6 @@ void ProfileSynthesis::Run(ProfileSynthesisOption option)
         case ProfileSynthesisOption::ResetAndSynthesize:
             ClearLikelihoods();
             AssignLikelihoods();
-            break;
-
-        case ProfileSynthesisOption::ReverseLikelihoods:
-            ReverseLikelihoods();
-            break;
-
-        case ProfileSynthesisOption::RandomLikelihoods:
-            RandomizeLikelihoods();
             break;
 
         case ProfileSynthesisOption::RepairLikelihoods:
@@ -382,7 +375,7 @@ void ProfileSynthesis::AssignLikelihoods()
 // AssignLikelihoodJump: update edge likelihood for a block that always
 //   transfers control to its target block
 //
-// Arguments;
+// Arguments:
 //   block -- block in question
 //
 void ProfileSynthesis::AssignLikelihoodJump(BasicBlock* block)
@@ -395,7 +388,7 @@ void ProfileSynthesis::AssignLikelihoodJump(BasicBlock* block)
 // AssignLikelihoodCond: update edge likelihood for a block that
 //   ends in a conditional branch
 //
-// Arguments;
+// Arguments:
 //   block -- block in question (BBJ_COND)
 //
 void ProfileSynthesis::AssignLikelihoodCond(BasicBlock* block)
@@ -518,7 +511,7 @@ void ProfileSynthesis::AssignLikelihoodCond(BasicBlock* block)
 // AssignLikelihoodSwitch: update edge likelihood for a block that
 //   ends in a switch
 //
-// Arguments;
+// Arguments:
 //   block -- block in question (BBJ_SWITCH)
 //
 void ProfileSynthesis::AssignLikelihoodSwitch(BasicBlock* block)
@@ -669,8 +662,6 @@ void ProfileSynthesis::BlendLikelihoods()
 
     for (BasicBlock* const block : m_comp->Blocks())
     {
-        weight_t sum = SumOutgoingLikelihoods(block, &likelihoods);
-
         switch (block->GetKind())
         {
             case BBJ_THROW:
@@ -775,82 +766,6 @@ void ProfileSynthesis::ClearLikelihoods()
 }
 
 //------------------------------------------------------------------------
-// ReverseLikelihoods: for all blocks, reverse likelihoods on all edges
-//   from the block
-//
-void ProfileSynthesis::ReverseLikelihoods()
-{
-#ifdef DEBUG
-    JITDUMP("Reversing likelihoods\n");
-    WeightVector likelihoods(m_comp->getAllocator(CMK_Pgo));
-    for (BasicBlock* const block : m_comp->Blocks())
-    {
-        for (BasicBlock* const succ : block->Succs())
-        {
-            weight_t sum = SumOutgoingLikelihoods(block, &likelihoods);
-
-            if (likelihoods.size() < 2)
-            {
-                continue;
-            }
-
-            for (size_t i = 0; i < likelihoods.size() / 2; i++)
-            {
-                size_t   j     = likelihoods.size() - i - 1;
-                weight_t t     = likelihoods[i];
-                likelihoods[i] = likelihoods[j];
-                likelihoods[j] = t;
-            }
-        }
-    }
-#endif // DEBUG
-}
-
-//------------------------------------------------------------------------
-// RandomizeLikelihoods: for all blocks, randomize likelihoods on all edges
-//   from the block
-//
-// Notes:
-//   total outgoing likelihood for each block remains at 1.0
-//
-void ProfileSynthesis::RandomizeLikelihoods()
-{
-#ifdef DEBUG
-    // todo: external seed
-    JITDUMP("Randomizing likelihoods\n");
-    WeightVector likelihoods(m_comp->getAllocator(CMK_Pgo));
-    CLRRandom    random;
-
-    random.Init(m_comp->info.compMethodHash());
-
-    for (BasicBlock* const block : m_comp->Blocks())
-    {
-        unsigned const N = block->NumSucc();
-        likelihoods.clear();
-        likelihoods.reserve(N);
-
-        weight_t sum = 0;
-        unsigned i   = 0;
-
-        // Consider: something other than uniform distribution.
-        // As is, this will rarely set likelihoods to zero.
-        //
-        for (i = 0; i < N; i++)
-        {
-            likelihoods[i] = (weight_t)random.NextDouble();
-            sum += likelihoods[i];
-        }
-
-        i = 0;
-        for (FlowEdge* const succEdge : block->SuccEdges())
-        {
-            succEdge->setLikelihood(likelihoods[i++] / sum);
-        }
-    }
-#endif // DEBUG
-}
-
-//------------------------------------------------------------------------
 // FindCyclicProbabilities: for each loop, compute how much flow returns
 //   to the loop head given one external count.
 //
@@ -864,8 +779,11 @@ void ProfileSynthesis::ComputeCyclicProbabilities()
 }
 
 //------------------------------------------------------------------------
-// FindCyclicProbabilities: for a given loop, compute how much flow returns
+// ComputeCyclicProbabilities: for a given loop, compute how much flow returns
 //   to the loop head given one external count.
+//
+// Arguments:
+//   loop -- loop to compute cyclic probabilities for
 //
 void ProfileSynthesis::ComputeCyclicProbabilities(FlowGraphNaturalLoop* loop)
 {
@@ -926,7 +844,7 @@ void ProfileSynthesis::ComputeCyclicProbabilities(FlowGraphNaturalLoop* loop)
                 //
                 assert(m_cyclicProbabilities[nestedLoop->GetIndex()] != 0);
 
-                // Sum entry edges, multply by Cp
+                // Sum entry edges, multiply by Cp
                 //
                 weight_t newWeight = 0.0;
 
@@ -1357,7 +1275,7 @@ void ProfileSynthesis::GaussSeidelSolver()
         //
         // Likewise we can stop at the postorder num of the last block that is
         // part of any improper SCC, if we knew what that was,
-        // and ony run through the tail blocks on the last iteration.
+        // and only run through the tail blocks on the last iteration.
         //
         // (or more generally we can go SCC by SCC...)
         //

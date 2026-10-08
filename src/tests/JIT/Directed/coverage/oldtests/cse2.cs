@@ -3,6 +3,8 @@
 
 //Testing common sub-expression elimination in random code
 
+namespace JitTest_Directed_coverage_oldtests_cse2;
+
 using System;
 using Xunit;
 public unsafe class testout1

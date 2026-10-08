@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.Loader;
 using Xunit;
+using TestLibrary;
 
 class TestAssemblyLoadContext : AssemblyLoadContext
 {
@@ -64,10 +65,17 @@ public class Test22888
         return success;
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/34072", TestRuntimes.Mono)]
     [Fact]
     public static int TestEntryPoint()
     {
-        string currentAssemblyDirectory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+        string assemblyPath = Assembly.GetExecutingAssembly().Location;
+        if (assemblyPath.Length == 0)
+        {
+            return 100;
+        }
+
+        string currentAssemblyDirectory = Path.GetDirectoryName(assemblyPath);
         string testAssemblyFullPath = Path.Combine(currentAssemblyDirectory, "test22888resources.dll");
 
         WeakReference alcWeakRef;

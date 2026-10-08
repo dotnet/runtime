@@ -2,6 +2,8 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
+using WasmAppBuilderTests;
+
 [assembly: DisableRuntimeMarshalling]
 public class Test
 {

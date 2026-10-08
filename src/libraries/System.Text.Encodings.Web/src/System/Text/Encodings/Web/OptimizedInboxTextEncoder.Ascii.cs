@@ -21,7 +21,17 @@ namespace System.Text.Encodings.Web
         /// </summary>
         private unsafe struct AsciiPreescapedData
         {
-            private fixed ulong Data[128];
+#if NET
+            [InlineArray(128)]
+            private struct DataBuffer
+            {
+                private ulong _element0;
+            }
+
+            private DataBuffer Data;
+#else
+            private unsafe fixed ulong Data[128];
+#endif
 
             internal void PopulatePreescapedData(in AllowedBmpCodePointsBitmap allowedCodePointsBmp, ScalarEscaperBase innerEncoder)
             {
@@ -63,7 +73,7 @@ namespace System.Text.Encodings.Web
             {
                 if (codePoint <= 0x7F)
                 {
-                    preescapedData = Data[codePoint];
+                    preescapedData = Data[(int)codePoint];
                     return true;
                 }
                 else

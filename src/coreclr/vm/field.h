@@ -23,7 +23,7 @@
 // Offset to indicate an EnC added field. They don't have offsets as aren't placed in the object.
 #define FIELD_OFFSET_NEW_ENC          (FIELD_OFFSET_MAX-4)
 #define FIELD_OFFSET_BIG_RVA          (FIELD_OFFSET_MAX-5)
-// Offset to indicate a FieldRVA that is added by EnC, but whose enclosing type is not yet loaded.
+// Offset to indicate a FieldRVA whose data is stored in the module's dynamic token map.
 #define FIELD_OFFSET_DYNAMIC_RVA      (FIELD_OFFSET_MAX-6)
 #define FIELD_OFFSET_LAST_REAL_OFFSET (FIELD_OFFSET_MAX-7)    // real fields have to be smaller than this
 
@@ -44,7 +44,7 @@ class FieldDesc
 
     // See also: FieldDesc::InitializeFrom method
 
-    union { //create a union so I can get the correct offset for ClrDump.
+    union { //create a union so I can get the correct offset for ClrDump. [cDAC] [RuntimeTypeSystem]: Contract depends on these offsets.
         unsigned m_dword1;
         struct {
         unsigned m_mb               : 24;
@@ -61,6 +61,7 @@ class FieldDesc
         struct {
         // Note: this has been as low as 22 bits in the past & seemed to be OK.
         // we can steal some more bits here if we need them.
+        // [cDAC] [RuntimeTypeSystem]: Contract depends on these offsets.
         unsigned m_dwOffset         : 27;
         unsigned m_type             : 5;
         };
@@ -256,8 +257,7 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
 
-        // The FIELD_OFFSET_DYNAMIC_RVA is a special case for EnC added fields when the
-        // type they are on is not yet loaded.
+        // The field's address is resolved through the module's dynamic token map.
         m_dwOffset = FIELD_OFFSET_DYNAMIC_RVA;
     }
 
@@ -515,7 +515,6 @@ public:
             THROWS;
             GC_TRIGGERS;
             MODE_COOPERATIVE;
-            INJECT_FAULT(COMPlusThrowOM());
         }
         CONTRACTL_END
 
@@ -542,7 +541,6 @@ public:
         {
             THROWS;
             GC_TRIGGERS;
-            INJECT_FAULT(COMPlusThrowOM());
         }
         CONTRACTL_END;
 
@@ -677,15 +675,6 @@ public:
         return GetModule()->GetMDImport();
     }
 
-#ifndef DACCESS_COMPILE
-    IMetaDataImport *GetRWImporter()
-    {
-        WRAPPER_NO_CONTRACT;
-
-        return GetModule()->GetRWImporter();
-    }
-#endif // DACCESS_COMPILE
-
     TypeHandle LookupFieldTypeHandle(ClassLoadLevel level = CLASS_LOADED, BOOL dropGenericArgumentLevel = FALSE);
 
     TypeHandle LookupApproxFieldTypeHandle()
@@ -746,4 +735,3 @@ struct cdac_data<FieldDesc>
 };
 
 #endif // _FIELD_H_
-

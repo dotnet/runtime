@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Threading;
 using Xunit;
+using TestLibrary;
 
 /************************
  * Regression test for bug Bug 749068:WatsonCrash: coreclr.dll!Thread::DoAppropriateWaitWorker -- APPLICATION_HANG_BlockedOn_EventHandle c0000194
@@ -91,7 +92,7 @@ namespace Prog
 
     public class Program
     {
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void TestEntryPoint()
         {
             Callback obj = new Callback();

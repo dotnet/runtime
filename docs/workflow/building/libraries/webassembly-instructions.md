@@ -4,6 +4,48 @@
 
 If you haven't already done so, please read [this document](../../README.md#Build_Requirements) to understand the build requirements for your operating system.
 
+## Wasm tool provisioning
+
+The external tools that the WebAssembly build and test workflows need — the Emscripten SDK, the
+WASI SDK, wasmtime, Chrome, chromedriver, Firefox, geckodriver, and V8 — are downloaded on demand
+into a shared cache under the repository's main checkout:
+
+```
+<main checkout>/.dotnet/wasm-tools/<tool>/<version>-<host rid>/            # the tool
+<main checkout>/.dotnet/wasm-tools/<tool>/<version>-<host rid>.complete    # written once usable
+```
+
+Because the version is part of the path:
+
+- Bumping a version provisions a new entry instead of silently reusing a stale one.
+- Switching between branches that pin different versions reuses both, with no re-download.
+
+The cache is anchored at the **main checkout** (not the individual working directory), so all git
+worktrees of the same clone share a single copy — no per-worktree re-download — while the cache is
+still deleted when you delete the repo. It also lives outside `artifacts/`, so it survives `clean`.
+Set `DOTNET_WASM_TOOL_CACHE_DIR` to relocate it (for example to a user-global `~/.dotnet/wasm-tools`
+shared across unrelated clones, or a CI agent cache). Setting `EMSDK_PATH` or `WASI_SDK_PATH`
+continues to take precedence over the cache for the corresponding SDK. (`WASMTIME_PATH` is *not*
+honored: pointing the build at a local wasmtime is currently disabled, see
+[#101528](https://github.com/dotnet/runtime/issues/101528).)
+
+Versions are pinned in `src/mono/browser/emscripten-version.txt`, `eng/wasm/wasi-sdk-version.txt`,
+`src/mono/wasi/wasmtime-version.txt` and `eng/testing/BrowserVersions.props`.
+
+To provision emscripten without building anything else:
+
+```bash
+./build.sh -s provision.emsdk -os browser
+```
+
+To remove cache entries that the current checkout no longer references:
+
+```bash
+./build.sh -s clean.wasmtools
+```
+
+Add `/p:PruneAllWasmTools=true` to remove the cache entirely.
+
 ## Building
 
 At this time no other build dependencies are necessary to start building for WebAssembly. Emscripten will be downloaded and installed automatically in the build process. To read how to build on specific platforms, see [Building](../../../../src/mono/browser/README.md#building).
@@ -119,42 +161,22 @@ L: GC_MAJOR: (user request) time 3.00ms, stw 3.00ms los size: 0K in use: 0K
 
 ## Updating Emscripten version in Docker image
 
-First update emscripten version in the [webassembly Dockerfile](https://github.com/dotnet/dotnet-buildtools-prereqs-docker/blob/master/src/ubuntu/18.04/webassembly/Dockerfile#L19).
+First update the Emscripten version in the current WebAssembly image definition in
+[dotnet-buildtools-prereqs-docker](https://github.com/dotnet/dotnet-buildtools-prereqs-docker/tree/main/src/azurelinux).
+The active WebAssembly images are tracked in the
+[Azure Linux manifest](https://github.com/dotnet/dotnet-buildtools-prereqs-docker/blob/main/src/azurelinux/manifest.json).
 
-```
-ENV EMSCRIPTEN_VERSION=1.39.16
-```
+Submit a PR with the Dockerfile change and wait for the image publishing flow to complete.
+Once the image is published, find the new tag in the corresponding
+[image-info file](https://github.com/dotnet/versions/blob/main/build-info/docker/image-info.dotnet-dotnet-buildtools-prereqs-docker-main.json)
+in `dotnet/versions`.
 
-Submit a PR request with the updated version, wait for all checks to pass and for the request to be merged. A [master.json file](https://github.com/dotnet/versions/blob/master/build-info/docker/image-info.dotnet-dotnet-buildtools-prereqs-docker-master.json#L1126) will be updated with the a new docker image.
+Then update the WebAssembly image references in this repo:
 
-```
-{
-  "platforms": [
-    {
-      "dockerfile": "src/ubuntu/18.04/webassembly/Dockerfile",
-      "simpleTags": [
-        "ubuntu-18.04-webassembly-20210707133424-12f133e"
-      ],
-      "digest": "sha256:1f2d920a70bd8d55bbb329e87c3bd732ef930d64ff288dab4af0aa700c25cfaf",
-      "osType": "Linux",
-      "osVersion": "Ubuntu 18.04",
-      "architecture": "amd64",
-      "created": "2020-05-29T22:16:52.5716294Z",
-      "commitUrl": "https://github.com/dotnet/dotnet-buildtools-prereqs-docker/blob/6a6da637580ec557fd3708f86291f3ead2422697/src/ubuntu/18.04/webassembly/Dockerfile"
-    }
-  ]
-},
-```
+- [eng/pipelines/helix-platforms.yml](https://github.com/dotnet/runtime/blob/main/eng/pipelines/helix-platforms.yml)
+- [eng/pipelines/libraries/helix-queues-setup.yml](https://github.com/dotnet/runtime/blob/main/eng/pipelines/libraries/helix-queues-setup.yml)
 
-Copy the docker image tag and replace it in [platform-matrix.yml](https://github.com/dotnet/runtime/blob/main/eng/pipelines/common/platform-matrix.yml#L172)
-
-```
-container:
-    image: ubuntu-18.04-webassembly-20210707133424-12f133e
-    registry: mcr
-```
-
-Open a PR request with the new image.
+Open a PR with the updated image references.
 
 # Test libraries
 

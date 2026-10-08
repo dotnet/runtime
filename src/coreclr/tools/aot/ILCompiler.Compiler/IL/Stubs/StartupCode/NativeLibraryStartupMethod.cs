@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 
+using Internal.Text;
 using Internal.TypeSystem;
 
 namespace Internal.IL.Stubs.StartupCode
@@ -40,7 +41,7 @@ namespace Internal.IL.Stubs.StartupCode
             }
         }
 
-        public override ReadOnlySpan<byte> Name
+        public override Utf8Span Name
         {
             get
             {

@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 
 using Internal.NativeFormat;
+using Internal.Text;
 
 using Debug = System.Diagnostics.Debug;
 
@@ -65,7 +66,7 @@ namespace Internal.TypeSystem
     {
         private int _hashcode;
 
-        public override ReadOnlySpan<byte> Namespace
+        public override Utf8Span Namespace
         {
             get
             {
@@ -73,7 +74,7 @@ namespace Internal.TypeSystem
             }
         }
 
-        public override ReadOnlySpan<byte> Name
+        public override Utf8Span Name
         {
             get
             {
@@ -149,7 +150,7 @@ namespace Internal.TypeSystem
     {
         private int _hashcode;
 
-        public override ReadOnlySpan<byte> Namespace
+        public override Utf8Span Namespace
         {
             get
             {
@@ -157,7 +158,7 @@ namespace Internal.TypeSystem
             }
         }
 
-        public override ReadOnlySpan<byte> Name
+        public override Utf8Span Name
         {
             get
             {

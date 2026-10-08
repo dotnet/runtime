@@ -347,10 +347,19 @@ namespace Internal.Cryptography
                 Oids.ContentType => new Pkcs9ContentType(encodedAttribute),
                 Oids.MessageDigest => new Pkcs9MessageDigest(encodedAttribute),
 #if NET || NETSTANDARD2_1
-                Oids.LocalKeyId => new Pkcs9LocalKeyId() { RawData = encodedAttribute.ToArray() },
+                Oids.LocalKeyId => CreatePkcs9LocalKeyId(encodedAttribute),
 #endif
                 _ => new Pkcs9AttributeObject(oid, encodedAttribute),
             };
+
+#if NET || NETSTANDARD2_1
+            static Pkcs9LocalKeyId CreatePkcs9LocalKeyId(ReadOnlySpan<byte> data)
+            {
+                Pkcs9LocalKeyId kid = new();
+                kid.CopyFrom(new Pkcs9AttributeObject(Oids.LocalKeyIdOid.CopyOid(), data));
+                return kid;
+            }
+#endif
         }
 
         public static AttributeAsn[] NormalizeAttributeSet(AttributeAsn[] setItems) =>
@@ -377,8 +386,8 @@ namespace Internal.Cryptography
 
             try
             {
-                AsnValueReader reader = new AsnValueReader(normalizedValue, AsnEncodingRules.DER);
-                AsnValueReader setReader = reader.ReadSetOf();
+                ValueAsnReader reader = new ValueAsnReader(normalizedValue, AsnEncodingRules.DER);
+                ValueAsnReader setReader = reader.ReadSetOf();
                 AttributeAsn[] decodedSet = new AttributeAsn[setItems.Length];
                 int i = 0;
                 while (setReader.HasData)

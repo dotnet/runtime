@@ -22,7 +22,7 @@ namespace System.ConfigurationTests
         }
 
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "SettingsSerializeAs.Binary is deprecated only on Core")]
-        [ConditionalFact(nameof(AreBinaryFormatterAndRemoteExecutorSupportedOnThisPlatform))]
+        [ConditionalFact(typeof(BinaryFormatterDeprecationTests), nameof(AreBinaryFormatterAndRemoteExecutorSupportedOnThisPlatform))]
         public void SerializeAndDeserializeWithSettingsSerializeAsBinary()
         {
             RemoteInvokeOptions options = new RemoteInvokeOptions();

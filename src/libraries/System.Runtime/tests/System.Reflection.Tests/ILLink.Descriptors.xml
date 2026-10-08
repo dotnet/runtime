@@ -13,6 +13,9 @@
   <assembly fullname="System.Private.CoreLib">
     <type fullname="System.Collections.ArrayList" />
   </assembly>
+  <assembly fullname="System.Runtime" />
   <assembly fullname="ForwardedTypesAssembly" />
+  <!-- Only referenced through a type forwarder in ForwardedTypesAssembly; AssemblyGetForwardedTypesLoadFailure expects it to exist and fail to load. -->
+  <assembly fullname="UnloadableAssembly" />
   <assembly fullname="TestAssembly" />
 </linker>

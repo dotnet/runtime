@@ -403,6 +403,10 @@ public:
         LIMITED_METHOD_CONTRACT;
         return !(m_token == INVALID_TOKEN);
     }
+
+    //------------------------------------------------------------------------
+    // Returns a hash of the token suitable for use in dispatch caches.
+    UINT16 GetHash() const;
 };  // struct DispatchToken
 
 // DispatchToken.m_token should be the only field of DispatchToken.
@@ -441,7 +445,6 @@ public:
             THROWS;
             GC_NOTRIGGER;
             MODE_ANY;
-            INJECT_FAULT(COMPlusThrowOM());
             PRECONDITION(m_nextID != 0);
         } CONTRACTL_END;
         UINT32 id = m_nextID;
@@ -470,7 +473,6 @@ public:
             THROWS;
             GC_NOTRIGGER;
             MODE_ANY;
-            INJECT_FAULT(COMPlusThrowOM());
             PRECONDITION(m_nextFatID != 0);
         } CONTRACTL_END;
         UINT32 id = m_nextFatID;
@@ -902,6 +904,16 @@ public:
 
     //------------------------------------------------------------------------
     UINT32 GetMapSize();
+
+    //------------------------------------------------------------------------
+    // Returns a pointer to the raw encoded mapping bytes. Used when reusing the
+    // encoded dispatch map of a generic type's typical instantiation for its
+    // non-typical instantiations (the encoding is instantiation-independent).
+    PTR_BYTE GetEncodedMapData()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return dac_cast<PTR_BYTE>(PTR_HOST_MEMBER_TADDR(DispatchMap, this, m_rgMap));
+    }
 
 #ifdef DACCESS_COMPILE
     void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);

@@ -3,6 +3,7 @@
 using System;
 using System.Threading;
 using Xunit;
+using TestLibrary;
 
 public class Program
 {
@@ -17,7 +18,8 @@ public class Program
         }
     }
     
-    [Fact]
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public static int TestEntryPoint()
     { 
         Thread[] threads;

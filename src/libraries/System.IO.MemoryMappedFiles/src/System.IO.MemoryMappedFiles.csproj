@@ -107,8 +107,6 @@
              Link="Common\Interop\Unix\Interop.Open.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.OpenFlags.cs"
              Link="Common\Interop\Unix\Interop.OpenFlags.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Stat.cs"
-             Link="Common\Interop\Unix\Interop.Stat.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.SysConf.cs"
              Link="Common\Interop\Unix\Interop.SysConf.cs" />
     <Compile Include="Microsoft\Win32\SafeMemoryMappedFileHandle.Unix.cs" />
@@ -121,6 +119,8 @@
              Link="Common\Interop\Unix\Interop.MAdvise.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.ShmOpen.cs"
              Link="Common\Interop\Unix\Interop.ShmOpen.cs" />
+    <Compile Include="$(CommonPath)System\NullableBool.cs"
+             Link="Common\System\NullableBool.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MemfdCreate.cs"
              Link="Common\Interop\Unix\Interop.MemfdCreate.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Unlink.cs"

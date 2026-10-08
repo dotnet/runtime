@@ -28,6 +28,45 @@ Precode* FuncPtrStubs::Lookup(MethodDesc * pMD, PrecodeType type)
     return pPrecode;
 }
 
+#if defined(FEATURE_PORTABLE_ENTRYPOINTS) && !defined(DACCESS_COMPILE)
+PCODE FuncPtrStubs::LookupClosedStaticRetBufStub(MethodDesc* pTargetMD, MethodDesc* pDelegateInvoke)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+    CrstHolder ch(&m_hashTableCrst);
+    const ClosedStaticRetBufStubEntry* entry =
+        m_closedStaticRetBufStubs.LookupPtr({ pTargetMD, pDelegateInvoke });
+    return entry == NULL ? (PCODE)NULL : entry->Stub;
+}
+
+PCODE FuncPtrStubs::AddClosedStaticRetBufStub(
+    MethodDesc* pTargetMD,
+    MethodDesc* pDelegateInvoke,
+    PCODE pStub)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+    CrstHolder ch(&m_hashTableCrst);
+    const ClosedStaticRetBufStubEntry* entry =
+        m_closedStaticRetBufStubs.LookupPtr({ pTargetMD, pDelegateInvoke });
+    if (entry != NULL)
+        return entry->Stub;
+
+    m_closedStaticRetBufStubs.Add({ pTargetMD, pDelegateInvoke, pStub });
+    return pStub;
+}
+#endif // FEATURE_PORTABLE_ENTRYPOINTS && !DACCESS_COMPILE
+
 
 #ifndef DACCESS_COMPILE
 //
@@ -64,7 +103,6 @@ PCODE FuncPtrStubs::GetFuncPtrStub(MethodDesc * pMD, PrecodeType type)
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(ThrowOutOfMemory(););
     }
     CONTRACTL_END
 
@@ -78,6 +116,7 @@ PCODE FuncPtrStubs::GetFuncPtrStub(MethodDesc * pMD, PrecodeType type)
     {
         return pPrecode->GetEntryPoint();
     }
+    GCX_PREEMP();
 
     PCODE target = (PCODE)NULL;
     bool setTargetAfterAddingToHashTable = false;
@@ -151,8 +190,6 @@ PCODE FuncPtrStubs::GetFuncPtrStub(MethodDesc * pMD, PrecodeType type)
 
     if (setTargetAfterAddingToHashTable)
     {
-        GCX_PREEMP();
-
         _ASSERTE(pMD->IsVersionableWithVtableSlotBackpatch());
 
         PCODE temporaryEntryPoint = pMD->GetTemporaryEntryPoint();

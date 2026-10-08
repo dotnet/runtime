@@ -62,11 +62,7 @@ namespace Microsoft.Extensions.Logging.Console
         {
             ReadOnlySpan<char> span = message.AsSpan(startIndex, length);
             var colorChanged = SetColor(background, foreground);
-#if NET
             _textWriter.Write(span);
-#else
-            _textWriter.Write(span.ToString());
-#endif
             if (colorChanged)
             {
                 ResetColor();

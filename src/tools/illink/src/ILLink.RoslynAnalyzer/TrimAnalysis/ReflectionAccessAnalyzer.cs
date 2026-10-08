@@ -96,7 +96,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
         {
             var message = RequiresUnreferencedCodeUtils.GetMessageFromAttribute(requiresAttributeData);
             var url = RequiresAnalyzerBase.GetUrlFromAttribute(requiresAttributeData);
-            var diagnosticContext = new DiagnosticContext(location, _reportDiagnostic);
+            var diagnosticContext = new DiagnosticContext(location, _reportDiagnostic, _typeNameResolver.Compilation);
             diagnosticContext.AddDiagnostic(DiagnosticId.RequiresUnreferencedCode, member.GetDisplayName(), message, url);
         }
 
@@ -146,7 +146,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
             if (reportOnMember)
                 location = DynamicallyAccessedMembersAnalyzer.GetPrimaryLocation(member.Locations);
 
-            var diagnosticContext = new DiagnosticContext(location, _reportDiagnostic);
+            var diagnosticContext = new DiagnosticContext(location, _reportDiagnostic, _typeNameResolver.Compilation);
 
             if (member.IsInRequiresUnreferencedCodeAttributeScope(out AttributeData? requiresUnreferencedCodeAttribute))
             {
@@ -166,7 +166,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
         internal void GetDiagnosticsForReflectionAccessToDAMOnMethod(Location location, IMethodSymbol methodSymbol)
         {
-            var diagnosticContext = new DiagnosticContext(location, _reportDiagnostic);
+            var diagnosticContext = new DiagnosticContext(location, _reportDiagnostic, _typeNameResolver.Compilation);
             if (methodSymbol.IsVirtual && FlowAnnotations.GetMethodReturnValueAnnotation(methodSymbol) != DynamicallyAccessedMemberTypes.None)
             {
                 diagnosticContext.AddDiagnostic(DiagnosticId.DynamicallyAccessedMembersMethodAccessedViaReflection, methodSymbol.GetDisplayName());
@@ -215,7 +215,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
             if (FlowAnnotations.GetFieldAnnotation(fieldSymbol) != DynamicallyAccessedMemberTypes.None)
             {
-                var diagnosticContext = new DiagnosticContext(location, _reportDiagnostic);
+                var diagnosticContext = new DiagnosticContext(location, _reportDiagnostic, _typeNameResolver.Compilation);
                 diagnosticContext.AddDiagnostic(DiagnosticId.DynamicallyAccessedMembersFieldAccessedViaReflection, fieldSymbol.GetDisplayName());
             }
         }

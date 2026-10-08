@@ -23,12 +23,7 @@ namespace Microsoft.Extensions.Hosting.WindowsServices.Internal
                 procEntry.dwSize = sizeof(Interop.Kernel32.PROCESSENTRY32);
                 if (Interop.Kernel32.Process32First(snapshotHandle, &procEntry))
                 {
-                    int currentProcessId =
-#if NET
-                        Environment.ProcessId;
-#else
-                        Process.GetCurrentProcess().Id;
-#endif
+                    int currentProcessId = Environment.ProcessId;
                     do
                     {
                         if (currentProcessId == procEntry.th32ProcessID)

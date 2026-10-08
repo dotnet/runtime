@@ -37,11 +37,8 @@
 
 #include "stublink.inl"
 
-#ifdef FEATURE_PERFMAP
 #include "perfmap.h"
-#endif
 
-#ifdef FEATURE_EH_FUNCLETS
 void UpdateRegDisplayFromCalleeSavedRegisters(REGDISPLAY * pRD, CalleeSavedRegisters * regs)
 {
     LIMITED_METHOD_CONTRACT;
@@ -65,84 +62,17 @@ void ClearRegDisplayArgumentAndScratchRegisters(REGDISPLAY * pRD)
     ENUM_ARGUMENT_AND_SCRATCH_REGISTERS();
 #undef ARGUMENT_AND_SCRATCH_REGISTER
 }
-#endif // FEATURE_EH_FUNCLETS
-
-#ifndef FEATURE_EH_FUNCLETS
-//---------------------------------------------------------------------------------------
-//
-// Initialize the EHContext using the resume PC and the REGDISPLAY.  The EHContext is currently used in two
-// scenarios: to store the register state before calling an EH clause, and to retrieve the ambient SP of a
-// particular stack frame.  resumePC means different things in the two scenarios.  In the former case, it
-// is the IP at which we are going to resume execution when we call an EH clause.  In the latter case, it
-// is just the current IP.
-//
-// Arguments:
-//    resumePC - refer to the comment above
-//    regs     - This is the REGDISPLAY obtained from the CrawlFrame used in the stackwalk.  It represents the
-//               stack frame of the method containing the EH clause we are about to call.  For getting the
-//               ambient SP, this is the stack frame we are interested in.
-//
-
-void EHContext::Setup(PCODE resumePC, PREGDISPLAY regs)
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    // EAX ECX EDX are scratch
-    this->Esp  = regs->SP;
-    this->Ebx = *regs->pEbx;
-    this->Esi = *regs->pEsi;
-    this->Edi = *regs->pEdi;
-    this->Ebp = *regs->pEbp;
-
-    this->Eip = (ULONG)(size_t)resumePC;
-}
-
-//
-// Update the registers using new context
-//
-// This is necessary to reflect GC pointer changes during the middle of a unwind inside a
-// finally clause, because:
-// 1. GC won't see the part of stack inside try (which has thrown an exception) that is already
-// unwinded and thus GC won't update GC pointers for this portion of the stack, but rather the
-// call stack in finally.
-// 2. upon return of finally, the unwind process continues and unwinds stack based on the part
-// of stack inside try and won't see the updated values in finally.
-// As a result, we need to manually update the context using register values upon return of finally
-//
-// Note that we only update the registers for finally clause because
-// 1. For filter handlers, stack walker is able to see the whole stack (including the try part)
-// with the help of ExceptionFilterFrame as filter handlers are called in first pass
-// 2. For catch handlers, the current unwinding is already finished
-//
-void EHContext::UpdateFrame(PREGDISPLAY regs)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    // EAX ECX EDX are scratch.
-    // No need to update ESP as unwinder takes care of that for us
-
-    LOG((LF_EH, LL_INFO1000, "Updating saved EBX: *%p= %p\n", regs->pEbx, this->Ebx));
-    LOG((LF_EH, LL_INFO1000, "Updating saved ESI: *%p= %p\n", regs->pEsi, this->Esi));
-    LOG((LF_EH, LL_INFO1000, "Updating saved EDI: *%p= %p\n", regs->pEdi, this->Edi));
-    LOG((LF_EH, LL_INFO1000, "Updating saved EBP: *%p= %p\n", regs->pEbp, this->Ebp));
-
-    *regs->pEbx = this->Ebx;
-    *regs->pEsi = this->Esi;
-    *regs->pEdi = this->Edi;
-    *regs->pEbp = this->Ebp;
-}
-#endif // FEATURE_EH_FUNCLETS
 
 void TransitionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
         SUPPORTS_DAC;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE();
 
@@ -151,21 +81,19 @@ void TransitionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFl
 
     UpdateRegDisplayHelper(pRD, pFunc->CbStackPop());
 
-    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    TransitionFrame::UpdateRegDisplay_Impl(ip:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
-
-    RETURN;
+    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    TransitionFrame::UpdateRegDisplay_Impl(ip:%p, sp:%p)\n", (void*)(size_t)pRD->ControlPC, (void*)(size_t)pRD->SP));
 }
 
 void TransitionFrame::UpdateRegDisplayHelper(const PREGDISPLAY pRD, UINT cbStackPop)
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
         SUPPORTS_DAC;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     CalleeSavedRegisters* regs = GetCalleeSavedRegisters();
 
@@ -173,10 +101,7 @@ void TransitionFrame::UpdateRegDisplayHelper(const PREGDISPLAY pRD, UINT cbStack
 
     DWORD CallerSP = (DWORD)(GetReturnAddressPtr() + sizeof(TADDR) + cbStackPop);
 
-#ifdef FEATURE_EH_FUNCLETS
-
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid      = FALSE;
 
     pRD->pCurrentContext->Esp = CallerSP;
 
@@ -184,52 +109,35 @@ void TransitionFrame::UpdateRegDisplayHelper(const PREGDISPLAY pRD, UINT cbStack
     ClearRegDisplayArgumentAndScratchRegisters(pRD);
 
     SyncRegDisplayToCurrentContext(pRD);
-
-#else // FEATURE_EH_FUNCLETS
-
-    // reset pContext; it's only valid for active (top-most) frame
-    pRD->pContext = NULL;
-
-#define CALLEE_SAVED_REGISTER(regname) pRD->p##regname = (DWORD*) &regs->regname;
-    ENUM_CALLEE_SAVED_REGISTERS();
-#undef CALLEE_SAVED_REGISTER
-
-    pRD->SP  = CallerSP;
-
-#endif // FEATURE_EH_FUNCLETS
-
-    RETURN;
 }
 
 void ExternalMethodFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
         SUPPORTS_DAC;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     UpdateRegDisplayHelper(pRD, CbStackPopUsingGCRefMap(GetGCRefMap()));
 
-    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    ExternalMethodFrane::UpdateRegDisplay_Impl(ip:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
-
-    RETURN;
+    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    ExternalMethodFrane::UpdateRegDisplay_Impl(ip:%p, sp:%p)\n", (void*)(size_t)pRD->ControlPC, (void*)(size_t)pRD->SP));
 }
 
 
 void StubDispatchFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
         SUPPORTS_DAC;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     PTR_BYTE pGCRefMap = GetGCRefMap();
     if (pGCRefMap != NULL)
@@ -251,17 +159,14 @@ void StubDispatchFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool update
         // This path is hit when we are throwing null reference exception from
         // code:VSD_ResolveWorker or code:StubDispatchFixupWorker
         pRD->ControlPC = GetAdjustedCallAddress(pRD->ControlPC);
-#ifdef FEATURE_EH_FUNCLETS
+
         // We need to set EIP to match ControlPC to ensure Thread::VirtualUnwindCallFrame
         // doesn't fail assertion on GetControlPC(pRD) == GetIP(pRD->pCurrentContext)
         // precondition.
         pRD->pCurrentContext->Eip = pRD->ControlPC;
-#endif
     }
 
-    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    StubDispatchFrame::UpdateRegDisplay_Impl(ip:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
-
-    RETURN;
+    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    StubDispatchFrame::UpdateRegDisplay_Impl(ip:%p, sp:%p)\n", (void*)(size_t)pRD->ControlPC, (void*)(size_t)pRD->SP));
 }
 
 PCODE StubDispatchFrame::GetReturnAddress_Impl()
@@ -284,18 +189,16 @@ PCODE StubDispatchFrame::GetReturnAddress_Impl()
 
 void FaultingExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
         SUPPORTS_DAC;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     SetRegdisplayPCTAddr(pRD, GetReturnAddressPtr());
-
-#ifdef FEATURE_EH_FUNCLETS
 
     memcpy(pRD->pCurrentContext, &m_ctx, sizeof(CONTEXT));
 
@@ -306,40 +209,31 @@ void FaultingExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool u
     pRD->SP = m_ctx.Esp;
     pRD->ControlPC = m_ctx.Eip;
 
-#define ARGUMENT_AND_SCRATCH_REGISTER(regname) pRD->pCurrentContextPointers->regname = &m_ctx.regname;
+#ifdef DACCESS_COMPILE
+    // &m_ctx.Xxx resolves through the DAC cache and the entry can be evicted
+    // before context pointers are consumed. Point at the local copy in
+    // pCurrentContext instead (values were already copied above).
+    CONTEXT *pContext = pRD->pCurrentContext;
+#else
+    CONTEXT *pContext = &m_ctx;
+#endif
+
+#define ARGUMENT_AND_SCRATCH_REGISTER(regname) pRD->pCurrentContextPointers->regname = &pContext->regname;
     ENUM_ARGUMENT_AND_SCRATCH_REGISTERS();
 #undef ARGUMENT_AND_SCRATCH_REGISTER
 
-#define CALLEE_SAVED_REGISTER(regname) pRD->pCurrentContextPointers->regname = &m_ctx.regname;
+#define CALLEE_SAVED_REGISTER(regname) pRD->pCurrentContextPointers->regname = &pContext->regname;
     ENUM_CALLEE_SAVED_REGISTERS();
 #undef CALLEE_SAVED_REGISTER
 
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid = FALSE;        // Don't add usage of this field.  This is only temporary.
 
-#else // FEATURE_EH_FUNCLETS
-
-    // reset pContext; it's only valid for active (top-most) frame
-    pRD->pContext = NULL;
-
-    CalleeSavedRegisters* regs = GetCalleeSavedRegisters();
-
-#define CALLEE_SAVED_REGISTER(regname) pRD->p##regname = (DWORD*) &regs->regname;
-    ENUM_CALLEE_SAVED_REGISTERS();
-#undef CALLEE_SAVED_REGISTER
-
-    pRD->SP = m_Esp;
-
-#endif // FEATURE_EH_FUNCLETS
-
-    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    FaultingExceptionFrame::UpdateRegDisplay_Impl(ip:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
-
-    RETURN;
+    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    FaultingExceptionFrame::UpdateRegDisplay_Impl(ip:%p, sp:%p)\n", (void*)(size_t)pRD->ControlPC, (void*)(size_t)pRD->SP));
 }
 
 void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
@@ -352,7 +246,7 @@ void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateF
         MODE_ANY;
         SUPPORTS_DAC;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     // @TODO: Remove this after the debugger is fixed to avoid stack-walks from bad places
     // @TODO: This may be still needed for sampling profilers
@@ -367,9 +261,7 @@ void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateF
 #if !defined(UNIX_X86_ABI)
     TADDR datum = dac_cast<TADDR>(m_Datum);
 
-#ifdef FEATURE_EH_FUNCLETS
     datum &= ~(TADDR)InlinedCallFrameMarker::Mask;
-#endif
 
     stackArgSize = (DWORD)datum;
 
@@ -388,10 +280,7 @@ void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateF
     /* The return address is just above the "ESP" */
     SetRegdisplayPCTAddr(pRD, PTR_HOST_MEMBER_TADDR(InlinedCallFrame, this, m_pCallerReturnAddress));
 
-#ifdef FEATURE_EH_FUNCLETS
-
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 
     pRD->pCurrentContext->Esp = (DWORD) dac_cast<TADDR>(m_pCallSiteSP);
     pRD->pCurrentContext->Ebp = (DWORD) m_pCalleeSavedFP;
@@ -406,21 +295,7 @@ void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateF
 
     SyncRegDisplayToCurrentContext(pRD);
 
-#else // FEATURE_EH_FUNCLETS
-
-    // reset pContext; it's only valid for active (top-most) frame
-    pRD->pContext = NULL;
-
-    pRD->pEbp = (DWORD*) &m_pCalleeSavedFP;
-
-    /* Now we need to pop off the outgoing arguments */
-    pRD->SP  = (DWORD) dac_cast<TADDR>(m_pCallSiteSP) + stackArgSize;
-
-#endif // FEATURE_EH_FUNCLETS
-
-    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    InlinedCallFrame::UpdateRegDisplay_Impl(ip:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
-
-    RETURN;
+    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    InlinedCallFrame::UpdateRegDisplay_Impl(ip:%p, sp:%p)\n", (void*)(size_t)pRD->ControlPC, (void*)(size_t)pRD->SP));
 }
 
 #ifdef FEATURE_HIJACK
@@ -435,18 +310,16 @@ TADDR ResumableFrame::GetReturnAddressPtr_Impl()
 
 void ResumableFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
         SUPPORTS_DAC;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     SetRegdisplayPCTAddr(pRD, dac_cast<TADDR>(m_Regs) + offsetof(CONTEXT, Eip));
-
-#ifdef FEATURE_EH_FUNCLETS
 
     CopyMemory(pRD->pCurrentContext, m_Regs, sizeof(T_CONTEXT));
 
@@ -461,53 +334,8 @@ void ResumableFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFlo
 #undef CALLEE_SAVED_REGISTER
 
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 
-#else // FEATURE_EH_FUNCLETS
-
-    // reset pContext; it's only valid for active (top-most) frame
-    pRD->pContext = NULL;
-
-    CONTEXT* pUnwoundContext = m_Regs;
-
-#if !defined(DACCESS_COMPILE)
-    // "pContextForUnwind" field is only used on X86 since not only is it initialized just for it,
-    // but its used only under the confines of STACKWALKER_MAY_POP_FRAMES preprocessor define,
-    // which is defined for x86 only (refer to its definition in stackwalk.cpp).
-    if (pRD->pContextForUnwind != NULL)
-    {
-        pUnwoundContext = pRD->pContextForUnwind;
-
-        pUnwoundContext->Eax = m_Regs->Eax;
-        pUnwoundContext->Ecx = m_Regs->Ecx;
-        pUnwoundContext->Edx = m_Regs->Edx;
-
-        pUnwoundContext->Edi = m_Regs->Edi;
-        pUnwoundContext->Esi = m_Regs->Esi;
-        pUnwoundContext->Ebx = m_Regs->Ebx;
-        pUnwoundContext->Ebp = m_Regs->Ebp;
-        pUnwoundContext->Eip = m_Regs->Eip;
-    }
-#endif // !defined(DACCESS_COMPILE)
-
-    pRD->pEax = &pUnwoundContext->Eax;
-    pRD->pEcx = &pUnwoundContext->Ecx;
-    pRD->pEdx = &pUnwoundContext->Edx;
-
-    pRD->pEdi = &pUnwoundContext->Edi;
-    pRD->pEsi = &pUnwoundContext->Esi;
-    pRD->pEbx = &pUnwoundContext->Ebx;
-    pRD->pEbp = &pUnwoundContext->Ebp;
-
-    pRD->ControlPC = pUnwoundContext->Eip;
-
-    pRD->SP  = m_Regs->Esp;
-
-#endif // !FEATURE_EH_FUNCLETS
-
-    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    ResumableFrame::UpdateRegDisplay_Impl(ip:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
-
-    RETURN;
+    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    ResumableFrame::UpdateRegDisplay_Impl(ip:%p, sp:%p)\n", (void*)(size_t)pRD->ControlPC, (void*)(size_t)pRD->SP));
 }
 
 // The HijackFrame has to know the registers that are pushed by OnHijackTripThread
@@ -523,10 +351,7 @@ void HijackFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats
 
     SetRegdisplayPCTAddr(pRD, dac_cast<TADDR>(m_Args) + offsetof(HijackArgs, Eip));
 
-#ifdef FEATURE_EH_FUNCLETS
-
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 
     pRD->pCurrentContext->Esp = (DWORD)(GetRegdisplayPCTAddr(pRD) + sizeof(TADDR));
 
@@ -542,67 +367,26 @@ void HijackFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats
 
     SyncRegDisplayToCurrentContext(pRD);
 
-#else // FEATURE_EH_FUNCLETS
-
-    // This only describes the top-most frame
-    pRD->pContext = NULL;
-
-#define RESTORE_REG(reg) { pRD->p##reg = &m_Args->reg; }
-#define CALLEE_SAVED_REGISTER(reg) RESTORE_REG(reg)
-    ENUM_CALLEE_SAVED_REGISTERS();
-#undef CALLEE_SAVED_REGISTER
-
-#define ARGUMENT_AND_SCRATCH_REGISTER(reg) RESTORE_REG(reg)
-    ENUM_ARGUMENT_AND_SCRATCH_REGISTERS();
-#undef ARGUMENT_AND_SCRATCH_REGISTER
-#undef RESTORE_REG
-
-    pRD->SP  = (DWORD)(GetRegdisplayPCTAddr(pRD) + sizeof(TADDR));
-
-#endif // FEATURE_EH_FUNCLETS
-
-    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    HijackFrame::UpdateRegDisplay_Impl(ip:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
+    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    HijackFrame::UpdateRegDisplay_Impl(ip:%p, sp:%p)\n", (void*)(size_t)pRD->ControlPC, (void*)(size_t)pRD->SP));
 }
 
 #endif  // FEATURE_HIJACK
 
-void PInvokeCalliFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
-{
-    CONTRACT_VOID
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        SUPPORTS_DAC;
-    }
-    CONTRACT_END;
-
-    VASigCookie *pVASigCookie = GetVASigCookie();
-    UpdateRegDisplayHelper(pRD, pVASigCookie->sizeOfArgs);
-
-    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    PInvokeCalliFrame::UpdateRegDisplay_Impl(ip:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
-
-    RETURN;
-}
-
 #ifndef UNIX_X86_ABI
 void TailCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
         SUPPORTS_DAC;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     SetRegdisplayPCTAddr(pRD, GetReturnAddressPtr());
 
-#ifdef FEATURE_EH_FUNCLETS
-
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 
     pRD->pCurrentContext->Esp = (DWORD)(GetRegdisplayPCTAddr(pRD) + sizeof(TADDR));
 
@@ -611,22 +395,7 @@ void TailCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloa
 
     SyncRegDisplayToCurrentContext(pRD);
 
-#else
-
-    // reset pContext; it's only valid for active (top-most) frame
-    pRD->pContext = NULL;
-
-#define CALLEE_SAVED_REGISTER(regname) pRD->p##regname = (DWORD*) &m_regs.regname;
-    ENUM_CALLEE_SAVED_REGISTERS();
-#undef CALLEE_SAVED_REGISTER
-
-    pRD->SP  = (DWORD)(GetRegdisplayPCTAddr(pRD) + sizeof(TADDR));
-
-#endif
-
-    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    TailCallFrame::UpdateRegDisplay_Impl(ip:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
-
-    RETURN;
+    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    TailCallFrame::UpdateRegDisplay_Impl(ip:%p, sp:%p)\n", (void*)(size_t)pRD->ControlPC, (void*)(size_t)pRD->SP));
 }
 #endif // !UNIX_X86_ABI
 
@@ -644,12 +413,12 @@ WORD GetUnpatchedCodeData(LPCBYTE pAddr)
 #ifndef TARGET_X86
 #error Make sure this works before porting to platforms other than x86.
 #endif
-    CONTRACT(WORD) {
+    CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
         PRECONDITION(CORDebuggerAttached());
         PRECONDITION(CheckPointer(pAddr));
-    } CONTRACT_END;
+    } CONTRACTL_END;
 
     // Ordering is because x86 is little-endien.
     BYTE bLow  = pAddr[0];
@@ -672,7 +441,7 @@ WORD GetUnpatchedCodeData(LPCBYTE pAddr)
 #endif
 
     WORD w = bLow + (bHigh << 8);
-    RETURN w;
+    return w;
 }
 
 
@@ -759,13 +528,9 @@ void ResumeAtJit(PCONTEXT pContext, LPVOID oldESP)
     size_t rxOffset = pStartRX - pStart; \
     BYTE * p = pStart;
 
-#ifdef FEATURE_PERFMAP
 #define BEGIN_DYNAMIC_HELPER_EMIT(size) \
     BEGIN_DYNAMIC_HELPER_EMIT_WORKER(size) \
     PerfMap::LogStubs(__FUNCTION__, "DynamicHelper", (PCODE)p, size, PerfMapStubType::Individual);
-#else
-#define BEGIN_DYNAMIC_HELPER_EMIT(size) BEGIN_DYNAMIC_HELPER_EMIT_WORKER(size)
-#endif
 
 #define END_DYNAMIC_HELPER_EMIT() \
     _ASSERTE(pStart + cb == p); \
@@ -794,7 +559,7 @@ void DynamicHelpers::EmitHelperWithArg(BYTE*& p, size_t rxOffset, LoaderAllocato
 {
     CONTRACTL
     {
-        GC_NOTRIGGER;
+        STANDARD_VM_CHECK;
         PRECONDITION(p != NULL && target != NULL);
     }
     CONTRACTL_END;
@@ -812,6 +577,8 @@ void DynamicHelpers::EmitHelperWithArg(BYTE*& p, size_t rxOffset, LoaderAllocato
 
 PCODE DynamicHelpers::CreateHelperWithArg(LoaderAllocator * pAllocator, TADDR arg, PCODE target)
 {
+    STANDARD_VM_CONTRACT;
+
     BEGIN_DYNAMIC_HELPER_EMIT(10);
 
     EmitHelperWithArg(p, rxOffset, pAllocator, arg, target);
@@ -821,6 +588,8 @@ PCODE DynamicHelpers::CreateHelperWithArg(LoaderAllocator * pAllocator, TADDR ar
 
 PCODE DynamicHelpers::CreateHelper(LoaderAllocator * pAllocator, TADDR arg, TADDR arg2, PCODE target)
 {
+    STANDARD_VM_CONTRACT;
+
     BEGIN_DYNAMIC_HELPER_EMIT(15);
 
     *p++ = 0xB9; // mov ecx, XXXXXX
@@ -840,6 +609,8 @@ PCODE DynamicHelpers::CreateHelper(LoaderAllocator * pAllocator, TADDR arg, TADD
 
 PCODE DynamicHelpers::CreateHelperArgMove(LoaderAllocator * pAllocator, TADDR arg, PCODE target)
 {
+    STANDARD_VM_CONTRACT;
+
     BEGIN_DYNAMIC_HELPER_EMIT(12);
 
     SET_UNALIGNED_16(p, 0xD18B); // mov edx, ecx
@@ -858,6 +629,8 @@ PCODE DynamicHelpers::CreateHelperArgMove(LoaderAllocator * pAllocator, TADDR ar
 
 PCODE DynamicHelpers::CreateReturn(LoaderAllocator * pAllocator)
 {
+    STANDARD_VM_CONTRACT;
+
     BEGIN_DYNAMIC_HELPER_EMIT(1);
 
     *p++ = 0xC3; // ret
@@ -867,6 +640,8 @@ PCODE DynamicHelpers::CreateReturn(LoaderAllocator * pAllocator)
 
 PCODE DynamicHelpers::CreateReturnConst(LoaderAllocator * pAllocator, TADDR arg)
 {
+    STANDARD_VM_CONTRACT;
+
     BEGIN_DYNAMIC_HELPER_EMIT(6);
 
     *p++ = 0xB8; // mov eax, XXXXXX
@@ -880,6 +655,8 @@ PCODE DynamicHelpers::CreateReturnConst(LoaderAllocator * pAllocator, TADDR arg)
 
 PCODE DynamicHelpers::CreateReturnIndirConst(LoaderAllocator * pAllocator, TADDR arg, INT8 offset)
 {
+    STANDARD_VM_CONTRACT;
+
     BEGIN_DYNAMIC_HELPER_EMIT((offset != 0) ? 9 : 6);
 
     *p++ = 0xA1; // mov eax, [XXXXXX]
@@ -903,6 +680,8 @@ EXTERN_C VOID DynamicHelperArgsStub();
 
 PCODE DynamicHelpers::CreateHelperWithTwoArgs(LoaderAllocator * pAllocator, TADDR arg, PCODE target)
 {
+    STANDARD_VM_CONTRACT;
+
 #ifdef UNIX_X86_ABI
     BEGIN_DYNAMIC_HELPER_EMIT(18);
 #else
@@ -947,6 +726,8 @@ PCODE DynamicHelpers::CreateHelperWithTwoArgs(LoaderAllocator * pAllocator, TADD
 
 PCODE DynamicHelpers::CreateHelperWithTwoArgs(LoaderAllocator * pAllocator, TADDR arg, TADDR arg2, PCODE target)
 {
+    STANDARD_VM_CONTRACT;
+
 #ifdef UNIX_X86_ABI
     BEGIN_DYNAMIC_HELPER_EMIT(23);
 #else

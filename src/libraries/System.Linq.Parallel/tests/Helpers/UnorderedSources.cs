@@ -73,19 +73,6 @@ namespace System.Linq.Parallel.Tests
         }
 
         /// <summary>
-        /// Get a set of ranges, starting at 0, and running for each count in `counts`.
-        /// </summary>
-        /// <remarks>This version is a wrapper for use from the MemberData attribute.</remarks>
-        /// <param name="counts">The sizes of ranges to return.</param>
-        /// <returns>Entries for test data.
-        /// The first element is the Labeled{ParallelQuery{int}} range,
-        /// and the second element is the count</returns>
-        public static IEnumerable<object[]> Ranges(int[] counts)
-        {
-            foreach (object[] parms in Ranges(counts.Cast<int>())) yield return parms;
-        }
-
-        /// <summary>
         /// Get a set of ranges, starting at 0, and having OuterLoopCount elements.
         /// </summary>
         /// <returns>Entries for test data.
@@ -94,34 +81,6 @@ namespace System.Linq.Parallel.Tests
         public static IEnumerable<object[]> OuterLoopRanges()
         {
             foreach (object[] parms in Ranges(new[] { Sources.OuterLoopCount })) yield return parms;
-        }
-
-        /// <summary>
-        /// Get a set of ranges, starting at `start`, and running for each count in `counts`.
-        /// </summary>
-        /// <remarks>This version is a wrapper for use from the MemberData attribute.</remarks>
-        /// <param name="start">The starting element of the range.</param>
-        /// <param name="counts">The sizes of ranges to return.</param>
-        /// <returns>Entries for test data.
-        /// The first element is the Labeled{ParallelQuery{int}} range,
-        /// the second element is the count, and the third is the start.</returns>
-        public static IEnumerable<object[]> Ranges(int start, int[] counts)
-        {
-            foreach (object[] parms in Ranges(start, counts.Cast<int>())) yield return parms;
-        }
-
-        /// <summary>
-        /// Return pairs of ranges, both from 0 to each respective count in `counts`.
-        /// </summary>
-        /// <remarks>This version is a wrapper for use from the MemberData attribute.</remarks>
-        /// <param name="leftCounts">The sizes of left ranges to return.</param>
-        /// <param name="rightCounts">The sizes of right ranges to return.</param>
-        /// <returns>Entries for test data.
-        /// The first element is the left Labeled{ParallelQuery{int}} range, the second element is the left count,
-        /// the third element is the right Labeled{ParallelQuery{int}} range, and the fourth element is the right count, .</returns>
-        public static IEnumerable<object[]> BinaryRanges(int[] leftCounts, int[] rightCounts)
-        {
-            foreach (object[] parms in BinaryRanges(leftCounts.Cast<int>(), rightCounts.Cast<int>())) yield return parms;
         }
 
         /// <summary>

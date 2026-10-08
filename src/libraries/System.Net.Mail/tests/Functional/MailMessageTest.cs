@@ -151,7 +151,7 @@ namespace System.Net.Mail.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser, "Not passing as internal System.Net.Mail.MailWriter stripped from build")]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi, "Not passing as internal System.Net.Mail.MailWriter stripped from build")]
         public void SendMailMessageTest()
         {
             string expected = @"X-Sender: from@example.com
@@ -223,7 +223,7 @@ blah blah
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser, "Not passing as internal System.Net.Mail.MailWriter stripped from build")]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi, "Not passing as internal System.Net.Mail.MailWriter stripped from build")]
         public void SentSpecialLengthMailAttachment_Base64Decode_Success()
         {
             // The special length follows pattern: (3N - 1) * 0x4400 + 1
@@ -261,14 +261,15 @@ blah blah
                                 culture: null,
                                 activationAttributes: null);
 
-            var syncSendAdapterType = typeof(MailMessage).Assembly.GetTypes()
-                .FirstOrDefault(t => t.Name == "SyncReadWriteAdapter");
+            var syncSendAdapterType = Type.GetType("System.SyncReadWriteAdapter, System.Net.Mail");
 
             // Send the message.
+#pragma warning disable IL3050 // Roslyn analyzer can't see through the private reflection, but publish process can. This is safe.
             typeof(MailMessage)
                 .GetMethod("SendAsync", BindingFlags.Instance | BindingFlags.NonPublic)
                 .MakeGenericMethod(syncSendAdapterType)
                 .Invoke(mail, new object[] { mailWriter, true, true, CancellationToken.None });
+#pragma warning restore IL3050
 
             // Decode contents.
             string result = Encoding.UTF8.GetString(stream.ToArray());

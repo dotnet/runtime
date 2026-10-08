@@ -14,6 +14,7 @@ namespace Microsoft.Extensions.Configuration
     {
         private readonly IConfiguration _config;
         private readonly bool _shouldDisposeConfig;
+        private bool _initialLoadCompleted;
 
         /// <summary>
         /// Initializes a new instance from the source configuration.
@@ -37,11 +38,11 @@ namespace Microsoft.Extensions.Configuration
         /// </summary>
         /// <param name="key">The key.</param>
         /// <param name="value">When this method returns, contains the value.</param>
-        /// <returns><see langword="true"/> if a value for the specified key was found, otherwise <see langword="false"/>.</returns>
+        /// <returns><see langword="true"/> if the chained configuration has a non-<see langword="null"/> value for the specified key, otherwise <see langword="false"/>.</returns>
         public bool TryGet(string key, out string? value)
         {
             value = _config[key];
-            return !string.IsNullOrEmpty(value);
+            return value is not null;
         }
 
         /// <summary>
@@ -60,7 +61,24 @@ namespace Microsoft.Extensions.Configuration
         /// <summary>
         /// Loads configuration values from the source represented by this <see cref="IConfigurationProvider"/>.
         /// </summary>
-        public void Load() { }
+        public void Load()
+        {
+            if (!_initialLoadCompleted)
+            {
+                // The initial load is a no-op since the chained configuration is expected to be already loaded by the
+                // time it is used as a source for another configuration. This way we avoid unnecessary change notifications.
+                _initialLoadCompleted = true;
+                return;
+            }
+
+            if (_config is IConfigurationRoot root)
+            {
+                foreach (IConfigurationProvider provider in root.Providers)
+                {
+                    provider.Load();
+                }
+            }
+        }
 
         /// <summary>
         /// Returns the immediate descendant configuration keys for a given parent path based on the data of this

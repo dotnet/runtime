@@ -16,6 +16,8 @@ namespace System.Net
     /// </summary>
     internal class CommandStream : NetworkStreamWrapper
     {
+        private const int MaxResponseLength = 4 * 1024;
+
         private static readonly AsyncCallback s_writeCallbackDelegate = new AsyncCallback(WriteCallback);
         private static readonly AsyncCallback s_readCallbackDelegate = new AsyncCallback(ReadCallback);
 
@@ -598,6 +600,11 @@ namespace System.Net
                     int numChars = _decoder.GetChars(state.Buffer, 0, bytesRead, chars, 0, false);
 
                     string szResponse = new string(chars, 0, numChars);
+
+                    if ((szResponse.Length + state.Resp.StatusBuffer.Length) > MaxResponseLength)
+                    {
+                        throw GenerateException(SR.Format(SR.net_ftp_response_too_large, MaxResponseLength), WebExceptionStatus.ServerProtocolViolation, null);
+                    }
 
                     state.Resp.StatusBuffer.Append(szResponse);
                     if (!CheckValid(state.Resp, ref validThrough, ref completeLength))

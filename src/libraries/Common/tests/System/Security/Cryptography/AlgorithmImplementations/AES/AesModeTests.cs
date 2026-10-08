@@ -28,16 +28,10 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
             SupportsMode(CipherMode.CFB, feedbackSize: 8);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [Fact]
         public static void SupportsCFB128()
         {
             SupportsMode(CipherMode.CFB, feedbackSize: 128);
-        }
-
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows7))]
-        public static void Windows7DoesNotSupportCFB128()
-        {
-            DoesNotSupportMode(CipherMode.CFB, feedbackSize: 128);
         }
 
         [Fact]

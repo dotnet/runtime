@@ -30,7 +30,7 @@ namespace System.Speech.Internal.SapiInterop
             }
         }
 
-        private SpeechEvent(SPEVENT sapiEvent, SpeechAudioFormatInfo audioFormat)
+        private SpeechEvent(SPEVENT sapiEvent, SpeechAudioFormatInfo? audioFormat)
             : this(sapiEvent.eEventId, sapiEvent.elParamType, sapiEvent.ullAudioStreamOffset, sapiEvent.wParam, sapiEvent.lParam)
         {
             if (audioFormat == null || audioFormat.EncodingFormat == 0)
@@ -90,10 +90,10 @@ namespace System.Speech.Internal.SapiInterop
         // This tries to get an event from the ISpEventSource.
         // If there are no events queued then null is returned.
         // Otherwise a new SpeechEvent is created and returned.
-        internal static SpeechEvent TryCreateSpeechEvent(ISpEventSource sapiEventSource, bool additionalSapiFeatures, SpeechAudioFormatInfo audioFormat)
+        internal static SpeechEvent? TryCreateSpeechEvent(ISpEventSource sapiEventSource, bool additionalSapiFeatures, SpeechAudioFormatInfo? audioFormat)
         {
             uint fetched;
-            SpeechEvent speechEvent = null;
+            SpeechEvent? speechEvent = null;
             if (additionalSapiFeatures)
             {
                 SPEVENTEX sapiEventEx;

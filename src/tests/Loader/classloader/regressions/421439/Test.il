@@ -7,7 +7,7 @@
 .assembly extern RefX1 {}
 .assembly extern ValX1 {}
 
-.assembly 'Test' {}
+.assembly 'Test_421439' {}
 
 .class public sequential ansi sealed beforefieldinit Gen<T>
        extends [mscorlib]System.ValueType

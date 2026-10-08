@@ -39,6 +39,11 @@ namespace System.Runtime.CompilerServices.Tests
                 Assert.False(RuntimeFeature.IsDynamicCodeSupported);
                 Assert.False(RuntimeFeature.IsDynamicCodeCompiled);
             }
+            else if (PlatformDetection.IsAppleMobile || PlatformDetection.IsWasm)
+            {
+                Assert.True(RuntimeFeature.IsDynamicCodeSupported);
+                Assert.False(RuntimeFeature.IsDynamicCodeCompiled);
+            }
             else
             {
                 Assert.True(RuntimeFeature.IsDynamicCodeSupported);
@@ -53,7 +58,7 @@ namespace System.Runtime.CompilerServices.Tests
             Assert.True(RuntimeFeature.IsDynamicCodeSupported);
             Assert.False(RuntimeFeature.IsDynamicCodeCompiled);
         }
-        
+
         public static IEnumerable<object[]> GetStaticFeatureNames()
         {
             foreach (var field in typeof(RuntimeFeature).GetFields(BindingFlags.Public | BindingFlags.Static))
@@ -64,7 +69,7 @@ namespace System.Runtime.CompilerServices.Tests
                 yield return new object[] { field.Name };
             }
         }
-        
+
         [Theory]
         [MemberData(nameof(GetStaticFeatureNames))]
         public static void StaticDataMatchesDynamicProbing(string probedValue)
@@ -80,8 +85,8 @@ namespace System.Runtime.CompilerServices.Tests
             RemoteInvokeOptions options = new RemoteInvokeOptions();
             options.RuntimeConfigurationOptions.Add("System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported", isDynamicCodeSupported.ToString());
 
-            // IsDynamicCodeCompiled on Mono interpreter always returns false
-            bool isDynamicCodeCompiled = PlatformDetection.IsMonoInterpreter ? false : isDynamicCodeSupported;
+            // The switch can disable dynamic code support, but it cannot enable compilation when the runtime does not provide it.
+            bool isDynamicCodeCompiled = RuntimeFeature.IsDynamicCodeCompiled && isDynamicCodeSupported;
 
             using RemoteInvokeHandle remoteHandle = RemoteExecutor.Invoke(static (isDynamicCodeSupportedString, isDynamicCodeCompiledString) =>
             {

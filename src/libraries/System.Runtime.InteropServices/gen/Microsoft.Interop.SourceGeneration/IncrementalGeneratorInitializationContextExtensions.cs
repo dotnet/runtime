@@ -1,14 +1,10 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using System.Reflection;
 using System.Text;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.Diagnostics;
 
 namespace Microsoft.Interop
 {
@@ -39,7 +35,18 @@ namespace Microsoft.Interop
                 .Collect()
                 .Select((topLevelAttrs, ct) => !topLevelAttrs.IsEmpty ? EnvironmentFlags.DisableRuntimeMarshalling : EnvironmentFlags.None);
 
-            return isModuleSkipLocalsInit.Combine(disabledRuntimeMarshalling).Select((data, ct) => data.Left | data.Right);
+            // Roslyn does not expose the memory safety rules version through a public API yet
+            // (https://github.com/dotnet/roslyn/issues/82546), so the same feature flag the compiler itself
+            // reads is used to determine whether the updated rules are in effect.
+            var updatedMemorySafetyRules = context.ParseOptionsProvider
+                .Select((options, ct) => options.Features.ContainsKey("updated-memory-safety-rules")
+                    ? EnvironmentFlags.UpdatedMemorySafetyRules
+                    : EnvironmentFlags.None);
+
+            return isModuleSkipLocalsInit
+                .Combine(disabledRuntimeMarshalling)
+                .Combine(updatedMemorySafetyRules)
+                .Select((data, ct) => data.Left.Left | data.Left.Right | data.Right);
         }
 
         public static IncrementalValueProvider<StubEnvironment> CreateStubEnvironmentProvider(this IncrementalGeneratorInitializationContext context)
@@ -50,29 +57,9 @@ namespace Microsoft.Interop
                     new StubEnvironment(data.Left, data.Right));
         }
 
-        public static void RegisterDiagnostics(this IncrementalGeneratorInitializationContext context, IncrementalValuesProvider<DiagnosticInfo> diagnostics)
+        public static void RegisterConcatenatedOutputs(this IncrementalGeneratorInitializationContext context, IncrementalValuesProvider<string> sources, string fileName)
         {
-            context.RegisterSourceOutput(diagnostics.Where(diag => diag is not null), (context, diagnostic) =>
-            {
-                context.ReportDiagnostic(diagnostic.ToDiagnostic());
-            });
-        }
-
-        public static void RegisterDiagnostics(this IncrementalGeneratorInitializationContext context, IncrementalValuesProvider<Diagnostic> diagnostics)
-        {
-            context.RegisterSourceOutput(diagnostics.Where(diag => diag is not null), (context, diagnostic) =>
-            {
-                context.ReportDiagnostic(diagnostic);
-            });
-        }
-
-        public static void RegisterConcatenatedSyntaxOutputs<TNode>(this IncrementalGeneratorInitializationContext context, IncrementalValuesProvider<TNode> nodes, string fileName)
-            where TNode : SyntaxNode
-        {
-            IncrementalValueProvider<ImmutableArray<string>> generatedMethods = nodes
-                .Select(
-                    static (node, ct) => node.NormalizeWhitespace().ToFullString())
-                .Collect();
+            IncrementalValueProvider<ImmutableArray<string>> generatedMethods = sources.Where(static source => source.Length != 0).Collect();
 
             context.RegisterSourceOutput(generatedMethods,
                 (context, generatedSources) =>
@@ -89,7 +76,6 @@ namespace Microsoft.Interop
                     foreach (string generated in generatedSources)
                     {
                         source.Append(generated);
-                        source.Append("\r\n");
                     }
 
                     // Once https://github.com/dotnet/roslyn/issues/61326 is resolved, we can avoid the ToString() here.

@@ -14,6 +14,7 @@ namespace System.Runtime.CompilerServices
         // In coreclr the table is allocated and written to on the native side.
         internal static int[]? s_table;
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThrowInvalidCastException")]
         private static partial void ThrowInvalidCastExceptionInternal(void* fromTypeHnd, void* toTypeHnd);
 
@@ -32,6 +33,7 @@ namespace System.Runtime.CompilerServices
             throw null!; // Provide hint to the inliner that this method does not return
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall)]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool IsInstanceOf_NoCacheLookup(void *toTypeHnd, [MarshalAs(UnmanagedType.Bool)] bool throwCastException, ObjectHandleOnStack obj);
@@ -52,9 +54,6 @@ namespace System.Runtime.CompilerServices
             IsInstanceOf_NoCacheLookup(toTypeHnd, true, ObjectHandleOnStack.Create(ref obj));
             return obj;
         }
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void WriteBarrier(ref object? dst, object? obj);
 
         // IsInstanceOf test used for unusual cases (naked type parameters, variant generic types)
         // Unlike the IsInstanceOfInterface and IsInstanceOfClass functions,
@@ -454,7 +453,7 @@ namespace System.Runtime.CompilerServices
                 goto notExactMatch;
 
             doWrite:
-                WriteBarrier(ref element, obj);
+                RuntimeHelpers.WriteBarrier(ref element, obj);
                 return;
 
             assigningNull:
@@ -475,7 +474,7 @@ namespace System.Runtime.CompilerServices
             CastResult result = CastCache.TryGet(s_table!, (nuint)RuntimeHelpers.GetMethodTable(obj), (nuint)elementType);
             if (result == CastResult.CanCast)
             {
-                WriteBarrier(ref element, obj);
+                RuntimeHelpers.WriteBarrier(ref element, obj);
                 return;
             }
 
@@ -493,7 +492,7 @@ namespace System.Runtime.CompilerServices
                 ThrowArrayMismatchException();
             }
 
-            WriteBarrier(ref element, obj2);
+            RuntimeHelpers.WriteBarrier(ref element, obj2);
         }
 
         [DebuggerHidden]
@@ -535,7 +534,7 @@ namespace System.Runtime.CompilerServices
                 return null;
 
             // Allocate a new instance of the T in Nullable<T>.
-            MethodTable* dstMT = srcMT->InstantiationArg0();
+            MethodTable* dstMT = srcMT->NullableType.AsMethodTable();
             ref byte srcValue = ref Unsafe.Add(ref nullableData, srcMT->NullableValueAddrOffset);
 
             // Delegate to non-nullable boxing implementation
@@ -593,19 +592,15 @@ namespace System.Runtime.CompilerServices
                 return false;
             }
 
-            // Normally getting the first generic argument involves checking the PerInstInfo to get the count of generic dictionaries
-            // in the hierarchy, and then doing a bit of math to find the right dictionary, but since we know this is nullable
-            // we can do a simple double deference to do the same thing.
-            Debug.Assert(typeMT->InstantiationArg0() == **typeMT->PerInstInfo);
-            MethodTable *pMTNullableArg = **typeMT->PerInstInfo;
-            if (pMTNullableArg == boxedMT)
+            TypeHandle nullableType = typeMT->NullableType;
+            if (TypeHandle.AreSameType(nullableType, new TypeHandle(boxedMT)))
             {
                 return true;
             }
             else
             {
 #if FEATURE_TYPEEQUIVALENCE
-                return AreTypesEquivalent(pMTNullableArg, boxedMT);
+                return !nullableType.IsTypeDesc && AreTypesEquivalent(nullableType.AsMethodTable(), boxedMT);
 #else
                 return false;
 #endif // FEATURE_TYPEEQUIVALENCE
@@ -698,7 +693,9 @@ namespace System.Runtime.CompilerServices
 #endif // FEATURE_TYPEEQUIVALENCE
                 )
             {
-                CastHelpers.ThrowInvalidCastException(pMT1, pMT2);
+                // The JIT passes (target, source) to match Unbox, but ThrowInvalidCastException
+                // takes (source, target) and names them in that order in the message.
+                CastHelpers.ThrowInvalidCastException(pMT2, pMT1);
             }
         }
 

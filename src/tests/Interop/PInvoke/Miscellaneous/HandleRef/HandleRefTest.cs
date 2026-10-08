@@ -6,6 +6,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using Xunit;
+using TestLibrary;
 
 public unsafe class HandleRefTest
 {
@@ -30,6 +31,9 @@ public unsafe class HandleRefTest
     const int intReturn = 3000;
     const int stackGuard = 5000;
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/82859", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoMiniJIT), nameof(PlatformDetection.IsArm64Process))]
+    [ActiveIssue("needs triage", TestPlatforms.Android)]
+    [ActiveIssue("missing assembly", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
     [Fact]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
     public static void Validate_In()
@@ -41,6 +45,9 @@ public unsafe class HandleRefTest
         Assert.Equal(intManaged, value);
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/82859", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoMiniJIT), nameof(PlatformDetection.IsArm64Process))]
+    [ActiveIssue("needs triage", TestPlatforms.Android)]
+    [ActiveIssue("missing assembly", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
     [Fact]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
     public static void Validate_InOut()
@@ -52,6 +59,9 @@ public unsafe class HandleRefTest
         Assert.Equal(intNative, value);
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/82859", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoMiniJIT), nameof(PlatformDetection.IsArm64Process))]
+    [ActiveIssue("needs triage", TestPlatforms.Android)]
+    [ActiveIssue("missing assembly", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
     [Fact]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
     public static void Validate_Out()
@@ -63,6 +73,9 @@ public unsafe class HandleRefTest
         Assert.Equal(intNative, value);
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/82859", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoMiniJIT), nameof(PlatformDetection.IsArm64Process))]
+    [ActiveIssue("needs triage", TestPlatforms.Android)]
+    [ActiveIssue("missing assembly", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
     [Fact]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
     public static void Validate_InvalidReturn()
@@ -70,6 +83,9 @@ public unsafe class HandleRefTest
         Assert.Throws<MarshalDirectiveException>(() => InvalidMarshalPointer_Return());
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/82859", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoMiniJIT), nameof(PlatformDetection.IsArm64Process))]
+    [ActiveIssue("needs triage", TestPlatforms.Android)]
+    [ActiveIssue("missing assembly", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
     [Fact]
     [SkipOnCoreClr("WaitForPendingFinalizers() not supported with GCStress", RuntimeTestModes.AnyGCStress)]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]

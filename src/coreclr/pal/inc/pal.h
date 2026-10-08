@@ -2,13 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*++
-
 Module Name:
-
     pal.h
 
 Abstract:
-
     CoreCLR Platform Adaptation Layer (PAL) header file.  This file
     defines all types and API calls required by the CoreCLR when
     compiled for Unix-like systems.
@@ -27,7 +24,6 @@ Abstract:
 
     If you want to add a PAL_ wrapper function to a native function in
     here, you also need to edit palinternal.h and win32pal.h.
-
 --*/
 
 #ifndef __PAL_H__
@@ -123,8 +119,6 @@ extern bool g_arm64_atomics_present;
 /******************* Compiler-specific glue *******************************/
 #define DECLSPEC_NORETURN   PAL_NORETURN
 
-#define EMPTY_BASES_DECL
-
 #if !defined(_MSC_VER) || defined(SOURCE_FORMATTING)
 #if __has_builtin(__builtin_assume)
 #define __assume(condition) do { bool assume_cond = (condition); __builtin_assume(assume_cond); } while (0)
@@ -132,7 +126,6 @@ extern bool g_arm64_atomics_present;
 #define __assume(condition) do { if (!(condition)) __builtin_unreachable(); } while (0)
 #endif // __has_builtin(__builtin_assume)
 
-#define __annotation(x)
 #endif //!MSC_VER
 
 #define UNALIGNED
@@ -207,7 +200,7 @@ PALIMPORT
 DWORD
 PALAPI
 PAL_InitializeCoreCLR(
-    const char *szExePath, BOOL runningInExe);
+    BOOL runningInExe);
 
 /// <summary>
 /// This function shuts down PAL WITHOUT exiting the current process.
@@ -256,6 +249,47 @@ PALAPI
 PAL_SetCreateDumpCallback(
     IN PCREATEDUMP_CALLBACK callback);
 
+/// <summary>
+/// Callback invoked when a signal is received that will terminate the process.
+/// The callback should log the managed callstack for the signal.
+/// </summary>
+typedef VOID (*PLOGMANAGEDCALLSTACKFORSIGNAL_CALLBACK)(LPCWSTR signalName);
+
+PALIMPORT
+VOID
+PALAPI
+PAL_SetLogManagedCallstackForSignalCallback(
+    IN PLOGMANAGEDCALLSTACKFORSIGNAL_CALLBACK callback);
+
+/// <summary>
+/// Callback invoked from the fatal-signal path to write an in-proc crash
+/// report. The callback runs inside the signal handler and must therefore
+/// be async-signal-safe. siginfo is opaque (siginfo_t*) and context is the
+/// raw ucontext_t pointer received by the PAL signal handler.
+///
+/// The PAL serializes concurrent crash diagnostics (this callback and the
+/// out-of-proc createdump path) through a shared gate before invoking the
+/// callback, so implementations do not need to serialize themselves.
+///
+/// Registration is opt-in: if no callback is installed the PAL falls back
+/// to its default crash-dump path (createdump where available). The PAL
+/// itself has no source-level dependency on the in-proc reporter library;
+/// it only knows about this callback ABI.
+/// </summary>
+typedef VOID (*PINPROCCRASHREPORT_CALLBACK)(int signal, void* siginfo, void* context);
+
+PALIMPORT
+VOID
+PALAPI
+PAL_SetInProcCrashReportCallback(
+    IN PINPROCCRASHREPORT_CALLBACK callback);
+
+PALIMPORT
+VOID
+PALAPI
+PAL_EnableCrashReportBeforeSignalChaining(
+    void);
+
 PALIMPORT
 BOOL
 PALAPI
@@ -265,27 +299,6 @@ PAL_GenerateCoreDump(
     IN ULONG32 flags,
     LPSTR errorMessageBuffer,
     INT cbErrorMessageBuffer);
-
-typedef VOID (*PPAL_STARTUP_CALLBACK)(
-    char *modulePath,
-    HMODULE hModule,
-    PVOID parameter);
-
-PALIMPORT
-DWORD
-PALAPI
-PAL_RegisterForRuntimeStartup(
-    IN DWORD dwProcessId,
-    IN LPCWSTR lpApplicationGroupId,
-    IN PPAL_STARTUP_CALLBACK pfnCallback,
-    IN PVOID parameter,
-    OUT PVOID *ppUnregisterToken);
-
-PALIMPORT
-DWORD
-PALAPI
-PAL_UnregisterForRuntimeStartup(
-    IN PVOID pUnregisterToken);
 
 PALIMPORT
 BOOL
@@ -339,32 +352,6 @@ PAL_UnregisterModule(
 PALIMPORT
 BOOL
 PALAPI
-PAL_OpenProcessMemory(
-    IN DWORD processId,
-    OUT DWORD* pHandle
-);
-
-PALIMPORT
-VOID
-PALAPI
-PAL_CloseProcessMemory(
-    IN DWORD handle
-);
-
-PALIMPORT
-BOOL
-PALAPI
-PAL_ReadProcessMemory(
-    IN DWORD handle,
-    IN ULONG64 address,
-    IN LPVOID buffer,
-    IN SIZE_T size,
-    OUT SIZE_T* numberOfBytesRead
-);
-
-PALIMPORT
-BOOL
-PALAPI
 PAL_ProbeMemory(
     PVOID pBuffer,
     DWORD cbBuffer,
@@ -385,7 +372,7 @@ PALIMPORT
 int
 PALAPI
 // Log a method to the jitdump file.
-PAL_PerfJitDump_LogMethod(void* pCode, size_t codeSize, const char* symbol, void* debugInfo, void* unwindInfo);
+PAL_PerfJitDump_LogMethod(void* pCode, size_t codeSize, const char* symbol, void* debugInfo, void* unwindInfo, bool reportCodeBlock);
 
 PALIMPORT
 int
@@ -407,9 +394,6 @@ typedef struct _SECURITY_ATTRIBUTES {
             BOOL bInheritHandle;
 } SECURITY_ATTRIBUTES, *PSECURITY_ATTRIBUTES, *LPSECURITY_ATTRIBUTES;
 
-#define FILE_READ_DATA            ( 0x0001 )    // file & pipe
-#define FILE_APPEND_DATA          ( 0x0004 )    // file
-
 #define GENERIC_READ               (0x80000000L)
 #define GENERIC_WRITE              (0x40000000L)
 
@@ -423,16 +407,9 @@ typedef struct _SECURITY_ATTRIBUTES {
 #define OPEN_ALWAYS                4
 #define TRUNCATE_EXISTING          5
 
-#define FILE_ATTRIBUTE_READONLY                 0x00000001
-#define FILE_ATTRIBUTE_HIDDEN                   0x00000002
-#define FILE_ATTRIBUTE_SYSTEM                   0x00000004
-#define FILE_ATTRIBUTE_DIRECTORY                0x00000010
-#define FILE_ATTRIBUTE_ARCHIVE                  0x00000020
-#define FILE_ATTRIBUTE_DEVICE                   0x00000040
 #define FILE_ATTRIBUTE_NORMAL                   0x00000080
 
 #define FILE_FLAG_WRITE_THROUGH    0x80000000
-#define FILE_FLAG_NO_BUFFERING     0x20000000
 #define FILE_FLAG_RANDOM_ACCESS    0x10000000
 #define FILE_FLAG_SEQUENTIAL_SCAN  0x08000000
 #define FILE_FLAG_BACKUP_SEMANTICS 0x02000000
@@ -577,159 +554,9 @@ GetFullPathNameW(
 PALIMPORT
 DWORD
 PALAPI
-GetTempPathW(
-         IN DWORD nBufferLength,
-         OUT LPWSTR lpBuffer);
-
-PALIMPORT
-DWORD
-PALAPI
 GetTempPathA(
          IN DWORD nBufferLength,
          OUT LPSTR lpBuffer);
-
-
-#ifdef UNICODE
-#define GetTempPath GetTempPathW
-#else
-#define GetTempPath GetTempPathA
-#endif
-
-PALIMPORT
-HANDLE
-PALAPI
-CreateSemaphoreExW(
-        IN LPSECURITY_ATTRIBUTES lpSemaphoreAttributes,
-        IN LONG lInitialCount,
-        IN LONG lMaximumCount,
-        IN LPCWSTR lpName,
-        IN /*_Reserved_*/  DWORD dwFlags,
-        IN DWORD dwDesiredAccess);
-
-PALIMPORT
-HANDLE
-PALAPI
-OpenSemaphoreW(
-    IN DWORD dwDesiredAccess,
-    IN BOOL bInheritHandle,
-    IN LPCWSTR lpName);
-
-#define CreateSemaphoreEx CreateSemaphoreExW
-
-PALIMPORT
-BOOL
-PALAPI
-ReleaseSemaphore(
-         IN HANDLE hSemaphore,
-         IN LONG lReleaseCount,
-         OUT LPLONG lpPreviousCount);
-
-PALIMPORT
-HANDLE
-PALAPI
-CreateEventW(
-         IN LPSECURITY_ATTRIBUTES lpEventAttributes,
-         IN BOOL bManualReset,
-         IN BOOL bInitialState,
-         IN LPCWSTR lpName);
-
-PALIMPORT
-HANDLE
-PALAPI
-CreateEventExW(
-         IN LPSECURITY_ATTRIBUTES lpEventAttributes,
-         IN LPCWSTR lpName,
-         IN DWORD dwFlags,
-         IN DWORD dwDesiredAccess);
-
-// CreateEventExW: dwFlags
-#define CREATE_EVENT_MANUAL_RESET ((DWORD)0x1)
-#define CREATE_EVENT_INITIAL_SET ((DWORD)0x2)
-
-#define CreateEvent CreateEventW
-
-PALIMPORT
-BOOL
-PALAPI
-SetEvent(
-     IN HANDLE hEvent);
-
-PALIMPORT
-BOOL
-PALAPI
-ResetEvent(
-       IN HANDLE hEvent);
-
-PALIMPORT
-HANDLE
-PALAPI
-OpenEventW(
-       IN DWORD dwDesiredAccess,
-       IN BOOL bInheritHandle,
-       IN LPCWSTR lpName);
-
-#ifdef UNICODE
-#define OpenEvent OpenEventW
-#endif
-
-PALIMPORT
-HANDLE
-PALAPI
-CreateMutexW(
-    IN LPSECURITY_ATTRIBUTES lpMutexAttributes,
-    IN BOOL bInitialOwner,
-    IN LPCWSTR lpName);
-
-PALIMPORT
-HANDLE
-PALAPI
-CreateMutexExW(
-    IN LPSECURITY_ATTRIBUTES lpMutexAttributes,
-    IN LPCWSTR lpName,
-    IN DWORD dwFlags,
-    IN DWORD dwDesiredAccess);
-
-PALIMPORT
-HANDLE
-PALAPI
-PAL_CreateMutexW(
-    IN BOOL bInitialOwner,
-    IN LPCWSTR lpName,
-    IN BOOL bCurrentUserOnly,
-    IN LPSTR lpSystemCallErrors,
-    IN DWORD dwSystemCallErrorsBufferSize);
-
-// CreateMutexExW: dwFlags
-#define CREATE_MUTEX_INITIAL_OWNER ((DWORD)0x1)
-
-#define CreateMutex CreateMutexW
-
-PALIMPORT
-HANDLE
-PALAPI
-OpenMutexW(
-       IN DWORD dwDesiredAccess,
-       IN BOOL bInheritHandle,
-       IN LPCWSTR lpName);
-
-PALIMPORT
-HANDLE
-PALAPI
-PAL_OpenMutexW(
-       IN LPCWSTR lpName,
-       IN BOOL bCurrentUserOnly,
-       IN LPSTR lpSystemCallErrors,
-       IN DWORD dwSystemCallErrorsBufferSize);
-
-#ifdef UNICODE
-#define OpenMutex  OpenMutexW
-#endif
-
-PALIMPORT
-BOOL
-PALAPI
-ReleaseMutex(
-    IN HANDLE hMutex);
 
 PALIMPORT
 DWORD
@@ -761,57 +588,10 @@ GetCurrentThread();
 
 #define STARTF_USESTDHANDLES       0x00000100
 
-typedef struct _STARTUPINFOW {
-    DWORD cb;
-    LPWSTR lpReserved_PAL_Undefined;
-    LPWSTR lpDesktop_PAL_Undefined;
-    LPWSTR lpTitle_PAL_Undefined;
-    DWORD dwX_PAL_Undefined;
-    DWORD dwY_PAL_Undefined;
-    DWORD dwXSize_PAL_Undefined;
-    DWORD dwYSize_PAL_Undefined;
-    DWORD dwXCountChars_PAL_Undefined;
-    DWORD dwYCountChars_PAL_Undefined;
-    DWORD dwFillAttribute_PAL_Undefined;
-    DWORD dwFlags;
-    WORD wShowWindow_PAL_Undefined;
-    WORD cbReserved2_PAL_Undefined;
-    LPBYTE lpReserved2_PAL_Undefined;
-    HANDLE hStdInput;
-    HANDLE hStdOutput;
-    HANDLE hStdError;
-} STARTUPINFOW, *LPSTARTUPINFOW;
-
+typedef struct _STARTUPINFOW STARTUPINFOW, *LPSTARTUPINFOW;
 typedef STARTUPINFOW STARTUPINFO;
-typedef LPSTARTUPINFOW LPSTARTUPINFO;
 
-#define CREATE_NEW_CONSOLE          0x00000010
-
-#define NORMAL_PRIORITY_CLASS             0x00000020
-
-typedef struct _PROCESS_INFORMATION {
-    HANDLE hProcess;
-    HANDLE hThread;
-    DWORD dwProcessId;
-    DWORD dwThreadId_PAL_Undefined;
-} PROCESS_INFORMATION, *PPROCESS_INFORMATION, *LPPROCESS_INFORMATION;
-
-PALIMPORT
-BOOL
-PALAPI
-CreateProcessW(
-           IN LPCWSTR lpApplicationName,
-           IN LPWSTR lpCommandLine,
-           IN LPSECURITY_ATTRIBUTES lpProcessAttributes,
-           IN LPSECURITY_ATTRIBUTES lpThreadAttributes,
-           IN BOOL bInheritHandles,
-           IN DWORD dwCreationFlags,
-           IN LPVOID lpEnvironment,
-           IN LPCWSTR lpCurrentDirectory,
-           IN LPSTARTUPINFOW lpStartupInfo,
-           OUT LPPROCESS_INFORMATION lpProcessInformation);
-
-#define CreateProcess CreateProcessW
+typedef struct _PROCESS_INFORMATION PROCESS_INFORMATION, *PPROCESS_INFORMATION, *LPPROCESS_INFORMATION;
 
 PALIMPORT
 PAL_NORETURN
@@ -827,71 +607,12 @@ TerminateProcess(
          IN HANDLE hProcess,
          IN UINT uExitCode);
 
-PALIMPORT
-BOOL
-PALAPI
-GetExitCodeProcess(
-           IN HANDLE hProcess,
-           IN LPDWORD lpExitCode);
-
 #define MAXIMUM_WAIT_OBJECTS  64
 #define WAIT_OBJECT_0 0
-#define WAIT_ABANDONED   0x00000080
-#define WAIT_ABANDONED_0 0x00000080
 #define WAIT_TIMEOUT 258
 #define WAIT_FAILED ((DWORD)0xFFFFFFFF)
 
 #define INFINITE 0xFFFFFFFF // Infinite timeout
-
-PALIMPORT
-DWORD
-PALAPI
-WaitForSingleObject(
-            IN HANDLE hHandle,
-            IN DWORD dwMilliseconds);
-
-PALIMPORT
-DWORD
-PALAPI
-PAL_WaitForSingleObjectPrioritized(
-            IN HANDLE hHandle,
-            IN DWORD dwMilliseconds);
-
-PALIMPORT
-DWORD
-PALAPI
-WaitForSingleObjectEx(
-            IN HANDLE hHandle,
-            IN DWORD dwMilliseconds,
-            IN BOOL bAlertable);
-
-PALIMPORT
-DWORD
-PALAPI
-WaitForMultipleObjects(
-               IN DWORD nCount,
-               IN CONST HANDLE *lpHandles,
-               IN BOOL bWaitAll,
-               IN DWORD dwMilliseconds);
-
-PALIMPORT
-DWORD
-PALAPI
-WaitForMultipleObjectsEx(
-             IN DWORD nCount,
-             IN CONST HANDLE *lpHandles,
-             IN BOOL bWaitAll,
-             IN DWORD dwMilliseconds,
-             IN BOOL bAlertable);
-
-PALIMPORT
-DWORD
-PALAPI
-SignalObjectAndWait(
-    IN HANDLE hObjectToSignal,
-    IN HANDLE hObjectToWaitOn,
-    IN DWORD dwMilliseconds,
-    IN BOOL bAlertable);
 
 #define DUPLICATE_CLOSE_SOURCE      0x00000001
 #define DUPLICATE_SAME_ACCESS       0x00000002
@@ -909,25 +630,10 @@ DuplicateHandle(
         IN DWORD dwOptions);
 
 PALIMPORT
-VOID
-PALAPI
-Sleep(
-      IN DWORD dwMilliseconds);
-
-PALIMPORT
-DWORD
-PALAPI
-SleepEx(
-    IN DWORD dwMilliseconds,
-    IN BOOL bAlertable);
-
-PALIMPORT
 BOOL
 PALAPI
 SwitchToThread();
 
-#define DEBUG_PROCESS                     0x00000001
-#define DEBUG_ONLY_THIS_PROCESS           0x00000002
 #define CREATE_SUSPENDED                  0x00000004
 #define STACK_SIZE_PARAM_IS_A_RESERVATION 0x00010000
 
@@ -965,16 +671,6 @@ DWORD
 PALAPI
 ResumeThread(
          IN HANDLE hThread);
-
-typedef VOID (PALAPI_NOEXPORT *PAPCFUNC)(ULONG_PTR dwParam);
-
-PALIMPORT
-DWORD
-PALAPI
-QueueUserAPC(
-         IN PAPCFUNC pfnAPC,
-         IN HANDLE hThread,
-         IN ULONG_PTR dwData);
 
 #ifdef HOST_X86
 
@@ -1031,8 +727,6 @@ typedef struct _FLOATING_SAVE_AREA {
     DWORD   Cr0NpxState;
 } FLOATING_SAVE_AREA;
 
-typedef FLOATING_SAVE_AREA *PFLOATING_SAVE_AREA;
-
 typedef struct _CONTEXT {
     ULONG ContextFlags;
 
@@ -1066,15 +760,6 @@ typedef struct _CONTEXT {
 
     UCHAR   ExtendedRegisters[MAXIMUM_SUPPORTED_EXTENSION];
 } CONTEXT, *PCONTEXT, *LPCONTEXT;
-
-// To support saving and loading xmm register context we need to know the offset in the ExtendedRegisters
-// section at which they are stored. This has been determined experimentally since I have found no
-// documentation thus far but it corresponds to the offset we'd expect if a fxsave instruction was used to
-// store the regular FP state along with the XMM registers at the start of the extended registers section.
-// Technically the offset doesn't really matter if no code in the PAL or runtime knows what the offset should
-// be either (as long as we're consistent across GetThreadContext() and SetThreadContext() and we don't
-// support any other values in the ExtendedRegisters) but we might as well be as accurate as we can.
-#define CONTEXT_EXREG_XMM_OFFSET 160
 
 typedef struct _KNONVOLATILE_CONTEXT {
 
@@ -1653,9 +1338,6 @@ typedef struct _IMAGE_ARM_RUNTIME_FUNCTION_ENTRY {
 // Define initial Cpsr/Fpscr value
 //
 
-#define INITIAL_CPSR 0x10
-#define INITIAL_FPSCR 0
-
 // begin_ntoshvp
 
 //
@@ -1851,9 +1533,6 @@ typedef union IMAGE_ARM64_RUNTIME_FUNCTION_ENTRY_XDATA {
 // however, almost no one implements more than 4 of each.
 //
 
-#define LOONGARCH64_MAX_BREAKPOINTS     8
-#define LOONGARCH64_MAX_WATCHPOINTS     2
-
 typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
 
     //
@@ -1970,9 +1649,6 @@ typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
 // will track. Architecturally, RISCV64 supports up to 16. In practice,
 // however, almost no one implements more than 4 of each.
 //
-
-#define RISCV64_MAX_BREAKPOINTS     8
-#define RISCV64_MAX_WATCHPOINTS     2
 
 typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
 
@@ -2427,9 +2103,9 @@ PAL_GetCpuLimit(UINT* val);
 
 typedef BOOL(*UnwindReadMemoryCallback)(PVOID address, PVOID buffer, SIZE_T size);
 
-PALIMPORT BOOL PALAPI PAL_VirtualUnwind(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *contextPointers);
+PALIMPORT BOOL PALAPI PAL_VirtualUnwind(CONTEXT *context);
 
-PALIMPORT BOOL PALAPI PAL_VirtualUnwindOutOfProc(CONTEXT *context, PULONG64 functionStart, SIZE_T baseAddress, UnwindReadMemoryCallback readMemoryCallback);
+PALIMPORT BOOL PALAPI PAL_VirtualUnwindOutOfProc(CONTEXT *context, PULONG64 functionStart, SIZE_T baseAddress, UnwindReadMemoryCallback readMemoryCallback, bool *isSignalFrame);
 
 PALIMPORT BOOL PALAPI PAL_GetUnwindInfoSize(SIZE_T baseAddress, ULONG64 ehFrameHdrAddr, UnwindReadMemoryCallback readMemoryCallback, PULONG64 ehFrameStart, PULONG64 ehFrameSize);
 
@@ -2503,7 +2179,7 @@ PALIMPORT
 BOOL
 PALAPI
 UnmapViewOfFile(
-        IN LPCVOID lpBaseAddress);
+        IN LPCVOID lpBaseAddress) noexcept;
 
 PALIMPORT
 HMODULE
@@ -2774,23 +2450,13 @@ WideCharToMultiByte(
 #define EXCEPTION_NESTED_CALL 0x10      // Nested exception handler call
 #define EXCEPTION_TARGET_UNWIND 0x20    // Target unwind in progress
 #define EXCEPTION_COLLIDED_UNWIND 0x40  // Collided exception handler call
-#define EXCEPTION_SKIP_VEH 0x200
 
 #define EXCEPTION_UNWIND (EXCEPTION_UNWINDING | EXCEPTION_EXIT_UNWIND | \
                           EXCEPTION_TARGET_UNWIND | EXCEPTION_COLLIDED_UNWIND)
 
-#define IS_DISPATCHING(Flag) ((Flag & EXCEPTION_UNWIND) == 0)
-#define IS_UNWINDING(Flag) ((Flag & EXCEPTION_UNWIND) != 0)
-#define IS_TARGET_UNWIND(Flag) (Flag & EXCEPTION_TARGET_UNWIND)
-
 #define EXCEPTION_IS_SIGNAL 0x100
 
 #define EXCEPTION_MAXIMUM_PARAMETERS 15
-
-// Index in the ExceptionInformation array where we will keep the reference
-// to the native exception that needs to be deleted when dispatching
-// exception in managed code.
-#define NATIVE_EXCEPTION_ASYNC_SLOT (EXCEPTION_MAXIMUM_PARAMETERS-1)
 
 typedef struct _EXCEPTION_RECORD {
     DWORD ExceptionCode;
@@ -2830,44 +2496,7 @@ typedef struct _RUNTIME_FUNCTION {
 } RUNTIME_FUNCTION, *PRUNTIME_FUNCTION;
 #endif // HOST_ARM64
 
-#define STANDARD_RIGHTS_REQUIRED  (0x000F0000L)
 #define SYNCHRONIZE               (0x00100000L)
-#define READ_CONTROL              (0x00020000L)
-#define MAXIMUM_ALLOWED           (0x02000000L)
-
-#define EVENT_MODIFY_STATE        (0x0002)
-#define EVENT_ALL_ACCESS          (STANDARD_RIGHTS_REQUIRED | SYNCHRONIZE | 0x3)
-
-#define MUTANT_QUERY_STATE        (0x0001)
-#define MUTANT_ALL_ACCESS         (STANDARD_RIGHTS_REQUIRED | SYNCHRONIZE | MUTANT_QUERY_STATE)
-#define MUTEX_ALL_ACCESS          MUTANT_ALL_ACCESS
-
-#define SEMAPHORE_MODIFY_STATE    (0x0002)
-#define SEMAPHORE_ALL_ACCESS      (STANDARD_RIGHTS_REQUIRED | SYNCHRONIZE | 0x3)
-
-#define PROCESS_TERMINATE         (0x0001)
-#define PROCESS_CREATE_THREAD     (0x0002)
-#define PROCESS_SET_SESSIONID     (0x0004)
-#define PROCESS_VM_OPERATION      (0x0008)
-#define PROCESS_VM_READ           (0x0010)
-#define PROCESS_VM_WRITE          (0x0020)
-#define PROCESS_DUP_HANDLE        (0x0040)
-#define PROCESS_CREATE_PROCESS    (0x0080)
-#define PROCESS_SET_QUOTA         (0x0100)
-#define PROCESS_SET_INFORMATION   (0x0200)
-#define PROCESS_QUERY_INFORMATION (0x0400)
-#define PROCESS_SUSPEND_RESUME    (0x0800)
-#define PROCESS_ALL_ACCESS        (STANDARD_RIGHTS_REQUIRED | SYNCHRONIZE | \
-                                   0xFFF)
-
-PALIMPORT
-HANDLE
-PALAPI
-OpenProcess(
-    IN DWORD dwDesiredAccess, /* PROCESS_DUP_HANDLE or PROCESS_ALL_ACCESS */
-    IN BOOL bInheritHandle,
-    IN DWORD dwProcessId
-    );
 
 PALIMPORT
 VOID
@@ -2938,7 +2567,7 @@ PALIMPORT
 BOOL
 PALAPI
 CloseHandle(
-        IN OUT HANDLE hObject);
+        IN OUT HANDLE hObject) noexcept;
 
 PALIMPORT
 VOID
@@ -3227,8 +2856,6 @@ Define_InterlockMethod(
     __sync_sub_and_fetch(lpAddend, (LONG)1)
 )
 
-#define InterlockedDecrementRelease InterlockedDecrement
-
 Define_InterlockMethod(
     LONGLONG,
     InterlockedDecrement64(IN OUT LONGLONG volatile *lpAddend),
@@ -3324,9 +2951,6 @@ Define_InterlockMethod(
         Comperand, /* The value to be compared */
         Exchange /* The value to be stored */)
 )
-
-#define InterlockedCompareExchangeAcquire InterlockedCompareExchange
-#define InterlockedCompareExchangeRelease InterlockedCompareExchange
 
 Define_InterlockMethod(
     LONGLONG,
@@ -3485,22 +3109,13 @@ FormatMessageW(
 PALIMPORT
 DWORD
 PALAPI
-GetLastError();
+GetLastError() noexcept;
 
 PALIMPORT
 VOID
 PALAPI
 SetLastError(
-         IN DWORD dwErrCode);
-
-PALIMPORT
-LPWSTR
-PALAPI
-GetCommandLineW();
-
-#ifdef UNICODE
-#define GetCommandLine GetCommandLineW
-#endif
+         IN DWORD dwErrCode) noexcept;
 
 PALIMPORT
 VOID
@@ -3554,25 +3169,11 @@ PALAPI
 GetSystemInfo(
           OUT LPSYSTEM_INFO lpSystemInfo);
 
-PALIMPORT
-BOOL
-PALAPI
-PAL_SetCurrentThreadAffinity(WORD procNo);
-
-PALIMPORT
-BOOL
-PALAPI
-PAL_GetCurrentThreadAffinitySet(SIZE_T size, UINT_PTR* data);
-
 //
 // The types of events that can be logged.
 //
-#define EVENTLOG_SUCCESS                0x0000
 #define EVENTLOG_ERROR_TYPE             0x0001
-#define EVENTLOG_WARNING_TYPE           0x0002
 #define EVENTLOG_INFORMATION_TYPE       0x0004
-#define EVENTLOG_AUDIT_SUCCESS          0x0008
-#define EVENTLOG_AUDIT_FAILURE          0x0010
 
 #if defined FEATURE_PAL_ANSI
 #include "palprivate.h"
@@ -3617,7 +3218,6 @@ PALIMPORT WCHAR * __cdecl PAL_wcscpy(WCHAR *, const WCHAR *);
 PALIMPORT WCHAR * __cdecl PAL_wcsncpy(WCHAR *, const WCHAR *, size_t);
 PALIMPORT DLLEXPORT const WCHAR * __cdecl PAL_wcschr(const WCHAR *, WCHAR);
 PALIMPORT DLLEXPORT const WCHAR * __cdecl PAL_wcsrchr(const WCHAR *, WCHAR);
-PALIMPORT WCHAR _WConst_return * __cdecl PAL_wcspbrk(const WCHAR *, const WCHAR *);
 PALIMPORT DLLEXPORT WCHAR _WConst_return * __cdecl PAL_wcsstr(const WCHAR *, const WCHAR *);
 PALIMPORT DLLEXPORT ULONG __cdecl PAL_wcstoul(const WCHAR *, WCHAR **, int);
 PALIMPORT DLLEXPORT ULONGLONG __cdecl PAL__wcstoui64(const WCHAR *, WCHAR **, int);
@@ -3651,8 +3251,6 @@ inline WCHAR *PAL_wcschr(WCHAR* S, WCHAR C)
         {return ((WCHAR *)PAL_wcschr((const WCHAR *)S, C)); }
 inline WCHAR *PAL_wcsrchr(WCHAR* S, WCHAR C)
         {return ((WCHAR *)PAL_wcsrchr((const WCHAR *)S, C)); }
-inline WCHAR *PAL_wcspbrk(WCHAR* S, const WCHAR* P)
-        {return ((WCHAR *)PAL_wcspbrk((const WCHAR *)S, P)); }
 inline WCHAR *PAL_wcsstr(WCHAR* S, const WCHAR* P)
         {return ((WCHAR *)PAL_wcsstr((const WCHAR *)S, P)); }
 }
@@ -3701,7 +3299,6 @@ unsigned int __cdecl _rotr(unsigned int value, int shift)
 #endif // !__has_builtin(_rotr)
 
 PALIMPORT DLLEXPORT char * __cdecl PAL_getenv(const char *);
-PALIMPORT DLLEXPORT int __cdecl _putenv(const char *);
 
 #ifndef ERANGE
 #define ERANGE          34
@@ -3716,13 +3313,21 @@ VOID
 PALAPI
 PAL_FreeExceptionRecords(
   IN EXCEPTION_RECORD *exceptionRecord,
-  IN CONTEXT *contextRecord);
+  IN CONTEXT *contextRecord) noexcept;
 
 #define EXCEPTION_CONTINUE_SEARCH   0
 #define EXCEPTION_EXECUTE_HANDLER   1
 #define EXCEPTION_CONTINUE_EXECUTION -1
 
-struct PAL_SEHException
+struct
+#ifdef __OpenBSD__
+// OpenBSD's libc++ compares exception type_info by pointer (relying on ld.so to merge
+// type_info across shared objects) instead of falling back to a name compare like Linux's
+// libstdc++. Default visibility lets ld.so merge type_info into one instance so a
+// PAL_SEHException thrown in one PAL DSO is caught in another (e.g. the pal_sxs test).
+__attribute__((visibility("default")))
+#endif
+PAL_SEHException
 {
 private:
     static const SIZE_T NoTargetFrameSp = (SIZE_T)SIZE_MAX;
@@ -3735,8 +3340,6 @@ private:
         TargetIp = ex.TargetIp;
         RecordsOnStack = ex.RecordsOnStack;
         IsExternal = ex.IsExternal;
-        ManagedToNativeExceptionCallback = ex.ManagedToNativeExceptionCallback;
-        ManagedToNativeExceptionCallbackContext = ex.ManagedToNativeExceptionCallbackContext;
 
         ex.Clear();
     }
@@ -3762,9 +3365,6 @@ public:
     // the well known runtime helpers
     bool IsExternal;
 
-    void(*ManagedToNativeExceptionCallback)(void* context);
-    void* ManagedToNativeExceptionCallbackContext;
-
     PAL_SEHException(EXCEPTION_RECORD *pExceptionRecord, CONTEXT *pContextRecord, bool onStack = false)
     {
         ExceptionPointers.ExceptionRecord = pExceptionRecord;
@@ -3773,8 +3373,6 @@ public:
         TargetIp = 0;
         RecordsOnStack = onStack;
         IsExternal = false;
-        ManagedToNativeExceptionCallback = NULL;
-        ManagedToNativeExceptionCallbackContext = NULL;
     }
 
     PAL_SEHException()
@@ -3813,8 +3411,11 @@ public:
         TargetIp = 0;
         RecordsOnStack = false;
         IsExternal = false;
-        ManagedToNativeExceptionCallback = NULL;
-        ManagedToNativeExceptionCallbackContext = NULL;
+    }
+
+    bool HasTargetFrame()
+    {
+        return TargetFrameSp != NoTargetFrameSp;
     }
 
     CONTEXT* GetContextRecord()
@@ -3825,29 +3426,6 @@ public:
     EXCEPTION_RECORD* GetExceptionRecord()
     {
         return ExceptionPointers.ExceptionRecord;
-    }
-
-    bool IsFirstPass()
-    {
-        return (TargetFrameSp == NoTargetFrameSp);
-    }
-
-    void SecondPassDone()
-    {
-        TargetFrameSp = NoTargetFrameSp;
-    }
-
-    bool HasPropagateExceptionCallback()
-    {
-        return ManagedToNativeExceptionCallback != NULL;
-    }
-
-    void SetPropagateExceptionCallback(
-        void(*callback)(void*),
-        void* context)
-    {
-        ManagedToNativeExceptionCallback = callback;
-        ManagedToNativeExceptionCallbackContext = context;
     }
 };
 
@@ -3953,8 +3531,7 @@ public:
         if (disposition == EXCEPTION_CONTINUE_SEARCH)                           \
         {                                                                       \
             throw;                                                              \
-        }                                                                       \
-        ex.SecondPassDone();
+        }
 
 // Start of an exception handler. It works the same way as the PAL_EXCEPT except
 // that the disposition is obtained by calling the specified filter.
@@ -3992,16 +3569,10 @@ public:
 #define PAL_CPP_THROW(type, obj) { throw obj; }
 #define PAL_CPP_RETHROW { throw; }
 #define PAL_CPP_TRY                     try { HardwareExceptionHolder
-#define PAL_CPP_CATCH_EXCEPTION(ident)  } catch (Exception *ident) {
-#define PAL_CPP_CATCH_EXCEPTION_NOARG   } catch (Exception *) {
 #define PAL_CPP_CATCH_DERIVED(type, ident) } catch (type *ident) {
 #define PAL_CPP_CATCH_NON_DERIVED(type, ident) } catch (type ident) {
 #define PAL_CPP_CATCH_NON_DERIVED_NOARG(type) } catch (type) {
-#define PAL_CPP_CATCH_ALL               } catch (...) {                                           \
-                                            try { throw; }                                        \
-                                            catch (PAL_SEHException& ex) { ex.SecondPassDone(); } \
-                                            catch (...) {}
-
+#define PAL_CPP_CATCH_ALL               } catch (...) {
 #define PAL_CPP_ENDTRY                  }
 
 #define PAL_TRY_FOR_DLLMAIN(ParamType, paramDef, paramRef, _reason) PAL_TRY(ParamType, paramDef, paramRef)
@@ -4024,7 +3595,6 @@ public:
 #define MAKEDLLNAME(x) MAKEDLLNAME_A(x)
 #endif
 
-#define PAL_SHLIB_PREFIX    "lib"
 #define PAL_SHLIB_PREFIX_W  u"lib"
 
 #if __APPLE__
@@ -4035,19 +3605,12 @@ public:
 #define PAL_SHLIB_SUFFIX_W  u".so"
 #endif
 
-#define DBG_EXCEPTION_HANDLED            ((DWORD   )0x00010001L)
 #define DBG_CONTINUE                     ((DWORD   )0x00010002L)
 #define DBG_EXCEPTION_NOT_HANDLED        ((DWORD   )0x80010001L)
 
-#define DBG_TERMINATE_THREAD             ((DWORD   )0x40010003L)
-#define DBG_TERMINATE_PROCESS            ((DWORD   )0x40010004L)
 #define DBG_CONTROL_C                    ((DWORD   )0x40010005L)
-#define DBG_RIPEXCEPTION                 ((DWORD   )0x40010007L)
-#define DBG_CONTROL_BREAK                ((DWORD   )0x40010008L)
-#define DBG_COMMAND_EXCEPTION            ((DWORD   )0x40010009L)
 
 #define STATUS_USER_APC                  ((DWORD   )0x000000C0L)
-#define STATUS_GUARD_PAGE_VIOLATION      ((DWORD   )0x80000001L)
 #define STATUS_DATATYPE_MISALIGNMENT     ((DWORD   )0x80000002L)
 #define STATUS_BREAKPOINT                ((DWORD   )0x80000003L)
 #define STATUS_SINGLE_STEP               ((DWORD   )0x80000004L)
@@ -4055,7 +3618,6 @@ public:
 #define STATUS_UNWIND_CONSOLIDATE        ((DWORD   )0x80000029L)
 #define STATUS_ACCESS_VIOLATION          ((DWORD   )0xC0000005L)
 #define STATUS_IN_PAGE_ERROR             ((DWORD   )0xC0000006L)
-#define STATUS_INVALID_HANDLE            ((DWORD   )0xC0000008L)
 #define STATUS_NO_MEMORY                 ((DWORD   )0xC0000017L)
 #define STATUS_ILLEGAL_INSTRUCTION       ((DWORD   )0xC000001DL)
 #define STATUS_NONCONTINUABLE_EXCEPTION  ((DWORD   )0xC0000025L)
@@ -4072,7 +3634,6 @@ public:
 #define STATUS_INTEGER_OVERFLOW          ((DWORD   )0xC0000095L)
 #define STATUS_PRIVILEGED_INSTRUCTION    ((DWORD   )0xC0000096L)
 #define STATUS_STACK_OVERFLOW            ((DWORD   )0xC00000FDL)
-#define STATUS_CONTROL_C_EXIT            ((DWORD   )0xC000013AL)
 
 #define WAIT_IO_COMPLETION                  STATUS_USER_APC
 
@@ -4086,7 +3647,6 @@ public:
 #define EXCEPTION_FLT_INEXACT_RESULT        STATUS_FLOAT_INEXACT_RESULT
 #define EXCEPTION_FLT_INVALID_OPERATION     STATUS_FLOAT_INVALID_OPERATION
 #define EXCEPTION_FLT_OVERFLOW              STATUS_FLOAT_OVERFLOW
-#define EXCEPTION_FLT_STACK_CHECK           STATUS_FLOAT_STACK_CHECK
 #define EXCEPTION_FLT_UNDERFLOW             STATUS_FLOAT_UNDERFLOW
 #define EXCEPTION_INT_DIVIDE_BY_ZERO        STATUS_INTEGER_DIVIDE_BY_ZERO
 #define EXCEPTION_INT_OVERFLOW              STATUS_INTEGER_OVERFLOW
@@ -4096,10 +3656,6 @@ public:
 #define EXCEPTION_NONCONTINUABLE_EXCEPTION  STATUS_NONCONTINUABLE_EXCEPTION
 #define EXCEPTION_STACK_OVERFLOW            STATUS_STACK_OVERFLOW
 #define EXCEPTION_INVALID_DISPOSITION       STATUS_INVALID_DISPOSITION
-#define EXCEPTION_GUARD_PAGE                STATUS_GUARD_PAGE_VIOLATION
-#define EXCEPTION_INVALID_HANDLE            STATUS_INVALID_HANDLE
-
-#define CONTROL_C_EXIT                      STATUS_CONTROL_C_EXIT
 
 /******************* HRESULT types ****************************************/
 

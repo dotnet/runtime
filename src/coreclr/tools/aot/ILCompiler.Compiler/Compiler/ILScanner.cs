@@ -63,7 +63,7 @@ namespace ILCompiler
                 {
                     // To compute dependencies of the shadow method that tracks dictionary
                     // dependencies we need to ensure there is code for the canonical method body.
-                    var dependencyMethod = (ShadowConcreteMethodNode)dependency;
+                    var dependencyMethod = (ShadowMethodNode)dependency;
                     methodCodeNodeNeedingCode = (ScannedMethodNode)dependencyMethod.CanonicalMethodNode;
                 }
 
@@ -192,16 +192,10 @@ namespace ILCompiler
             protected override int GetValueHashCode(Helper value) => (int)value.HelperID;
             protected override Helper CreateValueFromKey(ReadyToRunHelper key)
             {
-                string mangledName;
-                MethodDesc methodDesc;
-                JitHelper.GetEntryPoint(_compilation.TypeSystemContext, key, out mangledName, out methodDesc);
-                Debug.Assert(mangledName != null || methodDesc != null);
-
-                ISymbolNode entryPoint;
-                if (mangledName != null)
-                    entryPoint = _compilation.NodeFactory.ExternFunctionSymbol(mangledName);
-                else
-                    entryPoint = _compilation.NodeFactory.MethodEntrypoint(methodDesc);
+                MethodDesc methodDesc = JitHelper.GetEntryPoint(_compilation.TypeSystemContext, key);
+                ISymbolNode entryPoint = methodDesc is null
+                    ? _compilation.NodeFactory.ReadyToRunHelper(key)
+                    : _compilation.NodeFactory.MethodEntrypoint(methodDesc);
 
                 return new Helper(key, entryPoint);
             }
@@ -317,27 +311,19 @@ namespace ILCompiler
 
             internal override VTableSliceNode GetSlice(TypeDesc type)
             {
-                // TODO: move ownership of compiler-generated entities to CompilerTypeSystemContext.
-                // https://github.com/dotnet/corert/issues/3873
-                if (type.GetTypeDefinition() is Internal.TypeSystem.Ecma.EcmaType)
+                if (!_vtableSlices.TryGetValue(type, out MethodDesc[] slots))
                 {
-                    if (!_vtableSlices.TryGetValue(type, out MethodDesc[] slots))
-                    {
-                        // If we couldn't find the vtable slice information for this type, it's because the scanner
-                        // didn't correctly predict what will be needed.
-                        // To troubleshoot, compare the dependency graph of the scanner and the compiler.
-                        // Follow the path from the node that requested this node to the root.
-                        // On the path, you'll find a node that exists in both graphs, but it's predecessor
-                        // only exists in the compiler's graph. That's the place to focus the investigation on.
-                        // Use the ILCompiler-DependencyGraph-Viewer tool to investigate.
-                        Debug.Assert(false);
-                        string typeName = ExceptionTypeNameFormatter.Instance.FormatName(type);
-                        throw new ScannerFailedException($"VTable of type '{typeName}' not computed by the IL scanner.");
-                    }
-                    return new LazilyBuiltVTableSliceNode(type, slots);
+                    // If we couldn't find the vtable slice information for this type, it's because the scanner
+                    // didn't correctly predict what will be needed.
+                    // To troubleshoot, compare the dependency graph of the scanner and the compiler.
+                    // Follow the path from the node that requested this node to the root.
+                    // On the path, you'll find a node that exists in both graphs, but it's predecessor
+                    // only exists in the compiler's graph. That's the place to focus the investigation on.
+                    // Use the ILCompiler-DependencyGraph-Viewer tool to investigate.
+                    string typeName = ExceptionTypeNameFormatter.Instance.FormatName(type);
+                    throw new ScannerFailedException($"VTable of type '{typeName}' not computed by the IL scanner.");
                 }
-                else
-                    return new LazilyBuiltVTableSliceNode(type);
+                return new LazilyBuiltVTableSliceNode(type, slots);
             }
         }
 
@@ -432,7 +418,6 @@ namespace ILCompiler
                     // On the path, you'll find a node that exists in both graphs, but it's predecessor
                     // only exists in the compiler's graph. That's the place to focus the investigation on.
                     // Use the ILCompiler-DependencyGraph-Viewer tool to investigate.
-                    Debug.Assert(false);
                     throw new ScannerFailedException($"Dictionary layout of '{methodOrType}' was not computed by the IL scanner.");
                 }
                 return new PrecomputedDictionaryLayoutNode(methodOrType, layout.Slots, layout.DiscardedSlots);
@@ -447,24 +432,13 @@ namespace ILCompiler
 
                 if (methodOrType is TypeDesc type)
                 {
-                    // TODO: move ownership of compiler-generated entities to CompilerTypeSystemContext.
-                    // https://github.com/dotnet/corert/issues/3873
-                    if (type.GetTypeDefinition() is Internal.TypeSystem.Ecma.EcmaType)
-                        return GetPrecomputedLayout(type);
-                    else
-                        return new LazilyBuiltDictionaryLayoutNode(type);
+                    return GetPrecomputedLayout(type);
                 }
                 else
                 {
                     Debug.Assert(methodOrType is MethodDesc);
                     MethodDesc method = (MethodDesc)methodOrType;
-
-                    // TODO: move ownership of compiler-generated entities to CompilerTypeSystemContext.
-                    // https://github.com/dotnet/corert/issues/3873
-                    if (method.GetTypicalMethodDefinition() is Internal.TypeSystem.Ecma.EcmaMethod)
-                        return GetPrecomputedLayout(method);
-                    else
-                        return new LazilyBuiltDictionaryLayoutNode(method);
+                    return GetPrecomputedLayout(method);
                 }
             }
         }

@@ -296,6 +296,7 @@ HRESULT PEWriterSection::applyRelocs(IMAGE_NT_HEADERS  *  pNtHeaders,
 #ifdef LOGGING
         LOG((LF_ZAP, LL_INFO1000000,
              "   Reloc %s%s at %-7s+%04x (RVA=%08x) at" FMT_ADDR,
+             RelocName[curType],
              &RelocSpaces[strlen(RelocName[curType])],
              m_name, curOffset, curRVA, DBG_ADDR(pos)));
 
@@ -385,8 +386,8 @@ HRESULT PEWriterSection::applyRelocs(IMAGE_NT_HEADERS  *  pNtHeaders,
 
 #ifdef LOGGING
         LOG((LF_ZAP, LL_INFO1000000,
-             "to %-7s+%04x, old =" FMT_ADDR "new =" FMT_ADDR "%s\n",
-             cur->section->m_name, targetOffset,
+             "to %-7s+%04lx, old =" FMT_ADDR "new =" FMT_ADDR "%s\n",
+             cur->section->m_name, (unsigned long)targetOffset,
              DBG_ADDR(oldStarPos), DBG_ADDR(newStarPos),
              baseReloc ? "(BASE RELOC)" : ""));
 #endif
@@ -646,7 +647,7 @@ HRESULT CBlobFetcher::Write(FILE* file)
             size_t dwWritten = 0;
             if ((dwWritten = fwrite(m_pIndex[idx].GetRawDataStart(), 1, length, file)) <= 0)
             {
-                return HRESULTFromErrno();
+                return HRESULTFromErr(ferror(file));
             }
             _ASSERTE(dwWritten == length);
         }
@@ -1337,7 +1338,7 @@ HRESULT PEWriter::Open(_In_ LPCWSTR fileName)
     int err = fopen_lp(&m_file, fileName, W("wb"));
 
     if (err != 0)
-        hr = HRESULTFromErrno();
+        hr = HRESULTFromErr(err);
 
     return hr;
 }
@@ -1348,7 +1349,7 @@ HRESULT PEWriter::Seek(int offset)
     if (fseek(m_file, offset, SEEK_SET) == 0)
         return S_OK;
     else
-        return HRESULTFromErrno();
+        return HRESULTFromErr(ferror(m_file));
 }
 
 HRESULT PEWriter::Write(const void *data, int size)
@@ -1375,7 +1376,7 @@ HRESULT PEWriter::Write(const void *data, int size)
             _ASSERTE(dwWritten == (size_t)size);
         }
         else
-            hr = HRESULTFromErrno();
+            hr = HRESULTFromErr(ferror(m_file));
     }
 
     return hr;
@@ -1401,7 +1402,7 @@ HRESULT PEWriter::Close()
     if (err == 0)
         hr = S_OK;
     else
-        hr = HRESULTFromErrno();
+        hr = HRESULTFromErr(err);
 
     m_file = NULL;
 

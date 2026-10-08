@@ -1,10 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //
 // vars.cpp - Global Var definitions
 //
-
-
 
 #include "common.h"
 #include "vars.hpp"
@@ -69,8 +68,10 @@ GPTR_IMPL(MethodTable,      g_pWeakReferenceOfTClass);
 
 #ifdef DACCESS_COMPILE
 GPTR_IMPL(MethodTable,      g_pContinuationClassIfSubTypeCreated);
+GPTR_IMPL(EEClass,          g_singletonContinuationEEClass);
 #else
 GVAL_IMPL(Volatile<MethodTable*>, g_pContinuationClassIfSubTypeCreated);
+GVAL_IMPL(Volatile<EEClass*>, g_singletonContinuationEEClass);
 #endif
 
 #ifdef FEATURE_COMINTEROP
@@ -95,6 +96,14 @@ GPTR_IMPL_INIT(StressLog, g_pStressLog, &StressLog::theLog);
 GPTR_IMPL(RCWCleanupList,g_pRCWCleanupList);
 #endif // FEATURE_COMINTEROP
 
+#ifdef FEATURE_COMWRAPPERS
+GARY_IMPL(TADDR, g_knownQueryInterfaceImplementations, g_numKnownQueryInterfaceImplementations);
+#endif // FEATURE_COMWRAPPERS
+
+#ifdef FEATURE_OBJCMARSHAL
+GVAL_IMPL_INIT(OBJECTHANDLE, g_ObjectiveCTrackingInfoTable, NULL);
+#endif // FEATURE_OBJCMARSHAL
+
 #ifdef FEATURE_INTEROP_DEBUGGING
 GVAL_IMPL_INIT(DWORD, g_debuggerWordTLSIndex, TLS_OUT_OF_INDEXES);
 #endif
@@ -104,21 +113,22 @@ GVAL_IMPL_INIT(DWORD, g_gcNotificationFlags, 0);
 
 
 MethodTable* g_pCastHelpers;
-#ifdef FEATURE_EH_FUNCLETS
+
 GPTR_IMPL(MethodTable,      g_pEHClass);
 GPTR_IMPL(MethodTable,      g_pExceptionServicesInternalCallsClass);
 GPTR_IMPL(MethodTable,      g_pStackFrameIteratorClass);
-#endif
+
+GPTR_IMPL(MethodDesc,       g_pEnvironmentCallEntryPointMethodDesc);
 
 GVAL_IMPL_INIT(PTR_WSTR, g_EntryAssemblyPath, NULL);
 
 #ifndef DACCESS_COMPILE
 
-// <TODO> @TODO - PROMOTE. </TODO>
 OBJECTHANDLE         g_pPreallocatedOutOfMemoryException;
 OBJECTHANDLE         g_pPreallocatedStackOverflowException;
 OBJECTHANDLE         g_pPreallocatedExecutionEngineException;
-OBJECTHANDLE         g_pPreallocatedSentinelObject;
+
+OBJECTREF            g_pPreallocatedSentinelObject = NULL;
 
 //
 //
@@ -242,7 +252,11 @@ void OBJECTREF_EnumMemoryRegions(OBJECTREF ref)
 //
 // We need the following to be the compiler's notion of volatile.
 //
+#ifdef FEATURE_READONLY_GS_COOKIE
 extern "C" RAW_KEYWORD(volatile) const GSCookie s_gsCookie = 0;
+#else
+extern "C" RAW_KEYWORD(volatile) GSCookie s_gsCookie = 0;
+#endif
 
 #else
 __GlobalVal< GSCookie > s_gsCookie(&DacGlobals::dac__s_gsCookie);

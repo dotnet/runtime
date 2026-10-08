@@ -14,16 +14,7 @@ namespace System.Runtime.InteropServices
     /// applied to static, partial, non-generic methods.
     /// </remarks>
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = false)]
-#if SYSTEM_PRIVATE_CORELIB
-    public
-#else
-#pragma warning disable CS0436 // Type conflicts with imported type
-    // Some assemblies that target downlevel have InternalsVisibleTo to their test assemblies.
-    // As this is only used in this repo and isn't a problem in shipping code,
-    // just disable the duplicate type warning.
-    internal
-#endif
-    sealed class LibraryImportAttribute : Attribute
+    public sealed class LibraryImportAttribute : Attribute
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="LibraryImportAttribute"/>.

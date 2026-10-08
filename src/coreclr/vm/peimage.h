@@ -1,11 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// --------------------------------------------------------------------------------
-// PEImage.h
-//
-
-// --------------------------------------------------------------------------------
-
 
 #ifndef PEIMAGE_H_
 #define PEIMAGE_H_
@@ -110,7 +104,7 @@ public:
     BOOL Equals(PEImage* pImage);
 
     ULONG AddRef();
-    ULONG Release();
+    ULONG Release() noexcept;
 
 #ifndef DACCESS_COMPILE
     static PTR_PEImage CreateFromByteArray(const BYTE* array, COUNT_T size);
@@ -157,6 +151,7 @@ public:
     BOOL HasContents() ;
     BOOL IsPtrInImage(PTR_CVOID data);
 
+    BOOL HasHeaders();
     BOOL HasNTHeaders();
     BOOL HasCorHeader();
     BOOL HasReadyToRunHeader();
@@ -166,7 +161,6 @@ public:
     void GetPEKindAndMachine(DWORD* pdwKind, DWORD* pdwMachine);
 
     BOOL IsILOnly();
-    BOOL IsReferenceAssembly();
     BOOL IsComponentAssembly();
 
     PTR_CVOID GetNativeManifestMetadata(COUNT_T* pSize = NULL);
@@ -325,18 +319,25 @@ private:
 template<>
 struct cdac_data<PEImage>
 {
-    // The loaded PEImageLayout is m_pLayouts[IMAGE_LOADED]
+    // Layouts are stored in m_pLayouts[], indexed by IMAGE_FLAT (0) and IMAGE_LOADED (1).
+    static constexpr size_t FlatImageLayout = offsetof(PEImage, m_pLayouts);
     static constexpr size_t LoadedImageLayout = offsetof(PEImage, m_pLayouts) + sizeof(PTR_PEImageLayout);
     static constexpr size_t ProbeExtensionResult = offsetof(PEImage, m_probeExtensionResult);
 };
 
-FORCEINLINE void PEImageRelease(PEImage *i)
+struct PEImageHolderTraits final
 {
-    WRAPPER_NO_CONTRACT;
-    i->Release();
-}
+    using Type = PEImage*;
+    static constexpr Type Default() { return NULL; }
+    static void Free(Type i) noexcept
+    {
+        WRAPPER_NO_CONTRACT;
+        if (i != NULL)
+            i->Release();
+    }
+};
 
-typedef Wrapper<PEImage *, DoNothing, PEImageRelease> PEImageHolder;
+using PEImageHolder = LifetimeHolder<PEImageHolderTraits>;
 
 // ================================================================================
 // Inline definitions

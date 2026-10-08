@@ -1370,7 +1370,11 @@ dotnet_diagnostic.SA1204.severity = none
 dotnet_diagnostic.SA1205.severity = warning
 
 # SA1206: Keyword ordering
-dotnet_diagnostic.SA1206.severity = warning
+# Disabled: StyleCop does not know the 'safe' contextual keyword introduced by the updated
+# memory safety rules and asks for it ahead of the accessibility modifier, which is not how
+# it orders 'unsafe'. IDE0036 below keeps enforcing modifier ordering and ignores modifiers it
+# does not know, so nothing is lost while StyleCop lags the language.
+dotnet_diagnostic.SA1206.severity = none
 
 # SA1208: Using directive ordering
 dotnet_diagnostic.SA1208.severity = none

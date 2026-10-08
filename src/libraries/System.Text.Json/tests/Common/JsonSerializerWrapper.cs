@@ -73,11 +73,18 @@ namespace System.Text.Json.Serialization.Tests
         public virtual JsonTypeInfo GetTypeInfo(Type type, JsonSerializerOptions? options = null, bool mutable = false)
         {
             options ??= DefaultOptions;
+#if BUILDING_SOURCE_GENERATOR_TESTS
+            // In the source generator test project the options are always backed by a
+            // JsonSerializerContext resolver, so there is never a missing resolver to populate.
+            // Use the parameterless overload which is safe for trimming and Native AOT.
+            options.MakeReadOnly();
+#else
             options.MakeReadOnly(populateMissingResolver: true);
+#endif
             return mutable ? options.TypeInfoResolver.GetTypeInfo(type, options) : options.GetTypeInfo(type);
         }
 
-        public JsonTypeInfo<T> GetTypeInfo<T>(JsonSerializerOptions? options = null,bool mutable = false)
+        public JsonTypeInfo<T> GetTypeInfo<T>(JsonSerializerOptions? options = null, bool mutable = false)
             => (JsonTypeInfo<T>)GetTypeInfo(typeof(T), options, mutable);
 
         public JsonSerializerOptions GetDefaultOptionsWithMetadataModifier(Action<JsonTypeInfo> modifier)

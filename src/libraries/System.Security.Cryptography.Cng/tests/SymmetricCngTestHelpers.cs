@@ -452,7 +452,7 @@ namespace System.Security.Cryptography.Cng.Tests
 
         // Windows 7 (Microsoft Windows 6.1) does not support persisted symmetric keys
         // in the Microsoft Software KSP
-        internal static bool SupportsPersistedSymmetricKeys => PlatformDetection.IsWindows8xOrLater;
+        internal static bool SupportsPersistedSymmetricKeys => PlatformDetection.IsWindows;
 
         internal static bool IsAdministrator => PlatformDetection.IsWindows && PlatformDetection.IsPrivilegedProcess;
 

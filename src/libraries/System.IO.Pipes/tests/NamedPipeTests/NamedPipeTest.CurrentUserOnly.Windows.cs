@@ -123,7 +123,6 @@ namespace System.IO.Pipes.Tests
     {
         public static bool IsSupportedWindowsVersionAndPrivilegedProcess => PlatformDetection.IsPrivilegedProcess
             && PlatformDetection.IsWindows
-            && !PlatformDetection.IsWindows7
             && !PlatformDetection.IsWindowsNanoServer
             && !PlatformDetection.IsWindowsServerCore;
 
@@ -135,7 +134,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [OuterLoop("Requires admin privileges")]
-        [ConditionalFact(nameof(IsSupportedWindowsVersionAndPrivilegedProcess))]
+        [ConditionalFact(typeof(NamedPipeTest_CurrentUserOnly_Windows), nameof(IsSupportedWindowsVersionAndPrivilegedProcess))]
         public async Task Connection_UnderDifferentUsers_CurrentUserOnlyOnServer_InvalidClientConnectionAttempts_DoNotBlockSuccessfulClient()
         {
             string name = PipeStreamConformanceTests.GetUniquePipeName();
@@ -169,7 +168,7 @@ namespace System.IO.Pipes.Tests
             Volatile.Write(ref invalidClientShouldStop, true);
         }
 
-        [ConditionalTheory(nameof(IsSupportedWindowsVersionAndPrivilegedProcess))]
+        [ConditionalTheory(typeof(NamedPipeTest_CurrentUserOnly_Windows), nameof(IsSupportedWindowsVersionAndPrivilegedProcess))]
         [InlineData(PipeOptions.None, PipeOptions.None, PipeDirection.InOut)] // Fails even without CurrentUserOnly, because under the default pipe ACL, other users are denied Write access, and client is requesting PipeDirection.InOut
         [InlineData(PipeOptions.None, PipeOptions.CurrentUserOnly, PipeDirection.In)]
         [InlineData(PipeOptions.None, PipeOptions.CurrentUserOnly, PipeDirection.InOut)]
@@ -211,7 +210,7 @@ namespace System.IO.Pipes.Tests
             }
         }
 
-        [ConditionalTheory(nameof(IsSupportedWindowsVersionAndPrivilegedProcess))]
+        [ConditionalTheory(typeof(NamedPipeTest_CurrentUserOnly_Windows), nameof(IsSupportedWindowsVersionAndPrivilegedProcess))]
         [InlineData(false)]
         [InlineData(true)]
         public void Allow_Connection_UnderDifferentUsers_ForClientReading(bool useTimeSpan)

@@ -24,8 +24,7 @@ namespace AppHost.Bundle.Tests
         {
             CommandResult result = Command.Create(path)
                 .EnableTracingAndCaptureOutputs()
-                .DotNetRoot(selfContained ? null : TestContext.BuiltDotNet.BinPath)
-                .MultilevelLookup(false)
+                .DotNetRoot(selfContained ? null : HostTestContext.BuiltDotNet.BinPath)
                 .Execute();
             if (deleteApp)
             {

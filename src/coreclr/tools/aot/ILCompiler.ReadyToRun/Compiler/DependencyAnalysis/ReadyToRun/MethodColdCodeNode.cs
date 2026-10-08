@@ -8,7 +8,7 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
-    public class MethodColdCodeNode : ObjectNode, ISymbolDefinitionNode
+    public class MethodColdCodeNode : ObjectNode, ISymbolDefinitionNode, IPCodeSymbolNode
     {
         private ObjectData _methodColdCode;
         private MethodDesc _owningMethod;
@@ -24,15 +24,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override ObjectNodeSection GetSection(NodeFactory factory)
         {
-            // Put executable code into .text for PE files as AV software really
-            // doesn't like executable code in non-standard sections.
-            //
-            // For other formats, use the managed code section for managed code.
             return factory.Format switch
             {
-                ReadyToRunContainerFormat.PE => ObjectNodeSection.TextSection,
+                ReadyToRunContainerFormat.PE => ObjectNodeSection.ManagedCodeWindowsContentSection,
                 _ => ObjectNodeSection.ManagedCodeUnixContentSection
-            };            
+            };
         }
 
         public override bool IsShareable => false;

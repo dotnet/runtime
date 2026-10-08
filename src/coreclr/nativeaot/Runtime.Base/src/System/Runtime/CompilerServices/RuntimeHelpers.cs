@@ -18,5 +18,8 @@ namespace System.Runtime.CompilerServices
 
         [Intrinsic]
         public static extern void InitializeArray(Array array, RuntimeFieldHandle fldHandle);
+
+        [Intrinsic]
+        internal static void WriteBarrier(ref object? dst, object? obj) => dst = obj;
     }
 }

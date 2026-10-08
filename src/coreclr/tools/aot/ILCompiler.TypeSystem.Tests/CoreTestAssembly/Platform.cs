@@ -214,6 +214,7 @@ namespace System.Runtime.InteropServices
     public sealed class MarshalAsAttribute : Attribute
     {
         public MarshalAsAttribute(UnmanagedType unmanagedType) { }
+        public int IidParameterIndex { get; set; }
     }
 
     public sealed class ComImportAttribute : Attribute
@@ -233,6 +234,13 @@ namespace System.Runtime.InteropServices
 
 namespace System.Runtime.CompilerServices
 {
+    public sealed class InlineArrayAttribute : Attribute
+    {
+        public InlineArrayAttribute(int length)
+        {
+        }
+    }
+
     public sealed class IsByRefLikeAttribute : Attribute
     {
     }
@@ -245,6 +253,7 @@ namespace System.Runtime.CompilerServices
     {
         public const string ByRefFields = nameof(ByRefFields);
         public const string ByRefLikeGenerics = nameof(ByRefLikeGenerics);
+        public const string DefaultImplementationsOfInterfaces = nameof(DefaultImplementationsOfInterfaces);
         public const string UnmanagedSignatureCallingConvention = nameof(UnmanagedSignatureCallingConvention);
         public const string VirtualStaticsInInterfaces = nameof(VirtualStaticsInInterfaces);
         public const string CovariantReturnsOfClasses = "CovariantReturnsOfClasses";
@@ -289,5 +298,30 @@ namespace System.Runtime.Intrinsics
     {
         private readonly Vector256<T> _lower;
         private readonly Vector256<T> _upper;
+    }
+}
+
+namespace System.Numerics
+{
+    [Intrinsic]
+    [StructLayout(LayoutKind.Sequential)]
+    public readonly struct Decimal32
+    {
+        private readonly uint _value;
+    }
+
+    [Intrinsic]
+    [StructLayout(LayoutKind.Sequential)]
+    public readonly struct Decimal64
+    {
+        private readonly ulong _value;
+    }
+
+    [Intrinsic]
+    [StructLayout(LayoutKind.Sequential)]
+    public readonly struct Decimal128
+    {
+        private readonly ulong _lower;
+        private readonly ulong _upper;
     }
 }

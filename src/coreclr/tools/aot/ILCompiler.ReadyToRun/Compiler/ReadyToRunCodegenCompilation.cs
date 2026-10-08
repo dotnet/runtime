@@ -19,8 +19,10 @@ using Internal.TypeSystem;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysis.ReadyToRun;
 using ILCompiler.DependencyAnalysisFramework;
+using ILCompiler.ReadyToRun;
 using ILCompiler.Reflection.ReadyToRun;
 using Internal.TypeSystem.Ecma;
+using ILCompiler.ReadyToRun.TypeSystem;
 
 namespace ILCompiler
 {
@@ -242,20 +244,34 @@ namespace ILCompiler
                 _rootAdder(_deferredPhaseNode, "Deferred nodes");
             }
 
-            public void AddCompilationRoot(MethodDesc method, bool rootMinimalDependencies, string reason)
+            private void AddCompilationRootHelper(DependencyNodeCore<NodeFactory> node, bool rootMinimalDependencies, string reason)
+            {
+                if (rootMinimalDependencies)
+                {
+                    _deferredPhaseNode.AddDependency(node);
+                }
+                else
+                {
+                    _rootAdder(node, reason);
+                }
+            }
+
+            public void AddCompilationRoot(MethodDesc method, bool rootMinimalDependencies, string reason, bool isJitHelper = false)
             {
                 MethodDesc canonMethod = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
                 if (_factory.CompilationModuleGroup.ContainsMethodBody(canonMethod, false))
                 {
-                    IMethodNode methodEntryPoint = _factory.CompiledMethodNode(canonMethod);
+                    MethodWithGCInfo methodEntryPoint = _factory.CompiledMethodNode(canonMethod);
+                    methodEntryPoint.IsJitHelper |= isJitHelper;
+                    AddCompilationRootHelper(methodEntryPoint, rootMinimalDependencies, reason);
 
-                    if (rootMinimalDependencies)
+                    // Process unbox stubs inclusion for methods that have all type args Canon. InheritedVirtualMethodsNode
+                    // and GVMDependenciesNode are meant to deal with methods that have some of the type args instantiated
+                    // with valuetypes.
+                    if (_factory.NeedsUnboxingStub(canonMethod))
                     {
-                        _deferredPhaseNode.AddDependency((DependencyNodeCore<NodeFactory>)methodEntryPoint);
-                    }
-                    else
-                    {
-                        _rootAdder(methodEntryPoint, reason);
+                        DependencyNodeCore<NodeFactory> unboxingStub = _factory.UnboxingStub(canonMethod);
+                        AddCompilationRootHelper(unboxingStub, rootMinimalDependencies, reason);
                     }
                 }
             }
@@ -281,7 +297,6 @@ namespace ILCompiler
         private readonly bool _resilient;
 
         private readonly int _parallelism;
-        private readonly CorInfoImpl[] _corInfoImpls;
 
         private readonly bool _generateMapFile;
         private readonly bool _generateMapCsvFile;
@@ -291,12 +306,15 @@ namespace ILCompiler
         private readonly string _perfMapPath;
         private readonly int _perfMapFormatVersion;
         private readonly bool _generateProfileFile;
+        private readonly WasmDebugInfo _wasmDebugInfo;
         private readonly Func<MethodDesc, string> _printReproInstructions;
 
         private readonly ProfileDataManager _profileData;
         private readonly FileLayoutOptimizer _fileLayoutOptimizer;
-        private readonly HashSet<EcmaMethod> _methodsWhichNeedMutableILBodies = new HashSet<EcmaMethod>();
+        private readonly HashSet<MethodDesc> _methodsWhichNeedMutableILBodies = new HashSet<MethodDesc>();
         private readonly HashSet<MethodWithGCInfo> _methodsToRecompile = new HashSet<MethodWithGCInfo>();
+        private HashSet<MethodDesc> _directManagedHelpers;
+        private bool _directManagedHelpersInitialized;
 
         public ProfileDataManager ProfileData => _profileData;
 
@@ -304,6 +322,16 @@ namespace ILCompiler
 
         public ReadyToRunSymbolNodeFactory SymbolNodeFactory { get; }
         public ReadyToRunCompilationModuleGroupBase CompilationModuleGroup { get; }
+
+        internal bool IsDirectManagedHelperEligible(MethodDesc method)
+        {
+            if (NodeFactory.Target.Architecture is TargetArchitecture.ARM or TargetArchitecture.ARM64)
+                return false;
+
+            HashSet<MethodDesc> directManagedHelpers = Volatile.Read(ref _directManagedHelpers);
+            return directManagedHelpers is not null && directManagedHelpers.Contains(method);
+        }
+
         private readonly int _customPESectionAlignment;
         private readonly ReadyToRunContainerFormat _format;
 
@@ -313,6 +341,8 @@ namespace ILCompiler
         /// </summary>
         private ConcurrentDictionary<TypeDesc, bool> _computedFixedLayoutTypes = new ConcurrentDictionary<TypeDesc, bool>();
         private Func<TypeDesc, bool> _computedFixedLayoutTypesUncached;
+
+        private readonly ExternalReferenceTokenManager _tokenManager;
 
         internal ReadyToRunCodegenCompilation(
             DependencyAnalyzerBase<NodeFactory> dependencyGraph,
@@ -340,7 +370,8 @@ namespace ILCompiler
             FileLayoutAlgorithm fileLayoutAlgorithm,
             int customPESectionAlignment,
             bool verifyTypeAndFieldLayout,
-            ReadyToRunContainerFormat format)
+            ReadyToRunContainerFormat format,
+            WasmDebugInfo wasmDebugInfo)
             : base(
                   dependencyGraph,
                   nodeFactory,
@@ -354,7 +385,6 @@ namespace ILCompiler
             _computedFixedLayoutTypesUncached = IsLayoutFixedInCurrentVersionBubbleInternal;
             _resilient = resilient;
             _parallelism = parallelism;
-            _corInfoImpls = new CorInfoImpl[_parallelism];
             _generateMapFile = generateMapFile;
             _generateMapCsvFile = generateMapCsvFile;
             _generatePdbFile = generatePdbFile;
@@ -365,19 +395,26 @@ namespace ILCompiler
             _generateProfileFile = generateProfileFile;
             _customPESectionAlignment = customPESectionAlignment;
             _format = format;
+            _wasmDebugInfo = wasmDebugInfo;
             SymbolNodeFactory = new ReadyToRunSymbolNodeFactory(nodeFactory, verifyTypeAndFieldLayout);
+            _tokenManager = new ExternalReferenceTokenManager(_nodeFactory.ManifestMetadataTable._mutableModule, _nodeFactory.Resolver);
             if (nodeFactory.InstrumentationDataTable != null)
                 nodeFactory.InstrumentationDataTable.Initialize(SymbolNodeFactory);
             if (nodeFactory.CrossModuleInlningInfo != null)
                 nodeFactory.CrossModuleInlningInfo.Initialize(SymbolNodeFactory);
+            if (nodeFactory.ImportReferenceProvider != null)
+                nodeFactory.ImportReferenceProvider.Initialize(SymbolNodeFactory, _tokenManager);
             _inputFiles = inputFiles;
             _compositeRootPath = compositeRootPath;
             _printReproInstructions = printReproInstructions;
             CompilationModuleGroup = (ReadyToRunCompilationModuleGroupBase)nodeFactory.CompilationModuleGroup;
 
             // Generate baseline support specification for InstructionSetSupport. This will prevent usage of the generated
-            // code if the runtime environment doesn't support the specified instruction set
-            string instructionSetSupportString = ReadyToRunInstructionSetSupportSignature.ToInstructionSetSupportString(instructionSetSupport);
+            // code if the runtime environment doesn't support the specified instruction set. Targets that cannot generate
+            // code at runtime must not encode "must be absent" assertions, since a failing eager fixup is a fatal startup
+            // error with no JIT fallback (see ToInstructionSetSupportString).
+            bool targetAllowsRuntimeCodeGeneration = ((ReadyToRunCompilerContext)nodeFactory.TypeSystemContext).TargetAllowsRuntimeCodeGeneration;
+            string instructionSetSupportString = ReadyToRunInstructionSetSupportSignature.ToInstructionSetSupportString(instructionSetSupport, emitExplicitlyUnsupported: targetAllowsRuntimeCodeGeneration);
             ReadyToRunInstructionSetSupportSignature instructionSetSupportSig = new ReadyToRunInstructionSetSupportSignature(instructionSetSupportString);
             _dependencyGraph.AddRoot(new Import(NodeFactory.EagerImports, instructionSetSupportSig), "Baseline instruction set support");
 
@@ -392,9 +429,8 @@ namespace ILCompiler
         {
             _dependencyGraph.ComputeMarkedNodes();
 
-            _doneAllCompiling = true;
-            Array.Clear(_corInfoImpls);
-            _compilationThreadSemaphore.Release(_parallelism);
+            // Release single-threaded JIT state before object emission to reduce peak memory usage.
+            _singleThreadedWorkerState = default;
 
             var nodes = _dependencyGraph.MarkedNodeList;
 
@@ -420,6 +456,7 @@ namespace ILCompiler
                     callChainProfile: _profileData.CallChainProfile,
                     _format,
                     _customPESectionAlignment,
+                    _wasmDebugInfo,
                     _logger);
                 CompilationModuleGroup moduleGroup = _nodeFactory.CompilationModuleGroup;
 
@@ -437,6 +474,12 @@ namespace ILCompiler
                         ownerExecutableName = Path.ChangeExtension(ownerExecutableName, ".dylib");
                     }
 
+                    HashSet<MethodDesc> compiledMethodDefs = null;
+                    if (_nodeFactory.OptimizationFlags.StripILBodies)
+                    {
+                        compiledMethodDefs = _nodeFactory.BuildCompiledMethodDefsSet();
+                    }
+
                     foreach (string inputFile in _inputFiles)
                     {
                         string relativeMsilPath = Path.GetRelativePath(_compositeRootPath, inputFile);
@@ -446,13 +489,19 @@ namespace ILCompiler
                             relativeMsilPath = Path.GetFileName(inputFile);
                         }
                         string standaloneMsilOutputFile = Path.Combine(outputDirectory, relativeMsilPath);
-                        RewriteComponentFile(inputFile: inputFile, outputFile: standaloneMsilOutputFile, ownerExecutableName: ownerExecutableName);
+                        if (_format == ReadyToRunContainerFormat.Wasm)
+                        {
+                            // For wasm, component stubs are webcil-in-wasm modules loaded by name
+                            // as "<assembly>.wasm" (matching the browser/wasi external-assembly probe).
+                            standaloneMsilOutputFile = Path.ChangeExtension(standaloneMsilOutputFile, ".wasm");
+                        }
+                        RewriteComponentFile(inputFile: inputFile, outputFile: standaloneMsilOutputFile, ownerExecutableName: ownerExecutableName, compiledMethodDefs: compiledMethodDefs);
                     }
                 }
             }
         }
 
-        private void RewriteComponentFile(string inputFile, string outputFile, string ownerExecutableName)
+        private void RewriteComponentFile(string inputFile, string outputFile, string ownerExecutableName, HashSet<MethodDesc> compiledMethodDefs)
         {
             EcmaModule inputModule = NodeFactory.TypeSystemContext.GetModuleFromPath(inputFile);
 
@@ -472,9 +521,25 @@ namespace ILCompiler
                 flags |= ReadyToRunFlags.READYTORUN_FLAG_SkipTypeValidation;
             }
 
-            NodeFactoryOptimizationFlags optimizationFlags = _nodeFactory.OptimizationFlags with { IsComponentModule = true };
+            NodeFactoryOptimizationFlags optimizationFlags = _nodeFactory.OptimizationFlags with { IsComponentModule = true, CompiledMethodDefs = compiledMethodDefs };
+
+            if (optimizationFlags.StripILBodies)
+            {
+                flags |= ReadyToRunFlags.READYTORUN_FLAG_StrippedILBodies;
+            }
+
+            if (optimizationFlags.StripInliningInfo)
+            {
+                flags |= ReadyToRunFlags.READYTORUN_FLAG_StrippedInliningInfo;
+            }
+
+            if (optimizationFlags.StripDebugInfo)
+            {
+                flags |= ReadyToRunFlags.READYTORUN_FLAG_StrippedDebugInfo;
+            }
 
             flags |= _nodeFactory.CompilationModuleGroup.GetReadyToRunFlags() & ReadyToRunFlags.READYTORUN_FLAG_MultiModuleVersionBubble;
+            flags |= _nodeFactory.Header.Flags & ReadyToRunFlags.READYTORUN_FLAG_VerifyGCModeTransitions;
 
             bool isNativeCompositeImage = false;
             if (NodeFactory.Target.IsWindows && NodeFactory.Format == ReadyToRunContainerFormat.PE)
@@ -491,6 +556,11 @@ namespace ILCompiler
                 flags |= ReadyToRunFlags.READYTORUN_FLAG_PlatformNativeImage;
             }
 
+            // Component (per-assembly forwarding) stubs are emitted as PE (even when the composite image is native),
+            // except on wasm where we emit webcil-in-wasm stubs to match the browser/wasi loading model.
+            // The PE/COFF writer does not support the Wasm32 architecture.
+            ReadyToRunContainerFormat componentFormat =
+                _format == ReadyToRunContainerFormat.Wasm ? ReadyToRunContainerFormat.Wasm : ReadyToRunContainerFormat.PE;
             CopiedCorHeaderNode copiedCorHeader = new CopiedCorHeaderNode(inputModule);
             // Re-written components shouldn't have any additional diagnostic information - only information about the forwards.
             // Even with all of this, we might be modifying the image in a silly manner - adding a directory when if didn't have one.
@@ -505,7 +575,7 @@ namespace ILCompiler
                 win32Resources: new Win32Resources.ResourceData(inputModule),
                 flags: flags,
                 nodeFactoryOptimizationFlags: optimizationFlags,
-                format: ReadyToRunContainerFormat.PE,
+                format: componentFormat,
                 imageBase: _nodeFactory.ImageBase,
                 associatedModule: automaticTypeValidation ? inputModule : null,
                 genericCycleDepthCutoff: -1, // We don't need generic cycle detection when rewriting component assemblies
@@ -524,7 +594,8 @@ namespace ILCompiler
                 componentGraph.AddRoot(componentFactory.Win32ResourcesNode, "Win32 resources");
             }
             componentGraph.ComputeMarkedNodes();
-            componentFactory.Header.Add(Internal.Runtime.ReadyToRunSectionType.OwnerCompositeExecutable, ownerExecutableNode, ownerExecutableNode);
+            componentFactory.Header.Add(Internal.Runtime.ReadyToRunSectionType.OwnerCompositeExecutable, ownerExecutableNode);
+            componentFactory.SetMarkingComplete();
             ReadyToRunObjectWriter.EmitObject(
                 outputFile,
                 componentModule: inputModule,
@@ -540,9 +611,10 @@ namespace ILCompiler
                 perfMapFormatVersion: _perfMapFormatVersion,
                 generateProfileFile: false,
                 _profileData.CallChainProfile,
-                ReadyToRunContainerFormat.PE,
+                componentFormat,
                 customPESectionAlignment: 0,
-                _logger);
+                wasmDebugInfo: _wasmDebugInfo,
+                logger: _logger);
         }
 
         public override void WriteDependencyLog(string outputFileName)
@@ -626,13 +698,14 @@ namespace ILCompiler
                 if (CompilationModuleGroup.TypeLayoutCompilationUnits(type).HasMultipleInexactCompilationUnits)
                     return false;
 
-                while (!type.IsObject && type != null)
+                while (!type.IsObject)
                 {
                     if (!IsLayoutFixedInCurrentVersionBubble(type))
                     {
                         return false;
                     }
                     type = type.BaseType;
+                    Debug.Assert(type != null);
                 }
             }
 
@@ -646,26 +719,34 @@ namespace ILCompiler
         // The _finishedFirstCompilationRunInPhase2 variable works in concert some checking to ensure that we don't violate any of this model
         private bool _finishedFirstCompilationRunInPhase2 = false;
 
-        public void PrepareForCompilationRetry(MethodWithGCInfo methodToBeRecompiled, IEnumerable<EcmaMethod> methodsThatNeedILBodies)
+        public void PrepareForCompilationRetry(MethodWithGCInfo methodToBeRecompiled, IEnumerable<MethodDesc> methodsThatNeedILBodies)
         {
             lock (_methodsToRecompile)
             {
                 _methodsToRecompile.Add(methodToBeRecompiled);
                 if (methodsThatNeedILBodies != null)
+                {
                     foreach (var method in methodsThatNeedILBodies)
+                    {
+                        Debug.Assert(method.IsMethodDefinition);
                         _methodsWhichNeedMutableILBodies.Add(method);
+                    }
+                }
             }
         }
 
-        [ThreadStatic]
-        private static int s_methodsCompiledPerThread = 0;
+        private struct WorkerState
+        {
+            public CorInfoImpl CorInfoImpl;
+            public int MethodsCompiled;
+        }
 
-        private SemaphoreSlim _compilationThreadSemaphore = new(0);
-        private volatile IEnumerator<DependencyNodeCore<NodeFactory>> _currentCompilationMethodList;
-        private volatile bool _doneAllCompiling;
-        private int _finishedThreadCount;
-        private ManualResetEventSlim _compilationSessionComplete = new ManualResetEventSlim();
-        private bool _hasCreatedCompilationThreads = false;
+        // SuperPMI collection runs crossgen2 with parallelism 1 and requires ObjectToHandle
+        // handles to remain stable across compilation waves, so retain this state between calls.
+        private WorkerState _singleThreadedWorkerState;
+        private int _compilationSessionGeneratedColdCode;
+        private bool _hasAddedAsyncReferences = false;
+        private bool _hasAddedDelegateCtorReferences = false;
 
         protected override void ComputeDependencyNodeDependencies(List<DependencyNodeCore<NodeFactory>> obj)
         {
@@ -687,84 +768,65 @@ namespace ILCompiler
                     if (dependency is MethodWithGCInfo methodCodeNodeNeedingCode)
                     {
                         var method = methodCodeNodeNeedingCode.Method;
-                        if (method.GetTypicalMethodDefinition() is EcmaMethod ecmaMethod)
+                        var typicalDef = method.GetTypicalMethodDefinition();
+                        if (typicalDef is EcmaMethod or AsyncMethodVariant or AsyncResumptionStub)
                         {
-                            if (ilProvider.NeedsCrossModuleInlineableTokens(ecmaMethod) &&
-                                !_methodsWhichNeedMutableILBodies.Contains(ecmaMethod) &&
-                                CorInfoImpl.IsMethodCompilable(this, methodCodeNodeNeedingCode.Method))
-                                _methodsWhichNeedMutableILBodies.Add(ecmaMethod);
-                        }
-                        if (!_nodeFactory.CompilationModuleGroup.VersionsWithMethodBody(method))
-                        {
-                            // Validate that the typedef tokens for all of the instantiation parameters of the method
-                            // have tokens.
-                            foreach (var type in method.Instantiation)
-                                EnsureTypeDefTokensAreReady(type);
-                            foreach (var type in method.OwningType.Instantiation)
-                                EnsureTypeDefTokensAreReady(type);
-
-                            void EnsureTypeDefTokensAreReady(TypeDesc type)
+                            if (ilProvider.NeedsCrossModuleInlineableTokens(typicalDef) &&
+                                !_methodsWhichNeedMutableILBodies.Contains(typicalDef) &&
+                                CorInfoImpl.IsMethodCompilable(this, method, methodCodeNodeNeedingCode.IsJitHelper))
                             {
-                                // Type represented by simple element type
-                                if (type.IsPrimitive || type.IsVoid || type.IsObject || type.IsString || type.IsTypedReference)
-                                    return;
-
-                                if (type is EcmaType ecmaType)
-                                {
-                                    if (!_nodeFactory.Resolver.GetModuleTokenForType(ecmaType, allowDynamicallyCreatedReference: false, throwIfNotFound: false).IsNull)
-                                        return;
-                                    try
-                                    {
-                                        Debug.Assert(_nodeFactory.CompilationModuleGroup.CrossModuleInlineableModule(ecmaType.Module));
-                                        _nodeFactory.ManifestMetadataTable._mutableModule.ModuleThatIsCurrentlyTheSourceOfNewReferences
-                                            = ecmaType.Module;
-                                        if (!_nodeFactory.ManifestMetadataTable._mutableModule.TryGetEntityHandle(ecmaType).HasValue)
-                                            throw new InternalCompilerErrorException($"Unable to create token to {ecmaType}");
-                                    }
-                                    finally
-                                    {
-                                        _nodeFactory.ManifestMetadataTable._mutableModule.ModuleThatIsCurrentlyTheSourceOfNewReferences
-                                            = null;
-                                    }
-                                    return;
-                                }
-
-                                if (type.HasInstantiation)
-                                {
-                                    EnsureTypeDefTokensAreReady(type.GetTypeDefinition());
-
-                                    foreach (TypeDesc instParam in type.Instantiation)
-                                    {
-                                        EnsureTypeDefTokensAreReady(instParam);
-                                    }
-                                }
-                                else if (type.IsParameterizedType)
-                                {
-                                    EnsureTypeDefTokensAreReady(type.GetParameterType());
-                                }
+                                _methodsWhichNeedMutableILBodies.Add(typicalDef);
                             }
                         }
+
+                        bool shouldBeCompiled = !CorInfoImpl.ShouldCodeNotBeCompiledIntoFinalImage(InstructionSetSupport, method);
+                        if (method.IsAsyncCall() && shouldBeCompiled)
+                            AddNecessaryAsyncReferences(method);
+
+                        if (_nodeFactory.Target.IsWasm && shouldBeCompiled)
+                            AddNecessaryDelegateCtorReferences(method);
+
+                        if ((method.IsCompilerGeneratedILBodyForAsync() || ((CompilerTypeSystemContext)method.Context).IsUnboxingThunk(method)) && shouldBeCompiled)
+                            EnsureGeneratedILTokensAreAvailable(method);
+
+                        if (!_nodeFactory.CompilationModuleGroup.VersionsWithMethodBody(method))
+                            EnsureInstantiationReferencesArePresentForExternalMethod(method);
                     }
                 }
 
                 ProcessMutableMethodBodiesList();
                 ResetILCache();
-                CompileMethodList(obj);
 
-                while (_methodsToRecompile.Count > 0)
+                IReadOnlyList<DependencyNodeCore<NodeFactory>> methodsToCompile = obj;
+                if (!_directManagedHelpersInitialized && _nodeFactory.CompilationCurrentPhase == 0)
                 {
-                    ProcessMutableMethodBodiesList();
-                    ResetILCache();
-                    MethodWithGCInfo[] methodsToRecompile = new MethodWithGCInfo[_methodsToRecompile.Count];
-                    _methodsToRecompile.CopyTo(methodsToRecompile);
-                    _methodsToRecompile.Clear();
-                    Array.Sort(methodsToRecompile, new SortableDependencyNode.ObjectNodeComparer(CompilerComparer.Instance));
+                    List<MethodWithGCInfo> managedHelpers = new List<MethodWithGCInfo>();
+                    HashSet<MethodWithGCInfo> seenManagedHelpers = new HashSet<MethodWithGCInfo>();
+                    List<DependencyNodeCore<NodeFactory>> remainingMethods = new List<DependencyNodeCore<NodeFactory>>(obj.Count);
+                    foreach (DependencyNodeCore<NodeFactory> dependency in obj)
+                    {
+                        if (dependency is MethodWithGCInfo { IsJitHelper: true } managedHelper)
+                        {
+                            if (seenManagedHelpers.Add(managedHelper))
+                            {
+                                managedHelpers.Add(managedHelper);
+                            }
+                        }
+                        else
+                        {
+                            remainingMethods.Add(dependency);
+                        }
+                    }
 
-                    if (Logger.IsVerbose)
-                        Logger.Writer.WriteLine($"Processing {methodsToRecompile.Length} recompiles");
-
-                    CompileMethodList(methodsToRecompile);
+                    if (managedHelpers.Count > 0)
+                    {
+                        generatedColdCode |= ProbeAndCompileManagedHelpers(managedHelpers);
+                        methodsToCompile = remainingMethods;
+                        _directManagedHelpersInitialized = true;
+                    }
                 }
+
+                generatedColdCode |= CompileMethodsAndRetries(methodsToCompile);
             }
 
             ResetILCache();
@@ -779,13 +841,52 @@ namespace ILCompiler
                 _nodeFactory.GenerateHotColdMap(_dependencyGraph);
             }
 
+            void EnsureGeneratedILTokensAreAvailable(MethodDesc method)
+            {
+                if (!method.IsCompilerGeneratedILBodyForAsync() && !((CompilerTypeSystemContext)method.Context).IsUnboxingThunk(method))
+                    return;
+                MethodIL il = _methodILCache.ILProvider.GetMethodIL(method);
+                if (il is null)
+                    return;
+                var bytes = il.GetILBytes();
+                // Use ILTokenReplacer to iterate over tokens, not actually replace them
+                ILTokenReplacer.Replace(bytes, tok =>
+                {
+                    switch (il.GetObject(tok))
+                    {
+                        case TypeSystemEntity tse:
+                            _tokenManager.EnsureDefTokensAreAvailable(tse, ((EcmaMethod)method.GetPrimaryMethodDesc().GetTypicalMethodDefinition()).Module, true);
+                            break;
+                        default:
+                            // We don't need to worry about string handles
+                            break;
+                    }
+                    return tok;
+                });
+                // ILTokenReplacer doesn't handle exception regions or local variable types, so handle those separately
+                var exceptionRegions = (ILExceptionRegion[])il.GetExceptionRegions();
+                for (int i = 0; i < exceptionRegions.Length; i++)
+                {
+                    var region = exceptionRegions[i];
+                    if (region.Kind == ILExceptionRegionKind.Catch)
+                    {
+                        TypeSystemEntity catchType = (TypeSystemEntity)il.GetObject(region.ClassToken);
+                        _tokenManager.EnsureDefTokensAreAvailable(catchType, ((EcmaMethod)method.GetPrimaryMethodDesc().GetTypicalMethodDefinition()).Module, true);
+                    }
+                }
+                foreach (var local in il.GetLocals())
+                {
+                    _tokenManager.EnsureDefTokensAreAvailable(local.Type, ((EcmaMethod)method.GetPrimaryMethodDesc().GetTypicalMethodDefinition()).Module, true);
+                }
+            }
+
             void ProcessMutableMethodBodiesList()
             {
-                EcmaMethod[] mutableMethodBodyNeedList = new EcmaMethod[_methodsWhichNeedMutableILBodies.Count];
+                MethodDesc[] mutableMethodBodyNeedList = new MethodDesc[_methodsWhichNeedMutableILBodies.Count];
                 _methodsWhichNeedMutableILBodies.CopyTo(mutableMethodBodyNeedList);
                 _methodsWhichNeedMutableILBodies.Clear();
                 TypeSystemComparer comparer = TypeSystemComparer.Instance;
-                Comparison<EcmaMethod> comparison = (EcmaMethod a, EcmaMethod b) => comparer.Compare(a, b);
+                Comparison<MethodDesc> comparison = (MethodDesc a, MethodDesc b) => comparer.Compare(a, b);
                 Array.Sort(mutableMethodBodyNeedList, comparison);
                 var ilProvider = (ReadyToRunILProvider)_methodILCache.ILProvider;
 
@@ -799,162 +900,397 @@ namespace ILCompiler
                     _methodILCache = new ILCache(_methodILCache.ILProvider, NodeFactory.CompilationModuleGroup);
             }
 
-            void CompileMethodList(IEnumerable<DependencyNodeCore<NodeFactory>> methodList)
+            bool ProbeAndCompileManagedHelpers(List<MethodWithGCInfo> managedHelpers)
             {
-                // Disable generation of new tokens across the multi-threaded compile
-                NodeFactory.ManifestMetadataTable._mutableModule.DisableNewTokens = true;
+                HashSet<MethodDesc> deniedHelpers = new HashSet<MethodDesc>();
+                SetDirectManagedHelpers(managedHelpers, deniedHelpers);
 
+                // Start by allowing direct calls to every helper. Remove helpers that cannot be
+                // compiled portably and repeat so remaining helpers are probed with the final call paths.
+                while (true)
+                {
+                    HashSet<MethodDesc> newlyDeniedHelpers = new HashSet<MethodDesc>();
+                    bool retryRequested = false;
+                    CorInfoImpl corInfoImpl;
+                    if (_parallelism == 1)
+                    {
+                        if (_singleThreadedWorkerState.CorInfoImpl is null)
+                        {
+                            _singleThreadedWorkerState.CorInfoImpl = new CorInfoImpl(this);
+                        }
+                        corInfoImpl = _singleThreadedWorkerState.CorInfoImpl;
+                    }
+                    else
+                    {
+                        corInfoImpl = new CorInfoImpl(this);
+                    }
+
+                    NodeFactory.ManifestMetadataTable._mutableModule.DisableNewTokens = true;
+                    try
+                    {
+                        foreach (MethodWithGCInfo managedHelper in managedHelpers)
+                        {
+                            if (deniedHelpers.Contains(managedHelper.Method))
+                                continue;
+
+                            try
+                            {
+                                CorInfoImpl.ManagedHelperProbeResult probeResult =
+                                    corInfoImpl.ProbeManagedHelper(managedHelper.Method, Logger);
+
+                                if (probeResult.RetryRequested)
+                                {
+                                    retryRequested = true;
+                                    if (probeResult.MethodsRequiringILBodies is not null)
+                                    {
+                                        foreach (MethodDesc method in probeResult.MethodsRequiringILBodies)
+                                        {
+                                            _methodsWhichNeedMutableILBodies.Add(method);
+                                        }
+                                    }
+                                }
+                                else if (!probeResult.CompilationSucceeded)
+                                {
+                                    LogManagedHelperProbeFailure(managedHelper.Method, "compilation did not produce code");
+                                    newlyDeniedHelpers.Add(managedHelper.Method);
+                                }
+                                else if (probeResult.RequiresInstructionSetSupportFixup)
+                                {
+                                    LogManagedHelperProbeFailure(managedHelper.Method, "processor feature fixups are required");
+                                    newlyDeniedHelpers.Add(managedHelper.Method);
+                                }
+                            }
+                            catch (TypeSystemException ex)
+                            {
+                                LogManagedHelperProbeFailure(managedHelper.Method, ex.Message);
+                                newlyDeniedHelpers.Add(managedHelper.Method);
+                            }
+                            catch (RequiresRuntimeJitException ex)
+                            {
+                                LogManagedHelperProbeFailure(managedHelper.Method, ex.Message);
+                                newlyDeniedHelpers.Add(managedHelper.Method);
+                            }
+                            catch (CodeGenerationFailedException ex)
+                            {
+                                LogManagedHelperProbeFailure(managedHelper.Method, ex.Message);
+                                newlyDeniedHelpers.Add(managedHelper.Method);
+                            }
+                        }
+                    }
+                    finally
+                    {
+                        NodeFactory.ManifestMetadataTable._mutableModule.DisableNewTokens = false;
+                    }
+
+                    if (retryRequested)
+                    {
+                        ProcessMutableMethodBodiesList();
+                        ResetILCache();
+                        continue;
+                    }
+
+                    if (newlyDeniedHelpers.Count == 0)
+                        break;
+
+                    deniedHelpers.UnionWith(newlyDeniedHelpers);
+                    SetDirectManagedHelpers(managedHelpers, deniedHelpers);
+                }
+
+                int eligibleHelperCount = managedHelpers.Count - deniedHelpers.Count;
+                if (Logger.IsVerbose)
+                {
+                    Logger.Writer.WriteLine(
+                        $"Direct managed JIT helpers: {eligibleHelperCount} eligible, {deniedHelpers.Count} using helper cells");
+                }
+
+                DependencyNodeCore<NodeFactory>[] managedHelperDependencies =
+                    new DependencyNodeCore<NodeFactory>[managedHelpers.Count];
+                for (int i = 0; i < managedHelpers.Count; i++)
+                {
+                    managedHelperDependencies[i] = managedHelpers[i];
+                }
+
+                bool generatedHelperColdCode = CompileMethodsAndRetries(managedHelperDependencies);
+                foreach (MethodWithGCInfo managedHelper in managedHelpers)
+                {
+                    if (!deniedHelpers.Contains(managedHelper.Method) &&
+                        (managedHelper.IsEmpty || HasInstructionSetSupportFixup(managedHelper)))
+                    {
+                        throw new CodeGenerationFailedException(
+                            managedHelper.Method,
+                            new InvalidOperationException("Managed JIT helper eligibility changed during final compilation."));
+                    }
+                }
+
+                return generatedHelperColdCode;
+            }
+
+            void SetDirectManagedHelpers(
+                List<MethodWithGCInfo> managedHelpers,
+                HashSet<MethodDesc> deniedHelpers)
+            {
+                HashSet<MethodDesc> directManagedHelpers = new HashSet<MethodDesc>();
+                foreach (MethodWithGCInfo managedHelper in managedHelpers)
+                {
+                    if (!deniedHelpers.Contains(managedHelper.Method))
+                    {
+                        directManagedHelpers.Add(managedHelper.Method);
+                    }
+                }
+                Volatile.Write(ref _directManagedHelpers, directManagedHelpers);
+
+                // Single-threaded compilation reuses its CorInfoImpl across probe passes.
+                // Helper entry points cached before a denial must be recomputed using the new eligibility set.
+                _singleThreadedWorkerState.CorInfoImpl?.ClearHelperCache();
+            }
+
+            bool HasInstructionSetSupportFixup(MethodWithGCInfo managedHelper)
+            {
+                foreach (ISymbolNode fixup in managedHelper.Fixups)
+                {
+                    if (fixup is Import { Signature: ReadyToRunInstructionSetSupportSignature })
+                        return true;
+                }
+
+                return false;
+            }
+
+            bool CompileMethodsAndRetries(IReadOnlyList<DependencyNodeCore<NodeFactory>> methods)
+            {
+                bool generatedMethodColdCode = CompileMethodList(methods);
+                while (_methodsToRecompile.Count > 0)
+                {
+                    ProcessMutableMethodBodiesList();
+                    ResetILCache();
+                    MethodWithGCInfo[] methodsToRecompile = new MethodWithGCInfo[_methodsToRecompile.Count];
+                    _methodsToRecompile.CopyTo(methodsToRecompile);
+                    _methodsToRecompile.Clear();
+                    Array.Sort(methodsToRecompile, new SortableDependencyNode.ObjectNodeComparer(CompilerComparer.Instance));
+
+                    if (Logger.IsVerbose)
+                        Logger.Writer.WriteLine($"Processing {methodsToRecompile.Length} recompiles");
+
+                    generatedMethodColdCode |= CompileMethodList(methodsToRecompile);
+                }
+
+                return generatedMethodColdCode;
+            }
+
+            void LogManagedHelperProbeFailure(MethodDesc method, string reason)
+            {
+                if (Logger.IsVerbose)
+                    Logger.Writer.WriteLine($"Managed JIT helper `{method}` will use a helper cell because: {reason}");
+            }
+        }
+
+        private bool CompileMethodList(IReadOnlyList<DependencyNodeCore<NodeFactory>> methodList)
+        {
+            _compilationSessionGeneratedColdCode = 0;
+
+            NodeFactory.ManifestMetadataTable._mutableModule.DisableNewTokens = true;
+            try
+            {
                 if (_parallelism == 1)
                 {
-                    foreach (var dependency in methodList)
-                        CompileOneMethod(dependency, 0);
+                    foreach (DependencyNodeCore<NodeFactory> dependency in methodList)
+                    {
+                        CompileOneMethod(dependency, ref _singleThreadedWorkerState);
+                    }
                 }
                 else
                 {
-                    _currentCompilationMethodList = methodList.GetEnumerator();
-                    _finishedThreadCount = 0;
-                    _compilationSessionComplete.Reset();
-
-                    if (!_hasCreatedCompilationThreads)
-                    {
-                        for (int compilationThreadId = 1; compilationThreadId < _parallelism; compilationThreadId++)
-                        {
-                            new Thread(CompilationThread).Start((object)compilationThreadId);
-                        }
-                        _hasCreatedCompilationThreads = true;
-                    }
-
-                    _compilationThreadSemaphore.Release(_parallelism - 1);
-                    CompileOnThread(0);
-                    _compilationSessionComplete.Wait();
+                    Parallel.ForEach<DependencyNodeCore<NodeFactory>, WorkerState>(
+                        // Method compilation costs vary widely, so avoid buffering work into imbalanced partitions.
+                        Partitioner.Create(methodList, EnumerablePartitionerOptions.NoBuffering),
+                        new ParallelOptions { MaxDegreeOfParallelism = _parallelism },
+                        static () => default,
+                        CompileOneMethodInParallel,
+                        static _ => { });
                 }
 
-                // Re-enable generation of new tokens after the multi-threaded compile
+                return Volatile.Read(ref _compilationSessionGeneratedColdCode) != 0;
+            }
+            finally
+            {
                 NodeFactory.ManifestMetadataTable._mutableModule.DisableNewTokens = false;
             }
+        }
 
-            void CompilationThread(object objThreadId)
+        private WorkerState CompileOneMethodInParallel(
+            DependencyNodeCore<NodeFactory> dependency,
+            ParallelLoopState _,
+            WorkerState workerState)
+        {
+            CompileOneMethod(dependency, ref workerState);
+            return workerState;
+        }
+
+        private void CompileOneMethod(DependencyNodeCore<NodeFactory> dependency, ref WorkerState workerState)
+        {
+            MethodWithGCInfo methodCodeNodeNeedingCode = dependency as MethodWithGCInfo;
+            if (methodCodeNodeNeedingCode == null)
             {
-                while (true)
+                if (dependency is DeferredTillPhaseNode deferredPhaseNode)
                 {
-                    _compilationThreadSemaphore.Wait();
-                    lock(this)
-                    {
-                        if (_doneAllCompiling)
-                            return;
-                    }
-                    CompileOnThread((int)objThreadId);
+                    if (Logger.IsVerbose)
+                        _logger.Writer.WriteLine($"Moved to phase {_nodeFactory.CompilationCurrentPhase}");
+                    deferredPhaseNode.NotifyCurrentPhase(_nodeFactory.CompilationCurrentPhase);
+                    return;
                 }
             }
 
-            void CompileOnThread(int compilationThreadId)
+            Debug.Assert((_nodeFactory.CompilationCurrentPhase == 0) || ((_nodeFactory.CompilationCurrentPhase == 2) && !_finishedFirstCompilationRunInPhase2));
+
+            MethodDesc method = methodCodeNodeNeedingCode.Method;
+
+            if (Logger.IsVerbose)
             {
-                var compilationMethodList = _currentCompilationMethodList;
-                while (true)
-                {
-                    DependencyNodeCore<NodeFactory> dependency;
-                    lock (compilationMethodList)
-                    {
-                        if (!compilationMethodList.MoveNext())
-                        {
-                            if (Interlocked.Increment(ref _finishedThreadCount) == _parallelism)
-                                _compilationSessionComplete.Set();
-
-                            return;
-                        }
-                        dependency = compilationMethodList.Current;
-                    }
-
-                    CompileOneMethod(dependency, compilationThreadId);
-                }
+                string methodName = method.ToString();
+                Logger.Writer.WriteLine("Compiling " + methodName);
             }
 
-            void CompileOneMethod(DependencyNodeCore<NodeFactory> dependency, int compileThreadId)
+            if (_nodeFactory.OptimizationFlags.PrintReproArgs)
             {
-                MethodWithGCInfo methodCodeNodeNeedingCode = dependency as MethodWithGCInfo;
-                if (methodCodeNodeNeedingCode == null)
+                Logger.Writer.WriteLine($"Single method repro args:{GetReproInstructions(method)}");
+            }
+
+            try
+            {
+                using (PerfEventSource.StartStopEvents.JitMethodEvents())
                 {
-                    if (dependency is DeferredTillPhaseNode deferredPhaseNode)
+                    workerState.MethodsCompiled++;
+                    if (workerState.CorInfoImpl is null ||
+                        (_parallelism != 1 && (workerState.MethodsCompiled % 3000) == 0))
                     {
-                        if (Logger.IsVerbose)
-                            _logger.Writer.WriteLine($"Moved to phase {_nodeFactory.CompilationCurrentPhase}");
-                        deferredPhaseNode.NotifyCurrentPhase(_nodeFactory.CompilationCurrentPhase);
-                        return;
+                        // Periodically create a new CorInfoImpl to clear out stale caches. For single-threaded
+                        // compilation, reuse one instance so SuperPMI can rely on non-reuse of ObjectToHandle handles.
+                        workerState.CorInfoImpl = new CorInfoImpl(this);
+                    }
+
+                    CorInfoImpl corInfoImpl = workerState.CorInfoImpl;
+                    corInfoImpl.CompileMethod(methodCodeNodeNeedingCode, Logger);
+                    if (corInfoImpl.HasColdCode)
+                    {
+                        Volatile.Write(ref _compilationSessionGeneratedColdCode, 1);
                     }
                 }
-
-                Debug.Assert((_nodeFactory.CompilationCurrentPhase == 0) || ((_nodeFactory.CompilationCurrentPhase == 2) && !_finishedFirstCompilationRunInPhase2));
-
-                MethodDesc method = methodCodeNodeNeedingCode.Method;
-
+            }
+            catch (TypeSystemException ex)
+            {
+                // If compilation fails, don't emit code for this method. It will be Jitted at runtime
                 if (Logger.IsVerbose)
-                {
-                    string methodName = method.ToString();
-                    Logger.Writer.WriteLine("Compiling " + methodName);
-                }
-
-                if (_nodeFactory.OptimizationFlags.PrintReproArgs)
-                {
-                    Logger.Writer.WriteLine($"Single method repro args:{GetReproInstructions(method)}");
-                }
-
-                try
-                {
-                    using (PerfEventSource.StartStopEvents.JitMethodEvents())
-                    {
-                        s_methodsCompiledPerThread++;
-                        bool createNewCorInfoImpl = false;
-
-                        if (_corInfoImpls[compileThreadId] == null)
-                            createNewCorInfoImpl = true;
-                        else
-                        {
-                            if (_parallelism == 1)
-                            {
-                                // Create only 1 CorInfoImpl if not using parallelism
-                                // This allows SuperPMI to rely on non-reuse of handles in ObjectToHandle
-                            }
-                            else
-                            {
-                                // Periodically create a new CorInfoImpl to clear out stale caches
-                                // This is done as the CorInfoImpl holds a cache of data structures visible to the JIT
-                                // Those data structures include both structures which will last for the lifetime of the compilation
-                                // process, as well as various temporary structures that would really be better off with thread lifetime.
-                                if ((s_methodsCompiledPerThread % 3000) == 0)
-                                {
-                                    createNewCorInfoImpl = true;
-                                }
-                            }
-                        }
-
-                        if (createNewCorInfoImpl)
-                            _corInfoImpls[compileThreadId] = new CorInfoImpl(this);
-
-                        CorInfoImpl corInfoImpl = _corInfoImpls[compileThreadId];
-                        corInfoImpl.CompileMethod(methodCodeNodeNeedingCode, Logger);
-                        if (corInfoImpl.HasColdCode)
-                        {
-                            generatedColdCode = true;
-                        }
-                    }
-                }
-                catch (TypeSystemException ex)
-                {
-                    // If compilation fails, don't emit code for this method. It will be Jitted at runtime
-                    if (Logger.IsVerbose)
-                        Logger.Writer.WriteLine($"Warning: Method `{method}` was not compiled because: {ex.Message}");
-                }
-                catch (RequiresRuntimeJitException ex)
-                {
-                    if (Logger.IsVerbose)
-                        Logger.Writer.WriteLine($"Info: Method `{method}` was not compiled because `{ex.Message}` requires runtime JIT");
-                }
-                catch (CodeGenerationFailedException ex) when (_resilient)
-                {
-                    if (Logger.IsVerbose)
-                        Logger.Writer.WriteLine($"Warning: Method `{method}` was not compiled because `{ex.Message}` requires runtime JIT");
-                }
+                    Logger.Writer.WriteLine($"Warning: Method `{method}` was not compiled because: {ex.Message}");
             }
+            catch (RequiresRuntimeJitException ex)
+            {
+                if (Logger.IsVerbose)
+                    Logger.Writer.WriteLine($"Info: Method `{method}` was not compiled because `{ex.Message}` requires runtime JIT");
+            }
+            catch (CodeGenerationFailedException ex) when (_resilient)
+            {
+                if (Logger.IsVerbose)
+                    Logger.Writer.WriteLine($"Warning: Method `{method}` was not compiled because `{ex.Message}` requires runtime JIT");
+            }
+        }
+
+        private void EnsureInstantiationReferencesArePresentForExternalMethod(MethodDesc method)
+        {
+            // Validate that the typedef tokens for all of the instantiation parameters of the method
+            // have tokens.
+            var moduleForNewReferences = ((EcmaMethod)method.GetPrimaryMethodDesc().GetTypicalMethodDefinition()).Module;
+            foreach (var type in method.Instantiation)
+                _tokenManager.EnsureDefTokensAreAvailable(type, moduleForNewReferences, false);
+            foreach (var type in method.OwningType.Instantiation)
+                _tokenManager.EnsureDefTokensAreAvailable(type, moduleForNewReferences, false);
+        }
+
+        private void AddNecessaryAsyncReferences(MethodDesc method)
+        {
+            if (_hasAddedAsyncReferences)
+                return;
+
+            // Keep in sync with CorInfoImpl.getAsyncInfo()
+            DefType continuation = TypeSystemContext.ContinuationType;
+            TypeDesc asyncHelpers = TypeSystemContext.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8);
+            TypeDesc[] requiredTypes = [asyncHelpers, continuation];
+            FieldDesc[] requiredFields =
+            [
+                // For CorInfoImpl.getAsyncInfo
+                continuation.GetKnownField("Next"u8),
+                continuation.GetKnownField("ResumeInfo"u8),
+                continuation.GetKnownField("State"u8),
+                continuation.GetKnownField("Flags"u8),
+            ];
+            // The signature types for the TransparentAwait overloads used by
+            // CorInfoImpl.getAwaitReturnCall (kept in sync with that method).
+            TypeDesc voidType = TypeSystemContext.GetWellKnownType(WellKnownType.Void);
+            TypeDesc taskType = TypeSystemContext.SystemModule.GetKnownType("System.Threading.Tasks"u8, "Task"u8);
+            TypeDesc valueTaskType = TypeSystemContext.SystemModule.GetKnownType("System.Threading.Tasks"u8, "ValueTask"u8);
+            MetadataType taskOfTType = TypeSystemContext.SystemModule.GetKnownType("System.Threading.Tasks"u8, "Task`1"u8);
+            MetadataType valueTaskOfTType = TypeSystemContext.SystemModule.GetKnownType("System.Threading.Tasks"u8, "ValueTask`1"u8);
+            TypeDesc methodVar = TypeSystemContext.GetSignatureVariable(0, method: true);
+            MethodDesc[] requiredMethods =
+            [
+                // For CorInfoImpl.getAsyncInfo
+                asyncHelpers.GetKnownMethod("CaptureExecutionContext"u8, null),
+                asyncHelpers.GetKnownMethod("CaptureContinuationContext"u8, null),
+                asyncHelpers.GetKnownMethod("CaptureContexts"u8, null),
+                asyncHelpers.GetKnownMethod("RestoreContexts"u8, null),
+                asyncHelpers.GetKnownMethod("RestoreContextsOnSuspension"u8, null),
+                asyncHelpers.GetKnownMethod("FinishSuspensionNoContinuationContext"u8, null),
+                asyncHelpers.GetKnownMethod("FinishSuspensionWithContinuationContext"u8, null),
+                asyncHelpers.GetKnownMethod("RestoreInlinedFrameContexts"u8, null),
+                asyncHelpers.GetKnownMethod("CaptureInlinedFrameTransitionWithContinuationContext"u8, null),
+                asyncHelpers.GetKnownMethod("CaptureInlinedFrameTransitionNoContinuationContext"u8, null),
+                asyncHelpers.GetKnownMethod("CaptureInlinedFrameTransitionContinueOnThreadPool"u8, null),
+
+                // R2R Helpers
+                asyncHelpers.GetKnownMethod("AllocContinuation"u8, null),
+                asyncHelpers.GetKnownMethod("AllocContinuationClass"u8, null),
+                asyncHelpers.GetKnownMethod("AllocContinuationMethod"u8, null),
+
+                // For CorInfoImpl.getAwaitReturnCall. The JIT synthesizes calls to these overloads, so they
+                // have no IL token in the caller and their manifest tokens must be pre-seeded here.
+                asyncHelpers.GetKnownMethod("TransparentAwait"u8, new MethodSignature(MethodSignatureFlags.Static, 0, voidType, [taskType])),
+                asyncHelpers.GetKnownMethod("TransparentAwait"u8, new MethodSignature(MethodSignatureFlags.Static, 0, voidType, [valueTaskType])),
+                asyncHelpers.GetKnownMethod("TransparentAwait"u8, new MethodSignature(MethodSignatureFlags.Static, 1, methodVar, [taskOfTType.MakeInstantiatedType(methodVar)])),
+                asyncHelpers.GetKnownMethod("TransparentAwait"u8, new MethodSignature(MethodSignatureFlags.Static, 1, methodVar, [valueTaskOfTType.MakeInstantiatedType(methodVar)])),
+
+                // For CorInfoImpl.getAwaitAwaiterInContinuationCall. Same as above: the JIT rewrites calls
+                // to AsyncHelpers.AwaitAwaiter/UnsafeAwaitAwaiter into calls to these, so nothing in the
+                // caller's IL refers to them and their manifest tokens must be pre-seeded here.
+                //
+                // Only the typical definitions need tokens. The method fixup signature emits the method's
+                // def/ref token and encodes the instantiation separately as type signatures (see
+                // SignatureBuilder.EmitMethodSpecificationSignature), so no MethodSpec token is required.
+                // The instantiation argument is the awaiter type, which the caller already refers to in its
+                // own IL, so that is guaranteed to be encodable as well.
+                asyncHelpers.GetKnownMethod("AwaitAwaiterInContinuation"u8, null),
+                asyncHelpers.GetKnownMethod("UnsafeAwaitAwaiterInContinuation"u8, null),
+            ];
+            var moduleForNewReferences = ((EcmaMethod)method.GetPrimaryMethodDesc().GetTypicalMethodDefinition()).Module;
+            _tokenManager.EnsureDefTokensAreAvailable([..requiredMethods, ..requiredTypes, ..requiredFields], moduleForNewReferences, true);
+            _hasAddedAsyncReferences = true;
+        }
+
+        private void AddNecessaryDelegateCtorReferences(MethodDesc method)
+        {
+            if (_hasAddedDelegateCtorReferences ||
+                method.GetPrimaryMethodDesc().GetTypicalMethodDefinition() is not EcmaMethod ecmaMethod)
+            {
+                return;
+            }
+
+            // Keep in sync with CorInfoImpl.GetDelegateCtor. The JIT replaces delegate constructor
+            // calls with calls to these, so nothing in the caller's IL refers to them.
+            TypeDesc delegateType = TypeSystemContext.SystemModule.GetKnownType("System"u8, "Delegate"u8);
+            MethodDesc[] requiredMethods =
+            [
+                delegateType.GetKnownMethod("CtorClosed"u8, null),
+                delegateType.GetKnownMethod("DelegateConstruct"u8, null),
+            ];
+            _tokenManager.EnsureDefTokensAreAvailable(requiredMethods, ecmaMethod.Module, false);
+            _hasAddedDelegateCtorReferences = true;
         }
 
         public ISymbolNode GetFieldRvaData(FieldDesc field)
@@ -970,12 +1306,19 @@ namespace ILCompiler
 
         public override void Dispose()
         {
-            Array.Clear(_corInfoImpls);
+            _singleThreadedWorkerState = default;
+
+            // Workaround for https://github.com/dotnet/runtime/issues/23103.
+            // ManifestMetadataTable.Dispose() allows to break circular reference
+            // ConcurrentBag<EcmaModule> -> EcmaModule -> EcmaAssembly -> ReadyToRunCompilerContext -> ... -> ConcurrentBag<EcmaModule>.
+            // This circular reference along with #23103 prevents objects from being collected by GC.
+            _nodeFactory.ManifestMetadataTable.Dispose();
         }
 
         public string GetReproInstructions(MethodDesc method)
         {
             return _printReproInstructions(method);
         }
+
     }
 }

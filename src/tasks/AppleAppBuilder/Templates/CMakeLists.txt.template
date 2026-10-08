@@ -79,6 +79,12 @@ add_custom_command(
         if ls -1 $CODESIGNING_FOLDER_PATH/*.dylib 2>/dev/null | grep -q .\; then
           codesign --force --sign \"$SIGN_IDENTITY\" --timestamp $CODESIGNING_FOLDER_PATH/*.dylib\;
         fi\;
+        if ls -1 $CODESIGNING_FOLDER_PATH/Contents/Resources/*.r2r.dylib 2>/dev/null | grep -q .\; then
+          codesign --force --sign \"$SIGN_IDENTITY\" --timestamp $CODESIGNING_FOLDER_PATH/Contents/Resources/*.r2r.dylib\;
+        fi\;
+        if ls -1 $CODESIGNING_FOLDER_PATH/*.r2r.dylib 2>/dev/null | grep -q .\; then
+          codesign --force --sign \"$SIGN_IDENTITY\" --timestamp $CODESIGNING_FOLDER_PATH/*.r2r.dylib\;
+        fi\;
       fi\;
     fi
 )

@@ -99,6 +99,29 @@ namespace System.IO.Tests
             }
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))]
+        [OuterLoop]
+        public async Task WriteAsyncFromMemory_InputSizeLargerThanHalfOfMaxInt_ShouldSuccess()
+        {
+            const int InputSize = int.MaxValue / 2 + 1;
+            byte[] bytes;
+            try
+            {
+                bytes = new byte[InputSize];
+            }
+            catch (OutOfMemoryException)
+            {
+                throw new SkipTestException("Not enough memory");
+            }
+
+            var writableStream = new WriteOnlyStream();
+            using (var bs = new BufferedStream(writableStream))
+            {
+                await bs.WriteAsync(new ReadOnlyMemory<byte>(bytes));
+                Assert.Equal(InputSize, writableStream.Position);
+            }
+        }
+
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
@@ -216,7 +239,7 @@ namespace System.IO.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task ConcurrentOperationsAreSerialized()
         {
             byte[] data = Enumerable.Range(0, 1000).Select(i => unchecked((byte)i)).ToArray();
@@ -258,9 +281,9 @@ namespace System.IO.Tests
         [InlineData(true)]
         public async Task CopyToTest_RequiresFlushingOfWrites(bool copyAsynchronously)
         {
-            if (copyAsynchronously && !PlatformDetection.IsThreadingSupported)
+            if (copyAsynchronously && !PlatformDetection.IsMultithreadingSupported)
             {
-                throw new SkipTestException(nameof(PlatformDetection.IsThreadingSupported));
+                throw new SkipTestException(nameof(PlatformDetection.IsMultithreadingSupported));
             }
 
             byte[] data = Enumerable.Range(0, 1000).Select(i => (byte)(i % 256)).ToArray();

@@ -42,12 +42,44 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(ImportGlobals.SerializerTrimmerWarning)]
-        internal static bool IsItemTypeNullable(this DataContract collectionDataContract)
+        internal static bool IsCollectionItemNullable(this DataContract collectionDataContract)
         {
             if (collectionDataContract.GetContractType() == DataContractType.CollectionDataContract)
             {
-                // ItemContract - aka BaseContract - is never null for CollectionDataContract
-                return SchemaImportHelper.IsTypeNullable(collectionDataContract.BaseContract!.UnderlyingType);
+                // This would be easier if we had included a way to read 'IsItemTypeNullable' from
+                // CollectionDataContract. But let's do our best to see if we can figure out the
+                // nullability of the collection item type.
+
+                // If the item type is not a value type, then it's nullable.
+                // Dictionary KeyValuePair's are imported as value types.
+                DataContract itemContract = collectionDataContract.BaseContract!;
+                if (!itemContract.IsValueType)
+                    return true;
+
+                // GetArrayTypeName() generates the default DCS stable XML name for a collection of this item contract
+                // One of these variants should match for our item type, unless the imported schema is using a non-standard
+                // XML name for the collection item type.
+
+                // First check the standard non-nullable collection XML name for this item type.
+                XmlQualifiedName nonNullableCollectionType = itemContract.GetArrayTypeName(isNullable: false);
+                if (collectionDataContract.XmlName.Name == nonNullableCollectionType.Name &&
+                    collectionDataContract.XmlName.Namespace == nonNullableCollectionType.Namespace)
+                {
+                    return false;
+                }
+
+                // Then check the standard nullable collection XML name for this item type.
+                XmlQualifiedName nullableCollectionType = itemContract.GetArrayTypeName(isNullable: true);
+                if (collectionDataContract.XmlName.Name == nullableCollectionType.Name &&
+                    collectionDataContract.XmlName.Namespace == nullableCollectionType.Namespace)
+                {
+                    return true;
+                }
+
+                // If we get here, then the collection is using non-standard XML naming.
+                // UnderlyingType might be an actual CLR type, or it might be the SchemaDefinedType placeholder.
+                // This is just a best effort attempt at this point.
+                return SchemaImportHelper.IsTypeNullable(itemContract.UnderlyingType);
             }
 
             return false;

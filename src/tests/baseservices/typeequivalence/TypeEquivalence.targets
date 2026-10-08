@@ -1,5 +1,9 @@
 <Project>
 
+  <PropertyGroup>
+    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetOS)' == 'browser'">true</CLRTestTargetUnsupported>
+  </PropertyGroup>
+
   <Target
     Name="CreateEmbedResponseFile"
     BeforeTargets="BeforeCompile">

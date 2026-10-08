@@ -4,9 +4,12 @@
 using System;
 using System.Reflection;
 using Xunit;
+using TestLibrary;
 
 public class Program
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/91381", typeof(Utilities), nameof(Utilities.IsNativeAot))]
+    [ActiveIssue("needs triage", TestRuntimes.Mono)]
     [Fact]
     public static unsafe int TestEntryPoint()
     {

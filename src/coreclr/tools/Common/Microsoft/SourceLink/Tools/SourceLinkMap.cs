@@ -61,7 +61,8 @@ namespace Microsoft.SourceLink.Tools
 
             var list = new List<Entry>();
 
-            var root = JsonDocument.Parse(json, new JsonDocumentOptions() { AllowTrailingCommas = true }).RootElement;
+            using var jsonDocument = JsonDocument.Parse(json, new JsonDocumentOptions() { AllowTrailingCommas = true });
+            var root = jsonDocument.RootElement;
             if (root.ValueKind != JsonValueKind.Object)
             {
                 throw new InvalidDataException();

@@ -676,7 +676,7 @@ namespace System.Security.Cryptography.X509Certificates
         /// <exception cref="CryptographicException">
         ///   Other errors during the certificate creation process.
         /// </exception>
-        public X509Certificate2 CreateSelfSigned(DateTimeOffset notBefore, DateTimeOffset notAfter)
+        public unsafe X509Certificate2 CreateSelfSigned(DateTimeOffset notBefore, DateTimeOffset notAfter)
         {
             if (notAfter < notBefore)
                 throw new ArgumentException(SR.Cryptography_CertReq_DatesReversed);

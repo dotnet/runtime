@@ -76,7 +76,7 @@ namespace System.Formats.Asn1
             return ret;
         }
 
-        private static void ReadSubIdentifier(
+        private static unsafe void ReadSubIdentifier(
             ReadOnlySpan<byte> source,
             out int bytesRead,
             out long? smallValue,
@@ -367,6 +367,42 @@ namespace System.Formats.Asn1
         {
             string oidValue =
                 AsnDecoder.ReadObjectIdentifier(_data.Span, RuleSet, out int consumed, expectedTag);
+
+            _data = _data.Slice(consumed);
+            return oidValue;
+        }
+    }
+
+    public ref partial struct ValueAsnReader
+    {
+        /// <summary>
+        ///   Reads the next value as an OBJECT IDENTIFIER with a specified tag, returning
+        ///   the value in a dotted decimal format string.
+        /// </summary>
+        /// <param name="expectedTag">
+        ///   The tag to check for before reading, or <see langword="null"/> for the default tag (Universal 6).
+        /// </param>
+        /// <returns>The decoded object identifier in the dotted-decimal notation.</returns>
+        /// <exception cref="AsnContentException">
+        ///   The next value does not have the correct tag.
+        ///
+        ///   -or-
+        ///
+        ///   The length encoding is not valid under the current encoding rules.
+        ///
+        ///   -or-
+        ///
+        ///   The contents are not valid under the current encoding rules.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
+        ///   <see cref="TagClass.Universal"/>, but
+        ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
+        ///   the method.
+        /// </exception>
+        public string ReadObjectIdentifier(Asn1Tag? expectedTag = null)
+        {
+            string oidValue = AsnDecoder.ReadObjectIdentifier(_data, RuleSet, out int consumed, expectedTag);
 
             _data = _data.Slice(consumed);
             return oidValue;

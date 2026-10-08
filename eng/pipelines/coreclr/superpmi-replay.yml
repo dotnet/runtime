@@ -3,7 +3,10 @@ trigger: none
 pr:
   branches:
     include:
-    - main
+    - '*'
+    exclude:
+    - release/*
+    - internal/release/*
   paths:
     include:
     - src/coreclr/jit/lsra*.*
@@ -18,6 +21,7 @@ schedules:
 
 variables:
   - template: /eng/pipelines/common/variables.yml
+  - template: /eng/pipelines/helix-platforms.yml
 
 extends:
   template:  /eng/pipelines/coreclr/templates/jit-replay-pipeline.yml

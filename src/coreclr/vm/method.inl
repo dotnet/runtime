@@ -133,6 +133,31 @@ inline bool MethodDesc::IsILStub()
     return ((mcDynamic == GetClassification()) && dac_cast<PTR_DynamicMethodDesc>(this)->IsILStub());
 }
 
+inline bool MethodDesc::IsInteropStub()
+{
+    WRAPPER_NO_CONTRACT;
+
+    if (IsPInvoke() || IsCLRToCOMCall())
+        return true;
+
+    if (!IsILStub())
+        return false;
+
+    switch (AsDynamicMethodDesc()->GetILStubType())
+    {
+        case DynamicMethodDesc::StubPInvoke:
+        case DynamicMethodDesc::StubPInvokeDelegate:
+        case DynamicMethodDesc::StubPInvokeCalli:
+        case DynamicMethodDesc::StubPInvokeVarArg:
+        case DynamicMethodDesc::StubReversePInvoke:
+        case DynamicMethodDesc::StubCOMToCLRInterop:
+        case DynamicMethodDesc::StubStructMarshalInterop:
+            return true;
+        default:
+            return false;
+    }
+}
+
 // This method is intended to identify methods that aren't shown in diagnostic introspection (stacktraces,
 // code viewing, stepping, etc). Partly this is a user experience consideration to preserve the
 // abstraction users would expect based on source code and assembly contents. Partly it is also a technical
@@ -152,7 +177,30 @@ inline bool MethodDesc::IsDiagnosticsHidden()
     //   tolerate if the runtime-implemented frame is missing because they can still see the managed target method.
 
     WRAPPER_NO_CONTRACT;
-    return IsILStub() || IsAsyncThunkMethod() || IsWrapperStub();
+    if (IsILStub())
+    {
+        return true;
+    }
+
+    if (IsAsyncThunkMethod())
+    {
+        if (IsReturnDroppingThunk())
+        {
+            return true;
+        }
+
+        if (!SupportsAsyncVersionCodegen())
+        {
+            return true;
+        }
+    }
+
+    if (IsWrapperStub())
+    {
+        return true;
+    }
+
+    return false;
 }
 
 inline BOOL MethodDesc::IsQCall()
@@ -167,15 +215,8 @@ inline BOOL MethodDesc::IsQCall()
 inline CLRToCOMCallInfo *CLRToCOMCallInfo::FromMethodDesc(MethodDesc *pMD)
 {
     LIMITED_METHOD_CONTRACT;
-    if (pMD->IsCLRToCOMCall())
-    {
-        return ((CLRToCOMCallMethodDesc *)pMD)->m_pCLRToCOMCallInfo;
-    }
-    else
-    {
-        _ASSERTE(pMD->IsEEImpl());
-        return ((DelegateEEClass *)pMD->GetClass())->m_pCLRToCOMCallInfo;
-    }
+    _ASSERTE(pMD->IsCLRToCOMCall());
+    return ((CLRToCOMCallMethodDesc *)pMD)->m_pCLRToCOMCallInfo;
 }
 
 #endif //FEATURE_COMINTEROP

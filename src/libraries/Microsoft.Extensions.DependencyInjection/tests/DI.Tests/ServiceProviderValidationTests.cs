@@ -292,6 +292,35 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             Assert.IsType<Baz2>(actual.Last());
         }
 
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void BuildServiceProvider_ValidateOnBuild_DoesNotThrow_WhenKeyedSingletonInstanceAndScopedShareServiceType(bool registerScopedFirst)
+        {
+            // Arrange
+            var serviceCollection = new ServiceCollection();
+            if (registerScopedFirst)
+            {
+                serviceCollection.AddScoped<IKeyedScopedCollisionService, KeyedScopedCollisionScopedService>();
+                serviceCollection.AddKeyedSingleton<IKeyedScopedCollisionService>("Key", new KeyedScopedCollisionSingletonService());
+            }
+            else
+            {
+                serviceCollection.AddKeyedSingleton<IKeyedScopedCollisionService>("Key", new KeyedScopedCollisionSingletonService());
+                serviceCollection.AddScoped<IKeyedScopedCollisionService, KeyedScopedCollisionScopedService>();
+            }
+
+            serviceCollection.AddSingleton<KeyedScopedCollisionOtherSingleton>();
+
+            // Act + Assert
+            using var serviceProvider = serviceCollection.BuildServiceProvider(new ServiceProviderOptions
+            {
+                ValidateScopes = true,
+                ValidateOnBuild = true
+            });
+            Assert.NotNull(serviceProvider);
+        }
+
         [Fact]
         public void GetService_DoesNotThrow_WhenScopeFactoryIsInjectedIntoSingleton()
         {
@@ -583,6 +612,28 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         private class Boo : IBoo
         {
             public Boo(IServiceScopeFactory scopeFactory)
+            {
+            }
+        }
+
+        private interface IKeyedScopedCollisionService
+        {
+        }
+
+        private class KeyedScopedCollisionSingletonService : IKeyedScopedCollisionService
+        {
+        }
+
+        private class KeyedScopedCollisionScopedService : IKeyedScopedCollisionService
+        {
+            public KeyedScopedCollisionScopedService([FromKeyedServices("Key")] IKeyedScopedCollisionService keyedService)
+            {
+            }
+        }
+
+        private class KeyedScopedCollisionOtherSingleton
+        {
+            public KeyedScopedCollisionOtherSingleton([FromKeyedServices("Key")] IKeyedScopedCollisionService keyedService)
             {
             }
         }

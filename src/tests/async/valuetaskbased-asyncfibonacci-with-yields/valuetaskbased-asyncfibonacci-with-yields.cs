@@ -11,11 +11,11 @@ public class TaskBasedAsyncFibonacciWithYields
     const int iterations = 3;
     const bool doYields = true;
 
-    public static int Main()
+    public static async Task<int> Main()
     {
         long allocated = GC.GetTotalAllocatedBytes(precise: true);
 
-        AsyncEntry().GetAwaiter().GetResult();
+        await AsyncEntry();
 
         allocated = GC.GetTotalAllocatedBytes(precise: true) - allocated;
         System.Console.WriteLine("allocated: " + allocated);
@@ -29,7 +29,7 @@ public class TaskBasedAsyncFibonacciWithYields
         for (int i = 0; i < iterations; i++)
         {
             var sw = Stopwatch.StartNew();
-            int result = await Fib(25);
+            int result = await Fib(TestLibrary.Utilities.IsCoreClrInterpreter ? 5 : 25);
             sw.Stop();
 
             Console.WriteLine($"{sw.ElapsedMilliseconds} ms result={result}");

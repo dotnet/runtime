@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- StackOverflow: drives the crash-kind StackOverflow branch via
+       InProcCrashReportSetCrashKind + the BeginStackOverflowTrace /
+       AddStackOverflowTraceFrame / EndStackOverflowTrace APIs. Exercises the
+       dedicated stack-overflow thread emission (compressed trace with a repeated
+       sequence) instead of normal thread enumeration. -->
+  <PropertyGroup>
+    <AssemblyName>Android.Device_Emulator.InProcCrashReport.StackOverflow.Test</AssemblyName>
+    <MainLibraryFileName>Android.Device_Emulator.InProcCrashReport.StackOverflow.Test.dll</MainLibraryFileName>
+    <DefineConstants>$(DefineConstants);INPROC_SCENARIO_STACKOVERFLOW</DefineConstants>
+  </PropertyGroup>
+  <Import Project="../Shared/InProcCrashReport.Common.props" />
+</Project>

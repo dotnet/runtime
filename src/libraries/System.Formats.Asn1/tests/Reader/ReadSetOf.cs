@@ -6,8 +6,35 @@ using Xunit;
 
 namespace System.Formats.Asn1.Tests.Reader
 {
-    public sealed class ReadSetOf
+    public sealed class ReadSetOfAsnReaderTests : ReadSetOfBase
     {
+        internal override AsnReaderWrapper CreateWrapper(
+            ReadOnlyMemory<byte> data,
+            AsnEncodingRules ruleSet,
+            AsnReaderOptions options = default)
+        {
+            return AsnReaderWrapper.CreateClassReader(data, ruleSet, options);
+        }
+    }
+
+    public sealed class ReadSetOfValueAsnReaderTests : ReadSetOfBase
+    {
+        internal override AsnReaderWrapper CreateWrapper(
+            ReadOnlyMemory<byte> data,
+            AsnEncodingRules ruleSet,
+            AsnReaderOptions options = default)
+        {
+            return AsnReaderWrapper.CreateValueReader(data, ruleSet, options);
+        }
+    }
+
+    public abstract class ReadSetOfBase
+    {
+        internal abstract AsnReaderWrapper CreateWrapper(
+            ReadOnlyMemory<byte> data,
+            AsnEncodingRules ruleSet,
+            AsnReaderOptions options = default);
+
         [Theory]
         [InlineData(AsnEncodingRules.BER, "3100", false, -1)]
         [InlineData(AsnEncodingRules.BER, "31800000", false, -1)]
@@ -20,7 +47,7 @@ namespace System.Formats.Asn1.Tests.Reader
         [InlineData(AsnEncodingRules.CER, "3180" + "010100" + "0000" + "0500", true, 1)]
         [InlineData(AsnEncodingRules.CER, "3180" + "010100" + "0101FF" + "0500" + "0000", false, 1)]
         [InlineData(AsnEncodingRules.DER, "3105" + "0101FF" + "0500", false, 1)]
-        public static void ReadSetOf_Success(
+        public void ReadSetOf_Success(
             AsnEncodingRules ruleSet,
             string inputHex,
             bool expectDataRemaining,
@@ -28,8 +55,8 @@ namespace System.Formats.Asn1.Tests.Reader
         {
             byte[] inputData = inputHex.HexToByteArray();
 
-            AsnReader reader = new AsnReader(inputData, ruleSet);
-            AsnReader sequence = reader.ReadSetOf();
+            AsnReaderWrapper reader = CreateWrapper(inputData, ruleSet);
+            AsnReaderWrapper sequence = reader.ReadSetOf();
 
             if (expectDataRemaining)
             {
@@ -82,16 +109,16 @@ namespace System.Formats.Asn1.Tests.Reader
         [InlineData("Wrong Tag - Definite", AsnEncodingRules.DER, "3000")]
         [InlineData("Wrong Tag - Indefinite", AsnEncodingRules.BER, "3080" + "0000")]
         [InlineData("Wrong Tag - Indefinite", AsnEncodingRules.CER, "3080" + "0000")]
-        public static void ReadSetOf_Throws(
+        public void ReadSetOf_Throws(
             string description,
             AsnEncodingRules ruleSet,
             string inputHex)
         {
             _ = description;
             byte[] inputData = inputHex.HexToByteArray();
-            AsnReader reader = new AsnReader(inputData, ruleSet);
+            AsnReaderWrapper reader = CreateWrapper(inputData, ruleSet);
 
-            Assert.Throws<AsnContentException>(() => reader.ReadSetOf());
+            Assert.Throws<AsnContentException>(ref reader, static (ref reader) => reader.ReadSetOf());
         }
 
         [Theory]
@@ -113,7 +140,7 @@ namespace System.Formats.Asn1.Tests.Reader
         [InlineData(AsnEncodingRules.DER, "3105" + "010100" + "0500", true, 5)]
         [InlineData(AsnEncodingRules.DER, "3108" + "010100" + "0101FF" + "0500", true, 5)]
         [InlineData(AsnEncodingRules.DER, "3108" + "010100" + "010100" + "0500", true, 5)]
-        public static void ReadSetOf_DataSorting(
+        public void ReadSetOf_DataSorting(
             AsnEncodingRules ruleSet,
             string inputHex,
             bool expectSuccess,
@@ -121,10 +148,10 @@ namespace System.Formats.Asn1.Tests.Reader
         {
             byte[] inputData = inputHex.HexToByteArray();
 
-            AsnReader reader = new AsnReader(inputData, ruleSet);
-            AsnReader setOf;
+            AsnReaderWrapper reader = CreateWrapper(inputData, ruleSet);
+            AsnReaderWrapper setOf;
 
-            AsnReader laxReader = new AsnReader(
+            AsnReaderWrapper laxReader = CreateWrapper(
                 inputData,
                 ruleSet,
                 new AsnReaderOptions { SkipSetSortOrderVerification = true });
@@ -135,9 +162,9 @@ namespace System.Formats.Asn1.Tests.Reader
             }
             else
             {
-                AsnReader alsoReader = new AsnReader(inputData, ruleSet);
-                Assert.Throws<AsnContentException>(() => alsoReader.ReadSetOf());
-                Assert.Throws<AsnContentException>(() => laxReader.ReadSetOf(false));
+                AsnReaderWrapper alsoReader = CreateWrapper(inputData, ruleSet);
+                Assert.Throws<AsnContentException>(ref alsoReader, static (ref reader) => reader.ReadSetOf());
+                Assert.Throws<AsnContentException>(ref laxReader, static (ref reader) => reader.ReadSetOf(false));
 
                 setOf = reader.ReadSetOf(skipSortOrderValidation: true);
             }
@@ -173,23 +200,22 @@ namespace System.Formats.Asn1.Tests.Reader
         [Theory]
         [InlineData(AsnEncodingRules.BER)]
         [InlineData(AsnEncodingRules.DER)]
-        public static void TagMustBeCorrect_Universal_Definite(AsnEncodingRules ruleSet)
+        public void TagMustBeCorrect_Universal_Definite(AsnEncodingRules ruleSet)
         {
             byte[] inputData = "31020500".HexToByteArray();
-            AsnReader reader = new AsnReader(inputData, ruleSet);
+            AsnReaderWrapper reader = CreateWrapper(inputData, ruleSet);
 
-            AssertExtensions.Throws<ArgumentException>(
-                "expectedTag",
-                () => reader.ReadSetOf(expectedTag: Asn1Tag.Null));
+            Assert.Throws<ArgumentException>(
+                ref reader, "expectedTag", static (ref reader) => reader.ReadSetOf(expectedTag: Asn1Tag.Null));
 
             Assert.True(reader.HasData, "HasData after bad universal tag");
 
             Assert.Throws<AsnContentException>(
-                () => reader.ReadSetOf(expectedTag: new Asn1Tag(TagClass.ContextSpecific, 0)));
+                ref reader, static (ref reader) => reader.ReadSetOf(expectedTag: new Asn1Tag(TagClass.ContextSpecific, 0)));
 
             Assert.True(reader.HasData, "HasData after wrong tag");
 
-            AsnReader seq = reader.ReadSetOf();
+            AsnReaderWrapper seq = reader.ReadSetOf();
             Assert.Equal("0500", seq.ReadEncodedValue().ByteArrayToHex());
 
             Assert.False(reader.HasData, "HasData after read");
@@ -198,23 +224,22 @@ namespace System.Formats.Asn1.Tests.Reader
         [Theory]
         [InlineData(AsnEncodingRules.BER)]
         [InlineData(AsnEncodingRules.CER)]
-        public static void TagMustBeCorrect_Universal_Indefinite(AsnEncodingRules ruleSet)
+        public void TagMustBeCorrect_Universal_Indefinite(AsnEncodingRules ruleSet)
         {
             byte[] inputData = "318005000000".HexToByteArray();
-            AsnReader reader = new AsnReader(inputData, ruleSet);
+            AsnReaderWrapper reader = CreateWrapper(inputData, ruleSet);
 
-            AssertExtensions.Throws<ArgumentException>(
-                "expectedTag",
-                () => reader.ReadSetOf(expectedTag: Asn1Tag.Null));
+            Assert.Throws<ArgumentException>(
+                ref reader, "expectedTag", static (ref reader) => reader.ReadSetOf(expectedTag: Asn1Tag.Null));
 
             Assert.True(reader.HasData, "HasData after bad universal tag");
 
             Assert.Throws<AsnContentException>(
-                () => reader.ReadSetOf(expectedTag: new Asn1Tag(TagClass.ContextSpecific, 0)));
+                ref reader, static (ref reader) => reader.ReadSetOf(expectedTag: new Asn1Tag(TagClass.ContextSpecific, 0)));
 
             Assert.True(reader.HasData, "HasData after wrong tag");
 
-            AsnReader seq = reader.ReadSetOf();
+            AsnReaderWrapper seq = reader.ReadSetOf();
             Assert.Equal("0500", seq.ReadEncodedValue().ByteArrayToHex());
 
             Assert.False(reader.HasData, "HasData after read");
@@ -223,32 +248,31 @@ namespace System.Formats.Asn1.Tests.Reader
         [Theory]
         [InlineData(AsnEncodingRules.BER)]
         [InlineData(AsnEncodingRules.DER)]
-        public static void TagMustBeCorrect_Custom_Definite(AsnEncodingRules ruleSet)
+        public void TagMustBeCorrect_Custom_Definite(AsnEncodingRules ruleSet)
         {
             byte[] inputData = "A5020500".HexToByteArray();
-            AsnReader reader = new AsnReader(inputData, ruleSet);
+            AsnReaderWrapper reader = CreateWrapper(inputData, ruleSet);
 
-            AssertExtensions.Throws<ArgumentException>(
-                "expectedTag",
-                () => reader.ReadSetOf(expectedTag: Asn1Tag.Null));
+            Assert.Throws<ArgumentException>(
+                ref reader, "expectedTag", static (ref reader) => reader.ReadSetOf(expectedTag: Asn1Tag.Null));
 
             Assert.True(reader.HasData, "HasData after bad universal tag");
 
-            Assert.Throws<AsnContentException>(() => reader.ReadSetOf());
+            Assert.Throws<AsnContentException>(ref reader, static (ref reader) => reader.ReadSetOf());
 
             Assert.True(reader.HasData, "HasData after default tag");
 
             Assert.Throws<AsnContentException>(
-                () => reader.ReadSetOf(expectedTag: new Asn1Tag(TagClass.Application, 5)));
+                ref reader, static (ref reader) => reader.ReadSetOf(expectedTag: new Asn1Tag(TagClass.Application, 5)));
 
             Assert.True(reader.HasData, "HasData after wrong custom class");
 
             Assert.Throws<AsnContentException>(
-                () => reader.ReadSetOf(expectedTag: new Asn1Tag(TagClass.ContextSpecific, 7)));
+                ref reader, static (ref reader) => reader.ReadSetOf(expectedTag: new Asn1Tag(TagClass.ContextSpecific, 7)));
 
             Assert.True(reader.HasData, "HasData after wrong custom tag value");
 
-            AsnReader seq = reader.ReadSetOf(expectedTag: new Asn1Tag(TagClass.ContextSpecific, 5));
+            AsnReaderWrapper seq = reader.ReadSetOf(expectedTag: new Asn1Tag(TagClass.ContextSpecific, 5));
             Assert.Equal("0500", seq.ReadEncodedValue().ByteArrayToHex());
 
             Assert.False(reader.HasData, "HasData after reading value");
@@ -257,32 +281,31 @@ namespace System.Formats.Asn1.Tests.Reader
         [Theory]
         [InlineData(AsnEncodingRules.BER)]
         [InlineData(AsnEncodingRules.CER)]
-        public static void TagMustBeCorrect_Custom_Indefinite(AsnEncodingRules ruleSet)
+        public void TagMustBeCorrect_Custom_Indefinite(AsnEncodingRules ruleSet)
         {
             byte[] inputData = "A58005000000".HexToByteArray();
-            AsnReader reader = new AsnReader(inputData, ruleSet);
+            AsnReaderWrapper reader = CreateWrapper(inputData, ruleSet);
 
-            AssertExtensions.Throws<ArgumentException>(
-                "expectedTag",
-                () => reader.ReadSetOf(expectedTag: Asn1Tag.Null));
+            Assert.Throws<ArgumentException>(
+                ref reader, "expectedTag", static (ref reader) => reader.ReadSetOf(expectedTag: Asn1Tag.Null));
 
             Assert.True(reader.HasData, "HasData after bad universal tag");
 
-            Assert.Throws<AsnContentException>(() => reader.ReadSetOf());
+            Assert.Throws<AsnContentException>(ref reader, static (ref reader) => reader.ReadSetOf());
 
             Assert.True(reader.HasData, "HasData after default tag");
 
             Assert.Throws<AsnContentException>(
-                () => reader.ReadSetOf(expectedTag: new Asn1Tag(TagClass.Application, 5)));
+                ref reader, static (ref reader) => reader.ReadSetOf(expectedTag: new Asn1Tag(TagClass.Application, 5)));
 
             Assert.True(reader.HasData, "HasData after wrong custom class");
 
             Assert.Throws<AsnContentException>(
-                () => reader.ReadSetOf(expectedTag: new Asn1Tag(TagClass.ContextSpecific, 7)));
+                ref reader, static (ref reader) => reader.ReadSetOf(expectedTag: new Asn1Tag(TagClass.ContextSpecific, 7)));
 
             Assert.True(reader.HasData, "HasData after wrong custom tag value");
 
-            AsnReader seq = reader.ReadSetOf(expectedTag: new Asn1Tag(TagClass.ContextSpecific, 5));
+            AsnReaderWrapper seq = reader.ReadSetOf(expectedTag: new Asn1Tag(TagClass.ContextSpecific, 5));
             Assert.Equal("0500", seq.ReadEncodedValue().ByteArrayToHex());
 
             Assert.False(reader.HasData, "HasData after reading value");
@@ -297,21 +320,21 @@ namespace System.Formats.Asn1.Tests.Reader
         [InlineData(AsnEncodingRules.BER, "A1800101000000", TagClass.ContextSpecific, 1)]
         [InlineData(AsnEncodingRules.CER, "6C800101000000", TagClass.Application, 12)]
         [InlineData(AsnEncodingRules.DER, "FF8A46030101FF", TagClass.Private, 1350)]
-        public static void ExpectedTag_IgnoresConstructed(
+        public void ExpectedTag_IgnoresConstructed(
             AsnEncodingRules ruleSet,
             string inputHex,
             TagClass tagClass,
             int tagValue)
         {
             byte[] inputData = inputHex.HexToByteArray();
-            AsnReader reader = new AsnReader(inputData, ruleSet);
+            AsnReaderWrapper reader = CreateWrapper(inputData, ruleSet);
 
-            AsnReader val1 = reader.ReadSetOf(expectedTag: new Asn1Tag(tagClass, tagValue, true));
+            AsnReaderWrapper val1 = reader.ReadSetOf(expectedTag: new Asn1Tag(tagClass, tagValue, true));
             Assert.False(reader.HasData);
 
-            reader = new AsnReader(inputData, ruleSet);
+            reader = CreateWrapper(inputData, ruleSet);
 
-            AsnReader val2 = reader.ReadSetOf(expectedTag: new Asn1Tag(tagClass, tagValue, false));
+            AsnReaderWrapper val2 = reader.ReadSetOf(expectedTag: new Asn1Tag(tagClass, tagValue, false));
             Assert.False(reader.HasData);
 
             Assert.Equal(val1.ReadEncodedValue().ByteArrayToHex(), val2.ReadEncodedValue().ByteArrayToHex());
@@ -321,7 +344,7 @@ namespace System.Formats.Asn1.Tests.Reader
         [InlineData(AsnEncodingRules.BER)]
         [InlineData(AsnEncodingRules.CER)]
         [InlineData(AsnEncodingRules.DER)]
-        public static void ReadSetOf_PreservesOptions(AsnEncodingRules ruleSet)
+        public void ReadSetOf_PreservesOptions(AsnEncodingRules ruleSet)
         {
             // [5] (UtcTime) 500102123456Z
             // UtcTime 120102235959Z
@@ -350,25 +373,25 @@ namespace System.Formats.Asn1.Tests.Reader
                 UtcTimeTwoDigitYearMax = 2011,
             };
 
-            AsnReader initial = new AsnReader(inputData, ruleSet, options);
+            AsnReaderWrapper initial = CreateWrapper(inputData, ruleSet, options);
 
             if (ruleSet != AsnEncodingRules.BER)
             {
-                Assert.Throws<AsnContentException>(() => initial.ReadSetOf(false));
+                Assert.Throws<AsnContentException>(ref initial, static (ref reader) => reader.ReadSetOf(false));
             }
 
-            AsnReader outer = initial.ReadSetOf();
+            AsnReaderWrapper outer = initial.ReadSetOf();
             Assert.False(initial.HasData);
 
             Asn1Tag innerTag = new Asn1Tag(TagClass.ContextSpecific, 2);
 
             if (ruleSet != AsnEncodingRules.BER)
             {
-                Assert.Throws<AsnContentException>(() => outer.ReadSetOf(false, innerTag));
+                Assert.Throws<AsnContentException>(ref outer, (ref reader) => reader.ReadSetOf(false, innerTag));
             }
 
             // This confirms that we've passed SkipSetOrderVerification this far.
-            AsnReader inner = outer.ReadSetOf(innerTag);
+            AsnReaderWrapper inner = outer.ReadSetOf(innerTag);
             Assert.True(outer.HasData);
 
             Assert.Equal(
@@ -390,7 +413,10 @@ namespace System.Formats.Asn1.Tests.Reader
             outer.ThrowIfNotEmpty();
             initial.ThrowIfNotEmpty();
         }
+    }
 
+    public sealed class ReadSetOfDecoderTests
+    {
         [Theory]
         [InlineData(AsnEncodingRules.BER)]
         [InlineData(AsnEncodingRules.CER)]

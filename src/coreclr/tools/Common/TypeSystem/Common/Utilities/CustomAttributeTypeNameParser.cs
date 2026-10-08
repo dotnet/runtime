@@ -31,12 +31,23 @@ namespace Internal.TypeSystem
                 _context = module.Context,
                 _module = module,
                 _throwIfNotFound = throwIfNotFound,
+                _fallbackToCoreLib = true,
                 _canonGenericResolver = canonGenericResolver
             }.Resolve(parsed);
         }
 
+        /// <summary>
+        /// Determines whether <paramref name="name"/> is a valid assembly-qualified type name,
+        /// including assembly qualification for constructed generic arguments.
+        /// </summary>
+        public static bool IsAssemblyQualifiedTypeName(string name)
+        {
+            return TypeName.TryParse(name.AsSpan(), out TypeName parsed, s_typeNameParseOptions)
+                && IsFullyQualified(parsed);
+        }
+
         public static TypeDesc GetTypeByCustomAttributeTypeNameForDataFlow(string name, ModuleDesc callingModule,
-            TypeSystemContext context, List<ModuleDesc> referencedModules, bool needsAssemblyName, out bool failedBecauseNotFullyQualified)
+            TypeSystemContext context, List<ModuleDesc> referencedModules, bool needsAssemblyName, bool fallbackToCoreLib, out bool failedBecauseNotFullyQualified)
         {
             failedBecauseNotFullyQualified = false;
             if (!TypeName.TryParse(name.AsSpan(), out TypeName parsed, s_typeNameParseOptions))
@@ -48,42 +59,48 @@ namespace Internal.TypeSystem
                 return null;
             }
 
+            // Assembly.GetType (signaled by !fallbackToCoreLib) rejects top-level assembly-qualified
+            // names at runtime (Argument_AssemblyGetTypeCannotSpecifyAssembly).
+            if (!fallbackToCoreLib && parsed.AssemblyName is not null)
+                return null;
+
             TypeNameResolver resolver = new()
             {
                 _context = context,
                 _module = callingModule,
-                _referencedModules = referencedModules
+                _referencedModules = referencedModules,
+                _fallbackToCoreLib = fallbackToCoreLib,
             };
 
             TypeDesc type = resolver.Resolve(parsed);
 
             return type;
+        }
 
-            static bool IsFullyQualified(TypeName typeName)
+        private static bool IsFullyQualified(TypeName typeName)
+        {
+            if (typeName.AssemblyName is null)
             {
-                if (typeName.AssemblyName is null)
-                {
-                    return false;
-                }
+                return false;
+            }
 
-                if (typeName.IsArray || typeName.IsPointer || typeName.IsByRef)
-                {
-                    return IsFullyQualified(typeName.GetElementType());
-                }
+            if (typeName.IsArray || typeName.IsPointer || typeName.IsByRef)
+            {
+                return IsFullyQualified(typeName.GetElementType());
+            }
 
-                if (typeName.IsConstructedGenericType)
+            if (typeName.IsConstructedGenericType)
+            {
+                foreach (TypeName typeArgument in typeName.GetGenericArguments())
                 {
-                    foreach (var typeArgument in typeName.GetGenericArguments())
+                    if (!IsFullyQualified(typeArgument))
                     {
-                        if (!IsFullyQualified(typeArgument))
-                        {
-                            return false;
-                        }
+                        return false;
                     }
                 }
-
-                return true;
             }
+
+            return true;
         }
 
         private struct TypeNameResolver
@@ -91,6 +108,7 @@ namespace Internal.TypeSystem
             internal TypeSystemContext _context;
             internal ModuleDesc _module;
             internal bool _throwIfNotFound;
+            internal bool _fallbackToCoreLib;
             internal Func<ModuleDesc, string, TypeDesc> _canonGenericResolver;
 
             internal List<ModuleDesc> _referencedModules;
@@ -153,7 +171,7 @@ namespace Internal.TypeSystem
                     }
                 }
 
-                if (topLevelTypeName.AssemblyName == null)
+                if (_fallbackToCoreLib && topLevelTypeName.AssemblyName == null)
                 {
                     // If it didn't resolve and wasn't assembly-qualified, we also try core library
                     if (module != _context.SystemModule)
@@ -179,7 +197,7 @@ namespace Internal.TypeSystem
                     TypeDesc type = GetSimpleTypeFromModule(typeName.DeclaringType, module);
                     if (type == null)
                         return null;
-                    return ((MetadataType)type).GetNestedType(TypeName.Unescape(typeName.Name));
+                    return ((MetadataType)type).GetNestedType(System.Text.Encoding.UTF8.GetBytes(TypeName.Unescape(typeName.Name)));
                 }
 
                 if (_canonGenericResolver != null)

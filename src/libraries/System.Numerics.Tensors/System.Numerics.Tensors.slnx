@@ -1,5 +1,6 @@
 <Solution>
   <Folder Name="/gen/">
+    <Project Path="../../../eng/analyzers/PlatformDocAnalyzer/PlatformDocAnalyzer.csproj" />
     <Project Path="../System.Runtime.InteropServices/gen/DownlevelLibraryImportGenerator/DownlevelLibraryImportGenerator.csproj" />
     <Project Path="../System.Runtime.InteropServices/gen/Microsoft.Interop.SourceGeneration/Microsoft.Interop.SourceGeneration.csproj" />
   </Folder>
@@ -12,7 +13,6 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="../Common/tests/TestUtilities/TestUtilities.csproj" />
-    <Project Path="tests/Net8Tests/System.Numerics.Tensors.Net8.Tests.csproj" />
     <Project Path="tests/System.Numerics.Tensors.Tests.csproj" />
   </Folder>
   <Folder Name="/tools/" />

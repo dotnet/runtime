@@ -30,7 +30,7 @@ namespace System.Net
             }
         }
 
-        internal static IPAddress? Parse<TChar>(ReadOnlySpan<TChar> ipSpan, bool tryParse)
+        internal static unsafe IPAddress? Parse<TChar>(ReadOnlySpan<TChar> ipSpan, bool tryParse)
             where TChar : unmanaged, IBinaryInteger<TChar>
         {
             Debug.Assert(typeof(TChar) == typeof(byte) || typeof(TChar) == typeof(char));

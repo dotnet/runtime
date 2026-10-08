@@ -32,7 +32,7 @@ parser = argparse.ArgumentParser(description="description")
 
 parser.add_argument("-arch", required=True, help="Architecture")
 parser.add_argument("-platform", required=True, help="OS platform")
-parser.add_argument("-type", required=True, help="Type of diff (asmdiffs, tpdiff, all)")
+parser.add_argument("-type", required=True, help="Type of diff (asmdiffs, tpdiff, metricdiff, all)")
 parser.add_argument("-source_directory", required=True, help="Path to the root directory of the dotnet/runtime source tree")
 parser.add_argument("-checked_directory", help="Path to the directory containing built checked binaries (e.g., <source_directory>/artifacts/bin/coreclr/windows.x64.Checked)")
 parser.add_argument("-release_directory", help="Path to the directory containing built release binaries (e.g., <source_directory>/artifacts/bin/coreclr/windows.x64.Release)")
@@ -67,7 +67,7 @@ def setup_args(args):
 
     coreclr_args.verify(args,
                         "type",
-                        lambda type: type in ["asmdiffs", "tpdiff", "all"],
+                        lambda type: type in ["asmdiffs", "tpdiff", "metricdiff", "all"],
                         "Invalid type \"{}\"".format)
 
     coreclr_args.verify(args,
@@ -87,18 +87,24 @@ def setup_args(args):
 
     do_asmdiffs = False
     do_tpdiff = False
+    do_metricdiff = False
     if coreclr_args.type == 'asmdiffs':
         do_asmdiffs = True
     if coreclr_args.type == 'tpdiff':
         do_tpdiff = True
+    if coreclr_args.type == 'metricdiff':
+        do_metricdiff = True
     if coreclr_args.type == 'all':
         do_asmdiffs = True
         do_tpdiff = True
+        do_metricdiff = True
 
     use_checked = False
     use_release = False
     if do_asmdiffs:
         use_checked = True
+    if do_metricdiff:
+        use_release = True
     if do_tpdiff:
         use_release = True
 
@@ -243,32 +249,46 @@ def build_partitions(partitions_dir, do_asmdiffs, bin_path, host_bitness):
 
     elem = ET.fromstring(contents)
 
+    # Each tuple is (target_os, target_arch, blob_arch) where blob_arch is the architecture
+    # directory used in blob storage. For wasm collections the MCH files are uploaded under
+    # the host architecture directory (e.g. <jit_ee_version>/browser/x64/) because the wasm
+    # mch_arch override in superpmi.py replaces mch_arch with the host arch. Recording the
+    # blob_arch separately lets us discover those collections while still recording the real
+    # target_arch ("wasm") in the per-partition JSON so the diffs script picks the wasm jit
+    # and passes --altjit.
     if not target_windows and not do_asmdiffs:
-        targets = [("linux", "x64")]
+        targets = [("linux", "x64", "x64")]
     elif host_bitness == 64:
-        targets = [("windows", "x64"), ("windows", "arm64"), ("linux", "x64"), ("linux", "arm64"), ("osx", "arm64")]
+        targets = [
+            ("windows", "x64", "x64"),
+            ("windows", "arm64", "arm64"),
+            ("linux", "x64", "x64"),
+            ("linux", "arm64", "arm64"),
+            ("osx", "arm64", "arm64"),
+            ("browser", "wasm", "x64"),
+        ]
     else:
-        targets = [("windows", "x86"), ("linux", "arm")]
+        targets = [("windows", "x86", "x86"), ("linux", "arm", "arm")]
 
-    targets = [(target_os, arch, []) for (target_os, arch) in targets]
+    targets = [(target_os, target_arch, blob_arch, []) for (target_os, target_arch, blob_arch) in targets]
 
     for blob in elem.findall(".//Blob"):
         name = blob.find("Name").text
-        for (target_os, arch, collections) in targets:
-            name_pref = prefix + "/" + target_os + "/" + arch + "/"
+        for (target_os, target_arch, blob_arch, collections) in targets:
+            name_pref = prefix + "/" + target_os + "/" + blob_arch + "/"
             if name.startswith(name_pref) and name.removesuffix(".zip").endswith(".mch"):
                 url = blob.find("Url").text
                 col_name = name[len(name_pref):].removesuffix(".zip")
-                collections.append({ "target_os": target_os, "target_arch": arch, "col_name": col_name, "col_url": url })
+                collections.append({ "target_os": target_os, "target_arch": target_arch, "col_name": col_name, "col_url": url })
 
     if not os.path.exists(partitions_dir):
         os.makedirs(partitions_dir)
 
-    for (target_os, arch, collections) in targets:
+    for (target_os, target_arch, _blob_arch, collections) in targets:
         partition_index = 0
         for col in sorted(collections, key=lambda col: col["col_name"]):
-            json_path = os.path.join(partitions_dir, "{}-{}-{}.json".format(target_os, arch, partition_index))
-            print("Partition {}-{}-{}: {}".format(target_os, arch, partition_index, col["col_name"]))
+            json_path = os.path.join(partitions_dir, "{}-{}-{}.json".format(target_os, target_arch, partition_index))
+            print("Partition {}-{}-{}: {}".format(target_os, target_arch, partition_index, col["col_name"]))
             partition_index += 1
             with open(json_path, "w") as file:
                 file.write(json.dumps(col))
@@ -328,18 +348,24 @@ def main(main_args):
 
     do_asmdiffs = False
     do_tpdiff = False
+    do_metricdiff = False
     if coreclr_args.type == 'asmdiffs':
         do_asmdiffs = True
     if coreclr_args.type == 'tpdiff':
         do_tpdiff = True
+    if coreclr_args.type == 'metricdiff':
+        do_metricdiff = True
     if coreclr_args.type == 'all':
         do_asmdiffs = True
         do_tpdiff = True
+        do_metricdiff = True
 
     use_checked = False
     use_release = False
     if do_asmdiffs:
         use_checked = True
+    if do_metricdiff:
+        use_release = True
     if do_tpdiff:
         use_release = True
 

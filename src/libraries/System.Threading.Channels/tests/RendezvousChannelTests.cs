@@ -147,7 +147,7 @@ namespace System.Threading.Channels.Tests
             Assert.Equal(0, item);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(BoundedChannelFullMode.DropWrite)]
         [InlineData(BoundedChannelFullMode.DropOldest)]
         [InlineData(BoundedChannelFullMode.DropNewest)]
@@ -186,7 +186,7 @@ namespace System.Threading.Channels.Tests
             Assert.True(dropDelegateCalled);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(BoundedChannelFullMode.DropWrite)]
         [InlineData(BoundedChannelFullMode.DropOldest)]
         [InlineData(BoundedChannelFullMode.DropNewest)]
@@ -266,7 +266,7 @@ namespace System.Threading.Channels.Tests
             Assert.True(await write3);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [MemberData(nameof(ThreeBools))]
         public void AllowSynchronousContinuations_Reading_ContinuationsInvokedAccordingToSetting(bool allowSynchronousContinuations, bool cancelable, bool waitToReadAsync)
         {
@@ -296,9 +296,9 @@ namespace System.Threading.Channels.Tests
         [InlineData(true)]
         public void AllowSynchronousContinuations_CompletionTask_ContinuationsInvokedAccordingToSetting(bool allowSynchronousContinuations)
         {
-            if (!allowSynchronousContinuations && !PlatformDetection.IsThreadingSupported)
+            if (!allowSynchronousContinuations && !PlatformDetection.IsMultithreadingSupported)
             {
-                throw new SkipTestException(nameof(PlatformDetection.IsThreadingSupported));
+                throw new SkipTestException(nameof(PlatformDetection.IsMultithreadingSupported));
             }
 
             var c = Channel.CreateBounded<int>(new BoundedChannelOptions(0) { AllowSynchronousContinuations = allowSynchronousContinuations });

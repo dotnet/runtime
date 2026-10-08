@@ -227,12 +227,18 @@ namespace ILCompiler
         private static string GetModuleFileName(ModuleDesc module)
         {
             string assemblyName = module.Assembly.GetName().Name;
+#if ILTRIM
+            var context = (ILTrimTypeSystemContext)module.Context;
+            if (context.ReferenceFilePaths.TryGetValue(assemblyName, out string result))
+                return result;
+#else
             var context = (CompilerTypeSystemContext)module.Context;
             if (context.ReferenceFilePaths.TryGetValue(assemblyName, out string result)
                 || context.InputFilePaths.TryGetValue(assemblyName, out result))
             {
                 return result;
             }
+#endif
             return assemblyName;
         }
 

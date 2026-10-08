@@ -2,16 +2,20 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Security.Cryptography.Tests;
 using System.Xml.Linq;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.Security.Cryptography.Rsa.Tests
 {
     [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
-    public static class RSAXml
+    public abstract class RSAXml
     {
+        protected abstract RSAProvider RSAFactory { get; }
+
         [Fact]
-        public static void TestRead1032Parameters_Public()
+        public void TestRead1032Parameters_Public()
         {
             RSAParameters expectedParameters = ImportExport.MakePublic(TestData.RSA1032Parameters);
 
@@ -33,7 +37,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         }
 
         [Fact]
-        public static void TestRead1032Parameters_Private()
+        public void TestRead1032Parameters_Private()
         {
             // Bonus trait of this XML: the root element name is wrong
             TestReadXml(
@@ -76,9 +80,11 @@ namespace System.Security.Cryptography.Rsa.Tests
                 TestData.RSA1032Parameters);
         }
 
-        [ConditionalFact(typeof(ImportExport), nameof(ImportExport.Supports16384))]
-        public static void TestRead16384Parameters_Public()
+        [ConditionalFact]
+        public void TestRead16384Parameters_Public()
         {
+            SkipTestException.ThrowUnless(RSAFactory.Supports16384);
+
             RSAParameters expectedParameters = ImportExport.MakePublic(TestData.RSA16384Params);
 
             // Bonus trait of this XML: the Modulus and Exponent parameters
@@ -157,9 +163,11 @@ zM=
                 expectedParameters);
         }
 
-        [ConditionalFact(typeof(ImportExport), nameof(ImportExport.Supports16384))]
-        public static void TestRead16384Parameters_Private()
+        [ConditionalFact]
+        public void TestRead16384Parameters_Private()
         {
+            SkipTestException.ThrowUnless(RSAFactory.Supports16384);
+
             // Bonus trait of this XML: the D parameter is not in
             // canonical order.
             TestReadXml(
@@ -383,7 +391,7 @@ zM=
         }
 
         [Fact]
-        public static void TestReadDiminishedDPParameters_Public()
+        public void TestReadDiminishedDPParameters_Public()
         {
             RSAParameters expectedParameters =
                 ImportExport.MakePublic(TestData.DiminishedDPParameters);
@@ -404,7 +412,7 @@ zM=
         }
 
         [Fact]
-        public static void TestReadDiminishedDPParameters_Private_Base64Binary()
+        public void TestReadDiminishedDPParameters_Private_Base64Binary()
         {
             // This test uses the base64Binary version of the DP value, where the 0x00
             // is written down.
@@ -446,7 +454,7 @@ zM=
 
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
-        public static void TestReadDiminishedDPParameters_Private_CryptoBinary()
+        public void TestReadDiminishedDPParameters_Private_CryptoBinary()
         {
             // This test writes the DP value as a CryptoBinary, meaning the leading
             // 0x00 is not written down.
@@ -491,7 +499,7 @@ zM=
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public static void TestWrite1024Parameters(bool includePrivateParameters)
+        public void TestWrite1024Parameters(bool includePrivateParameters)
         {
             TestWriteXml(
                 TestData.RSA1024Params,
@@ -538,7 +546,7 @@ zM=
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public static void TestWrite1032Parameters(bool includePrivateParameters)
+        public void TestWrite1032Parameters(bool includePrivateParameters)
         {
             TestWriteXml(
                 TestData.RSA1032Parameters,
@@ -585,7 +593,7 @@ zM=
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public static void TestWrite2048Parameters(bool includePrivateParameters)
+        public void TestWrite2048Parameters(bool includePrivateParameters)
         {
             TestWriteXml(
                 TestData.RSA2048Params,
@@ -634,11 +642,13 @@ zM=
                 ));
         }
 
-        [ConditionalTheory(typeof(ImportExport), nameof(ImportExport.Supports16384))]
+        [ConditionalTheory]
         [InlineData(true)]
         [InlineData(false)]
-        public static void TestWrite16384Parameters(bool includePrivateParameters)
+        public void TestWrite16384Parameters(bool includePrivateParameters)
         {
+            SkipTestException.ThrowUnless(RSAFactory.Supports16384);
+
             TestWriteXml(
                 TestData.RSA16384Params,
                 includePrivateParameters,
@@ -904,7 +914,7 @@ zM=
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public static void TestWriteDiminishedDPParameters(bool includePrivateParameters)
+        public void TestWriteDiminishedDPParameters(bool includePrivateParameters)
         {
             // This test checks for the base64Binary version of DP (leading 0x00 written),
             // instead of the CryptoBinary version (leading 0x00 removed).
@@ -935,7 +945,7 @@ zM=
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public static void TestWriteUnusualExponentParameters(bool includePrivateParameters)
+        public void TestWriteUnusualExponentParameters(bool includePrivateParameters)
         {
             // This test ensures we pay attention to the Exponent value, instead of assuming
             // AQAB (0x010001 / 65537)
@@ -982,7 +992,7 @@ zM=
         }
 
         [Fact]
-        public static void FromToXml()
+        public void FromToXml()
         {
             using (RSA rsa = RSAFactory.Create())
             {
@@ -1010,7 +1020,7 @@ zM=
         }
 
         [Fact]
-        public static void FromXml_MissingModulus()
+        public void FromXml_MissingModulus()
         {
             using (RSA rsa = RSAFactory.Create())
             {
@@ -1045,7 +1055,7 @@ zM=
         }
 
         [Fact]
-        public static void FromXml_MissingExponent()
+        public void FromXml_MissingExponent()
         {
             using (RSA rsa = RSAFactory.Create())
             {
@@ -1083,7 +1093,7 @@ zM=
         }
 
         [Fact]
-        public static void FromXml_MissingQ()
+        public void FromXml_MissingQ()
         {
             using (RSA rsa = RSAFactory.Create())
             {
@@ -1119,7 +1129,7 @@ zM=
         }
 
         [Fact]
-        public static void FromXml_MissingDP()
+        public void FromXml_MissingDP()
         {
             using (RSA rsa = RSAFactory.Create())
             {
@@ -1155,7 +1165,7 @@ zM=
         }
 
         [Fact]
-        public static void FromXml_MissingDQ()
+        public void FromXml_MissingDQ()
         {
             using (RSA rsa = RSAFactory.Create())
             {
@@ -1191,7 +1201,7 @@ zM=
         }
 
         [Fact]
-        public static void FromXml_MissingInverseQ()
+        public void FromXml_MissingInverseQ()
         {
             using (RSA rsa = RSAFactory.Create())
             {
@@ -1227,7 +1237,7 @@ zM=
         }
 
         [Fact]
-        public static void FromXml_BadBase64()
+        public void FromXml_BadBase64()
         {
             using (RSA rsa = RSAFactory.Create())
             {
@@ -1265,7 +1275,7 @@ zM=
             }
         }
 
-        private static void TestReadXml(string xmlString, in RSAParameters expectedParameters)
+        private void TestReadXml(string xmlString, in RSAParameters expectedParameters)
         {
             using (RSA rsa = RSAFactory.Create())
             {
@@ -1281,7 +1291,7 @@ zM=
         }
 
         [Fact]
-        public static void FromNullXml()
+        public void FromNullXml()
         {
             using (RSA rsa = RSAFactory.Create())
             {
@@ -1292,7 +1302,7 @@ zM=
         }
 
         [Fact]
-        public static void FromInvalidXml()
+        public void FromInvalidXml()
         {
             using (RSA rsa = RSAFactory.Create())
             {
@@ -1341,7 +1351,7 @@ zM=
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/29515", TestPlatforms.OSX)]
-        public static void FromNonsenseXml()
+        public void FromNonsenseXml()
         {
             // This is DiminishedDPParameters XML, but with a P that is way too long.
             using (RSA rsa = RSAFactory.Create())
@@ -1382,7 +1392,7 @@ zM=
 
 
 
-        private static void TestWriteXml(
+        private void TestWriteXml(
             in RSAParameters keyParameters,
             bool includePrivateParameters,
             string expectedModulus,

@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+
+using Internal.Text;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Interop;
 
@@ -62,7 +64,7 @@ namespace Internal.IL.Stubs
             }
         }
 
-        public override ReadOnlySpan<byte> Name
+        public override Utf8Span Name
         {
             get
             {

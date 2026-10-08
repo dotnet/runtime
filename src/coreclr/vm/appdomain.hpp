@@ -2,15 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*============================================================
-**
 ** Header:  AppDomain.cpp
 **
-
-**
 ** Purpose: Implements AppDomain (loader domain) architecture
-**
-**
 ===========================================================*/
+
 #ifndef _APPDOMAIN_H
 #define _APPDOMAIN_H
 
@@ -21,7 +17,7 @@
 #include "arraylist.h"
 #include "comreflectioncache.hpp"
 #include "comutilnative.h"
-#include "domainassembly.h"
+#include "assembly.hpp"
 #include "fptrstubs.h"
 #include "gcheaputilities.h"
 #include "gchandleutilities.h"
@@ -40,7 +36,7 @@ class AppDomain;
 class GlobalStringLiteralMap;
 class StringLiteralMap;
 class FrozenObjectHeapManager;
-class DomainAssembly;
+class Assembly;
 class TypeEquivalenceHashTable;
 
 #ifdef FEATURE_COMINTEROP
@@ -188,31 +184,17 @@ FORCEINLINE  void PinnedHeapHandleBlockHolder__StaticFree(PinnedHeapHandleBlockH
     pHolder->FreeData();
 };
 
-//--------------------------------------------------------------------------------------
-// Base class for domains. It provides an abstract way of finding the first assembly and
-// for creating assemblies in the domain. The system domain only has one assembly, it
-// contains the classes that are logically shared between domains. All other domains can
-// have multiple assemblies. Iteration is done be getting the first assembly and then
-// calling the Next() method on the assembly.
-//
-// The system domain should be as small as possible, it includes object, exceptions, etc.
-// which are the basic classes required to load other assemblies. All other classes
-// should be loaded into the domain. Of coarse there is a trade off between loading the
-// same classes multiple times, requiring all domains to load certain assemblies (working
-// set) and being able to specify specific versions.
-//
+#define LOW_FREQUENCY_HEAP_RESERVE_SIZE        (3 * minipal_getpagesize())
+#define LOW_FREQUENCY_HEAP_COMMIT_SIZE         (1 * minipal_getpagesize())
 
-#define LOW_FREQUENCY_HEAP_RESERVE_SIZE        (3 * GetOsPageSize())
-#define LOW_FREQUENCY_HEAP_COMMIT_SIZE         (1 * GetOsPageSize())
+#define HIGH_FREQUENCY_HEAP_RESERVE_SIZE       (8 * minipal_getpagesize())
+#define HIGH_FREQUENCY_HEAP_COMMIT_SIZE        (1 * minipal_getpagesize())
 
-#define HIGH_FREQUENCY_HEAP_RESERVE_SIZE       (8 * GetOsPageSize())
-#define HIGH_FREQUENCY_HEAP_COMMIT_SIZE        (1 * GetOsPageSize())
+#define EXECUTABLE_HEAP_RESERVE_SIZE           (3 * minipal_getpagesize())
+#define EXECUTABLE_HEAP_COMMIT_SIZE            (1 * minipal_getpagesize())
 
-#define STUB_HEAP_RESERVE_SIZE                 (3 * GetOsPageSize())
-#define STUB_HEAP_COMMIT_SIZE                  (1 * GetOsPageSize())
-
-#define STATIC_FIELD_HEAP_RESERVE_SIZE         (2 * GetOsPageSize())
-#define STATIC_FIELD_HEAP_COMMIT_SIZE          (1 * GetOsPageSize())
+#define STATIC_FIELD_HEAP_RESERVE_SIZE         (2 * minipal_getpagesize())
+#define STATIC_FIELD_HEAP_COMMIT_SIZE          (1 * minipal_getpagesize())
 
 // --------------------------------------------------------------------------------
 // PE File List lock - for creating list locks on PE files
@@ -226,7 +208,6 @@ public:
     {
         STATIC_CONTRACT_NOTHROW;
         STATIC_CONTRACT_GC_NOTRIGGER;
-        STATIC_CONTRACT_FORBID_FAULT;
 
         PRECONDITION(HasLock());
 
@@ -267,7 +248,7 @@ typedef PEFileListLock::Holder PEFileListLockHolder;
 
 // Loading infrastructure:
 //
-// a DomainAssembly is a file being loaded.  Files are loaded in layers to enable loading in the
+// an Assembly is a file being loaded.  Files are loaded in layers to enable loading in the
 // presence of dependency loops.
 //
 // FileLoadLevel describes the various levels available.  These are implemented slightly
@@ -333,10 +314,20 @@ private:
 
     FileLoadLock(PEFileListLock* pLock, PEAssembly* pPEAssembly);
 
-    static void HolderLeave(FileLoadLock *pThis);
-
 public:
-    typedef Wrapper<FileLoadLock *, DoNothing, FileLoadLock::HolderLeave> Holder;
+    struct HolderTraits final
+    {
+        using Type = FileLoadLock*;
+        static constexpr Type Default() { return NULL; }
+        static void Free(Type pThis)
+        {
+            LIMITED_METHOD_CONTRACT;
+            if (pThis != NULL)
+                pThis->Leave();
+        }
+    };
+
+    using Holder = LifetimeHolder<HolderTraits>;
 
 };
 
@@ -412,12 +403,6 @@ public:
         LIMITED_METHOD_CONTRACT;
         m_currentLevel = level;
     }
-
-    static LoadLevelLimiter* GetCurrent()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return t_currentLoadLevelLimiter;
-    }
 };
 
 #define OVERRIDE_LOAD_LEVEL_LIMIT(newLimit)                    \
@@ -456,7 +441,7 @@ enum AssemblyIterationFlags
                                         // (all m_level values)
     kIncludeAvailableToProfilers
                           = 0x00000020, // include assemblies available to profilers
-                                        // See comment at code:DomainAssembly::IsAvailableToProfilers
+                                        // See comment at code:Assembly::IsAvailableToProfilers
 
     // Execution / introspection flags
     kIncludeExecution     = 0x00000004, // include assemblies that are loaded for execution only
@@ -531,16 +516,6 @@ public:
     }
 
 private:
-    LoaderAllocator * GetLoaderAllocator(DomainAssembly * pDomainAssembly)
-    {
-        WRAPPER_NO_CONTRACT;
-        return pDomainAssembly->GetAssembly()->GetLoaderAllocator();
-    }
-    BOOL IsCollectible(DomainAssembly * pDomainAssembly)
-    {
-        WRAPPER_NO_CONTRACT;
-        return pDomainAssembly->GetAssembly()->IsCollectible();
-    }
     LoaderAllocator * GetLoaderAllocator(Assembly * pAssembly)
     {
         WRAPPER_NO_CONTRACT;
@@ -558,7 +533,7 @@ private:
 // Holder of assembly reference which keeps collectible assembly alive while the holder is valid.
 //
 // Collectible assembly can be collected at any point when GC happens. Almost instantly all native data
-// structures of the assembly (e.g. code:DomainAssembly, code:Assembly) could be deallocated.
+// structures of the assembly (e.g. code:Assembly) could be deallocated.
 // Therefore any usage of (collectible) assembly data structures from native world, has to prevent the
 // deallocation by increasing ref-count on the assembly / associated loader allocator.
 //
@@ -674,9 +649,6 @@ public:
 
     STRINGREF *IsStringInterned(STRINGREF *pString);
     STRINGREF *GetOrInternString(STRINGREF *pString);
-
-    OBJECTREF GetRawExposedObject() { LIMITED_METHOD_CONTRACT; return NULL; }
-    OBJECTHANDLE GetRawExposedObjectHandleForDebugger() { LIMITED_METHOD_DAC_CONTRACT; return (OBJECTHANDLE)NULL; }
 
 #ifndef DACCESS_COMPILE
     PTR_NativeImage GetNativeImage(LPCUTF8 compositeFileName);
@@ -811,7 +783,7 @@ private:
 
 protected:
     // Multi-thread safe access to the list of assemblies
-    class DomainAssemblyList
+    class AssemblyList
     {
     private:
         ArrayList m_array;
@@ -878,7 +850,7 @@ protected:
             return m_array.GetCount();
         }
 
-        void Get(AppDomain * pAppDomain, DWORD index, CollectibleAssemblyHolder<DomainAssembly *> * pAssemblyHolder)
+        void Get(AppDomain * pAppDomain, DWORD index, CollectibleAssemblyHolder<Assembly *> * pAssemblyHolder)
         {
             CONTRACTL {
                 NOTHROW;
@@ -891,7 +863,7 @@ protected:
             CrstHolder ch(pAppDomain->GetAssemblyListLock());
             Get_Unlocked(index, pAssemblyHolder);
         }
-        void Get_Unlocked(DWORD index, CollectibleAssemblyHolder<DomainAssembly *> * pAssemblyHolder)
+        void Get_Unlocked(DWORD index, CollectibleAssemblyHolder<Assembly *> * pAssemblyHolder)
         {
             CONTRACTL {
                 NOTHROW;
@@ -900,11 +872,11 @@ protected:
             } CONTRACTL_END;
 
             _ASSERTE(dbg_m_pAppDomain->GetAssemblyListLock()->OwnedByCurrentThread());
-            *pAssemblyHolder = dac_cast<PTR_DomainAssembly>(m_array.Get(index));
+            *pAssemblyHolder = dac_cast<PTR_Assembly>(m_array.Get(index));
         }
         // Doesn't lock the assembly list (caller has to hold the lock already).
         // Doesn't AddRef the returned assembly (if collectible).
-        DomainAssembly * Get_UnlockedNoReference(DWORD index)
+        Assembly * Get_UnlockedNoReference(DWORD index)
         {
             CONTRACTL {
                 NOTHROW;
@@ -916,11 +888,11 @@ protected:
 #ifndef DACCESS_COMPILE
             _ASSERTE(dbg_m_pAppDomain->GetAssemblyListLock()->OwnedByCurrentThread());
 #endif
-            return dac_cast<PTR_DomainAssembly>(m_array.Get(index));
+            return dac_cast<PTR_Assembly>(m_array.Get(index));
         }
 
 #ifndef DACCESS_COMPILE
-        void Set(AppDomain * pAppDomain, DWORD index, DomainAssembly * pAssembly)
+        void Set(AppDomain * pAppDomain, DWORD index, Assembly * pAssembly)
         {
             CONTRACTL {
                 NOTHROW;
@@ -933,7 +905,7 @@ protected:
             CrstHolder ch(pAppDomain->GetAssemblyListLock());
             return Set_Unlocked(index, pAssembly);
         }
-        void Set_Unlocked(DWORD index, DomainAssembly * pAssembly)
+        void Set_Unlocked(DWORD index, Assembly * pAssembly)
         {
             CONTRACTL {
                 NOTHROW;
@@ -945,7 +917,7 @@ protected:
             m_array.Set(index, pAssembly);
         }
 
-        HRESULT Append_Unlocked(DomainAssembly * pAssembly)
+        HRESULT Append_Unlocked(Assembly * pAssembly)
         {
             CONTRACTL {
                 NOTHROW;
@@ -973,10 +945,10 @@ protected:
         }
 
         friend struct cdac_data<AppDomain>;
-    };  // class DomainAssemblyList
+    };  // class AssemblyList
 
     // Conceptually a list of code:Assembly structures, protected by lock code:GetAssemblyListLock
-    DomainAssemblyList m_Assemblies;
+    AssemblyList m_Assemblies;
 
 public:
     // Note that this lock switches thread into GC_NOTRIGGER region as GC can take it too.
@@ -1094,7 +1066,7 @@ private:
     // unless the call is guaranteed to succeed or you don't need the caching
     // (e.g. if you will FailFast or tear down the AppDomain anyway)
     // The main point that you should not bypass caching if you might try to load the same file again,
-    // resulting in multiple DomainAssembly objects that share the same PEAssembly for ngen image
+    // resulting in multiple Assembly objects that share the same PEAssembly for ngen image
     //which is violating our internal assumptions
     Assembly *LoadAssemblyInternal(AssemblySpec* pIdentity,
                                    PEAssembly *pPEAssembly,
@@ -1115,8 +1087,10 @@ public:
         return m_AssemblyCache.LookupAssembly(pSpec, fThrow);
     }
 
+    void GetParentAssemblyChain(Assembly *pStartAssembly, SString &chain, int maxDepth);
+
 private:
-    PEAssembly* FindCachedFile(AssemblySpec* pSpec, BOOL fThrow = TRUE);
+    PEAssembly* FindCachedFile(AssemblySpec* pSpec);
     BOOL IsCached(AssemblySpec *pSpec);
 #endif // DACCESS_COMPILE
 
@@ -1132,8 +1106,8 @@ public:
     NATIVE_LIBRARY_HANDLE FindUnmanagedImageInCache(LPCWSTR libraryName);
 
     // Adds or removes an assembly to the domain.
-    void AddAssembly(DomainAssembly * assem);
-    void RemoveAssembly(DomainAssembly * pAsm);
+    void AddAssembly(Assembly * assem);
+    void RemoveAssembly(Assembly * pAsm);
 
     BOOL ContainsAssembly(Assembly * assem);
 
@@ -1228,11 +1202,6 @@ public:
     DefaultAssemblyBinder *CreateDefaultBinder();
     DefaultAssemblyBinder *GetDefaultBinder() {LIMITED_METHOD_CONTRACT;  return m_pDefaultBinder; }
 
-    // Only call this routine when you can guarantee there are no loads in progress.
-    void ClearBinderContext();
-
-    static void ExceptionUnwind(Frame *pFrame);
-
     static void RaiseExitProcessEvent();
     Assembly* RaiseResourceResolveEvent(Assembly* pAssembly, LPCSTR szName);
     Assembly* RaiseTypeResolveEventThrowing(Assembly* pAssembly, LPCSTR szName, ASSEMBLYREF *pResultingAssemblyRef);
@@ -1275,8 +1244,6 @@ public:
     {
         STATIC_CONTRACT_THROWS;
         STATIC_CONTRACT_GC_TRIGGERS;
-        STATIC_CONTRACT_FAULT;
-
         if (m_pRefClassFactHash != NULL) {
             return m_pRefClassFactHash;
         }
@@ -1290,8 +1257,6 @@ public:
     {
         STATIC_CONTRACT_THROWS;
         STATIC_CONTRACT_GC_TRIGGERS;
-        STATIC_CONTRACT_FAULT;
-
         if (m_pRefDispIDCache != NULL) {
             return m_pRefDispIDCache;
         }
@@ -1300,7 +1265,6 @@ public:
     }
 #endif // FEATURE_COMINTEROP
 
-    PTR_LoaderHeap GetStubHeap();
     PTR_LoaderHeap GetLowFrequencyHeap();
     PTR_LoaderHeap GetHighFrequencyHeap();
 
@@ -1569,7 +1533,7 @@ template<>
 struct cdac_data<AppDomain>
 {
     static constexpr size_t RootAssembly = offsetof(AppDomain, m_pRootAssembly);
-    static constexpr size_t DomainAssemblyList = offsetof(AppDomain, m_Assemblies) + offsetof(AppDomain::DomainAssemblyList, m_array);
+    static constexpr size_t AssemblyList = offsetof(AppDomain, m_Assemblies) + offsetof(AppDomain::AssemblyList, m_array);
     static constexpr size_t FriendlyName = offsetof(AppDomain, m_friendlyName);
 };
 
@@ -1595,13 +1559,6 @@ public:
     // that require the use of system classes (i.e., exceptions).
     // DetachBegin stops all domains, while DetachEnd deallocates domain resources.
     static void DetachBegin();
-
-    //****************************************************************************************
-    //
-    // To be run during shutdown. This must be done after all operations
-    // that require the use of system classes (i.e., exceptions).
-    // DetachBegin stops release resources held by systemdomain and the default domain.
-    static void DetachEnd();
 
     //****************************************************************************************
     //
@@ -1745,11 +1702,6 @@ public:
     // Tell profiler about system created domains which are created before the profiler is
     // actually activated.
     static void NotifyProfilerStartup();
-
-    //****************************************************************************************
-    // Tell profiler at shutdown that system created domains are going away.  They are not
-    // torn down using the normal sequence.
-    static HRESULT NotifyProfilerShutdown();
 #endif // PROFILING_SUPPORTED
 
 #ifndef DACCESS_COMPILE
@@ -1807,9 +1759,6 @@ private:
 
     void PreallocateSpecialObjects();
 
-    //****************************************************************************************
-    //
-    static StackWalkAction CallersMethodCallback(CrawlFrame* pCrawlFrame, VOID* pClientData);
     static StackWalkAction CallersMethodCallbackWithStackMark(CrawlFrame* pCrawlFrame, VOID* pClientData);
 
 #ifndef DACCESS_COMPILE
@@ -1882,6 +1831,7 @@ struct cdac_data<SystemDomain>
 {
     static constexpr PTR_SystemDomain* SystemDomainPtr = &SystemDomain::m_pSystemDomain;
     static constexpr size_t GlobalLoaderAllocator = offsetof(SystemDomain, m_GlobalAllocator);
+    static constexpr size_t SystemAssembly = offsetof(SystemDomain, m_pSystemAssembly);
 };
 #endif // DACCESS_COMPILE
 

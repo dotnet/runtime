@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+namespace JitTest_Directed_Misc_Concat_ConcatTest;
+
 using System;
 using Xunit;
 
@@ -20,6 +22,7 @@ public class ConcatTest
 
     static int iReturn = 100;
 
+    [OuterLoop]
     [Fact]
     static public int TestEntryPoint()
     {

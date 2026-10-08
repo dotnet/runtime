@@ -46,7 +46,7 @@ namespace System.Text.RegularExpressions.Tests
             return new[]
             {
                 MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
-                MetadataReference.CreateFromFile(Path.Combine(Path.GetDirectoryName(corelibPath), "System.Runtime.dll")),
+                MetadataReference.CreateFromFile(Path.Combine(Path.GetDirectoryName(corelibPath)!, "System.Runtime.dll")),
                 MetadataReference.CreateFromFile(typeof(Unsafe).Assembly.Location),
                 MetadataReference.CreateFromFile(typeof(Regex).Assembly.Location),
             };
@@ -69,7 +69,7 @@ namespace System.Text.RegularExpressions.Tests
             throw new InvalidOperationException();
         }
 
-        private static async Task<(Compilation, GeneratorDriverRunResult)> RunGeneratorCore(
+        internal static async Task<(Compilation, GeneratorDriverRunResult)> RunGeneratorCore(
             string code, LanguageVersion langVersion = LanguageVersion.Preview, MetadataReference[]? additionalRefs = null, bool allowUnsafe = false, bool checkOverflow = true, CancellationToken cancellationToken = default)
         {
             var proj = new AdhocWorkspace()
@@ -146,7 +146,7 @@ namespace System.Text.RegularExpressions.Tests
             (string pattern, CultureInfo? culture, RegexOptions? options, TimeSpan? matchTimeout)[] regexes, CancellationToken cancellationToken = default)
         {
             // Un-ifdef to compile each regex individually, which can be useful if one regex among thousands is causing a failure.
-            // We compile them all en mass for test efficiency, but it can make it harder to debug a compilation failure in one of them.
+            // We compile them all en masse for test efficiency, but it can make it harder to debug a compilation failure in one of them.
 #if false
             if (regexes.Length > 1)
             {
@@ -158,6 +158,20 @@ namespace System.Text.RegularExpressions.Tests
                 return r.ToArray();
             }
 #endif
+
+            // On 32-bit processes the ~2GB address space limit can cause OutOfMemoryException
+            // when Roslyn compiles thousands of patterns at once. Chunk into smaller batches
+            // on 32-bit to avoid OOM while keeping full batching on 64-bit.
+            const int MaxBatchSize = 200;
+            if (!Environment.Is64BitProcess && regexes.Length > MaxBatchSize)
+            {
+                var batchResults = new List<Regex>(regexes.Length);
+                foreach (var chunk in regexes.Chunk(MaxBatchSize))
+                {
+                    batchResults.AddRange(await SourceGenRegexAsync(chunk, cancellationToken));
+                }
+                return batchResults.ToArray();
+            }
 
             Debug.Assert(regexes.Length > 0);
 
@@ -175,7 +189,7 @@ namespace System.Text.RegularExpressions.Tests
                 code.Append($"    [GeneratedRegex({SymbolDisplay.FormatLiteral(regex.pattern, quote: true)}");
                 if (regex.options is not null)
                 {
-                    code.Append($", {string.Join(" | ", regex.options.ToString().Split(',').Select(o => $"RegexOptions.{o.Trim()}"))}");
+                    code.Append($", {string.Join(" | ", regex.options.ToString()!.Split(',').Select(o => $"RegexOptions.{o.Trim()}"))}");
                     if (regex.matchTimeout is not null)
                     {
                         code.Append(string.Create(CultureInfo.InvariantCulture, $", {(int)regex.matchTimeout.Value.TotalMilliseconds}"));
@@ -215,7 +229,7 @@ namespace System.Text.RegularExpressions.Tests
                     .AddDocument("RegexGenerator.g.cs", SourceText.From("// Empty", Encoding.UTF8)).Project;
                 Assert.True(proj.Solution.Workspace.TryApplyChanges(proj.Solution));
 
-                s_compilation = comp = await proj!.GetCompilationAsync(CancellationToken.None).ConfigureAwait(false);
+                s_compilation = comp = (await proj!.GetCompilationAsync(CancellationToken.None).ConfigureAwait(false))!;
                 Debug.Assert(comp is not null);
             }
 
@@ -265,7 +279,7 @@ namespace System.Text.RegularExpressions.Tests
             for (int i = 0; i < instances.Length; i++)
             {
                 string memberName = $"Get{i}";
-                instances[i] = (Regex)(c.GetMethod(memberName) ?? c.GetProperty(memberName).GetGetMethod())!.Invoke(null, null)!;
+                instances[i] = (Regex)(c.GetMethod(memberName) ?? c.GetProperty(memberName)!.GetGetMethod())!.Invoke(null, null)!;
             }
 
             // Issue an unload on the ALC, so it'll be collected once the Regex instance is collected

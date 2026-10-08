@@ -15,6 +15,7 @@ namespace System
             return GetConfigBoolValue(switchName, out exist);
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ClrConfig_GetConfigBoolValue", StringMarshalling = StringMarshalling.Utf16)]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool GetConfigBoolValue(string configSwitchName, [MarshalAs(UnmanagedType.Bool)] out bool exist);

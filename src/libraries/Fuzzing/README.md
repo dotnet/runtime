@@ -58,7 +58,23 @@ deployment/HttpHeadersFuzzer/local-run.bat
 See the [libFuzzer options](https://llvm.org/docs/LibFuzzer.html#options) documentation for more information on how to customize the fuzzing process.
 For example, here is how you can run the fuzzer against a `header-inputs` corpus directory for 10 minutes, running multiple instances in parallel:
 ```cmd
-deployment/HttpHeadersFuzzer/local-run.bat header-inputs -timeout=30 -max_total_time=600 -jobs=5
+deployment/HttpHeadersFuzzer/local-run.bat header-inputs -max_total_time=600 -jobs=5
+```
+
+### Generating coverage reports
+
+After letting the fuzzer run for a while, you can use the generated inputs to test code coverage.
+
+```cmd
+mkdir header-inputs
+deployment/HttpHeadersFuzzer/local-run.bat header-inputs
+
+.\collect-coverage.ps1 HttpHeadersFuzzer header-inputs
+```
+
+The HTML report can be opened from
+```cmd
+.\coverage-report\html\index.html
 ```
 
 ## Creating a new fuzzing target
@@ -101,4 +117,4 @@ cd src/libraries/Fuzzing/DotnetFuzzing
 dotnet run HttpHeadersFuzzer inputs
 ```
 
-This can be useful when debugging a crash, or running the fuzzer over existing inputs to collect code coverage.
+This can be useful when debugging a crash.

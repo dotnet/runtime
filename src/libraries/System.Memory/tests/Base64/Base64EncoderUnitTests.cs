@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
+using System.Linq;
 using System.SpanTests;
 using System.Text;
 using Xunit;
@@ -296,6 +298,153 @@ namespace System.Buffers.Text.Tests
             byte[] testBytes = { 1, 2, 3 };
             Assert.Equal(OperationStatus.DestinationTooSmall, Base64.EncodeToUtf8InPlace(testBytes, testBytes.Length + 1, out int bytesWritten));
             Assert.Equal(0, bytesWritten);
+        }
+
+        [Fact]
+        public void EncodeToCharsWithLargeSpan()
+        {
+            var rnd = new Random(42);
+            for (int i = 0; i < 5; i++)
+            {
+                int numBytes = rnd.Next(100, 1000 * 1000);
+                Span<byte> source = new byte[numBytes];
+                Base64TestHelper.InitializeBytes(source, numBytes);
+
+                Span<char> encodedBytes = new char[Base64.GetEncodedLength(source.Length)];
+                OperationStatus result = Base64.EncodeToChars(source, encodedBytes, out int consumed, out int encodedBytesCount);
+                Assert.Equal(OperationStatus.Done, result);
+                Assert.Equal(source.Length, consumed);
+                Assert.Equal(encodedBytes.Length, encodedBytesCount);
+                string expectedText = Convert.ToBase64String(source);
+                Assert.Equal(expectedText, encodedBytes.ToString());
+            }
+        }
+
+        public static IEnumerable<object[]> EncodeToStringTests_TestData()
+        {
+            yield return new object[] { Enumerable.Range(0, 0).Select(i => (byte)i).ToArray(), "" };
+            yield return new object[] { Enumerable.Range(0, 1).Select(i => (byte)i).ToArray(), "AA==" };
+            yield return new object[] { Enumerable.Range(0, 2).Select(i => (byte)i).ToArray(), "AAE=" };
+            yield return new object[] { Enumerable.Range(0, 3).Select(i => (byte)i).ToArray(), "AAEC" };
+            yield return new object[] { Enumerable.Range(0, 4).Select(i => (byte)i).ToArray(), "AAECAw==" };
+            yield return new object[] { Enumerable.Range(0, 5).Select(i => (byte)i).ToArray(), "AAECAwQ=" };
+            yield return new object[] { Enumerable.Range(0, 6).Select(i => (byte)i).ToArray(), "AAECAwQF" };
+        }
+
+        [Theory]
+        [MemberData(nameof(EncodeToStringTests_TestData))]
+        public static void EncodeToStringTests(byte[] inputBytes, string expectedBase64)
+        {
+            Assert.Equal(expectedBase64, Base64.EncodeToString(inputBytes));
+            Span<char> chars = new char[Base64.GetEncodedLength(inputBytes.Length)];
+            Assert.Equal(OperationStatus.Done, Base64.EncodeToChars(inputBytes, chars, out int _, out int charsWritten));
+            Assert.Equal(expectedBase64, chars.Slice(0, charsWritten).ToString());
+        }
+
+        [Fact]
+        public void EncodeToCharsOutputTooSmall()
+        {
+            for (int numBytes = 4; numBytes < 20; numBytes++)
+            {
+                byte[] source = new byte[numBytes];
+                Base64TestHelper.InitializeBytes(source, numBytes);
+                int expectedConsumed = 3;
+                char[] encodedBytes = new char[4];
+
+                Assert.Equal(OperationStatus.DestinationTooSmall, Base64.EncodeToChars(source, encodedBytes, out int consumed, out int written));
+                Assert.Equal(expectedConsumed, consumed);
+                Assert.Equal(encodedBytes.Length, written);
+
+                Assert.Throws<ArgumentException>("destination", () => Base64.EncodeToChars(source, encodedBytes));
+            }
+        }
+
+        [Fact]
+        public void EncodeToUtf8_ArrayOverload()
+        {
+            byte[] input = Encoding.UTF8.GetBytes("test");
+            byte[] result = Base64.EncodeToUtf8(input);
+            Assert.Equal("dGVzdA==", Encoding.UTF8.GetString(result));
+        }
+
+        [Fact]
+        public void EncodeToUtf8_SpanOverload()
+        {
+            byte[] input = Encoding.UTF8.GetBytes("test");
+            Span<byte> destination = new byte[20];
+            int bytesWritten = Base64.EncodeToUtf8(input, destination);
+            Assert.Equal(8, bytesWritten);
+            Assert.Equal("dGVzdA==", Encoding.UTF8.GetString(destination.Slice(0, bytesWritten)));
+        }
+
+        [Fact]
+        public void TryEncodeToUtf8_Success()
+        {
+            byte[] input = Encoding.UTF8.GetBytes("test");
+            Span<byte> destination = new byte[20];
+            Assert.True(Base64.TryEncodeToUtf8(input, destination, out int bytesWritten));
+            Assert.Equal(8, bytesWritten);
+            Assert.Equal("dGVzdA==", Encoding.UTF8.GetString(destination.Slice(0, bytesWritten)));
+        }
+
+        [Fact]
+        public void TryEncodeToUtf8_DestinationTooSmall()
+        {
+            byte[] input = Encoding.UTF8.GetBytes("test");
+            Span<byte> destination = new byte[4]; // Too small
+            Assert.False(Base64.TryEncodeToUtf8(input, destination, out int bytesWritten));
+        }
+
+        [Fact]
+        public void TryEncodeToUtf8InPlace_Success()
+        {
+            byte[] buffer = new byte[20];
+            buffer[0] = (byte)'t';
+            buffer[1] = (byte)'e';
+            buffer[2] = (byte)'s';
+            buffer[3] = (byte)'t';
+
+            Assert.True(Base64.TryEncodeToUtf8InPlace(buffer, 4, out int bytesWritten));
+            Assert.Equal(8, bytesWritten);
+            Assert.Equal("dGVzdA==", Encoding.UTF8.GetString(buffer.AsSpan(0, bytesWritten)));
+        }
+
+        [Fact]
+        public void TryEncodeToUtf8InPlace_DestinationTooSmall()
+        {
+            byte[] buffer = new byte[4]; // Same size as input, which is too small for encoded output
+            buffer[0] = (byte)'t';
+            buffer[1] = (byte)'e';
+            buffer[2] = (byte)'s';
+            buffer[3] = (byte)'t';
+
+            Assert.False(Base64.TryEncodeToUtf8InPlace(buffer, 4, out int bytesWritten));
+            Assert.Equal(0, bytesWritten);
+        }
+
+        [Fact]
+        public void EncodeToChars_DestinationTooSmall()
+        {
+            byte[] input = Encoding.UTF8.GetBytes("test");
+            char[] destination = new char[4]; // Too small
+            Assert.Throws<ArgumentException>("destination", () => Base64.EncodeToChars(input, destination));
+        }
+
+        [Fact]
+        public void TryEncodeToChars_DestinationTooSmall()
+        {
+            byte[] input = Encoding.UTF8.GetBytes("test");
+            Span<char> destination = new char[4]; // Too small
+            Assert.False(Base64.TryEncodeToChars(input, destination, out int charsWritten));
+        }
+
+        [Fact]
+        public void GetEncodedLength_MatchesExisting()
+        {
+            for (int i = 0; i < 100; i++)
+            {
+                Assert.Equal(Base64.GetMaxEncodedToUtf8Length(i), Base64.GetEncodedLength(i));
+            }
         }
     }
 }

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Globalization;
 using Xunit;
 
 namespace System.Tests
@@ -34,13 +35,18 @@ namespace System.Tests
         [Fact]
         public void FromDouble()
         {
+            // 0.001 is inexact as a double, so the expected value is derived from parsing its full base-10
+            // expansion to exercise the correctly-rounded (double -> decimal) conversion.
             double[] testValues = { 1000.0, 100.0, 0.0, 0.001, -1000.0, -100.0, };
-            decimal[] expectedValues = { 1000.0m, 100.0m, 0.0m, 0.001m, -1000.0m, -100.0m };
+            decimal[] expectedValues = { 1000.0m, 100.0m, 0.0m, ParseDecimalExpansion(0.001), -1000.0m, -100.0m };
             Verify(Convert.ToDecimal, testValues, expectedValues);
 
             double[] overflowValues = { double.MaxValue, double.MinValue };
             VerifyThrows<OverflowException, double>(Convert.ToDecimal, overflowValues);
         }
+
+        private static decimal ParseDecimalExpansion(double value) =>
+            decimal.Parse(value.ToString("G99", CultureInfo.InvariantCulture), NumberStyles.Float, CultureInfo.InvariantCulture);
 
         [Fact]
         public void FromInt16()

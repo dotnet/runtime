@@ -10,11 +10,6 @@ namespace Internal.Runtime.CompilerHelpers
     /// </summary>
     internal static class LdTokenHelpers
     {
-        private static unsafe RuntimeTypeHandle GetRuntimeTypeHandle(MethodTable* pEEType)
-        {
-            return new RuntimeTypeHandle(pEEType);
-        }
-
         private static unsafe RuntimeMethodHandle GetRuntimeMethodHandle(IntPtr pHandleSignature)
         {
             RuntimeMethodHandle returnValue;
@@ -27,11 +22,6 @@ namespace Internal.Runtime.CompilerHelpers
             RuntimeFieldHandle returnValue;
             *(IntPtr*)&returnValue = pHandleSignature;
             return returnValue;
-        }
-
-        private static unsafe RuntimeType GetRuntimeType(MethodTable* pMT)
-        {
-            return Type.GetTypeFromMethodTable(pMT);
         }
     }
 }

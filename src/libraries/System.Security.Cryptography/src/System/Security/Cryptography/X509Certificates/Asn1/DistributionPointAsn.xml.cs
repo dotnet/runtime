@@ -64,7 +64,7 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
         {
             try
             {
-                AsnValueReader reader = new AsnValueReader(encoded.Span, ruleSet);
+                ValueAsnReader reader = new ValueAsnReader(encoded.Span, ruleSet);
 
                 DecodeCore(ref reader, expectedTag, encoded, out DistributionPointAsn decoded);
                 reader.ThrowIfNotEmpty();
@@ -76,12 +76,12 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
             }
         }
 
-        internal static void Decode(ref AsnValueReader reader, ReadOnlyMemory<byte> rebind, out DistributionPointAsn decoded)
+        internal static void Decode(ref ValueAsnReader reader, ReadOnlyMemory<byte> rebind, out DistributionPointAsn decoded)
         {
             Decode(ref reader, Asn1Tag.Sequence, rebind, out decoded);
         }
 
-        internal static void Decode(ref AsnValueReader reader, Asn1Tag expectedTag, ReadOnlyMemory<byte> rebind, out DistributionPointAsn decoded)
+        internal static void Decode(ref ValueAsnReader reader, Asn1Tag expectedTag, ReadOnlyMemory<byte> rebind, out DistributionPointAsn decoded)
         {
             try
             {
@@ -93,12 +93,12 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
             }
         }
 
-        private static void DecodeCore(ref AsnValueReader reader, Asn1Tag expectedTag, ReadOnlyMemory<byte> rebind, out DistributionPointAsn decoded)
+        private static void DecodeCore(ref ValueAsnReader reader, Asn1Tag expectedTag, ReadOnlyMemory<byte> rebind, out DistributionPointAsn decoded)
         {
             decoded = default;
-            AsnValueReader sequenceReader = reader.ReadSequence(expectedTag);
-            AsnValueReader explicitReader;
-            AsnValueReader collectionReader;
+            ValueAsnReader sequenceReader = reader.ReadSequence(expectedTag);
+            ValueAsnReader explicitReader;
+            ValueAsnReader collectionReader;
 
 
             if (sequenceReader.HasData && sequenceReader.PeekTag().HasSameClassAndValue(new Asn1Tag(TagClass.ContextSpecific, 0)))

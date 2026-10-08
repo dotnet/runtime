@@ -9,13 +9,13 @@ namespace System.Diagnostics
 
         private EventSourceCreationData() { }
 
-        public EventSourceCreationData(string source, string logName)
+        public EventSourceCreationData(string? source, string logName)
         {
             Source = source;
             LogName = logName;
         }
 
-        internal EventSourceCreationData(string source, string logName, string machineName) : this(source, logName)
+        internal EventSourceCreationData(string? source, string logName, string machineName) : this(source, logName)
         {
             MachineName = machineName;
         }
@@ -24,13 +24,13 @@ namespace System.Diagnostics
 
         public string MachineName { get; set; } = ".";
 
-        public string Source { get; set; }
+        public string? Source { get; set; }
 
-        public string MessageResourceFile { get; set; }
+        public string? MessageResourceFile { get; set; }
 
-        public string ParameterResourceFile { get; set; }
+        public string? ParameterResourceFile { get; set; }
 
-        public string CategoryResourceFile { get; set; }
+        public string? CategoryResourceFile { get; set; }
 
         public int CategoryCount
         {

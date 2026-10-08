@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
@@ -19,7 +19,7 @@ namespace System.Diagnostics
         /// we avoid the allocation of a new array by using the second collection as is and not converting it to an array. the reason
         /// is we call this every time we try to create a meter or instrument and we don't want to allocate a new array every time.
         /// </remarks>
-        internal static bool CompareTags(IList<KeyValuePair<string, object?>>? sortedTags, IEnumerable<KeyValuePair<string, object?>>? tags2)
+        internal static unsafe bool CompareTags(IList<KeyValuePair<string, object?>>? sortedTags, IEnumerable<KeyValuePair<string, object?>>? tags2)
         {
             if (sortedTags == tags2)
             {
@@ -47,6 +47,7 @@ namespace System.Diagnostics
                     for (int i = 0; i < count; i++)
                     {
                         KeyValuePair<string, object?> pair = secondList[i];
+                        bool found = false;
 
                         for (int j = 0; j < count; j++)
                         {
@@ -57,17 +58,17 @@ namespace System.Diagnostics
 
                             KeyValuePair<string, object?> pair1 = sortedTags[j];
 
-                            int compareResult = string.CompareOrdinal(pair.Key, pair1.Key);
-                            if (compareResult == 0 && object.Equals(pair.Value, pair1.Value))
+                            if (pair.Key == pair1.Key && object.Equals(pair.Value, pair1.Value))
                             {
                                 bitMapper.SetBit(j);
+                                found = true;
                                 break;
                             }
+                        }
 
-                            if (compareResult < 0 || j == count - 1)
-                            {
-                                return false;
-                            }
+                        if (!found)
+                        {
+                            return false;
                         }
                     }
 
@@ -87,6 +88,7 @@ namespace System.Diagnostics
                     }
 
                     KeyValuePair<string, object?> pair = enumerator.Current;
+                    bool found = false;
                     for (int j = 0; j < count; j++)
                     {
                         if (bitMapper.IsSet(j))
@@ -96,17 +98,17 @@ namespace System.Diagnostics
 
                         KeyValuePair<string, object?> pair1 = sortedTags[j];
 
-                        int compareResult = string.CompareOrdinal(pair.Key, pair1.Key);
-                        if (compareResult == 0 && object.Equals(pair.Value, pair1.Value))
+                        if (pair.Key == pair1.Key && object.Equals(pair.Value, pair1.Value))
                         {
                             bitMapper.SetBit(j);
+                            found = true;
                             break;
                         }
+                    }
 
-                        if (compareResult < 0 || j == count - 1)
-                        {
-                            return false;
-                        }
+                    if (!found)
+                    {
+                        return false;
                     }
                 }
 

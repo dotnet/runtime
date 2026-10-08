@@ -6,6 +6,7 @@ using System.Text;
 using System.Security;
 using System.Runtime.InteropServices;
 using Xunit;
+using TestLibrary;
 
 public class MarshalStructTest
 {
@@ -1605,8 +1606,12 @@ public class MarshalStructTest
         TestMethod_DoCallBack_MarshalStructByRef_Cdecl(StructID.S5Id);
         TestMethod_DoCallBack_MarshalStructByRef_Cdecl(StructID.StringStructSequentialAnsiId);
         TestMethod_DoCallBack_MarshalStructByRef_Cdecl(StructID.StringStructSequentialUnicodeId);
-        TestMethod_DoCallBack_MarshalStructByRef_Cdecl(StructID.S8Id);
-        TestMethod_DoCallBack_MarshalStructByRef_Cdecl(StructID.S9Id);
+        // UnmanagedType.Error: https://github.com/dotnet/runtime/issues/69919
+        if (!Utilities.IsNativeAot)
+        {
+            TestMethod_DoCallBack_MarshalStructByRef_Cdecl(StructID.S8Id);
+            TestMethod_DoCallBack_MarshalStructByRef_Cdecl(StructID.S9Id);
+        }
         TestMethod_DoCallBack_MarshalStructByRef_Cdecl(StructID.IncludeOuterIntegerStructSequentialId);
         TestMethod_DoCallBack_MarshalStructByRef_Cdecl(StructID.S11Id);
     }
@@ -1623,8 +1628,12 @@ public class MarshalStructTest
         TestMethod_DoCallBack_MarshalStructByRef_StdCall(StructID.S5Id);
         TestMethod_DoCallBack_MarshalStructByRef_StdCall(StructID.StringStructSequentialAnsiId);
         TestMethod_DoCallBack_MarshalStructByRef_StdCall(StructID.StringStructSequentialUnicodeId);
-        TestMethod_DoCallBack_MarshalStructByRef_StdCall(StructID.S8Id);
-        TestMethod_DoCallBack_MarshalStructByRef_StdCall(StructID.S9Id);
+        // UnmanagedType.Error: https://github.com/dotnet/runtime/issues/69919
+        if (!Utilities.IsNativeAot)
+        {
+            TestMethod_DoCallBack_MarshalStructByRef_StdCall(StructID.S8Id);
+            TestMethod_DoCallBack_MarshalStructByRef_StdCall(StructID.S9Id);
+        }
         TestMethod_DoCallBack_MarshalStructByRef_StdCall(StructID.IncludeOuterIntegerStructSequentialId);
         TestMethod_DoCallBack_MarshalStructByRef_StdCall(StructID.S11Id);
     }
@@ -1796,8 +1805,12 @@ public class MarshalStructTest
         TestMethod_DoCallBack_MarshalStructByVal_Cdecl(StructID.S5Id);
         TestMethod_DoCallBack_MarshalStructByVal_Cdecl(StructID.StringStructSequentialAnsiId);
         TestMethod_DoCallBack_MarshalStructByVal_Cdecl(StructID.StringStructSequentialUnicodeId);
-        TestMethod_DoCallBack_MarshalStructByVal_Cdecl(StructID.S8Id);
-        TestMethod_DoCallBack_MarshalStructByVal_Cdecl(StructID.S9Id);
+        // UnmanagedType.Error: https://github.com/dotnet/runtime/issues/69919
+        if (!Utilities.IsNativeAot)
+        {
+            TestMethod_DoCallBack_MarshalStructByVal_Cdecl(StructID.S8Id);
+            TestMethod_DoCallBack_MarshalStructByVal_Cdecl(StructID.S9Id);
+        }
         TestMethod_DoCallBack_MarshalStructByVal_Cdecl(StructID.IncludeOuterIntegerStructSequentialId);
         TestMethod_DoCallBack_MarshalStructByVal_Cdecl(StructID.S11Id);
         // Windows X86 has a long standing X86_ONLY logic that causes 3, 5,6,7 byte structure returns to behave incorrectly.
@@ -1819,8 +1832,12 @@ public class MarshalStructTest
         TestMethod_DoCallBack_MarshalStructByVal_StdCall(StructID.S5Id);
         TestMethod_DoCallBack_MarshalStructByVal_StdCall(StructID.StringStructSequentialAnsiId);
         TestMethod_DoCallBack_MarshalStructByVal_StdCall(StructID.StringStructSequentialUnicodeId);
-        TestMethod_DoCallBack_MarshalStructByVal_StdCall(StructID.S8Id);
-        TestMethod_DoCallBack_MarshalStructByVal_StdCall(StructID.S9Id);
+        // UnmanagedType.Error: https://github.com/dotnet/runtime/issues/69919
+        if (!Utilities.IsNativeAot)
+        {
+            TestMethod_DoCallBack_MarshalStructByVal_StdCall(StructID.S8Id);
+            TestMethod_DoCallBack_MarshalStructByVal_StdCall(StructID.S9Id);
+        }
         TestMethod_DoCallBack_MarshalStructByVal_StdCall(StructID.IncludeOuterIntegerStructSequentialId);
         TestMethod_DoCallBack_MarshalStructByVal_StdCall(StructID.S11Id);
         // Windows X86 has a long standing X86_ONLY logic that causes 3, 5,6,7 byte structure returns to behave incorrectly.
@@ -1833,6 +1850,9 @@ public class MarshalStructTest
     #endregion
 
     [Fact]
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoInterpreter))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/82859", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoMiniJIT), nameof(PlatformDetection.IsArm64Process))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/65695", TestRuntimes.Mono)]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
     public static int TestEntryPoint()
     {

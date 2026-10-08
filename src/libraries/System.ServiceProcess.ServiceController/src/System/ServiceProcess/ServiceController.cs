@@ -340,7 +340,7 @@ namespace System.ServiceProcess
                                 string dependencyNameStr = new string(dependencyChar, 0, length);
                                 dependencyChar = dependencyChar + length + 1;
                                 length = 0;
-                                if (dependencyNameStr.StartsWith("+", StringComparison.Ordinal))
+                                if (dependencyNameStr.StartsWith('+'))
                                 {
                                     // this entry is actually a service load group
                                     Interop.Advapi32.ENUM_SERVICE_STATUS_PROCESS[] loadGroup = GetServicesInGroup(_machineName, dependencyNameStr.Substring(1));
@@ -455,8 +455,7 @@ namespace System.ServiceProcess
 
         private static bool CheckMachineName(string value)
         {
-            // string.Contains(char) is .NetCore2.1+ specific
-            return !string.IsNullOrWhiteSpace(value) && value.IndexOf('\\') == -1;
+            return !string.IsNullOrWhiteSpace(value) && !value.Contains('\\');
         }
 
         /// <summary>

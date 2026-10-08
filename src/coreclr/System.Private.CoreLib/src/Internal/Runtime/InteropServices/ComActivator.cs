@@ -9,6 +9,7 @@ using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using System.Runtime.Loader;
 using System.Runtime.Versioning;
 
@@ -79,9 +80,9 @@ namespace Internal.Runtime.InteropServices
         public string AssemblyPath;
         public string AssemblyName;
         public string TypeName;
-        public bool IsolatedContext;
+        public IntPtr LoadContext;
 
-        public static unsafe ComActivationContext Create(ref ComActivationContextInternal cxtInt, bool isolatedContext)
+        public static unsafe ComActivationContext Create(ref ComActivationContextInternal cxtInt, IntPtr loadContext)
         {
             if (!Marshal.IsBuiltInComSupported)
             {
@@ -95,7 +96,7 @@ namespace Internal.Runtime.InteropServices
                 AssemblyPath = Marshal.PtrToStringUni(new IntPtr(cxtInt.AssemblyPathBuffer))!,
                 AssemblyName = Marshal.PtrToStringUni(new IntPtr(cxtInt.AssemblyNameBuffer))!,
                 TypeName = Marshal.PtrToStringUni(new IntPtr(cxtInt.TypeNameBuffer))!,
-                IsolatedContext = isolatedContext
+                LoadContext = loadContext
             };
         }
     }
@@ -103,13 +104,6 @@ namespace Internal.Runtime.InteropServices
     [SupportedOSPlatform("windows")]
     internal static class ComActivator
     {
-        // Collection of all ALCs used for COM activation. In the event we want to support
-        // unloadable COM server ALCs, this will need to be changed.
-        private static readonly Dictionary<string, AssemblyLoadContext> s_assemblyLoadContexts = new Dictionary<string, AssemblyLoadContext>(StringComparer.InvariantCultureIgnoreCase);
-
-        // COM component assembly paths loaded in the default ALC
-        private static readonly HashSet<string> s_loadedInDefaultContext = new HashSet<string>(StringComparer.InvariantCultureIgnoreCase);
-
         /// <summary>
         /// Entry point for unmanaged COM activation API from managed code
         /// </summary>
@@ -249,7 +243,7 @@ namespace Internal.Runtime.InteropServices
                 throw new NotSupportedException(SR.NotSupported_COM);
 
 #pragma warning disable IL2026 // suppressed in ILLink.Suppressions.LibraryBuild.xml
-            return GetClassFactoryForTypeImpl(pCxtInt, isolatedContext: true);
+            return GetClassFactoryForTypeImpl(pCxtInt, ComponentLoadContextManager.IsolatedContext);
 #pragma warning restore IL2026
         }
 
@@ -257,31 +251,28 @@ namespace Internal.Runtime.InteropServices
         /// Gets a class factory for COM activation in the specified load context
         /// </summary>
         /// <param name="pCxtInt">Pointer to a <see cref="ComActivationContextInternal"/> instance</param>
-        /// <param name="loadContext">Load context - currently must be IntPtr.Zero (default context) or -1 (isolated context)</param>
+        /// <param name="loadContext">Load context specification</param>
         [UnmanagedCallersOnly]
         private static unsafe int GetClassFactoryForTypeInContext(ComActivationContextInternal* pCxtInt, IntPtr loadContext)
         {
             if (!Marshal.IsBuiltInComSupported)
                 throw new NotSupportedException(SR.NotSupported_COM);
 
-            if (loadContext != IntPtr.Zero && loadContext != (IntPtr)(-1))
-                throw new ArgumentOutOfRangeException(nameof(loadContext));
-
-            return GetClassFactoryForTypeLocal(pCxtInt, isolatedContext: loadContext != IntPtr.Zero);
+            return GetClassFactoryForTypeLocal(pCxtInt, loadContext);
 
             // Use a local function for a targeted suppression of the requires unreferenced code warning
             [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                 Justification = "The same feature switch applies to GetClassFactoryForTypeInternal and this function. We rely on the warning from GetClassFactoryForTypeInternal.")]
-            static int GetClassFactoryForTypeLocal(ComActivationContextInternal* pCxtInt, bool isolatedContext) => GetClassFactoryForTypeImpl(pCxtInt, isolatedContext);
+            static int GetClassFactoryForTypeLocal(ComActivationContextInternal* pCxtInt, IntPtr loadContext) => GetClassFactoryForTypeImpl(pCxtInt, loadContext);
         }
 
         [RequiresUnreferencedCode("Built-in COM support is not trim compatible", Url = "https://aka.ms/dotnet-illink/com")]
-        private static unsafe int GetClassFactoryForTypeImpl(ComActivationContextInternal* pCxtInt, bool isolatedContext)
+        private static unsafe int GetClassFactoryForTypeImpl(ComActivationContextInternal* pCxtInt, IntPtr loadContext)
         {
             ref ComActivationContextInternal cxtInt = ref *pCxtInt;
             try
             {
-                var cxt = ComActivationContext.Create(ref cxtInt, isolatedContext);
+                var cxt = ComActivationContext.Create(ref cxtInt, loadContext);
                 object cf = GetClassFactoryForType(cxt);
                 IntPtr nativeIUnknown = Marshal.GetIUnknownForObject(cf);
                 Marshal.WriteIntPtr(cxtInt.ClassFactoryDest, nativeIUnknown);
@@ -304,27 +295,24 @@ namespace Internal.Runtime.InteropServices
             if (!Marshal.IsBuiltInComSupported)
                 throw new NotSupportedException(SR.NotSupported_COM);
 
-            return RegisterClassForTypeImpl(pCxtInt, isolatedContext: true);
+            return RegisterClassForTypeImpl(pCxtInt, ComponentLoadContextManager.IsolatedContext);
         }
 
         /// <summary>
         /// Registers a managed COM server in the specified load context
         /// </summary>
         /// <param name="pCxtInt">Pointer to a <see cref="ComActivationContextInternal"/> instance</param>
-        /// <param name="loadContext">Load context - currently must be IntPtr.Zero (default context) or -1 (isolated context)</param>
+        /// <param name="loadContext">Load context specification</param>
         [UnmanagedCallersOnly]
         private static unsafe int RegisterClassForTypeInContext(ComActivationContextInternal* pCxtInt, IntPtr loadContext)
         {
             if (!Marshal.IsBuiltInComSupported)
                 throw new NotSupportedException(SR.NotSupported_COM);
 
-            if (loadContext != IntPtr.Zero && loadContext != (IntPtr)(-1))
-                throw new ArgumentOutOfRangeException(nameof(loadContext));
-
-            return RegisterClassForTypeImpl(pCxtInt, isolatedContext: loadContext != IntPtr.Zero);
+            return RegisterClassForTypeImpl(pCxtInt, loadContext);
         }
 
-        private static unsafe int RegisterClassForTypeImpl(ComActivationContextInternal* pCxtInt, bool isolatedContext)
+        private static unsafe int RegisterClassForTypeImpl(ComActivationContextInternal* pCxtInt, IntPtr loadContext)
         {
             ref ComActivationContextInternal cxtInt = ref *pCxtInt;
             if (cxtInt.InterfaceId != Guid.Empty
@@ -335,7 +323,7 @@ namespace Internal.Runtime.InteropServices
 
             try
             {
-                var cxt = ComActivationContext.Create(ref cxtInt, isolatedContext);
+                var cxt = ComActivationContext.Create(ref cxtInt, loadContext);
                 ClassRegistrationScenarioForTypeLocal(cxt, register: true);
             }
             catch (Exception e)
@@ -360,27 +348,24 @@ namespace Internal.Runtime.InteropServices
             if (!Marshal.IsBuiltInComSupported)
                 throw new NotSupportedException(SR.NotSupported_COM);
 
-            return UnregisterClassForTypeImpl(pCxtInt, isolatedContext: true);
+            return UnregisterClassForTypeImpl(pCxtInt, ComponentLoadContextManager.IsolatedContext);
         }
 
         /// <summary>
         /// Unregisters a managed COM server in the specified load context
         /// </summary>
         /// <param name="pCxtInt">Pointer to a <see cref="ComActivationContextInternal"/> instance</param>
-        /// <param name="loadContext">Load context - currently must be IntPtr.Zero (default context) or -1 (isolated context)</param>
+        /// <param name="loadContext">Load context specification</param>
         [UnmanagedCallersOnly]
         private static unsafe int UnregisterClassForTypeInContext(ComActivationContextInternal* pCxtInt, IntPtr loadContext)
         {
             if (!Marshal.IsBuiltInComSupported)
                 throw new NotSupportedException(SR.NotSupported_COM);
 
-            if (loadContext != IntPtr.Zero && loadContext != (IntPtr)(-1))
-                throw new ArgumentOutOfRangeException(nameof(loadContext));
-
-            return UnregisterClassForTypeImpl(pCxtInt, isolatedContext: loadContext != IntPtr.Zero);
+            return UnregisterClassForTypeImpl(pCxtInt, loadContext);
         }
 
-        private static unsafe int UnregisterClassForTypeImpl(ComActivationContextInternal* pCxtInt, bool isolatedContext)
+        private static unsafe int UnregisterClassForTypeImpl(ComActivationContextInternal* pCxtInt, IntPtr loadContext)
         {
             ref ComActivationContextInternal cxtInt = ref *pCxtInt;
             if (cxtInt.InterfaceId != Guid.Empty
@@ -391,7 +376,7 @@ namespace Internal.Runtime.InteropServices
 
             try
             {
-                var cxt = ComActivationContext.Create(ref cxtInt, isolatedContext);
+                var cxt = ComActivationContext.Create(ref cxtInt, loadContext);
                 ClassRegistrationScenarioForTypeLocal(cxt, register: false);
             }
             catch (Exception e)
@@ -412,7 +397,7 @@ namespace Internal.Runtime.InteropServices
         {
             try
             {
-                AssemblyLoadContext alc = GetALC(cxt.AssemblyPath, cxt.IsolatedContext);
+                AssemblyLoadContext alc = ComponentLoadContextManager.Get(cxt.LoadContext, cxt.AssemblyPath);
                 var assemblyNameLocal = new AssemblyName(cxt.AssemblyName);
                 Assembly assem = alc.LoadFromAssemblyName(assemblyNameLocal);
                 Type? t = assem.GetType(cxt.TypeName);
@@ -428,46 +413,6 @@ namespace Internal.Runtime.InteropServices
 
             const int CLASS_E_CLASSNOTAVAILABLE = unchecked((int)0x80040111);
             throw new COMException(string.Empty, CLASS_E_CLASSNOTAVAILABLE);
-        }
-
-        [RequiresUnreferencedCode("The trimmer might remove types which are needed by the assemblies loaded in this method.")]
-        private static AssemblyLoadContext GetALC(string assemblyPath, bool isolatedContext)
-        {
-            AssemblyLoadContext? alc;
-            if (isolatedContext)
-            {
-                lock (s_assemblyLoadContexts)
-                {
-                    if (!s_assemblyLoadContexts.TryGetValue(assemblyPath, out alc))
-                    {
-                        alc = new IsolatedComponentLoadContext(assemblyPath);
-                        s_assemblyLoadContexts.Add(assemblyPath, alc);
-                    }
-                }
-            }
-            else
-            {
-                alc = AssemblyLoadContext.Default;
-                lock (s_loadedInDefaultContext)
-                {
-                    if (!s_loadedInDefaultContext.Contains(assemblyPath))
-                    {
-                        var resolver = new AssemblyDependencyResolver(assemblyPath);
-                        AssemblyLoadContext.Default.Resolving +=
-                            (context, assemblyName) =>
-                            {
-                                string? assemblyPath = resolver.ResolveAssemblyToPath(assemblyName);
-                                return assemblyPath != null
-                                    ? context.LoadFromAssemblyPath(assemblyPath)
-                                    : null;
-                            };
-
-                        s_loadedInDefaultContext.Add(assemblyPath);
-                    }
-                }
-            }
-
-            return alc;
         }
 
         [ComVisible(true)]
@@ -706,9 +651,14 @@ namespace Internal.Runtime.InteropServices
         private const string LicenseRefTypeName = "System.ComponentModel.License&, System.ComponentModel.TypeConverter";
         private const string LicInfoHelperLicenseContextTypeName = "System.ComponentModel.LicenseManager+LicInfoHelperLicenseContext, System.ComponentModel.TypeConverter";
 
-        // RCW Activation
-        private object? _licContext;
-        private Type? _targetRcwType;
+        private readonly object _licContext;
+        private readonly Type _targetRcwType;
+
+        private LicenseInteropProxy(object licContext, Type targetRcwType)
+        {
+            _licContext = licContext;
+            _targetRcwType = targetRcwType;
+        }
 
         [UnsafeAccessor(UnsafeAccessorKind.Method)]
         private static extern void SetSavedLicenseKey(
@@ -734,7 +684,7 @@ namespace Internal.Runtime.InteropServices
 
         [UnsafeAccessor(UnsafeAccessorKind.StaticMethod)]
         [return: UnsafeAccessorType(LicenseContextTypeName)]
-        private static extern object? GetCurrentContextInfo(
+        private static extern object GetCurrentContextInfo(
             [UnsafeAccessorType(LicenseInteropHelperTypeName)] object? licInteropHelper,
             Type type,
             out bool isDesignTime,
@@ -761,12 +711,6 @@ namespace Internal.Runtime.InteropServices
         private static extern bool Contains(
             [UnsafeAccessorType(LicInfoHelperLicenseContextTypeName)] object? licInfoHelperContext,
             string assemblyName);
-
-        // Helper function to create an object from the native side
-        public static object Create()
-        {
-            return new LicenseInteropProxy();
-        }
 
         // Determine if the type supports licensing
         public static bool HasLicense(Type type)
@@ -866,31 +810,42 @@ namespace Internal.Runtime.InteropServices
             }
         }
 
-        // See usage in native RCW code
-        public void GetCurrentContextInfo(RuntimeTypeHandle rth, out bool isDesignTime, out IntPtr bstrKey)
+        [UnmanagedCallersOnly]
+        private static unsafe void GetCurrentContextInfoAndProxy(MethodTable* pMT, bool* pIsDesignTime, ushort** pBstrKey, object* pProxy, Exception* pException)
         {
-            Type targetRcwTypeMaybe = Type.GetTypeFromHandle(rth)!;
+            try
+            {
+                RuntimeType targetRcwTypeMaybe = RuntimeTypeHandle.GetRuntimeType(pMT);
+                object licContext = GetCurrentContextInfo(null, targetRcwTypeMaybe, out *pIsDesignTime, out string? key);
 
-            _licContext = GetCurrentContextInfo(null, targetRcwTypeMaybe, out isDesignTime, out string? key);
-
-            _targetRcwType = targetRcwTypeMaybe;
-            bstrKey = Marshal.StringToBSTR((string)key!);
+                *pBstrKey = BStrStringMarshaller.ConvertToUnmanaged(key);
+                *pProxy = new LicenseInteropProxy(licContext, targetRcwTypeMaybe);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
         }
 
         // The CLR invokes this when instantiating a licensed COM
-        // object inside a designtime license context.
+        // object inside a design-time license context.
         // It's purpose is to save away the license key that the CLR
         // retrieved using RequestLicKey().
-        public void SaveKeyInCurrentContext(IntPtr bstrKey)
+        [UnmanagedCallersOnly]
+        private static unsafe void SaveKeyInCurrentContext(LicenseInteropProxy* pProxy, ushort* bstrKey, Exception* pException)
         {
-            if (bstrKey == IntPtr.Zero)
+            try
             {
-                return;
+                string? key = BStrStringMarshaller.ConvertToManaged(bstrKey);
+                if (key is not null)
+                {
+                    SetSavedLicenseKey(pProxy->_licContext, pProxy->_targetRcwType, key);
+                }
             }
-
-            string key = Marshal.PtrToStringBSTR(bstrKey);
-
-            SetSavedLicenseKey(_licContext!, _targetRcwType!, key);
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
         }
     }
 }

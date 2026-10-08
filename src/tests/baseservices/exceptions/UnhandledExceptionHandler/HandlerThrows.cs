@@ -44,7 +44,8 @@ public class HandlerThrows
         SetHandler();
     }
 
-    [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/47624", TestRuntimes.Mono)]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public static void Test1()
     {
         shouldThrowFromFilter = false;

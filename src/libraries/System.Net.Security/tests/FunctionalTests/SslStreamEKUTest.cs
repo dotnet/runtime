@@ -28,7 +28,7 @@ namespace System.Net.Security.Tests
         public static readonly X509Certificate2 clientCertificateNoEku = Configuration.Certificates.GetNoEKUCertificate();
         public static readonly X509Certificate2 clientCertificateClientEku = Configuration.Certificates.GetClientCertificate();
 
-        [ConditionalFact(nameof(IsRootCertificateInstalled))]
+        [ConditionalFact(typeof(SslStreamEKUTest), nameof(IsRootCertificateInstalled))]
         public async Task SslStream_NoEKUServerAuth_Ok()
         {
             var serverOptions = new HttpsTestServer.Options();
@@ -51,7 +51,7 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsRootCertificateInstalled))]
+        [ConditionalFact(typeof(SslStreamEKUTest), nameof(IsRootCertificateInstalled))]
         public async Task SslStream_ClientEKUServerAuth_Fails()
         {
             var serverOptions = new HttpsTestServer.Options();
@@ -74,7 +74,7 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsRootCertificateInstalled))]
+        [ConditionalFact(typeof(SslStreamEKUTest), nameof(IsRootCertificateInstalled))]
         public async Task SslStream_NoEKUClientAuth_Ok()
         {
             var serverOptions = new HttpsTestServer.Options();
@@ -99,7 +99,7 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsRootCertificateInstalled))]
+        [ConditionalFact(typeof(SslStreamEKUTest), nameof(IsRootCertificateInstalled))]
         public async Task SslStream_ServerEKUClientAuth_Fails()
         {
             var serverOptions = new HttpsTestServer.Options();
@@ -135,7 +135,7 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsRootCertificateInstalled), nameof(DoesNotSendCAListByDefault))]
+        [ConditionalFact(typeof(SslStreamEKUTest), nameof(IsRootCertificateInstalled), nameof(DoesNotSendCAListByDefault))]
         public async Task SslStream_SelfSignedClientEKUClientAuth_Ok()
         {
             var serverOptions = new HttpsTestServer.Options();

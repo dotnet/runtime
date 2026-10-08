@@ -14,11 +14,11 @@ public class Async2FibonacceWithYields
     const int iterations = 3;
 
     [Fact]
-    public static void Test()
+    public static async Task Test()
     {
         long allocated = GC.GetTotalAllocatedBytes(precise: true);
 
-        AsyncEntry().GetAwaiter().GetResult();
+        await AsyncEntry();
 
         allocated = GC.GetTotalAllocatedBytes(precise: true) - allocated;
         System.Console.WriteLine("allocated: " + allocated);
@@ -40,7 +40,7 @@ public class Async2FibonacceWithYields
         for (int i = 0; i < iterations; i++)
         {
             var sw = Stopwatch.StartNew();
-            MyInt result = await Fib(new MyInt(25));
+            MyInt result = await Fib(new MyInt(TestLibrary.Utilities.IsCoreClrInterpreter ? 5 : 25));
             sw.Stop();
 
             Console.WriteLine($"{sw.ElapsedMilliseconds} ms result={result.i}");

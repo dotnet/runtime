@@ -11,6 +11,7 @@ public class Program
 {
     private static int returnCode = 100;
 
+    [SkipOnCoreClr("Test failure under GC stress is tracked by https://github.com/dotnet/runtime/issues/66279.", RuntimeTestModes.AnyGCStress)]
     [Fact]
     public static int TestEntryPoint()
     {

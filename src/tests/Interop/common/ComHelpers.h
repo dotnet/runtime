@@ -104,6 +104,11 @@ public:
         return (++_refCount);
     }
 
+#ifdef TARGET_UNIX
+    // Header-defined 'delete this' confuses GCC 16's flow analysis when
+    // inlined into scopes containing stack-allocated instances.
+    __attribute__((noinline))
+#endif
     uint32_t DoRelease()
     {
         assert(_refCount > 0);

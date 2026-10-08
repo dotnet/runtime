@@ -49,8 +49,8 @@ void InitEventForDebuggerNotification(DEBUG_EVENT *      pDebugEvent,
 #define CopyContextChunk(_t, _f, _end, _flag)                                  \
 {                                                                              \
     LOG((LF_CORDB, LL_INFO1000000,                                             \
-         "CP::CTC: copying " #_flag  ":" FMT_ADDR "<---" FMT_ADDR "(%d)\n",    \
-         DBG_ADDR(_t), DBG_ADDR(_f), ((UINT_PTR)(_end) - (UINT_PTR)_t)));      \
+         "CP::CTC: copying " #_flag  ":" FMT_ADDR "<---" FMT_ADDR "(%zu)\n",   \
+         DBG_ADDR(_t), DBG_ADDR(_f), (size_t)((UINT_PTR)(_end) - (UINT_PTR)_t)));      \
     memcpy((_t), (_f), ((UINT_PTR)(_end) - (UINT_PTR)(_t)));                     \
 }
 
@@ -58,11 +58,8 @@ void InitEventForDebuggerNotification(DEBUG_EVENT *      pDebugEvent,
 // CORDbgCopyThreadContext() does an intelligent copy from pSrc to pDst,
 // respecting the ContextFlags of both contexts.
 //
-struct DebuggerREGDISPLAY;
 
 extern void CORDbgCopyThreadContext(DT_CONTEXT* pDst, const DT_CONTEXT* pSrc);
-extern void CORDbgSetDebuggerREGDISPLAYFromContext(DebuggerREGDISPLAY *pDRD,
-                                                   DT_CONTEXT* pContext);
 
 //---------------------------------------------------------------------------------------
 //

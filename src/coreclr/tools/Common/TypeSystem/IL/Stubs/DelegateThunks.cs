@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+
+using Internal.Text;
 using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
@@ -128,7 +130,7 @@ namespace Internal.IL.Stubs
             return emitter.Link(this);
         }
 
-        public override ReadOnlySpan<byte> Name
+        public override Utf8Span Name
         {
             get
             {
@@ -221,7 +223,7 @@ namespace Internal.IL.Stubs
             return emitter.Link(this);
         }
 
-        public override ReadOnlySpan<byte> Name
+        public override Utf8Span Name
         {
             get
             {
@@ -281,7 +283,7 @@ namespace Internal.IL.Stubs
             return emitter.Link(this);
         }
 
-        public override ReadOnlySpan<byte> Name
+        public override Utf8Span Name
         {
             get
             {
@@ -308,7 +310,7 @@ namespace Internal.IL.Stubs
             ILEmitter emitter = new ILEmitter();
             ILCodeStream codeStream = emitter.NewCodeStream();
 
-            TypeDesc delegateWrapperType = ((MetadataType)SystemDelegateType).GetKnownNestedType("Wrapper");
+            TypeDesc delegateWrapperType = ((MetadataType)SystemDelegateType).GetKnownNestedType("Wrapper"u8);
             ArrayType invocationListArrayType = delegateWrapperType.MakeArrayType();
 
             ILLocalVariable delegateArrayLocal = emitter.NewLocal(invocationListArrayType);
@@ -416,7 +418,7 @@ namespace Internal.IL.Stubs
             return emitter.Link(this);
         }
 
-        public override ReadOnlySpan<byte> Name
+        public override Utf8Span Name
         {
             get
             {
@@ -464,7 +466,7 @@ namespace Internal.IL.Stubs
             return emitter.Link(this);
         }
 
-        public override ReadOnlySpan<byte> Name
+        public override Utf8Span Name
         {
             get
             {
@@ -563,7 +565,9 @@ namespace Internal.IL.Stubs
             }
             else
             {
-                MethodDesc emptyObjectArrayMethod = Context.GetHelperEntryPoint("DelegateHelpers"u8, "GetEmptyObjectArray"u8);
+                MethodDesc emptyObjectArrayMethod = Context.SystemModule.GetKnownType("System"u8, "Array"u8)
+                    .GetKnownMethod("Empty"u8, null)
+                    .MakeInstantiatedMethod(objectType);
                 codeStream.Emit(ILOpcode.call, emitter.NewToken(emptyObjectArrayMethod));
                 codeStream.EmitStLoc(argsLocal);
             }
@@ -641,7 +645,7 @@ namespace Internal.IL.Stubs
             return emitter.Link(this);
         }
 
-        public override ReadOnlySpan<byte> Name
+        public override Utf8Span Name
         {
             get
             {
@@ -758,7 +762,7 @@ namespace Internal.IL.Stubs
             }
         }
 
-        public override ReadOnlySpan<byte> Name
+        public override Utf8Span Name
         {
             get
             {

@@ -1542,7 +1542,7 @@ namespace System.DirectoryServices.ActiveDirectory
                                             // multivalues attribute we can stop here.
                                             foundPartitionEntry = true;
 
-                                            if (string.Compare(dnString, 10, "0", 0, 1, StringComparison.OrdinalIgnoreCase) == 0)
+                                            if (dnString[10] == '0')
                                             {
                                                 // this server has the partition fully instantiated
                                                 ntdsaNames.Add(ntdsaName);
@@ -1648,7 +1648,7 @@ namespace System.DirectoryServices.ActiveDirectory
                                         // find the property name with the range info
                                         foreach (string property in res.Properties.PropertyNames)
                                         {
-                                            if (string.Compare(property, 0, PropertyManager.MsDSHasInstantiatedNCs, 0, PropertyManager.MsDSHasInstantiatedNCs.Length, StringComparison.OrdinalIgnoreCase) == 0)
+                                            if (property.AsSpan().StartsWith(PropertyManager.MsDSHasInstantiatedNCs, StringComparison.OrdinalIgnoreCase))
                                             {
                                                 propertyName = property;
                                                 break;
@@ -1677,7 +1677,7 @@ namespace System.DirectoryServices.ActiveDirectory
                                         {
                                             foundPartitionEntry = true;
 
-                                            if (string.Compare(dnString, 10, "0", 0, 1, StringComparison.OrdinalIgnoreCase) == 0)
+                                            if (dnString[10] == '0')
                                             {
                                                 ntdsaNames.Add(ntdsaName);
                                                 if (isADAM)
@@ -1905,10 +1905,10 @@ namespace System.DirectoryServices.ActiveDirectory
             }
 
             //extract IPv6 port number if any
-            bool isBrace = serverName.StartsWith("[", StringComparison.Ordinal);
+            bool isBrace = serverName.StartsWith('[');
             if (isBrace)
             {
-                if (serverName.EndsWith("]", StringComparison.Ordinal))
+                if (serverName.EndsWith(']'))
                 {
                     //[IPv6]
                     serverName = serverName.Substring(1, serverName.Length - 2); //2 for []

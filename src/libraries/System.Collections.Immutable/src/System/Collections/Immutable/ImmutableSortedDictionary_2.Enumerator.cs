@@ -90,12 +90,12 @@ namespace System.Collections.Immutable
                 get
                 {
                     this.ThrowIfDisposed();
-                    if (_current != null)
+                    if (_current == null)
                     {
-                        return _current.Value;
+                        ThrowHelper.ThrowInvalidOperationException();
                     }
 
-                    throw new InvalidOperationException();
+                    return _current.Value;
                 }
             }
 

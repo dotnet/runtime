@@ -70,7 +70,7 @@ attach_profiler_command_try_parse_payload (
 		!ds_ipc_message_try_parse_value (&buffer_cursor, &buffer_cursor_len, (uint8_t *)&instance->profiler_guid, (uint32_t)ARRAY_SIZE (instance->profiler_guid)) ||
 		!ds_ipc_message_try_parse_string_utf16_t (&buffer_cursor, &buffer_cursor_len, &instance->profiler_path) ||
 		!ds_ipc_message_try_parse_uint32_t (&buffer_cursor, &buffer_cursor_len, &instance->client_data_len) ||
-		!(buffer_cursor_len <= instance->client_data_len))
+		!(buffer_cursor_len >= instance->client_data_len))
 		ep_raise_error ();
 
 	instance->client_data = buffer_cursor;

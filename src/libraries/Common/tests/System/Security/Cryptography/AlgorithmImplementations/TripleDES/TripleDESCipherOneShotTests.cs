@@ -848,17 +848,14 @@ namespace System.Security.Cryptography.Encryption.TripleDes.Tests
                     8,
                 };
 
-                // 3DES CFB64 is not supported on Windows 7.
-                if (PlatformDetection.IsNotWindows7)
+                yield return new object[]
                 {
-                    yield return new object[]
+                    // plaintext
+                    new byte[]
                     {
-                        // plaintext
-                        new byte[]
-                        {
-                            0x50, 0x68, 0x12, 0xA4, 0x5F, 0x08, 0xC8, 0x89,
-                            0xB9, 0x7F, 0x59, 0x80, 0x03, 0x8B, 0x83, 0x59,
-                        },
+                        0x50, 0x68, 0x12, 0xA4, 0x5F, 0x08, 0xC8, 0x89,
+                        0xB9, 0x7F, 0x59, 0x80, 0x03, 0x8B, 0x83, 0x59,
+                    },
 
                         // ciphertext
                         new byte[]
@@ -1092,7 +1089,6 @@ namespace System.Security.Cryptography.Encryption.TripleDes.Tests
                         CipherMode.CFB,
                         64,
                     };
-                }
             }
         }
     }

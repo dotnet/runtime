@@ -73,7 +73,7 @@ namespace System.Reflection.Emit
 
         public short Value => (short)m_value;
 
-        private static volatile string[]? g_nameCache;
+        private static string[]? g_nameCache;
 
         public string? Name
         {

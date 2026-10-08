@@ -88,6 +88,33 @@ namespace System.Tests
             Assert.Equal(expected, Nullable.GetUnderlyingType(nullableType));
         }
 
+        public static IEnumerable<object[]> GetNullableUnderlyingType_RuntimeType_TestData()
+        {
+            yield return new object[] { typeof(int?), typeof(int) };
+            yield return new object[] { typeof(int), null };
+            yield return new object[] { typeof(G<int>), null };
+            // Nullable<> (generic type definition) is nullable; returns the generic type parameter T.
+            yield return new object[] { typeof(Nullable<>), typeof(Nullable<>).GetGenericArguments()[0] };
+        }
+
+        [Theory]
+        [MemberData(nameof(GetNullableUnderlyingType_RuntimeType_TestData))]
+        public static void GetNullableUnderlyingType_RuntimeType(Type type, Type? expected)
+        {
+            Assert.Equal(expected, type.GetNullableUnderlyingType());
+        }
+
+        [Fact]
+        public static void GetNullableUnderlyingType_NullableOverForeignGenericParameter()
+        {
+            // Nullable<T> instantiated over the generic parameter of another type.
+            Type genericParam = typeof(GStruct<>).GetGenericArguments()[0];
+            Type nullableOverParam = typeof(Nullable<>).MakeGenericType(genericParam);
+
+            Assert.Same(genericParam, nullableOverParam.GetNullableUnderlyingType());
+            Assert.Same(genericParam, Nullable.GetUnderlyingType(nullableOverParam));
+        }
+
         [Fact]
         public static void GetUnderlyingType_NullType_ThrowsArgumentNullException()
         {
@@ -222,5 +249,7 @@ namespace System.Tests
         }
 
         public class G<T> { }
+
+        public struct GStruct<T> where T : struct { }
     }
 }

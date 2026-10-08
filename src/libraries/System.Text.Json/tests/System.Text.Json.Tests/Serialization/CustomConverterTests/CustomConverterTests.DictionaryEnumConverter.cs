@@ -144,7 +144,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void VerifyDictionaryEnumToIntConverter()
         {
-            const string Json = @"{""One"":1}";
+            const string Json = """{"One":1}""";
 
             var options = new JsonSerializerOptions();
             options.Converters.Add(new DictionaryEnumConverter());
@@ -160,7 +160,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void VerifyDictionaryEnumToIntConverterCaseInsensitive()
         {
-            const string Json = @"{""one"":1}";
+            const string Json = """{"one":1}""";
 
             var options = new JsonSerializerOptions();
             options.Converters.Add(new DictionaryEnumConverter());
@@ -171,13 +171,13 @@ namespace System.Text.Json.Serialization.Tests
 
             // The serialized JSON is cased per the enum's actual vales.
             string jsonRoundTripped = JsonSerializer.Serialize(obj, options);
-            Assert.Equal(@"{""One"":1}", jsonRoundTripped);
+            Assert.Equal("""{"One":1}""", jsonRoundTripped);
         }
 
         [Fact]
         public static void VerifyDictionaryEnumToObjectConverter()
         {
-            const string Json = @"{""One"":{""Value"":""test""}}";
+            const string Json = """{"One":{"Value":"test"}}""";
 
             var options = new JsonSerializerOptions();
             options.Converters.Add(new DictionaryEnumConverter());
@@ -193,7 +193,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void VerifyDictionaryEnumConverterFail()
         {
-            const string Json = @"{""BAD"":2}";
+            const string Json = """{"BAD":2}""";
 
             var options = new JsonSerializerOptions();
             options.Converters.Add(new DictionaryEnumConverter());

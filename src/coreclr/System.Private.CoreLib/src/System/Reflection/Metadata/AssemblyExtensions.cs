@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -8,6 +9,7 @@ namespace System.Reflection.Metadata
 {
     public static partial class AssemblyExtensions
     {
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_InternalTryGetRawMetadata")]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static unsafe partial bool InternalTryGetRawMetadata(QCallAssembly assembly, ref byte* blob, ref int length);

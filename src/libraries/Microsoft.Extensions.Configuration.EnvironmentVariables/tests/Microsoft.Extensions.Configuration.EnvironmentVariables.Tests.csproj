@@ -3,6 +3,9 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
     <EnableDefaultItems>true</EnableDefaultItems>
+    <!-- https://github.com/dotnet/runtime/issues/126862 -->
+    <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
+    <EnableAotAnalyzer>false</EnableAotAnalyzer>
   </PropertyGroup>
 
   <ItemGroup>
@@ -17,6 +20,9 @@
   <ItemGroup>
     <ProjectReference Include="..\src\Microsoft.Extensions.Configuration.EnvironmentVariables.csproj" SkipUseReferenceAssembly="true" />
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration.Binder\src\Microsoft.Extensions.Configuration.Binder.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.FileProviders.Abstractions\src\Microsoft.Extensions.FileProviders.Abstractions.csproj" />
   </ItemGroup>
   

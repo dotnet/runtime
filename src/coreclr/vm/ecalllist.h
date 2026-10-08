@@ -68,9 +68,8 @@ FCFuncStart(gStringFuncs)
 FCFuncEnd()
 
 FCFuncStart(gEnvironmentFuncs)
-    FCFuncElement("get_CurrentManagedThreadId", JIT_GetCurrentManagedThreadId)
-    FCFuncElement("set_ExitCode", SystemNative::SetExitCode)
-    FCFuncElement("get_ExitCode", SystemNative::GetExitCode)
+    FCFuncElement("set_ExitCode", EnvironmentNative::SetExitCode)
+    FCFuncElement("get_ExitCode", EnvironmentNative::GetExitCode)
 FCFuncEnd()
 
 FCFuncStart(gExceptionFuncs)
@@ -123,7 +122,6 @@ FCFuncStart(gMetaDataImport)
     FCFuncElement("GetFieldMarshal", MetaDataImport::GetFieldMarshal)
     FCFuncElement("GetPInvokeMap", MetaDataImport::GetPInvokeMap)
     FCFuncElement("IsValidToken", MetaDataImport::IsValidToken)
-    FCFuncElement("GetMarshalAs", MetaDataImport::GetMarshalAs)
 FCFuncEnd()
 
 FCFuncStart(gSignatureNative)
@@ -152,6 +150,12 @@ FCFuncStart(gRuntimeMethodHandle)
     FCFuncElement("GetResolver", RuntimeMethodHandle::GetResolver)
     FCFuncElement("GetLoaderAllocatorInternal", RuntimeMethodHandle::GetLoaderAllocatorInternal)
 FCFuncEnd()
+
+#ifdef FEATURE_INTERPRETER
+FCFuncStart(gAsyncHelpers)
+    FCFuncElement("ResumeInterpreterContinuation", AsyncHelpers_ResumeInterpreterContinuation)
+FCFuncEnd()
+#endif // FEATURE_INTERPRETER
 
 FCFuncStart(gCOMFieldHandleNewFuncs)
     FCFuncElement("GetUtf8NameInternal", RuntimeFieldHandle::GetUtf8Name)
@@ -252,21 +256,15 @@ FCFuncStart(gThreadFuncs)
     FCFuncElement("InternalFinalize", ThreadNative::Finalize)
     FCFuncElement("CatchAtSafePoint", ThreadNative::CatchAtSafePoint)
     FCFuncElement("CurrentThreadIsFinalizerThread", ThreadNative::CurrentThreadIsFinalizerThread)
-    FCFuncElement("get_OptimalMaxSpinWaitsPerSpinIteration", ThreadNative::GetOptimalMaxSpinWaitsPerSpinIteration)
+#ifdef TARGET_WASM
+    FCFuncElement("GetThreadStaticsBaseNative", ThreadNative::GetThreadStaticsBaseNative)
+#endif
 FCFuncEnd()
 
 FCFuncStart(gObjectHeaderFuncs)
-    FCFuncElement("AcquireInternal", ObjHeader_AcquireThinLock)
-    FCFuncElement("Release", ObjHeader_ReleaseThinLock)
+    FCFuncElement("GetLockHandleIfExists", ObjectHeader_GetLockHandleIfExists)
 FCFuncEnd()
 
-FCFuncStart(gMonitorFuncs)
-    FCFuncElement("GetLockHandleIfExists", Monitor_GetLockHandleIfExists)
-FCFuncEnd()
-
-FCFuncStart(gCastHelpers)
-    FCFuncElement("WriteBarrier", ::WriteBarrier_Helper)
-FCFuncEnd()
 
 FCFuncStart(gArrayFuncs)
     FCFuncElement("GetCorElementTypeOfElementType", ArrayNative::GetCorElementTypeOfElementType)
@@ -300,7 +298,7 @@ FCFuncStart(gGCInterfaceFuncs)
 FCFuncEnd()
 
 FCFuncStart(gGCSettingsFuncs)
-    FCFuncElement("get_IsServerGC", SystemNative::IsServerGC)
+    FCFuncElement("get_IsServerGC", GCInterface::IsServerGC)
     FCFuncElement("GetGCLatencyMode", GCInterface::GetGcLatencyMode)
     FCFuncElement("GetLOHCompactionMode", GCInterface::GetLOHCompactionMode)
     FCFuncElement("SetGCLatencyMode", GCInterface::SetGcLatencyMode)
@@ -323,6 +321,7 @@ FCFuncStart(gInterlockedFuncs)
     FCFuncElement("Exchange64", COMInterlocked::Exchange64)
     FCFuncElement("ExchangeObject", COMInterlocked::ExchangeObject)
     FCFuncElement("CompareExchange32", COMInterlocked::CompareExchange32)
+    FCFuncElement("CompareExchange32Pointer", COMInterlocked::CompareExchange32)
     FCFuncElement("CompareExchange64", COMInterlocked::CompareExchange64)
     FCFuncElement("CompareExchangeObject", COMInterlocked::CompareExchangeObject)
     FCFuncElement("ExchangeAdd32", COMInterlocked::ExchangeAdd32)
@@ -347,19 +346,18 @@ FCFuncStart(gMethodTableFuncs)
     FCFuncElement("GetNumInstanceFieldBytes", MethodTableNative::GetNumInstanceFieldBytes)
     FCFuncElement("GetPrimitiveCorElementType", MethodTableNative::GetPrimitiveCorElementType)
     FCFuncElement("GetMethodTableMatchingParentClass", MethodTableNative::GetMethodTableMatchingParentClass)
-    FCFuncElement("InstantiationArg0", MethodTableNative::InstantiationArg0)
     FCFuncElement("GetLoaderAllocatorHandle", MethodTableNative::GetLoaderAllocatorHandle)
 FCFuncEnd()
 
 FCFuncStart(gStubHelperFuncs)
-    FCFuncElement("GetDelegateTarget", StubHelpers::GetDelegateTarget)
     FCFuncElement("SetLastError", StubHelpers::SetLastError)
     FCFuncElement("ClearLastError", StubHelpers::ClearLastError)
 #ifdef FEATURE_COMINTEROP
-    FCFuncElement("GetComInterfaceFromMethodDesc", StubHelpers::GetComInterfaceFromMethodDesc)
     FCFuncElement("GetCOMIPFromRCW", StubHelpers::GetCOMIPFromRCW)
 #endif // FEATURE_COMINTEROP
+#ifdef FEATURE_VARARGS
     FCFuncElement("CalcVaListSize", StubHelpers::CalcVaListSize)
+#endif // FEATURE_VARARGS
     FCFuncElement("LogPinnedArgument", StubHelpers::LogPinnedArgument)
 FCFuncEnd()
 
@@ -385,8 +383,10 @@ FCFuncEnd()
 
 FCClassElement("Array", "System", gArrayFuncs)
 FCClassElement("AssemblyLoadContext", "System.Runtime.Loader", gAssemblyLoadContextFuncs)
+#ifdef FEATURE_INTERPRETER
+FCClassElement("AsyncHelpers", "System.Runtime.CompilerServices", gAsyncHelpers)
+#endif
 FCClassElement("Buffer", "System", gBufferFuncs)
-FCClassElement("CastHelpers", "System.Runtime.CompilerServices", gCastHelpers)
 FCClassElement("Delegate", "System", gDelegateFuncs)
 FCClassElement("DependentHandle", "System.Runtime", gDependentHandleFuncs)
 FCClassElement("Environment", "System", gEnvironmentFuncs)
@@ -402,10 +402,7 @@ FCClassElement("Math", "System", gMathFuncs)
 FCClassElement("MathF", "System", gMathFFuncs)
 FCClassElement("MetadataImport", "System.Reflection", gMetaDataImport)
 FCClassElement("MethodTable", "System.Runtime.CompilerServices", gMethodTableFuncs)
-FCClassElement("Monitor", "System.Threading", gMonitorFuncs)
-
 FCClassElement("ObjectHeader", "System.Threading", gObjectHeaderFuncs)
-
 FCClassElement("RuntimeAssembly", "System.Reflection", gRuntimeAssemblyFuncs)
 FCClassElement("RuntimeFieldHandle", "System", gCOMFieldHandleNewFuncs)
 FCClassElement("RuntimeHelpers", "System.Runtime.CompilerServices", gRuntimeHelpers)

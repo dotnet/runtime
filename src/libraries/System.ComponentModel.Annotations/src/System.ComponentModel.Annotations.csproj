@@ -15,6 +15,7 @@
     <Compile Include="System\ComponentModel\DataAnnotations\AssociatedMetadataTypeTypeDescriptor.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\AssociatedMetadataTypeTypeDescriptionProvider.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\AssociationAttribute.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\AsyncValidationAttribute.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\Base64StringAttribute.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\CompareAttribute.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\ConcurrencyCheckAttribute.cs" />
@@ -31,6 +32,7 @@
     <Compile Include="System\ComponentModel\DataAnnotations\EnumDataTypeAttribute.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\FileExtensionsAttribute.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\FilterUIHintAttribute.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\IAsyncValidatableObject.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\IValidatableObject.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\KeyAttribute.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\LengthAttribute.cs" />

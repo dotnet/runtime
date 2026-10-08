@@ -3,6 +3,7 @@
 //
 
 #include "common.h"
+#include <minipal/time.h>
 
 #include "mscoree.h"
 #include "corhost.h"
@@ -165,9 +166,9 @@ BOOL ClrVirtualProtect(LPVOID lpAddress, SIZE_T dwSize, DWORD flNewProtect, PDWO
                 //
                 // because the section following UEF will also be included in the region size
                 // if it has the same protection as the UEF section.
-                DWORD dwUEFSectionPageCount = ((pUEFSection->Misc.VirtualSize + GetOsPageSize() - 1) / GetOsPageSize());
+                DWORD dwUEFSectionPageCount = (DWORD)((pUEFSection->Misc.VirtualSize + minipal_getpagesize() - 1) / minipal_getpagesize());
 
-                BYTE* pAddressOfFollowingSection = pStartOfUEFSection + (GetOsPageSize() * dwUEFSectionPageCount);
+                BYTE* pAddressOfFollowingSection = pStartOfUEFSection + (minipal_getpagesize() * dwUEFSectionPageCount);
 
                 // Ensure that the section following us is having different memory protection
                 MEMORY_BASIC_INFORMATION nextSectionInfo;
@@ -208,61 +209,6 @@ BOOL ClrVirtualProtect(LPVOID lpAddress, SIZE_T dwSize, DWORD flNewProtect, PDWO
 #endif // _DEBUG && !TARGET_UNIX
 
     return ::VirtualProtect(lpAddress, dwSize, flNewProtect, lpflOldProtect);
-}
-
-DWORD ClrSleepEx(DWORD dwMilliseconds, BOOL bAlertable)
-{
-    WRAPPER_NO_CONTRACT;
-    return ::SleepEx(dwMilliseconds, bAlertable);
-}
-
-// non-zero return value if this function causes the OS to switch to another thread
-// See file:spinlock.h#SwitchToThreadSpinning for an explanation of dwSwitchCount
-BOOL __SwitchToThread (DWORD dwSleepMSec, DWORD dwSwitchCount)
-{
-    // If you sleep for a long time, the thread should be in Preemptive GC mode.
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        PRECONDITION(dwSleepMSec < 10000 || GetThreadNULLOk() == NULL || !GetThread()->PreemptiveGCDisabled());
-    }
-    CONTRACTL_END;
-
-    if (dwSleepMSec > 0)
-    {
-        ClrSleepEx(dwSleepMSec,FALSE);
-        return TRUE;
-    }
-
-    // In deciding when to insert sleeps, we wait until we have been spinning
-    // for a long time and then always sleep.  The former is to let short perf-critical
-    // __SwitchToThread loops avoid context switches.  The latter is to ensure
-    // that if many threads are spinning waiting for a lower-priority thread
-    // to run that they will eventually all be asleep at the same time.
-    //
-    // The specific values are derived from the NDP 2.0 SP1 fix: it waits for
-    // 8 million cycles of __SwitchToThread calls where each takes ~300-500,
-    // which means we should wait in the neighborhood of 25000 calls.
-    //
-    // As of early 2011, ARM CPUs are much slower, so we need a lower threshold.
-    // The following two values appear to yield roughly equivalent spin times
-    // on their respective platforms.
-    //
-#ifdef TARGET_ARM
-    #define SLEEP_START_THRESHOLD (5 * 1024)
-#else
-    #define SLEEP_START_THRESHOLD (32 * 1024)
-#endif
-
-    _ASSERTE(CALLER_LIMITS_SPINNING < SLEEP_START_THRESHOLD);
-    if (dwSwitchCount >= SLEEP_START_THRESHOLD)
-    {
-        ClrSleepEx(1, FALSE);
-    }
-
-    return SwitchToThread();
 }
 
 // Locking routines supplied by the EE to the other DLLs of the CLR.  In a _DEBUG
@@ -356,7 +302,7 @@ DEBUG_NOINLINE void ClrEnterCriticalSection(CRITSEC_COOKIE cookie) {
     pCrst->Enter();
 }
 
-DEBUG_NOINLINE void ClrLeaveCriticalSection(CRITSEC_COOKIE cookie)
+DEBUG_NOINLINE void ClrLeaveCriticalSection(CRITSEC_COOKIE cookie) noexcept
 {
     CONTRACTL
     {

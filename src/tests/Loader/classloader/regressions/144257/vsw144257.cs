@@ -6,6 +6,7 @@
 
 using System;
 using Xunit;
+using TestLibrary;
 
 interface I
 {
@@ -24,6 +25,7 @@ public class B : A
 
 public class C : B, I
 {
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
     [Fact]
     public static void TestEntryPoint()
     {

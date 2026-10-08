@@ -44,7 +44,7 @@ namespace
         std::vector<known_options> known_opts;
         known_opts.reserve(static_cast<int>(known_options::__last));
         known_opts.push_back(known_options::additional_probing_path);
-        if (for_cli_usage || exec_mode || mode == host_mode_t::split_fx || mode == host_mode_t::apphost)
+        if (for_cli_usage || exec_mode || mode == host_mode_t::apphost)
         {
             known_opts.push_back(known_options::deps_file);
             known_opts.push_back(known_options::runtime_config);
@@ -229,13 +229,7 @@ int command_line::parse_args_for_mode(
 {
     int argoff = args_include_running_executable ? 1 : 0;
     int result;
-    if (mode == host_mode_t::split_fx)
-    {
-        // Invoked as corehost
-        trace::verbose(_X("--- Executing in split/FX mode..."));
-        result = parse_args(host_info, argoff, argc, argv, false, mode, new_argoff, app_candidate, opts);
-    }
-    else if (mode == host_mode_t::apphost)
+    if (mode == host_mode_t::apphost)
     {
         // Invoked from the application base.
         trace::verbose(_X("--- Executing in a native executable mode..."));

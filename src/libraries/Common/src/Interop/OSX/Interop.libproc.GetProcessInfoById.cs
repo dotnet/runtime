@@ -2,9 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-
-#pragma warning disable CA1823 // analyzer incorrectly flags fixed buffer length const (https://github.com/dotnet/roslyn/issues/37593)
 
 internal static partial class Interop
 {
@@ -18,7 +17,7 @@ internal static partial class Interop
 
         // From proc_info.h
         [StructLayout(LayoutKind.Sequential)]
-        internal unsafe struct proc_bsdinfo
+        internal struct proc_bsdinfo
         {
             internal uint       pbi_flags;
             internal uint       pbi_status;
@@ -32,8 +31,8 @@ internal static partial class Interop
             internal uint       pbi_svuid;
             internal uint       pbi_svgid;
             internal uint       reserved;
-            internal fixed byte pbi_comm[MAXCOMLEN];
-            internal fixed byte pbi_name[MAXCOMLEN * 2];
+            internal CommBuffer pbi_comm;
+            internal NameBuffer pbi_name;
             internal uint       pbi_nfiles;
             internal uint       pbi_pgid;
             internal uint       pbi_pjobc;
@@ -42,6 +41,18 @@ internal static partial class Interop
             internal int        pbi_nice;
             internal ulong      pbi_start_tvsec;
             internal ulong      pbi_start_tvusec;
+
+            [InlineArray(MAXCOMLEN)]
+            internal struct CommBuffer
+            {
+                private byte _element0;
+            }
+
+            [InlineArray(MAXCOMLEN * 2)]
+            internal struct NameBuffer
+            {
+                private byte _element0;
+            }
         }
 
         // From proc_info.h

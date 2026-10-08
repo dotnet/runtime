@@ -1,16 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 /*
  *    CallHelpers.CPP: helpers to call managed code
- *
-
  */
 
 #include "common.h"
 #include "dbginterface.h"
 
-// To include declaration of "AppDomainTransitionExceptionFilter"
-#include "excep.h"
 #include "invokeutil.h"
 #include "argdestination.h"
 
@@ -29,15 +26,12 @@ void AssertMulticoreJitAllowedModule(PCODE pTarget)
 
 #endif
 
-// For X86, INSTALL_COMPLUS_EXCEPTION_HANDLER grants us sufficient protection to call into
-// managed code.
-//
-// But on 64-bit, the personality routine will not pop frames or trackers as exceptions unwind
+// The personality routine will not pop frames or trackers as exceptions unwind
 // out of managed code.  Instead, we rely on explicit cleanup like CLRException::HandlerState::CleanupTry
 // or UMThunkUnwindFrameChainHandler.
 //
-// So all callers should call through CallDescrWorkerWithHandler (or a wrapper like MethodDesc::Call)
-// and get the platform-appropriate exception handling.
+// All callers should call through CallDescrWorkerWithHandler (or a wrapper like MethodDesc::Call)
+// to get proper exception handling.
 
 //*******************************************************************************
 void CallDescrWorkerWithHandler(
@@ -114,40 +108,6 @@ void CallDescrWorker(CallDescrData * pCallDescrData)
 }
 #endif // !defined(HOST_64BIT) && defined(_DEBUG)
 
-void DispatchCallDebuggerWrapper(
-    CallDescrData *   pCallDescrData,
-    BOOL fCriticalCall
-)
-{
-    // Use static contracts b/c we have SEH.
-    STATIC_CONTRACT_THROWS;
-    STATIC_CONTRACT_GC_TRIGGERS;
-    STATIC_CONTRACT_MODE_COOPERATIVE;
-
-    struct Param : NotifyOfCHFFilterWrapperParam
-    {
-        CallDescrData * pCallDescrData;
-        BOOL fCriticalCall;
-    } param;
-
-    param.pFrame = NULL;
-    param.pCallDescrData = pCallDescrData;
-    param.fCriticalCall = fCriticalCall;
-
-    PAL_TRY(Param *, pParam, &param)
-    {
-        CallDescrWorkerWithHandler(
-            pParam->pCallDescrData,
-            pParam->fCriticalCall);
-    }
-    PAL_EXCEPT_FILTER(AppDomainTransitionExceptionFilter)
-    {
-        // Should never reach here b/c handler should always continue search.
-        _ASSERTE(!"Unreachable");
-    }
-    PAL_ENDTRY
-}
-
 #if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
 void CopyReturnedFpStructFromRegisters(void* dest, UINT64 returnRegs[2], FpStructInRegistersInfo info,
     bool handleGcRefs)
@@ -178,76 +138,6 @@ void CopyReturnedFpStructFromRegisters(void* dest, UINT64 returnRegs[2], FpStruc
         copyReg(info.offset2nd, (swap ? 0 : 1), (info.flags & FpStruct::FloatInt), info.SizeShift2nd());
 }
 #endif // TARGET_RISCV64 || TARGET_LOONGARCH64
-
-// Helper for VM->managed calls with simple signatures.
-void* DispatchCallSimple(
-    SIZE_T *pSrc,
-    DWORD numStackSlotsToCopy,
-    PCODE pTargetAddress,
-    DWORD dwDispatchCallSimpleFlags)
-{
-    CONTRACTL
-    {
-        GC_TRIGGERS;
-        THROWS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-#ifdef DEBUGGING_SUPPORTED
-    if (CORDebuggerTraceCall())
-        g_pDebugInterface->TraceCall((const BYTE *)pTargetAddress);
-#endif // DEBUGGING_SUPPORTED
-
-    CallDescrData callDescrData;
-
-#ifdef CALLDESCR_ARGREGS
-    callDescrData.pSrc = pSrc + NUM_ARGUMENT_REGISTERS;
-    callDescrData.numStackSlots = numStackSlotsToCopy;
-    callDescrData.pArgumentRegisters = (ArgumentRegisters *)pSrc;
-#else
-    callDescrData.pSrc = pSrc;
-    callDescrData.numStackSlots = numStackSlotsToCopy;
-#endif
-
-#ifdef CALLDESCR_RETBUFFARGREG
-    UINT64 retBuffArgPlaceholder = 0;
-    callDescrData.pRetBuffArg = &retBuffArgPlaceholder;
-#endif
-
-#ifdef CALLDESCR_FPARGREGS
-    callDescrData.pFloatArgumentRegisters = NULL;
-#endif
-#ifdef CALLDESCR_REGTYPEMAP
-    callDescrData.dwRegTypeMap = 0;
-#endif
-    callDescrData.fpReturnSize = 0;
-    callDescrData.pTarget = pTargetAddress;
-
-#ifdef TARGET_WASM
-    static_assert(2*sizeof(ARGHOLDER_TYPE) == INTERP_STACK_SLOT_SIZE);
-    callDescrData.nArgsSize = numStackSlotsToCopy * sizeof(ARGHOLDER_TYPE)*2;
-    LPVOID pOrigSrc = callDescrData.pSrc;
-    callDescrData.pSrc = (LPVOID)_alloca(callDescrData.nArgsSize);
-    for (int i = 0; i < numStackSlotsToCopy; i++)
-    {
-        ((ARGHOLDER_TYPE*)callDescrData.pSrc)[i*2] = ((ARGHOLDER_TYPE*)pOrigSrc)[i];
-    }
-#endif // TARGET_WASM
-
-    if ((dwDispatchCallSimpleFlags & DispatchCallSimple_CatchHandlerFoundNotification) != 0)
-    {
-        DispatchCallDebuggerWrapper(
-            &callDescrData,
-            dwDispatchCallSimpleFlags & DispatchCallSimple_CriticalCall);
-    }
-    else
-    {
-        CallDescrWorkerWithHandler(&callDescrData, dwDispatchCallSimpleFlags & DispatchCallSimple_CriticalCall);
-    }
-
-    return *(void **)(&callDescrData.returnValue);
-}
 
 #ifdef CALLDESCR_REGTYPEMAP
 //*******************************************************************************
@@ -296,7 +186,6 @@ void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
         MODE_COOPERATIVE;
         PRECONDITION(GetAppDomain()->CheckCanExecuteManagedCode(m_pMD));
         PRECONDITION(m_pMD->CheckActivated());          // EnsureActive will trigger, so we must already be activated
@@ -330,9 +219,7 @@ void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *
         GCX_FORBID();
 
         //
-        // All types must already be loaded. This macro also sets up a FAULT_FORBID region which is
-        // also required for critical calls since we cannot inject any failure points between the
-        // caller of MethodDesc::CallDescr and the actual transition to managed code.
+        // All types must already be loaded.
         //
         ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE();
 
@@ -449,6 +336,15 @@ void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *
                 argDest.CopyStructToRegisters(pSrc, th.AsMethodTable()->GetNumInstanceFieldBytes(), 0);
             }
             else
+#elif defined(TARGET_ARM64)
+            if (argDest.IsHFA())
+            {
+                // An HFA/HVA struct argument is enregistered with each field in its own
+                // floating-point/vector register. Expand the packed struct data into the
+                // register slots instead of copying it verbatim.
+                argDest.CopyHFAStructToRegister(pSrc, stackSize);
+            }
+            else
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
             if (argDest.IsStructPassedInRegs())
             {
@@ -502,6 +398,7 @@ void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *
     #ifdef ENREGISTERED_PARAMTYPE_MAXSIZE
                         if (m_argIt.IsArgPassedByRef())
                         {
+                            _ASSERTE(!GCHeapUtilities::GetGCHeap()->IsHeapPointer(pSrc));
                             *(PVOID*)pDest = pSrc;
                         }
                         else
@@ -544,6 +441,9 @@ void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *
     callDescrData.pTarget = m_pCallTarget;
 #ifdef TARGET_WASM
     callDescrData.nArgsSize = nStackBytes;
+    callDescrData.hasRetBuff = false;
+    callDescrData.pTransitionBlock = (TransitionBlock*)pTransitionBlock;
+    _ASSERTE(!m_argIt.HasRetBuffArg());
 #endif // TARGET_WASM
 
     CallDescrWorkerWithHandler(&callDescrData);
@@ -605,15 +505,22 @@ void CallDefaultConstructor(OBJECTREF ref)
 
     GCPROTECT_BEGIN (ref);
 
-    MethodDesc *pMD = pMT->GetDefaultConstructor();
+    PCODE ctorCode;
+    {
+        GCX_PREEMP();
+        MethodDesc *pMD = pMT->GetDefaultConstructor();
+        ctorCode = pMD->GetSingleCallableAddrOfCode();
+    }
 
-    PREPARE_NONVIRTUAL_CALLSITE_USING_METHODDESC(pMD);
-    DECLARE_ARGHOLDER_ARRAY(CtorArgs, 1);
-    CtorArgs[ARGNUM_0]  = OBJECTREF_TO_ARGHOLDER(ref);
+    UnmanagedCallersOnlyCaller defaultCtorInvoker{METHOD__RUNTIME_HELPERS__CALL_DEFAULT_CONSTRUCTOR};
 
-    // Call the ctor...
-    CATCH_HANDLER_FOUND_NOTIFICATION_CALLSITE;
-    CALL_MANAGED_METHOD_NORET(CtorArgs);
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    // CallDefaultConstructor invokes the ctor via the function pointer, so its portable entrypoint
+    // must resolve to real code if possible.
+    MethodDesc::EnsurePortableEntryPointIsCallableFromR2R(ctorCode);
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
+
+    defaultCtorInvoker.InvokeThrowing(&ref, ctorCode);
 
     GCPROTECT_END ();
 }
