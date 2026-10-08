@@ -29,9 +29,9 @@ public sealed class CompilationResult
     /// It is not embedded in the image: the image's debug directory holds a CodeView entry that names the PDB path and carries this PDB's id, followed by a PdbChecksum
     /// entry with the SHA-256 hash of these bytes with the 20-byte PDB id zeroed, and, with
     /// <see cref="Options.Deterministic"/>, a Reproducible entry. The PDB path is
-    /// <see cref="Options.PdbFilePath"/> when set; otherwise it is <see cref="Options.OutputFileName"/> with its
+    /// <see cref="Options.PdbFilePath"/> as given when set; otherwise it is <see cref="Options.OutputFileName"/> with its
     /// extension replaced by <c>.pdb</c>, or <c>assembly.pdb</c> when no output file name is set.
-    /// The caller writes these bytes to the path named in the CodeView entry.
+    /// The caller writes these bytes to the file that path names; a file name alone names a file beside the image.
     /// </remarks>
     public ImmutableArray<byte>? PortablePdb { get; }
 

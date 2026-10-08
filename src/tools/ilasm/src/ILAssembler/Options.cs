@@ -95,6 +95,13 @@ namespace ILAssembler
         /// <summary>
         /// Produce deterministic outputs.
         /// </summary>
+        /// <remarks>
+        /// The same input and options give the same image and PDB bytes. The image records
+        /// <see cref="PdbFilePath"/> in its CodeView entry, or, when that is null, the fallback it describes
+        /// (<see cref="OutputFileName"/> with its extension replaced by <c>.pdb</c>, or <c>assembly.pdb</c>), so it
+        /// depends on that path;
+        /// the PDB does not.
+        /// </remarks>
         public bool Deterministic { get; set; }
 
         /// <summary>
@@ -142,10 +149,14 @@ namespace ILAssembler
         /// when a PDB is produced (see <see cref="CompilationResult.PortablePdb"/>).
         /// </summary>
         /// <remarks>
-        /// The assembler does not write this file; the caller writes <see cref="CompilationResult.PortablePdb"/>
-        /// to it. The command-line tool passes the full path of the output file with its extension
-        /// replaced by <c>.pdb</c>. When null, the CodeView entry names <see cref="OutputFileName"/> with
-        /// its extension replaced by <c>.pdb</c>, or <c>assembly.pdb</c> when no output file name is set.
+        /// The CodeView entry records this value as given. The assembler does not write the PDB file; the
+        /// caller writes <see cref="CompilationResult.PortablePdb"/> to the file this path names, where a
+        /// file name alone names a file beside the image. The command-line tool writes the PDB to the output
+        /// path with its extension replaced by <c>.pdb</c>, and passes the full path of that file, or, with
+        /// <see cref="Deterministic"/>, only its file name and extension, so that a deterministic image does
+        /// not depend on the directory it is written to. When null, the CodeView entry names
+        /// <see cref="OutputFileName"/> with its extension replaced by <c>.pdb</c>, or <c>assembly.pdb</c>
+        /// when no output file name is set.
         /// </remarks>
         public string? PdbFilePath { get; set; }
 

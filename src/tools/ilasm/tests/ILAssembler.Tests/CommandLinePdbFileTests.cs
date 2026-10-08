@@ -9,6 +9,7 @@ using System.Linq;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
 using System.Security.Cryptography;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace ILAssembler.Tests;
@@ -124,6 +125,13 @@ public sealed class CommandLinePdbFileTests : IDisposable
 
     private readonly string _directory = Directory.CreateTempSubdirectory("ilasm-cli-").FullName;
 
+    /// <summary>
+    /// Whether a relative path leads from the working directory to the temporary directory, where each test's files
+    /// are. On Windows there is none when the two are on different drives.
+    /// </summary>
+    public static bool TemporaryDirectoryHasARelativePath =>
+        !Path.IsPathRooted(Path.GetRelativePath(Environment.CurrentDirectory, Path.GetTempPath()));
+
     public CommandLinePdbFileTests()
     {
         Directory.CreateDirectory(Path.Combine(_directory, "src"));
@@ -194,8 +202,8 @@ public sealed class CommandLinePdbFileTests : IDisposable
         return false;
     }
 
-    // With -DEBUG or -PDB the PDB is a file beside the output, the CodeView entry names its full path and carries
-    // its id, and nothing is embedded in the image.
+    // With -DEBUG or -PDB the PDB is a file beside the output, the CodeView entry names its full path (without -DET)
+    // and carries its id, and nothing is embedded in the image.
     [Theory]
     [InlineData("-debug")]
     [InlineData("-pdb")]
@@ -215,6 +223,84 @@ public sealed class CommandLinePdbFileTests : IDisposable
         Assert.Equal(pdb, codeView.Path);
         BlobContentId pdbId = ReadPdbId(pdb);
         Assert.Equal((pdbId.Guid, pdbId.Stamp), (codeView.Guid, codeViewEntry.Stamp));
+    }
+
+    // With -DET the PDB is still written beside the output, but the CodeView entry names only its file name and
+    // extension, so the image does not depend on the directory it is written to; it still carries the PDB's id.
+    [Theory]
+    [InlineData("-debug -det")]
+    [InlineData("-pdb -det")]
+    public void Deterministic_CodeViewEntryNamesThePdbFileNameOnly(string switches)
+    {
+        string dll = OutputPath("TestPdbFile1.dll");
+        string pdb = OutputPath("TestPdbFile1.pdb");
+
+        Assert.Equal(0, RunIlasm(dll, switches));
+
+        Assert.Equal(new[] { "TestPdbFile1.dll", "TestPdbFile1.pdb" }, OutputFileNames());
+        using PEReader pe = ReadImage(dll);
+        DebugDirectoryEntry codeViewEntry = Assert.Single(pe.ReadDebugDirectory(), entry => entry.Type == DebugDirectoryEntryType.CodeView);
+        CodeViewDebugDirectoryData codeView = pe.ReadCodeViewDebugDirectoryData(codeViewEntry);
+        Assert.Equal("TestPdbFile1.pdb", codeView.Path);
+        BlobContentId pdbId = ReadPdbId(pdb);
+        Assert.Equal((pdbId.Guid, pdbId.Stamp), (codeView.Guid, codeViewEntry.Stamp));
+    }
+
+    // With -DET a relative output path still gives a CodeView entry with no directory part, and the PDB is written
+    // beside the output. The output path is relative to the working directory of the test process, which is not the
+    // output's directory. Where no relative path leads there, the test is skipped rather than run with an absolute path.
+    [ConditionalFact(typeof(CommandLinePdbFileTests), nameof(TemporaryDirectoryHasARelativePath))]
+    public void Deterministic_RelativeOutputPath_CodeViewEntryNamesThePdbFileNameOnly()
+    {
+        string directory = OutputPath("sub");
+        Directory.CreateDirectory(directory);
+        string relativeDll = Path.GetRelativePath(Environment.CurrentDirectory, Path.Combine(directory, "TestPdbFile1.dll"));
+        Assert.False(Path.IsPathRooted(relativeDll), relativeDll);
+
+        Assert.Equal(0, RunIlasm(relativeDll, "-debug -det"));
+
+        Assert.Equal(new[] { "TestPdbFile1.dll", "TestPdbFile1.pdb" }, Directory.EnumerateFiles(directory).Select(Path.GetFileName).Order().ToArray());
+        using PEReader pe = ReadImage(Path.Combine(directory, "TestPdbFile1.dll"));
+        DebugDirectoryEntry codeViewEntry = Assert.Single(pe.ReadDebugDirectory(), entry => entry.Type == DebugDirectoryEntryType.CodeView);
+        Assert.Equal("TestPdbFile1.pdb", pe.ReadCodeViewDebugDirectoryData(codeViewEntry).Path);
+    }
+
+    // With -DET a debugger still finds the PDB from the bare CodeView name: System.Reflection.Metadata probes the
+    // image's directory for that name, and the PDB it opens has the id that the CodeView entry carries.
+    [Fact]
+    public void Deterministic_TheAssociatedPdbIsFoundBesideTheImage()
+    {
+        string directory = OutputPath("sub");
+        Directory.CreateDirectory(directory);
+        string dll = Path.Combine(directory, "TestPdbFile1.dll");
+
+        Assert.Equal(0, RunIlasm(dll, "-debug -det"));
+
+        using PEReader pe = ReadImage(dll);
+        Assert.True(pe.TryOpenAssociatedPortablePdb(dll, File.OpenRead, out MetadataReaderProvider? provider, out string? pdbPath));
+        using (provider)
+        {
+            Assert.Equal(Path.Combine(directory, "TestPdbFile1.pdb"), pdbPath);
+            DebugDirectoryEntry codeViewEntry = Assert.Single(pe.ReadDebugDirectory(), entry => entry.Type == DebugDirectoryEntryType.CodeView);
+            BlobContentId openedPdbId = new(provider!.GetMetadataReader().DebugMetadataHeader!.Id);
+            Assert.Equal((pe.ReadCodeViewDebugDirectoryData(codeViewEntry).Guid, codeViewEntry.Stamp), (openedPdbId.Guid, openedPdbId.Stamp));
+        }
+    }
+
+    // -DET gives byte-identical image and PDB files when the same source is assembled to two different directories.
+    [Fact]
+    public void Deterministic_AssemblingToTwoDirectories_WritesIdenticalImageAndPdb()
+    {
+        string firstDll = OutputPath(Path.Combine("first", "TestPdbFile1.dll"));
+        string secondDll = OutputPath(Path.Combine("second", "TestPdbFile1.dll"));
+        Directory.CreateDirectory(Path.GetDirectoryName(firstDll)!);
+        Directory.CreateDirectory(Path.GetDirectoryName(secondDll)!);
+
+        Assert.Equal(0, RunIlasm(firstDll, "-debug -det"));
+        Assert.Equal(0, RunIlasm(secondDll, "-debug -det"));
+
+        Assert.Equal(File.ReadAllBytes(firstDll), File.ReadAllBytes(secondDll));
+        Assert.Equal(File.ReadAllBytes(Path.ChangeExtension(firstDll, ".pdb")), File.ReadAllBytes(Path.ChangeExtension(secondDll, ".pdb")));
     }
 
     // The debug directory is CodeView then PdbChecksum, and under -DET a Reproducible entry follows.

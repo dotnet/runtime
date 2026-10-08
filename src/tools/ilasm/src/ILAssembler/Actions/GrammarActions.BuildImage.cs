@@ -579,8 +579,9 @@ namespace ILAssembler
         /// With <see cref="Options.Deterministic"/>, the PDB id is derived from that same hash
         /// (<see cref="BlobContentId.FromHash(ImmutableArray{byte})"/>), so the same input gives the same PDB
         /// bytes. The PDB bytes do not depend on <see cref="Options.PdbFilePath"/>; the image does, because
-        /// the CodeView entry records that path, so the same input and the same PDB path give the same image
-        /// bytes. Without <see cref="Options.Deterministic"/>, the id's GUID is random. The checksum is the
+        /// the CodeView entry records that path as given, so the same input and the same PDB path give the
+        /// same image bytes, and a PDB path that is a file name alone keeps the image independent of its
+        /// directory. Without <see cref="Options.Deterministic"/>, the id's GUID is random. The checksum is the
         /// content hash in both cases.
         /// </para>
         /// </remarks>
@@ -645,7 +646,7 @@ namespace ILAssembler
         }
 
         /// <summary>
-        /// Gets the PDB path recorded in the CodeView entry: <see cref="Options.PdbFilePath"/> when set,
+        /// Gets the PDB path recorded in the CodeView entry: <see cref="Options.PdbFilePath"/> as given when set,
         /// otherwise <see cref="Options.OutputFileName"/> with its extension replaced by <c>.pdb</c>,
         /// otherwise <c>assembly.pdb</c>.
         /// </summary>

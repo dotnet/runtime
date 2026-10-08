@@ -63,8 +63,11 @@ internal sealed class Program
         int exitCode = 0;
         try
         {
-            // As in native ilasm, the PDB is <output without extension>.pdb beside the output, and the
-            // image's CodeView entry records its full path.
+            // As in native ilasm, the PDB is <output without extension>.pdb beside the output, and without
+            // --deterministic the image's CodeView entry records the PDB's full path. With --deterministic it
+            // records only the PDB's file name and extension, so that a deterministic image does not depend on
+            // the directory it is written to. Native ilasm records the full path in both modes; this follows
+            // the native linker's /PDBALTPATH:%_PDB% convention instead.
             string pdbPath = OutputFileWriter.GetPdbPath(outputPath);
 
             // Report each file being assembled
@@ -165,7 +168,7 @@ internal sealed class Program
             options.PseudoAttributes = Get(_command.PseudoAttributes);
             options.Fold = Get(_command.Fold);
             options.OutputFileName = Path.GetFileName(outputPath);
-            options.PdbFilePath = pdbPath;
+            options.PdbFilePath = options.Deterministic ? Path.GetFileName(pdbPath) : pdbPath;
 
             // Set up include path for #include directive resolution
             string? includePath = Get(_command.IncludePath);
