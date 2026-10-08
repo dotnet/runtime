@@ -8052,7 +8052,7 @@ DONE_MORPHING_CHILDREN:
                 if ((op1op2->IsCnsIntOrI() && !op1op2->IsIconHandle()) || op1op2->IsCnsFltOrDbl())
                 {
                     // NEG(MUL(a, C)) => MUL(a, NEG(C))
-                    // NEG(DIV(a, C)) => DIV(a, NEG(C)), except when C = {-1, 1} for integral
+                    // NEG(DIV(a, C)) => DIV(a, NEG(C)), except when C = {-1, 1, signed minimum} for integral
 
                     bool canTransform = true;
 
@@ -8060,8 +8060,9 @@ DONE_MORPHING_CHILDREN:
                     {
                         if (mulOrDiv->OperIs(GT_DIV))
                         {
-                            ssize_t constVal = op1op2->AsIntCon()->IconValue();
-                            canTransform     = (constVal != -1) && (constVal != 1);
+                            int64_t constVal = op1op2->AsIntConCommon()->IntegralValue();
+                            int64_t minValue = mulOrDiv->TypeIs(TYP_INT) ? INT32_MIN : INT64_MIN;
+                            canTransform     = (constVal != -1) && (constVal != 1) && (constVal != minValue);
                         }
                         else
                         {
