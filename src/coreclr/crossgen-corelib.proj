@@ -16,6 +16,7 @@
   </ItemGroup>
 
   <PropertyGroup>
+    <CustomAfterNoTargets>$(MSBuildThisFileDirectory)crossgen-corelib.targets</CustomAfterNoTargets>
     <OSPlatformConfig>$(TargetOS).$(TargetArchitecture).$(Configuration)</OSPlatformConfig>
     <RootBinDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts'))</RootBinDir>
     <LogsDir>$([MSBuild]::NormalizeDirectory('$(RootBinDir)', 'log'))</LogsDir>
@@ -261,4 +262,18 @@
   </Target>
 
   <Target Name="CrossgenCoreLib" DependsOnTargets="$(CrossgenTargetName)" AfterTargets="CoreBuild" />
+
+  <Target Name="_GetRuntimePackCoreLibFiles">
+    <ItemGroup>
+      <_RuntimePackCoreLibPortablePdb Include="$([MSBuild]::NormalizePath('$(BinDir)', 'IL', '$(CoreLibAssemblyName).pdb'))" />
+      <RuntimePackCoreLibFile Include="$(CoreLibOutputPath)" />
+      <RuntimePackCoreLibFile Include="@(_RuntimePackCoreLibPortablePdb)" />
+      <RuntimePackCoreLibFile Include="$(CoreLibNiPdbPath)"
+                              Condition="'$(CoreLibNiPdbPath)' != ''" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="GetRuntimePackCoreLib"
+          DependsOnTargets="CrossgenCoreLib;_GetRuntimePackCoreLibFiles"
+          Returns="@(RuntimePackCoreLibFile)" />
 </Project>

@@ -1,6 +1,7 @@
 <Project>
   <ItemGroup>
     <ProjectReference Include="$(CoreLibProject)"
+                      Condition="'$(UseRuntimeCoreLibProjectReference)' != 'false'"
                       AdditionalProperties="BuildAllProjects=true"
                       GlobalPropertiesToRemove="LibrariesRuntimeFlavor;RuntimeFlavor;RuntimeIdentifier;TargetFramework"
                       OutputItemType="_RuntimeCoreLibFile"

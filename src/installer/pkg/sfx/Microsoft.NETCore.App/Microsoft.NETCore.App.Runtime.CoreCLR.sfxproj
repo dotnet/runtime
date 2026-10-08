@@ -52,8 +52,27 @@
   <PropertyGroup>
     <CoreLibConfiguration>$(CoreCLRConfiguration)</CoreLibConfiguration>
     <LibrariesRuntimeFlavor Condition="'$(LibrariesRuntimeFlavor)' == ''">CoreCLR</LibrariesRuntimeFlavor>
+    <UseRuntimeCoreLibProjectReference>false</UseRuntimeCoreLibProjectReference>
     <UseRuntimeManagedProjectReferences>true</UseRuntimeManagedProjectReferences>
   </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(CoreClrProjectRoot)crossgen-corelib.proj"
+                      GlobalPropertiesToRemove="LibrariesRuntimeFlavor;RuntimeFlavor;RuntimeIdentifier;TargetFramework"
+                      OutputItemType="_RuntimeCoreLibFile"
+                      ReferenceOutputAssembly="false"
+                      SetConfiguration="Configuration=$(CoreCLRConfiguration)"
+                      SkipGetTargetFrameworkProperties="true"
+                      Targets="Build;GetRuntimePackCoreLib" />
+    <ProjectReference Include="$(CoreLibProject)"
+                      Condition="'$(TargetOS)' == 'browser'"
+                      AdditionalProperties="BuildAllProjects=true"
+                      GlobalPropertiesToRemove="LibrariesRuntimeFlavor;RuntimeFlavor;RuntimeIdentifier;TargetFramework"
+                      OutputItemType="_WasmCoreLibIL"
+                      ReferenceOutputAssembly="false"
+                      SetConfiguration="Configuration=$(CoreCLRConfiguration)"
+                      SkipGetTargetFrameworkProperties="true" />
+  </ItemGroup>
 
   <Target Name="AddCoreCLRRuntimeManagedFiles"
           BeforeTargets="AddRuntimeFilesToPackage"
@@ -111,17 +130,18 @@
       <_WasmFrameworkR2RExclude Include="@(_WasmFrameworkR2RReference)"
                                 Exclude="@(_WasmFrameworkR2RInput)" />
       <PublishReadyToRunExclude Include="@(_WasmFrameworkR2RExclude->'%(FileName)%(Extension)')" />
+      <PublishReadyToRunExclude Include="System.Private.CoreLib.dll" />
     </ItemGroup>
     <PropertyGroup>
       <_WasmCrossgen2Exe>$([MSBuild]::NormalizePath('$(Crossgen2InBuildDir)', 'crossgen2$(ExeSuffix)'))</_WasmCrossgen2Exe>
       <_PublishReadyToRunCrossgen2ExtraArgs>$(_PublishReadyToRunCrossgen2ExtraArgs);@(WasmCoreClrFrameworkPInvokeModule->WithMetadataValue('Browser', 'true')->WithMetadataValue('PrebuiltR2RDirect', 'true')->'--directpinvoke:%(Identity)', ';')</_PublishReadyToRunCrossgen2ExtraArgs>
     </PropertyGroup>
-    <Error Condition="'@(_RuntimeCoreLibFile)' == ''"
+    <Error Condition="'@(_WasmCoreLibIL)' == ''"
            Text="PublishReadyToRun is true but the System.Private.CoreLib project did not produce its IL assembly. Build CoreCLR first or set PublishReadyToRun=false." />
     <Error Condition="!Exists('$(_WasmCrossgen2Exe)')"
            Text="PublishReadyToRun is true but crossgen2 was not found at '$(_WasmCrossgen2Exe)'. Build the crossgen2 pack or set PublishReadyToRun=false." />
     <ItemGroup>
-      <_ReadyToRunCompilerInputs Include="@(_WasmFrameworkR2RReference);@(_RuntimeCoreLibFile)" />
+      <_ReadyToRunCompilerInputs Include="@(_WasmFrameworkR2RReference);@(_WasmCoreLibIL)" />
       <_ReadyToRunCompilerInputs Include="$(Crossgen2InBuildDir)*jit*.dll;$(Crossgen2InBuildDir)*jit*.dylib;$(Crossgen2InBuildDir)*jit*.so" />
       <_ReadyToRunCompilerInputs Include="$(WasmCoreClrFrameworkPInvokeModuleListFile)" />
     </ItemGroup>
@@ -134,6 +154,8 @@
       <_WasmFrameworkR2RCompileInput Include="@(_ReadyToRunCompileList)"
                                      Condition="$([System.String]::Copy('%(OutputR2RImage)').EndsWith('.wasm'))" />
       <_WasmFrameworkR2ROutput Include="@(_WasmFrameworkR2RCompileInput->'%(OutputR2RImage)')" />
+      <_WasmFrameworkR2ROutput Include="$(CoreCLRArtifactsPath)System.Private.CoreLib.wasm"
+                               Condition="Exists('$(CoreCLRArtifactsPath)System.Private.CoreLib.wasm')" />
       <FilesToPackage Include="@(_WasmFrameworkR2RCompileInput)"
                       IsNative=""
                       DestinationSubDirectory=""
