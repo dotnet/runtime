@@ -161,6 +161,7 @@ namespace System.Net.Mail.Tests
         [InlineData(true)]
         public async Task ClientCertificateRequired_Sent(bool useSslOptions)
         {
+            Server.SslOptions.AllowTlsResume = false;
             Server.SslOptions.ClientCertificateRequired = true;
             X509Certificate2 clientCert = _certificateSetup.ServerCert; // use the server cert as a client cert for testing
             X509Certificate2? receivedClientCert = null;
@@ -177,6 +178,7 @@ namespace System.Net.Mail.Tests
 
             Smtp.Credentials = new NetworkCredential("foo", "bar");
             Smtp.EnableSsl = true;
+            Smtp.SslOptions.AllowTlsResume = false;
             if (useSslOptions)
             {
                 Smtp.SslOptions.ClientCertificates = new X509CertificateCollection { clientCert };
@@ -235,7 +237,9 @@ namespace System.Net.Mail.Tests
         public async Task SslOptions_DefaultTargetHostFollowsHostChange()
         {
             Server.ReceiveMultipleConnections = true;
+            Server.SslOptions.AllowTlsResume = false;
             Smtp.EnableSsl = true;
+            Smtp.SslOptions.AllowTlsResume = false;
             string? validatedHost = null;
             Smtp.SslOptions.RemoteCertificateValidationCallback = (sender, cert, chain, errors) =>
             {
@@ -355,20 +359,26 @@ namespace System.Net.Mail.Tests
         {
             Smtp.EnableSsl = true;
             SslClientAuthenticationOptions original = Smtp.SslOptions;
-            bool callbackCalled = false;
-            _serverCertValidationCallback = (cert, chain, errors) =>
+            Exception? replacementAssignmentException = null;
+            Exception? sameInstanceAssignmentException = null;
+            Server.OnCommandReceived = (command, parameter) =>
             {
-                callbackCalled = true;
-                Assert.Throws<InvalidOperationException>(() => Smtp.SslOptions = new SslClientAuthenticationOptions());
-                Assert.Throws<InvalidOperationException>(() => Smtp.SslOptions = original);
-                Assert.Same(original, Smtp.SslOptions);
-                return true;
+                if (string.Equals(command, "STARTTLS", StringComparison.OrdinalIgnoreCase))
+                {
+                    replacementAssignmentException = Record.Exception(() => Smtp.SslOptions = new SslClientAuthenticationOptions());
+                    sameInstanceAssignmentException = Record.Exception(() => Smtp.SslOptions = original);
+                }
+
+                return null;
             };
+            _serverCertValidationCallback = (cert, chain, errors) => true;
             using var message = new MailMessage("from@example.com", "to@example.com", "subject", "body");
 
             await SendMail(message);
 
-            Assert.True(callbackCalled);
+            Assert.IsType<InvalidOperationException>(replacementAssignmentException);
+            Assert.IsType<InvalidOperationException>(sameInstanceAssignmentException);
+            Assert.Same(original, Smtp.SslOptions);
         }
 
         private bool ServerCertValidationCallback(object sender, X509Certificate? certificate, X509Chain? chain, SslPolicyErrors sslPolicyErrors)
