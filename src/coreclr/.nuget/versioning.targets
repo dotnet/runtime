@@ -5,6 +5,7 @@
        build does not use the .NET SDK -->
   <Target Name="UpdateAdditionalProperties"
           BeforeTargets="Build;Pack"
+          Condition="'$(IsGraphBuild)' != 'true'"
           DependsOnTargets="_InitializeAssemblyVersion">
     <ItemGroup>
       <!-- Pass the FileVersion calculated by _InitializeAssemblyVersion to referenced projects -->

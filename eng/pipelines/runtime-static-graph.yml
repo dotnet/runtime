@@ -1,0 +1,36 @@
+trigger: none
+pr: none
+
+variables:
+  - template: /eng/pipelines/common/variables.yml
+
+extends:
+  template: /eng/pipelines/common/templates/pipeline-with-resources.yml
+  parameters:
+    stages:
+    - stage: ClrStaticGraph
+      jobs:
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: debug
+          platforms:
+          - linux_x64_dev_innerloop
+          jobParameters:
+            nameSuffix: StaticGraph
+            # Restore only here (no /graphBuild /isolateProjects): Arcade's own toolset
+            # bootstrap step isn't graph/isolate-safe, so the actual static-graph build
+            # runs as a separate postBuildStep that invokes Build.proj directly, bypassing
+            # that bootstrap. As more subsets gain static-graph support, extend the Subset
+            # coverage below rather than adding a new pipeline.
+            buildArgs: -s clr -c Debug --restore
+            timeoutInMinutes: 180
+            postBuildSteps:
+            - script: |
+                set -ex
+                $(Build.SourcesDirectory)/.dotnet/dotnet msbuild $(Build.SourcesDirectory)/Build.proj \
+                  /t:Build /p:Subset=clr /p:Configuration=Debug /p:RuntimeConfiguration=Debug \
+                  /p:Restore=false /p:Build=true /p:Ninja=true /p:TargetArchitecture=x64 /p:BuildArchitecture=x64 \
+                  /p:ContinuousIntegrationBuild=true /p:FeatureDynamicCodeCompiled=true \
+                  /graphBuild /isolateProjects /m:2 /nr:false
+              displayName: Build clr subset with static graph (/graphBuild /isolateProjects)

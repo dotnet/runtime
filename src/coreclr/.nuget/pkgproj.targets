@@ -12,6 +12,34 @@
 
   <Import Project="$(NuGetPackageRoot)\microsoft.dotnet.build.tasks.packaging\$(MicrosoftDotNetBuildTasksPackagingVersion)\build\Microsoft.DotNet.Build.Tasks.Packaging.targets" />
 
+  <ItemGroup Condition="'$(IsGraphBuild)' == 'true' and '$(Restore)' != 'true' and '$(PackageTargetRuntime)' != ''">
+    <ProjectReference Include="$(CoreClrProjectRoot)runtime.proj"
+                      ReferenceOutputAssembly="false"
+                      Private="false"
+                      SkipGetTargetFrameworkProperties="true"
+                      Targets="Build"
+                      StaticGraphBuildOrderOnly="true"
+                      AdditionalProperties="$(ClrRuntimeBuildSubsets);$(TargetCxxLibraryProperties)"
+                      GlobalPropertiesToRemove="PackageTargetRuntime;Platform" />
+    <ProjectReferenceTargets Include="Build" Targets="Build" />
+    <ProjectReferenceTargets Include="Pack" Targets="Build" />
+  </ItemGroup>
+
+  <!-- A native producer orders the graph but is not a NuGet package dependency. -->
+  <Target Name="RemoveStaticGraphBuildOrderOnlyProjectReferences"
+          BeforeTargets="_GetProjectClosure;SplitProjectReferences;ExpandProjectReferences;GetPkgProjPackageDependencies;AssignPkgProjPackageDependenciesTargetFramework;GetPackageDependencies;GenerateRuntimeDependencies;GetFilesToPackage;GetPackageFiles;Pack"
+          Condition="'$(IsGraphBuild)' == 'true'">
+    <ItemGroup>
+      <ProjectReference Remove="@(ProjectReference)" Condition="'%(ProjectReference.StaticGraphBuildOrderOnly)' == 'true'" />
+    </ItemGroup>
+  </Target>
+
+  <ItemGroup Condition="'$(IsGraphBuild)' == 'true' and '$(IsLineupPackage)' == 'true'">
+    <!-- Identity packages query other RIDs for metadata, not their native binaries. -->
+    <ProjectReferenceTargets Remove="Build;Pack" />
+    <ProjectReferenceTargets Include="Build;Pack" Targets="GetPackageIdentity;GetPackageFiles;DetermineRuntimeDependencies" />
+  </ItemGroup>
+
   <!--
     Finds symbol files and injects them into the package build.
   -->

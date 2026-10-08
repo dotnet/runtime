@@ -6,6 +6,22 @@
     <BuildIdentityPackage Condition="'$(BuildingAnOfficialBuildLeg)' == 'true' AND ('$(OS)' != 'Windows_NT' OR '$(TargetArchitecture)' != 'x64')">false</BuildIdentityPackage>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(IsGraphBuild)' == 'true'">
+    <AddTransitiveProjectReferencesInStaticGraph>false</AddTransitiveProjectReferencesInStaticGraph>
+  </PropertyGroup>
+
+  <!-- Graph construction cannot see the references added by FilterProjects during execution. -->
+  <ItemGroup Condition="'$(IsGraphBuild)' == 'true'">
+    <_graphProjectsToBuild Include="@(Project->WithMetadataValue('PackageTargetRuntime', '$(TargetRid)'))" />
+    <_graphProjectsToBuild Include="@(Project->WithMetadataValue('PackageTargetRuntime', ''))"
+                           Condition="'$(BuildIdentityPackage)' == 'true'" />
+    <_graphProjectsToBuild Include="@(Project->WithMetadataValue('PackageTargetRuntime', '$(NETCoreSdkRuntimeIdentifier)'))"
+                           Condition="'$(BuildHostILTools)' == 'true' and '$(IsILToolPackage)' == 'true'"
+                           AdditionalProperties="%(Project.AdditionalProperties);PackCrossComponent=true" />
+    <ProjectReference Include="@(_graphProjectsToBuild)" Targets="Build;Pack" />
+    <ProjectReferenceTargets Include="Pack" Targets="Build;Pack" />
+  </ItemGroup>
+
   <Target Name="FilterProjects" BeforeTargets="Build;Pack">
     <Error Condition="'$(TargetRid)' == ''" Text="'TargetRid' property must be specified."/>
 
@@ -21,7 +37,7 @@
       <_projectsToBuild Include="@(Project)" Condition="'%(Project.PackageTargetRuntime)' == '$(NETCoreSdkRuntimeIdentifier)'" AdditionalProperties="%(Project.AdditionalProperties);PackCrossComponent=true" />
     </ItemGroup>
 
-    <ItemGroup>
+    <ItemGroup Condition="'$(IsGraphBuild)' != 'true'">
       <ProjectReference Include="@(_projectsToBuild)" />
     </ItemGroup>
   </Target>
