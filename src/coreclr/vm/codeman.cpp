@@ -1940,8 +1940,6 @@ void EEJitManager::SetCpuInfo()
     m_CPUCompileFlags = CPUCompileFlags;
 
 #ifdef TARGET_AMD64
-    // Read from the final CPUCompileFlags, not the cpuFeatures check above, so that a
-    // config-driven clearing of APX (DOTNET_EnableAPX=0) is honoured.
     g_isJmpAbsAvailable = CPUCompileFlags.GetInstructionSetFlags().HasInstructionSet(InstructionSet_APX);
 #endif // TARGET_AMD64
 }

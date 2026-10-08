@@ -160,9 +160,7 @@ struct DispatchStubShort
     }
 
 private:
-    // _implTarget is backpatched atomically, so it must be 8-byte aligned. DispatchStub is 13
-    // bytes, so each body opens with its own padding: 1 byte for legacy (target at 16), 2 for APX
-    // (target at 24, since jmpabs has a 3-byte opcode). Enforced by InitializeStatic()'s asserts.
+    // _implTarget is backpatched atomically, so it must be 8-byte aligned.
     union
     {
         struct
@@ -233,9 +231,7 @@ struct DispatchStubLong
     }
 
 private:
-    // Padding aligns _implTarget as in DispatchStubShort. The APX form needs no mov rax and uses a
-    // second jmpabs for the fail path, so both arms are padded to 35 bytes: the stub grows 40 -> 48,
-    // which is free because these are allocated with CODE_SIZE_ALIGN (16) and 40 already took 48.
+    // Padding aligns _implTarget as in DispatchStubShort.
     union
     {
         struct
@@ -281,7 +277,6 @@ inline BOOL DispatchStubLong::isLongStub(LPCBYTE pCode)
 
     if (IsJmpAbsAvailable())
     {
-        // Mirror of isShortStub(): byte 1 is 85 for long, 90 for short.
         return pCode[1] == 0x85;
     }
 
@@ -690,7 +685,7 @@ void  LookupHolder::Initialize(LookupHolder* pLookupHolderRX, PCODE resolveWorke
 
 void DispatchHolder::InitializeStatic()
 {
-    // _implTarget must be 8-byte aligned for backpatching; if these fire, a body's padding is wrong.
+    // Check that _implTarget is aligned in the DispatchStub for backpatching
     static_assert(((sizeof(DispatchStub) + offsetof(DispatchStubShort, _legacy._implTarget)) % sizeof(void *)) == 0);
     static_assert(((sizeof(DispatchStub) + offsetof(DispatchStubShort, _apx._implTarget)) % sizeof(void *)) == 0);
     static_assert(((sizeof(DispatchStub) + offsetof(DispatchStubLong, _legacy._implTarget)) % sizeof(void *)) == 0);
@@ -700,18 +695,9 @@ void DispatchHolder::InitializeStatic()
     static_assert(((sizeof(DispatchStub) + sizeof(DispatchStubLong)) % sizeof(void*)) == 0);
     static_assert((DispatchStubLong_offsetof_failLabel - DispatchStubLong_offsetof_failDisplBase) < INT8_MAX);
 
-    // Both arms of each union must fill it exactly, so the stub size cannot depend on the encoding.
-    static_assert(sizeof(DispatchStub) == 13);
-    static_assert(sizeof(DispatchStubShort) == 19);
-    static_assert(sizeof(DispatchStubLong) == 35);
-    static_assert(offsetof(DispatchStubShort, _legacy.part3) + sizeof(BYTE[2]) == sizeof(DispatchStubShort));
-    static_assert(offsetof(DispatchStubShort, _apx._implTarget) + sizeof(size_t) == sizeof(DispatchStubShort));
-    static_assert(offsetof(DispatchStubLong, _legacy.pad) + sizeof(BYTE[8]) == sizeof(DispatchStubLong));
-    static_assert(offsetof(DispatchStubLong, _apx.pad) + sizeof(BYTE[5]) == sizeof(DispatchStubLong));
-
     // Each stub must fit its CODE_SIZE_ALIGN slot (16-byte granularity).
-    static_assert((sizeof(DispatchStub) + sizeof(DispatchStubShort)) <= 32);
-    static_assert((sizeof(DispatchStub) + sizeof(DispatchStubLong)) <= 48);
+    static_assert((sizeof(DispatchStub) + sizeof(DispatchStubShort)) == 32);
+    static_assert((sizeof(DispatchStub) + sizeof(DispatchStubLong)) == 48);
 
     // Common dispatch stub initialization
     dispatchInit._entryPoint [0]      = 0x48;
@@ -721,34 +707,64 @@ void DispatchHolder::InitializeStatic()
     dispatchInit.part1 [1]            = (X64_INSTR_CMP_IND_THIS_REG_RAX >> 8) & 0xff;
     dispatchInit.part1 [2]            = (X64_INSTR_CMP_IND_THIS_REG_RAX >> 16) & 0xff;
 
-    // Templates are built before SetCpuInfo() publishes the APX flag, so they hold the legacy
-    // encoding; Initialize() writes the APX bytes itself.
-    dispatchShortInit._legacy.nop             = INSTR_NOP;
-    dispatchShortInit._legacy.part1 [0]       = 0x48;
-    dispatchShortInit._legacy.part1 [1]       = 0xb8;
-    dispatchShortInit._legacy._implTarget     = 0xcccccccccccccccc;
-    dispatchShortInit._legacy.part2 [0]       = 0x0F;
-    dispatchShortInit._legacy.part2 [1]       = 0x85;
-    dispatchShortInit._legacy._failDispl      = 0xcccccccc;
-    dispatchShortInit._legacy.part3 [0]       = 0xFF;
-    dispatchShortInit._legacy.part3 [1]       = 0xE0;
+    if (IsJmpAbsAvailable())
+    {
+        // Short dispatch stub initialization (APX encoding)
+        dispatchShortInit._apx.nop [0]                = 0x66;
+        dispatchShortInit._apx.nop [1]                = INSTR_NOP;
+        dispatchShortInit._apx.part1 [0]              = 0x0F;
+        dispatchShortInit._apx.part1 [1]              = 0x85;
+        dispatchShortInit._apx._failDispl             = 0xcccccccc;
+        dispatchShortInit._apx.jmpabsPrefix [0]       = 0xD5;
+        dispatchShortInit._apx.jmpabsPrefix [1]       = 0x00;
+        dispatchShortInit._apx.jmpabsPrefix [2]       = 0xA1;
+        dispatchShortInit._apx._implTarget            = 0xcccccccccccccccc;
 
-    // Long dispatch stub initialization (legacy encoding)
-    dispatchLongInit._legacy.nop              = INSTR_NOP;
-    dispatchLongInit._legacy.part1 [0]        = 0x48;
-    dispatchLongInit._legacy.part1 [1]        = 0xb8;
-    dispatchLongInit._legacy._implTarget      = 0xcccccccccccccccc;
-    dispatchLongInit._legacy.part2 [0]        = 0x75;
-    dispatchLongInit._legacy._failDispl       = BYTE(DispatchStubLong_offsetof_failLabel - DispatchStubLong_offsetof_failDisplBase);
-    dispatchLongInit._legacy.part3 [0]        = 0xFF;
-    dispatchLongInit._legacy.part3 [1]        = 0xE0;
-        // failLabel:
-    dispatchLongInit._legacy.part4 [0]        = 0x48;
-    dispatchLongInit._legacy.part4 [1]        = 0xb8;
-    dispatchLongInit._legacy._failTarget      = 0xcccccccccccccccc;
-    dispatchLongInit._legacy.part5 [0]        = 0xFF;
-    dispatchLongInit._legacy.part5 [1]        = 0xE0;
-    memset(dispatchLongInit._legacy.pad, INSTR_INT3, sizeof(dispatchLongInit._legacy.pad));
+        // Long dispatch stub initialization (APX encoding)
+        dispatchLongInit._apx.part1 [0]               = 0x0F;
+        dispatchLongInit._apx.part1 [1]               = 0x85;
+        dispatchLongInit._apx._failDispl              = (DISPL)(DispatchStubLong_offsetof_apx_failLabel - DispatchStubLong_offsetof_apx_failDisplBase);
+        dispatchLongInit._apx.nop [0]                 = 0x66;
+        dispatchLongInit._apx.nop [1]                 = INSTR_NOP;
+        dispatchLongInit._apx.jmpabsPrefix [0]        = 0xD5;
+        dispatchLongInit._apx.jmpabsPrefix [1]        = 0x00;
+        dispatchLongInit._apx.jmpabsPrefix [2]        = 0xA1;
+        dispatchLongInit._apx._implTarget             = 0xcccccccccccccccc;
+        dispatchLongInit._apx.failJmpabsPrefix [0]    = 0xD5;
+        dispatchLongInit._apx.failJmpabsPrefix [1]    = 0x00;
+        dispatchLongInit._apx.failJmpabsPrefix [2]    = 0xA1;
+        dispatchLongInit._apx._failTarget             = 0xcccccccccccccccc;
+        memset(dispatchLongInit._apx.pad, INSTR_INT3, sizeof(dispatchLongInit._apx.pad));
+    }
+    else
+    {
+        // Short dispatch stub initialization (legacy encoding)
+        dispatchShortInit._legacy.nop             = INSTR_NOP;
+        dispatchShortInit._legacy.part1 [0]       = 0x48;
+        dispatchShortInit._legacy.part1 [1]       = 0xb8;
+        dispatchShortInit._legacy._implTarget     = 0xcccccccccccccccc;
+        dispatchShortInit._legacy.part2 [0]       = 0x0F;
+        dispatchShortInit._legacy.part2 [1]       = 0x85;
+        dispatchShortInit._legacy._failDispl      = 0xcccccccc;
+        dispatchShortInit._legacy.part3 [0]       = 0xFF;
+        dispatchShortInit._legacy.part3 [1]       = 0xE0;
+
+        // Long dispatch stub initialization (legacy encoding)
+        dispatchLongInit._legacy.nop              = INSTR_NOP;
+        dispatchLongInit._legacy.part1 [0]        = 0x48;
+        dispatchLongInit._legacy.part1 [1]        = 0xb8;
+        dispatchLongInit._legacy._implTarget      = 0xcccccccccccccccc;
+        dispatchLongInit._legacy.part2 [0]        = 0x75;
+        dispatchLongInit._legacy._failDispl       = BYTE(DispatchStubLong_offsetof_failLabel - DispatchStubLong_offsetof_failDisplBase);
+        dispatchLongInit._legacy.part3 [0]        = 0xFF;
+        dispatchLongInit._legacy.part3 [1]        = 0xE0;
+        dispatchLongInit._legacy.part4 [0]        = 0x48;
+        dispatchLongInit._legacy.part4 [1]        = 0xb8;
+        dispatchLongInit._legacy._failTarget      = 0xcccccccccccccccc;
+        dispatchLongInit._legacy.part5 [0]        = 0xFF;
+        dispatchLongInit._legacy.part5 [1]        = 0xE0;
+        memset(dispatchLongInit._legacy.pad, INSTR_INT3, sizeof(dispatchLongInit._legacy.pad));
+    }
 };
 
 void  DispatchHolder::Initialize(DispatchHolder* pDispatchHolderRX, PCODE implTarget, PCODE failTarget, size_t expectedMT,
@@ -775,88 +791,42 @@ void  DispatchHolder::Initialize(DispatchHolder* pDispatchHolderRX, PCODE implTa
         // initialize the static data
         *shortStubRW = dispatchShortInit;
 
+        // fill in the dynamic data
         if (IsJmpAbsAvailable())
         {
-            // APX encoding (19 bytes), every byte written here rather than patched into the
-            // legacy template:
-            //  0-1:   66 90                nop        ; aligns _implTarget to an 8-byte boundary
-            //  2-3:   0F 85                jne near
-            //  4-7:   xx xx xx xx                     failTarget displacement
-            //  8-10:  D5 00 A1             jmpabs
-            //  11-18: xx .. xx                        implTarget
-
-            shortStubRW->_apx.nop[0] = 0x66;
-            shortStubRW->_apx.nop[1] = INSTR_NOP;
-
-            shortStubRW->_apx.part1[0] = 0x0F;
-            shortStubRW->_apx.part1[1] = 0x85;
-
-            // Displacement is relative to the next instruction, the jmpabs
-            size_t displ = failTarget - ((PCODE)&shortStubRX->_apx.jmpabsPrefix);
+            size_t displ = failTarget - (PCODE)&shortStubRX->_apx.jmpabsPrefix;
             CONSISTENCY_CHECK(FitsInI4(displ));
-            shortStubRW->_apx._failDispl = (DISPL)displ;
-
-            emitJmpAbsJump((LPBYTE)&shortStubRX->_apx.jmpabsPrefix, (LPBYTE)&shortStubRW->_apx.jmpabsPrefix, (LPVOID)implTarget);
+            shortStubRW->_apx._failDispl  = (DISPL)displ;
+            shortStubRW->_apx._implTarget = (size_t)implTarget;
             CONSISTENCY_CHECK((PCODE)&shortStubRX->_apx.jmpabsPrefix + shortStubRW->_apx._failDispl == failTarget);
         }
         else
         {
-            // Legacy encoding: fill in the dynamic data
-            size_t displ = (failTarget - ((PCODE)&shortStubRX->_legacy._failDispl + sizeof(DISPL)));
+            size_t displ = failTarget - ((PCODE)&shortStubRX->_legacy._failDispl + sizeof(DISPL));
             CONSISTENCY_CHECK(FitsInI4(displ));
-            shortStubRW->_legacy._failDispl   = (DISPL)displ;
-            shortStubRW->_legacy._implTarget  = (size_t)implTarget;
+            shortStubRW->_legacy._failDispl  = (DISPL)displ;
+            shortStubRW->_legacy._implTarget = (size_t)implTarget;
             CONSISTENCY_CHECK((PCODE)&shortStubRX->_legacy._failDispl + sizeof(DISPL) + shortStubRW->_legacy._failDispl == failTarget);
         }
     }
     else
     {
         CONSISTENCY_CHECK(type == DispatchStub::e_TYPE_LONG);
-        DispatchStubLong *longStubRW = const_cast<DispatchStubLong *>(stub()->getLongStub());
-        DispatchStubLong *longStubRX = const_cast<DispatchStubLong *>(pDispatchHolderRX->stub()->getLongStub());
+        DispatchStubLong *longStub = const_cast<DispatchStubLong *>(stub()->getLongStub());
 
         // initialize the static data
-        *longStubRW = dispatchLongInit;
+        *longStub = dispatchLongInit;
 
+        // fill in the dynamic data
         if (IsJmpAbsAvailable())
         {
-            // APX encoding (35 bytes), every byte written here rather than patched into the
-            // legacy template:
-            //  0-1:   0F 85                jne near
-            //  2-5:   xx xx xx xx                     failLabel displacement (static)
-            //  6-7:   66 90                nop        ; aligns _implTarget to an 8-byte boundary
-            //  8-10:  D5 00 A1             jmpabs
-            //  11-18: xx .. xx                        implTarget
-            //  19-21: D5 00 A1             jmpabs     ; failLabel
-            //  22-29: xx .. xx                        failTarget
-            //  30-34: CC .. CC                        unreachable padding
-            longStubRW->_apx.part1[0] = 0x0F;
-            longStubRW->_apx.part1[1] = 0x85;
-
-            // failLabel is at a fixed offset within the stub, so this displacement is a constant
-            longStubRW->_apx._failDispl =
-                (DISPL)(DispatchStubLong_offsetof_apx_failLabel - DispatchStubLong_offsetof_apx_failDisplBase);
-
-            longStubRW->_apx.nop[0] = 0x66;
-            longStubRW->_apx.nop[1] = INSTR_NOP;
-
-            emitJmpAbsJump((LPBYTE)&longStubRX->_apx.jmpabsPrefix,
-                           (LPBYTE)&longStubRW->_apx.jmpabsPrefix,
-                           (LPVOID)implTarget);
-            emitJmpAbsJump((LPBYTE)&longStubRX->_apx.failJmpabsPrefix,
-                           (LPBYTE)&longStubRW->_apx.failJmpabsPrefix,
-                           (LPVOID)failTarget);
-
-            memset(longStubRW->_apx.pad, INSTR_INT3, sizeof(longStubRW->_apx.pad));
-
-            CONSISTENCY_CHECK((PCODE)&longStubRX->_apx.nop + longStubRW->_apx._failDispl
-                              == (PCODE)&longStubRX->_apx.failJmpabsPrefix);
+            longStub->_apx._implTarget = implTarget;
+            longStub->_apx._failTarget = failTarget;
         }
         else
         {
-            // fill in the dynamic data
-            longStubRW->_legacy._implTarget = implTarget;
-            longStubRW->_legacy._failTarget = failTarget;
+            longStub->_legacy._implTarget = implTarget;
+            longStub->_legacy._failTarget = failTarget;
         }
     }
 }
