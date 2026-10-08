@@ -47,15 +47,14 @@ namespace System.ComponentModel.DataAnnotations
         ///     <para>
         ///         Synchronous validation consumers invoke this method. Provide a synchronous implementation when it
         ///         can evaluate the applicable rule, and return a validation error when the rule rejects the value.
-        ///         If an applicable, required rule cannot be evaluated synchronously, throw
+        ///         If a required rule applies but cannot be evaluated synchronously, throw
         ///         <see cref="InvalidOperationException" /> with a message directing callers to an asynchronous
         ///         validation entry point. An unsupported invocation does not establish that the value is invalid.
         ///     </para>
         ///     <para>
         ///         Return <see cref="ValidationResult.Success" /> without evaluating the rule only when the rule does
-        ///         not apply. Do not return success merely because an applicable, required asynchronous check cannot
-        ///         run synchronously. Success does not indicate pending validation or arrange a later asynchronous
-        ///         invocation.
+        ///         not apply. Do not return success merely because a required asynchronous check applies but cannot run
+        ///         synchronously. Success does not indicate pending validation or arrange a later asynchronous invocation.
         ///     </para>
         ///     <para>
         ///         Do not implement this method by blocking on asynchronous work through
@@ -68,7 +67,8 @@ namespace System.ComponentModel.DataAnnotations
         /// <param name="validationContext">
         ///     A <see cref="ValidationContext" /> instance that provides context about the validation operation,
         ///     such as the object and member being validated. Provides access to services required to perform
-        ///     validation using <see cref="IServiceProvider" />.
+        ///     validation using <see cref="IServiceProvider" />. This value can be <see langword="null" /> when the
+        ///     contextless <see cref="ValidationAttribute.IsValid(object?)" /> overload invokes this method.
         /// </param>
         /// <returns>
         ///     <see cref="ValidationResult.Success" /> when validation is valid.

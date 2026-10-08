@@ -527,7 +527,10 @@ namespace System.ComponentModel.DataAnnotations
         /// <param name="validationContext">Describes the object being validated and provides services and context for the validators.</param>
         /// <param name="cancellationToken">A <see cref="CancellationToken" /> to observe while waiting for the task to complete.</param>
         /// <returns>A <see cref="Task" /> representing the asynchronous validation operation.</returns>
-        /// <exception cref="ArgumentNullException">When <paramref name="validationContext" /> is null.</exception>
+        /// <exception cref="ArgumentNullException">
+        ///     <paramref name="validationContext" /> is null, or
+        ///     <see cref="ValidationContext.MemberName" /> is null or empty.
+        /// </exception>
         /// <exception cref="ArgumentException">
         ///     <see cref="ValidationContext.MemberName" /> does not identify a valid public, non-indexer property,
         ///     or <paramref name="value" /> cannot be assigned to that property.

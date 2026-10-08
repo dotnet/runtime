@@ -19,15 +19,15 @@ namespace System.ComponentModel.DataAnnotations
     ///     <para>
     ///         Provide a synchronous implementation of <see cref="IValidatableObject.Validate"/> when it can
     ///         evaluate the applicable rules, returning validation errors for rules that reject the object.
-    ///         If an applicable, required rule cannot be evaluated synchronously, throw
+    ///         If a required rule applies but cannot be evaluated synchronously, throw
     ///         <see cref="InvalidOperationException"/> with a message directing callers to an asynchronous
     ///         validation entry point.
     ///     </para>
     ///     <para>
     ///         Returning no validation errors without evaluating a rule is appropriate only when the rule does not
-    ///         apply. Do not return an empty result merely because an applicable, required asynchronous check cannot
-    ///         run synchronously. An empty result does not indicate pending validation or arrange a later
-    ///         asynchronous invocation.
+    ///         apply. Do not return an empty result merely because a required asynchronous check applies but cannot
+    ///         run synchronously. An empty result does not indicate pending validation or arrange a later asynchronous
+    ///         invocation.
     ///     </para>
     ///     <para>
     ///         Do not implement <see cref="IValidatableObject.Validate"/> by blocking on asynchronous work or

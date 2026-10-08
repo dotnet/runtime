@@ -28,7 +28,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// The built-in <see cref="IOptionsSnapshot{TOptions}"/> implementation always uses synchronous attribute
         /// validation and never calls the asynchronous <c>IsValidAsync</c> method. Options created before startup
         /// validation or recreated by the built-in <see cref="IOptionsMonitor{TOptions}"/> implementation after a
-        /// change also use synchronous validation. If an applicable, required rule cannot be evaluated synchronously,
+        /// change also use synchronous validation. If a required rule applies but cannot be evaluated synchronously,
         /// the attribute's synchronous <c>IsValid</c> implementation should throw
         /// <see cref="System.InvalidOperationException"/> to report that the invocation is unsupported instead of
         /// returning success.
