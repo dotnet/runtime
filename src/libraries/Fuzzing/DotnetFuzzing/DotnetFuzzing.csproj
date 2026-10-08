@@ -36,6 +36,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\System.Net.Security.Fuzzing\System.Net.Security.Fuzzing.csproj" />
     <ProjectReference Include="..\..\System.Formats.Nrbf\src\System.Formats.Nrbf.csproj" />
   </ItemGroup>
 
