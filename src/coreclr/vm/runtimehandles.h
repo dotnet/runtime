@@ -143,10 +143,6 @@ extern "C" void* QCALLTYPE RuntimeTypeHandle_AllocateTypeAssociatedMemoryAligned
 extern "C" PVOID QCALLTYPE QCall_GetGCHandleForTypeHandle(QCall::TypeHandle pTypeHandle, INT32 handleType, QCallExceptionStatus* qcallError);
 extern "C" void QCALLTYPE QCall_FreeGCHandleForTypeHandle(QCall::TypeHandle pTypeHandle, OBJECTHANDLE objHandle, QCallExceptionStatus* qcallError);
 
-extern "C" void QCALLTYPE RuntimeTypeHandle_EnsureInstanceActive(
-    QCall::TypeHandle type,
-    QCallExceptionStatus* qcallError);
-
 extern "C" void QCALLTYPE RuntimeTypeHandle_GetActivationInfo(
     QCall::ObjectHandleOnStack pRuntimeType,
     PCODE* ppfnAllocator,
