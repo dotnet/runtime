@@ -53,7 +53,7 @@ namespace System.Security.Cryptography
                         // length needs to be known ahead of time in CCM mode
                         Interop.Crypto.EvpCipherSetInputLength(ctx, plaintext.Length);
 
-                        if (!Interop.Crypto.EvpCipherUpdate(ctx, Span<byte>.Empty, out _, associatedData))
+                        if (!Interop.Crypto.EvpCipherSetAad(ctx, associatedData))
                         {
                             throw Interop.Crypto.CreateOpenSslCryptographicException();
                         }
@@ -119,7 +119,7 @@ namespace System.Security.Cryptography
                         // length needs to be known ahead of time in CCM mode
                         Interop.Crypto.EvpCipherSetInputLength(ctx, ciphertext.Length);
 
-                        if (!Interop.Crypto.EvpCipherUpdate(ctx, Span<byte>.Empty, out _, associatedData))
+                        if (!Interop.Crypto.EvpCipherSetAad(ctx, associatedData))
                         {
                             throw Interop.Crypto.CreateOpenSslCryptographicException();
                         }
