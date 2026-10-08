@@ -575,13 +575,9 @@ uint32_t NetSecurityNative_GetNameAttribute(uint32_t* minorStatus,
                 // single-valued, and a mechanism reporting more of them is not something the
                 // caller can act on.
                 NetSecurityNative_MoveBuffer(&value, outBuffer);
+                value.length = 0;
+                value.value = NULL;
             }
-            else
-            {
-                gss_release_buffer(&ignoredMinor, &value);
-            }
-
-            gss_release_buffer(&ignoredMinor, &displayValue);
         }
         else if (majorStatus == GSS_S_UNAVAILABLE)
         {
@@ -590,6 +586,9 @@ uint32_t NetSecurityNative_GetNameAttribute(uint32_t* minorStatus,
             *minorStatus = 0;
             majorStatus = GSS_S_COMPLETE;
         }
+
+        gss_release_buffer(&ignoredMinor, &value);
+        gss_release_buffer(&ignoredMinor, &displayValue);
     }
 
     if (srcName != GSS_C_NO_NAME)
