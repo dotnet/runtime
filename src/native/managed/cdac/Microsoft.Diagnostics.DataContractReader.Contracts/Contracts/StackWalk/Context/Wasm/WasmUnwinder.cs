@@ -140,11 +140,17 @@ internal sealed class WasmUnwinder
 
     /// <summary>
     /// Advances <paramref name="sp"/> by one R2R frame and produces the caller's virtual IP,
-    /// mirroring <c>WasmUnwindStackFrameCore</c>. Returns false when the R2R walk terminates
-    /// (no R2R frame at <paramref name="sp"/>), in which case <paramref name="sp"/> is set to
-    /// <see cref="TargetPointer.Null"/>.
+    /// mirroring <c>WasmUnwindStackFrameCore</c>. Returns false when the R2R walk cannot advance
+    /// (no R2R frame at <paramref name="sp"/>, missing unwind data, or a zero frame size), in
+    /// which case <paramref name="sp"/> is set to <see cref="TargetPointer.Null"/>. Otherwise
+    /// <paramref name="sp"/> is the caller's stack pointer, and <paramref name="ip"/> is null when
+    /// the caller is not ReadyToRun code.
     /// </summary>
-    public bool TryUnwindOneFrame(ref TargetPointer sp, out TargetCodePointer ip)
+    /// <param name="controlPC">
+    /// The virtual IP of the frame at <paramref name="sp"/>, used to detect a reverse P/Invoke
+    /// frame as native <c>RtlVirtualUnwind</c> does. Pass null when it is unknown.
+    /// </param>
+    public bool TryUnwindOneFrame(ref TargetPointer sp, TargetCodePointer controlPC, out TargetCodePointer ip)
     {
         ip = TargetCodePointer.Null;
         if (!TryGetFramePointer(sp, out TargetPointer frameBase))
@@ -169,16 +175,30 @@ internal sealed class WasmUnwinder
         }
 
         sp = new TargetPointer(frameBase.Value + frameSize);
-        ip = GetVirtualIP(sp);
-        if (ip == TargetCodePointer.Null)
+        // A reverse P/Invoke frame's caller is native code, so its stack bytes must not be read as
+        // an R2R frame. Funclets share their parent's GC info and are never entered from native code.
+        if (!IsReversePInvokeFrame(functionIndex, controlPC))
+            ip = GetVirtualIP(sp);
+
+        return true;
+    }
+
+    public bool TryUnwindOneFrame(ref TargetPointer sp, out TargetCodePointer ip)
+        => TryUnwindOneFrame(ref sp, TargetCodePointer.Null, out ip);
+
+    private bool IsReversePInvokeFrame(uint functionIndex, TargetCodePointer controlPC)
+    {
+        if (controlPC == TargetCodePointer.Null ||
+            !_r2rInfo.TryIsFunclet(functionIndex, out bool isFunclet) ||
+            isFunclet ||
+            _target.Contracts.ExecutionManager.GetCodeBlockHandle(controlPC) is not CodeBlockHandle codeBlock)
         {
-            // The caller is not R2R-generated code (an interpreter transition or the stack top);
-            // the R2R walk is exhausted.
-            sp = TargetPointer.Null;
             return false;
         }
 
-        return true;
+        _target.Contracts.ExecutionManager.GetGCInfo(codeBlock, out TargetPointer gcInfoAddress, out uint gcVersion);
+        IGCInfoHandle gcInfo = _target.Contracts.GCInfo.DecodePlatformSpecificGCInfo(gcInfoAddress, gcVersion);
+        return _target.Contracts.GCInfo.GetHeader(gcInfo).HasReversePInvokeFrame;
     }
 
     /// <summary>

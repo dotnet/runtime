@@ -79,18 +79,21 @@ internal struct WasmContext : IPlatformContext
 
     public void Unwind(Target target)
     {
-        // Advance one ReadyToRun frame over the managed linear stack. When the R2R walk
-        // terminates (an interpreter transition or the stack top), StackPointer becomes null and
-        // the caller falls back to the explicit Frame chain / interpreter frame chain.
+        // Advance one ReadyToRun frame over the managed linear stack, mirroring native
+        // RtlVirtualUnwind. When the caller is not R2R code (an interpreter transition, native code
+        // above a reverse P/Invoke, or the stack top), StackPointer is the caller's SP, the IP and FP
+        // are null, and the walker continues through the explicit Frame chain.
         Wasm.WasmUnwinder unwinder = new(target, new Wasm.WasmR2RInfo(target));
         TargetPointer sp = StackPointer;
-        if (unwinder.TryUnwindOneFrame(ref sp, out TargetCodePointer ip))
+        if (unwinder.TryUnwindOneFrame(ref sp, InstructionPointer, out TargetCodePointer ip))
         {
             StackPointer = sp;
             InstructionPointer = ip;
-            // Native WasmUnwindStackFrame recomputes the caller's frame pointer from its stack pointer;
-            // funclets report the establishing method's frame base (GetWasmFramePointerFromStackPointer).
-            FramePointer = unwinder.TryGetLogicalFramePointer(sp, out TargetPointer fp) ? fp : TargetPointer.Null;
+            // Native recomputes the caller's FP only for an R2R caller; funclets report the
+            // establishing method's frame (GetWasmFramePointerFromStackPointer).
+            FramePointer = ip != TargetCodePointer.Null && unwinder.TryGetLogicalFramePointer(sp, out TargetPointer fp)
+                ? fp
+                : TargetPointer.Null;
         }
         else
         {
