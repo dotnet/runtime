@@ -1919,11 +1919,8 @@ void emitter::emitHandleGCrefRegs(BYTE* dst, instrDesc* id)
 
         case IF_RRW_RRW:
         {
-            // This must be "xchg reg1, reg2"
+            // This must be "xchg reg1, reg2", swap the GC-ness of the registers if it differs.
             assert(id->idIns() == INS_xchg);
-
-            // If we got here, the GC-ness of the registers doesn't match, so we have to "swap" them in the GC
-            // register pointer mask.
 
             GCtype gc1, gc2;
 
@@ -15545,8 +15542,14 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
             {
                 case IF_RWR_SRD: // Register Write, Stack Read
                 case IF_RRW_SRD: // Register Read/Write, Stack Read
+                case IF_RWR_SRD_CNS:
+                case IF_RRW_SRD_CNS:
+                case IF_RWR_SRD_RRD:
+                case IF_RRW_SRD_RRD:
                 case IF_RWR_RRD_SRD:
                 case IF_RRW_RRD_SRD:
+                case IF_RWR_RRD_SRD_CNS:
+                case IF_RWR_RRD_SRD_RRD:
                 {
                     emitGCregDeadUpd(id->idReg1(), dst);
                     break;
@@ -16026,8 +16029,15 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
             {
                 case IF_RWR_MRD:
                 case IF_RRW_MRD:
+                case IF_RWR_MRD_CNS:
+                case IF_RRW_MRD_CNS:
+                case IF_RWR_MRD_RRD:
+                case IF_RRW_MRD_RRD:
                 case IF_RWR_RRD_MRD:
                 case IF_RRW_RRD_MRD:
+                case IF_RWR_RRD_MRD_CNS:
+                case IF_RWR_RRD_MRD_RRD:
+                case IF_RWR_MRD_OFF:
                 {
                     emitGCregDeadUpd(id->idReg1(), dst);
                     break;
@@ -16708,8 +16718,9 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
         dst += emitOutputByte(dst, (0xC0 | regCode));
     }
 
-    // Does this instruction operate on a GC ref value?
-    if (id->idGCref())
+    // Does this instruction operate on a GC ref value? "xchg reg1, reg2" always swaps
+    // the GC-ness of its registers, regardless of the attribute it was emitted with.
+    if (id->idGCref() || (id->idInsFmt() == IF_RRW_RRW))
     {
         emitHandleGCrefRegs(dst, id);
     }

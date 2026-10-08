@@ -4620,6 +4620,13 @@ StackWalkAction SWCB_GetExecutionState(CrawlFrame *pCF, VOID *pData)
     }
 #endif // TARGET_X86
 
+    // On 32-bit targets and in IL stubs the InlinedCallFrame stays linked for the whole method, and
+    // it is reported before the method that contains it. Skip it when it has no active call.
+    if (!pCF->IsFrameless() && !InlinedCallFrame::FrameHasActiveCall(pCF->GetFrame()))
+    {
+        return SWA_CONTINUE;
+    }
+
     // This will help factor out some repeated code.
     bool notJittedCase = false;
 
