@@ -23,6 +23,12 @@ namespace Microsoft.Extensions.Options
         /// <param name="options">The options instance.</param>
         /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
         /// <returns>The <see cref="ValidateOptionsResult"/> result.</returns>
+        /// <remarks>
+        /// This method must perform all applicable checks for this validator, including checks that can complete
+        /// synchronously. The built-in asynchronous options creation path invokes this method instead of first
+        /// invoking <see cref="IValidateOptions{TOptions}.Validate"/> on the same validator. Share common checks
+        /// through a helper when needed.
+        /// </remarks>
         Task<ValidateOptionsResult> ValidateAsync(string? name, TOptions options, CancellationToken cancellationToken = default);
     }
 }
