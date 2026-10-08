@@ -1309,7 +1309,9 @@ void RangeCheck::MergeEdgeAssertionsWorker(Compiler*                        comp
                 ((boundCns != 0) && comp->vnStore->IsVNBinFuncWithConst(normalLclVN, VNF_ADD, &addOp, &addCns) &&
                  (addOp == boundVN) && (addCns == boundCns));
 
-            if (canUseCheckedBounds && (normalLclVN == curAssertion.GetOp1().GetVN()))
+            // A bound checked on another path need not be nonnegative here.
+            if (canUseCheckedBounds && (normalLclVN == curAssertion.GetOp1().GetVN()) &&
+                (curAssertion.GetOp2().IsVNNeverNegative() || (boundVN == preferredBoundVN)))
             {
                 cmpOper = Compiler::AssertionDsc::ToCompareOper(curAssertion.GetKind(), &isUnsigned);
                 limit   = Limit(Limit::keBinOpArray, boundVN, boundCns);
@@ -1330,7 +1332,9 @@ void RangeCheck::MergeEdgeAssertionsWorker(Compiler*                        comp
                     limit = Limit(Limit::keConstant, comp->vnStore->ConstantValue<int>(curAssertion.GetOp1().GetVN()));
                 }
                 // Otherwise, report it as "normalLclVN <relop> some-other-checked-bound (op1.vn)".
-                else if (canUseCheckedBounds && comp->vnStore->IsVNCheckedBound(curAssertion.GetOp1().GetVN()))
+                else if (canUseCheckedBounds && comp->vnStore->IsVNCheckedBound(curAssertion.GetOp1().GetVN()) &&
+                         (comp->vnStore->IsVNNeverNegative(curAssertion.GetOp1().GetVN()) ||
+                          (curAssertion.GetOp1().GetVN() == preferredBoundVN)))
                 {
                     // Since we are swapping the operands, we also need to swap the comparison operator
                     cmpOper =
@@ -1408,7 +1412,8 @@ void RangeCheck::MergeEdgeAssertionsWorker(Compiler*                        comp
         else if (canUseCheckedBounds && curAssertion.KindIs(Compiler::OAK_EQUAL, Compiler::OAK_NOT_EQUAL) &&
                  (curAssertion.GetOp1().GetVN() == normalLclVN) &&
                  curAssertion.GetOp2().KindIs(Compiler::O2K_VN_ADD_CNS) && (curAssertion.GetOp2().GetCns() == 0) &&
-                 comp->vnStore->IsVNCheckedBound(curAssertion.GetOp2().GetVN()))
+                 comp->vnStore->IsVNCheckedBound(curAssertion.GetOp2().GetVN()) &&
+                 (curAssertion.GetOp2().IsVNNeverNegative() || (curAssertion.GetOp2().GetVN() == preferredBoundVN)))
         {
             const ValueNum boundVN = curAssertion.GetOp2().GetVN();
 
