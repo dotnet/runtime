@@ -95,14 +95,30 @@ internal sealed class WasmFunctionTableIndexLookup
 
     // Mirrors ExecutionManager::IsFuncletFunctionIndex.
     public bool TryIsFunclet(uint functionTableIndex, out bool isFunclet)
+        => TryGetFunctionIdentity(functionTableIndex, out _, out _, out isFunclet);
+
+    /// <summary>
+    /// Resolves a function-table index to the module that registered its R2R image, the
+    /// RUNTIME_FUNCTION index within that image, and whether it is a funclet. For a composite
+    /// image the module is the one that loaded the image, not necessarily the method's module.
+    /// </summary>
+    public bool TryGetFunctionIdentity(
+        uint functionTableIndex,
+        out TargetPointer module,
+        out uint runtimeFunctionIndex,
+        out bool isFunclet)
     {
+        module = TargetPointer.Null;
+        runtimeFunctionIndex = 0;
         isFunclet = false;
         Data.FunctionTableIndexRangeSection? section = FindSection(functionTableIndex);
         if (section is null)
             return false;
 
+        runtimeFunctionIndex = functionTableIndex - section.MinFunctionTableIndex;
         Data.ReadyToRunInfo r2rInfo = GetReadyToRunInfo(section);
-        isFunclet = _runtimeFunctions.IsFunclet(GetRuntimeFunction(r2rInfo, functionTableIndex - section.MinFunctionTableIndex));
+        module = section.R2RModule;
+        isFunclet = _runtimeFunctions.IsFunclet(GetRuntimeFunction(r2rInfo, runtimeFunctionIndex));
         return true;
     }
 

@@ -117,6 +117,19 @@ TargetPointer GetFuncletRootId(
 // Returns the exact generic instantiation context token for the current frameless managed frame,
 // or TargetPointer.Null if it can't be recovered.
 TargetPointer GetExactGenericArgsToken(IStackDataFrameHandle stackDataFrameHandle);
+
+// WASM only: identifies the WebAssembly function of a ReadyToRun frameless frame.
+WasmFunctionIdentity GetWasmFunctionIdentity(IStackDataFrameHandle stackDataFrameHandle);
+```
+
+```csharp
+public readonly struct WasmFunctionIdentity
+{
+    public uint FunctionTableIndex { get; init; }   // raw runtime-global function-table index in the frame record
+    public TargetPointer? Module { get; init; }     // module that registered the R2R image; null if unregistered
+    public uint? RuntimeFunctionIndex { get; init; } // RUNTIME_FUNCTION index within the image; null if unregistered
+    public bool? IsFunclet { get; init; }           // null if unregistered
+}
 ```
 
 ## Version 1
@@ -706,6 +719,8 @@ If no Frame in the chain produces a usable context (thread is not running manage
 `GetRedirectedContextPointer` returns the saved `TargetContext` pointer carried by the head Frame when that Frame is a `RedirectedThreadFrame` (a `ResumableFrame`). Otherwise it returns `TargetPointer.Null`.
 
 `GetFuncletRootId` returns the caller stack pointer for a non-funclet frame and sets `parentNativeOffset` to zero. For a funclet, it performs a secondary stack walk that skips intervening funclets and returns the caller stack pointer and relative native offset of the parent method frame. If that parent cannot be located because it has already been unwound, the method returns the current frame's caller stack pointer and sets `parentNativeOffset` to zero.
+
+`GetWasmFunctionIdentity` reads the function-table index from the WASM R2R frame record at the frame's SP and resolves it through `FunctionTableIndexRangeList` to the module that registered the image, the `RUNTIME_FUNCTION` index within the image, and whether that function is a funclet (bit 31 of `BeginAddress`). For a composite image the module is the one that loaded the image, not necessarily the method's own module. When the index is not in a registered range, only `FunctionTableIndex` is set. It throws `PlatformNotSupportedException` on other architectures, and `InvalidOperationException` unless the frame is `Frameless` with `CodeKind.ReadyToRun`, because native markers and interpreter frames can hold bytes that resemble a frame record. A WebAssembly engine's function index is module-local, so a consumer maps `Module` and `RuntimeFunctionIndex` through the image's element section rather than using the raw function-table index.
 
 `GetExactGenericArgsToken` recovers the exact generic instantiation context for the current frameless managed frame, mirroring native `CrawlFrame::GetExactGenericArgsToken`. It returns `TargetPointer.Null` unless the frame is `Frameless`, has a `MethodDesc`, and that method is shared by generic instantiations (`GetGenericContextLoc != None`). When applicable it:
 
