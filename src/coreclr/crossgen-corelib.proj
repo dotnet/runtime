@@ -210,16 +210,18 @@
         Condition="'$(TargetOS)' == 'browser' and ('$(Configuration)' == 'Debug' or '$(Configuration)' == 'Checked')" />
     </ItemGroup>
 
-    <RunReadyToRunCompiler Crossgen2Tool="@(_CoreLibCrossgen2Tool)"
-                           UseCrossgen2="true"
-                           ShowCompilerWarnings="true"
-                           ImplementationAssemblyReferences="@(Crossgen2CoreLibReferences)"
-                           ReadyToRunCompositeBuildReferences="@(Crossgen2CoreLibReferences)"
-                           ReadyToRunCompositeBuildInput="@(CoreLib)"
-                           Crossgen2PgoFiles="@(_CoreLibCrossgen2PgoFiles)"
-                           Crossgen2ContainerFormat="$(PublishReadyToRunContainerFormat)"
-                           Crossgen2ExtraCommandLineArgs="@(_CoreLibCrossgen2ExtraArgs, ';')"
-                           CompilationEntry="@(_CoreLibCompilationEntry)" />
+    <!-- Match the local registration instead of the SDK's short-name task. -->
+    <Microsoft.NET.Build.Tasks.RunReadyToRunCompiler
+      Crossgen2Tool="@(_CoreLibCrossgen2Tool)"
+      UseCrossgen2="true"
+      ShowCompilerWarnings="true"
+      ImplementationAssemblyReferences="@(Crossgen2CoreLibReferences)"
+      ReadyToRunCompositeBuildReferences="@(Crossgen2CoreLibReferences)"
+      ReadyToRunCompositeBuildInput="@(CoreLib)"
+      Crossgen2PgoFiles="@(_CoreLibCrossgen2PgoFiles)"
+      Crossgen2ContainerFormat="$(PublishReadyToRunContainerFormat)"
+      Crossgen2ExtraCommandLineArgs="@(_CoreLibCrossgen2ExtraArgs, ';')"
+      CompilationEntry="@(_CoreLibCompilationEntry)" />
 
     <Message Importance="High" Text="Crossgenning of System.Private.CoreLib succeeded." />
     <Message Importance="High" Text="Product binaries are available at $(BinDir)" />
