@@ -21,6 +21,55 @@ namespace ILCompiler.ReadyToRun.Tests.TestCasesRunner;
 
 internal static class WasmR2RAssert
 {
+    public static void AssertFrameIdentityPrologs(WebcilImageReader reader)
+    {
+        ReadOnlySpan<byte> image = reader.GetEntireImage().AsSpan();
+        Assert.True(TryGetWasmFunctionNameSubsection(image, out int nameOffset, out int nameEnd));
+        uint nameCount = ReadWasmUleb32(image, ref nameOffset, nameEnd);
+        Dictionary<uint, string> names = new();
+        for (uint i = 0; i < nameCount; i++)
+        {
+            uint index = ReadWasmUleb32(image, ref nameOffset, nameEnd);
+            names.Add(index, ReadWasmName(image, ref nameOffset, nameEnd));
+        }
+
+        uint importedFunctions = 0;
+        foreach (WasmImportIndex import in ReadWasmImports(reader).Values)
+        {
+            if (import.Kind == WasmImportKind.Function)
+                importedFunctions++;
+        }
+
+        Assert.True(TryGetWasmSectionBounds(image, WasmSectionKind.Code, out int offset, out int end));
+        uint functionCount = ReadWasmUleb32(image, ref offset, end);
+        int rootCount = 0;
+        int funcletCount = 0;
+        for (uint i = 0; i < functionCount; i++)
+        {
+            uint size = ReadWasmUleb32(image, ref offset, end);
+            int bodyEnd = checked(offset + (int)size);
+            Assert.InRange(bodyEnd, offset, end);
+            string name = names[importedFunctions + i];
+            ReadOnlySpan<byte> body = image.Slice(offset, (int)size);
+            ReadOnlySpan<byte> prolog = body.Slice(0, Math.Min(body.Length, 64));
+            if (name.Contains("SumStaticData", StringComparison.Ordinal))
+            {
+                // The signature is (SP, index, PEP); the identity store must use the PEP.
+                Assert.True(prolog.IndexOf(new byte[] { 0x20, 0x02, 0x36, 0x00, 0x00 }) >= 0,
+                    $"Expected an incoming PEP identity store in {name}.");
+                rootCount++;
+            }
+            if (name.Contains("SumWithFinally", StringComparison.Ordinal) &&
+                prolog.IndexOf(new byte[] { 0x20, 0x01, 0x41, 0x02, 0x6A, 0x36, 0x00, 0x00 }) >= 0)
+            {
+                funcletCount++;
+            }
+            offset = bodyEnd;
+        }
+        Assert.Equal(1, rootCount);
+        Assert.Equal(1, funcletCount);
+    }
+
     public static void AssertWebcilSegmentLayout(WebcilImageReader reader, bool isComponentStub)
     {
         Assert.True(reader.IsWasmWrapped);
@@ -784,6 +833,7 @@ internal static class WasmR2RAssert
         Global = 6,
         Export = 7,
         Element = 9,
+        Code = 10,
         Data = 11,
         Tag = 13,
     }

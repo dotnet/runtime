@@ -3478,6 +3478,17 @@ namespace Internal.JitInterface
             if (!_compilation.NodeFactory.Target.IsWasm)
                 return;
 
+            if (fRelocType == CorInfoReloc.WASM_METHOD_FRAME_IDENTITY_SLEB)
+            {
+                Debug.Assert(locationBlock == BlockType.Code);
+                Debug.Assert(_methodCodeNode.IsJitHelper);
+                MethodWithGCInfo method = _compilation.NodeFactory.CompiledMethodNode(MethodBeingCompiled);
+                relocTarget = _compilation.NodeFactory.WasmMethodFrameIdentity(method);
+                relocType = RelocType.WASM_METHOD_FRAME_IDENTITY_SLEB;
+                handled = true;
+                return;
+            }
+
             if (fRelocType != CorInfoReloc.WASM_METHOD_RELATIVE_VIRTUAL_IP_I32)
                 return;
 

@@ -2599,6 +2599,8 @@ public:
 #ifdef TARGET_WASM
     // Register a virtual IP range for a WASM R2R module.
     // Returns the start virtual IP assigned to this module.
+    static constexpr TADDR WasmInitialVirtualIP = (static_cast<TADDR>(1) << (sizeof(TADDR) * 8 - 1)) | 1;
+
     static TADDR         AddVirtualIPRange(UINT32 numVirtualIPs,
                                             IJitManager* pJit,
                                             PTR_Module pModule);
@@ -2628,7 +2630,7 @@ public:
     // then compute and return the virtual IP for that the entrypoint for that function
     // (which may require a walk back to find the main function if functionIndex represents a funclet)
     static TADDR          GetWasmVirtualIPFromFunctionTableIndex(DWORD functionIndex);
-    static BOOL           IsFuncletFunctionIndex(DWORD functionIndex);
+    static TADDR          GetWasmVirtualIPFromCoreLibRuntimeFunctionIndex(DWORD functionIndex);
     static TADDR          GetWasmFunctionTableIndexFromVirtualIP(TADDR virtualIP);
 #endif // TARGET_WASM
 

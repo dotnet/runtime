@@ -135,6 +135,7 @@ public class R2RTestSuites
         static void ValidateDefault(ReadyToRunReader reader)
         {
             var webcilReader = Assert.IsType<WebcilImageReader>(reader.CompositeReader);
+            WasmR2RAssert.AssertFrameIdentityPrologs(webcilReader);
             Assert.True(webcilReader.IsWasmWrapped);
             Assert.Equal(WasmMachine.Wasm32, reader.Machine);
             Assert.False(File.Exists(Path.ChangeExtension(reader.Filename, ".symbols")));

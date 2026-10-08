@@ -65,11 +65,7 @@ VOLATILE_SVAL_IMPL_INIT(LONG, ExecutionManager, m_dwWriterLock, 0);
 #ifdef TARGET_WASM
 VirtualIPRangeSection* ExecutionManager::s_pVirtualIPRangeList = nullptr;
 FunctionTableIndexRangeSection* ExecutionManager::s_pFunctionTableIndexRangeList = nullptr;
-#ifdef TARGET_64BIT
-static TADDR s_nextVirtualIP = 0x8000000000000001ULL;
-#else
-static TADDR s_nextVirtualIP = 0x80000001;
-#endif
+static TADDR s_nextVirtualIP = ExecutionManager::WasmInitialVirtualIP;
 #endif // TARGET_WASM
 
 #ifndef DACCESS_COMPILE
@@ -6120,6 +6116,13 @@ void ExecutionManager::AddFunctionTableIndexRange(DWORD minFunctionTableIndex,
         PRECONDITION(CheckPointer(pModule));
     } CONTRACTL_END;
 
+    // Positive odd frame identities encode table indices without overlapping negative helper identities.
+    if (minFunctionTableIndex == 0 || minFunctionTableIndex >= 0x40000000 ||
+        numRuntimeFunctions > 0x40000000 - minFunctionTableIndex)
+    {
+        COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+    }
+
     FunctionTableIndexRangeSection* pNewRange = new FunctionTableIndexRangeSection(
         minFunctionTableIndex, numRuntimeFunctions, pModule);
 
@@ -6146,24 +6149,6 @@ FunctionTableIndexRangeSection* ExecutionManager::FindFunctionTableIndexRangeSec
         pCurrent = pCurrent->pNext;
     }
     return nullptr;
-}
-
-BOOL ExecutionManager::IsFuncletFunctionIndex(DWORD functionIndex)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    FunctionTableIndexRangeSection* pSection = FindFunctionTableIndexRangeSection(functionIndex);
-    if (pSection == nullptr)
-    {
-        return FALSE;
-    }
-
-    Module* pModule = pSection->pR2RModule;
-    ReadyToRunInfo* pR2RInfo = pModule->GetReadyToRunInfo();
-
-    DWORD localIndex = functionIndex - pSection->minFunctionTableIndex;
-    PTR_RUNTIME_FUNCTION pRuntimeFunction = pR2RInfo->GetRuntimeFunctions() + localIndex;
-    return RUNTIME_FUNCTION__IsFunclet(pRuntimeFunction);
 }
 
 TADDR ExecutionManager::GetWasmVirtualIPFromFunctionTableIndex(DWORD functionIndex)
@@ -6200,6 +6185,20 @@ TADDR ExecutionManager::GetWasmVirtualIPFromFunctionTableIndex(DWORD functionInd
         }
         return pR2RInfo->GetMinVirtualIP() + RUNTIME_FUNCTION__BeginAddress(pRuntimeFunction);
     } while (true);
+}
+
+TADDR ExecutionManager::GetWasmVirtualIPFromCoreLibRuntimeFunctionIndex(DWORD functionIndex)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    VirtualIPRangeSection* pSection = FindVirtualIPRangeSection(WasmInitialVirtualIP);
+    _ASSERTE(pSection != nullptr);
+    ReadyToRunInfo* pR2RInfo = pSection->rangeSection._pR2RModule->GetReadyToRunInfo();
+    _ASSERTE(pR2RInfo->GetMinVirtualIP() == WasmInitialVirtualIP);
+    _ASSERTE(functionIndex < pR2RInfo->GetRuntimeFunctionCount());
+    PTR_RUNTIME_FUNCTION pRuntimeFunction = pR2RInfo->GetRuntimeFunctions() + functionIndex;
+    _ASSERTE(!RUNTIME_FUNCTION__IsFunclet(pRuntimeFunction));
+    return WasmInitialVirtualIP + RUNTIME_FUNCTION__BeginAddress(pRuntimeFunction);
 }
 
 TADDR ExecutionManager::GetWasmFunctionTableIndexFromVirtualIP(TADDR virtualIP)

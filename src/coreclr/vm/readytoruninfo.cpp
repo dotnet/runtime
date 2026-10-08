@@ -656,6 +656,14 @@ PTR_ReadyToRunInfo ReadyToRunInfo::Initialize(Module * pModule, AllocMemTracker 
         return NULL;
     }
 
+#ifdef TARGET_WASM
+    if (pHeader->MajorVersion < 32)
+    {
+        DoLog("Ready to Run disabled - unsupported Wasm frame identity encoding");
+        return NULL;
+    }
+#endif // TARGET_WASM
+
     LoaderHeap *pHeap = pModule->GetLoaderAllocator()->GetHighFrequencyHeap();
 
     NativeImage *nativeImage = NULL;
