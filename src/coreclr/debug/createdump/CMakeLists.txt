@@ -63,7 +63,7 @@ else(CLR_CMAKE_HOST_WIN32)
     set(CREATEDUMP_SHARED_SOURCES
         shared/createdumpcore.cpp
         shared/dumpname.cpp
-        shared/crashinfocore.cpp
+        shared/processinfo.cpp
         shared/dumpwriter.cpp
     )
 
@@ -87,7 +87,7 @@ if(CLR_CMAKE_HOST_OSX)
     )
 else()
     set(CREATEDUMP_SHARED_LINUX_SOURCES
-        shared/crashinfounixcore.cpp
+        shared/processinfounix.cpp
         shared/createdumpunixcore.cpp
         shared/dumpwriterelf.cpp
         shared/threadsnapshot.cpp
