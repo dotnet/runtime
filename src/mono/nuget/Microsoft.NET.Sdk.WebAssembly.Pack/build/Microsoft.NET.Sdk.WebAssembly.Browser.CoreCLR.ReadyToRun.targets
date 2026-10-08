@@ -15,7 +15,7 @@ Copyright (c) .NET Foundation. All rights reserved.
 -->
 <Project>
   <Target Name="_WasmCoreClrAddPerformanceInstrumentationToReadyToRun"
-          Condition="'$(PublishReadyToRun)' == 'true' and '$(WasmPerformanceInstrumentation)' != ''"
+          Condition="'$(UseMonoRuntime)' == 'false' and '$(PublishReadyToRun)' == 'true' and '$(WasmPerformanceInstrumentation)' != ''"
           DependsOnTargets="_AddWasmPerformanceInstrumentationEnvironmentVariables"
           BeforeTargets="_PrepareForReadyToRunCompilation">
     <PropertyGroup>
@@ -24,7 +24,7 @@ Copyright (c) .NET Foundation. All rights reserved.
   </Target>
 
   <Target Name="ResolveReadyToRunCompilers"
-          Condition="'$(PublishReadyToRun)' == 'true'"
+          Condition="'$(UseMonoRuntime)' == 'false' and '$(PublishReadyToRun)' == 'true'"
           DependsOnTargets="$(ResolveReadyToRunCompilersDependsOn)">
     <PropertyGroup>
       <_WasmCrossgen2InBuildUsable Condition="'$(Crossgen2InBuildDir)' != '' and Exists('$(Crossgen2InBuildDir)')">true</_WasmCrossgen2InBuildUsable>
