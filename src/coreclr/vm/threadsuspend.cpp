@@ -1,13 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-//
 // threadsuspend.CPP
 //
 // This file contains the implementation of thread suspension. The implementation of thread suspension
 // used to be spread through multiple places. That is why, many methods still live in their own homes
 // (class Thread, class ThreadStore, etc.). They should be eventually refactored into class ThreadSuspend.
-//
 
 #include "common.h"
 #include "CLREventBase.h"
@@ -813,51 +811,6 @@ StackWalkAction TAStackCrawlCallBack(CrawlFrame* pCf, void* data)
             UNREACHABLE();
     }
     return action;
-}
-
-// Is the current thread currently executing within a constrained execution region?
-BOOL Thread::IsExecutingWithinCer()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    if (!g_fEEStarted)
-        return FALSE;
-
-    Thread *pThread = GetThread();
-    StackCrawlContext sContext = { pThread,
-                                   StackCrawlContext::SCC_CheckWithinCer,
-        FALSE,
-        FALSE,
-        FALSE,
-        FALSE,
-        FALSE,
-        FALSE};
-
-    pThread->StackWalkFrames(TAStackCrawlCallBack, &sContext);
-
-#ifdef STRESS_LOG
-    if (sContext.fWithinCer && StressLog::StressLogOn(~0u, 0))
-    {
-        // If stress log is on, write info to stress log
-        StackCrawlContext sContext1 = { pThread,
-                                        StackCrawlContext::SCC_CheckWithinCer,
-            FALSE,
-            FALSE,
-            FALSE,
-            FALSE,
-            TRUE,
-            FALSE};
-
-        pThread->StackWalkFrames(TAStackCrawlCallBack, &sContext1);
-    }
-#endif
-
-    return sContext.fWithinCer;
 }
 
 #if defined(TARGET_AMD64) && defined(FEATURE_HIJACK)

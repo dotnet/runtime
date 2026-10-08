@@ -116,9 +116,16 @@ export interface AssetEntryInternal extends AssetEntry {
     isCore?: boolean
 }
 
+export type LoaderCallbacks = {
+    configLoaded?: (config: MonoConfig, api: RuntimeAPI) => void | Promise<void>;
+    dotnetReady?: () => void | Promise<void>;
+    downloadResourceProgress?: (resourcesLoaded: number, totalResources: number) => void;
+}
+
 export type LoaderHelpers = {
     gitHash: string,
     config: MonoConfigInternal;
+    callbacks: LoaderCallbacks;
     diagnosticTracing: boolean;
 
     maxParallelDownloads: number;

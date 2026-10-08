@@ -26,7 +26,6 @@ set(CORDBDI_SOURCES
   rsthread.cpp
   rstype.cpp
   shared.cpp
-  symbolinfo.cpp
   valuehome.cpp
 )
 
@@ -40,8 +39,7 @@ set(CORDBDI_HEADERS
     nativepipeline.h
     rsenumerator.hpp
     rspriv.h
-    rspriv.inl
-    symbolinfo.h)
+    rspriv.inl)
 
 
 if(CLR_CMAKE_HOST_WIN32)

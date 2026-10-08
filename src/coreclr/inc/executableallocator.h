@@ -1,10 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
 
-//
 // Allocator and holders for double mapped executable memory
-//
 
 #pragma once
 
@@ -245,10 +242,6 @@ public:
     // The reserved range must be within the loAddress and hiAddress. If it is not
     // possible to reserve memory in such range, the method returns NULL.
     void* ReserveWithinRange(size_t size, const void* loAddress, const void* hiAddress);
-
-    // Reserve the specified amount of virtual address space for executable mapping
-    // exactly at the given address.
-    void* ReserveAt(void* baseAddressRX, size_t size);
 
     // Commit the specified range of memory. The memory can be committed as executable (RX)
     // or non-executable (RW) based on the passed in isExecutable flag. The non-executable

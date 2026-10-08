@@ -2,15 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*++
-
 Module Name:
-
     machmessage.h
 
 Abstract:
-
     Abstraction over Mach messages used during exception handling.
-
 --*/
 
 #include <mach/mach.h>
@@ -164,9 +160,6 @@ public:
     // state will be fetched directly from the target thread instead (which can be computed implicitly for
     // exception messages or passed explicitly for reply messages).
     mach_msg_type_number_t GetThreadState(thread_state_flavor_t eFlavor, thread_state_t pState, thread_act_t thread = NULL);
-
-    // Fetch the return code from a reply type message.
-    kern_return_t GetReturnCode();
 
     // Initialize and send a request to set the register context of a particular thread.
     void SendSetThread(mach_port_t hServerPort, CONTEXT *pContext);

@@ -1,9 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-//
 // codeman.cpp - a managment class for handling multiple code managers
-//
 
 #include "common.h"
 #include "jitinterface.h"
@@ -1442,9 +1440,6 @@ EEJitManager::EEJitManager()
 
     m_jit = NULL;
     m_JITCompiler      = NULL;
-#ifdef TARGET_AMD64
-    m_pEmergencyJumpStubReserveList = NULL;
-#endif
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
     m_JITCompilerOther = NULL;
 #endif
@@ -2542,121 +2537,6 @@ void ThrowOutOfMemoryWithinRange()
     EX_THROW(EEMessageException, (kOutOfMemoryException, IDS_EE_OUT_OF_MEMORY_WITHIN_RANGE));
 }
 
-#ifdef TARGET_AMD64
-BYTE * EEJitManager::AllocateFromEmergencyJumpStubReserve(const BYTE * loAddr, const BYTE * hiAddr, SIZE_T * pReserveSize)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        PRECONDITION(m_CodeHeapLock.OwnedByCurrentThread());
-    } CONTRACTL_END;
-
-    for (EmergencyJumpStubReserve ** ppPrev = &m_pEmergencyJumpStubReserveList; *ppPrev != NULL; ppPrev = &(*ppPrev)->m_pNext)
-    {
-        EmergencyJumpStubReserve * pList = *ppPrev;
-
-        if (loAddr <= pList->m_ptr &&
-            pList->m_ptr + pList->m_size < hiAddr)
-        {
-            *ppPrev = pList->m_pNext;
-
-            BYTE * pBlock = pList->m_ptr;
-            *pReserveSize = pList->m_size;
-
-            delete pList;
-
-            return pBlock;
-        }
-    }
-
-    return NULL;
-}
-
-VOID EEJitManager::EnsureJumpStubReserve(BYTE * pImageBase, SIZE_T imageSize, SIZE_T reserveSize)
-{
-    CONTRACTL {
-        THROWS;
-        GC_NOTRIGGER;
-    } CONTRACTL_END;
-
-    CrstHolder ch(&m_CodeHeapLock);
-
-    BYTE * loAddr = pImageBase + imageSize + INT32_MIN;
-    if (loAddr > pImageBase) loAddr = NULL; // overflow
-
-    BYTE * hiAddr = pImageBase + INT32_MAX;
-    if (hiAddr < pImageBase) hiAddr = (BYTE *)UINT64_MAX; // overflow
-
-    for (EmergencyJumpStubReserve * pList = m_pEmergencyJumpStubReserveList; pList != NULL; pList = pList->m_pNext)
-    {
-        if (loAddr <= pList->m_ptr &&
-            pList->m_ptr + pList->m_size < hiAddr)
-        {
-            SIZE_T used = min(reserveSize, pList->m_free);
-            pList->m_free -= used;
-
-            reserveSize -= used;
-            if (reserveSize == 0)
-                return;
-        }
-    }
-
-    // Try several different strategies - the most efficient one first
-    int allocMode = 0;
-
-    // Try to reserve at least 16MB at a time
-    SIZE_T allocChunk = max<SIZE_T>(ALIGN_UP(reserveSize, VIRTUAL_ALLOC_RESERVE_GRANULARITY), 16*1024*1024);
-
-    while (reserveSize > 0)
-    {
-        NewHolder<EmergencyJumpStubReserve> pNewReserve(new EmergencyJumpStubReserve());
-
-        while (true)
-        {
-            BYTE * loAddrCurrent = loAddr;
-            BYTE * hiAddrCurrent = hiAddr;
-
-            switch (allocMode)
-            {
-            case 0:
-                // First, try to allocate towards the center of the allowed range. It is more likely to
-                // satisfy subsequent reservations.
-                loAddrCurrent = loAddr + (hiAddr - loAddr) / 8;
-                hiAddrCurrent = hiAddr - (hiAddr - loAddr) / 8;
-                break;
-            case 1:
-                // Try the whole allowed range
-                break;
-            case 2:
-                // If the large allocation failed, retry with small chunk size
-                allocChunk = VIRTUAL_ALLOC_RESERVE_GRANULARITY;
-                break;
-            default:
-                return; // Unable to allocate the reserve - give up
-            }
-
-            pNewReserve->m_ptr = (BYTE*)ExecutableAllocator::Instance()->ReserveWithinRange(allocChunk, loAddrCurrent, hiAddrCurrent);
-
-            if (pNewReserve->m_ptr != NULL)
-                break;
-
-            // Retry with the next allocation strategy
-            allocMode++;
-        }
-
-        SIZE_T used = min(allocChunk, reserveSize);
-        reserveSize -= used;
-
-        pNewReserve->m_size = allocChunk;
-        pNewReserve->m_free = allocChunk - used;
-
-        // Add it to the list
-        pNewReserve->m_pNext = m_pEmergencyJumpStubReserveList;
-        m_pEmergencyJumpStubReserveList = pNewReserve.Extract();
-    }
-}
-#endif // TARGET_AMD64
-
 static size_t GetDefaultReserveForJumpStubs(size_t codeHeapSize)
 {
     LIMITED_METHOD_CONTRACT;
@@ -2709,7 +2589,6 @@ HeapList* LoaderCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, LoaderHeap 
 
     BYTE * pBaseAddr = NULL;
     DWORD dwSizeAcquiredFromInitialBlock = 0;
-    bool fAllocatedFromEmergencyJumpStubReserve = false;
 
     size_t allocationSize = pCodeHeap->m_LoaderHeap.AllocMem_TotalSize(initialRequestSize);
 #if defined(TARGET_64BIT)
@@ -2753,19 +2632,11 @@ HeapList* LoaderCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, LoaderHeap 
 
             if (!pBaseAddr)
             {
-                // Conserve emergency jump stub reserve until when it is really needed
                 if (!pInfo->GetThrowOnOutOfMemoryWithinRange())
                     {
                         return NULL;
                     }
-#ifdef TARGET_AMD64
-                pBaseAddr = ExecutionManager::GetEEJitManager()->AllocateFromEmergencyJumpStubReserve(loAddr, hiAddr, &reserveSize);
-                if (!pBaseAddr)
-                    ThrowOutOfMemoryWithinRange();
-                fAllocatedFromEmergencyJumpStubReserve = true;
-#else
                 ThrowOutOfMemoryWithinRange();
-#endif // TARGET_AMD64
             }
         }
         else
@@ -2813,7 +2684,7 @@ HeapList* LoaderCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, LoaderHeap 
     }
     else
     {
-        pHp->reserveForJumpStubs = fAllocatedFromEmergencyJumpStubReserve ? pHp->maxCodeHeapSize : GetDefaultReserveForJumpStubs(pHp->maxCodeHeapSize);
+        pHp->reserveForJumpStubs = GetDefaultReserveForJumpStubs(pHp->maxCodeHeapSize);
     }
 
     _ASSERTE(heapSize >= initialRequestSize);
