@@ -139,6 +139,20 @@ internal sealed class WasmUnwinder
     }
 
     /// <summary>
+    /// Returns the function-table index recorded in the R2R frame at <paramref name="sp"/>.
+    /// Returns false when there is no R2R frame there.
+    /// </summary>
+    public bool TryGetFunctionIndex(TargetPointer sp, out uint functionIndex)
+    {
+        functionIndex = 0;
+        if (!TryGetFramePointer(sp, out TargetPointer frameBase))
+            return false;
+
+        functionIndex = _target.Read<uint>(frameBase.Value + FunctionIndexOffset);
+        return true;
+    }
+
+    /// <summary>
     /// Advances <paramref name="sp"/> by one R2R frame and produces the caller's virtual IP,
     /// mirroring <c>WasmUnwindStackFrameCore</c>. Returns false when the R2R walk terminates
     /// (no R2R frame at <paramref name="sp"/>), in which case <paramref name="sp"/> is set to

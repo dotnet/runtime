@@ -1436,6 +1436,111 @@ public unsafe class StackWalkTests
     // When the interpreted chain is exhausted, the walk must continue into that R2R caller rather
     // than reporting a native marker at the end of the TransitionBlock and skipping the R2R frames.
     // Each R2R frame's frame pointer is recomputed from its own stack pointer as the walk unwinds.
+    /// <summary>
+    /// <c>GetWasmFunctionIdentity</c> resolves each ReadyToRun frame of a real walk to the module that
+    /// registered the image, the image-relative RUNTIME_FUNCTION index, and the funclet flag. It
+    /// rejects interpreter frames, whose stack bytes are not R2R frame records.
+    /// </summary>
+    [Fact]
+    public void GetWasmFunctionIdentity_WalkedFrames_ResolveModuleRuntimeFunctionAndFunclet()
+    {
+        MockTarget.Architecture wasmArch = new() { IsLittleEndian = true, Is64Bit = false };
+        const ulong InterpIp = 0x0005_1000;
+        const uint ParentIndex = 5;
+        const uint FuncletIndex = 6;
+        const ulong MinVirtualIP = 0x8001_0000;
+        const uint ParentBegin = 0x100;
+        const uint FuncletVipHalf = 0x21;
+        const uint ParentVipHalf = 0x05;
+        const byte FuncletFrameSize = 16;
+        const ulong FuncletIp = MinVirtualIP + ParentBegin + FuncletVipHalf * 2;
+        const ulong ParentIp = MinVirtualIP + ParentBegin + ParentVipHalf * 2;
+
+        MockThread? thread = null;
+        MockFrameBuilder? frames = null;
+        ulong imcf = 0;
+        ulong funcletFrame = 0;
+        TestPlaceholderTarget target = CreateTarget(
+            wasmArch,
+            threadBuilder => thread = threadBuilder.AddThread(1, 1234),
+            frameBuilder =>
+            {
+                frames = frameBuilder;
+                MockInterpMethodContextFrame interpFrame = frameBuilder.AddInterpMethodContextFrame(parentPtr: 0, ip: InterpIp, stack: 0x0006_1000);
+                // The interpreter frame's SP is this InterpMethodContextFrame. Make its first word a
+                // registered R2R function-table index so only the code-kind check rejects it.
+                interpFrame.StartIp = ParentIndex;
+                imcf = interpFrame.Address;
+            },
+            runtimeArchitecture: RuntimeInfoArchitecture.Wasm,
+            configureTarget: targetBuilder =>
+            {
+                TargetTestHelpers helpers = targetBuilder.MemoryBuilder.TargetTestHelpers;
+                int pointerSize = helpers.PointerSize;
+                MockMemorySpace.BumpAllocator allocator = targetBuilder.MemoryBuilder.CreateAllocator(0x0020_0000, 0x0020_4000);
+                AddWasmR2RFunctions(targetBuilder, allocator, ParentIndex, MinVirtualIP,
+                    [(ParentBegin, 0x30), (0x8000_0000 | (ParentBegin + 0x40), FuncletFrameSize)]);
+                AddWasmNullDebugger(targetBuilder, allocator);
+
+                // A finally funclet called by its parent: funclet record, parent record, then a terminator.
+                MockMemorySpace.HeapFragment stack = allocator.Allocate(FuncletFrameSize + 0x30 + 4, "R2RLinearStack");
+                helpers.Write(stack.Data.AsSpan(0, sizeof(uint)), FuncletIndex);
+                helpers.Write(stack.Data.AsSpan(4, sizeof(uint)), FuncletVipHalf);
+                helpers.Write(stack.Data.AsSpan(FuncletFrameSize, sizeof(uint)), ParentIndex);
+                helpers.Write(stack.Data.AsSpan(FuncletFrameSize + 4, sizeof(uint)), ParentVipHalf);
+                helpers.Write(stack.Data.AsSpan(FuncletFrameSize + 0x30, sizeof(uint)), 1u);
+                funcletFrame = stack.Address;
+
+                ulong transitionBlock = AddWasmTransitionBlock(helpers, allocator, returnAddress: 0, stackPointer: funcletFrame);
+
+                Layout<MockFramedMethodFrame> fmfLayout = frames!.FramedMethodFrameLayout;
+                int topOffset = fmfLayout.Size;
+                int isFaultingOffset = topOffset + pointerSize;
+                Dictionary<string, Target.FieldInfo> interpreterFrameFields = new(TargetTestHelpers.CreateTypeInfo(fmfLayout).Fields)
+                {
+                    [nameof(Data.InterpreterFrame.TopInterpMethodContextFrame)] = new() { Offset = topOffset },
+                    [nameof(Data.InterpreterFrame.IsFaulting)] = new() { Offset = isFaultingOffset },
+                };
+                MockMemorySpace.HeapFragment interpreterFrame = allocator.Allocate((ulong)(isFaultingOffset + pointerSize), "InterpreterFrame");
+                MockFramedMethodFrame fmf = fmfLayout.Create(interpreterFrame);
+                fmf.Identifier = MockFrameBuilder.InterpreterFrameIdentifierValue;
+                fmf.Next = uint.MaxValue;
+                helpers.WritePointer(interpreterFrame.Data.AsSpan(fmfLayout.Fields.Single(f => f.Name == nameof(Data.FramedMethodFrame.TransitionBlockPtr)).Offset, pointerSize), transitionBlock);
+                helpers.WritePointer(interpreterFrame.Data.AsSpan(topOffset, pointerSize), imcf);
+                thread!.Frame = interpreterFrame.Address;
+
+                targetBuilder
+                    .AddTypes(CreateWasmTransitionBlockTypes(pointerSize))
+                    .AddTypes(new Dictionary<DataType, Target.TypeInfo>
+                    {
+                        [DataType.InterpreterFrame] = new() { Fields = interpreterFrameFields, Size = (uint)(isFaultingOffset + pointerSize) },
+                    });
+            },
+            executionManager: CreateInterpreterExecutionManager([InterpIp], managedIps: [FuncletIp, ParentIp], readyToRunIps: [FuncletIp, ParentIp]));
+
+        IStackWalk stackWalk = target.Contracts.StackWalk;
+        ThreadData threadData = target.Contracts.Thread.GetThreadData(new TargetPointer(thread!.Address));
+        IStackDataFrameHandle[] frameless = stackWalk.CreateStackWalk(threadData).Take(16)
+            .Where(f => f.State == StackWalkState.Frameless)
+            .ToArray();
+        Assert.Equal([InterpIp, FuncletIp, ParentIp], frameless.Select(f => stackWalk.GetInstructionPointer(f).Value));
+
+        Assert.Throws<InvalidOperationException>(() => stackWalk.GetWasmFunctionIdentity(frameless[0]));
+
+        WasmFunctionIdentity funclet = stackWalk.GetWasmFunctionIdentity(frameless[1]);
+        WasmFunctionIdentity parent = stackWalk.GetWasmFunctionIdentity(frameless[2]);
+
+        Assert.Equal(FuncletIndex, funclet.FunctionTableIndex);
+        Assert.Equal(1u, funclet.RuntimeFunctionIndex);
+        Assert.True(funclet.IsFunclet);
+        Assert.Equal(ParentIndex, parent.FunctionTableIndex);
+        Assert.Equal(0u, parent.RuntimeFunctionIndex);
+        Assert.False(parent.IsFunclet);
+        Assert.NotNull(funclet.Module);
+        Assert.NotEqual(TargetPointer.Null, funclet.Module.Value);
+        Assert.Equal(funclet.Module, parent.Module);
+    }
+
     [Fact]
     public void CreateStackWalk_WasmInterpreterFrameEnteredFromR2R_ContinuesIntoR2RCaller()
     {
@@ -1525,7 +1630,7 @@ public unsafe class StackWalkTests
         Assert.True(walked.Length <= 7, $"Walk did not terminate: {walked.Length} frames");
     }
 
-    private static IExecutionManager CreateInterpreterExecutionManager(ulong[] interpreterIps, ulong[]? managedIps = null)
+    private static IExecutionManager CreateInterpreterExecutionManager(ulong[] interpreterIps, ulong[]? managedIps = null, ulong[]? readyToRunIps = null)
     {
         Mock<IExecutionManager> executionManager = new();
         executionManager
@@ -1535,7 +1640,9 @@ public unsafe class StackWalkTests
                 : null);
         executionManager
             .Setup(em => em.GetCodeKind(It.IsAny<TargetCodePointer>()))
-            .Returns((TargetCodePointer ip) => interpreterIps.Contains(ip.Value) ? CodeKind.Interpreter : default);
+            .Returns((TargetCodePointer ip) => interpreterIps.Contains(ip.Value)
+                ? CodeKind.Interpreter
+                : (readyToRunIps?.Contains(ip.Value) ?? false) ? CodeKind.ReadyToRun : default);
         return executionManager.Object;
     }
 
