@@ -346,6 +346,7 @@ public unsafe class StackWalkTests
             .AddMockContract(runtimeTypeSystem)
             .AddMockContract(callingConvention)
             .AddMockContract(runtimeInfo)
+            .AddMockContract(Mock.Of<IPlatformMetadata>())
             .Build();
         ContextHolder<X86Context> context = new()
         {
