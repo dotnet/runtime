@@ -66,7 +66,7 @@ namespace System.IO.Compression
         public static ZstandardDictionary Create(ReadOnlySpan<byte> buffer) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression);
         public static ZstandardDictionary Create(ReadOnlySpan<byte> buffer, int quality) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression);
         public void Dispose() { }
-        public static ZstandardDictionary Train(ReadOnlySpan<byte> samples, ReadOnlySpan<int> sampleLengths, int maxDictionarySize) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression);
+        public static byte[] Train(ReadOnlySpan<byte> samples, ReadOnlySpan<int> sampleLengths, int maxDictionarySize) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression);
     }
 
     [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
