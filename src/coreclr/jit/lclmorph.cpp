@@ -1991,6 +1991,12 @@ private:
 #ifdef FEATURE_HW_INTRINSICS
             if (varTypeIsSIMD(varDsc))
             {
+                // A read-modify-write must not read the vector before the RHS can modify it.
+                if (isDef && ((indir->Data()->gtFlags & GTF_PERSISTENT_SIDE_EFFECTS) != 0))
+                {
+                    return IndirTransform::LclFld;
+                }
+
                 // We have three cases we want to handle:
                 // 1. Vector2/3/4 and Quaternion where we have 2-4x float fields
                 // 2. Plane where we have 1x Vector3 and 1x float field
