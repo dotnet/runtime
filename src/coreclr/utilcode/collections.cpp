@@ -1,12 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //*****************************************************************************
 // Collections.cpp
 //
-
-//
 // This contains Collections C++ utility classes.
-//
 //*****************************************************************************
 
 #include "stdafx.h"
@@ -379,99 +377,6 @@ void CClosedHashBase::Delete(
         if ((ptr -= m_iEntrySize) < &m_rgData[0])
             ptr = EntryPtr(m_iSize - 1);
     }
-}
-
-
-//*****************************************************************************
-// Iterates over all active values, passing each one to pDeleteLoopFunc.
-// If pDeleteLoopFunc returns TRUE, the entry is deleted. This is safer
-// and faster than using FindNext() and Delete().
-//*****************************************************************************
-void CClosedHashBase::DeleteLoop(
-    DELETELOOPFUNC pDeleteLoopFunc,     // Decides whether to delete item
-    void *pCustomizer)                  // Extra value passed to deletefunc.
-{
-    CONTRACTL
-    {
-        NOTHROW;
-    }
-    CONTRACTL_END;
-
-    int i;
-
-    if (m_rgData == 0)
-    {
-        return;
-    }
-
-    for (i = 0; i < m_iSize; i++)
-    {
-        BYTE *pEntry = EntryPtr(i);
-        if (Status(pEntry) == USED)
-        {
-            if (pDeleteLoopFunc(pEntry, pCustomizer))
-            {
-                if (m_bPerfect)
-                {
-                    SetStatus(pEntry, FREE);
-                    // One less non free entry.
-                    --m_iCount;
-                }
-                else
-                {
-                    SetStatus(pEntry, DELETED);
-                }
-            }
-        }
-    }
-
-    if (!m_bPerfect)
-    {
-        // Now free DELETED entries that are no longer part of a chain.
-        for (i = 0; i < m_iSize; i++)
-        {
-            if (Status(EntryPtr(i)) == FREE)
-            {
-                break;
-            }
-        }
-        if (i != m_iSize)
-        {
-            int iFirstFree = i;
-
-            do
-            {
-                if (i-- == 0)
-                {
-                    i = m_iSize - 1;
-                }
-                while (Status(EntryPtr(i)) == DELETED)
-                {
-                    SetStatus(EntryPtr(i), FREE);
-
-
-                    // One less non free entry.
-                    --m_iCount;
-
-                    if (i-- == 0)
-                    {
-                        i = m_iSize - 1;
-                    }
-                }
-
-                while (Status(EntryPtr(i)) != FREE)
-                {
-                    if (i-- == 0)
-                    {
-                        i = m_iSize - 1;
-                    }
-                }
-
-            }
-            while (i != iFirstFree);
-        }
-    }
-
 }
 
 //*****************************************************************************

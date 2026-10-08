@@ -74,14 +74,6 @@ namespace System.Threading
             RuntimeImports.RhSetThreadExitCallback(&OnThreadExit);
         }
 
-        internal static ulong CurrentOSThreadId
-        {
-            get
-            {
-                return RuntimeImports.RhCurrentOSThreadId();
-            }
-        }
-
         // Slow path executed once per thread
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static Thread InitializeCurrentThread()

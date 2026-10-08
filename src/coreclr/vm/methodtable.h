@@ -1,8 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
-// File: methodtable.h
-//
 
 #ifndef _METHODTABLE_H_
 #define _METHODTABLE_H_
@@ -38,7 +35,6 @@ class FCallMethodDesc;
 class    EEClass;
 class    EnCFieldDesc;
 class FieldDesc;
-class JIT_TrialAlloc;
 class MetaSig;
 class    MethodDesc;
 class    MethodDescChunk;
@@ -977,7 +973,6 @@ class MethodTable
 
     // Special access for setting up String object method table correctly
     friend class ClassLoader;
-    friend class JIT_TrialAlloc;
     friend class Module;
     friend class EEClass;
     friend class MethodTableBuilder;
@@ -2208,8 +2203,6 @@ public:
     PTR_EEClass GetClassWithPossibleAV();
 
     BOOL ValidateWithPossibleAV();
-
-    BOOL IsClassPointerValid();
 
     static UINT32 GetOffsetOfFlags()
     {

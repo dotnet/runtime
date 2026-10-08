@@ -1,11 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 // --------------------------------------------------------------------------------
 // PEImageLayout.h
-//
-
 // --------------------------------------------------------------------------------
-
 
 #ifndef PEIMAGELAYOUT_H_
 #define PEIMAGELAYOUT_H_
@@ -72,7 +70,6 @@ public:
 #endif
     PEImageLayout();
     virtual ~PEImageLayout();
-    static BOOL CompareBase(UPTR path, UPTR mapping);
 
     // Refcount above images.
     void AddRef();
@@ -338,4 +335,3 @@ class NativeImageLayout : public PEImageLayout
 };
 
 #endif  // PEIMAGELAYOUT_H_
-

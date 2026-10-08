@@ -2,15 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*++
-
 Module Name:
-
     wchar.c
 
 Abstract:
-
     Implementation of wide char string functions.
-
 --*/
 
 #include "pal/palinternal.h"
@@ -634,41 +630,6 @@ PAL_wcsrchr(
     LOGEXIT("wcsrchr returning wchar_t %p (%S)\n", last?last:W16_NULLSTRING, last?last:W16_NULLSTRING);
     PERF_EXIT(wcsrchr);
     return (wchar_16 *)last;
-}
-
-
-/*++
-Function:
-  PAL_wcspbrk
-
-See MSDN or man page for wcspbrk.
---*/
-const wchar_16 *
-__cdecl
-PAL_wcspbrk(
-        const wchar_16 *string,
-        const wchar_16 *strCharSet)
-{
-    PERF_ENTRY(wcspbrk);
-    ENTRY("wcspbrk (string=%p (%S), strCharSet=%p (%S))\n",
-          string?string:W16_NULLSTRING,
-          string?string:W16_NULLSTRING, strCharSet?strCharSet:W16_NULLSTRING, strCharSet?strCharSet:W16_NULLSTRING);
-
-    while (*string)
-    {
-        if (PAL_wcschr(strCharSet, *string) != NULL)
-        {
-            LOGEXIT("wcspbrk returning wchar_t %p (%S)\n", string, string);
-            PERF_EXIT(wcspbrk);
-            return (wchar_16 *) string;
-        }
-
-        string++;
-    }
-
-    LOGEXIT("wcspbrk returning wchar_t NULL\n");
-    PERF_EXIT(wcspbrk);
-    return NULL;
 }
 
 

@@ -286,9 +286,6 @@ namespace System.Threading
 #endif
         }
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern ulong GetCurrentOSThreadId();
-
         [MemberNotNull(nameof(self))]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void InitInternal(Thread thread);
