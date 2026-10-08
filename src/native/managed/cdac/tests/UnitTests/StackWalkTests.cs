@@ -1740,6 +1740,97 @@ public unsafe class StackWalkTests
     // stashes the InterpreterFrame address into the synthetic first-argument register
     // (InterpreterWalkFramePointer) so the subsequent interpreter virtual unwind can recover the
     // owning frame -- mirroring native SetFirstArgReg on the P/Invoke-into-interpreter transition.
+    /// <summary>
+    /// Native InlinedCallFrame::UpdateRegDisplay_Impl returns before recording the owning
+    /// InterpreterFrame when the frame has no active call.
+    /// </summary>
+    [Fact]
+    public void UpdateContextFromFrame_WasmInactiveInlinedCallFrameOverInterpreterFrame_LeavesContextUnchanged()
+    {
+        MockTarget.Architecture wasmArch = new() { IsLittleEndian = true, Is64Bit = false };
+
+        ulong icfAddr = 0;
+        TestPlaceholderTarget target = CreateTarget(
+            wasmArch,
+            threadBuilder => threadBuilder.AddThread(1, 1234),
+            frameBuilder =>
+            {
+                ulong interpAddr = frameBuilder.AddFrame(MockFrameBuilder.InterpreterFrameIdentifierValue, "InterpreterFrame").Address;
+                MockInlinedCallFrame icf = frameBuilder.AddInlinedCallFrame(callerReturnAddress: 0, datum: 0, callSiteSP: 0x0004_1000);
+                icf.Next = interpAddr;
+                icfAddr = icf.Address;
+            });
+
+        ContextHolder<WasmContext> context = new();
+        context.Context.StackPointer = new TargetPointer(0x0005_0000);
+        context.Context.InstructionPointer = new TargetCodePointer(0x0005_1000);
+        context.Context.FramePointer = new TargetPointer(0x0005_2000);
+        FrameHelpers frameHelpers = new(target);
+        Data.Frame frame = target.ProcessedData.GetOrAdd<Data.Frame>(icfAddr);
+        frameHelpers.UpdateContextFromFrame(frame, context);
+
+        Assert.True(context.TryReadRegister(WasmContext.InterpreterWalkFramePointerRegister, out TargetNUInt stashed));
+        Assert.Equal(0ul, stashed.Value);
+        Assert.Equal(0x0005_0000ul, context.StackPointer.Value);
+        Assert.Equal(0x0005_1000ul, context.InstructionPointer.Value);
+        Assert.Equal(0x0005_2000ul, context.FramePointer.Value);
+    }
+
+    /// <summary>
+    /// On WASM the callee-saved register set is InterpreterFP, so a SoftwareExceptionFrame restores
+    /// the frame pointer from its saved context along with IP and SP (native
+    /// SoftwareExceptionFrame::UpdateRegDisplay_Impl). WASM's CalleeSavedRegisters descriptor is
+    /// empty, so the frame pointer must not be left from the previous frame.
+    /// </summary>
+    [Fact]
+    public void UpdateContextFromFrame_WasmSoftwareExceptionFrame_RestoresFramePointer()
+    {
+        MockTarget.Architecture wasmArch = new() { IsLittleEndian = true, Is64Bit = false };
+        TargetTestHelpers helpers = new(wasmArch);
+        const ulong FrameAddress = 0x0006_0000;
+        const int ReturnAddressOffset = 8;
+        const int TargetContextOffset = 12;
+
+        // WasmContext layout: ContextFlags, InterpreterWalkFramePointer, InterpreterSP, InterpreterFP, InterpreterIP.
+        byte[] data = new byte[TargetContextOffset + 5 * sizeof(uint)];
+        helpers.Write(data.AsSpan(0, sizeof(uint)), (uint)MockFrameBuilder.SoftwareExceptionFrameIdentifierValue);
+        helpers.Write(data.AsSpan(TargetContextOffset + 8, sizeof(uint)), 0x0004_1000u);
+        helpers.Write(data.AsSpan(TargetContextOffset + 12, sizeof(uint)), 0x0004_1040u);
+        helpers.Write(data.AsSpan(TargetContextOffset + 16, sizeof(uint)), 0x8001_0106u);
+
+        TestPlaceholderTarget target = CreateTarget(
+            wasmArch,
+            threadBuilder => threadBuilder.AddThread(1, 1234),
+            frameBuilder => { },
+            runtimeArchitecture: RuntimeInfoArchitecture.Wasm,
+            configureTarget: builder =>
+            {
+                builder.MemoryBuilder.AddHeapFragment(new MockMemorySpace.HeapFragment { Address = FrameAddress, Data = data, Name = "SoftwareExceptionFrame" });
+                builder.AddTypes(new Dictionary<DataType, Target.TypeInfo>
+                {
+                    [DataType.SoftwareExceptionFrame] = new()
+                    {
+                        Fields = new Dictionary<string, Target.FieldInfo>
+                        {
+                            [nameof(Data.SoftwareExceptionFrame.ReturnAddress)] = new() { Offset = ReturnAddressOffset, TypeName = "CodePointer" },
+                            [nameof(Data.SoftwareExceptionFrame.TargetContext)] = new() { Offset = TargetContextOffset },
+                        },
+                    },
+                    [DataType.CalleeSavedRegisters] = new() { Fields = new Dictionary<string, Target.FieldInfo>() },
+                });
+            });
+
+        ContextHolder<WasmContext> context = new();
+        context.Context.FramePointer = new TargetPointer(0x0007_0000);
+        FrameHelpers frameHelpers = new(target);
+        Data.Frame frame = target.ProcessedData.GetOrAdd<Data.Frame>(new TargetPointer(FrameAddress));
+        frameHelpers.UpdateContextFromFrame(frame, context);
+
+        Assert.Equal(0x0004_1000ul, context.StackPointer.Value);
+        Assert.Equal(0x8001_0106ul, context.InstructionPointer.Value);
+        Assert.Equal(0x0004_1040ul, context.FramePointer.Value);
+    }
+
     [Fact]
     public void UpdateContextFromFrame_WasmInlinedCallFrameOverInterpreterFrame_StashesInterpreterFrame()
     {

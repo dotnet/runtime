@@ -450,7 +450,7 @@ Most of the handlers are implemented in `BaseFrameHandler`. Platform specific co
 
 #### InlinedCallFrame
 
-InlinedCallFrames store and update only the IP, SP, and FP of a given context. If the stored IP (CallerReturnAddress) is 0 then the InlinedCallFrame does not have an active call and should not update the context.
+InlinedCallFrames store and update only the IP, SP, and FP of a given context. If the stored IP (CallerReturnAddress) is 0 then the InlinedCallFrame does not have an active call and should not update the context. On WASM an active InlinedCallFrame directly above an `InterpreterFrame` also records that `InterpreterFrame` in the context's first-argument register; an inactive one does not.
 
 * On ARM, the InlinedCallFrame stores the value of the SP after the prolog (`SPAfterProlog`) to allow unwinding for functions with stackalloc. When a function uses stackalloc, the CallSiteSP can already have been adjusted. This value should be placed in R9.
 * On WASM, a `CallerReturnAddress` of `INLINED_PINVOKE_FROM_R2R` (`1`) marks an active inlined P/Invoke from ReadyToRun code rather than an address. SP is taken from `CallSiteSP`, IP is the R2R virtual IP of the shadow frame at `CallSiteSP`, and FP is the WASM logical frame pointer at `CallSiteSP` (see below). If no virtual IP can be recovered, IP is set to null.
@@ -461,7 +461,7 @@ An active InlinedCallFrame stays the current Frame after its context update so t
 
 #### SoftwareExceptionFrame
 
-SoftwareExceptionFrames store a copy of the context struct. The IP, SP, and all ABI specified (platform specific) callee-saved registers are copied from the stored context to the working context.
+SoftwareExceptionFrames store a copy of the context struct. The IP, SP, and all ABI specified (platform specific) callee-saved registers are copied from the stored context to the working context. On WASM the callee-saved register set is the frame pointer (`InterpreterFP`), so IP, SP, and FP are copied.
 
 **Return Address**: Read from the `ReturnAddress` field on the frame.
 
