@@ -480,6 +480,28 @@ When updating the context from a TransitionFrame, the IP, SP, and all ABI specif
 
 Like native `RtlVirtualUnwind`, unwinding a WASM R2R frame always advances SP to the caller's stack pointer. The caller's IP and FP are null when the caller is not R2R code: when no R2R virtual IP can be read at the caller's SP, or when the frame being unwound has a reverse P/Invoke frame in its GC info (`GCInfoHeader.HasReversePInvokeFrame`) and is not a funclet. A reverse P/Invoke frame's caller is native code, so its stack bytes are never read as an R2R frame. The walker then continues through the explicit Frame chain.
 
+```csharp
+// WasmContext.Unwind: one R2R frame, mirroring native RtlVirtualUnwind / WasmUnwindStackFrameCore.
+void Unwind()
+{
+    TargetPointer frameBase = /* frame base of the R2R frame at SP (frame record: function index, VIP / 2) */;
+    uint functionIndex = target.Read<uint>(frameBase + FunctionIndexOffset);
+    uint frameSize = /* ULEB128 at the start of the function's unwind data */;
+    if (/* no frame at SP, no unwind data, or frameSize == 0 */)
+    {
+        SP = IP = FP = null;  // the walk cannot advance
+        return;
+    }
+
+    SP = frameBase + frameSize;
+    bool callerIsNative = IP != null
+        && !IsFunclet(functionIndex)
+        && GCInfo.GetHeader(/* GC info of the code block containing IP */).HasReversePInvokeFrame;
+    IP = callerIsNative ? null : /* R2R virtual IP at SP, or null if SP has no R2R frame record */;
+    FP = IP != null ? /* WASM logical frame pointer at SP */ : null;
+}
+```
+
 **Return Address**: Read from `TransitionBlock.ReturnAddress`. On WASM, it is derived from `TransitionBlock.StackPointer` when it is 0, as above. For an x86 `StubDispatchFrame` with neither a method nor a GCRefMap, subtract five bytes to return the adjusted call address, matching the context update.
 
 The following Frame types also use this mechanism:
