@@ -497,7 +497,7 @@ CDAC_TYPE_FIELD(SystemDomain, TYPE(LoaderAllocator), GlobalLoaderAllocator, cdac
 CDAC_TYPE_FIELD(SystemDomain, T_POINTER, SystemAssembly, cdac_data<SystemDomain>::SystemAssembly)
 CDAC_TYPE_END(SystemDomain)
 
-#if defined(DEBUGGING_SUPPORTED) && !defined(TARGET_WASM)
+#ifdef DEBUGGING_SUPPORTED
 CDAC_TYPE_BEGIN(Debugger)
 CDAC_TYPE_INDETERMINATE(Debugger)
 CDAC_TYPE_FIELD(Debugger, T_INT32, LeftSideInitialized, offsetof(Debugger, m_fLeftSideInitialized))
@@ -532,7 +532,7 @@ CDAC_TYPE_SIZE(sizeof(MemoryRange))
 CDAC_TYPE_FIELD(MemoryRange, T_POINTER, StartAddress, cdac_data<MemoryRange>::StartAddress)
 CDAC_TYPE_FIELD(MemoryRange, T_NUINT, Size, cdac_data<MemoryRange>::Size)
 CDAC_TYPE_END(MemoryRange)
-#endif // DEBUGGING_SUPPORTED && !TARGET_WASM
+#endif // DEBUGGING_SUPPORTED
 
 CDAC_TYPE_BEGIN(ArrayListBase)
 CDAC_TYPE_INDETERMINATE(ArrayListBase)
@@ -1733,7 +1733,7 @@ CDAC_GLOBAL_POINTER(EEConfig, &::g_pConfig)
 #ifndef FEATURE_PORTABLE_ENTRYPOINTS
 CDAC_GLOBAL_POINTER(ThePreStub, &g_cdacThePreStub)
 #endif // !FEATURE_PORTABLE_ENTRYPOINTS
-#if defined(DEBUGGING_SUPPORTED) && !defined(TARGET_WASM)
+#ifdef DEBUGGING_SUPPORTED
 CDAC_GLOBAL_POINTER(Debugger, &::g_pDebugger)
 #if defined(TARGET_AMD64)
 CDAC_GLOBAL_POINTER(DebuggerPatchTable, cdac_data<DebuggerController>::PatchTable)
@@ -1741,7 +1741,7 @@ CDAC_GLOBAL_POINTER(DebuggerPatchTable, cdac_data<DebuggerController>::PatchTabl
 CDAC_GLOBAL_POINTER(CLRJitAttachState, &::CLRJitAttachState)
 CDAC_GLOBAL_POINTER(CORDebuggerControlFlags, &::g_CORDebuggerControlFlags)
 CDAC_GLOBAL(MaxHijackFunctions, T_UINT32, cdac_data<Debugger>::MaxHijackFunctions)
-#endif // DEBUGGING_SUPPORTED && !TARGET_WASM
+#endif // DEBUGGING_SUPPORTED
 #ifdef FEATURE_METADATA_UPDATER
 CDAC_GLOBAL_POINTER(MetadataUpdatesApplied, &::g_metadataUpdatesApplied)
 #endif
@@ -1901,9 +1901,9 @@ CDAC_GLOBAL_CONTRACT(ComWrappers, c1)
 #endif // FEATURE_COMWRAPPERS
 CDAC_GLOBAL_CONTRACT(ConditionalWeakTable, c1)
 CDAC_GLOBAL_CONTRACT(DacStreams, c1)
-#if defined(DEBUGGING_SUPPORTED) && !defined(TARGET_WASM)
+#ifdef DEBUGGING_SUPPORTED
 CDAC_GLOBAL_CONTRACT(Debugger, c1)
-#endif // DEBUGGING_SUPPORTED && !TARGET_WASM
+#endif // DEBUGGING_SUPPORTED
 CDAC_GLOBAL_CONTRACT(DebugInfo, c1)
 CDAC_GLOBAL_CONTRACT(EcmaMetadata, c1)
 #ifdef FEATURE_METADATA_UPDATER
@@ -1922,7 +1922,11 @@ CDAC_GLOBAL_CONTRACT(ObjectiveCMarshal, c1)
 CDAC_GLOBAL_CONTRACT(Object, c1)
 CDAC_GLOBAL_CONTRACT(FeatureFlags, c1)
 CDAC_GLOBAL_CONTRACT(PlatformMetadata, c1)
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+CDAC_GLOBAL_CONTRACT(PrecodeStubs, c2)
+#else
 CDAC_GLOBAL_CONTRACT(PrecodeStubs, c1)
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
 #ifdef PROFILING_SUPPORTED
 CDAC_GLOBAL_CONTRACT(ReJIT, c1)
 #endif // PROFILING_SUPPORTED

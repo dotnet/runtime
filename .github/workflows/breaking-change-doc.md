@@ -17,6 +17,8 @@ tools:
   bash: ["pwsh", "gh"]
 
 safe-outputs:
+  report-failure-as-issue: false
+  report-failed-jobs: false
   add-comment:
     target: "*"
   noop:
@@ -89,7 +91,8 @@ Create breaking change documentation for the pull request identified below.
 - If triggered by `workflow_dispatch` with `suppress_output` = `true`,
   **do not** post a comment on the PR after producing the files. Just
   write the markdown files and stop.
-- For pull_request triggers, always post the comment.
+- For pull_request triggers, post the comment only when permitted by the
+  skill's "Post the comment" rules, including its uncertainty gate.
 
 ## Instructions
 

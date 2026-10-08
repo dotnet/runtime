@@ -278,11 +278,18 @@ namespace System.Net.NameResolution.Tests
                 Assert.Equal(AddressFamily.InterNetwork, record.Address.AddressFamily));
         }
 
-        [ConditionalTheory(typeof(DnsResolverTest), nameof(IsSupportedPlatform))]
-        [InlineData(false)]
-        [InlineData(true)]
+        [ConditionalFact(typeof(DnsResolverTest), nameof(IsSupportedPlatform))]
         [OuterLoop]
-        public async Task ResolveAddresses_NonExistent_ReturnsNxDomain(bool async)
+        public Task ResolveAddresses_NonExistent_ReturnsNxDomain()
+            => ResolveAddresses_NonExistent_ReturnsNxDomainCore(async: false);
+
+        [ConditionalFact(typeof(DnsResolverTest), nameof(IsSupportedPlatform))]
+        [OuterLoop]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/131188", typeof(PlatformDetection), nameof(PlatformDetection.IsWindowsServer2025))]
+        public Task ResolveAddressesAsync_NonExistent_ReturnsNxDomain()
+            => ResolveAddresses_NonExistent_ReturnsNxDomainCore(async: true);
+
+        private static async Task ResolveAddresses_NonExistent_ReturnsNxDomainCore(bool async)
         {
             using DnsResolver r = new DnsResolver();
             DnsResult<AddressRecord> result = await ResolveAddresses(async, r, NonExistentHost);

@@ -396,14 +396,12 @@ GVAL_DECL(PTR_WSTR, g_EntryAssemblyPath);
 // Global System Information
 extern SYSTEM_INFO g_SystemInfo;
 
-// <TODO>@TODO - PROMOTE.</TODO>
-// <TODO>@TODO - I'd like to make these private members of CLRException some day.</TODO>
 EXTERN OBJECTHANDLE         g_pPreallocatedOutOfMemoryException;
 EXTERN OBJECTHANDLE         g_pPreallocatedStackOverflowException;
 EXTERN OBJECTHANDLE         g_pPreallocatedExecutionEngineException;
 
 // we use this as a dummy object to indicate free space in the handle tables -- this object is never visible to the world
-EXTERN OBJECTHANDLE         g_pPreallocatedSentinelObject;
+EXTERN OBJECTREF            g_pPreallocatedSentinelObject;
 
 EXTERN MethodTable*         g_pCastHelpers;
 

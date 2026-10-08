@@ -372,7 +372,7 @@ public:
     void AddType(Module* pModule,
                  mdTypeDef cl);
     void AddExportedType(mdExportedType cl);
-    mdAssemblyRef AddAssemblyRef(Assembly *refedAssembly, IMetaDataAssemblyEmit *pAssemEmitter);
+    mdAssemblyRef AddAssemblyRef(Assembly *refedAssembly, IMDInternalEmit *pAssemEmitter);
 
     //****************************************************************************************
 

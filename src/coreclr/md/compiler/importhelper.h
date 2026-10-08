@@ -12,8 +12,6 @@
 #define __IMPORTHELPER__h__
 
 class CMiniMdRW;
-class MDTOKENMAP;
-
 //*********************************************************************
 // Class to handle merge
 //*********************************************************************
@@ -36,22 +34,6 @@ public:
         mdMethodSpec *pMethodSpec,              // [OUT] Put the MethodSpec token here.
         RID         rid = 0);              // [IN] Optional rid to be ignored.
 
-
-    static HRESULT FindGenericParamConstraintByOwnerAndConstraint(
-        CMiniMdRW   *pMiniMd,                   // [IN] the minimd to lookup
-        mdGenericParam tkOwner,                 // [IN] GenericParamConstraint Owner
-        mdToken tkConstraint,                   // [IN] GenericParamConstraint Constraint
-        mdGenericParamConstraint *pGenericParamConstraint, // [OUT] Put the GenericParamConstraint token here.
-        RID         rid = 0);              // [IN] Optional rid to be ignored.
-
-
-    static HRESULT FindGenericParamByOwner(
-        CMiniMdRW   *pMiniMd,                   // [IN] the minimd to lookup
-        mdToken     tkOwner,                    // [IN] GenericParam Owner
-        LPCUTF8     szUTF8Name,                 // [IN] GeneriParam Name, may be NULL if not used for search
-        ULONG       *pNumber,                   // [IN] GeneriParam Number, may be NULL if not used for search
-        mdGenericParam *pGenericParam,          // [OUT] Put the GenericParam token here.
-        RID         rid = 0);                   // [IN] Optional rid to be ignored.
 
     static HRESULT FindMethod(
         CMiniMdRW *     pMiniMd,                    // [IN] the minimd to lookup
@@ -110,14 +92,6 @@ public:
         mdToken     tkDecl,                 // [IN] Method declaration token.
         RID         *pRid);                 // [OUT] Put the MethodImpl rid here
 
-    static HRESULT FindCustomAttributeCtorByName(
-        CMiniMdRW   *pMiniMd,               // [IN] the minimd to lookup
-        LPCUTF8     szAssemblyName,         // [IN] Assembly Name.
-        LPCUTF8     szNamespace,            // [IN] TypeRef Namespace.
-        LPCUTF8     szName,                 // [IN] TypeRef Name.
-        mdTypeDef   *ptk,                   // [OUT] Put the TypeRef token here.
-        RID         rid = 0);               // [IN] Optional rid to be ignored.
-
     static HRESULT FindTypeRefByName(
         CMiniMdRW   *pMiniMd,               // [IN] the minimd to lookup
         mdToken     tkResolutionScope,      // [IN] ResolutionScope, mdAssemblyRef or mdModuleRef.
@@ -167,26 +141,12 @@ public:
         LPCUTF8     szName,                 // [IN] name of the event
         mdProperty  *pev);                  // [OUT] Event token
 
-    static HRESULT FindCustomAttributeByToken(
-        CMiniMdRW   *pMiniMd,               // [IN] the minimd to lookup
-        mdToken     tkParent,               // [IN] the parent that custom value is associated with
-        mdToken     tkType,                 // [IN] type of the CustomAttribute
-        const void  *pCustBlob,             // [IN] custom value blob
-        ULONG       cbCustBlob,             // [IN] size of the blob.
-        mdCustomAttribute *pcv);            // [OUT] CustomAttribute token
-
     static HRESULT GetCustomAttributeByName(// S_OK or error.
         CMiniMdRW   *pMiniMd,               // [IN] the minimd to lookup
         mdToken     tkObj,                  // [IN] Object with Custom Attribute.
         LPCUTF8     szName,                 // [IN] Name of desired Custom Attribute.
         const void  **ppData,               // [OUT] Put pointer to data here.
         ULONG       *pcbData);              // [OUT] Put size of data here.
-
-    static HRESULT GetCustomAttributeByName(// S_OK or error.
-        CMiniMdRW   *pMiniMd,               // [IN] the minimd to lookup
-        mdToken     tkObj,                  // [IN] Object with Custom Attribute.
-        LPCUTF8     szName,                 // [IN] Name of desired Custom Attribute.
-        mdCustomAttribute pca);             // [OUT] found CA token
 
     static HRESULT MergeUpdateTokenInFieldSig(
         CMiniMdRW   *pMiniMdAssemEmit,      // [IN] The assembly emit scope.
@@ -196,7 +156,6 @@ public:
         ULONG       cbHashValue,            // [IN] Size in bytes for the hash value.
         IMetaModelCommon *pCommonImport,    // [IN] The scope to merge into the emit scope.
         PCCOR_SIGNATURE pbSigImp,           // [IN] signature from the imported scope
-        MDTOKENMAP  *ptkMap,                // [IN] Internal OID mapping structure.
         CQuickBytes *pqkSigEmit,            // [OUT] buffer for translated signature
         ULONG       cbStartEmit,            // [IN] start point of buffer to write to
         ULONG       *pcbImp,                // [OUT] total number of bytes consumed from pbSigImp
@@ -210,7 +169,6 @@ public:
         ULONG       cbHashValue,            // [IN] Size in bytes for the hash value.
         IMetaModelCommon *pCommonImport,    // [IN] The scope to merge into the emit scope.
         PCCOR_SIGNATURE pbSigImp,           // [IN] signature from the imported scope
-        MDTOKENMAP  *ptkMap,                // [IN] Internal OID mapping structure.
         CQuickBytes *pqkSigEmit,            // [OUT] translated signature
         ULONG       cbStartEmit,            // [IN] start point of buffer to write to
         ULONG       *pcbImp,                // [OUT] total number of bytes consumed from pbSigImp
@@ -257,13 +215,6 @@ public:
         CQuickArray<mdTypeDef> &cqaTdNesters,  // Array of Nesters.
         CQuickArray<LPCUTF8> &cqaNamespaces,    // Namespaces of the nesters.
         CQuickArray<LPCUTF8> &cqaNames);    // Names of the nesters.
-
-    static HRESULT FindNestedTypeRef(
-        CMiniMdRW   *pMiniMd,               // [IN] Scope in which to find the TypeRef.
-        CQuickArray<LPCUTF8> &cqaNesterNamespaces,   // [IN] Array of Namespaces.
-        CQuickArray<LPCUTF8> &cqaNesterNames,    // [IN] Array of Names.
-        mdToken     tkResolutionScope,      // [IN] Resolution scope for the outermost TypeRef.
-        mdTypeRef   *ptr);                  // [OUT] Inner most TypeRef token.
 
     static HRESULT FindNestedTypeDef(
         CMiniMdRW   *pMiniMd,               // [IN] Scope in which to find the TypeRef.

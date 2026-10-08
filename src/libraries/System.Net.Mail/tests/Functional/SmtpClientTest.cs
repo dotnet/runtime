@@ -25,7 +25,7 @@ using Xunit.Abstractions;
 
 namespace System.Net.Mail.Tests
 {
-    [SkipOnPlatform(TestPlatforms.Browser, "SmtpClient is not supported on Browser")]
+    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi, "SmtpClient is not supported on Browser and WASI")]
     public class SmtpClientTest : FileCleanupTestBase
     {
         private SmtpClient _smtp;

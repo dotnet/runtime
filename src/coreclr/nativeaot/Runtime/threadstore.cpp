@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 #include "common.h"
 #include "gcenv.h"
 #include "gcheaputilities.h"
@@ -411,27 +412,6 @@ void ThreadStore::SaveCurrentThreadOffsetForDAC()
 
 GPTR_IMPL(uint32_t, p_tls_index);
 GVAL_IMPL(uint32_t, SECTIONREL__tls_CurrentThread);
-
-//
-// This routine supports the !Thread debugger extension routine
-//
-// static
-PTR_Thread ThreadStore::GetThreadFromTEB(TADDR pTEB)
-{
-    if (pTEB == NULL)
-        return NULL;
-
-    uint32_t tlsIndex = *p_tls_index;
-    TADDR pTls = *(PTR_TADDR)(pTEB + OFFSETOF__TEB__ThreadLocalStoragePointer);
-    if (pTls == NULL)
-        return NULL;
-
-    TADDR pOurTls = *(PTR_TADDR)(pTls + (tlsIndex * sizeof(void*)));
-    if (pOurTls == NULL)
-        return NULL;
-
-    return (PTR_Thread)(pOurTls + SECTIONREL__tls_CurrentThread);
-}
 
 #endif // DACCESS_COMPILE
 

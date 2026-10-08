@@ -14,6 +14,26 @@ namespace System.Formats.Tar.Tests
 {
     public class TarFile_ExtractToDirectory_Stream_Tests : TarFile_ExtractToDirectory_Tests
     {
+        protected override Task ExtractArchive(MemoryStream archive, string destinationDirectoryName, bool overwriteFiles, bool useOptions, bool async, CancellationToken cancellationToken = default)
+        {
+            if (async)
+            {
+                return useOptions
+                    ? TarFile.ExtractToDirectoryAsync(archive, destinationDirectoryName, new TarExtractOptions { OverwriteFiles = overwriteFiles }, cancellationToken)
+                    : TarFile.ExtractToDirectoryAsync(archive, destinationDirectoryName, overwriteFiles, cancellationToken);
+            }
+
+            if (useOptions)
+            {
+                TarFile.ExtractToDirectory(archive, destinationDirectoryName, new TarExtractOptions { OverwriteFiles = overwriteFiles });
+            }
+            else
+            {
+                TarFile.ExtractToDirectory(archive, destinationDirectoryName, overwriteFiles);
+            }
+            return Task.CompletedTask;
+        }
+
         public static IEnumerable<object[]> GetLinkEntryTypesAndBooleanData() => GetDataAndBooleanData(new[]
         {
             new object[] { TarEntryType.SymbolicLink },
@@ -34,15 +54,6 @@ namespace System.Formats.Tar.Tests
             new object[] { "subdir/../readme.txt", "readme.txt" },
             new object[] { "subdir/./readme.txt", Path.Join("subdir", "readme.txt") }
         });
-
-        [Fact]
-        public async Task ExtractToDirectoryAsync_Cancel()
-        {
-            CancellationTokenSource cs = new CancellationTokenSource();
-            cs.Cancel();
-            using MemoryStream archiveStream = new MemoryStream();
-            await Assert.ThrowsAsync<TaskCanceledException>(() => TarFile.ExtractToDirectoryAsync(archiveStream, "directory", overwriteFiles: true, cs.Token));
-        }
 
         [Theory]
         [MemberData(nameof(GetBooleanData))]
@@ -65,17 +76,6 @@ namespace System.Formats.Tar.Tests
             using MemoryStream archive = new MemoryStream();
             using WrappedStream unreadable = new WrappedStream(archive, canRead: false, canWrite: true, canSeek: true);
             await Assert.ThrowsAsync<ArgumentException>(() => ExtractToDirectory(unreadable, destinationDirectoryName: "path", overwriteFiles: false, async));
-        }
-
-        [Theory]
-        [MemberData(nameof(GetBooleanData))]
-        public async Task NonExistentDirectory_Throws(bool async)
-        {
-            using TempDirectory root = new TempDirectory();
-            string dirPath = Path.Join(root.Path, "dir");
-
-            using MemoryStream archive = new MemoryStream();
-            await Assert.ThrowsAsync<DirectoryNotFoundException>(() => ExtractToDirectory(archive, destinationDirectoryName: dirPath, overwriteFiles: false, async));
         }
 
         [Theory]

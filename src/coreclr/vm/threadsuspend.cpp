@@ -1,13 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-//
 // threadsuspend.CPP
 //
 // This file contains the implementation of thread suspension. The implementation of thread suspension
 // used to be spread through multiple places. That is why, many methods still live in their own homes
 // (class Thread, class ThreadStore, etc.). They should be eventually refactored into class ThreadSuspend.
-//
 
 #include "common.h"
 #include "CLREventBase.h"
@@ -335,12 +333,12 @@ Thread::SuspendThreadResult Thread::SuspendThread(BOOL fOneTryOnly, DWORD *pdwSu
                             if ((tries++) % 20 != 0) {
                                 YieldProcessorNormalized(); // play nice on hyperthreaded CPUs
                             } else {
-                                __SwitchToThread(0, ++dwSwitchCount);
+                                minipal_switch_to_thread(++dwSwitchCount);
                             }
                         }
                         else
                         {
-                            __SwitchToThread(0, ++dwSwitchCount); // don't spin on uniproc machines
+                            minipal_switch_to_thread(++dwSwitchCount); // don't spin on uniproc machines
                         }
                     }
                 }
@@ -402,7 +400,7 @@ retry:
 #endif // _DEBUG
 
         // Allow the target thread to run in order to make some progress.
-        // On multi processor machines we saw the suspending thread resuming immediately after the __SwitchToThread()
+        // On multi processor machines we saw the suspending thread resuming immediately after minipal_switch_to_thread()
         // because it has another few processors available.  As a consequence the target thread was being Resumed and
         // Suspended right away, w/o a real chance to make any progress.
         if (g_SystemInfo.dwNumberOfProcessors > 1 && (tries++) % 20 != 0)
@@ -411,7 +409,7 @@ retry:
         }
         else
         {
-            __SwitchToThread(0, ++dwSwitchCount); // don't spin on uniproc machines
+            minipal_switch_to_thread(++dwSwitchCount); // don't spin on uniproc machines
         }
     }
 
@@ -813,51 +811,6 @@ StackWalkAction TAStackCrawlCallBack(CrawlFrame* pCf, void* data)
             UNREACHABLE();
     }
     return action;
-}
-
-// Is the current thread currently executing within a constrained execution region?
-BOOL Thread::IsExecutingWithinCer()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    if (!g_fEEStarted)
-        return FALSE;
-
-    Thread *pThread = GetThread();
-    StackCrawlContext sContext = { pThread,
-                                   StackCrawlContext::SCC_CheckWithinCer,
-        FALSE,
-        FALSE,
-        FALSE,
-        FALSE,
-        FALSE,
-        FALSE};
-
-    pThread->StackWalkFrames(TAStackCrawlCallBack, &sContext);
-
-#ifdef STRESS_LOG
-    if (sContext.fWithinCer && StressLog::StressLogOn(~0u, 0))
-    {
-        // If stress log is on, write info to stress log
-        StackCrawlContext sContext1 = { pThread,
-                                        StackCrawlContext::SCC_CheckWithinCer,
-            FALSE,
-            FALSE,
-            FALSE,
-            FALSE,
-            TRUE,
-            FALSE};
-
-        pThread->StackWalkFrames(TAStackCrawlCallBack, &sContext1);
-    }
-#endif
-
-    return sContext.fWithinCer;
 }
 
 #if defined(TARGET_AMD64) && defined(FEATURE_HIJACK)
@@ -1419,7 +1372,7 @@ Thread::UserAbort(EEPolicy::ThreadAbortTypes abortType, DWORD timeout)
             case STR_UnstartedOrDead:
             case STR_NoStressLog:
                 checkForAbort.Release();
-                __SwitchToThread(0, ++dwSwitchCount);
+                minipal_switch_to_thread(++dwSwitchCount);
                 continue;
 
             default:
@@ -1653,7 +1606,7 @@ void Thread::LockAbortRequest(Thread* pThread)
         if (InterlockedCompareExchange(&(pThread->m_AbortRequestLock),1,0) == 0) {
             return;
         }
-        __SwitchToThread(0, ++dwSwitchCount);
+        minipal_switch_to_thread(++dwSwitchCount);
     }
 }
 
@@ -2377,7 +2330,7 @@ void ThreadStore::IncrementTrapReturningThreads()
         // we can't forbid suspension while we are sleeping and don't hold the lock
         // this will trigger an assert on SQLCLR but is a general issue
         suspend.Release();
-        __SwitchToThread(0, ++dwSwitchCount);
+        minipal_switch_to_thread(++dwSwitchCount);
         suspend.Acquire();
     }
 
@@ -2415,7 +2368,7 @@ void ThreadStore::DecrementTrapReturningThreads()
         // we can't forbid suspension while we are sleeping and don't hold the lock
         // this will trigger an assert on SQLCLR but is a general issue
         suspend.Release();
-        __SwitchToThread(0, ++dwSwitchCount);
+        minipal_switch_to_thread(++dwSwitchCount);
         suspend.Acquire();
     }
 
@@ -4008,7 +3961,7 @@ bool Thread::SysStartSuspendForDebug(AppDomain *pAppDomain)
                     if (!thread->CheckForAndDoRedirectForDbg())
                     {
                         thread->ResumeThread();
-                        __SwitchToThread(0, ++dwSwitchCount);
+                        minipal_switch_to_thread(++dwSwitchCount);
                         goto RetrySuspension;
                     }
                 }
@@ -4248,7 +4201,7 @@ RetrySuspension:
                 if (!thread->CheckForAndDoRedirectForDbg())
                 {
                     thread->ResumeThread();
-                    __SwitchToThread(0, ++dwSwitchCount);
+                    minipal_switch_to_thread(++dwSwitchCount);
                     goto RetrySuspension;
                 }
 
@@ -5692,7 +5645,7 @@ retry_for_debugger:
         else
         {
             // otherwise, just yield so the debugger can finish what it's doing.
-            __SwitchToThread(0, ++dwSwitchCount);
+            minipal_switch_to_thread(++dwSwitchCount);
         }
 
         goto retry_for_debugger;

@@ -483,6 +483,9 @@ internal readonly struct Loader_1 : ILoader
     string ILoader.GetPath(ModuleHandle handle)
     {
         Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
+        if (GetFlags(module).HasFlag(ModuleFlags.ReflectionEmit) || ((ILoader)this).IsProbeExtensionResultValid(handle))
+            return string.Empty;
+
         return module.Path != TargetPointer.Null
             ? _target.ReadUtf16String(module.Path)
             : string.Empty;
