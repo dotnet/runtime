@@ -178,7 +178,7 @@
     <value>The assembly '{0}' has already been loaded into this MetadataLoadContext.</value>
   </data>
   <data name="FileNotFoundAssembly" xml:space="preserve">
-    <value>Could not find assembly '{0}'. The MetadataAssemblyResolver did not return it. An assembly loaded into the MetadataLoadContext, for example with LoadFromAssemblyPath(), is used for this name only if the resolver returns it.</value>
+    <value>Could not resolve assembly '{0}'. Loading an assembly into the MetadataLoadContext does not make it available by name unless the MetadataAssemblyResolver returns it.</value>
   </data>
   <data name="FileNotFoundModule" xml:space="preserve">
     <value>Could not find the module file for '{0}'.</value>
