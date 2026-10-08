@@ -4,6 +4,7 @@
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
+using System.Threading;
 using Xunit;
 
 public class Runtime_135392
@@ -14,6 +15,7 @@ public class Runtime_135392
     public static void TestEntryPoint(float value)
     {
         Assert.Equal(new Vector4(value + 1, value, value, value), StorePure(value));
+        Assert.Equal(new Vector4(value + 1, value, value, value), StoreVolatile(value));
         Assert.Equal(new Vector4(1, 42, value, value), StoreVector4(value));
         Assert.Equal(new Vector2(1, 42), StoreVector2(value));
         Assert.Equal(new Vector3(1, 42, value), StoreVector3(value));
@@ -105,6 +107,14 @@ public class Runtime_135392
     {
         Vector4 v = new Vector4(value);
         v.X = value + 1;
+        return v;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    private static Vector4 StoreVolatile(float value)
+    {
+        Vector4 v = new Vector4(value);
+        v.X = Volatile.Read(ref value) + 1;
         return v;
     }
 

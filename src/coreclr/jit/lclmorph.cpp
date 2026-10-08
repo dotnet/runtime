@@ -1991,8 +1991,8 @@ private:
 #ifdef FEATURE_HW_INTRINSICS
             if (varTypeIsSIMD(varDsc))
             {
-                // A read-modify-write must not read the vector before the RHS can modify it.
-                if (isDef && ((indir->Data()->gtFlags & GTF_PERSISTENT_SIDE_EFFECTS) != 0))
+                // Preserve RHS side effects before reading the vector for a partial store.
+                if (isDef && ((indir->Data()->gtFlags & (GTF_PERSISTENT_SIDE_EFFECTS | GTF_ORDER_SIDEEFF)) != 0))
                 {
                     return IndirTransform::LclFld;
                 }
