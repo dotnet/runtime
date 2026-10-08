@@ -178,6 +178,27 @@
       Text="Generating native image of System.Private.CoreLib for $(OSPlatformConfig). Logging to $(CrossGenCoreLibLog)" />
 
     <!--
+      Shared extra-flag logic for both the composite <Exec> path below and the non-composite
+      RunReadyToRunCompiler path further down: these flags/conditions are identical in both
+      cases, so they are computed once here instead of being duplicated per path. Only flags
+      that both paths actually use belong in this list (wasm-only flags and the GC mode
+      transition verification flag never apply to the composite/Apple-mobile case, so they
+      stay below, in the non-composite-only item group).
+    -->
+    <ItemGroup>
+      <_CoreLibCrossgen2CommonExtraArgs Include="--target-allows-runtime-code-generation:$(FeatureDynamicCodeCompiled)"
+        Condition="'$(FeatureDynamicCodeCompiled)' != ''" />
+      <_CoreLibCrossgen2CommonExtraArgs Include="--embed-pgo-data"
+        Condition="'$(UsingToolIbcOptimization)' != 'true' and '$(EnableNgenOptimization)' == 'true' and '$(PublishReadyToRunContainerFormat)' != 'wasm'" />
+      <!-- Enable type and field layout verification to make it easier to catch when the crossgen2 type layout engine and the runtime disagree on layout conventions -->
+      <_CoreLibCrossgen2CommonExtraArgs Include="--verify-type-and-field-layout"
+        Condition="'$(Configuration)' == 'Debug' or '$(Configuration)' == 'Checked'" />
+      <!-- Enable Cached Interface Dispatch layout rules for the StubDispatch import section. This allows testing of this path on platforms that do not require CachedInterface Dispatch -->
+      <_CoreLibCrossgen2CommonExtraArgs Include="--enable-cached-interface-dispatch-support"
+        Condition="'$(Configuration)' == 'Debug' or '$(Configuration)' == 'Checked'" />
+    </ItemGroup>
+
+    <!--
       Apple composite images (TargetsAppleMobile) are not single-assembly "-r + input" builds:
       RunReadyToRunCompiler's composite parameters (ReadyToRunCompositeBuildReferences/
       BuildInput/UnrootedBuildInput) model a different, multi-assembly composite workflow than
@@ -193,12 +214,9 @@
       <CrossGenDllCmd Condition="'$(PublishReadyToRunContainerFormat)' != ''">$(CrossGenDllCmd) --obj-format:$(PublishReadyToRunContainerFormat)</CrossGenDllCmd>
       <CrossGenDllCmd>$(CrossGenDllCmd) --composite</CrossGenDllCmd>
       <CrossGenDllCmd>$(CrossGenDllCmd) --targetos:$(TargetOS)</CrossGenDllCmd>
-      <CrossGenDllCmd Condition="'$(FeatureDynamicCodeCompiled)' != ''">$(CrossGenDllCmd) --target-allows-runtime-code-generation:$(FeatureDynamicCodeCompiled)</CrossGenDllCmd>
       <CrossGenDllCmd Condition="'$(UsingToolIbcOptimization)' != 'true' and '$(EnableNgenOptimization)' == 'true'">$(CrossGenDllCmd) -m:$(MergedMibcPath)</CrossGenDllCmd>
-      <CrossGenDllCmd Condition="'$(UsingToolIbcOptimization)' != 'true' and '$(EnableNgenOptimization)' == 'true'">$(CrossGenDllCmd) --embed-pgo-data</CrossGenDllCmd>
+      <CrossGenDllCmd>$(CrossGenDllCmd) @(_CoreLibCrossgen2CommonExtraArgs, ' ')</CrossGenDllCmd>
       <CrossGenDllCmd>$(CrossGenDllCmd) -O</CrossGenDllCmd>
-      <CrossGenDllCmd Condition="'$(Configuration)' == 'Debug' or '$(Configuration)' == 'Checked'">$(CrossGenDllCmd) --verify-type-and-field-layout</CrossGenDllCmd>
-      <CrossGenDllCmd Condition="'$(Configuration)' == 'Debug' or '$(Configuration)' == 'Checked'">$(CrossGenDllCmd) --enable-cached-interface-dispatch-support</CrossGenDllCmd>
       <CrossGenDllCmd>$(CrossGenDllCmd) @(CoreLib)</CrossGenDllCmd>
       <CrossGenDllCmd Condition="$(BuildPdb)">$(CrossGenDllCmd) --pdb --pdb-path:$([MSBuild]::NormalizePath('$(BinDir)', 'PDB'))</CrossGenDllCmd>
       <CrossGenDllCmd Condition="$(BuildPerfMap)">$(CrossGenDllCmd) --perfmap-format-version:1 --perfmap --perfmap-path:$(BinDir)</CrossGenDllCmd>
@@ -232,6 +250,8 @@
       <_CoreLibCrossgen2PgoFiles Include="$(MergedMibcPath)"
         Condition="'$(UsingToolIbcOptimization)' != 'true' and '$(EnableNgenOptimization)' == 'true'" />
 
+      <_CoreLibCrossgen2ExtraArgs Include="@(_CoreLibCrossgen2CommonExtraArgs)" />
+
       <_CoreLibCrossgen2ExtraArgs Include="--strip-inlining-info"
         Condition="'$(PublishReadyToRunContainerFormat)' == 'wasm' and '$(PublishReadyToRunStripInliningInfo)' != 'false'" />
       <_CoreLibCrossgen2ExtraArgs Include="--strip-debug-info"
@@ -245,16 +265,6 @@
         Condition="'$(PublishReadyToRunContainerFormat)' == 'wasm' and '$(TargetOS)' == 'browser'" />
       <_CoreLibCrossgen2ExtraArgs Include="@(WasmCoreClrFrameworkPInvokeModule->WithMetadataValue('Wasi', 'true')->WithMetadataValue('PrebuiltR2RDirect', 'true')->'--directpinvoke:%(Identity)')"
         Condition="'$(PublishReadyToRunContainerFormat)' == 'wasm' and '$(TargetOS)' == 'wasi'" />
-      <_CoreLibCrossgen2ExtraArgs Include="--target-allows-runtime-code-generation:$(FeatureDynamicCodeCompiled)"
-        Condition="'$(FeatureDynamicCodeCompiled)' != ''" />
-      <_CoreLibCrossgen2ExtraArgs Include="--embed-pgo-data"
-        Condition="'$(UsingToolIbcOptimization)' != 'true' and '$(EnableNgenOptimization)' == 'true' and '$(PublishReadyToRunContainerFormat)' != 'wasm'" />
-      <!-- Enable type and field layout verification to make it easier to catch when the crossgen2 type layout engine and the runtime disagree on layout conventions -->
-      <_CoreLibCrossgen2ExtraArgs Include="--verify-type-and-field-layout"
-        Condition="'$(Configuration)' == 'Debug' or '$(Configuration)' == 'Checked'" />
-      <!-- Enable Cached Interface Dispatch layout rules for the StubDispatch import section. This allows testing of this path on platforms that do not require CachedInterface Dispatch -->
-      <_CoreLibCrossgen2ExtraArgs Include="--enable-cached-interface-dispatch-support"
-        Condition="'$(Configuration)' == 'Debug' or '$(Configuration)' == 'Checked'" />
       <!-- Enable the GC mode transition verification scaffolding so that illegal transitions assert where they happen rather than corrupting the thread's GC mode.
            Only WebAssembly resumes from a catch by unwinding through native code, so only WebAssembly emits and consumes the scaffolding. -->
       <_CoreLibCrossgen2ExtraArgs Include="--verify-gc-mode-transitions"
