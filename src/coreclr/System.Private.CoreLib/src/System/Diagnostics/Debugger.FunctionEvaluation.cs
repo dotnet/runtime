@@ -368,8 +368,7 @@ namespace System.Diagnostics
                             object temporary;
                             if (type.IsNullableOfT)
                             {
-                                RuntimeHelpers.EnsureInstanceActive(type);
-                                temporary = CastHelpers.Box(type.GetNativeTypeHandle().AsMethodTable(), ref source);
+                                temporary = RuntimeMethodHandle.BoxToNullable(ref source, type);
                             }
                             else
                             {
