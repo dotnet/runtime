@@ -172,7 +172,6 @@ gh aw compile --validate
 ## Important Notes
 
 - Always reference the instructions file at https://github.com/github/gh-aw/blob/v0.89.21/.github/aw/github-agentic-workflows.md for complete documentation
-- **MCP gateway pin maintenance**: Follow [the mandatory workflow instructions](../instructions/agentic-workflows.instructions.md). Every gh-aw upgrade must explicitly remove, update, or justify the repository gateway mapping and any proxy exceptions before publishing.
 - Use the MCP tool `agentic-workflows` when running in GitHub Copilot Cloud
 - Workflows must be compiled to `.lock.yml` files before running in GitHub Actions
 - **Bash tools are enabled by default** - Don't restrict bash commands unnecessarily since workflows are sandboxed by the AWF

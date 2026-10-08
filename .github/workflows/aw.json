@@ -1,8 +1,0 @@
-{
-  "container_pins": {
-    "ghcr.io/github/gh-aw-mcpg:v0.4.25": {
-      "image": "ghcr.io/github/gh-aw-mcpg:v0.4.30",
-      "digest": "sha256:ab5a436a1490438db473e4e3d4c973cb1d75e3cb233fb08b73d31b42d7d18fba"
-    }
-  }
-}
