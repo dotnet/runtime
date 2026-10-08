@@ -428,9 +428,6 @@ namespace System.Reflection.Context.Delegation
                 _typeInfo.GetMethod(name, bindingAttr, binder, callConvention, types, modifiers);
         }
 
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2080:UnrecognizedReflectionPattern",
-            Justification = "A delegating type is created at run time from the type it wraps; the trimming tool cannot see that type, so a caller reaching this method through it gets its own warning.")]
         protected override MethodInfo? GetMethodImpl(string name, int genericParameterCount, BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[]? types, ParameterModifier[]? modifiers)
         {
             // Type.GetMethod rejects null types before calling this overload.
