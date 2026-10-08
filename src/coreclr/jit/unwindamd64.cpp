@@ -608,6 +608,20 @@ void Compiler::unwindPush2V3(regNumber reg1, regNumber reg2)
         return;
     }
 
+    // TODO-Unwind-V3: This is unreachable for now. genPushCalleeSavedRegistersFromMaskAPX pushes
+    // registers in descending order, so reg1 > reg2 for every PUSH2 it emits. Pushing in ascending
+    // order (and popping to match in genPopCalleeSavedRegistersFromMaskAPX) would let consecutive
+    // pairs use the one-byte WOD_PUSH_CONSECUTIVE_2.
+    if (reg2 == REG_NEXT(reg1))
+    {
+        // PUSH2 of consecutive registers has a one-byte encoding.
+        WOD_PUSH_CONSECUTIVE_2* wod = (WOD_PUSH_CONSECUTIVE_2*)unwindAllocWodV3(func, sizeof(WOD_PUSH_CONSECUTIVE_2));
+        wod->OpCode                 = WOD_OP_PUSH_CONSECUTIVE_2;
+        wod->Register               = (UCHAR)reg1;
+        assert((regNumber)wod->Register == reg1);
+        return;
+    }
+
     // PUSH2 pushes reg1 first, so it ends up at [rsp + 8] and reg2 at [rsp]. WOD_PUSH2's
     // Register1 and Register2 follow the same convention.
     WOD_PUSH2* wod = (WOD_PUSH2*)unwindAllocWodV3(func, sizeof(WOD_PUSH2));
