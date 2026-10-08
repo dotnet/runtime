@@ -125,6 +125,11 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
 
             // ReadyToRunJitManager::GetDebugInfo
             Data.ReadyToRunInfo r2rInfo = GetReadyToRunInfo(rangeSection);
+
+            // Images compiled with --strip-debug-info have no DebugInfo section
+            if (r2rInfo.DebugInfoSection == TargetPointer.Null)
+                return TargetPointer.Null;
+
             if (!GetRuntimeFunction(rangeSection, r2rInfo, jittedCodeAddress, out TargetPointer codeBase, out uint index))
                 return TargetPointer.Null;
 

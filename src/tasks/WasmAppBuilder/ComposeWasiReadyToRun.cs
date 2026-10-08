@@ -4,8 +4,10 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Text;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 using Microsoft.NET.WebAssembly.Webcil;
@@ -27,6 +29,12 @@ public sealed class ComposeWasiReadyToRun : Task
     public string? WasmOptPath { get; set; }
     public ITaskItem[] ComponentStubs { get; set; } = Array.Empty<ITaskItem>();
     public string? StubOutputDirectory { get; set; }
+
+    /// <summary>
+    /// Runs wasm-opt over the composed module. Off by default so crossgen2's output reaches the app as
+    /// emitted; optimizing also needs several times more memory for large composites.
+    /// </summary>
+    public bool Optimize { get; set; }
 
     [Output]
     public int FunctionCount { get; private set; }
@@ -64,7 +72,9 @@ public sealed class ComposeWasiReadyToRun : Task
                 out int imageBase,
                 out int imageCapacity,
                 out int tableBase,
-                out int reservedTableStart);
+                out int reservedTableStart,
+                out int compositeNameBase,
+                out int compositeNameCapacity);
             int compositeTableEnd = checked(tableBase + FunctionCount);
             if (compositeTableEnd > reservedTableStart)
                 throw new LogAsErrorException(
@@ -74,13 +84,25 @@ public sealed class ComposeWasiReadyToRun : Task
                 throw new LogAsErrorException(
                     $"The composite payload is {PayloadSize} bytes but the host staging buffer is only {imageCapacity} bytes.");
 
+            // Component stubs name their owner by the file name crossgen2 wrote, so the composite's own
+            // file name is the one the host must answer to.
+            string compositeName = Path.GetFileName(CompositePath);
+            byte[] compositeNameBytes = Encoding.UTF8.GetBytes(compositeName);
+            if (compositeNameBytes.Length == 0 || Array.IndexOf(compositeNameBytes, (byte)0) >= 0)
+                throw new LogAsErrorException($"The composite file name '{compositeName}' cannot be recorded in the host.");
+            if (compositeNameBytes.Length >= compositeNameCapacity)
+                throw new LogAsErrorException(
+                    $"The composite file name '{compositeName}' is {compositeNameBytes.Length} UTF-8 bytes, but the host " +
+                    $"records at most {compositeNameCapacity - 1}.");
+
             Log.LogMessage(MessageImportance.High,
                 $"WASI R2R composition: imageBase={imageBase} tableBase={tableBase} " +
-                $"reservedSlots={reservedTableStart} compositeFuncs={FunctionCount} payload={PayloadSize} cap={imageCapacity}");
+                $"reservedSlots={reservedTableStart} compositeFuncs={FunctionCount} payload={PayloadSize} cap={imageCapacity} " +
+                $"composite='{compositeName}'");
 
             string shimWatPath = Path.Combine(OutputDirectory!, "shim.wat");
             string shimPath = Path.Combine(OutputDirectory!, "shim.wasm");
-            File.WriteAllText(shimWatPath, CreateShimWat(imageBase, tableBase, PayloadSize));
+            File.WriteAllText(shimWatPath, CreateShimWat(imageBase, tableBase, PayloadSize, compositeNameBase, compositeNameBytes));
             Run(WasmToolsPath!, $"parse {Quote(shimWatPath)} -o {Quote(shimPath)}");
             Run(WasmToolsPath!, $"validate --features all {Quote(shimPath)}");
 
@@ -89,9 +111,18 @@ public sealed class ComposeWasiReadyToRun : Task
                 $"-g --all-features --enable-gc {Quote(hostModule)} webcil {Quote(shimPath)} webcil " +
                 $"{Quote(CompositePath)} composite -o {Quote(mergedPath)}");
 
+            // Merging turns the composite's imported base globals into module-defined globals, which engines
+            // only accept in constant expressions with the extended-const proposal. Fold them to constants.
             string finalModulePath = Path.Combine(OutputDirectory!, "final.wasm");
-            Run(WasmOptPath!,
-                $"{Quote(mergedPath)} --all-features -g --simplify-globals -o {Quote(finalModulePath)}");
+            if (Optimize)
+            {
+                Run(WasmOptPath!,
+                    $"{Quote(mergedPath)} --all-features -g --simplify-globals -o {Quote(finalModulePath)}");
+            }
+            else
+            {
+                WasiR2RComposition.FoldConstantGlobalReads(mergedPath, finalModulePath);
+            }
 
             WasiR2RComposition.ReplaceFirstCoreModule(ComponentPath!, finalModulePath, OutputPath!);
             Run(WasmToolsPath!, $"validate --features all {Quote(OutputPath!)}");
@@ -134,7 +165,8 @@ public sealed class ComposeWasiReadyToRun : Task
         RequireFile(ComponentPath, nameof(ComponentPath));
         RequireFile(WasmToolsPath, nameof(WasmToolsPath));
         RequireFile(WasmMergePath, nameof(WasmMergePath));
-        RequireFile(WasmOptPath, nameof(WasmOptPath));
+        if (Optimize)
+            RequireFile(WasmOptPath, nameof(WasmOptPath));
         if (string.IsNullOrEmpty(OutputDirectory))
             throw new LogAsErrorException($"{nameof(OutputDirectory)} is required.");
         if (string.IsNullOrEmpty(OutputPath))
@@ -157,7 +189,8 @@ public sealed class ComposeWasiReadyToRun : Task
         OutputPath = Path.GetFullPath(OutputPath!);
         WasmToolsPath = Path.GetFullPath(WasmToolsPath!);
         WasmMergePath = Path.GetFullPath(WasmMergePath!);
-        WasmOptPath = Path.GetFullPath(WasmOptPath!);
+        if (Optimize)
+            WasmOptPath = Path.GetFullPath(WasmOptPath!);
         if (StubOutputDirectory is not null)
             StubOutputDirectory = Path.GetFullPath(StubOutputDirectory);
     }
@@ -168,18 +201,28 @@ public sealed class ComposeWasiReadyToRun : Task
             File.Delete(path);
     }
 
-    private static string CreateShimWat(int memoryBase, int tableBase, int payloadSize) =>
-        FormattableString.Invariant($"""
+    // The shim imports the host's memory (the merge names the host "webcil", as the composite does) so its
+    // active segment writes the NUL-terminated composite name into the host's reserved name buffer.
+    private static string CreateShimWat(int memoryBase, int tableBase, int payloadSize, int compositeNameBase, byte[] compositeName)
+    {
+        StringBuilder escapedName = new();
+        foreach (byte b in compositeName)
+            escapedName.Append('\\').Append(b.ToString("x2", CultureInfo.InvariantCulture));
+
+        return FormattableString.Invariant($"""
             (module
+              (import "webcil" "memory" (memory 0))
               (import "composite" "patchWebcilHeader" (func $patchWebcilHeader (param i32 i32)))
               (global (export "__memory_base") i32 (i32.const {memoryBase}))
               (global (export "__table_base") i32 (i32.const {tableBase}))
+              (data (i32.const {compositeNameBase}) "{escapedName}\00")
               (func $start
                 i32.const {memoryBase}
                 i32.const {payloadSize}
                 call $patchWebcilHeader)
               (start $start))
             """);
+    }
 
     private void Run(string tool, string arguments)
     {

@@ -213,7 +213,7 @@ namespace Microsoft.NET.Sdk.WebAssembly
             return intValue;
         }
 
-        public string TransformResourcesToAssets(BootJsonData config, bool bundlerFriendly = false, Dictionary<string, (int tableSize, int payloadSize)>? webcilSizes = null)
+        public string TransformResourcesToAssets(BootJsonData config, bool bundlerFriendly = false, Dictionary<string, (int tableSize, int payloadSize)>? webcilSizes = null, HashSet<string>? compositeImages = null)
         {
             List<string> imports = [];
 
@@ -332,6 +332,9 @@ namespace Microsoft.NET.Sdk.WebAssembly
                             asset.tableSize = sizes.tableSize;
                     }
                 }
+
+                if (subFolder is null && compositeImages?.Contains(a.Key) == true)
+                    asset.isCompositeImage = true;
 
                 if (bundlerFriendly)
                 {

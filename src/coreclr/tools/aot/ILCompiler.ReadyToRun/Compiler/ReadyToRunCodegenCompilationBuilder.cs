@@ -18,6 +18,22 @@ using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler
 {
+    /// <summary>
+    /// Specifies the debug information emitted for WebAssembly ReadyToRun images.
+    /// </summary>
+    [Flags]
+    public enum WasmDebugInfo
+    {
+        /// <summary>Do not emit WebAssembly debug information.</summary>
+        None = 0,
+        /// <summary>Emit the standard WebAssembly function name section.</summary>
+        NameSection = 1,
+        /// <summary>Emit an Emscripten-compatible function symbol map sidecar.</summary>
+        SymbolMap = 2,
+        /// <summary>Emit all supported WebAssembly debug information.</summary>
+        All = NameSection | SymbolMap,
+    }
+
     public sealed class ReadyToRunCodegenCompilationBuilder : CompilationBuilder
     {
         private static bool _isJitInitialized = false;
@@ -42,6 +58,7 @@ namespace ILCompiler
         private bool _verifyTypeAndFieldLayout;
         private bool _hotColdSplitting;
         private bool _verifyGCModeTransitions;
+        private WasmDebugInfo _wasmDebugInfo = WasmDebugInfo.NameSection;
         private CompositeImageSettings _compositeImageSettings;
         private ulong _imageBase;
         private NodeFactoryOptimizationFlags _nodeFactoryOptimizationFlags = new NodeFactoryOptimizationFlags();
@@ -196,6 +213,12 @@ namespace ILCompiler
         public ReadyToRunCodegenCompilationBuilder UseVerifyGCModeTransitions(bool verifyGCModeTransitions)
         {
             _verifyGCModeTransitions = verifyGCModeTransitions;
+            return this;
+        }
+
+        public ReadyToRunCodegenCompilationBuilder UseWasmDebugInfo(WasmDebugInfo wasmDebugInfo)
+        {
+            _wasmDebugInfo = wasmDebugInfo;
             return this;
         }
 
@@ -377,7 +400,8 @@ namespace ILCompiler
                 _r2rFileLayoutAlgorithm,
                 _customPESectionAlignment,
                 _verifyTypeAndFieldLayout,
-                _format);
+                _format,
+                _wasmDebugInfo);
         }
     }
 }

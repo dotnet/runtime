@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-
 #ifndef ARRAYLIST_H_
 #define ARRAYLIST_H_
 
@@ -96,7 +95,6 @@ class ArrayListBase
     HRESULT Append(void *element);
 
     enum { NOT_FOUND = -1 };
-    DWORD FindElement(DWORD start, PTR_VOID element) const;
 
     void Clear() noexcept;
 

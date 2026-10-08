@@ -394,40 +394,6 @@ BOOL GetAnyThunkTarget (CONTEXT *pctx, TADDR *pTarget, TADDR *pTargetMethodDesc)
 
 #ifndef DACCESS_COMPILE
 
-void EncodeLoadAndJumpThunk (LPBYTE pBuffer, LPVOID pv, LPVOID pTarget)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-
-        PRECONDITION(CheckPointer(pBuffer));
-    }
-    CONTRACTL_END;
-
-    // mov r10, pv                      49 ba xx xx xx xx xx xx xx xx
-
-    pBuffer[0]  = 0x49;
-    pBuffer[1]  = 0xBA;
-
-    SET_UNALIGNED_64(&pBuffer[2], pv);
-
-    // mov rax, pTarget                 48 b8 xx xx xx xx xx xx xx xx
-
-    pBuffer[10] = 0x48;
-    pBuffer[11] = 0xB8;
-
-    SET_UNALIGNED_64(&pBuffer[12], pTarget);
-
-    // jmp rax                          ff e0
-
-    pBuffer[20] = 0xFF;
-    pBuffer[21] = 0xE0;
-
-    _ASSERTE(DbgIsExecutable(pBuffer, 22));
-}
-
 void emitBackToBackJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target)
 {
     CONTRACTL
@@ -522,69 +488,6 @@ INT32 rel32UsingJumpStub(INT32 UNALIGNED * pRel32, PCODE target, MethodDesc *pMe
 
     _ASSERTE(FitsInI4(offset));
     return static_cast<INT32>(offset);
-}
-
-INT32 rel32UsingPreallocatedJumpStub(INT32 UNALIGNED * pRel32, PCODE target, PCODE jumpStubAddrRX, PCODE jumpStubAddrRW, bool emitJump)
-{
-    CONTRACTL
-    {
-        THROWS; // emitBackToBackJump may throw (see emitJump)
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    TADDR baseAddr = (TADDR)pRel32 + 4;
-    _ASSERTE(FitsInI4(jumpStubAddrRX - baseAddr));
-
-    INT_PTR offset = target - baseAddr;
-    if (!FitsInI4(offset) INDEBUG(|| PEDecoder::GetForceRelocs()))
-    {
-        offset = jumpStubAddrRX - baseAddr;
-        if (!FitsInI4(offset))
-        {
-            _ASSERTE(!"jump stub was not in expected range");
-            EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
-        }
-
-        if (emitJump)
-        {
-            emitBackToBackJump((LPBYTE)jumpStubAddrRX, (LPBYTE)jumpStubAddrRW, (LPVOID)target);
-        }
-        else
-        {
-            _ASSERTE(decodeBackToBackJump(jumpStubAddrRX) == target);
-        }
-    }
-
-    _ASSERTE(FitsInI4(offset));
-    return static_cast<INT32>(offset);
-}
-//
-// Some AMD64 assembly functions have one or more DWORDS at the end of the function
-//  that specify the offsets where significant instructions are
-//  we use this function to get at these offsets
-//
-DWORD GetOffsetAtEndOfFunction(ULONGLONG           uImageBase,
-                               PT_RUNTIME_FUNCTION pFunctionEntry,
-                               int                 offsetNum /* = 1*/)
-{
-    CONTRACTL
-    {
-        MODE_ANY;
-        NOTHROW;
-        GC_NOTRIGGER;
-        PRECONDITION((offsetNum > 0) && (offsetNum < 20));  /* we only allow reasonable offsetNums 1..19 */
-    }
-    CONTRACTL_END;
-
-    DWORD  functionSize     = pFunctionEntry->EndAddress - pFunctionEntry->BeginAddress;
-    BYTE*  pEndOfFunction   = (BYTE*)  (uImageBase + pFunctionEntry->EndAddress);
-    DWORD* pOffset          = (DWORD*) (pEndOfFunction)  - offsetNum;
-    DWORD  offsetInFunc     = *pOffset;
-
-    _ASSERTE_ALL_BUILDS((offsetInFunc >= 0) && (offsetInFunc < functionSize));
-
-    return offsetInFunc;
 }
 
 #ifdef FEATURE_READYTORUN

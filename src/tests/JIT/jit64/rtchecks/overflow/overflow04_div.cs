@@ -3,6 +3,7 @@
 
 using System;
 using Xunit;
+using TestLibrary;
 
 namespace overflow04_div;
 
@@ -80,6 +81,7 @@ public class OVFTest
     }
 
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/134949", typeof(PlatformDetection), nameof(PlatformDetection.IsWasi), nameof(PlatformDetection.IsReadyToRunCompiled))]
     [Fact]
     public static void TestEntryPoint()
     {

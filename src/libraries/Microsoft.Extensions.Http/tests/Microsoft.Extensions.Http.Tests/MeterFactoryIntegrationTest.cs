@@ -12,7 +12,7 @@ namespace Microsoft.Extensions.Http
 #if NET
     public class MeterFactoryIntegrationTest
     {
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [ConditionalFact(typeof(SocketsHttpHandler), nameof(SocketsHttpHandler.IsSupported))]
         public void SocketsHttpHandler_Configured()
         {
             var serviceCollection = new ServiceCollection();
@@ -28,7 +28,7 @@ namespace Microsoft.Extensions.Http
             Assert.Same(meterFactory, configuredHandler.MeterFactory);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [ConditionalFact(typeof(SocketsHttpHandler), nameof(SocketsHttpHandler.IsSupported))]
         public void SocketsHttpHandler_HasExisting_Unchanged()
         {
             var testMeterFactory = new TestMeterFactory();

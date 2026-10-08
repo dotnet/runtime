@@ -65,6 +65,7 @@ namespace System.Text.Json.Serialization
                 JsonKnownNamingPolicy.SnakeCaseUpper => JsonNamingPolicy.SnakeCaseUpper,
                 JsonKnownNamingPolicy.KebabCaseLower => JsonNamingPolicy.KebabCaseLower,
                 JsonKnownNamingPolicy.KebabCaseUpper => JsonNamingPolicy.KebabCaseUpper,
+                JsonKnownNamingPolicy.PascalCase => JsonNamingPolicy.PascalCase,
                 _ => throw new ArgumentOutOfRangeException(nameof(namingPolicy)),
             };
         }

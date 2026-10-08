@@ -90,8 +90,8 @@ class CLiteWeightStgdbRW : public CLiteWeightStgdb<CMiniMdRW>
             ULONG                   cbHashValue,
             PCCOR_SIGNATURE         pbSigBlob,
             ULONG                   cbSigBlob,
-            IMetaDataAssemblyEmit*  pAssemEmit,
-            IMetaDataEmit*          emit,
+            IMDInternalEmit*        pAssemEmit,
+            IMDInternalEmit*        emit,
             CQuickBytes*            pqkSigEmit,
             ULONG*                  pcbSig);
 public:

@@ -17,7 +17,7 @@
     <ILLinkTrimInputPath>$(IntermediateOutputPath)PreTrim/</ILLinkTrimInputPath>
     <ILLinkTrimInputAssembly>$(ILLinkTrimInputPath)$(TargetName)$(TargetExt)</ILLinkTrimInputAssembly>
     <ILLinkTrimInputSymbols>$(ILLinkTrimInputPath)$(TargetName).pdb</ILLinkTrimInputSymbols>
-    <ILLinkTrimOutputPath>$(IntermediateOutputPath)</ILLinkTrimOutputPath>
+    <ILLinkTrimOutputPath>$(IntermediateOutputPath)ILLinkTrimOutput/</ILLinkTrimOutputPath>
 
     <ILLinkDescriptorsXml Condition="'$(ILLinkDescriptorsXml)' == '' and Exists('$(ILLinkDirectory)ILLink.Descriptors.xml')">$(ILLinkDirectory)ILLink.Descriptors.xml</ILLinkDescriptorsXml>
     <ILLinkDescriptorsXmlIntermediatePath>$(IntermediateOutputPath)ILLink.Descriptors.xml</ILLinkDescriptorsXmlIntermediatePath>
@@ -270,6 +270,15 @@
             ExtraArgs="$(ILLinkArgs)"
             ToolExe="$(_DotNetHostFileName)"
             ToolPath="$(_DotNetHostDirectory)" />
+
+    <ItemGroup>
+      <_ILLinkTrimOutput Include="$(ILLinkTrimOutputPath)**/*" />
+    </ItemGroup>
+
+    <Move SourceFiles="@(_ILLinkTrimOutput)"
+          DestinationFiles="@(_ILLinkTrimOutput->'$(IntermediateOutputPath)%(RecursiveDir)%(Filename)%(Extension)')">
+      <Output TaskParameter="MovedFiles" ItemName="FileWrites" />
+    </Move>
   </Target>
 
   <!-- ILLink reporting.

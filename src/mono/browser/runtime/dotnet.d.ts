@@ -116,6 +116,10 @@ interface DotnetHostBuilder {
      */
     withDownloadResourceProgress(callback?: (resourcesLoaded: number, totalResources: number) => void): DotnetHostBuilder;
     /**
+     * Sets a callback that is invoked after the runtime configuration is loaded.
+     */
+    withConfigLoaded(callback?: (config: MonoConfig) => void | Promise<void>): DotnetHostBuilder;
+    /**
      * Overrides the built-in boot resource loading mechanism so that boot resources can be fetched
      * from a custom source, such as an external CDN.
      */
@@ -446,9 +450,6 @@ declare const enum GlobalizationMode {
 }
 type DotnetModuleConfig = {
     config?: MonoConfig;
-    onConfigLoaded?: (config: MonoConfig) => void | Promise<void>;
-    onDotnetReady?: () => void | Promise<void>;
-    onDownloadResourceProgress?: (resourcesLoaded: number, totalResources: number) => void;
     imports?: any;
     exports?: string[];
 } & Partial<EmscriptenModule>;

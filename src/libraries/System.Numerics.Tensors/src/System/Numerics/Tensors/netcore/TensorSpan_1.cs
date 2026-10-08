@@ -137,7 +137,7 @@ namespace System.Numerics.Tensors
 
         internal TensorSpan(ref T data, nint dataLength, scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides, bool pinned)
         {
-            _shape = TensorShape.Create(ref data, dataLength, lengths, strides, pinned);
+            _shape = TensorShape.CreateForView(dataLength, lengths, strides, pinned);
             _reference = ref data;
         }
 

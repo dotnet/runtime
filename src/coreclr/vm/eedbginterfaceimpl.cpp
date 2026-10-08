@@ -171,62 +171,6 @@ void* EEDbgInterfaceImpl::GetObjectFromHandle(OBJECTHANDLE handle)
     return OBJECTREFToObject(ObjectFromHandle(handle));
 }
 
-OBJECTHANDLE EEDbgInterfaceImpl::GetHandleFromObject(void *obj,
-                                              bool fStrongNewRef,
-                                              AppDomain *pAppDomain)
-{
-    CONTRACTL
-    {
-        THROWS;  // From CreateHandle
-        GC_NOTRIGGER;
-        PRECONDITION(CheckPointer(pAppDomain));
-    }
-    CONTRACTL_END;
-
-    OBJECTHANDLE oh;
-
-    if (fStrongNewRef)
-    {
-        oh = pAppDomain->CreateStrongHandle(ObjectToOBJECTREF((Object *)obj));
-
-        LOG((LF_CORDB, LL_INFO1000, "EEI::GHFO: Given objectref %p,"
-            "created strong handle %p!\n", obj, oh));
-    }
-    else
-    {
-        oh = pAppDomain->CreateLongWeakHandle( ObjectToOBJECTREF((Object *)obj));
-
-        LOG((LF_CORDB, LL_INFO1000, "EEI::GHFO: Given objectref %p,"
-            "created long weak handle %p!\n", obj, oh));
-    }
-
-    return oh;
-}
-
-void EEDbgInterfaceImpl::DbgDestroyHandle(OBJECTHANDLE oh,
-                                          bool fStrongNewRef)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    LOG((LF_CORDB, LL_INFO1000, "EEI::GHFO: Destroyed given handle %p,"
-        "fStrong: 0x%x!\n", oh, fStrongNewRef));
-
-    if (fStrongNewRef)
-    {
-        DestroyStrongHandle(oh);
-    }
-    else
-    {
-        DestroyLongWeakHandle(oh);
-    }
-}
-
-
 OBJECTHANDLE EEDbgInterfaceImpl::GetThreadException(Thread *pThread)
 {
     CONTRACTL

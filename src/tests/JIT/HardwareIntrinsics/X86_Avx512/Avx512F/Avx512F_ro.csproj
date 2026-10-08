@@ -2,8 +2,6 @@
   <PropertyGroup>
     <AssemblyName>X86_Avx512F_ro</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <!-- Managed ilasm consumes excessive amount of memory -->
-    <ManagedIlasmRoundTripIncompatible>true</ManagedIlasmRoundTripIncompatible>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>Embedded</DebugType>

@@ -48,6 +48,12 @@
 
     See https://github.com/dotnet/runtime/issues/130129.
   -->
+  <!-- WasmApp.Common.targets disables System.Diagnostics.Metrics by default for Mono. CoreCLR keeps
+       it enabled, matching browser CoreCLR, so set the default before that import applies. -->
+  <PropertyGroup>
+    <MetricsSupport Condition="'$(MetricsSupport)' == ''">true</MetricsSupport>
+  </PropertyGroup>
+
   <!-- Reuse the shared WASI bundling; the Mono-only clang-link targets stay inert (gated on
        WasmBuildNative). Imported first so the CoreCLR overrides below win over its
        WasmAppRuntimeFlavor=Mono default. -->
@@ -71,8 +77,11 @@
   <PropertyGroup Condition="'$(PublishReadyToRun)' == 'true'">
     <PublishReadyToRunContainerFormat Condition="'$(PublishReadyToRunContainerFormat)' == '' or '$(PublishReadyToRunContainerFormat)' == 'pe'">wasm</PublishReadyToRunContainerFormat>
     <PublishReadyToRunComposite Condition="'$(PublishReadyToRunComposite)' == ''">true</PublishReadyToRunComposite>
-    <PublishReadyToRunCrossgen2ExtraArgs>$(PublishReadyToRunCrossgen2ExtraArgs);--opt-cross-module:*;--codegenopt:JitWasmNyiToR2RUnsupported=1;--codegenopt:JitWasmSimdNyiToR2RUnsupported=1</PublishReadyToRunCrossgen2ExtraArgs>
+    <PublishReadyToRunCrossgen2ExtraArgs>$(PublishReadyToRunCrossgen2ExtraArgs);--opt-cross-module:*</PublishReadyToRunCrossgen2ExtraArgs>
     <WasiEnableCompositeR2R Condition="'$(WasiEnableCompositeR2R)' == ''">true</WasiEnableCompositeR2R>
+    <!-- Run wasm-opt over the composed module. Off by default so codegen problems surface in crossgen2's
+         output instead of being optimized away. -->
+    <WasiR2ROptimizeComposite Condition="'$(WasiR2ROptimizeComposite)' == ''">false</WasiR2ROptimizeComposite>
   </PropertyGroup>
 
   <Target Name="_WasiCoreCLRValidateReadyToRun"
@@ -93,8 +102,6 @@
     <PropertyGroup>
       <WasiCoreCLRHostNativeDir Condition="'$(WasiCoreCLRHostNativeDir)' == ''">$(MicrosoftNetCoreAppRuntimePackRidNativeDir)</WasiCoreCLRHostNativeDir>
       <WasiCoreCLRNativeRuntimeDir Condition="'$(WasiCoreCLRNativeRuntimeDir)' == ''">$(MicrosoftNetCoreAppRuntimePackRidNativeDir)</WasiCoreCLRNativeRuntimeDir>
-      <WasiCoreCLRSystemPrivateCoreLibPath Condition="'$(WasiCoreCLRSystemPrivateCoreLibPath)' == '' and Exists('$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)System.Private.CoreLib.dll')">$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)System.Private.CoreLib.dll</WasiCoreCLRSystemPrivateCoreLibPath>
-      <WasiCoreCLRSystemPrivateCoreLibPath Condition="'$(WasiCoreCLRSystemPrivateCoreLibPath)' == ''">$(MicrosoftNetCoreAppRuntimePackRidNativeDir)System.Private.CoreLib.dll</WasiCoreCLRSystemPrivateCoreLibPath>
     </PropertyGroup>
   </Target>
 
@@ -105,35 +112,20 @@
     <RemoveDir Directories="$([MSBuild]::NormalizeDirectory('$(WasmAppDir)', 'managed', 'comp'))" />
   </Target>
 
-  <!-- The SDK does not resolve a CoreCLR wasi-wasm runtime pack, so its normal R2R input list
-       contains only the app closure and crossgen2 cannot resolve System.Private.CoreLib. Add the
-       implementation framework that _WasiCopyFrameworkToManaged deploys later, and compile the
-       whole closure into the composite. -->
-  <Target Name="_WasiCoreCLRFeedReadyToRunCompileList"
-          BeforeTargets="_PrepareForReadyToRunCompilation"
-          DependsOnTargets="_WasiCoreCLRSetRuntimePaths"
-          Condition="'$(PublishReadyToRun)' == 'true'">
-    <ItemGroup>
-      <_WasiReadyToRunFrameworkInput Include="$(WasiCoreCLRSystemPrivateCoreLibPath)" />
-      <_WasiReadyToRunFrameworkInput Include="$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)*.dll"
-                                     Exclude="$(WasiCoreCLRSystemPrivateCoreLibPath)" />
-      <!-- Applications can carry package implementations with the same simple name as
-           framework assemblies. Keep the app-selected copy authoritative for crossgen2. -->
-      <_WasiReadyToRunFrameworkInput Remove="@(ResolvedFileToPublish)"
-                                     MatchOnMetadata="Filename;Extension" />
-      <ResolvedFileToPublish Include="@(_WasiReadyToRunFrameworkInput)"
-                             PostprocessAssembly="true"
-                             RelativePath="%(_WasiReadyToRunFrameworkInput.FileName)%(_WasiReadyToRunFrameworkInput.Extension)"
-                             CopyToPublishDirectory="PreserveNewest" />
-    </ItemGroup>
-  </Target>
-
   <Target Name="_WasiCoreCLRInspectReadyToRunComposite"
           DependsOnTargets="CreateReadyToRunImages"
           Condition="'$(PublishReadyToRun)' == 'true'">
+    <ItemGroup>
+      <!-- The ReadyToRun tasks name the composite (the owner every component stub records); take
+           the path they planned rather than assuming a name. The composer bakes that file name
+           into the host. -->
+      <_WasiR2RCompositeCompilation Include="@(_ReadyToRunCompileList->WithMetadataValue('CreateCompositeImage', 'true'))" />
+    </ItemGroup>
+    <Error Condition="'@(_WasiR2RCompositeCompilation->Count())' != '1'"
+           Text="CoreCLR ReadyToRun publishing for wasi-wasm expected exactly one composite compilation, found @(_WasiR2RCompositeCompilation->Count())." />
     <PropertyGroup>
       <_WasiR2ROutputDir>$([MSBuild]::NormalizeDirectory('$(_ReadyToRunOutputPath)'))</_WasiR2ROutputDir>
-      <_WasiR2RCompositePath>$(_WasiR2ROutputDir)composite-r2r.wasm</_WasiR2RCompositePath>
+      <_WasiR2RCompositePath>@(_WasiR2RCompositeCompilation->'%(OutputR2RImage)')</_WasiR2RCompositePath>
       <_WasiR2RImageBufferSource>$([MSBuild]::NormalizePath('$(_WasmIntermediateOutputPath)', 'corerun-relink', 'r2r-image-buffer.cpp'))</_WasiR2RImageBufferSource>
     </PropertyGroup>
     <Error Condition="!Exists('$(_WasiR2RCompositePath)')"
@@ -176,37 +168,28 @@
        isn't in the pack; no-op _ReadWasmProps so the build doesn't fail looking for it. -->
   <Target Name="_ReadWasmProps" />
 
-  <!-- The SDK doesn't resolve a CoreCLR runtime pack for wasi-wasm, so the self-contained
-       publish only lands the app's own closure. Copy the framework (pack lib dir) +
-       System.Private.CoreLib.dll (pack native dir) into managed/, next to the wasihost host
-       (linked below), which finds them via CORE_ROOT. See https://github.com/dotnet/runtime/issues/130129. -->
-  <Target Name="_WasiCopyFrameworkToManaged"
+  <!-- The framework, including System.Private.CoreLib.dll, comes from the resolved runtime pack
+       through the publish list, so trimming and ReadyToRun see the whole closure. Place
+       icudt.dat next to the managed assemblies (CORE_ROOT) so the wasihost corehost, which
+       preloads it before managed globalization initializes, can find it. -->
+  <Target Name="_WasiCoreCLRPrepareManagedDir"
           AfterTargets="_WasiGenerateAppBundle"
           DependsOnTargets="_WasiCoreCLRSetRuntimePaths"
           Condition="'$(WasmGenerateAppBundle)' == 'true' and '$(WasmSingleFileBundle)' != 'true'">
-    <Error Condition="!Exists('$(WasiCoreCLRSystemPrivateCoreLibPath)')"
-           Text="CoreCLR System.Private.CoreLib.dll not found at: $(WasiCoreCLRSystemPrivateCoreLibPath)" />
     <ItemGroup>
-      <_WasiCoreCLRCoreLib Include="$(WasiCoreCLRSystemPrivateCoreLibPath)" />
-      <!-- Framework assemblies from the runtime pack (implementation, not ref). Filter out
-           any the app already published (its version is authoritative) into a separate list
-           so a single Copy runs on the remainder - avoids per-file Copy task batching. -->
-      <_WasiCoreCLRFrameworkFiles Include="$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)\*.dll"
-                                  Exclude="$(WasiCoreCLRSystemPrivateCoreLibPath)" />
-      <_WasiCoreCLRFrameworkToCopy Include="@(_WasiCoreCLRFrameworkFiles)"
-                                   Condition="!Exists('$(WasmAppDir)managed\%(_WasiCoreCLRFrameworkFiles.FileName)%(_WasiCoreCLRFrameworkFiles.Extension)')" />
+      <_WasiCoreCLRBundledCoreLib Include="@(_WasmAssembliesInternal)"
+                                  Condition="'%(Filename)%(Extension)' == 'System.Private.CoreLib.dll'" />
     </ItemGroup>
-    <Copy SourceFiles="@(_WasiCoreCLRCoreLib)"
-          DestinationFolder="$(WasmAppDir)managed"
-          SkipUnchangedFiles="true" />
-    <Copy SourceFiles="@(_WasiCoreCLRFrameworkToCopy)"
-          DestinationFolder="$(WasmAppDir)managed"
-          SkipUnchangedFiles="true" />
-    <!-- Non-invariant: place icudt.dat next to the managed assemblies (CORE_ROOT) so the
-         wasihost corehost, which preloads it before managed globalization initializes, can
-         find it. -->
+    <Error Condition="'@(_WasiCoreCLRBundledCoreLib)' == ''"
+           Text="System.Private.CoreLib.dll is not part of the bundled assemblies. Ensure the Microsoft.NETCore.App wasi-wasm runtime pack is resolved." />
     <Copy Condition="'$(InvariantGlobalization)' != 'true' and Exists('$(MicrosoftNetCoreAppRuntimePackRidNativeDir)icudt.dat')"
           SourceFiles="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)icudt.dat"
+          DestinationFolder="$(WasmAppDir)managed"
+          SkipUnchangedFiles="true" />
+    <!-- The wasihost corehost reads the app's runtimeconfig properties from runtimeconfig.bin
+         next to the entry assembly and passes them to the runtime. -->
+    <Copy Condition="'$(_ParsedRuntimeConfigFilePath)' != '' and Exists('$(_ParsedRuntimeConfigFilePath)')"
+          SourceFiles="$(_ParsedRuntimeConfigFilePath)"
           DestinationFolder="$(WasmAppDir)managed"
           SkipUnchangedFiles="true" />
   </Target>
@@ -224,7 +207,7 @@
   </Target>
 
   <Target Name="_WasiCoreCLRRelinkCoreRun"
-          AfterTargets="_WasiCopyFrameworkToManaged"
+          AfterTargets="_WasiCoreCLRPrepareManagedDir"
           DependsOnTargets="_WasiCoreCLRSetRuntimePaths;_SetupWasiSdk;_WasiCoreCLRInspectReadyToRunComposite"
           Condition="'$(WasmGenerateAppBundle)' == 'true' and '$(WasmSingleFileBundle)' != 'true'">
 
@@ -522,11 +505,12 @@
                            ComponentPath="$(_WasiRelinkOutput)"
                            OutputDirectory="$(_WasiR2RComposeOutputDir)"
                            OutputPath="$(_WasiPublishedHost)"
-                           WasmToolsPath="$(WasmToolsCacheDir)wasm-tools"
-                           WasmMergePath="$(BinaryenCacheDir)bin/wasm-merge"
-                           WasmOptPath="$(BinaryenCacheDir)bin/wasm-opt"
+                           WasmToolsPath="$(WasmToolsCacheDir)wasm-tools$(_ExeExt)"
+                           WasmMergePath="$(BinaryenCacheDir)bin/wasm-merge$(_ExeExt)"
+                           WasmOptPath="$(BinaryenCacheDir)bin/wasm-opt$(_ExeExt)"
                            ComponentStubs="@(_WasiR2RComponentStub)"
-                           StubOutputDirectory="$(_WasiR2RStubDir)">
+                           StubOutputDirectory="$(_WasiR2RStubDir)"
+                           Optimize="$(WasiR2ROptimizeComposite)">
       <Output TaskParameter="FileWrites" ItemName="_WasiR2RCompositionWrites" />
     </ComposeWasiReadyToRun>
     <ItemGroup>

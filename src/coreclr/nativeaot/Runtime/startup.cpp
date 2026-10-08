@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 #include "common.h"
 #include "CommonTypes.h"
 #include "CommonMacros.h"
@@ -31,10 +32,6 @@
 #endif
 
 #ifndef DACCESS_COMPILE
-
-#ifdef PROFILE_STARTUP
-uint64_t g_startupTimelineEvents[NUM_STARTUP_TIMELINE_EVENTS] = { 0 };
-#endif // PROFILE_STARTUP
 
 #ifdef HOST_WINDOWS
 LONG WINAPI RhpVectoredExceptionHandler(PEXCEPTION_POINTERS pExPtrs);
@@ -134,12 +131,8 @@ static bool InitDLL(HANDLE hPalInstance)
     }
 #endif // STRESS_LOG
 
-    STARTUP_TIMELINE_EVENT(NONGC_INIT_COMPLETE);
-
     if (!InitializeGC())
         return false;
-
-    STARTUP_TIMELINE_EVENT(GC_INIT_COMPLETE);
 
 #ifdef FEATURE_PERFTRACING
     // Finish setting up rest of EventPipe - specifically enable SampleProfiler if it was requested at startup.
@@ -232,46 +225,6 @@ bool InitGSCookie()
 #endif
 }
 #endif // TARGET_UNIX
-
-#ifdef PROFILE_STARTUP
-static void AppendInt64(char * pBuffer, uint32_t* pLen, uint64_t value)
-{
-    char localBuffer[20];
-    int cch = 0;
-
-    do
-    {
-        localBuffer[cch++] = '0' + (value % 10);
-        value = value / 10;
-    } while (value);
-
-    for (int i = 0; i < cch; i++)
-    {
-        pBuffer[(*pLen)++] = localBuffer[cch - i - 1];
-    }
-
-    pBuffer[(*pLen)++] = ',';
-    pBuffer[(*pLen)++] = ' ';
-}
-#endif // PROFILE_STARTUP
-
-static void UninitDLL()
-{
-#ifdef PROFILE_STARTUP
-    char buffer[1024];
-
-    uint32_t len = 0;
-
-    AppendInt64(buffer, &len, g_startupTimelineEvents[PROCESS_ATTACH_BEGIN]);
-    AppendInt64(buffer, &len, g_startupTimelineEvents[NONGC_INIT_COMPLETE]);
-    AppendInt64(buffer, &len, g_startupTimelineEvents[GC_INIT_COMPLETE]);
-    AppendInt64(buffer, &len, g_startupTimelineEvents[PROCESS_ATTACH_COMPLETE]);
-
-    buffer[len++] = '\n';
-
-    fwrite(buffer, len, 1, stdout);
-#endif // PROFILE_STARTUP
-}
 
 #ifdef HOST_WINDOWS
 // This is set to the thread that initiates and performs the shutdown and may run

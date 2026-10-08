@@ -211,30 +211,6 @@ BOOL ClrVirtualProtect(LPVOID lpAddress, SIZE_T dwSize, DWORD flNewProtect, PDWO
     return ::VirtualProtect(lpAddress, dwSize, flNewProtect, lpflOldProtect);
 }
 
-// non-zero return value if this function causes the OS to switch to another thread
-// See file:spinlock.h#SwitchToThreadSpinning for an explanation of dwSwitchCount
-BOOL __SwitchToThread (DWORD dwSleepMSec, DWORD dwSwitchCount)
-{
-    // If you sleep for a long time, the thread should be in Preemptive GC mode.
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        PRECONDITION(dwSleepMSec < 10000 || GetThreadNULLOk() == NULL || !GetThread()->PreemptiveGCDisabled());
-    }
-    CONTRACTL_END;
-
-    if (dwSleepMSec > 0)
-    {
-        minipal_sleep(dwSleepMSec);
-        return TRUE;
-    }
-
-    _ASSERTE(CALLER_LIMITS_SPINNING == 0);
-    return minipal_switch_to_thread(dwSwitchCount);
-}
-
 // Locking routines supplied by the EE to the other DLLs of the CLR.  In a _DEBUG
 // build of the EE, we poison the Crst as a poor man's attempt to do some argument
 // validation.
