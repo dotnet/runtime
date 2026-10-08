@@ -8,7 +8,8 @@ namespace System.Threading
 {
     public sealed partial class Thread
     {
-        private static void PollGC() { }
+        // Wasm polls through its native helper; retain the GC transition for the managed fallback.
+        private static void PollGC() => PollGCInternal();
 
         // Spinning cannot make progress with only one thread.
         internal static int GetOptimalMaxSpinWaitsPerSpinIteration() => 0;

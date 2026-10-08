@@ -27,9 +27,6 @@ namespace System.Threading
             static void PollGCWorker() => PollGCInternal();
         }
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_PollGC")]
-        private static partial void PollGCInternal();
-
         /// <summary>Clean up the thread when it goes away.</summary>
         ~Thread() => InternalFinalize(); // Delegate to the unmanaged portion.
 
