@@ -367,40 +367,12 @@ namespace System
                         num = TChar.CastToUInt32(value[index]);
                     }
                 }
-                else if (info.AllowHyphenDuringParsing() && num == '-')
-                {
-                    isNegative = true;
-                    index++;
-
-                    if ((uint)index >= (uint)value.Length)
-                    {
-                        goto FalseExit;
-                    }
-                    num = TChar.CastToUInt32(value[index]);
-                }
                 else
                 {
-                    // Slice a copy rather than reassigning value, so that index (and thus the number
-                    // of elements reported as consumed) stays relative to the original input.
-                    ReadOnlySpan<TChar> remaining = value.Slice(index);
-
-                    ReadOnlySpan<TChar> positiveSign = info.PositiveSignTChar<TChar>();
-                    ReadOnlySpan<TChar> negativeSign = info.NegativeSignTChar<TChar>();
-
-                    if (!positiveSign.IsEmpty && remaining.StartsWith(positiveSign))
+                    int nextIndex = MatchSignChars(value, index, info, out isNegative);
+                    if (nextIndex >= 0)
                     {
-                        index += positiveSign.Length;
-
-                        if ((uint)index >= (uint)value.Length)
-                        {
-                            goto FalseExit;
-                        }
-                        num = TChar.CastToUInt32(value[index]);
-                    }
-                    else if (!negativeSign.IsEmpty && remaining.StartsWith(negativeSign))
-                    {
-                        isNegative = true;
-                        index += negativeSign.Length;
+                        index = nextIndex;
 
                         if ((uint)index >= (uint)value.Length)
                         {
@@ -1228,24 +1200,10 @@ namespace System
             bool isNegative = false;
             if ((styles & NumberStyles.AllowLeadingSign) != 0)
             {
-                ReadOnlySpan<TChar> negativeSign = info.NegativeSignTChar<TChar>();
-                if (!negativeSign.IsEmpty && value.Slice(index).StartsWith(negativeSign))
+                int nextIndex = MatchSignChars(value, index, info, out isNegative);
+                if (nextIndex >= 0)
                 {
-                    isNegative = true;
-                    index += negativeSign.Length;
-                }
-                else if (info.AllowHyphenDuringParsing() && TChar.CastToUInt32(value[index]) == '-')
-                {
-                    isNegative = true;
-                    index++;
-                }
-                else
-                {
-                    ReadOnlySpan<TChar> positiveSign = info.PositiveSignTChar<TChar>();
-                    if (!positiveSign.IsEmpty && value.Slice(index).StartsWith(positiveSign))
-                    {
-                        index += positiveSign.Length;
-                    }
+                    index = nextIndex;
                 }
             }
 
@@ -1380,22 +1338,11 @@ namespace System
                     return false;
                 }
 
-                bool exponentIsNegative = false;
-                ReadOnlySpan<TChar> negSign = info.NegativeSignTChar<TChar>();
-                ReadOnlySpan<TChar> posSign = info.PositiveSignTChar<TChar>();
-                if (!negSign.IsEmpty && value.Slice(index).StartsWith(negSign))
+                bool exponentIsNegative;
+                int nextIndex = MatchSignChars(value, index, info, out exponentIsNegative);
+                if (nextIndex >= 0)
                 {
-                    exponentIsNegative = true;
-                    index += negSign.Length;
-                }
-                else if (info.AllowHyphenDuringParsing() && TChar.CastToUInt32(value[index]) == '-')
-                {
-                    exponentIsNegative = true;
-                    index++;
-                }
-                else if (!posSign.IsEmpty && value.Slice(index).StartsWith(posSign))
-                {
-                    index += posSign.Length;
+                    index = nextIndex;
                 }
 
                 if (index >= value.Length)

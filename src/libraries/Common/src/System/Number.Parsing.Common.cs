@@ -72,9 +72,10 @@ namespace System
                 // "-Kr 1231.47" is legal but "- 1231.47" is not.
                 if (!IsWhite(ch) || (styles & NumberStyles.AllowLeadingWhite) == 0 || ((state & StateSign) != 0 && (state & StateCurrency) == 0 && info.NumberNegativePattern != 2))
                 {
-                    if (((styles & NumberStyles.AllowLeadingSign) != 0) && (state & StateSign) == 0 && ((next = MatchChars(p, strEnd, info.PositiveSignTChar<TChar>())) != null || ((next = MatchNegativeSignChars(p, strEnd, info)) != null && (number.IsNegative = true))))
+                    if (((styles & NumberStyles.AllowLeadingSign) != 0) && (state & StateSign) == 0 && ((next = MatchSignChars(p, strEnd, info, out bool isNegative)) != null))
                     {
                         state |= StateSign;
+                        number.IsNegative = isNegative;
                         p = next - 1;
                     }
                     else if (ch == '(' && ((styles & NumberStyles.AllowParentheses) != 0) && ((state & StateSign) == 0))
@@ -181,14 +182,9 @@ namespace System
                 {
                     TChar* temp = p;
                     ch = ++p < strEnd ? TChar.CastToUInt32(*p) : '\0';
-                    if ((next = MatchChars(p, strEnd, info.PositiveSignTChar<TChar>())) != null)
+                    if ((next = MatchSignChars(p, strEnd, info, out negExp)) != null)
                     {
                         ch = (p = next) < strEnd ? TChar.CastToUInt32(*p) : '\0';
-                    }
-                    else if ((next = MatchNegativeSignChars(p, strEnd, info)) != null)
-                    {
-                        ch = (p = next) < strEnd ? TChar.CastToUInt32(*p) : '\0';
-                        negExp = true;
                     }
                     if (IsDigit(ch))
                     {
@@ -243,9 +239,10 @@ namespace System
                 {
                     if (!IsWhite(ch) || (styles & NumberStyles.AllowTrailingWhite) == 0)
                     {
-                        if ((styles & NumberStyles.AllowTrailingSign) != 0 && ((state & StateSign) == 0) && ((next = MatchChars(p, strEnd, info.PositiveSignTChar<TChar>())) != null || (((next = MatchNegativeSignChars(p, strEnd, info)) != null) && (number.IsNegative = true))))
+                        if ((styles & NumberStyles.AllowTrailingSign) != 0 && ((state & StateSign) == 0) && ((next = MatchSignChars(p, strEnd, info, out bool isNegative)) != null))
                         {
                             state |= StateSign;
+                            number.IsNegative = isNegative;
                             p = next - 1;
                         }
                         else if (ch == ')' && ((state & StateParens) != 0))
@@ -349,6 +346,77 @@ namespace System
             }
 
             return ret;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static unsafe TChar* MatchSignChars<TChar>(TChar* p, TChar* pEnd, NumberFormatInfo info, out bool isNegative)
+            where TChar : unmanaged, IUtfChar<TChar>
+        {
+            if (HasInvariantNumberSigns(info))
+            {
+                if (p < pEnd)
+                {
+                    uint ch = TChar.CastToUInt32(*p);
+                    if (ch == '-')
+                    {
+                        isNegative = true;
+                        return p + 1;
+                    }
+                    if (ch == '+')
+                    {
+                        isNegative = false;
+                        return p + 1;
+                    }
+                }
+
+                isNegative = false;
+                return null;
+            }
+
+            ReadOnlySpan<TChar> positiveSign = info.PositiveSignTChar<TChar>();
+            TChar* positiveSignIndex = MatchChars(p, pEnd, positiveSign);
+            if (positiveSignIndex is not null && info.PositiveSign.Length >= info.NegativeSign.Length)
+            {
+                isNegative = false;
+                return positiveSignIndex;
+            }
+
+            TChar* negativeSignIndex = MatchNegativeSignChars(p, pEnd, info);
+            if (positiveSignIndex is null)
+            {
+                isNegative = negativeSignIndex is not null;
+                return negativeSignIndex;
+            }
+
+            if (negativeSignIndex is null || positiveSignIndex >= negativeSignIndex)
+            {
+                isNegative = false;
+                return positiveSignIndex;
+            }
+
+            isNegative = true;
+            return negativeSignIndex;
+        }
+
+        private static unsafe int MatchSignChars<TChar>(ReadOnlySpan<TChar> value, int index, NumberFormatInfo info, out bool isNegative)
+            where TChar : unmanaged, IUtfChar<TChar>
+        {
+            Debug.Assert((uint)index < (uint)value.Length);
+
+            fixed (TChar* input = &MemoryMarshal.GetReference(value))
+            {
+                TChar* signEnd = MatchSignChars(input + index, input + value.Length, info, out isNegative);
+                return signEnd is null ? -1 : (int)(signEnd - input);
+            }
+        }
+
+        private static bool HasInvariantNumberSigns(NumberFormatInfo info)
+        {
+#if SYSTEM_PRIVATE_CORELIB
+            return info.HasInvariantNumberSigns;
+#else
+            return info.PositiveSign == "+" && info.NegativeSign == "-";
+#endif
         }
 
         private static unsafe TChar* MatchChars<TChar>(TChar* p, TChar* pEnd, ReadOnlySpan<TChar> value)
