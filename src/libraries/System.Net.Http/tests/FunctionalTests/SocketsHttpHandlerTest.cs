@@ -4750,17 +4750,15 @@ namespace System.Net.Http.Functional.Tests
             await new[] { serverTask, clientTask }.WhenAllOrAnyFailed(60_000);
         }
 
-        [ConditionalTheory(typeof(SocketsHttpHandlerTest_ConnectCallback), nameof(PlatformSupportsUnixDomainSockets))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.SupportsUnixDomainSocketBinding))]
         [InlineData(true)]
         [InlineData(false)]
         public async Task ConnectCallback_UseUnixDomainSocket_Success(bool useSsl)
         {
-            UnixDomainSocketTestHelpers.SkipIfFileSystemBindIsDenied();
-
             GenericLoopbackOptions options = new GenericLoopbackOptions() { UseSsl = useSsl };
 
             string guid = $"{Guid.NewGuid():N}";
-            string socketDirectory = UnixDomainSocketTestHelpers.GetSocketDirectory();
+            string socketDirectory = PlatformDetection.UnixDomainSocketDirectory;
             if (PlatformDetection.IsiOS || PlatformDetection.IstvOS)
             {
                 // Keep the name short for app container paths, and avoid an all-numeric URI host.
@@ -5212,8 +5210,6 @@ namespace System.Net.Http.Functional.Tests
 
             await TestHelper.WhenAllCompletedOrAnyFailedWithTimeout(GenericLoopbackServer.LoopbackServerTimeoutMilliseconds, clientTask, serverTask);
         }
-
-        private static bool PlatformSupportsUnixDomainSockets => Socket.OSSupportsUnixDomainSockets;
 
         private sealed class ReadAheadStream : DelegatingStream
         {
