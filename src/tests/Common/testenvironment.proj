@@ -7,8 +7,10 @@
 
 
   <!-- DOTNET_* variables that can be specified for a test scenario -->
-  <!-- There is a non-DOTNET variable here: RunningIlasmRoundTrip. When set to 1, this triggers CoreCLR round-trip testing.
-       The value is read in the test wrapper scripts. When set in a __TestEnv script, it is set before it is read.
+  <!-- There are non-DOTNET variables here: RunningIlasmRoundTrip and IlasmRoundTripUseManagedIlasm.
+       RunningIlasmRoundTrip, when set to 1, triggers CoreCLR round-trip testing.
+       IlasmRoundTripUseManagedIlasm, when set to 1, uses the managed ilasm for round-trip testing.
+       Both values are read in the test wrapper scripts. When set in a __TestEnv script, they are set before they are read.
        The DOTNET_ processing handling below allows for variables not prefixed by 'DOTNET_'.
   -->
   <PropertyGroup>
@@ -66,6 +68,7 @@
       DOTNET_JitForceControlFlowGuard;
       DOTNET_JitCFGUseDispatcher;
       RunningIlasmRoundTrip;
+      IlasmRoundTripUseManagedIlasm;
       DOTNET_JitSynthesizeCounts;
       DOTNET_JitCheckSynthesizedCounts;
       DOTNET_JitRLCSEGreedy;
@@ -191,7 +194,7 @@
     <TestEnvironment Include="jitcfg_dispatcher_never" JitForceControlFlowGuard="1" JitCFGUseDispatcher="0" />
     <TestEnvironment Include="jitcfg_gcstress0xc" JitForceControlFlowGuard="1" GCStress="0xC" />
     <TestEnvironment Include="ilasmroundtrip" RunningIlasmRoundTrip="1" />
-    <TestEnvironment Include="clrinterpreter" TieredCompilation="1" />
+    <TestEnvironment Include="managedilasmroundtrip" RunningIlasmRoundTrip="1" IlasmRoundTripUseManagedIlasm="1" />
     <TestEnvironment Include="defaultpgo" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" />
     <TestEnvironment Include="fullpgo" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" ReadyToRun="0" JitProfileCasts="1"/>
     <TestEnvironment Include="fullpgo_methodprofiling" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" ReadyToRun="0" JitDelegateProfiling="1" JitVTableProfiling="1" />
@@ -264,13 +267,6 @@
       <_TestEnvFileLine Condition="'$(RuntimeVariant)' == 'monointerpreter'" Include="set MONO_ENV_OPTIONS=--interpreter" />
 
       <_TestEnvFileLine Condition="'$(RuntimeVariant)' != ''" Include="set DOTNET_RUNTIME_VARIANT=$(RuntimeVariant)" />
-
-      <!-- CLR interpreter -->
-      <_TestEnvFileLine Condition="'$(Scenario)' == 'clrinterpreter'" Include="set DOTNET_Interpret=%2A" /> <!-- %2A is asterisk / wildcard -->
-      <_TestEnvFileLine Condition="'$(Scenario)' == 'clrinterpreter'" Include="set DOTNET_InterpreterHWIntrinsicsIsSupportedFalse=1" />
-      <_TestEnvFileLine Condition="'$(Scenario)' == 'clrinterpreter'" Include="set DOTNET_InterpreterJITThreshold=0x1000" />
-      <_TestEnvFileLine Condition="'$(Scenario)' == 'clrinterpreter'" Include="set DOTNET_TC_CallCountThreshold=0x1000" />
-      <_TestEnvFileLine Condition="'$(Scenario)' == 'clrinterpreter'" Include="set DOTNET_InterpreterDoLoopMethods=1" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(TargetsWindows)' != 'true'">
@@ -290,13 +286,6 @@
       <_TestEnvFileLine Condition="'$(RuntimeVariant)' == 'llvmfullaot' or '$(RuntimeVariant)' == 'minifullaot'" Include="export MONO_ENV_OPTIONS=--full-aot" />
 
       <_TestEnvFileLine Condition="'$(RuntimeVariant)' != ''" Include="export DOTNET_RUNTIME_VARIANT=$(RuntimeVariant)" />
-
-      <!-- CLR interpreter -->
-      <_TestEnvFileLine Condition="'$(Scenario)' == 'clrinterpreter'" Include="export DOTNET_Interpret=%2A" /> <!-- %2A is asterisk / wildcard -->
-      <_TestEnvFileLine Condition="'$(Scenario)' == 'clrinterpreter'" Include="export DOTNET_InterpreterHWIntrinsicsIsSupportedFalse=1" />
-      <_TestEnvFileLine Condition="'$(Scenario)' == 'clrinterpreter'" Include="export DOTNET_InterpreterJITThreshold=0x1000" />
-      <_TestEnvFileLine Condition="'$(Scenario)' == 'clrinterpreter'" Include="export DOTNET_TC_CallCountThreshold=0x1000" />
-      <_TestEnvFileLine Condition="'$(Scenario)' == 'clrinterpreter'" Include="export DOTNET_InterpreterDoLoopMethods=1" />
     </ItemGroup>
 
     <WriteLinesToFile File="$(TestEnvFileName)" Lines="@(_TestEnvFileLine)" Overwrite="true" />

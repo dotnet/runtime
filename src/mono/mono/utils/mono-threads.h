@@ -848,7 +848,7 @@ typedef void (*background_job_cb)(void);
 typedef gsize (*ds_job_cb)(void* data);
 #ifdef DISABLE_THREADS
 void SystemJS_ScheduleBackgroundJob (background_job_cb cb);
-void mono_schedule_ds_job (ds_job_cb cb, void* data);
+void SystemJS_DiagnosticServerQueueJob (ds_job_cb cb, void* data);
 #else
 void SystemJS_ScheduleSynchronizationContext(MonoNativeThreadId target_thread);
 #endif // DISABLE_THREADS

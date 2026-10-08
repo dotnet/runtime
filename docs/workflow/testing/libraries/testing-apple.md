@@ -96,7 +96,7 @@ Currently, only the `tracing/eventpipe` subset of runtime tests is enabled on iO
 The subset of runtime tests can be built by executing the following shell script:
 ```sh
 ./build.sh -arch arm64 -os ios -s mono+libs -c Release
-./src/tests/build.sh os ios arm64 Release -mono tree tracing/eventpipe /p:LibrariesConfiguration=Release
+./src/tests/build.sh -os ios -arch arm64 Release -mono tree tracing/eventpipe /p:LibrariesConfiguration=Release
 ```
 
 The script generates an Apple bundle that can be executed using Xcode or XHarness.

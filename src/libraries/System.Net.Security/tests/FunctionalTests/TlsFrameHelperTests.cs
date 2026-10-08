@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Authentication;
@@ -30,6 +31,20 @@ namespace System.Net.Security.Tests
             InvalidClientHello(clientHello, id, shouldPass: false);
         }
 
+        [Theory]
+        [InlineData(255, true)]
+        [InlineData(256, false)]
+        public void SniHelper_HostNameLength_ValidatesMaximum(int hostNameLength, bool isValid)
+        {
+            string? expected = isValid ? new string('a', hostNameLength) : null;
+            byte[] clientHello = CreateClientHello(hostNameLength);
+            TlsFrameHelper.TlsFrameInfo info = default;
+
+            Assert.True(TlsFrameHelper.TryGetFrameInfo(clientHello, ref info));
+            Assert.Equal(expected, info.TargetName);
+            Assert.Equal(expected, TlsFrameHelper.GetServerName(clientHello));
+        }
+
         private void InvalidClientHello(byte[] clientHello, int id, bool shouldPass)
         {
             string ret = TlsFrameHelper.GetServerName(clientHello);
@@ -39,11 +54,16 @@ namespace System.Net.Security.Tests
                 Assert.Null(ret);
         }
 
+        private const TlsFrameHelper.ProcessingOptions AllExtensions =
+            TlsFrameHelper.ProcessingOptions.ServerName |
+            TlsFrameHelper.ProcessingOptions.ApplicationProtocol |
+            TlsFrameHelper.ProcessingOptions.Versions;
+
         [Fact]
         public void TlsFrameHelper_ValidData_Ok()
         {
             TlsFrameHelper.TlsFrameInfo info = default;
-            Assert.True(TlsFrameHelper.TryGetFrameInfo(s_validClientHello, ref info));
+            Assert.True(TlsFrameHelper.TryGetFrameInfo(s_validClientHello, ref info, AllExtensions));
 
             Assert.Equal(SslProtocols.Tls12, info.Header.Version);
             Assert.Equal(208, info.Header.Length);
@@ -55,7 +75,7 @@ namespace System.Net.Security.Tests
         public void TlsFrameHelper_Tls12ClientHello_Ok()
         {
             TlsFrameHelper.TlsFrameInfo info = default;
-            Assert.True(TlsFrameHelper.TryGetFrameInfo(s_Tls12ClientHello, ref info));
+            Assert.True(TlsFrameHelper.TryGetFrameInfo(s_Tls12ClientHello, ref info, AllExtensions));
 
 #pragma warning disable SYSLIB0039
             Assert.Equal(SslProtocols.Tls, info.Header.Version);
@@ -68,7 +88,7 @@ namespace System.Net.Security.Tests
         public void TlsFrameHelper_Tls13ClientHello_Ok()
         {
             TlsFrameHelper.TlsFrameInfo info = default;
-            Assert.True(TlsFrameHelper.TryGetFrameInfo(s_Tls13ClientHello, ref info));
+            Assert.True(TlsFrameHelper.TryGetFrameInfo(s_Tls13ClientHello, ref info, AllExtensions));
 
 #pragma warning disable SYSLIB0039
             Assert.Equal(SslProtocols.Tls, info.Header.Version);
@@ -81,7 +101,7 @@ namespace System.Net.Security.Tests
         public void TlsFrameHelper_Tls12ServerHello_Ok()
         {
             TlsFrameHelper.TlsFrameInfo info = default;
-            Assert.True(TlsFrameHelper.TryGetFrameInfo(s_Tls12ServerHello, ref info));
+            Assert.True(TlsFrameHelper.TryGetFrameInfo(s_Tls12ServerHello, ref info, AllExtensions));
 
             Assert.Equal(SslProtocols.Tls12, info.Header.Version);
             Assert.Equal(SslProtocols.Tls12, info.SupportedVersions);
@@ -95,7 +115,7 @@ namespace System.Net.Security.Tests
             Assert.True(TlsFrameHelper.TryGetFrameHeader(s_UnifiedHello,  ref info.Header));
             Assert.Equal(75, info.Header.Length);
 
-            Assert.True(TlsFrameHelper.TryGetFrameInfo(s_UnifiedHello, ref info));
+            Assert.True(TlsFrameHelper.TryGetFrameInfo(s_UnifiedHello, ref info, AllExtensions));
 #pragma warning disable CS0618      // Ssl2 and Ssl3 are obsolete
 #pragma warning disable SYSLIB0039  // Tls is obsolete
             Assert.Equal(SslProtocols.Ssl2, info.Header.Version);
@@ -111,7 +131,7 @@ namespace System.Net.Security.Tests
         public void TlsFrameHelper_TlsClientHelloNoExtensions_Ok()
         {
             TlsFrameHelper.TlsFrameInfo info = default;
-            Assert.True(TlsFrameHelper.TryGetFrameInfo(s_TlsClientHelloNoExtensions, ref info));
+            Assert.True(TlsFrameHelper.TryGetFrameInfo(s_TlsClientHelloNoExtensions, ref info, AllExtensions));
             Assert.Equal(SslProtocols.Tls12, info.Header.Version);
             Assert.Equal(SslProtocols.Tls12, info.SupportedVersions);
             Assert.Equal(TlsContentType.Handshake, info.Header.Type);
@@ -152,6 +172,39 @@ namespace System.Net.Security.Tests
                 id++;
                 yield return new object[] { id, Convert.FromBase64String(invalidClientHello) };
             }
+        }
+
+        private static byte[] CreateClientHello(int hostNameLength)
+        {
+            const int HostNameOffset = 61;
+            byte[] clientHello = new byte[HostNameOffset + hostNameLength];
+
+            clientHello[0] = (byte)TlsContentType.Handshake;
+            clientHello[1] = 3;
+            clientHello[2] = 3;
+            BinaryPrimitives.WriteUInt16BigEndian(clientHello.AsSpan(3), checked((ushort)(clientHello.Length - TlsFrameHelper.HeaderSize)));
+            clientHello[5] = (byte)TlsHandshakeType.ClientHello;
+            int handshakeLength = clientHello.Length - 9;
+            clientHello[6] = (byte)(handshakeLength >> 16);
+            clientHello[7] = (byte)(handshakeLength >> 8);
+            clientHello[8] = (byte)handshakeLength;
+            clientHello[9] = 3;
+            clientHello[10] = 3;
+            clientHello[43] = 0; // Session ID length
+            BinaryPrimitives.WriteUInt16BigEndian(clientHello.AsSpan(44), 2);
+            clientHello[46] = 0x13;
+            clientHello[47] = 0x01;
+            clientHello[48] = 1;
+            clientHello[49] = 0;
+            BinaryPrimitives.WriteUInt16BigEndian(clientHello.AsSpan(50), checked((ushort)(hostNameLength + 9)));
+            BinaryPrimitives.WriteUInt16BigEndian(clientHello.AsSpan(52), (ushort)ExtensionType.ServerName);
+            BinaryPrimitives.WriteUInt16BigEndian(clientHello.AsSpan(54), checked((ushort)(hostNameLength + 5)));
+            BinaryPrimitives.WriteUInt16BigEndian(clientHello.AsSpan(56), checked((ushort)(hostNameLength + 3)));
+            clientHello[58] = 0;
+            BinaryPrimitives.WriteUInt16BigEndian(clientHello.AsSpan(59), checked((ushort)hostNameLength));
+            clientHello.AsSpan(HostNameOffset).Fill((byte)'a');
+
+            return clientHello;
         }
 
         private static byte[] s_validClientHello = new byte[] {

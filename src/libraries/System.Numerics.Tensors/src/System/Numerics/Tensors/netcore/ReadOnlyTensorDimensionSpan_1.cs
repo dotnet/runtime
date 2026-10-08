@@ -2,11 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Runtime.CompilerServices;
-
-#if NET9_0_OR_GREATER
 using System.Collections;
 using System.Collections.Generic;
-#endif
 
 namespace System.Numerics.Tensors
 {
@@ -21,16 +18,24 @@ namespace System.Numerics.Tensors
 
         internal ReadOnlyTensorDimensionSpan(ReadOnlyTensorSpan<T> tensor, int dimension)
         {
-            if ((uint)dimension >= tensor.Rank)
+            int rank = tensor.Rank;
+            if (rank == 0)
+            {
+                tensor = new ReadOnlyTensorSpan<T>(in tensor._reference, TensorShape.Normalize(tensor._shape));
+                rank = tensor.Rank;
+            }
+
+            if ((uint)dimension >= rank)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException();
             }
             dimension += 1;
 
+            ReadOnlySpan<nint> lengths = tensor.Lengths;
             _tensor = tensor;
-            _length = TensorPrimitives.Product(tensor.Lengths[..dimension]);
+            _length = TensorShape.GetProduct(lengths[..dimension]);
             _dimension = dimension;
-            _sliceShape = TensorShape.Create((dimension != tensor.Rank) ? tensor.Lengths[dimension..] : [1], tensor.Strides[dimension..], tensor.IsPinned);
+            _sliceShape = TensorShape.Create((dimension != rank) ? lengths[dimension..] : [1], tensor.Strides[dimension..], tensor.IsPinned);
         }
 
         /// <summary>Gets <c>true</c> if the slices that exist within the tracked dimension are dense; otherwise, <c>false</c>.</summary>
@@ -60,10 +65,7 @@ namespace System.Numerics.Tensors
         public Enumerator GetEnumerator() => new Enumerator(this);
 
         /// <summary>Enumerates the spans of a tensor dimension span.</summary>
-        public ref struct Enumerator
-#if NET9_0_OR_GREATER
-            : IEnumerator<ReadOnlyTensorSpan<T>>
-#endif
+        public ref struct Enumerator : IEnumerator<ReadOnlyTensorSpan<T>>
         {
             private readonly ReadOnlyTensorDimensionSpan<T> _span;
             private nint _index;
@@ -96,7 +98,6 @@ namespace System.Numerics.Tensors
                 _index = -1;
             }
 
-#if NET9_0_OR_GREATER
             //
             // IDisposable
             //
@@ -108,7 +109,6 @@ namespace System.Numerics.Tensors
             //
 
             readonly object? IEnumerator.Current => throw new NotSupportedException();
-#endif
         }
     }
 }

@@ -344,8 +344,10 @@ struct ResolveHolder
          _ASSERTE(n == ResolveStub::slowEntryPointLen);
          // ResolveStub._failEntryPoint(x0:MethodToken, x1,.., x7 and x8, x11:IndirectionCellAndFlags)
          // {
-         //     if(--*(this._pCounter) < 0) x11 = x11 | SDF_ResolveBackPatch;
-         //     this._resolveEntryPoint(x0, [x1..x7 and x8]);
+         //     if (--*(this._pCounter) >= 0)
+         //         return this._resolveEntryPoint(x0, [x1..x7 and x8]);
+         //     x11 = x11 | SDF_ResolveBackPatch;
+         //     return this._slowEntryPoint(x0, [x1..x7 and x8]);
          // }
 
 #undef PC_REL_OFFSET //NOTE Offset can be negative
@@ -379,8 +381,10 @@ struct ResolveHolder
          _ASSERTE(SDF_ResolveBackPatch == 0x1);
          _stub._failEntryPoint[n++] = 0xB240016B;
 
-         //;;b resolveEntryPoint:
-         offset = PC_REL_OFFSET(_resolveEntryPoint);
+         // Force the slow path to observe SDF_ResolveBackPatch. A hit in the
+         // inline resolve cache branches directly to the target without
+         // processing the flag.
+         offset = PC_REL_OFFSET(_slowEntryPoint);
          _stub._failEntryPoint[n++] = 0x14000000 | ((offset>>2) & 0x3FFFFFF);
 
          _ASSERTE(n == ResolveStub::failEntryPointLen);

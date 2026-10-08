@@ -13,7 +13,6 @@
 #include "methodcontextreader.h"
 #include "spmiutil.h"
 #include "fileio.h"
-#include "commandline.h"
 
 #if defined(_WIN32)
 #define strtok_r strtok_s
@@ -104,7 +103,7 @@ static MethodContext* getMethodContext(int index, MethodContextReader* reader)
         }
 
         MethodContext* mc = nullptr;
-        if (!MethodContext::Initialize(index, mcb.buff, mcb.size, &mc))
+        if (!MethodContext::Initialize(index, mcb.buff, mcb.size, /* readCompileResults */ false, &mc))
         {
             return nullptr;
         }

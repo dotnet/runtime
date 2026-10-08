@@ -32,7 +32,7 @@ internal sealed class StressLogAnalyzer(
         // The "end" timestamp is the timestamp of the most recent message.
         timeTracker.SetEndTimestamp(
             logs.Select(
-                log => outerLogContract.GetStressMessages(log).FirstOrDefault().Timestamp)
+                log => outerLogContract.GetStressMessages(log.Address).FirstOrDefault().Timestamp)
             .Max());
 
         if (!threadFilter.HasAnyGCThreadFilter)
@@ -58,7 +58,7 @@ internal sealed class StressLogAnalyzer(
                 StressMsgData? earliestMessage = null;
                 List<StressMsgData> localMessages = [];
                 bool includeThreadMessages = true;
-                foreach (StressMsgData message in stressLogContract.Value!.GetStressMessages(log))
+                foreach (StressMsgData message in stressLogContract.Value!.GetStressMessages(log.Address))
                 {
                     numMessagesProcessed.Value++;
                     token.ThrowIfCancellationRequested();

@@ -549,5 +549,37 @@ build_property.{MSBuildPropertyOptionNames.EnableAotAnalyzer} = true")));
                 // (4,24): warning IL3050: Using member 'System.Reflection.MethodInfo.MakeGenericMethod(params Type[])' which has 'RequiresDynamicCodeAttribute' can break functionality when AOT compiling. The native code for this instantiation might not be available at runtime.
                 VerifyCS.Diagnostic(DiagnosticId.RequiresDynamicCode).WithSpan(4, 24, 4, 72).WithArguments("System.Reflection.MethodInfo.MakeGenericMethod(params Type[])", " The native code for this instantiation might not be available at runtime.", ""));
         }
+
+        [Fact]
+        public Task EnumGetValuesWithKnownType()
+        {
+            const string src = $$"""
+            using System;
+            class C
+            {
+                public void M() => Enum.GetValues(typeof(MyEnum));
+            }
+            enum MyEnum { One, Two }
+            """;
+
+            return VerifyRequiresDynamicCodeAnalyzer(src);
+        }
+
+        [Fact]
+        public Task EnumGetValuesWithUnknownType()
+        {
+            const string src = $$"""
+            using System;
+            class C
+            {
+                public void M() => Enum.GetValues(GetUnknownType());
+                static Type GetUnknownType() => typeof(MyEnum);
+            }
+            enum MyEnum { One, Two }
+            """;
+
+            return VerifyRequiresDynamicCodeAnalyzer(src,
+                VerifyCS.Diagnostic(DiagnosticId.RequiresDynamicCode).WithSpan(4, 24, 4, 38).WithArguments("System.Enum.GetValues(Type)", " It might not be possible to create an array of the enum type at runtime. Use the GetValues<TEnum> overload or the GetValuesAsUnderlyingType method instead.", ""));
+        }
     }
 }

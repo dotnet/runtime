@@ -7,13 +7,14 @@ namespace System.Linq
 {
     public static partial class AsyncEnumerable
     {
-        /// <summary>Creates a new <see cref="IAsyncEnumerable{T}"/> that iterates through <paramref name="source"/>.</summary>
+        /// <summary>Converts an <see cref="IEnumerable{T}"/> to an <see cref="IAsyncEnumerable{T}"/>.</summary>
         /// <typeparam name="TSource">The type of the elements of source.</typeparam>
         /// <param name="source">An <see cref="IEnumerable{T}"/> of the elements to enumerate.</param>
         /// <returns>An <see cref="IAsyncEnumerable{T}"/> containing the sequence of elements from <paramref name="source"/>.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="source"/> is <see langword="null"/>.</exception>
         /// <remarks>
-        /// Each iteration through the resulting <see cref="IAsyncEnumerable{T}"/> will iterate through the <paramref name="source"/>.
+        /// If <paramref name="source"/> already implements <see cref="IAsyncEnumerable{T}"/>, it is returned directly.
+        /// Otherwise, each iteration through the resulting <see cref="IAsyncEnumerable{T}"/> will iterate through the <paramref name="source"/>.
         /// </remarks>
         public static IAsyncEnumerable<TSource> ToAsyncEnumerable<TSource>(
             this IEnumerable<TSource> source)
@@ -22,6 +23,7 @@ namespace System.Linq
 
             return source switch
             {
+                IAsyncEnumerable<TSource> asyncEnumerable => asyncEnumerable,
                 TSource[] array => array.Length == 0 ? Empty<TSource>() : FromArray(array),
                 List<TSource> list => FromList(list),
                 IList<TSource> list => FromIList(list),

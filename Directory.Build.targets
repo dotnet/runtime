@@ -31,19 +31,14 @@
   <Import Project="$(RepositoryEngineeringDir)packaging.targets" Condition="'$(IsPackable)' == 'true' and '$(MSBuildProjectExtension)' != '.pkgproj'" />
   <Import Project="$(RepositoryEngineeringDir)slngen.targets" Condition="'$(IsSlnGen)' == 'true'" />
 
-  <!--
-  When .NET gets built from source, make the SDK aware there are bootstrap packages
-  for Microsoft.NETCore.App.Runtime.<rid> and Microsoft.NETCore.App.Crossgen2.<rid>.
-  -->
+  <PropertyGroup>
+    <NetCoreAppCurrentBuildSettings>$(NetCoreAppCurrent)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)</NetCoreAppCurrentBuildSettings>
+    <NativeBinDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'native', '$(NetCoreAppCurrentBuildSettings)'))</NativeBinDir>
+    <NetCoreAppCurrentTestHostPath Condition="'$(UseDefaultTestHost)' != 'true'">$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'testhost', '$(NetCoreAppCurrentBuildSettings)'))</NetCoreAppCurrentTestHostPath>
+    <NetCoreAppCurrentTestHostSharedFrameworkPath Condition="'$(UseDefaultTestHost)' != 'true'">$([MSBuild]::NormalizeDirectory('$(NetCoreAppCurrentTestHostPath)', 'shared', '$(MicrosoftNetCoreAppFrameworkName)', '$(ProductVersion)'))</NetCoreAppCurrentTestHostSharedFrameworkPath>
+  </PropertyGroup>
+
   <ItemGroup Condition="'$(DotNetBuildSourceOnly)' == 'true'">
-    <KnownFrameworkReference Update="Microsoft.NETCore.App">
-      <RuntimePackRuntimeIdentifiers
-        Condition="'%(TargetFramework)' == '$(NetCoreAppCurrent)'">%(RuntimePackRuntimeIdentifiers);$(NETCoreSdkRuntimeIdentifier)</RuntimePackRuntimeIdentifiers>
-    </KnownFrameworkReference>
-    <KnownCrossgen2Pack Update="Microsoft.NETCore.App.Crossgen2">
-      <Crossgen2RuntimeIdentifiers
-        Condition="'%(TargetFramework)' == '$(NetCoreAppCurrent)'" >%(Crossgen2RuntimeIdentifiers);$(NETCoreSdkRuntimeIdentifier)</Crossgen2RuntimeIdentifiers>
-    </KnownCrossgen2Pack>
     <!-- Avoid references to Microsoft.AspNetCore.App.Runtime.<rid> -->
     <KnownFrameworkReference Remove="Microsoft.AspNetCore.App" />
   </ItemGroup>
@@ -99,13 +94,6 @@
     <Description>$(PackageDescription)</Description>
     <!-- Until we update the TFM to match the Major version, we need to patch in support for RequiresPreviewFeatures -->
     <GenerateRequiresPreviewFeaturesAttribute Condition="'$(TargetFrameworkMoniker)' == '$(NetCoreAppCurrentTargetFrameworkMoniker)'">true</GenerateRequiresPreviewFeaturesAttribute>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <!-- when building from source we need to use the current version of various packages as the toolset version, but source-build imports
-         another props file which overrides the versions from Version.props so we can't set it there -->
-    <SystemReflectionMetadataLoadContextToolsetVersion Condition="'$(DotNetBuildSourceOnly)' == 'true'">$(SystemReflectionMetadataLoadContextVersion)</SystemReflectionMetadataLoadContextToolsetVersion>
-    <SystemTextJsonToolsetVersion Condition="'$(DotNetBuildSourceOnly)' == 'true'">$(SystemTextJsonVersion)</SystemTextJsonToolsetVersion>
   </PropertyGroup>
 
   <Target Name="ValidateTargetOSLowercase"

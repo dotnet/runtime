@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
-using System.Buffers.Binary;
-using System.Diagnostics;
 using System.IO;
 using System.IO.MemoryMappedFiles;
 using Test.Cryptography;
@@ -11,7 +9,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.X509Certificates.Tests
 {
-    [SkipOnPlatform(TestPlatforms.Browser, "Browser doesn't support X.509 certificates")]
+    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi, "Browser doesn't support X.509 certificates")]
     public class X509CertificateLoaderTests_FromByteArray : X509CertificateLoaderTests
     {
         protected override void NullInputAssert(Action action) =>
@@ -41,7 +39,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
     }
 
-    [SkipOnPlatform(TestPlatforms.Browser, "Browser doesn't support X.509 certificates")]
+    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi, "Browser doesn't support X.509 certificates")]
     public class X509CertificateLoaderTests_FromByteSpan : X509CertificateLoaderTests
     {
         protected override void NullInputAssert(Action action) =>
@@ -80,7 +78,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
     }
 
-    [SkipOnPlatform(TestPlatforms.Browser, "Browser doesn't support X.509 certificates")]
+    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi, "Browser doesn't support X.509 certificates")]
     public class X509CertificateLoaderTests_FromFile : X509CertificateLoaderTests
     {
         protected override void NullInputAssert(Action action) =>
@@ -154,7 +152,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     Assert.Equal(contentType, actualType);
                 }
             }
-            
+
             if (path is null)
             {
                 Assert.ThrowsAny<CryptographicException>(() => LoadCertificateNoFile(data));
@@ -300,13 +298,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [Fact]
         public void LoadWrappingCertificate_PEM_WithTrailingData()
         {
-            byte[] source = TestData.NestedCertificates;
-            Array.Resize(ref source, source.Length + 4);
-
-            BinaryPrimitives.WriteInt32LittleEndian(
-                source.AsSpan(TestData.NestedCertificates.Length),
-                Process.GetCurrentProcess().Id);
-
+            byte[] source = [..TestData.NestedCertificates, 1, 2, 3, 4];
             byte[] data = System.Text.Encoding.ASCII.GetBytes(
                 ByteUtils.PemEncode("CERTIFICATE", source));
 

@@ -1,0 +1,140 @@
+# CI workflow evals
+
+Quality gates for the three agentic CI workflows
+[`ci-failure-scan`](../ci-failure-scan.md), [`ci-failure-fix`](../ci-failure-fix.md),
+and [`ci-failure-scan-feedback`](../ci-failure-scan-feedback.md).
+
+Maintainers invoke them from a PR comment. See [`../ci-eval.yml`](../ci-eval.yml).
+
+| Command | Grades |
+| --- | --- |
+| `/ci-scan eval` | ci-failure-scan safe-output |
+| `/ci-fix eval` | ci-failure-fix safe-output |
+| `/ci-feedback eval` | ci-failure-scan-feedback safe-output |
+| `/ci-eval` | all three |
+
+## How it works
+
+Each `*.eval.yaml` runs the real workflow prompt as the agent, using
+[Vally](https://microsoft.github.io/vally/) with the `copilot-sdk` executor,
+against a live task. The agent discovers real, current data itself and emits the
+safe-output it would produce, which is then graded. Graders mix cheap
+deterministic `file-matches` checks for format with `tool-calls` checks for
+evidence that the agent really engaged live data, and a few `prompt` LLM judges
+for conformance, behavior, and constructiveness. Every grader must pass.
+
+The workflow preserves the eval specs and installs Vally from the trusted base
+branch before it checks out the PR head. This lets it evaluate PR changes to the
+workflow prompts without allowing the PR to weaken its graders or toolchain.
+Each eval attaches a read-only GitHub MCP server with the toolsets its scenario
+needs. The `GITHUB_TOKEN` that the eval job supplies to that server has only the
+job's read permissions. The scanner eval omits the built-in `search` toolset and
+invokes a CLI harness for the workflow's `search-kbe-issues` MCP-script tool
+through Node because the eval runner does not launch workflow frontmatter MCP
+servers. It uses the `github` MCP server's `issue_read` tool for candidate
+inspection. A trusted static grader correlates every candidate returned by the
+harness with a successful, unfiltered `issue_read`. Focused Node tests keep the
+workflow-frontmatter and CLI wrapper behavior in sync and exercise the grader's
+candidate correlation.
+
+The scanner's focused tests also require the production and eval GitHub backend
+toolsets to match and retain `repos`, which the production integrity gateway
+needs for its internal `search_repositories` visibility check. The agent-facing
+allowlist remains limited to issue reads and PR reads/searches.
+
+The scanner eval connects directly to GitHub MCP, without production's filtering
+gateway. It validates search and candidate-read behavior, but cannot detect
+gateway-only failures. The toolset checks cover this configuration dependency;
+they are not an end-to-end gateway test.
+
+The focused tests also require the scanner and feedback workflows to select the
+Responses API in both their source and compiled Copilot execution steps.
+Production's firewall runs the CLI in offline/BYOK mode, where GPT-6.1 needs
+`COPILOT_PROVIDER_WIRE_API: responses`; the native Copilot SDK eval does not
+exercise that inference routing.
+
+These are format and behavior gates, not full ground-truth measurements. The
+second stage, a collector that scrapes the real failures and KBEs that actually
+exist and scores workflow output against them, is deferred.
+
+- **`ci-failure-scan`** has the agent query the anonymous dnceng-public AzDO REST
+  API for a currently-failing outer-loop build on `main`, extract a real error
+  signature, check for an existing KBE, and either emit the create-issue
+  safe-output at `out/kbe.md` or write the exact no-op result
+  `Result: No new Known Build Error` when the live scan has nothing actionable
+  to file. Graders check the static Known Build Error format when a KBE is
+  emitted: the title, exactly `Known Build Error` plus one blocking label, the
+  three sections, collapsed authoring guidance, a single json signature, the
+  collapsed workflow-owned positive match-count metadata, and no test-muting.
+  They also check `tool-calls` evidence that it actually fetched a real build,
+  searched existing KBEs through the wrapper, and inspected returned candidates
+  through `issue_read`.
+
+- **`ci-failure-fix`** runs the workflow's deterministic scanner-author filter
+  in trusted eval setup before the agent starts. The agent then reads a
+  candidate's body and comments through GitHub MCP, reasons about the real open
+  `[ci-scan]` Known Build Error, and emits one safe-output at
+  `out/decision.md`. Graders check that it either created a fix PR, with a
+  `[ci-fix]` title, a linked KBE, and a real diff that is never a test-disable,
+  or engaged owners with a hand-off comment, and never both. A deterministic
+  program grader validates the trusted filter output metadata and requires
+  successful MCP body and comments reads for the same candidate referenced by
+  `Linked KBE:` in the decision. The eval setup runs the same checked-in filter
+  script before the agent and preserves the artifact for grading.
+  An empty candidate list reports the live eval as unavailable (a grader error,
+  not a pass); `noop` cannot pass. The production empty-list skip is covered by
+  the deterministic intake tests instead.
+
+  This eval connects directly to the GitHub MCP server, not through production's
+  filtering gateway. It checks MCP usage and remediation behavior, but does not
+  validate production filtering; gateway-parity coverage remains separate work.
+
+- **`ci-failure-scan-feedback`** has the agent scan real recent `[ci-scan]`
+  issues and `[ci-fix]` PRs via `gh`, then emit its feedback safe-output at
+  `out/feedback.md`. `tool-calls` graders assert it actually scanned both the
+  scanner issues and the fixer PRs. LLM judges check the feedback is
+  constructive, meaning it is grounded and quantified, names the concrete miss,
+  and turns it into a specific, actionable next step. That next step is either a
+  prompt edit that quotes the triggering signal and targets an allowed workflow
+  or instruction file, or an explicit justification that no edit is warranted.
+
+Because the runs are live, they need network egress to AzDO and GitHub and a
+`GH_TOKEN` for the agent's `gh` calls, which `ci-eval.yml` exports the workflow
+token for on the eval step. Live runs are non-deterministic and depend on what
+is failing at eval time.
+
+## Run locally
+
+The deterministic scanner tests need Node, but no credentials or network access:
+
+```bash
+node --test .github/workflows/evals/kbe-search.test.mjs
+```
+
+The deterministic fixer tests need Python 3, Bash, jq, and Node with the eval
+dependencies installed (`npm ci --prefix .github/workflows/evals`), but no
+credentials or network access during testing. They exercise the shared intake
+script and grader, including author filtering, pagination, empty results, API
+failures, repository/job conditions, trusted candidate metadata, and
+candidate/read/comments/decision identity:
+
+```bash
+python3 .github/workflows/evals/test_ci_failure_fix_candidates.py
+```
+
+You need Node 22.12 or newer, Docker, a Copilot token for the agent and judges,
+and a GitHub token for the agent's `gh` calls and the GitHub MCP server.
+
+```bash
+npm ci --prefix .github/workflows/evals
+export PATH="$PWD/.github/workflows/evals/node_modules/.bin:$PATH"
+export COPILOT_GITHUB_TOKEN="$(gh auth token)"
+export GH_TOKEN="$(gh auth token)"
+export GITHUB_PERSONAL_ACCESS_TOKEN="$(gh auth token)"
+export KBE_SEARCH_HELPER="$PWD/.github/workflows/evals/search-kbe-issues.cjs"
+vally lint --eval-spec .github/workflows/evals/ci-failure-scan.eval.yaml \
+  --grader-plugin "$PWD/.github/workflows/evals/kbe-candidate-reads-grader.mjs" --strict
+vally eval --eval-spec .github/workflows/evals/ci-failure-scan.eval.yaml \
+  --grader-plugin "$PWD/.github/workflows/evals/kbe-candidate-reads-grader.mjs" \
+  --skill-dir .github/workflows --workspace /tmp/ws --output-dir /tmp/out
+```

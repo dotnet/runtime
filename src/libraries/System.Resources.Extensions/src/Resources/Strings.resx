@@ -225,9 +225,6 @@
   <data name="Serialization_InvalidReference" xml:space="preserve">
     <value>Member reference was pointing to a record of unexpected type.</value>
   </data>
-  <data name="Serialization_InvalidTypeName" xml:space="preserve">
-    <value>Invalid type name: `{0}`.</value>
-  </data>
   <data name="Serialization_TypeMismatch" xml:space="preserve">
     <value>Expected the array to be of type {0}, but its element type was {1}.</value>
   </data>

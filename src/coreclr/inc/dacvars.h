@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 // This file contains the globals and statics that are visible to DAC.
 // It is used for the following:
 // 1. in daccess.h to build the table of DAC globals
@@ -91,18 +92,14 @@ DEFINE_DACVAR(PTR_InterpreterCodeManager, ExecutionManager__m_pInterpreterCodeMa
 
 DEFINE_DACVAR_NO_DUMP(VMHELPDEF *, dac__hlpFuncTable, ::hlpFuncTable)
 DEFINE_DACVAR(VMHELPDEF *, dac__hlpDynamicFuncTable, ::hlpDynamicFuncTable)
+DEFINE_DACVAR(VMAUXILIARYSYMBOLDEF *, dac__hlpAuxiliarySymbolTable, ::hlpAuxiliarySymbolTable)
+DEFINE_DACVAR(DWORD, dac__g_auxiliarySymbolCount, ::g_auxiliarySymbolCount)
 
 DEFINE_DACVAR(PTR_StubManager, StubManager__g_pFirstManager, StubManager::g_pFirstManager)
 DEFINE_DACVAR(PTR_PrecodeStubManager, PrecodeStubManager__g_pManager, PrecodeStubManager::g_pManager)
 DEFINE_DACVAR(PTR_StubLinkStubManager, StubLinkStubManager__g_pManager, StubLinkStubManager::g_pManager)
-#ifdef FEATURE_JIT
-DEFINE_DACVAR(PTR_JumpStubStubManager, JumpStubStubManager__g_pManager, JumpStubStubManager::g_pManager)
-#endif // FEATURE_JIT
 DEFINE_DACVAR(PTR_RangeSectionStubManager, RangeSectionStubManager__g_pManager, RangeSectionStubManager::g_pManager)
 DEFINE_DACVAR(PTR_VirtualCallStubManagerManager, VirtualCallStubManagerManager__g_pManager, VirtualCallStubManagerManager::g_pManager)
-#ifdef FEATURE_TIERED_COMPILATION
-DEFINE_DACVAR(PTR_CallCountingStubManager, CallCountingStubManager__g_pManager, CallCountingStubManager::g_pManager)
-#endif // FEATURE_TIERED_COMPILATION
 
 DEFINE_DACVAR(PTR_ThreadStore, ThreadStore__s_pThreadStore, ThreadStore::s_pThreadStore)
 
@@ -115,17 +112,22 @@ DEFINE_DACVAR(PTR_GcDacVars, dac__g_gcDacGlobals, g_gcDacGlobals)
 DEFINE_DACVAR(PTR_AppDomain, AppDomain__m_pTheAppDomain, AppDomain::m_pTheAppDomain)
 DEFINE_DACVAR(PTR_SystemDomain, SystemDomain__m_pSystemDomain, SystemDomain::m_pSystemDomain)
 
+DEFINE_DACVAR(SListTail<ExternalMemoryHandle>, ExternalMemoryHandle__s_handles, ExternalMemoryHandle::s_handles)
+
 #ifdef FEATURE_INTEROP_DEBUGGING
 DEFINE_DACVAR(DWORD, dac__g_debuggerWordTLSIndex, g_debuggerWordTLSIndex)
 #endif
 DEFINE_DACVAR(DWORD, dac__g_TlsIndex, g_TlsIndex)
+#ifdef TARGET_WINDOWS
+DEFINE_DACVAR(DWORD, dac___tls_index, ::_tls_index)
+#endif
 DEFINE_DACVAR(DWORD, dac__g_offsetOfCurrentThreadInfo, g_offsetOfCurrentThreadInfo)
 
-#ifdef FEATURE_EH_FUNCLETS
 DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pEHClass, ::g_pEHClass)
 DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pExceptionServicesInternalCallsClass, ::g_pExceptionServicesInternalCallsClass)
 DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pStackFrameIteratorClass, ::g_pStackFrameIteratorClass)
-#endif
+
+DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pEnvironmentCallEntryPointMethodDesc, ::g_pEnvironmentCallEntryPointMethodDesc)
 
 DEFINE_DACVAR(PTR_SString, SString__s_Empty, SString::s_Empty)
 
@@ -150,6 +152,8 @@ DEFINE_DACVAR(ProfControlBlock, dac__g_profControlBlock, ::g_profControlBlock)
 DEFINE_DACVAR(PTR_DWORD, dac__g_card_table, ::g_card_table)
 DEFINE_DACVAR(PTR_BYTE, dac__g_lowest_address, ::g_lowest_address)
 DEFINE_DACVAR(PTR_BYTE, dac__g_highest_address, ::g_highest_address)
+// Not read by the DAC. Kept so that the (permanently zeroed) global is still captured in
+// mini/triage dumps, where the cDAC reads it for the GC contract c1 GlobalAllocContext global.
 DEFINE_DACVAR(ee_alloc_context, dac__g_global_alloc_context, ::g_global_alloc_context)
 
 DEFINE_DACVAR(IGCHeap, dac__g_pGCHeap, ::g_pGCHeap)
@@ -180,6 +184,7 @@ DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pWeakReferenceClass, ::g_pWeakReferen
 DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pWeakReferenceOfTClass, ::g_pWeakReferenceOfTClass)
 
 DEFINE_DACVAR_VOLATILE(UNKNOWN_POINTER_TYPE, dac__g_pContinuationClassIfSubTypeCreated, ::g_pContinuationClassIfSubTypeCreated)
+DEFINE_DACVAR_VOLATILE(UNKNOWN_POINTER_TYPE, dac__g_singletonContinuationEEClass, ::g_singletonContinuationEEClass)
 
 #ifdef FEATURE_COMINTEROP
 DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pBaseCOMObject, ::g_pBaseCOMObject)
@@ -208,6 +213,14 @@ DEFINE_DACVAR(PTR_SyncTableEntry, dac__g_pSyncTable, ::g_pSyncTable)
 #ifdef FEATURE_COMINTEROP
 DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pRCWCleanupList, ::g_pRCWCleanupList)
 #endif // FEATURE_COMINTEROP
+
+#ifdef FEATURE_COMWRAPPERS
+DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_knownQueryInterfaceImplementations, InteropLib::ABI::g_knownQueryInterfaceImplementations)
+#endif // FEATURE_COMWRAPPERS
+
+#ifdef FEATURE_OBJCMARSHAL
+DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_ObjectiveCTrackingInfoTable, ::g_ObjectiveCTrackingInfoTable)
+#endif // FEATURE_OBJCMARSHAL
 
 #ifndef TARGET_UNIX
 DEFINE_DACVAR(SIZE_T, dac__g_runtimeLoadedBaseAddress, ::g_runtimeLoadedBaseAddress)
@@ -241,6 +254,10 @@ DEFINE_DACVAR(bool, dac__g_metadataUpdatesApplied, ::g_metadataUpdatesApplied)
 #endif
 
 DEFINE_DACVAR(PTR_WSTR, dac__g_EntryAssemblyPath, ::g_EntryAssemblyPath)
+
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
+DEFINE_DACVAR(TADDR, dac__g_cdacThePreStub, ::g_cdacThePreStub)
+#endif
 
 DEFINE_DACVAR(CDacPlatformMetadata, dac__g_cdacPlatformMetadata, ::g_cdacPlatformMetadata)
 

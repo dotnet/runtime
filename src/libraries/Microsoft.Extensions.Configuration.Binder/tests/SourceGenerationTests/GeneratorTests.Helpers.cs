@@ -9,6 +9,9 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+#if NET
+using System.Runtime.Loader;
+#endif
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
@@ -99,6 +102,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             Assert.NotNull(source);
             Assert.Empty(result.Diagnostics);
             Assert.True(source.Value.SourceText.Lines.Count > 10);
+            await VerifySuppressedCallsMatchInterceptedCalls(result);
         }
 
         private static bool s_initializedInterceptorVersion;
@@ -174,15 +178,18 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
 
             Assert.True(resultEqualsBaseline, errorMessage);
 
+            await VerifySuppressedCallsMatchInterceptedCalls(result);
+
             return result;
         }
 
         private static async Task<ConfigBindingGenRunResult> RunGeneratorAndUpdateCompilation(
             string source,
             LanguageVersion langVersion = LanguageVersion.CSharp12,
-            IEnumerable<Assembly>? assemblyReferences = null)
+            IEnumerable<Assembly>? assemblyReferences = null,
+            IEnumerable<MetadataReference>? metadataReferences = null)
         {
-            ConfigBindingGenTestDriver driver = new ConfigBindingGenTestDriver(langVersion, assemblyReferences);
+            ConfigBindingGenTestDriver driver = new ConfigBindingGenTestDriver(langVersion, assemblyReferences, metadataReferences);
             return await driver.RunGeneratorAndUpdateCompilation(source);
         }
 
@@ -203,17 +210,57 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             return assemblies;
         }
 
-        public static byte[] CreateAssemblyImage(Compilation compilation)
+        private static void AssertCanCreateAssemblyImage(Compilation compilation)
         {
-            MemoryStream ms = new MemoryStream();
-            var emitResult = compilation.Emit(ms);
+            var emitResult = compilation.Emit(Stream.Null);
             if (!emitResult.Success)
             {
                 // Explicit failures to include in the test output.
                 string errorMessage = string.Join(Environment.NewLine, emitResult.Diagnostics.Select(d => d.ToString()));
                 throw new InvalidOperationException(errorMessage);
             }
-            return ms.ToArray();
+        }
+
+        private static byte[] CreateAssemblyImage(Compilation compilation)
+        {
+            using MemoryStream stream = new();
+            var emitResult = compilation.Emit(stream);
+            if (!emitResult.Success)
+            {
+                // Explicit failures to include in the test output.
+                string errorMessage = string.Join(Environment.NewLine, emitResult.Diagnostics.Select(d => d.ToString()));
+                throw new InvalidOperationException(errorMessage);
+            }
+            return stream.ToArray();
+        }
+
+        /// <summary>
+        /// Compiles the source-generated output to an in-memory assembly, invokes its Program.Main(),
+        /// and returns the value of the public static field named <paramref name="resultFieldName"/>.
+        /// Used to assert on real bound values rather than just that the generated code compiles,
+        /// since a generator can emit code that builds cleanly but binds the wrong data.
+        /// </summary>
+        private static object? LoadAndInvokeMain(Compilation compilation, string resultFieldName)
+        {
+#if NET
+            // Every test project shares the same assembly name ("test", from RoslynTestUtils.CreateTestProject),
+            // and AssemblyLoadContext.Default can't unload. If more than one theory case in a run reaches this
+            // method, loading the second image collides with the first under the identical identity. Give each
+            // load a unique name so they can coexist.
+            compilation = compilation.WithAssemblyName($"test_{Guid.NewGuid():N}");
+
+            byte[] image = CreateAssemblyImage(compilation);
+            Assembly assembly = AssemblyLoadContext.Default.LoadFromStream(new MemoryStream(image));
+
+            Type programType = assembly.GetType("Program")!;
+            programType.GetMethod("Main", BindingFlags.Public | BindingFlags.Static)!.Invoke(null, null);
+            return programType.GetField(resultFieldName, BindingFlags.Public | BindingFlags.Static)!.GetValue(null);
+#else
+            // Callers are gated with [ConditionalTheory/Fact(..., nameof(PlatformDetection.IsNetCore))],
+            // so this is never actually invoked on .NET Framework; the branch only exists so the file
+            // still compiles there (System.Runtime.Loader.AssemblyLoadContext isn't available on netfx).
+            throw new PlatformNotSupportedException();
+#endif
         }
     }
 }

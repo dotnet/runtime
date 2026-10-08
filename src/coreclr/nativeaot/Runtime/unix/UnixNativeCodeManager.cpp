@@ -22,6 +22,14 @@
 
 #include "eventtracebase.h"
 
+#if defined(TARGET_APPLE)
+#include <mach-o/compact_unwind_encoding.h>
+#endif // TARGET_APPLE
+
+#if defined(TARGET_ARM64)
+extern "C" void* PacStripPtr(void* ptr);
+#endif // TARGET_ARM64
+
 #define UBF_FUNC_KIND_MASK      0x03
 #define UBF_FUNC_KIND_ROOT      0x00
 #define UBF_FUNC_KIND_HANDLER   0x01
@@ -63,6 +71,160 @@ UnixNativeCodeManager::UnixNativeCodeManager(TADDR moduleBase,
 UnixNativeCodeManager::~UnixNativeCodeManager()
 {
 }
+
+#if defined(TARGET_ARM64)
+static size_t readULEB(const uint8_t *&p, const uint8_t *end)
+{
+    size_t result = 0;
+    unsigned shift = 0;
+    while (p < end)
+    {
+        uint8_t byte = *p++;
+        result |= size_t(byte & 0x7F) << shift;
+        if ((byte & 0x80) == 0) // clear top bit indicates the last by of the value
+            break;
+        shift += 7;
+    }
+    return result;
+}
+
+static ssize_t readSLEB(const uint8_t *&p, const uint8_t *end)
+{
+    ssize_t result = 0;
+    unsigned shift = 0;
+    uint8_t byte = 0;
+
+    while (p < end)
+    {
+        byte = *p++;
+        result |= ssize_t(byte & 0x7F) << shift;
+        shift += 7;
+        if ((byte & 0x80) == 0) // clear top bit indicates the last by of the value
+        {
+            break;
+        }
+    }
+
+    if ((shift < (sizeof(result) * 8)) && ((byte & 0x40) != 0))
+    {
+        result |= -((ssize_t)1 << shift);
+    }
+
+    return result;
+}
+
+static bool TryGetPacIsPacPresent(UnixNativeMethodInfo *pNativeMethodInfo, bool *pHasPac)
+{
+    *pHasPac = false;
+
+#if defined(TARGET_APPLE)
+    // PAC-enabled Apple ARM64 methods use DWARF to preserve negate_ra_state;
+    // compact unwind has no PAC state to parse.
+    if ((pNativeMethodInfo->format & UNWIND_ARM64_MODE_MASK) != UNWIND_ARM64_MODE_DWARF)
+    {
+        return true;
+    }
+#endif // TARGET_APPLE
+
+    const uint8_t* p = (const uint8_t*)pNativeMethodInfo->unwind_info;
+    uint32_t fdeLength = *dac_cast<PTR_uint32_t>((uint8_t*)p);
+    const uint8_t* end = p + fdeLength;
+    p += sizeof(uint32_t); // FDE length
+
+    if (*dac_cast<PTR_uint32_t>((uint8_t*)p) == 0)
+        return false;
+
+    p += sizeof(uint32_t); // CIE pointer
+    p += sizeof(uint32_t); // PC start
+    p += sizeof(uint32_t); // function length
+
+    size_t augmentationLength = readULEB(p, end);
+    if ((size_t)(end - p) < augmentationLength)
+        return false;
+    p += augmentationLength;
+
+    bool hasPac = false;
+
+    while (p < end)
+    {
+        uint8_t op = *p++;
+
+        if (op == DW_CFA_AARCH64_negate_ra_state)
+        {
+            hasPac = true;
+            continue;
+        }
+
+        if ((op & 0xC0) == DW_CFA_advance_loc)
+        {
+            continue;
+        }
+
+        if ((op & 0xC0) == DW_CFA_offset)
+        {
+            readULEB(p, end); // offset
+            continue;
+        }
+
+        switch (op)
+        {
+            case DW_CFA_nop:
+                break;
+
+            case DW_CFA_advance_loc1:
+                p += sizeof(uint8_t);
+                break;
+
+            case DW_CFA_advance_loc2:
+                p += sizeof(uint16_t);
+                break;
+
+            case DW_CFA_advance_loc4:
+                p += sizeof(uint32_t);
+                break;
+
+            case DW_CFA_offset_extended:
+                readULEB(p, end); // register
+                readULEB(p, end); // offset
+                break;
+
+            case DW_CFA_offset_extended_sf:
+                readULEB(p, end); // register
+                readSLEB(p, end); // offset
+                break;
+
+            case DW_CFA_def_cfa:
+                readULEB(p, end); // register
+                readULEB(p, end); // offset
+                break;
+
+            case DW_CFA_def_cfa_register:
+                readULEB(p, end); // register
+                break;
+
+            case DW_CFA_def_cfa_offset:
+                readULEB(p, end); // offset
+                break;
+
+            case DW_CFA_def_cfa_sf:
+                readULEB(p, end); // register
+                readSLEB(p, end); // offset
+                break;
+
+            case DW_CFA_def_cfa_offset_sf:
+                readSLEB(p, end); // offset
+                break;
+
+            default:
+                return false;
+        }
+    }
+
+    *pHasPac = hasPac;
+    return true;
+}
+
+#endif // TARGET_ARM64
 
 // Virtually unwind stack to the caller of the context specified by the REGDISPLAY
 bool UnixNativeCodeManager::VirtualUnwind(MethodInfo* pMethodInfo, REGDISPLAY* pRegisterSet)
@@ -111,10 +273,10 @@ bool UnixNativeCodeManager::FindMethodInfo(PTR_VOID        ControlPC,
     if ((unwindBlockFlags & UBF_FUNC_KIND_MASK) != UBF_FUNC_KIND_ROOT)
     {
         // Funclets just refer to the main function's blob
-        pMethodInfo->pMainLSDA = p + *dac_cast<PTR_int32_t>(p);
+        pMethodInfo->pMainLSDA = p + NativePrimitiveDecoder::PeekInt32(p);
         p += sizeof(int32_t);
 
-        pMethodInfo->pMethodStartAddress = dac_cast<PTR_VOID>(procInfo.start_ip - *dac_cast<PTR_int32_t>(p));
+        pMethodInfo->pMethodStartAddress = dac_cast<PTR_VOID>(procInfo.start_ip - NativePrimitiveDecoder::PeekInt32(p));
     }
     else
     {
@@ -364,6 +526,10 @@ bool UnixNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
         return false;
     }
 
+#if defined(TARGET_ARM64)
+    pRegisterSet->SetIP((PCODE)PacStripPtr((void*)pRegisterSet->GetIP()));
+#endif // TARGET_ARM64
+
     return true;
 }
 
@@ -501,7 +667,7 @@ static bool IsArmPrologInstruction(uint16_t* pInstr)
 
 #endif
 
-#if (defined(TARGET_APPLE) && defined(TARGET_ARM64)) || defined(TARGET_ARM)
+#if defined(TARGET_ARM64) || defined(TARGET_ARM)
 // checks for known prolog instructions generated by ILC and returns
 //  1 - in prolog
 //  0 - not in prolog
@@ -845,6 +1011,9 @@ int UnixNativeCodeManager::TrailingEpilogueInstructionsCount(MethodInfo * pMetho
 
 #elif defined(TARGET_ARM64)
 
+#define AUTIASP_INSTR 0xD50323BF
+#define AUTIBSP_INSTR 0xD50323FF
+
 // ldr with unsigned immediate
 // 1x11 1001 x1xx xxxx xxxx xxxx xxxx xxxx
 #define LDR_BITS1 0xB9400000
@@ -896,6 +1065,11 @@ int UnixNativeCodeManager::TrailingEpilogueInstructionsCount(MethodInfo * pMetho
         // Note: this includes RET, BRK, branches, calls, tailcalls, fences, etc...
         if ((instr & BEGS_MASK) == BEGS_BITS)
         {
+            // Scan past authentication instructions to find the FP/LR restore.
+            if (instr == AUTIASP_INSTR || instr == AUTIBSP_INSTR)
+            {
+                continue;
+            }
             // not in an epilogue
             break;
         }
@@ -1147,8 +1321,11 @@ int UnixNativeCodeManager::TrailingEpilogueInstructionsCount(MethodInfo * pMetho
 
 bool UnixNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodInfo,
                                                        REGDISPLAY *    pRegisterSet,       // in
-                                                       PTR_PTR_VOID *  ppvRetAddrLocation) // out
+                                                       PTR_PTR_VOID *  ppvRetAddrLocation, // out
+                                                       uintptr_t *     pSpForArm64PacSign) // out
 {
+    *pSpForArm64PacSign = 0;
+
     UnixNativeMethodInfo* pNativeMethodInfo = (UnixNativeMethodInfo*)pMethodInfo;
 
     PTR_uint8_t p = pNativeMethodInfo->pLSDA;
@@ -1176,7 +1353,8 @@ bool UnixNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
         // can't figure, possibly a breakpoint instruction
         return false;
     }
-    else if (epilogueInstructions > 0)
+
+    if (epilogueInstructions > 0)
     {
         *ppvRetAddrLocation = (PTR_PTR_VOID)(pRegisterSet->GetSP() + (sizeof(TADDR) * (epilogueInstructions - 1)));
         return true;
@@ -1201,7 +1379,6 @@ bool UnixNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
     // Unwind the current method context to the caller's context to get its stack pointer
     // and obtain the location of the return address on the stack
 #if defined(TARGET_AMD64)
-
     if (!VirtualUnwind(pMethodInfo, pRegisterSet))
     {
         return false;
@@ -1211,7 +1388,6 @@ bool UnixNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
     return true;
 
 #elif defined(TARGET_ARM64) || defined(TARGET_ARM) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-
     if ((unwindBlockFlags & UBF_FUNC_HAS_ASSOCIATED_DATA) != 0)
         p += sizeof(int32_t);
 
@@ -1235,6 +1411,14 @@ bool UnixNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
         return false;
     }
 
+#if defined(TARGET_ARM64)
+    bool hasPac;
+    if (!TryGetPacIsPacPresent(pNativeMethodInfo, &hasPac))
+    {
+        return false;
+    }
+#endif
+
     PTR_uintptr_t oldLocation = pRegisterSet->GetReturnAddressRegisterLocation();
     if (!VirtualUnwind(pMethodInfo, pRegisterSet))
     {
@@ -1251,8 +1435,15 @@ bool UnixNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
         return false;
     }
 
-    *ppvRetAddrLocation = (PTR_PTR_VOID)pRegisterSet->GetReturnAddressRegisterLocation();
+#if defined(TARGET_ARM64)
+    if (hasPac)
+    {
+        // Unwinding recovers the entry SP, which NativeAOT used to sign LR.
+        *pSpForArm64PacSign = pRegisterSet->GetSP();
+    }
+#endif
 
+    *ppvRetAddrLocation = (PTR_PTR_VOID)pRegisterSet->GetReturnAddressRegisterLocation();
     return true;
 #else
     return false;
@@ -1312,7 +1503,7 @@ bool UnixNativeCodeManager::EHEnumInit(MethodInfo * pMethodInfo, PTR_VOID * pMet
     *pMethodStartAddress = pNativeMethodInfo->pMethodStartAddress;
 
     pEnumState->pMethodStartAddress = dac_cast<PTR_uint8_t>(pNativeMethodInfo->pMethodStartAddress);
-    pEnumState->pEHInfo = dac_cast<PTR_uint8_t>(p + *dac_cast<PTR_int32_t>(p));
+    pEnumState->pEHInfo = dac_cast<PTR_uint8_t>(p + NativePrimitiveDecoder::PeekInt32(p));
     pEnumState->uClause = 0;
     pEnumState->nClauses = NativePrimitiveDecoder::ReadUnsigned(pEnumState->pEHInfo);
 
@@ -1414,7 +1605,7 @@ PTR_VOID UnixNativeCodeManager::GetAssociatedData(PTR_VOID ControlPC)
     if ((unwindBlockFlags & UBF_FUNC_HAS_ASSOCIATED_DATA) == 0)
         return NULL;
 
-    return dac_cast<PTR_VOID>(p + *dac_cast<PTR_int32_t>(p));
+    return dac_cast<PTR_VOID>(p + NativePrimitiveDecoder::PeekInt32(p));
 }
 
 extern "C" void RegisterCodeManager(ICodeManager * pCodeManager, PTR_VOID pvStartRange, uint32_t cbRange);

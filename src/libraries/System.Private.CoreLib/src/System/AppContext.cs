@@ -6,7 +6,9 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Tracing;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
+using System.Runtime.InteropServices;
 using System.Runtime.Loader;
 using System.Runtime.Versioning;
 using System.Threading;
@@ -41,12 +43,33 @@ namespace System
             if (s_dataStore == null)
                 return null;
 
-            object? data;
             lock (s_dataStore)
             {
-                s_dataStore.TryGetValue(name, out data);
+                if (s_dataStore.TryGetValue(name, out object? data))
+                    return data;
             }
-            return data;
+
+#if !NATIVEAOT
+            if (IsKnownHostProperty(name))
+            {
+                if (TryGetHostPropertyValue(name, out string? value))
+                {
+                    lock (s_dataStore)
+                    {
+                        if (s_dataStore.TryGetValue(name, out object? existing))
+                        {
+                            Debug.Assert(existing is string existingValue && existingValue == value);
+                            return existing;
+                        }
+
+                        s_dataStore[name] = value;
+                        return value;
+                    }
+                }
+            }
+#endif
+
+            return null;
         }
 
         /// <summary>
@@ -102,6 +125,47 @@ namespace System
                     catch
                     {
                     }
+                }
+            }
+        }
+
+        [ThreadStatic]
+        private static bool t_deliveringFirstChanceNotification;
+
+        private static void OnFirstChanceException(Exception e, object? sender)
+        {
+            if (FirstChanceException is EventHandler<FirstChanceExceptionEventArgs> handlers)
+            {
+                // Guard against reentrancy. Allocating the event args below or running a
+                // handler may itself throw (e.g. OutOfMemoryException in a low-memory
+                // situation). That exception would trigger another first-chance
+                // notification on this same thread, allocate again, throw again, and
+                // recurse until the stack overflows. Skip nested notifications to break
+                // the recursion.
+                if (t_deliveringFirstChanceNotification)
+                {
+                    return;
+                }
+
+                t_deliveringFirstChanceNotification = true;
+                try
+                {
+                    FirstChanceExceptionEventArgs args = new(e);
+
+                    foreach (EventHandler<FirstChanceExceptionEventArgs> handler in Delegate.EnumerateInvocationList(handlers))
+                    {
+                        try
+                        {
+                            handler(sender, args);
+                        }
+                        catch
+                        {
+                        }
+                    }
+                }
+                finally
+                {
+                    t_deliveringFirstChanceNotification = false;
                 }
             }
         }
@@ -166,6 +230,12 @@ namespace System
         }
 
 #if MONO
+        private static bool IsKnownHostProperty(string name)
+            => name == "TRUSTED_PLATFORM_ASSEMBLIES";
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern bool TryGetHostPropertyValue(string name, out string? value);
+
         internal static unsafe void Setup(char** pNames, uint* pNameLengths, char** pValues, uint* pValueLengths, int count)
         {
             Debug.Assert(s_dataStore == null, "s_dataStore is not expected to be inited before Setup is called");
@@ -176,13 +246,28 @@ namespace System
             }
         }
 #elif !NATIVEAOT
-        internal static unsafe void Setup(char** pNames, char** pValues, int count)
+        [UnmanagedCallersOnly]
+        internal static unsafe void Setup(char** pNames, char** pValues, int count, Exception* pException)
         {
-            Debug.Assert(s_dataStore == null, "s_dataStore is not expected to be inited before Setup is called");
-            s_dataStore = new Dictionary<string, object?>(count);
-            for (int i = 0; i < count; i++)
+            try
             {
-                s_dataStore.Add(new string(pNames[i]), new string(pValues[i]));
+                Debug.Assert(s_dataStore == null, "s_dataStore is not expected to be inited before Setup is called");
+                s_dataStore = new Dictionary<string, object?>(count);
+                for (int i = 0; i < count; i++)
+                {
+                    string name = new string(pNames[i]);
+
+                    // Avoid retaining a managed string copy of known host properties.
+                    // They will be retrieved if explicitly requested.
+                    if (IsKnownHostProperty(name))
+                        continue;
+
+                    s_dataStore.Add(name, new string(pValues[i]));
+                }
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
             }
         }
 #endif

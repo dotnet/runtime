@@ -79,6 +79,11 @@
 //
 // Possible enhancements:
 // * Allow fwd sub of "simple, cheap" trees when there's more than one use.
+//   PARTIAL: cheap reorderable address-of-local trees with up to four uses
+//   in the next statement (e.g. dup-spilled `&this.foo.bar` that feeds both
+//   `IND` and `STOREIND` for a compound assignment) are now handled below.
+//   See `fgIsCheapReorderableAddressTree` and the multi-use path in
+//   `fgForwardSubStatement`.
 // * Search more widely for the use.
 // * Use height/depth to avoid blowing morph's recursion, rather than tree size.
 // * Sub across a block boundary if successor block is unique, join-free,
@@ -90,6 +95,153 @@
 //   reordered. See if this offers any benefit.
 //
 //------------------------------------------------------------------------
+
+//------------------------------------------------------------------------
+// fgIsCheapReorderableAddressTree: Return true if `tree` is a small,
+//   reorderable address-of-local expression that is cheap to recompute
+//   and safe to clone into multiple use sites.
+//
+// Arguments:
+//    compiler - the compiler instance (for the chain-walk helper)
+//    tree     - candidate tree
+//
+// Returns:
+//    true if `tree` is a (possibly empty) chain of instance FIELD_ADDR
+//    nodes wrapping a LCL_VAR or LCL_ADDR of type BYREF/I_IMPL, with no
+//    side effects other than GTF_EXCEPT (the standard FIELD_ADDR null
+//    check). The zero-hop case (a bare LCL_VAR/LCL_ADDR address-of-local)
+//    is included.
+//
+// Remarks:
+//    Such trees morph into a single `ADD(base, constOffset)` per copy plus
+//    a NULLCHECK that assertion prop subsequently dedups. Duplicating them
+//    is essentially free at runtime and unblocks address-mode containment
+//    for the contained indirections downstream.
+//
+static bool fgIsCheapReorderableAddressTree(Compiler* compiler, GenTree* tree)
+{
+    if (!tree->TypeIs(TYP_BYREF, TYP_I_IMPL))
+    {
+        return false;
+    }
+
+    // Only allow GTF_EXCEPT side effects (from FIELD_ADDR null checks).
+    if ((tree->gtFlags & GTF_ALL_EFFECT & ~GTF_EXCEPT) != 0)
+    {
+        return false;
+    }
+
+    GenTree* base = compiler->gtPeelFieldAddrs(tree);
+    return base->OperIs(GT_LCL_VAR, GT_LCL_ADDR);
+}
+
+//------------------------------------------------------------------------
+// fgForwardSubMultiUse: substitute `fwdSubNode` at every use of `lclNum`
+//   in `nextStmt` (cloning for every site but the last).
+//
+// Arguments:
+//    nextStmt   - the consumer statement
+//    lclNum     - the local whose uses are to be replaced
+//    fwdSubNode - the tree to substitute (must be a side-effect-free or
+//                 only-GTF_EXCEPT cheap address expression as established
+//                 by `fgIsCheapReorderableAddressTree`)
+//
+// Returns:
+//    true on success. False indicates the caller should fall back to a
+//    no-op (the IR has not been modified).
+//
+// Remarks:
+//    Re-sequences the locals list of `nextStmt`, updates side effects, and
+//    conservatively clears last-use bits on locals inside the inserted
+//    clones (they may have been marked dead in the original def position
+//    but cannot be considered dead once duplicated across several uses).
+//
+bool Compiler::fgForwardSubMultiUse(Statement* nextStmt, unsigned lclNum, GenTree* fwdSubNode)
+{
+    assert(fgIsCheapReorderableAddressTree(this, fwdSubNode));
+
+    // Cap the number of clones we'll make. The targeted patterns (e.g. the
+    // C# compiler's `obj.struct.field op= rhs` lowering) hit exactly two uses.
+    // Anything beyond a handful starts to look more like a code-size hazard
+    // than an address-mode containment win.
+    constexpr int MaxUses = 4;
+
+    struct CollectVisitor : public GenTreeVisitor<CollectVisitor>
+    {
+        enum
+        {
+            DoPreOrder        = true,
+            UseExecutionOrder = true,
+        };
+
+        unsigned              m_lclNum;
+        ArrayStack<GenTree**> m_useSlots;
+        bool                  m_bail = false;
+
+        CollectVisitor(Compiler* comp, unsigned lclNum)
+            : GenTreeVisitor<CollectVisitor>(comp)
+            , m_lclNum(lclNum)
+            , m_useSlots(comp->getAllocator(CMK_Generic))
+        {
+        }
+
+        fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+        {
+            GenTree* node = *use;
+            if (node->OperIs(GT_LCL_VAR) && (node->AsLclVarCommon()->GetLclNum() == m_lclNum))
+            {
+                // Mirror the single-use ForwardSubVisitor check: substituting a
+                // complex tree (e.g. FIELD_ADDR) into an indirect-call control
+                // expression would later trip fgGetStubAddrArg, which calls
+                // gtClone(complexOK=true) and cannot handle FIELD_ADDR. Bail
+                // out of the multi-use path if we hit such a context.
+                if ((user != nullptr) && user->IsCall())
+                {
+                    GenTreeCall* const parentCall = user->AsCall();
+                    if ((parentCall->gtCallType == CT_INDIRECT) && (parentCall->gtControlExpr == node))
+                    {
+                        m_bail = true;
+                        return fgWalkResult::WALK_ABORT;
+                    }
+                }
+                m_useSlots.Push(use);
+            }
+            return fgWalkResult::WALK_CONTINUE;
+        }
+    };
+
+    CollectVisitor v(this, lclNum);
+    v.WalkTree(nextStmt->GetRootNodePointer(), nullptr);
+
+    if (v.m_bail)
+    {
+        return false;
+    }
+
+    int const useCount = v.m_useSlots.Height();
+    if ((useCount < 2) || (useCount > MaxUses))
+    {
+        return false;
+    }
+
+    int const lastIdx = useCount - 1;
+    for (int i = 0; i < lastIdx; i++)
+    {
+        *v.m_useSlots.BottomRef(i) = gtCloneExpr(fwdSubNode);
+    }
+    *v.m_useSlots.BottomRef(lastIdx) = fwdSubNode;
+
+    GenTreeLclVarCommon* const lastUseLcl = gtPeelFieldAddrs(fwdSubNode)->AsLclVarCommon();
+    fgSequenceLocals(nextStmt);
+
+    // The inserted subtree has exactly one local node, which serves as both the
+    // start and end of the inserted locals segment. This call walks backward
+    // from this point, properly adjusting any earlier clone and promoted parent flags.
+    fgForwardSubUpdateLiveness(lastUseLcl, lastUseLcl);
+
+    gtUpdateStmtSideEffects(nextStmt);
+    return true;
+}
 
 //------------------------------------------------------------------------
 // fgForwardSub: run forward substitution in this method
@@ -226,10 +378,10 @@ public:
                 if ((parent != nullptr) && parent->IsCall())
                 {
                     GenTreeCall* const parentCall = parent->AsCall();
-                    isCallTarget = (parentCall->gtCallType == CT_INDIRECT) && (parentCall->gtCallAddr == node);
+                    isCallTarget = (parentCall->gtCallType == CT_INDIRECT) && (parentCall->gtControlExpr == node);
                 }
 
-                if (!isCallTarget && IsLastUse(node->AsLclVar()))
+                if (!isCallTarget && IsLastUse(node->gtFlags))
                 {
                     m_node          = node;
                     m_use           = use;
@@ -245,7 +397,7 @@ public:
         if (node->OperIsLocal())
         {
 #ifdef DEBUG
-            if (IsUse(node->AsLclVarCommon()))
+            if (IsUse(node->AsLclVarCommon()->GetLclNum()))
             {
                 m_useCount++;
             }
@@ -257,16 +409,13 @@ public:
         }
 
         m_accumulatedFlags |= (node->gtFlags & GTF_GLOB_EFFECT);
-        if ((node->gtFlags & GTF_CALL) != 0)
+        if ((node->gtFlags & GTF_EXCEPT) != 0)
         {
-            m_accumulatedExceptions = ExceptionSetFlags::All;
-        }
-        else if ((node->gtFlags & GTF_EXCEPT) != 0)
-        {
-            // We can never reorder in the face of different exception types,
-            // so stop calling 'OperExceptions' once we've seen more than one
-            // different exception type.
-            if (genCountBits(static_cast<uint32_t>(m_accumulatedExceptions)) <= 1)
+            // We can never reorder in the face of different or unknown
+            // exception types, so stop calling 'OperExceptions' once we've
+            // seen more than one different exception type.
+            if ((genCountBits(static_cast<uint32_t>(m_accumulatedExceptions)) <= 1) &&
+                ((m_accumulatedExceptions & ExceptionSetFlags::UnknownException) == ExceptionSetFlags::None))
             {
                 m_accumulatedExceptions |= node->OperExceptions(m_compiler);
             }
@@ -334,14 +483,13 @@ public:
     // while taking promotion into account.
     //
     // Arguments:
-    //    lcl - the local
+    //    lclNum - the local number
     //
     // Returns:
     //    true if the node is a use of the local candidate or any of its fields.
     //
-    bool IsUse(GenTreeLclVarCommon* lcl)
+    bool IsUse(unsigned lclNum)
     {
-        unsigned lclNum = lcl->GetLclNum();
         if ((lclNum == m_lclNum) || (lclNum == m_parentLclNum))
         {
             return true;
@@ -352,22 +500,19 @@ public:
     }
 
     //------------------------------------------------------------------------
-    // IsLastUse: Check if the local node is a last use. The local node is expected
-    // to be a GT_LCL_VAR of the local being forward subbed.
+    // IsLastUse: Check if a read of the candidate local is a last use.
     //
     // Arguments:
-    //    lcl - the GT_LCL_VAR of the current local.
+    //    flags - Flags of the local occurrence.
     //
     // Returns:
     //    true if the expression is a last use of the local; otherwise false.
     //
-    bool IsLastUse(GenTreeLclVar* lcl)
+    bool IsLastUse(GenTreeFlags flags)
     {
-        assert(lcl->OperIs(GT_LCL_VAR) && (lcl->GetLclNum() == m_lclNum));
-
-        LclVarDsc*   dsc        = m_compiler->lvaGetDesc(lcl);
+        LclVarDsc*   dsc        = m_compiler->lvaGetDesc(m_lclNum);
         GenTreeFlags deathFlags = dsc->FullDeathFlags();
-        return (lcl->gtFlags & deathFlags) == deathFlags;
+        return (flags & deathFlags) == deathFlags;
     }
 
 private:
@@ -536,26 +681,42 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     //
     Statement* const nextStmt = stmt->GetNextStmt();
 
+    // Allow multi-use forward sub of cheap, reorderable address trees (e.g. dup-spilled
+    // `&this.struct.field`). C# compound assignments on struct fields produce two such
+    // uses in the consumer statement, and leaving the temp in place blocks address-mode
+    // containment downstream. See `fgIsCheapReorderableAddressTree`.
+    bool const isCheapAddressTree = fgIsCheapReorderableAddressTree(this, fwdSubNode);
+
     ForwardSubVisitor fsv(this, lclNum);
     // Do a quick scan through the linked locals list to see if there is a last use.
-    bool found = false;
-    for (GenTreeLclVarCommon* lcl : nextStmt->LocalsTreeList())
-    {
-        if (lcl->OperIs(GT_LCL_VAR) && (lcl->GetLclNum() == lclNum))
+    bool found    = false;
+    bool multiUse = false;
+    nextStmt->VisitLogicalLocalOccurrencesViaLocalsTreeList([&](const auto& occurrence) {
+        GenTree* lcl = occurrence.GetNode();
+        if (lcl->OperIs(GT_LCL_VAR) && (occurrence.GetLclNum() == lclNum))
         {
-            if (fsv.IsLastUse(lcl->AsLclVar()))
+            if (fsv.IsLastUse(occurrence.GetFlags()))
             {
                 found = true;
-                break;
+                return GenTree::VisitResult::Abort;
+            }
+
+            // Non-last direct use of the candidate local. Tolerate it only when we
+            // intend to clone the substitution tree at every site.
+            if (isCheapAddressTree)
+            {
+                multiUse = true;
+                return GenTree::VisitResult::Continue;
             }
         }
 
-        if (fsv.IsUse(lcl))
+        if (fsv.IsUse(occurrence.GetLclNum()))
         {
             JITDUMP(" next stmt has non-last use\n");
-            return false;
+            return GenTree::VisitResult::Abort;
         }
-    }
+        return GenTree::VisitResult::Continue;
+    });
 
     if (!found)
     {
@@ -694,9 +855,10 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
         if ((fsv.GetFlags() & GTF_EXCEPT) != 0)
         {
             assert(fsv.GetExceptions() != ExceptionSetFlags::None);
-            if (genCountBits(static_cast<uint32_t>(fsv.GetExceptions())) > 1)
+            if ((genCountBits(static_cast<uint32_t>(fsv.GetExceptions())) > 1) ||
+                (((fsv.GetExceptions() & ExceptionSetFlags::UnknownException) != ExceptionSetFlags::None)))
             {
-                JITDUMP(" cannot reorder different thrown exceptions\n");
+                JITDUMP(" cannot reorder different/unknown thrown exceptions\n");
                 return false;
             }
 
@@ -791,6 +953,19 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
         dstVarDsc->SetIsMultiRegDest();
     }
 
+    // Avoid forward substituting promoted locals if they are not DNER.
+    // This would require DNER'ing for many cases where the consumer
+    // does not support whole-local uses, such as GT_FIELD_LIST.
+    if (fwdSubNode->OperIs(GT_LCL_VAR) && varTypeIsSIMD(fwdSubNode))
+    {
+        LclVarDsc* const fwdSubVarDsc = lvaGetDesc(fwdSubNode->AsLclVar());
+        if (fwdSubVarDsc->lvPromoted && !fwdSubVarDsc->lvDoNotEnregister)
+        {
+            JITDUMP(" promoted SIMD lcl var\n");
+            return false;
+        }
+    }
+
     // If a method returns a multi-reg type, only forward sub locals,
     // and ensure the local and operand have the required markup.
     // (see eg impFixupStructReturnType).
@@ -849,12 +1024,35 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     //
     if (varTypeIsSmall(varDsc) && fgCastNeeded(fwdSubNode, varDsc->TypeGet()))
     {
+        // 32 bit targets can require a cast on trees that look like cheap address
+        // trees, since TYP_INT is used both for address expressions and upcasts
+        // from small types. Bail here instead of passing a CAST node to fgForwardSubMultiUse
+        if (multiUse)
+        {
+            JITDUMP(" multi-use sub needs a cast for small-typed local\n");
+            return false;
+        }
+
         JITDUMP(" [adding cast for small-typed local]");
         fwdSubNode = gtNewCastNode(TYP_INT, fwdSubNode, false, varDsc->TypeGet());
     }
 
     // Looks good, forward sub!
     //
+    if (multiUse)
+    {
+        if (!fgForwardSubMultiUse(nextStmt, lclNum, fwdSubNode))
+        {
+            JITDUMP(" multi-use sub failed (count out of range or indirect-call context)\n");
+            return false;
+        }
+
+        JITDUMP(" -- multi-use fwd subbing [%06u]; new next stmt is\n", dspTreeID(fwdSubNode));
+        DISPSTMT(nextStmt);
+
+        return true;
+    }
+
     GenTree**            use    = fsv.GetUse();
     GenTreeLclVarCommon* useLcl = (*use)->AsLclVarCommon();
     *use                        = fwdSubNode;
@@ -863,7 +1061,7 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     // replace the use of it with the rest from the statement.
     assert(defNode->gtNext == nullptr);
 
-    GenTreeLclVarCommon* firstLcl = *stmt->LocalsTreeList().begin();
+    GenTree* firstLcl = *stmt->LocalsTreeList().begin();
 
     if (firstLcl == defNode)
     {
@@ -871,7 +1069,7 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     }
     else
     {
-        nextStmt->LocalsTreeList().Replace(useLcl, useLcl, firstLcl, defNode->gtPrev->AsLclVarCommon());
+        nextStmt->LocalsTreeList().Replace(useLcl, useLcl, firstLcl, defNode->gtPrev);
 
         fgForwardSubUpdateLiveness(firstLcl, defNode->gtPrev);
     }
@@ -910,14 +1108,14 @@ bool Compiler::fgForwardSubHasStoreInterference(Statement* defStmt, Statement* n
 
     GenTreeLclVarCommon* defNode = defStmt->GetRootNode()->AsLclVarCommon();
 
-    for (GenTreeLclVarCommon* defStmtLcl : defStmt->LocalsTreeList())
-    {
-        if (defStmtLcl == defNode)
+    bool interferes = false;
+    defStmt->VisitLogicalLocalOccurrencesViaLocalsTreeList([&](const auto& defOccurrence) {
+        if (defOccurrence.GetNode() == defNode)
         {
-            break;
+            return GenTree::VisitResult::Abort;
         }
 
-        unsigned   defStmtLclNum       = defStmtLcl->GetLclNum();
+        unsigned   defStmtLclNum       = defOccurrence.GetLclNum();
         LclVarDsc* defStmtLclDsc       = lvaGetDesc(defStmtLclNum);
         unsigned   defStmtParentLclNum = BAD_VAR_NUM;
         if (defStmtLclDsc->lvIsStructField)
@@ -925,29 +1123,31 @@ bool Compiler::fgForwardSubHasStoreInterference(Statement* defStmt, Statement* n
             defStmtParentLclNum = defStmtLclDsc->lvParentLcl;
         }
 
-        for (GenTreeLclVarCommon* useStmtLcl : nextStmt->LocalsTreeList())
-        {
-            if (useStmtLcl == nextStmtUse)
+        nextStmt->VisitLogicalLocalOccurrencesViaLocalsTreeList([&](const auto& useOccurrence) {
+            if (useOccurrence.GetNode() == nextStmtUse)
             {
-                break;
+                return GenTree::VisitResult::Abort;
             }
 
-            if (!useStmtLcl->OperIsLocalStore())
+            if (!useOccurrence.GetNode()->OperIsStore())
             {
-                continue;
+                return GenTree::VisitResult::Continue;
             }
 
             // If the next statement has a store earlier than the use and that
             // store affects a local on the RHS of the forward sub candidate,
             // then we have interference.
-            if ((useStmtLcl->GetLclNum() == defStmtLclNum) || (useStmtLcl->GetLclNum() == defStmtParentLclNum))
+            if ((useOccurrence.GetLclNum() == defStmtLclNum) || (useOccurrence.GetLclNum() == defStmtParentLclNum))
             {
-                return true;
+                interferes = true;
+                return GenTree::VisitResult::Abort;
             }
-        }
-    }
+            return GenTree::VisitResult::Continue;
+        });
+        return interferes ? GenTree::VisitResult::Abort : GenTree::VisitResult::Continue;
+    });
 
-    return false;
+    return interferes;
 }
 
 //------------------------------------------------------------------------

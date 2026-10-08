@@ -4,11 +4,15 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.ExceptionServices;
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Options;
 
 namespace Microsoft.Extensions.Options
 {
-    internal sealed class StartupValidator : IStartupValidator
+#pragma warning disable SYSLIB0066 // IStartupValidator is obsolete but retained for compatibility.
+    internal sealed class StartupValidator : IStartupValidator, IAsyncStartupValidator
+#pragma warning restore SYSLIB0066
     {
         private readonly StartupValidatorOptions _validatorOptions;
 
@@ -33,6 +37,11 @@ namespace Microsoft.Extensions.Options
                     exceptions ??= new();
                     exceptions.Add(ex);
                 }
+                catch (Exception ex)
+                {
+                    (exceptions ??= new()).Add(ex);
+                    break;
+                }
             }
 
             if (exceptions != null)
@@ -46,6 +55,46 @@ namespace Microsoft.Extensions.Options
                 if (exceptions.Count > 1)
                 {
                     // Aggregate if we have many errors
+                    throw new AggregateException(exceptions);
+                }
+            }
+        }
+
+        public async Task ValidateAsync(CancellationToken cancellationToken = default)
+        {
+            List<Exception>? exceptions = null;
+
+            foreach (Func<CancellationToken, Task> asyncValidator in _validatorOptions._asyncValidators.Values)
+            {
+                try
+                {
+                    await asyncValidator(cancellationToken).ConfigureAwait(false);
+                }
+                catch (OptionsValidationException ex)
+                {
+                    exceptions ??= new();
+                    exceptions.Add(ex);
+                }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    (exceptions ??= new()).Add(ex);
+                    break;
+                }
+            }
+
+            if (exceptions is not null)
+            {
+                if (exceptions.Count == 1)
+                {
+                    ExceptionDispatchInfo.Capture(exceptions[0]).Throw();
+                }
+
+                if (exceptions.Count > 1)
+                {
                     throw new AggregateException(exceptions);
                 }
             }

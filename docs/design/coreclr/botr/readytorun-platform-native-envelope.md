@@ -13,14 +13,52 @@ The tentative high-level design is outlined below. As we implement this support,
 ## crossgen2: producing Mach-O object files
 
 Mach‑O support will only be supported for composite ReadyToRun when the target OS is macOS. It will be opt-in via a new `crossgen2` flag:
+
 - `--obj-format macho`
 
 `crossgen2` will:
-- Produce a Mach-O object file as the composite R2R image with the `RTR_HEADER` export for the `READYTORUN_HEADER`.
+
+- Produce a Mach-O object file as the composite R2R image with the `RTR_HEADER` export for the `READYTORUN_HEADER`. The export symbol name defaults to `RTR_HEADER` but can be overridden with the `--rtr-header-symbol-name` option (see below).
 - Mark each input IL assembly as a component R2R assembly: `READYTORUN_FLAG_COMPONENT`.
 - Mark each input IL assembly with a new flag indicating that the associated composite image is in the platform-native format: `READYTORUN_FLAG_PLATFORM_NATIVE_IMAGE`
 
-`crossgen2` does not produce the final shared library. A separate SDK / build linking step must preserve the `RTR_HEADER` export in the final `dylib`.
+`crossgen2` does not produce the final shared library. A separate SDK / build linking step must preserve the `RTR_HEADER` export (or the custom name if `--rtr-header-symbol-name` was used) in the final `dylib`.
+
+### Customizing the RTR_HEADER symbol name
+
+The `crossgen2` `--rtr-header-symbol-name <name>` option overrides the exported symbol name for the `READYTORUN_HEADER`. This is intended for custom hosts that directly link against multiple R2R images — rather than loading them dynamically via `dlopen` or equivalent — where each image needs a distinct export symbol name to avoid collisions. The runtime or host must then use the matching custom name when locating the header.
+
+### Mach-O Emitter Decisions
+
+There's a few cases in the R2R format that are not natively represented in the Mach-O format that have to be emulated. This section will describe some of the design decisions for the Mach-O R2R format.
+
+#### Sections
+
+
+Data moved out of `__TEXT,__text`:
+
+- Precompiled managed code has been moved into `__TEXT,__managedcode`. `__TEXT,__text` gets special treatment by the linker and `__TEXT,__managedcode` matches NativeAOT.
+- Read-only data such as jump tables, CLR metadata, Win32 Resources, managed unwind info, gc info, and the R2R headers are moved to `__TEXT,__const`
+
+Data that stays in the corresponding locations as the PE envelope:
+
+- Read-write data, such as fixup tables: `__DATA,__data`
+- Import thunks: `__TEXT,__text`
+
+#### Relocations
+
+Symbol ranges are represented differently in Mach-O than other platforms. Apple linkers have issues when multiple symbols are defined at the same location. Additionally, the Mach format natively supports a "subtractor" reloc to represent the distance between two symbols. As a result, we can represent the start of the symbol range as the start symbol of the range. We can represent the size of the range we can represent as "end symbol location - start symbol location + end symbol size".
+
+#### Base Symbol and RVAs
+
+The R2R format, like the PE format, is heavily based around having RVAs emitted into the image that can be added to the base symbol of the image. The COFF object file format natively supports such a concept, and the PE format uses such a concept in the PE header. However, other formats do not natively support such a concept.
+
+The Apple linker does provide a base symbol for the Mach format, but the base symbol depends on the output type, generally in the form `__mh_<output>_header`. For dylibs, the symbol is `__mh_dylib_header`. This symbol is located at the address returned by `dlinfo` and `dladdr` for the base address. It also points to the Mach header, which can be used to find the size of the image to bound reads of the R2R data.
+
+As a result, we can emulate this support in the Mach format with ease:
+
+1. The base symbol that we use in the object writer will be `__mh_dylib_header`.
+2. To emit the distance from the base symbol, we will use a subtractor relocation to represent "symbol location - `__mh_dylib_header` location".
 
 ## Runtime: consuming a platform-native R2R image
 

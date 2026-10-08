@@ -20,8 +20,8 @@ namespace System.ComponentModel.Composition
         private static readonly MethodInfo _createStronglyTypedLazyOfT = typeof(ExportServices).GetMethod("CreateStronglyTypedLazyOfT", BindingFlags.NonPublic | BindingFlags.Static)!;
         private static readonly MethodInfo _createSemiStronglyTypedLazy = typeof(ExportServices).GetMethod("CreateSemiStronglyTypedLazy", BindingFlags.NonPublic | BindingFlags.Static)!;
 
-        internal static readonly Type DefaultMetadataViewType = typeof(IDictionary<string, object>);
-        internal static readonly Type DefaultExportedValueType = typeof(object);
+        internal static Type DefaultMetadataViewType => typeof(IDictionary<string, object>);
+        internal static Type DefaultExportedValueType => typeof(object);
 
         internal static bool IsDefaultMetadataViewType(Type metadataViewType)
         {
@@ -49,11 +49,11 @@ namespace System.ComponentModel.Composition
             MethodInfo genericMethod;
             if (metadataViewType != null)
             {
-                genericMethod = _createStronglyTypedLazyOfTM.MakeGenericMethod(exportType ?? ExportServices.DefaultExportedValueType, metadataViewType);
+                genericMethod = _createStronglyTypedLazyOfTM.MakeGenericMethod(exportType ?? DefaultExportedValueType, metadataViewType);
             }
             else
             {
-                genericMethod = _createStronglyTypedLazyOfT.MakeGenericMethod(exportType ?? ExportServices.DefaultExportedValueType);
+                genericMethod = _createStronglyTypedLazyOfT.MakeGenericMethod(exportType ?? DefaultExportedValueType);
             }
 
             ArgumentNullException.ThrowIfNull(genericMethod);
@@ -64,8 +64,8 @@ namespace System.ComponentModel.Composition
         internal static Func<Export, Lazy<object, object>> CreateSemiStronglyTypedLazyFactory(Type? exportType, Type? metadataViewType)
         {
             MethodInfo genericMethod = _createSemiStronglyTypedLazy.MakeGenericMethod(
-                exportType ?? ExportServices.DefaultExportedValueType,
-                metadataViewType ?? ExportServices.DefaultMetadataViewType);
+                exportType ?? DefaultExportedValueType,
+                metadataViewType ?? DefaultMetadataViewType);
             ArgumentNullException.ThrowIfNull(genericMethod);
             return (Func<Export, Lazy<object, object>>)Delegate.CreateDelegate(typeof(Func<Export, Lazy<object, object>>), genericMethod);
         }

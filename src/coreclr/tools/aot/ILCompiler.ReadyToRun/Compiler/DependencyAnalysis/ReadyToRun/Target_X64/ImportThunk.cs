@@ -19,10 +19,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             switch (_thunkKind)
             {
-                case Kind.Eager:
+                case ImportThunkKind.Eager:
                     break;
 
-                case Kind.DelayLoadHelper:
+                case ImportThunkKind.DelayLoadHelper:
                     // xor eax, eax
                     instructionEncoder.EmitZeroReg(Register.RAX);
 
@@ -37,7 +37,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                     break;
 
-                case Kind.DelayLoadHelperWithExistingIndirectionCell:
+                case ImportThunkKind.DelayLoadHelperWithExistingIndirectionCell:
                     // Indirection cell is already in rax which will be first arg. Used for fast tailcalls.
 
                     if (!relocsOnly)
@@ -51,7 +51,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                     break;
 
-                case Kind.VirtualStubDispatch:
+                case ImportThunkKind.VirtualStubDispatch:
                     // mov rax, r11 - this is the most general case as the value of R11 also propagates
                     // to the new method after the indirection cell has been updated so the cell content
                     // can be repeatedly modified as needed during virtual / interface dispatch.
@@ -68,7 +68,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                     break;
 
-                case Kind.Lazy:
+                case ImportThunkKind.Lazy:
                     instructionEncoder.EmitMOV(factory.Target.OperatingSystem == TargetOS.Windows ? Register.RDX : Register.RSI, factory.ModuleImport);
 
                     break;

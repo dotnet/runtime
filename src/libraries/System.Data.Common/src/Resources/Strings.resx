@@ -171,7 +171,7 @@
   <data name="DataColumns_Add1" xml:space="preserve"><value>Column '{0}' already belongs to this DataTable.</value></data>
   <data name="DataColumns_Add2" xml:space="preserve"><value>Column '{0}' already belongs to another DataTable.</value></data>
   <data name="DataColumns_Add3" xml:space="preserve"><value>Cannot have more than one SimpleContent columns in a DataTable.</value></data>
-  <data name="DataColumns_Add4" xml:space="preserve"><value>Cannot add a SimpleContent column to a table containing element columns or nested relations.</value></data>
+  <data name="DataColumns_Add4" xml:space="preserve"><value>Cannot add a SimpleContent column '{0}' to a table containing element columns or nested relations.</value></data>
   <data name="DataColumns_AddDuplicate" xml:space="preserve"><value>A column named '{0}' already belongs to this DataTable.</value></data>
   <data name="DataColumns_AddDuplicate2" xml:space="preserve"><value>Cannot add a column named '{0}': a nested table with the same name already belongs to this DataTable.</value></data>
   <data name="DataColumns_AddDuplicate3" xml:space="preserve"><value>A column named '{0}' already belongs to this DataTable: cannot set a nested table name to the same name.</value></data>
@@ -193,7 +193,7 @@
   <data name="DataColumn_UniqueAndExpression" xml:space="preserve"><value>Cannot change Unique property for the expression column.</value></data>
   <data name="DataColumn_ExpressionAndUnique" xml:space="preserve"><value>Cannot create an expression on a column that has AutoIncrement or Unique.</value></data>
   <data name="DataColumn_ExpressionAndReadOnly" xml:space="preserve"><value>Cannot set expression because column cannot be made ReadOnly.</value></data>
-  <data name="DataColumn_ExpressionAndConstraint" xml:space="preserve"><value>Cannot set Expression property on column {0}, because it is a part of a constraint.</value></data>
+  <data name="DataColumn_ExpressionAndConstraint" xml:space="preserve"><value>Cannot set Expression property on column {0}, because it is a part of constraint '{1}'.</value></data>
   <data name="DataColumn_ExpressionInConstraint" xml:space="preserve"><value>Cannot create a constraint based on Expression column {0}.</value></data>
   <data name="DataColumn_ExpressionCircular" xml:space="preserve"><value>Cannot set Expression property due to circular reference in the expression.</value></data>
   <data name="DataColumn_NullKeyValues" xml:space="preserve"><value>Column '{0}' has null values in it.</value></data>
@@ -449,7 +449,7 @@
   <data name="ADP_MissingDataReaderFieldType" xml:space="preserve"><value>DataReader.GetFieldType({0}) returned null.</value></data>
   <data name="ADP_OnlyOneTableForStartRecordOrMaxRecords" xml:space="preserve"><value>Only specify one item in the dataTables array when using non-zero values for startRecords or maxRecords.</value></data>
   <data name="ADP_UpdateRequiresSourceTable" xml:space="preserve"><value>Update unable to find TableMapping['{0}'] or DataTable '{0}'.</value></data>
-  <data name="ADP_UpdateRequiresSourceTableName" xml:space="preserve"><value>Update: expected a non-empty SourceTable name.</value></data>
+  <data name="ADP_UpdateRequiresSourceTableName" xml:space="preserve"><value>Update: expected a non-empty SourceTable name. Table: '{0}'.</value></data>
   <data name="ADP_UpdateRequiresCommandClone" xml:space="preserve"><value>Update requires the command clone to be valid.</value></data>
   <data name="ADP_UpdateRequiresCommandSelect" xml:space="preserve"><value>Auto SQL generation during Update requires a valid SelectCommand.</value></data>
   <data name="ADP_UpdateRequiresCommandInsert" xml:space="preserve"><value>Update requires a valid InsertCommand when passed DataRow collection with new rows.</value></data>

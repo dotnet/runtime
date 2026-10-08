@@ -12,6 +12,7 @@
 
 #ifndef TARGET_WINDOWS
 #define __stdcall
+#define __cdecl
 #endif
 
 // typedef for shared lib exported methods
@@ -52,7 +53,7 @@ int main(int argc, char* argv[])
     return __managed__MainFunc(argc, argv);
 }
 
-extern "C" const char* __stdcall __asan_default_options()
+extern "C" const char* __cdecl __asan_default_options()
 {
     // NativeAOT is not designed to be unloadable, so we'll leak a few allocations from the shared library.
     // Disable leak detection as we don't care about these leaks as of now.

@@ -335,43 +335,8 @@ namespace System.Security.Cryptography
             return And(_mldsa.VerifyData(M_prime, mldsaSig, AlgorithmDetails.Label), _componentAlgorithm.VerifyData(M_prime, tradSig));
         }
 
-        protected override bool TryExportPkcs8PrivateKeyCore(Span<byte> destination, out int bytesWritten)
-        {
-            AsnWriter? writer = null;
-
-            try
-            {
-                using (CryptoPoolLease lease = CryptoPoolLease.Rent(Algorithm.MaxPrivateKeySizeInBytes))
-                {
-                    int privateKeySize = ExportCompositeMLDsaPrivateKeyCore(lease.Span);
-
-                    // Add some overhead for the ASN.1 structure.
-                    int initialCapacity = 32 + privateKeySize;
-
-                    writer = new AsnWriter(AsnEncodingRules.DER, initialCapacity);
-
-                    using (writer.PushSequence())
-                    {
-                        writer.WriteInteger(0); // Version
-
-                        using (writer.PushSequence())
-                        {
-                            writer.WriteObjectIdentifier(Algorithm.Oid);
-                        }
-
-                        writer.WriteOctetString(lease.Span.Slice(0, privateKeySize));
-                    }
-
-                    Debug.Assert(writer.GetEncodedLength() <= initialCapacity);
-                }
-
-                return writer.TryEncode(destination, out bytesWritten);
-            }
-            finally
-            {
-                writer?.Reset();
-            }
-        }
+        protected override bool TryExportPkcs8PrivateKeyCore(Span<byte> destination, out int bytesWritten) =>
+            TryExportPkcs8FromExportedPrivateKey(destination, out bytesWritten);
 
         protected override int ExportCompositeMLDsaPublicKeyCore(Span<byte> destination)
         {

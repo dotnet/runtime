@@ -7,6 +7,7 @@ internal static partial class Interop
 {
     internal static partial class Secur32
     {
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.Secur32, SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         internal static partial BOOLEAN GetUserNameExW(int NameFormat, ref char lpNameBuffer, ref uint lpnSize);
 

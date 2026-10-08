@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- On NativeAOT a non-Exception thrown after a suspension point is not surfaced
+         as a RuntimeWrappedException; it terminates the process instead of faulting the
+         Task. Blocked on NativeAOT pending https://github.com/dotnet/runtime/issues/69919. -->
+    <DisableProjectBuild Condition="'$(TestBuildMode)' == 'nativeaot'">true</DisableProjectBuild>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildProjectName).cs" />
+    <ProjectReference Include="NonExceptionThrower.ilproj" />
+    <ProjectReference Include="NoWrapThrowers.csproj" />
+  </ItemGroup>
+</Project>

@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <errno.h>
 #include <cwchar>
+#include <algorithm>
 #include <sal.h>
 #include "config.h"
 #include <pthread.h>
@@ -28,6 +29,7 @@
 #include "RhConfig.h"
 
 #include <unistd.h>
+#include <minipal/cpucount.h>
 #include <sched.h>
 #include <sys/mman.h>
 #include <sys/types.h>
@@ -50,6 +52,10 @@
 #endif
 
 #if HAVE_PTHREAD_GETTHREADID_NP
+#include <pthread_np.h>
+#endif
+
+#if defined(__OpenBSD__)
 #include <pthread_np.h>
 #endif
 
@@ -77,17 +83,6 @@ using std::nullptr_t;
 #define PAGE_READWRITE          0x04
 #define PAGE_EXECUTE_READ       0x20
 #define PAGE_EXECUTE_READWRITE  0x40
-
-#define WAIT_OBJECT_0           0
-#define WAIT_TIMEOUT            258
-#define WAIT_FAILED             0xFFFFFFFF
-
-static const int tccSecondsToMilliSeconds = 1000;
-static const int tccSecondsToMicroSeconds = 1000000;
-static const int tccSecondsToNanoSeconds = 1000000000;
-static const int tccMilliSecondsToMicroSeconds = 1000;
-static const int tccMilliSecondsToNanoSeconds = 1000000;
-static const int tccMicroSecondsToNanoSeconds = 1000;
 
 void RhFailFast()
 {
@@ -190,6 +185,7 @@ void PalGetPDBInfo(HANDLE hOsHandle, GUID * pGuidSignature, _Out_ uint32_t * pdw
 #endif
 }
 
+#ifdef FEATURE_HIJACK
 static void UnmaskActivationSignal()
 {
     sigset_t signal_set;
@@ -199,230 +195,7 @@ static void UnmaskActivationSignal()
     int sigmaskRet = pthread_sigmask(SIG_UNBLOCK, &signal_set, NULL);
     _ASSERTE(sigmaskRet == 0);
 }
-
-static void TimeSpecAdd(timespec* time, uint32_t milliseconds)
-{
-    uint64_t nsec = time->tv_nsec + (uint64_t)milliseconds * tccMilliSecondsToNanoSeconds;
-    if (nsec >= tccSecondsToNanoSeconds)
-    {
-        time->tv_sec += nsec / tccSecondsToNanoSeconds;
-        nsec %= tccSecondsToNanoSeconds;
-    }
-
-    time->tv_nsec = nsec;
-}
-
-// Convert nanoseconds to the timespec structure
-// Parameters:
-//  nanoseconds - time in nanoseconds to convert
-//  t           - the target timespec structure
-static void NanosecondsToTimeSpec(uint64_t nanoseconds, timespec* t)
-{
-    t->tv_sec = nanoseconds / tccSecondsToNanoSeconds;
-    t->tv_nsec = nanoseconds % tccSecondsToNanoSeconds;
-}
-
-void ReleaseCondAttr(pthread_condattr_t* condAttr)
-{
-    int st = pthread_condattr_destroy(condAttr);
-    ASSERT_MSG(st == 0, "Failed to destroy pthread_condattr_t object");
-}
-
-class PthreadCondAttrHolder : public Wrapper<pthread_condattr_t*, DoNothing, ReleaseCondAttr, nullptr>
-{
-public:
-    PthreadCondAttrHolder(pthread_condattr_t* attrs)
-    : Wrapper<pthread_condattr_t*, DoNothing, ReleaseCondAttr, nullptr>(attrs)
-    {
-    }
-};
-
-class UnixEvent
-{
-    pthread_cond_t m_condition;
-    pthread_mutex_t m_mutex;
-    bool m_manualReset;
-    bool m_state;
-    bool m_isValid;
-
-public:
-
-    UnixEvent(bool manualReset, bool initialState)
-    : m_manualReset(manualReset),
-      m_state(initialState),
-      m_isValid(false)
-    {
-    }
-
-    bool Initialize()
-    {
-        pthread_condattr_t attrs;
-        int st = pthread_condattr_init(&attrs);
-        if (st != 0)
-        {
-            ASSERT_UNCONDITIONALLY("Failed to initialize UnixEvent condition attribute");
-            return false;
-        }
-
-        PthreadCondAttrHolder attrsHolder(&attrs);
-
-#if HAVE_PTHREAD_CONDATTR_SETCLOCK && !HAVE_CLOCK_GETTIME_NSEC_NP
-        // Ensure that the pthread_cond_timedwait will use CLOCK_MONOTONIC
-        st = pthread_condattr_setclock(&attrs, CLOCK_MONOTONIC);
-        if (st != 0)
-        {
-            ASSERT_UNCONDITIONALLY("Failed to set UnixEvent condition variable wait clock");
-            return false;
-        }
-#endif // HAVE_PTHREAD_CONDATTR_SETCLOCK && !HAVE_CLOCK_GETTIME_NSEC_NP
-
-        st = pthread_mutex_init(&m_mutex, NULL);
-        if (st != 0)
-        {
-            ASSERT_UNCONDITIONALLY("Failed to initialize UnixEvent mutex");
-            return false;
-        }
-
-        st = pthread_cond_init(&m_condition, &attrs);
-        if (st != 0)
-        {
-            ASSERT_UNCONDITIONALLY("Failed to initialize UnixEvent condition variable");
-
-            st = pthread_mutex_destroy(&m_mutex);
-            ASSERT_MSG(st == 0, "Failed to destroy UnixEvent mutex");
-            return false;
-        }
-
-        m_isValid = true;
-
-        return true;
-    }
-
-    bool Destroy()
-    {
-        bool success = true;
-
-        if (m_isValid)
-        {
-            int st = pthread_mutex_destroy(&m_mutex);
-            ASSERT_MSG(st == 0, "Failed to destroy UnixEvent mutex");
-            success = success && (st == 0);
-
-            st = pthread_cond_destroy(&m_condition);
-            ASSERT_MSG(st == 0, "Failed to destroy UnixEvent condition variable");
-            success = success && (st == 0);
-        }
-
-        return success;
-    }
-
-    uint32_t Wait(uint32_t milliseconds)
-    {
-        timespec endTime;
-#if HAVE_CLOCK_GETTIME_NSEC_NP
-        uint64_t endNanoseconds;
-        if (milliseconds != INFINITE)
-        {
-            uint64_t nanoseconds = (uint64_t)milliseconds * tccMilliSecondsToNanoSeconds;
-            NanosecondsToTimeSpec(nanoseconds, &endTime);
-            endNanoseconds = clock_gettime_nsec_np(CLOCK_UPTIME_RAW) + nanoseconds;
-        }
-#elif HAVE_PTHREAD_CONDATTR_SETCLOCK
-        if (milliseconds != INFINITE)
-        {
-            clock_gettime(CLOCK_MONOTONIC, &endTime);
-            TimeSpecAdd(&endTime, milliseconds);
-        }
-#else
-#error "Don't know how to perform timed wait on this platform"
-#endif
-
-        int st = 0;
-
-        pthread_mutex_lock(&m_mutex);
-        while (!m_state)
-        {
-            if (milliseconds == INFINITE)
-            {
-                st = pthread_cond_wait(&m_condition, &m_mutex);
-            }
-            else
-            {
-#if HAVE_CLOCK_GETTIME_NSEC_NP
-                // Since OSX doesn't support CLOCK_MONOTONIC, we use relative variant of the
-                // timed wait and we need to handle spurious wakeups properly.
-                st = pthread_cond_timedwait_relative_np(&m_condition, &m_mutex, &endTime);
-                if ((st == 0) && !m_state)
-                {
-                    uint64_t currentNanoseconds = clock_gettime_nsec_np(CLOCK_UPTIME_RAW);
-                    if (currentNanoseconds < endNanoseconds)
-                    {
-                        // The wake up was spurious, recalculate the relative endTime
-                        uint64_t remainingNanoseconds = (endNanoseconds - currentNanoseconds);
-                        NanosecondsToTimeSpec(remainingNanoseconds, &endTime);
-                    }
-                    else
-                    {
-                        // Although the timed wait didn't report a timeout, time calculated from the
-                        // mach time shows we have already reached the end time. It can happen if
-                        // the wait was spuriously woken up right before the timeout.
-                        st = ETIMEDOUT;
-                    }
-                }
-#else // HAVE_CLOCK_GETTIME_NSEC_NP
-                st = pthread_cond_timedwait(&m_condition, &m_mutex, &endTime);
-#endif // HAVE_CLOCK_GETTIME_NSEC_NP
-            }
-
-            if (st != 0)
-            {
-                // wait failed or timed out
-                break;
-            }
-        }
-
-        if ((st == 0) && !m_manualReset)
-        {
-            // Clear the state for auto-reset events so that only one waiter gets released
-            m_state = false;
-        }
-
-        pthread_mutex_unlock(&m_mutex);
-
-        uint32_t waitStatus;
-
-        if (st == 0)
-        {
-            waitStatus = WAIT_OBJECT_0;
-        }
-        else if (st == ETIMEDOUT)
-        {
-            waitStatus = WAIT_TIMEOUT;
-        }
-        else
-        {
-            waitStatus = WAIT_FAILED;
-        }
-
-        return waitStatus;
-    }
-
-    void Set()
-    {
-        pthread_mutex_lock(&m_mutex);
-        m_state = true;
-        // Unblock all threads waiting for the condition variable
-        pthread_cond_broadcast(&m_condition);
-        pthread_mutex_unlock(&m_mutex);
-    }
-
-    void Reset()
-    {
-        pthread_mutex_lock(&m_mutex);
-        m_state = false;
-        pthread_mutex_unlock(&m_mutex);
-    }
-};
+#endif // FEATURE_HIJACK
 
 // This functions configures behavior of the signals that are not
 // related to hardware exception handling.
@@ -439,31 +212,72 @@ void ConfigureSignals()
 
 void InitializeCurrentProcessCpuCount()
 {
-    uint32_t count;
+    uint32_t count = 0;
 
     // If the configuration value has been set, it takes precedence. Otherwise, take into account
-    // process affinity and CPU quota limit.
+    // process affinity and CPU quota limit, except for Android (explained below).
 
     const unsigned int MAX_PROCESSOR_COUNT = 0xffff;
     uint64_t configValue;
+    int cpuPresentCount;
 
     if (g_pRhConfig->ReadConfigValue("PROCESSOR_COUNT", &configValue, true /* decimal */) &&
         0 < configValue && configValue <= MAX_PROCESSOR_COUNT)
     {
         count = configValue;
     }
+#ifdef HOST_ANDROID
+    // Android tries really hard to save power by powering off CPUs on SMP phones which
+    // means the normal way to query cpu count can underestimate the number of available CPUs.
+    else if ((cpuPresentCount = minipal_get_cpu_present_count()) > 0)
+    {
+        count = cpuPresentCount;
+
+        uint32_t cpuLimit;
+        if (GetCpuLimit(&cpuLimit) && cpuLimit < count)
+            count = cpuLimit;
+    }
+#endif
     else
     {
 #if HAVE_SCHED_GETAFFINITY
 
-        cpu_set_t cpuSet;
-        int st = sched_getaffinity(getpid(), sizeof(cpu_set_t), &cpuSet);
-        if (st != 0)
+        int configuredCpuCount = minipal_get_cpu_max_possible_count();
+        if (configuredCpuCount == -1)
         {
-            _ASSERTE(!"sched_getaffinity failed");
+            // In the unlikely event that minipal_get_cpu_max_possible_count() fails, just assume a reasonable default maximum number of CPUs to avoid failing.
+            configuredCpuCount = CPU_SETSIZE;
         }
 
-        count = CPU_COUNT(&cpuSet);
+        int cpusToAllocate = std::max(configuredCpuCount, CPU_SETSIZE);
+        cpu_set_t* pCpuSet = CPU_ALLOC(cpusToAllocate);
+        if (pCpuSet != nullptr)
+        {
+            size_t cpuSetSize = CPU_ALLOC_SIZE(cpusToAllocate);
+            CPU_ZERO_S(cpuSetSize, pCpuSet);
+
+            int st = sched_getaffinity(getpid(), cpuSetSize, pCpuSet);
+            if (st == 0)
+            {
+                count = (uint32_t)CPU_COUNT_S(cpuSetSize, pCpuSet);
+            }
+            else
+            {
+                _ASSERTE(!"sched_getaffinity failed");
+            }
+
+            CPU_FREE(pCpuSet);
+        }
+        else
+        {
+            ASSERT("CPU_ALLOC failed!\n");
+        }
+
+        if (count == 0)
+        {
+            // If we failed to get the number of CPUs from sched_getaffinity, fall back to getting the total number of CPUs in the system.
+            count = GCToOSInterface::GetTotalProcessorCount();
+        }
 #else // HAVE_SCHED_GETAFFINITY
         count = GCToOSInterface::GetTotalProcessorCount();
 #endif // HAVE_SCHED_GETAFFINITY
@@ -477,25 +291,7 @@ void InitializeCurrentProcessCpuCount()
     g_RhNumberOfProcessors = count;
 }
 
-static uint32_t g_RhPageSize;
-
-void InitializeOsPageSize()
-{
-    g_RhPageSize = (uint32_t)sysconf(_SC_PAGE_SIZE);
-
-#if defined(HOST_AMD64)
-    ASSERT(g_RhPageSize == 0x1000);
-#elif defined(HOST_APPLE)
-    ASSERT(g_RhPageSize == 0x4000);
-#endif
-}
-
-uint32_t PalGetOsPageSize()
-{
-    return g_RhPageSize;
-}
-
-#if defined(TARGET_LINUX) || defined(TARGET_ANDROID)
+#if defined(TARGET_LINUX)
 static pthread_key_t key;
 #endif
 
@@ -532,8 +328,6 @@ bool PalInit()
 
     InitializeCurrentProcessCpuCount();
 
-    InitializeOsPageSize();
-
 #ifdef FEATURE_HIJACK
     if (!InitializeSignalHandling())
     {
@@ -541,7 +335,7 @@ bool PalInit()
     }
 #endif
 
-#if defined(TARGET_LINUX) || defined(TARGET_ANDROID)
+#if defined(TARGET_LINUX)
     if (pthread_key_create(&key, RuntimeThreadShutdown) != 0)
     {
         return false;
@@ -551,7 +345,7 @@ bool PalInit()
     return true;
 }
 
-#if !defined(TARGET_LINUX) && !defined(TARGET_ANDROID)
+#if !defined(TARGET_LINUX)
 struct TlsDestructionMonitor
 {
     void* m_thread = nullptr;
@@ -575,29 +369,13 @@ struct TlsDestructionMonitor
 thread_local TlsDestructionMonitor tls_destructionMonitor;
 #endif
 
-// This thread local variable is used for delegate marshalling
-PLATFORM_THREAD_LOCAL intptr_t tls_thunkData;
-
-#ifdef FEATURE_EMULATED_TLS
-EXTERN_C intptr_t* RhpGetThunkData()
-{
-    return &tls_thunkData;
-}
-#endif //FEATURE_EMULATED_TLS
-
-FCIMPL0(intptr_t, RhGetCurrentThunkContext)
-{
-    return tls_thunkData;
-}
-FCIMPLEND
-
 // Register the thread with OS to be notified when thread is about to be destroyed
 // It fails fast if a different thread was already registered.
 // Parameters:
 //  thread        - thread to attach
 void PalAttachThread(void* thread)
 {
-#if defined(TARGET_LINUX) || defined(TARGET_ANDROID)
+#if defined(TARGET_LINUX)
     if (pthread_setspecific(key, thread) != 0)
     {
         _ASSERTE(!"pthread_setspecific failed");
@@ -607,7 +385,9 @@ void PalAttachThread(void* thread)
     tls_destructionMonitor.SetThread(thread);
 #endif
 
+#ifdef FEATURE_HIJACK
     UnmaskActivationSignal();
+#endif // FEATURE_HIJACK
 }
 
 #if !defined(FEATURE_PORTABLE_HELPERS) && !defined(FEATURE_RX_THUNKS)
@@ -687,28 +467,6 @@ UInt32_BOOL PalMarkThunksAsValidCallTargets(
     return ret == 0 ? UInt32_TRUE : UInt32_FALSE;
 }
 
-void PalSleep(uint32_t milliseconds)
-{
-#if HAVE_CLOCK_NANOSLEEP
-    timespec endTime;
-    clock_gettime(CLOCK_MONOTONIC, &endTime);
-    TimeSpecAdd(&endTime, milliseconds);
-    while (clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &endTime, NULL) == EINTR)
-    {
-    }
-#else // HAVE_CLOCK_NANOSLEEP
-    timespec requested;
-    requested.tv_sec = milliseconds / tccSecondsToMilliSeconds;
-    requested.tv_nsec = (milliseconds - requested.tv_sec * tccSecondsToMilliSeconds) * tccMilliSecondsToNanoSeconds;
-
-    timespec remaining;
-    while (nanosleep(&requested, &remaining) == EINTR)
-    {
-        requested = remaining;
-    }
-#endif // HAVE_CLOCK_NANOSLEEP
-}
-
 UInt32_BOOL __stdcall PalSwitchToThread()
 {
     // sched_yield yields to another thread in the current process.
@@ -723,35 +481,6 @@ UInt32_BOOL __stdcall PalSwitchToThread()
 UInt32_BOOL PalAreShadowStacksEnabled()
 {
     return false;
-}
-
-UInt32_BOOL PalCloseHandle(HANDLE handle)
-{
-    if ((handle == NULL) || (handle == INVALID_HANDLE_VALUE))
-    {
-        return UInt32_FALSE;
-    }
-
-    UnixEvent* event = (UnixEvent*)handle;
-    bool success = event->Destroy();
-    delete event;
-
-    return success ? UInt32_TRUE : UInt32_FALSE;
-}
-
-HANDLE PalCreateEventW(_In_opt_ LPSECURITY_ATTRIBUTES pEventAttributes, UInt32_BOOL manualReset, UInt32_BOOL initialState, _In_opt_z_ const WCHAR* pName)
-{
-    UnixEvent* event = new (nothrow) UnixEvent(manualReset, initialState);
-    if (event == NULL)
-    {
-        return INVALID_HANDLE_VALUE;
-    }
-    if (!event->Initialize())
-    {
-        delete event;
-        return INVALID_HANDLE_VALUE;
-    }
-    return (HANDLE)event;
 }
 
 typedef uint32_t(__stdcall *BackgroundCallback)(_In_opt_ void* pCallbackContext);
@@ -830,7 +559,7 @@ bool PalStartEventPipeHelperThread(_In_ BackgroundCallback callback, _In_opt_ vo
     return PalStartBackgroundWork(callback, pCallbackContext, UInt32_FALSE);
 }
 
-HANDLE PalGetModuleHandleFromPointer(_In_ void* pointer)
+HANDLE PalGetModuleHandleFromPointer(_In_ void* pointer, bool pinModule)
 {
     HANDLE moduleHandle = NULL;
 
@@ -841,6 +570,16 @@ HANDLE PalGetModuleHandleFromPointer(_In_ void* pointer)
     int st = dladdr(pointer, &info);
     if (st != 0)
     {
+#if defined(HOST_OSX)
+        if (pinModule && info.dli_fname != nullptr)
+        {
+            // NativeAOT runtime state cannot be safely unloaded.
+            // Keep the extra reference for the lifetime of the process.
+            // Unloading is disabled via `-z,nodelete` linker option on ELF platforms.
+            dlopen(info.dli_fname, RTLD_LAZY | RTLD_NOLOAD);
+        }
+#endif
+
         moduleHandle = info.dli_fbase;
     }
 #endif //!defined(HOST_WASM)
@@ -860,6 +599,11 @@ void PalPrintFatalError(const char* message)
 char* PalCopyTCharAsChar(const TCHAR* toCopy)
 {
     NewArrayHolder<char> copy {new (nothrow) char[strlen(toCopy) + 1]};
+    if (copy.IsNull())
+    {
+        return nullptr;
+    }
+
     strcpy(copy, toCopy);
     return copy.Extract();
 }
@@ -963,7 +707,7 @@ void PalFlushInstructionCache(_In_ void* pAddress, size_t size)
     }
 #elif (defined(HOST_MACCATALYST) || defined(HOST_IOS) || defined(HOST_TVOS)) && defined(HOST_ARM64)
     sys_icache_invalidate (pAddress, size);
-#else
+#elif !defined(HOST_WASM)
     __builtin___clear_cache((char *)pAddress, (char *)pAddress + size);
 #endif
 }
@@ -971,20 +715,6 @@ void PalFlushInstructionCache(_In_ void* pAddress, size_t size)
 uint32_t PalGetCurrentProcessId()
 {
     return getpid();
-}
-
-UInt32_BOOL PalSetEvent(HANDLE event)
-{
-    UnixEvent* unixEvent = (UnixEvent*)event;
-    unixEvent->Set();
-    return UInt32_TRUE;
-}
-
-UInt32_BOOL PalResetEvent(HANDLE event)
-{
-    UnixEvent* unixEvent = (UnixEvent*)event;
-    unixEvent->Reset();
-    return UInt32_TRUE;
 }
 
 uint32_t PalGetEnvironmentVariable(const char * name, char * buffer, uint32_t size)
@@ -1015,39 +745,58 @@ uint16_t PalCaptureStackBackTrace(uint32_t arg1, uint32_t arg2, void* arg3, uint
 #ifdef FEATURE_HIJACK
 static struct sigaction g_previousActivationHandler;
 
+static bool IsSaSigInfo(struct sigaction* action)
+{
+    return (action->sa_flags & SA_SIGINFO) != 0;
+}
+
+static bool IsSigDfl(struct sigaction* action)
+{
+    // macOS can return sigaction with SIG_DFL and SA_SIGINFO.
+    // SA_SIGINFO means we should use sa_sigaction, but here we want to check sa_handler.
+    // So we ignore SA_SIGINFO when sa_sigaction and sa_handler are at the same address.
+    return (&action->sa_handler == (void*)&action->sa_sigaction || !IsSaSigInfo(action)) &&
+            action->sa_handler == SIG_DFL;
+}
+
+static bool IsSigIgn(struct sigaction* action)
+{
+    return (&action->sa_handler == (void*)&action->sa_sigaction || !IsSaSigInfo(action)) &&
+            action->sa_handler == SIG_IGN;
+}
+
 static void ActivationHandler(int code, siginfo_t* siginfo, void* context)
 {
-    // Only accept activations from the current process
-    if (siginfo->si_pid == getpid()
-#ifdef HOST_APPLE
-        // On Apple platforms si_pid is sometimes 0. It was confirmed by Apple to be expected, as the si_pid is tracked at the process level. So when multiple
-        // signals are in flight in the same process at the same time, it may be overwritten / zeroed.
-        || siginfo->si_pid == 0
-#endif
-        )
-    {
-        // Make sure that errno is not modified
-        int savedErrNo = errno;
-        Thread::HijackCallback((NATIVE_CONTEXT*)context, NULL);
-        errno = savedErrNo;
-    }
-
-    Thread* pThread = ThreadStore::GetCurrentThreadIfAvailable();
+    Thread* pThread = ThreadStore::GetCurrentThreadIfAvailableAsyncSafe();
     if (pThread)
     {
+        // Only accept activations from the current process
+        if (siginfo->si_pid == getpid()
+#ifdef HOST_APPLE
+            // On Apple platforms si_pid is sometimes 0. It was confirmed by Apple to be expected, as the si_pid is tracked at the process level. So when multiple
+            // signals are in flight in the same process at the same time, it may be overwritten / zeroed.
+            || siginfo->si_pid == 0
+#endif
+            )
+        {
+            // Make sure that errno is not modified
+            int savedErrNo = errno;
+            Thread::HijackCallback((NATIVE_CONTEXT*)context, pThread, true /* doInlineSuspend */);
+            errno = savedErrNo;
+        }
+
         pThread->SetActivationPending(false);
     }
 
     // Call the original handler when it is not ignored or default (terminate).
-    if (g_previousActivationHandler.sa_flags & SA_SIGINFO)
+    if (!IsSigDfl(&g_previousActivationHandler) && !IsSigIgn(&g_previousActivationHandler))
     {
-        _ASSERTE(g_previousActivationHandler.sa_sigaction != NULL);
-        g_previousActivationHandler.sa_sigaction(code, siginfo, context);
-    }
-    else
-    {
-        if (g_previousActivationHandler.sa_handler != SIG_IGN &&
-            g_previousActivationHandler.sa_handler != SIG_DFL)
+        if (IsSaSigInfo(&g_previousActivationHandler))
+        {
+            _ASSERTE(g_previousActivationHandler.sa_sigaction != NULL);
+            g_previousActivationHandler.sa_sigaction(code, siginfo, context);
+        }
+        else
         {
             _ASSERTE(g_previousActivationHandler.sa_handler != NULL);
             g_previousActivationHandler.sa_handler(code);
@@ -1088,6 +837,11 @@ HijackFunc* PalGetHijackTarget(HijackFunc* defaultHijackTarget)
 
 void PalHijack(Thread* pThreadToHijack)
 {
+    if (pThreadToHijack->IsActivationPending())
+    {
+        return;
+    }
+
     pThreadToHijack->SetActivationPending(true);
 
     int status = pthread_kill(pThreadToHijack->GetOSThreadHandle(), INJECT_ACTIVATION_SIGNAL);
@@ -1120,20 +874,6 @@ void PalHijack(Thread* pThreadToHijack)
     }
 }
 #endif // FEATURE_HIJACK
-
-uint32_t PalWaitForSingleObjectEx(HANDLE handle, uint32_t milliseconds, UInt32_BOOL alertable)
-{
-    UnixEvent* unixEvent = (UnixEvent*)handle;
-    return unixEvent->Wait(milliseconds);
-}
-
-uint32_t PalCompatibleWaitAny(UInt32_BOOL alertable, uint32_t timeout, uint32_t handleCount, HANDLE* pHandles, UInt32_BOOL allowReentrantWait)
-{
-    // Only a single handle wait for event is supported
-    ASSERT(handleCount == 1);
-
-    return PalWaitForSingleObjectEx(pHandles[0], timeout, alertable);
-}
 
 HANDLE PalCreateLowMemoryResourceNotification()
 {
@@ -1175,6 +915,15 @@ bool PalGetMaximumStackBounds(_Out_ void** ppStackLowOut, _Out_ void** ppStackHi
     // This is a Mac specific method
     pStackHighOut = pthread_get_stackaddr_np(pthread_self());
     pStackLowOut = ((uint8_t *)pStackHighOut - pthread_get_stacksize_np(pthread_self()));
+#elif defined(__OpenBSD__)
+    // OpenBSD provides the stack segment of the current thread via pthread_stackseg_np.
+    // ss_sp points to the top (highest address) of the stack.
+    stack_t stack;
+    int status = pthread_stackseg_np(pthread_self(), &stack);
+    ASSERT_MSG(status == 0, "pthread_stackseg_np call failed");
+
+    pStackHighOut = stack.ss_sp;
+    pStackLowOut = (uint8_t*)stack.ss_sp - stack.ss_size;
 #else // __APPLE__
     pthread_attr_t attr;
     size_t stackSize;

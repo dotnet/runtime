@@ -32,6 +32,7 @@ namespace System.Reflection
             return new Pointer(ptr, rtType);
         }
 
+        /// <safety>Returns the pointer value previously stored in the boxed Pointer instance; it reads only a managed field and performs no dereference of the pointer.</safety>
         public static void* Unbox(object ptr)
         {
             if (ptr is Pointer p)

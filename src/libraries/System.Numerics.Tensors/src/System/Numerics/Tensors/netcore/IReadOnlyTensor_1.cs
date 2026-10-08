@@ -9,10 +9,7 @@ namespace System.Numerics.Tensors
     /// <typeparam name="TSelf">The type that implements this interface.</typeparam>
     /// <typeparam name="T">The element type.</typeparam>
     public interface IReadOnlyTensor<TSelf, T> : IReadOnlyTensor
-        where TSelf : IReadOnlyTensor<TSelf, T>
-#if NET9_0_OR_GREATER
-        , allows ref struct
-#endif
+        where TSelf : IReadOnlyTensor<TSelf, T>, allows ref struct
     {
         /// <summary>Gets an empty tensor.</summary>
         static abstract TSelf Empty { get; }
@@ -52,14 +49,14 @@ namespace System.Numerics.Tensors
 
         /// <summary>Copies the contents of the tensor into a destination tensor span.</summary>
         /// <param name="destination">The destination tensor span.</param>
-        /// <exception cref="ArgumentException"><paramref name="destination" /> is shorter than the source tensor.</exception>
-        /// <remarks>This method copies all of the source tensor to <paramref name="destination" /> even if they overlap.</remarks>
+        /// <exception cref="ArgumentException"><paramref name="destination" /> is shorter than the source tensor, or the source and destination overlap in an unsupported layout.</exception>
+        /// <remarks>Overlapping dense tensors with equal element counts and identical views are supported. Other overlapping layouts are rejected before copying.</remarks>
         void CopyTo(scoped in TensorSpan<T> destination);
 
         /// <summary>Flattens the contents of the tensor into a destination span.</summary>
         /// <param name="destination">The destination span.</param>
-        /// <exception cref="ArgumentException"><paramref name="destination" /> is shorter than the source tensor.</exception>
-        /// <remarks>This method copies all of the source tensor to <paramref name="destination" /> even if they overlap.</remarks>
+        /// <exception cref="ArgumentException"><paramref name="destination" /> is shorter than the source tensor, or the source and destination overlap in an unsupported layout.</exception>
+        /// <remarks>Overlapping dense tensors are supported. Other overlapping layouts are rejected before copying.</remarks>
         void FlattenTo(scoped Span<T> destination);
 
         /// <summary>Returns a span that can be used to access the flattened elements for a given dimension.</summary>
@@ -106,15 +103,16 @@ namespace System.Numerics.Tensors
         /// <returns>The current tensor if it is already dense; otherwise, a new tensor that contains the elements of this tensor.</returns>
         /// <remarks>
         ///   <para>A dense tensor is one where the elements are ordered sequentially in memory and where no gaps exist between the elements.</para>
-        ///   <para>For a 2x2 Tensor, this would mean it has <c>FlattendLength: 4; Lengths: [2, 2]; Strides: [4, 1]</c>. The elements would be sequentially accessed via indexes: <c>[0, 0]; [0, 1]; [1, 0]; [1, 1]</c>.</para>
+        ///   <para>For a 2x2 Tensor, this would mean it has <c>FlattenedLength: 4; Lengths: [2, 2]; Strides: [4, 1]</c>. The elements would be sequentially accessed via indexes: <c>[0, 0]; [0, 1]; [1, 0]; [1, 1]</c>.</para>
         /// </remarks>
         TSelf ToDenseTensor();
 
         /// <summary>Attempts to copy the contents of this tensor into a destination tensor span and returns a value to indicate whether or not the operation succeeded.</summary>
         /// <param name="destination">The target of the copy operation.</param>
         /// <returns><see langword="true"/> if the copy operation succeeded; otherwise, <c>false</c>.</returns>
+        /// <exception cref="ArgumentException">The source and <paramref name="destination" /> overlap in an unsupported layout.</exception>
         /// <remarks>
-        ///   <para>If the source and <paramref name="destination" /> overlap, the entirety of the source is handled as if it was copied to a temporary location before it is copied to <paramref name="destination" />.</para>
+        ///   <para>Overlapping dense tensors with equal element counts and identical views are supported. Other overlapping layouts throw <see cref="ArgumentException" /> before copying.</para>
         ///   <para>If the <paramref name="destination" /> length is shorter than the source, no items are copied and the method returns <c>false</c>.</para>
         /// </remarks>
         bool TryCopyTo(scoped in TensorSpan<T> destination);
@@ -122,8 +120,9 @@ namespace System.Numerics.Tensors
         /// <summary>Attempts to flatten the contents of this tensor into a destination span and returns a value to indicate whether or not the operation succeeded.</summary>
         /// <param name="destination">The target of the copy operation.</param>
         /// <returns><see langword="true"/> if the copy operation succeeded; otherwise, <c>false</c>.</returns>
+        /// <exception cref="ArgumentException">The source and <paramref name="destination" /> overlap in an unsupported layout.</exception>
         /// <remarks>
-        ///   <para>If the source and <paramref name="destination" /> overlap, the entirety of the source is handled as if it was flattened to a temporary location before it is copied to <paramref name="destination" />.</para>
+        ///   <para>Overlapping dense tensors are supported. Other overlapping layouts throw <see cref="ArgumentException" /> before copying.</para>
         ///   <para>If the <paramref name="destination" /> length is shorter than the source, no items are copied and the method returns <c>false</c>.</para>
         /// </remarks>
         bool TryFlattenTo(scoped Span<T> destination);

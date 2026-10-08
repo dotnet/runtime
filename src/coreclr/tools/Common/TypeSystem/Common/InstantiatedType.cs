@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
+using Internal.Text;
 #if TYPE_LOADER_IMPLEMENTATION
 using MetadataType = Internal.TypeSystem.DefType;
 #endif
@@ -127,7 +128,7 @@ namespace Internal.TypeSystem
             return flags;
         }
 
-        public override ReadOnlySpan<byte> Name
+        public override Utf8Span Name
         {
             get
             {
@@ -135,7 +136,7 @@ namespace Internal.TypeSystem
             }
         }
 
-        public override ReadOnlySpan<byte> Namespace
+        public override Utf8Span Namespace
         {
             get
             {
@@ -160,7 +161,7 @@ namespace Internal.TypeSystem
         }
 
         // TODO: Substitutions, generics, modopts, ...
-        public override MethodDesc GetMethod(ReadOnlySpan<byte> name, MethodSignature signature, Instantiation substitution)
+        public override MethodDesc GetMethod(Utf8Span name, MethodSignature signature, Instantiation substitution)
         {
             MethodDesc typicalMethodDef = _typeDef.GetMethod(name, signature, substitution);
             if (typicalMethodDef == null)
@@ -168,7 +169,7 @@ namespace Internal.TypeSystem
             return _typeDef.Context.GetMethodForInstantiatedType(typicalMethodDef, this);
         }
 
-        public override MethodDesc GetMethodWithEquivalentSignature(ReadOnlySpan<byte> name, MethodSignature signature, Instantiation substitution)
+        public override MethodDesc GetMethodWithEquivalentSignature(Utf8Span name, MethodSignature signature, Instantiation substitution)
         {
             MethodDesc typicalMethodDef = _typeDef.GetMethodWithEquivalentSignature(name, signature, substitution);
             if (typicalMethodDef == null)
@@ -230,7 +231,7 @@ namespace Internal.TypeSystem
         }
 
         // TODO: Substitutions, generics, modopts, ...
-        public override FieldDesc GetField(ReadOnlySpan<byte> name)
+        public override FieldDesc GetField(Utf8Span name)
         {
             FieldDesc fieldDef = _typeDef.GetField(name);
             if (fieldDef == null)

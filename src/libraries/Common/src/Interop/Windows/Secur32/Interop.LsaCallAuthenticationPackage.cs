@@ -15,6 +15,7 @@ internal static partial class Interop
             public LUID logonId;
         }
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.Secur32)]
         internal static partial uint LsaCallAuthenticationPackage(
             LsaLogonProcessSafeHandle lsaHandle,

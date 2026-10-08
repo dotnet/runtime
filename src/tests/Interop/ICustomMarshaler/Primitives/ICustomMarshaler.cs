@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Xunit;
 using static TestLibrary.Utilities;
+using TestLibrary;
 
 namespace System.Runtime.InteropServices.Tests
 {
@@ -687,6 +688,7 @@ namespace System.Runtime.InteropServices.Tests
         {
             Assert.Throws<MarshalDirectiveException>(() => CustomMarshallerWithDelegateRef(84664, (ref int x) => x.ToString()));
         }
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34374", TestRuntimes.Mono)]
         [Fact]
         public static int TestEntryPoint()
         {

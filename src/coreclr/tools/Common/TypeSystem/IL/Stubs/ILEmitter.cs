@@ -560,13 +560,15 @@ namespace Internal.IL.Stubs
 
         private const int MaxStackNotSet = -1;
         private int _maxStack;
+        private bool _stubILHasGeneratedTokens;
 
-        public ILStubMethodIL(MethodDesc owningMethod, byte[] ilBytes, LocalVariableDefinition[] locals, object[] tokens, ILExceptionRegion[] exceptionRegions = null, MethodDebugInformation debugInfo = null)
+        public ILStubMethodIL(MethodDesc owningMethod, byte[] ilBytes, LocalVariableDefinition[] locals, object[] tokens, ILExceptionRegion[] exceptionRegions = null, MethodDebugInformation debugInfo = null, bool stubILHasGeneratedTokens = false)
         {
             _ilBytes = ilBytes;
             _locals = locals;
             _tokens = tokens;
             _method = owningMethod;
+            _stubILHasGeneratedTokens = stubILHasGeneratedTokens;
             _maxStack = MaxStackNotSet;
 
             exceptionRegions ??= Array.Empty<ILExceptionRegion>();
@@ -582,6 +584,7 @@ namespace Internal.IL.Stubs
             _locals = methodIL._locals;
             _tokens = methodIL._tokens;
             _method = methodIL._method;
+            _stubILHasGeneratedTokens = methodIL._stubILHasGeneratedTokens;
             _debugInformation = methodIL._debugInformation;
             _exceptionRegions = methodIL._exceptionRegions;
             _maxStack = methodIL._maxStack;
@@ -594,6 +597,8 @@ namespace Internal.IL.Stubs
                 return _method;
             }
         }
+
+        public bool StubILHasGeneratedTokens => _stubILHasGeneratedTokens;
 
         public override byte[] GetILBytes()
         {
@@ -677,6 +682,7 @@ namespace Internal.IL.Stubs
         private ArrayBuilder<LocalVariableDefinition> _locals;
         private ArrayBuilder<object> _tokens;
         private ArrayBuilder<ILExceptionRegionBuilder> _exceptionRegions;
+        private bool _hasGeneratedTokens;
 
         public ILEmitter()
         {
@@ -687,6 +693,11 @@ namespace Internal.IL.Stubs
             ILCodeStream stream = new ILCodeStream(this);
             _codeStreams.Add(stream);
             return stream;
+        }
+
+        public bool SetHasGeneratedTokens()
+        {
+            return _hasGeneratedTokens = true;
         }
 
         private ILToken NewToken(object value, int tokenType)
@@ -826,7 +837,7 @@ namespace Internal.IL.Stubs
                 });
             }
 
-            var result = new ILStubMethodIL(owningMethod, ilInstructions, _locals.ToArray(), _tokens.ToArray(), exceptionRegions, debugInfo);
+            var result = new ILStubMethodIL(owningMethod, ilInstructions, _locals.ToArray(), _tokens.ToArray(), exceptionRegions, debugInfo, _hasGeneratedTokens);
             result.CheckStackBalance();
             return result;
         }
@@ -850,6 +861,40 @@ namespace Internal.IL.Stubs
     public abstract partial class ILStubMethod : MethodDesc
     {
         public abstract MethodIL EmitIL();
+
+        protected MethodSignature CreateSignatureWithSecretStubArgument(MethodSignature signature, MethodSignatureFlags flags)
+        {
+            TypeDesc[] parameterTypes = new TypeDesc[signature.Length + 1];
+            for (int i = 0; i < signature.Length; i++)
+            {
+                parameterTypes[i] = signature[i];
+            }
+            parameterTypes[parameterTypes.Length - 1] = Context.GetWellKnownType(WellKnownType.IntPtr);
+
+            EmbeddedSignatureData[] existingSignatureData = signature.GetEmbeddedSignatureData();
+            int existingSignatureDataLength = existingSignatureData?.Length ?? 0;
+            EmbeddedSignatureData[] embeddedSignatureData = new EmbeddedSignatureData[existingSignatureDataLength + 1];
+            if (existingSignatureDataLength != 0)
+            {
+                Array.Copy(existingSignatureData, embeddedSignatureData, existingSignatureDataLength);
+            }
+
+            embeddedSignatureData[existingSignatureDataLength] = new EmbeddedSignatureData
+            {
+                index = MethodSignature.GetIndexOfCustomModifierOnTypeByParameterIndex(parameterTypes.Length),
+                kind = EmbeddedSignatureDataKind.RequiredCustomModifier,
+                type = Context.SystemModule.GetKnownType(
+                    "System.Runtime.CompilerServices"u8,
+                    "SecretStubArgument"u8)
+            };
+
+            return new MethodSignature(
+                flags,
+                signature.GenericParameterCount,
+                signature.ReturnType,
+                parameterTypes,
+                embeddedSignatureData);
+        }
 
         public override bool HasCustomAttribute(string attributeNamespace, string attributeName)
         {

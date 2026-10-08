@@ -130,6 +130,7 @@ PTFF_SAVE_RDI           equ 00000004h
 PTFF_SAVE_ALL_PRESERVED equ 00000007h   ;; NOTE: RBP is not included in this set!
 PTFF_SAVE_RSP           equ 00008000h
 PTFF_SAVE_RAX           equ 00000100h   ;; RAX is saved if it contains a GC ref and we're in hijack handler
+PTFF_SAVE_RCX           equ 00000200h   ;; RCX is saved if it contains a GC ref and we're in hijack handler
 PTFF_SAVE_ALL_SCRATCH   equ 00000700h
 
 ;; These must match the TrapThreadsFlags enum

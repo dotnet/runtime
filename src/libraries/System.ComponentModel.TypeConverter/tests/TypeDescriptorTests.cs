@@ -1297,7 +1297,7 @@ namespace System.ComponentModel.Tests
             }
         }
 
-        [SkipOnPlatform(TestPlatforms.Browser, "Thread.Start is not supported on browsers.")]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi, "Thread.Start is not supported on browsers and WASI.")]
         [Fact]
         public void ConcurrentGetProperties_ReturnsExpected()
         {
@@ -1334,7 +1334,7 @@ namespace System.ComponentModel.Tests
             }
         }
 
-        [SkipOnPlatform(TestPlatforms.Browser, "Thread.Start is not supported on browsers.")]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi, "Thread.Start is not supported on browsers and WASI.")]
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static void ConcurrentAddProviderAndGetProvider()
         {
@@ -1581,6 +1581,7 @@ namespace System.ComponentModel.Tests
         // loaded in the default ALC, which causes problems for this test.
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported), nameof(PlatformDetection.IsNotMobile))]
         [ActiveIssue("34072", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/124031", typeof(PlatformDetection), nameof(PlatformDetection.IsReadyToRunCompiled))]
         public static void TypeDescriptor_WithDefaultProvider_UnloadsUnloadableTypes()
         {
             ExecuteAndUnload("UnloadableTestTypes.dll",
@@ -1624,6 +1625,7 @@ namespace System.ComponentModel.Tests
         // loaded in the default ALC, which causes problems for this test.
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported), nameof(PlatformDetection.IsNotMobile))]
         [ActiveIssue("34072", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/124031", typeof(PlatformDetection), nameof(PlatformDetection.IsReadyToRunCompiled))]
         public static void TypeDescriptor_WithCustomProvider_UnloadsUnloadableTypes()
         {
             ExecuteAndUnload("UnloadableTestTypes.dll",

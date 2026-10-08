@@ -7,7 +7,7 @@ namespace System.Buffers
         where T : IEquatable<T>?
     {
         internal override T[] GetValues() =>
-            Array.Empty<T>();
+            [];
 
         internal override bool ContainsCore(T value) =>
             false;

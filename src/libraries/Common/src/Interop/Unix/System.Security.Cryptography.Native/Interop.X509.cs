@@ -37,9 +37,6 @@ internal static partial class Interop
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_DecodeX509")]
         internal static partial SafeX509Handle DecodeX509(ref byte buf, int len);
 
-        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_DecodeX509")]
-        internal static partial SafeX509Handle DecodeX509(IntPtr buf, int len);
-
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509DerSize")]
         internal static partial int GetX509DerSize(SafeX509Handle x);
 
@@ -48,18 +45,6 @@ internal static partial class Interop
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509Destroy")]
         internal static partial void X509Destroy(IntPtr a);
-
-        /// <summary>
-        /// Clone the input certificate into a new object.
-        /// </summary>
-        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509Duplicate")]
-        internal static partial SafeX509Handle X509Duplicate(IntPtr handle);
-
-        /// <summary>
-        /// Clone the input certificate into a new object.
-        /// </summary>
-        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509Duplicate")]
-        internal static partial SafeX509Handle X509Duplicate(SafeX509Handle handle);
 
         /// <summary>
         /// Increment the native reference count of the certificate to protect against

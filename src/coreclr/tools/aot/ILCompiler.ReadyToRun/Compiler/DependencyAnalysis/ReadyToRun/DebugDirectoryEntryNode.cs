@@ -28,7 +28,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _module = module;
         }
 
-        public override ObjectNodeSection GetSection(NodeFactory factory) => ObjectNodeSection.TextSection;
+        public override ObjectNodeSection GetSection(NodeFactory factory)
+        {
+            return ObjectNodeSection.ReadOnlyDataSection;
+        }
 
         public override bool IsShareable => false;
 
@@ -241,11 +244,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             public int ChecksumSize => 16;
 
-            public void EmitChecksum(ReadOnlySpan<byte> outputBlob, Span<byte> checksumLocation)
+            public void EmitChecksum(Stream outputStream, Span<byte> checksumLocation)
             {
                 Debug.Assert(checksumLocation.Length == ChecksumSize);
-                // Take the first 16 bytes of the SHA256 hash as the RSDS checksum.
-                SHA256.HashData(outputBlob)[0..ChecksumSize].CopyTo(checksumLocation);
+                // Take the first 16 bytes of the SHA256 hash of the image as the RSDS checksum.
+                Span<byte> hash = stackalloc byte[SHA256.HashSizeInBytes];
+                SHA256.HashData(outputStream, hash);
+                hash[0..ChecksumSize].CopyTo(checksumLocation);
             }
 
             public override bool InterestingForDynamicDependencyAnalysis => false;

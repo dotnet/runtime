@@ -6,6 +6,7 @@
 #pragma hdrstop
 #endif
 #include "regalloc.h"
+#include "regallocimpl.h"
 
 #if DOUBLE_ALIGN
 DWORD Compiler::getCanDoubleAlign()
@@ -256,9 +257,10 @@ void Compiler::raMarkStkVars()
 
         noway_assert((varDsc->lvType != TYP_UNDEF) && (varDsc->lvType != TYP_VOID) && (varDsc->lvType != TYP_UNKNOWN));
 #if FEATURE_FIXED_OUT_ARGS
-        noway_assert((lclNum == lvaOutgoingArgSpaceVar) || (lvaLclStackHomeSize(lclNum) != 0));
+        noway_assert((lclNum == lvaOutgoingArgSpaceVar) || varTypeHasUnknownSize(varDsc) ||
+                     (lvaLclStackHomeSize(lclNum) != 0));
 #else  // FEATURE_FIXED_OUT_ARGS
-        noway_assert(lvaLclStackHomeSize(lclNum) != 0);
+        noway_assert(varTypeHasUnknownSize(varDsc) || lvaLclStackHomeSize(lclNum) != 0);
 #endif // FEATURE_FIXED_OUT_ARGS
 
         varDsc->lvOnFrame = true; // Our prediction is that the final home for this local variable will be in the
@@ -312,4 +314,228 @@ void Compiler::raMarkStkVars()
         }
 #endif
     }
+}
+
+//------------------------------------------------------------------------
+// isRegCandidate: Determine whether a local is eligible for register allocation.
+//
+// Arguments:
+//    varDsc - The local's descriptor
+//
+// Return Value:
+//    Whether the variable represented by "varDsc" may be allocated in
+//    a register, or needs to live on the stack.
+//
+bool RegAllocImpl::isRegCandidate(LclVarDsc* varDsc)
+{
+    if (!willEnregisterLocalVars())
+    {
+        return false;
+    }
+    Compiler* compiler = m_compiler;
+    assert(compiler->compEnregLocals());
+
+    if (!varDsc->lvTracked)
+    {
+        return false;
+    }
+
+#if LOWER_DECOMPOSE_LONGS
+    if (varDsc->lvType == TYP_LONG)
+    {
+        // Long variables should not be register candidates.
+        // Lowering will have split any candidate lclVars into lo/hi vars.
+        return false;
+    }
+#endif // LOWER_DECOMPOSE_LONGS
+
+    // If we have JMP, reg args must be put on the stack
+
+    if (compiler->compJmpOpUsed && varDsc->lvIsRegArg)
+    {
+        return false;
+    }
+
+    // Don't allocate registers for dependently promoted struct fields
+    if (compiler->lvaIsFieldOfDependentlyPromotedStruct(varDsc))
+    {
+        return false;
+    }
+
+    // Don't enregister if the ref count is zero.
+    if (varDsc->lvRefCnt() == 0)
+    {
+        varDsc->setLvRefCntWtd(0);
+        return false;
+    }
+
+    if (varDsc->lvDoNotEnregister)
+    {
+        return false;
+    }
+
+    switch (genActualType(varDsc->TypeGet()))
+    {
+        case TYP_FLOAT:
+        case TYP_DOUBLE:
+            return !compiler->opts.compDbgCode;
+
+        case TYP_INT:
+        case TYP_LONG:
+        case TYP_REF:
+        case TYP_BYREF:
+            break;
+
+#ifdef FEATURE_SIMD
+        case TYP_SIMD8:
+        case TYP_SIMD12:
+        case TYP_SIMD16:
+#if defined(TARGET_XARCH)
+        case TYP_SIMD32:
+        case TYP_SIMD64:
+#endif // TARGET_XARCH
+#ifdef FEATURE_MASKED_HW_INTRINSICS
+        case TYP_MASK:
+#endif // FEATURE_MASKED_HW_INTRINSICS
+        {
+            return !varDsc->lvPromoted;
+        }
+#endif // FEATURE_SIMD
+
+        case TYP_STRUCT:
+        {
+            // TODO-1stClassStructs: support vars with GC pointers. The issue is that such
+            // vars will have `lvMustInit` set, because emitter has poor support for struct liveness,
+            // but if the variable is tracked the prolog generator would expect it to be in liveIn set,
+            // so an assert in `genFnProlog` will fire.
+            return compiler->compEnregStructLocals() && !varDsc->HasGCPtr();
+        }
+
+        default:
+            return false;
+    }
+
+    return true;
+}
+
+//------------------------------------------------------------------------
+// checkForDNER: Set the lvDoNotEnregister flag for variables that are not
+// eligible for register allocation for a few reasons.
+//
+// Arguments:
+//   lclNum - The local number
+//   varDsc - Info about the local
+//
+void RegAllocImpl::checkForDNER(unsigned lclNum, LclVarDsc* varDsc)
+{
+    if (varDsc->lvDoNotEnregister)
+    {
+        return;
+    }
+
+    if (!m_compiler->compEnregLocals())
+    {
+        m_compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::NoRegVars));
+        return;
+    }
+
+    if (varTypeIsStruct(varDsc) && !varDsc->lvPromoted)
+    {
+        if (!varDsc->IsEnregisterableType())
+        {
+            m_compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::NotRegSizeStruct));
+            return;
+        }
+
+        if (varDsc->lvType == TYP_STRUCT)
+        {
+            if (!varDsc->lvRegStruct && !m_compiler->compEnregStructLocals())
+            {
+                m_compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::DontEnregStructs));
+                return;
+            }
+
+            if (varDsc->lvIsMultiRegArgOrRet())
+            {
+                // Prolog and return generators do not support SIMD<->general register moves.
+                m_compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::IsStructArg));
+                return;
+            }
+
+#if defined(TARGET_ARM)
+            if (varDsc->lvIsParam)
+            {
+                // On arm we prespill all struct args,
+                // TODO-Arm-CQ: keep them in registers, it will need a fix
+                // to "On the ARM we will spill any incoming struct args" logic in codegencommon.
+                m_compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::IsStructArg));
+                return;
+            }
+#endif // TARGET_ARM
+        }
+    }
+
+    if (varDsc->lvPinned)
+    {
+        m_compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::PinningRef));
+        return;
+    }
+
+    if (varDsc->lvTracked && varDsc->IsLiveInOutOfHandler())
+    {
+        // For now, only enregister an EH Var if it is a single def and whose refCnt > 1.
+        if (!m_compiler->IsEHVarARegCandidate(varDsc))
+        {
+            m_compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::LiveInOutOfHandler));
+            return;
+        }
+
+#ifdef JIT32_GCENCODER
+        if (m_compiler->lvaKeepAliveAndReportThis() && (lclNum == m_compiler->info.compThisArg))
+        {
+            // For the JIT32_GCENCODER, when lvaKeepAliveAndReportThis is true, we must either keep the "this" pointer
+            // in the same register for the entire method, or keep it on the stack. If it is EH-exposed, we can't ever
+            // keep it in a register, since it must also be live on the stack. Therefore, we won't attempt to allocate
+            // it.
+            m_compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::LiveInOutOfHandler));
+            return;
+        }
+#endif // JIT32_GCENCODER
+    }
+}
+
+//------------------------------------------------------------------------
+// IsContainableMemoryOp: Checks whether this is a memory op that can be contained.
+//
+// Arguments:
+//    node        - the node of interest.
+//
+// Return value:
+//    True if this will definitely be a memory reference that could be contained.
+//
+// Notes:
+//    This differs from the isMemoryOp() method on GenTree because it checks for
+//    the case of doNotEnregister local. This won't include locals that
+//    for some other reason do not become register candidates, nor those that get
+//    spilled.
+//    Also, because we usually call this before we redo dataflow, any new lclVars
+//    introduced after the last dataflow analysis will not yet be marked lvTracked,
+//    so we don't use that.
+//
+bool RegAllocImpl::isContainableMemoryOp(GenTree* node)
+{
+    if (node->isMemoryOp())
+    {
+        return true;
+    }
+    if (node->IsLocal())
+    {
+        if (!willEnregisterLocalVars())
+        {
+            return true;
+        }
+        const LclVarDsc* varDsc = m_compiler->lvaGetDesc(node->AsLclVar());
+        return varDsc->lvDoNotEnregister;
+    }
+    return false;
 }

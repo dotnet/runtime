@@ -73,10 +73,6 @@ EXTERN  g_GCShadowEnd:DWORD
 INVALIDGCVALUE equ 0CCCCCCCDh
 endif
 
-ifndef FEATURE_EH_FUNCLETS
-EXTERN _COMPlusEndCatch@20:PROC
-endif
-
 .686P
 .XMM
 ; The following macro is needed because of a MASM issue with the
@@ -271,143 +267,6 @@ _JIT_CheckedWriteBarrier&rg&@0 ENDP
 ENDM
 
 
-;***
-;JIT_ByRefWriteBarrier* - GC write barrier helper
-;
-;Purpose:
-;   Helper calls in order to assign an object to a byref field
-;   Enables book-keeping of the GC.
-;
-;Entry:
-;   EDI - address of ref-field (assigned to)
-;   ESI - address of the data  (source)
-;   ECX can be trashed
-;
-;Exit:
-;
-;Uses:
-;   EDI and ESI are incremented by a DWORD
-;
-;Exceptions:
-;
-;*******************************************************************************
-
-; The code here is tightly coupled with AdjustContextForJITHelpers, if you change
-; anything here, you might need to change AdjustContextForJITHelpers as well
-
-ByRefWriteBarrierHelper MACRO
-        ALIGN 4
-PUBLIC _JIT_ByRefWriteBarrier@0
-_JIT_ByRefWriteBarrier@0 PROC
-        ;;test for dest in range
-        mov     ecx, [esi]
-        cmp     edi, g_lowest_address
-        jb      ByRefWriteBarrier_NotInHeap
-        cmp     edi, g_highest_address
-        jae     ByRefWriteBarrier_NotInHeap
-
-ifndef WRITE_BARRIER_CHECK
-        ;;write barrier
-        mov     [edi],ecx
-endif
-
-ifdef WRITE_BARRIER_CHECK
-        ; Test dest here so if it is bad AV would happen before we change register/stack
-        ; status. This makes job of AdjustContextForJITHelpers easier.
-        cmp     [edi], 0
-
-        ;; ALSO update the shadow GC heap if that is enabled
-
-        ; use edx for address in GC Shadow,
-        push    edx
-
-        ;if g_GCShadow is 0, don't do the update
-        cmp     g_GCShadow, 0
-        je      ByRefWriteBarrier_NoShadow
-
-        mov     edx, edi
-        sub     edx, g_lowest_address   ; U/V
-        jb      ByRefWriteBarrier_NoShadow
-        add     edx, [g_GCShadow]
-        cmp     edx, [g_GCShadowEnd]
-        jae     ByRefWriteBarrier_NoShadow
-
-        ; TODO: In Orcas timeframe if we move to P4+ only on X86 we should enable
-        ; mfence barriers on either side of these two writes to make sure that
-        ; they stay as close together as possible
-
-        ; edi contains address in GC
-        ; edx contains address in ShadowGC
-        ; ecx is the value to assign
-
-        ;; When we're writing to the shadow GC heap we want to be careful to minimize
-        ;; the risk of a race that can occur here where the GC and ShadowGC don't match
-        mov     DWORD PTR [edi], ecx
-        mov     DWORD PTR [edx], ecx
-
-        ;; We need a scratch register to verify the shadow heap.  We also need to
-        ;; construct a memory barrier so that the write to the shadow heap happens
-        ;; before the read from the GC heap.  We can do both by using SUB/XCHG
-        ;; rather than PUSH.
-        ;;
-        ;; TODO: Should be changed to a push if the mfence described above is added.
-        ;;
-        sub     esp, 4
-        xchg    [esp], eax
-
-        ;; As part of our race avoidance (see above) we will now check whether the values
-        ;; in the GC and ShadowGC match. There is a possibility that we're wrong here but
-        ;; being overaggressive means we might mask a case where someone updates GC refs
-        ;; without going to a write barrier, but by its nature it will be indeterminant
-        ;; and we will find real bugs whereas the current implementation is indeterminant
-        ;; but only leads to investigations that find that this code is fundamentally flawed
-
-        mov     eax, [edi]
-        cmp     [edx], eax
-        je      ByRefWriteBarrier_CleanupShadowCheck
-        mov     [edx], INVALIDGCVALUE
-ByRefWriteBarrier_CleanupShadowCheck:
-        pop     eax
-        jmp     ByRefWriteBarrier_ShadowCheckEnd
-
-ByRefWriteBarrier_NoShadow:
-        ; If we come here then we haven't written the value to the GC and need to.
-        mov     DWORD PTR [edi], ecx
-
-ByRefWriteBarrier_ShadowCheckEnd:
-        pop     edx
-endif
-        ;;test for *src in ephemeral segement
-        cmp     ecx, g_ephemeral_low
-        jb      ByRefWriteBarrier_NotInEphemeral
-        cmp     ecx, g_ephemeral_high
-        jae     ByRefWriteBarrier_NotInEphemeral
-
-        mov     ecx, edi
-        add     esi,4
-        add     edi,4
-
-        shr     ecx, 10
-        add     ecx, [g_card_table]
-        cmp     byte ptr [ecx], 0FFh
-        jne     ByRefWriteBarrier_UpdateCardTable
-        ret
-ByRefWriteBarrier_UpdateCardTable:
-        mov     byte ptr [ecx], 0FFh
-        ret
-
-ByRefWriteBarrier_NotInHeap:
-        ; If it wasn't in the heap then we haven't updated the dst in memory yet
-        mov     [edi],ecx
-ByRefWriteBarrier_NotInEphemeral:
-        ; If it is in the GC Heap but isn't in the ephemeral range we've already
-        ; updated the Heap with the Object*.
-        add     esi,4
-        add     edi,4
-        ret
-_JIT_ByRefWriteBarrier@0 ENDP
-ENDM
-
 ;*******************************************************************************
 ; Write barrier wrappers with fcall calling convention
 ;
@@ -427,14 +286,6 @@ _JIT_WriteBarrierGroup@0 PROC
 ret
 _JIT_WriteBarrierGroup@0 ENDP
 
-        ALIGN 4
-PUBLIC @JIT_WriteBarrier_Callable@8
-@JIT_WriteBarrier_Callable@8 PROC
-        mov eax,edx
-        mov edx,ecx
-        jmp DWORD PTR [_JIT_WriteBarrierEAX_Loc]
-
-@JIT_WriteBarrier_Callable@8 ENDP
 
 UniversalWriteBarrierHelper MACRO name
         ALIGN 4
@@ -459,8 +310,6 @@ WriteBarrierHelper <ECX>
 WriteBarrierHelper <ESI>
 WriteBarrierHelper <EDI>
 WriteBarrierHelper <EBP>
-
-ByRefWriteBarrierHelper
 
 ; This is the first function outside the "keep together range". Used by BBT scripts.
 PUBLIC _JIT_WriteBarrierGroup_End@0
@@ -1075,37 +924,6 @@ _JIT_PatchedCodeLast@0 endp
 _JIT_PatchedCodeEnd@0 proc public
 ret
 _JIT_PatchedCodeEnd@0 endp
-
-
-ifndef FEATURE_EH_FUNCLETS
-; Note that the debugger skips this entirely when doing SetIP,
-; since COMPlusCheckForAbort should always return 0.  Excep.cpp:LeaveCatch
-; asserts that to be true.  If this ends up doing more work, then the
-; debugger may need additional support.
-; void __stdcall JIT_EndCatch();
-JIT_EndCatch PROC stdcall public
-
-    ; make temp storage for return address, and push the address of that
-    ; as the last arg to COMPlusEndCatch
-    mov     ecx, [esp]
-    push    ecx;
-    push    esp;
-
-    ; push the rest of COMPlusEndCatch's args, right-to-left
-    push    esi
-    push    edi
-    push    ebx
-    push    ebp
-
-    call    _COMPlusEndCatch@20 ; returns old esp value in eax, stores jump address
-    ; now eax = new esp, [esp] = new eip
-
-    pop     edx         ; edx = new eip
-    mov     esp, eax    ; esp = new esp
-    jmp     edx         ; eip = new eip
-
-JIT_EndCatch ENDP
-endif
 
 ; The following helper will access ("probe") a word on each page of the stack
 ; starting with the page right beneath esp down to the one pointed to by eax.

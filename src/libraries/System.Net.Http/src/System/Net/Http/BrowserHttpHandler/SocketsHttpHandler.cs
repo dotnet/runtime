@@ -148,6 +148,12 @@ namespace System.Net.Http
             set => throw new PlatformNotSupportedException();
         }
 
+        public int InitialHttp2MaxConcurrentStreams
+        {
+            get => throw new PlatformNotSupportedException();
+            set => throw new PlatformNotSupportedException();
+        }
+
         public TimeSpan KeepAlivePingDelay
         {
             get => throw new PlatformNotSupportedException();
@@ -209,6 +215,13 @@ namespace System.Net.Http
         }
 
         public Func<SocketsHttpPlaintextStreamFilterContext, CancellationToken, ValueTask<Stream>>? PlaintextStreamFilter
+        {
+            get => throw new PlatformNotSupportedException();
+            set => throw new PlatformNotSupportedException();
+        }
+
+        [Experimental(Experimentals.SocketsHttpHandlerExperimentalDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
+        public Func<SocketsHttpConnectionEvictionContext, CancellationToken, Task<bool>>? ShouldEvictConnection
         {
             get => throw new PlatformNotSupportedException();
             set => throw new PlatformNotSupportedException();

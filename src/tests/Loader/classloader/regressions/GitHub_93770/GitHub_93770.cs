@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Xunit;
+using TestLibrary;
 
 namespace ReproGH93770;
 
@@ -19,6 +20,7 @@ namespace ReproGH93770;
 
 public class ReproGH93770
 {
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
     [Fact]
     public static void TestEntryPoint()
     {

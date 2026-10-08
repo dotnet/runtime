@@ -690,7 +690,7 @@ namespace System.Security.Cryptography.Pkcs
             }
             else
             {
-#if NET9_0_OR_GREATER
+#if NET
                 return writer.Encode((state, verify), static (state, encoded) => state.verify(state.state, encoded));
 #else
                 return verify(state, writer.Encode());

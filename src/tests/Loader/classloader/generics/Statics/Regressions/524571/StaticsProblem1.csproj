@@ -6,4 +6,7 @@
   <ItemGroup>
     <Compile Include="StaticsProblem1.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

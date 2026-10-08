@@ -130,7 +130,7 @@ namespace System.Reflection.Metadata.Decoding.Tests
 
         // Test as much as we can with simple C# examples inline below.
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91923", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsAppleMobile))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/91923", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsAppleMobile))]
         public void SimpleSignatureProviderCoverage()
         {
             using (FileStream stream = File.OpenRead(AssemblyPathHelper.GetAssemblyLocation(typeof(SignaturesToDecode<>).GetTypeInfo().Assembly)))
@@ -260,8 +260,11 @@ namespace System.Reflection.Metadata.Decoding.Tests
 
                 MethodBodyBlock body = peReader.GetMethodBody(methodDef.RelativeVirtualAddress);
                 var il = body.GetILBytes();
-                // ILStrip replaces method body with the 'ret' IL opcode i.e. 0x2a
-                if (!(il?.Length == 1 && il[0] == 0x2a)) {
+                bool isStripped =
+                    (il?.Length == 1 && il[0] == 0x2A) ||
+                    (il?.Length == 2 && il[0] == 0xFE && il[1] == 0x24);
+                if (!isStripped)
+                {
                     StandaloneSignature localSignature = reader.GetStandaloneSignature(body.LocalSignature);
                     ImmutableArray<string> localTypes = localSignature.DecodeLocalSignature(provider, genericContext: null);
 

@@ -229,11 +229,6 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool StaticDependenciesAreComputed => true;
 
-        public static string GetMangledName(TypeDesc type, NameMangler nameMangler)
-        {
-            return nameMangler.NodeMangler.MethodTable(type);
-        }
-
         public virtual void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.NodeMangler.MethodTable(_type));
@@ -652,7 +647,7 @@ namespace ILCompiler.DependencyAnalysis
                     //   - As a matter of policy, the type and its methods may be exported for use in another module. The policy
                     //     may wish to specify that if a type is to be placed into a shared module, all of the methods associated with
                     //     it should be also be exported.
-                    foreach (var method in _type.GetClosestDefType().ConvertToCanonForm(CanonicalFormKind.Specific).GetAllMethods())
+                    foreach (var method in _type.GetClosestDefType().ConvertToCanonForm(CanonicalFormKind.Specific).GetAllMethodsAndAsyncVariants())
                     {
                         if (!MethodHasNonGenericILMethodBody(method))
                             continue;
@@ -704,7 +699,7 @@ namespace ILCompiler.DependencyAnalysis
                 // Emit VTable
                 Debug.Assert(objData.CountBytes - ((ISymbolDefinitionNode)this).Offset == GetVTableOffset(objData.TargetPointerSize));
                 SlotCounter virtualSlotCounter = SlotCounter.BeginCounting(ref /* readonly */ objData);
-                OutputVirtualSlots(factory, ref objData, _type, _type, _type, relocsOnly);
+                OutputVirtualSlots(factory, ref objData, _type, _type, relocsOnly);
 
                 // Update slot count
                 int numberOfVtableSlots = virtualSlotCounter.CountSlots(ref /* readonly */ objData);
@@ -888,42 +883,19 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        private void OutputVirtualSlots(NodeFactory factory, ref ObjectDataBuilder objData, TypeDesc implType, TypeDesc declType, TypeDesc templateType, bool relocsOnly)
+        private void OutputVirtualSlots(NodeFactory factory, ref ObjectDataBuilder objData, TypeDesc implType, TypeDesc declType, bool relocsOnly)
         {
             Debug.Assert(EmitVirtualSlots);
 
             declType = declType.GetClosestDefType();
-            templateType = templateType.ConvertToCanonForm(CanonicalFormKind.Specific);
-
             var baseType = declType.BaseType;
             if (baseType != null)
             {
-                Debug.Assert(templateType.BaseType != null);
-                OutputVirtualSlots(factory, ref objData, implType, baseType, templateType.BaseType, relocsOnly);
+                OutputVirtualSlots(factory, ref objData, implType, baseType, relocsOnly);
             }
 
-            //
-            // In the universal canonical types case, we could have base types in the hierarchy that are partial universal canonical types.
-            // The presence of these types could cause incorrect vtable layouts, so we need to fully canonicalize them and walk the
-            // hierarchy of the template type of the original input type to detect these cases.
-            //
-            // Exmaple: we begin with Derived<__UniversalCanon> and walk the template hierarchy:
-            //
-            //    class Derived<T> : Middle<T, MyStruct> { }    // -> Template is Derived<__UniversalCanon> and needs a dictionary slot
-            //                                                  // -> Basetype tempalte is Middle<__UniversalCanon, MyStruct>. It's a partial
-            //                                                        Universal canonical type, so we need to fully canonicalize it.
-            //
-            //    class Middle<T, U> : Base<U> { }              // -> Template is Middle<__UniversalCanon, __UniversalCanon> and needs a dictionary slot
-            //                                                  // -> Basetype template is Base<__UniversalCanon>
-            //
-            //    class Base<T> { }                             // -> Template is Base<__UniversalCanon> and needs a dictionary slot.
-            //
-            // If we had not fully canonicalized the Middle class template, we would have ended up with Base<MyStruct>, which does not need
-            // a dictionary slot, meaning we would have created a vtable layout that the runtime does not expect.
-            //
-
             // The generic dictionary pointer occupies the first slot of each type vtable slice
-            if (declType.HasGenericDictionarySlot() || templateType.HasGenericDictionarySlot())
+            if (declType.HasGenericDictionarySlot())
             {
                 // All generic interface types have a dictionary slot, but only some of them have an actual dictionary.
                 bool isInterfaceWithAnEmptySlot = declType.IsInterface &&
@@ -977,7 +949,7 @@ namespace ILCompiler.DependencyAnalysis
                 // Object.Finalize shouldn't get a virtual slot. Finalizer is stored in an optional field
                 // instead: most MethodTable don't have a finalizer, but all EETypes contain Object's vtable.
                 // This lets us save a pointer (+reloc) on most EETypes.
-                Debug.Assert(!declType.IsObject || !declMethod.Name.SequenceEqual("Finalize"u8));
+                Debug.Assert(!declType.IsObject || declMethod.Name != "Finalize"u8);
 
                 // No generic virtual methods can appear in the vtable!
                 Debug.Assert(!declMethod.HasInstantiation);
@@ -1002,8 +974,8 @@ namespace ILCompiler.DependencyAnalysis
                 // We also null out Equals/GetHashCode - that's just a marginal size/startup optimization.
                 if (isAsyncStateMachineValueType)
                 {
-                    if ((declType.IsObject && (declMethod.Name.SequenceEqual("Equals"u8) || declMethod.Name.SequenceEqual("GetHashCode"u8)) && implMethod.OwningType.IsWellKnownType(WellKnownType.ValueType))
-                        || (declType.IsWellKnownType(WellKnownType.ValueType) && declMethod.Name.SequenceEqual(ValueTypeGetFieldHelperMethodOverride.MetadataName)))
+                    if ((declType.IsObject && (declMethod.Name == "Equals"u8 || declMethod.Name == "GetHashCode"u8) && implMethod.OwningType.IsWellKnownType(WellKnownType.ValueType))
+                        || (declType.IsWellKnownType(WellKnownType.ValueType) && declMethod.Name == GetFieldHelperMethodOverride.MetadataName))
                     {
                         shouldEmitImpl = false;
                     }
@@ -1150,8 +1122,8 @@ namespace ILCompiler.DependencyAnalysis
                         && factory.MetadataManager.IsTypeInstantiationReflectionVisible(_type))
                     {
                         compositionNode = _type.Instantiation.Length > 1
-                            ? factory.ConstructedGenericComposition(_type.Instantiation)
-                            : factory.MaximallyConstructableType(_type.Instantiation[0]);
+                            ? factory.MetadataEnabledGenericComposition(_type.Instantiation)
+                            : factory.MaximallyMetadataEnabledType(_type.Instantiation[0]);
                     }
                     else
                     {

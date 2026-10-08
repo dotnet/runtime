@@ -6,8 +6,8 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using System.Reflection.Metadata;
+using System.Runtime.InteropServices;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
 using ILCompiler.Logging;
@@ -124,8 +124,12 @@ namespace ILCompiler.Dataflow
             base.Scan(methodIL, ref interproceduralState);
         }
 
-        public static DependencyList ScanAndProcessReturnValue(NodeFactory factory, FlowAnnotations annotations, Logger logger, MethodIL methodIL, out List<INodeWithRuntimeDeterminedDependencies> runtimeDependencies)
+        public static DependencyList ScanAndProcessReturnValue(NodeFactory factory, FlowAnnotations annotations, Logger logger, MethodIL methodIL, out List<(MethodDesc OwningMethod, INodeWithRuntimeDeterminedDependencies Dependency)> runtimeDependencies)
         {
+#if !ILTRIM
+            methodIL = AsyncMaskingILProvider.WrapIL(methodIL);
+#endif
+
             var scanner = new ReflectionMethodBodyScanner(factory, annotations, logger, new MessageOrigin(methodIL.OwningMethod));
 
             scanner.InterproceduralScan(methodIL);
@@ -293,7 +297,7 @@ namespace ILCompiler.Dataflow
             if (!calledMethod.Signature.IsStatic)
             {
                 instanceValue = methodParams[0];
-                arguments = methodParams.Skip(1).ToImmutableArray();
+                arguments = CollectionsMarshal.AsSpan(methodParams).Slice(1).ToImmutableArray();
             }
             else
             {

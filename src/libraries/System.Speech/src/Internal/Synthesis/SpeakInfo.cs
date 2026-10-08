@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Speech.Synthesis;
@@ -38,35 +39,35 @@ namespace System.Speech.Internal.Synthesis
 
         #region Internal Methods
 
-        internal void SetVoice(string name, CultureInfo culture, VoiceGender gender, VoiceAge age, int variant)
+        internal void SetVoice(string? name, CultureInfo? culture, VoiceGender gender, VoiceAge age, int variant)
         {
             TTSVoice ttsVoice = _voiceSynthesis.GetEngine(name, culture, gender, age, variant, false);
             if (!ttsVoice.Equals(_ttsVoice))
             {
                 _ttsVoice = ttsVoice;
-                _fNotInTextSeg = true;
+                NotInTextSeg = true;
             }
         }
 
         internal void AddAudio(AudioData audio)
         {
-            AddNewSeg(null, audio);
-            _fNotInTextSeg = true;
+            AddNewSeg(new SpeechSeg(audio));
+            NotInTextSeg = true;
         }
 
         internal void AddText(TTSVoice ttsVoice, TextFragment textFragment)
         {
-            if (_fNotInTextSeg || ttsVoice != _ttsVoice)
+            if (NotInTextSeg || ttsVoice != _ttsVoice)
             {
-                AddNewSeg(ttsVoice, null);
-                _fNotInTextSeg = false;
+                AddNewSeg(new SpeechSeg(ttsVoice));
+                NotInTextSeg = false;
             }
             _lastSeg.AddFrag(textFragment);
         }
 
-        internal SpeechSeg RemoveFirst()
+        internal SpeechSeg? RemoveFirst()
         {
-            SpeechSeg speechSeg = null;
+            SpeechSeg? speechSeg = null;
             if (_listSeg.Count > 0)
             {
                 speechSeg = _listSeg[0];
@@ -79,10 +80,9 @@ namespace System.Speech.Internal.Synthesis
 
         #region Private Method
 
-        private void AddNewSeg(TTSVoice pCurrVoice, AudioData audio)
+        [MemberNotNull(nameof(_lastSeg))]
+        private void AddNewSeg(SpeechSeg pNew)
         {
-            SpeechSeg pNew = new(pCurrVoice, audio);
-
             _listSeg.Add(pNew);
             _lastSeg = pNew;
         }
@@ -95,13 +95,14 @@ namespace System.Speech.Internal.Synthesis
         private TTSVoice _ttsVoice;
 
         // If true then a new segment is required for the next Add Text
-        private bool _fNotInTextSeg = true;
+        [MemberNotNullWhen(false, nameof(_lastSeg))]
+        private bool NotInTextSeg { get; set; } = true;
 
         // list of segments (text or audio)
         private List<SpeechSeg> _listSeg = new();
 
         // current segment
-        private SpeechSeg _lastSeg;
+        private SpeechSeg? _lastSeg;
 
         // Reference to the VoiceSynthesizer that created it
         private VoiceSynthesis _voiceSynthesis;
@@ -117,7 +118,7 @@ namespace System.Speech.Internal.Synthesis
         {
             _uri = uri;
             _resourceLoader = resourceLoader;
-            Uri baseAudio;
+            Uri? baseAudio;
             _stream = _resourceLoader.LoadFile(uri, out _mimeType, out baseAudio, out _localFile);
         }
 
@@ -136,7 +137,7 @@ namespace System.Speech.Internal.Synthesis
         }
 
         internal Uri _uri;
-        internal string _mimeType;
+        internal string? _mimeType;
         internal Stream _stream;
 
         protected virtual void Dispose(bool disposing)
@@ -152,14 +153,14 @@ namespace System.Speech.Internal.Synthesis
                 if (_stream != null)
                 {
                     _stream.Dispose();
-                    _stream = null;
-                    _localFile = null;
-                    _uri = null;
+                    _stream = null!;
+                    _localFile = null!;
+                    _uri = null!;
                 }
             }
         }
 
-        private string _localFile;
+        private string? _localFile;
         private ResourceLoader _resourceLoader;
     }
 

@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using Point = System.Numerics.Vector4;
 using Xunit;
 
-namespace VectorMathTests
+namespace SIMDTests.SumsTests
 {
     public class Program
     {
@@ -40,13 +40,13 @@ namespace VectorMathTests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/120904", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
         public static void TestEntryPoint()
         {
             System.Diagnostics.Stopwatch clock = new System.Diagnostics.Stopwatch();
             clock.Start();
             Random random = new Random(Seed);
-            int N = 10000;
+            // WASM-TODO: active issue https://github.com/dotnet/runtime/issues/124218
+            int N = TestLibrary.PlatformDetection.IsWasm ? 1000 : 10000;
             Point[] arr = new Point[N];
             for (int i = 0; i < N; ++i)
             {

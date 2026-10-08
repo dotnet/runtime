@@ -1,4 +1,8 @@
 <Project>
+  <PropertyGroup>
+    <WasmAppRuntimeFlavor>Mono</WasmAppRuntimeFlavor>
+  </PropertyGroup>
+
   <Import Project="$(WasmCommonTargetsPath)WasmApp.Common.targets" />
 
   <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.WasiAppBuilder" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
@@ -27,7 +31,6 @@
       _GetWasiGenerateAppBundleDependencies;
       _WasiGenerateAppBundle;
       _GenerateRunWasmtimeScript;
-      _WasmGenerateNodeScripts;
     </WasmGenerateAppBundleDependsOn>
 
     <WasiWriteRspForLinkingDependsOn>
@@ -45,6 +48,17 @@
     <!-- Temporarily `false`, till sdk gets a fix for supporting the new file -->
     <WasmEmitSymbolMap Condition="'$(WasmEmitSymbolMap)' == '' and '$(RunAOTCompilation)' != 'true'">false</WasmEmitSymbolMap>
     <TrimMode Condition="'$(TrimMode)' == ''">full</TrimMode>
+
+    <!-- The packaged WASI SDK ships the substitution XMLs next to this targets file
+         (see Microsoft.NET.Runtime.WebAssembly.Wasi.Sdk.pkgproj). For in-tree builds
+         the files only exist under $(BrowserProjectRoot)build\, so fall back to that. -->
+    <_WasiIntrinsicsSubstitutionsDir Condition="Exists('$(MSBuildThisFileDirectory)ILLink.Substitutions.WasmIntrinsics.xml')">$(MSBuildThisFileDirectory)</_WasiIntrinsicsSubstitutionsDir>
+    <_WasiIntrinsicsSubstitutionsDir Condition="'$(_WasiIntrinsicsSubstitutionsDir)' == '' and '$(BrowserProjectRoot)' != ''">$(BrowserProjectRoot)build\</_WasiIntrinsicsSubstitutionsDir>
+
+    <!-- CoreCLR determines intrinsic support in its own CoreLib/JIT and does not pass CoreLib
+         through this linker invocation, so these Mono substitutions do not apply. -->
+    <_ExtraTrimmerArgs Condition="'$(RuntimeFlavor)' != 'CoreCLR' and '$(WasmEnableSIMD)' != 'false' and '$(_WasiIntrinsicsSubstitutionsDir)' != ''">$(_ExtraTrimmerArgs) --substitutions "$(_WasiIntrinsicsSubstitutionsDir)ILLink.Substitutions.WasmIntrinsics.xml"</_ExtraTrimmerArgs>
+    <_ExtraTrimmerArgs Condition="'$(RuntimeFlavor)' != 'CoreCLR' and '$(WasmEnableSIMD)' == 'false' and '$(_WasiIntrinsicsSubstitutionsDir)' != ''">$(_ExtraTrimmerArgs) --substitutions "$(_WasiIntrinsicsSubstitutionsDir)ILLink.Substitutions.NoWasmIntrinsics.xml"</_ExtraTrimmerArgs>
 
     <WasmRunWasmOpt Condition="'$(WasmRunWasmOpt)' == ''">false</WasmRunWasmOpt>
 
@@ -89,6 +103,36 @@
     <PropertyGroup Condition="'$(_WasmRuntimeConfigFilePath)' == ''">
       <_WasmRuntimeConfigFilePath Condition="$([System.String]::new(%(PublishItemsOutputGroupOutputs.Identity)).EndsWith('$(AssemblyName).runtimeconfig.json'))">@(PublishItemsOutputGroupOutputs)</_WasmRuntimeConfigFilePath>
     </PropertyGroup>
+  </Target>
+
+  <!-- The runtime pack's RuntimeList.xml lists its link-time inputs (static libraries, sources,
+       headers, response files, WIT definitions) as native assets, so the SDK would copy them into
+       the build and publish output of every self-contained app. The native link reads them from
+       the runtime pack directly, so drop them from the runtime pack assets before they reach
+       ReferenceCopyLocalPaths (build) and ResolvedFileToPublish (publish). Mirrors the browser
+       filtering in AssetsComputingHelper.ShouldFilterCandidate. For CoreCLR, the pack's stock
+       corerun is replaced in the bundle by the per-app linked host.
+       ResolveRuntimePackAssets can be requested (and skipped) before @(RuntimePack) is populated,
+       which still triggers its AfterTargets. The @(RuntimePackAsset) condition keeps this target
+       from being marked as done in that case, so it runs again after the real resolution. -->
+  <Target Name="_WasiRemoveRuntimePackLinkInputs"
+          AfterTargets="ResolveRuntimePackAssets"
+          Condition="'$(IsWasiProject)' == 'true' and '@(RuntimePackAsset)' != ''">
+    <ItemGroup>
+      <_WasiRuntimePackLinkInput Include="@(RuntimePackAsset)"
+                                 Condition="'%(RuntimePackAsset.AssetType)' == 'native' and
+                                            ('%(RuntimePackAsset.Extension)' == '.a' or
+                                             '%(RuntimePackAsset.Extension)' == '.o' or
+                                             '%(RuntimePackAsset.Extension)' == '.c' or
+                                             '%(RuntimePackAsset.Extension)' == '.h' or
+                                             '%(RuntimePackAsset.Extension)' == '.rsp' or
+                                             '%(RuntimePackAsset.Extension)' == '.props' or
+                                             '%(RuntimePackAsset.Extension)' == '.wit' or
+                                             ('%(RuntimePackAsset.Extension)' == '.json' and '%(RuntimePackAsset.FileName)' == 'wasm-props') or
+                                             ('$(WasmAppRuntimeFlavor)' == 'CoreCLR' and '%(RuntimePackAsset.FileName)%(RuntimePackAsset.Extension)' == 'corerun'))" />
+      <RuntimePackAsset Remove="@(_WasiRuntimePackLinkInput)" />
+      <ReferenceCopyLocalPaths Remove="@(_WasiRuntimePackLinkInput)" />
+    </ItemGroup>
   </Target>
 
   <Target Name="_GetWasiGenerateAppBundleDependencies">
@@ -152,8 +196,9 @@
       <Output TaskParameter="Lines" ItemName="_WasiSdkVersionLines" />
     </ReadLinesFromFile>
     <PropertyGroup>
-      <_ExpectedWasiSdkVersion>25.0</_ExpectedWasiSdkVersion>
-      <_FoundExpectedWasiSdkVersion Condition="'%(_WasiSdkVersionLines.Identity)' == '$(_ExpectedWasiSdkVersion)'">true</_FoundExpectedWasiSdkVersion>
+      <!-- In-tree builds override this from eng/wasm/wasi-sdk-version.txt via WasiApp.InTree.targets. -->
+      <_ExpectedWasiSdkVersion Condition="'$(_ExpectedWasiSdkVersion)' == ''">34.0</_ExpectedWasiSdkVersion>
+      <_FoundExpectedWasiSdkVersion Condition="$([System.String]::Copy('%(_WasiSdkVersionLines.Identity)').StartsWith('$(_ExpectedWasiSdkVersion)'))">true</_FoundExpectedWasiSdkVersion>
       <_ToolchainMissingErrorMessage Condition="'$(_FoundExpectedWasiSdkVersion)' == ''">Please use wasi-sdk version $(_ExpectedWasiSdkVersion) and set %24(WASI_SDK_PATH) . It can be obtained from https://github.com/WebAssembly/wasi-sdk/releases</_ToolchainMissingErrorMessage>
       <_ToolchainMissingErrorMessage Condition="'$(WASI_SDK_PATH)' == '' or !Exists('$(WASI_SDK_PATH)/VERSION')">Could not find wasi-sdk. Install wasi-sdk and set %24(WASI_SDK_PATH) . It can be obtained from https://github.com/WebAssembly/wasi-sdk/releases</_ToolchainMissingErrorMessage>
       <_ToolchainMissingErrorMessage Condition="'$(_ToolchainMissingErrorMessage)' == '' and '$(_ToolchainMissingPaths)' != ''">Using WASI_SDK_PATH=$(WASI_SDK_PATH), cannot find $(_ToolchainMissingPaths) .</_ToolchainMissingErrorMessage>
@@ -176,6 +221,7 @@
       <_MonoAotCrossCompilerPath>@(MonoAotCrossCompiler->WithMetadataValue('RuntimeIdentifier','wasi-wasm'))</_MonoAotCrossCompilerPath>
       <_WasmDefaultFlagsRsp>$([MSBuild]::NormalizePath($(_WasmRuntimePackSrcDir), 'wasi-default.rsp'))</_WasmDefaultFlagsRsp>
       <_WasmDefaultLinkFlagsRsp>$([MSBuild]::NormalizePath($(_WasmRuntimePackSrcDir), 'wasi-link.rsp'))</_WasmDefaultLinkFlagsRsp>
+      <_WasmLlvmSizeRsp>$(_WasmIntermediateOutputPath)emcc-llvmsize.rsp</_WasmLlvmSizeRsp>
       <WasmLinkIcalls Condition="'$(WasmLinkIcalls)' == ''">$(WasmBuildNative)</WasmLinkIcalls>
 
       <_WasmICallTablePath>$(_WasmIntermediateOutputPath)icall-table.h</_WasmICallTablePath>
@@ -244,7 +290,7 @@
       <_WasiClangCommonFlags Include="-v"                                Condition="'$(WasiClangVerbose)' != 'false'" />
       <!--<_WasiClangCommonFlags Include="-s DISABLE_EXCEPTION_CATCHING=0"   Condition="'$(WasmEnableExceptionHandling)' == 'false'" />-->
       <!--<_WasiClangCommonFlags Include="-fwasm-exceptions"                 Condition="'$(WasmEnableExceptionHandling)' == 'true'" />-->
-      <!--<_WasiClangCommonFlags Include="-msimd128"                         Condition="'$(WasmEnableSIMD)' == 'true'" />-->
+      <_WasiClangCommonFlags Include="-msimd128"                         Condition="'$(WasmEnableSIMD)' == 'true'" />
 
       <_WasmCommonCFlags Include="-DGEN_PINVOKE=1" />
       <_WasmCommonCFlags Condition="'$(_WasmShouldAOT)' == 'true'"         Include="-DENABLE_AOT=1" />
@@ -406,7 +452,7 @@
       <_WasiLinkStepArgs Condition="'$(OS)' != 'Windows_NT'" Include="@(_WasiFilePathForFixup -> '&quot;%(Identity)&quot;')" />
 
       <!-- keep in sync with src\mono\wasi\wasi.proj -->
-      <_WasiLinkStepArgs Include="-Wl,-z,stack-size=8388608,-lwasi-emulated-process-clocks,-lwasi-emulated-signal,-lwasi-emulated-mman,-lwasi-emulated-pthread"/>
+      <_WasiLinkStepArgs Include="-Wl,-z,stack-size=8388608,-lwasi-emulated-process-clocks,-lwasi-emulated-signal,-lwasi-emulated-mman"/>
       <!--
       this together with some DLLImports makes dependency on wasi:http@0.2.0
       it will get trimmed when HTTP is not used and using publish + native rebuild
@@ -480,50 +526,9 @@
     <Exec Condition="'$(OS)' != 'Windows_NT'" Command="chmod a+x &quot;$(WasmRunWasmtimeScriptPath)&quot;" />
   </Target>
 
-  <Target Name="_WasmGenerateNodeScripts">
-    <PropertyGroup>
-      <_WasmNodeJSPath>$(WasmAppDir)node.mjs</_WasmNodeJSPath>
-      <_WasmNodeJSContents><![CDATA[
-import { readFile } from 'node:fs/promises';
-import { WASI } from 'wasi';
-import { argv, env } from 'node:process';
-
-const wasi = new WASI({
-  version: 'preview1',
-  args: argv.slice(1),
-  env,
-  preopens: {
-    '/': '.',
-    '/managed': './managed',
-  },
-});
-
-const wasm = await WebAssembly.compile(
-  await readFile(new URL('./dotnet.wasm', import.meta.url)),
-);
-const instance = await WebAssembly.instantiate(wasm, wasi.getImportObject());
-
-wasi.start(instance);
-]]></_WasmNodeJSContents>
-      <_WasmNodeScriptPath>$(WasmAppDir)run-node.sh</_WasmNodeScriptPath>
-      <_WasmNodeScriptContents>node --experimental-modules --experimental-wasm-modules node.mjs $([System.IO.Path]::GetFileNameWithoutExtension($(WasmMainAssemblyFileName))) $*</_WasmNodeScriptContents>
-    </PropertyGroup>
-
-    <WriteLinesToFile
-      File="$(_WasmNodeJSPath)"
-      Lines="$(_WasmNodeJSContents)"
-      Overwrite="true" />
-
-    <WriteLinesToFile
-      File="$(_WasmNodeScriptPath)"
-      Lines="$(_WasmNodeScriptContents)"
-      Overwrite="true" />
-    <Exec Condition="'$(OS)' != 'Windows_NT'" Command="chmod a+x &quot;$(_WasmNodeScriptPath)&quot;" />
-  </Target>
-
   <Target Name="ProvideDefaultUserRuntimeConfig" BeforeTargets="_GenerateRuntimeConfigurationFilesInputCache" Condition="'$(GenerateRuntimeConfigurationFiles)' == 'true'">
     <PropertyGroup Condition="!Exists('$(UserRuntimeConfig)')">
-      <UserRuntimeConfig>$(MSBuildThisFileDirectory)wasiconsole.runtimeconfig.template.json</UserRuntimeConfig>
+      <UserRuntimeConfig>$(MSBuildThisFileDirectory)wasi.runtimeconfig.template.json</UserRuntimeConfig>
     </PropertyGroup>
   </Target>
 

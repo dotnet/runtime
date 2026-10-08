@@ -19,6 +19,11 @@ Abstract:
 #ifndef _PAL_SIGNAL_HPP_
 #define _PAL_SIGNAL_HPP_
 
+#include <signal.h>
+#if defined(TARGET_WASI)
+#include "pal/wasi/pal_wasi_missing.h"
+#endif
+
 #if !HAVE_MACH_EXCEPTIONS
 
 // Return context and status for the signal_handler_worker.
@@ -92,6 +97,12 @@ Parameters :
 void ExecuteHandlerOnCustomStack(int code, siginfo_t *siginfo, void *context, size_t sp, SignalHandlerWorkerReturnPoint* returnPoint);
 
 #endif // !HAVE_MACH_EXCEPTIONS
+
+namespace CorUnix
+{
+    // Keep this header self-contained without including pal/thread.hpp.
+    class CPalThread;
+}
 
 /*++
 Function :

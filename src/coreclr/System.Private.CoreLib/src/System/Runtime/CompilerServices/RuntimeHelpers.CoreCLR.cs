@@ -4,6 +4,7 @@
 using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Numerics;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
@@ -162,6 +163,7 @@ namespace System.Runtime.CompilerServices
         // This call will generate an exception if the specified class constructor threw an
         // exception when it ran.
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(QCall, EntryPoint = "ReflectionInvocation_RunClassConstructor")]
         private static partial void RunClassConstructor(QCallTypeHandle type);
 
@@ -182,6 +184,7 @@ namespace System.Runtime.CompilerServices
         // This call will generate an exception if the specified module constructor threw an
         // exception when it ran.
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(QCall, EntryPoint = "ReflectionInvocation_RunModuleConstructor")]
         private static partial void RunModuleConstructor(QCallModule module);
 
@@ -193,9 +196,11 @@ namespace System.Runtime.CompilerServices
             RunModuleConstructor(new QCallModule(ref rm));
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(QCall, EntryPoint = "ReflectionInvocation_CompileMethod")]
         internal static partial void CompileMethod(RuntimeMethodHandleInternal method);
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(QCall, EntryPoint = "ReflectionInvocation_PrepareMethod")]
         private static unsafe partial void PrepareMethod(RuntimeMethodHandleInternal method, IntPtr* pInstantiation, int cInstantiation);
 
@@ -212,12 +217,13 @@ namespace System.Runtime.CompilerServices
             ReadOnlySpan<IntPtr> instantiationHandles = RuntimeTypeHandle.CopyRuntimeTypeHandles(instantiation, stackScratch: stackalloc IntPtr[8]);
             fixed (IntPtr* pInstantiation = instantiationHandles)
             {
-                PrepareMethod(methodInfo.Value, pInstantiation, instantiationHandles.Length);
+                PrepareMethod(IRuntimeMethodInfo.GetValue(methodInfo), pInstantiation, instantiationHandles.Length);
                 GC.KeepAlive(instantiation);
                 GC.KeepAlive(methodInfo);
             }
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(QCall, EntryPoint = "ReflectionInvocation_PrepareDelegate")]
         private static partial void PrepareDelegate(ObjectHandleOnStack d);
 
@@ -235,9 +241,11 @@ namespace System.Runtime.CompilerServices
         /// If a hash code has been assigned to the object, it is returned. Otherwise zero is
         /// returned.
         /// </summary>
+        /// <safety>Runtime FCall that reads the object's existing hash from its header and returns it as an int; it dereferences no raw pointer and touches no caller-chosen memory.</safety>
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern int TryGetHashCode(object? o);
+        internal static extern safe int TryGetHashCode(object? o);
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(QCall, EntryPoint = "ObjectNative_GetHashCodeSlow")]
         private static partial int GetHashCodeSlow(ObjectHandleOnStack o);
 
@@ -285,8 +293,9 @@ namespace System.Runtime.CompilerServices
             return ContentEquals(o1, o2);
         }
 
+        /// <safety>Runtime FCall that compares the field contents of two same-typed managed value objects and returns a bool; it works through type-checked object references and dereferences no raw pointer.</safety>
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern bool ContentEquals(object o1, object o2);
+        private static extern safe bool ContentEquals(object o1, object o2);
 
         [Obsolete("OffsetToStringData has been deprecated. Use string.GetPinnableReference() instead.")]
         public static int OffsetToStringData
@@ -324,8 +333,9 @@ namespace System.Runtime.CompilerServices
         // This method ensures that there is sufficient stack to execute the average Framework function.
         // If there is not enough stack, then it return false.
         // Note: this method is not to be confused with ProbeForSufficientStack.
+        /// <safety>Runtime FCall that only checks the current thread's remaining stack space; it takes no arguments and dereferences no caller-supplied memory.</safety>
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern bool TryEnsureSufficientExecutionStack();
+        public static extern safe bool TryEnsureSufficientExecutionStack();
 
         public static object GetUninitializedObject(
             // This API doesn't call any constructors, but the type needs to be seen as constructed.
@@ -345,6 +355,7 @@ namespace System.Runtime.CompilerServices
             return rt.GetUninitializedObject();
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(QCall, EntryPoint = "ObjectNative_AllocateUninitializedClone")]
         internal static partial void AllocateUninitializedClone(ObjectHandleOnStack objHandle);
 
@@ -385,10 +396,16 @@ namespace System.Runtime.CompilerServices
             throw new InvalidOperationException();
         }
 #endif
+
         [DebuggerHidden]
         [DebuggerStepThrough]
         internal static ref byte GetRawData(this object obj) =>
             ref Unsafe.As<RawData>(obj).Data;
+
+        [DebuggerHidden]
+        [DebuggerStepThrough]
+        internal static ref nint GetMethodTableRef(this object obj)
+            => ref Unsafe.Subtract(ref Unsafe.As<byte, nint>(ref GetRawData(obj)), 1);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static unsafe nuint GetRawObjectDataSize(object obj)
@@ -439,6 +456,15 @@ namespace System.Runtime.CompilerServices
             return GetMethodTable(obj)->HasComponentSize;
         }
 
+        // Returns true iff the type of the object requires finalization,
+        // which includes a finalizer inherited from a base type.
+        internal static unsafe bool ObjectHasFinalizer(object obj)
+        {
+            bool hasFinalizer = GetMethodTable(obj)->HasFinalizer;
+            GC.KeepAlive(obj); // Keep MethodTable alive
+            return hasFinalizer;
+        }
+
         /// <summary>
         /// Boxes a given value using an input <see cref="MethodTable"/> to determine its type.
         /// </summary>
@@ -463,33 +489,67 @@ namespace System.Runtime.CompilerServices
         [Intrinsic]
         internal static unsafe MethodTable* GetMethodTable(object obj) => GetMethodTable(obj);
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(QCall, EntryPoint = "MethodTable_AreTypesEquivalent")]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool AreTypesEquivalent(MethodTable* pMTa, MethodTable* pMTb);
 
-        /// <summary>
-        /// Allocate memory that is associated with the <paramref name="type"/> and
-        /// will be freed if and when the <see cref="Type"/> is unloaded.
-        /// </summary>
-        /// <param name="type">Type associated with the allocated memory.</param>
-        /// <param name="size">Amount of memory in bytes to allocate.</param>
-        /// <returns>The allocated memory</returns>
+        /// <summary>Allocates memory that's associated with the <paramref name="type" /> and is freed if and when the <see cref="Type" /> is unloaded.</summary>
+        /// <param name="type">The type associated with the allocated memory.</param>
+        /// <param name="size">The amount of memory to allocate, in bytes.</param>
+        /// <returns>The allocated memory.</returns>
+        /// <exception cref="ArgumentException"><paramref name="type" /> must be a type provided by the runtime.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="size" /> is negative.</exception>
         public static IntPtr AllocateTypeAssociatedMemory(Type type, int size)
         {
             if (type is not RuntimeType rt)
+            {
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(type));
+            }
 
             ArgumentOutOfRangeException.ThrowIfNegative(size);
 
             return AllocateTypeAssociatedMemory(new QCallTypeHandle(ref rt), (uint)size);
         }
 
+        /// <summary>Allocates aligned memory that's associated with the <paramref name="type" /> and is freed if and when the <see cref="Type" /> is unloaded.</summary>
+        /// <param name="type">The type associated with the allocated memory.</param>
+        /// <param name="size">The amount of memory to allocate, in bytes.</param>
+        /// <param name="alignment">The alignment, in bytes, of the memory to allocate. This must be a power of <c>2</c>.</param>
+        /// <returns>The allocated aligned memory.</returns>
+        /// <exception cref="ArgumentException"><paramref name="type" /> must be a type provided by the runtime.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="size" /> is negative.</exception>
+        /// <exception cref="ArgumentException"><paramref name="alignment" /> is not a power of <c>2</c>.</exception>
+        public static IntPtr AllocateTypeAssociatedMemory(Type type, int size, int alignment)
+        {
+            if (type is not RuntimeType rt)
+            {
+                throw new ArgumentException(SR.Arg_MustBeType, nameof(type));
+            }
+
+            ArgumentOutOfRangeException.ThrowIfNegative(size);
+
+            if (!BitOperations.IsPow2(alignment))
+            {
+                // The C standard doesn't define what a valid alignment is, however Windows and POSIX implementation requires a power of 2
+                ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_AlignmentMustBePow2);
+            }
+
+            return AllocateTypeAssociatedMemoryAligned(new QCallTypeHandle(ref rt), (uint)size, (uint)alignment);
+        }
+
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(QCall, EntryPoint = "RuntimeTypeHandle_AllocateTypeAssociatedMemory")]
         private static partial IntPtr AllocateTypeAssociatedMemory(QCallTypeHandle type, uint size);
+
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
+        [LibraryImport(QCall, EntryPoint = "RuntimeTypeHandle_AllocateTypeAssociatedMemoryAligned")]
+        private static partial IntPtr AllocateTypeAssociatedMemoryAligned(QCallTypeHandle type, uint size, uint alignment);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern unsafe TailCallArgBuffer* GetTailCallArgBuffer();
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(QCall, EntryPoint = "TailCallHelp_AllocTailCallArgBufferInternal")]
         private static unsafe partial TailCallArgBuffer* AllocTailCallArgBufferInternal(int size);
 
@@ -596,7 +656,7 @@ namespace System.Runtime.CompilerServices
         /// <returns>The size of instances of the type.</returns>
         /// <exception cref="ArgumentException">The passed-in type is not a valid type to get the size of.</exception>
         /// <remarks>
-        /// This API returns the same value as <see cref="Unsafe.SizeOf{T}"/> for the type that <paramref name="type"/> represents.
+        /// This API returns the same value as <c>sizeof(T)</c> for the type that <paramref name="type"/> represents.
         /// </remarks>
         public static int SizeOf(RuntimeTypeHandle type)
         {
@@ -609,6 +669,38 @@ namespace System.Runtime.CompilerServices
                 throw new ArgumentException(SR.Arg_TypeNotSupported);
 
             return result;
+        }
+
+        [UnmanagedCallersOnly]
+        internal static unsafe void CallToString(object* pObj, string* pResult, Exception* pException)
+        {
+            try
+            {
+                *pResult = pObj->ToString();
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
+        // Dummy method providing a MethodDesc with the correct signature (IntPtr -> object)
+        // for newobj allocator JIT helpers on portable entry point platforms. The interpreter
+        // uses the MethodDesc to derive the call cookie; the method itself is never executed.
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern object NewobjHelperDummy(IntPtr methodTable);
+
+        [UnmanagedCallersOnly]
+        internal static unsafe void CallDefaultConstructor(object* pObj, delegate*<object, void> pCtor, Exception* pException)
+        {
+            try
+            {
+                pCtor(*pObj);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
         }
     }
     // Helper class to assist with unsafe pinning of arbitrary objects.
@@ -737,7 +829,7 @@ namespace System.Runtime.CompilerServices
         /// generic dictionary is described in the DictionaryLayout of the associated canonical MethodTable.
         /// </summary>
         [FieldOffset(ElementTypeOffset)]
-        public MethodTable*** PerInstInfo;
+        public TypeHandle** PerInstInfo;
 
         /// <summary>
         /// This interface map used to list out the set of interfaces. Only meaningful if InterfaceCount is non-zero.
@@ -780,14 +872,17 @@ namespace System.Runtime.CompilerServices
 #if FEATURE_TYPEEQUIVALENCE
         private const uint enum_flag_HasTypeEquivalence = 0x02000000;
 #endif // FEATURE_TYPEEQUIVALENCE
+#if FEATURE_OBJCMARSHAL
+        private const uint enum_flag_IsTrackedReferenceWithFinalizer = 0x04000000;
+#endif // FEATURE_OBJCMARSHAL
         private const uint enum_flag_HasFinalizer = 0x00100000;
         private const uint enum_flag_Collectible = 0x00200000;
         private const uint enum_flag_Category_Mask = 0x000F0000;
         private const uint enum_flag_Category_ValueType = 0x00040000;
         private const uint enum_flag_Category_Nullable = 0x00050000;
-        private const uint enum_flag_Category_IsPrimitiveMask = 0x000E0000;
-        private const uint enum_flag_Category_PrimitiveValueType = 0x00060000; // sub-category of ValueType, Enum or primitive value type
-        private const uint enum_flag_Category_TruePrimitive = 0x00070000; // sub-category of ValueType, Primitive (ELEMENT_TYPE_I, etc.)
+        private const uint enum_flag_Category_ElementTypeMask = 0x000E0000;
+        private const uint enum_flag_Category_Primitive = 0x00060000;
+        private const uint enum_flag_Category_TruePrimitive = 0x00070000;
         private const uint enum_flag_Category_Array = 0x00080000;
         private const uint enum_flag_Category_Array_Mask = 0x000C0000;
         private const uint enum_flag_Category_ValueType_Mask = 0x000C0000;
@@ -840,6 +935,10 @@ namespace System.Runtime.CompilerServices
         public bool HasTypeEquivalence => (Flags & enum_flag_HasTypeEquivalence) != 0;
 #endif // FEATURE_TYPEEQUIVALENCE
 
+#if FEATURE_OBJCMARSHAL
+        public bool IsTrackedReferenceWithFinalizer => (Flags & enum_flag_IsTrackedReferenceWithFinalizer) != 0;
+#endif // FEATURE_OBJCMARSHAL
+
         public bool HasFinalizer => (Flags & enum_flag_HasFinalizer) != 0;
 
         public bool IsCollectible => (Flags & enum_flag_Collectible) != 0;
@@ -888,10 +987,22 @@ namespace System.Runtime.CompilerServices
 
         public bool IsNullable { [MethodImpl(MethodImplOptions.AggressiveInlining)] get { return (Flags & enum_flag_Category_Mask) == enum_flag_Category_Nullable; } }
 
+        public TypeHandle NullableType
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                Debug.Assert(IsNullable);
+
+                // Nullable<T> has one generic argument in its first dictionary.
+                return **PerInstInfo;
+            }
+        }
+
         public bool IsByRefLike => (Flags & (enum_flag_HasComponentSize | enum_flag_IsByRefLike)) == enum_flag_IsByRefLike;
 
         // Warning! UNLIKE the similarly named Reflection api, this method also returns "true" for Enums.
-        public bool IsPrimitive => (Flags & enum_flag_Category_IsPrimitiveMask) == enum_flag_Category_PrimitiveValueType;
+        public bool IsPrimitive => (Flags & enum_flag_Category_ElementTypeMask) == enum_flag_Category_Primitive;
 
         public bool IsTruePrimitive => (Flags & enum_flag_Category_Mask) is enum_flag_Category_TruePrimitive;
 
@@ -948,9 +1059,6 @@ namespace System.Runtime.CompilerServices
         /// </summary>
         [MethodImpl(MethodImplOptions.InternalCall)]
         public extern MethodTable* GetMethodTableMatchingParentClass(MethodTable* parent);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public extern MethodTable* InstantiationArg0();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public uint GetNullableNumInstanceFieldBytes()
@@ -1046,6 +1154,7 @@ namespace System.Runtime.CompilerServices
     internal unsafe struct MethodTableAuxiliaryData
     {
         private uint Flags;
+        private int CachedVersionResilientHashCode;
         private void* LoaderModule;
         private nint ExposedClassObjectRaw;
 
@@ -1240,6 +1349,7 @@ namespace System.Runtime.CompilerServices
             return CanCastTo_NoCacheLookup(srcTH.m_asTAddr, destTH.m_asTAddr) != Interop.BOOL.FALSE;
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeHandle_CanCastTo_NoCacheLookup")]
         private static partial Interop.BOOL CanCastTo_NoCacheLookup(void* fromTypeHnd, void* toTypeHnd);
 

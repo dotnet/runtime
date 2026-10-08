@@ -95,13 +95,7 @@ namespace
                 placementInfo.m_alignment = DATA_ALIGNMENT;
             }
             else
-#elif defined(FEATURE_64BIT_ALIGNMENT)
-            if (pNestedType.RequiresAlign8())
-            {
-                placementInfo.m_alignment = 8;
-            }
-            else
-#endif // FEATURE_64BIT_ALIGNMENT
+#endif // !TARGET_64BIT && (DATA_ALIGNMENT > 4)
             if (pNestedType.GetMethodTable()->ContainsGCPointers())
             {
                 // this field type has GC pointers in it, which need to be pointer-size aligned
@@ -111,6 +105,12 @@ namespace
             {
                 placementInfo.m_alignment = pNestedType.GetMethodTable()->GetFieldAlignmentRequirement();
             }
+#ifdef FEATURE_64BIT_ALIGNMENT
+            if (pNestedType.RequiresAlign8())
+            {
+                placementInfo.m_alignment = max(8u, placementInfo.m_alignment);
+            }
+#endif // FEATURE_64BIT_ALIGNMENT
         }
 
         // No other type permitted for ManagedSequential.
@@ -397,6 +397,16 @@ namespace
         return FALSE;
     }
 
+    BOOL TypeHasDecimalFloatingPointField(CorElementType corElemType, TypeHandle pNestedType)
+    {
+        if (corElemType == ELEMENT_TYPE_VALUETYPE)
+        {
+            _ASSERTE(!pNestedType.IsNull());
+            return pNestedType.GetMethodTable()->IsDecimalFloatingPointOrHasDecimalFloatingPointFields();
+        }
+        return FALSE;
+    }
+
     ParseNativeTypeFlags NlTypeToNativeTypeFlags(CorNativeLinkType nlType)
     {
         ParseNativeTypeFlags nativeTypeFlags = ParseNativeTypeFlags::None;
@@ -487,6 +497,11 @@ auto EEClassLayoutInfo::GetNestedFieldFlags(Module* pModule, FieldDesc *pFields,
         if (TypeHasInt128Field(corElemType, typeHandleMaybe))
         {
             flags |= NestedFieldFlags::Int128;
+        }
+
+        if (TypeHasDecimalFloatingPointField(corElemType, typeHandleMaybe))
+        {
+            flags |= NestedFieldFlags::DecimalFloatingPoint;
         }
     }
 
@@ -632,6 +647,45 @@ ULONG EEClassLayoutInfo::InitializeCStructFieldLayout(
     SetFieldOffsets(pFields, cFields, pInfoArray, numInstanceFields);
 
     UINT32 managedSize = AlignSize(lastFieldEnd, alignmentRequirement);
+
+    return SetInstanceBytesSize(managedSize);
+}
+
+ULONG EEClassLayoutInfo::InitializeCUnionFieldLayout(
+    FieldDesc* pFields,
+    MethodTable** pByValueClassCache,
+    ULONG cFields
+)
+{
+    STANDARD_VM_CONTRACT;
+
+    SetLayoutType(LayoutType::CUnion);
+
+    NewArrayHolder<LayoutRawFieldInfo> pInfoArray = new LayoutRawFieldInfo[cFields + 1];
+    UINT32 numInstanceFields;
+    BYTE fieldsAlignmentRequirement;
+    InitializeLayoutFieldInfoArray(pFields, cFields, pByValueClassCache, DEFAULT_PACKING_SIZE, pInfoArray, &numInstanceFields, &fieldsAlignmentRequirement);
+
+    BYTE alignmentRequirement = max<BYTE>(1, fieldsAlignmentRequirement);
+
+    SetAlignmentRequirement(alignmentRequirement);
+    SetPackingSize(DEFAULT_PACKING_SIZE);
+
+    // For a union, all fields are placed at offset 0
+    // and the size is the maximum of all field sizes
+    UINT32 maxFieldSize = 0;
+    for (UINT32 i = 0; i < numInstanceFields; i++)
+    {
+        pInfoArray[i].m_placement.m_offset = 0;
+        if (pInfoArray[i].m_placement.m_size > maxFieldSize)
+        {
+            maxFieldSize = pInfoArray[i].m_placement.m_size;
+        }
+    }
+
+    SetFieldOffsets(pFields, cFields, pInfoArray, numInstanceFields);
+
+    UINT32 managedSize = AlignSize(maxFieldSize, alignmentRequirement);
 
     return SetInstanceBytesSize(managedSize);
 }
@@ -1030,6 +1084,7 @@ EEClassNativeLayoutInfo* EEClassNativeLayoutInfo::CollectNativeLayoutFieldMetada
         else
         if (pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__INT128)) ||
             pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__UINT128)) ||
+            pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__DECIMAL128)) ||
             pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTOR64T)) ||
             pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTOR128T)) ||
             pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTOR256T)) ||
@@ -1085,8 +1140,8 @@ EEClassNativeLayoutInfo* EEClassNativeLayoutInfo::CollectNativeLayoutFieldMetada
 
         LOG((LF_INTEROP, LL_INFO100000, "\n\n"));
         LOG((LF_INTEROP, LL_INFO100000, "%s.%s\n", szNamespace, szName));
-        LOG((LF_INTEROP, LL_INFO100000, "Packsize      = %lu\n", (ULONG)pEEClassLayoutInfo->GetPackingSize()));
-        LOG((LF_INTEROP, LL_INFO100000, "Max align req = %lu\n", (ULONG)(pNativeLayoutInfo->GetLargestAlignmentRequirement())));
+        LOG((LF_INTEROP, LL_INFO100000, "Packsize      = %lu\n", (unsigned long)pEEClassLayoutInfo->GetPackingSize()));
+        LOG((LF_INTEROP, LL_INFO100000, "Max align req = %lu\n", (unsigned long)(pNativeLayoutInfo->GetLargestAlignmentRequirement())));
         LOG((LF_INTEROP, LL_INFO100000, "----------------------------\n"));
         for (LayoutRawFieldInfo* pfwalk = pInfoArray; pfwalk->m_token != mdFieldDefNil; pfwalk++)
         {
@@ -1095,12 +1150,12 @@ EEClassNativeLayoutInfo* EEClassNativeLayoutInfo::CollectNativeLayoutFieldMetada
             {
                 fieldname = "??";
             }
-            LOG((LF_INTEROP, LL_INFO100000, "+%-5lu  ", (ULONG)(pfwalk->m_placement.m_offset)));
+            LOG((LF_INTEROP, LL_INFO100000, "+%-5lu  ", (unsigned long)(pfwalk->m_placement.m_offset)));
             LOG((LF_INTEROP, LL_INFO100000, "%s", fieldname));
             LOG((LF_INTEROP, LL_INFO100000, "\n"));
         }
 
-        LOG((LF_INTEROP, LL_INFO100000, "+%-5lu   EOS\n", (ULONG)(pNativeLayoutInfo->GetSize())));
+        LOG((LF_INTEROP, LL_INFO100000, "+%-5lu   EOS\n", (unsigned long)(pNativeLayoutInfo->GetSize())));
         LOG((LF_INTEROP, LL_INFO100000, "Allocated %d %s field marshallers for %s.%s\n", numTotalInstanceFields, (!isMarshalable ? "pointless" : "usable"), szNamespace, szName));
     }
 #endif

@@ -18,6 +18,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq.Parallel;
+using System.Runtime.CompilerServices;
+using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -64,12 +66,10 @@ namespace System.Linq
 
         // When running in single partition mode, PLINQ operations will occur on a single partition and will not
         // be executed in parallel, but will retain PLINQ semantics (exceptions wrapped as aggregates, etc).
-#if !FEATURE_WASM_MANAGED_THREADS
-        [System.Runtime.Versioning.SupportedOSPlatformGuard("browser")]
-        internal static bool SinglePartitionMode => OperatingSystem.IsBrowser() || OperatingSystem.IsWasi();
-#else
-        internal static bool SinglePartitionMode => false;
-#endif
+
+        [SupportedOSPlatformGuard("browser")]
+        [SupportedOSPlatformGuard("wasi")]
+        internal static bool SinglePartitionMode => !RuntimeFeature.IsMultithreadingSupported;
 
         //-----------------------------------------------------------------------------------
         // Converts any IEnumerable<TSource> into something that can be the target of parallel

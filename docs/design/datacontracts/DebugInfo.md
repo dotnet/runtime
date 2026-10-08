@@ -8,9 +8,10 @@ This contract is for fetching information related to DebugInfo associated with n
 [Flags]
 public enum SourceTypes : uint
 {
-    SourceTypeInvalid = 0x00, // To indicate that nothing else applies
+    Default = 0x00, // To indicate that nothing else applies
     StackEmpty = 0x01, // The stack is empty here
-    CallInstruction = 0x02  // The actual instruction of a call.
+    CallInstruction = 0x02  // The actual instruction of a call
+    Async = 0x04 // Indicates suspension/resumption for an async call
 }
 ```
 
@@ -24,6 +25,10 @@ public readonly struct OffsetMapping
 ```
 
 ```csharp
+// Returns true if the method at pCode has debug info associated with it.
+// Methods such as ILStubs may be JIT-compiled but have no debug metadata.
+bool HasDebugInfo(TargetCodePointer pCode);
+
 // Given a code pointer, return the associated native/IL offset mapping and codeOffset.
 // If preferUninstrumented, will always read the uninstrumented bounds.
 // Otherwise will read the instrumented bounds and fallback to the uninstrumented bounds.
@@ -32,24 +37,47 @@ IEnumerable<OffsetMapping> GetMethodNativeMap(TargetCodePointer pCode, bool pref
 
 ## Version 1
 
-Data descriptors used:
-| Data Descriptor Name | Field | Meaning |
-| --- | --- | --- |
-| `PatchpointInfo` | `LocalCount` | Number of locals in the method associated with the patchpoint. |
+<!-- BEGIN GENERATED: usage contract=DebugInfo version=c1 -->
+### Data descriptors used
 
-Contracts used:
+_None._
+
+### Global variables used
+
+_None._
+
+### Contracts used
+
 | Contract Name |
 | --- |
 | `CodeVersions` |
 | `ExecutionManager` |
+| `PlatformMetadata` |
+| `RuntimeInfo` |
+<!-- END GENERATED: usage contract=DebugInfo version=c1 -->
 
-Constants:
+### Constants
+
 | Constant Name | Meaning | Value |
 | --- | --- | --- |
-| IL_OFFSET_BIAS | IL offsets are encoded in the DebugInfo with this bias. | `0xfffffffd` (-3) |
-| DEBUG_INFO_BOUNDS_HAS_INSTRUMENTED_BOUNDS | Indicates bounds data contains instrumented bounds | `0xFFFFFFFF` |
-| EXTRA_DEBUG_INFO_PATCHPOINT | Indicates debug info contains patchpoint information | 0x1 |
-| EXTRA_DEBUG_INFO_RICH | Indicates debug info contains rich information | 0x2 |
+| `IL_OFFSET_BIAS` | Bias used to encode IL offsets | `0xfffffffd` (-3) |
+| `DEBUG_INFO_FAT` | Marker value in first nibble-coded integer indicating a fat header follows | `0x0` |
+| `SOURCE_TYPE_BITS` | Number of bits per bounds entry used to encode source type flags | `3` |
+| `MAX_ILNUM` | Bias for adjusted encoding of variable numbers | `0xfffffffa` (-6) |
+| `CALL_RETURN_ILNUM` | Special variable number identifying a call-return-value entry | `0xfffffffb` (-5) |
+| `VLT_REG` | Variable is in a register | `0` |
+| `VLT_REG_BYREF` | Address of the variable is in a register | `1` |
+| `VLT_REG_FP` | Variable is in an FP register | `2` |
+| `VLT_STK` | Variable is on the stack | `3` |
+| `VLT_STK_BYREF` | Address of the variable is on the stack | `4` |
+| `VLT_REG_REG` | Variable lives in two registers | `5` |
+| `VLT_REG_STK` | Variable lives partly in a register and partly on the stack | `6` |
+| `VLT_STK_REG` | Reverse of `VLT_REG_STK` | `7` |
+| `VLT_STK2` | Variable lives in two stack slots | `8` |
+| `VLT_FPSTK` | Variable is on the floating-point stack | `9` |
+| `VLT_FIXED_VA` | Fixed argument in a varargs function | `10` |
+| `VLT_COUNT` | Number of valid `VarLocType` values | `11` |
+| `VLT_INVALID` | Sentinel for invalid locations | `12` |
 
 ### DebugInfo Stream Encoding
 
@@ -79,141 +107,161 @@ Examples:
 
 Based on the encoding specification, we use a decoder defined originally for r2r dump `NibbleReader.cs`
 
-### Bounds Data Encoding (R2R Major Version 16+)
+### Header Encoding
 
-For R2R major version 16 and above, the bounds data uses a bit-packed encoding algorithm:
+The first nibble-decoded unsigned integer (`countBoundsOrFatMarker`):
 
-1. The bounds entry count, bits needed for native deltas, and bits needed for IL offsets are encoded using the nibble scheme above
-2. Each bounds entry is then bit-packed with:
-   - 2 bits for source type (SourceTypeInvalid=0, CallInstruction=1, StackEmpty=2, StackEmpty|CallInstruction=3)
-   - Variable bits for native offset delta (accumulated from previous offset)
-   - Variable bits for IL offset (with IL_OFFSET_BIAS applied)
+* If `countBoundsOrFatMarker == DEBUG_INFO_FAT` (0), the header is FAT and the next 6 nibble-decoded unsigned integers are, in order:
+    1. `BoundsSize`
+    2. `VarsSize`
+    3. `UninstrumentedBoundsSize`
+    4. `PatchpointInfoSize`
+    5. `RichDebugInfoSize`
+    6. `AsyncInfoSize`
+* Otherwise (SLIM header), the value is `BoundsSize` and the next nibble-decoded unsigned integer is `VarsSize`; all other sizes are implicitly 0.
 
-The bit-packed data is read byte by byte, collecting bits until enough are available for each entry.
+After decoding sizes, chunk start addresses are computed by linear accumulation beginning at the first byte after the header stream:
 
-### Implementation
+```
+BoundsStart = debugInfo + headerBytesConsumed
+VarsStart = BoundsStart + BoundsSize
+UninstrumentedBoundsStart = VarsStart + VarsSize
+PatchpointInfoStart = UninstrumentedBoundsStart + UninstrumentedBoundsSize
+RichDebugInfoStart = PatchpointInfoStart + PatchpointInfoSize
+AsyncInfoStart = RichDebugInfoStart + RichDebugInfoSize
+DebugInfoEnd = AsyncInfoStart + AsyncInfoSize
+```
 
-``` csharp
-IEnumerable<OffsetMapping> IDebugInfo.GetMethodNativeMap(TargetCodePointer pCode, bool preferUninstrumented, out uint codeOffset)
+### Bounds Entry Encoding
+
+Each bounds entry uses three independent flag bits for source type:
+`[3 bits sourceFlags][nativeDeltaBits][ilOffsetBits]`.
+
+Source type bits (low -> high):
+| Bit | Mask | Meaning |
+| --- | --- | --- |
+| 0 | 0x1 | `CallInstruction` |
+| 1 | 0x2 | `StackEmpty` |
+| 2 | 0x4 | `Async` |
+
+`SourceTypeInvalid` is represented by all three bits clear (0). Combinations are produced by OR-ing masks (e.g., `StackEmpty | CallInstruction`).
+
+Pseudo-code for source type extraction:
+```csharp
+SourceTypes sourceType = 0;
+if ((encoded & 0x1) != 0) sourceType |= SourceTypes.CallInstruction;
+if ((encoded & 0x2) != 0) sourceType |= SourceTypes.StackEmpty;
+if ((encoded & 0x4) != 0) sourceType |= SourceTypes.Async;
+```
+
+After masking the 3 bits, shift them out before reading native delta and IL offset fields as before.
+
+### Variable Location APIs
+
+The contract decodes native variable location information from the Vars section of the debug info blob.
+
+Additional APIs:
+```csharp
+// Describes the kind of location where a variable is stored.
+public enum DebugVarLocKind
 {
-    // Get the method's DebugInfo
-    if (_eman.GetCodeBlockHandle(pCode) is not CodeBlockHandle cbh)
-        throw new InvalidOperationException($"No CodeBlockHandle found for native code {pCode}.");
-    TargetPointer debugInfo = _eman.GetDebugInfo(cbh, out bool hasFlagByte);
-
-    TargetCodePointer nativeCodeStart = _eman.GetStartAddress(cbh);
-    codeOffset = (uint)(CodePointerUtils.AddressFromCodePointer(pCode, _target) - CodePointerUtils.AddressFromCodePointer(nativeCodeStart, _target));
-
-    return RestoreBoundaries(debugInfo, hasFlagByte, preferUninstrumented);
+    Register,
+    Stack,
+    RegisterRegister,
+    RegisterStack,
+    StackRegister,
+    DoubleStack,
+    FloatingPointStack,
+    FixedVarArg,
 }
 
-private IEnumerable<OffsetMapping> RestoreBoundaries(TargetPointer debugInfo, bool hasFlagByte, bool preferUninstrumented)
+public readonly struct DebugVarInfo
 {
-    if (hasFlagByte)
-    {
-        // Check flag byte and skip over any patchpoint info
-        byte flagByte = _target.Read<byte>(debugInfo++);
-
-        if ((flagByte & EXTRA_DEBUG_INFO_PATCHPOINT) != 0)
-        {
-            uint localCount = _target.Read<uint>(debugInfo + /*PatchpointInfo::LocalCount offset*/)
-            debugInfo += /*size of PatchpointInfo*/ + (localCount * 4);
-        }
-
-        if ((flagByte & EXTRA_DEBUG_INFO_RICH) != 0)
-        {
-            uint richDebugInfoSize = _target.Read<uint>(debugInfo);
-            debugInfo += 4;
-            debugInfo += richDebugInfoSize;
-        }
-    }
-
-    NativeReader nibbleNativeReader = new(new TargetStream(_target, debugInfo, 24 /*maximum size of 4 32bit ints compressed*/), _target.IsLittleEndian);
-    NibbleReader nibbleReader = new(nibbleNativeReader, 0);
-
-    uint cbBounds = nibbleReader.ReadUInt();
-    uint cbUninstrumentedBounds = 0;
-    if (cbBounds == DEBUG_INFO_BOUNDS_HAS_INSTRUMENTED_BOUNDS)
-    {
-        // This means we have instrumented bounds.
-        cbBounds = nibbleReader.ReadUInt();
-        cbUninstrumentedBounds = nibbleReader.ReadUInt();
-    }
-    uint _ /*cbVars*/ = nibbleReader.ReadUInt();
-
-    TargetPointer addrBounds = debugInfo + (uint)nibbleReader.GetNextByteOffset();
-    // TargetPointer addrVars = addrBounds + cbBounds + cbUninstrumentedBounds;
-
-    if (preferUninstrumented && cbUninstrumentedBounds != 0)
-    {
-        // If we have uninstrumented bounds, we will use them instead of the regular bounds.
-        addrBounds += cbBounds;
-        cbBounds = cbUninstrumentedBounds;
-    }
-
-    if (cbBounds > 0)
-    {
-        NativeReader boundsNativeReader = new(new TargetStream(_target, addrBounds, cbBounds), _target.IsLittleEndian);
-        return DoBounds(boundsNativeReader);
-    }
-
-    return Enumerable.Empty<OffsetMapping>();
+    public uint StartOffset { get; init; }
+    public uint EndOffset { get; init; }
+    public uint VarNumber { get; init; }
+    public DebugVarLocKind Kind { get; init; }
+    public bool IsByRef { get; init; }
+    public bool IsFloatingPoint { get; init; }
+    public uint Register { get; init; }
+    public uint Register2 { get; init; }
+    public uint BaseRegister { get; init; }
+    public int StackOffset { get; init; }
+    public uint BaseRegister2 { get; init; }
+    public int StackOffset2 { get; init; }
+    public uint FloatingPointStackRegister { get; init; }
+    public uint FixedVarArgOffset { get; init; }
+    public uint CallReturnValueILOffset { get; init; }
 }
 
-private static IEnumerable<OffsetMapping> DoBounds(NativeReader nativeReader)
+// Given a code pointer, return the variable location info for the method.
+IEnumerable<DebugVarInfo> GetMethodVarInfo(TargetCodePointer pCode, out uint codeOffset);
+```
+
+### Vars Data Encoding
+
+Each variable entry in the Vars section is nibble-encoded as follows:
+
+1. `varNumber` — encoded as adjusted unsigned (`value - MAX_ILNUM`)
+2. `startOffset` — encoded unsigned 32-bit integer
+3. The next field depends on `varNumber`:
+   - If `varNumber == CALL_RETURN_ILNUM`: `callReturnValueILOffset` — encoded unsigned 32-bit integer (IL offset of the call site whose return value this entry describes). `endOffset` is implicit and equals `startOffset + 1`.
+   - Otherwise: `endOffset` — encoded as delta from `startOffset` (unsigned). `callReturnValueILOffset` is implicit and equals `0`.
+4. `VarLocType` — encoded unsigned 32-bit integer
+5. Location fields depend on the `VarLocType`:
+
+| VarLocType | Fields (in encoding order) |
+| --- | --- |
+| `VLT_REG`, `VLT_REG_FP`, `VLT_REG_BYREF` | register (encoded unsigned) |
+| `VLT_STK`, `VLT_STK_BYREF` | baseRegister (encoded unsigned), stackOffset (encoded signed, x86: ×4) |
+| `VLT_REG_REG` | register1 (encoded unsigned), register2 (encoded unsigned) |
+| `VLT_REG_STK` | register (encoded unsigned), baseRegister (encoded unsigned), stackOffset (encoded signed, x86: ×4) |
+| `VLT_STK_REG` | stackOffset (encoded signed, x86: ×4), baseRegister (encoded unsigned), register (encoded unsigned) |
+| `VLT_STK2` | baseRegister (encoded unsigned), stackOffset (encoded signed, x86: ×4) |
+| `VLT_FPSTK` | fpRegister (encoded unsigned) |
+| `VLT_FIXED_VA` | offset (encoded unsigned) |
+
+Signed integers are encoded using the same unsigned scheme, with the sign bit stored in bit 0 (`value = unsigned >> 1`, negate if `unsigned & 1`). On x86, stack offsets are DWORD-aligned and stored divided by `sizeof(DWORD)`.
+
+### Async Suspension Point APIs
+
+We also support decoding async suspension points (and their captured continuation-object locals) from the `AsyncInfo` chunk of the debug info blob. The chunk is present only for methods that the JIT compiled with runtime-async suspension points; for all other methods, `AsyncInfoSize` is `0` in the FAT header and the API returns an empty list.
+
+Additional types:
+```csharp
+// A native code location at which an async method may suspend, together with
+// the continuation-object locals captured at that point.
+public readonly struct AsyncSuspensionInfo
 {
-    NibbleReader reader = new(nativeReader, 0);
+    public uint NativeOffset { get; init; }
+    public IReadOnlyList<AsyncLocalInfo> Locals { get; init; }
+}
 
-    uint boundsEntryCount = reader.ReadUInt();
-
-    uint bitsForNativeDelta = reader.ReadUInt() + 1; // Number of bits needed for native deltas
-    uint bitsForILOffsets = reader.ReadUInt() + 1; // Number of bits needed for IL offsets
-
-    uint bitsPerEntry = bitsForNativeDelta + bitsForILOffsets + 2; // 2 bits for source type
-    ulong bitsMeaningfulMask = (1UL << ((int)bitsPerEntry)) - 1;
-    int offsetOfActualBoundsData = reader.GetNextByteOffset();
-
-    uint bitsCollected = 0;
-    ulong bitTemp = 0;
-    uint curBoundsProcessed = 0;
-
-    uint previousNativeOffset = 0;
-
-    while (curBoundsProcessed < boundsEntryCount)
-    {
-        bitTemp |= ((uint)nativeReader[offsetOfActualBoundsData++]) << (int)bitsCollected;
-        bitsCollected += 8;
-        while (bitsCollected >= bitsPerEntry)
-        {
-            ulong mappingDataEncoded = bitsMeaningfulMask & bitTemp;
-            bitTemp >>= (int)bitsPerEntry;
-            bitsCollected -= bitsPerEntry;
-
-            SourceTypes sourceType = (mappingDataEncoded & 0x3) switch
-            {
-                0 => SourceTypes.SourceTypeInvalid,
-                1 => SourceTypes.CallInstruction,
-                2 => SourceTypes.StackEmpty,
-                3 => SourceTypes.StackEmpty | SourceTypes.CallInstruction,
-                _ => throw new InvalidOperationException($"Unknown source type encoding: {mappingDataEncoded & 0x3}")
-            };
-
-            mappingDataEncoded >>= 2;
-            uint nativeOffsetDelta = (uint)(mappingDataEncoded & ((1UL << (int)bitsForNativeDelta) - 1));
-            previousNativeOffset += nativeOffsetDelta;
-            uint nativeOffset = previousNativeOffset;
-
-            mappingDataEncoded >>= (int)bitsForNativeDelta;
-            uint ilOffset = (uint)mappingDataEncoded + IL_OFFSET_BIAS;
-
-            yield return new OffsetMapping()
-            {
-                NativeOffset = nativeOffset,
-                ILOffset = ilOffset,
-                SourceType = sourceType
-            };
-            curBoundsProcessed++;
-        }
-    }
+// A single local captured into the continuation object at a suspension point.
+public readonly struct AsyncLocalInfo
+{
+    // Offset of the local within the continuation object's data area.
+    public uint Offset { get; init; }
+    // IL var number of the local (or a synthetic marker such as MAX_ILNUM-relative values).
+    public uint ILVarNumber { get; init; }
 }
 ```
+
+```csharp
+IReadOnlyList<AsyncSuspensionInfo> GetAsyncSuspensionPoints(TargetCodePointer pCode);
+```
+
+### AsyncInfo Data Encoding
+
+Each entry is nibble-encoded as follows:
+
+1. `NumSuspensionPoints` — encoded unsigned 32-bit integer.
+2. Total var count across all suspension points — encoded unsigned 32-bit integer. Informational only; the decoder reads it but does not need it, since the per-suspension-point counts read in step 3 already cover the entire flat var list.
+3. For each of the `NumSuspensionPoints` suspension points (in order):
+   * `DiagnosticNativeOffset` — encoded signed delta from the previous suspension point's offset (the first delta is from `0`). Deltas are not required to be monotonic.
+   * `NumContinuationVars` — encoded unsigned 32-bit integer giving the number of continuation locals captured at this suspension point.
+4. For each var (a single flat sequence, partitioned by the `NumContinuationVars` counts from step 3, in suspension-point order):
+   * `VarNumber - MAX_ILNUM` — encoded unsigned 32-bit integer. The `MAX_ILNUM` bias keeps the synthetic negative IL var numbers (e.g. `VARARGS_HND_ILNUM`, `RETBUF_ILNUM`, `TYPECTXT_ILNUM`) representable as unsigned values; the decoder reverses the bias by adding `MAX_ILNUM` back.
+   * `Offset` — encoded unsigned 32-bit integer giving the byte offset of the local within the continuation object's data area.
+
+`AsyncSuspensionInfo.Locals[i]` for the `n`-th suspension point therefore corresponds to the `i`-th var in the flat sequence whose flat index is the prefix sum of `NumContinuationVars[0..n-1]` plus `i`.

@@ -85,11 +85,7 @@ namespace System.Threading
         /// depends on the likelihood of the spin being successful and how long the wait would be but those are not accounted
         /// for here.
         /// </remarks>
-#if FEATURE_SINGLE_THREADED
-        internal const int SpinCountforSpinBeforeWait = 1;
-#else
-        internal static readonly int SpinCountforSpinBeforeWait = Environment.IsSingleProcessor ? 1 : 35;
-#endif
+        internal static readonly int SpinCountForSpinBeforeWait = Environment.IsSingleProcessor ? 1 : 35;
 
         // The number of times we've spun already.
         private int _count;
@@ -226,7 +222,7 @@ namespace System.Threading
                 // the equivalent of YieldProcessor(), as at that point SwitchToThread/Sleep(0) are more likely to be able to
                 // allow other useful work to run. Long YieldProcessor() loops can help to reduce contention, but Sleep(1) is
                 // usually better for that.
-                int n = Thread.OptimalMaxSpinWaitsPerSpinIteration;
+                int n = Thread.GetOptimalMaxSpinWaitsPerSpinIteration();
                 if (_count <= 30 && (1 << _count) < n)
                 {
                     n = 1 << _count;

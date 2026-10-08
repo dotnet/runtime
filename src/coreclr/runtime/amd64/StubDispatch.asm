@@ -23,6 +23,7 @@ DEFINE_INTERFACE_DISPATCH_STUB macro entries
 
 StubName textequ @CatStr( RhpInterfaceDispatch, entries )
 StubAVLocation textequ @CatStr( RhpInterfaceDispatchAVLocation, entries )
+RaceRetryLabel textequ @CatStr( RaceRetry, entries )
 
 LEAF_ENTRY StubName, _TEXT
 
@@ -32,6 +33,16 @@ LEAF_ENTRY StubName, _TEXT
         ;; r11 currently contains the indirection cell address.
         ;; load r10 to point to the cache block.
         mov     r10, [r11 + OFFSETOF__InterfaceDispatchCell__m_pCache]
+
+        ;; Validate r10 is a cache pointer matching the expected cache size.
+        ;; This compensates for a race where the stub was updated to expect a larger cache
+        ;; but we loaded a stale (smaller or non-cache) m_pCache value.
+        ;; On detection, re-dispatch through the indirection cell to retry with the current
+        ;; stub and cache pair.
+        test    r10, IDC_CACHE_POINTER_MASK
+        jnz     RaceRetryLabel
+        cmp     dword ptr [r10 + OFFSETOF__InterfaceDispatchCache__m_cEntries], entries
+        jne     RaceRetryLabel
 
         ;; Load the MethodTable from the object instance in rcx.
         ALTERNATE_ENTRY StubAVLocation
@@ -46,6 +57,9 @@ CurrentEntry = CurrentEntry + 1
         ;; r11 still contains the indirection cell address.
 
         jmp RhpInterfaceDispatchSlow
+
+RaceRetryLabel:
+        jmp     qword ptr [r11]
 
 LEAF_END StubName, _TEXT
 

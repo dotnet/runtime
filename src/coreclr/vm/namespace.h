@@ -36,6 +36,7 @@
 #define g_CustomMarshalersNS    g_InteropNS ".CustomMarshalers"
 #define g_ObjectiveCNS          g_InteropNS ".ObjectiveC"
 #define g_MarshallingNS         g_InteropNS ".Marshalling"
+#define g_SwiftNS               g_InteropNS ".Swift"
 
 #define g_IntrinsicsNS g_RuntimeNS ".Intrinsics"
 #define g_NumericsNS   g_SystemNS  ".Numerics"

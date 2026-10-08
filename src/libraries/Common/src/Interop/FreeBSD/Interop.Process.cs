@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.Marshalling;
+using System.Text;
 
 #pragma warning disable CA1823 // analyzer incorrectly flags fixed buffer length const (https://github.com/dotnet/roslyn/issues/37593)
 
@@ -108,9 +108,11 @@ internal static partial class Interop
 
             ProcessInfo info;
 
-            kinfo_proc* kinfo = GetProcInfo(pid, true, out int count);
+            kinfo_proc* kinfo = null;
             try
             {
+                kinfo = GetProcInfo(pid, true, out int count);
+
                 ArgumentOutOfRangeException.ThrowIfLessThan(count, 1, nameof(pid));
 
                 var process = new ReadOnlySpan<kinfo_proc>(kinfo, count);
@@ -118,7 +120,9 @@ internal static partial class Interop
                 // Get the process information for the specified pid
                 info = new ProcessInfo();
 
-                info.ProcessName = Utf8StringMarshaller.ConvertToManaged(kinfo->ki_comm)!;
+                ReadOnlySpan<byte> comm = kinfo->ki_comm;
+                int nul = comm.IndexOf((byte)0);
+                info.ProcessName = Encoding.UTF8.GetString(nul >= 0 ? comm[..nul] : comm);
                 info.BasePriority = kinfo->ki_nice;
                 info.VirtualBytes = (long)kinfo->ki_size;
                 info.WorkingSet = kinfo->ki_rssize;

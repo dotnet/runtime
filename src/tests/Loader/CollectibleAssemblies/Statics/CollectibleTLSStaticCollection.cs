@@ -8,6 +8,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using Xunit;
+using TestLibrary;
 
 namespace CollectibleThreadStaticShutdownRace
 {
@@ -111,7 +112,9 @@ namespace CollectibleThreadStaticShutdownRace
 
         }
 
-        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155: Collectible assemblies", typeof(Utilities), nameof(Utilities.IsNativeAot))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/40394", TestRuntimes.Mono)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void TestEntryPoint()
         {
             s_getAnIntField = typeof(CollectibleThreadStaticShutdownRace).GetField("s_getAnInt");
@@ -121,4 +124,3 @@ namespace CollectibleThreadStaticShutdownRace
         }
     }
 }
-

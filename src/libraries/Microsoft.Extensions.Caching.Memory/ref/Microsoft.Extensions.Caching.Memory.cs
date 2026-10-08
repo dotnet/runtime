@@ -25,7 +25,8 @@ namespace Microsoft.Extensions.Caching.Memory
     public partial class MemoryCache : Microsoft.Extensions.Caching.Memory.IMemoryCache, System.IDisposable
     {
         public MemoryCache(Microsoft.Extensions.Options.IOptions<Microsoft.Extensions.Caching.Memory.MemoryCacheOptions> optionsAccessor) { }
-        public MemoryCache(Microsoft.Extensions.Options.IOptions<Microsoft.Extensions.Caching.Memory.MemoryCacheOptions> optionsAccessor, Microsoft.Extensions.Logging.ILoggerFactory loggerFactory) { }
+        public MemoryCache(Microsoft.Extensions.Options.IOptions<Microsoft.Extensions.Caching.Memory.MemoryCacheOptions> optionsAccessor, Microsoft.Extensions.Logging.ILoggerFactory? loggerFactory) { }
+        public MemoryCache(Microsoft.Extensions.Options.IOptions<Microsoft.Extensions.Caching.Memory.MemoryCacheOptions> optionsAccessor, Microsoft.Extensions.Logging.ILoggerFactory? loggerFactory, System.Diagnostics.Metrics.IMeterFactory? meterFactory) { }
         public int Count { get { throw null; } }
         public System.Collections.Generic.IEnumerable<object> Keys { get { throw null; } }
         public void Clear() { }
@@ -51,6 +52,7 @@ namespace Microsoft.Extensions.Caching.Memory
         public long? SizeLimit { get { throw null; } set { } }
         public bool TrackLinkedCacheEntries { get { throw null; } set { } }
         public bool TrackStatistics { get { throw null; } set { } }
+        public string Name { get { throw null; } set { } }
     }
     public partial class MemoryDistributedCacheOptions : Microsoft.Extensions.Caching.Memory.MemoryCacheOptions
     {

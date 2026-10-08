@@ -45,6 +45,11 @@ namespace System.Reflection.Emit.Tests
             Assert.Throws<ArgumentNullException>("assemblyFileName", () => ab.Save(assemblyFileName: null));
             Assert.Throws<ArgumentNullException>("stream", () => ab.Save(stream: null));
             Assert.Throws<InvalidOperationException>(() => ab.Save(assemblyFileName: "File")); // no module defined
+
+            PersistedAssemblyBuilder afterGenerateMetadata = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder generatedTypeBuilder);
+            generatedTypeBuilder.CreateType();
+            afterGenerateMetadata.GenerateMetadata(out BlobBuilder _, out BlobBuilder _);
+            Assert.Throws<InvalidOperationException>(() => afterGenerateMetadata.Save(new MemoryStream()));
         }
 
         [Fact]
@@ -58,6 +63,45 @@ namespace System.Reflection.Emit.Tests
             Assert.NotNull(ilStream);
             Assert.NotNull(mappedFieldData);
             Assert.Throws<InvalidOperationException>(() => ab.GenerateMetadata(out var _, out var _)); // cannot re-generate metadata
+
+            PersistedAssemblyBuilder afterSave = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder typeBuilder);
+            typeBuilder.CreateType();
+            afterSave.Save(new MemoryStream());
+            Assert.Throws<InvalidOperationException>(() => afterSave.GenerateMetadata(out BlobBuilder _, out BlobBuilder _));
+        }
+
+        [Fact]
+        public void PersistedAssemblyBuilder_AssemblyIdentityRoundTrip()
+        {
+            AssemblyName assemblyName = new AssemblyName("MyIdentityAssembly")
+            {
+                Flags = AssemblyNameFlags.PublicKey | AssemblyNameFlags.Retargetable,
+                Version = new Version(9, 8, 7, 6),
+                CultureInfo = new CultureInfo("tr-TR")
+            };
+
+            byte[] expectedPublicKey = typeof(string).Assembly.GetName().GetPublicKey();
+            Assert.NotEmpty(expectedPublicKey);
+            assemblyName.SetPublicKey(expectedPublicKey);
+
+            PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilder(assemblyName);
+            TypeBuilder typeBuilder = ab.DefineDynamicModule("MyModule").DefineType("MyType", TypeAttributes.Public | TypeAttributes.Class);
+            typeBuilder.CreateType();
+            using MemoryStream stream = new MemoryStream();
+            ab.Save(stream);
+
+            stream.Position = 0;
+            using PEReader peReader = new PEReader(stream);
+            MetadataReader metadataReader = peReader.GetMetadataReader();
+            AssemblyDefinition assemblyDefinition = metadataReader.GetAssemblyDefinition();
+            AssemblyName loadedAssemblyName = assemblyDefinition.GetAssemblyNameInfo().ToAssemblyName();
+
+            Assert.Equal(assemblyName.Name, loadedAssemblyName.Name);
+            Assert.Equal(assemblyName.Version, loadedAssemblyName.Version);
+            Assert.Equal(assemblyName.CultureName, loadedAssemblyName.CultureName);
+            Assert.Equal(assemblyName.ContentType, loadedAssemblyName.ContentType);
+            Assert.Equal(assemblyName.Flags, loadedAssemblyName.Flags);
+            Assert.Equal(expectedPublicKey, loadedAssemblyName.GetPublicKey());
         }
 
         [Fact]

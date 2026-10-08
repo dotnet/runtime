@@ -12,6 +12,9 @@
     <GCStressIncompatible>true</GCStressIncompatible>
     <!-- And they also time out with jitstress modes -->
     <JitOptimizationSensitive>true</JitOptimizationSensitive>
+
+    <!-- needs triage -->
+    <DisableProjectBuild Condition="'$(RuntimeFlavor)' != 'coreclr'">true</DisableProjectBuild>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="BinderTracingTest.cs" />

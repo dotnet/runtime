@@ -325,7 +325,7 @@ namespace System.Numerics.Tests
         public static void LargeNegativeBigIntegerShiftTest()
         {
             // Create a very large negative BigInteger
-            int bitsPerElement = 8 * sizeof(uint);
+            int bitsPerElement = 8 * nint.Size;
             int maxBitLength = ((Array.MaxLength / bitsPerElement) * bitsPerElement);
             BigInteger bigInt = new BigInteger(-1) << (maxBitLength - 1);
             Assert.Equal(maxBitLength - 1, bigInt.GetBitLength());
@@ -335,19 +335,18 @@ namespace System.Numerics.Tests
             // At this point, bigInt should be a 1 followed by maxBitLength - 1 zeros.
             // Given this, bigInt._bits is expected to be structured as follows:
             // - _bits.Length == ceil(maxBitLength / bitsPerElement)
-            // - First (_bits.Length - 1) elements: 0x00000000
-            // - Last element: 0x80000000
-            //                   ^------ (There's the leading '1')
+            // - First (_bits.Length - 1) elements: 0
+            // - Last element: 1 << (bitsPerElement - 1)
 
             Assert.Equal((maxBitLength + (bitsPerElement - 1)) / bitsPerElement, bigInt._bits.Length);
 
-            uint i = 0;
-            for (; i < (bigInt._bits.Length - 1); i++)
+            int i = 0;
+            for (; i < bigInt._bits.Length - 1; i++)
             {
-                Assert.Equal(0x00000000u, bigInt._bits[i]);
+                Assert.Equal((nuint)0, bigInt._bits[i]);
             }
 
-            Assert.Equal(0x80000000u, bigInt._bits[i]);
+            Assert.Equal((nuint)1 << (bitsPerElement - 1), bigInt._bits[i]);
 
             // Right shift the BigInteger
             BigInteger shiftedBigInt = bigInt >> 1;
@@ -358,19 +357,18 @@ namespace System.Numerics.Tests
             // At this point, shiftedBigInt should be a 1 followed by maxBitLength - 2 zeros.
             // Given this, shiftedBigInt._bits is expected to be structured as follows:
             // - _bits.Length == ceil((maxBitLength - 1) / bitsPerElement)
-            // - First (_bits.Length - 1) elements: 0x00000000
-            // - Last element: 0x40000000
-            //                   ^------ (the '1' is now one position to the right)
+            // - First (_bits.Length - 1) elements: 0
+            // - Last element: 1 << (bitsPerElement - 2)
 
             Assert.Equal(((maxBitLength - 1) + (bitsPerElement - 1)) / bitsPerElement, shiftedBigInt._bits.Length);
 
             i = 0;
-            for (; i < (shiftedBigInt._bits.Length - 1); i++)
+            for (; i < shiftedBigInt._bits.Length - 1; i++)
             {
-                Assert.Equal(0x00000000u, shiftedBigInt._bits[i]);
+                Assert.Equal((nuint)0, shiftedBigInt._bits[i]);
             }
 
-            Assert.Equal(0x40000000u, shiftedBigInt._bits[i]);
+            Assert.Equal((nuint)1 << (bitsPerElement - 2), shiftedBigInt._bits[i]);
         }
     }
 
@@ -381,12 +379,13 @@ namespace System.Numerics.Tests
         [Fact]
         public void PowerOfTwo()
         {
-            for (int i = 0; i < 32; i++)
+            int bpl = nint.Size * 8; // bits per limb
+            for (int i = 0; i < bpl; i++)
             {
                 foreach (int k in new int[] { 1, 2, 10 })
                 {
-                    Assert.Equal(BigInteger.One << i, (BigInteger.One << (32 * k + i)) >>> (32 * k));
-                    Assert.Equal(new BigInteger(unchecked((int)(uint.MaxValue << i))), (BigInteger.MinusOne << (32 * k + i)) >>> (32 * k));
+                    Assert.Equal(BigInteger.One << i, (BigInteger.One << (bpl * k + i)) >>> (bpl * k));
+                    Assert.Equal(new BigInteger(unchecked((nint)(nuint.MaxValue << i))), (BigInteger.MinusOne << (bpl * k + i)) >>> (bpl * k));
                 }
             }
         }

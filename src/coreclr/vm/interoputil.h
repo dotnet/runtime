@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-
 #ifndef _H_INTEROP_UTIL
 #define _H_INTEROP_UTIL
 
@@ -55,12 +54,12 @@ HRESULT SetupErrorInfo(OBJECTREF pThrownObject);
 
 //--------------------------------------------------------------------------------
  // Release helper, enables and disables GC during call-outs
-ULONG SafeRelease(IUnknown* pUnk, RCW* pRCW = NULL);
+ULONG SafeRelease(IUnknown* pUnk) noexcept;
 
 //--------------------------------------------------------------------------------
 // Release helper, must be called in preemptive mode.  Only use this variant if
 // you already know you're in preemptive mode for other reasons.
-ULONG SafeReleasePreemp(IUnknown* pUnk, RCW* pRCW = NULL);
+ULONG SafeReleasePreemp(IUnknown* pUnk);
 
 //--------------------------------------------------------------------------------
 // Determines if a COM object can be cast to the specified type.
@@ -75,7 +74,6 @@ BOOL IsComObjectClass(TypeHandle type);
 //---------------------------------------------------------
 VOID ReadBestFitCustomAttribute(MethodDesc* pMD, BOOL* BestFit, BOOL* ThrowOnUnmappableChar);
 VOID ReadBestFitCustomAttribute(Module* pModule, mdTypeDef cl, BOOL* BestFit, BOOL* ThrowOnUnmappableChar);
-int  InternalWideToAnsi(_In_reads_(iNumWideChars) LPCWSTR szWideString, int iNumWideChars, _Out_writes_bytes_opt_(cbAnsiBufferSize) LPSTR szAnsiString, int cbAnsiBufferSize, BOOL fBestFit, BOOL fThrowOnUnmappableChar);
 
 //---------------------------------------------------------
 // Read the ClassInterfaceType custom attribute info from
@@ -101,9 +99,21 @@ BOOL GetDefaultDllImportSearchPathsAttributeValue(Module *pModule, mdToken token
 // Returns the index of the LCID parameter if one exists and -1 otherwise.
 int GetLCIDParameterIndex(MethodDesc *pMD);
 
+#ifdef FEATURE_COMINTEROP
+
 //---------------------------------------------------------------------------
 // Transforms an LCID into a CultureInfo.
 void GetCultureInfoForLCID(LCID lcid, OBJECTREF *pCultureObj);
+
+//---------------------------------------------------------------------------
+// Gets the current culture or UI culture for the current thread.
+OBJECTREF GetCurrentCulture(BOOL bUICulture);
+
+//---------------------------------------------------------------------------
+// Sets the current culture or UI culture for the current thread.
+void SetCurrentCulture(OBJECTREF *CultureObj, BOOL bUICulture);
+
+#endif // FEATURE_COMINTEROP
 
 //---------------------------------------------------------------------------
 // This method determines if a member is visible from COM.
@@ -181,11 +191,6 @@ HRESULT SafeVariantChangeType(_Inout_ VARIANT* pVarRes, _In_ VARIANT* pVarSrc,
                               unsigned short wFlags, VARTYPE vt);
 
 //--------------------------------------------------------------------------------
-// Release helper, enables and disables GC during call-outs
-HRESULT SafeVariantChangeTypeEx(_Inout_ VARIANT* pVarRes, _In_ VARIANT* pVarSrc,
-                          LCID lcid, unsigned short wFlags, VARTYPE vt);
-
-//--------------------------------------------------------------------------------
 // Init helper, enables and disables GC during call-outs
 void SafeVariantInit(VARIANT* pVar);
 
@@ -229,9 +234,6 @@ BOOL IsStandardTearOff(IUnknown* pUnk);
 //---------------------------------------------------------------------------
  //  is the iid represent an IClassX for this class
 BOOL IsIClassX(MethodTable *pMT, REFIID riid, ComMethodTable **ppComMT);
-
-// Returns TRUE if we support IClassX for the given class.
-BOOL ClassSupportsIClassX(MethodTable *pMT);
 
 #ifdef FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
 //---------------------------------------------------------------------------

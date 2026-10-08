@@ -117,7 +117,7 @@ export class TraceInfo {
     isVerbose: boolean;
 
     constructor (ip: MintOpcodePtr, index: number, isVerbose: number) {
-        this.ip = ip;
+        this.ip = ip as any >>> 0 as any;
         this.index = index;
         this.isVerbose = !!isVerbose;
     }
@@ -289,6 +289,8 @@ function getTraceImports () {
         ["stelemr_tc", "stelemr", getRawCwrap("mono_jiterp_stelem_ref")],
         importDef("fma", getRawCwrap("fma")),
         importDef("fmaf", getRawCwrap("fmaf")),
+        importDef("scalbn", getRawCwrap("scalbn")),
+        importDef("scalbnf", getRawCwrap("scalbnf")),
     ];
 
     if (instrumentedMethodNames.length > 0) {
@@ -446,6 +448,22 @@ function initialize_builder (builder: WasmBuilder) {
             "x": WasmValtype.f64,
             "y": WasmValtype.f64,
             "z": WasmValtype.f64,
+        },
+        WasmValtype.f64, true
+    );
+    builder.defineType(
+        "scalbnf",
+        {
+            "x": WasmValtype.f32,
+            "n": WasmValtype.i32,
+        },
+        WasmValtype.f32, true
+    );
+    builder.defineType(
+        "scalbn",
+        {
+            "x": WasmValtype.f64,
+            "n": WasmValtype.i32,
         },
         WasmValtype.f64, true
     );
@@ -731,18 +749,12 @@ function generate_wasm (
     traceIndex: number, methodFullName: string | undefined,
     backwardBranchTable: Uint16Array | null, presetFunctionPointer: number
 ): number {
-    // Pre-allocate a decent number of constant slots - this adds fixed size bloat
-    //  to the trace but will make the actual pointer constants in the trace smaller
-    // If we run out of constant slots it will transparently fall back to i32_const
-    // For System.Runtime.Tests we only run out of slots ~50 times in 9100 test cases
-    const constantSlotCount = 8;
-
     let builder = traceBuilder;
     if (!builder) {
-        traceBuilder = builder = new WasmBuilder(constantSlotCount);
+        traceBuilder = builder = new WasmBuilder();
         initialize_builder(builder);
     } else
-        builder.clear(constantSlotCount);
+        builder.clear();
 
     mostRecentOptions = builder.options;
 
@@ -1011,6 +1023,10 @@ export function mono_interp_tier_prepare_jiterpreter (
     presetFunctionPointer: number
 ): number {
     mono_assert(ip, "expected instruction pointer");
+    ip = ip as any >>> 0 as any;
+    frame = frame as any >>> 0 as any;
+    method = method as any >>> 0 as any;
+    startOfBody = startOfBody as any >>> 0 as any;
     if (!mostRecentOptions)
         mostRecentOptions = getOptions();
 
@@ -1084,6 +1100,9 @@ export function mono_interp_tier_prepare_jiterpreter (
 export function mono_wasm_free_method_data (
     method: MonoMethod, imethod: number, traceIndex: number
 ) {
+    method = method as any >>> 0 as any;
+    imethod = imethod >>> 0;
+
     if (runtimeHelpers.emscriptenBuildOptions.enableDevToolsProfiler) {
         mono_wasm_profiler_free_method(method);
     }

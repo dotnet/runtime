@@ -99,7 +99,6 @@ __SkipRestore=""
 __SourceDir="$__ProjectDir/src"
 __StaticAnalyzer=0
 __UnprocessedBuildArgs=
-__UseNinja=0
 __VerboseBuild=0
 __CMakeArgs=""
 __RequestedBuildComponents=""
@@ -172,10 +171,6 @@ fi
 
 if [[ "$__TargetArch" != "$__HostArch" ]]; then
     __CMakeArgs="-DCLR_CMAKE_TARGET_ARCH=$__TargetArch $__CMakeArgs"
-fi
-
-if [[ "$USE_SCCACHE" == "true" ]]; then
-    __CMakeArgs="-DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache $__CMakeArgs"
 fi
 
 eval "$__RepoRootDir/eng/native/version/copy_version_files.sh"

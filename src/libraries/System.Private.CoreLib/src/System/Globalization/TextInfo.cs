@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
@@ -19,13 +19,6 @@ namespace System.Globalization
     /// </summary>
     public sealed partial class TextInfo : ICloneable, IDeserializationCallback
     {
-        private enum Tristate : byte
-        {
-            NotInitialized = 0,
-            False = 1,
-            True = 2
-        }
-
         private bool _isReadOnly;
 
         private readonly string _cultureName;
@@ -36,10 +29,10 @@ namespace System.Globalization
         // // Name of the text info we're using (ie: _cultureData.TextInfoName)
         private readonly string _textInfoName;
 
-        private Tristate _isAsciiCasingSameAsInvariant = Tristate.NotInitialized;
+        private NullableBool _isAsciiCasingSameAsInvariant;
 
         // Invariant text info
-        internal static readonly TextInfo Invariant = new TextInfo(CultureData.Invariant, readOnly: true) { _isAsciiCasingSameAsInvariant = Tristate.True };
+        internal static readonly TextInfo Invariant = new TextInfo(CultureData.Invariant, readOnly: true) { _isAsciiCasingSameAsInvariant = NullableBool.True };
 
         internal TextInfo(CultureData cultureData)
         {
@@ -210,6 +203,33 @@ namespace System.Globalization
 
             return OrdinalCasing.ToUpper(c);
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static char ToLowerOrdinal(char c)
+        {
+            if (GlobalizationMode.Invariant)
+            {
+                return char.IsAscii(c)
+                    ? ToLowerAsciiInvariant(c)
+                    : PreserveOrdinalLowerCasingClass(c, InvariantModeCasing.ToLower(c));
+            }
+
+            if (GlobalizationMode.UseNls)
+            {
+                return char.IsAscii(c)
+                    ? ToLowerAsciiInvariant(c)
+                    : PreserveOrdinalLowerCasingClass(c, Invariant.ChangeCase(c, toUpper: false));
+            }
+
+            return OrdinalCasing.ToLower(c);
+        }
+
+        // Ordinal lower casing must never move a character out of its ordinal upper-casing class, otherwise it
+        // would stop being consistent with OrdinalIgnoreCase (for example the Kelvin, Ohm and Angstrom signs). The
+        // ICU ordinal table encodes this directly, but invariant and NLS simple lowering do not, so keep the original
+        // character whenever its simple lower mapping would change its ordinal upper-casing form.
+        private static char PreserveOrdinalLowerCasingClass(char c, char lower) =>
+            lower == c || ToUpperOrdinal(lower) == ToUpperOrdinal(c) ? lower : c;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void ChangeCaseToLower(ReadOnlySpan<char> source, Span<char> destination)
@@ -502,7 +522,7 @@ namespace System.Globalization
         /// </summary>
         /// <param name="value">The rune to convert to lowercase.</param>
         /// <returns>The specified rune converted to lowercase.</returns>
-        public Rune ToLower(Rune value)
+        public unsafe Rune ToLower(Rune value)
         {
             // Convert rune to span
             ReadOnlySpan<char> valueChars = value.AsSpan(stackalloc char[Rune.MaxUtf16CharsPerRune]);
@@ -510,7 +530,7 @@ namespace System.Globalization
             // Change span to lower and convert to rune
             if (valueChars.Length == 2)
             {
-                Span<char> lowerChars = stackalloc char[2];
+                Span<char> lowerChars = ['\0', '\0'];
                 ToLower(valueChars, lowerChars);
                 return new Rune(lowerChars[0], lowerChars[1]);
             }
@@ -524,7 +544,7 @@ namespace System.Globalization
         /// </summary>
         /// <param name="value">The rune to convert to uppercase.</param>
         /// <returns>The specified rune converted to uppercase.</returns>
-        public Rune ToUpper(Rune value)
+        public unsafe Rune ToUpper(Rune value)
         {
             // Convert rune to span
             ReadOnlySpan<char> valueChars = value.AsSpan(stackalloc char[Rune.MaxUtf16CharsPerRune]);
@@ -532,7 +552,7 @@ namespace System.Globalization
             // Change span to upper and convert to rune
             if (valueChars.Length == 2)
             {
-                Span<char> upperChars = stackalloc char[2];
+                Span<char> upperChars = ['\0', '\0'];
                 ToUpper(valueChars, upperChars);
                 return new Rune(upperChars[0], upperChars[1]);
             }
@@ -546,13 +566,13 @@ namespace System.Globalization
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                if (_isAsciiCasingSameAsInvariant == Tristate.NotInitialized)
+                if (_isAsciiCasingSameAsInvariant == NullableBool.Undefined)
                 {
                     PopulateIsAsciiCasingSameAsInvariant();
                 }
 
-                Debug.Assert(_isAsciiCasingSameAsInvariant == Tristate.True || _isAsciiCasingSameAsInvariant == Tristate.False);
-                return _isAsciiCasingSameAsInvariant == Tristate.True;
+                Debug.Assert(_isAsciiCasingSameAsInvariant == NullableBool.True || _isAsciiCasingSameAsInvariant == NullableBool.False);
+                return _isAsciiCasingSameAsInvariant == NullableBool.True;
             }
         }
 
@@ -560,7 +580,7 @@ namespace System.Globalization
         private void PopulateIsAsciiCasingSameAsInvariant()
         {
             bool compareResult = CultureInfo.GetCultureInfo(_textInfoName).CompareInfo.Compare("abcdefghijklmnopqrstuvwxyz", "ABCDEFGHIJKLMNOPQRSTUVWXYZ", CompareOptions.IgnoreCase) == 0;
-            _isAsciiCasingSameAsInvariant = (compareResult) ? Tristate.True : Tristate.False;
+            _isAsciiCasingSameAsInvariant = compareResult ? NullableBool.True : NullableBool.False;
         }
 
         /// <summary>
@@ -605,8 +625,11 @@ namespace System.Globalization
 
             StringBuilder result = new StringBuilder();
             string? lowercaseData = null;
-            // Store if the current culture is Dutch (special case)
-            bool isDutchCulture = CultureName.StartsWith("nl-", StringComparison.OrdinalIgnoreCase);
+            // Store if the current culture is Dutch (special case). This covers both the
+            // neutral culture ("nl") and any specific Dutch culture ("nl-NL", "nl-BE", etc.).
+            string cultureName = CultureName;
+            bool isDutchCulture = cultureName.StartsWith("nl", StringComparison.OrdinalIgnoreCase) &&
+                (cultureName.Length == 2 || cultureName[2] == '-');
 
             for (int i = 0; i < str.Length; i++)
             {
@@ -646,7 +669,7 @@ namespace System.Globalization
                             }
                             i += charLen;
                         }
-                        else if (str[i] == '\'')
+                        else if (IsApostrophe(str[i]))
                         {
                             i++;
                             if (hasLowerCase)
@@ -736,7 +759,7 @@ namespace System.Globalization
                 }
                 else
                 {
-                    Span<char> dst = stackalloc char[2];
+                    Span<char> dst = ['\0', '\0'];
                     ChangeCaseToUpper(src, dst);
                     result.Append(dst);
                 }
@@ -830,6 +853,18 @@ namespace System.Globalization
         private static bool IsWordSeparator(UnicodeCategory category)
         {
             return (c_wordSeparatorMask & (1 << (int)category)) != 0;
+        }
+
+        // Characters treated as an apostrophe within a word (e.g. contractions such as
+        // "can't" or possessives such as "Grandma's"), so a following letter is not treated
+        // as the start of a new word during titlecasing:
+        //   U+0027 APOSTROPHE
+        //   U+2019 RIGHT SINGLE QUOTATION MARK (the typographic curly apostrophe)
+        //   U+2018 LEFT SINGLE QUOTATION MARK
+        //   U+FF07 FULLWIDTH APOSTROPHE
+        private static bool IsApostrophe(char c)
+        {
+            return c is '\'' or '\u2019' or '\u2018' or '\uFF07';
         }
 
         private static bool IsLetterCategory(UnicodeCategory uc)

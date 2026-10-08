@@ -473,7 +473,7 @@ namespace System.Speech.Recognition
                 return newGrammarbuilder;
             }
 
-            internal override IElement CreateElement(IElementFactory elementFactory, IElement parent, IRule rule, IdentifierCollection ruleIds)
+            internal override IElement? CreateElement(IElementFactory elementFactory, IElement? parent, IRule? rule, IdentifierCollection ruleIds)
             {
                 Collection<RuleElement> newRules = new();
                 CalcCount(null);
@@ -507,7 +507,7 @@ namespace System.Speech.Recognition
                 {
                     if (!(item is RuleElement))
                     {
-                        IElement element = item.CreateElement(elementFactory, root, root, ruleIds);
+                        IElement? element = item.CreateElement(elementFactory, root, root, ruleIds);
 
                         if (element != null)
                         {
@@ -519,7 +519,7 @@ namespace System.Speech.Recognition
                 // Post parse the root rule
                 root.PostParse(elementFactory.Grammar);
 
-                elementFactory.Grammar.PostParse(null);
+                elementFactory.Grammar.PostParse(null!);
                 return null;
             }
 

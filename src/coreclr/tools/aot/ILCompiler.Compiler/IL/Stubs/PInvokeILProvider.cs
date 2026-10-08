@@ -25,20 +25,16 @@ namespace Internal.IL
 
         public override MethodIL GetMethodIL(MethodDesc method)
         {
+            if (method.IsAsync)
+            {
+                ThrowHelper.ThrowBadImageFormatException();
+            }
             return PInvokeILEmitter.EmitIL(method, _pInvokeILEmitterConfiguration, _interopStateManager);
         }
 
         public MethodDesc GetCalliStub(MethodSignature signature, ModuleDesc moduleContext)
         {
             return _interopStateManager.GetPInvokeCalliStub(signature, moduleContext);
-        }
-
-        public string GetDirectCallExternName(MethodDesc method)
-        {
-            bool directCall = _pInvokeILEmitterConfiguration.GenerateDirectCall(method, out string externName);
-            Debug.Assert(directCall);
-            Debug.Assert(externName != null);
-            return externName;
         }
     }
 }

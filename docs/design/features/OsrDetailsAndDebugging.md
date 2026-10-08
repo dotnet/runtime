@@ -281,7 +281,15 @@ But often much of the Tier0 frame is effectively dead after the transition and e
 
 The OSR prolog is conceptually similar to a normal method prolog, with a few key difference.
 
-When an OSR method is entered, all callee-save registers have the values they had when the Tier0 method was called, but the values in argument registers are unknown (and almost certainly not the args passed to the Tier0 method). The OSR method must initialize any live-in enregistered args or locals from the corresponding slots on the Tier0 frame. This happens in `genEnregisterOSRArgsAndLocals`.
+An OSR method is entered via a jump from the tier0 method.
+This means callee save registers used by the tier0 method may require special handling:
+- On x64, the OSR method keeps the original values of the callee saves in the tier0 frame.
+  They will be restored directly by the epilog, meaning that no instructions are needed.
+- For other targets the callee saves used by tier0 are restored in the prolog, and they are then saved again in the OSR frame as normal.
+  The above happens in `genOSRHandleTier0CalleeSavedRegistersAndFrame`.
+
+The OSR method must also initialize any live-in enregistered args or locals from the corresponding slots on the Tier0 frame.
+This happens in `genEnregisterOSRArgsAndLocals`.
 
 If the OSR method needs to report a generics context it uses the Tier0 frame slot; we ensure this is possible by forcing a Tier0 method with patchpoints to always report its generics context.
 
@@ -309,7 +317,7 @@ OSR funclets are more or less normal funclets.
 
 #### OSR Unwind Info
 
-On x64 the prolog unwind includes a phantom SP adjustment at offset 0 for the Tier0 frame.
+The prolog unwind includes a phantom SP adjustment at offset 0 for the Tier0 frame.
 
 As noted above the two SP adjusts in the x64 epilog are currently causing problems if we try and unwind in the epilog. Unwinding in the prolog and method body seems to work correctly; the unwind codes properly describe what needs to be done.
 
@@ -323,12 +331,11 @@ OSR GC info is standard. The only unusual aspect is that some special offsets (g
 
 ### Execution of an OSR Method
 
-OSR methods are never called directly; they can only be invoked by `CORINFO_HELP_PATCHPOINT` when called from a Tier0 method with patchpoints.
+OSR methods are never called directly; they can only be invoked by jump from a Tier0 method with patchpoints.
 
-On x64, to preserve proper stack alignment, the runtime helper will "push" a phantom return address on the stack (x64 methods assume SP is aligned 8 mod 16 on entry). This is not necessary on arm64 as calls do not push to the stack.
+On x64, to preserve proper stack alignment, the prolog will "push" a phantom return address on the stack (x64 methods assume SP is aligned 8 mod 16 on entry). This is not necessary on arm64 as calls do not push to the stack.
 
-When the OSR method returns, it cleans up both its own stack and the
-Tier0 method stack.
+When the OSR method returns, it cleans up both its own stack and the Tier0 method stack.
 
 Note if a Tier0 method is recursive and has loops there can be some interesting dynamics. After a sufficient amount of looping an OSR method will be created, and the currently active Tier0 instance will transition to the OSR method. When the OSR method makes a recursive call, it will invoke the Tier0 method, which will then fairly quickly transition to the OSR version just created.
 
@@ -474,7 +481,6 @@ to spend considerable time in OSR methods (e.g., the all-in-`Main` benchmark).
 
 Generally speaking the performance of an OSR method should be comparable to the equivalent Tier1 method. In practice we see variations of +/- 20% or so. There are a number or reasons for this:
 * OSR methods are often a subset of the full Tier1 method, and in many cases just comprise one loop. The JIT can often generate much better code for a single loop in isolation than a single loop in a more complex method.
-* A few optimizations are disabled in OSR methods, notably struct promotion.
 * OSR methods may only see fractional PGO data (as parts of the Tier0 method may not have executed yet). The JIT doesn't cope very well yet with this sort of partial PGO coverage.
 
 ### Impact on BenchmarkDotNet Results

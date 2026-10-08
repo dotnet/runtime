@@ -774,7 +774,7 @@ namespace System.Xml
             }
             else
             {
-                Span<int> bits = stackalloc int[4];
+                Span<int> bits = [0, 0, 0, 0];
                 decimal.TryGetBits(d, bits, out int intsWritten);
                 Debug.Assert(intsWritten == 4);
 
@@ -954,7 +954,7 @@ namespace System.Xml
             }
             else
             {
-                Span<int> bits = stackalloc int[4];
+                Span<int> bits = [0, 0, 0, 0];
                 WriteArrayInfo(XmlBinaryNodeType.DecimalTextWithEndElement, items.Length);
                 foreach (ref readonly decimal d in items)
                 {

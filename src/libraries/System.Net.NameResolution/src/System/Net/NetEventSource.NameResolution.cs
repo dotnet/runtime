@@ -5,11 +5,8 @@ using System.Diagnostics.Tracing;
 
 namespace System.Net
 {
-    [EventSource(Name = NetEventSourceName)]
+    [EventSource(Name = "Private.InternalDiagnostics.System.Net.NameResolution")]
     internal sealed partial class NetEventSource
     {
-        private const string NetEventSourceName = "Private.InternalDiagnostics.System.Net.NameResolution";
-
-        public NetEventSource() : base(NetEventSourceName, EventSourceSettings.EtwManifestEventFormat) { }
     }
 }

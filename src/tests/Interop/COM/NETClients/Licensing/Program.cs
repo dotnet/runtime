@@ -75,9 +75,9 @@ namespace NetClient
             }
         }
 
-        static void ActivateUnderDesigntimeContext()
+        static void ActivateUnderDesignTimeContext()
         {
-            Console.WriteLine($"Calling {nameof(ActivateUnderDesigntimeContext)}...");
+            Console.WriteLine($"Calling {nameof(ActivateUnderDesignTimeContext)}...");
 
             LicenseContext prev = LicenseManager.CurrentContext;
             try
@@ -134,7 +134,7 @@ namespace NetClient
             try
             {
                 ActivateLicensedObject();
-                ActivateUnderDesigntimeContext();
+                ActivateUnderDesignTimeContext();
                 ActivateUnderRuntimeContext();
             }
             catch (Exception e)

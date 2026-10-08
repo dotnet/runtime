@@ -31,6 +31,7 @@ namespace Mono.Linker
         public bool TryResolveTypeName(
             AssemblyDefinition assembly,
             string typeNameString,
+            bool fallbackToCoreLib,
             [NotNullWhen(true)] out TypeReference? typeReference,
             [NotNullWhen(true)] out List<TypeResolutionRecord>? typeResolutionRecords)
         {
@@ -40,7 +41,15 @@ namespace Mono.Linker
                 typeReference = null;
                 return false;
             }
-            typeReference = ResolveTypeName(assembly, parsedTypeName, typeResolutionRecords);
+            // Assembly.GetType (signaled by !fallbackToCoreLib) rejects top-level assembly-qualified
+            // names at runtime (Argument_AssemblyGetTypeCannotSpecifyAssembly).
+            if (!fallbackToCoreLib && parsedTypeName.AssemblyName is not null)
+            {
+                typeReference = null;
+                typeResolutionRecords = null;
+                return false;
+            }
+            typeReference = ResolveTypeName(assembly, parsedTypeName, typeResolutionRecords, fallbackToCoreLib);
 
             if (typeReference == null)
                 typeResolutionRecords = null;
@@ -48,7 +57,7 @@ namespace Mono.Linker
             return typeReference != null;
         }
 
-        TypeReference? ResolveTypeName(AssemblyDefinition originalAssembly, TypeName? typeName, List<TypeResolutionRecord> typeResolutionRecords)
+        TypeReference? ResolveTypeName(AssemblyDefinition originalAssembly, TypeName? typeName, List<TypeResolutionRecord> typeResolutionRecords, bool fallbackToCoreLib)
         {
             if (typeName == null)
                 return null;
@@ -63,7 +72,7 @@ namespace Mono.Linker
 
             if (typeName.IsConstructedGenericType)
             {
-                var genericTypeRef = ResolveTypeName(assembly, typeName.GetGenericTypeDefinition(), typeResolutionRecords);
+                var genericTypeRef = ResolveTypeName(assembly, typeName.GetGenericTypeDefinition(), typeResolutionRecords, fallbackToCoreLib);
                 if (genericTypeRef == null)
                     return null;
 
@@ -71,7 +80,7 @@ namespace Mono.Linker
                 var genericInstanceType = new GenericInstanceType(genericTypeRef);
                 foreach (var arg in typeName.GetGenericArguments())
                 {
-                    var genericArgument = ResolveTypeName(assembly, arg, typeResolutionRecords);
+                    var genericArgument = ResolveTypeName(assembly, arg, typeResolutionRecords, fallbackToCoreLib);
                     if (genericArgument == null)
                         return null;
 
@@ -82,7 +91,7 @@ namespace Mono.Linker
             }
             else if (typeName.IsArray || typeName.IsPointer || typeName.IsByRef)
             {
-                var elementType = ResolveTypeName(assembly, typeName.GetElementType(), typeResolutionRecords);
+                var elementType = ResolveTypeName(assembly, typeName.GetElementType(), typeResolutionRecords, fallbackToCoreLib);
                 if (elementType == null)
                     return null;
 
@@ -107,9 +116,11 @@ namespace Mono.Linker
             // so only record type resolutions for types which are actually resolved.
             if (resolvedType != null)
             {
-                typeResolutionRecords.Add(new(assembly, resolvedType));
                 return resolvedType;
             }
+
+            if (!fallbackToCoreLib)
+                return null;
 
             // If it didn't resolve and wasn't assembly-qualified, we also try core library
             var coreLibrary = _metadataResolver.TryResolve(originalAssembly.MainModule.TypeSystem.Object)?.Module.Assembly;
@@ -121,7 +132,6 @@ namespace Mono.Linker
                 resolvedType = GetSimpleTypeFromModule(typeName, coreLibrary.MainModule);
                 if (resolvedType != null)
                 {
-                    typeResolutionRecords.Add(new(coreLibrary, resolvedType));
                     return resolvedType;
                 }
             }
@@ -130,15 +140,31 @@ namespace Mono.Linker
 
             TypeDefinition? GetSimpleTypeFromModule(TypeName typeName, ModuleDefinition module)
             {
+                int initialResolutionRecordCount = typeResolutionRecords.Count;
+                TypeDefinition? resolvedType;
                 if (typeName.IsNested)
                 {
-                    TypeDefinition? type = GetSimpleTypeFromModule(typeName.DeclaringType, module);
-                    if (type == null)
+                    TypeDefinition? declaringType = GetSimpleTypeFromModule(typeName.DeclaringType, module);
+                    if (declaringType == null)
                         return null;
-                    return GetNestedType(type, TypeName.Unescape(typeName.Name));
+
+                    resolvedType = GetNestedType(declaringType, TypeName.Unescape(typeName.Name));
+                }
+                else
+                {
+                    resolvedType = module.ResolveType(TypeName.Unescape(typeName.FullName), _metadataResolver);
                 }
 
-                return module.ResolveType(TypeName.Unescape(typeName.FullName), _metadataResolver);
+                if (resolvedType != null)
+                {
+                    typeResolutionRecords.Add(new(module.Assembly, resolvedType));
+                }
+                else if (typeResolutionRecords.Count != initialResolutionRecordCount)
+                {
+                    typeResolutionRecords.RemoveRange(initialResolutionRecordCount, typeResolutionRecords.Count - initialResolutionRecordCount);
+                }
+
+                return resolvedType;
             }
 
             TypeDefinition? GetNestedType(TypeDefinition type, string nestedTypeName)

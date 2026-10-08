@@ -2,15 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*++
-
-
-
 Module Name:
-
     palinternal.h
 
 Abstract:
-
     CoreCLR Platform Adaptation Layer (PAL) header file used by source
     file part of the PAL implementation. This is a wrapper over
     pal/inc/pal.h. It allows avoiding name collisions when including
@@ -18,7 +13,6 @@ Abstract:
     to their PAL counterpart
 
 Details :
-
 A] Rationale (see B] for the quick recipe)
 There are 2 types of namespace collisions that must be handled.
 
@@ -132,9 +126,6 @@ When overriding a system function with the PAL's own implementation :
 - implement the function in the pal, naming it PAL_function_name
 - within the PAL, call PAL_function_name() to call the PAL's implementation,
 function_name() to call the system's implementation
-
-
-
 --*/
 
 #ifndef _PAL_INTERNAL_H_
@@ -229,8 +220,6 @@ function_name() to call the system's implementation
 // /data/local/tmp/
 #define TEMP_DIRECTORY_PATH "/data/local/tmp/"
 #endif
-
-#define PROCESS_PIPE_NAME_PREFIX ".dotnet-pal-processpipe"
 
 #ifdef __APPLE__
 #define APPLICATION_CONTAINER_BASE_PATH_SUFFIX "/Library/Group Containers/"
@@ -331,7 +320,5 @@ inline T* InterlockedCompareExchangePointerT(
 const char StackOverflowMessage[] = "Stack overflow.\n";
 
 #endif // __cplusplus
-
-DWORD PALAPI GetCurrentSessionId();
 
 #endif /* _PAL_INTERNAL_H_ */

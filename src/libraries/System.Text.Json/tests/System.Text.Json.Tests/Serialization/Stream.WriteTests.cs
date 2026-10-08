@@ -89,7 +89,9 @@ namespace System.Text.Json.Serialization.Tests
                 {
                     break;
                 }
-                json.AppendFormat(@"""Key_{0}"":""{0}"",", i);
+                json.AppendFormat("""
+                    "Key_{0}":"{0}",
+                    """, i);
                 i++;
             }
             json.Remove(json.Length - 1, 1).Append("}");

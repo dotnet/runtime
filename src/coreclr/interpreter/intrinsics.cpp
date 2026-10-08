@@ -29,6 +29,10 @@ NamedIntrinsic GetNamedIntrinsic(COMP_HANDLE compHnd, CORINFO_METHOD_HANDLE comp
                 return NI_PRIMITIVE_ConvertToIntegerNative;
             else if (!strcmp(methodName, "MultiplyAddEstimate"))
                 return NI_System_Math_MultiplyAddEstimate;
+            else if (!strcmp(methodName, "MinNative"))
+                return NI_System_Math_MinNative;
+            else if (!strcmp(methodName, "MaxNative"))
+                return NI_System_Math_MaxNative;
         }
         else if (!strcmp(className, "Math") || !strcmp(className, "MathF"))
         {
@@ -65,14 +69,17 @@ NamedIntrinsic GetNamedIntrinsic(COMP_HANDLE compHnd, CORINFO_METHOD_HANDLE comp
         {
             if (!strcmp(methodName, "NextCallReturnAddress"))
                 return NI_System_StubHelpers_NextCallReturnAddress;
-            else if (!strcmp(methodName, "GetStubContext"))
-                return NI_System_StubHelpers_GetStubContext;
         }
     }
     else if (!strcmp(namespaceName, "System.Numerics"))
     {
         if (!strcmp(className, "Vector") && !strcmp(methodName, "get_IsHardwareAccelerated"))
             return NI_IsSupported_False;
+        if (!strcmp(className, "Vector") &&
+            (!strcmp(methodName, "MinNative") || !strcmp(methodName, "MaxNative")))
+        {
+            return compMethod == method ? NI_Throw_PlatformNotSupportedException : NI_Illegal;
+        }
 
         // Fall back to managed implementation for everything else.
         return NI_Illegal;
@@ -82,6 +89,11 @@ NamedIntrinsic GetNamedIntrinsic(COMP_HANDLE compHnd, CORINFO_METHOD_HANDLE comp
         // Vector128<T> etc
         if (HAS_PREFIX(className, "Vector") && !strcmp(methodName, "get_IsHardwareAccelerated"))
             return NI_IsSupported_False;
+        if (HAS_PREFIX(className, "Vector") &&
+            (!strcmp(methodName, "MinNative") || !strcmp(methodName, "MaxNative")))
+        {
+            return compMethod == method ? NI_Throw_PlatformNotSupportedException : NI_Illegal;
+        }
 
         // Fall back to managed implementation for everything else.
         return NI_Illegal;
@@ -108,8 +120,25 @@ NamedIntrinsic GetNamedIntrinsic(COMP_HANDLE compHnd, CORINFO_METHOD_HANDLE comp
             {
                 if (!strcmp(methodName, "IsReferenceOrContainsReferences"))
                     return NI_System_Runtime_CompilerServices_RuntimeHelpers_IsReferenceOrContainsReferences;
+                else if (!strcmp(methodName, "IsRuntimeAsync"))
+                    return NI_System_Runtime_CompilerServices_RuntimeHelpers_IsRuntimeAsync;
                 else if (!strcmp(methodName, "GetMethodTable"))
                     return NI_System_Runtime_CompilerServices_RuntimeHelpers_GetMethodTable;
+                else if (!strcmp(methodName, "SetNextCallGenericContext"))
+                    return NI_System_Runtime_CompilerServices_RuntimeHelpers_SetNextCallGenericContext;
+                else if (!strcmp(methodName, "SetNextCallAsyncContinuation"))
+                    return NI_System_Runtime_CompilerServices_RuntimeHelpers_SetNextCallAsyncContinuation;
+            }
+            else if (!strcmp(className, "AsyncHelpers"))
+            {
+                if (!strcmp(methodName, "AsyncSuspend"))
+                    return NI_System_Runtime_CompilerServices_AsyncHelpers_AsyncSuspend;
+                else if (!strcmp(methodName, "AsyncCallContinuation"))
+                    return NI_System_Runtime_CompilerServices_AsyncHelpers_AsyncCallContinuation;
+                else if (!strcmp(methodName, "Await"))
+                    return NI_System_Runtime_CompilerServices_AsyncHelpers_Await;
+                else if (!strcmp(methodName, "TailAwait"))
+                    return NI_System_Runtime_CompilerServices_AsyncHelpers_TailAwait;
             }
         }
         else if (!strcmp(namespaceName, "System.Runtime.InteropServices"))
@@ -145,6 +174,29 @@ NamedIntrinsic GetNamedIntrinsic(COMP_HANDLE compHnd, CORINFO_METHOD_HANDLE comp
                 return NI_System_Threading_Volatile_ReadBarrier;
             else if (!strcmp(methodName, "WriteBarrier"))
                 return NI_System_Threading_Volatile_WriteBarrier;
+        }
+    }
+    else if (!strcmp(namespaceName, "System.Threading.Tasks"))
+    {
+        if (!strcmp(methodName, "ConfigureAwait"))
+        {
+            if (!strcmp(className, "Task`1") || !strcmp(className, "Task") ||
+                !strcmp(className, "ValueTask`1") || !strcmp(className, "ValueTask"))
+                return NI_System_Threading_Tasks_Task_ConfigureAwait;
+        }
+        else if (!strcmp(className, "ValueTask"))
+        {
+            if (!strcmp(methodName, ".ctor"))
+                return NI_System_Threading_Tasks_ValueTask__ctor;
+            else if (!strcmp(methodName, "AsTask"))
+                return NI_System_Threading_Tasks_ValueTask_AsTask;
+        }
+        else if (!strcmp(className, "ValueTask`1"))
+        {
+            if (!strcmp(methodName, ".ctor"))
+                return NI_System_Threading_Tasks_ValueTask_1__ctor;
+            else if (!strcmp(methodName, "AsTask"))
+                return NI_System_Threading_Tasks_ValueTask_1_AsTask;
         }
     }
 

@@ -6,12 +6,10 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Reflection;
-using System.Reflection.Runtime.CustomAttributes;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.General.NativeFormat;
 using System.Reflection.Runtime.MethodInfos;
 using System.Reflection.Runtime.MethodInfos.NativeFormat;
-using System.Reflection.Runtime.ParameterInfos;
 using System.Reflection.Runtime.TypeInfos;
 using System.Reflection.Runtime.TypeInfos.NativeFormat;
 using System.Runtime.CompilerServices;
@@ -67,13 +65,9 @@ namespace System.Reflection.Runtime.PropertyInfos.NativeFormat
             }
         }
 
-        public sealed override IEnumerable<CustomAttributeData> CustomAttributes
-        {
-            get
-            {
-                return RuntimeCustomAttributeData.GetCustomAttributes(_reader, _property.CustomAttributes);
-            }
-        }
+        internal sealed override MetadataReader GetMetadataReader() => _reader;
+
+        internal sealed override CustomAttributeHandleCollection GetCustomAttributeHandles() => _property.CustomAttributes;
 
         public override Type GetModifiedPropertyType()
         {
@@ -132,10 +126,20 @@ namespace System.Reflection.Runtime.PropertyInfos.NativeFormat
             }
         }
 
+        internal override QSignatureTypeHandle GetParameterTypeHandle(int position)
+        {
+            foreach (Handle parameterType in _property.Signature.GetPropertySignature(_reader).Parameters)
+            {
+                if (position-- == 0)
+                    return new QSignatureTypeHandle(_reader, parameterType);
+            }
+
+            throw new BadImageFormatException(SR.BadImageFormat_ParameterSignatureMismatch);
+        }
+
         protected sealed override bool GetDefaultValueIfAny(bool raw, out object? defaultValue)
         {
-            return DefaultValueParser.GetDefaultValueFromConstantIfAny(_reader, _property.DefaultValue, PropertyType, raw, out defaultValue)
-                || DefaultValueParser.GetDefaultValueFromAttributeIfAny(CustomAttributes, raw, out defaultValue);
+            return DefaultValueParser.GetDefaultValueFromConstantIfAny(_reader, _property.DefaultValue, PropertyType, raw, out defaultValue);
         }
 
         protected sealed override RuntimeNamedMethodInfo GetPropertyMethod(PropertyMethodSemantics whichMethod)

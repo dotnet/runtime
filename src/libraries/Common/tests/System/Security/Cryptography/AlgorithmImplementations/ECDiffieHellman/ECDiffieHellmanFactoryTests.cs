@@ -7,24 +7,26 @@ using Xunit;
 namespace System.Security.Cryptography.EcDiffieHellman.Tests
 {
     [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
-    public static class ECDiffieHellmanFactoryTests
+    public abstract class ECDiffieHellmanFactoryTests
     {
+        protected abstract ECDiffieHellmanProvider ECDiffieHellmanFactory { get; }
+
         [Fact]
-        public static void ECDiffieHellmanCreateDefault_Equals_SameInstance()
+        public void ECDiffieHellmanCreateDefault_Equals_SameInstance()
         {
             using ECDiffieHellman ecdh = ECDiffieHellmanFactory.Create();
             AssertExtensions.TrueExpression(ecdh.Equals(ecdh));
         }
 
         [Fact]
-        public static void ECDiffieHellmanCreateKeySize_Equals_SameInstance()
+        public void ECDiffieHellmanCreateKeySize_Equals_SameInstance()
         {
             using ECDiffieHellman ecdh = ECDiffieHellmanFactory.Create(256);
             AssertExtensions.TrueExpression(ecdh.Equals(ecdh));
         }
 
         [Fact]
-        public static void ECDiffieHellmanCreateKeySize_Equals_DifferentInstance_FalseForSameKeyMaterial()
+        public void ECDiffieHellmanCreateKeySize_Equals_DifferentInstance_FalseForSameKeyMaterial()
         {
             using ECDiffieHellman ecdh1 = ECDiffieHellmanFactory.Create();
             using ECDiffieHellman ecdh2 = ECDiffieHellmanFactory.Create();
@@ -35,7 +37,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
 
 #if NET
         [Fact]
-        public static void ECDiffieHellmanCreateCurve_Equals_SameInstance()
+        public void ECDiffieHellmanCreateCurve_Equals_SameInstance()
         {
             using ECDiffieHellman ecdh = ECDiffieHellmanFactory.Create(ECCurve.NamedCurves.nistP256);
             AssertExtensions.TrueExpression(ecdh.Equals(ecdh));

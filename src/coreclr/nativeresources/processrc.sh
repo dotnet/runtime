@@ -54,7 +54,7 @@ printf "#include <resourcestring.h>\n\n"
 printf "extern NativeStringResourceTable %s;\n" "$tableName"
 printf "const NativeStringResource %s[] = {\n" "$arrayName"
 
-for id in "${!resourceArray[@]}"; do
+for id in $(printf '%s\n' "${!resourceArray[@]}" | sort -n); do
   # ID is printed in hex representation. A string representation that has fewer than 8
   # characters (not including the '0x' prefix) is padded with 0's  to make it 8 characters.
   # Example: an input of 49 yields "0x00000031".

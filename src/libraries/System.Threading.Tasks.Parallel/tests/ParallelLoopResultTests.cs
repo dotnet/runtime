@@ -10,7 +10,7 @@ namespace System.Threading.Tasks.Tests
 {
     public static class ParallelLoopResultTests
     {
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void ForPLRTests()
         {
             ParallelLoopResult plr =
@@ -44,7 +44,7 @@ namespace System.Threading.Tasks.Tests
             PLRcheck(plr, "For-Completion", true, null);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void ForPLR64Tests()
         {
             ParallelLoopResult plr =
@@ -78,7 +78,7 @@ Parallel.For(1L, 0L, delegate (long i, ParallelLoopState ps)
             PLRcheck(plr, "For64-Completion", true, null);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void ForEachPLRTests()
         {
             Dictionary<string, string> dict = new Dictionary<string, string>();
@@ -122,7 +122,7 @@ Parallel.For(1L, 0L, delegate (long i, ParallelLoopState ps)
             PLRcheck(plr, "ForEach-Complete", true, null);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void PartitionerForEachPLRTests()
         {
             //
@@ -144,7 +144,7 @@ Parallel.For(1L, 0L, delegate (long i, ParallelLoopState ps)
             PLRcheck(plr, "Partitioner-ForEach-Complete", true, null);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void OrderablePartitionerForEachTests()
         {
             List<int> intlist = new List<int>();
@@ -372,7 +372,7 @@ Parallel.For(1L, 0L, delegate (long i, ParallelLoopState ps)
         }
 
         // Perform tests on various combinations of Stop()/Break()
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void SimultaneousStopBreakTests()
         {
             //

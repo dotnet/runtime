@@ -31,7 +31,7 @@ namespace Internal.TypeSystem.Interop
 
             if (mdType.IsExtendedLayout)
             {
-                return mdType.GetClassLayout().Kind is MetadataLayoutKind.CStruct;
+                return mdType.GetClassLayout().Kind is MetadataLayoutKind.CStruct or MetadataLayoutKind.CUnion;
             }
 
             if (mdType.IsAutoLayout)

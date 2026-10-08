@@ -98,6 +98,7 @@ target_link_libraries(createdump_static PRIVATE minipal)
         PRIVATE
         createdump_static
         corguids
+        coreclrpal_dac
         dbgutil
         ${CMAKE_DL_LIBS}
     )

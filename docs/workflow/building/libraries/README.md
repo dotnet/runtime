@@ -76,7 +76,7 @@ The libraries build has two logical components, the native build which produces 
 
 The build settings (BuildTargetFramework, TargetOS, Configuration, Architecture) are generally defaulted based on where you are building (i.e. which OS or which architecture) but we have a few shortcuts for the individual properties that can be passed to the build scripts:
 
-- `-framework|-f` identifies the target framework for the build. Possible values include `net10.0` (currently the latest .NET version) or `net481` (the latest .NET Framework version). (msbuild property `BuildTargetFramework`)
+- `-framework|-f` identifies the target framework for the build. Possible values include `net11.0` (currently the latest .NET version) or `net481` (the latest .NET Framework version). (msbuild property `BuildTargetFramework`)
 - `-os` identifies the OS for the build. It defaults to the OS you are running on but possible values include `windows`, `unix`, `linux`, or `osx`. (msbuild property `TargetOS`)
 - `-configuration|-c Debug|Release` controls the optimization level the compilers use for the build. It defaults to `Debug`. (msbuild property `Configuration`)
 - `-arch` identifies the architecture for the build. It defaults to `x64` but possible values include `x64`, `x86`, `arm`, or `arm64`. (msbuild property `TargetArchitecture`)
@@ -228,6 +228,27 @@ One can build in Debug or Release mode from the root by doing `./build.sh libs -
 ### Building other Architectures
 
 One can build 32- or 64-bit binaries or for any architecture by specifying in the root `./build.sh libs -arch [value]` or in a project `/p:TargetArchitecture=[value]` after the `dotnet build` command.
+
+### Building with static analysis and ILLink validation
+
+By default, code analyzers and ILLink trimming are disabled during local and PR product builds to improve build performance. They remain required merge gates in CI, and official product builds continue to run ILLink trimming validation. To enable these features locally, pass the following properties:
+
+- **Analyzers**: To run code analyzers during the build, use `/p:RunAnalyzersInBuild=true`:
+  ```bash
+  ./build.sh libs -c Release /p:RunAnalyzersInBuild=true
+  ```
+
+- **ILLink Trimming**: To run ILLink trimming during the build, use `/p:RunILLinkInBuild=true`:
+  ```bash
+  ./build.sh libs -c Release /p:RunILLinkInBuild=true
+  ```
+
+- **Both**: To enable both analyzers and trimming:
+  ```bash
+  ./build.sh libs -c Release /p:RunAnalyzersInBuild=true /p:RunILLinkInBuild=true
+  ```
+
+These features run in dedicated jobs in the global-build CI pipeline for relevant PRs, keeping them as merge gates without adding them to every product build.
 
 ## Working in Visual Studio
 

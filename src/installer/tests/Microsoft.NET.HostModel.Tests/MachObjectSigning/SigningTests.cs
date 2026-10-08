@@ -26,10 +26,12 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
     public class SigningTests :IClassFixture<SigningTests.SharedTestState>
     {
         private SharedTestState sharedTestState;
+        private ITestOutputHelper output;
 
-        public SigningTests(SharedTestState fixture)
+        public SigningTests(SharedTestState fixture, ITestOutputHelper output)
         {
             sharedTestState = fixture;
+            this.output = output;
         }
 
         [Theory]
@@ -78,14 +80,20 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
         }
 
         [Theory]
-        [MemberData(nameof(GetTestFilePaths), nameof(MatchesCodesignOutput))]
         [PlatformSpecific(TestPlatforms.OSX)]
-        void MatchesCodesignOutput(string filePath, TestArtifact _)
+        [MemberData(nameof(GetTestFilePaths), nameof(MatchesCodesignOutput))]
+        public void MatchesCodesignOutput(string filePath, TestArtifact _)
         {
             string fileName = Path.GetFileName(filePath);
             string originalFilePath = filePath;
             string codesignFilePath = filePath + ".codesigned";
             string managedSignedPath = filePath + ".signed";
+
+            // codesign's default arm64 code directory page size only matches HostModel's (16 KiB) on macOS 26+.
+            // On older macOS, codesign defaults to 4 KiB for arm64, so there is nothing meaningful to compare.
+            Assert.SkipWhen(
+                !OperatingSystem.IsMacOSVersionAtLeast(26) && IsArm64File(originalFilePath),
+                "codesign uses a different default code directory page size for arm64 before macOS 26.");
 
             // Codesigned file
             File.Copy(filePath, codesignFilePath);
@@ -98,7 +106,19 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
 
             (exitCode, stdErr) = Codesign.Run("-v", managedSignedPath);
             Assert.Equal(0, exitCode);
-            AssertMachFilesAreEquivalent(codesignFilePath, managedSignedPath, fileName);
+            try
+            {
+                AssertMachFilesAreEquivalent(codesignFilePath, managedSignedPath, fileName);
+            }
+            catch
+            {
+                string args = "--display --verbose=6";
+                var (_, stderr) = Codesign.Run(args, codesignFilePath);
+                output.WriteLine($"Codesign info for {codesignFilePath}:\n{stderr}");
+                (int _, stderr) = Codesign.Run(args, managedSignedPath);
+                output.WriteLine($"Codesign info for {managedSignedPath}:\n{stderr}");
+                throw;
+            }
         }
 
         [Fact]
@@ -154,7 +174,7 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
             // Bundler should create a new inode for the bundle which should clear the MacOS signature cache.
             string oldFile = singleFile;
             string dir = Path.GetDirectoryName(singleFile);
-            singleFile = sharedTestState.SelfContainedApp.Rebundle(dir, BundleOptions.BundleAllContent, out var _, new Version(5, 0));
+            singleFile = sharedTestState.SelfContainedApp.Rebundle(dir, BundleOptions.BundleAllContent, out var _);
             Assert.True(singleFile == oldFile, "Rebundled app should have the same path as the original single-file app.");
             var secondInode = Inode.GetInode(singleFile);
             Assert.False(firstInode == secondInode, "not a different inode after re-bundling");
@@ -175,6 +195,19 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
             {
                 SelfContainedApp.Dispose();
             }
+        }
+
+        static bool IsArm64File(string filePath)
+        {
+            using var fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 1);
+            using var mmapFile = MemoryMappedFile.CreateFromFile(fileStream, null, 0, MemoryMappedFileAccess.Read, HandleInheritability.None, true);
+            using var accessor = mmapFile.CreateViewAccessor(0, 0, MemoryMappedFileAccess.CopyOnWrite);
+
+            var file = new MemoryMappedMachOViewAccessor(accessor);
+            file.Read(0, out MachHeader header);
+
+            var cpuType = (MachCpuType)header.CpuType;
+            return cpuType is MachCpuType.Arm64 or MachCpuType.Arm64_32;
         }
 
         static void AssertMachFilesAreEquivalent(string codesignedPath, string managedSignedPath, string fileName)

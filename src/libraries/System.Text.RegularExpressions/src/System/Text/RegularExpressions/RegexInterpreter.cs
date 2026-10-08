@@ -299,7 +299,7 @@ namespace System.Text.RegularExpressions
                         // and if so, we need to fetch the case equivalences from our casing tables.
                         Debug.Assert(_culture != null, "If the pattern has backreferences and is IgnoreCase, then _culture must not be null.");
                         if (!RegexCaseEquivalences.TryFindCaseEquivalencesForCharWithIBehavior(backreferenceChar, _culture, ref _caseBehavior, out ReadOnlySpan<char> equivalences) ||
-                            equivalences.IndexOf(inputSpan[pos]) < 0)
+                            !equivalences.Contains(inputSpan[pos]))
                         {
                             // The backreference character doesn't participate in case conversions, or it does but the input character
                             // doesn't match any of its equivalents.  Either way, we fail to match.

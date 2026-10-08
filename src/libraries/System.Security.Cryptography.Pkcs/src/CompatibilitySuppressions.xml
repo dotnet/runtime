@@ -138,4 +138,24 @@
     <Left>lib/netstandard2.0/System.Security.Cryptography.Pkcs.dll</Left>
     <Right>lib/net462/System.Security.Cryptography.Pkcs.dll</Right>
   </Suppression>
+  <!-- ApiCompat filters out the internal ExperimentalAttribute used by .NET Standard, so it
+       incorrectly reports these already-experimental APIs as becoming experimental on .NET 10. -->
+  <Suppression>
+    <DiagnosticId>CP0023</DiagnosticId>
+    <Target>M:System.Security.Cryptography.Pkcs.CmsSigner.#ctor(System.Security.Cryptography.Pkcs.SubjectIdentifierType,System.Security.Cryptography.X509Certificates.X509Certificate2,System.Security.Cryptography.CompositeMLDsa)</Target>
+    <Left>lib/netstandard2.1/System.Security.Cryptography.Pkcs.dll</Left>
+    <Right>lib/net10.0/System.Security.Cryptography.Pkcs.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0023</DiagnosticId>
+    <Target>M:System.Security.Cryptography.Pkcs.CmsSigner.#ctor(System.Security.Cryptography.Pkcs.SubjectIdentifierType,System.Security.Cryptography.X509Certificates.X509Certificate2,System.Security.Cryptography.MLDsa)</Target>
+    <Left>lib/netstandard2.1/System.Security.Cryptography.Pkcs.dll</Left>
+    <Right>lib/net10.0/System.Security.Cryptography.Pkcs.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0023</DiagnosticId>
+    <Target>M:System.Security.Cryptography.Pkcs.CmsSigner.#ctor(System.Security.Cryptography.Pkcs.SubjectIdentifierType,System.Security.Cryptography.X509Certificates.X509Certificate2,System.Security.Cryptography.SlhDsa)</Target>
+    <Left>lib/netstandard2.1/System.Security.Cryptography.Pkcs.dll</Left>
+    <Right>lib/net10.0/System.Security.Cryptography.Pkcs.dll</Right>
+  </Suppression>
 </Suppressions>

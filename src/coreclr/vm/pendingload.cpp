@@ -118,9 +118,7 @@ VOID DECLSPEC_NORETURN PendingTypeLoadTable::Entry::ThrowException()
 {
     CONTRACTL
     {
-        THROWS;
-        GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
+        STANDARD_VM_CHECK;
     }
     CONTRACTL_END;
 
@@ -158,7 +156,6 @@ void PendingTypeLoadTable::Entry::SetException(Exception *pException)
     // the details - so be it
     EX_TRY
     {
-        FAULT_NOT_FATAL();
         m_pException = pException->Clone();
     }
     EX_CATCH

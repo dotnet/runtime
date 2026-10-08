@@ -13,6 +13,26 @@ private:
     BasicBlock* m_block;
     Statement*  m_statement;
 
+    struct ParameterUse
+    {
+        GenTreeLclVarCommon* Node;
+        BasicBlock*          Block;
+    };
+
+    struct ParameterUses
+    {
+        ArrayStack<ParameterUse> Uses;
+        bool                     HasKills = false;
+        bool                     HasReads = false;
+
+        ParameterUses(CompAllocator allocator)
+            : Uses(allocator)
+        {
+        }
+    };
+
+    ParameterUses** m_parameterUses = nullptr;
+
 public:
     Rationalizer(Compiler* comp);
 
@@ -30,6 +50,12 @@ public:
     virtual PhaseStatus DoPhase() override;
 
 private:
+    bool ShouldRecordParameterUse(GenTree* node);
+    void RecordParameterUse(GenTree* node);
+    void ForgetParameterUses(const LIR::ReadOnlyRange& range);
+    void RewriteParameterUses();
+    void RewriteParameterField(BasicBlock* block, GenTreeLclFld* field);
+
     inline LIR::Range& BlockRange() const
     {
         return LIR::AsRange(m_block);
@@ -64,6 +90,12 @@ private:
     bool ShouldRewriteToNonMaskHWIntrinsic(GenTree* node);
 #endif // TARGET_XARCH
 
+#if defined(TARGET_ARM64)
+    bool RewriteHWIntrinsicCmpMaskExtractMsb(GenTree** use, Compiler::GenTreeStack& parents);
+    bool RewriteHWIntrinsicCmpMaskExtractMsbPopCount(GenTree** use, Compiler::GenTreeStack& parents);
+    bool RewriteHWIntrinsicCmpMaskExtractMsbZeroCount(GenTree** use, Compiler::GenTreeStack& parents);
+#endif // TARGET_ARM64
+
     void RewriteHWIntrinsicExtractMsb(GenTree** use, Compiler::GenTreeStack& parents);
 #endif // FEATURE_HW_INTRINSICS
 
@@ -89,7 +121,7 @@ private:
         };
 
         RationalizeVisitor(Rationalizer& rationalizer)
-            : GenTreeVisitor<RationalizeVisitor>(rationalizer.comp)
+            : GenTreeVisitor<RationalizeVisitor>(rationalizer.m_compiler)
             , m_rationalizer(rationalizer)
         {
         }

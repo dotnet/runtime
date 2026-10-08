@@ -187,6 +187,11 @@
           type([TestLibrary]TestLibrary.PlatformDetection)
           string[1] ('IsAppleMobile')
       }
+      .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [mscorlib]System.Type, string[]) = {
+          string('https://github.com/dotnet/runtime/issues/91923')
+          type([TestLibrary]TestLibrary.PlatformDetection)
+          string[1] ('IsMonoInterpreter')
+      }
       .entrypoint
       .maxstack  4
       .locals (int32 V_0)

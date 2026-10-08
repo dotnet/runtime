@@ -13,11 +13,16 @@
   <ItemGroup>
     <Compile Include="$(CoreLibSharedDir)System\Runtime\InteropServices\StringMarshalling.cs" Link="Production\StringMarshalling.cs" />
     <Compile Include="$(CoreLibSharedDir)\System\Runtime\InteropServices\Marshalling\MarshalMode.cs" Link="Production\MarshalMode.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\src\System\Runtime\InteropServices\Marshalling\ComInterfaceOptions.cs" Link="Production\ComInterfaceOptions.cs" />
   </ItemGroup>
 
   <ItemGroup>
     <Compile Include="$(CommonPath)Roslyn\GetBestTypeByMetadataName.cs" Link="Common\Roslyn\GetBestTypeByMetadataName.cs" />
     <Compile Include="$(CommonPath)Roslyn\Hash.cs" Link="Common\Roslyn\Hash.cs" />
+    <Compile Include="$(CommonPath)SourceGenerators\ContainingTypeUtilities.cs" Link="Common\SourceGenerators\ContainingTypeUtilities.cs" />
+    <Compile Include="$(CommonPath)SourceGenerators\DeclarationHeader.cs" Link="Common\SourceGenerators\DeclarationHeader.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\InterpolatedStringHandlerArgumentAttribute.cs" Link="Common\System\Runtime\CompilerServices\InterpolatedStringHandlerArgumentAttribute.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\InterpolatedStringHandlerAttribute.cs" Link="Common\System\Runtime\CompilerServices\InterpolatedStringHandlerAttribute.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\IsExternalInit.cs" Link="Common\System\Runtime\CompilerServices\IsExternalInit.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\RequiredMemberAttribute.cs" Link="Common\System\Runtime\CompilerServices\RequiredMemberAttribute.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\SetsRequiredMembersAttribute.cs" Link="Common\System\Diagnostics\CodeAnalysis\SetsRequiredMembersAttribute.cs" />

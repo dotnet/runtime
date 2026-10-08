@@ -24,10 +24,7 @@ int32_t AppleCryptoNative_EccGenerateKey(int32_t keySizeBits,
     {
         CFDictionaryAddValue(attributes, kSecAttrKeyType, kSecAttrKeyTypeEC);
         CFDictionaryAddValue(attributes, kSecAttrKeySizeInBits, cfKeySizeValue);
-        if (__builtin_available(macOS 10.15, iOS 13, tvOS 13, *))
-        {
-            CFDictionaryAddValue(attributes, kSecUseDataProtectionKeychain, kCFBooleanTrue);
-        }
+        CFDictionaryAddValue(attributes, kSecUseDataProtectionKeychain, kCFBooleanTrue);
 
         *pPrivateKey = SecKeyCreateRandomKey(attributes, pErrorOut);
         if (*pPrivateKey != NULL)
@@ -59,7 +56,7 @@ int32_t AppleCryptoNative_EccGetKeySizeInBits(SecKeyRef publicKey)
     if (attributes == NULL)
         return 0;
 
-    CFNumberRef cfSize = CFDictionaryGetValue(attributes, kSecAttrKeySizeInBits);
+    CFNumberRef cfSize = (CFNumberRef)CFDictionaryGetValue(attributes, kSecAttrKeySizeInBits);
     int size = 0;
 
     if (cfSize != NULL)

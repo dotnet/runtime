@@ -17,7 +17,7 @@
     <ILLinkTrimInputPath>$(IntermediateOutputPath)PreTrim/</ILLinkTrimInputPath>
     <ILLinkTrimInputAssembly>$(ILLinkTrimInputPath)$(TargetName)$(TargetExt)</ILLinkTrimInputAssembly>
     <ILLinkTrimInputSymbols>$(ILLinkTrimInputPath)$(TargetName).pdb</ILLinkTrimInputSymbols>
-    <ILLinkTrimOutputPath>$(IntermediateOutputPath)</ILLinkTrimOutputPath>
+    <ILLinkTrimOutputPath>$(IntermediateOutputPath)ILLinkTrimOutput/</ILLinkTrimOutputPath>
 
     <ILLinkDescriptorsXml Condition="'$(ILLinkDescriptorsXml)' == '' and Exists('$(ILLinkDirectory)ILLink.Descriptors.xml')">$(ILLinkDirectory)ILLink.Descriptors.xml</ILLinkDescriptorsXml>
     <ILLinkDescriptorsXmlIntermediatePath>$(IntermediateOutputPath)ILLink.Descriptors.xml</ILLinkDescriptorsXmlIntermediatePath>
@@ -255,7 +255,7 @@
       </_DependencyDirectoriesNoSlash>
       <_DependencyDirectories Remove="@(_DependencyDirectories)" />
       <_DependencyDirectories Include="%(_DependencyDirectoriesNoSlash.PathWithoutSlash)" />
-      <ILLinkTrimInputAssembly Include="$(ILLinkTrimInputPath)$(TargetName)$(TargetExt)">
+      <ILLinkTrimInputAssembly Include="$(TargetName)">
         <RootMode>library</RootMode>
       </ILLinkTrimInputAssembly>
     </ItemGroup>
@@ -264,12 +264,21 @@
       <ILLinkArgs Condition="@(_DependencyDirectories->Count()) > 0">$(ILLinkArgs) -d @(_DependencyDirectories->'"%(Identity)"', ' -d ')</ILLinkArgs>
     </PropertyGroup>
 
-    <ILLink AssemblyPaths=""
+    <ILLink AssemblyPaths="$(ILLinkTrimInputPath)$(TargetName)$(TargetExt)"
             RootAssemblyNames="@(ILLinkTrimInputAssembly)"
             OutputDirectory="$(ILLinkTrimOutputPath)"
             ExtraArgs="$(ILLinkArgs)"
             ToolExe="$(_DotNetHostFileName)"
             ToolPath="$(_DotNetHostDirectory)" />
+
+    <ItemGroup>
+      <_ILLinkTrimOutput Include="$(ILLinkTrimOutputPath)**/*" />
+    </ItemGroup>
+
+    <Move SourceFiles="@(_ILLinkTrimOutput)"
+          DestinationFiles="@(_ILLinkTrimOutput->'$(IntermediateOutputPath)%(RecursiveDir)%(Filename)%(Extension)')">
+      <Output TaskParameter="MovedFiles" ItemName="FileWrites" />
+    </Move>
   </Target>
 
   <!-- ILLink reporting.

@@ -145,9 +145,15 @@ namespace System.ComponentModel.DataAnnotations
         ///     <para>Consume this instance with caution!</para>
         /// </summary>
         /// <remarks>
+        ///     <para>
         ///     During validation, especially property-level validation, the object instance might be in an indeterminate state.
         ///     For example, the property being validated, as well as other properties on the instance might not have been
         ///     updated to their new values.
+        ///     </para>
+        ///     <para>
+        ///     When validation is performed without an owning object (for example, validating standalone values),
+        ///     <see cref="ObjectInstance" /> might be a placeholder and should not be treated as the owner of the value.
+        ///     </para>
         /// </remarks>
         public object ObjectInstance { get; }
 
@@ -205,6 +211,14 @@ namespace System.ComponentModel.DataAnnotations
         ///     This property will never be null, but the dictionary may be empty.  Changes made
         ///     to items in this dictionary will never affect the original dictionary specified in the constructor.
         /// </value>
+        /// <remarks>
+        ///     <see cref="Items" /> is designed as a read-only input channel populated before validation
+        ///     begins. The validation pipeline does not guarantee attribute execution order (beyond
+        ///     <see cref="RequiredAttribute" /> priority), and no built-in attribute mutates
+        ///     <see cref="Items" /> during validation. Custom validators should treat <see cref="Items" />
+        ///     as read-only during validation execution. Mutating <see cref="Items" /> from within a
+        ///     validator is unsupported and may produce race conditions under parallel async validation.
+        /// </remarks>
         public IDictionary<object, object?> Items => _items;
 
         #endregion

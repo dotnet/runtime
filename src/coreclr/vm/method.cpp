@@ -104,25 +104,32 @@ const BYTE MethodDesc::s_ClassificationSizeTable[] = {
 #ifndef FEATURE_COMINTEROP
 #undef CLRToCOMCallMethodDesc
 #endif
-
-class ArgIteratorBaseForPInvoke : public ArgIteratorBase
+BOOL ArgIteratorBaseForPInvoke::IsRegPassedStruct(TypeHandle th)
 {
-protected:
-    FORCEINLINE BOOL IsRegPassedStruct(MethodTable* pMT)
+    if (th.IsNativeValueType())
     {
-        return pMT->GetNativeLayoutInfo()->IsNativeStructPassedInRegisters();
+        return th.AsNativeValueType()->GetNativeLayoutInfo()->IsNativeStructPassedInRegisters();
     }
-};
-
-class PInvokeArgIterator : public ArgIteratorTemplate<ArgIteratorBaseForPInvoke>
+    else
+    {
+        return th.GetMethodTable()->IsRegPassedStruct();
+    }
+}
+#if defined(UNIX_AMD64_ABI)
+SystemVEightByteRegistersInfo ArgIteratorBaseForPInvoke::GetEightByteRegistersInfo(TypeHandle th)
 {
-public:
-    PInvokeArgIterator(MetaSig* pSig)
+    if (!th.IsNativeValueType())
     {
-        m_pSig = pSig;
+        return th.AsMethodTable()->GetClass()->GetEightByteRegistersInfo();
     }
-};
 
+    SystemVStructRegisterPassingHelper helper((unsigned int)th.GetSize());
+    bool result = th.AsNativeValueType()->ClassifyEightBytes(&helper, true /* nativeLayout */);
+    // The answer must be true at this point.
+    _ASSERTE(result);
+    return SystemVEightByteRegistersInfo(helper);
+}
+#endif
 
 //*******************************************************************************
 SIZE_T MethodDesc::SizeOf()
@@ -151,7 +158,7 @@ BOOL PInvokeMethodDesc::HasDefaultDllImportSearchPathsAttribute()
     }
     CONTRACTL_END;
 
-    if(IsDefaultDllImportSearchPathsAttributeCached())
+    if (m_wPInvokeFlags & kDefaultDllImportSearchPathsIsCached)
     {
         return (m_wPInvokeFlags  & kDefaultDllImportSearchPathsStatus) != 0;
     }
@@ -232,6 +239,10 @@ HRESULT MethodDesc::EnsureCodeDataExists(AllocMemTracker *pamTracker)
     if (alloc == NULL)
         return E_OUTOFMEMORY;
 
+#ifdef FEATURE_CODE_VERSIONING
+    alloc->OptimizationTier = NativeCodeVersion::OptimizationTierUnknown;
+#endif
+
     // Try to set the field. Suppress clean-up if we win the race.
     if (InterlockedCompareExchangeT(&m_codeData, (MethodDescCodeData*)alloc, NULL) == NULL)
         amTracker.SuppressRelease();
@@ -253,29 +264,62 @@ HRESULT MethodDesc::SetMethodDescVersionState(PTR_MethodDescVersioningState stat
 
     return S_OK;
 }
-#endif // FEATURE_CODE_VERSIONING
 
-#ifdef FEATURE_INTERPRETER
-// Set the call stub for the interpreter to JIT/AOT calls
-// Returns true if the current call set the stub, false if it was already set
-bool MethodDesc::SetCallStub(CallStubHeader *pHeader)
+void MethodDesc::SetMethodDescOptimizationTier(NativeCodeVersion::OptimizationTier tier)
 {
     STANDARD_VM_CONTRACT;
 
     IfFailThrow(EnsureCodeDataExists(NULL));
 
     _ASSERTE(m_codeData != NULL);
-    return InterlockedCompareExchangeT(&m_codeData->CallStub, pHeader, NULL) == NULL;
+    VolatileStoreWithoutBarrier(&m_codeData->OptimizationTier, tier);
 }
 
-CallStubHeader *MethodDesc::GetCallStub()
+#if defined(_DEBUG) && defined(ALLOW_SXS_JIT)
+HRESULT MethodDesc::SetMethodDescAltJitPatchpointInfo(PatchpointInfo* pInfo)
+{
+    WRAPPER_NO_CONTRACT;
+
+    HRESULT hr;
+    IfFailRet(EnsureCodeDataExists(NULL));
+
+    _ASSERTE(m_codeData != NULL);
+    VolatileStoreWithoutBarrier(&m_codeData->AltJitPatchpointInfo, pInfo);
+    return S_OK;
+}
+
+PatchpointInfo* MethodDesc::GetMethodDescAltJitPatchpointInfo()
+{
+    WRAPPER_NO_CONTRACT;
+    if (m_codeData == NULL)
+        return nullptr;
+    return VolatileLoadWithoutBarrier(&m_codeData->AltJitPatchpointInfo);
+}
+#endif // _DEBUG && ALLOW_SXS_JIT
+
+#endif // FEATURE_CODE_VERSIONING
+
+#ifdef FEATURE_INTERPRETER
+// Cache the calli cookie on the MethodDesc
+// Returns true if the current call set the cookie, false if it was already set
+bool MethodDesc::SetCalliCookie(InterpreterCalliCookie cookie)
+{
+    STANDARD_VM_CONTRACT;
+
+    IfFailThrow(EnsureCodeDataExists(NULL));
+
+    _ASSERTE(m_codeData != NULL);
+    return InterlockedCompareExchangeT((void**)&m_codeData->CalliCookie, (void*)cookie, (void*)NULL) == NULL;
+}
+
+InterpreterCalliCookie MethodDesc::GetCalliCookie()
 {
     LIMITED_METHOD_CONTRACT;
 
     PTR_MethodDescCodeData codeData = VolatileLoadWithoutBarrier(&m_codeData);
     if (codeData == NULL)
         return NULL;
-    return VolatileLoadWithoutBarrier(&codeData->CallStub);
+    return (InterpreterCalliCookie)VolatileLoadWithoutBarrier(&codeData->CalliCookie);
 }
 #endif // FEATURE_INTERPRETER
 
@@ -289,6 +333,15 @@ PTR_MethodDescVersioningState MethodDesc::GetMethodDescVersionState()
     if (codeData == NULL)
         return NULL;
     return VolatileLoadWithoutBarrier(&codeData->VersioningState);
+}
+
+NativeCodeVersion::OptimizationTier MethodDesc::GetMethodDescOptimizationTier()
+{
+    WRAPPER_NO_CONTRACT;
+    PTR_MethodDescCodeData codeData = VolatileLoadWithoutBarrier(&m_codeData);
+    if (codeData == NULL)
+        return NativeCodeVersion::OptimizationTierUnknown;
+    return VolatileLoadWithoutBarrier(&codeData->OptimizationTier);
 }
 #endif // FEATURE_CODE_VERSIONING
 
@@ -328,7 +381,6 @@ LPCUTF8 MethodDesc::GetName()
     {
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS; // MethodImpl::FindMethodDesc can throw.
         GC_NOTRIGGER;
-        FORBID_FAULT;
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
@@ -353,7 +405,7 @@ LPCUTF8 MethodDesc::GetName()
             result = NULL;
         }
 
-        return(result);
+        return result;
     }
 }
 
@@ -445,7 +497,6 @@ void MethodDesc::GetSig(PCCOR_SIGNATURE *ppSig, DWORD *pcSig)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
         SUPPORTS_DAC;
     }
     CONTRACTL_END
@@ -498,7 +549,6 @@ void MethodDesc::GetSigFromMetadata(IMDInternalImport * importer,
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
         SUPPORTS_DAC;
     }
     CONTRACTL_END
@@ -566,7 +616,7 @@ PCODE MethodDesc::GetMethodEntryPoint()
     {
         THROWS;
         GC_NOTRIGGER;
-        MODE_ANY;
+        MODE_PREEMPTIVE;
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
@@ -712,7 +762,6 @@ DWORD MethodDesc::GetNumGenericMethodArgs()
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
         CANNOT_TAKE_LOCK;
         SUPPORTS_DAC;
     }
@@ -757,7 +806,6 @@ Instantiation MethodDesc::GetExactClassInstantiation(TypeHandle possibleObjType)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
         SUPPORTS_DAC;
     }
     CONTRACTL_END
@@ -776,7 +824,10 @@ BOOL MethodDesc::HasSameMethodDefAs(MethodDesc * pMD)
     if (this == pMD)
         return TRUE;
 
-    return (GetMemberDef() == pMD->GetMemberDef()) && (GetModule() == pMD->GetModule() && pMD->IsAsyncVariantMethod() == IsAsyncVariantMethod());
+    return (GetMemberDef() == pMD->GetMemberDef()) &&
+        (GetModule() == pMD->GetModule()) &&
+        (pMD->IsAsyncVariantMethod() == IsAsyncVariantMethod()) &&
+        (pMD->IsReturnDroppingThunk() == IsReturnDroppingThunk());
 }
 
 //*******************************************************************************
@@ -805,7 +856,6 @@ Instantiation MethodDesc::LoadMethodInstantiation()
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END
 
@@ -824,7 +874,6 @@ BOOL MethodDesc::ContainsGenericVariables()
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
     }
     CONTRACTL_END
 
@@ -1056,6 +1105,31 @@ PCODE MethodDesc::GetNativeCode()
     return GetStableEntryPoint();
 }
 
+#ifndef DACCESS_COMPILE
+PCODE MethodDesc::GetNativeCodeVolatile()
+{
+    WRAPPER_NO_CONTRACT;
+    SUPPORTS_DAC;
+    _ASSERTE(!IsDefaultInterfaceMethod() || HasNativeCodeSlot());
+    if (HasNativeCodeSlot())
+    {
+        PTR_PCODE ppCode = GetAddrOfNativeCodeSlot();
+        PCODE pCode = VolatileLoad(ppCode);
+
+#ifdef TARGET_ARM
+        if (pCode != (PCODE)NULL)
+            pCode |= THUMB_CODE;
+#endif
+        return pCode;
+    }
+
+    if (!HasStableEntryPoint() || HasPrecode())
+        return (PCODE)NULL;
+
+    return VolatileLoad(GetAddrOfSlot());
+}
+#endif
+
 PCODE MethodDesc::GetNativeCodeAnyVersion()
 {
     WRAPPER_NO_CONTRACT;
@@ -1144,7 +1218,6 @@ ULONG MethodDesc::GetRVA()
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
         SUPPORTS_DAC;
         PRECONDITION((IsIL() && MayHaveILHeader()) ||
             (IsPInvoke() && ((PInvokeMethodDesc*)this)->IsEarlyBound()));
@@ -1231,6 +1304,65 @@ COR_ILMETHOD* MethodDesc::GetILHeader()
 #endif // !DACCESS_COMPILE
 }
 
+COR_ILMETHOD* MethodDesc::GetActiveILHeader()
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        PRECONDITION(MayHaveILHeader());
+    }
+    CONTRACTL_END
+
+#ifdef FEATURE_CODE_VERSIONING
+    if (InEnCEnabledModule())
+    {
+        CodeVersionManager *pCodeVersionManager = GetCodeVersionManager();
+        if (pCodeVersionManager->GetILCodeVersioningState(dac_cast<PTR_Module>(GetModule()), GetMemberDef()) != NULL)
+        {
+            CodeVersionManager::LockHolder codeVersioningLockHolder;
+            ILCodeVersion activeVersion = pCodeVersionManager->GetActiveILCodeVersion(PTR_MethodDesc(this));
+            if (!activeVersion.IsNull() && activeVersion.GetSource() == CodeVersionSource::kEnC)
+            {
+                return activeVersion.GetIL();
+            }
+        }
+    }
+#endif // FEATURE_CODE_VERSIONING
+
+    return GetILHeader();
+}
+
+COR_ILMETHOD* MethodDesc::GetILHeaderForNativeCode(PCODE nativeCodeStartAddress)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        PRECONDITION(MayHaveILHeader());
+    }
+    CONTRACTL_END
+
+#ifdef FEATURE_CODE_VERSIONING
+    if (IsVersionable() && nativeCodeStartAddress != (PCODE)NULL)
+    {
+        CodeVersionManager *pCodeVersionManager = GetCodeVersionManager();
+        CodeVersionManager::LockHolder codeVersioningLockHolder;
+        NativeCodeVersion nativeCodeVersion = pCodeVersionManager->GetNativeCodeVersion(PTR_MethodDesc(this), nativeCodeStartAddress);
+        if (!nativeCodeVersion.IsNull())
+        {
+            ILCodeVersion ilCodeVersion = nativeCodeVersion.GetILCodeVersion();
+            if (!ilCodeVersion.IsNull() && ilCodeVersion.GetSource() == CodeVersionSource::kEnC)
+            {
+                return ilCodeVersion.GetIL();
+            }
+        }
+    }
+#endif // FEATURE_CODE_VERSIONING
+
+    return GetILHeader();
+}
+
 #if defined(TARGET_X86) && defined(HAVE_GCCOVER)
 //*******************************************************************************
 ReturnKind MethodDesc::GetReturnKind()
@@ -1239,7 +1371,6 @@ ReturnKind MethodDesc::GetReturnKind()
     {
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
         GC_NOTRIGGER;
-        FORBID_FAULT;
     }
     CONTRACTL_END
 
@@ -1356,7 +1487,7 @@ WORD MethodDesc::GetComSlot()
     {
         THROWS;
         GC_NOTRIGGER;
-        FORBID_FAULT;
+        PRECONDITION(!IsAsyncMethod());
     }
     CONTRACTL_END
 
@@ -1406,6 +1537,16 @@ DWORD MethodDesc::GetAttrs() const
         _ASSERTE(!"If this ever fires, then this method should return HRESULT");
         return 0;
     }
+
+    if (IsReturnDroppingThunk())
+    {
+        // A return-dropping thunk is synthesized by the runtime and always has an implementation -
+        // it calls the ordinary async variant virtually and drops the result.
+        // The metadata method that the thunk is derived from may be abstract (i.e. when the covariant
+        // override that needs the thunk is abstract), but the thunk itself never is.
+        dwAttributes &= ~mdAbstract;
+    }
+
     return dwAttributes;
 }
 
@@ -1480,7 +1621,6 @@ Module *MethodDesc::GetModule() const
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
     SUPPORTS_DAC;
 
     MethodTable* pMT = GetMethodDescChunk()->GetMethodTable();
@@ -1507,7 +1647,7 @@ BOOL MethodDesc::IsWrapperStub()
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
 
-    return (IsUnboxingStub() || IsInstantiatingStub());
+    return IsUnboxingStub() || IsInstantiatingStub();
 }
 
 #ifndef DACCESS_COMPILE
@@ -1548,7 +1688,6 @@ MethodDesc *MethodDesc::GetExistingWrappedMethodDesc()
     {
         THROWS;
         GC_NOTRIGGER;
-        MODE_ANY;
     }
     CONTRACTL_END;
 
@@ -1644,7 +1783,7 @@ BOOL MethodDesc::IsRuntimeMethodHandle()
     WRAPPER_NO_CONTRACT;
 
     // <TODO> Refine this check further for BoxedEntryPointStubs </TODO>
-    return (!HasMethodInstantiation() || !IsSharedByGenericMethodInstantiations());
+    return !HasMethodInstantiation() || !IsSharedByGenericMethodInstantiations();
 }
 
 //*******************************************************************************
@@ -1655,15 +1794,12 @@ BOOL MethodDesc::IsRuntimeMethodHandle()
 // C2.m2 -> C2.m2
 MethodDesc* MethodDesc::LoadTypicalMethodDefinition()
 {
-    CONTRACT(MethodDesc*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
-        POSTCONDITION(CheckPointer(RETVAL));
-        POSTCONDITION(RETVAL->IsTypicalMethodDefinition());
     }
-    CONTRACT_END
+    CONTRACTL_END
 
 #ifndef DACCESS_COMPILE
     if (HasClassOrMethodInstantiation())
@@ -1683,12 +1819,13 @@ MethodDesc* MethodDesc::LoadTypicalMethodDefinition()
         MethodDesc *resultMD = pMT->GetParallelMethodDesc(this);
         _ASSERTE(resultMD != NULL);
         resultMD->CheckRestore();
-        RETURN (resultMD);
+        _ASSERTE((resultMD)->IsTypicalMethodDefinition());
+        return resultMD;
     }
     else
 #endif // !DACCESS_COMPILE
     {
-        RETURN(this);
+        return this;
     }
 }
 
@@ -1728,19 +1865,6 @@ UINT MethodDesc::SizeOfArgStack()
     return argit.SizeOfArgStack();
 }
 
-
-UINT MethodDesc::SizeOfNativeArgStack()
-{
-#ifndef UNIX_AMD64_ABI
-    return SizeOfArgStack();
-#else
-    WRAPPER_NO_CONTRACT;
-    MetaSig msig(this);
-    PInvokeArgIterator argit(&msig);
-    return argit.SizeOfArgStack();
-#endif
-}
-
 #ifdef TARGET_X86
 //*******************************************************************************
 UINT MethodDesc::CbStackPop()
@@ -1770,41 +1894,37 @@ UINT MethodDesc::CbStackPop()
 // @todo check uses and clean this up
 MethodDesc* MethodDesc::StripMethodInstantiation()
 {
-    CONTRACT(MethodDesc*)
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END
+    CONTRACTL_END
 
     if (!HasClassOrMethodInstantiation())
-        RETURN(this);
+        return this;
 
     MethodTable *pMT = GetMethodTable()->GetCanonicalMethodTable();
     MethodDesc *resultMD = pMT->GetParallelMethodDesc(this);
     _ASSERTE(resultMD->IsGenericMethodDefinition() || !resultMD->HasMethodInstantiation());
-    RETURN(resultMD);
+    return resultMD;
 }
 
 //*******************************************************************************
 MethodDescChunk *MethodDescChunk::CreateChunk(LoaderHeap *pHeap, DWORD methodDescCount,
     DWORD classification, BOOL fNonVtableSlot, BOOL fNativeCodeSlot, BOOL fAsyncMethodData, MethodTable *pInitialMT, AllocMemTracker *pamTracker, Module *pLoaderModule)
 {
-    CONTRACT(MethodDescChunk *)
+    CONTRACTL
     {
         THROWS;
         GC_NOTRIGGER;
-        INJECT_FAULT(ThrowOutOfMemory());
 
         PRECONDITION(CheckPointer(pHeap));
         PRECONDITION(CheckPointer(pInitialMT));
         PRECONDITION(CheckPointer(pamTracker));
 
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     SIZE_T oneSize = MethodDesc::GetBaseSize(classification);
 
@@ -1874,7 +1994,7 @@ MethodDescChunk *MethodDescChunk::CreateChunk(LoaderHeap *pHeap, DWORD methodDes
     }
     while (methodDescCount > 0);
 
-    RETURN pFirstChunk;
+    return pFirstChunk;
 }
 
 //--------------------------------------------------------------------
@@ -1892,27 +2012,26 @@ MethodDescChunk *MethodDescChunk::CreateChunk(LoaderHeap *pHeap, DWORD methodDes
 // The following resolve virtual dispatch for the given method on the given
 // object down to an actual address to call, including any
 // handling of context proxies and other thunking layers.
-MethodDesc* MethodDesc::ResolveGenericVirtualMethod(OBJECTREF *orThis)
+MethodDesc* MethodDesc::ResolveGenericVirtualMethod(OBJECTREF *orThis, MethodTable* pMTOfThis)
 {
-    CONTRACT(MethodDesc *)
+    CONTRACTL
     {
+        MODE_PREEMPTIVE;
         THROWS;
         GC_TRIGGERS;
 
         PRECONDITION(IsVtableMethod());
         PRECONDITION(HasMethodInstantiation());
         PRECONDITION(!ContainsGenericVariables());
-        POSTCONDITION(CheckPointer(RETVAL));
-        POSTCONDITION(RETVAL->HasMethodInstantiation());
     }
-    CONTRACT_END;
-
-    // Method table of target (might be instantiated)
-    MethodTable *pObjMT = (*orThis)->GetMethodTable();
+    CONTRACTL_END;
 
     // This is the static method descriptor describing the call.
     // It is not the destination of the call, which we must compute.
     MethodDesc* pStaticMD = this;
+
+    // Return dropping thunks should only be called virtually through base
+    _ASSERTE(!pStaticMD->IsReturnDroppingThunk());
 
     // Strip off the method instantiation if present
     MethodDesc* pStaticMDWithoutGenericMethodArgs = pStaticMD->StripMethodInstantiation();
@@ -1921,8 +2040,8 @@ MethodDesc* MethodDesc::ResolveGenericVirtualMethod(OBJECTREF *orThis)
     MethodDesc *pTargetMDBeforeGenericMethodArgs =
         pStaticMD->IsInterface()
         ? MethodTable::GetMethodDescForInterfaceMethodAndServer(TypeHandle(pStaticMD->GetMethodTable()),
-                                                                pStaticMDWithoutGenericMethodArgs,orThis)
-        : pObjMT->GetMethodDescForSlot(pStaticMDWithoutGenericMethodArgs->GetSlot());
+                                                                pStaticMDWithoutGenericMethodArgs,orThis, pMTOfThis)
+        : pMTOfThis->GetMethodDescForSlot(pStaticMDWithoutGenericMethodArgs->GetSlot());
 
     pTargetMDBeforeGenericMethodArgs->CheckRestore();
 
@@ -1936,16 +2055,16 @@ MethodDesc* MethodDesc::ResolveGenericVirtualMethod(OBJECTREF *orThis)
     // same as the static, i.e. the virtual method has not been overridden.
     if (!pTargetMT->IsSharedByGenericInstantiations() && !pTargetMT->IsValueType() &&
         pTargetMDBeforeGenericMethodArgs == pStaticMDWithoutGenericMethodArgs)
-        RETURN(pStaticMD);
+        return pStaticMD;
 
     if (pTargetMT->IsSharedByGenericInstantiations())
     {
         pTargetMT = ClassLoader::LoadGenericInstantiationThrowing(pTargetMT->GetModule(),
                                                                   pTargetMT->GetCl(),
-                                                                  pTargetMDBeforeGenericMethodArgs->GetExactClassInstantiation(TypeHandle(pObjMT))).GetMethodTable();
+                                                                  pTargetMDBeforeGenericMethodArgs->GetExactClassInstantiation(TypeHandle(pMTOfThis))).GetMethodTable();
     }
 
-    RETURN(MethodDesc::FindOrCreateAssociatedMethodDesc(
+    return(MethodDesc::FindOrCreateAssociatedMethodDesc(
         pTargetMDBeforeGenericMethodArgs,
         pTargetMT,
         (pTargetMT->IsValueType()), /* get unboxing entry point if a struct*/
@@ -1953,53 +2072,82 @@ MethodDesc* MethodDesc::ResolveGenericVirtualMethod(OBJECTREF *orThis)
         FALSE /* no allowInstParam */ ));
 }
 
-//*******************************************************************************
-PCODE MethodDesc::GetSingleCallableAddrOfVirtualizedCode(OBJECTREF *orThis, TypeHandle staticTH)
+PCODE MethodDesc::GetSingleCallableAddrOfCode()
 {
     WRAPPER_NO_CONTRACT;
+    _ASSERTE(!IsGenericMethodDefinition());
+    return GetMethodEntryPoint();
+}
+
+PCODE MethodDesc::GetSingleCallableAddrOfCodeForUnmanagedCallersOnly()
+{
+    CONTRACTL
+    {
+        THROWS;
+        // On portable entrypoint platforms resolving the entrypoint may need to run the prestub
+        // (e.g. to publish R2R native code for the method), which can trigger a GC.
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+        PRECONDITION(HasUnmanagedCallersOnlyAttribute());
+    }
+    CONTRACTL_END;
+
+    PCODE entryPoint;
+
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    entryPoint = GetPortableEntryPoint();
+    (void)PortableEntryPoint::ToPortableEntryPoint(entryPoint)->EnsureCodeForUnmanagedCallersOnly();
+    entryPoint = (PCODE)PortableEntryPoint::GetActualCode(entryPoint);
+#else // !FEATURE_PORTABLE_ENTRYPOINTS
+    entryPoint = GetSingleCallableAddrOfCode();
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
+
+    return entryPoint;
+}
+
+//*******************************************************************************
+PCODE MethodDesc::GetSingleCallableAddrOfVirtualizedCode(OBJECTREF *orThis, MethodTable* pMTOfThis, TypeHandle staticTH)
+{
+    CONTRACTL
+    {
+        THROWS;                 // Resolving a generic virtual method can throw
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    }
+    CONTRACTL_END;
+
     PRECONDITION(IsVtableMethod());
 
-    MethodTable *pObjMT = (*orThis)->GetMethodTable();
 
     if (HasMethodInstantiation())
     {
         CheckRestore();
-        MethodDesc *pResultMD = ResolveGenericVirtualMethod(orThis);
-
-        // If we're remoting this call we can't call directly on the returned
-        // method desc, we need to go through a stub that guarantees we end up
-        // in the remoting handler. The stub we use below is normally just for
-        // non-virtual calls on virtual methods (that have the same problem
-        // where we could end up bypassing the remoting system), but it serves
-        // our purpose here (basically pushes our correctly instantiated,
-        // resolved method desc on the stack and calls the remoting code).
+        MethodDesc *pResultMD = ResolveGenericVirtualMethod(orThis, pMTOfThis);
 
         return pResultMD->GetSingleCallableAddrOfCode();
     }
 
     if (IsInterface())
     {
-        MethodDesc * pTargetMD = MethodTable::GetMethodDescForInterfaceMethodAndServer(staticTH,this,orThis);
+        MethodDesc * pTargetMD = MethodTable::GetMethodDescForInterfaceMethodAndServer(staticTH, this, orThis, pMTOfThis);
         return pTargetMD->GetSingleCallableAddrOfCode();
     }
 
-    return pObjMT->GetRestoredSlot(GetSlot());
+    return pMTOfThis->GetRestoredSlot(GetSlot());
 }
 
-MethodDesc* MethodDesc::GetMethodDescOfVirtualizedCode(OBJECTREF *orThis, TypeHandle staticTH)
+MethodDesc* MethodDesc::GetMethodDescOfVirtualizedCode(OBJECTREF *orThis, MethodTable* pMTOfThis, TypeHandle staticTH)
 {
-    CONTRACT(MethodDesc*)
+    CONTRACTL
     {
+        MODE_PREEMPTIVE;
         THROWS;
         GC_TRIGGERS;
 
         PRECONDITION(IsVtableMethod());
         PRECONDITION(!staticTH.IsNull() || !IsInterface()); // If this is a non-interface method, staticTH may be null
-        POSTCONDITION(RETVAL != NULL);
     }
-    CONTRACT_END;
-    // Method table of target (might be instantiated)
-    MethodTable *pObjMT = (*orThis)->GetMethodTable();
+    CONTRACTL_END;
 
     // This is the static method descriptor describing the call.
     // It is not the destination of the call, which we must compute.
@@ -2008,33 +2156,34 @@ MethodDesc* MethodDesc::GetMethodDescOfVirtualizedCode(OBJECTREF *orThis, TypeHa
     if (pStaticMD->HasMethodInstantiation())
     {
         CheckRestore();
-        RETURN(ResolveGenericVirtualMethod(orThis));
+        return ResolveGenericVirtualMethod(orThis, pMTOfThis);
     }
 
     if (pStaticMD->IsInterface())
     {
-        RETURN(MethodTable::GetMethodDescForInterfaceMethodAndServer(staticTH, pStaticMD, orThis));
+        return MethodTable::GetMethodDescForInterfaceMethodAndServer(staticTH, pStaticMD, orThis, pMTOfThis);
     }
 
-    RETURN(pObjMT->GetMethodDescForSlot(pStaticMD->GetSlot()));
+    // Method table of target (might be instantiated)
+    return pMTOfThis->GetMethodDescForSlot(pStaticMD->GetSlot());
 }
 
 //*******************************************************************************
 // The following resolve virtual dispatch for the given method on the given
 // object down to an actual address to call, including any
 // handling of context proxies and other thunking layers.
-PCODE MethodDesc::GetMultiCallableAddrOfVirtualizedCode(OBJECTREF *orThis, TypeHandle staticTH)
+PCODE MethodDesc::GetMultiCallableAddrOfVirtualizedCode(OBJECTREF *orThis, MethodTable* pMTOfThis, TypeHandle staticTH)
 {
-    CONTRACT(PCODE)
+    CONTRACTL
     {
+        MODE_PREEMPTIVE;
         THROWS;
         GC_TRIGGERS;
-        POSTCONDITION(RETVAL != NULL);
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
-    MethodDesc *pTargetMD = GetMethodDescOfVirtualizedCode(orThis, staticTH);
-    RETURN(pTargetMD->GetMultiCallableAddrOfCode());
+    MethodDesc *pTargetMD = GetMethodDescOfVirtualizedCode(orThis, pMTOfThis, staticTH);
+    return pTargetMD->GetMultiCallableAddrOfCode();
 }
 
 //*******************************************************************************
@@ -2044,19 +2193,20 @@ PCODE MethodDesc::GetMultiCallableAddrOfCode(CORINFO_ACCESS_FLAGS accessFlags /*
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END
 
     PCODE ret = TryGetMultiCallableAddrOfCode(accessFlags);
 
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    _ASSERTE((ret != (PCODE)NULL) && "PortableEntryPoint logic should always cause the TryGetMultiCallableAddrOfCode to return a value");
+#else
     if (ret == (PCODE)NULL)
     {
-        GCX_COOP();
-
         // We have to allocate funcptr stub
         ret = GetLoaderAllocator()->GetFuncPtrStubs()->GetFuncPtrStub(this);
     }
+#endif
 
     return ret;
 }
@@ -2095,7 +2245,6 @@ PCODE MethodDesc::TryGetMultiCallableAddrOfCode(CORINFO_ACCESS_FLAGS accessFlags
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END
 
@@ -2133,9 +2282,15 @@ PCODE MethodDesc::TryGetMultiCallableAddrOfCode(CORINFO_ACCESS_FLAGS accessFlags
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
     PCODE entryPoint = GetPortableEntryPoint();
     if (accessFlags & CORINFO_ACCESS_UNMANAGED_CALLER_MAYBE
-        && PortableEntryPoint::ToPortableEntryPoint(entryPoint)->HasUnmanagedCallersOnlyAttribute())
+        && PortableEntryPoint::ToPortableEntryPoint(entryPoint)->EnsureCodeForUnmanagedCallersOnly())
     {
         entryPoint = (PCODE)PortableEntryPoint::GetActualCode(entryPoint);
+    }
+    else
+    {
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+        MethodDesc::EnsurePortableEntryPointIsCallableFromR2R(entryPoint);
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
     }
 
     return entryPoint;
@@ -2206,13 +2361,13 @@ PCODE MethodDesc::TryGetMultiCallableAddrOfCode(CORINFO_ACCESS_FLAGS accessFlags
 }
 
 //*******************************************************************************
-PCODE MethodDesc::GetCallTarget(OBJECTREF* pThisObj, TypeHandle ownerType)
+PCODE MethodDesc::GetCallTarget(OBJECTREF* pThisObj, MethodTable *pMTThis, TypeHandle ownerType)
 {
     CONTRACTL
     {
         THROWS;                 // Resolving a generic virtual method can throw
         GC_TRIGGERS;
-        MODE_COOPERATIVE;
+        MODE_PREEMPTIVE;
     }
     CONTRACTL_END
 
@@ -2221,9 +2376,10 @@ PCODE MethodDesc::GetCallTarget(OBJECTREF* pThisObj, TypeHandle ownerType)
     if (IsVtableMethod() && !GetMethodTable()->IsValueType())
     {
         CONSISTENCY_CHECK(NULL != pThisObj);
+        _ASSERTE(NULL != pMTThis);
         if (ownerType.IsNull())
             ownerType = GetMethodTable();
-        pTarget = GetSingleCallableAddrOfVirtualizedCode(pThisObj, ownerType);
+        pTarget = GetSingleCallableAddrOfVirtualizedCode(pThisObj, pMTThis, ownerType);
     }
     else
     {
@@ -2279,8 +2435,6 @@ MethodDesc* NonVirtualEntry2MethodDesc(PCODE entryPoint)
             return pMD;
     }
 
-    // We should never get here
-    _ASSERTE(!"NonVirtualEntry2MethodDesc failed");
     return NULL;
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
 }
@@ -2315,25 +2469,20 @@ bool IsTypeDefOrRefImplementedInSystemModule(Module* pModule, mdToken tk)
         mdToken tkTypeDef;
         Module* pModuleOfTypeDef;
 
-        ClassLoader::ResolveTokenToTypeDefThrowing(pModule, tk, &pModuleOfTypeDef, &tkTypeDef);
-        if (pModuleOfTypeDef->IsSystem())
+        if (ClassLoader::ResolveTokenToTypeDefThrowing(pModule, tk, &pModuleOfTypeDef, &tkTypeDef))
         {
-            return true;
+            if (pModuleOfTypeDef->IsSystem())
+            {
+                return true;
+            }
         }
     }
 
     return false;
 }
 
-MethodReturnKind ClassifyMethodReturnKind(SigPointer sig, Module* pModule, ULONG* offsetOfAsyncDetails, bool *isValueTask)
+MethodReturnKind ClassifyMethodReturnKind(SigPointer sig, Module* pModule, ULONG* offsetOfAsyncDetails, ULONG* elementTypeLength, bool *isValueTask)
 {
-    // Without runtime async, every declared method is classified as a NormalMethod.
-    // Thus code that handles runtime async scenarios becomes unreachable.
-    if (!g_pConfig->RuntimeAsync())
-    {
-        return MethodReturnKind::NormalMethod;
-    }
-
     PCCOR_SIGNATURE initialSig = sig.GetPtr();
     uint32_t data;
     IfFailThrow(sig.GetCallingConvInfo(&data));
@@ -2375,7 +2524,12 @@ MethodReturnKind ClassifyMethodReturnKind(SigPointer sig, Module* pModule, ULONG
             if ((strcmp(name, *isValueTask ? "ValueTask`1" : "Task`1") == 0) && strcmp(_namespace, "System.Threading.Tasks") == 0)
             {
                 if (IsTypeDefOrRefImplementedInSystemModule(pModule, tk))
+                {
+                    PCCOR_SIGNATURE elementStart = sig.GetPtr();
+                    sig.SkipExactlyOne();
+                    *elementTypeLength = (ULONG)(sig.GetPtr() - elementStart);
                     return MethodReturnKind::GenericTaskReturningMethod;
+                }
             }
         }
     }
@@ -2448,26 +2602,12 @@ void MethodDesc::Reset()
     // Reset any flags relevant to the old code
     ClearFlagsOnUpdate();
 
-#ifndef FEATURE_PORTABLE_ENTRYPOINTS
-    if (HasPrecode())
-    {
-        GetPrecode()->Reset();
-    }
-    else
-#endif // !FEATURE_PORTABLE_ENTRYPOINTS
-    {
-        // We should go here only for the rental methods
-        _ASSERTE(GetLoaderModule()->IsReflectionEmit());
-
-        WORD flagsToSet = enum_flag3_HasStableEntryPoint;
-#ifndef FEATURE_PORTABLE_ENTRYPOINTS
-        flagsToSet |= enum_flag3_HasPrecode;
-#endif // !FEATURE_PORTABLE_ENTRYPOINTS
-
-        InterlockedUpdateFlags3(flagsToSet, FALSE);
-
-        *GetAddrOfSlot() = GetTemporaryEntryPoint();
-    }
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    ResetPortableEntryPoint();
+#else // !FEATURE_PORTABLE_ENTRYPOINTS
+    _ASSERTE(HasPrecode());
+    GetPrecode()->Reset();
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
 
     if (HasNativeCodeSlot())
     {
@@ -2512,7 +2652,6 @@ MethodImpl *MethodDesc::GetMethodImpl()
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
         PRECONDITION(HasMethodImplSlot());
         SUPPORTS_DAC;
     }
@@ -2524,24 +2663,6 @@ MethodImpl *MethodDesc::GetMethodImpl()
 }
 
 #ifndef DACCESS_COMPILE
-
-//*******************************************************************************
-BOOL MethodDesc::RequiresMDContextArg()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    // Interop marshaling is implemented using shared stubs
-    if (IsCLRToCOMCall())
-        return TRUE;
-
-    // Interop marshalling of varargs needs MethodDesc calling convention
-    // to support ldftn <PInvoke method with varargs>. It is not possible
-    // to smuggle the MethodDesc* via vararg cookie in this case.
-    if (IsPInvoke() && IsVarArg())
-        return TRUE;
-
-    return FALSE;
-}
 
 //*******************************************************************************
 BOOL MethodDesc::RequiresStableEntryPoint()
@@ -2612,8 +2733,8 @@ BOOL MethodDesc::MayHaveNativeCode()
         break;
     case mcFCall:           // FCalls do not have real native code.
         return FALSE;
-    case mcPInvoke:         // PInvoke never have native code (note that the PInvoke method
-        return FALSE;       //  does not appear as having a native code even for stubs as IL)
+    case mcPInvoke:         // P/Invokes are generally backed by IL.
+        return TRUE;
     case mcEEImpl:          // Runtime provided implementation. No native code.
         return FALSE;
     case mcArray:           // Runtime provided implementation. No native code.
@@ -2621,8 +2742,8 @@ BOOL MethodDesc::MayHaveNativeCode()
     case mcInstantiated:    // IsIL() case. Handled below.
         break;
 #ifdef FEATURE_COMINTEROP
-    case mcComInterop:      // Generated stub. No native code.
-        return FALSE;
+    case mcComInterop:      // CLR->COM calls are backed by transient IL.
+        return TRUE;
 #endif // FEATURE_COMINTEROP
     case mcDynamic:         // LCG or stub-as-il.
         return TRUE;
@@ -2645,8 +2766,6 @@ void MethodDesc::CheckRestore(ClassLoadLevel level)
 {
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
-    STATIC_CONTRACT_FAULT;
-
     if (!GetMethodTable()->IsFullyLoaded())
     {
         if (GetClassification() == mcInstantiated)
@@ -2690,12 +2809,12 @@ void MethodDesc::CheckRestore(ClassLoadLevel level)
 // static
 MethodDesc* MethodDesc::GetMethodDescFromPrecode(PCODE addr, BOOL fSpeculative /*=FALSE*/)
 {
-    CONTRACT(MethodDesc *)
+    CONTRACTL
     {
         GC_NOTRIGGER;
         NOTHROW;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     MethodDesc* pMD = NULL;
 
@@ -2710,7 +2829,7 @@ MethodDesc* MethodDesc::GetMethodDescFromPrecode(PCODE addr, BOOL fSpeculative /
 
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
 
-    RETURN(pMD);
+    return pMD;
 }
 
 //*******************************************************************************
@@ -2721,7 +2840,7 @@ PCODE MethodDesc::GetTemporaryEntryPoint()
     {
         THROWS;
         GC_NOTRIGGER;
-        MODE_ANY;
+        MODE_PREEMPTIVE;
     }
     CONTRACTL_END;
 
@@ -2786,13 +2905,17 @@ void MethodDesc::EnsureTemporaryEntryPoint()
     }
 }
 
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+void* GetPortableEntryPointToInterpreterThunk(MethodDesc *pMD);
+#endif
+
 void MethodDesc::EnsureTemporaryEntryPointCore(AllocMemTracker *pamTracker)
 {
     CONTRACTL
     {
         THROWS;
         GC_NOTRIGGER;
-        MODE_ANY;
+        MODE_PREEMPTIVE;
     }
     CONTRACTL_END;
 
@@ -2806,9 +2929,27 @@ void MethodDesc::EnsureTemporaryEntryPointCore(AllocMemTracker *pamTracker)
 
         PCODE entryPoint;
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
-        PortableEntryPoint* portableEntryPoint = (PortableEntryPoint*)pamTrackerPrecode->Track(
-            GetLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(S_SIZE_T{ sizeof(PortableEntryPoint) }));
-        portableEntryPoint->Init(this);
+        SIZE_T portableEntryPointSize = sizeof(PortableEntryPoint);
+        if (IsUnboxingStub())
+        {
+            portableEntryPointSize = sizeof(UnboxingStubPortableEntryPoint);
+        }
+        void* portableEntryPointAllocation = pamTrackerPrecode->Track(
+            GetLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(S_SIZE_T{ portableEntryPointSize }));
+        PortableEntryPoint* portableEntryPoint;
+        if (IsUnboxingStub())
+        {
+            UnboxingStubPortableEntryPoint* unboxingStubEntryPoint =
+                reinterpret_cast<UnboxingStubPortableEntryPoint*>(portableEntryPointAllocation);
+            unboxingStubEntryPoint->Init(this);
+            portableEntryPoint = unboxingStubEntryPoint->GetEntryPoint();
+        }
+        else
+        {
+            portableEntryPoint = reinterpret_cast<PortableEntryPoint*>(portableEntryPointAllocation);
+            SetPortableEntrypointInitialStateForMethod(portableEntryPoint);
+        }
+
         entryPoint = (PCODE)portableEntryPoint;
 
 #else // !FEATURE_PORTABLE_ENTRYPOINTS
@@ -2852,6 +2993,102 @@ PCODE MethodDesc::GetPortableEntryPoint()
     // The portable entry point is currently the same as the
     // temporary entry point.
     return GetTemporaryEntryPoint();
+}
+
+PCODE MethodDesc::GetPortableEntryPointIfExists()
+{
+    WRAPPER_NO_CONTRACT;
+
+    // The portable entry point is currently the same as the
+    // temporary entry point.
+    return GetTemporaryEntryPointIfExists();
+}
+
+// Prepare a portable entry point to be callable from R2R code. This doesn't necessarily
+// fill in the native code slot, but if it is possible to do so it will.
+// This must be called before any R2R code may call the target method.
+//
+// This is called from GetMultiCallableAddrOfCode and from R2R external method fixups.
+void MethodDesc::EnsurePortableEntryPointIsCallableFromR2R(PCODE entryPoint)
+{
+    WRAPPER_NO_CONTRACT;
+
+    PortableEntryPoint *pep = PortableEntryPoint::ToPortableEntryPoint(entryPoint);
+    if (pep->HasNativeCode())
+    {
+        return;
+    }
+
+    MethodDesc* pMD = PortableEntryPoint::GetMethodDesc(entryPoint);
+
+#ifdef FEATURE_READYTORUN
+    // R2R disabled: no R2R code can call this method, so no R2R->interpreter thunk is needed.
+    if (!g_pConfig->ReadyToRun())
+    {
+        return;
+    }
+#endif
+
+    void* pPortableEntryPointToInterpreter = GetPortableEntryPointToInterpreterThunk(pMD);
+    if (pPortableEntryPointToInterpreter != nullptr)
+    {
+        pep->TrySetInterpreterThunk(pPortableEntryPointToInterpreter);
+    }
+     else
+    {
+        _ASSERTE(!pMD->ContainsGenericVariables());
+        pMD->GetLoaderAllocator()->AddPendingPortableEntryPointThunk(pMD);
+    }
+}
+
+void MethodDesc::SetPortableEntrypointInitialStateForMethod(PortableEntryPoint *portableEntry)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    } CONTRACTL_END;
+
+    if (IsUnboxingStub())
+    {
+        UnboxingStubPortableEntryPoint::FromEntryPoint((PCODE)portableEntry)->Init(this);
+        return;
+    }
+
+    bool installInterpreterThunk = !IsDynamicMethod() && portableEntry->HasNativeCodeUnchecked();
+#ifdef FEATURE_READYTORUN
+    // With R2R disabled no R2R code exists to call this method, so don't install an R2R->interpreter thunk.
+    installInterpreterThunk = installInterpreterThunk && g_pConfig->ReadyToRun();
+#endif
+    if (installInterpreterThunk)
+    {
+        void* pPortableEntryPointToInterpreter = GetPortableEntryPointToInterpreterThunk(this);
+        _ASSERTE(pPortableEntryPointToInterpreter != nullptr);
+        portableEntry->Init_WithInterpreterThunk(pPortableEntryPointToInterpreter, this);
+    }
+    else
+    {
+        portableEntry->Init(this);
+    }
+    return;
+}
+
+void MethodDesc::ResetPortableEntryPoint()
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    } CONTRACTL_END;
+
+    PCODE portableEntry = GetPortableEntryPointIfExists();
+    if (portableEntry != (PCODE)NULL)
+    {
+        PortableEntryPoint* pep = PortableEntryPoint::ToPortableEntryPoint(portableEntry);
+        SetPortableEntrypointInitialStateForMethod(pep);
+    }
 }
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
 
@@ -3018,8 +3255,14 @@ bool MethodDesc::DetermineAndSetIsEligibleForTieredCompilation()
         // Functions with NoOptimization or AggressiveOptimization don't participate in tiering
         !IsJitOptimizationLevelRequested() &&
 
-        // Tiering the async thunk methods doesn't make sense
-        !IsAsyncThunkMethod()
+        // We tier async versions, but not task-returning wrapper thunks
+        (!IsAsyncThunkMethod() || SupportsAsyncVersionCodegen()) &&
+
+        // Tiering P/Invoke methods is not supported currently
+        !IsPInvoke() &&
+
+        // Tiering CLR->COM methods is not supported currently
+        !IsCLRToCOMCall()
         )
     {
         InterlockedUpdateFlags3(enum_flag3_IsEligibleForTieredCompilation, TRUE);
@@ -3042,7 +3285,7 @@ bool MethodDesc::IsJitOptimizationDisabled()
 
 bool MethodDesc::IsJitOptimizationDisabledForSpecificMethod()
 {
-    return (!IsNoMetadata() && IsMiNoOptimization(GetImplAttrs()));
+    return !IsNoMetadata() && IsMiNoOptimization(GetImplAttrs());
 }
 
 bool MethodDesc::IsJitOptimizationLevelRequested()
@@ -3240,11 +3483,19 @@ void MethodDesc::SetCodeEntryPoint(PCODE entryPoint)
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
 }
 
-#ifdef FEATURE_TIERED_COMPILATION
+#ifdef FEATURE_CODE_VERSIONING
 void MethodDesc::ResetCodeEntryPoint()
 {
     WRAPPER_NO_CONTRACT;
     _ASSERTE(IsVersionable());
+
+#ifdef FEATURE_INTERPRETER
+    ClearInterpreterCodePointer();
+#endif
+
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    ResetPortableEntryPoint();
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
 
     if (MayHaveEntryPointSlotsToBackpatch())
     {
@@ -3258,46 +3509,7 @@ void MethodDesc::ResetCodeEntryPoint()
         GetPrecode()->ResetTargetInterlocked();
     }
 }
-#endif // FEATURE_TIERED_COMPILATION
-
-void MethodDesc::ResetCodeEntryPointForEnC()
-{
-    WRAPPER_NO_CONTRACT;
-    _ASSERTE(!IsVersionable());
-    _ASSERTE(!IsVersionableWithPrecode());
-    _ASSERTE(!MayHaveEntryPointSlotsToBackpatch());
-
-    // Updates are expressed via metadata diff and a methoddef of a runtime async method
-    // would be resolved to the thunk.
-    // If we see a thunk here, fetch the other variant that owns the IL and reset that.
-    if (IsAsyncThunkMethod())
-    {
-        MethodDesc *otherVariant = GetAsyncOtherVariantNoCreate();
-        _ASSERTE(otherVariant != NULL);
-        otherVariant->ResetCodeEntryPointForEnC();
-        return;
-    }
-
-    LOG((LF_ENC, LL_INFO100000, "MD::RCEPFENC: this:%p - %s::%s\n", this, m_pszDebugClassName, m_pszDebugMethodName));
-#ifndef FEATURE_PORTABLE_ENTRYPOINTS
-    LOG((LF_ENC, LL_INFO100000, "MD::RCEPFENC: HasPrecode():%s, HasNativeCodeSlot():%s\n",
-        (HasPrecode() ? "true" : "false"), (HasNativeCodeSlot() ? "true" : "false")));
-    if (HasPrecode())
-    {
-        GetPrecode()->ResetTargetInterlocked();
-    }
-#endif // !FEATURE_PORTABLE_ENTRYPOINTS
-
-    if (HasNativeCodeSlot())
-    {
-        PTR_PCODE ppCode = GetAddrOfNativeCodeSlot();
-        PCODE pCode = *ppCode;
-        LOG((LF_CORDB, LL_INFO1000000, "MD::RCEPFENC: %p -> %p\n",
-            ppCode, pCode));
-        *ppCode = (PCODE)NULL;
-    }
-}
-
+#endif // FEATURE_CODE_VERSIONING
 
 //*******************************************************************************
 BOOL MethodDesc::SetNativeCodeInterlocked(PCODE addr, PCODE pExpected /*=NULL*/)
@@ -3353,7 +3565,6 @@ BOOL MethodDesc::SetStableEntryPointInterlocked(PCODE addr)
     } CONTRACTL_END;
 
     _ASSERTE(!HasPrecode());
-    _ASSERTE(!IsVersionable());
 
     PCODE pExpected = GetTemporaryEntryPoint();
     PTR_PCODE pSlot = GetAddrOfSlot();
@@ -3364,6 +3575,7 @@ BOOL MethodDesc::SetStableEntryPointInterlocked(PCODE addr)
 
 #ifndef FEATURE_PORTABLE_ENTRYPOINTS
     _ASSERTE(!RequiresStableEntryPoint()); // The RequiresStableEntryPoint scenarios should all result in a stable entry point which is a PreCode, so that it can be replaced and adjusted over time.
+    _ASSERTE(!IsVersionable());
 #endif // !FEATURE_PORTABLE_ENTRYPOINTS
 
     return fResult;
@@ -3376,36 +3588,12 @@ BOOL PInvokeMethodDesc::ComputeMarshalingRequired()
     return PInvoke::MarshalingRequired(this);
 }
 
-/**********************************************************************************/
-// Forward declare the PInvokeImportWorker function - See dllimport.cpp
-EXTERN_C LPVOID STDCALL PInvokeImportWorker(PInvokeMethodDesc*);
-void *PInvokeMethodDesc::ResolveAndSetPInvokeTarget(_In_ PInvokeMethodDesc* pMD)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
-        PRECONDITION(CheckPointer(pMD));
-    }
-    CONTRACTL_END
-
-// This build conditional is here due to dllimport.cpp
-// not being relevant during the crossgen build.
-    LPVOID targetMaybe = PInvokeImportWorker(pMD);
-    _ASSERTE(targetMaybe != nullptr);
-    pMD->SetPInvokeTarget(targetMaybe);
-    return targetMaybe;
-
-}
-
 BOOL PInvokeMethodDesc::TryGetResolvedPInvokeTarget(_In_ PInvokeMethodDesc* pMD, _Out_ void** ndirectTarget)
 {
     CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
         PRECONDITION(CheckPointer(pMD));
         PRECONDITION(CheckPointer(ndirectTarget));
     }
@@ -3418,10 +3606,21 @@ BOOL PInvokeMethodDesc::TryGetResolvedPInvokeTarget(_In_ PInvokeMethodDesc* pMD,
         return TRUE;
     }
 
+    // We only resolve P/Invoke targets early in two cases:
+    // - SuppressGCTransition inlined P/Invokes.
+    //   We do so because we cannot resolve the target of a SuppressGCTransition inlined P/Invoke at the time of the call
+    //   as the resolution logic violates the rules of SuppressGCTransition (this behavior is documented).
+    // - Platforms with no P/Invoke import precode:
+    //   On these platforms, there is no mechanism to lazily resolve the target of a P/Invoke,
+    //   so we must resolve it eagerly in order for the call to succeed.
+#ifdef HAS_PINVOKE_IMPORT_PRECODE
     if (!pMD->ShouldSuppressGCTransition())
         return FALSE;
+#endif
 
-    *ndirectTarget = ResolveAndSetPInvokeTarget(pMD);
+    PInvoke::ResolvePInvokeTarget(pMD);
+    *ndirectTarget = pMD->GetPInvokeTarget();
+
     return TRUE;
 
 }
@@ -3441,7 +3640,7 @@ void PInvokeMethodDesc::InterlockedSetPInvokeFlags(WORD wFlags)
 
     WORD *pFlags = &m_wPInvokeFlags;
 
-    // Make sure that m_flags is aligned on a 4 byte boundry
+    // Make sure that m_flags is aligned on a 4 byte boundary
     _ASSERTE( ( ((size_t) pFlags) & (sizeof(ULONG)-1) ) == 0);
 
     // Ensure we won't be reading or writing outside the bounds of the PInvokeMethodDesc.
@@ -3579,8 +3778,7 @@ void PInvokeMethodDesc::EnsureStackArgumentSize()
         // Marshalling required check sets the stack size as side-effect when marshalling is not required.
         if (MarshalingRequired())
         {
-            // Generating interop stub sets the stack size as side-effect in all cases
-            GetStubForInteropMethod(this, PINVOKESTUB_FL_FOR_NUMPARAMBYTES);
+            PInvoke::CalculateStackArgumentSize(this);
         }
     }
 }
@@ -3594,7 +3792,6 @@ void PInvokeMethodDesc::InitEarlyBoundPInvokeTarget()
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END
 
@@ -3626,7 +3823,6 @@ BOOL MethodDesc::HasUnmanagedCallersOnlyAttribute()
     {
         THROWS;
         GC_NOTRIGGER;
-        FORBID_FAULT;
     }
     CONTRACTL_END;
 
@@ -3634,7 +3830,9 @@ BOOL MethodDesc::HasUnmanagedCallersOnlyAttribute()
     {
         // Stubs generated for being called from native code are equivalent to
         // managed methods marked with UnmanagedCallersOnly.
-        return AsDynamicMethodDesc()->GetILStubType() == DynamicMethodDesc::StubReversePInvoke;
+        DynamicMethodDesc::ILStubType stubType = AsDynamicMethodDesc()->GetILStubType();
+        return stubType == DynamicMethodDesc::StubReversePInvoke
+            || stubType == DynamicMethodDesc::StubCOMToCLRInterop;
     }
 
     HRESULT hr = GetCustomAttribute(
@@ -3652,7 +3850,6 @@ BOOL MethodDesc::ShouldSuppressGCTransition()
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -3693,7 +3890,6 @@ void CLRToCOMCallMethodDesc::InitComEventCallInfo()
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END
 
@@ -3910,15 +4106,14 @@ MethodDescChunk::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 //*******************************************************************************
 MethodDesc *MethodDesc::GetInterfaceMD()
 {
-    CONTRACT (MethodDesc*) {
+    CONTRACTL {
         THROWS;
         GC_TRIGGERS;
         INSTANCE_CHECK;
         PRECONDITION(!IsInterface());
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
-    } CONTRACT_END;
+    } CONTRACTL_END;
     MethodTable *pMT = GetMethodTable();
-    RETURN(pMT->ReverseInterfaceMDLookup(GetSlot()));
+    return pMT->ReverseInterfaceMDLookup(GetSlot());
 }
 #endif // !DACCESS_COMPILE
 
@@ -3941,7 +4136,6 @@ REFLECTMETHODREF MethodDesc::AllocateStubMethodInfo()
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
         MODE_COOPERATIVE;
     }
     CONTRACTL_END;
@@ -4035,16 +4229,23 @@ PrecodeType MethodDesc::GetPrecodeType()
     PrecodeType precodeType = PRECODE_INVALID;
 
 #ifdef HAS_FIXUP_PRECODE
-    if (!RequiresMDContextArg())
+    // Interop marshalling of varargs needs the MethodDesc calling convention to
+    // support ldftn <PInvoke method with varargs>. It is not possible to smuggle
+    // the MethodDesc* via the vararg cookie in this case.
+#ifdef FEATURE_VARARGS
+    if (IsPInvoke() && IsVarArg())
+    {
+        precodeType = PRECODE_STUB;
+    }
+    else
+#endif // FEATURE_VARARGS
     {
         // Use the more efficient fixup precode if possible
         precodeType = PRECODE_FIXUP;
     }
-    else
+#else // !HAS_FIXUP_PRECODE
+    precodeType = PRECODE_STUB;
 #endif // HAS_FIXUP_PRECODE
-    {
-        precodeType = PRECODE_STUB;
-    }
 
     return precodeType;
 }

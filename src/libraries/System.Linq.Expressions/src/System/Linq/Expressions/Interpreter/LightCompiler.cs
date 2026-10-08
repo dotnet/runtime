@@ -1361,10 +1361,29 @@ namespace System.Linq.Expressions.Interpreter
             _instructions.EmitCall(opTrue);
             _instructions.EmitBranchTrue(labEnd);
 
+            // Store the left value to a local to empty the evaluation stack before
+            // compiling the right expression. The right expression may contain a
+            // TryCatch (or anything that does not tolerate non-empty evaluation
+            // stack on entry), so we must not leave the dup'd left value on the
+            // stack while the right expression executes.
+            LocalDefinition leftTemp = _locals.DefineLocal(Expression.Parameter(expr.Left.Type), _instructions.Count);
+            _instructions.EmitStoreLocal(leftTemp.Index);
+
             Compile(expr.Right);
+
+            // Store the right value, then reload both left and right before calling
+            // the user-defined operator method.
+            LocalDefinition rightTemp = _locals.DefineLocal(Expression.Parameter(expr.Right.Type), _instructions.Count);
+            _instructions.EmitStoreLocal(rightTemp.Index);
+
+            _instructions.EmitLoadLocal(leftTemp.Index);
+            _instructions.EmitLoadLocal(rightTemp.Index);
 
             Debug.Assert(expr.Method.IsStatic);
             _instructions.EmitCall(expr.Method);
+
+            _locals.UndefineLocal(leftTemp, _instructions.Count);
+            _locals.UndefineLocal(rightTemp, _instructions.Count);
 
             _instructions.MarkLabel(labEnd);
         }

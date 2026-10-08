@@ -72,9 +72,9 @@ FORCEINLINE int32_t PalInterlockedExchange(_Inout_ int32_t volatile *pDst, int32
 FORCEINLINE int64_t PalInterlockedExchange64(_Inout_ int64_t volatile *pDst, int64_t iValue)
 {
 #ifdef __clang__
-    int32_t result =__sync_swap(pDst, iValue);
+    int64_t result =__sync_swap(pDst, iValue);
 #else
-    int32_t result =__atomic_exchange_n(pDst, iValue, __ATOMIC_ACQ_REL);
+    int64_t result =__atomic_exchange_n(pDst, iValue, __ATOMIC_ACQ_REL);
 #endif
     PalInterlockedOperationBarrier();
     return result;
@@ -166,18 +166,4 @@ FORCEINLINE int32_t PalGetLastError()
 FORCEINLINE void PalSetLastError(int32_t error)
 {
     errno = error;
-}
-
-FORCEINLINE int32_t PalOsPageSize()
-{
-#if defined(HOST_AMD64)
-    // all supported platforms use 4K pages on x64, including emulated environments
-    return 0x1000;
-#elif defined(HOST_APPLE)
-    // OSX and related OS expose 16-kilobyte pages to the 64-bit userspace
-    // https://developer.apple.com/library/archive/documentation/Performance/Conceptual/ManagingMemory/Articles/AboutMemory.html
-    return 0x4000;
-#else
-    return PalGetOsPageSize();
-#endif
 }

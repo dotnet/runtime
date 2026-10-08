@@ -235,11 +235,11 @@ public:
 public:
     //suspend all threads
     static void SuspendEE(SUSPEND_REASON reason);
-    static void RestartEE(BOOL bFinishedGC, BOOL SuspendSucceeded); //resume threads.
+    static void RestartEE(BOOL SuspendSucceeded); //resume threads.
 
     static void LockThreadStore(ThreadSuspend::SUSPEND_REASON reason);
     static void UnlockThreadStore(BOOL bThreadDestroyed = FALSE,
-                                  ThreadSuspend::SUSPEND_REASON reason = ThreadSuspend::SUSPEND_OTHER);
+                                  ThreadSuspend::SUSPEND_REASON reason = ThreadSuspend::SUSPEND_OTHER) noexcept;
 
     static Thread * GetSuspensionThread()
     {

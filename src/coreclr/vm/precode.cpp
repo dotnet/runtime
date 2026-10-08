@@ -15,9 +15,7 @@
 #include <interpretershared.h>
 #endif // FEATURE_INTERPRETER
 
-#ifdef FEATURE_PERFMAP
 #include "perfmap.h"
-#endif
 
 InterleavedLoaderHeapConfig s_stubPrecodeHeapConfig;
 #ifdef HAS_FIXUP_PRECODE
@@ -190,7 +188,7 @@ TADDR InterpreterPrecode::GetMethodDesc()
     LIMITED_METHOD_DAC_CONTRACT;
 
     InterpByteCodeStart* pInterpreterCode = dac_cast<PTR_InterpByteCodeStart>(GetData()->ByteCodeAddr);
-    return dac_cast<TADDR>(pInterpreterCode->Method->methodDesc);
+    return dac_cast<TADDR>(pInterpreterCode->Method->methodHnd);
 }
 #endif // FEATURE_INTERPRETER
 
@@ -244,7 +242,7 @@ InterpreterPrecode* Precode::AllocateInterpreterPrecode(PCODE byteCode,
     {
         THROWS;
         GC_NOTRIGGER;
-        MODE_ANY;
+        MODE_PREEMPTIVE;
     }
     CONTRACTL_END;
 
@@ -253,9 +251,7 @@ InterpreterPrecode* Precode::AllocateInterpreterPrecode(PCODE byteCode,
 
     FlushCacheForDynamicMappedStub(pPrecode, sizeof(InterpreterPrecode));
 
-#ifdef FEATURE_PERFMAP
     PerfMap::LogStubs(__FUNCTION__, "UMEntryThunk", (PCODE)pPrecode, sizeof(InterpreterPrecode), PerfMapStubType::IndividualWithinBlock);
-#endif
     return pPrecode;
 }
 #endif // FEATURE_INTERPRETER
@@ -268,7 +264,7 @@ Precode* Precode::Allocate(PrecodeType t, MethodDesc* pMD,
     {
         THROWS;
         GC_NOTRIGGER;
-        MODE_ANY;
+        MODE_PREEMPTIVE;
     }
     CONTRACTL_END;
 
@@ -288,9 +284,7 @@ Precode* Precode::Allocate(PrecodeType t, MethodDesc* pMD,
         // to see the actual final Target (which doesn't require any further synchronization), or we'll hit the memory
         // barrier in the second portion of the FixupPrecodeThunk and find that the MethodDesc/PrecodeFixupThunk are
         // properly set. See FixupPrecode::GenerateDataPage for the code to fill in the target.
-#ifdef FEATURE_PERFMAP
         PerfMap::LogStubs(__FUNCTION__, "FixupPrecode", (PCODE)pPrecode, sizeof(FixupPrecode), PerfMapStubType::IndividualWithinBlock);
-#endif
     }
 #ifdef HAS_THISPTR_RETBUF_PRECODE
     else if (t == PRECODE_THISPTR_RETBUF)
@@ -302,9 +296,7 @@ Precode* Precode::Allocate(PrecodeType t, MethodDesc* pMD,
 
         FlushCacheForDynamicMappedStub(pPrecode, sizeof(ThisPtrRetBufPrecode));
 
-#ifdef FEATURE_PERFMAP
         PerfMap::LogStubs(__FUNCTION__, "ThisPtrRetBuf", (PCODE)pPrecode, sizeof(ThisPtrRetBufPrecodeData), PerfMapStubType::IndividualWithinBlock);
-#endif
         }
 #endif // HAS_THISPTR_RETBUF_PRECODE
     else
@@ -315,9 +307,7 @@ Precode* Precode::Allocate(PrecodeType t, MethodDesc* pMD,
 
         FlushCacheForDynamicMappedStub(pPrecode, sizeof(StubPrecode));
 
-#ifdef FEATURE_PERFMAP
         PerfMap::LogStubs(__FUNCTION__, t == PRECODE_STUB ? "StubPrecode" : "PInvokeImportPrecode", (PCODE)pPrecode, sizeof(StubPrecode), PerfMapStubType::IndividualWithinBlock);
-#endif
     }
 
     return pPrecode;
@@ -958,3 +948,78 @@ BOOL StubPrecode::IsStubPrecodeByASM(PCODE addr)
 }
 
 #endif // !FEATURE_PORTABLE_ENTRYPOINTS
+
+TADDR GetInterpreterCodeFromEntryPointIfPresent(TADDR entryPoint)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+        SUPPORTS_DAC;
+    } CONTRACTL_END;
+
+#ifdef FEATURE_INTERPRETER
+    if (entryPoint == (TADDR)NULL)
+    {
+        return (TADDR)NULL;
+    }
+
+    RangeSection * pRS = ExecutionManager::FindCodeRange(entryPoint, ExecutionManager::GetScanFlags());
+
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    if (pRS == NULL)
+    {
+        // Address not in any code range - this is a portable entry point.
+        MethodDesc* pMD = PortableEntryPoint::GetMethodDesc((PCODE)entryPoint);
+        PTR_InterpByteCodeStart pInterpCode = pMD->GetInterpreterCode();
+        if (pInterpCode != NULL)
+        {
+            entryPoint = dac_cast<TADDR>(pInterpCode);
+        }
+    }
+#else // !FEATURE_PORTABLE_ENTRYPOINTS
+    if (pRS != NULL && pRS->_flags & RangeSection::RANGE_SECTION_RANGELIST)
+    {
+        if (pRS->_pRangeList->GetCodeBlockKind() == STUB_CODE_BLOCK_STUBPRECODE)
+        {
+            if (dac_cast<PTR_StubPrecode>(PCODEToPINSTR(entryPoint))->GetType() == PRECODE_INTERPRETER)
+            {
+                entryPoint = (dac_cast<PTR_InterpreterPrecode>(PCODEToPINSTR(entryPoint)))->GetData()->ByteCodeAddr;
+            }
+        }
+    }
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
+#endif // FEATURE_INTERPRETER
+
+    return entryPoint;
+}
+
+#ifndef DACCESS_COMPILE
+TADDR GetDiagnosticCodeStartFromEntryPoint(MethodDesc* pMD, TADDR entryPoint)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+        PRECONDITION(CheckPointer(pMD));
+    } CONTRACTL_END;
+
+    TADDR start = GetInterpreterCodeFromEntryPointIfPresent(entryPoint);
+
+#if defined(TARGET_WASM) && defined(FEATURE_PORTABLE_ENTRYPOINTS)
+    if (start == entryPoint && entryPoint == pMD->GetPortableEntryPointIfExists() &&
+        PortableEntryPoint::HasNativeEntryPoint((PCODE)entryPoint))
+    {
+        // Native R2R portable entry points store a function-table index rather than an address
+        // registered with ExecutionManager. Map it to the corresponding synthetic virtual IP.
+        DWORD functionTableIndex =
+            static_cast<DWORD>(reinterpret_cast<TADDR>(PortableEntryPoint::GetActualCode((PCODE)entryPoint)));
+        TADDR virtualIP = ExecutionManager::GetWasmVirtualIPFromFunctionTableIndex(functionTableIndex);
+        if (virtualIP != 0)
+        {
+            start = virtualIP;
+        }
+    }
+#endif // TARGET_WASM && FEATURE_PORTABLE_ENTRYPOINTS
+
+    return start;
+}
+#endif // !DACCESS_COMPILE

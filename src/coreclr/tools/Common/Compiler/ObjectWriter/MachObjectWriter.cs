@@ -12,6 +12,7 @@ using System.Numerics;
 using System.Text;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
+using Internal.Text;
 using Internal.TypeSystem;
 using static ILCompiler.DependencyAnalysis.RelocType;
 using static ILCompiler.ObjectWriter.MachNative;
@@ -62,12 +63,18 @@ namespace ILCompiler.ObjectWriter
         private readonly List<MachSection> _sections = new();
 
         // Symbol table
-        private readonly Dictionary<string, uint> _symbolNameToIndex = new();
+        private readonly Dictionary<Utf8String, uint> _symbolNameToIndex = new();
         private readonly List<MachSymbol> _symbolTable = new();
         private readonly MachDynamicLinkEditSymbolTable _dySymbolTable = new();
+        private readonly Dictionary<Utf8String, (Utf8String StartNode, Utf8String EndNode, int Size)> _rangeSymbols = new();
 
-        public MachObjectWriter(NodeFactory factory, ObjectWritingOptions options)
-            : base(factory, options)
+        /// <summary>
+        /// Base symbol to use for <see cref="RelocType.IMAGE_REL_BASED_ADDR32NB"/> relocations.
+        /// </summary>
+        private readonly Utf8String? _baseSymbolName;
+
+        public MachObjectWriter(NodeFactory factory, ObjectWritingOptions options, OutputInfoBuilder outputInfoBuilder = null)
+            : base(factory, options, outputInfoBuilder)
         {
             switch (factory.Target.Architecture)
             {
@@ -92,6 +99,12 @@ namespace ILCompiler.ObjectWriter
             _targetOS = factory.Target.OperatingSystem;
         }
 
+        public MachObjectWriter(NodeFactory factory, ObjectWritingOptions options, OutputInfoBuilder outputInfoBuilder, string baseSymbolName)
+            : this(factory, options, outputInfoBuilder)
+        {
+            _baseSymbolName = baseSymbolName is not null ? new Utf8String(baseSymbolName) : null;
+        }
+
         private protected override bool UsesSubsectionsViaSymbols => true;
 
         private protected override void EmitSectionsAndLayout()
@@ -99,7 +112,7 @@ namespace ILCompiler.ObjectWriter
             // Layout sections. At this point we don't really care if the file offsets are correct
             // but we need to compute the virtual addresses to populate the symbol table.
             uint fileOffset = 0;
-            LayoutSections(recordFinalLayout: false, ref fileOffset, out _, out _);
+            LayoutSections(recordFinalLayout: false, ref fileOffset, out _, out _, out _);
 
             // Generate section base symbols. The section symbols are used for PC relative relocations
             // to subtract the base of the section, and in DWARF to emit section relative relocations.
@@ -108,7 +121,7 @@ namespace ILCompiler.ObjectWriter
             {
                 var machSymbol = new MachSymbol
                 {
-                    Name = $"lsection{sectionIndex}",
+                    Name = new Utf8StringBuilder().Append("lsection"u8).Append(sectionIndex).ToUtf8String(),
                     Section = section,
                     Value = section.VirtualAddress,
                     Descriptor = N_NO_DEAD_STRIP,
@@ -120,11 +133,12 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        private void LayoutSections(bool recordFinalLayout, ref uint fileOffset, out uint segmentFileSize, out ulong segmentSize)
+        private void LayoutSections(bool recordFinalLayout, ref uint fileOffset, out uint segmentFileOffset, out uint segmentFileSize, out ulong segmentSize)
         {
             ulong virtualAddress = 0;
             byte sectionIndex = 1;
 
+            segmentFileOffset = 0;
             segmentFileSize = 0;
             segmentSize = 0;
             foreach (MachSection section in _sections)
@@ -136,9 +150,11 @@ namespace ILCompiler.ObjectWriter
 
                 if (section.IsInFile)
                 {
+                    // Initialize the segment file offset to the first aligned section offset in the file.
+                    segmentFileOffset = segmentFileSize == 0 ? fileOffset : segmentFileOffset;
                     section.FileOffset = fileOffset;
                     fileOffset += (uint)section.Size;
-                    segmentFileSize = Math.Max(segmentFileSize, fileOffset);
+                    segmentFileSize = Math.Max(segmentFileSize, fileOffset - segmentFileOffset);
                 }
                 else
                 {
@@ -187,8 +203,12 @@ namespace ILCompiler.ObjectWriter
             // We added the compact unwinding section, debug sections, and relocations,
             // so re-run the layout and this time calculate with the correct file offsets.
             uint fileOffset = (uint)MachHeader64.HeaderSize + loadCommandsSize;
-            uint segmentFileOffset = fileOffset;
-            LayoutSections(recordFinalLayout: true, ref fileOffset, out uint segmentFileSize, out ulong segmentSize);
+            LayoutSections(
+                recordFinalLayout: true,
+                ref fileOffset,
+                out uint segmentFileOffset,
+                out uint segmentFileSize,
+                out ulong segmentSize);
 
             MachHeader64 machHeader = new MachHeader64
             {
@@ -252,7 +272,7 @@ namespace ILCompiler.ObjectWriter
 
                 case TargetOS.MacCatalyst:
                     buildVersion.Platform = PLATFORM_MACCATALYST;
-                    buildVersion.MinimumPlatformVersion = 0x0F_02_00; // 15.0.0
+                    buildVersion.MinimumPlatformVersion = 0x0F_02_00; // 15.2.0
                     break;
 
                 case TargetOS.iOS:
@@ -267,7 +287,7 @@ namespace ILCompiler.ObjectWriter
                         TargetOS.tvOSSimulator => PLATFORM_TVOSSIMULATOR,
                         _ => 0,
                     };
-                    buildVersion.MinimumPlatformVersion = 0x0C_02_00; // 12.2.0
+                    buildVersion.MinimumPlatformVersion = 0x0D_00_00; // 13.0.0
                     break;
             }
             buildVersion.Write(outputFileStream);
@@ -304,7 +324,7 @@ namespace ILCompiler.ObjectWriter
             stringTable.Write(outputFileStream);
         }
 
-        private protected override void CreateSection(ObjectNodeSection section, string comdatName, string symbolName, int sectionIndex, Stream sectionStream)
+        private protected override void CreateSection(ObjectNodeSection section, Utf8String comdatName, Utf8String symbolName, int sectionIndex, Stream sectionStream)
         {
             string segmentName = section.Name switch
             {
@@ -362,7 +382,7 @@ namespace ILCompiler.ObjectWriter
 
             _sections.Add(machSection);
 
-            base.CreateSection(section, comdatName, symbolName ?? $"lsection{sectionIndex}", sectionIndex, sectionStream);
+            base.CreateSection(section, comdatName, symbolName.IsNull ? new Utf8StringBuilder().Append("lsection"u8).Append(sectionIndex).ToUtf8String() : symbolName, sectionIndex, sectionStream);
         }
 
         protected internal override void UpdateSectionAlignment(int sectionIndex, int alignment)
@@ -372,20 +392,50 @@ namespace ILCompiler.ObjectWriter
             machSection.Log2Alignment = Math.Max(machSection.Log2Alignment, (uint)BitOperations.Log2((uint)alignment));
         }
 
+        private protected override void EmitSymbolRangeDefinition(Utf8String rangeNodeName, Utf8String startSymbolName, Utf8String endSymbolName, SymbolDefinition endSymbol)
+        {
+            // Mach has a few characteristics that make range symbols more difficult to emit:
+            // - Emitting two symbols in the same location is not well supported by the Apple linker.
+            // - Mach-O makes it more difficult to preserve symbol layout in the way we like.
+            // However, it also has one thing that makes it easier:
+            // - Mach-O natively supports a relocation type that can represents the distance between two symbols.
+            _rangeSymbols.Add(rangeNodeName, (startSymbolName, endSymbolName, endSymbol.Size));
+        }
+
         protected internal override unsafe void EmitRelocation(
             int sectionIndex,
             long offset,
             Span<byte> data,
             RelocType relocType,
-            string symbolName,
+            Utf8String symbolName,
             long addend)
         {
+            MachSection section = _sections[sectionIndex];
+
+            // We don't emit the range node name into the image as it overlaps with another symbol.
+            // For relocs to it, instead target the start symbol.
+            // For the "symbol size" reloc, we'll handle it later when we emit relocations in the Mach format.
+            if (_rangeSymbols.TryGetValue(symbolName, out (Utf8String StartNode, Utf8String, int Size) range))
+            {
+                if (relocType == RelocType.IMAGE_REL_SYMBOL_SIZE)
+                {
+                    // In this case, we will later emit the reloc as a pair of SUBTRACTOR + UNSIGNED relocs.
+                    // However, we need to adjust for the size of the end symbol here.
+                    BinaryPrimitives.WriteUInt32LittleEndian(data, (uint)addend + (uint)range.Size);
+                }
+                else
+                {
+                    // Otherwise, point relocs to the range as a reloc to the start symbol (as these locations are identical).
+                    symbolName = range.StartNode;
+                }
+            }
+
             // Mach-O doesn't use relocations between DWARF sections, so embed the offsets directly
             if (relocType is IMAGE_REL_BASED_DIR64 or IMAGE_REL_BASED_HIGHLOW &&
-                _sections[sectionIndex].IsDwarfSection)
+                section.IsDwarfSection)
             {
                 // DWARF section to DWARF section relocation
-                if (symbolName.StartsWith('.'))
+                if (symbolName.AsSpan().StartsWith((byte)'.'))
                 {
                     switch (relocType)
                     {
@@ -415,23 +465,39 @@ namespace ILCompiler.ObjectWriter
 
             switch (relocType)
             {
+                case IMAGE_REL_BASED_ARM64_BRANCH26:
                 case IMAGE_REL_BASED_ARM64_PAGEBASE_REL21:
                 case IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A:
                 case IMAGE_REL_BASED_ARM64_PAGEOFFSET_12L:
                     // Addend is handled through ARM64_RELOC_ADDEND
+                    fixed (byte* pData = data)
+                    {
+                        addend += Relocation.ReadValue(relocType, pData);
+                        Relocation.WriteValue(relocType, pData, 0);
+                    }
                     break;
 
                 case IMAGE_REL_BASED_RELPTR32:
                     if (_cpuType == CPU_TYPE_ARM64 || IsEhFrameSection(sectionIndex))
                     {
+                        // Additional symbols split functions into multiple atoms in ld-classic,
+                        // which corrupts function-start and unwind information.
+                        Debug.Assert(!section.IsExecutable, "Executable sections cannot contain RELPTR32 relocations on Mach-O.");
+
+                        // Zerofill sections have no file-backed relocation field in which to
+                        // store the adjusted addend.
+                        Debug.Assert(!section.IsZeroFill, "Uninitialized sections cannot contain RELPTR32 relocations on Mach-O.");
+
                         // On ARM64 we need to represent PC relative relocations as
                         // subtraction and the PC offset is baked into the addend.
                         // On x64, ld64 requires X86_64_RELOC_SUBTRACTOR + X86_64_RELOC_UNSIGNED
                         // for DWARF .eh_frame section.
-                        BinaryPrimitives.WriteInt32LittleEndian(
-                            data,
-                            BinaryPrimitives.ReadInt32LittleEndian(data) +
-                            (int)(addend - offset));
+
+                        // Combine both sources of the addend before selecting an anchor. Do the
+                        // arithmetic in 64 bits so malformed input fails instead of wrapping.
+                        long inlineAddend = checked((long)BinaryPrimitives.ReadInt32LittleEndian(data) + addend);
+                        long storedAddend = PrepareRelptr32Addend(section, offset, inlineAddend);
+                        BinaryPrimitives.WriteInt32LittleEndian(data, checked((int)storedAddend));
                     }
                     else
                     {
@@ -464,18 +530,44 @@ namespace ILCompiler.ObjectWriter
         }
 
         private protected override void EmitSymbolTable(
-            IDictionary<string, SymbolDefinition> definedSymbols,
-            SortedSet<string> undefinedSymbols)
+            IDictionary<Utf8String, SymbolDefinition> definedSymbols,
+            SortedSet<Utf8String> undefinedSymbols)
         {
-            // We already emitted symbols for all non-debug sections in EmitSectionsAndLayout,
-            // these symbols are local and we need to account for them.
+            // Emit the sparse anchors after the section symbols created by EmitSectionsAndLayout
+            // and before the remaining local symbols so all later symbol indexes account for them.
             uint symbolIndex = (uint)_symbolTable.Count;
+            Utf8StringBuilder relocAnchorNameBuilder = new Utf8StringBuilder();
+            int anchorOrdinal = 0;
+            foreach (MachSection section in _sections)
+            {
+                foreach (RelocAnchor anchor in section.RelocAnchors)
+                {
+                    relocAnchorNameBuilder.Clear();
+                    _symbolTable.Add(new MachSymbol
+                    {
+                        // Lowercase names avoid Mach-O's temporary-symbol naming convention;
+                        // omitting N_EXT from Type keeps the anchors local to this object.
+                        Name = relocAnchorNameBuilder.Append("lreloc_anchor"u8).Append(anchorOrdinal++).ToUtf8String(),
+                        Section = section,
+                        Value = section.VirtualAddress + (ulong)anchor.Offset,
+                        // ld-classic starts an atom at every symbol. A boundary at the first byte
+                        // of the relocation cannot split the fixup, and N_NO_DEAD_STRIP preserves
+                        // the newly split tail. Do not use N_ALT_ENTRY: ld-classic still creates an
+                        // atom for it and has additional bugs when processing alternate entries.
+                        Descriptor = N_NO_DEAD_STRIP,
+                        Type = N_SECT,
+                    });
+                    // Relocation emission uses this recorded index instead of relying on the
+                    // anchors occupying a contiguous range in the symbol table.
+                    anchor.SymbolIndex = symbolIndex++;
+                }
+            }
             _dySymbolTable.LocalSymbolsIndex = 0;
             _dySymbolTable.LocalSymbolsCount = symbolIndex;
 
             // Sort and insert all defined symbols
             var sortedDefinedSymbols = new List<MachSymbol>(definedSymbols.Count);
-            foreach ((string name, SymbolDefinition definition) in definedSymbols)
+            foreach ((Utf8String name, SymbolDefinition definition) in definedSymbols)
             {
                 MachSection section = _sections[definition.SectionIndex];
                 // Sections in our object file should not be altered during native linking as the runtime
@@ -490,7 +582,7 @@ namespace ILCompiler.ObjectWriter
                     Type = (byte)(N_SECT | N_EXT | (definition.Global ? 0 : N_PEXT)),
                 });
             }
-            sortedDefinedSymbols.Sort((symA, symB) => string.CompareOrdinal(symA.Name, symB.Name));
+            sortedDefinedSymbols.Sort((symA, symB) => Comparer<Utf8String>.Default.Compare(symA.Name, symB.Name));
             foreach (MachSymbol definedSymbol in sortedDefinedSymbols)
             {
                 _symbolTable.Add(definedSymbol);
@@ -502,7 +594,14 @@ namespace ILCompiler.ObjectWriter
             _dySymbolTable.ExternalSymbolsCount = (uint)definedSymbols.Count;
 
             uint savedSymbolIndex = symbolIndex;
-            foreach (string externSymbol in undefinedSymbols)
+
+            // Add the base symbol as an undefined symbol.
+            if (_baseSymbolName is not null)
+            {
+                undefinedSymbols.Add(_baseSymbolName.Value);
+            }
+
+            foreach (Utf8String externSymbol in undefinedSymbols)
             {
                 if (!_symbolNameToIndex.ContainsKey(externSymbol))
                 {
@@ -542,6 +641,82 @@ namespace ILCompiler.ObjectWriter
         private bool IsEhFrameSection(int sectionIndex) => false;
 #endif
 
+        // Apple ld-prime stores the addend of SUBTRACTOR/UNSIGNED relocations in a
+        // packed signed 20-bit field; values that don't fit go into a side table
+        // that itself has a hard cap ("too many large addends", see issue #119380).
+        // Sparse anchors at relocation sources keep every emitted addend inline
+        // without placing symbols at arbitrary offsets.
+        private const long MinimumRelptr32Addend = -(1L << 19);
+        private const long MaximumRelptr32Addend = (1L << 19) - 1;
+
+        // ld-prime only keeps values in this range in the relocation's packed addend field.
+        private static bool FitsInSigned20Bits(long value) =>
+            value >= MinimumRelptr32Addend && value <= MaximumRelptr32Addend;
+
+        // For relocation source P and anchor A, store inlineAddend - (P - A), preserving the
+        // original PC-relative value when the linker subtracts A. Create A at P when the nearest
+        // preceding anchor cannot encode that value in ld-prime's signed 20-bit field.
+        private static long PrepareRelptr32Addend(MachSection section, long offset, long inlineAddend)
+        {
+            // RELPTR32 relocations are processed in increasing offset order, so the last anchor in
+            // the list is the nearest one preceding this relocation.
+            List<RelocAnchor> anchors = section.RelocAnchors;
+            long anchorOffset = anchors.Count > 0 ? anchors[^1].Offset : 0;
+            long storedAddend = checked(inlineAddend - (offset - anchorOffset));
+
+            // Reuse the nearest preceding anchor while its adjusted addend remains encodable.
+            if (FitsInSigned20Bits(storedAddend))
+            {
+                return storedAddend;
+            }
+
+            // An anchor at offset removes the distance term completely. If inlineAddend itself is
+            // out of range, no source-position anchor can make this relocation encodable. We don't
+            // expect this to happen in practice since inline addends are usually small offsets, so
+            // just check with assert.
+            Debug.Assert(FitsInSigned20Bits(inlineAddend), "The RELPTR32 addend cannot fit in ld-prime's signed 20-bit inline encoding.");
+
+            anchors.Add(new RelocAnchor(offset));
+            return inlineAddend;
+        }
+
+        // Returns the symbol for the greatest anchor at or before offset. Anchors are appended in
+        // relocation order, so this reconstructs the anchor used by PrepareRelptr32Addend. The
+        // section symbol serves as the implicit anchor at offset zero.
+        private uint GetRelocAnchorSymbolIndex(int sectionIndex, long offset)
+        {
+            MachSection section = _sections[sectionIndex];
+            List<RelocAnchor> anchors = section.RelocAnchors;
+            int anchorIndex = section.CachedRelocAnchorIndex;
+
+            // Search again when the cached predecessor no longer brackets the relocation offset.
+            if ((anchorIndex >= 0 && anchors[anchorIndex].Offset > offset) ||
+                (anchorIndex + 1 < anchors.Count && anchors[anchorIndex + 1].Offset <= offset))
+            {
+                // Find the greatest anchor offset less than or equal to the relocation offset.
+                int lower = 0;
+                int upper = anchors.Count - 1;
+                while (lower <= upper)
+                {
+                    int middle = lower + ((upper - lower) / 2);
+                    if (anchors[middle].Offset <= offset)
+                    {
+                        lower = middle + 1;
+                    }
+                    else
+                    {
+                        upper = middle - 1;
+                    }
+                }
+
+                anchorIndex = upper;
+                section.CachedRelocAnchorIndex = anchorIndex;
+            }
+
+            // If no synthetic anchor precedes the relocation, use the implicit section-base anchor.
+            return anchorIndex >= 0 ? anchors[anchorIndex].SymbolIndex : (uint)sectionIndex;
+        }
+
         private void EmitRelocationsX64(int sectionIndex, List<SymbolicRelocation> relocationList)
         {
             ICollection<MachRelocation> sectionRelocations = _sections[sectionIndex].Relocations;
@@ -549,6 +724,36 @@ namespace ILCompiler.ObjectWriter
             relocationList.Reverse();
             foreach (SymbolicRelocation symbolicRelocation in relocationList)
             {
+                if (symbolicRelocation.Type == RelocType.IMAGE_REL_SYMBOL_SIZE
+                    && _rangeSymbols.TryGetValue(symbolicRelocation.SymbolName, out (Utf8String, Utf8String, int) range))
+                {
+                    // Represent as X86_64_RELOC_SUBTRACTOR + X86_64_RELOC_UNSIGNED.
+                    (Utf8String StartNode, Utf8String EndNode, int Size) = range;
+                    uint startSymbolIndex = _symbolNameToIndex[StartNode];
+                    uint endSymbolIndex = _symbolNameToIndex[EndNode];
+                    sectionRelocations.Add(
+                        new MachRelocation
+                        {
+                            Address = (int)symbolicRelocation.Offset,
+                            SymbolOrSectionIndex = startSymbolIndex,
+                            Length = 4,
+                            RelocationType = X86_64_RELOC_SUBTRACTOR,
+                            IsExternal = true,
+                            IsPCRelative = false,
+                        });
+                    sectionRelocations.Add(
+                        new MachRelocation
+                        {
+                            Address = (int)symbolicRelocation.Offset,
+                            SymbolOrSectionIndex = endSymbolIndex,
+                            Length = 4,
+                            RelocationType = X86_64_RELOC_UNSIGNED,
+                            IsExternal = true,
+                            IsPCRelative = false,
+                        });
+                    continue;
+                }
+
                 uint symbolIndex = _symbolNameToIndex[symbolicRelocation.SymbolName];
 
                 if (symbolicRelocation.Type == IMAGE_REL_BASED_DIR64)
@@ -567,11 +772,13 @@ namespace ILCompiler.ObjectWriter
                 }
                 else if (symbolicRelocation.Type == IMAGE_REL_BASED_RELPTR32 && IsEhFrameSection(sectionIndex))
                 {
+                    uint baseSymbolIndex = GetRelocAnchorSymbolIndex(sectionIndex, symbolicRelocation.Offset);
+
                     sectionRelocations.Add(
                         new MachRelocation
                         {
                             Address = (int)symbolicRelocation.Offset,
-                            SymbolOrSectionIndex = (uint)sectionIndex,
+                            SymbolOrSectionIndex = baseSymbolIndex,
                             Length = 4,
                             RelocationType = X86_64_RELOC_SUBTRACTOR,
                             IsExternal = true,
@@ -601,6 +808,37 @@ namespace ILCompiler.ObjectWriter
                             IsPCRelative = true,
                         });
                 }
+                else if (symbolicRelocation.Type == IMAGE_REL_BASED_ADDR32NB)
+                {
+                    if (_baseSymbolName is null)
+                    {
+                        throw new NotSupportedException("A base symbol name must be provided for IMAGE_REL_BASED_ADDR32NB relocations.");
+                    }
+
+                    Debug.Assert(_symbolNameToIndex.ContainsKey(_baseSymbolName.Value));
+
+                    // Represent as X86_64_RELOC_SUBTRACTOR + X86_64_RELOC_UNSIGNED against the base symbol.
+                    sectionRelocations.Add(
+                        new MachRelocation
+                        {
+                            Address = (int)symbolicRelocation.Offset,
+                            SymbolOrSectionIndex = _symbolNameToIndex[_baseSymbolName.Value],
+                            Length = 4,
+                            RelocationType = X86_64_RELOC_SUBTRACTOR,
+                            IsExternal = true,
+                            IsPCRelative = false,
+                        });
+                    sectionRelocations.Add(
+                        new MachRelocation
+                        {
+                            Address = (int)symbolicRelocation.Offset,
+                            SymbolOrSectionIndex = (uint)symbolIndex,
+                            Length = 4,
+                            RelocationType = X86_64_RELOC_UNSIGNED,
+                            IsExternal = true,
+                            IsPCRelative = false,
+                        });
+                }
                 else
                 {
                     throw new NotSupportedException("Unknown relocation type: " + symbolicRelocation.Type);
@@ -615,22 +853,39 @@ namespace ILCompiler.ObjectWriter
             relocationList.Reverse();
             foreach (SymbolicRelocation symbolicRelocation in relocationList)
             {
-                uint symbolIndex = _symbolNameToIndex[symbolicRelocation.SymbolName];
-
-                if (symbolicRelocation.Type == IMAGE_REL_BASED_ARM64_BRANCH26)
+                if (symbolicRelocation.Type == RelocType.IMAGE_REL_SYMBOL_SIZE
+                    && _rangeSymbols.TryGetValue(symbolicRelocation.SymbolName, out (Utf8String, Utf8String, int) range))
                 {
+                    // Represent as ARM64_RELOC_SUBTRACTOR + ARM64_RELOC_UNSIGNED.
+                    (Utf8String StartNode, Utf8String EndNode, _) = range;
+                    uint startSymbolIndex = _symbolNameToIndex[StartNode];
+                    uint endSymbolIndex = _symbolNameToIndex[EndNode];
                     sectionRelocations.Add(
                         new MachRelocation
                         {
                             Address = (int)symbolicRelocation.Offset,
-                            SymbolOrSectionIndex = symbolIndex,
+                            SymbolOrSectionIndex = startSymbolIndex,
                             Length = 4,
-                            RelocationType = ARM64_RELOC_BRANCH26,
+                            RelocationType = ARM64_RELOC_SUBTRACTOR,
                             IsExternal = true,
-                            IsPCRelative = true,
+                            IsPCRelative = false,
                         });
+                    sectionRelocations.Add(
+                        new MachRelocation
+                        {
+                            Address = (int)symbolicRelocation.Offset,
+                            SymbolOrSectionIndex = endSymbolIndex,
+                            Length = 4,
+                            RelocationType = ARM64_RELOC_UNSIGNED,
+                            IsExternal = true,
+                            IsPCRelative = false,
+                        });
+                    continue;
                 }
-                else if (symbolicRelocation.Type is IMAGE_REL_BASED_ARM64_PAGEBASE_REL21 or IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A or IMAGE_REL_BASED_ARM64_PAGEOFFSET_12L)
+
+                uint symbolIndex = _symbolNameToIndex[symbolicRelocation.SymbolName];
+
+                if (symbolicRelocation.Type is IMAGE_REL_BASED_ARM64_BRANCH26 or IMAGE_REL_BASED_ARM64_PAGEBASE_REL21 or IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A or IMAGE_REL_BASED_ARM64_PAGEOFFSET_12L)
                 {
                     if (symbolicRelocation.Addend != 0)
                     {
@@ -648,6 +903,7 @@ namespace ILCompiler.ObjectWriter
 
                     byte type = symbolicRelocation.Type switch
                     {
+                        IMAGE_REL_BASED_ARM64_BRANCH26 => ARM64_RELOC_BRANCH26,
                         IMAGE_REL_BASED_ARM64_PAGEBASE_REL21 => ARM64_RELOC_PAGE21,
                         IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A => ARM64_RELOC_PAGEOFF12,
                         IMAGE_REL_BASED_ARM64_PAGEOFFSET_12L => ARM64_RELOC_PAGEOFF12,
@@ -662,7 +918,7 @@ namespace ILCompiler.ObjectWriter
                             Length = 4,
                             RelocationType = type,
                             IsExternal = true,
-                            IsPCRelative = symbolicRelocation.Type == IMAGE_REL_BASED_ARM64_PAGEBASE_REL21,
+                            IsPCRelative = symbolicRelocation.Type is IMAGE_REL_BASED_ARM64_BRANCH26 or IMAGE_REL_BASED_ARM64_PAGEBASE_REL21,
                         });
                 }
                 else if (symbolicRelocation.Type == IMAGE_REL_BASED_DIR64)
@@ -681,12 +937,14 @@ namespace ILCompiler.ObjectWriter
                 }
                 else if (symbolicRelocation.Type == IMAGE_REL_BASED_RELPTR32)
                 {
+                    uint baseSymbolIndex = GetRelocAnchorSymbolIndex(sectionIndex, symbolicRelocation.Offset);
+
                     // This one is tough... needs to be represented by ARM64_RELOC_SUBTRACTOR + ARM64_RELOC_UNSIGNED.
                     sectionRelocations.Add(
                         new MachRelocation
                         {
                             Address = (int)symbolicRelocation.Offset,
-                            SymbolOrSectionIndex = (uint)sectionIndex,
+                            SymbolOrSectionIndex = baseSymbolIndex,
                             Length = 4,
                             RelocationType = ARM64_RELOC_SUBTRACTOR,
                             IsExternal = true,
@@ -703,6 +961,37 @@ namespace ILCompiler.ObjectWriter
                             IsPCRelative = false,
                         });
                 }
+                else if (symbolicRelocation.Type == IMAGE_REL_BASED_ADDR32NB)
+                {
+                    if (_baseSymbolName is null)
+                    {
+                        throw new NotSupportedException("A base symbol name must be provided for IMAGE_REL_BASED_ADDR32NB relocations.");
+                    }
+
+                    Debug.Assert(_symbolNameToIndex.ContainsKey(_baseSymbolName.Value));
+
+                    // Represent as ARM64_RELOC_SUBTRACTOR + ARM64_RELOC_UNSIGNED against the base symbol.
+                    sectionRelocations.Add(
+                        new MachRelocation
+                        {
+                            Address = (int)symbolicRelocation.Offset,
+                            SymbolOrSectionIndex = _symbolNameToIndex[_baseSymbolName.Value],
+                            Length = 4,
+                            RelocationType = ARM64_RELOC_SUBTRACTOR,
+                            IsExternal = true,
+                            IsPCRelative = false,
+                        });
+                    sectionRelocations.Add(
+                        new MachRelocation
+                        {
+                            Address = (int)symbolicRelocation.Offset,
+                            SymbolOrSectionIndex = (uint)symbolIndex,
+                            Length = 4,
+                            RelocationType = ARM64_RELOC_UNSIGNED,
+                            IsExternal = true,
+                            IsPCRelative = false,
+                        });
+                }
                 else
                 {
                     throw new NotSupportedException("Unknown relocation type: " + symbolicRelocation.Type);
@@ -710,11 +999,11 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        partial void EmitCompactUnwindTable(IDictionary<string, SymbolDefinition> definedSymbols);
+        partial void EmitCompactUnwindTable(IDictionary<Utf8String, SymbolDefinition> definedSymbols);
 
-        private protected override string ExternCName(string name) => "_" + name;
+        private protected override Utf8String ExternCName(Utf8String name) => Utf8String.Concat("_"u8, name.AsSpan());
 
-        private static bool IsSectionSymbolName(string symbolName) => symbolName.StartsWith('l');
+        private static bool IsSectionSymbolName(Utf8String symbolName) => symbolName.AsSpan().StartsWith((byte)'l');
 
         private struct MachHeader64
         {
@@ -780,6 +1069,21 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
+        // A sparse, section-relative symbol used as the SUBTRACTOR base for RELPTR32 relocations.
+        private sealed class RelocAnchor
+        {
+            // Offset of the relocation source that caused this anchor to be created.
+            public long Offset { get; }
+
+            // Assigned when EmitSymbolTable materializes the anchor as a Mach-O symbol.
+            public uint SymbolIndex { get; set; }
+
+            public RelocAnchor(long offset)
+            {
+                Offset = offset;
+            }
+        }
+
         private sealed class MachSection
         {
             private Stream dataStream;
@@ -796,11 +1100,22 @@ namespace ILCompiler.ObjectWriter
             public uint Flags { get; set; }
 
             public uint Type => Flags & 0xFF;
-            public bool IsInFile => Size > 0 && Type != S_ZEROFILL && Type != S_GB_ZEROFILL && Type != S_THREAD_LOCAL_ZEROFILL;
+
+            // These classifications determine whether an anchor has file-backed storage and can
+            // safely introduce an atom boundary.
+            public bool IsZeroFill => Type is S_ZEROFILL or S_GB_ZEROFILL or S_THREAD_LOCAL_ZEROFILL;
+            public bool IsInFile => Size > 0 && !IsZeroFill;
+            public bool IsExecutable => (Flags & (S_ATTR_SOME_INSTRUCTIONS | S_ATTR_PURE_INSTRUCTIONS)) != 0;
 
             public bool IsDwarfSection { get; }
 
             public IList<MachRelocation> Relocations => relocationCollection ??= new List<MachRelocation>();
+
+            // Synthetic anchors are appended in strictly increasing section-relative order.
+            public List<RelocAnchor> RelocAnchors { get; } = new();
+            // Predecessor anchor index cached by GetRelocAnchorSymbolIndex; -1 represents the section symbol.
+            public int CachedRelocAnchorIndex { get; set; } = -1;
+
             public Stream Stream => dataStream;
             public byte SectionIndex { get; set; }
 
@@ -864,7 +1179,7 @@ namespace ILCompiler.ObjectWriter
 
         private sealed class MachSymbol
         {
-            public string Name { get; init; } = string.Empty;
+            public Utf8String Name { get; init; }
             public byte Type { get; init; }
             public MachSection Section { get; init; }
             public ushort Descriptor { get; init; }
@@ -989,7 +1304,7 @@ namespace ILCompiler.ObjectWriter
             public MachStringTable()
             {
                 // Always start the table with empty string
-                GetStringOffset("");
+                GetStringOffset(Utf8String.Empty);
             }
         }
     }

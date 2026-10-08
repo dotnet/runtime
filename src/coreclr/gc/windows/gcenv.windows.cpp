@@ -14,10 +14,16 @@
 #include "gcenv.windows.inl"
 #include "volatile.h"
 #include "gcconfig.h"
+#include <minipal/time.h>
 
 GCSystemInfo g_SystemInfo;
 
 static bool g_SeLockMemoryPrivilegeAcquired = false;
+
+// The cached total number of CPUs that can be used in the OS.
+uint32_t g_totalCpuCount = 0;
+
+static uint32_t g_maxProcessorCount = 0;
 
 static AffinitySet g_processAffinitySet;
 
@@ -500,6 +506,14 @@ void GetGroupForProcessor(uint16_t processor_number, uint16_t* group_number, uin
 //  true if it has succeeded, false if it has failed
 bool GCToOSInterface::Initialize()
 {
+    uint16_t maximumProcessorGroupCount = GetMaximumProcessorGroupCount();
+    if (maximumProcessorGroupCount == 0)
+    {
+        return false;
+    }
+
+    g_maxProcessorCount = static_cast<uint32_t>(maximumProcessorGroupCount) * 64;
+
     SYSTEM_INFO systemInfo;
     GetSystemInfo(&systemInfo);
 
@@ -511,6 +525,11 @@ bool GCToOSInterface::Initialize()
 
     InitNumaNodeInfo();
     InitCPUGroupInfo();
+
+    if (!g_processAffinitySet.Initialize(GCToOSInterface::GetMaxProcessorCount()))
+    {
+        return false;
+    }
 
     if (CanEnableGCCPUGroups())
     {
@@ -651,11 +670,10 @@ void GCToOSInterface::DebugBreak()
 //  sleepMSec   - time to sleep before switching to another thread
 void GCToOSInterface::Sleep(uint32_t sleepMSec)
 {
-    // TODO(segilles) CLR implementation of __SwitchToThread spins for short sleep durations
-    // to avoid context switches - is that interesting or useful here?
+    // TODO: Consider spinning for short sleep durations to avoid context switches.
     if (sleepMSec > 0)
     {
-        ::SleepEx(sleepMSec, FALSE);
+        minipal_sleep(sleepMSec);
     }
 }
 
@@ -910,7 +928,7 @@ const AffinitySet* GCToOSInterface::SetGCThreadsAffinitySet(uintptr_t configAffi
         if (!configAffinitySet->IsEmpty())
         {
             // Update the process affinity set using the configured set
-            for (size_t i = 0; i < MAX_SUPPORTED_CPUS; i++)
+            for (size_t i = 0; i < g_totalCpuCount; i++)
             {
                 if (g_processAffinitySet.Contains(i) && !configAffinitySet->Contains(i))
                 {
@@ -1058,56 +1076,29 @@ void GCToOSInterface::GetMemoryStatus(uint64_t restricted_limit, uint32_t* memor
     }
 }
 
-// Get a high precision performance counter
-// Return:
-//  The counter value
-int64_t GCToOSInterface::QueryPerformanceCounter()
-{
-    LARGE_INTEGER ts;
-    if (!::QueryPerformanceCounter(&ts))
-    {
-        assert(false && "Failed to query performance counter");
-    }
-
-    return ts.QuadPart;
-}
-
-// Get a frequency of the high precision performance counter
-// Return:
-//  The counter frequency
-int64_t GCToOSInterface::QueryPerformanceFrequency()
-{
-    LARGE_INTEGER ts;
-    if (!::QueryPerformanceFrequency(&ts))
-    {
-        assert(false && "Failed to query performance counter");
-    }
-
-    return ts.QuadPart;
-}
-
-// Get a time stamp with a low precision
-// Return:
-//  Time stamp in milliseconds
-uint64_t GCToOSInterface::GetLowPrecisionTimeStamp()
-{
-    return ::GetTickCount64();
-}
-
 // Gets the total number of processors on the machine, not taking
 // into account current process affinity.
 // Return:
 //  Number of processors on the machine
 uint32_t GCToOSInterface::GetTotalProcessorCount()
 {
+    if (g_totalCpuCount != 0)
+        return g_totalCpuCount;
     if (CanEnableGCCPUGroups())
     {
-        return g_nProcessors;
+        g_totalCpuCount = g_nProcessors;
     }
     else
     {
-        return g_SystemInfo.dwNumberOfProcessors;
+        g_totalCpuCount = g_SystemInfo.dwNumberOfProcessors;
     }
+    return g_totalCpuCount;
+}
+
+uint32_t GCToOSInterface::GetMaxProcessorCount()
+{
+    assert(g_maxProcessorCount != 0);
+    return g_maxProcessorCount;
 }
 
 bool GCToOSInterface::CanEnableGCNumaAware()
@@ -1180,13 +1171,13 @@ bool GCToOSInterface::GetProcessorForHeap(uint16_t heap_number, uint16_t* proc_n
     // Locate heap_number-th available processor
     uint16_t procIndex = 0;
     size_t cnt = heap_number;
-    for (uint16_t i = 0; i < MAX_SUPPORTED_CPUS; i++)
+    for (uint32_t i = 0; i < g_totalCpuCount; i++)
     {
         if (g_processAffinitySet.Contains(i))
         {
             if (cnt == 0)
             {
-                procIndex = i;
+                procIndex = (uint16_t)i;
                 success = true;
                 break;
             }
@@ -1402,24 +1393,6 @@ uint32_t GCEvent::Wait(uint32_t timeout, bool alertable)
 
 bool GCEvent::CreateAutoEventNoThrow(bool initialState)
 {
-    // [DESKTOP TODO] The difference between events and OS events is
-    // whether or not the hosting API is made aware of them. When (if)
-    // we implement hosting support for Local GC, we will need to be
-    // aware of the host here.
-    return CreateOSAutoEventNoThrow(initialState);
-}
-
-bool GCEvent::CreateManualEventNoThrow(bool initialState)
-{
-    // [DESKTOP TODO] The difference between events and OS events is
-    // whether or not the hosting API is made aware of them. When (if)
-    // we implement hosting support for Local GC, we will need to be
-    // aware of the host here.
-    return CreateOSManualEventNoThrow(initialState);
-}
-
-bool GCEvent::CreateOSAutoEventNoThrow(bool initialState)
-{
     assert(m_impl == nullptr);
     std::unique_ptr<GCEvent::Impl> event(new (std::nothrow) GCEvent::Impl());
     if (!event)
@@ -1436,7 +1409,7 @@ bool GCEvent::CreateOSAutoEventNoThrow(bool initialState)
     return true;
 }
 
-bool GCEvent::CreateOSManualEventNoThrow(bool initialState)
+bool GCEvent::CreateManualEventNoThrow(bool initialState)
 {
     assert(m_impl == nullptr);
     std::unique_ptr<GCEvent::Impl> event(new (std::nothrow) GCEvent::Impl());

@@ -1,0 +1,11 @@
+<linker>
+  <assembly fullname="test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+    <type fullname="Mono.Linker.Tests.Cases.TestFramework.VerifyLocalsAreChanged">
+      <method signature="Mono.Linker.Tests.Cases.TestFramework.VerifyLocalsAreChanged/NestedType TestMethod_1()" body="stub">
+      </method>
+
+      <method signature="Mono.Linker.Tests.Cases.TestFramework.VerifyLocalsAreChanged/NestedType TestMethod_2()" body="stub">
+      </method>
+    </type>
+  </assembly>
+</linker>

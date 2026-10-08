@@ -591,13 +591,13 @@ namespace System.Globalization.Tests
             yield return new object[] { "xn--de-jg4avhby1noc0d", 0, 21, "\u30D1\u30D5\u30A3\u30FC\u0064\u0065\u30EB\u30F3\u30D0" };
         }
 
-        [ConditionalFact(nameof(PredefinedCulturesOnlyIsDisabled))]
+        [ConditionalFact(typeof(InvariantModeTests), nameof(PredefinedCulturesOnlyIsDisabled))]
         public static void IcuShouldNotBeLoaded()
         {
             Assert.False(PlatformDetection.IsIcuGlobalization);
         }
 
-        [ConditionalTheory(nameof(PredefinedCulturesOnlyIsDisabled))]
+        [ConditionalTheory(typeof(InvariantModeTests), nameof(PredefinedCulturesOnlyIsDisabled))]
         [MemberData(nameof(Cultures_TestData))]
         public void TestCultureData(string cultureName)
         {
@@ -737,7 +737,7 @@ namespace System.Globalization.Tests
             Assert.Equal(cultureName, ci.CompareInfo.Name, StringComparer.OrdinalIgnoreCase);
         }
 
-        [ConditionalTheory(nameof(PredefinedCulturesOnlyIsDisabled))]
+        [ConditionalTheory(typeof(InvariantModeTests), nameof(PredefinedCulturesOnlyIsDisabled))]
         [MemberData(nameof(Cultures_TestData))]
         public void SetCultureData(string cultureName)
         {
@@ -753,13 +753,13 @@ namespace System.Globalization.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => ci.DateTimeFormat.Calendar = new TaiwanCalendar());
         }
 
-        [ConditionalFact(nameof(PredefinedCulturesOnlyIsDisabled))]
+        [ConditionalFact(typeof(InvariantModeTests), nameof(PredefinedCulturesOnlyIsDisabled))]
         public void TestEnum()
         {
             Assert.Equal(new CultureInfo[1] { CultureInfo.InvariantCulture }, CultureInfo.GetCultures(CultureTypes.AllCultures));
         }
 
-        [ConditionalTheory(nameof(PredefinedCulturesOnlyIsDisabled))]
+        [ConditionalTheory(typeof(InvariantModeTests), nameof(PredefinedCulturesOnlyIsDisabled))]
         [MemberData(nameof(Cultures_TestData))]
         public void TestSortVersion(string cultureName)
         {
@@ -771,7 +771,7 @@ namespace System.Globalization.Tests
             Assert.Equal(version, new CultureInfo(cultureName).CompareInfo.Version);
         }
 
-        [ConditionalTheory(nameof(PredefinedCulturesOnlyIsDisabled))]
+        [ConditionalTheory(typeof(InvariantModeTests), nameof(PredefinedCulturesOnlyIsDisabled))]
         [InlineData(0, 0)]
         [InlineData(1, 2)]
         [InlineData(100_000, 200_000)]
@@ -784,7 +784,7 @@ namespace System.Globalization.Tests
             Assert.Equal(expectedSortKeyLength, CultureInfo.InvariantCulture.CompareInfo.GetSortKeyLength(dummySpan));
         }
 
-        [ConditionalTheory(nameof(PredefinedCulturesOnlyIsDisabled))]
+        [ConditionalTheory(typeof(InvariantModeTests), nameof(PredefinedCulturesOnlyIsDisabled))]
         [InlineData(0x4000_0000)]
         [InlineData(int.MaxValue)]
         public unsafe void TestGetSortKeyLength_OverlongArgument(int inputLength)
@@ -799,7 +799,7 @@ namespace System.Globalization.Tests
             });
         }
 
-        [ConditionalTheory(nameof(PredefinedCulturesOnlyIsDisabled))]
+        [ConditionalTheory(typeof(InvariantModeTests), nameof(PredefinedCulturesOnlyIsDisabled))]
         [InlineData("Hello", CompareOptions.None, "Hello")]
         [InlineData("Hello", CompareOptions.IgnoreWidth, "Hello")]
         [InlineData("Hello", CompareOptions.IgnoreCase, "HELLO")]
@@ -843,7 +843,7 @@ namespace System.Globalization.Tests
             }
         }
 
-        [ConditionalFact(nameof(PredefinedCulturesOnlyIsDisabled))]
+        [ConditionalFact(typeof(InvariantModeTests), nameof(PredefinedCulturesOnlyIsDisabled))]
         public void TestSortKey_ZeroWeightCodePoints()
         {
             // In the invariant globalization mode, there's no such thing as a zero-weight code point,
@@ -855,7 +855,7 @@ namespace System.Globalization.Tests
             Assert.NotEqual(0, SortKey.Compare(sortKeyForEmptyString, sortKeyForZeroWidthJoiner));
         }
 
-        [ConditionalTheory(nameof(PredefinedCulturesOnlyIsDisabled))]
+        [ConditionalTheory(typeof(InvariantModeTests), nameof(PredefinedCulturesOnlyIsDisabled))]
         [InlineData("", "", 0)]
         [InlineData("", "not-empty", -1)]
         [InlineData("not-empty", "", 1)]
@@ -896,7 +896,7 @@ namespace System.Globalization.Tests
             return sc;
         }
 
-        [ConditionalTheory(nameof(PredefinedCulturesOnlyIsDisabled))]
+        [ConditionalTheory(typeof(InvariantModeTests), nameof(PredefinedCulturesOnlyIsDisabled))]
         [MemberData(nameof(IndexOf_TestData))]
         public void TestIndexOf(string source, string value, int startIndex, int count, CompareOptions options, int result)
         {
@@ -943,7 +943,7 @@ namespace System.Globalization.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PredefinedCulturesOnlyIsDisabled))]
+        [ConditionalTheory(typeof(InvariantModeTests), nameof(PredefinedCulturesOnlyIsDisabled))]
         [MemberData(nameof(LastIndexOf_TestData))]
         public void TestLastIndexOf(string source, string value, int startIndex, int count, CompareOptions options, int result)
         {
@@ -1003,7 +1003,7 @@ namespace System.Globalization.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PredefinedCulturesOnlyIsDisabled))]
+        [ConditionalTheory(typeof(InvariantModeTests), nameof(PredefinedCulturesOnlyIsDisabled))]
         [MemberData(nameof(IsPrefix_TestData))]
         public void TestIsPrefix(string source, string value, CompareOptions options, bool result)
         {
@@ -1038,7 +1038,7 @@ namespace System.Globalization.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PredefinedCulturesOnlyIsDisabled))]
+        [ConditionalTheory(typeof(InvariantModeTests), nameof(PredefinedCulturesOnlyIsDisabled))]
         [MemberData(nameof(IsSuffix_TestData))]
         public void TestIsSuffix(string source, string value, CompareOptions options, bool result)
         {
@@ -1073,7 +1073,7 @@ namespace System.Globalization.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PredefinedCulturesOnlyIsDisabled))]
+        [ConditionalTheory(typeof(InvariantModeTests), nameof(PredefinedCulturesOnlyIsDisabled))]
         [InlineData("", false)]
         [InlineData('x', true)]
         [InlineData('\ud800', true)] // standalone high surrogate
@@ -1090,7 +1090,7 @@ namespace System.Globalization.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PredefinedCulturesOnlyIsDisabled))]
+        [ConditionalTheory(typeof(InvariantModeTests), nameof(PredefinedCulturesOnlyIsDisabled))]
         [MemberData(nameof(Compare_TestData))]
         public void TestCompare(string source, string value, CompareOptions options, int result)
         {
@@ -1121,7 +1121,7 @@ namespace System.Globalization.Tests
         }
 
 
-        [ConditionalTheory(nameof(PredefinedCulturesOnlyIsDisabled))]
+        [ConditionalTheory(typeof(InvariantModeTests), nameof(PredefinedCulturesOnlyIsDisabled))]
         [MemberData(nameof(ToLower_TestData))]
         public void TestToLower(string upper, string lower, bool result)
         {
@@ -1132,7 +1132,7 @@ namespace System.Globalization.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PredefinedCulturesOnlyIsDisabled))]
+        [ConditionalTheory(typeof(InvariantModeTests), nameof(PredefinedCulturesOnlyIsDisabled))]
         [MemberData(nameof(ToUpper_TestData))]
         public void TestToUpper(string lower, string upper, bool result)
         {
@@ -1143,7 +1143,7 @@ namespace System.Globalization.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PredefinedCulturesOnlyIsDisabled))]
+        [ConditionalTheory(typeof(InvariantModeTests), nameof(PredefinedCulturesOnlyIsDisabled))]
         [InlineData("", NormalizationForm.FormC)]
         [InlineData("\uFB01", NormalizationForm.FormC)]
         [InlineData("\uFB01", NormalizationForm.FormD)]
@@ -1165,7 +1165,7 @@ namespace System.Globalization.Tests
             Assert.Equal(s, s.Normalize(form));
         }
 
-        [ConditionalTheory(nameof(PredefinedCulturesOnlyIsDisabled))]
+        [ConditionalTheory(typeof(InvariantModeTests), nameof(PredefinedCulturesOnlyIsDisabled))]
         [MemberData(nameof(GetAscii_TestData))]
         public void GetAscii(string unicode, int index, int count, string expected)
         {
@@ -1180,7 +1180,7 @@ namespace System.Globalization.Tests
             Assert.Equal(expected, new IdnMapping().GetAscii(unicode, index, count));
         }
 
-        [ConditionalTheory(nameof(PredefinedCulturesOnlyIsDisabled))]
+        [ConditionalTheory(typeof(InvariantModeTests), nameof(PredefinedCulturesOnlyIsDisabled))]
         [MemberData(nameof(GetUnicode_TestData))]
         public void GetUnicode(string ascii, int index, int count, string expected)
         {
@@ -1195,7 +1195,7 @@ namespace System.Globalization.Tests
             Assert.Equal(expected, new IdnMapping().GetUnicode(ascii, index, count));
         }
 
-        [ConditionalFact(nameof(PredefinedCulturesOnlyIsDisabled))]
+        [ConditionalFact(typeof(InvariantModeTests), nameof(PredefinedCulturesOnlyIsDisabled))]
         public void TestHashing()
         {
             StringComparer cultureComparer = StringComparer.Create(CultureInfo.GetCultureInfo("tr-TR"), true);
@@ -1204,7 +1204,7 @@ namespace System.Globalization.Tests
             Assert.Equal(ordinalComparer.GetHashCode(turkishString), cultureComparer.GetHashCode(turkishString));
         }
 
-        [ConditionalTheory(nameof(PredefinedCulturesOnlyIsDisabled))]
+        [ConditionalTheory(typeof(InvariantModeTests), nameof(PredefinedCulturesOnlyIsDisabled))]
         [InlineData('a', 'A', 'a')]
         [InlineData('A', 'A', 'a')]
         [InlineData('i', 'I', 'i')] // to verify that we don't special-case the Turkish I in the invariant globalization mode
@@ -1224,13 +1224,13 @@ namespace System.Globalization.Tests
             Assert.Equal(expectedToLower, Rune.ToLower(originalRune, CultureInfo.GetCultureInfo("tr-TR")).Value);
         }
 
-        [ConditionalFact(nameof(PredefinedCulturesOnlyIsDisabled))]
+        [ConditionalFact(typeof(InvariantModeTests), nameof(PredefinedCulturesOnlyIsDisabled))]
         public void TestGetCultureInfo_PredefinedOnly_ReturnsSame()
         {
             Assert.Equal(CultureInfo.GetCultureInfo("en-US"), CultureInfo.GetCultureInfo("en-US", predefinedOnly: true));
         }
 
-        [ConditionalTheory(nameof(PredefinedCulturesOnlyIsDisabled))]
+        [ConditionalTheory(typeof(InvariantModeTests), nameof(PredefinedCulturesOnlyIsDisabled))]
         [InlineData(0x0001)]
         [InlineData(0x7c5C)]
         [InlineData(0x03_0404)] // with sort id

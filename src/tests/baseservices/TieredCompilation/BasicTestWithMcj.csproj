@@ -11,9 +11,18 @@
     <Optimize>true</Optimize>
     <!-- Generated shell script and corresponding assembly have different names -->
     <CLRTestTargetUnsupported Condition="'$(TargetOS)' == 'android'">true</CLRTestTargetUnsupported>
+
+    <!-- This test is very specific to MCJ tooling in CoreCLR. -->
+    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' != 'coreclr'">true</CLRTestTargetUnsupported>
+
+    <!-- No crossgen folder under Core_Root -->
+     <NativeAotIncompatible>true</NativeAotIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="BasicTestWithMcj.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
   </ItemGroup>
   <ItemGroup>
     <None Include="RunBasicTestWithMcj.cmd">

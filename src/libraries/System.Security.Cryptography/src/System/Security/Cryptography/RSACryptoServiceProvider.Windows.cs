@@ -259,22 +259,11 @@ namespace System.Security.Cryptography
         /// <param name="rgb">encrypted data</param>
         /// <param name="fOAEP">true to use OAEP padding (PKCS #1 v2), false to use PKCS #1 type 2 padding</param>
         /// <returns>decrypted data</returns>
+        [Obsolete(Obsoletions.RSACspEncryptDecryptMessage, DiagnosticId = Obsoletions.RSACspEncryptDecryptDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public byte[] Decrypt(byte[] rgb, bool fOAEP)
         {
             ArgumentNullException.ThrowIfNull(rgb);
-
-            // Save the KeySize value to a local because it has non-trivial cost.
-            int keySize = KeySize;
-
-            // size check -- must be exactly the modulus size
-            if (rgb.Length != (keySize / 8))
-            {
-                throw new CryptographicException(SR.Cryptography_RSA_DecryptWrongSize);
-            }
-
-            byte[] decryptedKey;
-            CapiHelper.DecryptKey(SafeKeyHandle, rgb, rgb.Length, fOAEP, out decryptedKey);
-            return decryptedKey;
+            return Decrypt(rgb, fOAEP ? RSAEncryptionPadding.OaepSHA1 : RSAEncryptionPadding.Pkcs1);
         }
 
         /// <summary>
@@ -316,26 +305,11 @@ namespace System.Security.Cryptography
         /// <param name="rgb">raw data to encrypt</param>
         /// <param name="fOAEP">true to use OAEP padding (PKCS #1 v2), false to use PKCS #1 type 2 padding</param>
         /// <returns>Encrypted key</returns>
+        [Obsolete(Obsoletions.RSACspEncryptDecryptMessage, DiagnosticId = Obsoletions.RSACspEncryptDecryptDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public byte[] Encrypt(byte[] rgb, bool fOAEP)
         {
             ArgumentNullException.ThrowIfNull(rgb);
-
-            if (fOAEP)
-            {
-                int rsaSize = GetMaxOutputSize();
-                const int OaepSha1Overhead = 20 + 20 + 2;
-
-                // Normalize the Windows 7 and Windows 8.1+ exception
-                if (rsaSize - OaepSha1Overhead < rgb.Length)
-                {
-                    const int NTE_BAD_LENGTH = unchecked((int)0x80090004);
-                    throw NTE_BAD_LENGTH.ToCryptographicException();
-                }
-            }
-
-            byte[]? encryptedKey = null;
-            CapiHelper.EncryptKey(SafeKeyHandle, rgb, rgb.Length, fOAEP, ref encryptedKey);
-            return encryptedKey;
+            return Encrypt(rgb, fOAEP ? RSAEncryptionPadding.OaepSHA1 : RSAEncryptionPadding.Pkcs1);
         }
 
         /// <summary>
@@ -591,18 +565,34 @@ namespace System.Security.Cryptography
             ArgumentNullException.ThrowIfNull(data);
             ArgumentNullException.ThrowIfNull(padding);
 
+            bool fOAEP;
+
             if (padding == RSAEncryptionPadding.Pkcs1)
             {
-                return Encrypt(data, fOAEP: false);
+                fOAEP = false;
             }
             else if (padding == RSAEncryptionPadding.OaepSHA1)
             {
-                return Encrypt(data, fOAEP: true);
+                fOAEP = true;
+
+                int rsaSize = GetMaxOutputSize();
+                const int OaepSha1Overhead = 20 + 20 + 2;
+
+                // Normalize the Windows 7 and Windows 8.1+ exception
+                if (rsaSize - OaepSha1Overhead < data.Length)
+                {
+                    const int NTE_BAD_LENGTH = unchecked((int)0x80090004);
+                    throw NTE_BAD_LENGTH.ToCryptographicException();
+                }
             }
             else
             {
                 throw PaddingModeNotSupported();
             }
+
+            byte[]? encryptedKey = null;
+            CapiHelper.EncryptKey(SafeKeyHandle, data, data.Length, fOAEP, ref encryptedKey);
+            return encryptedKey;
         }
 
         public override byte[] Decrypt(byte[] data, RSAEncryptionPadding padding)
@@ -610,18 +600,33 @@ namespace System.Security.Cryptography
             ArgumentNullException.ThrowIfNull(data);
             ArgumentNullException.ThrowIfNull(padding);
 
+            bool fOAEP;
+
             if (padding == RSAEncryptionPadding.Pkcs1)
             {
-                return Decrypt(data, fOAEP: false);
+                fOAEP = false;
             }
             else if (padding == RSAEncryptionPadding.OaepSHA1)
             {
-                return Decrypt(data, fOAEP: true);
+                fOAEP = true;
             }
             else
             {
                 throw PaddingModeNotSupported();
             }
+
+            // Save the KeySize value to a local because it has non-trivial cost.
+            int keySize = KeySize;
+
+            // size check -- must be exactly the modulus size
+            if (data.Length != (keySize / 8))
+            {
+                throw new CryptographicException(SR.Cryptography_RSA_DecryptWrongSize);
+            }
+
+            byte[] decryptedKey;
+            CapiHelper.DecryptKey(SafeKeyHandle, data, data.Length, fOAEP, out decryptedKey);
+            return decryptedKey;
         }
 
         public override byte[] SignHash(

@@ -36,7 +36,6 @@ typedef int (*ds_job_cb)(void* data);
 
 void SystemInteropJS_BindAssemblyExports (char *assembly_name);
 void SystemInteropJS_AssemblyGetEntryPoint (char *assembly_name, int auto_insert_breakpoint, MonoMethod **method_out);
-void SystemInteropJS_GetAssemblyExport (char *assembly_name, char *namespace, char *classname, char *methodname, int signature_hash, MonoMethod **method_out);
 
 #ifndef DISABLE_THREADS
 void SystemInteropJS_ReleaseCSOwnedObjectPost (pthread_t target_tid, int js_handle);
@@ -91,7 +90,6 @@ void bindings_initialize_internals (void)
 	mono_add_internal_call ("Interop/Runtime::CancelPromise", SystemInteropJS_CancelPromise);
 	mono_add_internal_call ("Interop/Runtime::AssemblyGetEntryPoint", SystemInteropJS_AssemblyGetEntryPoint);
 	mono_add_internal_call ("Interop/Runtime::BindAssemblyExports", SystemInteropJS_BindAssemblyExports);
-	mono_add_internal_call ("Interop/Runtime::GetAssemblyExport", SystemInteropJS_GetAssemblyExport);
 	mono_add_internal_call ("System.ConsolePal::Clear", SystemJS_ConsoleClear);
 
 	// JS-based globalization
@@ -213,38 +211,6 @@ void SystemInteropJS_BindAssemblyExports (char *assembly_name)
 	else if (!mono_runtime_run_module_cctor(image, &error)) {
 		//g_print ("Failed to run module constructor due to %s\n", mono_error_get_message (error));
 	}
-}
-
-void SystemInteropJS_GetAssemblyExport (char *assembly_name, char *namespace, char *classname, char *methodname, int signature_hash, MonoMethod **method_out)
-{
-	MonoError error;
-	MonoAssembly* assembly;
-	MonoImage *image;
-	MonoClass *klass;
-	MonoMethod *method=NULL;
-    char real_method_name_buffer[4096];
-	*method_out = NULL;
-
-	assert (assembly_name);
-	assembly = _mono_wasm_assembly_load (assembly_name);
-	assert (assembly);
-	image = mono_assembly_get_image (assembly);
-	assert (image);
-
-	klass = mono_class_from_name (image, namespace, classname);
-	assert (klass);
-
-    snprintf(real_method_name_buffer, 4096, "__Wrapper_%s_%d", methodname, signature_hash);
-
-	method = mono_class_get_method_from_name (klass, real_method_name_buffer, -1);
-	assert (method);
-
-	*method_out = method;
-    // This is freed by _mono_wasm_assembly_load for some reason
-    // free (assembly_name);
-	free (namespace);
-	free (classname);
-	free (methodname);
 }
 
 #ifndef DISABLE_THREADS

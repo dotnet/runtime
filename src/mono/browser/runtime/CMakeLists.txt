@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.26)
 
 project(mono-wasm-runtime C)
 
@@ -22,7 +22,7 @@ target_link_libraries(dotnet.native
     ${MONO_ARTIFACTS_DIR}/libmono-ee-interp.a
     ${MONO_ARTIFACTS_DIR}/libmonosgen-2.0.a
     ${MONO_ARTIFACTS_DIR}/libmono-icall-table.a
-    ${MONO_ARTIFACTS_DIR}/libmono-wasm-eh-js.a
+    ${MONO_ARTIFACTS_DIR}/libmono-wasm-${CONFIGURATION_EH_LIB}.a
     ${MONO_ARTIFACTS_DIR}/libmono-wasm-${CONFIGURATION_INTERPSIMDTABLES_LIB}.a
     ${NATIVE_BIN_DIR}/libSystem.Native.a
     ${NATIVE_BIN_DIR}/libSystem.Native.TimeZoneData.a
@@ -44,7 +44,7 @@ set(ignoreMeEmsdkPath "${EMSDK_PATH}")
 
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
     add_custom_command(TARGET dotnet.native
-                        POST_BUILD COMMAND ${EMSDK_PATH}/bin/wasm-opt --enable-exception-handling --enable-simd --enable-bulk-memory ${CONFIGURATION_WASM_OPT_FLAGS} --strip-dwarf ${NATIVE_BIN_DIR}/dotnet.native.wasm -o ${NATIVE_BIN_DIR}/dotnet.native.wasm
+                        POST_BUILD COMMAND ${EMSDK_PATH}/bin/wasm-opt --enable-exception-handling --enable-reference-types --enable-multivalue --enable-simd --enable-bulk-memory --enable-nontrapping-float-to-int ${CONFIGURATION_WASM_OPT_FLAGS} --strip-dwarf ${NATIVE_BIN_DIR}/dotnet.native.wasm -o ${NATIVE_BIN_DIR}/dotnet.native.wasm
                         COMMENT "Stripping debug symbols from dotnet.native.wasm using wasm-opt")
 endif()
 

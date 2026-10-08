@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Security.Cryptography.Pkcs;
 using System.Security.Cryptography.SLHDsa.Tests;
 using System.Security.Cryptography.Tests;
 using Test.Cryptography;
@@ -824,6 +825,228 @@ MII
                 X509Certificate2.CreateFromPem(certContents));
         }
 
+        [Theory]
+        [InlineData(X509KeyUsageFlags.CrlSign)]
+        [InlineData(X509KeyUsageFlags.KeyCertSign)]
+        [InlineData(X509KeyUsageFlags.DigitalSignature)]
+        public static void CreateFromPem_CanImportECCAnyPublicKeyWithSigningKeyUsage(X509KeyUsageFlags flags)
+        {
+            const string PrivateKey =
+                """
+                -----BEGIN PRIVATE KEY-----
+                MIGTAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBHkwdwIBAQQghew4zS1/h2J+PJLX
+                SY2U8qo0pBbNaFXm5f3GzsTCIxigCgYIKoZIzj0DAQehRANCAAT83cB14Y8zLLxo
+                bliw/JsBoy7oyKD0zVMgRbieDBZEn/5UpHv2Xv6W0dE3mEG6goF3s8GT+pf4JUT2
+                EfthzGhn
+                -----END PRIVATE KEY-----
+                """;
+
+            const string AnyKeyUsageCertificate =
+                """
+                -----BEGIN CERTIFICATE-----
+                MIIBITCBx6ADAgECAgkA1dyp2OqNXw0wCgYIKoZIzj0EAwIwFjEUMBIGA1UEAxML
+                ZXhhbXBsZS5jb20wHhcNMjYwMTA2MTg1ODUxWhcNMjcwMTA2MTg1ODUxWjAWMRQw
+                EgYDVQQDEwtleGFtcGxlLmNvbTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABPzd
+                wHXhjzMsvGhuWLD8mwGjLujIoPTNUyBFuJ4MFkSf/lSke/Ze/pbR0TeYQbqCgXez
+                wZP6l/glRPYR+2HMaGcwCgYIKoZIzj0EAwIDSQAwRgIhAPxduNwHwIafwVcfegnp
+                ocZs707jXBeVg1oxCZz5HwMeAiEAoFbL7kOyha8n0g2kkVaXNa0lWD62FZ1Jl+m9
+                bFYUxF4=
+                -----END CERTIFICATE-----
+                """;
+
+            string privateKeyWithSigningKeyUsage = AddKeyUsageAttributeToPkcs8Key(PrivateKey, flags);
+            using X509Certificate2 cert = X509Certificate2.CreateFromPem(AnyKeyUsageCertificate, privateKeyWithSigningKeyUsage);
+            AssertKeysMatch(privateKeyWithSigningKeyUsage, cert.GetECDsaPrivateKey);
+        }
+
+        [Theory]
+        [InlineData(X509KeyUsageFlags.CrlSign | X509KeyUsageFlags.KeyAgreement)]
+        [InlineData(X509KeyUsageFlags.KeyCertSign | X509KeyUsageFlags.KeyAgreement)]
+        [InlineData(X509KeyUsageFlags.DigitalSignature | X509KeyUsageFlags.KeyAgreement)]
+        public static void CreateFromPem_CanImportECCAnyPublicKeyWithMixedKeyUsage(X509KeyUsageFlags flags)
+        {
+            const string PrivateKey =
+                """
+                -----BEGIN PRIVATE KEY-----
+                MIGTAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBHkwdwIBAQQghew4zS1/h2J+PJLX
+                SY2U8qo0pBbNaFXm5f3GzsTCIxigCgYIKoZIzj0DAQehRANCAAT83cB14Y8zLLxo
+                bliw/JsBoy7oyKD0zVMgRbieDBZEn/5UpHv2Xv6W0dE3mEG6goF3s8GT+pf4JUT2
+                EfthzGhn
+                -----END PRIVATE KEY-----
+                """;
+
+            const string AnyKeyUsageCertificate =
+                """
+                -----BEGIN CERTIFICATE-----
+                MIIBITCBx6ADAgECAgkA1dyp2OqNXw0wCgYIKoZIzj0EAwIwFjEUMBIGA1UEAxML
+                ZXhhbXBsZS5jb20wHhcNMjYwMTA2MTg1ODUxWhcNMjcwMTA2MTg1ODUxWjAWMRQw
+                EgYDVQQDEwtleGFtcGxlLmNvbTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABPzd
+                wHXhjzMsvGhuWLD8mwGjLujIoPTNUyBFuJ4MFkSf/lSke/Ze/pbR0TeYQbqCgXez
+                wZP6l/glRPYR+2HMaGcwCgYIKoZIzj0EAwIDSQAwRgIhAPxduNwHwIafwVcfegnp
+                ocZs707jXBeVg1oxCZz5HwMeAiEAoFbL7kOyha8n0g2kkVaXNa0lWD62FZ1Jl+m9
+                bFYUxF4=
+                -----END CERTIFICATE-----
+                """;
+
+            string privateKeyWithSigningKeyUsage = AddKeyUsageAttributeToPkcs8Key(PrivateKey, flags);
+            using X509Certificate2 cert = X509Certificate2.CreateFromPem(AnyKeyUsageCertificate, privateKeyWithSigningKeyUsage);
+            AssertKeysMatch(privateKeyWithSigningKeyUsage, cert.GetECDsaPrivateKey);
+            AssertKeysMatch(privateKeyWithSigningKeyUsage, cert.GetECDiffieHellmanPrivateKey);
+        }
+
+        [Theory]
+        [InlineData(X509KeyUsageFlags.CrlSign)]
+        [InlineData(X509KeyUsageFlags.KeyCertSign)]
+        [InlineData(X509KeyUsageFlags.DigitalSignature)]
+        public static void CreateFromEncryptedPem_CanImportECCAnyPublicKeyWithSigningKeyUsage(X509KeyUsageFlags flags)
+        {
+            const string Password = "PLACEHOLDER";
+            const string PrivateKey =
+                """
+                -----BEGIN ENCRYPTED PRIVATE KEY-----
+                MIHAMCMGCiqGSIb3DQEMAQMwFQQQ2yoyxTdfjrkU0Qyc3IYVywIBAQSBmPQJanYv
+                mAH35aWV39G4/yDdbSZHZbPsmoEq3waW+yB7a0LykybjfJlMhGYJks3gZN6N21NR
+                XpnByhtPBTXzrzjxnLv/DAwZIpNuYOOkTmRKDpVsjBsHUF3Gw2b5h0YU2I4cUl2p
+                BXh95HPB2tUNrDiHd3Zya6OnGG+fg7Ya35XIyWTJ1ODnhkVc2SVkXk7Lgku3I3gq
+                CJuz
+                -----END ENCRYPTED PRIVATE KEY-----
+                """;
+
+            const string AnyKeyUsageCertificate =
+                """
+                -----BEGIN CERTIFICATE-----
+                MIIBHzCBxqADAgECAghjN3R7a8h36TAKBggqhkjOPQQDAjAWMRQwEgYDVQQDEwtl
+                eGFtcGxlLmNvbTAeFw0yNjAxMDcxODExMzFaFw0yNzAxMDcxODExMzFaMBYxFDAS
+                BgNVBAMTC2V4YW1wbGUuY29tMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEeybq
+                p51w8CAD3rKIi/cKx6JKTR9Z7dGzt53gPpCS6fpqDJMC4revxduxoZ60MhZWFESL
+                rq3coMOQVWjZAAz8rjAKBggqhkjOPQQDAgNIADBFAiBm07dRWT23lsfefred+Kzh
+                ZO9CxVEnV0nBQPkJH8GlrAIhAMnIN8RgUmGeXHNdq4yBoLlEaQcVzMquERBkZ0AG
+                dmo9
+                -----END CERTIFICATE-----
+                """;
+
+            string privateKeyWithSigningKeyUsage = AddKeyUsageAttributeToPkcs8Key(PrivateKey, flags, Password);
+            using X509Certificate2 cert = X509Certificate2.CreateFromEncryptedPem(
+                AnyKeyUsageCertificate,
+                privateKeyWithSigningKeyUsage,
+                Password);
+
+            AssertKeysMatch(privateKeyWithSigningKeyUsage, cert.GetECDsaPrivateKey, Password);
+        }
+
+        [Theory]
+        [InlineData(X509KeyUsageFlags.CrlSign | X509KeyUsageFlags.KeyAgreement)]
+        [InlineData(X509KeyUsageFlags.KeyCertSign | X509KeyUsageFlags.KeyAgreement)]
+        [InlineData(X509KeyUsageFlags.DigitalSignature | X509KeyUsageFlags.KeyAgreement)]
+        public static void CreateFromEncryptedPem_CanImportECCAnyPublicKeyWithMixedKeyUsage(X509KeyUsageFlags flags)
+        {
+            const string Password = "PLACEHOLDER";
+            const string PrivateKey =
+                """
+                -----BEGIN ENCRYPTED PRIVATE KEY-----
+                MIHAMCMGCiqGSIb3DQEMAQMwFQQQ2yoyxTdfjrkU0Qyc3IYVywIBAQSBmPQJanYv
+                mAH35aWV39G4/yDdbSZHZbPsmoEq3waW+yB7a0LykybjfJlMhGYJks3gZN6N21NR
+                XpnByhtPBTXzrzjxnLv/DAwZIpNuYOOkTmRKDpVsjBsHUF3Gw2b5h0YU2I4cUl2p
+                BXh95HPB2tUNrDiHd3Zya6OnGG+fg7Ya35XIyWTJ1ODnhkVc2SVkXk7Lgku3I3gq
+                CJuz
+                -----END ENCRYPTED PRIVATE KEY-----
+                """;
+
+            const string AnyKeyUsageCertificate =
+                """
+                -----BEGIN CERTIFICATE-----
+                MIIBHzCBxqADAgECAghjN3R7a8h36TAKBggqhkjOPQQDAjAWMRQwEgYDVQQDEwtl
+                eGFtcGxlLmNvbTAeFw0yNjAxMDcxODExMzFaFw0yNzAxMDcxODExMzFaMBYxFDAS
+                BgNVBAMTC2V4YW1wbGUuY29tMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEeybq
+                p51w8CAD3rKIi/cKx6JKTR9Z7dGzt53gPpCS6fpqDJMC4revxduxoZ60MhZWFESL
+                rq3coMOQVWjZAAz8rjAKBggqhkjOPQQDAgNIADBFAiBm07dRWT23lsfefred+Kzh
+                ZO9CxVEnV0nBQPkJH8GlrAIhAMnIN8RgUmGeXHNdq4yBoLlEaQcVzMquERBkZ0AG
+                dmo9
+                -----END CERTIFICATE-----
+                """;
+
+            string privateKeyWithSigningKeyUsage = AddKeyUsageAttributeToPkcs8Key(PrivateKey, flags, Password);
+            using X509Certificate2 cert = X509Certificate2.CreateFromEncryptedPem(
+                AnyKeyUsageCertificate,
+                privateKeyWithSigningKeyUsage,
+                Password);
+
+            AssertKeysMatch(privateKeyWithSigningKeyUsage, cert.GetECDsaPrivateKey, Password);
+            AssertKeysMatch(privateKeyWithSigningKeyUsage, cert.GetECDiffieHellmanPrivateKey, Password);
+        }
+
+        [Fact]
+        public static void CreateFromPem_CanImportECCAnyPublicKeyWithKeyAgreementUsage()
+        {
+            const string PrivateKey =
+                """
+                -----BEGIN PRIVATE KEY-----
+                MIGTAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBHkwdwIBAQQghew4zS1/h2J+PJLX
+                SY2U8qo0pBbNaFXm5f3GzsTCIxigCgYIKoZIzj0DAQehRANCAAT83cB14Y8zLLxo
+                bliw/JsBoy7oyKD0zVMgRbieDBZEn/5UpHv2Xv6W0dE3mEG6goF3s8GT+pf4JUT2
+                EfthzGhn
+                -----END PRIVATE KEY-----
+                """;
+
+            const string AnyKeyUsageCertificate =
+                """
+                -----BEGIN CERTIFICATE-----
+                MIIBITCBx6ADAgECAgkA1dyp2OqNXw0wCgYIKoZIzj0EAwIwFjEUMBIGA1UEAxML
+                ZXhhbXBsZS5jb20wHhcNMjYwMTA2MTg1ODUxWhcNMjcwMTA2MTg1ODUxWjAWMRQw
+                EgYDVQQDEwtleGFtcGxlLmNvbTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABPzd
+                wHXhjzMsvGhuWLD8mwGjLujIoPTNUyBFuJ4MFkSf/lSke/Ze/pbR0TeYQbqCgXez
+                wZP6l/glRPYR+2HMaGcwCgYIKoZIzj0EAwIDSQAwRgIhAPxduNwHwIafwVcfegnp
+                ocZs707jXBeVg1oxCZz5HwMeAiEAoFbL7kOyha8n0g2kkVaXNa0lWD62FZ1Jl+m9
+                bFYUxF4=
+                -----END CERTIFICATE-----
+                """;
+
+            string privateKeyWithAgreementKeyUsage = AddKeyUsageAttributeToPkcs8Key(PrivateKey, X509KeyUsageFlags.KeyAgreement);
+            using X509Certificate2 cert = X509Certificate2.CreateFromPem(AnyKeyUsageCertificate, privateKeyWithAgreementKeyUsage);
+            AssertKeysMatch(privateKeyWithAgreementKeyUsage, cert.GetECDiffieHellmanPrivateKey);
+        }
+
+        [Fact]
+        public static void CreateFromEncryptedPem_CanImportECCAnyPublicKeyWithKeyAgreementKeyUsage()
+        {
+            const string Password = "PLACEHOLDER";
+            const string PrivateKey =
+                """
+                -----BEGIN ENCRYPTED PRIVATE KEY-----
+                MIHAMCMGCiqGSIb3DQEMAQMwFQQQ2yoyxTdfjrkU0Qyc3IYVywIBAQSBmPQJanYv
+                mAH35aWV39G4/yDdbSZHZbPsmoEq3waW+yB7a0LykybjfJlMhGYJks3gZN6N21NR
+                XpnByhtPBTXzrzjxnLv/DAwZIpNuYOOkTmRKDpVsjBsHUF3Gw2b5h0YU2I4cUl2p
+                BXh95HPB2tUNrDiHd3Zya6OnGG+fg7Ya35XIyWTJ1ODnhkVc2SVkXk7Lgku3I3gq
+                CJuz
+                -----END ENCRYPTED PRIVATE KEY-----
+                """;
+
+            const string AnyKeyUsageCertificate =
+                """
+                -----BEGIN CERTIFICATE-----
+                MIIBHzCBxqADAgECAghjN3R7a8h36TAKBggqhkjOPQQDAjAWMRQwEgYDVQQDEwtl
+                eGFtcGxlLmNvbTAeFw0yNjAxMDcxODExMzFaFw0yNzAxMDcxODExMzFaMBYxFDAS
+                BgNVBAMTC2V4YW1wbGUuY29tMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEeybq
+                p51w8CAD3rKIi/cKx6JKTR9Z7dGzt53gPpCS6fpqDJMC4revxduxoZ60MhZWFESL
+                rq3coMOQVWjZAAz8rjAKBggqhkjOPQQDAgNIADBFAiBm07dRWT23lsfefred+Kzh
+                ZO9CxVEnV0nBQPkJH8GlrAIhAMnIN8RgUmGeXHNdq4yBoLlEaQcVzMquERBkZ0AG
+                dmo9
+                -----END CERTIFICATE-----
+                """;
+
+            string privateKeyWithAgreementKeyUsage = AddKeyUsageAttributeToPkcs8Key(
+                PrivateKey,
+                X509KeyUsageFlags.KeyAgreement,
+                Password);
+
+            using X509Certificate2 cert = X509Certificate2.CreateFromEncryptedPem(
+                AnyKeyUsageCertificate,
+                privateKeyWithAgreementKeyUsage,
+                Password);
+
+            AssertKeysMatch(privateKeyWithAgreementKeyUsage, cert.GetECDiffieHellmanPrivateKey, Password);
+        }
+
         private static void AssertKeysMatch<T>(string keyPem, Func<T> keyLoader, string password = null) where T : IDisposable
         {
             IDisposable key = keyLoader();
@@ -890,7 +1113,8 @@ MII
                         Assert.True(dsaPem.VerifyData(data, dsaSignature, HashAlgorithmName.SHA1));
                         break;
                     case (ECDiffieHellman ecdh, ECDiffieHellman ecdhPem):
-                        ECCurve curve = ecdh.KeySize switch {
+                        ECCurve curve = ecdh.KeySize switch
+                        {
                             256 => ECCurve.NamedCurves.nistP256,
                             384 => ECCurve.NamedCurves.nistP384,
                             521 => ECCurve.NamedCurves.nistP521,
@@ -925,6 +1149,34 @@ MII
                         throw new CryptographicException("Unknown key algorithm");
                 }
             }
+        }
+
+        private static string AddKeyUsageAttributeToPkcs8Key(
+            ReadOnlySpan<char> keyPem,
+            X509KeyUsageFlags flags,
+            string password = null)
+        {
+            X509KeyUsageExtension ext = new(flags, false);
+
+            PemFields fields = PemEncoding.Find(keyPem);
+            byte[] data = Convert.FromBase64String(keyPem[fields.Base64Data].ToString());
+
+            if (keyPem[fields.Label].SequenceEqual("PRIVATE KEY"))
+            {
+                Pkcs8PrivateKeyInfo info = Pkcs8PrivateKeyInfo.Decode(data, out _, skipCopy: true);
+                info.Attributes.Add(new AsnEncodedData(ext.Oid, ext.RawData));
+                return PemEncoding.WriteString("PRIVATE KEY", info.Encode());
+            }
+
+            if (keyPem[fields.Label].SequenceEqual("ENCRYPTED PRIVATE KEY"))
+            {
+                Pkcs8PrivateKeyInfo info = Pkcs8PrivateKeyInfo.DecryptAndDecode(password, data, out _);
+                info.Attributes.Add(new AsnEncodedData(ext.Oid, ext.RawData));
+                PbeParameters parameters = new(PbeEncryptionAlgorithm.TripleDes3KeyPkcs12, HashAlgorithmName.SHA1, 1);
+                return PemEncoding.WriteString("ENCRYPTED PRIVATE KEY", info.Encrypt(password, parameters));
+            }
+
+            throw new InvalidOperationException("PEM-encoded PKCS#8 does not contain an understood PEM label.");
         }
     }
 }

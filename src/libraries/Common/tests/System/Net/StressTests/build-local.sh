@@ -56,7 +56,6 @@ fi
 
 export DOTNET_ROOT=$daily_dotnet_root
 export PATH=$DOTNET_ROOT:$PATH
-export DOTNET_MULTILEVEL_LOOKUP=0
 
 if [[ ! -d "$testhost_root/shared/Microsoft.AspNetCore.App" ]]; then
     echo "Copying Microsoft.AspNetCore.App bits from daily SDK to testhost: $testhost_root"

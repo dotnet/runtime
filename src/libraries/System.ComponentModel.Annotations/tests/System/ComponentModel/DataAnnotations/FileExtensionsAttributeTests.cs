@@ -64,5 +64,17 @@ namespace System.ComponentModel.DataAnnotations.Tests
             attribute.Extensions = newValue;
             Assert.Equal(expected, attribute.Extensions);
         }
+
+        [Fact]
+        public static void FormatMessage_UsesSuppliedFormatAndFormattedExtensions()
+        {
+            const string ExternalFormat = "external {0}:{1}";
+            const string ErrorMessageFormat = "internal {0}:{1}";
+            FileExtensionsAttribute attribute = GetAttribute("png, .JPG");
+            attribute.ErrorMessage = ErrorMessageFormat;
+
+            Assert.Equal("external name:.png, .jpg", attribute.FormatMessage(ExternalFormat, "name"));
+            Assert.Equal("internal name:.png, .jpg", attribute.FormatErrorMessage("name"));
+        }
     }
 }

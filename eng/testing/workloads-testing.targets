@@ -7,18 +7,19 @@
   <PropertyGroup>
     <BuiltNuGetsDir>$([MSBuild]::NormalizeDirectory($(ArtifactsDir), 'packages', $(Configuration), 'Shipping'))</BuiltNuGetsDir>
 
+    <!-- install baseline builds from net11 channel-->
     <DotNetInstallArgumentsForWorkloadsTesting Condition="!$([MSBuild]::IsOSPlatform('windows'))"
-            >$(_DotNetInstallScriptPath) -i $(_SdkWithNoWorkloadPath) -v latest -q daily --channel 10.0</DotNetInstallArgumentsForWorkloadsTesting>
+            >$(_DotNetInstallScriptPath) -i $(_SdkWithNoWorkloadPath) -v latest -q daily --channel 11.0</DotNetInstallArgumentsForWorkloadsTesting>
     <DotNetInstallArgumentsForWorkloadsTesting Condition="$([MSBuild]::IsOSPlatform('windows'))"
-            >$(_DotNetInstallScriptPath) -InstallDir $(_SdkWithNoWorkloadPath) -Quality daily -Channel 10.0</DotNetInstallArgumentsForWorkloadsTesting>
+            >$(_DotNetInstallScriptPath) -InstallDir $(_SdkWithNoWorkloadPath) -Quality daily -Channel 11.0</DotNetInstallArgumentsForWorkloadsTesting>
 
     <VersionBandForManifestPackages>$(SdkBandVersionForWorkload_FromRuntimeVersions)</VersionBandForManifestPackages>
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Required for running apps built with 10.0 sdk, but the sdk does
-         not yet support *running* with 10.0 sdk -->
-    <AdditionalSharedFrameworkToInstallArguments Include="-Version latest -Channel 9.0 -Quality daily" />
+    <!-- Required for running apps built with net11.0 sdk, but the sdk does
+         not yet support *running* with net11.0 sdk -->
+    <AdditionalSharedFrameworkToInstallArguments Include="-Version latest -Channel 10.0 -Quality daily" />
 
     <DefaultPropertiesForNuGetBuild Include="TargetOS=$(TargetOSForWorkload)" />
     <DefaultPropertiesForNuGetBuild Include="TargetArchitecture=$(TargetArchitectureForWorkload)" />

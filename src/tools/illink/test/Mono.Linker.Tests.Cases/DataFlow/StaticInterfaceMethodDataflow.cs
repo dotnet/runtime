@@ -32,9 +32,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             [KeptInterface(typeof(IFoo))]
             class ImplIFoo : IFoo
             {
-                // NativeAOT correctly finds out that the method is not actually used by anything
-                // and removes it. The only caveat is GetInterfaceMap - see https://github.com/dotnet/runtimelab/issues/861
-                [Kept(By = Tool.Trimmer)]
+                [Kept]
                 public static void VirtualMethod() { }
             }
 
@@ -113,13 +111,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             [KeptInterface(typeof(IFoo))]
             class ImplIFoo : IFoo
             {
-                // NativeAOT correctly finds out that the method is not actually used by anything
-                // and removes it. The only caveat is GetInterfaceMap - see https://github.com/dotnet/runtimelab/issues/861
-                [Kept(By = Tool.Trimmer)]
+                [Kept]
                 public static void VirtualMethod() { }
-                // NativeAOT correctly finds out that the method is not actually used by anything
-                // and removes it. The only caveat is GetInterfaceMap - see https://github.com/dotnet/runtimelab/issues/861
-                [Kept(By = Tool.Trimmer)]
+                [Kept]
                 public static void AbstractMethod() { }
             }
 

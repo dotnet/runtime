@@ -59,7 +59,15 @@ namespace Microsoft.Extensions.Hosting
         /// <typeparam name="TContainerBuilder">The type of builder.</typeparam>
         /// <param name="factory">The factory to register.</param>
         /// <returns>The same instance of the <see cref="IHostBuilder"/> for chaining.</returns>
+#if NET
+        IHostBuilder UseServiceProviderFactory<TContainerBuilder>(Func<HostBuilderContext, IServiceProviderFactory<TContainerBuilder>> factory) where TContainerBuilder : notnull
+        {
+            ArgumentNullException.ThrowIfNull(factory);
+            throw new NotSupportedException($"The type '{GetType()}' does not support '{nameof(UseServiceProviderFactory)}' with a context-based factory. Override this method to provide an implementation.");
+        }
+#else
         IHostBuilder UseServiceProviderFactory<TContainerBuilder>(Func<HostBuilderContext, IServiceProviderFactory<TContainerBuilder>> factory) where TContainerBuilder : notnull;
+#endif
 
         /// <summary>
         /// Enables configuring the instantiated dependency container. This can be called multiple times and

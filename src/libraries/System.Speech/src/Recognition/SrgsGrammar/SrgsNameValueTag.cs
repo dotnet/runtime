@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Speech.Internal;
 using System.Speech.Internal.SrgsParser;
@@ -34,7 +35,8 @@ namespace System.Speech.Recognition.SrgsGrammar
 
         #region public Properties
         // Name of semantic property contained inside the <tag> element.
-        public string Name
+        [DisallowNull]
+        public string? Name
         {
             get
             {
@@ -49,7 +51,8 @@ namespace System.Speech.Recognition.SrgsGrammar
         // Prefast cannot figure out that parameter checking is done
 #pragma warning disable 56526
         // Value of semantic property contained inside the <tag> element.
-        public object Value
+        [DisallowNull]
+        public object? Value
         {
             get { return _value; }
             set
@@ -78,9 +81,6 @@ namespace System.Speech.Recognition.SrgsGrammar
 
         internal override void WriteSrgs(XmlWriter writer)
         {
-            // Figure out if the tag contains a value.
-            bool hasValue = Value != null;
-
             // Do not write the tag if it is empty
             bool hasName = !string.IsNullOrEmpty(_name);
             // Write <tag>text</tag>
@@ -94,7 +94,7 @@ namespace System.Speech.Recognition.SrgsGrammar
                 sb.Append('=');
             }
 
-            if (hasValue)
+            if (Value != null)
             {
                 if (Value is string)
                 {
@@ -123,7 +123,7 @@ namespace System.Speech.Recognition.SrgsGrammar
             }
         }
 
-        void IPropertyTag.NameValue(IElement parent, string name, object value)
+        void IPropertyTag.NameValue(IElement? parent, string? name, object? value)
         {
             _name = name;
             _value = value;
@@ -188,9 +188,9 @@ namespace System.Speech.Recognition.SrgsGrammar
 
         #region Private Fields
 
-        private string _name;
+        private string? _name;
 
-        private object _value;
+        private object? _value;
 
         #endregion
     }

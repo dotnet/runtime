@@ -18,6 +18,7 @@
 #include "mdutil.h"
 #include "rwutil.h"
 #include "mdlog.h"
+#include "memorystreams.h"
 #include "importhelper.h"
 #include "filtermanager.h"
 #include "switches.h"
@@ -27,7 +28,7 @@
 
 #include <metamodelrw.h>
 
-#if defined(_DEBUG)
+#if defined(_DEBUG) && defined(FEATURE_METADATA_PUBLIC_INTERFACES)
 #define LOGGING
 #endif
 #include <log.h>
@@ -64,6 +65,7 @@ ErrExit:
     return hr;
 } // STDMETHODIMP RegMeta::SetModuleProps()
 
+#ifdef FEATURE_METADATA_PERSISTENCE
 //*****************************************************************************
 // Saves a scope to a file of a given name.
 //*****************************************************************************
@@ -92,7 +94,7 @@ STDMETHODIMP RegMeta::Save(                     // S_OK or error.
         int DumpMD_impl(RegMeta *pMD);
         DumpMD_impl(this);
     }
-#endif // _DEBUG
+#endif // _DEBUG && FEATURE_METADATA_PUBLIC_INTERFACES
 
 ErrExit:
     return hr;
@@ -114,13 +116,13 @@ STDMETHODIMP RegMeta::SaveToStream(     // S_OK or error.
     hr = _SaveToStream(pIStream, dwSaveFlags);
 
 
-#if defined(_DEBUG)
+#if defined(_DEBUG) && defined(FEATURE_METADATA_PUBLIC_INTERFACES)
     if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_MD_RegMetaDump))
     {
         int DumpMD_impl(RegMeta *pMD);
         DumpMD_impl(this);
     }
-#endif // _DEBUG
+#endif // _DEBUG && FEATURE_METADATA_PUBLIC_INTERFACES
 
 ErrExit:
     return hr;
@@ -237,6 +239,35 @@ STDMETHODIMP RegMeta::GetSaveSize(      // S_OK or error.
 ErrExit:
     return hr;
 } // RegMeta::GetSaveSize
+#else
+STDMETHODIMP RegMeta::Save(
+    LPCWSTR szFile,
+    DWORD dwSaveFlags)
+{
+    return E_NOTIMPL;
+}
+
+STDMETHODIMP RegMeta::SaveToStream(
+    IStream *pIStream,
+    DWORD dwSaveFlags)
+{
+    return E_NOTIMPL;
+}
+
+STDMETHODIMP RegMeta::SaveToMemory(
+    void *pbData,
+    ULONG cbData)
+{
+    return E_NOTIMPL;
+}
+
+STDMETHODIMP RegMeta::GetSaveSize(
+    CorSaveSize fSave,
+    DWORD *pdwSaveSize)
+{
+    return E_NOTIMPL;
+}
+#endif
 
 #ifdef FEATURE_METADATA_EMIT_ALL
 
@@ -622,6 +653,7 @@ ErrExit:
 // Internal helper functions.
 //*******************************************************************************
 
+#ifdef FEATURE_METADATA_PERSISTENCE
 //*******************************************************************************
 // Perform optimizations of the metadata prior to saving.
 //*******************************************************************************
@@ -703,6 +735,7 @@ ErrExit:
 
     return hr;
 } // RegMeta::PreSave
+#endif
 
 //*******************************************************************************
 // Perform optimizations of ref to def
@@ -872,8 +905,7 @@ HRESULT RegMeta::_DefineTypeRef(
     mdToken     tkResolutionScope,          // [IN] ModuleRef or AssemblyRef.
     const void  *szName,                    // [IN] Name of the TypeRef.
     BOOL        isUnicode,                  // [IN] Specifies whether the URL is unicode.
-    mdTypeRef   *ptk,                       // [OUT] Put mdTypeRef here.
-    eCheckDups  eCheck)                     // [IN] Specifies whether to check for duplicates.
+    mdTypeRef   *ptk)                       // [OUT] Put mdTypeRef here.
 {
     HRESULT     hr = S_OK;
     LPUTF8      szUTF8FullQualName;
@@ -913,7 +945,7 @@ HRESULT RegMeta::_DefineTypeRef(
     _ASSERTE(bSuccess);
 
     // Search for existing TypeRef record.
-    if (eCheck==eCheckYes || (eCheck==eCheckDefault && CheckDups(MDDupTypeRef)))
+    if (CheckDups(MDDupTypeRef))
     {
         hr = ImportHelper::FindTypeRefByName(&(m_pStgdb->m_MiniMd), tkResolutionScope,
                                              (LPCUTF8)qbNamespace.Ptr(),
@@ -1331,10 +1363,6 @@ HRESULT RegMeta::_DefineEvent(          // Return hresult.
     // Set data
     IfFailGo(m_pStgdb->m_MiniMd.PutString(TBL_Event, EventRec::COL_Name, pEventRec, szUTF8Event));
     IfFailGo(_SetEventProps1(*pmdEvent, dwEventFlags, tkEventType));
-
-    // Add the <Event token, typedef token> to the lookup table
-    if (m_pStgdb->m_MiniMd.HasIndirectTable(TBL_Event))
-        IfFailGo( m_pStgdb->m_MiniMd.AddEventToLookUpTable(*pmdEvent, td) );
 
     IfFailGo(UpdateENCLog(*pmdEvent));
 
@@ -1907,4 +1935,3 @@ ErrExit:
 } // RegMeta::_DefineTypeDef
 
 #endif //FEATURE_METADATA_EMIT
-

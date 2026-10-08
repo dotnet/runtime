@@ -269,6 +269,8 @@ successfully bind to that overload, if simply passing an `int` value. However, i
 
 * Changing a parameter modifier from `ref` to `out`, or vice versa
 
+* Adding the `unsafe` modifier when compiled with the [updated memory safety rules](https://github.com/dotnet/csharplang/issues/9704)
+
 ### Attributes
 &#10003; **Allowed**
 * Changing the value of an attribute that is _not observable_

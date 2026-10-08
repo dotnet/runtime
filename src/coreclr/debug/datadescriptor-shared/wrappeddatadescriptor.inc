@@ -4,6 +4,65 @@
 // No include guards. This file is included multiple times.
 // Wraps datadescriptor.inc to define and undefine macros used in the file.
 
+// Field type annotation defines. These always expand to the type name
+// (e.g., T_UINT32 -> uint32, TYPE(GCHandle) -> GCHandle). Whether the type name
+// is included in the data descriptor blob's string pool is controlled by
+// CDAC_STRINGIFY_TYPE in datadescriptor.cpp (currently debug/checked builds only).
+// Primitive types use T_<TYPE> (e.g., T_UINT32, T_POINTER).
+// Inline struct types use TYPE(<name>) (e.g., TYPE(GCHandle), TYPE(CodePointer)).
+// EXTERN_TYPE(<name>) is the same as TYPE() but is not validated within this
+// descriptor. Use it for types declared in a different descriptor or for
+// well-known types that don't have a CDAC_TYPE_BEGIN in the current descriptor.
+// Array types use T_ARRAY(<type>) where <type> is another type define
+// (e.g., T_ARRAY(T_UINT8), T_ARRAY(TYPE(StressLogModuleDesc))).
+// T_ARRAY always expands to pointer in the blob since arrays are accessed via pointers.
+// These are defined once here and persist across multiple inclusions.
+#ifndef T_UINT8
+#define T_UINT8    uint8
+#endif
+#ifndef T_UINT16
+#define T_UINT16   uint16
+#endif
+#ifndef T_UINT32
+#define T_UINT32   uint32
+#endif
+#ifndef T_UINT64
+#define T_UINT64   uint64
+#endif
+#ifndef T_INT8
+#define T_INT8     int8
+#endif
+#ifndef T_INT16
+#define T_INT16    int16
+#endif
+#ifndef T_INT32
+#define T_INT32    int32
+#endif
+#ifndef T_INT64
+#define T_INT64    int64
+#endif
+#ifndef T_NUINT
+#define T_NUINT    nuint
+#endif
+#ifndef T_NINT
+#define T_NINT     nint
+#endif
+#ifndef T_POINTER
+#define T_POINTER  pointer
+#endif
+#ifndef T_BOOL
+#define T_BOOL     bool
+#endif
+#ifndef TYPE
+#define TYPE(name)          name
+#endif
+#ifndef EXTERN_TYPE
+#define EXTERN_TYPE(name)   name
+#endif
+#ifndef T_ARRAY
+#define T_ARRAY(name)       pointer
+#endif
+
 #ifndef CDAC_BASELINE
 #define CDAC_BASELINE(identifier)
 #endif

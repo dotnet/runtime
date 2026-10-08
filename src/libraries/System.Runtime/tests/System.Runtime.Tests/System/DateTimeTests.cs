@@ -1277,7 +1277,7 @@ namespace System.Tests
 
         private static bool IsNotOSXOrBrowser => !PlatformDetection.IsApplePlatform && !PlatformDetection.IsBrowser;
 
-        [ConditionalTheory(nameof(IsNotOSXOrBrowser))]
+        [ConditionalTheory(typeof(DateTimeTests), nameof(IsNotOSXOrBrowser))]
         [InlineData("ar")]
         [InlineData("ar-EG")]
         [InlineData("ar-IQ")]
@@ -1994,13 +1994,16 @@ namespace System.Tests
             }
         }
 
-        [Fact]
-        public static void InvalidDateTimeStyles()
+        [Theory]
+        [InlineData(DateTimeStyles.AssumeLocal | DateTimeStyles.AssumeUniversal)]
+        [InlineData(DateTimeStyles.RoundtripKind | DateTimeStyles.AssumeLocal)]
+        [InlineData(DateTimeStyles.RoundtripKind | DateTimeStyles.AssumeUniversal)]
+        [InlineData(DateTimeStyles.RoundtripKind | DateTimeStyles.AdjustToUniversal)]
+        public static void InvalidDateTimeStyles(DateTimeStyles style)
         {
             string strDateTime = "Thursday, August 31, 2006 1:14";
             string[] formats = new string[] { "f" };
             IFormatProvider provider = new CultureInfo("en-US");
-            DateTimeStyles style = DateTimeStyles.AssumeLocal | DateTimeStyles.AssumeUniversal;
             AssertExtensions.Throws<ArgumentException>("style", () => DateTime.ParseExact(strDateTime, formats, provider, style));
         }
 
@@ -2216,6 +2219,23 @@ namespace System.Tests
             yield return new object[] { "9/8/2017 10 : 11 : 12 AM", "M/d/yyyy HH':'mm':'ss tt\'  \'", CultureInfo.InvariantCulture, DateTimeStyles.AllowWhiteSpaces, new DateTime(2017, 9, 8, 10, 11, 12) };
             yield return new object[] { " 9 / 8 / 2017    10 : 11 : 12 AM", "M/d/yyyy HH':'mm':'ss tt\'  \'", CultureInfo.InvariantCulture, DateTimeStyles.AllowWhiteSpaces, new DateTime(2017, 9, 8, 10, 11, 12) };
             yield return new object[] { "   9   /   8   /   2017    10  :   11  :   12  AM", "M/d/yyyy HH':'mm':'ss tt\'  \'", CultureInfo.InvariantCulture, DateTimeStyles.AllowWhiteSpaces, new DateTime(2017, 9, 8, 10, 11, 12) };
+
+            // RoundtripKind: preserves the UTC kind when parsing UTC strings (indicated by 'Z')
+            yield return new object[] { "2017-10-11T01:23:45Z", "yyyy-MM-dd'T'HH:mm:ssK", CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, new DateTime(2017, 10, 11, 1, 23, 45, DateTimeKind.Utc) };
+            yield return new object[] { "2017-10-11T01:23:45.678Z", "yyyy-MM-dd'T'HH:mm:ss.fffK", CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, new DateTime(2017, 10, 11, 1, 23, 45, 678, DateTimeKind.Utc) };
+            yield return new object[] { "2017-10-11T01:23:45.6789012Z", "O", CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, null }; // roundtrip format
+
+            // AssumeLocal: interprets date/time as local when no timezone is specified
+            yield return new object[] { "2017-10-11 01:23:45", "yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal, new DateTime(2017, 10, 11, 1, 23, 45, DateTimeKind.Local) };
+            yield return new object[] { "9/8/2017 10:11:12 AM", "M/d/yyyy h:mm:ss tt", CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal, new DateTime(2017, 9, 8, 10, 11, 12, DateTimeKind.Local) };
+
+            // NoCurrentDateDefault: uses 0001-01-01 instead of current date when date components are missing
+            yield return new object[] { "10:30:45", "HH:mm:ss", CultureInfo.InvariantCulture, DateTimeStyles.NoCurrentDateDefault, new DateTime(1, 1, 1, 10, 30, 45) };
+            yield return new object[] { "3:45 PM", "h:mm tt", CultureInfo.InvariantCulture, DateTimeStyles.NoCurrentDateDefault, new DateTime(1, 1, 1, 15, 45, 0) };
+
+            // AllowInnerWhite (standalone): allows white space to appear in the middle of the string
+            yield return new object[] { "2017 - 10 - 11  01:23:45", "yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture, DateTimeStyles.AllowInnerWhite, new DateTime(2017, 10, 11, 1, 23, 45) };
+            yield return new object[] { "9 / 8 / 2017  10 : 11 : 12", "M/d/yyyy HH:mm:ss", CultureInfo.InvariantCulture, DateTimeStyles.AllowInnerWhite, new DateTime(2017, 9, 8, 10, 11, 12) };
 
             if (PlatformDetection.IsNotInvariantGlobalization)
             {
@@ -2915,10 +2935,77 @@ namespace System.Tests
             }
         }
 
+        [Theory]
+        [InlineData("'é'", "é")]
+        [InlineData("'\\é'", "é")]
+        [InlineData("%é", "é")]
+        [InlineData("\\é", "é")]
+        [InlineData("'\U0001F600'", "\U0001F600")]
+        [InlineData("'\\\U0001F600'", "\U0001F600")]
+        [InlineData("%\U0001F600", "\U0001F600")]
+        [InlineData("\\\U0001F600", "\U0001F600")]
+        public static void TryFormat_CustomFormatWithUnicodeLiteral(string format, string expected)
+        {
+            AssertFormatted(DateTime.UnixEpoch, format, CultureInfo.InvariantCulture, expected);
+            AssertFormatted(DateTimeOffset.UnixEpoch, format, CultureInfo.InvariantCulture, expected);
+            AssertFormatted(DateOnly.MinValue, format, CultureInfo.InvariantCulture, expected);
+            AssertFormatted(TimeOnly.MinValue, format, CultureInfo.InvariantCulture, expected);
+        }
+
+        [Fact]
+        public static void TryFormat_SingleDesignatorWithSupplementaryCharacter()
+        {
+            DateTimeFormatInfo dtfi = (DateTimeFormatInfo)CultureInfo.InvariantCulture.DateTimeFormat.Clone();
+            dtfi.AMDesignator = "\U0001F600x";
+
+            AssertFormatted(DateTime.UnixEpoch, "%t", dtfi, "\U0001F600");
+            AssertFormatted(TimeOnly.MinValue, "%t", dtfi, "\U0001F600");
+            Assert.Equal(0, DateTime.ParseExact("\U0001F600", "%t", dtfi).Hour);
+            Assert.Equal(TimeOnly.MinValue, TimeOnly.ParseExact("\U0001F600", "%t", dtfi));
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public static void TryFormat_CustomFormatWithUnpairedSurrogate(bool highSurrogate)
+        {
+            string literal = new(highSurrogate ? '\uD83D' : '\uDE00', 1);
+            AssertFormattedWithUnpairedSurrogate(DateTime.UnixEpoch, literal);
+            AssertFormattedWithUnpairedSurrogate(DateTimeOffset.UnixEpoch, literal);
+            AssertFormattedWithUnpairedSurrogate(DateOnly.MinValue, literal);
+            AssertFormattedWithUnpairedSurrogate(TimeOnly.MinValue, literal);
+        }
+
         [Fact]
         public static void UnixEpoch()
         {
             VerifyDateTime(DateTime.UnixEpoch, 1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
+        }
+
+        private static void AssertFormatted<T>(T value, string format, IFormatProvider provider, string expected)
+            where T : ISpanFormattable, IUtf8SpanFormattable
+        {
+            Span<char> chars = new char[expected.Length];
+            Assert.True(value.TryFormat(chars, out int charsWritten, format, provider));
+            Assert.Equal(expected, new string(chars[..charsWritten]));
+
+            Span<byte> bytes = new byte[Encoding.UTF8.GetByteCount(expected)];
+            Assert.True(value.TryFormat(bytes, out int bytesWritten, format, provider));
+            Assert.Equal(expected, Encoding.UTF8.GetString(bytes[..bytesWritten]));
+        }
+
+        private static void AssertFormattedWithUnpairedSurrogate<T>(T value, string literal)
+            where T : ISpanFormattable, IUtf8SpanFormattable
+        {
+            string format = $"'{literal}'";
+
+            Span<char> chars = new char[literal.Length];
+            Assert.True(value.TryFormat(chars, out int charsWritten, format, CultureInfo.InvariantCulture));
+            Assert.Equal(literal, new string(chars[..charsWritten]));
+
+            Span<byte> bytes = stackalloc byte[3];
+            Assert.True(value.TryFormat(bytes, out int bytesWritten, format, CultureInfo.InvariantCulture));
+            Assert.Equal("\uFFFD", Encoding.UTF8.GetString(bytes[..bytesWritten]));
         }
 
         [Fact]
@@ -3084,6 +3171,115 @@ namespace System.Tests
                     }
                 break;
             }
+        }
+
+        [Fact]
+        public void TestParsingWithAmPrefixPm()
+        {
+            var culture = new CultureInfo("en-US");
+            DateTime dt = new DateTime(2023, 4, 17, 14, 30, 0);
+
+            // AM designator is a prefix of PM designator
+            culture.DateTimeFormat.AMDesignator = "aM";
+            culture.DateTimeFormat.PMDesignator = "aMP";
+
+            string formatted = dt.ToString("hh:mm tt", culture);
+            Assert.Equal("02:30 aMP", formatted);
+
+            DateTime parsedDateTime = DateTime.ParseExact(formatted, "hh:mm tt", culture);
+            Assert.Equal(dt.TimeOfDay, parsedDateTime.TimeOfDay);
+        }
+
+        // Tests for ISO 8601 24:00 support (end of day)
+        [Theory]
+        [InlineData("2007-04-05T24:00:00.0000000", 2007, 4, 6, 0, 0, 0)]  // Basic case
+        [InlineData("2023-12-31T24:00:00.0000000", 2024, 1, 1, 0, 0, 0)]  // Year boundary
+        [InlineData("2020-02-29T24:00:00.0000000", 2020, 3, 1, 0, 0, 0)]  // Leap year
+        [InlineData("2023-02-28T24:00:00.0000000", 2023, 3, 1, 0, 0, 0)]  // Non-leap year, Feb boundary
+        [InlineData("2023-01-31T24:00:00.0000000", 2023, 2, 1, 0, 0, 0)]  // Month boundary (31 days)
+        [InlineData("2023-04-30T24:00:00.0000000", 2023, 5, 1, 0, 0, 0)]  // Month boundary (30 days)
+        public void ParseExact_Hour24_Success(string input, int expectedYear, int expectedMonth, int expectedDay, int expectedHour, int expectedMinute, int expectedSecond)
+        {
+            DateTime result = DateTime.ParseExact(input, "o", null);
+            Assert.Equal(expectedYear, result.Year);
+            Assert.Equal(expectedMonth, result.Month);
+            Assert.Equal(expectedDay, result.Day);
+            Assert.Equal(expectedHour, result.Hour);
+            Assert.Equal(expectedMinute, result.Minute);
+            Assert.Equal(expectedSecond, result.Second);
+        }
+
+        [Fact]
+        public void ParseExact_Hour24_WithUTC_Success()
+        {
+            // Test with UTC timezone marker
+            DateTime result = DateTime.ParseExact("2007-04-05T24:00:00.0000000Z", "o", null);
+            // When Z is specified, the result should be Local time (converted from UTC)
+            // The date should have advanced to 2007-04-06 at midnight UTC
+            DateTime utcResult = result.ToUniversalTime();
+            Assert.Equal(2007, utcResult.Year);
+            Assert.Equal(4, utcResult.Month);
+            Assert.Equal(6, utcResult.Day);
+            Assert.Equal(0, utcResult.Hour);
+            Assert.Equal(0, utcResult.Minute);
+            Assert.Equal(0, utcResult.Second);
+        }
+
+        [Theory]
+        [InlineData("2007-04-05T24:00:01.0000000")]  // Non-zero seconds
+        [InlineData("2007-04-05T24:01:00.0000000")]  // Non-zero minutes
+        [InlineData("2007-04-05T24:00:00.0000001")]  // Non-zero fraction
+        [InlineData("2007-04-05T24:01:01.0000000")]  // Non-zero minutes and seconds
+        [InlineData("9999-12-31T24:00:00.0000000")]  // Would overflow (9999-12-31 + 1 day)
+        public void ParseExact_Hour24_Invalid_ThrowsFormatException(string input)
+        {
+            Assert.Throws<FormatException>(() => DateTime.ParseExact(input, "o", null));
+        }
+
+        [Fact]
+        public void Parse_Hour24_BasicTest()
+        {
+            // Test basic Parse method (not just ParseExact) - this uses ParseISO8601
+            DateTime result = DateTime.Parse("2007-04-05T24:00:00.0000000", CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind);
+            Assert.Equal(new DateTime(2007, 4, 6, 0, 0, 0), result);
+        }
+
+        [Theory]
+        [InlineData("2007-04-05T24:00:00")]  // No fraction
+        [InlineData("2023-12-31T24:00:00")]  // Year boundary
+        [InlineData("2020-02-29T24:00:00")]  // Leap year
+        public void Parse_Hour24_ISO8601Format_Success(string input)
+        {
+            // These use the ParseISO8601 code path
+            DateTime result = DateTime.Parse(input, CultureInfo.InvariantCulture);
+            // Verify the date advanced by one day
+            DateTime original = DateTime.Parse(input.Replace("24:00:00", "00:00:00"), CultureInfo.InvariantCulture);
+            Assert.Equal(original.AddDays(1), result);
+        }
+
+        [Theory]
+        [InlineData("2007-04-05T24:00:01")]  // Non-zero seconds
+        [InlineData("2007-04-05T24:01:00")]  // Non-zero minutes
+        [InlineData("2007-04-05T24:00:00.0000001")]  // Non-zero fraction
+        public void Parse_Hour24_ISO8601Format_Invalid_ThrowsFormatException(string input)
+        {
+            // These use the ParseISO8601 code path and should fail
+            Assert.Throws<FormatException>(() => DateTime.Parse(input, CultureInfo.InvariantCulture));
+        }
+
+        [Fact]
+        public void TryParse_Hour24_Success()
+        {
+            bool success = DateTime.TryParseExact("2007-04-05T24:00:00.0000000", "o", null, DateTimeStyles.None, out DateTime result);
+            Assert.True(success);
+            Assert.Equal(new DateTime(2007, 4, 6, 0, 0, 0), result);
+        }
+
+        [Fact]
+        public void TryParse_Hour24_Invalid_ReturnsFalse()
+        {
+            bool success = DateTime.TryParseExact("2007-04-05T24:00:01.0000000", "o", null, DateTimeStyles.None, out DateTime result);
+            Assert.False(success);
         }
     }
 }

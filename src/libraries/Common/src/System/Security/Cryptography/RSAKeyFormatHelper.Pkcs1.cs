@@ -12,26 +12,13 @@ namespace System.Security.Cryptography
     {
         internal delegate TRet RSAParametersCallback<TRet>(RSAParameters parameters);
 
-        internal static unsafe TRet FromPkcs1PrivateKey<TRet>(
+        internal static TRet FromPkcs1PrivateKey<TRet>(
             ReadOnlySpan<byte> keyData,
             RSAParametersCallback<TRet> parametersReader,
-            bool pinAndClearParameters = true)
+            bool pinAndClearParameters = true,
+            AsnEncodingRules ruleSet = AsnEncodingRules.BER)
         {
-            fixed (byte* ptr = &MemoryMarshal.GetReference(keyData))
-            {
-                using (MemoryManager<byte> manager = new PointerMemoryManager<byte>(ptr, keyData.Length))
-                {
-                    return FromPkcs1PrivateKey(manager.Memory, parametersReader, pinAndClearParameters);
-                }
-            }
-        }
-
-        internal static TRet FromPkcs1PrivateKey<TRet>(
-            ReadOnlyMemory<byte> keyData,
-            RSAParametersCallback<TRet> parametersReader,
-            bool pinAndClearParameters = true)
-        {
-            RSAPrivateKeyAsn key = RSAPrivateKeyAsn.Decode(keyData, AsnEncodingRules.BER);
+            ValueRSAPrivateKeyAsn.Decode(keyData, ruleSet, out ValueRSAPrivateKeyAsn key);
 
             const int MaxSupportedVersion = 0;
 
@@ -70,15 +57,15 @@ namespace System.Security.Cryptography
                 using (PinAndClear.Track(parameters.DQ))
                 using (PinAndClear.Track(parameters.InverseQ))
                 {
-                    return ExtractParametersWithCallback(parametersReader, ref key, ref parameters);
+                    return ExtractParametersWithCallback(parametersReader, key, ref parameters);
                 }
             }
             else
             {
-                return ExtractParametersWithCallback(parametersReader, ref key, ref parameters);
+                return ExtractParametersWithCallback(parametersReader, key, ref parameters);
             }
 
-            static TRet ExtractParametersWithCallback(RSAParametersCallback<TRet> parametersReader, ref RSAPrivateKeyAsn key, ref RSAParameters parameters)
+            static TRet ExtractParametersWithCallback(RSAParametersCallback<TRet> parametersReader, in ValueRSAPrivateKeyAsn key, ref RSAParameters parameters)
             {
                 key.PrivateExponent.ToUnsignedIntegerBytes(parameters.D);
                 key.Prime1.ToUnsignedIntegerBytes(parameters.P);
@@ -91,22 +78,12 @@ namespace System.Security.Cryptography
             }
         }
 
-        internal static unsafe TRet FromPkcs1PublicKey<TRet>(
+        internal static TRet FromPkcs1PublicKey<TRet>(
             ReadOnlySpan<byte> keyData,
-            RSAParametersCallback<TRet> parametersReader)
+            RSAParametersCallback<TRet> parametersReader,
+            AsnEncodingRules ruleSet = AsnEncodingRules.BER)
         {
-            fixed (byte* ptr = &MemoryMarshal.GetReference(keyData))
-            {
-                using (MemoryManager<byte> manager = new PointerMemoryManager<byte>(ptr, keyData.Length))
-                {
-                    return FromPkcs1PublicKey(manager.Memory, parametersReader);
-                }
-            }
-        }
-
-        internal static TRet FromPkcs1PublicKey<TRet>(ReadOnlyMemory<byte> keyData, RSAParametersCallback<TRet> parametersReader)
-        {
-            RSAPublicKeyAsn key = RSAPublicKeyAsn.Decode(keyData, AsnEncodingRules.BER);
+            ValueRSAPublicKeyAsn.Decode(keyData, ruleSet, out ValueRSAPublicKeyAsn key);
 
             RSAParameters parameters = new RSAParameters
             {

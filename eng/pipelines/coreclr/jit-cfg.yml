@@ -10,12 +10,12 @@ schedules:
 
 variables:
   - template: /eng/pipelines/common/variables.yml
+  - template: /eng/pipelines/helix-platforms.yml
+
 extends:
   template:  /eng/pipelines/coreclr/templates/jit-outerloop-pipeline.yml
   parameters:
     platforms:
-    - linux_arm64
-    - linux_x64
     - windows_x64
     - windows_arm64
     testGroup: jit-cfg

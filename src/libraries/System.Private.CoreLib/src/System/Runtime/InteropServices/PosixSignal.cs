@@ -42,6 +42,10 @@ namespace System.Runtime.InteropServices
 
         /// <summary>Stop typed at terminal</summary>
         [UnsupportedOSPlatform("windows")]
-        SIGTSTP = -10
+        SIGTSTP = -10,
+
+        /// <summary>Kill (cannot be caught or ignored)</summary>
+        [UnsupportedOSPlatform("windows")]
+        SIGKILL = -11
     }
 }

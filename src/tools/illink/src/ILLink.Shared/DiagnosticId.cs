@@ -58,6 +58,7 @@ namespace ILLink.Shared
         UnexpectedAttributeArgumentType = 1045,
         InvalidMetadataOption = 1046,
         InvalidDependenciesFileFormat = 1047,
+        MultipleEntryPointRoots = 1048,
 
         // Trimming diagnostic ids.
         TypeHasNoFieldsToPreserve = 2001,
@@ -212,11 +213,17 @@ namespace ILLink.Shared
         RequiresDynamicCodeOnStaticConstructor = 3056,
         RequiresDynamicCodeOnEntryPoint = 3057,
         ReferenceNotMarkedIsAotCompatible = 3058,
+
         _EndAotAnalysisWarningsSentinel,
 
         // Feature guard diagnostic ids.
         ReturnValueDoesNotMatchFeatureGuards = 4000,
-        InvalidFeatureGuard = 4001
+        InvalidFeatureGuard = 4001,
+
+        // Memory safety migration diagnostic ids.
+        UnsafeMemberMissingSafetyDocumentation = 5005,
+        PointerSignatureRequiresUnsafe = 5006,
+        LibraryImportRequiresExplicitSafety = 5007,
     }
 
     public static class DiagnosticIdExtensions
@@ -240,7 +247,7 @@ namespace ILLink.Shared
                 2107 => MessageSubCategory.TrimAnalysis,
                 >= 2109 and < (int)DiagnosticId._EndTrimAnalysisWarningsSentinel => MessageSubCategory.TrimAnalysis,
                 >= 3050 and <= 3052 => MessageSubCategory.AotAnalysis,
-                >= 3054 and < (int)DiagnosticId._EndAotAnalysisWarningsSentinel => MessageSubCategory.AotAnalysis,
+                >= 3054 and <= 3058 => MessageSubCategory.AotAnalysis,
                 _ => MessageSubCategory.None,
             };
 
@@ -249,6 +256,7 @@ namespace ILLink.Shared
             {
                 > 2000 and < 3000 => DiagnosticCategory.Trimming,
                 >= 3000 and < 3050 => DiagnosticCategory.SingleFile,
+                5005 or 5006 or 5007 => DiagnosticCategory.Safety,
                 >= 3050 and <= 6000 => DiagnosticCategory.AOT,
                 _ => throw new ArgumentException($"The provided diagnostic id '{diagnosticId}' does not fall into the range of supported warning codes 2001 to 6000 (inclusive).")
             };

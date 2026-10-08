@@ -335,7 +335,7 @@ namespace ILCompiler.Dataflow
         {
             MethodDesc method = referencedMethod.GetTypicalMethodDefinition();
 
-            if (!CompilerGeneratedNames.IsLambdaOrLocalFunction(method.Name))
+            if (!CompilerGeneratedNames.IsLambdaOrLocalFunction(method.Name.AsSpan()))
                 return;
 
             interproceduralState.TrackMethod(method);
@@ -793,12 +793,15 @@ namespace ILCompiler.Dataflow
 
                     case ILOpcode.ret:
                         {
-                            bool hasReturnValue = !methodIL.OwningMethod.Signature.ReturnType.IsVoid;
-                            if (currentStack.Count != (hasReturnValue ? 1 : 0))
+                            if (!methodIL.OwningMethod.IsAsync)
                             {
-                                WarnAboutInvalidILInMethod(methodIL, offset);
+                                bool ilHasReturnValue = !methodIL.OwningMethod.Signature.ReturnType.IsVoid;
+                                if (currentStack.Count != (ilHasReturnValue ? 1 : 0))
+                                {
+                                    WarnAboutInvalidILInMethod(methodIL, offset);
+                                }
                             }
-                            if (hasReturnValue)
+                            if (currentStack.Count == 1)
                             {
                                 StackSlot retStackSlot = PopUnknown(currentStack, 1, methodIL, offset);
                                 // If the return value is a reference, treat it as the value itself for now

@@ -34,6 +34,7 @@ namespace System.Net.Test.Common
         private readonly Uri _uri;
         private readonly AuthenticationSchemes _authSchemes;
         private readonly bool _connectionCloseAfter407;
+        private readonly bool _killConnectionAfterAuth;
         private readonly bool _addViaRequestHeader;
         private readonly ManualResetEvent _serverStopped;
         private readonly List<ReceivedRequest> _requests;
@@ -54,6 +55,7 @@ namespace System.Net.Test.Common
             _uri = new Uri($"http://{ep.Address}:{ep.Port}/");
             _authSchemes = options.AuthenticationSchemes;
             _connectionCloseAfter407 = options.ConnectionCloseAfter407;
+            _killConnectionAfterAuth = options.KillConnectionAfterAuth;
             _addViaRequestHeader = options.AddViaRequestHeader;
             _serverStopped = new ManualResetEvent(false);
 
@@ -169,6 +171,10 @@ namespace System.Net.Test.Common
                 if (authTokens.Length > 1)
                 {
                     request.AuthorizationHeaderValueToken = authTokens[1];
+                }
+                if (_killConnectionAfterAuth)
+                {
+                    return false;
                 }
             }
             else if (_authSchemes != AuthenticationSchemes.None)
@@ -377,6 +383,7 @@ namespace System.Net.Test.Common
         {
             public AuthenticationSchemes AuthenticationSchemes { get; set; } = AuthenticationSchemes.None;
             public bool ConnectionCloseAfter407 { get; set; } = false;
+            public bool KillConnectionAfterAuth { get; set; } = false;
             public bool AddViaRequestHeader { get; set; } = false;
         }
     }

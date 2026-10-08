@@ -109,7 +109,7 @@ namespace System.Net.Primitives.Functional.Tests
         [InlineData("192.168.0.1", 33)]
         [InlineData("::", -1)]
         [InlineData("ffff::", 129)]
-        public void Constructor_PrefixLenghtOutOfRange_ThrowsArgumentOutOfRangeException(string ipStr, int prefixLength)
+        public void Constructor_PrefixLengthOutOfRange_ThrowsArgumentOutOfRangeException(string ipStr, int prefixLength)
         {
             IPAddress address = IPAddress.Parse(ipStr);
             Assert.Throws<ArgumentOutOfRangeException>(() => new IPNetwork(address, prefixLength));
@@ -208,6 +208,16 @@ namespace System.Net.Primitives.Functional.Tests
         {
             IPNetwork network = IPNetwork.Parse("ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff/128");
             Assert.False(network.Contains(IPAddress.Loopback));
+        }
+
+        [Theory]
+        [InlineData("2000::/3", "::ffff:1.2.3.4", false)]
+        [InlineData("::ffff:0:0/96", "::ffff:192.0.2.1", true)]
+        public void Contains_IPv4MappedAddressInIPv6Network_ReturnsExpected(string networkString, string addressString, bool expected)
+        {
+            IPNetwork network = IPNetwork.Parse(networkString);
+
+            Assert.Equal(expected, network.Contains(IPAddress.Parse(addressString)));
         }
 
         [Theory]

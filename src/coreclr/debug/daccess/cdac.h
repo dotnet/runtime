@@ -7,7 +7,7 @@
 class CDAC final
 {
 public: // static
-    static CDAC Create(uint64_t descriptorAddr, ICorDebugMutableDataTarget *pDataTarget, IUnknown* legacyImpl);
+    static CDAC Create(uint64_t descriptorAddr, ICorDebugDataTarget *pDataTarget, IUnknown* legacyImpl);
 
 public:
     CDAC() = default;
@@ -18,7 +18,7 @@ public:
     CDAC(CDAC&& other)
         : m_module{ other.m_module }
         , m_cdac_handle{ other.m_cdac_handle }
-        , m_target{ other.m_target.Extract() }
+        , m_target{ other.m_target.Detach() }
         , m_legacyImpl{ other.m_legacyImpl }
     {
         other.m_module = NULL;
@@ -31,7 +31,7 @@ public:
     {
         m_module = other.m_module;
         m_cdac_handle = other.m_cdac_handle;
-        m_target = other.m_target.Extract();
+        m_target = other.m_target.Detach();
         m_legacyImpl = other.m_legacyImpl;
 
         other.m_module = NULL;
@@ -49,7 +49,8 @@ public:
         return m_module != NULL && m_cdac_handle != 0;
     }
 
-    void CreateSosInterface(IUnknown** sos);
+    HRESULT CreateSosInterface(IUnknown** sos);
+    HRESULT CreateDacDbiInterface(IUnknown** dbi);
 
 private:
     CDAC(HMODULE module, intptr_t handle, ICorDebugDataTarget* target, IUnknown* legacyImpl);
@@ -57,7 +58,7 @@ private:
 private:
     HMODULE m_module;
     intptr_t m_cdac_handle;
-    NonVMComHolder<ICorDebugDataTarget> m_target;
+    ReleaseHolder<ICorDebugDataTarget> m_target;
 
     // Assumes the legacy impl lives for the lifetime of this class - currently ClrDataAccess, which contains this class
     IUnknown* m_legacyImpl;

@@ -22,6 +22,7 @@ namespace System.IO.Compression
         private Deflater? _deflater;
         private byte[]? _buffer;
         private volatile bool _activeAsyncOperation;
+        private volatile bool _decompressionFinished;
 
         internal DeflateStream(Stream stream, CompressionMode mode, long uncompressedSize) : this(stream, mode, leaveOpen: false, ZLibNative.Deflate_DefaultWindowBits, uncompressedSize)
         {
@@ -52,8 +53,14 @@ namespace System.IO.Compression
         /// <param name="compressionOptions">The options for fine tuning the compression stream.</param>
         /// <param name="leaveOpen"><see langword="true" /> to leave the stream object open after disposing the <see cref="DeflateStream"/> object; otherwise, <see langword="false" /></param>
         /// <exception cref="ArgumentNullException"><paramref name="stream"/> or <paramref name="compressionOptions"/> is <see langword="null" />.</exception>
-        public DeflateStream(Stream stream, ZLibCompressionOptions compressionOptions, bool leaveOpen = false) : this(stream, compressionOptions, leaveOpen, ZLibNative.Deflate_DefaultWindowBits)
+        public DeflateStream(Stream stream, ZLibCompressionOptions compressionOptions, bool leaveOpen = false)
         {
+            ArgumentNullException.ThrowIfNull(stream);
+            ArgumentNullException.ThrowIfNull(compressionOptions);
+
+            int windowBits = CompressionFormatHelper.ResolveWindowBits(compressionOptions.WindowLog2, CompressionFormat.Deflate);
+
+            InitializeDeflater(stream, (ZLibNative.CompressionLevel)compressionOptions.CompressionLevel, (CompressionStrategy)compressionOptions.CompressionStrategy, leaveOpen, windowBits);
         }
 
         internal DeflateStream(Stream stream, ZLibCompressionOptions compressionOptions, bool leaveOpen, int windowBits)
@@ -78,7 +85,7 @@ namespace System.IO.Compression
                     if (!stream.CanRead)
                         throw new ArgumentException(SR.NotSupported_UnreadableStream, nameof(stream));
 
-                    _inflater = new Inflater(windowBits, uncompressedSize);
+                    _inflater = Inflater.CreateInflater(windowBits, uncompressedSize);
                     _stream = stream;
                     _mode = CompressionMode.Decompress;
                     _leaveOpen = leaveOpen;
@@ -113,7 +120,7 @@ namespace System.IO.Compression
             if (!stream.CanWrite)
                 throw new ArgumentException(SR.NotSupported_UnwritableStream, nameof(stream));
 
-            _deflater = new Deflater(compressionLevel, strategy, windowBits, GetMemLevel(compressionLevel));
+            _deflater = Deflater.CreateDeflater(compressionLevel, strategy, windowBits, GetMemLevel(compressionLevel));
 
             _stream = stream;
             _mode = CompressionMode.Compress;
@@ -325,7 +332,15 @@ namespace System.IO.Compression
                         // - Inflation is not finished yet.
                         // - Provided input wasn't completely empty
                         // In such case, we are dealing with a truncated input stream.
-                        if (s_useStrictValidation && !buffer.IsEmpty && !_inflater.Finished() && _inflater.NonEmptyInput())
+                        if (_inflater.HasUnconfirmedGZipProbe && _stream.CanSeek)
+                        {
+                            // A lone trailing GZip ID1 (0x1F) byte was speculatively consumed as a
+                            // possible concatenated member, but no further data followed. It was actually
+                            // trailing content: mark the inflater finished so the byte is rewound below and
+                            // not re-read on subsequent calls.
+                            _inflater.MarkEndOfStream();
+                        }
+                        else if (s_useStrictValidation && !buffer.IsEmpty && !_inflater.Finished() && _inflater.NonEmptyInput())
                         {
                             ThrowTruncatedInvalidData();
                         }
@@ -354,6 +369,13 @@ namespace System.IO.Compression
                 }
             }
 
+            // When decompression finishes, rewind the stream to the exact end of compressed data
+            if (bytesRead == 0 && InflatorIsFinished && !_decompressionFinished && _stream.CanSeek)
+            {
+                TryRewindStream(_stream);
+                _decompressionFinished = true;
+            }
+
             return bytesRead;
         }
 
@@ -362,8 +384,10 @@ namespace System.IO.Compression
             // 1. DeflateStream => return
             // 2. GZipStream that is finished but may have an additional GZipStream appended => feed more input
             // 3. GZipStream that is finished and appended with garbage => return
-            _inflater!.Finished() &&
-            (!_inflater.IsGzipStream() || !_inflater.NeedsInput());
+            (_inflater!.Finished() &&
+            (!_inflater.IsGzipStream() || !_inflater.NeedsInput()))
+            // 4. GZipStream whose lone trailing 0x1F probe has been resolved as end-of-stream => return
+            || _inflater.EndOfStreamReached;
 
         private void EnsureNotDisposed()
         {
@@ -470,7 +494,15 @@ namespace System.IO.Compression
                                 // - Inflation is not finished yet.
                                 // - Provided input wasn't completely empty
                                 // In such case, we are dealing with a truncated input stream.
-                                if (s_useStrictValidation && !_inflater.Finished() && _inflater.NonEmptyInput() && !buffer.IsEmpty)
+                                if (_inflater.HasUnconfirmedGZipProbe && _stream.CanSeek)
+                                {
+                                    // A lone trailing GZip ID1 (0x1F) byte was speculatively consumed as a
+                                    // possible concatenated member, but no further data followed. It was
+                                    // actually trailing content: mark the inflater finished so the byte is
+                                    // rewound below and not re-read on subsequent calls.
+                                    _inflater.MarkEndOfStream();
+                                }
+                                else if (s_useStrictValidation && !_inflater.Finished() && _inflater.NonEmptyInput() && !buffer.IsEmpty)
                                 {
                                     ThrowTruncatedInvalidData();
                                 }
@@ -496,6 +528,13 @@ namespace System.IO.Compression
                             // subsequent call may end up getting one earlier than otherwise preferred.
                             break;
                         }
+                    }
+
+                    // When decompression finishes, rewind the stream to the exact end of compressed data
+                    if (bytesRead == 0 && InflatorIsFinished && !_decompressionFinished && _stream.CanSeek)
+                    {
+                        TryRewindStream(_stream);
+                        _decompressionFinished = true;
                     }
 
                     return bytesRead;
@@ -563,7 +602,17 @@ namespace System.IO.Compression
                 fixed (byte* bufferPtr = &MemoryMarshal.GetReference(buffer))
                 {
                     _deflater.SetInput(bufferPtr, buffer.Length);
-                    WriteDeflaterOutput();
+                    try
+                    {
+                        WriteDeflaterOutput();
+                    }
+                    finally
+                    {
+                        // Discard any stale input reference so a later call (e.g. Dispose) doesn't read from a
+                        // buffer the caller may have since mutated, reused, or freed. On the success path the
+                        // input has already been fully consumed, so this is a no-op.
+                        _deflater.UnsetInput();
+                    }
                 }
             }
         }
@@ -659,6 +708,35 @@ namespace System.IO.Compression
             } while (!finished);
         }
 
+        /// <summary>
+        /// Rewinds the underlying stream to the exact end of the compressed data if there are unconsumed bytes.
+        /// This is called when decompression finishes to reset the stream position.
+        /// </summary>
+        private void TryRewindStream(Stream stream)
+        {
+            Debug.Assert(stream != null);
+            Debug.Assert(_mode == CompressionMode.Decompress);
+            Debug.Assert(stream.CanSeek);
+            Debug.Assert(_inflater != null);
+
+            // Check if there are unconsumed bytes in the inflater's input buffer, plus any lone GZip ID1
+            // (0x1F) byte that was speculatively consumed as an unconfirmed concatenated-member probe but
+            // turned out to be trailing data.
+            int unconsumedBytes = _inflater.GetAvailableInput() + _inflater.UnconfirmedGZipProbeBytes;
+            if (unconsumedBytes > 0)
+            {
+                try
+                {
+                    // Rewind the stream to the exact end of the compressed data
+                    stream.Seek(-unconsumedBytes, SeekOrigin.Current);
+                }
+                catch
+                {
+                    // If seeking fails, we don't want to throw during disposal
+                }
+            }
+        }
+
         protected override void Dispose(bool disposing)
         {
             try
@@ -673,7 +751,9 @@ namespace System.IO.Compression
                 try
                 {
                     if (disposing && !_leaveOpen)
+                    {
                         _stream?.Dispose();
+                    }
                 }
                 finally
                 {
@@ -728,7 +808,9 @@ namespace System.IO.Compression
                     try
                     {
                         if (!_leaveOpen && stream != null)
+                        {
                             await stream.DisposeAsync().ConfigureAwait(false);
+                        }
                     }
                     finally
                     {
@@ -808,8 +890,17 @@ namespace System.IO.Compression
                     // Pass new bytes through deflater
                     Debug.Assert(_deflater != null);
                     _deflater.SetInput(buffer);
-
-                    await WriteDeflaterOutputAsync(cancellationToken).ConfigureAwait(false);
+                    try
+                    {
+                        await WriteDeflaterOutputAsync(cancellationToken).ConfigureAwait(false);
+                    }
+                    finally
+                    {
+                        // Discard any stale input reference so a later call (e.g. Dispose) doesn't read from a
+                        // buffer the caller may have since mutated, reused, or freed. On the success path the
+                        // input has already been fully consumed, so this is a no-op.
+                        _deflater.UnsetInput();
+                    }
                 }
                 finally
                 {
@@ -892,6 +983,16 @@ namespace System.IO.Compression
                 try
                 {
                     Debug.Assert(_deflateStream._inflater != null);
+
+                    // If a lone trailing GZip ID1 (0x1F) probe was already resolved as end-of-stream and the
+                    // base stream rewound, the inflater is terminally finished. A subsequent CopyToAsync would
+                    // otherwise re-read the rewound byte from the base stream and spin (the inflater returns 0
+                    // without consuming input while NeedsInput stays false), so return without re-reading.
+                    if (_deflateStream._inflater.EndOfStreamReached)
+                    {
+                        return;
+                    }
+
                     // Flush any existing data in the inflater to the destination stream.
                     while (!_deflateStream._inflater.Finished())
                     {
@@ -909,9 +1010,26 @@ namespace System.IO.Compression
 
                     // Now, use the source stream's CopyToAsync to push directly to our inflater via this helper stream
                     await _deflateStream._stream.CopyToAsync(this, _arrayPoolBuffer.Length, _cancellationToken).ConfigureAwait(false);
-                    if (s_useStrictValidation && !_deflateStream._inflater.Finished())
+                    // A lone trailing GZip ID1 (0x1F) probe only suppresses the truncated-data error when the
+                    // base stream is seekable, since only then can the byte be rewound below. On non-seekable
+                    // streams strict validation still throws, preserving the existing behavior.
+                    if (s_useStrictValidation && !_deflateStream._inflater.Finished() &&
+                        !(_deflateStream._inflater.HasUnconfirmedGZipProbe && _deflateStream._stream.CanSeek))
                     {
                         ThrowTruncatedInvalidData();
+                    }
+
+                    // Rewind the stream if decompression has finished and the stream supports seeking. A lone
+                    // trailing GZip ID1 (0x1F) byte that was speculatively consumed as a possible concatenated
+                    // member also counts as finished here: it was actually trailing data.
+                    if ((_deflateStream._inflater.Finished() || _deflateStream._inflater.HasUnconfirmedGZipProbe) && !_deflateStream._decompressionFinished && _deflateStream._stream.CanSeek)
+                    {
+                        if (_deflateStream._inflater.HasUnconfirmedGZipProbe)
+                        {
+                            _deflateStream._inflater.MarkEndOfStream();
+                        }
+                        _deflateStream.TryRewindStream(_deflateStream._stream);
+                        _deflateStream._decompressionFinished = true;
                     }
                 }
                 finally
@@ -928,6 +1046,16 @@ namespace System.IO.Compression
                 try
                 {
                     Debug.Assert(_deflateStream._inflater != null);
+
+                    // If a lone trailing GZip ID1 (0x1F) probe was already resolved as end-of-stream and the
+                    // base stream rewound, the inflater is terminally finished. A subsequent CopyTo would
+                    // otherwise re-read the rewound byte from the base stream and spin (the inflater returns 0
+                    // without consuming input while NeedsInput stays false), so return without re-reading.
+                    if (_deflateStream._inflater.EndOfStreamReached)
+                    {
+                        return;
+                    }
+
                     // Flush any existing data in the inflater to the destination stream.
                     while (!_deflateStream._inflater.Finished())
                     {
@@ -945,9 +1073,26 @@ namespace System.IO.Compression
 
                     // Now, use the source stream's CopyToAsync to push directly to our inflater via this helper stream
                     _deflateStream._stream.CopyTo(this, _arrayPoolBuffer.Length);
-                    if (s_useStrictValidation && !_deflateStream._inflater.Finished())
+                    // A lone trailing GZip ID1 (0x1F) probe only suppresses the truncated-data error when the
+                    // base stream is seekable, since only then can the byte be rewound below. On non-seekable
+                    // streams strict validation still throws, preserving the existing behavior.
+                    if (s_useStrictValidation && !_deflateStream._inflater.Finished() &&
+                        !(_deflateStream._inflater.HasUnconfirmedGZipProbe && _deflateStream._stream.CanSeek))
                     {
                         ThrowTruncatedInvalidData();
+                    }
+
+                    // Rewind the stream if decompression has finished and the stream supports seeking. A lone
+                    // trailing GZip ID1 (0x1F) byte that was speculatively consumed as a possible concatenated
+                    // member also counts as finished here: it was actually trailing data.
+                    if ((_deflateStream._inflater.Finished() || _deflateStream._inflater.HasUnconfirmedGZipProbe) && !_deflateStream._decompressionFinished && _deflateStream._stream.CanSeek)
+                    {
+                        if (_deflateStream._inflater.HasUnconfirmedGZipProbe)
+                        {
+                            _deflateStream._inflater.MarkEndOfStream();
+                        }
+                        _deflateStream.TryRewindStream(_deflateStream._stream);
+                        _deflateStream._decompressionFinished = true;
                     }
                 }
                 finally
@@ -989,19 +1134,29 @@ namespace System.IO.Compression
                 // Feed the data from base stream into decompression engine.
                 _deflateStream._inflater.SetInput(buffer);
 
-                // While there's more decompressed data available, forward it to the buffer stream.
-                while (!_deflateStream._inflater.Finished())
+                try
                 {
-                    int bytesRead = _deflateStream._inflater.Inflate(new Span<byte>(_arrayPoolBuffer));
-                    if (bytesRead > 0)
+                    // While there's more decompressed data available, forward it to the buffer stream.
+                    while (!_deflateStream._inflater.Finished())
                     {
-                        await _destination.WriteAsync(new ReadOnlyMemory<byte>(_arrayPoolBuffer, 0, bytesRead), cancellationToken).ConfigureAwait(false);
+                        int bytesRead = _deflateStream._inflater.Inflate(new Span<byte>(_arrayPoolBuffer));
+                        if (bytesRead > 0)
+                        {
+                            await _destination.WriteAsync(new ReadOnlyMemory<byte>(_arrayPoolBuffer, 0, bytesRead), cancellationToken).ConfigureAwait(false);
+                        }
+                        else if (_deflateStream._inflater.NeedsInput())
+                        {
+                            // only break if we read 0 and ran out of input, if input is still available it may be another GZip payload
+                            break;
+                        }
                     }
-                    else if (_deflateStream._inflater.NeedsInput())
-                    {
-                        // only break if we read 0 and ran out of input, if input is still available it may be another GZip payload
-                        break;
-                    }
+                }
+                catch
+                {
+                    // Discard any stale input reference to "buffer" so the inflater doesn't retain a
+                    // dangling reference once this exception propagates.
+                    _deflateStream._inflater.UnsetInput();
+                    throw;
                 }
             }
 
@@ -1025,19 +1180,29 @@ namespace System.IO.Compression
                 // Feed the data from base stream into the decompression engine.
                 _deflateStream._inflater.SetInput(buffer, offset, count);
 
-                // While there's more decompressed data available, forward it to the buffer stream.
-                while (!_deflateStream._inflater.Finished())
+                try
                 {
-                    int bytesRead = _deflateStream._inflater.Inflate(new Span<byte>(_arrayPoolBuffer));
-                    if (bytesRead > 0)
+                    // While there's more decompressed data available, forward it to the buffer stream.
+                    while (!_deflateStream._inflater.Finished())
                     {
-                        _destination.Write(_arrayPoolBuffer, 0, bytesRead);
+                        int bytesRead = _deflateStream._inflater.Inflate(new Span<byte>(_arrayPoolBuffer));
+                        if (bytesRead > 0)
+                        {
+                            _destination.Write(_arrayPoolBuffer, 0, bytesRead);
+                        }
+                        else if (_deflateStream._inflater.NeedsInput())
+                        {
+                            // only break if we read 0 and ran out of input, if input is still available it may be another GZip payload
+                            break;
+                        }
                     }
-                    else if (_deflateStream._inflater.NeedsInput())
-                    {
-                        // only break if we read 0 and ran out of input, if input is still available it may be another GZip payload
-                        break;
-                    }
+                }
+                catch
+                {
+                    // Discard any stale input reference to "buffer" so the inflater doesn't retain a
+                    // dangling reference once this exception propagates.
+                    _deflateStream._inflater.UnsetInput();
+                    throw;
                 }
             }
 

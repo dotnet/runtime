@@ -1,0 +1,116 @@
+﻿using System;
+using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
+using Mono.Linker.Tests.Cases.Expectations.Assertions;
+
+namespace Mono.Linker.Tests.Cases.DataFlow
+{
+    [SkipKeptItemsValidation]
+    [ExpectedNoWarnings]
+    class RequiresDynamicCodeAnalyzerIntrinsics
+    {
+        public static void Main()
+        {
+            MakeGenericType.Test();
+            MakeGenericMethod.Test();
+            EnumGetValues.Test();
+        }
+
+        class MakeGenericType
+        {
+            class Gen<T> { }
+            class GenConstrained<T> where T : class { }
+
+            static Type GrabUnknownType() => null;
+
+            public static void Test()
+            {
+                TestRecognizedIntrinsic();
+                TestRecognizedGenericIntrinsic<object>();
+                TestNullableCornerCase<int?>();
+                TestNullableCornerCaseClassConstraint<object>();
+                TestNullableCornerCaseEnumConstraint<DayOfWeek>();
+                TestRecognizedConstraint();
+                TestUnknownOwningType();
+                TestUnknownArgument();
+            }
+
+            public static void TestRecognizedIntrinsic() => typeof(Gen<>).MakeGenericType(typeof(object));
+
+            public static void TestRecognizedGenericIntrinsic<T>() => typeof(Gen<>).MakeGenericType(typeof(T));
+
+            [ExpectedWarning("IL3050", nameof(Type.MakeGenericType), Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
+            public static void TestNullableCornerCase<T>() => typeof(Gen<>).MakeGenericType(Nullable.GetUnderlyingType(typeof(T)));
+
+            [ExpectedWarning("IL3050", nameof(Type.MakeGenericType), Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
+            public static void TestNullableCornerCaseClassConstraint<T>() where T : class => typeof(Gen<>).MakeGenericType(Nullable.GetUnderlyingType(typeof(T)));
+
+            [ExpectedWarning("IL3050", nameof(Type.MakeGenericType), Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
+            public static void TestNullableCornerCaseEnumConstraint<T>() where T : Enum => typeof(Gen<>).MakeGenericType(Nullable.GetUnderlyingType(typeof(T)));
+
+            public static void TestRecognizedConstraint() => typeof(GenConstrained<>).MakeGenericType(GrabUnknownType());
+
+            [ExpectedWarning("IL2055", nameof(Type.MakeGenericType))]
+            [ExpectedWarning("IL3050", nameof(Type.MakeGenericType), Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
+            public static void TestUnknownOwningType() => GrabUnknownType().MakeGenericType(typeof(object));
+
+            [ExpectedWarning("IL3050", nameof(Type.MakeGenericType), Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
+            public static void TestUnknownArgument() => typeof(Gen<>).MakeGenericType(GrabUnknownType());
+        }
+
+        class MakeGenericMethod
+        {
+            public static void Gen<T>() { }
+            public static void GenConstrained<T>() where T : class { }
+
+            static MethodInfo GrabUnknownMethod() => null;
+
+            static Type GrabUnknownType() => null;
+
+            public static void Test()
+            {
+                TestRecognizedIntrinsic();
+                TestRecognizedGenericIntrinsic<object>();
+                TestRecognizedConstraint();
+                TestUnknownOwningMethod();
+                TestUnknownArgument();
+            }
+
+            public static void TestRecognizedIntrinsic() => typeof(MakeGenericMethod).GetMethod(nameof(Gen)).MakeGenericMethod(typeof(object));
+
+            public static void TestRecognizedGenericIntrinsic<T>() => typeof(MakeGenericMethod).GetMethod(nameof(Gen)).MakeGenericMethod(typeof(T));
+
+            public static void TestRecognizedConstraint() => typeof(MakeGenericMethod).GetMethod(nameof(GenConstrained)).MakeGenericMethod(GrabUnknownType());
+
+            [ExpectedWarning("IL2060", nameof(MethodInfo.MakeGenericMethod))]
+            [ExpectedWarning("IL3050", nameof(MethodInfo.MakeGenericMethod), Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
+            public static void TestUnknownOwningMethod() => GrabUnknownMethod().MakeGenericMethod(typeof(object));
+
+            [ExpectedWarning("IL3050", nameof(MethodInfo.MakeGenericMethod), Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
+            public static void TestUnknownArgument() => typeof(MakeGenericMethod).GetMethod(nameof(Gen)).MakeGenericMethod(GrabUnknownType());
+        }
+
+        class EnumGetValues
+        {
+            enum SomeEnum
+            {
+                A,
+                B
+            }
+
+            static Type GrabUnknownType() => null;
+
+            public static void Test()
+            {
+                TestKnownType();
+                TestUnknownType();
+            }
+
+            [ExpectedNoWarnings]
+            public static void TestKnownType() => Enum.GetValues(typeof(SomeEnum));
+
+            [ExpectedWarning("IL3050", nameof(Enum.GetValues), Tool.Analyzer | Tool.NativeAot, "NativeAOT-specific warning")]
+            public static void TestUnknownType() => Enum.GetValues(GrabUnknownType());
+        }
+    }
+}

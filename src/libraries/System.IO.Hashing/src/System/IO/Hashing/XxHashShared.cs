@@ -9,6 +9,7 @@ using System.Runtime.InteropServices;
 #if NET
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.Wasm;
 using System.Runtime.Intrinsics.X86;
 #endif
 
@@ -161,7 +162,7 @@ namespace System.IO.Hashing
         {
             state.Seed = seed;
 
-            fixed (byte* secret = state.Secret)
+            fixed (byte* secret = &state.Secret[0])
             {
                 if (seed == 0)
                 {
@@ -182,7 +183,7 @@ namespace System.IO.Hashing
             state.StripesProcessedInCurrentBlock = 0;
             state.TotalLength = 0;
 
-            fixed (ulong* accumulators = state.Accumulators)
+            fixed (ulong* accumulators = &state.Accumulators[0])
             {
                 InitializeAccumulators(accumulators);
             }
@@ -243,7 +244,7 @@ namespace System.IO.Hashing
 
             state.TotalLength += (uint)source.Length;
 
-            fixed (byte* buffer = state.Buffer)
+            fixed (byte* buffer = &state.Buffer[0])
             {
                 // Small input: just copy the data to the buffer.
                 if (source.Length <= InternalBufferLengthBytes - state.BufferedCount)
@@ -253,8 +254,8 @@ namespace System.IO.Hashing
                     return;
                 }
 
-                fixed (byte* secret = state.Secret)
-                fixed (ulong* accumulators = state.Accumulators)
+                fixed (byte* secret = &state.Secret[0])
+                fixed (ulong* accumulators = &state.Accumulators[0])
                 fixed (byte* sourcePtr = &MemoryMarshal.GetReference(source))
                 {
                     // Internal buffer is partially filled (always, except at beginning). Complete it, then consume it.
@@ -331,7 +332,7 @@ namespace System.IO.Hashing
 
         public static void CopyAccumulators(ref State state, ulong* accumulators)
         {
-            fixed (ulong* stateAccumulators = state.Accumulators)
+            fixed (ulong* stateAccumulators = &state.Accumulators[0])
             {
 #if NET
                 if (Vector256.IsHardwareAccelerated)
@@ -361,7 +362,7 @@ namespace System.IO.Hashing
         {
             Debug.Assert(state.BufferedCount > 0);
 
-            fixed (byte* buffer = state.Buffer)
+            fixed (byte* buffer = &state.Buffer[0])
             {
                 byte* accumulateData;
                 if (state.BufferedCount >= StripeLengthBytes)
@@ -702,12 +703,25 @@ namespace System.IO.Hashing
                 Vector64<uint> sourceHigh = Vector128.Shuffle(source, Vector128.Create(1u, 3, 0, 0)).GetLower();
                 return AdvSimd.MultiplyWideningLower(sourceLow, sourceHigh);
             }
+            else if (Sse2.IsSupported)
+            {
+                Vector128<uint> sourceLow = Vector128.Shuffle(source, Vector128.Create(1u, 0, 3, 0));
+                return Sse2.Multiply(source, sourceLow);
+            }
+            else if (PackedSimd.IsSupported)
+            {
+                // PackedSimd.MultiplyWideningLower (i64x2.extmul_low_i32x4_u) does
+                // result[i] = (ulong)a[i] * (ulong)b[i] for i in {0, 1}.
+                // We need { source[0]*source[1], source[2]*source[3] } to match the Sse2/AdvSimd paths,
+                // so first move the even lanes into one operand and the odd lanes into the other.
+                Vector128<uint> evens = Vector128.Shuffle(source, Vector128.Create(0u, 2, 0, 0));
+                Vector128<uint> odds = Vector128.Shuffle(source, Vector128.Create(1u, 3, 0, 0));
+                return PackedSimd.MultiplyWideningLower(evens, odds);
+            }
             else
             {
                 Vector128<uint> sourceLow = Vector128.Shuffle(source, Vector128.Create(1u, 0, 3, 0));
-                return Sse2.IsSupported ?
-                    Sse2.Multiply(source, sourceLow) :
-                    (source & Vector128.Create(~0u, 0u, ~0u, 0u)).AsUInt64() * (sourceLow & Vector128.Create(~0u, 0u, ~0u, 0u)).AsUInt64();
+                return (source & Vector128.Create(~0u, 0u, ~0u, 0u)).AsUInt64() * (sourceLow & Vector128.Create(~0u, 0u, ~0u, 0u)).AsUInt64();
             }
         }
 #endif
@@ -804,6 +818,16 @@ namespace System.IO.Hashing
         [StructLayout(LayoutKind.Auto)]
         public struct State
         {
+#if NET
+            /// <summary>The accumulators. Length is <see cref="AccumulatorCount"/>.</summary>
+            internal AccumulatorsBuffer Accumulators;
+
+            /// <summary>Used to store a custom secret generated from a seed. Length is <see cref="SecretLengthBytes"/>.</summary>
+            internal SecretBuffer Secret;
+
+            /// <summary>The internal buffer. Length is <see cref="InternalBufferLengthBytes"/>.</summary>
+            internal InputBuffer Buffer;
+#else
             /// <summary>The accumulators. Length is <see cref="AccumulatorCount"/>.</summary>
             internal fixed ulong Accumulators[AccumulatorCount];
 
@@ -812,6 +836,7 @@ namespace System.IO.Hashing
 
             /// <summary>The internal buffer. Length is <see cref="InternalBufferLengthBytes"/>.</summary>
             internal fixed byte Buffer[InternalBufferLengthBytes];
+#endif
 
             /// <summary>The amount of memory in <see cref="Buffer"/>.</summary>
             internal uint BufferedCount;
@@ -824,6 +849,26 @@ namespace System.IO.Hashing
 
             /// <summary>The seed employed (possibly 0).</summary>
             internal ulong Seed;
+
+#if NET
+            [InlineArray(AccumulatorCount)]
+            internal struct AccumulatorsBuffer
+            {
+                private ulong _element0;
+            }
+
+            [InlineArray(SecretLengthBytes)]
+            internal struct SecretBuffer
+            {
+                private byte _element0;
+            }
+
+            [InlineArray(InternalBufferLengthBytes)]
+            internal struct InputBuffer
+            {
+                private byte _element0;
+            }
+#endif
         };
     }
 }

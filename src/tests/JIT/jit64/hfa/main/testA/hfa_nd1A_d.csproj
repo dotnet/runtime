@@ -12,5 +12,6 @@
     <ProjectReference Include="..\dll\hfa_nested_f64_managed.csproj" />
     <CMakeProjectReference Include="..\dll\CMakeLists.txt" />
     <ProjectReference Include="..\dll\hfa_nested_f64_common.csproj" />
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
   </ItemGroup>
 </Project>

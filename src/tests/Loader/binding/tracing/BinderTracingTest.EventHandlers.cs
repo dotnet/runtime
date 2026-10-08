@@ -23,7 +23,7 @@ namespace BinderTracingTests
     }
     partial class BinderTracingTest
     {
-        private const string AssemblyLoadFromHandlerName = "LoadFromResolveHandler";
+        private const string AssemblyLoadFromHandlerName = "System.Reflection.Assembly.LoadFromResolveHandler";
 
         [BinderTest]
         public static BindOperation AssemblyLoadContextResolving_ReturnNull()
@@ -275,9 +275,7 @@ namespace BinderTracingTests
             };
         }
 
-        [BinderTest(isolate: true,
-            additionalLoadsToTrack: new string[] { "AssemblyToLoadDependency" },
-            activeIssue: "https://github.com/dotnet/runtime/issues/68521")] // Emit-based Invoke causes an extra load.
+        [BinderTest(isolate: true, additionalLoadsToTrack: new string[] { "AssemblyToLoadDependency" })] // Emit-based Invoke causes an extra load.
         public static BindOperation AssemblyLoadFromResolveHandler_MissingDependency()
         {
             string appPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
@@ -397,7 +395,7 @@ namespace BinderTracingTests
                 var invocation = new HandlerInvocation()
                 {
                     AssemblyName = assemblyName,
-                    HandlerName = nameof(OnAssemblyLoadContextResolving),
+                    HandlerName = $"{GetType().FullName}.{nameof(OnAssemblyLoadContextResolving)}",
                     AssemblyLoadContext = context == AssemblyLoadContext.Default ? context.Name : context.ToString(),
                 };
                 if (asm != null)
@@ -421,7 +419,7 @@ namespace BinderTracingTests
                 var invocation = new HandlerInvocation()
                 {
                     AssemblyName = assemblyName,
-                    HandlerName = nameof(OnAppDomainAssemblyResolve),
+                    HandlerName = $"{GetType().FullName}.{nameof(OnAppDomainAssemblyResolve)}",
                 };
                 if (asm != null)
                 {

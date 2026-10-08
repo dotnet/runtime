@@ -2,7 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Microsoft.Quic;
+using System.Diagnostics.CodeAnalysis;
+using System.Net.Security;
 using System.Reflection;
+using System.Runtime.InteropServices;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Linq;
 using System.Threading.Tasks;
@@ -22,6 +26,18 @@ public unsafe class QuicTestCollection : ICollectionFixture<QuicTestCollection>,
     public static Version MsQuicVersion { get; } = GetMsQuicVersion();
 
     private static readonly Dictionary<string, int> s_unobservedExceptions = new Dictionary<string, int>();
+    private static readonly X509Certificate2 s_clientCertificate = System.Net.Test.Common.Configuration.Certificates.GetClientCertificate();
+    private static readonly X509Certificate2 s_serverCertificate = System.Net.Test.Common.Configuration.Certificates.GetServerCertificate();
+
+    internal static SslStreamCertificateContext ClientCertificateContext { get; } =
+        SslStreamCertificateContext.Create(s_clientCertificate, additionalCertificates: null, offline: true);
+
+    // Avoid rebuilding the default certificate chain, including issuer discovery, for every test connection.
+    internal static SslStreamCertificateContext ServerCertificateContext { get; } =
+        SslStreamCertificateContext.Create(s_serverCertificate, additionalCertificates: null, offline: true);
+
+    internal static X509Certificate2 GetClientCertificate() => new X509Certificate2(s_clientCertificate);
+    internal static X509Certificate2 GetServerCertificate() => new X509Certificate2(s_serverCertificate);
 
     public QuicTestCollection()
     {
@@ -54,6 +70,19 @@ public unsafe class QuicTestCollection : ICollectionFixture<QuicTestCollection>,
 
     public unsafe void Dispose()
     {
+        foreach (X509Certificate2 certificate in ClientCertificateContext.IntermediateCertificates)
+        {
+            certificate.Dispose();
+        }
+
+        foreach (X509Certificate2 certificate in ServerCertificateContext.IntermediateCertificates)
+        {
+            certificate.Dispose();
+        }
+
+        s_clientCertificate.Dispose();
+        s_serverCertificate.Dispose();
+
         if (!IsSupported)
         {
             return;
@@ -124,6 +153,48 @@ public unsafe class QuicTestCollection : ICollectionFixture<QuicTestCollection>,
         Type msQuicApiType = Type.GetType("System.Net.Quic.MsQuicApi, System.Net.Quic");
 
         return (bool)msQuicApiType.GetProperty("UsesSChannelBackend", BindingFlags.NonPublic | BindingFlags.Static).GetGetMethod(true).Invoke(null, Array.Empty<object?>());
+    }
+
+    [DynamicDependency("_handle", typeof(QuicConnection))]
+    internal static QUIC_SETTINGS DisableConnectionKeepAlive(QuicConnection connection)
+    {
+        FieldInfo? field = typeof(QuicConnection).GetField("_handle", BindingFlags.NonPublic | BindingFlags.Instance);
+        Assert.NotNull(field);
+        SafeHandle handle = Assert.IsAssignableFrom<SafeHandle>(field.GetValue(connection));
+        QUIC_API_TABLE* apiTable = GetApiTable();
+        bool addedReference = false;
+        try
+        {
+            handle.DangerousAddRef(ref addedReference);
+            QUIC_HANDLE* nativeHandle = (QUIC_HANDLE*)handle.DangerousGetHandle();
+            Assert.NotEqual(0u, ReadSettings().KeepAliveIntervalMs);
+
+            QUIC_SETTINGS settings = default;
+            settings.IsSet.KeepAliveIntervalMs = 1;
+            settings.KeepAliveIntervalMs = 0;
+            int status = apiTable->SetParam(nativeHandle, QUIC_PARAM_CONN_SETTINGS, (uint)sizeof(QUIC_SETTINGS), &settings);
+            Assert.False(StatusFailed(status), $"Disabling connection keep-alive failed: 0x{status:X8}");
+
+            return ReadSettings();
+
+            QUIC_SETTINGS ReadSettings()
+            {
+                QUIC_SETTINGS currentSettings = default;
+                uint length = (uint)sizeof(QUIC_SETTINGS);
+                int status = apiTable->GetParam(nativeHandle, QUIC_PARAM_CONN_SETTINGS, &length, &currentSettings);
+                Assert.False(StatusFailed(status), $"Reading connection settings failed: 0x{status:X8}");
+                Assert.True(length >= (uint)Marshal.OffsetOf<QUIC_SETTINGS>(nameof(QUIC_SETTINGS.KeepAliveIntervalMs)) + sizeof(uint));
+                return currentSettings;
+            }
+        }
+        finally
+        {
+            if (addedReference)
+            {
+                handle.DangerousRelease();
+            }
+            GC.KeepAlive(connection);
+        }
     }
 
     private static QUIC_API_TABLE* GetApiTable()

@@ -289,25 +289,6 @@ C_FUNC(\Name):
     EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr, 48
 .endm
 
-.macro GETTHUNKDATA_ETLS_9
-    PROLOG_SAVE_REG_PAIR_INDEXED   fp, lr, -96           // ;; Push down stack pointer and store FP and LR
-    stp         x0, x1, [sp, #0x10]
-    stp         x2, x3, [sp, #0x20]
-    stp         x4, x5, [sp, #0x30]
-    stp         x6, x7, [sp, #0x40]
-    stp         x8, xip0, [sp, #0x50]
-
-    bl RhpGetThunkData
-    mov x9, x0
-
-    ldp         x0, x1, [sp, #0x10]
-    ldp         x2, x3, [sp, #0x20]
-    ldp         x4, x5, [sp, #0x30]
-    ldp         x6, x7, [sp, #0x40]
-    ldp         x8, xip0, [sp, #0x50]
-    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr, 96
-.endm
-
 .macro  InterlockedOperationBarrier
     dmb ish
 .endm
@@ -323,6 +304,7 @@ C_FUNC(\Name):
     str         \trashReg1, [\trashReg2]
     str         xzr, [\threadReg, #OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation]
     str         xzr, [\threadReg, #OFFSETOF__Thread__m_pvHijackedReturnAddress]
+    str         xzr, [\threadReg, #OFFSETOF__Thread__m_pSpForPacSign]
 0:
 .endm
 
@@ -330,6 +312,12 @@ C_FUNC(\Name):
 #define PTFF_SAVE_SP            0x00000400
 #define PTFF_SAVE_X0            0x00000800
 #define PTFF_SAVE_X1            0x00001000
+#define PTFF_SAVE_X2            0x00002000
+#define PTFF_SAVE_X3            0x00004000
+#define PTFF_SAVE_X4            0x00008000
+#define PTFF_SAVE_X5            0x00010000
+#define PTFF_SAVE_X6            0x00020000
+#define PTFF_SAVE_X7            0x00040000
 #define PTFF_SAVE_ALL_PRESERVED 0x000003FF  // NOTE: x19-x28
 #define PTFF_THREAD_HIJACK_HI   0x00000001  // upper 32 bits of the PTFF_THREAD_HIJACK
 

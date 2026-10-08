@@ -25,24 +25,22 @@ int32_t AndroidCryptoNative_EcDsaSign(const uint8_t* dgst, int32_t dgstlen, uint
     abort_if_invalid_pointer_argument (siglen);
 
     JNIEnv* env = GetJNIEnv();
+    int32_t ret = FAIL;
+    INIT_LOCALS(loc, signatureObject, privateKey);
 
-    jobject signatureObject = GetEcDsaSignatureObject(env);
-    if (!signatureObject)
-    {
-        return FAIL;
-    }
+    loc[signatureObject] = GetEcDsaSignatureObject(env);
+    if (!loc[signatureObject])
+        goto cleanup;
 
-    jobject privateKey = (*env)->CallObjectMethod(env, key->keyPair, g_keyPairGetPrivateMethod);
-    if (!privateKey)
-    {
-        ReleaseLRef(env, signatureObject);
-        return FAIL;
-    }
+    loc[privateKey] = (*env)->CallObjectMethod(env, key->keyPair, g_keyPairGetPrivateMethod);
+    if (CheckJNIExceptions(env) || !loc[privateKey])
+        goto cleanup;
 
-    int32_t returnValue = AndroidCryptoNative_SignWithSignatureObject(env, signatureObject, privateKey, dgst, dgstlen, sig, siglen);
-    ReleaseLRef(env, privateKey);
-    ReleaseLRef(env, signatureObject);
-    return returnValue;
+    ret = AndroidCryptoNative_SignWithSignatureObject(env, loc[signatureObject], loc[privateKey], dgst, dgstlen, sig, siglen);
+
+cleanup:
+    RELEASE_LOCALS(loc, env);
+    return ret;
 }
 
 int32_t AndroidCryptoNative_EcDsaVerify(const uint8_t* dgst, int32_t dgstlen, const uint8_t* sig, int32_t siglen, EC_KEY* key)

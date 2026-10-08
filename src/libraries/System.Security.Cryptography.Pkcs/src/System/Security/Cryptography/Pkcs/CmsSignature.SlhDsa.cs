@@ -13,27 +13,29 @@ namespace System.Security.Cryptography.Pkcs
     {
         static partial void PrepareRegistrationSlhDsa(Dictionary<string, CmsSignature> lookup)
         {
-            lookup.Add(Oids.SlhDsaSha2_128s, new SlhDsaCmsSignature(Oids.SlhDsaSha2_128s));
-            lookup.Add(Oids.SlhDsaShake128s, new SlhDsaCmsSignature(Oids.SlhDsaShake128s));
-            lookup.Add(Oids.SlhDsaSha2_128f, new SlhDsaCmsSignature(Oids.SlhDsaSha2_128f));
-            lookup.Add(Oids.SlhDsaShake128f, new SlhDsaCmsSignature(Oids.SlhDsaShake128f));
-            lookup.Add(Oids.SlhDsaSha2_192s, new SlhDsaCmsSignature(Oids.SlhDsaSha2_192s));
-            lookup.Add(Oids.SlhDsaShake192s, new SlhDsaCmsSignature(Oids.SlhDsaShake192s));
-            lookup.Add(Oids.SlhDsaSha2_192f, new SlhDsaCmsSignature(Oids.SlhDsaSha2_192f));
-            lookup.Add(Oids.SlhDsaShake192f, new SlhDsaCmsSignature(Oids.SlhDsaShake192f));
-            lookup.Add(Oids.SlhDsaSha2_256s, new SlhDsaCmsSignature(Oids.SlhDsaSha2_256s));
-            lookup.Add(Oids.SlhDsaShake256s, new SlhDsaCmsSignature(Oids.SlhDsaShake256s));
-            lookup.Add(Oids.SlhDsaSha2_256f, new SlhDsaCmsSignature(Oids.SlhDsaSha2_256f));
-            lookup.Add(Oids.SlhDsaShake256f, new SlhDsaCmsSignature(Oids.SlhDsaShake256f));
+            lookup.Add(Oids.SlhDsaSha2_128s, new SlhDsaCmsSignature(Oids.SlhDsaSha2_128s, SlhDsaAlgorithm.SlhDsaSha2_128s));
+            lookup.Add(Oids.SlhDsaShake128s, new SlhDsaCmsSignature(Oids.SlhDsaShake128s, SlhDsaAlgorithm.SlhDsaShake128s));
+            lookup.Add(Oids.SlhDsaSha2_128f, new SlhDsaCmsSignature(Oids.SlhDsaSha2_128f, SlhDsaAlgorithm.SlhDsaSha2_128f));
+            lookup.Add(Oids.SlhDsaShake128f, new SlhDsaCmsSignature(Oids.SlhDsaShake128f, SlhDsaAlgorithm.SlhDsaShake128f));
+            lookup.Add(Oids.SlhDsaSha2_192s, new SlhDsaCmsSignature(Oids.SlhDsaSha2_192s, SlhDsaAlgorithm.SlhDsaSha2_192s));
+            lookup.Add(Oids.SlhDsaShake192s, new SlhDsaCmsSignature(Oids.SlhDsaShake192s, SlhDsaAlgorithm.SlhDsaShake192s));
+            lookup.Add(Oids.SlhDsaSha2_192f, new SlhDsaCmsSignature(Oids.SlhDsaSha2_192f, SlhDsaAlgorithm.SlhDsaSha2_192f));
+            lookup.Add(Oids.SlhDsaShake192f, new SlhDsaCmsSignature(Oids.SlhDsaShake192f, SlhDsaAlgorithm.SlhDsaShake192f));
+            lookup.Add(Oids.SlhDsaSha2_256s, new SlhDsaCmsSignature(Oids.SlhDsaSha2_256s, SlhDsaAlgorithm.SlhDsaSha2_256s));
+            lookup.Add(Oids.SlhDsaShake256s, new SlhDsaCmsSignature(Oids.SlhDsaShake256s, SlhDsaAlgorithm.SlhDsaShake256s));
+            lookup.Add(Oids.SlhDsaSha2_256f, new SlhDsaCmsSignature(Oids.SlhDsaSha2_256f, SlhDsaAlgorithm.SlhDsaSha2_256f));
+            lookup.Add(Oids.SlhDsaShake256f, new SlhDsaCmsSignature(Oids.SlhDsaShake256f, SlhDsaAlgorithm.SlhDsaShake256f));
         }
 
         private sealed class SlhDsaCmsSignature : CmsSignature
         {
-            private string _signatureAlgorithm;
+            private readonly string _signatureAlgorithm;
+            private readonly SlhDsaAlgorithm _parameterSet;
 
-            internal SlhDsaCmsSignature(string signatureAlgorithm)
+            internal SlhDsaCmsSignature(string signatureAlgorithm, SlhDsaAlgorithm parameterSet)
             {
                 _signatureAlgorithm = signatureAlgorithm;
+                _parameterSet = parameterSet;
             }
 
             protected override bool VerifyKeyType(object key) => key is SlhDsa;
@@ -62,15 +64,18 @@ namespace System.Security.Cryptography.Pkcs
                 // The spec (as of May 5, 2025) has strength requirements on the hash, but we will
                 // not enforce them here. If the callers wants to enforce them, they can do so by themselves.
 
-                SlhDsa? publicKey = certificate.GetSlhDsaPublicKey();
-
-                if (publicKey is null)
+                using (SlhDsa? publicKey = certificate.GetSlhDsaPublicKey())
                 {
-                    return false;
-                }
+                    if (publicKey is null)
+                    {
+                        return false;
+                    }
 
-                using (publicKey)
-                {
+                    if (publicKey.Algorithm != _parameterSet)
+                    {
+                        return false;
+                    }
+
                     return publicKey.VerifyData(
                         valueHash,
 #if NET || NETSTANDARD2_1

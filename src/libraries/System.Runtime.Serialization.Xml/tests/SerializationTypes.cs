@@ -370,6 +370,27 @@ namespace SerializationTypes
         public byte[] ByteArray { get; set; }
     }
 
+    public class TypeWithBuiltInTypedMembers
+    {
+        public string StringMember;
+        public int IntMember;
+        public int? NullableIntMember;
+        public List<string> ListMember;
+        public int[] ArrayMember;
+    }
+
+    public class TypeWithNullableBuiltInTypedMembers
+    {
+        [XmlElement(IsNullable = true)]
+        public string StringMember;
+
+        public int? NullableIntMember;
+
+        public int[] ArrayMember;
+
+        public List<string> ListMember;
+    }
+
     public class TypeA
     {
         public string Name;
@@ -708,6 +729,61 @@ namespace SerializationTypes
             writer.WriteAttributeString("BoolValue", BoolValue.ToString());
         }
     }
+
+    public struct StructImplementingIXmlSerializableWithoutParameterlessConstructor : IXmlSerializable
+    {
+        public static bool WriteXmlInvoked = false;
+        public static bool ReadXmlInvoked = false;
+
+        public string StringValue { get; set; }
+
+        public System.Xml.Schema.XmlSchema GetSchema()
+        {
+            return null;
+        }
+
+        public void ReadXml(System.Xml.XmlReader reader)
+        {
+            ReadXmlInvoked = true;
+            reader.MoveToContent();
+            StringValue = reader.GetAttribute("StringValue");
+        }
+
+        public void WriteXml(System.Xml.XmlWriter writer)
+        {
+            WriteXmlInvoked = true;
+            writer.WriteAttributeString("StringValue", StringValue);
+        }
+    }
+
+    public struct StructImplementingIXmlSerializableWithParameterlessConstructor : IXmlSerializable
+    {
+        public static bool WriteXmlInvoked = false;
+        public static bool ReadXmlInvoked = false;
+
+        public string StringValue { get; set; }
+
+        public StructImplementingIXmlSerializableWithParameterlessConstructor() { }
+
+        public System.Xml.Schema.XmlSchema GetSchema()
+        {
+            return null;
+        }
+
+        public void ReadXml(System.Xml.XmlReader reader)
+        {
+            ReadXmlInvoked = true;
+            reader.MoveToContent();
+            StringValue = reader.GetAttribute("StringValue");
+        }
+
+        public void WriteXml(System.Xml.XmlWriter writer)
+        {
+            WriteXmlInvoked = true;
+            writer.WriteAttributeString("StringValue", StringValue);
+        }
+    }
+
     public class TypeWithPropertyNameSpecified
     {
         public string MyField;
@@ -922,6 +998,36 @@ namespace SerializationTypes
         {
             return Foo != DefaultFoo;
         }
+    }
+
+    public class BaseTypeWithShouldSerializeMethod
+    {
+        public string Foo { get; set; } = "default";
+
+        [System.Xml.Serialization.XmlAttribute]
+        public string Bar { get; set; } = "default";
+
+        public bool ShouldSerializeFoo()
+        {
+            return Foo != "default";
+        }
+
+        public bool ShouldSerializeBar()
+        {
+            return Bar != "default";
+        }
+    }
+
+    public class DerivedTypeWithInheritedShouldSerialize : BaseTypeWithShouldSerializeMethod
+    {
+    }
+
+    public class TypeWithFieldBackedSpecifiedMember
+    {
+        public string Foo { get; set; }
+
+        [System.Xml.Serialization.XmlIgnore]
+        public bool FooSpecified;
     }
 
     public class KnownTypesThroughConstructorWithArrayProperties
@@ -1386,7 +1492,7 @@ public class PurchaseOrder
         OrderedItem item = new OrderedItem();
         item.ItemName = "Widget S";
         item.Description = "Small widget";
-        item.UnitPrice = (decimal)5.23;
+        item.UnitPrice = 5.23m;
         item.Quantity = 3;
         item.Calculate();
 
@@ -1398,7 +1504,7 @@ public class PurchaseOrder
             subTotal += oi.LineTotal;
         }
         po.SubTotal = subTotal;
-        po.ShipCost = (decimal)12.51;
+        po.ShipCost = 12.51m;
         po.TotalCost = po.SubTotal + po.ShipCost;
         return po;
     }

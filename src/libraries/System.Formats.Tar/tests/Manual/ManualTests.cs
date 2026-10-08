@@ -15,20 +15,20 @@ public class ManualTests : TarTestsBase
 
     public static IEnumerable<object[]> WriteEntry_LongFileSize_TheoryData()
     {
-        foreach (bool unseekableStream in new[] { false, true })
+        foreach (TarEntryFormat entryFormat in new[] { TarEntryFormat.V7, TarEntryFormat.Ustar, TarEntryFormat.Gnu, TarEntryFormat.Pax })
         {
-            foreach (TarEntryFormat entryFormat in new[] { TarEntryFormat.V7, TarEntryFormat.Ustar, TarEntryFormat.Gnu, TarEntryFormat.Pax })
-            {
-                yield return new object[] { entryFormat, LegacyMaxFileSize, unseekableStream };
-            }
-
-            // Pax and Gnu supports unlimited size files.
-            yield return new object[] { TarEntryFormat.Pax, LegacyMaxFileSize + 1, unseekableStream };
-            yield return new object[] { TarEntryFormat.Gnu, LegacyMaxFileSize + 1, unseekableStream };
+            yield return new object[] { entryFormat, LegacyMaxFileSize, false };
+            yield return new object[] { entryFormat, LegacyMaxFileSize, true };
         }
+
+        // Pax and Gnu supports unlimited size files.
+        yield return new object[] { TarEntryFormat.Pax, LegacyMaxFileSize + 1, false };
+        yield return new object[] { TarEntryFormat.Pax, LegacyMaxFileSize + 1, true };
+        yield return new object[] { TarEntryFormat.Gnu, LegacyMaxFileSize + 1, false };
+        yield return new object[] { TarEntryFormat.Gnu, LegacyMaxFileSize + 1, true };
     }
 
-    [ConditionalTheory(nameof(ManualTestsEnabled))]
+    [ConditionalTheory(typeof(ManualTests), nameof(ManualTestsEnabled))]
     [MemberData(nameof(WriteEntry_LongFileSize_TheoryData))]
     [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.Android | TestPlatforms.Browser, "Needs too much disk space.")]
     public void WriteEntry_LongFileSize(TarEntryFormat entryFormat, long size, bool unseekableStream)
@@ -39,7 +39,7 @@ public class ManualTests : TarTestsBase
 
         using (TarWriter writer = new(s, leaveOpen: true))
         {
-            TarEntry writeEntry = InvokeTarEntryCreationConstructor(entryFormat, entryFormat is TarEntryFormat.V7 ? TarEntryType.V7RegularFile : TarEntryType.RegularFile, "foo");
+            TarEntry writeEntry = InvokeTarEntryCreationConstructor(entryFormat, GetRegularFileEntryTypeForFormat(entryFormat), "foo");
             writeEntry.DataStream = new SimulatedDataStream(size);
             writer.WriteEntry(writeEntry);
         }

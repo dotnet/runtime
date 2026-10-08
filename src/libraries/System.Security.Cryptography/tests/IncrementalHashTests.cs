@@ -517,6 +517,24 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotAndroid))]
+        [MemberData(nameof(GetHMACs))]
+        public static void VerifyEmptyHMACKey_Cloned(HMAC referenceAlgorithm, HashAlgorithmName hashAlgorithm)
+        {
+            using (referenceAlgorithm)
+            using (IncrementalHash incrementalHash = IncrementalHash.CreateHMAC(hashAlgorithm, Array.Empty<byte>()))
+            using (IncrementalHash cloned = incrementalHash.Clone())
+            {
+                referenceAlgorithm.Key = Array.Empty<byte>();
+                cloned.AppendData([1, 2, 3]);
+                byte[] referenceHash = referenceAlgorithm.ComputeHash([1, 2, 3]);
+                byte[] clonedResult = new byte[referenceHash.Length];
+                Assert.True(cloned.TryGetHashAndReset(clonedResult, out int bytesWritten));
+                Assert.Equal(referenceHash.Length, bytesWritten);
+                Assert.Equal(referenceHash, clonedResult);
+            }
+        }
+
         [Theory]
         [MemberData(nameof(GetHashAlgorithms))]
         public static void VerifyTrivialHash_Span(HashAlgorithm referenceAlgorithm, HashAlgorithmName hashAlgorithm)

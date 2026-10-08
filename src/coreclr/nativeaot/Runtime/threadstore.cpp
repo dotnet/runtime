@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 #include "common.h"
 #include "gcenv.h"
 #include "gcheaputilities.h"
@@ -22,13 +23,15 @@
 #include "TargetPtrs.h"
 #include "yieldprocessornormalized.h"
 #include <minipal/time.h>
-
-#include "slist.inl"
+#include <minipal/thread.h>
+#include "SignalSafeThreadMap.h"
 
 EXTERN_C volatile uint32_t RhpTrapThreads;
 volatile uint32_t RhpTrapThreads = (uint32_t)TrapThreadsFlags::None;
 
 GVAL_IMPL_INIT(PTR_Thread, RhpSuspendingThread, 0);
+
+SPTR_IMPL(ThreadStore, ThreadStore, s_pThreadStore);
 
 ThreadStore * GetThreadStore()
 {
@@ -142,7 +145,15 @@ void ThreadStore::AttachCurrentThread(bool fAcquireThreadStoreLock)
     ASSERT(pAttachingThread->m_ThreadStateFlags == Thread::TSF_Unknown);
     pAttachingThread->m_ThreadStateFlags = Thread::TSF_Attached;
 
-    pTS->m_ThreadList.PushHead(pAttachingThread);
+    pTS->m_ThreadList.InsertHead(pAttachingThread);
+
+#if defined(TARGET_UNIX) && !defined(TARGET_WASM)
+    if (!InsertThreadIntoSignalSafeMap(pAttachingThread->m_threadId, pAttachingThread))
+    {
+        PalPrintFatalError("\nFailed to insert thread into signal-safe map due to out of memory.\n");
+        RhFailFast();
+    }
+#endif // TARGET_UNIX && !TARGET_WASM
 }
 
 // static
@@ -183,11 +194,14 @@ void ThreadStore::DetachCurrentThread()
         // Note that when process is shutting down, the threads may be rudely terminated,
         // possibly while holding the threadstore lock. That is ok, since the process is being torn down.
         CrstHolder threadStoreLock(&pTS->m_Lock);
-        ASSERT(rh::std::count(pTS->m_ThreadList.Begin(), pTS->m_ThreadList.End(), pDetachingThread) == 1);
         // remove the thread from the list of managed threads.
-        pTS->m_ThreadList.RemoveFirst(pDetachingThread);
+        bool removed = pTS->m_ThreadList.RemoveFirst(pDetachingThread);
+        ASSERT(removed);
         // tidy up GC related stuff (release allocation context, etc..)
         pDetachingThread->Detach();
+#if defined(TARGET_UNIX) && !defined(TARGET_WASM)
+        RemoveThreadFromSignalSafeMap(pDetachingThread->m_threadId, pDetachingThread);
+#endif
     }
 
     // post-mortem clean up.
@@ -233,6 +247,7 @@ void ThreadStore::SuspendAllThreads(bool waitForGCEvent)
     }
 
     // set the global trap for pinvoke leave and return
+    GCHeapUtilities::GetGCHeap()->SetSuspensionPending(true);
     RhpTrapThreads |= (uint32_t)TrapThreadsFlags::TrapThreads;
 
     // Our lock-free algorithm depends on flushing write buffers of all processors running RH code.  The
@@ -333,6 +348,7 @@ void ThreadStore::ResumeAllThreads(bool waitForGCEvent)
 #endif //TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64
 
     RhpTrapThreads &= ~(uint32_t)TrapThreadsFlags::TrapThreads;
+    GCHeapUtilities::GetGCHeap()->SetSuspensionPending(false);
 
     RhpSuspendingThread = NULL;
     if (waitForGCEvent)
@@ -351,6 +367,13 @@ EXTERN_C RuntimeThreadLocals* RhpGetThread()
 {
     return &tls_CurrentThread;
 }
+
+#if defined(TARGET_UNIX) && !defined(TARGET_WASM)
+Thread * ThreadStore::GetCurrentThreadIfAvailableAsyncSafe()
+{
+    return (Thread*)FindThreadInSignalSafeMap(minipal_get_current_thread_id_no_cache());
+}
+#endif // TARGET_UNIX && !TARGET_WASM
 
 #endif // !DACCESS_COMPILE
 
@@ -389,27 +412,6 @@ void ThreadStore::SaveCurrentThreadOffsetForDAC()
 
 GPTR_IMPL(uint32_t, p_tls_index);
 GVAL_IMPL(uint32_t, SECTIONREL__tls_CurrentThread);
-
-//
-// This routine supports the !Thread debugger extension routine
-//
-// static
-PTR_Thread ThreadStore::GetThreadFromTEB(TADDR pTEB)
-{
-    if (pTEB == NULL)
-        return NULL;
-
-    uint32_t tlsIndex = *p_tls_index;
-    TADDR pTls = *(PTR_TADDR)(pTEB + OFFSETOF__TEB__ThreadLocalStoragePointer);
-    if (pTls == NULL)
-        return NULL;
-
-    TADDR pOurTls = *(PTR_TADDR)(pTls + (tlsIndex * sizeof(void*)));
-    if (pOurTls == NULL)
-        return NULL;
-
-    return (PTR_Thread)(pOurTls + SECTIONREL__tls_CurrentThread);
-}
 
 #endif // DACCESS_COMPILE
 

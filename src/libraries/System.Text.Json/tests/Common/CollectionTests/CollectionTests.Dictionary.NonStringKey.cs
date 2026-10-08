@@ -42,7 +42,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             yield return WrapArgs(true, 1);
             yield return WrapArgs(byte.MaxValue, 1);
-            yield return WrapArgs(char.MaxValue, char.MaxValue, expectedJson: @"{""\uFFFF"":""\uFFFF""}");
+            yield return WrapArgs(char.MaxValue, char.MaxValue, expectedJson: """{"\uFFFF":"\uFFFF"}""");
             yield return WrapArgs(DateTime.MaxValue, 1, expectedJson: $@"{{""{DateTime.MaxValue:O}"":1}}");
             yield return WrapArgs(DateTimeOffset.MaxValue, 1, expectedJson: $@"{{""{DateTimeOffset.MaxValue:O}"":1}}");
             yield return WrapArgs(TimeSpan.MaxValue, 1, expectedJson: $@"{{""{TimeSpan.MaxValue}"":1}}");
@@ -144,7 +144,7 @@ namespace System.Text.Json.Serialization.Tests
             dictionary.Add(MyEnum.Foo, 4);
             dictionary.Add(MyEnumFlags.Foo | MyEnumFlags.Bar, 5);
 
-            const string expected = @"{""1"":1,""08314fa2-b1fe-4792-bcd1-6e62338ac7f3"":2,""KeyString"":3,""Foo"":4,""Foo, Bar"":5}";
+            const string expected = """{"1":1,"08314fa2-b1fe-4792-bcd1-6e62338ac7f3":2,"KeyString":3,"Foo":4,"Foo, Bar":5}""";
 
             string json = await Serializer.SerializeWrapper(dictionary);
             Assert.Equal(expected, json);
@@ -168,7 +168,7 @@ namespace System.Text.Json.Serialization.Tests
             dictionary.Add(MyEnum.Foo, 4);
             dictionary.Add(MyEnumFlags.Foo | MyEnumFlags.Bar, 5);
 
-            const string expected = @"{""1"":1,""08314fa2-b1fe-4792-bcd1-6e62338ac7f3"":2,""KeyString"":3,""Foo"":4,""Foo, Bar"":5}";
+            const string expected = """{"1":1,"08314fa2-b1fe-4792-bcd1-6e62338ac7f3":2,"KeyString":3,"Foo":4,"Foo, Bar":5}""";
             string json = await Serializer.SerializeWrapper(dictionary);
             Assert.Equal(expected, json);
 
@@ -213,16 +213,16 @@ namespace System.Text.Json.Serialization.Tests
             await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper<Dictionary<int[], int>>("\"\""));
             Assert.NotNull(await Serializer.DeserializeWrapper<Dictionary<int[], int>>("{}"));
 
-            await Assert.ThrowsAsync<NotSupportedException>(() => Serializer.DeserializeWrapper<Dictionary<int[], int>>(@"{""Foo"":1}"));
+            await Assert.ThrowsAsync<NotSupportedException>(() => Serializer.DeserializeWrapper<Dictionary<int[], int>>("""{"Foo":1}"""));
 
             // UnsupportedDictionaryWrapper
             await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper<UnsupportedDictionaryWrapper>("\"\""));
             Assert.NotNull(await Serializer.DeserializeWrapper<UnsupportedDictionaryWrapper>("{}"));
             Assert.Null(await Serializer.DeserializeWrapper<UnsupportedDictionaryWrapper>("null"));
-            Assert.NotNull(await Serializer.DeserializeWrapper<UnsupportedDictionaryWrapper>(@"{""Dictionary"":null}"));
-            Assert.NotNull(await Serializer.DeserializeWrapper<UnsupportedDictionaryWrapper>(@"{""Dictionary"":{}}"));
+            Assert.NotNull(await Serializer.DeserializeWrapper<UnsupportedDictionaryWrapper>("""{"Dictionary":null}"""));
+            Assert.NotNull(await Serializer.DeserializeWrapper<UnsupportedDictionaryWrapper>("""{"Dictionary":{}}"""));
 
-            await Assert.ThrowsAsync<NotSupportedException>(() => Serializer.DeserializeWrapper<UnsupportedDictionaryWrapper>(@"{""Dictionary"":{""Foo"":1}}"));
+            await Assert.ThrowsAsync<NotSupportedException>(() => Serializer.DeserializeWrapper<UnsupportedDictionaryWrapper>("""{"Dictionary":{"Foo":1}}"""));
         }
 
         [Fact]
@@ -239,7 +239,7 @@ namespace System.Text.Json.Serialization.Tests
 
             var intIntDictionary = new Dictionary<int, int> { { 1, 1 } };
             json = await Serializer.SerializeWrapper(intIntDictionary, opts);
-            Assert.Equal(@"{""1"":1}", json);
+            Assert.Equal("""{"1":1}""", json);
 
             var objectIntDictionary = new Dictionary<object, int> { { "1", 1 } };
             json = await Serializer.SerializeWrapper(objectIntDictionary, opts);
@@ -247,7 +247,7 @@ namespace System.Text.Json.Serialization.Tests
 
             objectIntDictionary = new Dictionary<object, int> { { 1, 1 } };
             json = await Serializer.SerializeWrapper(objectIntDictionary, opts);
-            Assert.Equal(@"{""1"":1}", json);
+            Assert.Equal("""{"1":1}""", json);
         }
 
         [Fact]
@@ -257,7 +257,7 @@ namespace System.Text.Json.Serialization.Tests
             myEnumIntDictionary.Add((MyEnum)(-1), 1);
 
             string json = await Serializer.SerializeWrapper(myEnumIntDictionary);
-            Assert.Equal(@"{""-1"":1}", json);
+            Assert.Equal("""{"-1":1}""", json);
 
             myEnumIntDictionary = await Serializer.DeserializeWrapper<Dictionary<MyEnum, int>>(json);
             Assert.Equal(1, myEnumIntDictionary[(MyEnum)(-1)]);
@@ -266,7 +266,7 @@ namespace System.Text.Json.Serialization.Tests
             myEnumFlagsIntDictionary.Add((MyEnumFlags)(-1), 1);
 
             json = await Serializer.SerializeWrapper(myEnumFlagsIntDictionary);
-            Assert.Equal(@"{""-1"":1}", json);
+            Assert.Equal("""{"-1":1}""", json);
 
             myEnumFlagsIntDictionary = await Serializer.DeserializeWrapper<Dictionary<MyEnumFlags, int>>(json);
             Assert.Equal(1, myEnumFlagsIntDictionary[(MyEnumFlags)(-1)]);
@@ -398,7 +398,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task RoundtripAllDictionaryConverters()
         {
-            const string Expected = @"{""1"":1}";
+            const string Expected = """{"1":1}""";
 
             foreach (Type type in CollectionTestTypes.DeserializableDictionaryTypes<int, int>())
             {
@@ -412,7 +412,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(typeof(Hashtable))]
         public async Task IDictionary_Keys_ShouldBe_String_WhenDeserializing(Type type)
         {
-            const string Expected = @"{""1998-02-14"":1}";
+            const string Expected = """{"1998-02-14":1}""";
 
             IDictionary dict = (IDictionary) await Serializer.DeserializeWrapper(Expected, type);
             Assert.Equal(1, dict.Count);
@@ -425,7 +425,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task GenericDictionary_WithObjectKeys_Throw_WhenDeserializing()
         {
-            const string Expected = @"{""1998-02-14"":1}";
+            const string Expected = """{"1998-02-14":1}""";
 
             var dict = new Dictionary<object, int> { ["1998-02-14"] = 1 };
             await RunTest<IDictionary<object, int>>(dict);
@@ -451,7 +451,7 @@ namespace System.Text.Json.Serialization.Tests
 
             var dictionary = new Dictionary<int, string> { [1] = "1" };
 
-            string expectedJson = @"{""1"":""1""}";
+            string expectedJson = """{"1":"1"}""";
             string actualJson = await Serializer.SerializeWrapper(dictionary, options);
             Assert.Equal(expectedJson, actualJson);
 
@@ -470,7 +470,7 @@ namespace System.Text.Json.Serialization.Tests
             NotSupportedException ex = await Assert.ThrowsAsync<NotSupportedException>(() => Serializer.SerializeWrapper(dictionary, ctx.DictionaryInt32String));
             ValidateException(ex);
 
-            string json = @"{""1"":""1""}";
+            string json = """{"1":"1"}""";
             ex = await Assert.ThrowsAsync<NotSupportedException>(() => Serializer.DeserializeWrapper<Dictionary<int, string>>(json, ctx.DictionaryInt32String));
             ValidateException(ex);
 
@@ -521,7 +521,7 @@ namespace System.Text.Json.Serialization.Tests
             NotSupportedException ex = await Assert.ThrowsAsync<NotSupportedException>(() => Serializer.SerializeWrapper(dictionary, options));
             ValidateException(ex);
 
-            string json = @"{""SomeStringRepresentation"":""1""}";
+            string json = """{"SomeStringRepresentation":"1"}""";
             ex = await Assert.ThrowsAsync<NotSupportedException>(() => Serializer.DeserializeWrapper<Dictionary<ClassWithIDictionary, string>>(json, options));
             ValidateException(ex);
 

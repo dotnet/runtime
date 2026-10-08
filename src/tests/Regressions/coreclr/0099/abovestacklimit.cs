@@ -2,8 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 using System;
 using Xunit;
+using TestLibrary;
 
 public class Test_abovestacklimit{
+ [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
+ [ActiveIssue("https://github.com/dotnet/runtime/issues/132855", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmReadyToRun))]
 	[Fact]
 	public static int TestEntryPoint(){
 		int retVal;

@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
@@ -17,7 +17,7 @@ namespace System.Security.Cryptography
         // https://learn.microsoft.com/windows/desktop/api/bcrypt/ns-bcrypt-_bcrypt_dsa_key_blob_v2
         private const int WindowsMaxQSize = 32;
 
-        public override byte[] CreateSignature(byte[] rgbHash)
+        public override unsafe byte[] CreateSignature(byte[] rgbHash)
         {
             ArgumentNullException.ThrowIfNull(rgbHash);
 
@@ -78,7 +78,7 @@ namespace System.Security.Cryptography
             return VerifySignatureCore(rgbHash, rgbSignature, DSASignatureFormat.IeeeP1363FixedFieldConcatenation);
         }
 
-        protected override bool VerifySignatureCore(
+        protected override unsafe bool VerifySignatureCore(
             ReadOnlySpan<byte> hash,
             ReadOnlySpan<byte> signature,
             DSASignatureFormat signatureFormat)

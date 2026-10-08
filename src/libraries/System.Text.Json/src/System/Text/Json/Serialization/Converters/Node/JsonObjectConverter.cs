@@ -28,7 +28,7 @@ namespace System.Text.Json.Serialization.Converters
             Debug.Assert(obj is JsonObject);
             JsonObject jObject = (JsonObject)obj;
 
-            Debug.Assert(value == null || value is JsonNode);
+            Debug.Assert(value is null || value is JsonNode);
             JsonNode? jNodeValue = value;
 
             if (options.AllowDuplicateProperties)
@@ -39,6 +39,12 @@ namespace System.Text.Json.Serialization.Converters
             {
                 ThrowHelper.ThrowJsonException_DuplicatePropertyNotAllowed(propertyName);
             }
+        }
+
+        internal override void WriteExtensionDataValue(Utf8JsonWriter writer, JsonObject? value, JsonSerializerOptions options)
+        {
+            Debug.Assert(value is not null);
+            value.WriteContentsTo(writer, options);
         }
 
         public override void Write(Utf8JsonWriter writer, JsonObject? value, JsonSerializerOptions options)
@@ -97,8 +103,10 @@ namespace System.Text.Json.Serialization.Converters
                 reader.Read(); // Move to the value token.
                 JsonNode? value = JsonNodeConverter.ReadAsJsonNode(ref reader, options);
 
-                // To have parity with the lazy JsonObject, we throw on duplicates.
-                jObject.Add(propertyName, value);
+                if (!jObject.TryAdd(propertyName, value))
+                {
+                    ThrowHelper.ThrowJsonException_DuplicatePropertyNotAllowed(propertyName);
+                }
             }
 
             // JSON is invalid so reader would have already thrown.
@@ -106,6 +114,8 @@ namespace System.Text.Json.Serialization.Converters
             ThrowHelper.ThrowJsonException();
             return null;
         }
+
+        internal override JsonValueType GetSupportedJsonValueTypes(JsonNumberHandling _) => JsonValueType.Object;
 
         internal override JsonSchema? GetSchema(JsonNumberHandling _) => new() { Type = JsonSchemaType.Object };
     }

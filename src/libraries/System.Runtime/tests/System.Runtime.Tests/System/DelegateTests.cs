@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.IO;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -58,6 +57,14 @@ namespace System.Tests
             TestStruct returnedStruct = testDelegate();
             Assert.Same(foo.structField.o1, returnedStruct.o1);
             Assert.Same(foo.structField.o2, returnedStruct.o2);
+            Assert.Same(foo, testDelegate.Target);
+            Assert.Equal(nameof(TestExtensionMethod.TestFunc), testDelegate.Method.Name);
+
+            StructReturningDelegate equivalentDelegate = foo.TestFunc;
+            Assert.Equal(testDelegate, equivalentDelegate);
+
+            TestClass other = new TestClass();
+            Assert.NotEqual(testDelegate, other.TestFunc);
         }
 
         public class A { }
@@ -487,6 +494,15 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void DifferentMethodForDerivedBase()
+        {
+            var d1 = (Action<Derived>)Delegate.CreateDelegate(typeof(Action<Derived>), typeof(Base).GetMethod("M")!);
+            var d2 = (Action<Derived>)Delegate.CreateDelegate(typeof(Action<Derived>), typeof(Derived).GetMethod("M")!);
+            Assert.False(d1.Equals(d2));
+            Assert.False(d1.Method.Equals(d2.Method));
+        }
+
+        [Fact]
         public static void SameMethodObtainedViaDelegateAndReflectionAreSameForClass()
         {
             var m1 = ((MethodCallExpression)((Expression<Action>)(() => new Class().M())).Body).Method;
@@ -522,6 +538,60 @@ namespace System.Tests
             Assert.Equal(m1.MethodHandle.Value, m2.MethodHandle.Value);
         }
 
+        [Fact]
+        public static void DifferentOpenVirtualDelegates()
+        {
+            MethodInfo m1 = typeof(OpenVirtualClass).GetMethod(nameof(OpenVirtualClass.M1), BindingFlags.Instance | BindingFlags.NonPublic);
+            MethodInfo m2 = typeof(OpenVirtualClass).GetMethod(nameof(OpenVirtualClass.M2), BindingFlags.Instance | BindingFlags.NonPublic);
+
+            Delegate a = m1.CreateDelegate<Action<OpenVirtualClass>>();
+            Delegate b = m2.CreateDelegate<Action<OpenVirtualClass>>();
+
+            Assert.False(a.Equals(b));
+
+            Assert.Equal(m1, a.Method);
+            Assert.Equal(m2, b.Method);
+        }
+
+        [Fact]
+        public static void OpenVirtualDelegates_InvokeResolvesOverride()
+        {
+            Func<object, string> toString = typeof(object).GetMethod(nameof(object.ToString)).CreateDelegate<Func<object, string>>();
+            Assert.Equal(nameof(OpenVirtualDerived), toString(new OpenVirtualDerived()));
+            Assert.Equal(typeof(Struct).ToString(), toString(new Struct()));
+            Assert.Equal(nameof(DayOfWeek.Monday), toString(DayOfWeek.Monday));
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/134707", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
+        public static void OpenVirtualDelegates_InterfaceMethod_InvokeResolvesImplementation()
+        {
+            Func<IOpenVirtual, int> interfaceMethod = typeof(IOpenVirtual).GetMethod(nameof(IOpenVirtual.M)).CreateDelegate<Func<IOpenVirtual, int>>();
+            Assert.Equal(1, interfaceMethod(new OpenVirtualDerived()));
+            Assert.Equal(2, interfaceMethod(new OpenVirtualStruct()));
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsTypeEquivalenceSupported))]
+        public static void TypeEquivalentDelegatesPointingToSameMethod_AreEqualAndHaveSameHashCode()
+        {
+            // Get the type-equivalent delegate from System.TestEquivalentTypes.dll.
+            // Both types are compiled from TestEquivalentTypes/System.TestEquivalentTypes.cs.
+            Type otherDelegateType = Type.GetType($"{typeof(EquivalentDelegate).FullName}, System.TestEquivalentTypes", throwOnError: true)!;
+            Assert.False(typeof(EquivalentDelegate).Equals(otherDelegateType));
+            Assert.True(typeof(EquivalentDelegate).IsEquivalentTo(otherDelegateType));
+
+            MethodInfo methodInfo = typeof(DelegateTests).GetMethod(nameof(DelegateEquivalentTypeTargetMethod), BindingFlags.Static | BindingFlags.NonPublic);
+            Delegate a = Delegate.CreateDelegate(typeof(EquivalentDelegate), methodInfo);
+            Delegate b = Delegate.CreateDelegate(otherDelegateType, methodInfo);
+
+            // Delegates of type-equivalent types pointing to the same method should be equal
+            // and must return the same hash code.
+            Assert.True(a.Equals(b));
+            Assert.Equal(a.GetHashCode(), b.GetHashCode());
+        }
+
+        private static void DelegateEquivalentTypeTargetMethod() { }
+
         class Class { internal void M() { } }
 
         struct Struct { internal void M() { } }
@@ -529,6 +599,23 @@ namespace System.Tests
         class ClassG { internal void M<Key, Value>() { } }
 
         struct StructG { internal void M<Key, Value>() { } }
+
+        class OpenVirtualClass
+        {
+            internal virtual void M1() { }
+            internal virtual void M2() { }
+        }
+
+        interface IOpenVirtual { int M(); }
+        class OpenVirtualDerived : IOpenVirtual
+        {
+            public int M() => 1;
+            public override string ToString() => nameof(OpenVirtualDerived);
+        }
+        struct OpenVirtualStruct : IOpenVirtual { public int M() => 2; }
+
+        class Base { public virtual void M() { } }
+        class Derived : Base { public override void M() { } }
 
         private delegate void IntIntDelegate(int expected, int actual);
         private delegate void IntIntDelegateWithDefault(int expected, int actual = 7);
@@ -1262,6 +1349,7 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentException>(
                 () => Delegate.CreateDelegate(typeof(NullableIntToString), num, mi));
         }
+
         #endregion Tests
 
         #region Test Setup
@@ -1370,6 +1458,7 @@ namespace System.Tests
         public delegate int E(C c);
 
         delegate string NullableIntToString(ref int? obj);
+
         #endregion Test Setup
     }
 }

@@ -205,11 +205,9 @@ namespace Microsoft.Extensions.Hosting.Tests
         /// Tests that calling Environment.Exit from the "main" thread doesn't hang the process forever.
         /// </summary>
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "NET Framework shutdown issue")]
         public void EnsureEnvironmentExitDoesntHang()
         {
-            // SIGTERM is only handled on net6.0+, so the workaround to "clobber" the exit code is still in place on .NET Framework
-            int expectedExitCode = PlatformDetection.IsNetFramework ? 0 : 125;
-
             using var remoteHandle = RemoteExecutor.Invoke(async () =>
             {
                 await Host.CreateDefaultBuilder()
@@ -219,7 +217,7 @@ namespace Microsoft.Extensions.Hosting.Tests
                         services.AddHostedService<EnsureEnvironmentExitDoesntHangWorker>();
                     })
                     .RunConsoleAsync();
-            }, new RemoteInvokeOptions() { TimeOut = 30_000, ExpectedExitCode = expectedExitCode }); // give a 30 second time out, so if this does hang, it doesn't hang for the full timeout
+            }, new RemoteInvokeOptions() { TimeOut = 30_000, ExpectedExitCode = 125 }); // give a 30 second time out, so if this does hang, it doesn't hang for the full timeout
         }
 
         private class EnsureEnvironmentExitDoesntHangWorker : BackgroundService

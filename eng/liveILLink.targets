@@ -10,7 +10,8 @@
         '$(IsAotCompatible)' == 'true' Or '$(EnableAotAnalyzer)' == 'true' Or
         '$(PublishTrimmed)' == 'true' Or
         '$(IsTrimmable)' == 'true' Or '$(EnableTrimAnalyzer)' == 'true' Or
-        '$(EnableSingleFileAnalyzer)' == 'true')">true</_RequiresLiveILLink>
+        '$(EnableSingleFileAnalyzer)' == 'true' Or
+        '$(EnableUnsafeAnalyzer)' == 'true')">true</_RequiresLiveILLink>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(_RequiresLiveILLink)' == 'true'">
@@ -29,7 +30,11 @@
 
   <ItemGroup Condition="'$(_RequiresLiveILLink)' == 'true'">
     <!-- The assembly shouldn't be referenced, nor promoted to a package dependency, nor copied to the output directory. -->
+    <!-- The wasm nested publish evaluates this project with different global properties, so MSBuild builds it a
+         second time and copies obj -> bin over the assembly the outer pass already loaded (MSB3027). The outer
+         pass has built it by then, so referencing it again from the nested pass is redundant as well as harmful. -->
     <ProjectReference Include="$(_ILLinkTasksSourceDir)ILLink.Tasks.csproj"
+                      Condition="'$(WasmBuildingForNestedPublish)' != 'true'"
                       ReferenceOutputAssembly="false"
                       PrivateAssets="all"
                       Private="false"
@@ -42,6 +47,13 @@
 
     <!-- Need to reference the analyzer project separately, because there's no easy way to get it as a transitive reference of ILLink.Tasks.csproj -->
     <ProjectReference Include="$(_ILLinkTasksSourceDir)..\ILLink.RoslynAnalyzer\ILLink.RoslynAnalyzer.csproj"
+                      ReferenceOutputAssembly="false"
+                      Private="false"
+                      OutputItemType="Analyzer"
+                      SetConfiguration="Configuration=$(ToolsConfiguration)" />
+
+    <!-- Add the code fix provider for IDE fix suggestions -->
+    <ProjectReference Include="$(_ILLinkTasksSourceDir)..\ILLink.CodeFix\ILLink.CodeFixProvider.csproj"
                       ReferenceOutputAssembly="false"
                       Private="false"
                       OutputItemType="Analyzer"

@@ -19,17 +19,16 @@ FRAME_TYPE_NAME(SoftwareExceptionFrame)
 FRAME_TYPE_NAME(FuncEvalFrame)
 #endif // DEBUGGING_SUPPORTED
 #ifdef FEATURE_COMINTEROP
-FRAME_TYPE_NAME(ComMethodFrame)
-FRAME_TYPE_NAME(CLRToCOMMethodFrame)
-FRAME_TYPE_NAME(ComPrestubMethodFrame)
 #endif // FEATURE_COMINTEROP
-FRAME_TYPE_NAME(PInvokeCalliFrame)
 #ifdef FEATURE_HIJACK
 FRAME_TYPE_NAME(HijackFrame)
 #endif // FEATURE_HIJACK
 FRAME_TYPE_NAME(PrestubMethodFrame)
 FRAME_TYPE_NAME(CallCountingHelperFrame)
 FRAME_TYPE_NAME(StubDispatchFrame)
+#ifdef FEATURE_RESOLVE_HELPER_DISPATCH
+FRAME_TYPE_NAME(ResolveHelperFrame)
+#endif // FEATURE_RESOLVE_HELPER_DISPATCH
 FRAME_TYPE_NAME(ExternalMethodFrame)
 FRAME_TYPE_NAME(DynamicHelperFrame)
 FRAME_TYPE_NAME(ProtectValueClassFrame)

@@ -132,7 +132,7 @@ namespace System.Threading
 
                         if (!disableStarvationDetection &&
                             threadPoolInstance._pendingBlockingAdjustment == PendingBlockingAdjustment.None &&
-                            threadPoolInstance._separated.numRequestedWorkers > 0 &&
+                            threadPoolInstance._separated._hasOutstandingThreadRequest != 0 &&
                             SufficientDelaySinceLastDequeue(threadPoolInstance))
                         {
                             bool addWorker = false;
@@ -187,7 +187,7 @@ namespace System.Threading
                             }
                         }
 
-                        if (threadPoolInstance._separated.numRequestedWorkers <= 0 &&
+                        if (threadPoolInstance._separated._hasOutstandingThreadRequest == 0 &&
                             threadPoolInstance._pendingBlockingAdjustment == PendingBlockingAdjustment.None &&
                             Interlocked.Decrement(ref threadPoolInstance._separated.gateThreadRunningState) <= GetRunningStateForNumRuns(0))
                         {
@@ -208,7 +208,7 @@ namespace System.Threading
             // in deciding "too long"
             private static bool SufficientDelaySinceLastDequeue(PortableThreadPool threadPoolInstance)
             {
-                uint delay = (uint)(Environment.TickCount - threadPoolInstance._separated.lastDequeueTime);
+                uint delay = (uint)(Environment.TickCount - threadPoolInstance._separated.lastDispatchTime);
                 uint minimumDelay;
                 if (threadPoolInstance._cpuUtilization < CpuUtilizationLow)
                 {

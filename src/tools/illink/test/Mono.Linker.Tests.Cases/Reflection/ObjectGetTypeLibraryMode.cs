@@ -7,7 +7,7 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.Reflection
 {
-    [SetupLinkerArgument("-a", "test.exe", "library")]
+    [SetupLinkerArgument("-a", "test", "library")]
     [ExpectedNoWarnings]
     [KeptMember(".ctor()")]
     public class ObjectGetTypeLibraryMode

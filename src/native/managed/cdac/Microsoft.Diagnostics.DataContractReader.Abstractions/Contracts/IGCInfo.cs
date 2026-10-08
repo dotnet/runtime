@@ -1,0 +1,153 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System;
+using System.Collections.Generic;
+
+namespace Microsoft.Diagnostics.DataContractReader.Contracts;
+
+public interface IGCInfoHandle { }
+
+/// <summary>Stack offset of a special GC info slot (GS cookie, PSP sym, or generics inst context).</summary>
+public readonly record struct SpecialSlot(int SpOffset);
+
+/// <summary>Kind of the generics instantiation context.</summary>
+public enum GenericsContextKind
+{
+    None = 0,
+    MethodDesc = 1,
+    MethodHandle = 2,
+    This = 3,
+}
+
+/// <summary>Header fields decoded from the GC info stream for a method.</summary>
+public readonly record struct GCInfoHeader(
+    uint Version,
+    uint CodeSize,
+    uint PrologSize,
+    uint StackBaseRegister,
+    uint SizeOfStackParameterArea,
+    bool IsVarArg,
+    bool WantsReportOnlyLeaf,
+    bool HasTailCalls,
+    SpecialSlot? GSCookie,
+    uint GSCookieValidRangeStart,
+    uint GSCookieValidRangeEnd,
+    SpecialSlot? PSPSym,
+    SpecialSlot? GenericsInstContext,
+    GenericsContextKind GenericsInstContextKind);
+
+/// <summary>Unified lifetime of a GC slot (register or stack).</summary>
+/// <param name="IsRegister">True if the slot is a CPU register; false if it is a stack location.</param>
+/// <param name="RegisterNumber">Register number (meaningful only when IsRegister is true).</param>
+/// <param name="SpOffset">Stack offset from the base (meaningful only when IsRegister is false).</param>
+/// <param name="BaseRegister">Stack base kind: 0 = CALLER_SP_REL, 1 = SP_REL, 2 = FRAMEREG_REL (meaningful only when IsRegister is false).</param>
+/// <param name="GcFlags">GC slot flags: 0x1 = interior pointer, 0x2 = pinned, 0x4 = untracked.</param>
+/// <param name="BeginOffset">Code offset where the slot becomes live.</param>
+/// <param name="EndOffset">Code offset where the slot becomes dead (exclusive).</param>
+public readonly record struct GCSlotLifetime(
+    bool IsRegister,
+    uint RegisterNumber,
+    int SpOffset,
+    uint BaseRegister,
+    uint GcFlags,
+    uint BeginOffset,
+    uint EndOffset);
+
+/// <summary>
+/// Describes a code region where the GC can safely interrupt execution.
+/// </summary>
+/// <param name="StartOffset">Start of the interruptible region, as a byte offset from the method start.</param>
+/// <param name="EndOffset">End of the interruptible region (exclusive), as a byte offset from the method start.</param>
+public readonly record struct InterruptibleRange(uint StartOffset, uint EndOffset);
+
+/// <summary>
+/// Describes a live GC slot at a given instruction offset.
+/// </summary>
+/// <param name="IsRegister">True if the slot is a CPU register; false if it is a stack location.</param>
+/// <param name="RegisterNumber">Register number (meaningful only when IsRegister is true).</param>
+/// <param name="SpOffset">Stack offset from the base (meaningful only when IsRegister is false).</param>
+/// <param name="SpBase">Stack base: 0 = CALLER_SP_REL, 1 = SP_REL, 2 = FRAMEREG_REL.</param>
+/// <param name="GcFlags">GC slot flags: 0x1 = interior pointer, 0x2 = pinned.</param>
+public readonly record struct LiveSlot(bool IsRegister, uint RegisterNumber, int SpOffset, uint SpBase, uint GcFlags);
+
+public enum GenericContextStorageKind
+{
+    Register,
+    StackPointerRelative,
+    RegisterRelative,
+    InterpreterArgumentRelative,
+}
+
+public readonly record struct GenericContextStorage
+{
+    private readonly string? _registerName;
+
+    public GenericContextStorage(GenericContextStorageKind kind, uint registerNumber, int offset)
+    {
+        Kind = kind;
+        _registerName = null;
+        RegisterNumber = registerNumber;
+        Offset = offset;
+    }
+
+    public GenericContextStorage(GenericContextStorageKind kind, string registerName, int offset)
+    {
+        Kind = kind;
+        _registerName = registerName;
+        RegisterNumber = 0;
+        Offset = offset;
+    }
+
+    public GenericContextStorageKind Kind { get; }
+
+    public string RegisterName => _registerName ?? string.Empty;
+
+    public uint RegisterNumber { get; }
+
+    public int Offset { get; }
+}
+
+/// <summary>
+/// Options controlling which GC slots are reported by <see cref="IGCInfo.EnumerateLiveSlots"/>.
+/// </summary>
+public record struct GcSlotEnumerationOptions
+{
+    /// <summary>True if this is the active (leaf) stack frame. When false, scratch register and stack slots are excluded.</summary>
+    public bool IsActiveFrame { get; set; }
+    /// <summary>True if execution was aborted (e.g., interrupted by exception). Skips live slot reporting at non-interruptible offsets.</summary>
+    public bool IsExecutionAborted { get; set; }
+    /// <summary>True if the frame is a parent of a funclet that already reported GC references.</summary>
+    public bool IsParentOfFuncletStackFrame { get; set; }
+    /// <summary>True to suppress reporting of untracked slots (e.g., for filter funclets).</summary>
+    public bool SuppressUntrackedSlots { get; set; }
+    /// <summary>True to report only frame-register-relative stack slots (skips all register slots and non-frame-relative stack slots).</summary>
+    public bool ReportFPBasedSlotsOnly { get; set; }
+}
+
+public interface IGCInfo : IContract
+{
+    static string IContract.Name { get; } = nameof(GCInfo);
+
+    IGCInfoHandle DecodePlatformSpecificGCInfo(TargetPointer gcInfoAddress, uint gcVersion) => throw new NotImplementedException();
+    IGCInfoHandle DecodeInterpreterGCInfo(TargetPointer gcInfoAddress, uint gcVersion) => throw new NotImplementedException();
+
+    GCInfoHeader GetHeader(IGCInfoHandle handle) => throw new NotImplementedException();
+
+    uint GetCodeLength(IGCInfoHandle handle) => throw new NotImplementedException();
+    uint GetCalleePoppedArgumentsSize(IGCInfoHandle handle) => throw new NotImplementedException();
+
+    IReadOnlyList<InterruptibleRange> GetInterruptibleRanges(IGCInfoHandle handle) => throw new NotImplementedException();
+    IReadOnlyList<uint> GetSafePoints(IGCInfoHandle handle) => throw new NotImplementedException();
+    IReadOnlyList<GCSlotLifetime> GetSlotLifetimes(IGCInfoHandle handle) => throw new NotImplementedException();
+
+    IReadOnlyList<LiveSlot> EnumerateLiveSlots(IGCInfoHandle handle, uint instructionOffset, GcSlotEnumerationOptions options) => throw new NotImplementedException();
+    bool IsGcSafe(IGCInfoHandle handle, uint instructionOffset) => throw new NotImplementedException();
+    bool TryGetGenericContextStorage(IGCInfoHandle handle, GenericContextLoc contextKind, uint instructionOffset, out GenericContextStorage storage) => throw new NotImplementedException();
+    TargetPointer GetAmbientSP(IGCInfoHandle handle, uint codeOffset, TargetPointer fp, TargetPointer sp) => throw new NotImplementedException();
+}
+
+public readonly struct GCInfo : IGCInfo
+{
+    // Everything throws NotImplementedException
+}

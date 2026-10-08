@@ -13,8 +13,10 @@ namespace Microsoft.Win32.SafeHandles
         private static readonly bool s_captureTrace =
             Environment.GetEnvironmentVariable("DEBUG_SAFEX509HANDLE_FINALIZATION") != null;
 
-        private readonly StackTrace? _stacktrace =
-            s_captureTrace ? new StackTrace(fNeedFileInfo: true) : null;
+        // Using reflection to avoid a hard dependency on System.Diagnostics.StackTrace, which prevents
+        // System.IO.Compression from referencing this assembly.
+        private readonly object? _stacktrace =
+            s_captureTrace ? Activator.CreateInstance(Type.GetType("System.Diagnostics.StackTrace")!, true) : null;
 
         ~SafeX509Handle()
         {

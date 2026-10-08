@@ -102,6 +102,12 @@ namespace System
         }
 
         [DoesNotReturn]
+        internal static void ThrowSpanTooShortForColor(string? paramName = null)
+        {
+            throw new ArgumentException(SR.Arg_SpanMustHaveElementsForColor, paramName);
+        }
+
+        [DoesNotReturn]
         internal static void ThrowArgumentException_InvalidTimeSpanStyles()
         {
             throw new ArgumentException(SR.Argument_InvalidTimeSpanStyles, "styles");
@@ -243,12 +249,6 @@ namespace System
         }
 
         [DoesNotReturn]
-        internal static void ThrowArgumentOutOfRange_RoundingDigits_MathF(string name)
-        {
-            throw new ArgumentOutOfRangeException(name, SR.ArgumentOutOfRange_RoundingDigits_MathF);
-        }
-
-        [DoesNotReturn]
         internal static void ThrowArgumentOutOfRange_Range<T>(string parameterName, T value, T minInclusive, T maxInclusive)
         {
             throw new ArgumentOutOfRangeException(parameterName, value, SR.Format(SR.ArgumentOutOfRange_Range, minInclusive, maxInclusive));
@@ -333,18 +333,6 @@ namespace System
         internal static void ThrowArgumentException(ExceptionResource resource, ExceptionArgument argument)
         {
             throw GetArgumentException(resource, argument);
-        }
-
-        [DoesNotReturn]
-        internal static void ThrowArgumentException_HandleNotSync(string paramName)
-        {
-            throw new ArgumentException(SR.Arg_HandleNotSync, paramName);
-        }
-
-        [DoesNotReturn]
-        internal static void ThrowArgumentException_HandleNotAsync(string paramName)
-        {
-            throw new ArgumentException(SR.Arg_HandleNotAsync, paramName);
         }
 
         [DoesNotReturn]
@@ -1258,6 +1246,8 @@ namespace System
                     return SR.ConcurrentDictionary_ItemKeyIsNull;
                 case ExceptionResource.ConcurrentDictionary_TypeOfValueIncorrect:
                     return SR.ConcurrentDictionary_TypeOfValueIncorrect;
+                case ExceptionResource.InvalidOperation_NoElements:
+                    return SR.InvalidOperation_NoElements;
                 default:
                     Debug.Fail("The enum value is not defined, please check the ExceptionResource Enum.");
                     return "";
@@ -1459,5 +1449,6 @@ namespace System
         InvalidOperation_IncompatibleComparer,
         ConcurrentDictionary_ItemKeyIsNull,
         ConcurrentDictionary_TypeOfValueIncorrect,
+        InvalidOperation_NoElements,
     }
 }

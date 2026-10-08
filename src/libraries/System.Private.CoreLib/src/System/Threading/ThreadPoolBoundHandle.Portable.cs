@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 namespace System.Threading
@@ -16,12 +17,6 @@ namespace System.Threading
     /// </summary>
     public sealed partial class ThreadPoolBoundHandle : IDisposable
     {
-        private unsafe NativeOverlapped* AllocateNativeOverlappedPortableCore(IOCompletionCallback callback, object? state, object? pinData) =>
-            AllocateNativeOverlappedPortableCore(callback, state, pinData, flowExecutionContext: true);
-
-        private unsafe NativeOverlapped* UnsafeAllocateNativeOverlappedPortableCore(IOCompletionCallback callback, object? state, object? pinData) =>
-            AllocateNativeOverlappedPortableCore(callback, state, pinData, flowExecutionContext: false);
-
         private unsafe NativeOverlapped* AllocateNativeOverlappedPortableCore(IOCompletionCallback callback, object? state, object? pinData, bool flowExecutionContext)
         {
             ArgumentNullException.ThrowIfNull(callback);

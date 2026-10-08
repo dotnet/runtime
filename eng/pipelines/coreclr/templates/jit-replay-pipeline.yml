@@ -32,7 +32,10 @@ extends:
           buildConfig: checked
           platforms: ${{ parameters.platforms }}
           jobParameters:
-            buildArgs: -s clr.alljits+clr.spmi -c $(_BuildConfig)
+            ${{ if eq(parameters.replayType, 'wasm') }}:
+              buildArgs: -s clr.alljits+clr.wasmjit+clr.spmi -c $(_BuildConfig)
+            ${{ else }}:
+              buildArgs: -s clr.alljits+clr.spmi -c $(_BuildConfig)
             postBuildSteps:
               - template: /eng/pipelines/common/upload-artifact-step.yml
                 parameters:

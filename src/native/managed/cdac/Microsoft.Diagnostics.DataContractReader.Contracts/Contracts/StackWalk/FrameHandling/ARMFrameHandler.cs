@@ -20,7 +20,7 @@ internal class ARMFrameHandler(Target target, ContextHolder<ARMContext> contextH
         _holder.InstructionPointer = frame.ReturnAddress;
 
         // The stack pointer is the address immediately following HijackArgs
-        uint hijackArgsSize = _target.GetTypeInfo(DataType.HijackArgs).Size ?? throw new InvalidOperationException("HijackArgs size is not set");
+        uint hijackArgsSize = Data.HijackArgs.GetSize(_target);
         Debug.Assert(hijackArgsSize % 4 == 0, "HijackArgs contains register values and should be a multiple of the pointer size (4 bytes for ARM)");
         // The stack must be multiple of 8. So if hijackArgsSize is not multiple of 8 then there must be padding of 4 bytes
         hijackArgsSize += hijackArgsSize % 8;
@@ -52,13 +52,8 @@ internal class ARMFrameHandler(Target target, ContextHolder<ARMContext> contextH
 
         Data.TransitionBlock transitionBlock = _target.ProcessedData.GetOrAdd<Data.TransitionBlock>(framedMethodFrame.TransitionBlockPtr);
 
-        if (transitionBlock.ArgumentRegisters is not TargetPointer argumentRegistersPtr)
-        {
-            throw new InvalidOperationException("ARM TransitionBlock does not have ArgumentRegisters set");
-        }
-
         // On ARM, TransitionFrames update the argument registers
-        Data.ArgumentRegisters argumentRegisters = _target.ProcessedData.GetOrAdd<Data.ArgumentRegisters>(argumentRegistersPtr);
+        Data.ArgumentRegisters argumentRegisters = _target.ProcessedData.GetOrAdd<Data.ArgumentRegisters>(transitionBlock.ArgumentRegisters);
         UpdateFromRegisterDict(argumentRegisters.Registers);
     }
 }

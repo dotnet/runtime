@@ -25,16 +25,8 @@ CreateFileWrapper(
     _In_opt_ HANDLE hTemplateFile
     );
 
-BOOL
-CopyFileExWrapper(
-    _In_        LPCWSTR lpExistingFileName,
-    _In_        LPCWSTR lpNewFileName,
-    _In_opt_    LPPROGRESS_ROUTINE lpProgressRoutine,
-    _In_opt_    LPVOID lpData,
-    _When_(pbCancel != NULL, _Pre_satisfies_(*pbCancel == FALSE))
-    _Inout_opt_ LPBOOL pbCancel,
-    _In_        DWORD dwCopyFlags
-    );
+int u16_fopen_wrapper(FILE** stream, const WCHAR* filename, const WCHAR* mode);
+
 #endif //HOST_WINDOWS
 
 DWORD
@@ -59,4 +51,3 @@ DWORD WINAPI GetEnvironmentVariableWrapper(
     );
 
 #endif //_WIN_PATH_APIS_WRAPPER_
-

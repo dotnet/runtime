@@ -3,6 +3,9 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>$(NoWarn);67;168;219;414;162;184;458;464;78;169;114;693;108;1981;649;109;1066;3021;3026;3002;3014;3022;660;661;429;xUnit1013</NoWarn>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-ios;$(NetCoreAppCurrent)-tvos;$(NetCoreAppCurrent)-maccatalyst</TargetFrameworks>
+    <!-- https://github.com/dotnet/runtime/issues/126862 -->
+    <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
+    <EnableAotAnalyzer>false</EnableAotAnalyzer>
   </PropertyGroup>
   <ItemGroup>
     <AssembliesBeingTested Include="Microsoft.CSharp" />
@@ -151,5 +154,8 @@
     <Compile Include="Dynamic.Variance\Conformance.dynamic.Variance.implem.cs" />
     <Compile Include="Common.cs" />
     <Compile Include="ErrorVerifier.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(EnableAggressiveTrimming)' == 'true'">
+    <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.xml" />
   </ItemGroup>
 </Project>

@@ -22,14 +22,7 @@ namespace System.Reflection.Metadata
             get => _maxNodes;
             set
             {
-#if NET
                 ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(value, 0, nameof(value));
-#else
-                if (value <= 0)
-                {
-                    throw new ArgumentOutOfRangeException(paramName: nameof(value));
-                }
-#endif
 
                 _maxNodes = value;
             }

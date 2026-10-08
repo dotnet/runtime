@@ -48,11 +48,9 @@ namespace System.Diagnostics.Metrics
     ///         not counting the special zero bucket. The default value is 160.
     ///       o reportDeltas - If true, the histogram will report deltas instead of whole accumulated values. The default value is false.
     /// </summary>
-    [EventSource(Name = MetricsEventSourceName)]
-    internal sealed class MetricsEventSource : EventSource
+    [EventSource(Name = "System.Diagnostics.Metrics")]
+    internal sealed partial class MetricsEventSource : EventSource
     {
-        private const string MetricsEventSourceName = "System.Diagnostics.Metrics";
-
         public static readonly MetricsEventSource Log = new();
 
         // Although this API isn't public, it is invoked via reflection from System.Private.CoreLib and needs the same back-compat
@@ -96,11 +94,6 @@ namespace System.Diagnostics.Metrics
                 }
                 return _handler;
             }
-        }
-
-        private MetricsEventSource()
-            : base(MetricsEventSourceName, EventSourceSettings.EtwManifestEventFormat)
-        {
         }
 
         /// <summary>
@@ -782,11 +775,7 @@ namespace System.Diagnostics.Metrics
 
                     if (spec.Equals("scale", StringComparison.OrdinalIgnoreCase))
                     {
-#if NET
                         if (!int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out int s) || s < -11 || s > 20)
-#else
-                        if (!int.TryParse(value.ToString(), NumberStyles.Integer, CultureInfo.InvariantCulture, out int s) || s < -11 || s > 20)
-#endif // NET
                         {
                             Parent.Message($"Invalid scale value: {specString}");
                             continue;
@@ -798,11 +787,7 @@ namespace System.Diagnostics.Metrics
                     }
                     else if (spec.Equals("maxBuckets", StringComparison.OrdinalIgnoreCase))
                     {
-#if NET
                         if (!int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out int m) || m < 2)
-#else
-                        if (!int.TryParse(value.ToString(), NumberStyles.None, CultureInfo.InvariantCulture, out int m) || m < 2)
-#endif // NET
                         {
                             Parent.Message($"Invalid maxBuckets value: {specString}");
                             continue;

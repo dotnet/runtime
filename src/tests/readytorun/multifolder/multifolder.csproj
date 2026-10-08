@@ -18,6 +18,9 @@
   <ItemGroup>
     <Compile Include="Root.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="FolderA/FolderA.csproj">

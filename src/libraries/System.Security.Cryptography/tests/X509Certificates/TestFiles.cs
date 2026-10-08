@@ -8,8 +8,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 {
     internal static class TestFiles
     {
-        internal static readonly string? TestDataRoot = Environment.GetEnvironmentVariable("ASSETS_DIR") ?? AppContext.BaseDirectory;
-        internal static readonly string TestDataFolder = Path.Combine(TestDataRoot, "TestData");
+        internal static readonly string TestDataFolder = Path.Combine(AppContext.BaseDirectory, "TestData");
 
         // Certs
         internal static readonly string MsCertificateDerFile = Path.Combine(TestDataFolder, "MS.cer");

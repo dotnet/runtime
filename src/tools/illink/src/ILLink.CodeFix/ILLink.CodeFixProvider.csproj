@@ -14,6 +14,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="..\ILLink.RoslynAnalyzer\UnsafeMigrationSyntaxHelpers.cs" Link="UnsafeMigrationSyntaxHelpers.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\ILLink.RoslynAnalyzer\ILLink.RoslynAnalyzer.csproj" />
   </ItemGroup>
 

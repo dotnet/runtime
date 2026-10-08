@@ -1,15 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //*****************************************************************************
 // LoaderHeap.h
 //
-
-//
 // Utility functions for managing memory allocations that typically do not
 // need releasing.
-//
 //*****************************************************************************
-
 
 #ifndef __LoaderHeap_h__
 #define __LoaderHeap_h__
@@ -17,6 +14,7 @@
 #include "utilcode.h"
 #include "ex.h"
 #include "executableallocator.h"
+#include "cdacdata.h"
 
 //==============================================================================
 // Interface used to back out loader heap allocations.
@@ -159,7 +157,7 @@ struct LoaderHeapEvent;
 inline UINT32 GetStubCodePageSize()
 {
 #if (defined(TARGET_ARM64) && defined(TARGET_UNIX)) || defined(TARGET_WASM)
-    return max(16*1024u, GetOsPageSize());
+    return max(16*1024u, minipal_getpagesize());
 #elif defined(TARGET_ARM)
     return 4096; // ARM is special as the 32bit instruction set does not easily permit a 16KB offset
 #else
@@ -174,8 +172,13 @@ enum class LoaderHeapImplementationKind
     Interleaved
 };
 
+typedef DPTR(class UnlockedLoaderHeapBaseTraversable) PTR_UnlockedLoaderHeapBaseTraversable;
 class UnlockedLoaderHeapBaseTraversable
 {
+    friend struct cdac_data<UnlockedLoaderHeapBaseTraversable>;
+#ifdef DACCESS_COMPILE
+    friend class ClrDataAccess;
+#endif
 protected:
 #ifdef DACCESS_COMPILE
     UnlockedLoaderHeapBaseTraversable() {}
@@ -188,6 +191,8 @@ protected:
 #endif
 
 public:
+    // DO NOT REMOVE : This is needed for layout stability.
+    virtual ~UnlockedLoaderHeapBaseTraversable() {}
 #ifdef DACCESS_COMPILE
 public:
     void EnumMemoryRegions(enum CLRDataEnumMemoryFlags flags);
@@ -201,12 +206,17 @@ protected:
     PTR_LoaderHeapBlock m_pFirstBlock;
 };
 
+template<>
+struct cdac_data<UnlockedLoaderHeapBaseTraversable>
+{
+    static constexpr size_t FirstBlock = offsetof(UnlockedLoaderHeapBaseTraversable, m_pFirstBlock);
+};
+
 //===============================================================================
 // This is the base class for LoaderHeap and InterleavedLoaderHeap. It holds the
 // common handling for LoaderHeap events, and the data structures used for bump
 // pointer allocation (although not the actual allocation routines).
 //===============================================================================
-typedef DPTR(class UnlockedLoaderHeapBase) PTR_UnlockedLoaderHeapBase;
 class UnlockedLoaderHeapBase : public UnlockedLoaderHeapBaseTraversable, public ILoaderHeapBackout
 {
 #ifdef _DEBUG
@@ -249,8 +259,6 @@ public:
         WRAPPER_NO_CONTRACT;
         return m_dwDebugWastedBytes + GetBytesAvailCommittedRegion();
     }
-
-    void DumpFreeList();
 
 // Extra CallTracing support
     void UnlockedClearEvents();     //Discard saved events
@@ -447,9 +455,6 @@ public:
 
     size_t AllocMem_TotalSize(size_t dwRequestedSize);
 public:
-#ifdef _DEBUG
-    void DumpFreeList();
-#endif
 private:
     static void ValidateFreeList(UnlockedLoaderHeap *pHeap);
     static void WeGotAFaultNowWhat(UnlockedLoaderHeap *pHeap);
@@ -599,9 +604,6 @@ protected:
 typedef DPTR(class ExplicitControlLoaderHeap) PTR_ExplicitControlLoaderHeap;
 class ExplicitControlLoaderHeap : public UnlockedLoaderHeapBaseTraversable
 {
-#ifdef DACCESS_COMPILE
-    friend class ClrDataAccess;
-#endif
 
 private:
     // Allocation pointer in current block

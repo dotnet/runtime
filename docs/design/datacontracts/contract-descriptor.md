@@ -61,19 +61,19 @@ and the [compatible contracts](./datacontracts_design.md#Compatible_Contract).
 
 The compatible contracts are stored in the top-level key `"contracts"`.  The value will be a
 dictionary that contains each contract name as a key.  Each value is the version of the contract as
-a JSON integer constant.
+a JSON string.
 
 **Contract example**:
 
 ``` jsonc
-{"Thread":1,"GCHandle":1,...}
+{"Thread":"c1","GCHandle":"c1",...}
 ```
 
 **Complete in-memory data descriptor example**:
 
 ``` jsonc
 {
-  "version": "0",
+  "version": 2,
   "baseline": "example-64",
   "types":
   {
@@ -90,7 +90,7 @@ a JSON integer constant.
   {
     "GCDescriptor": [ 1 ]
   },
-  "contracts": {"Thread": 1, "GCHandle": 1, "ThreadStore": 1}
+  "contracts": {"Thread": "c1", "GCHandle": "c1", "ThreadStore": "c1"}
 }
 ```
 
@@ -102,4 +102,3 @@ target platform.
 
 In scenarios where multiple .NET runtimes may be present in a single process, diagnostic tooling
 should look for the symbol in each loaded module to discover all the runtimes.
-

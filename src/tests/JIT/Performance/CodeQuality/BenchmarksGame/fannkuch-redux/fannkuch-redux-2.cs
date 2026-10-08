@@ -7,6 +7,7 @@
 // Best-scoring single-threaded C# .NET Core version as of 2017-09-01
 
 /* The Computer Language Benchmarks Game
+using TestLibrary;
    http://benchmarksgame.alioth.debian.org/
 
    contributed by Isaac Gouy, transliterated from Mike Pall's Lua program 
@@ -73,6 +74,7 @@ namespace BenchmarksGame
             } while (true);
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/86772", TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         [Fact]
         public static int TestEntryPoint()
         {

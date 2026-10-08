@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-browser;$(NetCoreAppCurrent)-wasi;$(NetCoreAppCurrent)-maccatalyst;$(NetCoreAppCurrent)-ios;$(NetCoreAppCurrent)-tvos;$(NetCoreAppCurrent)-android</TargetFrameworks>
-    <IgnoreForCI Condition="'$(TargetOS)' == 'browser'">true</IgnoreForCI>
+    <IgnoreForCI Condition="'$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi'">true</IgnoreForCI>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\IO\IsolatedStorage\IdentityTests.cs" />
@@ -12,8 +12,8 @@
     <Compile Include="System\IO\IsolatedStorage\HelperTests.Win32Unix.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
-    <Compile Include="..\src\System\IO\IsolatedStorage\Helper.Win32.cs"
-             Link="Internals\Helper.Win32.cs" />
+    <Compile Include="..\src\System\IO\IsolatedStorage\Helper.Windows.cs"
+             Link="Internals\Helper.Windows.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'windows'">
     <Compile Include="..\src\System\IO\IsolatedStorage\Helper.Unix.cs"

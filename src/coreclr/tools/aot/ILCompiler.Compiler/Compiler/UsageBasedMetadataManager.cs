@@ -231,10 +231,11 @@ namespace ILCompiler
             out Dictionary<MethodDesc, int> methodMetadataMappings,
             out List<MetadataMapping<FieldDesc>> fieldMappings,
             out Dictionary<FieldDesc, int> fieldMetadataMappings,
-            out List<StackTraceMapping> stackTraceMapping)
+            out List<StackTraceMapping> stackTraceMapping,
+            out List<ReflectionStackTraceMapping> reflectionStackTraceMapping)
         {
             ComputeMetadata(new GeneratedTypesAndCodeMetadataPolicy(_blockingPolicy, factory),
-                factory, out metadataBlob, out typeMappings, out methodMappings, out methodMetadataMappings, out fieldMappings, out fieldMetadataMappings, out stackTraceMapping);
+                factory, out metadataBlob, out typeMappings, out methodMappings, out methodMetadataMappings, out fieldMappings, out fieldMetadataMappings, out stackTraceMapping, out reflectionStackTraceMapping);
         }
 
         protected override void GetMetadataDependenciesDueToReflectability(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
@@ -308,6 +309,22 @@ namespace ILCompiler
                 {
                     dependencies ??= new DependencyList();
                     dependencies.Add(factory.ReflectedMethod(invokeMethod.GetCanonMethodTarget(CanonicalFormKind.Specific)), "Delegate invoke method is always reflectable");
+                }
+            }
+
+            if (type.IsArray)
+            {
+                // Array.Initialize needs the default constructor of the element type to be reflectable
+                // for value types with a public parameterless constructor.
+                TypeDesc elementType = ((ArrayType)type).ElementType;
+                if (elementType.IsValueType)
+                {
+                    MethodDesc defaultConstructor = elementType.GetDefaultConstructor();
+                    if (defaultConstructor is not null && !IsReflectionBlocked(defaultConstructor))
+                    {
+                        dependencies ??= new DependencyList();
+                        dependencies.Add(factory.ReflectedMethod(defaultConstructor.GetCanonMethodTarget(CanonicalFormKind.Specific)), "Array.Initialize needs default constructor");
+                    }
                 }
             }
 
@@ -524,17 +541,7 @@ namespace ILCompiler
 
         public override void GetDependenciesDueToLdToken(ref DependencyList dependencies, NodeFactory factory, FieldDesc field)
         {
-            if (!IsReflectionBlocked(field)
-                // Scanning will report many field ldtokens due to InitializeArray/CreateSpan.
-                // We don't consider those reflection because codegen is going to intrinsically
-                // expand them if the pattern match holds. Scanner doesn't replicate the
-                // exact rules that codegen will follow - it will report it all as LDTOKEN
-                // and this can potentially reflection-root things that don't need rooting.
-                // If LDTOKEN with an RVA static field ever becomes an actual user scenario
-                // (outside InitializeArray/CreateSpan) we need to remove this condition, but
-                // we should also replicate the codegen expansion rules in the scanner
-                // so that it doesn't become an unnecessary size regression for the common patterns.
-                && !field.HasRva)
+            if (!IsReflectionBlocked(field))
             {
                 dependencies ??= new DependencyList();
                 dependencies.Add(factory.ReflectedField(field), "LDTOKEN field");
@@ -614,7 +621,8 @@ namespace ILCompiler
 
         public override void GetDependenciesForOverridingMethod(ref CombinedDependencyList dependencies, NodeFactory factory, MethodDesc decl, MethodDesc impl)
         {
-            Debug.Assert(decl.IsVirtual && MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(decl) == decl);
+            Debug.Assert(decl.IsVirtual
+                && MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(decl.GetMethodDefinition()) == decl.GetMethodDefinition());
 
             // If a virtual method slot is a target of a delegate, all implementations become reflection visible
             // to support Delegate.GetMethodInfo().
@@ -622,9 +630,11 @@ namespace ILCompiler
             {
                 dependencies ??= new CombinedDependencyList();
                 dependencies.Add(new DependencyNodeCore<NodeFactory>.CombinedDependencyListEntry(
-                    factory.ReflectedMethod(impl.GetCanonMethodTarget(CanonicalFormKind.Specific)),
-                    factory.ReflectedDelegateTargetVirtualMethod(decl.GetCanonMethodTarget(CanonicalFormKind.Specific)),
-                    "Virtual method declaration is reflectable"));
+                    factory.ReflectableVirtualMethodImpl(
+                        decl.GetCanonMethodTarget(CanonicalFormKind.Specific),
+                        impl.GetCanonMethodTarget(CanonicalFormKind.Specific)),
+                    null,
+                    "Virtual method implementation discovered"));
             }
         }
 

@@ -36,6 +36,9 @@ public:
         // The configuration should be parsed using a 10 radix as opposed to the
         // default of 16.
         ParseIntegerAsBase10 = 0x4,
+        
+        // If set, prepend DOTNET_ or CORECLR_ prefix when doing environment variable lookup.
+        CoreclrFallbackPrefix = 0x8,
     };
 
     // Struct used to store information about where/how to find a Config DWORD.
@@ -131,7 +134,7 @@ public:
     static BOOL IsConfigOptionSpecified(LPCWSTR name);
 
     // Free a string returned by GetConfigValue
-    static void FreeConfigString(_In_ _In_z_ LPWSTR name);
+    static void FreeConfigString(_In_ _In_z_ LPWSTR name) noexcept;
 
     // Initialize the configuration.
     static void Initialize();
@@ -147,6 +150,13 @@ inline CLRConfig::LookupOptions operator&(CLRConfig::LookupOptions lhs, CLRConfi
     return static_cast<CLRConfig::LookupOptions>(static_cast<DWORD>(lhs) & static_cast<DWORD>(rhs));
 }
 
-typedef Wrapper<LPWSTR, DoNothing, CLRConfig::FreeConfigString, 0> CLRConfigStringHolder;
+struct CLRConfigStringTraits final
+{
+    using Type = LPWSTR;
+    static constexpr Type Default() { return NULL; }
+    static void Free(Type value) noexcept { CLRConfig::FreeConfigString(value); }
+};
+
+using CLRConfigStringHolder = LifetimeHolder<CLRConfigStringTraits>;
 
 #endif //__CLRConfig_h__

@@ -10,6 +10,7 @@
     <Compile Include="..\InvokeRefReturn.cs" />
     <Compile Include="..\InvokeWithRefLikeArgs.cs" />
     <Compile Include="..\PointerTests.cs" />
+    <TrimmerRootDescriptor Include="$(ILLinkDescriptorsPath)ILLink.Descriptors.Castle.xml" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Moq" Version="$(MoqVersion)" />

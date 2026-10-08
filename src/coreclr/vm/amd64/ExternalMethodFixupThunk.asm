@@ -14,7 +14,7 @@ ifdef FEATURE_READYTORUN
 
 NESTED_ENTRY DelayLoad_MethodCall, _TEXT
 
-        PROLOG_WITH_TRANSITION_BLOCK 0, 10h, r8, r9
+        PROLOG_WITH_TRANSITION_BLOCK 0, DoNotPushCalleeSavedFloatRegs, 10h, r8, r9
 
         lea     rcx, [rsp + __PWTB_TransitionBlock] ; pTransitionBlock
         mov     rdx, rax                            ; pIndirection
@@ -33,7 +33,7 @@ DYNAMICHELPER macro frameFlags, suffix
 
 NESTED_ENTRY DelayLoad_Helper&suffix, _TEXT
 
-        PROLOG_WITH_TRANSITION_BLOCK 8h, 10h, r8, r9
+        PROLOG_WITH_TRANSITION_BLOCK 8h, DoNotPushCalleeSavedFloatRegs, 10h, r8, r9
 
         mov     qword ptr [rsp + SIZEOF_MAX_OUTGOING_ARGUMENT_HOMES], frameFlags
         lea     rcx, [rsp + __PWTB_TransitionBlock] ; pTransitionBlock

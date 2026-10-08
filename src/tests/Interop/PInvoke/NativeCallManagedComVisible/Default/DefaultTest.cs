@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Collections.Generic;
 using NativeCallManagedComVisible;
 using Xunit;
+using TestLibrary;
 
 // Setting ComVisible to false makes the types in this assembly not visible
 // to COM components by default.  If you need to access a type in this assembly from
@@ -704,6 +705,7 @@ public class ComVisibleServer
     /// Test case set for ComVisible. The assembly is set as [assembly: ComVisible(false)]
     /// </summary>
     /// <returns></returns>
+    [ActiveIssue("Requires COM support, disabled on all Mono platforms", TestRuntimes.Mono)]
     [Fact]
     [Xunit.SkipOnCoreClrAttribute("Depends on marshalled calli", RuntimeTestModes.InterpreterActive)]
     public static void RunComVisibleTests()
@@ -1003,6 +1005,7 @@ public class ComVisibleServer
         Assert.Equal<Guid>(new Guid("0ea2cb33-db9f-3655-9240-47ef1dea0f1e"), typeof(INestedInterfaceVisibleTrueNoGuid).GetTypeInfo().GUID);
     }
 
+    [ActiveIssue("Requires COM support, disabled on all Mono platforms", TestRuntimes.Mono)]
     [Fact]
     [Xunit.SkipOnCoreClrAttribute("Depends on marshalled calli", RuntimeTestModes.InterpreterActive)]
     public static void RunTestsInALC()

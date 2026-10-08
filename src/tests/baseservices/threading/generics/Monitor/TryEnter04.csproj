@@ -7,4 +7,7 @@
     <Compile Include="TryEnter04.cs" />
     <Compile Include="MonitorHelper.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

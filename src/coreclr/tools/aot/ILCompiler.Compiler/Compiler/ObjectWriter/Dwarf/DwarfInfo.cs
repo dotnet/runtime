@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Linq;
 using ILCompiler.DependencyAnalysis;
 using Internal.JitInterface;
+using Internal.Text;
 using Internal.TypeSystem;
 using Internal.TypeSystem.TypesDebugInfo;
 using static ILCompiler.ObjectWriter.DwarfNative;
@@ -194,15 +195,15 @@ namespace ILCompiler.ObjectWriter
 
     internal sealed class DwarfMemberFunction
     {
-        public string Name { get; private set; }
-        public string LinkageName { get; set; }
+        public Utf8String Name { get; private set; }
+        public Utf8String LinkageName { get; set; }
         public MemberFunctionTypeDescriptor Descriptor { get; private set; }
         public uint[] ArgumentTypes { get; private set; }
         public bool IsStatic { get; private set; }
         public long InfoOffset { get; set; }
 
         public DwarfMemberFunction(
-            string name,
+            Utf8String name,
             MemberFunctionTypeDescriptor descriptor,
             uint[] argumentTypes,
             bool isStatic)
@@ -360,37 +361,52 @@ namespace ILCompiler.ObjectWriter
 
     internal sealed class DwarfSubprogramInfo : DwarfInfo
     {
-        private readonly string _sectionSymbolName;
+        private readonly Utf8String _sectionSymbolName;
         private readonly long _methodAddress;
         private readonly int _methodSize;
         private readonly DwarfMemberFunction _memberFunction;
-        private readonly IEnumerable<(DebugVarInfoMetadata, uint)> _debugVars;
-        private readonly IEnumerable<DebugEHClauseInfo> _debugEHClauseInfos;
+        private readonly (DebugVarInfoMetadata, uint)[] _debugVars;
+        private readonly DebugEHClauseInfo[] _debugEHClauseInfos;
         private readonly bool _isStatic;
         private readonly bool _hasChildren;
+        private readonly int _thisVariableIndex;
 
         public DwarfSubprogramInfo(
-            string sectionSymbolName,
+            Utf8String sectionSymbolName,
             long methodAddress,
             int methodSize,
             DwarfMemberFunction memberFunction,
-            IEnumerable<(DebugVarInfoMetadata, uint)> debugVars,
-            IEnumerable<DebugEHClauseInfo> debugEHClauseInfos)
+            (DebugVarInfoMetadata, uint)[] debugVars,
+            DebugEHClauseInfo[] debugEHClauseInfos)
         {
             _sectionSymbolName = sectionSymbolName;
             _methodAddress = methodAddress;
             _methodSize = methodSize;
             _memberFunction = memberFunction;
             _isStatic = memberFunction.IsStatic;
-            _hasChildren = !_isStatic || debugVars.Any() || debugEHClauseInfos.Any();
             _debugVars = debugVars;
             _debugEHClauseInfos = debugEHClauseInfos;
+            _hasChildren = _debugVars.Length > 0 || _debugEHClauseInfos.Length > 0;
+            _thisVariableIndex = -1;
+
+            if (!_isStatic)
+            {
+                for (int i = 0; i < _debugVars.Length; i++)
+                {
+                    DebugVarInfoMetadata debugVar = _debugVars[i].Item1;
+                    if (debugVar.IsParameter && debugVar.DebugVarInfo.VarNumber == 0)
+                    {
+                        _thisVariableIndex = i;
+                        break;
+                    }
+                }
+            }
         }
 
         public override void Dump(DwarfInfoWriter writer)
         {
             writer.WriteStartDIE(
-                !_isStatic ? DwarfAbbrev.Subprogram :
+                _thisVariableIndex >= 0 ? DwarfAbbrev.Subprogram :
                 _hasChildren ? DwarfAbbrev.SubprogramStatic : DwarfAbbrev.SubprogramStaticNoChildren);
 
             // DW_AT_specification
@@ -406,7 +422,7 @@ namespace ILCompiler.ObjectWriter
             writer.WriteULEB128(1);
             writer.Write([(byte)(DW_OP_reg0 + writer.FrameRegister)]);
 
-            if (!_isStatic)
+            if (_thisVariableIndex >= 0)
             {
                 // DW_AT_object_pointer
                 writer.WriteInfoAbsReference(writer.Position + sizeof(uint));
@@ -415,10 +431,19 @@ namespace ILCompiler.ObjectWriter
             /// At the moment, the lexical scope reflects IL, not C#, meaning that
             /// there is only one scope for the whole method. We could be more precise
             /// in the future by pulling the scope information from the PDB.
-            foreach ((DebugVarInfoMetadata debugVar, uint typeIndex) in _debugVars)
+            if (_thisVariableIndex >= 0)
             {
-                bool isThis = debugVar.IsParameter && debugVar.DebugVarInfo.VarNumber == 0 && !_isStatic;
-                DumpVar(writer, debugVar, typeIndex, isThis);
+                (DebugVarInfoMetadata debugVar, uint typeIndex) = _debugVars[_thisVariableIndex];
+                DumpVar(writer, debugVar, typeIndex, isThis: true);
+            }
+
+            for (int i = 0; i < _debugVars.Length; i++)
+            {
+                if (i != _thisVariableIndex)
+                {
+                    (DebugVarInfoMetadata debugVar, uint typeIndex) = _debugVars[i];
+                    DumpVar(writer, debugVar, typeIndex, isThis: false);
+                }
             }
 
             // EH clauses
@@ -511,26 +536,26 @@ namespace ILCompiler.ObjectWriter
                 case VarLocType.VLT_STK:
                 case VarLocType.VLT_STK2:
                 case VarLocType.VLT_STK_BYREF:
-                    e.OpBReg(loc.B, loc.C);
+                    e.OpStackLocation(loc.B, loc.C);
                     if (loc.LocationType == VarLocType.VLT_STK_BYREF)
                     {
                         e.OpDeref();
                     }
                     break;
                 case VarLocType.VLT_REG_REG:
-                    e.OpReg(loc.C);
-                    e.OpPiece();
                     e.OpReg(loc.B);
+                    e.OpPiece();
+                    e.OpReg(loc.C);
                     e.OpPiece();
                     break;
                 case VarLocType.VLT_REG_STK:
                     e.OpReg(loc.B);
                     e.OpPiece();
-                    e.OpBReg(loc.C, loc.D);
+                    e.OpStackLocation(loc.C, loc.D);
                     e.OpPiece();
                     break;
                 case VarLocType.VLT_STK_REG:
-                    e.OpBReg(loc.B, loc.C);
+                    e.OpStackLocation(loc.B, loc.C);
                     e.OpPiece();
                     e.OpReg(loc.D);
                     e.OpPiece();
@@ -553,14 +578,14 @@ namespace ILCompiler.ObjectWriter
         private readonly StaticDataFieldDescriptor _descriptor;
 
         public long InfoOffset { get; set; }
-        public string Name => _descriptor.StaticDataName;
+        public Utf8String Name => _descriptor.StaticDataName;
 
         public DwarfStaticVariableInfo(StaticDataFieldDescriptor descriptor)
         {
             _descriptor = descriptor;
         }
 
-        public void Dump(DwarfInfoWriter writer, string sectionSymbolName, long address)
+        public void Dump(DwarfInfoWriter writer, Utf8String sectionSymbolName, long address)
         {
             writer.WriteStartDIE(DwarfAbbrev.VariableStatic);
 

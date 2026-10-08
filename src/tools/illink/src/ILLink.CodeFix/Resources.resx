@@ -126,6 +126,45 @@
   <data name="RequiresDynamicCodeCodeFixTitle" xml:space="preserve">
     <value>Add RequiresDynamicCode attribute to parent method</value>
   </data>
+  <data name="RequiresUnsafeCodeFixTitle" xml:space="preserve">
+    <value>Add 'unsafe' to parent method</value>
+  </data>
+  <data name="AddUnsafeToExternCodeFixTitle" xml:space="preserve">
+    <value>Mark extern member 'unsafe'</value>
+  </data>
+  <data name="AddSafeCodeFixTitle" xml:space="preserve">
+    <value>Mark member 'safe'</value>
+  </data>
+  <data name="AddSafeToDocumentedMemberCodeFixTitle" xml:space="preserve">
+    <value>Mark documented member 'safe'</value>
+  </data>
+  <data name="RemoveInvalidUnsafeCodeFixTitle" xml:space="preserve">
+    <value>Remove invalid 'unsafe' modifier</value>
+  </data>
+  <data name="RemoveUndocumentedUnsafeCodeFixTitle" xml:space="preserve">
+    <value>Remove undocumented 'unsafe' modifier</value>
+  </data>
+  <data name="AddUnsafeToPointerSignatureCodeFixTitle" xml:space="preserve">
+    <value>Add 'unsafe' to pointer signature</value>
+  </data>
+  <data name="AddUnsafeToFieldCodeFixTitle" xml:space="preserve">
+    <value>Mark field-like member 'unsafe'</value>
+  </data>
+  <data name="RemoveUnsafeFromDerivedMemberCodeFixTitle" xml:space="preserve">
+    <value>Remove 'unsafe' from this member</value>
+  </data>
+  <data name="AddUnsafeToBaseMemberCodeFixTitle" xml:space="preserve">
+    <value>Mark the overridden or implemented member 'unsafe'</value>
+  </data>
+  <data name="MatchPartialSafetyModifierCodeFixTitle" xml:space="preserve">
+    <value>Match the safety modifier on both partial declarations</value>
+  </data>
+  <data name="ReplaceUnsafeWithSafeCodeFixTitle" xml:space="preserve">
+    <value>Replace 'unsafe' with 'safe' on this member</value>
+  </data>
+  <data name="AddUnsafeToLibraryImportCodeFixTitle" xml:space="preserve">
+    <value>Mark 'LibraryImport' method 'unsafe'</value>
+  </data>
   <data name="UconditionalSuppressMessageCodeFixTitle" xml:space="preserve">
     <value>Add UnconditionalSuppressMessage attribute to parent method</value>
   </data>

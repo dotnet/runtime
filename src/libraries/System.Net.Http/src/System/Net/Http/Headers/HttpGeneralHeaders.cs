@@ -125,8 +125,8 @@ namespace System.Net.Http.Headers
                 else
                 {
                     _transferEncodingChunkedSet = value != null;
-                    // We intentionally ignore the return value. It's OK if "chunked" wasn't in the store.
-                    _parent.RemoveParsedValue(KnownHeaders.TransferEncoding.Descriptor, HeaderUtilities.TransferEncodingChunked);
+                    // Remove all occurrences of "chunked" in a single pass.
+                    _parent.RemoveParsedValue(KnownHeaders.TransferEncoding.Descriptor, HeaderUtilities.TransferEncodingChunked, removeAll: true);
                 }
             }
         }

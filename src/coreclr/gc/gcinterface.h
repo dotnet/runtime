@@ -11,11 +11,11 @@
 // The minor version of the IGCHeap interface. Non-breaking changes are required
 // to bump the minor version number. GCs and EEs with minor version number
 // mismatches can still interoperate correctly, with some care.
-#define GC_INTERFACE_MINOR_VERSION 6
+#define GC_INTERFACE_MINOR_VERSION 9
 
 // The major version of the IGCToCLR interface. Breaking changes to this interface
 // require bumps in the major version number.
-#define EE_INTERFACE_MAJOR_VERSION 4
+#define EE_INTERFACE_MAJOR_VERSION 5
 
 struct ScanContext;
 struct gc_alloc_context;
@@ -411,6 +411,7 @@ typedef enum
      * severed, even if the object will be visible from a pending finalization
      * graph.  This further implies that short weak handles do not track
      * across object resurrections.
+     * [cDAC] [GC]: Contract depends on this value
      *
      */
     HNDTYPE_WEAK_SHORT   = 0,
@@ -422,6 +423,7 @@ typedef enum
      * object is actually reclaimed.  Unlike short weak handles, long weak handles
      * continue to track their referents through finalization and across any
      * resurrections that may occur.
+     * [cDAC] [GC]: Contract depends on this value
      *
      */
     HNDTYPE_WEAK_LONG    = 1,
@@ -433,6 +435,7 @@ typedef enum
      * Strong handles are handles which function like a normal object reference.
      * The existence of a strong handle for an object will cause the object to
      * be promoted (remain alive) through a garbage collection cycle.
+     * [cDAC] [GC]: Contract depends on this value
      *
      */
     HNDTYPE_STRONG       = 2,
@@ -445,6 +448,7 @@ typedef enum
      * prevent an object from moving during a garbage collection cycle.  This is
      * useful when passing a pointer to object innards out of the runtime while GC
      * may be enabled.
+     * [cDAC] [GC]: Contract depends on this value
      *
      * NOTE:  PINNING AN OBJECT IS EXPENSIVE AS IT PREVENTS THE GC FROM ACHIEVING
      *        OPTIMAL PACKING OF OBJECTS DURING EPHEMERAL COLLECTIONS.  THIS TYPE
@@ -469,6 +473,7 @@ typedef enum
      *
      * Refcounted handles are handles that behave as strong handles while the
      * refcount on them is greater than 0 and behave as weak handles otherwise.
+     * [cDAC] [GC]: Contract depends on this value
      *
      */
     HNDTYPE_REFCOUNTED   = 5,
@@ -485,7 +490,7 @@ typedef enum
      *
      * They are also used to implement the managed ConditionalWeakTable class. If you want to use
      * these from managed code, they are exposed to BCL through the managed DependentHandle class.
-     *
+     * [cDAC] [GC]: Contract depends on this value
      *
      */
     HNDTYPE_DEPENDENT    = 6,
@@ -538,7 +543,8 @@ typedef enum
      * Interior pointer handles allow the vm to request that the GC keep an interior pointer to
      * a given object updated to keep pointing at the same location within an object. These handles
      * have an extra pointer which points at an interior pointer into the first object.
-     *
+     * [cDAC] [GC]: Contract depends on this value
+     * 
      */
     HNDTYPE_WEAK_INTERIOR_POINTER = 10,
 
@@ -546,6 +552,7 @@ typedef enum
      * CROSSREFERENCE HANDLES
      *
      * Crossreference handles are used to track the lifetime of an object in another VM heap.
+     * [cDAC] [GC]: Contract depends on this value
      */
     HNDTYPE_CROSSREFERENCE = 11
 } HandleType;
@@ -651,23 +658,23 @@ class IGCHeap {
 public:
     /*
     ===========================================================================
-    Hosting APIs. These are used by GC hosting. The code that
-    calls these methods may possibly be moved behind the interface -
-    today, the VM handles the setting of segment size and max gen 0 size.
-    (See src/vm/corehost.cpp)
+    Heap sizing and virtual memory limit APIs.
     ===========================================================================
     */
 
     // Returns whether or not the given size is a valid segment size.
+    // No longer used by the VM in .NET Core 2.1+
     virtual bool IsValidSegmentSize(size_t size) PURE_VIRTUAL
 
     // Returns whether or not the given size is a valid gen 0 max size.
+    // No longer used by the VM in .NET Core 2.1+
     virtual bool IsValidGen0MaxSize(size_t size) PURE_VIRTUAL
 
     // Gets a valid segment size.
     virtual size_t GetValidSegmentSize(bool large_seg = false) PURE_VIRTUAL
 
     // Sets the limit for reserved virtual memory.
+    // No longer used in .NET Core 2.1+
     virtual void SetReservedVMLimit(size_t vmlimit) PURE_VIRTUAL
 
     /*
@@ -1008,7 +1015,6 @@ public:
     /*
     ===========================================================================
     Routines to register read only segments for frozen objects.
-    Only valid if FEATURE_BASICFREEZE is defined.
     ===========================================================================
     */
 
@@ -1068,6 +1074,8 @@ public:
     virtual void DiagWalkHeapWithACHandling(walk_fn fn, void* context, int gen_number, bool walk_large_object_heap_p) PURE_VIRTUAL
 
     virtual void NullBridgeObjectsWeakRefs(size_t length, void* unreachableObjectHandles) PURE_VIRTUAL;
+
+    virtual uintptr_t* GetPendingBridgeHandles(size_t* count) PURE_VIRTUAL;
 };
 
 #ifdef WRITE_BARRIER_CHECK

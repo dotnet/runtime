@@ -6,9 +6,6 @@
 
 #include "rhassert.h"
 #include <minipal/utils.h>
-#ifdef PROFILE_STARTUP
-#include <minipal/time.h>
-#endif
 
 #define EXTERN_C extern "C"
 
@@ -63,7 +60,7 @@ inline bool IS_ALIGNED(T* val, uintptr_t alignment);
 #ifndef DACCESS_COMPILE
 
 #ifndef ZeroMemory
-#define ZeroMemory(_dst, _size) memset((_dst), 0, (_size))
+#define ZeroMemory(Destination,Length) memset((Destination),0,(Length))
 #endif
 
 #endif // !DACCESS_COMPILE
@@ -82,12 +79,6 @@ inline bool IS_ALIGNED(T* val, uintptr_t alignment);
 #define POINTER_SIZE 4
 
 #endif // HOST_64BIT
-
-#ifndef __GCENV_BASE_INCLUDED__
-
-#define OS_PAGE_SIZE    PalOsPageSize()
-
-#endif // __GCENV_BASE_INCLUDED__
 
 #if defined(TARGET_ARM)
 #define THUMB_CODE 1
@@ -263,24 +254,5 @@ typedef int32_t FC_BOOL_ARG;
 #define IN_DAC(x) x
 #define NOT_IN_DAC(x)
 #endif
-
-#define INLINE inline
-
-enum STARTUP_TIMELINE_EVENT_ID
-{
-    PROCESS_ATTACH_BEGIN = 0,
-    NONGC_INIT_COMPLETE,
-    GC_INIT_COMPLETE,
-    PROCESS_ATTACH_COMPLETE,
-
-    NUM_STARTUP_TIMELINE_EVENTS
-};
-
-#ifdef PROFILE_STARTUP
-extern uint64_t g_startupTimelineEvents[NUM_STARTUP_TIMELINE_EVENTS];
-#define STARTUP_TIMELINE_EVENT(eventid) g_startupTimelineEvents[eventid] = (uint64_t)minipal_hires_ticks();
-#else // PROFILE_STARTUP
-#define STARTUP_TIMELINE_EVENT(eventid)
-#endif // PROFILE_STARTUP
 
 #endif // __COMMONMACROS_H__

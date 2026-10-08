@@ -60,7 +60,7 @@ namespace System.Formats.Cbor
             {
                 ReadExpectedTag(expectedTag: CborTag.DateTimeString);
 
-                switch (PeekState())
+                switch (PeekStateEnsuringDataAvailable())
                 {
                     case CborReaderState.TextString:
                     case CborReaderState.StartIndefiniteLengthTextString:
@@ -108,7 +108,7 @@ namespace System.Formats.Cbor
             {
                 ReadExpectedTag(expectedTag: CborTag.UnixTimeSeconds);
 
-                switch (PeekState())
+                switch (PeekStateEnsuringDataAvailable())
                 {
                     case CborReaderState.UnsignedInteger:
                     case CborReaderState.NegativeInteger:
@@ -165,7 +165,7 @@ namespace System.Formats.Cbor
                     _ => throw new InvalidOperationException(SR.Cbor_Reader_InvalidBigNumEncoding),
                 };
 
-                switch (PeekState())
+                switch (PeekStateEnsuringDataAvailable())
                 {
                     case CborReaderState.ByteString:
                     case CborReaderState.StartIndefiniteLengthByteString:
@@ -208,7 +208,7 @@ namespace System.Formats.Cbor
             {
                 ReadExpectedTag(expectedTag: CborTag.DecimalFraction);
 
-                if (PeekState() != CborReaderState.StartArray || ReadStartArray() != 2)
+                if (PeekStateEnsuringDataAvailable() != CborReaderState.StartArray || ReadStartArray() != 2)
                 {
                     throw new CborContentException(SR.Cbor_Reader_InvalidDecimalEncoding);
                 }
@@ -216,7 +216,7 @@ namespace System.Formats.Cbor
                 decimal mantissa; // signed integral component of the decimal value
                 long exponent;    // base-10 exponent
 
-                switch (PeekState())
+                switch (PeekStateEnsuringDataAvailable())
                 {
                     case CborReaderState.UnsignedInteger:
                     case CborReaderState.NegativeInteger:
@@ -227,7 +227,7 @@ namespace System.Formats.Cbor
                         throw new CborContentException(SR.Cbor_Reader_InvalidDecimalEncoding);
                 }
 
-                switch (PeekState())
+                switch (PeekStateEnsuringDataAvailable())
                 {
                     case CborReaderState.UnsignedInteger:
                         mantissa = ReadUInt64();
@@ -264,6 +264,22 @@ namespace System.Formats.Cbor
                 RestoreCheckpoint(in checkpoint);
                 throw;
             }
+        }
+
+        // Semantic tag readers consume multiple tokens atomically, so a truncated non-final
+        // buffer surfaces as an unexpected end of buffer rather than as NeedsMoreData;
+        // the reader state is rolled back via checkpoint so the caller can retry
+        // after supplying more data.
+        private CborReaderState PeekStateEnsuringDataAvailable()
+        {
+            CborReaderState state = PeekState();
+
+            if (state == CborReaderState.NeedsMoreData)
+            {
+                throw new CborContentException(SR.Cbor_Reader_InvalidCbor_UnexpectedEndOfBuffer);
+            }
+
+            return state;
         }
 
         private void ReadExpectedTag(CborTag expectedTag)

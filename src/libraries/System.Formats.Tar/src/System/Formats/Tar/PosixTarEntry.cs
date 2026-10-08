@@ -48,7 +48,7 @@ namespace System.Formats.Tar
         /// <summary>
         /// When the current entry represents a character device or a block device, the major number identifies the driver associated with the device.
         /// </summary>
-        /// <remarks>Character and block devices are Unix-specific entry types.</remarks>
+        /// <remarks>Character and block devices are Unix-specific entry types. For PAX entries, setting this property updates the corresponding <c>devmajor</c> extended attribute in <see cref="PaxTarEntry.ExtendedAttributes"/>.</remarks>
         /// <exception cref="InvalidOperationException">The entry does not represent a block device or a character device.</exception>
         /// <exception cref="ArgumentOutOfRangeException">The value is negative, or larger than 2097151 when using <see cref="TarEntryFormat.V7"/> or <see cref="TarEntryFormat.Ustar"/>.</exception>
         public int DeviceMajor
@@ -64,17 +64,18 @@ namespace System.Formats.Tar
                 ArgumentOutOfRangeException.ThrowIfNegative(value);
                 if (FormatIsOctalOnly)
                 {
-                    ArgumentOutOfRangeException.ThrowIfGreaterThan(value, 0x1FFFFF); // 7777777 in octal
+                    ArgumentOutOfRangeException.ThrowIfGreaterThan(value, TarHeader.Octal8ByteFieldMaxValue);
                 }
 
                 _header._devMajor = value;
+                _header.SyncNumericExtendedAttribute(TarHeader.PaxEaDevMajor, value, TarHeader.Octal8ByteFieldMaxValue);
             }
         }
 
         /// <summary>
         /// When the current entry represents a character device or a block device, the minor number is used by the driver to distinguish individual devices it controls.
         /// </summary>
-        /// <remarks>Character and block devices are Unix-specific entry types.</remarks>
+        /// <remarks>Character and block devices are Unix-specific entry types. For PAX entries, setting this property updates the corresponding <c>devminor</c> extended attribute in <see cref="PaxTarEntry.ExtendedAttributes"/>.</remarks>
         /// <exception cref="InvalidOperationException">The entry does not represent a block device or a character device.</exception>
         /// <exception cref="ArgumentOutOfRangeException">The value is negative, or larger than 2097151 when using <see cref="TarEntryFormat.V7"/> or <see cref="TarEntryFormat.Ustar"/>.</exception>
         public int DeviceMinor
@@ -90,10 +91,11 @@ namespace System.Formats.Tar
                 ArgumentOutOfRangeException.ThrowIfNegative(value);
                 if (FormatIsOctalOnly)
                 {
-                    ArgumentOutOfRangeException.ThrowIfGreaterThan(value, 0x1FFFFF); // 7777777 in octal
+                    ArgumentOutOfRangeException.ThrowIfGreaterThan(value, TarHeader.Octal8ByteFieldMaxValue);
                 }
 
                 _header._devMinor = value;
+                _header.SyncNumericExtendedAttribute(TarHeader.PaxEaDevMinor, value, TarHeader.Octal8ByteFieldMaxValue);
             }
         }
 
@@ -101,7 +103,7 @@ namespace System.Formats.Tar
         /// Represents the name of the group that owns this entry.
         /// </summary>
         /// <exception cref="ArgumentNullException">Cannot set a null group name.</exception>
-        /// <remarks><see cref="GroupName"/> is only used in Unix platforms.</remarks>
+        /// <remarks><see cref="GroupName"/> is only used in Unix platforms. For PAX entries, setting this property updates the corresponding <c>gname</c> extended attribute in <see cref="PaxTarEntry.ExtendedAttributes"/>.</remarks>
         public string GroupName
         {
             get => _header._gName ?? string.Empty;
@@ -109,13 +111,14 @@ namespace System.Formats.Tar
             {
                 ArgumentNullException.ThrowIfNull(value);
                 _header._gName = value;
+                _header.SyncStringExtendedAttribute(TarHeader.PaxEaGName, value, FieldLengths.GName);
             }
         }
 
         /// <summary>
         /// Represents the name of the user that owns this entry.
         /// </summary>
-        /// <remarks><see cref="UserName"/> is only used in Unix platforms.</remarks>
+        /// <remarks><see cref="UserName"/> is only used in Unix platforms. For PAX entries, setting this property updates the corresponding <c>uname</c> extended attribute in <see cref="PaxTarEntry.ExtendedAttributes"/>.</remarks>
         /// <exception cref="ArgumentNullException">Cannot set a null user name.</exception>
         public string UserName
         {
@@ -124,6 +127,7 @@ namespace System.Formats.Tar
             {
                 ArgumentNullException.ThrowIfNull(value);
                 _header._uName = value;
+                _header.SyncStringExtendedAttribute(TarHeader.PaxEaUName, value, FieldLengths.UName);
             }
         }
     }

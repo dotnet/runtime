@@ -62,6 +62,6 @@ namespace System.Security.Cryptography.Pkcs
             return new Oid(contentTypeValue);
         }
 
-        private volatile Oid? _lazyContentType;
+        private Oid? _lazyContentType;
     }
 }

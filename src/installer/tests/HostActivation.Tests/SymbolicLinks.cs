@@ -43,10 +43,11 @@ namespace HostActivation.Tests
                     symlinks.Add(new SymLink(symlinkPath, file));
                 }
 
-                var result = Command.Create(Path.Combine(testDir.Location, symlinkRelativePath, Path.GetFileName(sharedTestState.FrameworkDependentApp.AppExe)))
+                string appHostPath = Path.Combine(testDir.Location, symlinkRelativePath, Path.GetFileName(sharedTestState.FrameworkDependentApp.AppExe));
+                var result = Command.Create(appHostPath, "print_command_line_args")
                     .CaptureStdErr()
                     .CaptureStdOut()
-                    .DotNetRoot(TestContext.BuiltDotNet.BinPath)
+                    .DotNetRoot(HostTestContext.BuiltDotNet.BinPath)
                     .Execute();
 
                 // This should succeed on all platforms, but for different reasons:
@@ -54,7 +55,9 @@ namespace HostActivation.Tests
                 // * Unix: The apphost will look next to the resolved apphost for the app dll and find the real thing
                 result
                     .Should().Pass()
-                    .And.HaveStdOutContaining("Hello World");
+                    .And.HaveStdOutContaining("Hello World")
+                    .And.HaveStdOutContaining($"Environment.GetCommandLineArgs()[0] = {appHostPath}")
+                    .And.HaveStdOutContaining("Environment.GetCommandLineArgs()[1] = print_command_line_args");
             }
             finally
             {
@@ -113,7 +116,7 @@ namespace HostActivation.Tests
                 var result = Command.Create(Path.Combine(targetPath, appHostName))
                     .CaptureStdErr()
                     .CaptureStdOut()
-                    .DotNetRoot(TestContext.BuiltDotNet.BinPath)
+                    .DotNetRoot(HostTestContext.BuiltDotNet.BinPath)
                     .Execute();
 
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
@@ -163,7 +166,7 @@ namespace HostActivation.Tests
                 var result = Command.Create(Path.Combine(testDir.Location, symlinkRelativePath, Path.GetFileName(sharedTestState.FrameworkDependentApp.AppExe)))
                     .CaptureStdErr()
                     .CaptureStdOut()
-                    .DotNetRoot(TestContext.BuiltDotNet.BinPath)
+                    .DotNetRoot(HostTestContext.BuiltDotNet.BinPath)
                     .Execute();
 
                 // This should succeed on all platforms, but for different reasons:
@@ -272,7 +275,7 @@ namespace HostActivation.Tests
                 var result = Command.Create(symlink.SrcPath)
                     .CaptureStdErr()
                     .CaptureStdOut()
-                    .DotNetRoot(TestContext.BuiltDotNet.BinPath)
+                    .DotNetRoot(HostTestContext.BuiltDotNet.BinPath)
                     .Execute();
 
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
@@ -299,7 +302,7 @@ namespace HostActivation.Tests
             {
                 var dotnetSymlink = Path.Combine(testDir.Location, Binaries.GetExeName("dotnet"));
 
-                using var symlink = new SymLink(dotnetSymlink, TestContext.BuiltDotNet.BinPath);
+                using var symlink = new SymLink(dotnetSymlink, HostTestContext.BuiltDotNet.BinPath);
                 Command.Create(sharedTestState.FrameworkDependentApp.AppExe)
                     .EnvironmentVariable("DOTNET_ROOT", symlink.SrcPath)
                     .CaptureStdErr()
@@ -337,7 +340,7 @@ namespace HostActivation.Tests
             {
                 var dotnetSymlink = Path.Combine(testDir.Location, Binaries.DotNet.FileName);
 
-                using var symlink = new SymLink(dotnetSymlink, TestContext.BuiltDotNet.DotnetExecutablePath);
+                using var symlink = new SymLink(dotnetSymlink, HostTestContext.BuiltDotNet.DotnetExecutablePath);
                 var result = Command.Create(symlink.SrcPath, sharedTestState.SelfContainedApp.AppDll)
                     .CaptureStdErr()
                     .CaptureStdOut()
@@ -369,7 +372,7 @@ namespace HostActivation.Tests
                 Directory.Move(app.Location, newAppDir.Location);
 
                 using var symlink = new SymLink(app.Location, newAppDir.Location);
-                TestContext.BuiltDotNet.Exec(app.AppDll)
+                HostTestContext.BuiltDotNet.Exec(app.AppDll)
                     .CaptureStdErr()
                     .CaptureStdOut()
                     .Execute()

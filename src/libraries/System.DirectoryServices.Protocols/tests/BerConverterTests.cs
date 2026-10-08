@@ -151,6 +151,13 @@ namespace System.DirectoryServices.Protocols.Tests
             // Content: sequence containing two booleans
             // Parsed as a sequence containing two bitstrings
             yield return new object[] { "{BB}", new byte[] { 48, 132, 0, 0, 0, 6, 1, 1, 255, 1, 1, 0 }, new object[] { new byte[] { 255 }, new byte[] { 0 } } };
+
+            yield return new object[] { "{a}", new byte[] { 48, 3, 4, 1, 65 }, new object[] { "A" } };
+            yield return new object[] { "{O}", new byte[] { 48, 2, 4, 0 }, new object[] { Array.Empty<byte>() } };
+            yield return new object[] { "{x}", new byte[] { 48, 3, 4, 1, 65 }, Array.Empty<object>() };
+            yield return new object[] { "x", new byte[] { 48, 3, 4, 1, 65 }, Array.Empty<object>() };
+            yield return new object[] { "{xxi}", new byte[] { 48, 11, 4, 1, 65, 48, 3, 4, 1, 66, 2, 1, 42 }, new object[] { 42 } };
+
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) // vv and VV formats are not supported yet in Linux
             {
                 // Content: sequence containing three octet strings
@@ -199,6 +206,32 @@ namespace System.DirectoryServices.Protocols.Tests
             Assert.Equal(expected, value);
         }
 
+        [Theory]
+        [InlineData(new byte[] { 48, 5, 4, 0, 2, 1, 42 })]
+        [InlineData(new byte[] { 48, 5, 5, 0, 2, 1, 42 })]
+        [InlineData(new byte[] { 48, 6, 4, 1, 65, 2, 1, 42 })]
+        [InlineData(new byte[] { 48, 6, 1, 1, 255, 2, 1, 42 })]
+        [InlineData(new byte[] { 48, 6, 128, 1, 65, 2, 1, 42 })]
+        [InlineData(new byte[] { 48, 7, 4, 129, 1, 65, 2, 1, 42 })]
+        [InlineData(new byte[] { 48, 8, 48, 3, 4, 1, 65, 2, 1, 42 })]
+        [InlineData(new byte[] { 48, 8, 49, 3, 4, 1, 65, 2, 1, 42 })]
+        [InlineData(new byte[] { 48, 10, 48, 5, 48, 3, 4, 1, 65, 2, 1, 42 })]
+        public void Decode_SkipElement_ReturnsNextValue(byte[] values)
+        {
+            Assert.Equal(new object[] { 42 }, BerConverter.Decode("{xi}", values));
+        }
+
+        [Theory]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [InlineData("v", new byte[] { 4, 0 })]
+        [InlineData("V", new byte[] { 4, 0 })]
+        [InlineData("v", new byte[] { 48, 3, 4, 1, 65 })]
+        [InlineData("V", new byte[] { 48, 3, 4, 1, 65 })]
+        public void Decode_MultiByteArrayOnUnix_ThrowsBerConversionException(string format, byte[] values)
+        {
+            Assert.Throws<BerConversionException>(() => BerConverter.Decode(format, values));
+        }
+
         [Fact]
         public void Decode_NullFormat_ThrowsArgumentNullException()
         {
@@ -231,6 +264,17 @@ namespace System.DirectoryServices.Protocols.Tests
             yield return new object[] { "bbb", new byte[] { 48, 132, 0, 0, 0, 6, 1, 1, 255, 1, 1, 0 } };
             yield return new object[] { "OOO", new byte[] { 48, 132, 0, 0, 0, 6, 1, 1, 255, 1, 1, 0 } };
             yield return new object[] { "BBB", new byte[] { 48, 132, 0, 0, 0, 6, 1, 1, 255, 1, 1, 0 } };
+            yield return new object[] { "v", new byte[] { 4, 1, 65 } };
+            yield return new object[] { "V", new byte[] { 4, 1, 65 } };
+            yield return new object[] { "a", new byte[] { 4, 2, 65 } };
+            yield return new object[] { "O", new byte[] { 4, 2, 65 } };
+            yield return new object[] { "B", new byte[] { 4, 2, 65 } };
+            yield return new object[] { "x", null };
+            yield return new object[] { "x", Array.Empty<byte>() };
+            yield return new object[] { "x", new byte[] { 4 } };
+            yield return new object[] { "x", new byte[] { 4, 2, 65 } };
+            yield return new object[] { "x", new byte[] { 4, 129 } };
+            yield return new object[] { "x", new byte[] { 4, 129, 2, 65 } };
         }
 
         [Theory]

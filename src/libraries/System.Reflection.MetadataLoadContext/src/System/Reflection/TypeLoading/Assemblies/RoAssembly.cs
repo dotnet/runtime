@@ -36,7 +36,7 @@ namespace System.Reflection.TypeLoading
         public sealed override AssemblyName GetName(bool copiedName) => GetAssemblyNameDataNoCopy().CreateAssemblyName();
         internal AssemblyNameData GetAssemblyNameDataNoCopy() => _lazyAssemblyNameData ??= ComputeNameData();
         protected abstract AssemblyNameData ComputeNameData();
-        private volatile AssemblyNameData? _lazyAssemblyNameData;
+        private AssemblyNameData? _lazyAssemblyNameData;
 
         public sealed override string FullName => field ??= GetName().FullName;
 
@@ -151,7 +151,7 @@ namespace System.Reflection.TypeLoading
 
         private AssemblyNameData[] GetReferencedAssembliesNoCopy() => _lazyAssemblyReferences ??= ComputeAssemblyReferences();
         protected abstract AssemblyNameData[] ComputeAssemblyReferences();
-        private volatile AssemblyNameData[]? _lazyAssemblyReferences;
+        private AssemblyNameData[]? _lazyAssemblyReferences;
 
         // Miscellaneous properties
         public sealed override bool ReflectionOnly => true;

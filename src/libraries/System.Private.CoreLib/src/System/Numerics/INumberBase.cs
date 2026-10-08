@@ -301,7 +301,7 @@ namespace System.Numerics
         /// <exception cref="ArgumentException"><paramref name="style" /> is not a supported <see cref="NumberStyles" /> value.</exception>
         /// <exception cref="FormatException"><paramref name="utf8Text" /> is not in the correct format.</exception>
         /// <exception cref="OverflowException"><paramref name="utf8Text" /> is not representable by <typeparamref name="TSelf" />.</exception>
-        static virtual TSelf Parse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider)
+        static virtual unsafe TSelf Parse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider)
         {
             // Convert text using stackalloc for <= 256 characters and ArrayPool otherwise
 
@@ -419,6 +419,30 @@ namespace System.Numerics
         /// <exception cref="ArgumentException"><paramref name="style" /> is not a supported <see cref="NumberStyles" /> value.</exception>
         static abstract bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, [MaybeNullWhen(false)] out TSelf result);
 
+        /// <summary>Tries to parse the leading portion of a string into a value, stopping at the first character that is not part of the value.</summary>
+        /// <param name="s">The string to parse.</param>
+        /// <param name="style">A bitwise combination of number styles that can be present in <paramref name="s" />.</param>
+        /// <param name="provider">An object that provides culture-specific formatting information about <paramref name="s" />.</param>
+        /// <param name="result">On return, contains the result of successfully parsing <paramref name="s" /> or an undefined value on failure.</param>
+        /// <param name="charsConsumed">On return, contains the number of characters consumed during parsing.</param>
+        /// <returns><c>true</c> if the leading portion of <paramref name="s" /> was successfully parsed; otherwise, <c>false</c>.</returns>
+        /// <exception cref="ArgumentException"><paramref name="style" /> is not a supported <see cref="NumberStyles" /> value.</exception>
+        static virtual bool TryParsePartial([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, [MaybeNullWhen(false)] out TSelf result, out int charsConsumed)
+        {
+            // This default implementation is a fallback for types that do not provide a true partial-parsing
+            // implementation. It defers to the regular TryParse and, on success, reports the entire input as
+            // consumed. Types that support stopping at the first invalid character override this method.
+
+            if (TSelf.TryParse(s, style, provider, out result))
+            {
+                charsConsumed = s.Length;
+                return true;
+            }
+
+            charsConsumed = 0;
+            return false;
+        }
+
         /// <summary>Tries to parse a span of characters into a value.</summary>
         /// <param name="s">The span of characters to parse.</param>
         /// <param name="style">A bitwise combination of number styles that can be present in <paramref name="s" />.</param>
@@ -428,6 +452,30 @@ namespace System.Numerics
         /// <exception cref="ArgumentException"><paramref name="style" /> is not a supported <see cref="NumberStyles" /> value.</exception>
         static abstract bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, [MaybeNullWhen(false)] out TSelf result);
 
+        /// <summary>Tries to parse the leading portion of a span of characters into a value, stopping at the first character that is not part of the value.</summary>
+        /// <param name="s">The span of characters to parse.</param>
+        /// <param name="style">A bitwise combination of number styles that can be present in <paramref name="s" />.</param>
+        /// <param name="provider">An object that provides culture-specific formatting information about <paramref name="s" />.</param>
+        /// <param name="result">On return, contains the result of successfully parsing <paramref name="s" /> or an undefined value on failure.</param>
+        /// <param name="charsConsumed">On return, contains the number of characters consumed during parsing.</param>
+        /// <returns><c>true</c> if the leading portion of <paramref name="s" /> was successfully parsed; otherwise, <c>false</c>.</returns>
+        /// <exception cref="ArgumentException"><paramref name="style" /> is not a supported <see cref="NumberStyles" /> value.</exception>
+        static virtual bool TryParsePartial(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, [MaybeNullWhen(false)] out TSelf result, out int charsConsumed)
+        {
+            // This default implementation is a fallback for types that do not provide a true partial-parsing
+            // implementation. It defers to the regular TryParse and, on success, reports the entire input as
+            // consumed. Types that support stopping at the first invalid character override this method.
+
+            if (TSelf.TryParse(s, style, provider, out result))
+            {
+                charsConsumed = s.Length;
+                return true;
+            }
+
+            charsConsumed = 0;
+            return false;
+        }
+
         /// <summary>Tries to parse a span of UTF-8 characters into a value.</summary>
         /// <param name="utf8Text">The span of UTF-8 characters to parse.</param>
         /// <param name="style">A bitwise combination of number styles that can be present in <paramref name="utf8Text" />.</param>
@@ -435,7 +483,7 @@ namespace System.Numerics
         /// <param name="result">On return, contains the result of successfully parsing <paramref name="utf8Text" /> or an undefined value on failure.</param>
         /// <returns><c>true</c> if <paramref name="utf8Text" /> was successfully parsed; otherwise, <c>false</c>.</returns>
         /// <exception cref="ArgumentException"><paramref name="style" /> is not a supported <see cref="NumberStyles" /> value.</exception>
-        static virtual bool TryParse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, [MaybeNullWhen(false)] out TSelf result)
+        static virtual unsafe bool TryParse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, [MaybeNullWhen(false)] out TSelf result)
         {
             // Convert text using stackalloc for <= 256 characters and ArrayPool otherwise
 
@@ -483,7 +531,31 @@ namespace System.Numerics
             return succeeded;
         }
 
-        bool IUtf8SpanFormattable.TryFormat(Span<byte> utf8Destination, out int bytesWritten, ReadOnlySpan<char> format, IFormatProvider? provider)
+        /// <summary>Tries to parse the leading portion of a span of UTF-8 characters into a value, stopping at the first character that is not part of the value.</summary>
+        /// <param name="utf8Text">The span of UTF-8 characters to parse.</param>
+        /// <param name="style">A bitwise combination of number styles that can be present in <paramref name="utf8Text" />.</param>
+        /// <param name="provider">An object that provides culture-specific formatting information about <paramref name="utf8Text" />.</param>
+        /// <param name="result">On return, contains the result of successfully parsing <paramref name="utf8Text" /> or an undefined value on failure.</param>
+        /// <param name="bytesConsumed">On return, contains the number of bytes consumed during parsing.</param>
+        /// <returns><c>true</c> if the leading portion of <paramref name="utf8Text" /> was successfully parsed; otherwise, <c>false</c>.</returns>
+        /// <exception cref="ArgumentException"><paramref name="style" /> is not a supported <see cref="NumberStyles" /> value.</exception>
+        static virtual bool TryParsePartial(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, [MaybeNullWhen(false)] out TSelf result, out int bytesConsumed)
+        {
+            // This default implementation is a fallback for types that do not provide a true partial-parsing
+            // implementation. It defers to the regular TryParse and, on success, reports the entire input as
+            // consumed. Types that support stopping at the first invalid character override this method.
+
+            if (TSelf.TryParse(utf8Text, style, provider, out result))
+            {
+                bytesConsumed = utf8Text.Length;
+                return true;
+            }
+
+            bytesConsumed = 0;
+            return false;
+        }
+
+        unsafe bool IUtf8SpanFormattable.TryFormat(Span<byte> utf8Destination, out int bytesWritten, ReadOnlySpan<char> format, IFormatProvider? provider)
         {
             char[]? utf16DestinationArray;
             scoped Span<char> utf16Destination;
@@ -537,7 +609,7 @@ namespace System.Numerics
             return false;
         }
 
-        static TSelf IUtf8SpanParsable<TSelf>.Parse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider)
+        static unsafe TSelf IUtf8SpanParsable<TSelf>.Parse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider)
         {
             // Convert text using stackalloc for <= 256 characters and ArrayPool otherwise
 
@@ -584,7 +656,7 @@ namespace System.Numerics
             return result;
         }
 
-        static bool IUtf8SpanParsable<TSelf>.TryParse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider, [MaybeNullWhen(returnValue: false)] out TSelf result)
+        static unsafe bool IUtf8SpanParsable<TSelf>.TryParse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider, [MaybeNullWhen(returnValue: false)] out TSelf result)
         {
             // Convert text using stackalloc for <= 256 characters and ArrayPool otherwise
 

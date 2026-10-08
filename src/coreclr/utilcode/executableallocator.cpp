@@ -190,7 +190,7 @@ void ExecutableAllocator::InitLazyPreferredRange(size_t base, size_t size, int r
     }
 
     // Randomize the address space
-    pStart += GetOsPageSize() * randomPageOffset;
+    pStart += minipal_getpagesize() * randomPageOffset;
 
     g_lazyPreferredRangeStart = pStart;
     g_lazyPreferredRangeHint = pStart;
@@ -223,7 +223,7 @@ bool ExecutableAllocator::IsPreferredExecutableRange(void * p)
     return g_preferredRangeMin <= (BYTE *)p && (BYTE *)p < g_preferredRangeMax;
 }
 
-ExecutableAllocator* ExecutableAllocator::Instance()
+ExecutableAllocator* ExecutableAllocator::Instance() noexcept
 {
     LIMITED_METHOD_CONTRACT;
     return g_instance;
@@ -395,9 +395,6 @@ bool ExecutableAllocator::AddRWBlock(void* baseRW, void* baseRX, size_t size, Ca
 {
     LIMITED_METHOD_CONTRACT;
 
-    // The new "nothrow" below failure is handled as fail fast since it is not recoverable
-    PERMANENT_CONTRACT_VIOLATION(FaultViolation, ReasonContractInfrastructure);
-
     BlockRW* pBlockRW = new (nothrow) BlockRW();
     if (pBlockRW == NULL)
     {
@@ -498,7 +495,7 @@ void* ExecutableAllocator::Commit(void* pStart, size_t size, bool isExecutable)
     }
     else
     {
-#if defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_MACCATALYST)
+#if !defined(FEATURE_DYNAMIC_CODE_COMPILED)
         return ClrVirtualAlloc(pStart, size, MEM_COMMIT, PAGE_READWRITE);
 #else
         return ClrVirtualAlloc(pStart, size, MEM_COMMIT, isExecutable ? PAGE_EXECUTE_READWRITE : PAGE_READWRITE);
@@ -506,12 +503,12 @@ void* ExecutableAllocator::Commit(void* pStart, size_t size, bool isExecutable)
     }
 }
 
-void ExecutableAllocator::Release(void* pRX)
+void ExecutableAllocator::Release(void* pRX) noexcept
 {
     ReleaseWorker(pRX, false /* this is the standard Release of normally allocated memory */);
 }
 
-void ExecutableAllocator::ReleaseWorker(void* pRX, bool releaseTemplate)
+void ExecutableAllocator::ReleaseWorker(void* pRX, bool releaseTemplate) noexcept
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -714,7 +711,7 @@ void* ExecutableAllocator::ReserveWithinRange(size_t size, const void* loAddress
     else
     {
         DWORD allocationType = MEM_RESERVE;
-#if defined(HOST_UNIX) && !defined(TARGET_IOS) && !defined(TARGET_TVOS) && !defined(TARGET_MACCATALYST)
+#if defined(HOST_UNIX) && defined(FEATURE_DYNAMIC_CODE_COMPILED)
         // Tell PAL to use the executable memory allocator to satisfy this request for virtual memory.
         // This will allow us to place JIT'ed code close to the coreclr library
         // and thus improve performance by avoiding jump stubs in managed code.
@@ -804,7 +801,7 @@ void* ExecutableAllocator::Reserve(size_t size)
         else
         {
             DWORD allocationType = MEM_RESERVE;
-#if defined(HOST_UNIX) && !defined(TARGET_IOS) && !defined(TARGET_TVOS) && !defined(TARGET_MACCATALYST)
+#if defined(HOST_UNIX) && defined(FEATURE_DYNAMIC_CODE_COMPILED)
             // Tell PAL to use the executable memory allocator to satisfy this request for virtual memory.
             // This will allow us to place JIT'ed code close to the coreclr library
             // and thus improve performance by avoiding jump stubs in managed code.
@@ -815,49 +812,6 @@ void* ExecutableAllocator::Reserve(size_t size)
     }
 
     return result;
-}
-
-// Reserve a block of executable memory at the specified virtual address. If it is not
-// possible, the method returns NULL.
-void* ExecutableAllocator::ReserveAt(void* baseAddressRX, size_t size)
-{
-    LIMITED_METHOD_CONTRACT;
-
-#ifdef LOG_EXECUTABLE_ALLOCATOR_STATISTICS
-    InterlockedIncrement64(&g_reserveCount);
-#endif
-
-    _ASSERTE((size & (Granularity() - 1)) == 0);
-
-    if (IsDoubleMappingEnabled())
-    {
-        CRITSEC_Holder csh(m_CriticalSection);
-
-        bool isFreeBlock;
-        BlockRX* block = AllocateBlock(size, &isFreeBlock);
-        if (block == NULL)
-        {
-            return NULL;
-        }
-
-        void* result = VMToOSInterface::ReserveDoubleMappedMemory(m_doubleMemoryMapperHandle, block->offset, size, baseAddressRX, baseAddressRX);
-
-        if (result != NULL)
-        {
-            block->baseRX = result;
-            AddRXBlock(block);
-        }
-        else
-        {
-            BackoutBlock(block, isFreeBlock);
-        }
-
-        return result;
-    }
-    else
-    {
-        return VirtualAlloc(baseAddressRX, size, MEM_RESERVE, PAGE_NOACCESS);
-    }
 }
 
 // Map an executable memory block as writeable. If there is already a mapping
@@ -948,7 +902,7 @@ void* ExecutableAllocator::MapRW(void* pRX, size_t size, CacheableMapping cacheM
 
 // Unmap writeable mapping at the specified address. The address must be an address
 // returned by the MapRW method.
-void ExecutableAllocator::UnmapRW(void* pRW)
+void ExecutableAllocator::UnmapRW(void* pRW) noexcept
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -1005,6 +959,7 @@ void* ExecutableAllocator::AllocateThunksFromTemplate(void *pTemplate, size_t te
         else
         {
             BackoutBlock(block, isFreeBlock);
+            return NULL;
         }
 
         void *pTemplateAddressAllocated = VMToOSInterface::AllocateThunksFromTemplate(pTemplate, templateSize, block->baseRX, dataPageGenerator);

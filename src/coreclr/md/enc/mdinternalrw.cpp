@@ -45,24 +45,24 @@ HRESULT TranslateSigHelper(                 // S_OK or error.
     ULONG                   cbHashValue,    // [IN] count of bytes in the hash value.
     PCCOR_SIGNATURE         pbSigBlob,      // [IN] signature in the importing scope
     ULONG                   cbSigBlob,      // [IN] count of bytes of signature
-    IMetaDataAssemblyEmit*  pAssemEmit,     // [IN] assembly emit scope.
-    IMetaDataEmit*          emit,           // [IN] emit interface
+    IMDInternalEmit*        pAssemEmit,     // [IN] assembly emit scope.
+    IMDInternalEmit*        emit,           // [IN] emit interface
     CQuickBytes*            pqkSigEmit,     // [OUT] buffer to hold translated signature
     ULONG*                  pcbSig)         // [OUT] count of bytes in the translated signature
 {
 #ifdef FEATURE_METADATA_EMIT
     HRESULT hr = S_OK;
     IMetaModelCommon *pCommon = pImport->GetMetaModelCommon();
-    RegMeta     *pAssemEmitRM = static_cast<RegMeta*>(pAssemEmit);
-    RegMeta     *pEmitRM      = static_cast<RegMeta*>(emit);
+    RegMeta *pAssemEmitRM = static_cast<RegMeta*>(pAssemEmit);
+    RegMeta *pEmitRM = static_cast<RegMeta*>(emit);
 
     CMiniMdRW *pMiniMdAssemEmit = pAssemEmitRM ? &pAssemEmitRM->m_pStgdb->m_MiniMd : NULL;
     CMiniMdRW *pMiniMdEmit      = &(pEmitRM->m_pStgdb->m_MiniMd);
 
     IMetaModelCommon *pCommonAssemImport = pAssemImport ? pAssemImport->GetMetaModelCommon() : NULL;
 
-    CMDSemReadWrite cSem(pEmitRM->m_pSemReadWrite);
-    IfFailGo(cSem.LockWrite());
+    CMDReadWriteLock lockHolder(pEmitRM->m_pReadWriteLock COMMA_INDEBUG(pMiniMdEmit));
+    IfFailGo(lockHolder.LockWrite());
 
     hr = ImportHelper::MergeUpdateTokenInSig(
                 pMiniMdAssemEmit,   // The assembly emit scope.
@@ -72,7 +72,6 @@ HRESULT TranslateSigHelper(                 // S_OK or error.
                 cbHashValue,        // Size in bytes.
                 pCommon,            // The scope where signature is from.
                 pbSigBlob,          // signature from the imported scope
-                NULL,               // Internal OID mapping structure.
                 pqkSigEmit,         // [OUT] translated signature
                 0,               // start from first byte of the signature
                 NULL,               // don't care how many bytes consumed
@@ -176,6 +175,24 @@ ErrExit:
     return hr;
 } // GetInternalWithRWFormat
 
+// This holder trait is slightly different from ReleaseHolderTraits
+// to account for the narrower contract.
+template <typename TYPE>
+struct MDReleaseHolderTraits final
+{
+    using Type = TYPE*;
+    static constexpr Type Default() { return NULL; }
+    static void Free(Type value) noexcept
+    {
+        STATIC_CONTRACT_WRAPPER;
+
+        if (value != NULL)
+            value->Release();
+    }
+};
+
+template<typename _TYPE>
+using MDReleaseHolder = LifetimeHolder<MDReleaseHolderTraits<_TYPE>>;
 
 //*****************************************************************************
 // This function returns a IMDInternalImport interface based on the given
@@ -188,7 +205,7 @@ STDAPI GetMDInternalInterfaceFromPublic(
     void        **ppIUnkInternal)       // [out] Return interface on success.
 {
     HRESULT hr = S_OK;
-    ReleaseHolder<IGetIMDInternalImport> pGetIMDInternalImport;
+    MDReleaseHolder<IGetIMDInternalImport> pGetIMDInternalImport;
 
     // IMDInternalImport is the only internal import interface currently supported by
     // this function.
@@ -196,7 +213,7 @@ STDAPI GetMDInternalInterfaceFromPublic(
 
     if (riid != IID_IMDInternalImport || pIUnkPublic == NULL || ppIUnkInternal == NULL)
         IfFailGo(E_INVALIDARG);
-    IfFailGo( pIUnkPublic->QueryInterface(IID_IGetIMDInternalImport, &pGetIMDInternalImport));
+    IfFailGo( pIUnkPublic->QueryInterface(IID_IGetIMDInternalImport, (void**)&pGetIMDInternalImport));
     IfFailGo( pGetIMDInternalImport->GetIMDInternalImport((IMDInternalImport **)ppIUnkInternal));
 
 ErrExit:
@@ -220,7 +237,7 @@ STDAPI GetMDPublicInterfaceFromInternal(
     void        **ppIUnkPublic)         // [out] Return interface on success.
 {
     HRESULT     hr = S_OK;
-    IMDInternalImport *pInternalImport = 0;;
+    MDReleaseHolder<IMDInternalImport> pInternalImport;
     IUnknown    *pIUnkPublic = NULL;
     OptionValue optVal = { MDDupAll, MDRefToDefDefault, MDNotifyDefault, MDUpdateFull, MDErrorOutOfOrderDefault , MDThreadSafetyOn};
     RegMeta     *pMeta = 0;
@@ -245,8 +262,10 @@ STDAPI GetMDPublicInterfaceFromInternal(
 
     // grab the write lock when we are creating the corresponding regmeta for the public interface
     _ASSERTE( pInternalImport->GetReaderWriterLock() != NULL );
+    IfFailGo(AcquireMDWriteLock(
+        pInternalImport->GetReaderWriterLock()
+        COMMA_INDEBUG(static_cast<CMiniMdRW *>(pInternalImport->GetMetaModelCommon()))));
     isLockedForWrite = true;
-    IfFailGo(pInternalImport->GetReaderWriterLock()->LockWrite());
 
     // check again. Maybe someone else beat us to setting the public interface while we are waiting
     // for the write lock. Don't need to grab the read lock since we already have the write lock.
@@ -262,7 +281,7 @@ STDAPI GetMDPublicInterfaceFromInternal(
     pMeta = new (nothrow) RegMeta();
     IfNullGo(pMeta);
     IfFailGo(pMeta->SetOption(&optVal));
-    IfFailGo( pMeta->InitWithStgdb((IUnknown*)pInternalImport, ((MDInternalRW*)pInternalImport)->GetMiniStgdb()) );
+    IfFailGo( pMeta->InitWithStgdb(pInternalImport, ((MDInternalRW*)(IMDInternalImport*)pInternalImport)->GetMiniStgdb()) );
     IfFailGo( pMeta->QueryInterface(riid, ppIUnkPublic) );
 
     // The following makes the public object and the internal object point to each other.
@@ -276,10 +295,9 @@ STDAPI GetMDPublicInterfaceFromInternal(
 
 ErrExit:
     if (isLockedForWrite)
-        pInternalImport->GetReaderWriterLock()->UnlockWrite();
-
-    if (pInternalImport)
-        pInternalImport->Release();
+        ReleaseMDWriteLock(
+            pInternalImport->GetReaderWriterLock()
+            COMMA_INDEBUG(static_cast<CMiniMdRW *>(pInternalImport->GetMetaModelCommon())));
 
     if (FAILED(hr))
     {
@@ -301,7 +319,7 @@ STDAPI ConvertMDInternalImport(         // S_OK, S_FALSE (no conversion), or err
     IMDInternalImport **ppIMD)          // [out] Put the RW here.
 {
     HRESULT     hr;                     // A result.
-    IMDInternalImportENC *pENC = NULL;  // ENC interface on the metadata.
+    MDReleaseHolder<IMDInternalImportENC> pENC;  // ENC interface on the metadata.
 
     _ASSERTE(pIMD != NULL);
     _ASSERTE(ppIMD != NULL);
@@ -319,8 +337,6 @@ STDAPI ConvertMDInternalImport(         // S_OK, S_FALSE (no conversion), or err
     }
 
 ErrExit:
-    if (pENC)
-        pENC->Release();
     return hr;
 } // ConvertMDInternalImport
 
@@ -338,8 +354,8 @@ MDInternalRW::MDInternalRW()
     m_pUnk(NULL),
     m_pUserUnk(NULL),
     m_pIMetaDataHelper(NULL),
-    m_pSemReadWrite(NULL),
-    m_fOwnSem(false)
+    m_pReadWriteLock(NULL),
+    m_fOwnLock(false)
 {
 } // MDInternalRW::MDInternalRW
 
@@ -369,14 +385,14 @@ MDInternalRW::~MDInternalRW()
 
             m_pIMetaDataHelper->SetCachedInternalInterface(NULL);
             m_pIMetaDataHelper = NULL;
-            m_fOwnSem = false;
+            m_fOwnLock = false;
 
         }
 
         UNLOCKWRITE();
     }
-    if (m_pSemReadWrite && m_fOwnSem)
-        delete m_pSemReadWrite;
+    if (m_pReadWriteLock && m_fOwnLock)
+        DestroyMDReadWriteLock(m_pReadWriteLock);
 
     if ( m_pStgdb && m_fOwnStgdb )
     {
@@ -416,7 +432,7 @@ HRESULT MDInternalRW::SetCachedPublicInterface(IUnknown * pUnk)
     {
         // public object is going away before the internal object. If we don't own the
         // reader writer lock, just take over the ownership.
-        m_fOwnSem = true;
+        m_fOwnLock = true;
         m_pIMetaDataHelper = NULL;
     }
     return hr;
@@ -453,7 +469,7 @@ ErrExit:
 //*****************************************************************************
 // Get the Reader-Writer lock
 //*****************************************************************************
-UTSemReadWrite * MDInternalRW::GetReaderWriterLock()
+minipal_rwlock * MDInternalRW::GetReaderWriterLock()
 {
     return getReaderWriterLock();
 } // MDInternalRW::GetReaderWriterLock
@@ -466,7 +482,7 @@ ULONG MDInternalRW::AddRef()
     return InterlockedIncrement(&m_cRefs);
 } // MDInternalRW::AddRef
 
-ULONG MDInternalRW::Release()
+ULONG MDInternalRW::Release() noexcept
 {
     ULONG cRef;
 
@@ -519,11 +535,9 @@ HRESULT MDInternalRW::Init(
     pStgdb = new (nothrow) CLiteWeightStgdbRW;
     IfNullGo(pStgdb);
 
-    m_pSemReadWrite = new (nothrow) UTSemReadWrite;
-    IfNullGo(m_pSemReadWrite);
-    IfFailGo(m_pSemReadWrite->Init());
-    m_fOwnSem = true;
-    INDEBUG(pStgdb->m_MiniMd.Debug_SetLock(m_pSemReadWrite);)
+    IfFailGo(CreateMDReadWriteLock(&m_pReadWriteLock));
+    m_fOwnLock = true;
+    INDEBUG(pStgdb->m_MiniMd.Debug_EnableLockCheck();)
 
     IfFailGo(pStgdb->InitOnMem(cbData, (BYTE*)pData, bReadOnly));
     IfFailGo(pStgdb->m_MiniMd.SetOption(&optVal));
@@ -549,7 +563,7 @@ HRESULT MDInternalRW::InitWithStgdb(
     IUnknown        *pUnk,              // The IUnknow that owns the life time for the existing stgdb
     CLiteWeightStgdbRW *pStgdb)         // existing lightweight stgdb
 {
-    // m_fOwnSem should be false because this is the case where we create the internal interface given a public
+    // m_fOwnLock should be false because this is the case where we create the internal interface given a public
     // interface.
 
     m_tdModule = COR_GLOBAL_PARENT_TOKEN;
@@ -580,11 +594,9 @@ HRESULT MDInternalRW::InitWithRO(
     pStgdb = new (nothrow) CLiteWeightStgdbRW;
     IfNullGo(pStgdb);
 
-    m_pSemReadWrite = new (nothrow) UTSemReadWrite;
-    IfNullGo(m_pSemReadWrite);
-    IfFailGo(m_pSemReadWrite->Init());
-    m_fOwnSem = true;
-    INDEBUG(pStgdb->m_MiniMd.Debug_SetLock(m_pSemReadWrite);)
+    IfFailGo(CreateMDReadWriteLock(&m_pReadWriteLock));
+    m_fOwnLock = true;
+    INDEBUG(pStgdb->m_MiniMd.Debug_EnableLockCheck();)
 
     IfFailGo(pStgdb->m_MiniMd.InitOnRO(&pRO->m_LiteWeightStgdb.m_MiniMd, bReadOnly));
     IfFailGo(pStgdb->m_MiniMd.SetOption(&optVal));
@@ -615,8 +627,8 @@ HRESULT MDInternalRW::TranslateSigWithScope(
     ULONG                   cbHashValue,    // [IN] count of bytes in the hash value.
     PCCOR_SIGNATURE         pbSigBlob,      // [IN] signature in the importing scope
     ULONG                   cbSigBlob,      // [IN] count of bytes of signature
-    IMetaDataAssemblyEmit*  pAssemEmit,     // [IN] assembly emit scope.
-    IMetaDataEmit*          emit,           // [IN] emit interface
+    IMDInternalEmit*        pAssemEmit,     // [IN] assembly emit scope.
+    IMDInternalEmit*        emit,           // [IN] emit interface
     CQuickBytes*            pqkSigEmit,     // [OUT] buffer to hold translated signature
     ULONG*                  pcbSig)         // [OUT] count of bytes in the translated signature
 {
@@ -892,40 +904,6 @@ MDInternalRW::EnumMethodImplNext(  // return hresult
     return EnumNext(phEnumDecl, ptkDecl) ? S_OK : S_FALSE;
 } // MDInternalRW::EnumMethodImplNext
 
-//*****************************************
-// Reset the enumerator to the beginning.
-//*****************************************
-void MDInternalRW::EnumMethodImplReset(
-    HENUMInternal   *phEnumBody,        // [IN] MethodBody enumerator.
-    HENUMInternal   *phEnumDecl)        // [IN] MethodDecl enumerator.
-{
-    _ASSERTE((phEnumBody->m_tkKind >> 24) == TBL_MethodImpl &&
-             (phEnumDecl->m_tkKind >> 24) == TBL_MethodImpl);
-    _ASSERTE(phEnumBody->m_EnumType == MDDynamicArrayEnum &&
-             phEnumDecl->m_EnumType == MDDynamicArrayEnum);
-    _ASSERTE(phEnumBody->m_ulCount == phEnumDecl->m_ulCount);
-
-    EnumReset(phEnumBody);
-    EnumReset(phEnumDecl);
-} // MDInternalRW::EnumMethodImplReset
-
-
-//*****************************************
-// Close the enumerator.
-//*****************************************
-void MDInternalRW::EnumMethodImplClose(
-    HENUMInternal   *phEnumBody,        // [IN] MethodBody enumerator.
-    HENUMInternal   *phEnumDecl)        // [IN] MethodDecl enumerator.
-{
-    _ASSERTE((phEnumBody->m_tkKind >> 24) == TBL_MethodImpl &&
-             (phEnumDecl->m_tkKind >> 24) == TBL_MethodImpl);
-    _ASSERTE(phEnumBody->m_EnumType == MDDynamicArrayEnum &&
-             phEnumDecl->m_EnumType == MDDynamicArrayEnum);
-    _ASSERTE(phEnumBody->m_ulCount == phEnumDecl->m_ulCount);
-
-    EnumClose(phEnumBody);
-    EnumClose(phEnumDecl);
-} // MDInternalRW::EnumMethodImplClose
 #endif //!DACCESS_COMPILE
 
 //******************************************************************************
@@ -1343,11 +1321,6 @@ HRESULT MDInternalRW::EnumInit(     // return S_FALSE if record not found
         phEnum->u.m_ulStart = 1;
         phEnum->u.m_ulEnd = m_pStgdb->m_MiniMd.getCountManifestResources() + 1;
         break;
-    case mdtModuleRef:
-        _ASSERTE(IsNilToken(tkParent));
-        phEnum->u.m_ulStart = 1;
-        phEnum->u.m_ulEnd = m_pStgdb->m_MiniMd.getCountModuleRefs() + 1;
-        break;
     default:
         _ASSERTE(!"ENUM INIT not implemented for the uncompressed format!");
         IfFailGo(E_NOTIMPL);
@@ -1391,14 +1364,6 @@ HRESULT MDInternalRW::EnumAllInit(      // return S_FALSE if record not found
         phEnum->m_ulCount = m_pStgdb->m_MiniMd.getCountTypeRefs();
         break;
 
-    case mdtMemberRef:
-        phEnum->m_ulCount = m_pStgdb->m_MiniMd.getCountMemberRefs();
-        break;
-
-    case mdtSignature:
-        phEnum->m_ulCount = m_pStgdb->m_MiniMd.getCountStandAloneSigs();
-        break;
-
     case mdtMethodDef:
         phEnum->m_ulCount = m_pStgdb->m_MiniMd.getCountMethods();
         break;
@@ -1407,32 +1372,12 @@ HRESULT MDInternalRW::EnumAllInit(      // return S_FALSE if record not found
         phEnum->m_ulCount = m_pStgdb->m_MiniMd.getCountMethodSpecs();
         break;
 
-    case mdtFieldDef:
-        phEnum->m_ulCount = m_pStgdb->m_MiniMd.getCountFields();
-        break;
-
     case mdtTypeSpec:
         phEnum->m_ulCount = m_pStgdb->m_MiniMd.getCountTypeSpecs();
         break;
 
     case mdtAssemblyRef:
         phEnum->m_ulCount = m_pStgdb->m_MiniMd.getCountAssemblyRefs();
-        break;
-
-    case mdtModuleRef:
-        phEnum->m_ulCount = m_pStgdb->m_MiniMd.getCountModuleRefs();
-        break;
-
-    case mdtTypeDef:
-        phEnum->m_ulCount = m_pStgdb->m_MiniMd.getCountTypeDefs();
-        break;
-
-    case mdtFile:
-        phEnum->m_ulCount = m_pStgdb->m_MiniMd.getCountFiles();
-        break;
-
-    case mdtCustomAttribute:
-        phEnum->m_ulCount = m_pStgdb->m_MiniMd.getCountCustomAttributes();
         break;
 
     default:
@@ -1566,9 +1511,12 @@ MDInternalRW::GetCustomAttributeProps( // S_OK or error.
     mdToken     *pTkType)               // Put attribute type here.
 {
     HRESULT hr;
-    // Getting the custom value prop with a token, no need to lock!
 
     _ASSERTE(TypeFromToken(at) == mdtCustomAttribute);
+
+    *pTkType = mdTokenNil;
+
+    LOCKREADIFFAILRET();
 
     // Do a linear search on compressed version as we do not want to
     // depend on ICR.
@@ -1591,9 +1539,13 @@ MDInternalRW::GetCustomAttributeAsBlob(
     void const  **ppBlob,               // [OUT] return the pointer to internal blob
     ULONG       *pcbSize)               // [OUT] return the size of the blob
 {
-    // Getting the custom value prop with a token, no need to lock!
     HRESULT hr;
     _ASSERTE(ppBlob && pcbSize && TypeFromToken(cv) == mdtCustomAttribute);
+
+    *ppBlob = NULL;
+    *pcbSize = 0;
+
+    LOCKREADIFFAILRET();
 
     CustomAttributeRec *pCustomAttributeRec;
 
@@ -1805,7 +1757,6 @@ MDInternalRW::GetNameOfTypeDef(     // return hresult
     LPCSTR*     pszname,            // pointer to an internal UTF8 string
     LPCSTR*     psznamespace)       // pointer to the namespace.
 {
-    // No need to lock this method.
     HRESULT hr;
 
     if (pszname != NULL)
@@ -1819,6 +1770,8 @@ MDInternalRW::GetNameOfTypeDef(     // return hresult
 
     if (TypeFromToken(classdef) == mdtTypeDef)
     {
+        LOCKREADIFFAILRET();
+
         TypeDefRec *pTypeDefRec;
         IfFailRet(m_pStgdb->m_MiniMd.GetTypeDefRecord(RidFromToken(classdef), &pTypeDefRec));
 
@@ -1898,10 +1851,12 @@ MDInternalRW::GetNameOfMethodDef(
     mdMethodDef md,
     LPCSTR     *pszMethodName)
 {
-    // name of method will not change. So no need to lock
     HRESULT      hr;
-    MethodRec *pMethodRec;
     *pszMethodName = NULL;
+
+    LOCKREADIFFAILRET();
+
+    MethodRec *pMethodRec;
     IfFailRet(m_pStgdb->m_MiniMd.GetMethodRecord(RidFromToken(md), &pMethodRec));
     IfFailRet(m_pStgdb->m_MiniMd.getNameOfMethod(pMethodRec, pszMethodName));
     return S_OK;
@@ -1920,20 +1875,23 @@ MDInternalRW::GetNameAndSigOfMethodDef(
     LPCSTR          *pszMethodName)
 {
     HRESULT hr;
-    // we don't need lock here because name and signature will not change
 
     // Output parameter should not be NULL
     _ASSERTE(ppvSigBlob && pcbSigBlob);
     _ASSERTE(TypeFromToken(methoddef) == mdtMethodDef);
 
-    MethodRec *pMethodRec;
     *pszMethodName = NULL;
     *ppvSigBlob = NULL;
-    *ppvSigBlob = NULL;
+    *pcbSigBlob = 0;
+
+    LOCKREADIFFAILRET();
+
+    MethodRec *pMethodRec;
     IfFailRet(m_pStgdb->m_MiniMd.GetMethodRecord(RidFromToken(methoddef), &pMethodRec));
     IfFailRet(m_pStgdb->m_MiniMd.getSignatureOfMethod(pMethodRec, ppvSigBlob, pcbSigBlob));
+    IfFailRet(m_pStgdb->m_MiniMd.getNameOfMethod(pMethodRec, pszMethodName));
 
-    return GetNameOfMethodDef(methoddef, pszMethodName);
+    return S_OK;
 } // MDInternalRW::GetNameAndSigOfMethodDef
 
 
@@ -1946,11 +1904,12 @@ MDInternalRW::GetNameOfFieldDef(    // return hresult
     mdFieldDef fd,                  // given field
     LPCSTR    *pszFieldName)
 {
-    // we don't need lock here because name of field will not change
     HRESULT hr;
+    *pszFieldName = NULL;
+
+    LOCKREADIFFAILRET();
 
     FieldRec *pFieldRec;
-    *pszFieldName = NULL;
     IfFailRet(m_pStgdb->m_MiniMd.GetFieldRecord(RidFromToken(fd), &pFieldRec));
     IfFailRet(m_pStgdb->m_MiniMd.getNameOfField(pFieldRec, pszFieldName));
     return S_OK;
@@ -1973,7 +1932,7 @@ MDInternalRW::GetNameOfTypeRef(     // return TypeDef's name
     *psznamespace = NULL;
     *pszname = NULL;
 
-    // we don't need lock here because name of a typeref will not change
+    LOCKREADIFFAILRET();
 
     TypeRefRec *pTypeRefRec;
     IfFailRet(m_pStgdb->m_MiniMd.GetTypeRefRecord(RidFromToken(classref), &pTypeRefRec));
@@ -2018,6 +1977,8 @@ HRESULT MDInternalRW::FindTypeRefByName(  // S_OK or error.
     mdToken     tkResolutionScope,      // [IN] Resolution Scope fo the TypeRef.
     mdTypeRef   *ptk)                   // [OUT] TypeRef token returned.
 {
+#ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
+    // ILDasm uses this API to resolve TypeRefs by name.
     HRESULT     hr = NOERROR;
     ULONG       cTypeRefRecs;
     TypeRefRec *pTypeRefRec;
@@ -2067,6 +2028,9 @@ HRESULT MDInternalRW::FindTypeRefByName(  // S_OK or error.
     hr = CLDB_E_RECORD_NOTFOUND;
 ErrExit:
     return hr;
+#else
+    return E_NOTIMPL;
+#endif
 } // MDInternalRW::FindTypeRefByName
 
 //*****************************************************************************
@@ -2196,6 +2160,8 @@ MDInternalRW::GetCountNestedClasses(  // return count of Nested classes.
 
     *pcNestedClassesCount = 0;
 
+    LOCKREADIFFAILRET();
+
     ulCount = m_pStgdb->m_MiniMd.getCountNestedClasss();
 
     for (ULONG i = 1; i <= ulCount; i++)
@@ -2228,6 +2194,8 @@ MDInternalRW::GetNestedClasses(   // Return actual count.
              !IsNilToken(tkEnclosingClass));
 
     *pcNestedClasses = 0;
+
+    LOCKREADIFFAILRET();
 
     ulCount = m_pStgdb->m_MiniMd.getCountNestedClasss();
 
@@ -2285,11 +2253,12 @@ MDInternalRW::GetSigOfMethodDef(
     _ASSERTE(TypeFromToken(methoddef) == mdtMethodDef);
 
     HRESULT hr;
-    // We don't change MethodDef signature. No need to lock.
-
-    MethodRec *pMethodRec;
     *ppSig = NULL;
     *pcbSigBlob = 0;
+
+    LOCKREADIFFAILRET();
+
+    MethodRec *pMethodRec;
     IfFailRet(m_pStgdb->m_MiniMd.GetMethodRecord(RidFromToken(methoddef), &pMethodRec));
     IfFailRet(m_pStgdb->m_MiniMd.getSignatureOfMethod(pMethodRec, ppSig, pcbSigBlob));
     return S_OK;
@@ -2310,11 +2279,12 @@ MDInternalRW::GetSigOfFieldDef(
     _ASSERTE(TypeFromToken(fielddef) == mdtFieldDef);
 
     HRESULT hr;
-    // We don't change Field's signature. No need to lock.
-
-    FieldRec *pFieldRec;
     *ppSig = NULL;
     *pcbSigBlob = 0;
+
+    LOCKREADIFFAILRET();
+
+    FieldRec *pFieldRec;
     IfFailRet(m_pStgdb->m_MiniMd.GetFieldRecord(RidFromToken(fielddef), &pFieldRec));
     IfFailRet(m_pStgdb->m_MiniMd.getSignatureOfField(pFieldRec, ppSig, pcbSigBlob));
     return S_OK;
@@ -2332,7 +2302,6 @@ MDInternalRW::GetSigFromToken(
     PCCOR_SIGNATURE * ppSig)
 {
     HRESULT hr;
-    // We don't change token's signature. Thus no need to lock.
 
     *ppSig = NULL;
     *pcbSig = 0;
@@ -2340,26 +2309,28 @@ MDInternalRW::GetSigFromToken(
     {
     case mdtSignature:
         {
+            LOCKREADIFFAILRET();
             StandAloneSigRec *pRec;
-            IfFailGo(m_pStgdb->m_MiniMd.GetStandAloneSigRecord(RidFromToken(tk), &pRec));
-            IfFailGo(m_pStgdb->m_MiniMd.getSignatureOfStandAloneSig(pRec, ppSig, pcbSig));
+            IfFailRet(m_pStgdb->m_MiniMd.GetStandAloneSigRecord(RidFromToken(tk), &pRec));
+            IfFailRet(m_pStgdb->m_MiniMd.getSignatureOfStandAloneSig(pRec, ppSig, pcbSig));
             return S_OK;
         }
     case mdtTypeSpec:
         {
+            LOCKREADIFFAILRET();
             TypeSpecRec *pRec;
-            IfFailGo(m_pStgdb->m_MiniMd.GetTypeSpecRecord(RidFromToken(tk), &pRec));
-            IfFailGo(m_pStgdb->m_MiniMd.getSignatureOfTypeSpec(pRec, ppSig, pcbSig));
+            IfFailRet(m_pStgdb->m_MiniMd.GetTypeSpecRecord(RidFromToken(tk), &pRec));
+            IfFailRet(m_pStgdb->m_MiniMd.getSignatureOfTypeSpec(pRec, ppSig, pcbSig));
             return S_OK;
         }
     case mdtMethodDef:
         {
-            IfFailGo(GetSigOfMethodDef(tk, pcbSig, ppSig));
+            IfFailRet(GetSigOfMethodDef(tk, pcbSig, ppSig));
             return S_OK;
         }
     case mdtFieldDef:
         {
-            IfFailGo(GetSigOfFieldDef(tk, pcbSig, ppSig));
+            IfFailRet(GetSigOfFieldDef(tk, pcbSig, ppSig));
             return S_OK;
         }
     }
@@ -2370,10 +2341,7 @@ MDInternalRW::GetSigFromToken(
             _ASSERTE(!"Unexpected token type");
 #endif
     *pcbSig = 0;
-    hr = META_E_INVALID_TOKEN_TYPE;
-
-ErrExit:
-    return hr;
+    return META_E_INVALID_TOKEN_TYPE;
 } // MDInternalRW::GetSigFromToken
 
 
@@ -2584,11 +2552,12 @@ MDInternalRW::GetTypeOfInterfaceImpl( // return hresult
     mdToken        *ptkType)
 {
     HRESULT hr;
-    // no need to lock this function.
 
     _ASSERTE(TypeFromToken(iiImpl) == mdtInterfaceImpl);
 
     *ptkType = mdTypeDefNil;
+
+    LOCKREADIFFAILRET();
 
     InterfaceImplRec *pIIRec;
     IfFailRet(m_pStgdb->m_MiniMd.GetInterfaceImplRecord(RidFromToken(iiImpl), &pIIRec));
@@ -2610,6 +2579,15 @@ HRESULT MDInternalRW::GetMethodSpecProps(         // S_OK or error.
     MethodSpecRec  *pMethodSpecRec;
 
     _ASSERTE(TypeFromToken(mi) == mdtMethodSpec);
+
+    if (tkParent)
+        *tkParent = mdTokenNil;
+    if (ppvSigBlob)
+        *ppvSigBlob = NULL;
+    if (pcbSigBlob)
+        *pcbSigBlob = 0;
+
+    LOCKREADIFFAILRET();
 
     IfFailGo(m_pStgdb->m_MiniMd.GetMethodSpecRecord(RidFromToken(mi), &pMethodSpecRec));
 
@@ -2670,11 +2648,8 @@ MDInternalRW::GetNameAndSigOfMemberRef( // meberref's name
 {
     HRESULT hr;
 
-    // MemberRef's name and sig won't change. Don't need to lock this.
-
     _ASSERTE(TypeFromToken(memberref) == mdtMemberRef);
 
-    MemberRefRec *pMemberRefRec;
     *pszMemberRefName = NULL;
     if (ppvSigBlob != NULL)
     {
@@ -2682,12 +2657,17 @@ MDInternalRW::GetNameAndSigOfMemberRef( // meberref's name
         *ppvSigBlob = NULL;
         *pcbSigBlob = 0;
     }
+
+    LOCKREADIFFAILRET();
+
+    MemberRefRec *pMemberRefRec;
     IfFailRet(m_pStgdb->m_MiniMd.GetMemberRefRecord(RidFromToken(memberref), &pMemberRefRec));
     if (ppvSigBlob != NULL)
     {
         IfFailRet(m_pStgdb->m_MiniMd.getSignatureOfMemberRef(pMemberRefRec, ppvSigBlob, pcbSigBlob));
     }
     IfFailRet(m_pStgdb->m_MiniMd.getNameOfMemberRef(pMemberRefRec, pszMemberRefName));
+
     return S_OK;
 } // MDInternalRW::GetNameAndSigOfMemberRef
 
@@ -3243,6 +3223,19 @@ HRESULT MDInternalRW::GetGenericParamProps(        // S_OK or error.
     HRESULT         hr = NOERROR;
     GenericParamRec  *pGenericParamRec = NULL;
 
+    if (pulSequence)
+        *pulSequence = 0;
+    if (pdwAttr)
+        *pdwAttr = 0;
+    if (ptOwner)
+        *ptOwner = mdTokenNil;
+    if (reserved)
+        *reserved = 0;
+    if (szName != NULL)
+        *szName = NULL;
+
+    LOCKREADIFFAILRET();
+
     // See if this version of the metadata can do Generics
     if (!m_pStgdb->m_MiniMd.SupportsGenerics())
         IfFailGo(CLDB_E_INCOMPATIBLE);
@@ -3281,6 +3274,13 @@ HRESULT MDInternalRW::GetGenericParamConstraintProps(      // S_OK or error.
     HRESULT         hr = NOERROR;
     GenericParamConstraintRec  *pGPCRec;
     RID             ridRD = RidFromToken(rd);
+
+    if (ptGenericParam)
+        *ptGenericParam = mdGenericParamNil;
+    if (ptkConstraintType)
+        *ptkConstraintType = mdTokenNil;
+
+    LOCKREADIFFAILRET();
 
     // See if this version of the metadata can do Generics
     if (!m_pStgdb->m_MiniMd.SupportsGenerics())
@@ -3431,7 +3431,6 @@ HRESULT
 MDInternalRW::GetUserString(    // Offset into the string blob heap.
     mdString stk,                       // [IN] the string token.
     ULONG   *pcchStringSize,            // [OUT] count of characters in the string.
-    BOOL    *pfIs80Plus,                // [OUT] specifies where there are extended characters >= 0x80.
     LPCWSTR *pwszUserString)
 {
     HRESULT hr;
@@ -3439,10 +3438,6 @@ MDInternalRW::GetUserString(    // Offset into the string blob heap.
 
     // no need to lock this function.
 
-    if (pfIs80Plus != NULL)
-    {
-        *pfIs80Plus = FALSE;
-    }
     *pwszUserString = NULL;
     *pcchStringSize = 0;
 
@@ -3458,16 +3453,6 @@ MDInternalRW::GetUserString(    // Offset into the string blob heap.
     {
         *pwszUserString = NULL;
         return S_OK;
-    }
-
-    if (pfIs80Plus != NULL)
-    {
-        if (userString.GetSize() % sizeof(WCHAR) == 0)
-        {
-            *pfIs80Plus = TRUE; // no indicator, presume the worst
-        }
-        // Return the user string terminator (contains value fIs80Plus)
-        *pfIs80Plus = *(reinterpret_cast<PBYTE>(wszTmp + *pcchStringSize));
     }
 
     *pwszUserString = wszTmp;
@@ -3775,8 +3760,13 @@ HRESULT MDInternalRW::GetTypeSpecFromToken(   // S_OK or error.
     _ASSERTE(TypeFromToken(typespec) == mdtTypeSpec);
     _ASSERTE(ppvSig && pcbSig);
 
+    *ppvSig = NULL;
+    *pcbSig = 0;
+
     if (!IsValidToken(typespec))
         return E_INVALIDARG;
+
+    LOCKREADIFFAILRET();
 
     TypeSpecRec *pRec;
     IfFailRet(m_pStgdb->m_MiniMd.GetTypeSpecRecord(RidFromToken(typespec), &pRec));
@@ -3969,6 +3959,9 @@ HRESULT MDInternalRW::EnumDeltaTokensInit(  // return hresult
     phEnum->m_EnumType = MDSimpleEnum;
 
     HENUMInternal::InitDynamicArrayEnum(phEnum);
+
+    LOCKREADIFFAILRET();
+
     for (index = 1; index <= m_pStgdb->m_MiniMd.m_Schema.m_cRecs[TBL_ENCLog]; ++index)
     {
         // Get the token type; see if it is a real token.

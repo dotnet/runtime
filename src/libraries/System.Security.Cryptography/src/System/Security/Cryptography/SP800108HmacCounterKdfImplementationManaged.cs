@@ -18,7 +18,7 @@ namespace System.Security.Cryptography
             _hashAlgorithm = hashAlgorithm;
         }
 
-        internal static void DeriveBytesOneShot(
+        internal static unsafe void DeriveBytesOneShot(
             ReadOnlySpan<byte> key,
             HashAlgorithmName hashAlgorithm,
             ReadOnlySpan<byte> label,

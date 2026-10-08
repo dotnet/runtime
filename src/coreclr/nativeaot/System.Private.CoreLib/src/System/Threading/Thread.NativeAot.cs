@@ -13,6 +13,7 @@ using Microsoft.Win32.SafeHandles;
 
 namespace System.Threading
 {
+    [DataContract]
     public sealed partial class Thread
     {
         // Extra bits used in _threadState
@@ -29,7 +30,9 @@ namespace System.Threading
 
         private volatile int _threadState = (int)ThreadState.Unstarted;
         private ThreadPriority _priority;
+        [DataContract]
         private ManagedThreadId _managedThreadId;
+        [DataContract]
         private string? _name;
         private StartHelper? _startHelper;
         private Exception? _startException;
@@ -69,14 +72,6 @@ namespace System.Threading
         private static unsafe void RegisterThreadExitCallback()
         {
             RuntimeImports.RhSetThreadExitCallback(&OnThreadExit);
-        }
-
-        internal static ulong CurrentOSThreadId
-        {
-            get
-            {
-                return RuntimeImports.RhCurrentOSThreadId();
-            }
         }
 
         // Slow path executed once per thread
@@ -272,24 +267,12 @@ namespace System.Threading
 
         private int SetThreadStateBit(ThreadState bit)
         {
-            int oldState, newState;
-            do
-            {
-                oldState = _threadState;
-                newState = oldState | (int)bit;
-            } while (Interlocked.CompareExchange(ref _threadState, newState, oldState) != oldState);
-            return oldState;
+            return Interlocked.Or(ref _threadState, (int)bit);
         }
 
         private int ClearThreadStateBit(ThreadState bit)
         {
-            int oldState, newState;
-            do
-            {
-                oldState = _threadState;
-                newState = oldState & ~(int)bit;
-            } while (Interlocked.CompareExchange(ref _threadState, newState, oldState) != oldState);
-            return oldState;
+            return Interlocked.And(ref _threadState, ~(int)bit);
         }
 
         internal void SetWaitSleepJoinState()
@@ -319,58 +302,6 @@ namespace System.Threading
             }
             return millisecondsTimeout;
         }
-
-        public bool Join(int millisecondsTimeout)
-        {
-            VerifyTimeoutMilliseconds(millisecondsTimeout);
-            if (GetThreadStateBit(ThreadState.Unstarted))
-            {
-                throw new ThreadStateException(SR.ThreadState_NotStarted);
-            }
-            return JoinInternal(millisecondsTimeout);
-        }
-
-        /// <summary>
-        /// Max value to be passed into <see cref="SpinWait(int)"/> for optimal delaying. Currently, the value comes from
-        /// defaults in CoreCLR's Thread::InitializeYieldProcessorNormalized(). This value is supposed to be normalized to be
-        /// appropriate for the processor.
-        /// TODO: See issue https://github.com/dotnet/corert/issues/4430
-        /// </summary>
-        internal const int OptimalMaxSpinWaitsPerSpinIteration = 8;
-
-        // Max iterations to be done in RhSpinWait.
-        // RhSpinWait does not switch GC modes and we want to avoid native spinning in coop mode for too long.
-        private const int SpinWaitCoopThreshold = 1024;
-
-        internal static void SpinWaitInternal(int iterations)
-        {
-            Debug.Assert(iterations <= SpinWaitCoopThreshold);
-            if (iterations > 0)
-            {
-                RuntimeImports.RhSpinWait(iterations);
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.NoInlining)] // Slow path method. Make sure that the caller frame does not pay for PInvoke overhead.
-        private static void LongSpinWait(int iterations)
-        {
-            RuntimeImports.RhLongSpinWait(iterations);
-        }
-
-        public static void SpinWait(int iterations)
-        {
-            if (iterations > SpinWaitCoopThreshold)
-            {
-                LongSpinWait(iterations);
-            }
-            else
-            {
-                SpinWaitInternal(iterations);
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.NoInlining)] // Slow path method. Make sure that the caller frame does not pay for PInvoke overhead.
-        public static bool Yield() => RuntimeImports.RhYield();
 
         private void StartCore()
         {

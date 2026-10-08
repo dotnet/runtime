@@ -1,10 +1,10 @@
-package wasi:http@0.2.0;
+package wasi:http@0.2.8;
 
 interface types {
-  use wasi:clocks/monotonic-clock@0.2.0.{duration};
-  use wasi:io/streams@0.2.0.{input-stream, output-stream};
-  use wasi:io/error@0.2.0.{error as io-error};
-  use wasi:io/poll@0.2.0.{pollable};
+  use wasi:clocks/monotonic-clock@0.2.8.{duration};
+  use wasi:io/streams@0.2.8.{input-stream, output-stream};
+  use wasi:io/error@0.2.8.{error as io-error};
+  use wasi:io/poll@0.2.8.{pollable};
 
   variant method {
     get,
@@ -90,17 +90,19 @@ interface types {
 
   type field-key = string;
 
+  type field-name = field-key;
+
   type field-value = list<u8>;
 
   resource fields {
     constructor();
-    from-list: static func(entries: list<tuple<field-key, field-value>>) -> result<fields, header-error>;
-    get: func(name: field-key) -> list<field-value>;
-    has: func(name: field-key) -> bool;
-    set: func(name: field-key, value: list<field-value>) -> result<_, header-error>;
-    delete: func(name: field-key) -> result<_, header-error>;
-    append: func(name: field-key, value: field-value) -> result<_, header-error>;
-    entries: func() -> list<tuple<field-key, field-value>>;
+    from-list: static func(entries: list<tuple<field-name, field-value>>) -> result<fields, header-error>;
+    get: func(name: field-name) -> list<field-value>;
+    has: func(name: field-name) -> bool;
+    set: func(name: field-name, value: list<field-value>) -> result<_, header-error>;
+    delete: func(name: field-name) -> result<_, header-error>;
+    append: func(name: field-name, value: field-value) -> result<_, header-error>;
+    entries: func() -> list<tuple<field-name, field-value>>;
     clone: func() -> fields;
   }
 
@@ -191,14 +193,14 @@ interface outgoing-handler {
 }
 
 world wasi-http {
-  import wasi:io/poll@0.2.0;
-  import wasi:clocks/monotonic-clock@0.2.0;
-  import wasi:io/error@0.2.0;
-  import wasi:io/streams@0.2.0;
+  import wasi:io/poll@0.2.8;
+  import wasi:clocks/monotonic-clock@0.2.8;
+  import wasi:io/error@0.2.8;
+  import wasi:io/streams@0.2.8;
   import types;
   import outgoing-handler;
 }
-package wasi:io@0.2.0 {
+package wasi:io@0.2.8 {
   interface poll {
     resource pollable {
       ready: func() -> bool;
@@ -245,9 +247,9 @@ package wasi:io@0.2.0 {
 }
 
 
-package wasi:clocks@0.2.0 {
+package wasi:clocks@0.2.8 {
   interface monotonic-clock {
-    use wasi:io/poll@0.2.0.{pollable};
+    use wasi:io/poll@0.2.8.{pollable};
 
     type instant = u64;
 

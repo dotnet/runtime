@@ -54,7 +54,7 @@ namespace System.Text.RegularExpressions
             // this one should be examined, or returns false if they shouldn't be because the node wasn't guaranteed
             // to be fully processed.
             // </summary>
-            static bool FindPrefixesCore(RegexNode node, List<StringBuilder> results, bool ignoreCase)
+            static unsafe bool FindPrefixesCore(RegexNode node, List<StringBuilder> results, bool ignoreCase)
             {
                 // If we're too deep to analyze further, we can't trust what we've already computed, so stop iterating.
                 // Also bail if any of our results is already hitting the threshold, or if this node is RTL, which is
@@ -337,7 +337,7 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>Computes the leading substring in <paramref name="node"/>; may be empty.</summary>
-        public static string FindPrefix(RegexNode node)
+        public static unsafe string FindPrefix(RegexNode node)
         {
             var vsb = new ValueStringBuilder(stackalloc char[64]);
             Process(node, ref vsb);
@@ -495,7 +495,7 @@ namespace System.Text.RegularExpressions
                         continue;
 
                     case RegexNodeKind.Concatenate:
-                        node.TryGetOrdinalCaseInsensitiveString(0, node.ChildCount(), out _, out string? caseInsensitiveString, consumeZeroWidthNodes: true);
+                        node.TryGetOrdinalCaseInsensitiveString(0, node.ChildCount(), out _, out string? caseInsensitiveString, consumeZeroWidthNodes: true, forPrefixAnalysis: true);
                         return caseInsensitiveString;
 
                     default:
@@ -508,7 +508,7 @@ namespace System.Text.RegularExpressions
         /// <param name="root">The RegexNode tree root.</param>
         /// <param name="thorough">true to spend more time finding sets (e.g. through alternations); false to do a faster analysis that's potentially more incomplete.</param>
         /// <returns>The array of found sets, or null if there aren't any.</returns>
-        public static List<RegexFindOptimizations.FixedDistanceSet>? FindFixedDistanceSets(RegexNode root, bool thorough)
+        public static unsafe List<RegexFindOptimizations.FixedDistanceSet>? FindFixedDistanceSets(RegexNode root, bool thorough)
         {
             const int MaxLoopExpansion = 20; // arbitrary cut-off to avoid loops adding significant overhead to processing
             const int MaxFixedResults = 50; // arbitrary cut-off to avoid generating lots of sets unnecessarily
@@ -1124,7 +1124,7 @@ namespace System.Text.RegularExpressions
         /// Analyzes the pattern for a leading set loop followed by a non-overlapping literal. If such a pattern is found, an implementation
         /// can search for the literal and then walk backward through all matches for the loop until the beginning is found.
         /// </summary>
-        public static (RegexNode LoopNode, (char Char, string? String, StringComparison StringComparison, char[]? Chars) Literal)? FindLiteralFollowingLeadingLoop(RegexNode node)
+        public static unsafe (RegexNode LoopNode, (char Char, string? String, StringComparison StringComparison, char[]? Chars) Literal)? FindLiteralFollowingLeadingLoop(RegexNode node)
         {
             if ((node.Options & RegexOptions.RightToLeft) != 0)
             {
@@ -1507,7 +1507,7 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>Percent occurrences in source text (100 * char count / total count).</summary>
-        private static ReadOnlySpan<float> Frequency =>
+        internal static ReadOnlySpan<float> Frequency =>
         [
             0.000f /* '\x00' */, 0.000f /* '\x01' */, 0.000f /* '\x02' */, 0.000f /* '\x03' */, 0.000f /* '\x04' */, 0.000f /* '\x05' */, 0.000f /* '\x06' */, 0.000f /* '\x07' */,
             0.000f /* '\x08' */, 0.001f /* '\x09' */, 0.000f /* '\x0A' */, 0.000f /* '\x0B' */, 0.000f /* '\x0C' */, 0.000f /* '\x0D' */, 0.000f /* '\x0E' */, 0.000f /* '\x0F' */,

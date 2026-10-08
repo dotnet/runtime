@@ -387,7 +387,7 @@ namespace System.Diagnostics
             _writer?.Write(message);
         }
 
-        private void InternalWrite<T>(T message) where T : ISpanFormattable
+        private unsafe void InternalWrite<T>(T message) where T : ISpanFormattable
         {
             Debug.Assert(typeof(T) == typeof(int) || typeof(T) == typeof(uint) || typeof(T) == typeof(long), "We only currently stackalloc enough space for these types.");
 
@@ -401,7 +401,7 @@ namespace System.Diagnostics
             }
         }
 
-        private void InternalWrite(Guid message)
+        private unsafe void InternalWrite(Guid message)
         {
             EnsureWriter();
             if (_writer is TextWriter writer)
@@ -413,7 +413,7 @@ namespace System.Diagnostics
             }
         }
 
-        private void InternalWrite(DateTime message)
+        private unsafe void InternalWrite(DateTime message)
         {
             EnsureWriter();
             if (_writer is TextWriter writer)

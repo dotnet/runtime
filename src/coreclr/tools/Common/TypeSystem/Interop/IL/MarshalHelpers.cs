@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using Debug = System.Diagnostics.Debug;
 using System.Runtime.InteropServices.ObjectiveC;
 using Internal.TypeSystem.Ecma;
@@ -10,6 +11,33 @@ namespace Internal.TypeSystem.Interop
 {
     public static partial class MarshalHelpers
     {
+        public static IEnumerable<string> GetPInvokeModuleNameVariations(TargetDetails target, string name)
+        {
+            yield return name;
+
+            if (target.IsWindows)
+            {
+                const string Suffix = ".dll";
+
+                if (name.EndsWith(Suffix, StringComparison.OrdinalIgnoreCase))
+                    yield return name.Substring(0, name.Length - Suffix.Length);
+            }
+            else
+            {
+                string suffix = target.IsApplePlatform ? ".dylib" : ".so";
+                bool hasSharedLibraryExtension = name.EndsWith(suffix, StringComparison.Ordinal);
+                const string LibPrefix = "lib";
+                bool hasLibPrefix = name.StartsWith(LibPrefix, StringComparison.Ordinal);
+
+                if (hasSharedLibraryExtension)
+                    yield return name.Substring(0, name.Length - suffix.Length);
+                if (hasLibPrefix)
+                    yield return name.Substring(LibPrefix.Length);
+                if (hasLibPrefix && hasSharedLibraryExtension)
+                    yield return name.Substring(LibPrefix.Length, name.Length - suffix.Length - LibPrefix.Length);
+            }
+        }
+
         internal static TypeDesc GetNativeTypeFromMarshallerKind(TypeDesc type,
                 MarshallerKind kind,
                 MarshallerKind elementMarshallerKind,
@@ -202,8 +230,8 @@ namespace Internal.TypeSystem.Interop
                 if (customModifierType == null)
                     continue;
 
-                if ((customModifierType.Namespace.SequenceEqual("System.Runtime.CompilerServices"u8) && customModifierType.Name.SequenceEqual("IsCopyConstructed"u8)) ||
-                    (customModifierType.Namespace.SequenceEqual("Microsoft.VisualC"u8) && customModifierType.Name.SequenceEqual("NeedsCopyConstructorModifier"u8)))
+                if ((customModifierType.Namespace == "System.Runtime.CompilerServices"u8 && customModifierType.Name == "IsCopyConstructed"u8) ||
+                    (customModifierType.Namespace == "Microsoft.VisualC"u8 && customModifierType.Name == "NeedsCopyConstructorModifier"u8))
                 {
                     return true;
                 }
@@ -247,6 +275,7 @@ namespace Internal.TypeSystem.Interop
                     // Allow ref returning blittable structs for IJW
                     if (type.IsValueType &&
                         (nativeType == NativeTypeKind.Struct || nativeType == NativeTypeKind.Default) &&
+                        IsValidForGenericMarshalling(type, isField) &&
                         MarshalUtils.IsBlittableType(type))
                     {
                         return MarshallerKind.BlittableValueClassByRefReturn;
@@ -420,6 +449,12 @@ namespace Internal.TypeSystem.Interop
                 if (!isField && ((DefType)type).IsInt128OrHasInt128Fields && !isByRef)
                 {
                     // Int128 types or structs that contain them cannot be passed by value
+                    return MarshallerKind.Invalid;
+                }
+
+                if (!isField && ((DefType)type).IsDecimalFloatingPointOrHasDecimalFloatingPointFields && !isByRef)
+                {
+                    // Decimal32/64/128 types or structs that contain them cannot be passed by value
                     return MarshallerKind.Invalid;
                 }
 
@@ -659,6 +694,12 @@ namespace Internal.TypeSystem.Interop
             }
             else if (type.IsInterface)
             {
+                if (type.HasInstantiation)
+                {
+                    // Generic types cannot be marshaled.
+                    return MarshallerKind.Invalid;
+                }
+
                 if (context.Target.IsWindows)
                     return MarshallerKind.ComInterface;
                 else
@@ -922,6 +963,7 @@ namespace Internal.TypeSystem.Interop
                 if (!defType.ContainsGCPointers
                     && !defType.IsAutoLayoutOrHasAutoLayoutFields
                     && !defType.IsInt128OrHasInt128Fields
+                    && !defType.IsDecimalFloatingPointOrHasDecimalFloatingPointFields
                     && IsValidForGenericMarshalling(defType, isFieldScenario, builtInMarshallingEnabled: false))
                 {
                     return MarshallerKind.BlittableValue;
@@ -946,7 +988,7 @@ namespace Internal.TypeSystem.Interop
             //   objc_msgSendSuper
             //   objc_msgSendSuper_stret
             return metadata.Module.Equals(ObjectiveCLibrary)
-                && metadata.Name.StartsWith(ObjectiveCMsgSend);
+                && metadata.Name.AsSpan().StartsWith(ObjectiveCMsgSend);
         }
 
         internal static uint? GetObjectiveCMessageSendFunction(TargetDetails target, string pinvokeModule, string pinvokeFunction)
@@ -969,7 +1011,12 @@ namespace Internal.TypeSystem.Interop
 
         public static bool IsRuntimeMarshallingEnabled(ModuleDesc module)
         {
-            return module.Assembly is not EcmaAssembly assembly || !assembly.HasAssemblyCustomAttribute("System.Runtime.CompilerServices", "DisableRuntimeMarshallingAttribute");
+            return module.Assembly is EcmaAssembly assembly && !assembly.HasAssemblyCustomAttribute("System.Runtime.CompilerServices", "DisableRuntimeMarshallingAttribute");
+        }
+
+        public static bool IsMarshallingRequired(MethodSignature methodSig, ModuleDesc moduleContext)
+        {
+            return Marshaller.IsMarshallingRequired(methodSig, moduleContext);
         }
     }
 }

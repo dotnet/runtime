@@ -987,9 +987,6 @@ namespace
             if (pThread->IsGCSpecial())
                 continue;
 
-            if (GCHeapUtilities::GetGCHeap()->IsThreadUsingAllocationContextHeap(pThread->GetAllocContext(), sc->thread_number))
-                continue;
-
             sc->thread_under_crawl = pThread;
             sc->dwEtwRootKind = kEtwGCRootKindStack;
             pThread->GcScanRoots(fn, sc);

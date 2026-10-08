@@ -66,8 +66,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                     {
                         // Add RID-specific assembly
                         (string ridPath, string localRidPath) = GetPaths(libraryType, true);
-                        b.WithRuntimeLibrary(libraryType, $"{library}-{TestContext.BuildRID}", "1.0.0", p => p
-                            .WithAssemblyGroup(TestContext.BuildRID, g => g
+                        b.WithRuntimeLibrary(libraryType, $"{library}-{HostTestContext.BuildRID}", "1.0.0", p => p
+                            .WithAssemblyGroup(HostTestContext.BuildRID, g => g
                                 .WithAsset(ridPath, useLocalPath ? f => f.WithLocalPath(localRidPath) : null)));
                     }
                 }
@@ -114,7 +114,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             static (string Path, string LocalPath) GetPaths(RuntimeLibraryType libraryType, bool useRid)
             {
                 string library = $"Test{libraryType}";
-                string path = useRid ? $"lib/{TestContext.BuildRID}/{library}-{TestContext.BuildRID}.dll" : $"lib/{library}.dll";
+                string path = useRid ? $"lib/{HostTestContext.BuildRID}/{library}-{HostTestContext.BuildRID}.dll" : $"lib/{library}.dll";
                 return (path, $"{libraryType}/{path}");
             }
         }
@@ -137,9 +137,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                     {
                         // Add RID-specific native library
                         (string ridPath, string localRidPath) = GetPaths(libraryType, true);
-                        b.WithRuntimeLibrary(libraryType, $"{library}-{TestContext.BuildRID}", "1.0.0", p => p
-                            .WithNativeLibraryGroup(TestContext.BuildRID, g => g
-                                .WithAsset($"{ridPath}/{library}-{TestContext.BuildRID}.native", useLocalPath ? f => f.WithLocalPath($"{localRidPath}/{library}-{TestContext.BuildRID}.native") : null)));
+                        b.WithRuntimeLibrary(libraryType, $"{library}-{HostTestContext.BuildRID}", "1.0.0", p => p
+                            .WithNativeLibraryGroup(HostTestContext.BuildRID, g => g
+                                .WithAsset($"{ridPath}/{library}-{HostTestContext.BuildRID}.native", useLocalPath ? f => f.WithLocalPath($"{localRidPath}/{library}-{HostTestContext.BuildRID}.native") : null)));
                     }
                 }
 
@@ -184,7 +184,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
 
             static (string Path, string LocalPath) GetPaths(NetCoreAppBuilder.RuntimeLibraryType libraryType, bool useRid)
             {
-                string path = useRid ? $"native/{TestContext.BuildRID}" : "native";
+                string path = useRid ? $"native/{HostTestContext.BuildRID}" : "native";
                 return (path, $"{libraryType}/{path}");
             }
         }
@@ -245,7 +245,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             }
             else
             {
-                app.PopulateFrameworkDependent(Constants.MicrosoftNETCoreApp, TestContext.MicrosoftNETCoreAppVersion, customizer);
+                app.PopulateFrameworkDependent(Constants.MicrosoftNETCoreApp, HostTestContext.MicrosoftNETCoreAppVersion, customizer);
             }
             return app;
         }
@@ -257,7 +257,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             public SharedTestState()
             {
                 DotNetWithNetCoreApp = DotNet("WithNetCoreApp")
-                    .AddMicrosoftNETCoreAppFrameworkMockCoreClr(TestContext.MicrosoftNETCoreAppVersion)
+                    .AddMicrosoftNETCoreAppFrameworkMockCoreClr(HostTestContext.MicrosoftNETCoreAppVersion)
                     .Build();
             }
         }

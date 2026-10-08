@@ -66,7 +66,7 @@ public:
 
     static unsigned Count(Env env, UINT64 bs)
     {
-        return BitSetSupport::CountBitsInIntegral(bs);
+        return BitOperations::PopCount(bs);
     }
 
     static bool IsEmptyUnion(Env env, UINT64 bs1, UINT64 bs2)

@@ -16,6 +16,7 @@ using Microsoft.Diagnostics.Tracing.Parsers;
 using Tracing.Tests.Common;
 using Microsoft.Diagnostics.Tracing.Parsers.Clr;
 using Xunit;
+using TestLibrary;
 
 namespace Tracing.Tests.EventSourceError
 {
@@ -33,6 +34,10 @@ namespace Tracing.Tests.EventSourceError
         private static readonly ulong GC_HeapDump_Keyword = 0x100000UL;
         private static ManualResetEvent _gcStopReceived = new ManualResetEvent(false);
 
+        [ActiveIssue("System.Diagnostics.Process is not supported on wasm", TestPlatforms.Browser)]
+        [ActiveIssue("Can't find file dotnet-diagnostic-{pid}-*-socket", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsRiscv64Process))]
+        [SkipOnCoreClr("This test is sensitive to JIT optimizations.", RuntimeTestModes.AnyJitOptimizationStress)]
+        [SkipOnCoreClr("Tracing tests routinely time out with JIT stress and GC stress.", RuntimeTestModes.AnyGCStress)]
         [Fact]
         public static int TestEntryPoint()
         {

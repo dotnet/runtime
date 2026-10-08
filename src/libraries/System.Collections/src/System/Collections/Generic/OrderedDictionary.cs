@@ -438,7 +438,7 @@ namespace System.Collections.Generic
             Entry[]? entries = _entries;
             Debug.Assert(entries is not null);
 
-            // Grow capacity if necessary to accomodate the extra entry.
+            // Grow capacity if necessary to accommodate the extra entry.
             if (entries.Length == _count)
             {
                 Resize(HashHelpers.ExpandPrime(entries.Length));
@@ -1079,7 +1079,7 @@ namespace System.Collections.Generic
         private void Resize(int newSize, bool forceNewHashCodes = false)
         {
             Debug.Assert(!forceNewHashCodes || !typeof(TKey).IsValueType, "Value types never rehash.");
-            Debug.Assert(newSize >= _count, "The requested size must accomodate all of the current elements.");
+            Debug.Assert(newSize >= _count, "The requested size must accommodate all of the current elements.");
 
             // Create the new arrays. We allocate both prior to storing either; in case one of the allocation fails,
             // we want to avoid corrupting the data structure.
@@ -1218,10 +1218,16 @@ namespace System.Collections.Generic
         }
 
         /// <inheritdoc/>
-        bool ICollection<KeyValuePair<TKey, TValue>>.Remove(KeyValuePair<TKey, TValue> item) =>
-            TryGetValue(item.Key, out TValue? value) &&
-            EqualityComparer<TValue>.Default.Equals(value, item.Value) &&
-            Remove(item.Key);
+        bool ICollection<KeyValuePair<TKey, TValue>>.Remove(KeyValuePair<TKey, TValue> item)
+        {
+            if (TryGetValue(item.Key, out TValue? value, out int index) && EqualityComparer<TValue>.Default.Equals(value, item.Value))
+            {
+                RemoveAt(index);
+                return true;
+            }
+
+            return false;
+        }
 
         /// <inheritdoc/>
         void IDictionary.Add(object key, object? value)
@@ -1235,11 +1241,6 @@ namespace System.Collections.Generic
             if (key is not TKey tkey)
             {
                 throw new ArgumentException(SR.Format(SR.Arg_WrongType, key, typeof(TKey)), nameof(key));
-            }
-
-            if (default(TValue) is not null)
-            {
-                ArgumentNullException.ThrowIfNull(value);
             }
 
             TValue tvalue = default!;

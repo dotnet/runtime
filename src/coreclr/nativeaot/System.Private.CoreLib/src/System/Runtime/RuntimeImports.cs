@@ -74,17 +74,7 @@ namespace System.Runtime
 
         // Wait for all pending finalizers. This must be a p/invoke to avoid starving the GC.
         [LibraryImport(RuntimeLibrary)]
-        private static partial void RhWaitForPendingFinalizers(int allowReentrantWait);
-
-        // Temporary workaround to unblock shareable assembly bring-up - without shared interop,
-        // we must prevent RhWaitForPendingFinalizers from using marshaling because it would
-        // rewrite System.Private.CoreLib to reference the non-shareable interop assembly. With shared interop,
-        // we will be able to remove this helper method and change the DllImport above
-        // to directly accept a boolean parameter.
-        internal static void RhWaitForPendingFinalizers(bool allowReentrantWait)
-        {
-            RhWaitForPendingFinalizers(allowReentrantWait ? 1 : 0);
-        }
+        internal static partial void RhWaitForPendingFinalizers([MarshalAs(UnmanagedType.Bool)] bool allowReentrantWait);
 
         // Get maximum GC generation number.
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -306,10 +296,6 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "RhHandleTryGetCrossReferenceContext")]
         internal static extern bool RhHandleTryGetCrossReferenceContext(IntPtr handle, out IntPtr context);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhIsGCBridgeActive")]
-        internal static extern bool RhIsGCBridgeActive();
-
         // Free handle.
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhHandleFree")]
@@ -410,10 +396,6 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "RhNewVariableSizeObject")]
         internal static extern unsafe Array RhNewVariableSizeObject(MethodTable* pEEType, int length);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhNewString")]
-        internal static extern unsafe string RhNewString(MethodTable* pEEType, nint length);
-
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetNewObjectHelper")]
         internal static extern unsafe IntPtr RhGetNewObjectHelper(MethodTable* pEEType);
@@ -422,38 +404,10 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "RhUnbox")]
         internal static extern unsafe void RhUnbox(object? obj, ref byte data, MethodTable* pUnboxToEEType);
 
-        // Busy spin for the given number of iterations.
-        [LibraryImport(RuntimeLibrary, EntryPoint = "RhSpinWait")]
-        [SuppressGCTransition]
-        internal static partial void RhSpinWait(int iterations);
-
-        // Call RhSpinWait with a GC transition
-        [LibraryImport(RuntimeLibrary, EntryPoint = "RhSpinWait")]
-        internal static partial void RhLongSpinWait(int iterations);
-
-        // Yield the cpu to another thread ready to process, if one is available.
-        [LibraryImport(RuntimeLibrary, EntryPoint = "RhYield")]
-        private static partial int _RhYield();
-        internal static bool RhYield() => _RhYield() != 0;
-
-        [LibraryImport(RuntimeLibrary, EntryPoint = "RhFlushProcessWriteBuffers")]
-        internal static partial void RhFlushProcessWriteBuffers();
-
 #if !TARGET_UNIX
         // Wait for any object to be signalled, in a way that's compatible with the CLR's behavior in an STA.
-        // ExactSpelling = 'true' to force MCG to resolve it to default
         [LibraryImport(RuntimeLibrary)]
-        private static unsafe partial int RhCompatibleReentrantWaitAny(int alertable, int timeout, int count, IntPtr* handles);
-
-        // Temporary workaround to unblock shareable assembly bring-up - without shared interop,
-        // we must prevent RhCompatibleReentrantWaitAny from using marshaling because it would
-        // rewrite System.Private.CoreLib to reference the non-shareable interop assembly. With shared interop,
-        // we will be able to remove this helper method and change the DllImport above
-        // to directly accept a boolean parameter and use the SetLastError = true modifier.
-        internal static unsafe int RhCompatibleReentrantWaitAny(bool alertable, int timeout, int count, IntPtr* handles)
-        {
-            return RhCompatibleReentrantWaitAny(alertable ? 1 : 0, timeout, count, handles);
-        }
+        internal static unsafe partial int RhCompatibleReentrantWaitAny([MarshalAs(UnmanagedType.Bool)] bool alertable, int timeout, int count, IntPtr* handles);
 #endif
 
         //
@@ -463,10 +417,6 @@ namespace System.Runtime
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetGCDescSize")]
         internal static extern unsafe int RhGetGCDescSize(MethodTable* eeType);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhNewInterfaceDispatchCell")]
-        internal static extern unsafe IntPtr RhNewInterfaceDispatchCell(MethodTable* pEEType, int slotNumber);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhResolveDispatch")]
@@ -487,6 +437,10 @@ namespace System.Runtime
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhResolveDynamicInterfaceCastableDispatchOnType")]
         internal static extern unsafe IntPtr RhResolveDynamicInterfaceCastableDispatchOnType(MethodTable* instanceType, MethodTable* interfaceType, ushort slot, MethodTable** pGenericContext);
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhpRegisterDispatchCache")]
+        internal static extern void RhpRegisterDispatchCache(ref byte cache);
 
         //
         // Support for GC and HandleTable callouts.
@@ -592,14 +546,6 @@ namespace System.Runtime
         internal static extern void RhRegisterInlinedThreadStaticRoot(ref object? root, TypeManagerHandle module);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhCurrentNativeThreadId")]
-        internal static extern unsafe IntPtr RhCurrentNativeThreadId();
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhCurrentOSThreadId")]
-        internal static extern unsafe ulong RhCurrentOSThreadId();
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetDefaultStackSize")]
         internal static extern unsafe IntPtr RhGetDefaultStackSize();
 
@@ -610,14 +556,6 @@ namespace System.Runtime
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhCheckAndClearPendingInterrupt")]
         internal static extern bool RhCheckAndClearPendingInterrupt();
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport("*", "RhGetCurrentThunkContext")]
-        internal static extern IntPtr GetCurrentInteropThunkContext();
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport("*", "RhGetCommonStubAddress")]
-        internal static extern IntPtr GetInteropCommonStubAddress();
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetCodeTarget")]
@@ -899,19 +837,6 @@ namespace System.Runtime
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "modff")]
         internal static extern unsafe float modff(float x, float* intptr);
-
-        [LibraryImport(RuntimeImports.RuntimeLibrary)]
-        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
-        internal static unsafe partial void* memmove(byte* dmem, byte* smem, nuint size);
-
-        [LibraryImport(RuntimeImports.RuntimeLibrary)]
-        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
-        internal static unsafe partial void* memset(byte* mem, int value, nuint size);
-
-#if TARGET_X86 || TARGET_AMD64
-        [LibraryImport(RuntimeLibrary)]
-        internal static unsafe partial void RhCpuIdEx(int* cpuInfo, int functionId, int subFunctionId);
-#endif
 
 #if TARGET_UNIX
         [LibraryImport(RuntimeLibrary, StringMarshalling = StringMarshalling.Utf8)]

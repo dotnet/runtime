@@ -147,7 +147,7 @@ namespace Microsoft.Interop.Analyzers
                 new CodeEmitOptions(SkipInit: true),
                 typeof(ConvertToLibraryImportAnalyzer).Assembly);
 
-            var factory = DefaultMarshallingGeneratorResolver.Create(env.EnvironmentFlags, MarshalDirection.ManagedToUnmanaged, TypeNames.LibraryImportAttribute_ShortName, []);
+            var factory = new ByValueContentsMarshalKindValidator(DefaultMarshallingGeneratorResolver.Create(env.EnvironmentFlags, MarshalDirection.ManagedToUnmanaged, TypeNames.LibraryImportAttribute_ShortName, []));
 
             mayRequireAdditionalWork = diagnostics.Diagnostics.Any();
             bool anyExplicitlyUnsupportedInfo = false;

@@ -9,7 +9,7 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.StaticInterfaceMethods
 {
     [SetupCompileBefore("library.dll", new[] { "Dependencies/Library.cs" })]
     [SetupLinkerAction("skip", "library")]
-    [SetupLinkerArgument("-a", "test.exe", "library")]
+    [SetupLinkerArgument("-a", "test", "library")]
     public static class StaticVirtualInterfaceMethodsInPreservedScopeLibrary
     {
         [Kept]

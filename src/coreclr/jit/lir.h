@@ -40,6 +40,15 @@ public:
 
             RegOptional = 0x04, // Set on a node if it produces a value, but does not
                                 // require a register (i.e. it can be used from memory).
+
+#ifdef TARGET_WASM
+            MultiplyUsed = 0x08, // Set by lowering on nodes that the RA should allocate into
+                                 // a dedicated register (WASM local), for multiple uses.
+
+            FoldedAddr = 0x10, // Set by lowering on a GT_LCL_ADDR whose frame offset is folded into
+                               // the memarg of the indirection using it. Codegen for such a node
+                               // emits just the frame pointer.
+#endif                         // TARGET_WASM
         };
     };
 

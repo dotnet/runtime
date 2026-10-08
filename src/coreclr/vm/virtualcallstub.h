@@ -1,11 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-//
+// ============================================================================
 // File: VirtualCallStub.h
 //
 // See code:VirtualCallStubManager for details
-//
 // ============================================================================
 
 #ifndef _VIRTUAL_CALL_STUB_H
@@ -44,6 +43,7 @@ extern "C" PCODE STDCALL VSD_ResolveWorker(TransitionBlock * pTransitionBlock,
 #endif
                                            );
 
+extern "C" PCODE STDCALL VSD_ResolveWorkerForInterfaceLookupSlot(TransitionBlock * pTransitionBlock, TADDR siteAddrForRegisterIndirect);
 
 /////////////////////////////////////////////////////////////////////////////////////
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
@@ -111,8 +111,8 @@ private:
     // In these cases all calls are made by the platform equivalent of "call [addr]".
     //
     // DelegateCallSite are particular in that they can come in a variety of forms:
-    // a direct delegate call has a sequence defined by the jit but a multicast or wrapper delegate
-    // are defined in a stub and have a different shape
+    // a direct delegate call has a sequence defined by the jit but a multicast delegate
+    // is defined in a stub and has a different shape
     //
     PTR_PCODE       m_siteAddr;     // Stores the address of an indirection cell
     PCODE           m_returnAddr;
@@ -576,13 +576,13 @@ private:
     // This methods returns the a cell from ppList. It returns NULL if the list is empty.
     BYTE * GetOneIndCell(BYTE ** ppList)
     {
-        CONTRACT (BYTE*) {
+        CONTRACTL {
             NOTHROW;
             GC_NOTRIGGER;
             MODE_ANY;
             PRECONDITION(CheckPointer(ppList));
             PRECONDITION(m_indCellLock.OwnedByCurrentThread());
-        } CONTRACT_END;
+        } CONTRACTL_END;
 
         BYTE * temp = *ppList;
 
@@ -590,10 +590,10 @@ private:
         {
             BYTE * pNext = *((BYTE **)temp);
             *ppList = pNext;
-            RETURN temp;
+            return temp;
         }
 
-        RETURN NULL;
+        return NULL;
     }
 
     // insert a linked list of indirection cells at the beginning of m_FreeIndCellList
@@ -743,6 +743,17 @@ protected:
         return W("Unexpected. RangeSectionStubManager should report the name");
     }
 #endif
+
+    friend struct ::cdac_data<VirtualCallStubManager>;
+};
+
+template<>
+struct cdac_data<VirtualCallStubManager>
+{
+    static constexpr size_t IndcellHeap = offsetof(VirtualCallStubManager, indcell_heap);
+#ifdef FEATURE_VIRTUAL_STUB_DISPATCH
+    static constexpr size_t CacheEntryHeap = offsetof(VirtualCallStubManager, cache_entry_heap);
+#endif // FEATURE_VIRTUAL_STUB_DISPATCH
 };
 
 /********************************************************************************************************
@@ -766,8 +777,6 @@ class VirtualCallStubManagerManager : public StubManager
     virtual BOOL CheckIsStub_Internal(PCODE stubStartAddress);
 
     virtual BOOL DoTraceStub(PCODE stubStartAddress, TraceDestination *trace);
-
-    static MethodDesc *Entry2MethodDesc(PCODE stubStartAddress, MethodTable *pMT);
 
 #ifdef DACCESS_COMPILE
     virtual void DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags);
@@ -1291,8 +1300,16 @@ public:
 #ifdef CHAIN_LOOKUP
         CONSISTENCY_CHECK(m_writeLock.OwnedByCurrentThread());
 #endif
-          cache[idx] = elem;
+          VolatileStore(&cache[idx], elem);
         }
+
+#ifdef CHAIN_LOOKUP
+    inline Crst *GetWriteLock()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return &m_writeLock;
+    }
+#endif
 
     inline void ClearCacheEntry(size_t idx)
     {
@@ -1488,7 +1505,6 @@ private:
         CONTRACTL {
             NOTHROW;
             GC_NOTRIGGER;
-            FORBID_FAULT;
         } CONTRACTL_END;
 
         _ASSERTE(probe);
@@ -1510,7 +1526,6 @@ private:
         CONTRACTL {
             THROWS;
             GC_TRIGGERS;
-            INJECT_FAULT(COMPlusThrowOM(););
         } CONTRACTL_END;
 
         size_t size = CALL_STUB_MIN_ENTRIES;

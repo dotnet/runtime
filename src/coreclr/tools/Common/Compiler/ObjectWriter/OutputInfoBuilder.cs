@@ -13,6 +13,7 @@ using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
 using ILCompiler.Diagnostics;
 using Internal.JitInterface;
+using Internal.Text;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
@@ -42,14 +43,14 @@ namespace ILCompiler.ObjectWriter
         /// <summary>
         /// Offset relative to section beginning
         /// </summary>
-        public readonly ulong Offset;
+        public ulong Offset { get; internal set; }
 
         /// <summary>
         /// Item name
         /// </summary>
-        public readonly string Name;
+        public readonly Utf8String Name;
 
-        public OutputItem(int sectionIndex, ulong offset, string name)
+        public OutputItem(int sectionIndex, ulong offset, Utf8String name)
         {
             SectionIndex = sectionIndex;
             Offset = offset;
@@ -66,7 +67,7 @@ namespace ILCompiler.ObjectWriter
         /// Node length (number of bytes). This doesn't include any external alignment
         /// applied when concatenating the nodes to form sections.
         /// </summary>
-        public readonly int Length;
+        public int Length { get; internal set; }
 
         /// <summary>
         /// Number of file-level relocations (.reloc section entries) used by the node.
@@ -74,7 +75,7 @@ namespace ILCompiler.ObjectWriter
         public int Relocations { get; private set; }
 
         public OutputNode(int sectionIndex, ulong offset, int length, string name)
-            : base(sectionIndex, offset, name)
+            : base(sectionIndex, offset, new Utf8String(name))
         {
             Length = length;
             Relocations = 0;
@@ -93,7 +94,7 @@ namespace ILCompiler.ObjectWriter
     /// </summary>
     public sealed class OutputSymbol : OutputItem
     {
-        public OutputSymbol(int sectionIndex, ulong offset, string name)
+        public OutputSymbol(int sectionIndex, ulong offset, Utf8String name)
             : base(sectionIndex, offset, name)
         {
         }
@@ -163,6 +164,26 @@ namespace ILCompiler.ObjectWriter
             _methodSymbolMap.Add(symbol, method);
         }
 
+        /// <summary>
+        /// Corrects code-section node offsets and lengths after the wasm writer LEB128-shrinks code
+        /// relocations during final emission. The map gives the final on-disk content offset for each
+        /// pre-shrink entry boundary, so a method node's start and end (which both fall on entry
+        /// boundaries) resolve to its real position and length in the emitted module for the perfmap.
+        /// </summary>
+        internal void RemapMethodNodeOffsets(int sectionIndex, IReadOnlyDictionary<ulong, ulong> offsetMap)
+        {
+            foreach (OutputNode node in _nodes)
+            {
+                if (node.SectionIndex == sectionIndex
+                    && offsetMap.TryGetValue(node.Offset, out ulong postStart)
+                    && offsetMap.TryGetValue(node.Offset + (ulong)node.Length, out ulong postEnd))
+                {
+                    node.Length = (int)(postEnd - postStart);
+                    node.Offset = postStart;
+                }
+            }
+        }
+
         public void Sort()
         {
             _nodes.Sort(OutputItem.Comparer.Instance);
@@ -171,7 +192,7 @@ namespace ILCompiler.ObjectWriter
 
         public bool FindSymbol(OutputItem item, out int index)
         {
-            index = _symbols.BinarySearch(new OutputSymbol(item.SectionIndex, item.Offset, name: null), OutputItem.Comparer.Instance);
+            index = _symbols.BinarySearch(new OutputSymbol(item.SectionIndex, item.Offset, name: default), OutputItem.Comparer.Instance);
             bool result = (index >= 0 && index < _symbols.Count && OutputItem.Comparer.Instance.Compare(_symbols[index], item) == 0);
             if (!result)
             {

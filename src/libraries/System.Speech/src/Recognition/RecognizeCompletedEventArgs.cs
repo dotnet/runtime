@@ -9,9 +9,9 @@ namespace System.Speech.Recognition
     {
         #region Constructors
 
-        internal RecognizeCompletedEventArgs(RecognitionResult result, bool initialSilenceTimeout, bool babbleTimeout,
+        internal RecognizeCompletedEventArgs(RecognitionResult? result, bool initialSilenceTimeout, bool babbleTimeout,
             bool inputStreamEnded, TimeSpan audioPosition,
-            Exception error, bool cancelled, object userState)
+            Exception? error, bool cancelled, object? userState)
             : base(error, cancelled, userState)
         {
             _result = result;
@@ -24,7 +24,7 @@ namespace System.Speech.Recognition
         #endregion
 
         #region Public Properties
-        public RecognitionResult Result
+        public RecognitionResult? Result
         {
             get { return _result; }
         }
@@ -49,7 +49,7 @@ namespace System.Speech.Recognition
 
         #region Private Fields
 
-        private RecognitionResult _result;
+        private RecognitionResult? _result;
         private bool _initialSilenceTimeout;
         private bool _babbleTimeout;
         private bool _inputStreamEnded;

@@ -1,0 +1,10 @@
+<Project>
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)TestHelper.cs">
+      <Link>Common\ComplianceTests\GB18030\TestHelper.cs</Link>
+    </Compile>
+    <EmbeddedResource Include="$(MSBuildThisFileDirectory)Level3+Amendment_Test_Data_for_Mid_to_High_Volume_cases.txt">
+      <LogicalName>Level3+Amendment_Test_Data_for_Mid_to_High_Volume_cases.txt</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+</Project>

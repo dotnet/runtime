@@ -1,15 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
 
-//
 ////////////////////////////////////////////////////////////////////////////////
 // This module defines a Utility Class used by reflection
-//
-//
-
 ////////////////////////////////////////////////////////////////////////////////
-
 
 #ifndef __INVOKEUTIL_H__
 #define __INVOKEUTIL_H__
@@ -51,22 +45,10 @@ class InvokeUtil
 {
 
 public:
-    static void CopyArg(TypeHandle th, PVOID argRef, ArgDestination *argDest);
-
-    // Given a type, this routine will convert an return value representing that
-    //  type into an ObjectReference.  If the type is a primitive, the
-    //  value is wrapped in one of the Value classes.
-    static OBJECTREF CreateObjectAfterInvoke(TypeHandle th, void * pValue);
-
     // This is a special purpose Exception creation function.  It
     //  creates the TargetInvocationException placing the passed
     //  exception into it.
     static OBJECTREF CreateTargetExcept(OBJECTREF* except);
-
-    // This is a special purpose Exception creation function.  It
-    //  creates the ReflectionClassLoadException placing the passed
-    //  classes array and exception array into it.
-    static OBJECTREF CreateClassLoadExcept(OBJECTREF* classes,OBJECTREF* except);
 
     // Validate that the field can be widened for Set
     static void ValidField(TypeHandle th, OBJECTREF* value);

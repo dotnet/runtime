@@ -85,11 +85,7 @@ namespace System.Configuration
                 throw ExceptionUtil.ParameterNullOrEmpty(nameof(name));
 
             // prevent GetConfig from returning config not in this collection
-#if NET
             if (name.Contains('/'))
-#else
-            if (name.IndexOf('/') >= 0)
-#endif
                 return null;
 
             // get the section from the config record

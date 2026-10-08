@@ -167,7 +167,7 @@ export function mono_jiterp_free_method_data_interp_entry (imethod: number) {
 // FIXME: move this counter into C and make it thread safe
 export function mono_interp_record_interp_entry (imethod: number) {
     // clear the unbox bit
-    imethod = imethod & ~0x1;
+    imethod = (imethod & ~0x1) >>> 0;
 
     const info = infoTable[imethod];
     // This shouldn't happen but it's not worth crashing over
@@ -198,6 +198,10 @@ export function mono_interp_jit_wasm_entry_trampoline (
     // HACK
     if (argumentCount > maxInlineArgs)
         return 0;
+
+    imethod = imethod >>> 0;
+    method = method as any >>> 0 as any;
+    pParamTypes = pParamTypes as any >>> 0 as any;
 
     const info = new TrampolineInfo(
         imethod, method, argumentCount, pParamTypes,
@@ -252,6 +256,7 @@ function flush_wasm_entry_trampoline_jit_queue () {
     const jitQueue : TrampolineInfo[] = [];
     let methodPtr = <MonoMethod><any>0;
     while ((methodPtr = <any>cwraps.mono_jiterp_tlqueue_next(JitQueue.InterpEntry)) != 0) {
+        methodPtr = methodPtr as any >>> 0 as any;
         const info = infoTable[<any>methodPtr];
         if (!info) {
             mono_log_info(`Failed to find corresponding info for method ptr ${methodPtr} from jit queue!`);
@@ -265,10 +270,9 @@ function flush_wasm_entry_trampoline_jit_queue () {
 
     // If the function signature contains types that need stackval_from_data, that'll use
     //  some constant slots, so make some extra space
-    const constantSlots = (4 * jitQueue.length) + 1;
     let builder = trampBuilder;
     if (!builder) {
-        trampBuilder = builder = new WasmBuilder(constantSlots);
+        trampBuilder = builder = new WasmBuilder();
 
         builder.defineType(
             "unbox",
@@ -303,7 +307,7 @@ function flush_wasm_entry_trampoline_jit_queue () {
             WasmValtype.void, true
         );
     } else
-        builder.clear(constantSlots);
+        builder.clear();
 
     if (builder.options.wasmBytesLimit <= getCounter(JiterpCounter.BytesGenerated)) {
         return;

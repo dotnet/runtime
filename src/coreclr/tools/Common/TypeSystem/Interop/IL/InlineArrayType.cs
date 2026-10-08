@@ -3,10 +3,13 @@
 
 using System;
 using System.Collections.Generic;
-using Debug = System.Diagnostics.Debug;
-using Internal.IL.Stubs;
-using Internal.IL;
 using System.Threading;
+
+using Internal.IL;
+using Internal.IL.Stubs;
+using Internal.Text;
+
+using Debug = System.Diagnostics.Debug;
 
 namespace Internal.TypeSystem.Interop
 {
@@ -27,11 +30,11 @@ namespace Internal.TypeSystem.Interop
             get;
         }
 
-        public override ReadOnlySpan<byte> Name
+        public override Utf8Span Name
         {
             get
             {
-                return "_InlineArray__"u8.Append(ElementType.Name, "__"u8, Length);
+                return new Utf8Span("_InlineArray__"u8).Append(ElementType.Name, "__"u8, Length);
             }
         }
 
@@ -43,7 +46,7 @@ namespace Internal.TypeSystem.Interop
             }
         }
 
-        public override ReadOnlySpan<byte> Namespace
+        public override Utf8Span Namespace
         {
             get
             {
@@ -199,7 +202,7 @@ namespace Internal.TypeSystem.Interop
             return Array.Empty<MetadataType>();
         }
 
-        public override MetadataType GetNestedType(string name)
+        public override MetadataType GetNestedType(Utf8Span name)
         {
             return null;
         }
@@ -209,7 +212,7 @@ namespace Internal.TypeSystem.Interop
             return Array.Empty<MethodImplRecord>();
         }
 
-        public override MethodImplRecord[] FindMethodsImplWithMatchingDeclName(ReadOnlySpan<byte> name)
+        public override MethodImplRecord[] FindMethodsImplWithMatchingDeclName(Utf8Span name)
         {
             return Array.Empty<MethodImplRecord>();
         }
@@ -323,7 +326,7 @@ namespace Internal.TypeSystem.Interop
                 }
             }
 
-            public override ReadOnlySpan<byte> Name
+            public override Utf8Span Name
             {
                 get
                 {
@@ -493,7 +496,7 @@ namespace Internal.TypeSystem.Interop
                 return false;
             }
 
-            public override ReadOnlySpan<byte> Name
+            public override Utf8Span Name
             {
                 get
                 {

@@ -11,6 +11,7 @@ using System.Text;
 
 using ILCompiler.DependencyAnalysis;
 using Internal.JitInterface;
+using Internal.Text;
 using Internal.TypeSystem;
 using Internal.TypeSystem.TypesDebugInfo;
 
@@ -44,11 +45,11 @@ namespace ILCompiler.ObjectWriter
 
         private readonly uint _classVTableTypeIndex;
         private readonly uint _vfuncTabTypeIndex;
-        private readonly List<(string, uint)> _userDefinedTypes = new();
+        private readonly List<(Utf8String, uint)> _userDefinedTypes = new();
 
         private uint _nextTypeIndex = 0x1000;
 
-        public IList<(string, uint)> UserDefinedTypes => _userDefinedTypes;
+        public IList<(Utf8String, uint)> UserDefinedTypes => _userDefinedTypes;
 
         public CodeViewTypesBuilder(NameMangler nameMangler, int targetPointerSize, SectionWriter sectionWriter)
         {
@@ -382,7 +383,7 @@ namespace ILCompiler.ObjectWriter
             return _nextTypeIndex++;
         }
 
-        public string GetMangledName(TypeDesc type)
+        public Utf8String GetMangledName(TypeDesc type)
         {
             return _nameMangler.GetMangledTypeName(type);
         }
@@ -442,6 +443,13 @@ namespace ILCompiler.ObjectWriter
             {
                 BinaryPrimitives.WriteUInt64LittleEndian(_bufferWriter.GetSpan(sizeof(ulong)), value);
                 _bufferWriter.Advance(sizeof(ulong));
+            }
+
+            public void Write(Utf8String value)
+            {
+                int byteCount = value.Length + 1;
+                value.AsSpan().CopyTo(_bufferWriter.GetSpan(byteCount));
+                _bufferWriter.Advance(byteCount);
             }
 
             public void Write(string value)

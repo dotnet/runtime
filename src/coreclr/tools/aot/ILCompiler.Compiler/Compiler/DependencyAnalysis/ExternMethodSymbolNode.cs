@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Internal.Text;
 using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
@@ -15,7 +16,8 @@ namespace ILCompiler.DependencyAnalysis
 
         public ExternMethodSymbolNode(NodeFactory factory, MethodDesc method, bool isUnboxing = false)
             : base(isUnboxing ? UnboxingStubNode.GetMangledName(factory.NameMangler, method) :
-                  factory.NameMangler.GetMangledMethodName(method))
+                  factory.NameMangler.GetMangledMethodName(method),
+                  method)
         {
             _method = method;
         }

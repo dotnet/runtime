@@ -1,8 +1,9 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 namespace System.Text
@@ -230,7 +231,7 @@ namespace System.Text
             // Copy the existing leftover data plus as many bytes as possible of the new incoming data
             // into a temporary concated buffer, then get its char count by decoding it.
 
-            Span<byte> combinedBuffer = stackalloc byte[4];
+            Span<byte> combinedBuffer = [0, 0, 0, 0];
             combinedBuffer = combinedBuffer.Slice(0, ConcatInto(GetLeftoverData(), bytes, combinedBuffer));
             int charCount = 0;
 
@@ -286,7 +287,7 @@ namespace System.Text
             // Copy the existing leftover data plus as many bytes as possible of the new incoming data
             // into a temporary concated buffer, then transcode it from bytes to chars.
 
-            Span<byte> combinedBuffer = stackalloc byte[4];
+            Span<byte> combinedBuffer = [0, 0, 0, 0];
             combinedBuffer = combinedBuffer.Slice(0, ConcatInto(GetLeftoverData(), bytes, combinedBuffer));
             int charsWritten = 0;
 

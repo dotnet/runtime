@@ -58,6 +58,10 @@ module.exports = {
         "array-bracket-spacing": ["error"],
         "space-infix-ops": ["error"],
         "func-call-spacing": ["error", "never"],
-        "space-before-function-paren": ["error", "never"],
+        "space-before-function-paren": ["error", {
+            "anonymous": "always",
+            "named": "never",
+            "asyncArrow": "always"
+        }],
     }
 };

@@ -9,6 +9,8 @@ public class MainApp_Inline
 {
     private int _v;
 
+    public MainApp_Inline() { }
+
     private MainApp_Inline(int i)
     {
         switch (i)

@@ -35,12 +35,23 @@ namespace System.Net
 
             X509Certificate2? result = null;
 
-            SafeX509ChainHandle chainHandle = securityContext switch
+            SafeX509ChainHandle? chainHandle = securityContext switch
             {
-                SafeDeleteNwContext nwContext => nwContext.PeerX509ChainHandle!,
+                SafeDeleteNwContext nwContext => nwContext.PeerX509ChainHandle,
                 SafeDeleteSslContext sslContext => Interop.AppleCrypto.SslCopyCertChain(sslContext.SslContext),
                 _ => throw new ArgumentException("Invalid context type", nameof(securityContext))
             };
+
+            if (chainHandle is null || chainHandle.IsInvalid)
+            {
+                if (securityContext is SafeDeleteSslContext)
+                {
+                    chainHandle?.Dispose();
+                }
+
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Log.RemoteCertificate(result);
+                return result;
+            }
 
             try
             {
@@ -142,9 +153,22 @@ namespace System.Net
 
                     using (SafeCFDataHandle cfData = new SafeCFDataHandle(element, ownsHandle: false))
                     {
-                        byte[] dnData = Interop.CoreFoundation.CFGetData(cfData);
-                        X500DistinguishedName dn = new X500DistinguishedName(dnData);
-                        distinguishedNames[i] = dn.Name;
+                        bool addedRef = false;
+                        try
+                        {
+                            cfData.DangerousAddRef(ref addedRef);
+
+                            ReadOnlySpan<byte> dnData = Interop.CoreFoundation.CFDataDangerousGetSpan(cfData);
+                            X500DistinguishedName dn = new X500DistinguishedName(dnData);
+                            distinguishedNames[i] = dn.Name;
+                        }
+                        finally
+                        {
+                            if (addedRef)
+                            {
+                                cfData.DangerousRelease();
+                            }
+                        }
                     }
                 }
 

@@ -10,7 +10,7 @@ namespace System.Data.OleDb.Tests
     [Collection("System.Data.OleDb")] // not let tests run in parallel
     public class OleDbParameterTests : OleDbTestBase
     {
-        [ConditionalFact(Helpers.IsDriverAvailable)]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.GetIsDriverAvailable))]
         public void OleDbParameterCollection_MultipleScenarios_Success()
         {
             OleDbParameterCollection opc = command.Parameters;
@@ -86,7 +86,7 @@ namespace System.Data.OleDb.Tests
             Assert.Throws<ArgumentException>(() => opc.Remove(new OleDbParameter()));
         }
 
-        [ConditionalFact(Helpers.IsDriverAvailable)]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.GetIsDriverAvailable))]
         public void IsNullable_Default_False()
         {
             var oleDbParameter = new OleDbParameter();
@@ -95,7 +95,7 @@ namespace System.Data.OleDb.Tests
             Assert.True(oleDbParameter.IsNullable);
         }
 
-        [ConditionalTheory(Helpers.IsDriverAvailable)]
+        [ConditionalTheory(typeof(Helpers), nameof(Helpers.GetIsDriverAvailable))]
         [MemberData(nameof(OleDbTypes))]
         public void Ctor_SetOleDbType_Success(OleDbType type)
         {
@@ -103,13 +103,13 @@ namespace System.Data.OleDb.Tests
             Assert.Equal(type, oleDbParameter.OleDbType);
         }
 
-        [ConditionalFact(Helpers.IsDriverAvailable)]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.GetIsDriverAvailable))]
         public void Ctor_InvalidOleDbType_Throws()
         {
             Assert.Throws<ArgumentOutOfRangeException>(() => new OleDbParameter(name: "ParameterName", dataType: (OleDbType)500));
         }
 
-        [ConditionalFact(Helpers.IsDriverAvailable)]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.GetIsDriverAvailable))]
         public void ResetOleDbType_ResetsToVarWChar()
         {
             var oleDbParameter = new OleDbParameter();
@@ -122,7 +122,7 @@ namespace System.Data.OleDb.Tests
             Assert.Equal(OleDbType.VarWChar, oleDbParameter.OleDbType);
         }
 
-        [ConditionalFact(Helpers.IsDriverAvailable)]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.GetIsDriverAvailable))]
         public void ResetDbType_ResetsToVarWChar()
         {
             var oleDbParameter = new OleDbParameter();
@@ -135,7 +135,7 @@ namespace System.Data.OleDb.Tests
             Assert.Equal(DbType.String, oleDbParameter.DbType);
         }
 
-        [ConditionalFact(Helpers.IsDriverAvailable)]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.GetIsDriverAvailable))]
         public void SourceColumn_Success()
         {
             var oleDbParameter = new OleDbParameter(default, default, default, srcColumn: null);
@@ -145,7 +145,7 @@ namespace System.Data.OleDb.Tests
             Assert.Equal("someSourceColumn", oleDbParameter.SourceColumn);
         }
 
-        [ConditionalFact(Helpers.IsDriverAvailable)]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.GetIsDriverAvailable))]
         public void PrecisionAndScale_Success()
         {
             var oleDbParameter = new OleDbParameter(default, default, default, default, default, precision: default, scale: default,
@@ -160,7 +160,7 @@ namespace System.Data.OleDb.Tests
             Assert.Equal(4, oleDbParameter.Scale);
         }
 
-        [ConditionalFact(Helpers.IsDriverAvailable)]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.GetIsDriverAvailable))]
         public void SourceColumnNullMapping_Success()
         {
             var oleDbParameter = new OleDbParameter();
@@ -170,7 +170,7 @@ namespace System.Data.OleDb.Tests
             Assert.True(oleDbParameter.SourceColumnNullMapping);
         }
 
-        [ConditionalFact(Helpers.IsDriverAvailable)]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.GetIsDriverAvailable))]
         public void Size_InvalidSizeValue_Throws()
         {
             Assert.Throws<ArgumentException>(() => new OleDbParameter(default, default, size: -2));
@@ -183,7 +183,7 @@ namespace System.Data.OleDb.Tests
             Assert.Throws<ArgumentException>(() => oleDbParameter.Size = -2);
         }
 
-        [ConditionalFact(Helpers.IsDriverAvailable)]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.GetIsDriverAvailable))]
         public void ParameterDirection_InvalidEnumValue_Throws()
         {
             var oleDbParameter = new OleDbParameter(default, default, default, (ParameterDirection)0,
@@ -196,7 +196,7 @@ namespace System.Data.OleDb.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => oleDbParameter.Direction = (ParameterDirection)0);
         }
 
-        [ConditionalTheory(Helpers.IsDriverAvailable)]
+        [ConditionalTheory(typeof(Helpers), nameof(Helpers.GetIsDriverAvailable))]
         [MemberData(nameof(ParameterDirections))]
         public void ParameterDirection_Success(ParameterDirection direction)
         {
@@ -205,7 +205,7 @@ namespace System.Data.OleDb.Tests
             Assert.Equal(direction, oleDbParameter.Direction);
         }
 
-        [ConditionalFact(Helpers.IsDriverAvailable)]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.GetIsDriverAvailable))]
         public void SourceVersion_InvalidEnumValue_Throws()
         {
             Assert.Throws<ArgumentOutOfRangeException>(() => new OleDbParameter(default, default, default, default,
@@ -218,7 +218,7 @@ namespace System.Data.OleDb.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => oleDbParameter.SourceVersion = (DataRowVersion)0);
         }
 
-        [ConditionalTheory(Helpers.IsDriverAvailable)]
+        [ConditionalTheory(typeof(Helpers), nameof(Helpers.GetIsDriverAvailable))]
         [MemberData(nameof(DataRowVersions))]
         public void SourceVersion_Success(DataRowVersion dataRowVersion)
         {
@@ -227,7 +227,7 @@ namespace System.Data.OleDb.Tests
             Assert.Equal(dataRowVersion, oleDbParameter.SourceVersion);
         }
 
-        [ConditionalFact(Helpers.IsDriverAvailable)]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.GetIsDriverAvailable))]
         public void Value_Success()
         {
             const string ParameterName = "Name";

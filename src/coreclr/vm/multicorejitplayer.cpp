@@ -18,10 +18,10 @@
 #include "stubgen.h"
 #include "eventtrace.h"
 #include "array.h"
-#include "fstream.h"
 #include "hash.h"
 #include "clrex.h"
 #include "minipal/time.h"
+#include <dn-stdio.h>
 
 #include "appdomain.hpp"
 
@@ -87,7 +87,7 @@ void MulticoreJitCodeStorage::StoreMethodCode(MethodDesc * pMD, MulticoreJitCode
             MulticoreJitTrace((
                 "%p %p %d %d StoredMethodCode",
                 pMD,
-                codeInfo.GetEntryPoint(),
+                (void*)codeInfo.GetEntryPoint(),
                 (int)codeInfo.WasTier0(),
                 (int)codeInfo.JitSwitchedToOptimized()));
         }
@@ -145,7 +145,7 @@ MulticoreJitCodeInfo MulticoreJitCodeStorage::QueryAndRemoveMethodCode(MethodDes
                 MulticoreJitTrace((
                     "%p %p %d %d QueryAndRemoveMethodCode",
                     pMethod,
-                    codeInfo.GetEntryPoint(),
+                    (void*)codeInfo.GetEntryPoint(),
                     (int)codeInfo.WasTier0(),
                     (int)codeInfo.JitSwitchedToOptimized()));
             }
@@ -426,7 +426,7 @@ bool MulticoreJitManager::ModuleHasNoCode(Module * pModule)
 }
 
 
-// We only support default load context, non dynamic module, non domain neutral (needed for dependency)
+// We only support default load context, non dynamic module (needed for dependency)
 bool MulticoreJitManager::IsSupportedModule(Module * pModule, bool fMethodJit)
 {
     CONTRACTL
@@ -450,7 +450,7 @@ bool MulticoreJitManager::IsSupportedModule(Module * pModule, bool fMethodJit)
         return false;
     }
 
-    if (pPEAssembly->GetPath().IsEmpty()) // Ignore in-memory modules
+    if (!pPEAssembly->GetPEImage()->IsInBundle() && pPEAssembly->GetPath().IsEmpty()) // Ignore in-memory modules
     {
         return false;
     }
@@ -1029,22 +1029,17 @@ HRESULT MulticoreJitProfilePlayer::ReadCheckFile(const WCHAR * pFileName)
     HRESULT hr = S_OK;
 
     {
-        HANDLE hFile = WszCreateFile(pFileName, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-
-        if (hFile == INVALID_HANDLE_VALUE)
+        FILE* fp;
+        if (fopen_lp(&fp, pFileName, W("rb")) != 0)
         {
             return COR_E_FILENOTFOUND;
         }
 
         HeaderRecord header;
 
-        DWORD cbRead = 0;
+        size_t cbRead = fread(&header, 1, sizeof(header), fp);
 
-        if (! ::ReadFile(hFile, & header, sizeof(header), &cbRead, NULL))
-        {
-            hr = COR_E_BADIMAGEFORMAT;
-        }
-        else if (cbRead != sizeof(header))
+        if (cbRead != sizeof(header))
         {
             hr = COR_E_BADIMAGEFORMAT;
         }
@@ -1072,7 +1067,8 @@ HRESULT MulticoreJitProfilePlayer::ReadCheckFile(const WCHAR * pFileName)
 
         if (SUCCEEDED(hr))
         {
-            m_nFileSize = SafeGetFileSize(hFile, 0);
+            uint64_t fSize = fgetsize(fp);
+            m_nFileSize = fSize > UINT32_MAX ? UINT32_MAX : (unsigned int)fSize;
 
             if (m_nFileSize > sizeof(header))
             {
@@ -1084,7 +1080,7 @@ HRESULT MulticoreJitProfilePlayer::ReadCheckFile(const WCHAR * pFileName)
                 {
                     hr = E_OUTOFMEMORY;
                 }
-                else if (::ReadFile(hFile, m_pFileBuffer, m_nFileSize, & cbRead, NULL))
+                else if ((cbRead = fread(m_pFileBuffer, 1, m_nFileSize, fp)) > 0)
                 {
                     if (cbRead != m_nFileSize)
                     {
@@ -1102,7 +1098,7 @@ HRESULT MulticoreJitProfilePlayer::ReadCheckFile(const WCHAR * pFileName)
             }
         }
 
-        CloseHandle(hFile);
+        fclose(fp);
 
         _FireEtwMulticoreJit(W("PLAYER"), W("Header"), hr, m_headerModuleCount, header.methodCount);
     }
@@ -1131,9 +1127,12 @@ HRESULT MulticoreJitProfilePlayer::PlayProfile()
 
     unsigned nSize = m_nFileSize;
 
-    MulticoreJitTrace(("PlayProfile %d bytes in (%s)",
-        nSize,
-        GetAppDomain()->GetFriendlyName()));
+    {
+        MAKE_UTF8PTR_FROMWIDE(pFriendlyName, GetAppDomain()->GetFriendlyName());
+        MulticoreJitTrace(("PlayProfile %d bytes in (%s)",
+            nSize,
+            pFriendlyName));
+    }
 
     while ((SUCCEEDED(hr)) && (nSize > sizeof(unsigned)))
     {
@@ -1333,7 +1332,6 @@ HRESULT MulticoreJitProfilePlayer::JITThreadProc(Thread * pThread)
         NOTHROW;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -1369,7 +1367,6 @@ DWORD WINAPI MulticoreJitProfilePlayer::StaticJITThreadProc(void *args)
         GC_TRIGGERS;
         MODE_ANY;
         ENTRY_POINT;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 

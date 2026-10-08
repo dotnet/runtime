@@ -25,7 +25,7 @@ using Xunit.Abstractions;
 
 namespace System.Net.Mail.Tests
 {
-    [SkipOnPlatform(TestPlatforms.Browser, "SmtpClient is not supported on Browser")]
+    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi, "SmtpClient is not supported on Browser and WASI")]
     public class SmtpClientTest : FileCleanupTestBase
     {
         private SmtpClient _smtp;
@@ -315,7 +315,7 @@ namespace System.Net.Mail.Tests
 
             // The server will introduce some fake latency so that the operation can be canceled before the request completes
             CancellationTokenSource cts = new CancellationTokenSource();
-            
+
             server.OnConnected += _ => cts.Cancel();
 
             var message = new MailMessage("foo@internet.com", "bar@internet.com", "Foo", "Bar");

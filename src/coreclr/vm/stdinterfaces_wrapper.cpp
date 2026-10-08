@@ -1033,3 +1033,7 @@ const StdInterfaceDesc<3> g_IAgileObject =
         (UINT_PTR*)Unknown_ReleaseSpecial
     }
 };
+
+const TADDR g_cdacTearOffAddRef        = (TADDR)(void*)Unknown_AddRef;
+const TADDR g_cdacTearOffAddRefSimple  = (TADDR)(void*)Unknown_AddRefSpecial;
+const TADDR g_cdacTearOffAddRefSimpleInner = (TADDR)(void*)Unknown_AddRefInner;

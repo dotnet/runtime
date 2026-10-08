@@ -4,23 +4,14 @@
 /***
 *input.c - C formatted input, used by scanf, etc.
 *
-
-*
 *Purpose:
 *       defines _input() to do formatted input; called from scanf(),
-*       etc. functions.  This module defines _cscanf() instead when
-*       CPRFLAG is defined.  The file cscanf.c defines that symbol
-*       and then includes this file in order to implement _cscanf().
+*       etc. functions.
 *
 *Note:
 *       this file is included in safecrt.lib build directly, plese refer
 *       to safecrt_[w]input_s.c
-*
 *******************************************************************************/
-
-
-#define ALLOW_RANGE /* enable "%[a-z]"-style scansets */
-
 
 /* temporary work-around for compiler without 64-bit support */
 
@@ -49,7 +40,6 @@
 #define _free_crt free
 
 #define _FASSIGN(flag, argument, number, dec_point, locale) _safecrt_fassign((flag), (argument), (number))
-#define _WFASSIGN(flag, argument, number, dec_point, locale) _safecrt_wfassign((flag), (argument), (number))
 
 #if defined (UNICODE)
 #define ALLOC_TABLE 1
@@ -57,22 +47,9 @@
 #define ALLOC_TABLE 0
 #endif  /* defined (UNICODE) */
 
-#define HEXTODEC(chr)   _hextodec(chr)
-
 #define LEFT_BRACKET    ('[' | ('a' - 'A')) /* 'lowercase' version */
 
 static int __cdecl _hextodec(_TCHAR);
-#ifdef CPRFLAG
-
-#define INC()           (++charcount, _inc())
-#define UN_INC(chr)     (--charcount, _un_inc(chr))
-#define EAT_WHITE()     _whiteout(&charcount)
-
-static int __cdecl _inc(void);
-static void __cdecl _un_inc(int);
-static int __cdecl _whiteout(int *);
-
-#else  /* CPRFLAG */
 
 #define INC()           (++charcount, _inc(stream))
 #define UN_INC(chr)     (--charcount, _un_inc(chr, stream))
@@ -82,18 +59,11 @@ static int __cdecl _inc(miniFILE *);
 static void __cdecl _un_inc(int, miniFILE *);
 static int __cdecl _whiteout(int *, miniFILE *);
 
-#endif  /* CPRFLAG */
-
 #undef _ISDIGIT
 #undef _ISXDIGIT
 
-#ifndef _UNICODE
 #define _ISDIGIT(chr)   isdigit((unsigned char)chr)
 #define _ISXDIGIT(chr)  isxdigit((unsigned char)chr)
-#else  /* _UNICODE */
-#define _ISDIGIT(chr)   ( !(chr & 0xff00) && isdigit( ((chr) & 0x00ff) ) )
-#define _ISXDIGIT(chr)  ( !(chr & 0xff00) && isxdigit( ((chr) & 0x00ff) ) )
-#endif  /* _UNICODE */
 
 #define MUL10(x)        ( (((x)<<2) + (x))<<1 )
 
@@ -110,7 +80,6 @@ static int __cdecl _whiteout(int *, miniFILE *);
 *
 *  Return:
 *       FALSE if more memory needed and the reallocation failed.
-*
 *******************************************************************************/
 
 static int __check_float_string(size_t nFloatStrUsed,
@@ -158,7 +127,6 @@ static int __check_float_string(size_t nFloatStrUsed,
     return TRUE;
 }
 
-
 #define ASCII       32           /* # of bytes needed to hold 256 bits */
 
 #define SCAN_SHORT     0         /* also for FLOAT */
@@ -168,12 +136,7 @@ static int __check_float_string(size_t nFloatStrUsed,
 #define SCAN_NEAR    0
 #define SCAN_FAR     1
 
-#ifndef _UNICODE
 #define TABLESIZE    ASCII
-#else  /* _UNICODE */
-#define TABLESIZE    (ASCII * 256)
-#endif  /* _UNICODE */
-
 
 /***
 *int _input(stream, format, arglist), static int input(format, arglist)
@@ -201,18 +164,12 @@ static int __check_float_string(size_t nFloatStrUsed,
 *Exit:
 *   returns number of items assigned and fills in data items
 *   returns EOF if error or EOF found on stream before 1st data item matched
-*
-*Exceptions:
-*
 *******************************************************************************/
 
-    #define _INTRN_LOCALE_CONV( x ) localeconv()
+#define _INTRN_LOCALE_CONV( x ) localeconv()
 
 #ifndef _UNICODE
-        int __cdecl __tinput_s (miniFILE* stream, const _TUCHAR* format, va_list arglist)
-#else
-        int __cdecl __twinput_s (miniFILE* stream, const _TUCHAR* format, va_list arglist)
-#endif  /* _UNICODE */
+int __cdecl __tinput_s (miniFILE* stream, const _TUCHAR* format, va_list arglist)
 {
     _TCHAR floatstring[_CVTBUFSIZE + 1];
     _TCHAR *pFloatStr=floatstring;
@@ -235,10 +192,7 @@ static int __check_float_string(size_t nFloatStrUsed,
     void *pointer=NULL;                 /* points to user data receptacle    */
     void *start;                        /* indicate non-empty string         */
 
-
-#ifndef _UNICODE
     char16_t wctemp=L'\0';
-#endif  /* _UNICODE */
     _TUCHAR *scanptr;                   /* for building "table" data         */
     int ch = 0;
     int charcount;                      /* total number of chars read        */
@@ -257,7 +211,6 @@ static int __check_float_string(size_t nFloatStrUsed,
 
 /* Neither coerceshort nor farone are need for the 386 */
 
-
     char done_flag;                     /* general purpose loop monitor      */
     char longone;                       /* 0 = SHORT, 1 = LONG, 2 = L_DOUBLE */
 #if _INTEGRAL_MAX_BITS >= 64
@@ -274,17 +227,13 @@ static int __check_float_string(size_t nFloatStrUsed,
 
     _TCHAR decimal;
 
-
     _TUCHAR rngch;
     _TUCHAR last;
     _TUCHAR prevchar;
     _TCHAR tch;
 
     _VALIDATE_RETURN( (format != NULL), EINVAL, EOF);
-
-#ifndef CPRFLAG
     _VALIDATE_RETURN( (stream != NULL), EINVAL, EOF);
-#endif  /* CPRFLAG */
 
     /*
     count = # fields assigned
@@ -314,7 +263,6 @@ static int __check_float_string(size_t nFloatStrUsed,
         }
 
         if (_T('%') == *format) {
-
             number = 0;
             prevchar = 0;
             width = widthset = started = 0;
@@ -441,15 +389,9 @@ DEFAULT_LABEL:
 
             if (!widechar) {    /* use case if not explicitly specified */
                 if ((*format == _T('S')) || (*format == _T('C')))
-#ifdef _UNICODE
-                    --widechar;
-                else
-                    ++widechar;
-#else  /* _UNICODE */
                     ++widechar;
                 else
                     --widechar;
-#endif  /* _UNICODE */
             }
 
             /* switch to lowercase to allow %E,%G, and to
@@ -472,7 +414,6 @@ DEFAULT_LABEL:
             }
 
             if (!widthset || width) {
-
 #ifdef _SECURE_SCANF
                 if(!suppress && (comchr == _T('c') || comchr == _T('s') || comchr == LEFT_BRACKET)) {
 
@@ -514,13 +455,11 @@ DEFAULT_LABEL:
                             fl_wchar_arg++;
                         goto scanit;
 
-
                     case _T('s'):
                 /*  case _T('S'):  */
                         if(widechar > 0)
                             fl_wchar_arg++;
                         goto scanit;
-
 
                     case LEFT_BRACKET :   /* scanset */
                         if (widechar>0)
@@ -543,14 +482,12 @@ DEFAULT_LABEL:
 #endif  /* ALLOC_TABLE */
                         memset(table, 0, TABLESIZE);
 
-
                         if (LEFT_BRACKET == comchr)
                             if (_T(']') == *scanptr) {
                                 prevchar = _T(']');
                                 ++scanptr;
 
                                 table[ _T(']') >> 3] = 1 << (_T(']') & 7);
-
                             }
 
                         while (_T(']') != *scanptr) {
@@ -577,10 +514,8 @@ DEFAULT_LABEL:
                                     table[rngch >> 3] |= 1 << (rngch & 7);
 
                                 prevchar = 0;
-
                             }
                         }
-
 
                         if (!*scanptr)
                             goto error_return;      /* trunc'd format string */
@@ -589,7 +524,6 @@ DEFAULT_LABEL:
 
                         if (LEFT_BRACKET == comchr)
                             format = scanptr;
-
 scanit:
                         start = pointer;
 
@@ -615,12 +549,9 @@ scanit:
                         }
 #endif  /* _SECURE_SCANF */
                         while ( !widthset || width-- ) {
-
                             ch = INC();
                             if (
-#ifndef CPRFLAG
                                  (_TEOF != ch) &&
-#endif  /* CPRFLAG */
                                    // char conditions
                                  ( ( comchr == _T('c')) ||
                                    // string conditions !isspace()
@@ -643,17 +574,10 @@ scanit:
                                         break;
                                     }
 #endif  /* _SECURE_SCANF */
-#ifndef _UNICODE
                                     if (fl_wchar_arg) {
                                         wctemp = W('?');
                                         char temp[2];
                                         temp[0] = (char) ch;
-#if 0       // we are not supporting multibyte input strings
-                                        if (isleadbyte((unsigned char)ch))
-                                        {
-                                            temp[1] = (char) INC();
-                                        }
-#endif  /* 0 */
                                         _MBTOWC(&wctemp, temp, MB_CUR_MAX);
                                         *(char16_t UNALIGNED *)pointer = wctemp;
                                         /* just copy W('?') if mbtowc fails, errno is set by mbtowc */
@@ -662,57 +586,12 @@ scanit:
                                         --array_width;
 #endif  /* _SECURE_SCANF */
                                     } else
-#else  /* _UNICODE */
-                                    if (fl_wchar_arg) {
-                                        *(char16_t UNALIGNED *)pointer = (char16_t)ch;
-                                        pointer = (char16_t *)pointer + 1;
-#ifdef _SECURE_SCANF
-                                        --array_width;
-#endif  /* _SECURE_SCANF */
-                                    } else
-#endif  /* _UNICODE */
                                     {
-#ifndef _UNICODE
                                     *(char *)pointer = (char)ch;
                                     pointer = (char *)pointer + 1;
 #ifdef _SECURE_SCANF
                                     --array_width;
 #endif  /* _SECURE_SCANF */
-#else  /* _UNICODE */
-                                    int temp = 0;
-#ifndef _SECURE_SCANF
-                                    /* convert wide to multibyte */
-                                    if (_ERRCHECK_EINVAL_ERANGE(wctomb_s(&temp, (char *)pointer, MB_LEN_MAX, ch)) == 0)
-                                    {
-                                        /* do nothing if wctomb fails, errno will be set to EILSEQ */
-                                        pointer = (char *)pointer + temp;
-                                    }
-#else  /* _SECURE_SCANF */
-                                    /* convert wide to multibyte */
-                                    if (array_width >= ((size_t)MB_CUR_MAX))
-                                    {
-                                        temp = wctomb((char *)pointer, ch);
-                                    }
-                                    else
-                                    {
-                                        char tmpbuf[MB_LEN_MAX];
-                                        temp = wctomb(tmpbuf, ch);
-                                        if (temp > 0 && ((size_t)temp) > array_width)
-                                        {
-                                            /* We have exhausted the user's buffer */
-                                            enomem = 1;
-                                            break;
-                                        }
-                                        memcpy(pointer, tmpbuf, temp);
-                                    }
-                                    if (temp > 0)
-                                    {
-                                        /* do nothing if wctomb fails, errno will be set to EILSEQ */
-                                        pointer = (char *)pointer + temp;
-                                        array_width -= temp;
-                                    }
-#endif  /* _SECURE_SCANF */
-#endif  /* _UNICODE */
                                     }
                                 } /* suppress */
                                 else {
@@ -976,7 +855,6 @@ assign_num:
                             goto assign_num; /* found in number code above */
                         break;
 
-
                     case _T('e') :
                  /* case _T('E') : */
                     case _T('f') :
@@ -997,7 +875,6 @@ f_incwidth:
                         if (!widthset)              /* must watch width */
                             width = -1;
 
-
                         /* now get integral part */
 
                         while (_ISDIGIT(ch) && width--) {
@@ -1014,15 +891,7 @@ f_incwidth:
                             ch = INC();
                         }
 
-#ifdef _UNICODE
-                        /* convert decimal point to wide-char */
-                        /* if mbtowc fails (should never happen), we use L'.' */
-                        decimal = L'.';
-                        _MBTOWC(&decimal, _INTRN_LOCALE_CONV(_loc_update)->decimal_point, MB_CUR_MAX);
-#else  /* _UNICODE */
-
                         decimal=*((_INTRN_LOCALE_CONV(_loc_update))->decimal_point);
-#endif  /* _UNICODE */
 
                         /* now check for decimal */
                         if (decimal == (char)ch && width--) {
@@ -1086,7 +955,6 @@ f_incwidth2:
                                     ch = INC();
                             }
 
-
                             while (_ISDIGIT(ch) && width--) {
                                 ++started;
                                 pFloatStr[nFloatStrUsed++] = (_TCHAR)ch;
@@ -1109,11 +977,7 @@ f_incwidth2:
                             if (!suppress) {
                                 ++count;
                                 pFloatStr[nFloatStrUsed]= _T('\0');
-#ifdef _UNICODE
-                                _WFASSIGN( longone-1, pointer, pFloatStr, (char)decimal, _loc_update.GetLocaleT());
-#else  /* _UNICODE */
                                 _FASSIGN( longone-1, pointer, pFloatStr, (char)decimal, _loc_update.GetLocaleT());
-#endif  /* _UNICODE */
                             } else /*NULL */;
                         else
                             goto error_return;
@@ -1158,28 +1022,11 @@ f_incwidth2:
                 UN_INC(ch);
                 goto error_return;
                 }
-#if 0       // we are not supporting multibyte input strings
-#ifndef _UNICODE
-            if (isleadbyte((unsigned char)ch))
-                {
-                int ch2;
-                if ((int)*format++ != (ch2=INC()))
-                    {
-                    UN_INC(ch2);
-                    UN_INC(ch);
-                    goto error_return;
-                    }
 
-                    --charcount; /* only count as one character read */
-                }
-#endif  /* _UNICODE */
-#endif
             }
 
-#ifndef CPRFLAG
         if ( (_TEOF == ch) && ((*format != _T('%')) || (*(format + 1) != _T('n'))) )
             break;
-#endif  /* CPRFLAG */
 
     }  /* WHILE (*format) */
 
@@ -1195,12 +1042,10 @@ error_return:
         _free_crt(pFloatStr);
     }
 
-#ifndef CPRFLAG
     if (_TEOF == ch)
         /* If any fields were matched or assigned, return count */
         return ( (count || match) ? count : EOF);
     else
-#endif  /* CPRFLAG */
 #ifdef _SECURE_SCANF
         if(format_error == TRUE) {
             _VALIDATE_RETURN( ("Invalid Input Format" && 0), EINVAL, count);
@@ -1209,6 +1054,7 @@ error_return:
         return count;
 
 }
+#endif // _UNICODE
 
 /* _hextodec() returns a value of 0-15 and expects a char 0-9, a-f, A-F */
 /* _inc() is the one place where we put the actual getc code. */
@@ -1218,40 +1064,6 @@ static int __cdecl _hextodec ( _TCHAR chr)
 {
     return _ISDIGIT(chr) ? chr : (chr & ~(_T('a') - _T('A'))) - _T('A') + 10 + _T('0');
 }
-
-#ifdef CPRFLAG
-
-static int __cdecl _inc(void)
-{
-    return (_gettche_nolock());
-}
-
-static void __cdecl _un_inc(int chr)
-{
-    if (_TEOF != chr) {
-        _ungettch_nolock(chr);
-    }
-}
-
-static int __cdecl _whiteout(REG1 int* counter)
-{
-    REG2 int ch;
-
-    do
-    {
-        ++*counter;
-        ch = _inc();
-
-        if (ch == _TEOF)
-        {
-            break;
-        }
-    }
-    while(_istspace((_TUCHAR)ch));
-    return ch;
-}
-
-#else  /* CPRFLAG */
 
 static int __cdecl _inc(miniFILE* fileptr)
 {
@@ -1282,5 +1094,3 @@ static int __cdecl _whiteout(int* counter, miniFILE* fileptr)
     while(_istspace((_TUCHAR)ch));
     return ch;
 }
-
-#endif  /* CPRFLAG */

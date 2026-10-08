@@ -19,12 +19,12 @@ namespace System.Globalization.Tests
             yield return new object[] { new DateTime(2007, 1, 1), -1, new DateTime(2006, 12, 1) };
 
             // Boundary values
-            yield return new object[] { new DateTime(1868, 9, 8), 1, new DateTime(1868, 10, 8) };
-            yield return new object[] { new DateTime(1868, 10, 8), -1, new DateTime(1868, 9, 8) };
+            yield return new object[] { new DateTime(1868, 10, 23), 1, new DateTime(1868, 11, 23) };
+            yield return new object[] { new DateTime(1868, 11, 23), -1, new DateTime(1868, 10, 23) };
             yield return new object[] { new DateTime(9999, 11, 30), 1, new DateTime(9999, 12, 30) };
             yield return new object[] { new DateTime(9999, 12, 30), -1, new DateTime(9999, 11, 30) };
             yield return new object[] { DateTime.MaxValue, 0, DateTime.MaxValue };
-            yield return new object[] { new DateTime(1868, 9, 8), 0, new DateTime(1868, 9, 8) };
+            yield return new object[] { new DateTime(1868, 10, 23), 0, new DateTime(1868, 10, 23) };
 
             // Day is not in the month
             yield return new object[] { new DateTime(2006, 10, 31), 1, new DateTime(2006, 11, 30) };

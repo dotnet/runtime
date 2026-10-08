@@ -24,5 +24,9 @@ internal static partial class Interop
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetPlatformSignalNumber")]
         [SuppressGCTransition]
         internal static partial int GetPlatformSignalNumber(PosixSignal signal);
+
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetPlatformSIGSTOP")]
+        [SuppressGCTransition]
+        internal static partial int GetPlatformSIGSTOP();
     }
 }

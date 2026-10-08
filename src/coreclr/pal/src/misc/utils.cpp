@@ -2,25 +2,22 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*++
-
-
-
 Module Name:
-
     misc/utils.c
 
 Abstract:
-
     Miscellaneous helper functions for the PAL, which don't fit anywhere else
-
-
-
 --*/
 
 #include "pal/dbgmsg.h"
 SET_DEFAULT_DEBUG_CHANNEL(MISC); // some headers have code with asserts, so do this first
 
 #include "pal/palinternal.h"
+
+#if defined(TARGET_WASI)
+#include "pal/wasi/pal_wasi_missing.h"
+#endif
+
 #if HAVE_VM_ALLOCATE
 #include <mach/message.h>
 #endif //HAVE_VM_ALLOCATE
@@ -38,125 +35,6 @@ SET_DEFAULT_DEBUG_CHANNEL(MISC); // some headers have code with asserts, so do t
 // defdbgchan defined by SET_DEFAULT_DEBUG_CHANNEL. Therefore, the include statement
 // should be placed after the SET_DEFAULT_DEBUG_CHANNEL(MISC)
 #include <safemath.h>
-
-/*++
-Function:
-  UTIL_inverse_wcspbrk
-
-  Opposite of wcspbrk : searches a string for the first character NOT in the
-  given set
-
-Parameters :
-    LPWSTR lpwstr :   string to search
-    LPCWSTR charset : list of characters to search for
-
-Return value :
-    pointer to first character of lpwstr that isn't in the set
-    NULL if all characters are in the set
---*/
-LPWSTR UTIL_inverse_wcspbrk(LPWSTR lpwstr, LPCWSTR charset)
-{
-    while(*lpwstr)
-    {
-        if(NULL == PAL_wcschr(charset,*lpwstr))
-        {
-            return lpwstr;
-        }
-        lpwstr++;
-    }
-    return NULL;
-}
-
-
-/*++
-Function :
-    UTIL_IsReadOnlyBitsSet
-
-    Takes a struct stat *
-    Returns true if the file is read only,
---*/
-BOOL UTIL_IsReadOnlyBitsSet( struct stat * stat_data )
-{
-    BOOL bRetVal = FALSE;
-
-    /* Check for read permissions. */
-    if ( stat_data->st_uid == geteuid() )
-    {
-        /* The process owner is the file owner as well. */
-        if ( ( stat_data->st_mode & S_IRUSR ) && !( stat_data->st_mode & S_IWUSR ) )
-        {
-            bRetVal = TRUE;
-        }
-    }
-    else if ( stat_data->st_gid == getegid() )
-    {
-        /* The process's owner is in the same group as the file's owner. */
-        if ( ( stat_data->st_mode & S_IRGRP ) && !( stat_data->st_mode & S_IWGRP ) )
-        {
-            bRetVal = TRUE;
-        }
-    }
-    else
-    {
-        /* Check the other bits to see who can access the file. */
-        if ( ( stat_data->st_mode & S_IROTH ) && !( stat_data->st_mode & S_IWOTH ) )
-        {
-            bRetVal = TRUE;
-        }
-    }
-
-    return bRetVal;
-}
-
-/*++
-Function :
-    UTIL_IsExecuteBitsSet
-
-    Takes a struct stat *
-    Returns true if the file is executable,
---*/
-BOOL UTIL_IsExecuteBitsSet( struct stat * stat_data )
-{
-    BOOL bRetVal = FALSE;
-
-    if ( (stat_data->st_mode & S_IFMT) == S_IFDIR )
-    {
-        return FALSE;
-    }
-
-    /* Check for read permissions. */
-    if ( 0 == geteuid() )
-    {
-        /* The process owner is root */
-        bRetVal = TRUE;
-    }
-    else if ( stat_data->st_uid == geteuid() )
-    {
-        /* The process owner is the file owner as well. */
-        if ( ( stat_data->st_mode & S_IXUSR ) )
-        {
-            bRetVal = TRUE;
-        }
-    }
-    else if ( stat_data->st_gid == getegid() )
-    {
-        /* The process's owner is in the same group as the file's owner. */
-        if ( ( stat_data->st_mode & S_IXGRP ) )
-        {
-            bRetVal = TRUE;
-        }
-    }
-    else
-    {
-        /* Check the other bits to see who can access the file. */
-        if ( ( stat_data->st_mode & S_IXOTH ) )
-        {
-            bRetVal = TRUE;
-        }
-    }
-
-    return bRetVal;
-}
 
 /*++
 Function :
@@ -366,61 +244,3 @@ BOOL IsRunningOnMojaveHardenedRuntime()
 }
 
 #endif // __APPLE__
-
-const char *GetFriendlyErrorCodeString(int errorCode)
-{
-#if HAVE_STRERRORNAME_NP
-    const char *error = strerrorname_np(errorCode);
-    if (error != nullptr)
-    {
-        return error;
-    }
-#else // !HAVE_STRERRORNAME_NP
-    switch (errorCode)
-    {
-        case EACCES: return "EACCES";
-    #if EAGAIN == EWOULDBLOCK
-        case EAGAIN: return "EAGAIN/EWOULDBLOCK";
-    #else
-        case EAGAIN: return "EAGAIN";
-        case EWOULDBLOCK: return "EWOULDBLOCK";
-    #endif
-        case EBADF: return "EBADF";
-        case EBUSY: return "EBUSY";
-        case EDQUOT: return "EDQUOT";
-        case EEXIST: return "EEXIST";
-        case EFAULT: return "EFAULT";
-        case EFBIG: return "EFBIG";
-        case EINVAL: return "EINVAL";
-        case EINTR: return "EINTR";
-        case EIO: return "EIO";
-        case EISDIR: return "EISDIR";
-        case ELOOP: return "ELOOP";
-        case EMFILE: return "EMFILE";
-        case EMLINK: return "EMLINK";
-        case ENAMETOOLONG: return "ENAMETOOLONG";
-        case ENFILE: return "ENFILE";
-        case ENODEV: return "ENODEV";
-        case ENOENT: return "ENOENT";
-        case ENOLCK: return "ENOLCK";
-        case ENOMEM: return "ENOMEM";
-        case ENOSPC: return "ENOSPC";
-    #if ENOTSUP == EOPNOTSUPP
-        case ENOTSUP: return "ENOTSUP/EOPNOTSUPP";
-    #else
-        case ENOTSUP: return "ENOTSUP";
-        case EOPNOTSUPP: return "EOPNOTSUPP";
-    #endif
-        case ENOTDIR: return "ENOTDIR";
-        case ENOTEMPTY: return "ENOTEMPTY";
-        case ENXIO: return "ENXIO";
-        case EOVERFLOW: return "EOVERFLOW";
-        case EPERM: return "EPERM";
-        case EROFS: return "EROFS";
-        case ETXTBSY: return "ETXTBSY";
-        case EXDEV: return "EXDEV";
-    }
-#endif // HAVE_STRERRORNAME_NP
-
-    return strerror(errorCode);
-}

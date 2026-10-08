@@ -12,30 +12,32 @@ namespace System.Text.Json.Nodes.Tests
             "\"MyInt\":43,\"MyDateTime\":\"2020-07-08T00:00:00\",\"MyGuid\":\"ed957609-cdfe-412f-88c1-02daca1b4f51\"," +
             "\"MyObject\":{\"MyString\":\"Hello!!\"},\"Child\":{\"ChildProp\":1}}";
 
-        internal const string Linq_Query_Json = @"
-        [
-          {
-            ""OrderId"":100, ""Customer"":
-            {
-              ""Name"":""Customer1"",
-              ""City"":""Fargo""
-            }
-          },
-          {
-            ""OrderId"":200, ""Customer"":
-            {
-              ""Name"":""Customer2"",
-              ""City"":""Redmond""
-            }
-          },
-          {
-            ""OrderId"":300, ""Customer"":
-            {
-              ""Name"":""Customer3"",
-              ""City"":""Fargo""
-            }
-          }
-        ]";
+        internal const string Linq_Query_Json = """
+
+                [
+                  {
+                    "OrderId":100, "Customer":
+                    {
+                      "Name":"Customer1",
+                      "City":"Fargo"
+                    }
+                  },
+                  {
+                    "OrderId":200, "Customer":
+                    {
+                      "Name":"Customer2",
+                      "City":"Redmond"
+                    }
+                  },
+                  {
+                    "OrderId":300, "Customer":
+                    {
+                      "Name":"Customer3",
+                      "City":"Fargo"
+                    }
+                  }
+                ]
+            """;
 
         /// <summary>
         /// Helper class simulating external library

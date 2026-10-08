@@ -48,6 +48,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
             ExplicitIndexerAccess.Test();
             ImplicitIndexerAccess.Test();
+            AnnotatedIndexerParameter.Test();
+            IndexerDefaultArgument.Test();
 
             AnnotationOnUnsupportedType.Test();
             AutoPropertyUnrecognizedField.Test();
@@ -780,6 +782,16 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 types[index].RequiresAll();
             }
 
+            // Tuple-swapping elements accessed through an implicit indexer (using the
+            // System.Index '^' operator) used to crash the analyzer, because Roslyn
+            // marks an implicit indexer reference that is a deconstruction assignment
+            // target as a write without also marking it as a reference.
+            static void TestTupleSwap()
+            {
+                Span<int> span = stackalloc int[4];
+                (span[^1], span[^2]) = (span[^2], span[^1]);
+            }
+
             class IndexWithTypeWithDam
             {
                 class DamOnIndexOnly
@@ -923,7 +935,76 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 TestWrite();
                 TestNullCoalescingAssignment();
                 TestSpanIndexerAccess();
+                TestTupleSwap();
                 IndexWithTypeWithDam.Test();
+            }
+        }
+
+        class AnnotatedIndexerParameter
+        {
+            public Type this[[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type index]
+            {
+                get
+                {
+                    index.RequiresPublicConstructors();
+                    return null;
+                }
+                [ExpectedWarning("IL2067", ["this[Type].set", "index"], Tool.Analyzer, "")]
+                [ExpectedWarning("IL2067", ["Item.set", "index"], Tool.Trimmer | Tool.NativeAot, "")]
+                set
+                {
+                    index.RequiresPublicMethods();
+                }
+            }
+
+            [ExpectedWarning("IL2067", ["this[Type].set", nameof(unannotated), "index"], Tool.Analyzer, "")]
+            [ExpectedWarning("IL2067", ["Item.set", nameof(unannotated), "index"], Tool.Trimmer | Tool.NativeAot, "")]
+            static void ParameterMismatch(Type unannotated = null)
+            {
+                var instance = new AnnotatedIndexerParameter();
+                instance[unannotated] = null;
+            }
+
+            static void ParameterMatch([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type annotated = null)
+            {
+                var instance = new AnnotatedIndexerParameter();
+                instance[annotated] = null;
+            }
+
+            public static void Test()
+            {
+                ParameterMismatch();
+                ParameterMatch();
+            }
+        }
+
+        class IndexerDefaultArgument
+        {
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
+            Type this[int index = 0]
+            {
+                get => throw new NotImplementedException();
+                set => throw new NotImplementedException();
+            }
+
+            [ExpectedWarning("IL2072", ["this[Int32].get", nameof(DataFlowTypeExtensions.RequiresAll)], Tool.Analyzer, "")]
+            [ExpectedWarning("IL2072", ["Item.get", nameof(DataFlowTypeExtensions.RequiresAll)], Tool.Trimmer | Tool.NativeAot, "")]
+            static void TestRead(IndexerDefaultArgument instance = null)
+            {
+                instance[1].RequiresAll();
+            }
+
+            [ExpectedWarning("IL2072", [nameof(GetTypeWithPublicConstructors), "this[Int32].set"], Tool.Analyzer, "")]
+            [ExpectedWarning("IL2072", [nameof(GetTypeWithPublicConstructors), "Item.set"], Tool.Trimmer | Tool.NativeAot, "")]
+            static void TestWrite(IndexerDefaultArgument instance = null)
+            {
+                instance[1] = GetTypeWithPublicConstructors();
+            }
+
+            public static void Test()
+            {
+                TestRead();
+                TestWrite();
             }
         }
 

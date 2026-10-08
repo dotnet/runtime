@@ -120,7 +120,7 @@ namespace System.Xml
         // Constants
         private const int InitialAttributeCount = 8;
 
-        private static volatile Type s_typeOfString = null!;
+        private static Type s_typeOfString = null!;
 
         // Constructor
         internal XsdValidatingReader(XmlReader reader, XmlResolver? xmlResolver, XmlReaderSettings readerSettings, XmlSchemaObject? partialValidationType)

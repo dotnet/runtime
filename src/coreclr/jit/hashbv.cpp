@@ -12,7 +12,7 @@
 #ifdef DEBUG
 void hashBvNode::dump()
 {
-    printf("base: %d { ", baseIndex);
+    printf("base: %llu { ", (unsigned long long)baseIndex);
     this->foreachBit(pBit);
     printf("}\n");
 }
@@ -115,29 +115,6 @@ bool hashBvNode::belongsIn(indexType index)
     return true;
 }
 
-int countBitsInWord(unsigned int bits)
-{
-    // In-place adder tree: perform 16 1-bit adds, 8 2-bit adds,
-    // 4 4-bit adds, 2 8=bit adds, and 1 16-bit add.
-    bits = ((bits >> 1) & 0x55555555) + (bits & 0x55555555);
-    bits = ((bits >> 2) & 0x33333333) + (bits & 0x33333333);
-    bits = ((bits >> 4) & 0x0F0F0F0F) + (bits & 0x0F0F0F0F);
-    bits = ((bits >> 8) & 0x00FF00FF) + (bits & 0x00FF00FF);
-    bits = ((bits >> 16) & 0x0000FFFF) + (bits & 0x0000FFFF);
-    return (int)bits;
-}
-
-int countBitsInWord(uint64_t bits)
-{
-    bits = ((bits >> 1) & 0x5555555555555555) + (bits & 0x5555555555555555);
-    bits = ((bits >> 2) & 0x3333333333333333) + (bits & 0x3333333333333333);
-    bits = ((bits >> 4) & 0x0F0F0F0F0F0F0F0F) + (bits & 0x0F0F0F0F0F0F0F0F);
-    bits = ((bits >> 8) & 0x00FF00FF00FF00FF) + (bits & 0x00FF00FF00FF00FF);
-    bits = ((bits >> 16) & 0x0000FFFF0000FFFF) + (bits & 0x0000FFFF0000FFFF);
-    bits = ((bits >> 32) & 0x00000000FFFFFFFF) + (bits & 0x00000000FFFFFFFF);
-    return (int)bits;
-}
-
 int hashBvNode::countBits()
 {
     int result = 0;
@@ -146,23 +123,11 @@ int hashBvNode::countBits()
     {
         elemType bits = elements[i];
 
-        result += countBitsInWord(bits);
+        result += BitOperations::PopCount(bits);
 
         result += (int)bits;
     }
     return result;
-}
-
-bool hashBvNode::anyBits()
-{
-    for (int i = 0; i < this->numElements(); i++)
-    {
-        if (elements[i])
-        {
-            return true;
-        }
-    }
-    return false;
 }
 
 bool hashBvNode::getBit(indexType base)
@@ -333,30 +298,12 @@ void hashBvNode::Subtract(hashBvNode* other)
     }
 }
 
-bool hashBvNode::sameAs(hashBvNode* other)
-{
-    if (this->baseIndex != other->baseIndex)
-    {
-        return false;
-    }
-
-    for (int i = 0; i < this->numElements(); i++)
-    {
-        if (this->elements[i] != other->elements[i])
-        {
-            return false;
-        }
-    }
-
-    return true;
-}
-
 // --------------------------------------------------------------------
 // --------------------------------------------------------------------
 
 hashBv::hashBv(Compiler* comp)
 {
-    this->compiler      = comp;
+    this->m_compiler    = comp;
     this->log2_hashSize = 0;
 
     int hts = hashtable_size();
@@ -371,23 +318,11 @@ hashBv::hashBv(Compiler* comp)
 
 hashBv* hashBv::Create(Compiler* compiler)
 {
-    hashBv*           result;
-    hashBvGlobalData* gd = &compiler->hbvGlobalData;
+    hashBv* result = new (compiler, CMK_hashBv) hashBv(compiler);
+    memset((void*)result, 0, sizeof(hashBv));
+    result->nodeArr = result->initialVector;
 
-    if (hbvFreeList(gd))
-    {
-        result          = hbvFreeList(gd);
-        hbvFreeList(gd) = result->next;
-        assert(result->nodeArr);
-    }
-    else
-    {
-        result = new (compiler, CMK_hashBv) hashBv(compiler);
-        memset((void*)result, 0, sizeof(hashBv));
-        result->nodeArr = result->initialVector;
-    }
-
-    result->compiler      = compiler;
+    result->m_compiler    = compiler;
     result->log2_hashSize = 0;
     result->numNodes      = 0;
 
@@ -401,7 +336,7 @@ void hashBv::Init(Compiler* compiler)
 
 hashBvGlobalData* hashBv::globalData()
 {
-    return &compiler->hbvGlobalData;
+    return &m_compiler->hbvGlobalData;
 }
 
 hashBvNode** hashBv::getNewVector(int vectorLength)
@@ -409,58 +344,8 @@ hashBvNode** hashBv::getNewVector(int vectorLength)
     assert(vectorLength > 0);
     assert(isPow2(vectorLength));
 
-    hashBvNode** newVector = new (compiler, CMK_hashBv) hashBvNode*[vectorLength]();
+    hashBvNode** newVector = new (m_compiler, CMK_hashBv) hashBvNode*[vectorLength]();
     return newVector;
-}
-
-hashBvNode*& hashBv::nodeFreeList(hashBvGlobalData* data)
-{
-    return data->hbvNodeFreeList;
-}
-
-hashBv*& hashBv::hbvFreeList(hashBvGlobalData* data)
-{
-    return data->hbvFreeList;
-}
-
-void hashBv::hbvFree()
-{
-    int hts = hashtable_size();
-    for (int i = 0; i < hts; i++)
-    {
-        while (nodeArr[i])
-        {
-            hashBvNode* curr = nodeArr[i];
-            nodeArr[i]       = curr->next;
-            curr->freeNode(globalData());
-        }
-    }
-    // keep the vector attached because the whole thing is freelisted
-    // plus you don't even know if it's freeable
-
-    this->next                = hbvFreeList(globalData());
-    hbvFreeList(globalData()) = this;
-}
-
-hashBv* hashBv::CreateFrom(hashBv* other, Compiler* comp)
-{
-    hashBv* result = hashBv::Create(comp);
-    result->copyFrom(other, comp);
-    return result;
-}
-
-void hashBv::MergeLists(hashBvNode** root1, hashBvNode** root2)
-{
-}
-
-bool hashBv::TooSmall()
-{
-    return this->numNodes > this->hashtable_size() * 4;
-}
-
-bool hashBv::TooBig()
-{
-    return this->hashtable_size() > this->numNodes * 4;
 }
 
 int hashBv::getNodeCount()
@@ -622,7 +507,7 @@ void hashBv::dump()
         {
             printf(" ");
         }
-        printf("%d", index);
+        printf("%llu", (unsigned long long)index);
         first = false;
         return HbvWalk::Continue;
     });
@@ -641,11 +526,11 @@ void hashBv::dumpFancy()
         {
             if (last_0 + 1 != last_1)
             {
-                printf(" %d-%d", last_0 + 1, last_1);
+                printf(" %llu-%llu", (unsigned long long)(last_0 + 1), (unsigned long long)last_1);
             }
             else
             {
-                printf(" %d", last_1);
+                printf(" %llu", (unsigned long long)last_1);
             }
             last_0 = index - 1;
         }
@@ -657,31 +542,16 @@ void hashBv::dumpFancy()
     // Print the last one
     if (last_0 + 1 != last_1)
     {
-        printf(" %d-%d", last_0 + 1, last_1);
+        printf(" %llu-%llu", (unsigned long long)(last_0 + 1), (unsigned long long)last_1);
     }
     else
     {
-        printf(" %d", last_1);
+        printf(" %llu", (unsigned long long)last_1);
     }
 
     printf("}\n");
 }
 #endif // DEBUG
-
-void hashBv::removeNodeAtBase(indexType index)
-{
-    hashBvNode** insertionPoint = this->getInsertionPointForIndex(index);
-
-    hashBvNode* node = *insertionPoint;
-
-    // make sure that we were called to remove something
-    // that really was there
-    assert(node);
-
-    // splice it out
-    *insertionPoint = node->next;
-    this->numNodes--;
-}
 
 int hashBv::getHashForIndex(indexType index, int table_size)
 {
@@ -691,12 +561,6 @@ int hashBv::getHashForIndex(indexType index, int table_size)
     hashIndex &= (table_size - 1);
 
     return (int)hashIndex;
-}
-
-int hashBv::getRehashForIndex(indexType thisIndex, int thisTableSize, int newTableSize)
-{
-    assert(0);
-    return 0;
 }
 
 hashBvNode** hashBv::getInsertionPointForIndex(indexType index)
@@ -754,30 +618,11 @@ hashBvNode* hashBv::getNodeForIndexHelper(indexType index, bool canAdd)
     else if (canAdd)
     {
         // missing node, insert it before the current one
-        hashBvNode* temp = hashBvNode::Create(index, this->compiler);
+        hashBvNode* temp = hashBvNode::Create(index, this->m_compiler);
         temp->next       = node;
         *prev            = temp;
         this->numNodes++;
         return temp;
-    }
-    else
-    {
-        return nullptr;
-    }
-}
-
-hashBvNode* hashBv::getNodeForIndex(indexType index)
-{
-    // determine the base index of the node containing this index
-    index = index & ~(BITS_PER_NODE - 1);
-
-    hashBvNode** prev = getInsertionPointForIndex(index);
-
-    hashBvNode* node = *prev;
-
-    if (node && node->belongsIn(index))
-    {
-        return node;
     }
     else
     {
@@ -1068,7 +913,7 @@ public:
         // it's in other, not this
         // so put one in
         result           = true;
-        hashBvNode* temp = hashBvNode::Create(r->baseIndex, lhs->compiler);
+        hashBvNode* temp = hashBvNode::Create(r->baseIndex, lhs->m_compiler);
         lhs->numNodes++;
         temp->XorWith(r);
         temp->next = (*l)->next;
@@ -1100,7 +945,7 @@ public:
         // it's in other, not this
         // so put one in
         result           = true;
-        hashBvNode* temp = hashBvNode::Create(r->baseIndex, lhs->compiler);
+        hashBvNode* temp = hashBvNode::Create(r->baseIndex, lhs->m_compiler);
         lhs->numNodes++;
         temp->XorWith(r);
         temp->next = nullptr;
@@ -1138,7 +983,7 @@ public:
         // it's in other, not this
         // so put one in
         result           = true;
-        hashBvNode* temp = hashBvNode::Create(r->baseIndex, lhs->compiler);
+        hashBvNode* temp = hashBvNode::Create(r->baseIndex, lhs->m_compiler);
         lhs->numNodes++;
         temp->OrWith(r);
         temp->next = *l;
@@ -1168,7 +1013,7 @@ public:
         // copy it
         // LeftGap(lhs, l, r, result, terminate);
         result           = true;
-        hashBvNode* temp = hashBvNode::Create(r->baseIndex, lhs->compiler);
+        hashBvNode* temp = hashBvNode::Create(r->baseIndex, lhs->m_compiler);
         lhs->numNodes++;
         temp->OrWith(r);
         temp->next = nullptr;
@@ -1176,49 +1021,6 @@ public:
         l          = &(temp->next);
 
         r = r->next;
-    }
-};
-
-class CompareAction
-{
-public:
-    static inline void PreAction(hashBv* lhs, hashBv* rhs)
-    {
-    }
-    static inline void PostAction(hashBv* lhs, hashBv* rhs)
-    {
-    }
-    static inline bool DefaultResult()
-    {
-        return true;
-    }
-
-    static inline void LeftGap(hashBv* lhs, hashBvNode**& l, hashBvNode*& r, bool& result, bool& terminate)
-    {
-        terminate = true;
-        result    = false;
-    }
-    static inline void RightGap(hashBv* lhs, hashBvNode**& l, hashBvNode*& r, bool& result, bool& terminate)
-    {
-        // in lhs, not rhs
-        // so skip lhs
-        terminate = true;
-        result    = false;
-    }
-    static inline void BothPresent(hashBv* lhs, hashBvNode**& l, hashBvNode*& r, bool& result, bool& terminate)
-    {
-        if (!(*l)->sameAs(r))
-        {
-            terminate = true;
-            result    = false;
-        }
-        l = &((*l)->next);
-        r = r->next;
-    }
-    static inline void LeftEmpty(hashBv* lhs, hashBvNode**& l, hashBvNode*& r, bool& result, bool& terminate)
-    {
-        terminate = true;
-        result    = false;
     }
 };
 
@@ -1549,18 +1351,6 @@ void hashBv::Subtract(hashBv* other)
     this->SubtractWithChange(other);
 }
 
-void hashBv::Subtract3(hashBv* o1, hashBv* o2)
-{
-    this->copyFrom(o1, compiler);
-    this->Subtract(o2);
-}
-
-void hashBv::UnionMinus(hashBv* src1, hashBv* src2, hashBv* src3)
-{
-    this->Subtract3(src1, src2);
-    this->OrWithChange(src3);
-}
-
 void hashBv::ZeroAll()
 {
     int hts = this->hashtable_size();
@@ -1594,11 +1384,6 @@ void hashBv::OrWith(hashBv* other)
 void hashBv::AndWith(hashBv* other)
 {
     this->AndWithChange(other);
-}
-
-bool hashBv::CompareWith(hashBv* other)
-{
-    return MultiTraverse<CompareAction>(other);
 }
 
 void hashBv::copyFrom(hashBv* other, Compiler* comp)
@@ -1641,7 +1426,7 @@ void hashBv::copyFrom(hashBv* other, Compiler* comp)
             }
             else
             {
-                newNode = hashBvNode::Create(otherNode->baseIndex, this->compiler);
+                newNode = hashBvNode::Create(otherNode->baseIndex, this->m_compiler);
             }
             newNode->copyFrom(otherNode);
 
@@ -1666,161 +1451,13 @@ void hashBv::copyFrom(hashBv* other, Compiler* comp)
 #endif
 }
 
-int nodeSort(const void* x, const void* y)
-{
-    hashBvNode* a = (hashBvNode*)x;
-    hashBvNode* b = (hashBvNode*)y;
-    return (int)(b->baseIndex - a->baseIndex);
-}
-
-void hashBv::InorderTraverse(nodeAction n)
-{
-    int hts = hashtable_size();
-
-    hashBvNode** x = new (compiler, CMK_hashBv) hashBvNode*[hts];
-
-    {
-        // keep an array of the current pointers
-        // into each of the bitvector lists
-        // in the hashtable
-        for (int i = 0; i < hts; i++)
-        {
-            x[i] = nodeArr[i];
-        }
-
-        while (1)
-        {
-            // pick the lowest node in the hashtable
-
-            indexType lowest       = INT_MAX;
-            int       lowest_index = -1;
-            for (int i = 0; i < hts; i++)
-            {
-                if (x[i] && x[i]->baseIndex < lowest)
-                {
-                    lowest       = x[i]->baseIndex;
-                    lowest_index = i;
-                }
-            }
-            // if there was anything left, use it and update
-            // the list pointers otherwise we are done
-            if (lowest_index != -1)
-            {
-                n(x[lowest_index]);
-                x[lowest_index] = x[lowest_index]->next;
-            }
-            else
-            {
-                break;
-            }
-        }
-    }
-
-    delete[] x;
-}
-
-void hashBv::InorderTraverseTwo(hashBv* other, dualNodeAction a)
-{
-    int          sizeThis, sizeOther;
-    hashBvNode **nodesThis, **nodesOther;
-
-    sizeThis  = this->hashtable_size();
-    sizeOther = other->hashtable_size();
-
-    nodesThis  = new (compiler, CMK_hashBv) hashBvNode*[sizeThis];
-    nodesOther = new (compiler, CMK_hashBv) hashBvNode*[sizeOther];
-
-    // populate the arrays
-    for (int i = 0; i < sizeThis; i++)
-    {
-        nodesThis[i] = this->nodeArr[i];
-    }
-
-    for (int i = 0; i < sizeOther; i++)
-    {
-        nodesOther[i] = other->nodeArr[i];
-    }
-
-    while (1)
-    {
-        indexType lowestThis           = INT_MAX;
-        indexType lowestOther          = INT_MAX;
-        int       lowestHashIndexThis  = -1;
-        int       lowestHashIndexOther = -1;
-
-        // find the lowest remaining node in each BV
-        for (int i = 0; i < sizeThis; i++)
-        {
-            if (nodesThis[i] && nodesThis[i]->baseIndex < lowestThis)
-            {
-                lowestHashIndexThis = i;
-                lowestThis          = nodesThis[i]->baseIndex;
-            }
-        }
-        for (int i = 0; i < sizeOther; i++)
-        {
-            if (nodesOther[i] && nodesOther[i]->baseIndex < lowestOther)
-            {
-                lowestHashIndexOther = i;
-                lowestOther          = nodesOther[i]->baseIndex;
-            }
-        }
-        hashBvNode *nodeThis, *nodeOther;
-        nodeThis  = lowestHashIndexThis == -1 ? nullptr : nodesThis[lowestHashIndexThis];
-        nodeOther = lowestHashIndexOther == -1 ? nullptr : nodesOther[lowestHashIndexOther];
-        // no nodes left in either, so return
-        if ((!nodeThis) && (!nodeOther))
-        {
-            break;
-
-            // there are only nodes left in one bitvector
-        }
-        else if ((!nodeThis) || (!nodeOther))
-        {
-            a(this, other, nodeThis, nodeOther);
-            if (nodeThis)
-            {
-                nodesThis[lowestHashIndexThis] = nodesThis[lowestHashIndexThis]->next;
-            }
-            if (nodeOther)
-            {
-                nodesOther[lowestHashIndexOther] = nodesOther[lowestHashIndexOther]->next;
-            }
-        }
-        // nodes are left in both so determine if the lowest ones
-        // match.  if so process them in a pair.  if not then
-        // process the lower of the two alone
-        else
-        {
-            if (nodeThis->baseIndex == nodeOther->baseIndex)
-            {
-                a(this, other, nodeThis, nodeOther);
-                nodesThis[lowestHashIndexThis]   = nodesThis[lowestHashIndexThis]->next;
-                nodesOther[lowestHashIndexOther] = nodesOther[lowestHashIndexOther]->next;
-            }
-            else if (nodeThis->baseIndex < nodeOther->baseIndex)
-            {
-                a(this, other, nodeThis, nullptr);
-                nodesThis[lowestHashIndexThis] = nodesThis[lowestHashIndexThis]->next;
-            }
-            else if (nodeOther->baseIndex < nodeThis->baseIndex)
-            {
-                a(this, other, nullptr, nodeOther);
-                nodesOther[lowestHashIndexOther] = nodesOther[lowestHashIndexOther]->next;
-            }
-        }
-    }
-    delete[] nodesThis;
-    delete[] nodesOther;
-}
-
 // --------------------------------------------------------------------
 // --------------------------------------------------------------------
 
 #ifdef DEBUG
 void SimpleDumpNode(hashBvNode* n)
 {
-    printf("base: %d\n", n->baseIndex);
+    printf("base: %llu\n", (unsigned long long)n->baseIndex);
 }
 
 void DumpNode(hashBvNode* n)
@@ -1833,7 +1470,7 @@ void SimpleDumpDualNode(hashBv* a, hashBv* b, hashBvNode* n, hashBvNode* m)
     printf("nodes: ");
     if (n)
     {
-        printf("%d,", n->baseIndex);
+        printf("%llu,", (unsigned long long)n->baseIndex);
     }
     else
     {
@@ -1841,7 +1478,7 @@ void SimpleDumpDualNode(hashBv* a, hashBv* b, hashBvNode* n, hashBvNode* m)
     }
     if (m)
     {
-        printf("%d\n", m->baseIndex);
+        printf("%llu\n", (unsigned long long)m->baseIndex);
     }
     else
     {
@@ -1872,26 +1509,6 @@ hashBvIterator::hashBvIterator(hashBv* bv)
         {
             this->nextNode();
         }
-    }
-}
-
-void hashBvIterator::initFrom(hashBv* bv)
-{
-    this->bv              = bv;
-    this->hashtable_size  = bv->hashtable_size();
-    this->hashtable_index = 0;
-    this->currNode        = bv->nodeArr[0];
-    this->current_element = 0;
-    this->current_base    = 0;
-    this->current_data    = 0;
-
-    if (!this->currNode)
-    {
-        this->nextNode();
-    }
-    if (this->currNode)
-    {
-        this->current_data = this->currNode->elements[0];
     }
 }
 

@@ -579,7 +579,7 @@ namespace parse_hb_log
             {
                 strAlloc += string.Format("|{0,5}", AllocMB[procIndex]);
             }
-            strAlloc += string.Format("|");
+            strAlloc += "|";
             PrintToAllPassOneFiles(strAlloc);
         }
 
@@ -613,7 +613,7 @@ namespace parse_hb_log
             {
                 strHeader += string.Format("|{0,5}", procIndex);
             }
-            strHeader += string.Format("|");
+            strHeader += "|";
             PrintToAllPassOneFiles(strHeader);
         }
 

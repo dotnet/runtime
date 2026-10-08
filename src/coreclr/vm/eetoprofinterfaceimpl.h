@@ -15,6 +15,8 @@
 #ifndef __EETOPROFINTERFACEIMPL_H__
 #define __EETOPROFINTERFACEIMPL_H__
 
+#if defined(PROFILING_SUPPORTED) || defined(PROFILING_SUPPORTED_DATA)
+
 #include <stddef.h>
 #include "profilepriv.h"
 #include "eeprofinterfaces.h"
@@ -537,9 +539,9 @@ private:
         GCReferencesData * pNext;
     };
 
-    // Since this stuff can only be performed by one thread (right now), we don't need
-    // to make this thread safe and can just have one block we reuse every time around
-    static AllocByClassData * m_pSavedAllocDataBlock;
+    // Since this stuff can only be performed by one thread per profiler (right now), we don't
+    // need to make this thread safe and can just have one block we reuse every time around.
+    AllocByClassData * m_pSavedAllocDataBlock;
 
     // Pointer to the profiler's implementation of the callback interface(s).
     // Profilers MUST support ICorProfilerCallback2.
@@ -693,5 +695,7 @@ private:
     // Remember the fact we've timed out when waiting for concurrent GC. Will report the error later
     BOOL m_bHasTimedOutWaitingForConcurrentGC;
 };
+
+#endif // PROFILING_SUPPORTED || PROFILING_SUPPORTED_DATA
 
 #endif // __EETOPROFINTERFACEIMPL_H__

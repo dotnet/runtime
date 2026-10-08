@@ -8,6 +8,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Tracing;
 using System.IO;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Runtime.Loader;
 
 namespace System
@@ -83,6 +84,21 @@ namespace System
             CallStartupHook(startupHook);
 #pragma warning restore IL2026
         }
+
+#if CORECLR
+        [UnmanagedCallersOnly]
+        private static unsafe void CallStartupHook(char* pStartupHookPart, Exception* pException)
+        {
+            try
+            {
+                CallStartupHook(pStartupHookPart);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+#endif
 
         private static void ParseStartupHook(ref StartupHookNameOrPath startupHook, string startupHookPart)
         {

@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+// This task is replicated in dotnet/sdk at src/Tasks/Microsoft.NET.Build.Tasks/PrepareForReadyToRunCompilation.cs.
+// Keep both copies synchronized.
+
 #nullable disable
 
 using System.Reflection;
@@ -20,6 +23,7 @@ namespace Microsoft.NET.Build.Tasks
         public bool EmitSymbols { get; set; }
         public bool ReadyToRunUseCrossgen2 { get; set; }
         public bool Crossgen2Composite { get; set; }
+        public string Crossgen2ContainerFormat { get; set; }
 
         [Required]
         public string OutputPath { get; set; }
@@ -162,8 +166,12 @@ namespace Microsoft.NET.Build.Tasks
                     continue;
                 }
 
-                var outputR2RImageRelativePath = file.GetMetadata(MetadataKeys.RelativePath);
-                var outputR2RImage = Path.Combine(OutputPath, outputR2RImageRelativePath);
+                TaskItem r2rFileToPublish = CreateReadyToRunFileToPublish(
+                    file,
+                    file.GetMetadata(MetadataKeys.RelativePath),
+                    isCompositeImage: false,
+                    out string outputR2RImageRelativePath,
+                    out string outputR2RImage);
 
                 string outputPDBImage = null;
                 string outputPDBImageRelativePath = null;
@@ -227,13 +235,6 @@ namespace Microsoft.NET.Build.Tasks
                     r2rCompositeInputList.Add(file);
                 }
 
-                // This TaskItem corresponds to the output R2R image. It is equivalent to the input TaskItem, only the ItemSpec for it points to the new path
-                // for the newly created R2R image
-                TaskItem r2rFileToPublish = new(file)
-                {
-                    ItemSpec = outputR2RImage
-                };
-                r2rFileToPublish.RemoveMetadata(MetadataKeys.OriginalItemSpec);
                 r2rFilesPublishList.Add(r2rFileToPublish);
 
                 // Note: ReadyToRun PDB/Map files are not needed for debugging. They are only used for profiling, therefore the default behavior is to not generate them
@@ -276,9 +277,16 @@ namespace Microsoft.NET.Build.Tasks
             {
                 MainAssembly.SetMetadata(MetadataKeys.RelativePath, Path.GetFileName(MainAssembly.ItemSpec));
 
-                var compositeR2RImageRelativePath = MainAssembly.GetMetadata(MetadataKeys.RelativePath);
-                compositeR2RImageRelativePath = Path.ChangeExtension(compositeR2RImageRelativePath, "r2r" + Path.GetExtension(compositeR2RImageRelativePath));
-                var compositeR2RImage = Path.Combine(OutputPath, compositeR2RImageRelativePath);
+                string mainAssemblyRelativePath = MainAssembly.GetMetadata(MetadataKeys.RelativePath);
+                string compositeR2RImageBaseRelativePath = Path.ChangeExtension(
+                    mainAssemblyRelativePath,
+                    "r2r" + Path.GetExtension(mainAssemblyRelativePath));
+                TaskItem compositeR2RFileToPublish = CreateReadyToRunFileToPublish(
+                    MainAssembly,
+                    compositeR2RImageBaseRelativePath,
+                    isCompositeImage: true,
+                    out string compositeR2RImageRelativePath,
+                    out string compositeR2RImage);
 
                 TaskItem r2rCompilationEntry = new(MainAssembly)
                 {
@@ -330,15 +338,49 @@ namespace Microsoft.NET.Build.Tasks
 
                 imageCompilationList.Add(r2rCompilationEntry);
 
-                // Publish it
-                TaskItem compositeR2RFileToPublish = new(MainAssembly)
-                {
-                    ItemSpec = compositeR2RImage
-                };
-                compositeR2RFileToPublish.RemoveMetadata(MetadataKeys.OriginalItemSpec);
-                compositeR2RFileToPublish.SetMetadata(MetadataKeys.RelativePath, compositeR2RImageRelativePath);
                 r2rFilesPublishList.Add(compositeR2RFileToPublish);
             }
+        }
+
+        private TaskItem CreateReadyToRunFileToPublish(
+            ITaskItem inputFile,
+            string relativePath,
+            bool isCompositeImage,
+            out string compilerOutputRelativePath,
+            out string compilerOutputPath)
+        {
+            // Crossgen2 emits WebAssembly directly, while Mach-O composite output is an object file
+            // that must be linked into the dylib published by the SDK.
+            (string compilerExtension, string publishExtension) = Crossgen2ContainerFormat switch
+            {
+                "macho" when isCompositeImage => (".o", ".dylib"),
+                "wasm" => (".wasm", ".wasm"),
+                _ => (null, null),
+            };
+
+            compilerOutputRelativePath = compilerExtension is null
+                ? relativePath
+                : Path.ChangeExtension(relativePath, compilerExtension);
+            string publishOutputRelativePath = publishExtension is null
+                ? relativePath
+                : Path.ChangeExtension(relativePath, publishExtension);
+
+            compilerOutputPath = Path.Combine(OutputPath, compilerOutputRelativePath);
+            string publishOutputPath = Path.Combine(OutputPath, publishOutputRelativePath);
+            TaskItem fileToPublish = new(inputFile)
+            {
+                ItemSpec = publishOutputPath
+            };
+            fileToPublish.RemoveMetadata(MetadataKeys.OriginalItemSpec);
+            fileToPublish.SetMetadata(MetadataKeys.RelativePath, publishOutputRelativePath);
+
+            if (publishOutputPath != compilerOutputPath)
+            {
+                fileToPublish.SetMetadata(MetadataKeys.RequiresNativeLink, "true");
+                fileToPublish.SetMetadata(MetadataKeys.NativeLinkerInputPath, compilerOutputPath);
+            }
+
+            return fileToPublish;
         }
 
         private struct Eligibility

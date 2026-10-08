@@ -2,15 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*++
-
 Module Name:
-
     wchar.c
 
 Abstract:
-
     Implementation of wide char string functions.
-
 --*/
 
 #include "pal/palinternal.h"
@@ -639,41 +635,6 @@ PAL_wcsrchr(
 
 /*++
 Function:
-  PAL_wcspbrk
-
-See MSDN or man page for wcspbrk.
---*/
-const wchar_16 *
-__cdecl
-PAL_wcspbrk(
-        const wchar_16 *string,
-        const wchar_16 *strCharSet)
-{
-    PERF_ENTRY(wcspbrk);
-    ENTRY("wcspbrk (string=%p (%S), strCharSet=%p (%S))\n",
-          string?string:W16_NULLSTRING,
-          string?string:W16_NULLSTRING, strCharSet?strCharSet:W16_NULLSTRING, strCharSet?strCharSet:W16_NULLSTRING);
-
-    while (*string)
-    {
-        if (PAL_wcschr(strCharSet, *string) != NULL)
-        {
-            LOGEXIT("wcspbrk returning wchar_t %p (%S)\n", string, string);
-            PERF_EXIT(wcspbrk);
-            return (wchar_16 *) string;
-        }
-
-        string++;
-    }
-
-    LOGEXIT("wcspbrk returning wchar_t NULL\n");
-    PERF_EXIT(wcspbrk);
-    return NULL;
-}
-
-
-/*++
-Function:
   PAL_wcsstr
 
 See MSDN or man page for wcsstr.
@@ -942,52 +903,4 @@ PAL_wcstod( const wchar_16 * nptr, wchar_16 **endptr )
     LOGEXIT( "wcstod returning %f.\n", RetVal );
     PERF_EXIT(wcstod);
     return RetVal;
-}
-
-/*++
-Function:
-  _wfopen
-
-see MSDN doc.
-
---*/
-extern "C"
-FILE *
-__cdecl
-_wfopen(
-    const wchar_16 *fileName,
-    const wchar_16 *mode)
-{
-    CHAR mbFileName[ MAX_PATH ];
-    CHAR mbMode[ 10 ];
-    FILE * filePtr = NULL;
-
-    PERF_ENTRY(_wfopen);
-    ENTRY("_wfopen(fileName:%p (%S), mode:%p (%S))\n", fileName, fileName, mode, mode);
-
-    _ASSERTE(fileName != NULL);
-    _ASSERTE(mode != NULL);
-
-    /* Convert the parameters to ASCII and defer to PAL_fopen */
-    if ( WideCharToMultiByte( CP_ACP, 0, fileName, -1, mbFileName,
-                              sizeof mbFileName, NULL, NULL ) != 0 )
-    {
-        if ( WideCharToMultiByte( CP_ACP, 0, mode, -1, mbMode,
-                                  sizeof mbMode, NULL, NULL ) != 0 )
-        {
-            filePtr = fopen(mbFileName, mbMode);
-        }
-        else
-        {
-            ERROR( "An error occurred while converting mode to ANSI.\n" );
-        }
-    }
-    else
-    {
-        ERROR( "An error occurred while converting"
-               " fileName to ANSI string.\n" );
-    }
-    LOGEXIT("_wfopen returning FILE* %p\n", filePtr);
-    PERF_EXIT(_wfopen);
-    return filePtr;
 }

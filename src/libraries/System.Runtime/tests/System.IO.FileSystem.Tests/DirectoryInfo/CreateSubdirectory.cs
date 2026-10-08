@@ -219,6 +219,41 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void CreateSubdirectory_RootDriveSubfolder_Windows()
+        {
+            string rootDrive = Path.GetPathRoot(Environment.SystemDirectory);
+            DirectoryInfo rootDirectory = new DirectoryInfo(rootDrive);
+            string testFolderName = GetTestFileName();
+
+            try
+            {
+                DirectoryInfo subDirectory = rootDirectory.CreateSubdirectory(testFolderName);
+
+                Assert.True(subDirectory.Exists);
+                Assert.Equal(Path.Combine(rootDrive, testFolderName), subDirectory.FullName);
+            }
+            finally
+            {
+                string testFolderPath = Path.Combine(rootDrive, testFolderName);
+                if (Directory.Exists(testFolderPath))
+                {
+                    Directory.Delete(testFolderPath, recursive: true);
+                }
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Linux)]
+        public void CreateSubdirectory_RootDriveSubfolder_ThrowsUnauthorizedAccessException_Linux()
+        {
+            DirectoryInfo rootDirectory = new DirectoryInfo("/");
+            string testFolderName = GetTestFileName();
+
+            Assert.Throws<UnauthorizedAccessException>(() => rootDirectory.CreateSubdirectory(testFolderName));
+        }
+
+        [Fact]
         [PlatformSpecific(TestPlatforms.Windows)] // UNC shares
         public void UNCPathWithOnlySlashes()
         {

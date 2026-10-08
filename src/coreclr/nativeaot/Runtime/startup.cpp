@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 #include "common.h"
 #include "CommonTypes.h"
 #include "CommonMacros.h"
@@ -18,13 +19,13 @@
 #include "threadstore.inl"
 #include "RuntimeInstance.h"
 #include "rhbinder.h"
-#include "CachedInterfaceDispatch.h"
 #include "RhConfig.h"
 #include "stressLog.h"
 #include "RestrictedCallouts.h"
 #include "yieldprocessornormalized.h"
 #include <minipal/cpufeatures.h>
 #include <minipal/time.h>
+#include <minipal/random.h>
 
 #ifdef FEATURE_PERFTRACING
 #include "EventPipeInterface.h"
@@ -32,17 +33,11 @@
 
 #ifndef DACCESS_COMPILE
 
-#ifdef PROFILE_STARTUP
-uint64_t g_startupTimelineEvents[NUM_STARTUP_TIMELINE_EVENTS] = { 0 };
-#endif // PROFILE_STARTUP
-
 #ifdef HOST_WINDOWS
 LONG WINAPI RhpVectoredExceptionHandler(PEXCEPTION_POINTERS pExPtrs);
 #else
 int32_t RhpHardwareExceptionHandler(uintptr_t faultCode, uintptr_t faultAddress, PAL_LIMITED_CONTEXT* palContext, uintptr_t* arg0Reg, uintptr_t* arg1Reg);
 #endif
-
-extern "C" void PopulateDebugHeaders();
 
 static bool DetectCPUFeatures();
 
@@ -88,14 +83,6 @@ bool InitializeGC();
 
 static bool InitDLL(HANDLE hPalInstance)
 {
-#ifdef FEATURE_CACHED_INTERFACE_DISPATCH
-    //
-    // Initialize interface dispatch.
-    //
-    if (!InterfaceDispatch_Initialize())
-        return false;
-#endif
-
     InitializeGCEventLock();
 
 #ifdef FEATURE_PERFTRACING
@@ -144,12 +131,8 @@ static bool InitDLL(HANDLE hPalInstance)
     }
 #endif // STRESS_LOG
 
-    STARTUP_TIMELINE_EVENT(NONGC_INIT_COMPLETE);
-
     if (!InitializeGC())
         return false;
-
-    STARTUP_TIMELINE_EVENT(GC_INIT_COMPLETE);
 
 #ifdef FEATURE_PERFTRACING
     // Finish setting up rest of EventPipe - specifically enable SampleProfiler if it was requested at startup.
@@ -182,7 +165,7 @@ bool DetectCPUFeatures()
     {
 #if defined(HOST_X86) || defined(HOST_AMD64)
         PalPrintFatalError("\nThe current CPU is missing one or more of the following instruction sets: SSE, SSE2, SSE3, SSSE3, SSE4.1, SSE4.2, POPCNT\n");
-#elif defined(HOST_ARM64) && (defined(HOST_WINDOWS) || defined(HOST_OSX) || defined(HOST_MACCATALYST))
+#elif defined(HOST_ARM64) && (defined(HOST_OSX) || defined(HOST_MACCATALYST))
         PalPrintFatalError("\nThe current CPU is missing one or more of the following instruction sets: AdvSimd, LSE\n");
 #elif defined(HOST_ARM64)
         PalPrintFatalError("\nThe current CPU is missing one or more of the following instruction sets: AdvSimd\n");
@@ -224,8 +207,9 @@ bool InitGSCookie()
     }
 #endif
 
-    // REVIEW: Need something better for PAL...
-    GSCookie val = (GSCookie)minipal_lowres_ticks();
+    GSCookie val;
+
+    minipal_get_non_cryptographically_secure_random_bytes((uint8_t*)&val, sizeof(val));
 
 #ifdef _DEBUG
     // In _DEBUG, always use the same value to make it easier to search for the cookie
@@ -241,46 +225,6 @@ bool InitGSCookie()
 #endif
 }
 #endif // TARGET_UNIX
-
-#ifdef PROFILE_STARTUP
-static void AppendInt64(char * pBuffer, uint32_t* pLen, uint64_t value)
-{
-    char localBuffer[20];
-    int cch = 0;
-
-    do
-    {
-        localBuffer[cch++] = '0' + (value % 10);
-        value = value / 10;
-    } while (value);
-
-    for (int i = 0; i < cch; i++)
-    {
-        pBuffer[(*pLen)++] = localBuffer[cch - i - 1];
-    }
-
-    pBuffer[(*pLen)++] = ',';
-    pBuffer[(*pLen)++] = ' ';
-}
-#endif // PROFILE_STARTUP
-
-static void UninitDLL()
-{
-#ifdef PROFILE_STARTUP
-    char buffer[1024];
-
-    uint32_t len = 0;
-
-    AppendInt64(buffer, &len, g_startupTimelineEvents[PROCESS_ATTACH_BEGIN]);
-    AppendInt64(buffer, &len, g_startupTimelineEvents[NONGC_INIT_COMPLETE]);
-    AppendInt64(buffer, &len, g_startupTimelineEvents[GC_INIT_COMPLETE]);
-    AppendInt64(buffer, &len, g_startupTimelineEvents[PROCESS_ATTACH_COMPLETE]);
-
-    buffer[len++] = '\n';
-
-    fwrite(buffer, len, 1, stdout);
-#endif // PROFILE_STARTUP
-}
 
 #ifdef HOST_WINDOWS
 // This is set to the thread that initiates and performs the shutdown and may run
@@ -376,11 +320,8 @@ extern "C" bool RhInitialize(bool isDll)
     g_safeToShutdownTracing = !isDll;
 #endif
 
-    if (!InitDLL(PalGetModuleHandleFromPointer((void*)&RhInitialize)))
+    if (!InitDLL(PalGetModuleHandleFromPointer((void*)&RhInitialize, isDll)))
         return false;
-
-    // Populate the values needed for debugging
-    PopulateDebugHeaders();
 
     return true;
 }

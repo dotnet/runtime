@@ -296,11 +296,3 @@ LEAF_END RestoreCompleteContext, _TEXT
 
 #endif // __APPLE__
 
-// Incoming:
-//  None
-//
-.arch_extension sve
-    LEAF_ENTRY CONTEXT_GetSveLengthFromOS, _TEXT
-        rdvl    x0, 1
-        ret     lr
-    LEAF_END CONTEXT_GetSveLengthFromOS, _TEXT

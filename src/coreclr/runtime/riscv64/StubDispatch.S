@@ -6,7 +6,7 @@
 #ifdef FEATURE_CACHED_INTERFACE_DISPATCH
 
     .extern RhpCidResolve
-    .extern RhpUniversalTransition_DebugStepTailCall
+    .extern RhpUniversalTransitionTailCall
 
     // Macro that generates code to check a single cache entry.
     .macro CHECK_CACHE_ENTRY entry
@@ -35,6 +35,17 @@
             // t5 holds the indirection cell address. Load the cache pointer.
             ld  t0, OFFSETOF__InterfaceDispatchCell__m_pCache(t5)  // Using a1 as an alternative base register
 
+            // Validate t0 is a cache pointer matching the expected cache size.
+            // This compensates for a race where the stub was updated to expect a larger cache
+            // but we loaded a stale (smaller or non-cache) m_pCache value.
+            // On detection, re-dispatch through the indirection cell to retry with the current
+            // stub and cache pair.
+            andi t6, t0, IDC_CACHE_POINTER_MASK
+            bnez t6, LOCAL_LABEL(RaceRetry_\entries)
+            lw   t6, OFFSETOF__InterfaceDispatchCache__m_cEntries(t0)
+            li   t3, \entries
+            bne  t6, t3, LOCAL_LABEL(RaceRetry_\entries)
+
             // Load the MethodTable from the object instance in a0.
             ALTERNATE_ENTRY RhpInterfaceDispatchAVLocation\entries
             ld  t1, 0(a0)
@@ -47,8 +58,13 @@
             .set CurrentEntry, CurrentEntry + 1
         .endr
 
-            // t0 still contains the indirection cell address.
+            // t5 still contains the indirection cell address.
             tail  C_FUNC(RhpInterfaceDispatchSlow)
+
+        LOCAL_LABEL(RaceRetry_\entries):
+            // Race detected: re-dispatch through the indirection cell
+            ld   t0, 0(t5)
+            jr   t0
 
         NESTED_END RhpInterfaceDispatch\entries, _TEXT
 
@@ -91,7 +107,9 @@
         //  t1: parameter of the thunk's target
         PREPARE_EXTERNAL_VAR RhpCidResolve, t0
         mv t1, t5
-        tail       C_FUNC(RhpUniversalTransition_DebugStepTailCall)
+    1:
+        auipc t2, %pcrel_hi(C_FUNC(RhpUniversalTransitionTailCall))
+        jalr  x0, t2, %pcrel_lo(1b)
     LEAF_END RhpInterfaceDispatchSlow, _TEXT
 
 #endif // FEATURE_CACHED_INTERFACE_DISPATCH

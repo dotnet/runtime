@@ -214,7 +214,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
             .Where(data =>
             {
                 var (test, options) = data;
-                var filter = new XUnitWrapperLibrary.TestFilter(options.GlobalOptions.TestFilter(), null);
+                var filter = new XUnitWrapperLibrary.TestFilter(options.GlobalOptions.TestFilter());
                 return filter.ShouldRunTest($"{test.ContainingType}.{test.Method}", test.DisplayNameForFiltering, Array.Empty<string>());
             })
             .Select((data, ct) => data.Left)
@@ -251,13 +251,15 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
 
     private static void AddRunnerSource(SourceProductionContext context, ImmutableArray<ITestInfo> methods, AnalyzerConfigOptionsProvider configOptions, ImmutableDictionary<string, string> aliasMap, CompData compData)
     {
-        bool isMergedTestRunnerAssembly = configOptions.GlobalOptions.IsMergedTestRunnerAssembly();
+        bool buildAsMergedRunner = configOptions.GlobalOptions.IsMergedTestRunnerAssembly() && !configOptions.GlobalOptions.BuildAsStandalone();
         configOptions.GlobalOptions.TryGetValue("build_property.TargetOS", out string? targetOS);
         string assemblyName = compData.AssemblyName;
+        string? targetOSLower = targetOS?.ToLowerInvariant();
 
-        if (isMergedTestRunnerAssembly)
+        if (buildAsMergedRunner)
         {
-            if (targetOS?.ToLowerInvariant() is "ios" or "iossimulator" or "tvos" or "tvossimulator" or "maccatalyst" or "android" or "browser")
+            if ((targetOSLower is "ios" or "iossimulator" or "tvos" or "tvossimulator" or "maccatalyst" or "android")
+                    || ((targetOSLower is "browser") && configOptions.GlobalOptions.RuntimeFlavor().ToLowerInvariant() == "mono"))
             {
                 context.AddSource("XHarnessRunner.g.cs", GenerateXHarnessTestRunner(methods, aliasMap, assemblyName, targetOS));
             }
@@ -268,7 +270,12 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         }
         else
         {
-            context.AddSource("SimpleRunner.g.cs", GenerateStandaloneSimpleTestRunner(methods, aliasMap));
+            context.AddSource(
+                "SimpleRunner.g.cs",
+                GenerateStandaloneSimpleTestRunner(
+                    methods,
+                    aliasMap,
+                    configOptions.GlobalOptions.RequiresProcessIsolation()));
         }
     }
 
@@ -298,7 +305,47 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
     {
         // For simplicity, we'll use top-level statements for the generated Main method.
         CodeBuilder builder = new();
+        CodeBuilder testExecutorBuilder = new();
+        int outOfProcessTestCount = testInfos.Count(static test => test is OutOfProcessTest);
+        if (outOfProcessTestCount != 0)
+        {
+            builder.AppendLine("#nullable enable annotations");
+            builder.AppendLine();
+        }
         AppendAliasMap(builder, aliasMap);
+
+        ITestReporterWrapper reporter =
+            new WrapperLibraryTestSummaryReporting(
+                "summary",
+                "filter",
+                "outputRecorder",
+                outOfProcessTestCount != 0 ? "outOfProcessPlanWriter" : null);
+        int currentTestExecutor = 0;
+
+        // This code breaks the tests into groups called by helper methods.
+        //
+        // Reasonably large methods are known to take a long time to compile, and use excessive stack
+        // leading to test failures. Groups of 50 were sufficient to avoid this problem.
+        //
+        // However, large methods also appear to causes problems when the tests are run in gcstress
+        // modes. Groups of 1 appear to help with this. It hasn't been directly measured but
+        // experimentally has improved gcstress testing.
+        foreach (ITestInfo test in testInfos)
+        {
+            currentTestExecutor++;
+            testExecutorBuilder.AppendLine($"{(test.IsAsync ? "async System.Threading.Tasks.Task" : "void")} TestExecutor{currentTestExecutor}("
+                                           + "System.IO.StreamWriter tempLogSw, "
+                                           + "System.IO.StreamWriter statsCsvSw"
+                                           + (outOfProcessTestCount != 0
+                                               ? ", System.IO.StreamWriter? outOfProcessPlanWriter)"
+                                               : ")"));
+            testExecutorBuilder.AppendLine("{");
+            testExecutorBuilder.PushIndent();
+            testExecutorBuilder.Append(test.GenerateTestExecution(reporter));
+            testExecutorBuilder.PopIndent();
+            testExecutorBuilder.AppendLine("}");
+            testExecutorBuilder.AppendLine();
+        }
 
         builder.AppendLine("XUnitWrapperLibrary.TestFilter filter;");
         builder.AppendLine("XUnitWrapperLibrary.TestSummary summary;");
@@ -309,10 +356,6 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         builder.AppendLine("void Initialize()");
         using (builder.NewBracesScope())
         {
-            builder.AppendLine("System.Collections.Generic.Dictionary<string, string> testExclusionTable ="
-                               + " XUnitWrapperLibrary.TestFilter.LoadTestExclusionTable();");
-            builder.AppendLine();
-
             builder.AppendLine($@"if (System.IO.File.Exists(""{assemblyName}.tempLog.xml""))");
             using (builder.NewBracesScope())
             {
@@ -326,7 +369,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
             }
             builder.AppendLine();
 
-            builder.AppendLine("filter = new (args, testExclusionTable);");
+            builder.AppendLine("filter = new(args);");
             builder.AppendLine("summary = new();");
             builder.AppendLine("stopwatch = System.Diagnostics.Stopwatch.StartNew();");
             builder.AppendLine("outputRecorder = new(System.Console.Out);");
@@ -343,11 +386,34 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
 
         builder.AppendLine("Initialize();");
 
+        if (outOfProcessTestCount != 0)
+        {
+            builder.AppendLine("if (TestLibrary.OutOfProcessTest.OutOfProcessPlanFile is string outOfProcessPlanFile)");
+            using (builder.NewBracesScope())
+            {
+                builder.AppendLine("using (System.IO.StreamWriter unusedWriter = new(System.IO.Stream.Null))");
+                builder.AppendLine("using (System.IO.StreamWriter outOfProcessPlanWriter = System.IO.File.CreateText(outOfProcessPlanFile))");
+                using (builder.NewBracesScope())
+                {
+                    for (int i = 1; i <= currentTestExecutor; i++)
+                    {
+                        builder.AppendLine($"{(testInfos[i - 1].IsAsync ? "await " : "")}TestExecutor{i}(unusedWriter, unusedWriter, outOfProcessPlanWriter);");
+                    }
+                }
+                builder.AppendLine("return 100;");
+            }
+
+            builder.AppendLine("if (System.OperatingSystem.IsBrowser() && !TestLibrary.OutOfProcessTest.IsUsingPrecomputedResults)");
+            using (builder.NewBracesScope())
+            {
+                builder.AppendLine(@"System.Console.Error.WriteLine(""Out-of-process tests require host-side orchestration on Browser."");");
+                builder.AppendLine("return 1;");
+            }
+        }
+
         // Open the stream writer for the temp log.
         builder.AppendLine($@"using (System.IO.StreamWriter tempLogSw = System.IO.File.AppendText(""{assemblyName}.tempLog.xml""))");
         builder.AppendLine($@"using (System.IO.StreamWriter statsCsvSw = System.IO.File.AppendText(""{assemblyName}.testStats.csv""))");
-        CodeBuilder testExecutorBuilder = new();
-        int totalTestsEmitted = 0;
 
         using (builder.NewBracesScope())
         {
@@ -357,56 +423,11 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
             // Otherwise, it's going to fail when attempting to find dumps.
             builder.AppendLine($@"summary.WriteHeaderToTempLog(""{assemblyName}"", tempLogSw);");
 
-            ITestReporterWrapper reporter =
-                new WrapperLibraryTestSummaryReporting("summary", "filter", "outputRecorder");
-
-            int testsLeftInCurrentTestExecutor = 0;
-            int currentTestExecutor = 0;
-
-            if (testInfos.Length > 0)
+            for (int i = 1; i <= currentTestExecutor; i++)
             {
-                // This code breaks the tests into groups called by helper methods.
-                //
-                // Reasonably large methods are known to take a long time to compile, and use excessive stack
-                // leading to test failures. Groups of 50 were sufficient to avoid this problem.
-                //
-                // However, large methods also appear to causes problems when the tests are run in gcstress
-                // modes. Groups of 1 appear to help with this. It hasn't been directly measured but
-                // experimentally has improved gcstress testing.
-                foreach (ITestInfo test in testInfos)
-                {
-                    if (testsLeftInCurrentTestExecutor == 0)
-                    {
-                        if (currentTestExecutor != 0)
-                        {
-                            testExecutorBuilder.PopIndent();
-                            testExecutorBuilder.AppendLine("}");
-                            testExecutorBuilder.AppendLine();
-                        }
-
-                        currentTestExecutor++;
-                        testExecutorBuilder.AppendLine($"void TestExecutor{currentTestExecutor}("
-                                                       + "System.IO.StreamWriter tempLogSw, "
-                                                       + "System.IO.StreamWriter statsCsvSw)");
-                        testExecutorBuilder.AppendLine("{");
-                        testExecutorBuilder.PushIndent();
-
-                        builder.AppendLine($"TestExecutor{currentTestExecutor}(tempLogSw, statsCsvSw);");
-                        testsLeftInCurrentTestExecutor = 1; // Break test executors into groups of 1, which empirically seems to work well
-                    }
-                    else
-                    {
-                        testExecutorBuilder.AppendLine();
-                    }
-
-                    testExecutorBuilder.Append(test.GenerateTestExecution(reporter));
-                    totalTestsEmitted++;
-                    testsLeftInCurrentTestExecutor--;
-                }
-
-                testExecutorBuilder.PopIndent();
-                testExecutorBuilder.AppendLine("}");
-                testExecutorBuilder.AppendLine();
+                builder.AppendLine((testInfos[i - 1].IsAsync ? "await " : "") + (outOfProcessTestCount != 0
+                    ? $"TestExecutor{i}(tempLogSw, statsCsvSw, null);"
+                    : $"TestExecutor{i}(tempLogSw, statsCsvSw);"));
             }
 
             builder.AppendLine("summary.WriteFooterToTempLog(tempLogSw);");
@@ -434,7 +455,12 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         builder.AppendLine();
 
         builder.Append(testExecutorBuilder);
-        builder.AppendLine("public static class TestCount { public const int Count = " + totalTestsEmitted.ToString() + "; }");
+        builder.AppendLine("public static class TestCount { public const int Count = " + testInfos.Length.ToString() + "; }");
+        if (outOfProcessTestCount != 0)
+        {
+            builder.AppendLine();
+            builder.AppendLine("#nullable restore annotations");
+        }
         return builder.GetCode();
     }
 
@@ -465,13 +491,9 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
 
         using (builder.NewBracesScope())
         {
-            builder.AppendLine("System.Collections.Generic.Dictionary<string, string> testExclusionTable ="
-                               + " XUnitWrapperLibrary.TestFilter.LoadTestExclusionTable();");
-
             builder.AppendLine($@"return await XHarnessRunnerLibrary.RunnerEntryPoint.RunTests(RunTests,"
                                + $@" ""{assemblyName}"","
-                               + $@" args.Length != 0 ? args[0] : null,"
-                               + $@" testExclusionTable);");
+                               + $@" args.Length != 0 ? args[0] : null);");
         }
 
         builder.AppendLine("catch (System.Exception ex)");
@@ -507,7 +529,8 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         }
         builder.AppendLine();
 
-        builder.AppendLine("XUnitWrapperLibrary.TestSummary RunTests(XUnitWrapperLibrary.TestFilter filter)");
+        bool hasAsyncTests = testInfos.Any(test => test.IsAsync);
+        builder.AppendLine($"{(hasAsyncTests ? "async " : "")}System.Threading.Tasks.Task<XUnitWrapperLibrary.TestSummary> RunTests(XUnitWrapperLibrary.TestFilter filter)");
 
         using (builder.NewBracesScope())
         {
@@ -550,14 +573,14 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                             }
 
                             currentTestExecutor++;
-                            testExecutorBuilder.AppendLine($"void TestExecutor{currentTestExecutor}("
+                            testExecutorBuilder.AppendLine($"{(test.IsAsync ? "async System.Threading.Tasks.Task" : "void")} TestExecutor{currentTestExecutor}("
                                                            + "XUnitWrapperLibrary.TestFilter filter, "
                                                            + "System.IO.StreamWriter tempLogSw, "
                                                            + "System.IO.StreamWriter statsCsvSw)");
                             testExecutorBuilder.AppendLine("{");
                             testExecutorBuilder.PushIndent();
 
-                            builder.AppendLine($"TestExecutor{currentTestExecutor}(filter, tempLogSw, statsCsvSw);");
+                            builder.AppendLine($"{(test.IsAsync ? "await " : "")}TestExecutor{currentTestExecutor}(filter, tempLogSw, statsCsvSw);");
                             testsLeftInCurrentTestExecutor = 1; // Break test executors into groups of 1, which empirically seems to work well
                         }
                         else
@@ -574,7 +597,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                     testExecutorBuilder.AppendLine();
                 }
             }
-            builder.AppendLine("return summary;");
+            builder.AppendLine(hasAsyncTests ? "return summary;" : "return System.Threading.Tasks.Task.FromResult(summary);");
 
             builder.Append(testExecutorBuilder);
         }
@@ -582,17 +605,37 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         return builder.GetCode();
     }
 
-    private static string GenerateStandaloneSimpleTestRunner(ImmutableArray<ITestInfo> testInfos, ImmutableDictionary<string, string> aliasMap)
+    private static string GenerateStandaloneSimpleTestRunner(
+        ImmutableArray<ITestInfo> testInfos,
+        ImmutableDictionary<string, string> aliasMap,
+        bool reportOutOfProcessStatus)
     {
-        ITestReporterWrapper reporter = new NoTestReporting();
+        const string testExecutedIdentifier = "outOfProcessTestExecuted";
+        const string skipReasonIdentifier = "outOfProcessSkipReason";
+        ITestReporterWrapper reporter = reportOutOfProcessStatus
+            ? new StandaloneTestReporting(testExecutedIdentifier, skipReasonIdentifier)
+            : new NoTestReporting();
         CodeBuilder builder = new();
+        if (reportOutOfProcessStatus)
+        {
+            builder.AppendLine("#nullable enable");
+            builder.AppendLine();
+        }
         AppendAliasMap(builder, aliasMap);
         builder.AppendLine("class __GeneratedMainWrapper");
         using (builder.NewBracesScope())
         {
-            builder.AppendLine("public static int Main()");
+            builder.AppendLine(testInfos.Any(test => test.IsAsync)
+                ? "public static async System.Threading.Tasks.Task<int> Main()"
+                : "public static int Main()");
             using (builder.NewBracesScope())
             {
+                if (reportOutOfProcessStatus)
+                {
+                    builder.AppendLine($"bool {testExecutedIdentifier} = false;");
+                    builder.AppendLine($"string? {skipReasonIdentifier} = null;");
+                    builder.AppendLine();
+                }
                 builder.AppendLine("try");
                 using (builder.NewBracesScope())
                 {
@@ -606,6 +649,16 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                 {
                     builder.AppendLine("System.Console.WriteLine(ex.ToString());");
                     builder.AppendLine("return 101;");
+                }
+                if (reportOutOfProcessStatus)
+                {
+                    builder.AppendLine();
+                    builder.AppendLine(@"string? outOfProcessStatusFile = System.Environment.GetEnvironmentVariable(""__TestOutOfProcessStatusFile"");");
+                    builder.AppendLine($"if (!System.String.IsNullOrEmpty(outOfProcessStatusFile) && !{testExecutedIdentifier} && {skipReasonIdentifier} is not null)");
+                    using (builder.NewBracesScope())
+                    {
+                        builder.AppendLine($"System.IO.File.WriteAllText(outOfProcessStatusFile, {skipReasonIdentifier} + System.Environment.NewLine);");
+                    }
                 }
                 builder.AppendLine("return 100;");
             }
@@ -663,6 +716,8 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
 
     private static IEnumerable<ITestInfo> GetTestMethodInfosForMethod(IMethodSymbol method, AnalyzerConfigOptionsProvider options, ImmutableDictionary<string, string> aliasMap)
     {
+        try
+        {
         bool factAttribute = false;
         bool theoryAttribute = false;
         List<AttributeData> theoryDataAttributes = new();
@@ -724,7 +779,9 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
             {
                 // todo: emit diagnostic
             }
-            else if (method.IsStatic && method.ReturnType.SpecialType == SpecialType.System_Int32)
+            else if (method.IsStatic && (method.ReturnType.SpecialType == SpecialType.System_Int32
+                || (BasicTestMethod.IsAwaitable(method.ReturnType) && method.ReturnType is INamedTypeSymbol { Arity: 1 } taskType
+                    && taskType.TypeArguments[0].SpecialType == SpecialType.System_Int32)))
             {
                 // Support the old executable-based test design where an int return of 100 is success.
                 testInfos = ImmutableArray.Create((ITestInfo)new LegacyStandaloneEntryPointTestMethod(method, aliasMap[method.ContainingAssembly.MetadataName]));
@@ -769,7 +826,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                         break;
                     }
                 case "Xunit.OuterLoopAttribute":
-                    if (options.GlobalOptions.Priority() == 0)
+                    if (options.GlobalOptions.CLRTestPriorityToBuild() == 0)
                     {
                         if (filterAttribute.AttributeConstructor!.Parameters.Length < 2)
                         {
@@ -782,40 +839,51 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                     }
                     break;
                 case "Xunit.ActiveIssueAttribute":
-                    if (filterAttribute.AttributeConstructor!.Parameters.Length == 3)
                     {
-                        ITypeSymbol conditionType = (ITypeSymbol)filterAttribute.ConstructorArguments[1].Value!;
-                        testInfos = DecorateWithUserDefinedCondition(
-                            testInfos,
-                            conditionType,
-                            filterAttribute.ConstructorArguments[2].Values,
-                            aliasMap[conditionType.ContainingAssembly.MetadataName],
-                            true /* negate the condition, as this attribute indicates that a test will NOT be run */);
-                        break;
-                    }
-                    else if (filterAttribute.AttributeConstructor.Parameters.Length == 4)
-                    {
-                        testInfos = FilterForSkippedRuntime(
-                            FilterForSkippedTargetFrameworkMonikers(
-                                DecorateWithSkipOnPlatform(testInfos, (int)filterAttribute.ConstructorArguments[1].Value!, options),
-                                (int)filterAttribute.ConstructorArguments[2].Value!),
-                            (int)filterAttribute.ConstructorArguments[3].Value!, options);
-                    }
-                    else
-                    {
-                        switch (filterAttribute.AttributeConstructor.Parameters[1].Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat))
+                        // Extract the skip reason with issue URL (only for actual ActiveIssue, not OuterLoop fallthrough).
+                        string? skipReason = filterAttribute.AttributeClass!.ToDisplayString() == "Xunit.ActiveIssueAttribute"
+                            ? $"ActiveIssue: {filterAttribute.ConstructorArguments[0].Value}"
+                            : null;
+
+                        if (filterAttribute.AttributeConstructor!.Parameters.Length == 3)
                         {
-                            case "global::Xunit.TestPlatforms":
-                                testInfos = DecorateWithSkipOnPlatform(testInfos, (int)filterAttribute.ConstructorArguments[1].Value!, options);
-                                break;
-                            case "global::Xunit.TestRuntimes":
-                                testInfos = FilterForSkippedRuntime(testInfos, (int)filterAttribute.ConstructorArguments[1].Value!, options);
-                                break;
-                            case "global::Xunit.TargetFrameworkMonikers":
-                                testInfos = FilterForSkippedTargetFrameworkMonikers(testInfos, (int)filterAttribute.ConstructorArguments[1].Value!);
-                                break;
-                            default:
-                                break;
+                            ITypeSymbol conditionType = (ITypeSymbol)filterAttribute.ConstructorArguments[1].Value!;
+                            testInfos = DecorateWithUserDefinedCondition(
+                                testInfos,
+                                conditionType,
+                                filterAttribute.ConstructorArguments[2].Values,
+                                aliasMap[conditionType.ContainingAssembly.MetadataName],
+                                true /* negate the condition, as this attribute indicates that a test will NOT be run */,
+                                skipReason);
+                            break;
+                        }
+                        else if (filterAttribute.AttributeConstructor.Parameters.Length == 4)
+                        {
+                            var skippedFrameworks = (Xunit.TargetFrameworkMonikers)(int)filterAttribute.ConstructorArguments[2].Value!;
+                            // All dimensions must match. Leave platform checks to the decorator,
+                            // which can defer them to execution time for multi-platform builds.
+                            if (skippedFrameworks.HasFlag(Xunit.TargetFrameworkMonikers.Netcoreapp)
+                                && IsRuntimeSkipped((int)filterAttribute.ConstructorArguments[3].Value!, options))
+                            {
+                                testInfos = DecorateWithSkipOnPlatform(testInfos, (int)filterAttribute.ConstructorArguments[1].Value!, options, skipReason);
+                            }
+                        }
+                        else
+                        {
+                            switch (filterAttribute.AttributeConstructor.Parameters[1].Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat))
+                            {
+                                case "global::Xunit.TestPlatforms":
+                                    testInfos = DecorateWithSkipOnPlatform(testInfos, (int)filterAttribute.ConstructorArguments[1].Value!, options, skipReason);
+                                    break;
+                                case "global::Xunit.TestRuntimes":
+                                    testInfos = FilterForSkippedRuntime(testInfos, (int)filterAttribute.ConstructorArguments[1].Value!, options, skipReason);
+                                    break;
+                                case "global::Xunit.TargetFrameworkMonikers":
+                                    testInfos = FilterForSkippedTargetFrameworkMonikers(testInfos, (int)filterAttribute.ConstructorArguments[1].Value!, skipReason);
+                                    break;
+                                default:
+                                    break;
+                            }
                         }
                     }
                     break;
@@ -875,29 +943,36 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                         }
                     }
 
-                    if (skippedTestModes == Xunit.RuntimeTestModes.Any)
+                    if (skippedTestModes == 0
+                        && skippedConfigurations == 0
+                        && skippedTestPlatforms == 0)
                     {
                         testInfos = FilterForSkippedRuntime(testInfos, (int)Xunit.TestRuntimes.CoreCLR, options);
                     }
-                    testInfos = DecorateWithSkipOnPlatform(testInfos, (int)skippedTestPlatforms, options);
-                    testInfos = DecorateWithSkipOnCoreClrConfiguration(testInfos, skippedTestModes, skippedConfigurations);
+                    testInfos = DecorateWithSkipOnCoreClrConfiguration(testInfos, skippedTestModes, skippedConfigurations, skippedTestPlatforms, options);
 
                     break;
             }
         }
 
         return testInfos;
+        }
+        catch(Exception ex) when (LaunchDebugger(ex))
+        {
+            throw;
+        }
+
+        bool LaunchDebugger(Exception ex)
+        {
+            System.Diagnostics.Debugger.Launch();
+            return false;
+        }
     }
 
-    private static ImmutableArray<ITestInfo> DecorateWithSkipOnCoreClrConfiguration(ImmutableArray<ITestInfo> testInfos, Xunit.RuntimeTestModes skippedTestModes, Xunit.RuntimeConfiguration skippedConfigurations)
+    private static ImmutableArray<ITestInfo> DecorateWithSkipOnCoreClrConfiguration(ImmutableArray<ITestInfo> testInfos, Xunit.RuntimeTestModes skippedTestModes, Xunit.RuntimeConfiguration skippedConfigurations, Xunit.TestPlatforms skippedTestPlatforms, AnalyzerConfigOptionsProvider options)
     {
         const string ConditionClass = "TestLibrary.CoreClrConfigurationDetection";
         List<string> conditions = new();
-        if (skippedConfigurations.HasFlag(Xunit.RuntimeConfiguration.Debug | Xunit.RuntimeConfiguration.Checked | Xunit.RuntimeConfiguration.Release))
-        {
-            // If all configurations are skipped, just skip the test as a whole
-            return ImmutableArray<ITestInfo>.Empty;
-        }
 
         if (skippedConfigurations.HasFlag(Xunit.RuntimeConfiguration.Debug))
         {
@@ -961,15 +1036,22 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
             conditions.Add($"!{ConditionClass}.IsGCStressC");
         }
 
-        return ImmutableArray.CreateRange<ITestInfo>(testInfos.Select(t => new ConditionalTest(t, string.Join(" && ", conditions))));
+        options.GlobalOptions.TryGetValue("build_property.TargetOS", out string? targetOS);
+        Xunit.TestPlatforms targetPlatform = GetPlatformForTargetOS(targetOS);
+
+        return ImmutableArray.CreateRange<ITestInfo>(testInfos.Select(t => new ConditionalTest(t, string.Join(" && ", conditions), targetPlatform & ~skippedTestPlatforms)));
     }
 
-    private static ImmutableArray<ITestInfo> FilterForSkippedTargetFrameworkMonikers(ImmutableArray<ITestInfo> testInfos, int v)
+    private static ImmutableArray<ITestInfo> FilterForSkippedTargetFrameworkMonikers(ImmutableArray<ITestInfo> testInfos, int v, string? skipReason = null)
     {
         var tfm = (Xunit.TargetFrameworkMonikers)v;
 
         if (tfm.HasFlag(Xunit.TargetFrameworkMonikers.Netcoreapp))
         {
+            if (skipReason != null)
+            {
+                return ImmutableArray.CreateRange(testInfos.Select(t => (ITestInfo)new AlwaysSkippedTest(t, skipReason)));
+            }
             return ImmutableArray<ITestInfo>.Empty;
         }
         else
@@ -999,7 +1081,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                             // Emit diagnostic
                             continue;
                         }
-                        var argsAsCode = ImmutableArray.CreateRange(args.Select(a => a.ToCSharpString() + (a.Type!.SpecialType == SpecialType.System_Single ? "F" : "")));
+                        var argsAsCode = ImmutableArray.CreateRange(args.Select(FormatInlineDataArgument));
                         testCasesBuilder.Add(new BasicTestMethod(method, alias, arguments: argsAsCode));
                         break;
                     }
@@ -1036,22 +1118,48 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         return testCasesBuilder.ToImmutable();
     }
 
-    private static ImmutableArray<ITestInfo> FilterForSkippedRuntime(ImmutableArray<ITestInfo> testInfos, int skippedRuntimeValue, AnalyzerConfigOptionsProvider options)
+    // TypedConstant.ToCSharpString() renders non-finite floating-point values as bare
+    // `NaN`/`Infinity`/`-Infinity`, which aren't valid C#. Emit the named constants instead.
+    private static string FormatInlineDataArgument(TypedConstant arg)
     {
-        Xunit.TestRuntimes skippedRuntimes = (Xunit.TestRuntimes)skippedRuntimeValue;
-        string runtimeFlavor = options.GlobalOptions.RuntimeFlavor().ToLowerInvariant();
-        if (runtimeFlavor == "mono" && skippedRuntimes.HasFlag(Xunit.TestRuntimes.Mono))
+        if (arg.Type is { SpecialType: SpecialType.System_Double } && arg.Value is double d)
         {
-            return ImmutableArray<ITestInfo>.Empty;
+            if (double.IsNaN(d)) return "double.NaN";
+            if (double.IsPositiveInfinity(d)) return "double.PositiveInfinity";
+            if (double.IsNegativeInfinity(d)) return "double.NegativeInfinity";
         }
-        else if (runtimeFlavor == "coreclr" && skippedRuntimes.HasFlag(Xunit.TestRuntimes.CoreCLR))
+        else if (arg.Type is { SpecialType: SpecialType.System_Single } && arg.Value is float f)
         {
+            if (float.IsNaN(f)) return "float.NaN";
+            if (float.IsPositiveInfinity(f)) return "float.PositiveInfinity";
+            if (float.IsNegativeInfinity(f)) return "float.NegativeInfinity";
+        }
+
+        return arg.ToCSharpString() + (arg.Type!.SpecialType == SpecialType.System_Single ? "F" : "");
+    }
+
+    private static ImmutableArray<ITestInfo> FilterForSkippedRuntime(ImmutableArray<ITestInfo> testInfos, int skippedRuntimeValue, AnalyzerConfigOptionsProvider options, string? skipReason = null)
+    {
+        if (IsRuntimeSkipped(skippedRuntimeValue, options))
+        {
+            if (skipReason != null)
+            {
+                return ImmutableArray.CreateRange(testInfos.Select(t => (ITestInfo)new AlwaysSkippedTest(t, skipReason)));
+            }
             return ImmutableArray<ITestInfo>.Empty;
         }
         return testInfos;
     }
 
-    private static ImmutableArray<ITestInfo> DecorateWithSkipOnPlatform(ImmutableArray<ITestInfo> testInfos, int v, AnalyzerConfigOptionsProvider options)
+    private static bool IsRuntimeSkipped(int skippedRuntimeValue, AnalyzerConfigOptionsProvider options)
+    {
+        Xunit.TestRuntimes skippedRuntimes = (Xunit.TestRuntimes)skippedRuntimeValue;
+        string runtimeFlavor = options.GlobalOptions.RuntimeFlavor().ToLowerInvariant();
+        return (runtimeFlavor == "mono" && skippedRuntimes.HasFlag(Xunit.TestRuntimes.Mono))
+            || (runtimeFlavor == "coreclr" && skippedRuntimes.HasFlag(Xunit.TestRuntimes.CoreCLR));
+    }
+
+    private static ImmutableArray<ITestInfo> DecorateWithSkipOnPlatform(ImmutableArray<ITestInfo> testInfos, int v, AnalyzerConfigOptionsProvider options, string? skipReason = null)
     {
         Xunit.TestPlatforms platformsToSkip = (Xunit.TestPlatforms)v;
         options.GlobalOptions.TryGetValue("build_property.TargetOS", out string? targetOS);
@@ -1064,6 +1172,12 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         }
         else if (platformsToSkip.HasFlag(targetPlatform))
         {
+            if (skipReason != null)
+            {
+                // When tracking skip reasons (e.g. ActiveIssue), emit a runtime skip instead
+                // of eliminating the test at compile time.
+                return ImmutableArray.CreateRange(testInfos.Select(t => (ITestInfo)new AlwaysSkippedTest(t, skipReason)));
+            }
             // If the target platform is skipped, then we don't have any tests to emit.
             return ImmutableArray<ITestInfo>.Empty;
         }
@@ -1072,35 +1186,36 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
             // If our target platform encompases one or more of the skipped platforms,
             // emit a runtime platform check here.
             Xunit.TestPlatforms platformsToEnableTest = targetPlatform & ~platformsToSkip;
-            return ImmutableArray.CreateRange(testInfos.Select(t => (ITestInfo)new ConditionalTest(t, platformsToEnableTest)));
+            return ImmutableArray.CreateRange(testInfos.Select(t => (ITestInfo)new ConditionalTest(t, platformsToEnableTest, skipReason)));
         }
         else
         {
             // The target platform is not mentioned in the attribute, just run it as-is.
             return testInfos;
         }
+    }
 
-        static Xunit.TestPlatforms GetPlatformForTargetOS(string? targetOS)
+    private static Xunit.TestPlatforms GetPlatformForTargetOS(string? targetOS)
+    {
+        return targetOS?.ToLowerInvariant() switch
         {
-            return targetOS?.ToLowerInvariant() switch
-            {
-                "windows" => Xunit.TestPlatforms.Windows,
-                "linux" => Xunit.TestPlatforms.Linux,
-                "osx" => Xunit.TestPlatforms.OSX,
-                "illumos" => Xunit.TestPlatforms.illumos,
-                "solaris" => Xunit.TestPlatforms.Solaris,
-                "android" => Xunit.TestPlatforms.Android,
-                "ios" => Xunit.TestPlatforms.iOS,
-                "tvos" => Xunit.TestPlatforms.tvOS,
-                "maccatalyst" => Xunit.TestPlatforms.MacCatalyst,
-                "browser" => Xunit.TestPlatforms.Browser,
-                "wasi" => Xunit.TestPlatforms.Wasi,
-                "freebsd" => Xunit.TestPlatforms.FreeBSD,
-                "netbsd" => Xunit.TestPlatforms.NetBSD,
-                null or "" or "anyos" => Xunit.TestPlatforms.Any,
-                _ => 0
-            };
-        }
+            "windows" => Xunit.TestPlatforms.Windows,
+            "linux" => Xunit.TestPlatforms.Linux,
+            "osx" => Xunit.TestPlatforms.OSX,
+            "illumos" => Xunit.TestPlatforms.illumos,
+            "solaris" => Xunit.TestPlatforms.Solaris,
+            "android" => Xunit.TestPlatforms.Android,
+            "ios" => Xunit.TestPlatforms.iOS,
+            "tvos" => Xunit.TestPlatforms.tvOS,
+            "maccatalyst" => Xunit.TestPlatforms.MacCatalyst,
+            "browser" => Xunit.TestPlatforms.Browser,
+            "wasi" => Xunit.TestPlatforms.Wasi,
+            "freebsd" => Xunit.TestPlatforms.FreeBSD,
+            "openbsd" => Xunit.TestPlatforms.OpenBSD,
+            "netbsd" => Xunit.TestPlatforms.NetBSD,
+            null or "" or "anyos" => Xunit.TestPlatforms.Any,
+            _ => 0
+        };
     }
 
     private static ImmutableArray<ITestInfo> DecorateWithUserDefinedCondition(
@@ -1108,12 +1223,13 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         ITypeSymbol conditionType,
         ImmutableArray<TypedConstant> values,
         string externAlias,
-        bool negate)
+        bool negate,
+        string? skipReason = null)
     {
         string condition = string.Join("&&", values.Select(v => $"{externAlias}::{conditionType.ToDisplayString(FullyQualifiedWithoutGlobalNamespace)}.{v.Value}"));
         if (negate)
             condition = $"!({condition})";
-        return ImmutableArray.CreateRange<ITestInfo>(testInfos.Select(m => new ConditionalTest(m, condition)));
+        return ImmutableArray.CreateRange<ITestInfo>(testInfos.Select(m => new ConditionalTest(m, condition, skipReason)));
     }
 
     public static readonly SymbolDisplayFormat FullyQualifiedWithoutGlobalNamespace = SymbolDisplayFormat.FullyQualifiedFormat.WithGlobalNamespaceStyle(SymbolDisplayGlobalNamespaceStyle.Omitted);

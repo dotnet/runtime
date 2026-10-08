@@ -83,8 +83,8 @@ namespace System.Net.WebSockets.Client.Tests
                     await pendingReceiveAsyncPosted.Task.WaitAsync(TimeSpan.FromMilliseconds(TimeOutMilliseconds));
 
                     // Close the underlying connection prematurely (without sending a WebSocket Close frame).
-                    connection.Socket.Shutdown(SocketShutdown.Both);
-                    connection.Socket.Close();
+                    await connection.Socket.ShutdownAsync(SocketShutdown.Both);
+                    await connection.Socket.CloseAsync();
                 });
 
                 // Initiate a connection attempt.

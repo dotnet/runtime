@@ -45,6 +45,11 @@ namespace TestMvn
                 fail = true;
             }
 
+            if (MvnCastChainLSR(0x10) != 0xFFFFFFFD)
+            {
+                fail = true;
+            }
+
             if (fail)
             {
                 return 101;
@@ -92,6 +97,13 @@ namespace TestMvn
         {
             //ARM64-FULL-LINE: mvn {{x[0-9]+}}, {{x[0-9]+}}, LSR #32
             return ~(a>>160);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static uint MvnCastChainLSR(uint a)
+        {
+            //ARM64-FULL-LINE: mvn {{w[0-9]+}}, {{w[0-9]+}}, LSR #3
+            return (uint)~(ulong)(a>>3);
         }
     }
 }

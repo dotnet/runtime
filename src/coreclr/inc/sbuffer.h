@@ -419,7 +419,7 @@ protected:
 
     friend class CheckedIteratorBase<SBuffer>;
 
-    class EMPTY_BASES_DECL Index : public CheckedIteratorBase<SBuffer>
+    class EMPTY_BASES Index : public CheckedIteratorBase<SBuffer>
     {
         friend class SBuffer;
 
@@ -445,7 +445,7 @@ protected:
 
   public:
 
-    class EMPTY_BASES_DECL CIterator : public Index, public Indexer<const BYTE, CIterator>
+    class EMPTY_BASES CIterator : public Index, public Indexer<const BYTE, CIterator>
     {
         friend class SBuffer;
 
@@ -460,7 +460,7 @@ protected:
         }
     };
 
-    class EMPTY_BASES_DECL Iterator : public Index, public Indexer<BYTE, Iterator>
+    class EMPTY_BASES Iterator : public Index, public Indexer<BYTE, Iterator>
     {
         friend class SBuffer;
 
@@ -528,7 +528,7 @@ protected:
 #define BUFFER_ALIGNMENT 4
 
 template <COUNT_T size>
-class EMPTY_BASES_DECL InlineSBuffer : public SBuffer
+class EMPTY_BASES InlineSBuffer : public SBuffer
 {
  private:
 #ifdef _MSC_VER

@@ -49,9 +49,9 @@ namespace System.Text.Json.Serialization.Tests
 
             // Serializer throws JsonException if null is assigned to value that can't be null.
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<int>("null", options));
-            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<ClassWithInt>(@"{""MyInt"":null}", options));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<ClassWithInt>("""{"MyInt":null}""", options));
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<List<int>>("[null]", options));
-            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Dictionary<string, int>>(@"{""MyInt"":null}", options));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Dictionary<string, int>>("""{"MyInt":null}""", options));
         }
 
         private class Int32NullConverter_OptOut : Int32NullConverter_SpecialCaseNull
@@ -121,10 +121,10 @@ namespace System.Text.Json.Serialization.Tests
 
             // Serializer throws JsonException if null is assigned to value that can't be null.
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Point_2D_Struct>("null", options));
-            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<ClassWithPoint>(@"{""MyPoint"":null}", options));
-            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<ImmutableClassWithPoint>(@"{""MyPoint"":null}", options));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<ClassWithPoint>("""{"MyPoint":null}""", options));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<ImmutableClassWithPoint>("""{"MyPoint":null}""", options));
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<List<Point_2D_Struct>>("[null]", options));
-            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Dictionary<string, Point_2D_Struct>>(@"{""MyPoint"":null}", options));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Dictionary<string, Point_2D_Struct>>("""{"MyPoint":null}""", options));
         }
 
         private class PointStructConverter_OptOut : PointStructConverter_SpecialCaseNull
@@ -303,7 +303,9 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(new Uri("https://default"), val);
 
             val = null;
-            Assert.Equal(@"""https://default""", JsonSerializer.Serialize(val, options));
+            Assert.Equal("""
+                "https://default"
+                """, JsonSerializer.Serialize(val, options));
         }
 
         private class UriNullConverter_NullOptIn : UriNullConverter_SpecialCaseNull
@@ -367,7 +369,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(-1, obj.Y);
 
             obj = null;
-            JsonTestHelper.AssertJsonEqual(@"{""X"":-1,""Y"":-1}", JsonSerializer.Serialize(obj, options));
+            JsonTestHelper.AssertJsonEqual("""{"X":-1,"Y":-1}""", JsonSerializer.Serialize(obj, options));
         }
 
         private class PointClassConverter_NullOptIn : PointClassConverter_SpecialCaseNull
@@ -382,7 +384,7 @@ namespace System.Text.Json.Serialization.Tests
             options.Converters.Add(new UriNullConverter_NullOptIn());
 
             // Converter is called - JsonIgnoreCondition.WhenWritingDefault does not apply to deserialization.
-            ClassWithIgnoredUri obj = JsonSerializer.Deserialize<ClassWithIgnoredUri>(@"{""MyUri"":null}", options);
+            ClassWithIgnoredUri obj = JsonSerializer.Deserialize<ClassWithIgnoredUri>("""{"MyUri":null}""", options);
             Assert.Equal(new Uri("https://default"), obj.MyUri);
 
             obj.MyUri = null;
@@ -456,7 +458,9 @@ namespace System.Text.Json.Serialization.Tests
             options.Converters.Add(new ObjectConverter());
 
             object obj = null;
-            Assert.Equal(@"""NullObject""", JsonSerializer.Serialize(obj, options));
+            Assert.Equal("""
+                "NullObject"
+                """, JsonSerializer.Serialize(obj, options));
             Assert.Equal("NullObject", JsonSerializer.Deserialize<object>("null", options));
 
             options = new JsonSerializerOptions();
@@ -471,7 +475,7 @@ namespace System.Text.Json.Serialization.Tests
             options.Converters.Add(new ObjectConverter());
 
             List<object> list = new List<object> {  null };
-            Assert.Equal(@"[""NullObject""]", JsonSerializer.Serialize(list, options));
+            Assert.Equal("""["NullObject"]""", JsonSerializer.Serialize(list, options));
 
             list = JsonSerializer.Deserialize<List<object>>("[null]", options);
             Assert.Equal("NullObject", list[0]);
@@ -519,13 +523,13 @@ namespace System.Text.Json.Serialization.Tests
             };
 
             // Baseline - null values ignored, converter is not called.
-            string json = @"{""MyUri"":null}";
+            string json = """{"MyUri":null}""";
 
             ClassWithInitializedUri obj = JsonSerializer.Deserialize<ClassWithInitializedUri>(json, options);
             Assert.Equal(new Uri("https://microsoft.com"), obj.MyUri);
 
             // Test - setter is called if payload is not null and converter returns null.
-            json = @"{""MyUri"":""https://default""}";
+            json = """{"MyUri":"https://default"}""";
             obj = JsonSerializer.Deserialize<ClassWithInitializedUri>(json, options);
             Assert.Null(obj.MyUri);
         }

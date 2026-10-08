@@ -7,6 +7,7 @@ using System.Text;
 using Xunit;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using TestLibrary;
 
 unsafe class PlatformDefaultMemberFunctionNative
 {
@@ -65,6 +66,7 @@ unsafe class PlatformDefaultMemberFunctionNative
 
 public unsafe class PlatformDefaultMemberFunctionTest
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/50440", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static int TestEntryPoint()
     {

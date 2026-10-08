@@ -16,18 +16,18 @@ namespace ILLink.Shared.TrimAnalysis
 {
     internal partial struct RequireDynamicallyAccessedMembersAction
     {
+        readonly RequiresUnreferencedCodeAnalyzer? _analyzer;
         readonly Location _location;
         readonly Action<Diagnostic>? _reportDiagnostic;
         readonly ReflectionAccessAnalyzer _reflectionAccessAnalyzer;
         readonly TypeNameResolver _typeNameResolver;
         readonly ISymbol _owningSymbol;
-        readonly DataFlowAnalyzerContext _context;
         readonly FeatureContext _featureContext;
 #pragma warning disable CA1822 // Mark members as static - the other partial implementations might need to be instance methods
 #pragma warning disable IDE0060 // Unused parameters - should be removed once methods are actually implemented
 
         public RequireDynamicallyAccessedMembersAction(
-            DataFlowAnalyzerContext context,
+            RequiresUnreferencedCodeAnalyzer? analyzer,
             FeatureContext featureContext,
             TypeNameResolver typeNameResolver,
             Location location,
@@ -35,24 +35,24 @@ namespace ILLink.Shared.TrimAnalysis
             ReflectionAccessAnalyzer reflectionAccessAnalyzer,
             ISymbol owningSymbol)
         {
-            _context = context;
+            _analyzer = analyzer;
             _featureContext = featureContext;
             _typeNameResolver = typeNameResolver;
             _location = location;
             _reportDiagnostic = reportDiagnostic;
             _reflectionAccessAnalyzer = reflectionAccessAnalyzer;
             _owningSymbol = owningSymbol;
-            _diagnosticContext = new(location, reportDiagnostic);
+            _diagnosticContext = new(location, reportDiagnostic, typeNameResolver.Compilation);
         }
 
         public partial bool TryResolveTypeNameAndMark(string typeName, bool needsAssemblyName, out TypeProxy type)
         {
-            var diagnosticContext = new DiagnosticContext(_location, _reportDiagnostic);
+            var diagnosticContext = new DiagnosticContext(_location, _reportDiagnostic, _typeNameResolver.Compilation);
             if (_reflectionAccessAnalyzer.TryResolveTypeNameAndMark(typeName, diagnosticContext, needsAssemblyName, out ITypeSymbol? foundType))
             {
                 if (foundType is INamedTypeSymbol namedType && namedType.IsGenericType)
                 {
-                    var genericArgumentDataFlow = new GenericArgumentDataFlow(_context, _featureContext, _typeNameResolver, _owningSymbol, _location, _reportDiagnostic);
+                    var genericArgumentDataFlow = new GenericArgumentDataFlow(_analyzer, _featureContext, _typeNameResolver, _owningSymbol, _location, _reportDiagnostic);
                     genericArgumentDataFlow.ProcessGenericArgumentDataFlow(namedType);
                 }
 

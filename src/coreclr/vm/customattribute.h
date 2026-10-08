@@ -37,7 +37,8 @@ extern "C" void QCALLTYPE CustomAttribute_CreateCustomAttributeInstance(
     BYTE** ppBlob,
     BYTE* pEndBlob,
     INT32* pcNamedArgs,
-    QCall::ObjectHandleOnStack result);
+    QCall::ObjectHandleOnStack result,
+    QCallExceptionStatus* qcallError);
 
 extern "C" void QCALLTYPE CustomAttribute_CreatePropertyOrFieldData(
     QCall::ModuleHandle pModule,
@@ -46,6 +47,7 @@ extern "C" void QCALLTYPE CustomAttribute_CreatePropertyOrFieldData(
     QCall::StringHandleOnStack pName,
     BOOL* pbIsProperty,
     QCall::ObjectHandleOnStack pType,
-    QCall::ObjectHandleOnStack value);
+    QCall::ObjectHandleOnStack value,
+    QCallExceptionStatus* qcallError);
 
 #endif // _CUSTOMATTRIBUTE_H_

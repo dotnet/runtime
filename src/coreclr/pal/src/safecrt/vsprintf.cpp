@@ -23,6 +23,78 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#if defined(__OpenBSD__)
+// OpenBSD's libc doesn't support the legacy %C/%S wide specifiers (glibc and the
+// other BSDs do). Rewrite them to %lc/%ls. Returns a malloc'd copy, or NULL on
+// failure (callers fall back to the original format).
+static char *PAL_TranslateWideFormatForOpenBSD(const char *format)
+{
+    size_t length = strlen(format);
+    // Each rewrite adds one 'l', so doubling is always enough.
+    char *translated = (char *)malloc(length * 2 + 1);
+    if (translated == NULL)
+    {
+        return NULL;
+    }
+
+    const char *in = format;
+    char *out = translated;
+    while (*in != '\0')
+    {
+        if (*in != '%')
+        {
+            *out++ = *in++;
+            continue;
+        }
+
+        *out++ = *in++;
+        if (*in == '%')
+        {
+            *out++ = *in++; // literal "%%"
+            continue;
+        }
+
+        // Skip flags, width, precision and length modifiers.
+        while (*in != '\0' && strchr("-+ #0123456789.*hlLwIqjzt", *in) != NULL)
+        {
+            *out++ = *in++;
+        }
+
+        if (*in == 'C')
+        {
+            *out++ = 'l';
+            *out++ = 'c';
+            in++;
+        }
+        else if (*in == 'S')
+        {
+            *out++ = 'l';
+            *out++ = 's';
+            in++;
+        }
+        else if (*in != '\0')
+        {
+            *out++ = *in++;
+        }
+    }
+    *out = '\0';
+
+    return translated;
+}
+
+static int PAL_safecrt_vsnprintf(char *string, size_t count, const char *format, va_list ap)
+{
+    char *translated = PAL_TranslateWideFormatForOpenBSD(format);
+    int retvalue = vsnprintf(string, count, translated != NULL ? translated : format, ap);
+    free(translated);
+    return retvalue;
+}
+
+#define PAL_SAFECRT_VSNPRINTF PAL_safecrt_vsnprintf
+#else // !defined(__OpenBSD__)
+#define PAL_SAFECRT_VSNPRINTF vsnprintf
+#endif // defined(__OpenBSD__)
+
 DLLEXPORT int __cdecl vsprintf_s (
         char *string,
         size_t sizeInBytes,
@@ -36,7 +108,7 @@ DLLEXPORT int __cdecl vsprintf_s (
     _VALIDATE_RETURN(format != NULL, EINVAL, -1);
     _VALIDATE_RETURN(string != NULL && sizeInBytes > 0, EINVAL, -1);
 
-    retvalue = vsnprintf(string, sizeInBytes, format, ap);
+    retvalue = PAL_SAFECRT_VSNPRINTF(string, sizeInBytes, format, ap);
     if (retvalue < 0)
     {
         string[0] = '\0';
@@ -77,7 +149,7 @@ DLLEXPORT int __cdecl _vsnprintf_s (
     if (sizeInBytes > count)
     {
         save_errno = errno;
-        retvalue = vsnprintf(string, count + 1, format, ap);
+        retvalue = PAL_SAFECRT_VSNPRINTF(string, count + 1, format, ap);
         if (retvalue > (int)(count + 1))
         {
             /* the string has been truncated, return -1 */
@@ -92,7 +164,7 @@ DLLEXPORT int __cdecl _vsnprintf_s (
     else /* sizeInBytes <= count */
     {
         save_errno = errno;
-        retvalue = vsnprintf(string, sizeInBytes, format, ap);
+        retvalue = PAL_SAFECRT_VSNPRINTF(string, sizeInBytes, format, ap);
         string[sizeInBytes - 1] = '\0';
         /* we allow truncation if count == _TRUNCATE */
         if (retvalue >= (int)sizeInBytes && count == _TRUNCATE)

@@ -58,12 +58,10 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllersWithViews();
 
 // Configuration to validate
-builder.Services.Configure<MyConfigOptions>(builder.Configuration.GetSection(
-                                        MyConfigOptions.MyConfig));
-
-// OPtions validation through the DI container
-builder.Services.AddSingleton<IValidateOptions
-                              <MyConfigOptions>, MyConfigValidation>();
+builder.Services.AddOptions<MyConfigOptions>()
+    .Bind(builder.Configuration.GetSection(MyConfigOptions.MyConfig))
+    // Validate with custom IValidateOptions
+    .Validate<MyConfigValidation>();
 
 var app = builder.Build();
 
@@ -134,13 +132,11 @@ public class MyConfigOptions
 public partial class MyConfigValidation : IValidateOptions<MyConfigOptions>
 {
     // Source generator will automatically provide the implementation of IValidateOptions
-    // Then you can add the validation to the DI Container using the following code:
+    // Then you can add the validation using the following code:
     //
-    // builder.Services.AddSingleton<IValidateOptions
-    //                          <MyConfigOptions>, MyConfigValidation>();
     // builder.Services.AddOptions<MyConfigOptions>()
     //        .Bind(builder.Configuration.GetSection(MyConfigOptions.MyConfig))
-    //        .ValidateDataAnnotations();
+    //        .Validate<MyConfigValidation>();
 }
 
 ```

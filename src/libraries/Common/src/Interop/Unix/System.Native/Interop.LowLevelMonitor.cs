@@ -17,6 +17,7 @@ internal static partial class Interop
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_LowLevelMonitor_Acquire")]
         internal static partial void LowLevelMonitor_Acquire(IntPtr monitor);
 
+        [SuppressGCTransition]
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_LowLevelMonitor_Release")]
         internal static partial void LowLevelMonitor_Release(IntPtr monitor);
 

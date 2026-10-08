@@ -8,7 +8,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Xunit;
 
-namespace Opt_Error
+namespace JitTest_Directed_StructABI_StructWithOverlappingFields
 {
     [StructLayout(LayoutKind.Explicit, Pack = 1)]
     public class FourByteClass

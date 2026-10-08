@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using Xunit;
+using TestLibrary;
 
 class TestType1<T> { }
 class TestType2<T> { }
@@ -278,7 +279,8 @@ public class Test_DictionaryExpansion
             Assert.Equal(GFunc<Test_DictionaryExpansion>(i).ToString(), i == 0 ? "Test_DictionaryExpansion" : $"TestType{i}`1[Test_DictionaryExpansion]");
     }
 
-    [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/90427", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoMINIFULLAOT))]
+    [ConditionalFact(typeof(Utilities), nameof(Utilities.IsReflectionEmitSupported))]
     public static void TestEntryPoint()
     {
         GenBase deriv4 = new GenDerived4();
