@@ -7,6 +7,12 @@
     <ProjectReference Include="$(CoreClrProjectRoot)/tools/aot/crossgen2/crossgen2_inbuild.csproj" OutputItemType="Crossgen2Files" />
     <ProjectReference Include="$(CoreClrProjectRoot)/tools/dotnet-pgo/dotnet-pgo.csproj" OutputItemType="DotNetPgo" Condition="'$(DotNetBuildSourceOnly)' != 'true'" />
     <ProjectReference Include="$([MSBuild]::NormalizePath('$(CoreClrProjectRoot)', 'System.Private.CoreLib', 'System.Private.CoreLib.csproj'))" OutputItemType="CoreLib" />
+    <!-- Built so InvokeCrossgen2 can call crossgen2 through the shared RunReadyToRunCompiler
+         task (the same one the SDK uses for PublishReadyToRun) instead of a raw <Exec>.
+         Referenced unconditionally: $(UseComposite) is not set yet at this point in the file
+         (it is assigned by a PropertyGroup further down), and building this task assembly is
+         harmless even for the composite case below, which does not end up invoking it. -->
+    <ProjectReference Include="$([MSBuild]::NormalizePath('$(RepoRoot)', 'src', 'tasks', 'Crossgen2Tasks', 'Crossgen2Tasks.csproj'))" />
   </ItemGroup>
 
   <PropertyGroup>
@@ -17,7 +23,15 @@
     <IntermediatesDir>$([MSBuild]::NormalizeDirectory('$(RootBinDir)', 'obj', 'coreclr', $(OSPlatformConfig)))</IntermediatesDir>
     <DotNetCli>$([MSBuild]::NormalizePath('$(RepoRoot)', 'dotnet.sh'))</DotNetCli>
     <DotNetCli Condition="'$(OS)' == 'Windows_NT'">$([MSBuild]::NormalizePath('$(RepoRoot)', 'dotnet.cmd'))</DotNetCli>
+    <!-- src/tasks builds independently of the coreclr Configuration (e.g. there is no
+         "Checked" task build), matching the convention used by the other *Dir properties
+         below for task assemblies built outside the coreclr build. -->
+    <Crossgen2TasksAssembly>$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'Crossgen2Tasks', '$(TasksConfiguration)', 'Crossgen2Tasks.dll'))</Crossgen2TasksAssembly>
   </PropertyGroup>
+
+  <!-- Unconditional for the same reason as the ProjectReference above; the actual
+       UseComposite gating happens where the task is invoked, inside InvokeCrossgen2. -->
+  <UsingTask TaskName="Microsoft.NET.Build.Tasks.RunReadyToRunCompiler" AssemblyFile="$(Crossgen2TasksAssembly)" />
 
   <PropertyGroup>
     <CrossgenTargetName>InvokeCrossgen2</CrossgenTargetName>
@@ -134,6 +148,14 @@
       <Crossgen2Inputs Include="@(Crossgen2Files->Metadata('OutputPath'))" />
       <Crossgen2Inputs Include="$(WasmCoreClrFrameworkPInvokeModuleListFile)"
                        Condition="'$(PublishReadyToRunContainerFormat)' == 'wasm'" />
+      <Crossgen2Inputs Include="$(Crossgen2TasksAssembly)" Condition="'$(UseComposite)' != 'true'" />
+    </ItemGroup>
+
+    <!-- Reproduces the file set that "-r:$(BinDir)IL/*.dll" previously expanded to via shell
+         globbing, as an explicit item list for RunReadyToRunCompiler's
+         ImplementationAssemblyReferences parameter (the task does not glob itself). -->
+    <ItemGroup Condition="'$(UseComposite)' != 'true'">
+      <Crossgen2CoreLibReferences Include="$([MSBuild]::NormalizePath('$(BinDir)', 'IL', '*.dll'))" />
     </ItemGroup>
   </Target>
 
@@ -155,46 +177,102 @@
     <Message Importance="High"
       Text="Generating native image of System.Private.CoreLib for $(OSPlatformConfig). Logging to $(CrossGenCoreLibLog)" />
 
-    <PropertyGroup>
+    <!--
+      Apple composite images (TargetsAppleMobile) are not single-assembly "-r + input" builds:
+      RunReadyToRunCompiler's composite parameters (ReadyToRunCompositeBuildReferences/
+      BuildInput/UnrootedBuildInput) model a different, multi-assembly composite workflow than
+      this target's "-r:(IL closure) plus composite flag plus one assembly" invocation, so this
+      case keeps the original direct crossgen2 call rather than forcing a mismatched shape onto
+      the task.
+    -->
+    <PropertyGroup Condition="'$(UseComposite)' == 'true'">
       <CrossGenDllCmd>@(Crossgen2Files->Metadata('OutputPath')->WithMetadataValue('Filename','crossgen2')->WithMetadataValue('Extension','$(ExeSuffix)'))</CrossGenDllCmd>
       <CrossGenDllCmd>$(CrossGenDllCmd) -o:$(CrossgenCoreLibOutputPath)</CrossGenDllCmd>
       <CrossGenDllCmd>$(CrossGenDllCmd) -r:$([MSBuild]::NormalizePath('$(BinDir)', 'IL', '*.dll'))</CrossGenDllCmd>
       <CrossGenDllCmd>$(CrossGenDllCmd) --targetarch:$(TargetArchitecture)</CrossGenDllCmd>
       <CrossGenDllCmd Condition="'$(PublishReadyToRunContainerFormat)' != ''">$(CrossGenDllCmd) --obj-format:$(PublishReadyToRunContainerFormat)</CrossGenDllCmd>
-      <CrossGenDllCmd Condition="'$(PublishReadyToRunContainerFormat)' == 'wasm' and '$(PublishReadyToRunStripInliningInfo)' != 'false'">$(CrossGenDllCmd) --strip-inlining-info</CrossGenDllCmd>
-      <CrossGenDllCmd Condition="'$(PublishReadyToRunContainerFormat)' == 'wasm' and '$(PublishReadyToRunStripDebugInfo)' != 'false'">$(CrossGenDllCmd) --strip-debug-info</CrossGenDllCmd>
-      <!-- wasm: enable cross-module inlining/optimization across the whole shared framework (the -r IL closure). -->
-      <CrossGenDllCmd Condition="'$(PublishReadyToRunContainerFormat)' == 'wasm'">$(CrossGenDllCmd) "--opt-cross-module:*"</CrossGenDllCmd>
-      <CrossGenDllCmd Condition="'$(PublishReadyToRunContainerFormat)' == 'wasm' and '$(TargetOS)' == 'browser'">$(CrossGenDllCmd) @(WasmCoreClrFrameworkPInvokeModule->WithMetadataValue('Browser', 'true')->WithMetadataValue('PrebuiltR2RDirect', 'true')->'--directpinvoke:%(Identity)', ' ')</CrossGenDllCmd>
-      <CrossGenDllCmd Condition="'$(PublishReadyToRunContainerFormat)' == 'wasm' and '$(TargetOS)' == 'wasi'">$(CrossGenDllCmd) @(WasmCoreClrFrameworkPInvokeModule->WithMetadataValue('Wasi', 'true')->WithMetadataValue('PrebuiltR2RDirect', 'true')->'--directpinvoke:%(Identity)', ' ')</CrossGenDllCmd>
-      <CrossGenDllCmd Condition="'$(UseComposite)' == 'true'">$(CrossGenDllCmd) --composite</CrossGenDllCmd>
+      <CrossGenDllCmd>$(CrossGenDllCmd) --composite</CrossGenDllCmd>
       <CrossGenDllCmd>$(CrossGenDllCmd) --targetos:$(TargetOS)</CrossGenDllCmd>
       <CrossGenDllCmd Condition="'$(FeatureDynamicCodeCompiled)' != ''">$(CrossGenDllCmd) --target-allows-runtime-code-generation:$(FeatureDynamicCodeCompiled)</CrossGenDllCmd>
       <CrossGenDllCmd Condition="'$(UsingToolIbcOptimization)' != 'true' and '$(EnableNgenOptimization)' == 'true'">$(CrossGenDllCmd) -m:$(MergedMibcPath)</CrossGenDllCmd>
-      <CrossGenDllCmd Condition="'$(UsingToolIbcOptimization)' != 'true' and '$(EnableNgenOptimization)' == 'true' and '$(PublishReadyToRunContainerFormat)' != 'wasm'">$(CrossGenDllCmd) --embed-pgo-data</CrossGenDllCmd>
+      <CrossGenDllCmd Condition="'$(UsingToolIbcOptimization)' != 'true' and '$(EnableNgenOptimization)' == 'true'">$(CrossGenDllCmd) --embed-pgo-data</CrossGenDllCmd>
       <CrossGenDllCmd>$(CrossGenDllCmd) -O</CrossGenDllCmd>
+      <CrossGenDllCmd Condition="'$(Configuration)' == 'Debug' or '$(Configuration)' == 'Checked'">$(CrossGenDllCmd) --verify-type-and-field-layout</CrossGenDllCmd>
+      <CrossGenDllCmd Condition="'$(Configuration)' == 'Debug' or '$(Configuration)' == 'Checked'">$(CrossGenDllCmd) --enable-cached-interface-dispatch-support</CrossGenDllCmd>
+      <CrossGenDllCmd>$(CrossGenDllCmd) @(CoreLib)</CrossGenDllCmd>
+      <CrossGenDllCmd Condition="$(BuildPdb)">$(CrossGenDllCmd) --pdb --pdb-path:$([MSBuild]::NormalizePath('$(BinDir)', 'PDB'))</CrossGenDllCmd>
+      <CrossGenDllCmd Condition="$(BuildPerfMap)">$(CrossGenDllCmd) --perfmap-format-version:1 --perfmap --perfmap-path:$(BinDir)</CrossGenDllCmd>
+    </PropertyGroup>
+
+    <Message Condition="'$(UseComposite)' == 'true'" Importance="High" Text="$(CrossGenDllCmd)" />
+    <Exec Condition="'$(UseComposite)' == 'true'" Command="$(CrossGenDllCmd)" />
+
+    <!-- Non-composite case: go through the shared RunReadyToRunCompiler task instead of
+         a raw <Exec>, so CoreLib compilation uses the same code path (and, in the future,
+         the same task-level caching) as every other crossgen2 invocation in the SDK/repo.
+         Flags without a dedicated task parameter are passed through verbatim via
+         Crossgen2ExtraCommandLineArgs, the same escape hatch the SDK itself uses for
+         PublishReadyToRunCrossgen2ExtraArgs. ShowCompilerWarnings is forced on because the
+         original <Exec> surfaced every canonical "warning:" line as a build warning; the
+         task demotes those to messages by default. -->
+    <ItemGroup Condition="'$(UseComposite)' != 'true'">
+      <_CoreLibCrossgen2Tool Include="@(Crossgen2Files->Metadata('OutputPath')->WithMetadataValue('Filename','crossgen2')->WithMetadataValue('Extension','$(ExeSuffix)'))">
+        <TargetOS>$(TargetOS)</TargetOS>
+        <TargetArch>$(TargetArchitecture)</TargetArch>
+        <PerfmapFormatVersion Condition="$(BuildPerfMap)">1</PerfmapFormatVersion>
+      </_CoreLibCrossgen2Tool>
+
+      <_CoreLibCompilationEntry Include="@(CoreLib)">
+        <OutputR2RImage>$(CrossgenCoreLibOutputPath)</OutputR2RImage>
+        <EmitSymbols Condition="$(BuildPdb) or $(BuildPerfMap)">true</EmitSymbols>
+        <OutputPDBImage Condition="$(BuildPdb)">$(CoreLibNiPdbPath)</OutputPDBImage>
+        <OutputPDBImage Condition="$(BuildPerfMap)">$(CoreLibPerfMapPath)</OutputPDBImage>
+      </_CoreLibCompilationEntry>
+
+      <_CoreLibCrossgen2PgoFiles Include="$(MergedMibcPath)"
+        Condition="'$(UsingToolIbcOptimization)' != 'true' and '$(EnableNgenOptimization)' == 'true'" />
+
+      <_CoreLibCrossgen2ExtraArgs Include="--strip-inlining-info"
+        Condition="'$(PublishReadyToRunContainerFormat)' == 'wasm' and '$(PublishReadyToRunStripInliningInfo)' != 'false'" />
+      <_CoreLibCrossgen2ExtraArgs Include="--strip-debug-info"
+        Condition="'$(PublishReadyToRunContainerFormat)' == 'wasm' and '$(PublishReadyToRunStripDebugInfo)' != 'false'" />
+      <_CoreLibCrossgen2ExtraArgs Include="--codegenopt:JitWasmNyiToR2RUnsupported=1"
+        Condition="'$(PublishReadyToRunContainerFormat)' == 'wasm'" />
+      <!-- No surrounding quotes: these are written to a response file, not parsed by a shell. -->
+      <_CoreLibCrossgen2ExtraArgs Include="--opt-cross-module:*"
+        Condition="'$(PublishReadyToRunContainerFormat)' == 'wasm'" />
+      <_CoreLibCrossgen2ExtraArgs Include="@(WasmCoreClrFrameworkPInvokeModule->WithMetadataValue('Browser', 'true')->WithMetadataValue('PrebuiltR2RDirect', 'true')->'--directpinvoke:%(Identity)')"
+        Condition="'$(PublishReadyToRunContainerFormat)' == 'wasm' and '$(TargetOS)' == 'browser'" />
+      <_CoreLibCrossgen2ExtraArgs Include="@(WasmCoreClrFrameworkPInvokeModule->WithMetadataValue('Wasi', 'true')->WithMetadataValue('PrebuiltR2RDirect', 'true')->'--directpinvoke:%(Identity)')"
+        Condition="'$(PublishReadyToRunContainerFormat)' == 'wasm' and '$(TargetOS)' == 'wasi'" />
+      <_CoreLibCrossgen2ExtraArgs Include="--target-allows-runtime-code-generation:$(FeatureDynamicCodeCompiled)"
+        Condition="'$(FeatureDynamicCodeCompiled)' != ''" />
+      <_CoreLibCrossgen2ExtraArgs Include="--embed-pgo-data"
+        Condition="'$(UsingToolIbcOptimization)' != 'true' and '$(EnableNgenOptimization)' == 'true' and '$(PublishReadyToRunContainerFormat)' != 'wasm'" />
       <!-- Enable type and field layout verification to make it easier to catch when the crossgen2 type layout engine and the runtime disagree on layout conventions -->
-      <CrossGenDllCmd  Condition="'$(Configuration)' == 'Debug' or '$(Configuration)' == 'Checked'">$(CrossGenDllCmd) --verify-type-and-field-layout</CrossGenDllCmd>
+      <_CoreLibCrossgen2ExtraArgs Include="--verify-type-and-field-layout"
+        Condition="'$(Configuration)' == 'Debug' or '$(Configuration)' == 'Checked'" />
       <!-- Enable Cached Interface Dispatch layout rules for the StubDispatch import section. This allows testing of this path on platforms that do not require CachedInterface Dispatch -->
-      <CrossGenDllCmd  Condition="'$(Configuration)' == 'Debug' or '$(Configuration)' == 'Checked'">$(CrossGenDllCmd) --enable-cached-interface-dispatch-support</CrossGenDllCmd>
+      <_CoreLibCrossgen2ExtraArgs Include="--enable-cached-interface-dispatch-support"
+        Condition="'$(Configuration)' == 'Debug' or '$(Configuration)' == 'Checked'" />
       <!-- Enable the GC mode transition verification scaffolding so that illegal transitions assert where they happen rather than corrupting the thread's GC mode.
            Only WebAssembly resumes from a catch by unwinding through native code, so only WebAssembly emits and consumes the scaffolding. -->
-      <CrossGenDllCmd  Condition="'$(TargetOS)' == 'browser' and ('$(Configuration)' == 'Debug' or '$(Configuration)' == 'Checked')">$(CrossGenDllCmd) --verify-gc-mode-transitions</CrossGenDllCmd>
-      <CrossGenDllCmd>$(CrossGenDllCmd) @(CoreLib)</CrossGenDllCmd>
-    </PropertyGroup>
+      <_CoreLibCrossgen2ExtraArgs Include="--verify-gc-mode-transitions"
+        Condition="'$(TargetOS)' == 'browser' and ('$(Configuration)' == 'Debug' or '$(Configuration)' == 'Checked')" />
+    </ItemGroup>
 
-    <PropertyGroup Condition="$(BuildPdb)">
-      <CrossGenDllCmd>$(CrossGenDllCmd) --pdb --pdb-path:$([MSBuild]::NormalizePath('$(BinDir)', 'PDB'))</CrossGenDllCmd>
-    </PropertyGroup>
+    <Message Condition="'$(UseComposite)' != 'true'" Importance="High"
+      Text="RunReadyToRunCompiler: @(_CoreLibCrossgen2Tool) --out:$(CrossgenCoreLibOutputPath) -r:&lt;$(BinDir)IL/*.dll&gt; --targetarch:$(TargetArchitecture) --targetos:$(TargetOS) @(_CoreLibCrossgen2ExtraArgs, ' ') @(CoreLib)" />
 
-    <PropertyGroup Condition="$(BuildPerfMap)">
-      <CrossGenDllCmd>$(CrossGenDllCmd) --perfmap-format-version:1</CrossGenDllCmd>
-      <CrossGenDllCmd>$(CrossGenDllCmd) --perfmap --perfmap-path:$(BinDir)</CrossGenDllCmd>
-    </PropertyGroup>
-
-    <Message Importance="High" Text="$(CrossGenDllCmd)" />
-
-    <Exec Command="$(CrossGenDllCmd)" />
+    <RunReadyToRunCompiler Condition="'$(UseComposite)' != 'true'"
+                           Crossgen2Tool="@(_CoreLibCrossgen2Tool)"
+                           UseCrossgen2="true"
+                           ShowCompilerWarnings="true"
+                           ImplementationAssemblyReferences="@(Crossgen2CoreLibReferences)"
+                           Crossgen2PgoFiles="@(_CoreLibCrossgen2PgoFiles)"
+                           Crossgen2ContainerFormat="$(PublishReadyToRunContainerFormat)"
+                           Crossgen2ExtraCommandLineArgs="@(_CoreLibCrossgen2ExtraArgs, ';')"
+                           CompilationEntry="@(_CoreLibCompilationEntry)" />
 
     <Message Importance="High" Text="Crossgenning of System.Private.CoreLib succeeded." />
     <Message Importance="High" Text="Product binaries are available at $(BinDir)" />
