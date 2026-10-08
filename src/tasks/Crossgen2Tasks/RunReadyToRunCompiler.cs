@@ -431,9 +431,9 @@ namespace Microsoft.NET.Build.Tasks
                         !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("LD_LIBRARY_PATH")) ||
                         !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("LD_PRELOAD")) ||
                         !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("LD_AUDIT")) ||
-                        !string.IsNullOrEmpty(Crossgen2ContainerFormat) ||
-                        HasExtraArguments(Crossgen2ExtraCommandLineArgs) ||
-                        HasExtraArguments(Crossgen2CompositeExtraCommandLineArgs) ||
+                        (!string.IsNullOrEmpty(Crossgen2ContainerFormat) && Crossgen2ContainerFormat != "pe") ||
+                        HasUnsafeExtraArguments(Crossgen2ExtraCommandLineArgs) ||
+                        HasUnsafeExtraArguments(Crossgen2CompositeExtraCommandLineArgs) ||
                         !RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ||
                         RuntimeInformation.ProcessArchitecture != Architecture.X64 ||
                         Crossgen2Tool.GetMetadata(MetadataKeys.TargetOS) != "linux" ||
@@ -509,8 +509,52 @@ namespace Microsoft.NET.Build.Tasks
         internal virtual int ExecuteCompiler(string pathToTool, string responseFileCommands, string commandLineCommands)
             => base.ExecuteTool(pathToTool, responseFileCommands, commandLineCommands);
 
-        private static bool HasExtraArguments(string arguments)
-            => !string.IsNullOrEmpty(arguments) && arguments.Any(c => c != ';' && !char.IsWhiteSpace(c));
+        // Extra arguments can name hidden input files or override the modeled output paths, which the cache
+        // cannot fingerprint from the argument string alone. These are the real-world (in-repo) extra arguments
+        // known to be plain, pathless boolean switches, so they are safe to allow through unchanged: the full
+        // argument text still participates in the cache key, so a different value still produces a different entry.
+        private static readonly string[] s_safeExtraArgumentNames =
+        {
+            "--target-allows-runtime-code-generation",
+            "--embed-pgo-data",
+            "--verify-type-and-field-layout",
+            "--enable-cached-interface-dispatch-support",
+        };
+
+        private static bool HasUnsafeExtraArguments(string arguments)
+        {
+            if (string.IsNullOrEmpty(arguments))
+            {
+                return false;
+            }
+
+            foreach (string argument in arguments.Split(';', StringSplitOptions.RemoveEmptyEntries))
+            {
+                string trimmed = argument.Trim();
+                if (trimmed.Length == 0)
+                {
+                    continue;
+                }
+
+                int colon = trimmed.IndexOf(':');
+                string name = colon < 0 ? trimmed : trimmed.Substring(0, colon);
+                string value = colon < 0 ? null : trimmed.Substring(colon + 1);
+
+                if (Array.IndexOf(s_safeExtraArgumentNames, name) < 0)
+                {
+                    return true;
+                }
+
+                // These are boolean-only switches: anything other than a bare flag or an explicit
+                // true/false value is an unrecognized shape, so bypass rather than risk caching it.
+                if (value is not null && value != "true" && value != "false")
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
 
         protected override void LogEventsFromTextOutput(string singleLine, MessageImportance messageImportance)
         {

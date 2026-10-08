@@ -25,8 +25,14 @@ This first version supports **native Linux-x64 crossgen2, targeting Linux x64,
 non-composite PE output**, with optional task-supplied MIBC profiles and version-1
 perf maps. It requires absolute, non-wildcard input/output paths that can be
 represented safely in the task's response file. It does not parse extra command
-strings: anything other than empty semicolon-separated arguments bypasses caching.
-The existing argument order and compiler invocation are unchanged.
+strings in general: an unrecognized argument (including anything with a path-like
+shape, response files, or an unexpected value) bypasses caching. A small allowlist
+of known, pathless boolean switches used by in-repo callers (currently
+`--target-allows-runtime-code-generation`, `--embed-pgo-data`,
+`--verify-type-and-field-layout`, and `--enable-cached-interface-dispatch-support`,
+each optionally suffixed with `:true`/`:false`) is still included verbatim in the
+cache key, so a different value still produces a different entry. The existing
+argument order and compiler invocation are unchanged.
 
 The task owns exactly the native image and its adjacent
 `<image-without-extension>.ni.r2rmap`, never the containing directory. When symbols
@@ -38,12 +44,11 @@ semaphores are untouched. Bypassed/disabled invocations retain existing behavior
 including existing cleanup behavior.
 
 Legacy crossgen, crossgen2 version 5, separate PDB-generation tasks, composites,
-Windows PDBs, legacy MVID-named maps, Mach-O/Wasm containers, extra arguments
-(including response files, maps, repro packages, and codegen options), explicit
-`ToolTask.EnvironmentVariables`, command processors, and managed-host/apphost
-deployments bypass caching. This includes current runtime callers that supply
-extra arguments such as `--embed-pgo-data`. No target opts these callers in or
-rewrites their arguments. The direct compiler CLI is unchanged.
+Windows PDBs, legacy MVID-named maps, Mach-O/Wasm containers, unrecognized extra
+arguments (including response files, maps, repro packages, and codegen options
+outside the allowlist above), explicit `ToolTask.EnvironmentVariables`, command
+processors, and managed-host/apphost deployments bypass caching. No target opts
+these callers in or rewrites their arguments. The direct compiler CLI is unchanged.
 
 ### Identity and assumptions
 

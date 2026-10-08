@@ -266,6 +266,58 @@ public class Crossgen2CacheTests
     }, shape).Dispose();
 
     [LinuxX64Theory]
+    [InlineData("--embed-pgo-data")]
+    [InlineData("--target-allows-runtime-code-generation:true")]
+    [InlineData("--target-allows-runtime-code-generation:false")]
+    [InlineData("--verify-type-and-field-layout")]
+    [InlineData("--enable-cached-interface-dispatch-support")]
+    [InlineData("--embed-pgo-data;--target-allows-runtime-code-generation:true")]
+    public void AllowlistedExtraArgumentsAreCached(string args) => RemoteExecutor.Invoke(value =>
+    {
+        using var fixture = new Fixture();
+        MockCompiler miss = fixture.Create();
+        miss.Crossgen2ExtraCommandLineArgs = value;
+        Assert.True(miss.Execute());
+        Assert.Equal(1, miss.Executions);
+        Assert.DoesNotContain(miss.Engine.Messages, m => m.Contains("cache bypass:", StringComparison.Ordinal));
+        MockCompiler hit = fixture.Create();
+        hit.Crossgen2ExtraCommandLineArgs = value;
+        Assert.True(hit.Execute());
+        Assert.Equal(0, hit.Executions);
+    }, args).Dispose();
+
+    [LinuxX64Theory]
+    [InlineData("--target-allows-runtime-code-generation:maybe")]
+    [InlineData("--embed-pgo-data;--out:\"elsewhere.dll\"")]
+    [InlineData("--unknown-flag")]
+    public void UnrecognizedExtraArgumentsStillBypass(string args) => RemoteExecutor.Invoke(value =>
+    {
+        using var fixture = new Fixture();
+        MockCompiler task = fixture.Create();
+        task.Crossgen2ExtraCommandLineArgs = value;
+        Assert.True(task.Execute());
+        Assert.Equal(1, task.Executions);
+        Assert.Contains(task.Engine.Messages, m => m.Contains("cache bypass:", StringComparison.Ordinal));
+    }, args).Dispose();
+
+    [LinuxX64Theory]
+    [InlineData(null)]
+    [InlineData("pe")]
+    public void DefaultOrExplicitPeContainerFormatIsCached(string format) => RemoteExecutor.Invoke(value =>
+    {
+        using var fixture = new Fixture();
+        MockCompiler miss = fixture.Create();
+        miss.Crossgen2ContainerFormat = value == "<null>" ? null : value;
+        Assert.True(miss.Execute());
+        Assert.Equal(1, miss.Executions);
+        Assert.DoesNotContain(miss.Engine.Messages, m => m.Contains("cache bypass:", StringComparison.Ordinal));
+        MockCompiler hit = fixture.Create();
+        hit.Crossgen2ContainerFormat = value == "<null>" ? null : value;
+        Assert.True(hit.Execute());
+        Assert.Equal(0, hit.Executions);
+    }, format ?? "<null>").Dispose();
+
+    [LinuxX64Theory]
     [InlineData(false)]
     [InlineData(true)]
     public void FailuresAreNotCached(bool logError) => RemoteExecutor.Invoke(value =>
