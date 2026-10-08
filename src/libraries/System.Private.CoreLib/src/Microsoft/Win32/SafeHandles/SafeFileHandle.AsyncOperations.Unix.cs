@@ -44,12 +44,6 @@ namespace Microsoft.Win32.SafeHandles
                 _strategy = strategy;
             }
 
-            internal void Init(long offset, IReadOnlyList<Memory<byte>> buffers)
-            {
-                _offset = offset;
-                _buffers = buffers;
-            }
-
             internal void Init(long offset, IReadOnlyList<Memory<byte>> buffers, CancellationToken cancellationToken)
             {
                 _offset = offset;
@@ -240,14 +234,6 @@ namespace Microsoft.Win32.SafeHandles
                 _buffer = buffer;
                 _cancellationToken = cancellationToken;
                 _strategy = strategy;
-            }
-
-            internal void Init(long offset, IReadOnlyList<ReadOnlyMemory<byte>> buffers, int bufferIndex, int bufferOffset)
-            {
-                _offset = offset;
-                _buffers = buffers;
-                _bufferIndex = bufferIndex;
-                _bufferOffset = bufferOffset;
             }
 
             internal void Init(long offset, IReadOnlyList<ReadOnlyMemory<byte>> buffers, int bufferIndex, int bufferOffset, CancellationToken cancellationToken)
