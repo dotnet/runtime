@@ -1247,6 +1247,28 @@ namespace System
             return obj;
         }
 
+        /// <summary>
+        /// Copy an unboxed Nullable{T} value to a true boxed Nullable{T}.
+        /// </summary>
+        internal static object BoxToNullable(ref byte src, RuntimeType destNullableType)
+        {
+            Debug.Assert(destNullableType.IsNullableOfT);
+            MethodTable* pMT = destNullableType.GetNativeTypeHandle().AsMethodTable();
+            object obj = RuntimeTypeHandle.InternalAlloc(pMT);
+            GC.KeepAlive(destNullableType); // The obj instance will keep the type alive.
+
+            uint size = pMT->GetNullableNumInstanceFieldBytes();
+            if (pMT->ContainsGCPointers)
+            {
+                Buffer.BulkMoveWithWriteBarrier(ref obj.GetRawData(), ref src, size);
+            }
+            else
+            {
+                SpanHelpers.Memmove(ref obj.GetRawData(), ref src, size);
+            }
+            return obj;
+        }
+
         [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeMethodHandle_GetMethodInstantiation")]
         private static partial void GetMethodInstantiation(RuntimeMethodHandleInternal method, ObjectHandleOnStack types, Interop.BOOL fAsRuntimeTypeArray);

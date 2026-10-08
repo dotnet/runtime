@@ -1067,21 +1067,6 @@ static void ValidateTypeAbleToBeInstantiated(
     }
 }
 
-extern "C" void QCALLTYPE RuntimeTypeHandle_EnsureInstanceActive(
-    QCall::TypeHandle type,
-    QCallExceptionStatus* qcallError)
-{
-    QCALL_CONTRACT;
-
-    BEGIN_QCALL;
-
-    TypeHandle typeHandle = type.AsTypeHandle();
-    _ASSERTE(!typeHandle.IsTypeDesc());
-    typeHandle.AsMethodTable()->EnsureInstanceActive();
-
-    END_QCALL;
-}
-
 /*
  * Given a RuntimeType, queries info on how to instantiate the type.
  * pRuntimeType - [required] the RuntimeType object
