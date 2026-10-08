@@ -116,7 +116,7 @@ namespace Microsoft.Win32.SafeHandles
             }
         }
 
-        private void SetHandleNonBlocking()
+        private void EnsureHandleNonBlocking()
         {
             Debug.Assert(SupportsNonBlocking);
 
@@ -136,7 +136,7 @@ namespace Microsoft.Win32.SafeHandles
             {
                 if (_asyncContext == null)
                 {
-                    SetHandleNonBlocking();
+                    EnsureHandleNonBlocking();
                     Interlocked.CompareExchange(ref _asyncContext, new UnixHandleAsyncContext(this), null);
                 }
                 return _asyncContext!;
@@ -999,13 +999,20 @@ namespace Microsoft.Win32.SafeHandles
             {
                 try
                 {
+                    if (_cancellationToken.IsCancellationRequested)
+                    {
+                        OnCompleted(OnCompletedResult.Canceled);
+                        return;
+                    }
+
                     bool completed = TryCompleteOperation(_owner);
                     Debug.Assert(completed);
                     OnCompleted(OnCompletedResult.Completed);
                 }
-                catch (ObjectDisposedException)
+                catch (Exception e)
                 {
-                    OnCompleted(OnCompletedResult.Aborted);
+                    Exception = e;
+                    OnCompleted(e is ObjectDisposedException ? OnCompletedResult.Aborted : OnCompletedResult.Completed);
                 }
             }
 
@@ -1192,13 +1199,20 @@ namespace Microsoft.Win32.SafeHandles
             {
                 try
                 {
+                    if (_cancellationToken.IsCancellationRequested)
+                    {
+                        OnCompleted(OnCompletedResult.Canceled);
+                        return;
+                    }
+
                     while (!TryCompleteOperation(_owner))
                     { }
                     OnCompleted(OnCompletedResult.Completed);
                 }
-                catch (ObjectDisposedException)
+                catch (Exception e)
                 {
-                    OnCompleted(OnCompletedResult.Aborted);
+                    Exception = e;
+                    OnCompleted(e is ObjectDisposedException ? OnCompletedResult.Aborted : OnCompletedResult.Completed);
                 }
             }
 
