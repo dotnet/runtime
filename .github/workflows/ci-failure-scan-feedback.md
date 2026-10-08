@@ -40,7 +40,7 @@ engine:
 model: gpt-6.1-sol
 max-ai-credits: 2500
 
-# gpt-6.1-sol is not yet in the built-in gh-aw v0.86.2 pricing table.
+# Explicit pricing for gpt-6.1-sol.
 models:
   providers:
     github-copilot:
