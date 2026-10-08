@@ -30,6 +30,56 @@ public class R2RTestSuites
         _output = output;
     }
 
+    [ConditionalTheory(typeof(TestPaths), nameof(TestPaths.IsXArchTarget))]
+    [InlineData(1)]
+    [InlineData(2)]
+    public void ManagedHelperEagerRegistration(int parallelism)
+    {
+        var input = new CompiledAssembly
+        {
+            AssemblyName = nameof(ManagedHelperEagerRegistration),
+            SourceResourceNames = ["ManagedHelpers/HelperCalls.cs"],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(ManagedHelperEagerRegistration),
+            [
+                new(nameof(ManagedHelperEagerRegistration), [new CrossgenAssembly(input)])
+                {
+                    Options = [Crossgen2Option.Composite, Crossgen2Option.Optimize],
+                    AdditionalArgs =
+                    [
+                        "--unrooted-input-file-paths", TestPaths.SystemPrivateCoreLibPath,
+                        "--parallelism", parallelism.ToString(),
+                    ],
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            Assert.True(R2RAssert.HasCompiledMethod(reader, "System.Threading.Thread", "PollGC", out string diagnostic), diagnostic);
+            var formattingOptions = new SignatureFormattingOptions();
+            var eagerHelperSignatures = new List<string>();
+            foreach (ReadyToRunImportSection section in reader.ImportSections)
+            {
+                if ((section.Flags & ReadyToRunImportSectionFlags.Eager) == 0)
+                    continue;
+
+                foreach (ReadyToRunImportSection.ImportSectionEntry entry in section.Entries)
+                {
+                    if (entry.Signature?.FixupKind == ReadyToRunFixupKind.MethodEntry_ReadyToRun)
+                    {
+                        eagerHelperSignatures.Add(entry.Signature.ToString(formattingOptions));
+                    }
+                }
+            }
+
+            Assert.Contains(eagerHelperSignatures, signature =>
+                signature.Contains("System.Threading.Thread.PollGC()", StringComparison.Ordinal));
+        }
+    }
+
     [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsNotWasmTarget))]
     public void BasicCrossModuleInlining()
     {

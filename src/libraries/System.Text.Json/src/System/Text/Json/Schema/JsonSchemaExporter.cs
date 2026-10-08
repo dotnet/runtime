@@ -219,8 +219,7 @@ namespace System.Text.Json.Schema
                     List<string>? required = null;
                     JsonSchema? additionalProperties = null;
 
-                    JsonUnmappedMemberHandling effectiveUnmappedMemberHandling = typeInfo.UnmappedMemberHandling ?? typeInfo.Options.UnmappedMemberHandling;
-                    if (effectiveUnmappedMemberHandling is JsonUnmappedMemberHandling.Disallow)
+                    if (typeInfo.EffectiveUnmappedMemberHandling is JsonUnmappedMemberHandling.Disallow)
                     {
                         additionalProperties = JsonSchema.CreateFalseSchema();
                     }

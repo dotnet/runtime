@@ -30,12 +30,12 @@ enum FileLoadLevel
     FILE_LOAD_ALLOCATE,          // Assembly object allocated and associated with the lock
     FILE_LOAD_BEGIN,
     FILE_LOAD_BEFORE_TYPE_LOAD,
-    FILE_LOAD_EAGER_FIXUPS,
     FILE_LOAD_DELIVER_EVENTS,
 #ifdef FEATURE_IJW
     FILE_LOAD_VTABLE_FIXUPS,
 #endif // FEATURE_IJW
     FILE_LOADED,                    // Loaded by not yet active
+    FILE_LOAD_EAGER_FIXUPS,
     FILE_ACTIVE                     // Fully active (constructors run & security checked)
 };
 

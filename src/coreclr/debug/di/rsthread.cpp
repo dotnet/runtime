@@ -1,10 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-//
-// File: rsthread.cpp
-//
-
 #include "stdafx.h"
 #include "primitives.h"
 #include <float.h>
@@ -3249,11 +3245,6 @@ bool CordbUnmanagedThread::IsCantStop()
     }
     _ASSERTE(GetProcess()->ThreadHoldsProcessLock());
 
-    if (IsRaiseExceptionHijacked())
-    {
-        return true;
-    }
-
     REMOTE_PTR pEEThread;
     HRESULT hr = this->GetEEThreadPtr(&pEEThread);
     if (FAILED(hr))
@@ -3382,40 +3373,6 @@ bool CordbUnmanagedThread::GetEEPGCDisabled()
         return false;
 }
 
-bool CordbUnmanagedThread::GetEEFrame()
-{
-    REMOTE_PTR pEEThread;
-
-    HRESULT hr = GetEEThreadPtr(&pEEThread);
-
-    _ASSERTE(SUCCEEDED(hr));
-    _ASSERTE(pEEThread != NULL);
-
-    // Compute the address of the thread's frame ptr
-    DebuggerIPCRuntimeOffsets *pRO = &(GetProcess()->m_runtimeOffsets);
-    void *pEEThreadFrame = (BYTE*) pEEThread + pRO->m_EEThreadFrameOffset;
-
-    // Grab the thread's frame out of the EE Thread.
-    DWORD EEThreadFrame;
-    hr = GetProcess()->SafeReadStruct(PTR_TO_CORDB_ADDRESS(pEEThreadFrame), &EEThreadFrame);
-
-    if (FAILED(hr))
-    {
-        LOG((LF_CORDB, LL_INFO1000, "CUT::GEETF: failed to read thread frame: 0x%p + 0x%x = 0x%p, err=%d\n",
-             pEEThread, pRO->m_EEThreadFrameOffset, pEEThreadFrame, GetLastError()));
-
-        return false;
-    }
-
-    LOG((LF_CORDB, LL_INFO1000000, "CUT::GEETF: EE Thread's frame is 0x%08x\n", EEThreadFrame));
-
-    // Looks like we've got the frame of the thread.
-    if (EEThreadFrame != pRO->m_EEMaxFrameValue)
-        return true;
-    else
-        return false;
-}
-
 // Gets the thread context as if the thread were unhijacked, regardless
 // of whether it really is
 HRESULT CordbUnmanagedThread::GetThreadContext(DT_CONTEXT* pContext)
@@ -3428,11 +3385,11 @@ HRESULT CordbUnmanagedThread::GetThreadContext(DT_CONTEXT* pContext)
     // Both #1 and #3 are stored in the GetHijackCtx() space so of course you can't
     // have them both. You have #1 if IsContextSet() is true, otherwise it holds #3.
     //
-    // GenericHijack, FirstChanceHijackForSync, and RaiseExceptionHijack use #1 if available
+    // GenericHijack and FirstChanceHijackForSync use #1 if available
     // and fallback to #3 if not. In other words they use GetHijackCtx() regardless of which thing it holds
     // M2UHandoff uses #1 if available and then falls back to #2.
     //
-    // The reasoning here is that the first three hijacks are intended to be transparent. Since
+    // The reasoning here is that the first two hijacks are intended to be transparent. Since
     // the debugger shouldn't know they are occurring then it shouldn't see changes potentially
     // made on the LS. The M2UHandoff is not transparent, it has to update the context in order
     // to get clear of a bp.
@@ -3443,13 +3400,12 @@ HRESULT CordbUnmanagedThread::GetThreadContext(DT_CONTEXT* pContext)
 
     LOG((LF_CORDB, LL_INFO10000, "CUT::GTC: thread=0x%p, flags=0x%x.\n", this, pContext->ContextFlags));
 
-    if(IsContextSet() || IsGenericHijacked() || (IsFirstChanceHijacked() && IsBlockingForSync())
-        || IsRaiseExceptionHijacked())
+    if(IsContextSet() || IsGenericHijacked() || (IsFirstChanceHijacked() && IsBlockingForSync()))
     {
-        _ASSERTE(IsFirstChanceHijacked() || IsGenericHijacked() || IsRaiseExceptionHijacked());
+        _ASSERTE(IsFirstChanceHijacked() || IsGenericHijacked());
         LOG((LF_CORDB, LL_INFO10000, "CUT::GTC: hijackCtx case IsContextSet=%d IsGenericHijacked=%d"
-            "HijackedForSync=%d RaiseExceptionHijacked=%d.\n",
-            IsContextSet(), IsGenericHijacked(), IsBlockingForSync(), IsRaiseExceptionHijacked()));
+            "HijackedForSync=%d.\n",
+            IsContextSet(), IsGenericHijacked(), IsBlockingForSync()));
         LOG((LF_CORDB, LL_INFO10000, "CUT::GTC: hijackCtx is:\n"));
         LogContext(GetHijackCtx());
         CORDbgCopyThreadContext(pContext, GetHijackCtx());
@@ -3479,10 +3435,6 @@ HRESULT CordbUnmanagedThread::GetThreadContext(DT_CONTEXT* pContext)
             hr = HRESULT_FROM_GetLastError();
     }
 
-    if(IsSSFlagHidden())
-    {
-        UnsetSSFlag(pContext);
-    }
     LogContext(pContext);
 
     return hr;
@@ -3503,19 +3455,15 @@ HRESULT CordbUnmanagedThread::SetThreadContext(DT_CONTEXT* pContext)
     // If the thread is first chance hijacked, then write the context into the remote process. If the thread is generic
     // hijacked, then update the copy of the context that we already have. Otherwise call the normal Win32 function.
 
-    if (IsGenericHijacked() || IsFirstChanceHijacked() || IsRaiseExceptionHijacked())
+    if (IsGenericHijacked() || IsFirstChanceHijacked())
     {
         if(IsGenericHijacked())
         {
             LOG((LF_CORDB, LL_INFO10000, "CUT::STC: setting context from generic/2nd chance hijack.\n"));
         }
-        else if(IsFirstChanceHijacked())
-        {
-            LOG((LF_CORDB, LL_INFO10000, "CUT::STC: setting context from 1st chance hijack.\n"));
-        }
         else
         {
-            LOG((LF_CORDB, LL_INFO10000, "CUT::STC: setting context from RaiseException hijack.\n"));
+            LOG((LF_CORDB, LL_INFO10000, "CUT::STC: setting context from 1st chance hijack.\n"));
         }
         SetState(CUTS_HasContextSet);
         CORDbgCopyThreadContext(GetHijackCtx(), pContext);
@@ -3523,19 +3471,6 @@ HRESULT CordbUnmanagedThread::SetThreadContext(DT_CONTEXT* pContext)
     else
     {
         LOG((LF_CORDB, LL_INFO10000, "CUT::STC: setting context from win32.\n"));
-
-        // If the user is also setting the SS flag then we no longer have to hide it
-        if(IsSSFlagEnabled(pContext))
-        {
-            ClearState(CUTS_IsSSFlagHidden);
-        }
-        // if the user is turning off the SS flag but we still want it on then leave it on
-        // but hidden
-        if(!IsSSFlagEnabled(pContext) && IsSSFlagNeeded())
-        {
-            SetState(CUTS_IsSSFlagHidden);
-            SetSSFlag(pContext);
-        }
 
         BOOL succ = DbiSetThreadContext(m_handle, pContext);
 
@@ -3547,54 +3482,6 @@ HRESULT CordbUnmanagedThread::SetThreadContext(DT_CONTEXT* pContext)
 
     return hr;
 }
-
-// Turns on the stepping flag internally and tracks whether or not the flag
-// should also be seen by the user
-VOID CordbUnmanagedThread::BeginStepping()
-{
-    _ASSERTE(!IsGenericHijacked() && !IsFirstChanceHijacked());
-    _ASSERTE(!IsSSFlagNeeded());
-    _ASSERTE(!IsSSFlagHidden());
-
-    DT_CONTEXT tempContext;
-    tempContext.ContextFlags = DT_CONTEXT_FULL;
-    BOOL succ = DbiGetThreadContext(m_handle, &tempContext);
-    _ASSERTE(succ);
-
-    if(!IsSSFlagEnabled(&tempContext))
-    {
-        SetSSFlag(&tempContext);
-        SetState(CUTS_IsSSFlagHidden);
-    }
-    SetState(CUTS_IsSSFlagNeeded);
-
-    succ = DbiSetThreadContext(m_handle, &tempContext);
-    _ASSERTE(succ);
-}
-
-// Turns off the stepping flag internally. If the user was also not using it then
-// the flag is turned off on the context
-VOID CordbUnmanagedThread::EndStepping()
-{
-    _ASSERTE(!IsGenericHijacked() && !IsFirstChanceHijacked());
-    _ASSERTE(IsSSFlagNeeded());
-
-    DT_CONTEXT tempContext;
-    tempContext.ContextFlags = DT_CONTEXT_FULL;
-    BOOL succ = DbiGetThreadContext(m_handle, &tempContext);
-    _ASSERTE(succ);
-
-    if(IsSSFlagHidden())
-    {
-        UnsetSSFlag(&tempContext);
-        ClearState(CUTS_IsSSFlagHidden);
-    }
-    ClearState(CUTS_IsSSFlagNeeded);
-
-    succ = DbiSetThreadContext(m_handle, &tempContext);
-    _ASSERTE(succ);
-}
-
 
 // Writes some details of the given context into the debugger log
 VOID CordbUnmanagedThread::LogContext(DT_CONTEXT* pContext)
@@ -3644,9 +3531,6 @@ HRESULT CordbUnmanagedThread::SetupFirstChanceHijackForSync()
     // This also means we can't hijack in coopeative (since that's a can't-stop)
     _ASSERTE(!IsCantStop());
 
-    // we should not be stepping into hijacks
-    _ASSERTE(!IsSSFlagHidden());
-    _ASSERTE(!IsSSFlagNeeded());
     _ASSERTE(!IsContextSet());
 
     // snapshot the current context so we can start spoofing it
@@ -3730,10 +3614,6 @@ HRESULT CordbUnmanagedThread::SetupFirstChanceHijack(EHijackReason::EHijackReaso
     // We'd better not be hijacking in a can't stop region!
     // This also means we can't hijack in coopeative (since that's a can't-stop)
     _ASSERTE(!IsCantStop());
-
-    // we should not be stepping into hijacks
-    _ASSERTE(!IsSSFlagHidden());
-    _ASSERTE(!IsSSFlagNeeded());
 
     // There's a bizarre race where the thread was suspended right as the thread was about to dispatch a
     // debug event. We still get the debug event, and then may try to hijack. Resume the thread so that
@@ -4163,192 +4043,6 @@ Exit:
 
 #endif // FEATURE_DBGIPC_TRANSPORT
 }
-
-//-----------------------------------------------------------------------------
-// Returns the thread context to the state it was in when it last entered RaiseException
-// This allows the thread to retrigger an exception caused by RaiseException
-//-----------------------------------------------------------------------------
-void CordbUnmanagedThread::HijackToRaiseException()
-{
-    LOG((LF_CORDB, LL_INFO1000, "CP::HTRE: hijacking to RaiseException\n"));
-    _ASSERTE(HasRaiseExceptionEntryCtx());
-    _ASSERTE(!IsRaiseExceptionHijacked());
-    _ASSERTE(!IsGenericHijacked());
-    _ASSERTE(!IsFirstChanceHijacked());
-    _ASSERTE(!IsContextSet());
-
-    BOOL succ = DbiGetThreadContext(m_handle, GetHijackCtx());
-    _ASSERTE(succ);
-    succ = DbiSetThreadContext(m_handle, &m_raiseExceptionEntryContext);
-    _ASSERTE(succ);
-    SetState(CUTS_IsRaiseExceptionHijacked);
-}
-
-//----------------------------------------------------------------------------
-// Returns the context to its unhijacked state.
-//----------------------------------------------------------------------------
-void CordbUnmanagedThread::RestoreFromRaiseExceptionHijack()
-{
-    LOG((LF_CORDB, LL_INFO1000, "CP::RFREH: ending RaiseException hijack\n"));
-    _ASSERTE(IsRaiseExceptionHijacked());
-
-    DT_CONTEXT restoreContext;
-    restoreContext.ContextFlags = DT_CONTEXT_FULL;
-    HRESULT hr = GetThreadContext(&restoreContext);
-    _ASSERTE(SUCCEEDED(hr));
-
-    ClearState(CUTS_IsRaiseExceptionHijacked);
-    hr = SetThreadContext(&restoreContext);
-    _ASSERTE(SUCCEEDED(hr));
-}
-
-//-----------------------------------------------------------------------------
-// Attempts to store the state of a thread currently entering RaiseException
-// This grabs both a full context and enough state to determine what exception
-// RaiseException should be raising. If any of the state can not be retrieved
-// then this entrance to RaiseException is silently ignored
-//-----------------------------------------------------------------------------
-void CordbUnmanagedThread::SaveRaiseExceptionEntryContext()
-{
-    _ASSERTE(FALSE); // should be unused now
-    LOG((LF_CORDB, LL_INFO1000, "CP::SREEC: saving raise exception context.\n"));
-    _ASSERTE(!HasRaiseExceptionEntryCtx());
-    _ASSERTE(!IsRaiseExceptionHijacked());
-    HRESULT hr = S_OK;
-    DT_CONTEXT context;
-    context.ContextFlags = DT_CONTEXT_FULL;
-    DbiGetThreadContext(m_handle, &context);
-    // if the flag is set, unset it
-    // we don't want to be single stepping through RaiseException the second time
-    // sending out OOB SS events. Ultimately we will rethrow the exception which would
-    // cleared the SS flag anyways.
-    UnsetSSFlag(&context);
-    memcpy(&m_raiseExceptionEntryContext, &context,  sizeof(DT_CONTEXT));
-
-    // calculate the exception that we would expect to come from this invocation of RaiseException
-    REMOTE_PTR pExceptionInformation = NULL;
-#if defined(TARGET_AMD64)
-    m_raiseExceptionExceptionCode = (DWORD)m_raiseExceptionEntryContext.Rcx;
-    m_raiseExceptionExceptionFlags = (DWORD)m_raiseExceptionEntryContext.Rdx;
-    m_raiseExceptionNumberParameters = (DWORD)m_raiseExceptionEntryContext.R8;
-    pExceptionInformation = (REMOTE_PTR)m_raiseExceptionEntryContext.R9;
-#elif defined(TARGET_ARM64)
-    m_raiseExceptionExceptionCode = (DWORD)m_raiseExceptionEntryContext.X0;
-    m_raiseExceptionExceptionFlags = (DWORD)m_raiseExceptionEntryContext.X1;
-    m_raiseExceptionNumberParameters = (DWORD)m_raiseExceptionEntryContext.X2;
-    pExceptionInformation = (REMOTE_PTR)m_raiseExceptionEntryContext.X3;
-#elif defined(TARGET_X86)
-    hr = m_pProcess->SafeReadStruct(PTR_TO_CORDB_ADDRESS((BYTE*)m_raiseExceptionEntryContext.Esp+4), &m_raiseExceptionExceptionCode);
-    if(FAILED(hr))
-    {
-        LOG((LF_CORDB, LL_INFO1000, "CP::SREEC: failed to read exception code.\n"));
-        return;
-    }
-    hr = m_pProcess->SafeReadStruct(PTR_TO_CORDB_ADDRESS((BYTE*)m_raiseExceptionEntryContext.Esp+8), &m_raiseExceptionExceptionFlags);
-    if(FAILED(hr))
-    {
-        LOG((LF_CORDB, LL_INFO1000, "CP::SREEC: failed to read exception flags.\n"));
-        return;
-    }
-    hr = m_pProcess->SafeReadStruct(PTR_TO_CORDB_ADDRESS((BYTE*)m_raiseExceptionEntryContext.Esp+12), &m_raiseExceptionNumberParameters);
-    if(FAILED(hr))
-    {
-        LOG((LF_CORDB, LL_INFO1000, "CP::SREEC: failed to read number of parameters.\n"));
-        return;
-    }
-    hr = m_pProcess->SafeReadStruct(PTR_TO_CORDB_ADDRESS((BYTE*)m_raiseExceptionEntryContext.Esp+16), &pExceptionInformation);
-    if(FAILED(hr))
-    {
-        LOG((LF_CORDB, LL_INFO1000, "CP::SREEC: failed to read exception information pointer.\n"));
-        return;
-    }
-#else
-    _ASSERTE(!"Implement this for your platform");
-    return;
-#endif
-    LOG((LF_CORDB, LL_INFO1000, "CP::SREEC: RaiseException parameters are 0x%x 0x%x 0x%x 0x%p.\n",
-        m_raiseExceptionExceptionCode, m_raiseExceptionExceptionFlags,
-        m_raiseExceptionNumberParameters, pExceptionInformation));
-    TargetBuffer exceptionInfoTargetBuffer(pExceptionInformation, sizeof(REMOTE_PTR)*m_raiseExceptionNumberParameters);
-    EX_TRY
-    {
-        m_pProcess->SafeReadBuffer(exceptionInfoTargetBuffer, (BYTE*)m_raiseExceptionExceptionInformation);
-    }
-    EX_CATCH_HRESULT(hr);
-    if(FAILED(hr))
-    {
-        LOG((LF_CORDB, LL_INFO1000, "CP::SREEC: failed to read exception information.\n"));
-        return;
-    }
-
-    // If everything was successful then set this flag, otherwise none of the above data is considered valid
-    SetState(CUTS_HasRaiseExceptionEntryCtx);
-    return;
-}
-
-//-----------------------------------------------------------------------------
-// Clears all the state saved in SaveRaiseExceptionContext and returns the thread
-// to the state as if RaiseException has yet to be called. This is typically called
-// after an exception retriggers or after determining that the exception never will
-// retrigger.
-//-----------------------------------------------------------------------------
-void CordbUnmanagedThread::ClearRaiseExceptionEntryContext()
-{
-    _ASSERTE(FALSE); // should be unused now
-    LOG((LF_CORDB, LL_INFO1000, "CP::CREEC: clearing raise exception context.\n"));
-    _ASSERTE(HasRaiseExceptionEntryCtx());
-    ClearState(CUTS_HasRaiseExceptionEntryCtx);
-}
-
-//-----------------------------------------------------------------------------
-// Uses a heuristic to determine if the given exception record is likely to be the exception
-// raised by the last invocation of RaiseException on this thread. The current heuristic compares
-// ExceptionCode, ExceptionFlags, and all ExceptionInformation.
-//-----------------------------------------------------------------------------
-BOOL CordbUnmanagedThread::IsExceptionFromLastRaiseException(const EXCEPTION_RECORD* pExceptionRecord)
-{
-    _ASSERTE(FALSE); // should be unused now
-    if(!HasRaiseExceptionEntryCtx())
-    {
-        LOG((LF_CORDB, LL_INFO1000, "CP::IEFLRE: not a match - no previous raise context\n"));
-        return FALSE;
-    }
-
-    if (pExceptionRecord->ExceptionCode != m_raiseExceptionExceptionCode)
-    {
-        LOG((LF_CORDB, LL_INFO1000, "CP::IEFLRE: not a match - exception codes differ 0x%x 0x%x\n",
-            pExceptionRecord->ExceptionCode, m_raiseExceptionExceptionCode));
-        return FALSE;
-    }
-
-    if (pExceptionRecord->ExceptionFlags != m_raiseExceptionExceptionFlags)
-    {
-        LOG((LF_CORDB, LL_INFO1000, "CP::IEFLRE: not a match - exception flags differ 0x%x 0x%x\n",
-            pExceptionRecord->ExceptionFlags, m_raiseExceptionExceptionFlags));
-        return FALSE;
-    }
-
-    if (pExceptionRecord->NumberParameters != m_raiseExceptionNumberParameters)
-    {
-        LOG((LF_CORDB, LL_INFO1000, "CP::IEFLRE: not a match - number parameters differ 0x%x 0x%x\n",
-            pExceptionRecord->NumberParameters, m_raiseExceptionNumberParameters));
-        return FALSE;
-    }
-
-    for(DWORD i = 0; i < pExceptionRecord->NumberParameters; i++)
-    {
-        if(m_raiseExceptionExceptionInformation[i] != pExceptionRecord->ExceptionInformation[i])
-        {
-            LOG((LF_CORDB, LL_INFO1000, "CP::IEFLRE: not a match - param %d differs 0x%x 0x%x\n",
-                i, pExceptionRecord->ExceptionInformation[i], m_raiseExceptionExceptionInformation[i]));
-            return FALSE;
-        }
-    }
-
-    LOG((LF_CORDB, LL_INFO1000, "CP::IEFLRE: match\n"));
-    return TRUE;
-}
-
 
 //-----------------------------------------------------------------------------
 // Inject an int3 at the given remote address

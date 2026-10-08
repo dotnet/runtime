@@ -15,7 +15,7 @@ namespace Internal.Runtime
     {
         public const uint Signature = 0x00525452; // 'RTR'
 
-        public const ushort CurrentMajorVersion = 30;
+        public const ushort CurrentMajorVersion = 31;
         public const ushort CurrentMinorVersion = 0;
     }
 #if READYTORUN

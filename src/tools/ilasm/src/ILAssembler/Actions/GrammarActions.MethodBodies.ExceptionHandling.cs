@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using Antlr4.Runtime;
+using LabelHandle = ILAssembler.MethodBodyWriter.Label;
 
 namespace ILAssembler;
 
@@ -105,6 +106,7 @@ internal sealed partial class GrammarActions
             return;
         }
 
+        Location location = Location.From(context.Start, _documents);
         foreach (ExceptionClauseValue clause in context.clauses.Value)
         {
             (LabelHandle Start, LabelHandle End)? handlerRange = ResolveExceptionRange(clause.Handler);
@@ -120,14 +122,16 @@ internal sealed partial class GrammarActions
                         tryRange.Value.Start,
                         tryRange.Value.End,
                         handlerRange.Value.Start,
-                        handlerRange.Value.End));
+                        handlerRange.Value.End,
+                        location));
                     break;
                 case FaultExceptionClauseValue:
                     AddExceptionRegion(new EntityRegistry.ExceptionRegion.FaultRegion(
                         tryRange.Value.Start,
                         tryRange.Value.End,
                         handlerRange.Value.Start,
-                        handlerRange.Value.End));
+                        handlerRange.Value.End,
+                        location));
                     break;
                 case CatchExceptionClauseValue { CatchType: { IsValid: true, Type: not null } catchType }:
                     AddExceptionRegion(new EntityRegistry.ExceptionRegion.CatchRegion(
@@ -135,7 +139,8 @@ internal sealed partial class GrammarActions
                         tryRange.Value.End,
                         handlerRange.Value.Start,
                         handlerRange.Value.End,
-                        catchType.Type));
+                        catchType.Type,
+                        location));
                     break;
                 case FilterExceptionClauseValue filterClause
                     when ResolveExceptionFilter(filterClause.Filter) is LabelHandle filterStart:
@@ -144,7 +149,8 @@ internal sealed partial class GrammarActions
                         tryRange.Value.End,
                         handlerRange.Value.Start,
                         handlerRange.Value.End,
-                        filterStart));
+                        filterStart,
+                        location));
                     break;
             }
         }

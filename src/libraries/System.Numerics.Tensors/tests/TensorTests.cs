@@ -146,6 +146,7 @@ namespace System.Numerics.Tensors.Tests
         [InlineData(3, 9)]
         [InlineData(3, 17)]
         [InlineData(3, 33)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/135117", typeof(Helpers), nameof(Helpers.IsWasmWithAcceleratedVector128))]
         public static void TensorTanPreservesScalarAccuracy(int layout, int columns)
         {
             Test<float>(layout, columns);

@@ -1,12 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //*****************************************************************************
 // File: controller.h
 //
-
-//
 // Debugger control flow object
-//
 //*****************************************************************************
 
 #ifndef CONTROLLER_H_
@@ -911,14 +909,6 @@ public:
         return ItemIndex(p);
     }
 
-#ifdef _DEBUG
-public:
-    // DEBUG An internal debugging routine, it iterates
-    //      through the hashtable, stopping at every
-    //      single entry, no matter what it's state.
-    void CheckPatchTable();
-#endif // _DEBUG
-
     // Count how many patches are in the table.
     // Use for asserts
     int GetNumberOfPatches();
@@ -1376,9 +1366,6 @@ public:
     void Dequeue();
 
   protected:
-    // Helper function that is called on each virtual trace call target to set a trace patch
-    static void PatchTargetVisitor(TADDR pVirtualTraceCallTarget, VOID* pUserData);
-
     DebuggerControllerPatch *AddILPrimaryPatch(Module *module,
                   mdMethodDef md,
                   MethodDesc *pMethodDescFilter,

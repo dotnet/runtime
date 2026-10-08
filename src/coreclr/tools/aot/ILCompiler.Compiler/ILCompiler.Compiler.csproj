@@ -616,6 +616,7 @@
     <Compile Include="Compiler\DependencyAnalysis\EmbeddedObjectNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\EmbeddedPointerIndirectionNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ExternMethodSymbolNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\KnownExternFunctions.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ISpecialUnboxThunkNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\MetadataNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\MetadataEETypeNode.cs" />

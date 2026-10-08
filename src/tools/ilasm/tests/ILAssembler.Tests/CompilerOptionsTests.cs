@@ -278,6 +278,62 @@ namespace ILAssembler.Tests
             Assert.Single(pe.GetMethodBody(methods["SecondFinally"]).ExceptionRegions);
         }
 
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void FoldOption_PreservesMalformedZeroCodeExceptionRegions(bool fold)
+        {
+            const string source = """
+                .assembly test {}
+                .class public Test
+                {
+                    .method public static void Prefix() cil managed { ret }
+                    .method public static void First() cil managed
+                    {
+                        .try -1 to 0 finally handler 0 to 1
+                    }
+                    .method public static void Second() cil managed
+                    {
+                        .try -1 to 0 finally handler 0 to 1
+                    }
+                    .method public static void DifferentKind() cil managed
+                    {
+                        .try -1 to 0 fault handler 0 to 1
+                    }
+                    .method public static void DifferentBounds() cil managed
+                    {
+                        .try -2 to 0 finally handler 0 to 1
+                    }
+                }
+                """;
+            var (diagnostics, result) = DocumentCompilerTestHelpers.CompileWithDiagnostics(
+                source, new Options { Fold = fold, ErrorTolerant = true });
+            Assert.Equal(4, diagnostics.Length);
+            Assert.All(diagnostics, diagnostic => Assert.Equal(DiagnosticIds.InvalidExceptionRegion, diagnostic.Id));
+            Assert.NotNull(result);
+            using PEReader pe = new(DocumentCompilerTestHelpers.Serialize(result));
+            MetadataReader reader = pe.GetMetadataReader();
+            Dictionary<string, int> methods = reader.MethodDefinitions.Select(reader.GetMethodDefinition)
+                .ToDictionary(method => reader.GetString(method.Name), method => method.RelativeVirtualAddress);
+            Assert.Equal(fold, methods["First"] == methods["Second"]);
+            Assert.NotEqual(methods["First"], methods["DifferentKind"]);
+            Assert.NotEqual(methods["First"], methods["DifferentBounds"]);
+            Assert.Equal(new byte[] { 0x2A }, pe.GetMethodBody(methods["Prefix"]).GetILBytes());
+            foreach (string name in new[] { "First", "Second", "DifferentKind", "DifferentBounds" })
+            {
+                Assert.True(methods[name] > 0);
+                Assert.Equal(0, methods[name] % 4);
+                MethodBodyBlock body = pe.GetMethodBody(methods[name]);
+                Assert.Empty(body.GetILBytes()!);
+                ExceptionRegion region = Assert.Single(body.ExceptionRegions);
+                Assert.Equal(name == "DifferentKind" ? ExceptionRegionKind.Fault : ExceptionRegionKind.Finally, region.Kind);
+                Assert.Equal(name == "DifferentBounds" ? -2 : -1, region.TryOffset);
+                Assert.Equal(name == "DifferentBounds" ? 2 : 1, region.TryLength);
+                Assert.Equal(0, region.HandlerOffset);
+                Assert.Equal(1, region.HandlerLength);
+            }
+        }
+
         [Fact]
         public void PdbOption_EmitsEmbeddedPortablePdbWithoutLineDirectives()
         {

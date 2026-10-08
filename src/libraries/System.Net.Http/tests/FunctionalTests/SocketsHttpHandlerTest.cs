@@ -470,6 +470,28 @@ namespace System.Net.Http.Functional.Tests
     public sealed class SocketsHttpHandler_HttpClientHandler_ServerCertificates_Test : HttpClientHandler_ServerCertificates_Test
     {
         public SocketsHttpHandler_HttpClientHandler_ServerCertificates_Test(ITestOutputHelper output) : base(output) { }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux | TestPlatforms.OSX)]
+        public void CreateHttpClientHandler_AllowTlsResume_ConfiguresSslOptions(bool allowTlsResume)
+        {
+            using HttpClientHandler defaultHandler = CreateHttpClientHandler();
+            Assert.True(GetUnderlyingSocketsHttpHandler(defaultHandler).SslOptions.AllowTlsResume);
+
+            using HttpClientHandler instanceHandler = CreateHttpClientHandler(allowTlsResume: allowTlsResume);
+            Assert.Equal(allowTlsResume, GetUnderlyingSocketsHttpHandler(instanceHandler).SslOptions.AllowTlsResume);
+            Assert.Null(instanceHandler.ServerCertificateCustomValidationCallback);
+
+            using HttpClientHandler versionHandler = CreateHttpClientHandler(UseVersion, allowAllCertificates: false, allowTlsResume: allowTlsResume);
+            Assert.Equal(allowTlsResume, GetUnderlyingSocketsHttpHandler(versionHandler).SslOptions.AllowTlsResume);
+            Assert.Null(versionHandler.ServerCertificateCustomValidationCallback);
+
+            using HttpClientHandler stringHandler = CreateHttpClientHandler(UseVersion.ToString(), allowTlsResume: allowTlsResume);
+            Assert.Equal(allowTlsResume, GetUnderlyingSocketsHttpHandler(stringHandler).SslOptions.AllowTlsResume);
+            Assert.NotNull(stringHandler.ServerCertificateCustomValidationCallback);
+        }
     }
 
     [SkipOnPlatform(TestPlatforms.Browser, "ResponseDrainTimeout is not supported on Browser")]
@@ -6237,7 +6259,7 @@ namespace System.Net.Http.Functional.Tests
 
                     policy.ExtraStore.AddRange(_certificateSetup.ServerChain);
                     policy.CustomTrustStore.Add(_certificateSetup.ServerChain[^1]);
-                    socketsHandler.SslOptions = new SslClientAuthenticationOptions() { CertificateChainPolicy = policy };
+                    socketsHandler.SslOptions = new SslClientAuthenticationOptions() { CertificateChainPolicy = policy, AllowTlsResume = false };
                     using HttpClient client = CreateHttpClient(handler);
                     client.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionExact;
                     HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, uri) { Version = UseVersion, VersionPolicy = HttpVersionPolicy.RequestVersionExact };
@@ -6270,7 +6292,7 @@ namespace System.Net.Http.Functional.Tests
 
                     policy.ExtraStore.AddRange(_certificateSetup.ServerChain);
                     policy.CustomTrustStore.Add(_certificateSetup.ServerChain[^1]);
-                    socketsHandler.SslOptions = new SslClientAuthenticationOptions() { CertificateChainPolicy = policy };
+                    socketsHandler.SslOptions = new SslClientAuthenticationOptions() { CertificateChainPolicy = policy, AllowTlsResume = false };
                     using HttpClient client = CreateHttpClient(handler);
                     client.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionExact;
                     HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, uri) { Version = UseVersion, VersionPolicy = HttpVersionPolicy.RequestVersionExact };
@@ -6309,7 +6331,7 @@ namespace System.Net.Http.Functional.Tests
 
                     policy.ExtraStore.AddRange(_certificateSetup.ServerChain);
                     policy.CustomTrustStore.Add(_certificateSetup.ServerChain[^1]);
-                    socketsHandler.SslOptions = new SslClientAuthenticationOptions() { CertificateChainPolicy = policy };
+                    socketsHandler.SslOptions = new SslClientAuthenticationOptions() { CertificateChainPolicy = policy, AllowTlsResume = false };
 
                     using HttpClient client = CreateHttpClient(handler);
                     client.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionExact;

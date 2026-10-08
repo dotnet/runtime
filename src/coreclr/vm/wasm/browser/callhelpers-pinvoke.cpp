@@ -89,6 +89,7 @@ extern "C" {
     void SystemNative_FreeLibrary (void *);
     double SystemNative_GetCpuUtilization (void *);
     int32_t SystemNative_GetCryptographicallySecureRandomBytes (void *, int32_t);
+    uint64_t SystemNative_GetCurrentThreadId ();
     void * SystemNative_GetCwd (void *, int32_t);
     void * SystemNative_GetDefaultSearchOrderPseudoHandle ();
     int32_t SystemNative_GetErrNo ();
@@ -235,6 +236,7 @@ static const Entry s_libSystem_Native [] = {
     DllImportEntry(SystemNative_FreeLibrary) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetCpuUtilization) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetCryptographicallySecureRandomBytes) // System.IO.Compression, System.Private.CoreLib, System.Security.Cryptography
+    DllImportEntry(SystemNative_GetCurrentThreadId) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetCwd) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetDefaultSearchOrderPseudoHandle) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetErrNo) // System.Private.CoreLib
@@ -325,7 +327,7 @@ typedef struct PInvokeTable {
 static PInvokeTable s_PInvokeTables[] = {
     {"libSystem.Globalization.Native", s_libSystem_Globalization_Native, 34},
     {"libSystem.IO.Compression.Native", s_libSystem_IO_Compression_Native, 9},
-    {"libSystem.Native", s_libSystem_Native, 94},
+    {"libSystem.Native", s_libSystem_Native, 95},
     {"libSystem.Native.Browser", s_libSystem_Native_Browser, 1},
     {"libSystem.Runtime.InteropServices.JavaScript.Native", s_libSystem_Runtime_InteropServices_JavaScript_Native, 6}
 };
