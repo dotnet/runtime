@@ -722,6 +722,35 @@ If no Frame in the chain produces a usable context (thread is not running manage
 
 `GetWasmFunctionIdentity` reads the function-table index from the WASM R2R frame record at the frame's SP and resolves it through `FunctionTableIndexRangeList` to the module that registered the image, the `RUNTIME_FUNCTION` index within the image, and whether that function is a funclet (bit 31 of `BeginAddress`). For a composite image the module is the one that loaded the image, not necessarily the method's own module. When the index is not in a registered range, only `FunctionTableIndex` is set. It throws `PlatformNotSupportedException` on other architectures, and `InvalidOperationException` unless the frame is `Frameless` with `CodeKind.ReadyToRun`, because native markers and interpreter frames can hold bytes that resemble a frame record. A WebAssembly engine's function index is module-local, so a consumer maps `Module` and `RuntimeFunctionIndex` through the image's element section rather than using the raw function-table index.
 
+```csharp
+WasmFunctionIdentity GetWasmFunctionIdentity(IStackDataFrameHandle frame)
+{
+    if (RuntimeInfo.GetTargetArchitecture() != RuntimeInfoArchitecture.Wasm)
+        throw new PlatformNotSupportedException();
+    if (frame.State != StackWalkState.Frameless || ExecutionManager.GetCodeKind(frame.Context.IP) != CodeKind.ReadyToRun)
+        throw new InvalidOperationException();
+
+    TargetPointer frameBase = /* frame base of the R2R frame at frame.Context.SP; InvalidOperationException if none */;
+    uint index = target.Read<uint>(frameBase + FunctionIndexOffset);
+
+    // Walk FunctionTableIndexRangeList for the section with
+    // MinFunctionTableIndex <= index < MinFunctionTableIndex + NumRuntimeFunctions.
+    FunctionTableIndexRangeSection? section = /* lookup */;
+    if (section is null)
+        return new WasmFunctionIdentity { FunctionTableIndex = index };
+
+    uint runtimeFunctionIndex = index - section.MinFunctionTableIndex;
+    RuntimeFunction function = /* section.R2RModule's ReadyToRunInfo RUNTIME_FUNCTION table */[runtimeFunctionIndex];
+    return new WasmFunctionIdentity
+    {
+        FunctionTableIndex = index,
+        Module = section.R2RModule,
+        RuntimeFunctionIndex = runtimeFunctionIndex,
+        IsFunclet = (function.BeginAddress & 0x80000000) != 0,
+    };
+}
+```
+
 `GetExactGenericArgsToken` recovers the exact generic instantiation context for the current frameless managed frame, mirroring native `CrawlFrame::GetExactGenericArgsToken`. It returns `TargetPointer.Null` unless the frame is `Frameless`, has a `MethodDesc`, and that method is shared by generic instantiations (`GetGenericContextLoc != None`). When applicable it:
 
 1. Selects the platform GC-info decoder, or the interpreter GC-info decoder for `CodeKind.Interpreter`, and requests the location through `IGCInfo.TryGetGenericContextStorage`.
