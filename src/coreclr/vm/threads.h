@@ -3241,7 +3241,6 @@ public:
     void EnumMemoryRegionsWorker(CLRDataEnumMemoryFlags flags);
 #endif
 
-public:
 #ifdef _DEBUG
 // when the thread is doing a stressing GC, some Crst violation could be ignored, by a non-elegant solution.
 private:
