@@ -117,7 +117,6 @@ inline void RestoreNonvolatileRegisterPointers(PT_KNONVOLATILE_CONTEXT_POINTERS 
 //    Unfortunately, I cannot articulate why at the moment.
 //
 #ifdef _DEBUG
-void DumpClauses(IJitManager* pJitMan, const METHODTOKEN& MethToken, UINT_PTR uMethodStartPC, UINT_PTR dwControlPc);
 static void DoEHLog(DWORD lvl, _In_z_ const char *fmt, ...);
 #define EH_LOG(expr)  { DoEHLog expr ; }
 #else
@@ -172,127 +171,6 @@ void InitializeExceptionHandling()
     PAL_SetGetGcMarkerExceptionCode(GetGcMarkerExceptionCode);
 #endif // TARGET_UNIX
 }
-
-struct UpdateObjectRefInResumeContextCallbackState
-{
-    UINT_PTR uResumeSP;
-    Frame *pHighestFrameWithRegisters;
-    TADDR uResumeFrameFP;
-    TADDR uICFCalleeSavedFP;
-
-#ifdef _DEBUG
-    UINT nFrames;
-    bool fFound;
-#endif
-};
-
-// Stack unwind callback for UpdateObjectRefInResumeContext().
-StackWalkAction UpdateObjectRefInResumeContextCallback(CrawlFrame* pCF, LPVOID pData)
-{
-    CONTRACTL
-    {
-        MODE_ANY;
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    UpdateObjectRefInResumeContextCallbackState *pState = (UpdateObjectRefInResumeContextCallbackState*)pData;
-    CONTEXT* pSrcContext = pCF->GetRegisterSet()->pCurrentContext;
-
-    INDEBUG(pState->nFrames++);
-
-    // Check to see if we have reached the resume frame.
-    if (pCF->IsFrameless())
-    {
-        // At this point, we are trying to find the managed frame containing the catch handler to be invoked.
-        // This is done by comparing the SP of the managed frame for which this callback was invoked with the
-        // SP the OS passed to our personality routine for the current managed frame. If they match, then we have
-        // reached the target frame.
-        //
-        // It is possible that a managed frame may execute a PInvoke after performing a stackalloc:
-        //
-        // 1) The ARM JIT will always inline the PInvoke in the managed frame, whether or not the frame
-        //    contains EH. As a result, the ICF will live in the same frame which performs stackalloc.
-        //
-        // 2) JIT64 will only inline the PInvoke in the managed frame if the frame *does not* contain EH. If it does,
-        //    then pinvoke will be performed via an ILStub and thus, stackalloc will be performed in a frame different
-        //    from the one (ILStub) that contains the ICF.
-        //
-        // Thus, for the scenario where the catch handler lives in the frame that performed stackalloc, in case of
-        // ARM JIT, the SP returned by the OS will be the SP *after* the stackalloc has happened. However,
-        // the stackwalker will invoke this callback with the CrawlFrameSP that was initialized at the time ICF was setup, i.e.,
-        // it will be the SP after the prolog has executed (refer to InlinedCallFrame::UpdateRegDisplay).
-        //
-        // Thus, checking only the SP will not work for this scenario when using the ARM JIT.
-        //
-        // To address this case, the callback data also contains the frame pointer (FP) passed by the OS. This will
-        // be the value that is saved in the "CalleeSavedFP" field of the InlinedCallFrame during ICF
-        // initialization. When the stackwalker sees an ICF and invokes this callback, we copy the value of "CalleeSavedFP" in the data
-        // structure passed to this callback.
-        //
-        // Later, when the stackwalker invokes the callback for the managed frame containing the ICF, and the check
-        // for SP comaprison fails, we will compare the FP value we got from the ICF with the FP value the OS passed
-        // to us. If they match, then we have reached the resume frame.
-        //
-        // Note: This problem/scenario is not applicable to JIT64 since it does not perform pinvoke inlining if the
-        // method containing pinvoke also contains EH. Thus, the SP check will never fail for it.
-        if (pState->uResumeSP == GetSP(pSrcContext))
-        {
-            INDEBUG(pState->fFound = true);
-
-            return SWA_ABORT;
-        }
-
-        // Perform the FP check, as explained above.
-        if ((pState->uICFCalleeSavedFP !=0) && (pState->uICFCalleeSavedFP == pState->uResumeFrameFP))
-        {
-            // FP from ICF is the one that was also copied to the FP register in InlinedCallFrame::UpdateRegDisplay.
-            _ASSERTE(pState->uICFCalleeSavedFP == GetFP(pSrcContext));
-
-            INDEBUG(pState->fFound = true);
-
-            return SWA_ABORT;
-        }
-
-        // Reset the ICF FP in callback data
-        pState->uICFCalleeSavedFP = 0;
-    }
-    else
-    {
-        Frame *pFrame = pCF->GetFrame();
-
-        if (pFrame->NeedsUpdateRegDisplay())
-        {
-            CONSISTENCY_CHECK(pFrame >= pState->pHighestFrameWithRegisters);
-            pState->pHighestFrameWithRegisters = pFrame;
-
-            // Is this an InlinedCallFrame?
-            if (pFrame->GetFrameIdentifier() == FrameIdentifier::InlinedCallFrame)
-            {
-                // If we are here, then ICF is expected to be active.
-                _ASSERTE(InlinedCallFrame::FrameHasActiveCall(pFrame));
-
-                // Copy the CalleeSavedFP to the data structure that is passed this callback
-                // by the stackwalker. This is the value of frame pointer when ICF is setup
-                // in a managed frame.
-                //
-                // Setting this value here is based upon the assumption (which holds true on X64 and ARM) that
-                // the stackwalker invokes the callback for explicit frames before their
-                // container/corresponding managed frame.
-                pState->uICFCalleeSavedFP = ((PTR_InlinedCallFrame)pFrame)->GetCalleeSavedFP();
-            }
-            else
-            {
-                // For any other frame, simply reset uICFCalleeSavedFP field
-                pState->uICFCalleeSavedFP = 0;
-            }
-        }
-    }
-
-    return SWA_CONTINUE;
-}
-
 
 //static
 void ExInfo::UpdateNonvolatileRegisters(CONTEXT *pContextRecord, REGDISPLAY *pRegDisplay, bool fAborting)
@@ -826,40 +704,6 @@ UINT_PTR ExInfo::DebugComputeNestingLevel()
 
     return uNestingLevel;
 }
-void DumpClauses(IJitManager* pJitMan, const METHODTOKEN& MethToken, UINT_PTR uMethodStartPC, UINT_PTR dwControlPc)
-{
-    EH_CLAUSE_ENUMERATOR    EnumState;
-    unsigned                EHCount;
-
-    EH_LOG((LL_INFO1000, "  | uMethodStartPC: %p, ControlPc at offset %x\n", uMethodStartPC, dwControlPc - uMethodStartPC));
-
-    EHCount = pJitMan->InitializeEHEnumeration(MethToken, &EnumState);
-    for (unsigned i = 0; i < EHCount; i++)
-    {
-        EE_ILEXCEPTION_CLAUSE EHClause;
-        pJitMan->GetNextEHClause(&EnumState, &EHClause);
-
-        EH_LOG((LL_INFO1000, "  | %s clause [%x, %x], handler: [%x, %x]",
-                (IsFault(&EHClause)         ? "fault"   :
-                (IsFinally(&EHClause)       ? "finally" :
-                (IsFilterHandler(&EHClause) ? "filter"  :
-                (IsTypedHandler(&EHClause)  ? "typed"   : "unknown")))),
-                EHClause.TryStartPC       , // + uMethodStartPC,
-                EHClause.TryEndPC         , // + uMethodStartPC,
-                EHClause.HandlerStartPC   , // + uMethodStartPC,
-                EHClause.HandlerEndPC       // + uMethodStartPC
-                ));
-
-        if (IsFilterHandler(&EHClause))
-        {
-            LOG((LF_EH, LL_INFO1000, " filter: [%x, ...]",
-                    EHClause.FilterOffset));// + uMethodStartPC
-        }
-
-        LOG((LF_EH, LL_INFO1000, "\n"));
-    }
-
-}
 
 #define STACK_ALLOC_ARRAY(numElements, type) \
     ((type *)_alloca((numElements)*(sizeof(type))))
@@ -953,19 +797,6 @@ static VOID UpdateContextForPropagationCallback(
 
 //---------------------------------------------------------------------------------------
 //
-// Function to update the current context for exception propagation.
-//
-// Arguments:
-//      exception       - the PAL_SEHException representing the propagating exception.
-//      currentContext  - the current context to update.
-//
-static VOID UpdateContextForPropagationCallback(
-    PAL_SEHException& ex,
-    CONTEXT* startContext)
-{
-    UpdateContextForPropagationCallback(ex.ManagedToNativeExceptionCallback, ex.ManagedToNativeExceptionCallbackContext, startContext);
-}
-
 extern void* g_hostingApiReturnAddress;
 
 VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHardwareException)
@@ -2398,49 +2229,6 @@ bool ExInfo::StackRange::IsSupersededBy(StackFrame sf)
     CONSISTENCY_CHECK(IsConsistent());
 
     return (sf >= m_sfLowBound);
-}
-
-void ExInfo::StackRange::CombineWith(StackFrame sfCurrent, StackRange* pPreviousRange)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    if ((pPreviousRange->m_sfHighBound < sfCurrent) && IsEmpty())
-    {
-        // This case comes from an unusual situation.  It is possible for a new nested tracker to start its
-        // first pass at a higher SP than any previously scanned frame in the previous "enclosing" tracker.
-        // Typically this doesn't happen because the ProcessCLRException callback is made multiple times for
-        // the frame where the nesting first occurs and that will ensure that the stack range of the new
-        // nested exception is extended to contain the scan range of the previous tracker's scan.  However,
-        // if the exception dispatch calls a C++ handler (e.g. a finally) and then that handler tries to
-        // reverse-pinvoke into the runtime, AND we trigger an exception (e.g. ThreadAbort)
-        // before we reach another managed frame (which would have the CLR personality
-        // routine associated with it), the first callback to ProcessCLRException for this new exception
-        // will occur on a frame that has never been seen before by the current tracker.
-        //
-        // So in this case, we'll see a sfCurrent that is larger than the previous tracker's high bound and
-        // we'll have an empty scan range for the current tracker.  And we'll just need to pre-init the
-        // scanned stack range for the new tracker to the previous tracker's range.  This maintains the
-        // invariant that the scanned range for nested trackers completely cover the scanned range of their
-        // previous tracker once they "escape" the previous tracker.
-        STRESS_LOG3(LF_EH, LL_INFO100,
-            "Initializing current StackRange with previous tracker's StackRange.  sfCurrent: %p, prev low: %p, prev high: %p\n",
-            (void*)sfCurrent.SP, (void*)pPreviousRange->m_sfLowBound.SP, (void*)pPreviousRange->m_sfHighBound.SP);
-
-        *this = *pPreviousRange;
-    }
-    else
-    {
-#ifdef TARGET_UNIX
-        // When the current range is empty, copy the low bound too. Otherwise a degenerate range would get
-        // created and tests for stack frame in the stack range would always fail.
-        // TODO: Check if we could enable it for non-PAL as well.
-        if (IsEmpty())
-        {
-            m_sfLowBound = pPreviousRange->m_sfLowBound;
-        }
-#endif // TARGET_UNIX
-        m_sfHighBound = pPreviousRange->m_sfHighBound;
-    }
 }
 
 bool ExInfo::StackRange::Contains(StackFrame sf)
@@ -4094,23 +3882,6 @@ extern "C" CLR_BOOL QCALLTYPE SfiInit(StackFrameIterator* pThis, CONTEXT* pStack
     END_QCALL;
 
     return result;
-}
-
-static StackWalkAction MoveToNextNonSkippedFrame(StackFrameIterator* pStackFrameIterator)
-{
-    StackWalkAction retVal;
-
-    do
-    {
-        retVal = pStackFrameIterator->Next();
-        if (retVal == SWA_FAILED)
-        {
-            break;
-        }
-    }
-    while (pStackFrameIterator->GetFrameState() == StackFrameIterator::SFITER_SKIPPED_FRAME_FUNCTION);
-
-    return retVal;
 }
 
 CLR_BOOL SfiNextWorker(StackFrameIterator* pThis, uint* uExCollideClauseIdx, CLR_BOOL* fUnwoundReversePInvoke, CLR_BOOL* pfIsExceptionIntercepted)

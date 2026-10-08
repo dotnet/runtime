@@ -1,9 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// ===========================================================================
-// File: TieredCompilation.h
-//
-// ===========================================================================
 
 // Exceptions (OOM)
 // - On foreground threads, exceptions are propagated unless they can be handled without any compromise
@@ -83,7 +79,6 @@ private:
     void ActivateCodeVersion(NativeCodeVersion nativeCodeVersion);
 public:
     HRESULT DeoptimizeMethod(Module* pModule, mdMethodDef methodDef);
-    HRESULT IsMethodDeoptimized(Module *pModule, mdMethodDef methodDef, BOOL *pResult);
 
 #ifndef DACCESS_COMPILE
 public:

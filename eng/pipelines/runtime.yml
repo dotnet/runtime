@@ -137,6 +137,8 @@ extends:
             buildArgs: -s clr+libs+libs.tests+packs -c Release -rc $(_BuildConfig) /p:TestAssemblies=false /p:TestWasmBuildTests=true /p:ArchiveTests=true /p:InstallWorkloadForTesting=false /p:BuildCrossgen2HostPackForWorkloadTesting=true
             timeoutInMinutes: 120
             postBuildSteps:
+              # Runs on the Linux-hosted browser_wasm job only; the step skips itself on Windows.
+              - template: /eng/pipelines/common/templates/wasm-coreclr-callhelpers-check.yml
               - template: /eng/pipelines/common/wasm-post-build-steps.yml
                 parameters:
                   publishArtifactsForWorkload: true
@@ -151,6 +153,7 @@ extends:
                 eq(variables['wasmDarcDependenciesChanged'], true),
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_wasm_coreclr_runtimetests.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_wasm_coreclr_callhelpers.containsChange'], true),
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_wasmbuildtests.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
@@ -167,6 +170,7 @@ extends:
               eq(variables['wasmDarcDependenciesChanged'], true),
               eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
               eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_wasm_coreclr_runtimetests.containsChange'], true),
+              eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_wasm_coreclr_callhelpers.containsChange'], true),
               eq(variables['isRollingBuild'], true))
 
       # CoreCLR src/tests subset run on wasmtime via Helix
