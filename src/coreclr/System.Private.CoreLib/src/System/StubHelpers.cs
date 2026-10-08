@@ -2446,7 +2446,7 @@ namespace System.StubHelpers
         }
 #endif // FEATURE_COMINTEROP
 
-#if FEATURE_CORPROFILER
+#if PROFILING_SUPPORTED
         //-------------------------------------------------------
         // Profiler helpers
         //-------------------------------------------------------
@@ -2457,7 +2457,7 @@ namespace System.StubHelpers
         [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "StubHelpers_ProfilerEndTransitionCallback")]
         internal static unsafe partial void ProfilerEndTransitionCallback(void* pTargetMD);
-#endif // FEATURE_CORPROFILER
+#endif // PROFILING_SUPPORTED
 
         //------------------------------------------------------
         // misc

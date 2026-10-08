@@ -454,11 +454,15 @@ _PInvokeImportThunk@0 proc public
         jmp     eax     ; Jump to DLL target
 _PInvokeImportThunk@0 endp
 
+ifdef PROFILING_SUPPORTED
+
 ; void __stdcall JIT_ProfilerEnterLeaveTailcallStub(UINT_PTR ProfilerHandle)
 _JIT_ProfilerEnterLeaveTailcallStub@4 proc public
     ; this function must preserve all registers, including scratch
     retn    4
 _JIT_ProfilerEnterLeaveTailcallStub@4 endp
+
+endif ; PROFILING_SUPPORTED
 
 ;
 ; Used to get the current instruction pointer value
@@ -475,6 +479,8 @@ _GetCurrentSP@0 proc public
     retn
 _GetCurrentSP@0 endp
 
+
+ifdef PROFILING_SUPPORTED
 
 ; void __stdcall ProfileEnterNaked(FunctionIDOrClientID functionIDOrClientID);
 _ProfileEnterNaked@4 proc public
@@ -653,6 +659,8 @@ _ProfileTailcallNaked@4 proc public
     pop     ecx
     retn    4
 _ProfileTailcallNaked@4 endp
+
+endif ; PROFILING_SUPPORTED
 
 ifdef FEATURE_VARARGS
 ;==========================================================================

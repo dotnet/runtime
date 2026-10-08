@@ -93,6 +93,6 @@
         <DefineConstants Condition="'$(FeatureCachedInterfaceDispatch)' == 'true'">$(DefineConstants);FEATURE_CACHED_INTERFACE_DISPATCH</DefineConstants>
         <DefineConstants Condition="'$(FeaturePortableEntryPoints)' == 'true'">$(DefineConstants);FEATURE_PORTABLE_ENTRYPOINTS</DefineConstants>
         <DefineConstants Condition="'$(FeaturePortableHelpers)' == 'true'">$(DefineConstants);FEATURE_PORTABLE_HELPERS</DefineConstants>
-        <DefineConstants Condition="'$(FeatureCorProfiler)' == 'true'">$(DefineConstants);FEATURE_CORPROFILER</DefineConstants>
+        <DefineConstants Condition="'$(FeatureCorProfiler)' == 'true'">$(DefineConstants);PROFILING_SUPPORTED</DefineConstants>
     </PropertyGroup>
 </Project>
