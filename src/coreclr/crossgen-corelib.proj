@@ -8,10 +8,8 @@
     <ProjectReference Include="$(CoreClrProjectRoot)/tools/dotnet-pgo/dotnet-pgo.csproj" OutputItemType="DotNetPgo" Condition="'$(DotNetBuildSourceOnly)' != 'true'" />
     <ProjectReference Include="$([MSBuild]::NormalizePath('$(CoreClrProjectRoot)', 'System.Private.CoreLib', 'System.Private.CoreLib.csproj'))" OutputItemType="CoreLib" />
     <!-- Built so InvokeCrossgen2 can call crossgen2 through the shared RunReadyToRunCompiler
-         task (the same one the SDK uses for PublishReadyToRun) instead of a raw <Exec>.
-         Referenced unconditionally: $(UseComposite) is not set yet at this point in the file
-         (it is assigned by a PropertyGroup further down), and building this task assembly is
-         harmless even for the composite case below, which does not end up invoking it. -->
+         task (the same one the SDK uses for PublishReadyToRun), for both the composite and
+         non-composite case, instead of a raw <Exec>. -->
     <ProjectReference Include="$([MSBuild]::NormalizePath('$(RepoRoot)', 'src', 'tasks', 'Crossgen2Tasks', 'Crossgen2Tasks.csproj'))" />
   </ItemGroup>
 
@@ -29,8 +27,6 @@
     <Crossgen2TasksAssembly>$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'Crossgen2Tasks', '$(TasksConfiguration)', 'Crossgen2Tasks.dll'))</Crossgen2TasksAssembly>
   </PropertyGroup>
 
-  <!-- Unconditional for the same reason as the ProjectReference above; the actual
-       UseComposite gating happens where the task is invoked, inside InvokeCrossgen2. -->
   <UsingTask TaskName="Microsoft.NET.Build.Tasks.RunReadyToRunCompiler" AssemblyFile="$(Crossgen2TasksAssembly)" />
 
   <PropertyGroup>
@@ -148,13 +144,18 @@
       <Crossgen2Inputs Include="@(Crossgen2Files->Metadata('OutputPath'))" />
       <Crossgen2Inputs Include="$(WasmCoreClrFrameworkPInvokeModuleListFile)"
                        Condition="'$(PublishReadyToRunContainerFormat)' == 'wasm'" />
-      <Crossgen2Inputs Include="$(Crossgen2TasksAssembly)" Condition="'$(UseComposite)' != 'true'" />
+      <Crossgen2Inputs Include="$(Crossgen2TasksAssembly)" />
     </ItemGroup>
 
     <!-- Reproduces the file set that "-r:$(BinDir)IL/*.dll" previously expanded to via shell
          globbing, as an explicit item list for RunReadyToRunCompiler's
-         ImplementationAssemblyReferences parameter (the task does not glob itself). -->
-    <ItemGroup Condition="'$(UseComposite)' != 'true'">
+         ImplementationAssemblyReferences/ReadyToRunCompositeBuildReferences parameters (the
+         task does not glob itself). Used for both the composite and non-composite cases: it is
+         the same glob the original composite <Exec> command passed via "-r:", so reusing it
+         here (including the harmless self-reference to CoreLib's own IL dll, which crossgen2
+         already tolerated under the old <Exec> composite invocation) preserves that behavior
+         exactly. -->
+    <ItemGroup>
       <Crossgen2CoreLibReferences Include="$([MSBuild]::NormalizePath('$(BinDir)', 'IL', '*.dll'))" />
     </ItemGroup>
   </Target>
@@ -177,71 +178,32 @@
     <Message Importance="High"
       Text="Generating native image of System.Private.CoreLib for $(OSPlatformConfig). Logging to $(CrossGenCoreLibLog)" />
 
-    <!--
-      Shared extra-flag logic for both the composite <Exec> path below and the non-composite
-      RunReadyToRunCompiler path further down: these flags/conditions are identical in both
-      cases, so they are computed once here instead of being duplicated per path. Only flags
-      that both paths actually use belong in this list (wasm-only flags and the GC mode
-      transition verification flag never apply to the composite/Apple-mobile case, so they
-      stay below, in the non-composite-only item group).
-    -->
-    <ItemGroup>
-      <_CoreLibCrossgen2CommonExtraArgs Include="--target-allows-runtime-code-generation:$(FeatureDynamicCodeCompiled)"
-        Condition="'$(FeatureDynamicCodeCompiled)' != ''" />
-      <_CoreLibCrossgen2CommonExtraArgs Include="--embed-pgo-data"
-        Condition="'$(UsingToolIbcOptimization)' != 'true' and '$(EnableNgenOptimization)' == 'true' and '$(PublishReadyToRunContainerFormat)' != 'wasm'" />
-      <!-- Enable type and field layout verification to make it easier to catch when the crossgen2 type layout engine and the runtime disagree on layout conventions -->
-      <_CoreLibCrossgen2CommonExtraArgs Include="--verify-type-and-field-layout"
-        Condition="'$(Configuration)' == 'Debug' or '$(Configuration)' == 'Checked'" />
-      <!-- Enable Cached Interface Dispatch layout rules for the StubDispatch import section. This allows testing of this path on platforms that do not require CachedInterface Dispatch -->
-      <_CoreLibCrossgen2CommonExtraArgs Include="--enable-cached-interface-dispatch-support"
-        Condition="'$(Configuration)' == 'Debug' or '$(Configuration)' == 'Checked'" />
-    </ItemGroup>
-
-    <!--
-      Apple composite images (TargetsAppleMobile) are not single-assembly "-r + input" builds:
-      RunReadyToRunCompiler's composite parameters (ReadyToRunCompositeBuildReferences/
-      BuildInput/UnrootedBuildInput) model a different, multi-assembly composite workflow than
-      this target's "-r:(IL closure) plus composite flag plus one assembly" invocation, so this
-      case keeps the original direct crossgen2 call rather than forcing a mismatched shape onto
-      the task.
-    -->
-    <PropertyGroup Condition="'$(UseComposite)' == 'true'">
-      <CrossGenDllCmd>@(Crossgen2Files->Metadata('OutputPath')->WithMetadataValue('Filename','crossgen2')->WithMetadataValue('Extension','$(ExeSuffix)'))</CrossGenDllCmd>
-      <CrossGenDllCmd>$(CrossGenDllCmd) -o:$(CrossgenCoreLibOutputPath)</CrossGenDllCmd>
-      <CrossGenDllCmd>$(CrossGenDllCmd) -r:$([MSBuild]::NormalizePath('$(BinDir)', 'IL', '*.dll'))</CrossGenDllCmd>
-      <CrossGenDllCmd>$(CrossGenDllCmd) --targetarch:$(TargetArchitecture)</CrossGenDllCmd>
-      <CrossGenDllCmd Condition="'$(PublishReadyToRunContainerFormat)' != ''">$(CrossGenDllCmd) --obj-format:$(PublishReadyToRunContainerFormat)</CrossGenDllCmd>
-      <CrossGenDllCmd>$(CrossGenDllCmd) --composite</CrossGenDllCmd>
-      <CrossGenDllCmd>$(CrossGenDllCmd) --targetos:$(TargetOS)</CrossGenDllCmd>
-      <CrossGenDllCmd Condition="'$(UsingToolIbcOptimization)' != 'true' and '$(EnableNgenOptimization)' == 'true'">$(CrossGenDllCmd) -m:$(MergedMibcPath)</CrossGenDllCmd>
-      <CrossGenDllCmd>$(CrossGenDllCmd) @(_CoreLibCrossgen2CommonExtraArgs, ' ')</CrossGenDllCmd>
-      <CrossGenDllCmd>$(CrossGenDllCmd) -O</CrossGenDllCmd>
-      <CrossGenDllCmd>$(CrossGenDllCmd) @(CoreLib)</CrossGenDllCmd>
-      <CrossGenDllCmd Condition="$(BuildPdb)">$(CrossGenDllCmd) --pdb --pdb-path:$([MSBuild]::NormalizePath('$(BinDir)', 'PDB'))</CrossGenDllCmd>
-      <CrossGenDllCmd Condition="$(BuildPerfMap)">$(CrossGenDllCmd) --perfmap-format-version:1 --perfmap --perfmap-path:$(BinDir)</CrossGenDllCmd>
-    </PropertyGroup>
-
-    <Message Condition="'$(UseComposite)' == 'true'" Importance="High" Text="$(CrossGenDllCmd)" />
-    <Exec Condition="'$(UseComposite)' == 'true'" Command="$(CrossGenDllCmd)" />
-
-    <!-- Non-composite case: go through the shared RunReadyToRunCompiler task instead of
-         a raw <Exec>, so CoreLib compilation uses the same code path (and, in the future,
-         the same task-level caching) as every other crossgen2 invocation in the SDK/repo.
+    <!-- Single RunReadyToRunCompiler invocation for both the composite (Apple-mobile) and
+         non-composite case: CompilationEntry's CreateCompositeImage metadata switches the
+         task itself between the two modes (it already emits the composite flag and swaps
+         which reference/input parameters it reads), so no raw <Exec> is needed for either
+         shape.
+         This mirrors exactly how the SDK's own PrepareForReadyToRunCompilation/
+         Microsoft.NET.CrossGen.targets invoke this task for real composite publishing - it is
+         not a repurposed or mismatched use of the task, but the same production mechanism.
          Flags without a dedicated task parameter are passed through verbatim via
          Crossgen2ExtraCommandLineArgs, the same escape hatch the SDK itself uses for
          PublishReadyToRunCrossgen2ExtraArgs. ShowCompilerWarnings is forced on because the
-         original <Exec> surfaced every canonical "warning:" line as a build warning; the
-         task demotes those to messages by default. -->
-    <ItemGroup Condition="'$(UseComposite)' != 'true'">
+         original composite/non-composite <Exec> commands surfaced every canonical "warning:"
+         line as a build warning; the task demotes those to messages by default. -->
+    <ItemGroup>
       <_CoreLibCrossgen2Tool Include="@(Crossgen2Files->Metadata('OutputPath')->WithMetadataValue('Filename','crossgen2')->WithMetadataValue('Extension','$(ExeSuffix)'))">
         <TargetOS>$(TargetOS)</TargetOS>
         <TargetArch>$(TargetArchitecture)</TargetArch>
         <PerfmapFormatVersion Condition="$(BuildPerfMap)">1</PerfmapFormatVersion>
       </_CoreLibCrossgen2Tool>
 
+      <!-- In composite mode the task ignores this item's ItemSpec (it hardcodes the input
+           to "CompositeImage" and reads ReadyToRunCompositeBuildInput instead); @(CoreLib) is
+           kept as the Include here purely so the metadata below attaches to a real item. -->
       <_CoreLibCompilationEntry Include="@(CoreLib)">
         <OutputR2RImage>$(CrossgenCoreLibOutputPath)</OutputR2RImage>
+        <CreateCompositeImage Condition="'$(UseComposite)' == 'true'">true</CreateCompositeImage>
         <EmitSymbols Condition="$(BuildPdb) or $(BuildPerfMap)">true</EmitSymbols>
         <OutputPDBImage Condition="$(BuildPdb)">$(CoreLibNiPdbPath)</OutputPDBImage>
         <OutputPDBImage Condition="$(BuildPerfMap)">$(CoreLibPerfMapPath)</OutputPDBImage>
@@ -250,7 +212,16 @@
       <_CoreLibCrossgen2PgoFiles Include="$(MergedMibcPath)"
         Condition="'$(UsingToolIbcOptimization)' != 'true' and '$(EnableNgenOptimization)' == 'true'" />
 
-      <_CoreLibCrossgen2ExtraArgs Include="@(_CoreLibCrossgen2CommonExtraArgs)" />
+      <_CoreLibCrossgen2ExtraArgs Include="--target-allows-runtime-code-generation:$(FeatureDynamicCodeCompiled)"
+        Condition="'$(FeatureDynamicCodeCompiled)' != ''" />
+      <_CoreLibCrossgen2ExtraArgs Include="--embed-pgo-data"
+        Condition="'$(UsingToolIbcOptimization)' != 'true' and '$(EnableNgenOptimization)' == 'true' and '$(PublishReadyToRunContainerFormat)' != 'wasm'" />
+      <!-- Enable type and field layout verification to make it easier to catch when the crossgen2 type layout engine and the runtime disagree on layout conventions -->
+      <_CoreLibCrossgen2ExtraArgs Include="--verify-type-and-field-layout"
+        Condition="'$(Configuration)' == 'Debug' or '$(Configuration)' == 'Checked'" />
+      <!-- Enable Cached Interface Dispatch layout rules for the StubDispatch import section. This allows testing of this path on platforms that do not require CachedInterface Dispatch -->
+      <_CoreLibCrossgen2ExtraArgs Include="--enable-cached-interface-dispatch-support"
+        Condition="'$(Configuration)' == 'Debug' or '$(Configuration)' == 'Checked'" />
 
       <_CoreLibCrossgen2ExtraArgs Include="--strip-inlining-info"
         Condition="'$(PublishReadyToRunContainerFormat)' == 'wasm' and '$(PublishReadyToRunStripInliningInfo)' != 'false'" />
@@ -271,14 +242,15 @@
         Condition="'$(TargetOS)' == 'browser' and ('$(Configuration)' == 'Debug' or '$(Configuration)' == 'Checked')" />
     </ItemGroup>
 
-    <Message Condition="'$(UseComposite)' != 'true'" Importance="High"
-      Text="RunReadyToRunCompiler: @(_CoreLibCrossgen2Tool) --out:$(CrossgenCoreLibOutputPath) -r:&lt;$(BinDir)IL/*.dll&gt; --targetarch:$(TargetArchitecture) --targetos:$(TargetOS) @(_CoreLibCrossgen2ExtraArgs, ' ') @(CoreLib)" />
+    <Message Importance="High"
+      Text="RunReadyToRunCompiler: @(_CoreLibCrossgen2Tool) --out:$(CrossgenCoreLibOutputPath) -r:&lt;$(BinDir)IL/*.dll&gt; --targetarch:$(TargetArchitecture) --targetos:$(TargetOS) @(_CoreLibCrossgen2ExtraArgs, ' ') @(CoreLib) (composite=$(UseComposite))" />
 
-    <RunReadyToRunCompiler Condition="'$(UseComposite)' != 'true'"
-                           Crossgen2Tool="@(_CoreLibCrossgen2Tool)"
+    <RunReadyToRunCompiler Crossgen2Tool="@(_CoreLibCrossgen2Tool)"
                            UseCrossgen2="true"
                            ShowCompilerWarnings="true"
                            ImplementationAssemblyReferences="@(Crossgen2CoreLibReferences)"
+                           ReadyToRunCompositeBuildReferences="@(Crossgen2CoreLibReferences)"
+                           ReadyToRunCompositeBuildInput="@(CoreLib)"
                            Crossgen2PgoFiles="@(_CoreLibCrossgen2PgoFiles)"
                            Crossgen2ContainerFormat="$(PublishReadyToRunContainerFormat)"
                            Crossgen2ExtraCommandLineArgs="@(_CoreLibCrossgen2ExtraArgs, ';')"
