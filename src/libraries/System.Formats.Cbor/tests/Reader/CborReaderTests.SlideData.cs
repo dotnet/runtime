@@ -434,6 +434,7 @@ namespace System.Formats.Cbor.Tests
             // the tag is the only token consumed, and SlideData rebases the offset to zero
             var reader = new CborReader("c1".HexToByteArray(), options, isFinalBlock: false);
             reader.ReadTag();
+            Assert.Equal(CborReaderState.NeedsMoreData, reader.PeekState());
             reader.SlideData(ReadOnlyMemory<byte>.Empty, isFinalBlock: true);
             Assert.Throws<CborContentException>(() => reader.PeekState());
             Assert.Throws<CborContentException>(() => reader.ReadInt32());
