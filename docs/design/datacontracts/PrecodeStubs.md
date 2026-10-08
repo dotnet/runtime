@@ -2,7 +2,7 @@
 
 This contract provides support for examining [precode](../coreclr/botr/method-descriptor.md#precode): small fragments of code used to implement temporary entry points and an efficient wrapper for stubs.
 
-Runtimes built with `FEATURE_PORTABLE_ENTRYPOINTS` do not advertise this contract because they have no executable precode stubs. Use `ExecutionManager.NonVirtualEntry2MethodDesc` to resolve an entry point to its owning `MethodDesc` on both portable and non-portable targets.
+Runtimes built with `FEATURE_PORTABLE_ENTRYPOINTS` do not advertise this contract because they have no executable precode stubs.
 
 ## APIs of contract
 
