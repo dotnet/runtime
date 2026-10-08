@@ -79,7 +79,30 @@ namespace Microsoft.Win32.SafeHandles
             _isBlocking = nonBlocking ? NullableBool.False : NullableBool.True;
         }
 
-        public bool IsAsync => !IsBlocking;
+        public bool IsAsync
+        {
+            get
+            {
+                NullableBool isBlocking = _isBlocking;
+                if (isBlocking != NullableBool.Undefined)
+                {
+                    return isBlocking == NullableBool.False;
+                }
+                // Match Windows behavior: IsAsync does not throw after Dispose.
+                if (IsClosed)
+                {
+                    return false;
+                }
+                try
+                {
+                    return !IsBlocking;
+                }
+                catch (ObjectDisposedException)
+                {
+                    return false;
+                }
+            }
+        }
 
         // RegularFile and BlockDevices don't support non-blocking and do support random access.
         // Perform read/write operations on the ThreadPool so that multiple can happen in parallel.
