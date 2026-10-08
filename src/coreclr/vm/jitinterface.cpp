@@ -1,10 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// ===========================================================================
-// File: JITinterface.CPP
-// ===========================================================================
-
 #include "common.h"
 #include <inttypes.h>
 #include "jitinterface.h"
@@ -3437,23 +3433,6 @@ void CEEInfo::AddTransientMethodDetails(TransientMethodDetails details)
     if (m_transientDetails == NULL)
         m_transientDetails = new SArray<TransientMethodDetails, FALSE>();
     m_transientDetails->Append(std::move(details));
-}
-
-TransientMethodDetails CEEInfo::RemoveTransientMethodDetails(MethodDesc* pMD)
-{
-    STANDARD_VM_CONTRACT;
-    _ASSERTE(pMD != NULL);
-
-    TransientMethodDetails local{};
-    TransientMethodDetails* details;
-    if (FindTransientMethodDetails(pMD, &details))
-    {
-        // Details found, move contents to return
-        // and default initialize the found instance.
-        local = std::move(*details);
-        *details = {};
-    }
-    return local;
 }
 
 bool CEEInfo::FindTransientMethodDetails(MethodDesc* pMD, TransientMethodDetails** details)
@@ -14663,6 +14642,11 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
 
             // We can take address of RVA field only since ngened code is domain neutral
             _ASSERTE(pField->IsRVA());
+
+            if (g_fEEStarted)
+            {
+                pField->GetModule()->EnsureActive();
+            }
 
             result = (size_t)pField->GetStaticAddressHandle(NULL);
         }

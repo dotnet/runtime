@@ -2,15 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*++
-
 Module Name:
-
     machmessage.cpp
 
 Abstract:
-
     Abstraction over Mach messages used during exception handling.
-
 --*/
 
 #include "config.h"
@@ -391,25 +387,6 @@ mach_msg_type_number_t MachMessage::GetThreadState(thread_state_flavor_t eFlavor
     CHECK_MACH("thread_get_state()", machret);
 
     return count;
-}
-
-// Fetch the return code from a reply type message.
-kern_return_t MachMessage::GetReturnCode()
-{
-    switch (m_pMessage->header.msgh_id)
-    {
-    case EXCEPTION_RAISE_REPLY_64_MESSAGE_ID:
-        return m_pMessage->data.raise_reply_64.ret;
-
-    case EXCEPTION_RAISE_STATE_REPLY_64_MESSAGE_ID:
-        return m_pMessage->data.raise_state_reply_64.ret;
-
-    case EXCEPTION_RAISE_STATE_IDENTITY_REPLY_64_MESSAGE_ID:
-        return m_pMessage->data.raise_state_identity_reply_64.ret;
-
-    default:
-        NONPAL_RETAIL_ASSERT("Unsupported message type: %u", m_pMessage->header.msgh_id);
-    }
 }
 
 // Initialize and send a request to set the register context of a particular thread.

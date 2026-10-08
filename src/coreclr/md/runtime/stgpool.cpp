@@ -1663,7 +1663,6 @@ StgBlobPool::GetBlobWithSizePrefix(
         IfFailGo(COR_E_BADIMAGEFORMAT);
     }
     //_ASSERTE(cbBlobSizePrefixSize <= 4);
-    //_ASSERTE(cbBlobContentSize <= CompressedInteger::const_Max);
 
     // Cannot overflow, because previous asserts hold (in comments)
     UINT32 cbBlobSize;

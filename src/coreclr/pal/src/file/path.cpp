@@ -2,21 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*++
-
-
-
 Module Name:
-
     path.c
 
 Abstract:
-
     Implementation of all functions related to path support
-
-Revision History:
-
-
-
 --*/
 
 #include "pal/thread.hpp"
@@ -370,114 +360,6 @@ GetTempPathA(
     LOGEXIT("GetTempPathA returns DWORD %u\n", dwPathLen);
     PERF_EXIT(GetTempPathA);
     return dwPathLen;
-}
-
-/*++
-Function:
-  GetTempPathW
-
-See MSDN.
-See also the comment for GetTempPathA.
---*/
-DWORD
-PALAPI
-GetTempPathW(
-	     IN DWORD nBufferLength,
-	     OUT LPWSTR lpBuffer)
-{
-    PERF_ENTRY(GetTempPathW);
-    ENTRY("GetTempPathW(nBufferLength=%u, lpBuffer=%p)\n",
-          nBufferLength, lpBuffer);
-
-    if (!lpBuffer)
-    {
-        ERROR("lpBuffer was not a valid pointer.\n")
-        SetLastError(ERROR_INVALID_PARAMETER);
-        LOGEXIT("GetTempPathW returns DWORD 0\n");
-        PERF_EXIT(GetTempPathW);
-        return 0;
-    }
-
-    char* tempBuffer = (char*)alloca(nBufferLength > 0 ? nBufferLength : 1);
-    DWORD dwRetVal = GetTempPathA( nBufferLength, tempBuffer );
-
-    if ( dwRetVal >= nBufferLength )
-    {
-        ERROR( "lpBuffer was not large enough.\n" )
-        SetLastError( ERROR_INSUFFICIENT_BUFFER );
-        *lpBuffer = '\0';
-    }
-    else if ( dwRetVal != 0 )
-    {
-        /* Convert to wide. */
-        if ( 0 == MultiByteToWideChar( CP_ACP, 0, tempBuffer, -1,
-                                       lpBuffer, dwRetVal + 1 ) )
-        {
-            ASSERT( "An error occurred while converting the string to wide.\n" );
-            SetLastError( ERROR_INTERNAL_ERROR );
-            dwRetVal = 0;
-        }
-    }
-    else
-    {
-        ERROR( "The function failed.\n" );
-        *lpBuffer = '\0';
-    }
-
-    LOGEXIT("GetTempPathW returns DWORD %u\n", dwRetVal );
-    PERF_EXIT(GetTempPathW);
-    return dwRetVal;
-}
-
-
-/*++
-Function:
-  FILEGetDirectoryFromFullPathA
-
-Parse the given path. If it contains a directory part and a file part,
-put the directory part into the supplied buffer, and return the number of
-characters written to the buffer. If the buffer is not large enough,
-return the required size of the buffer including the NULL character. If
-there is no directory part in the path, return 0.
---*/
-DWORD FILEGetDirectoryFromFullPathA( LPCSTR lpFullPath,
-                     DWORD  nBufferLength,
-                     LPSTR  lpBuffer )
-{
-    size_t full_len, dir_len, i;
-    LPCSTR lpDirEnd;
-    DWORD  dwRetLength;
-
-    full_len = strlen( lpFullPath );
-
-    /* look for the first path separator backwards */
-    lpDirEnd = lpFullPath + full_len - 1;
-    while( lpDirEnd >= lpFullPath && *lpDirEnd != '/')
-    --lpDirEnd;
-
-    dir_len = lpDirEnd - lpFullPath + 1; /* +1 for fencepost */
-
-    if ( dir_len <= 0 )
-    {
-        dwRetLength = 0;
-    }
-    else if (dir_len >= nBufferLength)
-    {
-        dwRetLength = dir_len + 1; /* +1 for NULL char */
-    }
-    else
-    {
-    /* put the directory into the buffer, including 1 or more
-       trailing path separators */
-    for( i = 0; i < dir_len; ++i )
-        *(lpBuffer + i) = *(lpFullPath + i);
-
-    *(lpBuffer + i) = '\0';
-
-    dwRetLength = dir_len;
-    }
-
-    return( dwRetLength );
 }
 
 /*++

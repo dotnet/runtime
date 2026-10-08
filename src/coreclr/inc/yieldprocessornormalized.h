@@ -84,7 +84,6 @@ public:
     friend void YieldProcessorNormalized(const YieldProcessorNormalizationInfo &);
     friend void YieldProcessorNormalized(const YieldProcessorNormalizationInfo &, unsigned int);
     friend void YieldProcessorNormalizedForPreSkylakeCount(const YieldProcessorNormalizationInfo &, unsigned int);
-    friend void YieldProcessorWithBackOffNormalized(const YieldProcessorNormalizationInfo &, unsigned int);
 };
 
 // See YieldProcessorNormalized() for preliminary info. Typical usage:
@@ -243,45 +242,6 @@ FORCEINLINE void YieldProcessorNormalizedForPreSkylakeCount(unsigned int preSkyl
     {
         n = 1;
     }
-    do
-    {
-        System_YieldProcessor();
-    } while (--n != 0);
-}
-
-// See YieldProcessorNormalized() for preliminary info. This function is to be used when there is a decent possibility that the
-// condition would not be satisfied within a short duration. The current implementation increases the delay per spin-wait
-// iteration exponentially up to a limit. Typical usage:
-//     if (!conditionThatMayNotBeSatisfiedSoon)
-//     {
-//         YieldProcessorNormalizationInfo normalizationInfo;
-//         do
-//         {
-//             YieldProcessorWithBackOffNormalized(normalizationInfo); // maybe Sleep(0) occasionally
-//         } while (!conditionThatMayNotBeSatisfiedSoon);
-//     }
-FORCEINLINE void YieldProcessorWithBackOffNormalized(
-    const YieldProcessorNormalizationInfo &normalizationInfo,
-    unsigned int spinIteration)
-{
-    // This shift value should be adjusted based on the asserted conditions below
-    const uint8_t MaxShift = 3;
-    static_assert(
-        ((unsigned int)1 << MaxShift) <= YieldProcessorNormalization::MaxOptimalMaxNormalizedYieldsPerSpinIteration, "");
-    static_assert(
-        ((unsigned int)1 << (MaxShift + 1)) > YieldProcessorNormalization::MaxOptimalMaxNormalizedYieldsPerSpinIteration, "");
-
-    unsigned int n;
-    if (spinIteration <= MaxShift &&
-        ((unsigned int)1 << spinIteration) < normalizationInfo.optimalMaxNormalizedYieldsPerSpinIteration)
-    {
-        n = ((unsigned int)1 << spinIteration) * normalizationInfo.yieldsPerNormalizedYield;
-    }
-    else
-    {
-        n = normalizationInfo.optimalMaxYieldsPerSpinIteration;
-    }
-    _ASSERTE(n != 0);
     do
     {
         System_YieldProcessor();
