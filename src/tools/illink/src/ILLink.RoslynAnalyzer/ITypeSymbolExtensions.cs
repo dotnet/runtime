@@ -78,8 +78,7 @@ namespace ILLink.RoslynAnalyzer
                     return wellKnownType == WellKnownType.System_Object;
             }
 
-            // WellKnownType is contiguous from zero through System_Void; invalid values previously returned false.
-            if ((uint)wellKnownType > (uint)WellKnownType.System_Void)
+            if ((uint)wellKnownType >= (uint)WellKnownType.NextAvailable)
             {
                 return false;
             }
