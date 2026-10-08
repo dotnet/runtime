@@ -7,8 +7,8 @@ Microsoft.NET.Sdk.WebAssembly.Browser.props only when an in-build crossgen2 is p
 
 The base SDK's ReadyToRun pipeline predates wasm support (dotnet/sdk#55785) and emits composite images
 for wasm, which strip the assembly manifest so the runtime fails coreclr_initialize with 0x80131018.
-Activate the runtime's wasm-aware Crossgen2Tasks shim. Microsoft.NET.Sdk.WebAssembly.Browser.props
-appends the ResolveReadyToRunCompilers override after this import so the override wins. Mirrors AppleBuild.props.
+Activate the runtime's wasm-aware Crossgen2Tasks shim and append the in-build
+ResolveReadyToRunCompilers override after the shim so the override wins. Mirrors AppleBuild.props.
 
 Inert for Mono and for normal consumers, which resolve crossgen2 through the base SDK.
 
@@ -21,5 +21,6 @@ Copyright (c) .NET Foundation. All rights reserved.
 
   <PropertyGroup>
     <AfterMicrosoftNETSdkTargets Condition="'$(Crossgen2SdkOverrideTargetsPath)' != '' and Exists('$(Crossgen2SdkOverrideTargetsPath)')">$(AfterMicrosoftNETSdkTargets);$(Crossgen2SdkOverrideTargetsPath)</AfterMicrosoftNETSdkTargets>
+    <AfterMicrosoftNETSdkTargets>$(AfterMicrosoftNETSdkTargets);$(MSBuildThisFileDirectory)Microsoft.NET.Sdk.WebAssembly.Browser.CoreCLR.ReadyToRun.InBuild.targets</AfterMicrosoftNETSdkTargets>
   </PropertyGroup>
 </Project>
