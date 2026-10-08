@@ -237,6 +237,11 @@ register = localIndex + WASM_LOCAL_REGNUM_BASE
 encoded: it is implied by the variable's type and by the local's declaration in the WebAssembly
 function.
 
+`WASM_LOCAL_REGNUM_BASE` (`3`) and the stack base register (`2`, described below) are fixed
+constants of DebugInfo contract version `c1`; readers hardcode them. Changing either requires a new
+DebugInfo contract version. Because ReadyToRun images persist this encoding, it also requires a
+ReadyToRun format version change so static readers such as R2RDump do not misdecode older images.
+
 ### WebAssembly Stack Base Encoding
 
 WASM `VLT_STK` and `VLT_STK2` records currently encode base register `2`.
