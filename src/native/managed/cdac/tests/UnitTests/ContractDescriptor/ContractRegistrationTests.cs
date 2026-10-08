@@ -98,19 +98,40 @@ public class ContractRegistrationTests
         Assert.Equal("v1", contract.Tag);
     }
 
-    [Theory]
-    [ClassData(typeof(MockTarget.StdArch))]
-    public void AdvertisedVersion_NoMatchingRegistration_DoesNotFallBackToDefault(MockTarget.Architecture arch)
+    public static IEnumerable<object[]> UnsupportedVersionData()
     {
-        // Target advertises FakeContract (version "c1"), but only a default ("")
-        // registration exists. This is a version-skew failure and must NOT
-        // silently use the default registration.
+        foreach (object[] data in new MockTarget.StdArch())
+        {
+            yield return [data[0], false];
+            yield return [data[0], true];
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(UnsupportedVersionData))]
+    public void AdvertisedVersion_NoMatchingRegistration_DoesNotFallBackToDefault(MockTarget.Architecture arch, bool obsolete)
+    {
         ContractDescriptorTarget target = CreateTarget(
             arch,
             advertisedContracts: ["FakeContract"],
-            registerFake: static r => r.Register<IFakeContract>(string.Empty, static t => new FakeContract("default")));
+            registerFake: r =>
+            {
+                r.Register<IFakeContract>(string.Empty, static t => new FakeContract("default"));
+                if (obsolete)
+                    r.RegisterUnsupported<IFakeContract>("c1");
+            });
 
-        Assert.False(target.Contracts.TryGetContract<IFakeContract>(out IFakeContract? contract));
+        Assert.False(target.Contracts.TryGetContract<IFakeContract>(out IFakeContract? contract, out System.Exception? failure));
         Assert.Null(contract);
+        if (obsolete)
+        {
+            Assert.IsType<ContractObsoleteException>(failure);
+            Assert.Throws<ContractObsoleteException>(() => target.Contracts.TryGetContract<IFakeContract>(out _));
+        }
+        else
+        {
+            Assert.IsType<ContractUnrecognizedException>(failure);
+            Assert.Throws<ContractUnrecognizedException>(() => target.Contracts.TryGetContract<IFakeContract>(out _));
+        }
     }
 }

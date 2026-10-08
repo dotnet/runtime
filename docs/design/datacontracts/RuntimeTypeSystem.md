@@ -2003,7 +2003,13 @@ Determining if a method supports multiple code versions:
         if (md.IsEligibleForTieredCompilation)
             return true;
         // MethodDesc::IsEligibleForReJIT
-        if (_target.Contracts.ReJIT.IsEnabled())
+        // Targets without profiling support do not advertise ReJIT.
+        // An invalid advertised contract is still an error.
+        if (!_target.Contracts.TryGetContract(out IReJIT reJit))
+        {
+            return false;
+        }
+        if (reJit.IsEnabled())
         {
             if (!md.IsIL)
                 return false;

@@ -178,9 +178,32 @@ public abstract class ContractRegistry
         return contract;
     }
 
+    /// <summary>
+    /// Attempts to get the requested contract.
+    /// </summary>
+    /// <typeparam name="TContract">The contract type to retrieve.</typeparam>
+    /// <param name="contract">
+    /// When this method returns, contains the contract if found; otherwise, its default value.
+    /// </param>
+    /// <returns>
+    /// <see langword="true"/> if the contract was retrieved; <see langword="false"/> if it is not
+    /// advertised and no default implementation is registered.
+    /// </returns>
+    /// <exception cref="ContractUnsupportedException">
+    /// The target advertises a contract version that this cDAC cannot provide.
+    /// </exception>
+    /// <remarks>
+    /// Contract-creation errors propagate. Use the two-output overload to inspect availability failures.
+    /// </remarks>
     public bool TryGetContract<TContract>([NotNullWhen(true)] out TContract contract) where TContract : IContract
     {
-        return TryGetContract(out contract, out _);
+        if (!TryGetContract(out contract, out System.Exception? failureException))
+        {
+            if (failureException is ContractMissingException)
+                return false;
+            throw failureException;
+        }
+        return true;
     }
 
     /// <summary>
