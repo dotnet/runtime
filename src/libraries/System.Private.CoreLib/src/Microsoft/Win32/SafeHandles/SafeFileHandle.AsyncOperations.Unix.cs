@@ -166,11 +166,13 @@ namespace Microsoft.Win32.SafeHandles
                 }
                 else if (result == OnCompletedResult.Canceled)
                 {
+                    _strategy?.OnIncompleteOperation(_buffer.Length, 0);
                     _mrvtsc.SetException(new OperationCanceledException(_cancellationToken));
                 }
                 else
                 {
                     Debug.Assert(result == OnCompletedResult.Aborted);
+                    _strategy?.OnIncompleteOperation(_buffer.Length, 0);
                     _mrvtsc.SetException(new OperationCanceledException());
                 }
             }
@@ -369,11 +371,13 @@ namespace Microsoft.Win32.SafeHandles
                 }
                 else if (result == OnCompletedResult.Canceled)
                 {
+                    _strategy?.OnIncompleteOperation(_buffer.Length, 0);
                     _mrvtsc.SetException(new OperationCanceledException(_cancellationToken));
                 }
                 else
                 {
                     Debug.Assert(result == OnCompletedResult.Aborted);
+                    _strategy?.OnIncompleteOperation(_buffer.Length, 0);
                     _mrvtsc.SetException(new OperationCanceledException());
                 }
             }
