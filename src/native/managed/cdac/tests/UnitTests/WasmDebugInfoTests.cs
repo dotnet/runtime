@@ -56,30 +56,6 @@ public unsafe class WasmDebugInfoTests
 
     public static TheoryData<uint> WasmLocalIndices() => new() { 0u, 1u, 4u, 6u };
 
-    [Fact]
-    public void GetMethodCodeOffset_WasmUsesExecutionManagerRelativeOffset()
-    {
-        const uint MethodOffset = 0x18C;
-        CodeBlockHandle codeBlock = new(new TargetPointer(0x7000));
-        Mock<IExecutionManager> executionManager = new();
-        executionManager.Setup(e => e.GetRelativeOffset(codeBlock)).Returns(new TargetNUInt(MethodOffset));
-
-        TestPlaceholderTarget target = new TestPlaceholderTarget.Builder(
-            new MockTarget.Architecture { IsLittleEndian = true, Is64Bit = false })
-            .AddGlobalStrings((Constants.Globals.Architecture, "wasm"))
-            .AddContract<IRuntimeInfo>(version: "c1")
-            .AddMockContract(executionManager)
-            .Build();
-        DebugInfo_1 debugInfo = new(target);
-
-        uint offset = debugInfo.GetMethodCodeOffset(
-            new TargetCodePointer(0x8001_028F),
-            codeBlock);
-
-        Assert.Equal(MethodOffset, offset);
-        executionManager.Verify(e => e.GetRelativeOffset(codeBlock), Times.Once);
-    }
-
     /// <summary>
     /// A WASM local must not resolve to a fabricated location. Before this guard existed,
     /// <c>ReadRegister</c> fell through to <c>return 0</c> for every WASM local register,

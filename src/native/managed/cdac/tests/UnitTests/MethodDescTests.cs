@@ -78,7 +78,8 @@ public class MethodDescTests
         MockTarget.Architecture arch,
         Action<MockDescriptors.MockMethodDescriptorsBuilder> configure,
         Mock<IExecutionManager>? mockExecutionManager = null,
-        Mock<IPrecodeStubs>? mockPrecodeStubs = null)
+        Mock<IPrecodeStubs>? mockPrecodeStubs = null,
+        Action<TestPlaceholderTarget.Builder>? configureTarget = null)
     {
         var targetBuilder = new TestPlaceholderTarget.Builder(arch);
         MockDescriptors.RuntimeTypeSystem rtsBuilder = new(targetBuilder.MemoryBuilder);
@@ -89,16 +90,16 @@ public class MethodDescTests
 
         mockExecutionManager ??= new Mock<IExecutionManager>();
         mockPrecodeStubs ??= new Mock<IPrecodeStubs>();
-        var target = targetBuilder
+        TestPlaceholderTarget.Builder target = targetBuilder
             .AddTypes(CreateContractTypes(methodDescBuilder))
             .AddGlobals(CreateContractGlobals(methodDescBuilder))
             .AddContract<IRuntimeTypeSystem>(version: "c1")
             .AddContract<ILoader>(version: "c1")
             .AddMockContract(new Mock<IPlatformMetadata>())
             .AddMockContract(mockExecutionManager)
-            .AddMockContract(mockPrecodeStubs)
-            .Build();
-        return target.Contracts.RuntimeTypeSystem;
+            .AddMockContract(mockPrecodeStubs);
+        configureTarget?.Invoke(target);
+        return target.Build().Contracts.RuntimeTypeSystem;
     }
 
     [Theory]
@@ -208,6 +209,46 @@ public class MethodDescTests
                 : ArrayFunctionType.Constructor;
             Assert.Equal(expectedFunctionType, functionType);
         }
+    }
+
+    /// <summary>
+    /// The ReJIT contract is advertised only by runtimes built with profiler support. Without it,
+    /// native <c>MethodDesc::IsEligibleForReJIT</c> is false, so a method that is not eligible for
+    /// tiered compilation is not versionable.
+    /// </summary>
+    [Theory]
+    [InlineData(false, false, false)]
+    [InlineData(true, false, false)]
+    [InlineData(true, true, true)]
+    public void IsVersionable_ReJITContractOptional(bool advertiseReJIT, bool reJITEnabled, bool expected)
+    {
+        MockTarget.Architecture arch = new() { IsLittleEndian = true, Is64Bit = true };
+        TargetPointer methodDescAddress = TargetPointer.Null;
+        Mock<IReJIT> reJIT = new();
+        reJIT.Setup(r => r.IsEnabled()).Returns(reJITEnabled);
+        Mock<ICodeVersions> codeVersions = new();
+        codeVersions.Setup(c => c.CodeVersionManagerSupportsMethod(It.IsAny<TargetPointer>())).Returns(true);
+
+        IRuntimeTypeSystem rts = CreateRuntimeTypeSystemContract(
+            arch,
+            methodDescBuilder =>
+            {
+                MockMethodTable objectMethodTable = methodDescBuilder.RTSBuilder.SystemObjectMethodTable;
+                byte methodDescSize = (byte)(methodDescBuilder.MethodDescLayout.Size / methodDescBuilder.MethodDescAlignment);
+                MockMethodDescChunk chunk = methodDescBuilder.AddMethodDescChunk("testMethod", methodDescSize);
+                chunk.MethodTable = objectMethodTable.Address;
+                chunk.Size = methodDescSize;
+                chunk.Count = 1;
+                methodDescAddress = new TargetPointer(chunk.GetMethodDescAtChunkIndex(0, methodDescBuilder.MethodDescLayout).Address);
+            },
+            configureTarget: targetBuilder =>
+            {
+                targetBuilder.AddMockContract(codeVersions);
+                if (advertiseReJIT)
+                    targetBuilder.AddMockContract(reJIT);
+            });
+
+        Assert.Equal(expected, rts.IsVersionable(rts.GetMethodDescHandle(methodDescAddress)));
     }
 
     [Theory]
