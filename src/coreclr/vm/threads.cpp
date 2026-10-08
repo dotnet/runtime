@@ -828,7 +828,6 @@ Thread* SetupUnstartedThread(SetupUnstartedThreadFlags flags)
 
     return pThread;
 }
-#endif // FEATURE_MULTITHREADING
 
 //-------------------------------------------------------------------------
 // Public function: DestroyThread()
@@ -854,6 +853,7 @@ void DestroyThread(Thread *th)
     th->SetThreadState(Thread::TS_Stopped);
     th->OnThreadTerminate(FALSE);
 }
+#endif // FEATURE_MULTITHREADING
 
 //-------------------------------------------------------------------------
 // Public function: DetachThread()

@@ -307,8 +307,8 @@ enum SetupUnstartedThreadFlags
 };
 #ifdef FEATURE_MULTITHREADING
 Thread* SetupUnstartedThread(SetupUnstartedThreadFlags flags = SUTF_Default);
-#endif // FEATURE_MULTITHREADING
 void    DestroyThread(Thread *th);
+#endif // FEATURE_MULTITHREADING
 
 DWORD GetRuntimeId();
 
