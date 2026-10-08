@@ -1,11 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
+
 // siginfo.cpp
 //
 // Signature parsing code
-//
-
 
 #include "common.h"
 
@@ -5426,25 +5424,6 @@ CorElementType MetaSig::GetReturnTypeNormalized(TypeHandle * pthValueType) const
     pSig->m_flags |= SIG_RET_TYPE_INITTED;
 
     return m_corNormalizedRetType;
-}
-
-BOOL MetaSig::IsObjectRefReturnType()
-{
-    WRAPPER_NO_CONTRACT;
-
-    switch (GetReturnTypeNormalized())
-        {
-        case ELEMENT_TYPE_CLASS:
-        case ELEMENT_TYPE_SZARRAY:
-        case ELEMENT_TYPE_ARRAY:
-        case ELEMENT_TYPE_STRING:
-        case ELEMENT_TYPE_OBJECT:
-        case ELEMENT_TYPE_VAR:
-            return TRUE;
-        default:
-            break;
-        }
-    return FALSE;
 }
 
 CorElementType MetaSig::GetReturnType() const

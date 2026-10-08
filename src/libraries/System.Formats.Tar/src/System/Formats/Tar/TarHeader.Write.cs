@@ -621,15 +621,8 @@ namespace System.Formats.Tar
                 checksum += FormatNumeric(_mode, buffer.Slice(FieldLocations.Mode, FieldLengths.Mode));
             }
 
-            if (_uid >= 0)
-            {
-                checksum += FormatNumeric(_uid, buffer.Slice(FieldLocations.Uid, FieldLengths.Uid));
-            }
-
-            if (_gid >= 0)
-            {
-                checksum += FormatNumeric(_gid, buffer.Slice(FieldLocations.Gid, FieldLengths.Gid));
-            }
+            checksum += FormatUidGid(_uid, buffer.Slice(FieldLocations.Uid, FieldLengths.Uid));
+            checksum += FormatUidGid(_gid, buffer.Slice(FieldLocations.Gid, FieldLengths.Gid));
 
             if (_size >= 0)
             {
@@ -1054,6 +1047,26 @@ namespace System.Formats.Tar
             {
                 throw new ArgumentException(SR.Format(SR.TarFieldTooLargeForEntryFormat, _format));
             }
+        }
+
+        // Unix uid_t and gid_t are unsigned: a negative value represents an id larger than int.MaxValue.
+        // Only the GNU format can store those ids in the header field. PAX stores them in the extended attributes,
+        // and for the other formats the field is left empty.
+        private int FormatUidGid(int value, Span<byte> destination)
+        {
+            if (value >= 0)
+            {
+                return FormatNumeric(value, destination);
+            }
+
+            if (_format == TarEntryFormat.Gnu)
+            {
+                // Store in big endian format with leading '0x80' byte.
+                BinaryPrimitives.WriteInt64BigEndian(destination, (long)unchecked((uint)value) | (1L << 63));
+                return Checksum(destination);
+            }
+
+            return 0;
         }
 
         private int FormatNumeric(long value, Span<byte> destination)
