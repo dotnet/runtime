@@ -425,6 +425,18 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        public async Task ConstructorParameterIncompleteBinding_CaseInsensitiveDuplicateParameter_MemberOrderDoesNotAffectDiagnostic()
+        {
+            InvalidOperationException ex1 = await Assert.ThrowsAsync<InvalidOperationException>(
+                () => Serializer.DeserializeWrapper<CaseInsensitiveDuplicateParameterBoundFirstClass>("{}"));
+            Assert.Contains("Parameter 'A' of type 'System.Int32' could not be bound because property or field 'A' is already bound to constructor parameter 'a'.", ex1.Message);
+
+            InvalidOperationException ex2 = await Assert.ThrowsAsync<InvalidOperationException>(
+                () => Serializer.DeserializeWrapper<CaseInsensitiveDuplicateParameterMismatchFirstClass>("{}"));
+            Assert.Contains("Parameter 'A' of type 'System.Int32' could not be bound because property or field 'A' is already bound to constructor parameter 'a'.", ex2.Message);
+        }
+
+        [Fact]
         public void ConstructorParameterIncompleteBinding_PropertyRenamedAfterAssociation()
         {
             DefaultJsonTypeInfoResolver resolver = new();

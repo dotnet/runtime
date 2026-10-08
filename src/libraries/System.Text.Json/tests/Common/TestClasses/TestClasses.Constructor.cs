@@ -2516,6 +2516,20 @@ namespace System.Text.Json.Serialization.Tests
         public CaseInsensitiveDuplicateParameterClass(int a, int A) => this.A = A;
     }
 
+    public sealed class CaseInsensitiveDuplicateParameterBoundFirstClass
+    {
+        public CaseInsensitiveDuplicateParameterBoundFirstClass(int a, int A) => this.A = A;
+        public int A { get; }
+        public string? a { get; set; }
+    }
+
+    public sealed class CaseInsensitiveDuplicateParameterMismatchFirstClass
+    {
+        public CaseInsensitiveDuplicateParameterMismatchFirstClass(int a, int A) => this.A = A;
+        public string? a { get; set; }
+        public int A { get; }
+    }
+
     public class ClassWithTwoConstructorParameters
     {
         public int X { get; }

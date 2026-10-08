@@ -210,6 +210,8 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(ClassWithPropertyAndFieldMismatch))]
         [JsonSerializable(typeof(ClassWithJsonIncludeFieldMismatch))]
         [JsonSerializable(typeof(CaseInsensitiveDuplicateParameterClass))]
+        [JsonSerializable(typeof(CaseInsensitiveDuplicateParameterBoundFirstClass))]
+        [JsonSerializable(typeof(CaseInsensitiveDuplicateParameterMismatchFirstClass))]
         [JsonSerializable(typeof(ClassWithOneConstructorParameter))]
         internal sealed partial class ConstructorTestsContext_Metadata : JsonSerializerContext
         {
@@ -416,6 +418,8 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(ClassWithPropertyAndFieldMismatch))]
         [JsonSerializable(typeof(ClassWithJsonIncludeFieldMismatch))]
         [JsonSerializable(typeof(CaseInsensitiveDuplicateParameterClass))]
+        [JsonSerializable(typeof(CaseInsensitiveDuplicateParameterBoundFirstClass))]
+        [JsonSerializable(typeof(CaseInsensitiveDuplicateParameterMismatchFirstClass))]
         [JsonSerializable(typeof(ClassWithOneConstructorParameter))]
         internal sealed partial class ConstructorTestsContext_Default : JsonSerializerContext
         {

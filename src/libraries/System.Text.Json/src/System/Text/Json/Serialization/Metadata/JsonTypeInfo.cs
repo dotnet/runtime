@@ -1682,27 +1682,21 @@ namespace System.Text.Json.Serialization.Metadata
                     if (param.Position < boundParameters.Length && !boundParameters[param.Position])
                     {
                         JsonPropertyInfo? matchingNameProp = null;
+                        int matchingNameRank = -1;
                         foreach (JsonPropertyInfo prop in _propertyCache)
                         {
                             string propName = prop.MemberName ?? prop.Name;
                             if (string.Equals(propName, param.Name, StringComparison.OrdinalIgnoreCase))
                             {
-                                if (matchingNameProp is null)
+                                int rank = (prop.PropertyType == param.ParameterType ? 2 : 0) + (prop.AssociatedParameter is null ? 1 : 0);
+                                if (rank > matchingNameRank)
                                 {
                                     matchingNameProp = prop;
-                                }
-                                else if (prop.PropertyType == param.ParameterType && matchingNameProp.PropertyType != param.ParameterType)
-                                {
-                                    matchingNameProp = prop;
-                                }
-                                else if (prop.AssociatedParameter is null && matchingNameProp.AssociatedParameter is not null)
-                                {
-                                    matchingNameProp = prop;
-                                }
-
-                                if (matchingNameProp.PropertyType == param.ParameterType && matchingNameProp.AssociatedParameter is null)
-                                {
-                                    break;
+                                    matchingNameRank = rank;
+                                    if (rank == 3)
+                                    {
+                                        break;
+                                    }
                                 }
                             }
                         }
