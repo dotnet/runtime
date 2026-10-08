@@ -7,9 +7,6 @@
     <ProjectReference Include="$(CoreClrProjectRoot)/tools/aot/crossgen2/crossgen2_inbuild.csproj" OutputItemType="Crossgen2Files" />
     <ProjectReference Include="$(CoreClrProjectRoot)/tools/dotnet-pgo/dotnet-pgo.csproj" OutputItemType="DotNetPgo" Condition="'$(DotNetBuildSourceOnly)' != 'true'" />
     <ProjectReference Include="$([MSBuild]::NormalizePath('$(CoreClrProjectRoot)', 'System.Private.CoreLib', 'System.Private.CoreLib.csproj'))" OutputItemType="CoreLib" />
-    <!-- Built so InvokeCrossgen2 can call crossgen2 through the shared RunReadyToRunCompiler
-         task (the same one the SDK uses for PublishReadyToRun), for both the composite and
-         non-composite case, instead of a raw <Exec>. -->
     <ProjectReference Include="$([MSBuild]::NormalizePath('$(RepoRoot)', 'src', 'tasks', 'Crossgen2Tasks', 'Crossgen2Tasks.csproj'))" />
   </ItemGroup>
 
@@ -21,9 +18,6 @@
     <IntermediatesDir>$([MSBuild]::NormalizeDirectory('$(RootBinDir)', 'obj', 'coreclr', $(OSPlatformConfig)))</IntermediatesDir>
     <DotNetCli>$([MSBuild]::NormalizePath('$(RepoRoot)', 'dotnet.sh'))</DotNetCli>
     <DotNetCli Condition="'$(OS)' == 'Windows_NT'">$([MSBuild]::NormalizePath('$(RepoRoot)', 'dotnet.cmd'))</DotNetCli>
-    <!-- src/tasks builds independently of the coreclr Configuration (e.g. there is no
-         "Checked" task build), matching the convention used by the other *Dir properties
-         below for task assemblies built outside the coreclr build. -->
     <Crossgen2TasksAssembly>$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'Crossgen2Tasks', '$(TasksConfiguration)', 'Crossgen2Tasks.dll'))</Crossgen2TasksAssembly>
   </PropertyGroup>
 
@@ -147,14 +141,6 @@
       <Crossgen2Inputs Include="$(Crossgen2TasksAssembly)" />
     </ItemGroup>
 
-    <!-- Reproduces the file set that "-r:$(BinDir)IL/*.dll" previously expanded to via shell
-         globbing, as an explicit item list for RunReadyToRunCompiler's
-         ImplementationAssemblyReferences/ReadyToRunCompositeBuildReferences parameters (the
-         task does not glob itself). Used for both the composite and non-composite cases: it is
-         the same glob the original composite <Exec> command passed via "-r:", so reusing it
-         here (including the harmless self-reference to CoreLib's own IL dll, which crossgen2
-         already tolerated under the old <Exec> composite invocation) preserves that behavior
-         exactly. -->
     <ItemGroup>
       <Crossgen2CoreLibReferences Include="$([MSBuild]::NormalizePath('$(BinDir)', 'IL', '*.dll'))" />
     </ItemGroup>
@@ -175,22 +161,6 @@
     <MakeDir
       Directories="$(BinDir);$(IntermediatesDir);$(LogsDir)" />
 
-    <Message Importance="High"
-      Text="Generating native image of System.Private.CoreLib for $(OSPlatformConfig). Logging to $(CrossGenCoreLibLog)" />
-
-    <!-- Single RunReadyToRunCompiler invocation for both the composite (Apple-mobile) and
-         non-composite case: CompilationEntry's CreateCompositeImage metadata switches the
-         task itself between the two modes (it already emits the composite flag and swaps
-         which reference/input parameters it reads), so no raw <Exec> is needed for either
-         shape.
-         This mirrors exactly how the SDK's own PrepareForReadyToRunCompilation/
-         Microsoft.NET.CrossGen.targets invoke this task for real composite publishing - it is
-         not a repurposed or mismatched use of the task, but the same production mechanism.
-         Flags without a dedicated task parameter are passed through verbatim via
-         Crossgen2ExtraCommandLineArgs, the same escape hatch the SDK itself uses for
-         PublishReadyToRunCrossgen2ExtraArgs. ShowCompilerWarnings is forced on because the
-         original composite/non-composite <Exec> commands surfaced every canonical "warning:"
-         line as a build warning; the task demotes those to messages by default. -->
     <ItemGroup>
       <_CoreLibCrossgen2Tool Include="@(Crossgen2Files->Metadata('OutputPath')->WithMetadataValue('Filename','crossgen2')->WithMetadataValue('Extension','$(ExeSuffix)'))">
         <TargetOS>$(TargetOS)</TargetOS>
@@ -198,9 +168,7 @@
         <PerfmapFormatVersion Condition="$(BuildPerfMap)">1</PerfmapFormatVersion>
       </_CoreLibCrossgen2Tool>
 
-      <!-- In composite mode the task ignores this item's ItemSpec (it hardcodes the input
-           to "CompositeImage" and reads ReadyToRunCompositeBuildInput instead); @(CoreLib) is
-           kept as the Include here purely so the metadata below attaches to a real item. -->
+      <!-- @(CoreLib) just carries the metadata below; the task ignores this item's ItemSpec in composite mode. -->
       <_CoreLibCompilationEntry Include="@(CoreLib)">
         <OutputR2RImage>$(CrossgenCoreLibOutputPath)</OutputR2RImage>
         <CreateCompositeImage Condition="'$(UseComposite)' == 'true'">true</CreateCompositeImage>
@@ -229,7 +197,7 @@
         Condition="'$(PublishReadyToRunContainerFormat)' == 'wasm' and '$(PublishReadyToRunStripDebugInfo)' != 'false'" />
       <_CoreLibCrossgen2ExtraArgs Include="--codegenopt:JitWasmNyiToR2RUnsupported=1"
         Condition="'$(PublishReadyToRunContainerFormat)' == 'wasm'" />
-      <!-- No surrounding quotes: these are written to a response file, not parsed by a shell. -->
+      <!-- wasm: enable cross-module inlining/optimization across the whole shared framework (the -r IL closure). -->
       <_CoreLibCrossgen2ExtraArgs Include="--opt-cross-module:*"
         Condition="'$(PublishReadyToRunContainerFormat)' == 'wasm'" />
       <_CoreLibCrossgen2ExtraArgs Include="@(WasmCoreClrFrameworkPInvokeModule->WithMetadataValue('Browser', 'true')->WithMetadataValue('PrebuiltR2RDirect', 'true')->'--directpinvoke:%(Identity)')"
@@ -241,9 +209,6 @@
       <_CoreLibCrossgen2ExtraArgs Include="--verify-gc-mode-transitions"
         Condition="'$(TargetOS)' == 'browser' and ('$(Configuration)' == 'Debug' or '$(Configuration)' == 'Checked')" />
     </ItemGroup>
-
-    <Message Importance="High"
-      Text="RunReadyToRunCompiler: @(_CoreLibCrossgen2Tool) --out:$(CrossgenCoreLibOutputPath) -r:&lt;$(BinDir)IL/*.dll&gt; --targetarch:$(TargetArchitecture) --targetos:$(TargetOS) @(_CoreLibCrossgen2ExtraArgs, ' ') @(CoreLib) (composite=$(UseComposite))" />
 
     <RunReadyToRunCompiler Crossgen2Tool="@(_CoreLibCrossgen2Tool)"
                            UseCrossgen2="true"
