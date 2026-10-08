@@ -8,7 +8,6 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.DotNet.XUnitExtensions;
 using Microsoft.Extensions.FileProviders.Internal;
 using Microsoft.Extensions.FileProviders.Physical;
 using Microsoft.Extensions.Primitives;
@@ -1271,6 +1270,13 @@ namespace Microsoft.Extensions.FileProviders
             using (var physicalFilesWatcher = new PhysicalFilesWatcher(root.Path + Path.DirectorySeparatorChar, fileSystemWatcher, pollForChanges: false))
             using (var provider = new PhysicalFileProvider(root.Path) { FileWatcher = physicalFilesWatcher })
             {
+                // This test only relies on the watcher events that are injected below via
+                // fileSystemWatcher.CallOnRenamed, which invokes FileSystemWatcher.OnRenamed directly and
+                // so bypasses Filter matching. Setting a Filter that cannot match any of the (randomly
+                // generated) names used by this test suppresses any genuine native events - e.g. ones
+                // belatedly reported by macOS fseventsd for the directory/file creation below.
+                fileSystemWatcher.Filter = "this-filter-does-not-match-anything";
+
                 var oldDirectoryName = Guid.NewGuid().ToString();
                 var oldSubDirectoryName = Guid.NewGuid().ToString();
                 var oldSubDirectoryPath = Path.Combine(oldDirectoryName, oldSubDirectoryName);
@@ -1286,15 +1292,6 @@ namespace Microsoft.Extensions.FileProviders
                 Directory.CreateDirectory(Path.Combine(root.Path, newDirectoryName));
                 Directory.CreateDirectory(Path.Combine(root.Path, newDirectoryName, newSubDirectoryName));
                 File.Create(Path.Combine(root.Path, newDirectoryName, newSubDirectoryName, newFileName));
-
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-                {
-                    // Give the macOS fseventsd a chance to catch up with the directory structure
-                    // created above before the watcher starts, reducing (but not eliminating) the risk
-                    // that it replays those changes as new events after the watch starts. See
-                    // https://github.com/dotnet/runtime/issues/30415#issuecomment-532465088.
-                    await Task.Delay(TimeSpan.FromSeconds(1));
-                }
 
                 var oldDirectoryToken = provider.Watch(oldDirectoryName);
                 var oldDirectoryTcs = new TaskCompletionSource<bool>();
@@ -1314,23 +1311,12 @@ namespace Microsoft.Extensions.FileProviders
                 var newFileTcs = new TaskCompletionSource<bool>();
                 newFileToken.RegisterChangeCallback(_ => newFileTcs.TrySetResult(true), null);
 
-                static void AssertFalseOrSkipOnMacOSRace(IChangeToken token, string tokenDescription)
-                {
-                    bool changed = token.HasChanged;
-                    if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX) && changed)
-                    {
-                        // Mark the test as inconclusive/skipped.
-                        throw new SkipTestException($"Known macOS FSEvents race caused the {tokenDescription} token to change before the rename.");
-                    }
-                    Assert.False(changed, $"{tokenDescription} token should not have changed");
-                }
-
                 Assert.False(oldDirectoryToken.HasChanged, "Old directory token should not have changed");
                 Assert.False(oldSubDirectoryToken.HasChanged, "Old subdirectory token should not have changed");
                 Assert.False(oldFileToken.HasChanged, "Old file token should not have changed");
-                AssertFalseOrSkipOnMacOSRace(newDirectoryToken, "New directory");
-                AssertFalseOrSkipOnMacOSRace(newSubDirectoryToken, "New subdirectory");
-                AssertFalseOrSkipOnMacOSRace(newFileToken, "New file");
+                Assert.False(newDirectoryToken.HasChanged, "New directory token should not have changed");
+                Assert.False(newSubDirectoryToken.HasChanged, "New subdirectory token should not have changed");
+                Assert.False(newFileToken.HasChanged, "New file token should not have changed");
 
                 fileSystemWatcher.CallOnRenamed(new RenamedEventArgs(WatcherChangeTypes.Renamed, root.Path, newDirectoryName, oldDirectoryName));
 
