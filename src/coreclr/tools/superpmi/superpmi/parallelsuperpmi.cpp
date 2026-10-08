@@ -809,7 +809,7 @@ static bool RegisterCtrlHandler()
 
 static bool GetTempFolderPath(char* tempPath)
 {
-    if (!GetTempPath(MAX_PATH, tempPath))
+    if (!GetTempPathA(MAX_PATH, tempPath))
     {
         LogError("Failed to get path to temp folder.");
         return false;

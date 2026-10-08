@@ -27,8 +27,9 @@ namespace Internal.Runtime.TypeLoader
             Debug.Assert(!typeDef.Name.IsNil);
 
             name = typeDef.Name.GetConstantStringValue(reader).Value;
-            enclosing = typeDef.EnclosingType.IsNil ? null : typeDef.EnclosingType.GetFullName(reader);
-            nspace = typeDef.NamespaceDefinition.IsNil ? null : typeDef.NamespaceDefinition.GetFullName(reader);
+            Handle parent = typeDef.NamespaceOrEnclosingType;
+            enclosing = parent.HandleType == HandleType.TypeDefinition ? parent.ToTypeDefinitionHandle(reader).GetFullName(reader) : null;
+            nspace = parent.HandleType == HandleType.NamespaceDefinition ? parent.ToNamespaceDefinitionHandle(reader).GetFullName(reader) : null;
         }
 
         public static string GetFullName(this TypeDefinitionHandle typeDefHandle, MetadataReader reader)
@@ -50,7 +51,7 @@ namespace Internal.Runtime.TypeLoader
         {
             var typeDef = typeDefHandle.GetTypeDefinition(reader);
 
-            Handle currentHandle = !typeDef.EnclosingType.IsNil ? (Handle)typeDef.EnclosingType : (Handle)typeDef.NamespaceDefinition;
+            Handle currentHandle = typeDef.NamespaceOrEnclosingType;
             Debug.Assert(!currentHandle.IsNil);
 
             while (!currentHandle.IsNil)
@@ -59,7 +60,7 @@ namespace Internal.Runtime.TypeLoader
                 {
                     case HandleType.TypeDefinition:
                         typeDef = currentHandle.ToTypeDefinitionHandle(reader).GetTypeDefinition(reader);
-                        currentHandle = !typeDef.EnclosingType.IsNil ? (Handle)typeDef.EnclosingType : (Handle)typeDef.NamespaceDefinition;
+                        currentHandle = typeDef.NamespaceOrEnclosingType;
                         break;
 
                     case HandleType.NamespaceDefinition:

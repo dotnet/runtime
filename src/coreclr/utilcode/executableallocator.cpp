@@ -814,49 +814,6 @@ void* ExecutableAllocator::Reserve(size_t size)
     return result;
 }
 
-// Reserve a block of executable memory at the specified virtual address. If it is not
-// possible, the method returns NULL.
-void* ExecutableAllocator::ReserveAt(void* baseAddressRX, size_t size)
-{
-    LIMITED_METHOD_CONTRACT;
-
-#ifdef LOG_EXECUTABLE_ALLOCATOR_STATISTICS
-    InterlockedIncrement64(&g_reserveCount);
-#endif
-
-    _ASSERTE((size & (Granularity() - 1)) == 0);
-
-    if (IsDoubleMappingEnabled())
-    {
-        CRITSEC_Holder csh(m_CriticalSection);
-
-        bool isFreeBlock;
-        BlockRX* block = AllocateBlock(size, &isFreeBlock);
-        if (block == NULL)
-        {
-            return NULL;
-        }
-
-        void* result = VMToOSInterface::ReserveDoubleMappedMemory(m_doubleMemoryMapperHandle, block->offset, size, baseAddressRX, baseAddressRX);
-
-        if (result != NULL)
-        {
-            block->baseRX = result;
-            AddRXBlock(block);
-        }
-        else
-        {
-            BackoutBlock(block, isFreeBlock);
-        }
-
-        return result;
-    }
-    else
-    {
-        return VirtualAlloc(baseAddressRX, size, MEM_RESERVE, PAGE_NOACCESS);
-    }
-}
-
 // Map an executable memory block as writeable. If there is already a mapping
 // covering the specified block, return that mapping instead of creating a new one.
 // Return starting address of the writeable mapping.

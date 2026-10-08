@@ -35,6 +35,9 @@ namespace System.Threading
         }
 #endif // TARGET_WASI
 
+        /// <summary>Returns the operating system identifier for the current thread.</summary>
+        internal static ulong CurrentOSThreadId => Interop.Sys.GetCurrentThreadId();
+
         // the closest analog to Sleep(0) on Unix is sched_yield
         internal static void UninterruptibleSleep0() => Thread.Yield();
 

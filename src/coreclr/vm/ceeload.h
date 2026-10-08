@@ -1,9 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 // ===========================================================================
 // File: CEELOAD.H
-//
-
 //
 // CEELOAD.H defines the class use to represent the PE file
 // ===========================================================================
@@ -1054,11 +1053,6 @@ public:
     HRESULT GetReadablePublicMetaDataInterface(DWORD dwOpenFlags, REFIID riid, LPVOID * ppvInterface);
 #endif // PROFILING_SUPPORTED
 
-#if defined(FEATURE_READYTORUN)
-    BOOL IsInSameVersionBubble(Module *target);
-#endif // FEATURE_READYTORUN
-
-
     LPCWSTR GetPathForErrorMessages() final;
 
 
@@ -1471,10 +1465,10 @@ public:
     PTR_READYTORUN_IMPORT_SECTION GetImportSectionFromIndex(COUNT_T index);
     PTR_READYTORUN_IMPORT_SECTION GetImportSectionForRVA(RVA rva);
 
-    // These are overridden by reflection modules
+    // This is overridden by reflection modules
     virtual TADDR GetIL(RVA il);
 
-    virtual PTR_VOID GetRvaField(RVA field);
+    PTR_VOID GetRvaField(RVA field);
     CHECK CheckRvaField(RVA field);
     CHECK CheckRvaField(RVA field, COUNT_T size);
 
@@ -1570,12 +1564,10 @@ public:
 #endif // !DACCESS_COMPILE
     TADDR GetDynamicIL(mdToken token);
 
-protected:
 #ifndef DACCESS_COMPILE
     void SetDynamicRvaField(mdToken token, TADDR blobAddress);
 #endif // !DACCESS_COMPILE
 
-public:
     TADDR GetDynamicRvaField(mdToken token);
 
     // store and retrieve the instrumented IL offset mapping for a particular method
@@ -1758,11 +1750,6 @@ class ReflectionModule : public Module
 {
     VPTR_VTABLE_CLASS(ReflectionModule, Module)
 
- public:
-    HCEESECTION m_sdataSection;
-
- protected:
-    ICeeGenInternal * m_pCeeFileGen;
 private:
     RefClassWriter       *m_pInMemoryWriter;
 
@@ -1787,11 +1774,8 @@ public:
     void Destruct();
 #endif // !DACCESS_COMPILE
 
-    // Overrides functions to access sections
-    virtual TADDR GetIL(RVA target);
-    virtual PTR_VOID GetRvaField(RVA rva);
-
-    ICeeGenInternal *GetCeeGen() {LIMITED_METHOD_CONTRACT;  return m_pCeeFileGen; }
+    // Emitted methods use their tokens in the metadata RVA column.
+    virtual TADDR GetIL(RVA methodToken);
 
     RefClassWriter *GetClassWriter()
     {

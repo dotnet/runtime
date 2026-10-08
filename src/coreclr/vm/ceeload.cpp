@@ -1,14 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 // ===========================================================================
 // File: CEELOAD.CPP
 //
-
-//
-
 // CEELOAD reads in the PE file format using LoadLibrary
 // ===========================================================================
-
 
 #include "common.h"
 
@@ -80,8 +77,6 @@
 #define COR_VTABLE_PTRSIZED     COR_VTABLE_32BIT
 #define COR_VTABLE_NOT_PTRSIZED COR_VTABLE_64BIT
 #endif // !TARGET_64BIT
-
-#define CEE_FILE_GEN_GROWTH_COLLECTIBLE 2048
 
 #define NGEN_STATICS_ALLCLASSES_WERE_LOADED -1
 
@@ -868,8 +863,6 @@ BOOL Module::IsCollectible()
 }
 
 #ifndef DACCESS_COMPILE
-#include "staticallocationhelpers.inl"
-
 // initialize Crst controlling the Dynamic IL hashtable
 void Module::InitializeDynamicILCrst()
 {
@@ -912,12 +905,11 @@ void Module::SetDynamicIL(mdToken token, TADDR blobAddress)
 
 #endif // !DACCESS_COMPILE
 
-// Get the stored address of the IL blob for reflection/dynamics
+// Get the stored address of an IL body or RVA field's data for reflection/dynamics
 // Arguments:
 //     Input:
-//         token        method token
-//         fAllowTemporary also check the temporary overrides
-// Return Value: starting (target) address of the IL blob corresponding to the input token
+//         token        method token or field token
+// Return Value: starting (target) address of the data corresponding to the input token
 
 TADDR Module::GetDynamicIL(mdToken token)
 {
@@ -1562,66 +1554,6 @@ void Module::StartUnload()
 
     SetBeingUnloaded();
 }
-
-#if defined(FEATURE_READYTORUN)
-//---------------------------------------------------------------------------------------
-// Check if the target module is in the same version bubble as this one
-// The current implementation uses the presence of an AssemblyRef for the target module's assembly in
-// the native manifest metadata.
-//
-// Arguments:
-//      * target - target module to check
-//
-// Return Value:
-//      TRUE if the target module is in the same version bubble as this one
-//
-BOOL Module::IsInSameVersionBubble(Module *target)
-{
-    STANDARD_VM_CONTRACT;
-
-    if (this == target)
-    {
-        return TRUE;
-    }
-
-    if (!IsReadyToRun())
-    {
-        return FALSE;
-    }
-
-    NativeImage *nativeImage = this->GetCompositeNativeImage();
-
-    if (nativeImage != NULL)
-    {
-        if (nativeImage == target->GetCompositeNativeImage())
-        {
-            // Fast path for modules contained within the same native image
-            return TRUE;
-        }
-    }
-
-    IMDInternalImport* pMdImport = GetReadyToRunInfo()->GetNativeManifestModule()->GetMDImport();
-    if (pMdImport == NULL)
-        return FALSE;
-
-    LPCUTF8 targetName = target->GetAssembly()->GetSimpleName();
-
-    HENUMInternal assemblyEnum;
-    HRESULT hr = pMdImport->EnumAllInit(mdtAssemblyRef, &assemblyEnum);
-    mdAssemblyRef assemblyRef;
-    while (pMdImport->EnumNext(&assemblyEnum, &assemblyRef))
-    {
-        LPCSTR assemblyName;
-        hr = pMdImport->GetAssemblyRefProps(assemblyRef, NULL, NULL, &assemblyName, NULL, NULL, NULL, NULL);
-        if (strcmp(assemblyName, targetName) == 0)
-        {
-            return TRUE;
-        }
-    }
-
-    return FALSE;
-}
-#endif // FEATURE_READYTORUN
 
 //---------------------------------------------------------------------------------------
 #ifdef PROFILING_SUPPORTED
@@ -3577,6 +3509,16 @@ void Module::RunEagerFixupsUnlocked()
     PTR_READYTORUN_IMPORT_SECTION pSections = GetImportSections(&nSections);
     ReadyToRunLoadedImage *pNativeImage = GetReadyToRunImage();
 
+#ifndef TARGET_WASM
+    TADDR base = dac_cast<TADDR>(pNativeImage->GetBase());
+
+    ExecutionManager::AddCodeRange(
+        base, base + (TADDR)pNativeImage->GetVirtualSize(),
+        ExecutionManager::GetReadyToRunJitManager(),
+        RangeSection::RANGE_SECTION_NONE,
+        this /* pHeapListOrZapModule */);
+#endif // !TARGET_WASM
+
     for (COUNT_T iSection = 0; iSection < nSections; iSection++)
     {
         PTR_READYTORUN_IMPORT_SECTION pSection = pSections + iSection;
@@ -3612,15 +3554,6 @@ void Module::RunEagerFixupsUnlocked()
         }
     }
 
-#ifndef TARGET_WASM
-    TADDR base = dac_cast<TADDR>(pNativeImage->GetBase());
-
-    ExecutionManager::AddCodeRange(
-        base, base + (TADDR)pNativeImage->GetVirtualSize(),
-        ExecutionManager::GetReadyToRunJitManager(),
-        RangeSection::RANGE_SECTION_NONE,
-        this /* pHeapListOrZapModule */);
-#endif // !TARGET_WASM
 }
 #endif // !DACCESS_COMPILE
 
@@ -3842,11 +3775,7 @@ ReflectionModule::ReflectionModule(Assembly *pAssembly, PEAssembly *pPEAssembly)
     CONTRACTL_END
 
     m_pInMemoryWriter = NULL;
-    m_sdataSection = NULL;
-    m_pCeeFileGen = NULL;
 }
-
-HRESULT STDMETHODCALLTYPE CreateICeeGen(REFIID riid, void **pCeeGen);
 
 // Module initialization occurs in two phases: the constructor phase and the Initialize phase.
 //
@@ -3866,21 +3795,9 @@ void ReflectionModule::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
 
     Module::Initialize(pamTracker);
 
-    IfFailThrow(CreateICeeGen(IID_ICeeGenInternal, (void **)&m_pCeeFileGen));
-
-    // Collectible modules should try to limit the growth of their associate IL section, as common scenarios for collectible
-    // modules include single type modules
-    if (IsCollectible())
-    {
-        ReleaseHolder<ICeeGenInternal> pCeeGenInternal(NULL);
-        IfFailThrow(m_pCeeFileGen->QueryInterface(IID_ICeeGenInternal, (void **)&pCeeGenInternal));
-        IfFailThrow(pCeeGenInternal->SetInitialGrowth(CEE_FILE_GEN_GROWTH_COLLECTIBLE));
-    }
-
     m_pInMemoryWriter = new RefClassWriter();
 
     IfFailThrow(m_pInMemoryWriter->Init(
-        GetCeeGen(),
         GetPEAssembly()->GetMDInternalEmit(),
         GetMDImport(),
         szName));
@@ -3899,9 +3816,6 @@ void ReflectionModule::Destruct()
     CONTRACTL_END;
 
     delete m_pInMemoryWriter;
-
-    if (m_pCeeFileGen)
-        m_pCeeFileGen->Release();
 
     Module::Destruct();
 
@@ -4085,33 +3999,20 @@ TADDR ReflectionModule::GetDynamicMetadataBuffer() const
 }
 #endif
 
-TADDR ReflectionModule::GetIL(RVA il) // virtual
+TADDR ReflectionModule::GetIL(RVA methodToken) // virtual
 {
 #ifndef DACCESS_COMPILE
     WRAPPER_NO_CONTRACT;
-    BYTE* pByte = NULL;
-    if (il != 0)
-        m_pCeeFileGen->GetMethodBuffer(il, &pByte);
-    return TADDR(pByte);
-#else // DACCESS_COMPILE
-    SUPPORTS_DAC;
-    DacNotImpl();
-    return (TADDR)NULL;
-#endif // DACCESS_COMPILE
-}
 
-PTR_VOID ReflectionModule::GetRvaField(RVA field) // virtual
-{
-#ifndef DACCESS_COMPILE
-    WRAPPER_NO_CONTRACT;
-    // This function should be call only if the target is a field or a field with RVA.
-    PTR_BYTE pByte = NULL;
-    m_pCeeFileGen->ComputePointer(m_sdataSection, field, &pByte);
-    return dac_cast<PTR_VOID>(pByte);
+    if (methodToken == 0)
+        return 0;
+
+    _ASSERTE(TypeFromToken(methodToken) == mdtMethodDef);
+    return GetDynamicIL(methodToken);
 #else // DACCESS_COMPILE
     SUPPORTS_DAC;
     DacNotImpl();
-    return NULL;
+    return 0;
 #endif // DACCESS_COMPILE
 }
 

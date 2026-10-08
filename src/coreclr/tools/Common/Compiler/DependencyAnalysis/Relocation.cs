@@ -486,8 +486,8 @@ namespace ILCompiler.DependencyAnalysis
         {
             uint pcInstr = *pCode;
 
-            // first get the high 20 bits,
-            long imm = ((long)((pcInstr >> 5) & 0xFFFFF) << 18);
+            // first get and sign-extend the high 20 bits,
+            long imm = ((int)(pcInstr << 7) >> 12) * 0x40000L;
 
             // then get the low 18 bits
             pcInstr = *(pCode + 1);

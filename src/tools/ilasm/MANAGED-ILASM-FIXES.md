@@ -30,3 +30,4 @@
 | `MethodReferenceForms_EmitResolvableCallTokensAndMethodSpecification` | Treats the unqualified in-type call as an unresolved global reference. | Resolves the call to the method in the containing type. |
 | `TypelistMscorlibAndSemicolonControls_EmitExpectedMetadata` | Leaves the implicit `System.Object` base unresolved. | Resolves the implicit object base through `mscorlib`. |
 | Compiler-controlled scope disambiguator | Strips the `$PST` token-specific disambiguator from anywhere within a symbol that it is present. | Strips the `$PST` disambiguator only from the end of a symbol name, the only place ildasm adds it. |
+| `BackwardBranchOptimization_UsesShortInstructionLimit` | With `/OPTIMIZE`, leaves backward branches long when their short-form displacement is -126, -127, or -128. | Uses the actual short-form displacement and emits a short branch whenever it fits in a signed byte. |

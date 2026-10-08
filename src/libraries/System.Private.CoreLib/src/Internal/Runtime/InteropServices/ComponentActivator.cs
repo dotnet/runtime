@@ -16,14 +16,7 @@ namespace Internal.Runtime.InteropServices
         private const string TrimIncompatibleWarningMessage = "Native hosting is not trim compatible and this warning will be seen if trimming is enabled.";
         private const string NativeAOTIncompatibleWarningMessage = "The native code for the method requested might not be available at runtime.";
 
-        [UnsupportedOSPlatform("android")]
-        [UnsupportedOSPlatform("browser")]
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("maccatalyst")]
-        [UnsupportedOSPlatform("tvos")]
-        private static readonly Dictionary<string, IsolatedComponentLoadContext> s_assemblyLoadContexts = new Dictionary<string, IsolatedComponentLoadContext>(StringComparer.InvariantCulture);
         private static readonly Dictionary<IntPtr, Delegate> s_delegates = new Dictionary<IntPtr, Delegate>();
-        private static readonly HashSet<string> s_loadedInDefaultContext = new HashSet<string>(StringComparer.InvariantCulture);
 
         // Use a value defined in https://github.com/dotnet/runtime/blob/main/docs/design/features/host-error-codes.md
         // To indicate the specific error when IsSupported is false
@@ -82,7 +75,7 @@ namespace Internal.Runtime.InteropServices
                 ArgumentNullException.ThrowIfNull(functionHandle);
 
                 // Set up the AssemblyLoadContext for this delegate.
-                AssemblyLoadContext alc = GetIsolatedComponentLoadContext(assemblyPath);
+                AssemblyLoadContext alc = ComponentLoadContextManager.Get(ComponentLoadContextManager.IsolatedContext, assemblyPath);
 
                 // Create the function pointer.
                 *(IntPtr*)functionHandle = InternalGetFunctionPointer(alc, typeName, methodName, delegateTypeNative);
@@ -131,34 +124,10 @@ namespace Internal.Runtime.InteropServices
 
             [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                 Justification = "The same feature switch applies to GetFunctionPointer and this function. We rely on the warning from GetFunctionPointer.")]
-            static void LoadAssemblyLocal(string assemblyPath) => LoadAssemblyImpl(assemblyPath);
-        }
-
-        [RequiresUnreferencedCode(TrimIncompatibleWarningMessage, Url = "https://aka.ms/dotnet-illink/nativehost")]
-        [UnsupportedOSPlatform("android")]
-        [UnsupportedOSPlatform("browser")]
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("maccatalyst")]
-        [UnsupportedOSPlatform("tvos")]
-        private static void LoadAssemblyImpl(string assemblyPath)
-        {
-            lock (s_loadedInDefaultContext)
+            static void LoadAssemblyLocal(string assemblyPath)
             {
-                if (s_loadedInDefaultContext.Contains(assemblyPath))
-                    return;
-
-                var resolver = new AssemblyDependencyResolver(assemblyPath);
-                AssemblyLoadContext.Default.Resolving +=
-                    (context, assemblyName) =>
-                    {
-                        string? assemblyPath = resolver.ResolveAssemblyToPath(assemblyName);
-                        return assemblyPath != null
-                            ? context.LoadFromAssemblyPath(assemblyPath)
-                            : null;
-                    };
-
+                ComponentLoadContextManager.AddResolverToDefaultContext(assemblyPath);
                 AssemblyLoadContext.Default.LoadFromAssemblyPath(assemblyPath);
-                s_loadedInDefaultContext.Add(assemblyPath);
             }
         }
 
@@ -274,27 +243,6 @@ namespace Internal.Runtime.InteropServices
             }
 
             return 0;
-        }
-
-        [RequiresUnreferencedCode(TrimIncompatibleWarningMessage, Url = "https://aka.ms/dotnet-illink/nativehost")]
-        [UnsupportedOSPlatform("android")]
-        [UnsupportedOSPlatform("browser")]
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
-        private static IsolatedComponentLoadContext GetIsolatedComponentLoadContext(string assemblyPath)
-        {
-            IsolatedComponentLoadContext? alc;
-
-            lock (s_assemblyLoadContexts)
-            {
-                if (!s_assemblyLoadContexts.TryGetValue(assemblyPath, out alc))
-                {
-                    alc = new IsolatedComponentLoadContext(assemblyPath);
-                    s_assemblyLoadContexts.Add(assemblyPath, alc);
-                }
-            }
-
-            return alc;
         }
 
         [RequiresDynamicCode(NativeAOTIncompatibleWarningMessage)]

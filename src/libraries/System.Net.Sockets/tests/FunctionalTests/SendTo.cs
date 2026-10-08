@@ -96,6 +96,7 @@ namespace System.Net.Sockets.Tests
 
         [ConditionalFact]
         [SkipOnPlatform(TestPlatforms.FreeBSD, "FreeBSD allows sendto() to broadcast")]
+        [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support Broadcast")]
         public async Task Datagram_UDP_AccessDenied_Throws_DoesNotBind()
         {
             IPEndPoint invalidEndpoint = new IPEndPoint(IPAddress.Broadcast, 1234);

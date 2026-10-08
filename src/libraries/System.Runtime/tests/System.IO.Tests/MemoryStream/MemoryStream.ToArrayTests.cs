@@ -5,7 +5,6 @@ using Xunit;
 using System;
 using System.IO;
 using System.Collections.Generic;
-using System.Security.Cryptography;
 
 namespace System.IO.Tests
 {
@@ -44,18 +43,25 @@ namespace System.IO.Tests
             Assert.True(array.AsSpan(index, count).SequenceEqual(newArray));
         }
 
+        private static byte[] GetRandomBytes(int count)
+        {
+            byte[] bytes = new byte[count];
+            Random.Shared.NextBytes(bytes);
+            return bytes;
+        }
+
         public static IEnumerable<object[]> GetArraysVariedBySize()
         {
-            yield return new object[] { RandomNumberGenerator.GetBytes(0) };
-            yield return new object[] { RandomNumberGenerator.GetBytes(1) };
-            yield return new object[] { RandomNumberGenerator.GetBytes(2) };
-            yield return new object[] { RandomNumberGenerator.GetBytes(256) };
-            yield return new object[] { RandomNumberGenerator.GetBytes(512) };
-            yield return new object[] { RandomNumberGenerator.GetBytes(1024) };
-            yield return new object[] { RandomNumberGenerator.GetBytes(2047) };
-            yield return new object[] { RandomNumberGenerator.GetBytes(2048) };
-            yield return new object[] { RandomNumberGenerator.GetBytes(2049) };
-            yield return new object[] { RandomNumberGenerator.GetBytes(2100) };
+            yield return new object[] { GetRandomBytes(0) };
+            yield return new object[] { GetRandomBytes(1) };
+            yield return new object[] { GetRandomBytes(2) };
+            yield return new object[] { GetRandomBytes(256) };
+            yield return new object[] { GetRandomBytes(512) };
+            yield return new object[] { GetRandomBytes(1024) };
+            yield return new object[] { GetRandomBytes(2047) };
+            yield return new object[] { GetRandomBytes(2048) };
+            yield return new object[] { GetRandomBytes(2049) };
+            yield return new object[] { GetRandomBytes(2100) };
         }
     }
 }
