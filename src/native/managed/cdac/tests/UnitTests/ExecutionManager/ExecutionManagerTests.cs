@@ -332,6 +332,43 @@ public class ExecutionManagerTests
         }
     }
 
+    /// <summary>
+    /// Variable offsets are relative to the code that a method's entry point starts, as native
+    /// <c>ClrDataAccess::GetMethodVarInfo</c> computes with <c>GetInterpreterCodeFromEntryPointIfPresent</c>:
+    /// an interpreter precode or portable entry point maps to the code it runs (interpreter bytecode
+    /// or the R2R virtual IP), while a JIT entry point is already the code start.
+    /// </summary>
+    [Theory]
+    [InlineData(0x0040_0000ul, 0x0040_0000ul)]
+    [InlineData(0x0040_0000ul, 0x8001_0100ul)]
+    public void GetMethodVarInfo_CodeOffsetIsRelativeToDiagnosticCodeStart(ulong entryPoint, ulong codeStart)
+    {
+        const uint CodeOffset = 0x2;
+        TargetCodePointer pCode = new(codeStart + CodeOffset);
+        CodeBlockHandle codeBlock = new(new TargetPointer(0x7000));
+        NativeCodeVersionHandle nativeCodeVersion = NativeCodeVersionHandle.CreateSynthetic(new TargetPointer(0x1000));
+
+        Mock<IExecutionManager> executionManager = new();
+        executionManager.Setup(e => e.GetCodeBlockHandle(pCode)).Returns(codeBlock);
+        executionManager.Setup(e => e.GetDebugInfo(codeBlock, out It.Ref<bool>.IsAny)).Returns(TargetPointer.Null);
+        executionManager
+            .Setup(e => e.GetDiagnosticCodeStartFromEntryPoint(new TargetCodePointer(entryPoint)))
+            .Returns(new TargetCodePointer(codeStart));
+        Mock<ICodeVersions> codeVersions = new();
+        codeVersions.Setup(c => c.GetNativeCodeVersionForIP(pCode)).Returns(nativeCodeVersion);
+        codeVersions.Setup(c => c.GetNativeCode(nativeCodeVersion)).Returns(new TargetCodePointer(entryPoint));
+
+        Target target = new TestPlaceholderTarget.Builder(new MockTarget.Architecture { IsLittleEndian = true, Is64Bit = false })
+            .AddMockContract(executionManager)
+            .AddMockContract(codeVersions)
+            .AddMockContract(new Mock<IPlatformMetadata>())
+            .AddContract<IDebugInfo>(version: "c1")
+            .Build();
+
+        Assert.Empty(target.Contracts.DebugInfo.GetMethodVarInfo(pCode, out uint codeOffset));
+        Assert.Equal(CodeOffset, codeOffset);
+    }
+
     [Theory]
     [MemberData(nameof(StdArchAllVersions))]
     public void GetDebugInfo_R2R_NoDebugInfoSection_ReturnsNull(string version, MockTarget.Architecture arch)
@@ -365,10 +402,15 @@ public class ExecutionManagerTests
         codeVersions.Setup(c => c.GetNativeCode(nativeCodeVersion)).Returns(methodStart);
 
         MockMemorySpace.MemoryContext memoryContext = emBuilder.Builder.GetMemoryContext();
+        Mock<IPrecodeStubs> precodeStubs = new();
+        precodeStubs.Setup(p => p.GetInterpreterCodeFromInterpreterPrecodeIfPresent(methodStart)).Returns(methodStart);
         Target target = CreateTarget(emBuilder, configureTarget: targetBuilder => targetBuilder
             .UseReader(ReadWithReadableZeroPage)
+            .AddGlobals((Constants.Globals.FeaturePortableEntrypoints, 0ul))
+            .AddContract<IFeatureFlags>(version: "c1")
             .AddContract<IDebugInfo>(version: "c1")
-            .AddMockContract(codeVersions));
+            .AddMockContract(codeVersions)
+            .AddMockContract(precodeStubs));
         IExecutionManager em = target.Contracts.ExecutionManager;
 
         CodeBlockHandle? handle = em.GetCodeBlockHandle(pCode);
