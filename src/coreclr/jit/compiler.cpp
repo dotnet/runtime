@@ -5049,6 +5049,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     DoPhase(this, PHASE_WASM_VIRTUAL_IP, &Compiler::fgWasmVirtualIP);
 
+    // Identify GC safe locals for wasm.
+    //
+    DoPhase(this, PHASE_WASM_IDENTIFY_GCSAFE_LOCALS, &Compiler::fgWasmIdentifyGCSafeLocals);
+
     // Ensure that any refs or byrefs live at call sites are spilled
     // to pinned stack slots so the objects aren't moved.
     //

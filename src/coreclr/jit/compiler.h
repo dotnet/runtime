@@ -4406,6 +4406,7 @@ public:
         bool     inUse;
     };
     jitstd::vector<WasmSpillSlot>* m_wasmSpillSlots = nullptr;
+    BitVec* m_wasmGCSafeLocals = nullptr;
 #endif // defined(TARGET_WASM)
 
     unsigned lvaInlinedPInvokeFrameVar = BAD_VAR_NUM; // variable representing the InlinedCallFrame
@@ -7024,6 +7025,7 @@ public:
     PhaseStatus fgWasmTransformSccs();
     PhaseStatus fgWasmRepairTryEntries();
     PhaseStatus fgWasmVirtualIP();
+    PhaseStatus fgWasmIdentifyGCSafeLocals();
     PhaseStatus fgWasmSpillRefs();
 #ifdef DEBUG
     void fgDumpWasmControlFlow();
