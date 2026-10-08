@@ -85,6 +85,7 @@
     <PropertyGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR'">
       <CoreCLRArtifactsPath>$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)'))</CoreCLRArtifactsPath>
       <CoreCLRArtifactsPdbDir>$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)','PDB'))</CoreCLRArtifactsPdbDir>
+      <CoreCLRArtifactsILDir>$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)','IL'))</CoreCLRArtifactsILDir>
       <!--
         Even though CoreCLRSharedFrameworkDir is statically initialized, set it again in case the
         value is different after CoreCLRArtifactsPath is normalized.
@@ -116,16 +117,16 @@
       </RuntimeFiles>
       <_systemPrivateCoreLib Include="$(CoreCLRArtifactsPath)System.Private.CoreLib.dll"
                              Condition="Exists('$(CoreCLRArtifactsPath)System.Private.CoreLib.dll')" />
-      <_systemPrivateCoreLib Include="$(CoreCLRArtifactsPath)IL/System.Private.CoreLib.dll"
-                             Condition="Exists('$(CoreCLRArtifactsPath)IL/System.Private.CoreLib.dll') and '@(_systemPrivateCoreLib)' == ''" />
+      <_systemPrivateCoreLib Include="$(CoreCLRArtifactsILDir)System.Private.CoreLib.dll"
+                             Condition="Exists('$(CoreCLRArtifactsILDir)System.Private.CoreLib.dll') and '@(_systemPrivateCoreLib)' == ''" />
       <RuntimeFiles Include="@(_systemPrivateCoreLib)" />
       <RuntimeFiles
         Include="
           $(CoreCLRSharedFrameworkPdbDir)*.pdb;
           $(CoreCLRSharedFrameworkPdbDir)*.dbg;
           $(CoreCLRSharedFrameworkPdbDir)*.dwarf" IsNative="true" />
-      <RuntimeFiles Condition="Exists('$(CoreCLRArtifactsPath)IL/System.Private.CoreLib.pdb')"
-        Include="$(CoreCLRArtifactsPath)IL/System.Private.CoreLib.pdb" />
+      <RuntimeFiles Condition="Exists('$(CoreCLRArtifactsILDir)System.Private.CoreLib.pdb')"
+        Include="$(CoreCLRArtifactsILDir)System.Private.CoreLib.pdb" />
       <RuntimeFiles Condition="Exists('$(CoreCLRArtifactsPdbDir)System.Private.CoreLib.ni.pdb')"
         Include="$(CoreCLRArtifactsPdbDir)System.Private.CoreLib.ni.pdb" />
 
