@@ -217,13 +217,8 @@ void Module::UpdateNewlyAddedTypes()
     }
     CONTRACTL_END
 
-    DWORD countTypesAfterProfilerUpdate = GetMDImport()->GetCountWithTokenKind(mdtTypeDef);
-    DWORD countExportedTypesAfterProfilerUpdate = GetMDImport()->GetCountWithTokenKind(mdtExportedType);
-    DWORD countCustomAttributeCount = GetMDImport()->GetCountWithTokenKind(mdtCustomAttribute);
-
-    if (m_dwTypeCount == countTypesAfterProfilerUpdate
-        && m_dwExportedTypeCount == countExportedTypesAfterProfilerUpdate
-        && m_dwCustomAttributeCount == countCustomAttributeCount)
+    TypeCounts currTypeCounts = GetCurrentTypeCounts();
+    if (m_typeCounts == currTypeCounts)
     {
         // The profiler added no new types, do not create the in memory hashes
         return;
@@ -242,27 +237,39 @@ void Module::UpdateNewlyAddedTypes()
         // If the hash tables already exist (either R2R and we've previously populated the ) we need to manually add the types.
 
         // typeDefs rids 0 and 1 aren't included in the count, thus X typeDefs before means rid X+1 was valid and our incremental addition should start at X+2
-        for (DWORD typeDefRid = m_dwTypeCount + 2; typeDefRid < countTypesAfterProfilerUpdate + 2; typeDefRid++)
+        for (DWORD typeDefRid = m_typeCounts.TypeCount + 2; typeDefRid < currTypeCounts.TypeCount + 2; typeDefRid++)
         {
             GetAssembly()->AddType(this, TokenFromRid(typeDefRid, mdtTypeDef));
         }
 
         // exportedType rid 0 isn't included in the count, thus X exportedTypes before means rid X was valid and our incremental addition should start at X+1
-        for (DWORD exportedTypeDef = m_dwExportedTypeCount + 1; exportedTypeDef < countExportedTypesAfterProfilerUpdate + 1; exportedTypeDef++)
+        for (DWORD exportedTypeDef = m_typeCounts.ExportedTypeCount + 1; exportedTypeDef < currTypeCounts.ExportedTypeCount + 1; exportedTypeDef++)
         {
             GetAssembly()->AddExportedType(TokenFromRid(exportedTypeDef, mdtExportedType));
         }
 
-        if ((countCustomAttributeCount != m_dwCustomAttributeCount) && IsReadyToRun())
+        if ((currTypeCounts.CustomAttributeCount != m_typeCounts.CustomAttributeCount) && IsReadyToRun())
         {
             // Set of custom attributes has changed. Disable the cuckoo filter from ready to run, and do normal custom attribute parsing
             GetReadyToRunInfo()->DisableCustomAttributeFilter();
         }
     }
 
-    m_dwTypeCount = countTypesAfterProfilerUpdate;
-    m_dwExportedTypeCount = countExportedTypesAfterProfilerUpdate;
-    m_dwCustomAttributeCount = countCustomAttributeCount;
+    m_typeCounts = currTypeCounts;
+}
+
+Module::TypeCounts Module::GetCurrentTypeCounts()
+{
+    WRAPPER_NO_CONTRACT;
+
+    IMDInternalImport* pMDImport = GetMDImport();
+    _ASSERTE(pMDImport != NULL);
+
+    TypeCounts typeCounts;
+    typeCounts.TypeCount = pMDImport->GetCountWithTokenKind(mdtTypeDef);
+    typeCounts.ExportedTypeCount = pMDImport->GetCountWithTokenKind(mdtExportedType);
+    typeCounts.CustomAttributeCount = pMDImport->GetCountWithTokenKind(mdtCustomAttribute);
+    return typeCounts;
 }
 #endif // PROFILING_SUPPORTED || FEATURE_METADATA_UPDATER
 
@@ -282,10 +289,8 @@ void Module::NotifyProfilerLoadFinished(HRESULT hr)
     // the profiler once.
     if (SetTransientFlagInterlocked(IS_PROFILER_NOTIFIED))
     {
-        // Record how many types are already present
-        m_dwTypeCount = GetMDImport()->GetCountWithTokenKind(mdtTypeDef);
-        m_dwExportedTypeCount = GetMDImport()->GetCountWithTokenKind(mdtExportedType);
-        m_dwCustomAttributeCount = GetMDImport()->GetCountWithTokenKind(mdtCustomAttribute);
+        // Initialize how many types are already present
+        m_typeCounts = GetCurrentTypeCounts();
 
         BOOL profilerCallbackHappened = FALSE;
         // Notify the profiler, this may cause metadata to be updated
@@ -498,15 +503,11 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
     }
 
 #if defined(PROFILING_SUPPORTED_DATA) || defined(FEATURE_METADATA_UPDATER)
-#ifdef PROFILING_SUPPORTED
-    // These will be initialized in NotifyProfilerLoadFinished.
-    m_dwTypeCount = 0;
-    m_dwExportedTypeCount = 0;
-    m_dwCustomAttributeCount = 0;
+#if defined(PROFILING_SUPPORTED)
+    // These will be updated in NotifyProfilerLoadFinished for profiling scenarios.
+    m_typeCounts = {};
 #else
-    m_dwTypeCount = GetMDImport()->GetCountWithTokenKind(mdtTypeDef);
-    m_dwExportedTypeCount = GetMDImport()->GetCountWithTokenKind(mdtExportedType);
-    m_dwCustomAttributeCount = GetMDImport()->GetCountWithTokenKind(mdtCustomAttribute);
+    m_typeCounts = GetCurrentTypeCounts();
 #endif // PROFILING_SUPPORTED
 #endif // PROFILING_SUPPORTED_DATA || FEATURE_METADATA_UPDATER
 

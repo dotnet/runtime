@@ -862,9 +862,22 @@ private:
 
 #if defined(PROFILING_SUPPORTED_DATA) || defined(FEATURE_METADATA_UPDATER)
 private:
-    DWORD                   m_dwTypeCount;
-    DWORD                   m_dwExportedTypeCount;
-    DWORD                   m_dwCustomAttributeCount;
+    struct TypeCounts final
+    {
+        DWORD TypeCount;
+        DWORD ExportedTypeCount;
+        DWORD CustomAttributeCount;
+
+        bool operator==(const TypeCounts& other) const
+        {
+            return TypeCount == other.TypeCount
+                && ExportedTypeCount == other.ExportedTypeCount
+                && CustomAttributeCount == other.CustomAttributeCount;
+        }
+    };
+    TypeCounts GetCurrentTypeCounts();
+
+    TypeCounts              m_typeCounts;
 #endif // PROFILING_SUPPORTED_DATA || FEATURE_METADATA_UPDATER
 
 protected:
