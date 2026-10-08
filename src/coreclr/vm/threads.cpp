@@ -4390,7 +4390,7 @@ void ThreadStore::TriggerGCForDeadThreadsIfNecessary()
 // Access the list of threads.  You must be inside a critical section, otherwise
 // the "cursor" thread might disappear underneath you.  Pass in NULL for the
 // cursor to begin at the start of the list.
-Thread *ThreadStore::GetAllThreadList(Thread *cursor, ULONG mask, ULONG bits)
+Thread *ThreadStore::GetAllThreadList(Thread *cursor)
 {
     CONTRACTL {
         NOTHROW;
@@ -4404,23 +4404,29 @@ Thread *ThreadStore::GetAllThreadList(Thread *cursor, ULONG mask, ULONG bits)
 #endif
 
 #ifdef FEATURE_MULTITHREADING
-    while (TRUE)
+    return cursor
+        ? s_pThreadStore->m_ThreadList.GetNext(cursor)
+        : s_pThreadStore->m_ThreadList.GetHead();
+#else
+    return cursor == NULL ? s_pThreadStore->m_pThread : NULL;
+#endif // FEATURE_MULTITHREADING
+}
+
+Thread *ThreadStore::GetAllThreadList(Thread *cursor, ULONG mask, ULONG bits)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+    SUPPORTS_DAC;
+
+    while ((cursor = GetAllThreadList(cursor)) != NULL)
     {
-        cursor = (cursor
-                  ? s_pThreadStore->m_ThreadList.GetNext(cursor)
-                  : s_pThreadStore->m_ThreadList.GetHead());
-
-        if (cursor == NULL)
-            break;
-
         if ((cursor->m_State & mask) == bits)
             return cursor;
     }
     return NULL;
-#else
-    Thread *thread = cursor == NULL ? s_pThreadStore->m_pThread : NULL;
-    return thread != NULL && (thread->m_State & mask) == bits ? thread : NULL;
-#endif // FEATURE_MULTITHREADING
 }
 
 // Iterate over the threads that have been started
