@@ -70,33 +70,7 @@ namespace System.Threading.Tests
             s.CheckedWait();
 
             s = new Semaphore(0, 2);
-            s.AssertWaitOneTimeout();
-        }
-
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMultithreadingSupported))]
-        public void Wait_SingleThreaded()
-        {
-            using Semaphore semaphore = new(1, 1);
-            Assert.True(semaphore.WaitOne());
-            Assert.False(semaphore.WaitOne(0));
-            Assert.Throws<PlatformNotSupportedException>(() => semaphore.WaitOne(1));
-        }
-
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMultithreadingSupported))]
-        public void WaitMultiple_SingleThreaded()
-        {
-            using Semaphore first = new(1, 1);
-            using Semaphore second = new(1, 1);
-            WaitHandle[] semaphores = [first, second];
-
-            Assert.Equal(0, WaitHandle.WaitAny(semaphores));
-            first.Release();
-            Assert.True(WaitHandle.WaitAll(semaphores));
-
-            Assert.Equal(WaitHandle.WaitTimeout, WaitHandle.WaitAny(semaphores, 0));
-            Assert.False(WaitHandle.WaitAll(semaphores, 0));
-            Assert.Throws<PlatformNotSupportedException>(() => WaitHandle.WaitAny(semaphores, 1));
-            Assert.Throws<PlatformNotSupportedException>(() => WaitHandle.WaitAll(semaphores, 1));
+            Assert.False(s.WaitOne(ThreadTestHelpers.ExpectedTimeoutMilliseconds));
         }
 
         [Fact]
@@ -173,7 +147,7 @@ namespace System.Threading.Tests
             ss[1].Release();
             ss[2].Release();
             Assert.False(WaitHandle.WaitAll(ss, 0));
-            ThreadTestHelpers.AssertWaitAllTimeout(ss);
+            Assert.False(WaitHandle.WaitAll(ss, ThreadTestHelpers.ExpectedTimeoutMilliseconds));
             for (int i = 0; i < ss.Length; ++i)
             {
                 Assert.Equal(i == 1 || i == 2, ss[i].WaitOne(0));
@@ -192,9 +166,9 @@ namespace System.Threading.Tests
                     new Semaphore(0, 1)
                 };
             Assert.Equal(WaitHandle.WaitTimeout, WaitHandle.WaitAny(ss, 0));
-            ThreadTestHelpers.AssertWaitAnyTimeout(ss);
+            Assert.Equal(WaitHandle.WaitTimeout, WaitHandle.WaitAny(ss, ThreadTestHelpers.ExpectedTimeoutMilliseconds));
             Assert.False(WaitHandle.WaitAll(ss, 0));
-            ThreadTestHelpers.AssertWaitAllTimeout(ss);
+            Assert.False(WaitHandle.WaitAll(ss, ThreadTestHelpers.ExpectedTimeoutMilliseconds));
             for (int i = 0; i < ss.Length; ++i)
             {
                 Assert.False(ss[i].WaitOne(0));
