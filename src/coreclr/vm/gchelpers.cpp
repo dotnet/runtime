@@ -457,7 +457,14 @@ inline void LogAlloc(Object* object)
 template <class TObj>
 void PublishObjectAndNotify(TObj* &orObject, GC_ALLOC_FLAGS flags)
 {
+	if (g_heap_type != GC_HEAP_CUSTOM)
+	{
     _ASSERTE(orObject->HasEmptySyncBlockInfo());
+	}
+	else
+	{
+		_ASSERTE(orObject->HasEmptySyncBlockInfo() || (flags & (GC_ALLOC_LARGE_OBJECT_HEAP | GC_ALLOC_PINNED_OBJECT_HEAP)));
+	}
 
     if (flags & GC_ALLOC_USER_OLD_HEAP)
     {
@@ -1209,6 +1216,44 @@ OBJECTREF TryAllocateFrozenObject(MethodTable* pObjMT)
     return ObjectToOBJECTREF(orObject);
 }
 
+Object* AllocateImmortalObject(MethodTable* pMT, size_t objectSize)
+{
+    CONTRACTL{
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE; // returns an objref without pinning it => cooperative
+        PRECONDITION(CheckPointer(pMT));
+        PRECONDITION(pMT->CheckInstanceActivated());
+    } CONTRACTL_END;
+
+    SetTypeHandleOnThreadForAlloc(TypeHandle(pMT));
+
+    GC_ALLOC_FLAGS flags = GC_ALLOC_IMMORTAL;
+    if (pMT->ContainsGCPointers())
+        flags |= GC_ALLOC_CONTAINS_REF;
+
+#ifdef FEATURE_64BIT_ALIGNMENT
+    if (pMT->RequiresAlign8())
+    {
+        // The last argument to the allocation, indicates whether the alignment should be "biased". This
+        // means that the object is allocated so that its header lies exactly between two 8-byte
+        // boundaries. This is required in cases where we need to mis-align the header in order to align
+        // the actual payload. Currently this is false for classes (where we apply padding to ensure the
+        // first field is aligned relative to the header) and true for boxed value types (where we can't
+        // do the same padding without introducing more complexity in type layout and unboxing stubs).
+        _ASSERTE(sizeof(Object) == 4);
+        flags |= GC_ALLOC_ALIGN8;
+        if (pMT->IsValueType())
+            flags |= GC_ALLOC_ALIGN8_BIAS;
+    }
+#endif // FEATURE_64BIT_ALIGNMENT
+
+    Object* orObject = (Object*)Alloc(objectSize, flags);
+    orObject->SetMethodTable(pMT);
+
+    return orObject;
+}
+
 //========================================================================
 //
 //      WRITE BARRIER HELPERS
@@ -1344,6 +1389,8 @@ void ErectWriteBarrier(OBJECTREF *dst, OBJECTREF ref)
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
 
+    if (g_heap_type != GC_HEAP_CUSTOM)
+    {
     // if the dst is outside of the heap (unboxed value classes) then we
     //      simply exit
     if (((BYTE*)dst < g_lowest_address) || ((BYTE*)dst >= g_highest_address))
@@ -1375,6 +1422,11 @@ void ErectWriteBarrier(OBJECTREF *dst, OBJECTREF ref)
         }
     }
 }
+    else
+    {
+        GCHeapUtilities::GetFastGCFunctions().write_barrier(GCHeapUtilities::GetFastGCFunctions().context, (Object**)dst, OBJECTREFToObject(ref));
+    }
+}
 #include <optdefault.h>
 
 void ErectWriteBarrierForMT(MethodTable **dst, MethodTable *ref)
@@ -1383,6 +1435,8 @@ void ErectWriteBarrierForMT(MethodTable **dst, MethodTable *ref)
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
 
+	if (g_heap_type != GC_HEAP_CUSTOM)
+    {
     *dst = ref;
 
 #ifdef WRITE_BARRIER_CHECK
@@ -1414,5 +1468,11 @@ void ErectWriteBarrierForMT(MethodTable **dst, MethodTable *ref)
 #endif
             }
         }
+        }
+    }
+    else
+    {
+    	// this whole thing is unnecessary in Satori
+    	UNREACHABLE();
     }
 }

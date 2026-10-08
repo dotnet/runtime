@@ -69,6 +69,12 @@ VersionInfo g_gc_version_info;
 // The module that contains the GC.
 PTR_VOID g_gc_module_base;
 
+FastGCFunctions GCHeapUtilities::s_fastGCFunctions = {};
+void GCHeapUtilities::InitializeFastGCFunctions(IGCHeap* gcHeap)
+{
+    gcHeap->GetFastGCFunctions(&s_fastGCFunctions);
+}
+
 // GC entrypoints for the linked-in GC. These symbols are invoked
 // directly if we are not using a standalone GC.
 extern "C" void LOCALGC_CALLCONV GC_VersionInfo(/* Out */ VersionInfo* info);
@@ -114,6 +120,13 @@ BOOL g_gcEventTracingInitialized = FALSE;
 void FinalizeLoad(IGCHeap* gcHeap, IGCHandleManager* handleMgr, PTR_VOID pGcModuleBase)
 {
     g_pGCHeap = gcHeap;
+    bool supportsFastGCFunctionsAndHeapType =
+        (g_gc_version_info.MajorVersion > GC_INTERFACE_MAJOR_VERSION) ||
+        (g_gc_version_info.MinorVersion >= GC_INTERFACE_MINOR_VERSION);
+    if (supportsFastGCFunctionsAndHeapType)
+    {
+        g_heap_type = gcHeap->GetGCHeapType();
+    }
 
     {
         DangerousNonHostedSpinLockHolder lockHolder(&g_eventStashLock);
@@ -129,6 +142,12 @@ void FinalizeLoad(IGCHeap* gcHeap, IGCHandleManager* handleMgr, PTR_VOID pGcModu
     g_gcDacGlobals = &g_gc_dac_vars;
     g_gc_load_status = GC_LOAD_STATUS_LOAD_COMPLETE;
     g_gc_module_base = pGcModuleBase;
+
+    if (supportsFastGCFunctionsAndHeapType)
+    {
+        GCHeapUtilities::InitializeFastGCFunctions(gcHeap);
+    }
+
     LOG((LF_GC, LL_INFO100, "GC load successful\n"));
 
     StressLog::AddModule((uint8_t*)pGcModuleBase);

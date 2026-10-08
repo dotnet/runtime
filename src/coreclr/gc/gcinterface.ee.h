@@ -475,6 +475,17 @@ public:
     // cross references would be discarded by the client, so the GC can skip computing it.
     virtual
     bool IsClientBridgeProcessingActive() PURE_VIRTUAL
+
+    // The following methods are available only with EE_INTERFACE_MAJOR_VERSION >= 6
+
+    // Performs a stack walk of current thread and invokes the given promote_func
+    // on all GC roots encountered on the stack.
+    virtual
+    void GcScanCurrentStackRoots(promote_func* fn, ScanContext* sc) = 0;
+
+    // If suspension is requested, suspends the current thread.
+    virtual
+    void GcPoll() = 0;
 };
 
 #endif // _GCINTERFACE_EE_H_

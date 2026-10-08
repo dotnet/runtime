@@ -1971,6 +1971,12 @@ uint64_t GCHeap::GetTotalAllocatedBytes()
 #endif //MULTIPLE_HEAPS
 }
 
+uint64_t GCHeap::GetTotalAllocatedBytesPrecise()
+{
+    assert(!"GetTotalAllocatedBytesPrecise should not be called on the default GC");
+    return 0;
+}
+
 int GCHeap::CollectionCount (int generation, int get_bgc_fgc_count)
 {
     if (get_bgc_fgc_count != 0)

@@ -257,6 +257,12 @@ NOP_3_BYTE macro
 
         endm
 
+NOP_6_BYTE macro
+
+        DB 066h, 00Fh, 01Fh, 044h, 000h, 000h
+
+        endm
+
 PUSH_CALLEE_SAVED_REGISTERS macro
 
         push_nonvol_reg r15

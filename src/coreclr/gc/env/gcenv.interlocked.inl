@@ -38,6 +38,18 @@ FORCEINLINE T Interlocked::Increment(T volatile *addend)
 #endif
 }
 
+template <>
+FORCEINLINE size_t Interlocked::Increment(size_t volatile* addend)
+{
+#ifdef _MSC_VER
+    return (size_t)_InterlockedIncrement64((volatile long long*)addend);
+#else
+    size_t result = __sync_add_and_fetch(addend, 1);
+    InterlockedOperationBarrier();
+    return result;
+#endif
+}
+
 // Decrement the value of the specified 32-bit variable as an atomic operation.
 // Parameters:
 //  addend - variable to be decremented
@@ -51,6 +63,18 @@ FORCEINLINE T Interlocked::Decrement(T volatile *addend)
     return _InterlockedDecrement((long*)addend);
 #else
     T result = __sync_sub_and_fetch(addend, 1);
+    InterlockedOperationBarrier();
+    return result;
+#endif
+}
+
+template <>
+FORCEINLINE size_t Interlocked::Decrement(size_t volatile* addend)
+{
+#ifdef _MSC_VER
+    return (size_t)_InterlockedDecrement64((volatile long long*)addend);
+#else
+    size_t result = __sync_sub_and_fetch(addend, 1);
     InterlockedOperationBarrier();
     return result;
 #endif
@@ -75,6 +99,18 @@ FORCEINLINE T Interlocked::Exchange(T volatile *destination, T value)
 #endif
 }
 
+template <>
+FORCEINLINE int8_t Interlocked::Exchange<int8_t>(int8_t volatile* destination, int8_t value)
+{
+#ifdef _MSC_VER
+    return (int8_t)_InterlockedExchange8((char*)destination, value);
+#else
+    int8_t result = __atomic_exchange_n(destination, value, __ATOMIC_ACQ_REL);
+    InterlockedOperationBarrier();
+    return result;
+#endif
+}
+
 // Performs an atomic compare-and-exchange operation on the specified values.
 // Parameters:
 //  destination - value to be exchanged
@@ -91,6 +127,42 @@ FORCEINLINE T Interlocked::CompareExchange(T volatile *destination, T exchange, 
     return _InterlockedCompareExchange((long*)destination, exchange, comparand);
 #else
     T result = __sync_val_compare_and_swap(destination, comparand, exchange);
+    InterlockedOperationBarrier();
+    return result;
+#endif
+}
+
+template <>
+FORCEINLINE size_t Interlocked::CompareExchange<size_t>(size_t volatile * destination, size_t exchange, size_t comparand)
+{
+#ifdef _MSC_VER
+    return _InterlockedCompareExchange64((volatile long long*)destination, exchange, comparand);
+#else
+    size_t result = __sync_val_compare_and_swap(destination, comparand, exchange);
+    InterlockedOperationBarrier();
+    return result;
+#endif
+}
+
+template <>
+FORCEINLINE int8_t Interlocked::CompareExchange<int8_t>(int8_t volatile* destination, int8_t exchange, int8_t comparand)
+{
+#ifdef _MSC_VER
+    return (int8_t)_InterlockedCompareExchange8((char*)destination, exchange, comparand);
+#else
+    int8_t result = __sync_val_compare_and_swap(destination, comparand, exchange);
+    InterlockedOperationBarrier();
+    return result;
+#endif
+}
+
+template <>
+FORCEINLINE uint8_t Interlocked::CompareExchange<uint8_t>(uint8_t volatile* destination, uint8_t exchange, uint8_t comparand)
+{
+#ifdef _MSC_VER
+    return (uint8_t)_InterlockedCompareExchange8((char*)destination, exchange, comparand);
+#else
+    uint8_t result = __sync_val_compare_and_swap(destination, comparand, exchange);
     InterlockedOperationBarrier();
     return result;
 #endif

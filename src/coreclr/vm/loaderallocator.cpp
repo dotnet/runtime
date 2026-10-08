@@ -972,6 +972,11 @@ OBJECTREF LoaderAllocator::CompareExchangeValueInHandle(LOADERHANDLE handle, OBJ
     {
         OBJECTREF *ptr = (OBJECTREF *)(((UINT_PTR)handle) - 1);
 
+        if (GCHeapUtilities::GetFastGCFunctions().check_escape != nullptr)
+        {
+            GCHeapUtilities::GetFastGCFunctions().check_escape((Object**)ptr, OBJECTREFToObject(gc.value));
+        }
+
         gc.previous = ObjectToOBJECTREF(InterlockedCompareExchangeT((Object **)ptr, OBJECTREFToObject(gc.value), OBJECTREFToObject(gc.compare)));
         if (gc.previous == gc.compare)
         {

@@ -77,6 +77,7 @@ extern int StompWriteBarrierResize(bool isRuntimeSuspended, bool bReqUpperBounds
 extern int SwitchToWriteWatchBarrier(bool isRuntimeSuspended);
 extern int SwitchToNonWriteWatchBarrier(bool isRuntimeSuspended);
 extern void FlushWriteBarrierInstructionCache();
+extern void UpdateCustomWriteBarrierGlobals();
 
 extern void ThrowOutOfMemoryDimensionsExceeded();
 

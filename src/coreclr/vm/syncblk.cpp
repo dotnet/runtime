@@ -737,6 +737,15 @@ DWORD SyncBlockCache::NewSyncBlockSlot(Object *obj)
 
     CardTableSetBit (indexNewEntry);
 
+    if (GCHeapUtilities::GetFastGCFunctions().check_escape != nullptr)
+    {
+        // TODO: I've derived this from EscapeCheckOnHandleCreation(), but it is not 100% match.
+        GCHeapUtilities::GetFastGCFunctions().check_escape(&obj, obj);
+        // make sure the object is published after we are done marking escapes
+        //VolatileStoreBarrier();
+        VOLATILE_MEMORY_BARRIER();
+    }
+
     // In debug builds the m_SyncBlock at indexNewEntry should already be null, since we should
     // start out with a null table and always null it out on delete.
     _ASSERTE(SyncTableEntry::GetSyncTableEntry() [indexNewEntry].m_SyncBlock == NULL);
@@ -1732,10 +1741,13 @@ BOOL SyncBlock::TryGetLockInfo(DWORD *pThreadId, DWORD *pRecursionLevel)
 void ObjHeader::IllegalAlignPad()
 {
     WRAPPER_NO_CONTRACT;
+	if (g_heap_type != GC_HEAP_CUSTOM)
+	{
 #ifdef LOGGING
     void** object = ((void**) this) + 1;
     STRESS_LOG1(LF_ASSERT, LL_ALWAYS, "\n\n******** Illegal ObjHeader m_alignpad not 0, m_alignpad value: %d\n", m_alignpad);
 #endif
     _ASSERTE(m_alignpad == 0);
+	}
 }
 #endif // HOST_64BIT && _DEBUG

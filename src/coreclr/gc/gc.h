@@ -340,7 +340,7 @@ inline bool IsServerHeap()
 {
 #ifdef FEATURE_SVR_GC
     assert(g_gc_heap_type != GC_HEAP_INVALID);
-    return g_gc_heap_type == GC_HEAP_SVR;
+    return g_gc_heap_type == GC_HEAP_SVR || g_gc_heap_type == GC_HEAP_CUSTOM;
 #else // FEATURE_SVR_GC
     return false;
 #endif // FEATURE_SVR_GC

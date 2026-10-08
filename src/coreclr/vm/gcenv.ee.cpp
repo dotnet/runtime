@@ -137,6 +137,7 @@ static void ScanStackRoots(Thread * pThread, promote_func* fn, ScanContext* sc)
 
     _ASSERTE(dbgOnly_IsSpecialEEThread() ||
                 GetThreadNULLOk() == NULL ||
+                GetThreadNULLOk() == sc->thread_under_crawl || // TODO: generalize this
                 // this is for background GC threads which always call this when EE is suspended.
                 IsGCSpecialThread() ||
                 (GetThread() == ThreadSuspend::GetSuspensionThread() && ThreadStore::HoldingThreadStore()));
@@ -166,14 +167,25 @@ static void ScanStackRoots(Thread * pThread, promote_func* fn, ScanContext* sc)
             Object ** walk;
             for (walk = topStack; walk < bottomStack; walk ++)
             {
-                if (((void*)*walk > (void*)bottomStack || (void*)*walk < (void*)topStack) &&
-                    ((void*)*walk >= (void*)g_lowest_address && (void*)*walk <= (void*)g_highest_address)
-                    )
+                if (((void*)*walk > (void*)bottomStack || (void*)*walk < (void*)topStack))
+                {
+                    bool isInGcHeap;
+                    if (g_heap_type != GC_HEAP_CUSTOM)
+                    {
+                        isInGcHeap = (void*)*walk >= (void*)g_lowest_address && (void*)*walk <= (void*)g_highest_address;
+                    }
+                    else
+                    {
+                        isInGcHeap = GCHeapUtilities::GetFastGCFunctions().is_in_gc_heap(GCHeapUtilities::GetFastGCFunctions().context, *walk);
+                    }
+
+                    if (isInGcHeap)
                 {
                     //DbgPrintf("promote " FMT_ADDR " : " FMT_ADDR "\n", walk, *walk);
                     fn(walk, sc, GC_CALL_INTERIOR|GC_CALL_PINNED);
                 }
             }
+        }
         }
 
         // Also ask the explicit Frames to report any references they might know about.
@@ -291,6 +303,29 @@ static void ScanTailCallArgBufferRoots(Thread* pThread, promote_func* fn, ScanCo
             break;
         }
     }
+}
+
+void GCToEEInterface::GcScanCurrentStackRoots(promote_func* fn, ScanContext* sc)
+{
+    STRESS_LOG1(LF_GCROOTS, LL_INFO10, "GC Stack Scan: Promotion Phase = %d\n", sc->promotion);
+
+    Thread* pThread = GetThread();
+    sc->thread_under_crawl = pThread;
+    sc->concurrent = FALSE;
+
+    STRESS_LOG2(LF_GC | LF_GCROOTS, LL_INFO100, "{ Starting scan of Thread %p ID = %x\n", pThread, pThread->GetThreadId());
+
+#ifdef FEATURE_EVENT_TRACE
+    sc->dwEtwRootKind = kEtwGCRootKindStack;
+#endif // FEATURE_EVENT_TRACE
+    ScanStackRoots(pThread, fn, sc);
+    ScanTailCallArgBufferRoots(pThread, fn, sc);
+    ScanThreadStaticRoots(pThread, fn, sc);
+#ifdef FEATURE_EVENT_TRACE
+    sc->dwEtwRootKind = kEtwGCRootKindOther;
+#endif // FEATURE_EVENT_TRACE
+
+     STRESS_LOG2(LF_GC | LF_GCROOTS, LL_INFO100, "Ending scan of Thread %p ID = 0x%x }\n", pThread, pThread->GetThreadId());
 }
 
 void GCToEEInterface::GcScanRoots(promote_func* fn, int condemned, int max_gen, ScanContext* sc)
@@ -573,6 +608,28 @@ void GCToEEInterface::DisablePreemptiveGC()
     Thread* pThread = ::GetThreadNULLOk();
     if (pThread)
     {
+        pThread->DisablePreemptiveGC();
+    }
+}
+
+void GCToEEInterface::GcPoll()
+{
+    CONTRACTL{
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
+    if (g_TrapReturningThreads)
+    {
+        Thread* pThread = ::GetThread();
+        _ASSERTE(!ThreadStore::HoldingThreadStore(pThread));
+#ifdef FEATURE_HIJACK
+        pThread->UnhijackThread();
+#endif // FEATURE_HIJACK
+
+        pThread->EnablePreemptiveGC();
         pThread->DisablePreemptiveGC();
     }
 }
@@ -990,6 +1047,15 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
     int stompWBCompleteActions = SWB_PASS;
     bool is_runtime_suspended = args->is_runtime_suspended;
 
+    // The custom GC's write barrier helpers never read their globals (e.g. card table, write
+    // barrier state) directly; they read patched values cached in the helper code itself (see
+    // GCWriteBarrierPatchableValue). Any global change -- whatever WriteBarrierOp it arrives as --
+    // must be reflected there.
+    if (g_heap_type == GC_HEAP_CUSTOM)
+    {
+        UpdateCustomWriteBarrierGlobals();
+    }
+
     switch (args->operation)
     {
     case WriteBarrierOp::StompResize:
@@ -1192,6 +1258,74 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
 #endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
         break;
 
+    case WriteBarrierOp::StompCustom:
+        if (HasFlag(args->parameters_mask, WriteBarrierParametersMask::LowestAddress))
+        {
+            g_lowest_address = args->lowest_address;
+        }
+        if (HasFlag(args->parameters_mask, WriteBarrierParametersMask::HighestAddress))
+        {
+            g_highest_address = args->highest_address;
+        }
+        if (HasFlag(args->parameters_mask, WriteBarrierParametersMask::RegionToGenerationTable))
+        {
+            g_region_to_generation_table = args->region_to_generation_table;
+        }
+        if (HasFlag(args->parameters_mask, WriteBarrierParametersMask::RegionShr))
+        {
+            g_region_shr = args->region_shr;
+        }
+        if (HasFlag(args->parameters_mask, WriteBarrierParametersMask::RegionUseBitwiseWriteBarrier))
+        {
+            g_region_use_bitwise_write_barrier = args->region_use_bitwise_write_barrier;
+        }
+        if (HasFlag(args->parameters_mask, WriteBarrierParametersMask::EphemeralLow))
+        {
+            g_ephemeral_low = args->ephemeral_low;
+        }
+        if (HasFlag(args->parameters_mask, WriteBarrierParametersMask::EphemeralHigh))
+        {
+            g_ephemeral_high = args->ephemeral_high;
+        }
+        if (HasFlag(args->parameters_mask, WriteBarrierParametersMask::SwWwEnabledForGcHeap))
+        {
+            g_sw_ww_enabled_for_gc_heap = args->sw_ww_enabled_for_gc_heap;
+        }
+        if (HasFlag(args->parameters_mask, WriteBarrierParametersMask::CardTable))
+        {
+            g_card_table = args->card_table;
+        }
+        if (HasFlag(args->parameters_mask, WriteBarrierParametersMask::CardBundleTable))
+        {
+            g_card_bundle_table = args->card_bundle_table;
+        }
+        if (HasFlag(args->parameters_mask, WriteBarrierParametersMask::WriteWatchTable))
+        {
+            g_write_watch_table = args->write_watch_table;
+        }
+        
+        stompWBCompleteActions |= ::SwitchToWriteWatchBarrier(is_runtime_suspended);
+        break;
+
+    // case WriteBarrierOp::StartConcurrentMarkingSatori:
+    //     g_write_watch_table = args->write_watch_table;
+    //     g_sw_ww_enabled_for_gc_heap = true;
+    //     stompWBCompleteActions |= ::SwitchToWriteWatchBarrier(is_runtime_suspended);
+    //     if (!is_runtime_suspended)
+    //     {
+    //         // If runtime is not suspended, force all threads to see the changed state before observing future allocations.
+    //         minipal_memory_barrier_process_wide();
+
+    //     }
+
+    //     return;
+
+    // case WriteBarrierOp::StopConcurrentMarkingSatori:
+    //     assert(args->is_runtime_suspended && "the runtime must be suspended here!");
+    //     g_write_watch_table = args->write_watch_table;
+    //     g_sw_ww_enabled_for_gc_heap = false;
+    //     stompWBCompleteActions |= ::SwitchToNonWriteWatchBarrier(true);
+    //     return;
     default:
         assert(!"unknown WriteBarrierOp enum");
     }

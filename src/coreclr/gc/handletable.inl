@@ -12,6 +12,10 @@
 #include "gceventstatus.h"
 #include "handletableconstants.h"
 
+#ifdef FEATURE_SATORI_GC
+#include "SatoriObject.h"
+#endif
+
 FORCEINLINE int GetConvertedGeneration(_UNCHECKED_OBJECTREF obj)
 {
     int generation = g_theGCHeap->WhichGeneration(obj);
@@ -37,6 +41,10 @@ FORCEINLINE uint32_t HandleFetchType(OBJECTHANDLE handle)
 FORCEINLINE void HndWriteBarrierWorker(OBJECTHANDLE handle, _UNCHECKED_OBJECTREF value)
 {
     _ASSERTE(value != NULL);
+
+#ifdef FEATURE_SATORI_GC
+    ((SatoriObject*)value)->EscapeCheckOnHandleCreation();
+#endif
 
     uint8_t* barrier = (uint8_t*)((uintptr_t)handle & HANDLE_SEGMENT_ALIGN_MASK);
     _ASSERTE(barrier);

@@ -127,6 +127,11 @@ void GCToEEInterface::GcScanRoots(promote_func* fn,  int condemned, int max_gen,
     // TODO: Implement - Scan stack roots on given thread
 }
 
+void GCToEEInterface::GcScanCurrentStackRoots(promote_func* fn, ScanContext* sc)
+{
+    // TODO: Implement - Scan current stack roots on the current thread
+}
+
 void GCToEEInterface::GcStartWork(int condemned, int max_gen)
 {
 }
@@ -179,6 +184,11 @@ void GCToEEInterface::DisablePreemptiveGC()
 {
     Thread* pThread = ::GetThread();
     pThread->DisablePreemptiveGC();
+}
+
+void GCToEEInterface::GcPoll()
+{
+    // TODO: Implement
 }
 
 Thread* GCToEEInterface::GetThread()

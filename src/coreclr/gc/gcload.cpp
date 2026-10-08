@@ -12,6 +12,10 @@
 #include "gcenv.h"
 #include "gc.h"
 
+#ifdef FEATURE_SATORI_GC
+#include "SatoriGC.h"
+#endif
+
 #ifdef BUILD_AS_STANDALONE
 #ifndef DLLEXPORT
 #ifdef _MSC_VER
@@ -56,7 +60,11 @@ GC_VersionInfo(/* InOut */ VersionInfo* info)
     info->MajorVersion = GC_INTERFACE_MAJOR_VERSION;
     info->MinorVersion = GC_INTERFACE_MINOR_VERSION;
     info->BuildVersion = 0;
+#ifdef FEATURE_SATORI_GC
+	info->Name = "Satori GC";
+#else
     info->Name = "CoreCLR GC";
+#endif    
 }
 
 GC_EXPORT
@@ -77,6 +85,14 @@ GC_Initialize(
 #ifdef BUILD_AS_STANDALONE
     assert(clrToGC != nullptr);
     g_theGCToCLR = clrToGC;
+#ifdef FEATURE_SATORI_GC
+    // Satori requires the stack-scanning and polling callbacks added in EE interface version 6.
+    if (g_runtimeSupportedVersion.MajorVersion < 6)
+    {
+        GCToEEInterface::LogErrorToHost("Satori GC requires EE interface version 6 or later.");
+        return E_FAIL;
+    }
+#endif // FEATURE_SATORI_GC
 #else
     UNREFERENCED_PARAMETER(clrToGC);
     assert(clrToGC == nullptr);
@@ -111,6 +127,13 @@ GC_Initialize(
         return E_OUTOFMEMORY;
     }
 
+#ifdef FEATURE_SATORI_GC
+
+    g_gc_heap_type = GC_HEAP_CUSTOM;
+    heap = new(nothrow) SatoriGC();
+
+#else
+
 #ifdef FEATURE_SVR_GC
     if (GCConfig::GetServerGC() && GCToEEInterface::GetCurrentProcessCpuCount() > 1)
     {
@@ -130,6 +153,8 @@ GC_Initialize(
         heap = WKS::CreateGCHeap();
         WKS::PopulateDacVars(gcDacVars);
     }
+
+#endif
 
     PopulateHandleTableDacVars(gcDacVars);
     if (heap == nullptr)

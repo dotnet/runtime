@@ -24,6 +24,11 @@ namespace standalone
             ::GCToEEInterface::GcScanRoots(fn, condemned, max_gen, sc);
         }
 
+        void GcScanCurrentStackRoots(promote_func* fn, ScanContext* sc)
+        {
+            ::GCToEEInterface::GcScanCurrentStackRoots(fn, sc);
+        }
+
         void GcStartWork(int condemned, int max_gen)
         {
             ::GCToEEInterface::GcStartWork(condemned, max_gen);
@@ -92,6 +97,11 @@ namespace standalone
         void DisablePreemptiveGC()
         {
             ::GCToEEInterface::DisablePreemptiveGC();
+        }
+
+        void GcPoll()
+        {
+            ::GCToEEInterface::GcPoll();
         }
 
         Thread* GetThread()

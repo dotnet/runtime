@@ -3066,12 +3066,13 @@ ClrDataAccess::GetGCHeapData(struct DacpGcHeapData *gcheapData)
     // is GC_HEAP_INVALID, in which case we fail.
     ULONG32 gcHeapValue = g_heap_type;
 
-    // GC_HEAP_TYPE has three possible values:
+    // GC_HEAP_TYPE has four possible values:
     //       GC_HEAP_INVALID = 0,
     //       GC_HEAP_WKS     = 1,
-    //       GC_HEAP_SVR     = 2
+    //       GC_HEAP_SVR     = 2,
+    //       GC_HEAP_CUSTOM  = 3
     // If we get something other than that, we probably read the wrong location.
-    _ASSERTE(gcHeapValue >= GC_HEAP_INVALID && gcHeapValue <= GC_HEAP_SVR);
+    _ASSERTE(gcHeapValue >= GC_HEAP_INVALID && gcHeapValue <= GC_HEAP_CUSTOM);
 
     // we have GC_HEAP_INVALID if gcHeapValue == 0, so we're done - we haven't
     // initialized the heap yet.

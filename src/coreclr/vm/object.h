@@ -16,6 +16,7 @@
 #include "sstring.h"
 #include "daccess.h"
 #include "fcall.h"
+#include "gcheaputilities.h"
 
 extern "C" void __fastcall ZeroMemoryInGCHeap(void*, size_t);
 
@@ -153,8 +154,16 @@ class Object
     VOID SetMethodTableForUOHObject(MethodTable *pMT)
     {
         WRAPPER_NO_CONTRACT;
+		if (g_heap_type != GC_HEAP_CUSTOM)
+		{
         // This function must be used if the allocation occurs on a UOH heap, and the method table might be a collectible type
         ErectWriteBarrierForMT(&m_pMethTab, pMT);
+		}
+		else
+		{
+			// nothing extra needs to happen in Satori.
+        	m_pMethTab = pMT;
+        }
     }
 #endif //!DACCESS_COMPILE
 

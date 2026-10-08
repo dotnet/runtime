@@ -917,8 +917,9 @@ void SystemDomain::LazyInitFrozenObjectsHeap()
     CONTRACTL_END;
 
     _ASSERTE(GCHeapUtilities::IsGCInProgress() &&
-             GCHeapUtilities::IsServerHeap()   &&
-             IsGCSpecialThread());
+             GCHeapUtilities::IsServerHeap());
+             
+    _ASSERTE(IsGCSpecialThread() || ((g_heap_type == GC_HEAP_CUSTOM) && !GetThread()->PreemptiveGCDisabled()));
 
     AppDomain* pAppDomain = ::GetAppDomain();
     if (pAppDomain)
@@ -3689,8 +3690,9 @@ void AppDomain::EnumStaticGCRefs(promote_func* fn, ScanContext* sc)
     CONTRACTL_END;
 
     _ASSERTE(GCHeapUtilities::IsGCInProgress() &&
-             GCHeapUtilities::IsServerHeap()   &&
-             IsGCSpecialThread());
+             GCHeapUtilities::IsServerHeap());
+             
+    _ASSERTE(IsGCSpecialThread() || ((g_heap_type == GC_HEAP_CUSTOM) && !GetThread()->PreemptiveGCDisabled()));
 
     if (m_pPinnedHeapHandleTable != nullptr)
     {

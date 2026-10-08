@@ -18,6 +18,7 @@ public:
     // The GC roots enumeration callback
     //
     static void GcScanRoots(promote_func* fn, int condemned, int max_gen, ScanContext* sc);
+    static void GcScanCurrentStackRoots(promote_func* fn, ScanContext* sc);
 
     //
     // Callbacks issues during GC that the execution engine can do its own bookkeeping
@@ -53,6 +54,7 @@ public:
     static bool IsPreemptiveGCDisabled();
     static bool EnablePreemptiveGC();
     static void DisablePreemptiveGC();
+    static void GcPoll();
     static Thread* GetThread();
 
     static gc_alloc_context * GetAllocContext();

@@ -204,6 +204,27 @@ T VolatileLoadWithoutBarrier(T const * pt)
     return val;
 }
 
+//
+// Memory ordering barrier that waits for stores in progress to complete.
+// Any effects of stores that appear before, in program order, will "happen before" relative to this.
+// Other operations such as computation, instruction prefetch or loads !!! are not guaranteed to be ordered.
+//
+// Architectural mapping:
+//   arm64  : dmb ishst
+//   arm    : dmb ish
+//   x86/64 : compiler fence
+inline
+void VolatileStoreBarrier()
+{
+#if defined(HOST_ARM64) && defined(__GNUC__)
+    asm volatile ("dmb ishst" : : : "memory");
+#elif defined(HOST_ARM64) && defined(_MSC_VER)
+    __dmb(_ARM64_BARRIER_ISHST);
+#else
+    VOLATILE_MEMORY_BARRIER();
+#endif   
+}
+
 template <typename T> class Volatile;
 
 template<typename T>

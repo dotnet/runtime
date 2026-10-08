@@ -132,6 +132,11 @@ void GCToEEInterface::GcScanRoots(ScanFunc* fn, int condemned, int max_gen, Scan
     sc->thread_under_crawl = NULL;
 }
 
+void GCToEEInterface::GcScanCurrentStackRoots(promote_func* fn, ScanContext* sc)
+{
+    // TODO: Implement - Scan current stack roots on the current thread
+}
+
 void GCToEEInterface::GcEnumAllocContexts(enum_alloc_context_func* fn, void* param)
 {
     FOREACH_THREAD(thread)
@@ -236,6 +241,11 @@ void GCToEEInterface::DisablePreemptiveGC()
 #else
     UNREFERENCED_PARAMETER(pThread);
 #endif
+}
+
+void GCToEEInterface::GcPoll()
+{
+    // TODO: Implement
 }
 
 Thread* GCToEEInterface::GetThread()

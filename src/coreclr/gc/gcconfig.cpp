@@ -69,6 +69,7 @@ GC_CONFIGURATION_KEYS
 
 void GCConfig::RefreshHeapHardLimitSettings()
 {
+#ifndef FEATURE_SATORI_GC
     GCToEEInterface::GetIntConfigValue("GCHeapHardLimit", "System.GC.HeapHardLimit", &s_GCHeapHardLimit); s_UpdatedGCHeapHardLimit = s_GCHeapHardLimit;
     GCToEEInterface::GetIntConfigValue("GCHeapHardLimitPercent", "System.GC.HeapHardLimitPercent", &s_GCHeapHardLimitPercent); s_UpdatedGCHeapHardLimitPercent = s_GCHeapHardLimitPercent;
     GCToEEInterface::GetIntConfigValue("GCHeapHardLimitSOH", "System.GC.HeapHardLimitSOH", &s_GCHeapHardLimitSOH); s_UpdatedGCHeapHardLimitSOH = s_GCHeapHardLimitSOH;
@@ -77,6 +78,7 @@ void GCConfig::RefreshHeapHardLimitSettings()
     GCToEEInterface::GetIntConfigValue("GCHeapHardLimitSOHPercent", "System.GC.HeapHardLimitSOHPercent", &s_GCHeapHardLimitSOHPercent); s_UpdatedGCHeapHardLimitSOHPercent = s_GCHeapHardLimitSOHPercent;
     GCToEEInterface::GetIntConfigValue("GCHeapHardLimitLOHPercent", "System.GC.HeapHardLimitLOHPercent", &s_GCHeapHardLimitLOHPercent); s_UpdatedGCHeapHardLimitLOHPercent = s_GCHeapHardLimitLOHPercent;
     GCToEEInterface::GetIntConfigValue("GCHeapHardLimitPOHPercent", "System.GC.HeapHardLimitPOHPercent", &s_GCHeapHardLimitPOHPercent); s_UpdatedGCHeapHardLimitPOHPercent = s_GCHeapHardLimitPOHPercent;
+#endif    
 }
 
 void GCConfig::Initialize()

@@ -261,6 +261,9 @@ if(CLR_CROSS_COMPONENTS_BUILD AND CLR_CMAKE_TARGET_ARCH_WASM)
 endif()
 
 add_subdirectory(gc)
+if (CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_ARM64)
+  add_subdirectory(gc_satori)
+endif()
 
 if (CLR_CMAKE_HOST_UNIX)
   include_directories("pal/inc")

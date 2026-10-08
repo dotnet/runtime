@@ -333,6 +333,11 @@ void SetObjectReferenceUnchecked(OBJECTREF *dst,OBJECTREF ref)
     STATIC_CONTRACT_MODE_COOPERATIVE;
     STATIC_CONTRACT_CANNOT_TAKE_LOCK;
 
+    if (GCHeapUtilities::GetFastGCFunctions().check_escape != nullptr)
+    {
+        GCHeapUtilities::GetFastGCFunctions().check_escape((Object**)dst, OBJECTREFToObject(ref));
+    }
+
     // Assign value. We use casting to avoid going thru the overloaded
     // OBJECTREF= operator which in this case would trigger a false
     // write-barrier violation assert.
@@ -452,6 +457,8 @@ VOID Object::Validate(BOOL bDeep, BOOL bVerifyNextHeader, BOOL bVerifySyncBlock)
     STATIC_CONTRACT_MODE_COOPERATIVE;
     STATIC_CONTRACT_CANNOT_TAKE_LOCK;
 
+	if (g_heap_type != GC_HEAP_CUSTOM)
+	{
     if (g_fEEShutDown & ShutDown_Phase2)
     {
         // During second phase of shutdown the code below is not guaranteed to work.
@@ -484,6 +491,11 @@ VOID Object::Validate(BOOL bDeep, BOOL bVerifyNextHeader, BOOL bVerifySyncBlock)
 
         // using inner helper because of TRY and stack objects with destructors.
         ValidateInner(bDeep, bVerifyNextHeader, bVerifySyncBlock);
+        }
+    }
+    else
+    {
+		_ASSERTE(this->GetSize() > 0);
     }
 }
 

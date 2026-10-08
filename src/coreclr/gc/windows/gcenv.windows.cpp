@@ -713,6 +713,12 @@ void* GCToOSInterface::VirtualReserve(size_t size, size_t alignment, uint32_t fl
     }
 }
 
+void* GCToOSInterface::VirtualReserve(void* location, size_t size, bool useTHP /*unused*/)
+{
+    DWORD memFlags = MEM_RESERVE;
+    return ::VirtualAlloc(location, size, memFlags, PAGE_READWRITE);
+}
+
 // Release virtual memory range previously reserved using VirtualReserve
 // Parameters:
 //  address - starting virtual address

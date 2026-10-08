@@ -78,7 +78,11 @@ HHANDLETABLE GCHandleStore::GetTable()
 
 OBJECTHANDLE GCHandleStore::CreateHandleOfType(Object* object, HandleType type)
 {
+#ifdef FEATURE_SATORI_GC
+	HHANDLETABLE handletable = _underlyingBucket.pTable[GetCurrentThreadHomeHeapNumber()];
+#else
     HHANDLETABLE handletable = GetTable();
+#endif
     return ::HndCreateHandle(handletable, type, ObjectToOBJECTREF(object));
 }
 

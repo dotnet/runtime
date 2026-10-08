@@ -18,6 +18,10 @@
 #include "objecthandle.h"
 #include "handletablepriv.h"
 
+#ifdef FEATURE_SATORI_GC
+#include "SatoriObject.h"
+#endif
+
 #if defined(ENABLE_PERF_COUNTERS) || defined(FEATURE_EVENT_TRACE)
 DWORD g_dwHandles = 0;
 #endif // ENABLE_PERF_COUNTERS || FEATURE_EVENT_TRACE

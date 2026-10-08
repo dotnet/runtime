@@ -638,6 +638,8 @@ public:
     static void DeliverFirstChanceNotification();
 };
 
+extern uintptr_t* g_customWriteBarrierAVLocations;
+
 #ifndef DACCESS_COMPILE
 
 X86_ONLY(EXCEPTION_REGISTRATION_RECORD* GetNextCOMPlusSEHRecord(EXCEPTION_REGISTRATION_RECORD* pRec);)

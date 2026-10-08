@@ -6,16 +6,16 @@
 
 // The major version of the IGCHeap interface. Breaking changes to this interface
 // require bumps in the major version number.
-#define GC_INTERFACE_MAJOR_VERSION 5
+#define GC_INTERFACE_MAJOR_VERSION 6
 
 // The minor version of the IGCHeap interface. Non-breaking changes are required
 // to bump the minor version number. GCs and EEs with minor version number
 // mismatches can still interoperate correctly, with some care.
-#define GC_INTERFACE_MINOR_VERSION 9
+#define GC_INTERFACE_MINOR_VERSION 0
 
 // The major version of the IGCToCLR interface. Breaking changes to this interface
 // require bumps in the major version number.
-#define EE_INTERFACE_MAJOR_VERSION 5
+#define EE_INTERFACE_MAJOR_VERSION 6
 
 struct ScanContext;
 struct gc_alloc_context;
@@ -52,7 +52,26 @@ enum class WriteBarrierOp
     StompEphemeral,
     Initialize,
     SwitchToWriteWatch,
-    SwitchToNonWriteWatch
+    SwitchToNonWriteWatch,
+    StompCustom,
+};
+
+enum class WriteBarrierParametersMask
+{
+    support_use_as_flags = -1,
+    IsRuntimeSuspended = 1 << 0,
+    RequiresUpperBoundsCheck = 1 << 1,
+    SwWwEnabledForGcHeap = 1 << 2,
+    CardTable = 1 << 3,
+    CardBundleTable = 1 << 4,
+    LowestAddress = 1 << 5,
+    HighestAddress = 1 << 6,
+    EphemeralLow = 1 << 7,
+    EphemeralHigh = 1 << 8,
+    RegionToGenerationTable = 1 << 9,
+    RegionShr = 1 << 10,
+    RegionUseBitwiseWriteBarrier = 1 << 11,
+    WriteWatchTable = 1 << 12,
 };
 
 // Arguments to GCToEEInterface::StompWriteBarrier
@@ -113,6 +132,45 @@ struct WriteBarrierParameters
 
     // whether to use the more precise but slower write barrier
     bool region_use_bitwise_write_barrier;
+
+    // whether the software write watch is enabled for the GC heap.
+    bool sw_ww_enabled_for_gc_heap;
+
+    // bitmask indicating which parameters are valid in this structure. Used for custom GCs
+    WriteBarrierParametersMask parameters_mask;
+};
+
+using WriteBarrierFunction = void (*)(void* context, Object** dst, Object* ref);
+using IsInGCHeapFunction = bool (*)(void* context, void* address);
+using BulkMoveWithWriteBarrierFunction = void (*)(void* context, void* destination, const void* source, size_t length);
+using CheckEscapeFunction = void (*)(Object** dst, Object* ref);
+
+struct FastGCFunctions
+{
+    void* context;
+    WriteBarrierFunction write_barrier;
+    // WriteBarrierFunction checked_write_barrier;
+    IsInGCHeapFunction is_in_gc_heap;
+    CheckEscapeFunction check_escape;
+    BulkMoveWithWriteBarrierFunction bulk_move_with_write_barrier;
+};
+
+// Describes a patchable, pointer-sized data slot embedded directly in a custom assign-reference
+// helper (see GetAssignRefFunctions), used in place of a direct reference to a global variable.
+// A helper cannot take a PC-relative reference to an arbitrary (possibly far away) global and
+// remain correct once copied to a new location, since the displacement may no longer fit the
+// instruction encoding (e.g. amd64's 32-bit RIP-relative displacement has only a +/-2GB range).
+// Instead, the helper embeds the slot directly in its own code -- on arm64 this is a literal-pool
+// entry co-located with the code, and on amd64 it is the immediate operand of a MOV instruction --
+// and the EE copies the current value of the referenced global into the slot, both right after the
+// helper is copied to a new location and whenever the global's value changes thereafter.
+struct GCWriteBarrierPatchableValue
+{
+    // Address, within the original (uncopied) helper code, of an 8-byte, 8-byte-aligned slot that
+    // caches the value of *Source. A Slot of nullptr terminates the array.
+    void* Slot;
+    // Address of the global variable whose value is cached at Slot.
+    void* Source;
 };
 
 struct FinalizerWorkItem
@@ -243,6 +301,7 @@ struct segment_info
 #define GC_PROFILING       //Turn on profiling
 #endif // PROFILING_SUPPORTED
 
+// TODO: Satori has LARGE_OBJECT_SIZE ((size_t)(32 * 1024))
 #define LARGE_OBJECT_SIZE ((size_t)(85000))
 
 // The minimum size of an object is three pointers wide: one for the syncblock,
@@ -561,7 +620,8 @@ typedef enum
 {
     GC_HEAP_INVALID = 0,
     GC_HEAP_WKS     = 1,
-    GC_HEAP_SVR     = 2
+    GC_HEAP_SVR     = 2,
+    GC_HEAP_CUSTOM  = 3
 } GCHeapType;
 
 typedef bool (* walk_fn)(Object*, void*);
@@ -1076,6 +1136,23 @@ public:
     virtual void NullBridgeObjectsWeakRefs(size_t length, void* unreachableObjectHandles) PURE_VIRTUAL;
 
     virtual uintptr_t* GetPendingBridgeHandles(size_t* count) PURE_VIRTUAL;
+
+    // Gets specialized callbacks for performance-sensitive callers.
+    virtual void GetFastGCFunctions(FastGCFunctions* functions) PURE_VIRTUAL
+
+    // Gets the type of the GC heap.
+    virtual GCHeapType GetGCHeapType() PURE_VIRTUAL
+
+    // Gets the precise total number of allocated bytes.
+    virtual uint64_t GetTotalAllocatedBytesPrecise() PURE_VIRTUAL
+
+    // Gets custom assign-reference helpers, their byte lengths, original access violation locations,
+    // and the patchable global-value slots (see GCWriteBarrierPatchableValue) embedded in them. The
+    // helpers and any intervening bytes must form a relocatable block: internal relative references
+    // must stay within the block, and any reference to an external global variable must instead be
+    // listed in patchableValues (and read from the patched slot) so the helper remains correct no
+    // matter where the EE copies it to.
+    virtual void GetAssignRefFunctions(void** assignRef, size_t* assignRefSize, void** assignRefChecked, size_t* assignRefCheckedSize, uintptr_t** avLocationsList, GCWriteBarrierPatchableValue** patchableValues) PURE_VIRTUAL
 };
 
 #ifdef WRITE_BARRIER_CHECK
@@ -1100,6 +1177,7 @@ enum GC_ALLOC_FLAGS
     GC_ALLOC_ZEROING_OPTIONAL   = 16,
     GC_ALLOC_LARGE_OBJECT_HEAP  = 32,
     GC_ALLOC_PINNED_OBJECT_HEAP = 64,
+    GC_ALLOC_IMMORTAL           = 128,
     GC_ALLOC_USER_OLD_HEAP      = GC_ALLOC_LARGE_OBJECT_HEAP | GC_ALLOC_PINNED_OBJECT_HEAP,
 };
 
@@ -1175,7 +1253,7 @@ struct VersionInfo {
 #endif
 
 typedef void (LOCALGC_CALLCONV *GC_VersionInfoFunction)(
-    /* Out */ VersionInfo*
+    /* InOut */ VersionInfo*
 );
 
 typedef HRESULT (LOCALGC_CALLCONV *GC_InitializeFunction)(

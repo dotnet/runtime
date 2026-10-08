@@ -443,6 +443,36 @@ void* GCToOSInterface::VirtualReserve(size_t size, size_t alignment, uint32_t fl
     return VirtualReserveInner(size, alignment, flags, 0, /* committing */ false);
 }
 
+void* GCToOSInterface::VirtualReserve(void* location, size_t size, bool useTHP)
+{
+    void* pRetVal = mmap(location, size, PROT_NONE, MAP_ANON | MAP_PRIVATE , -1, 0);
+
+    if (pRetVal == MAP_FAILED)
+    {
+        return NULL;
+    }
+
+    if (location != nullptr && pRetVal != location)
+    {
+        munmap(pRetVal, size);
+        return NULL;
+    }
+
+#ifdef TARGET_LINUX
+    if (useTHP)
+    {
+        madvise(pRetVal, size, MADV_HUGEPAGE);
+    }
+#endif
+
+#ifdef MADV_DONTDUMP
+        // Do not include reserved memory in coredump.
+        madvise(pRetVal, size, MADV_DONTDUMP);
+#endif
+
+    return pRetVal;
+}
+
 // Release virtual memory range previously reserved using VirtualReserve
 // Parameters:
 //  address - starting virtual address

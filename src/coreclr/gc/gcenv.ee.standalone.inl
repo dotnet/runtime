@@ -11,7 +11,7 @@
 // will be forwarded to this interface instance.
 extern IGCToCLR* g_theGCToCLR;
 
-// GC version that the current runtime supports
+// EE callback interface version supported by the current runtime
 extern VersionInfo g_runtimeSupportedVersion;
 
 // Does the runtime use the old method table flags
@@ -40,6 +40,13 @@ inline void GCToEEInterface::GcScanRoots(promote_func* fn, int condemned, int ma
 {
     assert(g_theGCToCLR != nullptr);
     g_theGCToCLR->GcScanRoots(fn, condemned, max_gen, sc);
+}
+
+inline void GCToEEInterface::GcScanCurrentStackRoots(promote_func* fn, ScanContext* sc)
+{
+    assert(g_theGCToCLR != nullptr);
+    assert(g_runtimeSupportedVersion.MajorVersion >= 6);
+    g_theGCToCLR->GcScanCurrentStackRoots(fn, sc);
 }
 
 inline void GCToEEInterface::GcStartWork(int condemned, int max_gen)
@@ -355,6 +362,13 @@ inline uint64_t GCToEEInterface::GetThreadOSThreadId(Thread* thread)
     {
         return 0;
     }
+}
+
+inline void GCToEEInterface::GcPoll()
+{
+    assert(g_theGCToCLR != nullptr);
+    assert(g_runtimeSupportedVersion.MajorVersion >= 6);
+    g_theGCToCLR->GcPoll();
 }
 
 #endif // __GCTOENV_EE_STANDALONE_INL__

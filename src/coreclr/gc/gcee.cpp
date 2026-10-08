@@ -223,6 +223,30 @@ size_t GCHeap::GetLastGCGenerationSize(int gen)
     return g_GenerationSizes[gen];
 }
 
+void GCHeap::GetFastGCFunctions(FastGCFunctions* functions)
+{
+    functions->context = nullptr;
+    functions->write_barrier = nullptr;
+    functions->is_in_gc_heap = nullptr;
+    functions->check_escape = nullptr;
+    functions->bulk_move_with_write_barrier = nullptr;
+}
+
+GCHeapType GCHeap::GetGCHeapType()
+{
+    return g_gc_heap_type;
+}
+
+void GCHeap::GetAssignRefFunctions(void** assignRef, size_t* assignRefSize, void** assignRefChecked, size_t* assignRefCheckedSize, uintptr_t** avLocationsList, GCWriteBarrierPatchableValue** patchableValues)
+{
+    *assignRef = nullptr;
+    *assignRefSize = 0;
+    *assignRefChecked = nullptr;
+    *assignRefCheckedSize = 0;
+    *avLocationsList = nullptr;
+    *patchableValues = nullptr;
+}
+
 size_t GCHeap::GetCurrentObjSize()
 {
     return (totalSurvivedSize + gc_heap::get_total_allocated());
