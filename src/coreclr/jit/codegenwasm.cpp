@@ -3589,10 +3589,16 @@ void CodeGen::genCompareInt(GenTreeOp* treeNode)
 
     if (value != nullptr)
     {
-        GetEmitter()->emitIns(genActualType(value->TypeGet()) == TYP_LONG ? INS_i64_eqz : INS_i32_eqz);
-        if (treeNode->OperIs(GT_NE))
+        const bool canUseValueDirectly = treeNode->OperIs(GT_NE) && ((treeNode->gtFlags & GTF_RELOP_JMP_USED) != 0) &&
+                                         (genActualType(value->TypeGet()) == TYP_INT);
+
+        if (!canUseValueDirectly)
         {
-            GetEmitter()->emitIns(INS_i32_eqz);
+            GetEmitter()->emitIns(genActualType(value->TypeGet()) == TYP_LONG ? INS_i64_eqz : INS_i32_eqz);
+            if (treeNode->OperIs(GT_NE))
+            {
+                GetEmitter()->emitIns(INS_i32_eqz);
+            }
         }
 
         WasmProduceReg(treeNode);

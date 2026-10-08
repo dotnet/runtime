@@ -338,25 +338,6 @@ GenTree* Lowering::LowerNeg(GenTreeOp* node)
 //
 GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
 {
-    GenTree* condition = jtrue->gtGetOp1();
-    if (condition->OperIs(GT_NE) && (genActualType(condition->gtGetOp1()->TypeGet()) == TYP_INT))
-    {
-        GenTree* value = condition->gtGetOp1();
-        GenTree* zero  = condition->gtGetOp2();
-
-        if (!zero->IsIntegralConst(0))
-        {
-            std::swap(value, zero);
-        }
-
-        if (zero->IsIntegralConst(0))
-        {
-            BlockRange().Remove(zero);
-            BlockRange().Remove(condition);
-            jtrue->gtOp1 = value;
-        }
-    }
-
     return nullptr;
 }
 
