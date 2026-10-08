@@ -5662,10 +5662,10 @@ void CodeGen::genCodeForSwap(GenTreeOp* tree)
 
     // Do the xchg
     emitAttr size = EA_PTRSIZE;
-    if (varTypeIsGC(type1) != varTypeIsGC(type2))
+    if (varTypeIsGC(type1) || varTypeIsGC(type2))
     {
-        // If the type specified to the emitter is a GC type, it will swap the GC-ness of the registers.
-        // Otherwise it will leave them alone, which is correct if they have the same GC-ness.
+        // If the type specified to the emitter is a GC type, it will swap the GC-ness of the registers
+        // when it differs (including GCREF vs BYREF). Otherwise it will leave them alone.
         size = EA_GCREF;
     }
     inst_RV_RV(INS_xchg, oldOp1Reg, oldOp2Reg, TYP_I_IMPL, size);

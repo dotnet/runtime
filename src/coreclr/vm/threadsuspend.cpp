@@ -4618,6 +4618,15 @@ StackWalkAction SWCB_GetExecutionState(CrawlFrame *pCF, VOID *pData)
         }
         return action;
     }
+
+    // x86 keeps the InlinedCallFrame linked for the whole method, and it is reported before
+    // the method that contains it. Skip it when it has no active call to get to the method.
+    if (!pCF->IsFrameless() && (pCF->GetFrame() != NULL) &&
+        (pCF->GetFrame()->GetFrameIdentifier() == FrameIdentifier::InlinedCallFrame) &&
+        !InlinedCallFrame::FrameHasActiveCall(pCF->GetFrame()))
+    {
+        return SWA_CONTINUE;
+    }
 #endif // TARGET_X86
 
     // This will help factor out some repeated code.
