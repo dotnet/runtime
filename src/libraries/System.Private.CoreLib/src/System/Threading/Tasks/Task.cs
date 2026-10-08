@@ -3210,7 +3210,7 @@ namespace System.Threading.Tasks
             bool infiniteWait = millisecondsTimeout == Timeout.Infinite;
             uint startTimeTicks = infiniteWait ? 0 : (uint)Environment.TickCount;
             bool returnValue = SpinWait(millisecondsTimeout);
-            if (!returnValue && millisecondsTimeout != 0)
+            if (!returnValue && (millisecondsTimeout != 0 || RuntimeFeature.IsMultithreadingSupported))
             {
                 RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
 
@@ -5173,10 +5173,17 @@ namespace System.Threading.Tasks
 
             if (waitedOnTaskList != null)
             {
-                // Block waiting for the tasks to complete.
-                returnValue =
-                    millisecondsTimeout != 0 &&
-                    WaitAllBlockingCore(waitedOnTaskList, millisecondsTimeout, cancellationToken);
+                if (millisecondsTimeout != 0 || RuntimeFeature.IsMultithreadingSupported)
+                {
+                    RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
+
+                    // Block waiting for the tasks to complete.
+                    returnValue = WaitAllBlockingCore(waitedOnTaskList, millisecondsTimeout, cancellationToken);
+                }
+                else
+                {
+                    returnValue = false;
+                }
 
                 // If the wait didn't time out, ensure exceptions are propagated, and if a debugger is
                 // attached and one of these tasks requires it, that we notify the debugger of a wait completion.
@@ -5513,7 +5520,9 @@ namespace System.Threading.Tasks
                 }
             }
 
-            if (signaledTaskIndex == -1 && tasks.Length != 0 && millisecondsTimeout != 0)
+            if (signaledTaskIndex == -1 &&
+                tasks.Length != 0 &&
+                (millisecondsTimeout != 0 || RuntimeFeature.IsMultithreadingSupported))
             {
                 RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
 
