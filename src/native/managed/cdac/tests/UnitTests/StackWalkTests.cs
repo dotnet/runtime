@@ -18,6 +18,76 @@ public unsafe class StackWalkTests
     private const uint X86TransitionBlockSize = 7 * sizeof(uint);
 
     [Theory]
+    [InlineData(RuntimeInfoArchitecture.Wasm, true)]
+    [InlineData(RuntimeInfoArchitecture.Wasm, false)]
+    [InlineData(RuntimeInfoArchitecture.X86, true)]
+    [InlineData(RuntimeInfoArchitecture.X86, false)]
+    public void GCInfoHeader_ReportsReversePInvokeFrame(RuntimeInfoArchitecture architecture, bool hasReversePInvokeFrame)
+    {
+        byte[] encoded = architecture == RuntimeInfoArchitecture.X86
+            ? EncodeX86GCInfoHeader(hasReversePInvokeFrame)
+            : EncodeWasmFatGCInfoHeader(hasReversePInvokeFrame);
+        byte[] gcInfo = new byte[32];
+        encoded.CopyTo(gcInfo, 0);
+
+        TestPlaceholderTarget.Builder builder = new(new MockTarget.Architecture { IsLittleEndian = true, Is64Bit = false });
+        builder.MemoryBuilder.AddHeapFragment(new MockMemorySpace.HeapFragment { Address = 0x1000, Data = gcInfo, Name = "GC info" });
+        Mock<IRuntimeInfo> runtimeInfo = new();
+        runtimeInfo.Setup(r => r.GetTargetArchitecture()).Returns(architecture);
+        IGCInfo contract = builder
+            .AddMockContract(runtimeInfo)
+            .AddContract<IGCInfo>(version: "c1")
+            .Build().Contracts.GCInfo;
+
+        IGCInfoHandle handle = contract.DecodePlatformSpecificGCInfo(new TargetPointer(0x1000), 4);
+
+        Assert.Equal(hasReversePInvokeFrame, contract.GetHeader(handle).HasReversePInvokeFrame);
+    }
+
+    // Fat header in gcinfodecoder.cpp order: fat bit, flags, code length, reverse P/Invoke slot,
+    // safe-point count. Wasm32GcInfoEncoding has no interruptible-range count.
+    private static byte[] EncodeWasmFatGCInfoHeader(bool hasReversePInvokeFrame)
+    {
+        const uint GcInfoReversePInvokeFrame = 0x200;
+        List<bool> bits = [];
+        void Write(uint value, int count)
+        {
+            for (int i = 0; i < count; i++)
+                bits.Add(((value >> i) & 1) != 0);
+        }
+        void WriteVarLength(uint value, int baseBits)
+        {
+            do
+            {
+                uint chunk = value & ((1u << baseBits) - 1);
+                value >>= baseBits;
+                Write(chunk | (value != 0 ? 1u << baseBits : 0), baseBits + 1);
+            }
+            while (value != 0);
+        }
+
+        Write(1, 1);
+        Write(hasReversePInvokeFrame ? GcInfoReversePInvokeFrame : 0, 10);
+        WriteVarLength(0x20, 6);
+        if (hasReversePInvokeFrame)
+            WriteVarLength(0x8, 6);
+        WriteVarLength(0, 4);
+
+        byte[] bytes = new byte[(bits.Count + 7) / 8];
+        for (int i = 0; i < bits.Count; i++)
+        {
+            if (bits[i])
+                bytes[i / 8] |= (byte)(1 << (i % 8));
+        }
+        return bytes;
+    }
+
+    // Method size, then InfoHdr table entry 0. FLIP_REV_PINVOKE_FRAME (0x4E) marks a reverse P/Invoke
+    // frame whose offset follows the header.
+    private static byte[] EncodeX86GCInfoHeader(bool hasReversePInvokeFrame)
+        => hasReversePInvokeFrame ? [0x10, 0x80, 0x4E, 0x08] : [0x10, 0x00];
+
+    [Theory]
     [InlineData(false, new byte[] { 0x04, 0x05, 0x21, 0x02 }, uint.MaxValue)]
     [InlineData(false, new byte[] { 0x81, 0x08, 0x0a, 0x30, 0x42, 0x04 }, 8u)]
     [InlineData(true, new byte[] { 0x04, 0x4a, 0x04 }, uint.MaxValue)]
