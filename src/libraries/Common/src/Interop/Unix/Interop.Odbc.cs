@@ -16,7 +16,7 @@ internal static partial class Interop
     {
         internal static string GetNativeLibraryName()
         {
-            if (OperatingSystem.IsApplePlatform())
+            if (OperatingSystem.IsMacOS() || OperatingSystem.IsIOS() || OperatingSystem.IsTvOS())
             {
                 return "libodbc.2.dylib";
             }
