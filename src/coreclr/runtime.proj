@@ -22,6 +22,8 @@
           DependsOnTargets="$(BuildRuntimeDependsOnTargets)"
           BeforeTargets="Build">
     <ItemGroup>
+      <!-- build-runtime prepends each -cmakeargs, so this comes first to end up after, and take precedence over, the user's CMakeArgs. -->
+      <_CoreClrBuildArg Condition="'$(ClrCrossComponentsBuild)' == 'true'" Include="-cmakeargs &quot;-DCLR_CROSS_COMPONENTS_BUILD=1&quot;" />
       <_CMakeArgs Include="$(CMakeArgs)" />
       <_CoreClrBuildArg Include="@(_CMakeArgs->'-cmakeargs &quot;%(Identity)&quot;')" />
       <_CoreClrBuildArg Condition="'$(TargetArchitecture)' != ''" Include="-$(TargetArchitecture)" />
