@@ -19,11 +19,13 @@ HANDLE hThread_CreateThread_test2[NUM_TESTS];
 DWORD dwThreadId_CreateThread_test2[NUM_TESTS];
 volatile BOOL bResult_CreateThread_test2[NUM_TESTS];
 volatile DWORD dwThreadId1_CreateThread_test2[NUM_TESTS];
+LONG completedThreadCount_CreateThread_test2 = 0;
 
 DWORD PALAPI Thread_CreateThread_test2( LPVOID lpParameter)
 {
     dwThreadId1_CreateThread_test2[(DWORD)(SIZE_T)lpParameter] = GetCurrentThreadId();
     bResult_CreateThread_test2[(DWORD)(SIZE_T) lpParameter] = TRUE;
+    InterlockedIncrement(&completedThreadCount_CreateThread_test2);
     return (DWORD)(SIZE_T) lpParameter;
 }
 
@@ -67,7 +69,6 @@ PALTEST(threading_CreateThread_test2_paltest_createthread_test2, "threading/Crea
     };
 
     SIZE_T i;
-    DWORD dwRetWFSO;
     DWORD dwRetRT;
     BOOL bRet = TRUE;
 
@@ -124,20 +125,9 @@ PALTEST(threading_CreateThread_test2_paltest_createthread_test2, "threading/Crea
         }
     }
 
+    WaitForThreadCompletion(&completedThreadCount_CreateThread_test2, NUM_TESTS);
+
     /* cleanup */
-    for (i = 0; i < NUM_TESTS; i++)
-    {
-        dwRetWFSO = WaitForSingleObject(hThread_CreateThread_test2[i], 10000);
-        if (dwRetWFSO != WAIT_OBJECT_0)
-        {
-            Trace ("PALSUITE ERROR: WaitForSingleObject('%p' '%d') "
-                   "call returned %d instead of WAIT_OBJECT_0 ('%d').\n"
-                   "GetLastError returned %u.\n", hThread_CreateThread_test2[i], 10000, 
-                   dwRetWFSO, WAIT_OBJECT_0, GetLastError());
-            cleanup_CreateThread_test2(i);
-            Fail("");
-        }
-    }
     if(!cleanup_CreateThread_test2(NUM_TESTS))
     {
         Fail("");
@@ -178,6 +168,5 @@ PALTEST(threading_CreateThread_test2_paltest_createthread_test2, "threading/Crea
     PAL_Terminate();
     return (PASS);
 }
-
 
 

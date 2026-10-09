@@ -29,6 +29,7 @@ TypeAttr(typeof(object), name = "TypeAttrSimple")]
 
 namespace System.Reflection.Tests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/134952", TestPlatforms.Wasi)]
     public class AssemblyTests : FileCleanupTestBase
     {
         private const string s_sourceTestAssemblyName = "TestAssembly.dll";
@@ -154,7 +155,11 @@ namespace System.Reflection.Tests
             string assembly = Assembly.GetEntryAssembly().ToString();
 
             bool correct;
-            if (PlatformDetection.IsNativeAot || PlatformDetection.IsReadyToRunCompiled)
+            if (PlatformDetection.IsWasmReadyToRun)
+            {
+                correct = assembly.IndexOf("WasmTestRunner", StringComparison.OrdinalIgnoreCase) != -1;
+            }
+            else if (PlatformDetection.IsNativeAot || (PlatformDetection.IsReadyToRunCompiled && !PlatformDetection.IsAppleMobile))
             {
                 // The single file test runner is not 'xunit.console'.
                 correct = assembly.IndexOf("System.Reflection.Tests", StringComparison.OrdinalIgnoreCase) != -1;
@@ -325,7 +330,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50715", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50715", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsWasm))]
         public void GetType_DefaultsToItself()
         {
             Assembly a = typeof(AssemblyTests).Assembly;
@@ -954,8 +959,6 @@ namespace System.Reflection.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/69919", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/77821", TestPlatforms.Android)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
         public static void AssemblyGetForwardedTypesLoadFailure()
         {
             Assembly a = typeof(TypeInForwardedAssembly).Assembly;

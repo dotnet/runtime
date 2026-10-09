@@ -34,7 +34,7 @@ namespace System.Security.Cryptography.Tests
             ExerciseSuccessfulVerify(mldsa, data, signature, []);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(MLDsaTestHelpers), nameof(MLDsaTestHelpers.PreHashIsSupported))]
         [MemberData(nameof(MLDsaTestsData.AllMLDsaAlgorithms), MemberType = typeof(MLDsaTestsData))]
         public void GenerateSignVerifyPreHashNoContext(MLDsaAlgorithm algorithm)
         {
@@ -66,7 +66,7 @@ namespace System.Security.Cryptography.Tests
             ExerciseSuccessfulVerify(mldsa, data, signature, context);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(MLDsaTestHelpers), nameof(MLDsaTestHelpers.PreHashIsSupported))]
         [MemberData(nameof(MLDsaTestsData.AllMLDsaAlgorithms), MemberType = typeof(MLDsaTestsData))]
         public void GenerateSignVerifyPreHashWithContext(MLDsaAlgorithm algorithm)
         {
@@ -133,7 +133,7 @@ namespace System.Security.Cryptography.Tests
             byte[] data = [1, 2, 3, 4, 5];
             byte[] signature;
             byte[] hash = HashInfo.Sha512.GetHash(data);
-            byte[] signaturePreHash;
+            byte[]? signaturePreHash = null;
             byte[]? mu = null;
             byte[] muSignature = null;
 
@@ -142,8 +142,11 @@ namespace System.Security.Cryptography.Tests
                 signature = mldsa.SignData(data);
                 AssertExtensions.TrueExpression(mldsa.VerifyData(data, signature));
 
-                signaturePreHash = mldsa.SignPreHash(hash, HashInfo.Sha512.Oid);
-                AssertExtensions.TrueExpression(mldsa.VerifyPreHash(hash, signaturePreHash, HashInfo.Sha512.Oid));
+                if (MLDsaTestHelpers.PreHashIsSupported)
+                {
+                    signaturePreHash = mldsa.SignPreHash(hash, HashInfo.Sha512.Oid);
+                    AssertExtensions.TrueExpression(mldsa.VerifyPreHash(hash, signaturePreHash, HashInfo.Sha512.Oid));
+                }
 
                 publicKey = mldsa.ExportMLDsaPublicKey();
 
@@ -158,8 +161,12 @@ namespace System.Security.Cryptography.Tests
             using (MLDsa mldsaPub = ImportPublicKey(algorithm, publicKey))
             {
                 ExerciseSuccessfulVerify(mldsaPub, data, signature, [], mu);
-                ExerciseSuccessfulVerifyPreHash(mldsaPub, HashInfo.Sha512.Oid, hash, signaturePreHash, []);
-                AssertExtensions.FalseExpression(mldsaPub.VerifyPreHash(hash, signature, HashInfo.Sha512.Oid));
+
+                if (signaturePreHash is not null)
+                {
+                    ExerciseSuccessfulVerifyPreHash(mldsaPub, HashInfo.Sha512.Oid, hash, signaturePreHash, []);
+                    AssertExtensions.FalseExpression(mldsaPub.VerifyPreHash(hash, signature, HashInfo.Sha512.Oid));
+                }
 
                 if (muSignature is not null)
                 {
@@ -266,7 +273,7 @@ namespace System.Security.Cryptography.Tests
             Assert.Equal(testCase.ShouldPass, mldsa.VerifyData(testCase.Message, testCase.Signature, testCase.Context));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(MLDsaTestHelpers), nameof(MLDsaTestHelpers.PreHashIsSupported))]
         [MemberData(nameof(MLDsaTestsData.AllPreHashMLDsaNistTestCases), MemberType = typeof(MLDsaTestsData))]
         public void NistImportPublicKeyVerifyPreHash(MLDsaNistTestCase testCase)
         {

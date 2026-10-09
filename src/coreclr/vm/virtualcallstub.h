@@ -1,11 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-//
+// ============================================================================
 // File: VirtualCallStub.h
 //
 // See code:VirtualCallStubManager for details
-//
 // ============================================================================
 
 #ifndef _VIRTUAL_CALL_STUB_H
@@ -779,8 +778,6 @@ class VirtualCallStubManagerManager : public StubManager
 
     virtual BOOL DoTraceStub(PCODE stubStartAddress, TraceDestination *trace);
 
-    static MethodDesc *Entry2MethodDesc(PCODE stubStartAddress, MethodTable *pMT);
-
 #ifdef DACCESS_COMPILE
     virtual void DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags);
     virtual LPCWSTR GetStubManagerName(PCODE addr)
@@ -1303,7 +1300,7 @@ public:
 #ifdef CHAIN_LOOKUP
         CONSISTENCY_CHECK(m_writeLock.OwnedByCurrentThread());
 #endif
-          cache[idx] = elem;
+          VolatileStore(&cache[idx], elem);
         }
 
 #ifdef CHAIN_LOOKUP

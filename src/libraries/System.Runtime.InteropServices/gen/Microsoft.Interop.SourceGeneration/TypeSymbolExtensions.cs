@@ -9,8 +9,6 @@ using System.Linq;
 using System.Runtime.InteropServices;
 
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Microsoft.Interop
 {
@@ -165,11 +163,6 @@ namespace Microsoft.Interop
             }
 
             return true;
-        }
-
-        public static TypeSyntax AsTypeSyntax(this ITypeSymbol type)
-        {
-            return SyntaxFactory.ParseTypeName(type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat));
         }
 
         public static bool IsIntegralType(this SpecialType type)

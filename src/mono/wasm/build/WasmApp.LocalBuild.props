@@ -50,6 +50,7 @@
 
     <_EmscriptenVersionFile>$([MSBuild]::NormalizePath('$(RuntimeSrcDir)', 'src', 'mono', 'browser', 'emscripten-version.txt'))</_EmscriptenVersionFile>
     <_WasiSdkVersionFile>$([MSBuild]::NormalizePath('$(RuntimeSrcDir)', 'eng', 'wasm', 'wasi-sdk-version.txt'))</_WasiSdkVersionFile>
+    <WasmPInvokeModulesPropsPath Condition="'$(WasmPInvokeModulesPropsPath)' == ''">$([MSBuild]::NormalizePath('$(RuntimeSrcDir)', 'eng', 'wasm', 'WasmPInvokeModules.props'))</WasmPInvokeModulesPropsPath>
     <_EmscriptenVersion Condition="Exists('$(_EmscriptenVersionFile)')">$([System.IO.File]::ReadAllText('$(_EmscriptenVersionFile)').Trim())</_EmscriptenVersion>
     <_WasiSdkVersion Condition="Exists('$(_WasiSdkVersionFile)')">$([System.IO.File]::ReadAllText('$(_WasiSdkVersionFile)').Trim())</_WasiSdkVersion>
 

@@ -369,7 +369,9 @@ namespace Internal.IL
                 if (wrappedIL == null)
                     return null;
 
-                return new AsyncMethodIL(asyncVariantImpl, wrappedIL);
+                return wrappedIL is EcmaMethodIL ecmaIL
+                    ? new EcmaAsyncMethodIL(asyncVariantImpl, ecmaIL)
+                    : new AsyncMethodIL(asyncVariantImpl, wrappedIL);
             }
             else
             {
@@ -378,7 +380,7 @@ namespace Internal.IL
             }
         }
 
-        private sealed class AsyncMethodIL : MethodIL
+        private class AsyncMethodIL : MethodIL
         {
             private readonly AsyncMethodVariant _variant;
             private readonly MethodIL _wrappedIL;
@@ -397,6 +399,17 @@ namespace Internal.IL
             public override object GetObject(int token, NotFoundBehavior notFoundBehavior = NotFoundBehavior.Throw) => _wrappedIL.GetObject(token, notFoundBehavior);
             public override bool IsInitLocals => _wrappedIL.IsInitLocals;
             public override int MaxStack => _wrappedIL.MaxStack;
+        }
+
+        private sealed class EcmaAsyncMethodIL : AsyncMethodIL, IEcmaMethodIL
+        {
+            public EcmaAsyncMethodIL(AsyncMethodVariant variant, EcmaMethodIL wrappedIL)
+                : base(variant, wrappedIL)
+            {
+                Module = wrappedIL.Module;
+            }
+
+            public IEcmaModule Module { get; }
         }
     }
 }

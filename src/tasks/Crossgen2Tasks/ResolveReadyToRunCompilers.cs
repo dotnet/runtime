@@ -1,6 +1,9 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+// This task is replicated in dotnet/sdk at src/Tasks/Microsoft.NET.Build.Tasks/ResolveReadyToRunCompilers.cs.
+// Keep both copies synchronized.
+
 #nullable disable
 
 using Microsoft.Build.Framework;

@@ -17,5 +17,6 @@
 #cmakedefine01 BIGENDIAN
 #cmakedefine01 HAVE_BCRYPT_H
 #cmakedefine01 HAVE_FSYNC
+#cmakedefine01 HAVE_PTHREAD_RWLOCK_PREFER_WRITER_NONRECURSIVE_NP
 
 #endif

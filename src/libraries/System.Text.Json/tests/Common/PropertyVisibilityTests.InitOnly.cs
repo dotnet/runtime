@@ -110,6 +110,21 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(deserializedValue, value);
         }
 
+#if NET
+        [Fact]
+        public async Task GenericColor_InitOnlyProperties_CanRoundtrip()
+        {
+            const string Json = """{"A":1,"R":0.25,"G":0.5,"B":0.75}""";
+            var color = await Serializer.DeserializeWrapper<System.Numerics.Colors.Argb<float>>(Json);
+
+            Assert.Equal(1f, color.A);
+            Assert.Equal(0.25f, color.R);
+            Assert.Equal(0.5f, color.G);
+            Assert.Equal(0.75f, color.B);
+            JsonTestHelper.AssertJsonEqual(Json, await Serializer.SerializeWrapper(color));
+        }
+#endif
+
         public class ClassWithInitOnlyProperty
         {
             public int MyInt { get; init; }

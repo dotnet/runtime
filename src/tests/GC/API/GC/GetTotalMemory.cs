@@ -30,6 +30,27 @@ namespace DefaultNamespace {
             return true;
         }
 
+        public static bool VerifyPromotedObjects()
+        {
+            const int ObjectCount = 1_000_000;
+            const long MaxDifference = 1024 * 1024;
+
+            var keep = new object[ObjectCount];
+            for (int i = 0; i < keep.Length; i++)
+            {
+                keep[i] = new object();
+            }
+
+            long totalMemory = GC.GetTotalMemory(forceFullCollection: true);
+            GCMemoryInfo memoryInfo = GC.GetGCMemoryInfo();
+            long liveHeapSize = memoryInfo.HeapSizeBytes - memoryInfo.FragmentedBytes;
+            long difference = Math.Abs(totalMemory - liveHeapSize);
+
+            Console.WriteLine("GetTotalMemory: {0}, live heap size: {1}, difference: {2}", totalMemory, liveHeapSize, difference);
+            GC.KeepAlive(keep);
+            return difference <= MaxDifference;
+        }
+
         public static int Main(String [] args )
         {
             int MB = 1024*1024;
@@ -75,6 +96,12 @@ namespace DefaultNamespace {
 
                 heapSizeBeforeAlloc = GC.GetTotalMemory(false);
                 Console.WriteLine( "HeapSize after delete all objects: {0}", heapSizeBeforeAlloc );
+            }
+
+            if (!VerifyPromotedObjects())
+            {
+                Console.WriteLine("Test Failed");
+                return 1;
             }
 
             Console.WriteLine( "Test Passed!" );

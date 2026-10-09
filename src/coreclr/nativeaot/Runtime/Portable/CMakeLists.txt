@@ -5,8 +5,16 @@ project(PortableRuntime)
 
 add_definitions(-DFEATURE_PORTABLE_HELPERS)
 
-add_library(PortableRuntime STATIC ${COMMON_RUNTIME_SOURCES} ${PORTABLE_RUNTIME_SOURCES})
+add_library(Runtime.GC.Workstation OBJECT ${GC_WKS_SVR_SOURCES})
+set_target_properties(Runtime.GC.Workstation PROPERTIES UNITY_BUILD ON UNITY_BUILD_BATCH_SIZE 0)
+
+add_library(PortableRuntime STATIC
+    ${COMMON_RUNTIME_SOURCES}
+    ${PORTABLE_RUNTIME_SOURCES}
+    $<TARGET_OBJECTS:Runtime.GC.Workstation>)
 target_link_libraries(PortableRuntime PRIVATE aotminipal)
+
+add_library(standalonegc-disabled STATIC ${STANDALONEGC_DISABLED_SOURCES})
 
 # Get the current list of definitions
 get_compile_definitions(DEFINITIONS)
@@ -29,9 +37,10 @@ endif()
 add_custom_command(
    # The AsmOffsetsPortable.cs is consumed later by the managed build
    TARGET PortableRuntime
+   POST_BUILD
    COMMAND ${CMAKE_CXX_COMPILER} ${COMPILER_LANGUAGE} ${DEFINITIONS} ${PREPROCESSOR_FLAGS} -I"${ARCH_SOURCES_DIR}" "${ASM_OFFSETS_CSPP}" >"${CMAKE_CURRENT_BINARY_DIR}/AsmOffsetsPortable.cs"
-   DEPENDS "${NATIVEAOT_RUNTIME_DIR}/AsmOffsets.cpp" "${NATIVEAOT_RUNTIME_DIR}/AsmOffsets.h"
 )
 
 install_static_library(PortableRuntime aotsdk nativeaot)
+install_static_library(standalonegc-disabled aotsdk nativeaot)
 install_static_library(aotminipal aotsdk nativeaot)

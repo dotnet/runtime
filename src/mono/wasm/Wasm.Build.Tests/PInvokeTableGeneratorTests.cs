@@ -453,13 +453,13 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(aot: false)]
-        [TestCategory("native"), TestCategory("mono")]
+        [TestCategory("native")]
         public async Task EnsureWasmAbiRulesAreFollowedInInterpreter(Configuration config, bool aot) =>
             await EnsureWasmAbiRulesAreFollowed(config, aot);
 
         [Theory]
         [BuildAndRun(aot: false)]
-        [TestCategory("native"), TestCategory("mono")]
+        [TestCategory("native")]
         public void UnsupportedOSPlatformPInvokeIsSkipped(Configuration config, bool aot)
         {
             // https://github.com/dotnet/runtime/issues/110870: a Windows-only pinvoke with

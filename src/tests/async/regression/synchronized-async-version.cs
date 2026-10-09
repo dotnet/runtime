@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -8,13 +9,42 @@ using Xunit;
 
 public class Async2Synchronized
 {
-    [Fact]
-    public static void TestEntryPoint()
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public static async Task FaultedAwaitable(bool useValueTask, bool callerHoldsLock)
     {
-        TestEntryPointAsync().GetAwaiter().GetResult();
+        Async2Synchronized p = new();
+        InvalidOperationException expected = new("boom");
+        Task task = Task.FromException(expected);
+
+        if (callerHoldsLock)
+        {
+            Monitor.Enter(p);
+        }
+
+        try
+        {
+            Task faulted = useValueTask ? p.FooValueTask(new ValueTask(task)).AsTask() : p.Foo(task);
+            Assert.True(faulted.IsFaulted);
+            InvalidOperationException actual = await Assert.ThrowsAsync<InvalidOperationException>(() => faulted);
+
+            Assert.Same(expected, actual);
+            Assert.Equal(callerHoldsLock, Monitor.IsEntered(p));
+        }
+        finally
+        {
+            if (Monitor.IsEntered(p))
+            {
+                Monitor.Exit(p);
+            }
+        }
     }
 
-    private static async Task TestEntryPointAsync()
+    [Fact]
+    public static async Task TestEntryPointAsync()
     {
         Async2Synchronized p = new();
         TaskCompletionSource tcs = new();
@@ -38,12 +68,7 @@ public class Async2Synchronized
     }
 
     [Fact]
-    public static void TestEntryPointValueTask()
-    {
-        TestEntryPointValueTaskAsync().GetAwaiter().GetResult();
-    }
-
-    private static async ValueTask TestEntryPointValueTaskAsync()
+    public static async ValueTask TestEntryPointValueTaskAsync()
     {
         Async2Synchronized p = new();
         TaskCompletionSource tcs = new();

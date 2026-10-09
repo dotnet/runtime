@@ -138,6 +138,21 @@ namespace LayoutClass
         public RecursiveTestClass c;
     }
 
+    public class RecursiveLayoutMetadataTest
+    {
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR))]
+        [InlineData(typeof(RecursiveTestClass))]
+        [InlineData(typeof(RecursiveTestStruct))]
+        public static void RepeatedRecursiveLayoutFailure(Type type)
+        {
+            for (int i = 0; i < 3; i++)
+            {
+                Assert.Throws<TypeLoadException>(() => Marshal.SizeOf(type));
+                Assert.Equal(sizeof(int), Marshal.SizeOf<Blittable>());
+            }
+        }
+    }
+
     [SkipOnMono("needs triage")]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
     public class LayoutClassTest

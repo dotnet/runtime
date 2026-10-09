@@ -63,7 +63,7 @@ DacGetThread(ULONG32 osThread)
     return NULL;
 }
 
-Thread* GetThread()
+Thread* GetThread() noexcept
 {
     // In dac mode it's unlikely that the thread calling dac
     // is actually the same "current thread" that the runtime cares
@@ -75,7 +75,7 @@ Thread* GetThread()
     return NULL;
 }
 
-Thread* GetThreadNULLOk()
+Thread* GetThreadNULLOk() noexcept
 {
     return GetThread();
 }

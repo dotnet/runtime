@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-//
 // EXCEPTMACROS.H -
 //
 // This header file exposes mechanisms to:
@@ -26,7 +25,6 @@
 // COMPlusThrow() must only be called within the scope of a EX_TRY
 // block. See below for more information.
 //
-//
 // THROWING A RUNTIME EXCEPTION
 // ----------------------------
 // COMPlusThrow() is overloaded to take a constant describing
@@ -50,15 +48,12 @@
 //                   IDS_CANTREFORMATCDRIVEBECAUSE,
 //                   W("Formatting C drive permissions not granted."));
 //
-//
-//
 // TO CATCH CLR EXCEPTIONS:
 // ----------------------------
 //
 // Use the following syntax:
 //
 //      #include "exceptmacros.h"
-//
 //
 //      OBJECTREF pThrownObject;
 //
@@ -67,7 +62,6 @@
 //      } EX_CATCH {
 //          ...handler...
 //      } EX_END_CATCH
-//
 //
 // EX_TRY blocks can be nested.
 //
@@ -89,7 +83,6 @@
 // self-document its contract, the checked version of this will fire
 // an assert if the function is ever called without being in scope.
 //
-//
 // AVOIDING EX_TRY GOTCHAS
 // ----------------------------
 // EX_TRY/EX_CATCH actually expands into a Win32 SEH
@@ -104,7 +97,6 @@
 //       of these things is not simple (you can wrap another EX_TRY
 //       around the call to simulate a CLR "try-finally" but EX_TRY
 //       is relatively expensive compared to the real thing.)
-//
 
 #ifndef __exceptmacros_h__
 #define __exceptmacros_h__
@@ -596,8 +588,6 @@ void COMPlusCooperativeTransitionHandler(Frame* pFrame);
 
 extern LONG UserBreakpointFilter(EXCEPTION_POINTERS *ep);
 extern LONG DefaultCatchFilter(EXCEPTION_POINTERS *ep, LPVOID pv);
-extern LONG DefaultCatchNoSwallowFilter(EXCEPTION_POINTERS *ep, LPVOID pv);
-
 
 // the only valid parameter for DefaultCatchFilter
 #define COMPLUS_EXCEPTION_EXECUTE_HANDLER   (PVOID)EXCEPTION_EXECUTE_HANDLER

@@ -862,6 +862,40 @@ namespace Internal.IL.Stubs
     {
         public abstract MethodIL EmitIL();
 
+        protected MethodSignature CreateSignatureWithSecretStubArgument(MethodSignature signature, MethodSignatureFlags flags)
+        {
+            TypeDesc[] parameterTypes = new TypeDesc[signature.Length + 1];
+            for (int i = 0; i < signature.Length; i++)
+            {
+                parameterTypes[i] = signature[i];
+            }
+            parameterTypes[parameterTypes.Length - 1] = Context.GetWellKnownType(WellKnownType.IntPtr);
+
+            EmbeddedSignatureData[] existingSignatureData = signature.GetEmbeddedSignatureData();
+            int existingSignatureDataLength = existingSignatureData?.Length ?? 0;
+            EmbeddedSignatureData[] embeddedSignatureData = new EmbeddedSignatureData[existingSignatureDataLength + 1];
+            if (existingSignatureDataLength != 0)
+            {
+                Array.Copy(existingSignatureData, embeddedSignatureData, existingSignatureDataLength);
+            }
+
+            embeddedSignatureData[existingSignatureDataLength] = new EmbeddedSignatureData
+            {
+                index = MethodSignature.GetIndexOfCustomModifierOnTypeByParameterIndex(parameterTypes.Length),
+                kind = EmbeddedSignatureDataKind.RequiredCustomModifier,
+                type = Context.SystemModule.GetKnownType(
+                    "System.Runtime.CompilerServices"u8,
+                    "SecretStubArgument"u8)
+            };
+
+            return new MethodSignature(
+                flags,
+                signature.GenericParameterCount,
+                signature.ReturnType,
+                parameterTypes,
+                embeddedSignatureData);
+        }
+
         public override bool HasCustomAttribute(string attributeNamespace, string attributeName)
         {
             return false;

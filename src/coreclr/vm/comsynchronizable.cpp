@@ -340,29 +340,6 @@ extern "C" void QCALLTYPE ThreadNative_GetCurrentThread(QCall::ObjectHandleOnSta
     END_QCALL;
 }
 
-extern "C" UINT64 QCALLTYPE ThreadNative_GetCurrentOSThreadId(QCallExceptionStatus* qcallError)
-{
-    QCALL_CONTRACT;
-
-    UINT64 threadId = 0;
-
-    BEGIN_QCALL;
-
-    // The Windows API GetCurrentThreadId returns a 32-bit integer thread ID.
-    // On some non-Windows platforms (e.g. OSX), the thread ID is a 64-bit value.
-    // We special case the API for non-Windows to get the 64-bit value and zero-extend
-    // the Windows value to return a single data type on all platforms.
-
-#ifndef TARGET_UNIX
-    threadId = (UINT64) GetCurrentThreadId();
-#else
-    threadId = (UINT64) PAL_GetCurrentOSThreadId();
-#endif
-    END_QCALL;
-
-    return threadId;
-}
-
 extern "C" void QCALLTYPE ThreadNative_Initialize(QCall::ObjectHandleOnStack t, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
@@ -693,14 +670,6 @@ extern "C" void QCALLTYPE ThreadNative_InformThreadNameChange(QCall::ThreadHandl
     END_QCALL;
 }
 
-FCIMPL0(INT32, ThreadNative::GetOptimalMaxSpinWaitsPerSpinIteration)
-{
-    FCALL_CONTRACT;
-
-    return (INT32)YieldProcessorNormalization::GetOptimalMaxNormalizedYieldsPerSpinIteration();
-}
-FCIMPLEND
-
 extern "C" void QCALLTYPE ThreadNative_GetQCallSpecialException(
     INT_PTR status,
     QCall::ObjectHandleOnStack exception,
@@ -742,18 +711,6 @@ FCIMPL0(void*, ThreadNative::GetThreadStaticsBaseNative)
 }
 FCIMPLEND
 #endif // TARGET_WASM
-
-extern "C" void QCALLTYPE ThreadNative_SpinWait(INT32 iterations)
-{
-    FCALL_CONTRACT;
-
-    if (iterations <= 0)
-    {
-        return;
-    }
-
-    YieldProcessorNormalized(iterations);
-}
 
 #ifdef TARGET_WINDOWS
 // This service can be called on unstarted and dead threads.  For unstarted ones, the
@@ -804,21 +761,6 @@ extern "C" void QCALLTYPE ThreadNative_PollGC()
 {
     // This is an intentional no-op.  The call is made to ensure that the thread goes through a GC transition
     // and is thus marked as a GC safe point, and that the p/invoke rare path will kick in
-}
-
-extern "C" BOOL QCALLTYPE ThreadNative_YieldThread(QCallExceptionStatus* qcallError)
-{
-    QCALL_CONTRACT;
-
-    BOOL ret = FALSE;
-
-    BEGIN_QCALL;
-
-    ret = __SwitchToThread(0, CALLER_LIMITS_SPINNING);
-
-    END_QCALL;
-
-    return ret;
 }
 
 extern "C" void QCALLTYPE ThreadNative_Abort(QCall::ThreadHandle thread, QCallExceptionStatus* qcallError)

@@ -28,6 +28,64 @@ namespace ILLink.RoslynAnalyzer.Tests
                 expected: expected);
         }
 
+        [Theory]
+        [InlineData("System.Type", "Type")]
+        [InlineData("System.Reflection.TypeInfo", "TypeInfo")]
+        [InlineData("System.Reflection.IReflect", "IReflect")]
+        [InlineData("string", "String")]
+        public Task WellKnownAndDerivedTypesRetainDataFlow(string typeName, string displayName)
+        {
+            string source = $$"""
+                using System.Diagnostics.CodeAnalysis;
+                using T = {{typeName}};
+
+                class C
+                {
+                    [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
+                    static T M(T value)
+                    {
+                        return value;
+                    }
+                }
+                """;
+
+            return VerifyDynamicallyAccessedMembersAnalyzer(source, consoleApplication: false,
+                VerifyCS.Diagnostic(DiagnosticId.DynamicallyAccessedMembersMismatchParameterTargetsMethodReturnType)
+                    .WithSpan(9, 16, 9, 21)
+                    .WithSpan(7, 16, 7, 23)
+                    .WithArguments($"C.M({displayName})", "value", $"C.M({displayName})",
+                        "'DynamicallyAccessedMemberTypes.PublicMethods'"));
+        }
+
+        [Theory]
+        [InlineData("Other.Type")]
+        [InlineData("Other.IReflect")]
+        [InlineData("System.Array")]
+        public Task UnrelatedWellKnownNamesAreNotInteresting(string typeName)
+        {
+            string source = $$"""
+                using System.Diagnostics.CodeAnalysis;
+                using T = {{typeName}};
+
+                namespace Other
+                {
+                    public class Type { }
+                    public interface IReflect { }
+                }
+
+                class C
+                {
+                    [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
+                    static T M() => null;
+                }
+                """;
+
+            return VerifyDynamicallyAccessedMembersAnalyzer(source, consoleApplication: false,
+                VerifyCS.Diagnostic(DiagnosticId.DynamicallyAccessedMembersOnMethodReturnValueCanOnlyApplyToTypesOrStrings)
+                    .WithSpan(13, 14, 13, 15)
+                    .WithArguments("C.M()"));
+        }
+
         [Fact]
         public Task NoWarningsIfAnalyzerIsNotEnabled()
         {

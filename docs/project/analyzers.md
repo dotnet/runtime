@@ -1,6 +1,46 @@
+## Enabling analyzers and other analysis tools
+
+By default, code analyzers and ILLink trimming analysis are **disabled** during local and PR product builds to improve build performance. They remain required merge gates in CI, and official product builds continue to run ILLink trimming validation. To enable them locally, pass the corresponding MSBuild properties on the command line or set them in your environment.
+
+### Analyzers
+
+To run all Roslyn code analyzers (style, correctness, performance, etc.) during the build:
+
+```bash
+./build.sh libs -c Release /p:RunAnalyzersInBuild=true
+```
+
+This enables the analyzer packages declared in [`eng/Analyzers.targets`](../../eng/Analyzers.targets) (including `Microsoft.CodeAnalysis.NetAnalyzers`, `StyleCop.Analyzers`, and others) and applies the rule severities from the [`eng/CodeAnalysis.src.globalconfig`](../../eng/CodeAnalysis.src.globalconfig) and [`eng/CodeAnalysis.test.globalconfig`](../../eng/CodeAnalysis.test.globalconfig) files.
+
+You can also enable analyzers for a single project build:
+
+```bash
+dotnet build /p:RunAnalyzersInBuild=true
+```
+
+### ILLink trimming
+
+To run ILLink trimming analysis during the build:
+
+```bash
+./build.sh libs -c Release /p:RunILLinkInBuild=true
+```
+
+### Enabling both checks
+
+To enable both checks:
+
+```bash
+./build.sh libs -c Release /p:RunAnalyzersInBuild=true /p:RunILLinkInBuild=true
+```
+
+These features run in dedicated jobs in the global-build CI pipeline for relevant PRs, keeping them as merge gates without adding them to every product build.
+
+> **Note:** Reference assembly projects and source-build always have analyzers disabled regardless of these settings.
+
 ## Adding new analyzers to the build
 
-This repo relies on [.NET Compiler Platform analyzers](https://learn.microsoft.com/visualstudio/code-quality/roslyn-analyzers-overview) to help validate the correctness, performance, and maintainability of the code.  Several existing analyzer packages are wired into the build, but it is easy to augment the utilized packages in order to experiment with additional analyzers.
+This repo relies on [.NET Compiler Platform analyzers](https://learn.microsoft.com/visualstudio/code-quality/roslyn-analyzers-overview) to help validate the correctness, performance, and maintainability of the code. Several existing analyzer packages are wired into the build, but it is easy to augment the utilized packages in order to experiment with additional analyzers.
 
 To add an analyzer package to the build:
 1. Select a package you want to employ, for example https://www.nuget.org/packages/SonarAnalyzer.CSharp/.  This analyzer package's name is `SonarAnalyzer.CSharp` and the latest version as of this edit is `8.50.0.58025`.

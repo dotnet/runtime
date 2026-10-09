@@ -1607,10 +1607,11 @@ bool WrapICorJitInfo::convertPInvokeCalliToCall(
 
 bool WrapICorJitInfo::notifyInstructionSetUsage(
           CORINFO_InstructionSet instructionSet,
-          bool supportEnabled)
+          bool supportEnabled,
+          bool preserveNegativeDependency)
 {
     API_ENTER(notifyInstructionSetUsage);
-    bool temp = wrapHnd->notifyInstructionSetUsage(instructionSet, supportEnabled);
+    bool temp = wrapHnd->notifyInstructionSetUsage(instructionSet, supportEnabled, preserveNegativeDependency);
     API_LEAVE(notifyInstructionSetUsage);
     return temp;
 }

@@ -151,7 +151,7 @@ namespace System.Runtime.Serialization.Json
             Type valueType = keyValueTypes[1];
 
             int keyTypeNullableDepth = 0;
-            while (keyType.IsGenericType && keyType.GetGenericTypeDefinition() == Globals.TypeOfNullable)
+            while (keyType.IsGenericType && keyType.GetGenericTypeDefinition() == typeof(Nullable<>))
             {
                 keyTypeNullableDepth++;
                 keyType = keyType.GetGenericArguments()[0];
@@ -162,7 +162,7 @@ namespace System.Runtime.Serialization.Json
 
             KeyParseMode keyParseMode = KeyParseMode.Fail;
 
-            if (keyType == Globals.TypeOfString || keyType == Globals.TypeOfObject)
+            if (keyType == typeof(string) || keyType == typeof(object))
             {
                 keyParseMode = KeyParseMode.AsString;
             }

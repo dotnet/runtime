@@ -24,8 +24,6 @@
 
 #include "nsutilpriv.h"
 
-#include "utsem.h"
-
 using std::min;
 using std::max;
 

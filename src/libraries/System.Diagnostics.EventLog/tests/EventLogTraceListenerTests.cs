@@ -28,6 +28,17 @@ namespace System.Diagnostics.Tests
             }
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNetFramework))]
+        public void TraceMethods_EventLogNull_NoOp()
+        {
+            using var listener = new EventLogTraceListener(eventLog: null);
+
+            listener.TraceEvent(null, "source", TraceEventType.Information, 1, "message");
+            listener.TraceEvent(null, "source", TraceEventType.Information, 1, "{0}", "message");
+            listener.TraceData(null, "source", TraceEventType.Information, 1, data: (object?)"message");
+            listener.TraceData(null, "source", TraceEventType.Information, 1, data: new object?[] { "message" });
+        }
+
         [Fact]
         public void StringConstructor()
         {

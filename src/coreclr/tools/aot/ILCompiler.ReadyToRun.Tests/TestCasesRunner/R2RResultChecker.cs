@@ -35,6 +35,55 @@ internal static class R2RAssert
         return methods;
     }
 
+    public static bool HasStringThunkWithPrefix(ReadyToRunReader reader, string prefix, out string diagnostic)
+    {
+        List<string> keys = GetStringThunkKeys(reader);
+        bool found = keys.Any(key => key.StartsWith(prefix, StringComparison.Ordinal) &&
+            (prefix != "U" || (!key.StartsWith("UG", StringComparison.Ordinal) && !key.StartsWith("UM", StringComparison.Ordinal))));
+        diagnostic = found
+            ? $"Found string thunk with prefix '{prefix}'."
+            : $"Expected string thunk with prefix '{prefix}' not found. Found: [{string.Join(", ", keys)}]";
+        return found;
+    }
+
+    public static bool HasStringThunk(ReadyToRunReader reader, string lookupString, out string diagnostic)
+    {
+        List<string> keys = GetStringThunkKeys(reader);
+        bool found = keys.Contains(lookupString, StringComparer.Ordinal);
+        diagnostic = found
+            ? $"Found string thunk '{lookupString}'."
+            : $"Expected string thunk '{lookupString}' not found. Found: [{string.Join(", ", keys)}]";
+        return found;
+    }
+
+    private static List<string> GetStringThunkKeys(ReadyToRunReader reader)
+    {
+        var keys = new List<string>();
+        foreach (ReadyToRunImportSection section in reader.ImportSections)
+        {
+            foreach (ReadyToRunImportSection.ImportSectionEntry entry in section.Entries)
+            {
+                string signature = entry.Signature.ToString(new SignatureFormattingOptions());
+                const string marker = " (INJECT_STRING_THUNKS";
+                if (!signature.Contains(marker, StringComparison.Ordinal))
+                    continue;
+
+                int start = 0;
+                while ((start = signature.IndexOf('"', start)) >= 0)
+                {
+                    int end = signature.IndexOf('"', start + 1);
+                    if (end < 0)
+                        break;
+
+                    keys.Add(signature.Substring(start + 1, end - start - 1));
+                    start = end + 1;
+                }
+            }
+        }
+
+        return keys;
+    }
+
     /// <summary>
     /// Returns true if the R2R image contains a manifest or MSIL assembly reference with the given name.
     /// </summary>
@@ -589,6 +638,48 @@ internal static class R2RAssert
     }
 
     /// <summary>
+    /// Returns true if the CrossModuleInlineInfo entry for an inlinee matching <paramref name="inlineeMethodName"/>
+    /// has exactly <paramref name="expectedCount"/> cross-module inliners whose resolved names contain
+    /// <paramref name="inlinerMethodName"/>.
+    /// </summary>
+    public static bool HasCrossModuleInlinerCount(
+        ReadyToRunReader reader,
+        string inlineeMethodName,
+        string inlinerMethodName,
+        int expectedCount,
+        out string diagnostic)
+    {
+        if (!TryGetCrossModuleInliningInfoSection(reader, out var inliningInfo, out diagnostic))
+            return false;
+
+        foreach (var entry in inliningInfo.GetEntries())
+        {
+            string inlineeName = inliningInfo.ResolveMethodName(entry.Inlinee);
+            if (!inlineeName.Contains(inlineeMethodName, StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            var matchingInliners = new List<string>();
+            foreach (var inliner in entry.Inliners)
+            {
+                if (!inliner.IsCrossModule)
+                    continue;
+
+                string inlinerName = inliningInfo.ResolveMethodName(inliner);
+                if (inlinerName.Contains(inlinerMethodName, StringComparison.OrdinalIgnoreCase))
+                    matchingInliners.Add(inlinerName);
+            }
+
+            diagnostic =
+                $"Inlinee '{inlineeName}': expected {expectedCount} cross-module inliner(s) matching '{inlinerMethodName}', " +
+                $"found {matchingInliners.Count}:\n  {string.Join("\n  ", matchingInliners)}";
+            return matchingInliners.Count == expectedCount;
+        }
+
+        diagnostic = $"No CrossModuleInlineInfo entry found for inlinee matching '{inlineeMethodName}'.";
+        return false;
+    }
+
+    /// <summary>
     /// Returns true if any inlining info section (CrossModuleInlineInfo or InliningInfo2) records
     /// that <paramref name="inlinerMethodName"/> inlined <paramref name="inlineeMethodName"/>.
     /// Does not check whether the encoding is cross-module or local.
@@ -821,6 +912,119 @@ internal static class R2RAssert
 
         diagnostic = $"Found {checkedMethodCount} [ASYNC] method(s), each followed by its [RESUME] stub.";
         return true;
+    }
+
+    /// <summary>
+    /// Returns true if each Wasm async resume target uses the RuntimeFunctions index immediately
+    /// following its parent async method and its funclets.
+    /// </summary>
+    public static bool WasmAsyncResumeTargetsMatchRuntimeFunctionOrder(ReadyToRunReader reader, out string diagnostic)
+    {
+        var failures = new List<string>();
+        var resumptionStubTargets = new HashSet<uint>();
+        var storeMultiTargets = new List<(string Owner, uint Target)>();
+        int checkedMethodCount = 0;
+
+        foreach (ReadyToRunMethod method in GetAllMethods(reader))
+        {
+            if (method.Fixups is null)
+                continue;
+
+            bool foundResumptionStub = false;
+            foreach (FixupCell cell in method.Fixups)
+            {
+                ReadyToRunImportSection importSection = reader.ImportSections[(int)cell.TableIndex];
+                ReadyToRunImportSection.ImportSectionEntry entry = importSection.Entries[(int)cell.CellOffset];
+                ReadyToRunFixupKind? kind = entry.Signature?.FixupKind;
+                if (kind is not (ReadyToRunFixupKind.ResumptionStubEntryPoint or ReadyToRunFixupKind.StoreMultiCallableAddrOfCode))
+                    continue;
+
+                int offset = reader.GetOffset(checked((int)entry.SignatureRVA)) + sizeof(byte);
+                uint targetIndex = BinaryPrimitives.ReadUInt32LittleEndian(reader.Image.AsSpan(offset, sizeof(uint)));
+
+                if (kind == ReadyToRunFixupKind.StoreMultiCallableAddrOfCode)
+                {
+                    storeMultiTargets.Add((method.SignatureString, targetIndex));
+                    continue;
+                }
+
+                foundResumptionStub = true;
+                resumptionStubTargets.Add(targetIndex);
+                uint expectedIndex = checked((uint)(method.EntryPointRuntimeFunctionId + method.RuntimeFunctionCount - 1));
+                if (targetIndex != expectedIndex)
+                {
+                    failures.Add(
+                        $"'{method.SignatureString}' has {kind} target {targetIndex}; " +
+                        $"expected RuntimeFunctions index {expectedIndex}.");
+                }
+            }
+
+            if (foundResumptionStub)
+                checkedMethodCount++;
+        }
+
+        foreach ((string owner, uint target) in storeMultiTargets)
+        {
+            if (!resumptionStubTargets.Contains(target))
+            {
+                failures.Add(
+                    $"'{owner}' has StoreMultiCallableAddrOfCode target {target}, " +
+                    "which is not registered by a ResumptionStubEntryPoint fixup.");
+            }
+        }
+
+        if (checkedMethodCount == 0)
+        {
+            diagnostic = "No methods with ResumptionStubEntryPoint fixups were found.";
+            return false;
+        }
+
+        if (storeMultiTargets.Count == 0)
+        {
+            diagnostic = "No StoreMultiCallableAddrOfCode fixups were found.";
+            return false;
+        }
+
+        if (!HasWasmVirtualDispatchThunk(reader))
+        {
+            diagnostic = "No virtual-dispatch thunk was found.";
+            return false;
+        }
+
+        diagnostic = failures.Count == 0
+            ? $"Found {checkedMethodCount} async method(s) and {storeMultiTargets.Count} StoreMultiCallableAddrOfCode fixup(s) whose resume targets match RuntimeFunctions ordering in an image containing a virtual-dispatch thunk."
+            : string.Join(Environment.NewLine, failures);
+        return failures.Count == 0;
+    }
+
+    private static bool HasWasmVirtualDispatchThunk(ReadyToRunReader reader)
+    {
+        foreach (ReadyToRunImportSection section in reader.ImportSections)
+        {
+            if (section.Entries is null)
+                continue;
+
+            foreach (ReadyToRunImportSection.ImportSectionEntry entry in section.Entries)
+            {
+                if (entry.Signature?.FixupKind != ReadyToRunFixupKind.InjectStringThunks)
+                    continue;
+
+                int offset = reader.GetOffset(checked((int)entry.SignatureRVA)) + sizeof(byte);
+                while (reader.Image[offset] != 0)
+                {
+                    int terminator = reader.Image.AsSpan(offset).IndexOf((byte)0);
+                    if (terminator < 0)
+                        return false;
+
+                    if (reader.Image[offset] == (byte)'V')
+                        return true;
+
+                    offset += terminator + 1 + sizeof(uint);
+                }
+            }
+        }
+
+        return false;
     }
 
     /// <summary>

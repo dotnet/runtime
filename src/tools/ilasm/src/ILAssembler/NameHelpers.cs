@@ -2,14 +2,45 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
-using System.Runtime.InteropServices.ComTypes;
-using System.Text;
 
 namespace ILAssembler
 {
     internal static class NameHelpers
     {
+        public static string GetPrivateScopeMetadataName(string name, bool isMethod)
+        {
+            const int TokenLength = 8;
+            const string PrivateScopeMarker = "$PST";
+            int markerIndex = name.Length - PrivateScopeMarker.Length - TokenLength;
+            if (markerIndex < 0)
+            {
+                return name;
+            }
+
+            ReadOnlySpan<char> token = name.AsSpan(markerIndex + PrivateScopeMarker.Length);
+            if (!name.AsSpan(markerIndex, PrivateScopeMarker.Length).SequenceEqual(PrivateScopeMarker)
+                || !token.StartsWith(isMethod ? "06" : "04")
+                || !IsHexToken(token))
+            {
+                return name;
+            }
+
+            return name.Substring(0, markerIndex);
+
+            static bool IsHexToken(ReadOnlySpan<char> token)
+            {
+                foreach (char c in token)
+                {
+                    if (!char.IsAsciiHexDigit(c))
+                    {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+        }
+
         public static (string Namespace, string Name) SplitDottedNameToNamespaceAndName(string dottedName)
         {
             int lastDotIndex = dottedName.LastIndexOf('.');
@@ -20,13 +51,15 @@ namespace ILAssembler
                 lastDotIndex -= 1;
             }
 
+            // A dot at position 0 is part of the name (e.g., ".GlobalStruct"), not a namespace separator
+            if (lastDotIndex <= 0)
+            {
+                return (string.Empty, dottedName);
+            }
+
             return (
-                lastDotIndex != -1
-                    ? dottedName.Substring(0, lastDotIndex)
-                    : string.Empty,
-                lastDotIndex != -1
-                    ? dottedName.Substring(lastDotIndex + 1)
-                    : dottedName);
+                dottedName.Substring(0, lastDotIndex),
+                dottedName.Substring(lastDotIndex + 1));
         }
     }
 }

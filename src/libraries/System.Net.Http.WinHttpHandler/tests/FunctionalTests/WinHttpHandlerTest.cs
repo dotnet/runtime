@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http.Functional.Tests;
+using System.Net.Sockets;
 using System.Net.Test.Common;
 using System.Text;
 using System.Threading;
@@ -33,6 +34,105 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
         {
             _output = output;
         }
+
+#if !NETFRAMEWORK
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows10Version1607OrGreater))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task GetAsync_Http2LoopbackConnectionDisposed_ResponseRemainsReadable(bool handleRequest)
+        {
+            const string Content = "Response read after the server finishes sending";
+            var serverFinished = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            Http2LoopbackConnection connection = null;
+
+            await Http2LoopbackServer.CreateClientAndServerAsync(async address =>
+            {
+                using var client = new HttpClient(new WinHttpHandler
+                {
+                    ServerCertificateValidationCallback = TestHelper.AllowAllCertificates
+                });
+                using var request = new HttpRequestMessage(HttpMethod.Get, address) { Version = HttpVersion20.Value };
+                using HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+                await serverFinished.Task.WaitAsync(TestHelper.PassingTestTimeout);
+
+                Assert.False(connection.IsInvalid);
+                Assert.Equal(Content, await response.Content.ReadAsStringAsync());
+            },
+            async server =>
+            {
+                try
+                {
+                    connection = await server.EstablishConnectionAsync();
+                    await using (connection)
+                    {
+                        if (handleRequest)
+                        {
+                            await connection.HandleRequestAsync(content: Content);
+                        }
+                        else
+                        {
+                            int streamId = await connection.ReadRequestHeaderAsync();
+                            await connection.SendResponseHeadersAsync(streamId, endStream: false);
+                            await connection.SendResponseBodyAsync(streamId, Encoding.ASCII.GetBytes(Content));
+                        }
+                    }
+
+                    serverFinished.SetResult(true);
+                }
+                catch (Exception e)
+                {
+                    serverFinished.TrySetException(e);
+                    throw;
+                }
+            });
+
+            Assert.True(connection.IsInvalid);
+        }
+
+        [Fact]
+        public async Task Http2LoopbackConnection_CloseDuringDeferredDispose_Completes()
+        {
+            var writeStarted = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var finishWrite = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            bool closed = false;
+            using var socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
+            using var stream = new DelegateStream(
+                canReadFunc: () => true,
+                canWriteFunc: () => true,
+                readAsyncFunc: (buffer, offset, count, token) =>
+                {
+                    byte[] preface = Encoding.ASCII.GetBytes(Http2LoopbackConnection.Http2Prefix);
+                    Assert.Equal(preface.Length, count);
+                    preface.CopyTo(buffer, offset);
+                    return Task.FromResult(preface.Length);
+                },
+                writeAsyncFunc: async (buffer, offset, count, token) =>
+                {
+                    writeStarted.TrySetResult(true);
+                    await finishWrite.Task.WaitAsync(TestHelper.PassingTestTimeout);
+                    Assert.True(closed);
+                    throw new ObjectDisposedException(nameof(DelegateStream));
+                },
+                disposeFunc: _ => closed = true);
+
+            Http2LoopbackConnection connection = await Http2LoopbackConnection.CreateAsync(
+                new SocketWrapper(socket), stream, new Http2Options { UseSsl = false });
+            connection.DeferClose = true;
+            Task disposeTask = connection.DisposeAsync().AsTask();
+            try
+            {
+                await writeStarted.Task.WaitAsync(TestHelper.PassingTestTimeout);
+                connection.Close();
+            }
+            finally
+            {
+                finishWrite.TrySetResult(true);
+            }
+
+            await disposeTask.WaitAsync(TestHelper.PassingTestTimeout);
+            Assert.True(connection.IsInvalid);
+        }
+#endif
 
         [OuterLoop]
         [Fact]

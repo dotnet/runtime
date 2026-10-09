@@ -1,4 +1,9 @@
 <Project>
+  <PropertyGroup>
+    <!-- By default, analyzers are disabled to speed up local builds and CI.
+         Set RunAnalyzersInBuild=true to enable analyzers during the build. -->
+    <RunAnalyzers Condition="'$(RunAnalyzers)' == '' and '$(RunAnalyzersInBuild)' != 'true'">false</RunAnalyzers>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(UsingMicrosoftNoTargetsSdk)' == 'true' or
                             '$(UsingMicrosoftDotNetSharedFrameworkSdk)' == 'true' or
                             '$(MSBuildProjectExtension)' == '.pkgproj' or

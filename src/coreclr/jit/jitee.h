@@ -31,7 +31,6 @@ public:
         JIT_FLAG_BBINSTR_IF_LOOPS        = 19, // JIT must instrument current method if it has loops
         JIT_FLAG_BBOPT                   = 20, // Optimize method based on profile information
         JIT_FLAG_FRAMED                  = 21, // All methods have an EBP frame
-        JIT_FLAG_PUBLISH_SECRET_PARAM    = 22, // JIT must place stub secret param into local 0.  (used by IL stubs)
         JIT_FLAG_USE_PINVOKE_HELPERS     = 23, // The JIT should use the PINVOKE_{BEGIN,END} helpers instead of emitting inline transitions
         JIT_FLAG_REVERSE_PINVOKE         = 24, // The JIT should insert REVERSE_PINVOKE_{ENTER,EXIT} helpers into method prolog/epilog
         JIT_FLAG_TRACK_TRANSITIONS       = 25, // The JIT should insert the helper variants that track transitions.
@@ -45,6 +44,7 @@ public:
 #endif
 
         JIT_FLAG_USE_DISPATCH_HELPERS    = 31, // The JIT should use helpers for interface dispatch instead of virtual stub dispatch
+        JIT_FLAG_VERIFY_GC_MODE_TRANSITIONS = 32, // The JIT should emit the diagnostic helpers that verify GC mode transitions are legal
 
         // Note: the mcs tool uses the currently unused upper flags bits when outputting SuperPMI MC file flags.
         // See EXTRA_JIT_FLAGS and spmidumphelper.cpp. Currently, these are bits 56 through 63. If they overlap,
@@ -132,7 +132,6 @@ public:
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_BBINSTR_IF_LOOPS, JIT_FLAG_BBINSTR_IF_LOOPS);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_BBOPT, JIT_FLAG_BBOPT);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_FRAMED, JIT_FLAG_FRAMED);
-        FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_PUBLISH_SECRET_PARAM, JIT_FLAG_PUBLISH_SECRET_PARAM);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_USE_PINVOKE_HELPERS, JIT_FLAG_USE_PINVOKE_HELPERS);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_REVERSE_PINVOKE, JIT_FLAG_REVERSE_PINVOKE);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_TRACK_TRANSITIONS, JIT_FLAG_TRACK_TRANSITIONS);
@@ -146,6 +145,7 @@ public:
 #endif // TARGET_ARM
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_ASYNC, JIT_FLAG_ASYNC);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_USE_DISPATCH_HELPERS, JIT_FLAG_USE_DISPATCH_HELPERS);
+        FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_VERIFY_GC_MODE_TRANSITIONS, JIT_FLAG_VERIFY_GC_MODE_TRANSITIONS);
 
 #undef FLAGS_EQUAL
     }

@@ -29,6 +29,7 @@
 #include "CommonTypes.h"
 #include "CommonMacros.h"
 #include "PalLimitedContext.h"
+#include "CLREventBase.h"
 #include "gcenv.structs.h" // EEThreadId
 
 #ifndef PAL_INCLUDED
@@ -231,10 +232,8 @@ _Ret_maybenull_ _Post_writable_byte_size_(size) void* PalVirtualAlloc(uintptr_t 
 void PalVirtualFree(_In_ void* pAddress, uintptr_t size);
 UInt32_BOOL PalVirtualProtect(_In_ void* pAddress, uintptr_t size, uint32_t protect);
 void PalFlushInstructionCache(_In_ void* pAddress, size_t size);
-void PalSleep(uint32_t milliseconds);
 UInt32_BOOL PalSwitchToThread();
 UInt32_BOOL PalAreShadowStacksEnabled();
-HANDLE PalCreateEventW(_In_opt_ LPSECURITY_ATTRIBUTES pEventAttributes, UInt32_BOOL manualReset, UInt32_BOOL initialState, _In_opt_z_ LPCWSTR pName);
 HANDLE PalGetModuleHandleFromPointer(_In_ void* pointer, bool pinModule = false);
 
 #ifdef TARGET_UNIX
@@ -268,7 +267,9 @@ UInt32_BOOL PalMarkThunksAsValidCallTargets(
     int thunkBlockSize,
     int thunkBlocksPerMapping);
 
+#ifdef TARGET_WINDOWS
 uint32_t PalCompatibleWaitAny(UInt32_BOOL alertable, uint32_t timeout, uint32_t count, HANDLE* pHandles, UInt32_BOOL allowReentrantWait);
+#endif
 
 HANDLE PalCreateLowMemoryResourceNotification();
 
@@ -289,7 +290,6 @@ int32_t _stricmp(const char *string1, const char *string2);
 #endif // TARGET_UNIX
 
 uint16_t PalCaptureStackBackTrace(uint32_t arg1, uint32_t arg2, void* arg3, uint32_t* arg4);
-UInt32_BOOL PalCloseHandle(HANDLE arg1);
 uint32_t PalGetCurrentProcessId();
 
 #ifdef UNICODE
@@ -297,10 +297,6 @@ uint32_t PalGetEnvironmentVariable(_In_opt_ LPCWSTR lpName, _Out_writes_to_opt_(
 #else
 uint32_t PalGetEnvironmentVariable(_In_opt_ LPCSTR lpName, _Out_writes_to_opt_(nSize, return + 1) LPSTR lpBuffer, _In_ uint32_t nSize);
 #endif
-
-UInt32_BOOL PalResetEvent(HANDLE arg1);
-UInt32_BOOL PalSetEvent(HANDLE arg1);
-uint32_t PalWaitForSingleObjectEx(HANDLE arg1, uint32_t arg2, UInt32_BOOL arg3);
 
 void RuntimeThreadShutdown(void* thread);
 

@@ -9,6 +9,8 @@ using System.Reflection.Runtime.Assemblies;
 using System.Reflection.Runtime.General;
 using System.Runtime.Serialization;
 
+using Internal.Metadata.NativeFormat;
+
 namespace System.Reflection.Runtime.Modules
 {
     //
@@ -25,22 +27,33 @@ namespace System.Reflection.Runtime.Modules
 
         public abstract override Assembly Assembly { get; }
 
-        public abstract override IEnumerable<CustomAttributeData> CustomAttributes { get; }
-
-        public sealed override object[] GetCustomAttributes(bool inherit) => RuntimeCustomAttribute.GetCustomAttributes(this, typeof(object));
+        public sealed override object[] GetCustomAttributes(bool inherit) =>
+            RuntimeCustomAttribute.GetCustomAttributes(this, (RuntimeType)typeof(object));
 
         public sealed override object[] GetCustomAttributes(Type attributeType, bool inherit)
         {
             ArgumentNullException.ThrowIfNull(attributeType);
-            return RuntimeCustomAttribute.GetCustomAttributes(this, attributeType);
+
+            if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
+                throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
+
+            return RuntimeCustomAttribute.GetCustomAttributes(this, attributeRuntimeType);
         }
 
-        public sealed override IList<CustomAttributeData> GetCustomAttributesData() => CustomAttributes.ToReadOnlyCollection();
+        public sealed override IList<CustomAttributeData> GetCustomAttributesData() => RuntimeCustomAttributeData.GetCustomAttributesInternal(this);
+
+        internal virtual MetadataReader? GetMetadataReader() => null;
+
+        internal virtual CustomAttributeHandleCollection GetCustomAttributeHandles() => default;
 
         public sealed override bool IsDefined(Type attributeType, bool inherit)
         {
             ArgumentNullException.ThrowIfNull(attributeType);
-            return RuntimeCustomAttribute.IsDefined(this, attributeType);
+
+            if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
+                throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
+
+            return RuntimeCustomAttribute.IsDefined(this, attributeRuntimeType);
         }
 
         [RequiresAssemblyFiles(UnknownStringMessageInRAF)]
@@ -97,7 +110,7 @@ namespace System.Reflection.Runtime.Modules
 
         public abstract override Guid ModuleVersionId { get; }
 
-        public sealed override bool IsResource() { throw new PlatformNotSupportedException(); }
+        public sealed override bool IsResource() => false;
         public sealed override void GetPEKind(out PortableExecutableKinds peKind, out ImageFileMachine machine) { throw new PlatformNotSupportedException(); }
         public sealed override int MDStreamVersion { get { throw new PlatformNotSupportedException(); } }
         [RequiresUnreferencedCode("Trimming changes metadata tokens")]

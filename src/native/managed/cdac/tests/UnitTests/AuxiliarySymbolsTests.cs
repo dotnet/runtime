@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
@@ -92,6 +93,23 @@ public class AuxiliarySymbolsTests
             .AddMockContract<IPlatformMetadata>(Mock.Of<IPlatformMetadata>(p => p.GetCodePointerFlags() == default(CodePointerFlags)))
             .AddContract<IAuxiliarySymbols>(version: "c1")
             .Build();
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void EnumerateAuxiliarySymbols_ReturnsAllSymbols(MockTarget.Architecture arch)
+    {
+        (ulong Address, string Name)[] helpers =
+        [
+            (0x7FFF_0100, "@WriteBarrier"),
+            (0x7FFF_0200, "@CheckedWriteBarrier"),
+        ];
+        Target target = CreateTarget(arch, helpers);
+
+        Assert.Equal(
+            helpers.Select(helper => (new TargetCodePointer(helper.Address), helper.Name)),
+            target.Contracts.AuxiliarySymbols.EnumerateAuxiliarySymbols());
+        Assert.Empty(CreateTarget(arch, []).Contracts.AuxiliarySymbols.EnumerateAuxiliarySymbols());
     }
 
     [Theory]
