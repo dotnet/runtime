@@ -194,11 +194,9 @@
     <Message Importance="High" Text="TimeoutPerTestInMinutes: $(TimeoutPerTestInMinutes)" />
     <Error Condition="'$(_Scenarios)' == ''" Text="_Scenarios not set" />
 
-    <ItemGroup>
-      <CleanPreexistingPayloads Include="$(MergedPayloadsRootDirectory)**" />
-    </ItemGroup>
-
-    <Delete Files="@(CleanPreexistingPayloads)" />
+    <!-- A build job can submit multiple test configurations. Remove the directories as well as
+         their files so the nested payload-preparation build doesn't evaluate stale payload groups. -->
+    <RemoveDir Directories="$(MergedPayloadsRootDirectory)" />
 
     <MSBuild Projects="$(MSBuildProjectFile)" Targets="PrepareCorrelationPayloadDirectory" Properties="$(_PropertiesToPass)" />
     <MSBuild Projects="$(MSBuildProjectFile)" Targets="PreparePayloadDirectories" Properties="$(_PropertiesToPass)" StopOnFirstFailure="true" />
