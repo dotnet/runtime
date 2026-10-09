@@ -1809,6 +1809,21 @@ constexpr unsigned ROOT_FUNC_IDX = 0;
 
 class emitLocation;
 
+#if defined(TARGET_AMD64)
+// Unwind Information V3 for a function or funclet. Like the V1 codes in FuncInfoDsc, the prolog
+// WODs and their IP offsets are filled from the end of their arrays backwards, which leaves them
+// in the reverse execution order V3 requires. Maximum of 31 prolog WODs, each at most the size of
+// WOD_ALLOC_HUGE.
+struct UnwindInfoV3
+{
+    UNWIND_INFO_V3 header;
+    BYTE           wods[UNWIND_INFO_V3_MAX_OPS * sizeof(WOD_ALLOC_HUGE)];
+    unsigned       wodSlot;
+    BYTE           ipOffsets[UNWIND_INFO_V3_MAX_OPS];
+    unsigned       ipOffsetSlot;
+};
+#endif // TARGET_AMD64
+
 struct FuncInfoDsc
 {
     FuncKind       funKind;
@@ -1863,14 +1878,8 @@ struct FuncInfoDsc
     BYTE     unwindCodes[offsetof(UNWIND_INFO, UnwindCode) + (0xFF * sizeof(UNWIND_CODE))];
     unsigned unwindCodeSlot;
 
-    // Unwind Information V3. Like the V1 codes above, the prolog WODs and their IP offsets are
-    // filled from the end of their arrays backwards, which leaves them in the reverse execution
-    // order V3 requires. Maximum of 31 prolog WODs, each at most the size of WOD_ALLOC_HUGE.
-    UNWIND_INFO_V3 unwindHeaderV3;
-    BYTE           unwindWodsV3[UNWIND_INFO_V3_MAX_OPS * sizeof(WOD_ALLOC_HUGE)];
-    unsigned       unwindWodSlotV3;
-    BYTE           unwindIpOffsetsV3[UNWIND_INFO_V3_MAX_OPS];
-    unsigned       unwindIpOffsetSlotV3;
+    // Unwind Information V3, allocated by unwindBegPrologV3; nullptr unless V3 is used.
+    UnwindInfoV3* unwindV3;
 
 #elif defined(TARGET_X86)
 

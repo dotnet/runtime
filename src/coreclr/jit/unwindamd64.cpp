@@ -524,14 +524,20 @@ void Compiler::unwindBegPrologV3()
 
     // The code locations are set up by unwindBegPrologWindows, which runs for every prolog.
 
-    func->unwindWodSlotV3                = sizeof(func->unwindWodsV3);
-    func->unwindIpOffsetSlotV3           = sizeof(func->unwindIpOffsetsV3);
-    func->unwindHeaderV3.Version         = 3;
-    func->unwindHeaderV3.Flags           = 0;
-    func->unwindHeaderV3.SizeOfProlog    = 0;
-    func->unwindHeaderV3.PayloadWords    = 0;
-    func->unwindHeaderV3.NumberOfOps     = 0;
-    func->unwindHeaderV3.NumberOfEpilogs = 0;
+    if (func->unwindV3 == nullptr)
+    {
+        func->unwindV3 = new (this, CMK_UnwindInfo) UnwindInfoV3;
+    }
+
+    UnwindInfoV3* uwi           = func->unwindV3;
+    uwi->wodSlot                = sizeof(uwi->wods);
+    uwi->ipOffsetSlot           = sizeof(uwi->ipOffsets);
+    uwi->header.Version         = 3;
+    uwi->header.Flags           = 0;
+    uwi->header.SizeOfProlog    = 0;
+    uwi->header.PayloadWords    = 0;
+    uwi->header.NumberOfOps     = 0;
+    uwi->header.NumberOfEpilogs = 0;
 }
 
 //------------------------------------------------------------------------
@@ -547,20 +553,22 @@ void Compiler::unwindBegPrologV3()
 BYTE* Compiler::unwindAllocWodV3(FuncInfoDsc* func, unsigned size)
 {
     assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
-    assert(func->unwindHeaderV3.Version == 3); // Can't call this before unwindBegPrologV3
+    assert(func->unwindV3 != nullptr); // Can't call this before unwindBegPrologV3
+
+    UnwindInfoV3* uwi = func->unwindV3;
 
     // Can't call this after unwindReserve.
     // TODO-Unwind-V3: Nothing sets NumberOfOps yet, so this holds trivially until the V3
     // reserve path fills it in, as unwindReserveFuncHelper does CountOfUnwindCodes for V1.
-    assert(func->unwindHeaderV3.NumberOfOps == 0);
-    assert(func->unwindIpOffsetSlotV3 > 0);
-    assert(func->unwindWodSlotV3 >= size);
+    assert(uwi->header.NumberOfOps == 0);
+    assert(uwi->ipOffsetSlot > 0);
+    assert(uwi->wodSlot >= size);
 
     unsigned int cbProlog = unwindGetCurrentOffset(func);
     noway_assert((BYTE)cbProlog == cbProlog);
-    func->unwindIpOffsetsV3[--func->unwindIpOffsetSlotV3] = (BYTE)cbProlog;
+    uwi->ipOffsets[--uwi->ipOffsetSlot] = (BYTE)cbProlog;
 
-    return &func->unwindWodsV3[func->unwindWodSlotV3 -= size];
+    return &uwi->wods[uwi->wodSlot -= size];
 }
 
 void Compiler::unwindPushV3(regNumber reg)
@@ -621,7 +629,7 @@ void Compiler::unwindPush2V3(regNumber reg1, regNumber reg2)
         assert((regNumber)wod->Register == reg1);
         return;
     }
-
+    
     // PUSH2 pushes reg1 first, so it ends up at [rsp + 8] and reg2 at [rsp]. WOD_PUSH2's
     // Register1 and Register2 follow the same convention.
     WOD_PUSH2* wod = (WOD_PUSH2*)unwindAllocWodV3(func, sizeof(WOD_PUSH2));
@@ -639,7 +647,7 @@ void Compiler::unwindAllocStackV3(unsigned size)
     FuncInfoDsc* func = funCurrentFunc();
 
     assert(size % 8 == 0); // Stack size is *always* 8 byte aligned
-    if (size <= 128) // largest WOD_ALLOC_SMALL, 16 * 8
+    if (size <= 128)       // largest WOD_ALLOC_SMALL, 16 * 8
     {
         WOD_ALLOC_SMALL* wod = (WOD_ALLOC_SMALL*)unwindAllocWodV3(func, sizeof(WOD_ALLOC_SMALL));
         wod->OpCode          = WOD_OP_ALLOC_SMALL;
