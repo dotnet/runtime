@@ -334,20 +334,6 @@ bool ep_rt_coreclr_wasi_queue_job(size_t (*cb)(void *data), void *data)
     return true;
 }
 
-extern "C" CLR_BOOL QCALLTYPE EventPipeInternal_WasiHasPendingJobs(QCallExceptionStatus* qcallError)
-{
-    QCALL_CONTRACT;
-
-    CLR_BOOL pending = FALSE;
-
-    BEGIN_QCALL;
-
-    pending = s_wasiJobsHead != nullptr ? TRUE : FALSE;
-
-    END_QCALL;
-    return pending;
-}
-
 void ep_rt_coreclr_wasi_run_jobs()
 {
     // Detach the current list so jobs queued while running are picked up on the next pump.
@@ -366,15 +352,20 @@ void ep_rt_coreclr_wasi_run_jobs()
     }
 }
 
-extern "C" void QCALLTYPE EventPipeInternal_WasiRunJobs(QCallExceptionStatus* qcallError)
+// Runs the queued jobs and returns whether any are still queued, so the caller knows to run again.
+extern "C" CLR_BOOL QCALLTYPE EventPipeInternal_WasiRunJobs(QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
+
+    CLR_BOOL pending = FALSE;
 
     BEGIN_QCALL;
 
     ep_rt_coreclr_wasi_run_jobs();
+    pending = s_wasiJobsHead != nullptr ? TRUE : FALSE;
 
     END_QCALL;
+    return pending;
 }
 #endif // TARGET_WASI && PERFTRACING_DISABLE_THREADS
 

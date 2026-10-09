@@ -58,7 +58,7 @@ namespace System.Threading
                 {
 #if FEATURE_PERFTRACING && CORECLR && !FEATURE_MULTITHREADING
                     // Before Dispatch, which can block in wasi:io/poll, so the pump's timer is registered first.
-                    WasiEventPipeJobs.EnsurePumpIfPending();
+                    WasiEventPipeJobs.Pump();
 #endif
                     ThreadPoolWorkQueue.Dispatch();
                     WasiFinalizerScheduler.DrainIfPending();
@@ -84,7 +84,7 @@ namespace System.Threading
                 {
 #if FEATURE_PERFTRACING && CORECLR && !FEATURE_MULTITHREADING
                     // Before Dispatch, which can block in wasi:io/poll, so the pump's timer is registered first.
-                    WasiEventPipeJobs.EnsurePumpIfPending();
+                    WasiEventPipeJobs.Pump();
 #endif
                     ThreadPoolWorkQueue.Dispatch();
                     WasiFinalizerScheduler.DrainIfPending();
