@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Optimize>True</Optimize>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildProjectName).cs" />
+
+    <CLRTestEnvironmentVariable Include="DOTNET_TieredCompilation" Value="0" />
+    <CLRTestEnvironmentVariable Include="DOTNET_EnableAVX10v2" Value="1" />
+    <!-- Force a GC at every instruction so a stale gcref register is caught -->
+    <CLRTestEnvironmentVariable Include="DOTNET_GCStress" Value="4" />
+  </ItemGroup>
+</Project>

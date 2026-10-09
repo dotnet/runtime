@@ -4186,6 +4186,22 @@ bool emitter::emitInsCanOnlyWriteSSE2OrAVXReg(instrDesc* id)
         case INS_vcvttsd2usi64:
         case INS_vcvttss2usi32:
         case INS_vcvttss2usi64:
+        case INS_vcvttsd2sis32:
+        case INS_vcvttsd2sis64:
+        case INS_vcvttsd2usis32:
+        case INS_vcvttsd2usis64:
+        case INS_vcvttss2sis32:
+        case INS_vcvttss2sis64:
+        case INS_vcvttss2usis32:
+        case INS_vcvttss2usis64:
+        case INS_vcvtsh2si32:
+        case INS_vcvtsh2si64:
+        case INS_vcvtsh2usi32:
+        case INS_vcvtsh2usi64:
+        case INS_vcvttsh2si32:
+        case INS_vcvttsh2si64:
+        case INS_vcvttsh2usi32:
+        case INS_vcvttsh2usi64:
         {
             // These SSE instructions write to a general purpose integer register.
             return false;
