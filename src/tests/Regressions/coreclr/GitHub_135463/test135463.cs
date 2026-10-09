@@ -263,6 +263,32 @@ public class Runtime_135463
         Assert.False(s_reachedAfterCatch);
     }
 
+    // The action aborts itself. CancellationTokenSource.Cancel catches the abort and it is thrown again at the end of
+    // that catch block, in compiled code when only user code is interpreted.
+    private static void CancelItself()
+    {
+        Console.WriteLine(nameof(CancelItself));
+        s_trace = "";
+
+        var cts = new CancellationTokenSource();
+        Exception exception = null;
+        try
+        {
+            ControlledExecution.Run(() =>
+            {
+                cts.Cancel();
+                s_trace += "unreachable ";
+            }, cts.Token);
+        }
+        catch (Exception e)
+        {
+            exception = e;
+        }
+
+        Assert.IsType<OperationCanceledException>(exception);
+        Assert.Equal("", s_trace);
+    }
+
     // ControlledExecution is supported on CoreCLR only
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR), nameof(PlatformDetection.IsMultithreadingSupported))]
     public static void TestEntryPoint()
@@ -272,6 +298,7 @@ public class Runtime_135463
         RunAndAbort(nameof(CatchInsideOfFinally), CatchInsideOfFinally, "catch in finally end of finally outer catch ");
         RunAndAbort(nameof(CatchInsideOfCatch), CatchInsideOfCatch, "inner catch end of outer catch ");
         RunAndAbort(nameof(LeaveOutOfNestedCatch), LeaveOutOfNestedCatch, "inner catch ");
+        CancelItself();
     }
 
     // A positive InterpMode, or a runtime without a JIT, runs these methods in the interpreter.

@@ -1457,12 +1457,14 @@ BOOL HandleHardwareException(PAL_SEHException* ex)
 #if defined(FEATURE_INTERPRETER) && !defined(HOST_WASM)
 
 // The ssp argument needs to match the pContext (SSP register value at that context)
-VOID DECLSPEC_NORETURN RethrowResumeAfterCatchExceptionSkipManagedFrames(const ResumeAfterCatchException& ex, CONTEXT *pContext, TADDR ssp)
+// isInterruptedContext: the context is where a thread was interrupted and redirected, not a call site. No shadow stack slot
+// holds its instruction pointer and the ssp is the precise value already.
+VOID DECLSPEC_NORETURN RethrowResumeAfterCatchExceptionSkipManagedFrames(const ResumeAfterCatchException& ex, CONTEXT *pContext, TADDR ssp, bool isInterruptedContext)
 {
 #if defined(HOST_AMD64) && defined(HOST_WINDOWS)
     // Find precise SSP value. We cannot use the instruction pointer from the context here because for PInvoke frames it points to the return address
     // of the JIT_PInvokeBegin call that is called before the actual target function.
-    if (ssp != 0)
+    if (ssp != 0 && !isInterruptedContext)
     {
         while (!ExecutionManager::IsManagedCode(*(PCODE*)(ssp - 8)))
         {

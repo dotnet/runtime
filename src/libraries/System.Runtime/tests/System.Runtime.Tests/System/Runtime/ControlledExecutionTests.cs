@@ -205,7 +205,7 @@ namespace System.Runtime.Tests
         }
 
         // Tests cancellation by the action itself
-//        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime), nameof(PlatformDetection.IsNotNativeAot))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime), nameof(PlatformDetection.IsNotNativeAot))]
         public void CancelItselfOutsideOfTryCatchFinally()
         {
             var cts = new CancellationTokenSource();
