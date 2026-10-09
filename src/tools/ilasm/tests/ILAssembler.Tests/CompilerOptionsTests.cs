@@ -15,6 +15,35 @@ namespace ILAssembler.Tests
 {
     public class CompilerOptionsTests
     {
+        [Theory]
+        [InlineData("System.SerializableAttribute", "( 01 00 00 00 )")]
+        [InlineData("System.SerializableAttribute", "( FF FF )")]
+        [InlineData("System.Security.SuppressUnmanagedCodeSecurityAttribute", "( 01 00 00 00 )")]
+        [InlineData("System.Security.DynamicSecurityMethodAttribute", "( 01 00 00 00 )")]
+        public void Pseudoattributes_DefaultPreservesCustomAttribute(string attributeType, string blob)
+        {
+            string source = $$"""
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .custom instance void [mscorlib]{{attributeType}}::.ctor() = {{blob}}
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var type = reader.GetTypeDefinition(reader.TypeDefinitions.Single(
+                handle => reader.GetString(reader.GetTypeDefinition(handle).Name) == "Test"));
+            var attribute = reader.GetCustomAttribute(Assert.Single(type.GetCustomAttributes()));
+
+#pragma warning disable SYSLIB0050 // Inspect the metadata serialization flag.
+            Assert.Equal(default, type.Attributes & (TypeAttributes.Serializable | TypeAttributes.HasSecurity));
+#pragma warning restore SYSLIB0050
+            Assert.Equal(Convert.FromHexString(blob.Replace("(", "").Replace(")", "").Replace(" ", "")),
+                reader.GetBlobBytes(attribute.Value));
+        }
+
         [Fact]
         public void AssemblyNameMetadataVersionAndModuleNameOptions_AreApplied()
         {

@@ -133,6 +133,14 @@ namespace ILAssembler
         public bool Optimize { get; set; }
 
         /// <summary>
+        /// Gets or sets a value that indicates whether recognized pseudo custom attributes
+        /// are lowered into metadata flags and auxiliary tables.
+        /// </summary>
+        /// <value><see langword="true" /> to enable lowering; otherwise, <see langword="false" />.
+        /// The default is <see langword="false" />.</value>
+        public bool PseudoAttributes { get; set; }
+
+        /// <summary>
         /// Fold identical method bodies into one.
         /// </summary>
         public bool Fold { get; set; }
