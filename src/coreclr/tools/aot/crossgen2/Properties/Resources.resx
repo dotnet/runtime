@@ -366,6 +366,9 @@
   <data name="HotColdSplittingOption" xml:space="preserve">
     <value>Turn on hot cold splitting optimization.</value>
   </data>
+  <data name="TwoPhaseCompilationOption" xml:space="preserve">
+    <value>Run a discovery compilation and compile methods in callee-first dependency levels. This is an experimental option.</value>
+  </data>
   <data name="MapCsvFileOption" xml:space="preserve">
     <value>Generate a CSV formatted map file</value>
   </data>

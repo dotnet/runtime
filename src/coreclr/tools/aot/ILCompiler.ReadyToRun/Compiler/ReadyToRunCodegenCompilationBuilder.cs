@@ -65,6 +65,7 @@ namespace ILCompiler
         private int _genericCycleDetectionDepthCutoff = -1;
         private int _genericCycleDetectionBreadthCutoff = -1;
         private ReadyToRunContainerFormat _format = ReadyToRunContainerFormat.PE;
+        private ReadyToRunCompilationPlan _compilationPlan;
 
         private string _jitPath;
         private string _outputFile;
@@ -259,6 +260,12 @@ namespace ILCompiler
             return this;
         }
 
+        public ReadyToRunCodegenCompilationBuilder UseCompilationPlan(ReadyToRunCompilationPlan compilationPlan)
+        {
+            _compilationPlan = compilationPlan;
+            return this;
+        }
+
         public override ICompilation ToCompilation()
         {
             // TODO: only copy COR headers for single-assembly build and for composite build with embedded MSIL
@@ -401,7 +408,8 @@ namespace ILCompiler
                 _customPESectionAlignment,
                 _verifyTypeAndFieldLayout,
                 _format,
-                _wasmDebugInfo);
+                _wasmDebugInfo,
+                _compilationPlan);
         }
     }
 }

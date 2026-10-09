@@ -315,6 +315,9 @@ namespace ILCompiler
         private readonly HashSet<MethodWithGCInfo> _methodsToRecompile = new HashSet<MethodWithGCInfo>();
         private HashSet<MethodDesc> _directManagedHelpers;
         private bool _directManagedHelpersInitialized;
+        private ReadyToRunCallGraphBuilder _callGraphBuilder;
+        private readonly ReadyToRunCompilationPlan _compilationPlan;
+        private readonly Dictionary<MethodDesc, ReadyToRunMethodCompilationInfo> _previousCompilationInfo;
 
         public ProfileDataManager ProfileData => _profileData;
 
@@ -371,7 +374,8 @@ namespace ILCompiler
             int customPESectionAlignment,
             bool verifyTypeAndFieldLayout,
             ReadyToRunContainerFormat format,
-            WasmDebugInfo wasmDebugInfo)
+            WasmDebugInfo wasmDebugInfo,
+            ReadyToRunCompilationPlan compilationPlan)
             : base(
                   dependencyGraph,
                   nodeFactory,
@@ -396,6 +400,11 @@ namespace ILCompiler
             _customPESectionAlignment = customPESectionAlignment;
             _format = format;
             _wasmDebugInfo = wasmDebugInfo;
+            _compilationPlan = compilationPlan;
+            if (_compilationPlan is not null)
+            {
+                _previousCompilationInfo = new Dictionary<MethodDesc, ReadyToRunMethodCompilationInfo>();
+            }
             SymbolNodeFactory = new ReadyToRunSymbolNodeFactory(nodeFactory, verifyTypeAndFieldLayout);
             _tokenManager = new ExternalReferenceTokenManager(_nodeFactory.ManifestMetadataTable._mutableModule, _nodeFactory.Resolver);
             if (nodeFactory.InstrumentationDataTable != null)
@@ -408,6 +417,14 @@ namespace ILCompiler
             _compositeRootPath = compositeRootPath;
             _printReproInstructions = printReproInstructions;
             CompilationModuleGroup = (ReadyToRunCompilationModuleGroupBase)nodeFactory.CompilationModuleGroup;
+
+            if (_compilationPlan is not null)
+            {
+                foreach (MethodDesc method in _compilationPlan.Methods)
+                {
+                    _dependencyGraph.AddRoot(NodeFactory.CompiledMethodNode(method), "Two-phase compilation plan");
+                }
+            }
 
             // Generate baseline support specification for InstructionSetSupport. This will prevent usage of the generated
             // code if the runtime environment doesn't support the specified instruction set. Targets that cannot generate
@@ -499,6 +516,66 @@ namespace ILCompiler
                     }
                 }
             }
+        }
+
+        public ReadyToRunCompilationPlan CreateCompilationPlan()
+        {
+            Debug.Assert(_callGraphBuilder is null);
+            _callGraphBuilder = new ReadyToRunCallGraphBuilder();
+            _dependencyGraph.ComputeMarkedNodes();
+
+            var methods = new List<MethodDesc>();
+            foreach (DependencyNodeCore<NodeFactory> node in _dependencyGraph.MarkedNodeList)
+            {
+                if (node is MethodWithGCInfo method && !method.IsEmpty)
+                {
+                    methods.Add(method.Method);
+                }
+            }
+
+            ReadyToRunCompilationPlan plan = _callGraphBuilder.CreatePlan(methods);
+            if (Logger.IsVerbose)
+            {
+                Logger.Writer.WriteLine($"Two-phase discovery found {methods.Count} methods in {plan.LevelCount} levels");
+            }
+
+            return plan;
+        }
+
+        internal void RecordCall(MethodDesc caller, MethodDesc callee)
+        {
+            ReadyToRunCallGraphBuilder callGraphBuilder = _callGraphBuilder;
+            if (callGraphBuilder is null)
+            {
+                return;
+            }
+
+            if (callee.IsUnboxingThunk())
+            {
+                callee = callee.GetUnboxedMethod();
+            }
+
+            if (callee is PInvokeTargetNativeMethod rawPInvoke)
+            {
+                callee = rawPInvoke.Target;
+            }
+
+            callee = callee.GetCanonMethodTarget(CanonicalFormKind.Specific);
+            if (CompilationModuleGroup.ContainsMethodBody(callee, unboxingStub: false))
+            {
+                callGraphBuilder.AddCall(caller, callee);
+            }
+        }
+
+        internal bool TryGetPreviousCompilationInfo(MethodDesc method, out ReadyToRunMethodCompilationInfo compilationInfo)
+        {
+            if (_previousCompilationInfo is null)
+            {
+                compilationInfo = default;
+                return false;
+            }
+
+            return _previousCompilationInfo.TryGetValue(method, out compilationInfo);
         }
 
         private void RewriteComponentFile(string inputFile, string outputFile, string ownerExecutableName, HashSet<MethodDesc> compiledMethodDefs)
@@ -826,7 +903,7 @@ namespace ILCompiler
                     }
                 }
 
-                generatedColdCode |= CompileMethodsAndRetries(methodsToCompile);
+                generatedColdCode |= CompileMethodsAndRetriesInPlanOrder(methodsToCompile);
             }
 
             ResetILCache();
@@ -1073,6 +1150,62 @@ namespace ILCompiler
                     generatedMethodColdCode |= CompileMethodList(methodsToRecompile);
                 }
 
+                return generatedMethodColdCode;
+            }
+
+            bool CompileMethodsAndRetriesInPlanOrder(IReadOnlyList<DependencyNodeCore<NodeFactory>> methods)
+            {
+                if (_compilationPlan is null || _nodeFactory.CompilationCurrentPhase != 0)
+                {
+                    return CompileMethodsAndRetries(methods);
+                }
+
+                var methodsByLevel = new List<DependencyNodeCore<NodeFactory>>[_compilationPlan.LevelCount];
+                var unplannedMethods = new List<DependencyNodeCore<NodeFactory>>();
+                for (int i = 0; i < methodsByLevel.Length; i++)
+                {
+                    methodsByLevel[i] = new List<DependencyNodeCore<NodeFactory>>();
+                }
+
+                foreach (DependencyNodeCore<NodeFactory> dependency in methods)
+                {
+                    if (dependency is MethodWithGCInfo method &&
+                        _compilationPlan.TryGetLevel(method.Method, out int level))
+                    {
+                        methodsByLevel[level].Add(dependency);
+                    }
+                    else
+                    {
+                        unplannedMethods.Add(dependency);
+                    }
+                }
+
+                bool generatedMethodColdCode = false;
+                for (int level = 0; level < methodsByLevel.Length; level++)
+                {
+                    List<DependencyNodeCore<NodeFactory>> methodsAtLevel = methodsByLevel[level];
+                    if (methodsAtLevel.Count == 0)
+                    {
+                        continue;
+                    }
+
+                    if (Logger.IsVerbose)
+                    {
+                        Logger.Writer.WriteLine($"Compiling two-phase level {level} with {methodsAtLevel.Count} methods");
+                    }
+
+                    generatedMethodColdCode |= CompileMethodsAndRetries(methodsAtLevel);
+
+                    foreach (DependencyNodeCore<NodeFactory> dependency in methodsAtLevel)
+                    {
+                        var method = (MethodWithGCInfo)dependency;
+                        _previousCompilationInfo.Add(
+                            method.Method,
+                            new ReadyToRunMethodCompilationInfo(method.Size));
+                    }
+                }
+
+                generatedMethodColdCode |= CompileMethodsAndRetries(unplannedMethods);
                 return generatedMethodColdCode;
             }
 

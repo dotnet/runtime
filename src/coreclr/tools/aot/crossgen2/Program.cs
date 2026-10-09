@@ -723,6 +723,15 @@ namespace ILCompiler
 
                     builder.UsePrintReproInstructions(CreateReproArgumentString);
 
+                    if (Get(_command.TwoPhaseCompilation))
+                    {
+                        using ReadyToRunCodegenCompilation discoveryCompilation = (ReadyToRunCodegenCompilation)builder.ToCompilation();
+                        ReadyToRunCompilationPlan compilationPlan = discoveryCompilation.CreateCompilationPlan();
+                        builder
+                            .UseCompilationPlan(compilationPlan)
+                            .UseILProvider(new ReadyToRunILProvider(compilationGroup));
+                    }
+
                     compilation = (ReadyToRunCodegenCompilation)builder.ToCompilation();
 
                 }

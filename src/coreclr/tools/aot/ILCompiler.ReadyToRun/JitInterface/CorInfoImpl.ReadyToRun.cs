@@ -2687,6 +2687,11 @@ namespace Internal.JitInterface
             // by virtual resolution during getCallInfo (virtual resolution could find a result using type equivalence)
             ValidateSafetyOfUsingTypeEquivalenceInSignature(targetMethod.GetTypicalMethodDefinition().Signature);
 
+            if (pResult->kind == CORINFO_CALL_KIND.CORINFO_CALL)
+            {
+                _compilation.RecordCall(MethodBeingCompiled, methodToCall);
+            }
+
             if (_compilation.NodeFactory.Target.IsWasm && targetMethod.OwningType.IsDelegate && targetMethod.Name == "Invoke"u8)
             {
                 // The hidden-argument flags come from the resolved call signature: a shared generic
