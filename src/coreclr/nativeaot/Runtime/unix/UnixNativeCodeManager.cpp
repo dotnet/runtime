@@ -56,6 +56,11 @@ struct UnixNativeMethodInfo
 // Ensure that UnixNativeMethodInfo fits into the space reserved by MethodInfo
 static_assert(sizeof(UnixNativeMethodInfo) <= sizeof(MethodInfo), "UnixNativeMethodInfo too big");
 
+struct UnwindSectionsLookupArgs
+{
+    typedef uintptr_t link_hardened_reg_arg_t;
+};
+
 UnixNativeCodeManager::UnixNativeCodeManager(TADDR moduleBase,
                                              PTR_VOID pvManagedCodeStartRange, uint32_t cbManagedCodeRange,
                                              PTR_PTR_VOID pClasslibFunctions, uint32_t nClasslibFunctions)
@@ -64,7 +69,7 @@ UnixNativeCodeManager::UnixNativeCodeManager(TADDR moduleBase,
       m_pClasslibFunctions(pClasslibFunctions), m_nClasslibFunctions(nClasslibFunctions)
 {
     // Cache the location of unwind sections
-    libunwind::LocalAddressSpace::sThisAddressSpace.findUnwindSections(
+    libunwind::LocalAddressSpace::sThisAddressSpace.findUnwindSections<UnwindSectionsLookupArgs>(
         (uintptr_t)pvManagedCodeStartRange, m_UnwindInfoSections);
 }
 
