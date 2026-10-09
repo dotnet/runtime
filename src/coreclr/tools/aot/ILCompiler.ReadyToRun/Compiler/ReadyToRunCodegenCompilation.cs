@@ -646,8 +646,9 @@ namespace ILCompiler
 
         internal bool CanUseDirectCall(MethodDesc method)
         {
+            TargetArchitecture architecture = NodeFactory.Target.Architecture;
             return _isCoreLibCompilation &&
-                NodeFactory.Target.IsWasm &&
+                architecture is TargetArchitecture.X86 or TargetArchitecture.X64 or TargetArchitecture.Wasm32 &&
                 TryGetPreviousCompilationInfo(method, out _);
         }
 
