@@ -4120,9 +4120,8 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
                                     WellKnownAttribute::ThreadStatic,
                                     NULL, NULL);
             IfFailThrow(hr);
-            BOOL fHasThreadStaticAttribute = (hr == S_OK);
 #ifdef FEATURE_MULTITHREADING
-            fIsThreadStatic = fHasThreadStaticAttribute;
+            fIsThreadStatic = (hr == S_OK);
 #endif // FEATURE_MULTITHREADING
             // Without multithreading there is only one thread, so thread statics are laid out
             // and accessed as regular statics.
@@ -4141,9 +4140,8 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
             }
 
 
-            // Do some sanity checks that we are not mixing context and thread
-            // relative statics.
-            if (fHasRVA && fHasThreadStaticAttribute)
+            // RVA fields cannot be thread-relative.
+            if (fHasRVA && fIsThreadStatic)
             {
                 IfFailThrow(COR_E_TYPELOAD);
             }
