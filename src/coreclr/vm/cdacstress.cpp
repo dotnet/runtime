@@ -924,10 +924,10 @@ static HRESULT CollectRuntimeStackRefs(Thread* pThread, PCONTEXT regs, SArray<St
 }
 
 //-----------------------------------------------------------------------------
-// Filter cDAC refs to match runtime PromoteCarefully behavior.
+// Filter refs to match runtime PromoteCarefully behavior.
 // The runtime's PromoteCarefully (siginfo.cpp) skips interior pointers whose
 // object value is a stack address. The cDAC reports all GcInfo slots without
-// this filter, so we apply it here before comparing against runtime refs.
+// this filter, so we apply it here before comparing refs.
 //-----------------------------------------------------------------------------
 
 static int FilterInteriorStackRefs(StackRef* refs, int count, Thread* pThread, uintptr_t stackLimit)
@@ -1860,11 +1860,11 @@ static void VerifyGcRefsAtStressPoint(Thread* pThread, PCONTEXT regs, DWORD osTh
         return;
     }
 
-    // Phase B: Normalize the cDAC side so it can compare directly with RT.
+    // Phase B: Normalize both sides so they can be compared directly.
 
-    // B.1: Live-stack upper bound. PromoteCarefully (siginfo.cpp) drops
+    // B.1: Live-stack lower bound. PromoteCarefully (siginfo.cpp) drops
     // interior pointers whose value lies in the live stack [topStack, ...).
-    // We mirror that filter on the cDAC side in B.3.
+    // We mirror that filter on both sides in B.3.
     Frame* pTopFrame = pThread->GetFrame();
     Object** topStack = (Object**)pTopFrame;
     if (InlinedCallFrame::FrameHasActiveCall(pTopFrame))
@@ -1897,6 +1897,13 @@ static void VerifyGcRefsAtStressPoint(Thread* pThread, PCONTEXT regs, DWORD osTh
         StackRef* buf = cdacRefs.OpenRawBuffer();
         cdacCount = FilterInteriorStackRefs(buf, cdacCount, pThread, stackLimit);
         cdacRefs.CloseRawBuffer();
+    }
+    // Some runtime paths bypass PromoteCarefully, so filter runtime refs too.
+    if (runtimeCount > 0)
+    {
+        StackRef* buf = runtimeRefs.OpenRawBuffer();
+        runtimeCount = FilterInteriorStackRefs(buf, runtimeCount, pThread, stackLimit);
+        runtimeRefs.CloseRawBuffer();
     }
 
     // Phase C: Compare per-frame. CompareFrames is a pure data transform;
