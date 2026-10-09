@@ -37,22 +37,18 @@ namespace ILCompiler
 
     public sealed class ReadyToRunCompilationPlan
     {
-        private readonly Dictionary<MethodDesc, int> _methodLevels;
         private readonly MethodDesc[][] _methodsByLevel;
 
-        private ReadyToRunCompilationPlan(Dictionary<MethodDesc, int> methodLevels, MethodDesc[][] methodsByLevel)
+        private ReadyToRunCompilationPlan(MethodDesc[][] methodsByLevel)
         {
-            _methodLevels = methodLevels;
             _methodsByLevel = methodsByLevel;
         }
 
         internal int LevelCount => _methodsByLevel.Length;
 
-        internal IEnumerable<MethodDesc> Methods => _methodLevels.Keys;
-
-        internal bool TryGetLevel(MethodDesc method, out int level)
+        internal IReadOnlyList<MethodDesc> GetMethodsAtLevel(int level)
         {
-            return _methodLevels.TryGetValue(method, out level);
+            return _methodsByLevel[level];
         }
 
         internal static int[] ComputeLevelsForTest(int[][] adjacency)
@@ -118,11 +114,9 @@ namespace ILCompiler
                 methodsByLevel[i] = new List<MethodDesc>();
             }
 
-            var methodLevels = new Dictionary<MethodDesc, int>(methods.Count);
             for (int i = 0; i < methods.Count; i++)
             {
                 int level = componentLevels[components[i]];
-                methodLevels.Add(methods[i], level);
                 methodsByLevel[level].Add(methods[i]);
             }
 
@@ -132,7 +126,7 @@ namespace ILCompiler
                 resultLevels[i] = methodsByLevel[i].ToArray();
             }
 
-            return new ReadyToRunCompilationPlan(methodLevels, resultLevels);
+            return new ReadyToRunCompilationPlan(resultLevels);
         }
 
         private static int[] ComputeStronglyConnectedComponents(int[][] adjacency, out int componentCount)

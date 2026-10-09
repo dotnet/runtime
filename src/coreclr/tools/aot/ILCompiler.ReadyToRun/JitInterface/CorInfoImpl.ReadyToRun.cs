@@ -1083,6 +1083,11 @@ namespace Internal.JitInterface
 
         private void AddManagedHelperDependency(MethodDesc helperMethod)
         {
+            if (!_isCompilationProbe)
+            {
+                _compilation.RecordCall(MethodBeingCompiled, helperMethod);
+            }
+
             // Cached helper targets outlive the current compilation's dependencies, including probes.
             MethodWithToken helperMethodWithToken = new MethodWithToken(
                 helperMethod,
