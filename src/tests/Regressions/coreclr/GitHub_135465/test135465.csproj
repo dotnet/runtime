@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- The loops never exit, so their threads have to end with the process -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <!-- Their threads also keep the test assembly from unloading -->
+    <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
+    <!-- Only optimized IL closes the loops with a branch to itself, a leave and a switch -->
+    <Optimize>True</Optimize>
+    <!-- The interpreter is CoreCLR-VM specific -->
+    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' != 'coreclr'">true</CLRTestTargetUnsupported>
+    <NativeAotIncompatible>true</NativeAotIncompatible>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="test135465.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
+</Project>
