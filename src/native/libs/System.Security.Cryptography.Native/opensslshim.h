@@ -213,6 +213,10 @@ int SSL_set_ciphersuites(SSL *s, const char *str);
 const SSL_CIPHER* SSL_CIPHER_find(SSL *ssl, const unsigned char *ptr);
 #endif
 
+#if OPENSSL_VERSION_NUMBER < OPENSSL_VERSION_4_0_RTM
+#include "osslcompat_40.h"
+#endif
+
 #if OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_3_0_RTM
 #include "osslcompat_102.h"
 #elif OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_1_1_0_RTM
@@ -640,6 +644,7 @@ extern bool g_libSslUses32BitTime;
     RENAMED_FUNCTION(OPENSSL_sk_pop, sk_pop) \
     RENAMED_FUNCTION(OPENSSL_sk_pop_free, sk_pop_free) \
     RENAMED_FUNCTION(OPENSSL_sk_push, sk_push) \
+    LIGHTUP_FUNCTION(OPENSSL_sk_set_thunks) \
     RENAMED_FUNCTION(OPENSSL_sk_value, sk_value) \
     FALLBACK_FUNCTION(OpenSSL_version_num) \
     LIGHTUP_FUNCTION(OSSL_LIB_CTX_free) \
@@ -1218,6 +1223,7 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define OPENSSL_sk_pop OPENSSL_sk_pop_ptr
 #define OPENSSL_sk_pop_free OPENSSL_sk_pop_free_ptr
 #define OPENSSL_sk_push OPENSSL_sk_push_ptr
+#define OPENSSL_sk_set_thunks OPENSSL_sk_set_thunks_ptr
 #define OPENSSL_sk_value OPENSSL_sk_value_ptr
 #define OpenSSL_version_num OpenSSL_version_num_ptr
 #define OSSL_LIB_CTX_free OSSL_LIB_CTX_free_ptr
@@ -1462,9 +1468,6 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define sk_SSL_CIPHER_num(stack) OPENSSL_sk_num((const OPENSSL_STACK*)(1 ? stack : (const STACK_OF(SSL_CIPHER)*)0))
 #define sk_X509_NAME_num(stack) OPENSSL_sk_num((const OPENSSL_STACK*)(1 ? stack : (const STACK_OF(X509_NAME)*)0))
 #define sk_X509_num(stack) OPENSSL_sk_num((const OPENSSL_STACK*)(1 ? stack : (const STACK_OF(X509)*)0))
-
-// type-safe OPENSSL_sk_new_null
-#define sk_X509_new_null() (STACK_OF(X509)*)OPENSSL_sk_new_null()
 
 // type-safe OPENSSL_sk_push
 #define sk_X509_push(stack,value) OPENSSL_sk_push((OPENSSL_STACK*)(1 ? stack : (STACK_OF(X509)*)0), (const void*)(1 ? value : (X509*)0))
