@@ -28,6 +28,8 @@ namespace System
         "TVOS"
 #elif TARGET_ANDROID
         "ANDROID"
+#elif TARGET_OPENHARMONY
+        "OPENHARMONY"
 #elif TARGET_LINUX
         "LINUX"
 #elif TARGET_FREEBSD
@@ -199,10 +201,10 @@ namespace System
             => IsFreeBSD() && IsOSVersionAtLeast(major, minor, build, revision);
 
         /// <summary>
-        /// Indicates whether the current application is running on FreeBSD.
+        /// Indicates whether the current application is running on OpenBSD.
         /// </summary>
         [NonVersionable]
-        internal static bool IsOpenBSD() =>
+        public static bool IsOpenBSD() =>
 #if TARGET_OPENBSD
             true;
 #else
@@ -210,11 +212,28 @@ namespace System
 #endif
 
         /// <summary>
+        /// Check for the OpenBSD version with a >= version comparison. Used to guard APIs that were added in the given OpenBSD release.
+        /// </summary>
+        public static bool IsOpenBSDVersionAtLeast(int major, int minor = 0, int build = 0, int revision = 0)
+            => IsOpenBSD() && IsOSVersionAtLeast(major, minor, build, revision);
+
+        /// <summary>
         /// Indicates whether the current application is running on Haiku.
         /// </summary>
         [NonVersionable]
         internal static bool IsHaiku() =>
 #if TARGET_HAIKU
+            true;
+#else
+            false;
+#endif
+
+        /// <summary>
+        /// Indicates whether the current application is running on OpenHarmony.
+        /// </summary>
+        [NonVersionable]
+        internal static bool IsOpenHarmony() =>
+#if TARGET_OPENHARMONY
             true;
 #else
             false;

@@ -98,7 +98,7 @@ internal static partial class Interop
             private ushort p_xstat;             /* U_SHORT: Exit status for wait; also stop signal. */
             private ushort p_spare;             /* U_SHORT: unused */
 
-            public fixed byte p_comm[KI_MAXCOMLEN];     /* command name */
+            public NameBuffer p_comm;           /* command name */
 
             private WmesgBuffer p_wmesg;        /* wchan message */
             private ulong p_wchan;              /* PTR: sleep address. */
@@ -175,7 +175,7 @@ internal static partial class Interop
             }
 
             [InlineArray(KI_MAXCOMLEN)]
-            private struct NameBuffer
+            internal struct NameBuffer
             {
                 private byte _element0;
             }

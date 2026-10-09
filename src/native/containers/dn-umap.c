@@ -298,7 +298,7 @@ umap_it_next (dn_umap_it_t *it)
 		it->_internal._node = it->_internal._node->next;
 	}
 
-	return it->_internal._node;
+	return it->_internal._node != NULL;
 }
 
 dn_umap_it_t
@@ -377,7 +377,7 @@ dn_umap_custom_init (
 	if (map->_internal._buckets)
 		memset (map->_internal._buckets, 0, sizeof (dn_umap_node_t *) * map->_internal._bucket_count);
 
-	return map->_internal._buckets;
+	return map->_internal._buckets != NULL;
 }
 
 void

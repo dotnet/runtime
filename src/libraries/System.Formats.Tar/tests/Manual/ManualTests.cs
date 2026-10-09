@@ -15,17 +15,17 @@ public class ManualTests : TarTestsBase
 
     public static IEnumerable<object[]> WriteEntry_LongFileSize_TheoryData()
     {
-        foreach (bool unseekableStream in new[] { false, true })
+        foreach (TarEntryFormat entryFormat in new[] { TarEntryFormat.V7, TarEntryFormat.Ustar, TarEntryFormat.Gnu, TarEntryFormat.Pax })
         {
-            foreach (TarEntryFormat entryFormat in new[] { TarEntryFormat.V7, TarEntryFormat.Ustar, TarEntryFormat.Gnu, TarEntryFormat.Pax })
-            {
-                yield return new object[] { entryFormat, LegacyMaxFileSize, unseekableStream };
-            }
-
-            // Pax and Gnu supports unlimited size files.
-            yield return new object[] { TarEntryFormat.Pax, LegacyMaxFileSize + 1, unseekableStream };
-            yield return new object[] { TarEntryFormat.Gnu, LegacyMaxFileSize + 1, unseekableStream };
+            yield return new object[] { entryFormat, LegacyMaxFileSize, false };
+            yield return new object[] { entryFormat, LegacyMaxFileSize, true };
         }
+
+        // Pax and Gnu supports unlimited size files.
+        yield return new object[] { TarEntryFormat.Pax, LegacyMaxFileSize + 1, false };
+        yield return new object[] { TarEntryFormat.Pax, LegacyMaxFileSize + 1, true };
+        yield return new object[] { TarEntryFormat.Gnu, LegacyMaxFileSize + 1, false };
+        yield return new object[] { TarEntryFormat.Gnu, LegacyMaxFileSize + 1, true };
     }
 
     [ConditionalTheory(typeof(ManualTests), nameof(ManualTestsEnabled))]

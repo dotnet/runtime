@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Runtime.CompilerServices;
 using Xunit;
 
 namespace hello_tryfinallytryfinally_basics_cs
@@ -53,6 +54,59 @@ namespace hello_tryfinallytryfinally_basics_cs
             testLog.StopRecording();
 
             return testLog.VerifyOutput();
+        }
+    }
+
+    public class NestedFinallyGc
+    {
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void Test(bool throwException)
+        {
+            int[] values = new int[1];
+            bool caught = false;
+            try
+            {
+                Run(values, throwException);
+            }
+            catch (InvalidOperationException)
+            {
+                caught = true;
+            }
+
+            Assert.Equal(throwException, caught);
+            Assert.Equal(111, values[0]);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void Run(int[] values, bool throwException)
+        {
+            try
+            {
+                values[0] = 1;
+                if (throwException)
+                    throw new InvalidOperationException();
+            }
+            finally
+            {
+                try
+                {
+                    Update(values);
+                }
+                finally
+                {
+                    // This finally is called normally, including during exceptional entry to the outer finally.
+                    GC.Collect();
+                    values[0] += 100;
+                }
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void Update(int[] values)
+        {
+            values[0] += 10;
         }
     }
 }

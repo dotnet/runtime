@@ -414,5 +414,16 @@ namespace System.Formats.Tar
                 }
             }
         }
+
+        // Creates a new, empty entry of the type appropriate for the current archive Format.
+        private TarEntry CreateEntryForFormat(TarEntryType entryType, string entryName) =>
+            Format switch
+            {
+                TarEntryFormat.V7 => new V7TarEntry(entryType, entryName),
+                TarEntryFormat.Ustar => new UstarTarEntry(entryType, entryName),
+                TarEntryFormat.Pax => new PaxTarEntry(entryType, entryName),
+                TarEntryFormat.Gnu => new GnuTarEntry(entryType, entryName),
+                _ => throw new InvalidDataException(SR.Format(SR.TarInvalidFormat, Format)),
+            };
     }
 }

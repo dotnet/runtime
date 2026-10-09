@@ -8,7 +8,6 @@ namespace structinreg
 {
     public class Program
     {
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/123946", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
         [Fact]
         [OuterLoop]
         public static int TestEntryPoint()
@@ -33,12 +32,6 @@ namespace structinreg
                     return ret;
                 }
 
-                ret = Program3.Main1();
-                if (ret != 100)
-                {
-                    return ret;
-                }
-
                 ret = Program4.Main1();
                 if (ret != 100)
                 {
@@ -50,6 +43,15 @@ namespace structinreg
                 Console.WriteLine(e.ToString());
             }
             return 100;
+        }
+
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123946", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/133565", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsWasm), nameof(TestLibrary.PlatformDetection.IsCoreCLR))]
+        [Fact]
+        [OuterLoop]
+        public static int TestPInvokeCallbacks()
+        {
+            return Program3.Main1();
         }
     }
 

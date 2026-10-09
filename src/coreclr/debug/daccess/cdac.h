@@ -49,8 +49,8 @@ public:
         return m_module != NULL && m_cdac_handle != 0;
     }
 
-    void CreateSosInterface(IUnknown** sos);
-    void CreateDacDbiInterface(IUnknown** dbi);
+    HRESULT CreateSosInterface(IUnknown** sos);
+    HRESULT CreateDacDbiInterface(IUnknown** dbi);
 
 private:
     CDAC(HMODULE module, intptr_t handle, ICorDebugDataTarget* target, IUnknown* legacyImpl);

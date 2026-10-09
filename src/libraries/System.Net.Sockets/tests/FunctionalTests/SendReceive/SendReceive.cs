@@ -1059,6 +1059,7 @@ namespace System.Net.Sockets.Tests
                 (Socket socket1, Socket socket2) = SocketTestExtensions.CreateConnectedSocketPair(ipv6Server, dualModeClient);
                 using SafeSocketHandle? owner = ReplaceWithNonOwning(ref socket1, owning);
 
+                using (socket1)
                 using (socket2)
                 {
                     Task socketOperation;
@@ -1137,6 +1138,15 @@ namespace System.Net.Sockets.Tests
                             {
                                 peerSocketError = se.SocketErrorCode;
                                 break;
+                            }
+                            catch (TimeoutException ex) when (!receiveOrSend && (PlatformDetection.IsApplePlatform || PlatformDetection.IsFreeBSD))
+                            {
+                                // BSD TCP stacks may reject a valid reset when sent data has not yet
+                                // been acknowledged. Retry with fresh sockets, not another receive.
+                                const string Message = "Timed out waiting for the peer to observe the connection reset, retry.";
+                                _output?.WriteLine(Message);
+                                _output?.WriteLine(ex.ToString());
+                                Assert.Fail(Message);
                             }
                         }
 

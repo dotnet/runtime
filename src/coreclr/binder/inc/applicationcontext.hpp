@@ -52,13 +52,6 @@ namespace BINDER_SPACE
 
         void OnDestructPerEntryCleanupAction(const SimpleNameToFileNameMapEntry & e)
         {
-            if (e.m_wszILFileName == nullptr)
-            {
-                // Don't delete simple name here since it's a filename only entry and will be cleaned up
-                // by the SimpleName -> FileName entry which reuses the same filename pointer.
-                return;
-            }
-
             if (e.m_wszSimpleName != nullptr)
             {
                 delete [] e.m_wszSimpleName;

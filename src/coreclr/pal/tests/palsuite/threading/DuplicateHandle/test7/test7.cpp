@@ -17,6 +17,7 @@
 #include <palsuite.h>
 
 DWORD PALAPI CreateTestThread_DuplicateHandle_test7(LPVOID lpParam);
+LONG completedThreadCount_DuplicateHandle_test7 = 0;
 
 PALTEST(threading_DuplicateHandle_test7_paltest_duplicatehandle_test7, "threading/DuplicateHandle/test7/paltest_duplicatehandle_test7")
 {
@@ -24,8 +25,6 @@ PALTEST(threading_DuplicateHandle_test7_paltest_duplicatehandle_test7, "threadin
     HANDLE  hDupThread;  
     DWORD   dwThreadId = 0;
     LPTHREAD_START_ROUTINE lpStartAddress =  &CreateTestThread_DuplicateHandle_test7;
-    HANDLE  hSyncEvent;
-
     int threadPriority;
     int duplicatePriority;
     int finalPriority;
@@ -36,26 +35,12 @@ PALTEST(threading_DuplicateHandle_test7_paltest_duplicatehandle_test7, "threadin
         return (FAIL);
     }
     
-    LPSECURITY_ATTRIBUTES lpEventAttributes = NULL;
-    BOOL bManualReset = TRUE;
-    BOOL bInitialState = FALSE;
-    hSyncEvent = CreateEvent(lpEventAttributes,
-                             bManualReset,
-                             bInitialState,
-                             NULL);
-
-    if (hSyncEvent == NULL)
-    {
-        Fail("ERROR:%u: Unable to create sync event.\n",
-             GetLastError());
-    }
-
     /* Create a thread.*/
     hThread = CreateThread(NULL,            /* SD*/
                           (DWORD)0,         /* initial stack size*/
                           lpStartAddress,   /* thread function*/
-                          (VOID*)hSyncEvent,/* thread argument*/
-                          (DWORD)0,         /* creation option*/
+                          NULL,             /* thread argument*/
+                          CREATE_SUSPENDED, /* creation option*/
                           &dwThreadId);     /* thread identifier*/
     if (hThread == NULL)
     {
@@ -137,27 +122,16 @@ PALTEST(threading_DuplicateHandle_test7_paltest_duplicatehandle_test7, "threadin
         Fail("");
     }
 
-    /* Signal the helper thread that it can shut down */
-    if (!SetEvent(hSyncEvent))
+    /* Let the helper thread run and shut down. */
+    if (ResumeThread(hThread) == (DWORD)-1)
     {
-        Fail("ERROR:%u: Failed to set event.\n",
+        Fail("ERROR:%u: Failed to resume thread.\n",
              GetLastError());
     }
 
-    /* Wait on the original thread.*/
-    if((WaitForSingleObject(hThread, 100)) != WAIT_OBJECT_0)
-    {
-        Trace("ERROR:%u: hThread=0x%lx is in a non-signalled "
-              "mode, yet created signalled.\n",
-              GetLastError(),
-              hThread);
-        CloseHandle(hThread);
-        CloseHandle(hDupThread);
-        Fail("");
-    }
+    WaitForThreadCompletion(&completedThreadCount_DuplicateHandle_test7, 1);
 
     /* Clean-up thread and Terminate the PAL.*/
-    CloseHandle(hSyncEvent);
     CloseHandle(hThread);
     CloseHandle(hDupThread);
     PAL_Terminate();
@@ -167,11 +141,6 @@ PALTEST(threading_DuplicateHandle_test7_paltest_duplicatehandle_test7, "threadin
 /*Thread testing function*/
 DWORD PALAPI CreateTestThread_DuplicateHandle_test7(LPVOID lpParam)
 {
-    HANDLE hSyncEvent = (HANDLE)lpParam;
-
-    /* Wait until the main thread signals that this helper thread should shut down */
-    WaitForSingleObject(hSyncEvent, INFINITE);
-
+    InterlockedIncrement(&completedThreadCount_DuplicateHandle_test7);
     return (DWORD)0;
 }
-

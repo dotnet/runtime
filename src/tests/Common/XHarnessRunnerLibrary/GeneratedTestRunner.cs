@@ -14,13 +14,13 @@ public sealed class GeneratedTestRunner : TestRunner
 {
     private string _assemblyName;
     private TestFilter.ISearchClause? _filter;
-    private Func<TestFilter?, TestSummary> _runTestsCallback;
+    private Func<TestFilter?, Task<TestSummary>> _runTestsCallback;
 
     private readonly Boolean _writeBase64TestResults;
 
     public GeneratedTestRunner(
         LogWriter logger, 
-        Func<TestFilter?, TestSummary> runTestsCallback, 
+        Func<TestFilter?, Task<TestSummary>> runTestsCallback,
         string assemblyName,
         bool writeBase64TestResults)
         : base(logger)
@@ -36,15 +36,14 @@ public sealed class GeneratedTestRunner : TestRunner
 
     protected override string ResultsFileName { get; set; }
 
-    public override Task Run(IEnumerable<TestAssemblyInfo> testAssemblies)
+    public override async Task Run(IEnumerable<TestAssemblyInfo> testAssemblies)
     {
-        LastTestRun = _runTestsCallback(new TestFilter(_filter));
+        LastTestRun = await _runTestsCallback(new TestFilter(_filter));
         PassedTests = LastTestRun.PassedTests;
         FailedTests = LastTestRun.FailedTests;
         SkippedTests = LastTestRun.SkippedTests;
         ExecutedTests = PassedTests + FailedTests;
         TotalTests = ExecutedTests + SkippedTests;
-        return Task.CompletedTask;
     }
 
     public override Task<string> WriteResultsToFile(XmlResultJargon xmlResultJargon)

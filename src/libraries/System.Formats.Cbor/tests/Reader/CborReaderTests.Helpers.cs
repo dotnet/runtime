@@ -227,7 +227,9 @@ namespace System.Formats.Cbor.Tests
                 "60",
                 "6161",
                 "6449455446",
+                "63e6b0b4",
                 "7f62616260ff",
+                "7f63e6b0b46161ff",
                 // Arrays
                 "80",
                 "840120604107",
@@ -244,11 +246,16 @@ namespace System.Formats.Cbor.Tests
                 // simple values
                 "f4",
                 "f6",
+                "f8ff",
                 // floating point encodings
+                "f93c00",
                 "fa47c35000",
+                "fb3ff199999999999a",
             };
 
-        public static string[] InvalidCborValues =>
+        // Truncations of well-formed encodings: appending the right bytes to any of these
+        // produces a valid value, so non-final-block readers can complete them with more data.
+        public static string[] TruncatedCborValues =>
             new[]
             {
                 "",
@@ -275,10 +282,9 @@ namespace System.Formats.Cbor.Tests
                 // definite-length maps with missing fields
                 "a1",
                 "a20102",
-                // maps with odd number of elements
+                // maps with missing values
                 "a101",
                 "a2010203",
-                "bf01ff",
                 // indefinite-length collections with missing break byte
                 "9f",
                 "9f01",
@@ -288,7 +294,6 @@ namespace System.Formats.Cbor.Tests
                 "d8",
                 "d9ff",
                 "daffffff",
-                "daffffffffff",
                 // valid tag not followed by value
                 "c2",
                 // floats missing data
@@ -298,5 +303,15 @@ namespace System.Formats.Cbor.Tests
                 // two-byte simple value missing data
                 "f8",
             };
+
+        // Encodings that are invalid regardless of any data that could follow.
+        public static string[] MalformedCborValues =>
+            new[]
+            {
+                "bf01ff", // indefinite-length map key missing a value
+                "daffffffffff", // tag followed by break byte
+            };
+
+        public static string[] InvalidCborValues => TruncatedCborValues.Concat(MalformedCborValues).ToArray();
     }
 }

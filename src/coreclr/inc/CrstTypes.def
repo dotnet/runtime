@@ -188,6 +188,9 @@ Crst ExecutableAllocatorLock
     AcquiredAfter LoaderHeap UMEntryThunkFreeListLock COMCallWrapper
 End
 
+Crst ExternalMemoryHandle
+End
+
 Crst FCall
     AcquiredBefore LoaderHeap
 End
@@ -505,7 +508,8 @@ Crst MethodDescBackpatchInfoTracker
 End
 
 Crst NativeImageEagerFixups
-    AcquiredBefore PregeneratedStringThunks UnresolvedClassLock
+    AcquiredBefore AppDomainCache GlobalStrLiteralMap ILStubGen InstMethodHashTable LoaderAllocatorReferences
+                   PendingTypeLoadEntry PregeneratedStringThunks UnresolvedClassLock
 End
 
 Crst NativeImageLoad

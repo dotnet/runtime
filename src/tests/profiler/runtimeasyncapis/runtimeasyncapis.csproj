@@ -4,6 +4,8 @@
     <OutputType>exe</OutputType>
     <Optimize>true</Optimize>
     <Features>$(Features);runtime-async=on</Features>
+    <!-- The test validates native code and IL mappings, which are unavailable for interpreted methods. -->
+    <InterpreterIncompatible>true</InterpreterIncompatible>
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
   </PropertyGroup>
   <ItemGroup>

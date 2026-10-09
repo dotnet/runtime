@@ -294,8 +294,7 @@ OBJECTREF ComClassFactory::CreateAggregatedInstance(MethodTable* pMTClass, BOOL 
 
         RCWCache* pCache = RCWCache::GetRCWCache();
 
-        _ASSERTE(cref->GetSyncBlock()->IsPrecious()); // the object already has a CCW
-        DWORD dwSyncBlockIndex = cref->GetSyncBlockIndex();
+        DWORD dwSyncBlockIndex = cref->GetSyncBlock()->GetSyncBlockIndex();
 
         // create a wrapper for this COM object
         pNewRCW = RCW::CreateRCW(pUnk, dwSyncBlockIndex, RCW::CF_None, pMTClass);
@@ -1643,9 +1642,8 @@ void RCW::CreateDuplicateWrapper(MethodTable *pNewMT, RCWHolder* pNewRCW)
 
         DWORD flags = 0;
 
-        // make sure we "pin" the syncblock before switching to preemptive mode
+        // Get the sync block index before switching to preemptive mode.
         SyncBlock *pSB = NewWrapperObj->GetSyncBlock();
-        pSB->SetPrecious();
         DWORD dwSyncBlockIndex = pSB->GetSyncBlockIndex();
 
         pNewWrap = RCW::CreateRCW((IUnknown *)pAutoUnk, dwSyncBlockIndex, flags, pNewMT);

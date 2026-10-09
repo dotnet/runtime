@@ -367,13 +367,14 @@ ErrExit:
 #endif //!FEATURE_METADATA_EMIT_IN_DEBUGGER
 } // RegMeta::DefineTypeRefByName
 
+#ifdef FEATURE_METADATA_PUBLIC_INTERFACES
 //*****************************************************************************
 // Create a reference, in an emit scope, to a TypeDef in another scope.
 //*****************************************************************************
 STDMETHODIMP RegMeta::DefineImportType(       // S_OK or error.
     IMetaDataAssemblyImport *pAssemImport,  // [IN] Assembly containing the TypeDef.
-    const void  *pbHashValue,           // [IN] Hash Blob for Assembly.
-    ULONG    cbHashValue,           // [IN] Count of bytes.
+    const void  *,                      // [IN] Hash Blob for Assembly.
+    ULONG,                              // [IN] Count of bytes.
     IMetaDataImport *pImport,           // [IN] Scope containing the TypeDef.
     mdTypeDef   tdImport,               // [IN] The imported TypeDef.
     IMetaDataAssemblyEmit *pAssemEmit,  // [IN] Assembly into which the TypeDef is imported.
@@ -387,13 +388,8 @@ STDMETHODIMP RegMeta::DefineImportType(       // S_OK or error.
     IMetaDataImport2 *pImport2 = NULL;
     IMDCommon        *pImport2MDCommon = NULL;
 
-    IMDCommon        *pAssemImportMDCommon = NULL;
-
-    RegMeta     *pAssemEmitRM = NULL;
-    CMiniMdRW   *pMiniMdAssemEmit =  NULL;
     CMiniMdRW   *pMiniMdEmit = NULL;
 
-    IMetaModelCommon *pAssemImportMetaModelCommon;
     IMetaModelCommon *pImport2MetaModelCommon;
 
     LOCKWRITE();
@@ -401,25 +397,13 @@ STDMETHODIMP RegMeta::DefineImportType(       // S_OK or error.
     IfFailGo(m_pStgdb->m_MiniMd.PreUpdate());
     IfFailGo(pImport->QueryInterface(IID_IMetaDataImport2, (void**)&pImport2));
 
-    if (pAssemImport)
-    {
-        IfFailGo(pAssemImport->QueryInterface(IID_IMDCommon, (void**)&pAssemImportMDCommon));
-    }
-
-    pAssemImportMetaModelCommon = pAssemImportMDCommon ? pAssemImportMDCommon->GetMetaModelCommon() : 0;
-
     IfFailGo(pImport2->QueryInterface(IID_IMDCommon, (void**)&pImport2MDCommon));
     pImport2MetaModelCommon = pImport2MDCommon->GetMetaModelCommon();
 
-    pAssemEmitRM = static_cast<RegMeta*>(pAssemEmit);
-    pMiniMdAssemEmit =  pAssemEmitRM ? static_cast<CMiniMdRW*>(&pAssemEmitRM->m_pStgdb->m_MiniMd) : 0;
     pMiniMdEmit = &m_pStgdb->m_MiniMd;
 
     IfFailGo(ImportHelper::ImportTypeDef(
-                        pMiniMdAssemEmit,
                         pMiniMdEmit,
-                        pAssemImportMetaModelCommon,
-                        pbHashValue, cbHashValue,
                         pImport2MetaModelCommon,
                         tdImport,
                         false,  // Do not optimize to TypeDef if import and emit scopes are identical.
@@ -430,12 +414,10 @@ ErrExit:
         pImport2->Release();
     if (pImport2MDCommon)
         pImport2MDCommon->Release();
-    if (pAssemImportMDCommon)
-        pAssemImportMDCommon->Release();
-
     return hr;
 #endif //!FEATURE_METADATA_EMIT_IN_DEBUGGER
 } // RegMeta::DefineImportType
+#endif // FEATURE_METADATA_PUBLIC_INTERFACES
 
 //*****************************************************************************
 // Create and set a MemberRef record.
@@ -521,13 +503,14 @@ ErrExit:
 #endif //!FEATURE_METADATA_EMIT_IN_DEBUGGER
 } // RegMeta::DefineMemberRef
 
+#ifdef FEATURE_METADATA_PUBLIC_INTERFACES
 //*****************************************************************************
 // Create a MemberRef record based on a member in an import scope.
 //*****************************************************************************
 STDMETHODIMP RegMeta::DefineImportMember(     // S_OK or error.
     IMetaDataAssemblyImport *pAssemImport,  // [IN] Assembly containing the Member.
-    const void  *pbHashValue,           // [IN] Hash Blob for Assembly.
-    ULONG        cbHashValue,           // [IN] Count of bytes.
+    const void  *,                      // [IN] Hash Blob for Assembly.
+    ULONG,                              // [IN] Count of bytes.
     IMetaDataImport *pImport,           // [IN] Import scope, with member.
     mdToken     mbMember,               // [IN] Member in import scope.
     IMetaDataAssemblyEmit *pAssemEmit,  // [IN] Assembly into which the Member is imported.
@@ -589,8 +572,8 @@ STDMETHODIMP RegMeta::DefineImportMember(     // S_OK or error.
 
     IfFailGo(TranslateSigWithScope(
         pAssemImport,
-        pbHashValue,
-        cbHashValue,
+        nullptr,
+        0,
         pImport,
         pvSig,
         cbSig,
@@ -625,6 +608,7 @@ ErrExit:
     return hr;
 #endif //!FEATURE_METADATA_EMIT_IN_DEBUGGER
 } // RegMeta::DefineImportMember
+#endif // FEATURE_METADATA_PUBLIC_INTERFACES
 
 //*****************************************************************************
 // Define and set a Event record.
@@ -2941,6 +2925,7 @@ HRESULT RegMeta::DefineSecurityAttributeSet(// Return code.
     return E_NOTIMPL;
 } // RegMeta::DefineSecurityAttributeSet
 
+#ifdef FEATURE_METADATA_PUBLIC_INTERFACES
 //*****************************************************************************
 // Apply edit and continue changes to this metadata.
 //*****************************************************************************
@@ -2975,5 +2960,6 @@ ErrExit:
     return E_NOTIMPL;
 #endif //!FEATURE_METADATA_EMIT_ALL
 } // RegMeta::ApplyEditAndContinue
+#endif // FEATURE_METADATA_PUBLIC_INTERFACES
 
 #endif //FEATURE_METADATA_EMIT

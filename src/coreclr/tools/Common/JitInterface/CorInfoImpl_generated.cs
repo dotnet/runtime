@@ -367,7 +367,7 @@ namespace Internal.JitInterface
             public delegate* unmanaged<IntPtr, IntPtr*, nuint, bool*, nuint, CORINFO_CLASS_STRUCT_*> getContinuationType;
             public delegate* unmanaged<IntPtr, IntPtr*, void**, CORINFO_METHOD_STRUCT_*> getAsyncResumptionStub;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_RESOLVED_TOKEN*, byte, byte> convertPInvokeCalliToCall;
-            public delegate* unmanaged<IntPtr, IntPtr*, InstructionSet, byte, byte> notifyInstructionSetUsage;
+            public delegate* unmanaged<IntPtr, IntPtr*, InstructionSet, byte, byte, byte> notifyInstructionSetUsage;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CONST_LOOKUP*, void> updateEntryPointForTailCall;
             public delegate* unmanaged<IntPtr, IntPtr*, AllocMemArgs*, void> allocMem;
             public delegate* unmanaged<IntPtr, IntPtr*, byte, byte, uint, void> reserveUnwindInfo;
@@ -2784,12 +2784,12 @@ namespace Internal.JitInterface
         }
 
         [UnmanagedCallersOnly]
-        private static byte _notifyInstructionSetUsage(IntPtr thisHandle, IntPtr* ppException, InstructionSet instructionSet, byte supportEnabled)
+        private static byte _notifyInstructionSetUsage(IntPtr thisHandle, IntPtr* ppException, InstructionSet instructionSet, byte supportEnabled, byte preserveNegativeDependency)
         {
             var _this = GetThis(thisHandle);
             try
             {
-                return _this.notifyInstructionSetUsage(instructionSet, supportEnabled != 0) ? (byte)1 : (byte)0;
+                return _this.notifyInstructionSetUsage(instructionSet, supportEnabled != 0, preserveNegativeDependency != 0) ? (byte)1 : (byte)0;
             }
             catch (Exception ex)
             {

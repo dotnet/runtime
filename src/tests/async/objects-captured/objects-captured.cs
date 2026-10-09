@@ -39,8 +39,8 @@ public class Async2ObjectsWithYields
     }
 
     [Fact]
-    public static int Test()
+    public static async Task<int> Test()
     {
-        return (int)AsyncEntry().Result;
+        return (int)(await AsyncEntry());
     }
 }

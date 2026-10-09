@@ -216,7 +216,7 @@ variables:
     value: Windows.Amd64.Open.rt
 
   - name: helix_windows_x64_latest_internal
-    value: Windows.11.Amd64
+    value: Windows.Amd64.rt
 
   # Oldest: Windows 10
   - name: helix_windows_x64_oldest

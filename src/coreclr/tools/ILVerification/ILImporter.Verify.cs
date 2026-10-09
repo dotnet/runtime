@@ -1107,7 +1107,7 @@ namespace Internal.IL
                     VerificationError(VerifierError.DelegatePattern);
                     return;
                 }
-                else
+                if (!ftn.Method.Signature.IsStatic)
                 {
                     // See "Rules for non-virtual call to a non-final virtual method" in ImportCall
                     if (ftn.Method.IsVirtual && !ftn.Method.IsFinal && !obj.IsBoxedValueType)
@@ -1624,7 +1624,9 @@ namespace Internal.IL
 
                 CheckDelegateCreation(actualFtn, actualObj);
 
-                if (!IsDelegateAssignable(actualFtn.Method, methodType, actualObj))
+                // A function pointer that did not come from ldftn/ldvirtftn carries no method;
+                // StackMethod has already been reported for it above.
+                if (actualFtn.IsMethod && !IsDelegateAssignable(actualFtn.Method, methodType, actualObj))
                     VerificationError(VerifierError.DelegateCtor);
             }
             else
@@ -1843,6 +1845,10 @@ namespace Internal.IL
                     ClearPendingPrefix(Prefix.Constrained);
                     if (!_constrained.CanCastTo(method.OwningType))
                         VerificationError(VerifierError.ConstrainedTypeNoInterfaceImpl, _constrained, method.OwningType);
+                }
+                else
+                {
+                    Check(!method.IsAbstract, VerifierError.CallAbstract);
                 }
             }
             else if (opCode == ILOpcode.ldvirtftn)

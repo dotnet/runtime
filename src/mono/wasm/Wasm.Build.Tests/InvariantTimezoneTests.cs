@@ -35,7 +35,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [MemberData(nameof(InvariantTimezoneTestData), parameters: new object[] { /*aot*/ false })]
-        [TestCategory("native"), TestCategory("mono")]
+        [TestCategory("native")]
         public async Task RelinkingWithoutAOT(Configuration config, bool aot, bool? invariantTimezone)
             => await TestInvariantTimezone(config, aot, invariantTimezone, isNativeBuild: true);
 

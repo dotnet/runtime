@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Immutable;
+using System.Globalization;
 using System.Threading;
 
 using Microsoft.CodeAnalysis;
@@ -61,8 +62,9 @@ namespace Microsoft.Interop.JavaScript
                 typesHash = (int)(hash & int.MaxValue);
             };
 
-            var fullName = $"{method.ContainingType.ToDisplayString()}.{method.Name}";
+            string fullName = $"{method.ContainingType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}.{CodeWriterHelpers.EscapeIdentifier(method.Name)}";
             string qualifiedName = GetFullyQualifiedMethodName(env, method);
+            string typesHashString = typesHash.ToString(CultureInfo.InvariantCulture);
 
             return new JSSignatureContext()
             {
@@ -71,7 +73,8 @@ namespace Microsoft.Interop.JavaScript
                 StubTypeFullName = stubTypeFullName,
                 MethodName = fullName,
                 QualifiedMethodName = qualifiedName,
-                BindingName = "__signature_" + method.Name + "_" + typesHash,
+                BindingName = "__signature_" + method.Name + "_" + typesHashString,
+                WrapperName = "__Wrapper_" + method.Name + "_" + typesHashString,
                 AssemblyName = env.Compilation.AssemblyName,
             };
         }
@@ -86,12 +89,13 @@ namespace Microsoft.Interop.JavaScript
 
             return $"[{env.Compilation.AssemblyName}]{typeName}:{method.Name}";
         }
-        public string? StubTypeFullName { get; init; }
+        public string StubTypeFullName { get; init; }
         public int TypesHash { get; init; }
 
         public string MethodName { get; init; }
         public string QualifiedMethodName { get; init; }
         public string BindingName { get; init; }
+        public string WrapperName { get; init; }
         public string AssemblyName { get; init; }
 
         public override int GetHashCode()

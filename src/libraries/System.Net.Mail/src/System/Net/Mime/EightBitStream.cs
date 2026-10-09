@@ -117,6 +117,16 @@ namespace System.Net.Mime
                     }
                 }
 
+                if (buffer[i] == '\n')
+                {
+                    // Bare LF (not preceded by CR). Some SMTP servers may interpret a bare
+                    // "\n.\n" sequence as the "CRLF.CRLF" end-of-data marker, which would
+                    // corrupt the message. Canonicalize the bare LF to CRLF and reset the
+                    // line state so subsequent leading dots are still dot-stuffed.
+                    WriteState.AppendCRLF(false); // Resets CurrentLineLength to 0
+                    continue;
+                }
+
                 if ((WriteState.CurrentLineLength == 0) && (buffer[i] == '.'))
                 {
                     // RFC 2821 Section 4.5.2: We must pad leading dots on a line with an extra dot

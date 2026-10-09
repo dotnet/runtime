@@ -533,7 +533,7 @@ static bool GetIntersection(var_types  type,
 //
 bool IsConstantRangeTest(GenTreeOp* tree, GenTree** varNode, GenTreeIntCon** cnsNode, genTreeOps* cmp)
 {
-    if (tree->OperIs(GT_LE, GT_LT, GT_GE, GT_GT) && !tree->IsUnsigned())
+    if (tree->OperIs(GT_LE, GT_LT, GT_GE, GT_GT))
     {
         GenTree* op1 = tree->gtGetOp1();
         GenTree* op2 = tree->gtGetOp2();
@@ -584,10 +584,10 @@ bool FoldNeverNegativeRangeTest(
     GenTreeIntCon* cns1Node;
     genTreeOps     cmp1Op;
 
-    // First cmp has to be "X >= 0" (or "0 <= X")
+    // First cmp has to be signed "X >= 0" (or "0 <= X")
     // TODO: handle "X < NN && X >= 0" (where the 2nd comparison is the lower bound)
     // It seems to be a rare case, so we don't handle it for now.
-    if (!IsConstantRangeTest(cmp1, &var1Node, &cns1Node, &cmp1Op))
+    if (cmp1->IsUnsigned() || !IsConstantRangeTest(cmp1, &var1Node, &cns1Node, &cmp1Op))
     {
         return false;
     }
@@ -633,9 +633,10 @@ bool FoldNeverNegativeRangeTest(
         return false;
     }
 
-    if ((upperBound->gtFlags & GTF_SIDE_EFFECT) != 0)
+    if ((upperBound->gtFlags & (GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF)) != 0)
     {
-        // We can't fold "X >= 0 && X < NN" to "X u< NN" if NN has side effects.
+        // The fold makes NN evaluate unconditionally, so it must be safe to speculate.
+        // GTF_ORDER_SIDEEFF covers e.g. "a[X]" whose bounds check was removed via "X >= 0".
         return false;
     }
 
@@ -679,11 +680,11 @@ bool FoldRangeTests(Compiler* comp, GenTreeOp* cmp1, bool cmp1IsReversed, GenTre
     genTreeOps     cmp1Op;
     genTreeOps     cmp2Op;
 
-    // Make sure both conditions are constant range checks, e.g. "X > CNS"
-    if (!IsConstantRangeTest(cmp1, &var1Node, &cns1Node, &cmp1Op) ||
+    // Make sure both conditions are constant range checks with matching signedness, e.g. "X > CNS".
+    if ((cmp1->IsUnsigned() != cmp2->IsUnsigned()) || !IsConstantRangeTest(cmp1, &var1Node, &cns1Node, &cmp1Op) ||
         !IsConstantRangeTest(cmp2, &var2Node, &cns2Node, &cmp2Op))
     {
-        // Give FoldNeverNegativeRangeTest a try if both conditions are not constant range checks.
+        // Give FoldNeverNegativeRangeTest a try when the constant range fold does not apply.
         return FoldNeverNegativeRangeTest(comp, cmp1, cmp1IsReversed, cmp2, cmp2IsReversed);
     }
 
@@ -1000,8 +1001,7 @@ bool OptBoolsDsc::optOptimizeCompareChainCondBlock()
     }
 
     // Ensure there are no additional side effects.
-    if ((cond1->gtFlags & (GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF)) != 0 ||
-        (cond2->gtFlags & (GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF)) != 0)
+    if ((cond1->gtFlags & GTF_OBS_EFFECT) != 0 || (cond2->gtFlags & GTF_OBS_EFFECT) != 0)
     {
         return false;
     }

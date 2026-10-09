@@ -191,14 +191,11 @@ internal static class Entrypoints
             if (cdacHandle is null)
                 return HResults.E_INVALIDARG;
 
+            Contracts.CoreCLRContracts.ValidateForDataAccess(cdacHandle.Target, cdacHandle.ApiLock);
+
             object? legacyImpl = legacyImplPtr != IntPtr.Zero
                 ? ComInterfaceMarshaller<ISOSDacInterface>.ConvertToManaged((void*)legacyImplPtr)
                 : null;
-
-            // Without a legacy implementation to absorb individually-unimplemented APIs, validate
-            // the complete data-access contract set before publishing the interface.
-            if (legacyImpl is null)
-                Contracts.CoreCLRContracts.ValidateForDataAccess(cdacHandle.Target, cdacHandle.ApiLock);
 
             Legacy.SOSDacImpl impl = new(cdacHandle.Target, legacyImpl, cdacHandle.ApiLock);
             nint ptr = (nint)ComInterfaceMarshaller<ISOSDacInterface>.ConvertToUnmanaged(impl);
@@ -340,7 +337,7 @@ internal static class Entrypoints
         try
         {
             object legacyTarget = ComInterfaceMarshaller<ICLRDataTarget>.ConvertToManaged((void*)pLegacyTarget)!;
-            return CreateInstanceFromContractDescriptorCore(pIID, legacyTarget, contractDescriptorAddr, legacyImpl: null, new Lock(), iface);
+            return CreateInstanceFromContractDescriptorCore(pIID, legacyTarget, contractDescriptorAddr, legacyImplPtr: IntPtr.Zero, new Lock(), iface);
         }
         catch (Exception ex)
         {
@@ -369,8 +366,6 @@ internal static class Entrypoints
     private static unsafe int CLRDataCreateInstanceCore(Guid* pIID, IntPtr /*ICLRDataTarget*/ pLegacyTarget, IntPtr pLegacyImpl, Lock apiLock, void** iface)
     {
         object legacyTarget = ComInterfaceMarshaller<ICLRDataTarget>.ConvertToManaged((void*)pLegacyTarget)!;
-        object? legacyImpl = pLegacyImpl != IntPtr.Zero ?
-            ComInterfaceMarshaller<ISOSDacInterface>.ConvertToManaged((void*)pLegacyImpl) : null;
 
         ICLRContractLocator contractLocator = legacyTarget as ICLRContractLocator ?? throw new ArgumentException(
             $"{nameof(pLegacyTarget)} does not implement {nameof(ICLRContractLocator)}", nameof(pLegacyTarget));
@@ -386,10 +381,10 @@ internal static class Entrypoints
             };
         }
 
-        return CreateInstanceFromContractDescriptorCore(pIID, legacyTarget, contractAddress, legacyImpl, apiLock, iface);
+        return CreateInstanceFromContractDescriptorCore(pIID, legacyTarget, contractAddress, pLegacyImpl, apiLock, iface);
     }
 
-    private static unsafe int CreateInstanceFromContractDescriptorCore(Guid* pIID, object legacyTarget, ulong contractAddress, object? legacyImpl, Lock apiLock, void** iface)
+    private static unsafe int CreateInstanceFromContractDescriptorCore(Guid* pIID, object legacyTarget, ulong contractAddress, IntPtr legacyImplPtr, Lock apiLock, void** iface)
     {
         ICLRDataTarget dataTarget = legacyTarget as ICLRDataTarget ?? throw new ArgumentException(
             $"Data target does not implement {nameof(ICLRDataTarget)}", nameof(legacyTarget));
@@ -468,10 +463,11 @@ internal static class Entrypoints
             allocVirtual,
             [Contracts.CoreCLRContracts.Register]);
 
-        // Without a legacy implementation to absorb individually-unimplemented APIs, validate
-        // the complete data-access contract set before publishing the interface.
-        if (legacyImpl is null)
-            Contracts.CoreCLRContracts.ValidateForDataAccess(target);
+        Contracts.CoreCLRContracts.ValidateForDataAccess(target, apiLock);
+
+        object? legacyImpl = legacyImplPtr != IntPtr.Zero
+            ? ComInterfaceMarshaller<ISOSDacInterface>.ConvertToManaged((void*)legacyImplPtr)
+            : null;
 
         Legacy.SOSDacImpl impl = new(target, legacyImpl, apiLock);
         void* ccw = ComInterfaceMarshaller<IXCLRDataProcess>.ConvertToUnmanaged(impl);

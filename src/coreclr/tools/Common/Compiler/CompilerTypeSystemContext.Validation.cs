@@ -321,6 +321,11 @@ namespace ILCompiler
                 // Validate classes, structs, enums, interfaces, and delegates
                 Debug.Assert(type.IsDefType);
 
+                if (type.IsWindowsRuntime)
+                {
+                    ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
+                }
+
                 // Don't validate generic definitions much other than by checking for illegal recursion.
                 if (type.IsGenericDefinition)
                 {

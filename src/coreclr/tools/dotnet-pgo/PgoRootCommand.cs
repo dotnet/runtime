@@ -23,6 +23,8 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             new("--input", "-i") { Description = "Name of the input mibc file to dump", Required = true, Arity = ArgumentArity.ExactlyOne };
         public Option<string> TraceFilePath { get; } =
             new("--trace", "-t") { Description = "Specify the trace file to be parsed" };
+        public Option<string> MethodListFilePath { get; } =
+            new("--method-list") { Description = "Specify a JSON file containing methods to place in a Mibc file", Required = true };
         public Option<string> OutputFilePath { get; } =
             new("--output", "-o") { Description = "Specify the output filename to be created" };
         public Option<string> PreciseDebugInfoFile { get; } =
@@ -82,6 +84,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
         public JitTraceOptions JitTraceOptions;
         public bool Warnings;
         public bool BasicProgressMessages;
+        public bool CreateMibcFromMethodList;
         public bool DetailedProgressMessages;
         public bool DumpMibc;
         public ParseResult Result;
@@ -136,6 +139,25 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             });
 
             Subcommands.Add(createMbicCommand);
+
+            Command createMibcFromMethodListCommand = new("create-mibc-from-method-list", "Create a Mibc profile data file from a JSON method list")
+            {
+                MethodListFilePath,
+                OutputFilePath,
+                Reference,
+                _verbosity,
+                Compressed,
+            };
+
+            createMibcFromMethodListCommand.SetAction(result =>
+            {
+                CreateMibcFromMethodList = true;
+                ValidateOutputFile = true;
+
+                return ExecuteWithContext(result, true);
+            });
+
+            Subcommands.Add(createMibcFromMethodListCommand);
 
             JitTraceOptions = JitTraceOptions.none;
 #if DEBUG

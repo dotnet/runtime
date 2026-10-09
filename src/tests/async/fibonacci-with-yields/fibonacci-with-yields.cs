@@ -13,11 +13,11 @@ public class Async2FibonacciWithYields
     const bool doYields = true;
 
     [Fact]
-    public static void Test()
+    public static async Task Test()
     {
         long allocated = GC.GetTotalAllocatedBytes(precise: true);
 
-        AsyncEntry().GetAwaiter().GetResult();
+        await AsyncEntry();
 
         allocated = GC.GetTotalAllocatedBytes(precise: true) - allocated;
         System.Console.WriteLine("allocated: " + allocated);

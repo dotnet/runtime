@@ -755,6 +755,10 @@ namespace System.Tests
         [InlineData( float.PositiveInfinity,  3,  float.PositiveInfinity, 0.0f)]
         [InlineData( float.PositiveInfinity,  4,  float.PositiveInfinity, 0.0f)]
         [InlineData( float.PositiveInfinity,  5,  float.PositiveInfinity, 0.0f)]
+        [InlineData(-1.0f,                    -16777217,   -1.0f,                   0.0f)]
+        [InlineData(-1.0f,                     16777217,   -1.0f,                   0.0f)]
+        [InlineData(-0.0f,                    -16777217,    float.NegativeInfinity, 0.0f)]
+        [InlineData(-0.0f,                     16777217,   -0.0f,                   0.0f)]
         public static void RootN(float x, int n, float expectedResult, float allowedVariance)
         {
             AssertExtensions.Equal(expectedResult, float.RootN(x, n), allowedVariance);
@@ -857,6 +861,25 @@ namespace System.Tests
         }
 
         [Theory]
+        [InlineData(3.1415927E-07f, "F8", "0.00000031")]
+        [InlineData(3.1415927E-07f, "F9", "0.000000314")]
+        [InlineData(3.1415927E-07f, "F10", "0.0000003142")]
+        [InlineData(-3.1415927E-07f, "F9", "-0.000000314")]
+        [InlineData(3.1415927E-07f, "C9", "\u00A40.000000314")]
+        [InlineData(3.1415927E-07f, "N9", "0.000000314")]
+        [InlineData(3.1415927E-07f, "P7", "0.0000314 %")]
+        [InlineData(3.1415927E-07f, "P9", "0.000031416 %")]
+        [InlineData(float.Epsilon, "F9", "0.000000000")]
+        [InlineData(-float.Epsilon, "F9", "-0.000000000")]
+        [InlineData(0.0f, "F9", "0.000000000")]
+        [InlineData(-0.0f, "F9", "-0.000000000")]
+        public static void ToString_FractionalPrecision(float value, string format, string expected)
+        {
+            Assert.Equal(expected, value.ToString(format, NumberFormatInfo.InvariantInfo));
+            NumberFormatTestHelper.TryFormatNumberTest(value, format, NumberFormatInfo.InvariantInfo, expected);
+        }
+
+        [Theory]
         // Basic values
         [InlineData(1.0f, "x", "0x1p+0")]
         [InlineData(1.5f, "x", "0x1.8p+0")]
@@ -933,6 +956,66 @@ namespace System.Tests
 
             Assert.True(float.TryParse(input, NumberStyles.HexFloat, NumberFormatInfo.InvariantInfo, out result));
             Assert.True(float.IsNegative(result) && result == 0.0f);
+        }
+
+        [Theory]
+        [InlineData(0.0f, "x", "plus", "minus", "0x0pplus0")]
+        [InlineData(-0.0f, "X", "plus", "minus", "minus0X0Pplus0")]
+        [InlineData(0.0f, "x3", "plus", "minus", "0x0.000pplus0")]
+        [InlineData(-0.0f, "X3", "plus", "minus", "minus0X0.000Pplus0")]
+        [InlineData(3.0f, "x", "plus", "minus", "0x1.8pplus1")]
+        [InlineData(-0.75f, "X", "plus", "minus", "minus0X1.8Pminus1")]
+        [InlineData(3.0f, "X", "\u200E+", "\u200E-", "0X1.8P\u200E+1")]
+        [InlineData(-0.75f, "x", "\u200E+", "\u200E-", "\u200E-0x1.8p\u200E-1")]
+        [InlineData(3.0f, "x", "\u061C+", "\u061C-", "0x1.8p\u061C+1")]
+        [InlineData(-0.75f, "X", "\u061C+", "\u061C-", "\u061C-0X1.8P\u061C-1")]
+        [InlineData(0.75f, "x", "+", "\u2212", "0x1.8p\u22121")]
+        [InlineData(3.0f, "X", "", "~", "0X1.8P1")]
+        [InlineData(3.0f, "x", "-+", "-", "0x1.8p-+1")]
+        [InlineData(3.0f, "X", "-", "-+", "0X1.8P-1")]
+        [InlineData(3.0f, "x", "-", "+", "0x1.8p-1")]
+        [InlineData(0.75f, "X", "-", "+", "0X1.8P+1")]
+        [InlineData(-3.0f, "X", "-", "+", "+0X1.8P-1")]
+        [InlineData(-3.0f, "x", "-+", "-", "-0x1.8p-+1")]
+        [InlineData(-3.0f, "X", "-", "-+", "-+0X1.8P-1")]
+        [InlineData(-0.75f, "x", "-", "-+", "-+0x1.8p-+1")]
+        [InlineData(0.75f, "x", "-", "-+", "0x1.8p-+1")]
+        public static void ToStringHexFloat_CustomSigns(float value, string format, string positiveSign, string negativeSign, string expected)
+        {
+            var info = new NumberFormatInfo { PositiveSign = positiveSign, NegativeSign = negativeSign };
+            Assert.Equal(expected, value.ToString(format, info));
+            NumberFormatTestHelper.TryFormatNumberTest(value, format, info, expected, formatCasingMatchesOutput: false);
+
+            Assert.Equal(BitConverter.SingleToInt32Bits(value), BitConverter.SingleToInt32Bits(float.Parse(expected, NumberStyles.HexFloat, info)));
+            Assert.Equal(BitConverter.SingleToInt32Bits(value), BitConverter.SingleToInt32Bits(float.Parse(expected.AsSpan(), NumberStyles.HexFloat, info)));
+            byte[] utf8 = Encoding.UTF8.GetBytes(expected);
+            Assert.Equal(BitConverter.SingleToInt32Bits(value), BitConverter.SingleToInt32Bits(float.Parse(utf8, NumberStyles.HexFloat, info)));
+
+            Assert.True(float.TryParse(expected, NumberStyles.HexFloat, info, out float result));
+            Assert.Equal(BitConverter.SingleToInt32Bits(value), BitConverter.SingleToInt32Bits(result));
+            Assert.True(float.TryParse(expected.AsSpan(), NumberStyles.HexFloat, info, out result));
+            Assert.Equal(BitConverter.SingleToInt32Bits(value), BitConverter.SingleToInt32Bits(result));
+            Assert.True(float.TryParse(utf8, NumberStyles.HexFloat, info, out result));
+            Assert.Equal(BitConverter.SingleToInt32Bits(value), BitConverter.SingleToInt32Bits(result));
+        }
+
+        [Theory]
+        [InlineData(-3.0f, "E-0")]
+        [InlineData(-0.75f, "E-+")]
+        public static void ToStringE_CustomSignPrefixes(float value, string exponentSign)
+        {
+            var info = new NumberFormatInfo { PositiveSign = "-", NegativeSign = "-+" };
+            string formatted = value.ToString("E", info);
+            Assert.StartsWith("-+", formatted);
+            Assert.Contains(exponentSign, formatted);
+
+            Assert.True(float.TryParse(formatted, NumberStyles.Float, info, out float result));
+            Assert.Equal(BitConverter.SingleToInt32Bits(value), BitConverter.SingleToInt32Bits(result));
+            Assert.True(float.TryParse(formatted.AsSpan(), NumberStyles.Float, info, out result));
+            Assert.Equal(BitConverter.SingleToInt32Bits(value), BitConverter.SingleToInt32Bits(result));
+            byte[] utf8 = Encoding.UTF8.GetBytes(formatted);
+            Assert.True(float.TryParse(utf8, NumberStyles.Float, info, out result));
+            Assert.Equal(BitConverter.SingleToInt32Bits(value), BitConverter.SingleToInt32Bits(result));
         }
 
         [Fact]

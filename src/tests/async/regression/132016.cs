@@ -12,10 +12,10 @@ public class Runtime_132016
     private static readonly List<string> s_log = new List<string>();
 
     [Fact]
-    public static void TestEntryPoint()
+    public static async Task TestEntryPoint()
     {
         s_log.Clear();
-        new Runtime_132016().M().GetAwaiter().GetResult();
+        await new Runtime_132016().M();
 
         Assert.Equal(new[] { "outer", "outer", "inner", "inner", "outer", "inner" }, s_log);
     }
