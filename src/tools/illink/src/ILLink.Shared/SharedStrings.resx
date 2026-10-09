@@ -1122,9 +1122,6 @@
   <data name="TypeMapOutputInvalidAttribute" xml:space="preserve">
     <value>Cannot write type map output because attribute '{0}' has invalid constructor arguments.</value>
   </data>
-  <data name="TypeMapOutputUnsupportedType" xml:space="preserve">
-    <value>Cannot serialize type '{0}' in type map output using the reflection type name format.</value>
-  </data>
   <data name="AvoidAssemblyLocationInSingleFileTitle" xml:space="preserve">
     <value>Avoid accessing Assembly file path when publishing as a single file</value>
   </data>

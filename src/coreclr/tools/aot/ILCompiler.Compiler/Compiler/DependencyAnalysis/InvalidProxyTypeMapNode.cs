@@ -47,5 +47,7 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         public IProxyTypeMapNode ToAnalysisBasedNode(NodeFactory factory) => new InvalidProxyTypeMapNode(TypeMapGroup, ThrowingMethodStub);
+
+        public IEnumerable<KeyValuePair<TypeDesc, TypeDesc>> GetEntries(NodeFactory factory) => [];
     }
 }

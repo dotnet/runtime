@@ -63,23 +63,8 @@ namespace Mono.Linker.Steps
 
         protected override void EndProcess()
         {
-            if (Context.TypeMapGenerateXmlFile)
-            {
-                AssemblyDefinition? entryAssembly = Annotations.GetEntryPointAssembly() ?? Context.TypeMapOutputAssembly ?? Context.TypeMapHandler?.EntryPointAssembly;
-                string fileName = entryAssembly is null ? "typemaps.xml"
-                    : Path.ChangeExtension(GetOriginalAssemblyFileInfo(entryAssembly).Name, ".typemaps.xml");
-                string outputPath = Path.GetFullPath(Path.Combine(Context.OutputDirectory, fileName));
-                try
-                {
-                    TypeMapOutput.Write(Context, outputPath);
-                }
-                catch (Exception e) when (e is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException or InvalidOperationException or BadImageFormatException or System.Xml.XmlException)
-                {
-                    if (File.Exists(outputPath))
-                        File.Delete(outputPath);
-                    throw new LinkerFatalErrorException(MessageContainer.CreateErrorMessage(null, DiagnosticId.FailedToWriteOutput, outputPath), e);
-                }
-            }
+            if (Context.TypeMapFileName is string typeMapFileName)
+                TypeMapOutput.Write(Context, typeMapFileName);
 
             if (Context.AssemblyListFile != null)
             {

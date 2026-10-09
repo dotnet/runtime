@@ -86,6 +86,7 @@
 
   <Import Project="{NativeSanitizersTargets}" />
   <Import Project="$(RepositoryEngineeringDir)toolAot.targets" />
+  <Import Project="{AdditionalTargets}" Condition="'{AdditionalTargets}' != ''" />
 
   <ItemGroup>
     <Content Include="@(SanitizerRuntimeToCopy->'{SanitizerRuntimeFolder}/%(Identity)')" CopyToOutputDirectory="PreserveNewest" />

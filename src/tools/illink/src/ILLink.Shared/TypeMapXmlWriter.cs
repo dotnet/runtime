@@ -27,21 +27,6 @@ internal sealed class TypeMapXmlWriter : IDisposable
 
         _writer.WriteStartDocument();
         _writer.WriteStartElement("typemaps");
-        _writer.WriteAttributeString("version", "1");
-    }
-
-    // Reflection type identifiers escape a different set of characters than assembly display names.
-    public static string EscapeTypeName(string name)
-    {
-        var builder = new StringBuilder();
-        foreach (char character in name)
-        {
-            if (character is '[' or ']' or '&' or '*' or ',' or '+' or '\\')
-                builder.Append('\\');
-            builder.Append(character);
-        }
-
-        return builder.ToString();
     }
 
     public static void WriteTypeMapsToStream(Stream output, SortedDictionary<string, (Map? External, Map? Proxy)> groups)
@@ -50,7 +35,6 @@ internal sealed class TypeMapXmlWriter : IDisposable
         {
             Encoding = new UTF8Encoding(false),
             Indent = true,
-            NewLineChars = "\n",
             NewLineHandling = NewLineHandling.Entitize
         });
 

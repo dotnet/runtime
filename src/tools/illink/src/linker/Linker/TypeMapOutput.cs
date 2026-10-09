@@ -106,7 +106,6 @@ internal static class TypeMapOutput
             ByReferenceType byRef => GetTypeName(byRef.ElementType).MakeByRefTypeName(),
             GenericInstanceType instance => GetTypeName(instance.ElementType)
                 .MakeGenericTypeName(instance.GenericArguments.Select(GetTypeName).ToImmutableArray()),
-            TypeSpecification or GenericParameter => throw new NotSupportedException(string.Format(SharedStrings.TypeMapOutputUnsupportedType, type.FullName)),
             _ => GetSimpleTypeName(context.TryResolve(type) ?? type)
         };
 
@@ -116,12 +115,25 @@ internal static class TypeMapOutput
             if (type.DeclaringType is TypeReference declaringType)
                 name.Append(GetTypeName(declaringType).FullName).Append('+');
             else if (type.Namespace.Length > 0)
-                name.Append(TypeMapXmlWriter.EscapeTypeName(type.Namespace)).Append('.');
-            name.Append(TypeMapXmlWriter.EscapeTypeName(type.Name));
+                name.Append(EscapeTypeName(type.Namespace)).Append('.');
+            name.Append(EscapeTypeName(type.Name));
             string assemblyName = type.Scope is AssemblyNameReference assembly
                 ? assembly.Name : type.Module.Assembly.Name.Name;
 
             return TypeName.Parse(name.ToString()).WithAssemblyName(new AssemblyNameInfo(assemblyName));
         }
+    }
+
+    private static string EscapeTypeName(string name)
+    {
+        var builder = new StringBuilder();
+        foreach (char character in name)
+        {
+            if (character is '[' or ']' or '&' or '*' or ',' or '+' or '\\')
+                builder.Append('\\');
+            builder.Append(character);
+        }
+
+        return builder.ToString();
     }
 }

@@ -142,7 +142,7 @@ namespace Mono.Linker
         public string? TypeMapEntryAssembly { get; set; }
 
 #if !ILTRIM
-        internal bool TypeMapGenerateXmlFile { get; set; }
+        internal string? TypeMapFileName { get; set; }
         internal AssemblyDefinition? TypeMapOutputAssembly { get; set; }
         internal TypeMapHandler? TypeMapHandler { get; set; }
 #endif

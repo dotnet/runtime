@@ -186,8 +186,8 @@ namespace ILCompiler
             new("--disable-generated-code-heuristics") { Description = "Disable heuristics for detecting compiler-generated code" };
         public Option<string> TypeMapEntryAssembly { get; } =
             new("--typemap-entry-assembly") { Description = "Assembly name to use as entry point for TypeMap generation" };
-        public Option<bool> TypeMapGenerateXmlFile { get; } =
-            new("--output-typemaps") { Description = "Write retained type maps to a .typemaps.xml sidecar beside the native object" };
+        public Option<string> TypeMapFileName { get; } =
+            new("--output-typemaps") { Description = "Write retained type maps to the specified XML file" };
 
         public OptimizationMode OptimizationMode { get; private set; }
         public ParseResult Result;
@@ -279,7 +279,7 @@ namespace ILCompiler
             Options.Add(UnmanagedEntryPointsAssemblies);
             Options.Add(DisableGeneratedCodeHeuristics);
             Options.Add(TypeMapEntryAssembly);
-            Options.Add(TypeMapGenerateXmlFile);
+            Options.Add(TypeMapFileName);
 
             this.SetAction(result =>
             {
@@ -315,7 +315,7 @@ namespace ILCompiler
 #pragma warning disable CA1861 // Avoid constant arrays as arguments. Only executed once during the execution of the program.
                         Helpers.MakeReproPackage(makeReproPath, result.GetValue(OutputFilePath), args, result,
                             inputOptions : new[] { "-r", "--reference", "-m", "--mibc", "--rdxml", "--directpinvokelist", "--descriptor", "--satellite", "--order" },
-                            outputOptions : new[] { "-o", "--out", "--exportsfile", "--dgmllog", "--scandgmllog", "--mstat", "--sourcelink" });
+                            outputOptions : new[] { "-o", "--out", "--exportsfile", "--dgmllog", "--scandgmllog", "--mstat", "--sourcelink", "--output-typemaps" });
 #pragma warning restore CA1861 // Avoid constant arrays as arguments
                     }
 

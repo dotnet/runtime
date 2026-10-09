@@ -649,6 +649,10 @@ namespace ILCompiler
             if (sourceLinkFileName != null)
                 dumpers.Add(new SourceLinkWriter(sourceLinkFileName));
 
+            string typeMapFileName = Get(_command.TypeMapFileName);
+            if (typeMapFileName != null)
+                dumpers.Add(new TypeMapObjectDumper(typeMapFileName));
+
             // Write to a temporary file and rename on success to avoid leaving partial files on failure
             string tempOutputFilePath = outputFilePath + ".tmp";
             CompilationResults compilationResults = compilation.Compile(tempOutputFilePath, ObjectDumper.Compose(dumpers));
@@ -745,22 +749,6 @@ namespace ILCompiler
 
             // Rename the temporary file to the final output file
             File.Move(tempOutputFilePath, outputFilePath, overwrite: true);
-
-            if (Get(_command.TypeMapGenerateXmlFile))
-            {
-                string typeMapOutputFile = Path.ChangeExtension(outputFilePath, ".typemaps.xml");
-                try
-                {
-                    compilationResults.WriteTypeMapArtifact(typeMapOutputFile);
-                }
-                catch (Exception e) when (e is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException or InvalidOperationException or XmlException)
-                {
-                    logger.LogError(new DiagnosticString(DiagnosticId.FailedToWriteOutput).GetMessage(typeMapOutputFile) + " " + e.Message, (int)DiagnosticId.FailedToWriteOutput);
-                    if (File.Exists(typeMapOutputFile))
-                        File.Delete(typeMapOutputFile);
-                    return 1;
-                }
-            }
 
             return 0;
         }

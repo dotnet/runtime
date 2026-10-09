@@ -101,6 +101,12 @@ namespace ILCompiler.DependencyAnalysis
         private static IEETypeNode GetEffectiveTrimTargetType(NodeFactory factory, TypeDesc trimmingTargetType)
             => RuntimeConstructableTypeDependencies.GetEffectiveTrimTargetType(factory, trimmingTargetType, conditionConstructed: false);
 
+        public IEnumerable<KeyValuePair<string, TypeDesc>> GetEntries(NodeFactory factory)
+        {
+            foreach ((string name, IEETypeNode target) in GetMarkedEntries(factory))
+                yield return new KeyValuePair<string, TypeDesc>(name, target.Type);
+        }
+
         public Vertex CreateTypeMap(NodeFactory factory, NativeWriter writer, Section section, INativeFormatTypeReferenceProvider externalReferences)
         {
             VertexHashtable typeMapHashTable = new();

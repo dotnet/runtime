@@ -86,8 +86,9 @@ Copyright (c) .NET Foundation. All rights reserved.
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TypeMapGenerateXmlFile)' == 'true'">
-    <_TrimmerTypeMapXmlFile>$(IntermediateLinkDir)$(TargetName).typemaps.xml</_TrimmerTypeMapXmlFile>
-    <_ExtraTrimmerArgs>$(_ExtraTrimmerArgs) --output-typemaps</_ExtraTrimmerArgs>
+    <TypeMapXmlFile Condition="'$(TypeMapXmlFile)' == ''">$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '$(IntermediateOutputPath)', '$(TargetName).typemaps.xml'))</TypeMapXmlFile>
+    <_TrimmerTypeMapXmlFile>$(TypeMapXmlFile)</_TrimmerTypeMapXmlFile>
+    <_ExtraTrimmerArgs>$(_ExtraTrimmerArgs) --output-typemaps "$(TypeMapXmlFile)"</_ExtraTrimmerArgs>
   </PropertyGroup>
 
   <!-- Disable Redundant Warning Suppressions by default-->

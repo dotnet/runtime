@@ -597,8 +597,10 @@ namespace Mono.Linker
 
 #if !ILTRIM
                         case "--output-typemaps":
-                            if (!GetBoolParam(token, value => context.TypeMapGenerateXmlFile = value))
+                            if (!GetStringParam(token, out string? typeMapFileName))
                                 return -1;
+
+                            context.TypeMapFileName = typeMapFileName;
 
                             continue;
 #endif
@@ -1555,7 +1557,7 @@ namespace Mono.Linker
             Console.WriteLine("  --skip-unresolved         Ignore unresolved types, methods, and assemblies. Defaults to true");
             Console.WriteLine("  --output-pinvokes PATH    Output a JSON file with all modules and entry points of the P/Invokes found");
 #if !ILTRIM
-            Console.WriteLine("  --output-typemaps         Write retained type maps to a .typemaps.xml sidecar in the output directory");
+            Console.WriteLine("  --output-typemaps <file>  Write retained type maps to the specified XML file");
 #endif
             Console.WriteLine("  --verbose                 Log messages indicating progress and warnings");
             Console.WriteLine("  --nowarn WARN             Disable specific warning messages");

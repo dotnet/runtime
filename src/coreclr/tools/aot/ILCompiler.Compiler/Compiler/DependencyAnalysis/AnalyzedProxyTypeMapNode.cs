@@ -15,7 +15,7 @@ namespace ILCompiler.DependencyAnalysis
     {
         public TypeDesc TypeMapGroup => typeMapGroup;
 
-        public IReadOnlyDictionary<TypeDesc, TypeDesc> Entries => entries;
+        public IEnumerable<KeyValuePair<TypeDesc, TypeDesc>> GetEntries(NodeFactory factory) => entries;
 
         public Vertex CreateTypeMap(NodeFactory factory, NativeWriter writer, Section section, INativeFormatTypeReferenceProvider externalReferences)
         {

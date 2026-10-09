@@ -24,7 +24,7 @@ namespace Mono.Linker.Steps
                 return;
 
 #if !ILTRIM
-            if (Context.TypeMapGenerateXmlFile && (rootMode == AssemblyRootMode.EntryPoint || Context.TypeMapOutputAssembly is null))
+            if (Context.TypeMapFileName is not null && (rootMode == AssemblyRootMode.EntryPoint || Context.TypeMapOutputAssembly is null))
                 Context.TypeMapOutputAssembly = assembly;
 #endif
 
