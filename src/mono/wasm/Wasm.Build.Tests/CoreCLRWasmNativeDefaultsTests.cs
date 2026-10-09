@@ -102,6 +102,34 @@ namespace Wasm.Build.Tests
             Assert.Contains("** WasmBuildNative: 'false'", line);
         }
 
+        [Fact, TestCategory("no-workload")]
+        public void WebcilVersionDoesNotRequireRuntimeFlavor()
+        {
+            ProjectInfo info = CopyTestAsset(
+                Configuration.Debug,
+                aot: false,
+                TestAsset.WasmBasicTestApp,
+                "coreclr_webcil_version",
+                extraProperties: "<PublishReadyToRun>false</PublishReadyToRun>",
+                insertAtEnd: """
+                    <Target Name="CheckCoreClrWebcilVersion" DependsOnTargets="_ResolveWasmConfiguration">
+                        <Error Condition="'$(UseMonoRuntime)' != 'false'" Text="The test must select CoreCLR." />
+                        <Error Condition="'$(RuntimeFlavor)' != ''" Text="The test must not set RuntimeFlavor." />
+                        <Error Condition="'$(_WasmWebcilVersion)' != '1'" Text="CoreCLR requires WebCIL version 1." />
+                        <Error Text="Stopping after validating CoreCLR WebCIL version" />
+                    </Target>
+                    """);
+
+            (string _, string output) = BuildProject(
+                info,
+                Configuration.Debug,
+                new BuildOptions(
+                    ExpectSuccess: false,
+                    ExtraMSBuildArgs: "-t:CheckCoreClrWebcilVersion -p:RuntimeFlavor="));
+
+            Assert.Contains("Stopping after validating CoreCLR WebCIL version", output);
+        }
+
         // Mirrors the Mono path's WithNativeReference test: a project that references a native
         // object file always needs a relink to embed it, regardless of whether any tracked
         // property differs from the runtime pack.
