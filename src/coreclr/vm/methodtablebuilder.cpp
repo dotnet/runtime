@@ -8683,7 +8683,9 @@ VOID MethodTableBuilder::HandleAutoLayout(MethodTable ** pByValueClassCache)
 
 #ifdef FEATURE_64BIT_ALIGNMENT
             if (GetHalfBakedClass()->IsAlign8Candidate()) {
-                minAlign = 8;
+                // Align8 raises the requirement to at least 8; it must not lower a larger requirement
+                // of a field (e.g. 16 for Int128 on wasm), matching sequential layout and crossgen2.
+                minAlign = containsGCPointers ? 8 : max(8u, (unsigned)largestAlignmentRequirement);
             }
             else
 #endif // FEATURE_64BIT_ALIGNMENT

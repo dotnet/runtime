@@ -1,17 +1,17 @@
 using System;
+using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using Xunit;
-using TestLibrary;
 
 public class Test
 {
     // This test uses the same set of types as the type system unittests use, and attempts to validate that the R2R usage of said types works well.
     // This is done by touching the various types, and then relying on the verification logic in R2R images to detect failures.
     [ActiveIssue("These tests are not supposed to be run with mono.", TestRuntimes.Mono)]
-    [ActiveIssue("https://github.com/dotnet/runtime/pull/131421", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
     [Fact]
     public static void TestEntryPoint()
     {
+        AutoStructWithInt128InDerivedClassTest.Test();
         ContainsGCPointersFieldsTest.Test();
 //        ExplicitTest.Test(); // Explicit layout is known to not quite match the runtime, and if enabled this set of tests will fail.
         SequentialTest.Test();
@@ -20,6 +20,40 @@ public class Test
         AutoTestWithVector128.Test();
         AutoTestWithVector256.Test();
         AutoTestWithVector512.Test();
+    }
+}
+
+// An auto layout struct with Int128 fields placed in a class whose base class has fields. The field
+// offset compiled into R2R code must match the offset the runtime uses (observed via reflection).
+class AutoStructWithInt128InDerivedClassTest
+{
+    [StructLayout(LayoutKind.Auto)]
+    public struct Int128Pair
+    {
+        public Int128 First;
+        public Int128 Second;
+    }
+
+    public class Base
+    {
+        public char[] Chars = new char[1];
+    }
+
+    public sealed class Derived : Base
+    {
+        public Int128Pair Pair;
+    }
+
+    public static void Test()
+    {
+        Derived derived = new Derived();
+        derived.Pair.First = 0x1111;
+        derived.Pair.Second = -0x2222;
+
+        Int128Pair pair = (Int128Pair)typeof(Derived).GetField(nameof(Derived.Pair))!.GetValue(derived)!;
+        Assert.Equal((Int128)0x1111, pair.First);
+        Assert.Equal((Int128)(-0x2222), pair.Second);
+        Assert.Equal(1, derived.Chars.Length);
     }
 }
 
