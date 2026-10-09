@@ -3094,8 +3094,12 @@ void CallCatchFunclet(BYTE* pHandlerIP, REGDISPLAY* pvRegDisplay, ExInfo* exInfo
     // But don't check in case the target is in the interpreter loop, because the ControlPC doesn't match the shadow stack entry
     // in that case. The shadow stack contains the return address of the DispatchManagedException call, but the ControlPC is the
     // value captured to the exception context before the DispatchManagedException call.
+    // And don't check for a frame that faulted, such as the one a thread abort is raised in after the thread was redirected
+    // to ThrowControlForThread. That frame was interrupted rather than stopped at a call, so the slot below its SSP need not
+    // contain its ControlPC. The SSP recorded for it points at its return address, which is the right value to resume it with.
     _ASSERTE(targetSSP == 0 ||
         (pHandlerIP != NULL) && (exInfo->m_frameIter.m_crawl.GetCodeManager() == ExecutionManager::GetInterpreterCodeManager()) ||
+        (pHandlerIP != NULL) && exInfo->m_frameIter.m_crawl.HasFaulted() ||
         (*(size_t*)(targetSSP-8) == exInfo->m_frameIter.m_crawl.GetRegisterSet()->ControlPC));
 #else
     size_t targetSSP = 0;
