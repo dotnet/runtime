@@ -57,8 +57,10 @@ internal sealed class MockReJITBuilder
     public enum RejitFlags : uint
     {
         kStateRequested = 0x00000000,
+        kStateGettingReJITParameters = 0x00000001,
         kStateActive = 0x00000002,
-        kStateMask = 0x0000000F
+        kStateMask = 0x0000000F,
+        kSuppressParams = 0x80000000,
     }
 
     internal MockMemorySpace.Builder Builder { get; }

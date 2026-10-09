@@ -9,7 +9,10 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 public enum RejitState
 {
     Requested,
-    Active
+    Active,
+    // ReJIT parameter configuration is in progress (for example, the profiler's GetReJITParameters callback is
+    // running) and the version has not yet become Active.
+    GettingReJITParameters,
 }
 
 public interface IReJIT : IContract

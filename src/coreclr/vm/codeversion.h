@@ -169,6 +169,7 @@ enum class RejitFlags : uint32_t
     // committed to a specific IL body, even if the CLR doesn't know what it is yet.
     // If the profiler calls RequestRejit we need to allocate a new ILCodeVersion
     // and call GetReJITParameters() again.
+    // [cDAC] [ReJIT]: Contract depends on this value.
     kStateGettingReJITParameters = 0x00000001,
 
     // This is set in two scenarios:
