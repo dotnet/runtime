@@ -3646,16 +3646,19 @@ MethodTableBuilder::EnumerateClassFields()
                 bmtEnumFields.dwNumStaticFields++;
 
 #ifdef FEATURE_MULTITHREADING
-                // If this static field is thread static, then we need
-                // to increment bmtEnumFields.dwNumThreadStaticFields
-                hr = GetCustomAttribute(tok,
-                                        WellKnownAttribute::ThreadStatic,
-                                        NULL, NULL);
-                IfFailThrow(hr);
-                if (hr == S_OK)
+                if (!IsFdHasFieldRVA(dwMemberAttrs))
                 {
-                    // It's a thread static, so increment the count
-                    bmtEnumFields.dwNumThreadStaticFields++;
+                    // If this static field is thread static, then we need
+                    // to increment bmtEnumFields.dwNumThreadStaticFields
+                    hr = GetCustomAttribute(tok,
+                                            WellKnownAttribute::ThreadStatic,
+                                            NULL, NULL);
+                    IfFailThrow(hr);
+                    if (hr == S_OK)
+                    {
+                        // It's a thread static, so increment the count
+                        bmtEnumFields.dwNumThreadStaticFields++;
+                    }
                 }
 #endif // FEATURE_MULTITHREADING
             }
@@ -4116,12 +4119,15 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
 
             HRESULT hr;
 
-            hr = GetCustomAttribute(bmtMetaData.pFields[i],
-                                    WellKnownAttribute::ThreadStatic,
-                                    NULL, NULL);
-            IfFailThrow(hr);
 #ifdef FEATURE_MULTITHREADING
-            fIsThreadStatic = (hr == S_OK);
+            if (!fHasRVA)
+            {
+                hr = GetCustomAttribute(bmtMetaData.pFields[i],
+                                        WellKnownAttribute::ThreadStatic,
+                                        NULL, NULL);
+                IfFailThrow(hr);
+                fIsThreadStatic = (hr == S_OK);
+            }
 #endif // FEATURE_MULTITHREADING
             // Without multithreading there is only one thread, so thread statics are laid out
             // and accessed as regular statics.
@@ -4137,13 +4143,6 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
                 {
                     bmtFP.fHasFixedAddressValueTypes = true;
                 }
-            }
-
-
-            // RVA fields cannot be thread-relative.
-            if (fHasRVA && fIsThreadStatic)
-            {
-                IfFailThrow(COR_E_TYPELOAD);
             }
         }
 

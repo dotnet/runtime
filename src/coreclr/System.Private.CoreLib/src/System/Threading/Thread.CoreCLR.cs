@@ -139,12 +139,7 @@ namespace System.Threading
             }
             set
             {
-                if (value is not (
-                    ThreadPriority.Lowest or
-                    ThreadPriority.BelowNormal or
-                    ThreadPriority.Normal or
-                    ThreadPriority.AboveNormal or
-                    ThreadPriority.Highest))
+                if (value is < ThreadPriority.Lowest or > ThreadPriority.Highest)
                 {
                     throw new ArgumentOutOfRangeException(paramName: null, message: SR.Argument_InvalidFlag);
                 }
@@ -189,9 +184,6 @@ namespace System.Threading
             NativeThread* nativeThread = GetNativeThreadForCurrentThread();
             Interlocked.And(ref nativeThread->m_State, ~NativeThread.ThreadState.TS_WaitSleepJoin);
         }
-
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_PollGC")]
-        private static partial void PollGCInternal();
 
 #if TARGET_UNIX || TARGET_BROWSER || TARGET_WASI
         internal WaitSubsystem.ThreadWaitInfo WaitInfo

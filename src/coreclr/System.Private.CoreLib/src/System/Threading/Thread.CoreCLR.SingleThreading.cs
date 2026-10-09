@@ -8,9 +8,6 @@ namespace System.Threading
 {
     public sealed partial class Thread
     {
-        // Wasm polls through its native helper; retain the GC transition for the managed fallback.
-        private static void PollGC() => PollGCInternal();
-
         // Spinning cannot make progress with only one thread.
         internal static int GetOptimalMaxSpinWaitsPerSpinIteration() => 0;
 
@@ -65,11 +62,7 @@ namespace System.Threading
 
         /// <summary>Returns true if the thread is a threadpool thread.</summary>
         /// <remarks>There are no thread pool threads when multithreading is not supported.</remarks>
-        public bool IsThreadPoolThread
-        {
-            get => false;
-            internal set => throw new PlatformNotSupportedException();
-        }
+        public bool IsThreadPoolThread => false;
 
         // Finalizers run on the only thread, so it must not be reconfigured as a finalizer thread.
         internal void ResetFinalizerThread()
