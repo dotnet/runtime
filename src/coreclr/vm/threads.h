@@ -1,11 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-//
-//
 // Currently represents a logical and physical CLR thread. Later, these concepts will be separated.
-//
-
 //
 // #SuspendingTheRuntime
 //
@@ -103,7 +99,6 @@
 // 'cooperates' to ensure that GCs can happen in a timely fashion.
 //
 // If you need to switch the GC mode of the current thread, look for the GCX_COOP() and GCX_PREEMP() macros.
-//
 
 #ifndef __threads_h__
 #define __threads_h__
@@ -2763,8 +2758,6 @@ public:
     void ClearThreadCurrNotification();
 
 private:
-    void SetLastThrownObjectHandle(OBJECTHANDLE h);
-
     ThreadExceptionState  m_ExceptionState;
 
 private:
@@ -2819,7 +2812,6 @@ private:
 
 private:
 #ifndef DACCESS_COMPILE
-private:
     static UINT32 *GetThreadLocalCountRef(Thread *pThread, SIZE_T threadLocalCountOffset)
     {
         WRAPPER_NO_CONTRACT;
@@ -2864,8 +2856,6 @@ private:
         }
         return InterlockedCompareExchange64((LONGLONG *)overflowCount, 0, 0); // prevent tearing
     }
-
-    static UINT64 GetTotalCount(SIZE_T threadLocalCountOffset, UINT64 *overflowCount);
 #endif // !DACCESS_COMPILE
 
 public:
@@ -3252,9 +3242,6 @@ public:
 #endif
 
 public:
-    // Is the current thread currently executing within a constrained execution region?
-    static BOOL IsExecutingWithinCer();
-
 #ifdef _DEBUG
 // when the thread is doing a stressing GC, some Crst violation could be ignored, by a non-elegant solution.
 private:

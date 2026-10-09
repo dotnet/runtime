@@ -26,6 +26,13 @@ internal interface IWasmR2RInfo
     /// frame size. Returns false when the index does not map to a known R2R function.
     /// </summary>
     bool TryGetUnwindData(uint functionTableIndex, out TargetPointer unwindDataAddress);
+
+    /// <summary>
+    /// Reports whether an R2R function table entry is a funclet rather than a method's root
+    /// function (<c>ExecutionManager::IsFuncletFunctionIndex</c>). Returns false when the index
+    /// does not map to a known R2R function.
+    /// </summary>
+    bool TryIsFunclet(uint functionTableIndex, out bool isFunclet);
 }
 
 /// <summary>
@@ -172,6 +179,87 @@ internal sealed class WasmUnwinder
         }
 
         return true;
+    }
+
+    /// <summary>
+    /// Advances <paramref name="sp"/> by one R2R frame and returns the caller's stack pointer,
+    /// without requiring the caller to be R2R-generated code. This is the frame-size half of
+    /// <c>WasmUnwindStackFrameCore</c>, which <see cref="TryGetLogicalFramePointer"/> needs in
+    /// order to inspect a synthetic <see cref="TerminateR2RStackWalk"/> frame.
+    /// </summary>
+    private bool TryUnwindToCallerStackPointer(TargetPointer sp, out TargetPointer callerSp)
+    {
+        callerSp = TargetPointer.Null;
+        if (!TryGetFramePointer(sp, out TargetPointer frameBase))
+            return false;
+
+        uint functionIndex = _target.Read<uint>(frameBase.Value + FunctionIndexOffset);
+        if (!_r2rInfo.TryGetUnwindData(functionIndex, out TargetPointer unwindData))
+            return false;
+
+        uint frameSize = DecodeULEB128(unwindData.Value);
+        if (frameSize == 0)
+            return false;
+
+        callerSp = new TargetPointer(frameBase.Value + frameSize);
+        return true;
+    }
+
+    /// <summary>
+    /// Returns the logical (establishing) frame pointer for the frame at <paramref name="sp"/>,
+    /// mirroring <c>GetWasmFramePointerFromStackPointer</c> in
+    /// <c>src/coreclr/vm/wasm/helpers.cpp</c>.
+    /// </summary>
+    /// <remarks>
+    /// For a method's root function this is its own frame base. For a funclet it is the frame
+    /// base of the establishing method: the funclet's FP local is the FP its caller passed in
+    /// (<c>WasmRegAlloc::AllocateFramePointer</c>, <c>CodeGen::genCallFinally</c>), so reaching it
+    /// means unwinding out of the funclet, either to its containing method or funclet, or to the
+    /// synthetic <see cref="TerminateR2RStackWalk"/> frame that
+    /// <c>CallFuncletWith[out]Throwable</c> pushes, which carries the establishing frame pointer
+    /// beside the marker.
+    /// </remarks>
+    public bool TryGetLogicalFramePointer(TargetPointer sp, out TargetPointer framePointer)
+    {
+        framePointer = TargetPointer.Null;
+
+        // Native recurses until it reaches a non-funclet frame or a CallFunclet terminator. The
+        // cDAC reads untrusted memory, so require each step to move toward the caller; the step
+        // count is only a backstop.
+        const int MaxUnwindSteps = 4096;
+        TargetPointer current = sp;
+
+        for (int i = 0; i < MaxUnwindSteps; i++)
+        {
+            if (!TryGetFramePointer(current, out TargetPointer frameBase))
+                return false;
+
+            uint functionIndex = _target.Read<uint>(frameBase.Value + FunctionIndexOffset);
+            // Native treats an unknown index as a root function; report no frame pointer instead.
+            if (!_r2rInfo.TryIsFunclet(functionIndex, out bool isFunclet))
+                return false;
+
+            if (!isFunclet)
+            {
+                framePointer = frameBase;
+                return true;
+            }
+
+            if (!TryUnwindToCallerStackPointer(current, out TargetPointer callerSp) || callerSp.Value <= current.Value)
+                return false;
+
+            if (_target.Read<uint>(callerSp.Value + FunctionIndexOffset) == TerminateR2RStackWalk)
+            {
+                // Invoked by the VM through CallFuncletWith[out]Throwable.
+                framePointer = GetEstablishingFramePointerFromTerminator(callerSp);
+                return true;
+            }
+
+            // Called by its containing method or funclet; keep walking out.
+            current = callerSp;
+        }
+
+        return false;
     }
 
     // Standard little-endian base-128 varint, matching the native DecodeULEB128AsU32. A ULEB128

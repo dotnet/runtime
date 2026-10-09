@@ -6,10 +6,16 @@ include(${CLR_ENG_NATIVE_DIR}/ijw/IJW.cmake)
 add_library(ijw SHARED ijw.cpp)
 target_link_libraries(ijw PRIVATE ijwhost)
 
+add_library(ijw2 SHARED ijw.cpp)
+target_link_libraries(ijw2 PRIVATE ijwhost)
+
 remove_ijw_incompatible_target_options(ijw)
+remove_ijw_incompatible_target_options(ijw2)
 add_ijw_msbuild_project_properties(ijw ijwhost)
+add_ijw_msbuild_project_properties(ijw2 ijwhost)
 
 install_with_stripped_symbols(ijw TARGETS corehost_test)
+install_with_stripped_symbols(ijw2 TARGETS corehost_test)
 
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
   # Copy over the debug CRT so that it is available for test runs

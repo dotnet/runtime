@@ -2641,7 +2641,7 @@ bool Compiler::optAssertionVNIsSubtype(ValueNum objVN, ValueNum castToVN, ASSERT
 }
 
 //------------------------------------------------------------------------------
-// optVNBasedFoldExpr_Call_Memcmp: Folds NI_System_SpanHelpers_SequenceEqual for immutable data.
+// optVNBasedFoldExpr_Call_Memcmp: Folds NI_System_SpanHelpers_SequenceEqual for equal addresses or immutable data.
 //
 // Arguments:
 //    call - NI_System_SpanHelpers_SequenceEqual call to fold
@@ -2658,28 +2658,48 @@ GenTree* Compiler::optVNBasedFoldExpr_Call_Memcmp(GenTreeCall* call)
     CallArg* arg2   = call->gtArgs.GetUserArgByIndex(1);
     CallArg* lenArg = call->gtArgs.GetUserArgByIndex(2);
 
+    ValueNum lenVN             = optConservativeNormalVN(lenArg->GetNode());
+    size_t   len               = 0;
+    bool     hasConstantLength = vnStore->IsVNIntegralConstant(lenVN, &len);
+
+    // SequenceEqual(..., len == 0) => true, and does not dereference pointers
+    if (hasConstantLength && (len == 0))
+    {
+        JITDUMP("...length is 0 -> optimize to constant true.\n");
+        return gtWrapWithSideEffects(gtNewIconNode(1), call, GTF_ALL_EFFECT, true);
+    }
+
     // See if arguments are the same - in that case we can optimize to constant true
     ValueNum arg1VN = optConservativeNormalVN(arg1->GetNode());
     ValueNum arg2VN = optConservativeNormalVN(arg2->GetNode());
     if ((arg1VN != ValueNumStore::NoVN) && (arg1VN == arg2VN))
     {
+        bool couldBeNull = !vnStore->IsKnownNonNull(arg1VN) && fgAddrCouldBeNull(arg1->GetNode()) &&
+                           fgAddrCouldBeNull(arg2->GetNode());
+        if (couldBeNull && !hasConstantLength)
+        {
+            JITDUMP("...equal arguments may be null and length is not a constant - bail out.\n");
+            return nullptr;
+        }
+
+        GenTree* result = gtNewIconNode(1);
+        // Short nonempty sequences are dereferenced before checking whether the addresses are equal.
+        if (couldBeNull && (len < TARGET_POINTER_SIZE))
+        {
+            GenTree* first  = fgMakeMultiUse(&arg1->NodeRef());
+            GenTree* second = fgMakeMultiUse(&arg2->NodeRef());
+            result          = gtNewOperNode(GT_COMMA, TYP_INT, gtNewNullCheck(second), result);
+            result          = gtNewOperNode(GT_COMMA, TYP_INT, gtNewNullCheck(first), result);
+        }
+
         JITDUMP("...both arguments have the same VN -> optimize to constant true.\n");
-        return gtWrapWithSideEffects(gtNewIconNode(1), call, GTF_ALL_EFFECT, true);
+        return gtWrapWithSideEffects(result, call, GTF_ALL_EFFECT, true);
     }
 
-    ValueNum lenVN = optConservativeNormalVN(lenArg->GetNode());
-    size_t   len;
-    if (!vnStore->IsVNIntegralConstant(lenVN, &len))
+    if (!hasConstantLength)
     {
         JITDUMP("...length is not a constant - bail out.\n");
         return nullptr;
-    }
-
-    // SequenceEqual(..., len == 0) => true, and does not dereference pointers
-    if (len == 0)
-    {
-        JITDUMP("...length is 0 -> optimize to constant true.\n");
-        return gtWrapWithSideEffects(gtNewIconNode(1), call, GTF_ALL_EFFECT, true);
     }
 
     constexpr size_t maxLen = 65536; // Arbitrary threshold to avoid large buffer allocations

@@ -23,4 +23,7 @@ internal sealed class WasmR2RInfo : IWasmR2RInfo
 
     public bool TryGetUnwindData(uint functionTableIndex, out TargetPointer unwindDataAddress)
         => _lookup.TryGetUnwindData(functionTableIndex, out unwindDataAddress);
+
+    public bool TryIsFunclet(uint functionTableIndex, out bool isFunclet)
+        => _lookup.TryIsFunclet(functionTableIndex, out isFunclet);
 }
