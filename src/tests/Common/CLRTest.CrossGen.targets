@@ -41,6 +41,9 @@ WARNING:   When setting properties based on their current state (for example:
     tooling cannot yet inspect emitted components) by setting this property in their project:
 
       <CrossGenTestSkipR2RDump>true</CrossGenTestSkipR2RDump>
+
+    Generated execution scripts can compile the test assemblies and System.Private.CoreLib into one
+    composite image by setting the WholeProgramCompositeBuildMode environment variable.
   -->
   <Target Name="GetCrossgenBashScript">
 
@@ -49,6 +52,9 @@ WARNING:   When setting properties based on their current state (for example:
     <PropertyGroup>
       <CrossgenBashScript Condition="'$(CLRTestKind)' == 'BuildAndRun' and '$(R2RIncompatible)' == 'true'">
         <![CDATA[
+if [ ! -z ${WholeProgramCompositeBuildMode+x} ]%3B then
+  export RunCrossGen2=1
+fi
 if [ ! -z ${RunCrossGen2+x} ]%3B then
   echo SKIPPING EXECUTION BECAUSE the test is incompatible with ReadyToRun
   exit 0
@@ -63,6 +69,17 @@ if [ "$(AlwaysUseCrossGen2)" == "true" ]; then
     export CompositeBuildMode=1
 fi
 
+crossgen2OutputDirectory="IL-CG2"
+crossgen2InputDirectory="$crossgen2OutputDirectory"
+if [ ! -z ${WholeProgramCompositeBuildMode+x} ]; then
+    export RunCrossGen2=1
+    export CompositeBuildMode=1
+    crossgen2OutputDirectory="IL-CG2-WholeProgram"
+    crossgen2InputDirectory="$crossgen2OutputDirectory/inputs"
+    export R2RTestCoreRoot="$PWD/$crossgen2OutputDirectory/core-root"
+    export CORE_LIBRARIES="$R2RTestCoreRoot"
+fi
+
 # CrossGen2 Script
 if [ ! -z ${RunCrossGen2+x} ]%3B then
   export TEST_READY_TO_RUN_MODE=1
@@ -70,8 +87,8 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
     # WASI loads R2R code from a single composite spliced into the host.
     export CompositeBuildMode=1
   fi
-  compilationDoneFlagFile="IL-CG2/done"
-  if [ -d IL-CG2 ]%3B then
+  compilationDoneFlagFile="$crossgen2OutputDirectory/done"
+  if [ -d "$crossgen2OutputDirectory" ]%3B then
     while [ ! -f $compilationDoneFlagFile ]%3B
     do
       echo "Waiting for concurrent Crossgen2 compilation: $compilationDoneFlagFile"
@@ -79,10 +96,15 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
     done
   else
     TakeLock
-    if [ ! -d IL-CG2 ]%3B then
-      mkdir IL-CG2
-      cp ./*.dll IL-CG2/
-      rm IL-CG2/composite-r2r.* 2>/dev/null
+    if [ ! -d "$crossgen2OutputDirectory" ]%3B then
+      mkdir -p "$crossgen2InputDirectory"
+      if [ ! -z ${WholeProgramCompositeBuildMode+x} ]%3B then
+        mkdir "$R2RTestCoreRoot"
+        cp "$CORE_ROOT"/*.dll "$R2RTestCoreRoot/"
+        cp "$CORE_ROOT/System.Private.CoreLib.dll" "$crossgen2InputDirectory/"
+      fi
+      cp ./*.dll "$crossgen2InputDirectory/"
+      rm "$crossgen2OutputDirectory"/composite-r2r.* 2>/dev/null
 
       if [ ! -z ${CompositeBuildMode+x} ]%3B then
         if [ "$(CrossGen2OutputFormat)" != "wasm" ]; then
@@ -224,10 +246,10 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
               __CompositeExt=".wasm"
               __CompositeExtFinal=".wasm"
           fi
-          RunCrossgen2OnFiles "$PWD/composite-r2r${__CompositeExt}" "$PWD/composite-r2r${__CompositeExtFinal}" "$PWD/IL-CG2/*.dll"
+          RunCrossgen2OnFiles "$PWD/composite-r2r${__CompositeExt}" "$PWD/composite-r2r${__CompositeExtFinal}" "$PWD/$crossgen2InputDirectory/*.dll"
       else
-          ExtraCrossGen2Args+=" -r:$PWD/IL-CG2/*.dll"
-          for dllFile in "$PWD"/IL-CG2/*.dll
+          ExtraCrossGen2Args+=" -r:$PWD/$crossgen2InputDirectory/*.dll"
+          for dllFile in "$PWD"/"$crossgen2InputDirectory"/*.dll
           do
             echo $dllFile
             bareFileName="${dllFile##*/}"
@@ -241,14 +263,21 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
           done
       fi
 
+      if [ ! -z ${WholeProgramCompositeBuildMode+x} ] && [ $__cg2ExitCode -eq 0 ]; then
+        cp "$__OutputFileFinal" "$R2RTestCoreRoot/"
+        if [ "$(CrossGen2OutputFormat)" == "wasm" ]%3B then
+          cp "$PWD/System.Private.CoreLib.wasm" "$R2RTestCoreRoot/"
+        fi
+      fi
+
       if [ "$(TargetOS)" == "wasi" ] && [ $__cg2ExitCode -eq 0 ] && [ $__r2rDumpExitCode -eq 0 ]; then
         (
-          mkdir -p IL-CG2/wasi-r2r/comp || exit 1
-          "$__DotNet" msbuild "$CORE_ROOT/wasi-r2r/WasiR2RComposer.proj" -nologo -t:Compose "/p:CompositePath=$PWD/composite-r2r.wasm" "/p:ComponentPath=$CORE_ROOT/corerun" "/p:OutputDirectory=$PWD/IL-CG2/wasi-r2r/work" "/p:OutputPath=$PWD/IL-CG2/wasi-r2r/corerun-composite.wasm" "/p:WasmToolsPath=%24(command -v wasm-tools)" "/p:WasmMergePath=%24(command -v wasm-merge)" "/p:WasmOptPath=%24(command -v wasm-opt)" "/p:StubOutputDirectory=$PWD/IL-CG2/wasi-r2r/comp" "/p:ComponentStubsDirectory=$PWD"
+          mkdir -p "$crossgen2OutputDirectory/wasi-r2r/comp" || exit 1
+          "$__DotNet" msbuild "$CORE_ROOT/wasi-r2r/WasiR2RComposer.proj" -nologo -t:Compose "/p:CompositePath=$PWD/composite-r2r.wasm" "/p:ComponentPath=$CORE_ROOT/corerun" "/p:OutputDirectory=$PWD/$crossgen2OutputDirectory/wasi-r2r/work" "/p:OutputPath=$PWD/$crossgen2OutputDirectory/wasi-r2r/corerun-composite.wasm" "/p:WasmToolsPath=%24(command -v wasm-tools)" "/p:WasmMergePath=%24(command -v wasm-merge)" "/p:WasmOptPath=%24(command -v wasm-opt)" "/p:StubOutputDirectory=$PWD/$crossgen2OutputDirectory/wasi-r2r/comp" "/p:ComponentStubsDirectory=$PWD"
         )
         __linkExitCode=$?
         if [ $__linkExitCode -ne 0 ]; then
-          rm -f "$PWD/IL-CG2/wasi-r2r/corerun-composite.wasm"
+          rm -f "$PWD/$crossgen2OutputDirectory/wasi-r2r/corerun-composite.wasm"
         fi
       fi
 
@@ -283,6 +312,9 @@ fi
     <PropertyGroup>
       <CrossgenBatchScript Condition="'$(CLRTestKind)' == 'BuildAndRun' and '$(R2RIncompatible)' == 'true'">
         <![CDATA[
+IF DEFINED WholeProgramCompositeBuildMode (
+  SET RunCrossGen2=1
+)
 IF NOT "%RunCrossGen2%"=="" (
   ECHO SKIPPING EXECUTION BECAUSE the test is incompatible with ReadyToRun
   popd
@@ -298,6 +330,17 @@ if /i "$(AlwaysUseCrossGen2)" == "true" (
     set CompositeBuildMode=1
 )
 
+set crossgen2OutputDirectory=IL-CG2
+set crossgen2InputDirectory=!crossgen2OutputDirectory!
+if defined WholeProgramCompositeBuildMode (
+    set RunCrossGen2=1
+    set CompositeBuildMode=1
+    set crossgen2OutputDirectory=IL-CG2-WholeProgram
+    set crossgen2InputDirectory=!crossgen2OutputDirectory!\inputs
+    set "R2RTestCoreRoot=!CD!\!crossgen2OutputDirectory!\core-root"
+    set "CORE_LIBRARIES=!R2RTestCoreRoot!"
+)
+
 REM CrossGen2 Script
 if defined RunCrossGen2 (
     set TEST_READY_TO_RUN_MODE=1
@@ -310,8 +353,8 @@ if defined RunCrossGen2 (
 
     set CrossGen2Status=0
     set R2RDumpStatus=0
-    set compilationDoneFlagFile=!ScriptPath!IL-CG2\done
-    if exist "IL-CG2" (
+    set compilationDoneFlagFile=!ScriptPath!!crossgen2OutputDirectory!\done
+    if exist "!crossgen2OutputDirectory!" (
       REM We may have come in the middle of a concurrent CG2 compilation, wait for it to finish
       :ProbeCompilationFinished
       if exist "!compilationDoneFlagFile!" goto :DoneCrossgen2OperationsNoRelease
@@ -320,11 +363,17 @@ if defined RunCrossGen2 (
       goto :ProbeCompilationFinished
     )
     call :TakeLock
-    if exist "IL-CG2" goto :DoneCrossgen2Operations
+    if exist "!crossgen2OutputDirectory!" goto :DoneCrossgen2Operations
 
-    mkdir IL-CG2
-    copy *.dll IL-CG2\
-    del IL-CG2\composite-r2r.* 2>nul
+    mkdir !crossgen2OutputDirectory!
+    mkdir !crossgen2InputDirectory!
+    if defined WholeProgramCompositeBuildMode (
+        mkdir "!R2RTestCoreRoot!"
+        copy /y "!CORE_ROOT!\*.dll" "!R2RTestCoreRoot!\"
+        copy /y "!CORE_ROOT!\System.Private.CoreLib.dll" "!crossgen2InputDirectory!\"
+    )
+    copy /y *.dll !crossgen2InputDirectory!\
+    del !crossgen2OutputDirectory!\composite-r2r.* 2>nul
 
     if defined CompositeBuildMode (
         set ExtraCrossGen2Args=!ExtraCrossGen2Args! --composite
@@ -336,12 +385,12 @@ if defined RunCrossGen2 (
         )
         set __PdbFile=!scriptPath!\composite-r2r.ni.pdb
         rem In composite mode, treat all dll's in the test folder as rooting inputs
-        set __InputFile=!scriptPath!IL-CG2\*.dll
+        set __InputFile=!scriptPath!!crossgen2InputDirectory!\*.dll
         call :CompileOneFileCrossgen2
         IF NOT !CrossGen2Status!==0 goto :DoneCrossgen2Operations
     ) else (
-        set ExtraCrossGen2Args=!ExtraCrossGen2Args! -r:!scriptPath!IL-CG2\*.dll
-        for %%I in (!scriptPath!IL-CG2\*.dll) do (
+        set ExtraCrossGen2Args=!ExtraCrossGen2Args! -r:!scriptPath!!crossgen2InputDirectory!\*.dll
+        for %%I in (!scriptPath!!crossgen2InputDirectory!\*.dll) do (
             if "$(CrossGen2OutputFormat)"=="wasm" (
                 set __OutputFile=!scriptPath!%%~nI.wasm
             ) else (
@@ -445,7 +494,7 @@ if defined RunCrossGen2 (
         call !__R2RDumpCommand! !__R2RDumpArguments!
         set R2RDumpStatus=!ERRORLEVEL!
     ) else (
-        for %%I in (!scriptPath!IL-CG2\*.dll) do (
+        for %%I in (!scriptPath!!crossgen2InputDirectory!\*.dll) do (
             set __R2RDumpInput=!scriptPath!%%~nI.wasm
             set __R2RDumpArguments=--header --sc --in "!__R2RDumpInput!" --out "!__R2RDumpInput!.r2rdump" --val --rp "!CORE_ROOT!"
             echo "Running R2RDump: !__R2RDumpCommand! !__R2RDumpArguments!"
@@ -461,6 +510,12 @@ if defined RunCrossGen2 (
     echo %time%
 
     if !CrossGen2Status!==0 (
+        if defined WholeProgramCompositeBuildMode (
+            copy /y "!__OutputFile!" "!R2RTestCoreRoot!\"
+            if "$(CrossGen2OutputFormat)"=="wasm" (
+                copy /y "!scriptPath!System.Private.CoreLib.wasm" "!R2RTestCoreRoot!\"
+            )
+        )
         if defined CrossGen2TestCheckPdb (
             set __CheckPdbCommand=!__DotNet!
             set __CheckPdbCommand=!__CheckPdbCommand! "!CORE_ROOT!\PdbChecker\PdbChecker.dll"

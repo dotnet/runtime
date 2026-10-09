@@ -319,6 +319,7 @@ namespace ILCompiler
         private ReadyToRunCallGraphBuilder _callGraphBuilder;
         private readonly ReadyToRunCompilationPlan _compilationPlan;
         private readonly Dictionary<MethodDesc, ReadyToRunMethodCompilationInfo> _previousCompilationInfo;
+        private readonly bool _isCoreLibCompilation;
 
         public ProfileDataManager ProfileData => _profileData;
 
@@ -418,6 +419,14 @@ namespace ILCompiler
             _compositeRootPath = compositeRootPath;
             _printReproInstructions = printReproInstructions;
             CompilationModuleGroup = (ReadyToRunCompilationModuleGroupBase)nodeFactory.CompilationModuleGroup;
+            foreach (EcmaModule compilationModule in CompilationModuleGroup.CompilationModuleSet)
+            {
+                if (compilationModule == TypeSystemContext.SystemModule)
+                {
+                    _isCoreLibCompilation = true;
+                    break;
+                }
+            }
 
             // Generate baseline support specification for InstructionSetSupport. This will prevent usage of the generated
             // code if the runtime environment doesn't support the specified instruction set. Targets that cannot generate
@@ -633,6 +642,13 @@ namespace ILCompiler
             }
 
             return _previousCompilationInfo.TryGetValue(method, out compilationInfo);
+        }
+
+        internal bool CanUseDirectCall(MethodDesc method)
+        {
+            return _isCoreLibCompilation &&
+                NodeFactory.Target.IsWasm &&
+                TryGetPreviousCompilationInfo(method, out _);
         }
 
         private void RewriteComponentFile(string inputFile, string outputFile, string ownerExecutableName, HashSet<MethodDesc> compiledMethodDefs)

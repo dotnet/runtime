@@ -191,7 +191,8 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
         GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetFramePointerRegIndex());
         if (m_compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_WASM_MANAGED_HELPER))
         {
-            GetEmitter()->emitIns_I(INS_i32_const_frameidentity, EA_PTRSIZE, 0);
+            GetEmitter()->emitIns_I(INS_i32_const_frameidentity, EA_HANDLE_CNS_RELOC,
+                                    reinterpret_cast<cnsval_ssize_t>(m_compiler->info.compMethodHnd));
         }
         else if (m_compiler->lvaWasmPortableEntryPointArg != BAD_VAR_NUM)
         {
@@ -2170,6 +2171,13 @@ void CodeGen::genCodeForConstant(GenTree* treeNode)
         icon = treeNode->AsIntConCommon();
         if (icon->IsIconHandle())
         {
+            if (icon->IsIconHandle(GTF_ICON_WASM_FRAME_IDENTITY))
+            {
+                GetEmitter()->emitIns_I(INS_i32_const_frameidentity, EA_HANDLE_CNS_RELOC, icon->IntegralValue());
+                WasmProduceReg(treeNode);
+                return;
+            }
+
             // Wasm has no absolute-address literals; every handle is materialized as a module-base-
             // relative constant and relocated. compReloc is always on for a real AOT compile, so a
             // handle only reaches here without needing a reloc under a cross-VM SuperPMI replay.

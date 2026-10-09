@@ -1020,8 +1020,10 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         }
         case IF_FRAMEIDENTITY:
         {
+            assert(id->idIsCnsReloc());
             dst += emitOutputOpcode(dst, ins);
-            emitRecordRelocation(dst, m_compiler->info.compMethodHnd, CorInfoReloc::WASM_METHOD_FRAME_IDENTITY_SLEB);
+            emitRecordRelocation(dst, reinterpret_cast<void*>(emitGetInsSC(id)),
+                                 CorInfoReloc::WASM_METHOD_FRAME_IDENTITY_SLEB);
             dst += emitOutputPaddedReloc(dst);
             break;
         }

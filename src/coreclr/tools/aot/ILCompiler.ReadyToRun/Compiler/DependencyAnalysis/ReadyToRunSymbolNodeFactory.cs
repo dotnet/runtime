@@ -75,6 +75,16 @@ namespace ILCompiler.DependencyAnalysis
                     sortLast: true);
             });
 
+            _precodeReadyToRunMethodEntries = new NodeCache<MethodWithToken, Import>(method =>
+            {
+                return new PrecodeHelperImport(
+                    _codegenNodeFactory,
+                    _codegenNodeFactory.MethodSignature(
+                        ReadyToRunFixupKind.MethodEntry_ReadyToRun,
+                        method,
+                        isInstantiatingStub: false));
+            });
+
             _instructionSetSupportFixups = new NodeCache<string, Import>(key =>
             {
                 return new PrecodeHelperImport(
@@ -320,12 +330,18 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         private NodeCache<MethodWithToken, Import> _eagerReadyToRunMethodEntries;
+        private NodeCache<MethodWithToken, Import> _precodeReadyToRunMethodEntries;
         private NodeCache<string, Import> _instructionSetSupportFixups;
         private NodeCache<MethodWithGCInfo, Import> _resumptionStubEntryPointFixups;
 
         public Import EagerReadyToRunMethodEntry(MethodWithToken method)
         {
             return _eagerReadyToRunMethodEntries.GetOrAdd(method);
+        }
+
+        public Import PrecodeReadyToRunMethodEntry(MethodWithToken method)
+        {
+            return _precodeReadyToRunMethodEntries.GetOrAdd(method);
         }
 
         public Import PerMethodInstructionSetSupportFixup(InstructionSetSupport instructionSetSupport)

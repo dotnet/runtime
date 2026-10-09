@@ -39,7 +39,7 @@ IF_DEF(MEMADDR,       IS_NONE, NONE) // <opcode> <SLEB128 immediate (memory addr
 IF_DEF(FUNCPTR,       IS_NONE, NONE) // <opcode> <SLEB128 immediate (function pointer reloc)>
 IF_DEF(FUNCLETPTR,    IS_NONE, NONE) // <opcode> <SLEB128 immediate (funclet pointer reloc)>
 IF_DEF(FUNCLETIDX,    IS_NONE, NONE) // <opcode> <SLEB128 immediate (funclet index reloc)>
-IF_DEF(FRAMEIDENTITY, IS_NONE, NONE) // <opcode> <SLEB128 immediate (current method's frame identity reloc)>
+IF_DEF(FRAMEIDENTITY, IS_NONE, NONE) // <opcode> <SLEB128 immediate (method frame identity reloc)>
 IF_DEF(DATAOFFS,      IS_NONE, NONE) // <opcode> <SLEB128 immediate (JIT data section offset reloc)>
 IF_DEF(F32,           IS_NONE, NONE) // <opcode> <f32 immediate (stored as 64-bit integer constant)>
 IF_DEF(F64,           IS_NONE, NONE) // <opcode> <f64 immediate (stored as 64-bit integer constant)>

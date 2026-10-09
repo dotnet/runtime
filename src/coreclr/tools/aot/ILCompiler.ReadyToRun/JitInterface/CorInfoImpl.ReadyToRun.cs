@@ -2754,6 +2754,7 @@ namespace Internal.JitInterface
                         {
                             nonUnboxingMethod = methodToCall.GetUnboxedMethod();
                         }
+                        bool isRawPInvoke = nonUnboxingMethod is IL.Stubs.PInvokeTargetNativeMethod;
                         if (nonUnboxingMethod is IL.Stubs.PInvokeTargetNativeMethod rawPinvoke)
                         {
                             nonUnboxingMethod = rawPinvoke.Target;
@@ -2778,6 +2779,30 @@ namespace Internal.JitInterface
                             MethodDesc compilableTarget = nonUnboxingMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
                             MethodWithGCInfo targetCodeNode = _compilation.NodeFactory.CompiledMethodNode(compilableTarget);
                             pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(targetCodeNode);
+                        }
+                        else if (!isUnboxingStub &&
+                            !isRawPInvoke &&
+                            !useInstantiatingStub &&
+                            (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) == 0 &&
+                            _compilation.CanUseDirectCall(
+                                nonUnboxingMethod.GetCanonMethodTarget(CanonicalFormKind.Specific)))
+                        {
+                            MethodDesc compilableTarget =
+                                nonUnboxingMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
+                            Debug.Assert(methodToCall == compilableTarget);
+
+                            MethodWithToken targetMethodWithToken = ComputeMethodWithToken(
+                                nonUnboxingMethod,
+                                ref resolvedToken,
+                                constrainedType,
+                                unboxing: false);
+                            AddPrecodeFixup(
+                                _compilation.SymbolNodeFactory.PrecodeReadyToRunMethodEntry(targetMethodWithToken));
+
+                            MethodWithGCInfo targetCodeNode =
+                                _compilation.NodeFactory.CompiledMethodNode(compilableTarget);
+                            pResult->codePointerOrStubLookup.constLookup =
+                                CreateConstLookupToSymbol(targetCodeNode);
                         }
                         else
                         {
