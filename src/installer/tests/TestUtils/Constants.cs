@@ -9,18 +9,6 @@ namespace Microsoft.DotNet.CoreSetup.Test
     {
         public const string MicrosoftNETCoreApp = "Microsoft.NETCore.App";
 
-        public static class ApplyPatchesSetting
-        {
-            public const string RuntimeConfigPropertyName = "applyPatches";
-        }
-
-        public static class RollForwardOnNoCandidateFxSetting
-        {
-            public const string RuntimeConfigPropertyName = "rollForwardOnNoCandidateFx";
-            public const string CommandLineArgument = "--roll-forward-on-no-candidate-fx";
-            public const string EnvironmentVariable = "DOTNET_ROLL_FORWARD_ON_NO_CANDIDATE_FX";
-        }
-
         public static class RollForwardSetting
         {
             public const string RuntimeConfigPropertyName = "rollForward";

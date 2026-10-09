@@ -4,6 +4,7 @@
 #include <atomic>
 #include <condition_variable>
 #include <mutex>
+#include <optional>
 #include <pal.h>
 #include "args.h"
 #include <trace.h>
@@ -965,10 +966,9 @@ SHARED_API int HOSTPOLICY_CALLTYPE corehost_resolve_component_dependencies(
 
     // For now intentionally don't process .runtimeconfig.json since we don't perform framework resolution.
 
-    // Call parse_runtime_config since it initializes the defaults for various settings
-    // but we don't have any .runtimeconfig.json for the component, so pass in empty paths.
+    // Initialize the runtime config without processing a .runtimeconfig.json for the component.
     // Empty paths is a valid case and the method will simply skip parsing anything.
-    app->parse_runtime_config(pal::string_t(), pal::string_t(), runtime_config_t::settings_t());
+    app->parse_runtime_config(pal::string_t(), pal::string_t(), std::nullopt);
     if (!app->get_runtime_config().is_valid())
     {
         // This should really never happen, but fail gracefully if it does anyway.
