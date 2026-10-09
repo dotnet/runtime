@@ -338,7 +338,6 @@ GenTree* Lowering::LowerNeg(GenTreeOp* node)
 //
 GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
 {
-    // TODO-WASM: recognize eqz cases
     return nullptr;
 }
 
@@ -665,7 +664,21 @@ void Lowering::ContainCheckCast(GenTreeCast* node)
 //
 void Lowering::ContainCheckCompare(GenTreeOp* cmp)
 {
-    // TODO-WASM-CQ: do containment for [i32|i64].eqz.
+    if (!cmp->OperIs(GT_EQ, GT_NE))
+    {
+        return;
+    }
+
+    GenTree* zero = cmp->gtGetOp2();
+    if (!zero->IsIntegralConst(0))
+    {
+        zero = cmp->gtGetOp1();
+    }
+
+    if (zero->IsIntegralConst(0))
+    {
+        MakeSrcContained(cmp, zero);
+    }
 }
 
 //------------------------------------------------------------------------

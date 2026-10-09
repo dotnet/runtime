@@ -54,8 +54,6 @@ namespace System.Data.Common
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public int Count => (null != _items) ? _items.Count : 0;
 
-        private static Type ItemType => typeof(DataTableMapping);
-
         [Browsable(false)]
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public DataTableMapping this[int index]
@@ -309,7 +307,7 @@ namespace System.Data.Common
             }
             else
             {
-                throw ADP.CollectionRemoveInvalidObject(ItemType, this);
+                throw ADP.CollectionRemoveInvalidObject(typeof(DataTableMapping), this);
             }
         }
 
@@ -327,7 +325,7 @@ namespace System.Data.Common
             {
                 throw ADP.TablesAddNullAttempt(nameof(value));
             }
-            else if (!ItemType.IsInstanceOfType(value))
+            else if (!typeof(DataTableMapping).IsInstanceOfType(value))
             {
                 throw ADP.NotADataTableMapping(value);
             }

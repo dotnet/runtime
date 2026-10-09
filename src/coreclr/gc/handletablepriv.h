@@ -5,9 +5,6 @@
  * Generational GC handle manager.  Internal Implementation Header.
  *
  * Shared defines and declarations for handle table implementation.
- *
-
- *
  */
 
 #include "common.h"
@@ -657,11 +654,6 @@ TableSegment *SegmentAlloc(HandleTable *pTable);
  *
  */
 void SegmentFree(TableSegment *pSegment);
-
-/*
- * Check if a handle is part of a HandleTable
- */
-BOOL TableContainHandle(HandleTable *pTable, OBJECTHANDLE handle);
 
 /*
  * SegmentRemoveFreeBlocks

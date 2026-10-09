@@ -1007,9 +1007,12 @@ namespace System.Net.Security.Tests
                 {
                     byte[] pt = "blocked"u8.ToArray();
                     byte[] ct = new byte[CipherBufSize];
-                    Assert.Throws<AuthenticationException>(() => session.Write(pt, ct, out _, out _));
+                    serverFault = Assert.Throws<AuthenticationException>(() => session.Write(pt, ct, out _, out _));
                 }
 
+                // The fault message carries the caller's verdict, like SslStream's.
+                Assert.Contains(nameof(SslPolicyErrors.RemoteCertificateChainErrors), serverFault.Message);
+                Assert.DoesNotContain("{0}", serverFault.Message);
             }
         }
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows))]

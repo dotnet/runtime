@@ -659,6 +659,32 @@ internal partial class MockDescriptors
         }
 
         /// <summary>
+        /// Allocates a method table followed by one vtable indirection and its chunk of virtual slots
+        /// (MethodTable::GetSlotPtrRaw: the indirections start immediately after the MethodTable).
+        /// Sets <c>NumVirtuals</c> to the number of slots given.
+        /// </summary>
+        internal MockMethodTable AddMethodTableWithVtable(string name, ulong[] vtableSlots)
+        {
+            const int SlotsPerIndirection = 8;
+            if (vtableSlots.Length > SlotsPerIndirection)
+                throw new ArgumentOutOfRangeException(nameof(vtableSlots));
+
+            int pointerSize = Builder.TargetTestHelpers.PointerSize;
+            int indirectionOffset = MethodTableLayout.Size;
+            int chunkOffset = indirectionOffset + pointerSize;
+            MockMemorySpace.HeapFragment fragment = TypeSystemAllocator.Allocate(
+                (ulong)(chunkOffset + SlotsPerIndirection * pointerSize), $"MethodTable+vtable '{name}'");
+
+            Builder.TargetTestHelpers.WritePointer(fragment.Data.AsSpan(indirectionOffset, pointerSize), fragment.Address + (ulong)chunkOffset);
+            for (int i = 0; i < vtableSlots.Length; i++)
+                Builder.TargetTestHelpers.WritePointer(fragment.Data.AsSpan(chunkOffset + i * pointerSize, pointerSize), vtableSlots[i]);
+
+            MockMethodTable mt = MethodTableLayout.Create(fragment.Data.AsMemory(0, MethodTableLayout.Size), fragment.Address);
+            mt.NumVirtuals = (ushort)vtableSlots.Length;
+            return mt;
+        }
+
+        /// <summary>
         /// Allocates a method table together with a CGCDesc immediately before it in memory.
         /// </summary>
         /// <param name="name">Descriptive name for the allocation.</param>

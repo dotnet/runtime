@@ -2537,7 +2537,7 @@ void StackFrameIterator::ProcessCurrentFrame(void)
             // Cache values which may be updated by CheckForSkippedFrames()
             m_cachedCodeInfo = m_crawl.codeInfo;
 
-            // On non-X86, we want to process the skipped explicit frames before the managed stack frame
+            // We want to process the skipped explicit frames before the managed stack frame
             // containing them.
             if (CheckForSkippedFrames())
             {
@@ -2573,10 +2573,8 @@ void StackFrameIterator::ProcessCurrentFrame(void)
 //    Returns true if there are skipped frames.
 //
 // Notes:
-//    x86 wants to stop at the skipped stack frames after the containing managed stack frame, but
-//    WIN64 wants to stop before.  I don't think x86 actually has any good reason for this, except
-//    because it doesn't unwind one frame ahead of time like WIN64 does.  This means that we don't
-//    have the caller SP on x86.
+//    Skipped frames are reported before the containing managed stack frame. On x86 this includes
+//    the InlinedCallFrame, which stays linked for the whole method.
 //
 
 BOOL StackFrameIterator::CheckForSkippedFrames(void)

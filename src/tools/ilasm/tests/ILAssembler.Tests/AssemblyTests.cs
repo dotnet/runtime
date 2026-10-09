@@ -986,5 +986,33 @@ namespace ILAssembler.Tests
             Assert.Single(reader.GetCustomAttributes(dependencyHandle));
             Assert.Equal(dependencyHandle, externalType.ResolutionScope);
         }
+
+        [Theory]
+        [InlineData("System.Security.AllowPartiallyTrustedCallersAttribute", ".ctor()", "( 01 00 00 00 )")]
+        [InlineData("System.Runtime.InteropServices.TypeLibVersionAttribute", ".ctor(int32, int32)", "( 01 00 01 00 00 00 02 00 00 00 00 00 )")]
+        [InlineData("System.Runtime.InteropServices.ComCompatibleVersionAttribute", ".ctor(int32, int32, int32, int32)", "( 01 00 01 00 00 00 02 00 00 00 03 00 00 00 04 00 00 00 00 00 )")]
+        [InlineData("System.Runtime.InteropServices.TypeLibVersionAttribute", ".ctor(int32, int32)", "( 01 00 FF FF FF FF 02 00 00 00 00 00 )")]
+        [InlineData("System.Runtime.InteropServices.ComCompatibleVersionAttribute", ".ctor(int32, int32, int32, int32)", "( 01 00 FF FF FF FF 02 00 00 00 03 00 00 00 04 00 00 00 00 00 )")]
+        public void PseudoCustomAttribute_OnAssembly_KeepsAttribute(string attributeType, string constructor, string value)
+        {
+            string source = $$"""
+                .assembly extern mscorlib { }
+                .assembly test
+                {
+                    .custom instance void [mscorlib]{{attributeType}}::{{constructor}} = {{value}}
+                }
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options { PseudoAttributes = true });
+            var reader = pe.GetMetadataReader();
+
+            var attribute = reader.GetCustomAttribute(Assert.Single(reader.GetAssemblyDefinition().GetCustomAttributes()));
+            Assert.Equal(
+                Convert.FromHexString(value.Replace("(", "").Replace(")", "").Replace(" ", "")),
+                reader.GetBlobBytes(attribute.Value));
+        }
     }
 }

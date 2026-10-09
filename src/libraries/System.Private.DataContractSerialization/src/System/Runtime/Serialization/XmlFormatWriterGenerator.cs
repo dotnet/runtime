@@ -83,7 +83,7 @@ namespace System.Runtime.Serialization
                     bool memberAccessFlag = classContract.RequiresMemberAccessForWrite(null);
                     try
                     {
-                        _ilg.BeginMethod("Write" + classContract.XmlName.Name + "ToXml", Globals.TypeOfXmlFormatClassWriterDelegate, memberAccessFlag);
+                        _ilg.BeginMethod("Write" + classContract.XmlName.Name + "ToXml", typeof(XmlFormatClassWriterDelegate), memberAccessFlag);
                     }
                     catch (SecurityException securityException)
                     {
@@ -127,7 +127,7 @@ namespace System.Runtime.Serialization
                     bool memberAccessFlag = collectionContract.RequiresMemberAccessForWrite(null);
                     try
                     {
-                        _ilg.BeginMethod("Write" + collectionContract.XmlName.Name + "ToXml", Globals.TypeOfXmlFormatCollectionWriterDelegate, memberAccessFlag);
+                        _ilg.BeginMethod("Write" + collectionContract.XmlName.Name + "ToXml", typeof(XmlFormatCollectionWriterDelegate), memberAccessFlag);
                     }
                     catch (SecurityException securityException)
                     {
@@ -165,14 +165,14 @@ namespace System.Runtime.Serialization
                 // DateTimeOffsetAdapter is used here for serialization purposes to bypass the ISerializable implementation
                 // on DateTimeOffset; which does not work in partial trust.
 
-                if (objType == Globals.TypeOfDateTimeOffsetAdapter)
+                if (objType == typeof(DateTimeOffsetAdapter))
                 {
-                    _ilg.ConvertValue(objectArg.ArgType, Globals.TypeOfDateTimeOffset);
+                    _ilg.ConvertValue(objectArg.ArgType, typeof(DateTimeOffset));
                     _ilg.Call(XmlFormatGeneratorStatics.GetDateTimeOffsetAdapterMethod);
                 }
-                else if (objType == Globals.TypeOfMemoryStreamAdapter)
+                else if (objType == typeof(MemoryStreamAdapter))
                 {
-                    _ilg.ConvertValue(objectArg.ArgType, Globals.TypeOfMemoryStream);
+                    _ilg.ConvertValue(objectArg.ArgType, typeof(System.IO.MemoryStream));
                     _ilg.Call(XmlFormatGeneratorStatics.GetMemoryStreamAdapterMethod);
                 }
                 else
@@ -268,9 +268,9 @@ namespace System.Runtime.Serialization
 
                     if (classContract.HasExtensionData)
                     {
-                        LocalBuilder extensionDataLocal = _ilg.DeclareLocal(Globals.TypeOfExtensionDataObject);
+                        LocalBuilder extensionDataLocal = _ilg.DeclareLocal(typeof(ExtensionDataObject));
                         _ilg.Load(_objectLocal);
-                        _ilg.ConvertValue(_objectLocal.LocalType, Globals.TypeOfIExtensibleDataObject);
+                        _ilg.ConvertValue(_objectLocal.LocalType, typeof(IExtensibleDataObject));
                         _ilg.LoadMember(XmlFormatGeneratorStatics.ExtensionDataProperty);
                         _ilg.Store(extensionDataLocal);
                         _ilg.Call(_contextArg, XmlFormatGeneratorStatics.WriteExtensionDataMethod, _xmlWriterArg, extensionDataLocal, -1);
@@ -394,7 +394,7 @@ namespace System.Runtime.Serialization
                 if (collectionContract.Kind == CollectionKind.Array)
                 {
                     Type itemType = collectionContract.ItemType;
-                    LocalBuilder i = _ilg.DeclareLocal(Globals.TypeOfInt);
+                    LocalBuilder i = _ilg.DeclareLocal(typeof(int));
 
                     _ilg.Call(_contextArg, XmlFormatGeneratorStatics.IncrementArrayCountMethod, _xmlWriterArg, _objectLocal);
 
@@ -430,7 +430,7 @@ namespace System.Runtime.Serialization
                             incrementCollectionCountMethod = XmlFormatGeneratorStatics.IncrementCollectionCountGenericMethod.MakeGenericMethod(collectionContract.ItemType);
                             break;
                         case CollectionKind.GenericDictionary:
-                            incrementCollectionCountMethod = XmlFormatGeneratorStatics.IncrementCollectionCountGenericMethod.MakeGenericMethod(Globals.TypeOfKeyValuePair.MakeGenericType(collectionContract.ItemType.GetGenericArguments()));
+                            incrementCollectionCountMethod = XmlFormatGeneratorStatics.IncrementCollectionCountGenericMethod.MakeGenericMethod(typeof(System.Collections.Generic.KeyValuePair<,>).MakeGenericType(collectionContract.ItemType.GetGenericArguments()));
                             break;
                     }
                     if (incrementCollectionCountMethod != null)
@@ -445,13 +445,13 @@ namespace System.Runtime.Serialization
                     {
                         isGenericDictionary = true;
                         keyValueTypes = collectionContract.ItemType.GetGenericArguments();
-                        enumeratorType = Globals.TypeOfGenericDictionaryEnumerator.MakeGenericType(keyValueTypes);
+                        enumeratorType = typeof(CollectionDataContract.GenericDictionaryEnumerator<,>).MakeGenericType(keyValueTypes);
                     }
                     else if (collectionContract.Kind == CollectionKind.Dictionary)
                     {
                         isDictionary = true;
-                        keyValueTypes = new Type[] { Globals.TypeOfObject, Globals.TypeOfObject };
-                        enumeratorType = Globals.TypeOfDictionaryEnumerator;
+                        keyValueTypes = new Type[] { typeof(object), typeof(object) };
+                        enumeratorType = typeof(CollectionDataContract.DictionaryEnumerator);
                     }
                     else
                     {
@@ -468,7 +468,7 @@ namespace System.Runtime.Serialization
                         }
                         else
                         {
-                            Type ienumeratorInterface = Globals.TypeOfIEnumerator;
+                            Type ienumeratorInterface = typeof(IEnumerator);
                             CollectionKind kind = collectionContract.Kind;
                             if (kind == CollectionKind.GenericDictionary || kind == CollectionKind.GenericCollection || kind == CollectionKind.GenericEnumerable)
                             {
@@ -476,7 +476,7 @@ namespace System.Runtime.Serialization
                                 foreach (Type interfaceType in interfaceTypes)
                                 {
                                     if (interfaceType.IsGenericType
-                                        && interfaceType.GetGenericTypeDefinition() == Globals.TypeOfIEnumeratorGeneric
+                                        && interfaceType.GetGenericTypeDefinition() == typeof(System.Collections.Generic.IEnumerator<>)
                                         && interfaceType.GetGenericArguments()[0] == collectionContract.ItemType)
                                     {
                                         ienumeratorInterface = interfaceType;
@@ -496,12 +496,12 @@ namespace System.Runtime.Serialization
                     _ilg.Call(_objectLocal, collectionContract.GetEnumeratorMethod);
                     if (isDictionary)
                     {
-                        _ilg.ConvertValue(collectionContract.GetEnumeratorMethod.ReturnType, Globals.TypeOfIDictionaryEnumerator);
+                        _ilg.ConvertValue(collectionContract.GetEnumeratorMethod.ReturnType, typeof(IDictionaryEnumerator));
                         _ilg.New(XmlFormatGeneratorStatics.DictionaryEnumeratorCtor);
                     }
                     else if (isGenericDictionary)
                     {
-                        Type ctorParam = Globals.TypeOfIEnumeratorGeneric.MakeGenericType(Globals.TypeOfKeyValuePair.MakeGenericType(keyValueTypes!));
+                        Type ctorParam = typeof(System.Collections.Generic.IEnumerator<>).MakeGenericType(typeof(System.Collections.Generic.KeyValuePair<,>).MakeGenericType(keyValueTypes!));
                         ConstructorInfo dictEnumCtor = enumeratorType.GetConstructor(Globals.ScanAllMembers, new Type[] { ctorParam })!;
                         _ilg.ConvertValue(collectionContract.GetEnumeratorMethod.ReturnType, ctorParam);
                         _ilg.New(dictEnumCtor);
@@ -522,7 +522,7 @@ namespace System.Runtime.Serialization
                             _ilg.Call(_dataContractArg, XmlFormatGeneratorStatics.GetItemContractMethod);
                             _ilg.Load(_xmlWriterArg);
                             _ilg.Load(currentValue);
-                            _ilg.ConvertValue(currentValue.LocalType, Globals.TypeOfObject);
+                            _ilg.ConvertValue(currentValue.LocalType, typeof(object));
                             _ilg.Load(_contextArg);
                             _ilg.Call(XmlFormatGeneratorStatics.WriteXmlValueMethod);
                         }
@@ -541,7 +541,7 @@ namespace System.Runtime.Serialization
             private bool TryWritePrimitive(Type type, LocalBuilder? value, MemberInfo? memberInfo, LocalBuilder? arrayItemIndex, LocalBuilder ns, LocalBuilder? name, int nameIndex)
             {
                 PrimitiveDataContract? primitiveContract = PrimitiveDataContract.GetPrimitiveDataContract(type);
-                if (primitiveContract == null || primitiveContract.UnderlyingType == Globals.TypeOfObject)
+                if (primitiveContract == null || primitiveContract.UnderlyingType == typeof(object))
                     return false;
 
                 // load xmlwriter
@@ -641,12 +641,12 @@ namespace System.Runtime.Serialization
                     _ilg.Load(memberValue);
                     _ilg.Load(memberType);
                     _ilg.Call(XmlFormatGeneratorStatics.BoxPointer);
-                    memberType = Globals.TypeOfReflectionPointer;
+                    memberType = typeof(System.Reflection.Pointer);
                     memberValue = _ilg.DeclareLocal(memberType);
                     _ilg.Store(memberValue);
                 }
                 bool isNullableOfT = (memberType.IsGenericType &&
-                                      memberType.GetGenericTypeDefinition() == Globals.TypeOfNullable);
+                                      memberType.GetGenericTypeDefinition() == typeof(Nullable<>));
                 if (memberType.IsValueType && !isNullableOfT)
                 {
                     PrimitiveDataContract? primitiveContract = PrimitiveDataContract.GetPrimitiveDataContract(memberType);
@@ -672,7 +672,7 @@ namespace System.Runtime.Serialization
                     _ilg.Call(_contextArg, XmlFormatGeneratorStatics.WriteNullMethod, _xmlWriterArg, memberType, DataContract.IsTypeSerializable(memberType));
                     _ilg.Else();
                     PrimitiveDataContract? primitiveContract = PrimitiveDataContract.GetPrimitiveDataContract(memberType);
-                    if (primitiveContract != null && primitiveContract.UnderlyingType != Globals.TypeOfObject && !writeXsiType)
+                    if (primitiveContract != null && primitiveContract.UnderlyingType != typeof(object) && !writeXsiType)
                     {
                         if (isNullableOfT)
                         {
@@ -685,13 +685,13 @@ namespace System.Runtime.Serialization
                     }
                     else
                     {
-                        if (memberType == Globals.TypeOfObject ||//boxed Nullable<T>
-                            memberType == Globals.TypeOfValueType ||
-                            ((IList)Globals.TypeOfNullable.GetInterfaces()).Contains(memberType))
+                        if (memberType == typeof(object) ||//boxed Nullable<T>
+                            memberType == typeof(ValueType) ||
+                            ((IList)typeof(Nullable<>).GetInterfaces()).Contains(memberType))
                         {
                             _ilg.Load(memberValue);
-                            _ilg.ConvertValue(memberValue.LocalType, Globals.TypeOfObject);
-                            memberValue = _ilg.DeclareLocal(Globals.TypeOfObject);
+                            _ilg.ConvertValue(memberValue.LocalType, typeof(object));
+                            memberValue = _ilg.DeclareLocal(typeof(object));
                             memberType = memberValue.LocalType;
                             _ilg.Stloc(memberValue);
                             _ilg.If(memberValue, Cmp.EqualTo, null);
@@ -701,7 +701,7 @@ namespace System.Runtime.Serialization
                         InternalSerialize((isNullableOfT ? XmlFormatGeneratorStatics.InternalSerializeMethod : XmlFormatGeneratorStatics.InternalSerializeReferenceMethod),
                             memberValue, memberType, writeXsiType);
 
-                        if (memberType == Globals.TypeOfObject) //boxed Nullable<T>
+                        if (memberType == typeof(object)) //boxed Nullable<T>
                             _ilg.EndIf();
                     }
                     _ilg.EndIf();
@@ -713,7 +713,7 @@ namespace System.Runtime.Serialization
                 _ilg.Load(_contextArg);
                 _ilg.Load(_xmlWriterArg);
                 _ilg.Load(memberValue);
-                _ilg.ConvertValue(memberValue.LocalType, Globals.TypeOfObject);
+                _ilg.ConvertValue(memberValue.LocalType, typeof(object));
                 LocalBuilder typeHandleValue = _ilg.DeclareLocal(typeof(RuntimeTypeHandle));
                 _ilg.Call(null, typeof(Type).GetMethod("GetTypeHandle")!, memberValue);
                 _ilg.Stloc(typeHandleValue);
@@ -735,7 +735,7 @@ namespace System.Runtime.Serialization
                 Label onNull = _ilg.DefineLabel();
                 Label end = _ilg.DefineLabel();
                 _ilg.Load(memberValue);
-                while (memberType.IsGenericType && memberType.GetGenericTypeDefinition() == Globals.TypeOfNullable)
+                while (memberType.IsGenericType && memberType.GetGenericTypeDefinition() == typeof(Nullable<>))
                 {
                     Type innerType = memberType.GetGenericArguments()[0];
                     _ilg.Dup();
@@ -759,7 +759,7 @@ namespace System.Runtime.Serialization
 
             private static bool NeedsPrefix(Type type, XmlDictionaryString ns)
             {
-                return type == Globals.TypeOfXmlQualifiedName && (ns != null && ns.Value != null && ns.Value.Length > 0);
+                return type == typeof(XmlQualifiedName) && (ns != null && ns.Value != null && ns.Value.Length > 0);
             }
 
             private void WriteStartElement(Type type, XmlDictionaryString ns, LocalBuilder namespaceLocal, LocalBuilder? nameLocal, int nameIndex)

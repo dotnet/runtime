@@ -2,12 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import type { MonoConfig, RuntimeAPI } from "../types";
-
-export const loaderCallbacks: {
-    configLoaded?: (config: MonoConfig, api: RuntimeAPI) => void | Promise<void>;
-    dotnetReady?: () => void | Promise<void>;
-    downloadResourceProgress?: (resourcesLoaded: number, totalResources: number) => void;
-} = {};
+import { loaderHelpers } from "./globals";
 
 type LegacyModuleCallbacks = {
     onConfigLoaded?: (config: MonoConfig, api: RuntimeAPI) => void | Promise<void>;
@@ -27,13 +22,13 @@ export function extractLegacyModuleCallbacks<T extends object> (moduleConfig: T)
 
     const { onConfigLoaded, onDotnetReady, onDownloadResourceProgress, ...rest } = moduleConfig as T & LegacyModuleCallbacks;
     if (onConfigLoaded !== undefined) {
-        loaderCallbacks.configLoaded = onConfigLoaded;
+        loaderHelpers.callbacks.configLoaded = onConfigLoaded;
     }
     if (onDotnetReady !== undefined) {
-        loaderCallbacks.dotnetReady = onDotnetReady;
+        loaderHelpers.callbacks.dotnetReady = onDotnetReady;
     }
     if (onDownloadResourceProgress !== undefined) {
-        loaderCallbacks.downloadResourceProgress = onDownloadResourceProgress;
+        loaderHelpers.callbacks.downloadResourceProgress = onDownloadResourceProgress;
     }
 
     return rest as unknown as T;

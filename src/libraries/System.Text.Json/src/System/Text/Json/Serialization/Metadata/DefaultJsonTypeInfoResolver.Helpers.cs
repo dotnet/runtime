@@ -560,7 +560,7 @@ namespace System.Text.Json.Serialization.Metadata
             // Walk the type hierarchy starting from the current type up to the base type(s)
             foreach (Type currentType in typeInfo.Type.GetSortedTypeHierarchy())
             {
-                if (currentType == JsonTypeInfo.ObjectType ||
+                if (currentType == typeof(object) ||
                     currentType == typeof(ValueType))
                 {
                     // Don't process any members for typeof(object) or System.ValueType

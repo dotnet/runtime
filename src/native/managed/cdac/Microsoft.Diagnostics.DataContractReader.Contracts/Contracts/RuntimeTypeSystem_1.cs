@@ -2160,24 +2160,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             return TargetPointer.Null;
         }
 
-        return GetMethodDescForEntrypoint(pCode);
-    }
-
-    private readonly TargetPointer GetMethodDescForEntrypoint(TargetCodePointer pCode)
-    {
-        // standard path, ask ExecutionManager for the MethodDesc
-        IExecutionManager executionManager = _target.Contracts.ExecutionManager;
-        if (executionManager.GetCodeBlockHandle(pCode) is CodeBlockHandle cbh)
-        {
-            TargetPointer methodDescPtr = executionManager.GetMethodDesc(cbh);
-            return methodDescPtr;
-        }
-
-        // stub path, read address as a Precode and read MethodDesc from it
-        {
-            TargetPointer methodDescPtr = _target.Contracts.PrecodeStubs.GetMethodDescFromStubAddress(pCode);
-            return methodDescPtr;
-        }
+        return _target.Contracts.ExecutionManager.NonVirtualEntry2MethodDesc(pCode);
     }
 
     TargetCodePointer IRuntimeTypeSystem.GetSlot(ITypeHandle typeHandle, uint slot)

@@ -83,6 +83,7 @@ namespace System.Reflection.Emit
         public override bool IsGenericType => false;
         public override bool IsGenericParameter => true;
         public override bool IsConstructedGenericType => false;
+        public override bool IsByRefLike => false;
         public override bool ContainsGenericParameters => false;
         public override MethodBase? DeclaringMethod => _type.DeclaringMethod;
         public override Type? BaseType => _parent;

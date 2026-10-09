@@ -4032,6 +4032,12 @@ bool Compiler::optIsProfitableToHoistTree(GenTree*              tree,
         varInOutCount    = hoistCtxt->m_loopVarInOutFPCount;
 
         availRegCount = CNT_CALLEE_SAVED_FLOAT;
+#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
+        if (loopContainsCall && varTypeNeedsPartialCalleeSave(tree->TypeGet()))
+        {
+            availRegCount = 0;
+        }
+#endif
         if (!loopContainsCall)
         {
             availRegCount += CNT_CALLEE_TRASH_FLOAT - 1;

@@ -2,15 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*++
-
 Module Name:
-
     misc/dbgmsg.cpp
 
 Abstract:
     Implementation of Debug Message utilies. Relay channel information,
     output functions, etc.
-
 --*/
 
 /* PAL headers */
@@ -43,9 +40,6 @@ Abstract:
 #include <stdarg.h>
 
 using namespace CorUnix;
-
-/* append mode file I/O is safer */
-#define _PAL_APPEND_DBG_OUTPUT_
 
 static const char FOPEN_FLAGS[] = "at";
 
@@ -368,44 +362,6 @@ BOOL DBG_init_channels(void)
 
     return TRUE;
 }
-
-/*++
-Function :
-    DBG_close_channels
-
-    Stop outputting debug messages by closing the associated file.
-
-    (no parameters, no return value)
---*/
-void DBG_close_channels()
-{
-    if(output_file && output_file != stderr && output_file != stdout)
-    {
-        if (fclose(output_file) != 0)
-        {
-            fprintf(stderr, "ERROR : fclose() failed errno:%d (%s)\n",
-                   errno, strerror(errno));
-        }
-    }
-
-    output_file = NULL;
-
-    minipal_mutex_destroy(&fprintf_crit_section);
-
-    /* if necessary, release TLS key for entry nesting level */
-    if(0 != max_entry_level)
-    {
-        int retval;
-
-        retval = pthread_key_delete(entry_level_key);
-        if(0 != retval)
-        {
-            fprintf(stderr, "ERROR : pthread_key_delete() returned %d! (%s)\n",
-                    retval, strerror(retval));
-        }
-    }
-}
-
 
 static const void *DBG_get_module_id()
 {
