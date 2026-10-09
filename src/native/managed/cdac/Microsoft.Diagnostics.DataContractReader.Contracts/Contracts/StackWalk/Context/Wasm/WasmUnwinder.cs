@@ -183,8 +183,32 @@ internal sealed class WasmUnwinder
         return true;
     }
 
-    public bool TryUnwindOneFrame(ref TargetPointer sp, out TargetCodePointer ip)
-        => TryUnwindOneFrame(ref sp, TargetCodePointer.Null, out ip);
+    /// <summary>
+    /// Unwinds <paramref name="context"/> by one R2R frame, mirroring native <c>RtlVirtualUnwind</c>.
+    /// When the caller is not R2R code (an interpreter transition, native code above a reverse
+    /// P/Invoke, or the stack top), SP is the caller's SP, IP and FP are null, and the walker
+    /// continues through the explicit Frame chain. If no R2R frame can be unwound, SP, IP and FP
+    /// are all null.
+    /// </summary>
+    public void Unwind(ref WasmContext context)
+    {
+        TargetPointer sp = context.StackPointer;
+        if (!TryUnwindOneFrame(ref sp, context.InstructionPointer, out TargetCodePointer ip))
+        {
+            context.StackPointer = TargetPointer.Null;
+            context.InstructionPointer = TargetCodePointer.Null;
+            context.FramePointer = TargetPointer.Null;
+            return;
+        }
+
+        context.StackPointer = sp;
+        context.InstructionPointer = ip;
+        // Native recomputes the caller's FP only for an R2R caller; funclets report the
+        // establishing method's frame (GetWasmFramePointerFromStackPointer).
+        context.FramePointer = ip != TargetCodePointer.Null && TryGetLogicalFramePointer(sp, out TargetPointer fp)
+            ? fp
+            : TargetPointer.Null;
+    }
 
     private bool IsReversePInvokeFrame(uint functionIndex, TargetCodePointer controlPC)
     {
