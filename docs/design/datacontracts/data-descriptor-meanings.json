@@ -178,7 +178,7 @@
     "ExceptionInfo.PreviousNestedInfo": "Pointer to previous nested exception info",
     "ExceptionInfo.StackHighBound": "High bound of the stack range unwound by this exception",
     "ExceptionInfo.StackLowBound": "Low bound of the stack range unwound by this exception",
-    "ExceptionInfo.ThrownObject": "Handle to the thrown exception object",
+    "ExceptionInfo.ThrownObject": "The thrown exception object (an object reference, not a handle)",
     "ExceptionLookupTableEntry.ExceptionInfoRVA": "RVA of the exception clause data",
     "ExceptionLookupTableEntry.MethodStartRVA": "RVA of the method start",
     "ExceptionLookupTableEntry.Size": "Size of an exception lookup table entry in bytes",

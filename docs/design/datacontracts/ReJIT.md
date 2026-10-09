@@ -21,7 +21,12 @@ bool IsDeoptimized(ILCodeVersionHandle codeVersionHandle);
 
 TargetNUInt GetRejitId(ILCodeVersionHandle codeVersionHandle);
 
-IEnumerable<TargetNUInt> GetRejitIds(TargetPointer methodDesc)
+```
+
+The IDs of a method's active ReJIT versions are available through the `IReJITExtensions.GetRejitIds` extension method, which builds on `CodeVersions` and the APIs above:
+
+```csharp
+IEnumerable<TargetNUInt> GetRejitIds(this IReJIT rejit, Target target, TargetPointer methodDesc)
 ```
 
 ## Version 1
@@ -129,17 +134,17 @@ TargetNUInt GetRejitId(ILCodeVersionHandle codeVersion)
     }
 }
 
-IEnumerable<TargetNUInt> GetRejitIds(TargetPointer methodDesc)
+IEnumerable<TargetNUInt> GetRejitIds(this IReJIT rejit, Target target, TargetPointer methodDesc)
 {
     // ReJitManager::GetReJITIDs
-    ICodeVersions cv = _target.Contracts.CodeVersions;
+    ICodeVersions cv = target.Contracts.CodeVersions;
     IEnumerable<ILCodeVersionHandle> ilCodeVersions = cv.GetILCodeVersions(methodDesc);
 
     foreach (ILCodeVersionHandle ilCodeVersionHandle in ilCodeVersions)
     {
-        if (GetRejitState(ilCodeVersionHandle) == RejitState.Active)
+        if (cv.GetSource(ilCodeVersionHandle) == CodeVersionSource.ReJIT && rejit.GetRejitState(ilCodeVersionHandle) == RejitState.Active)
         {
-            yield return GetRejitId(ilCodeVersionHandle);
+            yield return rejit.GetRejitId(ilCodeVersionHandle);
         }
     }
 }

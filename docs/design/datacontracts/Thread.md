@@ -102,7 +102,7 @@ TargetPointer GetThreadLocalStaticBase(TargetPointer threadPointer, TargetPointe
 | `ExceptionInfo` | `ExceptionFlags` | `uint32` | Exception state flags |
 | `ExceptionInfo` | `ExceptionRecord` | `pointer` | Pointer to the OS `EXCEPTION_RECORD` the OS dispatcher pushed for this exception |
 | `ExceptionInfo` | `PreviousNestedInfo` | `pointer` | Pointer to previous nested exception info |
-| `ExceptionInfo` | `ThrownObject` | `pointer` | Handle to the thrown exception object |
+| `ExceptionInfo` | `ThrownObject` | `pointer` | The thrown exception object (an object reference, not a handle) |
 | `GCAllocContext` | `AllocBytes` | `int64` | Number of bytes allocated on SOH by this context |
 | `GCAllocContext` | `AllocBytesLoh` | `int64` | Number of bytes allocated not on SOH by this context |
 | `GCAllocContext` | `Limit` | `pointer` | Allocation limit pointer |
@@ -198,10 +198,8 @@ ThreadData GetThreadData(TargetPointer address)
 {
     var runtimeThread = new Thread(target, threadPointer);
 
-    // Exception tracker is a pointer when EH funclets are enabled
-    TargetPointer exceptionTrackerAddr = target.ReadGlobal<byte>("FeatureEHFunclets") != 0
-        ? target.ReadPointer(address + /* Thread::ExceptionTracker offset */)
-        : address + /* Thread::ExceptionTracker offset */;
+    // Thread::ExceptionTracker is the field holding the thread's current ExInfo pointer
+    TargetPointer exceptionTrackerAddr = target.ReadPointer(address + /* Thread::ExceptionTracker offset */);
     TargetPointer firstNestedException = exceptionTrackerAddr != TargetPointer.Null
         ? target.ReadPointer(exceptionTrackerAddr + /* ExceptionInfo::PreviousNestedInfo offset*/)
         : TargetPointer.Null;
