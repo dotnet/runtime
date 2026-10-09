@@ -3485,8 +3485,8 @@ namespace Internal.JitInterface
             if (fRelocType == CorInfoReloc.WASM_METHOD_FRAME_IDENTITY_SLEB)
             {
                 Debug.Assert(locationBlock == BlockType.Code);
-                Debug.Assert(_methodCodeNode.IsJitHelper);
-                MethodWithGCInfo method = _compilation.NodeFactory.CompiledMethodNode(MethodBeingCompiled);
+                MethodDesc targetMethod = HandleToObject((CORINFO_METHOD_STRUCT_*)target);
+                MethodWithGCInfo method = _compilation.NodeFactory.CompiledMethodNode(targetMethod);
                 relocTarget = _compilation.NodeFactory.WasmMethodFrameIdentity(method);
                 relocType = RelocType.WASM_METHOD_FRAME_IDENTITY_SLEB;
                 handled = true;

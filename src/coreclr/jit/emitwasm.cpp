@@ -1021,7 +1021,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_FRAMEIDENTITY:
         {
             dst += emitOutputOpcode(dst, ins);
-            dst += emitOutputConstantFunclet(dst, id, CorInfoReloc::WASM_METHOD_FRAME_IDENTITY_SLEB);
+            emitRecordRelocation(dst, m_compiler->info.compMethodHnd, CorInfoReloc::WASM_METHOD_FRAME_IDENTITY_SLEB);
+            dst += emitOutputPaddedReloc(dst);
             break;
         }
         case IF_DATAOFFS:
