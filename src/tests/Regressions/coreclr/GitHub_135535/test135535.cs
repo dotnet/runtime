@@ -6,11 +6,13 @@ using System.Runtime.CompilerServices;
 using Xunit;
 
 // On a Checked runtime under the CoreCLR interpreter, this test asserted Thread::IsObjRefValid in OBJECTREF::operator->
-// at an interpreted virtual call: CreateCustomAttributeInstance registers its argument storage, a local on the interpreter
-// stack, for GC reporting, and GCFrame::Remove used to record those slots as unprotected object references when the
-// storage was unregistered. A later virtual call whose 'this' argument landed on one of those addresses then tripped
-// the check. Reaching the assert depends on the stack layout: it reproduced on windows-x64 under DOTNET_InterpMode 2
-// and 3 and passes elsewhere, so the test is process-isolated to keep the layout it was measured with.
+// at an interpreted virtual call. CreateCustomAttributeInstance registers its argument storage, a local on the interpreter
+// stack, for GC reporting; unregistering it records those slots in the checked OBJECTREF address table, the next
+// possible-GC point marks the entries, and the interpreter used to read a later virtual call's 'this' argument from one
+// of those addresses through a checked OBJECTREF, which tripped the check. The interpreter now reads and writes its
+// stack slots as raw object pointers. Reaching the assert depends on the stack layout: it reproduced on windows-x64
+// under DOTNET_InterpMode 2 and 3 and passed in the other configurations tested, so the test is process-isolated to
+// keep the layout it was measured with.
 
 [AttributeUsage(AttributeTargets.Class)]
 sealed class FourArgsAttribute : Attribute
