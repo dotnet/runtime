@@ -77,8 +77,7 @@ public class MethodDescTests
     private static IRuntimeTypeSystem CreateRuntimeTypeSystemContract(
         MockTarget.Architecture arch,
         Action<MockDescriptors.MockMethodDescriptorsBuilder> configure,
-        Mock<IExecutionManager>? mockExecutionManager = null,
-        Mock<IPrecodeStubs>? mockPrecodeStubs = null)
+        Mock<IExecutionManager>? mockExecutionManager = null)
     {
         var targetBuilder = new TestPlaceholderTarget.Builder(arch);
         MockDescriptors.RuntimeTypeSystem rtsBuilder = new(targetBuilder.MemoryBuilder);
@@ -88,7 +87,6 @@ public class MethodDescTests
         configure(methodDescBuilder);
 
         mockExecutionManager ??= new Mock<IExecutionManager>();
-        mockPrecodeStubs ??= new Mock<IPrecodeStubs>();
         var target = targetBuilder
             .AddTypes(CreateContractTypes(methodDescBuilder))
             .AddGlobals(CreateContractGlobals(methodDescBuilder))
@@ -96,7 +94,6 @@ public class MethodDescTests
             .AddContract<ILoader>(version: "c1")
             .AddMockContract(new Mock<IPlatformMetadata>())
             .AddMockContract(mockExecutionManager)
-            .AddMockContract(mockPrecodeStubs)
             .Build();
         return target.Contracts.RuntimeTypeSystem;
     }
@@ -852,7 +849,6 @@ public class MethodDescTests
         TargetPointer methodDescAddress = TargetPointer.Null;
         TargetCodePointer nativeCode = new TargetCodePointer(0x0789_abc0);
         Mock<IExecutionManager> mockExecutionManager = new();
-        Mock<IPrecodeStubs> mockPrecodeStubs = new();
 
         IRuntimeTypeSystem rts = CreateRuntimeTypeSystemContract(arch, methodDescBuilder =>
         {
@@ -893,7 +889,7 @@ public class MethodDescTests
             helpers.WritePointer(
                 methodDescBuilder.Builder.BorrowAddressRange(methodDescAddress + methodDescBaseSize, helpers.PointerSize),
                 nativeCode);
-        }, mockExecutionManager, mockPrecodeStubs);
+        }, mockExecutionManager);
 
         mockExecutionManager.Setup(em => em.GetCodeBlockHandle(nativeCode)).Returns((CodeBlockHandle?)null);
         mockExecutionManager.Setup(em => em.NonVirtualEntry2MethodDesc(nativeCode)).Returns(methodDescAddress);
@@ -913,7 +909,6 @@ public class MethodDescTests
         TargetCodePointer nativeCode = new TargetCodePointer(0x0789_abc0);
         TargetPointer wrongMethodDescAddress = new TargetPointer(0xDEAD_BEEF);
         Mock<IExecutionManager> mockExecutionManager = new();
-        Mock<IPrecodeStubs> mockPrecodeStubs = new();
 
         IRuntimeTypeSystem rts = CreateRuntimeTypeSystemContract(arch, methodDescBuilder =>
         {
@@ -954,7 +949,7 @@ public class MethodDescTests
             helpers.WritePointer(
                 methodDescBuilder.Builder.BorrowAddressRange(methodDescAddress + methodDescBaseSize, helpers.PointerSize),
                 nativeCode);
-        }, mockExecutionManager, mockPrecodeStubs);
+        }, mockExecutionManager);
 
         mockExecutionManager.Setup(em => em.GetCodeBlockHandle(nativeCode)).Returns((CodeBlockHandle?)null);
         mockExecutionManager.Setup(em => em.NonVirtualEntry2MethodDesc(nativeCode)).Returns(wrongMethodDescAddress);

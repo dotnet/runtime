@@ -2772,6 +2772,19 @@ AGAIN:
         }
     }
 
+    // Ordered and unordered floating-point relops differ for NaN operands.
+    if (op1->OperIsCompare() && ((op1->gtFlags & GTF_RELOP_NAN_UN) != (op2->gtFlags & GTF_RELOP_NAN_UN)))
+    {
+        return false;
+    }
+
+    // Indirection flags are semantic and some of them (e.g. GTF_IND_NONFAULTING) are only valid
+    // in the context of the original node, so they must be equal for all indirection-like nodes.
+    if (op1->OperIsIndirOrArrMetaData() && ((op1->gtFlags & GTF_IND_FLAGS) != (op2->gtFlags & GTF_IND_FLAGS)))
+    {
+        return false;
+    }
+
     /* Figure out what kind of nodes we're comparing */
 
     kind = op1->OperKind();
@@ -2783,11 +2796,21 @@ AGAIN:
         switch (oper)
         {
             case GT_CNS_INT:
-                if (op1->AsIntCon()->IconValue() == op2->AsIntCon()->IconValue())
+            {
+                GenTreeIntCon* const con1 = op1->AsIntCon();
+                GenTreeIntCon* const con2 = op2->AsIntCon();
+
+                // Field sequences carry field identity (and thus type info) just like
+                // GT_FIELD_ADDR's field handle, so they must match too. The same goes for
+                // the handle kind and the compile-time handle.
+                if ((con1->IconValue() == con2->IconValue()) && (con1->GetFieldSeq() == con2->GetFieldSeq()) &&
+                    ((op1->gtFlags & GTF_ICON_HDL_MASK) == (op2->gtFlags & GTF_ICON_HDL_MASK)) &&
+                    (!con1->IsIconHandle() || (con1->GetCompileTimeHandle() == con2->GetCompileTimeHandle())))
                 {
                     return true;
                 }
                 break;
+            }
 
             case GT_CNS_LNG:
             {
@@ -2901,11 +2924,6 @@ AGAIN:
                 // Rare case -- need contextual information to check equality in some cases.
                 return false;
             }
-
-            if ((op1->gtFlags & GTF_IND_FLAGS) != (op2->gtFlags & GTF_IND_FLAGS))
-            {
-                return false;
-            }
         }
 
         if (IsExOp(kind))
@@ -2954,12 +2972,6 @@ AGAIN:
                     {
                         return false;
                     }
-
-                    if ((op1->gtFlags & GTF_IND_FLAGS) != (op2->gtFlags & GTF_IND_FLAGS))
-                    {
-                        return false;
-                    }
-
                     break;
 
                 case GT_FIELD_ADDR:
@@ -2972,19 +2984,29 @@ AGAIN:
                 case GT_ARR_ADDR:
                     if ((op1->AsArrAddr()->GetElemType() != op2->AsArrAddr()->GetElemType()) ||
                         (op1->AsArrAddr()->GetElemClassHandle() != op2->AsArrAddr()->GetElemClassHandle()) ||
-                        (op1->AsArrAddr()->GetFirstElemOffset() != op2->AsArrAddr()->GetFirstElemOffset()))
+                        (op1->AsArrAddr()->GetFirstElemOffset() != op2->AsArrAddr()->GetFirstElemOffset()) ||
+                        ((op1->gtFlags & GTF_ARR_ADDR_NONNULL) != (op2->gtFlags & GTF_ARR_ADDR_NONNULL)))
+                    {
+                        return false;
+                    }
+                    break;
+
+                case GT_BOX:
+                    // Boxes are tied to their (upstream) allocation and copy statements.
+                    if ((op1->AsBox()->gtDefStmtWhenInlinedBoxValue != op2->AsBox()->gtDefStmtWhenInlinedBoxValue) ||
+                        (op1->AsBox()->gtCopyStmtWhenInlinedBoxValue != op2->AsBox()->gtCopyStmtWhenInlinedBoxValue))
                     {
                         return false;
                     }
                     break;
 
                 // For the ones below no extra argument matters for comparison.
-                case GT_BOX:
                 case GT_RUNTIMELOOKUP:
                     break;
 
                 default:
                     assert(!"unexpected unary ExOp operator");
+                    return false;
             }
         }
         return Compare(op1->AsOp()->gtOp1, op2->AsOp()->gtOp1);
@@ -3003,13 +3025,9 @@ AGAIN:
                     {
                         return false;
                     }
-                    FALLTHROUGH;
+                    break;
 
                 case GT_STOREIND:
-                    if ((op1->gtFlags & GTF_IND_FLAGS) != (op2->gtFlags & GTF_IND_FLAGS))
-                    {
-                        return false;
-                    }
                     break;
 
                 case GT_INTRINSIC:
@@ -3053,6 +3071,7 @@ AGAIN:
 
                 default:
                     assert(!"unexpected binary ExOp operator");
+                    return false;
             }
         }
 
