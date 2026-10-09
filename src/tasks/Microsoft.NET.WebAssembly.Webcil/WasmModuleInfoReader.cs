@@ -15,12 +15,12 @@ internal sealed class WasmModuleInfo
     public IReadOnlyDictionary<string, (byte Kind, uint Index)> Exports => _exports;
     public IReadOnlyList<int?> DefinedI32Functions => _definedI32Functions;
     public IReadOnlyList<(bool Active, int? Offset, long PayloadOffset, uint Size)> DataSegments => _dataSegments;
-    public IReadOnlyList<(bool Active, int? Offset)> ElementSegments => _elementSegments;
+    public IReadOnlyList<WasmElementSegmentInfo> ElementSegments => _elementSegments;
 
     internal readonly Dictionary<string, (byte Kind, uint Index)> _exports = new(StringComparer.Ordinal);
     internal readonly List<int?> _definedI32Functions = new();
     internal readonly List<(bool Active, int? Offset, long PayloadOffset, uint Size)> _dataSegments = new();
-    internal readonly List<(bool Active, int? Offset)> _elementSegments = new();
+    internal readonly List<WasmElementSegmentInfo> _elementSegments = new();
 
     public int? GetExportedI32Function(string name)
     {
@@ -33,6 +33,22 @@ internal sealed class WasmModuleInfo
         uint definedIndex = export.Index - ImportedFunctionCount;
         return definedIndex < _definedI32Functions.Count ? _definedI32Functions[(int)definedIndex] : null;
     }
+}
+
+internal readonly struct WasmElementSegmentInfo
+{
+    public WasmElementSegmentInfo(bool active, uint tableIndex, int? offset, uint elementCount)
+    {
+        Active = active;
+        TableIndex = tableIndex;
+        Offset = offset;
+        ElementCount = elementCount;
+    }
+
+    public bool Active { get; }
+    public uint TableIndex { get; }
+    public int? Offset { get; }
+    public uint ElementCount { get; }
 }
 
 internal sealed class WasmModuleInfoReader : WasmModuleReader
@@ -148,9 +164,10 @@ internal sealed class WasmModuleInfoReader : WasmModuleReader
                 throw new BadImageFormatException($"Unsupported WebAssembly element segment flags {flags}.");
 
             bool active = flags is 0 or 2 or 4 or 6;
+            uint tableIndex = 0;
             int? offset = null;
             if (flags is 2 or 6)
-                ReadULEB128(); // table index
+                tableIndex = ReadULEB128();
             if (active)
                 offset = ReadConstExpression();
 
@@ -173,7 +190,7 @@ internal sealed class WasmModuleInfoReader : WasmModuleReader
                     RequireEnd();
                 }
             }
-            _info._elementSegments.Add((active, offset));
+            _info._elementSegments.Add(new WasmElementSegmentInfo(active, tableIndex, offset, elementCount));
         }
     }
 
@@ -774,10 +791,30 @@ public static class WasiR2RComposition
     // stub defines nothing else.
     private const uint ComponentStubFunctionCount = 2;
 
-    public static void InspectComposite(string path, out int functionCount, out int payloadSize)
+    public static void InspectComposite(
+        string path,
+        out int functionCount,
+        out int tableSlotCount,
+        out int payloadSize)
     {
         WasmModuleInfo module = ReadModule(path);
         functionCount = checked((int)module.DefinedFunctionCount);
+        WasmElementSegmentInfo? activeElementSegment = null;
+        foreach (WasmElementSegmentInfo segment in module.ElementSegments)
+        {
+            if (!segment.Active)
+                continue;
+            if (segment.TableIndex != 0)
+                throw new BadImageFormatException(
+                    $"{path} has an active element segment for table {segment.TableIndex}; expected table 0.");
+            if (activeElementSegment is not null)
+                throw new BadImageFormatException($"{path} has multiple active element segments.");
+            activeElementSegment = segment;
+        }
+        if (activeElementSegment is null)
+            throw new BadImageFormatException($"{path} has no active element segment.");
+
+        tableSlotCount = checked((int)activeElementSegment.Value.ElementCount);
         payloadSize = checked((int)GetSelfInstallingPayloadSegment(module, path).Size);
     }
 
@@ -797,7 +834,7 @@ public static class WasiR2RComposition
         compositeNameBase = GetRequiredI32Export(module, "wasi_r2r_composite_name_base");
         compositeNameCapacity = GetRequiredI32Export(module, "wasi_r2r_composite_name_cap");
         reservedTableStart = int.MaxValue;
-        foreach ((bool Active, int? Offset) segment in module.ElementSegments)
+        foreach (WasmElementSegmentInfo segment in module.ElementSegments)
         {
             if (segment.Active && segment.Offset.HasValue)
                 reservedTableStart = Math.Min(reservedTableStart, segment.Offset.Value);
