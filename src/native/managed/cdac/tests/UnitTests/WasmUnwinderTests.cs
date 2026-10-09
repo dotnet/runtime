@@ -213,7 +213,7 @@ public class WasmUnwinderTests
         WasmUnwinder unwinder = new(target, info);
 
         TargetPointer sp = new(FramesBase);
-        Assert.True(unwinder.TryUnwindOneFrame(ref sp, out TargetCodePointer ip));
+        Assert.True(unwinder.TryUnwindOneFrame(ref sp, TargetCodePointer.Null, out TargetCodePointer ip));
         Assert.Equal(callerBase, sp.Value);
         Assert.Equal(VirtualIpBase + 14, ip.Value); // caller local VIP 7*2
     }
@@ -238,7 +238,7 @@ public class WasmUnwinderTests
         WasmUnwinder unwinder = new(target, info);
 
         TargetPointer sp = new(FramesBase);
-        Assert.True(unwinder.TryUnwindOneFrame(ref sp, out _));
+        Assert.True(unwinder.TryUnwindOneFrame(ref sp, TargetCodePointer.Null, out _));
         Assert.Equal(callerBase, sp.Value);
     }
 
@@ -265,7 +265,7 @@ public class WasmUnwinderTests
         WasmUnwinder unwinder = new(target, info);
 
         TargetPointer sp = new(FramesBase);
-        Assert.True(unwinder.TryUnwindOneFrame(ref sp, out TargetCodePointer ip));
+        Assert.True(unwinder.TryUnwindOneFrame(ref sp, TargetCodePointer.Null, out TargetCodePointer ip));
         Assert.Equal(callerBase, sp.Value);
         Assert.Equal(TargetCodePointer.Null, ip);
     }
@@ -316,7 +316,7 @@ public class WasmUnwinderTests
         WasmUnwinder unwinder = new(target, new FakeWasmR2RInfo());
 
         TargetPointer sp = new(FramesBase);
-        Assert.False(unwinder.TryUnwindOneFrame(ref sp, out _));
+        Assert.False(unwinder.TryUnwindOneFrame(ref sp, TargetCodePointer.Null, out _));
         Assert.Equal(TargetPointer.Null, sp);
     }
 
@@ -353,7 +353,7 @@ public class WasmUnwinderTests
         WasmUnwinder unwinder = new(target, info);
 
         TargetPointer sp = new(FramesBase);
-        Assert.False(unwinder.TryUnwindOneFrame(ref sp, out _));
+        Assert.False(unwinder.TryUnwindOneFrame(ref sp, TargetCodePointer.Null, out _));
         Assert.Equal(TargetPointer.Null, sp);
     }
 
@@ -372,7 +372,7 @@ public class WasmUnwinderTests
         WasmUnwinder unwinder = new(target, info);
 
         TargetPointer sp = new(FramesBase);
-        Assert.Throws<InvalidOperationException>(() => unwinder.TryUnwindOneFrame(ref sp, out _));
+        Assert.Throws<InvalidOperationException>(() => unwinder.TryUnwindOneFrame(ref sp, TargetCodePointer.Null, out _));
     }
 
     private const uint StackWalkSentinelIndirect = 0;
