@@ -898,6 +898,15 @@ NOINLINE static void InterpThrow(InterpMethodContextFrame* pFrame, const int32_t
 #define NULL_CHECK(o) do { if ((o) == NULL) { INTERP_THROW(kNullReferenceException); } } while (0)
 #define INTERP_THROW(exType) InterpThrow(pFrame, ip, exType)
 
+// The helpers that can throw when called through the native exits of INTOP_CALL_HELPER_* and INTOP_UNBOX_ANY* are
+// managed code, so an exception thrown by one of them is dispatched as if it were thrown by a call: the stack walk treats
+// the interpreter frame's ip as a return address and moves it back by STACKWALK_CONTROLPC_ADJUST_OFFSET before looking
+// up the EH clauses. Like INTOP_CALL, and like the paths that interpret
+// the helper (goto CALL_INTERP_METHOD), record the ip of the next instruction so that the adjusted ip stays inside the
+// current one. Recording the ip of the current instruction attributes an exception thrown by a helper call that starts
+// a try region to the code before the region, so the region's handlers do not run.
+#define SAVE_IP_BEFORE_HELPER_CALL(insLen) pFrame->ip = ip + (insLen)
+
 // When enabled, each opcode dispatches directly to the next one via an indirect goto,
 // avoiding the overhead of the central switch dispatch.
 #if !defined(TARGET_WINDOWS) && !defined(TARGET_WASM) && !defined(DEBUG)
@@ -2938,6 +2947,7 @@ SWITCH_OPCODE:
 
                     _ASSERTE(helperFtn != NULL);
 
+                    SAVE_IP_BEFORE_HELPER_CALL(4);
                     LOCAL_VAR(ip[1], void*) = Call_HELPER_FTN_P_P(helperFtn, helperArg);
                     ip += 4;
                     INTOP_NEXT;
@@ -2964,6 +2974,7 @@ SWITCH_OPCODE:
 
                     _ASSERTE(helperFtn != NULL);
 
+                    SAVE_IP_BEFORE_HELPER_CALL(4);
                     LOCAL_VAR(ip[1], void*) = Call_HELPER_FTN_P_P(helperFtn, helperArg);
                     ip += 4;
                     INTOP_NEXT;
@@ -3016,6 +3027,7 @@ SWITCH_OPCODE:
                     }
 
                     _ASSERTE(helperFtn != NULL);
+                    SAVE_IP_BEFORE_HELPER_CALL(5);
                     LOCAL_VAR(ip[1], void*) = Call_HELPER_FTN_P_PP(helperFtn, helperArg1, helperArg2);
                     ip += 5;
                     INTOP_NEXT;
@@ -3044,6 +3056,7 @@ SWITCH_OPCODE:
                     }
 
                     _ASSERTE(helperFtn != NULL);
+                    SAVE_IP_BEFORE_HELPER_CALL(5);
                     LOCAL_VAR(ip[1], void*) = Call_HELPER_FTN_P_PP(helperFtn, helperArg1, helperArg2);
                     ip += 5;
                     INTOP_NEXT;
@@ -3071,6 +3084,7 @@ SWITCH_OPCODE:
                     }
 
                     _ASSERTE(helperFtn != NULL);
+                    SAVE_IP_BEFORE_HELPER_CALL(5);
                     LOCAL_VAR(ip[1], void*) = Call_HELPER_FTN_P_P(helperFtn, helperArg);
                     ip += 5;
                     INTOP_NEXT;
@@ -3100,6 +3114,7 @@ SWITCH_OPCODE:
                     }
 
                     _ASSERTE(helperFtn != NULL);
+                    SAVE_IP_BEFORE_HELPER_CALL(6);
                     LOCAL_VAR(ip[1], void*) = Call_HELPER_FTN_P_PP(helperFtn, helperArg1, helperArg2);
                     ip += 6;
                     INTOP_NEXT;
@@ -3129,6 +3144,7 @@ SWITCH_OPCODE:
                     }
 
                     _ASSERTE(helperFtn != NULL);
+                    SAVE_IP_BEFORE_HELPER_CALL(6);
                     LOCAL_VAR(ip[1], void*) = Call_HELPER_FTN_P_PP(helperFtn, helperArg1, helperArg2);
                     ip += 6;
                     INTOP_NEXT;
@@ -3156,6 +3172,7 @@ SWITCH_OPCODE:
                         goto CALL_INTERP_METHOD;
                     }
 
+                    SAVE_IP_BEFORE_HELPER_CALL(5);
                     LOCAL_VAR(ip[1], void*) = Call_HELPER_FTN_P_PP(helperFtn, helperArg1, helperArg2);
                     ip += 5;
                     INTOP_NEXT;
@@ -3187,6 +3204,7 @@ SWITCH_OPCODE:
                     }
 
                     _ASSERTE(helperFtn != NULL);
+                    SAVE_IP_BEFORE_HELPER_CALL(6);
                     Call_HELPER_FTN_V_PPP(helperFtn, helperArg1, helperArg2, helperArg3);
                     ip += 6;
                     INTOP_NEXT;
@@ -3217,6 +3235,7 @@ SWITCH_OPCODE:
                     }
 
                     _ASSERTE(helperFtn != NULL);
+                    SAVE_IP_BEFORE_HELPER_CALL(5);
                     Call_HELPER_FTN_V_PPP(helperFtn, helperArg1, helperArg2, helperArg3);
                     ip += 5;
                     INTOP_NEXT;
@@ -3245,6 +3264,7 @@ SWITCH_OPCODE:
                     }
 
                     _ASSERTE(helperFtn != NULL);
+                    SAVE_IP_BEFORE_HELPER_CALL(4);
                     Call_HELPER_FTN_V_PP(helperFtn, helperArg1, helperArg2);
                     ip += 4;
                     INTOP_NEXT;
@@ -3271,6 +3291,7 @@ SWITCH_OPCODE:
                     }
 
                     _ASSERTE(helperFtn != NULL);
+                    SAVE_IP_BEFORE_HELPER_CALL(4);
                     Call_HELPER_FTN_V_PP(helperFtn, helperArg1, helperArg2);
                     ip += 4;
                     INTOP_NEXT;
@@ -3300,6 +3321,7 @@ SWITCH_OPCODE:
                     }
 
                     _ASSERTE(helperFtn != NULL);
+                    SAVE_IP_BEFORE_HELPER_CALL(5);
                     Call_HELPER_FTN_V_PPP(helperFtn, helperArg1, helperArg2, helperArg3);
                     ip += 5;
                     INTOP_NEXT;
@@ -3884,6 +3906,7 @@ CALL_INTERP_METHOD:
                     }
 
                     // private static ref byte Unbox(MethodTable* toTypeHnd, object obj)
+                    SAVE_IP_BEFORE_HELPER_CALL(5);
                     LOCAL_VAR(dreg, void*) = Call_HELPER_FTN_BOX_UNBOX(helper, pMT, src);
 
                     ip += 5;
@@ -3928,6 +3951,7 @@ CALL_INTERP_METHOD:
                     }
 
                     // private static ref byte Unbox(MethodTable* toTypeHnd, object obj)
+                    SAVE_IP_BEFORE_HELPER_CALL(6);
                     LOCAL_VAR(dreg, void*) = Call_HELPER_FTN_BOX_UNBOX(helper, pMTBoxedObj, src);
 
                     ip += 6;
