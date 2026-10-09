@@ -5661,15 +5661,8 @@ void CodeGen::genCodeForSwap(GenTreeOp* tree)
     varDsc1->SetRegNum(oldOp2Reg);
     varDsc2->SetRegNum(oldOp1Reg);
 
-    // Do the xchg
-    emitAttr size = EA_PTRSIZE;
-    if (varTypeIsGC(type1) != varTypeIsGC(type2))
-    {
-        // If the type specified to the emitter is a GC type, it will swap the GC-ness of the registers.
-        // Otherwise it will leave them alone, which is correct if they have the same GC-ness.
-        size = EA_GCREF;
-    }
-    inst_RV_RV(INS_xchg, oldOp1Reg, oldOp2Reg, TYP_I_IMPL, size);
+    // Do the xchg. The emitter swaps the GC-ness of the registers on its own, so the attribute doesn't matter.
+    inst_RV_RV(INS_xchg, oldOp1Reg, oldOp2Reg, TYP_I_IMPL, EA_PTRSIZE);
 
     // Update the gcInfo.
     // Manually remove these regs for the gc sets (mostly to avoid confusing duplicative dump output)
@@ -5857,6 +5850,10 @@ void CodeGen::genCall(GenTreeCall* call)
     if (m_compiler->killGCRefs(call))
     {
         genDefineTempLabel(genCreateTempLabel());
+
+        // The runtime can't find callee-saved registers through an InlinedCallFrame,
+        // so LSRA must have spilled any GC values held in them.
+        assert(((gcInfo.gcRegGCrefSetCur | gcInfo.gcRegByrefSetCur) & RBM_INT_CALLEE_SAVED) == RBM_NONE);
     }
 
 #if defined(DEBUG) && defined(TARGET_X86)

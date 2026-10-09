@@ -1,10 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-//
-// THREADS.CPP
-//
-
 #include "common.h"
 #include "CLREventBase.h"
 
@@ -2925,38 +2921,6 @@ void Thread::OnThreadTerminate(BOOL holdingLock)
     }
 }
 
-// Helper functions to check for duplicate handles. we only do this check if
-// a waitfor multiple fails.
-int __cdecl compareHandles( const void *arg1, const void *arg2 )
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    HANDLE h1 = *(HANDLE*)arg1;
-    HANDLE h2 = *(HANDLE*)arg2;
-    return  (h1 == h2) ? 0 : ((h1 < h2) ? -1 : 1);
-}
-
-BOOL CheckForDuplicateHandles(int countHandles, HANDLE *handles)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    qsort(handles,countHandles,sizeof(HANDLE),compareHandles);
-    for (int i=1; i < countHandles; i++)
-    {
-        if (handles[i-1] == handles[i])
-            return TRUE;
-    }
-    return FALSE;
-}
-
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
 //--------------------------------------------------------------------
@@ -3447,25 +3411,6 @@ void Thread::SyncManagedExceptionState(bool fIsDebuggerThread)
         // Syncup the LastThrownObject on the managed thread
         SafeUpdateLastThrownObject();
     }
-}
-
-void Thread::SetLastThrownObjectHandle(OBJECTHANDLE h)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    if (m_LastThrownObjectHandle != NULL &&
-        !CLRException::IsPreallocatedExceptionHandle(m_LastThrownObjectHandle))
-    {
-        DestroyHandle(m_LastThrownObjectHandle);
-    }
-
-    m_LastThrownObjectHandle = h;
 }
 
 //
@@ -6340,30 +6285,6 @@ NOINLINE void Thread::OnIncrementCountOverflow(UINT32 *threadLocalCount, UINT64 
 
     *threadLocalCount = 0;
     InterlockedExchangeAdd64((LONGLONG *)overflowCount, (LONGLONG)UINT32_MAX + 1);
-}
-
-UINT64 Thread::GetTotalCount(SIZE_T threadLocalCountOffset, UINT64 *overflowCount)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
-
-    _ASSERTE(overflowCount != nullptr);
-
-    // enumerate all threads, summing their local counts.
-    ThreadStoreLockHolder tsl;
-
-    UINT64 total = GetOverflowCount(overflowCount);
-
-    Thread *pThread = NULL;
-    while ((pThread = ThreadStore::GetAllThreadList(pThread, 0, 0)) != NULL)
-    {
-        total += *GetThreadLocalCountRef(pThread, threadLocalCountOffset);
-    }
-
-    return total;
 }
 
 #if defined(FEATURE_MULTITHREADING) || defined(_DEBUG)

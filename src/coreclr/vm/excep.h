@@ -106,11 +106,9 @@ EXTERN_C VOID STDCALL ResetCurrentContext();
 
 void UnwindFrameChain(Thread *pThread, LPVOID pvLimitSP) noexcept;
 DWORD MapWin32FaultToCOMPlusException(EXCEPTION_RECORD *pExceptionRecord);
-DWORD ComputeEnclosingHandlerNestingLevel(IJitManager *pIJM, const METHODTOKEN& mdTok, SIZE_T offsNat);
 BOOL IsException(MethodTable *pMT);
 BOOL IsExceptionOfType(RuntimeExceptionKind reKind, OBJECTREF *pThrowable);
 BOOL IsExceptionOfType(RuntimeExceptionKind reKind, Exception *pException);
-BOOL IsUncatchable(OBJECTREF *pThrowable);
 VOID FixupOnRethrow(Thread *pCurThread, EXCEPTION_POINTERS *pExceptionPointers);
 BOOL UpdateCurrentThrowable(PEXCEPTION_RECORD pExceptionRecord);
 BOOL IsStackOverflowException(Thread* pThread, EXCEPTION_RECORD* pExceptionRecord);
@@ -288,7 +286,6 @@ ULONG GetExceptionMessage(OBJECTREF throwable,
 void GetExceptionMessage(OBJECTREF throwable, SString &result);
 STRINGREF GetExceptionMessage(OBJECTREF throwable);
 HRESULT GetExceptionHResult(OBJECTREF throwable);
-DWORD GetExceptionXCode(OBJECTREF throwable);
 
 void ExceptionPreserveStackTrace(OBJECTREF throwable);
 
@@ -628,11 +625,6 @@ inline void CopyOSContext(T_CONTEXT* pDest, T_CONTEXT* pSrc)
 }
 
 void SaveCurrentExceptionInfo(PEXCEPTION_RECORD pRecord, PT_CONTEXT pContext);
-
-// See implementation for detailed comments in excep.cpp
-LONG ReflectionInvocationExceptionFilter(
-    EXCEPTION_POINTERS *pExceptionInfo, // the pExceptionInfo passed to a filter function.
-    PVOID               pParam);
 
 #ifndef DACCESS_COMPILE
 // exception filter invoked for unhandled exceptions on the entry point thread (thread 0)

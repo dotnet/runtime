@@ -1,11 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// ===========================================================================
-// File: JITinterface.H
-//
-// ===========================================================================
-
 #ifndef JITINTERFACE_H
 #define JITINTERFACE_H
 
@@ -383,7 +378,6 @@ public:
 
     // Add/Remove/Find transient method details.
     void AddTransientMethodDetails(TransientMethodDetails details);
-    TransientMethodDetails RemoveTransientMethodDetails(MethodDesc* pMD);
     bool FindTransientMethodDetails(MethodDesc* pMD, TransientMethodDetails** details);
 
 protected:

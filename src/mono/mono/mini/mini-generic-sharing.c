@@ -1157,35 +1157,19 @@ static GENERATE_GET_CLASS_WITH_CACHE (valuetuple_5, "Mono", "ValueTuple`5");
 static GENERATE_GET_CLASS_WITH_CACHE (valuetuple_6, "Mono", "ValueTuple`6");
 static GENERATE_GET_CLASS_WITH_CACHE (valuetuple_7, "Mono", "ValueTuple`7");
 
-/*
- * Tracks the valuetypes whose layout is currently being normalized by get_wrapper_shared_vtype ().
- * A struct can reference itself through a type argument of a field type, e.g.
- * struct S { Box<S> f; }, which would otherwise recurse without bound.
- */
-typedef struct _WrapperSharedVtypeFrame WrapperSharedVtypeFrame;
-struct _WrapperSharedVtypeFrame {
-	MonoClass *klass;
-	WrapperSharedVtypeFrame *parent;
-	int depth;
-};
-
-/* Bounds expansion for types which grow on every level, e.g. struct S<T> { Box<S<S<T>>> f; } */
-#define WRAPPER_SHARED_VTYPE_MAX_DEPTH 16
-
 static MonoType*
 get_wrapper_shared_type (MonoType *t);
 static MonoType*
-get_wrapper_shared_type_full (MonoType *t, gboolean field, WrapperSharedVtypeFrame *frame);
+get_wrapper_shared_type_full (MonoType *t, gboolean field);
 
 /*
  * get_wrapper_shared_vtype:
  *
  *   Return an instantiation of one of the Mono.ValueTuple types with the same
- * layout as the valuetype KLASS. Return NULL if the type should not be shared,
- * including when its layout is already being normalized further up the stack.
+ * layout as the valuetype KLASS.
  */
 static MonoType*
-get_wrapper_shared_vtype (MonoType *t, WrapperSharedVtypeFrame *parent)
+get_wrapper_shared_vtype (MonoType *t)
 {
 	ERROR_DECL (error);
 	MonoGenericContext ctx;
@@ -1200,19 +1184,6 @@ get_wrapper_shared_vtype (MonoType *t, WrapperSharedVtypeFrame *parent)
 	// FIXME: Map 1 member structs to primitive types on platforms where its supported
 
 	klass = mono_class_from_mono_type_internal (t);
-
-	if (parent && parent->depth >= WRAPPER_SHARED_VTYPE_MAX_DEPTH)
-		return NULL;
-	for (WrapperSharedVtypeFrame *f = parent; f; f = f->parent) {
-		if (f->klass == klass)
-			return NULL;
-	}
-
-	WrapperSharedVtypeFrame frame;
-	frame.klass = klass;
-	frame.parent = parent;
-	frame.depth = parent ? parent->depth + 1 : 1;
-
 	/* Under mono, auto and sequential layout are the same for valuetypes, see mono_class_layout_fields () */
 	if (((mono_class_get_flags (klass) & TYPE_ATTRIBUTE_LAYOUT_MASK) != TYPE_ATTRIBUTE_SEQUENTIAL_LAYOUT) &&
 		((mono_class_get_flags (klass) & TYPE_ATTRIBUTE_LAYOUT_MASK) != TYPE_ATTRIBUTE_AUTO_LAYOUT))
@@ -1262,7 +1233,7 @@ get_wrapper_shared_vtype (MonoType *t, WrapperSharedVtypeFrame *parent)
 	while ((field = mono_class_get_fields_internal (klass, &iter))) {
 		if (field->type->attrs & (FIELD_ATTRIBUTE_STATIC | FIELD_ATTRIBUTE_HAS_FIELD_RVA))
 			continue;
-		MonoType *ftype = get_wrapper_shared_type_full (field->type, TRUE, &frame);
+		MonoType *ftype = get_wrapper_shared_type_full (field->type, TRUE);
 		if (m_class_is_byreflike (mono_class_from_mono_type_internal (ftype)))
 			/* Cannot inflate generic params with byreflike types */
 			return NULL;
@@ -1355,7 +1326,7 @@ get_wrapper_shared_vtype (MonoType *t, WrapperSharedVtypeFrame *parent)
  *   Return a type which is handled identically wrt to calling conventions as T.
  */
 static MonoType*
-get_wrapper_shared_type_full (MonoType *t, gboolean is_field, WrapperSharedVtypeFrame *frame)
+get_wrapper_shared_type_full (MonoType *t, gboolean is_field)
 {
 	if (m_type_is_byref (t))
 		return mono_class_get_byref_type (mono_defaults.int_class);
@@ -1430,14 +1401,14 @@ get_wrapper_shared_type_full (MonoType *t, gboolean is_field, WrapperSharedVtype
 		if (inst) {
 			g_assert (inst->type_argc < 16);
 			for (guint i = 0; i < inst->type_argc; ++i)
-				args [i] = get_wrapper_shared_type_full (inst->type_argv [i], TRUE, frame);
+				args [i] = get_wrapper_shared_type_full (inst->type_argv [i], TRUE);
 			ctx.class_inst = mono_metadata_get_generic_inst (inst->type_argc, args);
 		}
 		inst = orig_ctx->method_inst;
 		if (inst) {
 			g_assert (inst->type_argc < 16);
 			for (guint i = 0; i < inst->type_argc; ++i)
-				args [i] = get_wrapper_shared_type_full (inst->type_argv [i], TRUE, frame);
+				args [i] = get_wrapper_shared_type_full (inst->type_argv [i], TRUE);
 			ctx.method_inst = mono_metadata_get_generic_inst (inst->type_argc, args);
 		}
 		klass = mono_class_inflate_generic_class_checked (mono_class_get_generic_class (klass)->container_class, &ctx, error);
@@ -1447,13 +1418,13 @@ get_wrapper_shared_type_full (MonoType *t, gboolean is_field, WrapperSharedVtype
 		mono_class_set_skip_generic_constraints (klass);
 
 		t = m_class_get_byval_arg (klass);
-		MonoType *shared_type = get_wrapper_shared_vtype (t, frame);
+		MonoType *shared_type = get_wrapper_shared_vtype (t);
 		if (shared_type)
 			t = shared_type;
 		return t;
 	}
 	case MONO_TYPE_VALUETYPE: {
-		MonoType *shared_type = get_wrapper_shared_vtype (t, frame);
+		MonoType *shared_type = get_wrapper_shared_vtype (t);
 		if (shared_type)
 			t = shared_type;
 		return t;
@@ -1469,7 +1440,7 @@ get_wrapper_shared_type_full (MonoType *t, gboolean is_field, WrapperSharedVtype
 static MonoType*
 get_wrapper_shared_type (MonoType *t)
 {
-	return get_wrapper_shared_type_full (t, FALSE, NULL);
+	return get_wrapper_shared_type_full (t, FALSE);
 }
 
 /* Returns the intptr type for types that are passed in a single register */
