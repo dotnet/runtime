@@ -21,7 +21,6 @@ set __BuildArch=x64
 set __BuildType=Debug
 set __TargetOS=windows
 
-set "__ProjectFilesDir=%__TestDir%"
 set "__RootBinDir=%__RepoRootDir%\artifacts"
 set "__LogsDir=%__RootBinDir%\log"
 set "__MsbuildDebugLogsDir=%__LogsDir%\MsbuildDebugLogs"
@@ -48,7 +47,7 @@ set __CreatePdb=
 set __CreatePerfmap=
 set __SkipGenerateLayout=0
 set __GenerateLayoutOnly=0
-set __Ninja=1
+set __UseNinja=1
 set __CMakeArgs=
 set __EnableNativeSanitizers=
 set __Priority=0
@@ -98,7 +97,7 @@ if /i "%arg%" == "SkipNative"            (set __SkipNative=1&set processedArgs=!
 if /i "%arg%" == "SkipGenerateLayout"    (set __SkipGenerateLayout=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
 if /i "%arg%" == "GenerateLayoutOnly"    (set __GenerateLayoutOnly=1&set __SkipManaged=1&set __SkipNative=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%arg%" == "MSBuild"               (set __Ninja=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%arg%" == "MSBuild"               (set __UseNinja=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%arg%" == "crossgen2"             (set __TestBuildMode=crossgen2&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%arg%" == "composite"             (set __CompositeBuildMode=1&set __TestBuildMode=crossgen2&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%arg%" == "pdb"                   (set __CreatePdb=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
@@ -162,7 +161,7 @@ if defined __TestArgParsing (
     echo.__CreatePerfmap=%__CreatePerfmap%
     echo.__SkipGenerateLayout=%__SkipGenerateLayout%
     echo.__GenerateLayoutOnly=%__GenerateLayoutOnly%
-    echo.__Ninja=%__Ninja%
+    echo.__UseNinja=%__UseNinja%
     echo.__CMakeArgs=%__CMakeArgs%
     echo.__Priority=%__Priority%
     echo.__EnableNativeSanitizers=%__EnableNativeSanitizers%
@@ -194,12 +193,8 @@ if not defined __TestIntermediateDir (
     set "__TestIntermediateDir=tests\coreclr\obj\%__TargetOS%.%__BuildArch%.%__BuildType%"
 )
 set "__NativeTestIntermediatesDir=%__RootBinDir%\%__TestIntermediateDir%\Native"
-if "%__Ninja%"=="0" (set "__NativeTestIntermediatesDir=%__NativeTestIntermediatesDir%\ide")
+if "%__UseNinja%"=="0" (set "__NativeTestIntermediatesDir=%__NativeTestIntermediatesDir%\ide")
 set "__ManagedTestIntermediatesDir=%__RootBinDir%\%__TestIntermediateDir%\Managed"
-
-REM Generate path to be set for CMAKE_INSTALL_PREFIX to contain forward slash
-set "__CMakeBinDir=%__TestBinDir%"
-set "__CMakeBinDir=%__CMakeBinDir:\=/%"
 
 if not exist "%__TestBinDir%"                   md "%__TestBinDir%"
 if not exist "%__NativeTestIntermediatesDir%"   md "%__NativeTestIntermediatesDir%"
@@ -216,13 +211,11 @@ set __CommonMSBuildArgs=%__CommonMSBuildArgs% "/p:TargetArchitecture=%__BuildArc
 
 if "%__Mono%"=="1" (
   set __CommonMSBuildArgs=!__CommonMSBuildArgs! "/p:RuntimeFlavor=mono"
-  set __CMakeArgs="-DCMAKE_BUILD_RUNTIME_FLAVOR=Mono" !__CMakeArgs!
 ) else (
   set __CommonMSBuildArgs=!__CommonMSBuildArgs! "/p:RuntimeFlavor=coreclr"
-  set __CMakeArgs="-DCMAKE_BUILD_RUNTIME_FLAVOR=CoreCLR" !__CMakeArgs!
 )
 
-if %__Ninja% == 0 (
+if %__UseNinja% == 0 (
     set __CommonMSBuildArgs=%__CommonMSBuildArgs% /p:UseVisualStudioNativeBinariesLayout=true
 )
 
@@ -236,62 +229,6 @@ if defined __TestArgParsing (
 
 call %__RepoRootDir%\eng\native\init-vs-env.cmd %__BuildArch%
 if NOT '%ERRORLEVEL%' == '0' exit /b 1
-
-REM =========================================================================================
-REM ===
-REM === Native test build section
-REM ===
-REM =========================================================================================
-
-if "%__SkipNative%" == "1" goto skipnative
-if "%__GenerateLayoutOnly%" == "1" goto skipnative
-
-echo %__MsgPrefix%Commencing build of native test components for %__BuildArch%/%__BuildType%
-
-REM Set the environment for the native build
-
-@if defined _echo @echo on
-
-set __ExtraCmakeArgs=
-
-if %__Ninja% EQU 1 (
-    set __ExtraCmakeArgs="-DCMAKE_SYSTEM_VERSION=10.0" "-DCMAKE_BUILD_TYPE=!__BuildType!"
-) else (
-    set __ExtraCmakeArgs="-DCMAKE_SYSTEM_VERSION=10.0"
-)
-call "%__RepoRootDir%\eng\native\gen-buildsys.cmd" "%__ProjectFilesDir%" "%__NativeTestIntermediatesDir%" %VisualStudioVersion% %__BuildArch% %__TargetOS% !__ExtraCmakeArgs! !__CMakeArgs!
-
-if not !errorlevel! == 0 (
-    echo %__ErrMsgPrefix%%__MsgPrefix%Error: failed to generate native component build project!
-    exit /b 1
-)
-
-@if defined _echo @echo on
-
-if not exist "%__NativeTestIntermediatesDir%\CMakeCache.txt" (
-    echo %__ErrMsgPrefix%%__MsgPrefix%Error: unable to find generated native component build project!
-    exit /b 1
-)
-
-echo %__MsgPrefix%Environment setup
-
-set __CmakeBuildToolArgs=
-
-if %__Ninja% EQU 1 (
-    set __CmakeBuildToolArgs=
-) else (
-    REM We pass the /m flag directly to MSBuild so that we can get both MSBuild and CL parallelism, which is fastest for our builds.
-    set __CmakeBuildToolArgs=/nologo /m
-)
-
-"%CMakePath%" --build %__NativeTestIntermediatesDir% --target install --config %__BuildType% -- !__CmakeBuildToolArgs!
-
-if errorlevel 1 (
-    echo %__ErrMsgPrefix%%__MsgPrefix%Error: native test build failed.
-    exit /b 1
-)
-
-:skipnative
 
 REM =========================================================================================
 REM ===

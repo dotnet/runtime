@@ -26,6 +26,7 @@
 
   <ItemGroup>
     <TestBuildSteps Include="RestorePackages" />
+    <TestBuildSteps Include="NativeBuild" />
     <TestBuildSteps Include="ManagedBuild" />
     <TestBuildSteps Include="GenerateLayout" />
     <TestBuildSteps Include="CrossgenFramework" />
@@ -191,8 +192,16 @@
       DependsOnTargets="BatchRestorePackages"
       Condition="'$(__SkipRestorePackages)' != '1'" />
 
+  <Target Name="NativeBuild"
+      DependsOnTargets="RestorePackages"
+      Condition="'$(__GenerateLayoutOnly)' != '1' and '$(__SkipNative)' != '1'">
+    <Message Importance="High" Text="$(MsgPrefix)Building native test components" />
+    <MSBuild Projects="build-native.proj"
+             Targets="BuildNativeTests" />
+  </Target>
+
   <Target Name="ManagedBuild"
-      DependsOnTargets="BuildManagedTestGroups"
+      DependsOnTargets="NativeBuild;BuildManagedTestGroups"
       Condition="'$(__GenerateLayoutOnly)' != '1' and '$(__SkipManaged)' != '1' and !$(MonoAot) and !$(MonoFullAot)" />
 
   <Target Name="BuildManagedTestGroups" DependsOnTargets="RestorePackages;ResolveDisabledProjects;BuildNativeAotFrameworkObjects">

@@ -1,0 +1,230 @@
+<Project Sdk="Microsoft.DotNet.CMake.Sdk" TreatAsLocalProperty="Platform">
+  <PropertyGroup>
+    <ImportDirectoryBuildTargets>false</ImportDirectoryBuildTargets>
+    <Platform>$(TargetArchitecture)</Platform>
+    <CMakeLists>$(MSBuildThisFileDirectory)CMakeLists.txt</CMakeLists>
+    <CMakeOutputDir>$(__NativeTestIntermediatesDir)</CMakeOutputDir>
+    <CMakeInstallDir Condition="'$(__TestBinDir)' != ''">$(__TestBinDir)</CMakeInstallDir>
+    <CMakeInstallDir Condition="'$(CMakeInstallDir)' == ''">$(TestBinDir)</CMakeInstallDir>
+    <CMakeBuildTarget>install</CMakeBuildTarget>
+    <CMakeConfigureCommandWrapper Condition="$([MSBuild]::IsOSPlatform('Windows'))">%25CMAKE_CONFIGURE_COMMAND_WRAPPER%25</CMakeConfigureCommandWrapper>
+    <CMakeConfigureCommandWrapper Condition="!$([MSBuild]::IsOSPlatform('Windows'))">$CMAKE_CONFIGURE_COMMAND_WRAPPER</CMakeConfigureCommandWrapper>
+
+    <__UseNinja Condition="'$(__UseNinja)' == ''">1</__UseNinja>
+
+    <CMakeGenerator Condition="'$(__UseNinja)' == '1'">Ninja</CMakeGenerator>
+    <CMakeGenerator Condition="'$(__UseNinja)' != '1' and !$([MSBuild]::IsOSPlatform('Windows'))">Unix Makefiles</CMakeGenerator>
+    <CMakeGenerator Condition="$([MSBuild]::IsOSPlatform('Windows')) and '$(TargetOS)' == 'wasi'">Ninja</CMakeGenerator>
+    <CMakeGenerator Condition="'$(__UseNinja)' != '1' and $([MSBuild]::IsOSPlatform('Windows')) and '$(TargetArchitecture)' == 'wasm' and '$(TargetOS)' != 'wasi'">NMake Makefiles</CMakeGenerator>
+    <CMakeGenerator Condition="'$(CMakeGenerator)' == '' and $([MSBuild]::IsOSPlatform('Windows'))">Visual Studio</CMakeGenerator>
+
+    <_NativeTestPrepareDependsOn>CopyNativeTestVersionFiles</_NativeTestPrepareDependsOn>
+    <_NativeTestPrepareDependsOn Condition="'$(TargetOS)' == 'browser'">AcquireEmscriptenSdk;$(_NativeTestPrepareDependsOn)</_NativeTestPrepareDependsOn>
+    <_NativeTestPrepareDependsOn Condition="'$(TargetOS)' == 'wasi'">AcquireWasiSdk;$(_NativeTestPrepareDependsOn)</_NativeTestPrepareDependsOn>
+    <CMakeConfigureDependsOn>PrepareNativeTestBuild;$(CMakeConfigureDependsOn)</CMakeConfigureDependsOn>
+    <CMakeBuildDependsOn>PrepareNativeTestBuild;$(CMakeBuildDependsOn)</CMakeBuildDependsOn>
+
+    <_NativeTestBuildDependsOn>Build</_NativeTestBuildDependsOn>
+    <_NativeTestBuildDependsOn Condition="'$(__ConfigureOnly)' == '1'">Configure</_NativeTestBuildDependsOn>
+    <_NativeTestBuildDependsOn Condition="'$(__SkipConfigure)' == '1'">BuildNativeTestsWithoutConfigure</_NativeTestBuildDependsOn>
+    <_NativeTestBuildDependsOn Condition="'$(__ConfigureOnly)' == '1' and '$(__SkipConfigure)' == '1'">ValidateNativeTestBuildConfigured</_NativeTestBuildDependsOn>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Windows'))">
+    <_NativeTestSetSkipVCEnvInit Condition="'$(SkipVCEnvInit)' != '' and '$(SkipVCEnvInit)' != 'false' and '$(SkipVCEnvInit)' != '0'">set &quot;SkipVCEnvInit=$(SkipVCEnvInit)&quot;</_NativeTestSetSkipVCEnvInit>
+    <_NativeTestSetSkipVCEnvInit Condition="'$(_NativeTestSetSkipVCEnvInit)' == ''">set &quot;SkipVCEnvInit=&quot;</_NativeTestSetSkipVCEnvInit>
+    <_NativeTestWindowsCompilerSearchScript>
+      $(_NativeTestSetSkipVCEnvInit)
+      call &quot;$(RepositoryEngineeringDir)native\init-vs-env.cmd&quot; $(TargetArchitecture)
+      if errorlevel 1 exit /b 1
+      for %25%25I in (&quot;%25CMakePath%25&quot;) do set &quot;PATH=%25%25~dpI%3B%25PATH%25&quot;
+      set &quot;USE_SCCACHE=$(USE_SCCACHE)&quot;
+      call &quot;$(RepositoryEngineeringDir)native\init-cmake-toolchain.cmd&quot; $(TargetArchitecture) $(TargetOS)
+      if errorlevel 1 exit /b 1
+      set CFLAGS=%25CFLAGS%25 %25EXTRA_CFLAGS%25
+      set CXXFLAGS=%25CXXFLAGS%25 %25EXTRA_CXXFLAGS%25
+      set LDFLAGS=%25LDFLAGS%25 %25EXTRA_LDFLAGS%25
+    </_NativeTestWindowsCompilerSearchScript>
+    <CMakeCompilerSearchScript>$(_NativeTestWindowsCompilerSearchScript)</CMakeCompilerSearchScript>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="!$([MSBuild]::IsOSPlatform('Windows'))">
+    <_NativeTestUsesTargetToolchain Condition="'$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi' or '$(TargetOS)' == 'android' or '$(TargetOS)' == 'linux-bionic'">true</_NativeTestUsesTargetToolchain>
+
+    <CMakeCompilerToolchain Condition="'$(CppCompilerAndLinker)' != ''">$(CppCompilerAndLinker)</CMakeCompilerToolchain>
+    <CMakeCompilerToolchain Condition="'$(CppCompilerAndLinker)' == '' and '$(__Compiler)' != ''">$(__Compiler)</CMakeCompilerToolchain>
+    <CMakeCompilerToolchain Condition="'$(CppCompilerAndLinker)' == '' and '$(__Compiler)' == ''">clang</CMakeCompilerToolchain>
+
+    <_NativeTestUnixCrossEnvironment Condition="'$(CROSSCOMPILE)' == '1'">
+      export CROSSCOMPILE=1
+      export TARGET_BUILD_ARCH="$(TargetArchitecture)"
+    </_NativeTestUnixCrossEnvironment>
+    <_NativeTestUnixToolchainSearchScript>
+      reporoot=&quot;$(RepoRoot)&quot; build_arch=&quot;$(TargetArchitecture)&quot; target_os=&quot;$(TargetOS)&quot; USE_SCCACHE=&quot;$(USE_SCCACHE)&quot; . &quot;$(RepositoryEngineeringDir)native/init-cmake-toolchain.sh&quot;
+      export CFLAGS="$CFLAGS $EXTRA_CFLAGS"
+      export CXXFLAGS="$CXXFLAGS $EXTRA_CXXFLAGS"
+      export LDFLAGS="$LDFLAGS $EXTRA_LDFLAGS"
+      $(_NativeTestUnixCrossEnvironment)
+    </_NativeTestUnixToolchainSearchScript>
+    <_NativeTestUnixCompilerSearchScript>
+      build_arch=&quot;$(TargetArchitecture)&quot; compiler=&quot;$(CMakeCompilerToolchain)&quot; . &quot;$(RepositoryEngineeringDir)common/native/init-compiler.sh&quot;
+      $(_NativeTestUnixToolchainSearchScript)
+    </_NativeTestUnixCompilerSearchScript>
+    <CMakeCompilerSearchScript Condition="'$(_NativeTestUsesTargetToolchain)' == 'true'">$(_NativeTestUnixToolchainSearchScript)</CMakeCompilerSearchScript>
+    <CMakeCompilerSearchScript Condition="'$(_NativeTestUsesTargetToolchain)' != 'true'">$(_NativeTestUnixCompilerSearchScript)</CMakeCompilerSearchScript>
+  </PropertyGroup>
+
+  <!-- Work around the CMake SDK not recognizing Visual Studio 2026.
+       TODO: Remove once https://github.com/dotnet/arcade/issues/17519 is fixed. -->
+  <PropertyGroup>
+    <CMakeGenerator Condition="'$(__UseNinja)' != '1' and $([MSBuild]::IsOSPlatform('Windows')) and '$(TargetArchitecture)' != 'wasm' and $(VisualStudioVersion.StartsWith('18.'))">Visual Studio 18 2026</CMakeGenerator>
+    <_CMakeMultiConfigurationGenerator Condition="$(CMakeGenerator.StartsWith('Visual Studio '))">true</_CMakeMultiConfigurationGenerator>
+    <_CMakePassArchitectureToGenerator Condition="$(CMakeGenerator.StartsWith('Visual Studio '))">true</_CMakePassArchitectureToGenerator>
+    <Platform Condition="$(CMakeGenerator.StartsWith('Visual Studio ')) and '$(TargetArchitecture)' == 'x86'">Win32</Platform>
+    <CMakeCompilerSearchScript Condition="$([MSBuild]::IsOSPlatform('Windows')) and '$(CMakeGenerator)' == 'Visual Studio 18 2026'">
+      $(CMakeCompilerSearchScript)
+      set &quot;PATH=%25VSINSTALLDIR%25Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin%3B%25PATH%25&quot;
+    </CMakeCompilerSearchScript>
+  </PropertyGroup>
+
+  <Import Project="$(RepositoryEngineeringDir)AcquireEmscriptenSdk.targets" Condition="'$(TargetOS)' == 'browser'" />
+  <Import Project="$(RepositoryEngineeringDir)AcquireWasiSdk.targets" Condition="'$(TargetOS)' == 'wasi'" />
+
+  <!-- The test restore graph relocates the SDK's implicit package props, so provide the vswhere
+       path needed by the CMake SDK when it resolves a Visual Studio generator. -->
+  <Target Name="ResolveNativeTestVSWhere"
+          BeforeTargets="ResolveVSGenerator"
+          Condition="'$(CMakeGenerator)' == 'Visual Studio'">
+    <PropertyGroup>
+      <!-- Test projects relocate NuGet restore outputs after the SDK's standard props import point. -->
+      <VSWherePath>$([MSBuild]::NormalizePath('$(NuGetPackageRoot)', 'vswhere', '$(VSWhereVersion)', 'tools', 'vswhere.exe'))</VSWherePath>
+    </PropertyGroup>
+    <Error Condition="!Exists('$(VSWherePath)')" Text="vswhere was not restored to the expected path: $(VSWherePath)" />
+  </Target>
+
+  <Target Name="CopyNativeTestVersionFiles" Condition="!$([MSBuild]::IsOSPlatform('Windows')) and !Exists('$(ArtifactsObjDir)_version.c')">
+    <Exec Command="bash &quot;$(RepositoryEngineeringDir)native/version/copy_version_files.sh&quot;" />
+  </Target>
+
+  <Target Name="PrepareNativeTestBuild" DependsOnTargets="$(_NativeTestPrepareDependsOn)">
+    <Error Condition="('$(TargetOS)' == 'android' or '$(TargetOS)' == 'linux-bionic') and '$(ANDROID_NDK_ROOT)' == ''"
+           Text="The ANDROID_NDK_ROOT environment variable must point to the Android NDK root." />
+    <Error Condition="'$(CROSSCOMPILE)' == '1' and '$(HostOS)' != 'osx' and '$(ROOTFS_DIR)' == ''"
+           Text="The ROOTFS_DIR environment variable must be set for a cross build." />
+    <Error Condition="('$(TargetOS)' == 'osx' or '$(TargetOS)' == 'maccatalyst') and '$(TargetArchitecture)' != 'x64' and '$(TargetArchitecture)' != 'arm64'"
+           Text="Unsupported Apple architecture: $(TargetArchitecture)" />
+    <Error Condition="('$(TargetOS)' == 'android' or '$(TargetOS)' == 'linux-bionic') and '$(TargetArchitecture)' != 'x86' and '$(TargetArchitecture)' != 'x64' and '$(TargetArchitecture)' != 'arm' and '$(TargetArchitecture)' != 'arm64'"
+           Text="Unsupported Android architecture: $(TargetArchitecture)" />
+
+    <!-- Work around the CMake SDK not quoting CMAKE_INSTALL_PREFIX. -->
+    <PropertyGroup>
+      <CMakeInstallDir>&quot;$(CMakeInstallDir)&quot;</CMakeInstallDir>
+    </PropertyGroup>
+
+    <PropertyGroup>
+      <_NativeTestRuntimeFlavor>CoreCLR</_NativeTestRuntimeFlavor>
+      <_NativeTestRuntimeFlavor Condition="'$(RuntimeFlavor)' == 'mono'">Mono</_NativeTestRuntimeFlavor>
+      <_NativeTestAppleArchitecture>x86_64</_NativeTestAppleArchitecture>
+      <_NativeTestAppleArchitecture Condition="'$(TargetArchitecture)' == 'arm64'">arm64</_NativeTestAppleArchitecture>
+      <_NativeTestAndroidAbi>x86</_NativeTestAndroidAbi>
+      <_NativeTestAndroidAbi Condition="'$(TargetArchitecture)' == 'x64'">x86_64</_NativeTestAndroidAbi>
+      <_NativeTestAndroidAbi Condition="'$(TargetArchitecture)' == 'arm'">armeabi-v7a</_NativeTestAndroidAbi>
+      <_NativeTestAndroidAbi Condition="'$(TargetArchitecture)' == 'arm64'">arm64-v8a</_NativeTestAndroidAbi>
+      <_AndroidNdkRoot>$([System.String]::Copy('$(ANDROID_NDK_ROOT)').Replace('\', '/'))</_AndroidNdkRoot>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(TargetOS)' == 'browser'">
+      <CMakeCompilerSearchScript Condition="$([MSBuild]::IsOSPlatform('Windows'))">
+        set &quot;EMSDK_PATH=$(EMSDK_PATH)&quot;
+        $(CMakeCompilerSearchScript)
+      </CMakeCompilerSearchScript>
+      <CMakeCompilerSearchScript Condition="!$([MSBuild]::IsOSPlatform('Windows'))">
+        EMSDK_PATH=&quot;$(EMSDK_PATH)&quot;
+        $(CMakeCompilerSearchScript)
+      </CMakeCompilerSearchScript>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(TargetOS)' == 'wasi'">
+      <CMakeCompilerSearchScript Condition="$([MSBuild]::IsOSPlatform('Windows'))">
+        set &quot;WASI_SDK_PATH=$(RuntimeBuildWasiSdkPath)&quot;
+        $(CMakeCompilerSearchScript)
+      </CMakeCompilerSearchScript>
+      <CMakeCompilerSearchScript Condition="!$([MSBuild]::IsOSPlatform('Windows'))">
+        WASI_SDK_PATH=&quot;$(RuntimeBuildWasiSdkPath)&quot;
+        $(CMakeCompilerSearchScript)
+      </CMakeCompilerSearchScript>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <CMakeArguments Include="--no-warn-unused-cli" />
+      <CMakeDefines Include="CMAKE_BUILD_RUNTIME_FLAVOR" Value="$(_NativeTestRuntimeFlavor)" />
+      <CMakeDefines Include="CLR_CMAKE_HOST_ARCH" Value="$(TargetArchitecture)" Condition="$([MSBuild]::IsOSPlatform('Windows'))" />
+      <CMakeDefines Include="CLR_CMAKE_TEST_BUILD_MODE" Value="$(TestBuildMode)" />
+      <CMakeDefines Include="CLR_CMAKE_TEST_RUNTIME_FLAVOR" Value="$(RuntimeFlavor)" />
+      <CMakeDefines Include="CMAKE_SYSTEM_VERSION" Value="10.0" Condition="$([MSBuild]::IsOSPlatform('Windows')) and '$(TargetArchitecture)' != 'wasm'" />
+
+      <CMakeArguments Include="-C &quot;$(RepositoryEngineeringDir)native/tryrun.cmake&quot;" Condition="'$(CROSSCOMPILE)' == '1'" />
+      <CMakeArguments Include="-DCMAKE_SYSTEM_NAME=Darwin" Condition="'$(CROSSCOMPILE)' == '1' and '$(HostOS)' == 'osx'" />
+      <CMakeArguments Include="-DCMAKE_TOOLCHAIN_FILE=&quot;$(RepositoryEngineeringDir)common/cross/toolchain.cmake&quot;" Condition="'$(CROSSCOMPILE)' == '1' and '$(HostOS)' != 'osx'" />
+
+      <CMakeDefines Include="CMAKE_OSX_ARCHITECTURES" Value="$(_NativeTestAppleArchitecture)" Condition="'$(TargetOS)' == 'osx' or '$(TargetOS)' == 'maccatalyst'" />
+      <CMakeArguments Include="-C &quot;$(RepositoryEngineeringDir)native/tryrun_ios_tvos.cmake&quot;" Condition="'$(TargetOS)' == 'maccatalyst'" />
+      <CMakeDefines Include="CMAKE_SYSTEM_NAME" Value="Darwin" Condition="'$(TargetOS)' == 'maccatalyst'" />
+      <CMakeDefines Include="CMAKE_OSX_SYSROOT" Value="macosx" Condition="'$(TargetOS)' == 'maccatalyst'" />
+      <CMakeDefines Include="CMAKE_SYSTEM_VARIANT" Value="maccatalyst" Condition="'$(TargetOS)' == 'maccatalyst'" />
+
+      <CMakeDefines Include="ANDROID_BUILD" Value="1" Condition="'$(TargetOS)' == 'android' or '$(TargetOS)' == 'linux-bionic'" />
+      <CMakeArguments Include="-C &quot;$(RepositoryEngineeringDir)native/tryrun.cmake&quot;" Condition="'$(TargetOS)' == 'android' or '$(TargetOS)' == 'linux-bionic'" />
+      <CMakeArguments Include="-DCMAKE_TOOLCHAIN_FILE=&quot;$(_AndroidNdkRoot)/build/cmake/android.toolchain.cmake&quot;" Condition="'$(TargetOS)' == 'android' or '$(TargetOS)' == 'linux-bionic'" />
+      <CMakeDefines Include="ANDROID_PLATFORM" Value="android-24" Condition="'$(TargetOS)' == 'android' or '$(TargetOS)' == 'linux-bionic'" />
+      <CMakeDefines Include="ANDROID_NATIVE_API_LEVEL" Value="24" Condition="'$(TargetOS)' == 'android' or '$(TargetOS)' == 'linux-bionic'" />
+      <CMakeDefines Include="ANDROID_ABI" Value="$(_NativeTestAndroidAbi)" Condition="'$(TargetOS)' == 'android' or '$(TargetOS)' == 'linux-bionic'" />
+      <CMakeArguments Include="-DANDROID_CPP_FEATURES=&quot;no-rtti exceptions&quot;" Condition="'$(TargetOS)' == 'android' or '$(TargetOS)' == 'linux-bionic'" />
+
+      <CMakeArguments Include="-C &quot;%25CMAKE_INITIAL_CACHE%25&quot;" Condition="'$(TargetOS)' == 'browser' and $([MSBuild]::IsOSPlatform('Windows'))" />
+      <CMakeArguments Include="-C &quot;$CMAKE_INITIAL_CACHE&quot;" Condition="'$(TargetOS)' == 'browser' and !$([MSBuild]::IsOSPlatform('Windows'))" />
+      <CMakeDefines Include="CLR_CMAKE_TARGET_OS" Value="wasi" Condition="'$(TargetOS)' == 'wasi'" />
+      <CMakeArguments Include="-DCMAKE_TOOLCHAIN_FILE=&quot;%25CMAKE_TOOLCHAIN_FILE%25&quot;" Condition="'$(TargetOS)' == 'wasi' and $([MSBuild]::IsOSPlatform('Windows'))" />
+      <CMakeArguments Include="-DCMAKE_TOOLCHAIN_FILE=&quot;$CMAKE_TOOLCHAIN_FILE&quot;" Condition="'$(TargetOS)' == 'wasi' and !$([MSBuild]::IsOSPlatform('Windows'))" />
+
+      <CMakeArguments Include="$(__CMakeArgs)" Condition="'$(__CMakeArgs)' != ''" />
+      <CMakeArguments Include="$(CMakeArgs)" Condition="'$(CMakeArgs)' != ''" />
+
+      <CMakeNativeToolArguments Include="/nologo" Condition="$(CMakeGenerator.StartsWith('Visual Studio ')) or '$(CMakeGenerator)' == 'NMake Makefiles'" />
+    </ItemGroup>
+
+    <!-- Work around CMakeParallelization emitting an invalid -g argument. -->
+    <ItemGroup>
+      <CMakeNativeToolArguments Include="/m" Condition="$(CMakeGenerator.StartsWith('Visual Studio '))" />
+      <CMakeNativeToolArguments Include="-j" Condition="!$(CMakeGenerator.StartsWith('Visual Studio ')) and '$(CMakeGenerator)' != 'NMake Makefiles' and '$(NUMBER_OF_PROCESSORS)' != ''" />
+      <CMakeNativeToolArguments Include="$(NUMBER_OF_PROCESSORS)" Condition="!$(CMakeGenerator.StartsWith('Visual Studio ')) and '$(CMakeGenerator)' != 'NMake Makefiles' and '$(NUMBER_OF_PROCESSORS)' != ''" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="BuildNativeTests"
+          DependsOnTargets="$(_NativeTestBuildDependsOn)" />
+
+  <!-- Work around GenerateBringupScript omitting CMakeCompilerSearchScript. -->
+  <Target Name="IncludeNativeTestToolchainInBringupScript"
+          AfterTargets="GetConfigScript"
+          Condition="'$(BringupScriptOutputFile)' != ''">
+    <PropertyGroup>
+      <CMakeConfigScript>
+        $(CMakeCompilerSearchScript)
+        $(CMakeConfigScript)
+      </CMakeConfigScript>
+    </PropertyGroup>
+  </Target>
+
+  <Target Name="ValidateNativeTestBuildConfigured">
+    <Error Condition="!Exists('$(CMakeOutputDir)\CMakeCache.txt')"
+           Text="Unable to find the configured native test build at '$(CMakeOutputDir)'." />
+  </Target>
+
+  <Target Name="BuildNativeTestsWithoutConfigure"
+          DependsOnTargets="ResolveVSGenerator;GetBuildScript;ValidateNativeTestBuildConfigured">
+    <Exec WorkingDirectory="$(MSBuildProjectDirectory)" Command="
+      $(CMakeCompilerSearchScript)
+      $(CMakeBuildScript)" />
+  </Target>
+</Project>

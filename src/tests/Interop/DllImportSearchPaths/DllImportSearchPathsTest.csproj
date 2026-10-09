@@ -20,7 +20,7 @@
     <LibrarySubdirectory>$(OutputPath)/subdirectory</LibrarySubdirectory>
   </PropertyGroup>
 
-  <Target Name="SetUpSubdirectoryNative" AfterTargets="CopyNativeProjectBinaries">
+  <Target Name="SetUpSubdirectoryNative" AfterTargets="CopyAllNativeProjectReferenceBinaries">
     <ItemGroup>
       <NativeLibrariesToMove Include="$(OutDir)/libNativeLibrary.*" />
       <NativeLibrariesToMove Include="$(OutDir)/libNativeLibraryWithDependency.*" />

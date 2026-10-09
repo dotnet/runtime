@@ -4,8 +4,6 @@ build_Tests()
 {
     echo "${__MsgPrefix}Building Tests..."
 
-    __ProjectFilesDir="$__TestDir"
-
     if [[ -f  "${__TestBinDir}/build_info.json" ]]; then
         rm  "${__TestBinDir}/build_info.json"
     fi
@@ -16,9 +14,6 @@ build_Tests()
             rm -rf "$__TestBinDir"
         fi
     fi
-
-    __CMakeBinDir="$__TestBinDir"
-    export __CMakeBinDir
 
     if [[ ! -d "$__TestIntermediatesDir" ]]; then
         mkdir -p "$__TestIntermediatesDir"
@@ -58,14 +53,8 @@ build_Tests()
     MSBUILDDEBUGPATH="${__MsbuildDebugLogsDir}"
     export MSBUILDDEBUGPATH
 
-    if [[ "$__SkipNative" != 1 && "$__GenerateLayoutOnly" != 1 && \
-        "$__TargetOS" != "android" && "$__TargetOS" != "ios" && "$__TargetOS" != "iossimulator" && "$__TargetOS" != "tvos" && "$__TargetOS" != "tvossimulator" ]]; then
-        build_native "$__TargetOS" "$__TargetArch" "$__TestDir" "$__NativeTestIntermediatesDir" "install" "$__CMakeArgs -DCLR_CMAKE_TEST_RUNTIME_FLAVOR=$__RuntimeFlavor -DCLR_CMAKE_TEST_BUILD_MODE=$__TestBuildMode" "CoreCLR test component"
-
-        if [[ "$?" -ne 0 ]]; then
-            echo "${__ErrMsgPrefix}${__MsgPrefix}Error: native test build failed. Refer to the build log files for details (above)"
-            exit 1
-        fi
+    if [[ "$__TargetOS" == "android" || "$__TargetOS" == "ios" || "$__TargetOS" == "iossimulator" || "$__TargetOS" == "tvos" || "$__TargetOS" == "tvossimulator" ]]; then
+        __SkipNative=1
     fi
 
     # Set up directories and file names
@@ -95,6 +84,11 @@ build_Tests()
     export __BuildTestTree
     export __RuntimeFlavor
     export __SkipNative
+    export __ConfigureOnly
+    export __SkipConfigure
+    export __UseNinja
+    export __Compiler
+    export __CMakeArgs
     export __Priority
     export __CreatePerfmap
     export __CompositeBuildMode
@@ -374,10 +368,8 @@ fi
 
 if [[ $__Mono -eq 1 ]]; then
     __RuntimeFlavor="mono"
-    __CMakeArgs="-DCMAKE_BUILD_RUNTIME_FLAVOR=Mono $__CMakeArgs"
 else
     __RuntimeFlavor="coreclr"
-    __CMakeArgs="-DCMAKE_BUILD_RUNTIME_FLAVOR=CoreCLR $__CMakeArgs"
 fi
 
 # Get the number of processors available to the scheduler

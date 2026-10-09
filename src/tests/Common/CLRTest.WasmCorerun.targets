@@ -98,7 +98,7 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
 
     <ItemGroup>
       <!-- Native static libraries produced by the test's own CMake project(s), already staged into
-           $(OutDir) by CopyNativeProjectBinaries. -->
+           $(OutDir) by CopyAllNativeProjectReferenceBinaries. -->
       <_WasmCorerunTestLib Include="$(OutDir)*$(StaticLibSuffix)" />
 
       <!-- Match the app build's support for source NativeFileReference items. -->

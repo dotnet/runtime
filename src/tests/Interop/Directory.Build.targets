@@ -20,4 +20,5 @@
     </ItemGroup>
     <Copy SourceFiles="@(InteropNativeRuntimeDependencies)" DestinationFolder="$(OutputPath)" />
   </Target>
+
 </Project>

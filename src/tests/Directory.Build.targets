@@ -142,119 +142,45 @@
       Text="Tests in merged test directories should not set OutputType to Exe unless they are RequiresProcessIsolation, BuildAsStandalone, or IsMergedTestRunnerAssembly." />
   </Target>
 
-  <Target Name="CopyNativeProjectBinaries" Condition="'$(_CopyNativeProjectBinaries)' == 'true'">
-    <ItemGroup Condition="'$(UseVisualStudioNativeBinariesLayout)' == 'true'">
-      <NativeProjectBinaries Include="$(NativeProjectOutputFolder)\*.*" />
-    </ItemGroup>
-    <ItemGroup Condition="'$(UseVisualStudioNativeBinariesLayout)' != 'true'">
-      <!-- ############################################################### -->
-      <!-- The following is required because the single configuration      -->
-      <!-- generators, unlike multi-configuration generators,              -->
-      <!-- do not place the binaries built into a separate                 -->
-      <!-- Debug/Checked/Release directory. Therefore we must filter       -->
-      <!-- the folder to only include dynamic libraries, static libraries  -->
-      <!--  and executables.                                               -->
-      <!--                                                                 -->
-      <!-- Please take care when modifying the following lines of code.    -->
-      <!-- ############################################################### -->
-
-      <!-- Include everything and then filter. -->
-      <NativeProjectBinariesMatched Include="$(NativeProjectOutputFolder)\**\*.*" />
-
-      <!-- Filter executables on unix -->
-      <NativeProjectBinariesExeFilter Condition="'%(Extension)' == ''" Include="@(NativeProjectBinariesMatched)" />
-
-      <!-- Filter executables on Windows -->
-      <NativeProjectBinariesExeFilter Condition="'%(Extension)' == '.exe'" Include="@(NativeProjectBinariesMatched)" />
-
-      <!-- Filter manifest/data files on Windows -->
-      <NativeProjectBinariesManifestFilter Condition="'%(Extension)' == '.manifest'" Include="@(NativeProjectBinariesMatched)" />
-      <NativeProjectBinariesManifestFilter Condition="'%(Extension)' == '.tlb'" Include="@(NativeProjectBinariesMatched)" />
-
-      <!-- Filter out the *Make* files -->
-      <NativeProjectBinariesExeFilterRemovedMakeFile Condition="'%(FileName)' != 'Makefile'" Include="@(NativeProjectBinariesExeFilter)" />
-
-      <!-- Filter .dylib files for OSX -->
-      <NativeProjectBinariesDyLibFilter Condition="'%(Extension)' == '.dylib'" Include="@(NativeProjectBinariesMatched)" />
-
-      <!-- Filter .so files for Linux -->
-      <NativeProjectBinariesDyLibFilter Condition="'%(Extension)' == '.so'" Include="@(NativeProjectBinariesMatched)" />
-
-      <!-- Filter static lib files for Unix -->
-      <NativeProjectBinariesStaticLibFilter Condition="'%(Extension)' == '.a'" Include="@(NativeProjectBinariesMatched)" />
-
-      <!-- Filter dynamic lib files for Windows -->
-      <NativeProjectBinariesDyLibFilter Condition="'%(Extension)' == '.dll'" Include="@(NativeProjectBinariesMatched)" />
-
-      <!-- Filter symbol files for Windows -->
-      <NativeProjectsBinariesSymbolsFilter Condition="'%(Extension)' == '.pdb'" Include="@(NativeProjectBinariesMatched)" />
-
-      <!-- Filter static lib files for Windows -->
-      <NativeProjectBinariesStaticLibFilter Condition="'%(Extension)' == '.lib'" Include="@(NativeProjectBinariesMatched)" />
-
-      <!-- Filter .dex and .jar files for Android -->
-      <NativeProjectBinariesJavaLibFilter Condition="'%(Extension)' == '.dex'" Include="@(NativeProjectBinariesMatched)" />
-      <NativeProjectBinariesJavaLibFilter Condition="'%(Extension)' == '.jar'" Include="@(NativeProjectBinariesMatched)" />
-
-      <!-- Merge the filtered lists -->
-      <NativeProjectBinaries Include="@(NativeProjectBinariesExeFilterRemovedMakeFile)" />
-      <NativeProjectBinaries Include="@(NativeProjectBinariesDyLibFilter)" />
-      <NativeProjectBinaries Include="@(NativeProjectBinariesStaticLibFilter)" />
-      <NativeProjectBinaries Include="@(NativeProjectsBinariesSymbolsFilter)" />
-      <NativeProjectBinaries Include="@(NativeProjectBinariesManifestFilter)" />
-      <NativeProjectBinaries Include="@(NativeProjectBinariesJavaLibFilter)" />
-    </ItemGroup>
-
-     <!-- There are currently no native project binaries on wasm or Android -->
-     <Error  Text="The native project files are missing in $(NativeProjectOutputFolder) please run build from the root of the repo at least once"
-             Condition="'@(NativeProjectBinaries)' == '' And '$(TargetOS)' != 'browser' And '$(TargetsMobile)' != 'true'"/>
-
-     <Copy
-        SourceFiles="@(NativeProjectBinaries)"
-        DestinationFiles="@(NativeProjectBinaries -> '$(OutDir)%(Filename)%(Extension)')"
-        SkipUnchangedFiles="$(SkipCopyUnchangedFiles)"
-        OverwriteReadOnlyFiles="$(OverwriteReadOnlyFiles)"
-        Retries="$(CopyRetryCount)"
-        RetryDelayMilliseconds="$(CopyRetryDelayMilliseconds)"
-        UseHardlinksIfPossible="$(CreateHardLinksForCopyFilesToOutputDirectoryIfPossible)">
-        <Output TaskParameter="DestinationFiles" ItemName="FileWrites" />
-     </Copy>
-  </Target>
+  <Import Project="ProjectReference.targets" Sdk="Microsoft.DotNet.CMake.Sdk" />
 
   <Target Name="ResolveCMakeNativeProjectReference"
-          Condition="'@(CMakeProjectReference)' != ''"
-          BeforeTargets="ConsolidateNativeProjectReference;BeforeResolveReferences;BeforeClean" >
-     <ItemGroup>
-        <NativeProjectReference Include="%(CMakeProjectReference.Identity)" Condition="$([System.String]::Copy(%(CMakeProjectReference.FileName)).ToUpper()) == 'CMAKELISTS'" />
-        <NativeProjectReferenceNormalized Include="@(NativeProjectReference -> '%(FullPath)')" />
-     </ItemGroup>
+          Condition="'@(CMakeProjectReference)' != '' and '$(_CopyNativeProjectBinaries)' == 'true'"
+          BeforeTargets="NormalizeNativeProjectReferences;BeforeResolveReferences;BeforeClean">
+    <PropertyGroup>
+      <_NativeTestBuildsFullCMakeTree Condition="'$(TargetArchitecture)' != 'wasm' or ('$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'coreclr')">true</_NativeTestBuildsFullCMakeTree>
+      <_NativeTestInterpreterSourceDir>$([MSBuild]::NormalizeDirectory('$(TestSourceDir)', 'JIT', 'interpreter'))</_NativeTestInterpreterSourceDir>
+    </PropertyGroup>
+    <ItemGroup>
+      <NativeProjectReference Include="%(CMakeProjectReference.Identity)"
+                              Condition="$([System.String]::Copy(%(CMakeProjectReference.FileName)).ToUpperInvariant()) == 'CMAKELISTS' and
+                                         '$(_UseCMakeSdkNativeProjectReference)' != 'false' and
+                                         ('$(_NativeTestBuildsFullCMakeTree)' == 'true' or
+                                          $([System.String]::Copy('%(CMakeProjectReference.FullPath)').StartsWith('$(_NativeTestInterpreterSourceDir)')))" />
+    </ItemGroup>
   </Target>
 
-  <Target Name="ConsolidateNativeProjectReference"
-          Condition="'$(_CopyNativeProjectBinaries)' == 'true'"
-          BeforeTargets="Build" >
-     <ItemGroup Condition="'@(NativeProjectReferenceNormalized)' != ''">
-        <NativeProjectOutputFoldersToCopy Include="$([System.String]::Copy('%(NativeProjectReferenceNormalized.RelativeDir)').Replace($(TestSourceDir),$(__NativeTestIntermediatesDir)\))" Condition="'$(UseVisualStudioNativeBinariesLayout)' != 'true'" />
-        <NativeProjectOutputFoldersToCopy Include="$([System.String]::Copy('%(NativeProjectReferenceNormalized.RelativeDir)').Replace($(TestSourceDir),$(__NativeTestIntermediatesDir)\))$(Configuration)\" Condition="'$(UseVisualStudioNativeBinariesLayout)' == 'true'" />
-     </ItemGroup>
+  <Target Name="ValidateNativeProjectReferenceOutputs"
+          AfterTargets="CopyNativeProjectBinariesFromFileApi">
+    <Error Text="No native project outputs were found for $(ReferencedCMakeLists)."
+           Condition="'@(_ArtifactsToCopy)' == '' and '$(TargetOS)' != 'browser' and '$(TargetsMobile)' != 'true'" />
+  </Target>
 
-    <Message Text= "Full native project references are :%(NativeProjectReferenceNormalized.Identity)" />
-    <Message Text= "Native binaries will be copied from :%(NativeProjectOutputFoldersToCopy.Identity)" />
+  <!-- The SDK's CopyAll target is the extension point used by native dependency and execution-script
+       hooks in the test tree, so invoke it explicitly before every managed Build. -->
+  <Target Name="CopyNativeTestProjectReferenceBinaries"
+          BeforeTargets="Build"
+          DependsOnTargets="CopyAllNativeProjectReferenceBinaries" />
 
-    <MSBuild Projects="$(MSBuildProjectFile)" Targets="CopyNativeProjectBinaries" Properties="NativeProjectOutputFolder=%(NativeProjectOutputFoldersToCopy.Identity)" Condition="'@(NativeProjectReference)' != ''" />
-
+  <Target Name="CopyMergedTestNativeProjectBinaries"
+          AfterTargets="CopyAllNativeProjectReferenceBinaries"
+          Condition="'$(IsMergedTestRunnerAssembly)' == 'true'">
     <MSBuild Projects="@(ProjectReference)"
         Targets="CopyAllNativeProjectReferenceBinaries"
-        Condition="'$(IsMergedTestRunnerAssembly)' == 'true'"
         SkipNonexistentTargets="true"
         BuildInParallel="true" />
-  </Target>
 
-  <Target Name="CopyAllNativeProjectReferenceBinaries"
-          DependsOnTargets="ResolveCMakeNativeProjectReference;ConsolidateNativeProjectReference"
-          BeforeTargets="Build">
-
-    <ItemGroup Condition="'$(IsMergedTestRunnerAssembly)' == 'true'">
+    <ItemGroup>
       <OutOfProcessTestMarkers Include="$(OutDir)/../**/*.OutOfProcessTest" />
       <OutOfProcessTestFolders Include="$([MSBuild]::NormalizePath('$([System.IO.Path]::GetDirectoryName('%(OutOfProcessTestMarkers.FullPath)'))'))" Condition="'@(OutOfProcessTestMarkers)' != ''" />
       <MergedWrapperReferenceFolders Include="@(ProjectReference->'$([MSBuild]::NormalizePath('$([System.IO.Path]::GetFullPath('%(ProjectReference.Identity)/..', '$(OutDir)/..'))/%(ProjectReference.FileName)'))')" />
