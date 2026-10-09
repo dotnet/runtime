@@ -40,11 +40,13 @@ namespace ILAssembler
         private int _syntaxErrorCount;
 
         // Debug info tracking
-        private Guid _currentLanguageGuid = Guid.Empty;
+        private Guid _currentLanguageGuid = PdbDocumentTable.ILAssemblyLanguage;
         private Guid _currentLanguageVendorGuid = Guid.Empty;
         private Guid _currentDocumentTypeGuid = Guid.Empty;
-        private string? _currentDocumentPath;
-        private readonly Dictionary<(string Path, Guid LanguageGuid), DocumentHandle> _documentHandles = new();
+        private readonly PdbDocumentTable _pdbDocuments;
+        // The index in _pdbDocuments of the current document: the input file being parsed, or the file named by
+        // the last .line or #line directive applied since its parsing began. -1 before the first input file.
+        private int _currentDocument = -1;
         private readonly MetadataBuilder _pdbBuilder = new();
         private readonly List<VTableFixupDeclaration> _vtableFixups = new();
         private readonly Dictionary<EntityRegistry.MethodDefinitionEntity, ParserRuleContext> _exportDirectiveContexts = new();
@@ -55,6 +57,7 @@ namespace ILAssembler
             _documents = documents;
             _options = options;
             _resourceLocator = resourceLocator;
+            _pdbDocuments = new PdbDocumentTable(options.PathMap);
         }
 
         private sealed record VTableFixupDeclaration(
@@ -196,6 +199,8 @@ namespace ILAssembler
                         ArgumentNames[param.Name] = param.Sequence - 1;
                     }
                 }
+
+                OpenScopes.Add(new LexicalScope(startOffset: 0, order: 0));
             }
 
             public EntityRegistry.MethodDefinitionEntity Definition { get; }
@@ -206,9 +211,22 @@ namespace ILAssembler
 
             public Dictionary<string, int> ArgumentNames { get; } = new();
 
-            public List<Dictionary<string, int>> LocalsScopes { get; } = new();
+            /// <summary>
+            /// Gets the open lexical scopes of the method body, outermost first: the method's root scope, then one
+            /// scope per enclosing <c>{ }</c> block. A local name resolves to its declaration in the innermost
+            /// scope that declares it.
+            /// </summary>
+            public List<LexicalScope> OpenScopes { get; } = new();
 
-            public List<SignatureArg> AllLocals { get; } = new();
+            /// <summary>
+            /// Gets the method's local slots, indexed by slot. The body's local signature has one entry per slot.
+            /// </summary>
+            public List<LocalSlot> LocalSlots { get; } = new();
+
+            /// <summary>
+            /// Gets or sets the source-order position of the next block to open; the root scope is 0.
+            /// </summary>
+            public int NextScopeOrder { get; set; } = 1;
         }
 
         private CurrentMethodContext? _currentMethod;

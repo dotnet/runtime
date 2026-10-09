@@ -23,7 +23,7 @@ internal sealed class IlasmRootCommand : RootCommand
         new("--debug", "-g") { Description = "Disable JIT optimization, create PDB file, use sequence points from PDB" };
 
     public Option<DebugMode?> DebugMode { get; } =
-        new("--debug-mode") { Description = "Debug mode: 'impl' (implicit sequence points) or 'opt' (enable JIT optimization)" };
+        new("--debug-mode") { Description = "Debug mode: 'impl' (disable JIT optimization, JIT uses implicit sequence points instead of those in the PDB) or 'opt' (enable JIT optimization, JIT uses implicit sequence points)" };
 
     public Option<bool> Optimize { get; } =
         new("--optimize", "-O") { Description = "Optimize long instructions to short" };
@@ -66,6 +66,9 @@ internal sealed class IlasmRootCommand : RootCommand
 
     public Option<string> IncludePath { get; } =
         new("--include", "-I") { Description = "Set path to search for #include'd files" };
+
+    public Option<string[]> PathMap { get; } =
+        new("--pathmap") { Description = "Map a path prefix to the path written in the PDB and the image: <path>=<sourcePath>[,<path>=<sourcePath>...], as the C# compiler's -pathmap" };
 
     public Option<int> Subsystem { get; } =
         new("--subsystem") { Description = "Set Subsystem value in the NT Optional header" };
@@ -137,6 +140,7 @@ internal sealed class IlasmRootCommand : RootCommand
         Options.Add(KeyFile);
         Options.Add(AssemblyName);
         Options.Add(IncludePath);
+        Options.Add(PathMap);
         Options.Add(Subsystem);
         Options.Add(SubsystemVersion);
         Options.Add(Flags);
