@@ -1293,8 +1293,11 @@ void GCFrame::Remove()
 
 #ifdef _DEBUG
             m_pCurThread->EnableStressHeap();
-            for(UINT i = 0; i < m_numObjRefs; i++)
-                Thread::ObjectRefNew(&m_pObjRefs[i]);       // Unprotect them
+            // Unlike Pop, do not record the slots as unprotected OBJECTREFs. Remove is used by
+            // GCReporting::Unregister for storage supplied by managed code, which does not follow
+            // the checked OBJECTREF lifetime and assignment rules. Recording its addresses can
+            // cause false IsObjRefValid assertions when the storage is reused later and read
+            // through a checked OBJECTREF, as the interpreter does for a call's 'this' argument.
 #endif
             break;
         }

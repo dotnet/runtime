@@ -1721,7 +1721,8 @@ public:
     // Push and pop this frame from the thread's stack.
     void Push(Thread* pThread);
     void Pop();
-    // Remove this frame from any position in the thread's stack
+    // Remove this frame from any position in the thread's stack. Used by GCReporting::Unregister
+    // for frames that managed code registered through GCReporting::Register.
     void Remove();
 
 #endif // DACCESS_COMPILE
