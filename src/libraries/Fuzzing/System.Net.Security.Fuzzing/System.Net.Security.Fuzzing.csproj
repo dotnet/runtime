@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="KerberosPacFuzzing.cs" />
+    <Compile Include="$(CommonPath)System\Net\Security\KerberosPacLogonInfo.cs"
+             Link="System\Net\Security\KerberosPacLogonInfo.cs" />
+  </ItemGroup>
+
+</Project>

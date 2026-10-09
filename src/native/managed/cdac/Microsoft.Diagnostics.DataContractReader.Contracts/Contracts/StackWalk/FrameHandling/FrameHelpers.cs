@@ -88,6 +88,82 @@ internal sealed class FrameHelpers
         return FrameType.Unknown;
     }
 
+    /// <summary>
+    /// Resolves a frame's GCRefMap from its import slot, matching native FindGCRefMap (frames.cpp).
+    /// </summary>
+    public TargetPointer FindGCRefMap(TargetPointer indirection)
+    {
+        if (indirection == TargetPointer.Null)
+            return TargetPointer.Null;
+
+        TargetPointer zapModule = _target.Contracts.ExecutionManager.FindReadyToRunModule(indirection);
+        if (zapModule == TargetPointer.Null)
+            return TargetPointer.Null;
+
+        Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(zapModule);
+        if (module.ReadyToRunInfo == TargetPointer.Null)
+            return TargetPointer.Null;
+
+        Data.ReadyToRunInfo r2rInfo = _target.ProcessedData.GetOrAdd<Data.ReadyToRunInfo>(module.ReadyToRunInfo);
+        if (r2rInfo.ImportSections == TargetPointer.Null || r2rInfo.NumImportSections == 0)
+            return TargetPointer.Null;
+
+        ulong imageBase = r2rInfo.LoadedImageBase.Value;
+        if (indirection.Value < imageBase)
+            return TargetPointer.Null;
+        ulong diff = indirection.Value - imageBase;
+        if (diff > uint.MaxValue)
+            return TargetPointer.Null;
+        uint rva = (uint)diff;
+
+        const int ImportSectionSize = 20;
+        const int SectionVAOffset = 0;
+        const int SectionSizeOffset = 4;
+        const int EntrySizeOffset = 11;
+        const int AuxiliaryDataOffset = 16;
+
+        TargetPointer sectionsBase = r2rInfo.ImportSections;
+        for (uint i = 0; i < r2rInfo.NumImportSections; i++)
+        {
+            TargetPointer sectionAddr = new(sectionsBase.Value + i * ImportSectionSize);
+            uint sectionVA = _target.Read<uint>(sectionAddr + SectionVAOffset);
+            uint sectionSize = _target.Read<uint>(sectionAddr + SectionSizeOffset);
+
+            if (rva >= sectionVA && rva < sectionVA + sectionSize)
+            {
+                byte entrySize = _target.Read<byte>(sectionAddr + EntrySizeOffset);
+                if (entrySize == 0)
+                    return TargetPointer.Null;
+
+                uint index = (rva - sectionVA) / entrySize;
+                uint auxDataRva = _target.Read<uint>(sectionAddr + AuxiliaryDataOffset);
+                if (auxDataRva == 0)
+                    return TargetPointer.Null;
+
+                TargetPointer gcRefMapBase = new(imageBase + auxDataRva);
+
+                const uint GCREFMAP_LOOKUP_STRIDE = 1024;
+                uint lookupIndex = index / GCREFMAP_LOOKUP_STRIDE;
+                uint remaining = index % GCREFMAP_LOOKUP_STRIDE;
+
+                uint lookupOffset = _target.Read<uint>(new TargetPointer(gcRefMapBase.Value + lookupIndex * 4));
+                TargetPointer p = new(gcRefMapBase.Value + lookupOffset);
+
+                while (remaining > 0)
+                {
+                    while ((_target.Read<byte>(p) & 0x80) != 0)
+                        p = new(p.Value + 1);
+                    p = new(p.Value + 1);
+                    remaining--;
+                }
+
+                return p;
+            }
+        }
+
+        return TargetPointer.Null;
+    }
+
     public TargetPointer GetMethodDescPtr(TargetPointer framePtr)
     {
         Data.Frame frame = _target.ProcessedData.GetOrAdd<Data.Frame>(framePtr);
@@ -235,6 +311,14 @@ internal sealed class FrameHelpers
             case FrameType.DynamicHelperFrame:
                 Data.FramedMethodFrame fmf = _target.ProcessedData.GetOrAdd<Data.FramedMethodFrame>(frame.Address);
                 Data.TransitionBlock tb = _target.ProcessedData.GetOrAdd<Data.TransitionBlock>(fmf.TransitionBlockPtr);
+                if (frameType == FrameType.StubDispatchFrame &&
+                    _target.Contracts.RuntimeInfo.GetTargetArchitecture() == RuntimeInfoArchitecture.X86 &&
+                    GetMethodDescPtr(frame.Address) == TargetPointer.Null)
+                {
+                    Data.StubDispatchFrame dispatchFrame = _target.ProcessedData.GetOrAdd<Data.StubDispatchFrame>(frame.Address);
+                    if (FindGCRefMap(dispatchFrame.Indirection) == TargetPointer.Null)
+                        return new TargetCodePointer((uint)tb.ReturnAddress - X86FrameHandler.CallInstructionSize);
+                }
                 return tb.ReturnAddress;
 
             // SoftwareExceptionFrame: stored m_ReturnAddress

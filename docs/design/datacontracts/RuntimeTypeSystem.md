@@ -1529,7 +1529,7 @@ The contract depends on the following other contracts
 | PlatformMetadata |
 | ReJIT |
 | ExecutionManager |
-| PrecodeStubs |
+| PrecodeStubs (when advertised) |
 
 And the following enumeration definitions
 
@@ -2332,23 +2332,6 @@ Getting a MethodDesc for a certain slot in a MethodTable
         }
     }
 
-    private readonly TargetPointer GetMethodDescForEntrypoint(TargetCodePointer pCode)
-    {
-        // Standard path, ask ExecutionManager for the MethodDesc
-        IExecutionManager executionManager = _target.Contracts.ExecutionManager;
-        if (executionManager.GetCodeBlockHandle(pCode) is CodeBlockHandle cbh)
-        {
-            TargetPointer methodDescPtr = executionManager.GetMethodDesc(cbh);
-            return methodDescPtr;
-        }
-
-        // Stub path, read address as a Precode and get the MethodDesc from it
-        {
-            TargetPointer methodDescPtr = _target.Contracts.PrecodeStubs.GetMethodDescFromStubAddress(pCode);
-            return methodDescPtr;
-        }
-    }
-
     public IEnumerable<TargetPointer> GetIntroducedMethodDescs(ITypeHandle typeHandle)
     {
         if (!typeHandle.IsMethodTable())
@@ -2423,7 +2406,7 @@ Getting a MethodDesc for a certain slot in a MethodTable
             return TargetPointer.Null;
         }
 
-        return GetMethodDescForEntrypoint(pCode);
+        return _target.Contracts.ExecutionManager.NonVirtualEntry2MethodDesc(pCode);
     }
 ```
 

@@ -489,7 +489,7 @@ namespace System.Net.Security
                 // are drained to the caller first).
                 if (_isHandshakeComplete)
                 {
-                    _externalValidationFault = new AuthenticationException(SR.net_ssl_io_cert_validation);
+                    _externalValidationFault = new AuthenticationException(SR.Format(SR.net_ssl_io_cert_validation, errors));
                 }
                 else if (_resumeAfterCertValidation)
                 {
@@ -503,7 +503,7 @@ namespace System.Net.Security
                     // which checks _externalValidationFault. On OpenSSL 3.0+ retry-verify the
                     // fault will instead be set by the natural token-failed branch when
                     // SSL_do_handshake emits the fatal alert.
-                    _externalValidationFault = new AuthenticationException(SR.net_ssl_io_cert_validation);
+                    _externalValidationFault = new AuthenticationException(SR.Format(SR.net_ssl_io_cert_validation, errors));
                 }
 
                 // VerifyRemoteCertificateCore assigns _remoteCertificate to the candidate before it

@@ -10,7 +10,6 @@
   <PropertyGroup>
     <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
     <DefineConstants Condition="'$(TargetPlatformIdentifier)' == 'windows'">$(DefineConstants);TargetsWindows</DefineConstants>
-    <DefineConstants Condition="'$(TargetOS)' == 'osx' and '$(TargetPlatformIdentifier)' == 'unix'">$(DefineConstants);TARGET_OSX</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonPath)System\IO\StringParser.cs"
@@ -93,6 +92,8 @@
              Link="Common\Interop\OSX\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\Interop.libproc.cs"
              Link="Common\Interop\OSX\Interop.libproc.cs" />
+    <Compile Include="$(CommonPath)Interop\OSX\Interop.libproc.GetProcessInfoById.cs"
+             Link="Common\Interop\OSX\Interop.libproc.GetProcessInfoById.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\Interop.libSystem.cs"
              Link="Common\Interop\OSX\Interop.libSystem.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs" 

@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //*****************************************************************************
 // UtilCode.h
 //
 // Utility functions implemented in UtilCode.lib.
-//
 //*****************************************************************************
 
 #ifndef __UtilCode_h__
@@ -449,38 +449,6 @@ inline int CountBits(int iNum)
     return (iBits);
 }
 
-// Convert the currency to a decimal and canonicalize.
-inline void VarDecFromCyCanonicalize(CY cyIn, DECIMAL* dec)
-{
-    WRAPPER_NO_CONTRACT;
-
-    (*(ULONG*)dec) = 0;
-    DECIMAL_HI32(*dec) = 0;
-    if (cyIn.int64 == 0) // For compatibility, a currency of 0 emits the Decimal "0.0000" (scale set to 4).
-    {
-        DECIMAL_SCALE(*dec) = 4;
-        DECIMAL_LO32(*dec) = 0;
-        DECIMAL_MID32(*dec) = 0;
-        return;
-    }
-
-    if (cyIn.int64 < 0) {
-        DECIMAL_SIGN(*dec) = DECIMAL_NEG;
-        cyIn.int64 = -cyIn.int64;
-    }
-
-    BYTE scale = 4;
-    ULONGLONG absoluteCy = (ULONGLONG)cyIn.int64;
-    while (scale != 0 && ((absoluteCy % 10) == 0))
-    {
-        scale--;
-        absoluteCy /= 10;
-    }
-    DECIMAL_SCALE(*dec) = scale;
-    DECIMAL_LO32(*dec) = (ULONG)absoluteCy;
-    DECIMAL_MID32(*dec) = (ULONG)(absoluteCy >> 32);
-}
-
 //*****************************************************************************
 //
 // Paths functions. Use these instead of the CRT.
@@ -567,8 +535,6 @@ public:
     static void ClearCPUGroupAffinity(GROUP_AFFINITY *gf);
     static BOOL GetCPUGroupRange(WORD group_number, WORD* group_begin, WORD* group_size);
 };
-
-DWORD_PTR GetCurrentProcessCpuMask();
 
 #endif // HOST_WINDOWS
 
@@ -2201,23 +2167,6 @@ public:
 //*****************************************************************************
     void Delete(
         void        *pData);                // Key value to delete.
-
-
-//*****************************************************************************
-//  Callback function passed to DeleteLoop.
-//*****************************************************************************
-    typedef BOOL (* DELETELOOPFUNC)(        // Delete current item?
-         BYTE *pEntry,                      // Bucket entry to evaluate
-         void *pCustomizer);                // User-defined value
-
-//*****************************************************************************
-// Iterates over all active values, passing each one to pDeleteLoopFunc.
-// If pDeleteLoopFunc returns TRUE, the entry is deleted. This is safer
-// and faster than using FindNext() and Delete().
-//*****************************************************************************
-    void DeleteLoop(
-        DELETELOOPFUNC pDeleteLoopFunc,     // Decides whether to delete item
-        void *pCustomizer);                 // Extra value passed to deletefunc.
 
 
 //*****************************************************************************

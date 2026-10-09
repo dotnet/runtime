@@ -3212,6 +3212,10 @@ void CodeGen::genCall(GenTreeCall* call)
     if (m_compiler->killGCRefs(call))
     {
         genDefineTempLabel(genCreateTempLabel());
+
+        // The runtime can't find callee-saved registers through an InlinedCallFrame,
+        // so LSRA must have spilled any GC values held in them.
+        assert(((gcInfo.gcRegGCrefSetCur | gcInfo.gcRegByrefSetCur) & RBM_INT_CALLEE_SAVED) == RBM_NONE);
     }
 
     genCallInstruction(call);

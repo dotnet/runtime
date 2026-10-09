@@ -710,22 +710,37 @@ DWORD WINAPI FinalizerThread::FinalizerThreadStart(void *args)
         {
             GetFinalizerThread()->SetBackground(TRUE);
 
-            while (!fQuitFinalizer)
+            HRESULT startupStatus;
             {
-                ManagedThreadBase::KickOff(FinalizerThreadWorker, NULL);
-
-                // If we came out on an exception, then we probably lost the signal that
-                // there are objects in the queue ready to finalize.  The safest thing is
-                // to reenable finalization.
-                if (!fQuitFinalizer)
-                    EnableFinalization();
+                GCX_PREEMP();
+                // EEStartup creates this thread while holding the startup lock, so this waits
+                // for startup to finish without initiating loading on the finalizer thread.
+                startupStatus = EnsureEEStarted();
             }
 
-            AppDomain::RaiseExitProcessEvent();
+            if (SUCCEEDED(startupStatus))
+            {
+                while (!fQuitFinalizer)
+                {
+                    ManagedThreadBase::KickOff(FinalizerThreadWorker, NULL);
 
-            // We have been asked to quit, so must be shutting down
-            _ASSERTE(g_fEEShutDown);
-            _ASSERTE(GetFinalizerThread()->PreemptiveGCDisabled());
+                    // If we came out on an exception, then we probably lost the signal that
+                    // there are objects in the queue ready to finalize.  The safest thing is
+                    // to reenable finalization.
+                    if (!fQuitFinalizer)
+                        EnableFinalization();
+                }
+
+                AppDomain::RaiseExitProcessEvent();
+
+                // We have been asked to quit, so must be shutting down
+                _ASSERTE(g_fEEShutDown);
+                _ASSERTE(GetFinalizerThread()->PreemptiveGCDisabled());
+            }
+            else
+            {
+                LOG((LF_GC, LL_ERROR, "Finalizer thread skipping managed execution because EnsureEEStarted failed: 0x%08x\n", startupStatus));
+            }
 
             hEventFinalizerToShutDown->Set();
         }
