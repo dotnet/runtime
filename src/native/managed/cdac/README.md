@@ -161,8 +161,11 @@ Build from the runtime repo root:
 ./build.sh clr+clr.hosts+libs+tools.cdac -c Debug -lc Release
 ```
 
-A Debug runtime is not required: when the cDAC is enabled, the legacy DAC can delegate to it in Debug, Checked and Release runtime builds on the platforms that support it. Release build of the libraries
-(`-lc Release`) is highly recommended for a faster inner loop.
+A Debug runtime is not required: when the cDAC is enabled, the legacy DAC can delegate to
+it in Debug, Checked and Release runtime builds on the platforms that support it. The
+`#if DEBUG` cross-validation still requires the legacy DAC to match the runtime build; the
+testhost produced by the command above has both from the same build. Release build of the
+libraries (`-lc Release`) is highly recommended for a faster inner loop.
 
 Once the initial build is done, shorter incremental rebuilds can be done with:
 
