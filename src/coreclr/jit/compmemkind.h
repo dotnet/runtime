@@ -73,7 +73,7 @@ CompMemKindMacro(WasmSccTransform)
 CompMemKindMacro(WasmCfgLowering)
 CompMemKindMacro(WasmEH)
 CompMemKindMacro(WasmSpillRefs)
-CompMemKindMacro(WasmGCSafeLocals)
+CompMemKindMacro(WasmGCRefCandidates)
 //clang-format on
 
 #undef CompMemKindMacro
