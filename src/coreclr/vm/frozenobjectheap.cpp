@@ -16,8 +16,6 @@ FrozenObjectHeapManager::FrozenObjectHeapManager():
 {
 }
 
-Object* AllocateImmortalObject(MethodTable* pMT, size_t objectSize);
-
 // Allocates an object of the give size (including header) on a frozen segment.
 // May return nullptr if object is too large (larger than FOH_COMMIT_SIZE)
 // in such cases caller is responsible to find a more appropriate heap to allocate it
@@ -32,33 +30,7 @@ Object* FrozenObjectHeapManager::TryAllocateObject(PTR_MethodTable type, size_t 
     }
     CONTRACTL_END
 
-    // TODO: Get rid of this and use the same mechanism as we do for default GC
     Object* obj = nullptr;
-    if (g_heap_type == GC_HEAP_CUSTOM)
-    {
-    	// TODO: Satori does not have any size limitations here.
-    	if (objectSize > FOH_COMMIT_SIZE)
-    	{
-      		// The current design doesn't allow objects larger than FOH_COMMIT_SIZE and
-      		// since FrozenObjectHeap is just an optimization, let's not fill it with huge objects.
-      		return nullptr;
-    	}
-
-#if defined(_DEBUG) && defined(FEATURE_SATORI_EXTERNAL_OBJECTS)
-    	// in debug use external objects once in a while - for coverage
-    	if (objectSize % 16 != 0)
-#endif
-    	{
-      		obj = AllocateImmortalObject(type, objectSize);
-      		if (initFunc != nullptr)
-      		{
-        		initFunc(obj, pParam);
-      		}
-
-      		return obj;
-    	}
-    }
-
     FrozenObjectSegment* curSeg = nullptr;
     uint8_t* curSegmentCurrent = nullptr;
     size_t curSegSizeCommitted = 0;

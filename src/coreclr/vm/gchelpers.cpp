@@ -1216,44 +1216,6 @@ OBJECTREF TryAllocateFrozenObject(MethodTable* pObjMT)
     return ObjectToOBJECTREF(orObject);
 }
 
-Object* AllocateImmortalObject(MethodTable* pMT, size_t objectSize)
-{
-    CONTRACTL{
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE; // returns an objref without pinning it => cooperative
-        PRECONDITION(CheckPointer(pMT));
-        PRECONDITION(pMT->CheckInstanceActivated());
-    } CONTRACTL_END;
-
-    SetTypeHandleOnThreadForAlloc(TypeHandle(pMT));
-
-    GC_ALLOC_FLAGS flags = GC_ALLOC_IMMORTAL;
-    if (pMT->ContainsGCPointers())
-        flags |= GC_ALLOC_CONTAINS_REF;
-
-#ifdef FEATURE_64BIT_ALIGNMENT
-    if (pMT->RequiresAlign8())
-    {
-        // The last argument to the allocation, indicates whether the alignment should be "biased". This
-        // means that the object is allocated so that its header lies exactly between two 8-byte
-        // boundaries. This is required in cases where we need to mis-align the header in order to align
-        // the actual payload. Currently this is false for classes (where we apply padding to ensure the
-        // first field is aligned relative to the header) and true for boxed value types (where we can't
-        // do the same padding without introducing more complexity in type layout and unboxing stubs).
-        _ASSERTE(sizeof(Object) == 4);
-        flags |= GC_ALLOC_ALIGN8;
-        if (pMT->IsValueType())
-            flags |= GC_ALLOC_ALIGN8_BIAS;
-    }
-#endif // FEATURE_64BIT_ALIGNMENT
-
-    Object* orObject = (Object*)Alloc(objectSize, flags);
-    orObject->SetMethodTable(pMT);
-
-    return orObject;
-}
-
 //========================================================================
 //
 //      WRITE BARRIER HELPERS
