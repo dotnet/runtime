@@ -2069,7 +2069,7 @@ ValueNum ValueNumStore::VNForCastOper(var_types castToType, bool srcIsUnsigned)
 
 //------------------------------------------------------------------------
 // VNIgnoreIntToLongCast: Looks through a sign-extending int-to-long cast
-//    or convert long-typed integral constants to int.
+//    or converts non-handle long-typed integral constants to int.
 //
 // Arguments:
 //    vn - The value number to inspect.
@@ -2077,7 +2077,7 @@ ValueNum ValueNumStore::VNForCastOper(var_types castToType, bool srcIsUnsigned)
 // Return Value:
 //    The value number of the original TYP_INT operand if 'vn' is a VNF_Cast
 //    that sign-extends a TYP_INT to TYP_LONG; or the value number of a TYP_INT
-//    constant if 'vn' is a TYP_LONG constant that fits in an int; otherwise, 'vn' itself.
+//    constant if 'vn' is a non-handle TYP_LONG constant that fits in an int; otherwise, 'vn' itself.
 //
 ValueNum ValueNumStore::VNIgnoreIntToLongCast(ValueNum vn)
 {
