@@ -1657,11 +1657,9 @@ namespace
         return true;
     }
 } // anonymous namespace
-#endif // FEATURE_MULTITHREADING
 
 bool GCToEEInterface::CreateThread(void (*threadStart)(void*), void* arg, bool is_suspendable, const char* name)
 {
-#ifdef FEATURE_MULTITHREADING
     InlineSString<MaxThreadNameSize> wideName;
     const WCHAR* namePtr = nullptr;
     EX_TRY
@@ -1688,12 +1686,8 @@ bool GCToEEInterface::CreateThread(void (*threadStart)(void*), void* arg, bool i
     {
         return CreateNonSuspendableThread(threadStart, arg, namePtr);
     }
-#else
-    LIMITED_METHOD_CONTRACT;
-    UNREACHABLE();
-    return false;
-#endif // FEATURE_MULTITHREADING
 }
+#endif // FEATURE_MULTITHREADING
 
 void GCToEEInterface::WalkAsyncPinnedForPromotion(Object* object, ScanContext* sc, promote_func* callback)
 {

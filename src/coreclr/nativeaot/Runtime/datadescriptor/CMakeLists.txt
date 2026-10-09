@@ -43,13 +43,15 @@ generate_data_descriptors(
     CONTRACT_NAME "GCContractDescriptorWKS"
     INTERFACE_TARGET nativeaot_gc_wks_descriptor_interface)
 
-add_library(nativeaot_gc_svr_descriptor_interface INTERFACE)
-target_include_directories(nativeaot_gc_svr_descriptor_interface INTERFACE
+if(FEATURE_MULTITHREADING)
+  add_library(nativeaot_gc_svr_descriptor_interface INTERFACE)
+  target_include_directories(nativeaot_gc_svr_descriptor_interface INTERFACE
     ${GC_DESCRIPTOR_DIR})
-target_link_libraries(nativeaot_gc_svr_descriptor_interface INTERFACE nativeaot_runtime_includes)
-add_dependencies(nativeaot_gc_svr_descriptor_interface aot_eventing_headers)
-target_compile_definitions(nativeaot_gc_svr_descriptor_interface INTERFACE -DSERVER_GC)
-generate_data_descriptors(
+  target_link_libraries(nativeaot_gc_svr_descriptor_interface INTERFACE nativeaot_runtime_includes)
+  add_dependencies(nativeaot_gc_svr_descriptor_interface aot_eventing_headers)
+  target_compile_definitions(nativeaot_gc_svr_descriptor_interface INTERFACE -DSERVER_GC)
+  generate_data_descriptors(
     LIBRARY_NAME nativeaot_gc_svr_descriptor
     CONTRACT_NAME "GCContractDescriptorSVR"
     INTERFACE_TARGET nativeaot_gc_svr_descriptor_interface)
+endif()
