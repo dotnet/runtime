@@ -324,9 +324,7 @@ WASM local index spaces are per function, and a method's funclets are separate W
 its root (`WasmRegAlloc` in `src/coreclr/jit/regallocwasm.cpp`). Variable ranges, by contrast, are
 method-relative, and a funclet's virtual IP is rebased onto its root function. A consumer must
 therefore establish which WASM function the current virtual IP belongs to before interpreting a
-local index. `GetMethodVarInfo` obtains the method-relative offset from the ReadyToRun CodeBlock's
-`ExecutionManager.GetRelativeOffset` result; it does not validate the portable-entrypoint
-`MethodDesc` through `CodeVersions`.
+local index.
 
 ### Async Suspension Point APIs
 
