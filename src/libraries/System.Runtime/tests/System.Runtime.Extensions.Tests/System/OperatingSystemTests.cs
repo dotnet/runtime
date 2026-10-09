@@ -197,14 +197,9 @@ namespace System.Tests
 
             Assert.True(currentOSCheck());
 
-            if (AllApplePlatformNames.Contains(currentOSName))
-            {
-                Assert.True(OperatingSystem.IsApplePlatform());
-            }
-            else 
-            {
-                Assert.False(OperatingSystem.IsApplePlatform());
-            }
+            Assert.Equal(
+                AllApplePlatformNames.Contains(currentOSName),
+                OperatingSystem.IsApplePlatform());
 
             Dictionary<string, bool> allResults = new()
             {
