@@ -1,5 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <CLRTestPriority>1</CLRTestPriority>
     <!-- The loops never exit, so their threads have to end with the process -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <!-- Their threads also keep the test assembly from unloading -->
