@@ -14,7 +14,7 @@ __RepoRootDir="$(cd "$__scriptpath"/../../..; pwd -P)"
 __TargetArch=x64
 __TargetOS=linux
 __BuildType=Debug
-__CMakeArgs=""
+__CMakeArgs=()
 __Compiler=clang
 __CrossBuild=0
 __PortableBuild=1
@@ -59,10 +59,10 @@ __IntermediatesDir="$__RootBinDir/obj/$__TargetRid.$__BuildType"
 
 export __BinDir __IntermediatesDir __RuntimeFlavor
 
-__CMakeArgs="-DCLI_CMAKE_FALLBACK_OS=\"$__HostFallbackOS\" -DCLI_CMAKE_COMMIT_HASH=\"$__commit_hash\" $__CMakeArgs"
+__CMakeArgs=("-DCLI_CMAKE_FALLBACK_OS=$__HostFallbackOS" "-DCLI_CMAKE_COMMIT_HASH=$__commit_hash" ${__CMakeArgs[@]+"${__CMakeArgs[@]}"})
 
 if [[ "$__TargetOS" != osx ]]; then
-    __CMakeArgs="-DFEATURE_DISTRO_AGNOSTIC_SSL=$__PortableBuild $__CMakeArgs"
+    __CMakeArgs=("-DFEATURE_DISTRO_AGNOSTIC_SSL=$__PortableBuild" ${__CMakeArgs[@]+"${__CMakeArgs[@]}"})
 fi
 
 # Specify path to be set for CMAKE_INSTALL_PREFIX.
@@ -77,4 +77,4 @@ setup_dirs
 check_prereqs
 
 # Build the installer native components.
-build_native "$__TargetOS" "$__TargetArch" "$__scriptpath" "$__IntermediatesDir" "install" "$__CMakeArgs" "installer component"
+build_native "$__TargetOS" "$__TargetArch" "$__scriptpath" "$__IntermediatesDir" "install" "installer component" ${__CMakeArgs[@]+"${__CMakeArgs[@]}"}
