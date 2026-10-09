@@ -154,6 +154,7 @@ private:
     bool     LowerCallMemset(GenTreeCall* call, GenTree** next);
     void     LowerCFGCall(GenTreeCall* call);
 #ifdef TARGET_WASM
+    void AddWasmPortableEntryPointArg(GenTreeCall* call, GenTree* value);
     void LowerPEPCall(GenTreeCall* call);
 #endif
     void MovePutArgNodesUpToCall(GenTreeCall* call);

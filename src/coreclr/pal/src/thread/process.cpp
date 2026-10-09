@@ -2,15 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*++
-
 Module Name:
-
     process.cpp
 
 Abstract:
-
     Implementation of process object and functions related to processes.
-
 --*/
 
 #include "pal/dbgmsg.h"
@@ -222,11 +218,6 @@ struct UnambiguousProcessDescriptor
     DWORD m_processId;
 };
 #pragma pack(pop)
-
-static
-DWORD
-StartupHelperThread(
-    LPVOID p);
 
 static
 BOOL
@@ -2074,17 +2065,6 @@ PROCAbort(int signal, siginfo_t* siginfo, void* context)
     abort();
 }
 
-#define FATAL_ASSERT(e, msg) \
-    do \
-    { \
-        if (!(e)) \
-        { \
-            fprintf(stderr, "FATAL ERROR: " msg); \
-            PROCAbort(); \
-        } \
-    } \
-    while(0)
-
 /*++
 Function:
   CreateInitialProcessAndThreadObjects
@@ -2192,7 +2172,6 @@ CorUnix::TerminateCurrentProcessNoExit(BOOL bTerminateUnconditionally)
     if(locked && PALIsInitialized())
     {
         PROCNotifyProcessShutdown();
-        PALCommonCleanup();
     }
 }
 

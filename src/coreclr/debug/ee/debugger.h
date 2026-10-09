@@ -2083,9 +2083,6 @@ public:
     bool IsThreadAtSafePlaceWorker(Thread *thread);
     bool IsThreadAtSafePlace(Thread *thread);
 
-    CorDebugUserState GetFullUserState(Thread *pThread);
-
-
     void Terminate();
     void Continue();
 
@@ -2235,7 +2232,6 @@ public:
 #endif // FEATURE_CODE_VERSIONING
     HRESULT DeoptimizeMethod(Module* pModule, mdMethodDef methodDef);
 #endif //DACCESS_COMPILE
-    HRESULT IsMethodDeoptimized(Module *pModule, mdMethodDef methodDef, BOOL *pResult);
     HRESULT UpdateForceCatchHandlerFoundTable(BOOL enableEvents, OBJECTREF exObj, AppDomain *pAppDomain);
     HRESULT UpdateCustomNotificationTable(Module *pModule, mdTypeDef classToken, BOOL enabled);
 
@@ -2518,7 +2514,6 @@ public:
     virtual void EnumMemoryRegionsIfFuncEvalFrame(CLRDataEnumMemoryFlags flags, Frame * pFrame);
 #endif
 
-    BOOL ShouldAutoAttach();
     BOOL FallbackJITAttachPrompt();
 
     void AppDomainCreated(AppDomain * pAppDomain);
@@ -2545,8 +2540,6 @@ public:
 
     void LockDebuggerForShutdown(void);
 
-    void DisableDebugger(void);
-
     // Pid of the left side process that this Debugger instance is in.
     DWORD GetPid(void) { return m_processId; }
 
@@ -2554,9 +2547,6 @@ public:
 
     // send an event to the RS indicating that there's a Ctrl-C or Ctrl-Break
     BOOL SendCtrlCToDebugger(DWORD dwCtrlType);
-
-    // Allows the debugger to keep an up to date list of special threads
-    HRESULT UpdateSpecialThreadList(DWORD cThreadArrayLength, DWORD *rgdwThreadIDArray);
 
 #ifndef DACCESS_COMPILE
     static void AcquireDebuggerDataLock(Debugger *pDebugger);

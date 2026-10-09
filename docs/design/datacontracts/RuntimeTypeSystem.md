@@ -670,7 +670,7 @@ static class RuntimeTypeSystem_1_Helpers
 | `CoreLib` | `pointer` | Pointer to the CoreLibBinder data containing well-known core library type handles |
 | `ExceptionMethodTable` | `pointer` | A pointer to the address of the System.Exception MethodTable (g_pExceptionClass) |
 | `FieldOffsetBigRVA` | `uint32` | Sentinel value of FieldDesc::DWord2 indicating the field is an RVA static whose offset is too large to encode in the bitfield; the real offset must be read from the field's metadata (FieldDefinition.GetRelativeVirtualAddress). |
-| `FieldOffsetDynamicRVA` | `uint32` | Sentinel FieldDesc offset for an EnC-added RVA field whose enclosing type is not yet loaded |
+| `FieldOffsetDynamicRVA` | `uint32` | Sentinel FieldDesc offset for token-backed RVA field data, including Reflection.Emit fields and EnC-added fields whose enclosing type was not yet loaded when the field was added |
 | `FreeObjectMethodTable` | `pointer` | A pointer to the address of a MethodTable used by the GC to indicate reclaimed memory |
 | `MethodDescAlignment` | `uint64` | MethodDescChunk trailing data is allocated in multiples of this constant.  The size (in bytes) of each MethodDesc (or subclass) instance is a multiple of this constant. |
 | `MethodDescTokenRemainderBitCount` | `uint8` | Number of bits in the token remainder in MethodDesc |
@@ -1529,7 +1529,7 @@ The contract depends on the following other contracts
 | PlatformMetadata |
 | ReJIT |
 | ExecutionManager |
-| PrecodeStubs |
+| PrecodeStubs (when advertised) |
 
 And the following enumeration definitions
 
@@ -2332,23 +2332,6 @@ Getting a MethodDesc for a certain slot in a MethodTable
         }
     }
 
-    private readonly TargetPointer GetMethodDescForEntrypoint(TargetCodePointer pCode)
-    {
-        // Standard path, ask ExecutionManager for the MethodDesc
-        IExecutionManager executionManager = _target.Contracts.ExecutionManager;
-        if (executionManager.GetCodeBlockHandle(pCode) is CodeBlockHandle cbh)
-        {
-            TargetPointer methodDescPtr = executionManager.GetMethodDesc(cbh);
-            return methodDescPtr;
-        }
-
-        // Stub path, read address as a Precode and get the MethodDesc from it
-        {
-            TargetPointer methodDescPtr = _target.Contracts.PrecodeStubs.GetMethodDescFromStubAddress(pCode);
-            return methodDescPtr;
-        }
-    }
-
     public IEnumerable<TargetPointer> GetIntroducedMethodDescs(ITypeHandle typeHandle)
     {
         if (!typeHandle.IsMethodTable())
@@ -2423,7 +2406,7 @@ Getting a MethodDesc for a certain slot in a MethodTable
             return TargetPointer.Null;
         }
 
-        return GetMethodDescForEntrypoint(pCode);
+        return _target.Contracts.ExecutionManager.NonVirtualEntry2MethodDesc(pCode);
     }
 ```
 

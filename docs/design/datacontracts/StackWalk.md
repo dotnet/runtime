@@ -159,6 +159,10 @@ Unwinding call frames on the stack usually requires an OS specific implementatio
 | `FramedMethodFrame` | `TransitionBlockPtr` | `pointer` | Pointer to Frame's TransitionBlock |
 | `FuncEvalFrame` | `DebuggerEvalPtr` | `pointer` | Pointer to the Frame's DebuggerEval object |
 | `FuncEvalFrame` | `ReturnAddress` | `CodePointer` | Return address of the frame |
+| `FunctionTableIndexRangeSection` | `MinFunctionTableIndex` | `uint32` | First runtime-global shared function-table index owned by the R2R module |
+| `FunctionTableIndexRangeSection` | `Next` | `pointer` | Pointer to the next registered WASM R2R function-table range |
+| `FunctionTableIndexRangeSection` | `NumRuntimeFunctions` | `uint32` | Number of consecutive RUNTIME_FUNCTION entries owned by the R2R module |
+| `FunctionTableIndexRangeSection` | `R2RModule` | `pointer` | Pointer to the Module that owns this function-table range |
 | `GCFrame` | `GCFlags` | `uint32` | GC_CALL_* promotion flags applied when reporting the protected slots |
 | `GCFrame` | `Next` | `pointer` | Pointer to the next GCFrame toward the top of the chain |
 | `GCFrame` | `NumObjRefs` | `uint32` | Count of protected object reference slots starting at ObjRefs |
@@ -185,8 +189,14 @@ Unwinding call frames on the stack usually requires an OS specific implementatio
 | `PInvokeCalliFrame` | `VASigCookiePtr` | `pointer` | Pointer to the varargs signature cookie for the unmanaged call |
 | `ReadyToRunInfo` | `ImportSections` | `pointer` | Pointer to the array of ReadyToRun import sections |
 | `ReadyToRunInfo` | `LoadedImageBase` | `pointer` | Base address of the loaded R2R image |
+| `ReadyToRunInfo` | `MinVirtualIP` | `pointer` | Base virtual IP assigned to the ReadyToRun module on WebAssembly |
 | `ReadyToRunInfo` | `NumImportSections` | `uint32` | Number of ReadyToRun import sections |
+| `ReadyToRunInfo` | `NumRuntimeFunctions` | `uint32` | Number of `RuntimeFunctions` |
+| `ReadyToRunInfo` | `RuntimeFunctions` | `pointer` | Pointer to an array of `RuntimeFunctions` - [see R2R format](../coreclr/botr/readytorun-format.md#readytorunsectiontyperuntimefunctions) |
 | `ResumableFrame` | `TargetContextPtr` | `pointer` | Pointer to the Frame's Target Context |
+| `RuntimeFunction` | *(type size)* | `uint32` | Size of a runtime function entry in bytes |
+| `RuntimeFunction` | `BeginAddress` | `uint32` | Begin address of the function. On ARM32, bit 0 is the Thumb bit; on WebAssembly, bit 31 marks a funclet and is excluded from address arithmetic. |
+| `RuntimeFunction` | `UnwindData` | `uint32` | Pointer to the unwind info for the function |
 | `SoftwareExceptionFrame` | `ReturnAddress` | `CodePointer` | Return address saved in Frame |
 | `SoftwareExceptionFrame` | `TargetContext` | `pointer` | Context object saved in Frame |
 | `String` | `m_StringLength` | `uint32` | Length of the string in UTF-16 characters |
@@ -203,6 +213,7 @@ Unwinding call frames on the stack usually requires an OS specific implementatio
 | `TransitionBlock` | `CalleeSavedRegisters` | `pointer` | Platform specific CalleeSavedRegisters struct associated with the TransitionBlock |
 | `TransitionBlock` | `FirstGCRefMapSlot` | `pointer` | Byte offset where GCRefMap slot enumeration begins. ARM64: RetBuffArgReg offset; others: ArgumentRegisters offset |
 | `TransitionBlock` | `ReturnAddress` | `CodePointer` | Return address associated with the TransitionBlock |
+| `TransitionBlock` | `StackPointer` | `pointer` | WASM only: R2R linear-stack pointer of the caller, saved by the transition helper |
 | `VASigCookie` | `SizeOfArgs` | `uint32` | Total size in bytes of the varargs argument area; used on x86 to locate the argument base |
 
 ### Global variables used
@@ -211,6 +222,7 @@ Unwinding call frames on the stack usually requires an OS specific implementatio
 | --- | --- | --- |
 | `<FrameType>Identifier` *(name pattern)* | `pointer` | Per-frame-type sentinel address used to identify and classify runtime frames |
 | `Architecture` | `string` | Target architecture |
+| `FunctionTableIndexRangeList` | `pointer` | Pointer to the head pointer of the registered WASM R2R function-table range list |
 | `ObjectToMethodTableUnmask` | `uint8` | Bits to clear when converting an object header value to a method table address |
 
 ### Contracts used
@@ -280,7 +292,9 @@ InterpreterFrame
 
 This produces three frames in order: C, B, A (innermost to outermost).
 
-When the stack walk starts with an explicit context in interpreted code (e.g., from a debugger breakpoint), the interpreted frames are already yielded from the initial context as frameless frames. When the walker subsequently encounters the corresponding `InterpreterFrame`, it skips expanding it to prevent the same frames from being walked twice.
+When the stack walk starts with a context in interpreted code (e.g., from a debugger breakpoint, or a context seeded from an interpreted P/Invoke's `InlinedCallFrame`), the interpreted frames are already yielded from the initial context as frameless frames. Like native `StackFrameIterator::Init`, the walker reads the owning `InterpreterFrame` from the context's first-argument register and sets the Frame iterator to that Frame's `Next`, so the same frames are not walked twice. If the first-argument register is null or does not name an `InterpreterFrame`, the walk fails (native asserts both).
+
+An interpreted P/Invoke pushes an active `InlinedCallFrame` whose `CallSiteSP` is the top `InterpMethodContextFrame` of the `InterpreterFrame` that immediately follows it (native `InlinedCallFrame::IsInInterpreter`). When the walker reaches such a Frame, it moves to that `InterpreterFrame` without updating the context; the `InterpreterFrame` then switches into the interpreted chain.
 
 
 #### Simple Example
@@ -439,6 +453,9 @@ Most of the handlers are implemented in `BaseFrameHandler`. Platform specific co
 InlinedCallFrames store and update only the IP, SP, and FP of a given context. If the stored IP (CallerReturnAddress) is 0 then the InlinedCallFrame does not have an active call and should not update the context.
 
 * On ARM, the InlinedCallFrame stores the value of the SP after the prolog (`SPAfterProlog`) to allow unwinding for functions with stackalloc. When a function uses stackalloc, the CallSiteSP can already have been adjusted. This value should be placed in R9.
+* On WASM, a `CallerReturnAddress` of `INLINED_PINVOKE_FROM_R2R` (`1`) marks an active inlined P/Invoke from ReadyToRun code rather than an address. SP is taken from `CallSiteSP`, IP is the R2R virtual IP of the shadow frame at `CallSiteSP`, and FP is the WASM logical frame pointer at `CallSiteSP` (see below). If no virtual IP can be recovered, IP is set to null.
+
+An active InlinedCallFrame stays the current Frame after its context update so the skipped-Frame check can step past it once the walk reaches the managed caller. If the updated IP is not managed code (for example, no WASM R2R virtual IP could be recovered), the walk fails, matching native `StackFrameIterator::NextRaw`; otherwise it would never advance past the Frame.
 
 **Return Address**: `CallerReturnAddress`, but only when the frame has an active call (i.e., `CallerReturnAddress != 0`). Returns null otherwise.
 
@@ -455,8 +472,13 @@ TransitionFrames hold a pointer to a `TransitionBlock`. The TransitionBlock hold
 When updating the context from a TransitionFrame, the IP, SP, and all ABI specified callee-saved registers are copied over.
 
 * On ARM, the additional register values stored in `ArgumentRegisters` are copied over. The `TransitionBlock` holds a pointer to the `ArgumentRegister` struct containing these values.
+* On x86, the caller SP also skips callee-popped stack arguments. For `ExternalMethodFrame` and `StubDispatchFrame`, the argument size comes from the frame's GCRefMap, including when its MethodDesc is null. `ReadStackPop()` gives the number of pointer-sized slots to add to the SP. If no GCRefMap is available, MethodDesc-backed frames use the argument map computed from their signature. `PInvokeCalliFrame` instead uses `VASigCookie.SizeOfArgs`.
+* For an x86 `StubDispatchFrame` without a GCRefMap, resolve its method from the stored MethodDesc or its representative MethodTable and slot. If no method is available, the SP stays at the end of the transition block and the IP is adjusted to the call instruction by subtracting five bytes from the saved return address.
+* On WASM, a transition helper called from R2R code records the caller's R2R linear-stack pointer in `TransitionBlock.StackPointer`, and may leave `ReturnAddress` 0. When `ReturnAddress` is 0 and `StackPointer` is set, the return address is the R2R virtual IP of the frame at `StackPointer` (native `FramedMethodFrame::GetTransitionBlock_Impl`). When `StackPointer` is set and a return address is known, the caller's SP is `StackPointer` and its FP is the WASM logical frame pointer at `StackPointer` (native `TransitionFrame::GetSP`); otherwise the SP is the end of the TransitionBlock and the FP is null. This also applies when the interpreted chain under an `InterpreterFrame` is exhausted and the walker applies the `InterpreterFrame`'s transition.
 
-**Return Address**: Read from `TransitionBlock.ReturnAddress`. This applies to all frame types that use the TransitionFrame mechanism.
+**WASM logical frame pointer.** R2R frames on WASM keep a record on the linear stack: the function-table index, then the function-local virtual IP / 2. Unwinding one frame (`WasmContext.Unwind`) adds the function's frame size from its unwind data to the frame base, and sets the caller's FP as native `GetWasmFramePointerFromStackPointer` does. For a method, the FP is its own frame base. For a funclet (its `RUNTIME_FUNCTION.BeginAddress` has bit 31 set), the FP is the establishing method's frame. The walker unwinds out of the funclet: if the caller slot holds the `TERMINATE_R2R_STACK_WALK` marker, the funclet was invoked by the VM through `CallFuncletWith[out]Throwable`, and the establishing frame pointer is stored one pointer after the marker. Otherwise the funclet was called by its parent method or funclet, and the walker repeats from there. Each step must move toward the caller, or the frame pointer is unknown (null).
+
+**Return Address**: Read from `TransitionBlock.ReturnAddress`. On WASM, it is derived from `TransitionBlock.StackPointer` when it is 0, as above. For an x86 `StubDispatchFrame` with neither a method nor a GCRefMap, subtract five bytes to return the adjusted call address, matching the context update.
 
 The following Frame types also use this mechanism:
 * FramedMethodFrame
@@ -721,7 +743,7 @@ The runtime installs a small set of redirect/hijack stubs whose code blocks are 
 
 The recovery step is driven by `IDebugger.GetHijackKind(controlPC)`, which returns a `HijackKind`:
 
-* `HijackKind.None` — the IP is not inside any tracked stub; `Next()` does nothing special.
+* `HijackKind.None` — the IP is not inside any tracked stub; `Next()` does nothing special. WASM has no hijack stubs; its `Debugger` contract reports `HijackKind.None` for every IP.
 * `HijackKind.UnhandledException` — the IP is inside the `ExceptionHijack` stub. The saved `PT_CONTEXT*` is at `*SP` (the stub pushed it directly), so the implementation reads `*context.StackPointer`.
 * `HijackKind.Other` — the IP is inside another redirect stub. The saved `PT_CONTEXT*` is at a fixed offset from SP or FP, matching the `REDIRECTSTUB_*` constants.
 

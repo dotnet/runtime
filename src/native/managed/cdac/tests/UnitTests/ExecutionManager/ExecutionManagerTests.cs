@@ -1901,6 +1901,124 @@ public class ExecutionManagerTests
     private const ulong PortableInterpreterCode = 0x0061_0000;
     private const ulong PortableCodeRangeStart = 0x0a0a_0000;
 
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void NonVirtualEntry2MethodDesc_PortableEntryPoint_ReturnsOwningMethodDesc(MockTarget.Architecture arch)
+    {
+        MockExecutionManagerBuilder emBuilder = new("c1", arch, MockExecutionManagerBuilder.DefaultAllocationRange);
+        TargetTestHelpers helpers = emBuilder.Builder.TargetTestHelpers;
+        TargetTestHelpers.LayoutResult layout = helpers.LayoutFields([
+            new(nameof(Data.PortableEntryPoint.ActualCode), DataType.pointer),
+            new(nameof(Data.PortableEntryPoint.MethodDesc), DataType.pointer),
+            new(nameof(Data.PortableEntryPoint.Flags), DataType.int32),
+        ]);
+        TargetPointer expectedMethodDesc = new(PortableMethodDescAddress);
+        MockMemorySpace.BumpAllocator allocator = emBuilder.Builder.CreateAllocator(0x0060_0000, 0x0061_0000);
+        MockMemorySpace.HeapFragment entryPoint = allocator.Allocate(layout.Stride, "PortableEntryPoint");
+        helpers.WritePointer(entryPoint.Data.AsSpan(layout.Fields[nameof(Data.PortableEntryPoint.MethodDesc)].Offset, helpers.PointerSize), expectedMethodDesc);
+
+        Target target = CreateTarget(emBuilder, configureTarget: targetBuilder => targetBuilder
+            .AddTypes(new Dictionary<DataType, Target.TypeInfo>
+            {
+                [DataType.PortableEntryPoint] = new() { Fields = layout.Fields, Size = layout.Stride },
+            })
+            .AddGlobals((Constants.Globals.FeaturePortableEntrypoints, 1))
+            .AddContract<IFeatureFlags>(version: "c1"));
+
+        Assert.Equal(expectedMethodDesc, target.Contracts.ExecutionManager.NonVirtualEntry2MethodDesc(new TargetCodePointer(entryPoint.Address)));
+    }
+
+    // The non-portable paths of NonVirtualEntry2MethodDesc, mirroring native NonVirtualEntry2MethodDesc
+    // (src/coreclr/vm/method.cpp): jitted code resolves through the jit manager, a precode range list
+    // resolves through the precode, and an address in no range section resolves to null.
+
+    [Theory]
+    [MemberData(nameof(StdArchAllVersions))]
+    public void NonVirtualEntry2MethodDesc_JittedCode_ReturnsMethodDesc(string version, MockTarget.Architecture arch)
+    {
+        const ulong codeRangeStart = 0x0a0a_0000u;
+        const uint codeRangeSize = 0xc000u;
+        const uint methodSize = 0x450;
+        const ulong jitManagerAddress = 0x000b_ff00;
+        const ulong expectedMethodDescAddress = 0x0101_aaa0;
+
+        MockExecutionManagerBuilder emBuilder = new(version, arch, MockExecutionManagerBuilder.DefaultAllocationRange);
+        MockExecutionManagerBuilder.JittedCodeRange jittedCode = emBuilder.AllocateJittedCodeRange(codeRangeStart, codeRangeSize);
+        ulong methodStart = emBuilder.AddJittedMethod(jittedCode, methodSize, expectedMethodDescAddress).CodeAddress;
+        NibbleMapTestBuilderBase nibBuilder = emBuilder.CreateNibbleMap(codeRangeStart, codeRangeSize);
+        nibBuilder.AllocateCodeChunk(new TargetCodePointer(methodStart), methodSize);
+        MockCodeHeapListNode codeHeapListNode = emBuilder.AddCodeHeapListNode(0, codeRangeStart, codeRangeStart + codeRangeSize, codeRangeStart, nibBuilder.NibbleMapFragment.Address);
+        MockRangeSection rangeSection = emBuilder.AddRangeSection(jittedCode, jitManagerAddress, codeHeapListNode.Address);
+        _ = emBuilder.AddRangeSectionFragment(jittedCode, rangeSection.Address);
+
+        // Strict: resolving jitted code must not consult the precode decoder.
+        Mock<IPrecodeStubs> precodeStubs = new(MockBehavior.Strict);
+        Target target = CreateTarget(emBuilder, configureTarget: targetBuilder => targetBuilder
+            .AddContract<IFeatureFlags>(version: "c1")
+            .AddMockContract(precodeStubs));
+
+        Assert.Equal(
+            new TargetPointer(expectedMethodDescAddress),
+            target.Contracts.ExecutionManager.NonVirtualEntry2MethodDesc(new TargetCodePointer(methodStart)));
+    }
+
+    [Theory]
+    [MemberData(nameof(StdArchAllVersions))]
+    public void NonVirtualEntry2MethodDesc_PrecodeRangeList_ReturnsPrecodeMethodDesc(string version, MockTarget.Architecture arch)
+    {
+        TargetCodePointer precode = new(PrecodeRangeStart + 0x100);
+        TargetPointer expectedMethodDesc = new(0x0101_aaa0);
+        Mock<IPrecodeStubs> precodeStubs = new(MockBehavior.Strict);
+        precodeStubs.Setup(p => p.GetMethodDescFromStubAddress(precode)).Returns(expectedMethodDesc);
+
+        Target target = CreatePrecodeRangeListTarget(version, arch, precodeStubs);
+
+        Assert.Equal(expectedMethodDesc, target.Contracts.ExecutionManager.NonVirtualEntry2MethodDesc(precode));
+    }
+
+    [Theory]
+    [MemberData(nameof(StdArchAllVersions))]
+    public void NonVirtualEntry2MethodDesc_RangeListAddressThatIsNotAPrecode_ReturnsNull(string version, MockTarget.Architecture arch)
+    {
+        TargetCodePointer notAPrecode = new(PrecodeRangeStart + 0x100);
+        Mock<IPrecodeStubs> precodeStubs = new(MockBehavior.Strict);
+        precodeStubs.Setup(p => p.GetMethodDescFromStubAddress(notAPrecode)).Throws(new InvalidOperationException("Invalid precode type"));
+
+        Target target = CreatePrecodeRangeListTarget(version, arch, precodeStubs);
+
+        Assert.Equal(TargetPointer.Null, target.Contracts.ExecutionManager.NonVirtualEntry2MethodDesc(notAPrecode));
+    }
+
+    [Theory]
+    [MemberData(nameof(StdArchAllVersions))]
+    public void NonVirtualEntry2MethodDesc_AddressInNoRangeSection_ReturnsNullWithoutDecoding(string version, MockTarget.Architecture arch)
+    {
+        // Strict with no setups: native returns NULL here without reading the address as a precode.
+        Mock<IPrecodeStubs> precodeStubs = new(MockBehavior.Strict);
+
+        Target target = CreatePrecodeRangeListTarget(version, arch, precodeStubs);
+
+        Assert.Equal(TargetPointer.Null, target.Contracts.ExecutionManager.NonVirtualEntry2MethodDesc(new TargetCodePointer(PrecodeRangeStart + PrecodeRangeSize + 0x100)));
+    }
+
+    private const ulong PrecodeRangeStart = 0x0b0b_0000u;
+    private const uint PrecodeRangeSize = 0x1000u;
+
+    private static Target CreatePrecodeRangeListTarget(string version, MockTarget.Architecture arch, Mock<IPrecodeStubs> precodeStubs)
+    {
+        const ulong jitManagerAddress = 0x000b_ff00;
+        const int stubCodeBlockKindFixupPrecode = 4; // STUB_CODE_BLOCK_FIXUPPRECODE
+
+        MockExecutionManagerBuilder emBuilder = new(version, arch, MockExecutionManagerBuilder.DefaultAllocationRange);
+        MockExecutionManagerBuilder.JittedCodeRange precodeRange = emBuilder.AllocateJittedCodeRange(PrecodeRangeStart, PrecodeRangeSize);
+        MockRangeSection rangeSection = emBuilder.AddRangeListRangeSection(precodeRange, jitManagerAddress, stubCodeBlockKindFixupPrecode);
+        _ = emBuilder.AddRangeSectionFragment(precodeRange, rangeSection.Address);
+
+        return CreateTarget(emBuilder, configureTarget: targetBuilder => targetBuilder
+            .AddContract<IFeatureFlags>(version: "c1")
+            .AddMockContract(precodeStubs));
+    }
+
     private sealed class PortableEntryPointFixture
     {
         public required Target Target { get; init; }

@@ -10,6 +10,7 @@ using System.Reflection;
 using System.Runtime.Serialization.DataContracts;
 using System.Text;
 using System.Xml;
+using System.Xml.Serialization;
 
 namespace System.Runtime.Serialization.Json
 {
@@ -101,7 +102,7 @@ namespace System.Runtime.Serialization.Json
                    object.ReferenceEquals(contract.Namespace, declaredContract.Namespace)) ||
                  (contract.Name.Value == declaredContract.Name.Value &&
                  contract.Namespace.Value == declaredContract.Namespace.Value)) &&
-                 (contract.UnderlyingType != Globals.TypeOfObjectArray) &&
+                 (contract.UnderlyingType != typeof(object[])) &&
                  (_emitXsiType != EmitTypeInformation.Never))
             {
                 // We always deserialize collections assigned to System.Object as object[]
@@ -233,7 +234,7 @@ namespace System.Runtime.Serialization.Json
                     }
                     obj = genericDictionaryObj;
                 }
-                dataContract = GetDataContract(Globals.TypeOfIEnumerable);
+                dataContract = GetDataContract(typeof(IEnumerable));
             }
         }
 
@@ -292,22 +293,22 @@ namespace System.Runtime.Serialization.Json
         internal override void WriteExtensionDataTypeInfo(XmlWriterDelegator xmlWriter, IDataNode dataNode)
         {
             Type dataType = dataNode.DataType;
-            if (dataType == Globals.TypeOfClassDataNode ||
-                dataType == Globals.TypeOfISerializableDataNode)
+            if (dataType == typeof(ClassDataNode) ||
+                dataType == typeof(ISerializableDataNode))
             {
                 xmlWriter.WriteAttributeString(null, JsonGlobals.typeString, null, JsonGlobals.objectString);
                 base.WriteExtensionDataTypeInfo(xmlWriter, dataNode);
             }
-            else if (dataType == Globals.TypeOfCollectionDataNode)
+            else if (dataType == typeof(CollectionDataNode))
             {
                 xmlWriter.WriteAttributeString(null, JsonGlobals.typeString, null, JsonGlobals.arrayString);
                 // Don't write __type for collections
             }
-            else if (dataType == Globals.TypeOfXmlDataNode)
+            else if (dataType == typeof(XmlDataNode))
             {
                 // Don't write type or __type for XML types because we serialize them to strings
             }
-            else if ((dataType == Globals.TypeOfObject) && (dataNode.Value != null))
+            else if ((dataType == typeof(object)) && (dataNode.Value != null))
             {
                 DataContract dc = GetDataContract(dataNode.Value.GetType());
                 if (RequiresJsonTypeInfo(dc))
@@ -320,7 +321,7 @@ namespace System.Runtime.Serialization.Json
         internal static void VerifyObjectCompatibilityWithInterface(DataContract contract, object graph, Type declaredType)
         {
             Type contractType = contract.GetType();
-            if ((contractType == typeof(XmlDataContract)) && !Globals.TypeOfIXmlSerializable.IsAssignableFrom(declaredType))
+            if ((contractType == typeof(XmlDataContract)) && !typeof(IXmlSerializable).IsAssignableFrom(declaredType))
             {
                 throw XmlObjectSerializer.CreateSerializationException(SR.Format(SR.XmlObjectAssignedToIncompatibleInterface, graph.GetType(), declaredType));
             }
@@ -357,7 +358,7 @@ namespace System.Runtime.Serialization.Json
         {
             if ((oldItemContract != null) &&
                 oldItemContract.UnderlyingType.IsGenericType &&
-                (oldItemContract.UnderlyingType.GetGenericTypeDefinition() == Globals.TypeOfKeyValue))
+                (oldItemContract.UnderlyingType.GetGenericTypeDefinition() == typeof(KeyValue<,>)))
             {
                 return DataContract.GetDataContract(oldItemContract.UnderlyingType);
             }
@@ -412,7 +413,7 @@ namespace System.Runtime.Serialization.Json
                 if (collectionContract.ItemType.IsGenericType
                     && collectionContract.ItemType.GetGenericTypeDefinition() == typeof(KeyValue<,>))
                 {
-                    itemContract = context.GetDataContract(Globals.TypeOfKeyValuePair.MakeGenericType(collectionContract.ItemType.GetGenericArguments()));
+                    itemContract = context.GetDataContract(typeof(System.Collections.Generic.KeyValuePair<,>).MakeGenericType(collectionContract.ItemType.GetGenericArguments()));
                 }
                 else
                 {

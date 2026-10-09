@@ -4,6 +4,7 @@
 using System;
 using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
+using System.Net.Security;
 using System.Runtime.Versioning;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
@@ -111,6 +112,13 @@ namespace System.Net.Mail
         ///    <para>Set to true if we need SSL</para>
         /// </summary>
         public bool EnableSsl
+        {
+            get => throw new PlatformNotSupportedException();
+            set => throw new PlatformNotSupportedException();
+        }
+
+        /// <summary>Gets or sets the options used to establish a TLS connection.</summary>
+        public SslClientAuthenticationOptions SslOptions
         {
             get => throw new PlatformNotSupportedException();
             set => throw new PlatformNotSupportedException();

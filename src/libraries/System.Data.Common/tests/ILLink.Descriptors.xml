@@ -1,3 +1,7 @@
 <linker>
   <assembly fullname="System.Data" />
+  <!-- FacadeTest loads this through the System.Data facade's type forwarder. -->
+  <assembly fullname="System.Data.SqlClient">
+    <type fullname="Microsoft.SqlServer.Server.SqlMetaData" />
+  </assembly>
 </linker>

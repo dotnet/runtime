@@ -1999,14 +1999,26 @@ GenTree* Compiler::impDuplicateWithProfiledArg(GenTreeCall* call, IL_OFFSET ilOf
                 }
             }
 
-            // Prefer the profiled fast path over inlining the variable-length implementation.
+            InlineCandidateInfo* inlineInfo = nullptr;
             if (call->IsInlineCandidate())
             {
-                assert(call->GetSingleInlineCandidateInfo()->retExpr == nullptr);
+                inlineInfo = call->GetSingleInlineCandidateInfo();
+                assert(inlineInfo->retExpr == nullptr);
                 call->ClearInlineInfo();
             }
 
-            GenTree* fallbackCall      = gtCloneExpr(call);
+            GenTree* fallbackCall = gtCloneExpr(call);
+            if (inlineInfo != nullptr)
+            {
+                fallbackCall->AsCall()->SetSingleInlineCandidateInfo(inlineInfo);
+                if (!call->TypeIs(TYP_VOID))
+                {
+                    GenTreeRetExpr* retExpr = gtNewInlineCandidateReturnExpr(fallbackCall->AsCall(), call->TypeGet());
+                    inlineInfo->retExpr     = retExpr;
+                    fallbackCall            = gtNewOperNode(GT_COMMA, call->TypeGet(), fallbackCall, retExpr);
+                }
+            }
+
             GenTree* profiledValueNode = gtNewIconNode(profiledValue, argClone->TypeGet());
             *argRef                    = profiledValueNode;
 
@@ -2014,6 +2026,12 @@ GenTree* Compiler::impDuplicateWithProfiledArg(GenTreeCall* call, IL_OFFSET ilOf
             GenTreeColon* colon = new (this, GT_COLON) GenTreeColon(call->TypeGet(), call, fallbackCall);
             GenTreeOp*    cond  = gtNewOperNode(GT_EQ, TYP_INT, argClone, gtCloneExpr(profiledValueNode));
             GenTreeQmark* qmark = gtNewQmarkNode(call->TypeGet(), cond, colon);
+            if (inlineInfo != nullptr)
+            {
+                // Expose the fallback as a top-level call before inlining.
+                optMethodFlags |= OMF_HAS_EARLY_QMARKS;
+                qmark->SetEarlyExpandableQmark();
+            }
 
             JITDUMP("\n\nResulting tree:\n")
             DISPTREE(qmark)

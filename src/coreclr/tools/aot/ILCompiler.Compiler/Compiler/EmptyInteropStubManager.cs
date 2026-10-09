@@ -14,6 +14,19 @@ namespace ILCompiler
     /// </summary>
     public sealed class EmptyInteropStubManager : InteropStubManager
     {
+        private class DummyConfiguration : PInvokeILEmitterConfiguration
+        {
+            public override bool GenerateDirectCall(MethodDesc method, out string externName)
+            {
+                externName = method.GetPInvokeMethodMetadata().Name;
+                return true;
+            }
+        }
+
+        public EmptyInteropStubManager()
+            : base(new DummyConfiguration())
+        { }
+
         public override PInvokeILProvider CreatePInvokeILProvider()
         {
             return null;
