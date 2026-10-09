@@ -133,11 +133,12 @@
     <ComposeWasiReadyToRun CompositePath="$(_WasiR2RCompositePath)"
                            InspectOnly="true">
       <Output TaskParameter="FunctionCount" PropertyName="_WasiR2RFunctionCount" />
+      <Output TaskParameter="TableSlotCount" PropertyName="_WasiR2RTableSlotCount" />
       <Output TaskParameter="PayloadSize" PropertyName="_WasiR2RPayloadSize" />
     </ComposeWasiReadyToRun>
     <PropertyGroup>
       <!-- The composite starts at table slot 1, so the host's functions begin immediately after it. -->
-      <WasiCompositeR2RTableBase>$([MSBuild]::Add($(_WasiR2RFunctionCount), 1))</WasiCompositeR2RTableBase>
+      <WasiCompositeR2RTableBase>$([MSBuild]::Add($(_WasiR2RTableSlotCount), 1))</WasiCompositeR2RTableBase>
     </PropertyGroup>
     <WriteLinesToFile File="$(_WasiR2RImageBufferSource)"
                       Overwrite="true"
@@ -146,7 +147,7 @@
     <ItemGroup>
       <FileWrites Include="$(_WasiR2RImageBufferSource)" />
     </ItemGroup>
-    <Message Text="CoreCLR-WASI ReadyToRun composite: $(_WasiR2RFunctionCount) functions, $(_WasiR2RPayloadSize) payload bytes." Importance="High" />
+    <Message Text="CoreCLR-WASI ReadyToRun composite: $(_WasiR2RFunctionCount) functions, $(_WasiR2RTableSlotCount) table slots, $(_WasiR2RPayloadSize) payload bytes." Importance="High" />
   </Target>
 
   <!-- Override the same-named target imported above so we do NOT bundle Mono's
@@ -430,7 +431,7 @@
       <WasiEnableCompositeR2R Condition="'$(WasiEnableCompositeR2R)' == ''">false</WasiEnableCompositeR2R>
       <!-- Table slots 1..N-1 are reserved for the composite's ACTIVE element segment, which the engine
            installs at instantiation - so the table must already be large enough. Reserve by the
-           composite's FUNCTION count, not its assembly count. Must be > the composite's function count. -->
+           element segment's slot count, independently of how many function definitions those slots reference. -->
       <WasiCompositeR2RTableBase Condition="'$(WasiCompositeR2RTableBase)' == ''">65537</WasiCompositeR2RTableBase>
     </PropertyGroup>
 
