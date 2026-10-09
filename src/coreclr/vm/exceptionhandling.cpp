@@ -958,7 +958,12 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
     }
     GCX_COOP();
     OBJECTREF throwable = ExInfo::CreateThrowable(ex.GetExceptionRecord(), FALSE);
-    DispatchManagedException(throwable, ex.GetContextRecord());
+    ExInfo exInfo(GetThread(), ex.GetExceptionRecord(), ex.GetContextRecord(), ExKind::Throw);
+    if (!ex.RecordsOnStack)
+    {
+        exInfo.TakeExceptionPointersOwnership(&ex);
+    }
+    DispatchManagedException(throwable, &exInfo);
 }
 
 #if defined(TARGET_AMD64) || defined(TARGET_X86)
@@ -1535,8 +1540,6 @@ VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable, CONTEXT* pE
 
     GCPROTECT_BEGIN(throwable);
 
-   _ASSERTE(IsException(throwable->GetMethodTable()));
-
     Thread *pThread = GetThread();
 
     ULONG_PTR hr = GetHRFromThrowable(throwable);
@@ -1575,6 +1578,25 @@ VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable, CONTEXT* pE
     }
 #endif // HOST_WINDOWS
 
+    DispatchManagedException(throwable, &exInfo);
+
+    GCPROTECT_END();
+
+    UNREACHABLE();
+}
+
+VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable, ExInfo* pExInfo)
+{
+    STATIC_CONTRACT_THROWS;
+    STATIC_CONTRACT_GC_TRIGGERS;
+    STATIC_CONTRACT_MODE_COOPERATIVE;
+
+    GCPROTECT_BEGIN(throwable);
+
+    _ASSERTE(IsException(throwable->GetMethodTable()));
+
+    Thread *pThread = GetThread();
+
     if (pThread->IsAbortInitiated () && IsExceptionOfType(kThreadAbortException,&throwable))
     {
         pThread->ResetPreparingAbort();
@@ -1586,20 +1608,20 @@ VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable, CONTEXT* pE
         }
     }
 
-    GCPROTECT_BEGIN(exInfo.m_exception);
+    GCPROTECT_BEGIN(pExInfo->m_exception);
 
     PREPARE_NONVIRTUAL_CALLSITE(METHOD__EH__RH_THROW_EX);
     DECLARE_ARGHOLDER_ARRAY(args, 2);
     args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(throwable);
-    args[ARGNUM_1] = PTR_TO_ARGHOLDER(&exInfo);
+    args[ARGNUM_1] = PTR_TO_ARGHOLDER(pExInfo);
 
     pThread->IncPreventAbort();
 
-    //Ex.RhThrowEx(throwable, &exInfo)
+    //Ex.RhThrowEx(throwable, pExInfo)
     CRITICAL_CALLSITE;
     CALL_MANAGED_METHOD_NORET(args)
 
-    DispatchExSecondPass(&exInfo);
+    DispatchExSecondPass(pExInfo);
 
     GCPROTECT_END();
     GCPROTECT_END();
