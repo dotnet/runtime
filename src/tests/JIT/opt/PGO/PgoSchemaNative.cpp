@@ -51,35 +51,137 @@ public:
     }
 };
 
-extern "C" DLL_EXPORT int __cdecl ValidatePgoSnapshot(int schemaAlignment)
+#ifdef WINDOWS
+// Returns a buffer that is immediately followed by an inaccessible page, the way a loader heap block can end at the
+// end of its committed memory. Reading past the buffer faults.
+static uint8_t* AllocateBufferBeforeGuardPage(size_t size, void** region)
 {
-    ICorJitInfo::PgoInstrumentationSchema schemas[4] = {};
-    schemas[0].InstrumentationKind = ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount;
-    schemas[0].Count = 1;
-    schemas[1].InstrumentationKind = ICorJitInfo::PgoInstrumentationKind::ValueHistogramIntCount;
-    schemas[1].ILOffset = 1;
-    schemas[1].Count = 1;
-    schemas[2].InstrumentationKind = ICorJitInfo::PgoInstrumentationKind::ValueHistogram;
-    schemas[2].ILOffset = 1;
-    schemas[2].Count = ICorJitInfo::HandleHistogram32::SIZE;
-    schemas[3].InstrumentationKind = ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount;
-    schemas[3].ILOffset = 2;
-    schemas[3].Count = 1;
+    SYSTEM_INFO info;
+    GetSystemInfo(&info);
+    size_t pageSize = info.dwPageSize;
+    size_t committedSize = AlignUp(size, pageSize);
+    uint8_t* allocation = static_cast<uint8_t*>(VirtualAlloc(nullptr, committedSize + pageSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE));
+    if (allocation == nullptr)
+    {
+        return nullptr;
+    }
+
+    DWORD oldProtect;
+    if (!VirtualProtect(allocation + committedSize, pageSize, PAGE_NOACCESS, &oldProtect))
+    {
+        VirtualFree(allocation, 0, MEM_RELEASE);
+        return nullptr;
+    }
+
+    *region = allocation;
+    return allocation + committedSize - size;
+}
+
+static void FreeBuffer(void* region)
+{
+    VirtualFree(region, 0, MEM_RELEASE);
+}
+
+static int FilterAccessViolation(EXCEPTION_POINTERS* exceptionPointers, uintptr_t* faultAddress)
+{
+    const EXCEPTION_RECORD* record = exceptionPointers->ExceptionRecord;
+    if (record->ExceptionCode != EXCEPTION_ACCESS_VIOLATION)
+    {
+        return EXCEPTION_CONTINUE_SEARCH;
+    }
+
+    *faultAddress = static_cast<uintptr_t>(record->ExceptionInformation[1]);
+    return EXCEPTION_EXECUTE_HANDLER;
+}
+#else
+// There is no guard page here; an over-read is still caught because it shifts the data compared below.
+static uint8_t* AllocateBufferBeforeGuardPage(size_t size, void** region)
+{
+    *region = malloc(size);
+    return static_cast<uint8_t*>(*region);
+}
+
+static void FreeBuffer(void* region)
+{
+    free(region);
+}
+#endif
+
+struct BufferHolder
+{
+    void* region = nullptr;
+
+    ~BufferHolder()
+    {
+        if (region != nullptr)
+        {
+            FreeBuffer(region);
+        }
+    }
+};
+
+// Reports a fault while reading the data as a failure that names the address, instead of crashing the test process.
+static bool TrySnapshot(const uint8_t* data,
+                        size_t countsOffset,
+                        TestSchemaArray* schemas,
+                        uint8_t** allocatedData,
+                        ICorJitInfo::PgoInstrumentationSchema** snapshotSchema,
+                        uint32_t* schemaCount,
+                        uint8_t** snapshotData,
+                        uintptr_t* faultAddress)
+{
+    *faultAddress = 0;
+#ifdef WINDOWS
+    __try
+    {
+        return SnapshotPgoInstrumentationData(data, countsOffset, schemas, allocatedData, snapshotSchema, schemaCount, snapshotData);
+    }
+    __except (FilterAccessViolation(GetExceptionInformation(), faultAddress))
+    {
+        return false;
+    }
+#else
+    return SnapshotPgoInstrumentationData(data, countsOffset, schemas, allocatedData, snapshotSchema, schemaCount, snapshotData);
+#endif
+}
+
+// On 32 bit targets countsOffset is only 4 byte aligned (schemaAlignment 4). Restarting the layout at the counters then
+// moved the value histogram by four bytes: earlier with one leading block counter, later with two, which read past the
+// end of the data.
+extern "C" DLL_EXPORT int __cdecl ValidatePgoSnapshot(int schemaAlignment, int leadingCounters)
+{
+    if ((schemaAlignment != 0 && schemaAlignment != 4) || leadingCounters < 1)
+    {
+        printf("Unexpected arguments: schemaAlignment=%d, leadingCounters=%d\n", schemaAlignment, leadingCounters);
+        return 1;
+    }
+
+    std::vector<ICorJitInfo::PgoInstrumentationSchema> schemas;
+    auto addSchema = [&schemas](ICorJitInfo::PgoInstrumentationKind kind, int32_t count)
+    {
+        ICorJitInfo::PgoInstrumentationSchema schema = {};
+        schema.InstrumentationKind = kind;
+        schema.ILOffset = static_cast<int32_t>(schemas.size());
+        schema.Count = count;
+        schemas.push_back(schema);
+    };
+
+    for (int i = 0; i < leadingCounters; i++)
+    {
+        addSchema(ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount, 1);
+    }
+    addSchema(ICorJitInfo::PgoInstrumentationKind::ValueHistogramIntCount, 1);
+    addSchema(ICorJitInfo::PgoInstrumentationKind::ValueHistogram, ICorJitInfo::HandleHistogram32::SIZE);
+    addSchema(ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount, 1);
 
     std::vector<uint8_t> compressedSchema;
-    if (!WriteInstrumentationSchemaToBytes(schemas, ARRAY_SIZE(schemas), [&compressedSchema](uint8_t value)
+    if (!WriteInstrumentationSchemaToBytes(schemas.data(), schemas.size(), [&compressedSchema](uint8_t value)
     {
         compressedSchema.push_back(value);
         return true;
     }))
     {
         printf("Unable to write PGO schema\n");
-        return 1;
-    }
-
-    if (schemaAlignment != 0 && schemaAlignment != 4)
-    {
-        printf("Unexpected schema alignment: %d\n", schemaAlignment);
         return 1;
     }
 
@@ -92,46 +194,57 @@ extern "C" DLL_EXPORT int __cdecl ValidatePgoSnapshot(int schemaAlignment)
         previous = schema;
     }
 
-    // Leave guard bytes after the payload so the unfixed overread produces a value
-    // mismatch instead of depending on whether the next page happens to be mapped.
-    alignas(8) uint8_t data[512];
-    size_t dataSize = AlignUp(schemas[3].Offset + sizeof(uint32_t), sizeof(size_t));
-    if (dataSize + sizeof(size_t) > sizeof(data))
+    // The allocator rounds the data region up to whole size_t units, which is what the snapshot copies.
+    const ICorJitInfo::PgoInstrumentationSchema& last = schemas.back();
+    size_t dataSize = AlignUp(last.Offset + last.Count * InstrumentationKindToSize(last.InstrumentationKind), sizeof(size_t));
+
+    BufferHolder buffer;
+    uint8_t* data = AllocateBufferBeforeGuardPage(dataSize, &buffer.region);
+    if (data == nullptr)
     {
-        printf("PGO fixture exceeds its data buffer\n");
+        printf("Unable to allocate the PGO data\n");
         return 1;
     }
-    memset(data, 0xCC, sizeof(data));
-    memcpy(data, compressedSchema.data(), compressedSchema.size());
 
-    uint32_t blockCount = 0x12345678;
-    uint32_t histogramCount = 0x27182818;
-    uint32_t trailingCount = 0x89ABCDEF;
-    memcpy(data + schemas[0].Offset, &blockCount, sizeof(blockCount));
-    memcpy(data + schemas[1].Offset, &histogramCount, sizeof(histogramCount));
-    for (int32_t i = 0; i < schemas[2].Count; i++)
+    memset(data, 0xCC, dataSize);
+    memcpy(data, compressedSchema.data(), compressedSchema.size());
+    for (size_t i = 0; i < schemas.size(); i++)
     {
-        uint64_t value = 0x1122334455667788ULL + i;
-        memcpy(data + schemas[2].Offset + i * sizeof(value), &value, sizeof(value));
+        uint32_t entrySize = InstrumentationKindToSize(schemas[i].InstrumentationKind);
+        for (int32_t j = 0; j < schemas[i].Count; j++)
+        {
+            // Distinct for every entry, so data read from the wrong place cannot match.
+            uint64_t value = 0x9E3779B97F4A7C15ULL * (i + 1) + 0x0123456789ABCDEFULL * (j + 1);
+            memcpy(data + schemas[i].Offset + j * entrySize, &value, entrySize);
+        }
     }
-    memcpy(data + schemas[3].Offset, &trailingCount, sizeof(trailingCount));
 
     TestSchemaArray schemaArray;
-    uint8_t* allocatedData;
-    ICorJitInfo::PgoInstrumentationSchema* snapshotSchema;
-    uint32_t schemaCount;
-    uint8_t* snapshotData;
-    if (!SnapshotPgoInstrumentationData(data, countsOffset, &schemaArray, &allocatedData,
-                                       &snapshotSchema, &schemaCount, &snapshotData))
+    uint8_t* allocatedData = nullptr;
+    ICorJitInfo::PgoInstrumentationSchema* snapshotSchema = nullptr;
+    uint32_t schemaCount = 0;
+    uint8_t* snapshotData = nullptr;
+    uintptr_t faultAddress = 0;
+    if (!TrySnapshot(data, countsOffset, &schemaArray, &allocatedData, &snapshotSchema, &schemaCount, &snapshotData, &faultAddress))
     {
-        printf("Unable to snapshot PGO data\n");
+        if (faultAddress != 0)
+        {
+            printf("Access violation reading %p; the PGO data ends at %p (countsOffset %% 8 = %zu, %d leading counters)\n",
+                   reinterpret_cast<void*>(faultAddress), static_cast<void*>(data + dataSize), countsOffset % 8, leadingCounters);
+        }
+        else
+        {
+            printf("Unable to snapshot PGO data\n");
+        }
+
         return 1;
     }
+
     std::unique_ptr<uint8_t[]> snapshot(allocatedData);
 
-    if (schemaCount != ARRAY_SIZE(schemas))
+    if (schemaCount != schemas.size())
     {
-        printf("Expected %zu schema entries, got %u\n", ARRAY_SIZE(schemas), schemaCount);
+        printf("Expected %zu schema entries, got %u\n", schemas.size(), schemaCount);
         return 1;
     }
 
@@ -139,6 +252,7 @@ extern "C" DLL_EXPORT int __cdecl ValidatePgoSnapshot(int schemaAlignment)
     {
         const ICorJitInfo::PgoInstrumentationSchema& expected = schemas[i];
         const ICorJitInfo::PgoInstrumentationSchema& actual = snapshotSchema[i];
+        // The comparison below reads each entry through the snapshot's offsets, so a misplaced entry shows up as a mismatch.
         if (actual.InstrumentationKind != expected.InstrumentationKind ||
             actual.ILOffset != expected.ILOffset || actual.Count != expected.Count || actual.Other != expected.Other)
         {
@@ -154,6 +268,6 @@ extern "C" DLL_EXPORT int __cdecl ValidatePgoSnapshot(int schemaAlignment)
         }
     }
 
-    printf("Snapshot validated: countsOffset %% 8 = %zu, %u schema entries\n", countsOffset % 8, schemaCount);
+    printf("Snapshot validated: countsOffset %% 8 = %zu, %d leading counters\n", countsOffset % 8, leadingCounters);
     return 0;
 }
