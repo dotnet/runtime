@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Formats.Tar.Tests
@@ -117,6 +118,132 @@ namespace System.Formats.Tar.Tests
                 Assert.Contains(KeyValuePair.Create(key, value), entry.ExtendedAttributes);
                 Assert.Null(reader.GetNextEntry());
             }
+        }
+
+        public static IEnumerable<object[]> GnuBase256UidGidTestData()
+        {
+            // Leading 0x80 byte: the remaining bytes are a positive big-endian value.
+            yield return new object[] { new byte[] { 0x80, 0, 0, 0, 0x7F, 0xFF, 0xFF, 0xFF }, int.MaxValue };
+            yield return new object[] { new byte[] { 0x80, 0, 0, 0, 0xB6, 0x5A, 0x65, 0x38 }, unchecked((int)0xB65A6538u) };
+            yield return new object[] { new byte[] { 0x80, 0, 0, 0, 0xFF, 0x5A, 0x65, 0x38 }, unchecked((int)0xFF5A6538u) };
+            yield return new object[] { new byte[] { 0x80, 0, 0, 0, 0xFF, 0xFF, 0xFF, 0xFF }, -1 };
+            // Leading 0xFF byte: the field is a negative big-endian value.
+            yield return new object[] { new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFE }, -2 };
+        }
+
+        [Theory]
+        [MemberData(nameof(GnuBase256UidGidTestData))]
+        public void GnuBase256UidGid_LargerThanInt32MaxValue_DoesNotThrow(byte[] fieldBytes, int expected)
+        {
+            byte[] tarData = CreateEntryWithRawUidGid(fieldBytes, fieldBytes);
+
+            using TarReader reader = new TarReader(new MemoryStream(tarData));
+            TarEntry entry = reader.GetNextEntry();
+            Assert.NotNull(entry);
+            Assert.Equal(expected, entry.Uid);
+            Assert.Equal(expected, entry.Gid);
+            Assert.Null(reader.GetNextEntry());
+        }
+
+        [Theory]
+        [MemberData(nameof(GnuBase256UidGidTestData))]
+        public async Task GnuBase256UidGid_LargerThanInt32MaxValue_DoesNotThrow_Async(byte[] fieldBytes, int expected)
+        {
+            byte[] tarData = CreateEntryWithRawUidGid(fieldBytes, fieldBytes);
+
+            await using TarReader reader = new TarReader(new MemoryStream(tarData));
+            TarEntry entry = await reader.GetNextEntryAsync();
+            Assert.NotNull(entry);
+            Assert.Equal(expected, entry.Uid);
+            Assert.Equal(expected, entry.Gid);
+            Assert.Null(await reader.GetNextEntryAsync());
+        }
+
+        [Theory]
+        [InlineData(new byte[] { 0x80, 0, 0, 1, 0, 0, 0, 0 })] // uint.MaxValue + 1
+        [InlineData(new byte[] { 0x80, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF })]
+        [InlineData(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0x7F, 0xFF, 0xFF, 0xFF })] // int.MinValue - 1
+        public void GnuBase256UidGid_LargerThan32Bits_Throws(byte[] fieldBytes)
+        {
+            byte[] tarData = CreateEntryWithRawUidGid(fieldBytes, fieldBytes);
+
+            using TarReader reader = new TarReader(new MemoryStream(tarData));
+            Assert.Throws<InvalidDataException>(() => reader.GetNextEntry());
+        }
+
+        [Fact]
+        public void PaxUidGid_LargerThan32Bits_Throws()
+        {
+            byte[] tarData = CreateEntryWithRawPaxUidGid("9999999999");
+
+            using TarReader reader = new TarReader(new MemoryStream(tarData));
+            Assert.Throws<InvalidDataException>(() => reader.GetNextEntry());
+        }
+
+        [Theory]
+        [InlineData("2147483647", int.MaxValue)]
+        [InlineData("3059377464", unchecked((int)3059377464u))]
+        [InlineData("4294967295", -1)]
+        public void PaxUidGid_LargerThanInt32MaxValue_DoesNotThrow(string value, int expected)
+        {
+            byte[] tarData = CreateEntryWithRawPaxUidGid(value);
+
+            using TarReader reader = new TarReader(new MemoryStream(tarData));
+            PaxTarEntry entry = Assert.IsType<PaxTarEntry>(reader.GetNextEntry());
+            Assert.Equal(expected, entry.Uid);
+            Assert.Equal(expected, entry.Gid);
+            Assert.Equal(value, entry.ExtendedAttributes["uid"]);
+            Assert.Equal(value, entry.ExtendedAttributes["gid"]);
+        }
+
+        // Writes a GNU entry, then overwrites its uid and gid fields with the given raw bytes and fixes up the checksum.
+        private static byte[] CreateEntryWithRawUidGid(byte[] uid, byte[] gid)
+        {
+            const int UidOffset = 108, GidOffset = 116, ChecksumOffset = 148, FieldLength = 8;
+
+            MemoryStream ms = new MemoryStream();
+            using (TarWriter writer = new TarWriter(ms, TarEntryFormat.Gnu, leaveOpen: true))
+            {
+                writer.WriteEntry(new GnuTarEntry(TarEntryType.Directory, "dir"));
+            }
+
+            byte[] tarData = ms.ToArray();
+            uid.CopyTo(tarData, UidOffset);
+            gid.CopyTo(tarData, GidOffset);
+
+            // The checksum is computed with the checksum field itself filled with spaces.
+            tarData.AsSpan(ChecksumOffset, FieldLength).Fill((byte)' ');
+            int checksum = 0;
+            for (int i = 0; i < 512; i++)
+            {
+                checksum += tarData[i];
+            }
+            System.Text.Encoding.ASCII.GetBytes(Convert.ToString(checksum, 8).PadLeft(6, '0') + "\0 ").CopyTo(tarData, ChecksumOffset);
+
+            return tarData;
+        }
+
+        // Replaces the PAX ids without changing the extended attribute record lengths.
+        private static byte[] CreateEntryWithRawPaxUidGid(string value)
+        {
+            using MemoryStream ms = new MemoryStream();
+            using (TarWriter writer = new TarWriter(ms, leaveOpen: true))
+            {
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.Directory, "dir") { Uid = int.MaxValue, Gid = int.MaxValue });
+            }
+
+            byte[] tarData = ms.ToArray();
+            foreach (string attribute in new[] { "uid", "gid" })
+            {
+                byte[] original = System.Text.Encoding.ASCII.GetBytes($"{attribute}=2147483647");
+                byte[] replacement = System.Text.Encoding.ASCII.GetBytes($"{attribute}={value}");
+                Assert.Equal(original.Length, replacement.Length);
+                int index = tarData.AsSpan().IndexOf(original);
+                Assert.True(index >= 0);
+                replacement.CopyTo(tarData, index);
+            }
+
+            return tarData;
         }
     }
 }
