@@ -36,6 +36,9 @@ steps:
     displayName: ${{ parameters.DisplayNamePrefix }}
     condition: ${{ parameters.condition }}
     shouldContinueOnError: ${{ parameters.continueOnError }}
+    useEntraAuthentication: ${{ eq(variables['helixUseEntraAuthentication'], true) }}
+    azureSubscription: ${{ variables.helixAzureSubscription }}
+    helixBaseUri: ${{ variables.helixBaseUri }}
     environment:
       _Creator: ${{ parameters.Creator }}
       ${{ if ne(parameters.targetOS, '') }}:
@@ -55,7 +58,8 @@ steps:
       HelixType: ${{ parameters.HelixType }}
       HelixBuild: ${{ parameters.HelixBuild }}
       HelixTargetQueues: ${{ parameters.HelixTargetQueues }}
-      HelixAccessToken: ${{ parameters.HelixAccessToken }}
+      ${{ if ne(variables['helixUseEntraAuthentication'], true) }}:
+        HelixAccessToken: ${{ parameters.HelixAccessToken }}
       HelixPreCommands: ${{ parameters.HelixPreCommands }}
       HelixPostCommands: ${{ parameters.HelixPostCommands }}
       WorkItemDirectory: ${{ parameters.WorkItemDirectory }}

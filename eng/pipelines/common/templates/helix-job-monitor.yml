@@ -1,0 +1,35 @@
+parameters:
+- name: helixAccessToken
+  type: string
+  default: ''
+- name: timeoutInMinutes
+  type: number
+  default: 480
+- name: testResultUploadParallelism
+  type: number
+  default: 48
+- name: allowNoHelixJobs
+  type: boolean
+  default: false
+- name: useEntraAuthentication
+  type: boolean
+  default: false
+- name: azureSubscription
+  type: string
+  default: ''
+- name: helixBaseUri
+  type: string
+  default: ''
+
+jobs:
+- template: /eng/common/core-templates/job/helix-job-monitor.yml
+  parameters:
+    timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
+    testResultUploadParallelism: ${{ parameters.testResultUploadParallelism }}
+    allowNoHelixJobs: ${{ parameters.allowNoHelixJobs }}
+    helixBaseUri: ${{ coalesce(parameters.helixBaseUri, variables.helixBaseUri, 'https://helix.dot.net/') }}
+    ${{ if or(eq(parameters.useEntraAuthentication, true), eq(variables['helixUseEntraAuthentication'], true)) }}:
+      useEntraAuthentication: true
+      azureSubscription: ${{ coalesce(parameters.azureSubscription, variables.helixAzureSubscription) }}
+    ${{ else }}:
+      helixAccessToken: ${{ parameters.helixAccessToken }}
