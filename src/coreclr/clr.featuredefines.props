@@ -13,7 +13,8 @@
         <FeaturePortableTimer>true</FeaturePortableTimer>
     </PropertyGroup>
 
-    <PropertyGroup Condition="'$(TargetsMobile)' == 'true' OR '$(TargetsWasm)' == 'true' OR '$(TargetsLinuxBionic)' == 'true'">
+    <PropertyGroup Condition="'$(TargetsWasm)' == 'true'">
+        <!--  OR '$(TargetsMobile)' == 'true' OR '$(TargetsLinuxBionic)' == 'true' -->
         <FeatureCorProfiler>false</FeatureCorProfiler>
     </PropertyGroup>
 
