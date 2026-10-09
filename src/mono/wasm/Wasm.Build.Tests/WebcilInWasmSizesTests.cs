@@ -341,6 +341,45 @@ public class WebcilInWasmSizesTests
         Assert.Equal(0, tableSize);
     }
 
+    [Fact]
+    public void ConvertDllsToWebcil_Fails_WhenPrebuiltR2RIsComposite()
+    {
+        // Composite R2R images carry an empty MVID. The base SDK tasks write one per assembly as <name>.dll
+        // even for non-composite wasm publishes; it must fail the build rather than silently publish IL.
+        string candidatePath = typeof(System.Console).Assembly.Location;
+        using var directory = new TempDirectory();
+        string prebuiltDirectory = Path.Combine(directory.Path, "prebuilt");
+        Directory.CreateDirectory(prebuiltDirectory);
+
+        string payloadPath = Path.Combine(directory.Path, "payload.webcil");
+        WebcilConverter converter = WebcilConverter.FromPortableExecutable(candidatePath, payloadPath, webcilVersion: 1);
+        converter.WrapInWebAssembly = false;
+        converter.ConvertToWebcil();
+        byte[] payload = File.ReadAllBytes(payloadPath);
+        byte[] mvid = typeof(System.Console).Module.ModuleVersionId.ToByteArray();
+        int mvidOffset = payload.AsSpan().IndexOf(mvid);
+        Assert.True(mvidOffset >= 0, "MVID not found in the webcil payload.");
+        Array.Clear(payload, mvidOffset, mvid.Length);
+        File.WriteAllBytes(Path.Combine(prebuiltDirectory, "System.Console.dll"), BuildWebcilInWasm(payload, tableSize: 1, activePayload: true));
+
+        var candidate = new TaskItem(candidatePath);
+        candidate.SetMetadata("RelativePath", "System.Console.dll");
+
+        var buildEngine = new TestBuildEngine(collectErrors: true);
+        var task = new ConvertDllsToWebcil
+        {
+            BuildEngine = buildEngine,
+            Candidates = [candidate],
+            IntermediateOutputPath = Path.Combine(directory.Path, "intermediate"),
+            IsEnabled = true,
+            OutputPath = Path.Combine(directory.Path, "output"),
+            PrebuiltR2RDirectory = prebuiltDirectory,
+        };
+
+        Assert.False(task.Execute());
+        Assert.Contains(buildEngine.Errors, error => error.Contains("empty MVID", StringComparison.Ordinal));
+    }
+
     private const byte SectionCustom = 0x00;
     private const byte SectionData = 0x0b;
 
@@ -544,8 +583,9 @@ public class WebcilInWasmSizesTests
         public void Dispose() => Directory.Delete(Path, recursive: true);
     }
 
-    private sealed class TestBuildEngine : IBuildEngine
+    private sealed class TestBuildEngine(bool collectErrors = false) : IBuildEngine
     {
+        public List<string> Errors { get; } = new();
         public bool ContinueOnError => false;
         public int LineNumberOfTaskNode => 0;
         public int ColumnNumberOfTaskNode => 0;
@@ -558,7 +598,13 @@ public class WebcilInWasmSizesTests
         {
         }
 
-        public void LogErrorEvent(BuildErrorEventArgs e) => Assert.Fail(e.Message ?? "Build error");
+        public void LogErrorEvent(BuildErrorEventArgs e)
+        {
+            if (!collectErrors)
+                Assert.Fail(e.Message ?? "Build error");
+
+            Errors.Add(e.Message ?? string.Empty);
+        }
 
         public void LogMessageEvent(BuildMessageEventArgs e)
         {
