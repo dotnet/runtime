@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using Antlr4.Runtime;
 
 namespace ILAssembler;
@@ -121,30 +122,40 @@ internal sealed partial class GrammarActions
         ApplySourceDirective(value);
     }
 
+    /// <summary>
+    /// Applies a <c>.line</c> or <c>#line</c> directive: a non-empty file name defines that file as a PDB
+    /// document and makes it the current document, and inside a method body the directive adds a sequence point
+    /// at the current IL offset in the current document.
+    /// </summary>
+    /// <remarks>
+    /// An empty file name (<c>''</c> or <c>""</c>) leaves the current document unchanged, as in native ilasm:
+    /// ildasm writes it for "the same file as the previous directive", including on the first directive of a
+    /// method. A directive without a file name uses the current document, which is the input file until a
+    /// directive names another. A directive at the same offset as the previous point replaces that point,
+    /// coordinates and document. There is always a current document here: <see cref="DocumentCompiler"/> calls
+    /// <see cref="BeginDocument"/>, which defines the input file, before it parses anything.
+    /// </remarks>
     private void ApplySourceDirective(SourceDirectiveValue value)
     {
-        if (value.DocumentPath is not null)
+        Debug.Assert(_currentDocument >= 0, "BeginDocument defines the input file before any directive is applied.");
+        if (!string.IsNullOrEmpty(value.DocumentPath))
         {
-            _currentDocumentPath = value.DocumentPath;
+            _currentDocument = _pdbDocuments.GetOrAdd(value.DocumentPath, _currentLanguageGuid);
         }
 
-        if (_currentMethod is null || _currentDocumentPath is null)
+        if (_currentMethod is null)
         {
             return;
         }
 
+        int document = _currentDocument;
         int ilOffset = _currentMethod.Definition.MethodBody.Offset;
         EntityRegistry.MethodDebugInfo debugInfo = _currentMethod.Definition.DebugInfo;
-        if (debugInfo.DocumentPath is null)
-        {
-            debugInfo.DocumentPath = _currentDocumentPath;
-            debugInfo.LanguageGuid = _currentLanguageGuid;
-        }
 
         EntityRegistry.SequencePoint sequencePoint;
         if (value.StartLine == 0xFEEFEE)
         {
-            sequencePoint = EntityRegistry.SequencePoint.Hidden(ilOffset);
+            sequencePoint = EntityRegistry.SequencePoint.Hidden(document, ilOffset);
         }
         else
         {
@@ -155,6 +166,7 @@ internal sealed partial class GrammarActions
             }
 
             sequencePoint = new EntityRegistry.SequencePoint(
+                document,
                 ilOffset,
                 value.StartLine,
                 value.StartColumn,
