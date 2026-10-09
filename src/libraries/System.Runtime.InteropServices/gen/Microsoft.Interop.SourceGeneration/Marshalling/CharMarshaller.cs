@@ -1,13 +1,8 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
-using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Microsoft.Interop
 {
@@ -44,7 +39,7 @@ namespace Microsoft.Interop
             return info.IsByRef ? SignatureBehavior.PointerToNativeType : SignatureBehavior.NativeType;
         }
 
-        public IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubCodeContext codeContext, StubIdentifierContext context)
+        public void Generate(IndentedTextWriter writer, TypePositionInfo info, StubCodeContext codeContext, StubIdentifierContext context)
         {
             (string managedIdentifier, string nativeIdentifier) = context.GetIdentifiers(info);
 
@@ -52,31 +47,15 @@ namespace Microsoft.Interop
             {
                 if (context.CurrentStage == StubIdentifierContext.Stage.Pin)
                 {
-                    // fixed (char* <pinned> = &<managed>)
-                    yield return FixedStatement(
-                        VariableDeclaration(
-                            PointerType(PredefinedType(Token(SyntaxKind.CharKeyword))),
-                            SingletonSeparatedList(
-                                VariableDeclarator(Identifier(PinnedIdentifier(info.InstanceIdentifier)))
-                                    .WithInitializer(EqualsValueClause(
-                                        PrefixUnaryExpression(
-                                            SyntaxKind.AddressOfExpression,
-                                            IdentifierName(Identifier(managedIdentifier)))
-                                    ))
-                            )
-                        ),
-                        // ushort* <native> = (ushort*)<pinned>;
-                        LocalDeclarationStatement(
-                            VariableDeclaration(PointerType(AsNativeType(info).Syntax),
-                                SingletonSeparatedList(
-                                    VariableDeclarator(nativeIdentifier)
-                                        .WithInitializer(EqualsValueClause(
-                                            CastExpression(
-                                                PointerType(AsNativeType(info).Syntax),
-                                                IdentifierName(PinnedIdentifier(info.InstanceIdentifier))))))))
-                    );
+                    writer.WriteLine($"fixed (char* {PinnedIdentifier(info.InstanceIdentifier)} = &{managedIdentifier})");
                 }
-                yield break;
+                else if (context.CurrentStage == StubIdentifierContext.Stage.PinnedMarshal)
+                {
+                    string nativeType = AsNativeType(info).FullTypeName;
+                    // The alias must live inside the body shared by all fixed headers.
+                    writer.WriteLine($"{nativeType}* {nativeIdentifier} = ({nativeType}*){PinnedIdentifier(info.InstanceIdentifier)};");
+                }
+                return;
             }
 
             MarshalDirection elementMarshalDirection = MarshallerHelpers.GetMarshalDirection(info, codeContext);
@@ -92,11 +71,7 @@ namespace Microsoft.Interop
                         // so we simplify the generated code to just pass the char value directly
                         if (info.IsByRef)
                         {
-                            yield return ExpressionStatement(
-                                AssignmentExpression(
-                                    SyntaxKind.SimpleAssignmentExpression,
-                                    IdentifierName(nativeIdentifier),
-                                    IdentifierName(managedIdentifier)));
+                            writer.WriteLine($"{nativeIdentifier} = {managedIdentifier};");
                         }
                     }
 
@@ -104,14 +79,7 @@ namespace Microsoft.Interop
                 case StubIdentifierContext.Stage.Unmarshal:
                     if (elementMarshalDirection is MarshalDirection.UnmanagedToManaged or MarshalDirection.Bidirectional)
                     {
-                        yield return ExpressionStatement(
-                            AssignmentExpression(
-                                SyntaxKind.SimpleAssignmentExpression,
-                                IdentifierName(managedIdentifier),
-                                CastExpression(
-                                    PredefinedType(
-                                        Token(SyntaxKind.CharKeyword)),
-                                    IdentifierName(nativeIdentifier))));
+                        writer.WriteLine($"{managedIdentifier} = (char){nativeIdentifier};");
                     }
 
                     break;

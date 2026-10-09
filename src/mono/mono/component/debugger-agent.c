@@ -789,8 +789,6 @@ mono_debugger_agent_init_internal (void)
 	/* Need to know whenever a thread has acquired the loader mutex */
 	mono_loader_lock_track_ownership (TRUE);
 
-	event_requests = g_ptr_array_new ();
-
 	mono_coop_mutex_init (&debugger_thread_exited_mutex);
 	mono_coop_cond_init (&debugger_thread_exited_cond);
 
@@ -806,8 +804,6 @@ mono_debugger_agent_init_internal (void)
 	mono_profiler_set_gc_finalized_callback (prof, gc_finalized);
 
 	mono_init_debugger_agent_common (&prof);
-
-	pending_assembly_loads = g_ptr_array_new ();
 
 	log_level = agent_config.log_level;
 

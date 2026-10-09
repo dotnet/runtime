@@ -123,17 +123,15 @@ namespace System
         private static string GetWindowsInstallationType()
         {
             string key = @"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion";
-            string value = "";
 
             try
             {
-                value = (string)Registry.GetValue(key, "InstallationType", defaultValue: "");
+                return Registry.GetValue(key, "InstallationType", defaultValue: "") as string ?? "";
             }
-            catch (Exception e) when (e is SecurityException || e is InvalidCastException)
+            catch (SecurityException)
             {
+                return "";
             }
-
-            return value;
         }
 
         private static int GetWindowsProductType()
@@ -258,5 +256,6 @@ namespace System
         public static bool CanRunImpersonatedTests => PlatformDetection.IsNotWindowsNanoServer && PlatformDetection.IsWindows && PlatformDetection.IsPrivilegedProcess;
 
         public static bool IsWindowsX86OrX64 => PlatformDetection.IsWindows && (PlatformDetection.IsX86Process || PlatformDetection.IsX64Process);
+
     }
 }

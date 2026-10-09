@@ -162,5 +162,39 @@ namespace ComInterfaceGenerator.Unit.Tests
                 abiMethod.GetAttributes().Select(attr => attr.AttributeClass),
                 SymbolEqualityComparer.Default);
         }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void GeneratedTextIsCachedUnlessSignatureChanges(bool changeSignature)
+        {
+            string source = """
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+
+                [UnmanagedObjectUnwrapper<UnmanagedObjectUnwrapper.TestUnwrapper>]
+                partial interface INativeAPI : IUnmanagedInterfaceType
+                {
+                    static unsafe void* IUnmanagedInterfaceType.VirtualMethodTableManagedImplementation => null;
+                    [VirtualMethodIndex(0)]
+                    int Method(int value);
+                }
+                """;
+
+            string updatedSource = changeSignature
+                ? source.Replace("int Method(int value)", "long Method(long value)")
+                : "// Input trivia does not affect generated source.\r\n" + source;
+
+            GeneratedSourceVerification.VerifyIncrementalOutput(
+                new Microsoft.Interop.VtableIndexStubGenerator(),
+                source,
+                updatedSource,
+                changeSignature,
+                4,
+                "GeneratedManagedToNativeVtableStubs",
+                "GeneratedNativeToManagedVtableStubs",
+                "GeneratedVtableNativeInterfaces",
+                "GeneratedVtablePopulation");
+        }
     }
 }

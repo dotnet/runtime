@@ -4,17 +4,11 @@
 using System;
 using System.Collections.Generic;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
-using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
-using static Microsoft.Interop.SyntaxFactoryExtensions;
 
 namespace Microsoft.Interop
 {
     public static class MarshallerHelpers
     {
-        public static readonly TypeSyntax SystemIntPtrType = TypeSyntaxes.System_IntPtr;
-
         public static RefKind GetRefKindForByValueContentsKind(this ByValueContentsMarshalKind byValue)
         {
             return byValue switch
@@ -27,39 +21,33 @@ namespace Microsoft.Interop
             };
         }
 
-        public static TypeSyntax GetCompatibleGenericTypeParameterSyntax(this TypeSyntax type)
+        public static string GetCompatibleGenericTypeParameter(this ManagedTypeInfo type)
         {
-            TypeSyntax spanElementTypeSyntax = type;
-            if (spanElementTypeSyntax is PointerTypeSyntax)
-            {
-                // Pointers cannot be passed to generics, so use IntPtr for this case.
-                spanElementTypeSyntax = TypeSyntaxes.System_IntPtr;
-            }
-            return spanElementTypeSyntax;
+            // Neither data pointers nor function pointers can be generic arguments.
+            return type is PointerTypeInfo
+                ? TypeNames.GlobalAlias + TypeNames.System_IntPtr
+                : type.FullTypeName;
         }
 
 
         /// <summary>
         /// <c>Marshal.SetLastSystemError(<paramref name="errorCode"/>);</c>
         /// </summary>
-        public static StatementSyntax CreateClearLastSystemErrorStatement(int errorCode) =>
-            MethodInvocationStatement(
-                TypeSyntaxes.System_Runtime_InteropServices_Marshal,
-                IdentifierName("SetLastSystemError"),
-                Argument(LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(errorCode))));
+        public static string CreateClearLastSystemErrorStatement(int errorCode) =>
+            FormattableString.Invariant($"{TypeNames.GlobalAlias}{TypeNames.System_Runtime_InteropServices_Marshal}.SetLastSystemError({errorCode});");
 
         /// <summary>
         /// <code><paramref name="lastErrorIdentifier"/> = Marshal.GetLastSystemError();</code>
         /// </summary>
-        public static StatementSyntax CreateGetLastSystemErrorStatement(string lastErrorIdentifier) =>
-            AssignmentStatement(IdentifierName(lastErrorIdentifier), MethodInvocation(TypeSyntaxes.System_Runtime_InteropServices_Marshal, IdentifierName("GetLastSystemError")));
+        public static string CreateGetLastSystemErrorStatement(string lastErrorIdentifier) =>
+            $"{lastErrorIdentifier} = {TypeNames.GlobalAlias}{TypeNames.System_Runtime_InteropServices_Marshal}.GetLastSystemError();";
 
         //
         /// <summary>
         /// <code>Marshal.SetLastPInvokeError(<paramref name="lastErrorIdentifier"/>);</code>
         /// </summary>
-        public static StatementSyntax CreateSetLastPInvokeErrorStatement(string lastErrorIdentifier) =>
-            MethodInvocationStatement(TypeSyntaxes.System_Runtime_InteropServices_Marshal, IdentifierName("SetLastPInvokeError"), Argument(IdentifierName(lastErrorIdentifier)));
+        public static string CreateSetLastPInvokeErrorStatement(string lastErrorIdentifier) =>
+            $"{TypeNames.GlobalAlias}{TypeNames.System_Runtime_InteropServices_Marshal}.SetLastPInvokeError({lastErrorIdentifier});";
 
         public static string GetMarshallerIdentifier(TypePositionInfo info, StubIdentifierContext context)
         {
@@ -91,13 +79,12 @@ namespace Microsoft.Interop
             return $"__i{i}";
         }
 
-        public static ExpressionSyntax GetIndexedManagedElementExpression(TypePositionInfo info, StubCodeContext codeContext, StubIdentifierContext context)
+        public static string GetIndexedManagedElementExpression(TypePositionInfo info, StubCodeContext codeContext, StubIdentifierContext context)
         {
-            ExpressionSyntax indexedManagedElement = IdentifierName(context.GetIdentifiers(info).managed);
+            string indexedManagedElement = context.GetIdentifiers(info).managed;
             for (int i = 0; i < codeContext.ElementIndirectionLevel; i++)
             {
-                indexedManagedElement = ElementAccessExpression(indexedManagedElement)
-                    .AddArgumentListArguments(Argument(IdentifierName(GetIndexerIdentifier(i))));
+                indexedManagedElement += $"[{GetIndexerIdentifier(i)}]";
             }
             return indexedManagedElement;
         }
@@ -229,8 +216,7 @@ namespace Microsoft.Interop
             }
         }
 
-        // private static readonly InvocationExpressionSyntax SkipInitInvocation =
-        public static StatementSyntax SkipInitOrDefaultInit(TypePositionInfo info, StubIdentifierContext context)
+        public static string SkipInitOrDefaultInit(TypePositionInfo info, StubIdentifierContext context)
         {
             if (info.ManagedType is not PointerTypeInfo
                 && info.ManagedType is not ValueTypeInfo { IsByRefLike: true }
@@ -238,26 +224,19 @@ namespace Microsoft.Interop
             {
                 // Use the Unsafe.SkipInit<T> API when available and
                 // managed type is usable as a generic parameter.
-                return ExpressionStatement(
-                    MethodInvocation(TypeSyntaxes.System_Runtime_CompilerServices_Unsafe, IdentifierName("SkipInit"),
-                                Argument(IdentifierName(info.InstanceIdentifier))
-                                .WithRefOrOutKeyword(Token(SyntaxKind.OutKeyword))));
+                return $"{TypeNames.GlobalAlias}{TypeNames.System_Runtime_CompilerServices_Unsafe}.SkipInit(out {info.InstanceIdentifier});";
             }
             else
             {
                 // Assign out params to default
-                return AssignmentStatement(
-                    IdentifierName(info.InstanceIdentifier),
-                    LiteralExpression(SyntaxKind.DefaultLiteralExpression, Token(SyntaxKind.DefaultKeyword)));
+                return DefaultInit(info, context);
             }
         }
 
-        public static StatementSyntax DefaultInit(TypePositionInfo info, StubIdentifierContext context)
+        public static string DefaultInit(TypePositionInfo info, StubIdentifierContext context)
         {
             // Assign out params to default
-            return AssignmentStatement(
-                IdentifierName(info.InstanceIdentifier),
-                LiteralExpression(SyntaxKind.DefaultLiteralExpression, Token(SyntaxKind.DefaultKeyword)));
+            return $"{info.InstanceIdentifier} = default;";
         }
 
         /// <summary>
@@ -387,16 +366,16 @@ namespace Microsoft.Interop
             }
         }
 
-        public static SyntaxTokenList GetManagedParameterModifiers(TypePositionInfo typeInfo)
+        public static string GetManagedParameterModifiers(TypePositionInfo typeInfo)
         {
-            SyntaxTokenList tokens = TokenList();
+            List<string> modifiers = [];
 
             // "out" parameters are implicitly scoped, so we can't put the "scoped" keyword on them.
             // All other cases of explicit parameters are only scoped when the "scoped" keyword is present.
             // When the "scoped" keyword is present, it must be present on all declarations.
             if (typeInfo.ScopedKind != ScopedKind.None && typeInfo.RefKind != RefKind.Out)
             {
-                tokens = tokens.Add(Token(SyntaxKind.ScopedKeyword));
+                modifiers.Add("scoped");
             }
 
             if (typeInfo.IsByRef)
@@ -404,18 +383,17 @@ namespace Microsoft.Interop
                 switch (typeInfo.RefKind)
                 {
                     case RefKind.In:
-                        tokens = tokens.Add(Token(SyntaxKind.InKeyword));
+                        modifiers.Add("in");
                         break;
                     case RefKind.Ref:
-                        tokens = tokens.Add(Token(SyntaxKind.RefKeyword));
+                        modifiers.Add("ref");
                         break;
 
                     case RefKind.Out:
-                        tokens = tokens.Add(Token(SyntaxKind.OutKeyword));
+                        modifiers.Add("out");
                         break;
                     case RefKind.RefReadOnlyParameter:
-                        tokens = tokens.Add(Token(SyntaxKind.RefKeyword));
-                        tokens = tokens.Add(Token(SyntaxKind.ReadOnlyKeyword));
+                        modifiers.Add("ref readonly");
                         break;
                     default:
                         throw new NotImplementedException($"Support for some RefKind: {typeInfo.RefKind}");
@@ -424,21 +402,21 @@ namespace Microsoft.Interop
 
             if (typeInfo.IsExplicitThis)
             {
-                tokens = tokens.Add(Token(SyntaxKind.ThisKeyword));
+                modifiers.Add("this");
             }
 
-            return tokens;
+            return string.Join(" ", modifiers);
         }
 
-        public static SyntaxToken GetManagedArgumentRefKindKeyword(TypePositionInfo typeInfo)
+        public static string GetManagedArgumentRefKindKeyword(TypePositionInfo typeInfo)
         {
             return typeInfo.RefKind switch
             {
-                RefKind.None => default,
-                RefKind.In => Token(SyntaxKind.InKeyword),
-                RefKind.Ref => Token(SyntaxKind.RefKeyword),
-                RefKind.Out => Token(SyntaxKind.OutKeyword),
-                RefKind.RefReadOnlyParameter => Token(SyntaxKind.InKeyword),
+                RefKind.None => string.Empty,
+                RefKind.In => "in",
+                RefKind.Ref => "ref",
+                RefKind.Out => "out",
+                RefKind.RefReadOnlyParameter => "in",
                 _ => throw new NotImplementedException($"Support for some RefKind: {typeInfo.RefKind}")
             };
         }

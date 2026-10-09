@@ -1235,70 +1235,10 @@ static void SetCardBundleByte(BYTE* addr)
 
 // NOTE: non-ASM write barriers only work with Workstation GC.
 
-#ifdef FEATURE_COUNT_GC_WRITE_BARRIERS
-static UINT64 CheckedBarrierCount = 0;
-static UINT64 CheckedBarrierRetBufCount = 0;
-static UINT64 CheckedBarrierByrefArgCount = 0;
-static UINT64 CheckedBarrierByrefOtherLocalCount = 0;
-static UINT64 CheckedBarrierAddrOfLocalCount = 0;
-static UINT64 UncheckedBarrierCount = 0;
-static UINT64 CheckedAfterHeapFilter = 0;
-static UINT64 CheckedAfterRefInEphemFilter = 0;
-static UINT64 CheckedAfterAlreadyDirtyFilter = 0;
-static UINT64 CheckedDestInEphem = 0;
-static UINT64 UncheckedAfterRefInEphemFilter = 0;
-static UINT64 UncheckedAfterAlreadyDirtyFilter = 0;
-static UINT64 UncheckedDestInEphem = 0;
-
-const unsigned BarrierCountPrintInterval = 1000000;
-static unsigned CheckedBarrierInterval = BarrierCountPrintInterval;
-static unsigned UncheckedBarrierInterval = BarrierCountPrintInterval;
-
-
-void IncCheckedBarrierCount()
-{
-    ++CheckedBarrierCount;
-    if (--CheckedBarrierInterval == 0)
-    {
-        CheckedBarrierInterval = BarrierCountPrintInterval;
-        minipal_log_print_info("GC write barrier counts: checked = %lld, unchecked = %lld, total = %lld.\n",
-            CheckedBarrierCount, UncheckedBarrierCount, (CheckedBarrierCount + UncheckedBarrierCount));
-        minipal_log_print_info("    [Checked: %lld after heap check, %lld after ephem check, %lld after already dirty check.]\n",
-            CheckedAfterHeapFilter, CheckedAfterRefInEphemFilter, CheckedAfterAlreadyDirtyFilter);
-        minipal_log_print_info("    [Unchecked: %lld after ephem check, %lld after already dirty check.]\n",
-            UncheckedAfterRefInEphemFilter, UncheckedAfterAlreadyDirtyFilter);
-        minipal_log_print_info("    [Dest in ephem: checked = %lld, unchecked = %lld.]\n",
-            CheckedDestInEphem, UncheckedDestInEphem);
-        minipal_log_print_info("    [Checked: %lld are stores to fields of ret buff, %lld via byref args,\n",
-            CheckedBarrierRetBufCount, CheckedBarrierByrefArgCount);
-        minipal_log_print_info("     %lld via other locals, %lld via addr of local.]\n",
-            CheckedBarrierByrefOtherLocalCount, CheckedBarrierAddrOfLocalCount);
-    }
-}
-
-void IncUncheckedBarrierCount()
-{
-    ++UncheckedBarrierCount;
-    if (--UncheckedBarrierInterval == 0)
-    {
-        minipal_log_print_info("GC write barrier counts: checked = %lld, unchecked = %lld, total = %lld.\n",
-            CheckedBarrierCount, UncheckedBarrierCount, (CheckedBarrierCount + UncheckedBarrierCount));
-        UncheckedBarrierInterval = BarrierCountPrintInterval;
-    }
-}
-#endif // FEATURE_COUNT_GC_WRITE_BARRIERS
-
-#ifdef FEATURE_COUNT_GC_WRITE_BARRIERS
-// (We ignore the advice below on using a _RAW macro for this performance diagnostic mode, which need not function properly in
-// all situations...)
-extern "C" HCIMPL3(VOID, JIT_CheckedWriteBarrier, Object **dst, Object *ref, CheckedWriteBarrierKinds kind)
-#else
-
 // This function is a JIT helper, but it must NOT use HCIMPL2 because it
 // modifies Thread state that will not be restored if an exception occurs
 // inside of memset.  A normal EH unwind will not occur.
 extern "C" HCIMPL2_RAW(VOID, JIT_CheckedWriteBarrier, Object **dst, Object *ref)
-#endif
 {
     // Must use static contract here, because if an AV occurs, a normal EH
     // unwind will not occur, and destructors will not run.
@@ -1306,41 +1246,12 @@ extern "C" HCIMPL2_RAW(VOID, JIT_CheckedWriteBarrier, Object **dst, Object *ref)
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_NOTRIGGER;
 
-#ifdef FEATURE_COUNT_GC_WRITE_BARRIERS
-    IncCheckedBarrierCount();
-    switch (kind)
-    {
-    case CWBKind_RetBuf:
-        CheckedBarrierRetBufCount++;
-        break;
-    case CWBKind_ByRefArg:
-        CheckedBarrierByrefArgCount++;
-        break;
-    case CWBKind_OtherByRefLocal:
-        CheckedBarrierByrefOtherLocalCount++;
-        break;
-    case CWBKind_AddrOfLocal:
-        CheckedBarrierAddrOfLocalCount++;
-        break;
-    case CWBKind_Unclassified:
-        break;
-    default:
-        // It should be some member of the enumeration.
-        _ASSERTE_ALL_BUILDS(false);
-        break;
-    }
-#endif // FEATURE_COUNT_GC_WRITE_BARRIERS
-
     VolatileStore(dst, ref);
 
     // if the dst is outside of the heap (unboxed value classes) then we
     //      simply exit
     if (((BYTE*)dst < g_lowest_address) || ((BYTE*)dst >= g_highest_address))
         return;
-
-#ifdef FEATURE_COUNT_GC_WRITE_BARRIERS
-    CheckedAfterHeapFilter++;
-#endif
 
 #ifdef WRITE_BARRIER_CHECK
     updateGCShadow(dst, ref);     // support debugging write barrier
@@ -1353,25 +1264,13 @@ extern "C" HCIMPL2_RAW(VOID, JIT_CheckedWriteBarrier, Object **dst, Object *ref)
     }
 #endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 
-#ifdef FEATURE_COUNT_GC_WRITE_BARRIERS
-    if((BYTE*) dst >= g_ephemeral_low && (BYTE*) dst < g_ephemeral_high)
-    {
-        CheckedDestInEphem++;
-    }
-#endif
     if((BYTE*) ref >= g_ephemeral_low && (BYTE*) ref < g_ephemeral_high)
     {
-#ifdef FEATURE_COUNT_GC_WRITE_BARRIERS
-        CheckedAfterRefInEphemFilter++;
-#endif
         // VolatileLoadWithoutBarrier() is used here to prevent fetch of g_card_table from being reordered
         // with g_lowest/highest_address check above. See comment in StompWriteBarrier.
         BYTE* pCardByte = (BYTE*)VolatileLoadWithoutBarrier(&g_card_table) + card_byte((BYTE *)dst);
         if(*pCardByte != 0xFF)
         {
-#ifdef FEATURE_COUNT_GC_WRITE_BARRIERS
-            CheckedAfterAlreadyDirtyFilter++;
-#endif
             *pCardByte = 0xFF;
 
 #ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
@@ -1393,10 +1292,6 @@ extern "C" HCIMPL2_RAW(VOID, JIT_WriteBarrier, Object **dst, Object *ref)
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_NOTRIGGER;
 
-#ifdef FEATURE_COUNT_GC_WRITE_BARRIERS
-    IncUncheckedBarrierCount();
-#endif
-
     VolatileStore(dst, ref);
 
     // If the store above succeeded, "dst" should be in the heap.
@@ -1413,25 +1308,13 @@ extern "C" HCIMPL2_RAW(VOID, JIT_WriteBarrier, Object **dst, Object *ref)
     }
 #endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 
-#ifdef FEATURE_COUNT_GC_WRITE_BARRIERS
-    if((BYTE*) dst >= g_ephemeral_low && (BYTE*) dst < g_ephemeral_high)
-    {
-        UncheckedDestInEphem++;
-    }
-#endif
     if((BYTE*) ref >= g_ephemeral_low && (BYTE*) ref < g_ephemeral_high)
     {
-#ifdef FEATURE_COUNT_GC_WRITE_BARRIERS
-        UncheckedAfterRefInEphemFilter++;
-#endif
         // VolatileLoadWithoutBarrier() is used here to prevent fetch of g_card_table from being reordered
         // with g_lowest/highest_address check above. See comment in StompWriteBarrier.
         BYTE* pCardByte = (BYTE*)VolatileLoadWithoutBarrier(&g_card_table) + card_byte((BYTE *)dst);
         if(*pCardByte != 0xFF)
         {
-#ifdef FEATURE_COUNT_GC_WRITE_BARRIERS
-            UncheckedAfterAlreadyDirtyFilter++;
-#endif
             *pCardByte = 0xFF;
 
 #ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES

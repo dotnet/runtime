@@ -33,7 +33,7 @@ namespace System.Text.Json
 
         public int Capacity => _buffer.Capacity;
 
-        public void Clear() => _buffer.Discard(_buffer.ActiveLength);
+        public void Clear() => _buffer.DiscardAll();
 
         public void ClearAndReturnBuffers() => _buffer.ClearAndReturnBuffer();
 

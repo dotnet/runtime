@@ -365,20 +365,6 @@ FCIMPL0(int, RhpGetThunkBlockSize)
 }
 FCIMPLEND
 
-FCIMPL0(void *, RhGetCommonStubAddress)
-{
-    ASSERT_UNCONDITIONALLY("NYI");
-    return NULL;
-}
-FCIMPLEND
-
-FCIMPL0(void *, RhGetCurrentThunkContext)
-{
-    ASSERT_UNCONDITIONALLY("NYI");
-    return NULL;
-}
-FCIMPLEND
-
 FCIMPL0(void, RhpGcPoll)
 {
     // TODO: implement

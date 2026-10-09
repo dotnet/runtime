@@ -18,11 +18,11 @@ public class InlineThunks
         }
     }
 
-    static void CheckNoThrow(string testName, Action action)
+    static async Task CheckNoThrow(string testName, Func<Task> action)
     {
         try
         {
-            action();
+            await action();
         }
         catch (Exception ex)
         {
@@ -31,29 +31,30 @@ public class InlineThunks
         }
     }
 
-    public static int Main()
+    [RuntimeAsyncMethodGeneration(false)] // Use async1 codegen so calls exercise the Task/ValueTask-returning entry points rather than runtime-async variants.
+    public static async Task<int> Main()
     {
         // Task-returning thunk inlining (non-async caller → async callee)
-        Check("TaskReturningThunk", 20, CallAsyncAndGetResult(10).GetAwaiter().GetResult());
-        CheckNoThrow("TaskReturningThunkVoid", () => CallAsyncVoid().GetAwaiter().GetResult());
-        Check("ValueTaskReturningThunk", 10, CallAsyncValueTask(5).GetAwaiter().GetResult());
+        Check("TaskReturningThunk", 20, await CallAsyncAndGetResult(10));
+        await CheckNoThrow("TaskReturningThunkVoid", CallAsyncVoid);
+        Check("ValueTaskReturningThunk", 10, await CallAsyncValueTask(5));
 
         // Async variant inlining (async caller → async callee)
-        Check("AsyncVariant", 14, AsyncCallerOfSmallAsync(7).GetAwaiter().GetResult());
-        CheckNoThrow("AsyncVariantVoid", () => AsyncCallerOfSmallAsyncVoid().GetAwaiter().GetResult());
-        Check("AsyncVariantValueTask", 6, AsyncCallerOfSmallValueTaskAsync(3).GetAwaiter().GetResult());
+        Check("AsyncVariant", 14, await AsyncCallerOfSmallAsync(7));
+        await CheckNoThrow("AsyncVariantVoid", AsyncCallerOfSmallAsyncVoid);
+        Check("AsyncVariantValueTask", 6, await AsyncCallerOfSmallValueTaskAsync(3));
 
         // Non-runtime-async (traditional state machine) inlining
-        Check("NonRuntimeAsyncNotAwaited", 8, CallNonRuntimeAsync(4).GetAwaiter().GetResult());
-        Check("NonRuntimeAsyncAwaited", 12, AwaitNonRuntimeAsync(6).GetAwaiter().GetResult());
-        Check("NonRuntimeValueTaskNotAwaited", 18, CallNonRuntimeValueTaskAsync(9).GetAwaiter().GetResult());
-        Check("NonRuntimeValueTaskAwaited", 22, AwaitNonRuntimeValueTaskAsync(11).GetAwaiter().GetResult());
+        Check("NonRuntimeAsyncNotAwaited", 8, await CallNonRuntimeAsync(4));
+        Check("NonRuntimeAsyncAwaited", 12, await AwaitNonRuntimeAsync(6));
+        Check("NonRuntimeValueTaskNotAwaited", 18, await CallNonRuntimeValueTaskAsync(9));
+        Check("NonRuntimeValueTaskAwaited", 22, await AwaitNonRuntimeValueTaskAsync(11));
 
         // Cross-module async inlining (helper.dll)
-        Check("CrossModuleAsyncVariant", 15, CrossModuleAsyncCaller(5).GetAwaiter().GetResult());
-        CheckNoThrow("CrossModuleAsyncVariantVoid", () => CrossModuleAsyncCallerVoid().GetAwaiter().GetResult());
-        Check("CrossModuleAsyncVariantValueTask", 12, CrossModuleAsyncCallerValueTask(4).GetAwaiter().GetResult());
-        Check("CrossModuleTaskReturningThunk", 24, CrossModuleCallAsync(8).GetAwaiter().GetResult());
+        Check("CrossModuleAsyncVariant", 15, await CrossModuleAsyncCaller(5));
+        await CheckNoThrow("CrossModuleAsyncVariantVoid", CrossModuleAsyncCallerVoid);
+        Check("CrossModuleAsyncVariantValueTask", 12, await CrossModuleAsyncCallerValueTask(4));
+        Check("CrossModuleTaskReturningThunk", 24, await CrossModuleCallAsync(8));
 
         // Cross-module sync baseline
         Check("CrossModuleSyncBaseline", 21, CrossModuleSyncCaller(7));

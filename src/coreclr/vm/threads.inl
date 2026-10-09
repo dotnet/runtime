@@ -33,12 +33,12 @@ EXTERN_C
 #endif
 PLATFORM_THREAD_LOCAL ThreadLocalInfo t_CurrentThreadInfo;
 
-inline Thread* GetThreadNULLOk()
+inline Thread* GetThreadNULLOk() noexcept
 {
     return t_CurrentThreadInfo.m_pThread;
 }
 
-inline Thread* GetThread()
+inline Thread* GetThread() noexcept
 {
     Thread* pThread = t_CurrentThreadInfo.m_pThread;
     _ASSERTE(pThread);
@@ -166,34 +166,6 @@ inline void Thread::SetGCSpecial()
 }
 
 #if !defined(DACCESS_COMPILE)
-
-inline Thread::CurrentPrepareCodeConfigHolder::CurrentPrepareCodeConfigHolder(Thread *thread, PrepareCodeConfig *config)
-    : m_thread(thread)
-#ifdef _DEBUG
-    , m_config(config)
-#endif
-{
-    LIMITED_METHOD_CONTRACT;
-    _ASSERTE(thread == GetThread());
-    _ASSERTE(config != nullptr);
-
-    PrepareCodeConfig *previousConfig = thread->m_currentPrepareCodeConfig;
-    if (previousConfig != nullptr)
-    {
-        config->SetNextInSameThread(previousConfig);
-    }
-    thread->m_currentPrepareCodeConfig = config;
-}
-
-inline Thread::CurrentPrepareCodeConfigHolder::~CurrentPrepareCodeConfigHolder()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    PrepareCodeConfig *config = m_thread->m_currentPrepareCodeConfig;
-    _ASSERTE(config == m_config);
-    m_thread->m_currentPrepareCodeConfig = config->GetNextInSameThread();
-    config->SetNextInSameThread(nullptr);
-}
 
 inline void Thread::EnterForbidSuspendForDebuggerRegion()
 {

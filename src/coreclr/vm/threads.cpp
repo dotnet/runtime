@@ -1,11 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-//
-// THREADS.CPP
-//
-
 #include "common.h"
+#include "CLREventBase.h"
 
 #include "frames.h"
 #include "threads.h"
@@ -125,6 +122,12 @@ TailCallArgBuffer* TailCallTls::AllocArgBuffer(int size)
 #if defined (_DEBUG_IMPL)
 thread_local int t_ForbidGCLoaderUseCount;
 #endif
+
+// See the declaration in threads.h. Transitions are permitted by default; only the WebAssembly
+// restore-context unwind clears this.
+#ifdef _DEBUG
+thread_local bool t_gcModeSwitchPermitted = true;
+#endif // _DEBUG
 
 uint64_t Thread::dead_threads_non_alloc_bytes = 0;
 
@@ -604,6 +607,12 @@ Thread* SetupThread()
     if ((pThread = GetThreadNULLOk()) != NULL)
         return pThread;
 
+#ifndef TARGET_APPLE
+    // Disable the check on Apple platforms
+    // See https://github.com/dotnet/runtime/issues/134571
+    CheckThreadStateNotDestroyed();
+#endif
+
     // For interop debugging, we must mark that we're in a can't-stop region
     // b.c we may take Crsts here that may block the helper thread.
     // We're especially fragile here b/c we don't have a Thread object yet
@@ -896,8 +905,7 @@ HRESULT Thread::DetachThread(BOOL inTerminationCallback)
     while (m_dwThreadHandleBeingUsed > 0)
     {
         // Another thread is using the handle now.
-        // We can not call __SwitchToThread since we can not go back to host.
-        ClrSleepEx(10, FALSE);
+        minipal_sleep(10);
     }
     if (m_ThreadHandleForClose == INVALID_HANDLE_VALUE)
     {
@@ -1516,7 +1524,6 @@ Thread::Thread()
     m_HijackHasAsyncRet = false;
 #endif
 
-    m_currentPrepareCodeConfig = nullptr;
     m_isInForbidSuspendForDebuggerRegion = false;
     m_hasPendingActivation = false;
 
@@ -1659,18 +1666,29 @@ BOOL Thread::AllocHandles()
     WRAPPER_NO_CONTRACT;
 
     _ASSERTE(!m_DebugSuspendEvent.IsValid());
+#ifdef TARGET_UNIX
+    _ASSERTE(!m_ThreadExitedEvent.IsValid());
+#endif // TARGET_UNIX
 
     BOOL fOK = TRUE;
     EX_TRY {
         // create a manual reset event for getting the thread to a safe point
         m_DebugSuspendEvent.CreateManualEvent(FALSE);
+#ifdef TARGET_UNIX
+        m_ThreadExitedEvent.CreateManualEvent(FALSE);
+#endif // TARGET_UNIX
     }
     EX_CATCH {
         fOK = FALSE;
 
-        if (!m_DebugSuspendEvent.IsValid()) {
+        if (m_DebugSuspendEvent.IsValid()) {
             m_DebugSuspendEvent.CloseEvent();
         }
+#ifdef TARGET_UNIX
+        if (m_ThreadExitedEvent.IsValid()) {
+            m_ThreadExitedEvent.CloseEvent();
+        }
+#endif // TARGET_UNIX
 
         RethrowTerminalExceptions();
     }
@@ -2371,6 +2389,13 @@ Thread::~Thread()
         m_DebugSuspendEvent.CloseEvent();
     }
 
+#ifdef TARGET_UNIX
+    if (m_ThreadExitedEvent.IsValid())
+    {
+        m_ThreadExitedEvent.CloseEvent();
+    }
+#endif // TARGET_UNIX
+
     if (m_OSContext)
         delete m_OSContext;
 
@@ -2896,38 +2921,6 @@ void Thread::OnThreadTerminate(BOOL holdingLock)
     }
 }
 
-// Helper functions to check for duplicate handles. we only do this check if
-// a waitfor multiple fails.
-int __cdecl compareHandles( const void *arg1, const void *arg2 )
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    HANDLE h1 = *(HANDLE*)arg1;
-    HANDLE h2 = *(HANDLE*)arg2;
-    return  (h1 == h2) ? 0 : ((h1 < h2) ? -1 : 1);
-}
-
-BOOL CheckForDuplicateHandles(int countHandles, HANDLE *handles)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    qsort(handles,countHandles,sizeof(HANDLE),compareHandles);
-    for (int i=1; i < countHandles; i++)
-    {
-        if (handles[i-1] == handles[i])
-            return TRUE;
-    }
-    return FALSE;
-}
-
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
 //--------------------------------------------------------------------
@@ -3002,7 +2995,12 @@ DWORD Thread::DoReentrantWaitAny(int numWaiters, HANDLE* pHandles, DWORD timeout
     }
     CONTRACTL_END;
 
+#ifdef TARGET_WINDOWS
     return DoAppropriateAptStateWait(numWaiters, pHandles, FALSE, timeout, mode);
+#else
+    _ASSERTE(!"Reentrant waits are only supported on Windows");
+    return WAIT_FAILED;
+#endif
 }
 
 DWORD Thread::DoReentrantWaitWithRetry(HANDLE handle, DWORD timeout, WaitMode mode)
@@ -3015,8 +3013,10 @@ DWORD Thread::DoReentrantWaitWithRetry(HANDLE handle, DWORD timeout, WaitMode mo
     CONTRACTL_END;
 
 #ifdef TARGET_UNIX
-    return WaitForSingleObjectEx(handle, timeout, mode == WaitMode_Alertable);
+    _ASSERTE(handle == GetThreadHandle());
+    return m_ThreadExitedEvent.Wait(timeout, (mode & WaitMode_Alertable) != 0);
 #else
+
     ULONGLONG dwStart = 0, dwEnd;
     if (timeout != INFINITE)
     {
@@ -3050,6 +3050,7 @@ DWORD Thread::DoReentrantWaitWithRetry(HANDLE handle, DWORD timeout, WaitMode mo
 }
 
 
+#ifdef TARGET_WINDOWS
 //--------------------------------------------------------------------
 // Do appropriate wait based on apartment state (STA or MTA)
 DWORD Thread::DoAppropriateAptStateWait(int numWaiters, HANDLE* pHandles, BOOL bWaitAll,
@@ -3072,6 +3073,7 @@ DWORD Thread::DoAppropriateAptStateWait(int numWaiters, HANDLE* pHandles, BOOL b
 
     return WaitForMultipleObjectsEx(numWaiters, pHandles, bWaitAll, timeout, alertable);
 }
+#endif // TARGET_WINDOWS
 
 #ifdef TARGET_WINDOWS
 // This is the callback from the OS, when we queue an APC to interrupt a waiting thread.
@@ -3409,25 +3411,6 @@ void Thread::SyncManagedExceptionState(bool fIsDebuggerThread)
         // Syncup the LastThrownObject on the managed thread
         SafeUpdateLastThrownObject();
     }
-}
-
-void Thread::SetLastThrownObjectHandle(OBJECTHANDLE h)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    if (m_LastThrownObjectHandle != NULL &&
-        !CLRException::IsPreallocatedExceptionHandle(m_LastThrownObjectHandle))
-    {
-        DestroyHandle(m_LastThrownObjectHandle);
-    }
-
-    m_LastThrownObjectHandle = h;
 }
 
 //
@@ -3964,7 +3947,7 @@ DEBUG_NOINLINE void ThreadStore::Enter()
     m_Crst.Enter();
 }
 
-DEBUG_NOINLINE void ThreadStore::Leave()
+DEBUG_NOINLINE void ThreadStore::Leave() noexcept
 {
     CONTRACTL {
         NOTHROW;
@@ -3985,7 +3968,7 @@ void ThreadStore::LockThreadStore()
     ThreadSuspend::LockThreadStore(ThreadSuspend::SUSPEND_OTHER);
 }
 
-void ThreadStore::UnlockThreadStore()
+void ThreadStore::UnlockThreadStore() noexcept
 {
     WRAPPER_NO_CONTRACT;
 
@@ -4412,7 +4395,7 @@ BOOL CLREventWaitWithTry(CLREventBase *pEvent, DWORD timeout, BOOL fAlertable, D
     BOOL fLoop = TRUE;
     EX_TRY
     {
-        *pStatus = pEvent->Wait(timeout, fAlertable);
+        *pStatus = pEvent->Wait(timeout, fAlertable, false);
         fLoop = FALSE;
     }
     EX_CATCH
@@ -6222,7 +6205,7 @@ TADDR Thread::GetStaticFieldAddrNoCreate(FieldDesc *pFD)
 // frame's ExceptionUnwind method.  It will return the first
 // Frame that is above pvLimitSP.
 //
-Frame * Thread::NotifyFrameChainOfExceptionUnwind(Frame* pStartFrame, LPVOID pvLimitSP)
+Frame * Thread::NotifyFrameChainOfExceptionUnwind(Frame* pStartFrame, LPVOID pvLimitSP) noexcept
 {
     CONTRACTL
     {
@@ -6304,30 +6287,7 @@ NOINLINE void Thread::OnIncrementCountOverflow(UINT32 *threadLocalCount, UINT64 
     InterlockedExchangeAdd64((LONGLONG *)overflowCount, (LONGLONG)UINT32_MAX + 1);
 }
 
-UINT64 Thread::GetTotalCount(SIZE_T threadLocalCountOffset, UINT64 *overflowCount)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
-
-    _ASSERTE(overflowCount != nullptr);
-
-    // enumerate all threads, summing their local counts.
-    ThreadStoreLockHolder tsl;
-
-    UINT64 total = GetOverflowCount(overflowCount);
-
-    Thread *pThread = NULL;
-    while ((pThread = ThreadStore::GetAllThreadList(pThread, 0, 0)) != NULL)
-    {
-        total += *GetThreadLocalCountRef(pThread, threadLocalCountOffset);
-    }
-
-    return total;
-}
-
+#if defined(FEATURE_MULTITHREADING) || defined(_DEBUG)
 DeadlockAwareLock::DeadlockAwareLock(const char *description)
   : m_pHoldingThread(NULL)
 #ifdef _DEBUG
@@ -6530,7 +6490,7 @@ void DeadlockAwareLock::LeaveLock()
 
     m_pHoldingThread = NULL;
 }
-
+#endif // FEATURE_MULTITHREADING || _DEBUG
 
 #ifdef _DEBUG
 

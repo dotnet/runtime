@@ -1,6 +1,8 @@
 <Project>
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
+    <Features>$(Features);updated-memory-safety-rules</Features>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <!-- Source gen tests target AOT so we disable reflection everywhere for consistency. -->

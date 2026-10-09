@@ -1,10 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// ===========================================================================
-// File: JITinterface.CPP
-// ===========================================================================
-
 #include "common.h"
 #include <inttypes.h>
 #include "jitinterface.h"
@@ -3439,23 +3435,6 @@ void CEEInfo::AddTransientMethodDetails(TransientMethodDetails details)
     m_transientDetails->Append(std::move(details));
 }
 
-TransientMethodDetails CEEInfo::RemoveTransientMethodDetails(MethodDesc* pMD)
-{
-    STANDARD_VM_CONTRACT;
-    _ASSERTE(pMD != NULL);
-
-    TransientMethodDetails local{};
-    TransientMethodDetails* details;
-    if (FindTransientMethodDetails(pMD, &details))
-    {
-        // Details found, move contents to return
-        // and default initialize the found instance.
-        local = std::move(*details);
-        *details = {};
-    }
-    return local;
-}
-
 bool CEEInfo::FindTransientMethodDetails(MethodDesc* pMD, TransientMethodDetails** details)
 {
     STANDARD_VM_CONTRACT;
@@ -6717,22 +6696,21 @@ void CEEInfo::setMethodAttribs (
 
     if (attribs & (CORINFO_FLG_SWITCHED_TO_OPTIMIZED | CORINFO_FLG_SWITCHED_TO_MIN_OPT))
     {
-        PrepareCodeConfig *config = GetThread()->GetCurrentPrepareCodeConfig();
-        if (config != nullptr)
+        PrepareCodeConfig *config = m_pPrepareCodeConfig;
+        _ASSERTE(config != nullptr);
+
+        if (attribs & CORINFO_FLG_SWITCHED_TO_MIN_OPT)
         {
-            if (attribs & CORINFO_FLG_SWITCHED_TO_MIN_OPT)
-            {
-                _ASSERTE(!ftn->IsJitOptimizationDisabled());
-                config->SetJitSwitchedToMinOpt();
-            }
-#ifdef FEATURE_TIERED_COMPILATION
-            else if (attribs & CORINFO_FLG_SWITCHED_TO_OPTIMIZED)
-            {
-                _ASSERTE(ftn->IsEligibleForTieredCompilation());
-                config->SetJitSwitchedToOptimized();
-            }
-#endif
+            _ASSERTE(!ftn->IsJitOptimizationDisabled());
+            config->SetJitSwitchedToMinOpt();
         }
+#ifdef FEATURE_TIERED_COMPILATION
+        else if (attribs & CORINFO_FLG_SWITCHED_TO_OPTIMIZED)
+        {
+            _ASSERTE(ftn->IsEligibleForTieredCompilation());
+            config->SetJitSwitchedToOptimized();
+        }
+#endif
     }
 
     EE_TO_JIT_TRANSITION();
@@ -10231,8 +10209,10 @@ bool CEEInfo::pInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method, CORINFO_SI
 #endif
     }
 
-    PrepareCodeConfig *config = GetThread()->GetCurrentPrepareCodeConfig();
-    if (config != nullptr && config->IsForMulticoreJit())
+    PrepareCodeConfig *config = m_pPrepareCodeConfig;
+    _ASSERTE(config != nullptr);
+
+    if (config->IsForMulticoreJit())
     {
         bool suppressGCTransition = false;
         CorInfoCallConvExtension unmanagedCallConv = getUnmanagedCallConv(method, callSiteSig, &suppressGCTransition);
@@ -11208,7 +11188,7 @@ static CORJIT_FLAGS GetCompileFlags(PrepareCodeConfig* prepareConfig, MethodDesc
 }
 
 CEECodeGenInfo::CEECodeGenInfo(PrepareCodeConfig* config, MethodDesc* fd, COR_ILMETHOD_DECODER* header, EECodeGenManager* jm)
-    : CEEInfo(fd)
+    : CEEInfo(fd, config)
     , m_jitManager(jm)
     , m_CodeHeader(NULL)
     , m_CodeHeaderRW(NULL)
@@ -11904,7 +11884,7 @@ void CInterpreterJitInfo::allocMem(AllocMemArgs *pArgs)
             codeSize, 0, totalSize.Value(), 0, GetClrInstanceId());
     }
 
-    m_jitManager->AllocCode<InterpreterCodeHeader>(m_pMethodBeingCompiled, totalSize.Value(), 0, codeAlign, &m_CodeHeader, &m_CodeHeaderRW,
+    m_jitManager->AllocCode<InterpreterCodeHeader>(m_pMethodBeingCompiled, totalSize.Value(), 0, codeAlign, false, &m_CodeHeader, &m_CodeHeaderRW,
         &m_codeWriteBufferSize, &m_pCodeHeap, &m_pRealCodeHeader, 0);
 
     BYTE* current = (BYTE *)((InterpreterCodeHeader*)m_CodeHeader)->GetCodeStartAddress();
@@ -13061,7 +13041,15 @@ CORJIT_FLAGS* CEECodeGenInfo::getJitFlagsInternal()
 }
 
 /*********************************************************************/
-HRESULT CEEJitInfo::allocPgoInstrumentationBySchema(
+#ifdef FEATURE_PGO
+static bool InterpreterPgoInstrumentationEnabled()
+{
+    static ConfigDWORD s_interpPgo;
+    return s_interpPgo.val(CLRConfig::INTERNAL_InterpPGO) != 0;
+}
+#endif // FEATURE_PGO
+
+HRESULT CEECodeGenInfo::allocPgoInstrumentationBySchema(
             CORINFO_METHOD_HANDLE ftnHnd, /* IN */
             PgoInstrumentationSchema* pSchema, /* IN/OUT */
             uint32_t countSchemaItems, /* IN */
@@ -13080,9 +13068,10 @@ HRESULT CEEJitInfo::allocPgoInstrumentationBySchema(
 
 #ifdef FEATURE_PGO
 
-    // Only try instrumenting tiering-eligible methods
+    // Only try instrumenting tiering-eligible methods, unless interpreter PGO is enabled, in
+    // which case we instrument every method for offline profile collection.
     MethodDesc* pMD = (MethodDesc*)ftnHnd;
-    if (pMD->IsEligibleForTieredCompilation())
+    if (pMD->IsEligibleForTieredCompilation() || InterpreterPgoInstrumentationEnabled())
     {
         hr = PgoManager::allocPgoInstrumentationBySchema(pMD, m_ILHeader, pSchema, countSchemaItems, pInstrumentationData);
     }
@@ -13091,7 +13080,7 @@ HRESULT CEEJitInfo::allocPgoInstrumentationBySchema(
         hr = E_NOTIMPL;
     }
 #else
-    _ASSERTE(!"allocMethodBlockCounts not implemented on CEEJitInfo!");
+    _ASSERTE(!"allocMethodBlockCounts not implemented on CEECodeGenInfo!");
     hr = E_NOTIMPL;
 #endif // !FEATURE_PGO
 
@@ -13100,9 +13089,9 @@ HRESULT CEEJitInfo::allocPgoInstrumentationBySchema(
     return hr;
 }
 
-// Consider implementing getBBProfileData on CEEJitInfo.  This will allow us
+// Consider implementing getBBProfileData on CEECodeGenInfo.  This will allow us
 // to use profile info in codegen for non zapped images.
-HRESULT CEEJitInfo::getPgoInstrumentationResults(
+HRESULT CEECodeGenInfo::getPgoInstrumentationResults(
             CORINFO_METHOD_HANDLE      ftnHnd,
             PgoInstrumentationSchema **pSchema,                    // pointer to the schema table which describes the instrumentation results (pointer will not remain valid after jit completes)
             uint32_t *                 pCountSchemaItems,          // pointer to the count schema items
@@ -13163,7 +13152,7 @@ HRESULT CEEJitInfo::getPgoInstrumentationResults(
     *pPgoSource = pDataCur->m_pgoSource;
     hr = pDataCur->m_hr;
 #else
-    _ASSERTE(!"getPgoInstrumentationResults not implemented on CEEJitInfo!");
+    _ASSERTE(!"getPgoInstrumentationResults not implemented on CEECodeGenInfo!");
     hr = E_NOTIMPL;
 #endif
 
@@ -13238,7 +13227,23 @@ void CEEJitInfo::allocMem (AllocMemArgs *pArgs)
             codeSize, roDataSize, totalSize.Value(), 0, GetClrInstanceId());
     }
 
-    m_jitManager->AllocCode<CodeHeader>(m_pMethodBeingCompiled, totalSize.Value(), GetReserveForJumpStubs(), alignment, &m_CodeHeader,
+    bool isTier1Code = false;
+#ifdef FEATURE_TIERED_COMPILATION
+    PrepareCodeConfig* config = m_pPrepareCodeConfig;
+    _ASSERTE(config != nullptr);
+
+    // The JIT may change the requested optimization level before allocMem, but
+    // the VM updates the NativeCodeVersion's tier only after the JIT completes.
+    // Use the requested tier here and account for a switch to MinOpt separately.
+    NativeCodeVersion::OptimizationTier optimizationTier =
+        config->GetCodeVersion().GetOptimizationTier();
+    isTier1Code =
+        !config->JitSwitchedToMinOpt() &&
+        (optimizationTier == NativeCodeVersion::OptimizationTier1 ||
+         optimizationTier == NativeCodeVersion::OptimizationTier1OSR);
+#endif // FEATURE_TIERED_COMPILATION
+
+    m_jitManager->AllocCode<CodeHeader>(m_pMethodBeingCompiled, totalSize.Value(), GetReserveForJumpStubs(), alignment, isTier1Code, &m_CodeHeader,
         &m_CodeHeaderRW, &m_codeWriteBufferSize, &m_pCodeHeap, &m_pRealCodeHeader, m_totalUnwindInfos);
 
     m_moduleBase = m_pCodeHeap->GetModuleBase();
@@ -13998,7 +14003,9 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
             PCODE portableEntryPoint = ftn->GetPortableEntryPoint();
             _ASSERTE(portableEntryPoint != NULL);
-            PortableEntryPoint::SetInterpreterData(portableEntryPoint, ret);
+            // The deadlock-aware lock may allow multiple compilations of this method.
+            // The first compilation to publish interpreter data must win.
+            PortableEntryPoint::SetInterpreterDataInterlocked(portableEntryPoint, reinterpret_cast<void*>(PCODEToPINSTR(ret)));
             ret = portableEntryPoint;
 
 #else // !FEATURE_PORTABLE_ENTRYPOINTS
@@ -14429,9 +14436,9 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
 
             if (!th.IsTypeDesc())
             {
-                if (currentModule->IsReadyToRun())
+                if (g_fEEStarted)
                 {
-                    // We do not emit activation fixups for version resilient references. Activate the target explicitly.
+                    // Activate the target explicitly.
                     th.AsMethodTable()->EnsureInstanceActive();
                 }
             }
@@ -14445,9 +14452,9 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
         {
             MethodDesc * pMD = ZapSig::DecodeMethod(currentModule, pInfoModule, pBlob);
 
-            if (currentModule->IsReadyToRun())
+            if (g_fEEStarted)
             {
-                // We do not emit activation fixups for version resilient references. Activate the target explicitly.
+                // Activate the target explicitly.
                 pMD->EnsureActive();
             }
 
@@ -14477,9 +14484,9 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
                     COMPlusThrowHR(COR_E_TYPELOAD);
             }
 
-            if (currentModule->IsReadyToRun())
+            if (g_fEEStarted)
             {
-                // We do not emit activation fixups for version resilient references. Activate the target explicitly.
+                // Activate the target explicitly.
                 pDeclaringMT->EnsureInstanceActive();
             }
 
@@ -14523,9 +14530,9 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
 
             pMD->PrepareForUseAsADependencyOfANativeImage();
 
-            if (currentModule->IsReadyToRun())
+            if (g_fEEStarted)
             {
-                // We do not emit activation fixups for version resilient references. Activate the target explicitly.
+                // Activate the target explicitly.
                 pMD->EnsureActive();
             }
 
@@ -14544,9 +14551,9 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
 
             pMD->PrepareForUseAsADependencyOfANativeImage();
 
-            if (currentModule->IsReadyToRun())
+            if (g_fEEStarted)
             {
-                // We do not emit activation fixups for version resilient references. Activate the target explicitly.
+                // Activate the target explicitly.
                 pMD->EnsureActive();
             }
 
@@ -14557,14 +14564,44 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
         {
             pMD = ZapSig::DecodeMethod(currentModule, pInfoModule, pBlob);
 
-            if (currentModule->IsReadyToRun())
+            if (g_fEEStarted)
             {
-                // We do not emit activation fixups for version resilient references. Activate the target explicitly.
+                // Activate the target explicitly.
                 pMD->EnsureActive();
             }
 
         MethodEntry:
             result = pMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_UNMANAGED_CALLER_MAYBE);
+        }
+        break;
+
+    case READYTORUN_FIXUP_MethodEntry_ReadyToRun:
+        {
+            pMD = ZapSig::DecodeMethod(currentModule, pInfoModule, pBlob);
+
+            if (!pMD->GetModule()->IsReadyToRun())
+            {
+                return FALSE;
+            }
+
+            if (g_fEEStarted)
+            {
+                pMD->EnsureActive();
+            }
+
+            PrepareCodeConfig config(NativeCodeVersion(pMD), FALSE, TRUE);
+            PCODE pEntryPoint = pMD->GetModule()->GetReadyToRunInfo()->GetEntryPoint(pMD, &config, TRUE /* fFixups */);
+            if (pEntryPoint == (PCODE)NULL)
+            {
+                return FALSE;
+            }
+
+            if (pMD->PublishPrecompiledCode(&config, pEntryPoint, false) != pEntryPoint)
+            {
+                return FALSE;
+            }
+
+            result = pEntryPoint;
         }
         break;
 
@@ -14605,6 +14642,11 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
 
             // We can take address of RVA field only since ngened code is domain neutral
             _ASSERTE(pField->IsRVA());
+
+            if (g_fEEStarted)
+            {
+                pField->GetModule()->EnsureActive();
+            }
 
             result = (size_t)pField->GetStaticAddressHandle(NULL);
         }
@@ -15459,7 +15501,7 @@ CORINFO_METHOD_HANDLE CEEJitInfo::getAsyncResumptionStub(void** entryPoint)
     // Resumption stubs are uniquely coupled to the code version (since the
     // continuation is), so we need to make sure we always keep calling the
     // same version here.
-    PrepareCodeConfig* config = GetThread()->GetCurrentPrepareCodeConfig();
+    PrepareCodeConfig* config = m_pPrepareCodeConfig;
     NativeCodeVersion ncv = config->GetCodeVersion();
     if (ncv.GetOptimizationTier() == NativeCodeVersion::OptimizationTier1OSR)
     {
@@ -15923,7 +15965,8 @@ void CEEInfo::GetProfilingHandle(bool                      *pbHookFunction,
 }
 
 bool CEEInfo::notifyInstructionSetUsage(CORINFO_InstructionSet instructionSet,
-                                        bool supportEnabled)
+                                        bool supportEnabled,
+                                        bool preserveNegativeDependency)
 {
     LIMITED_METHOD_CONTRACT;
     // Do nothing. This api does not provide value in JIT scenarios and

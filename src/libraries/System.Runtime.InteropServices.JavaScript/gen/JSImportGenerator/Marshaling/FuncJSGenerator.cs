@@ -1,124 +1,55 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
+using System.Globalization;
 using System.Runtime.InteropServices.JavaScript;
-using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
-using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Microsoft.Interop.JavaScript
 {
     internal sealed class FuncJSGenerator(TypePositionInfo info, StubCodeContext context, bool isAction, MarshalerType[] argumentMarshalerTypes) : BaseJSGenerator(info, context)
     {
-        public override IEnumerable<StatementSyntax> Generate(StubIdentifierContext context)
+        public override void Generate(IndentedTextWriter writer, StubIdentifierContext context)
         {
-            foreach (var statement in base.Generate(context))
+            base.Generate(writer, context);
+
+            MarshalDirection marshalDirection = MarshallerHelpers.GetMarshalDirection(TypeInfo, CodeContext);
+
+            if (marshalDirection == MarshalDirection.UnmanagedToManaged
+                && ((context.CurrentStage == StubIdentifierContext.Stage.UnmarshalCapture && CodeContext.Direction == MarshalDirection.ManagedToUnmanaged)
+                    || (context.CurrentStage == StubIdentifierContext.Stage.Unmarshal && CodeContext.Direction == MarshalDirection.UnmanagedToManaged)))
             {
-                yield return statement;
+                WriteMarshal(writer, context, toManaged: true);
             }
 
+            if (marshalDirection == MarshalDirection.ManagedToUnmanaged
+                && ((context.CurrentStage == StubIdentifierContext.Stage.Marshal && CodeContext.Direction == MarshalDirection.UnmanagedToManaged)
+                    || (context.CurrentStage == StubIdentifierContext.Stage.PinnedMarshal && CodeContext.Direction == MarshalDirection.ManagedToUnmanaged)))
+            {
+                WriteMarshal(writer, context, toManaged: false);
+            }
+        }
+
+        private void WriteMarshal(IndentedTextWriter writer, StubIdentifierContext context, bool toManaged)
+        {
+            var functionType = (JSFunctionTypeInfo)((JSMarshallingInfo)TypeInfo.MarshallingAttributeInfo).TypeInfo;
             var (managed, js) = context.GetIdentifiers(TypeInfo);
-
-            var jsty = (JSFunctionTypeInfo)((JSMarshallingInfo)TypeInfo.MarshallingAttributeInfo).TypeInfo;
-            var sourceTypes = jsty.ArgsTypeInfo
-                .Select(a => a.Syntax)
-                .ToArray();
-
-            if (context.CurrentStage == StubIdentifierContext.Stage.UnmarshalCapture && CodeContext.Direction == MarshalDirection.ManagedToUnmanaged && TypeInfo.IsManagedReturnPosition)
+            MarshalerType marshalerType = isAction ? MarshalerType.Action : MarshalerType.Function;
+            string method = toManaged ? GetToManagedMethod(marshalerType) : GetToJSMethod(marshalerType);
+            writer.Write($"{js}.{method}({(toManaged ? "out " : "")}{managed}");
+            for (int i = 0; i < functionType.ArgsTypeInfo.Length; i++)
             {
-                yield return ToManagedMethod(js, Argument(IdentifierName(managed)), jsty);
+                bool isReturn = !isAction && i == functionType.ArgsTypeInfo.Length - 1;
+                string index = (i + 1).ToString(CultureInfo.InvariantCulture);
+                writer.Write(", ");
+                WriteMarshallingLambda(
+                    writer,
+                    functionType.ArgsTypeInfo[i].FullTypeName,
+                    "__delegate_arg_arg" + index,
+                    "__delegate_arg" + index,
+                    argumentMarshalerTypes[i],
+                    toManaged == isReturn);
             }
-
-            if (context.CurrentStage == StubIdentifierContext.Stage.Marshal && CodeContext.Direction == MarshalDirection.UnmanagedToManaged && TypeInfo.IsManagedReturnPosition)
-            {
-                yield return ToJSMethod(js, Argument(IdentifierName(managed)), jsty);
-            }
-
-            if (context.CurrentStage == StubIdentifierContext.Stage.PinnedMarshal && CodeContext.Direction == MarshalDirection.ManagedToUnmanaged && !TypeInfo.IsManagedReturnPosition)
-            {
-                yield return ToJSMethod(js, Argument(IdentifierName(managed)), jsty);
-            }
-
-            if (context.CurrentStage == StubIdentifierContext.Stage.Unmarshal && CodeContext.Direction == MarshalDirection.UnmanagedToManaged && !TypeInfo.IsManagedReturnPosition)
-            {
-                yield return ToManagedMethod(js, Argument(IdentifierName(managed)), jsty);
-            }
+            writer.WriteLine(");");
         }
-
-        private ExpressionStatementSyntax ToManagedMethod(string target, ArgumentSyntax source, JSFunctionTypeInfo info)
-        {
-            List<ArgumentSyntax> arguments = [source.WithRefOrOutKeyword(Token(SyntaxKind.OutKeyword))];
-            for (int i = 0; i < info.ArgsTypeInfo.Length; i++)
-            {
-                var sourceType = info.ArgsTypeInfo[i];
-                if (!isAction && i + 1 == info.ArgsTypeInfo.Length)
-                {
-                    arguments.Add(ArgToManaged(i, sourceType.Syntax, argumentMarshalerTypes[i]));
-                }
-                else
-                {
-                    arguments.Add(ArgToJS(i, sourceType.Syntax, argumentMarshalerTypes[i]));
-                }
-            }
-
-            return ExpressionStatement(InvocationExpression(MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                    IdentifierName(target), GetToManagedMethod(isAction ? MarshalerType.Action : MarshalerType.Function)))
-                .WithArgumentList(ArgumentList(SeparatedList(arguments))));
-        }
-
-        private ExpressionStatementSyntax ToJSMethod(string target, ArgumentSyntax source, JSFunctionTypeInfo info)
-        {
-            List<ArgumentSyntax> arguments = [source];
-            for (int i = 0; i < info.ArgsTypeInfo.Length; i++)
-            {
-                var sourceType = info.ArgsTypeInfo[i];
-                if (!isAction && i + 1 == info.ArgsTypeInfo.Length)
-                {
-                    arguments.Add(ArgToJS(i, sourceType.Syntax, argumentMarshalerTypes[i]));
-                }
-                else
-                {
-                    arguments.Add(ArgToManaged(i, sourceType.Syntax, argumentMarshalerTypes[i]));
-                }
-            }
-
-            return ExpressionStatement(InvocationExpression(MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                    IdentifierName(target), GetToJSMethod(isAction ? MarshalerType.Action : MarshalerType.Function)))
-                .WithArgumentList(ArgumentList(SeparatedList(arguments))));
-        }
-
-        private static ArgumentSyntax ArgToJS(int i, TypeSyntax sourceType, MarshalerType marshalerType) => Argument(ParenthesizedLambdaExpression()
-                            .WithModifiers(TokenList(Token(SyntaxKind.StaticKeyword)))
-                            .WithParameterList(ParameterList(SeparatedList(new[]{
-                        Parameter(Identifier("__delegate_arg_arg"+(i+1)))
-                        .WithModifiers(TokenList(Token(SyntaxKind.RefKeyword)))
-                        .WithType(IdentifierName(Constants.JSMarshalerArgumentGlobal)),
-                        Parameter(Identifier("__delegate_arg"+(i+1)))
-                        .WithType(sourceType)})))
-                            .WithBlock(Block(SingletonList<StatementSyntax>(ExpressionStatement(
-                                InvocationExpression(MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                                IdentifierName("__delegate_arg_arg" + (i + 1)), GetToJSMethod(marshalerType)))
-                                .WithArgumentList(ArgumentList(SeparatedList(new[]{
-                            Argument(IdentifierName("__delegate_arg"+(i+1))),
-                                }))))))));
-
-        private static ArgumentSyntax ArgToManaged(int i, TypeSyntax sourceType, MarshalerType marshalerType) => Argument(ParenthesizedLambdaExpression()
-                            .WithModifiers(TokenList(Token(SyntaxKind.StaticKeyword)))
-                            .WithParameterList(ParameterList(SeparatedList(new[]{
-                        Parameter(Identifier("__delegate_arg_arg"+(i+1)))
-                        .WithModifiers(TokenList(Token(SyntaxKind.RefKeyword)))
-                        .WithType(IdentifierName(Constants.JSMarshalerArgumentGlobal)),
-                        Parameter(Identifier("__delegate_arg"+(i+1)))
-                        .WithModifiers(TokenList(Token(SyntaxKind.OutKeyword)))
-                        .WithType(sourceType)})))
-                            .WithBlock(Block(SingletonList<StatementSyntax>(ExpressionStatement(
-                                InvocationExpression(MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                                IdentifierName("__delegate_arg_arg" + (i + 1)), GetToManagedMethod(marshalerType)))
-                                .WithArgumentList(ArgumentList(SeparatedList(new[]{
-                            Argument(IdentifierName("__delegate_arg"+(i+1))).WithRefOrOutKeyword(Token(SyntaxKind.OutKeyword)),
-                                }))))))));
     }
 }

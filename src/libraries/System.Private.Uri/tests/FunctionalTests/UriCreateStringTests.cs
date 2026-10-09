@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text.RegularExpressions;
 using Xunit;
@@ -11,11 +12,71 @@ namespace System.PrivateUri.Tests
     public class UriCreateStringTests
     {
         private static readonly bool s_isWindowsSystem = PlatformDetection.IsWindows;
+        private static readonly IFormatProvider[] s_parsableFormatProviders =
+        {
+            null,
+            CultureInfo.InvariantCulture
+        };
+
+        [Theory]
+        [InlineData("C:relative")]
+        [InlineData("a:payload")]
+        public void IParsable_UnrootedDosPath_IsRelative(string uriString)
+        {
+            TestIParsable(uriString, uri => VerifyRelativeUri(uri, uriString, uriString));
+        }
+
+        [Theory]
+        [InlineData("http://")]
+        [InlineData("http://ho!st/")]
+        [InlineData("http://[::1")]
+        [InlineData("http://host:65536")]
+        public void IParsable_InvalidUri(string uriString)
+        {
+            foreach (IFormatProvider provider in s_parsableFormatProviders)
+            {
+                Assert.Throws<UriFormatException>(() => Parse<Uri>(uriString, provider));
+
+                Uri result = new Uri("http://host");
+                Assert.False(TryParse<Uri>(uriString, provider, out result));
+                Assert.Null(result);
+            }
+        }
+
+        [Theory]
+        [InlineData(1024, true)]
+        [InlineData(1025, false)]
+        public void IParsable_SchemeLengthLimit(int schemeLength, bool valid)
+        {
+            string uriString = new string('a', schemeLength) + "://host/";
+
+            foreach (IFormatProvider provider in s_parsableFormatProviders)
+            {
+                Assert.Equal(valid, TryParse<Uri>(uriString, provider, out Uri result));
+                if (valid)
+                {
+                    Assert.Equal(uriString, result.AbsoluteUri);
+                    Assert.Equal(result, Parse<Uri>(uriString, provider));
+                }
+                else
+                {
+                    Assert.Null(result);
+                    Assert.Throws<UriFormatException>(() => Parse<Uri>(uriString, provider));
+                }
+            }
+        }
+
+        private static T Parse<T>(string s, IFormatProvider provider) where T : IParsable<T> =>
+            T.Parse(s, provider);
+
+        private static bool TryParse<T>(string s, IFormatProvider provider, out T result) where T : IParsable<T> =>
+            T.TryParse(s, provider, out result);
 
         public static IEnumerable<object[]> OriginalString_AbsoluteUri_ToString_TestData()
         {
             // Basic
             yield return new object[] { "http://host", "http://host/", "http://host/" };
+            yield return new object[] { "custom:payload", "custom:payload", "custom:payload" };
             yield return new object[] { @"http:/\host", "http://host/", "http://host/" };
             yield return new object[] { @"http:\/host", "http://host/", "http://host/" };
             yield return new object[] { @"http:\\host", "http://host/", "http://host/" };
@@ -1017,13 +1078,25 @@ namespace System.PrivateUri.Tests
 
         public static IEnumerable<object[]> Relative_TestData()
         {
+            yield return new object[] { "", true };
+            yield return new object[] { " \t\r\n ", true };
             yield return new object[] { "path1/page.htm?query1=value#fragment", true };
+            yield return new object[] { "../path?query#fragment", true };
+            yield return new object[] { "path/\u00F6", true };
             yield return new object[] { "/", true };
+            yield return new object[] { "/tmp/file", true };
             yield return new object[] { "?query", true };
             yield return new object[] { "#fragment", true };
             yield return new object[] { @"C:\abc", false };
+            yield return new object[] { "C:/abc", false };
             yield return new object[] { @"C|\abc", false };
+            yield return new object[] { "C|/abc", false };
+            yield return new object[] { @"  C:\abc", false };
             yield return new object[] { @"\\servername\sharename\path\filename", false };
+            yield return new object[] { "//server/share/file", true };
+            yield return new object[] { @"\/server/share/file", true };
+            yield return new object[] { @"/\server/share/file", true };
+            yield return new object[] { @"  \\server\share\file", true };
         }
 
         [Theory]
@@ -1045,6 +1118,7 @@ namespace System.PrivateUri.Tests
                     Assert.True(uri.IsAbsoluteUri);
                 }
             });
+            TestIParsable(uriString, uri => VerifyRelativeUri(uri, uriString, uriString));
         }
 
         [Fact]
@@ -1056,6 +1130,14 @@ namespace System.PrivateUri.Tests
             Uri uri;
             Assert.False(Uri.TryCreate(null, UriKind.Absolute, out uri));
             Assert.Null(uri);
+
+            foreach (IFormatProvider provider in s_parsableFormatProviders)
+            {
+                AssertExtensions.Throws<ArgumentNullException>("s", () => Parse<Uri>(null, provider));
+                uri = new Uri("http://host");
+                Assert.False(TryParse<Uri>(null, provider, out uri));
+                Assert.Null(uri);
+            }
         }
 
         [Fact]
@@ -1320,6 +1402,12 @@ namespace System.PrivateUri.Tests
             {
                 Uri uri = new Uri(uriString);
                 action(uri);
+
+                // File URIs are covered separately because implicit paths have different IParsable semantics.
+                if (!uri.IsFile)
+                {
+                    TestIParsable(uriString, action);
+                }
             }
 
             Uri uri1 = new Uri(uriString, uriKind);
@@ -1328,6 +1416,20 @@ namespace System.PrivateUri.Tests
             Uri result = null;
             Assert.True(Uri.TryCreate(uriString, uriKind, out result));
             action(result);
+        }
+
+        internal static void TestIParsable(string uriString, Action<Uri> action)
+        {
+            foreach (IFormatProvider provider in s_parsableFormatProviders)
+            {
+                Uri uri = Parse<Uri>(uriString, provider);
+                Assert.Equal(uriString, uri.OriginalString);
+                action(uri);
+
+                Assert.True(TryParse<Uri>(uriString, provider, out uri));
+                Assert.Equal(uriString, uri.OriginalString);
+                action(uri);
+            }
         }
 
         internal static void VerifyRelativeUri(Uri uri, string originalString, string toString)

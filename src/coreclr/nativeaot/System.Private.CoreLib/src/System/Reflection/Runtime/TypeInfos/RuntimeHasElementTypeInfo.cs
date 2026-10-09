@@ -47,14 +47,6 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
-        public sealed override IEnumerable<CustomAttributeData> CustomAttributes
-        {
-            get
-            {
-                return Array.Empty<CustomAttributeData>();
-            }
-        }
-
         public sealed override bool ContainsGenericParameters
         {
             get

@@ -8,6 +8,7 @@
 
 
 #include "common.h"
+#include "CLREventBase.h"
 #include "excep.h"
 #include "log.h"
 #include "threadsuspend.h"
@@ -500,14 +501,14 @@ void TieredCompilationManager::BackgroundWorkerStart()
         {
             do
             {
-                ClrSleepEx(delayMs, false);
+                minipal_sleep(delayMs);
             } while (!TryDeactivateTieringDelay());
         }
 
         // Don't want to perform background work as soon as it is scheduled if there is possibly more important work that could
         // be done. Some operating systems may also give a thread woken by a signal higher priority temporarily, which on a
         // CPU-limited environment may lead to rejitting a method as soon as it's promoted, effectively in the foreground.
-        ClrSleepEx(0, false);
+        minipal_sleep(0);
 
         if (IsTieringDelayActive())
         {
@@ -534,7 +535,7 @@ void TieredCompilationManager::BackgroundWorkerStart()
         }
 
         // Wait for the worker to be scheduled again
-        DWORD waitResult = s_backgroundWorkAvailableEvent.Wait(timeoutMs, false);
+        DWORD waitResult = s_backgroundWorkAvailableEvent.Wait(timeoutMs, false, false);
         if (waitResult == WAIT_OBJECT_0)
         {
             continue;
@@ -827,7 +828,7 @@ bool TieredCompilationManager::DoBackgroundWork(
         }
 
         int64_t beforeSleepTicks = currentTicks;
-        ClrSleepEx(0, false);
+        minipal_sleep(0);
 
         currentTicks = minipal_hires_ticks();
 

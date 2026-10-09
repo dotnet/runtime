@@ -41,6 +41,11 @@ extern "C" INTERP_API void jitStartup(ICorJitHost* jitHost)
 #endif // PERFTRACING_DISABLE_THREADS
     }
 
+    if (InterpConfig.InterpPGO() != 0)
+    {
+        InterpCompiler::s_interpPgoEnabled = true;
+    }
+
     g_interpInitialized = true;
 }
 /*****************************************************************************/
@@ -55,7 +60,9 @@ extern "C" INTERP_API ICorJitCompiler* getJit()
 }
 
 
+#if defined(FEATURE_DYNAMIC_CODE_COMPILED)
 static CORINFO_MODULE_HANDLE g_interpModule = NULL;
+#endif // FEATURE_DYNAMIC_CODE_COMPILED
 
 //****************************************************************************
 CorJitResult CILInterp::compileMethod(ICorJitInfo*         compHnd,
@@ -65,8 +72,10 @@ CorJitResult CILInterp::compileMethod(ICorJitInfo*         compHnd,
                                    uint32_t*            nativeSizeOfCode)
 {
 
-    bool doInterpret = false;
     ArenaAllocatorWithDestructorT<InterpMemKindTraits> arenaAllocator;
+
+#if defined(FEATURE_DYNAMIC_CODE_COMPILED)
+    bool doInterpret = false;
 
     if ((g_interpModule != NULL) && (methodInfo->scope == g_interpModule))
         doInterpret = true;
@@ -103,10 +112,6 @@ CorJitResult CILInterp::compileMethod(ICorJitInfo*         compHnd,
                 break;
         }
 
-#if !defined(FEATURE_DYNAMIC_CODE_COMPILED)
-        // interpret everything when we do not have a JIT
-        doInterpret = true;
-#else
         // NOTE: We do this check even if doInterpret==true in order to populate g_interpModule
         const char *methodName = compHnd->getMethodNameFromMetadata(methodInfo->ftn, nullptr, nullptr, nullptr, 0);
         if (InterpConfig.Interpreter().contains(compHnd, methodInfo->ftn, compHnd->getMethodClass(methodInfo->ftn), &methodInfo->args))
@@ -114,13 +119,13 @@ CorJitResult CILInterp::compileMethod(ICorJitInfo*         compHnd,
             doInterpret = true;
             g_interpModule = methodInfo->scope;
         }
-#endif
     }
 
     if (!doInterpret)
     {
         return CORJIT_SKIPPED;
     }
+#endif // FEATURE_DYNAMIC_CODE_COMPILED
 
     try
     {

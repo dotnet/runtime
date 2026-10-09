@@ -60,7 +60,7 @@ void Compiler::fgAsyncStressPrepare(unsigned depth)
         return;
     }
 
-    CLRRandom* const random = impInlineRoot()->m_inlineStrategy->GetRandom(JitConfig.JitStressAsyncInlining());
+    CLRRandom* const random = impInlineRoot()->m_inlineStrategy->GetRandom(compAsyncInliningStressSeed());
 
     // Fisher-Yates.
     for (int i = candidates.Height() - 1; i > 0; i--)
@@ -1580,7 +1580,7 @@ void Compiler::fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* inlineRe
                    eeGetMethodFullName(fncHandle));
         }
 #endif // DEBUG
-        inlineResult->NoteFatal(InlineObservation::CALLEE_LACKS_RETURN);
+        inlineResult->NoteFatal(InlineObservation::CALLSITE_LACKS_RETURN);
         return;
     }
 

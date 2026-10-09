@@ -9,6 +9,7 @@
 }
 .assembly 'b68872' { }
 .assembly extern xunit.core {}
+
 .namespace JitTest
 {
   .class public auto ansi beforefieldinit Test

@@ -11,11 +11,11 @@ public class TaskBasedAsyncFibonacciWithoutYields
     const int iterations = 3;
     const bool doYields = false;
 
-    public static int Main()
+    public static async Task<int> Main()
     {
         long allocated = GC.GetTotalAllocatedBytes(precise: true);
 
-        AsyncEntry().GetAwaiter().GetResult();
+        await AsyncEntry();
 
         allocated = GC.GetTotalAllocatedBytes(precise: true) - allocated;
         System.Console.WriteLine("allocated: " + allocated);

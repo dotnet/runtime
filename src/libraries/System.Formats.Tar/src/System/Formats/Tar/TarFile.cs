@@ -263,12 +263,12 @@ namespace System.Formats.Tar
         /// Extracts the contents of a stream that represents a tar archive into the specified directory.
         /// </summary>
         /// <param name="source">The stream containing the tar archive.</param>
-        /// <param name="destinationDirectoryName">The path of the destination directory where the filesystem entries should be extracted.</param>
-        /// <param name="overwriteFiles"><see langword="true"/> to overwrite files and directories in <paramref name="destinationDirectoryName"/>; <see langword="false"/> to avoid overwriting, and throw if any files or directories are found with existing names.</param>
+        /// <param name="destinationDirectoryName">The path of the destination directory where the filesystem entries should be extracted.
+        /// Missing destination and parent directories are created as needed when entries are extracted. An empty archive does not create any directories.</param>
+        /// <param name="overwriteFiles"><see langword="true"/> to overwrite existing files in <paramref name="destinationDirectoryName"/>; otherwise, <see langword="false"/> to throw if a file to extract already exists.</param>
         /// <remarks><para>Files of type <see cref="TarEntryType.BlockDevice"/>, <see cref="TarEntryType.CharacterDevice"/> or <see cref="TarEntryType.Fifo"/> can only be extracted in Unix platforms.</para>
         /// <para>Elevation is required to extract a <see cref="TarEntryType.BlockDevice"/> or <see cref="TarEntryType.CharacterDevice"/> to disk.</para></remarks>
         /// <exception cref="ArgumentNullException"><paramref name="source"/> or <paramref name="destinationDirectoryName"/> is <see langword="null"/>.</exception>
-        /// <exception cref="DirectoryNotFoundException">The <paramref name="destinationDirectoryName"/> directory path was not found.</exception>
         /// <exception cref="UnauthorizedAccessException">Operation not permitted due to insufficient permissions.</exception>
         /// <exception cref="ArgumentException"><para>Extracting tar entry would have resulted in a file outside the specified destination directory.</para>
         /// <para>-or-</para>
@@ -283,12 +283,12 @@ namespace System.Formats.Tar
         /// Extracts the contents of a stream that represents a tar archive into the specified directory.
         /// </summary>
         /// <param name="source">The stream containing the tar archive.</param>
-        /// <param name="destinationDirectoryName">The path of the destination directory where the filesystem entries should be extracted.</param>
+        /// <param name="destinationDirectoryName">The path of the destination directory where the filesystem entries should be extracted.
+        /// Missing destination and parent directories are created as needed when entries are extracted. An empty archive does not create any directories.</param>
         /// <param name="options">The options that configure the behavior of the extraction.</param>
         /// <remarks><para>Files of type <see cref="TarEntryType.BlockDevice"/>, <see cref="TarEntryType.CharacterDevice"/> or <see cref="TarEntryType.Fifo"/> can only be extracted in Unix platforms.</para>
         /// <para>Elevation is required to extract a <see cref="TarEntryType.BlockDevice"/> or <see cref="TarEntryType.CharacterDevice"/> to disk.</para></remarks>
         /// <exception cref="ArgumentNullException"><paramref name="source"/>, <paramref name="destinationDirectoryName"/>, or <paramref name="options"/> is <see langword="null"/>.</exception>
-        /// <exception cref="DirectoryNotFoundException">The <paramref name="destinationDirectoryName"/> directory path was not found.</exception>
         /// <exception cref="UnauthorizedAccessException">Operation not permitted due to insufficient permissions.</exception>
         /// <exception cref="ArgumentException"><para>Extracting tar entry would have resulted in a file outside the specified destination directory.</para>
         /// <para>-or-</para>
@@ -307,11 +307,6 @@ namespace System.Formats.Tar
                 throw new ArgumentException(SR.IO_NotSupported_UnreadableStream, nameof(source));
             }
 
-            if (!Directory.Exists(destinationDirectoryName))
-            {
-                throw new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, destinationDirectoryName), destinationDirectoryName);
-            }
-
             // Rely on Path.GetFullPath for validation of paths
             destinationDirectoryName = Path.GetFullPath(destinationDirectoryName);
             destinationDirectoryName = PathInternal.EnsureTrailingSeparator(destinationDirectoryName);
@@ -323,14 +318,14 @@ namespace System.Formats.Tar
         /// Asynchronously extracts the contents of a stream that represents a tar archive into the specified directory.
         /// </summary>
         /// <param name="source">The stream containing the tar archive.</param>
-        /// <param name="destinationDirectoryName">The path of the destination directory where the filesystem entries should be extracted.</param>
-        /// <param name="overwriteFiles"><see langword="true"/> to overwrite files and directories in <paramref name="destinationDirectoryName"/>; <see langword="false"/> to avoid overwriting, and throw if any files or directories are found with existing names.</param>
+        /// <param name="destinationDirectoryName">The path of the destination directory where the filesystem entries should be extracted.
+        /// Missing destination and parent directories are created as needed when entries are extracted. An empty archive does not create any directories.</param>
+        /// <param name="overwriteFiles"><see langword="true"/> to overwrite existing files in <paramref name="destinationDirectoryName"/>; otherwise, <see langword="false"/> to throw if a file to extract already exists.</param>
         /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.</param>
         /// <returns>A task that represents the asynchronous extraction operation.</returns>
         /// <remarks><para>Files of type <see cref="TarEntryType.BlockDevice"/>, <see cref="TarEntryType.CharacterDevice"/> or <see cref="TarEntryType.Fifo"/> can only be extracted in Unix platforms.</para>
         /// <para>Elevation is required to extract a <see cref="TarEntryType.BlockDevice"/> or <see cref="TarEntryType.CharacterDevice"/> to disk.</para></remarks>
         /// <exception cref="ArgumentNullException"><paramref name="source"/> or <paramref name="destinationDirectoryName"/> is <see langword="null"/>.</exception>
-        /// <exception cref="DirectoryNotFoundException">The <paramref name="destinationDirectoryName"/> directory path was not found.</exception>
         /// <exception cref="UnauthorizedAccessException">Operation not permitted due to insufficient permissions.</exception>
         /// <exception cref="ArgumentException"><para>Extracting tar entry would have resulted in a file outside the specified destination directory.</para>
         /// <para>-or-</para>
@@ -345,14 +340,14 @@ namespace System.Formats.Tar
         /// Asynchronously extracts the contents of a stream that represents a tar archive into the specified directory.
         /// </summary>
         /// <param name="source">The stream containing the tar archive.</param>
-        /// <param name="destinationDirectoryName">The path of the destination directory where the filesystem entries should be extracted.</param>
+        /// <param name="destinationDirectoryName">The path of the destination directory where the filesystem entries should be extracted.
+        /// Missing destination and parent directories are created as needed when entries are extracted. An empty archive does not create any directories.</param>
         /// <param name="options">The options that configure the behavior of the extraction.</param>
         /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.</param>
         /// <returns>A task that represents the asynchronous extraction operation.</returns>
         /// <remarks><para>Files of type <see cref="TarEntryType.BlockDevice"/>, <see cref="TarEntryType.CharacterDevice"/> or <see cref="TarEntryType.Fifo"/> can only be extracted in Unix platforms.</para>
         /// <para>Elevation is required to extract a <see cref="TarEntryType.BlockDevice"/> or <see cref="TarEntryType.CharacterDevice"/> to disk.</para></remarks>
         /// <exception cref="ArgumentNullException"><paramref name="source"/>, <paramref name="destinationDirectoryName"/>, or <paramref name="options"/> is <see langword="null"/>.</exception>
-        /// <exception cref="DirectoryNotFoundException">The <paramref name="destinationDirectoryName"/> directory path was not found.</exception>
         /// <exception cref="UnauthorizedAccessException">Operation not permitted due to insufficient permissions.</exception>
         /// <exception cref="ArgumentException"><para>Extracting tar entry would have resulted in a file outside the specified destination directory.</para>
         /// <para>-or-</para>
@@ -375,11 +370,6 @@ namespace System.Formats.Tar
                 return Task.FromException(new ArgumentException(SR.IO_NotSupported_UnreadableStream, nameof(source)));
             }
 
-            if (!Directory.Exists(destinationDirectoryName))
-            {
-                return Task.FromException(new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, destinationDirectoryName), destinationDirectoryName));
-            }
-
             // Rely on Path.GetFullPath for validation of paths
             destinationDirectoryName = Path.GetFullPath(destinationDirectoryName);
             destinationDirectoryName = PathInternal.EnsureTrailingSeparator(destinationDirectoryName);
@@ -391,12 +381,12 @@ namespace System.Formats.Tar
         /// Extracts the contents of a tar file into the specified directory.
         /// </summary>
         /// <param name="sourceFileName">The path of the tar file to extract.</param>
-        /// <param name="destinationDirectoryName">The path of the destination directory where the filesystem entries should be extracted.</param>
-        /// <param name="overwriteFiles"><see langword="true"/> to overwrite files and directories in <paramref name="destinationDirectoryName"/>; <see langword="false"/> to avoid overwriting, and throw if any files or directories are found with existing names.</param>
+        /// <param name="destinationDirectoryName">The path of the destination directory where the filesystem entries should be extracted.
+        /// Missing destination and parent directories are created as needed when entries are extracted. An empty archive does not create any directories.</param>
+        /// <param name="overwriteFiles"><see langword="true"/> to overwrite existing files in <paramref name="destinationDirectoryName"/>; otherwise, <see langword="false"/> to throw if a file to extract already exists.</param>
         /// <remarks><para>Files of type <see cref="TarEntryType.BlockDevice"/>, <see cref="TarEntryType.CharacterDevice"/> or <see cref="TarEntryType.Fifo"/> can only be extracted in Unix platforms.</para>
         /// <para>Elevation is required to extract a <see cref="TarEntryType.BlockDevice"/> or <see cref="TarEntryType.CharacterDevice"/> to disk.</para></remarks>
         /// <exception cref="ArgumentNullException"><paramref name="sourceFileName"/> or <paramref name="destinationDirectoryName"/> is <see langword="null"/>.</exception>
-        /// <exception cref="DirectoryNotFoundException">The <paramref name="destinationDirectoryName"/> directory path was not found.</exception>
         /// <exception cref="FileNotFoundException"> The <paramref name="sourceFileName"/> file path was not found.</exception>
         /// <exception cref="UnauthorizedAccessException">Operation not permitted due to insufficient permissions.</exception>
         /// <exception cref="ArgumentException"><para>Extracting tar entry would have resulted in a file outside the specified destination directory.</para>
@@ -410,12 +400,12 @@ namespace System.Formats.Tar
         /// Extracts the contents of a tar file into the specified directory.
         /// </summary>
         /// <param name="sourceFileName">The path of the tar file to extract.</param>
-        /// <param name="destinationDirectoryName">The path of the destination directory where the filesystem entries should be extracted.</param>
+        /// <param name="destinationDirectoryName">The path of the destination directory where the filesystem entries should be extracted.
+        /// Missing destination and parent directories are created as needed when entries are extracted. An empty archive does not create any directories.</param>
         /// <param name="options">The options that configure the behavior of the extraction.</param>
         /// <remarks><para>Files of type <see cref="TarEntryType.BlockDevice"/>, <see cref="TarEntryType.CharacterDevice"/> or <see cref="TarEntryType.Fifo"/> can only be extracted in Unix platforms.</para>
         /// <para>Elevation is required to extract a <see cref="TarEntryType.BlockDevice"/> or <see cref="TarEntryType.CharacterDevice"/> to disk.</para></remarks>
         /// <exception cref="ArgumentNullException"><paramref name="sourceFileName"/>, <paramref name="destinationDirectoryName"/>, or <paramref name="options"/> is <see langword="null"/>.</exception>
-        /// <exception cref="DirectoryNotFoundException">The <paramref name="destinationDirectoryName"/> directory path was not found.</exception>
         /// <exception cref="FileNotFoundException"> The <paramref name="sourceFileName"/> file path was not found.</exception>
         /// <exception cref="UnauthorizedAccessException">Operation not permitted due to insufficient permissions.</exception>
         /// <exception cref="ArgumentException"><para>Extracting tar entry would have resulted in a file outside the specified destination directory.</para>
@@ -438,11 +428,6 @@ namespace System.Formats.Tar
                 throw new FileNotFoundException(SR.Format(SR.IO_FileNotFound_FileName, sourceFileName));
             }
 
-            if (!Directory.Exists(destinationDirectoryName))
-            {
-                throw new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, destinationDirectoryName), destinationDirectoryName);
-            }
-
             using FileStream archive = File.OpenRead(sourceFileName);
 
             ExtractToDirectoryInternal(archive, destinationDirectoryName, options, leaveOpen: false);
@@ -452,14 +437,14 @@ namespace System.Formats.Tar
         /// Asynchronously extracts the contents of a tar file into the specified directory.
         /// </summary>
         /// <param name="sourceFileName">The path of the tar file to extract.</param>
-        /// <param name="destinationDirectoryName">The path of the destination directory where the filesystem entries should be extracted.</param>
-        /// <param name="overwriteFiles"><see langword="true"/> to overwrite files and directories in <paramref name="destinationDirectoryName"/>; <see langword="false"/> to avoid overwriting, and throw if any files or directories are found with existing names.</param>
+        /// <param name="destinationDirectoryName">The path of the destination directory where the filesystem entries should be extracted.
+        /// Missing destination and parent directories are created as needed when entries are extracted. An empty archive does not create any directories.</param>
+        /// <param name="overwriteFiles"><see langword="true"/> to overwrite existing files in <paramref name="destinationDirectoryName"/>; otherwise, <see langword="false"/> to throw if a file to extract already exists.</param>
         /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.</param>
         /// <returns>A task that represents the asynchronous extraction operation.</returns>
         /// <remarks><para>Files of type <see cref="TarEntryType.BlockDevice"/>, <see cref="TarEntryType.CharacterDevice"/> or <see cref="TarEntryType.Fifo"/> can only be extracted in Unix platforms.</para>
         /// <para>Elevation is required to extract a <see cref="TarEntryType.BlockDevice"/> or <see cref="TarEntryType.CharacterDevice"/> to disk.</para></remarks>
         /// <exception cref="ArgumentNullException"><paramref name="sourceFileName"/> or <paramref name="destinationDirectoryName"/> is <see langword="null"/>.</exception>
-        /// <exception cref="DirectoryNotFoundException">The <paramref name="destinationDirectoryName"/> directory path was not found.</exception>
         /// <exception cref="FileNotFoundException"> The <paramref name="sourceFileName"/> file path was not found.</exception>
         /// <exception cref="UnauthorizedAccessException">Operation not permitted due to insufficient permissions.</exception>
         /// <exception cref="ArgumentException"><para>Extracting tar entry would have resulted in a file outside the specified destination directory.</para>
@@ -473,14 +458,14 @@ namespace System.Formats.Tar
         /// Asynchronously extracts the contents of a tar file into the specified directory.
         /// </summary>
         /// <param name="sourceFileName">The path of the tar file to extract.</param>
-        /// <param name="destinationDirectoryName">The path of the destination directory where the filesystem entries should be extracted.</param>
+        /// <param name="destinationDirectoryName">The path of the destination directory where the filesystem entries should be extracted.
+        /// Missing destination and parent directories are created as needed when entries are extracted. An empty archive does not create any directories.</param>
         /// <param name="options">The options that configure the behavior of the extraction.</param>
         /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.</param>
         /// <returns>A task that represents the asynchronous extraction operation.</returns>
         /// <remarks><para>Files of type <see cref="TarEntryType.BlockDevice"/>, <see cref="TarEntryType.CharacterDevice"/> or <see cref="TarEntryType.Fifo"/> can only be extracted in Unix platforms.</para>
         /// <para>Elevation is required to extract a <see cref="TarEntryType.BlockDevice"/> or <see cref="TarEntryType.CharacterDevice"/> to disk.</para></remarks>
         /// <exception cref="ArgumentNullException"><paramref name="sourceFileName"/>, <paramref name="destinationDirectoryName"/>, or <paramref name="options"/> is <see langword="null"/>.</exception>
-        /// <exception cref="DirectoryNotFoundException">The <paramref name="destinationDirectoryName"/> directory path was not found.</exception>
         /// <exception cref="FileNotFoundException"> The <paramref name="sourceFileName"/> file path was not found.</exception>
         /// <exception cref="UnauthorizedAccessException">Operation not permitted due to insufficient permissions.</exception>
         /// <exception cref="ArgumentException"><para>Extracting tar entry would have resulted in a file outside the specified destination directory.</para>
@@ -505,11 +490,6 @@ namespace System.Formats.Tar
             if (!File.Exists(sourceFileName))
             {
                 return Task.FromException(new FileNotFoundException(SR.Format(SR.IO_FileNotFound_FileName, sourceFileName)));
-            }
-
-            if (!Directory.Exists(destinationDirectoryName))
-            {
-                return Task.FromException(new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, destinationDirectoryName), destinationDirectoryName));
             }
 
             return ExtractToDirectoryInternalAsync(sourceFileName, destinationDirectoryName, options, cancellationToken);

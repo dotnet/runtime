@@ -1972,63 +1972,7 @@ public:
     //
     virtual HRESULT STDMETHODCALLTYPE HasReadWriteMetadata(VMPTR_PEAssembly vmPEAssembly, OUT BOOL* pHasReadWriteMetadata) = 0;
 
-    // DEPRECATED - use GetActiveRejitILCodeVersionNode
-    // Retrieves the active ReJitInfo for a given module/methodDef, if it exists.
-    //     Active is defined as after GetReJitParameters returns from the profiler dll and
-    //     no call to Revert has completed yet.
-    //
-    //
-    // Arguments:
-    //    vmModule - The module to search in
-    //    methodTk - The methodDef token indicates the method within the module to check
-    //    pReJitInfo - [out] The RejitInfo request, if any, that is active on this method. If no request
-    //                 is active this will be pReJitInfo->IsNull() == TRUE.
-    //
-    // Returns:
-    //    S_OK regardless of whether a rejit request is active or not, as long as the answer is certain
-    //    error HRESULTs such as CORDBG_READ_VIRTUAL_FAILURE are possible
-    //
-    // DEPRECATED - use GetNativeCodeVersionNode
-    // Retrieves the ReJitInfo for a given MethodDesc/code address, if it exists.
-    //
-    //
-    // Arguments:
-    //    vmMethod         - The method to look for
-    //    codeStartAddress - The code start address disambiguates between multiple rejitted instances
-    //                       of the method.
-    //    pReJitInfo - [out] The RejitInfo request that corresponds to this MethodDesc/code address, if it exists.
-    //                       NULL otherwise.
-    //
-    // Returns:
-    //    S_OK regardless of whether a rejit request is active or not, as long as the answer is certain
-    //    error HRESULTs such as CORDBG_READ_VIRTUAL_FAILURE are possible
-    //
-    // DEPRECATED - use GetILCodeVersion
-    // Retrieves the SharedReJitInfo for a given ReJitInfo.
-    //
-    //
-    // Arguments:
-    //    vmReJitInfo      - The ReJitInfo to inspect
-    //    pSharedReJitInfo - [out] The SharedReJitInfo that is pointed to by vmReJitInfo.
-    //
-    // Returns:
-    //    S_OK if no error
-    //    error HRESULTs such as CORDBG_READ_VIRTUAL_FAILURE are possible
-    //
-    // DEPRECATED - use GetILCodeVersionData
-    // Retrieves useful data from a SharedReJitInfo such as IL code and IL mapping.
-    //
-    //
-    // Arguments:
-    //    sharedReJitInfo  - The SharedReJitInfo to inspect
-    //    pData            - [out] Various properties of the SharedReJitInfo such as IL code and IL mapping.
-    //
-    // Returns:
-    //    S_OK if no error
-    //    error HRESULTs such as CORDBG_READ_VIRTUAL_FAILURE are possible
-    //
     // Retrieves a bool indicating whether or not a method's optimizations have been disabled
-    // defined in Debugger::IsMethodDeoptimized
     //
     //
     //

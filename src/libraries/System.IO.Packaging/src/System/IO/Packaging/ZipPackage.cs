@@ -1143,12 +1143,34 @@ namespace System.IO.Packaging
                         throw new FormatException(SR.BadPackageFormat);
                     }
 
+                    if (_contentTypeZipArchiveEntry.Length > MaxContentTypesXmlSize)
+                    {
+                        throw new FileFormatException(SR.Format(SR.ContentTypeStreamTooLarge, MaxContentTypesXmlSize));
+                    }
+
                     _contentTypeStreamExists = true;
-                    return _zipStreamManager.Open(_contentTypeZipArchiveEntry, FileAccess.ReadWrite);
+                    return _zipStreamManager.Open(_contentTypeZipArchiveEntry, FileAccess.Read);
                 }
                 // If the content type stream is interleaved, validate the piece numbering.
                 else if (partPieces != null)
                 {
+                    // Sum the piece lengths without risking overflow: each ZipArchiveEntry.Length is a
+                    // non-negative long that (with Zip64) can be as large as long.MaxValue, so a malicious
+                    // archive could otherwise make an unchecked running total wrap around and defeat the
+                    // size check below. Comparing against the remaining budget instead of adding first keeps
+                    // totalLength bounded by MaxContentTypesXmlSize at all times.
+                    long totalLength = 0;
+                    foreach (ZipPackagePartPiece piece in partPieces)
+                    {
+                        long pieceLength = piece.ZipArchiveEntry.Length;
+                        if (pieceLength > MaxContentTypesXmlSize - totalLength)
+                        {
+                            throw new FileFormatException(SR.Format(SR.ContentTypeStreamTooLarge, MaxContentTypesXmlSize));
+                        }
+
+                        totalLength += pieceLength;
+                    }
+
                     _contentTypeStreamExists = true;
                     _contentTypeStreamPieces = partPieces;
 
@@ -1306,6 +1328,17 @@ namespace System.IO.Packaging
             private CompressionLevel _cachedCompressionLevel;
             private const string ContentTypesFile = "[Content_Types].xml";
             private const string ContentTypesFileUpperInvariant = "[CONTENT_TYPES].XML";
+
+            // Maximum allowed (uncompressed) size for the "[Content_Types].xml" part. This part is package
+            // metadata rather than user content, so - similarly to the metadata block size limit applied to
+            // TAR archives (see https://github.com/dotnet/runtime/pull/127602) - its size can be bounded to a
+            // value that comfortably covers legitimate packages while preventing a small, malformed, or
+            // malicious archive from declaring an implausibly large entry that gets eagerly buffered in memory
+            // when the package is opened for ReadWrite access. 4 MB covers packages with 100,000+ parts even in
+            // the worst case where every part has a distinct content type (forcing an <Override> element each),
+            // which is far beyond what real-world OPC packages (e.g. Office documents) contain.
+            private const long MaxContentTypesXmlSize = 4 * 1024 * 1024;
+
             private const int DefaultDictionaryInitialSize = 16;
             private const int OverrideDictionaryInitialSize = 8;
 

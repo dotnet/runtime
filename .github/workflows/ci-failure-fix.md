@@ -8,7 +8,7 @@ permissions:
   pull-requests: read
 
 on:
-  schedule: every 12h
+  schedule: daily on weekdays
   workflow_dispatch:
   roles: [admin, maintainer, write]
   permissions: {}
@@ -31,9 +31,10 @@ environment: copilot-pat-pool
 
 engine:
   id: copilot
-  model: claude-opus-4.8
   env:
     COPILOT_GITHUB_TOKEN: ${{ case(needs.pat_pool.outputs.pat_number == '0', secrets.COPILOT_PAT_0, needs.pat_pool.outputs.pat_number == '1', secrets.COPILOT_PAT_1, needs.pat_pool.outputs.pat_number == '2', secrets.COPILOT_PAT_2, needs.pat_pool.outputs.pat_number == '3', secrets.COPILOT_PAT_3, needs.pat_pool.outputs.pat_number == '4', secrets.COPILOT_PAT_4, needs.pat_pool.outputs.pat_number == '5', secrets.COPILOT_PAT_5, needs.pat_pool.outputs.pat_number == '6', secrets.COPILOT_PAT_6, needs.pat_pool.outputs.pat_number == '7', secrets.COPILOT_PAT_7, needs.pat_pool.outputs.pat_number == '8', secrets.COPILOT_PAT_8, needs.pat_pool.outputs.pat_number == '9', secrets.COPILOT_PAT_9, 'NO COPILOT PAT AVAILABLE') }}
+
+model: gpt-5.6-terra
 
 concurrency:
   group: "ci-failure-fix"
@@ -42,14 +43,60 @@ concurrency:
 tools:
   github:
     toolsets: [pull_requests, repos, issues, search]
+    allowed-repos: ["dotnet/runtime"]
     min-integrity: approved
+    approval-labels: ["Known Build Error"]
   edit:
   bash: ["dotnet", "git", "find", "ls", "cat", "grep", "head", "tail", "wc", "curl", "jq", "tee", "sed", "awk", "tr", "cut", "sort", "uniq", "xargs", "echo", "date", "mkdir", "test", "env", "basename", "dirname", "bash", "sh", "chmod"]
 
 checkout:
   fetch-depth: 200
 
+# Enumerate metadata separately: the pre-agent CLI proxy does not apply approval labels.
+# Bodies and comments are still read through the agent's integrity-gated GitHub MCP.
+jobs:
+  scanner_kbes:
+    needs: activation
+    if: github.repository == 'dotnet/runtime'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: read
+    outputs:
+      count: ${{ steps.filter.outputs.count }}
+    steps:
+      - name: Checkout workflow helper
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+          sparse-checkout: .github/workflows/shared/filter-scanner-kbes.sh
+          sparse-checkout-cone-mode: false
+      - name: Filter scanner-authored KBEs (deterministic)
+        id: filter
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          bash .github/workflows/shared/filter-scanner-kbes.sh
+      - name: Upload scanner KBE allowlist
+        uses: actions/upload-artifact@v7
+        with:
+          name: scanner-kbe-candidates
+          path: ${{ runner.temp }}/scanner-kbe-candidates.json
+          if-no-files-found: error
+  agent:
+    needs: scanner_kbes
+    if: needs.scanner_kbes.outputs.count > 0
+
+steps:
+  - name: Download scanner KBE allowlist
+    uses: actions/download-artifact@v8
+    with:
+      name: scanner-kbe-candidates
+      path: /tmp/gh-aw/agent
+
 safe-outputs:
+  report-failure-as-issue: false
+  report-failed-jobs: false
   create-pull-request:
     title-prefix: "[ci-fix] "
     draft: true
@@ -66,7 +113,7 @@ safe-outputs:
     allowed-labels: [agentic-workflows]
   add-comment:
     target: "*"
-    max: 10
+    max: 3
   data:
     type: object
     properties:
@@ -103,7 +150,7 @@ You are a CI remediation agent. Each scheduled run, you walk the open `[ci-scan]
 
 You are the *mitigation* stage. `ci-failure-scan` only detects failures and files KBEs; it never disables tests. **You never mute, skip, or disable a test, and you never add `[ActiveIssue]` / `Skip` / `<*Incompatible>` annotations.** A failure is removed either by a real fix PR or by a human the PR/comment loops in. A "help wanted" PR is a genuine best-effort code change plus an ask for review — never a test-disable dressed up as a fix. The agent runs read-only; all writes go through `safe-outputs`.
 
-To suggest changes, edit this file or comment on the PRs/comments it produces — the [`ci-failure-scan-feedback`](ci-failure-scan-feedback.md) workflow reads recent runs and that feedback daily, and opens (or updates) a single draft PR with proposed edits to either prompt.
+To suggest changes, edit this file or comment on the PRs/comments it produces — the [`ci-failure-scan-feedback`](ci-failure-scan-feedback.md) workflow reads recent runs and that feedback every two weeks and lists proposed edits to either prompt in the `[ci-scan-feedback] KPI Tracker` issue.
 
 ## Hard rules — non-negotiable
 
@@ -145,17 +192,19 @@ Read once at start:
 
 ### Step 2 — Enumerate open KBEs
 
-List open KBE issues this workflow is responsible for. Use the `github` MCP `search_issues` (integrity-gated; `[Filtered]` results are skipped — record the count, do not chase them):
+The deterministic `scanner_kbes` job has prepared `/tmp/gh-aw/agent/scanner-kbe-candidates.json`. It selects remediation candidates: only open `dotnet/runtime` issues whose exact `Known Build Error` label, `[ci-scan]` title prefix, and `github-actions[bot]` author were verified through the GitHub API. Select work only from `.candidates[].number`, in ascending creation order. If the candidate file is missing or invalid, report the error and stop; do not fall back to search for other candidates.
 
-- `repo:dotnet/runtime is:issue is:open label:"Known Build Error" in:title "[ci-scan]" sort:created-asc`
+This is a task-selection rule, not an issue-ID restriction on the tools. Search remains available for existing-artifact deduplication and investigation; do not treat issues found during that work as additional remediation candidates. Enforcing candidate IDs at the tool layer would require a larger change and is outside this workflow update.
 
-Do NOT bound this query by `updated:` recency. Older-but-still-open `[ci-scan]` KBEs are exactly the ones at risk of being stranded with no mitigation, so they must remain in scope. `sort:created-asc` walks the oldest open KBEs first; the per-run PR cap (Step 6 / `create-pull-request max`) bounds how many you act on, and the next run continues where this one left off.
+The enumeration paginates all open KBEs without an `updated:` cutoff, so older issues remain in scope. An empty allowlist skips the agent job entirely.
 
 For each result, read the body + latest comments through the `github` MCP (NOT `gh`, so the integrity gate applies). Extract:
 
 - The failing leg + test/assembly from the `Build error leg or test failing:` line.
 - The `Build:` link (AzDO build) and any `First build it occurred` commit/sha.
 - The applied `area-*` label (added by `.github/workflows/labeler-predict-issues.yml`). If no `area-*` label is present yet, record `-> skipped: not yet area-labeled` and let a later run revisit — owner attribution depends on it.
+
+Before deduplication or analysis, confirm that the body read still reports an open issue with the `[ci-scan] ` title prefix, the exact `Known Build Error` label, and author `github-actions[bot]` with account type `Bot`. If any of these checks fail, record `-> skipped: candidate is stale or no longer scanner-authored` and do not act on it.
 
 **Freshness gate.** Skip any KBE created less than 60 minutes ago (`-> skipped: KBE too fresh, defer to next run`). The scanner and labeler run asynchronously; acting before the labeler has attached the `area-*` label produces mis-attributed hand-offs.
 
@@ -319,6 +368,10 @@ Every `create_pull_request` and `add_comment` safe-output call MUST also provide
 
 Do not paste this JSON into the body. `safe-outputs.data` validates it and appends it after sanitization as a `Structured data:` fenced JSON block. New readers use that block as the machine-readable identity; the visible block remains the legacy fallback.
 
+In every `## Evidence` section, render each Azure DevOps build ID as a Markdown link
+to that build, never as a bare number. Use the build URL from the KBE when available;
+otherwise use `https://dev.azure.com/dnceng-public/public/_build/results?buildId=<id>`.
+
 ## Templates
 
 ### Template: Fix-PR body (Branch FIX — confident)
@@ -342,12 +395,12 @@ Linked KBE: #<n>
 - Why the failing test/log validates this fix: <one or two sentences>
 
 ## Evidence
-- Failing build: <AzDO link>
-- First build it occurred: <commit/sha + UTC timestamp> (computed within the scanned window; may not be the true origin)
+- Failing build: [<build-id>](<AzDO build URL>)
+- First build it occurred: [<build-id>](<AzDO build URL>) — <commit/sha + UTC timestamp> (computed within the scanned window; may not be the true origin)
 - Suspected regressing change: <dotnet/runtime#<n> | none identified>
 
 ---
-Filed by [`ci-failure-fix`](https://github.com/dotnet/runtime/blob/main/.github/workflows/ci-failure-fix.md), which attempts validated fixes for `[ci-scan]` Known Build Errors and otherwise loops in owners. Comment here or on the workflow file to suggest changes; [`ci-failure-scan-feedback`](https://github.com/dotnet/runtime/blob/main/.github/workflows/ci-failure-scan-feedback.md) reads in-scope feedback daily and opens (or updates) a PR with prompt edits.
+Filed by [`ci-failure-fix`](https://github.com/dotnet/runtime/blob/main/.github/workflows/ci-failure-fix.md), which attempts validated fixes for `[ci-scan]` Known Build Errors and otherwise loops in owners. Comment here or on the workflow file to suggest changes; [`ci-failure-scan-feedback`](https://github.com/dotnet/runtime/blob/main/.github/workflows/ci-failure-scan-feedback.md) reads in-scope feedback every two weeks and lists proposed prompt edits in its KPI tracker issue.
 ````
 
 Keep the diff <= 20 lines, single file. Never stage a test-disabling change.
@@ -379,8 +432,8 @@ Linked KBE: #<n>
 - Result: <passed | failed | not run>
 
 ## Evidence
-- Failing build: <AzDO link>
-- First build it occurred: <commit/sha + UTC timestamp> (computed within the scanned window; may not be the true origin)
+- Failing build: [<build-id>](<AzDO build URL>)
+- First build it occurred: [<build-id>](<AzDO build URL>) — <commit/sha + UTC timestamp> (computed within the scanned window; may not be the true origin)
 - Suspected regressing change: <dotnet/runtime#<n> | none identified with sufficient confidence>
 
 ## Help wanted
@@ -388,7 +441,7 @@ Linked KBE: #<n>
 - Area owners (`area-<x>`): <@individual-owner>, `@dotnet/<team>`
 
 ---
-Filed by [`ci-failure-fix`](https://github.com/dotnet/runtime/blob/main/.github/workflows/ci-failure-fix.md). Comment here or on the workflow file to suggest changes; [`ci-failure-scan-feedback`](https://github.com/dotnet/runtime/blob/main/.github/workflows/ci-failure-scan-feedback.md) reads in-scope feedback daily and opens (or updates) a PR with prompt edits.
+Filed by [`ci-failure-fix`](https://github.com/dotnet/runtime/blob/main/.github/workflows/ci-failure-fix.md). Comment here or on the workflow file to suggest changes; [`ci-failure-scan-feedback`](https://github.com/dotnet/runtime/blob/main/.github/workflows/ci-failure-scan-feedback.md) reads in-scope feedback every two weeks and lists proposed prompt edits in its KPI tracker issue.
 ````
 
 ### Template: Loop-in comment body (Branch COMMENT — last resort)
@@ -407,8 +460,8 @@ This Known Build Error has no producible automated code change (reason: <JIT/GC 
 <what fails, the failing log line, the source location, and the most likely cause>
 
 ## Evidence
-- Failing build: <AzDO link>
-- First build it occurred: <commit/sha + UTC timestamp> (computed within the scanned window; may not be the true origin)
+- Failing build: [<build-id>](<AzDO build URL>)
+- First build it occurred: [<build-id>](<AzDO build URL>) — <commit/sha + UTC timestamp> (computed within the scanned window; may not be the true origin)
 - Possible related PR: <dotnet/runtime#<n> | none identified with sufficient confidence>
 
 ## Suggested reviewers / area contacts

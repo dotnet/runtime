@@ -1552,7 +1552,7 @@ namespace System.Net.Http
             ReadOnlySpan<byte> bytes = _writeBuffer.ActiveSpan;
             if (bytes.Length > 0)
             {
-                _writeBuffer.Discard(bytes.Length);
+                _writeBuffer.DiscardAll();
                 WriteToStream(bytes);
             }
         }
@@ -1562,7 +1562,7 @@ namespace System.Net.Http
             ReadOnlyMemory<byte> bytes = _writeBuffer.ActiveMemory;
             if (bytes.Length > 0)
             {
-                _writeBuffer.Discard(bytes.Length);
+                _writeBuffer.DiscardAll();
                 return WriteToStreamAsync(bytes, async);
             }
             return default;
@@ -2080,7 +2080,7 @@ namespace System.Net.Http
                     Trace("Unexpected data on connection after response read.");
                 }
 
-                _readBuffer.Discard(_readBuffer.ActiveLength);
+                _readBuffer.DiscardAll();
                 _connectionClose = true;
             }
 

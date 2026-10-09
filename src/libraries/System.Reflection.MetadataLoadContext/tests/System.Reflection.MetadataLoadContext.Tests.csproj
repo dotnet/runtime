@@ -100,8 +100,17 @@
     <WasmFilesToIncludeFromPublishDir Include="mscorlib.dll" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetOS)' == 'browser' or ('$(TargetsAppleMobile)' == 'true' and '$(EnableAggressiveTrimming)' == 'true' and '$(UseNativeAotRuntime)' != 'true')">
+  <ItemGroup Condition="'$(TargetOS)' == 'browser' or (('$(TargetsAppleMobile)' == 'true' or '$(TargetsWasi)' == 'true') and '$(EnableAggressiveTrimming)' == 'true' and '$(UseNativeAotRuntime)' != 'true')">
     <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.xml" />
   </ItemGroup>
+
+  <!-- ActiveIssue https://github.com/dotnet/runtime/issues/134761: ILLink drops MarshalAs data when it rewrites the test assembly. -->
+  <Target Name="_PreserveMetadataLoadContextTestAssemblyFromTrimming"
+          AfterTargets="ConfigureTrimming"
+          Condition="('$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi') and '$(RuntimeFlavor)' == 'CoreCLR' and '$(TestWasmReadyToRun)' == 'true' and '$(PublishReadyToRun)' != 'false'">
+    <ItemGroup>
+      <ResolvedFileToPublish TrimMode="copy" Condition="'%(FileName)%(Extension)' == 'System.Reflection.MetadataLoadContext.Tests.dll'" />
+    </ItemGroup>
+  </Target>
 
 </Project>

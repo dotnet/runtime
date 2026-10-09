@@ -16,7 +16,7 @@ namespace System.Linq.Expressions.Tests
         [OuterLoop("Takes over a minute to complete")]
         // Compiling a 10,000-deep expression tree takes hours on the single-threaded wasm
         // interpreter, exceeding the test timeout. Still covered on Mono and other platforms.
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/129973", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129973", typeof(PlatformDetection), nameof(PlatformDetection.IsWasm), nameof(PlatformDetection.IsCoreCLR))]
         public static void CompileDeepTree_NoStackOverflow(bool useInterpreter)
         {
             var e = (Expression)Expression.Constant(0);

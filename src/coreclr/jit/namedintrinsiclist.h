@@ -23,6 +23,7 @@ enum NamedIntrinsic : unsigned short
     NI_System_BitConverter_Int64BitsToDouble,
     NI_System_BitConverter_SingleToInt32Bits,
 
+    NI_System_Buffer_Memmove,
     NI_System_SpanHelpers_Memmove,
 
     NI_System_Half_FusedMultiplyAdd,
@@ -140,7 +141,6 @@ enum NamedIntrinsic : unsigned short
     NI_System_Object_GetType,
     NI_System_RuntimeTypeHandle_ToIntPtr,
     NI_System_RuntimeType_get_TypeHandle,
-    NI_System_StubHelpers_GetStubContext,
     NI_System_StubHelpers_NextCallReturnAddress,
 
     NI_Array_Address,
@@ -215,9 +215,14 @@ enum NamedIntrinsic : unsigned short
     NI_System_Threading_Tasks_ValueTask_1__ctor,
     NI_System_Threading_Tasks_ValueTask_1_AsTask,
 
-    // These two are special marker IDs so that we still get the inlining profitability boost
+    // These are special marker IDs so that we still get the inlining profitability boost.
     NI_System_Numerics_Intrinsic,
     NI_System_Runtime_Intrinsics_Intrinsic,
+    NI_System_Runtime_Intrinsics_PlatformIntrinsic,
+
+    // Support-query identities; resolution determines their value for the target.
+    NI_IsSupported,
+    NI_IsHardwareAccelerated,
 
 #if defined(FEATURE_HW_INTRINSICS)
     NI_HW_INTRINSIC_START,
