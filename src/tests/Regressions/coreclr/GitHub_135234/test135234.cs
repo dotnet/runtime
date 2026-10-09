@@ -28,6 +28,8 @@ public class Runtime_135234
     }
 
     [Theory]
+    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi | TestPlatforms.iOS | TestPlatforms.tvOS,
+        "Process working set monitoring is not supported on these platforms.")]
     [InlineData(false)]
     [InlineData(true)]
     public static void TestEntryPoint(bool hardwareException)
