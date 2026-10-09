@@ -23,5 +23,5 @@ public class Program
 
     [ActiveIssue("https://github.com/dotnet/runtime/issues/41472", typeof(PlatformDetection), nameof(PlatformDetection.IsNotMultithreadingSupported))]
     [Fact]
-    public static void TestEntryPoint() => Task.Run(TestTask).Wait();
+    public static Task TestEntryPoint() => Task.Run(TestTask);
 }

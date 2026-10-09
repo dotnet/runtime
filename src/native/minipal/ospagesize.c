@@ -1,15 +1,17 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// POSIX implementation of minipal_getpagesize. On WASM and Windows the page size
-// is a compile-time constant and minipal_getpagesize is defined inline in the
-// header; this file is excluded from the build on those platforms by
-// src/native/minipal/CMakeLists.txt to avoid an empty translation unit.
+#include "ospagesize.h"
+
+#if defined(HOST_WASM) || defined(HOST_WINDOWS)
+
+extern uint32_t minipal_getpagesize(void);
+
+#else
 
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdatomic.h>
-#include "ospagesize.h"
 
 uint32_t minipal_getpagesize(void)
 {
@@ -38,3 +40,5 @@ uint32_t minipal_getpagesize(void)
     }
     return page_size;
 }
+
+#endif // HOST_WASM || HOST_WINDOWS

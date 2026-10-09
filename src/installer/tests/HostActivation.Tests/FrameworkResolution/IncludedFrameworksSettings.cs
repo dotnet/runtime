@@ -77,9 +77,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
                 new TestSettings()
                     .WithRuntimeConfigCustomizer(runtimeConfig => runtimeConfig
                         .WithIncludedFramework(new RuntimeConfig.Framework(MicrosoftNETCoreApp, "5.1.2")
-                            .WithApplyPatches(false)    // Properties which are otherwise parsed on frameworks are ignored
-                            .WithRollForward("invalid") // in case of included frameworks. (so invalid values will be accepted)
-                            .WithRollForwardOnNoCandidateFx(42))))
+                            .WithRollForward("invalid"))))
                 .Should().Pass()
                 .And.HaveStdOutContaining("mock is_framework_dependent: 0");
         }

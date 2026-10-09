@@ -333,7 +333,10 @@ namespace System
                 }
             }
 
-            return TryGetUtcOffset(dateTime, out TimeSpan offset) ? offset : _baseUtcOffset;
+            // For an invalid (DST gap) local time TryGetUtcOffset returns false. Fall back to the standard
+            // offset (base plus the applicable rule's BaseUtcOffsetDelta) so GetUtcOffset and DateTimeOffset
+            // stay consistent with ConvertTime/ToUniversalTime for zones that changed their standard offset.
+            return TryGetUtcOffset(dateTime, out TimeSpan offset) ? offset : new TimeSpan(GetStandardUtcOffsetTicks(dateTime));
         }
 
         /// <summary>
@@ -660,9 +663,11 @@ namespace System
             {
                 // This is not logical to do but we are keeping it for app compatibility reason.
                 // We get here if the dateTime is invalid in the source time zone.
+                // Subtract the standard offset (base UTC offset plus the applicable rule's BaseUtcOffsetDelta)
+                // so zones that changed their standard offset over time convert correctly.
                 // Preserve the historical behavior of throwing if the computed UTC time is
                 // outside the DateTime range, rather than silently clamping it later.
-                DateTime invalidTimeUtc = new DateTime(dateTime.Ticks + sourceTimeZone.BaseUtcOffset.Ticks, DateTimeKind.Utc);
+                DateTime invalidTimeUtc = new DateTime(dateTime.Ticks - sourceTimeZone.GetStandardUtcOffsetTicks(dateTime), DateTimeKind.Utc);
                 utcTicks = invalidTimeUtc.Ticks;
             }
 

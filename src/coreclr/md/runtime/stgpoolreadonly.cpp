@@ -1,13 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //*****************************************************************************
 // StgPoolReadOnly.cpp
 //
-
-//
 // Read only pools are used to reduce the amount of data actually required in the database.
-//
 //*****************************************************************************
+
 #include "stdafx.h"                     // Standard include.
 #include <stgpool.h>                    // Our interface definitions.
 
@@ -42,7 +41,6 @@ HRESULT StgPoolReadOnly::InitOnMemReadOnly(// Return code.
     CONTRACTL
     {
         NOTHROW;
-        INJECT_FAULT(return E_OUTOFMEMORY);
     }
     CONTRACTL_END
 
@@ -66,35 +64,12 @@ HRESULT StgPoolReadOnly::InitOnMemReadOnly(// Return code.
 //*****************************************************************************
 // Prepare to shut down or reinitialize.
 //*****************************************************************************
-void StgPoolReadOnly::Uninit()
+void StgPoolReadOnly::Uninit() noexcept
 {
     LIMITED_METHOD_CONTRACT;
 
     m_pSegData = (BYTE*)m_zeros;
     m_pNextSeg = 0;
-}
-
-
-//*****************************************************************************
-// Convert a string to UNICODE into the caller's buffer.
-//*****************************************************************************
-HRESULT StgPoolReadOnly::GetStringW(        // Return code.
-    ULONG       iOffset,                    // Offset of string in pool.
-    _Out_writes_(cchBuffer) LPWSTR szOut,   // Output buffer for string.
-    int         cchBuffer)                  // Size of output buffer.
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_FAULT;
-
-    HRESULT hr;
-    LPCSTR  pString;                // The string in UTF8.
-    int     iChars;
-
-    IfFailRet(GetString(iOffset, &pString));
-    iChars = ::MultiByteToWideChar(CP_UTF8, 0, pString, -1, szOut, cchBuffer);
-    if (iChars == 0)
-        return (BadError(HRESULT_FROM_NT(GetLastError())));
-    return S_OK;
 }
 
 //*****************************************************************************
@@ -107,7 +82,6 @@ StgPoolReadOnly::GetBlob(
     MetaData::DataBlob *pData)
 {
     STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     HRESULT hr;
     UINT32  cbBlobContentSize;
@@ -159,7 +133,6 @@ StgBlobPoolReadOnly::GetBlob(
     MetaData::DataBlob *pData)
 {
     STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     HRESULT hr;
     UINT32  cbBlobContentSize;

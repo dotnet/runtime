@@ -25,12 +25,16 @@ public class MemoryTests : WasmTemplateTestsBase
     public async Task AllocateLargeHeapThenRepeatedlyInterop_NoWorkload() =>
         await AllocateLargeHeapThenRepeatedlyInterop();
 
-    [Fact]
+    [Fact, TestCategory("mono")] // TODO-WASM https://github.com/dotnet/runtime/issues/132555
     public async Task AllocateLargeHeapThenRepeatedlyInterop()
     {
         Configuration config = Configuration.Release;
         ProjectInfo info = CopyTestAsset(config, false, TestAsset.WasmBasicTestApp, "MemoryTests");
         string extraArgs = "-p:EmccMaximumHeapSize=4294901760";
+        // TODO-WASM https://github.com/dotnet/runtime/issues/126100 Pass default property values from runtime (pack) build to the relink.
+        if (BuildTestBase.IsCoreClrRuntime)
+            extraArgs += " -p:WasmBuildNative=true";
+
         BuildProject(info,
             config,
             new BuildOptions(ExtraMSBuildArgs: extraArgs, ExpectSuccess: BuildTestBase.IsUsingWorkloads),

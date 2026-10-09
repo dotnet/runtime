@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Text;
 
 namespace System
@@ -25,7 +23,7 @@ namespace System
         internal const int Decimal64NumberBufferLength = 16 + 1 + 1; // 16 for the longest input + 1 for rounding
         internal const int Decimal128NumberBufferLength = 34 + 1 + 1; // 34 for the longest input + 1 for rounding
 
-        internal unsafe ref struct NumberBuffer
+        internal ref struct NumberBuffer
         {
             public int DigitsCount;
             public int Scale;
@@ -33,14 +31,6 @@ namespace System
             public bool HasNonZeroTail;
             public NumberBufferKind Kind;
             public Span<byte> Digits;
-            /// <safety>Converts the ref to Digits into a pointer value via Unsafe.AsPointer and returns it without dereferencing; the result is not GC-tracked, so any use must be in an unsafe context that establishes Digits still refers to unmovable memory.</safety>
-            public readonly byte* DigitsPtr => (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(Digits)); // safe since constructor expects Digits to refer to unmovable memory
-
-            public NumberBuffer(NumberBufferKind kind, byte* digits, int digitsLength) : this(kind, new Span<byte>(digits, digitsLength))
-            {
-                Debug.Assert(digits != null);
-            }
-
             /// <summary>Initializes the NumberBuffer.</summary>
             /// <param name="kind">The kind of the buffer.</param>
             /// <param name="digits">The digits scratch space. The referenced memory must not be moveable, e.g. stack memory, pinned array, etc.</param>

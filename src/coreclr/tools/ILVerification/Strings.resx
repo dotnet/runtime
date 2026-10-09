@@ -183,6 +183,9 @@
   <data name="ConstrainedCallWithNonByRefThis" xml:space="preserve">
     <value>The 'this' argument to a constrained call must have ByRef type.</value>
   </data>
+  <data name="ConstrainedTypeNoInterfaceImpl" xml:space="preserve">
+    <value>The type operand of the constrained prefix must implement the interface declaring the static virtual method.</value>
+  </data>
   <data name="CtorExpected" xml:space="preserve">
     <value>.ctor expected.</value>
   </data>

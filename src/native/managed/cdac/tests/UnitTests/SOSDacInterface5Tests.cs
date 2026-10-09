@@ -105,9 +105,9 @@ public unsafe class SOSDacInterface5Tests
             .Setup(c => c.GetNativeCodeVersions(s_methodDescAddr, It.IsAny<ILCodeVersionHandle>()))
             .Returns(nativeVersionHandles);
 
-        var mockPrecodeStubs = new Mock<IPrecodeStubs>();
-        mockPrecodeStubs
-            .Setup(p => p.GetInterpreterCodeFromInterpreterPrecodeIfPresent(It.IsAny<TargetCodePointer>()))
+        var mockExecutionManager = new Mock<IExecutionManager>();
+        mockExecutionManager
+            .Setup(e => e.GetDiagnosticCodeStartFromEntryPoint(It.IsAny<TargetCodePointer>()))
             .Returns((TargetCodePointer ep) => ep);
 
         var mockPlatformMetadata = new Mock<IPlatformMetadata>();
@@ -121,11 +121,11 @@ public unsafe class SOSDacInterface5Tests
             .AddMockContract(mockRts)
             .AddMockContract(mockLoader)
             .AddMockContract(mockReJIT)
-            .AddMockContract(mockPrecodeStubs)
+            .AddMockContract(mockExecutionManager)
             .AddMockContract(mockPlatformMetadata)
             .Build();
 
-        return new SOSDacImpl(target, legacyObj: null);
+        return new SOSDacImpl(target, legacyObj: null, new());
     }
 
     private static int CallGetTieredVersions(ISOSDacInterface5 dac5, DacpTieredVersionData[] buffer, out int count, int rejitId = 0)

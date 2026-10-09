@@ -36,6 +36,9 @@ PerfMapArchitectureToken
     ARM64   = 2,
     X64     = 3,
     X86     = 4,
+    RiscV64 = 5,
+    LoongArch64 = 6,
+    Wasm    = 7,
 ```
 
 ```
@@ -47,6 +50,9 @@ PerfMapOSToken
     FreeBSD     = 4,
     NetBSD      = 5,
     SunOS       = 6,
+    OpenBSD     = 7,
+    Browser     = 8,
+    Wasi        = 9,
 ```
 
 ```

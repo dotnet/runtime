@@ -1,14 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
-// File: DispatchInfo.h
-//
 
+// File: DispatchInfo.h
 //
 // Definition of helpers used to expose IDispatch
 // and IDispatchEx to COM.
-//
-
 
 #ifndef _DISPATCHINFO_H
 #define _DISPATCHINFO_H
@@ -262,25 +258,6 @@ public:
     // Helper method that invokes the member with the specified DISPID.
     HRESULT                 InvokeMember(SimpleComCallWrapper *pSimpleWrap, DISPID id, LCID lcid, WORD wFlags, DISPPARAMS *pdp, VARIANT *pVarRes, EXCEPINFO *pei, IServiceProvider *pspCaller, unsigned int *puArgErr);
 
-    void                    InvokeMemberDebuggerWrapper(DispatchMemberInfo*   pDispMemberInfo,
-                                               InvokeObjects*        pObjs,
-                                               int                   NumParams,
-                                               int                   NumArgs,
-                                               int                   NumNamedArgs,
-                                               int&                  NumByrefArgs,
-                                               int&                  iSrcArg,
-                                               DISPID                id,
-                                               DISPPARAMS*           pdp,
-                                               VARIANT*              pVarRes,
-                                               WORD                  wFlags,
-                                               LCID                  lcid,
-                                               DISPID*               pSrcArgNames,
-                                               VARIANT*              pSrcArgs,
-                                               OBJECTHANDLE*         aByrefStaticArrayBackupObjHandle,
-                                               int*                  pManagedMethodParamIndexMap,
-                                               VARIANT**             aByrefArgOleVariant,
-                                               Frame *               pFrame);
-
     void                    InvokeMemberWorker(DispatchMemberInfo*   pDispMemberInfo,
                                                InvokeObjects*        pObjs,
                                                int                   NumParams,
@@ -298,12 +275,6 @@ public:
                                                OBJECTHANDLE*         aByrefStaticArrayBackupObjHandle,
                                                int*                  pManagedMethodParamIndexMap,
                                                VARIANT**             aByrefArgOleVariant);
-
-    // Methods to retrieve the cached MD's
-    static MethodDesc*      GetFieldInfoMD(BinderMethodID Method, TypeHandle hndFieldInfoType);
-    static MethodDesc*      GetPropertyInfoMD(BinderMethodID Method, TypeHandle hndPropInfoType);
-    static MethodDesc*      GetMethodInfoMD(BinderMethodID Method, TypeHandle hndMethodInfoType);
-    static MethodDesc*      GetCustomAttrProviderMD(TypeHandle hndCustomAttrProvider);
 
     // This method synchronizes the DispatchInfo's members with the ones in managed world.
     // The return value will be set to TRUE if the object was out of synch and members where

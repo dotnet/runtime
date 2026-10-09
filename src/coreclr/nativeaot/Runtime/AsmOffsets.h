@@ -52,11 +52,15 @@ ASM_OFFSET(    0,     0, Thread, m_eeAllocContext)
 ASM_OFFSET(   2c,    40, Thread, m_ThreadStateFlags)
 ASM_OFFSET(   30,    48, Thread, m_pTransitionFrame)
 ASM_OFFSET(   34,    50, Thread, m_pDeferredTransitionFrame)
+#ifdef FEATURE_HIJACK
 ASM_OFFSET(   40,    68, Thread, m_ppvHijackedReturnAddressLocation)
 ASM_OFFSET(   44,    70, Thread, m_pvHijackedReturnAddress)
+#endif // FEATURE_HIJACK
 #if defined(TARGET_ARM64)
 ASM_OFFSET(   48,    78, Thread, m_pSpForPacSign)
 ASM_OFFSET(   4c,    80, Thread, m_pExInfoStackHead)
+#elif defined(TARGET_WASM)
+ASM_OFFSET(   40,    FF, Thread, m_pExInfoStackHead)
 #else
 ASM_OFFSET(   48,    78, Thread, m_pExInfoStackHead)
 #endif

@@ -17,9 +17,31 @@ namespace System.Text.Json.SourceGeneration
     internal static class RoslynExtensions
     {
         private static readonly Func<ITypeSymbol, bool>? s_isClosedTypeAccessor = CreateIsClosedTypeAccessor();
+        private static readonly Func<IModuleSymbol, int>? s_memorySafetyRulesVersionAccessor = CreateMemorySafetyRulesVersionAccessor();
 
         public static LanguageVersion? GetLanguageVersion(this Compilation compilation)
             => compilation is CSharpCompilation csc ? csc.LanguageVersion : null;
+
+        public static bool UsesUpdatedMemorySafetyRules(this SemanticModel semanticModel)
+        {
+            const int UpdatedMemorySafetyRulesVersion = 2;
+
+            // The module API includes both the compilation option and the legacy feature flag.
+            // Older compiler hosts expose only the temporary feature-flag opt-in.
+            return s_memorySafetyRulesVersionAccessor is { } getVersion
+                ? getVersion(semanticModel.Compilation.SourceModule) >= UpdatedMemorySafetyRulesVersion
+                : semanticModel.SyntaxTree.Options.Features.ContainsKey("updated-memory-safety-rules");
+        }
+
+        private static Func<IModuleSymbol, int>? CreateMemorySafetyRulesVersionAccessor()
+        {
+            // The enum-valued API is unavailable in Roslyn 3.11; delegate binding accepts its underlying int type.
+            // https://github.com/dotnet/roslyn/pull/84860
+            MethodInfo? getter = typeof(IModuleSymbol).GetProperty("MemorySafetyRulesVersion")?.GetMethod;
+            return getter is null
+                ? null
+                : (Func<IModuleSymbol, int>)getter.CreateDelegate(typeof(Func<IModuleSymbol, int>));
+        }
 
         public static INamedTypeSymbol? GetBestTypeByMetadataName(this Compilation compilation, Type type)
         {
@@ -662,33 +684,6 @@ namespace System.Text.Json.SourceGeneration
             }
         }
 
-        /// <summary>
-        /// Returns the kind keyword corresponding to the specified declaration syntax node.
-        /// </summary>
-        public static string GetTypeKindKeyword(this TypeDeclarationSyntax typeDeclaration)
-        {
-            switch (typeDeclaration.Kind())
-            {
-                case SyntaxKind.ClassDeclaration:
-                    return "class";
-                case SyntaxKind.InterfaceDeclaration:
-                    return "interface";
-                case SyntaxKind.StructDeclaration:
-                    return "struct";
-                case SyntaxKind.RecordDeclaration:
-                    return "record";
-                case SyntaxKind.RecordStructDeclaration:
-                    return "record struct";
-                case SyntaxKind.EnumDeclaration:
-                    return "enum";
-                case SyntaxKind.DelegateDeclaration:
-                    return "delegate";
-                default:
-                    Debug.Fail("unexpected syntax kind");
-                    return null;
-            }
-        }
-
         public static void ResolveNullabilityAnnotations(this IFieldSymbol field, out bool isGetterNonNullable, out bool isSetterNonNullable)
         {
             if (field.Type.IsNullableType())
@@ -859,34 +854,54 @@ namespace System.Text.Json.SourceGeneration
 
         /// <summary>
         /// Polyfill for <c>ITypeSymbol.GetClosedDerivedTypeInfo().ClosedDerivedTypes</c>: reconstructs the
-        /// immediate derived types of a closed hierarchy. The <c>closed</c> modifier constrains subtyping
-        /// to the base type's declaring module, so the immediate derived types are exactly the same-module
-        /// named types whose direct base type shares <paramref name="closedType"/>'s original definition —
-        /// the set Roslyn records internally as <c>CandidateClosedSubtypeDefinitions</c>. Generic derived
-        /// types are returned in unbound form so callers can unify them against the constructed base.
-        /// Returns <see langword="null"/> when none are found. Derived types are yielded in module-scan
-        /// order; callers that require a canonical ordering (for example, for deterministic generator
-        /// output) order them by discriminator, where uniqueness is established.
+        /// derived types of a closed hierarchy, recursively expanding derived types that are themselves
+        /// closed. The <c>closed</c> modifier constrains subtyping to the base type's declaring module, so
+        /// the derived types at each level are exactly the same-module named types whose direct base type
+        /// shares the current closed type's original definition. Generic derived types are returned in
+        /// unbound form so callers can unify them against the constructed base.
+        /// Returns <see langword="null"/> when the closed type has no derived types. Returns an empty list
+        /// when it has closed descendants but no terminal derived types. Derived types are yielded in
+        /// module-scan order; callers that require a canonical ordering (for example, for deterministic
+        /// generator output) order them by discriminator, where uniqueness is established.
         /// </summary>
         public static List<ITypeSymbol>? GetClosedDerivedTypes(this INamedTypeSymbol closedType)
         {
-            INamedTypeSymbol baseDefinition = closedType.OriginalDefinition;
+            Debug.Assert(closedType.TypeKind is TypeKind.Class);
+
+            INamedTypeSymbol[] enumeratedTypes = EnumerateNamedTypes(closedType.ContainingModule.GlobalNamespace).ToArray();
             List<ITypeSymbol>? derivedTypes = null;
+            GetClosedDerivedTypesCore(closedType, enumeratedTypes, ref derivedTypes);
+            return derivedTypes;
 
-            foreach (INamedTypeSymbol candidate in EnumerateNamedTypes(closedType.ContainingModule.GlobalNamespace))
+            static void GetClosedDerivedTypesCore(
+                INamedTypeSymbol closedType,
+                INamedTypeSymbol[] enumeratedTypes,
+                ref List<ITypeSymbol>? derivedTypes)
             {
-                if (candidate.BaseType is { } candidateBase &&
-                    SymbolEqualityComparer.Default.Equals(candidateBase.OriginalDefinition, baseDefinition))
-                {
-                    ITypeSymbol derivedType = candidate.IsGenericType
-                        ? candidate.ConstructUnboundGenericType()
-                        : candidate;
+                INamedTypeSymbol baseDefinition = closedType.OriginalDefinition;
 
-                    (derivedTypes ??= new()).Add(derivedType);
+                foreach (INamedTypeSymbol candidate in enumeratedTypes)
+                {
+                    if (candidate.BaseType is { } candidateBase &&
+                        SymbolEqualityComparer.Default.Equals(candidateBase.OriginalDefinition, baseDefinition))
+                    {
+                        derivedTypes ??= new();
+
+                        INamedTypeSymbol derivedType = candidate.IsGenericType
+                            ? candidate.ConstructUnboundGenericType()
+                            : candidate;
+
+                        if (candidate.IsClosedType())
+                        {
+                            GetClosedDerivedTypesCore(derivedType, enumeratedTypes, ref derivedTypes);
+                        }
+                        else
+                        {
+                            derivedTypes.Add(derivedType);
+                        }
+                    }
                 }
             }
-
-            return derivedTypes;
 
             static IEnumerable<INamedTypeSymbol> EnumerateNamedTypes(INamespaceSymbol namespaceSymbol)
             {

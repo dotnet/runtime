@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Optimize>True</Optimize>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <CLRTestPriority>1</CLRTestPriority>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Runtime_133746.cs" />
+    <CLRTestEnvironmentVariable Include="DOTNET_TieredCompilation" Value="0" />
+  </ItemGroup>
+</Project>

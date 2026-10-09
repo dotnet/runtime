@@ -28,6 +28,10 @@ namespace System.Net.Test.Common
         private readonly TimeSpan _timeout;
         private int _lastStreamId;
         private bool _expectClientDisconnect;
+        private bool _closeDeferred;
+        private int _lastRequestStreamId;
+        private int _lastGoAwayStreamId = int.MaxValue;
+        private int _closed;
         private readonly SemaphoreSlim? _readLock;
         private readonly SemaphoreSlim? _writeLock;
 
@@ -36,6 +40,8 @@ namespace System.Net.Test.Common
         public bool IsInvalid => _connectionSocket == null;
         public Stream Stream => _connectionStream;
         public Task<bool> SettingAckWaiter => _ignoredSettingsAckPromise?.Task;
+        internal bool DeferClose { get; set; }
+        internal bool IsCloseDeferred => _closeDeferred;
 
         private Http2LoopbackConnection(SocketWrapper socket, Stream stream, TimeSpan timeout, Http2Options httpOptions)
         {
@@ -179,9 +185,10 @@ namespace System.Net.Test.Common
 
         public async Task WriteFrameAsync(Frame frame, CancellationToken cancellationToken = default)
         {
+            Stream stream = _connectionStream ?? throw new ObjectDisposedException(nameof(Http2LoopbackConnection));
             byte[] writeBuffer = new byte[Frame.FrameHeaderLength + frame.Length];
             frame.WriteTo(writeBuffer);
-            await _connectionStream.WriteAsync(writeBuffer, 0, writeBuffer.Length, cancellationToken).ConfigureAwait(false);
+            await stream.WriteAsync(writeBuffer, 0, writeBuffer.Length, cancellationToken).ConfigureAwait(false);
         }
 
         public async Task WriteFramesAsync(Frame[] frames, CancellationToken cancellationToken = default)
@@ -247,6 +254,10 @@ namespace System.Net.Test.Common
             }
 
             Frame header = Frame.ReadFrom(headerBytes);
+            if (header.Type == FrameType.Headers)
+            {
+                _lastRequestStreamId = Math.Max(_lastRequestStreamId, header.StreamId);
+            }
 
             // Read the data segment of the frame, if it is present.
             byte[] data = new byte[header.Length];
@@ -799,6 +810,7 @@ namespace System.Net.Test.Common
 
         public async Task SendGoAway(int lastStreamId, ProtocolErrors errorCode = ProtocolErrors.NO_ERROR)
         {
+            _lastGoAwayStreamId = Math.Min(_lastGoAwayStreamId, lastStreamId);
             GoAwayFrame frame = new GoAwayFrame(lastStreamId, (int)errorCode, new byte[] { }, 0);
             await WriteFrameAsync(frame).ConfigureAwait(false);
         }
@@ -932,10 +944,56 @@ namespace System.Net.Test.Common
 
         public override async ValueTask DisposeAsync()
         {
+            if (_closeDeferred)
+            {
+                return;
+            }
+
             // Might have been already shutdown manually via WaitForConnectionShutdownAsync which nulls the _connectionStream.
             if (_connectionStream != null)
             {
+                if (DeferClose)
+                {
+                    _closeDeferred = true;
+                    try
+                    {
+                        await SendGoAway(Math.Min(_lastRequestStreamId, _lastGoAwayStreamId)).ConfigureAwait(false);
+                    }
+                    catch (ObjectDisposedException) when (Volatile.Read(ref _closed) != 0)
+                    {
+                        // The server can close connections while a failing test is still unwinding.
+                    }
+                    catch (IOException)
+                    {
+                        // The client may already have closed the connection.
+                    }
+                    catch (SocketException)
+                    {
+                        // The client may already have closed the connection.
+                    }
+                    return;
+                }
+
                 await ShutdownIgnoringErrorsAsync(_lastStreamId);
+            }
+        }
+
+        internal void Close()
+        {
+            if (Interlocked.Exchange(ref _closed, 1) != 0)
+            {
+                return;
+            }
+
+            try
+            {
+                _connectionStream?.Dispose();
+            }
+            finally
+            {
+                _connectionSocket?.Dispose();
+                _connectionStream = null;
+                _connectionSocket = null;
             }
         }
 
@@ -1047,7 +1105,14 @@ namespace System.Net.Test.Common
                 await SendResponseBodyAsync(streamId, Encoding.ASCII.GetBytes(content)).ConfigureAwait(false);
             }
 
-            await WaitForConnectionShutdownAsync().ConfigureAwait(false);
+            if (DeferClose)
+            {
+                await DisposeAsync().ConfigureAwait(false);
+            }
+            else
+            {
+                await WaitForConnectionShutdownAsync().ConfigureAwait(false);
+            }
 
             return requestData;
         }

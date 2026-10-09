@@ -27,8 +27,8 @@ namespace ILLink.CodeFix
         /// Registers an add-unsafe action for a supported declaration that has no existing safety modifier.
         /// </summary>
         /// <remarks>
-        /// A declaration that documents why it is safe gets <c>safe</c> instead, so an audited member does not
-        /// become caller-unsafe and force its callers into <c>unsafe</c> contexts.
+        /// A destructor or a declaration that documents why it is safe gets <c>safe</c> instead, so the fixer does
+        /// not add a meaningless <c>unsafe</c> modifier or force callers of an audited member into unsafe contexts.
         /// </remarks>
         internal static async Task RegisterAddUnsafeCodeFixAsync(
             CodeFixContext context,
@@ -51,15 +51,21 @@ namespace ILLink.CodeFix
                 return;
             }
 
-            SyntaxKind modifier = SyntaxKind.UnsafeKeyword;
+            bool hasSafetyDocumentation = UnsafeMigrationSyntaxHelpers.HasSafetyDocumentation(declaration);
+            bool useSafeModifier = UnsafeMigrationSyntaxHelpers.SafeKeywordKind != SyntaxKind.None
+                && (declaration is DestructorDeclarationSyntax || hasSafetyDocumentation);
+            SyntaxKind modifier = useSafeModifier
+                ? UnsafeMigrationSyntaxHelpers.SafeKeywordKind
+                : SyntaxKind.UnsafeKeyword;
             string title = codeFixTitle.ToString();
             string displayTitle = title;
-            if (UnsafeMigrationSyntaxHelpers.SafeKeywordKind != SyntaxKind.None
-                && UnsafeMigrationSyntaxHelpers.HasSafetyDocumentation(declaration))
+            if (useSafeModifier)
             {
-                modifier = UnsafeMigrationSyntaxHelpers.SafeKeywordKind;
+                string resourceName = hasSafetyDocumentation
+                    ? nameof(Resources.AddSafeToDocumentedMemberCodeFixTitle)
+                    : nameof(Resources.AddSafeCodeFixTitle);
                 displayTitle = new LocalizableResourceString(
-                    nameof(Resources.AddSafeToDocumentedMemberCodeFixTitle),
+                    resourceName,
                     Resources.ResourceManager,
                     typeof(Resources)).ToString();
             }

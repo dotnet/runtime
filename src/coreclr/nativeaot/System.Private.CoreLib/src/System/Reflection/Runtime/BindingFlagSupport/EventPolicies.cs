@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Runtime.TypeInfos;
 
 namespace System.Reflection.Runtime.BindingFlagSupport
@@ -16,13 +15,6 @@ namespace System.Reflection.Runtime.BindingFlagSupport
         public static readonly EventPolicies Instance = new EventPolicies();
 
         public EventPolicies() : base(MemberTypeIndex.Event) { }
-
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
-            Justification = "Reflection implementation")]
-        public sealed override IEnumerable<EventInfo> GetDeclaredMembers(Type type)
-        {
-            return type.GetEvents(DeclaredOnlyLookup);
-        }
 
         public sealed override IEnumerable<EventInfo> CoreGetDeclaredMembers(RuntimeTypeInfo type, NameFilter? optionalNameFilter, RuntimeTypeInfo reflectedType)
         {
@@ -65,13 +57,6 @@ namespace System.Reflection.Runtime.BindingFlagSupport
                     return true;
             }
             return false;
-        }
-
-        public sealed override bool ImplicitlyOverrides(EventInfo? baseMember, EventInfo? derivedMember)
-        {
-            MethodInfo? baseAccessor = GetAccessorMethod(baseMember!);
-            MethodInfo? derivedAccessor = GetAccessorMethod(derivedMember!);
-            return MethodPolicies.Instance.ImplicitlyOverrides(baseAccessor, derivedAccessor);
         }
 
         public sealed override bool OkToIgnoreAmbiguity(EventInfo m1, EventInfo m2)

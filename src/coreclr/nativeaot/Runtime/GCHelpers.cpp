@@ -88,6 +88,8 @@ bool InitializeGC()
     if (!GCHandleUtilities::GetGCHandleManager()->Initialize())
         return false;
 
+    g_pGlobalHandleStore = GCHandleUtilities::GetGCHandleManager()->GetGlobalHandleStore();
+
 #ifdef TARGET_WINDOWS
     // By now finalizer thread should have initialized FLS slot for thread cleanup notifications.
     // And ensured that COM is initialized (must happen before allocating FLS slot).

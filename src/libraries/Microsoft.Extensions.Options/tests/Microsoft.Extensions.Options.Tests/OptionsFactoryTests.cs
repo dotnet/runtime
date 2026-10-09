@@ -351,7 +351,6 @@ namespace Microsoft.Extensions.Options.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50877", TestPlatforms.Android)]
         public void ConfigureOptionsThrowsWithAction()
         {
             var services = new ServiceCollection();
@@ -361,7 +360,6 @@ namespace Microsoft.Extensions.Options.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50877", TestPlatforms.Android)]
         public void ConfigureOptionsThrowsIfNothingFound()
         {
             var services = new ServiceCollection();

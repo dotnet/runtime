@@ -88,8 +88,10 @@ ASMCONSTANTS_C_ASSERT(CallDescrData__pTarget              == offsetof(CallDescrD
 ASMCONSTANTS_C_ASSERT(CallDescrData__pRetBuffArg          == offsetof(CallDescrData, pRetBuffArg))
 ASMCONSTANTS_C_ASSERT(CallDescrData__returnValue          == offsetof(CallDescrData, returnValue))
 
+#ifdef FEATURE_VARARGS
 #define VASigCookie__pPInvokeILStub 0x8
 ASMCONSTANTS_C_ASSERT(VASigCookie__pPInvokeILStub == offsetof(VASigCookie, pPInvokeILStub))
+#endif // FEATURE_VARARGS
 
 #define SIZEOF__Frame                 0x10
 ASMCONSTANTS_C_ASSERT(SIZEOF__Frame == sizeof(Frame));
@@ -215,18 +217,6 @@ ASMCONSTANTS_C_ASSERT(MethodDesc_ALIGNMENT_SHIFT == MethodDesc::ALIGNMENT_SHIFT)
 ASMCONSTANTS_C_ASSERT(ResolveCacheElem__target == offsetof(ResolveCacheElem, target));
 ASMCONSTANTS_C_ASSERT(ResolveCacheElem__pNext == offsetof(ResolveCacheElem, pNext));
 #endif // FEATURE_VIRTUAL_STUB_DISPATCH
-
-#define                OFFSETOF__DynamicStaticsInfo__m_pMethodTable 0x10
-ASMCONSTANTS_C_ASSERT(OFFSETOF__DynamicStaticsInfo__m_pMethodTable
-                    == offsetof(DynamicStaticsInfo, m_pMethodTable));
-
-#define                OFFSETOF__DynamicStaticsInfo__m_pNonGCStatics 0x8
-ASMCONSTANTS_C_ASSERT(OFFSETOF__DynamicStaticsInfo__m_pNonGCStatics
-                    == offsetof(DynamicStaticsInfo, m_pNonGCStatics));
-
-#define                OFFSETOF__DynamicStaticsInfo__m_pGCStatics 0
-ASMCONSTANTS_C_ASSERT(OFFSETOF__DynamicStaticsInfo__m_pGCStatics
-                    == offsetof(DynamicStaticsInfo, m_pGCStatics));
 
 // For JIT_PInvokeBegin and JIT_PInvokeEnd helpers
 #define               Frame__m_Next 0x08

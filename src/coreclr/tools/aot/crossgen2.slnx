@@ -3,9 +3,9 @@
     <BuildType Name="Checked" />
     <BuildType Name="Debug" />
     <BuildType Name="Release" />
+    <Platform Name="x86" />
     <Platform Name="Any CPU" />
     <Platform Name="x64" />
-    <Platform Name="x86" />
   </Configurations>
   <Project Path="../../../tools/illink/src/ILLink.CodeFix/ILLink.CodeFixProvider.csproj">
     <BuildType Solution="Checked|*" Project="Debug" />

@@ -1,0 +1,13 @@
+<Project>
+  <PropertyGroup>
+    <MonoTargetsTasksAssemblyPath Condition="'$(MSBuildRuntimeType)' == 'Core'">$(MSBuildThisFileDirectory)..\tasks\net\MonoTargetsTasks.dll</MonoTargetsTasksAssemblyPath>
+    <MonoTargetsTasksAssemblyPath Condition="'$(MSBuildRuntimeType)' != 'Core'">$(MSBuildThisFileDirectory)..\tasks\netframework\MonoTargetsTasks.dll</MonoTargetsTasksAssemblyPath>
+  </PropertyGroup>
+  <!-- ILStrip -->
+  <UsingTask TaskName="ILStrip" AssemblyFile="$(MonoTargetsTasksAssemblyPath)" />
+  <!-- RuntimeConfigParser -->
+  <UsingTask TaskName="RuntimeConfigParserTask" AssemblyFile="$(MonoTargetsTasksAssemblyPath)" />
+  <!-- NetTraceToMibcConverter -->
+  <UsingTask TaskName="NetTraceToMibcConverter" AssemblyFile="$(MonoTargetsTasksAssemblyPath)" />
+  <UsingTask TaskName="MonoRuntimeComponentManifestReadTask" AssemblyFile="$(MonoTargetsTasksAssemblyPath)" />
+</Project>

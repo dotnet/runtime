@@ -147,6 +147,10 @@ void PerfMap::Enable(PerfMapType type, bool sendExisting)
             return;
         }
 
+#ifndef FEATURE_PORTABLE_HELPERS
+        ReportCopiedWriteBarriersToPerfMap();
+#endif // !FEATURE_PORTABLE_HELPERS
+
         AppDomain::AssemblyIterator assemblyIterator = GetAppDomain()->IterateAssembliesEx(
             (AssemblyIterationFlags)(kIncludeLoaded | kIncludeExecution));
         CollectibleAssemblyHolder<Assembly *> pAssembly;
@@ -183,6 +187,19 @@ void PerfMap::Enable(PerfMapType type, bool sendExisting)
                 MethodDesc * pMethod = heapIterator.GetMethod();
                 if (pMethod == nullptr)
                 {
+                    StubCodeBlockKind stubCodeBlockKind = heapIterator.GetStubCodeBlockKind();
+                    if (stubCodeBlockKind != STUB_CODE_BLOCK_UNKNOWN)
+                    {
+                        // CodeHeapIterator cannot reconstruct individual stubs within a block, so
+                        // on-demand maps report the block regardless of live block/individual granularity.
+                        PerfMap::LogStubs(
+                            "ReportStubBlock",
+                            GetStubCodeBlockKindString(stubCodeBlockKind),
+                            PINSTRToPCODE(heapIterator.GetMethodCode()),
+                            heapIterator.GetCodeSize(),
+                            PerfMapStubType::Block,
+                            /* applyGranularityFilter */ false);
+                    }
                     continue;
                 }
 
@@ -341,7 +358,7 @@ void PerfMap::LogJITCompiledMethod(MethodDesc * pMethod, PCODE pCode, size_t cod
             name.AppendPrintf("[%s]", optimizationTier);
         }
         SString line;
-        line.Printf(FMT_CODE_ADDR " %x %s\n", pCode, codeSize, name.GetUTF8());
+        line.Printf(FMT_CODE_ADDR " %zx %s\n", (void*)pCode, codeSize, name.GetUTF8());
 
         {
             CrstHolder ch(&(s_csPerfMap));
@@ -442,7 +459,8 @@ void PerfMap::LogInterpreterMethod(MethodDesc * pMethod, PCODE irAddress, size_t
         pMethod->GetFullMethodInfo(name);
 
         SString line;
-        line.Printf(FMT_CODE_ADDR " %x [Interpreter] %s\n", irAddress, irSize, name.GetUTF8());
+        line.Printf(FMT_CODE_ADDR " %zx [Interpreter] %s\n", (void*)irAddress, irSize,
+                    name.GetUTF8());
 
         {
             CrstHolder ch(&(s_csPerfMap));
@@ -458,7 +476,7 @@ void PerfMap::LogInterpreterMethod(MethodDesc * pMethod, PCODE irAddress, size_t
 #endif // FEATURE_INTERPRETER
 
 // Log a set of stub to the map.
-void PerfMap::LogStubs(const char* stubType, const char* stubOwner, PCODE pCode, size_t codeSize, PerfMapStubType stubAllocationType)
+void PerfMap::LogStubs(const char* stubType, const char* stubOwner, PCODE pCode, size_t codeSize, PerfMapStubType stubAllocationType, bool applyGranularityFilter)
 {
     CONTRACTL
     {
@@ -472,7 +490,7 @@ void PerfMap::LogStubs(const char* stubType, const char* stubOwner, PCODE pCode,
         return;
     }
 
-    if (stubAllocationType != PerfMapStubType::Individual)
+    if (applyGranularityFilter && stubAllocationType != PerfMapStubType::Individual)
     {
         if ((stubAllocationType == PerfMapStubType::IndividualWithinBlock) != s_IndividualAllocationStubReporting)
         {
@@ -503,7 +521,7 @@ void PerfMap::LogStubs(const char* stubType, const char* stubOwner, PCODE pCode,
             name.Printf("stub<%d> %s<%s>", ++(s_StubsMapped), stubType, stubOwner);
         }
         SString line;
-        line.Printf(FMT_CODE_ADDR " %x %s\n", pCode, codeSize, name.GetUTF8());
+        line.Printf(FMT_CODE_ADDR " %zx %s\n", (void*)pCode, codeSize, name.GetUTF8());
 
         {
             CrstHolder ch(&(s_csPerfMap));

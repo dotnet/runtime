@@ -21,7 +21,7 @@ public class DacDbiStackWalkDumpTests : DumpTestBase
     protected override string DebuggeeName => "StackWalk";
     protected override string DumpType => "full";
 
-    private DacDbiImpl CreateDacDbi() => new DacDbiImpl(Target, legacyObj: null);
+    private DacDbiImpl CreateDacDbi() => new DacDbiImpl(Target, legacyObj: null, new());
 
     [ConditionalTheory]
     [MemberData(nameof(TestConfigurations))]

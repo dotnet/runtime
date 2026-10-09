@@ -28,7 +28,7 @@ FCIMPL1(INT32, ArrayNative::GetCorElementTypeOfElementType, ArrayBase* arrayUNSA
 }
 FCIMPLEND
 
-extern "C" PCODE QCALLTYPE Array_GetElementConstructorEntrypoint(QCall::TypeHandle pArrayTypeHnd)
+extern "C" PCODE QCALLTYPE Array_GetElementConstructorEntrypoint(QCall::TypeHandle pArrayTypeHnd, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -107,7 +107,7 @@ static void CheckElementType(TypeHandle elementType)
     }
 }
 
-extern "C" void QCALLTYPE Array_CreateInstance(QCall::TypeHandle pTypeHnd, INT32 rank, INT32* pLengths, INT32* pLowerBounds, BOOL createFromArrayType, QCall::ObjectHandleOnStack retArray)
+extern "C" void QCALLTYPE Array_CreateInstance(QCall::TypeHandle pTypeHnd, INT32 rank, INT32* pLengths, INT32* pLowerBounds, BOOL createFromArrayType, QCall::ObjectHandleOnStack retArray, QCallExceptionStatus* qcallError)
 {
     CONTRACTL {
         QCALL_CHECK;
@@ -203,7 +203,7 @@ Done: ;
     END_QCALL;
 }
 
-extern "C" void QCALLTYPE Array_Ctor(MethodTable* pArrayMT, UINT32 dwNumArgs, INT32* pArgList, QCall::ObjectHandleOnStack retArray)
+extern "C" void QCALLTYPE Array_Ctor(MethodTable* pArrayMT, UINT32 dwNumArgs, INT32* pArgList, QCall::ObjectHandleOnStack retArray, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 

@@ -246,10 +246,10 @@ namespace ILCompiler.ObjectWriter
 
         private protected override void EmitDebugFunctionInfo(
             uint methodTypeIndex,
+            Utf8String methodDisplayName,
             Utf8String methodName,
             SymbolDefinition methodSymbol,
-            INodeWithDebugInfo debugNode,
-            bool hasSequencePoints)
+            INodeWithDebugInfo debugNode)
         {
             DebugEHClauseInfo[] clauses = null;
 
@@ -269,7 +269,7 @@ namespace ILCompiler.ObjectWriter
                     debugNode.GetDebugVars().Select(debugVar => (debugVar, GetVarTypeIndex(debugNode.IsStateMachineMoveNextMethod, debugVar))),
                     clauses ?? []);
 
-                if (hasSequencePoints)
+                if (debugNode.GetNativeSequencePoints().Any())
                 {
                     _dwarfBuilder.EmitLineInfo(
                         methodSymbol.SectionIndex,

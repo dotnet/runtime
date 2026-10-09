@@ -1,9 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-//
 // EE to Debugger Interface Header
-//
 
 #ifndef _eedbginterface_h_
 #define _eedbginterface_h_
@@ -92,12 +90,6 @@ public:
 
     virtual void *GetObjectFromHandle(OBJECTHANDLE handle) = 0;
 
-    virtual OBJECTHANDLE GetHandleFromObject(void *obj,
-                                      bool fStrongNewRef,
-                                      AppDomain *pAppDomain) = 0;
-
-    virtual void DbgDestroyHandle( OBJECTHANDLE oh, bool fStrongNewRef ) = 0;
-
     virtual OBJECTHANDLE GetThreadException(Thread *pThread) = 0;
 
     virtual bool IsThreadExceptionNull(Thread *pThread) = 0;
@@ -128,6 +120,8 @@ public:
     virtual BOOL IsManagedNativeCode(const BYTE *address) = 0;
 
 #endif // #ifndef DACCESS_COMPILE
+
+    virtual BOOL IsIPInModule(PTR_VOID pModuleBaseAddress, PCODE ip) = 0;
 
     virtual PCODE GetNativeCodeStartAddress(PCODE address) = 0;
 

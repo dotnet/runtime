@@ -225,6 +225,27 @@
       <ExcludeNativeLibrariesRuntimeFiles Condition="'$(TargetsWasi)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR'"
                                           Include="$(LibrariesNativeArtifactsPath)libSystem.IO.Compression.Native.a;
                                                    $(LibrariesNativeArtifactsPath)libz.a" />
+
+      <!-- Same situation on browser with CoreCLR: these libraries are always installed to both
+           LibrariesNativeArtifactsPath (the top-level, flavor-agnostic native artifacts directory
+           shared with Mono, whose contents can be stale leftovers from a Mono build in the same
+           tree) and LibrariesSharedFrameworkDir/CoreCLRSharedFrameworkDir, from where the
+           browser+CoreCLR-specific LibrariesRuntimeFiles/RuntimeFiles items below already pick
+           them up. Exclude the top-level copies to avoid duplicate publish output files. -->
+      <ExcludeNativeLibrariesRuntimeFiles Condition="'$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'CoreCLR'"
+                                          Include="$(LibrariesNativeArtifactsPath)icudt.dat;
+                                                   $(LibrariesNativeArtifactsPath)icudt_CJK.dat;
+                                                   $(LibrariesNativeArtifactsPath)icudt_EFIGS.dat;
+                                                   $(LibrariesNativeArtifactsPath)icudt_no_CJK.dat;
+                                                   $(LibrariesNativeArtifactsPath)libicudata.a;
+                                                   $(LibrariesNativeArtifactsPath)libicui18n.a;
+                                                   $(LibrariesNativeArtifactsPath)libicuuc.a;
+                                                   $(LibrariesNativeArtifactsPath)libSystem.Globalization.Native.a;
+                                                   $(LibrariesNativeArtifactsPath)libSystem.IO.Compression.Native.a;
+                                                   $(LibrariesNativeArtifactsPath)libSystem.Native.a;
+                                                   $(LibrariesNativeArtifactsPath)libSystem.Native.TimeZoneData.a;
+                                                   $(LibrariesNativeArtifactsPath)libSystem.Native.TimeZoneData.Invariant.a;
+                                                   $(LibrariesNativeArtifactsPath)libz.a" />
       <LibrariesRuntimeFiles Include="
         $(LibrariesNativeArtifactsPath)*.dat;
         $(LibrariesNativeArtifactsPath)*.dll;
@@ -242,6 +263,7 @@
         $(LibrariesNativeArtifactsPath)*.jar;"
         IsNative="true" />
 
+      <!-- These Rollup maps are inputs to Emscripten's JS-library handling, not maps for a served module. -->
       <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'CoreCLR'"
                              Include="
         $(CoreCLRSharedFrameworkDir)libcoreclr_static.a;
@@ -258,7 +280,11 @@
         "
         Exclude="$(LibrariesSharedFrameworkDir)libminipal.a;
                  $(LibrariesSharedFrameworkDir)libSystem.IO.Compression.Native.a;
-                 $(LibrariesSharedFrameworkDir)libz.a"
+                 $(LibrariesSharedFrameworkDir)libz.a;
+                 $(LibrariesSharedFrameworkDir)libBrowserHost.js.map;
+                 $(LibrariesSharedFrameworkDir)libSystem.Native.Browser.js.map;
+                 $(LibrariesSharedFrameworkDir)libSystem.Native.Browser.Utils.js.map;
+                 $(LibrariesSharedFrameworkDir)libSystem.Runtime.InteropServices.JavaScript.Native.js.map"
         IsNative="true" />
 
       <!-- Runtime tests for Helix are built without the host subset, so browser host files are excluded from the runtime tests build -->
@@ -266,6 +292,7 @@
                              Include="
         $(HostSharedFrameworkDir)libBrowserHost.a;
         $(HostSharedFrameworkDir)dotnet.native.js;
+        $(HostSharedFrameworkDir)dotnet.native.js.symbols;
         $(HostSharedFrameworkDir)dotnet.native.wasm;
         "
         IsNative="true" />

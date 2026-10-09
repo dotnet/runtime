@@ -4,6 +4,7 @@
 #include <atomic>
 #include <condition_variable>
 #include <mutex>
+#include <optional>
 #include <pal.h>
 #include "args.h"
 #include <trace.h>
@@ -64,7 +65,31 @@ namespace
 
             // Verbose logging
             if (trace::is_enabled())
+            {
                 g_context->coreclr_properties.log_properties();
+                if (!g_context->coreclr_properties.contains(_STRINGIFY(HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES)))
+                {
+                    for (const char* name : g_context->tpa_names)
+                    {
+                        std::unordered_map<std::string, hostpolicy_context_t::tpa_path_t>::const_iterator path =
+                            g_context->tpa_paths.find(name);
+                        assert(path != g_context->tpa_paths.end());
+
+                        const char* directory = path->second.directory;
+                        assert(directory[0] != '\0' && directory[strlen(directory) - 1] == static_cast<char>(DIR_SEPARATOR));
+
+                        pal::string_t name_str;
+                        pal::string_t directory_str;
+                        pal::string_t file_name_str;
+                        if (pal::clr_palstring(name, &name_str)
+                            && pal::clr_palstring(directory, &directory_str)
+                            && pal::clr_palstring(path->second.file_name.c_str(), &file_name_str))
+                        {
+                            trace::verbose(_X("TPA entry %s = %s%s"), name_str.c_str(), directory_str.c_str(), file_name_str.c_str());
+                        }
+                    }
+                }
+            }
 
             std::vector<char> host_path;
             pal::pal_clrstring(g_context->host_path, &host_path);
@@ -447,7 +472,7 @@ SHARED_API int HOSTPOLICY_CALLTYPE corehost_main_with_output_buffer(const int ar
         {
             rc = StatusCode::HostApiBufferTooSmall;
             *required_buffer_size = len + 1;
-            trace::info(_X("get-native-search-directories failed with buffer too small"), output_string.c_str());
+            trace::info(_X("get-native-search-directories failed with buffer too small. Required: %d, available: %d"), len + 1, buffer_size);
         }
         else
         {
@@ -558,7 +583,12 @@ namespace
             return StatusCode::HostInvalidState;
 
         if (!context->coreclr_properties.try_get(key, value))
-            return StatusCode::HostPropertyNotFound;
+        {
+            if (pal::strcmp(key, _STRINGIFY(HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES)) != 0)
+                return StatusCode::HostPropertyNotFound;
+
+            *value = context->get_reconstructed_tpa_property().c_str();
+        }
 
         return StatusCode::Success;
     }
@@ -599,7 +629,8 @@ namespace
             return StatusCode::HostInvalidState;
         }
 
-        size_t actualCount = context->coreclr_properties.count();
+        bool hasExplicitTpa = context->coreclr_properties.contains(_STRINGIFY(HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES));
+        size_t actualCount = context->coreclr_properties.count() + (hasExplicitTpa ? 0 : 1);
         size_t input_count = *count;
         *count = actualCount;
         if (input_count < actualCount || keys == nullptr || values == nullptr)
@@ -613,6 +644,11 @@ namespace
             ++index;
         };
         context->coreclr_properties.enumerate(callback);
+        if (!hasExplicitTpa)
+        {
+            keys[index] = _STRINGIFY(HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES);
+            values[index] = context->get_reconstructed_tpa_property().c_str();
+        }
 
         return StatusCode::Success;
     }
@@ -930,10 +966,9 @@ SHARED_API int HOSTPOLICY_CALLTYPE corehost_resolve_component_dependencies(
 
     // For now intentionally don't process .runtimeconfig.json since we don't perform framework resolution.
 
-    // Call parse_runtime_config since it initializes the defaults for various settings
-    // but we don't have any .runtimeconfig.json for the component, so pass in empty paths.
+    // Initialize the runtime config without processing a .runtimeconfig.json for the component.
     // Empty paths is a valid case and the method will simply skip parsing anything.
-    app->parse_runtime_config(pal::string_t(), pal::string_t(), runtime_config_t::settings_t());
+    app->parse_runtime_config(pal::string_t(), pal::string_t(), std::nullopt);
     if (!app->get_runtime_config().is_valid())
     {
         // This should really never happen, but fail gracefully if it does anyway.
@@ -979,19 +1014,31 @@ SHARED_API int HOSTPOLICY_CALLTYPE corehost_resolve_component_dependencies(
         return StatusCode::ResolverResolveFailure;
     }
 
+    pal::string_t tpa;
+    for (const probe_paths_t::tpa_t::entry_t& entry : probe_paths.tpa.entries)
+    {
+        assert(entry.directory_index < probe_paths.tpa.directories.size());
+        const probe_paths_t::tpa_t::entry_t& directory =
+            probe_paths.tpa.entries[probe_paths.tpa.directories[entry.directory_index]];
+        assert(directory.file_name_offset != 0 && directory.path[directory.file_name_offset - 1] == DIR_SEPARATOR);
+        tpa.append(directory.path, 0, directory.file_name_offset);
+        tpa.append(entry.path, entry.file_name_offset, pal::string_t::npos);
+        tpa.push_back(PATH_SEPARATOR);
+    }
+
     if (trace::is_enabled())
     {
         trace::info(_X("corehost_resolve_component_dependencies results: {"));
-        trace::info(_X("  assembly_paths: '%s'"), probe_paths.tpa.data());
-        trace::info(_X("  native_search_paths: '%s'"), probe_paths.native.data());
-        trace::info(_X("  resource_search_paths: '%s'"), probe_paths.resources.data());
+        trace::info(_X("  assembly_paths: '%s'"), tpa.c_str());
+        trace::info(_X("  native_search_paths: '%s'"), probe_paths.native.c_str());
+        trace::info(_X("  resource_search_paths: '%s'"), probe_paths.resources.c_str());
         trace::info(_X("}"));
     }
 
     result(
-        probe_paths.tpa.data(),
-        probe_paths.native.data(),
-        probe_paths.resources.data());
+        tpa.c_str(),
+        probe_paths.native.c_str(),
+        probe_paths.resources.c_str());
 
     return 0;
 }

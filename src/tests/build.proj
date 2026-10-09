@@ -204,10 +204,11 @@
     <!-- We need to build group #1 manually as it doesn't have a _GroupStartsWith item associated with it, see the comment in Common\dirs.proj -->
     <MSBuild Projects="$(MSBuildThisFileFullPath)" Targets="BuildManagedTestGroup" Properties="__TestGroupToBuild=1;__SkipRestorePackages=1" />
     <!-- ActiveIssue https://github.com/dotnet/runtime/issues/114123
-    The groups 2..n are disabled for browser target because they get OOM kill in CI.
+    The groups 2..n are disabled for browser target because they get OOM kill in CI when building the whole test tree.
+    Builds restricted to specific projects, directories or trees (-test/-dir/-tree) are small enough to build all groups.
     -->
     <MSBuild Projects="$(MSBuildThisFileFullPath)" Targets="BuildManagedTestGroup" Properties="__TestGroupToBuild=%(_GroupStartsWith.GroupNumber);__SkipRestorePackages=1"
-        Condition="'$(TargetOS)' != 'browser' or '$(ContinuousIntegrationBuild)' != 'true'"
+        Condition="'$(TargetOS)' != 'browser' or '$(ContinuousIntegrationBuild)' != 'true' or '@(BuildTestProjects)@(BuildTestDirs)@(BuildTestTrees)' != ''"
     />
   </Target>
 
@@ -280,7 +281,7 @@
 
   <Target Name="CrossgenFramework"
       DependsOnTargets="GenerateLayout"
-      Condition="'$(__CopyNativeTestBinaries)' != '1' and '$(__TestBuildMode)' == 'crossgen2' and !$(MonoAot) and !$(MonoFullAot)" >
+      Condition="'$(__CopyNativeTestBinaries)' != '1' and '$(__TestBuildMode)' == 'crossgen2' and '$(TargetArchitecture)' != 'wasm' and !$(MonoAot) and !$(MonoFullAot)" >
 
     <PropertyGroup>
       <CrossgenOutputDir>$(__TestIntermediatesDir)\crossgen.out</CrossgenOutputDir>

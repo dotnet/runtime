@@ -3,9 +3,6 @@
 
 /*
  * Wraps handle table to implement various handle types (Strong, Weak, etc.)
- *
-
- *
  */
 
 #include "common.h"
@@ -278,8 +275,8 @@ void CALLBACK ClearDependentHandle(_UNCHECKED_OBJECTREF *pObjRef, uintptr_t *pEx
 
     if (!g_theGCHeap->IsPromoted(*pPrimaryRef))
     {
-        LOG((LF_GC, LL_INFO1000, "\tunreachable ", LOG_OBJECT_CLASS(*pPrimaryRef)));
-        LOG((LF_GC, LL_INFO1000, "\tunreachable ", LOG_OBJECT_CLASS(*pSecondaryRef)));
+        LOG((LF_GC, LL_INFO1000, "\tunreachable " LOG_OBJECT_CLASS(*pPrimaryRef)));
+        LOG((LF_GC, LL_INFO1000, "\tunreachable " LOG_OBJECT_CLASS(*pSecondaryRef)));
         *pPrimaryRef = NULL;
         *pSecondaryRef = NULL;
     }
@@ -641,7 +638,6 @@ bool Ref_Initialize()
     {
         NOTHROW;
         WRAPPER(GC_NOTRIGGER);
-        INJECT_FAULT(return false);
     }
     CONTRACTL_END;
 
@@ -840,38 +836,6 @@ uint32_t GetVariableHandleType(OBJECTHANDLE handle)
     WRAPPER_NO_CONTRACT;
 
     return (uint32_t)HndGetHandleExtraInfo(handle);
-}
-
-/*
- * UpdateVariableHandleType.
- *
- * Changes the dynamic type of a variable-strength handle.
- *
- * N.B. This routine is not a macro since we do validation in RETAIL.
- * We always validate the type here because it can come from external callers.
- */
-void UpdateVariableHandleType(OBJECTHANDLE handle, uint32_t type)
-{
-    WRAPPER_NO_CONTRACT;
-
-    // verify that we are being asked to set a valid type
-    if (!IS_VALID_VHT_VALUE(type))
-    {
-        // bogus value passed in
-        _ASSERTE(FALSE);
-        return;
-    }
-
-    // <REVISIT_TODO> (francish)  CONCURRENT GC NOTE</REVISIT_TODO>
-    //
-    // If/when concurrent GC is implemented, we need to make sure variable handles
-    // DON'T change type during an asynchronous scan, OR that we properly recover
-    // from the change.  Some changes are benign, but for example changing to or
-    // from a pinning handle in the middle of a scan would not be fun.
-    //
-
-    // store the type in the handle's extra info
-    HndSetHandleExtraInfo(handle, HNDTYPE_VARIABLE, (uintptr_t)type);
 }
 
 /*
@@ -1505,6 +1469,8 @@ void CALLBACK GetBridgeObjectsForProcessing(_UNCHECKED_OBJECTREF* pObjRef, uintp
     if (!g_theGCHeap->IsPromoted(*ppRef))
     {
         RegisterBridgeObject(*ppRef, *pExtraInfo);
+        if (lp2 != 0)
+            RegisterPendingBridgeHandle((uintptr_t)pObjRef);
     }
 }
 
@@ -1515,8 +1481,9 @@ uint8_t** Ref_ScanBridgeObjects(uint32_t condemned, uint32_t maxgen, ScanContext
     LOG((LF_GC | LF_CORPROF, LL_INFO10000, "Building bridge object graphs.\n"));
     uint32_t flags = HNDGCF_NORMAL;
     uint32_t type = HNDTYPE_CROSSREFERENCE;
+    bool shouldProcessBridgeObjects = ShouldProcessBridgeObjects();
 
-    BridgeResetData();
+    BridgeResetData(shouldProcessBridgeObjects);
 
     HandleTableMap* walk = &g_HandleTableMap;
     while (walk) {
@@ -1528,14 +1495,14 @@ uint8_t** Ref_ScanBridgeObjects(uint32_t condemned, uint32_t maxgen, ScanContext
                     HHANDLETABLE hTable = walk->pBuckets[i]->pTable[uCPUindex];
                     if (hTable)
                         // or have a local var for bridgeObjectsToPromote/size (instead of NULL) that's passed in as lp2
-                        HndScanHandlesForGC(hTable, GetBridgeObjectsForProcessing, uintptr_t(sc), 0, &type, 1, condemned, maxgen, HNDGCF_EXTRAINFO | flags);
+                        HndScanHandlesForGC(hTable, GetBridgeObjectsForProcessing, uintptr_t(sc), shouldProcessBridgeObjects, &type, 1, condemned, maxgen, HNDGCF_EXTRAINFO | flags);
                 }
             }
         walk = walk->pNext;
     }
 
     // The callee here will free the allocated memory.
-    if (ShouldProcessBridgeObjects())
+    if (shouldProcessBridgeObjects)
     {
         MarkCrossReferencesArgs *args = ProcessBridgeObjects();
 

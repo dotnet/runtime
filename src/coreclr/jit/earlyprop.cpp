@@ -507,10 +507,10 @@ bool Compiler::optIsNullCheckFoldingLegal(GenTree*    tree,
 {
     // Check all nodes between the GT_NULLCHECK and the indirection to see
     // if any nodes have unsafe side effects.
-    bool           isInsideTry        = compCurBB->hasTryIndex();
-    bool           canRemoveNullCheck = true;
-    const unsigned maxNodesWalked     = 50;
-    unsigned       nodesWalked        = 0;
+    bool           isInsideTryOrFilter = compCurBB->HasPotentialEHSuccs(this);
+    bool           canRemoveNullCheck  = true;
+    const unsigned maxNodesWalked      = 50;
+    unsigned       nodesWalked         = 0;
 
     // First walk the nodes in the statement containing the GT_NULLCHECK in forward execution order
     // until we get to the indirection or process the statement root.
@@ -525,7 +525,7 @@ bool Compiler::optIsNullCheckFoldingLegal(GenTree*    tree,
         }
         const bool checkExceptionSummary = false;
         if ((nodesWalked++ > maxNodesWalked) ||
-            !optCanMoveNullCheckPastTree(currentTree, isInsideTry, checkExceptionSummary))
+            !optCanMoveNullCheckPastTree(currentTree, isInsideTryOrFilter, checkExceptionSummary))
         {
             canRemoveNullCheck = false;
         }
@@ -553,7 +553,7 @@ bool Compiler::optIsNullCheckFoldingLegal(GenTree*    tree,
         {
             const bool checkExceptionSummary = false;
             if ((nodesWalked++ > maxNodesWalked) ||
-                !optCanMoveNullCheckPastTree(currentTree, isInsideTry, checkExceptionSummary))
+                !optCanMoveNullCheckPastTree(currentTree, isInsideTryOrFilter, checkExceptionSummary))
             {
                 canRemoveNullCheck = false;
             }
@@ -572,7 +572,7 @@ bool Compiler::optIsNullCheckFoldingLegal(GenTree*    tree,
         {
             const bool checkExceptionSummary = true;
             if ((nodesWalked++ > maxNodesWalked) ||
-                !optCanMoveNullCheckPastTree(currentTree, isInsideTry, checkExceptionSummary))
+                !optCanMoveNullCheckPastTree(currentTree, isInsideTryOrFilter, checkExceptionSummary))
             {
                 canRemoveNullCheck = false;
             }
@@ -600,15 +600,15 @@ bool Compiler::optIsNullCheckFoldingLegal(GenTree*    tree,
 //
 // Arguments:
 //    tree                  - The tree to check.
-//    isInsideTry           - True if tree is inside try, false otherwise.
-//    checkSideEffectSummary -If true, check side effect summary flags only,
-//                            otherwise check the side effects of the operation itself.
+//    isInsideTryOrFilter   - True if tree is inside a try or filter, false otherwise.
+//    checkSideEffectSummary - If true, check side effect summary flags only,
+//                             otherwise check the side effects of the operation itself.
 //
 // Return Value:
 //    True if nullcheck may be folded into a node that is after tree in execution order,
 //    false otherwise.
 
-bool Compiler::optCanMoveNullCheckPastTree(GenTree* tree, bool isInsideTry, bool checkSideEffectSummary)
+bool Compiler::optCanMoveNullCheckPastTree(GenTree* tree, bool isInsideTryOrFilter, bool checkSideEffectSummary)
 {
     bool result = true;
 
@@ -630,9 +630,9 @@ bool Compiler::optCanMoveNullCheckPastTree(GenTree* tree, bool isInsideTry, bool
             {
                 result = false;
             }
-            else if (isInsideTry)
+            else if (isInsideTryOrFilter)
             {
-                // Inside try we allow only stores to locals not live in handlers.
+                // Inside a try or filter we allow only stores to locals not live in handlers.
                 result = false;
                 if (tree->OperIs(GT_STORE_LCL_VAR))
                 {
@@ -654,11 +654,11 @@ bool Compiler::optCanMoveNullCheckPastTree(GenTree* tree, bool isInsideTry, bool
         }
         else if (checkSideEffectSummary)
         {
-            result = !isInsideTry && ((tree->gtFlags & GTF_GLOB_REF) == 0);
+            result = !isInsideTryOrFilter && ((tree->gtFlags & GTF_GLOB_REF) == 0);
         }
         else
         {
-            result = !isInsideTry && (!tree->OperRequiresAsgFlag() || ((tree->gtFlags & GTF_GLOB_REF) == 0));
+            result = !isInsideTryOrFilter && (!tree->OperRequiresAsgFlag() || ((tree->gtFlags & GTF_GLOB_REF) == 0));
         }
     }
 

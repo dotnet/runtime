@@ -329,17 +329,17 @@ namespace System.Reflection
         //
         public override bool IsDefined(Type attributeType, bool inherit)
         {
-            return CustomAttribute.IsDefined(this, attributeType, false);
+            return RuntimeCustomAttribute.IsDefined(this, attributeType, false);
         }
 
         public override object[] GetCustomAttributes(bool inherit)
         {
-            return CustomAttribute.GetCustomAttributes(this, false);
+            return RuntimeCustomAttribute.GetCustomAttributes(this, false);
         }
 
         public override object[] GetCustomAttributes(Type attributeType, bool inherit)
         {
-            return CustomAttribute.GetCustomAttributes(this, attributeType, false);
+            return RuntimeCustomAttribute.GetCustomAttributes(this, attributeType, false);
         }
 
 

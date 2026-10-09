@@ -53,8 +53,10 @@ Therefore the managed portion of each test **must not contain**:
     * `<JitOptimizationSensitive>true</JitOptimizationSensitive>`
 * Exclude test from NativeAOT runs runs by adding the following to the csproj:
     * `<NativeAotIncompatible>true</NativeAotIncompatible>`
-* Exclude the test from ilasm round trip testing by adding the following to the csproj
+* Exclude the test from all ilasm round-trip testing by adding the following to the csproj. This also implies `ManagedIlasmRoundTripIncompatible`.
     * `<IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>`
+* Exclude the test only when round-trip testing with managed ilasm by adding the following to the csproj:
+    * `<ManagedIlasmRoundTripIncompatible>true</ManagedIlasmRoundTripIncompatible>`
 * Exclude the test for unloadability (collectible assemblies) testing
     * `<UnloadabilityIncompatible>true</UnloadabilityIncompatible>`
 * If the test is specific for testing crossgen2, and should be compiled as such in all test modes
@@ -68,6 +70,29 @@ Therefore the managed portion of each test **must not contain**:
 This means there must be enough implementation for the C# compiler to find the referenced types and methods. Unsupported target platforms
 should simply `throw new PlatformNotSupportedException()` in its dummy method implementations.
 * Add an `[ActiveIssue]` attribute if the test fails due to active bug.
+
+### Adding a simple JIT regression test
+
+Add tests that use optimized compilation without debug information directly to
+`src/tests/JIT/Regression_ro_2/Runtime_<issue_number>.cs`. The
+`Regression_ro_2/Regression_ro_2.csproj` runner recursively includes all `.cs` files in its
+directory, so adding a test requires neither a
+project-file edit nor a directory for a single source file. Related files can be
+grouped in a subdirectory.
+Other source-compiling regression runners use the same convention for their
+grouped sources, retaining their existing partitions and compilation settings.
+Sources shared by multiple runners live in one runner's directory and are
+explicitly included by the others.
+
+Source-glob directories contain sources compiled directly into their respective
+runners. Tests requiring different compilation settings, separate assemblies,
+native dependencies, or process isolation should instead have their own project
+under `src/tests/JIT/Regression_2/Runtime_<issue_number>/`.
+`Regression_2.csproj` discovers these projects recursively rather than compiling
+their sources directly. `Regression_3.csproj` similarly owns the existing
+project-backed `GitHub_*`, `DevDiv_*`, and other tests under `src/tests/JIT/Regression_3/`.
+Keep each project's sources and supporting files together, and do not place them
+in a source-glob runner's directory.
 
 ### Creating a C# test project
 
@@ -119,4 +144,3 @@ Unless tests are manually run on the command line to repro a problem, these para
 `testFilterString` is any string other that `-stripe`. The only filters supported today are the simple form supported in 'dotnet test --filter' (substrings of the test's fully qualified name).
 
 Either the -stripe <whichStripe> <totalStripes> parameter can be used or the TEST_HARNESS_STRIPE_TO_EXECUTE environment variable may be used to control striping. The TEST_HARNESS_STRIPE_TO_EXECUTE environment variable must be set to a string of the form `.<whichStripe>.<totalStripes>` if it is used. `<whichStripe>` is a 0 based index into the count of stripes, `<totalStripes>` is the total number of stripes.
-

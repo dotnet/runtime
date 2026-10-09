@@ -108,10 +108,17 @@ namespace System.Threading.Tasks.Tests
         {
             if (depth <= 1)
             {
-                await gate;
+                await StateMachineAsync_RecursiveChainGated_Leaf(gate);
                 return;
             }
             await StateMachineAsync_RecursiveChainGated(depth - 1, gate);
+        }
+
+        [RuntimeAsyncMethodGeneration(false)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static async Task StateMachineAsync_RecursiveChainGated_Leaf(Task gate)
+        {
+            await gate;
         }
 
         [RuntimeAsyncMethodGeneration(false)]
@@ -1530,14 +1537,15 @@ namespace System.Threading.Tasks.Tests
             const int MaxFrames = byte.MaxValue;
             const int Iterations = 128;
 
-            // Warm up the recursive method so its state machine id is frozen at its tier-0 version, then
-            // snapshot that id before tracing. (Snapshot is a no-op on non-Mono, where ids resolve
-            // reflectively; the warmup itself runs on all runtimes.)
+            // Warm up the leaf and record its current code address for method-name resolution.
+            // Mono interpreter tiering can change that address, while the profiler retains its
+            // cached method ID. Snapshotting preserves the old ID-to-name mapping.
+            // The snapshot is a no-op on non-Mono runtimes.
             var warmupGate = new TaskCompletionSource();
             Task warmup = StateMachineAsync_RecursiveChainGated(2, warmupGate.Task);
             warmupGate.SetResult();
             warmup.GetAwaiter().GetResult();
-            SnapshotStateMachineMethodIdFor(typeof(AsyncProfilerTests).GetMethod(nameof(StateMachineAsync_RecursiveChainGated), BindingFlags.NonPublic | BindingFlags.Static)!);
+            SnapshotStateMachineMethodIdFor(typeof(AsyncProfilerTests).GetMethod(nameof(StateMachineAsync_RecursiveChainGated_Leaf), BindingFlags.NonPublic | BindingFlags.Static)!);
 
             var events = CollectEvents(ResumeStateMachineAsyncCallstackKeyword, () =>
             {
@@ -1558,20 +1566,17 @@ namespace System.Threading.Tasks.Tests
             var stream = ParseAllEvents(events);
 
             // The deep chains overflow the per-thread buffer many times over, so the rent/overflow path is
-            // exercised. The regression check: every chain resume must carry the full (capped) frame count.
-            // Scope to our recursive chains by method rather than by frame count -- a callstack truncated by
-            // the overflow bug has fewer frames but still consists of the recursive method, so it stays in
-            // scope and is caught.
+            // exercised. Each leaf resume must carry the full (capped) frame count. Later resumes can
+            // legitimately be shorter when stack protection queues the remaining continuations.
+            // Filter by the leaf method rather than frame count so truncated leaf callstacks are still caught.
             var chainCallstacks = stream.OfType(AsyncEventID.ResumeStateMachineAsyncCallstack)
-                .Where(cs => cs.Frames.Any(f => GetMethodNameFromMethodId(cs.CallstackType, f.MethodId) == nameof(StateMachineAsync_RecursiveChainGated)))
+                .Where(cs => cs.Frames.Any(f => GetMethodNameFromMethodId(cs.CallstackType, f.MethodId) == nameof(StateMachineAsync_RecursiveChainGated_Leaf)))
                 .ToList();
-            AssertNotEmpty(stream, chainCallstacks);
+            AssertEqual(stream, Iterations, chainCallstacks.Count);
 
-            int leafDepth = chainCallstacks.Max(cs => (int)cs.FrameCount);
-            AssertEqual(stream, MaxFrames, leafDepth);
             foreach (var cs in chainCallstacks)
             {
-                AssertEqual(stream, leafDepth, (int)cs.FrameCount);
+                AssertEqual(stream, MaxFrames, (int)cs.FrameCount);
                 AssertEqual(stream, (int)cs.FrameCount, cs.Frames.Count);
             }
         }
@@ -1762,7 +1767,7 @@ namespace System.Threading.Tasks.Tests
         // compiler emits a generic state machine (<Marker>d__N`1). Instantiated with a reference type the JIT
         // reaches the async body through the shared (__Canon) generic code, whose per-instantiation MethodDesc
         // is an instantiating (wrapper) stub. The V1 methodId is the native code start of MoveNext, so
-        // RuntimeMethodHandle_GetNativeCode must peel wrapper stubs to the shared body's code for the id to map
+        // RuntimeMethodHandle_GetDiagnosticCodeStart must peel wrapper stubs to the shared body's code for the id to map
         // back to a managed method; otherwise a frame would carry a stub thunk address that resolves to null.
         [RuntimeAsyncMethodGeneration(false)]
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -1794,7 +1799,7 @@ namespace System.Threading.Tasks.Tests
         // or JIT-map data.
         //
         // A reference type (string) reaches the shared __Canon body through an instantiating (wrapper) stub that
-        // RuntimeMethodHandle_GetNativeCode must peel; a value type (int) is fully specialized into its own code
+        // RuntimeMethodHandle_GetDiagnosticCodeStart must peel; a value type (int) is fully specialized into its own code
         // (no wrapper stub) and resolves directly. Both must symbolize to their managed names.
         [ConditionalTheory(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncAndThreadingSupported), nameof(IsNotMonoRuntime))]
         [InlineData(typeof(string))]

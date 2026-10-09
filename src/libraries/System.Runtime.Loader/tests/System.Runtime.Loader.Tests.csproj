@@ -8,8 +8,9 @@
     <PublishReadyToRunStripILBodies>false</PublishReadyToRunStripILBodies>
     <!-- EnC tests on targets without a remote executor need the environment variable set before launching the test -->
     <!-- Also ask Mono to use make sequence points even without a debugger attached to match "dotnet watch" behavior -->
-    <WasmXHarnessMonoArgs>--setenv=DOTNET_MODIFIABLE_ASSEMBLIES=debug --setenv=MONO_DEBUG=gen-seq-points</WasmXHarnessMonoArgs>
+    <WasmXHarnessMonoArgs Condition="'$(TargetOS)' == 'browser'">--setenv=DOTNET_MODIFIABLE_ASSEMBLIES=debug --setenv=MONO_DEBUG=gen-seq-points</WasmXHarnessMonoArgs>
 
+    <!-- CoreCLR does not build the metadata updater for wasm, so ApplyUpdate tests are excluded for CoreCLR on WASI below. -->
     <!-- disabled due to https://github.com/dotnet/runtime/issues/65672 -->
     <XUnitUseRandomizedTestOrderer>false</XUnitUseRandomizedTestOrderer>
     <MetadataUpdaterSupport>true</MetadataUpdaterSupport>
@@ -19,7 +20,7 @@
   </PropertyGroup>
 
   <!-- ActiveIssue https://github.com/dotnet/runtime/issues/114526 deadlocks on linux CI -->
-  <ItemGroup Condition="'$(ContinuousIntegrationBuild)' != 'true' or '$(TargetOS)' != 'browser' or '$(OS)' == 'Windows_NT'">
+  <ItemGroup Condition="('$(ContinuousIntegrationBuild)' != 'true' or '$(TargetOS)' != 'browser' or '$(OS)' == 'Windows_NT') and ('$(TargetOS)' != 'wasi' or '$(RuntimeFlavor)' != 'CoreCLR')">
     <Compile Include="ApplyUpdateTest.cs" />
     <Compile Include="ApplyUpdateUtil.cs" />
     <Compile Include="MetadataUpdateHandlerAttributeTest.cs" />
@@ -72,7 +73,7 @@
   </ItemGroup>
 
   <!-- ActiveIssue https://github.com/dotnet/runtime/issues/114526 deadlocks on linux CI -->
-  <ItemGroup Condition="'$(ContinuousIntegrationBuild)' != 'true' or '$(TargetOS)' != 'browser' or '$(OS)' == 'Windows_NT'">
+  <ItemGroup Condition="('$(ContinuousIntegrationBuild)' != 'true' or '$(TargetOS)' != 'browser' or '$(OS)' == 'Windows_NT') and ('$(TargetOS)' != 'wasi' or '$(RuntimeFlavor)' != 'CoreCLR')">
     <!-- ApplyUpdate tests -->
     <ProjectReference Include="ApplyUpdate\System.Reflection.Metadata.ApplyUpdate.Test.AsyncMethodChange\System.Reflection.Metadata.ApplyUpdate.Test.AsyncMethodChange.csproj" />
     <ProjectReference Include="ApplyUpdate\System.Reflection.Metadata.ApplyUpdate.Test.CustomAttributeDelete\System.Reflection.Metadata.ApplyUpdate.Test.CustomAttributeDelete.csproj" />
@@ -102,6 +103,8 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetOS)' == 'browser' or ('$(TargetsAppleMobile)' == 'true' and '$(EnableAggressiveTrimming)' == 'true' and '$(UseNativeAotRuntime)' != 'true')">
     <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.xml" />
+    <!-- Test.Assembly/Test.Assembly2 are embedded resources on browser (not link inputs); only root them where they are real references. -->
+    <TrimmerRootDescriptor Condition="'$(TargetsAppleMobile)' == 'true'" Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.AppleMobile.xml" />
   </ItemGroup>
 
   <Target Name="PreserveEnCAssembliesFromLinking" Condition="'$(TargetOS)' == 'browser' and '$(EnableAggressiveTrimming)' == 'true'" BeforeTargets="PrepareForILLink">

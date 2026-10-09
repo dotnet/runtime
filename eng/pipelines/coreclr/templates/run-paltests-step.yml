@@ -5,6 +5,7 @@ parameters:
   archType: ''                    # required -- targeting CPU architecture
   osGroup: ''                     # required -- operating system for the job
   osSubgroup: ''                  # optional -- operating system subgroup
+  useHelixMonitor: false
 
 steps:
   - template: /eng/pipelines/common/templates/runtimes/send-to-helix-step.yml
@@ -20,3 +21,5 @@ steps:
       osGroup: ${{ parameters.osGroup }}
       archType: ${{ parameters.archType }}
       shouldContinueOnError: ${{ parameters.continueOnError }}
+      publishTestResults: true
+      useHelixMonitor: ${{ parameters.useHelixMonitor }}

@@ -47,6 +47,7 @@ namespace System.Diagnostics
                     for (int i = 0; i < count; i++)
                     {
                         KeyValuePair<string, object?> pair = secondList[i];
+                        bool found = false;
 
                         for (int j = 0; j < count; j++)
                         {
@@ -57,17 +58,17 @@ namespace System.Diagnostics
 
                             KeyValuePair<string, object?> pair1 = sortedTags[j];
 
-                            int compareResult = string.CompareOrdinal(pair.Key, pair1.Key);
-                            if (compareResult == 0 && object.Equals(pair.Value, pair1.Value))
+                            if (pair.Key == pair1.Key && object.Equals(pair.Value, pair1.Value))
                             {
                                 bitMapper.SetBit(j);
+                                found = true;
                                 break;
                             }
+                        }
 
-                            if (compareResult < 0 || j == count - 1)
-                            {
-                                return false;
-                            }
+                        if (!found)
+                        {
+                            return false;
                         }
                     }
 
@@ -87,6 +88,7 @@ namespace System.Diagnostics
                     }
 
                     KeyValuePair<string, object?> pair = enumerator.Current;
+                    bool found = false;
                     for (int j = 0; j < count; j++)
                     {
                         if (bitMapper.IsSet(j))
@@ -96,17 +98,17 @@ namespace System.Diagnostics
 
                         KeyValuePair<string, object?> pair1 = sortedTags[j];
 
-                        int compareResult = string.CompareOrdinal(pair.Key, pair1.Key);
-                        if (compareResult == 0 && object.Equals(pair.Value, pair1.Value))
+                        if (pair.Key == pair1.Key && object.Equals(pair.Value, pair1.Value))
                         {
                             bitMapper.SetBit(j);
+                            found = true;
                             break;
                         }
+                    }
 
-                        if (compareResult < 0 || j == count - 1)
-                        {
-                            return false;
-                        }
+                    if (!found)
+                    {
+                        return false;
                     }
                 }
 

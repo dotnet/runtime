@@ -7,7 +7,9 @@ using System.Numerics;
 using Xunit;
 using TestLibrary;
 
-public partial class VectorTest
+namespace SIMDTests.VectorConvertTests;
+
+public partial class VectorTest : VectorTestBase
 {
     const int Pass = 100;
     const int Fail = -1;
@@ -501,9 +503,23 @@ public partial class VectorTest
 
     [ActiveIssue("https://github.com/dotnet/runtime/issues/75359", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoLLVMAOT))]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/75359", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
-    [Fact]
-        [SkipOnMono("https://github.com/dotnet/runtime/issues/100368")]
-    public static int TestEntryPoint()
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.Is32BitProcess))]
+    [SkipOnMono("https://github.com/dotnet/runtime/issues/100368")]
+    public static int TestEntryPoint32Bit()
+    {
+        return TestEntryPoint(checkInt64Conversion: false);
+    }
+
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/75359", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoLLVMAOT))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/75359", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))]
+    [SkipOnMono("https://github.com/dotnet/runtime/issues/100368")]
+    public static int TestEntryPoint64Bit()
+    {
+        return TestEntryPoint(checkInt64Conversion: true);
+    }
+
+    private static int TestEntryPoint(bool checkInt64Conversion)
     {
         int returnVal = Pass;
 
@@ -630,9 +646,7 @@ public partial class VectorTest
         if (!jitLog.Check("System.Numerics.Vector:ConvertToInt32(struct):struct")) returnVal = Fail;
         if (!jitLog.Check("System.Numerics.Vector:ConvertToSingle(struct):struct")) returnVal = Fail;
         // SIMD Conversion to Int64 is not supported on x86
-#if !TARGET_32BIT
-        if (!jitLog.Check("System.Numerics.Vector:ConvertToInt64(struct):struct")) returnVal = Fail;
-#endif // !TARGET_32BIT
+        if (checkInt64Conversion && !jitLog.Check("System.Numerics.Vector:ConvertToInt64(struct):struct")) returnVal = Fail;
         if (!jitLog.Check("System.Numerics.Vector:ConvertToDouble(struct):struct")) returnVal = Fail;
         if (!jitLog.Check("System.Numerics.Vector:Narrow(struct,struct):struct")) returnVal = Fail;
         if (!jitLog.Check("System.Numerics.Vector:Widen(struct,byref,byref)")) returnVal = Fail;
@@ -641,4 +655,3 @@ public partial class VectorTest
         return returnVal;
     }
 }
-

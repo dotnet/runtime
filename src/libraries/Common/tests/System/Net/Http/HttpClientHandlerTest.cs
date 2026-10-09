@@ -2248,39 +2248,80 @@ namespace System.Net.Http.Functional.Tests
                 return; // SocketsHttpHandler doesn't support Latin-1 characters in headers without setting header encoding.
             }
             var headerValue = $"HeaderValue{safeChar}WithSafeChar";
+            var clientFinished = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            using var cancellation = new CancellationTokenSource();
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
                 {
-                    var handler = CreateHttpClientHandler();
-                    using (var client = new HttpClient(handler))
+                    try
                     {
-                        var request = new HttpRequestMessage(HttpMethod.Get, uri);
-                        request.Version = UseVersion;
-                        switch (headerType)
+                        var handler = CreateHttpClientHandler();
+                        using (var client = new HttpClient(handler))
                         {
-                            case HeaderType.Request:
-                                request.Headers.Add("Custom-Header", headerValue);
-                                break;
-                            case HeaderType.Content:
-                                request.Content = new StringContent("test content");
-                                request.Content.Headers.Add("Custom-Content-Header", headerValue);
-                                break;
-                            case HeaderType.Cookie:
+                            using var request = new HttpRequestMessage(HttpMethod.Get, uri);
+                            request.Version = UseVersion;
+                            switch (headerType)
+                            {
+                                case HeaderType.Request:
+                                    request.Headers.Add("Custom-Header", headerValue);
+                                    break;
+                                case HeaderType.Content:
+                                    request.Content = new StringContent("test content");
+                                    request.Content.Headers.Add("Custom-Content-Header", headerValue);
+                                    break;
+                                case HeaderType.Cookie:
 #if WINHTTPHANDLER_TEST
-                                handler.CookieUsePolicy = CookieUsePolicy.UseSpecifiedCookieContainer;
+                                    handler.CookieUsePolicy = CookieUsePolicy.UseSpecifiedCookieContainer;
 #endif
-                                handler.CookieContainer = new CookieContainer();
-                                handler.CookieContainer.Add(uri, new Cookie("CustomCookie", headerValue));
-                                break;
-                        }
+                                    handler.CookieContainer = new CookieContainer();
+                                    handler.CookieContainer.Add(uri, new Cookie("CustomCookie", headerValue));
+                                    break;
+                            }
 
-                        using (HttpResponseMessage response = await client.SendAsync(request))
-                        {
-                            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                            using (HttpResponseMessage response = await client.SendAsync(request, cancellation.Token))
+                            {
+                                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                            }
                         }
+                    }
+                    finally
+                    {
+                        clientFinished.SetResult(true);
                     }
                 }, async server =>
                 {
-                    var data = await server.AcceptConnectionSendResponseAndCloseAsync();
+                    HttpRequestData data;
+                    if (IsWinHttpHandler && UseVersion.Major == 2)
+                    {
+                        GenericLoopbackConnection genericConnection = null;
+                        try
+                        {
+                            genericConnection = await server.EstablishGenericConnectionAsync();
+                            var connection = (Http2LoopbackConnection)genericConnection;
+                            (int streamId, data) = await connection.ReadAndParseRequestHeaderAsync();
+                            await connection.SendGoAway(streamId);
+                            await connection.SendResponseHeadersAsync(streamId, endStream: true);
+
+                            // WinHTTP can fail pending native I/O if the server closes before the buffered send completes.
+                            await clientFinished.Task.WaitAsync(TestHelper.PassingTestTimeout);
+                            await connection.WaitForConnectionShutdownAsync();
+                        }
+                        catch
+                        {
+                            cancellation.Cancel();
+                            throw;
+                        }
+                        finally
+                        {
+                            if (genericConnection is not null)
+                            {
+                                await genericConnection.DisposeAsync();
+                            }
+                        }
+                    }
+                    else
+                    {
+                        data = await server.AcceptConnectionSendResponseAndCloseAsync();
+                    }
                     switch (headerType)
                     {
                         case HeaderType.Request:

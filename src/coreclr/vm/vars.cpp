@@ -124,11 +124,11 @@ GVAL_IMPL_INIT(PTR_WSTR, g_EntryAssemblyPath, NULL);
 
 #ifndef DACCESS_COMPILE
 
-// <TODO> @TODO - PROMOTE. </TODO>
 OBJECTHANDLE         g_pPreallocatedOutOfMemoryException;
 OBJECTHANDLE         g_pPreallocatedStackOverflowException;
 OBJECTHANDLE         g_pPreallocatedExecutionEngineException;
-OBJECTHANDLE         g_pPreallocatedSentinelObject;
+
+OBJECTREF            g_pPreallocatedSentinelObject = NULL;
 
 //
 //
@@ -252,7 +252,11 @@ void OBJECTREF_EnumMemoryRegions(OBJECTREF ref)
 //
 // We need the following to be the compiler's notion of volatile.
 //
+#ifdef FEATURE_READONLY_GS_COOKIE
 extern "C" RAW_KEYWORD(volatile) const GSCookie s_gsCookie = 0;
+#else
+extern "C" RAW_KEYWORD(volatile) GSCookie s_gsCookie = 0;
+#endif
 
 #else
 __GlobalVal< GSCookie > s_gsCookie(&DacGlobals::dac__s_gsCookie);

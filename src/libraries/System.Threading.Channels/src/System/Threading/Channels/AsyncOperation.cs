@@ -52,6 +52,9 @@ namespace System.Threading.Channels
         /// </remarks>
         private protected readonly bool _pooled;
 
+        /// <summary>true if this operation was created with a cancelable token; otherwise, false.</summary>
+        private readonly bool _isCancelable;
+
         /// <summary>Only relevant to cancelable operations; 0 if the operation hasn't had completion reserved, 1 if it has.</summary>
         private volatile
 #if NET
@@ -103,13 +106,14 @@ namespace System.Threading.Channels
             bool pooled,
             Action<object?, CancellationToken>? cancellationCallback)
         {
-            Debug.Assert(!pooled || !cancellationToken.CanBeCanceled);
+            _isCancelable = cancellationToken.CanBeCanceled;
+            Debug.Assert(!pooled || !_isCancelable);
 
             _continuation = pooled ? s_availableSentinel : null;
             _pooled = pooled;
             RunContinuationsAsynchronously = runContinuationsAsynchronously;
 
-            if (cancellationToken.CanBeCanceled)
+            if (_isCancelable)
             {
                 Debug.Assert(cancellationCallback is not null, "Expected a non-null cancellation callback when the token is cancelable");
                 Debug.Assert(!_pooled, "Cancelable operations can't be pooled");
@@ -130,12 +134,9 @@ namespace System.Threading.Channels
         /// <summary>Gets whether continuations should be forced to run asynchronously.</summary>
         public bool RunContinuationsAsynchronously { get; }
 
+#if !NET
         /// <summary>Gets the cancellation token associated with this operation.</summary>
-        private CancellationToken CancellationToken
-#if NET
-            => _cancellationRegistration.Token;
-#else
-            { get; }
+        private CancellationToken CancellationToken { get; }
 #endif
 
         /// <summary>Gets whether the operation has completed.</summary>
@@ -178,7 +179,7 @@ namespace System.Threading.Channels
         /// to a reserved completion state.
         /// </remarks>
         public bool TryReserveCompletionIfCancelable() =>
-            !CancellationToken.CanBeCanceled ||
+            !_isCancelable ||
 #if NET
             !Interlocked.Exchange(ref _completionReserved, true);
 #else
@@ -189,7 +190,7 @@ namespace System.Threading.Channels
         private protected void SignalCompletion()
         {
             Debug.Assert(
-                !CancellationToken.CanBeCanceled ||
+                !_isCancelable ||
 #if NET
                 _completionReserved);
 #else

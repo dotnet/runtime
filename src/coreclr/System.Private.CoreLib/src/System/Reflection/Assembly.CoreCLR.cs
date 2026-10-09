@@ -54,6 +54,7 @@ namespace System.Reflection
             return RuntimeAssembly.InternalLoad(assemblyRef, ref stackMark, AssemblyLoadContext.CurrentContextualReflectionContext);
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetExecutingAssembly")]
         private static partial void GetExecutingAssemblyNative(StackCrawlMarkHandle stackMark, ObjectHandleOnStack retAssembly);
 
@@ -85,6 +86,7 @@ namespace System.Reflection
             return GetExecutingAssembly(ref stackMark);
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetEntryAssembly")]
         private static partial void GetEntryAssemblyNative(ObjectHandleOnStack retAssembly);
 

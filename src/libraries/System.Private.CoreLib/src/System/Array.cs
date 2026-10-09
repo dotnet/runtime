@@ -815,6 +815,12 @@ namespace System
         {
             if (indices == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.indices);
+
+            return GetValue(new ReadOnlySpan<int>(indices));
+        }
+
+        public object? GetValue(params ReadOnlySpan<int> indices)
+        {
             if (Rank != indices.Length)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_RankIndices);
 
@@ -873,6 +879,12 @@ namespace System
         {
             if (indices == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.indices);
+
+            SetValue(value, new ReadOnlySpan<int>(indices));
+        }
+
+        public void SetValue(object? value, params ReadOnlySpan<int> indices)
+        {
             if (Rank != indices.Length)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_RankIndices);
 

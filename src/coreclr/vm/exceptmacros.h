@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-//
 // EXCEPTMACROS.H -
 //
 // This header file exposes mechanisms to:
@@ -26,7 +25,6 @@
 // COMPlusThrow() must only be called within the scope of a EX_TRY
 // block. See below for more information.
 //
-//
 // THROWING A RUNTIME EXCEPTION
 // ----------------------------
 // COMPlusThrow() is overloaded to take a constant describing
@@ -50,15 +48,12 @@
 //                   IDS_CANTREFORMATCDRIVEBECAUSE,
 //                   W("Formatting C drive permissions not granted."));
 //
-//
-//
 // TO CATCH CLR EXCEPTIONS:
 // ----------------------------
 //
 // Use the following syntax:
 //
 //      #include "exceptmacros.h"
-//
 //
 //      OBJECTREF pThrownObject;
 //
@@ -67,7 +62,6 @@
 //      } EX_CATCH {
 //          ...handler...
 //      } EX_END_CATCH
-//
 //
 // EX_TRY blocks can be nested.
 //
@@ -89,7 +83,6 @@
 // self-document its contract, the checked version of this will fire
 // an assert if the function is ever called without being in scope.
 //
-//
 // AVOIDING EX_TRY GOTCHAS
 // ----------------------------
 // EX_TRY/EX_CATCH actually expands into a Win32 SEH
@@ -104,7 +97,6 @@
 //       of these things is not simple (you can wrap another EX_TRY
 //       around the call to simulate a CLR "try-finally" but EX_TRY
 //       is relatively expensive compared to the real thing.)
-//
 
 #ifndef __exceptmacros_h__
 #define __exceptmacros_h__
@@ -193,6 +185,8 @@ extern LONG InternalUnhandledExceptionFilter_Worker(PEXCEPTION_POINTERS pExcepti
 
 VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable);
 
+typedef UINT_PTR QCallExceptionStatus;
+
 #if defined(DACCESS_COMPILE)
 
 #define INSTALL_UNWIND_AND_CONTINUE_HANDLER
@@ -202,7 +196,22 @@ VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable);
 #define UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX
 #else // DACCESS_COMPILE
 
+constexpr QCallExceptionStatus QCallOutOfMemoryException = 1;
+constexpr QCallExceptionStatus QCallStackOverflowException = 2;
+
+void SetQCallExceptionStatusThrowable(QCallExceptionStatus* pStatus, OBJECTREF throwable);
+
+static_assert(sizeof(QCallExceptionStatus) == sizeof(void*));
+
 void UnwindAndContinueRethrowHelperInsideCatch(Frame* pEntryFrame, Exception* pException);
+void UnwindAndContinueRethrowHelperInsideQCallCatch(
+    Exception* pException,
+    QCallExceptionStatus* pQCallException DEBUG_ARG(Frame* pEntryFrame));
+
+#ifdef TARGET_UNIX
+void CaptureQCallExceptionFromPALException(PAL_SEHException& exception, QCallExceptionStatus* pQCallException);
+#endif
+
 VOID DECLSPEC_NORETURN UnwindAndContinueRethrowHelperAfterCatch(Frame* pEntryFrame, Exception* pException, bool nativeRethrow);
 
 #ifdef FEATURE_INTERPRETER
@@ -318,6 +327,35 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
             UNREACHABLE();                                                                          \
         }
 
+
+#define INSTALL_MANAGED_EXCEPTION_CAPTURE_DISPATCHER    \
+    {                                                                                       \
+        INDEBUG(MAKE_CURRENT_THREAD_AVAILABLE();)                                           \
+        INDEBUG(Frame* __pUnCEntryFrame = CURRENT_THREAD->GetFrame();)                      \
+        _ASSERTE(__pUnCEntryFrame->GetFrameIdentifier() == FrameIdentifier::InlinedCallFrame); \
+        PAL_CPP_TRY {
+
+#define UNINSTALL_MANAGED_EXCEPTION_CAPTURE_DISPATCHER \
+        }                                           \
+        PAL_CPP_CATCH_NON_DERIVED (PAL_SEHException&, ex)                \
+        {                                           \
+            _ASSERTE(CURRENT_THREAD->GetFrame() == __pUnCEntryFrame);     \
+            _ASSERTE(CURRENT_THREAD->GetFrame()->GetFrameIdentifier() == FrameIdentifier::InlinedCallFrame); \
+            CaptureQCallExceptionFromPALException(ex, qcallError);        \
+        }                                           \
+        PAL_CPP_CATCH_NON_DERIVED_NOARG (const std::bad_alloc&)                             \
+        {                                                                                   \
+            UnwindAndContinueRethrowHelperInsideQCallCatch(Exception::GetOOMException(), qcallError DEBUG_ARG(__pUnCEntryFrame)); \
+        }                                                                                   \
+        PAL_CPP_CATCH_DERIVED (Exception, __pException)                                     \
+        {                                                                                   \
+            CONSISTENCY_CHECK(NULL != __pException);                                        \
+            UnwindAndContinueRethrowHelperInsideQCallCatch(__pException, qcallError DEBUG_ARG(__pUnCEntryFrame)); \
+        }                                                                                   \
+        PAL_CPP_ENDTRY                                                                      \
+    }
+
+
 #elif defined(TARGET_X86) && defined(TARGET_WINDOWS)
 
 #define INSTALL_MANAGED_EXCEPTION_DISPATCHER
@@ -381,9 +419,9 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
 
 #define UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX(nativeRethrow)                             \
         }                                                                                   \
-        PAL_CPP_CATCH_NON_DERIVED_NOARG (const std::bad_alloc&)                             \
+        PAL_CPP_CATCH_NON_DERIVED_NOARG (const std::exception&)                             \
         {                                                                                   \
-            __pUnCException = Exception::GetOOMException();                                 \
+            __pUnCException = GetExceptionFromCxxException();                               \
             UnwindAndContinueRethrowHelperInsideCatch(__pUnCEntryFrame, __pUnCException);   \
             __fExceptionCaught = true;                                                      \
         }                                                                                   \
@@ -403,6 +441,35 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
 
 #define UNINSTALL_UNWIND_AND_CONTINUE_HANDLER                                               \
     UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX(false);
+
+
+#if !defined(TARGET_UNIX)
+    // The Windows implementation of the INSTALL_MANAGED_EXCEPTION_CAPTURE_DISPATCHER is very similar
+    // to the unix one, but the major distinction is that the Windows version allows for an existing
+    // eh which has been converted into SEH, to flow directly into managed code. The unix version
+    // catches the PAL_SEHException and converts it into a managed exception before it hits managed code.
+
+#define INSTALL_MANAGED_EXCEPTION_CAPTURE_DISPATCHER    \
+    {                                                                                       \
+        INDEBUG(MAKE_CURRENT_THREAD_AVAILABLE();)                                           \
+        INDEBUG(Frame* __pUnCEntryFrame = CURRENT_THREAD->GetFrame();)                      \
+        _ASSERTE(__pUnCEntryFrame->GetFrameIdentifier() == FrameIdentifier::InlinedCallFrame); \
+        PAL_CPP_TRY {
+
+#define UNINSTALL_MANAGED_EXCEPTION_CAPTURE_DISPATCHER \
+        }                                           \
+        PAL_CPP_CATCH_NON_DERIVED_NOARG (const std::bad_alloc&)                             \
+        {                                                                                   \
+            UnwindAndContinueRethrowHelperInsideQCallCatch(Exception::GetOOMException(), qcallError DEBUG_ARG(__pUnCEntryFrame)); \
+        }                                                                                   \
+        PAL_CPP_CATCH_DERIVED (Exception, __pException)                                     \
+        {                                                                                   \
+            CONSISTENCY_CHECK(NULL != __pException);                                        \
+            UnwindAndContinueRethrowHelperInsideQCallCatch(__pException, qcallError DEBUG_ARG(__pUnCEntryFrame)); \
+        }                                                                                   \
+        PAL_CPP_ENDTRY                                                                      \
+    }
+#endif
 
 #endif // DACCESS_COMPILE
 
@@ -521,8 +588,6 @@ void COMPlusCooperativeTransitionHandler(Frame* pFrame);
 
 extern LONG UserBreakpointFilter(EXCEPTION_POINTERS *ep);
 extern LONG DefaultCatchFilter(EXCEPTION_POINTERS *ep, LPVOID pv);
-extern LONG DefaultCatchNoSwallowFilter(EXCEPTION_POINTERS *ep, LPVOID pv);
-
 
 // the only valid parameter for DefaultCatchFilter
 #define COMPLUS_EXCEPTION_EXECUTE_HANDLER   (PVOID)EXCEPTION_EXECUTE_HANDLER

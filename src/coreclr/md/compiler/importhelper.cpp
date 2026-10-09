@@ -67,110 +67,6 @@ HRESULT ImportHelper::FindMethodSpecByMethodAndInstantiation(
 
 
 //*******************************************************************************
-// Find the GenericParam by owner and constraint
-//*******************************************************************************
-//@GENERICS: todo: look in hashtable (cf. MetaModelRW.cpp) if necessary
-HRESULT ImportHelper::FindGenericParamConstraintByOwnerAndConstraint(
-    CMiniMdRW   *pMiniMd,                   // [IN] the minimd to lookup
-    mdGenericParam tkOwner,                 // [IN] GenericParamConstraint Owner
-    mdToken tkConstraint,                   // [IN] GenericParamConstraint Constraint
-    mdGenericParamConstraint *pGenericParamConstraint,// [OUT] Put the GenericParam token here.
-    RID         rid /* = 0*/)               // [IN] Optional rid to be ignored.
-{
-    HRESULT hr;
-    GenericParamConstraintRec *pRecord;
-    mdGenericParam     tkOwnerTmp;
-    mdToken     tkConstraintTmp;
-    ULONG       cGenericParamConstraints;
-
-    ULONG       i;
-
-    _ASSERTE(pGenericParamConstraint);
-
-    cGenericParamConstraints = pMiniMd->getCountGenericParamConstraints();
-
-    // linear scan through the GenericParam table
-    for (i=1; i <= cGenericParamConstraints; ++i)
-    {
-        // For the call from Validator ignore the rid passed in.
-        if (i == rid)
-            continue;
-
-        IfFailRet(pMiniMd->GetGenericParamConstraintRecord(i, &pRecord));
-
-        tkOwnerTmp = pMiniMd->getOwnerOfGenericParamConstraint(pRecord);
-        tkConstraintTmp = pMiniMd->getConstraintOfGenericParamConstraint(pRecord);
-
-        if ((tkOwnerTmp != tkOwner) || (tkConstraintTmp != tkConstraint))
-            continue;
-
-        //  Matching record found.
-        *pGenericParamConstraint = TokenFromRid(i, mdtGenericParamConstraint);
-        return S_OK;
-    }
-    return CLDB_E_RECORD_NOTFOUND;
-} // HRESULT ImportHelper::FindGenericParamConstraintByOwnerAndConstraint()
-
-//*******************************************************************************
-// Find the GenericParam by owner and name or number
-//*******************************************************************************
-//<REVISIT_TODO> @GENERICS: todo: look in hashtable (cf. MetaModelRW.cpp) if necessary </REVISIT_TODO>
-HRESULT ImportHelper::FindGenericParamByOwner(
-    CMiniMdRW   *pMiniMd,                   // [IN] the minimd to lookup
-    mdToken     tkOwner,                    // [IN] GenericParam Owner
-    LPCUTF8     szUTF8Name,                 // [IN] GeneriParam Name, may be NULL if not used for search
-    ULONG       *pNumber,                   // [IN] GeneriParam Number, may be NULL if not used for search
-    mdGenericParam *pGenericParam,          // [OUT] Put the GenericParam token here.
-    RID         rid /* = 0*/)               // [IN] Optional rid to be ignored.
-{
-    HRESULT          hr;
-    GenericParamRec *pRecord;
-    mdToken     tkOwnerTmp;
-    ULONG       cGenericParams;
-    LPCUTF8     szCurName;
-    ULONG       curNumber;
-    ULONG       i;
-
-    _ASSERTE(pGenericParam);
-
-    cGenericParams = pMiniMd->getCountGenericParams();
-
-    // linear scan through the GenericParam table
-    for (i=1; i <= cGenericParams; ++i)
-    {
-        // For the call from Validator ignore the rid passed in.
-        if (i == rid)
-            continue;
-
-        IfFailRet(pMiniMd->GetGenericParamRecord(i, &pRecord));
-
-        tkOwnerTmp = pMiniMd->getOwnerOfGenericParam(pRecord);
-        if ( tkOwnerTmp != tkOwner)
-            continue;
-
-        // if the name is significant, try to match it
-        if (szUTF8Name)
-        {
-            IfFailRet(pMiniMd->getNameOfGenericParam(pRecord, &szCurName));
-            if (strcmp(szCurName, szUTF8Name))
-                continue;
-        }
-
-        // if the number is significant, try to match it
-        if (pNumber)
-        {  curNumber = pMiniMd->getNumberOfGenericParam(pRecord);
-           if (*pNumber != curNumber)
-               continue;
-        }
-
-        //  Matching record found.
-        *pGenericParam = TokenFromRid(i, mdtGenericParam);
-        return S_OK;
-    }
-    return CLDB_E_RECORD_NOTFOUND;
-} // HRESULT ImportHelper::FindGenericParamByOwner()
-
-//*******************************************************************************
 // Find a Method given a parent, name and signature.
 //*******************************************************************************
 HRESULT ImportHelper::FindMethod(
@@ -626,41 +522,6 @@ HRESULT ImportHelper::FindMethodImpl(
     }
     return CLDB_E_RECORD_NOTFOUND;
 } // HRESULT ImportHelper::FindMethodImpl()
-
-//*******************************************************************************
-// Find the TypeRef given the fully qualified name and the assembly name
-//*******************************************************************************
-HRESULT ImportHelper::FindCustomAttributeCtorByName(
-    CMiniMdRW   *pMiniMd,               // [IN] the minimd to lookup
-    LPCUTF8     szAssemblyName,         // [IN] Assembly Name.
-    LPCUTF8     szNamespace,            // [IN] TypeRef Namespace.
-    LPCUTF8     szName,                 // [IN] TypeRef Name.
-    mdTypeDef   *ptk,                   // [OUT] Put the TypeRef token here.
-    RID         rid /* = 0*/)           // [IN] Optional rid to be ignored.
-{
-    HRESULT     hr;
-    ULONG       cRecs;                  // Count of records.
-    AssemblyRefRec *pRec;               // Current record being looked at.
-    LPCUTF8     szTmp;                  // Temp string.
-    mdTypeRef   tkCAType;
-
-    cRecs = pMiniMd->getCountAssemblyRefs();
-    // Search for the AssemblyRef record.
-    for (ULONG i = 1; i <= cRecs; i++)
-    {
-        IfFailRet(pMiniMd->GetAssemblyRefRecord(i, &pRec));
-
-        IfFailRet(pMiniMd->getNameOfAssemblyRef(pRec, &szTmp));
-        if (!strcmp(szTmp, szAssemblyName) &&
-            (SUCCEEDED(FindTypeRefByName(pMiniMd, TokenFromRid(i, mdtAssemblyRef), szNamespace, szName, &tkCAType, rid))) &&
-            (SUCCEEDED(FindMemberRef(pMiniMd, tkCAType, COR_CTOR_METHOD_NAME, NULL, 0 ,ptk))))
-        {
-            return S_OK;
-        }
-    }
-
-    return CLDB_E_RECORD_NOTFOUND;
-}
 
 //*******************************************************************************
 // Find the TypeRef given the fully qualified name.
@@ -1146,136 +1007,6 @@ HRESULT ImportHelper::FindEvent(
 
 
 //*****************************************************************************
-// find an custom value record given by parent and type token. This will always return
-// the first one that is found regardless duplicated.
-//*****************************************************************************
-HRESULT ImportHelper::FindCustomAttributeByToken(
-    CMiniMdRW   *pMiniMd,                   // [IN] the minimd to lookup
-    mdToken     tkParent,                   // [IN] the parent that custom value is associated with
-    mdToken     tkType,                     // [IN] type of the CustomAttribute
-    const void  *pCustBlob,                 // [IN] custom attribute blob
-    ULONG       cbCustBlob,                 // [IN] size of the blob.
-    mdCustomAttribute *pcv)                 // [OUT] CustomAttribute token
-{
-    HRESULT     hr;
-    CustomAttributeRec  *pRec;
-    ULONG       ridStart, ridEnd;
-    ULONG       i;
-    mdToken     tkParentTmp;
-    mdToken     tkTypeTmp;
-    const void  *pCustBlobTmp;
-    ULONG       cbCustBlobTmp;
-
-    _ASSERTE(pcv);
-    *pcv = mdCustomAttributeNil;
-    if ( pMiniMd->IsSorted(TBL_CustomAttribute) )
-    {
-        IfFailRet(pMiniMd->FindCustomAttributeFor(
-            RidFromToken(tkParent),
-            TypeFromToken(tkParent),
-            tkType,
-            (RID *)pcv));
-        if (InvalidRid(*pcv))
-        {
-            return S_FALSE;
-        }
-        else if (pCustBlob)
-        {
-            IfFailRet(pMiniMd->GetCustomAttributeRecord(RidFromToken(*pcv), &pRec));
-            IfFailRet(pMiniMd->getValueOfCustomAttribute(pRec, (const BYTE **)&pCustBlobTmp, &cbCustBlobTmp));
-            if (cbCustBlob == cbCustBlobTmp &&
-                !memcmp(pCustBlob, pCustBlobTmp, cbCustBlob))
-                {
-                    return S_OK;
-                }
-        }
-        else
-        {
-            return S_OK;
-        }
-    }
-    else
-    {
-        CLookUpHash *pHashTable = pMiniMd->m_pLookUpHashes[TBL_CustomAttribute];
-
-        if (pHashTable)
-        {
-            // table is not sorted but hash is built
-            // We want to create dynmaic array to hold the dynamic enumerator.
-            TOKENHASHENTRY *p;
-            ULONG       iHash;
-            int         pos;
-
-            // Hash the data.
-            iHash = pMiniMd->HashCustomAttribute(tkParent);
-
-            // Go through every entry in the hash chain looking for ours.
-            for (p = pHashTable->FindFirst(iHash, pos);
-                 p;
-                 p = pHashTable->FindNext(pos))
-            {
-                IfFailRet(pMiniMd->GetCustomAttributeRecord(RidFromToken(p->tok), &pRec));
-
-                tkParentTmp = pMiniMd->getParentOfCustomAttribute(pRec);
-                if (tkParentTmp != tkParent)
-                    continue;
-
-                tkTypeTmp = pMiniMd->getTypeOfCustomAttribute(pRec);
-                if (tkType != tkTypeTmp)
-                    continue;
-                if (pCustBlob != NULL)
-                {
-                    IfFailRet(pMiniMd->getValueOfCustomAttribute(pRec, (const BYTE **)&pCustBlobTmp, &cbCustBlobTmp));
-                    if (cbCustBlob == cbCustBlobTmp &&
-                        !memcmp(pCustBlob, pCustBlobTmp, cbCustBlob))
-                    {
-                        *pcv = TokenFromRid(p->tok, mdtCustomAttribute);
-                        return S_OK;
-                    }
-                }
-                else
-                    return S_OK;
-            }
-        }
-        else
-        {
-            // linear scan
-            ridStart = 1;
-            ridEnd = pMiniMd->getCountCustomAttributes() + 1;
-
-            // loop through all custom values
-            for (i = ridStart; i < ridEnd; i++)
-            {
-                IfFailRet(pMiniMd->GetCustomAttributeRecord(i, &pRec));
-
-                tkParentTmp = pMiniMd->getParentOfCustomAttribute(pRec);
-                if ( tkParentTmp != tkParent )
-                    continue;
-
-                tkTypeTmp = pMiniMd->getTypeOfCustomAttribute(pRec);
-                if (tkType != tkTypeTmp)
-                    continue;
-
-                if (pCustBlob != NULL)
-                {
-                    IfFailRet(pMiniMd->getValueOfCustomAttribute(pRec, (const BYTE **)&pCustBlobTmp, &cbCustBlobTmp));
-                    if (cbCustBlob == cbCustBlobTmp &&
-                        !memcmp(pCustBlob, pCustBlobTmp, cbCustBlob))
-                    {
-                        *pcv = TokenFromRid(i, mdtCustomAttribute);
-                        return S_OK;
-                    }
-                }
-                else
-                    return S_OK;
-            }
-        }
-        // fall through
-    }
-    return S_FALSE;
-} // ImportHelper::FindCustomAttributeByToken
-
-//*****************************************************************************
 // Helper function to lookup and retrieve a CustomAttribute.
 //*****************************************************************************
 HRESULT ImportHelper::GetCustomAttributeByName( // S_OK or error.
@@ -1581,14 +1312,9 @@ HRESULT ImportHelper::FindManifestResource(
 //****************************************************************************
 HRESULT
 ImportHelper::MergeUpdateTokenInFieldSig(
-    CMiniMdRW   *pMiniMdAssemEmit,      // [IN] The assembly emit scope.
     CMiniMdRW   *pMiniMdEmit,           // [IN] The emit scope.
-    IMetaModelCommon *pCommonAssemImport,// [IN] Assembly scope where the signature is from.
-    const void  *pbHashValue,           // [IN] Hash value for the import assembly.
-    ULONG       cbHashValue,            // [IN] Size in bytes for the hash value.
     IMetaModelCommon *pCommonImport,    // [IN] The scope to merge into the emit scope.
     PCCOR_SIGNATURE pbSigImp,           // signature from the imported scope
-    MDTOKENMAP      *ptkMap,            // Internal OID mapping structure.
     CQuickBytes     *pqkSigEmit,        // [OUT] buffer for translated signature
     ULONG           cbStartEmit,        // [IN] start point of buffer to write to
     ULONG           *pcbImp,            // [OUT] total number of bytes consumed from pbSigImp
@@ -1637,14 +1363,9 @@ ImportHelper::MergeUpdateTokenInFieldSig(
 
             // conver the base type for the SZARRAY or GENERICARRAY
             IfFailGo(MergeUpdateTokenInFieldSig(
-                pMiniMdAssemEmit,           // The assembly emit scope.
                 pMiniMdEmit,                // The emit scope.
-                pCommonAssemImport,         // The assembly scope where the signature is from.
-                pbHashValue,                // Hash value for the import assembly.
-                cbHashValue,                // Size in bytes for the hash value.
                 pCommonImport,              // scope to merge into the emit scope.
                 &pbSigImp[cbSrcTotal],      // from the imported scope
-                ptkMap,                     // OID mapping structure.
                 pqkSigEmit,                 // [OUT] buffer for translated signature
                 cbStartEmit + cbDestTotal,  // [IN] start point of buffer to write to
                 &cbImp,                     // [OUT] total number of bytes consumed from pbSigImp
@@ -1658,14 +1379,9 @@ ImportHelper::MergeUpdateTokenInFieldSig(
             // syntax : WITH (ELEMENT_TYPE_CLASS | ELEMENT_TYPE_VALUECLASS)  <BaseType>
 
             IfFailGo(MergeUpdateTokenInFieldSig(
-                pMiniMdAssemEmit,           // The assembly emit scope.
                 pMiniMdEmit,                // The emit scope.
-                pCommonAssemImport,         // The assembly scope where the signature is from.
-                pbHashValue,                // Hash value for the import assembly.
-                cbHashValue,                // Size in bytes for the hash value.
                 pCommonImport,              // scope to merge into the emit scope.
                 &pbSigImp[cbSrcTotal],      // from the imported scope
-                ptkMap,                     // OID mapping structure.
                 pqkSigEmit,                 // [OUT] buffer for translated signature
                 cbStartEmit + cbDestTotal,  // [IN] start point of buffer to write to
                 &cbImp,                     // [OUT] total number of bytes consumed from pbSigImp
@@ -1686,14 +1402,9 @@ ImportHelper::MergeUpdateTokenInFieldSig(
 
             for (ULONG narg = 0; narg < nargs; narg++) {
                 IfFailGo(MergeUpdateTokenInFieldSig(
-                    pMiniMdAssemEmit,           // The assembly emit scope.
                     pMiniMdEmit,                // The emit scope.
-                    pCommonAssemImport,         // The assembly scope where the signature is from.
-                    pbHashValue,                // Hash value for the import assembly.
-                    cbHashValue,                // Size in bytes for the hash value.
                     pCommonImport,              // The scope to merge into the emit scope.
                     &pbSigImp[cbSrcTotal],      // signature from the imported scope
-                    ptkMap,                     // Internal OID mapping structure.
                     pqkSigEmit,                 // [OUT] buffer for translated signature
                     cbStartEmit + cbDestTotal,  // [IN] start point of buffer to write to
                     &cbImp,                     // [OUT] total number of bytes consumed from pbSigImp
@@ -1728,14 +1439,9 @@ ImportHelper::MergeUpdateTokenInFieldSig(
 
             // conver the base type for the MDARRAY
             IfFailGo(MergeUpdateTokenInFieldSig(
-                pMiniMdAssemEmit,           // The assembly emit scope.
                 pMiniMdEmit,                // The emit scope.
-                pCommonAssemImport,         // The assembly scope where the signature is from.
-                pbHashValue,                // Hash value for the import assembly.
-                cbHashValue,                // Size in bytes for the hash value.
                 pCommonImport,              // The scope to merge into the emit scope.
                 &pbSigImp[cbSrcTotal],      // signature from the imported scope
-                ptkMap,                     // Internal OID mapping structure.
                 pqkSigEmit,                 // [OUT] buffer for translated signature
                 cbStartEmit + cbSrcTotal,   // [IN] start point of buffer to write to
                 &cbImp,                     // [OUT] total number of bytes consumed from pbSigImp
@@ -1784,14 +1490,9 @@ ImportHelper::MergeUpdateTokenInFieldSig(
         case ELEMENT_TYPE_FNPTR:
             // function pointer is followed by another complete signature
             IfFailGo(MergeUpdateTokenInSig(
-                pMiniMdAssemEmit,           // The assembly emit scope.
                 pMiniMdEmit,                // The emit scope.
-                pCommonAssemImport,         // The assembly scope where the signature is from.
-                pbHashValue,                // Hash value for the import assembly.
-                cbHashValue,                // Size in bytes for the hash value.
                 pCommonImport,              // The scope to merge into the emit scope.
                 &pbSigImp[cbSrcTotal],      // signature from the imported scope
-                ptkMap,                     // Internal OID mapping structure.
                 pqkSigEmit,                 // [OUT] buffer for translated signature
                 cbStartEmit + cbDestTotal,  // [IN] start point of buffer to write to
                 &cbImp,                     // [OUT] total number of bytes consumed from pbSigImp
@@ -1810,30 +1511,12 @@ ImportHelper::MergeUpdateTokenInFieldSig(
             // now get the embedded typeref token
             cb = CorSigUncompressToken(&pbSigImp[cbSrcTotal], &tkRidFrom);
 
-            // Map the ulRidFrom to ulRidTo
-            if (ptkMap)
-            {
-                // mdtBaseType does not record in the map. It is unique across modules
-                if ( TypeFromToken(tkRidFrom) == mdtBaseType )
-                {
-                    tkRidTo = tkRidFrom;
-                }
-                else
-                {
-                    IfFailGo( ptkMap->Remap(tkRidFrom, &tkRidTo) );
-                }
-            }
-            else
             {
                 // If the token is a TypeDef or a TypeRef, get/create the
                 // ResolutionScope for the outermost TypeRef.
                 if (TypeFromToken(tkRidFrom) == mdtTypeDef)
                 {
-                    IfFailGo(ImportTypeDef(pMiniMdAssemEmit,
-                                           pMiniMdEmit,
-                                           pCommonAssemImport,
-                                           pbHashValue,
-                                           cbHashValue,
+                    IfFailGo(ImportTypeDef(pMiniMdEmit,
                                            pCommonImport,
                                            tkRidFrom,
                                            true,    // Optimize to TypeDef if emit and import scopes are identical.
@@ -1841,11 +1524,7 @@ ImportHelper::MergeUpdateTokenInFieldSig(
                 }
                 else if (TypeFromToken(tkRidFrom) == mdtTypeRef)
                 {
-                    IfFailGo(ImportTypeRef(pMiniMdAssemEmit,
-                                           pMiniMdEmit,
-                                           pCommonAssemImport,
-                                           pbHashValue,
-                                           cbHashValue,
+                    IfFailGo(ImportTypeRef(pMiniMdEmit,
                                            pCommonImport,
                                            tkRidFrom,
                                            &tkRidTo));
@@ -1865,14 +1544,9 @@ ImportHelper::MergeUpdateTokenInFieldSig(
 
                                         // Translate the typespec signature before look up
                     IfFailGo(MergeUpdateTokenInFieldSig(
-                        pMiniMdAssemEmit,           // The assembly emit scope.
                         pMiniMdEmit,                // The emit scope.
-                        pCommonAssemImport,         // The assembly scope where the signature is from.
-                        pbHashValue,                // Hash value for the import assembly.
-                        cbHashValue,                // Size in bytes for the hash value.
                         pCommonImport,              // The scope to merge into the emit scope.
                         pvTypeSpecSig,              // signature from the imported scope
-                        ptkMap,                     // Internal OID mapping structure.
                         &qkTypeSpecSigEmit,         // [OUT] buffer for translated signature
                         0,                          // start from first byte of TypeSpec signature
                         0,                          // don't care how many bytes are consumed
@@ -1932,14 +1606,9 @@ ImportHelper::MergeUpdateTokenInFieldSig(
             {
                 // need to skip over the base type
                 IfFailGo(MergeUpdateTokenInFieldSig(
-                    pMiniMdAssemEmit,           // The assembly emit scope.
                     pMiniMdEmit,                // The emit scope.
-                    pCommonAssemImport,         // The assembly scope where the signature is from.
-                    pbHashValue,                // Hash value for the import assembly.
-                    cbHashValue,                // Size in bytes for the hash value.
                     pCommonImport,              // The scope to merge into the emit scope.
                     &pbSigImp[cbSrcTotal],      // signature from the imported scope
-                    ptkMap,                     // Internal OID mapping structure.
                     pqkSigEmit,                 // [OUT] buffer for translated signature
                     cbStartEmit + cbDestTotal,  // [IN] start point of buffer to write to
                     &cbImp,                     // [OUT] total number of bytes consumed from pbSigImp
@@ -1975,14 +1644,9 @@ ErrExit:
 // convert tokens contained in a signature
 //****************************************************************************
 HRESULT ImportHelper::MergeUpdateTokenInSig(// S_OK or error.
-    CMiniMdRW   *pMiniMdAssemEmit,      // [IN] The assembly emit scope.
     CMiniMdRW   *pMiniMdEmit,           // [IN] The emit scope.
-    IMetaModelCommon *pCommonAssemImport,// [IN] Assembly scope where the signature is from.
-    const void  *pbHashValue,           // [IN] Hash value for the import assembly.
-    ULONG       cbHashValue,            // [IN] Size in bytes for the hash value.
     IMetaModelCommon *pCommonImport,    // [IN] The scope to merge into the emit scope.
     PCCOR_SIGNATURE pbSigImp,           // signature from the imported scope
-    MDTOKENMAP      *ptkMap,            // Internal OID mapping structure.
     CQuickBytes     *pqkSigEmit,        // [OUT] translated signature
     ULONG           cbStartEmit,        // [IN] start point of buffer to write to
     ULONG           *pcbImp,            // [OUT] total number of bytes consumed from pbSigImp
@@ -2019,14 +1683,9 @@ HRESULT ImportHelper::MergeUpdateTokenInSig(// S_OK or error.
 
         cbDestTotal = cbSrcTotal = cb;
         IfFailGo(MergeUpdateTokenInFieldSig(
-            pMiniMdAssemEmit,
             pMiniMdEmit,
-            pCommonAssemImport,
-            pbHashValue,
-            cbHashValue,
             pCommonImport,
             &pbSigImp[cbSrcTotal],
-            ptkMap,
             pqkSigEmit,                     // output buffer to hold the new sig for the field
             cbStartEmit + cbDestTotal,      // number of bytes already in pqkSigDest
             &cbImp,                         // number of bytes consumed from imported signature
@@ -2058,14 +1717,9 @@ HRESULT ImportHelper::MergeUpdateTokenInSig(// S_OK or error.
                 // LocalVar sig does not have return type
                 // process the return type
                 IfFailGo(MergeUpdateTokenInFieldSig(
-                    pMiniMdAssemEmit,
                     pMiniMdEmit,
-                    pCommonAssemImport,
-                    pbHashValue,
-                    cbHashValue,
                     pCommonImport,
                     &pbSigImp[cbSrcTotal],
-                    ptkMap,
                     pqkSigEmit,                     // output buffer to hold the new sig for the field
                     cbStartEmit + cbDestTotal,      // number of bytes already in pqkSigDest
                     &cbImp,                         // number of bytes consumed from imported signature
@@ -2081,14 +1735,9 @@ HRESULT ImportHelper::MergeUpdateTokenInSig(// S_OK or error.
         {
             // process every argument
             IfFailGo(MergeUpdateTokenInFieldSig(
-                pMiniMdAssemEmit,
                 pMiniMdEmit,
-                pCommonAssemImport,
-                pbHashValue,
-                cbHashValue,
                 pCommonImport,
                 &pbSigImp[cbSrcTotal],
-                ptkMap,
                 pqkSigEmit,                 // output buffer to hold the new sig for the field
                 cbStartEmit + cbDestTotal,
                 &cbImp,                     // number of bytes consumed from imported signature
@@ -2352,47 +2001,6 @@ ErrExit:
 
 //****************************************************************************
 // Given the arrays of names and namespaces for the Nested Type hierarchy,
-// find the innermost TypeRef token.  The arrays start with the innermost
-// TypeRefs and go outwards.
-//****************************************************************************
-HRESULT ImportHelper::FindNestedTypeRef(
-    CMiniMdRW   *pMiniMd,               // [IN] Scope in which to find the TypeRef.
-    CQuickArray<LPCUTF8> &cqaNesterNamespaces,  // [IN] Array of Names.
-    CQuickArray<LPCUTF8> &cqaNesterNames,   // [IN] Array of Namespaces.
-    mdToken     tkResolutionScope,      // [IN] Resolution scope for the outermost TypeRef.
-    mdTypeRef   *ptr)                   // [OUT] Inner most TypeRef token.
-{
-    ULONG       ulNesters;
-    ULONG       ulCurNester;
-    HRESULT     hr = S_OK;
-
-    _ASSERTE(cqaNesterNames.Size() == cqaNesterNamespaces.Size() &&
-             cqaNesterNames.Size());
-
-    // Set the output parameter to Nil token.
-    *ptr = mdTokenNil;
-
-    // Get count in the hierarchy, the give TypeDef included.
-    ulNesters = (ULONG)cqaNesterNames.Size();
-
-    // For each nester try to find the corresponding TypeRef in
-    // the emit scope.  For the outermost TypeDef enclosing class is Nil.
-    for (ulCurNester = ulNesters-1; ulCurNester != (ULONG) -1; ulCurNester--)
-    {
-        IfFailGo(FindTypeRefByName(pMiniMd,
-                                   tkResolutionScope,
-                                   cqaNesterNamespaces[ulCurNester],
-                                   cqaNesterNames[ulCurNester],
-                                   &tkResolutionScope));
-    }
-    *ptr = tkResolutionScope;
-ErrExit:
-    return hr;
-}   // HRESULT ImportHelper::FindNestedTypeRef()
-
-
-//****************************************************************************
-// Given the arrays of names and namespaces for the Nested Type hierarchy,
 // find the innermost TypeDef token.  The arrays start with the innermost
 // TypeDef and go outwards.
 //****************************************************************************
@@ -2434,17 +2042,13 @@ ErrExit:
 #ifdef FEATURE_METADATA_EMIT
 
 //****************************************************************************
-// Given the TypeDef and the corresponding assembly and module import scopes,
+// Given a TypeDef and its import scope,
 // create a corresponding TypeRef in the given emit scope.
 //****************************************************************************
 HRESULT
 ImportHelper::ImportTypeDef(
-    CMiniMdRW *        pMiniMdAssemEmit,    // [IN] Assembly emit scope.
-    CMiniMdRW *        pMiniMdEmit,         // [IN] Module emit scope.
-    IMetaModelCommon * pCommonAssemImport,  // [IN] Assembly import scope.
-    const void *       pbHashValue,         // [IN] Hash value for import assembly.
-    ULONG              cbHashValue,         // [IN] Size in bytes of hash value.
-    IMetaModelCommon * pCommonImport,       // [IN] Module import scope.
+    CMiniMdRW *        pMiniMdEmit,         // [IN] Emit scope.
+    IMetaModelCommon * pCommonImport,       // [IN] Import scope.
     mdTypeDef          tdImport,            // [IN] Imported TypeDef.
     bool               bReturnTd,           // [IN] If the import and emit scopes are identical, return the TypeDef.
     mdToken *          ptkType)             // [OUT] Output token for the imported type in the emit scope.
@@ -2453,33 +2057,21 @@ ImportHelper::ImportTypeDef(
     CQuickArray<LPCUTF8> cqaNesterNames;
     CQuickArray<LPCUTF8> cqaNesterNamespaces;
     GUID        nullguid = GUID_NULL;
-    GUID        MvidAssemImport = nullguid;
-    GUID        MvidAssemEmit = nullguid;
     GUID        MvidImport = nullguid;
     GUID        MvidEmit = nullguid;
-    GUID        GuidImport = GUID_NULL;
-    LPCUTF8     szModuleImport;
     mdToken     tkOuterRes = mdTokenNil;
     HRESULT     hr = S_OK;
 
     _ASSERTE(pMiniMdEmit && pCommonImport && ptkType);
     _ASSERTE(TypeFromToken(tdImport) == mdtTypeDef && tdImport != mdTypeDefNil);
 
-    // Get MVIDs for import and emit, assembly and module scopes.
-    if (pCommonAssemImport != NULL)
-    {
-        IfFailGo(pCommonAssemImport->CommonGetScopeProps(0, &MvidAssemImport));
-    }
-    IfFailGo(pCommonImport->CommonGetScopeProps(&szModuleImport, &MvidImport));
-    if (pMiniMdAssemEmit != NULL)
-    {
-        IfFailGo(static_cast<IMetaModelCommon*>(pMiniMdAssemEmit)->CommonGetScopeProps(0, &MvidAssemEmit));
-    }
+    // Get MVIDs for import and emit scopes.
+    IfFailGo(pCommonImport->CommonGetScopeProps(0, &MvidImport));
     IfFailGo(static_cast<IMetaModelCommon*>(pMiniMdEmit)->CommonGetScopeProps(0, &MvidEmit));
 
-    if (MvidAssemImport == MvidAssemEmit && MvidImport == MvidEmit)
+    if (MvidImport == MvidEmit)
     {
-        // The TypeDef is in the same Assembly and the Same scope.
+        // The TypeDef is in the same scope.
         if (bReturnTd)
         {
             *ptkType = tdImport;
@@ -2488,30 +2080,14 @@ ImportHelper::ImportTypeDef(
         else
             tkOuterRes = TokenFromRid(1, mdtModule);
     }
-    else if (MvidAssemImport == MvidAssemEmit && MvidImport != MvidEmit)
+    else
     {
-        // The TypeDef is in the same Assembly but a different module.
-
-        // Create a ModuleRef corresponding to the import scope.
-        IfFailGo(CreateModuleRefFromScope(pMiniMdEmit, pCommonImport, &tkOuterRes));
-    }
-    else if (MvidAssemImport != MvidAssemEmit)
-    {   
         // The TypeDef is from a different Assembly.
 
-        // Import and Emit scopes can't be identical and be from different
-        // Assemblies at the same time.
-        _ASSERTE(MvidImport != MvidEmit &&
-                 "Import scope can't be identical to the Emit scope and be from a different Assembly at the same time.");
-
-        _ASSERTE(pCommonAssemImport);
-
         // Create an AssemblyRef corresponding to the import scope.
-        IfFailGo(CreateAssemblyRefFromAssembly(pMiniMdAssemEmit,
+        IfFailGo(CreateAssemblyRefFromAssembly(pMiniMdEmit,
                                                pMiniMdEmit,
-                                               pCommonAssemImport,
-                                               pbHashValue,
-                                               cbHashValue,
+                                               pCommonImport,
                                                &tkOuterRes));
     }
 
@@ -2535,52 +2111,34 @@ ErrExit:
 } // ImportHelper::ImportTypeDef
 
 //****************************************************************************
-// Given the TypeRef and the corresponding assembly and module import scopes,
+// Given a TypeRef and its import scope,
 // return the corresponding token in the given emit scope.
 // <REVISIT_TODO>@FUTURE:  Should we look at visibility flags on ExportedTypes and TypeDefs when
 // handling references across Assemblies?</REVISIT_TODO>
 //****************************************************************************
 HRESULT ImportHelper::ImportTypeRef(
-    CMiniMdRW   *pMiniMdAssemEmit,      // [IN] Assembly emit scope.
-    CMiniMdRW   *pMiniMdEmit,           // [IN] Module emit scope.
-    IMetaModelCommon *pCommonAssemImport, // [IN] Assembly import scope.
-    const void  *pbHashValue,           // [IN] Hash value for import assembly.
-    ULONG       cbHashValue,            // [IN] Size in bytes of hash value.
-    IMetaModelCommon *pCommonImport,    // [IN] Module import scope.
+    CMiniMdRW   *pMiniMdEmit,           // [IN] Emit scope.
+    IMetaModelCommon *pCommonImport,    // [IN] Import scope.
     mdTypeRef   trImport,               // [IN] Imported TypeRef.
     mdToken     *ptkType)               // [OUT] Output token for the imported type in the emit scope.
 {
     CQuickArray<mdTypeDef>  cqaNesters;
     CQuickArray<LPCUTF8> cqaNesterNames;
     CQuickArray<LPCUTF8> cqaNesterNamespaces;
-    LPCUTF8     szScopeNameEmit;
     GUID        nullguid = GUID_NULL;
-    GUID        MvidAssemImport = nullguid;
-    GUID        MvidAssemEmit = nullguid;
     GUID        MvidImport = nullguid;
     GUID        MvidEmit = nullguid;
     mdToken     tkOuterImportRes;               // ResolutionScope for the outermost TypeRef in import scope.
     mdToken     tkOuterEmitRes = mdTokenNil;    // ResolutionScope for outermost TypeRef in emit scope.
     HRESULT     hr = S_OK;
-    bool        bAssemblyRefFromAssemScope = false;
 
     _ASSERTE(pMiniMdEmit && pCommonImport && ptkType);
     _ASSERTE(TypeFromToken(trImport) == mdtTypeRef);
 
-    // Get MVIDs for import and emit, assembly and module scopes.
-    if (pCommonAssemImport != NULL)
-    {
-        IfFailGo(pCommonAssemImport->CommonGetScopeProps(0, &MvidAssemImport));
-    }
+    // Get MVIDs for import and emit scopes.
     IfFailGo(pCommonImport->CommonGetScopeProps(0, &MvidImport));
-    if (pMiniMdAssemEmit != NULL)
-    {
-        IfFailGo(static_cast<IMetaModelCommon*>(pMiniMdAssemEmit)->CommonGetScopeProps(
-            0,
-            &MvidAssemEmit));
-    }
     IfFailGo(static_cast<IMetaModelCommon*>(pMiniMdEmit)->CommonGetScopeProps(
-        &szScopeNameEmit,
+        0,
         &MvidEmit));
 
     // Get the outermost resolution scope for the TypeRef being imported.
@@ -2596,87 +2154,18 @@ HRESULT ImportHelper::ImportTypeRef(
         &tkOuterImportRes));
 
     // Compute the ResolutionScope for the imported type.
-    if (MvidAssemImport == MvidAssemEmit && MvidImport == MvidEmit)
+    if (MvidImport == MvidEmit)
     {
         *ptkType = trImport;
         goto ErrExit;
     }
-    else if (MvidAssemImport == MvidAssemEmit && MvidImport != MvidEmit)
+    else
     {
-        // The TypeRef is in the same Assembly but a different module.
-
-        if (IsNilToken(tkOuterImportRes))
-        {
-            tkOuterEmitRes = tkOuterImportRes;
-        }
-        else if (TypeFromToken(tkOuterImportRes) == mdtModule)
-        {
-            // TypeRef resolved to the import module in which its defined.
-
-            //
-            if (pMiniMdAssemEmit == NULL && pCommonAssemImport == NULL)
-            {
-                tkOuterEmitRes = TokenFromRid(1, mdtModule);
-            }
-            else
-            {
-                // Create a ModuleRef corresponding to the import scope.
-                IfFailGo(CreateModuleRefFromScope(pMiniMdEmit,
-                                                  pCommonImport,
-                                                  &tkOuterEmitRes));
-            }
-        }
-        else if (TypeFromToken(tkOuterImportRes) == mdtAssemblyRef)
-        {
-            // TypeRef is from a different Assembly.
-
-            // Create a corresponding AssemblyRef in the emit scope.
-            IfFailGo(CreateAssemblyRefFromAssemblyRef(pMiniMdAssemEmit,
-                                                      pMiniMdEmit,
-                                                      pCommonImport,
-                                                      tkOuterImportRes,
-                                                      &tkOuterEmitRes));
-        }
-        else if (TypeFromToken(tkOuterImportRes) == mdtModuleRef)
-        {
-            // Get Name of the ModuleRef.
-            LPCUTF8     szMRName;
-            IfFailGo(pCommonImport->CommonGetModuleRefProps(tkOuterImportRes, &szMRName));
-
-            if (!strcmp(szMRName, szScopeNameEmit))
-            {
-                // ModuleRef from import scope resolves to the emit scope.
-                tkOuterEmitRes = TokenFromRid(1, mdtModule);
-            }
-            else
-            {
-                // ModuleRef does not correspond to the emit scope.
-                // Create a corresponding ModuleRef.
-                IfFailGo(CreateModuleRefFromModuleRef(pMiniMdEmit,
-                                                      pCommonImport,
-                                                      tkOuterImportRes,
-                                                      &tkOuterEmitRes));
-            }
-        }
-    }
-    else if (MvidAssemImport != MvidAssemEmit)
-    {
-        // The TypeDef is from a different Assembly.
-
-        // Import and Emit scopes can't be identical and be from different
-        // Assemblies at the same time.
-        _ASSERTE(MvidImport != MvidEmit &&
-                 "Import scope can't be identical to the Emit scope and be from a different Assembly at the same time.");
+        // The TypeRef is from a different Assembly.
 
         mdToken     tkImplementation;       // Implementation token for ExportedType.
         if (IsNilToken(tkOuterImportRes))
         {
-            _ASSERTE(pCommonAssemImport != NULL);
-            if (pCommonAssemImport == NULL)
-            {
-                IfFailGo(E_UNEXPECTED);
-            }
-
             // <REVISIT_TODO>BUG FIX:: URT 13626
             // Well, before all of the clients generate AR for SPCL reference, it is not true
             // that tkOuterImportRes == nil will imply that we have to find such an entry in the import manifest!!</REVISIT_TODO>
@@ -2684,14 +2173,14 @@ HRESULT ImportHelper::ImportTypeRef(
             // Look for a ExportedType entry in the import Assembly.  Its an error
             // if we don't find a ExportedType entry.
             mdExportedType   tkExportedType;
-            hr = pCommonAssemImport->CommonFindExportedType(
+            hr = pCommonImport->CommonFindExportedType(
                                     cqaNesterNamespaces[cqaNesters.Size() - 1],
                                     cqaNesterNames[cqaNesters.Size() - 1],
                                     mdTokenNil,
                                     &tkExportedType);
             if (SUCCEEDED(hr))
             {
-                IfFailGo(pCommonAssemImport->CommonGetExportedTypeProps(
+                IfFailGo(pCommonImport->CommonGetExportedTypeProps(
                     tkExportedType,
                     NULL,
                     NULL,
@@ -2699,21 +2188,15 @@ HRESULT ImportHelper::ImportTypeRef(
                 if (TypeFromToken(tkImplementation) == mdtFile)
                 {
                     // Type is from a different Assembly.
-                    IfFailGo(CreateAssemblyRefFromAssembly(pMiniMdAssemEmit,
+                    IfFailGo(CreateAssemblyRefFromAssembly(pMiniMdEmit,
                                                            pMiniMdEmit,
-                                                           pCommonAssemImport,
-                                                           pbHashValue,
-                                                           cbHashValue,
+                                                           pCommonImport,
                                                            &tkOuterEmitRes));
                 }
                 else if (TypeFromToken(tkImplementation) == mdtAssemblyRef)
                 {
                     // This folds into the case where the Type is AssemblyRef.  So
                     // let it fall through to that case.
-
-                    // Remember that this AssemblyRef token is actually from the Manifest scope not
-                    // the module scope!!!
-                    bAssemblyRefFromAssemScope = true;
                     tkOuterImportRes = tkImplementation;
                 }
                 else
@@ -2729,11 +2212,9 @@ HRESULT ImportHelper::ImportTypeRef(
         else if (TypeFromToken(tkOuterImportRes) == mdtModule)
         {
             // Type is from a different Assembly.
-            IfFailGo(CreateAssemblyRefFromAssembly(pMiniMdAssemEmit,
+            IfFailGo(CreateAssemblyRefFromAssembly(pMiniMdEmit,
                                                    pMiniMdEmit,
-                                                   pCommonAssemImport,
-                                                   pbHashValue,
-                                                   cbHashValue,
+                                                   pCommonImport,
                                                    &tkOuterEmitRes));
         }
         // Not else if, because mdtModule case above could change
@@ -2743,109 +2224,42 @@ HRESULT ImportHelper::ImportTypeRef(
             // If there is an emit assembly, see if the import assembly ref points to
             //  it.  If there is no emit assembly, the import assembly, by definition,
             //  does not point to this one.
-            if (pMiniMdAssemEmit == NULL  || !pMiniMdAssemEmit->getCountAssemblys())
+            if (!pMiniMdEmit->getCountAssemblys())
                 hr = S_FALSE;
             else
             {
-                if (bAssemblyRefFromAssemScope)
-                {
-                    // Check to see if the AssemblyRef resolves to the emit assembly.
-                    IfFailGo(CompareAssemblyRefToAssembly(pCommonAssemImport,
-                                                          tkOuterImportRes,
-                                    static_cast<IMetaModelCommon*>(pMiniMdAssemEmit)));
-
-                }
-                else
-                {
-                    // Check to see if the AssemblyRef resolves to the emit assembly.
-                    IfFailGo(CompareAssemblyRefToAssembly(pCommonImport,
-                                                          tkOuterImportRes,
-                                    static_cast<IMetaModelCommon*>(pMiniMdAssemEmit)));
-                }
+                // Check to see if the AssemblyRef resolves to the emit assembly.
+                IfFailGo(CompareAssemblyRefToAssembly(pCommonImport,
+                                                      tkOuterImportRes,
+                                static_cast<IMetaModelCommon*>(pMiniMdEmit)));
             }
             if (hr == S_OK)
             {
                 // The TypeRef being imported is defined in the current Assembly.
 
-                // Find the ExportedType for the outermost TypeRef in the Emit assembly.
-                mdExportedType   tkExportedType;
-
-                hr = FindExportedType(pMiniMdAssemEmit,
-                                 cqaNesterNamespaces[cqaNesters.Size() - 1],
-                                 cqaNesterNames[cqaNesters.Size() - 1],
-                                 mdTokenNil,    // Enclosing ExportedType.
-                                 &tkExportedType);
-                if (hr == S_OK)
-                {
-                    // Create a ModuleRef based on the File name for the ExportedType.
-                    // If the ModuleRef corresponds to pMiniMdEmit, the function
-                    // will return S_FALSE, in which case set tkOuterEmitRes to
-                    // the Module token.
-                    hr = CreateModuleRefFromExportedType(pMiniMdAssemEmit,
-                                                    pMiniMdEmit,
-                                                    tkExportedType,
-                                                    &tkOuterEmitRes);
-                    if (hr == S_FALSE)
-                        tkOuterEmitRes = TokenFromRid(1, mdtModule);
-                    else
-                        IfFailGo(hr);
-                }
-                else if (hr == CLDB_E_RECORD_NOTFOUND)
-                {
-                    // Find the Type in the Assembly emit scope to cover the
-                    // case where ExportedTypes may be implicitly defined.  Its an
-                    // error if we can't find the Type at this point.
-                    IfFailGo(FindTypeDefByName(pMiniMdAssemEmit,
-                                               cqaNesterNamespaces[cqaNesters.Size() - 1],
-                                               cqaNesterNames[cqaNesters.Size() - 1],
-                                               mdTokenNil,  // Enclosing Type.
-                                               &tkOuterEmitRes));
-                    tkOuterEmitRes = TokenFromRid(1, mdtModule);
-                }
-                else
-                {
-                    _ASSERTE(FAILED(hr));
-                    IfFailGo(hr);
-                }
+                IfFailGo(FindTypeDefByName(pMiniMdEmit,
+                                           cqaNesterNamespaces[cqaNesters.Size() - 1],
+                                           cqaNesterNames[cqaNesters.Size() - 1],
+                                           mdTokenNil,  // Enclosing Type.
+                                           &tkOuterEmitRes));
+                tkOuterEmitRes = TokenFromRid(1, mdtModule);
             }
             else if (hr == S_FALSE)
             {
                 // The TypeRef being imported is from a different Assembly.
 
-                if (bAssemblyRefFromAssemScope)
-                {
-                    // Create a corresponding AssemblyRef.
-                    IfFailGo(CreateAssemblyRefFromAssemblyRef(pMiniMdAssemEmit,
-                                                              pMiniMdEmit,
-                                                              pCommonAssemImport,
-                                                              tkOuterImportRes,
-                                                              &tkOuterEmitRes));
-                }
-                else
-                {
-                    // Create a corresponding AssemblyRef.
-                    IfFailGo(CreateAssemblyRefFromAssemblyRef(pMiniMdAssemEmit,
-                                                              pMiniMdEmit,
-                                                              pCommonImport,
-                                                              tkOuterImportRes,
-                                                              &tkOuterEmitRes));
-                }
+                // Create a corresponding AssemblyRef.
+                IfFailGo(CreateAssemblyRefFromAssemblyRef(pMiniMdEmit,
+                                                          pMiniMdEmit,
+                                                          pCommonImport,
+                                                          tkOuterImportRes,
+                                                          &tkOuterEmitRes));
             }
             else
             {
                 _ASSERTE(FAILED(hr));
                 IfFailGo(hr);
             }
-        }
-        else if (TypeFromToken(tkOuterImportRes) == mdtModuleRef)
-        {
-            // Type is from a different Assembly.
-            IfFailGo(CreateAssemblyRefFromAssembly(pMiniMdAssemEmit,
-                                                   pMiniMdEmit,
-                                                   pCommonAssemImport,
-                                                   pbHashValue,
-                                                   cbHashValue,
-                                                   &tkOuterEmitRes));
         }
     }
 
@@ -2881,172 +2295,6 @@ ErrExit:
 } // ImportHelper::ImportTypeRef
 
 //******************************************************************************
-// Given import scope, create a corresponding ModuleRef.
-//******************************************************************************
-HRESULT ImportHelper::CreateModuleRefFromScope( // S_OK or error.
-    CMiniMdRW   *pMiniMdEmit,           // [IN] Emit scope in which the ModuleRef is to be created.
-    IMetaModelCommon *pCommonImport,    // [IN] Import scope.
-    mdModuleRef *ptkModuleRef)          // [OUT] Output token for ModuleRef.
-{
-    HRESULT     hr = S_OK;
-    LPCSTR      szName;
-    ModuleRefRec *pRecordEmit;
-    RID         iRecordEmit;
-
-    // Set output to nil.
-    *ptkModuleRef = mdTokenNil;
-
-    // Get name of import scope.
-    IfFailGo(pCommonImport->CommonGetScopeProps(&szName, 0));
-
-    // See if the ModuleRef exists in the Emit scope.
-    hr = FindModuleRef(pMiniMdEmit, szName, ptkModuleRef);
-
-    if (hr == CLDB_E_RECORD_NOTFOUND)
-    {
-        if (szName[0] == '\0')
-        {
-            // It the referenced Module does not have a proper name, use the nil token instead.
-            LOG((LOGMD, "WARNING!!! MD ImportHelper::CreatemoduleRefFromScope but scope does not have a proper name!!!!"));
-
-            // clear the error
-            hr = NOERROR;
-
-            // It is a bug to create an ModuleRef to an empty name!!!
-            *ptkModuleRef = mdTokenNil;
-        }
-        else
-        {
-            // Create ModuleRef record and set the output parameter.
-            IfFailGo(pMiniMdEmit->AddModuleRefRecord(&pRecordEmit, &iRecordEmit));
-            *ptkModuleRef = TokenFromRid(iRecordEmit, mdtModuleRef);
-            IfFailGo(pMiniMdEmit->UpdateENCLog(*ptkModuleRef));
-
-            // Set the name of ModuleRef.
-            IfFailGo(pMiniMdEmit->PutString(TBL_ModuleRef, ModuleRefRec::COL_Name,
-                                                  pRecordEmit, szName));
-        }
-    }
-    else
-        IfFailGo(hr);
-ErrExit:
-    return hr;
-} // ImportHelper::CreateModuleRefFromScope
-
-
-//******************************************************************************
-// Given an import scope and a ModuleRef, create a corresponding ModuleRef in
-// the given emit scope.
-//******************************************************************************
-HRESULT ImportHelper::CreateModuleRefFromModuleRef(    // S_OK or error.
-    CMiniMdRW   *pMiniMdEmit,           // [IN] Emit scope.
-    IMetaModelCommon *pCommon,              // [IN] Import scope.
-    mdModuleRef tkModuleRef,            // [IN] ModuleRef token.
-    mdModuleRef *ptkModuleRef)          // [OUT] ModuleRef token in the emit scope.
-{
-    HRESULT     hr = S_OK;
-    LPCSTR      szName;
-    ModuleRefRec *pRecord;
-    RID         iRecord;
-
-    // Set output to Nil.
-    *ptkModuleRef = mdTokenNil;
-
-    // Get name of the ModuleRef being imported.
-    IfFailGo(pCommon->CommonGetModuleRefProps(tkModuleRef, &szName));
-
-    // See if the ModuleRef exist in the Emit scope.
-    hr = FindModuleRef(pMiniMdEmit, szName, ptkModuleRef);
-
-    if (hr == CLDB_E_RECORD_NOTFOUND)
-    {
-        // Create ModuleRef record and set the output parameter.
-        IfFailGo(pMiniMdEmit->AddModuleRefRecord(&pRecord, &iRecord));
-        *ptkModuleRef = TokenFromRid(iRecord, mdtModuleRef);
-        IfFailGo(pMiniMdEmit->UpdateENCLog(*ptkModuleRef));
-
-        // Set the name of ModuleRef.
-        IfFailGo(pMiniMdEmit->PutString(TBL_ModuleRef, ModuleRefRec::COL_Name,
-                                              pRecord, szName));
-    }
-    else
-    {
-        IfFailGo(hr);
-    }
-ErrExit:
-    return hr;
-} // ImportHelper::CreateModuleRefFromModuleRef
-
-
-//******************************************************************************
-// Given a ExportedType and the Assembly emit scope, create a corresponding ModuleRef
-// in the give emit scope.  The ExportedType being passed in must belong to the
-// Assembly passed in.  Function returns S_FALSE if the ExportedType is implemented
-// by the emit scope passed in.
-//******************************************************************************
-HRESULT ImportHelper::CreateModuleRefFromExportedType(  // S_OK or error.
-    CMiniMdRW   *pAssemEmit,            // [IN] Import assembly scope.
-    CMiniMdRW   *pMiniMdEmit,           // [IN] Emit scope.
-    mdExportedType   tkExportedType,              // [IN] ExportedType token in Assembly emit scope.
-    mdModuleRef *ptkModuleRef)          // [OUT] ModuleRef token in the emit scope.
-{
-    mdFile      tkFile;
-    LPCUTF8     szFile;
-    LPCUTF8     szScope;
-    FileRec     *pFileRec;
-    HRESULT     hr = S_OK;
-
-    // Set output to nil.
-    *ptkModuleRef = mdTokenNil;
-
-    // Get the implementation token for the ExportedType.  It must be a File token
-    // since the caller should call this function only on ExportedTypes that resolve
-    // to the same Assembly.
-    IfFailGo(static_cast<IMetaModelCommon*>(pAssemEmit)->CommonGetExportedTypeProps(
-        tkExportedType,
-        NULL,
-        NULL,
-        &tkFile));
-    _ASSERTE(TypeFromToken(tkFile) == mdtFile);
-
-    // Get the name of the file.
-    IfFailGo(pAssemEmit->GetFileRecord(RidFromToken(tkFile), &pFileRec));
-    IfFailGo(pAssemEmit->getNameOfFile(pFileRec, &szFile));
-
-    // Get the name of the emit scope.
-    IfFailGo(static_cast<IMetaModelCommon*>(pMiniMdEmit)->CommonGetScopeProps(
-        &szScope,
-        0));
-
-    // If the file corresponds to the emit scope, return S_FALSE;
-    if (!strcmp(szFile, szScope))
-        return S_FALSE;
-
-    // See if a ModuleRef exists with this name.
-    hr = FindModuleRef(pMiniMdEmit, szFile, ptkModuleRef);
-
-    if (hr == CLDB_E_RECORD_NOTFOUND)
-    {
-        // Create ModuleRef record and set the output parameter.
-
-        ModuleRefRec    *pRecord;
-        RID             iRecord;
-
-        IfFailGo(pMiniMdEmit->AddModuleRefRecord(&pRecord, &iRecord));
-        *ptkModuleRef = TokenFromRid(iRecord, mdtModuleRef);
-        IfFailGo(pMiniMdEmit->UpdateENCLog(*ptkModuleRef));
-
-        // Set the name of ModuleRef.
-        IfFailGo(pMiniMdEmit->PutString(TBL_ModuleRef, ModuleRefRec::COL_Name,
-                                              pRecord, szFile));
-    }
-    else
-        IfFailGo(hr);
-ErrExit:
-    return hr;
-}   // ImportHelper::CreateModuleRefFromExportedType
-
-//******************************************************************************
 // Given an AssemblyRef and the corresponding scope, create an AssemblyRef in
 // the given Module scope and Assembly scope.
 //******************************************************************************
@@ -3070,8 +2318,6 @@ HRESULT ImportHelper::CreateAssemblyRefFromAssemblyRef(
     ULONG       cbPublicKeyOrToken;
     LPCUTF8     szName;
     LPCUTF8     szLocale;
-    const void  *pbHashValue;
-    ULONG       cbHashValue;
     HRESULT     hr = S_OK;
 
     // Set output to Nil.
@@ -3083,7 +2329,7 @@ HRESULT ImportHelper::CreateAssemblyRefFromAssemblyRef(
         &usMajorVersion, &usMinorVersion, &usBuildNumber, &usRevisionNumber,
         &dwFlags, &pbPublicKeyOrToken, &cbPublicKeyOrToken,
         &szName, &szLocale,
-        &pbHashValue, &cbHashValue));
+        nullptr, nullptr));
 
     // Create the AssemblyRef in both the Assembly and Module emit scopes.
     rMiniMdRW[0] = pMiniMdAssemEmit;
@@ -3121,9 +2367,8 @@ HRESULT ImportHelper::CreateAssemblyRefFromAssemblyRef(
             IfFailGo(pMiniMdEmit->PutString(TBL_AssemblyRef, AssemblyRefRec::COL_Locale,
                                           pRecordEmit, szLocale));
 
-            // Set the parameters passed in for the AssemblyRef.
             IfFailGo(pMiniMdEmit->PutBlob(TBL_AssemblyRef, AssemblyRefRec::COL_HashValue,
-                                          pRecordEmit, pbHashValue, cbHashValue));
+                                          pRecordEmit, nullptr, 0));
         }
         else
             IfFailGo(hr);
@@ -3137,7 +2382,7 @@ ErrExit:
 } // ImportHelper::CreateAssemblyRefFromAssemblyRef
 
 //******************************************************************************
-// Given the Assembly Import scope, hash value and execution location, create
+// Given the Assembly Import scope and execution location, create
 // a corresponding AssemblyRef in the given assembly and module emit scope.
 // Set the output parameter to the AssemblyRef token emitted in the module emit
 // scope.
@@ -3147,8 +2392,6 @@ ImportHelper::CreateAssemblyRefFromAssembly(
     CMiniMdRW *        pMiniMdAssemEmit,    // [IN] Emit assembly scope.
     CMiniMdRW *        pMiniMdModuleEmit,   // [IN] Emit module scope.
     IMetaModelCommon * pCommonAssemImport,  // [IN] Assembly import scope.
-    const void *       pbHashValue,         // [IN] Hash Blob for Assembly.
-    ULONG              cbHashValue,         // [IN] Count of bytes.
     mdAssemblyRef *    ptkAssemblyRef)      // [OUT] AssemblyRef token.
 {
 #ifdef FEATURE_METADATA_EMIT_IN_DEBUGGER
@@ -3241,9 +2484,8 @@ ImportHelper::CreateAssemblyRefFromAssembly(
             IfFailGo(pMiniMdEmit->PutString(TBL_AssemblyRef, AssemblyRefRec::COL_Locale,
                                           pRecordEmit, szLocale));
 
-            // Set the parameters passed in for the AssemblyRef.
             IfFailGo(pMiniMdEmit->PutBlob(TBL_AssemblyRef, AssemblyRefRec::COL_HashValue,
-                                          pRecordEmit, pbHashValue, cbHashValue));
+                                          pRecordEmit, nullptr, 0));
         }
         else
             IfFailGo(hr);

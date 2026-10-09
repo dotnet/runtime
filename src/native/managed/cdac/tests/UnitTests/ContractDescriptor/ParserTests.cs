@@ -20,7 +20,6 @@ public class ParserTests
         Assert.Null(descriptor.Baseline);
         Assert.Null(descriptor.Contracts);
         Assert.Null(descriptor.Types);
-        Assert.Null(descriptor.Extras);
     }
     [Fact]
     public void ParsesTrivialContract()
@@ -40,7 +39,57 @@ public class ParserTests
         Assert.Empty(descriptor.Contracts);
         Assert.Empty(descriptor.Types);
         Assert.Empty(descriptor.Globals);
-        Assert.Null(descriptor.Extras);
+    }
+
+    [Fact]
+    public void IgnoresUnknownProperties()
+    {
+        ReadOnlySpan<byte> json = """
+        {
+            "version": "1",
+            "unknownObject": { "value": 2 },
+            "unknownArray": [3, 4],
+            "unknownString": "value"
+        }
+        """u8;
+
+        ContractDescriptorParser.ContractDescriptor descriptor = ContractDescriptorParser.ParseCompact(json);
+
+        Assert.Equal(1, descriptor.Version);
+        Assert.Null(descriptor.Baseline);
+        Assert.Null(descriptor.Contracts);
+        Assert.Null(descriptor.Types);
+        Assert.Null(descriptor.Globals);
+    }
+
+    [Fact]
+    public void RejectsTrailingJson()
+    {
+        byte[][] invalidJson =
+        [
+            "{}{}"u8.ToArray(),
+            "null{}"u8.ToArray(),
+        ];
+
+        foreach (byte[] json in invalidJson)
+            Assert.ThrowsAny<JsonException>(() => ContractDescriptorParser.ParseCompact(json));
+    }
+
+    [Fact]
+    public void RejectsDuplicateFieldNames()
+    {
+        byte[] json = """
+        {
+            "types": {
+                "Type": {
+                    "field": 0,
+                    "field": 8
+                }
+            }
+        }
+        """u8.ToArray();
+
+        Assert.Throws<JsonException>(() => ContractDescriptorParser.ParseCompact(json));
     }
 
     [Fact]

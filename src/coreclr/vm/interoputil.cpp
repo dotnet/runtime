@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-
 #include "common.h"
 #include "vars.hpp"
 #include "excep.h"
@@ -270,7 +269,6 @@ void GetCultureInfoForLCID(LCID lcid, OBJECTREF *pCultureObj)
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pCultureObj));
     }
     CONTRACTL_END;
@@ -433,7 +431,6 @@ BOOL IsManagedObject(IUnknown *pIUnknown)
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pIUnknown));
     }
     CONTRACTL_END;
@@ -744,14 +741,14 @@ ULONG SafeReleasePreemp(IUnknown * pUnk)
         return 0;
 
     // Message pump could happen, so arbitrary managed code could run.
-    CONTRACT_VIOLATION(ThrowsViolation | FaultViolation);
+    CONTRACT_VIOLATION(ThrowsViolation);
 
     return pUnk->Release();
 }
 
 //--------------------------------------------------------------------------------
 // Release helper, enables and disables GC during call-outs
-ULONG SafeRelease(IUnknown* pUnk)
+ULONG SafeRelease(IUnknown* pUnk) noexcept
 {
     CONTRACTL {
         NOTHROW;
@@ -768,7 +765,7 @@ ULONG SafeRelease(IUnknown* pUnk)
     GCX_PREEMP_NO_DTOR_HAVE_THREAD(pThread);
 
     // Message pump could happen, so arbitrary managed code could run.
-    CONTRACT_VIOLATION(ThrowsViolation | FaultViolation);
+    CONTRACT_VIOLATION(ThrowsViolation);
 
     res = pUnk->Release();
 
@@ -897,84 +894,6 @@ ReadBestFitCustomAttribute(Module* pModule, mdTypeDef cl, BOOL* BestFit, BOOL* T
             // index to end of data to skip description of named argument
             *ThrowOnUnmappableChar = pData[29] != 0;
     }
-}
-
-
-int InternalWideToAnsi(_In_reads_(iNumWideChars) LPCWSTR szWideString, int iNumWideChars, _Out_writes_bytes_opt_(cbAnsiBufferSize) LPSTR szAnsiString, int cbAnsiBufferSize, BOOL fBestFit, BOOL fThrowOnUnmappableChar)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-
-    if ((szWideString == 0) || (iNumWideChars == 0) || (szAnsiString == 0) || (cbAnsiBufferSize == 0))
-        return 0;
-
-    DWORD flags = 0;
-    int retval;
-
-    if (fBestFit == FALSE)
-        flags = WC_NO_BEST_FIT_CHARS;
-
-    if (fThrowOnUnmappableChar)
-    {
-        BOOL DefaultCharUsed = FALSE;
-        retval = WideCharToMultiByte(CP_ACP,
-                                    flags,
-                                    szWideString,
-                                    iNumWideChars,
-                                    szAnsiString,
-                                    cbAnsiBufferSize,
-                                    NULL,
-                                    &DefaultCharUsed);
-        DWORD lastError = GetLastError();
-
-        if (retval == 0)
-        {
-            INSTALL_UNWIND_AND_CONTINUE_HANDLER_EX;
-            COMPlusThrowHR(HRESULT_FROM_WIN32(lastError));
-            UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX(true);
-        }
-
-        if (DefaultCharUsed)
-        {
-            struct HelperThrow
-            {
-                static void Throw()
-                {
-                    COMPlusThrow( kArgumentException, IDS_EE_MARSHAL_UNMAPPABLE_CHAR );
-                }
-            };
-
-            ENCLOSE_IN_EXCEPTION_HANDLER( HelperThrow::Throw );
-        }
-
-    }
-    else
-    {
-        retval = WideCharToMultiByte(CP_ACP,
-                                    flags,
-                                    szWideString,
-                                    iNumWideChars,
-                                    szAnsiString,
-                                    cbAnsiBufferSize,
-                                    NULL,
-                                    NULL);
-        DWORD lastError = GetLastError();
-
-        if (retval == 0)
-        {
-            INSTALL_UNWIND_AND_CONTINUE_HANDLER_EX;
-            COMPlusThrowHR(HRESULT_FROM_WIN32(lastError));
-            UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX(true);
-        }
-    }
-
-    return retval;
 }
 
 namespace
@@ -1583,29 +1502,6 @@ HRESULT SafeVariantChangeType(_Inout_ VARIANT* pVarRes, _In_ VARIANT* pVarSrc,
 }
 
 //--------------------------------------------------------------------------------
-HRESULT SafeVariantChangeTypeEx(_Inout_ VARIANT* pVarRes, _In_ VARIANT* pVarSrc,
-                          LCID lcid, unsigned short wFlags, VARTYPE vt)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(pVarRes));
-        PRECONDITION(CheckPointer(pVarSrc));
-    }
-    CONTRACTL_END;
-
-    GCX_PREEMP();
-    _ASSERTE(GetModuleHandleA("oleaut32.dll") != NULL);
-    CONTRACT_VIOLATION(ThrowsViolation);
-
-    HRESULT hr = VariantChangeTypeEx (pVarRes, pVarSrc,lcid,wFlags,vt);
-
-    return hr;
-}
-
-//--------------------------------------------------------------------------------
 void SafeVariantInit(VARIANT* pVar)
 {
     CONTRACTL
@@ -1732,7 +1628,6 @@ DefaultInterfaceType GetDefaultInterfaceForClassInternal(TypeHandle hndClass, Ty
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(!hndClass.IsNull());
         PRECONDITION(CheckPointer(pHndDefClass));
         PRECONDITION(!hndClass.GetMethodTable()->IsInterface());
@@ -1955,9 +1850,9 @@ HRESULT TryGetDefaultInterfaceForClass(TypeHandle hndClass, TypeHandle *pHndDefC
     return hr;
 }
 
-// Returns the default interface for a class if it's an explicit interface or the AutoDual
-// class interface. Sets *pbDispatch otherwise. This is the logic used by array marshaling
-// in code:OleVariant::MarshalInterfaceArrayComToOleHelper.
+// Returns the default interface for a class if it's an explicit interface.
+// Sets *pbDispatch for a generated class interface; a class MethodTable cannot
+// be passed to the managed typed interface array marshaler.
 MethodTable *GetDefaultInterfaceMTForClass(MethodTable *pMT, BOOL *pbDispatch)
 {
     CONTRACTL
@@ -1977,7 +1872,6 @@ MethodTable *GetDefaultInterfaceMTForClass(MethodTable *pMT, BOOL *pbDispatch)
     switch (DefItfType)
     {
         case DefaultInterfaceType_Explicit:
-        case DefaultInterfaceType_AutoDual:
         {
             return hndDefItfClass.GetMethodTable();
         }
@@ -1989,6 +1883,7 @@ MethodTable *GetDefaultInterfaceMTForClass(MethodTable *pMT, BOOL *pbDispatch)
             return NULL;
         }
 
+        case DefaultInterfaceType_AutoDual:
         case DefaultInterfaceType_AutoDispatch:
         {
             *pbDispatch = TRUE;
@@ -2012,7 +1907,6 @@ void GetComSourceInterfacesForClass(MethodTable *pMT, CQuickArray<MethodTable *>
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pMT));
     }
     CONTRACTL_END;
@@ -2184,7 +2078,6 @@ ULONG GetStringizedClassItfDef(TypeHandle InterfaceType, CQuickArray<BYTE> &rDef
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(!InterfaceType.IsNull());
     }
     CONTRACTL_END;
@@ -2277,7 +2170,6 @@ void GenerateClassItfGuid(TypeHandle InterfaceType, GUID *pGuid)
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(!InterfaceType.IsNull());
         PRECONDITION(CheckPointer(pGuid));
     }
@@ -3522,7 +3414,6 @@ static void GetComClassHelper(
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        INJECT_FAULT(ThrowOutOfMemory());
         PRECONDITION(CheckPointer(pRef));
         PRECONDITION(CheckPointer(pClassFactHash));
         PRECONDITION(CheckPointer(pClassFactInfo));
@@ -3582,7 +3473,6 @@ void GetComClassFromCLSID(REFCLSID clsid, _In_opt_z_ PCWSTR wszServer, OBJECTREF
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(pRef != NULL);
     }
     CONTRACTL_END;
@@ -3626,7 +3516,6 @@ ClassFactoryBase *GetComClassFactory(MethodTable* pClassMT)
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(ThrowOutOfMemory());
         PRECONDITION(CheckPointer(pClassMT));
         PRECONDITION(pClassMT->IsComObjectType());
     }

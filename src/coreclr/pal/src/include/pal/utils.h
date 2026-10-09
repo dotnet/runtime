@@ -2,18 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*++
-
-
-
 Module Name:
-
     include/pal/utils.h
 
 Abstract:
     Miscellaneous helper functions for the PAL, which don't fit anywhere else
-
-
-
 --*/
 
 #ifndef _PAL_UTILS_H_
@@ -83,42 +76,6 @@ inline BOOL IS_ALIGNED(const void* val, size_t alignment)
 extern "C"
 {
 #endif // __cplusplus
-
-/*++
-Function:
-  UTIL_inverse_wcspbrk
-
-  Opposite of wcspbrk : searches a string for the first character NOT in the
-  given set
-
-Parameters :
-    LPWSTR lpwstr :   string to search
-    LPCWSTR charset : list of characters to search for
-
-Return value :
-    pointer to first character of lpwstr that isn't in the set
-    NULL if all characters are in the set
---*/
-LPWSTR UTIL_inverse_wcspbrk(LPWSTR lpwstr, LPCWSTR charset);
-
-/*++
-Function :
-    UTIL_IsReadOnlyBitsSet
-
-    Takes a struct stat *
-    Returns true if the file is read only,
---*/
-BOOL UTIL_IsReadOnlyBitsSet( struct stat * stat_data );
-
-/*++
-Function :
-    UTIL_IsExecuteBitsSet
-
-    Takes a struct stat *
-    Returns true if the file is executable.
---*/
-BOOL UTIL_IsExecuteBitsSet( struct stat * stat_data );
-
 
 /*++
 Function :

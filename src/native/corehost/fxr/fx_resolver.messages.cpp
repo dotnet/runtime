@@ -13,10 +13,9 @@ void fx_resolver_t::display_incompatible_framework_error(
     const pal::string_t& higher,
     const fx_reference_t& lower)
 {
-    trace::error(_X("The specified framework '%s', version '%s', apply_patches=%d, version_compatibility_range=%s cannot roll-forward to the previously referenced version '%s'."),
+    trace::error(_X("The specified framework '%s', version '%s', version_compatibility_range=%s cannot roll-forward to the previously referenced version '%s'."),
         lower.get_fx_name().c_str(),
         lower.get_fx_version().c_str(),
-        lower.get_apply_patches(),
         version_compatibility_range_to_string(lower.get_version_compatibility_range()).c_str(),
         higher.c_str());
 }
@@ -27,10 +26,9 @@ void fx_resolver_t::display_compatible_framework_trace(
 {
     if (trace::is_enabled())
     {
-        trace::verbose(_X("--- The specified framework '%s', version '%s', apply_patches=%d, version_compatibility_range=%s is compatible with the previously referenced version '%s'."),
+        trace::verbose(_X("--- The specified framework '%s', version '%s', version_compatibility_range=%s is compatible with the previously referenced version '%s'."),
             lower.get_fx_name().c_str(),
             lower.get_fx_version().c_str(),
-            lower.get_apply_patches(),
             version_compatibility_range_to_string(lower.get_version_compatibility_range()).c_str(),
             higher.c_str());
     }
@@ -42,11 +40,10 @@ void fx_resolver_t::display_retry_framework_trace(
 {
     if (trace::is_enabled())
     {
-        trace::verbose(_X("--- Restarting all framework resolution because the previously resolved framework '%s', version '%s' must be re-resolved with the new version '%s', apply_patches=%d, version_compatibility_range=%s, roll_to_highest_version=%d ."),
+        trace::verbose(_X("--- Restarting all framework resolution because the previously resolved framework '%s', version '%s' must be re-resolved with the new version '%s', version_compatibility_range=%s, roll_to_highest_version=%d ."),
             fx_existing.get_fx_name().c_str(),
             fx_existing.get_fx_version().c_str(),
             fx_new.get_fx_version().c_str(),
-            fx_new.get_apply_patches(),
             version_compatibility_range_to_string(fx_new.get_version_compatibility_range()).c_str(),
             fx_new.get_roll_to_highest_version());
     }
@@ -72,12 +69,11 @@ void fx_resolver_t::display_summary_of_frameworks(
                 auto newest_ref = newest_references.find(fx->get_name());
                 assert(newest_ref != newest_references.end());
 
-                trace::verbose(_X("     framework:'%s', lowest requested version='%s', found version='%s', effective reference version='%s' apply_patches=%d, version_compatibility_range=%s, roll_to_highest_version=%d, folder=%s"),
+                trace::verbose(_X("     framework:'%s', lowest requested version='%s', found version='%s', effective reference version='%s', version_compatibility_range=%s, roll_to_highest_version=%d, folder=%s"),
                     fx->get_name().c_str(),
                     fx->get_requested_version().c_str(),
                     fx->get_found_version().c_str(),
                     newest_ref->second.get_fx_version().c_str(),
-                    newest_ref->second.get_apply_patches(),
                     version_compatibility_range_to_string(newest_ref->second.get_version_compatibility_range()).c_str(),
                     newest_ref->second.get_roll_to_highest_version(),
                     fx->get_dir().c_str());
@@ -93,8 +89,7 @@ void fx_resolver_t::display_summary_of_frameworks(
 void fx_resolver_t::display_missing_framework_error(
     const pal::string_t& fx_name,
     const pal::string_t& fx_version,
-    const pal::string_t& dotnet_root,
-    bool disable_multilevel_lookup)
+    const pal::string_t& dotnet_root)
 {
 
     // Display the error message about missing FX.
@@ -110,7 +105,7 @@ void fx_resolver_t::display_missing_framework_error(
     trace::error(_X(".NET location: %s\n"), dotnet_root.c_str());
 
     std::vector<framework_info> framework_infos;
-    framework_info::get_all_framework_infos(dotnet_root, fx_name.c_str(), disable_multilevel_lookup, /*include_disabled_versions*/ true, &framework_infos);
+    framework_info::get_all_framework_infos(dotnet_root, fx_name.c_str(), /*include_disabled_versions*/ true, &framework_infos);
     if (framework_infos.size())
     {
         trace::error(_X("The following frameworks were found:"));
@@ -133,7 +128,7 @@ void fx_resolver_t::display_missing_framework_error(
         [&](pal::architecture arch, const pal::string_t& install_location, bool is_registered)
         {
             std::vector<framework_info> other_arch_infos;
-            framework_info::get_all_framework_infos(install_location, fx_name.c_str(), disable_multilevel_lookup, /*include_disabled_versions*/ true, &other_arch_infos);
+            framework_info::get_all_framework_infos(install_location, fx_name.c_str(), /*include_disabled_versions*/ true, &other_arch_infos);
             if (!other_arch_infos.empty())
             {
                 other_arch_framework_infos.push_back(std::make_pair(arch, std::move(other_arch_infos)));
@@ -171,10 +166,9 @@ void fx_resolver_t::display_incompatible_loaded_framework_error(
     const pal::string_t& loaded_version,
     const fx_reference_t& fx_ref)
 {
-    trace::error(_X("The specified framework '%s', version '%s', apply_patches=%d, version_compatibility_range=%s is incompatible with the previously loaded version '%s'."),
+    trace::error(_X("The specified framework '%s', version '%s', version_compatibility_range=%s is incompatible with the previously loaded version '%s'."),
         fx_ref.get_fx_name().c_str(),
         fx_ref.get_fx_version().c_str(),
-        fx_ref.get_apply_patches(),
         version_compatibility_range_to_string(fx_ref.get_version_compatibility_range()).c_str(),
         loaded_version.c_str());
 }

@@ -45,34 +45,6 @@ inline void BaseContract::DoChecks(UINT testmask, _In_z_ const char *szFunction,
         m_pClrDebugState->SetDebugOnly();
     }
 
-    switch (testmask & FAULT_Mask)
-    {
-        case FAULT_Forbid:
-            m_pClrDebugState->ViolationMaskReset( FaultViolation|FaultNotFatal );
-            m_pClrDebugState->SetFaultForbid();
-            break;
-
-        case FAULT_Inject:
-            if (m_pClrDebugState->IsFaultForbid() &&
-                !(m_pClrDebugState->ViolationMask() & (FaultViolation|FaultNotFatal|BadDebugState)))
-            {
-                CONTRACT_ASSERT("INJECT_FAULT called in a FAULTFORBID region.",
-                                BaseContract::FAULT_Forbid,
-                                BaseContract::FAULT_Mask,
-                                m_contractStackRecord.m_szFunction,
-                                m_contractStackRecord.m_szFile,
-                                m_contractStackRecord.m_lineNum);
-            }
-            break;
-
-        case FAULT_Disabled:
-            // Nothing
-            break;
-
-        default:
-            UNREACHABLE();
-    }
-
     switch (testmask & THROWS_Mask)
     {
         case THROWS_Yes:
@@ -151,12 +123,6 @@ inline void BaseContract::DoChecks(UINT testmask, _In_z_ const char *szFunction,
             UNREACHABLE();
     }
 
-}
-
-FORCEINLINE BOOL BaseContract::CheckFaultInjection()
-{
-    // ??? use m_tag to see if we should trigger an injection
-    return FALSE;
 }
 
 inline BOOL ClrDebugState::CheckOkayToThrowNoAssert()

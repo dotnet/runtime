@@ -30,7 +30,7 @@ inline CHECK PEAssembly::Invariant()
     {
         // dynamic module case
         CHECK(m_PEImage == NULL);
-        CHECK(CheckPointer(m_pEmitter));
+        CHECK(CheckPointer(m_pMDInternalEmit));
     }
     else
     {
@@ -125,7 +125,6 @@ inline void PEAssembly::GetMVID(GUID *pMvid)
     {
         THROWS;
         GC_NOTRIGGER;
-        FORBID_FAULT;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -254,7 +253,15 @@ inline IMDInternalImport* PEAssembly::GetMDImport()
 #endif
 };
 
-#ifndef DACCESS_COMPILE
+inline IMDInternalEmit* PEAssembly::GetMDInternalEmit()
+{
+    LIMITED_METHOD_CONTRACT;
+
+    _ASSERTE(m_pMDInternalEmit != NULL);
+    return m_pMDInternalEmit;
+}
+
+#ifdef PROFILING_SUPPORTED
 
 inline IMetaDataImport2 *PEAssembly::GetRWImporter()
 {
@@ -291,7 +298,7 @@ inline IMetaDataEmit *PEAssembly::GetEmitter()
 }
 
 
-#endif // DACCESS_COMPILE
+#endif // PROFILING_SUPPORTED
 
 // Same as the managed Module.ScopeName property, this unconditionally looks in the
 // metadata Module table to get the name.  Useful for profilers and others who don't
@@ -352,7 +359,7 @@ inline BOOL PEAssembly::IsILOnly()
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
 
-    CONTRACT_VIOLATION(ThrowsViolation|GCViolation|FaultViolation);
+    CONTRACT_VIOLATION(ThrowsViolation|GCViolation);
 
     if (IsReflectionEmit())
         return FALSE;
@@ -689,7 +696,6 @@ inline BOOL PEAssembly::IsPtrInPEImage(PTR_CVOID data)
         INSTANCE_CHECK;
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
@@ -809,7 +815,6 @@ inline DWORD PEAssembly::GetFlags()
         INSTANCE_CHECK;
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
         if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
-        if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else { INJECT_FAULT(COMPlusThrowOM()); }
         MODE_ANY;
     }
     CONTRACTL_END;

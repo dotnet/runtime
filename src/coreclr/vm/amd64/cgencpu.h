@@ -1,13 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 // CGENCPU.H -
 //
 // Various helper routines for generating AMD64 assembly code.
 //
 // DO NOT INCLUDE THIS FILE DIRECTLY - ALWAYS USE CGENSYS.H INSTEAD
-//
-
-
 
 #ifndef TARGET_AMD64
 #error Should only include "AMD64\cgencpu.h" for AMD64 builds
@@ -486,19 +484,9 @@ inline TADDR GetSecondArgReg(CONTEXT *context)
 
 extern "C" void* GetCurrentSP();
 
-// Emits:
-//  mov r10, pv1
-//  mov rax, pTarget
-//  jmp rax
-void EncodeLoadAndJumpThunk (LPBYTE pBuffer, LPVOID pv, LPVOID pTarget);
-
-
 // Get Rel32 destination, emit jumpStub if necessary
 INT32 rel32UsingJumpStub(INT32 UNALIGNED * pRel32, PCODE target, MethodDesc *pMethod,
     LoaderAllocator *pLoaderAllocator = NULL, bool throwOnOutOfMemoryWithinRange = true);
-
-// Get Rel32 destination, emit jumpStub if necessary into a preallocated location
-INT32 rel32UsingPreallocatedJumpStub(INT32 UNALIGNED * pRel32, PCODE target, PCODE jumpStubAddr, PCODE jumpStubAddrRW, bool emitJump);
 
 void emitBackToBackJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target);
 
@@ -540,14 +528,6 @@ struct HijackArgs
     };
 };
 
-#ifndef DACCESS_COMPILE
-
-DWORD GetOffsetAtEndOfFunction(ULONGLONG           uImageBase,
-                               PT_RUNTIME_FUNCTION   pFunctionEntry,
-                               int                 offsetNum = 1);
-
-#endif // DACCESS_COMPILE
-
 // ClrFlushInstructionCache is used when we want to call FlushInstructionCache
 // for a specific architecture in the common code, but not for other architectures.
 // We call ClrFlushInstructionCache whenever we create or modify code in the heap.
@@ -566,13 +546,5 @@ inline BOOL ClrFlushInstructionCache(LPCVOID pCodeAddr, size_t sizeOfCode, bool 
     }
     return TRUE;
 }
-
-//
-// JIT HELPER ALIASING FOR PORTABILITY.
-//
-// Create alias for optimized implementations of helpers provided on this platform
-//
-#define JIT_GetDynamicGCStaticBase           JIT_GetDynamicGCStaticBase_SingleAppDomain
-#define JIT_GetDynamicNonGCStaticBase        JIT_GetDynamicNonGCStaticBase_SingleAppDomain
 
 #endif // __cgencpu_h__

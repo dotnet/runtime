@@ -34,8 +34,11 @@ namespace Microsoft.Win32.SafeHandles
             UnixFileMode.OtherRead |
             UnixFileMode.OtherWrite;
 
-        internal static bool DisableFileLocking { get; } = OperatingSystem.IsBrowser() || OperatingSystem.IsWasi()// #40065: Emscripten does not support file locking
-            || AppContextConfigHelper.GetBooleanConfig("System.IO.DisableFileLocking", "DOTNET_SYSTEM_IO_DISABLEFILELOCKING", defaultValue: false);
+        internal static bool DisableFileLocking { get; } = OperatingSystem.IsBrowser() || OperatingSystem.IsWasi() // #40065: Emscripten does not support file locking
+            || AppContextConfigHelper.GetBooleanConfig(
+                "System.IO.DisableFileLocking",
+                "DOTNET_SYSTEM_IO_DISABLEFILELOCKING",
+                defaultValue: (OperatingSystem.IsIOS() && !OperatingSystem.IsMacCatalyst()) || OperatingSystem.IsTvOS());
 
         // not using bool? as it's not thread safe
         private NullableBool _supportsRandomAccess /* = NullableBool.Undefined */;

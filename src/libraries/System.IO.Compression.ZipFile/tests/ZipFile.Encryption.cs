@@ -1107,6 +1107,7 @@ namespace System.IO.Compression.Tests
         #region Zip64 Tests for Encrypted Entries
 
         [Theory]
+        [OuterLoop("Takes a long time to run locally")]
         [SkipOnCI("Takes significant time and disk space to create 4GB+ files")]
         [MemberData(nameof(EncryptionMethodAndBoolTestData))]
         public async Task Encryption_TrueZip64_LargeEntry_RoundTrip(ZipEncryptionMethod encryptionMethod, bool async)
@@ -1199,6 +1200,7 @@ namespace System.IO.Compression.Tests
         }
 
         [Theory]
+        [OuterLoop("Takes a long time to run locally")]
         [SkipOnCI("Takes significant time and disk space to create 4GB+ files")]
         [MemberData(nameof(EncryptionMethodAndBoolTestData))]
         public async Task Encryption_TrueZip64_LargeEntry_UpdateMode_Throws(ZipEncryptionMethod encryptionMethod, bool async)

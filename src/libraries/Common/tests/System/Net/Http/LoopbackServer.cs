@@ -431,6 +431,7 @@ namespace System.Net.Test.Common
 
         public class Options : GenericLoopbackOptions
         {
+            public bool AllowTlsResume { get; set; } = true;
             public bool WebSocketEndpoint { get; set; } = false;
             public Func<Stream, Stream> StreamWrapper { get; set; }
             public string Username { get; set; }
@@ -483,6 +484,7 @@ namespace System.Net.Test.Common
 #if !NETFRAMEWORK
                     SslServerAuthenticationOptions sslOptions = new SslServerAuthenticationOptions()
                     {
+                        AllowTlsResume = httpOptions.AllowTlsResume,
                         EnabledSslProtocols = httpOptions.SslProtocols,
                         ServerCertificateContext = httpOptions.CertificateContext ?? SslStreamCertificateContext.Create(Configuration.Certificates.GetServerCertificate(), null),
                         ClientCertificateRequired = true,
@@ -815,16 +817,13 @@ namespace System.Net.Test.Common
                     requestData.Headers.Add(new HttpHeaderData(name, value, raw: lineBytes, rawValueStart: offset + 1));
                 }
 
-                if (requestData.Method != "GET")
+                if (requestData.GetHeaderValueCount("Content-Length") != 0)
                 {
-                    if (requestData.GetHeaderValueCount("Content-Length") != 0)
-                    {
-                        _contentLength = int.Parse(requestData.GetSingleHeaderValue("Content-Length"));
-                    }
-                    else if (requestData.GetHeaderValueCount("Transfer-Encoding") != 0 && requestData.GetSingleHeaderValue("Transfer-Encoding") == "chunked")
-                    {
-                        _contentLength = -1;
-                    }
+                    _contentLength = int.Parse(requestData.GetSingleHeaderValue("Content-Length"));
+                }
+                else if (requestData.GetHeaderValueCount("Transfer-Encoding") != 0 && requestData.GetSingleHeaderValue("Transfer-Encoding") == "chunked")
+                {
+                    _contentLength = -1;
                 }
 
                 if (readBody)

@@ -865,7 +865,7 @@ if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
 else()
   if(NOT EXISTS "${VERSION_FILE_PATH}")
     file(WRITE "${VERSION_FILE_PATH}"
-      "#if defined(__GNUC__) && !defined(__clang__) && defined(TARGET_SUNOS) && defined(TARGET_AMD64)\n"
+      "#if defined(__GNUC__) && !defined(__clang__) && defined(__sun) && defined(__x86_64__)\n"
       "char sccsid[] __attribute__((used, weak)) = \"@(#)Version 42.42.42.42424 @Commit: AAA\";\n"
       "__asm__(\".pushsection .init_array; .reloc ., R_X86_64_NONE, sccsid; .popsection\");\n"
       "#else\n"

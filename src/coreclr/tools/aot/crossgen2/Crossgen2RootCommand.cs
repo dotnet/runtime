@@ -44,6 +44,8 @@ namespace ILCompiler
             new("--optimize-time", "--Ot") { Description = SR.OptimizeSpeedOption };
         public Option<bool?> EnableCachedInterfaceDispatchSupport { get; } =
             new("--enable-cached-interface-dispatch-support", "--CID") { Description = SR.EnableCachedInterfaceDispatchSupport };
+        public Option<bool?> GenerateUnboxingStubs { get; } =
+            new("--generate-unboxing-stubs") { Description = SR.GenerateUnboxingStubsOption };
         public Option<TypeValidationRule> TypeValidation { get; } =
             new("--type-validation") { DefaultValueFactory = _ => TypeValidationRule.Automatic, Description = SR.TypeValidation, HelpName = "arg" };
         public Option<bool> InputBubble { get; } =
@@ -94,10 +96,16 @@ namespace ILCompiler
             new("--maxgenericcyclebreadth") { DefaultValueFactory = _ => ReadyToRunCompilerContext.DefaultGenericCycleBreadthCutoff, Description = SR.GenericCycleBreadthCutoff };
         public Option<string> TargetOS { get; } =
             new("--targetos") { Description = SR.TargetOSOption };
+        public Option<bool?> TargetAllowsRuntimeCodeGeneration { get; } =
+            new("--target-allows-runtime-code-generation") { Description = SR.TargetAllowsRuntimeCodeGenerationOption };
         public Option<string> JitPath { get; } =
             new("--jitpath") { Description = SR.JitPathOption };
         public Option<bool> PrintReproInstructions { get; } =
             new("--print-repro-instructions") { Description = SR.PrintReproInstructionsOption };
+        public Option<string> GeneratePortableCallHelpers { get; } =
+            new("--generate-portable-callhelpers") { Description = SR.GeneratePortableCallHelpersOption };
+        public Option<string[]> DirectPInvoke { get; } =
+            new("--directpinvoke") { DefaultValueFactory = _ => Array.Empty<string>(), Description = SR.DirectPInvokeOption };
         public Option<string> SingleMethodTypeName { get; } =
             new("--singlemethodtypename") { Description = SR.SingleMethodTypeName };
         public Option<string> SingleMethodName { get; } =
@@ -124,6 +132,8 @@ namespace ILCompiler
             new("--perfmap-path") { Description = SR.PerfMapFilePathOption };
         public Option<int> PerfMapFormatVersion { get; } =
             new("--perfmap-format-version") { DefaultValueFactory = _ => 0, Description = SR.PerfMapFormatVersionOption };
+        public Option<WasmDebugInfo> WasmDebugInfoOption { get; } =
+            new("--wasm-debug-info") { CustomParser = MakeWasmDebugInfo, DefaultValueFactory = MakeWasmDebugInfo, Description = SR.WasmDebugInfoOption, HelpName = "formats" };
         public Option<string[]> CrossModuleInlining { get; } =
             new("--opt-cross-module") { Description = SR.CrossModuleInlining };
         public Option<bool> AsyncMethodOptimization { get; } =
@@ -142,6 +152,8 @@ namespace ILCompiler
             new("--make-repro-path") { Description = "Path where to place a repro package" };
         public Option<bool> HotColdSplitting { get; } =
             new("--hot-cold-splitting") { Description = SR.HotColdSplittingOption };
+        public Option<bool> VerifyGCModeTransitions { get; } =
+            new("--verify-gc-mode-transitions") { Description = SR.VerifyGCModeTransitionsOption };
         public Option<bool> StripInliningInfo { get; } =
             new("--strip-inlining-info") { Description = SR.StripInliningInfoOption };
         public Option<bool> StripDebugInfo { get; } =
@@ -174,6 +186,7 @@ namespace ILCompiler
             Options.Add(OptimizeSpace);
             Options.Add(OptimizeTime);
             Options.Add(EnableCachedInterfaceDispatchSupport);
+            Options.Add(GenerateUnboxingStubs);
             Options.Add(TypeValidation);
             Options.Add(InputBubble);
             Options.Add(InputBubbleReferenceFilePaths);
@@ -199,8 +212,11 @@ namespace ILCompiler
             Options.Add(GenericCycleBreadthCutoff);
             Options.Add(TargetArchitecture);
             Options.Add(TargetOS);
+            Options.Add(TargetAllowsRuntimeCodeGeneration);
             Options.Add(JitPath);
             Options.Add(PrintReproInstructions);
+            Options.Add(GeneratePortableCallHelpers);
+            Options.Add(DirectPInvoke);
             Options.Add(SingleMethodTypeName);
             Options.Add(SingleMethodName);
             Options.Add(SingleMethodIndex);
@@ -214,12 +230,14 @@ namespace ILCompiler
             Options.Add(PerfMap);
             Options.Add(PerfMapPath);
             Options.Add(PerfMapFormatVersion);
+            Options.Add(WasmDebugInfoOption);
             Options.Add(CrossModuleInlining);
             Options.Add(AsyncMethodOptimization);
             Options.Add(NonLocalGenericsModule);
             Options.Add(MethodLayout);
             Options.Add(FileLayout);
             Options.Add(VerifyTypeAndFieldLayout);
+            Options.Add(VerifyGCModeTransitions);
             Options.Add(CallChainProfileFile);
             Options.Add(MakeReproPath);
             Options.Add(HotColdSplitting);
@@ -416,6 +434,34 @@ namespace ILCompiler
                 "wasm" => ReadyToRunContainerFormat.Wasm,
                 _ => throw new CommandLineException(SR.InvalidOutputFormat)
             };
+        }
+
+        private static WasmDebugInfo MakeWasmDebugInfo(ArgumentResult result)
+        {
+            if (result.Tokens.Count == 0)
+                return WasmDebugInfo.NameSection;
+
+            string value = result.Tokens[0].Value;
+            if (value.Equals("none", StringComparison.OrdinalIgnoreCase))
+                return WasmDebugInfo.None;
+            if (value.Equals("all", StringComparison.OrdinalIgnoreCase))
+                return WasmDebugInfo.All;
+
+            WasmDebugInfo debugInfo = WasmDebugInfo.None;
+            foreach (string format in value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            {
+                debugInfo |= format.ToLowerInvariant() switch
+                {
+                    "name" => WasmDebugInfo.NameSection,
+                    "symbol-map" => WasmDebugInfo.SymbolMap,
+                    _ => throw new CommandLineException(SR.InvalidWasmDebugInfo)
+                };
+            }
+
+            if (debugInfo == WasmDebugInfo.None)
+                throw new CommandLineException(SR.InvalidWasmDebugInfo);
+
+            return debugInfo;
         }
 
 #if DEBUG

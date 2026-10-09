@@ -360,6 +360,52 @@ namespace System.Net.Tests
             Assert.Equal(WebSocketState.Aborted, context.WebSocket.State);
         }
 
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsWindowsImplementation))]
+        public async Task CloseAsync_ConcurrentWithCloseFrameFromClient_DoesNotDeadlock()
+        {
+            // Closing a WebSocket from both ends at the same time used to deadlock: the thread processing
+            // an incoming close frame holds the session handle lock while acquiring the state lock, while
+            // CloseAsync held the state lock while acquiring the session handle lock.
+            const int Iterations = 100;
+            Random random = new Random(42);
+
+            for (int i = 0; i < Iterations; i++)
+            {
+                using ClientWebSocket client = new ClientWebSocket();
+                HttpListenerWebSocketContext context = await GetWebSocketContext(client);
+                WebSocket server = context.WebSocket;
+
+                // The pending receive makes a separate thread process the close frame sent by the client.
+                Task serverReceiveTask = IgnoreExpectedExceptionsAsync(
+                    server.ReceiveAsync(new ArraySegment<byte>(new byte[16]), CancellationToken.None));
+
+                Task clientCloseTask = IgnoreExpectedExceptionsAsync(
+                    client.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, null, CancellationToken.None));
+
+                // Sweep the (very short) window in which the deadlock can happen.
+                Thread.SpinWait(random.Next(200_000));
+
+                Task serverCloseTask = IgnoreExpectedExceptionsAsync(Task.Run(
+                    () => server.CloseAsync(WebSocketCloseStatus.NormalClosure, null, CancellationToken.None)));
+
+                Task allTasks = Task.WhenAll(serverReceiveTask, clientCloseTask, serverCloseTask);
+                await allTasks.WaitAsync(TimeSpan.FromSeconds(30));
+
+                server.Dispose();
+            }
+
+            static async Task IgnoreExpectedExceptionsAsync(Task task)
+            {
+                try
+                {
+                    await task;
+                }
+                catch (Exception e) when (e is WebSocketException or InvalidOperationException or ObjectDisposedException or OperationCanceledException)
+                {
+                }
+            }
+        }
+
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
         public async Task ReceiveAsync_ReadBuffer_WithWindowsAuthScheme_Success()
         {
@@ -429,6 +475,24 @@ namespace System.Net.Tests
 
             HttpListenerContext context = await serverContextTask;
             return await context.AcceptWebSocketAsync(null);
+        }
+
+        private async Task<HttpListenerWebSocketContext> GetWebSocketContext(ClientWebSocket client)
+        {
+            var uriBuilder = new UriBuilder(Factory.ListeningUrl) { Scheme = "ws" };
+            Task<HttpListenerContext> serverContextTask = Factory.GetListener().GetContextAsync();
+
+            Task clientConnectTask = client.ConnectAsync(uriBuilder.Uri, CancellationToken.None);
+            if (clientConnectTask == await Task.WhenAny(serverContextTask, clientConnectTask))
+            {
+                await clientConnectTask;
+                Assert.Fail("Client should not have completed prior to server sending response");
+            }
+
+            HttpListenerContext context = await serverContextTask;
+            HttpListenerWebSocketContext webSocketContext = await context.AcceptWebSocketAsync(null);
+            await clientConnectTask;
+            return webSocketContext;
         }
     }
 }

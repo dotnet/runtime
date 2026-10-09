@@ -8,6 +8,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Security;
 using System.Security.Cryptography;
 using System.Threading;
 using Microsoft.Extensions.FileSystemGlobbing;
@@ -114,51 +115,61 @@ namespace Microsoft.Extensions.FileProviders.Physical
 
         private bool CalculateChanges()
         {
-            PatternMatchingResult result = _matcher.Execute(_directoryInfo);
-
-            IOrderedEnumerable<FilePatternMatch> files = result.Files.OrderBy(f => f.Path, StringComparer.Ordinal);
-            using (var sha256 = IncrementalHash.CreateHash(HashAlgorithmName.SHA256))
+            try
             {
-                foreach (FilePatternMatch file in files)
+                PatternMatchingResult result = _matcher.Execute(_directoryInfo);
+                IOrderedEnumerable<FilePatternMatch> files = result.Files.OrderBy(f => f.Path, StringComparer.Ordinal);
+                using (var sha256 = IncrementalHash.CreateHash(HashAlgorithmName.SHA256))
                 {
-                    DateTime lastWriteTimeUtc = GetLastWriteUtc(file.Path);
-                    if (_lastScanTimeUtc.Ticks != 0 && _lastScanTimeUtc < lastWriteTimeUtc)
+                    foreach (FilePatternMatch file in files)
                     {
-                        // _lastScanTimeUtc is the greatest timestamp that any last writes could have been.
-                        // If a file has a newer timestamp than this value, it must've changed.
-                        return true;
+                        DateTime lastWriteTimeUtc = GetLastWriteUtc(file.Path);
+                        if (_previousHash is not null && _lastScanTimeUtc < lastWriteTimeUtc)
+                        {
+                            // _lastScanTimeUtc is the greatest timestamp that any last writes could have been.
+                            // If a file has a newer timestamp than this value, it must've changed.
+                            // A non-null hash means a scan completed, so there is something to compare against.
+                            return true;
+                        }
+
+                        ComputeHash(sha256, file.Path, lastWriteTimeUtc);
                     }
 
-                    ComputeHash(sha256, file.Path, lastWriteTimeUtc);
-                }
-
 #if NET
-                Span<byte> currentHash = stackalloc byte[256 / 8];
-                sha256.GetHashAndReset(currentHash);
-                if (_previousHash is null)
-                {
-                    _previousHash = currentHash.ToArray(); // First run
-                }
-                else if (!_previousHash.AsSpan().SequenceEqual(currentHash))
-                {
-                    return true;
-                }
+                    Span<byte> currentHash = stackalloc byte[256 / 8];
+                    sha256.GetHashAndReset(currentHash);
+                    if (_previousHash is null)
+                    {
+                        _previousHash = currentHash.ToArray(); // First run
+                    }
+                    else if (!_previousHash.AsSpan().SequenceEqual(currentHash))
+                    {
+                        return true;
+                    }
 #else
-                byte[] currentHash = sha256.GetHashAndReset();
-                if (_previousHash is null)
-                {
-                    _previousHash = currentHash; // First run
-                }
-                else if (!_previousHash.AsSpan().SequenceEqual(currentHash.AsSpan()))
-                {
-                    return true;
-                }
+                    byte[] currentHash = sha256.GetHashAndReset();
+                    if (_previousHash is null)
+                    {
+                        _previousHash = currentHash; // First run
+                    }
+                    else if (!_previousHash.AsSpan().SequenceEqual(currentHash.AsSpan()))
+                    {
+                        return true;
+                    }
 #endif
 
-                _lastScanTimeUtc = Clock.UtcNow;
-            }
+                    _lastScanTimeUtc = Clock.UtcNow;
+                }
 
-            return false;
+                return false;
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or SecurityException)
+            {
+                // The directory couldn't be scanned, for example because a network share went down or
+                // the directory became inaccessible. Report no change and try again on the next poll.
+                _lastScanTimeUtc = Clock.UtcNow;
+                return false;
+            }
         }
 
         /// <summary>

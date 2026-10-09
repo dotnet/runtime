@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using KeywordNames;
 using Microsoft.Extensions.Options;
 using Xunit;
@@ -40,6 +41,38 @@ public class KeywordNamesTests
 
         var validator = new FirstValidator();
         Assert.Equal(ValidateOptionsResult.Success, validator.Validate("KeywordNames", model));
+    }
+
+    [Fact]
+    public async Task InvalidAsync()
+    {
+        var model = new FirstModel
+        {
+            @namespace = "XXX",
+            @if = "YYY",
+            @event = new @class(),
+            @const = new List<@class> { new @class { @string = "XXX" } },
+        };
+
+        var validator = new FirstValidator();
+        var vr = await validator.ValidateAsync("KeywordNames", model, default);
+
+        Utils.VerifyValidateOptionsResult(vr, 4, "namespace", "if", "event", "const");
+    }
+
+    [Fact]
+    public async Task ValidAsync()
+    {
+        var model = new FirstModel
+        {
+            @namespace = "ABCDE",
+            @if = "ABCDE",
+            @event = new @class { @string = "ABCDE" },
+            @const = new List<@class> { new @class { @string = "ABCDE" } },
+        };
+
+        var validator = new FirstValidator();
+        Assert.Equal(ValidateOptionsResult.Success, await validator.ValidateAsync("KeywordNames", model, default));
     }
 
     [Fact]

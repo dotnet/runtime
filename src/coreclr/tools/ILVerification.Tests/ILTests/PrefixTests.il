@@ -9,11 +9,155 @@
 {
 }
 
+.class interface public auto ansi abstract IStaticInterface
+{
+    .method public hidebysig newslot abstract virtual static void StaticAbstractMethod() cil managed
+    {
+    }
+
+    .method public hidebysig newslot virtual static void StaticVirtualMethod() cil managed
+    {
+        ret
+    }
+}
+
+.class public sequential ansi sealed beforefieldinit ImplStruct
+       extends [System.Runtime]System.ValueType
+       implements IStaticInterface
+{
+    .pack 0
+    .size 1
+
+    .method public hidebysig static void StaticAbstractMethod() cil managed
+    {
+        .override method void IStaticInterface::StaticAbstractMethod()
+        ret
+    }
+}
+
+.class public sequential ansi sealed beforefieldinit NonImplStruct
+       extends [System.Runtime]System.ValueType
+{
+    .pack 0
+    .size 1
+}
+
 .class public auto ansi beforefieldinit PrefixTestsType
        extends [System.Runtime]System.Object
 {
-    .method static public hidebysig void StaticMethod() cil managed 
+    .method static public hidebysig void StaticMethod() cil managed
     {
+        ret
+    }
+
+    .method static public hidebysig void ConstrainedCall.StaticAbstractOnConstrainedTypeParam_Valid<(IStaticInterface) T>() cil managed
+    {
+        constrained. !!T
+        call    void IStaticInterface::StaticAbstractMethod()
+        ret
+    }
+
+    .method static public hidebysig void ConstrainedCall.StaticAbstractOnImplStruct_Valid() cil managed
+    {
+        constrained. ImplStruct
+        call    void IStaticInterface::StaticAbstractMethod()
+        ret
+    }
+
+    .method static public hidebysig void ConstrainedCall.UnconstrainedTypeParam_Invalid_ConstrainedTypeNoInterfaceImpl<T>() cil managed
+    {
+        constrained. !!T
+        call    void IStaticInterface::StaticAbstractMethod()
+        ret
+    }
+
+    .method static public hidebysig void ConstrainedCall.NonImplStruct_Invalid_ConstrainedTypeNoInterfaceImpl() cil managed
+    {
+        constrained. NonImplStruct
+        call    void IStaticInterface::StaticAbstractMethod()
+        ret
+    }
+
+    .method static public hidebysig void ConstrainedCall.NonVirtualStaticMethod_Invalid_Constrained<(IStaticInterface) T>() cil managed
+    {
+        constrained. !!T
+        call    void PrefixTestsType::StaticMethod()
+        ret
+    }
+
+    .method static public hidebysig void ConstrainedLdftn.StaticAbstractOnConstrainedTypeParam_Valid<(IStaticInterface) T>() cil managed
+    {
+        constrained. !!T
+        ldftn  void IStaticInterface::StaticAbstractMethod()
+        pop
+        ret
+    }
+
+    .method static public hidebysig void ConstrainedLdftn.StaticAbstractOnImplStruct_Valid() cil managed
+    {
+        constrained. ImplStruct
+        ldftn  void IStaticInterface::StaticAbstractMethod()
+        pop
+        ret
+    }
+
+    .method static public hidebysig void ConstrainedLdftn.UnconstrainedTypeParam_Invalid_ConstrainedTypeNoInterfaceImpl<T>() cil managed
+    {
+        constrained. !!T
+        ldftn  void IStaticInterface::StaticAbstractMethod()
+        pop
+        ret
+    }
+
+    .method static public hidebysig void ConstrainedLdftn.NonImplStruct_Invalid_ConstrainedTypeNoInterfaceImpl() cil managed
+    {
+        constrained. NonImplStruct
+        ldftn  void IStaticInterface::StaticAbstractMethod()
+        pop
+        ret
+    }
+
+    .method static public hidebysig void ConstrainedLdftn.NonVirtualStaticMethod_Invalid_Constrained<(IStaticInterface) T>() cil managed
+    {
+        constrained. !!T
+        ldftn  void PrefixTestsType::StaticMethod()
+        pop
+        ret
+    }
+
+    .method static public hidebysig void ConstrainedLdftn.StaticAbstractDelegateOnTypeParam_Valid<(IStaticInterface) T>() cil managed
+    {
+        ldnull
+        constrained. !!T
+        ldftn   void IStaticInterface::StaticAbstractMethod()
+        newobj  instance void [System.Runtime]System.Action::.ctor(object, native int)
+        pop
+        ret
+    }
+
+    .method static public hidebysig void ConstrainedLdftn.StaticVirtualDelegateOnTypeParam_Valid<(IStaticInterface) T>() cil managed
+    {
+        ldnull
+        constrained. !!T
+        ldftn   void IStaticInterface::StaticVirtualMethod()
+        newobj  instance void [System.Runtime]System.Action::.ctor(object, native int)
+        pop
+        ret
+    }
+
+    .method static public hidebysig void Ldftn.StaticVirtualDelegateWithoutConstrained_Valid() cil managed
+    {
+        ldnull
+        ldftn   void IStaticInterface::StaticVirtualMethod()
+        newobj  instance void [System.Runtime]System.Action::.ctor(object, native int)
+        pop
+        ret
+    }
+
+    .method static public hidebysig void Ldftn.StaticAbstractWithoutConstrained_Invalid_CallAbstract() cil managed
+    {
+        ldftn   void IStaticInterface::StaticAbstractMethod()
+        pop
         ret
     }
 

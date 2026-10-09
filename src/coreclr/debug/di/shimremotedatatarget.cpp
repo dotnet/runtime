@@ -190,14 +190,14 @@ HRESULT BuildPlatformSpecificDataTarget(MachineInfo machineInfo,
                                         const ProcessDescriptor * pProcessDescriptor,
                                         ShimDataTarget ** ppDataTarget)
 {
-    HandleHolder hDummy;
+    WaitHandle *processWaitHandle = nullptr;
     HRESULT hr = E_FAIL;
 
     ShimRemoteDataTarget * pRemoteDataTarget = NULL;
     DbgTransportTarget *   pProxy = &g_DbgTransportTarget;
     DbgTransportSession *  pTransport = NULL;
 
-    hr = pProxy->GetTransportForProcess(pProcessDescriptor, &pTransport, &hDummy);
+    hr = pProxy->GetTransportForProcess(pProcessDescriptor, &pTransport, &processWaitHandle);
     if (FAILED(hr))
     {
         goto Label_Exit;
@@ -221,6 +221,8 @@ HRESULT BuildPlatformSpecificDataTarget(MachineInfo machineInfo,
     pRemoteDataTarget->AddRef(); // must addref out-parameters
 
 Label_Exit:
+    delete processWaitHandle;
+
     if (FAILED(hr))
     {
         if (pRemoteDataTarget != NULL)

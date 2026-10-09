@@ -88,7 +88,6 @@ void DoRaiseExceptionOnAssert(DWORD chance)
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_DEBUG_ONLY;
-    STATIC_CONTRACT_FORBID_FAULT;
     STATIC_CONTRACT_SUPPORTS_DAC;
 
 #if !defined(DACCESS_COMPILE)
@@ -118,7 +117,6 @@ BOOL RaiseExceptionOnAssert(RaiseOnAssertOptions option = rTestAndRaise)
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_DEBUG_ONLY;
-    STATIC_CONTRACT_FORBID_FAULT;
     STATIC_CONTRACT_SUPPORTS_DAC;
 
     // ok for debug-only code to take locks
@@ -235,10 +233,9 @@ bool _DbgBreakCheck(
 {
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
     STATIC_CONTRACT_DEBUG_ONLY;
 
-    CONTRACT_VIOLATION(FaultNotFatal | GCViolation | TakesLockViolation);
+    CONTRACT_VIOLATION(GCViolation | TakesLockViolation);
 
     char formatBuffer[4096];
 
@@ -311,7 +308,6 @@ bool _DbgBreakCheckNoThrow(
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
     STATIC_CONTRACT_DEBUG_ONLY;
 
     bool failed = false;
@@ -364,7 +360,6 @@ VOID DbgAssertDialog(const char *szFile, int iLine, const char *szExpr)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
     STATIC_CONTRACT_SUPPORTS_DAC_HOST_ONLY;
 
     DEBUG_ONLY_FUNCTION;
@@ -423,7 +418,6 @@ VOID DbgAssertDialog(const char *szFile, int iLine, const char *szExpr)
 #ifndef DACCESS_COMPILE
         EX_TRY
         {
-            FAULT_NOT_FATAL();
             szExprToDisplay = &g_szExprWithStack2[0];
             strcpy(szExprToDisplay, szExpr);
             strcat_s(szExprToDisplay, ARRAY_SIZE(g_szExprWithStack2), "\n\n");
@@ -461,7 +455,6 @@ bool GetStackTraceAtContext(SString & s, CONTEXT * pContext)
      // NULL means use the current context.
     bool fSuccess = false;
 
-    FAULT_NOT_FATAL();
 
 #ifndef TARGET_UNIX
     EX_TRY

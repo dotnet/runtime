@@ -301,6 +301,7 @@ config.ps1
 
 # VS debug support files
 launchSettings.json
+!src/mono/wasm/templates/**/launchSettings.json
 
 # Snapcraft files
 .snapcraft

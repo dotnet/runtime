@@ -972,27 +972,27 @@ namespace System.Tests
 
             Assert.True(BinaryIntegerHelper<int>.TryWriteBigEndian((int)0x00000000, destination, out bytesWritten));
             Assert.Equal(4, bytesWritten);
-            Assert.Equal(new byte[] { 0x00, 0x00, 0x00, 0x00 }, destination.ToArray());
+            Assert.Equal<byte>([0x00, 0x00, 0x00, 0x00], destination);
 
             Assert.True(BinaryIntegerHelper<int>.TryWriteBigEndian((int)0x00000001, destination, out bytesWritten));
             Assert.Equal(4, bytesWritten);
-            Assert.Equal(new byte[] { 0x00, 0x00, 0x00, 0x01 }, destination.ToArray());
+            Assert.Equal<byte>([0x00, 0x00, 0x00, 0x01], destination);
 
             Assert.True(BinaryIntegerHelper<int>.TryWriteBigEndian((int)0x7FFFFFFF, destination, out bytesWritten));
             Assert.Equal(4, bytesWritten);
-            Assert.Equal(new byte[] { 0x7F, 0xFF, 0xFF, 0xFF }, destination.ToArray());
+            Assert.Equal<byte>([0x7F, 0xFF, 0xFF, 0xFF], destination);
 
             Assert.True(BinaryIntegerHelper<int>.TryWriteBigEndian(unchecked((int)0x80000000), destination, out bytesWritten));
             Assert.Equal(4, bytesWritten);
-            Assert.Equal(new byte[] { 0x80, 0x00, 0x00, 0x00 }, destination.ToArray());
+            Assert.Equal<byte>([0x80, 0x00, 0x00, 0x00], destination);
 
             Assert.True(BinaryIntegerHelper<int>.TryWriteBigEndian(unchecked((int)0xFFFFFFFF), destination, out bytesWritten));
             Assert.Equal(4, bytesWritten);
-            Assert.Equal(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF }, destination.ToArray());
+            Assert.Equal<byte>([0xFF, 0xFF, 0xFF, 0xFF], destination);
 
             Assert.False(BinaryIntegerHelper<int>.TryWriteBigEndian(default, Span<byte>.Empty, out bytesWritten));
             Assert.Equal(0, bytesWritten);
-            Assert.Equal(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF }, destination.ToArray());
+            Assert.Equal<byte>([0xFF, 0xFF, 0xFF, 0xFF], destination);
         }
 
         [Fact]
@@ -1003,27 +1003,27 @@ namespace System.Tests
 
             Assert.True(BinaryIntegerHelper<int>.TryWriteLittleEndian((int)0x00000000, destination, out bytesWritten));
             Assert.Equal(4, bytesWritten);
-            Assert.Equal(new byte[] { 0x00, 0x00, 0x00, 0x00 }, destination.ToArray());
+            Assert.Equal<byte>([0x00, 0x00, 0x00, 0x00], destination);
 
             Assert.True(BinaryIntegerHelper<int>.TryWriteLittleEndian((int)0x00000001, destination, out bytesWritten));
             Assert.Equal(4, bytesWritten);
-            Assert.Equal(new byte[] { 0x01, 0x00, 0x00, 0x00 }, destination.ToArray());
+            Assert.Equal<byte>([0x01, 0x00, 0x00, 0x00], destination);
 
             Assert.True(BinaryIntegerHelper<int>.TryWriteLittleEndian((int)0x7FFFFFFF, destination, out bytesWritten));
             Assert.Equal(4, bytesWritten);
-            Assert.Equal(new byte[] { 0xFF, 0xFF, 0xFF, 0x7F }, destination.ToArray());
+            Assert.Equal<byte>([0xFF, 0xFF, 0xFF, 0x7F], destination);
 
             Assert.True(BinaryIntegerHelper<int>.TryWriteLittleEndian(unchecked((int)0x80000000), destination, out bytesWritten));
             Assert.Equal(4, bytesWritten);
-            Assert.Equal(new byte[] { 0x00, 0x00, 0x00, 0x80 }, destination.ToArray());
+            Assert.Equal<byte>([0x00, 0x00, 0x00, 0x80], destination);
 
             Assert.True(BinaryIntegerHelper<int>.TryWriteLittleEndian(unchecked((int)0xFFFFFFFF), destination, out bytesWritten));
             Assert.Equal(4, bytesWritten);
-            Assert.Equal(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF }, destination.ToArray());
+            Assert.Equal<byte>([0xFF, 0xFF, 0xFF, 0xFF], destination);
 
             Assert.False(BinaryIntegerHelper<int>.TryWriteLittleEndian(default, Span<byte>.Empty, out bytesWritten));
             Assert.Equal(0, bytesWritten);
-            Assert.Equal(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF }, destination.ToArray());
+            Assert.Equal<byte>([0xFF, 0xFF, 0xFF, 0xFF], destination);
         }
 
         //

@@ -681,7 +681,7 @@ namespace System.Security.Cryptography.X509Certificates
         /// </para>
         /// <para>-or-</para>
         /// <para>
-        ///   An error occured while finding the certificates with a matching thumbprint.
+        ///   An error occurred while finding the certificates with a matching thumbprint.
         /// </para>
         /// </exception>
         public X509Certificate2Collection FindByThumbprint(HashAlgorithmName hashAlgorithm, string thumbprintHex)
@@ -718,7 +718,7 @@ namespace System.Security.Cryptography.X509Certificates
         /// </para>
         /// <para>-or-</para>
         /// <para>
-        ///   An error occured while finding the certificates with a matching thumbprint.
+        ///   An error occurred while finding the certificates with a matching thumbprint.
         /// </para>
         /// </exception>
         public X509Certificate2Collection FindByThumbprint(HashAlgorithmName hashAlgorithm, ReadOnlySpan<char> thumbprintHex)
@@ -768,7 +768,7 @@ namespace System.Security.Cryptography.X509Certificates
         /// </para>
         /// <para>-or-</para>
         /// <para>
-        ///   An error occured while finding the certificates with a matching thumbprint.
+        ///   An error occurred while finding the certificates with a matching thumbprint.
         /// </para>
         /// </exception>
         public X509Certificate2Collection FindByThumbprint(HashAlgorithmName hashAlgorithm, ReadOnlySpan<byte> thumbprintBytes)

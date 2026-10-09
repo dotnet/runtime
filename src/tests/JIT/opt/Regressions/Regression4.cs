@@ -16,8 +16,14 @@ public class Program
     [Fact]
     public static int TestEntryPoint()
     {
+        string assemblyPath = System.Reflection.Assembly.GetExecutingAssembly().Location;
+        if (assemblyPath.Length == 0)
+        {
+            return 100;
+        }
+
         CollectibleALC alc = new CollectibleALC();
-        System.Reflection.Assembly asm = alc.LoadFromAssemblyPath(System.Reflection.Assembly.GetExecutingAssembly().Location);
+        System.Reflection.Assembly asm = alc.LoadFromAssemblyPath(assemblyPath);
         System.Reflection.MethodInfo mi = asm.GetType(typeof(Program).FullName).GetMethod(nameof(MainInner));
         System.Type runtimeTy = asm.GetType(typeof(Runtime).FullName);
         int count = (int)mi.Invoke(null, new object[] { System.Activator.CreateInstance(runtimeTy) });

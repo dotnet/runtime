@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include <cassert>
+#include <optional>
 #include "trace.h"
 #include "pal.h"
 #include "utils.h"
@@ -31,17 +32,17 @@ SHARED_API int HOSTFXR_CALLTYPE hostfxr_main_bundle_startupinfo(const int argc, 
 {
     trace_hostfxr_entry_point(_X("hostfxr_main_bundle_startupinfo"));
 
+    if (host_path == nullptr || dotnet_root == nullptr || app_path == nullptr || dotnet_root[0] == _X('\0'))
+    {
+        trace::error(_X("Invalid startup info: host_path, dotnet_root, and app_path should not be null."));
+        return StatusCode::InvalidArgFailure;
+    }
+
     StatusCode bundleStatus = bundle::info_t::process_bundle(host_path, app_path, bundle_header_offset);
     if (bundleStatus != StatusCode::Success)
     {
         trace::error(_X("A fatal error occurred while processing application bundle"));
         return bundleStatus;
-    }
-
-    if (host_path == nullptr || dotnet_root == nullptr || app_path == nullptr)
-    {
-        trace::error(_X("Invalid startup info: host_path, dotnet_root, and app_path should not be null."));
-        return StatusCode::InvalidArgFailure;
     }
 
     host_startup_info_t startup_info(host_path, dotnet_root, app_path);
@@ -53,7 +54,7 @@ SHARED_API int HOSTFXR_CALLTYPE hostfxr_main_startupinfo(const int argc, const p
 {
     trace_hostfxr_entry_point(_X("hostfxr_main_startupinfo"));
 
-    if (host_path == nullptr || dotnet_root == nullptr || app_path == nullptr)
+    if (host_path == nullptr || dotnet_root == nullptr || app_path == nullptr || dotnet_root[0] == _X('\0'))
     {
         trace::error(_X("Invalid startup info: host_path, dotnet_root, and app_path should not be null."));
         return StatusCode::InvalidArgFailure;
@@ -75,8 +76,7 @@ SHARED_API int HOSTFXR_CALLTYPE hostfxr_main(const int argc, const pal::char_t* 
 
 // [OBSOLETE] Replaced by hostfxr_resolve_sdk2
 //
-// Determines the directory location of the SDK accounting for
-// global.json and multi-level lookup policy.
+// Determines the directory location of the SDK accounting for global.json.
 //
 // Invoked via MSBuild SDK resolver to locate SDK props and targets
 // from an msbuild other than the one bundled by the CLI.
@@ -86,9 +86,6 @@ SHARED_API int HOSTFXR_CALLTYPE hostfxr_main(const int argc, const pal::char_t* 
 //      The main directory where SDKs are located in sdk\[version]
 //      sub-folders. Pass the directory of a dotnet executable to
 //      mimic how that executable would search in its own directory.
-//      It is also valid to pass nullptr or empty, in which case
-//      multi-level lookup can still search other locations if
-//      it has not been disabled by the user's environment.
 //
 //    working_dir
 //      The directory where the search for global.json (which can
@@ -437,7 +434,7 @@ SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_get_dotnet_environment_info(
     }
 
     std::vector<framework_info> framework_infos;
-    framework_info::get_all_framework_infos(dotnet_dir, nullptr, /*disable_multilevel_lookup*/ true, /*include_disabled_versions*/ false, &framework_infos);
+    framework_info::get_all_framework_infos(dotnet_dir, nullptr, /*include_disabled_versions*/ false, &framework_infos);
 
     std::vector<hostfxr_dotnet_environment_framework_info> environment_framework_infos;
     std::vector<pal::string_t> framework_versions;
@@ -641,8 +638,8 @@ SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_resolve_frameworks_for_runtime_confi
     auto app = new fx_definition_t();
     fx_definitions.push_back(std::unique_ptr<fx_definition_t>(app));
 
-    const runtime_config_t::settings_t override_settings;
-    app->parse_runtime_config(runtime_config, _X(""), override_settings);
+    const std::optional<roll_forward_option> override_roll_forward;
+    app->parse_runtime_config(runtime_config, _X(""), override_roll_forward);
 
     const runtime_config_t& app_config = app->get_runtime_config();
     if (!app_config.is_valid())
@@ -655,7 +652,7 @@ SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_resolve_frameworks_for_runtime_confi
     // Self-contained apps assume the framework is next to the app, so we just treat it as success.
     fx_resolver_t::resolution_failure_info failure_info;
     rc = app_config.get_is_framework_dependent()
-        ? fx_resolver_t::resolve_frameworks(host_info.dotnet_root, override_settings, app_config, fx_definitions, failure_info)
+        ? fx_resolver_t::resolve_frameworks(host_info.dotnet_root, override_roll_forward, app_config, fx_definitions, failure_info)
         : StatusCode::Success;
 
     if (callback)

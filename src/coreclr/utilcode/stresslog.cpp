@@ -1,12 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-/*************************************************************************************/
-/*                                   StressLog.cpp                                   */
-/*************************************************************************************/
-
-/*************************************************************************************/
-
 #include "stdafx.h"			// precompiled headers
 
 #include "switches.h"
@@ -377,7 +371,6 @@ void StressLog::AddModule(uint8_t* moduleBase)
 /*********************************************************************************/
 void StressLog::Terminate(BOOL fProcessDetach) {
     STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     theLog.facilitiesToLog = 0;
 
@@ -390,7 +383,7 @@ void StressLog::Terminate(BOOL fProcessDetach) {
                 // threads are out of logMsg.  In practice, since they can no longer enter logMsg
                 // and there are no blocking operations in logMsg, simply sleeping will ensure
                 // that everyone gets out.
-        ClrSleepEx(2, FALSE);
+        minipal_sleep(2);
         lockh.Acquire();
     }
 
@@ -423,7 +416,6 @@ ThreadStressLog* StressLog::CreateThreadStressLog() {
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
     }
     CONTRACTL_END;
 
@@ -519,7 +511,6 @@ ThreadStressLog* StressLog::CreateThreadStressLogHelper() {
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
         CANNOT_TAKE_LOCK;
     }
     CONTRACTL_END;
@@ -572,7 +563,6 @@ ThreadStressLog* StressLog::CreateThreadStressLogHelper() {
     }
 
     if (msgs == 0)  {
-    	FAULT_NOT_FATAL(); // We don't mind if we can't allocate here, we'll try again later.
     	if (IsInCantAllocStressLogRegion ())
     	{
             goto LEAVE;
@@ -638,7 +628,6 @@ LEAVE:
 /* static */
 void StressLog::ThreadDetach() {
     STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_FORBID_FAULT;
     STATIC_CONTRACT_CANNOT_TAKE_LOCK;
 
     ThreadStressLog* msgs = t_pCurrentThreadLog;
@@ -715,32 +704,11 @@ BOOL StressLog::ReserveStressLogChunks (unsigned chunksToReserve)
     return msgs->chunkListLength >= (LONG)chunksToReserve;
 }
 
-void (*FSwitchToSOTolerant)();
-void (*FSwitchToSOIntolerant)();
-void TrackSO(BOOL tolerance)
-{
-    if (tolerance)
-    {
-        if (FSwitchToSOTolerant)
-        {
-            FSwitchToSOTolerant();
-        }
-    }
-    else
-    {
-        if (FSwitchToSOIntolerant)
-        {
-            FSwitchToSOIntolerant();
-        }
-    }
-}
-
 /*********************************************************************************/
 /* fetch a buffer that can be used to write a stress message, it is thread safe */
 FORCEINLINE void ThreadStressLog::LogMsg(unsigned facility, int cArgs, const char* format, va_list Args)
 {
     STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     // Asserts in this function cause infinite loops in the asserting mechanism.
     // Just use debug breaks instead.
@@ -863,7 +831,6 @@ void StressLog::LogMsg(unsigned level, unsigned facility, int cArgs, const char*
 #ifndef DACCESS_COMPILE
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
     STATIC_CONTRACT_SUPPORTS_DAC;
 
     // Any stresslog LogMsg could theoretically create a new stress log and thus
@@ -903,7 +870,6 @@ void StressLog::LogMsg(unsigned level, unsigned facility, const StressLogMsg &ms
 #ifndef DACCESS_COMPILE
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
     STATIC_CONTRACT_SUPPORTS_DAC;
 
     // Any stresslog LogMsg could theoretically create a new stress log and thus
@@ -1007,4 +973,3 @@ void __cdecl ThreadStressLog::operator delete(void* p)
 #endif //MEMORY_MAPPED_STRESSLOG
 
 #endif // STRESS_LOG
-

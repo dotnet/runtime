@@ -58,7 +58,7 @@ namespace TestApp
                 DeclaringType = typeof(global::TestApp.GenericProps<int>),
                 Converter = null,
                 Getter = static obj => ((global::TestApp.GenericProps<int>)obj).Value,
-                Setter = static (obj, value) => __GenericAccessors_GenericPropsInt32<int>.__set_GenericPropsInt32_Value((global::TestApp.GenericProps<int>)obj, value!),
+                Setter = static (obj, value) => __GenericAccessors_GenericPropsInt32_0<int>.__set_GenericPropsInt32_Value((global::TestApp.GenericProps<int>)obj, value!),
                 IgnoreCondition = null,
                 HasJsonInclude = false,
                 IsExtensionData = false,
@@ -78,7 +78,7 @@ namespace TestApp
                 DeclaringType = typeof(global::TestApp.GenericProps<int>),
                 Converter = null,
                 Getter = static obj => ((global::TestApp.GenericProps<int>)obj).Label,
-                Setter = static (obj, value) => __GenericAccessors_GenericPropsInt32<int>.__set_GenericPropsInt32_Label((global::TestApp.GenericProps<int>)obj, value!),
+                Setter = static (obj, value) => __GenericAccessors_GenericPropsInt32_0<int>.__set_GenericPropsInt32_Label((global::TestApp.GenericProps<int>)obj, value!),
                 IgnoreCondition = null,
                 HasJsonInclude = false,
                 IsExtensionData = false,
@@ -112,7 +112,7 @@ namespace TestApp
         }
 
 
-        private static class __GenericAccessors_GenericPropsInt32<T>
+        private static partial class __GenericAccessors_GenericPropsInt32_0<T>
         {
             [global::System.Runtime.CompilerServices.UnsafeAccessorAttribute(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = "set_Value")]
             public static extern void __set_GenericPropsInt32_Value(global::TestApp.GenericProps<T> obj, T value);

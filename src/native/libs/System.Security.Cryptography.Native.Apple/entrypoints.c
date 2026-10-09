@@ -29,6 +29,8 @@ static const Entry s_cryptoAppleNative[] =
 {
     DllImportEntry(AppleCryptoNative_AesGcmEncrypt)
     DllImportEntry(AppleCryptoNative_AesGcmDecrypt)
+    DllImportEntry(AppleCryptoNative_AesKeyWrapEncrypt)
+    DllImportEntry(AppleCryptoNative_AesKeyWrapDecrypt)
     DllImportEntry(AppleCryptoNative_ChaCha20Poly1305Encrypt)
     DllImportEntry(AppleCryptoNative_ChaCha20Poly1305Decrypt)
     DllImportEntry(AppleCryptoNative_DigestClone)
@@ -39,6 +41,7 @@ static const Entry s_cryptoAppleNative[] =
     DllImportEntry(AppleCryptoNative_DigestOneShot)
     DllImportEntry(AppleCryptoNative_DigestReset)
     DllImportEntry(AppleCryptoNative_DigestUpdate)
+    DllImportEntry(AppleCryptoNative_EccExportPublicKeyFromPrivateKey)
     DllImportEntry(AppleCryptoNative_EccGenerateKey)
     DllImportEntry(AppleCryptoNative_EccGetKeySizeInBits)
     DllImportEntry(AppleCryptoNative_EcdhKeyAgree)

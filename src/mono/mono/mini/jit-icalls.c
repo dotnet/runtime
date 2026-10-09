@@ -1169,6 +1169,15 @@ mono_helper_newobj_mscorlib (guint32 idx)
 	return obj;
 }
 
+MonoObject*
+mono_helper_box_nullable (gpointer vbuf, MonoClass *klass)
+{
+	ERROR_DECL (error);
+	MonoObject *result = mono_nullable_box (vbuf, klass, error);
+	mono_error_set_pending_exception (error);
+	return result;
+}
+
 /*
  * On some architectures, gdb doesn't like encountering the cpu breakpoint instructions
  * in generated code. So instead we emit a call to this function and place a gdb

@@ -5,6 +5,14 @@
     <!-- net8.0 is only need for the internal nuget produced which isn't required for source builds -->
     <TargetFrameworks Condition="'$(DotNetBuildSourceOnly)' != 'true'">$(TargetFrameworks);net8.0</TargetFrameworks>
     <NoWarn>$(NoWarn),CA1050,CA1850</NoWarn>
+    <!-- Emit the current tool build into a stable, version-independent folder name instead of the TFM so the
+         package layout and its consumers don't need updating whenever the .NET Core TFM bumps. The pinned
+         net8.0 build keeps its TFM folder because it is selected by the consuming project's own TFM. -->
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <OutputPath Condition="'$(TargetFramework)' == '$(NetCoreAppToolCurrent)'">$(OutputPath)net\</OutputPath>
+    <OutputPath Condition="'$(TargetFramework)' == 'net8.0'">$(OutputPath)net8.0\</OutputPath>
+    <IntermediateOutputPath Condition="'$(TargetFramework)' == '$(NetCoreAppToolCurrent)'">$(IntermediateOutputPath)net\</IntermediateOutputPath>
+    <IntermediateOutputPath Condition="'$(TargetFramework)' == 'net8.0'">$(IntermediateOutputPath)net8.0\</IntermediateOutputPath>
   </PropertyGroup>
 
   <ItemGroup>
@@ -14,11 +22,11 @@
 
   <Target Name="GetFilesToPackage" Returns="@(FilesToPackage)">
     <ItemGroup>
-      <_PublishFramework Remove="@(_PublishFramework)" />
-      <_PublishFramework Include="$(TargetFrameworks)" />
+      <FilesToPackage Include="$(OutputPath)net\$(AssemblyName).dll" TargetPath="tasks\net" />
+      <FilesToPackage Include="$(OutputPath)net\$(AssemblyName).pdb" TargetPath="tasks\net" />
 
-      <FilesToPackage Include="$(OutputPath)%(_PublishFramework.Identity)\$(AssemblyName).dll" TargetPath="tasks\%(_PublishFramework.Identity)" />
-      <FilesToPackage Include="$(OutputPath)%(_PublishFramework.Identity)\$(AssemblyName).pdb" TargetPath="tasks\%(_PublishFramework.Identity)" />
+      <FilesToPackage Condition="'$(DotNetBuildSourceOnly)' != 'true'" Include="$(OutputPath)net8.0\$(AssemblyName).dll" TargetPath="tasks\net8.0" />
+      <FilesToPackage Condition="'$(DotNetBuildSourceOnly)' != 'true'" Include="$(OutputPath)net8.0\$(AssemblyName).pdb" TargetPath="tasks\net8.0" />
     </ItemGroup>
   </Target>
 

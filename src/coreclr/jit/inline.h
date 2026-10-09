@@ -344,8 +344,12 @@ class InlineResult
 public:
     // Construct a new InlineResult to help evaluate a
     // particular call for inlining.
-    InlineResult(
-        Compiler* compiler, GenTreeCall* call, Statement* stmt, const char* description, bool doNotReport = false);
+    InlineResult(Compiler*             compiler,
+                 GenTreeCall*          call,
+                 Statement*            stmt,
+                 const char*           description,
+                 bool                  doNotReport = false,
+                 CORINFO_METHOD_HANDLE callee      = nullptr);
 
     // Construct a new InlineResult to evaluate a particular
     // method to see if it is inlineable.
@@ -621,6 +625,11 @@ struct InlineCandidateInfo : public HandleHistogramProfileCandidateInfo
     unsigned clsAttr;
     unsigned methAttr;
 
+    // True if the target of this candidate can be inlined. GDV candidates are kept
+    // around even when it can't be, so this is what tells the two apart.
+    //
+    bool isInlineable;
+
     CorInfoInitClassResult initClassResult;
     InlineContext*         inlinersContext;
 
@@ -869,6 +878,11 @@ public:
     {
         return m_Unboxed;
     }
+
+    bool IsAsyncCall() const
+    {
+        return m_IsAsyncCall;
+    }
 #endif
 
     unsigned GetImportedILSize() const
@@ -933,6 +947,7 @@ private:
     bool          m_Devirtualized : 1; // true if this was a devirtualized call
     bool          m_Guarded       : 1; // true if this was a guarded call
     bool          m_Unboxed       : 1; // true if this call now invokes the unboxed entry
+    bool          m_IsAsyncCall   : 1; // true if the call being inlined was an async call
 
 #endif // defined(DEBUG)
 

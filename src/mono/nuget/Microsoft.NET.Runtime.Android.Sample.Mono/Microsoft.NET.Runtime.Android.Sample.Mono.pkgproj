@@ -11,7 +11,7 @@
 
   <ItemGroup>
     <_AndroidSampleFiles Include="$(AndroidAppBuilderTasksAssemblyPath)" />
-    <PackageFile Include="@(_AndroidSampleFiles)" TargetPath="tools\$(NetCoreAppToolCurrent)\" />
+    <PackageFile Include="@(_AndroidSampleFiles)" TargetPath="tools\net\" />
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />

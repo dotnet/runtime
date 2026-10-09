@@ -1,9 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.CommandLine;
-using System.CommandLine.Parsing;
 
 namespace ILAssembler;
 
@@ -29,6 +27,9 @@ internal sealed class IlasmRootCommand : RootCommand
 
     public Option<bool> Optimize { get; } =
         new("--optimize", "-O") { Description = "Optimize long instructions to short" };
+
+    public Option<bool> PseudoAttributes { get; } =
+        new("--pseudoattributes") { Description = "Lower recognized pseudo custom attributes into metadata flags and auxiliary tables" };
 
     public Option<bool> Fold { get; } =
         new("--fold") { Description = "Fold identical method bodies into one" };
@@ -103,9 +104,6 @@ internal sealed class IlasmRootCommand : RootCommand
     public Option<bool> TargetX64 { get; } =
         new("--x64") { Description = "Target processor: 64bit AMD processor" };
 
-    public Option<bool> TargetArm { get; } =
-        new("--arm") { Description = "Target processor: ARM (AArch32) processor" };
-
     public Option<bool> TargetArm64 { get; } =
         new("--arm64") { Description = "Target processor: ARM64 (AArch64) processor" };
 
@@ -114,8 +112,6 @@ internal sealed class IlasmRootCommand : RootCommand
 
     public Option<bool> WaitForDebugger { get; } =
         new("--waitfordebugger") { Description = "Pause to give opportunity to attach debugger" };
-
-    public ParseResult Result { get; private set; } = null!;
 
     internal const string ProductName = ".NET IL Assembler";
 
@@ -128,6 +124,7 @@ internal sealed class IlasmRootCommand : RootCommand
         Options.Add(Debug);
         Options.Add(DebugMode);
         Options.Add(Optimize);
+        Options.Add(PseudoAttributes);
         Options.Add(Fold);
         Options.Add(NoLogo);
         Options.Add(Quiet);
@@ -152,33 +149,8 @@ internal sealed class IlasmRootCommand : RootCommand
         Options.Add(NoCorStub);
         Options.Add(StripReloc);
         Options.Add(TargetX64);
-        Options.Add(TargetArm);
         Options.Add(TargetArm64);
         Options.Add(Prefer32Bit);
         Options.Add(WaitForDebugger);
-
-        this.SetAction(result =>
-        {
-            Result = result;
-
-            if (result.GetValue(WaitForDebugger))
-            {
-                Console.WriteLine("Waiting for debugger to attach. Press ENTER to continue");
-                Console.ReadLine();
-            }
-
-            try
-            {
-                return new Program(this).Run();
-            }
-            catch (Exception e)
-            {
-                Console.ResetColor();
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.Error.WriteLine("Error: " + e.Message);
-                Console.ResetColor();
-                return 1;
-            }
-        });
     }
 }

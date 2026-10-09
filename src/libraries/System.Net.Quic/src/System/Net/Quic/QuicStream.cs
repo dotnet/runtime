@@ -321,9 +321,10 @@ public sealed partial class QuicStream
             cancellationToken.ThrowIfCancellationRequested();
         }
 
-        // The following loop will repeat at most twice depending whether some data are readily available in the buffer (one iteration) or not.
-        // In which case, it'll wait on RECEIVE or any of PEER_SEND_(SHUTDOWN|ABORTED) event and attempt to copy data in the second iteration.
+        // Loop copying available data and/or waiting on RECEIVE or PEER_SEND_(SHUTDOWN|ABORTED) events.
+        // Keeps waiting while nothing was copied and the buffer is empty (and not final) to ignore stale wake-ups on _receiveTcs.
         int totalCopied = 0;
+        bool empty;
         do
         {
             // Concurrent call, this one lost the race.
@@ -333,7 +334,7 @@ public sealed partial class QuicStream
             }
 
             // Copy data from the buffer, reduce target and increment total.
-            int copied = _receiveBuffers.CopyTo(buffer, out bool complete, out bool empty);
+            int copied = _receiveBuffers.CopyTo(buffer, out bool complete, out empty);
             buffer = buffer.Slice(copied);
             totalCopied += copied;
 
@@ -357,7 +358,7 @@ public sealed partial class QuicStream
             {
                 break;
             }
-        } while (!buffer.IsEmpty && totalCopied == 0);  // Exit the loop if target buffer is full we at least copied something.
+        } while (totalCopied == 0 && empty);  // Keep waiting while we haven't copied anything and no data is available.
 
         if (totalCopied > 0 && Interlocked.CompareExchange(ref _receivedNeedsEnable, 0, 1) == 1)
         {

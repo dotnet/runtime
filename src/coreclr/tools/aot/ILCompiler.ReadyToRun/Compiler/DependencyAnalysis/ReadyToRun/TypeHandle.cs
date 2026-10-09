@@ -178,7 +178,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public int GetFieldAlignment()
         {
-            return ((DefType)_type).InstanceFieldAlignment.AsInt;
+            return CompilerTypeSystemContext.GetClassAlignmentRequirementStatic((DefType)_type);
         }
 
         /// <summary>

@@ -52,7 +52,7 @@ namespace System
 
         public override object[] GetCustomAttributes(bool inherit)
         {
-            return CustomAttribute.GetCustomAttributes(this, ObjectType, inherit);
+            return RuntimeCustomAttribute.GetCustomAttributes(this, (RuntimeType)typeof(object), inherit);
         }
 
         public override object[] GetCustomAttributes(Type attributeType, bool inherit)
@@ -62,7 +62,7 @@ namespace System
             if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 
-            return CustomAttribute.GetCustomAttributes(this, attributeRuntimeType, inherit);
+            return RuntimeCustomAttribute.GetCustomAttributes(this, attributeRuntimeType, inherit);
         }
 
         public override IList<CustomAttributeData> GetCustomAttributesData()
@@ -184,8 +184,6 @@ namespace System
             return Enum.InternalGetUnderlyingType(this);
         }
 
-        public override int GetHashCode() => RuntimeHelpers.GetHashCode(this);
-
         internal RuntimeModule GetRuntimeModule() => RuntimeTypeHandle.GetModule(this);
 
         protected override TypeCode GetTypeCodeImpl()
@@ -214,7 +212,7 @@ namespace System
             if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 
-            return CustomAttribute.IsDefined(this, attributeRuntimeType, inherit);
+            return RuntimeCustomAttribute.IsDefined(this, attributeRuntimeType, inherit);
         }
 
         public override bool IsEnumDefined(object value)
@@ -236,7 +234,7 @@ namespace System
             }
 
             // If a string is passed in, search the enum names with it.
-            if (valueType == StringType)
+            if (valueType == typeof(string))
                 return Array.IndexOf(Enum.GetNamesNoCopy(this), (string)value) >= 0;
 
             // If an enum or integer value is passed in
@@ -718,7 +716,7 @@ namespace System
             {
                 Type[] constraints = GetGenericParameterConstraints();
 
-                RuntimeType baseType = ObjectType;
+                RuntimeType baseType = (RuntimeType)typeof(object);
 
                 for (int i = 0; i < constraints.Length; i++)
                 {
@@ -739,11 +737,11 @@ namespace System
                     baseType = constraint;
                 }
 
-                if (baseType == ObjectType)
+                if (baseType == typeof(object))
                 {
                     GenericParameterAttributes special = GenericParameterAttributes;
                     if ((special & GenericParameterAttributes.NotNullableValueTypeConstraint) != 0)
-                        baseType = ValueType;
+                        baseType = (RuntimeType)typeof(ValueType);
                 }
 
                 return baseType;

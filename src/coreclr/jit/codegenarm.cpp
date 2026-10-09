@@ -1313,7 +1313,7 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
         // data goes in REG_ARG_1
         inst_Mov(data->TypeGet(), REG_ARG_1, data->GetRegNum(), /* canSkip */ true);
 
-        genGCWriteBarrier(tree, writeBarrierForm);
+        genGCWriteBarrier(writeBarrierForm);
     }
     else // A normal store, not a WriteBarrier store
     {
@@ -1845,7 +1845,7 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
 
     const target_size_t pageSize = m_compiler->eeGetPageSize();
 
-    assert(!m_compiler->info.compPublishStubParam || (REG_SECRET_STUB_PARAM != initReg));
+    assert(!m_compiler->compHasSecretStubArgument() || (REG_SECRET_STUB_PARAM != initReg));
 
     if (frameSize < pageSize)
     {

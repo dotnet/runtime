@@ -25,7 +25,6 @@ BOOL ParamTypeDesc::Verify() {
 
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
     STATIC_CONTRACT_CANNOT_TAKE_LOCK;
     STATIC_CONTRACT_DEBUG_ONLY;
     STATIC_CONTRACT_SUPPORTS_DAC;
@@ -61,7 +60,6 @@ PTR_Module TypeDesc::GetLoaderModule()
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
     SUPPORTS_DAC;
 
     if (HasTypeParam())
@@ -124,7 +122,6 @@ PTR_Module TypeDesc::GetModule() {
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
         SUPPORTS_DAC;
         // Function pointer types belong to no module
         //PRECONDITION(GetInternalCorElementType() != ELEMENT_TYPE_FNPTR);
@@ -153,7 +150,6 @@ PTR_Module TypeDesc::GetModule() {
 Assembly* TypeDesc::GetAssembly() {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     Module *pModule = GetModule();
     _ASSERTE(pModule!=NULL);
@@ -166,7 +162,6 @@ void TypeDesc::GetName(SString &ssBuf)
     {
         THROWS;
         GC_NOTRIGGER;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END
 
@@ -196,7 +191,6 @@ void TypeDesc::ConstructName(CorElementType kind,
     {
         THROWS;
         GC_NOTRIGGER;
-        INJECT_FAULT(COMPlusThrowOM()); // SString operations can allocate.
     }
     CONTRACTL_END
 
@@ -309,7 +303,6 @@ BOOL TypeDesc::CanCastTo(TypeHandle toTypeHnd, TypeHandlePairList *pVisited)
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END
 
@@ -389,7 +382,6 @@ BOOL TypeDesc::CanCastParam(TypeHandle fromParam, TypeHandle toParam, TypeHandle
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END
 
@@ -439,7 +431,6 @@ TypeHandle::CastResult TypeDesc::CanCastToCached(TypeHandle toType)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_COOPERATIVE;
-        FORBID_FAULT;
     }
     CONTRACTL_END
 
@@ -489,7 +480,6 @@ TypeHandle TypeDesc::GetParent() {
 
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     CorElementType kind = GetInternalCorElementType();
 
@@ -507,7 +497,6 @@ OBJECTREF TypeDesc::GetManagedClassObject()
         GC_TRIGGERS;
         MODE_COOPERATIVE;
 
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -524,12 +513,13 @@ ClassLoadLevel TypeDesc::GetLoadLevel()
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
     SUPPORTS_DAC;
 
-    if (_typeAndFlags & TypeDesc::enum_flag_IsNotFullyLoaded)
+    DWORD dwFlags = VolatileLoad(&_typeAndFlags);
+
+    if (dwFlags & TypeDesc::enum_flag_IsNotFullyLoaded)
     {
-        if (_typeAndFlags & TypeDesc::enum_flag_DependenciesLoaded)
+        if (dwFlags & TypeDesc::enum_flag_DependenciesLoaded)
         {
             return CLASS_DEPENDENCIES_LOADED;
         }
@@ -760,7 +750,6 @@ void TypeVarTypeDesc::LoadConstraints(ClassLoadLevel level, WhichConstraintsToLo
         GC_TRIGGERS;
         MODE_ANY;
 
-        INJECT_FAULT(COMPlusThrowOM());
 
         PRECONDITION(level == CLASS_DEPENDENCIES_LOADED || level == CLASS_LOADED);
     }
@@ -843,7 +832,18 @@ void TypeVarTypeDesc::LoadConstraints(ClassLoadLevel level, WhichConstraintsToLo
             if (whichCurrent == WhichConstraintsToLoad::None)
             {
                 constraintAlloc = (pAllocator->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(numConstraints & ~WhichConstraintsLoadedMask) * S_SIZE_T(sizeof(TypeHandle))));
-                constraints = (TypeHandle*)constraintAlloc;
+                constraints = constraintAlloc.operator->();
+
+                // Publish the array before filling it so concurrent loaders populate the same storage.
+                TypeHandle* existingConstraints = InterlockedCompareExchangeT(&m_constraints, constraints, nullptr);
+                if (existingConstraints == nullptr)
+                {
+                    constraintAlloc.SuppressRelease();
+                }
+                else
+                {
+                    constraints = existingConstraints;
+                }
             }
             else
             {
@@ -969,14 +969,6 @@ void TypeVarTypeDesc::LoadConstraints(ClassLoadLevel level, WhichConstraintsToLo
                 }
 
                 i++;
-            }
-
-            if (whichCurrent == WhichConstraintsToLoad::None)
-            {
-                if (InterlockedCompareExchangeT(&m_constraints, constraintAlloc.operator->(), NULL) == NULL)
-                {
-                    constraintAlloc.SuppressRelease();
-                }
             }
 
             if (loadedAllConstraints)
@@ -1138,7 +1130,6 @@ TypeHandle LoadTypeVarConstraint(TypeVarTypeDesc *pTypeVar, mdGenericParamConstr
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
         MODE_ANY;
         PRECONDITION(CheckPointer(pTypeVar));
     }
@@ -1259,7 +1250,6 @@ BOOL SatisfiesSpecialConstraintRecursive(TypeVarTypeDesc *pTyArg, DWORD specialC
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
         MODE_ANY;
         PRECONDITION(CheckPointer(pTyArg));
     }
@@ -1439,7 +1429,6 @@ void GatherConstraintsRecursive(TypeVarTypeDesc *pTyArg, ArrayList *pArgList, co
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
         MODE_ANY;
         PRECONDITION(CheckPointer(pTyArg));
         PRECONDITION(CheckPointer(pArgList));
@@ -1498,7 +1487,6 @@ BOOL TypeVarTypeDesc::SatisfiesConstraints(SigTypeContext *pTypeContextOfConstra
         MODE_ANY;
 
         PRECONDITION(!thArg.IsNull());
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 

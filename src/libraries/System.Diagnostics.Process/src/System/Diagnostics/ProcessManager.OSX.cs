@@ -4,7 +4,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.Marshalling;
+using System.Text;
 
 namespace System.Diagnostics
 {
@@ -63,7 +63,9 @@ namespace System.Diagnostics
                 if (taskInfo.HasValue && string.IsNullOrEmpty(processName))
                 {
                     Interop.libproc.proc_taskallinfo temp = taskInfo.Value;
-                    unsafe { processName = Utf8StringMarshaller.ConvertToManaged(temp.pbsd.pbi_comm); }
+                    ReadOnlySpan<byte> comm = temp.pbsd.pbi_comm;
+                    int nul = comm.IndexOf((byte)0);
+                    processName = Encoding.UTF8.GetString(nul >= 0 ? comm[..nul] : comm);
                 }
             }
             else
@@ -104,6 +106,16 @@ namespace System.Diagnostics
             if (sessionId != -1)
             {
                 procInfo.SessionId = sessionId;
+            }
+
+            // Get the process's physical memory footprint - an accounting-based measurement (the same value
+            // shown in Activity Monitor's Memory column), not a strict count of unique/private pages. This can
+            // fail for several reasons - e.g. lacking permission to query a process owned by another user, or
+            // the process having exited since it was enumerated - in which case PrivateBytes is left at its
+            // default of 0, matching prior (unset) behavior for this field on macOS.
+            if (Interop.libproc.TryGetProcessPhysicalFootprint(pid, out ulong physicalFootprint))
+            {
+                procInfo.PrivateBytes = physicalFootprint > long.MaxValue ? long.MaxValue : (long)physicalFootprint;
             }
 
             // Create a threadinfo for each thread in the process

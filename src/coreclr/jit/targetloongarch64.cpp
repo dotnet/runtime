@@ -57,6 +57,12 @@ ABIPassingInformation LoongArch64Classifier::Classify(Compiler*    comp,
                                                       ClassLayout* structLayout,
                                                       WellKnownArg wellKnownParam)
 {
+    if (wellKnownParam == WellKnownArg::SecretStubParam)
+    {
+        return ABIPassingInformation::FromSegmentByValue(comp, ABIPassingSegment::InRegister(REG_SECRET_STUB_PARAM, 0,
+                                                                                             TARGET_POINTER_SIZE));
+    }
+
     assert(!m_info.IsVarArgs);
 
     unsigned  passedSize;

@@ -1,14 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
-// File: memberload.cpp
-//
-
-
-//
-
-//
-// ============================================================================
 
 #include "common.h"
 #include "clsload.hpp"
@@ -727,7 +718,6 @@ MemberLoader::GetMethodDescFromMemberDefOrRefOrSpec(
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
         PRECONDITION(CheckPointer(pModule));
     }
     CONTRACTL_END;
@@ -903,7 +893,6 @@ MemberLoader::GetMethodDescFromMethodDef(
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
         PRECONDITION(CheckPointer(pModule));
         PRECONDITION(TypeFromToken(MethodDef) == mdtMethodDef);
     }
@@ -943,7 +932,6 @@ FieldDesc* MemberLoader::GetFieldDescFromMemberDefOrRef(
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -1040,7 +1028,6 @@ static BOOL CompareMethodSigWithCorrectSubstitution(
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END
 
@@ -1083,7 +1070,6 @@ MemberLoader::FindMethod(
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
         MODE_ANY;
     } CONTRACTL_END;
 
@@ -1251,7 +1237,6 @@ MemberLoader::FindMethod(MethodTable * pMT, LPCUTF8 pwzName, LPHARDCODEDMETASIG 
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
         MODE_ANY;
     } CONTRACTL_END;
 
@@ -1267,7 +1252,6 @@ MemberLoader::FindMethod(MethodTable * pMT, mdMethodDef mb)
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
         MODE_ANY;
     } CONTRACTL_END;
 
@@ -1294,7 +1278,6 @@ MemberLoader::FindMethodByName(MethodTable * pMT, LPCUTF8 pszName, FM_Flags flag
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
         PRECONDITION(!pMT->IsArray());
         MODE_ANY;
     } CONTRACTL_END;
@@ -1375,46 +1358,17 @@ MemberLoader::FindMethodByName(MethodTable * pMT, LPCUTF8 pszName, FM_Flags flag
 
 //*******************************************************************************
 MethodDesc *
-MemberLoader::FindPropertyMethod(MethodTable * pMT, LPCUTF8 pszName, EnumPropertyMethods Method, FM_Flags flags)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
-        MODE_ANY;
-        PRECONDITION(Method < 2);
-    } CONTRACTL_END;
-
-    // The format strings for the getter and setter. These must stay in synch with the
-    // EnumPropertyMethods enum defined in class.h
-    static const LPCUTF8 aFormatStrings[] =
-    {
-        "get_%s",
-        "set_%s"
-    };
-
-    CQuickBytes qbMethName;
-    size_t len = strlen(pszName) + strlen(aFormatStrings[Method]) + 1;
-    LPUTF8 strMethName = (LPUTF8) qbMethName.AllocThrows(len);
-    sprintf_s(strMethName, len, aFormatStrings[Method], pszName);
-
-    return FindMethodByName(pMT, strMethName, flags);
-}
-
-//*******************************************************************************
-MethodDesc *
 MemberLoader::FindEventMethod(MethodTable * pMT, LPCUTF8 pszName, EnumEventMethods Method, FM_Flags flags)
     {
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
         MODE_ANY;
         PRECONDITION(Method < 3);
     } CONTRACTL_END;
 
     // The format strings for the getter and setter. These must stay in synch with the
-    // EnumPropertyMethods enum defined in class.h
+    // EnumEventMethods enum defined in memberload.h
     static const LPCUTF8 aFormatStrings[] =
     {
         "add_%s",
@@ -1438,7 +1392,6 @@ MemberLoader::FindConstructor(MethodTable * pMT, LPHARDCODEDMETASIG pwzSignature
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
         MODE_ANY;
     }
     CONTRACTL_END
@@ -1456,7 +1409,6 @@ MemberLoader::FindConstructor(MethodTable * pMT, PCCOR_SIGNATURE pSignature,DWOR
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
         MODE_ANY;
     }
     CONTRACTL_END
@@ -1514,7 +1466,6 @@ MemberLoader::FindField(MethodTable* pMT, LPCUTF8 pszName, PCCOR_SIGNATURE pSign
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
         MODE_ANY;
     }
     CONTRACTL_END

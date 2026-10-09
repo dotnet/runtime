@@ -49,11 +49,10 @@ namespace System
                     return data;
             }
 
-#if !MONO && !NATIVEAOT
+#if !NATIVEAOT
             if (IsKnownHostProperty(name))
             {
-                string? value = null;
-                if (TryGetHostPropertyValue(name, new StringHandleOnStack(ref value)))
+                if (TryGetHostPropertyValue(name, out string? value))
                 {
                     lock (s_dataStore)
                     {
@@ -130,20 +129,43 @@ namespace System
             }
         }
 
+        [ThreadStatic]
+        private static bool t_deliveringFirstChanceNotification;
+
         private static void OnFirstChanceException(Exception e, object? sender)
         {
             if (FirstChanceException is EventHandler<FirstChanceExceptionEventArgs> handlers)
             {
-                FirstChanceExceptionEventArgs args = new(e);
-                foreach (EventHandler<FirstChanceExceptionEventArgs> handler in Delegate.EnumerateInvocationList(handlers))
+                // Guard against reentrancy. Allocating the event args below or running a
+                // handler may itself throw (e.g. OutOfMemoryException in a low-memory
+                // situation). That exception would trigger another first-chance
+                // notification on this same thread, allocate again, throw again, and
+                // recurse until the stack overflows. Skip nested notifications to break
+                // the recursion.
+                if (t_deliveringFirstChanceNotification)
                 {
-                    try
+                    return;
+                }
+
+                t_deliveringFirstChanceNotification = true;
+                try
+                {
+                    FirstChanceExceptionEventArgs args = new(e);
+
+                    foreach (EventHandler<FirstChanceExceptionEventArgs> handler in Delegate.EnumerateInvocationList(handlers))
                     {
-                        handler(sender, args);
+                        try
+                        {
+                            handler(sender, args);
+                        }
+                        catch
+                        {
+                        }
                     }
-                    catch
-                    {
-                    }
+                }
+                finally
+                {
+                    t_deliveringFirstChanceNotification = false;
                 }
             }
         }
@@ -208,6 +230,12 @@ namespace System
         }
 
 #if MONO
+        private static bool IsKnownHostProperty(string name)
+            => name == "TRUSTED_PLATFORM_ASSEMBLIES";
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern bool TryGetHostPropertyValue(string name, out string? value);
+
         internal static unsafe void Setup(char** pNames, uint* pNameLengths, char** pValues, uint* pValueLengths, int count)
         {
             Debug.Assert(s_dataStore == null, "s_dataStore is not expected to be inited before Setup is called");

@@ -47,9 +47,6 @@
 #ifdef FEATURE_VIRTUAL_STUB_DISPATCH
     IMPORT  g_dispatch_cache_chain_success_counter
 #endif
-    IMPORT  g_pGetGCStaticBase
-    IMPORT  g_pGetNonGCStaticBase
-
     IMPORT g_pPollGC
     IMPORT g_TrapReturningThreads
 
@@ -699,48 +696,6 @@ Fail
     DynamicHelper DynamicHelperFrameFlags_ObjectArg, _Obj
     DynamicHelper DynamicHelperFrameFlags_ObjectArg | DynamicHelperFrameFlags_ObjectArg2, _ObjObj
 #endif // FEATURE_READYTORUN
-
-;
-; JIT Static access helpers when coreclr host specifies single appdomain flag
-;
-
-; ------------------------------------------------------------------
-
-; void* JIT_GetDynamicNonGCStaticBase(DynamicStaticsInfo *dynamicInfo)
-
-    LEAF_ENTRY JIT_GetDynamicNonGCStaticBase_SingleAppDomain
-    ; If class is not initialized, bail to C++ helper
-    add x1, x0, #OFFSETOF__DynamicStaticsInfo__m_pNonGCStatics
-    ldar x1, [x1]
-    tbnz x1, #0, CallHelper1
-    mov x0, x1
-    ret lr
-
-CallHelper1
-    ; Tail call GetNonGCStaticBase
-    ldr x0, [x0, #OFFSETOF__DynamicStaticsInfo__m_pMethodTable]
-    adrp     x1, g_pGetNonGCStaticBase
-    ldr      x1, [x1, g_pGetNonGCStaticBase]
-    br       x1
-    LEAF_END
-
-; void* JIT_GetDynamicGCStaticBase(DynamicStaticsInfo *dynamicInfo)
-
-    LEAF_ENTRY JIT_GetDynamicGCStaticBase_SingleAppDomain
-    ; If class is not initialized, bail to C++ helper
-    add x1, x0, #OFFSETOF__DynamicStaticsInfo__m_pGCStatics
-    ldar x1, [x1]
-    tbnz x1, #0, CallHelper2
-    mov x0, x1
-    ret lr
-
-CallHelper2
-    ; Tail call GetGCStaticBase
-    ldr x0, [x0, #OFFSETOF__DynamicStaticsInfo__m_pMethodTable]
-    adrp     x1, g_pGetGCStaticBase
-    ldr      x1, [x1, g_pGetGCStaticBase]
-    br       x1
-    LEAF_END
 
 #ifdef PROFILING_SUPPORTED
 

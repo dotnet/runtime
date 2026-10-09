@@ -45,7 +45,6 @@ inline DWORD EEClassHashTable::Hash(LPCUTF8 pszNamespace, LPCUTF8 pszClassName, 
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        FORBID_FAULT;
         SUPPORTS_DAC;
     }
     CONTRACTL_END;

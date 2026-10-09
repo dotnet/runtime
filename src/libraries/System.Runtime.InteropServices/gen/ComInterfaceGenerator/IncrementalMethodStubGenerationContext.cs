@@ -3,7 +3,7 @@
 
 using System;
 using System.Diagnostics;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
+using SourceGenerators;
 
 namespace Microsoft.Interop
 {
@@ -47,7 +47,7 @@ namespace Microsoft.Interop
     internal record IncrementalMethodStubGenerationContext(
         SignatureContext SignatureContext,
         ISignatureDiagnosticLocations DiagnosticLocation,
-        SequenceEqualImmutableArray<FunctionPointerUnmanagedCallingConventionSyntax> CallingConvention,
+        SequenceEqualImmutableArray<string> CallingConvention,
         VirtualMethodIndexData VtableIndexData,
         MarshallingInfo ExceptionMarshallingInfo,
         EnvironmentFlags EnvironmentFlags,
@@ -85,9 +85,9 @@ namespace Microsoft.Interop
     internal sealed record SourceAvailableIncrementalMethodStubGenerationContext(
         SignatureContext SignatureContext,
         ContainingSyntaxContext ContainingSyntaxContext,
-        ContainingSyntax StubMethodSyntaxTemplate,
+        DeclarationHeader StubMethodSyntaxTemplate,
         ISignatureDiagnosticLocations DiagnosticLocation,
-        SequenceEqualImmutableArray<FunctionPointerUnmanagedCallingConventionSyntax> CallingConvention,
+        SequenceEqualImmutableArray<string> CallingConvention,
         VirtualMethodIndexData VtableIndexData,
         MarshallingInfo ExceptionMarshallingInfo,
         EnvironmentFlags EnvironmentFlags,
@@ -108,6 +108,8 @@ namespace Microsoft.Interop
             ManagedThisMarshallingInfo,
             MemberKind)
     {
+        public string AbiMethodIdentifier => "ABI_" + StubMethodSyntaxTemplate.Identifier.TrimStart('@');
+
         /// <summary>
         /// The user-visible name of the member this stub targets, suitable for use as an identifier in
         /// generated source. For an ordinary method this is the method's name; for a property accessor
@@ -118,10 +120,10 @@ namespace Microsoft.Interop
         {
             get
             {
-                string templateName = StubMethodSyntaxTemplate.Identifier.Text;
+                string templateName = StubMethodSyntaxTemplate.Identifier;
                 if (MemberKind.IsPropertyOrIndexerAccessor())
                 {
-                    return GetPropertyNameFromAccessor(templateName);
+                    return CodeWriterHelpers.EscapeIdentifier(GetPropertyNameFromAccessor(templateName));
                 }
                 return templateName;
             }

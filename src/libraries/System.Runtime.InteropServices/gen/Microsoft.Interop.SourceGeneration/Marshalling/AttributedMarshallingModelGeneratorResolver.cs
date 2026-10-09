@@ -4,11 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Linq;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
-using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Microsoft.Interop
 {
@@ -48,18 +44,6 @@ namespace Microsoft.Interop
             }
 
             return ResolvedGenerator.UnresolvedGenerator;
-        }
-
-        private record struct ExpressionOrNotSupported(ExpressionSyntax? Expression, GeneratorDiagnostic.NotSupported? NotSupported)
-        {
-            public ExpressionOrNotSupported(ExpressionSyntax expression)
-                : this(expression, null)
-            {
-            }
-            public ExpressionOrNotSupported(GeneratorDiagnostic.NotSupported notSupportedDiagnostic)
-                : this(null, notSupportedDiagnostic)
-            {
-            }
         }
 
         private GeneratorDiagnostic.NotSupported? ValidateCountInfo(TypePositionInfo info, CountInfo count, StubCodeContext context, out bool countInfoRequiresCast)
@@ -167,13 +151,13 @@ namespace Microsoft.Interop
             {
                 marshallingStrategy = new StatefulValueMarshalling(info, context, marshallerData.MarshallerType, marshallerData.NativeType, marshallerData.Shape);
                 if (marshallerData.Shape.HasFlag(MarshallerShape.CallerAllocatedBuffer))
-                    marshallingStrategy = new StatefulCallerAllocatedBufferMarshalling(marshallingStrategy, marshallerData.MarshallerType.Syntax, marshallerData.BufferElementType.Syntax);
+                    marshallingStrategy = new StatefulCallerAllocatedBufferMarshalling(marshallingStrategy, marshallerData.MarshallerType.FullTypeName, marshallerData.BufferElementType.FullTypeName);
             }
             else
             {
-                marshallingStrategy = new StatelessValueMarshalling(info, context, marshallerData.MarshallerType.Syntax, marshallerData.NativeType, marshallerData.Shape);
+                marshallingStrategy = new StatelessValueMarshalling(info, context, marshallerData.MarshallerType.FullTypeName, marshallerData.NativeType, marshallerData.Shape);
                 if (marshallerData.Shape.HasFlag(MarshallerShape.CallerAllocatedBuffer))
-                    marshallingStrategy = new StatelessCallerAllocatedBufferMarshalling(marshallingStrategy, marshallerData.MarshallerType.Syntax, marshallerData.BufferElementType.Syntax, isLinearCollectionMarshalling: false);
+                    marshallingStrategy = new StatelessCallerAllocatedBufferMarshalling(marshallingStrategy, marshallerData.MarshallerType.FullTypeName, marshallerData.BufferElementType.FullTypeName, isLinearCollectionMarshalling: false);
 
                 FreeStrategy freeStrategy = GetFreeStrategy(info, context);
 
@@ -184,7 +168,7 @@ namespace Microsoft.Interop
 
                 if (freeStrategy != FreeStrategy.NoFree && marshallerData.Shape.HasFlag(MarshallerShape.Free))
                 {
-                    marshallingStrategy = new StatelessFreeMarshalling(marshallingStrategy, marshallerData.MarshallerType.Syntax);
+                    marshallingStrategy = new StatelessFreeMarshalling(marshallingStrategy, marshallerData.MarshallerType.FullTypeName);
                 }
 
                 if (freeStrategy == FreeStrategy.FreeOriginal)
@@ -197,7 +181,7 @@ namespace Microsoft.Interop
 
             if (marshallerData.Shape.HasFlag(MarshallerShape.StatelessPinnableReference))
             {
-                marshallingGenerator = new StaticPinnableManagedValueMarshaller(marshallingGenerator, marshallerData.MarshallerType.Syntax);
+                marshallingGenerator = new StaticPinnableManagedValueMarshaller(marshallingGenerator, marshallerData.MarshallerType.FullTypeName);
             }
 
             return ResolvedGenerator.Resolved(marshallingGenerator);
@@ -238,21 +222,12 @@ namespace Microsoft.Interop
                 }
             }
 
-            // Insert the unmanaged element type into the marshaller type
-            TypeSyntax unmanagedElementType = elementMarshaller.NativeType.Syntax.GetCompatibleGenericTypeParameterSyntax();
+            // Specialize only the placeholder occurrences identified while analyzing the marshaller symbols.
+            string unmanagedElementType = elementMarshaller.NativeType.GetCompatibleGenericTypeParameter();
+            marshallerData = marshallerData.WithUnmanagedElementType(unmanagedElementType);
             ManagedTypeInfo marshallerType = marshallerData.MarshallerType;
-            TypeSyntax marshallerTypeSyntax = ReplacePlaceholderSyntaxWithUnmanagedTypeSyntax(marshallerType.Syntax, marshalInfo, unmanagedElementType);
-            marshallerType = marshallerType with
-            {
-                FullTypeName = marshallerTypeSyntax.ToString(),
-                DiagnosticFormattedName = marshallerTypeSyntax.ToString()
-            };
-            string newNativeTypeName = ReplacePlaceholderSyntaxWithUnmanagedTypeSyntax(marshallerData.NativeType.Syntax, marshalInfo, unmanagedElementType).ToFullString();
-            ManagedTypeInfo nativeType = marshallerData.NativeType with
-            {
-                FullTypeName = newNativeTypeName,
-                DiagnosticFormattedName = newNativeTypeName
-            };
+            string marshallerTypeName = marshallerType.FullTypeName;
+            ManagedTypeInfo nativeType = marshallerData.NativeType;
 
             ICustomTypeMarshallingStrategy marshallingStrategy;
             bool elementIsBlittable = elementMarshaller.IsBlittable();
@@ -262,11 +237,7 @@ namespace Microsoft.Interop
                 marshallingStrategy = new StatefulValueMarshalling(info, context, marshallerType, nativeType, marshallerData.Shape);
                 if (marshallerData.Shape.HasFlag(MarshallerShape.CallerAllocatedBuffer))
                 {
-                    // Check if the buffer element type is actually the unmanaged element type
-                    TypeSyntax bufferElementTypeSyntax = marshallerData.BufferElementType.Syntax.IsEquivalentTo(marshalInfo.PlaceholderTypeParameter.Syntax)
-                        ? unmanagedElementType
-                        : marshallerData.BufferElementType.Syntax;
-                    marshallingStrategy = new StatefulCallerAllocatedBufferMarshalling(marshallingStrategy, marshallerTypeSyntax, bufferElementTypeSyntax);
+                    marshallingStrategy = new StatefulCallerAllocatedBufferMarshalling(marshallingStrategy, marshallerTypeName, marshallerData.BufferElementType.FullTypeName);
                 }
 
                 var freeStrategy = GetFreeStrategy(info, context);
@@ -292,11 +263,11 @@ namespace Microsoft.Interop
             }
             else
             {
-                marshallingStrategy = new StatelessLinearCollectionSpaceAllocator(info, context, marshallerTypeSyntax, nativeType, marshallerData.Shape, countInfo, countInfoRequiresCast);
+                marshallingStrategy = new StatelessLinearCollectionSpaceAllocator(info, context, marshallerTypeName, nativeType, marshallerData.Shape, countInfo, countInfoRequiresCast);
 
                 var freeStrategy = GetFreeStrategy(info, context);
 
-                IElementsMarshallingCollectionSource collectionSource = new StatelessLinearCollectionSource(info, context, marshallerTypeSyntax);
+                IElementsMarshallingCollectionSource collectionSource = new StatelessLinearCollectionSource(info, context, marshallerTypeName);
                 if (freeStrategy == FreeStrategy.FreeOriginal)
                 {
                     marshallingStrategy = new UnmanagedToManagedOwnershipTrackingStrategy(marshallingStrategy);
@@ -308,16 +279,12 @@ namespace Microsoft.Interop
 
                 if (marshallerData.Shape.HasFlag(MarshallerShape.CallerAllocatedBuffer))
                 {
-                    // Check if the buffer element type is actually the unmanaged element type
-                    TypeSyntax bufferElementTypeSyntax = marshallerData.BufferElementType.Syntax.IsEquivalentTo(marshalInfo.PlaceholderTypeParameter.Syntax)
-                        ? unmanagedElementType
-                        : marshallerData.BufferElementType.Syntax;
-                    marshallingStrategy = new StatelessCallerAllocatedBufferMarshalling(marshallingStrategy, marshallerTypeSyntax, bufferElementTypeSyntax, isLinearCollectionMarshalling: true);
+                    marshallingStrategy = new StatelessCallerAllocatedBufferMarshalling(marshallingStrategy, marshallerTypeName, marshallerData.BufferElementType.FullTypeName, isLinearCollectionMarshalling: true);
                 }
 
                 if (freeStrategy != FreeStrategy.NoFree && marshallerData.Shape.HasFlag(MarshallerShape.Free))
                 {
-                    marshallingStrategy = new StatelessFreeMarshalling(marshallingStrategy, marshallerTypeSyntax);
+                    marshallingStrategy = new StatelessFreeMarshalling(marshallingStrategy, marshallerTypeName);
                 }
 
                 if (freeStrategy == FreeStrategy.FreeOriginal)
@@ -342,7 +309,7 @@ namespace Microsoft.Interop
             IBoundMarshallingGenerator marshallingGenerator = new CustomTypeMarshallingGenerator(marshallingStrategy, byValueMarshalKindSupport, isPinned);
             if (isPinned)
             {
-                marshallingGenerator = new StaticPinnableManagedValueMarshaller(marshallingGenerator, marshallerTypeSyntax);
+                marshallingGenerator = new StaticPinnableManagedValueMarshaller(marshallingGenerator, marshallerTypeName);
             }
             return ResolvedGenerator.Resolved(marshallingGenerator);
         }
@@ -389,14 +356,14 @@ namespace Microsoft.Interop
             return FreeStrategy.NoFree;
         }
 
-        private static ElementsMarshalling CreateElementsMarshalling(CustomTypeMarshallerData marshallerData, IBoundMarshallingGenerator elementMarshaller, TypeSyntax unmanagedElementType, IElementsMarshallingCollectionSource collectionSource)
+        private static ElementsMarshalling CreateElementsMarshalling(CustomTypeMarshallerData marshallerData, IBoundMarshallingGenerator elementMarshaller, string unmanagedElementType, IElementsMarshallingCollectionSource collectionSource)
         {
             ElementsMarshalling elementsMarshalling;
 
             bool elementIsBlittable = elementMarshaller.IsBlittable();
             if (elementIsBlittable)
             {
-                elementsMarshalling = new BlittableElementsMarshalling(marshallerData.CollectionElementType.Syntax, unmanagedElementType, collectionSource);
+                elementsMarshalling = new BlittableElementsMarshalling(marshallerData.CollectionElementType.FullTypeName, unmanagedElementType, collectionSource);
             }
             else
             {
@@ -405,14 +372,6 @@ namespace Microsoft.Interop
 
             return elementsMarshalling;
         }
-
-        private static TypeSyntax ReplacePlaceholderSyntaxWithUnmanagedTypeSyntax(
-            TypeSyntax originalTypeSyntax,
-            NativeLinearCollectionMarshallingInfo marshalInfo,
-            TypeSyntax unmanagedElementType)
-            => originalTypeSyntax.ReplaceNodes(
-                    originalTypeSyntax.DescendantNodesAndSelf().OfType<TypeSyntax>().Where(t => t.IsEquivalentTo(marshalInfo.PlaceholderTypeParameter.Syntax)),
-                    (_, _) => unmanagedElementType);
 
         private GeneratorDiagnostic.NotSupported? ValidateCustomNativeTypeMarshallingSupported(TypePositionInfo info, StubCodeContext context, NativeMarshallingAttributeInfo marshalInfo)
         {

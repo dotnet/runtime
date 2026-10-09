@@ -63,7 +63,6 @@ TypeHandle ClassLoader::CanonicalizeGenericArg(TypeHandle thGenericArg)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
     }
     CONTRACTL_END
 
@@ -81,7 +80,6 @@ TypeHandle ClassLoader::CanonicalizeGenericArg(TypeHandle thGenericArg)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
     }
     CONTRACTL_END
 
@@ -99,7 +97,6 @@ TypeHandle ClassLoader::CanonicalizeGenericArg(TypeHandle thGenericArg)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
     }
     CONTRACTL_END
 
@@ -717,7 +714,7 @@ void RecursionGraph::AddEdge(TypeVarTypeDesc *pFromVar, TypeVarTypeDesc *pToVar,
     }
     CONTRACTL_END
 
-    LOG((LF_CLASSLOADER, LL_INFO10000, "GENERICS: Adding %s edge: from %x(0x%x) to %x(0x%x) into recursion graph owned by MT: %x\n",
+    LOG((LF_CLASSLOADER, LL_INFO10000, "GENERICS: Adding %s edge: from %x(%p) to %x(%p) into recursion graph owned by MT: %p\n",
         (fExpanding ? "EXPANDING" : "NON-EXPANDING"),
         pFromVar->GetToken(), pFromVar->GetModule(),
         pToVar->GetToken(), pToVar->GetModule(),

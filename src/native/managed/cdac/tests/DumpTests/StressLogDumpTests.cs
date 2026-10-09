@@ -72,7 +72,7 @@ public class StressLogDumpTests : DumpTestBase
     public unsafe void ISOSDacInterface17_GetStressLogData(TestConfiguration config)
     {
         InitializeDumpTest(config);
-        ISOSDacInterface17 sosDac = (ISOSDacInterface17)new SOSDacImpl(Target, legacyObj: null);
+        ISOSDacInterface17 sosDac = (ISOSDacInterface17)new SOSDacImpl(Target, legacyObj: null, new());
 
         SOSStressLogData data;
         int hr = sosDac.GetStressLogData(&data);
@@ -87,7 +87,7 @@ public class StressLogDumpTests : DumpTestBase
     public unsafe void ISOSDacInterface17_GetStressLogThreadEnumerator(TestConfiguration config)
     {
         InitializeDumpTest(config);
-        ISOSDacInterface17 sosDac = (ISOSDacInterface17)new SOSDacImpl(Target, legacyObj: null);
+        ISOSDacInterface17 sosDac = (ISOSDacInterface17)new SOSDacImpl(Target, legacyObj: null, new());
 
         DacComNullableByRef<ISOSStressLogThreadEnum> ppEnum = new(isNullRef: false);
         int hr = sosDac.GetStressLogThreadEnumerator(ppEnum);
@@ -114,7 +114,7 @@ public class StressLogDumpTests : DumpTestBase
     public unsafe void ISOSDacInterface17_GetStressLogMessageEnumerator(TestConfiguration config)
     {
         InitializeDumpTest(config);
-        ISOSDacInterface17 sosDac = (ISOSDacInterface17)new SOSDacImpl(Target, legacyObj: null);
+        ISOSDacInterface17 sosDac = (ISOSDacInterface17)new SOSDacImpl(Target, legacyObj: null, new());
 
         DacComNullableByRef<ISOSStressLogThreadEnum> ppThreadEnum = new(isNullRef: false);
         int hr = sosDac.GetStressLogThreadEnumerator(ppThreadEnum);

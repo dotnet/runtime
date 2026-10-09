@@ -11,6 +11,8 @@ using Xunit;
 
 public class MDArrayIntrinsicExpansion
 {
+    private static int s_valueFactoryInvocations;
+
     [InlineArray(300)]
     public struct Payload
     {
@@ -60,6 +62,38 @@ public class MDArrayIntrinsicExpansion
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static LargeStructWithRef GetLargeWithRef(LargeStructWithRef[,] a, int i, int j) => a[i, j];
+
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    private static void SetIntWithThrowingValue2D(int[,] a, int i, int divisor) => a[i, 0] = 100 / divisor;
+
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    private static void SetIntWithThrowingValue3D(int[,,] a, int i, int divisor) => a[i, 0, 0] = 100 / divisor;
+
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    private static void SetIntWithSideEffect2D(int[,] a, int i) => a[i, 0] = GetIntValue();
+
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    private static void SetIntWithSideEffect3D(int[,,] a, int i) => a[i, 0, 0] = GetIntValue();
+
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    private static void SetSmallWithSideEffect2D(SmallStruct[,] a, int i) => a[i, 0] = GetSmallValue();
+
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    private static void SetSmallWithSideEffect3D(SmallStruct[,,] a, int i) => a[i, 0, 0] = GetSmallValue();
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int GetIntValue()
+    {
+        s_valueFactoryInvocations++;
+        return 42;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static SmallStruct GetSmallValue()
+    {
+        s_valueFactoryInvocations++;
+        return new SmallStruct { A = 42 };
+    }
 
     [Fact]
     public static void SmallStructElements()
@@ -157,5 +191,25 @@ public class MDArrayIntrinsicExpansion
 
         SmallStruct[,] b = new SmallStruct[2, 3];
         Assert.Throws<IndexOutOfRangeException>(() => SetSmall(b, 0, 3, default));
+    }
+
+    [Fact]
+    public static void StoreValueIsEvaluatedBeforeArrayChecks()
+    {
+        Assert.Throws<DivideByZeroException>(() => SetIntWithThrowingValue2D(new int[2, 2], 5, 0));
+        Assert.Throws<DivideByZeroException>(() => SetIntWithThrowingValue2D(null, 0, 0));
+        Assert.Throws<DivideByZeroException>(() => SetIntWithThrowingValue3D(new int[2, 2, 2], 5, 0));
+        Assert.Throws<DivideByZeroException>(() => SetIntWithThrowingValue3D(null, 0, 0));
+
+        s_valueFactoryInvocations = 0;
+
+        Assert.Throws<IndexOutOfRangeException>(() => SetIntWithSideEffect2D(new int[2, 2], 5));
+        Assert.Equal(1, s_valueFactoryInvocations);
+        Assert.Throws<IndexOutOfRangeException>(() => SetIntWithSideEffect3D(new int[2, 2, 2], 5));
+        Assert.Equal(2, s_valueFactoryInvocations);
+        Assert.Throws<IndexOutOfRangeException>(() => SetSmallWithSideEffect2D(new SmallStruct[2, 2], 5));
+        Assert.Equal(3, s_valueFactoryInvocations);
+        Assert.Throws<IndexOutOfRangeException>(() => SetSmallWithSideEffect3D(new SmallStruct[2, 2, 2], 5));
+        Assert.Equal(4, s_valueFactoryInvocations);
     }
 }

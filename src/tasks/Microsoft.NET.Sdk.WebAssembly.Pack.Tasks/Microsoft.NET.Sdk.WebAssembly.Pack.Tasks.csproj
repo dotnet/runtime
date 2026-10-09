@@ -11,9 +11,9 @@
          consumers don't need updating whenever the .NET Core TFM bumps. -->
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <OutputPath Condition="'$(TargetFramework)' == '$(NetCoreAppToolCurrent)'">$(OutputPath)net\</OutputPath>
-    <OutputPath Condition="'$(TargetFramework)' == '$(NetFrameworkToolCurrent)'">$(OutputPath)netframework\</OutputPath>
+    <OutputPath Condition="'$(NetFrameworkToolCurrent)' != '' and '$(TargetFramework)' == '$(NetFrameworkToolCurrent)'">$(OutputPath)netframework\</OutputPath>
     <IntermediateOutputPath Condition="'$(TargetFramework)' == '$(NetCoreAppToolCurrent)'">$(IntermediateOutputPath)net\</IntermediateOutputPath>
-    <IntermediateOutputPath Condition="'$(TargetFramework)' == '$(NetFrameworkToolCurrent)'">$(IntermediateOutputPath)netframework\</IntermediateOutputPath>
+    <IntermediateOutputPath Condition="'$(NetFrameworkToolCurrent)' != '' and '$(TargetFramework)' == '$(NetFrameworkToolCurrent)'">$(IntermediateOutputPath)netframework\</IntermediateOutputPath>
   </PropertyGroup>
 
   <ItemGroup>

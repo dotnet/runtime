@@ -335,7 +335,7 @@ namespace System.Text
                     // Check that we will not overrun our boundaries.
                     if ((uint)(chunkLength + chunkOffset) > (uint)result.Length || (uint)chunkLength > (uint)sourceArray.Length)
                     {
-                        throw new ArgumentOutOfRangeException(nameof(chunkLength), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
+                        throw new ArgumentOutOfRangeException(null, SR.InvalidOperation_ConcurrentOperationsNotSupported);
                     }
 
                     Buffer.Memmove(

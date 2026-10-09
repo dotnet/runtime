@@ -6,9 +6,6 @@
 
 #include "rhassert.h"
 #include <minipal/utils.h>
-#ifdef PROFILE_STARTUP
-#include <minipal/time.h>
-#endif
 
 #define EXTERN_C extern "C"
 
@@ -257,22 +254,5 @@ typedef int32_t FC_BOOL_ARG;
 #define IN_DAC(x) x
 #define NOT_IN_DAC(x)
 #endif
-
-enum STARTUP_TIMELINE_EVENT_ID
-{
-    PROCESS_ATTACH_BEGIN = 0,
-    NONGC_INIT_COMPLETE,
-    GC_INIT_COMPLETE,
-    PROCESS_ATTACH_COMPLETE,
-
-    NUM_STARTUP_TIMELINE_EVENTS
-};
-
-#ifdef PROFILE_STARTUP
-extern uint64_t g_startupTimelineEvents[NUM_STARTUP_TIMELINE_EVENTS];
-#define STARTUP_TIMELINE_EVENT(eventid) g_startupTimelineEvents[eventid] = (uint64_t)minipal_hires_ticks();
-#else // PROFILE_STARTUP
-#define STARTUP_TIMELINE_EVENT(eventid)
-#endif // PROFILE_STARTUP
 
 #endif // __COMMONMACROS_H__

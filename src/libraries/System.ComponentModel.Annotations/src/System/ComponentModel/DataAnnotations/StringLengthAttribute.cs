@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
 namespace System.ComponentModel.DataAnnotations
@@ -75,7 +76,17 @@ namespace System.ComponentModel.DataAnnotations
 
             // it's ok to pass in the minLength even for the error message without a {2} param since string.Format will just
             // ignore extra arguments
-            return string.Format(CultureInfo.CurrentCulture, errorMessage, name, MaximumLength, MinimumLength);
+            return FormatMessage(errorMessage, name);
+        }
+
+        /// <inheritdoc />
+        /// <remarks>
+        /// <c>{0}</c> is replaced with <paramref name="name" />, <c>{1}</c> is replaced with
+        /// <see cref="MaximumLength" />, and <c>{2}</c> is replaced with <see cref="MinimumLength" />.
+        /// </remarks>
+        public override string FormatMessage([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, string name)
+        {
+            return string.Format(CultureInfo.CurrentCulture, format, name, MaximumLength, MinimumLength);
         }
 
         /// <summary>

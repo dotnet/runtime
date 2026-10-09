@@ -123,7 +123,7 @@ CrashInfo::EnumerateMemoryRegions()
             address,
             address + size,
             size / PAGE_SIZE,
-            info.pages_resident,
+            (unsigned long long)info.pages_resident,
             info.offset,
             info.is_submap ? "sub" : "   ",
             depth,
@@ -239,22 +239,22 @@ void CrashInfo::VisitModule(MachOModule& module)
             m_coreclrPath = module.Name().substr(0, last + 1);
             m_runtimeBaseAddress = module.BaseAddress();
 
-            uint64_t symbolOffset;
-            if (!module.TryLookupSymbol(DACCESS_TABLE_SYMBOL, &symbolOffset))
+            uint64_t symbolAddress;
+            if (!module.TryLookupSymbol(DACCESS_TABLE_SYMBOL, &symbolAddress))
             {
                 TRACE("TryLookupSymbol(" DACCESS_TABLE_SYMBOL ") FAILED\n");
             }
         }
         else if (m_appModel == AppModelType::SingleFile)
         {
-            uint64_t symbolOffset;
-            if (module.TryLookupSymbol("DotNetRuntimeInfo", &symbolOffset))
+            uint64_t symbolAddress;
+            if (module.TryLookupSymbol("DotNetRuntimeInfo", &symbolAddress))
             {
                 m_coreclrPath = GetDirectory(module.Name());
                 m_runtimeBaseAddress = module.BaseAddress();
 
                 RuntimeInfo runtimeInfo { };
-                if (ReadMemory(module.BaseAddress() + symbolOffset, &runtimeInfo, sizeof(RuntimeInfo)))
+                if (ReadMemory(symbolAddress, &runtimeInfo, sizeof(RuntimeInfo)))
                 {
                     if (strcmp(runtimeInfo.Signature, RUNTIME_INFO_SIGNATURE) == 0)
                     {
@@ -265,8 +265,8 @@ void CrashInfo::VisitModule(MachOModule& module)
         }
         else if (m_appModel == AppModelType::NativeAOT)
         {
-            uint64_t symbolOffset;
-            if (module.TryLookupSymbol("DotNetRuntimeContractDescriptor", &symbolOffset))
+            uint64_t symbolAddress;
+            if (module.TryLookupSymbol("DotNetRuntimeContractDescriptor", &symbolAddress))
             {
                 m_coreclrPath = GetDirectory(module.Name());
                 m_runtimeBaseAddress = module.BaseAddress();
@@ -402,8 +402,8 @@ CrashInfo::ReadProcessMemory(uint64_t address, void* buffer, size_t size, size_t
         if (result != KERN_SUCCESS || bytesRead != PAGE_SIZE)
         {
             g_readProcessMemoryResult = result;
-            TRACE_VERBOSE("ReadProcessMemory(%p %d): vm_read_overwrite failed bytesLeft %d bytesRead %d from %p: %s (%x)\n",
-                (void*)address, size, bytesLeft, bytesRead, (void*)addressAligned, mach_error_string(result), result);
+            TRACE_VERBOSE("ReadProcessMemory(%p %zd): vm_read_overwrite failed bytesLeft %zd bytesRead %lu from %p: %s (%x)\n",
+                (void*)address, size, bytesLeft, (unsigned long)bytesRead, (void*)addressAligned, mach_error_string(result), result);
             break;
         }
         ssize_t bytesToCopy = PAGE_SIZE - offset;

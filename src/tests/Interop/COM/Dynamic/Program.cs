@@ -25,7 +25,7 @@ namespace Dynamic
             {
                 new BasicTest().Run();
                 new CollectionTest().Run();
-                new EventTest().Run();
+                EventTest.Run();
                 new ParametersTest().Run();
                 new NETServerTest().Run();
             }

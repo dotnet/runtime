@@ -17,6 +17,8 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 #if defined(TARGET_XARCH)
 
+#include <inttypes.h>
+
 /*****************************************************************************/
 /*****************************************************************************/
 
@@ -789,17 +791,23 @@ bool emitter::HasRegularWideImmediateForm(instruction ins)
 }
 
 //------------------------------------------------------------------------
-// DoesWriteZeroFlag: check if the instruction write the
-//     ZF flag.
+// DoesWriteZeroFlagForResult: check if the instruction writes ZF according to
+//     whether its result is zero.
 //
 // Arguments:
 //    ins - instruction to test
 //
 // Return Value:
-//    true if instruction writes the ZF flag, false otherwise.
+//    true if instruction writes ZF based on its result, false otherwise.
 //
-bool emitter::DoesWriteZeroFlag(instruction ins)
+bool emitter::DoesWriteZeroFlagForResult(instruction ins)
 {
+    // BSF/BSR write ZF based on the source, not the result.
+    if ((ins == INS_bsf) || (ins == INS_bsr))
+    {
+        return false;
+    }
+
     insFlags flags = CodeGenInterface::instInfo[ins];
     return (flags & Writes_ZF) != 0;
 }
@@ -1616,7 +1624,7 @@ bool emitter::AreFlagsSetToZeroCmp(regNumber reg, emitAttr opSize, GenCondition 
     // Certain instruction like and, or and xor modifies exactly same flags
     // as "test" instruction.
     // They reset OF and CF to 0 and modifies SF, ZF and PF.
-    if (DoesResetOverflowAndCarryFlags(lastIns) && DoesWriteSignFlag(lastIns) && DoesWriteZeroFlag(lastIns) &&
+    if (DoesResetOverflowAndCarryFlags(lastIns) && DoesWriteSignFlag(lastIns) && DoesWriteZeroFlagForResult(lastIns) &&
         DoesWriteParityFlag(lastIns))
     {
         return id->idOpSize() == opSize;
@@ -1624,7 +1632,7 @@ bool emitter::AreFlagsSetToZeroCmp(regNumber reg, emitAttr opSize, GenCondition 
 
     if ((cond.GetCode() == GenCondition::NE) || (cond.GetCode() == GenCondition::EQ))
     {
-        if (DoesWriteZeroFlag(lastIns) && IsFlagsAlwaysModified(id))
+        if (DoesWriteZeroFlagForResult(lastIns) && IsFlagsAlwaysModified(id))
         {
             return id->idOpSize() == opSize;
         }
@@ -1911,11 +1919,8 @@ void emitter::emitHandleGCrefRegs(BYTE* dst, instrDesc* id)
 
         case IF_RRW_RRW:
         {
-            // This must be "xchg reg1, reg2"
+            // This must be "xchg reg1, reg2", swap the GC-ness of the registers if it differs.
             assert(id->idIns() == INS_xchg);
-
-            // If we got here, the GC-ness of the registers doesn't match, so we have to "swap" them in the GC
-            // register pointer mask.
 
             GCtype gc1, gc2;
 
@@ -11806,16 +11811,16 @@ void emitter::emitDispClsVar(CORINFO_FIELD_HANDLE fldHnd, ssize_t offs, bool rel
 
         if (offs)
         {
-            printf("%+Id", offs);
+            printf("%+zd", (ssize_t)offs);
         }
     }
     else
     {
-        printf("classVar[%#p]", (void*)m_compiler->dspPtr(fldHnd));
+        printf("classVar[%p]", (void*)m_compiler->dspPtr(fldHnd));
 
         if (offs)
         {
-            printf("%+Id", offs);
+            printf("%+zd", (ssize_t)offs);
         }
     }
 
@@ -11828,7 +11833,7 @@ void emitter::emitDispClsVar(CORINFO_FIELD_HANDLE fldHnd, ssize_t offs, bool rel
         printf("'%s", m_compiler->eeGetFieldName(fldHnd, true, buffer, sizeof(buffer)));
         if (offs)
         {
-            printf("%+Id", offs);
+            printf("%+zd", offs);
         }
         printf("'");
     }
@@ -12198,7 +12203,7 @@ void emitter::emitDispEmbBroadcastCount(instrDesc* id) const
 
     ssize_t baseSize   = GetInputSizeInBytes(id);
     ssize_t vectorSize = (ssize_t)emitGetMemOpSize(id, /* ignoreEmbeddedBroadcast */ true);
-    printf(" {1to%d}", vectorSize / baseSize);
+    printf(" {1to%zu}", (size_t)(vectorSize / baseSize));
 }
 
 // emitDispEmbRounding: Display the tag where embedded rounding is activated
@@ -12656,7 +12661,7 @@ void emitter::emitDispIns(
                 }
             }
 
-            printf(sstr);
+            printf("%s", sstr);
             emitDispAddrMode(id);
             emitDispEmbMasking(id);
             printf(", %s", emitRegName(id->idReg1(), attr));
@@ -13496,7 +13501,7 @@ void emitter::emitDispIns(
                 }
             }
 
-            printf(sstr);
+            printf("%s", sstr);
             offs = emitGetInsDsp(id);
             emitDispClsVar(id->idAddr()->iiaFieldHnd, offs, ID_INFO_DSP_RELOC);
             emitDispEmbMasking(id);
@@ -13737,7 +13742,7 @@ void emitter::emitDispIns(
     if (sz != 0 && sz != id->idCodeSize() && (!asmfm || m_compiler->verbose))
     {
         // Code size in the instrDesc is different from the actual code size we've been given!
-        printf(" (ECS:%d, ACS:%d)", id->idCodeSize(), sz);
+        printf(" (ECS:%d, ACS:%zu)", id->idCodeSize(), sz);
     }
 #endif
 
@@ -14977,6 +14982,7 @@ DONE:
                 else
                 {
                     assert((id->idGCref() == GCT_GCREF) && (ins == INS_cmpxchg || ins == INS_xchg));
+                    emitGCregLiveUpd(id->idGCref(), (ins == INS_cmpxchg) ? REG_EAX : id->idReg1(), dst);
                 }
                 break;
 
@@ -15536,8 +15542,14 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
             {
                 case IF_RWR_SRD: // Register Write, Stack Read
                 case IF_RRW_SRD: // Register Read/Write, Stack Read
+                case IF_RWR_SRD_CNS:
+                case IF_RRW_SRD_CNS:
+                case IF_RWR_SRD_RRD:
+                case IF_RRW_SRD_RRD:
                 case IF_RWR_RRD_SRD:
                 case IF_RRW_RRD_SRD:
+                case IF_RWR_RRD_SRD_CNS:
+                case IF_RWR_RRD_SRD_RRD:
                 {
                     emitGCregDeadUpd(id->idReg1(), dst);
                     break;
@@ -16017,8 +16029,15 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
             {
                 case IF_RWR_MRD:
                 case IF_RRW_MRD:
+                case IF_RWR_MRD_CNS:
+                case IF_RRW_MRD_CNS:
+                case IF_RWR_MRD_RRD:
+                case IF_RRW_MRD_RRD:
                 case IF_RWR_RRD_MRD:
                 case IF_RRW_RRD_MRD:
+                case IF_RWR_RRD_MRD_CNS:
+                case IF_RWR_RRD_MRD_RRD:
+                case IF_RWR_MRD_OFF:
                 {
                     emitGCregDeadUpd(id->idReg1(), dst);
                     break;
@@ -16699,8 +16718,9 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
         dst += emitOutputByte(dst, (0xC0 | regCode));
     }
 
-    // Does this instruction operate on a GC ref value?
-    if (id->idGCref())
+    // Does this instruction operate on a GC ref value? "xchg reg1, reg2" always swaps
+    // the GC-ness of its registers, regardless of the attribute it was emitted with.
+    if (id->idGCref() || (id->idInsFmt() == IF_RRW_RRW))
     {
         emitHandleGCrefRegs(dst, id);
     }
@@ -17452,9 +17472,11 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
             {
                 printf("[3] Jump %u:\n", id->idDebugOnlyInfo()->idNum);
             }
-            printf("[3] Jump  block is at %08X - %02X = %08X\n", blkOffs, emitOffsAdj, blkOffs - emitOffsAdj);
-            printf("[3] Jump        is at %08X - %02X = %08X\n", srcOffs, emitOffsAdj, srcOffs - emitOffsAdj);
-            printf("[3] Label block is at %08X - %02X = %08X\n", dstOffs, emitOffsAdj, dstOffs - emitOffsAdj);
+            printf("[3] Jump  block is at %08zX - %02X = %08zX\n", blkOffs, emitOffsAdj, blkOffs - emitOffsAdj);
+            printf("[3] Jump        is at %08zX - %02X = %08zX\n", (size_t)srcOffs, emitOffsAdj,
+                   (size_t)(srcOffs - emitOffsAdj));
+            printf("[3] Label block is at %08zX - %02X = %08zX\n", (size_t)dstOffs, emitOffsAdj,
+                   (size_t)(dstOffs - emitOffsAdj));
         }
 #endif
 
@@ -17495,9 +17517,10 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
             {
                 printf("[4] Jump %u:\n", id->idDebugOnlyInfo()->idNum);
             }
-            printf("[4] Jump  block is at %08X\n", blkOffs);
-            printf("[4] Jump        is at %08X\n", srcOffs);
-            printf("[4] Label block is at %08X - %02X = %08X\n", dstOffs + emitOffsAdj, emitOffsAdj, dstOffs);
+            printf("[4] Jump  block is at %08zX\n", blkOffs);
+            printf("[4] Jump        is at %08zX\n", (size_t)srcOffs);
+            printf("[4] Label block is at %08zX - %02X = %08zX\n", (size_t)(dstOffs + emitOffsAdj), emitOffsAdj,
+                   (size_t)dstOffs);
         }
 #endif
 
@@ -17519,9 +17542,9 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
     {
         size_t sz          = id->idjShort ? ssz : lsz;
         int    distValSize = id->idjShort ? 4 : 8;
-        printf("; %s jump [%08X/%03u] from %0*X to %0*X: dist = 0x%08X\n", (dstOffs <= srcOffs) ? "Fwd" : "Bwd",
-               m_compiler->dspPtr(id), id->idDebugOnlyInfo()->idNum, distValSize, srcOffs + sz, distValSize, dstOffs,
-               distVal);
+        printf("; %s jump [%p/%03u] from %0*zX to %0*zX: dist = 0x%08zX\n", (dstOffs <= srcOffs) ? "Fwd" : "Bwd",
+               m_compiler->dspPtr(id), id->idDebugOnlyInfo()->idNum, distValSize, srcOffs + sz, distValSize,
+               (size_t)dstOffs, (size_t)distVal);
     }
 #endif
 
@@ -17544,7 +17567,7 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
             if (INDEBUG(m_compiler->verbose ||)(id->idDebugOnlyInfo()->idNum == (unsigned)INTERESTING_JUMP_NUM ||
                                                 INTERESTING_JUMP_NUM == 0))
             {
-                printf("; NOTE: size of jump [%08p] mis-predicted by %d bytes\n", dspPtr(id), offsShrinkage);
+                printf("; NOTE: size of jump [%p] mis-predicted by %d bytes\n", dspPtr(id), offsShrinkage);
             }
 #endif
         }

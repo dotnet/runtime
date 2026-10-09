@@ -408,7 +408,6 @@ void ConnectionPoint::SetupEventMethods()
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -514,7 +513,6 @@ void ConnectionPoint::InvokeProviderMethod( OBJECTREF pProvider, OBJECTREF pSubs
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pProvMethodDesc));
         PRECONDITION(CheckPointer(pEventMethodDesc));
     }

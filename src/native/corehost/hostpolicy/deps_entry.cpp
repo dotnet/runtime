@@ -39,9 +39,6 @@ static bool to_path(const pal::string_t& base, const pal::string_t& relative_pat
         return false;
     }
 
-    // Reserve space for the path below
-    candidate.reserve(base.length() + relative_path.length() + 2); // +2 for directory separator and null terminator
-
     bool look_in_bundle = search_options & deps_entry_t::search_options::look_in_bundle;
     bool is_servicing = search_options & deps_entry_t::search_options::is_servicing;
 
@@ -53,13 +50,13 @@ static bool to_path(const pal::string_t& base, const pal::string_t& relative_pat
 
         if (app->has_base(base))
         {
-            // If relative_path is found in the single-file bundle,
-            // app::locate() will set candidate to the full-path to the assembly extracted out to disk.
+            // candidate is only set if the file was extracted to disk. Files used directly from the
+            // bundle have no path - the runtime resolves those by probing the bundle manifest.
             bool extracted_to_disk = false;
             if (app->locate(relative_path, candidate, extracted_to_disk))
             {
                 found_in_bundle = !extracted_to_disk;
-                trace::verbose(_X("    %s found in bundle [%s] %s"), relative_path.c_str(), candidate.c_str(), extracted_to_disk ? _X("(extracted)") : _X(""));
+                trace::verbose(_X("    %s found in bundle %s"), relative_path.c_str(), extracted_to_disk ? candidate.c_str() : _X("(no extraction)"));
                 return true;
             }
             else
@@ -74,6 +71,7 @@ static bool to_path(const pal::string_t& base, const pal::string_t& relative_pat
         }
     }
 
+    candidate.reserve(base.length() + relative_path.length() + 2); // +2 for directory separator and null terminator
     candidate.assign(base);
     append_path(&candidate, relative_path.c_str());
 

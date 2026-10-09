@@ -41,7 +41,6 @@ void *EEClass::operator new(
     {
         THROWS;
         GC_NOTRIGGER;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -60,7 +59,6 @@ void EEClass::Destruct()
     {
         NOTHROW;
         GC_TRIGGERS;
-        FORBID_FAULT;
     }
     CONTRACTL_END
 
@@ -114,7 +112,6 @@ MethodTable *MethodTable::LoadEnclosingMethodTable(ClassLoadLevel targetLevel)
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
         MODE_ANY;
     }
     CONTRACTL_END
@@ -145,7 +142,6 @@ VOID EEClass::FixupFieldDescForEnC(MethodTable * pMT, EnCFieldDesc *pFD, mdField
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END
 
@@ -182,45 +178,44 @@ VOID EEClass::FixupFieldDescForEnC(MethodTable * pMT, EnCFieldDesc *pFD, mdField
     DWORD fieldAttrs[1];
     IfFailThrow(pImport->GetFieldDefProps(fieldDefs[0], &fieldAttrs[0]));
 
-    MethodTableBuilder::bmtMetaDataInfo bmtMetaData;
-    bmtMetaData.cFields = ARRAY_SIZE(fieldDefs);
-    bmtMetaData.pFields = fieldDefs;
-    bmtMetaData.pFieldAttrs = fieldAttrs;
+    AllocMemTracker dummyAmTracker;
+    EEClass* pClass = pMT->GetClass();
+    MethodTableBuilder builder(pMT, pClass,
+                               pStackingAllocator,
+                               &dummyAmTracker);
+    builder.bmtAllocator = pMT->GetLoaderAllocator();
+
+    builder.bmtMetaData.cFields = ARRAY_SIZE(fieldDefs);
+    builder.bmtMetaData.pFields = fieldDefs;
+    builder.bmtMetaData.pFieldAttrs = fieldAttrs;
 
     // We need to alloc the memory, but don't have to fill it in.  InitializeFieldDescs
     // will copy pFD (1st arg) into here.
     FieldDesc* fieldDescs[1];
-    MethodTableBuilder::bmtMethAndFieldDescs bmtMFDescs;
-    bmtMFDescs.ppFieldDescList = fieldDescs;
-
-    MethodTableBuilder::bmtFieldPlacement bmtFP;
+    builder.bmtMFDescs.ppFieldDescList = fieldDescs;
 
     // This simulates the environment that BuildMethodTableThrowing creates
     // just enough to run InitializeFieldDescs
-    MethodTableBuilder::bmtErrorInfo bmtError;
-    bmtError.pModule = pModule;
-    bmtError.cl = pMT->GetCl();
-    bmtError.dMethodDefInError = mdTokenNil;
-    bmtError.szMethodNameForError = NULL;
+    builder.bmtError.pModule = pModule;
+    builder.bmtError.cl = pMT->GetCl();
+    builder.bmtError.dMethodDefInError = mdTokenNil;
+    builder.bmtError.szMethodNameForError = NULL;
 
-    MethodTableBuilder::bmtInternalInfo bmtInternal;
-    bmtInternal.pModule = pModule;
-    bmtInternal.pInternalImport = pImport;
-    bmtInternal.pParentMT = pMT->GetParentMethodTable();
+    builder.bmtInternal.pModule = pModule;
+    builder.bmtInternal.pInternalImport = pImport;
+    builder.bmtInternal.pParentMT = pMT->GetParentMethodTable();
 
-    MethodTableBuilder::bmtProperties bmtProp;
-    bmtProp.fIsValueClass = !!pMT->IsValueType();
-
-    MethodTableBuilder::bmtEnumFieldInfo bmtEnumFields(bmtInternal.pInternalImport);
+    builder.bmtProp.fIsValueClass = !!pMT->IsValueType();
+    builder.bmtEnumFields.m_pInternalImport = pImport;
 
     if (pFD->IsStatic())
     {
-        bmtEnumFields.dwNumStaticFields = 1;
+        builder.bmtEnumFields.dwNumStaticFields = 1;
     }
     else
     {
         _ASSERTE(!pMT->IsValueType());
-        bmtEnumFields.dwNumInstanceFields = 1;
+        builder.bmtEnumFields.dwNumInstanceFields = 1;
     }
 
     // If not NULL, it means there are some by-value fields, and this contains an entry for each instance or static field,
@@ -228,47 +223,17 @@ VOID EEClass::FixupFieldDescForEnC(MethodTable * pMT, EnCFieldDesc *pFD, mdField
     // come first, statics come second.
     MethodTable** pByValueClassCache = NULL;
 
-    AllocMemTracker dummyAmTracker;
-
-    EEClass* pClass = pMT->GetClass();
-    MethodTableBuilder builder(pMT, pClass,
-                               pStackingAllocator,
-                               &dummyAmTracker);
-
     TypeHandle thisTH(pMT);
     SigTypeContext typeContext(thisTH);
     MethodTableBuilder::bmtGenericsInfo genericsInfo;
     genericsInfo.typeContext = typeContext;
 
-    builder.SetBMTData(pMT->GetLoaderAllocator(),
-                       &bmtError,
-                       &bmtProp,
-                       NULL,
-                       NULL,
-                       NULL,
-                       &bmtMetaData,
-                       NULL,
-                       &bmtMFDescs,
-                       &bmtFP,
-                       &bmtInternal,
-                       NULL,
-                       NULL,
-                       &genericsInfo,
-                       &bmtEnumFields);
+    builder.bmtGenerics = &genericsInfo;
 
     {
         GCX_PREEMP();
         unsigned totalDeclaredFieldSize = 0;
-        builder.InitializeFieldDescs(pFD,
-                                 &bmtInternal,
-                                 &genericsInfo,
-                                 &bmtMetaData,
-                                 &bmtEnumFields,
-                                 &bmtError,
-                                 &pByValueClassCache,
-                                 &bmtMFDescs,
-                                 &bmtFP,
-                                 &totalDeclaredFieldSize);
+        builder.InitializeFieldDescs(pFD, &pByValueClassCache, &totalDeclaredFieldSize);
     }
 
     dummyAmTracker.SuppressRelease();
@@ -804,27 +769,13 @@ HRESULT EEClass::AddMethodDesc(
         // that caches StackingAllocator, use a local StackingAllocator instead.
     StackingAllocator stackingAllocator;
 
-    MethodTableBuilder::bmtInternalInfo bmtInternal;
-    bmtInternal.pModule = pModule;
-    bmtInternal.pInternalImport = NULL;
-    bmtInternal.pParentMT = NULL;
-
     MethodTableBuilder builder(pMT,
                                 pClass,
                                 &stackingAllocator,
                                 &dummyAmTracker);
 
-    builder.SetBMTData(pMT->GetLoaderAllocator(),
-                        NULL,
-                        NULL,
-                        NULL,
-                        NULL,
-                        NULL,
-                        NULL,
-                        NULL,
-                        NULL,
-                        NULL,
-                        &bmtInternal);
+    builder.bmtAllocator = pAllocator;
+    builder.bmtInternal.pModule = pModule;
 
     // Initialize the new MethodDesc
     EX_TRY
@@ -1686,7 +1637,6 @@ MethodDesc* MethodTable::GetBoxedEntryPointMD(MethodDesc *pMD)
         MODE_PREEMPTIVE;
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
         PRECONDITION(IsValueType());
         PRECONDITION(!pMD->ContainsGenericVariables());
         PRECONDITION(!pMD->IsUnboxingStub());
@@ -1709,7 +1659,6 @@ MethodDesc* MethodTable::GetUnboxedEntryPointMD(MethodDesc *pMD)
         MODE_PREEMPTIVE;
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
         PRECONDITION(IsValueType());
         // reflection needs to call this for methods in non instantiated classes,
         // so move the assert to the caller when needed
@@ -1734,7 +1683,6 @@ MethodDesc* MethodTable::GetExistingUnboxedEntryPointMD(MethodDesc *pMD)
     CONTRACTL {
         THROWS;
         GC_NOTRIGGER;
-        INJECT_FAULT(COMPlusThrowOM(););
         PRECONDITION(IsValueType());
         // reflection needs to call this for methods in non instantiated classes,
         // so move the assert to the caller when needed
@@ -2098,7 +2046,6 @@ TypeHandle MethodTable::GetCoClassForInterface()
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END
 
@@ -2123,7 +2070,6 @@ TypeHandle MethodTable::SetupCoClassForInterface()
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
         PRECONDITION(IsComClassInterface());
 
     }
@@ -2165,7 +2111,6 @@ void MethodTable::GetEventInterfaceInfo(MethodTable **ppSrcItfClass, MethodTable
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END
 
@@ -2221,7 +2166,6 @@ TypeHandle MethodTable::GetDefItfForComClassItf()
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END
 
@@ -2333,7 +2277,6 @@ SString &MethodTable::_GetFullyQualifiedNameForClassNestedAware(SString &ssBuf)
     CONTRACTL {
         THROWS;
         GC_NOTRIGGER;
-        INJECT_FAULT(COMPlusThrowOM(););
     } CONTRACTL_END;
 
     ssBuf.Clear();
@@ -2394,7 +2337,6 @@ SString &MethodTable::_GetFullyQualifiedNameForClass(SString &ssBuf)
     {
         THROWS;
         GC_NOTRIGGER;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END
 
@@ -2438,7 +2380,6 @@ LPCUTF8 MethodTable::GetFullyQualifiedNameInfo(LPCUTF8 *ppszNamespace)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
     }
     CONTRACTL_END
 
@@ -2470,7 +2411,6 @@ CorIfaceAttr MethodTable::GetComInterfaceType()
     {
         THROWS;
         GC_NOTRIGGER;
-        FORBID_FAULT;
     }
     CONTRACTL_END
 
@@ -2773,7 +2713,7 @@ MethodTable::DebugDumpGCDesc(
             {
                 if (fDebug)
                 {
-                    ssBuff.Printf("   offset %5d (%d w/o Object), size %5d (%5d w/o BaseSize subtr)\n",
+                    ssBuff.Printf("   offset %5zu (%zu w/o Object), size %5zu (%5zu w/o BaseSize subtr)\n",
                         pSeries->GetSeriesOffset(),
                         pSeries->GetSeriesOffset() - OBJECT_SIZE,
                         pSeries->GetSeriesSize(),
@@ -2783,7 +2723,7 @@ MethodTable::DebugDumpGCDesc(
                 else
                 {
                     //LF_ALWAYS allowed here because this is controlled by special env var ShouldDumpOnClassLoad
-                    LOG((LF_ALWAYS, LL_ALWAYS, "   offset %5d (%d w/o Object), size %5d (%5d w/o BaseSize subtr)\n",
+                    LOG((LF_ALWAYS, LL_ALWAYS, "   offset %5zu (%zu w/o Object), size %5zu (%5zu w/o BaseSize subtr)\n",
                          pSeries->GetSeriesOffset(),
                          pSeries->GetSeriesOffset() - OBJECT_SIZE,
                          pSeries->GetSeriesSize(),
@@ -2856,7 +2796,6 @@ MethodTable::GetSubstitutionForParent(
     {
         THROWS;
         GC_NOTRIGGER;
-        FORBID_FAULT;
     }
     CONTRACTL_END
 
@@ -3004,7 +2943,6 @@ WORD SparseVTableMap::LookupVTSlot(WORD MTSlot)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
     }
     CONTRACTL_END
 
@@ -3114,7 +3052,6 @@ ApproxFieldDescIterator::ApproxFieldDescIterator()
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
     }
     CONTRACTL_END
 
@@ -3131,7 +3068,6 @@ void ApproxFieldDescIterator::Init(MethodTable *pMT, int iteratorType)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
         SUPPORTS_DAC;
     }
     CONTRACTL_END
@@ -3162,7 +3098,6 @@ PTR_FieldDesc ApproxFieldDescIterator::Next()
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
         SUPPORTS_DAC;
     }
     CONTRACTL_END

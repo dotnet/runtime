@@ -14,14 +14,21 @@ namespace System.Buffers.Text
     public static partial class Base64
     {
         /// <summary>
-        /// Returns the length (in bytes) of the result if you were to encode binary data within a byte span of size <paramref name="bytesLength"/>.
+        /// Returns the number of characters required to encode
+        /// <paramref name="bytesLength"/> bytes to Base64.
         /// </summary>
         /// <param name="bytesLength">The number of bytes to encode.</param>
-        /// <returns>The number of bytes that encoding will produce.</returns>
+        /// <returns>The number of characters that encoding will produce.</returns>
         /// <exception cref="ArgumentOutOfRangeException">
         /// <paramref name="bytesLength"/> is less than 0 or greater than 1610612733.
         /// </exception>
         /// <remarks>
+        /// Because the Base64 characters are all in the 7-bit ASCII range,
+        /// the number of characters is equal both to the number of
+        /// <see cref="char"/> values written by methods like
+        /// <see cref="EncodeToChars(ReadOnlySpan{byte}, Span{char})"/>
+        /// and the number of <see cref="byte"/> values written by UTF-8 methods like
+        /// <see cref="EncodeToUtf8(ReadOnlySpan{byte}, Span{byte})"/>.
         /// This method is equivalent to <see cref="GetMaxEncodedToUtf8Length(int)"/>. The encoded length for base64 is exactly calculated, not an upper bound.
         /// </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

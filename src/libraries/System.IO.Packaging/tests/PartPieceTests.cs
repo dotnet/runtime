@@ -271,6 +271,23 @@ namespace System.IO.Packaging.Tests
             Assert.NotEmpty(zipPackage.GetParts());
         }
 
+        // Regression test: an interleaved "[Content_Types].xml" (i.e. one split into pieces) must be
+        // bounded by the same maximum size as an atomic "[Content_Types].xml", since its pieces are
+        // recombined and parsed by the same XmlReader. Otherwise a malicious package could bypass the
+        // atomic-entry size guard simply by splitting the content types part into pieces.
+        [Fact]
+        public void InterleavedContentTypesExceedingMaxSizeThrows()
+        {
+            // Two highly-compressible (all-zero) pieces whose combined declared uncompressed size
+            // exceeds the 4 MB cap, even though neither piece alone does.
+            byte[] package = CreatePackage(
+                new PartConstructionParameters("AtomicPartEntry.bin", true, false, false, false, [200], GenerateRandomBytes),
+                new PartConstructionParameters("[Content_Types].xml", false, true, false, false, [2_500_000, 2_500_001], (_, totalLength) => new byte[totalLength]));
+
+            using var ms = new MemoryStream(package);
+            Assert.Throws<FileFormatException>(() => Package.Open(ms));
+        }
+
         // Verify that the IComparable<T> implementation on ZipPackagePartPiece works properly.
         // If it is, we should see the list reordered by piece number
         [Theory]

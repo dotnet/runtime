@@ -5,7 +5,6 @@
 // File: RsMain.cpp
 //
 // Random RS utility stuff, plus root ICorDebug implementation
-//
 //*****************************************************************************
 
 #include "stdafx.h"
@@ -38,33 +37,6 @@ RSDebuggingInfo * g_pRSDebuggingInfo = &g_RSDebuggingInfo_OutOfProc;
 
 // The following instances are used for invoking overloaded new/delete
 forDbiWorker forDbi;
-
-#ifdef _DEBUG
-// For logs, we can print the string name for the debug codes.
-const char * GetDebugCodeName(DWORD dwCode)
-{
-    if (dwCode < 1 || dwCode > 9)
-    {
-        return "!Invalid Debug Event Code!";
-    }
-
-    static const char * const szNames[] = {
-        "(1) EXCEPTION_DEBUG_EVENT",
-        "(2) CREATE_THREAD_DEBUG_EVENT",
-        "(3) CREATE_PROCESS_DEBUG_EVENT",
-        "(4) EXIT_THREAD_DEBUG_EVENT",
-        "(5) EXIT_PROCESS_DEBUG_EVENT",
-        "(6) LOAD_DLL_DEBUG_EVENT",
-        "(7) UNLOAD_DLL_DEBUG_EVENT",
-        "(8) OUTPUT_DEBUG_STRING_EVENT",
-        "(9) RIP_EVENT",// <-- only on Win9X
-    };
-
-    return szNames[dwCode - 1];
-}
-
-#endif
-
 
 //-----------------------------------------------------------------------------
 // Per-thread state for Debug builds...
@@ -1305,7 +1277,7 @@ void Cordb::AddProcess(CordbProcess* process)
 {
     // At this point, we should have already checked that we
     // can have another debuggee.
-    STRESS_LOG1(LF_CORDB, LL_INFO10, "Cordb::AddProcess %08x...\n", process);
+    STRESS_LOG1(LF_CORDB, LL_INFO10, "Cordb::AddProcess %p...\n", process);
 
     if ((m_managedCallback == NULL) || (m_managedCallback2 == NULL) || (m_managedCallback3 == NULL) || (m_managedCallback4 == NULL))
     {
@@ -1330,7 +1302,7 @@ void Cordb::AddProcess(CordbProcess* process)
 //
 void Cordb::RemoveProcess(CordbProcess* process)
 {
-    STRESS_LOG1(LF_CORDB, LL_INFO10, "Cordb::RemoveProcess %08x...\n", process);
+    STRESS_LOG1(LF_CORDB, LL_INFO10, "Cordb::RemoveProcess %p...\n", process);
 
     LockProcessList();
     GetProcessList()->RemoveBase((ULONG_PTR)process->m_id);
@@ -2547,4 +2519,3 @@ HRESULT CopyOutString(LPCWSTR pInputString, ULONG32 cchName, ULONG32 * pcchName,
         return S_OK;
     }
 }
-

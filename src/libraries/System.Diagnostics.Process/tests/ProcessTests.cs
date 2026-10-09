@@ -1140,11 +1140,15 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void TestPrivateMemorySize64()
+        public void TestPrivateMemorySize64AndPrivateMemorySize()
         {
             CreateDefaultProcess();
 
-            AssertNonZeroAllZeroDarwin(_process.PrivateMemorySize64);
+            Assert.InRange(_process.PrivateMemorySize64, 1, long.MaxValue);
+
+#pragma warning disable CS0618
+            Assert.Equal(unchecked((int)_process.PrivateMemorySize64), _process.PrivateMemorySize);
+#pragma warning restore CS0618
         }
 
         [Fact]
@@ -2355,16 +2359,6 @@ namespace System.Diagnostics.Tests
 #pragma warning restore 0618
         }
 
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void TestPrivateMemorySize()
-        {
-            CreateDefaultProcess();
-
-#pragma warning disable 0618
-            AssertNonZeroAllZeroDarwin(_process.PrivateMemorySize);
-#pragma warning restore 0618
-        }
-
         [Fact]
         public void PrivateMemorySize_GetNotStarted_ThrowsInvalidOperationException()
         {
@@ -2641,6 +2635,27 @@ namespace System.Diagnostics.Tests
             testProcess.StartInfo = psi;
 
             AssertExtensions.Throws<ArgumentNullException>("ArgumentList[0]", () => testProcess.Start());
+        }
+
+        [Fact]
+        public void ArgumentsContainingNullThrowsOnStart()
+        {
+            ProcessStartInfo psi = new ProcessStartInfo("unused")
+            {
+                Arguments = "argument\0suffix"
+            };
+
+            AssertExtensions.Throws<ArgumentException>("Arguments", () => Process.Start(psi));
+        }
+
+        [Fact]
+        public void ArgumentListArgumentContainingNullThrowsOnStart()
+        {
+            ProcessStartInfo psi = new ProcessStartInfo("unused");
+            psi.ArgumentList.Add("valid");
+            psi.ArgumentList.Add("argument\0suffix");
+
+            AssertExtensions.Throws<ArgumentException>("ArgumentList[1]", () => Process.Start(psi));
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]

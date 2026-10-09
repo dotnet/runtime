@@ -14,10 +14,16 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- Private=false stops MSBuild from pulling the referenced project's copy-to-output-directory
+         items into this project's output. The crossgen2 publish projects only run Publish (see their
+         DefaultTargets), so build-only outputs like crossgen2.deps.json and crossgen2.runtimeconfig.json
+         are never produced and copying them would fail. Everything this project packages comes from
+         the publish output collected via OutputItemType below. -->
     <ProjectReference
       Include="$(CrossgenPublishProject)"
       OutputItemType="_RawCrossgenPublishFiles"
-      ReferenceOutputAssembly="false" />
+      ReferenceOutputAssembly="false"
+      Private="false" />
   </ItemGroup>
 
   <Target Name="PublishCrossgen"

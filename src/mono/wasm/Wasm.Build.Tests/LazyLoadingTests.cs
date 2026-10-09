@@ -74,7 +74,7 @@ public class LazyLoadingTests : WasmTemplateTestsBase
     }
 
     [Fact]
-    [TestCategory("native-mono")]
+    [TestCategory("native"), TestCategory("mono")]
     public async Task LoadLazyAssemblyWithAOT()
     {
         // Regression coverage for https://github.com/dotnet/runtime/issues/125794:

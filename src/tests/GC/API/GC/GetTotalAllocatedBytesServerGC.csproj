@@ -7,8 +7,8 @@
     <ServerGarbageCollection>true</ServerGarbageCollection>
     <!-- DATAS heap-count adaptation is a CoreCLR Server GC behavior -->
     <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' != 'coreclr'">true</CLRTestTargetUnsupported>
-    <!-- TODO: Re-enable when CoreCLR WebAssembly supports server GC.
-         Tracked by https://github.com/dotnet/runtime/issues/131321. -->
+    <!-- Server GC is disabled on CoreCLR browser by design; see the suppression
+         inventory in https://github.com/dotnet/runtime/issues/131321. -->
     <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetOS)' == 'browser'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
   <PropertyGroup>

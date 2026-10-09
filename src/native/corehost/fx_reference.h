@@ -14,8 +14,7 @@ class fx_reference_t
 {
 public:
     fx_reference_t()
-        : apply_patches(true)
-        , version_compatibility_range(version_compatibility_range_t::minor)
+        : version_compatibility_range(version_compatibility_range_t::minor)
         , roll_to_highest_version(false)
         , prefer_release(false)
         , fx_name(_X(""))
@@ -46,15 +45,6 @@ public:
     const fx_ver_t& get_fx_version_number() const
     {
         return fx_version_number;
-    }
-
-    bool get_apply_patches() const
-    {
-        return apply_patches;
-    }
-    void set_apply_patches(bool value)
-    {
-        apply_patches = value;
     }
 
     version_compatibility_range_t get_version_compatibility_range() const
@@ -125,7 +115,6 @@ public:
         return
             fx_name == other.fx_name &&
             fx_version == other.fx_version &&
-            apply_patches == other.apply_patches &&
             version_compatibility_range == other.version_compatibility_range &&
             roll_to_highest_version == other.roll_to_highest_version &&
             prefer_release == other.prefer_release;
@@ -137,8 +126,6 @@ public:
     }
 
 private:
-    bool apply_patches;
-
     version_compatibility_range_t version_compatibility_range;
     bool roll_to_highest_version;
 

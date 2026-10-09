@@ -71,7 +71,6 @@ void StringLiteralMap::Init()
         THROWS;
         GC_TRIGGERS;
         PRECONDITION(CheckPointer(this));
-        INJECT_FAULT(ThrowOutOfMemory());
     }
     CONTRACTL_END;
 
@@ -346,7 +345,6 @@ void GlobalStringLiteralMap::Init()
         THROWS;
         GC_NOTRIGGER;
         PRECONDITION(CheckPointer(this));
-        INJECT_FAULT(ThrowOutOfMemory());
     }
     CONTRACTL_END;
 
@@ -433,7 +431,6 @@ static void LogStringLiteral(_In_z_ const char* action, EEStringData *pStringDat
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     ULONG length = pStringData->GetCharCount();
     length = min(length, (ULONG)128);
