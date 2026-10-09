@@ -44,6 +44,7 @@ export type EmscriptenInternals = {
 };
 
 export type EmscriptenModuleInternal = EmscriptenModule & DotnetModuleConfig & {
+    onStartupDownloadQueueComputed?: (resourcesLoaded: number, totalResources: number) => void;
     runtimeKeepalivePush(): void;
     runtimeKeepalivePop(): void;
     print(message: string): void;

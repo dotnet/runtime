@@ -129,6 +129,14 @@ public class WasmTemplateTestsBase : BuildTestBase
         }
         string projectFilePath = Path.Combine(_projectDir, $"{asset.Name}.csproj");
 
+        if (s_buildEnv.IsCoreClrRuntime && asset == TestAsset.WasmBasicTestApp)
+        {
+            UpdateFile("wwwroot/main.js", new Dictionary<string, string>
+            {
+                { "const verifyStartupDownloadQueue = false;", "const verifyStartupDownloadQueue = true;" }
+            });
+        }
+
         if (EnvironmentVariables.UseJavascriptBundler)
         {
             extraProperties +=

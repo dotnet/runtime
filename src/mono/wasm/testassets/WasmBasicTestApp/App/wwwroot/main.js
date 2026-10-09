@@ -61,6 +61,57 @@ let memoryTestCallManagedExports = () => "managed exports were not initialized";
 // Prepare base runtime parameters
 dotnet.withConfig({ appendElementOnExit: true, exitOnUnhandledError: true, logExitCode: true });
 
+// Wasm.Build.Tests enables this only for the CoreCLR loader's upfront counting contract.
+const verifyStartupDownloadQueue = false;
+let startupDownloadQueue;
+let startupDownloadQueueError;
+
+function recordStartupDownloadProgress(loaded, total) {
+    if (startupDownloadQueue !== undefined) {
+        if (total !== startupDownloadQueue.total) {
+            startupDownloadQueueError ??= new Error(
+                `Startup download queue changed: loaded ${loaded}, expected total ${startupDownloadQueue.total}, actual total ${total}.`);
+        }
+        startupDownloadQueue.loaded = loaded;
+    }
+}
+
+function assertStartupDownloadQueue() {
+    if (!verifyStartupDownloadQueue) {
+        return;
+    }
+    if (startupDownloadQueueError !== undefined) {
+        exit(1, startupDownloadQueueError);
+        throw startupDownloadQueueError;
+    }
+    if (startupDownloadQueue === undefined || startupDownloadQueue.loaded !== startupDownloadQueue.total) {
+        const error = new Error("Startup download queue was not observed or did not finish.");
+        exit(1, error);
+        throw error;
+    }
+    testOutput(`Startup download queue remained fixed: ${startupDownloadQueue.total}`);
+    startupDownloadQueue = undefined;
+}
+
+dotnet.withModuleConfig({
+    onStartupDownloadQueueComputed: (loaded, total) => {
+        if (verifyStartupDownloadQueue) {
+            if (startupDownloadQueue !== undefined) {
+                startupDownloadQueueError ??= new Error("Startup download queue was recomputed before the phase finished.");
+            }
+            startupDownloadQueue = { loaded, total };
+        }
+    }
+}).withDownloadResourceProgress((loaded, total) => {
+    recordStartupDownloadProgress(loaded, total);
+    if (testCase === "DownloadResourceProgressTest") {
+        console.log(`DownloadResourceProgress: ${loaded} / ${total}`);
+        if (loaded === total && loaded !== 0) {
+            testOutput("DownloadResourceProgress: Finished");
+        }
+    }
+});
+
 const logLevel = params.get("MONO_LOG_LEVEL");
 const logMask = params.get("MONO_LOG_MASK");
 if (logLevel !== null && logMask !== null) {
@@ -121,12 +172,6 @@ switch (testCase) {
                 throw error;
             });
         }
-        dotnet.withDownloadResourceProgress((loaded, total) => {
-            console.log(`DownloadResourceProgress: ${loaded} / ${total}`);
-            if (loaded === total && loaded !== 0) {
-                testOutput("DownloadResourceProgress: Finished");
-            }
-        });
         break;
     case "AssetIntegrity":
         dotnet.withResourceLoader((type, name, defaultUri, integrity, behavior) => {
@@ -166,6 +211,7 @@ switch (testCase) {
             return originalFetch(url, fetchArgs);
         };
         await dotnet.download();
+        assertStartupDownloadQueue();
         if (dtConfigLoadedCalled) {
             testOutput("onConfigLoaded was called during download");
         }
@@ -277,6 +323,7 @@ switch (testCase) {
 }
 
 const { setModuleImports, Module, getAssemblyExports, getConfig, INTERNAL, invokeLibraryInitializers } = await dotnet.create();
+assertStartupDownloadQueue();
 const config = getConfig();
 const exports = await getAssemblyExports(config.mainAssemblyName);
 const assemblyExtension = Object.keys(config.resources.coreAssembly)[0].endsWith('.wasm') ? ".wasm" : ".dll";

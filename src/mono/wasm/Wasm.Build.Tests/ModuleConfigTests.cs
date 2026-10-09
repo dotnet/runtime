@@ -87,6 +87,39 @@ public class ModuleConfigTests : WasmTemplateTestsBase
         );
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    [TestCategory("coreclr")]
+    public async Task StartupDownloadQueueGuardDetectsGrowth(bool simulateGrowth)
+    {
+        Configuration config = Configuration.Debug;
+        ProjectInfo info = CopyTestAsset(config, false, TestAsset.WasmBasicTestApp, $"StartupDownloadQueueGuard_{simulateGrowth}");
+        if (simulateGrowth)
+        {
+            UpdateFile("wwwroot/main.js", new Dictionary<string, string>
+            {
+                { "recordStartupDownloadProgress(loaded, total);", "recordStartupDownloadProgress(loaded, total + 1);" }
+            });
+        }
+        PublishProject(info, config);
+
+        RunResult result = await RunForPublishWithWebServer(new BrowserRunOptions(
+            Configuration: config,
+            TestScenario: "DownloadResourceProgressTest",
+            ExpectedExitCode: simulateGrowth ? 1 : 0
+        ));
+        if (simulateGrowth)
+        {
+            Assert.Contains(result.ConsoleOutput, message => message.Contains("Startup download queue changed:"));
+            Assert.DoesNotContain(result.TestOutput, message => message.StartsWith("Startup download queue remained fixed:"));
+        }
+        else
+        {
+            Assert.Contains(result.TestOutput, message => message.StartsWith("Startup download queue remained fixed:"));
+        }
+    }
+
     [Fact, TestCategory("bundler-friendly")]
     public async Task OutErrOverrideWorks()
     {

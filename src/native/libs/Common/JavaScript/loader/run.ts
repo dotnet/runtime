@@ -1,14 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { JsModuleExports, EmscriptenModuleInternal, JsAsset, PromiseCompletionSource, VfsAsset } from "./types";
+import type { JsModuleExports, EmscriptenModuleInternal, JsAsset, PromiseCompletionSource, VfsAsset, AssetEntryInternal } from "./types";
 
 import { dotnetAssert, dotnetInternals, dotnetBrowserHostExports, Module } from "./cross-module";
 import { exit, runtimeState } from "./exit";
 import { createPromiseCompletionSource } from "./promise-completion-source";
 import { getIcuResourceName } from "./icu";
 import { loaderConfig, validateLoaderConfig } from "./config";
-import { fetchAssembly, fetchIcu, fetchNativeSymbols, fetchPdb, fetchSatelliteAssemblies, fetchVfs, fetchMainWasm, loadDotnetModule, loadJSModule, nativeModulePromiseController, verifyAllAssetsDownloaded, callLibraryInitializerOnRuntimeReady, callLibraryInitializerOnRuntimeConfigLoaded, prefetchAllResources, prefetchJSModuleLinks, resolveAllDownloadsQueued } from "./assets";
+import { DownloadQueue, fetchAssembly, fetchIcu, fetchNativeSymbols, fetchPdb, fetchVfs, fetchMainWasm, loadDotnetModule, loadJSModule, nativeModulePromiseController, verifyAllAssetsDownloaded, callLibraryInitializerOnRuntimeReady, callLibraryInitializerOnRuntimeConfigLoaded, prefetchAllResources, prefetchJSModuleLinks, resolveAllDownloadsQueued, notifyStartupDownloadQueueComputed } from "./assets";
 import { initPolyfillsLoader } from "./polyfills";
 import { validateEngineFeatures } from "./bootstrap";
 
@@ -50,7 +50,10 @@ export async function createRuntime(downloadOnly: boolean, httpCacheOnly: boolea
 
             const resources = loaderConfig.resources;
             // modulesAfterRuntimeReady were only prefetched during download(), now load and call onRuntimeReady.
-            const modulesAfterRuntimeReadyPromises: [JsAsset, Promise<any>][] = normalizeCollection(resources.modulesAfterRuntimeReady).map((a) => [a, loadJSModule(a)]);
+            const downloadQueue = new DownloadQueue();
+            const downloads = normalizeCollection(resources.modulesAfterRuntimeReady).map(a => downloadQueue.enqueue(a, loadJSModule));
+            notifyStartupDownloadQueueComputed();
+            const modulesAfterRuntimeReadyPromises: [JsAsset, Promise<any>][] = normalizeCollection(resources.modulesAfterRuntimeReady).map((a, i) => [a, downloads[i]()]);
             // modulesAfterConfigLoaded were loaded during download() — call onRuntimeReady for them too.
             await Promise.all([...modulesAfterConfigLoadedCache, ...modulesAfterRuntimeReadyPromises].map(callLibraryInitializerOnRuntimeReady));
             return;
@@ -68,8 +71,10 @@ export async function createRuntime(downloadOnly: boolean, httpCacheOnly: boolea
                 await Module.onConfigLoaded(loaderConfig);
             }
             validateLoaderConfig();
-
-            modulesAfterConfigLoadedPromises = normalizeCollection(resources.modulesAfterConfigLoaded).map((a) => [a, callLibraryInitializerOnRuntimeConfigLoaded(a)]);
+            // Initializers can change resource selection, so the remaining queue is built after their hooks finish.
+            const downloadQueue = new DownloadQueue();
+            const downloads = normalizeCollection(resources.modulesAfterConfigLoaded).map(a => downloadQueue.enqueue(a, callLibraryInitializerOnRuntimeConfigLoaded));
+            modulesAfterConfigLoadedPromises = normalizeCollection(resources.modulesAfterConfigLoaded).map((a, i) => [a, downloads[i]()]);
             await Promise.all(modulesAfterConfigLoadedPromises.map(([, p]) => p));
 
             // Wire user-provided out/err overrides to Emscripten's print/printErr.
@@ -97,6 +102,7 @@ export async function createRuntime(downloadOnly: boolean, httpCacheOnly: boolea
         }
 
         const appsettingsVfs = getAppsettingsVfs();
+        const downloadQueue = new DownloadQueue();
 
         // HTTP cache only path: just fetch all resources into browser cache and discard
         if (downloadOnly && httpCacheOnly) {
@@ -106,45 +112,62 @@ export async function createRuntime(downloadOnly: boolean, httpCacheOnly: boolea
             return;
         }
 
-        if (resources.jsModuleDiagnostics && resources.jsModuleDiagnostics.length > 0) {
-            const diagnosticsModule = await loadDotnetModule(resources.jsModuleDiagnostics[0]);
-            diagnosticsModule.dotnetInitializeModule<void>(dotnetInternals);
-            if (resources.wasmSymbols && resources.wasmSymbols.length > 0) {
-                await fetchNativeSymbols(resources.wasmSymbols[0]);
-            }
-        }
-        const nativeModulePromise: Promise<JsModuleExports> = loadDotnetModule(resources.jsModuleNative[0]);
-        const runtimeModulePromise: Promise<JsModuleExports> = loadDotnetModule(resources.jsModuleRuntime[0]);
-        const wasmNativePromise: Promise<Response> = fetchMainWasm(resources.wasmNative[0]);
-
-        const coreAssembliesPromise = forEachResource(resources.coreAssembly, fetchAssembly);
+        const downloadDiagnostics = resources.jsModuleDiagnostics?.length
+            ? downloadQueue.enqueue(resources.jsModuleDiagnostics[0], loadDotnetModule)
+            : undefined;
+        const downloadSymbols = downloadDiagnostics && resources.wasmSymbols?.length
+            ? downloadQueue.enqueue(resources.wasmSymbols[0], fetchNativeSymbols)
+            : undefined;
+        const downloadNativeModule = downloadQueue.enqueue(resources.jsModuleNative[0], loadDotnetModule);
+        const downloadRuntimeModule = downloadQueue.enqueue(resources.jsModuleRuntime[0], loadDotnetModule);
+        const downloadWasm = downloadQueue.enqueue(resources.wasmNative[0], fetchMainWasm);
+        const downloadCoreAssemblies = queueResources(downloadQueue, resources.coreAssembly, fetchAssembly);
 
         const icuResourceName = getIcuResourceName();
-        const icuDataPromise = forEachResource(resources.icu, fetchIcu, asset => asset.name === icuResourceName);
+        const downloadIcu = queueResources(downloadQueue, resources.icu, fetchIcu, asset => asset.name === icuResourceName);
 
-        const assembliesPromise = forEachResource(resources.assembly, fetchAssembly);
-        const satelliteResourcesPromise = loaderConfig.loadAllSatelliteResources && resources.satelliteResources
-            ? fetchSatelliteAssemblies(Object.keys(resources.satelliteResources))
-            : Promise.resolve();
+        const downloadAssemblies = queueResources(downloadQueue, resources.assembly, fetchAssembly);
+        const downloadSatellites = queueSatelliteResources(downloadQueue, resources);
 
-        const vfsPromise = forEachResource([...normalizeCollection(resources.vfs), ...appsettingsVfs], fetchVfs);
+        const downloadVfs = queueResources(downloadQueue, [...normalizeCollection(resources.vfs), ...appsettingsVfs], fetchVfs);
 
         // WASM-TODO: also check that the debugger is linked in and check feature flags
         const isDebuggingSupported = loaderConfig.debugLevel != 0;
-        const corePDBsPromise = forEachResource(resources.corePdb, fetchPdb, () => isDebuggingSupported);
-        const pdbsPromise = forEachResource(resources.pdb, fetchPdb, () => isDebuggingSupported);
+        const downloadCorePdbs = queueResources(downloadQueue, resources.corePdb, fetchPdb, () => isDebuggingSupported);
+        const downloadPdbs = queueResources(downloadQueue, resources.pdb, fetchPdb, () => isDebuggingSupported);
+        const runtimeReadyModules = normalizeCollection(resources.modulesAfterRuntimeReady);
+        const downloadRuntimeReadyModules = downloadOnly ? [] : runtimeReadyModules.map(a => downloadQueue.enqueue(a, loadJSModule));
 
-        // Signal that all first-attempt asset fetches queued above via forEachResource/fetch* have been queued.
-        // Retry logic waits on this before attempting second downloads for those asset fetches.
+        notifyStartupDownloadQueueComputed();
+
+        if (downloadDiagnostics) {
+            const diagnosticsModule = await downloadDiagnostics();
+            diagnosticsModule.dotnetInitializeModule<void>(dotnetInternals);
+            if (downloadSymbols) {
+                await downloadSymbols();
+            }
+        }
+        const nativeModulePromise: Promise<JsModuleExports> = downloadNativeModule();
+        const runtimeModulePromise: Promise<JsModuleExports> = downloadRuntimeModule();
+        const wasmNativePromise: Promise<Response> = downloadWasm();
+        const coreAssembliesPromise = downloadCoreAssemblies();
+        const icuDataPromise = downloadIcu();
+        const assembliesPromise = downloadAssemblies();
+        const satelliteResourcesPromise = downloadSatellites();
+        const vfsPromise = downloadVfs();
+        const corePDBsPromise = downloadCorePdbs();
+        const pdbsPromise = downloadPdbs();
+
+        // Retries must still wait until all first-attempt fetches have entered the existing throttle.
         resolveAllDownloadsQueued();
 
         // In download-only mode, just add prefetch hints for runtime-ready modules so create() loads them from cache.
         // In create mode, load them now so onRuntimeReady can be called later.
         let modulesAfterRuntimeReadyPromises: [JsAsset, Promise<any>][] = [];
         if (downloadOnly) {
-            prefetchJSModuleLinks(normalizeCollection(resources.modulesAfterRuntimeReady));
+            prefetchJSModuleLinks(runtimeReadyModules);
         } else {
-            modulesAfterRuntimeReadyPromises = normalizeCollection(resources.modulesAfterRuntimeReady).map((a) => [a, loadJSModule(a)]);
+            modulesAfterRuntimeReadyPromises = runtimeReadyModules.map((a, i) => [a, downloadRuntimeReadyModules[i]()]);
         }
 
         const nativeModule = await nativeModulePromise;
@@ -223,12 +246,26 @@ export function getRunMainPromise(): Promise<number> {
     return runMainPromiseController.promise;
 }
 
-function forEachResource<T, R>(collection: T[] | undefined, callback: (item: T) => Promise<R>, filter?: (item: T) => boolean): Promise<R[]> {
-    if (!collection) {
-        return Promise.resolve([]);
+function queueResources<T, R>(queue: DownloadQueue, collection: T[] | undefined, callback: (item: T, countDownload?: boolean) => Promise<R>, filter?: (item: T) => boolean): () => Promise<R[]> {
+    const filteredCollection = filter ? collection?.filter(filter) : collection;
+    const downloads = normalizeCollection(filteredCollection).map(item => queue.enqueue(item, callback));
+    return () => Promise.all(downloads.map(download => download()));
+}
+
+function queueSatelliteResources(queue: DownloadQueue, resources: NonNullable<typeof loaderConfig.resources>): () => Promise<void[]> {
+    if (!loaderConfig.loadAllSatelliteResources || !resources.satelliteResources) {
+        return () => Promise.resolve([]);
     }
-    const filteredCollection = filter ? collection.filter(filter) : collection;
-    return Promise.all(filteredCollection.map(callback));
+
+    const downloads = Object.keys(resources.satelliteResources).flatMap(culture =>
+        resources.satelliteResources![culture].map(asset => {
+            const download = queue.enqueue(asset, fetchAssembly);
+            return () => {
+                (asset as AssetEntryInternal).culture = culture;
+                return download();
+            };
+        }));
+    return () => Promise.all(downloads.map(download => download()));
 }
 
 function normalizeCollection<T>(collection: T[] | undefined): T[] {

@@ -19,6 +19,18 @@ const loadedLazyAssemblies = new Set<string>();
 let mainWasmAsset: WasmAsset | null = null;
 const allDownloadsQueuedPCS = createPromiseCompletionSource<void>();
 
+export class DownloadQueue {
+    public enqueue<T, R>(asset: T, operation: (asset: T, countDownload?: boolean) => Promise<R>): () => Promise<R> {
+        ++totalAssetsToDownload;
+        // Admission must not throttle whole operations: webcil and ICU wait for WASM/native initialization.
+        return () => operation(asset, false);
+    }
+}
+
+export function notifyStartupDownloadQueueComputed(): void {
+    Module.onStartupDownloadQueueComputed?.(downloadedAssetsCount, totalAssetsToDownload);
+}
+
 export function resolveAllDownloadsQueued(): void {
     allDownloadsQueuedPCS.resolve();
 }
@@ -37,17 +49,17 @@ function sanitizeUrl(url: string): string {
     return qIdx >= 0 ? url.substring(0, qIdx) : url;
 }
 
-export async function loadDotnetModule(asset: JsAsset): Promise<JsModuleExports> {
-    return loadJSModule(asset);
+export async function loadDotnetModule(asset: JsAsset, countDownload = true): Promise<JsModuleExports> {
+    return loadJSModule(asset, countDownload);
 }
 
-export async function loadJSModule(asset: JsAsset): Promise<any> {
+export async function loadJSModule(asset: JsAsset, countDownload = true): Promise<any> {
     const assetInternal = asset as AssetEntryInternal;
     let mod: JsModuleExports = await asset.moduleExports;
     if (mod) {
         asset.moduleExports = mod;
     }
-    totalAssetsToDownload++;
+    if (countDownload) totalAssetsToDownload++;
     if (!mod) {
         if (assetInternal.name && !asset.resolvedUrl) {
             asset.resolvedUrl = locateFile(assetInternal.name, true);
@@ -69,8 +81,8 @@ export async function loadJSModule(asset: JsAsset): Promise<any> {
     return mod;
 }
 
-export async function callLibraryInitializerOnRuntimeConfigLoaded(asset: JsAsset): Promise<any> {
-    const module = await loadJSModule(asset);
+export async function callLibraryInitializerOnRuntimeConfigLoaded(asset: JsAsset, countDownload = true): Promise<any> {
+    const module = await loadJSModule(asset, countDownload);
     const name = asset.name || asset.resolvedUrl || "unknown";
     try {
         if (typeof module.onRuntimeConfigLoaded === "function") {
@@ -96,8 +108,8 @@ export async function callLibraryInitializerOnRuntimeReady([asset, modulePromise
     }
 }
 
-export function fetchMainWasm(asset: WasmAsset): Promise<Response> {
-    totalAssetsToDownload++;
+export function fetchMainWasm(asset: WasmAsset, countDownload = true): Promise<Response> {
+    if (countDownload) totalAssetsToDownload++;
     const assetInternal = asset as AssetEntryInternal;
     if (assetInternal.name && !asset.resolvedUrl) {
         asset.resolvedUrl = locateFile(assetInternal.name);
@@ -129,11 +141,11 @@ export async function instantiateMainWasm(imports: WebAssembly.Imports, successC
     wasmMemoryPromiseController.resolve(memory);
 }
 
-export async function fetchIcu(asset: IcuAsset): Promise<void> {
+export async function fetchIcu(asset: IcuAsset, countDownload = true): Promise<void> {
     const assetInternal = asset as AssetEntryInternal;
     let bytes;
     try {
-        totalAssetsToDownload++;
+        if (countDownload) totalAssetsToDownload++;
         if (assetInternal.name && !asset.resolvedUrl) {
             asset.resolvedUrl = locateFile(assetInternal.name);
         }
@@ -148,9 +160,9 @@ export async function fetchIcu(asset: IcuAsset): Promise<void> {
     }
 }
 
-export async function fetchAssembly(asset: AssemblyAsset): Promise<void> {
+export async function fetchAssembly(asset: AssemblyAsset, countDownload = true): Promise<void> {
     const assetInternal = asset as AssetEntryInternal;
-    totalAssetsToDownload++;
+    if (countDownload) totalAssetsToDownload++;
     dotnetAssert.check(assetInternal.virtualPath, "Assembly asset must have virtualPath");
     const assetNameForUrl = assetInternal.culture
         ? `${assetInternal.culture}/${assetInternal.name}`
@@ -198,11 +210,11 @@ async function fetchDll(assetInternal: AssetEntryInternal): Promise<void> {
     }
 }
 
-export async function fetchPdb(asset: AssemblyAsset): Promise<void> {
+export async function fetchPdb(asset: AssemblyAsset, countDownload = true): Promise<void> {
     const assetInternal = asset as AssetEntryInternal;
     let bytes;
     try {
-        totalAssetsToDownload++;
+        if (countDownload) totalAssetsToDownload++;
         dotnetAssert.check(assetInternal.virtualPath, "PDB asset must have virtualPath");
         if (assetInternal.name && !asset.resolvedUrl) {
             asset.resolvedUrl = locateFile(assetInternal.name);
@@ -222,11 +234,11 @@ export async function fetchPdb(asset: AssemblyAsset): Promise<void> {
     }
 }
 
-export async function fetchVfs(asset: AssemblyAsset): Promise<void> {
+export async function fetchVfs(asset: AssemblyAsset, countDownload = true): Promise<void> {
     const assetInternal = asset as AssetEntryInternal;
     let bytes;
     try {
-        totalAssetsToDownload++;
+        if (countDownload) totalAssetsToDownload++;
         if (assetInternal.name && !asset.resolvedUrl) {
             asset.resolvedUrl = locateFile(assetInternal.name);
         }
@@ -328,11 +340,11 @@ export async function fetchLazyAssembly(assemblyNameToLoad: string): Promise<boo
     return true;
 }
 
-export async function fetchNativeSymbols(asset: SymbolsAsset): Promise<void> {
+export async function fetchNativeSymbols(asset: SymbolsAsset, countDownload = true): Promise<void> {
     const assetInternal = asset as AssetEntryInternal;
     let tableText;
     try {
-        totalAssetsToDownload++;
+        if (countDownload) totalAssetsToDownload++;
         if (assetInternal.name && !asset.resolvedUrl) {
             asset.resolvedUrl = locateFile(assetInternal.name);
         }
