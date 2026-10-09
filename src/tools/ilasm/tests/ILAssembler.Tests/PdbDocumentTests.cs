@@ -171,7 +171,17 @@ namespace ILAssembler.Tests
 
             // No document-record at all: not before the hidden point, and not before the third point, whose
             // document is still the current one.
-            Assert.Equal(new[] { "point@0", "hidden@1", "point@2" }, pdb.ReadBlobRecords("M"));
+            pdb.AssertNoDocumentRecordInSequencePointsBlob("M");
+        }
+
+        [Fact]
+        public void AssertNoDocumentRecordInSequencePointsBlob_FailsForAMethodThatSwitchesDocuments()
+        {
+            // The check the previous test relies on fails when the blob does have a document-record: here, the one
+            // before the point in b.cs.
+            using var pdb = PortablePdbTestReader.Compile(Program(Method("M", TwoDocumentMethod)));
+
+            Assert.ThrowsAny<Xunit.Sdk.XunitException>(() => pdb.AssertNoDocumentRecordInSequencePointsBlob("M"));
         }
 
         [Fact]
