@@ -1438,7 +1438,8 @@ HRESULT validateOneArg(
     SigParser  *pSig,
     ULONG       *pulNSentinels,         // [IN/OUT] Number of sentinels
     IMDInternalImport*  pImport,        // [IN] Internal MD Import interface ptr
-    BOOL        bNoVoidAllowed)         // [IN] Flag indicating whether "void" is disallowed for this arg
+    BOOL        bNoVoidAllowed,         // [IN] Flag indicating whether "void" is disallowed for this arg
+    bool        allowInternalTypes)
 
 {
     CONTRACTL
@@ -1508,15 +1509,20 @@ HRESULT validateOneArg(
             case ELEMENT_TYPE_U:
             case ELEMENT_TYPE_I:
                 break;
+            case ELEMENT_TYPE_INTERNAL:
+                if (!allowInternalTypes)
+                    IfFailGo(VLDTR_E_SIG_BADELTYPE);
+                IfFailGo(pSig->GetPointer(nullptr));
+                break;
             case ELEMENT_TYPE_PTR:
                 // Validate the referenced type.
-                if(FAILED(hr = validateOneArg(tk, pSig, pulNSentinels, pImport, FALSE))) IfFailGo(hr);
+                if(FAILED(hr = validateOneArg(tk, pSig, pulNSentinels, pImport, FALSE, allowInternalTypes))) IfFailGo(hr);
                 break;
             case ELEMENT_TYPE_BYREF:
             case ELEMENT_TYPE_PINNED:
             case ELEMENT_TYPE_SZARRAY:
                 // Validate the referenced type.
-                if(FAILED(hr = validateOneArg(tk, pSig, pulNSentinels, pImport, TRUE))) IfFailGo(hr);
+                if(FAILED(hr = validateOneArg(tk, pSig, pulNSentinels, pImport, TRUE, allowInternalTypes))) IfFailGo(hr);
                 break;
             case ELEMENT_TYPE_CMOD_OPT:
             case ELEMENT_TYPE_CMOD_REQD:
@@ -1559,18 +1565,18 @@ HRESULT validateOneArg(
 
                 // FNPTR signature must follow the rules of MethodDef
                 // Validate and consume return type.
-                IfFailGo(validateOneArg(mdtMethodDef, pSig, NULL, pImport, FALSE));
+                IfFailGo(validateOneArg(mdtMethodDef, pSig, NULL, pImport, FALSE, allowInternalTypes));
 
                 // Validate and consume the arguments.
                 while(ulArgCnt--)
                 {
-                    IfFailGo(validateOneArg(mdtMethodDef, pSig, NULL, pImport, TRUE));
+                    IfFailGo(validateOneArg(mdtMethodDef, pSig, NULL, pImport, TRUE, allowInternalTypes));
                 }
                 break;
 
             case ELEMENT_TYPE_ARRAY:
                 // Validate and consume the base type.
-                IfFailGo(validateOneArg(tk, pSig, pulNSentinels, pImport, TRUE));
+                IfFailGo(validateOneArg(tk, pSig, pulNSentinels, pImport, TRUE, allowInternalTypes));
 
                 // Validate that the rank is present.
                 if (FAILED(pSig->GetData(&ulRank)))
@@ -1627,7 +1633,7 @@ HRESULT validateOneArg(
 
                 case ELEMENT_TYPE_GENERICINST:
                     // Validate the generic type.
-                    IfFailGo(validateOneArg(tk, pSig, pulNSentinels, pImport, TRUE));
+                    IfFailGo(validateOneArg(tk, pSig, pulNSentinels, pImport, TRUE, allowInternalTypes));
 
                     // Validate that parameter count is present.
                     if (FAILED(pSig->GetData(&ulArgCnt)))
@@ -1640,7 +1646,7 @@ HRESULT validateOneArg(
                     // Validate and consume the parameters.
                     while(ulArgCnt--)
                     {
-                        IfFailGo(validateOneArg(tk, pSig, NULL, pImport, TRUE));
+                        IfFailGo(validateOneArg(tk, pSig, NULL, pImport, TRUE, allowInternalTypes));
                     }
                     break;
 
@@ -1666,7 +1672,8 @@ HRESULT validateTokenSig(
     PCCOR_SIGNATURE     pbSig,                  // [IN] Signature.
     ULONG               cbSig,                  // [IN] Size in bytes of the signature.
     DWORD               dwFlags,                // [IN] Method flags.
-    IMDInternalImport*  pImport)               // [IN] Internal MD Import interface ptr
+    IMDInternalImport*  pImport,               // [IN] Internal MD Import interface ptr
+    bool                allowInternalTypes)
 {
     CONTRACTL
     {
@@ -1710,7 +1717,7 @@ HRESULT validateTokenSig(
             FALLTHROUGH;
 
         case mdtMemberRef:
-            if(i == IMAGE_CEE_CS_CALLCONV_FIELD) return validateOneArg(tk, &sig, NULL, pImport, TRUE);
+            if(i == IMAGE_CEE_CS_CALLCONV_FIELD) return validateOneArg(tk, &sig, NULL, pImport, TRUE, allowInternalTypes);
 
             // EXPLICITTHIS and native call convs are for stand-alone sigs only (for calli)
             if(((i != IMAGE_CEE_CS_CALLCONV_DEFAULT)&&( i != IMAGE_CEE_CS_CALLCONV_VARARG))
@@ -1730,7 +1737,7 @@ HRESULT validateTokenSig(
 
         case mdtFieldDef:
             if(i != IMAGE_CEE_CS_CALLCONV_FIELD) return VLDTR_E_MD_BADCALLINGCONV;
-            return validateOneArg(tk, &sig, NULL, pImport, TRUE);
+            return validateOneArg(tk, &sig, NULL, pImport, TRUE, allowInternalTypes);
     }
     // Is there any sig left for arguments?
 
@@ -1753,7 +1760,7 @@ HRESULT validateTokenSig(
     // (at this moment ulArgCount = num.args+1, ulArgIx = (standalone sig. ? 1 :0); )
     for(; ulArgIx < ulArgCount; ulArgIx++)
     {
-        if(FAILED(hr = validateOneArg(tk, &sig, &ulNSentinels, pImport, (ulArgIx!=0)))) return hr;
+        if(FAILED(hr = validateOneArg(tk, &sig, &ulNSentinels, pImport, (ulArgIx!=0), allowInternalTypes))) return hr;
     }
 
     // <TODO>@todo: we allow junk to be at the end of the signature (we may not consume it all)

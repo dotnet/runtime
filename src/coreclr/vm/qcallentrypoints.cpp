@@ -114,6 +114,8 @@ static const Entry s_QCall[] =
     DllImportEntry(Delegate_Construct)
     DllImportEntry(Delegate_CreateMethodInfo)
     DllImportEntry(Delegate_GetMethodDesc)
+    DllImportEntry(Delegate_GetTypeLoaderAllocator)
+    DllImportEntry(Delegate_CreateType)
     DllImportEntry(Environment_Exit)
     DllImportEntry(Environment_FailFast)
     DllImportEntry(Environment_GetProcessorCount)

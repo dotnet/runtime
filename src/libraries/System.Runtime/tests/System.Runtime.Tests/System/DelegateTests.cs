@@ -1,12 +1,18 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Loader;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Runtime.Serialization.Formatters.Tests;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Tests
@@ -26,6 +32,308 @@ namespace System.Tests
 
     public static unsafe class DelegateTests
     {
+        [Fact]
+        public static void GetDelegateType_InvalidArguments()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("typeArgs", () => RuntimeHelpers.GetDelegateType(null));
+            AssertExtensions.Throws<ArgumentException>("typeArgs", () => RuntimeHelpers.GetDelegateType());
+            AssertExtensions.Throws<ArgumentNullException>("typeArgs[1]", () => RuntimeHelpers.GetDelegateType(typeof(int), null));
+            Assert.Throws<ArgumentException>(() => RuntimeHelpers.GetDelegateType(typeof(void), typeof(int)));
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(16)]
+        public static void GetDelegateType_PredefinedTypes(int parameterCount)
+        {
+            Type[] signature = Enumerable.Repeat(typeof(int), parameterCount).Append(typeof(void)).ToArray();
+            Assert.Same(Expression.GetDelegateType(signature), RuntimeHelpers.GetDelegateType(signature));
+            signature[parameterCount] = typeof(string);
+            Assert.Same(Expression.GetDelegateType(signature), RuntimeHelpers.GetDelegateType(signature));
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotReflectionEmitSupported))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void GetDelegateType_CustomGenerationNotSupported(bool highArity)
+        {
+            Type[] signature = highArity
+                ? Enumerable.Repeat(typeof(int), 18).Append(typeof(void)).ToArray()
+                : new[] { typeof(int).MakeByRefType(), typeof(void) };
+            Assert.Throws<PlatformNotSupportedException>(() => RuntimeHelpers.GetDelegateType(signature));
+            Assert.Throws<PlatformNotSupportedException>(() => Expression.GetDelegateType(signature));
+        }
+
+        public static IEnumerable<object[]> CustomDelegateSignatures()
+        {
+            yield return new object[] { new[] { typeof(int).MakeByRefType(), typeof(int) } };
+            yield return new object[] { new[] { typeof(int).MakeByRefType() } };
+            yield return new object[] { new[] { typeof(int*), typeof(void*) } };
+            yield return new object[] { new[] { typeof(string).MakePointerType(), typeof(void) } };
+            yield return new object[] { new[] { typeof(Span<int>), typeof(ReadOnlySpan<int>) } };
+            yield return new object[] { new[] { typeof(List<int[]>).MakeByRefType(), typeof(Dictionary<string, List<int[,]>>) } };
+            yield return new object[] { new[] { typeof(int[,]), typeof(int).MakeArrayType(1), typeof(int).MakeByRefType() } };
+            yield return new object[] { new[] { typeof(delegate*<int, int>), typeof(void) } };
+            yield return new object[] { new[] { typeof(delegate* unmanaged[Cdecl]<int, int>), typeof(void) } };
+            yield return new object[] { new[] { typeof(delegate*<int, int>) } };
+            yield return new object[] { new[] { typeof(delegate* unmanaged[Cdecl]<int, int>) } };
+            yield return new object[] { Enumerable.Repeat(typeof(int), 18).ToArray() };
+            yield return new object[] { Enumerable.Repeat(typeof(List<int>), 18).ToArray() };
+            yield return new object[] { Enumerable.Repeat(typeof(int).MakeByRefType(), 130).Append(typeof(void)).ToArray() };
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR))]
+        [MemberData(nameof(CustomDelegateSignatures))]
+        public static void GetDelegateType_CustomSignatures(Type[] signature)
+        {
+            Type delegateType = RuntimeHelpers.GetDelegateType(signature);
+            Assert.Equal(typeof(MulticastDelegate), delegateType.BaseType);
+            Assert.True(delegateType.IsSealed);
+            MethodInfo invoke = delegateType.GetMethod("Invoke");
+            Assert.Equal(signature[^1], invoke.ReturnType);
+            Assert.Equal(signature.Take(signature.Length - 1), invoke.GetParameters().Select(p => p.ParameterType));
+            Assert.Equal(MethodImplAttributes.Runtime, invoke.GetMethodImplementationFlags() & MethodImplAttributes.CodeTypeMask);
+            Assert.NotNull(delegateType.GetConstructor(new[] { typeof(object), typeof(IntPtr) }));
+            Assert.Same(delegateType, RuntimeHelpers.GetDelegateType((Type[])signature.Clone()));
+
+            AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(
+                new AssemblyName(nameof(GetDelegateType_CustomSignatures)), AssemblyBuilderAccess.RunAndCollect);
+            TypeBuilder wrapper = assembly.DefineDynamicModule("Wrapper").DefineType("Wrapper", TypeAttributes.Public);
+            // Ordinary Emit cannot encode function-pointer types; native ints still exercise importing Invoke.
+            Type[] wrapperSignature = signature.Select(type => type.IsFunctionPointer ? typeof(IntPtr) : type).ToArray();
+            MethodBuilder method = wrapper.DefineMethod("Invoke", MethodAttributes.Public | MethodAttributes.Static,
+                wrapperSignature[^1], new[] { delegateType }.Concat(wrapperSignature.Take(signature.Length - 1)).ToArray());
+            ILGenerator il = method.GetILGenerator();
+            for (short i = 0; i < signature.Length; i++)
+            {
+                il.Emit(OpCodes.Ldarg, i);
+            }
+            il.Emit(OpCodes.Callvirt, invoke);
+            il.Emit(OpCodes.Ret);
+            MethodInfo wrapperMethod = wrapper.CreateType().GetMethod("Invoke");
+            Assert.Equal(wrapperSignature[^1], wrapperMethod.ReturnType);
+            RuntimeHelpers.PrepareMethod(wrapperMethod.MethodHandle);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        public static void GetDelegateType_InvokeAndCombine()
+        {
+            Type delegateType = RuntimeHelpers.GetDelegateType(typeof(int).MakeByRefType(), typeof(int));
+            MethodInfo target = typeof(DelegateTests).GetMethod(nameof(IncrementAndReturn), BindingFlags.NonPublic | BindingFlags.Static);
+            Delegate first = target.CreateDelegate(delegateType);
+            Delegate combined = Delegate.Combine(first, target.CreateDelegate(delegateType));
+            object[] arguments = { 40 };
+            Assert.Equal(42, combined.DynamicInvoke(arguments));
+            Assert.Equal(42, arguments[0]);
+            Assert.Equal(2, combined.GetInvocationList().Length);
+
+            Delegate compiled = CompileIncrementExpression(delegateType, target);
+            Assert.Equal(43, compiled.DynamicInvoke(arguments));
+
+            AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(
+                new AssemblyName(nameof(GetDelegateType_InvokeAndCombine)), AssemblyBuilderAccess.RunAndCollect);
+            TypeBuilder wrapper = assembly.DefineDynamicModule("Wrapper").DefineType("Wrapper", TypeAttributes.Public);
+            MethodBuilder method = wrapper.DefineMethod("Invoke", MethodAttributes.Public | MethodAttributes.Static,
+                typeof(int), new[] { delegateType, typeof(int).MakeByRefType() });
+            ILGenerator il = method.GetILGenerator();
+            il.Emit(OpCodes.Ldarg_0);
+            il.Emit(OpCodes.Ldarg_1);
+            il.Emit(OpCodes.Callvirt, delegateType.GetMethod("Invoke"));
+            il.Emit(OpCodes.Ret);
+            object[] wrapperArguments = { first, 43 };
+            Assert.Equal(44, wrapper.CreateType().GetMethod("Invoke").Invoke(null, wrapperArguments));
+            Assert.Equal(44, wrapperArguments[1]);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR))]
+        public static void GetDelegateType_CompiledExpressionWritesBackByRefArguments()
+        {
+            Type delegateType = RuntimeHelpers.GetDelegateType(typeof(int).MakeByRefType(), typeof(int));
+            MethodInfo target = typeof(DelegateTests).GetMethod(nameof(IncrementAndReturn), BindingFlags.NonPublic | BindingFlags.Static);
+            Delegate compiled = CompileIncrementExpression(delegateType, target);
+            object[] arguments = { 42 };
+            Assert.Equal(43, compiled.DynamicInvoke(arguments));
+            Assert.Equal(43, arguments[0]);
+        }
+
+        private static Delegate CompileIncrementExpression(Type delegateType, MethodInfo target)
+        {
+            ParameterExpression parameter = Expression.Parameter(typeof(int).MakeByRefType());
+            return Expression.Lambda(delegateType, Expression.Call(target, parameter), parameter).Compile();
+        }
+
+        private static int IncrementAndReturn(ref int value) => ++value;
+
+        public static IEnumerable<object[]> ReconstructedDelegateSignatures()
+        {
+            yield return new object[] { new[] { typeof(List<int>).MakeByRefType(), typeof(Dictionary<string, List<int[,]>>) } };
+            yield return new object[] { new[] { typeof(int[,]).MakeByRefType(), typeof(int).MakeArrayType(1), typeof(int[,,]) } };
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR))]
+        [MemberData(nameof(ReconstructedDelegateSignatures))]
+        public static void GetDelegateType_ReconstructedSignatures(Type[] signature)
+        {
+            Type delegateType = RuntimeHelpers.GetDelegateType(signature);
+            Assert.False(delegateType.IsGenericType);
+            AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(
+                new AssemblyName(nameof(GetDelegateType_ReconstructedSignatures)), AssemblyBuilderAccess.RunAndCollect);
+            TypeBuilder wrapper = assembly.DefineDynamicModule("Wrapper").DefineType("Wrapper", TypeAttributes.Public);
+            MethodBuilder method = wrapper.DefineMethod("Invoke", MethodAttributes.Public | MethodAttributes.Static,
+                signature[^1], new[] { delegateType }.Concat(signature.Take(signature.Length - 1)).ToArray());
+            ILGenerator il = method.GetILGenerator();
+            for (short i = 0; i < signature.Length; i++)
+            {
+                il.Emit(OpCodes.Ldarg, i);
+            }
+            il.Emit(OpCodes.Callvirt, new ForwardingMethodInfo(delegateType.GetMethod("Invoke")));
+            il.Emit(OpCodes.Ret);
+            RuntimeHelpers.PrepareMethod(wrapper.CreateType().GetMethod("Invoke").MethodHandle);
+        }
+
+        private sealed class ForwardingMethodInfo(MethodInfo method) : MethodInfo
+        {
+            public override MethodAttributes Attributes => method.Attributes;
+            public override CallingConventions CallingConvention => method.CallingConvention;
+            public override Type DeclaringType => method.DeclaringType;
+            public override RuntimeMethodHandle MethodHandle => method.MethodHandle;
+            public override Module Module => method.Module;
+            public override string Name => method.Name;
+            public override Type ReflectedType => method.ReflectedType;
+            public override Type ReturnType => method.ReturnType;
+            public override ParameterInfo ReturnParameter => method.ReturnParameter;
+            public override ICustomAttributeProvider ReturnTypeCustomAttributes => method.ReturnTypeCustomAttributes;
+            public override MethodInfo GetBaseDefinition() => method.GetBaseDefinition();
+            public override object[] GetCustomAttributes(bool inherit) => method.GetCustomAttributes(inherit);
+            public override object[] GetCustomAttributes(Type attributeType, bool inherit) => method.GetCustomAttributes(attributeType, inherit);
+            public override MethodImplAttributes GetMethodImplementationFlags() => method.GetMethodImplementationFlags();
+            public override ParameterInfo[] GetParameters() => method.GetParameters();
+            public override object Invoke(object obj, BindingFlags invokeAttr, Binder binder, object[] parameters, Globalization.CultureInfo culture) =>
+                method.Invoke(obj, invokeAttr, binder, parameters, culture);
+            public override bool IsDefined(Type attributeType, bool inherit) => method.IsDefined(attributeType, inherit);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        public static void GetDelegateType_SharedAssemblyAndConcurrentCache()
+        {
+            Type[] signature = { typeof(long).MakeByRefType(), typeof(long) };
+            Type[] results = new Type[32];
+            Parallel.For(0, results.Length, i => results[i] = RuntimeHelpers.GetDelegateType(signature));
+            Assert.All(results, result => Assert.Same(results[0], result));
+            Type other = RuntimeHelpers.GetDelegateType(typeof(byte).MakeByRefType(), typeof(byte));
+            Assert.Same(results[0].Assembly, other.Assembly);
+            Assert.False(other.IsCollectible);
+            signature[0] = typeof(short).MakeByRefType();
+            Assert.NotSame(results[0], RuntimeHelpers.GetDelegateType(signature));
+            Assert.Same(results[0], RuntimeHelpers.GetDelegateType(typeof(long).MakeByRefType(), typeof(long)));
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void GetDelegateType_Collectible(bool useLoadContext)
+        {
+            WeakReference[] references = CreateCollectibleDelegateTypes(useLoadContext);
+            for (int i = 0; i < 100 && references.Any(reference => reference.IsAlive); i++)
+            {
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+            }
+            Assert.All(references, reference => Assert.False(reference.IsAlive));
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static WeakReference[] CreateCollectibleDelegateTypes(bool useLoadContext)
+        {
+            AssemblyLoadContext context = null;
+            Type parameterType;
+            if (useLoadContext)
+            {
+                context = new AssemblyLoadContext(nameof(GetDelegateType_Collectible), isCollectible: true);
+                using FileStream stream = File.OpenRead(typeof(DelegateTests).Assembly.Location);
+                Assembly assembly = context.LoadFromStream(stream);
+                parameterType = assembly.GetType(typeof(TestClass).FullName, throwOnError: true);
+            }
+            else
+            {
+                AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(
+                    new AssemblyName("DelegateFactoryInput"), AssemblyBuilderAccess.RunAndCollect);
+                parameterType = assembly.DefineDynamicModule("Input").DefineType("Parameter", TypeAttributes.Public).CreateType();
+            }
+
+            Type first = RuntimeHelpers.GetDelegateType(parameterType.MakeByRefType(), typeof(void));
+            Type second = RuntimeHelpers.GetDelegateType(typeof(List<>).MakeGenericType(parameterType).MakeByRefType(), typeof(void));
+            Assert.True(first.IsCollectible);
+            Assert.Same(first.Assembly, second.Assembly);
+            Assert.Same(first, RuntimeHelpers.GetDelegateType(parameterType.MakeByRefType(), typeof(void)));
+            Assert.Same(first, Expression.GetDelegateType(parameterType.MakeByRefType(), typeof(void)));
+            Assert.Equal(parameterType.MakeByRefType(), first.GetMethod("Invoke").GetParameters()[0].ParameterType);
+
+            MethodInfo target = typeof(DelegateTests).GetMethod(nameof(CollectibleTarget), BindingFlags.NonPublic | BindingFlags.Static)
+                .MakeGenericMethod(parameterType);
+            Delegate instance = target.CreateDelegate(first);
+            instance.DynamicInvoke(new object[] { null });
+            context?.Unload();
+            instance.DynamicInvoke(new object[] { null });
+
+            return new[] { new WeakReference(parameterType), new WeakReference(first), new WeakReference(first.Assembly), new WeakReference(instance) };
+        }
+
+        private static void CollectibleTarget<T>(ref T value) { }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void GetDelegateType_DistinctCollectibleTypeIdentities(bool verifyRetainedLifetime)
+        {
+            WeakReference[] references = CreateAndReleaseMixedCollectibleDelegateTypes(verifyRetainedLifetime);
+            for (int i = 0; i < 100 && references.Any(reference => reference.IsAlive); i++)
+            {
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+            }
+            Assert.All(references, reference => Assert.False(reference.IsAlive));
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static WeakReference[] CreateAndReleaseMixedCollectibleDelegateTypes(bool verifyRetainedLifetime)
+        {
+            (Type delegateType, WeakReference[] references) = CreateMixedCollectibleDelegateTypes();
+            if (verifyRetainedLifetime)
+            {
+                for (int i = 0; i < 3; i++)
+                {
+                    GC.Collect();
+                    GC.WaitForPendingFinalizers();
+                }
+                Assert.All(references, reference => Assert.True(reference.IsAlive));
+            }
+            GC.KeepAlive(delegateType);
+            return references;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static (Type, WeakReference[]) CreateMixedCollectibleDelegateTypes()
+        {
+            Type CreateInput()
+            {
+                AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(
+                    new AssemblyName("SameIdentity"), AssemblyBuilderAccess.RunAndCollect);
+                return assembly.DefineDynamicModule("Input").DefineType("Parameter", TypeAttributes.Public).CreateType();
+            }
+
+            Type first = CreateInput();
+            Type second = CreateInput();
+            Type mixed = RuntimeHelpers.GetDelegateType(first.MakeByRefType(), second);
+            Assert.Equal(first.MakeByRefType(), mixed.GetMethod("Invoke").GetParameters()[0].ParameterType);
+            Assert.Equal(second, mixed.GetMethod("Invoke").ReturnType);
+            Assert.Same(mixed.Assembly, RuntimeHelpers.GetDelegateType(second.MakeByRefType(), typeof(void)).Assembly);
+            Assert.NotSame(mixed.Assembly, RuntimeHelpers.GetDelegateType(first.MakeByRefType(), typeof(void)).Assembly);
+            Assert.Same(mixed, RuntimeHelpers.GetDelegateType(first.MakeByRefType(), second));
+            return (mixed, new[] { new WeakReference(first), new WeakReference(second), new WeakReference(mixed), new WeakReference(mixed.Assembly) });
+        }
+
         public struct TestStruct
         {
             public object o1;

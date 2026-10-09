@@ -18,6 +18,12 @@ namespace System.Runtime.CompilerServices
 {
     public static partial class RuntimeHelpers
     {
+        private static partial class DelegateTypeFactory
+        {
+            internal static Type GetCustomDelegateType(Type[] typeArgs) =>
+                throw new PlatformNotSupportedException(SR.PlatformNotSupported_ReflectionEmit);
+        }
+
         [Intrinsic]
         public static void InitializeArray(Array array, RuntimeFieldHandle fldHandle)
         {

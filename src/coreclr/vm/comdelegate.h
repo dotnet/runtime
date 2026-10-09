@@ -94,6 +94,10 @@ public:
 
 extern "C" void QCALLTYPE Delegate_Construct(MethodTable* pDelegateMT, MethodTable* pTargetMT, PCODE method, BindToMethodDetails *pBindToMethodDetails, QCallExceptionStatus* qcallError);
 
+extern "C" void QCALLTYPE Delegate_GetTypeLoaderAllocator(TypeHandle* signature, INT32 signatureLength, QCall::ObjectHandleOnStack loaderAllocator, QCallExceptionStatus* qcallError);
+
+extern "C" void QCALLTYPE Delegate_CreateType(TypeHandle* signature, INT32 signatureLength, QCall::ObjectHandleOnStack assembly, QCall::ObjectHandleOnStack result, QCallExceptionStatus* qcallError);
+
 extern "C" PCODE QCALLTYPE Delegate_GetMulticastInvokeSlow(MethodTable* pDelegateMT, QCallExceptionStatus* qcallError);
 
 extern "C" PCODE QCALLTYPE Delegate_AdjustTarget(MethodTable* pMTTarg, PCODE method, QCallExceptionStatus* qcallError);

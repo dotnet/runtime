@@ -22,6 +22,8 @@
 #include "asmconstants.h"
 #include "virtualcallstub.h"
 #include "typestring.h"
+#include "comdynamic.h"
+#include "reflectclasswriter.h"
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
 #include "wasm/helpers.hpp"
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
@@ -30,6 +32,143 @@
 #endif // FEATURE_COMINTEROP
 
 #ifndef DACCESS_COMPILE
+
+namespace
+{
+    void AppendDelegateSignatureType(SigBuilder& builder, TypeHandle type)
+    {
+        STANDARD_VM_CONTRACT;
+
+        // ECMA-335 II.23.2.12, with runtime-owned TypeHandles in place of metadata type tokens.
+        CorElementType elementType = type.GetSignatureCorElementType();
+        if (CorIsPrimitiveType(elementType))
+        {
+            builder.AppendElementType(elementType);
+        }
+        else if (type.HasTypeParam())
+        {
+            builder.AppendElementType(elementType);
+            AppendDelegateSignatureType(builder, type.GetTypeParam());
+            if (elementType == ELEMENT_TYPE_ARRAY)
+            {
+                builder.AppendData(type.GetRank());
+                builder.AppendData(0);
+                builder.AppendData(type.GetRank());
+                for (DWORD i = 0; i < type.GetRank(); i++)
+                    builder.AppendData(0);
+            }
+        }
+        else if (!type.IsTypeDesc() && type.GetMethodTable()->HasInstantiation())
+        {
+            MethodTable* pMethodTable = type.GetMethodTable();
+            Instantiation instantiation = pMethodTable->GetInstantiation();
+            builder.AppendElementType(ELEMENT_TYPE_GENERICINST);
+            builder.AppendElementType(ELEMENT_TYPE_INTERNAL);
+            builder.AppendPointer(TypeHandle(pMethodTable->GetTypicalMethodTable()).AsPtr());
+            builder.AppendData(instantiation.GetNumArgs());
+            for (DWORD i = 0; i < instantiation.GetNumArgs(); i++)
+                AppendDelegateSignatureType(builder, instantiation[i]);
+        }
+        else
+        {
+            builder.AppendElementType(ELEMENT_TYPE_INTERNAL);
+            builder.AppendPointer(type.AsPtr());
+        }
+    }
+}
+
+extern "C" void QCALLTYPE Delegate_GetTypeLoaderAllocator(TypeHandle* signature, INT32 signatureLength,
+    QCall::ObjectHandleOnStack loaderAllocator, QCallExceptionStatus* qcallError)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    _ASSERTE(signatureLength > 0);
+    LoaderAllocator* pLoaderAllocator =
+        ClassLoader::ComputeLoaderModuleForFunctionPointer(signature, signatureLength)->GetLoaderAllocator();
+    GCX_COOP();
+    loaderAllocator.Set(pLoaderAllocator->IsCollectible() ? pLoaderAllocator->GetExposedObject() : nullptr);
+
+    END_QCALL;
+}
+
+extern "C" void QCALLTYPE Delegate_CreateType(TypeHandle* signature, INT32 signatureLength,
+    QCall::ObjectHandleOnStack assembly, QCall::ObjectHandleOnStack result, QCallExceptionStatus* qcallError)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    _ASSERTE(signatureLength > 0);
+    Module* pLoaderModule = ClassLoader::ComputeLoaderModuleForFunctionPointer(signature, signatureLength);
+    if (!pLoaderModule->IsCollectible())
+        pLoaderModule = CoreLibBinder::GetModule();
+    LoaderAllocator* pLoaderAllocator = pLoaderModule->GetLoaderAllocator();
+    pLoaderAllocator->EnsureInstantiation(nullptr, Instantiation(signature, signatureLength));
+
+    Assembly* pAssembly;
+    {
+        GCX_COOP();
+        if (assembly.Get() == nullptr)
+        {
+            NativeAssemblyNameParts name = {};
+            name._pName = W("System.Runtime.GeneratedDelegates");
+            LOADERALLOCATORREF keepAlive = nullptr;
+            GCPROTECT_BEGIN(keepAlive);
+            pAssembly = Assembly::CreateDynamic(pLoaderModule->GetAssembly()->GetPEAssembly()->GetAssemblyBinder(),
+                &name, 0, ASSEMBLY_ACCESS_RUN, &keepAlive, pLoaderAllocator);
+            pAssembly->GetModule()->SetRuntimeDelegateModule();
+            assembly.Set(pAssembly->GetExposedObject());
+            GCPROTECT_END();
+        }
+        else
+        {
+            pAssembly = static_cast<ASSEMBLYREF>(assembly.Get())->GetAssembly();
+        }
+    }
+
+    _ASSERTE(pAssembly->GetLoaderAllocator() == pLoaderAllocator);
+    Module* pModule = pAssembly->GetModule();
+    IMDInternalEmit* pEmitter = pModule->GetReflectionModule()->GetClassWriter()->GetEmitter();
+
+    mdAssemblyRef coreLibRef = pAssembly->AddAssemblyRef(CoreLibBinder::GetModule()->GetAssembly(), pEmitter);
+    pModule->ForceStoreAssemblyRef(coreLibRef, CoreLibBinder::GetModule()->GetAssembly());
+    mdTypeRef parent;
+    IfFailThrow(pEmitter->DefineTypeRefByName(coreLibRef, W("System.MulticastDelegate"), &parent));
+
+    StackSString typeName;
+    typeName.Printf("Delegate%u", pModule->GetMDImport()->GetCountWithTokenKind(mdtTypeDef));
+    mdTypeDef typeToken = COMDynamicWrite::DefineType(pModule, typeName.GetUnicode(), parent,
+        tdPublic | tdSealed | tdAutoLayout | tdAnsiClass, 0, nullptr);
+
+    const COR_SIGNATURE constructorSignature[] =
+    {
+        IMAGE_CEE_CS_CALLCONV_DEFAULT | IMAGE_CEE_CS_CALLCONV_HASTHIS,
+        2, ELEMENT_TYPE_VOID, ELEMENT_TYPE_OBJECT, ELEMENT_TYPE_I
+    };
+    mdMethodDef methodToken;
+    IfFailThrow(pEmitter->DefineMethod(typeToken, W(".ctor"),
+        mdPublic | mdHideBySig | mdSpecialName | mdRTSpecialName,
+        constructorSignature, sizeof(constructorSignature), 0, miRuntime | miManaged, &methodToken));
+
+    SigBuilder invokeSignature;
+    invokeSignature.AppendByte(IMAGE_CEE_CS_CALLCONV_DEFAULT | IMAGE_CEE_CS_CALLCONV_HASTHIS);
+    invokeSignature.AppendData(signatureLength - 1);
+    AppendDelegateSignatureType(invokeSignature, signature[signatureLength - 1]);
+    for (INT32 i = 0; i < signatureLength - 1; i++)
+        AppendDelegateSignatureType(invokeSignature, signature[i]);
+
+    DWORD signatureSize;
+    PCCOR_SIGNATURE signatureBlob = static_cast<PCCOR_SIGNATURE>(invokeSignature.GetSignature(&signatureSize));
+    IfFailThrow(pEmitter->DefineMethod(typeToken, W("Invoke"),
+        mdPublic | mdHideBySig | mdNewSlot | mdVirtual,
+        signatureBlob, signatureSize, 0, miRuntime | miManaged, &methodToken));
+
+    COMDynamicWrite::TermCreateClass(pModule, typeToken, result);
+
+    END_QCALL;
+}
 
 #if defined(TARGET_X86)
 

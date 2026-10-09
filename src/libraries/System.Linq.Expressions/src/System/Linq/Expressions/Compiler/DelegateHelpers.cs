@@ -6,7 +6,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Dynamic;
 using System.Dynamic.Utils;
 using System.Reflection;
-using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 
 namespace System.Linq.Expressions.Compiler
@@ -110,27 +109,8 @@ namespace System.Linq.Expressions.Compiler
             return mo.Expression is ParameterExpression pe && pe.IsByRef;
         }
 
-        private static System.Reflection.TypeInfo MakeNewCustomDelegate(Type[] types)
-        {
-            if (RuntimeFeature.IsDynamicCodeSupported)
-            {
-                Type returnType = types[types.Length - 1];
-                Type[] parameters = types.RemoveLast();
-                Type[] delegateCtorSignature = { typeof(object), typeof(IntPtr) };
-
-                const MethodAttributes ctorAttributes = MethodAttributes.RTSpecialName | MethodAttributes.HideBySig | MethodAttributes.Public;
-                const MethodImplAttributes implAttributes = MethodImplAttributes.Runtime | MethodImplAttributes.Managed;
-                const MethodAttributes invokeAttributes = MethodAttributes.Public | MethodAttributes.HideBySig | MethodAttributes.NewSlot | MethodAttributes.Virtual;
-
-                TypeBuilder builder = AssemblyGen.DefineDelegateType("Delegate" + types.Length);
-                builder.DefineConstructor(ctorAttributes, CallingConventions.Standard, delegateCtorSignature).SetImplementationFlags(implAttributes);
-                builder.DefineMethod("Invoke", invokeAttributes, returnType, parameters).SetImplementationFlags(implAttributes);
-                return builder.CreateTypeInfo();
-            }
-            else
-            {
-                throw new PlatformNotSupportedException();
-            }
-        }
+        [RequiresDynamicCode(Expression.DelegateCreationRequiresDynamicCode)]
+        private static System.Reflection.TypeInfo MakeNewCustomDelegate(Type[] types) =>
+            RuntimeHelpers.GetDelegateType(types).GetTypeInfo();
     }
 }
