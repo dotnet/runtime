@@ -508,7 +508,8 @@ Crst MethodDescBackpatchInfoTracker
 End
 
 Crst NativeImageEagerFixups
-    AcquiredBefore PregeneratedStringThunks UnresolvedClassLock
+    AcquiredBefore AppDomainCache GlobalStrLiteralMap ILStubGen InstMethodHashTable LoaderAllocatorReferences
+                   PendingTypeLoadEntry PregeneratedStringThunks UnresolvedClassLock
 End
 
 Crst NativeImageLoad
