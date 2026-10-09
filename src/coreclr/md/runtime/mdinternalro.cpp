@@ -29,12 +29,8 @@ HRESULT _FillMDDefaultValue(
 __checkReturn
 HRESULT TranslateSigHelper(                 // S_OK or error.
     IMDInternalImport       *pImport,       // [IN] import scope.
-    IMDInternalImport       *pAssemImport,  // [IN] import assembly scope.
-    const void              *pbHashValue,   // [IN] hash value for the import assembly.
-    ULONG                   cbHashValue,    // [IN] count of bytes in the hash value.
     PCCOR_SIGNATURE         pbSigBlob,      // [IN] signature in the importing scope
     ULONG                   cbSigBlob,      // [IN] count of bytes of signature
-    IMDInternalEmit         *pAssemEmit,    // [IN] assembly emit scope.
     IMDInternalEmit         *emit,          // [IN] emit interface
     CQuickBytes             *pqkSigEmit,    // [OUT] buffer to hold translated signature
     ULONG                   *pcbSig);       // [OUT] count of bytes in the translated signature
@@ -132,24 +128,16 @@ HRESULT MDInternalRO::Init(
 //*****************************************************************************
 __checkReturn
 HRESULT MDInternalRO::TranslateSigWithScope(
-    IMDInternalImport*      pAssemImport,   // [IN] import assembly scope.
-    const void*             pbHashValue,    // [IN] hash value for the import assembly.
-    ULONG                   cbHashValue,    // [IN] count of bytes in the hash value.
     PCCOR_SIGNATURE         pbSigBlob,      // [IN] signature in the importing scope
     ULONG                   cbSigBlob,      // [IN] count of bytes of signature
-    IMDInternalEmit*        pAssemEmit,     // [IN] assembly emit scope.
     IMDInternalEmit*        emit,           // [IN] emit interface
     CQuickBytes*            pqkSigEmit,     // [OUT] buffer to hold translated signature
     ULONG*                  pcbSig)         // [OUT] count of bytes in the translated signature
 {
     return TranslateSigHelper(
                 this,
-                pAssemImport,
-                pbHashValue,
-                cbHashValue,
                 pbSigBlob,
                 cbSigBlob,
-                pAssemEmit,
                 emit,
                 pqkSigEmit,
                 pcbSig);
