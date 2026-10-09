@@ -1,5 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <CLRTestPriority>1</CLRTestPriority>
     <!-- The assert this test pins depends on the stack layout at process start -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <!-- GCFrameRegistration and the checked OBJECTREF table are CoreCLR only -->
