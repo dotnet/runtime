@@ -6,6 +6,8 @@ parameters:
   hostedOs: ''
   container: ''
   testGroup: ''
+  # ISA stress scenarios supplied by jit-outerloop-pipeline.yml.
+  jitIsaStressScenarios: []
   crossBuild: false
   readyToRun: false
   hotColdSplitting: false
@@ -383,38 +385,8 @@ jobs:
           scenarios:
           - jitstress_random_1
           - jitstress_random_2
-        ${{ if in(parameters.testGroup, 'jitstress-isas-arm') }}:
-          scenarios:
-          - jitstress_isas_nohwintrinsic
-        ${{ if in(parameters.testGroup, 'jitstress-isas-x86') }}:
-          scenarios:
-          - jitstress_isas_nohwintrinsic
-          - jitstress_isas_x86_evex
-          - jitstress_isas_x86_noavx
-          - jitstress_isas_x86_noavx2
-          - jitstress_isas_x86_noavx512
-          - jitstress_isas_x86_vectort128
-          - jitstress_isas_x86_vectort512
-          - jitstress_isas_x86_noavx512_vectort128
-          - jitstress_isas_1_x86_evex
-          - jitstress_isas_1_x86_noavx
-          - jitstress_isas_1_x86_noavx2
-          - jitstress_isas_1_x86_noavx512
-          - jitstress_isas_1_x86_vectort128
-          - jitstress_isas_1_x86_vectort512
-          - jitstress_isas_1_x86_noavx512_vectort128
-          - jitstress_isas_2_x86_evex
-          - jitstress_isas_2_x86_noavx
-          - jitstress_isas_2_x86_noavx2
-          - jitstress_isas_2_x86_noavx512
-          - jitstress_isas_2_x86_vectort128
-          - jitstress_isas_2_x86_vectort512
-          - jitstress_isas_2_x86_noavx512_vectort128
-        ${{ if in(parameters.testGroup, 'jitstress-isas-avx512') }}:
-          scenarios:
-          - jitstress_isas_x86_evex
-          - jitstress_isas_x86_noavx512
-          - jitstressregs0x2000
+        ${{ if in(parameters.testGroup, 'jitstress-isas-arm', 'jitstress-isas-avx512', 'jitstress-isas-x86') }}:
+          scenarios: ${{ parameters.jitIsaStressScenarios }}
         ${{ if in(parameters.testGroup, 'jitstressregs-x86') }}:
           scenarios:
           - jitstressregs1_x86_noavx
