@@ -312,7 +312,10 @@ Existing `ClrDataValue` behavior then reports those values unavailable (`GetNumL
 An unreadable or null WASM `VLT_STK_BYREF` indirection preserves one logical location, matching
 the native DAC's location count, but its address/value/object accessors fail with
 `CORDBG_E_READVIRTUAL_FAILURE`. This distinguishes a failed indirection from a direct
-stack-homed null reference, which remains one readable location containing zero.
+stack-homed null reference, which remains one readable location containing zero. This deliberately
+differs from the native DAC (`DereferenceByRefVar` in `vm/util.cpp`), which reports a failed byref read as
+address `0` and relies on address `0` being unmapped; WASM linear address `0` is readable, so the
+same representation would read unrelated bytes as the variable's value.
 
 There is no native DAC build on WASM, so live `_legacyImpl` comparison assertions cannot validate
 this representation. DacDbi coverage is structural managed unit coverage.

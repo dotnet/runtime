@@ -1052,6 +1052,8 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
 
         if (varInfo.IsByRef)
         {
+            // Native DereferenceByRefVar reports a failed indirection as address 0, which is unmapped
+            // natively. WASM linear address 0 is readable, so mark the location as unreadable instead.
             if (!target.TryReadPointer(address, out TargetPointer byRefAddress) ||
                 byRefAddress == TargetPointer.Null)
             {
