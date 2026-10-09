@@ -1,10 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- Needed for CLRTestEnvironmentVariable -->
+    <!-- Needed for CMakeProjectReference and CLRTestEnvironmentVariable -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <Optimize>True</Optimize>
+    <!-- Browser CoreCLR links native test assets into a test-specific corerun. -->
+    <CLRTestTargetUnsupported Condition="('$(TargetsWasm)' == 'true' or '$(TargetsMobile)' == 'true') and ('$(TargetsBrowser)' != 'true' or '$(RuntimeFlavor)' != 'coreclr')">true</CLRTestTargetUnsupported>
   </PropertyGroup>
   <ItemGroup>
+    <CMakeProjectReference Include="CMakeLists.txt" />
     <Compile Include="$(MSBuildProjectName).cs" />
 
     <CLRTestEnvironmentVariable Include="DOTNET_TieredCompilation" Value="1" />

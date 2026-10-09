@@ -16,11 +16,23 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Threading;
 using Xunit;
 
 public class Runtime_134695
 {
+    [DllImport("PgoSchemaNative", CallingConvention = CallingConvention.Cdecl)]
+    private static extern int ValidatePgoSnapshot(int schemaAlignment);
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(4)]
+    public static void SnapshotPreservesHistogramValues(int schemaAlignment)
+    {
+        Assert.Equal(0, ValidatePgoSnapshot(schemaAlignment));
+    }
+
     private interface IOp
     {
         int Apply(int x);
