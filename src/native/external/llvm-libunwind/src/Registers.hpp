@@ -20,8 +20,9 @@
 #include "libunwind_ext.h"
 #include "shadow_stack_unwind.h"
 
-#if defined(_LIBUNWIND_HAVE_GETAUXVAL) || defined(_LIBUNWIND_HAVE_ELF_AUX_INFO)
+#if __has_include(<sys/auxv.h>)
 #include <sys/auxv.h>
+#define HAVE_SYS_AUXV_H
 #endif
 
 namespace libunwind {
@@ -71,8 +72,7 @@ public:
 
   bool        validRegister(int num) const;
   uint32_t    getRegister(int num) const;
-  void        setRegister(int num, uint32_t value, uint32_t location);
-  uint32_t    getRegisterLocation(int num) const;
+  void        setRegister(int num, uint32_t value);
   bool        validFloatRegister(int) const { return false; }
   double      getFloatRegister(int num) const;
   void        setFloatRegister(int num, double value);
@@ -87,21 +87,21 @@ public:
   static int  getArch() { return REGISTERS_X86; }
 
   uint32_t  getSP() const          { return _registers.__esp; }
-  void      setSP(uint32_t value, uint32_t location)  { _registers.__esp = value; _registerLocations.__esp = location; }
+  void      setSP(uint32_t value)  { _registers.__esp = value; }
   uint32_t  getIP() const          { return _registers.__eip; }
-  void      setIP(uint32_t value, uint32_t location)  { _registers.__eip = value; _registerLocations.__eip = location; }
+  void      setIP(uint32_t value)  { _registers.__eip = value; }
   uint32_t  getEBP() const         { return _registers.__ebp; }
-  void      setEBP(uint32_t value, uint32_t location) { _registers.__ebp = value; _registerLocations.__ebp = location; }
+  void      setEBP(uint32_t value) { _registers.__ebp = value; }
   uint32_t  getEBX() const         { return _registers.__ebx; }
-  void      setEBX(uint32_t value, uint32_t location) { _registers.__ebx = value; _registerLocations.__ebx = location; }
+  void      setEBX(uint32_t value) { _registers.__ebx = value; }
   uint32_t  getECX() const         { return _registers.__ecx; }
-  void      setECX(uint32_t value, uint32_t location) { _registers.__ecx = value; _registerLocations.__ecx = location; }
+  void      setECX(uint32_t value) { _registers.__ecx = value; }
   uint32_t  getEDX() const         { return _registers.__edx; }
-  void      setEDX(uint32_t value, uint32_t location) { _registers.__edx = value; _registerLocations.__edx = location; }
+  void      setEDX(uint32_t value) { _registers.__edx = value; }
   uint32_t  getESI() const         { return _registers.__esi; }
-  void      setESI(uint32_t value, uint32_t location) { _registers.__esi = value; _registerLocations.__esi = location; }
+  void      setESI(uint32_t value) { _registers.__esi = value; }
   uint32_t  getEDI() const         { return _registers.__edi; }
-  void      setEDI(uint32_t value, uint32_t location) { _registers.__edi = value; _registerLocations.__edi = location; }
+  void      setEDI(uint32_t value) { _registers.__edi = value; }
 
 private:
   struct GPRs {
@@ -122,32 +122,18 @@ private:
     unsigned int __fs;
     unsigned int __gs;
   };
-  struct GPRLocations {
-    unsigned int __eax;
-    unsigned int __ebx;
-    unsigned int __ecx;
-    unsigned int __edx;
-    unsigned int __edi;
-    unsigned int __esi;
-    unsigned int __ebp;
-    unsigned int __esp;
-    unsigned int __eip;
-  };
 
   GPRs _registers;
-  GPRLocations _registerLocations;
 };
 
 inline Registers_x86::Registers_x86(const void *registers) {
   static_assert((check_fit<Registers_x86, unw_context_t>::does_fit),
                 "x86 registers do not fit into unw_context_t");
   memcpy(&_registers, registers, sizeof(_registers));
-  memset(&_registerLocations, 0, sizeof(_registerLocations));
 }
 
 inline Registers_x86::Registers_x86() {
   memset(&_registers, 0, sizeof(_registers));
-  memset(&_registerLocations, 0, sizeof(_registerLocations));
 }
 
 inline bool Registers_x86::validRegister(int regNum) const {
@@ -196,31 +182,25 @@ inline uint32_t Registers_x86::getRegister(int regNum) const {
   _LIBUNWIND_ABORT("unsupported x86 register");
 }
 
-inline void Registers_x86::setRegister(int regNum, uint32_t value, uint32_t location) {
+inline void Registers_x86::setRegister(int regNum, uint32_t value) {
   switch (regNum) {
   case UNW_REG_IP:
     _registers.__eip = value;
-    _registerLocations.__eip = location;
     return;
   case UNW_REG_SP:
     _registers.__esp = value;
-    _registerLocations.__esp = location;
     return;
   case UNW_X86_EAX:
     _registers.__eax = value;
-    _registerLocations.__eax = location;
     return;
   case UNW_X86_ECX:
     _registers.__ecx = value;
-    _registerLocations.__ecx = location;
     return;
   case UNW_X86_EDX:
     _registers.__edx = value;
-    _registerLocations.__edx = location;
     return;
   case UNW_X86_EBX:
     _registers.__ebx = value;
-    _registerLocations.__ebx = location;
     return;
 #if !defined(__APPLE__)
   case UNW_X86_ESP:
@@ -228,7 +208,6 @@ inline void Registers_x86::setRegister(int regNum, uint32_t value, uint32_t loca
   case UNW_X86_EBP:
 #endif
     _registers.__ebp = value;
-    _registerLocations.__ebp = location;
     return;
 #if !defined(__APPLE__)
   case UNW_X86_EBP:
@@ -236,42 +215,13 @@ inline void Registers_x86::setRegister(int regNum, uint32_t value, uint32_t loca
   case UNW_X86_ESP:
 #endif
     _registers.__esp = value;
-    _registerLocations.__esp = location;
     return;
   case UNW_X86_ESI:
     _registers.__esi = value;
-    _registerLocations.__esi = location;
     return;
   case UNW_X86_EDI:
     _registers.__edi = value;
-    _registerLocations.__edi = location;
     return;
-  }
-  _LIBUNWIND_ABORT("unsupported x86 register");
-}
-
-inline uint32_t Registers_x86::getRegisterLocation(int regNum) const {
-  switch (regNum) {
-  case UNW_REG_IP:
-    return _registerLocations.__eip;
-  case UNW_REG_SP:
-    return _registerLocations.__esp;
-  case UNW_X86_EAX:
-    return _registerLocations.__eax;
-  case UNW_X86_ECX:
-    return _registerLocations.__ecx;
-  case UNW_X86_EDX:
-    return _registerLocations.__edx;
-  case UNW_X86_EBX:
-    return _registerLocations.__ebx;
-  case UNW_X86_EBP:
-    return _registerLocations.__ebp;
-  case UNW_X86_ESP:
-    return _registerLocations.__esp;
-  case UNW_X86_ESI:
-    return _registerLocations.__esi;
-  case UNW_X86_EDI:
-    return _registerLocations.__edi;
   }
   _LIBUNWIND_ABORT("unsupported x86 register");
 }
@@ -344,8 +294,7 @@ public:
 
   bool        validRegister(int num) const;
   uint64_t    getRegister(int num) const;
-  void        setRegister(int num, uint64_t value, uint64_t location);
-  uint64_t    getRegisterLocation(int num) const;
+  void        setRegister(int num, uint64_t value);
   bool        validFloatRegister(int) const { return false; }
   double      getFloatRegister(int num) const;
   void        setFloatRegister(int num, double value);
@@ -360,21 +309,21 @@ public:
   static int  getArch() { return REGISTERS_X86_64; }
 
   uint64_t  getSP() const          { return _registers.__rsp; }
-  void      setSP(uint64_t value, uint64_t location)  { _registers.__rsp = value; _registerLocations.__rsp = location;}
+  void      setSP(uint64_t value)  { _registers.__rsp = value; }
   uint64_t  getIP() const          { return _registers.__rip; }
-  void      setIP(uint64_t value, uint64_t location)  { _registers.__rip = value; _registerLocations.__rip = location; }
+  void      setIP(uint64_t value)  { _registers.__rip = value; }
   uint64_t  getRBP() const         { return _registers.__rbp; }
-  void      setRBP(uint64_t value, uint64_t location) { _registers.__rbp = value; _registerLocations.__rbp = location; }
+  void      setRBP(uint64_t value) { _registers.__rbp = value; }
   uint64_t  getRBX() const         { return _registers.__rbx; }
-  void      setRBX(uint64_t value, uint64_t location) { _registers.__rbx = value; _registerLocations.__rbx = location; }
+  void      setRBX(uint64_t value) { _registers.__rbx = value; }
   uint64_t  getR12() const         { return _registers.__r12; }
-  void      setR12(uint64_t value, uint64_t location) { _registers.__r12 = value; _registerLocations.__r12 = location; }
+  void      setR12(uint64_t value) { _registers.__r12 = value; }
   uint64_t  getR13() const         { return _registers.__r13; }
-  void      setR13(uint64_t value, uint64_t location) { _registers.__r13 = value; _registerLocations.__r13 = location; }
+  void      setR13(uint64_t value) { _registers.__r13 = value; }
   uint64_t  getR14() const         { return _registers.__r14; }
-  void      setR14(uint64_t value, uint64_t location) { _registers.__r14 = value; _registerLocations.__r14 = location; }
+  void      setR14(uint64_t value) { _registers.__r14 = value; }
   uint64_t  getR15() const         { return _registers.__r15; }
-  void      setR15(uint64_t value, uint64_t location) { _registers.__r15 = value; _registerLocations.__r15 = location; }
+  void      setR15(uint64_t value) { _registers.__r15 = value; }
 
 private:
   struct GPRs {
@@ -403,27 +352,7 @@ private:
     uint64_t __padding; // 16-byte align
 #endif
   };
-  struct GPRLocations {
-    uint64_t __rax;
-    uint64_t __rbx;
-    uint64_t __rcx;
-    uint64_t __rdx;
-    uint64_t __rdi;
-    uint64_t __rsi;
-    uint64_t __rbp;
-    uint64_t __rsp;
-    uint64_t __r8;
-    uint64_t __r9;
-    uint64_t __r10;
-    uint64_t __r11;
-    uint64_t __r12;
-    uint64_t __r13;
-    uint64_t __r14;
-    uint64_t __r15;
-    uint64_t __rip;
-  };
   GPRs _registers;
-  GPRLocations _registerLocations;
 #if defined(_WIN64)
   v128 _xmm[16];
 #endif
@@ -433,12 +362,10 @@ inline Registers_x86_64::Registers_x86_64(const void *registers) {
   static_assert((check_fit<Registers_x86_64, unw_context_t>::does_fit),
                 "x86_64 registers do not fit into unw_context_t");
   memcpy(&_registers, registers, sizeof(_registers));
-  memset(&_registerLocations, 0, sizeof(_registerLocations));
 }
 
 inline Registers_x86_64::Registers_x86_64() {
   memset(&_registers, 0, sizeof(_registers));
-  memset(&_registerLocations, 0, sizeof(_registerLocations));
 }
 
 inline bool Registers_x86_64::validRegister(int regNum) const {
@@ -496,122 +423,62 @@ inline uint64_t Registers_x86_64::getRegister(int regNum) const {
   _LIBUNWIND_ABORT("unsupported x86_64 register");
 }
 
-inline uint64_t Registers_x86_64::getRegisterLocation(int regNum) const {
-  switch (regNum) {
-  case UNW_REG_IP:
-    return _registerLocations.__rip;
-  case UNW_REG_SP:
-    return _registerLocations.__rsp;
-  case UNW_X86_64_RAX:
-    return _registerLocations.__rax;
-  case UNW_X86_64_RDX:
-    return _registerLocations.__rdx;
-  case UNW_X86_64_RCX:
-    return _registerLocations.__rcx;
-  case UNW_X86_64_RBX:
-    return _registerLocations.__rbx;
-  case UNW_X86_64_RSI:
-    return _registerLocations.__rsi;
-  case UNW_X86_64_RDI:
-    return _registerLocations.__rdi;
-  case UNW_X86_64_RBP:
-    return _registerLocations.__rbp;
-  case UNW_X86_64_RSP:
-    return _registerLocations.__rsp;
-  case UNW_X86_64_R8:
-    return _registerLocations.__r8;
-  case UNW_X86_64_R9:
-    return _registerLocations.__r9;
-  case UNW_X86_64_R10:
-    return _registerLocations.__r10;
-  case UNW_X86_64_R11:
-    return _registerLocations.__r11;
-  case UNW_X86_64_R12:
-    return _registerLocations.__r12;
-  case UNW_X86_64_R13:
-    return _registerLocations.__r13;
-  case UNW_X86_64_R14:
-    return _registerLocations.__r14;
-  case UNW_X86_64_R15:
-    return _registerLocations.__r15;
-  }
-  _LIBUNWIND_ABORT("unsupported x86_64 register");
-}
-
-inline void Registers_x86_64::setRegister(int regNum, uint64_t value, uint64_t location) {
+inline void Registers_x86_64::setRegister(int regNum, uint64_t value) {
   switch (regNum) {
   case UNW_REG_IP:
   case UNW_X86_64_RIP:
     _registers.__rip = value;
-    _registerLocations.__rip = location;
     return;
   case UNW_REG_SP:
     _registers.__rsp = value;
-    _registerLocations.__rsp = location;
     return;
   case UNW_X86_64_RAX:
     _registers.__rax = value;
-    _registerLocations.__rax = location;
     return;
   case UNW_X86_64_RDX:
     _registers.__rdx = value;
-    _registerLocations.__rdx = location;
     return;
   case UNW_X86_64_RCX:
     _registers.__rcx = value;
-    _registerLocations.__rcx = location;
     return;
   case UNW_X86_64_RBX:
     _registers.__rbx = value;
-    _registerLocations.__rbx = location;
     return;
   case UNW_X86_64_RSI:
     _registers.__rsi = value;
-    _registerLocations.__rsi = location;
     return;
   case UNW_X86_64_RDI:
     _registers.__rdi = value;
-    _registerLocations.__rdi = location;
     return;
   case UNW_X86_64_RBP:
     _registers.__rbp = value;
-    _registerLocations.__rbp = location;
     return;
   case UNW_X86_64_RSP:
     _registers.__rsp = value;
-    _registerLocations.__rsp = location;
     return;
   case UNW_X86_64_R8:
     _registers.__r8 = value;
-    _registerLocations.__r8 = location;
     return;
   case UNW_X86_64_R9:
     _registers.__r9 = value;
-    _registerLocations.__r9 = location;
     return;
   case UNW_X86_64_R10:
     _registers.__r10 = value;
-    _registerLocations.__r10 = location;
     return;
   case UNW_X86_64_R11:
     _registers.__r11 = value;
-    _registerLocations.__r11 = location;
     return;
   case UNW_X86_64_R12:
     _registers.__r12 = value;
-    _registerLocations.__r12 = location;
     return;
   case UNW_X86_64_R13:
     _registers.__r13 = value;
-    _registerLocations.__r13 = location;
     return;
   case UNW_X86_64_R14:
     _registers.__r14 = value;
-    _registerLocations.__r14 = location;
     return;
   case UNW_X86_64_R15:
     _registers.__r15 = value;
-    _registerLocations.__r15 = location;
     return;
   }
   _LIBUNWIND_ABORT("unsupported x86_64 register");
@@ -1326,8 +1193,7 @@ public:
 
   bool        validRegister(int num) const;
   uint64_t    getRegister(int num) const;
-  void        setRegister(int num, uint64_t value, uint64_t location);
-  uint64_t    getRegisterLocation(int num) const;
+  void        setRegister(int num, uint64_t value);
   bool        validFloatRegister(int num) const;
   double      getFloatRegister(int num) const;
   void        setFloatRegister(int num, double value);
@@ -2000,14 +1866,13 @@ public:
 
   bool        validRegister(int num) const;
   uint64_t    getRegister(int num) const;
-  void        setRegister(int num, uint64_t value, uint64_t location);
+  void        setRegister(int num, uint64_t value);
   bool        validFloatRegister(int num) const;
   double      getFloatRegister(int num) const;
   void        setFloatRegister(int num, double value);
   bool        validVectorRegister(int num) const;
   v128        getVectorRegister(int num) const;
   void        setVectorRegister(int num, v128 value);
-  uint64_t    getRegisterLocation(int regNum) const;
   static const char *getRegisterName(int num);
   void        jumpto(unsigned walkedFrames = 0) {
     zaDisable();
@@ -2023,10 +1888,7 @@ public:
   static int  getArch() { return REGISTERS_ARM64; }
 
   uint64_t  getSP() const         { return _registers.__sp; }
-  void      setSP(uint64_t value, uint64_t location) {
-    _registers.__sp = value;
-    _registerLocations.__sp = location;
-  }
+  void      setSP(uint64_t value) { _registers.__sp = value; }
   uint64_t  getIP() const {
     uint64_t value = _registers.__pc;
 #if defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING)
@@ -2040,7 +1902,7 @@ public:
 #endif
     return value;
   }
-  void      setIP(uint64_t value, uint64_t location) {
+  void      setIP(uint64_t value) {
 #if defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING)
     // Note the value which was set should have been signed with the SP.
     // We then resign with the slot we are being stored in to so that both SP
@@ -2052,13 +1914,9 @@ public:
                                               &_registers.__pc);
 #endif
     _registers.__pc = value;
-    _registerLocations.__pc = location;
   }
   uint64_t getFP() const { return _registers.__fp; }
-  void setFP(uint64_t value, uint64_t location) {
-    _registers.__fp = value;
-    _registerLocations.__fp = location;
-  }
+  void setFP(uint64_t value) { _registers.__fp = value; }
 
 #if defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING)
   void
@@ -2083,25 +1941,15 @@ private:
       _LIBUNWIND_ABORT("SME ZA disable failed");
   }
 
-#if defined(_LIBUNWIND_HAVE_GETAUXVAL)
   static bool checkHasSME() {
+#if defined(HAVE_SYS_AUXV_H)
     constexpr int hwcap2_sme = (1 << 23);
     unsigned long hwcap2 = getauxval(AT_HWCAP2);
     return (hwcap2 & hwcap2_sme) != 0;
-  }
-#elif defined(_LIBUNWIND_HAVE_ELF_AUX_INFO)
-  static bool checkHasSME() {
-    constexpr int hwcap2_sme = (1 << 23);
-    unsigned long hwcap2 = 0;
-    elf_aux_info(AT_HWCAP2, &hwcap2, sizeof(hwcap2));
-    return (hwcap2 & hwcap2_sme) != 0;
-  }
-#else
-  static bool checkHasSME() {
+#endif
     // TODO: Support other platforms.
     return false;
   }
-#endif
 
   struct GPRs {
     uint64_t __x[29] = {};        // x0-x28
@@ -2112,21 +1960,12 @@ private:
     uint64_t __ra_sign_state = 0; // RA sign state register
   };
 
-  struct GPRLocations {
-    uint64_t __x[29] = {}; // x0-x28
-    uint64_t __fp = 0;     // Frame pointer x29
-    uint64_t __lr = 0;     // Link register x30
-    uint64_t __sp = 0;     // Stack pointer x31
-    uint64_t __pc = 0;     // Program counter
-  };
-
   struct Misc {
     mutable uint32_t __vg = 0; // Vector Granule
     bool __has_sme = checkHasSME();
   };
 
   GPRs _registers = {};
-  GPRLocations _registerLocations = {};
   // Currently only the lower double in 128-bit vectore registers
   // is perserved during unwinding.  We could define new register
   // numbers (> 96) which mean whole vector registers, then this
@@ -2144,9 +1983,7 @@ inline Registers_arm64::Registers_arm64(const void *registers) {
   static_assert((check_fit<Registers_arm64, unw_context_t>::does_fit),
                 "arm64 registers do not fit into unw_context_t");
   memcpy(&_registers, registers, sizeof(_registers));
-  memset(&_registerLocations, 0, sizeof(_registerLocations));
-  static_assert(
-      sizeof(GPRs) == 0x110,
+  static_assert(sizeof(GPRs) == 0x110,
                 "expected VFP registers to be at offset 272");
   memcpy(_vectorHalfRegisters,
          static_cast<const uint8_t *>(registers) + sizeof(GPRs),
@@ -2161,7 +1998,7 @@ inline Registers_arm64::Registers_arm64(const void *registers) {
   uint64_t pcRegister = 0;
   memmove(&pcRegister, ((uint8_t *)&_registers) + offsetof(GPRs, __pc),
           sizeof(pcRegister));
-  setIP(pcRegister, 0);
+  setIP(pcRegister);
 #endif
 }
 
@@ -2174,7 +2011,7 @@ Registers_arm64::operator=(const Registers_arm64 &other) {
   memmove(static_cast<void *>(this), &other, sizeof(*this));
   // We perform this step to ensure that we correctly authenticate and re-sign
   // the pc after the bitwise copy.
-  setIP(other.getIP(), other.getRegisterLocation(UNW_REG_IP));
+  setIP(other.getIP());
   return *this;
 }
 
@@ -2228,51 +2065,23 @@ inline uint64_t Registers_arm64::getRegister(int regNum) const {
   _LIBUNWIND_ABORT("unsupported arm64 register");
 }
 
-inline void Registers_arm64::setRegister(int regNum, uint64_t value, uint64_t location) {
+inline void Registers_arm64::setRegister(int regNum, uint64_t value) {
   if (regNum == UNW_REG_IP || regNum == UNW_AARCH64_PC)
-    setIP(value, location);
-  else if (regNum == UNW_REG_SP || regNum == UNW_AARCH64_SP) {
+    setIP(value);
+  else if (regNum == UNW_REG_SP || regNum == UNW_AARCH64_SP)
     _registers.__sp = value;
-    _registerLocations.__sp = location;
-  }
   else if (regNum == UNW_AARCH64_RA_SIGN_STATE)
     _registers.__ra_sign_state = value;
-  else if (regNum == UNW_AARCH64_FP) {
-    _registers.__fp = value;
-    _registerLocations.__fp = location;
-  }
-  else if (regNum == UNW_AARCH64_LR) {
+  else if (regNum == UNW_AARCH64_FP)
+    setFP(value);
+  else if (regNum == UNW_AARCH64_LR)
     _registers.__lr = value;
-    _registerLocations.__lr = location;
-  }
-  else if ((regNum >= 0) && (regNum < 29)) {
-    _registers.__x[regNum] = value;
-    _registerLocations.__x[regNum] = location;
-  }
   else if (regNum == UNW_AARCH64_VG)
     _misc_registers.__vg = value;
+  else if ((regNum >= 0) && (regNum < 29))
+    _registers.__x[regNum] = value;
   else
     _LIBUNWIND_ABORT("unsupported arm64 register");
-}
-
-inline uint64_t Registers_arm64::getRegisterLocation(int regNum) const {
-  if (regNum == UNW_REG_IP)
-    return _registerLocations.__pc;
-  if (regNum == UNW_AARCH64_PC)
-    return _registerLocations.__pc;
-  if (regNum == UNW_REG_SP)
-    return _registerLocations.__sp;
-  if (regNum == UNW_AARCH64_SP)
-    return _registerLocations.__sp;
-  if (regNum == UNW_AARCH64_FP)
-    return _registerLocations.__fp;
-  if (regNum == UNW_AARCH64_LR)
-    return _registerLocations.__lr;
-  if ((regNum >= 0) && (regNum < 29))
-    return _registerLocations.__x[regNum];
-  if (regNum == UNW_AARCH64_RA_SIGN_STATE || regNum == UNW_AARCH64_VG)
-    return 0;
-  _LIBUNWIND_ABORT("unsupported arm64 register");
 }
 
 inline const char *Registers_arm64::getRegisterName(int regNum) {
@@ -2464,8 +2273,7 @@ public:
 
   bool        validRegister(int num) const;
   uint32_t    getRegister(int num) const;
-  void        setRegister(int num, uint32_t value, uint32_t location);
-  uint32_t    getRegisterLocation(int num) const;
+  void        setRegister(int num, uint32_t value);
   bool        validFloatRegister(int num) const;
   unw_fpreg_t getFloatRegister(int num);
   void        setFloatRegister(int num, unw_fpreg_t value);
@@ -2483,9 +2291,9 @@ public:
   static int  getArch() { return REGISTERS_ARM; }
 
   uint32_t  getSP() const         { return _registers.__sp; }
-  void      setSP(uint32_t value, uint32_t location) { _registers.__sp = value; _registerLocations.__sp = location; }
+  void      setSP(uint32_t value) { _registers.__sp = value; }
   uint32_t  getIP() const         { return _registers.__pc; }
-  void      setIP(uint32_t value, uint32_t location) { _registers.__pc = value; _registerLocations.__pc = location; }
+  void      setIP(uint32_t value) { _registers.__pc = value; }
 
   void saveVFPAsX() {
     assert(_use_X_for_vfp_save || !_saved_vfp_d0_d15);
@@ -2522,14 +2330,6 @@ private:
   };
 
   static void saveVFPWithFSTMD(void*);
-
-  struct GPRLocations {
-    uint32_t __r[13]; // r0-r12
-    uint32_t __sp;    // Stack pointer r13
-    uint32_t __lr;    // Link register r14
-    uint32_t __pc;    // Program counter r15
-  };
-
   static void saveVFPWithFSTMX(void*);
   static void saveVFPv3(void*);
   static void restoreVFPWithFLDMD(void*);
@@ -2546,7 +2346,6 @@ private:
   // ARM registers
   GPRs _registers;
   PseudoRegisters _pseudo_registers;
-  GPRLocations _registerLocations;
 
   // We save floating point registers lazily because we can't know ahead of
   // time which ones are used. See EHABI #4.7.
@@ -2585,7 +2384,6 @@ inline Registers_arm::Registers_arm(const void *registers)
   // See __unw_getcontext() note about data.
   memcpy(&_registers, registers, sizeof(_registers));
   memset(&_pseudo_registers, 0, sizeof(_pseudo_registers));
-  memset(&_registerLocations, 0, sizeof(_registerLocations));
   memset(&_vfp_d0_d15_pad, 0, sizeof(_vfp_d0_d15_pad));
   memset(&_vfp_d16_d31, 0, sizeof(_vfp_d16_d31));
 #if defined(__ARM_WMMX)
@@ -2602,7 +2400,6 @@ inline Registers_arm::Registers_arm()
     _saved_vfp_d16_d31(false) {
   memset(&_registers, 0, sizeof(_registers));
   memset(&_pseudo_registers, 0, sizeof(_pseudo_registers));
-  memset(&_registerLocations, 0, sizeof(_registerLocations));
   memset(&_vfp_d0_d15_pad, 0, sizeof(_vfp_d0_d15_pad));
   memset(&_vfp_d16_d31, 0, sizeof(_vfp_d16_d31));
 #if defined(__ARM_WMMX)
@@ -2669,28 +2466,24 @@ inline uint32_t Registers_arm::getRegister(int regNum) const {
   _LIBUNWIND_ABORT("unsupported arm register");
 }
 
-inline void Registers_arm::setRegister(int regNum, uint32_t value, uint32_t location) {
+inline void Registers_arm::setRegister(int regNum, uint32_t value) {
   if (regNum == UNW_REG_SP || regNum == UNW_ARM_SP) {
     _registers.__sp = value;
-    _registerLocations.__sp = location;
     return;
   }
 
   if (regNum == UNW_ARM_LR) {
     _registers.__lr = value;
-    _registerLocations.__lr = location;
     return;
   }
 
   if (regNum == UNW_REG_IP || regNum == UNW_ARM_IP) {
     _registers.__pc = value;
-    _registerLocations.__pc = location;
     return;
   }
 
   if (regNum >= UNW_ARM_R0 && regNum <= UNW_ARM_R12) {
     _registers.__r[regNum] = value;
-    _registerLocations.__r[regNum] = location;
     return;
   }
 
@@ -2709,22 +2502,6 @@ inline void Registers_arm::setRegister(int regNum, uint32_t value, uint32_t loca
     _pseudo_registers.__pac = value;
     return;
   }
-
-  _LIBUNWIND_ABORT("unsupported arm register");
-}
-
-inline uint32_t Registers_arm::getRegisterLocation(int regNum) const {
-  if (regNum == UNW_REG_SP || regNum == UNW_ARM_SP)
-    return _registerLocations.__sp;
-
-  if (regNum == UNW_ARM_LR)
-    return _registerLocations.__lr;
-
-  if (regNum == UNW_REG_IP || regNum == UNW_ARM_IP)
-    return _registerLocations.__pc;
-
-  if (regNum >= UNW_ARM_R0 && regNum <= UNW_ARM_R12)
-    return _registerLocations.__r[regNum];
 
   _LIBUNWIND_ABORT("unsupported arm register");
 }
@@ -4452,14 +4229,13 @@ public:
 
   bool        validRegister(int num) const;
   reg_t       getRegister(int num) const;
-  void        setRegister(int num, reg_t value, uint64_t location);
+  void        setRegister(int num, reg_t value);
   bool        validFloatRegister(int num) const;
   fp_t        getFloatRegister(int num) const;
   void        setFloatRegister(int num, fp_t value);
   bool        validVectorRegister(int num) const;
   v128        getVectorRegister(int num) const;
   void        setVectorRegister(int num, v128 value);
-  uint64_t    getRegisterLocation(int num) const;
   static const char *getRegisterName(int num);
   void        jumpto();
   static constexpr int lastDwarfRegNum() {
@@ -4468,14 +4244,13 @@ public:
   static int  getArch() { return REGISTERS_RISCV; }
 
   reg_t       getSP() const { return _registers[2]; }
-  void        setSP(reg_t value, uint64_t location) { _registers[2] = value; }
+  void        setSP(reg_t value) { _registers[2] = value; }
   reg_t       getIP() const { return _registers[0]; }
-  void        setIP(reg_t value, uint64_t location) { _registers[0] = value; }
+  void        setIP(reg_t value) { _registers[0] = value; }
 
 private:
   // _registers[0] holds the pc
   reg_t _registers[32];
-  reg_t _registerLocations[32];
 # if defined(__riscv_flen)
   fp_t _floats[32];
 # endif
@@ -4485,7 +4260,6 @@ inline Registers_riscv::Registers_riscv(const void *registers) {
   static_assert((check_fit<Registers_riscv, unw_context_t>::does_fit),
                 "riscv registers do not fit into unw_context_t");
   memcpy(&_registers, registers, sizeof(_registers));
-  memset(&_registerLocations, 0, sizeof(_registerLocations));
 # if __riscv_xlen == 32
   static_assert(sizeof(_registers) == 0x80,
                 "expected float registers to be at offset 128");
@@ -4505,7 +4279,6 @@ inline Registers_riscv::Registers_riscv(const void *registers) {
 
 inline Registers_riscv::Registers_riscv() {
   memset(&_registers, 0, sizeof(_registers));
-  memset(&_registerLocations, 0, sizeof(_registerLocations));
 # if defined(__riscv_flen)
   memset(&_floats, 0, sizeof(_floats));
 # endif
@@ -4542,39 +4315,18 @@ inline reg_t Registers_riscv::getRegister(int regNum) const {
   _LIBUNWIND_ABORT("unsupported riscv register");
 }
 
-inline void Registers_riscv::setRegister(int regNum, reg_t value, uint64_t location) {
-  if (regNum == UNW_REG_IP) {
+inline void Registers_riscv::setRegister(int regNum, reg_t value) {
+  if (regNum == UNW_REG_IP)
     _registers[0] = value;
-    _registerLocations[0] = value;
-  }
   else if (regNum == UNW_REG_SP)
     _registers[2] = value;
   else if (regNum == UNW_RISCV_X0)
     /* x0 is hardwired to zero */
     return;
-  else if ((regNum > 0) && (regNum < 32)) {
+  else if ((regNum > 0) && (regNum < 32))
     _registers[regNum] = value;
-    _registerLocations[regNum - UNW_RISCV_X0] = location;
-  }
   else
     _LIBUNWIND_ABORT("unsupported riscv register");
-}
-
-inline uint64_t Registers_riscv::getRegisterLocation(int regNum) const {
-  if (regNum == UNW_REG_IP)
-    return _registerLocations[0];
-  if (regNum == UNW_REG_SP)
-    return _registerLocations[2];
-  if (regNum == UNW_RISCV_X0)
-    return 0;
-  if ((regNum > 0) && (regNum < 32))
-    return _registerLocations[regNum];
-  if (regNum == UNW_RISCV_VLENB) {
-    reg_t vlenb;
-    __asm__("csrr %0, 0xC22" : "=r"(vlenb));
-    return vlenb;
-  }
-  _LIBUNWIND_ABORT("unsupported riscv register");
 }
 
 inline const char *Registers_riscv::getRegisterName(int regNum) {
@@ -5517,14 +5269,13 @@ public:
 
   bool validRegister(int num) const;
   uint64_t getRegister(int num) const;
-  void setRegister(int num, uint64_t value, uint64_t location);
+  void setRegister(int num, uint64_t value);
   bool validFloatRegister(int num) const;
   double getFloatRegister(int num) const;
   void setFloatRegister(int num, double value);
   bool validVectorRegister(int num) const;
   v128 getVectorRegister(int num) const;
   void setVectorRegister(int num, v128 value);
-  uint64_t getRegisterLocation(int num) const;
   static const char *getRegisterName(int num);
   void jumpto();
   static constexpr int lastDwarfRegNum() {
@@ -5533,23 +5284,17 @@ public:
   static int getArch() { return REGISTERS_LOONGARCH; }
 
   uint64_t getSP() const { return _registers.__r[3]; }
-  void setSP(uint64_t value, uint64_t location) { _registers.__r[3] = value; }
+  void setSP(uint64_t value) { _registers.__r[3] = value; }
   uint64_t getIP() const { return _registers.__pc; }
-  void setIP(uint64_t value, uint64_t location) { _registers.__pc = value; }
+  void setIP(uint64_t value) { _registers.__pc = value; }
 
 private:
-  struct GPRs {
+  struct loongarch_thread_state_t {
     uint64_t __r[32];
     uint64_t __pc;
   };
 
-  struct GPRLocations {
-    uint64_t __r[32];
-    uint64_t __pc;
-  };
-
-  GPRs _registers;
-  GPRLocations _registerLocations;
+  loongarch_thread_state_t _registers;
 #if __loongarch_frlen == 64
   double _floats[32];
 #endif
@@ -5559,7 +5304,6 @@ inline Registers_loongarch::Registers_loongarch(const void *registers) {
   static_assert((check_fit<Registers_loongarch, unw_context_t>::does_fit),
                 "loongarch registers do not fit into unw_context_t");
   memcpy(&_registers, registers, sizeof(_registers));
-  memset(&_registerLocations, 0, sizeof(_registerLocations));
   static_assert(sizeof(_registers) == 0x108,
                 "expected float registers to be at offset 264");
 #if __loongarch_frlen == 64
@@ -5570,7 +5314,6 @@ inline Registers_loongarch::Registers_loongarch(const void *registers) {
 
 inline Registers_loongarch::Registers_loongarch() {
   memset(&_registers, 0, sizeof(_registers));
-  memset(&_registerLocations, 0, sizeof(_registerLocations));
 #if __loongarch_frlen == 64
   memset(&_floats, 0, sizeof(_floats));
 #endif
@@ -5595,31 +5338,15 @@ inline uint64_t Registers_loongarch::getRegister(int regNum) const {
   _LIBUNWIND_ABORT("unsupported loongarch register");
 }
 
-inline void Registers_loongarch::setRegister(int regNum, uint64_t value, uint64_t location) {
-  if (regNum >= UNW_LOONGARCH_R0 && regNum <= UNW_LOONGARCH_R31) {
+inline void Registers_loongarch::setRegister(int regNum, uint64_t value) {
+  if (regNum >= UNW_LOONGARCH_R0 && regNum <= UNW_LOONGARCH_R31)
     _registers.__r[regNum - UNW_LOONGARCH_R0] = value;
-    _registerLocations.__r[regNum - UNW_LOONGARCH_R0] = location;
-  }
-  else if (regNum == UNW_REG_IP) {
+  else if (regNum == UNW_REG_IP)
     _registers.__pc = value;
-    _registerLocations.__pc = location;
-  }
-  else if (regNum == UNW_REG_SP) {
+  else if (regNum == UNW_REG_SP)
     _registers.__r[3] = value;
-    _registerLocations.__r[3] = location;
-  }
   else
     _LIBUNWIND_ABORT("unsupported loongarch register");
-}
-
-inline uint64_t Registers_loongarch::getRegisterLocation(int regNum) const {
-  if (regNum == UNW_REG_IP)
-    return _registerLocations.__pc;
-  if (regNum == UNW_REG_SP)
-    return _registerLocations.__r[3];
-  if ((regNum >= 0) && (regNum < 32))
-    return _registerLocations.__r[regNum];
-  _LIBUNWIND_ABORT("unsupported loongarch64 register");
 }
 
 inline const char *Registers_loongarch::getRegisterName(int regNum) {
