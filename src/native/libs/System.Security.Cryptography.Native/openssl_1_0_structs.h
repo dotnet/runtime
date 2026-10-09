@@ -4,6 +4,15 @@
 // Definitions of structures from OpenSSL 1.0.2, modified as relevant to
 // building .NET.
 
+#if OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_4_0_RTM
+struct asn1_string_st {
+    int length;
+    int type;
+    unsigned char *data;
+    long flags;
+};
+#endif
+
 // The CRYPTO_EX_DATA struct is smaller in 1.1, which changes the packing of
 // dsa_st
 struct crypto_ex_data_10_st

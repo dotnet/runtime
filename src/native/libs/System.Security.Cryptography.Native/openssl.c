@@ -213,7 +213,12 @@ ASN1_OBJECT* CryptoNative_GetX509PublicKeyAlgorithm(X509* x509)
 
     if (x509)
     {
-        X509_PUBKEY* pubkey = X509_get_X509_PUBKEY(x509);
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wcast-qual"
+        // In OpenSSL 4.0 this is const X509_PUBKEY*. OpenSSL 1.1.1's X509_PUBKEY_get0_param
+        // does not accept a const X509_PUBKEY*.
+        X509_PUBKEY* pubkey = (X509_PUBKEY*)X509_get_X509_PUBKEY(x509);
+#pragma clang diagnostic pop
         ASN1_OBJECT* algOid;
 
         if (pubkey && X509_PUBKEY_get0_param(&algOid, NULL, NULL, NULL, pubkey))
@@ -275,7 +280,12 @@ int32_t CryptoNative_GetX509PublicKeyParameterBytes(X509* x509, uint8_t* pBuf, i
         return 0;
     }
 
-    X509_PUBKEY* pubkey = X509_get_X509_PUBKEY(x509);
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wcast-qual"
+        // In OpenSSL 4.0 this is const X509_PUBKEY*. OpenSSL 1.1.1's X509_PUBKEY_get0_param
+        // does not accept a const X509_PUBKEY*.
+        X509_PUBKEY* pubkey = (X509_PUBKEY*)X509_get_X509_PUBKEY(x509);
+#pragma clang diagnostic pop
 
     if (!pubkey)
     {
@@ -327,7 +337,7 @@ Return values:
 NULL if the public key cannot be determined, a pointer to the ASN1_BIT_STRING structure representing
 the public key.
 */
-ASN1_BIT_STRING* CryptoNative_GetX509PublicKeyBytes(X509* x509)
+const ASN1_BIT_STRING* CryptoNative_GetX509PublicKeyBytes(X509* x509)
 {
     // No error queue impact.
 
@@ -381,7 +391,7 @@ int32_t CryptoNative_GetAsn1StringBytes(ASN1_STRING* asn1, uint8_t* pBuf, int32_
         return 0;
     }
 
-    int length = asn1->length;
+    int length = ASN1_STRING_length(asn1);
     assert(length >= 0);
     if (length < 0)
     {
@@ -393,7 +403,7 @@ int32_t CryptoNative_GetAsn1StringBytes(ASN1_STRING* asn1, uint8_t* pBuf, int32_
         return -length;
     }
 
-    memcpy_s(pBuf, Int32ToSizeT(cBuf), asn1->data, Int32ToSizeT(length));
+    memcpy_s(pBuf, Int32ToSizeT(cBuf), ASN1_STRING_get0_data(asn1), Int32ToSizeT(length));
     return 1;
 }
 
@@ -803,12 +813,19 @@ int32_t CryptoNative_CheckX509IpAddress(
 
             ipAddr = sanEntry->d.iPAddress;
 
-            if (!ipAddr || !ipAddr->data || ipAddr->length != addressBytesLen)
+            if (!ipAddr || ASN1_STRING_length(ipAddr) != addressBytesLen)
             {
                 continue;
             }
 
-            if (!memcmp(addressBytes, ipAddr->data, (size_t)addressBytesLen))
+            const uint8_t* ipAddrData = ASN1_STRING_get0_data(ipAddr);
+
+            if (!ipAddrData)
+            {
+                continue;
+            }
+
+            if (!memcmp(addressBytes, ipAddrData, (size_t)addressBytesLen))
             {
                 success = 1;
                 break;
@@ -833,8 +850,8 @@ int32_t CryptoNative_CheckX509IpAddress(
                 X509_NAME_ENTRY* nameEnt = X509_NAME_get_entry(subject, i);
                 ASN1_STRING* cn = X509_NAME_ENTRY_get_data(nameEnt);
 
-                if (cn->length == cchHostname &&
-                    !strncasecmp((const char*)cn->data, hostname, (size_t)cchHostname))
+                if (ASN1_STRING_length(cn) == cchHostname &&
+                    !strncasecmp((const char*)ASN1_STRING_get0_data(cn), hostname, (size_t)cchHostname))
                 {
                     success = 1;
                     break;
@@ -1024,6 +1041,13 @@ int32_t CryptoNative_BioSeek(BIO* bio, int32_t ofs)
     return BIO_seek(bio, ofs);
 }
 
+#ifdef FEATURE_DISTRO_AGNOSTIC_SSL
+static void local_sk_X509_freefunc_thunk(OPENSSL_sk_freefunc freefunc, void* ptr)
+{
+    freefunc(ptr);
+}
+#endif
+
 /*
 Function:
 NewX509Stack
@@ -1037,7 +1061,19 @@ A STACK_OF(X509*) with no comparator.
 STACK_OF(X509) * CryptoNative_NewX509Stack(void)
 {
     ERR_clear_error();
+
+#ifdef FEATURE_DISTRO_AGNOSTIC_SSL
+    OPENSSL_STACK* stack = OPENSSL_sk_new_null();
+
+    if (API_EXISTS(OPENSSL_sk_set_thunks))
+    {
+        OPENSSL_sk_set_thunks(stack, local_sk_X509_freefunc_thunk);
+    }
+
+    return (STACK_OF(X509)*)stack;
+#else
     return sk_X509_new_null();
+#endif
 }
 
 /*
