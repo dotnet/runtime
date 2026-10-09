@@ -252,9 +252,6 @@
   <data name="FieldAccess" xml:space="preserve">
     <value>Field is not visible.</value>
   </data>
-  <data name="FilterAndHandlerSameOffset" xml:space="preserve">
-    <value>Exception filter and handler start at the same offset.</value>
-  </data>
   <data name="FilterOrCatchUnexpectedStack" xml:space="preserve">
     <value>Attempt to enter a filter or catch block with unexpected stack state.</value>
   </data>
@@ -305,6 +302,24 @@
   </data>
   <data name="EHClauseOutOfRange" xml:space="preserve">
     <value>Exception handling clause bounds outside code size.</value>
+  </data>
+  <data name="EHClauseEmpty" xml:space="preserve">
+    <value>Exception handling region is empty.</value>
+  </data>
+  <data name="EHClauseBoundary" xml:space="preserve">
+    <value>Exception handling region does not start or end on an instruction boundary.</value>
+  </data>
+  <data name="EHClauseOverlap" xml:space="preserve">
+    <value>Exception handling regions overlap or are shared illegally.</value>
+  </data>
+  <data name="EHClauseNesting" xml:space="preserve">
+    <value>The try, filter, and handler of an exception clause must have the same enclosing region, and cannot be nested in a filter.</value>
+  </data>
+  <data name="EHClauseOrder" xml:space="preserve">
+    <value>An exception handling clause nested in a try must precede that try's clause.</value>
+  </data>
+  <data name="EHClauseFilterEnd" xml:space="preserve">
+    <value>A filter must have exactly one endfilter as its last instruction.</value>
   </data>
   <data name="NewobjAbstractClass" xml:space="preserve">
     <value>Cannot construct an instance of abstract class.</value>

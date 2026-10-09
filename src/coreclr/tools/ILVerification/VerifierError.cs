@@ -193,6 +193,11 @@ namespace ILVerify
         InvalidBaseType, // Type has an invalid base type.
         BadTypeSpec, // Invalid TypeSpec metadata.
         ConstrainedTypeNoInterfaceImpl, // The type operand of the constrained prefix must implement the interface declaring the static virtual method.
-        FilterAndHandlerSameOffset, // Exception filter and handler start at the same offset.
+        EHClauseEmpty, // Exception handling region is empty.
+        EHClauseBoundary, // Exception handling region does not start or end on an instruction boundary.
+        EHClauseOverlap, // Exception handling regions overlap or are shared illegally.
+        EHClauseNesting, // The parts of an exception handling clause have inconsistent nesting.
+        EHClauseOrder, // An exception handling clause nested in a try must precede that try's clause.
+        EHClauseFilterEnd, // A filter must have exactly one endfilter as its last instruction.
     }
 }
