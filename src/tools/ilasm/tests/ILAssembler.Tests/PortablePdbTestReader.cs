@@ -104,13 +104,19 @@ namespace ILAssembler.Tests
         }
 
         /// <summary>
-        /// Reads the records of the method's sequence points blob after its header, in order, as written:
-        /// <c>point@&lt;offset&gt;</c> for a sequence-point-record, <c>hidden@&lt;offset&gt;</c> for a
-        /// hidden-sequence-point-record and <c>document#&lt;row&gt;</c> for a document-record. Unlike
-        /// <see cref="GetSequencePoints"/>, this shows whether a document-record was written, including one that
-        /// names the document that is already current. Asserts that the method has a blob.
+        /// Asserts that the method has a sequence points blob and that no record after its header is a
+        /// document-record: a zero IL offset delta after the first record, followed by a Document row number, which
+        /// makes the following points belong to that document (docs/design/specs/PortablePdb-Metadata.md,
+        /// "Sequence Points Blob").
         /// </summary>
-        public string[] ReadBlobRecords(string methodName)
+        /// <remarks>
+        /// <see cref="GetSequencePoints"/> cannot tell this: a reader applies a document-record that names the
+        /// document that is already current without any visible effect, so the points it returns are the same with
+        /// or without the record. On failure, the message lists the records as written: <c>point@&lt;offset&gt;</c>
+        /// for a sequence-point-record, <c>hidden@&lt;offset&gt;</c> for a hidden-sequence-point-record and
+        /// <c>document#&lt;row&gt;</c> for a document-record.
+        /// </remarks>
+        public void AssertNoDocumentRecordInSequencePointsBlob(string methodName)
         {
             MethodDebugInformation debugInformation = GetDebugInformation(methodName);
             Assert.False(debugInformation.SequencePointsBlob.IsNil);
@@ -122,6 +128,7 @@ namespace ILAssembler.Tests
             }
 
             var records = new List<string>();
+            bool hasDocumentRecord = false;
             int offset = 0;
             bool first = true;
             bool afterNonHiddenPoint = false;
@@ -131,6 +138,7 @@ namespace ILAssembler.Tests
                 if (offsetDelta == 0 && !first)
                 {
                     records.Add($"document#{blob.ReadCompressedInteger()}");
+                    hasDocumentRecord = true;
                     continue;
                 }
 
@@ -159,7 +167,10 @@ namespace ILAssembler.Tests
                 records.Add($"point@{offset}");
             }
 
-            return records.ToArray();
+            if (hasDocumentRecord)
+            {
+                Assert.Fail($"The sequence points blob of {methodName} has a document-record: {string.Join(", ", records)}");
+            }
         }
 
         /// <summary>Gets the Document row number of the document with this name.</summary>

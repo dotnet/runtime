@@ -697,8 +697,6 @@ namespace ILAssembler
                 List<EntityRegistry.SequencePoint> sequencePoints = method.DebugInfo.SequencePoints;
                 if (sequencePoints.Count == 0 || !method.HasBody)
                 {
-                    // A method without an IL body has no offsets for its .line directives to map, as in native
-                    // ilasm, which records sequence points as it emits instructions.
                     _pdbBuilder.AddMethodDebugInformation(default, default);
                     continue;
                 }
@@ -715,6 +713,11 @@ namespace ILAssembler
                     method.DebugInfo.LocalSignature,
                     documentHandles,
                     singleDocument);
+
+                // docs/design/specs/PortablePdb-Metadata.md, MethodDebugInformation table: Document is "the row id of the
+                // single document containing all sequence points of the method, or 0 if the method doesn't have sequence
+                // points or spans multiple documents", and "_InitialDocument_ is only present if the _Document_ field of
+                // the _MethodDebugInformation_ table is nil"; the blob then names the documents (EncodeSequencePoints).
                 _pdbBuilder.AddMethodDebugInformation(
                     singleDocument ? documentHandles[firstDocument] : default,
                     _pdbBuilder.GetOrAddBlob(sequencePointsBlob));
