@@ -531,6 +531,23 @@ namespace ILAssembler.Tests
             Assert.Equal(pdbFilePath, pe.ReadCodeViewDebugDirectoryData(codeViewEntry).Path);
         }
 
+        [Fact]
+        public void PortablePdb_CodeViewEntry_NamesPdbFilePathAfterPathMap()
+        {
+            string directory = Path.Combine(Path.GetTempPath(), "tree");
+            CompilationResult result = DocumentCompilerTestHelpers.CompileAndGetResult(PortablePdbSource, new Options
+            {
+                Debug = true,
+                OutputFileName = "Output.dll",
+                PdbFilePath = Path.Combine(directory, "out", "Output.pdb"),
+                PathMap = PathMapTests.Parse($"{directory}=/_/"),
+            });
+            using var pe = new PEReader(DocumentCompilerTestHelpers.Serialize(result));
+            DebugDirectoryEntry codeViewEntry = Assert.Single(pe.ReadDebugDirectory(), entry => entry.Type == DebugDirectoryEntryType.CodeView);
+
+            Assert.Equal("/_/out/Output.pdb", pe.ReadCodeViewDebugDirectoryData(codeViewEntry).Path);
+        }
+
         [Theory]
         [InlineData("Output.dll", "Output.pdb")]
         [InlineData("Output", "Output.pdb")]

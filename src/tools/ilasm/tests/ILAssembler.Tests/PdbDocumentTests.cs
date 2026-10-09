@@ -539,6 +539,43 @@ namespace ILAssembler.Tests
             Assert.Equal<byte>(first, second);
         }
 
+        [Fact]
+        public void PathMap_MapsTheInputDocumentAndALineFileUnderAMappedPrefix_AndKeepsAFileOutsideIt()
+        {
+            CompilationResult result = CompileDocuments(
+                new Options { Debug = true, PathMap = PathMapTests.Parse("/src=/_") },
+                new SourceText(Program(Method("M", """
+                    .line 1,1 : 1,2 '/src/lib/a.cs'
+                    nop
+                    .line 2,2 : 1,2 '/elsewhere/b.cs'
+                    nop
+                    .line 3,3 : 1,2 'relative/c.cs'
+                    ret
+            """)), "/src/test.il"));
+            using var pdb = new PortablePdbTestReader(result);
+
+            Assert.Equal(new[] { "/_/test.il", "/_/lib/a.cs", "/elsewhere/b.cs", "relative/c.cs" }, pdb.DocumentNames);
+        }
+
+        [Fact]
+        public void PathMap_TwoNamesMappedToOneName_AreOneDocument()
+        {
+            using var pdb = PortablePdbTestReader.Compile(
+                Program(
+                    Method("M1", """
+                    .line 1,1 : 1,2 '/one/a.cs'
+                    ret
+            """) +
+                    Method("M2", """
+                    .line 2,2 : 1,2 '/two/a.cs'
+                    ret
+            """)),
+                new Options { Debug = true, PathMap = PathMapTests.Parse("/one=/_,/two=/_") });
+
+            Assert.Equal(new[] { "test.il", "/_/a.cs" }, pdb.DocumentNames);
+            Assert.Equal(("/_/a.cs", "/_/a.cs"), (pdb.GetMethodDocumentName("M1"), pdb.GetMethodDocumentName("M2")));
+        }
+
         private static string MethodWithLocals(string name, string locals) => Method(name, $$"""
                     .locals init ({{locals}})
                     .line 1,1 : 1,2 'a.cs'
