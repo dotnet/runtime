@@ -240,14 +240,11 @@ export async function mono_wasm_load_config (module: DotnetModuleInternal): Prom
         await importLibraryInitializers(loaderHelpers.config.resources?.modulesAfterConfigLoaded);
         await invokeLibraryInitializers("onRuntimeConfigLoaded", [loaderHelpers.config]);
 
-        if (module.onConfigLoaded) {
-            try {
-                await module.onConfigLoaded(loaderHelpers.config, exportedRuntimeAPI);
-                normalizeConfig();
-            } catch (err: any) {
-                mono_log_error("onConfigLoaded() failed", err);
-                throw err;
-            }
+        try {
+            await loaderHelpers.callbacks.configLoaded?.(loaderHelpers.config, exportedRuntimeAPI);
+        } catch (err: any) {
+            mono_log_error("onConfigLoaded() failed", err);
+            throw err;
         }
 
         normalizeConfig();
@@ -268,4 +265,3 @@ export function isDebuggingSupported (): boolean {
 
     return loaderHelpers.isChromium || loaderHelpers.isFirefox;
 }
-

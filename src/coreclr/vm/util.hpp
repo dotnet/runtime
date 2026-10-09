@@ -1,12 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
+
 // util.hpp
 //
-
-//
 // Miscellaneous useful functions
-//
 
 #ifndef _H_UTIL
 #define _H_UTIL
@@ -513,7 +510,7 @@ public:
         return m_FiberPtrId == UNKNOWN_ID;
     }
 #endif
-    void Clear()
+    void Clear() noexcept
     {
         LIMITED_METHOD_CONTRACT;
         m_FiberPtrId = UNKNOWN_ID;
@@ -540,13 +537,13 @@ CLRMapViewOfFile(
 BOOL
 CLRUnmapViewOfFile(
     IN LPVOID lpBaseAddress
-    );
+    ) noexcept;
 
 struct CLRMapViewTraits final
 {
     using Type = void*;
     static constexpr Type Default() { return NULL; }
-    static void Free(Type ptr)
+    static void Free(Type ptr) noexcept
     {
         STATIC_CONTRACT_WRAPPER;
 #ifndef DACCESS_COMPILE
@@ -564,7 +561,7 @@ struct PALPEFileTraits final
 {
     using Type = void*;
     static constexpr Type Default() { return NULL; }
-    static void Free(Type ptr)
+    static void Free(Type ptr) noexcept
     {
         STATIC_CONTRACT_WRAPPER;
 #ifndef DACCESS_COMPILE
@@ -593,7 +590,7 @@ struct NativeLibraryHandleTraits final
 {
     using Type = NATIVE_LIBRARY_HANDLE;
     static constexpr Type Default() { return NULL; }
-    static void Free(Type h)
+    static void Free(Type h) noexcept
     {
         STATIC_CONTRACT_WRAPPER;
 
@@ -712,7 +709,6 @@ public:
     static void DoJITNotification(MethodDesc *MethodDescPtr, TADDR NativeCodeLocation);
     static void DoModuleLoadNotification(Module *Module);
     static void DoModuleUnloadNotification(Module *Module);
-    static void DoExceptionNotification(class Thread* ThreadPtr);
     static void DoGCNotification(const GcEvtArgs& evtargs);
     static void DoExceptionCatcherEnterNotification(MethodDesc *MethodDescPtr, DWORD nativeOffset);
 

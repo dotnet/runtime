@@ -2190,11 +2190,11 @@ namespace System.Runtime.Intrinsics
         {
             if (typeof(T) == typeof(float))
             {
-                return VectorMath.IsEvenIntegerSingle<Vector64<float>, Vector64<uint>>(vector.AsSingle()).As<float, T>();
+                return VectorMath.IsEvenInteger<Vector64<float>, float>(vector.AsSingle()).As<float, T>();
             }
             else if (typeof(T) == typeof(double))
             {
-                return VectorMath.IsEvenIntegerDouble<Vector64<double>, Vector64<ulong>>(vector.AsDouble()).As<double, T>();
+                return VectorMath.IsEvenInteger<Vector64<double>, double>(vector.AsDouble()).As<double, T>();
             }
             return IsZero(vector & Vector64<T>.One);
         }
@@ -2234,7 +2234,7 @@ namespace System.Runtime.Intrinsics
         {
             if ((typeof(T) == typeof(float)) || (typeof(T) == typeof(double)))
             {
-                return IsFinite(vector) & Equals(vector, Truncate(vector));
+                return IsZero(vector - Truncate(vector));
             }
             return Vector64<T>.AllBitsSet;
         }
@@ -2313,11 +2313,11 @@ namespace System.Runtime.Intrinsics
         {
             if (typeof(T) == typeof(float))
             {
-                return VectorMath.IsOddIntegerSingle<Vector64<float>, Vector64<uint>>(vector.AsSingle()).As<float, T>();
+                return VectorMath.IsOddInteger<Vector64<float>, float>(vector.AsSingle()).As<float, T>();
             }
             else if (typeof(T) == typeof(double))
             {
-                return VectorMath.IsOddIntegerDouble<Vector64<double>, Vector64<ulong>>(vector.AsDouble()).As<double, T>();
+                return VectorMath.IsOddInteger<Vector64<double>, double>(vector.AsDouble()).As<double, T>();
             }
             return ~IsZero(vector & Vector64<T>.One);
         }

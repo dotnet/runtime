@@ -47,9 +47,6 @@ namespace System.Reflection.Emit
 
         private int m_fixupCount;
 
-        private int[]? m_RelocFixupList;
-        private int m_RelocFixupCount;
-
         private int m_exceptionCount;
         private int m_currExcStackCount;
         private __ExceptionInfo[]? m_exceptions;           // This is the list of all of the exceptions in this ILStream.
@@ -101,20 +98,6 @@ namespace System.Reflection.Emit
         #endregion
 
         #region Internal Members
-        internal virtual void RecordTokenFixup()
-        {
-            if (m_RelocFixupList == null)
-            {
-                m_RelocFixupList = new int[DefaultFixupArraySize];
-            }
-            else if (m_RelocFixupList.Length <= m_RelocFixupCount)
-            {
-                m_RelocFixupList = EnlargeArray(m_RelocFixupList);
-            }
-
-            m_RelocFixupList[m_RelocFixupCount++] = m_length;
-        }
-
         internal void InternalEmit(OpCode opcode)
         {
             short opcodeValue = opcode.Value;
@@ -355,18 +338,6 @@ namespace System.Reflection.Emit
             }
         }
 
-        internal int[]? GetTokenFixups()
-        {
-            if (m_RelocFixupCount == 0)
-            {
-                Debug.Assert(m_RelocFixupList == null);
-                return null;
-            }
-
-            int[] narrowTokens = new int[m_RelocFixupCount];
-            Array.Copy(m_RelocFixupList!, narrowTokens, m_RelocFixupCount);
-            return narrowTokens;
-        }
         #endregion
 
         #region Public Members
@@ -506,7 +477,6 @@ namespace System.Reflection.Emit
                 InternalEmit(opcode);
 
                 UpdateStackSize(opcode, 0);
-                RecordTokenFixup();
                 PutInteger4(tk);
             }
         }
@@ -555,7 +525,6 @@ namespace System.Reflection.Emit
 
             UpdateStackSize(OpCodes.Calli, stackchange);
 
-            RecordTokenFixup();
             PutInteger4(modBuilder.GetSignatureMetadataToken(sig));
         }
 
@@ -598,7 +567,6 @@ namespace System.Reflection.Emit
 
             EnsureCapacity(7);
             Emit(OpCodes.Calli);
-            RecordTokenFixup();
             PutInteger4(modBuilder.GetSignatureMetadataToken(sig));
         }
 
@@ -632,7 +600,6 @@ namespace System.Reflection.Emit
                 stackchange -= optionalParameterTypes.Length;
             UpdateStackSize(opcode, stackchange);
 
-            RecordTokenFixup();
             PutInteger4(tk);
         }
 
@@ -669,7 +636,6 @@ namespace System.Reflection.Emit
                 UpdateStackSize(opcode, stackchange);
             }
 
-            RecordTokenFixup();
             PutInteger4(tempVal);
         }
 
@@ -709,23 +675,17 @@ namespace System.Reflection.Emit
             }
             UpdateStackSize(opcode, stackchange);
 
-            RecordTokenFixup();
             PutInteger4(tk);
         }
 
         public override void Emit(OpCode opcode, Type cls)
         {
-            // Puts opcode onto the stream and then the metadata token represented
-            // by cls.  The location of cls is recorded so that the token can be
-            // patched if necessary when persisting the module to a PE.
-
             RuntimeModuleBuilder modBuilder = (RuntimeModuleBuilder)m_methodBuilder.Module;
             bool getGenericDefinition = (opcode == OpCodes.Ldtoken && cls != null && cls.IsGenericTypeDefinition);
             int tempVal = modBuilder.GetTypeTokenInternal(cls!, getGenericDefinition);
 
             EnsureCapacity(7);
             InternalEmit(opcode);
-            RecordTokenFixup();
             PutInteger4(tempVal);
         }
 
@@ -807,16 +767,11 @@ namespace System.Reflection.Emit
             int tempVal = modBuilder.GetFieldMetadataToken(field);
             EnsureCapacity(7);
             InternalEmit(opcode);
-            RecordTokenFixup();
             PutInteger4(tempVal);
         }
 
         public override void Emit(OpCode opcode, string str)
         {
-            // Puts the opcode onto the IL stream followed by the metadata token
-            // represented by str.  The location of str is recorded for future
-            // fixups if the module is persisted to a PE.
-
             ModuleBuilder modBuilder = (ModuleBuilder)m_methodBuilder.Module;
             int tempVal = modBuilder.GetStringMetadataToken(str);
             EnsureCapacity(7);

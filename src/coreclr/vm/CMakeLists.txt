@@ -84,6 +84,7 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     excep.cpp
     exinfo.cpp
     exstate.cpp
+    externalmemoryhandle.cpp
     field.cpp
     formattype.cpp
     fptrstubs.cpp
@@ -145,6 +146,7 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
 )
 
 set(VM_HEADERS_DAC_AND_WKS_COMMON
+    externalmemoryhandle.h
     ../inc/corjit.h
     ../inc/corjitflags.h
     ../inc/corjithost.h
@@ -313,7 +315,6 @@ set(VM_SOURCES_WKS
     callstubgenerator.cpp
     clrconfignative.cpp
     clrex.cpp
-    comdatetime.cpp
     comdelegate.cpp
     comdependenthandle.cpp
     comdynamic.cpp
@@ -428,7 +429,6 @@ set(VM_HEADERS_WKS
     ceemain.h
     clrconfignative.h
     clrex.h
-    comdatetime.h
     comdelegate.h
     comdependenthandle.h
     comdynamic.h

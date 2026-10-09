@@ -94,6 +94,17 @@ Things that have caused confusion before and will again:
 
 Classify every failure as **infrastructure** or **code** before acting.
 
+Follow the repository's [GitHub publication authorization rules](../../copilot-instructions.md#github-publication-authorization)
+for all proposed issues, updates, and comments below. In an interactive
+session, explicit advance permission covering the proposed publication is
+sufficient; do not ask again. An executing workflow's documented publication
+contract may also authorize the proposed publication within its currently
+authorized actions; follow any approval conditions it requires. Otherwise, in
+interactive and coding sessions, present the complete draft and obtain explicit
+approval before publishing. Without authorization, leave the draft locally.
+A workflow's authorization covers only its declared outputs and action limits,
+not every reporting action described in this skill.
+
 ### Infrastructure failures
 
 Caused by the test environment, not code. Indicators:
@@ -103,15 +114,15 @@ Caused by the test environment, not code. Indicators:
 - Machine-specific: same test passes on other machines
 - "No space left on device", Helix agent crashes
 
-Report infrastructure failures on existing tracking issues with a table entry:
+Prepare an update for an existing tracking issue with a table entry:
 
 | Build | Date | Machine | Job | Error |
 |---|---|---|---|---|
 | [#buildNumber](link) | YYYY-MM-DD | machineName | jobName | brief error |
 
-If no matching issue exists, create one with `area-Infrastructure` and platform labels (`os-ios`, `os-tvos`, `os-maccatalyst`, `os-android`).
+If no matching issue exists, draft one with `area-Infrastructure` and platform labels (`os-ios`, `os-tvos`, `os-maccatalyst`, `os-android`).
 
-For already tracked known issues, check whether the root cause is actionable. If a code or configuration fix is feasible, open a PR. If the issue is purely infrastructure (device provisioning, network), add occurrence data to the tracking issue instead.
+For already tracked known issues, check whether the root cause is actionable. If a code or configuration fix is feasible, prepare the fix and recommend a PR; open it only when publication is authorized. If the issue is purely infrastructure (device provisioning, network), draft occurrence data for the tracking issue instead.
 
 ### Code failures
 
@@ -128,7 +139,7 @@ Investigate code failures by starting with `git log --oneline --since='3 days ag
 
 ## Self-improvement
 
-When a mobile fix workflow discovers new patterns or workarounds, record the finding as a comment on the tracking issue (or create a new issue labeled `area-Infrastructure-mono`) so the team can later incorporate it into this document. Add findings to the relevant section above:
+When a mobile fix workflow discovers new patterns or workarounds, draft a comment on the tracking issue (or a new issue labeled `area-Infrastructure-mono`) so the team can later incorporate it into this document. Publish only with the authorization described above. Include findings about:
 - New failure patterns not yet documented
 - Code paths that turned out to be relevant
 - Recurring infrastructure issues and their workarounds

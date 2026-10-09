@@ -13,8 +13,4 @@
     <OutputPath>$(RuntimeBinDir)\AssemblyChecker</OutputPath>
     <RunAnalyzers>false</RunAnalyzers>
   </PropertyGroup>
-
-  <ItemGroup>
-    <PackageReference Include="System.Reflection.MetadataLoadContext" Version="$(SystemReflectionMetadataLoadContextPackageVersion)" />
-  </ItemGroup>
 </Project>

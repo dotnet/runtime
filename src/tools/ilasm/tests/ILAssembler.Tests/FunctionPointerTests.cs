@@ -40,16 +40,9 @@ namespace ILAssembler.Tests
             var reader = pe.GetMetadataReader();
 
             var field = reader.GetFieldDefinition(MetadataTokens.FieldDefinitionHandle(1));
-            var sigBytes = reader.GetBlobBytes(field.Signature);
-
-            // Field signature: 0x06 (FIELD), 0x1B (FNPTR), ...
-            Assert.Equal(0x06, sigBytes[0]); // FIELD calling convention
-            Assert.Equal(0x1B, sigBytes[1]); // ELEMENT_TYPE_FNPTR
-            // After FNPTR: calling convention byte, param count, return type, param types
-            Assert.Equal(0x00, sigBytes[2]); // DEFAULT calling convention
-            Assert.Equal(0x01, sigBytes[3]); // 1 parameter
-            Assert.Equal(0x01, sigBytes[4]); // return type: void
-            Assert.Equal(0x08, sigBytes[5]); // param type: int32
+            Assert.Equal(
+                "method void *(int32)",
+                field.DecodeSignature(DocumentCompilerTestHelpers.Decoder, genericContext: null));
         }
 
 
@@ -76,13 +69,10 @@ namespace ILAssembler.Tests
                 .Select(h => reader.GetMethodDefinition(h))
                 .First(m => reader.GetString(m.Name) == "Invoke");
 
-            var sigBytes = reader.GetBlobBytes(method.Signature);
-            // Method signature: 0x00 (DEFAULT), 0x01 (1 param), 0x01 (void ret), ...
-            Assert.Equal(0x00, sigBytes[0]); // DEFAULT calling convention
-            Assert.Equal(0x01, sigBytes[1]); // 1 parameter
-            Assert.Equal(0x01, sigBytes[2]); // return type: void
-            // Parameter should be ELEMENT_TYPE_FNPTR (0x1B)
-            Assert.Equal(0x1B, sigBytes[3]); // ELEMENT_TYPE_FNPTR
+            MethodSignature<string> signature =
+                method.DecodeSignature(DocumentCompilerTestHelpers.Decoder, genericContext: null);
+            Assert.Equal("void", signature.ReturnType);
+            Assert.Equal(new[] { "method void *(int32)" }, signature.ParameterTypes);
         }
 
 
@@ -111,18 +101,10 @@ namespace ILAssembler.Tests
                 .Select(h => reader.GetMethodDefinition(h))
                 .First(m => reader.GetString(m.Name) == "GetAdder");
 
-            var sigBytes = reader.GetBlobBytes(method.Signature);
-            // Method signature: 0x00 (DEFAULT), 0x00 (0 params), return type...
-            Assert.Equal(0x00, sigBytes[0]); // DEFAULT calling convention
-            Assert.Equal(0x00, sigBytes[1]); // 0 parameters
-            // Return type should be ELEMENT_TYPE_FNPTR (0x1B)
-            Assert.Equal(0x1B, sigBytes[2]); // ELEMENT_TYPE_FNPTR
-            // After FNPTR: calling convention, param count, return type (int32), param types (int32, int32)
-            Assert.Equal(0x00, sigBytes[3]); // DEFAULT calling convention for inner sig
-            Assert.Equal(0x02, sigBytes[4]); // 2 parameters in inner sig
-            Assert.Equal(0x08, sigBytes[5]); // inner return type: int32
-            Assert.Equal(0x08, sigBytes[6]); // inner param 1: int32
-            Assert.Equal(0x08, sigBytes[7]); // inner param 2: int32
+            MethodSignature<string> signature =
+                method.DecodeSignature(DocumentCompilerTestHelpers.Decoder, genericContext: null);
+            Assert.Equal("method int32 *(int32, int32)", signature.ReturnType);
+            Assert.Empty(signature.ParameterTypes);
         }
 
 
@@ -143,13 +125,9 @@ namespace ILAssembler.Tests
             var reader = pe.GetMetadataReader();
 
             var field = reader.GetFieldDefinition(MetadataTokens.FieldDefinitionHandle(1));
-            var sigBytes = reader.GetBlobBytes(field.Signature);
-
-            Assert.Equal(0x06, sigBytes[0]); // FIELD calling convention
-            Assert.Equal(0x1B, sigBytes[1]); // ELEMENT_TYPE_FNPTR
-            Assert.Equal(0x00, sigBytes[2]); // DEFAULT calling convention
-            Assert.Equal(0x00, sigBytes[3]); // 0 parameters
-            Assert.Equal(0x01, sigBytes[4]); // return type: void
+            Assert.Equal(
+                "method void *()",
+                field.DecodeSignature(DocumentCompilerTestHelpers.Decoder, genericContext: null));
         }
 
 
@@ -172,17 +150,9 @@ namespace ILAssembler.Tests
             var reader = pe.GetMetadataReader();
 
             var field = reader.GetFieldDefinition(MetadataTokens.FieldDefinitionHandle(1));
-            var sigBytes = reader.GetBlobBytes(field.Signature);
-
-            // Field sig: 0x06 (FIELD), 0x1B (FNPTR), 0x00 (DEFAULT), 0x01 (1 param),
-            //            0x0F (PTR), 0x01 (VOID) [= void* return type], 0x08 (int32 param)
-            Assert.Equal(0x06, sigBytes[0]); // FIELD calling convention
-            Assert.Equal(0x1B, sigBytes[1]); // ELEMENT_TYPE_FNPTR
-            Assert.Equal(0x00, sigBytes[2]); // DEFAULT calling convention
-            Assert.Equal(0x01, sigBytes[3]); // 1 parameter
-            Assert.Equal(0x0F, sigBytes[4]); // return type: ELEMENT_TYPE_PTR
-            Assert.Equal(0x01, sigBytes[5]); // return type inner: VOID (making void*)
-            Assert.Equal(0x08, sigBytes[6]); // param type: int32
+            Assert.Equal(
+                "method void* *(int32)",
+                field.DecodeSignature(DocumentCompilerTestHelpers.Decoder, genericContext: null));
         }
 
 
@@ -203,16 +173,9 @@ namespace ILAssembler.Tests
             var reader = pe.GetMetadataReader();
 
             var field = reader.GetFieldDefinition(MetadataTokens.FieldDefinitionHandle(1));
-            var sigBytes = reader.GetBlobBytes(field.Signature);
-
-            // Field sig: 0x06 (FIELD), 0x1B (FNPTR), 0x00 (DEFAULT), 0x00 (0 params),
-            //            0x0F (PTR), 0x01 (VOID) [= void* return type]
-            Assert.Equal(0x06, sigBytes[0]); // FIELD calling convention
-            Assert.Equal(0x1B, sigBytes[1]); // ELEMENT_TYPE_FNPTR
-            Assert.Equal(0x00, sigBytes[2]); // DEFAULT calling convention
-            Assert.Equal(0x00, sigBytes[3]); // 0 parameters
-            Assert.Equal(0x0F, sigBytes[4]); // return type: ELEMENT_TYPE_PTR
-            Assert.Equal(0x01, sigBytes[5]); // return type inner: VOID (making void*)
+            Assert.Equal(
+                "method void* *()",
+                field.DecodeSignature(DocumentCompilerTestHelpers.Decoder, genericContext: null));
         }
 
 
@@ -233,17 +196,9 @@ namespace ILAssembler.Tests
             var reader = pe.GetMetadataReader();
 
             var field = reader.GetFieldDefinition(MetadataTokens.FieldDefinitionHandle(1));
-            var sigBytes = reader.GetBlobBytes(field.Signature);
-
-            // Field sig: 0x06 (FIELD), 0x1B (FNPTR), 0x00 (DEFAULT), 0x01 (1 param),
-            //            0x0F (PTR), 0x08 (I4) [= int32* return type], 0x08 (int32 param)
-            Assert.Equal(0x06, sigBytes[0]); // FIELD calling convention
-            Assert.Equal(0x1B, sigBytes[1]); // ELEMENT_TYPE_FNPTR
-            Assert.Equal(0x00, sigBytes[2]); // DEFAULT calling convention
-            Assert.Equal(0x01, sigBytes[3]); // 1 parameter
-            Assert.Equal(0x0F, sigBytes[4]); // return type: ELEMENT_TYPE_PTR
-            Assert.Equal(0x08, sigBytes[5]); // return type inner: int32 (making int32*)
-            Assert.Equal(0x08, sigBytes[6]); // param type: int32
+            Assert.Equal(
+                "method int32* *(int32)",
+                field.DecodeSignature(DocumentCompilerTestHelpers.Decoder, genericContext: null));
         }
 
 
@@ -265,15 +220,30 @@ namespace ILAssembler.Tests
             var reader = pe.GetMetadataReader();
 
             var field = reader.GetFieldDefinition(MetadataTokens.FieldDefinitionHandle(1));
-            var sigBytes = reader.GetBlobBytes(field.Signature);
+            Assert.Equal(
+                "method void *(int32)*",
+                field.DecodeSignature(DocumentCompilerTestHelpers.Decoder, genericContext: null));
+        }
 
-            // Field sig: 0x06 (FIELD), then the type is FNPTR(void(int32)) with PTR modifier
-            // The modifier ordering means: 0x06, 0x1B (FNPTR), ..., then 0x0F (PTR) wraps it
-            // But in practice ECMA-335 encodes: 0x06, 0x0F (PTR), 0x1B (FNPTR), ...
-            Assert.Equal(0x06, sigBytes[0]); // FIELD calling convention
-            // The next two bytes must contain both PTR and FNPTR
-            Assert.Contains((byte)0x1B, sigBytes.Skip(1).ToArray()); // Must have ELEMENT_TYPE_FNPTR
-            Assert.Contains((byte)0x0F, sigBytes.Skip(1).ToArray()); // Must have ELEMENT_TYPE_PTR
+        [Fact]
+        public void FunctionPointer_VarargSignature_EmitsSentinel()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .field public static method vararg void *(int32, ..., object) fnPtrField
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            var field = reader.GetFieldDefinition(MetadataTokens.FieldDefinitionHandle(1));
+            Assert.Equal(
+                "method void *(int32, ..., object)",
+                field.DecodeSignature(DocumentCompilerTestHelpers.Decoder, genericContext: null));
         }
 
     }

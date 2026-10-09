@@ -11,6 +11,7 @@ using System.Security.Authentication;
 using System.Security.Authentication.ExtendedProtection;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace System.Net.Security
@@ -20,6 +21,8 @@ namespace System.Net.Security
 
 
         private SafeFreeCredentials? _credentialsHandle;
+        // Keeps a cache hit alive until SSPI has retained its own credential reference.
+        private SafeFreeCredentials? _cachedCredentialsHandle;
 
 #if TARGET_APPLE
         // on OSX, we have two implementations of SafeDeleteContext, so store a reference to the base class
@@ -145,9 +148,13 @@ namespace System.Net.Security
 
             _securityContext?.Dispose();
             _credentialsHandle?.Dispose();
+            ReleaseCachedCredentials();
 
             _sslAuthenticationOptions.Dispose();
         }
+
+        private void ReleaseCachedCredentials() =>
+            Interlocked.Exchange(ref _cachedCredentialsHandle, null)?.DangerousRelease();
 
         //
         // SECURITY: we open a private key container on behalf of the caller
@@ -544,6 +551,8 @@ namespace System.Net.Security
 
         internal bool AcquireClientCredentials(ref byte[]? thumbPrint, bool newCredentialsRequested = false)
         {
+            ReleaseCachedCredentials();
+
             // Acquire possible Client Certificate information and set it on the handle.
             bool cachedCred = false;                   // this is a return result from this method.
 
@@ -578,6 +587,7 @@ namespace System.Net.Security
                     sendTrustList: false,
                     _sslAuthenticationOptions.AllowRsaPssPadding,
                     _sslAuthenticationOptions.AllowRsaPkcs1Padding);
+                Volatile.Write(ref _cachedCredentialsHandle, cachedCredentialHandle);
 
                 // We can probably do some optimization here. If the selectedCert is returned by the delegate
                 // we can always go ahead and use the certificate to create our credential
@@ -650,6 +660,8 @@ namespace System.Net.Security
         //
         private bool AcquireServerCredentials(ref byte[]? thumbPrint)
         {
+            ReleaseCachedCredentials();
+
             X509Certificate? localCertificate = null;
             X509Certificate2? selectedCert = null;
             bool cachedCred = false;
@@ -731,6 +743,7 @@ namespace System.Net.Security
                                                                 sendTrustedList,
                                                                 _sslAuthenticationOptions.AllowRsaPssPadding,
                                                                 _sslAuthenticationOptions.AllowRsaPkcs1Padding);
+            Volatile.Write(ref _cachedCredentialsHandle, cachedCredentialHandle);
             if (cachedCredentialHandle != null)
             {
                 _credentialsHandle = cachedCredentialHandle;
@@ -845,10 +858,6 @@ namespace System.Net.Security
             // _credentialsHandle may be always null on some platforms but
             // _securityContext will be allocated on first call.
             bool refreshCredentialNeeded = _securityContext == null;
-            //
-            // Looping through ASC or ISC with potentially cached credential that could have been
-            // already disposed from a different thread before ISC or ASC dir increment a cred ref count.
-            //
             try
             {
                 do
@@ -929,6 +938,7 @@ namespace System.Net.Security
             }
             finally
             {
+                ReleaseCachedCredentials();
                 if (refreshCredentialNeeded)
                 {
                     //
@@ -1138,12 +1148,28 @@ namespace System.Net.Security
             int preexistingExtraCertsCount = _sslAuthenticationOptions.CertificateChainPolicy?.ExtraStore?.Count ?? 0;
 
             X509Chain? chain = null;
+            bool certificateValidationSkippedOnResume = false;
 
             try
             {
                 X509Certificate2? certificate = CertificateValidationPal.GetRemoteCertificate(_securityContext, ref chain, _sslAuthenticationOptions.CertificateChainPolicy);
 
-                return VerifyRemoteCertificate(certificate, chain, trust, ref alertToken, ref sslPolicyErrors, out chainStatus);
+                return VerifyRemoteCertificateCore(
+                    this,
+                    !_isRenego && !_isReAuthentication,
+                    _sslAuthenticationOptions,
+                    _securityContext,
+                    ref _remoteCertificate,
+                    ref _connectionInfo,
+                    certificate,
+                    chain,
+                    trust,
+                    ref alertToken,
+                    ref sslPolicyErrors,
+                    out chainStatus,
+                    out certificateValidationSkippedOnResume,
+                    peerCertificateChain: null,
+                    cloneCertificateChainPolicy: false);
             }
             finally
             {
@@ -1155,7 +1181,11 @@ namespace System.Net.Security
                     // Only cleanup certificates if no user callback was provided.
                     // When a callback is provided, users might add their own certificates to ExtraStore
                     // or keep references to certificates from ChainElements.
-                    if (_sslAuthenticationOptions.CertValidationDelegate == null)
+                    // On a resumed handshake we skip the callback entirely (see the resumption shortcut
+                    // in VerifyRemoteCertificateCore), so nothing else adopts the peer-sent intermediates
+                    // GetRemoteCertificate appended; dispose them here even when a callback is configured
+                    // to avoid leaking X509Certificate2 handles across repeated resumptions.
+                    if (_sslAuthenticationOptions.CertValidationDelegate == null || certificateValidationSkippedOnResume)
                     {
                         // Dispose only the certificates that were added by GetRemoteCertificate
                         for (int i = preexistingExtraCertsCount; i < chain.ChainPolicy.ExtraStore.Count; i++)
@@ -1185,6 +1215,7 @@ namespace System.Net.Security
         {
             return VerifyRemoteCertificateCore(
                 this,
+                !_isRenego && !_isReAuthentication,
                 _sslAuthenticationOptions,
                 _securityContext,
                 ref _remoteCertificate,
@@ -1194,11 +1225,15 @@ namespace System.Net.Security
                 trust,
                 ref alertToken,
                 ref sslPolicyErrors,
-                out chainStatus);
+                out chainStatus,
+                out _,
+                peerCertificateChain: null,
+                cloneCertificateChainPolicy: false);
         }
 
         internal static bool VerifyRemoteCertificateCore(
             object sender,
+            bool isInitialHandshake,
             SslAuthenticationOptions sslAuthenticationOptions,
 #if TARGET_APPLE
             SafeDeleteContext? securityContext,
@@ -1212,9 +1247,13 @@ namespace System.Net.Security
             SslCertificateTrust? trust,
             ref ProtocolToken alertToken,
             ref SslPolicyErrors sslPolicyErrors,
-            out X509ChainStatusFlags chainStatus)
+            out X509ChainStatusFlags chainStatus,
+            out bool certificateValidationSkippedOnResume,
+            X509Certificate2Collection? peerCertificateChain,
+            bool cloneCertificateChainPolicy)
         {
             chainStatus = X509ChainStatusFlags.NoError;
+            certificateValidationSkippedOnResume = false;
 
             bool success = false;
 
@@ -1229,6 +1268,34 @@ namespace System.Net.Security
                 // change in system trust, ...), but we have already established trust on this particular
                 // connection to even get this far.
                 certificate.Dispose();
+                return true;
+            }
+
+            if (certificate != null &&
+                isInitialHandshake &&
+                connectionInfo.TlsResumed &&
+                !LocalAppContextSwitches.RevalidateCertificateOnTlsResume)
+            {
+                // The initial TLS handshake was a resumption via an abbreviated handshake. The
+                // peer did not send its certificate again; its identity was established and
+                // validated during the original full handshake that produced the session ticket
+                // / session id. Common TLS stacks (e.g. OpenSSL, SChannel) do not re-run
+                // certificate verification on resumption, so by default neither do we: adopt the
+                // cached peer certificate for the RemoteCertificate property but skip rebuilding
+                // the chain and invoking the user validation callback. Set the
+                // System.Net.Security.RevalidateCertificateOnTlsResume switch to opt back into
+                // re-validating the peer certificate on every resumption.
+                //
+                // This shortcut is gated on the initial handshake: during renegotiation or
+                // TLS 1.3 post-handshake authentication the peer can present a new certificate,
+                // which must always be validated (the identical-certificate case above is handled
+                // separately).
+                remoteCertificateSlot = certificate;
+                certificateValidationSkippedOnResume = true;
+                if (NetEventSource.Log.IsEnabled())
+                {
+                    NetEventSource.Info(sender, "Skipping remote certificate validation on resumed TLS session.");
+                }
                 return true;
             }
 
@@ -1248,7 +1315,9 @@ namespace System.Net.Security
 
                 if (sslAuthenticationOptions.CertificateChainPolicy != null)
                 {
-                    chain.ChainPolicy = sslAuthenticationOptions.CertificateChainPolicy;
+                    chain.ChainPolicy = cloneCertificateChainPolicy
+                        ? sslAuthenticationOptions.CertificateChainPolicy.Clone()
+                        : sslAuthenticationOptions.CertificateChainPolicy;
                 }
                 else
                 {
@@ -1272,6 +1341,11 @@ namespace System.Net.Security
                             chain.ChainPolicy.CustomTrustStore.AddRange(trust._trustList);
                         }
                     }
+                }
+
+                if (peerCertificateChain is { Count: > 0 })
+                {
+                    chain.ChainPolicy.ExtraStore.AddRange(peerCertificateChain);
                 }
 
                 // set ApplicationPolicy unless already provided.

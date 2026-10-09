@@ -172,6 +172,9 @@ switch (testCase) {
                 throw error;
             });
         }
+        dotnet.withDotnetReady(() => {
+            testOutput("onDotnetReady called");
+        });
         break;
     case "AssetIntegrity":
         dotnet.withResourceLoader((type, name, defaultUri, integrity, behavior) => {
@@ -199,11 +202,9 @@ switch (testCase) {
         break;
     case "DownloadThenInit":
         let dtConfigLoadedCalled = false;
-        dotnet.withModuleConfig({
-            onConfigLoaded: () => {
-                dtConfigLoadedCalled = true;
-                testOutput("onConfigLoaded called");
-            }
+        dotnet.withConfigLoaded(() => {
+            dtConfigLoadedCalled = true;
+            testOutput("onConfigLoaded called");
         });
         const originalFetch = globalThis.fetch;
         globalThis.fetch = (url, fetchArgs) => {
@@ -225,11 +226,9 @@ switch (testCase) {
             loadBootResourceCalled = true;
             return defaultUri;
         });
-        dotnet.withModuleConfig({
-            onConfigLoaded: () => {
-                hcConfigLoadedCalled = true;
-                testOutput("onConfigLoaded called");
-            }
+        dotnet.withConfigLoaded(() => {
+            hcConfigLoadedCalled = true;
+            testOutput("onConfigLoaded called");
         });
         const originalFetch3 = globalThis.fetch;
         globalThis.fetch = (url, fetchArgs) => {
@@ -300,23 +299,21 @@ switch (testCase) {
         break;
     case "BufferedAssetsTest":
         const originalFetch4 = globalThis.fetch.bind(globalThis);
-        dotnet.withModuleConfig({
-            onConfigLoaded: (config) => {
-                const bufferedAssets = [
-                    ...config.resources.wasmNative,
-                    ...config.resources.coreAssembly,
-                    ...config.resources.assembly,
-                    ...(config.resources.corePdb ?? []),
-                    ...(config.resources.pdb ?? []),
-                    ...config.resources.wasmSymbols,
-                ];
-                for (const asset of bufferedAssets) {
-                    const url = new URL(asset.resolvedUrl ?? `./_framework/${asset.name}`, location.href);
-                    asset.buffer = originalFetch4(url).then(r => {
-                        if (!r.ok) throw new Error(`Failed to fetch buffered asset '${url}': ${r.status} ${r.statusText}`);
-                        return r.arrayBuffer();
-                    });
-                }
+        dotnet.withConfigLoaded((config) => {
+            const bufferedAssets = [
+                ...config.resources.wasmNative,
+                ...config.resources.coreAssembly,
+                ...config.resources.assembly,
+                ...(config.resources.corePdb ?? []),
+                ...(config.resources.pdb ?? []),
+                ...config.resources.wasmSymbols,
+            ];
+            for (const asset of bufferedAssets) {
+                const url = new URL(asset.resolvedUrl ?? `./_framework/${asset.name}`, location.href);
+                asset.buffer = originalFetch4(url).then(r => {
+                    if (!r.ok) throw new Error(`Failed to fetch buffered asset '${url}': ${r.status} ${r.statusText}`);
+                    return r.arrayBuffer();
+                });
             }
         });
         break;

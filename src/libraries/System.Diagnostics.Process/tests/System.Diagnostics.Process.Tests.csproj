@@ -92,6 +92,8 @@
              Link="Common\Interop\OSX\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\Interop.libproc.cs"
              Link="Common\Interop\OSX\Interop.libproc.cs" />
+    <Compile Include="$(CommonPath)Interop\OSX\Interop.libproc.GetProcessInfoById.cs"
+             Link="Common\Interop\OSX\Interop.libproc.GetProcessInfoById.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\Interop.libSystem.cs"
              Link="Common\Interop\OSX\Interop.libSystem.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs" 

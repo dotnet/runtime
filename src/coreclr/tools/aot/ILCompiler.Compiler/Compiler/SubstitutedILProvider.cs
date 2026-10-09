@@ -1095,6 +1095,10 @@ namespace ILCompiler
             if (type.IsCanonicalDefinitionType(CanonicalFormKind.Any))
                 return false;
 
+            // Nullable<T> isinst checks operate on boxed T, not a constructed Nullable<T> MethodTable.
+            if (type.IsNullable)
+                return false;
+
             // We don't track types without a constructed MethodTable very well.
             if (!ConstructedEETypeNode.CreationAllowed(type))
                 return false;

@@ -4,6 +4,7 @@
 #ifndef HAVE_MINIPAL_TIME_H
 #define HAVE_MINIPAL_TIME_H
 
+#include <stdbool.h>
 #include <stdint.h>
 
 #ifdef __cplusplus
@@ -24,6 +25,10 @@ extern "C"
     // A value of UINT32_MAX suspends indefinitely. A value of zero yields the remainder
     // of the thread's time slice.
     void minipal_sleep(uint32_t milliseconds);
+
+    // Yield to another thread, periodically sleeping after repeated yields.
+    // Returns whether the OS yield succeeded.
+    bool minipal_switch_to_thread(uint32_t switchCount);
 
     // Delays execution of current thread by `usecs` microseconds.
     // The delay is best-effort and may take longer than desired.

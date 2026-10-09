@@ -4,7 +4,7 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    public interface INodeWithTypeSignature : ISymbolDefinitionNode
+    public interface INodeWithTypeSignature : ISymbolNode
     {
         MethodSignature Signature { get; }
         bool IsUnmanagedCallersOnly { get; }
@@ -12,7 +12,7 @@ namespace ILCompiler.DependencyAnalysis
         bool HasGenericContextArg { get; }
     }
 
-    public interface IMethodCodeNodeWithTypeSignature : IMethodNode, INodeWithTypeSignature
+    public interface IMethodCodeNodeWithTypeSignature : IMethodNode, INodeWithTypeSignature, ISymbolDefinitionNode
     {
         // Keep methods aligned with WasmLowering.GetSignature(MethodDesc)
         MethodSignature INodeWithTypeSignature.Signature => Method.Signature;

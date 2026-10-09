@@ -153,5 +153,96 @@ namespace ILAssembler.Tests
             Assert.Equal(DiagnosticSeverity.Warning, warning.Severity);
         }
 
+        [Fact]
+        public void ExportedTypeAttributesAndImplementations_EmitExpectedMetadata()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly extern ForwardedAssembly { }
+                .assembly test { }
+                .file Module.netmodule .hash = (01 02 03 04)
+
+                .class extern public Outer
+                {
+                    .assembly extern ForwardedAssembly
+                }
+                .class extern private PrivateType
+                {
+                    .assembly extern ForwardedAssembly
+                }
+                .class extern forwarder ForwardedType
+                {
+                    .assembly extern ForwardedAssembly
+                }
+                .class extern nested public NestedPublic
+                {
+                    .class extern Outer
+                }
+                .class extern nested private NestedPrivate
+                {
+                    .class extern Outer
+                }
+                .class extern nested family NestedFamily
+                {
+                    .class extern Outer
+                }
+                .class extern nested assembly NestedAssembly
+                {
+                    .class extern Outer
+                }
+                .class extern nested famandassem NestedFamAndAssem
+                {
+                    .class extern Outer
+                }
+                .class extern nested famorassem NestedFamOrAssem
+                {
+                    .class extern Outer
+                }
+                .class extern public FileBackedType
+                {
+                    .file Module.netmodule
+                }
+                .class extern public TypeDefIdType
+                {
+                    .assembly extern ForwardedAssembly
+                    .class 42
+                }
+                .class extern public AttributedType
+                {
+                    .assembly extern ForwardedAssembly
+                    .custom instance void [mscorlib]System.ObsoleteAttribute::.ctor() = (01 00 00 00)
+                    ;
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var exportedTypes = reader.ExportedTypes
+                .ToDictionary(
+                    handle => reader.GetString(reader.GetExportedType(handle).Name),
+                    handle => (Handle: handle, Type: reader.GetExportedType(handle)));
+
+            Assert.Equal(TypeAttributes.Public, exportedTypes["Outer"].Type.Attributes & TypeAttributes.VisibilityMask);
+            Assert.Equal(TypeAttributes.NotPublic, exportedTypes["PrivateType"].Type.Attributes & TypeAttributes.VisibilityMask);
+            Assert.True(exportedTypes["ForwardedType"].Type.IsForwarder);
+            Assert.Equal(TypeAttributes.NestedPublic, exportedTypes["NestedPublic"].Type.Attributes & TypeAttributes.VisibilityMask);
+            Assert.Equal(TypeAttributes.NestedPrivate, exportedTypes["NestedPrivate"].Type.Attributes & TypeAttributes.VisibilityMask);
+            Assert.Equal(TypeAttributes.NestedFamily, exportedTypes["NestedFamily"].Type.Attributes & TypeAttributes.VisibilityMask);
+            Assert.Equal(TypeAttributes.NestedAssembly, exportedTypes["NestedAssembly"].Type.Attributes & TypeAttributes.VisibilityMask);
+            Assert.Equal(TypeAttributes.NestedFamANDAssem, exportedTypes["NestedFamAndAssem"].Type.Attributes & TypeAttributes.VisibilityMask);
+            Assert.Equal(TypeAttributes.NestedFamORAssem, exportedTypes["NestedFamOrAssem"].Type.Attributes & TypeAttributes.VisibilityMask);
+
+            Assert.Equal(HandleKind.AssemblyReference, exportedTypes["Outer"].Type.Implementation.Kind);
+            Assert.Equal(HandleKind.AssemblyFile, exportedTypes["FileBackedType"].Type.Implementation.Kind);
+            Assert.Equal(HandleKind.ExportedType, exportedTypes["NestedPublic"].Type.Implementation.Kind);
+            Assert.Equal(42, exportedTypes["TypeDefIdType"].Type.GetTypeDefinitionId());
+
+            var attribute = reader.GetCustomAttribute(
+                Assert.Single(reader.GetCustomAttributes(exportedTypes["AttributedType"].Handle)));
+            Assert.Equal(
+                [0x01, 0x00, 0x00, 0x00],
+                reader.GetBlobBytes(attribute.Value));
+        }
+
     }
 }

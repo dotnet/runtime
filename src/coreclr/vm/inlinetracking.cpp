@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 // =============================================================================================
 // Code for tracking method inlinings in NGen and R2R images.
 // The only information stored is "who" got inlined "where", no offsets or inlining depth tracking.
@@ -7,12 +8,15 @@
 // This information is later exposed to profilers and can be useful for ReJIT.
 // Runtime inlining is not being tracked because profilers can deduce it via callbacks anyway.
 // =============================================================================================
+
 #include "common.h"
 #include "inlinetracking.h"
 #include "ceeload.h"
 #include "versionresilienthashcode.h"
 
 using namespace NativeFormat;
+
+#ifdef FEATURE_INLINE_TRACKING
 
 #ifndef DACCESS_COMPILE
 
@@ -78,38 +82,6 @@ bool MethodInModule::operator !=(const MethodInModule& other) const
     LIMITED_METHOD_DAC_CONTRACT;
     return m_methodDef != other.m_methodDef ||
            m_module != other.m_module;
-}
-
-
-void InlineTrackingEntry::SortAndDeduplicate()
-{
-    STANDARD_VM_CONTRACT;
-
-    //Sort
-    MethodInModule *begin = &m_inliners[0];
-    MethodInModule *end = begin + m_inliners.GetCount();
-    util::sort(begin, end);
-
-    //Deduplicate
-    MethodInModule *left = begin;
-    MethodInModule *right = left + 1;
-    while (right < end)
-    {
-        auto rvalue = *right;
-        if (*left != rvalue)
-        {
-            left++;
-            if (left != right)
-            {
-                *left = rvalue;
-            }
-        }
-        right++;
-    }
-
-    //Shrink
-    int newCount = (int)(left - begin + 1);
-    m_inliners.SetCount(newCount);
 }
 
 InlineTrackingEntry::InlineTrackingEntry(const InlineTrackingEntry& other)
@@ -269,107 +241,8 @@ MethodInModule NativeImageInliningIterator::GetMethod()
 
 #ifdef FEATURE_READYTORUN
 
-struct InliningHeader
-{
-    int SizeOfInlineeIndex;
-};
-
 #ifndef DACCESS_COMPILE
 
-BOOL PersistentInlineTrackingMapR2R::TryLoad(Module* pModule, const BYTE* pBuffer, DWORD cbBuffer,
-	                                         AllocMemTracker *pamTracker, PersistentInlineTrackingMapR2R** ppLoadedMap)
-{
-    InliningHeader* pHeader = (InliningHeader*)pBuffer;
-    if (pHeader->SizeOfInlineeIndex > (int)(cbBuffer - sizeof(InliningHeader)))
-    {
-		//invalid serialized data, the index can't be larger the entire block
-		_ASSERTE(!"R2R image is invalid or there is a bug in the R2R parser");
-        return FALSE;
-    }
-
-	//NOTE: Error checking on the format is very limited at this point.
-	//We trust the image format is valid and this initial check is a cheap
-	//verification that may help catch simple bugs. It does not secure against
-	//a deliberately maliciously formed binary.
-
-	LoaderHeap *pHeap = pModule->GetLoaderAllocator()->GetHighFrequencyHeap();
-	void * pMemory = pamTracker->Track(pHeap->AllocMem((S_SIZE_T)sizeof(PersistentInlineTrackingMapR2R)));
-	PersistentInlineTrackingMapR2R* pMap = new (pMemory) PersistentInlineTrackingMapR2R();
-
-    pMap->m_module = pModule;
-	pMap->m_inlineeIndex = (PTR_ZapInlineeRecord)(pHeader + 1);
-	pMap->m_inlineeIndexSize = pHeader->SizeOfInlineeIndex / sizeof(ZapInlineeRecord);
-	pMap->m_inlinersBuffer = ((PTR_BYTE)(pHeader+1)) + pHeader->SizeOfInlineeIndex;
-	pMap->m_inlinersBufferSize = cbBuffer - sizeof(InliningHeader) - pMap->m_inlineeIndexSize;
-	*ppLoadedMap = pMap;
-    return TRUE;
-}
-
-#endif //!DACCESS_COMPILE
-
-COUNT_T PersistentInlineTrackingMapR2R::GetInliners(PTR_Module inlineeOwnerMod, mdMethodDef inlineeTkn, COUNT_T inlinersSize, MethodInModule inliners[], BOOL *incompleteData)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    _ASSERTE(inlineeOwnerMod);
-    _ASSERTE(inliners != NULL || inlinersSize == 0);
-
-    if (incompleteData)
-    {
-        *incompleteData = FALSE;
-    }
-    if (m_inlineeIndex == NULL || m_inlinersBuffer == NULL)
-    {
-        //No inlines saved in this image.
-        return 0;
-    }
-    if(inlineeOwnerMod != m_module)
-    {
-        // no cross module inlining (yet?)
-        return 0;
-    }
-
-    // Binary search to find all records matching (inlineeTkn)
-    ZapInlineeRecord probeRecord;
-    probeRecord.InitForR2R(RidFromToken(inlineeTkn));
-    ZapInlineeRecord *begin = m_inlineeIndex;
-    ZapInlineeRecord *end = m_inlineeIndex + m_inlineeIndexSize;
-    ZapInlineeRecord *foundRecord = util::lower_bound(begin, end, probeRecord);
-    DWORD result = 0;
-    DWORD outputIndex = 0;
-
-    // Go through all matching records
-    for (; foundRecord < end && *foundRecord == probeRecord; foundRecord++)
-    {
-        DWORD offset = foundRecord->m_offset;
-        NibbleReader stream(m_inlinersBuffer + offset, m_inlinersBufferSize - offset);
-        Module *inlinerModule = m_module;
-
-        DWORD inlinersCount = stream.ReadEncodedU32();
-        _ASSERTE(inlinersCount > 0);
-
-        RID inlinerRid = 0;
-        // Reading inliner RIDs one by one, each RID is represented as an adjustment (diff) to the previous one.
-        // Adding inliners module and coping to the output buffer
-        for (DWORD i = 0; i < inlinersCount && outputIndex < inlinersSize; i++)
-        {
-            inlinerRid += stream.ReadEncodedU32();
-            mdMethodDef inlinerTkn = TokenFromRid(inlinerRid, mdtMethodDef);
-            inliners[outputIndex++] = MethodInModule(inlinerModule, inlinerTkn);
-        }
-        result += inlinersCount;
-    }
-
-    return result;
-}
-
-#ifndef DACCESS_COMPILE
 BOOL PersistentInlineTrackingMapR2R2::TryLoad(Module* pModule, const BYTE* pBuffer, DWORD cbBuffer,
     AllocMemTracker* pamTracker, PersistentInlineTrackingMapR2R2** ppLoadedMap)
 {
@@ -730,7 +603,7 @@ Module* CrossModulePersistentInlineTrackingMapR2R::GetModuleByIndex(DWORD index)
 }
 #endif //!DACCESS_COMPILE
 
-#endif //FEATURE_READYTORUN
+#endif // FEATURE_READYTORUN
 
 
 #if !defined(DACCESS_COMPILE)
@@ -796,3 +669,5 @@ void JITInlineTrackingMap::AddInliningDontTakeLock(MethodDesc *inliner, MethodDe
 }
 
 #endif // !defined(DACCESS_COMPILE)
+
+#endif // FEATURE_INLINE_TRACKING

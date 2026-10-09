@@ -8,6 +8,96 @@ namespace System.Reflection.Emit.Tests
     public class MethodBuilderGetILGenerator
     {
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [InlineData(AssemblyBuilderAccess.Run, 0)]
+        [InlineData(AssemblyBuilderAccess.Run, 512)]
+        [InlineData(AssemblyBuilderAccess.RunAndCollect, 0)]
+        [InlineData(AssemblyBuilderAccess.RunAndCollect, 512)]
+        public void GetILGenerator_BodiesSurviveFurtherEmission(AssemblyBuilderAccess access, int padding)
+        {
+            ModuleBuilder module = Helpers.DynamicAssembly(access: access).DefineDynamicModule("MethodModule");
+            TypeBuilder type = module.DefineType("Methods", TypeAttributes.Public | TypeAttributes.Abstract | TypeAttributes.Sealed);
+            MethodBuilder constant = type.DefineMethod("Constant", MethodAttributes.Public | MethodAttributes.Static, typeof(int), Type.EmptyTypes);
+            constant.InitLocals = false;
+            ILGenerator constantIL = constant.GetILGenerator();
+            constantIL.Emit(OpCodes.Ldc_I4, 37);
+            constantIL.Emit(OpCodes.Ret);
+
+            MethodBuilder method = type.DefineMethod("WithExceptions", MethodAttributes.Public | MethodAttributes.Static, typeof(int), new[] { typeof(int) });
+            ILGenerator il = method.GetILGenerator();
+            LocalBuilder result = il.DeclareLocal(typeof(int));
+            Label nonNegative = il.DefineLabel();
+            il.BeginExceptionBlock();
+            il.Emit(OpCodes.Ldarg_0);
+            il.Emit(OpCodes.Ldc_I4_0);
+            il.Emit(OpCodes.Bge_S, nonNegative);
+            il.Emit(OpCodes.Newobj, typeof(InvalidOperationException).GetConstructor(Type.EmptyTypes));
+            il.Emit(OpCodes.Throw);
+            il.MarkLabel(nonNegative);
+            il.Emit(OpCodes.Ldarg_0);
+            il.Emit(OpCodes.Call, typeof(Math).GetMethod(nameof(Math.Abs), new[] { typeof(int) }));
+            il.Emit(OpCodes.Ldstr, "abc");
+            il.Emit(OpCodes.Callvirt, typeof(string).GetProperty(nameof(string.Length)).GetMethod);
+            il.Emit(OpCodes.Add);
+            il.Emit(OpCodes.Stloc, result);
+            il.Emit(OpCodes.Ldtoken, typeof(int));
+            il.Emit(OpCodes.Call, typeof(Type).GetMethod(nameof(Type.GetTypeFromHandle)));
+            il.Emit(OpCodes.Pop);
+            for (int i = 0; i < padding; i++)
+            {
+                il.Emit(OpCodes.Nop);
+            }
+            il.BeginCatchBlock(typeof(InvalidOperationException));
+            il.Emit(OpCodes.Pop);
+            il.Emit(OpCodes.Ldc_I4, -7);
+            il.Emit(OpCodes.Stloc, result);
+            il.BeginFinallyBlock();
+            il.Emit(OpCodes.Ldloc, result);
+            il.Emit(OpCodes.Ldc_I4_1);
+            il.Emit(OpCodes.Add);
+            il.Emit(OpCodes.Stloc, result);
+            il.EndExceptionBlock();
+            il.Emit(OpCodes.Ldloc, result);
+            il.Emit(OpCodes.Ret);
+
+            Type createdType = type.CreateType();
+            MethodInfo createdMethod = createdType.GetMethod(method.Name);
+            MethodInfo createdConstant = createdType.GetMethod(constant.Name);
+            Assert.Equal(37, createdConstant.Invoke(null, null));
+            Assert.Equal(6, createdMethod.Invoke(null, new object[] { 2 }));
+            Assert.Equal(-6, createdMethod.Invoke(null, new object[] { -2 }));
+            Assert.Equal(method.MetadataToken, createdMethod.MetadataToken);
+
+            MethodBody body = createdMethod.GetMethodBody();
+            Assert.True(body.InitLocals);
+            Assert.Equal(typeof(int), Assert.Single(body.LocalVariables).LocalType);
+            Assert.Equal(2, body.ExceptionHandlingClauses.Count);
+            Assert.Contains(body.ExceptionHandlingClauses, clause => clause.Flags == ExceptionHandlingClauseOptions.Clause && clause.CatchType == typeof(InvalidOperationException));
+            Assert.Contains(body.ExceptionHandlingClauses, clause => clause.Flags == ExceptionHandlingClauseOptions.Finally);
+            byte[] bytes = body.GetILAsByteArray();
+            Assert.Equal(il.ILOffset, bytes.Length);
+            Assert.Empty(createdConstant.GetMethodBody().ExceptionHandlingClauses);
+            Assert.Empty(createdConstant.GetMethodBody().LocalVariables);
+            Assert.False(createdConstant.GetMethodBody().InitLocals);
+
+            TypeBuilder moreMethods = module.DefineType("MoreMethods", TypeAttributes.Public | TypeAttributes.Abstract | TypeAttributes.Sealed);
+            for (int i = 0; i < 64; i++)
+            {
+                MethodBuilder extra = moreMethods.DefineMethod($"Extra{i}", MethodAttributes.Public | MethodAttributes.Static, typeof(int), Type.EmptyTypes);
+                ILGenerator extraIL = extra.GetILGenerator();
+                extraIL.Emit(OpCodes.Ldc_I4, i);
+                extraIL.Emit(OpCodes.Ret);
+            }
+            Type extraType = moreMethods.CreateType();
+            Assert.Equal(63, extraType.GetMethod("Extra63").Invoke(null, null));
+
+            Assert.Equal(bytes, createdMethod.GetMethodBody().GetILAsByteArray());
+            Assert.Equal(37, createdConstant.Invoke(null, null));
+            Assert.Equal(6, createdMethod.Invoke(null, new object[] { 2 }));
+            Assert.Equal(-6, createdMethod.Invoke(null, new object[] { -2 }));
+            Assert.Equal(createdMethod, module.ResolveMethod(method.MetadataToken));
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         [InlineData(20)]
         [InlineData(-10)]
         public void GetILGenerator_Int(int size)

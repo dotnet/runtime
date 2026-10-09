@@ -12,10 +12,10 @@ namespace System.Reflection;
 
 internal sealed partial class RuntimeParameterInfo : ParameterInfo
 {
-    private readonly ParameterHandle m_tkParamDef;
-    private readonly MetadataReader? m_scope;
-    private readonly QSignatureTypeHandle m_signature;
-    private readonly TypeContext m_typeContext;
+    private readonly ParameterHandle _tkParamDef;
+    private readonly MetadataReader? _scope;
+    private readonly QSignatureTypeHandle _signature;
+    private readonly TypeContext _typeContext;
 
     internal static RuntimeParameterInfo[] GetParameters<TRuntimeMethodCommon>(
         ref TRuntimeMethodCommon method, MethodBase member, RuntimeTypeInfo[] methodTypeArguments)
@@ -100,10 +100,10 @@ internal sealed partial class RuntimeParameterInfo : ParameterInfo
 
         PositionImpl = position;
         MemberImpl = member;
-        m_signature = signature;
-        m_typeContext = typeContext;
-        m_tkParamDef = parameterHandle;
-        m_scope = scope;
+        _signature = signature;
+        _typeContext = typeContext;
+        _tkParamDef = parameterHandle;
+        _scope = scope;
         AttrsImpl = attributes;
     }
 
@@ -113,18 +113,18 @@ internal sealed partial class RuntimeParameterInfo : ParameterInfo
         MemberImpl = owner;
         ClassImpl = parameterType;
         PositionImpl = position;
-        m_nameIsCached = true;
+        _nameIsCached = true;
     }
 
     private object? GetDefaultValueFromMetadata(bool raw)
     {
-        Debug.Assert(m_scope is not null && !m_tkParamDef.IsNil);
+        Debug.Assert(_scope is not null && !_tkParamDef.IsNil);
         Type parameterType = ParameterType;
-        Handle constantHandle = m_scope.GetParameter(m_tkParamDef).DefaultValue;
+        Handle constantHandle = _scope.GetParameter(_tkParamDef).DefaultValue;
         if (constantHandle.IsNil)
             return DBNull.Value;
 
-        object? value = constantHandle.ParseConstantValue(m_scope);
+        object? value = constantHandle.ParseConstantValue(_scope);
         if (parameterType.IsEnum && !raw)
         {
             if (value is null)
@@ -150,27 +150,27 @@ internal sealed partial class RuntimeParameterInfo : ParameterInfo
         return value;
     }
 
-    internal MetadataReader? GetMetadataReader() => m_scope;
+    internal MetadataReader? GetMetadataReader() => _scope;
 
     internal CustomAttributeHandleCollection GetCustomAttributeHandles()
     {
-        if (m_tkParamDef.IsNil)
+        if (_tkParamDef.IsNil)
             return default;
 
-        Debug.Assert(m_scope is not null);
-        return m_scope.GetParameter(m_tkParamDef).CustomAttributes;
+        Debug.Assert(_scope is not null);
+        return _scope.GetParameter(_tkParamDef).CustomAttributes;
     }
 
-    public override int MetadataToken => m_tkParamDef.IsNil
+    public override int MetadataToken => _tkParamDef.IsNil
         ? base.MetadataToken
         : throw new InvalidOperationException(SR.NoMetadataTokenAvailable);
 
     public override Type[] GetRequiredCustomModifiers() =>
-        m_signature.Reader is null ? [] : m_signature.GetCustomModifiers(m_typeContext, optional: false);
+        _signature.Reader is null ? [] : _signature.GetCustomModifiers(_typeContext, optional: false);
 
     public override Type[] GetOptionalCustomModifiers() =>
-        m_signature.Reader is null ? [] : m_signature.GetCustomModifiers(m_typeContext, optional: true);
+        _signature.Reader is null ? [] : _signature.GetCustomModifiers(_typeContext, optional: true);
 
     public override Type GetModifiedParameterType() =>
-        m_signature.GetModifiedType(ParameterType);
+        _signature.GetModifiedType(ParameterType);
 }

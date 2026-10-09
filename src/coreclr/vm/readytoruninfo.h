@@ -1,9 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 // ===========================================================================
 // File: ReadyToRunInfo.h
-//
-
 //
 // Runtime support for Ready to Run
 // ===========================================================================
@@ -96,7 +95,6 @@ public:
 
     const static ReadyToRun_TypeGenericInfoMap EmptyInstance;
 
-    HRESULT IsGenericNoThrow(mdTypeDef input, bool *pIsGeneric, IMDInternalImport* pImport) const;
     HRESULT GetGenericArgumentCountNoThrow(mdTypeDef input, uint32_t *pCount, IMDInternalImport* pImport) const;
     bool IsGeneric(mdTypeDef input, IMDInternalImport* pImport) const;
     uint32_t GetGenericArgumentCount(mdTypeDef input, IMDInternalImport* pImport) const;
@@ -191,8 +189,10 @@ class ReadyToRunInfo
     Crst                            m_Crst;
     PtrHashMap                      m_entryPointToMethodDescMap;
 
+#ifdef FEATURE_INLINE_TRACKING
     PTR_PersistentInlineTrackingMapR2R m_pPersistentInlineTrackingMap;
     PTR_PersistentInlineTrackingMapR2R m_pCrossModulePersistentInlineTrackingMap;
+#endif // FEATURE_INLINE_TRACKING
 
     NativeFormat::NativeHashtable   m_externalTypeMaps;
     NativeFormat::NativeHashtable   m_proxyTypeMaps;
@@ -389,6 +389,7 @@ public:
 
     static DWORD GetFieldBaseOffset(MethodTable * pMT);
 
+#ifdef FEATURE_INLINE_TRACKING
     PTR_PersistentInlineTrackingMapR2R GetInlineTrackingMap()
     {
         return m_pPersistentInlineTrackingMap;
@@ -426,7 +427,7 @@ public:
 
         return inlinersCount;
     }
-
+#endif // FEATURE_INLINE_TRACKING
 
     bool MayHaveCustomAttribute(WellKnownAttribute attribute, mdToken token);
     void DisableCustomAttributeFilter();

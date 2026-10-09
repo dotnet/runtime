@@ -49,7 +49,7 @@ bool CLREventBase::CreateFromOSHandle(void* osHandle)
         DUPLICATE_SAME_ACCESS) != FALSE;
 }
 
-void CLREventBase::CloseEvent()
+void CLREventBase::CloseEvent() noexcept
 {
     if (IsValid())
     {

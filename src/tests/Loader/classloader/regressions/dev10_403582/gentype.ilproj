@@ -1,5 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk.IL">
   <PropertyGroup>
+    <ManagedIlasmRoundTripIncompatible>true</ManagedIlasmRoundTripIncompatible>
     <OutputType>Library</OutputType>
   </PropertyGroup>
   <ItemGroup>

@@ -152,6 +152,15 @@ namespace System.Diagnostics
         // value       = 0*255(chr) nblk-chr
         // nblk-chr    = %x21-2B / %x2D-3C / %x3E-7E
         // chr         = %x20 / nblk-chr
+        // A single incoming request commonly fans out to several outgoing calls that
+        // all inject the same (unmodified) Activity.TraceStateString (see InjectTraceState),
+        // typically all from the same thread for a given request. Cache the last
+        // (input, output) pair per thread to skip re-parsing and rebuilding it every time.
+        [ThreadStatic]
+        private static string? t_lastRawTraceState;
+        [ThreadStatic]
+        private static string? t_lastValidatedTraceState;
+
         internal static string? ValidateTraceState(string? traceState)
         {
             if (string.IsNullOrEmpty(traceState))
@@ -159,6 +168,28 @@ namespace System.Diagnostics
                 return null;
             }
 
+            // ValidateTraceState also runs on the raw carrier value from an incoming (untrusted)
+            // request, via ExtractTraceIdAndState. Don't let an arbitrarily large or malformed
+            // value get rooted in per-thread state for the thread's lifetime just because it was
+            // seen once - only cache inputs already within a valid tracestate's own size limit.
+            if (traceState.Length > MaxTraceStateEncodedLength)
+            {
+                return ValidateTraceStateCore(traceState);
+            }
+
+            if (ReferenceEquals(traceState, t_lastRawTraceState))
+            {
+                return t_lastValidatedTraceState;
+            }
+
+            string? validated = ValidateTraceStateCore(traceState);
+            t_lastRawTraceState = traceState;
+            t_lastValidatedTraceState = validated;
+            return validated;
+        }
+
+        private static string? ValidateTraceStateCore(string traceState)
+        {
             int entries = 0;
             using ValueStringBuilder vsb = new ValueStringBuilder(stackalloc char[Math.Min(traceState.Length, MaxTraceStateEncodedLength)]);
 
@@ -295,6 +326,14 @@ namespace System.Diagnostics
         {
             value = null!;
             valueSpan = Trim(valueSpan);
+
+            // If every character is already in the allowed (unescaped) baggage-value set, which
+            // excludes both '%' and non-ASCII, the value decodes to itself.
+            if (valueSpan.IndexOfAnyExcept(s_validBaggageValueChars) < 0)
+            {
+                value = valueSpan.ToString();
+                return true;
+            }
 
             using ValueStringBuilder vsb = new ValueStringBuilder(stackalloc char[128]);
 

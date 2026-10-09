@@ -67,110 +67,6 @@ HRESULT ImportHelper::FindMethodSpecByMethodAndInstantiation(
 
 
 //*******************************************************************************
-// Find the GenericParam by owner and constraint
-//*******************************************************************************
-//@GENERICS: todo: look in hashtable (cf. MetaModelRW.cpp) if necessary
-HRESULT ImportHelper::FindGenericParamConstraintByOwnerAndConstraint(
-    CMiniMdRW   *pMiniMd,                   // [IN] the minimd to lookup
-    mdGenericParam tkOwner,                 // [IN] GenericParamConstraint Owner
-    mdToken tkConstraint,                   // [IN] GenericParamConstraint Constraint
-    mdGenericParamConstraint *pGenericParamConstraint,// [OUT] Put the GenericParam token here.
-    RID         rid /* = 0*/)               // [IN] Optional rid to be ignored.
-{
-    HRESULT hr;
-    GenericParamConstraintRec *pRecord;
-    mdGenericParam     tkOwnerTmp;
-    mdToken     tkConstraintTmp;
-    ULONG       cGenericParamConstraints;
-
-    ULONG       i;
-
-    _ASSERTE(pGenericParamConstraint);
-
-    cGenericParamConstraints = pMiniMd->getCountGenericParamConstraints();
-
-    // linear scan through the GenericParam table
-    for (i=1; i <= cGenericParamConstraints; ++i)
-    {
-        // For the call from Validator ignore the rid passed in.
-        if (i == rid)
-            continue;
-
-        IfFailRet(pMiniMd->GetGenericParamConstraintRecord(i, &pRecord));
-
-        tkOwnerTmp = pMiniMd->getOwnerOfGenericParamConstraint(pRecord);
-        tkConstraintTmp = pMiniMd->getConstraintOfGenericParamConstraint(pRecord);
-
-        if ((tkOwnerTmp != tkOwner) || (tkConstraintTmp != tkConstraint))
-            continue;
-
-        //  Matching record found.
-        *pGenericParamConstraint = TokenFromRid(i, mdtGenericParamConstraint);
-        return S_OK;
-    }
-    return CLDB_E_RECORD_NOTFOUND;
-} // HRESULT ImportHelper::FindGenericParamConstraintByOwnerAndConstraint()
-
-//*******************************************************************************
-// Find the GenericParam by owner and name or number
-//*******************************************************************************
-//<REVISIT_TODO> @GENERICS: todo: look in hashtable (cf. MetaModelRW.cpp) if necessary </REVISIT_TODO>
-HRESULT ImportHelper::FindGenericParamByOwner(
-    CMiniMdRW   *pMiniMd,                   // [IN] the minimd to lookup
-    mdToken     tkOwner,                    // [IN] GenericParam Owner
-    LPCUTF8     szUTF8Name,                 // [IN] GeneriParam Name, may be NULL if not used for search
-    ULONG       *pNumber,                   // [IN] GeneriParam Number, may be NULL if not used for search
-    mdGenericParam *pGenericParam,          // [OUT] Put the GenericParam token here.
-    RID         rid /* = 0*/)               // [IN] Optional rid to be ignored.
-{
-    HRESULT          hr;
-    GenericParamRec *pRecord;
-    mdToken     tkOwnerTmp;
-    ULONG       cGenericParams;
-    LPCUTF8     szCurName;
-    ULONG       curNumber;
-    ULONG       i;
-
-    _ASSERTE(pGenericParam);
-
-    cGenericParams = pMiniMd->getCountGenericParams();
-
-    // linear scan through the GenericParam table
-    for (i=1; i <= cGenericParams; ++i)
-    {
-        // For the call from Validator ignore the rid passed in.
-        if (i == rid)
-            continue;
-
-        IfFailRet(pMiniMd->GetGenericParamRecord(i, &pRecord));
-
-        tkOwnerTmp = pMiniMd->getOwnerOfGenericParam(pRecord);
-        if ( tkOwnerTmp != tkOwner)
-            continue;
-
-        // if the name is significant, try to match it
-        if (szUTF8Name)
-        {
-            IfFailRet(pMiniMd->getNameOfGenericParam(pRecord, &szCurName));
-            if (strcmp(szCurName, szUTF8Name))
-                continue;
-        }
-
-        // if the number is significant, try to match it
-        if (pNumber)
-        {  curNumber = pMiniMd->getNumberOfGenericParam(pRecord);
-           if (*pNumber != curNumber)
-               continue;
-        }
-
-        //  Matching record found.
-        *pGenericParam = TokenFromRid(i, mdtGenericParam);
-        return S_OK;
-    }
-    return CLDB_E_RECORD_NOTFOUND;
-} // HRESULT ImportHelper::FindGenericParamByOwner()
-
-//*******************************************************************************
 // Find a Method given a parent, name and signature.
 //*******************************************************************************
 HRESULT ImportHelper::FindMethod(
@@ -626,41 +522,6 @@ HRESULT ImportHelper::FindMethodImpl(
     }
     return CLDB_E_RECORD_NOTFOUND;
 } // HRESULT ImportHelper::FindMethodImpl()
-
-//*******************************************************************************
-// Find the TypeRef given the fully qualified name and the assembly name
-//*******************************************************************************
-HRESULT ImportHelper::FindCustomAttributeCtorByName(
-    CMiniMdRW   *pMiniMd,               // [IN] the minimd to lookup
-    LPCUTF8     szAssemblyName,         // [IN] Assembly Name.
-    LPCUTF8     szNamespace,            // [IN] TypeRef Namespace.
-    LPCUTF8     szName,                 // [IN] TypeRef Name.
-    mdTypeDef   *ptk,                   // [OUT] Put the TypeRef token here.
-    RID         rid /* = 0*/)           // [IN] Optional rid to be ignored.
-{
-    HRESULT     hr;
-    ULONG       cRecs;                  // Count of records.
-    AssemblyRefRec *pRec;               // Current record being looked at.
-    LPCUTF8     szTmp;                  // Temp string.
-    mdTypeRef   tkCAType;
-
-    cRecs = pMiniMd->getCountAssemblyRefs();
-    // Search for the AssemblyRef record.
-    for (ULONG i = 1; i <= cRecs; i++)
-    {
-        IfFailRet(pMiniMd->GetAssemblyRefRecord(i, &pRec));
-
-        IfFailRet(pMiniMd->getNameOfAssemblyRef(pRec, &szTmp));
-        if (!strcmp(szTmp, szAssemblyName) &&
-            (SUCCEEDED(FindTypeRefByName(pMiniMd, TokenFromRid(i, mdtAssemblyRef), szNamespace, szName, &tkCAType, rid))) &&
-            (SUCCEEDED(FindMemberRef(pMiniMd, tkCAType, COR_CTOR_METHOD_NAME, NULL, 0 ,ptk))))
-        {
-            return S_OK;
-        }
-    }
-
-    return CLDB_E_RECORD_NOTFOUND;
-}
 
 //*******************************************************************************
 // Find the TypeRef given the fully qualified name.
@@ -1146,136 +1007,6 @@ HRESULT ImportHelper::FindEvent(
 
 
 //*****************************************************************************
-// find an custom value record given by parent and type token. This will always return
-// the first one that is found regardless duplicated.
-//*****************************************************************************
-HRESULT ImportHelper::FindCustomAttributeByToken(
-    CMiniMdRW   *pMiniMd,                   // [IN] the minimd to lookup
-    mdToken     tkParent,                   // [IN] the parent that custom value is associated with
-    mdToken     tkType,                     // [IN] type of the CustomAttribute
-    const void  *pCustBlob,                 // [IN] custom attribute blob
-    ULONG       cbCustBlob,                 // [IN] size of the blob.
-    mdCustomAttribute *pcv)                 // [OUT] CustomAttribute token
-{
-    HRESULT     hr;
-    CustomAttributeRec  *pRec;
-    ULONG       ridStart, ridEnd;
-    ULONG       i;
-    mdToken     tkParentTmp;
-    mdToken     tkTypeTmp;
-    const void  *pCustBlobTmp;
-    ULONG       cbCustBlobTmp;
-
-    _ASSERTE(pcv);
-    *pcv = mdCustomAttributeNil;
-    if ( pMiniMd->IsSorted(TBL_CustomAttribute) )
-    {
-        IfFailRet(pMiniMd->FindCustomAttributeFor(
-            RidFromToken(tkParent),
-            TypeFromToken(tkParent),
-            tkType,
-            (RID *)pcv));
-        if (InvalidRid(*pcv))
-        {
-            return S_FALSE;
-        }
-        else if (pCustBlob)
-        {
-            IfFailRet(pMiniMd->GetCustomAttributeRecord(RidFromToken(*pcv), &pRec));
-            IfFailRet(pMiniMd->getValueOfCustomAttribute(pRec, (const BYTE **)&pCustBlobTmp, &cbCustBlobTmp));
-            if (cbCustBlob == cbCustBlobTmp &&
-                !memcmp(pCustBlob, pCustBlobTmp, cbCustBlob))
-                {
-                    return S_OK;
-                }
-        }
-        else
-        {
-            return S_OK;
-        }
-    }
-    else
-    {
-        CLookUpHash *pHashTable = pMiniMd->m_pLookUpHashes[TBL_CustomAttribute];
-
-        if (pHashTable)
-        {
-            // table is not sorted but hash is built
-            // We want to create dynmaic array to hold the dynamic enumerator.
-            TOKENHASHENTRY *p;
-            ULONG       iHash;
-            int         pos;
-
-            // Hash the data.
-            iHash = pMiniMd->HashCustomAttribute(tkParent);
-
-            // Go through every entry in the hash chain looking for ours.
-            for (p = pHashTable->FindFirst(iHash, pos);
-                 p;
-                 p = pHashTable->FindNext(pos))
-            {
-                IfFailRet(pMiniMd->GetCustomAttributeRecord(RidFromToken(p->tok), &pRec));
-
-                tkParentTmp = pMiniMd->getParentOfCustomAttribute(pRec);
-                if (tkParentTmp != tkParent)
-                    continue;
-
-                tkTypeTmp = pMiniMd->getTypeOfCustomAttribute(pRec);
-                if (tkType != tkTypeTmp)
-                    continue;
-                if (pCustBlob != NULL)
-                {
-                    IfFailRet(pMiniMd->getValueOfCustomAttribute(pRec, (const BYTE **)&pCustBlobTmp, &cbCustBlobTmp));
-                    if (cbCustBlob == cbCustBlobTmp &&
-                        !memcmp(pCustBlob, pCustBlobTmp, cbCustBlob))
-                    {
-                        *pcv = TokenFromRid(p->tok, mdtCustomAttribute);
-                        return S_OK;
-                    }
-                }
-                else
-                    return S_OK;
-            }
-        }
-        else
-        {
-            // linear scan
-            ridStart = 1;
-            ridEnd = pMiniMd->getCountCustomAttributes() + 1;
-
-            // loop through all custom values
-            for (i = ridStart; i < ridEnd; i++)
-            {
-                IfFailRet(pMiniMd->GetCustomAttributeRecord(i, &pRec));
-
-                tkParentTmp = pMiniMd->getParentOfCustomAttribute(pRec);
-                if ( tkParentTmp != tkParent )
-                    continue;
-
-                tkTypeTmp = pMiniMd->getTypeOfCustomAttribute(pRec);
-                if (tkType != tkTypeTmp)
-                    continue;
-
-                if (pCustBlob != NULL)
-                {
-                    IfFailRet(pMiniMd->getValueOfCustomAttribute(pRec, (const BYTE **)&pCustBlobTmp, &cbCustBlobTmp));
-                    if (cbCustBlob == cbCustBlobTmp &&
-                        !memcmp(pCustBlob, pCustBlobTmp, cbCustBlob))
-                    {
-                        *pcv = TokenFromRid(i, mdtCustomAttribute);
-                        return S_OK;
-                    }
-                }
-                else
-                    return S_OK;
-            }
-        }
-        // fall through
-    }
-    return S_FALSE;
-} // ImportHelper::FindCustomAttributeByToken
-
-//*****************************************************************************
 // Helper function to lookup and retrieve a CustomAttribute.
 //*****************************************************************************
 HRESULT ImportHelper::GetCustomAttributeByName( // S_OK or error.
@@ -1588,7 +1319,6 @@ ImportHelper::MergeUpdateTokenInFieldSig(
     ULONG       cbHashValue,            // [IN] Size in bytes for the hash value.
     IMetaModelCommon *pCommonImport,    // [IN] The scope to merge into the emit scope.
     PCCOR_SIGNATURE pbSigImp,           // signature from the imported scope
-    MDTOKENMAP      *ptkMap,            // Internal OID mapping structure.
     CQuickBytes     *pqkSigEmit,        // [OUT] buffer for translated signature
     ULONG           cbStartEmit,        // [IN] start point of buffer to write to
     ULONG           *pcbImp,            // [OUT] total number of bytes consumed from pbSigImp
@@ -1644,7 +1374,6 @@ ImportHelper::MergeUpdateTokenInFieldSig(
                 cbHashValue,                // Size in bytes for the hash value.
                 pCommonImport,              // scope to merge into the emit scope.
                 &pbSigImp[cbSrcTotal],      // from the imported scope
-                ptkMap,                     // OID mapping structure.
                 pqkSigEmit,                 // [OUT] buffer for translated signature
                 cbStartEmit + cbDestTotal,  // [IN] start point of buffer to write to
                 &cbImp,                     // [OUT] total number of bytes consumed from pbSigImp
@@ -1665,7 +1394,6 @@ ImportHelper::MergeUpdateTokenInFieldSig(
                 cbHashValue,                // Size in bytes for the hash value.
                 pCommonImport,              // scope to merge into the emit scope.
                 &pbSigImp[cbSrcTotal],      // from the imported scope
-                ptkMap,                     // OID mapping structure.
                 pqkSigEmit,                 // [OUT] buffer for translated signature
                 cbStartEmit + cbDestTotal,  // [IN] start point of buffer to write to
                 &cbImp,                     // [OUT] total number of bytes consumed from pbSigImp
@@ -1693,7 +1421,6 @@ ImportHelper::MergeUpdateTokenInFieldSig(
                     cbHashValue,                // Size in bytes for the hash value.
                     pCommonImport,              // The scope to merge into the emit scope.
                     &pbSigImp[cbSrcTotal],      // signature from the imported scope
-                    ptkMap,                     // Internal OID mapping structure.
                     pqkSigEmit,                 // [OUT] buffer for translated signature
                     cbStartEmit + cbDestTotal,  // [IN] start point of buffer to write to
                     &cbImp,                     // [OUT] total number of bytes consumed from pbSigImp
@@ -1735,7 +1462,6 @@ ImportHelper::MergeUpdateTokenInFieldSig(
                 cbHashValue,                // Size in bytes for the hash value.
                 pCommonImport,              // The scope to merge into the emit scope.
                 &pbSigImp[cbSrcTotal],      // signature from the imported scope
-                ptkMap,                     // Internal OID mapping structure.
                 pqkSigEmit,                 // [OUT] buffer for translated signature
                 cbStartEmit + cbSrcTotal,   // [IN] start point of buffer to write to
                 &cbImp,                     // [OUT] total number of bytes consumed from pbSigImp
@@ -1791,7 +1517,6 @@ ImportHelper::MergeUpdateTokenInFieldSig(
                 cbHashValue,                // Size in bytes for the hash value.
                 pCommonImport,              // The scope to merge into the emit scope.
                 &pbSigImp[cbSrcTotal],      // signature from the imported scope
-                ptkMap,                     // Internal OID mapping structure.
                 pqkSigEmit,                 // [OUT] buffer for translated signature
                 cbStartEmit + cbDestTotal,  // [IN] start point of buffer to write to
                 &cbImp,                     // [OUT] total number of bytes consumed from pbSigImp
@@ -1810,20 +1535,6 @@ ImportHelper::MergeUpdateTokenInFieldSig(
             // now get the embedded typeref token
             cb = CorSigUncompressToken(&pbSigImp[cbSrcTotal], &tkRidFrom);
 
-            // Map the ulRidFrom to ulRidTo
-            if (ptkMap)
-            {
-                // mdtBaseType does not record in the map. It is unique across modules
-                if ( TypeFromToken(tkRidFrom) == mdtBaseType )
-                {
-                    tkRidTo = tkRidFrom;
-                }
-                else
-                {
-                    IfFailGo( ptkMap->Remap(tkRidFrom, &tkRidTo) );
-                }
-            }
-            else
             {
                 // If the token is a TypeDef or a TypeRef, get/create the
                 // ResolutionScope for the outermost TypeRef.
@@ -1872,7 +1583,6 @@ ImportHelper::MergeUpdateTokenInFieldSig(
                         cbHashValue,                // Size in bytes for the hash value.
                         pCommonImport,              // The scope to merge into the emit scope.
                         pvTypeSpecSig,              // signature from the imported scope
-                        ptkMap,                     // Internal OID mapping structure.
                         &qkTypeSpecSigEmit,         // [OUT] buffer for translated signature
                         0,                          // start from first byte of TypeSpec signature
                         0,                          // don't care how many bytes are consumed
@@ -1939,7 +1649,6 @@ ImportHelper::MergeUpdateTokenInFieldSig(
                     cbHashValue,                // Size in bytes for the hash value.
                     pCommonImport,              // The scope to merge into the emit scope.
                     &pbSigImp[cbSrcTotal],      // signature from the imported scope
-                    ptkMap,                     // Internal OID mapping structure.
                     pqkSigEmit,                 // [OUT] buffer for translated signature
                     cbStartEmit + cbDestTotal,  // [IN] start point of buffer to write to
                     &cbImp,                     // [OUT] total number of bytes consumed from pbSigImp
@@ -1982,7 +1691,6 @@ HRESULT ImportHelper::MergeUpdateTokenInSig(// S_OK or error.
     ULONG       cbHashValue,            // [IN] Size in bytes for the hash value.
     IMetaModelCommon *pCommonImport,    // [IN] The scope to merge into the emit scope.
     PCCOR_SIGNATURE pbSigImp,           // signature from the imported scope
-    MDTOKENMAP      *ptkMap,            // Internal OID mapping structure.
     CQuickBytes     *pqkSigEmit,        // [OUT] translated signature
     ULONG           cbStartEmit,        // [IN] start point of buffer to write to
     ULONG           *pcbImp,            // [OUT] total number of bytes consumed from pbSigImp
@@ -2026,7 +1734,6 @@ HRESULT ImportHelper::MergeUpdateTokenInSig(// S_OK or error.
             cbHashValue,
             pCommonImport,
             &pbSigImp[cbSrcTotal],
-            ptkMap,
             pqkSigEmit,                     // output buffer to hold the new sig for the field
             cbStartEmit + cbDestTotal,      // number of bytes already in pqkSigDest
             &cbImp,                         // number of bytes consumed from imported signature
@@ -2065,7 +1772,6 @@ HRESULT ImportHelper::MergeUpdateTokenInSig(// S_OK or error.
                     cbHashValue,
                     pCommonImport,
                     &pbSigImp[cbSrcTotal],
-                    ptkMap,
                     pqkSigEmit,                     // output buffer to hold the new sig for the field
                     cbStartEmit + cbDestTotal,      // number of bytes already in pqkSigDest
                     &cbImp,                         // number of bytes consumed from imported signature
@@ -2088,7 +1794,6 @@ HRESULT ImportHelper::MergeUpdateTokenInSig(// S_OK or error.
                 cbHashValue,
                 pCommonImport,
                 &pbSigImp[cbSrcTotal],
-                ptkMap,
                 pqkSigEmit,                 // output buffer to hold the new sig for the field
                 cbStartEmit + cbDestTotal,
                 &cbImp,                     // number of bytes consumed from imported signature
@@ -2349,47 +2054,6 @@ HRESULT ImportHelper::CreateNesterHierarchy(
 ErrExit:
     return hr;
 }   // ImportHelper::CreateNesterHierarchy
-
-//****************************************************************************
-// Given the arrays of names and namespaces for the Nested Type hierarchy,
-// find the innermost TypeRef token.  The arrays start with the innermost
-// TypeRefs and go outwards.
-//****************************************************************************
-HRESULT ImportHelper::FindNestedTypeRef(
-    CMiniMdRW   *pMiniMd,               // [IN] Scope in which to find the TypeRef.
-    CQuickArray<LPCUTF8> &cqaNesterNamespaces,  // [IN] Array of Names.
-    CQuickArray<LPCUTF8> &cqaNesterNames,   // [IN] Array of Namespaces.
-    mdToken     tkResolutionScope,      // [IN] Resolution scope for the outermost TypeRef.
-    mdTypeRef   *ptr)                   // [OUT] Inner most TypeRef token.
-{
-    ULONG       ulNesters;
-    ULONG       ulCurNester;
-    HRESULT     hr = S_OK;
-
-    _ASSERTE(cqaNesterNames.Size() == cqaNesterNamespaces.Size() &&
-             cqaNesterNames.Size());
-
-    // Set the output parameter to Nil token.
-    *ptr = mdTokenNil;
-
-    // Get count in the hierarchy, the give TypeDef included.
-    ulNesters = (ULONG)cqaNesterNames.Size();
-
-    // For each nester try to find the corresponding TypeRef in
-    // the emit scope.  For the outermost TypeDef enclosing class is Nil.
-    for (ulCurNester = ulNesters-1; ulCurNester != (ULONG) -1; ulCurNester--)
-    {
-        IfFailGo(FindTypeRefByName(pMiniMd,
-                                   tkResolutionScope,
-                                   cqaNesterNamespaces[ulCurNester],
-                                   cqaNesterNames[ulCurNester],
-                                   &tkResolutionScope));
-    }
-    *ptr = tkResolutionScope;
-ErrExit:
-    return hr;
-}   // HRESULT ImportHelper::FindNestedTypeRef()
-
 
 //****************************************************************************
 // Given the arrays of names and namespaces for the Nested Type hierarchy,

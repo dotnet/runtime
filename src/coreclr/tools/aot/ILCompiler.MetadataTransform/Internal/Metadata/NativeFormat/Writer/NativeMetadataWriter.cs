@@ -677,16 +677,16 @@ namespace Internal.Metadata.NativeFormat.Writer
         public override string ToString(bool includeHandleValue)
         {
             string str;
-            if (this.EnclosingType != null)
+            if (this.NamespaceOrEnclosingType is TypeDefinition enclosingType)
             {
-                str = this.EnclosingType.ToString(false) + "+" + Name.Value;
+                str = enclosingType.ToString(false) + "+" + Name.Value;
                 if (includeHandleValue)
                     str += string.Format(" ({0:x})", Handle._value);
                 return str;
             }
-            else if (this.NamespaceDefinition != null && this.NamespaceDefinition.Name != null)
+            else if (this.NamespaceOrEnclosingType is NamespaceDefinition namespaceDefinition && namespaceDefinition.Name != null)
             {
-                str = this.NamespaceDefinition.ToString(false) + "." + Name.Value;
+                str = namespaceDefinition.ToString(false) + "." + Name.Value;
                 if (includeHandleValue)
                     str += string.Format(" ({0:x})", Handle._value);
                 return str;
@@ -707,10 +707,10 @@ namespace Internal.Metadata.NativeFormat.Writer
         public override string ToString(bool includeHandleValue)
         {
             string s = "";
-            if (ParentNamespaceOrType is NamespaceReference)
-                s += ParentNamespaceOrType.ToString(false) + ".";
-            if (ParentNamespaceOrType is TypeReference)
-                s += ParentNamespaceOrType.ToString(false) + "+";
+            if (NamespaceOrEnclosingType is NamespaceReference)
+                s += NamespaceOrEnclosingType.ToString(false) + ".";
+            if (NamespaceOrEnclosingType is TypeReference)
+                s += NamespaceOrEnclosingType.ToString(false) + "+";
             s += TypeName.Value;
             if (includeHandleValue)
                 s += string.Format(" ({0:x})", Handle._value);

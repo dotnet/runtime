@@ -1,11 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-//
-//
 // Currently represents a logical and physical CLR thread. Later, these concepts will be separated.
-//
-
 //
 // #SuspendingTheRuntime
 //
@@ -103,7 +99,6 @@
 // 'cooperates' to ensure that GCs can happen in a timely fashion.
 //
 // If you need to switch the GC mode of the current thread, look for the GCX_COOP() and GCX_PREEMP() macros.
-//
 
 #ifndef __threads_h__
 #define __threads_h__
@@ -922,7 +917,7 @@ public:
     DWORD                m_ThreadId;
 
 #ifndef DACCESS_COMPILE
-    Frame* NotifyFrameChainOfExceptionUnwind(Frame* pStartFrame, LPVOID pvLimitSP);
+    Frame* NotifyFrameChainOfExceptionUnwind(Frame* pStartFrame, LPVOID pvLimitSP) noexcept;
 #endif // DACCESS_COMPILE
 
     // Lock thread is trying to acquire
@@ -1223,7 +1218,7 @@ public:
     //--------------------------------------------------------------
     // Enter cooperative GC mode. NOT NESTABLE.
     //--------------------------------------------------------------
-    FORCEINLINE_NONDEBUG void DisablePreemptiveGC()
+    FORCEINLINE_NONDEBUG void DisablePreemptiveGC() noexcept
     {
 #ifndef DACCESS_COMPILE
         WRAPPER_NO_CONTRACT;
@@ -1273,7 +1268,7 @@ public:
 #endif
     }
 
-    NOINLINE void RareDisablePreemptiveGC();
+    NOINLINE void RareDisablePreemptiveGC() noexcept;
 
     void HandleThreadAbort();
 
@@ -1286,7 +1281,7 @@ public:
     //--------------------------------------------------------------
     // Leave cooperative GC mode. NOT NESTABLE.
     //--------------------------------------------------------------
-    FORCEINLINE_NONDEBUG void EnablePreemptiveGC()
+    FORCEINLINE_NONDEBUG void EnablePreemptiveGC() noexcept
     {
         LIMITED_METHOD_CONTRACT;
 
@@ -1320,7 +1315,7 @@ public:
     //--------------------------------------------------------------
     // Query mode
     //--------------------------------------------------------------
-    BOOL PreemptiveGCDisabled()
+    BOOL PreemptiveGCDisabled() noexcept
     {
         WRAPPER_NO_CONTRACT;
         _ASSERTE(this == GetThread());
@@ -2763,8 +2758,6 @@ public:
     void ClearThreadCurrNotification();
 
 private:
-    void SetLastThrownObjectHandle(OBJECTHANDLE h);
-
     ThreadExceptionState  m_ExceptionState;
 
 private:
@@ -2819,7 +2812,6 @@ private:
 
 private:
 #ifndef DACCESS_COMPILE
-private:
     static UINT32 *GetThreadLocalCountRef(Thread *pThread, SIZE_T threadLocalCountOffset)
     {
         WRAPPER_NO_CONTRACT;
@@ -2864,8 +2856,6 @@ private:
         }
         return InterlockedCompareExchange64((LONGLONG *)overflowCount, 0, 0); // prevent tearing
     }
-
-    static UINT64 GetTotalCount(SIZE_T threadLocalCountOffset, UINT64 *overflowCount);
 #endif // !DACCESS_COMPILE
 
 public:
@@ -3252,9 +3242,6 @@ public:
 #endif
 
 public:
-    // Is the current thread currently executing within a constrained execution region?
-    static BOOL IsExecutingWithinCer();
-
 #ifdef _DEBUG
 // when the thread is doing a stressing GC, some Crst violation could be ignored, by a non-elegant solution.
 private:
@@ -3864,7 +3851,7 @@ public:
 
     static void InitThreadStore();
     static void LockThreadStore();
-    static void UnlockThreadStore();
+    static void UnlockThreadStore() noexcept;
 
     // Add a Thread to the ThreadStore
     static void AddThread(Thread *newThread);
@@ -3918,7 +3905,7 @@ private:
     // Enter and leave the critical section around the thread store.  Clients should
     // use LockThreadStore and UnlockThreadStore.
     void Enter();
-    void Leave();
+    void Leave() noexcept;
 
     // Critical section for adding and removing threads to the store
     Crst        m_Crst;
@@ -5260,6 +5247,46 @@ struct ManagedThreadBase
 
 class DeadlockAwareLock
 {
+#if !defined(FEATURE_MULTITHREADING) && !defined(_DEBUG)
+private:
+    // A held lock can only belong to this thread. Reentry must still fail, including
+    // indirect cycles through other entries, without disturbing the outer holder.
+    bool m_isHeld;
+
+public:
+    DeadlockAwareLock(const char *description = nullptr) : m_isHeld(false)
+    {
+        LIMITED_METHOD_CONTRACT;
+    }
+
+    BOOL CanEnterLock()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return !m_isHeld;
+    }
+
+    BOOL TryBeginEnterLock()
+    {
+        WRAPPER_NO_CONTRACT;
+        return CanEnterLock();
+    }
+
+    void BeginEnterLock() { LIMITED_METHOD_CONTRACT; }
+
+    void EndEnterLock()
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_isHeld = true;
+    }
+
+    void LeaveLock()
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_isHeld = false;
+    }
+
+    typedef StateHolder<DoNothing, DoNothing> BlockingLockHolder;
+#else
  private:
     VolatilePtr<Thread> m_pHoldingThread;
 #ifdef _DEBUG
@@ -5295,6 +5322,7 @@ class DeadlockAwareLock
     }
 public:
     typedef StateHolder<DoNothing,DeadlockAwareLock::ReleaseBlockingLock> BlockingLockHolder;
+#endif // !FEATURE_MULTITHREADING && !_DEBUG
 };
 
 inline void SetTypeHandleOnThreadForAlloc(TypeHandle th)

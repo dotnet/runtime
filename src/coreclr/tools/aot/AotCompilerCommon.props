@@ -1,15 +1,5 @@
 <Project>
-  <PropertyGroup>
-    <ServerGarbageCollection>true</ServerGarbageCollection>
-    <TieredCompilation>false</TieredCompilation>
-    <EventSourceSupport>true</EventSourceSupport>
-    <OptimizationPreference>Speed</OptimizationPreference>
-    <ControlFlowGuard>Guard</ControlFlowGuard>
-    <InvariantGlobalization>true</InvariantGlobalization>
-    <StripSymbols Condition="'$(KeepNativeSymbols)' == 'true'">false</StripSymbols>
-    <XmlResolverIsNetworkingEnabledByDefault>false</XmlResolverIsNetworkingEnabledByDefault>
-    <StackTraceLineNumberSupport>true</StackTraceLineNumberSupport>
-  </PropertyGroup>
+  <Import Project="NativeAotToolRuntimeSettings.props" />
 
   <PropertyGroup>
     <_LibPrefix Condition="'$(CrossHostArch)' == 'true'">$(LibPrefix)</_LibPrefix>

@@ -174,7 +174,7 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
             // PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED (this macro is always defined in _gcInfoTypes.h)
             NumSafePoints = imageReader.DecodeVarLengthUnsigned(_gcInfoTypes.NUM_SAFE_POINTS_ENCBASE, ref bitOffset);
 
-            if (!_slimHeader)
+            if (!_slimHeader && _gcInfoTypes.HAS_INTERRUPTIBLE_RANGES)
             {
                 NumInterruptibleRanges = imageReader.DecodeVarLengthUnsigned(_gcInfoTypes.NUM_INTERRUPTIBLE_RANGES_ENCBASE, ref bitOffset);
             }

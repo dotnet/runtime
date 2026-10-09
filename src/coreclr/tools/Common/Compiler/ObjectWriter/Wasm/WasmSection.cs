@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Numerics;
+using ILCompiler.ObjectWriter.WasmInstructions;
 using Internal.Text;
 using Internal.TypeSystem;
 
@@ -342,19 +343,38 @@ namespace ILCompiler.ObjectWriter
         }
     }
 
-    internal sealed class WasmElementSection : WasmSection<ReadOnlyMemory<int>>
+    /// <summary>
+    /// An active <c>funcref</c> element segment targeting table 0, placed by <see cref="OffsetExpr"/>.
+    /// The engine installs it at instantiation.
+    /// </summary>
+    internal readonly struct WasmElementSegment
+    {
+        public ReadOnlyMemory<int> FunctionIndices { get; }
+        public WasmInstructionGroup OffsetExpr { get; }
+
+        public WasmElementSegment(ReadOnlyMemory<int> functionIndices, WasmInstructionGroup offsetExpr)
+        {
+            FunctionIndices = functionIndices;
+            OffsetExpr = offsetExpr;
+        }
+    }
+
+    internal sealed class WasmElementSection : WasmSection<WasmElementSegment>
     {
         public WasmElementSection(Stream stream, Utf8String name, int sectionIndex)
             : base(WasmSectionType.Element, stream, name, sectionIndex)
         {
         }
 
-        protected override void WriteEntryCore(SectionWriter writer, ReadOnlyMemory<int> entry)
+        protected override void WriteEntryCore(SectionWriter writer, WasmElementSegment entry)
         {
-            ReadOnlySpan<int> functionIndices = entry.Span;
+            ReadOnlySpan<int> functionIndices = entry.FunctionIndices.Span;
 
-            writer.WriteByte(1); // Passive element segment
-            writer.WriteByte(0); // element type: ref func
+            // Active element segment, table 0. Flag 0 implies both the table index and the
+            // funcref element type, so no element-type byte follows.
+            writer.WriteByte(0);
+            WriteEncodable(writer, entry.OffsetExpr);
+
             writer.WriteULEB128((ulong)functionIndices.Length);
             foreach (int functionIndex in functionIndices)
             {

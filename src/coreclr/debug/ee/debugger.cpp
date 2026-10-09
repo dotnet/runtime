@@ -25,6 +25,7 @@
 #include "../../vm/dwreport.h"
 #include "../../vm/eepolicy.h"
 #include "../../vm/excep.h"
+#include "../../vm/externalmemoryhandle.h"
 
 #if defined(FEATURE_DBGIPC_TRANSPORT_VM)
 #include "dbgtransportsession.h"
@@ -330,7 +331,7 @@ void Debugger::ReleaseDebuggerLockAndBlockForShutdownIfNotSpecialThread(Thread *
         GCX_ASSERT_PREEMP();
 
         WaitForEndOfShutdown();
-        __SwitchToThread(INFINITE, CALLER_LIMITS_SPINNING);
+        minipal_sleep(INFINITE);
         _ASSERTE(!"Can not reach here");
     }
 }
@@ -365,7 +366,8 @@ void Debugger::DoNotCallDirectlyPrivateLock(void)
     //
     if (m_fDisabled)
     {
-        __SwitchToThread(INFINITE, CALLER_LIMITS_SPINNING);
+        GCX_ASSERT_PREEMP();
+        minipal_sleep(INFINITE);
         _ASSERTE (!"Can not reach here");
     }
 
@@ -378,7 +380,8 @@ void Debugger::DoNotCallDirectlyPrivateLock(void)
     if (m_fDisabled)
     {
         m_mutex.Leave();
-        __SwitchToThread(INFINITE, CALLER_LIMITS_SPINNING);
+        GCX_ASSERT_PREEMP();
+        minipal_sleep(INFINITE);
         _ASSERTE (!"Can not reach here");
     }
 
@@ -475,7 +478,8 @@ void Debugger::DoNotCallDirectlyPrivateUnlock(void)
         //
         if (m_fDisabled)
         {
-            __SwitchToThread(INFINITE, CALLER_LIMITS_SPINNING);
+            GCX_ASSERT_PREEMP();
+            minipal_sleep(INFINITE);
             _ASSERTE (!"Can not reach here");
         }
 
@@ -714,54 +718,6 @@ CONTEXT * GetManagedLiveCtx(Thread * pThread)
 
     return pCtx;
 }
-
-// Attempt to validate a GC handle.
-HRESULT ValidateGCHandle(OBJECTHANDLE oh)
-{
-    // The only real way to do this is to Enumerate all GC handles in the handle table.
-    // That's too expensive. So we'll use a similar workaround that we use in ValidateObject.
-    // This will err on the side off returning True for invalid handles.
-
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    HRESULT hr = S_OK;
-
-    EX_TRY
-    {
-        // Use AVInRuntimeImplOkHolder.
-        AVInRuntimeImplOkayHolder AVOkay;
-
-        // This may throw if the Object Handle is invalid.
-        Object * objPtr = *((Object**) oh);
-
-        // NULL is certinally valid...
-        if (objPtr != NULL)
-        {
-            if (!objPtr->ValidateObjectWithPossibleAV())
-            {
-                LOG((LF_CORDB, LL_INFO10000, "GAV: object methodtable-class invariant doesn't hold.\n"));
-                hr = E_INVALIDARG;
-                goto LExit;
-            }
-        }
-
-    LExit: ;
-    }
-    EX_CATCH
-    {
-        LOG((LF_CORDB, LL_INFO10000, "GAV: exception indicated ref is bad.\n"));
-        hr = E_INVALIDARG;
-    }
-    EX_END_CATCH
-
-    return hr;
-}
-
 
 // Validate an object. Returns E_INVALIDARG or S_OK.
 HRESULT ValidateObject(Object *objPtr)
@@ -1291,6 +1247,7 @@ DebuggerEval::DebuggerEval(CONTEXT * pContext, DebuggerIPCE_FuncEvalInfo * pEval
     memset(m_result, 0, sizeof(m_result));
     m_md = NULL;
     m_resultType = TypeHandle();
+    m_externalMemoryOwner = NULL;
     m_aborting = FE_ABORT_NONE;
     m_aborted = false;
     m_completed = false;
@@ -1310,6 +1267,56 @@ DebuggerEval::DebuggerEval(CONTEXT * pContext, DebuggerIPCE_FuncEvalInfo * pEval
     {
         memcpy(&m_context, pContext, sizeof(m_context));
     }
+}
+
+DebuggerExternalMemoryOwner::DebuggerExternalMemoryOwner(MethodTable *pMT, BYTE *pMemory)
+    : m_pHandle(NULL),
+      m_pMemory(pMemory)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
+    m_pHandle = ExternalMemoryHandle::Add(pMT, m_pMemory, 0);
+}
+
+DebuggerExternalMemoryOwner::~DebuggerExternalMemoryOwner()
+{
+    WRAPPER_NO_CONTRACT;
+
+    ExternalMemoryHandle::Remove(m_pHandle DEBUG_ARG(g_pDebugger->IsStopped()));
+    DeleteInteropSafe(m_pMemory);
+}
+
+BYTE *DebuggerEval::CreateExternalMemory(MethodTable *pMT, SIZE_T size)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
+    _ASSERTE(m_externalMemoryOwner == NULL);
+
+    BYTE *pMemory = new (interopsafe) BYTE[size];
+    EX_TRY
+    {
+        m_externalMemoryOwner = new (interopsafe) DebuggerExternalMemoryOwner(pMT, pMemory);
+    }
+    EX_CATCH
+    {
+        DeleteInteropSafe(pMemory);
+        EX_RETHROW;
+    }
+    EX_END_CATCH
+
+    return pMemory;
 }
 
 #ifdef _DEBUG
@@ -8285,31 +8292,6 @@ void Debugger::ExceptionHandle(MethodDesc *fd, TADDR pMethodAddr, SIZE_T offset,
                                        fd, pDJI, offset, handlerFP, STEP_EXCEPTION_HANDLER);
 }
 
-BOOL Debugger::ShouldAutoAttach()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    _ASSERTE(!CORDebuggerAttached());
-
-    // We're relying on the caller to determine the
-
-    LOG((LF_CORDB, LL_INFO1000000, "D::SAD\n"));
-
-    // Check if the user has specified a setting in the registry about what he
-    // wants done when an unhandled exception occurs.
-    DebuggerLaunchSetting dls = GetDbgJITDebugLaunchSetting();
-
-    return dls == DLS_ATTACH_DEBUGGER;
-
-    // @TODO cache the debugger launch setting.
-
-}
-
 BOOL Debugger::FallbackJITAttachPrompt()
 {
     _ASSERTE(!CORDebuggerAttached());
@@ -9827,9 +9809,13 @@ void Debugger::FuncEvalComplete(Thread* pThread, DebuggerEval *pDE)
     ipce->FuncEvalComplete.funcEvalKey = pDE->m_funcEvalKey;
     ipce->FuncEvalComplete.successful = pDE->m_successful;
     ipce->FuncEvalComplete.aborted = pDE->m_aborted;
-    ipce->FuncEvalComplete.resultAddr = (CORDB_ADDRESS)(pDE->m_result);
+    void *pResult = pDE->m_externalMemoryOwner != NULL
+        ? static_cast<void *>(pDE->m_externalMemoryOwner->GetMemory())
+        : static_cast<void *>(pDE->m_result);
+    ipce->FuncEvalComplete.resultAddr = (CORDB_ADDRESS)pResult;
     ipce->FuncEvalComplete.vmAppDomain.SetRawPtr(pDomain);
     ipce->FuncEvalComplete.vmObjectHandle = pDE->m_vmObjectHandle;
+    ipce->FuncEvalComplete.vmExternalMemoryOwner.SetRawPtr(pDE->m_externalMemoryOwner);
 
     LOG((LF_CORDB, LL_INFO1000, "D::FEC: TypeHandle is %p\n", pDE->m_resultType.AsPtr()));
 
@@ -9838,17 +9824,19 @@ void Debugger::FuncEvalComplete(Thread* pThread, DebuggerEval *pDE)
                                            pDE->m_resultType,
                                            &ipce->FuncEvalComplete.resultType);
 
-    _ASSERTE(ipce->FuncEvalComplete.resultType.elementType != ELEMENT_TYPE_VALUETYPE);
-
-    // We must adjust the result address to point to the right place
-    ipce->FuncEvalComplete.resultAddr = (CORDB_ADDRESS)(ArgSlotEndiannessFixup((ARG_SLOT*)(CORDB_ADDRESS_TO_PTR(ipce->FuncEvalComplete.resultAddr)),
-        GetSizeForCorElementType(ipce->FuncEvalComplete.resultType.elementType)));
+    if (ipce->FuncEvalComplete.resultType.elementType != ELEMENT_TYPE_VALUETYPE)
+    {
+        // We must adjust the result address to point to the right place
+        ipce->FuncEvalComplete.resultAddr = (CORDB_ADDRESS)(ArgSlotEndiannessFixup((ARG_SLOT*)(CORDB_ADDRESS_TO_PTR(ipce->FuncEvalComplete.resultAddr)),
+            GetSizeForCorElementType(ipce->FuncEvalComplete.resultType.elementType)));
+    }
 
     LOG((LF_CORDB, LL_INFO1000, "D::FEC: returned el %04x resultAddr %p\n",
         static_cast<unsigned>(ipce->FuncEvalComplete.resultType.elementType),
         (CORDB_ADDRESS_TO_PTR(ipce->FuncEvalComplete.resultAddr))));
 
-    m_pRCThread->SendIPCEvent();
+    IfFailThrow(m_pRCThread->SendIPCEvent());
+    pDE->m_externalMemoryOwner = NULL;
 
 #endif
 }
@@ -10882,6 +10870,13 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
             default:
                 pEvent->hr = E_INVALIDARG;
             }
+            break;
+        }
+
+    case DB_IPCE_DISPOSE_EXTERNAL_MEMORY_OWNER:
+        {
+            DebuggerExternalMemoryOwner *pOwner = pEvent->DisposeExternalMemoryOwner.vmExternalMemoryOwner.GetRawPtr();
+            DeleteInteropSafe(pOwner);
             break;
         }
 
@@ -12105,35 +12100,6 @@ HRESULT Debugger::DeoptimizeMethod(Module* pModule, mdMethodDef methodDef)
 }
 #endif //FEATURE_CODE_VERSIONING && !DACCESS_COMPILE
 
-HRESULT Debugger::IsMethodDeoptimized(Module *pModule, mdMethodDef methodDef, BOOL *pResult)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        CAN_TAKE_LOCK;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    if (pModule == NULL || pResult == NULL || TypeFromToken(methodDef) != mdtMethodDef)
-    {
-        return E_INVALIDARG;
-    }
-
-#ifdef FEATURE_CODE_VERSIONING
-    {
-        CodeVersionManager::LockHolder codeVersioningLockHolder;
-        CodeVersionManager *pCodeVersionManager = pModule->GetCodeVersionManager();
-        ILCodeVersion activeILVersion = pCodeVersionManager->GetActiveILCodeVersion(pModule, methodDef);
-        *pResult = activeILVersion.IsDeoptimized();
-    }
-#else
-    *pResult = FALSE;
-#endif // FEATURE_CODE_VERSIONING
-
-    return S_OK;
-}
-
 HRESULT Debugger::UpdateCustomNotificationTable(Module *pModule, mdTypeDef classToken, BOOL enabled)
 {
     CONTRACTL
@@ -12371,37 +12337,6 @@ bool Debugger::IsThreadAtSafePlace(Thread *thread)
     {
         return IsThreadAtSafePlaceWorker(thread);
     }
-}
-
-//-----------------------------------------------------------------------------
-// Get the complete user state flags.
-// This will collect flags both from the EE and from the LS.
-// This is the real implementation of the RS's ICorDebugThread::GetUserState().
-//
-// Parameters:
-//    pThread - non-null thread to get state for.
-//
-// Returns: a CorDebugUserState flags enum describing state.
-//-----------------------------------------------------------------------------
-CorDebugUserState Debugger::GetFullUserState(Thread *pThread)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        PRECONDITION(CheckPointer(pThread));
-    }
-    CONTRACTL_END;
-
-    CorDebugUserState state = g_pEEInterface->GetPartialUserState(pThread);
-
-    bool fSafe = IsThreadAtSafePlace(pThread);
-    if (!fSafe)
-    {
-        state = (CorDebugUserState) (state | USER_UNSAFE_POINT);
-    }
-
-    return state;
 }
 
 /******************************************************************************
@@ -14682,40 +14617,6 @@ void Debugger::LockDebuggerForShutdown(void)
 #endif
 }
 
-
-/*
- * DisableDebugger
- *
- * This routine is used by the EE to inform the debugger that it should block all
- * threads from executing as soon as it can.  Any thread entering the debugger can
- * block infinitely, as well.
- *
- * This is accomplished by transitioning the debugger lock into a mode where it will
- * block all threads infinitely rather than taking the lock.
- *
- */
-void Debugger::DisableDebugger(void)
-{
-#ifndef DACCESS_COMPILE
-
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        PRECONDITION(ThisMaybeHelperThread());
-    }
-    CONTRACTL_END;
-
-    m_fDisabled = true;
-
-    CORDBDebuggerSetUnrecoverableError(this, CORDBG_E_DEBUGGING_DISABLED, false);
-
-#else
-    DacNotImpl();
-#endif
-}
-
-
 /****************************************************************************
  * This will perform the duties of the helper thread if none already exists.
  * This is called in the case that the loader lock is held and so no new
@@ -14930,29 +14831,6 @@ BOOL Debugger::SendCtrlCToDebugger(DWORD dwCtrlType)
     GetCtrlCMutex().Wait(INFINITE);
 
     return GetDebuggerHandlingCtrlC();
-}
-
-// Allows the debugger to keep an up to date list of special threads
-HRESULT Debugger::UpdateSpecialThreadList(DWORD cThreadArrayLength,
-                                        DWORD *rgdwThreadIDArray)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    _ASSERTE(g_pRCThread != NULL);
-
-    DebuggerIPCControlBlock *pIPC = g_pRCThread->GetDCB();
-    _ASSERTE(pIPC);
-
-    if (!pIPC)
-        return E_FAIL;
-
-    // Save the thread list information, and mark the dirty bit so
-    // the right side knows.
-    pIPC->m_specialThreadList = rgdwThreadIDArray;
-    pIPC->m_specialThreadListLength = cThreadArrayLength;
-    pIPC->m_specialThreadListDirty = true;
-
-    return S_OK;
 }
 
 //

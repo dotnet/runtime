@@ -256,7 +256,6 @@ FCFuncStart(gThreadFuncs)
     FCFuncElement("InternalFinalize", ThreadNative::Finalize)
     FCFuncElement("CatchAtSafePoint", ThreadNative::CatchAtSafePoint)
     FCFuncElement("CurrentThreadIsFinalizerThread", ThreadNative::CurrentThreadIsFinalizerThread)
-    FCFuncElement("get_OptimalMaxSpinWaitsPerSpinIteration", ThreadNative::GetOptimalMaxSpinWaitsPerSpinIteration)
 #ifdef TARGET_WASM
     FCFuncElement("GetThreadStaticsBaseNative", ThreadNative::GetThreadStaticsBaseNative)
 #endif
@@ -347,7 +346,6 @@ FCFuncStart(gMethodTableFuncs)
     FCFuncElement("GetNumInstanceFieldBytes", MethodTableNative::GetNumInstanceFieldBytes)
     FCFuncElement("GetPrimitiveCorElementType", MethodTableNative::GetPrimitiveCorElementType)
     FCFuncElement("GetMethodTableMatchingParentClass", MethodTableNative::GetMethodTableMatchingParentClass)
-    FCFuncElement("InstantiationArg0", MethodTableNative::InstantiationArg0)
     FCFuncElement("GetLoaderAllocatorHandle", MethodTableNative::GetLoaderAllocatorHandle)
 FCFuncEnd()
 

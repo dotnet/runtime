@@ -6,8 +6,6 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-#pragma warning disable CA1823 // analyzer incorrectly flags fixed buffer length const (https://github.com/dotnet/roslyn/issues/37593)
-
 internal static partial class Interop
 {
     internal static partial class Process
@@ -146,11 +144,11 @@ internal static partial class Interop
             private byte ki_rqindex;                    /* Run queue index */
             private byte ki_oncpu_old;                  /* Which cpu we are on (legacy) */
             private byte ki_lastcpu_old;                /* Last cpu we were on (legacy) */
-            public fixed byte ki_tdname[TDNAMLEN + 1];    /* thread name */
+            public TdNameBuffer ki_tdname;              /* thread name */
             private WmesgBuffer ki_wmesg;    /* wchan message */
             private LoginBuffer ki_login;  /* setlogin name */
             private LocknameBuffer ki_lockname; /* lock name */
-            public fixed byte ki_comm[COMMLEN + 1];       /* command name */
+            public CommBuffer ki_comm;                  /* command name */
             private EmulNameBuffer ki_emul; /* emulation name */
             private LoginClassBuffer ki_loginclass; /* login class */
             private SpareStringsBuffer ki_sparestrings;     /* spare string space */
@@ -180,6 +178,18 @@ internal static partial class Interop
             private struct GroupsBuffer
             {
                 private uint _element0;
+            }
+
+            [InlineArray(TDNAMLEN + 1)]
+            internal struct TdNameBuffer
+            {
+                private byte _element0;
+            }
+
+            [InlineArray(COMMLEN + 1)]
+            internal struct CommBuffer
+            {
+                private byte _element0;
             }
 
             [InlineArray(WMESGLEN + 1)]

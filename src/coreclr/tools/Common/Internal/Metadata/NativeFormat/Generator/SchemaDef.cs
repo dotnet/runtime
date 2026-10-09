@@ -458,11 +458,10 @@ internal sealed class SchemaDef
             members: new MemberDef[] {
                 new MemberDef("Flags", "TypeAttributes"),
                 new MemberDef("BaseType", TypeDefOrRefOrSpec, MemberDefFlags.RecordRef),
-                new MemberDef("NamespaceDefinition", "NamespaceDefinition", MemberDefFlags.RecordRef | MemberDefFlags.Compare),
+                new MemberDef("NamespaceOrEnclosingType", new[] { "NamespaceDefinition", "TypeDefinition" }, MemberDefFlags.RecordRef | MemberDefFlags.Compare),
                 new MemberDef("Name", "ConstantStringValue", MemberDefFlags.RecordRef | MemberDefFlags.Child | MemberDefFlags.Compare),
                 new MemberDef("Size", "uint"),
                 new MemberDef("PackingSize", "ushort"),
-                new MemberDef("EnclosingType", "TypeDefinition", MemberDefFlags.RecordRef | MemberDefFlags.Compare),
                 new MemberDef("NestedTypes", "TypeDefinition", MemberDefFlags.List | MemberDefFlags.RecordRef | MemberDefFlags.Child),
                 new MemberDef("Methods", "Method", MemberDefFlags.List | MemberDefFlags.RecordRef | MemberDefFlags.Child),
                 new MemberDef("Fields", "Field", MemberDefFlags.Map | MemberDefFlags.RecordRef | MemberDefFlags.Child),
@@ -477,7 +476,7 @@ internal sealed class SchemaDef
         new RecordDef(
             name: "TypeReference",
             members: new MemberDef[] {
-                new MemberDef("ParentNamespaceOrType", new string[] { "NamespaceReference", "TypeReference" }, MemberDefFlags.RecordRef),
+                new MemberDef("NamespaceOrEnclosingType", new string[] { "NamespaceReference", "TypeReference" }, MemberDefFlags.RecordRef),
                 new MemberDef("TypeName", "ConstantStringValue", MemberDefFlags.RecordRef | MemberDefFlags.Child | MemberDefFlags.Name),
                 // COMPLETENESS: new MemberDef("CustomAttributes", "CustomAttribute", MemberDefFlags.List | MemberDefFlags.RecordRef | MemberDefFlags.Child),
             }

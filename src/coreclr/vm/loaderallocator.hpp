@@ -2,20 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*============================================================
-**
 ** Header:  LoaderAllocator.hpp
 **
-
-**
 ** Purpose: Implements collection of loader heaps
-**
-**
 ===========================================================*/
 
 #ifndef __LoaderAllocator_h__
 #define __LoaderAllocator_h__
 
 class FuncPtrStubs;
+class ClosedStaticRetBufPortableEntryPoint;
 #include "qcall.h"
 #include "ilstubcache.h"
 
@@ -501,11 +497,15 @@ private:
     PTR_AsyncContinuationsManager m_asyncContinuationsManager;
 
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
-    // Methods whose PortableEntryPoint was initialized without an R2R-to-interpreter thunk
-    // because the thunk wasn't yet loaded. When a new R2R module injects string thunks,
-    // these methods are re-checked and resolved if a thunk is now available.
-    // Protected by s_pendingThunkResolutionLock (not m_crstLoaderAllocator).
-    SArray<MethodDesc*> m_pendingPortableEntryPointThunks;
+    // Entries whose resolution couldn't complete immediately (e.g. a PortableEntryPoint
+    // initialized without an R2R-to-interpreter thunk because the thunk wasn't yet loaded,
+    // or a closed-static-retbuf adapter whose target wasn't yet resolved). When a new R2R
+    // module injects string thunks, these are re-checked and resolved if now available.
+    // Untyped so both pending lists can share the generic resolve-and-compact helper in
+    // pregeneratedstringthunks.cpp; elements are MethodDesc* / ClosedStaticRetBufPortableEntryPoint*
+    // respectively. Protected by s_pendingThunkResolutionLock (not m_crstLoaderAllocator).
+    SArray<void*> m_pendingPortableEntryPointThunks;
+    SArray<void*> m_pendingClosedStaticRetBufThunks;
     bool m_registeredForPendingThunkResolution;
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
 
@@ -597,7 +597,7 @@ public:
     // Adds reference if the native object is alive  - code:#AssemblyPhases.
     // Returns TRUE if the reference was added.
     BOOL AddReferenceIfAlive();
-    BOOL Release();
+    BOOL Release() noexcept;
     // Checks if the native object is alive - see code:#AssemblyPhases.
     BOOL IsAlive() { LIMITED_METHOD_DAC_CONTRACT; return (m_cReferences != (UINT32)0); }
     // Checks if managed scout is alive - see code:#AssemblyPhases.
@@ -763,11 +763,6 @@ public:
 #endif // FEATURE_PGO
 #endif // !defined(DACCESS_COMPILE)
 
-
-    // This function is only safe to call if the handle is known to be a handle in a collectible
-    // LoaderAllocator, and the handle is allocated, and the LoaderAllocator is also not collected.
-    FORCEINLINE OBJECTREF GetHandleValueFastCannotFailType2(LOADERHANDLE handle);
-
     // These functions are designed to be used for maximum performance to access handle values
     // The GetHandleValueFast will handle the scenario where a loader allocator pointer does not
     // need to be acquired to do the handle lookup, and the GetHandleValueFastPhase2 handles
@@ -919,6 +914,9 @@ public:
     // Add a MethodDesc to the pending list of methods waiting for an R2R-to-interpreter thunk.
     // Takes s_pendingThunkResolutionLock internally.
     void AddPendingPortableEntryPointThunk(MethodDesc* pMD);
+
+    void AddPendingClosedStaticRetBufThunk(ClosedStaticRetBufPortableEntryPoint* pEntryPoint);
+
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
 
 #ifndef DACCESS_COMPILE
@@ -931,6 +929,7 @@ public:
     friend struct ::cdac_data<LoaderAllocator>;
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
     friend void AddPendingPortableEntryPointThunkUnderLock(LoaderAllocator*, MethodDesc*);
+    friend void AddPendingClosedStaticRetBufThunkUnderLock(LoaderAllocator*, ClosedStaticRetBufPortableEntryPoint*);
     friend void UnregisterLoaderAllocatorForPendingThunkResolution(LoaderAllocator*);
     friend void ResolvePendingPortableEntryPointThunksGlobal();
 #endif // FEATURE_PORTABLE_ENTRYPOINTS

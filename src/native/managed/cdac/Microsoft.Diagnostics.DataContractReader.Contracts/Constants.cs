@@ -12,6 +12,7 @@ public static class Constants
         public const string SystemDomain = nameof(SystemDomain);
         public const string ThreadStore = nameof(ThreadStore);
         public const string FinalizerThread = nameof(FinalizerThread);
+        public const string VirtualIPRangeList = nameof(VirtualIPRangeList);
         public const string FunctionTableIndexRangeList = nameof(FunctionTableIndexRangeList);
         public const string GCThread = nameof(GCThread);
         public const string Debugger = nameof(Debugger);
@@ -40,6 +41,7 @@ public static class Constants
         public const string CanonMethodTable = nameof(CanonMethodTable);
         public const string ContinuationSingletonEEClass = nameof(ContinuationSingletonEEClass);
         public const string ExceptionMethodTable = nameof(ExceptionMethodTable);
+        public const string ExternalMemoryHandles = nameof(ExternalMemoryHandles);
         public const string FreeObjectMethodTable = nameof(FreeObjectMethodTable);
         public const string ObjectMethodTable = nameof(ObjectMethodTable);
         public const string ObjectArrayMethodTable = nameof(ObjectArrayMethodTable);

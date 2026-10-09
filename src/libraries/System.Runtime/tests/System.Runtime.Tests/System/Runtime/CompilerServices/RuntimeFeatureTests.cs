@@ -32,8 +32,6 @@ namespace System.Runtime.CompilerServices.Tests
 
         [Fact]
         [SkipOnMono("IsDynamicCodeCompiled returns false in cases where mono doesn't support these features")]
-        // Apple mobile has interpreter-specific expectations below.
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsCoreClrInterpreter), nameof(PlatformDetection.IsNotAppleMobile))]
         public static void DynamicCode_Jit()
         {
             if (PlatformDetection.IsNativeAot)
@@ -41,7 +39,7 @@ namespace System.Runtime.CompilerServices.Tests
                 Assert.False(RuntimeFeature.IsDynamicCodeSupported);
                 Assert.False(RuntimeFeature.IsDynamicCodeCompiled);
             }
-            else if (PlatformDetection.IsAppleMobile)
+            else if (PlatformDetection.IsAppleMobile || PlatformDetection.IsWasm)
             {
                 Assert.True(RuntimeFeature.IsDynamicCodeSupported);
                 Assert.False(RuntimeFeature.IsDynamicCodeCompiled);

@@ -147,14 +147,46 @@
       <EmccExportedFunction Include="___coreclr_wasm_rtlrestorecontext_tag" />
       <EmccExportedFunction Include="___async_continuation" />
     </ItemGroup>
+
+    <!-- Emscripten's default INCOMING_MODULE_JS_API, kept explicit so a Module property we don't declare aborts a debug build early. -->
+    <ItemGroup>
+      <_EmccIncomingModuleJSAPI Include="ENVIRONMENT" />
+      <_EmccIncomingModuleJSAPI Include="arguments" />
+      <_EmccIncomingModuleJSAPI Include="canvas" />
+      <_EmccIncomingModuleJSAPI Include="dynamicLibraries" />
+      <_EmccIncomingModuleJSAPI Include="elementPointerLock" />
+      <_EmccIncomingModuleJSAPI Include="instantiateWasm" />
+      <_EmccIncomingModuleJSAPI Include="locateFile" />
+      <_EmccIncomingModuleJSAPI Include="monitorRunDependencies" />
+      <_EmccIncomingModuleJSAPI Include="noExitRuntime" />
+      <_EmccIncomingModuleJSAPI Include="noInitialRun" />
+      <_EmccIncomingModuleJSAPI Include="onAbort" />
+      <_EmccIncomingModuleJSAPI Include="onExit" />
+      <_EmccIncomingModuleJSAPI Include="onRuntimeInitialized" />
+      <_EmccIncomingModuleJSAPI Include="postRun" />
+      <_EmccIncomingModuleJSAPI Include="preInit" />
+      <_EmccIncomingModuleJSAPI Include="preRun" />
+      <_EmccIncomingModuleJSAPI Include="print" />
+      <_EmccIncomingModuleJSAPI Include="printErr" />
+      <_EmccIncomingModuleJSAPI Include="setStatus" />
+      <_EmccIncomingModuleJSAPI Include="statusMessage" />
+      <_EmccIncomingModuleJSAPI Include="stderr" />
+      <_EmccIncomingModuleJSAPI Include="stdin" />
+      <_EmccIncomingModuleJSAPI Include="stdout" />
+      <_EmccIncomingModuleJSAPI Include="thisProgram" />
+      <_EmccIncomingModuleJSAPI Include="wasm" />
+      <_EmccIncomingModuleJSAPI Include="websocket" />
+    </ItemGroup>
     <PropertyGroup>
       <_EmccExportedRuntimeMethods>@(EmccExportedRuntimeMethod -> '%(Identity)',',')</_EmccExportedRuntimeMethods>
       <_EmccExportedFunctions>@(EmccExportedFunction -> '%(Identity)',',')</_EmccExportedFunctions>
+      <_EmccIncomingModuleJSAPIs>@(_EmccIncomingModuleJSAPI -> '%(Identity)',',')</_EmccIncomingModuleJSAPIs>
     </PropertyGroup>
 
     <ItemGroup>
       <NativeCMakeArg Condition="'$(TargetsBrowser)' == 'true'" Include="-cmakeargs &quot;-DCMAKE_EMCC_EXPORTED_RUNTIME_METHODS=$(_EmccExportedRuntimeMethods)&quot;" />
       <NativeCMakeArg Condition="'$(TargetsBrowser)' == 'true'" Include="-cmakeargs &quot;-DCMAKE_EMCC_EXPORTED_FUNCTIONS=$(_EmccExportedFunctions)&quot;" />
+      <NativeCMakeArg Condition="'$(TargetsBrowser)' == 'true'" Include="-cmakeargs &quot;-DCMAKE_EMCC_INCOMING_MODULE_JS_API=$(_EmccIncomingModuleJSAPIs)&quot;" />
     </ItemGroup>
 
   </Target>

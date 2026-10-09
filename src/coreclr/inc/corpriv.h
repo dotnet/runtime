@@ -18,8 +18,10 @@ STDAPI CreateMetaDataDispenser(
     REFIID riid,
     void ** pMetaDataDispenserOut);
 
+#ifdef FEATURE_ISYM_READER
 // Helper function to get a do-nothing IMetaDataImport2 instance for DIA.
 IMetaDataImport2* GetNoopMetaDataImport2();
+#endif // FEATURE_ISYM_READER
 
 // Helper function to get an Internal interface with an in-memory metadata section
 STDAPI  GetMDInternalInterface(
@@ -113,54 +115,6 @@ DECLARE_INTERFACE_(IMetaDataHelper, IUnknown)
     STDMETHOD(SetReaderWriterLock)(minipal_rwlock * pLock) PURE;
 };  // IMetaDataHelper
 
-
-EXTERN_GUID(IID_IMetaDataEmitHelper, 0x5c240ae4, 0x1e09, 0x11d3, 0x94, 0x24, 0x0, 0x0, 0xf8, 0x8, 0x34, 0x60);
-
-#undef  INTERFACE
-#define INTERFACE IMetaDataEmitHelper
-DECLARE_INTERFACE_(IMetaDataEmitHelper, IUnknown)
-{
-    // emit helper functions
-    STDMETHOD(DefineMethodSemanticsHelper)(
-        mdToken     tkAssociation,          // [IN] property or event token
-        DWORD       dwFlags,                // [IN] semantics
-        mdMethodDef md) PURE;               // [IN] method to associated with
-
-    STDMETHOD(SetFieldLayoutHelper)(                // Return hresult.
-        mdFieldDef  fd,                     // [IN] field to associate the layout info
-        ULONG       ulOffset) PURE;         // [IN] the offset for the field
-
-    STDMETHOD(DefineEventHelper) (
-        mdTypeDef   td,                     // [IN] the class/interface on which the event is being defined
-        LPCWSTR     szEvent,                // [IN] Name of the event
-        DWORD       dwEventFlags,           // [IN] CorEventAttr
-        mdToken     tkEventType,            // [IN] a reference (mdTypeRef or mdTypeRef) to the Event class
-        mdEvent     *pmdEvent) PURE;        // [OUT] output event token
-
-    STDMETHOD(AddDeclarativeSecurityHelper) (
-        mdToken     tk,                     // [IN] Parent token (typedef/methoddef)
-        DWORD       dwAction,               // [IN] Security action (CorDeclSecurity)
-        void const  *pValue,                // [IN] Permission set blob
-        DWORD       cbValue,                // [IN] Byte count of permission set blob
-        mdPermission*pmdPermission) PURE;   // [OUT] Output permission token
-
-    STDMETHOD(SetResolutionScopeHelper)(    // Return hresult.
-        mdTypeRef   tr,                     // [IN] TypeRef record to update
-        mdToken     rs) PURE;               // [IN] new ResolutionScope
-
-    STDMETHOD(SetManifestResourceOffsetHelper)(  // Return hresult.
-        mdManifestResource mr,              // [IN] The manifest token
-        ULONG       ulOffset) PURE;         // [IN] new offset
-
-    STDMETHOD(SetTypeParent)(               // Return hresult.
-        mdTypeDef   td,                     // [IN] Type definition
-        mdToken     tkExtends) PURE;        // [IN] parent type
-
-    STDMETHOD(AddInterfaceImpl)(            // Return hresult.
-        mdTypeDef   td,                     // [IN] Type definition
-        mdToken     tkInterface) PURE;      // [IN] interface type
-
-};  // IMetaDataEmitHelper
 
 //////////////////////////////////////////////////////////////////////////////
 // enum CorElementTypeZapSig defines some additional internal ELEMENT_TYPE's

@@ -416,7 +416,7 @@ void Thread::Destroy()
 extern OBJECTREF * t_pShadowStackTop;
 extern OBJECTREF * t_pShadowStackBottom;
 
-void GcScanWasmShadowStack(void * pfnEnumCallback, void * pvCallbackData)
+void GcScanWasmShadowStack(ScanFunc* pfnEnumCallback, ScanContext* pvCallbackData)
 {
     // Wasm does not permit iteration of stack frames so is uses a shadow stack instead
     EnumGcRefsInRegionConservatively(t_pShadowStackBottom, t_pShadowStackTop, pfnEnumCallback, pvCallbackData);
@@ -472,6 +472,7 @@ bool Thread::GcScanRoots(GcScanRootsCallbackFunc * pfnEnumCallback, void * token
 }
 #endif //DACCESS_COMPILE
 
+#ifndef TARGET_WASM
 void Thread::GcScanRootsWorker(ScanFunc * pfnEnumCallback, ScanContext * pvCallbackData, StackFrameIterator & frameIterator)
 {
     PTR_OBJECTREF    pHijackedReturnValue = NULL;
@@ -594,6 +595,7 @@ void Thread::GcScanRootsWorker(ScanFunc * pfnEnumCallback, ScanContext * pvCallb
         }
     }
 }
+#endif // !TARGET_WASM
 
 #ifndef DACCESS_COMPILE
 
@@ -1377,24 +1379,6 @@ FCIMPL2(void, RhRegisterInlinedThreadStaticRoot, Object** root, TypeManager* typ
 {
     Thread* pCurrentThread = ThreadStore::RawGetCurrentThread();
     pCurrentThread->RegisterInlinedThreadStaticRoot((InlinedThreadStaticRoot*)root, typeManager);
-}
-FCIMPLEND
-
-// This is function is used to quickly query a value that can uniquely identify a thread
-FCIMPL0(uint8_t*, RhCurrentNativeThreadId)
-{
-#ifndef TARGET_UNIX
-    return PalNtCurrentTeb();
-#else
-    return (uint8_t*)ThreadStore::RawGetCurrentThread();
-#endif // TARGET_UNIX
-}
-FCIMPLEND
-
-// This function is used to get the OS thread identifier for the current thread.
-FCIMPL0(uint64_t, RhCurrentOSThreadId)
-{
-    return PalGetCurrentOSThreadId();
 }
 FCIMPLEND
 
