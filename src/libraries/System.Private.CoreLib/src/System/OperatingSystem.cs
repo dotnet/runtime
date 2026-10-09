@@ -292,7 +292,7 @@ namespace System
         /// </summary>
         [NonVersionable]
         public static bool IsApplePlatform() =>
-#if TARGET_OSX || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS || TARGET_WATCHOS
+#if TARGET_OSX || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
             true;
 #else
             false;

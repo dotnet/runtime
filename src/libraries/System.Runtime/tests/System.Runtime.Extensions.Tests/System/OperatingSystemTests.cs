@@ -23,13 +23,12 @@ namespace System.Tests
             "Wasi",
         };
 
-        private static readonly HashSet<string> AllApplePlatformNames = new()
+        private static readonly HashSet<string> SupportedApplePlatformNames = new()
         {
             "macOS",
             "MacCatalyst",
             "iOS",
             "tvOS",
-            "watchOS",
         };
 
         [Theory]
@@ -198,7 +197,7 @@ namespace System.Tests
             Assert.True(currentOSCheck());
 
             Assert.Equal(
-                AllApplePlatformNames.Contains(currentOSName),
+                SupportedApplePlatformNames.Contains(currentOSName),
                 OperatingSystem.IsApplePlatform());
 
             Dictionary<string, bool> allResults = new()
