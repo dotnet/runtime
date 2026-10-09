@@ -26,6 +26,12 @@ public class Runtime_133965
     }
 
     [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    private static void TestNative(nint x)
+    {
+        nint unused = nint.Log2(x);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
     private static int TestUsed(int x)
     {
         return int.Log2(x);
@@ -36,9 +42,11 @@ public class Runtime_133965
     {
         Test(8);
         TestLong(8);
+        TestNative(8);
         Assert.Equal(3, TestUsed(8));
         Assert.Throws<ArgumentOutOfRangeException>(() => Test(Neg()));
         Assert.Throws<ArgumentOutOfRangeException>(() => TestLong(NegL()));
+        Assert.Throws<ArgumentOutOfRangeException>(() => TestNative(Neg()));
         Assert.Throws<ArgumentOutOfRangeException>(() => TestUsed(Neg()));
     }
 }
