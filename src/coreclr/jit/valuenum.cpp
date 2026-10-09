@@ -11923,7 +11923,8 @@ PhaseStatus Compiler::fgValueNumber()
             VNFunc initValFunc = VNF_InitVal;
 #ifdef TARGET_WASM
             if (IsReadyToRun() && (JitConfig.JitWasmAssumeNonNullThis() != 0) && (lclNum == info.compThisArg) &&
-                varDsc->TypeIs(TYP_REF))
+                varDsc->TypeIs(TYP_REF) &&
+                ((info.compClassAttr & (CORINFO_FLG_VALUECLASS | CORINFO_FLG_INTERFACE)) == 0))
             {
                 initValFunc = VNF_InitValNonNull;
                 JITDUMP("Assuming incoming this V%02u is non-null\n", lclNum);
