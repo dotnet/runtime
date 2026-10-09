@@ -689,6 +689,7 @@ static class RuntimeTypeSystem_1_Helpers
 | `ExecutionManager` |
 | `Loader` |
 | `PlatformMetadata` |
+| `PrecodeStubs` |
 | `ReJIT` |
 | `RuntimeInfo` |
 | `Signature` |
@@ -1528,6 +1529,7 @@ The contract depends on the following other contracts
 | PlatformMetadata |
 | ReJIT |
 | ExecutionManager |
+| PrecodeStubs (when advertised) |
 
 And the following enumeration definitions
 
