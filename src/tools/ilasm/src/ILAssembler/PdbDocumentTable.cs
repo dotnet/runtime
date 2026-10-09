@@ -13,8 +13,9 @@ namespace ILAssembler;
 /// <para>
 /// As in native ilasm, a document is defined when the assembler first meets its name: each input file when its
 /// parsing begins, and each file named by a <c>.line</c> or <c>#line</c> directive when the directive is applied,
-/// whether or not a sequence point ever refers to it. A document is identified by its name alone; defining it
-/// again returns the existing document, which keeps the language it was first defined with.
+/// whether or not a sequence point ever refers to it. A document is identified by its name alone, after
+/// <see cref="Options.PathMap"/>; defining it again returns the existing document, which keeps the language it was
+/// first defined with.
 /// </para>
 /// <para>
 /// Sequence points refer to a document by its index in this table
@@ -32,16 +33,29 @@ internal sealed class PdbDocumentTable
 
     private readonly List<PdbDocument> _documents = new();
     private readonly Dictionary<string, int> _indices = new(StringComparer.Ordinal);
+    private readonly PathMap _pathMap;
+
+    /// <summary>Creates an empty table whose document names are mapped by <paramref name="pathMap"/>.</summary>
+    public PdbDocumentTable(PathMap pathMap)
+    {
+        _pathMap = pathMap;
+    }
 
     /// <summary>Gets the documents in the order they were first defined.</summary>
     public IReadOnlyList<PdbDocument> Documents => _documents;
 
     /// <summary>
-    /// Gets the index of the document with this name, first adding it at the end of the table with this
-    /// language if no document has the name yet.
+    /// Gets the index of the document with this name after the table's <see cref="PathMap"/>, first adding it at the
+    /// end of the table with this language if no document has that name yet.
     /// </summary>
+    /// <remarks>
+    /// The name is mapped before it is looked up, and the document is named by the mapped name, so two names that
+    /// map to the same name are one document, as in the C# compiler. A name that no key of the map matches, such as
+    /// a relative <c>.line</c> file name when the keys are full paths, is kept as written.
+    /// </remarks>
     public int GetOrAdd(string name, Guid language)
     {
+        name = _pathMap.Map(name);
         if (!_indices.TryGetValue(name, out int index))
         {
             index = _documents.Count;

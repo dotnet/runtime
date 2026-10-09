@@ -55,6 +55,20 @@ internal sealed class Program
             }
         }
 
+        // Each --pathmap is one comma-separated list; the entries of all of them apply, in the order given. An invalid
+        // one fails the run before any file is read or written.
+        PathMap pathMap = PathMap.Empty;
+        foreach (string text in _result.GetValue(_command.PathMap) ?? [])
+        {
+            if (!PathMap.TryParse(text, out PathMap? parsed, out string? error))
+            {
+                Console.Error.WriteLine($"Error: {error}");
+                return 1;
+            }
+
+            pathMap = pathMap.Concat(parsed);
+        }
+
         // Determine output file (based on first input file)
         bool isDll = Get(_command.BuildDll);
         string? outputPath = Get(_command.OutputFilePath) ??
@@ -156,6 +170,10 @@ internal sealed class Program
             // Deterministic and metadata version
             options.Deterministic = Get(_command.Deterministic);
             options.MetadataVersion = Get(_command.MetadataVersion);
+
+            // Paths recorded in the PDB and the image's CodeView entry; files are still read and written at their
+            // real paths.
+            options.PathMap = pathMap;
 
             // Debug options
             options.Debug = Get(_command.Debug);

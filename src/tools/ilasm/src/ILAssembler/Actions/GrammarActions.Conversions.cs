@@ -43,7 +43,7 @@ namespace ILAssembler
         private Guid _currentLanguageGuid = PdbDocumentTable.ILAssemblyLanguage;
         private Guid _currentLanguageVendorGuid = Guid.Empty;
         private Guid _currentDocumentTypeGuid = Guid.Empty;
-        private readonly PdbDocumentTable _pdbDocuments = new();
+        private readonly PdbDocumentTable _pdbDocuments;
         // The index in _pdbDocuments of the current document: the input file being parsed, or the file named by
         // the last .line or #line directive applied since its parsing began. -1 before the first input file.
         private int _currentDocument = -1;
@@ -57,6 +57,7 @@ namespace ILAssembler
             _documents = documents;
             _options = options;
             _resourceLocator = resourceLocator;
+            _pdbDocuments = new PdbDocumentTable(options.PathMap);
         }
 
         private sealed record VTableFixupDeclaration(
