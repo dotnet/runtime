@@ -453,6 +453,7 @@ cp() {
             for name, content, max_entries, max_metadata_bytes, accepted in cases:
                 with self.subTest(workflow=workflow_name, case=name):
                     result, _, _ = self.run_script(
+                        'timeout() { shift; "$@"; }\n'
                         "set +e\n"
                         'for ZIP_TMP in "$ARCHIVE"; do\n'
                         "safe_name=test\n"
@@ -484,6 +485,7 @@ cp() {
             extractor = source[start:end]
             with self.subTest(workflow=workflow_name):
                 result, _, _ = self.run_script(
+                    'timeout() { shift; "$@"; }\n'
                     "set +e\n"
                     'for ZIP_TMP in "$ARCHIVE"; do\n'
                     "safe_name=test\n"
