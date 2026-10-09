@@ -384,7 +384,7 @@ void Lowering::ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenT
     assert(blkNode->OperIs(GT_STORE_BLK) && (blkNode->gtBlkOpKind == GenTreeBlk::BlkOpKindUnroll));
     assert(size < INT32_MAX);
 
-    if (addr->OperIs(GT_LCL_ADDR) && IsContainableLclAddr(addr->AsLclFld(), size))
+    if (addr->OperIs(GT_LCL_ADDR) && IsContainableLclAddr(addr->AsLclFld(), ValueSize(size)))
     {
         addr->SetContained();
         return;
@@ -7561,7 +7561,7 @@ void Lowering::ContainCheckIndir(GenTreeIndir* node)
         // The address of an indirection that requires its address in a reg.
         // Skip any further processing that might otherwise make it contained.
     }
-    else if (addr->OperIs(GT_LCL_ADDR) && IsContainableLclAddr(addr->AsLclFld(), node->Size()))
+    else if (addr->OperIs(GT_LCL_ADDR) && IsContainableLclAddr(addr->AsLclFld(), node->ValueSize()))
     {
         // These nodes go into an addr mode:
         // - GT_LCL_ADDR is a stack addr mode.
@@ -8600,7 +8600,7 @@ bool Lowering::LowerRMWMemOp(GenTreeIndir* storeInd)
         // If it is a GT_LCL_VAR, it still needs the reg to hold the address.
         // We would still need a reg for GT_CNS_INT if it doesn't fit within addressing mode base.
         if (indirCandidateChild->OperIs(GT_LCL_ADDR) &&
-            IsContainableLclAddr(indirCandidateChild->AsLclFld(), storeInd->Size()))
+            IsContainableLclAddr(indirCandidateChild->AsLclFld(), storeInd->ValueSize()))
         {
             indirDst->SetContained();
         }
@@ -9533,7 +9533,7 @@ void Lowering::TryMakeSrcContainedOrRegOptional(GenTreeHWIntrinsic* parentNode, 
 void Lowering::ContainCheckHWIntrinsicAddr(GenTreeHWIntrinsic* node, GenTree* addr, unsigned size)
 {
     assert((genActualType(addr) == TYP_I_IMPL) || addr->TypeIs(TYP_BYREF));
-    if ((addr->OperIs(GT_LCL_ADDR) && IsContainableLclAddr(addr->AsLclFld(), size)) ||
+    if ((addr->OperIs(GT_LCL_ADDR) && IsContainableLclAddr(addr->AsLclFld(), ValueSize(size))) ||
         (addr->IsCnsIntOrI() && addr->AsIntConCommon()->FitsInAddrBase(m_compiler)))
     {
         MakeSrcContained(node, addr);
