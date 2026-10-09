@@ -15810,7 +15810,17 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
 
             case EA_2BYTE:
                 // Output a size prefix for a 16-bit operand
-                dst += emitOutputByte(dst, 0x66);
+                if (TakesEvexPrefix(id))
+                {
+                    assert(IsApxExtendedEvexInstruction(ins));
+                    assert(hasEvexPrefix(code));
+                    // Evex.pp should already be added when adding the prefix.
+                    assert((code & EXTENDED_EVEX_PP_BITS) != 0);
+                }
+                else
+                {
+                    dst += emitOutputByte(dst, 0x66);
+                }
                 FALLTHROUGH;
 
             case EA_4BYTE:
