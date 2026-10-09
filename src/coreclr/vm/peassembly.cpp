@@ -648,10 +648,10 @@ PEAssembly::PEAssembly(
       m_PEImage{NULL}
     , m_MDImportIsRW_Debugger_Use_Only{FALSE}
     , m_pMDImport{NULL}
-#if defined(PROFILING_SUPPORTED) || defined(FEATURE_METADATA_UPDATER)
+#if defined(PROFILING_SUPPORTED_DATA) || defined(FEATURE_METADATA_UPDATER)
     , m_pImporter{NULL}
     , m_pEmitter{NULL}
-#endif // PROFILING_SUPPORTED || FEATURE_METADATA_UPDATER
+#endif // PROFILING_SUPPORTED_DATA || FEATURE_METADATA_UPDATER
     , m_pMDInternalEmit{NULL}
     , m_refCount{1}
     , m_pHostAssembly{nullptr}

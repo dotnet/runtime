@@ -257,7 +257,9 @@ void Module::UpdateNewlyAddedTypes()
 
     m_typeCounts = currTypeCounts;
 }
+#endif // PROFILING_SUPPORTED || FEATURE_METADATA_UPDATER
 
+#if defined(PROFILING_SUPPORTED) || defined(FEATURE_METADATA_UPDATER)
 Module::TypeCounts Module::GetCurrentTypeCounts()
 {
     WRAPPER_NO_CONTRACT;
@@ -503,12 +505,11 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
     }
 
 #if defined(PROFILING_SUPPORTED_DATA) || defined(FEATURE_METADATA_UPDATER)
-#if defined(PROFILING_SUPPORTED)
-    // These will be updated in NotifyProfilerLoadFinished for profiling scenarios.
     m_typeCounts = {};
-#else
+
+#if defined(FEATURE_METADATA_UPDATER) && !defined(PROFILING_SUPPORTED)
     m_typeCounts = GetCurrentTypeCounts();
-#endif // PROFILING_SUPPORTED
+#endif // FEATURE_METADATA_UPDATER && !PROFILING_SUPPORTED
 #endif // PROFILING_SUPPORTED_DATA || FEATURE_METADATA_UPDATER
 
 #ifdef PROFILING_SUPPORTED

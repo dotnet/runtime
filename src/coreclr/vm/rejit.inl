@@ -24,11 +24,11 @@ static BOOL RejitOnAttachEnabled()
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-#ifdef PROFILING_SUPPORTED
+#if defined(PROFILING_SUPPORTED) || defined(DACCESS_COMPILE)
     return (&g_profControlBlock)->fRejitOnAttachEnabled;
 #else
     return FALSE;
-#endif // PROFILING_SUPPORTED
+#endif // PROFILING_SUPPORTED || DACCESS_COMPILE
 }
 
 // static
@@ -36,12 +36,12 @@ inline BOOL ReJitManager::IsReJITEnabled()
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-#ifdef PROFILING_SUPPORTED
+#if defined(PROFILING_SUPPORTED) || defined(DACCESS_COMPILE)
     static bool profilerStartupRejit = CORProfilerEnableRejit() != FALSE;
     return  profilerStartupRejit || RejitOnAttachEnabled();
 #else
     return FALSE;
-#endif // PROFILING_SUPPORTED
+#endif // PROFILING_SUPPORTED || DACCESS_COMPILE
 }
 
 inline BOOL ReJitManager::IsReJITInlineTrackingEnabled()
