@@ -59,6 +59,8 @@
       <_projectDir>%(TestConsoleApps.ProjectDir)\</_projectDir>
       <_projectFile>%(TestConsoleApps.ProjectFile)</_projectFile>
       <_projectSourceFile>%(TestConsoleApps.ProjectCompileItems)</_projectSourceFile>
+      <_additionalTargetsImport></_additionalTargetsImport>
+      <_additionalTargetsImport Condition="'%(TestConsoleApps.AdditionalTargets)' != ''">&lt;Import Project=&quot;%(TestConsoleApps.AdditionalTargets)&quot; /&gt;</_additionalTargetsImport>
     </PropertyGroup>
 
     <ItemGroup Condition="'$(AdditionalProjectReferences)' != ''">
@@ -114,7 +116,7 @@
                                                  .Replace('{CoreCLRBuildIntegrationDir}', '$(CoreCLRBuildIntegrationDir)')
                                                  .Replace('{RuntimeHostConfigurationOptions}', '$(_runtimeHostConfigurationOptionsString)')
                                                  .Replace('{AdditionalProjectReferences}', '$(_additionalProjectReferencesString)')
-                                                 .Replace('{AdditionalTargets}', '%(TestConsoleApps.AdditionalTargets)')
+                                                 .Replace('{AdditionalTargetsImport}', '$(_additionalTargetsImport)')
                                                  .Replace('{RepositoryEngineeringDir}', '$(RepositoryEngineeringDir)')
                                                  .Replace('{MonoAOTCompilerDir}', '$(MonoAOTCompilerDir)')
                                                  .Replace('{MonoProjectRoot}', '$(MonoProjectRoot)')
