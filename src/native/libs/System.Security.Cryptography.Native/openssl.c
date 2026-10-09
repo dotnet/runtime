@@ -391,7 +391,7 @@ int32_t CryptoNative_GetAsn1StringBytes(ASN1_STRING* asn1, uint8_t* pBuf, int32_
         return 0;
     }
 
-    int length = asn1->length;
+    int length = ASN1_STRING_length(asn1);
     assert(length >= 0);
     if (length < 0)
     {
@@ -403,7 +403,7 @@ int32_t CryptoNative_GetAsn1StringBytes(ASN1_STRING* asn1, uint8_t* pBuf, int32_
         return -length;
     }
 
-    memcpy_s(pBuf, Int32ToSizeT(cBuf), asn1->data, Int32ToSizeT(length));
+    memcpy_s(pBuf, Int32ToSizeT(cBuf), ASN1_STRING_get0_data(asn1), Int32ToSizeT(length));
     return 1;
 }
 
@@ -813,12 +813,19 @@ int32_t CryptoNative_CheckX509IpAddress(
 
             ipAddr = sanEntry->d.iPAddress;
 
-            if (!ipAddr || !ipAddr->data || ipAddr->length != addressBytesLen)
+            if (!ipAddr || ASN1_STRING_length(ipAddr) != addressBytesLen)
             {
                 continue;
             }
 
-            if (!memcmp(addressBytes, ipAddr->data, (size_t)addressBytesLen))
+            const uint8_t* ipAddrData = ASN1_STRING_get0_data(ipAddr);
+
+            if (!ipAddrData)
+            {
+                continue;
+            }
+
+            if (!memcmp(addressBytes, ipAddrData, (size_t)addressBytesLen))
             {
                 success = 1;
                 break;
@@ -843,8 +850,8 @@ int32_t CryptoNative_CheckX509IpAddress(
                 X509_NAME_ENTRY* nameEnt = X509_NAME_get_entry(subject, i);
                 ASN1_STRING* cn = X509_NAME_ENTRY_get_data(nameEnt);
 
-                if (cn->length == cchHostname &&
-                    !strncasecmp((const char*)cn->data, hostname, (size_t)cchHostname))
+                if (ASN1_STRING_length(cn) == cchHostname &&
+                    !strncasecmp((const char*)ASN1_STRING_get0_data(cn), hostname, (size_t)cchHostname))
                 {
                     success = 1;
                     break;

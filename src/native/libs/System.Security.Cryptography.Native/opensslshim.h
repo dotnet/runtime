@@ -38,6 +38,7 @@
 
 #include "pal_crypto_config.h"
 #include "pal_compiler.h"
+#define OPENSSL_VERSION_4_0_RTM 0x40000000L
 #define OPENSSL_VERSION_3_0_RTM 0x30000000L
 #define OPENSSL_VERSION_1_1_1_RTM 0x10101000L
 #define OPENSSL_VERSION_1_1_0_RTM 0x10100000L
@@ -320,7 +321,10 @@ extern bool g_libSslUses32BitTime;
     REQUIRED_FUNCTION(ASN1_OCTET_STRING_set) \
     REQUIRED_FUNCTION(ASN1_STRING_dup) \
     REQUIRED_FUNCTION(ASN1_STRING_free) \
+    FALLBACK_FUNCTION(ASN1_STRING_get0_data) \
+    REQUIRED_FUNCTION(ASN1_STRING_length) \
     REQUIRED_FUNCTION(ASN1_STRING_print_ex) \
+    REQUIRED_FUNCTION(ASN1_STRING_type) \
     REQUIRED_FUNCTION(ASN1_TIME_new) \
     REQUIRED_FUNCTION(ASN1_TIME_set) \
     FALLBACK_FUNCTION(ASN1_TIME_to_tm) \
@@ -892,7 +896,10 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define ASN1_OCTET_STRING_set ASN1_OCTET_STRING_set_ptr
 #define ASN1_STRING_dup ASN1_STRING_dup_ptr
 #define ASN1_STRING_free ASN1_STRING_free_ptr
+#define ASN1_STRING_get0_data ASN1_STRING_get0_data_ptr
+#define ASN1_STRING_length ASN1_STRING_length_ptr
 #define ASN1_STRING_print_ex ASN1_STRING_print_ex_ptr
+#define ASN1_STRING_type ASN1_STRING_type_ptr
 #define ASN1_TIME_free ASN1_TIME_free_ptr
 #define ASN1_TIME_new ASN1_TIME_new_ptr
 #define ASN1_TIME_set ASN1_TIME_set_ptr
@@ -1516,6 +1523,7 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #elif OPENSSL_VERSION_NUMBER < OPENSSL_VERSION_1_1_0_RTM
 
 // Alias "future" API to the local_ version.
+#define ASN1_STRING_get0_data local_ASN1_STRING_get0_data
 #define ASN1_TIME_to_tm local_ASN1_TIME_to_tm
 #define BN_abs_is_word local_BN_abs_is_word
 #define BN_is_odd local_BN_is_odd
