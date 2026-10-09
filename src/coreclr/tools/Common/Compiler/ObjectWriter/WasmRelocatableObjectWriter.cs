@@ -400,19 +400,7 @@ namespace ILCompiler.ObjectWriter
 
         private protected override void WriteImports()
         {
-            foreach (Utf8String name in GetUndefinedSymbols())
-            {
-                string globalName = name.ToString();
-                if (globalName is WasmWellKnownGlobalSymbolNode.StackPointerName or
-                    WasmWellKnownGlobalSymbolNode.ImageBaseName or
-                    WasmWellKnownGlobalSymbolNode.TableBaseName or
-                    WasmWellKnownGlobalSymbolNode.AsyncContinuationName)
-                {
-                    WasmMutabilityType mutability = globalName is WasmWellKnownGlobalSymbolNode.StackPointerName or WasmWellKnownGlobalSymbolNode.AsyncContinuationName
-                        ? WasmMutabilityType.Mut : WasmMutabilityType.Const;
-                    WriteImport(new WasmImport("env", globalName, new WasmGlobalImportType(WasmValueType.I32, mutability)));
-                }
-            }
+            WriteImport(new WasmImport("env", WasmWellKnownGlobalSymbolNode.StackPointerName, import: new WasmGlobalImportType(WasmValueType.I32, WasmMutabilityType.Mut)));
             WriteImport(new WasmImport("env", "__indirect_function_table", new WasmTableImportType()));
             WriteImport(new WasmImport("env", "memory", new WasmMemoryImportType(WasmLimitType.HasMin, 0)));
         }
