@@ -2937,11 +2937,12 @@ SWITCH_OPCODE:
 
                     _ASSERTE(helperFtn != NULL);
 
+                    int32_t resultVar = ip[1];
                     // Same as INTOP_CALL: the stack walk treats the ip as a return address and moves it back by
                     // STACKWALK_CONTROLPC_ADJUST_OFFSET, so record the ip of the next instruction.
-                    pFrame->ip = ip + 4;
-                    LOCAL_VAR(ip[1], void*) = Call_HELPER_FTN_P_P(helperFtn, helperArg);
                     ip += 4;
+                    pFrame->ip = ip;
+                    LOCAL_VAR(resultVar, void*) = Call_HELPER_FTN_P_P(helperFtn, helperArg);
                     INTOP_NEXT;
                 }
 
@@ -2965,9 +2966,10 @@ SWITCH_OPCODE:
 
                     _ASSERTE(helperFtn != NULL);
 
-                    pFrame->ip = ip + 4;
-                    LOCAL_VAR(ip[1], void*) = Call_HELPER_FTN_P_P(helperFtn, helperArg);
+                    int32_t resultVar = ip[1];
                     ip += 4;
+                    pFrame->ip = ip;
+                    LOCAL_VAR(resultVar, void*) = Call_HELPER_FTN_P_P(helperFtn, helperArg);
                     INTOP_NEXT;
                 }
 
@@ -3017,9 +3019,10 @@ SWITCH_OPCODE:
                     }
 
                     _ASSERTE(helperFtn != NULL);
-                    pFrame->ip = ip + 5;
-                    LOCAL_VAR(ip[1], void*) = Call_HELPER_FTN_P_PP(helperFtn, helperArg1, helperArg2);
+                    int32_t resultVar = ip[1];
                     ip += 5;
+                    pFrame->ip = ip;
+                    LOCAL_VAR(resultVar, void*) = Call_HELPER_FTN_P_PP(helperFtn, helperArg1, helperArg2);
                     INTOP_NEXT;
                 }
 
@@ -3045,9 +3048,10 @@ SWITCH_OPCODE:
                     }
 
                     _ASSERTE(helperFtn != NULL);
-                    pFrame->ip = ip + 5;
-                    LOCAL_VAR(ip[1], void*) = Call_HELPER_FTN_P_PP(helperFtn, helperArg1, helperArg2);
+                    int32_t resultVar = ip[1];
                     ip += 5;
+                    pFrame->ip = ip;
+                    LOCAL_VAR(resultVar, void*) = Call_HELPER_FTN_P_PP(helperFtn, helperArg1, helperArg2);
                     INTOP_NEXT;
                 }
 
@@ -3075,9 +3079,10 @@ SWITCH_OPCODE:
                     }
 
                     _ASSERTE(helperFtn != NULL);
-                    pFrame->ip = ip + 5;
-                    LOCAL_VAR(ip[1], void*) = Call_HELPER_FTN_P_P(helperFtn, helperArg);
+                    int32_t resultVar = ip[1];
                     ip += 5;
+                    pFrame->ip = ip;
+                    LOCAL_VAR(resultVar, void*) = Call_HELPER_FTN_P_P(helperFtn, helperArg);
                     INTOP_NEXT;
                 }
 
@@ -3105,9 +3110,10 @@ SWITCH_OPCODE:
                     }
 
                     _ASSERTE(helperFtn != NULL);
-                    pFrame->ip = ip + 6;
-                    LOCAL_VAR(ip[1], void*) = Call_HELPER_FTN_P_PP(helperFtn, helperArg1, helperArg2);
+                    int32_t resultVar = ip[1];
                     ip += 6;
+                    pFrame->ip = ip;
+                    LOCAL_VAR(resultVar, void*) = Call_HELPER_FTN_P_PP(helperFtn, helperArg1, helperArg2);
                     INTOP_NEXT;
                 }
 
@@ -3135,9 +3141,10 @@ SWITCH_OPCODE:
                     }
 
                     _ASSERTE(helperFtn != NULL);
-                    pFrame->ip = ip + 6;
-                    LOCAL_VAR(ip[1], void*) = Call_HELPER_FTN_P_PP(helperFtn, helperArg1, helperArg2);
+                    int32_t resultVar = ip[1];
                     ip += 6;
+                    pFrame->ip = ip;
+                    LOCAL_VAR(resultVar, void*) = Call_HELPER_FTN_P_PP(helperFtn, helperArg1, helperArg2);
                     INTOP_NEXT;
                 }
 
@@ -3162,9 +3169,10 @@ SWITCH_OPCODE:
                         goto CALL_INTERP_METHOD;
                     }
 
-                    pFrame->ip = ip + 5;
-                    LOCAL_VAR(ip[1], void*) = Call_HELPER_FTN_P_PP(helperFtn, helperArg1, helperArg2);
+                    int32_t resultVar = ip[1];
                     ip += 5;
+                    pFrame->ip = ip;
+                    LOCAL_VAR(resultVar, void*) = Call_HELPER_FTN_P_PP(helperFtn, helperArg1, helperArg2);
                     INTOP_NEXT;
                 }
 
@@ -3194,9 +3202,9 @@ SWITCH_OPCODE:
                     }
 
                     _ASSERTE(helperFtn != NULL);
-                    pFrame->ip = ip + 6;
-                    Call_HELPER_FTN_V_PPP(helperFtn, helperArg1, helperArg2, helperArg3);
                     ip += 6;
+                    pFrame->ip = ip;
+                    Call_HELPER_FTN_V_PPP(helperFtn, helperArg1, helperArg2, helperArg3);
                     INTOP_NEXT;
                 }
 
@@ -3224,9 +3232,9 @@ SWITCH_OPCODE:
                     }
 
                     _ASSERTE(helperFtn != NULL);
-                    pFrame->ip = ip + 5;
-                    Call_HELPER_FTN_V_PPP(helperFtn, helperArg1, helperArg2, helperArg3);
                     ip += 5;
+                    pFrame->ip = ip;
+                    Call_HELPER_FTN_V_PPP(helperFtn, helperArg1, helperArg2, helperArg3);
                     INTOP_NEXT;
                 }
 
@@ -3252,9 +3260,9 @@ SWITCH_OPCODE:
                     }
 
                     _ASSERTE(helperFtn != NULL);
-                    pFrame->ip = ip + 4;
-                    Call_HELPER_FTN_V_PP(helperFtn, helperArg1, helperArg2);
                     ip += 4;
+                    pFrame->ip = ip;
+                    Call_HELPER_FTN_V_PP(helperFtn, helperArg1, helperArg2);
                     INTOP_NEXT;
                 }
                 INTOP_CASE(INTOP_CALL_HELPER_V_SS)
@@ -3278,9 +3286,9 @@ SWITCH_OPCODE:
                     }
 
                     _ASSERTE(helperFtn != NULL);
-                    pFrame->ip = ip + 4;
-                    Call_HELPER_FTN_V_PP(helperFtn, helperArg1, helperArg2);
                     ip += 4;
+                    pFrame->ip = ip;
+                    Call_HELPER_FTN_V_PP(helperFtn, helperArg1, helperArg2);
                     INTOP_NEXT;
                 }
 
@@ -3307,9 +3315,9 @@ SWITCH_OPCODE:
                     }
 
                     _ASSERTE(helperFtn != NULL);
-                    pFrame->ip = ip + 5;
-                    Call_HELPER_FTN_V_PPP(helperFtn, helperArg1, helperArg2, helperArg3);
                     ip += 5;
+                    pFrame->ip = ip;
+                    Call_HELPER_FTN_V_PPP(helperFtn, helperArg1, helperArg2, helperArg3);
                     INTOP_NEXT;
                 }
 
@@ -3891,10 +3899,9 @@ CALL_INTERP_METHOD:
                     }
 
                     // private static ref byte Unbox(MethodTable* toTypeHnd, object obj)
-                    pFrame->ip = ip + 5;
-                    LOCAL_VAR(dreg, void*) = Call_HELPER_FTN_BOX_UNBOX(helper, pMT, src);
-
                     ip += 5;
+                    pFrame->ip = ip;
+                    LOCAL_VAR(dreg, void*) = Call_HELPER_FTN_BOX_UNBOX(helper, pMT, src);
                     INTOP_NEXT;
                 }
                 INTOP_CASE(INTOP_UNBOX_END)
@@ -3936,10 +3943,9 @@ CALL_INTERP_METHOD:
                     }
 
                     // private static ref byte Unbox(MethodTable* toTypeHnd, object obj)
-                    pFrame->ip = ip + 6;
-                    LOCAL_VAR(dreg, void*) = Call_HELPER_FTN_BOX_UNBOX(helper, pMTBoxedObj, src);
-
                     ip += 6;
+                    pFrame->ip = ip;
+                    LOCAL_VAR(dreg, void*) = Call_HELPER_FTN_BOX_UNBOX(helper, pMTBoxedObj, src);
                     INTOP_NEXT;
                 }
                 INTOP_CASE(INTOP_UNBOX_END_GENERIC)
