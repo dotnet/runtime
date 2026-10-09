@@ -79,14 +79,14 @@ static bool CanFlushUsingMembarrier(void)
 static bool s_flushUsingMemBarrier = false;
 #endif // HAVE_SYS_MEMBARRIER_H
 
-#ifndef HOST_APPLE
+#ifdef HOST_APPLE
+static bool s_serializeAppleMemoryBarrier = false;
+#else
 // Helper memory page used by the fallback path
 static uint8_t* g_helperPage = NULL;
 
 static size_t s_pageSize = 0;
-#else
-static bool s_serializeAppleMemoryBarrier = false;
-#endif // !HOST_APPLE
+#endif // HOST_APPLE
 #endif // !HOST_WASM
 
 static bool s_initializedMemoryBarrierSuccessfullyInitialized = false;
