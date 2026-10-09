@@ -91,8 +91,8 @@ public sealed class CommandLinePathMapTests : IDisposable
     [Fact]
     public void Deterministic_TheSameSourceInTwoTreesMappedToOnePath_GivesIdenticalImageAndPdb()
     {
-        AssertSucceeds(RunIlasm(_first, "-DET", "-DEBUG", $"-pathmap={_first}=/_/"));
-        AssertSucceeds(RunIlasm(_second, "-DET", "-DEBUG", $"-pathmap={_second}=/_/"));
+        AssertSucceeds(RunIlasm(_first, "-DET", "-DEBUG", "--pathmap", $"{_first}=/_/"));
+        AssertSucceeds(RunIlasm(_second, "-DET", "-DEBUG", "--pathmap", $"{_second}=/_/"));
 
         Assert.Equal(File.ReadAllBytes(Output(_first)), File.ReadAllBytes(Output(_second)));
         Assert.Equal(File.ReadAllBytes(Pdb(_first)), File.ReadAllBytes(Pdb(_second)));
@@ -101,22 +101,10 @@ public sealed class CommandLinePathMapTests : IDisposable
         Assert.Equal("T.pdb", ReadCodeViewPath(Output(_first)));
     }
 
-    // The native form, with either of its separators, as native options take a value.
-    [Theory]
-    [InlineData('=')]
-    [InlineData(':')]
-    public void NativePathMapOption_IsAccepted(char separator)
-    {
-        AssertSucceeds(RunIlasm(_first, "-DEBUG", $"-PATHMAP{separator}{_first}=/_/"));
-
-        using PortablePdbTestReader reader = PortablePdbTestReader.Open(Output(_first), Pdb(_first));
-        Assert.Equal(new[] { "/_/src/T.il" }, reader.DocumentNames);
-    }
-
     // Two --pathmap options: the entries of both apply, those of the first before those of the second. Only the
     // second's entry matches the PDB path, and both match the input, where the first's wins.
     [Fact]
-    public void ModernPathMapOption_GivenTwice_AppliesBothInOrder()
+    public void PathMap_GivenTwice_AppliesBothInOrder()
     {
         string src = Path.Combine(_first, "src");
         AssertSucceeds(RunIlasm(_first, "-DEBUG", "--pathmap", $"{src}=/first/", "--pathmap", $"{_first}=/second/"));
@@ -130,7 +118,7 @@ public sealed class CommandLinePathMapTests : IDisposable
     [Fact]
     public void MalformedPathMap_FailsAndWritesNothing()
     {
-        int exitCode = RunIlasm(_first, "-DEBUG", $"-PATHMAP={_first}");
+        int exitCode = RunIlasm(_first, "-DEBUG", "--pathmap", _first);
 
         Assert.Equal(1, exitCode);
         Assert.Empty(Directory.EnumerateFileSystemEntries(Path.Combine(_first, "out")));
@@ -140,7 +128,7 @@ public sealed class CommandLinePathMapTests : IDisposable
     [Fact]
     public void PathMap_PdbIsWrittenAtItsRealPath_WhileTheCodeViewEntryNamesTheMappedPath()
     {
-        AssertSucceeds(RunIlasm(_first, "-DEBUG", $"-pathmap={_first}=/_/"));
+        AssertSucceeds(RunIlasm(_first, "-DEBUG", "--pathmap", $"{_first}=/_/"));
 
         Assert.True(File.Exists(Pdb(_first)));
         Assert.Equal("/_/out/T.pdb", ReadCodeViewPath(Output(_first)));

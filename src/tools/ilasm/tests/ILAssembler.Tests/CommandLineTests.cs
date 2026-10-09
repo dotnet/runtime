@@ -61,7 +61,6 @@ public class CommandLineTests
         { "KEY", "--key" },
         { "MDV", "--mdv" },
         { "OUT", "--output" },
-        { "PAT", "--pathmap" },
         { "SSV", "--ssver" },
         { "STA", "--stack" },
         { "SUB", "--subsystem" },
@@ -76,7 +75,6 @@ public class CommandLineTests
         "KEY",
         "MDV",
         "OUT",
-        "PAT",
         "SSV",
         "STA",
         "SUB",
@@ -406,6 +404,7 @@ public class CommandLineTests
     [InlineData("-unknown", false)]
     [InlineData("-x", false)]
     [InlineData("-i", false)]
+    [InlineData("-PATHMAP=/src=/_", false)]
     [InlineData("/unknown", true)]
     public void UnrecognizedNativeOption_Throws(string argument, bool allowSlashOptions)
     {

@@ -33,7 +33,6 @@ internal static class NativeCommandLine
         ["NOL"] = "--nologo",
         ["OPT"] = "--optimize",
         ["OUT"] = "--output",
-        ["PAT"] = "--pathmap",
         ["PDB"] = "--pdb",
         ["PE6"] = "--pe64",
         ["QUI"] = "--quiet",
