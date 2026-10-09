@@ -1070,6 +1070,87 @@
         .try OuterTry to CatchStart catch [System.Runtime]System.Exception handler CatchStart to MethodEnd
     }
 
+    .method public static void MethodEntry.Catch_Invalid_FallthroughIntoHandler() cil managed
+    {
+        .maxstack 1
+    HandlerStart:
+        pop
+        leave MethodEnd
+    TryStart:
+        leave MethodEnd
+    MethodEnd:
+        ret
+        .try TryStart to MethodEnd catch [System.Runtime]System.Exception handler HandlerStart to TryStart
+    }
+
+    .method public static void MethodEntry.Finally_Invalid_FallthroughIntoHandler() cil managed
+    {
+    HandlerStart:
+        endfinally
+    TryStart:
+        leave MethodEnd
+    MethodEnd:
+        ret
+        .try TryStart to MethodEnd finally handler HandlerStart to TryStart
+    }
+
+    .method public static void MethodEntry.Fault_Invalid_FallthroughIntoHandler() cil managed
+    {
+    HandlerStart:
+        endfault
+    TryStart:
+        leave MethodEnd
+    MethodEnd:
+        ret
+        .try TryStart to MethodEnd fault handler HandlerStart to TryStart
+    }
+
+    .method public static void MethodEntry.Filter_Invalid_FallthroughIntoFilter() cil managed
+    {
+        .maxstack 1
+    FilterStart:
+        pop
+        ldc.i4.0
+        endfilter
+    HandlerStart:
+        pop
+        leave MethodEnd
+    TryStart:
+        leave MethodEnd
+    MethodEnd:
+        ret
+        .try TryStart to MethodEnd filter FilterStart handler HandlerStart to TryStart
+    }
+
+    .method public static void MethodEntry.TryInFinally_Invalid_FallthroughIntoHandler() cil managed
+    {
+    HandlerStart:
+    InnerTry:
+        leave InnerEnd
+    InnerHandler:
+        endfinally
+    InnerEnd:
+        endfinally
+    OuterTry:
+        leave MethodEnd
+    MethodEnd:
+        ret
+        .try InnerTry to InnerHandler finally handler InnerHandler to InnerEnd
+        .try OuterTry to MethodEnd finally handler HandlerStart to OuterTry
+    }
+
+    .method public static void MethodEntry.EmptyHandler_Invalid_EHClauseEmpty() cil managed
+    {
+    EmptyHandler:
+        // An empty handler at offset zero does not enclose the first instruction.
+        ret
+    TryStart:
+        leave MethodEnd
+    MethodEnd:
+        ret
+        .try TryStart to MethodEnd finally handler EmptyHandler to EmptyHandler
+    }
+
     .method public static void Try.SharedByCatchesAndFilter_Valid() cil managed
     {
         .maxstack 1

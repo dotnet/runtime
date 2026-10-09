@@ -227,6 +227,12 @@ namespace Internal.IL
             InitialPass();
             VerifyExceptionRegions();
             FindEnclosingExceptionRegions();
+
+            // ECMA-335 I.12.4.2.8.1 forbids filters and handlers at method entry.
+            _currentInstructionOffset = 0;
+            Check(!_basicBlocks[0].HandlerIndex.HasValue, VerifierError.FallthroughIntoHandler);
+            Check(!_basicBlocks[0].FilterIndex.HasValue, VerifierError.FallthroughIntoFilter);
+
             ImportBasicBlocks();
         }
 
@@ -1335,6 +1341,7 @@ namespace Internal.IL
 
         void StartImportingBasicBlock(BasicBlock basicBlock)
         {
+            _currentInstructionOffset = basicBlock.StartOffset;
             _delegateCreateStart = null;
             _isThisInitialized = basicBlock.IsThisInitialized;
 
