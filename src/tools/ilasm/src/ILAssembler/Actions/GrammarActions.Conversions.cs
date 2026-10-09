@@ -40,11 +40,16 @@ namespace ILAssembler
         private int _syntaxErrorCount;
 
         // Debug info tracking
-        private Guid _currentLanguageGuid = Guid.Empty;
+        private Guid _currentLanguageGuid = PdbDocumentTable.ILAssemblyLanguage;
         private Guid _currentLanguageVendorGuid = Guid.Empty;
         private Guid _currentDocumentTypeGuid = Guid.Empty;
-        private string? _currentDocumentPath;
-        private readonly Dictionary<(string Path, Guid LanguageGuid), DocumentHandle> _documentHandles = new();
+        private readonly PdbDocumentTable _pdbDocuments;
+        // The .line state of each source of the input file being parsed: the input file and each inclusion of an
+        // #include'd file, keyed by the token source (lexer) that reads it. See SourceLineState.
+        private readonly Dictionary<object, SourceLineState> _sourceLineStates = new();
+        // The span of the last sequence point recorded, across methods and input files, or null when a .line or
+        // #line directive has been applied since. An instruction gets a point only when its span differs.
+        private SequencePointSpan? _lastSequencePointSpan;
         private readonly MetadataBuilder _pdbBuilder = new();
         private readonly List<VTableFixupDeclaration> _vtableFixups = new();
         private readonly Dictionary<EntityRegistry.MethodDefinitionEntity, ParserRuleContext> _exportDirectiveContexts = new();
@@ -55,6 +60,7 @@ namespace ILAssembler
             _documents = documents;
             _options = options;
             _resourceLocator = resourceLocator;
+            _pdbDocuments = new PdbDocumentTable(options.PathMap);
         }
 
         private sealed record VTableFixupDeclaration(
@@ -196,6 +202,8 @@ namespace ILAssembler
                         ArgumentNames[param.Name] = param.Sequence - 1;
                     }
                 }
+
+                OpenScopes.Add(new LexicalScope(startOffset: 0, order: 0));
             }
 
             public EntityRegistry.MethodDefinitionEntity Definition { get; }
@@ -206,9 +214,22 @@ namespace ILAssembler
 
             public Dictionary<string, int> ArgumentNames { get; } = new();
 
-            public List<Dictionary<string, int>> LocalsScopes { get; } = new();
+            /// <summary>
+            /// Gets the open lexical scopes of the method body, outermost first: the method's root scope, then one
+            /// scope per enclosing <c>{ }</c> block. A local name resolves to its declaration in the innermost
+            /// scope that declares it.
+            /// </summary>
+            public List<LexicalScope> OpenScopes { get; } = new();
 
-            public List<SignatureArg> AllLocals { get; } = new();
+            /// <summary>
+            /// Gets the method's local slots, indexed by slot. The body's local signature has one entry per slot.
+            /// </summary>
+            public List<LocalSlot> LocalSlots { get; } = new();
+
+            /// <summary>
+            /// Gets or sets the source-order position of the next block to open; the root scope is 0.
+            /// </summary>
+            public int NextScopeOrder { get; set; } = 1;
         }
 
         private CurrentMethodContext? _currentMethod;

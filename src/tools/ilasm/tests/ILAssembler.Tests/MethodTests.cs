@@ -475,6 +475,57 @@ namespace ILAssembler.Tests
                 pe.PEHeaders.CorHeader!.EntryPointTokenOrRelativeVirtualAddress);
         }
 
+        [Fact]
+        public void EntryPointMethod_IsPortablePdbHeaderEntryPoint()
+        {
+            // Main is not the first MethodDef, so the PDB header's entry point must name Main itself.
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi beforefieldinit Program extends [mscorlib]System.Object
+                {
+                    .method public static void Helper() cil managed
+                    {
+                        ret
+                    }
+
+                    .method public static int32 Main() cil managed
+                    {
+                        .entrypoint
+                        ldc.i4.0
+                        ret
+                    }
+                }
+                """;
+
+            using var pdb = PortablePdbTestReader.Compile(source);
+            MethodDefinitionHandle mainHandle = pdb.GetMethodHandle("Main");
+
+            Assert.NotEqual(1, MetadataTokens.GetRowNumber(mainHandle));
+            Assert.Equal(mainHandle, pdb.Pdb.DebugMetadataHeader!.EntryPoint);
+        }
+
+        [Fact]
+        public void NoEntryPointMethod_PortablePdbHeaderEntryPointIsNil()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi beforefieldinit Program extends [mscorlib]System.Object
+                {
+                    .method public static int32 Main() cil managed
+                    {
+                        ldc.i4.0
+                        ret
+                    }
+                }
+                """;
+
+            using var pdb = PortablePdbTestReader.Compile(source);
+
+            Assert.True(pdb.Pdb.DebugMetadataHeader!.EntryPoint.IsNil);
+        }
+
 
         [Fact]
         public void ArrayType_InMethodSignature_ParsedCorrectly()

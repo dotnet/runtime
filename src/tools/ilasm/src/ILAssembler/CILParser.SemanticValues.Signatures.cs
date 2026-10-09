@@ -84,6 +84,14 @@ public partial class CILParser
     {
         public static SignatureArgumentValue Error { get; } =
             new(false, 0, TypeValue.Error, null, null);
+
+        /// <summary>
+        /// Gets the explicit slot index of a <c>.locals</c> declaration written as <c>[n] type name</c>, or
+        /// <see langword="null"/> when the declaration has none and takes the next free slot. Only set for the
+        /// arguments of a <c>.locals</c> directive: there the <c>[n]</c> is a slot index and is not folded into
+        /// <see cref="Attributes"/>. Elsewhere <c>[n]</c> remains a raw parameter attribute value.
+        /// </summary>
+        public int? Slot { get; init; }
     }
 
     public sealed record CalliSignatureValue(
