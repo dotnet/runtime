@@ -1458,6 +1458,7 @@ void InterpExecMethod(InterpreterFrame *pInterpreterFrame, InterpMethodContextFr
 
     TADDR resumeSP = 0;
     TADDR resumeIP = 0;
+    bool resumedAfterCatch = false;
 
 #if defined(HOST_AMD64) && defined(HOST_WINDOWS)
     pInterpreterFrame->SetInterpExecMethodSSP((TADDR)_rdsspq());
@@ -1522,6 +1523,26 @@ MAIN_LOOP:
     {
         INSTALL_MANAGED_EXCEPTION_DISPATCHER;
         INSTALL_UNWIND_AND_CONTINUE_HANDLER;
+
+        if (resumedAfterCatch)
+        {
+            // The execution is resuming after a catch handler. If the thread is being aborted, raise the abort
+            // again, like EECodeManager::ResumeAfterCatch does for compiled code.
+            resumedAfterCatch = false;
+
+            // Record the resume IP in the pFrame so that the exception handling unwinds from there
+            pFrame->ip = ip;
+
+            // COMPlusCheckForAbort expects Thread::m_OSContext to describe the place where the execution resumes. It
+            // uses that context to find out whether the thread can be aborted there.
+            pInterpreterFrame->SetContextToInterpMethodContextFrame(GetThread()->m_OSContext);
+
+            if (COMPlusCheckForAbort(resumeIP) != NULL)
+            {
+                DispatchManagedException(kThreadAbortException);
+            }
+        }
+
         while (true)
         {
 #if USE_COMPUTED_GOTO
@@ -4979,13 +5000,11 @@ do                                                                      \
 
         pInterpreterFrame->SetIsFaulting(false);
 
-        void* abortAddress = COMPlusCheckForAbort(resumeIP);
-        if (abortAddress != NULL)
-        {
-            // Record the resume IP in the pFrame so that the exception handling unwinds from there
-            pFrame->ip = ip;
-            DispatchManagedException(kThreadAbortException);
-        }
+        // If the thread is being aborted, the abort has to be raised again now that the catch handler is done. That
+        // cannot be done from here: when a frame of this InterpExecMethod catches the abort, the
+        // ResumeAfterCatchException that resumes it would be thrown from inside this catch block and the try block
+        // above would not catch it. So the check is made at the start of the try block.
+        resumedAfterCatch = true;
 
         goto MAIN_LOOP;
     }
