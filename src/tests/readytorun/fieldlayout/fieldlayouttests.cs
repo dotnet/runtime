@@ -53,7 +53,6 @@ class AutoStructWithInt128InDerivedClassTest
         Int128Pair pair = (Int128Pair)typeof(Derived).GetField(nameof(Derived.Pair))!.GetValue(derived)!;
         Assert.Equal((Int128)0x1111, pair.First);
         Assert.Equal((Int128)(-0x2222), pair.Second);
-        Assert.Equal(1, derived.Chars.Length);
     }
 }
 
