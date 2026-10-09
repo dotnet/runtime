@@ -898,6 +898,7 @@ private:
     void                LinkBBs(InterpBasicBlock *from, InterpBasicBlock *to);
     void                UnlinkBBs(InterpBasicBlock *from, InterpBasicBlock *to);
 
+    void    EmitLoopSafepoint();
     void    EmitBranch(InterpOpcode opcode, int ilOffset);
     void    EmitOneArgBranch(InterpOpcode opcode, int ilOffset, int insSize);
     void    EmitTwoArgBranch(InterpOpcode opcode, int ilOffset, int insSize);

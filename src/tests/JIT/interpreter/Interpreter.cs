@@ -959,6 +959,14 @@ public class InterpreterTest
         if (!TestThreading_Interlocked_CompareExchange())
             Environment.FailFast(null);
 
+        // ControlledExecution is not supported on iOS and tvOS
+        if (PlatformDetection.IsMultithreadingSupported && !PlatformDetection.IsAppleMobile)
+        {
+            Console.WriteLine("TestLoopSafepoints");
+            if (!TestLoopSafepoints())
+                Environment.FailFast(null);
+        }
+
         Console.WriteLine("TestRuntimeHelpers_IsReferenceOrContainsReferences");
         if (!TestRuntimeHelpers_IsReferenceOrContainsReferences())
             Environment.FailFast(null);
@@ -3020,6 +3028,131 @@ public class InterpreterTest
         objComparand = null;
         objResult = System.Threading.Interlocked.CompareExchange(ref objLocation, objValue, objComparand);
         if (!(objResult is null && object.ReferenceEquals(objLocation, objValue)))
+            return false;
+
+        return true;
+    }
+
+    static volatile bool s_loopStarted;
+    static volatile bool s_loopFinallyRan;
+
+    // An empty infinite loop is a branch to itself. Here it is also the first instruction of the try region.
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static void SpinInBranchToSelf()
+    {
+        s_loopStarted = true;
+        try
+        {
+            while (true) { }
+        }
+        finally
+        {
+            s_loopFinallyRan = true;
+        }
+    }
+
+    // The loop is closed by the leave at the end of the try block.
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static void SpinInBackwardLeave()
+    {
+        s_loopStarted = true;
+        int i = 0;
+        while (true)
+        {
+            try
+            {
+                i++;
+            }
+            catch (ArgumentException)
+            {
+                i--;
+            }
+        }
+    }
+
+    // The same, with a finally to call on the way back to the head of the loop.
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static void SpinInBackwardLeaveThroughFinally()
+    {
+        s_loopStarted = true;
+        int i = 0;
+        while (true)
+        {
+            try
+            {
+                i++;
+            }
+            finally
+            {
+                i--;
+            }
+        }
+    }
+
+    // The loop is closed by the switch: the C# compiler makes the switch target of an empty `goto` case the label itself.
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static int SpinInBackwardSwitch(int selector)
+    {
+        s_loopStarted = true;
+    Loop:
+        switch (selector)
+        {
+            case 0: goto Loop;
+            case 1: return 1;
+            case 2: return 2;
+            case 3: return 3;
+            case 4: return 4;
+            default: return -1;
+        }
+    }
+
+    // Runs a loop that never exits and calls nothing on another thread, lets a GC suspend that thread, then aborts it.
+    static bool SuspendAndAbortLoop(Action loop)
+    {
+        s_loopStarted = false;
+        bool canceled = false;
+        using CancellationTokenSource cts = new CancellationTokenSource();
+        Thread thread = new Thread(() =>
+        {
+            try
+            {
+#pragma warning disable SYSLIB0046 // ControlledExecution.Run is obsolete
+                System.Runtime.ControlledExecution.Run(loop, cts.Token);
+#pragma warning restore SYSLIB0046
+            }
+            catch (OperationCanceledException)
+            {
+                canceled = true;
+            }
+        });
+        thread.Start();
+        while (!s_loopStarted)
+            Thread.Sleep(1);
+
+        // This does not return if the loop has no safepoint
+        GC.Collect();
+
+        cts.Cancel();
+        thread.Join();
+        return canceled;
+    }
+
+    public static bool TestLoopSafepoints()
+    {
+        s_loopFinallyRan = false;
+        if (!SuspendAndAbortLoop(SpinInBranchToSelf))
+            return false;
+        // The abort is raised from the safepoint that starts the try region, so its finally has to run
+        if (!s_loopFinallyRan)
+            return false;
+
+        if (!SuspendAndAbortLoop(SpinInBackwardLeave))
+            return false;
+
+        if (!SuspendAndAbortLoop(SpinInBackwardLeaveThroughFinally))
+            return false;
+
+        if (!SuspendAndAbortLoop(() => SpinInBackwardSwitch(0)))
             return false;
 
         return true;

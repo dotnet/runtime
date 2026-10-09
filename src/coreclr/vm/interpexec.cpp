@@ -2070,11 +2070,19 @@ SWITCH_OPCODE:
                         Thread *pThread = GetThread();
                         if (pThread->IsAbortRequested())
                         {
+                            // HandleThreadAbort raises the abort through managed exception dispatch, as if a call made
+                            // by this instruction had thrown: the stack walk treats the frame's ip as a return address
+                            // and moves it back before looking up the EH clauses. Record the ip of the next instruction
+                            // while it runs, like INTOP_CALL does, so that the adjusted ip stays inside this one. With
+                            // the ip of this instruction, an abort at a safepoint that is the first instruction of a
+                            // try region would skip the region's handlers.
+                            pFrame->ip = ip + 1;
                             CallWithSEHWrapper(
                             [&pThread]() {
                                 pThread->HandleThreadAbort();
                                 return 0;
                             });
+                            pFrame->ip = ip;
                         }
                         // Transition into preemptive mode to allow the GC to suspend us
                         GCX_PREEMP_REGION_BEGIN();
