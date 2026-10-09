@@ -1901,6 +1901,33 @@ public class ExecutionManagerTests
     private const ulong PortableInterpreterCode = 0x0061_0000;
     private const ulong PortableCodeRangeStart = 0x0a0a_0000;
 
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void NonVirtualEntry2MethodDesc_PortableEntryPoint_ReturnsOwningMethodDesc(MockTarget.Architecture arch)
+    {
+        MockExecutionManagerBuilder emBuilder = new("c1", arch, MockExecutionManagerBuilder.DefaultAllocationRange);
+        TargetTestHelpers helpers = emBuilder.Builder.TargetTestHelpers;
+        TargetTestHelpers.LayoutResult layout = helpers.LayoutFields([
+            new(nameof(Data.PortableEntryPoint.ActualCode), DataType.pointer),
+            new(nameof(Data.PortableEntryPoint.MethodDesc), DataType.pointer),
+            new(nameof(Data.PortableEntryPoint.Flags), DataType.int32),
+        ]);
+        TargetPointer expectedMethodDesc = new(PortableMethodDescAddress);
+        MockMemorySpace.BumpAllocator allocator = emBuilder.Builder.CreateAllocator(0x0060_0000, 0x0061_0000);
+        MockMemorySpace.HeapFragment entryPoint = allocator.Allocate(layout.Stride, "PortableEntryPoint");
+        helpers.WritePointer(entryPoint.Data.AsSpan(layout.Fields[nameof(Data.PortableEntryPoint.MethodDesc)].Offset, helpers.PointerSize), expectedMethodDesc);
+
+        Target target = CreateTarget(emBuilder, configureTarget: targetBuilder => targetBuilder
+            .AddTypes(new Dictionary<DataType, Target.TypeInfo>
+            {
+                [DataType.PortableEntryPoint] = new() { Fields = layout.Fields, Size = layout.Stride },
+            })
+            .AddGlobals((Constants.Globals.FeaturePortableEntrypoints, 1))
+            .AddContract<IFeatureFlags>(version: "c1"));
+
+        Assert.Equal(expectedMethodDesc, target.Contracts.ExecutionManager.NonVirtualEntry2MethodDesc(new TargetCodePointer(entryPoint.Address)));
+    }
+
     private sealed class PortableEntryPointFixture
     {
         public required Target Target { get; init; }

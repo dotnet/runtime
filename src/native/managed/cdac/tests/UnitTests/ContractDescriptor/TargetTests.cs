@@ -482,14 +482,25 @@ public unsafe partial class TargetTests
     [ClassData(typeof(MockTarget.StdArch))]
     public void ValidateForDataAccess_AllRequiredPresent_DoesNotThrow(MockTarget.Architecture arch)
     {
-        TargetTestHelpers targetTestHelpers = new(arch);
-        ContractDescriptorBuilder builder = new(targetTestHelpers);
-        ContractDescriptorBuilder.DescriptorBuilder descriptorBuilder = new(builder);
-        descriptorBuilder.SetContracts(s_requiredDataAccessContracts);
+        foreach (bool portableEntrypoints in new[] { false, true })
+        {
+            TargetTestHelpers targetTestHelpers = new(arch);
+            ContractDescriptorBuilder builder = new(targetTestHelpers);
+            ContractDescriptorBuilder.DescriptorBuilder descriptorBuilder = new(builder);
+            descriptorBuilder
+                .SetContracts(
+                    s_requiredDataAccessContracts
+                        .Where(pair => !portableEntrypoints || pair.Key != "PrecodeStubs")
+                        .ToDictionary(static pair => pair.Key, static pair => pair.Value))
+                .SetGlobals(
+                [
+                    (Constants.Globals.FeaturePortableEntrypoints, portableEntrypoints ? 1ul : 0ul, null, "uint8"),
+                ]);
 
-        Assert.True(builder.TryCreateTarget(descriptorBuilder, out ContractDescriptorTarget? target));
+            Assert.True(builder.TryCreateTarget(descriptorBuilder, out ContractDescriptorTarget? target));
 
-        Contracts.CoreCLRContracts.ValidateForDataAccess(target);
+            Contracts.CoreCLRContracts.ValidateForDataAccess(target);
+        }
     }
 
     [Theory]
@@ -562,7 +573,7 @@ public unsafe partial class TargetTests
     [ClassData(typeof(MockTarget.StdArch))]
     public void ValidateForDataAccess_MissingTransitiveContract_ThrowsNotAdvertised(MockTarget.Architecture arch)
     {
-        string[] transitiveDependencies = ["ConditionalWeakTable", "Debugger", "SHash"];
+        string[] transitiveDependencies = ["ConditionalWeakTable", "Debugger", "PrecodeStubs", "SHash"];
 
         foreach (string missingContract in transitiveDependencies)
         {
