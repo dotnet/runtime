@@ -14,10 +14,21 @@
 #include "dn-stdio.h"
 #include "ex.h"
 
+static Exception *GetCxxOutOfMemoryException()
+{
+    LIMITED_METHOD_CONTRACT;
+
+#ifndef DACCESS_COMPILE
+    VolatileStoreWithoutBarrier<HRESULT>(&g_hrFatalError, COR_E_OUTOFMEMORY);
+#endif
+
+    return Exception::GetOOMException();
+}
+
 #ifndef SELF_NO_HOST
-void DECLSPEC_NORETURN ThrowCxxSystemError(DWORD errorCode);
+Exception *GetExceptionFromCxxSystemError(DWORD errorCode);
 #else
-static void DECLSPEC_NORETURN ThrowCxxSystemError(DWORD errorCode)
+static Exception *GetExceptionFromCxxSystemError(DWORD errorCode)
 {
     CONTRACTL
     {
@@ -27,7 +38,13 @@ static void DECLSPEC_NORETURN ThrowCxxSystemError(DWORD errorCode)
     }
     CONTRACTL_END;
 
-    ThrowWin32(errorCode);
+    HRESULT hr = HRESULT_FROM_WIN32(errorCode);
+    if (errorCode == ERROR_NOT_ENOUGH_MEMORY || hr == E_OUTOFMEMORY)
+    {
+        return GetCxxOutOfMemoryException();
+    }
+
+    return new HRException(hr);
 }
 #endif
 
@@ -78,9 +95,7 @@ Exception *GetExceptionFromCxxException()
         return Exception::GetOOMException();
     }
 
-    Exception *result = NULL;
-
-    // EX_TRY also converts std::bad_alloc if allocating a non-OOM runtime Exception fails.
+    // Allocating a non-OOM runtime Exception can itself fail with OOM.
     EX_TRY_CPP_ONLY
     {
         try
@@ -89,80 +104,79 @@ Exception *GetExceptionFromCxxException()
         }
         catch (const std::bad_alloc&)
         {
-            ThrowOutOfMemory();
+            return Exception::GetOOMException();
         }
         catch (const std::invalid_argument&)
         {
-            ThrowHR(COR_E_ARGUMENT);
+            return new HRException(COR_E_ARGUMENT);
         }
         catch (const std::domain_error&)
         {
-            ThrowHR(COR_E_ARGUMENTOUTOFRANGE);
+            return new HRException(COR_E_ARGUMENTOUTOFRANGE);
         }
         catch (const std::length_error&)
         {
-            ThrowHR(COR_E_ARGUMENTOUTOFRANGE);
+            return new HRException(COR_E_ARGUMENTOUTOFRANGE);
         }
         catch (const std::out_of_range&)
         {
-            ThrowHR(COR_E_ARGUMENTOUTOFRANGE);
+            return new HRException(COR_E_ARGUMENTOUTOFRANGE);
         }
         catch (const std::range_error&)
         {
-            ThrowHR(COR_E_ARITHMETIC);
+            return new HRException(COR_E_ARITHMETIC);
         }
         catch (const std::overflow_error&)
         {
-            ThrowHR(COR_E_OVERFLOW);
+            return new HRException(COR_E_OVERFLOW);
         }
         catch (const std::underflow_error&)
         {
-            ThrowHR(COR_E_OVERFLOW);
+            return new HRException(COR_E_OVERFLOW);
         }
         catch (const std::system_error& systemError)
         {
-            ThrowCxxSystemError(GetWin32ErrorCode(systemError.code()));
+            return GetExceptionFromCxxSystemError(GetWin32ErrorCode(systemError.code()));
         }
         catch (const std::bad_function_call&)
         {
-            ThrowHR(COR_E_INVALIDOPERATION);
+            return new HRException(COR_E_INVALIDOPERATION);
         }
         catch (const std::bad_weak_ptr&)
         {
-            ThrowHR(COR_E_INVALIDOPERATION);
+            return new HRException(COR_E_INVALIDOPERATION);
         }
         catch (const std::bad_optional_access&)
         {
-            ThrowHR(COR_E_INVALIDOPERATION);
+            return new HRException(COR_E_INVALIDOPERATION);
         }
         catch (const std::bad_variant_access&)
         {
-            ThrowHR(COR_E_INVALIDOPERATION);
+            return new HRException(COR_E_INVALIDOPERATION);
         }
         catch (const std::logic_error&)
         {
-            ThrowHR(COR_E_INVALIDOPERATION);
+            return new HRException(COR_E_INVALIDOPERATION);
         }
         catch (const std::runtime_error&)
         {
-            ThrowHR(COR_E_EXCEPTION);
+            return new HRException(COR_E_EXCEPTION);
         }
         catch (const std::exception&)
         {
-            ThrowHR(COR_E_EXCEPTION);
+            return new HRException(COR_E_EXCEPTION);
         }
         catch (...)
         {
             _ASSERTE_ALL_BUILDS(!"Only exceptions derived from std::exception should be thrown in CoreCLR.");
-            ThrowHR(COR_E_EXCEPTION);
+            return new HRException(COR_E_EXCEPTION);
         }
     }
     EX_CATCH_CPP_ONLY
     {
-        result = EXTRACT_EXCEPTION();
+        _ASSERTE(GET_EXCEPTION()->GetHR() == E_OUTOFMEMORY);
     }
     EX_END_CATCH
 
-    _ASSERTE(result != NULL);
-    return result;
+    return GetCxxOutOfMemoryException();
 }

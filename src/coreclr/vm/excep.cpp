@@ -9503,7 +9503,7 @@ UINT GetResourceIDForFileLoadExceptionHR(HRESULT hr)
 
 #ifndef DACCESS_COMPILE
 
-void DECLSPEC_NORETURN ThrowCxxSystemError(DWORD errorCode)
+Exception *GetExceptionFromCxxSystemError(DWORD errorCode)
 {
     CONTRACTL
     {
@@ -9513,7 +9513,9 @@ void DECLSPEC_NORETURN ThrowCxxSystemError(DWORD errorCode)
     }
     CONTRACTL_END;
 
-    COMPlusThrowWin32(HRESULT_FROM_WIN32(errorCode));
+    // Match RealCOMPlusThrowWin32's ApplicationException compatibility behavior.
+    return new EEMessageException(kApplicationException, HRESULT_FROM_WIN32(errorCode), 0 /* resid */,
+                                  NULL, NULL, NULL, NULL, NULL, NULL);
 }
 
 //==========================================================================
