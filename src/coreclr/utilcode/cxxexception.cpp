@@ -175,8 +175,7 @@ Exception *GetExceptionFromCxxException()
     EX_CATCH_CPP_ONLY
     {
         // The original C++ exception is replaced with OOM here, so record the failure to keep it from being hidden.
-        STRESS_LOG1(LF_EH, LL_WARNING, "GetExceptionFromCxxException: converting C++ exception failed, HR = %x; returning OOM\n",
-                    GET_EXCEPTION()->GetHR());
+        STRESS_LOG0(LF_EH, LL_WARNING, "GetExceptionFromCxxException: converting C++ exception failed; returning OOM\n");
         _ASSERTE(GET_EXCEPTION()->GetHR() == E_OUTOFMEMORY);
     }
     EX_END_CATCH
