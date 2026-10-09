@@ -59,7 +59,7 @@ namespace Microsoft.Win32.SafeHandles
         }
 
         private volatile OwnershipState _ownershipState;
-        private Lock? _ownershipLock;
+        private object? _ownershipLock;
 
         /// <summary>
         ///     If the handle is a Duplicate, this points at the safe handle which actually owns the native handle.
