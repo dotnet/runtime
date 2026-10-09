@@ -186,6 +186,14 @@ _LIBUNWIND_HIDDEN int __unw_set_reg(unw_cursor_t *cursor, unw_regnum_t regNum,
 }
 _LIBUNWIND_WEAK_ALIAS(__unw_set_reg, unw_set_reg)
 
+/// Report the address a register was restored from at cursor position.
+_LIBUNWIND_HIDDEN void __unw_set_reg_location(unw_cursor_t *cursor,
+                                              unw_regnum_t regNum,
+                                              unw_word_t location) {
+  AbstractUnwindCursor *co = (AbstractUnwindCursor *)cursor;
+  co->setRegLocation(regNum, location);
+}
+
 /// Get value of specified float register at cursor position in stack frame.
 _LIBUNWIND_HIDDEN int __unw_get_fpreg(unw_cursor_t *cursor, unw_regnum_t regNum,
                                       unw_fpreg_t *value) {

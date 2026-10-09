@@ -58,6 +58,26 @@ private:
                                    pint_t initialStackValue);
   static pint_t getSavedRegister(A &addressSpace, const R &registers,
                                  pint_t cfa, const RegisterLocation &savedReg);
+  // Reports where a register was restored from to register sets that track
+  // save locations (by implementing setRegisterLocation); no-op otherwise.
+  template <typename T>
+  static auto setSavedRegisterLocation(A &addressSpace, const R &registers,
+                                       pint_t cfa,
+                                       const RegisterLocation &savedReg,
+                                       T &newRegisters, int regNum, int)
+      -> decltype(newRegisters.setRegisterLocation(regNum, pint_t()), void()) {
+    pint_t location = 0;
+    if (savedReg.location == CFI_Parser<A>::kRegisterInCFA)
+      location = cfa + (pint_t)savedReg.value;
+    else if (savedReg.location == CFI_Parser<A>::kRegisterAtExpression)
+      location = evaluateExpression((pint_t)savedReg.value, addressSpace,
+                                    registers, cfa);
+    newRegisters.setRegisterLocation(regNum, location);
+  }
+  template <typename T>
+  static void setSavedRegisterLocation(A &, const R &, pint_t,
+                                       const RegisterLocation &, T &, int,
+                                       long) {}
   static double getSavedFloatRegister(A &addressSpace, const R &registers,
                                   pint_t cfa, const RegisterLocation &savedReg);
   static v128 getSavedVectorRegister(A &addressSpace, const R &registers,
@@ -226,7 +246,7 @@ int DwarfInstructions<A, R>::stepWithDwarf(
       // __unw_step_stage2 is not used for cross unwinding, so we use
       // __aarch64__ rather than LIBUNWIND_TARGET_AARCH64 to make sure we are
       // building for AArch64 natively.
-#if defined(__aarch64__)
+#if 0 // defined(__aarch64__)
       if (stage2 && cieInfo.mteTaggedFrame) {
         pint_t sp = registers.getSP();
         pint_t p = sp;
@@ -284,14 +304,20 @@ int DwarfInstructions<A, R>::stepWithDwarf(
             newRegisters.setVectorRegister(
                 i, getSavedVectorRegister(addressSpace, registers, cfa,
                                           prolog.savedRegisters[i]));
-          else if (i == (int)cieInfo.returnAddressRegister)
+          else if (i == (int)cieInfo.returnAddressRegister) {
             returnAddress = getSavedRegister(addressSpace, registers, cfa,
                                              prolog.savedRegisters[i]);
-          else if (registers.validRegister(i))
+            setSavedRegisterLocation(addressSpace, registers, cfa,
+                                     prolog.savedRegisters[i], newRegisters,
+                                     i, 0);
+          } else if (registers.validRegister(i)) {
             newRegisters.setRegister(
                 i, getSavedRegister(addressSpace, registers, cfa,
                                     prolog.savedRegisters[i]));
-          else
+            setSavedRegisterLocation(addressSpace, registers, cfa,
+                                     prolog.savedRegisters[i], newRegisters,
+                                     i, 0);
+          } else
             return UNW_EBADREG;
         } else if (i == (int)cieInfo.returnAddressRegister) {
             // Leaf function keeps the return address in register and there is no

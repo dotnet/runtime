@@ -30,6 +30,7 @@ extern int __unw_step_stage2(unw_cursor_t *);
 extern int __unw_get_reg(unw_cursor_t *, unw_regnum_t, unw_word_t *);
 extern int __unw_get_fpreg(unw_cursor_t *, unw_regnum_t, unw_fpreg_t *);
 extern int __unw_set_reg(unw_cursor_t *, unw_regnum_t, unw_word_t);
+extern void __unw_set_reg_location(unw_cursor_t *, unw_regnum_t, unw_word_t);
 extern int __unw_set_fpreg(unw_cursor_t *, unw_regnum_t, unw_fpreg_t);
 _LIBUNWIND_TRACE_NO_INLINE
   extern int __unw_resume_with_frames_walked(unw_cursor_t *, unsigned);

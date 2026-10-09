@@ -463,6 +463,7 @@ public:
   virtual void setReg(int, unw_word_t) {
     _LIBUNWIND_ABORT("setReg not implemented");
   }
+  virtual void setRegLocation(int, unw_word_t) {}
   virtual bool validFloatReg(int) {
     _LIBUNWIND_ABORT("validFloatReg not implemented");
   }
@@ -1006,7 +1007,9 @@ public:
 private:
 
 #if defined(_LIBUNWIND_ARM_EHABI)
+public:
   bool getInfoFromEHABISection(pint_t pc, const UnwindInfoSections &sects);
+private:
 
   int stepWithEHABI() {
     size_t len = 0;
@@ -1065,9 +1068,11 @@ private:
                          const typename CFI_Parser<A>::CIE_Info &cieInfo,
                          typename R::link_hardened_reg_arg_t pc,
                          uintptr_t dso_base);
+public:
   bool getInfoFromDwarfSection(typename R::link_hardened_reg_arg_t pc,
                                const UnwindInfoSections &sects,
                                uint32_t fdeSectionOffsetHint = 0);
+private:
   int stepWithDwarfFDE(bool stage2) {
 #if defined(_LIBUNWIND_TARGET_AARCH64_AUTHENTICATED_UNWINDING)
     typename R::reg_t rawPC = this->getReg(UNW_REG_IP);
@@ -1083,8 +1088,10 @@ private:
 #endif
 
 #if defined(_LIBUNWIND_SUPPORT_COMPACT_UNWIND)
+public:
   bool getInfoFromCompactEncodingSection(typename R::link_hardened_reg_arg_t pc,
                                          const UnwindInfoSections &sects);
+private:
   int stepWithCompactEncoding(bool stage2 = false) {
 #if defined(_LIBUNWIND_SUPPORT_DWARF_UNWIND)
     if ( compactSaysUseDwarf() )

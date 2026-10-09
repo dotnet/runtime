@@ -1085,6 +1085,10 @@ _Unwind_VRS_Pop(_Unwind_Context *context, _Unwind_VRS_RegClass regclass,
                             _UVRSD_UINT32, &value) != _UVRSR_OK) {
           return _UVRSR_FAILED;
         }
+        if (regclass == _UVRSC_CORE)
+          __unw_set_reg_location((unw_cursor_t *)context,
+                                 (unw_regnum_t)(UNW_ARM_R0 + i),
+                                 (unw_word_t)(sp - 1));
       }
       if (!poppedSP) {
         return _Unwind_VRS_Set(context, _UVRSC_CORE, UNW_ARM_SP,
