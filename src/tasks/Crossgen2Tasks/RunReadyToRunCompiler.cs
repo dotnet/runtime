@@ -440,7 +440,7 @@ namespace Microsoft.NET.Build.Tasks
                         Crossgen2Tool.GetMetadata(MetadataKeys.TargetArch) != "x64" ||
                         Path.GetFullPath(pathToTool) != Path.GetFullPath(Crossgen2Tool.ItemSpec))
                     {
-                        cache.Report("bypass: unsupported invocation (requires native Linux-x64, non-composite PE crossgen2 without extra arguments or environment overrides)");
+                        cache.Report("bypass: unsupported invocation (requires native Linux-x64, non-composite PE crossgen2 without unrecognized extra arguments or environment overrides)");
                     }
                     else
                     {

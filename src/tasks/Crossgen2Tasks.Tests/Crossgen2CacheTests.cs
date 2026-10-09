@@ -253,7 +253,10 @@ public class Crossgen2CacheTests
             case "arch": task.Crossgen2Tool.SetMetadata("TargetArch", "arm64"); break;
             case "missing-profile": File.Delete(fixture.Profile); break;
             case "missing-jit": File.Delete(fixture.Jit); break;
-            case "unreadable-profile": File.SetUnixFileMode(fixture.Profile, UnixFileMode.None); break;
+            case "unreadable-profile":
+                File.Delete(fixture.Profile);
+                Directory.CreateDirectory(fixture.Profile);
+                break;
             case "bad-input": File.WriteAllText(fixture.Input, "not a PE"); break;
             case "invalid-root": Environment.SetEnvironmentVariable("CROSSGEN2_EXPERIMENTAL_CACHE_PATH", fixture.Profile); break;
             case "outputs-in-cache": Environment.SetEnvironmentVariable("CROSSGEN2_EXPERIMENTAL_CACHE_PATH", fixture.Root + Path.DirectorySeparatorChar); break;

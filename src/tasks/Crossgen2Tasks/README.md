@@ -108,7 +108,7 @@ before lookup, not the original cache timestamp, for downstream incremental chec
 Cache store failures are visible but do not fail a successful compilation.
 Corrupt existing entries are not repaired automatically. Cache operations are
 synchronous and do not add cancellation polling; tool execution retains ToolTask
-cancellation. There is no eviction, size limit, purge command, CI wiring, or stable
+cancellation. There is no eviction, size limit, purge command, CI cache enablement, or stable
 on-disk format guarantee.
 
 ### SDK coordination and local validation

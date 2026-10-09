@@ -1,6 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>$(BundledNETCoreAppTargetFramework)</TargetFramework>
+    <IsTestProject>true</IsTestProject>
+    <IsShipping>false</IsShipping>
     <UseDefaultTestHost>true</UseDefaultTestHost>
   </PropertyGroup>
   <ItemGroup>
