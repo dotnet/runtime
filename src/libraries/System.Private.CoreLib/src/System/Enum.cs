@@ -6,6 +6,7 @@
 #define RARE_ENUMS
 #endif
 
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
@@ -1052,6 +1053,12 @@ namespace System
 
             bool parsed = true;
             TStorage localResult = default;
+
+            // For case-insensitive parsing, use a cached name->value lookup and match spans without allocating.
+            Dictionary<string, TStorage>.AlternateLookup<ReadOnlySpan<char>> ignoreCaseLookup = ignoreCase ?
+                enumInfo.GetNamesToValuesIgnoreCase().GetAlternateLookup<ReadOnlySpan<char>>() :
+                default;
+
             while (value.Length > 0)
             {
                 // Find the next separator.
@@ -1080,14 +1087,10 @@ namespace System
                 bool success = false;
                 if (ignoreCase)
                 {
-                    for (int i = 0; i < enumNames.Length; i++)
+                    if (ignoreCaseLookup.TryGetValue(subvalue, out TStorage matchedValue))
                     {
-                        if (subvalue.EqualsOrdinalIgnoreCase(enumNames[i]))
-                        {
-                            localResult |= enumValues[i];
-                            success = true;
-                            break;
-                        }
+                        localResult |= matchedValue;
+                        success = true;
                     }
                 }
                 else
