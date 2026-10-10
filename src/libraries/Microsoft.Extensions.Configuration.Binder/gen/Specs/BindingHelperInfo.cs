@@ -21,10 +21,16 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         public required ImmutableEquatableArray<ComplexTypeSpec>? TypesForGen_BindCore { get; init; }
         public required ImmutableEquatableArray<ObjectSpec>? TypesForGen_Initialize { get; init; }
         public required ImmutableEquatableArray<ParsableFromStringSpec>? TypesForGen_ParsePrimitive { get; init; }
+        public required ImmutableEquatableArray<TypeConverterSpec> PropertyConverters { get; init; }
+        public required ImmutableEquatableArray<InitOnlySetterSpec> InitOnlySetters { get; init; }
+        public required ImmutableEquatableArray<ConstructorAccessorSpec> ConstructorAccessors { get; init; }
 
         internal sealed class Builder(TypeIndex _typeIndex)
         {
             private readonly Dictionary<TypeRef, bool> _seenTransitiveTypes = new();
+            private readonly HashSet<TypeConverterSpec> _propertyConverters = new();
+            private readonly HashSet<InitOnlySetterSpec> _initOnlySetters = new();
+            private readonly HashSet<ConstructorAccessorSpec> _constructorAccessors = new();
 
             private MethodsToGen_CoreBindingHelper _methodsToGen;
             private bool _emitConfigurationKeyCaches;
@@ -42,10 +48,19 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             public BindingHelperInfo ToIncrementalValue()
             {
+                if (_propertyConverters.Count is not 0)
+                {
+                    _namespaces.Add("System.Linq");
+                }
+
                 return new BindingHelperInfo
                 {
                     Namespaces = _namespaces.ToImmutableEquatableArray(),
                     EmitConfigurationKeyCaches = _emitConfigurationKeyCaches,
+                    PropertyConverters = _propertyConverters.OrderBy(converter => converter.Identifier, StringComparer.Ordinal).ToImmutableEquatableArray(),
+                    InitOnlySetters = _initOnlySetters.OrderBy(setter => setter.DeclaringType.Type.FullyQualifiedName, StringComparer.Ordinal)
+                        .ThenBy(setter => setter.PropertyName, StringComparer.Ordinal).ToImmutableEquatableArray(),
+                    ConstructorAccessors = _constructorAccessors.OrderBy(accessor => accessor.DeclaringType.Type.FullyQualifiedName, StringComparer.Ordinal).ToImmutableEquatableArray(),
 
                     MethodsToGen = _methodsToGen,
                     TypesForGen_GetCore = GetTypesForGen_CoreBindingHelper<TypeSpec>(MethodsToGen_CoreBindingHelper.GetCore),
@@ -171,6 +186,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                             }
                         case ObjectSpec objectSpec:
                             {
+                                if (objectSpec.ConstructorAccessor is not null)
+                                {
+                                    _constructorAccessors.Add(objectSpec.ConstructorAccessor);
+                                }
+
                                 // Base case to avoid stack overflow for recursive object graphs.
                                 // Register all object types for gen; we need to throw runtime exceptions in some cases.
                                 _seenTransitiveTypes.Add(typeRef, true);
@@ -187,10 +207,42 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                                 // HasBindableMembers is false (e.g. the only member is a ctor parameter backed
                                 // by a non-bindable read-only collection type), otherwise the emitter can end up
                                 // calling an Initialize method that was never generated.
-                                bool needsInitializeMethod = objectSpec is { InstantiationStrategy: ObjectInstantiationStrategy.ParameterizedConstructor, InitExceptionMessage: null };
+                                bool needsInitializeMethod = objectSpec is
+                                {
+                                    InstantiationStrategy: ObjectInstantiationStrategy.ParameterizedConstructor,
+                                    InitExceptionMessage: null,
+                                    ConstructorParameters: { } constructorParameters
+                                } && constructorParameters.All(parameter => parameter.TypeConverter is not null || _typeIndex.TryGetTypeSpec(parameter.TypeRef, out _));
 
                                 if (hasBindableMembers || needsInitializeMethod)
                                 {
+                                    if (needsInitializeMethod)
+                                    {
+                                        foreach (ParameterSpec parameter in objectSpec.ConstructorParameters!)
+                                        {
+                                            if (parameter.TypeConverter is not null)
+                                            {
+                                                _propertyConverters.Add(parameter.TypeConverter);
+                                            }
+                                            if (parameter.FallbackTypeConverter is not null)
+                                            {
+                                                _propertyConverters.Add(parameter.FallbackTypeConverter);
+                                            }
+
+                                            if (!_typeIndex.TryGetTypeSpec(parameter.TypeRef, out TypeSpec? parameterType))
+                                            {
+                                                continue;
+                                            }
+
+                                            TryRegisterTransitiveTypesForMethodGen(parameter.TypeRef);
+
+                                            if (parameterType is ComplexTypeSpec)
+                                            {
+                                                RegisterForGen_AsConfigWithChildrenHelper();
+                                            }
+                                        }
+                                    }
+
                                     foreach (PropertySpec property in objectSpec.Properties!)
                                     {
                                         // Skip types reachable only through non-bindable properties, unless the
@@ -201,9 +253,28 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                                             continue;
                                         }
 
+                                        if (property.InitOnlySetter is not null && _typeIndex.ShouldBindTo(property))
+                                        {
+                                            _initOnlySetters.Add(property.InitOnlySetter);
+                                        }
+
+                                        if (property.TypeConverter is not null && _typeIndex.ShouldBindTo(property))
+                                        {
+                                            _propertyConverters.Add(property.TypeConverter);
+                                            if (property.FallbackTypeConverter is not null)
+                                            {
+                                                _propertyConverters.Add(property.FallbackTypeConverter);
+                                            }
+                                        }
+
+                                        if (!_typeIndex.TryGetTypeSpec(property.TypeRef, out TypeSpec? propertyType))
+                                        {
+                                            continue;
+                                        }
+
                                         TryRegisterTransitiveTypesForMethodGen(property.TypeRef);
 
-                                        if (_typeIndex.GetTypeSpec(property.TypeRef) is ComplexTypeSpec)
+                                        if (propertyType is ComplexTypeSpec)
                                         {
                                             RegisterForGen_AsConfigWithChildrenHelper();
                                         }

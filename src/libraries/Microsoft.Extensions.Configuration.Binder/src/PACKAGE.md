@@ -102,6 +102,53 @@ You can add the following property to enable the source generator.  This require
 </PropertyGroup>
 ```
 
+### Custom type conversion
+
+When binding a configuration section that has a string value, the reflection-based binder honors a `TypeConverterAttribute` applied to the target property. The property-level converter takes precedence over the converter registered for the property's type.
+
+Converters on virtual overrides are honored, while properties hidden with `new` retain their own converters. A property's converter also applies to a matching constructor parameter when the parameter and property have the same type. A default `TypeConverterAttribute`, an unresolved converter, or a converter that cannot convert from `string` preserves the binder's built-in conversion behavior.
+
+```cs
+class Settings
+{
+    [TypeConverter(typeof(TimeoutConverter))]
+    public TimeSpan Timeout { get; set; }
+}
+```
+
+Property-level converters in source-generated binding require a separate, explicit opt-in:
+
+```xml
+<PropertyGroup>
+  <EnableConfigurationBindingGenerator>true</EnableConfigurationBindingGenerator>
+  <EnableConfigurationBindingGeneratorTypeConverters>true</EnableConfigurationBindingGeneratorTypeConverters>
+</PropertyGroup>
+```
+
+`EnableConfigurationBindingGeneratorTypeConverters` defaults to `false`. Neither `PublishAot` nor `PublishTrimmed` enables it automatically. When it is unset or `false`, the generator continues to ignore property-level converter attributes, without introducing a new reflection fallback for those attributes. This preserves the previous generated binding behavior on upgrade; it does not change the reflection-based binder's behavior.
+
+With the opt-in enabled, the generator calls statically resolved, accessible converters directly. It supports `typeof(...)` and resolvable metadata type names, and public parameterless constructors or constructors taking a `Type` argument by value. Use `typeof(...)` for closed generic converter types. If a converter has required members, the selected constructor must be annotated with `SetsRequiredMembers`. The converter itself must be compatible with trimming and Native AOT when used in those applications.
+
+For statically known target types, both implementations apply the following rules:
+
+* `IConfigurationSection` properties and matching constructor parameters receive the configuration section itself. Their converter is not constructed or called.
+* `[ConfigurationIgnore]` on a virtual override excludes that property, including from constructor-parameter matching. A property hidden with `new` retains its own attributes.
+* A getter-only override inherits its property's converter when used to bind a matching constructor parameter.
+* If a property converter cannot convert from `string`, the binder tries the property's type-level converter before binding children. The generator resolves this fallback converter statically as well.
+* A missing key preserves the existing property value. An explicitly present `null` resets a leaf whose converter supports `string`, without calling `ConvertFrom` with `null`. Converter construction and `CanConvertFrom` can still run. The existing special rule for appending to nonempty `byte[]` properties is unchanged.
+
+With the opt-in enabled, generated binding uses `UnsafeAccessor` to call public `init` setters on .NET 8 or later. This supports both `Get` and `Bind` on an existing instance without discarding constructor-initialized values or bypassing setter logic. Generic declaring types require .NET 9 or later. Constructors of types with required members use a constructor accessor when needed to preserve their initial values and constructor normalization until binding supplies a replacement.
+
+Generated conversion uses the declared property attributes, including virtual overrides. When binding through a base type or interface, it uses the metadata visible on that static type; it cannot discover different converter or ignore attributes on the runtime concrete type. It also does not honor runtime metadata changes through `TypeDescriptor` or custom type description providers. Applications that require dynamic metadata can disable configuration binding generation using `EnableConfigurationBindingGenerator=false`; doing so does not make reflection-based binding safe for trimming or Native AOT.
+
+If an eligible converter or required accessor cannot be handled statically, a normal, non-trimmed build reports warning `SYSLIB1105` and leaves the affected binding call to the reflection-based binder. With `PublishAot=true` or `PublishTrimmed=true`, that diagnostic is an error instead. This includes inaccessible fallback converters and target frameworks without the required unsafe-accessor support. Properties excluded from binding do not trigger fallback. Converter-only target types that otherwise have no generated binding support require a section handled by their converter.
+
+### Compatibility
+
+These are behavioral changes for applications that already declare property-level converters or ignored overrides. Previously, an inherited getter-only converter could be skipped during constructor binding, an ignored override could still be bound, and an explicitly configured `null` could leave a property-converted reference value unchanged. Applications that depended on retaining such a default should omit the configuration key instead of explicitly setting it to `null`. Remove `[ConfigurationIgnore]` from an override if it is intended to participate in binding.
+
+The generator's converter and accessor changes remain opt-in. Leaving `EnableConfigurationBindingGeneratorTypeConverters` unset or `false` preserves its previous converter and init-only behavior. Correct handling of `[ConfigurationIgnore]` overrides applies regardless of this switch.
+
 ## Main Types
 
 <!-- The main types provided in this library -->
