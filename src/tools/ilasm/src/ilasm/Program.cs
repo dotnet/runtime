@@ -63,6 +63,13 @@ internal sealed class Program
         int exitCode = 0;
         try
         {
+            // As in native ilasm, the PDB is <output without extension>.pdb beside the output, and without
+            // --deterministic the image's CodeView entry records the PDB's full path. With --deterministic it
+            // records only the PDB's file name and extension, so that a deterministic image does not depend on
+            // the directory it is written to. Native ilasm records the full path in both modes; this follows
+            // the native linker's /PDBALTPATH:%_PDB% convention instead.
+            string pdbPath = OutputFileWriter.GetPdbPath(outputPath);
+
             // Report each file being assembled
             foreach (string file in inputFiles)
             {
@@ -161,6 +168,7 @@ internal sealed class Program
             options.PseudoAttributes = Get(_command.PseudoAttributes);
             options.Fold = Get(_command.Fold);
             options.OutputFileName = Path.GetFileName(outputPath);
+            options.PdbFilePath = options.Deterministic ? Path.GetFileName(pdbPath) : pdbPath;
 
             // Set up include path for #include directive resolution
             string? includePath = Get(_command.IncludePath);
@@ -248,11 +256,22 @@ internal sealed class Program
                 return 1;
             }
 
-            // Write output
-            using var outputStream = File.Create(outputPath);
+            // Write the image, then the PDB beside it (or, when there is none, remove the PDB of the image
+            // that was replaced).
+            // Every failure above returns before this, leaving the existing files as they are.
             var blobBuilder = new BlobBuilder();
             compilationResult.Serialize(blobBuilder);
-            blobBuilder.WriteContentTo(outputStream);
+            OutputWriteResult written = OutputFileWriter.Write(
+                outputPath,
+                pdbPath,
+                stream => blobBuilder.WriteContentTo(stream),
+                compilationResult.PortablePdb);
+            if (written == OutputWriteResult.PdbWouldOverwriteOutput)
+            {
+                Console.Error.WriteLine($"Error: The PDB file '{pdbPath}' would overwrite the output file");
+                Console.Error.WriteLine("***** FAILURE *****");
+                return 1;
+            }
 
             if (hasErrors)
             {

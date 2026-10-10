@@ -11,13 +11,15 @@ namespace ILAssembler
     public enum DebugMode
     {
         /// <summary>
-        /// Implicit sequence points - enables edit and continue.
-        /// Produces DebuggingModes = Default | DisableOptimizations | EnableEditAndContinue (0x103).
+        /// Implicit sequence points: JIT optimization is disabled, and the JIT uses implicit sequence points
+        /// rather than those in the PDB. Edit and Continue is not enabled.
+        /// Produces DebuggingModes = Default | IgnoreSymbolStoreSequencePoints | DisableOptimizations (0x103).
         /// </summary>
         Impl,
 
         /// <summary>
-        /// Optimized debugging - enables JIT optimization while preserving debug info.
+        /// Optimized debugging - enables JIT optimization while preserving debug info; the JIT uses implicit
+        /// sequence points rather than those in the PDB.
         /// Produces DebuggingModes = Default | IgnoreSymbolStoreSequencePoints (0x03).
         /// </summary>
         Opt
@@ -93,6 +95,13 @@ namespace ILAssembler
         /// <summary>
         /// Produce deterministic outputs.
         /// </summary>
+        /// <remarks>
+        /// The same input and options give the same image and PDB bytes. The image records
+        /// <see cref="PdbFilePath"/> in its CodeView entry, or, when that is null, the fallback it describes
+        /// (<see cref="OutputFileName"/> with its extension replaced by <c>.pdb</c>, or <c>assembly.pdb</c>), so it
+        /// depends on that path;
+        /// the PDB does not.
+        /// </remarks>
         public bool Deterministic { get; set; }
 
         /// <summary>
@@ -101,20 +110,55 @@ namespace ILAssembler
         public string? MetadataVersion { get; set; }
 
         /// <summary>
-        /// Enable debug mode: create PDB, disable JIT optimization.
+        /// Enable debug mode: produce a Portable PDB and add a <c>DebuggableAttribute</c> to the assembly
+        /// that disables JIT optimization (see <see cref="DebugMode"/> for the other settings).
         /// </summary>
+        /// <remarks>
+        /// The <c>DebuggableAttribute</c> is added only when the source declares an assembly (<c>.assembly</c>);
+        /// a module without one gets no attribute.
+        /// The PDB is returned in <see cref="CompilationResult.PortablePdb"/>, not embedded in the image.
+        /// The image references it through its debug directory; see <see cref="PdbFilePath"/>.
+        /// </remarks>
         public bool Debug { get; set; }
 
         /// <summary>
-        /// Create PDB file without enabling debug info tracking.
+        /// Produce a Portable PDB without enabling debug info tracking: this option does not itself add a
+        /// <c>DebuggableAttribute</c>, so on its own it leaves the JIT settings of the assembly unchanged.
         /// </summary>
+        /// <remarks>
+        /// Combined with <see cref="Debug"/> or <see cref="DebugMode"/>, the attribute those options add is
+        /// still added. The PDB is returned in <see cref="CompilationResult.PortablePdb"/>, not embedded in
+        /// the image.
+        /// </remarks>
         public bool Pdb { get; set; }
 
         /// <summary>
-        /// Debug mode: Impl for implicit sequence points, Opt to enable JIT optimization.
+        /// Debug mode, as native ilasm's <c>/DEBUG=IMPL</c> and <c>/DEBUG=OPT</c>: selects the modes of the
+        /// <c>DebuggableAttribute</c>.
         /// When null with Debug=true, uses default (DisableOptimizations).
         /// </summary>
+        /// <remarks>
+        /// A non-null value implies <see cref="Debug"/>: it produces a Portable PDB and adds a
+        /// <c>DebuggableAttribute</c> with the selected debugging modes, likewise only when the source
+        /// declares an assembly.
+        /// </remarks>
         public DebugMode? DebugMode { get; set; }
+
+        /// <summary>
+        /// The path of the Portable PDB file, recorded in the image's CodeView debug directory entry
+        /// when a PDB is produced (see <see cref="CompilationResult.PortablePdb"/>).
+        /// </summary>
+        /// <remarks>
+        /// The CodeView entry records this value as given. The assembler does not write the PDB file; the
+        /// caller writes <see cref="CompilationResult.PortablePdb"/> to the file this path names, where a
+        /// file name alone names a file beside the image. The command-line tool writes the PDB to the output
+        /// path with its extension replaced by <c>.pdb</c>, and passes the full path of that file, or, with
+        /// <see cref="Deterministic"/>, only its file name and extension, so that a deterministic image does
+        /// not depend on the directory it is written to. When null, the CodeView entry names
+        /// <see cref="OutputFileName"/> with its extension replaced by <c>.pdb</c>, or <c>assembly.pdb</c>
+        /// when no output file name is set.
+        /// </remarks>
+        public string? PdbFilePath { get; set; }
 
         /// <summary>
         /// Override the name of the compiled assembly.

@@ -137,8 +137,8 @@ namespace ILAssembler
                 entryPoint = (MethodDefinitionHandle)_entityRegistry.EntryPoint.Handle;
             }
 
-            // Build debug directory if we have any debug info
-            DebugDirectoryBuilder? debugDirectoryBuilder = BuildDebugDirectory(entryPoint, out _);
+            // Build the PDB and the debug directory that references it, if a PDB is requested
+            DebugDirectoryBuilder? debugDirectoryBuilder = BuildDebugDirectory(entryPoint, out ImmutableArray<byte>? portablePdb);
 
             Func<IEnumerable<Blob>, BlobContentId>? deterministicIdProvider = _options.Deterministic
                 ? GetDeterministicContentId
@@ -177,7 +177,7 @@ namespace ILAssembler
                     exports: exports,
                     dataLabelFixups: validatedDataLabelFixups);
 
-                return (_diagnostics.ToImmutable(), new CompilationResult(peBuilder, mvidFixup));
+                return (_diagnostics.ToImmutable(), new CompilationResult(peBuilder, mvidFixup, portablePdb));
             }
 
             // Apply CorFlags from options or directive
@@ -187,7 +187,7 @@ namespace ILAssembler
                 standardCorFlags |= CorFlags.Prefers32Bit;
             }
 
-            ManagedPEBuilder standardBuilder = new(
+            ILAssemblerPEBuilder standardBuilder = new(
                 header,
                 rootBuilder,
                 ilStream,
@@ -198,10 +198,13 @@ namespace ILAssembler
                 debugDirectoryBuilder: debugDirectoryBuilder,
                 deterministicIdProvider: deterministicIdProvider);
 
-            return (_diagnostics.ToImmutable(), new CompilationResult(standardBuilder, mvidFixup));
+            return (_diagnostics.ToImmutable(), new CompilationResult(standardBuilder, mvidFixup, portablePdb));
         }
 
         private static BlobContentId GetDeterministicContentId(IEnumerable<Blob> content)
+            => BlobContentId.FromHash(ComputeSha256(content));
+
+        private static byte[] ComputeSha256(IEnumerable<Blob> content)
         {
             using IncrementalHash hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
             foreach (Blob blob in content)
@@ -209,7 +212,7 @@ namespace ILAssembler
                 hash.AppendData(blob.GetBytes());
             }
 
-            return BlobContentId.FromHash(hash.GetHashAndReset());
+            return hash.GetHashAndReset();
         }
 
         private ImmutableArray<ValidatedVTableFixup> ValidateVTableFixups(Machine machine)
@@ -554,24 +557,41 @@ namespace ILAssembler
             }
         }
 
-        private DebugDirectoryBuilder? BuildDebugDirectory(MethodDefinitionHandle entryPoint, out int debugDataSize)
+        /// <summary>
+        /// Builds the Portable PDB and the debug directory that references it, when a PDB is requested.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// A PDB is produced when <see cref="Options.Debug"/>, <see cref="Options.DebugMode"/> or
+        /// <see cref="Options.Pdb"/> is set; <c>.line</c> directives alone do not produce one. Otherwise this
+        /// returns <see langword="null"/>, the image has no debug directory (<see cref="ILAssemblerPEBuilder"/>),
+        /// and <paramref name="portablePdb"/> is <see langword="null"/>.
+        /// </para>
+        /// <para>
+        /// The PDB is returned in <paramref name="portablePdb"/> for the caller to write as a separate file;
+        /// it is not embedded in the image. The debug directory has these entries, in this order:
+        /// a CodeView entry that names the PDB file (<see cref="GetPdbFilePath"/>) and carries the PDB id;
+        /// a PdbChecksum entry holding the SHA-256 hash of the PDB with its 20-byte id zeroed
+        /// (the PDB Checksum Debug Directory Entry in docs/design/specs/PE-COFF.md); and, with
+        /// <see cref="Options.Deterministic"/>, a Reproducible entry.
+        /// </para>
+        /// <para>
+        /// With <see cref="Options.Deterministic"/>, the PDB id is derived from that same hash
+        /// (<see cref="BlobContentId.FromHash(ImmutableArray{byte})"/>), so the same input gives the same PDB
+        /// bytes. The PDB bytes do not depend on <see cref="Options.PdbFilePath"/>; the image does, because
+        /// the CodeView entry records that path as given, so the same input and the same PDB path give the
+        /// same image bytes, and a PDB path that is a file name alone keeps the image independent of its
+        /// directory. Without <see cref="Options.Deterministic"/>, the id's GUID is random. The checksum is the
+        /// content hash in both cases.
+        /// </para>
+        /// </remarks>
+        private DebugDirectoryBuilder? BuildDebugDirectory(MethodDefinitionHandle entryPoint, out ImmutableArray<byte>? portablePdb)
         {
-            debugDataSize = 0;
+            portablePdb = null;
 
-            // Check if we have any methods with debug info
-            bool hasDebugInfo = false;
-            foreach (var entity in _entityRegistry.GetSeenEntities(TableIndex.MethodDef))
-            {
-                if (entity is EntityRegistry.MethodDefinitionEntity method &&
-                    method.DebugInfo.SequencePoints.Count > 0)
-                {
-                    hasDebugInfo = true;
-                    break;
-                }
-            }
-
-            // Generate PDB if we have debug info OR if --debug/--pdb options are set
-            bool generatePdb = hasDebugInfo || _options.Debug || _options.Pdb;
+            // As in native ilasm, only /DEBUG (any mode) or /PDB produces a PDB. Without them, sequence
+            // points from .line directives are parsed and validated but not emitted.
+            bool generatePdb = _options.Debug || _options.DebugMode is not null || _options.Pdb;
             if (!generatePdb)
             {
                 return null;
@@ -583,40 +603,63 @@ namespace ILAssembler
             // Get row counts from main metadata for the portable PDB
             var typeSystemRowCounts = _metadataBuilder.GetRowCounts();
 
-            Func<IEnumerable<Blob>, BlobContentId> pdbIdProvider = _options.Deterministic
-                ? GetDeterministicContentId
-                : _ => new BlobContentId(Guid.NewGuid(), 0x04030201);
+            // PortablePdbBuilder hands the id provider the serialized PDB with its 20-byte id zeroed.
+            // The SHA-256 of that content is the PdbChecksum value, and the deterministic id.
+            byte[]? pdbContentHash = null;
+            BlobContentId PdbIdProvider(IEnumerable<Blob> content)
+            {
+                pdbContentHash = ComputeSha256(content);
+                return _options.Deterministic
+                    ? BlobContentId.FromHash(pdbContentHash)
+                    : new BlobContentId(Guid.NewGuid(), 0x04030201);
+            }
 
             // Create the portable PDB
             var pdbBuilder = new PortablePdbBuilder(
                 _pdbBuilder,
                 typeSystemRowCounts,
                 entryPoint,
-                idProvider: pdbIdProvider);
+                idProvider: PdbIdProvider);
 
             var pdbBlob = new BlobBuilder();
             var pdbContentId = pdbBuilder.Serialize(pdbBlob);
+            byte[] pdbChecksum = pdbContentHash
+                ?? throw new InvalidOperationException("The Portable PDB was serialized without calling its id provider.");
 
-            // Create debug directory with embedded PDB
+            // Reference the PDB file from the image: CodeView, then PdbChecksum, then (deterministic only)
+            // Reproducible, as native ilasm and the C# compiler do.
             var debugDirectoryBuilder = new DebugDirectoryBuilder();
             debugDirectoryBuilder.AddCodeViewEntry(
-                $"assembly.pdb",
+                GetPdbFilePath(),
                 pdbContentId,
                 pdbBuilder.FormatVersion);
-            debugDirectoryBuilder.AddEmbeddedPortablePdbEntry(pdbBlob, pdbBuilder.FormatVersion);
+            debugDirectoryBuilder.AddPdbChecksumEntry(
+                "SHA256",
+                ImmutableArray.Create(pdbChecksum));
+            if (_options.Deterministic)
+            {
+                debugDirectoryBuilder.AddReproducibleEntry();
+            }
 
-            // Calculate debug data size:
-            // 2 debug directory entries (28 bytes each) + CodeView data (~24 bytes) + Embedded PDB data (compressed pdbBlob + 8 header)
-            // CodeView entry: signature (4) + guid (16) + age (4) + path (variable, ~12 for "assembly.pdb\0")
-            const int debugDirEntrySize = 28;
-            int codeViewDataSize = 4 + 16 + 4 + "assembly.pdb".Length + 1; // signature + guid + age + path + null
-            int embeddedPdbHeaderSize = 8; // MPDB signature (4) + uncompressed size (4)
-            // The embedded PDB is compressed, estimate conservatively as same size
-            int embeddedPdbDataSize = embeddedPdbHeaderSize + pdbBlob.Count;
-
-            debugDataSize = (2 * debugDirEntrySize) + codeViewDataSize + embeddedPdbDataSize;
-
+            portablePdb = pdbBlob.ToImmutableArray();
             return debugDirectoryBuilder;
+        }
+
+        /// <summary>
+        /// Gets the PDB path recorded in the CodeView entry: <see cref="Options.PdbFilePath"/> as given when set,
+        /// otherwise <see cref="Options.OutputFileName"/> with its extension replaced by <c>.pdb</c>,
+        /// otherwise <c>assembly.pdb</c>.
+        /// </summary>
+        private string GetPdbFilePath()
+        {
+            if (_options.PdbFilePath is not null)
+            {
+                return _options.PdbFilePath;
+            }
+
+            return _options.OutputFileName is not null
+                ? Path.ChangeExtension(_options.OutputFileName, ".pdb")
+                : "assembly.pdb";
         }
 
         private void BuildPdbMetadata()
@@ -744,7 +787,7 @@ namespace ILAssembler
         /// Add DebuggableAttribute to the assembly based on debug options.
         /// - /DEBUG: 0x101 = Default | DisableOptimizations
         /// - /DEBUG=OPT: 0x03 = Default | IgnoreSymbolStoreSequencePoints
-        /// - /DEBUG=IMPL: 0x103 = Default | DisableOptimizations | EnableEditAndContinue
+        /// - /DEBUG=IMPL: 0x103 = Default | IgnoreSymbolStoreSequencePoints | DisableOptimizations
         /// </summary>
         private void ApplyDebuggableAttribute()
         {
@@ -758,7 +801,7 @@ namespace ILAssembler
             // EnableEditAndContinue = 0x04, DisableOptimizations = 0x100
             const int DebuggingModesDefault = 0x101;  // Default | DisableOptimizations
             const int DebuggingModesOpt = 0x03;       // Default | IgnoreSymbolStoreSequencePoints
-            const int DebuggingModesImpl = 0x103;     // Default | DisableOptimizations | EnableEditAndContinue
+            const int DebuggingModesImpl = 0x103;     // Default | IgnoreSymbolStoreSequencePoints | DisableOptimizations
 
             int debuggingModes = _options.DebugMode switch
             {
