@@ -87,5 +87,17 @@
       "digest": "sha256:508a0857ec762b1ab1cece29193345b501fab1dd9d1228a7b617062954cecac6",
       "pinned_image": "ghcr.io/github/github-mcp-server:v1.12.2@sha256:508a0857ec762b1ab1cece29193345b501fab1dd9d1228a7b617062954cecac6"
     }
+  },
+  "containers": {
+    "ghcr.io/lewing/helix.mcp:v0.8.0": {
+      "image": "ghcr.io/lewing/helix.mcp:v0.8.0",
+      "digest": "sha256:3c0a16544d922f17ebb477df4d4b0bd546815eb6b1200f4fd8291809011fc20f",
+      "pinned_image": "ghcr.io/lewing/helix.mcp:v0.8.0@sha256:3c0a16544d922f17ebb477df4d4b0bd546815eb6b1200f4fd8291809011fc20f"
+    },
+    "mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-binlog-mcp-amd64": {
+      "image": "mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-binlog-mcp-amd64",
+      "digest": "sha256:ca760fd18bf8e6168d9b304d65c5d2340e4135fc9080c6e2f2eb4800368e3df4",
+      "pinned_image": "mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-binlog-mcp-amd64@sha256:ca760fd18bf8e6168d9b304d65c5d2340e4135fc9080c6e2f2eb4800368e3df4"
+    }
   }
 }
