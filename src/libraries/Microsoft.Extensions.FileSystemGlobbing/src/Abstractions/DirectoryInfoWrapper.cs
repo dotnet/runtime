@@ -30,6 +30,10 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Abstractions
             _isParentPath = isParentPath;
         }
 
+    #if USE_TOUKI_GLOBBING
+        internal DirectoryInfo DirectoryInfo => _directoryInfo;
+    #endif
+
         /// <inheritdoc />
         public override IEnumerable<FileSystemInfoBase> EnumerateFileSystemInfos()
         {
