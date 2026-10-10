@@ -431,19 +431,19 @@ namespace ILCompiler
                 ILEmitter emit = new ILEmitter();
                 ILCodeStream codeStream = emit.NewCodeStream();
 
-                FieldDesc rawDataField = Context.SystemModule
-                    .GetKnownType("System.Runtime.CompilerServices"u8, "RawData"u8)
-                    .GetField("Data"u8);
+                MethodDesc rawDataMethod = Context.SystemModule
+                    .GetKnownType("System.Runtime.CompilerServices"u8, "RuntimeHelpers"u8)
+                    .GetKnownMethod("GetRawData"u8, null);
 
                 // Load ByRef to the field with the value of the boxed valuetype
                 codeStream.EmitLdArg(0);
-                codeStream.Emit(ILOpcode.ldflda, emit.NewToken(rawDataField));
+                codeStream.Emit(ILOpcode.call, emit.NewToken(rawDataMethod));
 
                 // Load the MethodTable of the boxed valuetype (this is the hidden generic context parameter expected
                 // by the (canonical) instance method, but normally not part of the signature in IL).
                 codeStream.EmitLdArg(0);
 #if READYTORUN
-                codeStream.Emit(ILOpcode.ldflda, emit.NewToken(rawDataField));
+                codeStream.Emit(ILOpcode.call, emit.NewToken(rawDataMethod));
                 codeStream.EmitLdc(Context.Target.PointerSize);
                 codeStream.Emit(ILOpcode.sub);
                 codeStream.Emit(ILOpcode.ldind_i);
@@ -559,7 +559,7 @@ namespace ILCompiler
 
                 // unbox to get a pointer to the value type
                 codeStream.EmitLdArg(0);
-                codeStream.Emit(ILOpcode.ldflda, emit.NewToken(Context.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "RawData"u8).GetField("Data"u8)));
+                codeStream.Emit(ILOpcode.call, emit.NewToken(Context.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "RuntimeHelpers"u8).GetKnownMethod("GetRawData"u8, null)));
 
                 // Load rest of the arguments
                 for (int i = 0; i < _targetMethod.Signature.Length; i++)

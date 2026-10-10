@@ -172,9 +172,6 @@ namespace System.Runtime.CompilerServices
             return false;
         }
 
-        internal static ref byte GetRawData(this object obj) =>
-            ref Unsafe.As<RawData>(obj).Data;
-
         internal static unsafe nuint GetRawObjectDataSize(this object obj)
         {
             MethodTable* pMT = GetMethodTable(obj);
@@ -193,6 +190,9 @@ namespace System.Runtime.CompilerServices
         {
             return array.GetMethodTable()->ComponentSize;
         }
+
+        [Intrinsic]
+        internal static ref byte GetRawData(this object obj) => ref obj.GetRawData();
 
         [Intrinsic]
         internal static unsafe MethodTable* GetMethodTable(this object obj) => obj.GetMethodTable();
@@ -426,9 +426,9 @@ namespace System.Runtime.CompilerServices
     // [ sync block || pMethodTable || num components || MD array bounds || array data .. ]
     //                 ^               ^                 ^                  ^ returned reference
     //                 |               |                 \-- ref Unsafe.As<RawArrayData>(array).Data
-    //                 \-- array       \-- ref Unsafe.As<RawData>(array).Data
+    //                 \-- array       \-- ref array.GetRawData()
     // The BaseSize of an array includes all the fields before the array data,
-    // including the sync block and method table. The reference to RawData.Data
+    // including the sync block and method table. The reference to GetRawData()
     // points at the number of components, skipping over these two pointer-sized fields.
     [StructLayout(LayoutKind.Sequential)]
     internal class RawArrayData
@@ -437,12 +437,6 @@ namespace System.Runtime.CompilerServices
 #if TARGET_64BIT
         public uint Padding;
 #endif
-        public byte Data;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    internal class RawData
-    {
         public byte Data;
     }
 }
