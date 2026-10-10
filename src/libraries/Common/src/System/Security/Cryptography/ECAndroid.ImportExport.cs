@@ -8,39 +8,117 @@ namespace System.Security.Cryptography
 {
     internal sealed partial class ECAndroid
     {
+        private static readonly string[] s_validOids = [Oids.EcPublicKey];
+
         public int ImportParameters(ECParameters parameters)
         {
-            SafeEcKeyHandle key;
-
             parameters.Validate();
+            SafeEcKeyHandle key = ImportParametersCore(parameters);
 
-            if (parameters.Curve.IsPrime)
-            {
-                key = ImportPrimeCurveParameters(parameters);
-            }
-            else if (parameters.Curve.IsCharacteristic2)
-            {
-                key = ImportCharacteristic2CurveParameters(parameters);
-            }
-            else if (parameters.Curve.IsNamed)
-            {
-                key = ImportNamedCurveParameters(parameters);
-            }
-            else
-            {
-                throw new PlatformNotSupportedException(
-                    SR.Format(SR.Cryptography_CurveNotSupported, parameters.Curve.CurveType.ToString()));
-            }
-
-            if (key == null || key.IsInvalid)
+            if (key is null || key.IsInvalid)
             {
                 key?.Dispose();
                 throw new CryptographicException();
             }
 
+            if (parameters.D is not null && parameters.Q.X is null)
+            {
+                SafeEcKeyHandle? completeKey = null;
+
+                try
+                {
+                    if (!TryRecoverPublicKey(key, out ECPoint publicKey))
+                    {
+                        throw new CryptographicException();
+                    }
+
+                    ECParameters completeParameters = parameters;
+                    completeParameters.Q = publicKey;
+                    completeKey = ImportParametersCore(completeParameters);
+
+                    if (completeKey is null || completeKey.IsInvalid)
+                    {
+                        throw new CryptographicException();
+                    }
+                }
+                catch
+                {
+                    completeKey?.Dispose();
+                    key.Dispose();
+                    throw;
+                }
+
+                key.Dispose();
+                key = completeKey;
+            }
+
             FreeKey();
             _key = new Lazy<SafeEcKeyHandle>(key);
             return KeySize;
+        }
+
+        private static SafeEcKeyHandle ImportParametersCore(ECParameters parameters)
+        {
+            if (parameters.Curve.IsPrime)
+            {
+                return ImportPrimeCurveParameters(parameters);
+            }
+
+            if (parameters.Curve.IsCharacteristic2)
+            {
+                return ImportCharacteristic2CurveParameters(parameters);
+            }
+
+            if (parameters.Curve.IsNamed)
+            {
+                return ImportNamedCurveParameters(parameters);
+            }
+
+            throw new PlatformNotSupportedException(
+                SR.Format(SR.Cryptography_CurveNotSupported, parameters.Curve.CurveType.ToString()));
+        }
+
+        private static bool TryRecoverPublicKey(SafeEcKeyHandle key, out ECPoint publicKey)
+        {
+            publicKey = default;
+
+            if (!Interop.AndroidCrypto.TryExportEcKeyPkcs8PrivateKey(key, out ArraySegment<byte> pkcs8))
+            {
+                return false;
+            }
+
+            ECParameters recoveredParameters = default;
+
+            try
+            {
+                KeyFormatHelper.ReadPkcs8<ECParameters>(
+                    s_validOids,
+                    pkcs8.AsSpan(),
+                    EccKeyFormatHelper.FromECPrivateKey,
+                    out int bytesRead,
+                    out recoveredParameters);
+
+                if (bytesRead != pkcs8.Count || recoveredParameters.Q.X is null || recoveredParameters.Q.Y is null)
+                {
+                    return false;
+                }
+
+                publicKey = recoveredParameters.Q;
+                return true;
+            }
+            catch (CryptographicException)
+            {
+                return false;
+            }
+            finally
+            {
+                CryptoPool.Return(pkcs8);
+
+                if (recoveredParameters.D is not null)
+                {
+                    CryptographicOperations.ZeroMemory(recoveredParameters.D);
+                }
+            }
         }
 
         public static ECParameters ExportExplicitParameters(SafeEcKeyHandle currentKey, bool includePrivateParameters) =>

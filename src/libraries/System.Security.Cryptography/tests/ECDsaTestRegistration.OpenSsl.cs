@@ -36,13 +36,11 @@ namespace System.Security.Cryptography.EcDsa.Tests
     public sealed class ECDsaImportExportTests_OpenSsl : ECDsaImportExportTests
     {
         protected override ECDsaProvider ECDsaFactory { get; } = ECDsaOpenSslProvider.Instance;
-        protected override bool CanDeriveNewPublicKey { get; } = EcDiffieHellman.Tests.ECDiffieHellmanOpenSslProvider.Instance.CanDeriveNewPublicKey;
     }
 
     public sealed class ECDsaKeyFileTests_OpenSsl : ECDsaKeyFileTests
     {
         protected override ECDsaProvider ECDsaFactory { get; } = ECDsaOpenSslProvider.Instance;
-        protected override bool CanDeriveNewPublicKey { get; } = EcDiffieHellman.Tests.ECDiffieHellmanOpenSslProvider.Instance.CanDeriveNewPublicKey;
     }
 
     public sealed class ECDsaXml_OpenSsl : ECDsaXml
