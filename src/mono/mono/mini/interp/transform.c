@@ -3732,6 +3732,11 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 		return FALSE;
 	}
 
+	if (calli && csignature->call_convention == MONO_CALL_VARARG) {
+		mono_error_set_not_supported (error, "Calli with a vararg signature is not supported by the interpreter.");
+		return FALSE;
+	}
+
 #ifdef MONO_ARCH_HAVE_SWIFTCALL
 	/*
 	* We need to modify the signature of the swiftcall calli to account for the lowering of Swift structs.
