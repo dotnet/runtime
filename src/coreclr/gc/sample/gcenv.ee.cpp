@@ -308,10 +308,12 @@ MethodTable* GCToEEInterface::GetFreeObjectMethodTable()
     return &freeObjectMT;
 }
 
+#ifdef FEATURE_MULTITHREADING
 bool GCToEEInterface::CreateThread(void (*threadStart)(void*), void* arg, bool is_suspendable, const char* name)
 {
     return false;
 }
+#endif // FEATURE_MULTITHREADING
 
 void GCToEEInterface::WalkAsyncPinnedForPromotion(Object* object, ScanContext* sc, promote_func* callback)
 {

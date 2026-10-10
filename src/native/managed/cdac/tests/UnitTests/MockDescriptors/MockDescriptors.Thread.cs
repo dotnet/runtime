@@ -213,7 +213,7 @@ internal sealed class MockThread : TypedView
     private const string DebuggerFilterContextFieldName = "DebuggerFilterContext";
     private const string InteropDebuggingHijackedFieldName = "InteropDebuggingHijacked";
 
-    public static Layout<MockThread> CreateLayout(MockTarget.Architecture architecture)
+    public static Layout<MockThread> CreateLayout(MockTarget.Architecture architecture, bool includeThreadLocalDataPtr = true)
     {
         SequentialLayoutBuilder layoutBuilder = new SequentialLayoutBuilder("Thread", architecture)
             .AddUInt32Field(IdFieldName)
@@ -231,8 +231,14 @@ internal sealed class MockThread : TypedView
             .AddUInt32Field(LastThrownObjectIsUnhandledFieldName)
             .AddPointerField(CurrentCustomDebuggerNotificationFieldName)
             .AddPointerField(LinkNextFieldName)
-            .AddPointerField(ExceptionTrackerFieldName)
-            .AddPointerField(ThreadLocalDataPtrFieldName)
+            .AddPointerField(ExceptionTrackerFieldName);
+
+        if (includeThreadLocalDataPtr)
+        {
+            layoutBuilder.AddPointerField(ThreadLocalDataPtrFieldName);
+        }
+
+        layoutBuilder
             .AddPointerField(ThreadHandleFieldName)
             .AddPointerField(UEWatsonBucketTrackerBucketsFieldName)
             .AddPointerField(DebuggerFilterContextFieldName)
@@ -386,19 +392,19 @@ internal sealed class MockThreadBuilder
 
     private MockThread? _previousThread;
 
-    public MockThreadBuilder(MockMemorySpace.Builder builder)
-        : this(builder, (DefaultAllocationRangeStart, DefaultAllocationRangeEnd))
+    public MockThreadBuilder(MockMemorySpace.Builder builder, bool includeThreadLocalDataPtr = true)
+        : this(builder, (DefaultAllocationRangeStart, DefaultAllocationRangeEnd), includeThreadLocalDataPtr)
     {
     }
 
-    public MockThreadBuilder(MockMemorySpace.Builder builder, (ulong Start, ulong End) allocationRange)
+    public MockThreadBuilder(MockMemorySpace.Builder builder, (ulong Start, ulong End) allocationRange, bool includeThreadLocalDataPtr = true)
     {
         Builder = builder;
         _allocator = Builder.CreateAllocator(allocationRange.Start, allocationRange.End);
 
         TargetTestHelpers helpers = builder.TargetTestHelpers;
         ExceptionInfoLayout = MockExceptionInfo.CreateLayout(helpers.Arch);
-        ThreadLayout = MockThread.CreateLayout(helpers.Arch);
+        ThreadLayout = MockThread.CreateLayout(helpers.Arch, includeThreadLocalDataPtr);
         ThreadStoreLayout = MockThreadStore.CreateLayout(helpers.Arch);
         GCAllocContextLayout = MockGCAllocContext.CreateLayout(helpers.Arch);
         EEAllocContextLayout = MockEEAllocContext.CreateLayout(helpers.Arch, GCAllocContextLayout);

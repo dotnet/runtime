@@ -26,7 +26,9 @@
 #include "callhelpers.h"
 #include "appdomain.hpp"
 #include "appdomain.inl"
+#ifdef FEATURE_MULTITHREADING
 #include "threadstatics.h"
+#endif // FEATURE_MULTITHREADING
 
 #ifndef TARGET_UNIX
 #include "utilcode.h"
@@ -53,6 +55,7 @@ static inline BOOL ThreadIsDead(Thread *t)
 }
 
 
+#ifdef FEATURE_MULTITHREADING
 // Map our exposed notion of thread priorities into the enumeration that NT uses.
 static INT32 MapToNTPriority(INT32 ours)
 {
@@ -370,6 +373,7 @@ extern "C" void QCALLTYPE ThreadNative_Initialize(QCall::ObjectHandleOnStack t, 
     GCPROTECT_END();
     END_QCALL;
 }
+#endif // FEATURE_MULTITHREADING
 
 // Deliver the state of the thread as a consistent set of bits.
 // Duplicate logic in DacDbiInterfaceImpl::GetPartialUserState()
@@ -515,7 +519,7 @@ extern "C" HANDLE QCALLTYPE ThreadNative_GetOSHandle(QCall::ThreadHandle t, QCal
 #endif
 
 // If the exposed object is created after-the-fact, for an existing thread, we call
-// InitExisting on it.  This is the other "construction", as opposed to SetDelegate.
+// InitExisting on it instead of running the managed constructor.
 void ThreadBaseObject::InitExisting()
 {
     CONTRACTL
@@ -526,6 +530,7 @@ void ThreadBaseObject::InitExisting()
     }
     CONTRACTL_END;
 
+#ifdef FEATURE_MULTITHREADING
     Thread *pThread = GetInternal();
     _ASSERTE (pThread);
     switch (pThread->GetThreadPriority())
@@ -561,8 +566,12 @@ void ThreadBaseObject::InitExisting()
         m_Priority = ThreadNative::PRIORITY_NORMAL;
         break;
     }
+#else
+    m_Priority = ThreadNative::PRIORITY_NORMAL;
+#endif // FEATURE_MULTITHREADING
 }
 
+#ifdef FEATURE_MULTITHREADING
 FCIMPL1(void, ThreadNative::Finalize, ThreadBaseObject* pThisUNSAFE)
 {
     FCALL_CONTRACT;
@@ -584,9 +593,7 @@ FCIMPL1(void, ThreadNative::Finalize, ThreadBaseObject* pThisUNSAFE)
         }
 
         thread->SetThreadState(Thread::TS_Finalized);
-#ifdef FEATURE_MULTITHREADING
         Thread::SetCleanupNeededForFinalizedThread();
-#endif // FEATURE_MULTITHREADING
     }
 }
 FCIMPLEND
@@ -598,7 +605,9 @@ FCIMPL0(FC_BOOL_RET, ThreadNative::CatchAtSafePoint)
     FC_RETURN_BOOL(GetThread()->CatchAtSafePoint());
 }
 FCIMPLEND
+#endif // FEATURE_MULTITHREADING
 
+#ifdef FEATURE_MULTITHREADING
 // Get whether or not this is a background thread.
 extern "C" BOOL QCALLTYPE ThreadNative_GetIsBackground(QCall::ThreadHandle thread)
 {
@@ -669,6 +678,7 @@ extern "C" void QCALLTYPE ThreadNative_InformThreadNameChange(QCall::ThreadHandl
 
     END_QCALL;
 }
+#endif // FEATURE_MULTITHREADING
 
 extern "C" void QCALLTYPE ThreadNative_GetQCallSpecialException(
     INT_PTR status,
@@ -700,9 +710,8 @@ extern "C" void QCALLTYPE ThreadNative_GetQCallSpecialException(
     END_QCALL;
 }
 
-// Returns the address of the current thread's ThreadLocalData (&t_ThreadStatics). Used on wasm to break
-// the thread-static bootstrap recursion in Thread.GetThreadStaticsBase (see the managed counterpart).
-#ifdef TARGET_WASM
+#if defined(TARGET_WASM) && defined(FEATURE_MULTITHREADING)
+// Break the thread-static bootstrap recursion in Thread.GetThreadStaticsBase.
 FCIMPL0(void*, ThreadNative::GetThreadStaticsBaseNative)
 {
     FCALL_CONTRACT;
@@ -710,7 +719,7 @@ FCIMPL0(void*, ThreadNative::GetThreadStaticsBaseNative)
     return (void*)&t_ThreadStatics;
 }
 FCIMPLEND
-#endif // TARGET_WASM
+#endif // TARGET_WASM && FEATURE_MULTITHREADING
 
 #ifdef TARGET_WINDOWS
 // This service can be called on unstarted and dead threads.  For unstarted ones, the
@@ -757,11 +766,13 @@ extern "C" void QCALLTYPE ThreadNative_DisableComObjectEagerCleanup(QCall::Threa
 }
 #endif //FEATURE_COMINTEROP
 
+#ifdef FEATURE_MULTITHREADING
 extern "C" void QCALLTYPE ThreadNative_PollGC()
 {
     // This is an intentional no-op.  The call is made to ensure that the thread goes through a GC transition
     // and is thus marked as a GC safe point, and that the p/invoke rare path will kick in
 }
+#endif // FEATURE_MULTITHREADING
 
 extern "C" void QCALLTYPE ThreadNative_Abort(QCall::ThreadHandle thread, QCallExceptionStatus* qcallError)
 {
@@ -786,6 +797,7 @@ extern "C" void QCALLTYPE ThreadNative_ResetAbort()
     }
 }
 
+#ifdef FEATURE_MULTITHREADING
 FCIMPL0(FC_BOOL_RET, ThreadNative::CurrentThreadIsFinalizerThread)
 {
     FCALL_CONTRACT;
@@ -793,6 +805,7 @@ FCIMPL0(FC_BOOL_RET, ThreadNative::CurrentThreadIsFinalizerThread)
     FC_RETURN_BOOL(IsFinalizerThread());
 }
 FCIMPLEND
+#endif // FEATURE_MULTITHREADING
 
 FCIMPL1(OBJECTHANDLE, ObjectHeader_GetLockHandleIfExists, Object* pObj)
 {

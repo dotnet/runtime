@@ -275,6 +275,11 @@
 
   <Import Project="$(LibrariesProjectRoot)\System.Private.CoreLib\src\System.Private.CoreLib.Shared.projitems" Label="Shared" />
 
+  <ItemGroup Condition="'$(FeatureMultithreading)' != 'true'">
+    <Compile Include="$(LibrariesProjectRoot)\System.Private.CoreLib\src\System\Threading\Thread.Multithreading.cs" />
+    <Compile Include="$(LibrariesProjectRoot)\System.Private.CoreLib\src\System\Threading\Thread.Unix.cs" Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true'" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)\System.Private.CoreLib\gen\System.Private.CoreLib.Generators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
     <CompilerVisibleProperty Include="InformationalVersion" />

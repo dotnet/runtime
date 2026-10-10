@@ -560,8 +560,8 @@ PCODE MethodDesc::GetMulticoreJitCode(PrepareCodeConfig* pConfig, bool* pWasTier
     _ASSERTE(pWasTier0 != NULL);
     _ASSERTE(!*pWasTier0);
 
-    MulticoreJitCodeInfo codeInfo;
 #ifdef FEATURE_MULTICOREJIT
+    MulticoreJitCodeInfo codeInfo;
     // Quick check before calling expensive out of line function on this method's domain has code JITted by background thread
     MulticoreJitManager & mcJitManager = GetAppDomain()->GetMulticoreJitManager();
     if (mcJitManager.GetMulticoreJitCodeStorage().GetRemainingMethodCount() > 0)
@@ -584,9 +584,10 @@ PCODE MethodDesc::GetMulticoreJitCode(PrepareCodeConfig* pConfig, bool* pWasTier
         #endif
         }
     }
-#endif // FEATURE_MULTICOREJIT
-
     return codeInfo.GetEntryPoint();
+#else
+    return (PCODE)NULL;
+#endif // FEATURE_MULTICOREJIT
 }
 
 // ********************************************************************
@@ -3344,6 +3345,7 @@ static PCODE getHelperForSharedStatic(Module * pModule, ReadyToRunFixupKind kind
 
     switch(helpFunc)
     {
+#ifdef FEATURE_MULTITHREADING
         case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2:
         case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2_NOJITOPT:
         {
@@ -3358,6 +3360,7 @@ static PCODE getHelperForSharedStatic(Module * pModule, ReadyToRunFixupKind kind
         case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE:
             pArgs->arg0 = (TADDR)pMT->GetThreadStaticsInfo();
             break;
+#endif // FEATURE_MULTITHREADING
 
         case CORINFO_HELP_GETDYNAMIC_GCSTATIC_BASE_NOCTOR:
         case CORINFO_HELP_GETPINNED_GCSTATIC_BASE_NOCTOR:
@@ -3398,11 +3401,13 @@ static PCODE getHelperForStaticBase(Module * pModule, ReadyToRunFixupKind kind, 
     bool noCtor = pMT->IsClassInitedOrPreinited();
     bool threadStatic = (kind == READYTORUN_FIXUP_ThreadStaticBaseNonGC || kind == READYTORUN_FIXUP_ThreadStaticBaseGC);
 
+#ifdef FEATURE_MULTITHREADING
     // Special case for DirectOnThreadLocalData: return helper that gets the address of the pThread field
     if (threadStatic && !GCStatic && pMT == CoreLibBinder::GetExistingClass(CLASS__DIRECTONTHREADLOCALDATA))
     {
         return CEEJitInfo::getHelperFtnStatic(CORINFO_HELP_GETDIRECTONTHREADLOCALDATA_NONGCTHREADSTATIC_BASE);
     }
+#endif // FEATURE_MULTITHREADING
 
     CorInfoHelpFunc helper;
 
@@ -3663,11 +3668,13 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
     Statics:
         th.AsMethodTable()->EnsureInstanceActive();
         th.AsMethodTable()->CheckRunClassInitThrowing();
+#ifdef FEATURE_MULTITHREADING
         if (kind == READYTORUN_FIXUP_ThreadStaticBaseNonGC || kind == READYTORUN_FIXUP_ThreadStaticBaseGC ||
             (kind == READYTORUN_FIXUP_FieldAddress && pFD->IsThreadStatic()))
         {
             th.AsMethodTable()->EnsureTlsIndexAllocated();
         }
+#endif // FEATURE_MULTITHREADING
         fReliable = true;
         break;
 
@@ -4006,12 +4013,14 @@ extern "C" SIZE_T STDCALL DynamicHelperWorker(TransitionBlock * pTransitionBlock
         case READYTORUN_FIXUP_StaticBaseGC:
             result = (SIZE_T)th.AsMethodTable()->GetGCStaticsBasePointer();
             break;
+#ifdef FEATURE_MULTITHREADING
         case READYTORUN_FIXUP_ThreadStaticBaseNonGC:
             result = (SIZE_T)th.AsMethodTable()->GetNonGCThreadStaticsBasePointer();
             break;
         case READYTORUN_FIXUP_ThreadStaticBaseGC:
             result = (SIZE_T)th.AsMethodTable()->GetGCThreadStaticsBasePointer();
             break;
+#endif // FEATURE_MULTITHREADING
         case READYTORUN_FIXUP_CctorTrigger:
             break;
         case READYTORUN_FIXUP_FieldAddress:

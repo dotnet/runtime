@@ -25,7 +25,8 @@ internal sealed partial class Thread : IData<Thread>
 
     // Descriptor-optional: not present on non-Windows platforms.
     [Field] public partial TargetPointer? UEWatsonBucketTrackerBuckets { get; }
-    [Field] public partial TargetPointer ThreadLocalDataPtr { get; }
+    // Descriptor-optional: not present on runtimes built without FEATURE_MULTITHREADING.
+    [Field] public partial TargetPointer? ThreadLocalDataPtr { get; }
     [Field] public partial TargetPointer DebuggerFilterContext { get; }
     [Field] public partial uint InteropDebuggingHijacked { get; }
     [Field] public partial ObjectHandle CurrentCustomDebuggerNotification { get; }

@@ -986,7 +986,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
     public TargetPointer GetGCThreadStaticsBasePointer(ITypeHandle typeHandle, TargetPointer threadPtr)
     {
-        if (!typeHandle.IsMethodTable())
+        if (GetNumThreadStaticFields(typeHandle) == 0)
             return TargetPointer.Null;
         TargetPointer tlsIndexPtr = GetThreadStaticsInfo(typeHandle).GCTlsIndex;
         Contracts.IThread threadContract = _target.Contracts.Thread;
@@ -995,7 +995,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
     public TargetPointer GetNonGCThreadStaticsBasePointer(ITypeHandle typeHandle, TargetPointer threadPtr)
     {
-        if (!typeHandle.IsMethodTable())
+        if (GetNumThreadStaticFields(typeHandle) == 0)
             return TargetPointer.Null;
         TargetPointer tlsIndexPtr = GetThreadStaticsInfo(typeHandle).NonGCTlsIndex;
         Contracts.IThread threadContract = _target.Contracts.Thread;

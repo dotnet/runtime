@@ -761,6 +761,7 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pE
 
         DisplayStackOverflowException();
 
+#ifdef FEATURE_MULTITHREADING
         HandleHolder stackDumpThreadHandle{ Thread::CreateUtilityThread(Thread::StackSize_Small, LogStackOverflowStackTraceThread, GetThreadNULLOk(), W(".NET SO Tracer")) };
         if (stackDumpThreadHandle != NULL)
         {
@@ -775,6 +776,7 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pE
  #endif
         }
         else
+#endif // FEATURE_MULTITHREADING
         {
             InterlockedExchange(&g_stackOverflowCallStackLogged, 2);
         }

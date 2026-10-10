@@ -266,11 +266,13 @@ inline bool GCToEEInterface::WasCurrentThreadCreatedByGC()
     return g_theGCToCLR->WasCurrentThreadCreatedByGC();
 }
 
+#ifdef FEATURE_MULTITHREADING
 inline bool GCToEEInterface::CreateThread(void (*threadStart)(void*), void* arg, bool is_suspendable, const char* name)
 {
     assert(g_theGCToCLR != nullptr);
     return g_theGCToCLR->CreateThread(threadStart, arg, is_suspendable, name);
 }
+#endif // FEATURE_MULTITHREADING
 
 inline void GCToEEInterface::WalkAsyncPinnedForPromotion(Object* object, ScanContext* sc, promote_func* callback)
 {

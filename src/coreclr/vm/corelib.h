@@ -980,7 +980,9 @@ DEFINE_CLASS(STACKCRAWMARK,         Threading,       StackCrawlMark)
 
 DEFINE_CLASS_U(Threading,              Thread,                     ThreadBaseObject)
 DEFINE_FIELD_U(_name,                     ThreadBaseObject,   m_Name)
+#ifdef FEATURE_MULTITHREADING
 DEFINE_FIELD_U(_startHelper,              ThreadBaseObject,   m_StartHelper)
+#endif // FEATURE_MULTITHREADING
 DEFINE_FIELD_U(_DONT_USE_InternalThread,  ThreadBaseObject,   m_InternalThread)
 DEFINE_FIELD_U(_priority,                 ThreadBaseObject,   m_Priority)
 DEFINE_FIELD_U(_isDead,                   ThreadBaseObject,   m_IsDead)
@@ -994,11 +996,17 @@ DEFINE_FIELD_U(m_isFlowSuppressed,    ExecutionContextObject,      m_isFlowSuppr
 DEFINE_CLASS(EXECUTIONCONTEXT,        Threading,                   ExecutionContext)
 DEFINE_FIELD(EXECUTIONCONTEXT,        DEFAULT_FLOW_SUPPRESSED,     DefaultFlowSuppressed)
 
+#ifdef FEATURE_MULTITHREADING
 DEFINE_CLASS(DIRECTONTHREADLOCALDATA, Threading, Thread+DirectOnThreadLocalData)
+#endif // FEATURE_MULTITHREADING
 
 DEFINE_CLASS(THREAD,                Threading,              Thread)
+#ifdef FEATURE_MULTITHREADING
 DEFINE_METHOD(THREAD,               START_CALLBACK,                          StartCallback,                        SM_PtrThread_RetVoid)
 DEFINE_METHOD(THREAD,               POLLGC,                                  PollGC,                               NoSig)
+#else
+DEFINE_FIELD(THREAD,                CURRENT_THREAD,                          s_currentThread)
+#endif // FEATURE_MULTITHREADING
 DEFINE_METHOD(THREAD,               ON_THREAD_EXITING,                       OnThreadExited,                       SM_PtrThread_PtrException_RetVoid)
 #ifdef FOR_ILLINK
 DEFINE_METHOD(THREAD,               CTOR,                                    .ctor,                                IM_RetVoid)
@@ -1416,12 +1424,14 @@ DEFINE_METHOD(STATICSHELPERS, GET_NONGC_STATIC, GetNonGCStaticBase, NoSig)
 DEFINE_METHOD(STATICSHELPERS, GET_GC_STATIC, GetGCStaticBase, NoSig)
 DEFINE_METHOD(STATICSHELPERS, GET_DYNAMIC_NONGC_STATIC, GetDynamicNonGCStaticBase, NoSig)
 DEFINE_METHOD(STATICSHELPERS, GET_DYNAMIC_GC_STATIC, GetDynamicGCStaticBase, NoSig)
+#ifdef FEATURE_MULTITHREADING
 DEFINE_METHOD(STATICSHELPERS, GET_NONGC_THREADSTATIC, GetNonGCThreadStaticBase, NoSig)
 DEFINE_METHOD(STATICSHELPERS, GET_GC_THREADSTATIC, GetGCThreadStaticBase, NoSig)
 DEFINE_METHOD(STATICSHELPERS, GET_DYNAMIC_NONGC_THREADSTATIC, GetDynamicNonGCThreadStaticBase, NoSig)
 DEFINE_METHOD(STATICSHELPERS, GET_DYNAMIC_GC_THREADSTATIC, GetDynamicGCThreadStaticBase, NoSig)
 DEFINE_METHOD(STATICSHELPERS, GET_OPTIMIZED_NONGC_THREADSTATIC, GetOptimizedNonGCThreadStaticBase, NoSig)
 DEFINE_METHOD(STATICSHELPERS, GET_OPTIMIZED_GC_THREADSTATIC, GetOptimizedGCThreadStaticBase, NoSig)
+#endif // FEATURE_MULTITHREADING
 
 DEFINE_METHOD(STATICSHELPERS, STATICFIELDADDRESS_DYNAMIC, StaticFieldAddress_Dynamic, NoSig)
 DEFINE_METHOD(STATICSHELPERS, STATICFIELDADDRESSUNBOX_DYNAMIC, StaticFieldAddressUnbox_Dynamic, NoSig)

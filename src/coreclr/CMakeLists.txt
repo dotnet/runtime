@@ -54,6 +54,14 @@ endif()
 
 OPTION(CLR_CMAKE_ENABLE_CODE_COVERAGE "Enable code coverage" OFF)
 
+# WebAssembly targets are single-threaded unless threads are explicitly enabled.
+if(NOT DEFINED FEATURE_MULTITHREADING AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
+  set(FEATURE_MULTITHREADING 1)
+endif()
+if(FEATURE_MULTITHREADING)
+  add_compile_definitions(FEATURE_MULTITHREADING)
+endif()
+
 #----------------------------------------------------
 # Cross target Component build specific configuration
 #----------------------------------------------------

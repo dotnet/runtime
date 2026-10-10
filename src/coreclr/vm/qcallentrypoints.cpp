@@ -299,6 +299,7 @@ static const Entry s_QCall[] =
     DllImportEntry(AppContext_SetFirstChanceExceptionHandler)
     DllImportEntry(AppContext_TryGetHostPropertyValue)
     DllImportEntry(ThreadNative_GetQCallSpecialException)
+#ifdef FEATURE_MULTITHREADING
     DllImportEntry(ThreadNative_Start)
     DllImportEntry(ThreadNative_SetPriority)
     DllImportEntry(ThreadNative_GetCurrentThread)
@@ -306,6 +307,7 @@ static const Entry s_QCall[] =
     DllImportEntry(ThreadNative_SetIsBackground)
     DllImportEntry(ThreadNative_InformThreadNameChange)
     DllImportEntry(ThreadNative_Initialize)
+#endif // FEATURE_MULTITHREADING
     DllImportEntry(ThreadNative_GetThreadState)
     DllImportEntry(ThreadNative_ReentrantWaitAny)
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
@@ -319,7 +321,9 @@ static const Entry s_QCall[] =
     DllImportEntry(ThreadNative_Interrupt)
     DllImportEntry(ThreadNative_GetOSHandle)
 #endif // TARGET_WINDOWS
+#ifdef FEATURE_MULTITHREADING
     DllImportEntry(ThreadNative_PollGC)
+#endif // FEATURE_MULTITHREADING
 #ifdef FEATURE_COMINTEROP
     DllImportEntry(ThreadNative_DisableComObjectEagerCleanup)
 #endif // FEATURE_COMINTEROP
@@ -409,9 +413,11 @@ static const Entry s_QCall[] =
     DllImportEntry(GetFileLoadExceptionMessage)
     DllImportEntry(FileLoadException_GetMessageForHR)
     DllImportEntry(Interlocked_MemoryBarrierProcessWide)
+#ifdef FEATURE_MULTITHREADING
     DllImportEntry(Thread_SpinWait)
     DllImportEntry(Thread_Yield)
     DllImportEntry(Thread_GetOptimalMaxSpinWaitsPerSpinIteration)
+#endif // FEATURE_MULTITHREADING
     DllImportEntry(ObjectNative_GetHashCodeSlow)
     DllImportEntry(ObjectNative_AllocateUninitializedClone)
     DllImportEntry(MetadataImport_Enum)
@@ -534,8 +540,10 @@ static const Entry s_QCall[] =
     DllImportEntry(AppendExceptionStackFrame)
     DllImportEntry(InitClassHelper)
     DllImportEntry(ResolveVirtualFunctionPointer)
+#ifdef FEATURE_MULTITHREADING
     DllImportEntry(GetThreadStaticsByMethodTable)
     DllImportEntry(GetThreadStaticsByIndex)
+#endif // FEATURE_MULTITHREADING
     DllImportEntry(GenericHandleWorker)
     DllImportEntry(ThrowInvalidCastException)
     DllImportEntry(IsInstanceOf_NoCacheLookup)

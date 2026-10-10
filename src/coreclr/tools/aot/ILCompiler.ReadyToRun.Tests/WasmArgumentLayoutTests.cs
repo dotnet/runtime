@@ -1282,7 +1282,7 @@ public class WasmArgumentLayoutTests
         }
 
         // Wasm cannot generate code at runtime, matching what crossgen2's Program computes for this target.
-        ReadyToRunCompilerContext context = new(target, SharedGenericsMode.CanonicalReferenceTypes, bubbleIncludesCoreModule: true, targetAllowsRuntimeCodeGeneration: false, instructionSetSupport, oldTypeSystemContext: null)
+        ReadyToRunCompilerContext context = new(target, SharedGenericsMode.CanonicalReferenceTypes, bubbleIncludesCoreModule: true, targetAllowsRuntimeCodeGeneration: false, targetIsSingleThreaded: true, instructionSetSupport, oldTypeSystemContext: null)
         {
             InputFilePaths = inputFilePaths,
             ReferenceFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase),

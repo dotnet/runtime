@@ -539,6 +539,7 @@ bool GCToEEInterface::WasCurrentThreadCreatedByGC()
     return ThreadStore::RawGetCurrentThread()->IsGCSpecial();
 }
 
+#ifdef FEATURE_MULTITHREADING
 struct ThreadStubArguments
 {
     void (*m_pRealStartRoutine)(void*);
@@ -660,6 +661,7 @@ bool GCToEEInterface::CreateThread(void (*threadStart)(void*), void* arg, bool i
 
     return true;
 }
+#endif // FEATURE_MULTITHREADING
 
 // NativeAOT does not use async pinned handles
 void GCToEEInterface::WalkAsyncPinnedForPromotion(Object* object, ScanContext* sc, ScanFunc* callback)

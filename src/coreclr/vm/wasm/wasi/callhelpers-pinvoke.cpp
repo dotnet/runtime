@@ -94,7 +94,6 @@ extern "C" {
     int32_t SystemNative_GetControlMessageBufferSize (int32_t, int32_t);
     double SystemNative_GetCpuUtilization (void *);
     int32_t SystemNative_GetCryptographicallySecureRandomBytes (void *, int32_t);
-    uint64_t SystemNative_GetCurrentThreadId ();
     void * SystemNative_GetCwd (void *, int32_t);
     void * SystemNative_GetDefaultSearchOrderPseudoHandle ();
     int32_t SystemNative_GetErrNo ();
@@ -170,7 +169,6 @@ extern "C" {
     int32_t SystemNative_ReceiveMessage (void *, void *, int32_t, void *);
     int32_t SystemNative_Rename (void *, void *);
     int32_t SystemNative_RmDir (void *);
-    int32_t SystemNative_SchedGetCpu ();
     int32_t SystemNative_Select (void *, int32_t, void *, int32_t, void *, int32_t, int32_t, int32_t, void *);
     int32_t SystemNative_Send (void *, void *, int32_t, int32_t, void *);
     int32_t SystemNative_SendFile (void *, void *, int64_t, int64_t, void *);
@@ -343,7 +341,6 @@ static const Entry s_libSystem_Native [] = {
     DllImportEntry(SystemNative_GetControlMessageBufferSize) // System.Net.Sockets
     DllImportEntry(SystemNative_GetCpuUtilization) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetCryptographicallySecureRandomBytes) // System.IO.Compression, System.Security.Cryptography
-    DllImportEntry(SystemNative_GetCurrentThreadId) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetCwd) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetDefaultSearchOrderPseudoHandle) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetErrNo) // System.Private.CoreLib
@@ -419,7 +416,6 @@ static const Entry s_libSystem_Native [] = {
     DllImportEntry(SystemNative_ReceiveMessage) // System.Net.Sockets
     DllImportEntry(SystemNative_Rename) // System.Private.CoreLib
     DllImportEntry(SystemNative_RmDir) // System.Private.CoreLib
-    DllImportEntry(SystemNative_SchedGetCpu) // System.Private.CoreLib
     DllImportEntry(SystemNative_Select) // System.Net.Sockets
     DllImportEntry(SystemNative_Send) // System.Net.Sockets
     DllImportEntry(SystemNative_SendFile) // System.Net.Sockets
@@ -523,7 +519,7 @@ typedef struct PInvokeTable {
 static PInvokeTable s_PInvokeTables[] = {
     {"libSystem.Globalization.Native", s_libSystem_Globalization_Native, 34},
     {"libSystem.IO.Compression.Native", s_libSystem_IO_Compression_Native, 9},
-    {"libSystem.Native", s_libSystem_Native, 149},
+    {"libSystem.Native", s_libSystem_Native, 147},
     {"wasi:clocks/monotonic-clock@0.2.8", s_wasi_3A_clocks_2F_monotonic_clock_40_0_2_8, 4},
     {"wasi:http/outgoing-handler@0.2.8", s_wasi_3A_http_2F_outgoing_handler_40_0_2_8, 1},
     {"wasi:http/types@0.2.8", s_wasi_3A_http_2F_types_40_0_2_8, 26},
