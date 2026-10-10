@@ -18,8 +18,6 @@ namespace System.Reflection.Emit
         private Type _genericType;
         private Type[] _typeArguments;
         #endregion
-        internal Hashtable _hashtable;
-
 
         public override bool IsAssignableFrom([NotNullWhen(true)] TypeInfo? typeInfo)
         {
@@ -51,7 +49,6 @@ namespace System.Reflection.Emit
         {
             _genericType = type;
             _typeArguments = inst;
-            _hashtable = new Hashtable();
         }
         #endregion
 

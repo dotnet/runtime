@@ -148,7 +148,7 @@ namespace System.Reflection.Emit
 
                 // Property has to be from the same class or base class as ConstructorInfo.
                 if (property.DeclaringType != con.DeclaringType
-                    && (con.DeclaringType is not TypeBuilderInstantiation)
+                    && (con.DeclaringType is not (TypeBuilderInstantiation or SignatureType))
                     && !con.DeclaringType!.IsSubclassOf(property.DeclaringType!))
                 {
                     // Might have failed check because one type is a XXXBuilder
@@ -200,7 +200,7 @@ namespace System.Reflection.Emit
 
                 // Field has to be from the same class or base class as ConstructorInfo.
                 if (namedField.DeclaringType != con.DeclaringType
-                    && (con.DeclaringType is not TypeBuilderInstantiation)
+                    && (con.DeclaringType is not (TypeBuilderInstantiation or SignatureType))
                     && !con.DeclaringType!.IsSubclassOf(namedField.DeclaringType!))
                 {
                     // Might have failed check because one type is a XXXBuilder

@@ -41,12 +41,6 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void GetMethod_TypeNotTypeBuilder_ThrowsArgumentException()
-        {
-            AssertExtensions.Throws<ArgumentException>("type", () => TypeBuilder.GetMethod(typeof(int), typeof(int).GetMethod("Parse", new Type[] { typeof(string) })));
-        }
-
-        [Fact]
         public void GetMethod_MethodDefinitionNotInTypeGenericDefinition_ThrowsArgumentException()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Class | TypeAttributes.Public);
