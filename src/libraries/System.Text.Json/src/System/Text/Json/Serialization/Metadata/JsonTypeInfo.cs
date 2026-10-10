@@ -35,6 +35,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// </summary>
         internal BitArray? OptionalPropertiesMask { get; private set; }
         internal bool ShouldTrackRequiredProperties => OptionalPropertiesMask is not null;
+        internal bool IsSourceGenerated { get; set; }
 
         internal JsonTypeInfo(Type type, JsonConverter converter, JsonSerializerOptions options)
         {
