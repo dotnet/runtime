@@ -1,0 +1,8 @@
+<!-- This file blocks inheritance from parent Directory.Build.props files -->
+<Project>
+  <!-- Intentionally empty to isolate this project from the runtime repo's build configuration -->
+
+  <PropertyGroup>
+    <UseArtifactsOutput>true</UseArtifactsOutput>
+  </PropertyGroup>
+</Project>
