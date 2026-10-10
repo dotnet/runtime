@@ -580,9 +580,9 @@ namespace System.Runtime
 #endif // !NATIVEAOT
         }
 
-        // Returns the exception that is currently in flight on the current thread, starting the search from
-        // the given ExInfo (the head of the thread's ExInfo chain). Exceptions that are being handled by
-        // a catch handler and exceptions that were superseded by a nested exception are skipped.
+        // Returns the exception that is currently in flight on the current thread, including one being handled
+        // by a catch handler, starting the search from the given ExInfo (the head of the thread's ExInfo chain).
+        // Exceptions that were superseded by a nested exception are skipped.
         internal static object? GetCurrentException(ExInfo* pExInfo)
         {
             for (; pExInfo != null; pExInfo = (ExInfo*)pExInfo->_pPrevExInfo)
