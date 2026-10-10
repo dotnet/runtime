@@ -3853,7 +3853,7 @@ void Compiler::fgDebugCheckLinkedLocals()
                     return GenTree::VisitResult::Continue;
                 };
 
-                node->VisitPhysicalLocalDefNodes(m_compiler, linkDefs);
+                node->AsCall()->VisitCallLocalDefNodes(m_compiler, linkDefs);
             }
 
             return WALK_CONTINUE;
@@ -3864,7 +3864,7 @@ void Compiler::fgDebugCheckLinkedLocals()
             auto defIsNode = [=](GenTree* def) {
                 return node == def ? GenTree::VisitResult::Abort : GenTree::VisitResult::Continue;
             };
-            return call->VisitPhysicalLocalDefNodes(m_compiler, defIsNode) == GenTree::VisitResult::Abort;
+            return call->VisitCallLocalDefNodes(m_compiler, defIsNode) == GenTree::VisitResult::Abort;
         }
     };
 
