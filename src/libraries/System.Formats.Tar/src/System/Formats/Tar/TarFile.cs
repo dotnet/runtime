@@ -16,6 +16,8 @@ namespace System.Formats.Tar
     /// </summary>
     public static class TarFile
     {
+        private const int ArchiveBufferSize = 64 * 1024;
+
         /// <inheritdoc cref="CreateFromDirectory(string, Stream, bool, TarEntryFormat)" />
         public static void CreateFromDirectory(string sourceDirectoryName, Stream destination, bool includeBaseDirectory)
             => CreateFromDirectory(sourceDirectoryName, destination, includeBaseDirectory, TarEntryFormat.Pax);
@@ -194,7 +196,7 @@ namespace System.Formats.Tar
             }
 
             // Throws if the destination file exists
-            using FileStream fs = new(destinationFileName, FileMode.CreateNew, FileAccess.Write);
+            using FileStream fs = new(destinationFileName, FileMode.CreateNew, FileAccess.Write, FileShare.Read, ArchiveBufferSize);
 
             CreateFromDirectoryInternal(sourceDirectoryName, fs, includeBaseDirectory, leaveOpen: false, options);
         }
@@ -538,6 +540,7 @@ namespace System.Formats.Tar
             {
                 Access = FileAccess.Write,
                 Mode = FileMode.CreateNew,
+                BufferSize = ArchiveBufferSize,
                 Options = FileOptions.Asynchronous,
             };
             // Throws if the destination file exists
@@ -636,12 +639,13 @@ namespace System.Formats.Tar
 
             SortedDictionary<string, UnixFileMode>? pendingModes = TarHelpers.CreatePendingModesDictionary();
             var directoryModificationTimes = new Stack<(string, DateTimeOffset)>();
+            TarEntry.ExtractionContext context = new(destinationDirectoryFullPath);
             TarEntry? entry;
             while ((entry = reader.GetNextEntry()) != null)
             {
                 if (entry.EntryType is not TarEntryType.GlobalExtendedAttributes)
                 {
-                    entry.ExtractRelativeToDirectory(destinationDirectoryFullPath, overwriteFiles, pendingModes, directoryModificationTimes, hardLinkMode);
+                    entry.ExtractRelativeToDirectory(context, overwriteFiles, pendingModes, directoryModificationTimes, hardLinkMode);
                 }
             }
             TarHelpers.SetPendingModes(pendingModes);
@@ -681,6 +685,7 @@ namespace System.Formats.Tar
 
             SortedDictionary<string, UnixFileMode>? pendingModes = TarHelpers.CreatePendingModesDictionary();
             var directoryModificationTimes = new Stack<(string, DateTimeOffset)>();
+            TarEntry.ExtractionContext context = new(destinationDirectoryFullPath);
             TarReader reader = new TarReader(source, leaveOpen);
             await using (reader.ConfigureAwait(false))
             {
@@ -689,7 +694,7 @@ namespace System.Formats.Tar
                 {
                     if (entry.EntryType is not TarEntryType.GlobalExtendedAttributes)
                     {
-                        await entry.ExtractRelativeToDirectoryAsync(destinationDirectoryFullPath, overwriteFiles, pendingModes, directoryModificationTimes, hardLinkMode, cancellationToken).ConfigureAwait(false);
+                        await entry.ExtractRelativeToDirectoryAsync(context, overwriteFiles, pendingModes, directoryModificationTimes, hardLinkMode, cancellationToken).ConfigureAwait(false);
                     }
                 }
             }

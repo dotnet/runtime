@@ -25,6 +25,23 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
+        [InlineData(1)]
+        [InlineData(256)]
+        [InlineData(8192)]
+        public async Task ExtractToFileAsync_CanceledAfterCopy_Throws(int length)
+        {
+            using TempDirectory root = new TempDirectory();
+            using CancellationTokenSource cancellationSource = new CancellationTokenSource();
+            using CancelAfterCopyStream source = new(new byte[length], cancellationSource);
+            PaxTarEntry entry = new(TarEntryType.RegularFile, "file.txt") { DataStream = source };
+
+            OperationCanceledException exception = await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+                entry.ExtractToFileAsync(Path.Join(root.Path, "file.txt"), overwrite: false, cancellationSource.Token));
+
+            Assert.Equal(cancellationSource.Token, exception.CancellationToken);
+        }
+
+        [Theory]
         [MemberData(nameof(GetFormatBooleanData))]
         public async Task Constructor_Name_FullPath_DestinationDirectory_Mismatch_Throws(TarEntryFormat format, bool async)
         {
@@ -109,6 +126,55 @@ namespace System.Formats.Tar.Tests
             await ExtractToFile(entry, destination, overwrite: true, async);
 
             Verify_Extract(destination, entry, entryType);
+        }
+
+        [Theory]
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux | TestPlatforms.OSX)]
+        [InlineData(0, false)]
+        [InlineData(1, false)]
+        [InlineData(256, false)]
+        [InlineData(4095, false)]
+        [InlineData(4096, false)]
+        [InlineData(8192, false)]
+        [InlineData(0, true)]
+        [InlineData(1, true)]
+        [InlineData(256, true)]
+        [InlineData(4095, true)]
+        [InlineData(4096, true)]
+        [InlineData(8192, true)]
+        public async Task ExtractBufferedData_RestoresModificationTime(int length, bool async)
+        {
+            using TempDirectory root = new TempDirectory();
+            string destination = Path.Join(root.Path, "file.txt");
+            byte[] expected = Enumerable.Range(0, length).Select(value => (byte)(value % 251)).ToArray();
+            using MemoryStream source = new MemoryStream(expected);
+            PaxTarEntry entry = new(TarEntryType.RegularFile, "file.txt")
+            {
+                DataStream = source,
+                ModificationTime = TestModificationTime
+            };
+
+            await ExtractToFile(entry, destination, overwrite: false, async);
+
+            Assert.Equal(expected, File.ReadAllBytes(destination));
+            Assert.Equal(TestModificationTime.UtcDateTime, File.GetLastWriteTimeUtc(destination));
+        }
+
+        private sealed class CancelAfterCopyStream : MemoryStream
+        {
+            private readonly CancellationTokenSource _cancellationSource;
+
+            internal CancelAfterCopyStream(byte[] data, CancellationTokenSource cancellationSource)
+                : base(data, writable: false)
+            {
+                _cancellationSource = cancellationSource;
+            }
+
+            public override async Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
+            {
+                await base.CopyToAsync(destination, bufferSize, cancellationToken);
+                _cancellationSource.Cancel();
+            }
         }
     }
 }

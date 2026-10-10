@@ -134,7 +134,8 @@ namespace System.Formats.Tar
                 Debug.Assert(entry._header._dataStream == null);
                 try
                 {
-                    entry._header._dataStream = new FileStream(fullPath, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, fileOptions);
+                    entry._header._dataStream = new FileStream(fullPath, FileMode.Open, FileAccess.Read, FileShare.Read, 4096,
+                        fileOptions | FileOptions.SequentialScan);
                 }
                 catch (Exception e) when ((attributes & FileAttributes.ReparsePoint) != 0 && (e is IOException or UnauthorizedAccessException))
                 {

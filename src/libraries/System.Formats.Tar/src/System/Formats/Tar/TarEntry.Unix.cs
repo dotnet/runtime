@@ -10,6 +10,21 @@ namespace System.Formats.Tar
     // Unix specific methods for the TarEntry class.
     public abstract partial class TarEntry
     {
+        private static readonly char[] s_directorySeparators = [Path.DirectorySeparatorChar];
+
+        private static string ResolveExistingPath(string path, out bool isOrdinaryDirectory)
+        {
+            isOrdinaryDirectory = false;
+            if (Interop.Sys.LStat(path, out Interop.Sys.FileStatus status) == 0 &&
+                (status.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR)
+            {
+                isOrdinaryDirectory = true;
+                return Path.GetFullPath(path);
+            }
+
+            return Path.Exists(path) ? ResolveSymlink(path) : path;
+        }
+
         // Unix specific implementation of the method that extracts the current entry as a block device.
         private void ExtractAsBlockDevice(string destinationFileName)
         {
