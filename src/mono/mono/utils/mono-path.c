@@ -99,6 +99,12 @@ mono_path_canonicalize (const char *path)
 		abspath [len+1] = 0;
 	}
 
+#ifdef HOST_WIN32
+	gchar *prefixed = g_path_make_long_compatible(abspath);
+	g_free(abspath);
+	abspath = prefixed;
+#endif
+
 	return abspath;
 }
 

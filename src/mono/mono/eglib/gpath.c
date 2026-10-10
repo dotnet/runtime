@@ -33,10 +33,112 @@
 
 #ifdef G_OS_WIN32
 #include <direct.h>
+#include <windows.h>
 #endif
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
+
+#ifdef G_OS_WIN32
+
+#ifndef MAX_PATH
+#define MAX_PATH 260
+#endif
+
+/* Helper function to check if a Windows path needs the \\?\ prefix for long path support.
+ * Returns TRUE if:
+ * - The path is long enough to potentially hit MAX_PATH limit
+ * - The path doesn't already have the \\?\ prefix
+ * - The path is an absolute Windows path (e.g., C:\path), UNC path (e.g., \\server\share),
+ *   or drive-relative path (e.g., \Windows\System32)
+ */
+static gboolean
+g_path_needs_long_prefix (const gchar *path)
+{
+	if (!path || strlen(path) <= 2)
+		return FALSE;
+	
+	/* Only add prefix for paths that are approaching or exceeding MAX_PATH */
+	if (strlen(path) < MAX_PATH)
+		return FALSE;
+	
+	if (strncmp(path, "\\\\?\\", 4) == 0)
+		return FALSE;
+	
+	if (path[1] == ':' && (path[2] == '\\' || path[2] == '/'))
+		return TRUE;
+	
+	if (path[0] == '\\' && path[1] == '\\' && path[2] != '?')
+		return TRUE;
+	
+	if (path[0] == '\\' && path[1] != '\\')
+		return TRUE;
+	
+	return FALSE;
+}
+
+/* Helper function to convert a drive-relative path to an absolute path.
+ * For example, \Windows\System32 becomes C:\Windows\System32.
+ * Caller must free the result with g_free().
+ */
+static gchar *
+g_path_drive_relative_to_absolute (const gchar *path)
+{
+	if (!path)
+		return g_strdup(path);
+
+	char current_dir[MAX_PATH];
+	if (GetCurrentDirectoryA(MAX_PATH, current_dir) > 0 && current_dir[1] == ':') {
+		gchar *result = g_malloc(strlen(path) + 3);
+		result[0] = current_dir[0];
+		result[1] = ':';
+		strcpy(result + 2, path);
+		return result;
+	}
+
+	return g_strdup(path);
+}
+
+/* Makes a path compatible with long path support by adding \\?\ prefix if needed. Caller must free the result. */
+gchar *
+g_path_make_long_compatible (const gchar *path)
+{
+	if (!path)
+		return NULL;
+
+	gchar *work_path;
+	
+	/* Drive-relative paths (e.g., \Windows\System32) need to be converted to absolute paths first */
+	if (path[0] == '\\' && path[1] != '\\') {
+		work_path = g_path_drive_relative_to_absolute(path);
+	} else {
+		work_path = g_strdup(path);
+	}
+	
+	gchar *result;
+	
+	if (!g_path_needs_long_prefix(work_path)) {
+		g_free(work_path);
+		return g_strdup(path);
+	}
+	
+	/* Handle UNC paths: \\server\share becomes \\?\UNC\server\share */
+	if (work_path[0] == '\\' && work_path[1] == '\\') {
+		result = g_malloc(strlen(work_path) + 7);
+		strcpy(result, "\\\\?\\UNC\\");
+		strcat(result, work_path + 2);
+		g_free(work_path);
+		return result;
+	}
+	
+	/* Handle absolute paths: C:\path becomes \\?\C:\path */
+	result = g_malloc(strlen(work_path) + 5);
+	strcpy(result, "\\\\?\\");
+	strcat(result, work_path);
+	g_free(work_path);
+	return result;
+}
 #endif
 
 gchar *
