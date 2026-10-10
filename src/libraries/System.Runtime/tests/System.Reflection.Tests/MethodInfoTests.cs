@@ -1284,6 +1284,38 @@ namespace System.Reflection.Tests
             Assert.Equal(testString, returnValue);
         }
 
+        [Fact]
+        public void Invoke_StaticVirtual()
+        {
+            MethodInfo miStaticVirtual = GetMethod(typeof(IStaticInterface), nameof(IStaticInterface.StaticVirtual));
+            const string testString = "test";
+
+            Assert.Equal(testString, miStaticVirtual.Invoke(null, new object[] { testString }));
+        }
+
+        private interface IStaticAbstractInterface
+        {
+            static abstract int StaticAbstract();
+        }
+
+        private interface IStaticAbstractInterface<T>
+        {
+            static abstract void StaticAbstract(T value);
+        }
+
+        // A static abstract method has no body to invoke, bind a delegate to or take the address of
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
+        public void StaticAbstract_NativeAot_ThrowsNotSupportedException()
+        {
+            MethodInfo miStaticAbstract = GetMethod(typeof(IStaticAbstractInterface), nameof(IStaticAbstractInterface.StaticAbstract));
+            Assert.Throws<NotSupportedException>(() => miStaticAbstract.Invoke(null, null));
+            Assert.Throws<NotSupportedException>(() => miStaticAbstract.CreateDelegate<Func<int>>());
+            Assert.Throws<NotSupportedException>(() => miStaticAbstract.MethodHandle.GetFunctionPointer());
+
+            MethodInfo miGenericStaticAbstract = GetMethod(typeof(IStaticAbstractInterface<string>), nameof(IStaticAbstractInterface<string>.StaticAbstract));
+            Assert.Throws<NotSupportedException>(() => miGenericStaticAbstract.Invoke(null, new object[] { "" }));
+        }
+
         [Theory]
         [InlineData(typeof(MI_BaseClass), nameof(MI_BaseClass.VirtualMethod), null, typeof(ArgumentNullException))]
         [InlineData(typeof(MI_BaseClass), nameof(MI_BaseClass.VirtualMethod), typeof(Delegate_Void_Int), typeof(ArgumentException))]

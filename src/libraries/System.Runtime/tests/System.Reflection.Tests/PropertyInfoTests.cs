@@ -160,6 +160,19 @@ namespace System.Reflection.Tests
             Assert.Throws(exceptionType, () => PropertyInfo.SetValue(obj, value, index));
         }
 
+        private interface IStaticAbstractProperty
+        {
+            static abstract int Value { get; }
+        }
+
+        // The getter of a static abstract property has no body to invoke
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
+        public void GetValue_StaticAbstract_NativeAot_ThrowsNotSupportedException()
+        {
+            PropertyInfo propertyInfo = GetProperty(typeof(IStaticAbstractProperty), nameof(IStaticAbstractProperty.Value));
+            Assert.Throws<NotSupportedException>(() => propertyInfo.GetValue(null));
+        }
+
         [Theory]
         [InlineData(nameof(PropertyInfoMembers.PublicGetIntProperty))]
         [InlineData(nameof(PropertyInfoMembers.PublicGetPublicSetStringProperty))]
