@@ -7,6 +7,7 @@
     <AssemblyName>ILCompiler.ReadyToRun.Tests</AssemblyName>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TestRunnerAdditionalArguments>-notrait category=failing</TestRunnerAdditionalArguments>
     <!-- These tests build for AnyCPU, but the assets copied for crossgen compilations within the
          tests are tied to the outer runtime build's Target -->

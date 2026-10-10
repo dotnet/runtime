@@ -342,6 +342,7 @@
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\WasmImportThunk.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\WasmImportThunkPortableEntrypoint.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\WasmInterpreterToR2RThunkNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\WasmMethodFrameIdentityNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\WasmMethodRelativeVirtualIPNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\WasmR2RToInterpreterThunkNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\WasmThunkArgLayout.cs" />
@@ -370,6 +371,7 @@
     <Compile Include="Compiler\ReadyToRunCompilerContext.cs" />
     <Compile Include="Compiler\ReadyToRunCodegenCompilation.cs" />
     <Compile Include="Compiler\ReadyToRunCodegenCompilationBuilder.cs" />
+    <Compile Include="Compiler\ReadyToRunCompilationPlan.cs" />
     <Compile Include="Compiler\FileLayoutOptimizer.cs" />
     <Compile Include="Compiler\ReadyToRunMetadataFieldLayoutAlgorithm.cs" />
     <Compile Include="Compiler\ReadyToRunSingleAssemblyCompilationModuleGroup.cs" />

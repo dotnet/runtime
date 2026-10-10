@@ -748,7 +748,8 @@ unsigned emitter::instrDesc::idCodeSize() const
             break;
         case IF_FUNCLETPTR:
         case IF_FUNCLETIDX:
-            size += PADDED_RELOC_SIZE; // funclet indices and pointers are always emitted as relocations
+        case IF_FRAMEIDENTITY:
+            size += PADDED_RELOC_SIZE; // These operands are always emitted as relocations.
             break;
         case IF_DATAOFFS:
             size += PADDED_RELOC_SIZE; // data-section offsets are always emitted as relocations
@@ -1015,6 +1016,15 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         {
             dst += emitOutputOpcode(dst, ins);
             dst += emitOutputConstantFunclet(dst, id, CorInfoReloc::WASM_TABLE_INDEX_SLEB);
+            break;
+        }
+        case IF_FRAMEIDENTITY:
+        {
+            assert(id->idIsCnsReloc());
+            dst += emitOutputOpcode(dst, ins);
+            emitRecordRelocation(dst, reinterpret_cast<void*>(emitGetInsSC(id)),
+                                 CorInfoReloc::WASM_METHOD_FRAME_IDENTITY_SLEB);
+            dst += emitOutputPaddedReloc(dst);
             break;
         }
         case IF_DATAOFFS:
@@ -1392,6 +1402,7 @@ void emitter::emitDispIns(
 
         case IF_FUNCLETPTR:
         case IF_FUNCLETIDX:
+        case IF_FRAMEIDENTITY:
         {
             cnsval_ssize_t imm = emitGetInsSC(id);
             printf("funclet %lli", static_cast<long long>(imm));

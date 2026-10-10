@@ -22,7 +22,7 @@ namespace ILCompiler
     public class ReadyToRunXmlRootProvider : ICompilationRootProvider
     {
         private readonly TypeSystemContext _context;
-        private readonly Stream _documentStream;
+        private readonly byte[] _document;
         private readonly ManifestResource _resource;
         private readonly ModuleDesc _owningModule;
         private readonly string _xmlDocumentLocation;
@@ -30,7 +30,12 @@ namespace ILCompiler
         public ReadyToRunXmlRootProvider(Stream documentStream, ManifestResource resource, ModuleDesc owningModule, string xmlDocumentLocation)
         {
             _context = owningModule.Context;
-            _documentStream = documentStream;
+            using (documentStream)
+            using (var documentCopy = new MemoryStream())
+            {
+                documentStream.CopyTo(documentCopy);
+                _document = documentCopy.ToArray();
+            }
             _resource = resource;
             _owningModule = owningModule;
             _xmlDocumentLocation = xmlDocumentLocation;
@@ -38,7 +43,8 @@ namespace ILCompiler
 
         public void AddCompilationRoots(IRootingServiceProvider rootProvider)
         {
-            CompilationRootProvider root = new CompilationRootProvider(rootProvider, _context, _documentStream, _resource, _owningModule, _xmlDocumentLocation);
+            using var documentStream = new MemoryStream(_document, writable: false);
+            CompilationRootProvider root = new CompilationRootProvider(rootProvider, _context, documentStream, _resource, _owningModule, _xmlDocumentLocation);
             root.ProcessXml();
         }
 
