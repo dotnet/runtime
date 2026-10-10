@@ -1176,6 +1176,39 @@ namespace System.Numerics
             return result;
         }
 
+        /// <summary>Finds the least common multiple of two <see cref="BigInteger" /> values.</summary>
+        /// <param name="left">The first value.</param>
+        /// <param name="right">The second value.</param>
+        /// <returns>The smallest non-negative integer that is a multiple of both <paramref name="left" /> and <paramref name="right" />.</returns>
+        /// <remarks>
+        ///   <para>
+        ///     The result is always non-negative, because the sign of either operand does not affect the
+        ///     set of their common multiples.
+        ///   </para>
+        ///   <para>
+        ///     Zero is a multiple of every integer, so the result is <see cref="Zero" /> when either
+        ///     <paramref name="left" /> or <paramref name="right" /> is <see cref="Zero" />.
+        ///   </para>
+        /// </remarks>
+        public static BigInteger LeastCommonMultiple(BigInteger left, BigInteger right)
+        {
+            if (left.IsZero || right.IsZero)
+            {
+                return s_zero;
+            }
+
+            if (TryGetPowerOfTwoExponent(left, out int leftExponent)
+                && TryGetPowerOfTwoExponent(right, out int rightExponent))
+            {
+                return CreatePowerOfTwo(Math.Max(leftExponent, rightExponent), negative: false);
+            }
+
+            // Divide before multiplying so the intermediate never exceeds the result.
+            // The greatest common divisor always divides left exactly, so the quotient is exact.
+            BigInteger greatestCommonDivisor = GreatestCommonDivisor(left, right);
+            return Abs(left / greatestCommonDivisor) * Abs(right);
+        }
+
         public static BigInteger Max(BigInteger left, BigInteger right)
         {
             return left.CompareTo(right) < 0 ? right : left;
@@ -1297,6 +1330,121 @@ namespace System.Numerics
                     bits[digitShift + length] = carry;
                 }
             }
+        }
+
+        /// <summary>Finds the modular multiplicative inverse of a <see cref="BigInteger" /> value.</summary>
+        /// <param name="value">The value to invert.</param>
+        /// <param name="modulus">The modulus.</param>
+        /// <returns>
+        ///   The least non-negative integer <c>x</c> in the range <c>[0, modulus)</c> that satisfies
+        ///   <c>value * x == 1 (mod modulus)</c>, or <see cref="Zero" /> when <paramref name="modulus" /> is one.
+        /// </returns>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="modulus" /> is less than or equal to zero.</exception>
+        /// <exception cref="ArithmeticException"><paramref name="value" /> and <paramref name="modulus" /> are not coprime, so no inverse exists.</exception>
+        /// <remarks>
+        ///   <para>
+        ///     <paramref name="value" /> is first reduced to its canonical representative in the range
+        ///     <c>[0, modulus)</c>, so a negative <paramref name="value" /> is inverted as though the
+        ///     appropriate multiple of <paramref name="modulus" /> had been added to it.
+        ///   </para>
+        ///   <para>
+        ///     Every integer is congruent to zero modulo one, so the result is <see cref="Zero" /> for any
+        ///     <paramref name="value" /> when <paramref name="modulus" /> is one.
+        ///   </para>
+        ///   <para>
+        ///     An inverse exists only when <paramref name="value" /> and <paramref name="modulus" /> are
+        ///     coprime. This excludes the case where <paramref name="value" /> is congruent to zero modulo
+        ///     <paramref name="modulus" />, including when <paramref name="value" /> is itself <see cref="Zero" />.
+        ///   </para>
+        /// </remarks>
+        public static BigInteger ModInverse(BigInteger value, BigInteger modulus)
+        {
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(modulus.Sign, nameof(modulus));
+
+            if (modulus.IsOne)
+            {
+                // Every integer is congruent to zero modulo one.
+                return s_zero;
+            }
+
+            // Reduce to the canonical representative in [0, modulus) so that a negative
+            // value is inverted as though a multiple of the modulus had been added to it.
+            BigInteger reduced = value % modulus;
+            if (reduced.Sign < 0)
+            {
+                reduced += modulus;
+            }
+
+            if (reduced.IsZero)
+            {
+                // The greatest common divisor is the modulus, which is greater than one.
+                throw new ArithmeticException(SR.Arithmetic_ModInverseDoesNotExist);
+            }
+
+            return TryGetPowerOfTwoExponent(modulus, out int modulusExponent)
+                ? ModInversePowerOfTwo(reduced, modulusExponent)
+                : ModInverseGeneral(reduced, modulus);
+        }
+
+        private static BigInteger ModInversePowerOfTwo(BigInteger value, int exponent)
+        {
+            Debug.Assert(exponent >= 1);
+            Debug.Assert(value.Sign > 0);
+
+            if (value.IsEven)
+            {
+                // The value and the modulus share the factor two.
+                throw new ArithmeticException(SR.Arithmetic_ModInverseDoesNotExist);
+            }
+
+            nuint valueLimb = 0;
+            ReadOnlySpan<nuint> valueBits = value._bits is null
+                ? CreateSingleLimb(ref valueLimb, NumericsHelpers.Abs(value._sign))
+                : value._bits;
+
+            // The inverse is reduced modulo 2^exponent, which needs one fewer limb than the
+            // modulus itself whenever the modulus is an exact multiple of the limb width.
+            int size = (exponent + BigIntegerCalculator.BitsPerLimb - 1) / BigIntegerCalculator.BitsPerLimb;
+            Span<nuint> bits = RentedBuffer.Create(size, out RentedBuffer bitsBuffer);
+
+            BigIntegerCalculator.ModInversePowerOfTwo(valueBits, exponent, bits);
+
+            BigInteger result = new BigInteger(bits, negative: false);
+            bitsBuffer.Dispose();
+
+            return result;
+        }
+
+        private static BigInteger ModInverseGeneral(BigInteger value, BigInteger modulus)
+        {
+            nuint valueLimb = 0;
+            nuint modulusLimb = 0;
+
+            ReadOnlySpan<nuint> valueBits = value._bits is null
+                ? CreateSingleLimb(ref valueLimb, NumericsHelpers.Abs(value._sign))
+                : value._bits;
+            ReadOnlySpan<nuint> modulusBits = modulus._bits is null
+                ? CreateSingleLimb(ref modulusLimb, NumericsHelpers.Abs(modulus._sign))
+                : modulus._bits;
+
+            Span<nuint> bits = RentedBuffer.Create(modulusBits.Length, out RentedBuffer bitsBuffer);
+
+            if (!BigIntegerCalculator.ModInverse(valueBits, modulusBits, bits))
+            {
+                bitsBuffer.Dispose();
+                throw new ArithmeticException(SR.Arithmetic_ModInverseDoesNotExist);
+            }
+
+            BigInteger result = new BigInteger(bits, negative: false);
+            bitsBuffer.Dispose();
+
+            return result;
+        }
+
+        private static ReadOnlySpan<nuint> CreateSingleLimb(ref nuint storage, nuint value)
+        {
+            storage = value;
+            return new ReadOnlySpan<nuint>(in storage);
         }
 
         public static BigInteger ModPow(BigInteger value, BigInteger exponent, BigInteger modulus)
