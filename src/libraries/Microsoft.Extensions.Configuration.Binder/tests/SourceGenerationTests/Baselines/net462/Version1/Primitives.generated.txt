@@ -62,7 +62,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             if (TryGetConfigurationValue(configuration, key: "Prop0", out string? value0))
             {
-                if (!string.IsNullOrEmpty(value0))
+                if (value0 is not null)
                 {
                     instance.Prop0 = ParseBool(value0, configuration.GetSection("Prop0").Path);
                 }
@@ -74,7 +74,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             if (TryGetConfigurationValue(configuration, key: "Prop1", out string? value1))
             {
-                if (!string.IsNullOrEmpty(value1))
+                if (value1 is not null)
                 {
                     instance.Prop1 = ParseByte(value1, configuration.GetSection("Prop1").Path);
                 }
@@ -86,7 +86,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             if (TryGetConfigurationValue(configuration, key: "Prop2", out string? value2))
             {
-                if (!string.IsNullOrEmpty(value2))
+                if (value2 is not null)
                 {
                     instance.Prop2 = ParseSbyte(value2, configuration.GetSection("Prop2").Path);
                 }
@@ -98,7 +98,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             if (TryGetConfigurationValue(configuration, key: "Prop3", out string? value3))
             {
-                if (!string.IsNullOrEmpty(value3))
+                if (value3 is not null)
                 {
                     instance.Prop3 = ParseChar(value3, configuration.GetSection("Prop3").Path);
                 }
@@ -110,7 +110,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             if (TryGetConfigurationValue(configuration, key: "Prop4", out string? value4))
             {
-                if (!string.IsNullOrEmpty(value4))
+                if (value4 is not null)
                 {
                     instance.Prop4 = ParseDouble(value4, configuration.GetSection("Prop4").Path);
                 }
@@ -135,7 +135,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             if (TryGetConfigurationValue(configuration, key: "Prop6", out string? value6))
             {
-                if (!string.IsNullOrEmpty(value6))
+                if (value6 is not null)
                 {
                     instance.Prop6 = ParseInt(value6, configuration.GetSection("Prop6").Path);
                 }
@@ -147,7 +147,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             if (TryGetConfigurationValue(configuration, key: "Prop8", out string? value7))
             {
-                if (!string.IsNullOrEmpty(value7))
+                if (value7 is not null)
                 {
                     instance.Prop8 = ParseShort(value7, configuration.GetSection("Prop8").Path);
                 }
@@ -159,7 +159,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             if (TryGetConfigurationValue(configuration, key: "Prop9", out string? value8))
             {
-                if (!string.IsNullOrEmpty(value8))
+                if (value8 is not null)
                 {
                     instance.Prop9 = ParseLong(value8, configuration.GetSection("Prop9").Path);
                 }
@@ -171,7 +171,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             if (TryGetConfigurationValue(configuration, key: "Prop10", out string? value9))
             {
-                if (!string.IsNullOrEmpty(value9))
+                if (value9 is not null)
                 {
                     instance.Prop10 = ParseFloat(value9, configuration.GetSection("Prop10").Path);
                 }
@@ -183,7 +183,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             if (TryGetConfigurationValue(configuration, key: "Prop13", out string? value10))
             {
-                if (!string.IsNullOrEmpty(value10))
+                if (value10 is not null)
                 {
                     instance.Prop13 = ParseUshort(value10, configuration.GetSection("Prop13").Path);
                 }
@@ -195,7 +195,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             if (TryGetConfigurationValue(configuration, key: "Prop14", out string? value11))
             {
-                if (!string.IsNullOrEmpty(value11))
+                if (value11 is not null)
                 {
                     instance.Prop14 = ParseUint(value11, configuration.GetSection("Prop14").Path);
                 }
@@ -207,7 +207,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             if (TryGetConfigurationValue(configuration, key: "Prop15", out string? value12))
             {
-                if (!string.IsNullOrEmpty(value12))
+                if (value12 is not null)
                 {
                     instance.Prop15 = ParseUlong(value12, configuration.GetSection("Prop15").Path);
                 }
@@ -238,10 +238,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
                 else
                 {
-                    if (!string.IsNullOrEmpty(value14))
-                    {
-                        instance.Prop17 = ParseSystemGlobalizationCultureInfo(value14, configuration.GetSection("Prop17").Path);
-                    }
+                    instance.Prop17 = ParseSystemGlobalizationCultureInfo(value14, configuration.GetSection("Prop17").Path);
                 }
             }
             else if (defaultValueIfNotFound)
@@ -255,7 +252,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             if (TryGetConfigurationValue(configuration, key: "Prop19", out string? value15))
             {
-                if (!string.IsNullOrEmpty(value15))
+                if (value15 is not null)
                 {
                     instance.Prop19 = ParseSystemDateTime(value15, configuration.GetSection("Prop19").Path);
                 }
@@ -267,7 +264,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             if (TryGetConfigurationValue(configuration, key: "Prop20", out string? value16))
             {
-                if (!string.IsNullOrEmpty(value16))
+                if (value16 is not null)
                 {
                     instance.Prop20 = ParseSystemDateTimeOffset(value16, configuration.GetSection("Prop20").Path);
                 }
@@ -279,7 +276,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             if (TryGetConfigurationValue(configuration, key: "Prop21", out string? value17))
             {
-                if (!string.IsNullOrEmpty(value17))
+                if (value17 is not null)
                 {
                     instance.Prop21 = ParseDecimal(value17, configuration.GetSection("Prop21").Path);
                 }
@@ -291,7 +288,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             if (TryGetConfigurationValue(configuration, key: "Prop23", out string? value18))
             {
-                if (!string.IsNullOrEmpty(value18))
+                if (value18 is not null)
                 {
                     instance.Prop23 = ParseSystemTimeSpan(value18, configuration.GetSection("Prop23").Path);
                 }
@@ -303,7 +300,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             if (TryGetConfigurationValue(configuration, key: "Prop24", out string? value19))
             {
-                if (!string.IsNullOrEmpty(value19))
+                if (value19 is not null)
                 {
                     instance.Prop24 = ParseSystemGuid(value19, configuration.GetSection("Prop24").Path);
                 }
@@ -321,10 +318,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
                 else
                 {
-                    if (!string.IsNullOrEmpty(value20))
-                    {
-                        instance.Prop25 = ParseSystemUri(value20, configuration.GetSection("Prop25").Path);
-                    }
+                    instance.Prop25 = ParseSystemUri(value20, configuration.GetSection("Prop25").Path);
                 }
             }
             else if (defaultValueIfNotFound)
@@ -344,10 +338,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
                 else
                 {
-                    if (!string.IsNullOrEmpty(value21))
-                    {
-                        instance.Prop26 = ParseSystemVersion(value21, configuration.GetSection("Prop26").Path);
-                    }
+                    instance.Prop26 = ParseSystemVersion(value21, configuration.GetSection("Prop26").Path);
                 }
             }
             else if (defaultValueIfNotFound)
@@ -361,7 +352,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             if (TryGetConfigurationValue(configuration, key: "Prop27", out string? value22))
             {
-                if (!string.IsNullOrEmpty(value22))
+                if (value22 is not null)
                 {
                     instance.Prop27 = ParseEnum<global::System.DayOfWeek>(value22, configuration.GetSection("Prop27").Path);
                 }
@@ -379,14 +370,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
                 else
                 {
-                    if (value23 == string.Empty)
-                    {
-                        instance.Prop28 = ParseByteArray(value23, configuration.GetSection("Prop28").Path);
-                    }
-                    else if (!string.IsNullOrEmpty(value23))
-                    {
-                        instance.Prop28 = ParseByteArray(value23, configuration.GetSection("Prop28").Path);
-                    }
+                    instance.Prop28 = ParseByteArray(value23, configuration.GetSection("Prop28").Path);
                 }
             }
             else if (defaultValueIfNotFound)
@@ -400,7 +384,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             if (TryGetConfigurationValue(configuration, key: "Prop29", out string? value24))
             {
-                if (!string.IsNullOrEmpty(value24))
+                if (value24 is not null)
                 {
                     instance.Prop29 = ParseInt(value24, configuration.GetSection("Prop29").Path);
                 }
@@ -412,7 +396,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             if (TryGetConfigurationValue(configuration, key: "Prop30", out string? value25))
             {
-                if (!string.IsNullOrEmpty(value25))
+                if (value25 is not null)
                 {
                     instance.Prop30 = ParseSystemDateTime(value25, configuration.GetSection("Prop30").Path);
                 }
