@@ -7,6 +7,7 @@ This guide provides instructions for building, running, and debugging CoreCLR on
 - [Prerequisites](#prerequisites)
 - [Building CoreCLR for WebAssembly](#building-coreclr-for-webassembly)
 - [Testing the Runtime](#testing-the-runtime)
+- [Hot Reload without a debugger](#hot-reload-without-a-debugger)
 - [Debugging](#debugging)
   - [Chrome DevTools with DWARF Support](#chrome-devtools-with-dwarf-support)
   - [VS Code WebAssembly Debugging](#vs-code-webassembly-debugging)
@@ -84,6 +85,37 @@ cp helloworld.dll ./artifacts/bin/coreclr/browser.wasm.Debug/corehost
 cd ./artifacts/bin/coreclr/browser.wasm.Debug/corehost
 node --experimental-wasm-exnref ./main.mjs
 ```
+
+## Hot Reload without a debugger
+
+CoreCLR/browser supports Hot Reload through `dotnet watch` without an attached
+managed debugger. This uses the existing CoreCLR metadata updater and
+interpreter. Updates take effect on subsequent method calls;
+active frames continue executing their original code.
+
+For an external `wasmbrowser` application, set `UseMonoRuntime=false` and run
+`dotnet watch` in Debug. Keep editable assemblies interpreted, unoptimized, and
+untrimmed; framework assemblies can use ReadyToRun. When testing a local runtime
+build, add `+packs` to the build subset (for example `-subset clr+libs+packs`)
+to produce the matching runtime and `Microsoft.NET.Sdk.WebAssembly.Pack`
+packages under `artifacts/packages/<Configuration>/Shipping`.
+
+`dotnet watch` sets `DOTNET_MODIFIABLE_ASSEMBLIES=debug` for the launched
+process; no manual environment configuration is required.
+
+After building `clr+libs` for browser, the existing two-update functional test
+can be run through XHarness on Linux/macOS:
+
+```bash
+XHARNESS_COMMAND=test-browser ./dotnet.sh build /t:Test \
+  src/tests/FunctionalTests/WebAssembly/Browser/HotReload/WebAssembly.Browser.HotReload.Test.csproj \
+  /p:TargetOS=browser /p:TargetArchitecture=wasm /p:RuntimeFlavor=CoreCLR \
+  /p:Configuration=Debug /p:Scenario=WasmTestOnChrome /p:InstallChromeForTests=true
+```
+
+This test exercises the production browser host and `ApplyUpdate`, not the
+`dotnet watch` transport. See [testing libraries on WebAssembly](../../testing/libraries/testing-wasm.md)
+for browser prerequisites and additional test-runner options.
 
 ## Debugging
 

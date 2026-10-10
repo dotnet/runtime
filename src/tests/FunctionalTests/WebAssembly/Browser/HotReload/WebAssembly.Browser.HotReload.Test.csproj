@@ -8,11 +8,11 @@
     <!-- <WasmXHarnessMonoArgs>- -setenv=DOTNET_MODIFIABLE_ASSEMBLIES=debug</WasmXHarnessMonoArgs> -->
     <MetadataUpdaterSupport>true</MetadataUpdaterSupport>
 
-    <!-- ActiveIssue https://github.com/dotnet/runtime/issues/114526 deadlocks on linux CI -->
-    <IgnoreForCI Condition="'$(OS)' != 'Windows_NT' and '$(ContinuousIntegrationBuild)' == 'true'">true</IgnoreForCI>
+    <!-- ActiveIssue https://github.com/dotnet/runtime/issues/114526: hot reload tests deadlock on Linux CI; CoreCLR isn't known to hit this. -->
+    <IgnoreForCI Condition="'$(OS)' != 'Windows_NT' and '$(ContinuousIntegrationBuild)' == 'true' and '$(RuntimeFlavor)' != 'CoreCLR'">true</IgnoreForCI>
   </PropertyGroup>
-  <ItemGroup Condition="'$(OS)' == 'Windows_NT' or '$(ContinuousIntegrationBuild)' != 'true'">
-    <!-- ActiveIssue https://github.com/dotnet/runtime/issues/114526 deadlocks on linux CI -->
+  <ItemGroup Condition="'$(OS)' == 'Windows_NT' or '$(ContinuousIntegrationBuild)' != 'true' or '$(RuntimeFlavor)' == 'CoreCLR'">
+    <!-- ActiveIssue https://github.com/dotnet/runtime/issues/114526: hot reload tests deadlock on Linux CI; CoreCLR isn't known to hit this. -->
     <ProjectReference Include="ApplyUpdateReferencedAssembly\ApplyUpdateReferencedAssembly.csproj" />
   </ItemGroup>
 

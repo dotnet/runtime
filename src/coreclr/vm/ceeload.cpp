@@ -207,6 +207,16 @@ void Module::SetTransientFlagInterlockedWithMask(DWORD dwFlag, DWORD dwMask)
 #ifndef DACCESS_COMPILE
 
 #if defined(PROFILING_SUPPORTED) || defined(FEATURE_METADATA_UPDATER)
+void Module::InitializeMetadataRowCounts()
+{
+    WRAPPER_NO_CONTRACT;
+
+    IMDInternalImport *pImport = GetMDImport();
+    m_dwTypeCount = pImport->GetCountWithTokenKind(mdtTypeDef);
+    m_dwExportedTypeCount = pImport->GetCountWithTokenKind(mdtExportedType);
+    m_dwCustomAttributeCount = pImport->GetCountWithTokenKind(mdtCustomAttribute);
+}
+
 void Module::UpdateNewlyAddedTypes()
 {
     CONTRACTL
@@ -221,11 +231,16 @@ void Module::UpdateNewlyAddedTypes()
     DWORD countExportedTypesAfterProfilerUpdate = GetMDImport()->GetCountWithTokenKind(mdtExportedType);
     DWORD countCustomAttributeCount = GetMDImport()->GetCountWithTokenKind(mdtCustomAttribute);
 
+    LOG((LF_ENC, LL_INFO1000, "Module::UpdateNewlyAddedTypes %s: TypeDef %u -> %u, ExportedType %u -> %u, CustomAttribute %u -> %u\n",
+        GetDebugName(), m_dwTypeCount, countTypesAfterProfilerUpdate,
+        m_dwExportedTypeCount, countExportedTypesAfterProfilerUpdate,
+        m_dwCustomAttributeCount, countCustomAttributeCount));
+
     if (m_dwTypeCount == countTypesAfterProfilerUpdate
         && m_dwExportedTypeCount == countExportedTypesAfterProfilerUpdate
         && m_dwCustomAttributeCount == countCustomAttributeCount)
     {
-        // The profiler added no new types, do not create the in memory hashes
+        // No new types, exported types, or custom attributes were added; skip materializing the class hash.
         return;
     }
 
@@ -282,10 +297,7 @@ void Module::NotifyProfilerLoadFinished(HRESULT hr)
     // the profiler once.
     if (SetTransientFlagInterlocked(IS_PROFILER_NOTIFIED))
     {
-        // Record how many types are already present
-        m_dwTypeCount = GetMDImport()->GetCountWithTokenKind(mdtTypeDef);
-        m_dwExportedTypeCount = GetMDImport()->GetCountWithTokenKind(mdtExportedType);
-        m_dwCustomAttributeCount = GetMDImport()->GetCountWithTokenKind(mdtCustomAttribute);
+        InitializeMetadataRowCounts();
 
         BOOL profilerCallbackHappened = FALSE;
         // Notify the profiler, this may cause metadata to be updated
@@ -498,12 +510,15 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
     }
 
 #ifdef PROFILING_SUPPORTED_DATA
-    // These will be initialized in NotifyProfilerLoadFinished, set them to
-    // a safe initial value now.
+    // Zero placeholder; NotifyProfilerLoadFinished snapshots the real counts
+    // immediately before invoking the profiler's load callback.
     m_dwTypeCount = 0;
     m_dwExportedTypeCount = 0;
     m_dwCustomAttributeCount = 0;
-#endif // PROFILING_SUPPORTED_DATA
+#elif defined(FEATURE_METADATA_UPDATER)
+    // No profiler load callback exists to snapshot later, so capture the baseline now.
+    InitializeMetadataRowCounts();
+#endif // PROFILING_SUPPORTED_DATA || FEATURE_METADATA_UPDATER
 
 #ifdef PROFILING_SUPPORTED
     // set profiler related JIT flags
