@@ -66,7 +66,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 #if NET
             var extension = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? ".exe" : "";
 
-            var toolsDir = (string)AppContext.GetData("Mono.Linker.Tests.ILToolsDir")!;
+            var toolsDir = (string)AppContext.GetData("Mono.Linker.Tests.CoreCLRArtifactsPath")!;
 
             var ilasmPath = Path.GetFullPath(Path.Combine(toolsDir, $"ilasm{extension}")).ToNPath();
             if (ilasmPath.FileExists())
