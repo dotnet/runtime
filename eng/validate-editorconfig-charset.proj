@@ -1,0 +1,206 @@
+<Project>
+  <PropertyGroup>
+    <RepoRoot Condition="'$(RepoRoot)' == ''">$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)', '..'))</RepoRoot>
+    <BaseCommit Condition="'$(BaseCommit)' == ''">HEAD^</BaseCommit>
+    <TargetCommit Condition="'$(TargetCommit)' == ''">HEAD</TargetCommit>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(Files)' != ''">
+    <EditorConfigCharsetValidationFile Include="$(Files)" />
+  </ItemGroup>
+
+  <UsingTask
+    TaskName="ValidateEditorConfigCharset"
+    TaskFactory="RoslynCodeTaskFactory"
+    AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll">
+    <ParameterGroup>
+      <RepoRoot ParameterType="System.String" Required="true" />
+      <BaseCommit ParameterType="System.String" Required="false" />
+      <TargetCommit ParameterType="System.String" Required="false" />
+      <Files ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="false" />
+    </ParameterGroup>
+    <Task>
+      <Using Namespace="System" />
+      <Using Namespace="System.Collections.Generic" />
+      <Using Namespace="System.Diagnostics" />
+      <Using Namespace="System.IO" />
+      <Using Namespace="System.Linq" />
+      <Using Namespace="System.Text" />
+      <Using Namespace="Microsoft.Build.Framework" />
+      <Code Type="Fragment" Language="cs"><![CDATA[
+        static string EscapeArgument(string argument)
+        {
+            if (argument.IndexOf(' ') < 0 &&
+                argument.IndexOf('\t') < 0 &&
+                argument.IndexOf('"') < 0)
+            {
+                return argument;
+            }
+
+            return "\"" + argument.Replace("\"", "\\\"") + "\"";
+        }
+
+        static (int ExitCode, string StdOut, string StdErr) RunGit(string workingDirectory, params string[] arguments)
+        {
+            var startInfo = new ProcessStartInfo("git")
+            {
+                Arguments = string.Join(" ", arguments.Select(EscapeArgument)),
+                WorkingDirectory = workingDirectory,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                StandardOutputEncoding = Encoding.UTF8,
+                StandardErrorEncoding = Encoding.UTF8,
+                UseShellExecute = false,
+            };
+
+            using Process? process = Process.Start(startInfo);
+            if (process is null)
+            {
+                return (1, string.Empty, "Failed to start the git process.");
+            }
+
+            string stdOut = process.StandardOutput.ReadToEnd();
+            string stdErr = process.StandardError.ReadToEnd();
+            process.WaitForExit();
+
+            return (process.ExitCode, stdOut, stdErr);
+        }
+
+        static bool HasUtf8Bom(byte[] bytes) =>
+            bytes.Length >= 3 &&
+            bytes[0] == 0xEF &&
+            bytes[1] == 0xBB &&
+            bytes[2] == 0xBF;
+
+        static bool ContainsNullCharacter(byte[] bytes) => Array.IndexOf(bytes, (byte)0) >= 0;
+
+        var supportedExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ".csproj",
+            ".locproj",
+            ".nativeproj",
+            ".proj",
+            ".resx",
+            ".slnx",
+            ".vbproj",
+        };
+
+        List<string> candidateFiles = [];
+
+        bool succeeded = true;
+
+        if (Files is { Length: > 0 })
+        {
+            foreach (var file in Files)
+            {
+                if (!string.IsNullOrWhiteSpace(file.ItemSpec))
+                {
+                    candidateFiles.Add(file.ItemSpec);
+                }
+            }
+        }
+        else
+        {
+            var result = RunGit(
+                RepoRoot,
+                "diff",
+                "--name-only",
+                "--diff-filter=ACMR",
+                "-z",
+                BaseCommit ?? "HEAD^",
+                TargetCommit ?? "HEAD",
+                "--",
+                "*.csproj",
+                "*.locproj",
+                "*.nativeproj",
+                "*.proj",
+                "*.resx",
+                "*.slnx",
+                "*.vbproj");
+
+            if (result.ExitCode != 0)
+            {
+                Log.LogError($"Failed to determine changed files with git diff: {result.StdErr}");
+                succeeded = false;
+            }
+            else
+            {
+                candidateFiles.AddRange(result.StdOut.Split(new[] { '\0' }, StringSplitOptions.RemoveEmptyEntries));
+            }
+        }
+
+        candidateFiles = candidateFiles
+            .Select(path => path.Trim())
+            .Where(path => path.Length > 0)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        if (candidateFiles.Count == 0)
+        {
+            Log.LogMessage(MessageImportance.High, "No changed files matched the .editorconfig charset validation rules.");
+        }
+        else if (succeeded)
+        {
+            var utf8 = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+
+            foreach (string candidateFile in candidateFiles)
+            {
+                string fullPath = Path.IsPathRooted(candidateFile)
+                    ? candidateFile
+                    : Path.GetFullPath(Path.Combine(RepoRoot, candidateFile));
+
+                if (!supportedExtensions.Contains(Path.GetExtension(fullPath)))
+                {
+                    continue;
+                }
+
+                if (!File.Exists(fullPath))
+                {
+                    continue;
+                }
+
+                string displayPath = Path.IsPathRooted(candidateFile)
+                    ? fullPath
+                    : candidateFile.Replace('\\', '/');
+
+                byte[] bytes = File.ReadAllBytes(fullPath);
+
+                if (HasUtf8Bom(bytes))
+                {
+                    Log.LogError($"File '{displayPath}' must be saved as UTF-8 without a byte-order mark to match the repository .editorconfig.");
+                    succeeded = false;
+                    continue;
+                }
+
+                if (ContainsNullCharacter(bytes))
+                {
+                    Log.LogError($"File '{displayPath}' contains NUL bytes and is not valid UTF-8 text for the repository .editorconfig charset rules.");
+                    succeeded = false;
+                    continue;
+                }
+
+                try
+                {
+                    _ = utf8.GetCharCount(bytes);
+                }
+                catch (DecoderFallbackException)
+                {
+                    Log.LogError($"File '{displayPath}' is not valid UTF-8. Matching files must be saved as UTF-8 without a byte-order mark to match the repository .editorconfig.");
+                    succeeded = false;
+                }
+            }
+        }
+
+        Success = succeeded;
+      ]]></Code>
+    </Task>
+  </UsingTask>
+
+  <Target Name="ValidateEditorConfigCharsetChangedFiles">
+    <ValidateEditorConfigCharset
+      RepoRoot="$(RepoRoot)"
+      BaseCommit="$(BaseCommit)"
+      TargetCommit="$(TargetCommit)"
+      Files="@(EditorConfigCharsetValidationFile)" />
+  </Target>
+</Project>
