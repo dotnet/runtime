@@ -1131,6 +1131,31 @@ namespace System.Xml
             }
         }
 
+        internal void WriteRaw(ReadOnlySpan<char> data)
+        {
+            try
+            {
+                AdvanceState(Token.RawData);
+                if (SaveAttrValue)
+                {
+                    _attrValueCache!.WriteRaw(data.ToString());
+                }
+                else if (_rawWriter is not null)
+                {
+                    _rawWriter.WriteRaw(data);
+                }
+                else
+                {
+                    _writer.WriteRaw(data.ToString());
+                }
+            }
+            catch
+            {
+                _currentState = State.Error;
+                throw;
+            }
+        }
+
         public override void WriteBase64(byte[] buffer, int index, int count)
         {
             try
