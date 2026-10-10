@@ -166,7 +166,8 @@ bool        IsRedundantMov(
            instruction ins, insFormat fmt, emitAttr size, regNumber dst, regNumber src, bool canIgnoreSideEffects);
 bool EmitMovsxAsCwde(instruction ins, emitAttr size, regNumber dst, regNumber src);
 
-bool IsRedundantStackMov(instruction ins, insFormat fmt, emitAttr size, regNumber ireg, int varx, int offs);
+bool IsRedundantStackMov(
+    instruction ins, insFormat fmt, emitAttr size, regNumber ireg, int varx, int offs, insOpts instOptions);
 
 static bool IsJccInstruction(instruction ins);
 static bool IsJmpInstruction(instruction ins);
