@@ -44,6 +44,7 @@ LOCAL_LABEL(donestack):
     ld t4, CallDescrData__pFloatArgumentRegisters(s1)
     beq t4, zero, LOCAL_LABEL(NoFloatingPoint)
 
+#if __riscv_flen >= 64
     fld fa0, 0(t4)
     fld fa1, 8(t4)
     fld fa2, 16(t4)
@@ -52,6 +53,7 @@ LOCAL_LABEL(donestack):
     fld fa5, 40(t4)
     fld fa6, 48(t4)
     fld fa7, 56(t4)
+#endif
 
 LOCAL_LABEL(NoFloatingPoint):
     // Copy [pArgumentRegisters, ..., pArgumentRegisters + 56]
@@ -80,7 +82,9 @@ LOCAL_LABEL(CallDescrWorkerInternalReturnAddress):
     // Just save the returned registers (fa0, fa1/a0) and let CopyReturnedFpStructFromRegisters worry about placing
     // the fields as they were originally laid out in memory.
 
+#if __riscv_flen >= 64
     fsd fa0, CallDescrData__returnValue(s1) // fa0 is always occupied; we have at least one floating field
+#endif
 
     andi a3, a3, FpStruct__BothFloat
     bne  a3, zero, LOCAL_LABEL(SecondFieldFloatReturn)
@@ -91,7 +95,9 @@ LOCAL_LABEL(CallDescrWorkerInternalReturnAddress):
     j  LOCAL_LABEL(ReturnDone)
 
 LOCAL_LABEL(SecondFieldFloatReturn):
+#if __riscv_flen >= 64
     fsd fa1, (CallDescrData__returnValue + 8)(s1)
+#endif
     j  LOCAL_LABEL(ReturnDone)
 
 LOCAL_LABEL(IntReturn):

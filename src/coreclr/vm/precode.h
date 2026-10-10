@@ -394,7 +394,13 @@ struct FixupPrecode
     static const int FixupCodeOffset = 12;
 #elif defined(TARGET_RISCV64)
     static const SIZE_T CodeSize = 32;
+    // The thunk's second half starts after the tail jump, which is 2 bytes
+    // shorter with the C extension. Keep in sync with thunktemplates.S.
+#ifdef __riscv_compressed
     static const int FixupCodeOffset = 10;
+#else
+    static const int FixupCodeOffset = 12;
+#endif
 #endif // TARGET_AMD64
 
     BYTE m_code[CodeSize];
