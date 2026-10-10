@@ -7,6 +7,9 @@ using System.Globalization;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.X86;
 using System.Runtime.Versioning;
 
 namespace System
@@ -328,6 +331,34 @@ namespace System
         /// <inheritdoc cref="IBinaryInteger{TSelf}.PopCount(TSelf)" />
         [Intrinsic]
         public static ulong PopCount(ulong value) => (ulong)BitOperations.PopCount(value);
+
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.ReverseBits(TSelf)"/>
+        public static ulong ReverseBits(ulong value)
+        {
+            if (Gfni.IsSupported)
+            {
+                Vector128<byte> vec = Vector128.CreateScalarUnsafe(value).AsByte();
+                vec = Gfni.GaloisFieldAffineTransform(vec, Vector128.Create(0x8040201008040201).AsByte(), 0);
+                return BinaryPrimitives.ReverseEndianness(vec.AsUInt64().ToScalar());
+            }
+            else if (ArmBase.Arm64.IsSupported)
+            {
+                return ArmBase.Arm64.ReverseElementBits(value);
+            }
+            else if (IntPtr.Size == 4)
+            {
+                uint hi = uint.ReverseBits((uint)(value >> 32));
+                uint lo = uint.ReverseBits((uint)value);
+                return ((ulong)lo << 32) | hi;
+            }
+            else
+            {
+                value = ((value & 0xF0F0F0F0F0F0F0F0) >>> 4) | ((value & 0x0F0F0F0F0F0F0F0F) << 4);
+                value = ((value & 0xCCCCCCCCCCCCCCCC) >>> 2) | ((value & 0x3333333333333333) << 2);
+                value = ((value & 0xAAAAAAAAAAAAAAAA) >>> 1) | ((value & 0x5555555555555555) << 1);
+                return BinaryPrimitives.ReverseEndianness(value);
+            }
+        }
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.RotateLeft(TSelf, int)" />
         [Intrinsic]

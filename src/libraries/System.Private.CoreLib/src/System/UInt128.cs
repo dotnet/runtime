@@ -8,6 +8,7 @@ using System.Globalization;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 
 namespace System
@@ -1081,6 +1082,24 @@ namespace System
         /// <inheritdoc cref="IBinaryInteger{TSelf}.PopCount(TSelf)" />
         public static UInt128 PopCount(UInt128 value)
             => ulong.PopCount(value._lower) + ulong.PopCount(value._upper);
+
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.ReverseBits(TSelf)"/>
+        public static UInt128 ReverseBits(UInt128 value)
+        {
+            if (Gfni.IsSupported)
+            {
+                Vector128<byte> vec = Unsafe.BitCast<UInt128, Vector128<byte>>(value);
+                vec = Gfni.GaloisFieldAffineTransform(vec, Vector128.Create(0x8040201008040201).AsByte(), 0);
+                vec = Vector128.Shuffle(vec, Vector128.Create((byte)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0));
+                return Unsafe.BitCast<Vector128<byte>, UInt128>(vec);
+            }
+            else
+            {
+                ulong hi = ulong.ReverseBits(value.Upper);
+                ulong lo = ulong.ReverseBits(value.Lower);
+                return new UInt128(upper: lo, lower: hi);
+            }
+        }
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.RotateLeft(TSelf, int)" />
         public static UInt128 RotateLeft(UInt128 value, int rotateAmount)

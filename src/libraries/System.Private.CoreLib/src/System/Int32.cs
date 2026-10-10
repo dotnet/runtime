@@ -8,6 +8,9 @@ using System.Globalization;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.X86;
 using System.Runtime.Versioning;
 
 namespace System
@@ -308,6 +311,28 @@ namespace System
         /// <inheritdoc cref="IBinaryInteger{TSelf}.PopCount(TSelf)" />
         [Intrinsic]
         public static int PopCount(int value) => BitOperations.PopCount((uint)value);
+
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.ReverseBits(TSelf)"/>
+        public static int ReverseBits(int value)
+        {
+            if (Gfni.IsSupported)
+            {
+                Vector128<byte> vec = Vector128.CreateScalarUnsafe(value).AsByte();
+                vec = Gfni.GaloisFieldAffineTransform(vec, Vector128.Create(0x8040201008040201).AsByte(), 0);
+                return BinaryPrimitives.ReverseEndianness(vec.AsInt32().ToScalar());
+            }
+            else if (ArmBase.IsSupported)
+            {
+                return ArmBase.ReverseElementBits(value);
+            }
+            else
+            {
+                value = ((value & unchecked((int)0xF0F0F0F0)) >>> 4) | ((value & 0x0F0F0F0F) << 4);
+                value = ((value & unchecked((int)0xCCCCCCCC)) >>> 2) | ((value & 0x33333333) << 2);
+                value = ((value & unchecked((int)0xAAAAAAAA)) >>> 1) | ((value & 0x55555555) << 1);
+                return BinaryPrimitives.ReverseEndianness(value);
+            }
+        }
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.RotateLeft(TSelf, int)" />
         [Intrinsic]
