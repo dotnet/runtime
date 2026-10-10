@@ -74,19 +74,29 @@ namespace System.IO.Compression
             }
         }
 
-        /// <summary>Creates a dictionary by training on the provided samples.</summary>
+        /// <summary>Trains Zstandard dictionary data using the provided samples.</summary>
         /// <param name="samples">All training samples concatenated in one large buffer.</param>
         /// <param name="sampleLengths">The lengths of the individual samples. The sum of these lengths must equal the length of <paramref name="samples"/>. Minimum of 5 samples is required.</param>
         /// <param name="maxDictionarySize">The maximum size of the dictionary to create.</param>
-        /// <returns>A new <see cref="ZstandardDictionary"/> instance.</returns>
+        /// <returns>A byte array containing the trained dictionary data.</returns>
         /// <exception cref="ArgumentException">The sample data or lengths are invalid.</exception>
-        /// <exception cref="ArgumentOutOfRangeException"><paramref name="maxDictionarySize"/> is not between the minimum and maximum allowed values.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="maxDictionarySize"/> is less than 256.</exception>
         /// <exception cref="IOException">Failed to train the dictionary.</exception>
         /// <remarks>
         /// The recommended maximum dictionary size is 100 KB, and the size of the training data
         /// should be approximately 100 times the size of the resulting dictionary.
+        /// The returned data can be stored for later use. Call <see cref="Create(ReadOnlySpan{byte})"/>
+        /// or <see cref="Create(ReadOnlySpan{byte}, int)"/> to prepare a dictionary for compression or decompression.
+        /// Specify compression quality when creating the dictionary; its quality takes precedence over
+        /// <see cref="ZstandardCompressionOptions.Quality"/>.
         /// </remarks>
-        public static ZstandardDictionary Train(ReadOnlySpan<byte> samples, ReadOnlySpan<int> sampleLengths, int maxDictionarySize)
+        /// <example>
+        /// <code language="csharp">
+        /// byte[] dictionaryData = ZstandardDictionary.Train(samples, sampleLengths, maxDictionarySize);
+        /// using ZstandardDictionary dictionary = ZstandardDictionary.Create(dictionaryData, quality);
+        /// </code>
+        /// </example>
+        public static byte[] Train(ReadOnlySpan<byte> samples, ReadOnlySpan<int> sampleLengths, int maxDictionarySize)
         {
             if (samples.IsEmpty)
             {
@@ -158,7 +168,7 @@ namespace System.IO.Compression
                     }
 
                     ZstandardUtils.ThrowIfError(dictSize);
-                    return Create(dictionaryBuffer.AsSpan(0, (int)dictSize));
+                    return dictionaryBuffer.AsSpan(0, (int)dictSize).ToArray();
                 }
             }
             finally
