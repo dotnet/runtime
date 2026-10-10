@@ -850,7 +850,7 @@ namespace ILCompiler.DependencyAnalysis
 
             if (!factory.LazyGenericsPolicy.UsesLazyGenerics(_method) && templateLayout.Count > 0)
             {
-                List<NativeLayoutVertexNode> dictionaryVertices = new List<NativeLayoutVertexNode>();
+                List<NativeLayoutVertexNode> dictionaryVertices = new List<NativeLayoutVertexNode>(templateLayout.Count);
 
                 foreach (NativeLayoutVertexNode dictionaryEntry in templateLayout)
                 {
@@ -1004,7 +1004,7 @@ namespace ILCompiler.DependencyAnalysis
             // Interfaces
             if (_type.RuntimeInterfaces.Length > 0)
             {
-                List<NativeLayoutVertexNode> implementedInterfacesList = new List<NativeLayoutVertexNode>();
+                List<NativeLayoutVertexNode> implementedInterfacesList = new List<NativeLayoutVertexNode>(_type.RuntimeInterfaces.Length);
 
                 foreach (TypeDesc iface in _type.RuntimeInterfaces)
                 {
@@ -1017,7 +1017,7 @@ namespace ILCompiler.DependencyAnalysis
 
             if (!factory.LazyGenericsPolicy.UsesLazyGenerics(_type) && templateLayout.Count > 0)
             {
-                List<NativeLayoutVertexNode> dictionaryVertices = new List<NativeLayoutVertexNode>();
+                List<NativeLayoutVertexNode> dictionaryVertices = new List<NativeLayoutVertexNode>(templateLayout.Count);
 
                 foreach (NativeLayoutVertexNode dictionaryEntry in templateLayout)
                 {

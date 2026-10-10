@@ -1291,7 +1291,7 @@ namespace ILCompiler.Dataflow
                 return;
             }
 
-            var dereferencedMethodParams = new List<MultiValue>();
+            var dereferencedMethodParams = new ValueNodeList(methodArguments.Count);
             foreach (var argument in methodArguments)
                 dereferencedMethodParams.Add(DereferenceValue(callingMethodIL, offset, argument, locals, ref interproceduralState));
             MultiValue methodReturnValue = HandleCall(
@@ -1299,7 +1299,7 @@ namespace ILCompiler.Dataflow
                 calledMethod,
                 opcode,
                 offset,
-                new ValueNodeList(dereferencedMethodParams));
+                dereferencedMethodParams);
 
             if (isNewObj || !calledMethod.Signature.ReturnType.IsVoid)
                 currentStack.Push(new StackSlot(methodReturnValue));

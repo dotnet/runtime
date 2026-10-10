@@ -196,7 +196,7 @@ namespace ILCompiler.Win32Resources
 
             SortedDictionary<string, List<ObjectDataBuilder.Reservation>> nameTable = new SortedDictionary<string, List<ObjectDataBuilder.Reservation>>();
             Dictionary<ResLanguage, int> dataEntryTable = new Dictionary<ResLanguage, int>();
-            List<Tuple<ResType, ObjectDataBuilder.Reservation>> resTypes = new List<Tuple<ResType, ObjectDataBuilder.Reservation>>();
+            List<Tuple<ResType, ObjectDataBuilder.Reservation>> resTypes = new List<Tuple<ResType, ObjectDataBuilder.Reservation>>(_resTypeHeadName.Count + _resTypeHeadID.Count);
             List<Tuple<ResName, ObjectDataBuilder.Reservation>> resNames = new List<Tuple<ResName, ObjectDataBuilder.Reservation>>();
             List<Tuple<ResLanguage, ObjectDataBuilder.Reservation>> resLanguages = new List<Tuple<ResLanguage, ObjectDataBuilder.Reservation>>();
 

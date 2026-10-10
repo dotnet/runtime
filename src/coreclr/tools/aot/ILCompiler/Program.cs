@@ -46,11 +46,12 @@ namespace ILCompiler
 
         private IReadOnlyCollection<MethodDesc> CreateInitializerList(CompilerTypeSystemContext context)
         {
-            List<ModuleDesc> assembliesWithInitializers = new List<ModuleDesc>();
+            string[] initAssemblies = Get(_command.InitAssemblies);
+            List<ModuleDesc> assembliesWithInitializers = new List<ModuleDesc>(initAssemblies.Length);
 
             // Build a list of assemblies that have an initializer that needs to run before
             // any user code runs.
-            foreach (string initAssemblyName in Get(_command.InitAssemblies))
+            foreach (string initAssemblyName in initAssemblies)
             {
                 ModuleDesc assembly = context.ResolveAssembly(new AssemblyNameInfo(initAssemblyName), throwIfNotFound: true);
                 assembliesWithInitializers.Add(assembly);
@@ -203,7 +204,7 @@ namespace ILCompiler
                 bool SplitExeInitialization = Get(_command.SplitExeInitialization);
                 if (multiFile)
                 {
-                    List<EcmaModule> inputModules = new List<EcmaModule>();
+                    List<EcmaModule> inputModules = new List<EcmaModule>(typeSystemContext.InputFilePaths.Count);
 
                     foreach (var inputFile in typeSystemContext.InputFilePaths)
                     {
@@ -812,10 +813,10 @@ namespace ILCompiler
 
             if (method.HasInstantiation)
             {
-                List<TypeDesc> genericArguments = new List<TypeDesc>();
-                foreach (var argString in singleMethodGenericArgs)
-                    genericArguments.Add(FindType(context, argString));
-                method = method.MakeInstantiatedMethod(genericArguments.ToArray());
+                TypeDesc[] genericArguments = new TypeDesc[singleMethodGenericArgs.Length];
+                for (int i = 0; i < singleMethodGenericArgs.Length; i++)
+                    genericArguments[i] = FindType(context, singleMethodGenericArgs[i]);
+                method = method.MakeInstantiatedMethod(genericArguments);
             }
 
             return method;
