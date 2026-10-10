@@ -224,8 +224,15 @@ namespace Internal.IL
             _instructionBoundaries = new bool[_ilBytes.Length];
 
             FindBasicBlocks();
-            FindEnclosingExceptionRegions();
             InitialPass();
+            VerifyExceptionRegions();
+            FindEnclosingExceptionRegions();
+
+            // ECMA-335 I.12.4.2.8.1 forbids filters and handlers at method entry.
+            _currentInstructionOffset = 0;
+            Check(!_basicBlocks[0].HandlerIndex.HasValue, VerifierError.FallthroughIntoHandler);
+            Check(!_basicBlocks[0].FilterIndex.HasValue, VerifierError.FallthroughIntoFilter);
+
             ImportBasicBlocks();
         }
 
@@ -274,7 +281,7 @@ namespace Internal.IL
                             var probeItem = _exceptionRegions[j].ILRegion;
 
                             if (currentlySelected.HandlerOffset < probeItem.HandlerOffset &&
-                                currentlySelected.HandlerOffset + currentlySelected.HandlerLength > probeItem.HandlerOffset + probeItem.HandlerLength)
+                                currentlySelected.HandlerOffset + currentlySelected.HandlerLength >= probeItem.HandlerOffset + probeItem.HandlerLength)
                             {
                                 basicBlock.HandlerIndex = j;
                             }
@@ -289,6 +296,15 @@ namespace Internal.IL
                         }
                     }
                 }
+
+                // Empty regions can mark an entry without enclosing the block. Do not
+                // initialize an EH entry stack from an unrelated enclosing region.
+                basicBlock.TryStart &= basicBlock.TryIndex.HasValue &&
+                    _exceptionRegions[basicBlock.TryIndex.Value].ILRegion.TryOffset == offset;
+                basicBlock.HandlerStart &= basicBlock.HandlerIndex.HasValue &&
+                    _exceptionRegions[basicBlock.HandlerIndex.Value].ILRegion.HandlerOffset == offset;
+                basicBlock.FilterStart &= basicBlock.FilterIndex.HasValue &&
+                    _exceptionRegions[basicBlock.FilterIndex.Value].ILRegion.FilterOffset == offset;
             }
         }
 
@@ -823,7 +839,7 @@ namespace Internal.IL
                     }
                     isValid = false;
                 }
-                else if (target.HandlerIndex == null)
+                else if (target.FilterIndex == null)
                 {
                     if (reportErrors)
                     {
@@ -1325,49 +1341,39 @@ namespace Internal.IL
 
         void StartImportingBasicBlock(BasicBlock basicBlock)
         {
+            _currentInstructionOffset = basicBlock.StartOffset;
             _delegateCreateStart = null;
             _isThisInitialized = basicBlock.IsThisInitialized;
 
             if (basicBlock.TryStart)
             {
-                Check(basicBlock.EntryStack == null || basicBlock.EntryStack.Length == 0, VerifierError.TryNonEmptyStack);
-
                 for (int i = 0; i < _exceptionRegions.Length; i++)
                 {
                     var r = _exceptionRegions[i];
 
-                    if (basicBlock.StartOffset != r.ILRegion.TryOffset)
+                    if (basicBlock.StartOffset != r.ILRegion.TryOffset || r.ILRegion.TryLength == 0)
                         continue;
 
-                    if (r.ILRegion.Kind == ILExceptionRegionKind.Filter)
+                    if (r.ILRegion.Kind == ILExceptionRegionKind.Filter && _validTargetOffsets[r.ILRegion.FilterOffset])
                     {
                         var filterBlock = _basicBlocks[r.ILRegion.FilterOffset];
                         PropagateThisState(basicBlock, filterBlock);
                         MarkBasicBlock(filterBlock);
                     }
 
-                    var handlerBlock = _basicBlocks[r.ILRegion.HandlerOffset];
-                    PropagateThisState(basicBlock, handlerBlock);
-                    MarkBasicBlock(handlerBlock);
+                    if (r.ILRegion.HandlerLength != 0 && _validTargetOffsets[r.ILRegion.HandlerOffset])
+                    {
+                        var handlerBlock = _basicBlocks[r.ILRegion.HandlerOffset];
+                        PropagateThisState(basicBlock, handlerBlock);
+                        MarkBasicBlock(handlerBlock);
+                    }
                 }
             }
 
             if (basicBlock.FilterStart || basicBlock.HandlerStart)
             {
-                ExceptionRegion r;
-                if (basicBlock.HandlerIndex.HasValue)
-                {
-                    r = _exceptionRegions[basicBlock.HandlerIndex.Value];
-                }
-                else if (basicBlock.FilterIndex.HasValue)
-                {
-                    r = _exceptionRegions[basicBlock.FilterIndex.Value];
-                }
-                else
-                {
-                    Debug.Fail("Block marked as filter / handler start but no filter / handler index set.");
-                    return;
-                }
+                ExceptionRegion r = _exceptionRegions[basicBlock.FilterStart ?
+                    basicBlock.FilterIndex.Value : basicBlock.HandlerIndex.Value];
 
                 if (r.ILRegion.Kind == ILExceptionRegionKind.Filter || r.ILRegion.Kind == ILExceptionRegionKind.Catch)
                 {
@@ -1402,6 +1408,13 @@ namespace Internal.IL
                     if (basicBlock.EntryStack == null)
                         basicBlock.EntryStack = s_emptyStack;
                 }
+            }
+
+            if (basicBlock.TryStart)
+            {
+                // A catch/filter entry supplies an exception object even when no predecessor
+                // propagated a stack. Check after initializing that entry stack.
+                Check(basicBlock.EntryStack == null || basicBlock.EntryStack.Length == 0, VerifierError.TryNonEmptyStack);
             }
 
             if (basicBlock.EntryStack?.Length > 0)
@@ -2462,9 +2475,11 @@ namespace Internal.IL
 
         void ImportEndFinally()
         {
-            Check(_currentBasicBlock.HandlerIndex.HasValue, VerifierError.Endfinally);
-            Check(_exceptionRegions[_currentBasicBlock.HandlerIndex.Value].ILRegion.Kind == ILExceptionRegionKind.Finally ||
-                _exceptionRegions[_currentBasicBlock.HandlerIndex.Value].ILRegion.Kind == ILExceptionRegionKind.Fault, VerifierError.Endfinally);
+            if (Check(_currentBasicBlock.HandlerIndex.HasValue, VerifierError.Endfinally))
+            {
+                Check(_exceptionRegions[_currentBasicBlock.HandlerIndex.Value].ILRegion.Kind == ILExceptionRegionKind.Finally ||
+                    _exceptionRegions[_currentBasicBlock.HandlerIndex.Value].ILRegion.Kind == ILExceptionRegionKind.Fault, VerifierError.Endfinally);
+            }
 
             EmptyTheStack();
         }
@@ -2686,8 +2701,8 @@ namespace Internal.IL
 
         void ImportEndFilter()
         {
-            Check(_currentBasicBlock.FilterIndex.HasValue, VerifierError.Endfilter);
-            Check(_currentOffset == _exceptionRegions[_currentBasicBlock.FilterIndex.Value].ILRegion.HandlerOffset, VerifierError.Endfilter);
+            if (Check(_currentBasicBlock.FilterIndex.HasValue, VerifierError.Endfilter))
+                Check(_currentOffset == _exceptionRegions[_currentBasicBlock.FilterIndex.Value].ILRegion.HandlerOffset, VerifierError.Endfilter);
 
             var result = Pop(allowUninitThis: true);
             Check(result.Kind == StackValueKind.Int32, VerifierError.StackUnexpected, result);
