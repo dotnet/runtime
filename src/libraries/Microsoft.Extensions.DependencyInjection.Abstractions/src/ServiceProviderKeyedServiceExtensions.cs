@@ -117,5 +117,23 @@ namespace Microsoft.Extensions.DependencyInjection
             Type? genericEnumerable = typeof(IEnumerable<>).MakeGenericType(serviceType);
             return (IEnumerable<object>)provider.GetRequiredKeyedService(genericEnumerable, serviceKey);
         }
+
+        /// <summary>
+        /// Get all known service keys for service type <typeparamref name="T"/> from the <see cref="IServiceProvider"/>.
+        /// </summary>
+        /// <typeparam name="T">The type of service object to get known keys for.</typeparam>
+        /// <param name="provider">The <see cref="IServiceProvider"/> to retrieve the service keys from.</param>
+        /// <returns>An enumeration of known service keys for <typeparamref name="T"/> or <see langword="null"/> if not supported.</returns>
+        public static IEnumerable<object?>? GetServiceKeys<T>(this IServiceProvider provider)
+        {
+            ArgumentNullException.ThrowIfNull(provider);
+
+            if (provider is IServiceKeysProvider serviceKeysProvider)
+            {
+                return serviceKeysProvider.GetServiceKeys(typeof(T));
+            }
+
+            return null;
+        }
     }
 }

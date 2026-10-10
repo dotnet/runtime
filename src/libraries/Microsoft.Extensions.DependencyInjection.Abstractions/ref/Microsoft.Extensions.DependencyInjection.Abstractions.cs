@@ -76,6 +76,10 @@ namespace Microsoft.Extensions.DependencyInjection
         object? GetKeyedService(System.Type serviceType, object? serviceKey);
         object GetRequiredKeyedService(System.Type serviceType, object? serviceKey);
     }
+    public partial interface IServiceKeysProvider
+    {
+        System.Collections.Generic.IEnumerable<object?> GetServiceKeys(System.Type serviceType);
+    }
     public partial interface ISupportRequiredService
     {
         object GetRequiredService(System.Type serviceType);
@@ -240,6 +244,7 @@ namespace Microsoft.Extensions.DependencyInjection
         public static object? GetKeyedService(this System.IServiceProvider provider, System.Type serviceType, object? serviceKey) { throw null; }
         public static object GetRequiredKeyedService(this System.IServiceProvider provider, System.Type serviceType, object? serviceKey) { throw null; }
         public static T GetRequiredKeyedService<T>(this System.IServiceProvider provider, object? serviceKey) where T : notnull { throw null; }
+        public static System.Collections.Generic.IEnumerable<object?>? GetServiceKeys<T>(this System.IServiceProvider provider) { throw null; }
     }
     public static partial class ServiceProviderServiceExtensions
     {
