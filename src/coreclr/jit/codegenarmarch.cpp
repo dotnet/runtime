@@ -1551,55 +1551,76 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
         genJumpToThrowHlpBlk(EJ_hs, SCK_RNGCHK_FAIL);
     }
 
-    // Can we use a ScaledAdd instruction?
-    //
-    if (isPow2(node->gtElemSize) && (node->gtElemSize <= 32768))
+#ifdef TARGET_ARM64
+    if (varTypeHasUnknownSize(node->gtElemType))
     {
-        DWORD scale;
-        BitScanForward(&scale, node->gtElemSize);
+        if (node->gtElemType == TYP_SIMD)
+        {
+            // tmpReg = VL
+            GetEmitter()->emitIns_R_I(INS_sve_rdvl, EA_8BYTE, tmpReg, 1);
+        }
+        else
+        {
+            // tmpReg = PL
+            assert(node->gtElemType == TYP_MASK);
+            instGen_Set_Reg_To_Zero(EA_8BYTE, tmpReg);
+            GetEmitter()->emitIns_R_R_I(INS_sve_addpl, EA_8BYTE, tmpReg, tmpReg, 1);
+        }
+
+        // Generate addr = base + {VL|PL} * index;
+        GetEmitter()->emitIns_R_R_R_R(INS_madd, EA_8BYTE, node->GetRegNum(), indexReg, tmpReg, base->GetRegNum());
+    }
+    else
+#endif
+        // Can we use a ScaledAdd instruction?
+        //
+        if (isPow2(node->GetElemSize()) && (node->GetElemSize() <= 32768))
+        {
+            DWORD scale;
+            BitScanForward(&scale, node->GetElemSize());
 
 #ifdef TARGET_ARM64
-        if (!index->TypeIs(TYP_I_IMPL))
-        {
-            if (scale <= 4)
+            if (!index->TypeIs(TYP_I_IMPL))
             {
-                // target = base + index<<scale
-                GetEmitter()->emitIns_R_R_R_I(INS_add, emitActualTypeSize(node), node->GetRegNum(), base->GetRegNum(),
-                                              indexReg, scale, INS_OPTS_UXTW);
+                if (scale <= 4)
+                {
+                    // target = base + index<<scale
+                    GetEmitter()->emitIns_R_R_R_I(INS_add, emitActualTypeSize(node), node->GetRegNum(),
+                                                  base->GetRegNum(), indexReg, scale, INS_OPTS_UXTW);
+                }
+                else
+                {
+                    GetEmitter()->emitIns_Mov(INS_mov, EA_4BYTE, tmpReg, indexReg, /* canSkip */ false);
+                    indexReg      = tmpReg;
+                    emitter* emit = GetEmitter();
+                    genScaledAdd(emitActualTypeSize(node), node->GetRegNum(), base->GetRegNum(), indexReg, scale);
+                }
             }
             else
+#endif // TARGET_ARM64
             {
-                GetEmitter()->emitIns_Mov(INS_mov, EA_4BYTE, tmpReg, indexReg, /* canSkip */ false);
-                indexReg      = tmpReg;
-                emitter* emit = GetEmitter();
+                // dest = base + index * scale
                 genScaledAdd(emitActualTypeSize(node), node->GetRegNum(), base->GetRegNum(), indexReg, scale);
             }
         }
-        else
-#endif // TARGET_ARM64
+        else // we have to load the element size and use a MADD (multiply-add) instruction
         {
-            // dest = base + index * scale
-            genScaledAdd(emitActualTypeSize(node), node->GetRegNum(), base->GetRegNum(), indexReg, scale);
-        }
-    }
-    else // we have to load the element size and use a MADD (multiply-add) instruction
-    {
 #ifdef TARGET_ARM64
-        if (!index->TypeIs(TYP_I_IMPL))
-        {
-            const regNumber tmpReg2 = internalRegisters.Extract(node);
-            GetEmitter()->emitIns_Mov(INS_mov, EA_4BYTE, tmpReg2, indexReg, /* canSkip */ false);
-            indexReg = tmpReg2;
-        }
+            if (!index->TypeIs(TYP_I_IMPL))
+            {
+                const regNumber tmpReg2 = internalRegisters.Extract(node);
+                GetEmitter()->emitIns_Mov(INS_mov, EA_4BYTE, tmpReg2, indexReg, /* canSkip */ false);
+                indexReg = tmpReg2;
+            }
 #endif // TARGET_ARM64
 
-        // tmpReg = element size
-        instGen_Set_Reg_To_Imm(EA_4BYTE, tmpReg, (ssize_t)node->gtElemSize);
+            // tmpReg = element size
+            instGen_Set_Reg_To_Imm(EA_4BYTE, tmpReg, (ssize_t)node->GetElemSize());
 
-        // dest = index * tmpReg + base
-        GetEmitter()->emitIns_R_R_R_R(INS_MULADD, emitActualTypeSize(node), node->GetRegNum(), indexReg, tmpReg,
-                                      base->GetRegNum());
-    }
+            // dest = index * tmpReg + base
+            GetEmitter()->emitIns_R_R_R_R(INS_MULADD, emitActualTypeSize(node), node->GetRegNum(), indexReg, tmpReg,
+                                          base->GetRegNum());
+        }
 
     // dest = dest + elemOffs
     GetEmitter()->emitIns_R_R_I(INS_add, emitActualTypeSize(node), node->GetRegNum(), node->GetRegNum(),

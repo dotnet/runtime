@@ -2606,7 +2606,7 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
     }
 
     // Result is the address of the array element.
-    unsigned const scale = node->gtElemSize;
+    unsigned const scale = node->GetElemSize();
 
     if (scale > 1)
     {

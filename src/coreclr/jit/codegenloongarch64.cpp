@@ -5174,13 +5174,13 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
     emitAttr attr = emitActualTypeSize(node);
     // Can we use a shift instruction for multiply ?
     //
-    if (isPow2(node->gtElemSize))
+    if (isPow2(node->GetElemSize()))
     {
         DWORD scale;
-        BitScanForward(&scale, node->gtElemSize);
+        BitScanForward(&scale, node->GetElemSize());
 
         // dest = base + (index << scale)
-        if (node->gtElemSize <= 64)
+        if (node->GetElemSize() <= 64)
         {
             genScaledAdd(attr, node->GetRegNum(), base->GetRegNum(), index->GetRegNum(), scale);
         }
@@ -5206,7 +5206,7 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
     else // we have to load the element size and use a MADD (multiply-add) instruction
     {
         // REG_R21 = element size
-        instGen_Set_Reg_To_Imm(EA_4BYTE, REG_R21, (ssize_t)node->gtElemSize);
+        instGen_Set_Reg_To_Imm(EA_4BYTE, REG_R21, (ssize_t)node->GetElemSize());
 
         // dest = index * REG_R21 + base
         instruction ins;
