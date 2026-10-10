@@ -13691,7 +13691,7 @@ GenTree* Compiler::impArrayAccessIntrinsic(
     if (intrinsicName == NI_Array_Set)
     {
         // The array checks in the store's address must happen after the value is evaluated.
-        if ((impStackTop().val->gtFlags & GTF_SIDE_EFFECT) != 0)
+        if ((impStackTop().val->gtFlags & GTF_OBS_EFFECT) != 0)
         {
             impSpillSideEffects(false, CHECK_SPILL_ALL DEBUGARG("Strict ordering of exceptions for MD Array store"));
         }
