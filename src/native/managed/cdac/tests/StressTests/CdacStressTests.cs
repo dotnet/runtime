@@ -36,6 +36,7 @@ public class CdacStressTests : CdacStressTestBase
         [new Debuggee("DynamicMethods")],
         [new Debuggee("InlineArrayByRefLike")],
         [new Debuggee("CallSignatures")],
+        [new Debuggee("ByRefArguments")],
         [new Debuggee("CrossModule")],
         [new Debuggee("NotYetLoadedArgType")],
         [new Debuggee("PInvoke", WindowsOnly: true)],
