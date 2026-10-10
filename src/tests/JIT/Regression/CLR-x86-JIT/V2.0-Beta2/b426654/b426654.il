@@ -217,11 +217,6 @@
       string('This test is too slow under GCStress=3. See https://github.com/dotnet/runtime/issues/50615.')
       int32(0xC0) // AnyGCStress
     }
-    .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [System.Runtime]System.Type, string[]) = {
-      string('https://github.com/dotnet/runtime/issues/134770')
-      type([TestLibrary]TestLibrary.PlatformDetection)
-      string[2] ('IsAppleMobile' 'IsCoreCLR')
-    }
     .entrypoint
     .maxstack  5
     .locals init (class cs1 V_0,
