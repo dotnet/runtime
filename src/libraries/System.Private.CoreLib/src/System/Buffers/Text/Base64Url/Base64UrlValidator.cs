@@ -61,17 +61,8 @@ namespace System.Buffers.Text
 
             public int IndexOfAnyExcept(ReadOnlySpan<char> span) => span.IndexOfAnyExcept(s_validBase64UrlChars);
 #else
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public int DecodeValue(char value)
-            {
-                if (value > byte.MaxValue)
-                {
-                    // Invalid char was found.
-                    return -2;
-                }
-
-                return default(Base64UrlDecoderByte).DecodingMap[value];
-            }
+            public int IndexOfAnyExcept(ReadOnlySpan<char> span) =>
+                Base64Helper.IndexOfAnyExcept(span, default(Base64UrlDecoderByte).DecodingMap);
 #endif
             public bool IsWhiteSpace(char value) => Base64Helper.IsWhiteSpace(value);
             public bool IsEncodingPad(char value) => value == Base64Helper.EncodingPad || value == UrlEncodingPad;
@@ -87,7 +78,8 @@ namespace System.Buffers.Text
 
             public int IndexOfAnyExcept(ReadOnlySpan<byte> span) => span.IndexOfAnyExcept(s_validBase64UrlChars);
 #else
-            public int DecodeValue(byte value) => default(Base64UrlDecoderByte).DecodingMap[value];
+            public int IndexOfAnyExcept(ReadOnlySpan<byte> span) =>
+                Base64Helper.IndexOfAnyExcept(span, default(Base64UrlDecoderByte).DecodingMap);
 #endif
             public bool IsWhiteSpace(byte value) => Base64Helper.IsWhiteSpace(value);
             public bool IsEncodingPad(byte value) => value == Base64Helper.EncodingPad || value == UrlEncodingPad;
