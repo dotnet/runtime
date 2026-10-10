@@ -82,13 +82,13 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWasi)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR'">
       <NativeCMakeArg Include="-cmakeargs &quot;-DGEN_PINVOKE=1&quot;" />
-      <!-- Initial WASI bring-up disables EventPipe / diagnostic-server PAL
-           via FEATURE_PERFTRACING=0 in src/coreclr/CMakeLists.txt; the
-           PERFTRACING_DISABLE_* flags are unused while PERFTRACING is off
-           but kept for symmetry with browser-CoreCLR and for when we
-           re-enable PERFTRACING in a follow-up. -->
+      <!-- WASI has no AF_UNIX sockets, so build the TCP flavor of the diagnostic
+           server PAL. Listen and connect ports stay disabled until a WASI
+           transport is validated; EventPipe works in-process only. -->
+      <NativeCMakeArg Include="-cmakeargs &quot;-DFEATURE_PERFTRACING_PAL_TCP=1&quot;" />
       <NativeCMakeArg Include="-cmakeargs &quot;-DFEATURE_PERFTRACING_DISABLE_PERFTRACING_LISTEN_PORTS=1&quot;" />
       <NativeCMakeArg Include="-cmakeargs &quot;-DFEATURE_PERFTRACING_DISABLE_DEFAULT_LISTEN_PORT=1&quot;" />
+      <NativeCMakeArg Include="-cmakeargs &quot;-DFEATURE_PERFTRACING_DISABLE_CONNECT_PORTS=1&quot;" />
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureMultithreading)' != 'true'">
       <NativeCMakeArg Include="-cmakeargs &quot;-DFEATURE_PERFTRACING_DISABLE_THREADS=1&quot;" />
