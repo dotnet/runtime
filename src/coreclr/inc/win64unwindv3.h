@@ -16,7 +16,8 @@
 
 //
 // Define winding operation descriptor (WOD) operation codes. The opcode is held in the low bits
-// of the first byte of a WOD, and its width varies by operation.
+// of the first byte of a WOD, and its width varies by operation. See
+// https://learn.microsoft.com/en-us/cpp/build/x64-unwind-information-v3#opcode-dispatch-table.
 //
 
 typedef enum _WOD_OP_CODES {
@@ -36,7 +37,13 @@ typedef enum _WOD_OP_CODES {
 
 //
 // Define winding operation descriptor structures. WODs are variable length, unaligned, and
-// packed with no padding between them.
+// packed with no padding between them. The bitfields follow the bit-level layouts at
+// https://learn.microsoft.com/en-us/cpp/build/x64-unwind-information-v3#wod-layouts-bit-level,
+// allocated LSB first to match its bit numbering.
+//
+// In V1 every UNWIND_CODE is a 2-byte slot and larger operations take extra slots (see
+// win64unwind.h). WODs are 1 to 5 bytes long and their opcode field is 3, 4, 6 or 8 bits wide,
+// so there is no uniform slot: each WOD has its own structure.
 //
 
 #pragma pack(push, 1)
@@ -191,6 +198,11 @@ static_assert(sizeof(EPILOG_INFO_LARGE_EX_V3) == 4, "EPILOG_INFO_LARGE_EX_V3 mus
 #define UNWIND_INFO_V3_MAX_PAYLOAD_BYTES 510    // PayloadWords is 8 bits
 #define UNWIND_INFO_V3_MAX_EPILOG_SIZE 255      // without EPILOG_INFO_LARGE
 #define UNWIND_INFO_V3_MAX_SET_FPREG 240        // WOD_SET_FPREG.Offset is 4 bits scaled by 16
+
+//
+// Define the unwind information header. See
+// https://learn.microsoft.com/en-us/cpp/build/x64-unwind-information-v3#unwind_info_v3-header.
+//
 
 typedef struct _UNWIND_INFO_V3 {
     UCHAR Version : 3;
