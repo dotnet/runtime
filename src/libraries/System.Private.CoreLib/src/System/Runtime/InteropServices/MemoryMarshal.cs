@@ -121,7 +121,7 @@ namespace System.Runtime.InteropServices
             // to special-case arrays of known type and dimension.
 
             // See comment on RawArrayData (in RuntimeHelpers.CoreCLR.cs / RuntimeHelpers.NativeAot.cs) for details
-            return ref Unsafe.AddByteOffset(ref Unsafe.As<RawData>(array).Data, (nuint)RuntimeHelpers.GetMethodTable(array)->BaseSize - (nuint)(2 * sizeof(IntPtr)));
+            return ref Unsafe.AddByteOffset(ref array.GetArrayData().Data, (nuint)RuntimeHelpers.GetMethodTable(array)->BaseSize - (nuint)(3 * sizeof(IntPtr)));
         }
 #endif // !MONO
 

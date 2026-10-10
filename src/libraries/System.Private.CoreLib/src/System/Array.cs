@@ -377,8 +377,8 @@ namespace System
                     (uint)length <= destinationArray.NativeLength)
                 {
                     nuint byteCount = (uint)length * (nuint)pMT->ComponentSize;
-                    ref byte src = ref Unsafe.As<RawArrayData>(sourceArray).Data;
-                    ref byte dst = ref Unsafe.As<RawArrayData>(destinationArray).Data;
+                    ref byte src = ref sourceArray.GetArrayData().Data;
+                    ref byte dst = ref destinationArray.GetArrayData().Data;
 
                     if (pMT->ContainsGCPointers)
                         Buffer.BulkMoveWithWriteBarrier(ref dst, ref src, byteCount);
@@ -414,8 +414,8 @@ namespace System
                 {
                     nuint elementSize = (nuint)pMT->ComponentSize;
                     nuint byteCount = (uint)length * elementSize;
-                    ref byte src = ref Unsafe.AddByteOffset(ref Unsafe.As<RawArrayData>(sourceArray).Data, (uint)sourceIndex * elementSize);
-                    ref byte dst = ref Unsafe.AddByteOffset(ref Unsafe.As<RawArrayData>(destinationArray).Data, (uint)destinationIndex * elementSize);
+                    ref byte src = ref Unsafe.AddByteOffset(ref sourceArray.GetArrayData().Data, (uint)sourceIndex * elementSize);
+                    ref byte dst = ref Unsafe.AddByteOffset(ref destinationArray.GetArrayData().Data, (uint)destinationIndex * elementSize);
 
                     if (pMT->ContainsGCPointers)
                         Buffer.BulkMoveWithWriteBarrier(ref dst, ref src, byteCount);
@@ -691,7 +691,7 @@ namespace System
             if (array == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
 
-            ref byte p = ref Unsafe.As<RawArrayData>(array).Data;
+            ref byte p = ref array.GetArrayData().Data;
             int lowerBound = 0;
 
             MethodTable* pMT = RuntimeHelpers.GetMethodTable(array);

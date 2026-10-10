@@ -287,10 +287,10 @@ namespace System
             GC.KeepAlive(this); // Keep the method table alive
         }
 
-        public int Length => checked((int)Unsafe.As<RawArrayData>(this).Length);
+        public int Length => checked((int)this.GetArrayData().Length);
 
         // This could return a length greater than int.MaxValue
-        internal nuint NativeLength => Unsafe.As<RawArrayData>(this).Length;
+        internal nuint NativeLength => this.GetArrayData().Length;
 
         public long LongLength => (long)NativeLength;
 
