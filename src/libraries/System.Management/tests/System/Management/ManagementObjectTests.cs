@@ -13,6 +13,8 @@ namespace System.Management.Tests
 {
     public class ManagementObjectTests
     {
+        private static bool IsWmiAndBinaryFormatterSupported => WmiTestHelper.IsWmiSupported && PlatformDetection.IsBinaryFormatterSupported;
+
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindowsNanoServer))]
         public void PlatformNotSupportedException_On_Nano()
         {
@@ -103,7 +105,7 @@ namespace System.Management.Tests
             }, maxAttempts: 10, retryWhen: e => e is XunitException);
         }
 
-        [ConditionalFact(typeof(WmiTestHelper), nameof(WmiTestHelper.IsWmiSupported))]
+        [ConditionalFact(typeof(ManagementObjectTests), nameof(IsWmiAndBinaryFormatterSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34689", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [OuterLoop]
 #if NET
