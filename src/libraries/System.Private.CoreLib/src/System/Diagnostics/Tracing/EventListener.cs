@@ -375,7 +375,10 @@ public abstract class EventListener : IDisposable
             {
                 if (value)
                 {
-                    eventDispatcher.m_Listener.DisableEvents(eventSource);
+                    // Dispose removes the EventPipe subscription after releasing EventListenersLock.
+                    // Doing that here can invert it with the dispatcher's control lock.
+                    eventSource.SendCommand(eventDispatcher.m_Listener, EventProviderType.None, 0,
+                        EventCommand.Update, false, EventLevel.LogAlways, EventKeywords.None, null);
                 }
             }
 #if DEBUG
