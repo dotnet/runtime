@@ -938,6 +938,27 @@ namespace System.Net.Http.Functional.Tests
             }).DisposeAsync();
         }
 
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsAndroid))]
+        [InlineData("http://example.com/")]
+        [InlineData("https://example.com/")]
+        [InlineData("http://example.com:8080/some/path?query=1")]
+        public void DefaultProxy_Android_GetProxy_NoConfiguredProxy_DoesNotThrow(string destination)
+        {
+            // On Android, DefaultProxy resolves through AndroidPlatformProxy, which crosses into
+            // native code and java.net.ProxySelector via JNI. We cannot mutate the emulator/device
+            // system proxy settings from a test without risking leaking that state into other
+            // workloads, so the only behavior we can safely assert is that the resolution path is
+            // robust when no proxy is configured: GetProxy must not throw and must return either a
+            // proxy URI or null (meaning "connect directly").
+            IWebProxy proxy = HttpClient.DefaultProxy;
+            var uri = new Uri(destination);
+
+            Uri? result = proxy.GetProxy(uri);
+            proxy.IsBypassed(uri);
+
+            Assert.True(result is null || result.IsAbsoluteUri);
+        }
+
         [Fact]
         public async Task PatchAsync_Canceled_Throws()
         {
