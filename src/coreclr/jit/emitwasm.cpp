@@ -287,6 +287,10 @@ void emitter::emitIns_Call(const EmitCallParams& params)
 
     assert(params.wasmSignature != nullptr);
 
+    FuncInfoDsc* const func = m_compiler->funCurrentFunc();
+    assert(func->hasCalls);
+    func->hasCalls = true;
+
     /*
         We need to allocate the appropriate instruction descriptor based
         on whether this is a direct/indirect call, and whether we need to
