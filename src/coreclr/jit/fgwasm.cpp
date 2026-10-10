@@ -2406,6 +2406,118 @@ PhaseStatus Compiler::fgWasmControlFlow()
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
+// Identify locals which are considered to be GC-safe. By GC-safe,
+// we mean unexposed to any possible GC collections, and thus safe from being moved by the GC
+// These locals do not need to be spilled to the Wasm shadow stack for GC safety, and thus can safely be assigned
+// homes in Wasm locals.
+//  We mark a local as GC-safe if and only if it is never live across a GC safepoint. GC safepoints are:
+// -  GC poll points (GT_GCPOLL)
+// -  All user Calls (GT_CALL)
+// -  Helper calls and any node which might generate a helper call  (except for helpers marked as GC safe, which at this
+// point are only write barriers)
+//     => This includes any node which can throw.
+// - Invocation of a finally funclet
+inline bool treeIsNonExceptGCSafePoint(GenTree* tree, Compiler* comp)
+{
+    if (tree->IsCall())
+    {
+        // All non-helper calls are considered safe points. A helper is a GC safepoint if it is not marked as NoGC.
+        return !tree->IsHelperCall() || !comp->s_helperCallProperties.IsNoGC(tree->AsCall()->GetHelperNum());
+    }
+
+    // All operations which may throw are considered potential GC safepoints, as a GC could occur during exception
+    // handling before a catch. This includes null checks, divide by zero, and array bounds checks.
+    return tree->OperIs(GT_GCPOLL);
+}
+
+PhaseStatus Compiler::fgWasmFindGCRefCandidates()
+{
+    if (lvaTrackedCount == 0)
+    {
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
+    VARSET_TP              liveAcrossGC = VarSetOps::MakeEmpty(this);
+    VARSET_TP              liveInto     = VarSetOps::MakeEmpty(this);
+    TreeLifeUpdater<false> lifeUpdater(this);
+    VarSetOps::AssignNoCopy(this, compCurLife, VarSetOps::MakeEmpty(this));
+
+    for (BasicBlock* const block : Blocks())
+    {
+        VARSET_TP ehLive = VarSetOps::MakeEmpty(this);
+        if (block->HasPotentialEHSuccs(this))
+        {
+            MemoryKindSet memoryLive = 0;
+            fgAddHandlerLiveVars(block, ehLive, memoryLive);
+        }
+
+        compCurLifeTree = nullptr;
+        VarSetOps::Assign(this, compCurLife, block->bbLiveIn);
+        for (GenTree* tree : LIR::AsRange(block))
+        {
+            // compCurLife should reflect livness into this tree;
+            VarSetOps::Assign(this, liveInto, compCurLife);
+
+            if (treeIsNonExceptGCSafePoint(tree, this))
+            {
+                VarSetOps::UnionD(this, liveAcrossGC, liveInto);
+                JITDUMP("GC safepoint in " FMT_BB ":\n", block->bbNum);
+                DISPNODE(tree);
+                JITDUMP("\n  Live across: ");
+                JITDUMPEXEC(dumpConvertedVarSet(this, liveInto));
+                JITDUMP("\n");
+            }
+            else if (tree->OperMayThrow(this))
+            {
+                VarSetOps::IntersectionD(this, liveInto, ehLive);
+                VarSetOps::UnionD(this, liveAcrossGC, liveInto);
+                JITDUMP("EH-Only GC safepoint in " FMT_BB ":\n", block->bbNum);
+                DISPNODE(tree);
+                JITDUMP("\n  Live across: ");
+                JITDUMPEXEC(dumpConvertedVarSet(this, liveInto));
+                JITDUMP("\n");
+            }
+
+            // We use GeneralLclAddrHandling=false here, since for consistency we want to treat a local value as live
+            // until its value is actually read.
+            lifeUpdater.UpdateLife<false>(tree);
+        }
+
+        if (block->KindIs(BBJ_CALLFINALLY))
+        {
+            // At this point, compCurLife should reflect the set of locals live after all IR trees in the block have
+            // been processed. If this block calls a finally funclet, locals which are in bbLiveOut would potentially
+            // cross a GC safepoint as well, so account for this.
+            BitVec liveAcross = VarSetOps::Intersection(this, compCurLife, block->bbLiveOut);
+            VarSetOps::UnionD(this, liveAcrossGC, liveAcross);
+        }
+    }
+
+    JITDUMP("All Vars Live across GC safepoints:\n");
+    JITDUMPEXEC(dumpConvertedVarSet(this, liveAcrossGC));
+    JITDUMP("\n");
+
+    // Build our set of candiates from gc-ref typed locals which are not live across a safepoint
+    m_wasmGCRefCandidates  = new (this, CMK_WasmGCRefCandidates) BitVec();
+    *m_wasmGCRefCandidates = VarSetOps::MakeEmpty(this);
+    JITDUMP("Building GC ref candidates for %d tracked locals (excluding those live across GC safepoints):\n",
+            lvaTrackedCount);
+    for (unsigned varIndex = 0; varIndex < lvaTrackedCount; varIndex++)
+    {
+        JITDUMP("Considering tracked var V%02u\n", varIndex);
+        LclVarDsc* varDsc = lvaGetDescByTrackedIndex(varIndex);
+        if (varTypeIsGC(varDsc->TypeGet()) && !VarSetOps::IsMember(this, liveAcrossGC, varIndex))
+        {
+            VarSetOps::AddElemD(this, *m_wasmGCRefCandidates, varIndex);
+        }
+    }
+
+    JITDUMP("Identified GC ref candidates:\n");
+    JITDUMPEXEC(dumpConvertedVarSet(this, *m_wasmGCRefCandidates));
+
+    return PhaseStatus::MODIFIED_NOTHING;
+}
+
 PhaseStatus Compiler::fgWasmSpillRefs()
 {
     bool anyChanges = false;
@@ -2560,14 +2672,20 @@ PhaseStatus Compiler::fgWasmSpillRefs()
                 continue;
             }
 
-            // If a value is just a GT_LCL_VAR that isn't address-exposed, by construction we ensure that
-            //  it won't be mutated between its def (here) and its use (the call that would produce a spill)
-            //  and we won't need to spill it.
             if (tree->OperIs(GT_LCL_VAR))
             {
                 GenTreeLclVarCommon* lclVar = tree->AsLclVarCommon();
                 LclVarDsc*           dsc    = lvaGetDesc(lclVar);
-                if (!dsc->IsAddressExposed())
+                bool                 isRefLocalCandidate =
+                    dsc->lvTracked && VarSetOps::IsMember(this, *m_wasmGCRefCandidates, dsc->lvVarIndex);
+
+                // If a value is just a GT_LCL_VAR that isn't address-exposed, by construction we ensure that
+                // it won't be mutated between its def (here) and its use (the call that would produce a spill).
+                // That means we don't need to spill it since it has a pinned stack home already, UNLESS it is marked as
+                // GC-safe. If the local is marked as GC-safe that means it may be a wasm local candidate, so we may
+                // still need to spill the read value; This is because a local can die before a call but the tree
+                // temporary holding its last value may still be live into the call.
+                if (!dsc->IsAddressExposed() && !isRefLocalCandidate)
                 {
                     continue;
                 }
