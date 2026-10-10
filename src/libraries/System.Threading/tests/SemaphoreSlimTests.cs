@@ -63,6 +63,26 @@ namespace System.Threading.Tests
             RunSemaphoreSlimTest1_Wait_Helper(1, 10, TimeSpan.FromMilliseconds(uint.MaxValue), true, null);
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMultithreadingSupported))]
+        public static void Wait_SingleThreaded()
+        {
+            using SemaphoreSlim semaphore = new(1, 1);
+
+            semaphore.Wait();
+            semaphore.Release();
+            semaphore.Wait(CancellationToken.None);
+            semaphore.Release();
+            Assert.True(semaphore.Wait(1));
+            semaphore.Release();
+            Assert.True(semaphore.Wait(TimeSpan.FromMilliseconds(1)));
+            semaphore.Release();
+            Assert.True(semaphore.Wait(0, CancellationToken.None));
+
+            Assert.False(semaphore.Wait(0));
+            Assert.Throws<PlatformNotSupportedException>(() => semaphore.Wait(1));
+            Assert.Throws<PlatformNotSupportedException>(() => semaphore.Wait());
+        }
+
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunSemaphoreSlimTest1_Wait_NegativeCases()
         {

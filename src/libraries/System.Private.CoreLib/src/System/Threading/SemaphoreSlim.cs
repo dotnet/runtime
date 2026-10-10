@@ -320,8 +320,6 @@ namespace System.Threading
                 return false;
             }
 
-            RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
-
             long startTime = 0;
             if (millisecondsTimeout != Timeout.Infinite && millisecondsTimeout > 0)
             {
@@ -367,6 +365,8 @@ namespace System.Threading
                 // then block on (once we've released the lock).
                 if (m_asyncHead is not null)
                 {
+                    RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
+
                     Debug.Assert(m_asyncTail is not null, "tail should not be null if head isn't");
                     asyncWaitTask = WaitAsyncCore(millisecondsTimeout, cancellationToken);
                 }

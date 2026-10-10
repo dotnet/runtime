@@ -68,6 +68,21 @@ namespace System.Threading.Tests
             }
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMultithreadingSupported))]
+        public static void Wait_SingleThreaded()
+        {
+            using ManualResetEventSlim setEvent = new(true);
+            setEvent.Wait();
+            Assert.True(setEvent.Wait(1));
+            Assert.True(setEvent.Wait(TimeSpan.Zero));
+
+            using ManualResetEventSlim unsetEvent = new(false);
+            Assert.False(unsetEvent.Wait(0));
+            Assert.False(unsetEvent.Wait(TimeSpan.Zero));
+            Assert.Throws<PlatformNotSupportedException>(() => unsetEvent.Wait(1));
+            Assert.Throws<PlatformNotSupportedException>(() => unsetEvent.Wait());
+        }
+
         // Tests timeout on an event that is never set.
         [Fact]
         public static void RunManualResetEventSlimTest3_ConstructorTests()
