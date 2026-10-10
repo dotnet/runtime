@@ -43,7 +43,7 @@ int __cdecl main(int argc, char* argv[])
     int exitCode = 0;
     if (o.actionASMDump)
     {
-        exitCode = verbASMDump::DoWork(o.nameOfFile1, o.nameOfFile2, o.indexCount, o.indexes);
+        exitCode = verbASMDump::DoWork(o.nameOfFile1, o.nameOfFile2, o.indexCount, o.indexes.data());
     }
     if (o.actionConcat)
     {
@@ -55,15 +55,15 @@ int __cdecl main(int argc, char* argv[])
     }
     if (o.actionCopy)
     {
-        exitCode = verbStrip::DoWork(o.nameOfFile1, o.nameOfFile2, o.indexCount, o.indexes, false, o.stripCR);
+        exitCode = verbStrip::DoWork(o.nameOfFile1, o.nameOfFile2, o.indexCount, o.indexes.data(), false, o.stripCR);
     }
     if (o.actionDump)
     {
-        exitCode = verbDump::DoWork(o.nameOfFile1, o.indexCount, o.indexes, o.simple);
+        exitCode = verbDump::DoWork(o.nameOfFile1, o.indexCount, o.indexes.data(), o.simple);
     }
     if (o.actionFracture)
     {
-        exitCode = verbFracture::DoWork(o.nameOfFile1, o.nameOfFile2, o.indexCount, o.indexes, o.stripCR);
+        exitCode = verbFracture::DoWork(o.nameOfFile1, o.nameOfFile2, o.indexCount, o.indexes.data(), o.stripCR);
     }
     if (o.actionDumpMap)
     {
@@ -75,7 +75,7 @@ int __cdecl main(int argc, char* argv[])
     }
     if (o.actionILDump)
     {
-        exitCode = verbILDump::DoWork(o.nameOfFile1, o.indexCount, o.indexes);
+        exitCode = verbILDump::DoWork(o.nameOfFile1, o.indexCount, o.indexes.data());
     }
     if (o.actionInteg)
     {
@@ -87,11 +87,11 @@ int __cdecl main(int argc, char* argv[])
     }
     if (o.actionStat)
     {
-        exitCode = verbStat::DoWork(o.nameOfFile1, o.nameOfFile2, o.indexCount, o.indexes);
+        exitCode = verbStat::DoWork(o.nameOfFile1, o.nameOfFile2, o.indexCount, o.indexes.data());
     }
     if (o.actionStrip)
     {
-        exitCode = verbStrip::DoWork(o.nameOfFile1, o.nameOfFile2, o.indexCount, o.indexes, true, o.stripCR);
+        exitCode = verbStrip::DoWork(o.nameOfFile1, o.nameOfFile2, o.indexCount, o.indexes.data(), true, o.stripCR);
     }
     if (o.actionTOC)
     {
