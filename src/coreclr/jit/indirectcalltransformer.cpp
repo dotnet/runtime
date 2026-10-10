@@ -1033,7 +1033,7 @@ private:
                 if (m_returnTemp != BAD_VAR_NUM)
                 {
                     GenTree* const store = m_compiler->gtNewTempStore(m_returnTemp, call);
-                    m_compiler->fgNewStmtAtEnd(block, store);
+                    m_compiler->fgNewStmtAtEnd(block, store, m_stmt->GetDebugInfo());
                 }
                 else
                 {
@@ -1094,7 +1094,7 @@ private:
                         assert(m_origCall->TypeIs(TYP_VOID) || m_returnValueUnused);
                         newRetExpr = m_compiler->gtUnusedValNode(newRetExpr);
                     }
-                    m_compiler->fgNewStmtAtEnd(block, newRetExpr);
+                    m_compiler->fgNewStmtAtEnd(block, newRetExpr, m_stmt->GetDebugInfo());
                 }
             }
         }
