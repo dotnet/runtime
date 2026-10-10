@@ -11,6 +11,8 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.IO.Compression
 {
@@ -553,10 +555,23 @@ namespace System.IO.Compression
 
         private void CloseStreams()
         {
+            ValueTask vt = CloseStreamsCoreAsync<SyncReadWriteAdapter>();
+            Debug.Assert(vt.IsCompleted, "Synchronous CloseStreams completed asynchronously.");
+            vt.GetAwaiter().GetResult();
+        }
+
+        private ValueTask CloseStreamsAsync() => CloseStreamsCoreAsync<AsyncReadWriteAdapter>();
+
+        private async ValueTask CloseStreamsCoreAsync<TAdapter>()
+            where TAdapter : IReadWriteAdapter
+        {
             if (!_leaveOpen)
             {
-                _archiveStream.Dispose();
-                _backingStream?.Dispose();
+                await TAdapter.DisposeAsync(_archiveStream).ConfigureAwait(false);
+                if (_backingStream != null)
+                {
+                    await TAdapter.DisposeAsync(_backingStream).ConfigureAwait(false);
+                }
             }
             else
             {
@@ -565,16 +580,27 @@ namespace System.IO.Compression
                 // the temporary copy that we needed
                 if (_backingStream != null)
                 {
-                    _archiveStream.Dispose();
+                    await TAdapter.DisposeAsync(_archiveStream).ConfigureAwait(false);
                 }
             }
         }
 
         private void EnsureCentralDirectoryRead()
         {
+            ValueTask vt = EnsureCentralDirectoryReadCoreAsync<SyncReadWriteAdapter>(CancellationToken.None);
+            Debug.Assert(vt.IsCompleted, "Synchronous EnsureCentralDirectoryRead completed asynchronously.");
+            vt.GetAwaiter().GetResult();
+        }
+
+        private ValueTask EnsureCentralDirectoryReadAsync(CancellationToken cancellationToken) =>
+            EnsureCentralDirectoryReadCoreAsync<AsyncReadWriteAdapter>(cancellationToken);
+
+        private async ValueTask EnsureCentralDirectoryReadCoreAsync<TAdapter>(CancellationToken cancellationToken)
+            where TAdapter : IReadWriteAdapter
+        {
             if (!_readEntries)
             {
-                ReadCentralDirectory();
+                await ReadCentralDirectoryCoreAsync<TAdapter>(cancellationToken).ConfigureAwait(false);
                 _readEntries = true;
             }
         }
@@ -660,10 +686,21 @@ namespace System.IO.Compression
 
         private void ReadCentralDirectory()
         {
+            ValueTask vt = ReadCentralDirectoryCoreAsync<SyncReadWriteAdapter>(CancellationToken.None);
+            Debug.Assert(vt.IsCompleted, "Synchronous ReadCentralDirectory completed asynchronously.");
+            vt.GetAwaiter().GetResult();
+        }
+
+        private ValueTask ReadCentralDirectoryAsync(CancellationToken cancellationToken) =>
+            ReadCentralDirectoryCoreAsync<AsyncReadWriteAdapter>(cancellationToken);
+
+        private async ValueTask ReadCentralDirectoryCoreAsync<TAdapter>(CancellationToken cancellationToken)
+            where TAdapter : IReadWriteAdapter
+        {
             byte[] arrayPoolArray = ArrayPool<byte>.Shared.Rent(ReadCentralDirectoryReadBufferSize);
             try
             {
-                Span<byte> fileBuffer = arrayPoolArray.AsSpan();
+                Memory<byte> fileBuffer = arrayPoolArray;
 
                 ReadCentralDirectoryInitialize(out long numberOfEntries, out bool saveExtraFieldsAndComments, out bool continueReadingCentralDirectory, out int bytesRead, out int currPosition, out int bytesConsumed);
 
@@ -671,15 +708,15 @@ namespace System.IO.Compression
                 while (continueReadingCentralDirectory)
                 {
                     // the buffer read must always be large enough to fit the constant section size of at least one header
-                    int currBytesRead = _archiveStream.ReadAtLeast(fileBuffer, ZipCentralDirectoryFileHeader.BlockConstantSectionSize, throwOnEndOfStream: false);
+                    int currBytesRead = await TAdapter.ReadAtLeastAsync(_archiveStream, fileBuffer, ZipCentralDirectoryFileHeader.BlockConstantSectionSize, throwOnEndOfStream: false, cancellationToken).ConfigureAwait(false);
 
-                    ReadOnlySpan<byte> sizedFileBuffer = fileBuffer.Slice(0, currBytesRead);
+                    ReadOnlyMemory<byte> sizedFileBuffer = fileBuffer[0..currBytesRead];
                     continueReadingCentralDirectory = currBytesRead >= ZipCentralDirectoryFileHeader.BlockConstantSectionSize;
 
                     while (currPosition + ZipCentralDirectoryFileHeader.BlockConstantSectionSize <= currBytesRead)
                     {
-                        bool result = ZipCentralDirectoryFileHeader.TryReadBlock(sizedFileBuffer.Slice(currPosition), _archiveStream,
-                            saveExtraFieldsAndComments, out bytesConsumed, out ZipCentralDirectoryFileHeader? currentHeader);
+                        (bool result, bytesConsumed, ZipCentralDirectoryFileHeader? currentHeader) =
+                            await ZipCentralDirectoryFileHeader.TryReadBlockCoreAsync<TAdapter>(sizedFileBuffer.Slice(currPosition), _archiveStream, saveExtraFieldsAndComments, cancellationToken).ConfigureAwait(false);
 
                         if (!ReadCentralDirectoryEndOfInnerLoopWork(result, currentHeader, bytesConsumed, ref continueReadingCentralDirectory, ref numberOfEntries, ref currPosition, ref bytesRead))
                         {
@@ -689,11 +726,11 @@ namespace System.IO.Compression
                         ZipArchiveEntry lastEntry = _entries[_entries.Count - 1];
                         if (lastEntry.IsEncrypted)
                         {
-                            lastEntry.ReadEncryptionSaltIfNeeded();
+                            await lastEntry.ReadEncryptionSaltIfNeededCoreAsync<TAdapter>(cancellationToken).ConfigureAwait(false);
                         }
                     }
 
-                    ReadCentralDirectoryEndOfOuterLoopWork(ref currPosition, sizedFileBuffer);
+                    ReadCentralDirectoryEndOfOuterLoopWork(ref currPosition, sizedFileBuffer.Span);
                 }
 
                 ReadCentralDirectoryPostOuterLoopWork(numberOfEntries);
@@ -734,6 +771,17 @@ namespace System.IO.Compression
         // Also checks that offset to CD isn't out of bounds
         private void ReadEndOfCentralDirectory()
         {
+            ValueTask vt = ReadEndOfCentralDirectoryCoreAsync<SyncReadWriteAdapter>(CancellationToken.None);
+            Debug.Assert(vt.IsCompleted, "Synchronous ReadEndOfCentralDirectory completed asynchronously.");
+            vt.GetAwaiter().GetResult();
+        }
+
+        private ValueTask ReadEndOfCentralDirectoryAsync(CancellationToken cancellationToken) =>
+            ReadEndOfCentralDirectoryCoreAsync<AsyncReadWriteAdapter>(cancellationToken);
+
+        private async ValueTask ReadEndOfCentralDirectoryCoreAsync<TAdapter>(CancellationToken cancellationToken)
+            where TAdapter : IReadWriteAdapter
+        {
             try
             {
                 // This seeks backwards almost to the beginning of the EOCD, one byte after where the signature would be
@@ -742,19 +790,20 @@ namespace System.IO.Compression
 
                 // If the EOCD has the minimum possible size (no zip file comment), then exactly the previous 4 bytes will contain the signature
                 // But if the EOCD has max possible size, the signature should be found somewhere in the previous 64K + 4 bytes
-                if (!ZipHelper.SeekBackwardsToSignature(_archiveStream,
+                if (!await ZipHelper.SeekBackwardsToSignatureCoreAsync<TAdapter>(_archiveStream,
                         ZipEndOfCentralDirectoryBlock.SignatureConstantBytes,
-                        ZipEndOfCentralDirectoryBlock.ZipFileCommentMaxLength + ZipEndOfCentralDirectoryBlock.FieldLengths.Signature))
+                        ZipEndOfCentralDirectoryBlock.ZipFileCommentMaxLength + ZipEndOfCentralDirectoryBlock.FieldLengths.Signature,
+                        cancellationToken).ConfigureAwait(false))
                     throw new InvalidDataException(SR.EOCDNotFound);
 
                 long eocdStart = _archiveStream.Position;
 
                 // read the EOCD
-                ZipEndOfCentralDirectoryBlock eocd = ZipEndOfCentralDirectoryBlock.ReadBlock(_archiveStream);
+                ZipEndOfCentralDirectoryBlock eocd = await ZipEndOfCentralDirectoryBlock.ReadBlockCoreAsync<TAdapter>(_archiveStream, cancellationToken).ConfigureAwait(false);
 
                 ReadEndOfCentralDirectoryInnerWork(eocd);
 
-                TryReadZip64EndOfCentralDirectory(eocd, eocdStart);
+                await TryReadZip64EndOfCentralDirectoryCoreAsync<TAdapter>(eocd, eocdStart, cancellationToken).ConfigureAwait(false);
 
                 if (_centralDirectoryStart > _archiveStream.Length)
                 {
@@ -815,6 +864,17 @@ namespace System.IO.Compression
         // End of Central Directory block has already been found, as well as the location in the stream where the EOCD starts.
         private void TryReadZip64EndOfCentralDirectory(ZipEndOfCentralDirectoryBlock eocd, long eocdStart)
         {
+            ValueTask vt = TryReadZip64EndOfCentralDirectoryCoreAsync<SyncReadWriteAdapter>(eocd, eocdStart, CancellationToken.None);
+            Debug.Assert(vt.IsCompleted, "Synchronous TryReadZip64EndOfCentralDirectory completed asynchronously.");
+            vt.GetAwaiter().GetResult();
+        }
+
+        private ValueTask TryReadZip64EndOfCentralDirectoryAsync(ZipEndOfCentralDirectoryBlock eocd, long eocdStart, CancellationToken cancellationToken) =>
+            TryReadZip64EndOfCentralDirectoryCoreAsync<AsyncReadWriteAdapter>(eocd, eocdStart, cancellationToken);
+
+        private async ValueTask TryReadZip64EndOfCentralDirectoryCoreAsync<TAdapter>(ZipEndOfCentralDirectoryBlock eocd, long eocdStart, CancellationToken cancellationToken)
+            where TAdapter : IReadWriteAdapter
+        {
             // Only bother looking for the Zip64-EOCD stuff if we suspect it is needed because some value is FFFFFFFFF
             // because these are the only two values we need, we only worry about these
             // if we don't find the Zip64-EOCD, we just give up and try to use the original values
@@ -835,16 +895,16 @@ namespace System.IO.Compression
 
                 // Exactly the previous 4 bytes should contain the Zip64-EOCDL signature
                 // if we don't find it, assume it doesn't exist and use data from normal EOCD
-                if (ZipHelper.SeekBackwardsToSignature(_archiveStream,
+                if (await ZipHelper.SeekBackwardsToSignatureCoreAsync<TAdapter>(_archiveStream,
                         Zip64EndOfCentralDirectoryLocator.SignatureConstantBytes,
-                        Zip64EndOfCentralDirectoryLocator.FieldLengths.Signature))
+                        Zip64EndOfCentralDirectoryLocator.FieldLengths.Signature, cancellationToken).ConfigureAwait(false))
                 {
                     // use locator to get to Zip64-EOCD
-                    Zip64EndOfCentralDirectoryLocator locator = Zip64EndOfCentralDirectoryLocator.TryReadBlock(_archiveStream);
+                    Zip64EndOfCentralDirectoryLocator locator = await Zip64EndOfCentralDirectoryLocator.TryReadBlockCoreAsync<TAdapter>(_archiveStream, cancellationToken).ConfigureAwait(false);
                     TryReadZip64EndOfCentralDirectoryInnerInitialWork(locator);
 
                     // Read Zip64 End of Central Directory Record
-                    Zip64EndOfCentralDirectoryRecord record = Zip64EndOfCentralDirectoryRecord.TryReadBlock(_archiveStream);
+                    Zip64EndOfCentralDirectoryRecord record = await Zip64EndOfCentralDirectoryRecord.TryReadBlockCoreAsync<TAdapter>(_archiveStream, cancellationToken).ConfigureAwait(false);
                     TryReadZip64EndOfCentralDirectoryInnerFinalWork(record);
                 }
             }
@@ -902,6 +962,17 @@ namespace System.IO.Compression
 
         private void WriteFile()
         {
+            ValueTask vt = WriteFileCoreAsync<SyncReadWriteAdapter>(CancellationToken.None);
+            Debug.Assert(vt.IsCompleted, "Synchronous WriteFile completed asynchronously.");
+            vt.GetAwaiter().GetResult();
+        }
+
+        private ValueTask WriteFileAsync(CancellationToken cancellationToken = default) =>
+            WriteFileCoreAsync<AsyncReadWriteAdapter>(cancellationToken);
+
+        private async ValueTask WriteFileCoreAsync<TAdapter>(CancellationToken cancellationToken)
+            where TAdapter : IReadWriteAdapter
+        {
             // if we are in create mode, we always set readEntries to true in Init
             // if we are in update mode, we call EnsureCentralDirectoryRead, which sets readEntries to true
             Debug.Assert(_readEntries);
@@ -935,10 +1006,10 @@ namespace System.IO.Compression
                         {
                             WriteFileCheckStartingOffset(entry, ref completeRewriteStartingOffset);
 
-                            entry.LoadLocalHeaderExtraFieldIfNeeded();
+                            await entry.LoadLocalHeaderExtraFieldIfNeededCoreAsync<TAdapter>(cancellationToken).ConfigureAwait(false);
                             if (entry.OffsetOfLocalHeader >= completeRewriteStartingOffset)
                             {
-                                entry.LoadCompressedBytesIfNeeded();
+                                await entry.LoadCompressedBytesIfNeededCoreAsync<TAdapter>(cancellationToken).ConfigureAwait(false);
                             }
 
                             entriesToWrite.Add(entry);
@@ -955,7 +1026,7 @@ namespace System.IO.Compression
                 // which had a pending dynamically-sized write.
                 bool forceWriteLocalEntry = !entry.OriginallyInArchive || (entry.OriginallyInArchive && entry.OffsetOfLocalHeader >= completeRewriteStartingOffset);
 
-                entry.WriteAndFinishLocalEntry(forceWriteLocalEntry);
+                await entry.WriteAndFinishLocalEntryCoreAsync<TAdapter>(forceWriteLocalEntry, cancellationToken).ConfigureAwait(false);
             }
 
             long plannedCentralDirectoryPosition = _archiveStream.Position;
@@ -968,13 +1039,13 @@ namespace System.IO.Compression
                 bool centralDirectoryEntryRequiresUpdate = plannedCentralDirectoryPosition != _centralDirectoryStart
                     || !entry.OriginallyInArchive || entry.OffsetOfLocalHeader >= completeRewriteStartingOffset;
 
-                entry.WriteCentralDirectoryFileHeader(centralDirectoryEntryRequiresUpdate);
+                await entry.WriteCentralDirectoryFileHeaderCoreAsync<TAdapter>(centralDirectoryEntryRequiresUpdate, cancellationToken).ConfigureAwait(false);
                 archiveEpilogueRequiresUpdate |= centralDirectoryEntryRequiresUpdate;
             }
 
             long sizeOfCentralDirectory = _archiveStream.Position - plannedCentralDirectoryPosition;
 
-            WriteArchiveEpilogue(plannedCentralDirectoryPosition, sizeOfCentralDirectory, archiveEpilogueRequiresUpdate);
+            await WriteArchiveEpilogueCoreAsync<TAdapter>(plannedCentralDirectoryPosition, sizeOfCentralDirectory, archiveEpilogueRequiresUpdate, cancellationToken).ConfigureAwait(false);
 
             WriteFileFinalWork();
         }
@@ -988,6 +1059,17 @@ namespace System.IO.Compression
         // writes eocd, and if needed, zip 64 eocd, zip64 eocd locator
         // should only throw an exception in extremely exceptional cases because it is called from dispose
         private void WriteArchiveEpilogue(long startOfCentralDirectory, long sizeOfCentralDirectory, bool centralDirectoryChanged)
+        {
+            ValueTask vt = WriteArchiveEpilogueCoreAsync<SyncReadWriteAdapter>(startOfCentralDirectory, sizeOfCentralDirectory, centralDirectoryChanged, CancellationToken.None);
+            Debug.Assert(vt.IsCompleted, "Synchronous WriteArchiveEpilogue completed asynchronously.");
+            vt.GetAwaiter().GetResult();
+        }
+
+        private ValueTask WriteArchiveEpilogueAsync(long startOfCentralDirectory, long sizeOfCentralDirectory, bool centralDirectoryChanged, CancellationToken cancellationToken) =>
+            WriteArchiveEpilogueCoreAsync<AsyncReadWriteAdapter>(startOfCentralDirectory, sizeOfCentralDirectory, centralDirectoryChanged, cancellationToken);
+
+        private async ValueTask WriteArchiveEpilogueCoreAsync<TAdapter>(long startOfCentralDirectory, long sizeOfCentralDirectory, bool centralDirectoryChanged, CancellationToken cancellationToken)
+            where TAdapter : IReadWriteAdapter
         {
             // determine if we need Zip 64
             if (startOfCentralDirectory >= uint.MaxValue
@@ -1003,8 +1085,8 @@ namespace System.IO.Compression
 
                 if (centralDirectoryChanged)
                 {
-                    Zip64EndOfCentralDirectoryRecord.WriteBlock(_archiveStream, _entries.Count, startOfCentralDirectory, sizeOfCentralDirectory);
-                    Zip64EndOfCentralDirectoryLocator.WriteBlock(_archiveStream, zip64EOCDRecordStart);
+                    await Zip64EndOfCentralDirectoryRecord.WriteBlockCoreAsync<TAdapter>(_archiveStream, _entries.Count, startOfCentralDirectory, sizeOfCentralDirectory, cancellationToken).ConfigureAwait(false);
+                    await Zip64EndOfCentralDirectoryLocator.WriteBlockCoreAsync<TAdapter>(_archiveStream, zip64EOCDRecordStart, cancellationToken).ConfigureAwait(false);
                 }
                 else
                 {
@@ -1015,7 +1097,7 @@ namespace System.IO.Compression
             // write normal eocd
             if (centralDirectoryChanged || (Changed != ChangeState.Unchanged))
             {
-                ZipEndOfCentralDirectoryBlock.WriteBlock(_archiveStream, _entries.Count, startOfCentralDirectory, sizeOfCentralDirectory, _archiveComment);
+                await ZipEndOfCentralDirectoryBlock.WriteBlockCoreAsync<TAdapter>(_archiveStream, _entries.Count, startOfCentralDirectory, sizeOfCentralDirectory, _archiveComment, cancellationToken).ConfigureAwait(false);
             }
             else
             {

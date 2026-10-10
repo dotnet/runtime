@@ -27,12 +27,23 @@ namespace System.IO.Compression
         public ushort Size => _size;
         public byte[] Data => _data ??= [];
 
-        public unsafe void WriteBlock(Stream stream)
+        public void WriteBlock(Stream stream)
         {
-            Span<byte> extraFieldHeader = stackalloc byte[SizeOfHeader];
+            ValueTask vt = WriteBlockCoreAsync<SyncReadWriteAdapter>(stream, CancellationToken.None);
+            Debug.Assert(vt.IsCompleted, "Synchronous WriteBlock completed asynchronously.");
+            vt.GetAwaiter().GetResult();
+        }
+
+        public ValueTask WriteBlockAsync(Stream stream, CancellationToken cancellationToken) =>
+            WriteBlockCoreAsync<AsyncReadWriteAdapter>(stream, cancellationToken);
+
+        private async ValueTask WriteBlockCoreAsync<TAdapter>(Stream stream, CancellationToken cancellationToken)
+            where TAdapter : IReadWriteAdapter
+        {
+            byte[] extraFieldHeader = new byte[SizeOfHeader];
             WriteBlockCore(extraFieldHeader);
-            stream.Write(extraFieldHeader);
-            stream.Write(Data);
+            await TAdapter.WriteAsync(stream, extraFieldHeader, cancellationToken).ConfigureAwait(false);
+            await TAdapter.WriteAsync(stream, Data, cancellationToken).ConfigureAwait(false);
         }
 
         private void WriteBlockCore(Span<byte> extraFieldHeader)
@@ -101,23 +112,45 @@ namespace System.IO.Compression
             return size;
         }
 
-        public static void WriteAllBlocks(List<ZipGenericExtraField>? fields, ReadOnlySpan<byte> trailingExtraFieldData, Stream stream)
+        public static void WriteAllBlocks(List<ZipGenericExtraField>? fields, ReadOnlyMemory<byte> trailingExtraFieldData, Stream stream)
+        {
+            ValueTask vt = WriteAllBlocksCoreAsync<SyncReadWriteAdapter>(fields, trailingExtraFieldData, stream, CancellationToken.None);
+            Debug.Assert(vt.IsCompleted, "Synchronous WriteAllBlocks completed asynchronously.");
+            vt.GetAwaiter().GetResult();
+        }
+
+        public static ValueTask WriteAllBlocksAsync(List<ZipGenericExtraField>? fields, ReadOnlyMemory<byte> trailingExtraFieldData, Stream stream, CancellationToken cancellationToken) =>
+            WriteAllBlocksCoreAsync<AsyncReadWriteAdapter>(fields, trailingExtraFieldData, stream, cancellationToken);
+
+        private static async ValueTask WriteAllBlocksCoreAsync<TAdapter>(List<ZipGenericExtraField>? fields, ReadOnlyMemory<byte> trailingExtraFieldData, Stream stream, CancellationToken cancellationToken)
+            where TAdapter : IReadWriteAdapter
         {
             if (fields != null)
             {
                 foreach (ZipGenericExtraField field in fields)
                 {
-                    field.WriteBlock(stream);
+                    await field.WriteBlockCoreAsync<TAdapter>(stream, cancellationToken).ConfigureAwait(false);
                 }
             }
 
             if (!trailingExtraFieldData.IsEmpty)
             {
-                stream.Write(trailingExtraFieldData);
+                await TAdapter.WriteAsync(stream, trailingExtraFieldData, cancellationToken).ConfigureAwait(false);
             }
         }
 
-        public static void WriteAllBlocksExcludingTag(List<ZipGenericExtraField>? fields, ReadOnlySpan<byte> trailingExtraFieldData, Stream stream, ushort excludeTag)
+        public static void WriteAllBlocksExcludingTag(List<ZipGenericExtraField>? fields, ReadOnlyMemory<byte> trailingExtraFieldData, Stream stream, ushort excludeTag)
+        {
+            ValueTask vt = WriteAllBlocksExcludingTagCoreAsync<SyncReadWriteAdapter>(fields, trailingExtraFieldData, stream, excludeTag, CancellationToken.None);
+            Debug.Assert(vt.IsCompleted, "Synchronous WriteAllBlocksExcludingTag completed asynchronously.");
+            vt.GetAwaiter().GetResult();
+        }
+
+        public static ValueTask WriteAllBlocksExcludingTagAsync(List<ZipGenericExtraField>? fields, ReadOnlyMemory<byte> trailingExtraFieldData, Stream stream, ushort excludeTag, CancellationToken cancellationToken) =>
+            WriteAllBlocksExcludingTagCoreAsync<AsyncReadWriteAdapter>(fields, trailingExtraFieldData, stream, excludeTag, cancellationToken);
+
+        private static async ValueTask WriteAllBlocksExcludingTagCoreAsync<TAdapter>(List<ZipGenericExtraField>? fields, ReadOnlyMemory<byte> trailingExtraFieldData, Stream stream, ushort excludeTag, CancellationToken cancellationToken)
+            where TAdapter : IReadWriteAdapter
         {
             if (fields != null)
             {
@@ -125,14 +158,14 @@ namespace System.IO.Compression
                 {
                     if (field.Tag != excludeTag)
                     {
-                        field.WriteBlock(stream);
+                        await field.WriteBlockCoreAsync<TAdapter>(stream, cancellationToken).ConfigureAwait(false);
                     }
                 }
             }
 
             if (!trailingExtraFieldData.IsEmpty)
             {
-                stream.Write(trailingExtraFieldData);
+                await TAdapter.WriteAsync(stream, trailingExtraFieldData, cancellationToken).ConfigureAwait(false);
             }
         }
 
@@ -440,11 +473,22 @@ namespace System.IO.Compression
             }
         }
 
-        public unsafe void WriteBlock(Stream stream)
+        public void WriteBlock(Stream stream)
         {
-            Span<byte> extraFieldData = stackalloc byte[TotalSize];
+            ValueTask vt = WriteBlockCoreAsync<SyncReadWriteAdapter>(stream, CancellationToken.None);
+            Debug.Assert(vt.IsCompleted, "Synchronous WriteBlock completed asynchronously.");
+            vt.GetAwaiter().GetResult();
+        }
+
+        public ValueTask WriteBlockAsync(Stream stream, CancellationToken cancellationToken) =>
+            WriteBlockCoreAsync<AsyncReadWriteAdapter>(stream, cancellationToken);
+
+        private ValueTask WriteBlockCoreAsync<TAdapter>(Stream stream, CancellationToken cancellationToken)
+            where TAdapter : IReadWriteAdapter
+        {
+            byte[] extraFieldData = new byte[TotalSize];
             WriteBlockCore(extraFieldData);
-            stream.Write(extraFieldData);
+            return TAdapter.WriteAsync(stream, extraFieldData, cancellationToken);
         }
     }
 
@@ -479,15 +523,34 @@ namespace System.IO.Compression
             return true;
         }
 
-        public static unsafe Zip64EndOfCentralDirectoryLocator TryReadBlock(Stream stream)
+        public static Zip64EndOfCentralDirectoryLocator TryReadBlock(Stream stream)
         {
-            Span<byte> blockContents = stackalloc byte[TotalSize];
-            int bytesRead = stream.ReadAtLeast(blockContents, blockContents.Length, throwOnEndOfStream: false);
-            bool zip64eocdLocatorProper = TryReadBlockCore(blockContents, bytesRead, out Zip64EndOfCentralDirectoryLocator? zip64EOCDLocator);
+            ValueTask<Zip64EndOfCentralDirectoryLocator> vt = TryReadBlockCoreAsync<SyncReadWriteAdapter>(stream, CancellationToken.None);
+            Debug.Assert(vt.IsCompleted, "Synchronous TryReadBlock completed asynchronously.");
+            return vt.GetAwaiter().GetResult();
+        }
 
-            Debug.Assert(zip64eocdLocatorProper && zip64EOCDLocator != null); // we just found this using the signature finder, so it should be okay
+        public static ValueTask<Zip64EndOfCentralDirectoryLocator> TryReadBlockAsync(Stream stream, CancellationToken cancellationToken) =>
+            TryReadBlockCoreAsync<AsyncReadWriteAdapter>(stream, cancellationToken);
 
-            return zip64EOCDLocator;
+        internal static async ValueTask<Zip64EndOfCentralDirectoryLocator> TryReadBlockCoreAsync<TAdapter>(Stream stream, CancellationToken cancellationToken)
+            where TAdapter : IReadWriteAdapter
+        {
+            byte[] rented = ArrayPool<byte>.Shared.Rent(TotalSize);
+            try
+            {
+                Memory<byte> blockContents = rented.AsMemory(0, TotalSize);
+                int bytesRead = await TAdapter.ReadAtLeastAsync(stream, blockContents, blockContents.Length, throwOnEndOfStream: false, cancellationToken).ConfigureAwait(false);
+                bool zip64eocdLocatorProper = TryReadBlockCore(blockContents.Span, bytesRead, out Zip64EndOfCentralDirectoryLocator? zip64EOCDLocator);
+
+                Debug.Assert(zip64eocdLocatorProper && zip64EOCDLocator != null); // we just found this using the signature finder, so it should be okay
+
+                return zip64EOCDLocator;
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(rented);
+            }
         }
 
         private static void WriteBlockCore(Span<byte> blockContents, long zip64EOCDRecordStart)
@@ -501,13 +564,25 @@ namespace System.IO.Compression
 
         }
 
-        public static unsafe void WriteBlock(Stream stream, long zip64EOCDRecordStart)
+        public static void WriteBlock(Stream stream, long zip64EOCDRecordStart)
         {
-            Span<byte> blockContents = stackalloc byte[TotalSize];
+            ValueTask vt = WriteBlockCoreAsync<SyncReadWriteAdapter>(stream, zip64EOCDRecordStart, CancellationToken.None);
+            Debug.Assert(vt.IsCompleted, "Synchronous WriteBlock completed asynchronously.");
+            vt.GetAwaiter().GetResult();
+        }
+
+        public static ValueTask WriteBlockAsync(Stream stream, long zip64EOCDRecordStart, CancellationToken cancellationToken) =>
+            WriteBlockCoreAsync<AsyncReadWriteAdapter>(stream, zip64EOCDRecordStart, cancellationToken);
+
+        internal static ValueTask WriteBlockCoreAsync<TAdapter>(Stream stream, long zip64EOCDRecordStart, CancellationToken cancellationToken)
+            where TAdapter : IReadWriteAdapter
+        {
+            byte[] blockContents = new byte[TotalSize];
             WriteBlockCore(blockContents, zip64EOCDRecordStart);
-            stream.Write(blockContents);
+            return TAdapter.WriteAsync(stream, blockContents, cancellationToken);
         }
     }
+
 
     internal sealed partial class Zip64EndOfCentralDirectoryRecord
     {
@@ -558,16 +633,35 @@ namespace System.IO.Compression
             return true;
         }
 
-        public static unsafe Zip64EndOfCentralDirectoryRecord TryReadBlock(Stream stream)
+        public static Zip64EndOfCentralDirectoryRecord TryReadBlock(Stream stream)
         {
-            Span<byte> blockContents = stackalloc byte[BlockConstantSectionSize];
-            int bytesRead = stream.ReadAtLeast(blockContents, blockContents.Length, throwOnEndOfStream: false);
-            if (!TryReadBlockCore(blockContents, bytesRead, out Zip64EndOfCentralDirectoryRecord? zip64EOCDRecord))
-            {
-                throw new InvalidDataException(SR.Zip64EOCDNotWhereExpected);
-            }
+            ValueTask<Zip64EndOfCentralDirectoryRecord> vt = TryReadBlockCoreAsync<SyncReadWriteAdapter>(stream, CancellationToken.None);
+            Debug.Assert(vt.IsCompleted, "Synchronous TryReadBlock completed asynchronously.");
+            return vt.GetAwaiter().GetResult();
+        }
 
-            return zip64EOCDRecord;
+        public static ValueTask<Zip64EndOfCentralDirectoryRecord> TryReadBlockAsync(Stream stream, CancellationToken cancellationToken) =>
+            TryReadBlockCoreAsync<AsyncReadWriteAdapter>(stream, cancellationToken);
+
+        internal static async ValueTask<Zip64EndOfCentralDirectoryRecord> TryReadBlockCoreAsync<TAdapter>(Stream stream, CancellationToken cancellationToken)
+            where TAdapter : IReadWriteAdapter
+        {
+            byte[] rented = ArrayPool<byte>.Shared.Rent(BlockConstantSectionSize);
+            try
+            {
+                Memory<byte> blockContents = rented.AsMemory(0, BlockConstantSectionSize);
+                int bytesRead = await TAdapter.ReadAtLeastAsync(stream, blockContents, blockContents.Length, throwOnEndOfStream: false, cancellationToken).ConfigureAwait(false);
+                if (!TryReadBlockCore(blockContents.Span, bytesRead, out Zip64EndOfCentralDirectoryRecord? zip64EOCDRecord))
+                {
+                    throw new InvalidDataException(SR.Zip64EOCDNotWhereExpected);
+                }
+
+                return zip64EOCDRecord;
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(rented);
+            }
         }
 
         private static void WriteBlockCore(Span<byte> blockContents, long numberOfEntries, long startOfCentralDirectory, long sizeOfCentralDirectory)
@@ -590,12 +684,23 @@ namespace System.IO.Compression
             BinaryPrimitives.WriteInt64LittleEndian(blockContents[FieldLocations.OffsetOfCentralDirectory..], startOfCentralDirectory);
         }
 
-        public static unsafe void WriteBlock(Stream stream, long numberOfEntries, long startOfCentralDirectory, long sizeOfCentralDirectory)
+        public static void WriteBlock(Stream stream, long numberOfEntries, long startOfCentralDirectory, long sizeOfCentralDirectory)
         {
-            Span<byte> blockContents = stackalloc byte[BlockConstantSectionSize];
+            ValueTask vt = WriteBlockCoreAsync<SyncReadWriteAdapter>(stream, numberOfEntries, startOfCentralDirectory, sizeOfCentralDirectory, CancellationToken.None);
+            Debug.Assert(vt.IsCompleted, "Synchronous WriteBlock completed asynchronously.");
+            vt.GetAwaiter().GetResult();
+        }
+
+        public static ValueTask WriteBlockAsync(Stream stream, long numberOfEntries, long startOfCentralDirectory, long sizeOfCentralDirectory, CancellationToken cancellationToken) =>
+            WriteBlockCoreAsync<AsyncReadWriteAdapter>(stream, numberOfEntries, startOfCentralDirectory, sizeOfCentralDirectory, cancellationToken);
+
+        internal static ValueTask WriteBlockCoreAsync<TAdapter>(Stream stream, long numberOfEntries, long startOfCentralDirectory, long sizeOfCentralDirectory, CancellationToken cancellationToken)
+            where TAdapter : IReadWriteAdapter
+        {
+            byte[] blockContents = new byte[BlockConstantSectionSize];
             WriteBlockCore(blockContents, numberOfEntries, startOfCentralDirectory, sizeOfCentralDirectory);
             // write Zip 64 EOCD record
-            stream.Write(blockContents);
+            return TAdapter.WriteAsync(stream, blockContents, cancellationToken);
         }
     }
 
@@ -628,33 +733,42 @@ namespace System.IO.Compression
             return list;
         }
 
-        public static unsafe List<ZipGenericExtraField> GetExtraFields(Stream stream, out byte[] trailingData)
+        public static List<ZipGenericExtraField> GetExtraFields(Stream stream, out byte[] trailingData)
+        {
+            ValueTask<(List<ZipGenericExtraField> Fields, byte[] TrailingData)> vt = GetExtraFieldsCoreAsync<SyncReadWriteAdapter>(stream, CancellationToken.None);
+            Debug.Assert(vt.IsCompleted, "Synchronous GetExtraFields completed asynchronously.");
+            (List<ZipGenericExtraField> fields, trailingData) = vt.GetAwaiter().GetResult();
+            return fields;
+        }
+
+        public static ValueTask<(List<ZipGenericExtraField> Fields, byte[] TrailingData)> GetExtraFieldsAsync(Stream stream, CancellationToken cancellationToken) =>
+            GetExtraFieldsCoreAsync<AsyncReadWriteAdapter>(stream, cancellationToken);
+
+        private static async ValueTask<(List<ZipGenericExtraField>, byte[])> GetExtraFieldsCoreAsync<TAdapter>(Stream stream, CancellationToken cancellationToken)
+            where TAdapter : IReadWriteAdapter
         {
             // assumes that TrySkipBlock has already been called, so we don't have to validate twice
 
-            Span<byte> fixedHeaderBuffer = stackalloc byte[FieldLengths.FilenameLength + FieldLengths.ExtraFieldLength];
+            byte[] fixedHeaderBuffer = new byte[FieldLengths.FilenameLength + FieldLengths.ExtraFieldLength];
             GetExtraFieldsInitialize(stream, out int relativeFilenameLengthLocation, out int relativeExtraFieldLengthLocation);
-            stream.ReadExactly(fixedHeaderBuffer);
+            await TAdapter.ReadExactlyAsync(stream, fixedHeaderBuffer, cancellationToken).ConfigureAwait(false);
 
             GetExtraFieldsCore(fixedHeaderBuffer, relativeFilenameLengthLocation, relativeExtraFieldLengthLocation, out ushort filenameLength, out ushort extraFieldLength);
 
-            const int StackAllocationThreshold = 512;
-
-            byte[]? arrayPoolBuffer = extraFieldLength > StackAllocationThreshold ? ArrayPool<byte>.Shared.Rent(extraFieldLength) : null;
-            Span<byte> extraFieldBuffer = extraFieldLength <= StackAllocationThreshold ? stackalloc byte[StackAllocationThreshold].Slice(0, extraFieldLength) : arrayPoolBuffer.AsSpan(0, extraFieldLength);
+            byte[] arrayPoolBuffer = ArrayPool<byte>.Shared.Rent(extraFieldLength);
+            Memory<byte> extraFieldBuffer = arrayPoolBuffer.AsMemory(0, extraFieldLength);
             try
             {
                 stream.Seek(filenameLength, SeekOrigin.Current);
-                stream.ReadExactly(extraFieldBuffer);
+                await TAdapter.ReadExactlyAsync(stream, extraFieldBuffer, cancellationToken).ConfigureAwait(false);
 
-                return GetExtraFieldPostReadWork(extraFieldBuffer, out trailingData);
+                List<ZipGenericExtraField> list = GetExtraFieldPostReadWork(extraFieldBuffer.Span, out byte[] trailingData);
+
+                return (list, trailingData);
             }
             finally
             {
-                if (arrayPoolBuffer != null)
-                {
-                    ArrayPool<byte>.Shared.Return(arrayPoolBuffer);
-                }
+                ArrayPool<byte>.Shared.Return(arrayPoolBuffer);
             }
         }
 
@@ -702,16 +816,35 @@ namespace System.IO.Compression
         }
 
         // will not throw end of stream exception
-        public static unsafe bool TrySkipBlock(Stream stream)
+        public static bool TrySkipBlock(Stream stream)
         {
-            Span<byte> blockBytes = stackalloc byte[FieldLengths.Signature];
-            int bytesRead = stream.ReadAtLeast(blockBytes, blockBytes.Length, throwOnEndOfStream: false);
-            if (!TrySkipBlockCore(stream, blockBytes, bytesRead))
+            ValueTask<bool> vt = TrySkipBlockCoreAsync<SyncReadWriteAdapter>(stream, CancellationToken.None);
+            Debug.Assert(vt.IsCompleted, "Synchronous TrySkipBlock completed asynchronously.");
+            return vt.GetAwaiter().GetResult();
+        }
+
+        public static ValueTask<bool> TrySkipBlockAsync(Stream stream, CancellationToken cancellationToken) =>
+            TrySkipBlockCoreAsync<AsyncReadWriteAdapter>(stream, cancellationToken);
+
+        private static async ValueTask<bool> TrySkipBlockCoreAsync<TAdapter>(Stream stream, CancellationToken cancellationToken)
+            where TAdapter : IReadWriteAdapter
+        {
+            byte[] rented = ArrayPool<byte>.Shared.Rent(FieldLengths.Signature);
+            try
             {
-                return false;
+                Memory<byte> blockBytes = rented.AsMemory(0, FieldLengths.Signature);
+                int bytesRead = await TAdapter.ReadAtLeastAsync(stream, blockBytes, blockBytes.Length, throwOnEndOfStream: false, cancellationToken).ConfigureAwait(false);
+                if (!TrySkipBlockCore(stream, blockBytes.Span, bytesRead))
+                {
+                    return false;
+                }
+                bytesRead = await TAdapter.ReadAtLeastAsync(stream, blockBytes, blockBytes.Length, throwOnEndOfStream: false, cancellationToken).ConfigureAwait(false);
+                return TrySkipBlockFinalize(stream, blockBytes.Span, bytesRead);
             }
-            bytesRead = stream.ReadAtLeast(blockBytes, blockBytes.Length, throwOnEndOfStream: false);
-            return TrySkipBlockFinalize(stream, blockBytes, bytesRead);
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(rented);
+            }
         }
     }
 
@@ -827,18 +960,22 @@ namespace System.IO.Compression
             return true;
         }
 
-        public unsafe void WriteBlock(Stream stream)
+        public void WriteBlock(Stream stream)
         {
-            Span<byte> buffer = stackalloc byte[TotalSize];
-            WriteBlockCore(buffer);
-            stream.Write(buffer);
+            ValueTask vt = WriteBlockCoreAsync<SyncReadWriteAdapter>(stream, CancellationToken.None);
+            Debug.Assert(vt.IsCompleted, "Synchronous WriteBlock completed asynchronously.");
+            vt.GetAwaiter().GetResult();
         }
 
-        public async Task WriteBlockAsync(Stream stream, CancellationToken cancellationToken = default)
+        public ValueTask WriteBlockAsync(Stream stream, CancellationToken cancellationToken = default) =>
+            WriteBlockCoreAsync<AsyncReadWriteAdapter>(stream, cancellationToken);
+
+        private ValueTask WriteBlockCoreAsync<TAdapter>(Stream stream, CancellationToken cancellationToken)
+            where TAdapter : IReadWriteAdapter
         {
             byte[] buffer = new byte[TotalSize];
             WriteBlockCore(buffer);
-            await stream.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
+            return TAdapter.WriteAsync(stream, buffer, cancellationToken);
         }
 
         private void WriteBlockCore(Span<byte> buffer)
@@ -858,8 +995,6 @@ namespace System.IO.Compression
         // The Zip File Format Specification references 0x02014B50, this is a big endian representation.
         // ZIP files store values in little endian, so this is reversed.
         public static ReadOnlySpan<byte> SignatureConstantBytes => [0x50, 0x4B, 0x01, 0x02];
-
-        private const int StackAllocationThreshold = 512;
 
         // These are the minimum possible size, assuming the zip file comments variable section is empty
         public const int BlockConstantSectionSize = 46;
@@ -984,11 +1119,24 @@ namespace System.IO.Compression
 
         // if saveExtraFieldsAndComments is false, FileComment and ExtraFields will be null
         // in either case, the zip64 extra field info will be incorporated into other fields
-        public static bool TryReadBlock(ReadOnlySpan<byte> buffer, Stream furtherReads, bool saveExtraFieldsAndComments, out int bytesRead, [NotNullWhen(returnValue: true)] out ZipCentralDirectoryFileHeader? header)
+        public static bool TryReadBlock(ReadOnlyMemory<byte> buffer, Stream furtherReads, bool saveExtraFieldsAndComments, out int bytesRead, [NotNullWhen(returnValue: true)] out ZipCentralDirectoryFileHeader? header)
         {
-            if (!TryReadBlockInitialize(buffer, out header, out bytesRead, out uint compressedSizeSmall, out uint uncompressedSizeSmall, out ushort diskNumberStartSmall, out uint relativeOffsetOfLocalHeaderSmall))
+            ValueTask<(bool Success, int BytesRead, ZipCentralDirectoryFileHeader? Header)> vt =
+                TryReadBlockCoreAsync<SyncReadWriteAdapter>(buffer, furtherReads, saveExtraFieldsAndComments, CancellationToken.None);
+            Debug.Assert(vt.IsCompleted, "Synchronous TryReadBlock completed asynchronously.");
+            (bool success, bytesRead, header) = vt.GetAwaiter().GetResult();
+            return success;
+        }
+
+        public static ValueTask<(bool Success, int BytesRead, ZipCentralDirectoryFileHeader? Header)> TryReadBlockAsync(ReadOnlyMemory<byte> buffer, Stream furtherReads, bool saveExtraFieldsAndComments, CancellationToken cancellationToken) =>
+            TryReadBlockCoreAsync<AsyncReadWriteAdapter>(buffer, furtherReads, saveExtraFieldsAndComments, cancellationToken);
+
+        internal static async ValueTask<(bool Success, int BytesRead, ZipCentralDirectoryFileHeader? Header)> TryReadBlockCoreAsync<TAdapter>(ReadOnlyMemory<byte> buffer, Stream furtherReads, bool saveExtraFieldsAndComments, CancellationToken cancellationToken)
+            where TAdapter : IReadWriteAdapter
+        {
+            if (!TryReadBlockInitialize(buffer.Span, out ZipCentralDirectoryFileHeader? header, out int bytesRead, out uint compressedSizeSmall, out uint uncompressedSizeSmall, out ushort diskNumberStartSmall, out uint relativeOffsetOfLocalHeaderSmall))
             {
-                return false;
+                return (false, 0, null);
             }
 
             byte[]? arrayPoolBuffer = null;
@@ -1004,7 +1152,7 @@ namespace System.IO.Compression
                 // No need to read extra data from the stream, no need to allocate a new buffer.
                 if (bytesToRead <= 0)
                 {
-                    dynamicHeader = buffer[FieldLocations.DynamicData..];
+                    dynamicHeader = buffer.Span[FieldLocations.DynamicData..];
                 }
                 // Data needs to come from two sources, and we must thus copy data into a single address space.
                 else
@@ -1015,26 +1163,23 @@ namespace System.IO.Compression
                     // remains in the stream, avoiding a wasted large allocation for every malformed entry.
                     if (furtherReads.CanSeek && bytesToRead > furtherReads.Length - furtherReads.Position)
                     {
-                        return false;
+                        return (false, bytesRead, null);
                     }
 
-                    if (dynamicHeaderSize > StackAllocationThreshold)
-                    {
-                        arrayPoolBuffer = ArrayPool<byte>.Shared.Rent(dynamicHeaderSize);
-                    }
-
-                    Span<byte> collatedHeader = dynamicHeaderSize <= StackAllocationThreshold ? stackalloc byte[StackAllocationThreshold].Slice(0, dynamicHeaderSize) : arrayPoolBuffer.AsSpan(0, dynamicHeaderSize);
+                    arrayPoolBuffer = ArrayPool<byte>.Shared.Rent(dynamicHeaderSize);
+                    Memory<byte> collatedHeader = arrayPoolBuffer.AsMemory(0, dynamicHeaderSize);
 
                     buffer[FieldLocations.DynamicData..].CopyTo(collatedHeader);
 
-                    Debug.Assert(bytesToRead == collatedHeader[remainingBufferLength..].Length);
-                    int realBytesRead = furtherReads.ReadAtLeast(collatedHeader[remainingBufferLength..], bytesToRead, throwOnEndOfStream: false);
+                    Debug.Assert(bytesToRead == collatedHeader.Length - remainingBufferLength);
+                    int realBytesRead = await TAdapter.ReadAtLeastAsync(furtherReads, collatedHeader.Slice(remainingBufferLength), bytesToRead, throwOnEndOfStream: false, cancellationToken).ConfigureAwait(false);
 
                     if (realBytesRead != bytesToRead)
                     {
-                        return false;
+                        return (false, bytesRead, null);
                     }
-                    dynamicHeader = collatedHeader;
+
+                    dynamicHeader = collatedHeader.Span;
                 }
 
                 TryReadBlockFinalize(header, dynamicHeader, dynamicHeaderSize, uncompressedSizeSmall, compressedSizeSmall, diskNumberStartSmall, relativeOffsetOfLocalHeaderSmall, saveExtraFieldsAndComments, ref bytesRead, out Zip64ExtraField zip64);
@@ -1047,7 +1192,7 @@ namespace System.IO.Compression
                 }
             }
 
-            return true;
+            return (true, bytesRead, header);
         }
     }
 
@@ -1105,16 +1250,27 @@ namespace System.IO.Compression
             BinaryPrimitives.WriteUInt16LittleEndian(blockContents[FieldLocations.ArchiveCommentLength..], (ushort)archiveComment.Length);
         }
 
-        public static unsafe void WriteBlock(Stream stream, long numberOfEntries, long startOfCentralDirectory, long sizeOfCentralDirectory, byte[] archiveComment)
+        public static void WriteBlock(Stream stream, long numberOfEntries, long startOfCentralDirectory, long sizeOfCentralDirectory, byte[] archiveComment)
         {
-            Span<byte> blockContents = stackalloc byte[TotalSize];
+            ValueTask vt = WriteBlockCoreAsync<SyncReadWriteAdapter>(stream, numberOfEntries, startOfCentralDirectory, sizeOfCentralDirectory, archiveComment, CancellationToken.None);
+            Debug.Assert(vt.IsCompleted, "Synchronous WriteBlock completed asynchronously.");
+            vt.GetAwaiter().GetResult();
+        }
+
+        public static ValueTask WriteBlockAsync(Stream stream, long numberOfEntries, long startOfCentralDirectory, long sizeOfCentralDirectory, byte[] archiveComment, CancellationToken cancellationToken) =>
+            WriteBlockCoreAsync<AsyncReadWriteAdapter>(stream, numberOfEntries, startOfCentralDirectory, sizeOfCentralDirectory, archiveComment, cancellationToken);
+
+        internal static async ValueTask WriteBlockCoreAsync<TAdapter>(Stream stream, long numberOfEntries, long startOfCentralDirectory, long sizeOfCentralDirectory, byte[] archiveComment, CancellationToken cancellationToken)
+            where TAdapter : IReadWriteAdapter
+        {
+            byte[] blockContents = new byte[TotalSize];
 
             WriteBlockInitialize(blockContents, numberOfEntries, startOfCentralDirectory, sizeOfCentralDirectory, archiveComment);
 
-            stream.Write(blockContents);
+            await TAdapter.WriteAsync(stream, blockContents, cancellationToken).ConfigureAwait(false);
             if (archiveComment.Length > 0)
             {
-                stream.Write(archiveComment);
+                await TAdapter.WriteAsync(stream, archiveComment, cancellationToken).ConfigureAwait(false);
             }
         }
 
@@ -1164,10 +1320,21 @@ namespace System.IO.Compression
             return true;
         }
 
-        public static unsafe ZipEndOfCentralDirectoryBlock ReadBlock(Stream stream)
+        public static ZipEndOfCentralDirectoryBlock ReadBlock(Stream stream)
         {
-            Span<byte> blockContents = stackalloc byte[TotalSize];
-            int bytesRead = stream.ReadAtLeast(blockContents, blockContents.Length, throwOnEndOfStream: false);
+            ValueTask<ZipEndOfCentralDirectoryBlock> vt = ReadBlockCoreAsync<SyncReadWriteAdapter>(stream, CancellationToken.None);
+            Debug.Assert(vt.IsCompleted, "Synchronous ReadBlock completed asynchronously.");
+            return vt.GetAwaiter().GetResult();
+        }
+
+        public static ValueTask<ZipEndOfCentralDirectoryBlock> ReadBlockAsync(Stream stream, CancellationToken cancellationToken) =>
+            ReadBlockCoreAsync<AsyncReadWriteAdapter>(stream, cancellationToken);
+
+        internal static async ValueTask<ZipEndOfCentralDirectoryBlock> ReadBlockCoreAsync<TAdapter>(Stream stream, CancellationToken cancellationToken)
+            where TAdapter : IReadWriteAdapter
+        {
+            byte[] blockContents = new byte[TotalSize];
+            int bytesRead = await TAdapter.ReadAtLeastAsync(stream, blockContents, blockContents.Length, throwOnEndOfStream: false, cancellationToken).ConfigureAwait(false);
 
             if (!TryReadBlockInitialize(stream, blockContents, bytesRead, out ZipEndOfCentralDirectoryBlock? eocdBlock, out bool readComment))
             {
@@ -1176,7 +1343,7 @@ namespace System.IO.Compression
             }
             else if (readComment)
             {
-                stream.ReadExactly(eocdBlock._archiveComment);
+                await TAdapter.ReadExactlyAsync(stream, eocdBlock._archiveComment, cancellationToken).ConfigureAwait(false);
             }
 
             return eocdBlock;
