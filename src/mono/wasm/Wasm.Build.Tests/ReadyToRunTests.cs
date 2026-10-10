@@ -143,6 +143,30 @@ namespace Wasm.Build.Tests
         }
 
         [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void PerformanceInstrumentationIsRejectedForBuild(bool readyToRun)
+        {
+            ProjectInfo info = CopyTestAsset(
+                Configuration.Debug,
+                aot: false,
+                TestAsset.BlazorBasicTestApp,
+                $"profiling_build_r2r_{readyToRun}",
+                extraProperties: $"""
+                    <EnableDiagnostics>true</EnableDiagnostics>
+                    <PublishReadyToRun>{readyToRun}</PublishReadyToRun>
+                    <WasmPerformanceInstrumentation>all</WasmPerformanceInstrumentation>
+                    """);
+
+            (string _, string output) = BlazorBuild(
+                info,
+                Configuration.Debug,
+                new BuildOptions(ExpectSuccess: false, AssertAppBundle: false));
+
+            Assert.Contains("Only published applications are supported for CPU profiling", output);
+        }
+
+        [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
         [InlineData(Configuration.Release)]
         [TestCategory("no-workload")]
         public void CompositeRequiresWebcil(Configuration config)
@@ -151,7 +175,6 @@ namespace Wasm.Build.Tests
                 extraProperties: "<PublishReadyToRun>true</PublishReadyToRun><PublishReadyToRunComposite>true</PublishReadyToRunComposite><WasmEnableWebcil>false</WasmEnableWebcil>");
             (string _, string output) = BlazorPublish(info, config,
                 new PublishOptions(ExpectSuccess: false, ExtraMSBuildArgs: GetR2RBuildArgs(config, composite: true)));
-
             Assert.Contains("PublishReadyToRunComposite for CoreCLR browser-wasm requires WebCIL-in-Wasm assemblies", output);
         }
 
@@ -262,35 +285,6 @@ namespace Wasm.Build.Tests
                 Assert.True(imageCount > 0, $"Expected per-app ReadyToRun images under '{r2rDir}'.");
             else
                 Assert.True(imageCount == 0, $"Expected no per-app crossgen2 output, found {imageCount} file(s) under '{r2rDir}'.");
-        }
-
-        // Wire the in-build crossgen2 when this leg shipped it, and for composite the wasm-aware Crossgen2Tasks shim:
-        // composite needs the shim's wasm output naming (<entry>.r2r.wasm owner, <name>.wasm stubs), which the base
-        // SDK's ReadyToRun tasks don't implement yet (dotnet/sdk#56395). Per-assembly R2R keeps the base SDK tasks so
-        // that path stays covered. Each is passed only when present under BASE_DIR: the no-workload leg resolves
-        // crossgen2 itself from the SDK pack (the SDK restores it when PublishReadyToRun is set), so passing a
-        // non-existent Crossgen2InBuildDir there would break the call-helpers generator. All inert if BASE_DIR is unset.
-        // TODO-WASM https://github.com/dotnet/runtime/issues/135023: drop the composite-only shim once the SDK names wasm R2R outputs.
-        private static string GetR2RBuildArgs(Configuration config, bool composite)
-        {
-            string? baseDir = EnvironmentVariables.BaseDir;
-            if (string.IsNullOrEmpty(baseDir))
-                return string.Empty;
-
-            string hostArch = System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture.ToString().ToLowerInvariant();
-            string crossgenDir = Path.Combine(baseDir, "coreclr", $"browser.wasm.{config}", hostArch, "crossgen2");
-            string shimDir = Path.Combine(baseDir, "Crossgen2Tasks", config.ToString());
-            string shimProps = Path.Combine(shimDir, "Microsoft.NET.CrossGen.props");
-            string shimTargets = Path.Combine(shimDir, "Microsoft.NET.CrossGen.targets");
-
-            var args = new List<string>();
-            if (Directory.Exists(crossgenDir))
-                args.Add($"-p:Crossgen2InBuildDir=\"{crossgenDir}\"");
-            if (composite && File.Exists(shimProps))
-                args.Add($"-p:Crossgen2SdkOverridePropsPath=\"{shimProps}\"");
-            if (composite && File.Exists(shimTargets))
-                args.Add($"-p:Crossgen2SdkOverrideTargetsPath=\"{shimTargets}\"");
-            return string.Join(" ", args);
         }
 
         private static int GetReadyToRunTableSize(string webcilPath)

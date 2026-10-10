@@ -20,7 +20,7 @@
 // If you update this, ensure you run `git grep MINIMUM_READYTORUN_MAJOR_VERSION`
 // and handle pending work.
 #define READYTORUN_MAJOR_VERSION 31
-#define READYTORUN_MINOR_VERSION 0x0000
+#define READYTORUN_MINOR_VERSION 0x0001
 
 #define MINIMUM_READYTORUN_MAJOR_VERSION 26
 
@@ -80,6 +80,7 @@
 // R2R Version 30 requires implicit byref arguments to always be outside of the GC heap
 // R2R Version 31 adds READYTORUN_FIXUP_MethodEntry_ReadyToRun for initializing a
 // method's ReadyToRun entry point and fixups.
+// R2R Version 31.1 adds READYTORUN_HELPER_WasmProfSamplepoint (used on WebAssembly)
 
 struct READYTORUN_CORE_HEADER
 {
@@ -525,6 +526,7 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_InitClass                 = 0x116,
     READYTORUN_HELPER_InitInstClass             = 0x117,
     READYTORUN_HELPER_R2RToInterpreter          = 0x118,
+    READYTORUN_HELPER_WasmProfSamplepoint       = 0x119,
 };
 
 #include "readytoruninstructionset.h"
