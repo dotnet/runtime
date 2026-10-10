@@ -1992,7 +1992,7 @@ private:
             if (varTypeIsSIMD(varDsc))
             {
                 // Preserve RHS side effects before reading the vector for a partial store.
-                if (isDef && ((indir->Data()->gtFlags & (GTF_PERSISTENT_SIDE_EFFECTS | GTF_ORDER_SIDEEFF)) != 0))
+                if (isDef && ((indir->Data()->gtFlags & GTF_OBS_EFFECT) != 0))
                 {
                     return IndirTransform::LclFld;
                 }
