@@ -19,6 +19,8 @@ namespace System.Tests
             "Windows",
             "Linux",
             "FreeBSD",
+            "illumos",
+            "Solaris",
             "Browser",
             "Wasi",
         };
@@ -169,6 +171,18 @@ namespace System.Tests
         [Fact, PlatformSpecific(TestPlatforms.Windows)]
         public static void TestIsOSVersionAtLeast_Windows() => TestIsOSVersionAtLeast("Windows");
 
+        [Fact, PlatformSpecific(TestPlatforms.illumos)]
+        public static void TestIsOSPlatform_Illumos() => TestIsOSPlatform("illumos", OperatingSystem.IsIllumos);
+
+        [Fact, PlatformSpecific(TestPlatforms.illumos)]
+        public static void TestIsOSVersionAtLeast_Illumos() => TestIsOSVersionAtLeast("illumos");
+
+        [Fact, PlatformSpecific(TestPlatforms.Solaris)]
+        public static void TestIsOSPlatform_Solaris() => TestIsOSPlatform("Solaris", OperatingSystem.IsSolaris);
+
+        [Fact, PlatformSpecific(TestPlatforms.Solaris)]
+        public static void TestIsOSVersionAtLeast_Solaris() => TestIsOSVersionAtLeast("Solaris");
+
         private static void TestIsOSPlatform(string currentOSName, Func<bool> currentOSCheck)
         {
             foreach (string platformName in AllKnownPlatformNames)
@@ -193,6 +207,8 @@ namespace System.Tests
                 { "IsBrowser", OperatingSystem.IsBrowser() },
                 { "IsLinux", OperatingSystem.IsLinux() },
                 { "IsFreeBSD", OperatingSystem.IsFreeBSD() },
+                { "IsIllumos", OperatingSystem.IsIllumos() },
+                { "IsSolaris", OperatingSystem.IsSolaris() },
                 { "IsAndroid", OperatingSystem.IsAndroid() },
                 { "IsIOS", OperatingSystem.IsIOS() },
                 { "IsMacCatalyst", OperatingSystem.IsMacCatalyst() },
@@ -248,6 +264,8 @@ namespace System.Tests
             }
 
             AssertVersionChecks(currentOSName.Equals("Android", StringComparison.OrdinalIgnoreCase), OperatingSystem.IsAndroidVersionAtLeast);
+            AssertVersionChecks(currentOSName.Equals("illumos", StringComparison.OrdinalIgnoreCase), OperatingSystem.IsIllumosVersionAtLeast);
+            AssertVersionChecks(currentOSName.Equals("Solaris", StringComparison.OrdinalIgnoreCase), OperatingSystem.IsSolarisVersionAtLeast);
             AssertVersionChecks(currentOSName == "MacCatalyst" || currentOSName.Equals("iOS", StringComparison.OrdinalIgnoreCase), OperatingSystem.IsIOSVersionAtLeast);
             AssertVersionChecks(currentOSName.Equals("macOS", StringComparison.OrdinalIgnoreCase), OperatingSystem.IsMacOSVersionAtLeast);
             AssertVersionChecks(currentOSName.Equals("MacCatalyst", StringComparison.OrdinalIgnoreCase), OperatingSystem.IsMacCatalystVersionAtLeast);
