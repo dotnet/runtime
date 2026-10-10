@@ -6,11 +6,8 @@
 int g_readProcessMemoryResult = KERN_SUCCESS;
 
 bool
-CrashInfo::Initialize()
+ProcessInfo::Initialize()
 {
-    m_ppid = 0;
-    m_tgid = 0;
-
     kern_return_t result = ::task_for_pid(mach_task_self(), m_pid, &m_task);
     if (result != KERN_SUCCESS)
     {
@@ -23,29 +20,39 @@ CrashInfo::Initialize()
 }
 
 void
+ProcessInfo::CleanupAndResumeProcess()
+{
+    for (const ThreadSnapshot& thread : m_threads)
+    {
+        kern_return_t result = ::mach_port_deallocate(mach_task_self(), thread.Port());
+        if (result != KERN_SUCCESS)
+        {
+            printf_error("Internal error: mach_port_deallocate FAILED %s (%x)\n", mach_error_string(result), result);
+        }
+    }
+}
+
+void
 CrashInfo::CleanupAndResumeProcess()
 {
     // Resume all the threads suspended in EnumerateAndSuspendThreads
     ::task_resume(Task());
 }
 
-//
-// Suspends all the threads and creating a list of them. Should be the before gathering any info about the process.
-//
 bool
-CrashInfo::EnumerateAndSuspendThreads()
+ProcessInfo::EnumerateAndSuspendThreads()
 {
     thread_act_port_array_t threadList;
     mach_msg_type_number_t threadCount;
 
-    kern_return_t result = ::task_suspend(Task());
+    kern_return_t result = ::task_suspend(m_task);
     if (result != KERN_SUCCESS)
     {
         printf_error("Problem suspending process: task_suspend(%d) FAILED %s (%x)\n", m_pid, mach_error_string(result), result);
         return false;
     }
 
-    result = ::task_threads(Task(), &threadList, &threadCount);
+    result = ::task_threads(m_task, &threadList, &threadCount);
     if (result != KERN_SUCCESS)
     {
         printf_error("Problem enumerating threads: task_threads(%d) FAILED %s (%x)\n", m_pid, mach_error_string(result), result);
@@ -69,9 +76,16 @@ CrashInfo::EnumerateAndSuspendThreads()
             tid = tident.thread_id;
         }
 
-        // Add to the list of threads
-        ThreadInfo* thread = new ThreadInfo(*this, tid, threadList[i]);
-        m_threads.push_back(thread);
+        ThreadSnapshot thread(tid, threadList[i]);
+        if (!m_threads.Add(thread))
+        {
+            for (mach_msg_type_number_t remaining = i; remaining < threadCount; remaining++)
+            {
+                ::mach_port_deallocate(mach_task_self(), threadList[remaining]);
+            }
+            ::vm_deallocate(mach_task_self(), reinterpret_cast<vm_address_t>(threadList), threadCount * sizeof(thread_act_t));
+            return false;
+        }
     }
 
     result = ::vm_deallocate(mach_task_self(), reinterpret_cast<vm_address_t>(threadList), threadCount * sizeof(thread_act_t));
@@ -168,7 +182,7 @@ CrashInfo::EnumerateMemoryRegions()
     return true;
 }
 
-void
+bool
 CrashInfo::InitializeOtherMappings()
 {
     uint64_t cbOtherMappings = 0;
@@ -219,6 +233,22 @@ CrashInfo::InitializeOtherMappings()
         }
     }
     TRACE("OtherMappings: %06llx\n", cbOtherMappings / PAGE_SIZE);
+
+    for (const ModuleRegion& mapping : m_moduleMappings)
+    {
+        if (!m_processInfo.AddMapping(mapping))
+        {
+            return false;
+        }
+    }
+    for (const MemoryRegion& mapping : m_otherMappings)
+    {
+        if (!m_processInfo.AddMapping(mapping))
+        {
+            return false;
+        }
+    }
+    return true;
 }
 
 void CrashInfo::VisitModule(MachOModule& module)
@@ -226,9 +256,9 @@ void CrashInfo::VisitModule(MachOModule& module)
     AddModuleInfo(false, module.BaseAddress(), nullptr, module.Name());
 
     // Get the process name from the executable module file type
-    if (m_name.empty() && module.Header().filetype == MH_EXECUTE)
+    if (*Name() == '\0' && module.Header().filetype == MH_EXECUTE)
     {
-        m_name = GetFileName(module.Name());
+        m_processInfo.SetName(GetFileName(module.Name()).c_str());
     }
     // Save the runtime module path
     if (m_coreclrPath.empty())
@@ -237,7 +267,7 @@ void CrashInfo::VisitModule(MachOModule& module)
         if (last != std::string::npos)
         {
             m_coreclrPath = module.Name().substr(0, last + 1);
-            m_runtimeBaseAddress = module.BaseAddress();
+            m_processInfo.SetRuntimeBaseAddress(module.BaseAddress());
 
             uint64_t symbolAddress;
             if (!module.TryLookupSymbol(DACCESS_TABLE_SYMBOL, &symbolAddress))
@@ -251,7 +281,7 @@ void CrashInfo::VisitModule(MachOModule& module)
             if (module.TryLookupSymbol("DotNetRuntimeInfo", &symbolAddress))
             {
                 m_coreclrPath = GetDirectory(module.Name());
-                m_runtimeBaseAddress = module.BaseAddress();
+                m_processInfo.SetRuntimeBaseAddress(module.BaseAddress());
 
                 RuntimeInfo runtimeInfo { };
                 if (ReadMemory(symbolAddress, &runtimeInfo, sizeof(RuntimeInfo)))
@@ -269,7 +299,7 @@ void CrashInfo::VisitModule(MachOModule& module)
             if (module.TryLookupSymbol("DotNetRuntimeContractDescriptor", &symbolAddress))
             {
                 m_coreclrPath = GetDirectory(module.Name());
-                m_runtimeBaseAddress = module.BaseAddress();
+                m_processInfo.SetRuntimeBaseAddress(module.BaseAddress());
                 TRACE("Found valid NativeAOT runtime module\n");
             }
         }
@@ -305,7 +335,11 @@ void CrashInfo::VisitSegment(MachOModule& module, const segment_command_64& segm
             assert(end > 0);
 
             // Add module memory region if not already on the list
-            ModuleRegion newModule(regionFlags, start, end, offset, module.Name());
+            ModuleRegion newModule(regionFlags, start, end, offset);
+            if (!newModule.SetFileName(module.Name().c_str()))
+            {
+                return;
+            }
             std::set<ModuleRegion>::iterator existingModule = m_moduleMappings.find(newModule);
             if (existingModule == m_moduleMappings.end())
             {
@@ -314,8 +348,8 @@ void CrashInfo::VisitSegment(MachOModule& module, const segment_command_64& segm
                     newModule.Trace("VisitSegment: ");
                 }
                 // Add this module segment to the module mappings list
-                m_moduleMappings.insert(newModule);
                 m_cbModuleMappings += newModule.Size();
+                m_moduleMappings.insert(Move(newModule));
             }
             else
             {
@@ -330,7 +364,11 @@ void CrashInfo::VisitSegment(MachOModule& module, const segment_command_64& segm
                     uint64_t numberPages = newModule.SizeInPages();
                     for (size_t p = 0; p < numberPages; p++, start += PAGE_SIZE, offset += PAGE_SIZE)
                     {
-                        ModuleRegion gap(newModule.Flags(), start, start + PAGE_SIZE, offset, newModule.FileName());
+                        ModuleRegion gap(newModule.Flags(), start, start + PAGE_SIZE, offset);
+                        if (!gap.SetFileName(newModule.FileName()))
+                        {
+                            return;
+                        }
 
                         const auto& found = m_moduleMappings.find(gap);
                         if (found != m_moduleMappings.end())
@@ -339,8 +377,8 @@ void CrashInfo::VisitSegment(MachOModule& module, const segment_command_64& segm
                             {
                                 gap.Trace("VisitSegment: *");
                             }
-                            m_moduleMappings.insert(gap);
                             m_cbModuleMappings += gap.Size();
+                            m_moduleMappings.insert(Move(gap));
                         }
                     }
                 }
@@ -380,7 +418,7 @@ CrashInfo::GetMemoryRegionFlags(uint64_t start)
 // Read raw memory
 //
 bool
-CrashInfo::ReadProcessMemory(uint64_t address, void* buffer, size_t size, size_t* read)
+ProcessInfo::ReadProcessMemory(uint64_t address, void* buffer, size_t size, size_t* read)
 {
     assert(buffer != nullptr);
     assert(read != nullptr);
@@ -398,7 +436,7 @@ CrashInfo::ReadProcessMemory(uint64_t address, void* buffer, size_t size, size_t
     while (bytesLeft > 0)
     {
         vm_size_t bytesRead = PAGE_SIZE;
-        kern_return_t result = ::vm_read_overwrite(Task(), addressAligned, PAGE_SIZE, (vm_address_t)data, &bytesRead);
+        kern_return_t result = ::vm_read_overwrite(m_task, addressAligned, PAGE_SIZE, (vm_address_t)data, &bytesRead);
         if (result != KERN_SUCCESS || bytesRead != PAGE_SIZE)
         {
             g_readProcessMemoryResult = result;
@@ -419,6 +457,12 @@ CrashInfo::ReadProcessMemory(uint64_t address, void* buffer, size_t size, size_t
     }
     *read = numberOfBytesRead;
     return size == 0 || numberOfBytesRead > 0;
+}
+
+bool
+CrashInfo::ReadProcessMemory(uint64_t address, void* buffer, size_t size, size_t* read)
+{
+    return m_processInfo.ReadProcessMemory(address, buffer, size, read);
 }
 
 const struct dyld_all_image_infos* g_image_infos = nullptr;

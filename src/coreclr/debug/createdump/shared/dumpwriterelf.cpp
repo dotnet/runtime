@@ -1,9 +1,21 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#include "createdump.h"
+#include "createdumpcore.h"
+#include "dumpwriter.h"
 
 extern int g_readProcessMemoryErrno;
+
+DumpWriter::DumpWriter(
+    ProcessInfo& processInfo,
+    const DynamicArray<ModuleRegion>& moduleMappings,
+    const DynamicArray<MemoryRegion>& dumpRegions) :
+    m_fd(-1),
+    m_processInfo(processInfo),
+    m_moduleMappings(moduleMappings),
+    m_dumpRegions(dumpRegions)
+{
+}
 
 // Write the core dump file:
 //   ELF header
@@ -47,7 +59,7 @@ DumpWriter::WriteDump()
 
     // PT_NOTE + number of memory regions
     uint64_t phnum = 1;
-    for (const MemoryRegion& memoryRegion : m_crashInfo.MemoryRegions())
+    for (const MemoryRegion& memoryRegion : m_dumpRegions)
     {
         phnum++;
     }
@@ -113,7 +125,7 @@ DumpWriter::WriteDump()
     TRACE("Writing memory region headers to core file\n");
 
     // Write memory region note headers
-    for (const MemoryRegion& memoryRegion : m_crashInfo.MemoryRegions())
+    for (const MemoryRegion& memoryRegion : m_dumpRegions)
     {
         phdr.p_flags = memoryRegion.Permissions();
         phdr.p_vaddr = memoryRegion.StartAddress();
@@ -143,12 +155,12 @@ DumpWriter::WriteDump()
         return false;
     }
 
-    TRACE("Writing %zd thread entries to core file\n", m_crashInfo.Threads().size());
+    TRACE("Writing %zd thread entries to core file\n", m_processInfo.Threads().Count());
 
     // Write all the thread's state and registers
-    for (const ThreadInfo* thread : m_crashInfo.Threads())
+    for (const ThreadSnapshot& thread : m_processInfo.Threads())
     {
-        if (!WriteThread(*thread)) {
+        if (!WriteThread(thread)) {
             return false;
         }
     }
@@ -170,7 +182,7 @@ DumpWriter::WriteDump()
 
     // Read from target process and write memory regions to core
     uint64_t total = 0;
-    for (const MemoryRegion& memoryRegion : m_crashInfo.MemoryRegions())
+    for (const MemoryRegion& memoryRegion : m_dumpRegions)
     {
         uint64_t address = memoryRegion.StartAddress();
         size_t size = memoryRegion.Size();
@@ -186,10 +198,10 @@ DumpWriter::WriteDump()
         {
             while (size > 0)
             {
-                size_t bytesToRead = std::min(size, sizeof(m_tempBuffer));
+                size_t bytesToRead = size < sizeof(m_tempBuffer) ? size : sizeof(m_tempBuffer);
                 size_t read = 0;
 
-                if (!m_crashInfo.ReadProcessMemory(address, m_tempBuffer, bytesToRead, &read)) {
+                if (!m_processInfo.ReadProcessMemory(address, m_tempBuffer, bytesToRead, &read)) {
                     printf_error("Error reading memory at %" PRIA PRIx64 " size %08zx FAILED %s (%d)\n", address, bytesToRead, strerror(g_readProcessMemoryErrno), g_readProcessMemoryErrno);
                     return false;
                 }
@@ -220,10 +232,10 @@ DumpWriter::WriteProcessInfo()
     prpsinfo_t processInfo;
     memset(&processInfo, 0, sizeof(processInfo));
     processInfo.pr_sname = 'R';
-    processInfo.pr_pid = m_crashInfo.Pid();
-    processInfo.pr_ppid = m_crashInfo.Ppid();
-    processInfo.pr_pgrp = m_crashInfo.Tgid();
-    m_crashInfo.Name().copy(processInfo.pr_fname, sizeof(processInfo.pr_fname));
+    processInfo.pr_pid = m_processInfo.Pid();
+    processInfo.pr_ppid = m_processInfo.Ppid();
+    processInfo.pr_pgrp = m_processInfo.Tgid();
+    strncpy(processInfo.pr_fname, m_processInfo.Name(), sizeof(processInfo.pr_fname));
 
     Nhdr nhdr;
     memset(&nhdr, 0, sizeof(nhdr));
@@ -248,16 +260,16 @@ DumpWriter::WriteAuxv()
     Nhdr nhdr;
     memset(&nhdr, 0, sizeof(nhdr));
     nhdr.n_namesz = 5;
-    nhdr.n_descsz = m_crashInfo.GetAuxvSize();
+    nhdr.n_descsz = m_processInfo.GetAuxvSize();
     nhdr.n_type = NT_AUXV;
 
-    TRACE("Writing %zd auxv entries to core file\n", m_crashInfo.AuxvEntries().size());
+    TRACE("Writing %zd auxv entries to core file\n", m_processInfo.AuxvEntries().Count());
 
     if (!WriteData(&nhdr, sizeof(nhdr)) ||
         !WriteData("CORE\0AUX", 8)) {
         return false;
     }
-    for (const auto& auxvEntry : m_crashInfo.AuxvEntries())
+    for (const elf_aux_entry& auxvEntry : m_processInfo.AuxvEntries())
     {
         if (!WriteData(&auxvEntry, sizeof(auxvEntry))) {
             return false;
@@ -277,7 +289,7 @@ struct NTFileEntry
 size_t
 DumpWriter::GetNTFileInfoSize(size_t* alignmentBytes)
 {
-    size_t count = m_crashInfo.ModuleMappings().size();
+    size_t count = m_moduleMappings.Count();
     size_t size = 0;
 
     // Header, CORE, entry count, page size
@@ -290,8 +302,8 @@ DumpWriter::GetNTFileInfoSize(size_t* alignmentBytes)
     size += count;
 
     // File name storage needed
-    for (const ModuleRegion& image : m_crashInfo.ModuleMappings()) {
-        size += image.FileName().length();
+    for (const ModuleRegion& image : m_moduleMappings) {
+        size += image.FileNameLength();
     }
     // Notes must end on 4 byte alignment
     size_t alignmentBytesNeeded = 4 - (size % 4);
@@ -326,10 +338,10 @@ DumpWriter::WriteNTFileInfo()
     size_t alignmentBytesNeeded = 0;
     nhdr.n_descsz = GetNTFileInfoSize(&alignmentBytesNeeded) - sizeof(nhdr) - 8;
 
-    size_t count = m_crashInfo.ModuleMappings().size();
+    size_t count = m_moduleMappings.Count();
     size_t pageSize = PAGE_SIZE;
 
-    TRACE("Writing %zd NT_FILE entries to core file\n", m_crashInfo.ModuleMappings().size());
+    TRACE("Writing %zd NT_FILE entries to core file\n", m_moduleMappings.Count());
 
     if (!WriteData(&nhdr, sizeof(nhdr)) ||
         !WriteData("CORE\0FIL", 8) ||
@@ -338,7 +350,7 @@ DumpWriter::WriteNTFileInfo()
         return false;
     }
 
-    for (const ModuleRegion& image : m_crashInfo.ModuleMappings())
+    for (const ModuleRegion& image : m_moduleMappings)
     {
         struct NTFileEntry entry { (unsigned long)image.StartAddress(), (unsigned long)image.EndAddress(), (unsigned long)(image.Offset() / pageSize) };
         if (!WriteData(&entry, sizeof(entry))) {
@@ -346,9 +358,9 @@ DumpWriter::WriteNTFileInfo()
         }
     }
 
-    for (const ModuleRegion& image : m_crashInfo.ModuleMappings())
+    for (const ModuleRegion& image : m_moduleMappings)
     {
-        if (!WriteData(image.FileName().c_str(), image.FileName().length()) ||
+        if (!WriteData(image.FileName(), image.FileNameLength()) ||
             !WriteData("\0", 1)) {
             return false;
         }
@@ -367,15 +379,15 @@ DumpWriter::WriteNTFileInfo()
 }
 
 bool
-DumpWriter::WriteThread(const ThreadInfo& thread)
+DumpWriter::WriteThread(const ThreadSnapshot& thread)
 {
     prstatus_t pr;
     memset(&pr, 0, sizeof(pr));
     const siginfo_t* siginfo = nullptr;
 
-    if (m_crashInfo.Signal() != 0 && thread.IsCrashThread())
+    if (m_processInfo.Signal() != 0 && thread.Tid() == m_processInfo.CrashThread())
     {
-        siginfo = m_crashInfo.SigInfo();
+        siginfo = m_processInfo.SigInfo();
         pr.pr_info.si_signo = siginfo->si_signo;
         pr.pr_info.si_code = siginfo->si_code;
         pr.pr_info.si_errno = siginfo->si_errno;
