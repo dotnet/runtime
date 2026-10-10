@@ -326,7 +326,7 @@ IEnumerable<ModuleHandle> GetModuleHandles(TargetPointer appDomain, AssemblyIter
         }
 
         if ((assembly.NotifyFlags & ASSEMBLY_NOTIFYFLAGS_PROFILER_NOTIFIED) != 0 &&
-            !iterationFlags.HasFlag(AssemblyIterationFlags.IncludeAvailableToProfilers))
+            iterationFlags.HasFlag(AssemblyIterationFlags.IncludeAvailableToProfilers))
         {
             // The assembly has reached the state at which we would notify profilers,
             // and we're supposed to include such assemblies in the enumeration. So

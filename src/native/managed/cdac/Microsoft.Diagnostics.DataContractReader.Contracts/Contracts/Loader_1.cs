@@ -95,7 +95,7 @@ internal readonly struct Loader_1 : ILoader
                 continue;
             }
 
-            if ((assembly.NotifyFlags & ASSEMBLY_NOTIFYFLAGS_PROFILER_NOTIFIED) != 0 && !iterationFlags.HasFlag(AssemblyIterationFlags.IncludeAvailableToProfilers))
+            if ((assembly.NotifyFlags & ASSEMBLY_NOTIFYFLAGS_PROFILER_NOTIFIED) != 0 && iterationFlags.HasFlag(AssemblyIterationFlags.IncludeAvailableToProfilers))
             {
                 // The assembly has reached the state at which we would notify profilers,
                 // and we're supposed to include such assemblies in the enumeration. So
