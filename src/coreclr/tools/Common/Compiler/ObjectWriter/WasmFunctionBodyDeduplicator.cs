@@ -37,7 +37,7 @@ namespace ILCompiler.ObjectWriter
                 {
                     continue;
                 }
-                if (HasTableIndexSelfRelocation(node, data.Relocs))
+                if (HasIdentityExposingSelfRelocation(node, data.Relocs))
                 {
                     continue;
                 }
@@ -74,7 +74,7 @@ namespace ILCompiler.ObjectWriter
         public bool TryGetCanonicalBody(ObjectNode node, out ObjectNode canonical) =>
             _canonicalBodies.TryGetValue(node, out canonical);
 
-        private static bool HasTableIndexSelfRelocation(ObjectNode node, Relocation[] relocations)
+        private static bool HasIdentityExposingSelfRelocation(ObjectNode node, Relocation[] relocations)
         {
             if (relocations is null)
             {
@@ -83,7 +83,7 @@ namespace ILCompiler.ObjectWriter
 
             foreach (Relocation relocation in relocations)
             {
-                bool exposesTableIndex = relocation.RelocType switch
+                bool exposesMethodIdentity = relocation.RelocType switch
                 {
                     RelocType.IMAGE_REL_BASED_WASM32_TABLE or
                     RelocType.IMAGE_REL_BASED_WASM64_TABLE or
@@ -91,6 +91,7 @@ namespace ILCompiler.ObjectWriter
                     RelocType.WASM_TABLE_INDEX_I32 or
                     RelocType.WASM_TABLE_INDEX_I64 or
                     RelocType.WASM_TABLE_INDEX_REL_I32 or
+                    RelocType.WASM_METHOD_FRAME_IDENTITY_SLEB or
                     RelocType.WASM_MEMORY_ADDR_REL_SLEB => true,
 
                     RelocType.IMAGE_REL_BASED_ABSOLUTE or
@@ -142,7 +143,7 @@ namespace ILCompiler.ObjectWriter
                         $"Unhandled relocation type {relocation.RelocType} in Wasm function-body deduplication."),
                 };
 
-                if (exposesTableIndex && TargetsSelf(node, relocation.Target))
+                if (exposesMethodIdentity && TargetsSelf(node, relocation.Target))
                 {
                     return true;
                 }

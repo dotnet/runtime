@@ -13,6 +13,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Emit;
 
 using crossgen2::ILCompiler;
+using crossgen2::ILCompiler.DependencyAnalysis;
 using crossgen2::ILCompiler.DependencyAnalysis.ReadyToRun;
 using crossgen2::ILCompiler.DependencyAnalysis.Wasm;
 using crossgen2::ILCompiler.PortableCallHelpers;
@@ -53,6 +54,32 @@ public class WasmArgumentLayoutTests
     public WasmArgumentLayoutTests(ITestOutputHelper output)
     {
         _output = output;
+    }
+
+    [Theory]
+    [InlineData(0, -1, 1)]
+    [InlineData(1, -3, 1)]
+    [InlineData(31, -63, 1)]
+    [InlineData(32, -65, 2)]
+    [InlineData(4095, -8191, 2)]
+    [InlineData(4096, -8193, 3)]
+    [InlineData(1073741823, -2147483647, 5)]
+    public unsafe void ManagedHelperFrameIdentityRelocation(int index, int identity, int encodedSize)
+    {
+        Assert.Equal(identity, checked(-(index * 2 + 1)));
+        Assert.Equal((uint)index, (~(uint)identity) >> 1);
+        RelocType type = RelocType.WASM_METHOD_FRAME_IDENTITY_SLEB;
+        Assert.True(Relocation.IsVariableLength(type));
+        Assert.Equal(5, Relocation.GetSize(type));
+        Assert.Equal(encodedSize, Relocation.ActualSize(type, identity));
+        byte[] buffer = new byte[Relocation.GetSize(type)];
+        fixed (byte* bytes = buffer)
+        {
+            Relocation.WriteValue(type, bytes, identity);
+            Assert.Equal(identity, Relocation.ReadValue(type, bytes));
+            Assert.Equal(encodedSize, Relocation.WriteVariableLengthValue(type, bytes, identity));
+            Assert.Equal(identity, Relocation.ReadValue(type, bytes));
+        }
     }
 
     [Theory]

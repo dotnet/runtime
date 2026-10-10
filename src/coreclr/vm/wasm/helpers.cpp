@@ -299,12 +299,6 @@ __attribute__((naked)) DWORD_PTR CallFuncletWithThrowable(UINT_PTR pFuncletToInv
          "i32.store       0\n"               // And save a terminator to the stack frame.
 
          "local.get       3\n"               // Get the stack pointer
-         "i32.const       " WASM_STRINGIFY(TERMINATE_R2R_STACK_WALK_FP_OFFSET) "\n"
-         "i32.add\n"                          // Compute the address next to the terminator
-         "local.get       1\n"               // Get the establishing (method) frame pointer argument
-         "i32.store       0\n"               // Save it so a handler nested in this funclet can recover its establishing frame.
-
-         "local.get       3\n"               // Get the stack pointer
          "local.get       1\n"               // Get the frame pointer argument for the original function
          "local.get       2\n"               // Get the exception object for the funclet
          "local.get       0\n"               // Get the funclet address to call
@@ -332,12 +326,6 @@ __attribute__((naked)) DWORD_PTR CallFuncletWithoutThrowable(UINT_PTR pFuncletTo
          "local.get       2\n"               // Get the stack pointer
          "i32.const       " WASM_STRINGIFY(TERMINATE_R2R_STACK_WALK) "\n"
          "i32.store       0\n"               // And save a terminator to the stack frame.
-
-         "local.get       2\n"               // Get the stack pointer
-         "i32.const       " WASM_STRINGIFY(TERMINATE_R2R_STACK_WALK_FP_OFFSET) "\n"
-         "i32.add\n"                          // Compute the address next to the terminator
-         "local.get       1\n"               // Get the establishing (method) frame pointer argument
-         "i32.store       0\n"               // Save it so a handler nested in this funclet can recover its establishing frame.
 
          "local.get       2\n"               // Get the stack pointer
          "local.get       1\n"               // Get the frame pointer argument for the original function
@@ -1853,17 +1841,25 @@ static TADDR GetWasmFramePointerFromStackPointer_Internal(TADDR sp)
     }
 }
 
-// Recover the establishing (method) frame pointer stored by CallFuncletWith[out]Throwable next to the
-// TERMINATE_R2R_STACK_WALK marker. 'sp' must point at such a synthetic terminator frame (i.e. the SP
-// reached after natively unwinding a funclet that the VM invoked via CallFunclet).
-TADDR GetWasmEstablishingFramePointerFromTerminator(TADDR sp)
+static TADDR GetWasmEstablishingFramePointer(TADDR fp)
 {
-    _ASSERTE(*(int32_t*)(sp + WASM_STACKFRAME_FUNCTION_INDEX_OFFSET) == TERMINATE_R2R_STACK_WALK);
-    return *(TADDR*)(sp + TERMINATE_R2R_STACK_WALK_FP_OFFSET);
+    LIMITED_METHOD_CONTRACT;
+
+    UINT_PTR identity = *reinterpret_cast<UINT_PTR*>(fp + WASM_STACKFRAME_FUNCTION_INDEX_OFFSET);
+    while ((identity & WASM_FRAME_IDENTITY_TAG_MASK) == WASM_FRAME_IDENTITY_ESTABLISHING_FRAME_TAG)
+    {
+        TADDR establishingFrame = identity - WASM_FRAME_IDENTITY_ESTABLISHING_FRAME_TAG;
+        _ASSERTE(establishingFrame > fp);
+        fp = establishingFrame;
+        identity = *reinterpret_cast<UINT_PTR*>(fp + WASM_STACKFRAME_FUNCTION_INDEX_OFFSET);
+    }
+    return fp;
 }
 
 TADDR GetWasmVirtualIPFromStackPointer(TADDR sp)
 {
+    LIMITED_METHOD_CONTRACT;
+
     TADDR fp = GetWasmFramePointerFromStackPointer_Internal(sp);
 
     if (fp == 0)
@@ -1872,9 +1868,26 @@ TADDR GetWasmVirtualIPFromStackPointer(TADDR sp)
     }
     else
     {
-        uint32_t r2rFunctionTableEntryNumber = *(uint32_t*)(fp + WASM_STACKFRAME_FUNCTION_INDEX_OFFSET);
-        uint32_t functionLocalVirtualIP = (*(uint32_t*)(fp + WASM_STACKFRAME_VIRTUALIP_OFFSET)) * 2; // Multiply by 2 as virtual IPs are encoded in units of 2 to leave the low bit in the VirtualIP mapping available to distinguish between virtual IPs and interpreter addresses/PortableEntryPoints.
-        TADDR baseVirtualIP = ExecutionManager::GetWasmVirtualIPFromFunctionTableIndex(r2rFunctionTableEntryNumber);
+        uint32_t functionLocalVirtualIP = (*(uint32_t*)(fp + WASM_STACKFRAME_VIRTUALIP_OFFSET)) * 2;
+        TADDR establishingFrame = GetWasmEstablishingFramePointer(fp);
+        UINT_PTR identity = *reinterpret_cast<UINT_PTR*>(establishingFrame + WASM_STACKFRAME_FUNCTION_INDEX_OFFSET);
+        TADDR baseVirtualIP;
+        if ((identity & 1) == 0)
+        {
+            _ASSERTE(identity != STACK_WALK_INDIRECT_TO_FRAMEPOINTER);
+            DWORD functionIndex = static_cast<DWORD>(reinterpret_cast<UINT_PTR>(PortableEntryPoint::GetActualCode(identity)));
+            baseVirtualIP = ExecutionManager::GetWasmVirtualIPFromFunctionTableIndex(functionIndex);
+        }
+        else if (static_cast<INT_PTR>(identity) < 0)
+        {
+            DWORD functionIndex = static_cast<DWORD>((~identity) >> 1);
+            baseVirtualIP = ExecutionManager::GetWasmVirtualIPFromCoreLibRuntimeFunctionIndex(functionIndex);
+        }
+        else
+        {
+            _ASSERTE(identity != TERMINATE_R2R_STACK_WALK);
+            baseVirtualIP = ExecutionManager::GetWasmVirtualIPFromFunctionTableIndex(static_cast<DWORD>(identity >> 1));
+        }
         if (baseVirtualIP == 0)
             return 0;
         return baseVirtualIP + functionLocalVirtualIP;
@@ -1902,49 +1915,15 @@ static void WasmUnwindStackFrameCore(TADDR* pSP, TADDR* pIP, UINT_PTR ImageBase,
 
 TADDR GetWasmFramePointerFromStackPointer(TADDR sp, PCODE controlPC)
 {
-    // Get the frame pointer of the individual WASM function from the stack pointer. However, if this is a funclet, the logical
-    // frame pointer is found by unwinding to either its containing function, or to a CallFunclet location.
+    LIMITED_METHOD_CONTRACT;
 
     TADDR internalFunctionFramePointer = GetWasmFramePointerFromStackPointer_Internal(sp);
     if (internalFunctionFramePointer == 0)
         return 0;
 
-    uint32_t r2rFunctionTableEntryNumber = *(uint32_t*)(internalFunctionFramePointer + WASM_STACKFRAME_FUNCTION_INDEX_OFFSET);
     _ASSERTE(GetWasmVirtualIPFromStackPointer(sp) == controlPC);
 
-    if (ExecutionManager::IsFuncletFunctionIndex(r2rFunctionTableEntryNumber))
-    {
-        UINT_PTR            uImageBase;
-        PT_RUNTIME_FUNCTION pFunctionEntry;
-        EECodeInfo codeInfo;
-
-        codeInfo.Init(controlPC);
-        pFunctionEntry = codeInfo.GetFunctionEntry();
-        uImageBase = (UINT_PTR)codeInfo.GetModuleBase();
-
-        WasmUnwindStackFrameCore(&sp, &controlPC, uImageBase, pFunctionEntry);
-
-        if (*(int32_t*)sp == TERMINATE_R2R_STACK_WALK)
-        {
-            // The funclet was invoked by the VM through CallFuncletWith[out]Throwable, so native
-            // unwinding terminates at that synthetic frame before reaching the method's own frame.
-            // Recover the establishing (method) frame pointer the helper stored next to the
-            // TERMINATE_R2R_STACK_WALK marker.
-            return GetWasmEstablishingFramePointerFromTerminator(sp);
-        }
-        else
-        {
-            // The funclet was called by its containing method or funclet.
-            // Recurse to find out if we're dealing with another funclet, or the non-exceptional
-            // finally case.
-            return GetWasmFramePointerFromStackPointer(sp, controlPC);
-        }
-    }
-    else
-    {
-        // Return the normal method frame pointer
-        return internalFunctionFramePointer;
-    }
+    return GetWasmEstablishingFramePointer(internalFunctionFramePointer);
 }
 
 PEXCEPTION_ROUTINE

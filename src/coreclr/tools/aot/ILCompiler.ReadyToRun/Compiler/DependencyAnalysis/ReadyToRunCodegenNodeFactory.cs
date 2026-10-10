@@ -568,6 +568,10 @@ namespace ILCompiler.DependencyAnalysis
             {
                 return new WasmMethodRelativeVirtualIPNode(this, method);
             });
+            _wasmMethodFrameIdentities = new(method =>
+            {
+                return new WasmMethodFrameIdentityNode(this, method);
+            });
         }
 
         public int CompilationCurrentPhase { get; private set; }
@@ -1501,6 +1505,7 @@ namespace ILCompiler.DependencyAnalysis
         private NodeCache<WasmFuncType, WasmTypeNode> _wasmTypeNodes;
 
         private NodeCache<MethodWithGCInfo, WasmMethodRelativeVirtualIPNode> _wasmMethodRelativeVirtualIPs;
+        private NodeCache<MethodWithGCInfo, WasmMethodFrameIdentityNode> _wasmMethodFrameIdentities;
 
         private readonly struct WasmUnboxingStubKey : IEquatable<WasmUnboxingStubKey>
         {
@@ -1556,6 +1561,11 @@ namespace ILCompiler.DependencyAnalysis
         internal WasmMethodRelativeVirtualIPNode WasmMethodRelativeVirtualIP(MethodWithGCInfo method)
         {
             return _wasmMethodRelativeVirtualIPs.GetOrAdd(method);
+        }
+
+        internal WasmMethodFrameIdentityNode WasmMethodFrameIdentity(MethodWithGCInfo method)
+        {
+            return _wasmMethodFrameIdentities.GetOrAdd(method);
         }
     }
 }
