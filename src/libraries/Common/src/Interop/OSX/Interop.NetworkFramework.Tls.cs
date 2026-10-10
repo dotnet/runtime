@@ -28,7 +28,7 @@ internal static partial class Interop
 
             // Create a new connection context
             [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_NwConnectionCreate", StringMarshalling = StringMarshalling.Utf8)]
-            internal static unsafe partial SafeNwHandle NwConnectionCreate([MarshalAs(UnmanagedType.I4)] bool isServer, IntPtr context, string targetName, byte* alpnBuffer, int alpnLength, SslProtocols minTlsProtocol, SslProtocols maxTlsProtocol, uint* cipherSuites, int cipherSuitesLength, IntPtr serverIdentity);
+            internal static unsafe partial SafeNwHandle NwConnectionCreate([MarshalAs(UnmanagedType.I4)] bool isServer, IntPtr context, string targetName, byte* alpnBuffer, int alpnLength, SslProtocols minTlsProtocol, SslProtocols maxTlsProtocol, uint* cipherSuites, int cipherSuitesLength, IntPtr serverIdentity, [MarshalAs(UnmanagedType.I4)] bool requireClientCert);
 
             // Start the TLS handshake, notifications are received via the status callback (potentially from a different thread).
             [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_NwConnectionStart")]
@@ -52,7 +52,7 @@ internal static partial class Interop
 
             // gets TLS connection information
             [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_GetConnectionInfo")]
-            internal static unsafe partial int GetConnectionInfo(SafeNwHandle connection, IntPtr context, out SslProtocols pProtocol, out TlsCipherSuite pCipherSuiteOut, byte* negotiatedAlpn, ref int negotiatedAlpnLength);
+            internal static unsafe partial int GetConnectionInfo(SafeNwHandle connection, IntPtr context, out SslProtocols pProtocol, out TlsCipherSuite pCipherSuiteOut, byte* negotiatedAlpn, ref int negotiatedAlpnLength, byte* serverName, ref int serverNameLength);
         }
 
         // Status enumeration for Network Framework TLS operations

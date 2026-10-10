@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Test.Common;
@@ -10,6 +11,7 @@ using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 using Microsoft.DotNet.XUnitExtensions;
 
@@ -19,6 +21,67 @@ namespace System.Net.Security.Tests
 
     public class SslStreamSniTest
     {
+        // Network.framework parses the ClientHello internally, so the server cannot recover SNI
+        // from the transport the way the other PALs do. This holds that PAL to the same
+        // expectations as SslStream_ClientSendsSNIServerReceives_Ok below.
+        //
+        // The server has to supply ServerCertificate directly rather than through a
+        // ServerCertificateSelectionCallback: ShouldUseNetworkFramework requires a
+        // CertificateContext up front, so the callback form quietly falls back to SecureTransport
+        // and would leave this path untested.
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [PlatformSpecific(TestPlatforms.OSX)]
+        [MemberData(nameof(NetworkFrameworkHostNameData))]
+        public async Task NetworkFramework_ClientSendsSNIServerReceives_Ok(string hostName)
+        {
+            var psi = new ProcessStartInfo
+            {
+                Environment = { { "DOTNET_SYSTEM_NET_SECURITY_USENETWORKFRAMEWORK", "1" } }
+            };
+
+            await RemoteExecutor.Invoke(static async hostName =>
+            {
+                (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
+                using (clientStream)
+                using (serverStream)
+                using (var client = new SslStream(clientStream))
+                using (var server = new SslStream(serverStream))
+                using (X509Certificate2 certificate = Configuration.Certificates.GetServerCertificate())
+                {
+                    var clientOptions = new SslClientAuthenticationOptions
+                    {
+                        TargetHost = hostName,
+                        CertificateRevocationCheckMode = X509RevocationMode.NoCheck,
+                        RemoteCertificateValidationCallback = TestHelper.AllowAnyServerCertificate,
+                    };
+                    var serverOptions = new SslServerAuthenticationOptions
+                    {
+                        ServerCertificate = certificate,
+                        CertificateRevocationCheckMode = X509RevocationMode.NoCheck,
+                    };
+
+                    await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
+                        client.AuthenticateAsClientAsync(clientOptions),
+                        server.AuthenticateAsServerAsync(serverOptions));
+
+                    Assert.Equal(hostName, server.TargetHostName);
+                    Assert.Equal(hostName, client.TargetHostName);
+                }
+            }, hostName, new RemoteInvokeOptions { StartInfo = psi }).DisposeAsync();
+        }
+
+        public static IEnumerable<object[]> NetworkFrameworkHostNameData()
+        {
+            // A client that sends no SNI at all: the server has to report the absence rather than
+            // a stale or partially decoded name.
+            yield return new object[] { "" };
+
+            foreach (object[] hostName in HostNameData())
+            {
+                yield return hostName;
+            }
+        }
+
         [Theory]
         [MemberData(nameof(HostNameData))]
         public async Task SslStream_ClientSendsSNIServerReceives_Ok(string hostName)
