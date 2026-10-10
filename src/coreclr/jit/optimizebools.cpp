@@ -518,6 +518,74 @@ static bool GetIntersection(var_types  type,
 }
 
 //------------------------------------------------------------------------------
+// GetSameDirectionBound: Given two compares "X cmp1 cns1 && X cmp2 cns2" that bound X
+//    from the same side, compute the single equivalent compare. Examples:
+//      >10 and >100 -> >=101
+//      <50 and <=20 -> <=20
+//
+// Arguments:
+//    type    - The type of the compare nodes.
+//    cmp1    - The first compare operator (constant on the RHS, already un-reversed).
+//    cmp2    - The second compare operator.
+//    cns1    - The constant value of the first compare node.
+//    cns2    - The constant value of the second compare node.
+//    pNewOp  - [OUT] GT_GE or GT_LE.
+//    pNewCns - [OUT] The constant for the merged compare.
+//
+// Returns:
+//    true if both compares bound X from the same side and could be merged.
+//
+static bool GetSameDirectionBound(
+    var_types type, genTreeOps cmp1, genTreeOps cmp2, ssize_t cns1, ssize_t cns2, genTreeOps* pNewOp, ssize_t* pNewCns)
+{
+    if ((cns1 < 0) || (cns2 < 0))
+    {
+        // Negative constants are not handled yet (same restriction as GetIntersection).
+        return false;
+    }
+
+    // Normalize to inclusive GE/LE
+    auto normalize = [](genTreeOps* cmp, ssize_t* cns) -> bool {
+        if (*cmp == GT_GT)
+        {
+            if (*cns == SSIZE_T_MAX)
+            {
+                return false;
+            }
+            *cns = *cns + 1;
+            *cmp = GT_GE;
+        }
+        else if (*cmp == GT_LT)
+        {
+            if (*cns == 0)
+            {
+                return false;
+            }
+            *cns = *cns - 1;
+            *cmp = GT_LE;
+        }
+        return true;
+    };
+
+    if (!normalize(&cmp1, &cns1) || !normalize(&cmp2, &cns2) || (cmp1 != cmp2))
+    {
+        // Overflow, or opposite directions (handled by GetIntersection)
+        return false;
+    }
+
+    // "X >= a && X >= b" -> "X >= max(a, b)", "X <= a && X <= b" -> "X <= min(a, b)"
+    ssize_t result = (cmp1 == GT_GE) ? max(cns1, cns2) : min(cns1, cns2);
+    if (!FitsIn(type, result))
+    {
+        return false;
+    }
+
+    *pNewOp  = cmp1;
+    *pNewCns = result;
+    return true;
+}
+
+//------------------------------------------------------------------------------
 // IsConstantRangeTest: Does the given compare node represent a constant range test? E.g.
 //    "X relop CNS" or "CNS relop X" where relop is [<, <=, >, >=]
 //
@@ -718,13 +786,26 @@ bool FoldRangeTests(Compiler* comp, GenTreeOp* cmp1, bool cmp1IsReversed, GenTre
         return false;
     }
 
+    // Same-direction ranges, e.g. "X > 10 && X > 100" -> "X >= 101"
+    genTreeOps mergedOp;
+    ssize_t    mergedCns;
+    if (GetSameDirectionBound(var1Node->TypeGet(), cmp1Op, cmp2Op, cns1Node->IconValue(), cns2Node->IconValue(),
+                              &mergedOp, &mergedCns))
+    {
+        cmp1->gtOp1 = var1Node;
+        cmp1->gtOp2 = comp->gtNewIconNode(mergedCns, var1Node->TypeGet());
+        cmp1->SetOper(cmp2IsReversed ? GenTree::ReverseRelop(mergedOp) : mergedOp);
+        // Signedness is kept as is (both compares have matching signedness).
+        return true;
+    }
+
     ssize_t rangeStart;
     ssize_t rangeEnd;
     if (!GetIntersection(var1Node->TypeGet(), cmp1Op, cmp2Op, cns1Node->IconValue(), cns2Node->IconValue(), &rangeStart,
                          &rangeEnd))
     {
         // The range we test via two conditions is not a closed range
-        // TODO: We should support overlapped ranges here, e.g. "X > 10 && x > 100" -> "X > 100"
+        // TODO: If the ranges are disjoint, the condition could be folded to a constant.
         return false;
     }
     assert(rangeStart < rangeEnd);
