@@ -5,7 +5,9 @@ using System.Reflection.PortableExecutable;
 using System.Linq;
 using Xunit;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Reflection.Metadata;
+using System.Security.Cryptography;
 
 namespace IlasmPortablePdbTests
 {
@@ -27,15 +29,17 @@ namespace IlasmPortablePdbTests
             IlasmFile = IlasmFileName + NativeExtension;
         }
 
-        // Tests whether pe file includes portable pdb codeview debug directory
-        // and its contents against the generated portable pdb metadata file
+        // Tests whether pe file includes portable pdb codeview and pdb checksum debug directory entries
+        // and their contents against the generated portable pdb file, with and without deterministic output
         [Theory]
-        [InlineData("TestPdbDebugDirectory1.il")]
-        [InlineData("TestPdbDebugDirectory2.il")]
-        public void TestPortablePdbDebugDirectory(string ilSource)
+        [InlineData("TestPdbDebugDirectory1.il", false)]
+        [InlineData("TestPdbDebugDirectory1.il", true)]
+        [InlineData("TestPdbDebugDirectory2.il", false)]
+        [InlineData("TestPdbDebugDirectory2.il", true)]
+        public void TestPortablePdbDebugDirectory(string ilSource, bool deterministic)
         {
             var ilasm = IlasmPortablePdbTesterCommon.GetIlasmFullPath(CoreRootVar, IlasmFile);
-            IlasmPortablePdbTesterCommon.Assemble(ilasm, ilSource, TestDir, out string dll, out string pdb);
+            IlasmPortablePdbTesterCommon.Assemble(ilasm, ilSource, TestDir, out string dll, out string pdb, deterministic);
 
             using (var peStream = new FileStream(dll, FileMode.Open, FileAccess.Read))
             {
@@ -51,22 +55,32 @@ namespace IlasmPortablePdbTests
                     Assert.Equal(1, portablePdbDbgEntry.Age);
                     Assert.Equal(pdb, portablePdbDbgEntry.Path);
 
+                    var pdbChecksumEntry = Assert.Single(dbgDirEntries, entry => entry.Type == DebugDirectoryEntryType.PdbChecksum);
+                    var pdbChecksum = peReader.ReadPdbChecksumDebugDirectoryData(pdbChecksumEntry);
+                    Assert.Equal("SHA256", pdbChecksum.AlgorithmName);
+
+                    var pdbImage = File.ReadAllBytes(pdb);
+                    using (var pdbImageReaderProvider = MetadataReaderProvider.FromPortablePdbImage(ImmutableArray.Create(pdbImage)))
+                    {
+                        var pdbHeader = pdbImageReaderProvider.GetMetadataReader().DebugMetadataHeader;
+                        Assert.NotNull(pdbHeader);
+
+                        // check pdb id (guid and stamp) against the codeview entry
+                        var pdbId = new BlobContentId(pdbHeader.Id);
+                        Assert.Equal(portablePdbDbgEntry.Guid, pdbId.Guid);
+                        Assert.Equal(dbgEntry.Stamp, pdbId.Stamp);
+
+                        // check pdb checksum: the hash of the entire pdb file with its 20-byte pdb id zeroed
+                        Array.Clear(pdbImage, pdbHeader.IdStartOffset, pdbHeader.Id.Length);
+                        Assert.Equal(SHA256.HashData(pdbImage), pdbChecksum.Checksum.ToArray());
+                    }
+
                     using (var pdbReaderProvider = IlasmPortablePdbTesterCommon.GetMetadataReaderProvider(dll, pdb, peReader, false))
                     {
                         var portablePdbMdReader = pdbReaderProvider.GetMetadataReader();
                         Assert.NotNull(portablePdbMdReader);
                         // check pdb stream
                         Assert.NotNull(portablePdbMdReader.DebugMetadataHeader);
-                        // check pdb guid
-                        var pdbGuid = portablePdbDbgEntry.Guid.ToByteArray();
-                        var pdbId = portablePdbMdReader.DebugMetadataHeader.Id.ToArray();
-                        int i = 0;
-                        foreach (var pdbGuidByte in pdbGuid)
-                        {
-                            Assert.True(i < pdbId.Length);
-                            Assert.Equal(pdbGuidByte, pdbId[i++]);
-                        }
-                        Assert.Equal(i, pdbGuid.Length);
                         var peMdReader = peReader.GetMetadataReader();
                         Assert.NotNull(peMdReader);
 
