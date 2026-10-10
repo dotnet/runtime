@@ -142,8 +142,11 @@
       <Crossgen2Inputs Include="$(Crossgen2TasksAssembly)" />
     </ItemGroup>
 
+    <PropertyGroup>
+      <_CoreLibILDir>$([MSBuild]::NormalizeDirectory('$(BinDir)', 'IL'))</_CoreLibILDir>
+    </PropertyGroup>
     <ItemGroup>
-      <Crossgen2CoreLibReferences Include="$([MSBuild]::NormalizePath('$(BinDir)', 'IL', '*.dll'))" />
+      <Crossgen2CoreLibReferences Include="$(_CoreLibILDir)*.dll" />
     </ItemGroup>
   </Target>
 

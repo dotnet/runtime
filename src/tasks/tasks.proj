@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="**\*.csproj" />
+    <ProjectReference Remove="Crossgen2Tasks.Tests\Crossgen2Tasks.Tests.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetsMobile)' != 'true'">
