@@ -1028,6 +1028,26 @@ bool emitter::DoJitUseApxNDD(instruction ins) const
 #endif
 }
 
+//------------------------------------------------------------------------
+// DoJitUseApxNDD: Answer the question: does JIT use APX NDD feature on the given instruction,
+//                 given the r/m operand it would encode?
+//
+// Arguments:
+//    ins  - instruction to test
+//    rmOp - the operand that would be encoded as the r/m source
+//
+// Return Value:
+//    true if JIT allows APX NDD to be applied on the instruction.
+//
+bool emitter::DoJitUseApxNDD(instruction ins, GenTree* rmOp) const
+{
+#if !defined(TARGET_AMD64)
+    return false;
+#else
+    return DoJitUseApxNDD(ins) && !rmOp->isUsedFromMemory();
+#endif
+}
+
 inline bool emitter::IsApxConditionalInstruction(instruction ins)
 {
 #ifdef TARGET_AMD64
@@ -6506,12 +6526,9 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
         assert(IsApxNddEncodableInstruction(ins));
         // targetReg has to be an actual register if using NDD.
         assert(targetReg < REG_STK);
-        // make sure target register is not either of the src registers.
+        // targetReg may be src's register (a non-commutative sub), but never dst's.
         assert(dst->isUsedFromReg());
-        regNumber dstreg = dst->GetRegNum();
-        regNumber srcreg = src->isUsedFromReg() ? src->GetRegNum() : REG_NA;
-        assert(targetReg != dstreg);
-        assert(targetReg != srcreg);
+        assert(targetReg != dst->GetRegNum());
     }
 #endif
 
@@ -10464,14 +10481,38 @@ void emitter::emitIns_BASE_R_R_I(instruction ins, emitAttr attr, regNumber op1Re
     }
 }
 
-regNumber emitter::emitIns_BASE_R_R_RM(
-    instruction ins, emitAttr attr, regNumber targetReg, GenTree* treeNode, GenTree* regOp, GenTree* rmOp)
+//------------------------------------------------------------------------
+// emitIns_BASE_R_R_RM: Emit a binary instruction with a register and an r/m source into targetReg.
+//
+// Arguments:
+//    ins       - the instruction to emit
+//    attr      - the instruction operand size
+//    targetReg - the destination register
+//    treeNode  - the node being generated
+//    regOp     - the operand that is in a register
+//    rmOp      - the operand that may be contained (register, memory or immediate)
+//    useApxNdd - true to emit the non-destructive `ins targetReg, regOp, rmOp` form
+//
+regNumber emitter::emitIns_BASE_R_R_RM(instruction ins,
+                                       emitAttr    attr,
+                                       regNumber   targetReg,
+                                       GenTree*    treeNode,
+                                       GenTree*    regOp,
+                                       GenTree*    rmOp,
+                                       bool        useApxNdd)
 {
-    bool      requiresOverflowCheck = treeNode->gtOverflowEx();
-    regNumber r                     = REG_NA;
     assert(regOp->isUsedFromReg());
+    assert(!useApxNdd || DoJitUseApxNDD(ins, rmOp));
 
-    bool useApxNdd = DoJitUseApxNDD(ins);
+#ifdef DEBUG
+    if (!useApxNdd && (targetReg != regOp->GetRegNum()))
+    {
+        // The `mov` below must not clobber a base/index register of rmOp. LSRA guarantees this:
+        // isRMWRegOper reports RMW for these nodes, so BuildRMWUses routes the contained operand
+        // through BuildDelayFreeUses, which keeps its address registers live past the def.
+        assert((rmOp->gtGetContainedRegMask() & genRegMask(targetReg)) == 0);
+    }
+#endif // DEBUG
 
     if (emitIns_Mov(INS_mov, attr, targetReg, regOp->GetRegNum(), true, useApxNdd) && useApxNdd)
     {
@@ -10479,7 +10520,6 @@ regNumber emitter::emitIns_BASE_R_R_RM(
     }
 
     return emitInsBinary(ins, attr, treeNode, rmOp);
-    ;
 }
 
 //----------------------------------------------------------------------------------------

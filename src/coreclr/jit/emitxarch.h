@@ -145,6 +145,7 @@ static bool      IsBitTestInstruction(instruction ins);
 bool             IsLegacyMap1(code_t code) const;
 bool             IsSimdVexOrEvexEncodableInstruction(instruction ins) const;
 bool             DoJitUseApxNDD(instruction ins) const;
+bool             DoJitUseApxNDD(instruction ins, GenTree* rmOp) const;
 
 code_t insEncodeMIreg(const instrDesc* id, regNumber reg, emitAttr size, code_t code);
 
@@ -1246,8 +1247,13 @@ void emitIns_BASE_R_R(instruction ins, emitAttr attr, regNumber op1Reg, regNumbe
 
 void emitIns_BASE_R_R_I(instruction ins, emitAttr attr, regNumber op1Reg, regNumber op2Reg, int ival);
 
-regNumber emitIns_BASE_R_R_RM(
-    instruction ins, emitAttr attr, regNumber targetReg, GenTree* treeNode, GenTree* regOp, GenTree* rmOp);
+regNumber emitIns_BASE_R_R_RM(instruction ins,
+                              emitAttr    attr,
+                              regNumber   targetReg,
+                              GenTree*    treeNode,
+                              GenTree*    regOp,
+                              GenTree*    rmOp,
+                              bool        useApxNdd);
 
 #ifdef TARGET_AMD64
 // Is the last instruction emitted a call instruction?
