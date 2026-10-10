@@ -19,7 +19,8 @@ enum class ExKind : uint8_t
     KindMask = 3,
     RethrowFlag = 4,
     SupersededFlag = 8,
-    InstructionFaultFlag = 0x10
+    InstructionFaultFlag = 0x10,
+    CatchHandlerRunningFlag = 0x20
 };
 
 #endif  // HAVE_EXKIND_H

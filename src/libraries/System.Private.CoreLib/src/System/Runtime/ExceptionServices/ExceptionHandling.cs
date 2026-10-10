@@ -6,9 +6,9 @@ using System.Threading;
 namespace System.Runtime.ExceptionServices
 {
     /// <summary>
-    /// Provides helpers for configuring and raising global unhandled exception handlers.
+    /// Provides helpers for exception handling, such as configuring and raising global unhandled exception handlers.
     /// </summary>
-    public static class ExceptionHandling
+    public static partial class ExceptionHandling
     {
         private static Func<Exception, bool>? s_handler;
 
@@ -42,6 +42,26 @@ namespace System.Runtime.ExceptionServices
                 throw new InvalidOperationException(SR.InvalidOperation_CannotRegisterSecondHandler);
             }
         }
+
+        /// <summary>
+        /// Gets the exception that is currently in flight on the current thread, if any.
+        /// </summary>
+        /// <returns>
+        /// The exception that is currently in flight on the current thread, or <see langword="null"/> if there is no such exception.
+        /// </returns>
+        /// <remarks>
+        /// An exception is in flight from the point where it is thrown until it is caught by a catch handler.
+        /// This method returns the exception while its exception filters and its finally and fault handlers run,
+        /// but not within the catch handler that caught it.
+        ///
+        /// If another exception is thrown and caught while an exception is in flight, the original exception
+        /// is returned again once the nested exception is caught.
+        ///
+        /// The returned value is a point-in-time answer. This method is intended for diagnostic purposes, such as
+        /// logging the exception that caused a finally block to run.
+        /// </remarks>
+        /// <exception cref="PlatformNotSupportedException">The current runtime does not support this method.</exception>
+        public static partial Exception? GetCurrentException();
 
         /// <summary>
         /// Raises the <see cref="AppDomain.UnhandledException"/> event.
