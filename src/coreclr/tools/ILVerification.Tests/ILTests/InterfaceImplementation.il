@@ -448,3 +448,93 @@
 	{
 	}
 }
+
+.class public auto ansi beforefieldinit ExplicitVirtualMethod_ValidType_Valid
+    extends [System.Runtime]System.Object
+    implements IInterface
+{
+    .method private final hidebysig newslot virtual instance void InterfaceMethod() cil managed
+    {
+        .override method instance void IInterface::InterfaceMethod()
+        .maxstack 0
+        ret
+    }
+}
+
+.class public auto ansi beforefieldinit ExplicitNonVirtualMethod_InvalidType_InvalidMethodImpl
+    extends [System.Runtime]System.Object
+    implements IInterface
+{
+    .method private hidebysig instance void InterfaceMethod() cil managed
+    {
+        .override method instance void IInterface::InterfaceMethod()
+        .maxstack 0
+        ret
+    }
+}
+
+.class interface public auto ansi abstract IStaticInterface
+{
+    .method public hidebysig newslot abstract virtual static void StaticMethod() cil managed
+    {
+    }
+}
+
+.class public auto ansi beforefieldinit ExplicitStaticMethod_ValidType_Valid
+    extends [System.Runtime]System.Object
+    implements IStaticInterface
+{
+    .method private hidebysig static void StaticMethod() cil managed
+    {
+        .override method void IStaticInterface::StaticMethod()
+        .maxstack 0
+        ret
+    }
+}
+
+.class public auto ansi beforefieldinit MissingStaticMethod_InvalidType_InterfaceMethodNotImplemented
+    extends [System.Runtime]System.Object
+    implements IStaticInterface
+{
+}
+
+.class interface public auto ansi abstract IDefaultStaticInterface
+    implements IStaticInterface
+{
+    .method private hidebysig static void StaticMethod() cil managed
+    {
+        .override method void IStaticInterface::StaticMethod()
+        .maxstack 0
+        ret
+    }
+}
+
+.class public auto ansi beforefieldinit DefaultStaticMethod_ValidType_Valid
+    extends [System.Runtime]System.Object
+    implements IDefaultStaticInterface, IStaticInterface
+{
+}
+
+.class public auto ansi beforefieldinit NonVirtualMethodHidesBaseVirtualMethod_InvalidType_InvalidMethodImpl
+    extends BaseClass
+    implements IInterface
+{
+    .method public hidebysig instance void InterfaceMethod() cil managed
+    {
+        .override method instance void IInterface::InterfaceMethod()
+        .maxstack 0
+        ret
+    }
+}
+
+.class public auto ansi beforefieldinit InstanceBodyForStaticMethod_InvalidType_InvalidMethodImpl
+    extends [System.Runtime]System.Object
+    implements IStaticInterface
+{
+    .method public hidebysig newslot virtual instance void StaticMethod() cil managed
+    {
+        .override method void IStaticInterface::StaticMethod()
+        .maxstack 0
+        ret
+    }
+}
