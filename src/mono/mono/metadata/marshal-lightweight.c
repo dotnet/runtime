@@ -2445,6 +2445,12 @@ emit_unsafe_accessor_ctor_wrapper (MonoMethodBuilder *mb, gboolean inflate_gener
 		return;
 	}
 
+	if (!mono_unsafe_accessor_verify_constraints (accessor_method, target_class, target_method, find_method_error)) {
+		mono_mb_emit_exception_for_error (mb, find_method_error);
+		mono_error_cleanup (find_method_error);
+		return;
+	}
+
 	target_method = inflate_method (target_class, target_method, accessor_method, find_method_error);
 
 	g_assert (target_method->klass == target_class);
@@ -2497,6 +2503,12 @@ emit_unsafe_accessor_method_wrapper (MonoMethodBuilder *mb, gboolean inflate_gen
 			mono_mb_emit_exception_for_error (mb, find_method_error);
 		else
 			emit_missing_method_error (mb, find_method_error, member_name);
+		mono_error_cleanup (find_method_error);
+		return;
+	}
+
+	if (!mono_unsafe_accessor_verify_constraints (accessor_method, target_class, target_method, find_method_error)) {
+		mono_mb_emit_exception_for_error (mb, find_method_error);
 		mono_error_cleanup (find_method_error);
 		return;
 	}
