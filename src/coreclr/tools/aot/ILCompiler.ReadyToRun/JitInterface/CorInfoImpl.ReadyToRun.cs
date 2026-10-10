@@ -496,6 +496,7 @@ namespace Internal.JitInterface
         private HashSet<MethodDesc> _inlinedMethods;
         private UnboxingMethodDescFactory _unboxingThunkFactory = new UnboxingMethodDescFactory();
         private List<ISymbolNode> _precodeFixups;
+        private Dictionary<MethodWithGCInfo, ISymbolNode> _relocationDrivenPrecodeFixups;
         private List<MethodDesc> _ilBodiesNeeded;
         private Dictionary<TypeDesc, bool> _preInitedTypes = new Dictionary<TypeDesc, bool>();
         private HashSet<MethodDesc> _synthesizedPgoDependencies;
@@ -512,6 +513,21 @@ namespace Internal.JitInterface
         {
             _precodeFixups = _precodeFixups ?? new List<ISymbolNode>();
             _precodeFixups.Add(node);
+        }
+
+        private void AddRelocationDrivenPrecodeFixup(MethodWithGCInfo target, ISymbolNode fixup)
+        {
+            _relocationDrivenPrecodeFixups ??= new Dictionary<MethodWithGCInfo, ISymbolNode>();
+            _relocationDrivenPrecodeFixups.TryAdd(target, fixup);
+        }
+
+        partial void RecordRelocationDependencies(ISymbolNode relocTarget)
+        {
+            if (relocTarget is MethodWithGCInfo method &&
+                _relocationDrivenPrecodeFixups?.TryGetValue(method, out ISymbolNode fixup) == true)
+            {
+                AddPrecodeFixup(fixup);
+            }
         }
 
         private void AddAdditionalDependency(ISymbolNode node, string reason)
@@ -2796,11 +2812,11 @@ namespace Internal.JitInterface
                                 ref resolvedToken,
                                 constrainedType,
                                 unboxing: false);
-                            AddPrecodeFixup(
-                                _compilation.SymbolNodeFactory.PrecodeReadyToRunMethodEntry(targetMethodWithToken));
-
                             MethodWithGCInfo targetCodeNode =
                                 _compilation.NodeFactory.CompiledMethodNode(compilableTarget);
+                            AddRelocationDrivenPrecodeFixup(
+                                targetCodeNode,
+                                _compilation.SymbolNodeFactory.PrecodeReadyToRunMethodEntry(targetMethodWithToken));
                             pResult->codePointerOrStubLookup.constLookup =
                                 CreateConstLookupToSymbol(targetCodeNode);
                         }
