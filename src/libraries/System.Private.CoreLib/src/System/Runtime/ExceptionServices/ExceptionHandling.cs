@@ -60,7 +60,6 @@ namespace System.Runtime.ExceptionServices
         /// The returned value is a point-in-time answer. This method is intended for diagnostic purposes, such as
         /// logging the exception that caused a finally block to run.
         /// </remarks>
-        /// <exception cref="PlatformNotSupportedException">The current runtime does not support this method.</exception>
         public static partial Exception? GetCurrentException();
 
         /// <summary>
