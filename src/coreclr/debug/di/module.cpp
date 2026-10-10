@@ -30,13 +30,10 @@ CordbModule::CordbModule(
 : CordbBase(pProcess, VmPtrToCookie(vmModule), enumCordbModule),
     m_pAssembly(0),
     m_pAppDomain(0),
-    m_classes(11),
-    m_functions(101),
     m_vmAssembly(vmAssembly),
     m_vmModule(vmModule),
     m_EnCCount(0),
-    m_fForceMetaDataSerialize(FALSE),
-    m_nativeCodeTable(101)
+    m_fForceMetaDataSerialize(FALSE)
 {
     _ASSERTE(pProcess->GetProcessLock()->HasLock());
 
