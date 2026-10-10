@@ -2413,6 +2413,39 @@ PhaseStatus Compiler::fgWasmSpillRefs()
     jitstd::vector<GenTree*> defs(getAllocator(CMK_WasmSpillRefs));
     jitstd::vector<unsigned> spillSlotsToZeroAtEndOfBlock(getAllocator(CMK_WasmSpillRefs));
 
+    // Helper to remove used nodes from the defs list when they're no longer meaningfully 'live'. A contained operand is
+    //  not itself on the operand stack, so look through it to the operands that are.
+    auto removeUses = [](GenTree* op, jitstd::vector<GenTree*>& defs, auto& recurse) -> void {
+        if (!op->IsValue())
+        {
+            return;
+        }
+
+        if (op->isContained())
+        {
+            op->VisitOperands([&recurse, &defs](GenTree* innerOp) {
+                recurse(innerOp, defs, recurse);
+                return GenTree::VisitResult::Continue;
+            });
+            return;
+        }
+
+        if (!op->TypeIs(TYP_REF, TYP_BYREF))
+        {
+            return;
+        }
+
+        for (size_t i = defs.size(); i > 0; i--)
+        {
+            if (op == defs[i - 1])
+            {
+                defs[i - 1] = defs[defs.size() - 1];
+                defs.pop_back();
+                break;
+            }
+        }
+    };
+
     for (BasicBlock* const block : Blocks())
     {
         // The defs list should already be empty because we walked all the nodes in the previous block,
@@ -2433,10 +2466,27 @@ PhaseStatus Compiler::fgWasmSpillRefs()
 
         for (GenTree* tree : LIR::AsRange(block))
         {
+            bool removedCurrentTreeDefs = false;
             if (tree->IsCall())
             {
-                // For any ref/byref values live at the point of a call, spill them into pinned slots
-                //  on the stack where the GC can see them so it won't move them.
+                // If we have a managed non-helper call, consume the call's operands from the defs list BEFORE spilling
+                // any live refs. This is because a GC-ref node which is only live INTO (and not across) another managed
+                // call does not need extra GC protection. The callee is responsible for ensuring the GC safety of any
+                // incoming GC ref args.
+                if (!tree->AsCall()->IsUnmanaged() && !tree->AsCall()->IsHelperCall())
+                {
+                    tree->VisitOperands([&removeUses, &defs](GenTree* op) {
+                        removeUses(op, defs, removeUses);
+                        return GenTree::VisitResult::Continue;
+                    });
+                    removedCurrentTreeDefs = true;
+                }
+
+                // For any ref/byref values which are still live at the point of a call, spill them into pinned slots
+                //  on the stack where the GC can see them so it won't move them. These cases should only be for nested
+                //  calls like
+                // F(x, G(x)) where x is a GC ref OR for unmanaged calls where we are unsure about GC behavior of the
+                // callee.
                 if (!defs.empty())
                 {
                     if (m_wasmSpillSlots == nullptr)
@@ -2509,49 +2559,22 @@ PhaseStatus Compiler::fgWasmSpillRefs()
                 }
             }
 
-            // FIXME: Should this happen before the spilling of the live defs list?
-            // I think the answer is no, because live defs being passed as arguments to the current call
-            //  are not guaranteed to ever end up in memory where the GC can see them unless we spill
-            //  them. If we can somehow guarantee that all callees will spill their ref parameters
-            //  immediately, we could do this before the block above.
-
-            // Remove used nodes from defs list, they're no longer meaningfully 'live'. A contained operand is
-            //  not itself on the operand stack, so look through it to the operands that are.
-            auto removeUses = [&defs](GenTree* op, auto& recurse) -> void {
-                if (!op->IsValue())
-                    return;
-                if (op->isContained())
-                {
-                    op->VisitOperands([&recurse](GenTree* innerOp) {
-                        recurse(innerOp, recurse);
-                        return GenTree::VisitResult::Continue;
-                    });
-                    return;
-                }
-                if (!op->TypeIs(TYP_REF, TYP_BYREF))
-                    return;
-
-                for (size_t i = defs.size(); i > 0; i--)
-                {
-                    if (op == defs[i - 1])
-                    {
-                        defs[i - 1] = defs[defs.size() - 1];
-                        defs.pop_back();
-                        break;
-                    }
-                }
-            };
-
-            // A contained node is part of its parent, so it is visited as part of the parent instead.
             if (tree->isContained())
             {
                 continue;
             }
 
-            tree->VisitOperands([&removeUses](GenTree* op) {
-                removeUses(op, removeUses);
-                return GenTree::VisitResult::Continue;
-            });
+            if (!removedCurrentTreeDefs)
+            {
+                // If we haven't already removed the current tree's defs, do so now. These operands are no longer
+                // meaningfully live. Note that we should have already removed the defs for any operands of a non-helper
+                // managed call.
+                assert(!tree->IsCall() || tree->AsCall()->IsUnmanaged() || tree->AsCall()->IsHelperCall());
+                tree->VisitOperands([&removeUses, &defs](GenTree* op) {
+                    removeUses(op, defs, removeUses);
+                    return GenTree::VisitResult::Continue;
+                });
+            }
 
             // We only care about used values, and invariant nodes can't produce movable GC refs, so skip
             //  nodes appropriately
