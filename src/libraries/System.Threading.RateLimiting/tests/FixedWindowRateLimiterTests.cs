@@ -1016,6 +1016,28 @@ namespace System.Threading.RateLimiting.Test
         }
 
         [Fact]
+        public void SubMillisecondWindowWithAutoReplenishmentDoesNotDisableTimer()
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/109027
+            // System.Threading.Timer truncates its period to whole milliseconds, so a sub-millisecond
+            // Window previously produced a timer period of 0, which fires once and never again,
+            // silently stopping auto-replenishment. The timer period is now clamped to a 1ms floor.
+            var subMillisecond = TimeSpan.FromTicks(TimeSpan.TicksPerMillisecond / 2); // 500 microseconds
+            using ReplenishingRateLimiter limiter = new FixedWindowRateLimiter(new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 10,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 0,
+                Window = subMillisecond,
+                AutoReplenishment = true
+            });
+
+            // The clamp affects only the internal timer; the observable ReplenishmentPeriod still reflects the configured Window.
+            Assert.True(limiter.IsAutoReplenishing);
+            Assert.Equal(subMillisecond, limiter.ReplenishmentPeriod);
+        }
+
+        [Fact]
         public async Task RetryAfterWithPartiallyElapsedWindow()
         {
             var options = new FixedWindowRateLimiterOptions
