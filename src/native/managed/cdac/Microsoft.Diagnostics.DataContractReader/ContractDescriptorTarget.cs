@@ -12,7 +12,6 @@ using System.Text;
 using System.Text.Json;
 using Microsoft.Diagnostics.DataContractReader.Data;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
-using System.Collections.Frozen;
 
 namespace Microsoft.Diagnostics.DataContractReader;
 
@@ -37,8 +36,9 @@ public sealed unsafe class ContractDescriptorTarget : Target
     }
 
     private readonly Configuration _config;
+    private readonly TargetPointer _runtimeImageBase;
 
-    private readonly DataTargetDelegates _dataTargetDelegates;
+    private DataTargetDelegates _dataTargetDelegates;
 
     private readonly List<Descriptor> _descriptors = [];
 
@@ -51,9 +51,9 @@ public sealed unsafe class ContractDescriptorTarget : Target
     // queried for whether it has been published yet (IsSubDescriptorResolved).
     private readonly List<(string Name, TargetPointer Slot)> _pendingSubDescriptors = [];
 
-    private IReadOnlyDictionary<string, string> _contracts = new Dictionary<string, string>();
-    private IReadOnlyDictionary<string, GlobalValue> _globals = new Dictionary<string, GlobalValue>();
-    private IReadOnlyDictionary<string, TypeInfo> _types = new Dictionary<string, TypeInfo>();
+    private Dictionary<string, string> _contracts = [];
+    private Dictionary<string, GlobalValue> _globals = [];
+    private Dictionary<string, TypeInfo> _types = [];
 
     public override ContractRegistry Contracts { get; }
     public override DataCache ProcessedData { get; }
@@ -90,6 +90,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
     /// <param name="setThreadContext">A callback to set a thread's context</param>
     /// <param name="allocVirtual">A callback to allocate virtual memory in the target</param>
     /// <param name="contractRegistrations">Registration actions that populate the contract registry (e.g., <see cref="Contracts.CoreCLRContracts.Register"/>)</param>
+    /// <param name="runtimeImageBase">The runtime image base address, or <see langword="default"/> when unavailable. This value is fixed for the lifetime of the target.</param>
     /// <returns>The target object.</returns>
     public static ContractDescriptorTarget Create(
         ulong contractDescriptor,
@@ -98,11 +99,12 @@ public sealed unsafe class ContractDescriptorTarget : Target
         GetTargetThreadContextDelegate getThreadContext,
         SetTargetThreadContextDelegate setThreadContext,
         AllocVirtualDelegate allocVirtual,
-        Action<ContractRegistry>[] contractRegistrations)
+        Action<ContractRegistry>[] contractRegistrations,
+        TargetPointer runtimeImageBase = default)
     {
         DataTargetDelegates dataTargetDelegates = new DataTargetDelegates(readFromTarget, writeToTarget, getThreadContext, setThreadContext, allocVirtual);
         Descriptor descriptor = ReadContractDescriptor(contractDescriptor, dataTargetDelegates);
-        return new ContractDescriptorTarget(descriptor, dataTargetDelegates, contractRegistrations);
+        return new ContractDescriptorTarget(descriptor, dataTargetDelegates, contractRegistrations, runtimeImageBase);
     }
 
     /// <summary>
@@ -118,6 +120,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
     /// <param name="isLittleEndian">Whether the target is little-endian</param>
     /// <param name="pointerSize">The size of a pointer in bytes in the target process.</param>
     /// <param name="contractRegistrations">Registration actions that populate the contract registry (e.g., <see cref="Contracts.CoreCLRContracts.Register"/>)</param>
+    /// <param name="runtimeImageBase">The runtime image base address, or <see langword="default"/> when unavailable. This value is fixed for the lifetime of the target.</param>
     /// <returns>The target object.</returns>
     public static ContractDescriptorTarget Create(
         ContractDescriptorParser.ContractDescriptor contractDescriptor,
@@ -129,7 +132,8 @@ public sealed unsafe class ContractDescriptorTarget : Target
         AllocVirtualDelegate allocVirtual,
         bool isLittleEndian,
         int pointerSize,
-        Action<ContractRegistry>[]? contractRegistrations = null)
+        Action<ContractRegistry>[]? contractRegistrations = null,
+        TargetPointer runtimeImageBase = default)
     {
         return new ContractDescriptorTarget(
             new Descriptor
@@ -139,19 +143,59 @@ public sealed unsafe class ContractDescriptorTarget : Target
                 PointerData = globalPointerValues
             },
             new DataTargetDelegates(readFromTarget, writeToTarget, getThreadContext, setThreadContext, allocVirtual),
-            contractRegistrations ?? []);
+            contractRegistrations ?? [], runtimeImageBase);
     }
 
-    private ContractDescriptorTarget(Descriptor mainDescriptor, DataTargetDelegates dataTargetDelegates, Action<ContractRegistry>[] contractRegistrations)
+    private ContractDescriptorTarget(Descriptor mainDescriptor, DataTargetDelegates dataTargetDelegates, Action<ContractRegistry>[] contractRegistrations, TargetPointer runtimeImageBase)
     {
         Contracts = new CachingContractRegistry(this, this.TryGetContractVersion, contractRegistrations);
         ProcessedData = new DataCache(this);
 
         _config = mainDescriptor.Config;
+        _runtimeImageBase = runtimeImageBase;
         _dataTargetDelegates = dataTargetDelegates;
 
         AddDescriptor(mainDescriptor);
         BuildDescriptors(forceBuild: true);
+    }
+
+    public override bool TryGetRuntimeImageBase(out TargetPointer imageBase)
+    {
+        imageBase = _runtimeImageBase;
+        return imageBase != TargetPointer.Null;
+    }
+
+    /// <summary>Reports successful target memory reads until the returned scope is disposed.</summary>
+    /// <param name="reportRead">Receives successful memory reads as an address and size in bytes.</param>
+    /// <returns>A scope that restores the previous reader when disposed.</returns>
+    /// <remarks>Access to the target must be serialized. Nested scopes must be disposed in reverse order.</remarks>
+    public IDisposable RegisterReadCallback(Action<ulong, ulong> reportRead)
+    {
+        ReadCallbackScope scope = new(this, _dataTargetDelegates);
+        _dataTargetDelegates = _dataTargetDelegates.WithReadCallback(reportRead);
+        return scope;
+    }
+
+    /// <summary>Enumerates the target memory backing the loaded descriptors and their sub-descriptor pointer slots.</summary>
+    /// <returns>The native descriptor headers, JSON, pointer tables, and pointer slots.</returns>
+    /// <remarks>Does not read target memory. Externally supplied descriptors have no native backing ranges.</remarks>
+    public IEnumerable<TargetSpan> EnumerateDescriptorMemory()
+    {
+        foreach (Descriptor descriptor in _descriptors)
+        {
+            if (descriptor.HeaderMemory.Size != 0)
+                yield return descriptor.HeaderMemory;
+            if (descriptor.JsonMemory.Size != 0)
+                yield return descriptor.JsonMemory;
+            if (descriptor.PointerDataMemory.Size != 0)
+                yield return descriptor.PointerDataMemory;
+
+            foreach ((_, TargetPointer slot) in GetSubDescriptors(descriptor))
+            {
+                if (slot != TargetPointer.Null)
+                    yield return new TargetSpan(slot, (uint)PointerSize);
+            }
+        }
     }
 
     public override void Flush(FlushScope scope)
@@ -301,9 +345,9 @@ public sealed unsafe class ContractDescriptorTarget : Target
             }
         }
 
-        _contracts = contracts.ToFrozenDictionary();
-        _globals = globals.ToFrozenDictionary();
-        _types = types.ToFrozenDictionary();
+        _contracts = contracts;
+        _globals = globals;
+        _types = types;
     }
 
     private struct GlobalValue
@@ -318,6 +362,9 @@ public sealed unsafe class ContractDescriptorTarget : Target
         public Configuration Config { get; init; }
         public ContractDescriptorParser.ContractDescriptor ContractDescriptor { get; init; }
         public TargetPointer[] PointerData { get; init; }
+        public TargetSpan HeaderMemory { get; init; }
+        public TargetSpan JsonMemory { get; init; }
+        public TargetSpan PointerDataMemory { get; init; }
     }
 
     private static IEnumerable<(string Name, TargetPointer Slot)> GetSubDescriptors(Descriptor descriptor)
@@ -349,6 +396,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
         ulong address,
         DataTargetDelegates dataTargetDelegates)
     {
+        ulong descriptorAddress = address;
         // Magic - uint64_t
         Span<byte> buffer = stackalloc byte[sizeof(ulong)];
         if (dataTargetDelegates.ReadFromTarget(address, buffer) < 0)
@@ -439,7 +487,10 @@ public sealed unsafe class ContractDescriptorTarget : Target
         {
             Config = config,
             ContractDescriptor = contractDescriptor,
-            PointerData = pointerData
+            PointerData = pointerData,
+            HeaderMemory = new(new(descriptorAddress), address - descriptorAddress + (uint)pointerSize),
+            JsonMemory = new(descriptorAddr, descriptorSize),
+            PointerDataMemory = new(pointerDataAddr, (ulong)pointerDataCount * (uint)pointerSize),
         };
     }
 
@@ -989,6 +1040,20 @@ public sealed unsafe class ContractDescriptorTarget : Target
         }
     }
 
+    private sealed class ReadCallbackScope(ContractDescriptorTarget target, DataTargetDelegates original) : IDisposable
+    {
+        private bool _disposed;
+
+        public void Dispose()
+        {
+            if (_disposed)
+                return;
+
+            target._dataTargetDelegates = original;
+            _disposed = true;
+        }
+    }
+
     private readonly struct DataTargetDelegates(
         ReadFromTargetDelegate readFromTarget,
         WriteToTargetDelegate writeToTarget,
@@ -1019,6 +1084,21 @@ public sealed unsafe class ContractDescriptorTarget : Target
         public int AllocVirtual(ulong size, out ulong allocatedAddress)
         {
             return allocVirtual(size, out allocatedAddress);
+        }
+
+        public DataTargetDelegates WithReadCallback(Action<ulong, ulong> reportRead)
+        {
+            ReadFromTargetDelegate reader = readFromTarget;
+            return new(
+                (address, buffer) =>
+                {
+                    int hr = reader(address, buffer);
+                    if (hr >= 0)
+                        reportRead(address, (ulong)buffer.Length);
+
+                    return hr;
+                },
+                writeToTarget, getThreadContext, setThreadContext, allocVirtual);
         }
     }
 }

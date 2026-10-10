@@ -40,6 +40,103 @@ ISOSDacInterface* / IXCLRDataProcess (COM-style API surface)
   and algorithms each contract must implement.
 - **To write tests**: see the [tests README](tests/README.md).
 
+## Dump collection
+
+`SOSDacImpl` implements `ICLRDataEnumMemoryRegions` using the shared collection
+engine in `Microsoft.Diagnostics.DataContractReader.Legacy/EnumMemory`.
+Both the universal cDAC and the separately built
+`mscordaccore_enummemory` provider use this implementation.
+The separate NativeAOT project controls its exports, architecture restrictions,
+size settings, and installation without duplicating collection logic.
+
+With `UseCdacDumpCollectProvider=true`, the native build omits both the legacy
+DAC and legacy DBI, but still builds `mscordbi_universal`. These builds retain
+the Windows `CLRDEBUGINFO` resources with the CoreCLR signature and zero
+DAC/DBI timestamps and image sizes, allowing dbgshim to recognize the runtime
+for universal DBI activation without advertising matching legacy binaries.
+Legacy DAC/DBI identity indexes in `DotNetRuntimeInfo` remain empty.
+Runtime identity/version information and WER's separate dump-provider resources
+are preserved. Discovery paths that require valid legacy identities remain
+unsupported.
+
+Enumeration shares the SOS/process instance's COM identity and API lock.
+`MemoryEnumerator.Enumerate` requires a `ContractDescriptorTarget`, returning
+`E_NOTIMPL` for other target implementations. Each call flushes all cached target data
+and contract state, then uses `RegisterReadCallback` to report successful reads,
+including string terminators. Collection uses the existing target and contract instances;
+it does not copy registrations or construct a separate target. The scope restores the
+previous reader on success, failure, or cancellation.
+
+`EnumerateDescriptorMemory` separately reports native descriptor headers (including
+padding), JSON, pointer tables, and both resolved and pending sub-descriptor pointer slots.
+It enumerates stored ranges without rereading descriptors. An externally supplied main
+descriptor has no native backing memory, but its pointer slots and any native
+sub-descriptors are still included. Flushing before installing the read callback discovers
+newly published sub-descriptors without allowing reporting cancellation to interrupt parsing.
+This works with both COM-data-target and callback-based activation.
+Both target factories accept an optional `runtimeImageBase`, stored for the lifetime of
+the target and preserved across flushes and read-callback scopes. The default value
+indicates that the image base is unavailable. During collection, `TryGetRuntimeImageBase`
+provides the stored runtime image address. The enummemory entrypoint resolves it once through
+`EntrypointHelpers.TryGetRuntimeImageBase`, using `ICLRRuntimeLocator` and falling back to
+`ICLRDataTarget.GetImageBase` when the locator is unavailable or does not return `S_OK`,
+matching the native DAC's lookup order. Enummemory activation requires both a nonzero
+descriptor address and a nonzero runtime image base; failure to obtain either fails activation.
+Universal COM activation uses only `ICLRRuntimeLocator` and never falls back to
+`GetImageBase`. An unsuccessful lookup leaves the image base unavailable for universal activation.
+DacDbi activation uses the supplied `runtimeBase`. Inspection scripts use the image base
+of the same module that exports the descriptor, including the NativeAOT application-module
+fallback. Dump-test targets likewise use the image base of the descriptor's runtime module.
+`PEImageCollector` takes a `Target` and enumerates runtime and managed image regions,
+without storing image information on `SOSDacImpl` or requiring a separate discovery step.
+It uses `PEImageInfo` for PE parsing and reads image memory through the target.
+`MemoryEnumerator` resolves the native runtime image base and passes it explicitly;
+managed modules supply their own image base, size, and layout through the loader contract.
+Managed module collection also includes PE headers, debug-directory tables, and
+the payloads referenced by their entries, including CodeView PDB identifiers.
+Mapped images resolve RVAs directly; flat images resolve them through section headers.
+This preserves file-backed image mapping without including entire managed images.
+Method collection includes one target-pointer-sized region starting at each
+live-stack and saved exception-stack IP to satisfy method-instance address-readability
+checks. Unlike the legacy DAC, it does not capture surrounding instruction windows
+or indirect-call slots. Saved exception
+frames collect the code, GC, and debug-map dependencies needed for source-line lookup,
+even when those methods are no longer on the live stack.
+`Sanitizer` owns the PDB-path and stack-trace sanitization helpers.
+Triage collection strips CodeView PDB paths to filenames through the optional
+memory-update callback, leaving the PDB identifiers unchanged.
+Callback-only native activation does not supply an image base and leaves image
+mapping to the dump writer.
+
+Both NativeAOT hosts forward `CLRDataCreateInstance` to shared activation in
+`EntrypointHelpers.CreateInstance` in Legacy, which requires a nonzero descriptor address
+and accepts the optional runtime image base without performing further discovery.
+The entrypoints obtain that address from `ICLRContractLocator`, which `createdump`
+implements using the descriptor discovered during module enumeration.
+The universal host requires this locator to return `S_OK` and a nonzero address.
+The enummemory entrypoint first resolves the required runtime image base, then tries
+the locator. If the locator is absent, returns a result other than `S_OK`, or returns
+a zero address, enummemory falls back to the runtime's PE exports. This also supports
+WER, which does not provide `ICLRContractLocator`.
+The enummemory entrypoint performs that export lookup using the already-resolved image base and `PEImageInfo` in
+`Microsoft.Diagnostics.DataContractReader.Legacy`.
+`PEImageInfo` owns the shared PE parsing and export lookup, allowing activation to read
+the image before a `Target` exists. Shared `EntrypointHelpers.TryGetContractDescriptorAddress`
+uses only `ICLRContractLocator`.
+The universal host's explicit-address dbgshim entrypoint bypasses descriptor discovery.
+
+The COM entrypoint selects the collection mode from `miniDumpFlags`, as the native DAC does,
+and passes the derived `EnumMemory.DumpType` (`Mini`, `Heap`, or `Triage`) through
+the collection engine. It also wraps the native callback in `MemoryRegionEmitter`;
+`MemoryEnumerator` accepts that managed adapter rather than a callback pointer and owns
+the flush, read-observation scope, and descriptor-memory enumeration. The
+`CLRDataEnumMemoryFlags` argument to `EnumMemoryRegions` is reserved and ignored.
+Triage exception collection omits messages and remote stack traces from types
+that override the `StackTrace` getter. Stack-trace strings have source-file
+information removed through the optional `ICLRDataEnumMemoryRegionsCallback2`
+update callback, when the dump writer supports it. This does not guarantee that
+other memory selected by the dump writer is free of personal information.
+
 ## Project structure
 
 | Directory | Purpose |
@@ -49,6 +146,7 @@ ISOSDacInterface* / IXCLRDataProcess (COM-style API surface)
 | `Microsoft.Diagnostics.DataContractReader.Legacy` | `SOSDacImpl` — bridges `ISOSDacInterface*` COM APIs to contracts |
 | `Microsoft.Diagnostics.DataContractReader` | Contract/data descriptor parsing and `Target` construction |
 | `mscordaccore_universal` | Entry point that wires everything together |
+| `mscordaccore_enummemory` | NativeAOT entrypoint host for the shared dump collector; produces `mscordaccore` |
 | `tests` | Unit tests with mock memory infrastructure |
 
 ## Contract specifications

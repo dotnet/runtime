@@ -78,9 +78,9 @@ analyzer. It scans for classes carrying `[CdacType]` and emits a
 * A `private readonly Target _target` field (captured in the
   constructor) for any type with instance members, so lazy getters and
   `Write{Name}` methods can read/write without a `Target` parameter.
-* An explicit `IReadableData.EnsureAllFieldsRead()` implementation (for
-  any type with instance members) that touches every field so a caller
-  can force a full eager read.
+* An internal `bool TryReadAllFields()` method (for any type with instance
+  members) that touches every field so a caller can force a full eager read.
+  It returns `false` if a target memory read throws `VirtualReadException`.
 * For types with `HasTypeHandle = true`: a
   `public static ITypeHandle TypeHandle(Target target)` accessor.
 * For each `[Field(Writable = true)]` property: a
@@ -151,25 +151,25 @@ not at construction, and whatever it throws (an
 from a failed read, or nothing for an optional value) surfaces at first
 access.
 
-### Forcing a full read: `IReadableData`
+### Forcing a full read: `TryReadAllFields`
 
 Because reads are deferred, constructing an instance no longer proves the
 whole structure is readable. Every generated type with instance members
-implements `IReadableData.EnsureAllFieldsRead()`, which touches every
-field to force a full eager read. Materializing a field can throw either
-lazy-read exception: `InvalidOperationException` if a required field is
-missing from the descriptor, or `VirtualReadException` if the field's
-target memory cannot be read. A caller catches whichever it cares about --
-for example, to validate that the target memory is readable:
+provides an internal `TryReadAllFields()` method, which touches every field
+to force a full eager read. It returns `true` when all fields can be
+materialized, or `false` if a field's target memory cannot be read.
+`InvalidOperationException` still propagates if a required field is missing
+from the descriptor. Optional fields absent from the descriptor yield `null`
+and do not cause failure. For example, to validate that a method table is
+readable:
 
 ```csharp
-T data = target.ProcessedData.GetOrAdd<T>(address);
-try
+Data.MethodTable data = target.ProcessedData.GetOrAdd<Data.MethodTable>(address);
+if (data.TryReadAllFields())
 {
-    (data as IReadableData)?.EnsureAllFieldsRead();
     // ... the entire structure is readable
 }
-catch (VirtualReadException)
+else
 {
     // ... the structure is only partially readable
 }
@@ -177,9 +177,9 @@ catch (VirtualReadException)
 
 This is how `RuntimeTypeSystem` validation confirms a candidate
 `MethodTable` / `EEClass` is fully readable before trusting it. Its
-descriptor fields are always present, so only `VirtualReadException` is
-relevant there; a caller that also needs to tolerate a missing descriptor
-field would additionally catch `InvalidOperationException`.
+descriptor fields are always present, so the boolean result is sufficient
+there; a caller that also needs to tolerate a missing descriptor field would
+additionally catch `InvalidOperationException`.
 
 ## Attribute surface
 
