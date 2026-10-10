@@ -3118,6 +3118,9 @@ GenTree* Compiler::fgMorphIndexAddr(GenTreeIndexAddr* indexAddr)
     {
         groupArrayRefWithIndex = false;
     }
+#elif defined(TARGET_WASM)
+    // Keep the constant offset outermost so it can fold into the memory instruction's memarg.
+    groupArrayRefWithIndex = varTypeIsGC(arrRef) && !varTypeIsStruct(elemTyp);
 #endif
 
     // Note the array reference may now be TYP_I_IMPL, TYP_BYREF, or TYP_REF
