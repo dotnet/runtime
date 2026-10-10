@@ -346,7 +346,12 @@ Return Value:
 --*/
 {
     UNREFERENCED_PARAMETER(Sp);
+#if defined(TARGET_UNIX)
     *Pointer &= 0x0000FFFFFFFFFFFF;
+#else
+    // Windows uses 47-bit user addresses, so bit 47 can also contain PAC.
+    *Pointer &= 0x00007FFFFFFFFFFF;
+#endif
     return;
 }
 

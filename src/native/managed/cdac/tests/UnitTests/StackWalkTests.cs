@@ -346,6 +346,7 @@ public unsafe class StackWalkTests
             .AddMockContract(runtimeTypeSystem)
             .AddMockContract(callingConvention)
             .AddMockContract(runtimeInfo)
+            .AddMockContract(Mock.Of<IPlatformMetadata>())
             .Build();
         ContextHolder<X86Context> context = new()
         {
@@ -647,6 +648,7 @@ public unsafe class StackWalkTests
                 [DataType.RuntimeFunction] = TargetTestHelpers.CreateTypeInfo(runtimeFunctionLayout),
             })
             .AddMockContract(executionManager.Object)
+            .AddMockContract(Mock.Of<IPlatformMetadata>())
             .Build();
 
         ARM64Context context = new()
@@ -811,6 +813,7 @@ public unsafe class StackWalkTests
             // invoke ExecutionManager or GCInfo, so empty mocks satisfy construction.
             .AddMockContract(executionManager ?? Mock.Of<IExecutionManager>())
             .AddMockContract(Mock.Of<IGCInfo>())
+            .AddMockContract(Mock.Of<IPlatformMetadata>())
             .Build();
     }
 
