@@ -38,8 +38,6 @@ jobs:
     # Test job depends on the corresponding build job
     dependsOn:
      - 'build_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}_'
-     - ${{ if eq(parameters.collectionName, 'coreclr_tests') }}:
-        - 'coreclr_common_test_build_p1_AnyOS_AnyCPU_${{parameters.buildConfig }}'
      # For the corelib crossgen2 collection targeting browser/wasm we also need a
      # browser/wasm-built System.Private.CoreLib.dll, produced by the browser_wasm_win
      # Release build.
@@ -107,15 +105,6 @@ jobs:
           cleanDestinationFolder: true
           overwriteExistingFiles: true
 
-    # Download and unzip managed test artifacts
-    - ${{ if eq(parameters.collectionName, 'coreclr_tests') }}:
-      - template: /eng/pipelines/common/download-artifact-step.yml
-        parameters:
-          unpackFolder: '$(managedTestArtifactRootFolderPath)'
-          artifactFileName: '$(managedGenericTestArtifactName).tar.gz'
-          artifactName: '$(managedGenericTestArtifactName)'
-          displayName: 'generic managed test artifacts'
-
     # Create Core_Root
     - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(buildConfig) -arch $(archType) $(crossArg) generatelayoutonly $(librariesOverrideArg)
       displayName: Create Core_Root
@@ -125,4 +114,3 @@ jobs:
     - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) release -arch $(archType) $(crossArg) generatelayoutonly $(librariesOverrideArg)
       displayName: Create Release Core_Root
       condition: succeeded()
-

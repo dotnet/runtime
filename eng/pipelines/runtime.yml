@@ -253,6 +253,7 @@ extends:
               - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
                 parameters:
                   creator: dotnet-bot
+                  displayNameArgs: Interpreter
                   testBuildArgs: -os browser /p:HostConfiguration=Release
                   testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
                   useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
@@ -261,7 +262,9 @@ extends:
               - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
                 parameters:
                   creator: dotnet-bot
+                  displayNameArgs: R2R_CG2
                   readyToRun: true
+                  runAfterPreviousFailure: true
                   testBuildArgs: generatelayoutonly crossgen2 -os browser /p:HostConfiguration=Release
                   testRunNamePrefixSuffix: CoreCLR_R2R_CG2_$(_BuildConfig)
                   timeoutPerTestInMinutes: 30

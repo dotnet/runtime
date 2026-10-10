@@ -14,6 +14,7 @@
   },
   "msbuild-sdks": {
     "Microsoft.DotNet.Arcade.Sdk": "12.0.0-beta.26471.108",
+    "Microsoft.DotNet.CMake.Sdk": "12.0.0-beta.26471.108",
     "Microsoft.DotNet.Helix.Sdk": "12.0.0-beta.26471.108",
     "Microsoft.DotNet.SharedFramework.Sdk": "12.0.0-beta.26471.108",
     "Microsoft.Build.NoTargets": "3.7.0",

@@ -1213,7 +1213,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
             "freebsd" => Xunit.TestPlatforms.FreeBSD,
             "openbsd" => Xunit.TestPlatforms.OpenBSD,
             "netbsd" => Xunit.TestPlatforms.NetBSD,
-            null or "" or "anyos" => Xunit.TestPlatforms.Any,
+            null or "" => Xunit.TestPlatforms.Any,
             _ => 0
         };
     }

@@ -1,0 +1,78 @@
+parameters:
+  osGroup: ''
+  osSubgroup: ''
+  archType: ''
+  buildConfig: ''
+  condition: always()
+
+steps:
+- ${{ if ne(parameters.osGroup, 'windows') }}:
+  - script: |
+      mkdir -p $(Build.SourcesDirectory)/artifacts/spmi_collection
+      mkdir -p $(Build.SourcesDirectory)/artifacts/spmi_logs
+      python3 -m venv $(Build.SourcesDirectory)/venv
+      echo "##vso[task.setvariable variable=PythonScript]$(Build.SourcesDirectory)/venv/bin/python3"
+      echo "##vso[task.setvariable variable=PipScript]$(Build.SourcesDirectory)/venv/bin/pip3"
+    displayName: Create SuperPMI directories
+    condition: ${{ parameters.condition }}
+- ${{ if eq(parameters.osGroup, 'windows') }}:
+  - script: |
+      mkdir $(Build.SourcesDirectory)\artifacts\spmi_collection
+      mkdir $(Build.SourcesDirectory)\artifacts\spmi_logs
+      py -3 -m venv $(Build.SourcesDirectory)\venv
+      echo ##vso[task.setvariable variable=PythonScript]$(Build.SourcesDirectory)\venv\Scripts\python.exe
+      echo ##vso[task.setvariable variable=PipScript]$(Build.SourcesDirectory)\venv\Scripts\python.exe -m pip
+    displayName: Create SuperPMI directories
+    condition: ${{ parameters.condition }}
+
+- script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi.py merge-mch -log_level DEBUG -pattern $(Build.SourcesDirectory)/artifacts/helixresults/coreclr_tests.run*.mch -output_mch_path $(Build.SourcesDirectory)/artifacts/spmi_collection/coreclr_tests.run.${{ parameters.osGroup }}.${{ parameters.archType }}.${{ parameters.buildConfig }}.mch
+  displayName: Merge coreclr_tests-run SuperPMI collections
+  condition: ${{ parameters.condition }}
+
+- template: /eng/pipelines/common/upload-artifact-step.yml
+  parameters:
+    rootFolder: $(Build.SourcesDirectory)/artifacts/spmi_collection
+    includeRootFolder: false
+    archiveType: $(archiveType)
+    tarCompression: $(tarCompression)
+    archiveExtension: $(archiveExtension)
+    artifactName: SuperPMI_Collection_coreclr_tests_run_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}_Attempt$(System.JobAttempt)
+    displayName: Upload artifacts SuperPMI coreclr_tests-run collection
+    condition: ${{ parameters.condition }}
+
+- ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+  - task: PipAuthenticate@1
+    displayName: Pip Authenticate
+    inputs:
+      artifactFeeds: public/dotnet-public-pypi
+      onlyAddExtraIndex: false
+    condition: ${{ parameters.condition }}
+
+  - script: $(PipScript) install --upgrade pip && $(PipScript) install azure.storage.blob==12.27.0 --force-reinstall && $(PipScript) install azure.identity==1.25.1 --force-reinstall
+    displayName: Upgrade Pip to latest and install Azure Storage packages
+    condition: ${{ parameters.condition }}
+
+  - task: AzureCLI@2
+    displayName: Upload SuperPMI coreclr_tests-run collection to Azure Storage
+    inputs:
+      azureSubscription: superpmi-collect-rw
+      scriptType: pscore
+      scriptLocation: inlineScript
+      inlineScript: |
+        $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi.py upload -log_level DEBUG -arch ${{ parameters.archType }} -build_type ${{ parameters.buildConfig }} -mch_files $(Build.SourcesDirectory)/artifacts/spmi_collection/coreclr_tests.run.${{ parameters.osGroup }}.${{ parameters.archType }}.${{ parameters.buildConfig }}.mch -core_root $(Build.SourcesDirectory)/artifacts/bin/coreclr/${{ parameters.osGroup }}.x64.$(buildConfigUpper)
+    condition: ${{ parameters.condition }}
+
+- task: CopyFiles@2
+  displayName: Copy SuperPMI logs
+  inputs:
+    sourceFolder: $(Build.SourcesDirectory)/artifacts/helixresults
+    contents: '**/coreclr_tests.run*.log'
+    targetFolder: $(Build.SourcesDirectory)/artifacts/spmi_logs
+  condition: ${{ parameters.condition }}
+
+- task: PublishPipelineArtifact@1
+  displayName: Publish SuperPMI logs
+  inputs:
+    targetPath: $(Build.SourcesDirectory)/artifacts/spmi_logs
+    artifactName: SuperPMI_Logs_coreclr_tests_run_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}_Attempt$(System.JobAttempt)
+  condition: ${{ parameters.condition }}

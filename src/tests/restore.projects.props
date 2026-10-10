@@ -1,5 +1,6 @@
 <Project>
   <ItemGroup>
+    <RestoreProjects Include="build-native.proj" />
     <RestoreProjects Include="Common\test_dependencies_fs\test_dependencies.fsproj" />
     <RestoreProjects Include="Common\test_dependencies\test_dependencies.csproj" />
     <RestoreProjects Include="Common\CoreCLRTestLibrary\CoreCLRTestLibrary.csproj" />

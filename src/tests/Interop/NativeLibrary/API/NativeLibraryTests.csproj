@@ -29,7 +29,7 @@
     <FileNameSuffix>-in-subdirectory</FileNameSuffix>
   </PropertyGroup>
 
-  <Target Name="SetUpSubdirectoryNative" AfterTargets="CopyNativeProjectBinaries">
+  <Target Name="SetUpSubdirectoryNative" AfterTargets="CopyAllNativeProjectReferenceBinaries">
     <ItemGroup>
       <NativeLibrariesToCopy Include="$(OutDir)/libNativeLibrary.*" />
       <NativeLibrariesToCopy Include="$(OutDir)/NativeLibrary.*" />

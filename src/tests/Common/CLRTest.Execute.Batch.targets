@@ -435,9 +435,10 @@ $(BatchSelectTestCorerun)
                     set "__OopExit=!ERRORLEVEL!"
                     set "__TestOutOfProcessStatusFile="
                 ) ELSE (
-                    REM allTargets runners can include tests whose target-specific wrapper was not generated.
-                    set "__OopExit=0"
-                    ECHO Test executable '!__OopWrapper!' was not found on this platform.> "!__OopStatus!"
+                    REM A planned out-of-process wrapper that is missing on disk is an infrastructure
+                    REM failure, not a skip: report it as a failing result with a diagnostic message.
+                    set "__OopExit=1"
+                    ECHO Test Infrastructure Failure: planned out-of-process wrapper "!__OopWrapper!" was not found.> "!__OopOutput!"
                 )
                 set "CORE_ROOT=!__CoreRootUnix!"
 
