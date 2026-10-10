@@ -1996,9 +1996,9 @@ void gc_heap::move_aged_regions(region_free_list dest[count_free_region_kinds], 
     for (heap_segment* region = src.get_first_free_region(); region != nullptr; region = next_region)
     {
         next_region = heap_segment_next (region);
-        // when we are about to get OOM, we'd like to discount the free regions that just have the initial page commit as they are not useful
+        // when we are about to get OOM, we'd like to discount the free regions that just have the initial commit as they are not useful
         if (aged_region_p(region, kind) ||
-            ((get_region_committed_size (region) == GC_PAGE_SIZE) && joined_last_gc_before_oom))
+            (joined_last_gc_before_oom && (get_region_committed_size (region) == SEGMENT_INITIAL_COMMIT)))
         {
             region_free_list::unlink_region (region);
             region_free_list::add_region (region, dest);
