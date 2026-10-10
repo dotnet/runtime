@@ -149,4 +149,76 @@ public class Color
             Assert.Equal(shouldEmitEscapes, parts[1].Contains(Esc));
         }
     }
+
+    [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+    [PlatformSpecific(TestPlatforms.AnyUnix)] // terminfo is only consulted on Unix
+    // TERM=dumb and an absent TERM both yield a terminal description with no
+    // setaf/setab capability. FORCE_COLOR is an unconditional request for color, so it
+    // must still emit; without an explicit request, an absent capability means no color.
+    [InlineData("dumb", true, true)]
+    [InlineData("dumb", false, false)]
+    [InlineData(null, true, true)]
+    [InlineData(null, false, false)]
+    public static void RedirectedOutput_ForceColorWithoutTerminfo_StillEmitsEscapes(
+        string? term, bool forceColor, bool shouldEmitEscapes)
+    {
+        var psi = new ProcessStartInfo { RedirectStandardOutput = true };
+        if (term is null)
+        {
+            psi.Environment.Remove("TERM");
+        }
+        else
+        {
+            psi.Environment["TERM"] = term;
+        }
+
+        if (forceColor)
+        {
+            psi.Environment["FORCE_COLOR"] = "1";
+        }
+
+        Action main = () =>
+        {
+            Console.Write("SEPARATOR");
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.Write("SEPARATOR");
+        };
+
+        using RemoteInvokeHandle remote = RemoteExecutor.Invoke(main, new RemoteInvokeOptions() { StartInfo = psi });
+
+        string stdout = remote.Process.StandardOutput.ReadToEnd();
+        string[] parts = stdout.Split("SEPARATOR");
+        Assert.Equal(3, parts.Length);
+        Assert.Equal(shouldEmitEscapes, parts[1].Contains(Esc));
+    }
+
+    [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+    [PlatformSpecific(TestPlatforms.AnyUnix)]
+    public static void RedirectedOutput_ForceColorWithoutTerminfo_ResetsColor()
+    {
+        // The fallback must also reset, or a forced color bleeds into everything after it.
+        var psi = new ProcessStartInfo { RedirectStandardOutput = true };
+        psi.Environment.Remove("TERM");
+        psi.Environment["FORCE_COLOR"] = "1";
+
+        Action main = () =>
+        {
+            // Bracket with separators so terminal initialization output, if any, can't
+            // affect the comparison -- same isolation the other tests in this file use.
+            Console.Write("SEPARATOR");
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.Write("X");
+            Console.ResetColor();
+            Console.Write("SEPARATOR");
+        };
+
+        using RemoteInvokeHandle remote = RemoteExecutor.Invoke(main, new RemoteInvokeOptions() { StartInfo = psi });
+
+        string stdout = remote.Process.StandardOutput.ReadToEnd();
+        string[] parts = stdout.Split("SEPARATOR");
+        Assert.Equal(3, parts.Length);
+        // RefreshColors resets before re-applying the tracked colors, so the reset
+        // fallback fires here too -- same shape terminfo produces on a real terminal.
+        Assert.Equal($"{Esc}[0m{Esc}[91mX{Esc}[0m", parts[1]);
+    }
 }
