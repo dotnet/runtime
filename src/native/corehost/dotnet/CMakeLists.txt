@@ -24,6 +24,10 @@ add_executable(dotnet ${SOURCES})
 
 target_link_libraries(dotnet PRIVATE hostmisc fxr_resolver)
 
+if(CLR_CMAKE_TARGET_OSX)
+    set_macos_bundle_identifier(dotnet com.microsoft.dotnet)
+endif()
+
 add_sanitizer_runtime_support(dotnet)
 
 if(NOT CLR_CMAKE_TARGET_WIN32)
