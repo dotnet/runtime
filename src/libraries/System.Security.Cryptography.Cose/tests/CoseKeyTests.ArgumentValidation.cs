@@ -27,6 +27,37 @@ namespace System.Security.Cryptography.Cose.Tests
             AssertExtensions.Throws<ArgumentNullException>("hashAlgorithm.Name", () => new CoseKey(CoseTestHelpers.ES256, default));
         }
 
+#if NET11_0_OR_GREATER
+        [Theory]
+        [InlineData("SHA256", 32)]
+        [InlineData("SHA384", 48)]
+        [InlineData("SHA512", 64)]
+        public void CreateCoseKeyWithExplicitPssHashLength(string hashAlgorithmName, int saltLength)
+        {
+            CoseKey key = new CoseKey(
+                CoseTestHelpers.RSAKey,
+                RSASignaturePadding.CreatePss(saltLength),
+                new HashAlgorithmName(hashAlgorithmName));
+
+            Assert.NotNull(key);
+        }
+
+        [Theory]
+        [InlineData("SHA256", 31)]
+        [InlineData("SHA256", 33)]
+        [InlineData("SHA384", 32)]
+        [InlineData("SHA512", RSASignaturePadding.PssSaltLengthMax)]
+        public void CreateCoseKeyWithInvalidPssSaltLength(string hashAlgorithmName, int saltLength)
+        {
+            AssertExtensions.Throws<ArgumentException>(
+                "signaturePadding",
+                () => new CoseKey(
+                    CoseTestHelpers.RSAKey,
+                    RSASignaturePadding.CreatePss(saltLength),
+                    new HashAlgorithmName(hashAlgorithmName)));
+        }
+#endif
+
         [Fact]
         public void CreateCoseSignerWithNullCoseKey_Throws()
         {
