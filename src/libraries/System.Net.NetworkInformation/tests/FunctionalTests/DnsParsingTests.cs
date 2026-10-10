@@ -17,7 +17,7 @@ namespace System.Net.NetworkInformation.Tests
             string fileName = GetTestFilePath();
             FileUtil.NormalizeLineEndings(file, fileName);
 
-            string suffix = StringParsingHelpers.ParseDnsSuffixFromResolvConfFile(File.ReadAllText(fileName));
+            string suffix = StringParsingHelpers.ParseDnsSuffixFromResolvConfFile(StringParsingHelpers.ReadResolvConfFile(fileName));
             Assert.Equal("fake.suffix.net", suffix);
         }
 
@@ -29,9 +29,19 @@ namespace System.Net.NetworkInformation.Tests
             string fileName = GetTestFilePath();
             FileUtil.NormalizeLineEndings(file, fileName);
 
-            List<IPAddress> dnsAddresses = StringParsingHelpers.ParseDnsAddressesFromResolvConfFile(File.ReadAllText(fileName));
+            List<IPAddress> dnsAddresses = StringParsingHelpers.ParseDnsAddressesFromResolvConfFile(StringParsingHelpers.ReadResolvConfFile(fileName));
             Assert.Equal(1, dnsAddresses.Count);
             Assert.Equal(IPAddress.Parse("127.0.1.1"), dnsAddresses[0]);
+        }
+
+        [InlineData("resolv.conf")]
+        [InlineData("etc/resolv.conf")]
+        [Theory]
+        public void ReadResolvConfFile_MissingFileOrDirectory_ReturnsNull(string relativePath)
+        {
+            string fileName = Path.Combine(TestDirectory, relativePath);
+
+            Assert.Null(StringParsingHelpers.ReadResolvConfFile(fileName));
         }
     }
 }
