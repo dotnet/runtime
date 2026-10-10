@@ -103,6 +103,13 @@ typedef EventPipeProvider *
 	EventPipeCallback callback_func,
 	void *callback_data);
 
+typedef EventPipeProvider *
+(*event_pipe_component_create_provider_2_func) (
+	const ep_char8_t *provider_name,
+	EventPipeCallback callback_func,
+	void *callback_data,
+	bool callback_data_includes_generation);
+
 typedef void
 (*event_pipe_component_delete_provider_func) (EventPipeProvider *provider);
 
@@ -271,6 +278,7 @@ typedef struct _MonoComponentEventPipe {
 	event_pipe_component_add_rundown_execution_checkpoint_2_func add_rundown_execution_checkpoint_2;
 	event_pipe_component_convert_100ns_ticks_to_timestamp_t_func convert_100ns_ticks_to_timestamp_t;
 	event_pipe_component_create_provider_func create_provider;
+	event_pipe_component_create_provider_2_func create_provider_2;
 	event_pipe_component_delete_provider_func delete_provider;
 	event_pipe_component_get_provider_func get_provider;
 	event_pipe_component_provider_add_event_func provider_add_event;

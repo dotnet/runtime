@@ -10,6 +10,7 @@ namespace System.Diagnostics.Tracing
     internal sealed class EventPipeEventProvider : EventProviderImpl
     {
         private readonly WeakReference<EventProvider> _eventProvider;
+        private readonly CallbackGeneration _callbackGeneration = new CallbackGeneration();
         private IntPtr _provHandle;
         private GCHandle<EventPipeEventProvider> _gcHandle;
 
@@ -59,14 +60,105 @@ namespace System.Diagnostics.Tracing
             target.OnControllerCommand(command, args, bEnabling ? (int)SessionMask.MAX : -1);
         }
 
+        private unsafe void HandleEnableNotification(
+            EventProvider target,
+            byte* additionalData,
+            byte level,
+            long matchAnyKeywords,
+            Interop.Advapi32.EVENT_FILTER_DESCRIPTOR* filterData,
+            ulong configurationGeneration)
+        {
+            ulong id = BitConverter.ToUInt64(new ReadOnlySpan<byte>(additionalData, sizeof(ulong)));
+            bool enablingSession = id != 0;
+            IDictionary<string, string?>? args = null;
+            ControllerCommand command = ControllerCommand.Update;
+
+            if (enablingSession)
+            {
+                byte[]? filterDataBytes = null;
+                if (filterData != null)
+                {
+                    MarshalFilterData(filterData, out command, out filterDataBytes);
+                }
+                args = ParseFilterData(filterDataBytes);
+            }
+
+            target.OnControllerCommand(
+                command,
+                args,
+                enablingSession ? (int)SessionMask.MAX : -1,
+                configurationGeneration,
+                true,
+                (EventLevel)level,
+                (EventKeywords)matchAnyKeywords);
+        }
+
         [UnmanagedCallersOnly]
         private static unsafe void Callback(byte* sourceId, int isEnabled, byte level,
             long matchAnyKeywords, long matchAllKeywords, Interop.Advapi32.EVENT_FILTER_DESCRIPTOR* filterData, void* callbackContext)
         {
             EventPipeEventProvider _this = GCHandle<EventPipeEventProvider>.FromIntPtr((IntPtr)callbackContext).Target;
-            if (_this._eventProvider.TryGetTarget(out EventProvider? target))
+            ulong configurationGeneration = BitConverter.ToUInt64(new ReadOnlySpan<byte>(sourceId + sizeof(ulong), sizeof(ulong)));
+
+            try
             {
-                _this.ProviderCallback(target, sourceId, isEnabled, level, matchAnyKeywords, matchAllKeywords, filterData);
+                if (!_this._eventProvider.TryGetTarget(out EventProvider? target))
+                {
+                    return;
+                }
+
+                bool enabled = isEnabled != 0;
+                if (!_this._callbackGeneration.TryApply(configurationGeneration, () =>
+                    {
+                        if (enabled)
+                            _this.Enable(level, matchAnyKeywords, matchAllKeywords);
+                        else
+                            _this.Disable();
+                    }))
+                {
+                    return;
+                }
+
+                if (enabled)
+                {
+                    _this.HandleEnableNotification(target, sourceId, level, matchAnyKeywords, filterData, configurationGeneration);
+                }
+                else
+                {
+                    target.OnControllerCommand(
+                        ControllerCommand.Update,
+                        null,
+                        0,
+                        configurationGeneration,
+                        false,
+                        EventLevel.LogAlways,
+                        EventKeywords.None);
+                }
+            }
+            catch
+            {
+                // Provider callbacks must not crash the process.
+            }
+        }
+
+        private sealed class CallbackGeneration
+        {
+            private readonly object _lock = new object();
+            private ulong _lastConfigurationGeneration;
+
+            internal bool TryApply(ulong configurationGeneration, Action applyConfiguration)
+            {
+                lock (_lock)
+                {
+                    if (configurationGeneration <= _lastConfigurationGeneration)
+                    {
+                        return false;
+                    }
+
+                    _lastConfigurationGeneration = configurationGeneration;
+                    applyConfiguration();
+                    return true;
+                }
             }
         }
 
