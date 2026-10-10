@@ -214,17 +214,21 @@ namespace System.IO.Tests
 
         #region PlatformSpecific
 
-        [Theory,
-            MemberData(nameof(PathsWithComponentLongerThanMaxComponent))]
-        [SkipOnPlatform(TestPlatforms.Browser, "Browser does not have a limit on the maximum component length")]
+        // Legacy Mono WebAssembly (emscripten MEMFS) does not enforce a maximum path-component
+        // length, so creating a directory with an over-long component succeeds there. Every other
+        // configuration - including CoreCLR WebAssembly (WASMFS) - enforces one and throws.
+        public static bool NoMaxComponentLength => PlatformDetection.IsBrowser && PlatformDetection.IsMonoRuntime;
+        public static bool HasMaxComponentLength => !NoMaxComponentLength;
+
+        [ConditionalTheory(typeof(Directory_CreateDirectory), nameof(HasMaxComponentLength))]
+        [MemberData(nameof(PathsWithComponentLongerThanMaxComponent))]
         public void DirectoryWithComponentLongerThanMaxComponentAsPath_ThrowsException(string path)
         {
             AssertExtensions.ThrowsAny<IOException, DirectoryNotFoundException, PathTooLongException>(() => Create(path));
         }
 
-        [Theory,
-            MemberData(nameof(PathsWithComponentLongerThanMaxComponent))]
-        [PlatformSpecific(TestPlatforms.Browser)] // Browser specific test in case the check changes in the future
+        [ConditionalTheory(typeof(Directory_CreateDirectory), nameof(NoMaxComponentLength))]
+        [MemberData(nameof(PathsWithComponentLongerThanMaxComponent))]
         public void DirectoryWithComponentLongerThanMaxComponentAsPath_BrowserDoesNotThrowException(string path)
         {
             DirectoryInfo result = Create(path);

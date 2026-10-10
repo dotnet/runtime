@@ -49,6 +49,7 @@ export type EmscriptenModuleInternal = EmscriptenModule & {
     instantiateWasm?: InstantiateWasmCallBack;
     onAbort?: (reason: any, extraJson?: string) => void;
     onExit?: (code: number) => void;
+    onRuntimeInitialized?: () => any;
     preInit?: (() => any)[] | (() => any);
     preRun?: (() => any)[] | (() => any);
     postRun?: (() => any)[] | (() => any);
