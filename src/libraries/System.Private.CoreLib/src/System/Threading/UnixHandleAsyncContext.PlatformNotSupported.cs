@@ -21,7 +21,17 @@ namespace System.Threading
             throw new PlatformNotSupportedException();
         }
 
+        public int StartAsyncReadAsInt(Operation operation, int observedSequenceNumber, CancellationToken cancellationToken)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
         public AsyncResult StartAsyncWrite(Operation operation, int observedSequenceNumber, CancellationToken cancellationToken)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        public int StartAsyncWriteAsInt(Operation operation, int observedSequenceNumber, CancellationToken cancellationToken)
         {
             throw new PlatformNotSupportedException();
         }
@@ -31,7 +41,17 @@ namespace System.Threading
             throw new PlatformNotSupportedException();
         }
 
+        public int ReadAsInt(Operation operation, int observedSequenceNumber, int timeout)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
         public SyncResult Write(Operation operation, int observedSequenceNumber, int timeout)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        public int WriteAsInt(Operation operation, int observedSequenceNumber, int timeout)
         {
             throw new PlatformNotSupportedException();
         }
