@@ -22,6 +22,7 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector128<double> Asin(System.Runtime.Intrinsics.Vector128<double> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<float> Asin(System.Runtime.Intrinsics.Vector128<float> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<byte> AsByte<T>(this System.Runtime.Intrinsics.Vector128<T> vector) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<char> AsChar<T>(this System.Runtime.Intrinsics.Vector128<T> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<double> AsDouble<T>(this System.Runtime.Intrinsics.Vector128<T> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<short> AsInt16<T>(this System.Runtime.Intrinsics.Vector128<T> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<int> AsInt32<T>(this System.Runtime.Intrinsics.Vector128<T> vector) { throw null; }
@@ -88,6 +89,8 @@ namespace System.Runtime.Intrinsics
         public static int CountWhereAllBitsSet<T>(System.Runtime.Intrinsics.Vector128<T> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<byte> Create(byte value) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<byte> Create(byte e0, byte e1, byte e2, byte e3, byte e4, byte e5, byte e6, byte e7, byte e8, byte e9, byte e10, byte e11, byte e12, byte e13, byte e14, byte e15) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<char> Create(char value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<char> Create(char e0, char e1, char e2, char e3, char e4, char e5, char e6, char e7) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<double> Create(double value) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<double> Create(double e0, double e1) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<short> Create(short value) { throw null; }
@@ -100,6 +103,7 @@ namespace System.Runtime.Intrinsics
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector128<nuint> Create(nuint value) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<byte> Create(System.Runtime.Intrinsics.Vector64<byte> lower, System.Runtime.Intrinsics.Vector64<byte> upper) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<char> Create(System.Runtime.Intrinsics.Vector64<char> lower, System.Runtime.Intrinsics.Vector64<char> upper) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<double> Create(System.Runtime.Intrinsics.Vector64<double> lower, System.Runtime.Intrinsics.Vector64<double> upper) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<short> Create(System.Runtime.Intrinsics.Vector64<short> lower, System.Runtime.Intrinsics.Vector64<short> upper) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<int> Create(System.Runtime.Intrinsics.Vector64<int> lower, System.Runtime.Intrinsics.Vector64<int> upper) { throw null; }
@@ -135,6 +139,7 @@ namespace System.Runtime.Intrinsics
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector128<ulong> Create(ulong e0, ulong e1) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<byte> CreateScalar(byte value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<char> CreateScalar(char value) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<double> CreateScalar(double value) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<short> CreateScalar(short value) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<int> CreateScalar(int value) { throw null; }
@@ -153,6 +158,7 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector128<ulong> CreateScalar(ulong value) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<T> CreateScalar<T>(T value) { throw null; }
         public unsafe static System.Runtime.Intrinsics.Vector128<byte> CreateScalarUnsafe(byte value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<char> CreateScalarUnsafe(char value) { throw null; }
         public unsafe static System.Runtime.Intrinsics.Vector128<double> CreateScalarUnsafe(double value) { throw null; }
         public unsafe static System.Runtime.Intrinsics.Vector128<short> CreateScalarUnsafe(short value) { throw null; }
         public unsafe static System.Runtime.Intrinsics.Vector128<int> CreateScalarUnsafe(int value) { throw null; }
@@ -304,6 +310,7 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector128<double> Round(System.Runtime.Intrinsics.Vector128<double> vector, System.MidpointRounding mode) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<float> Round(System.Runtime.Intrinsics.Vector128<float> vector, System.MidpointRounding mode) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<byte> ShiftLeft(System.Runtime.Intrinsics.Vector128<byte> vector, int shiftCount) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<char> ShiftLeft(System.Runtime.Intrinsics.Vector128<char> vector, int shiftCount) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<short> ShiftLeft(System.Runtime.Intrinsics.Vector128<short> vector, int shiftCount) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<int> ShiftLeft(System.Runtime.Intrinsics.Vector128<int> vector, int shiftCount) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<long> ShiftLeft(System.Runtime.Intrinsics.Vector128<long> vector, int shiftCount) { throw null; }
@@ -325,6 +332,7 @@ namespace System.Runtime.Intrinsics
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector128<sbyte> ShiftRightArithmetic(System.Runtime.Intrinsics.Vector128<sbyte> vector, int shiftCount) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<byte> ShiftRightLogical(System.Runtime.Intrinsics.Vector128<byte> vector, int shiftCount) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<char> ShiftRightLogical(System.Runtime.Intrinsics.Vector128<char> vector, int shiftCount) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<short> ShiftRightLogical(System.Runtime.Intrinsics.Vector128<short> vector, int shiftCount) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<int> ShiftRightLogical(System.Runtime.Intrinsics.Vector128<int> vector, int shiftCount) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<long> ShiftRightLogical(System.Runtime.Intrinsics.Vector128<long> vector, int shiftCount) { throw null; }
@@ -346,6 +354,13 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector128<long> Shuffle(System.Runtime.Intrinsics.Vector128<long> vector, System.Runtime.Intrinsics.Vector128<long> indices) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<nint> Shuffle(System.Runtime.Intrinsics.Vector128<nint> vector, System.Runtime.Intrinsics.Vector128<nint> indices) { throw null; }
         [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector128<char> Shuffle(System.Runtime.Intrinsics.Vector128<char> vector, System.Runtime.Intrinsics.Vector128<ushort> indices) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<double> Shuffle(System.Runtime.Intrinsics.Vector128<double> vector, System.Runtime.Intrinsics.Vector128<long> indices) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<short> Shuffle(System.Runtime.Intrinsics.Vector128<short> vector, System.Runtime.Intrinsics.Vector128<short> indices) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<int> Shuffle(System.Runtime.Intrinsics.Vector128<int> vector, System.Runtime.Intrinsics.Vector128<int> indices) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<long> Shuffle(System.Runtime.Intrinsics.Vector128<long> vector, System.Runtime.Intrinsics.Vector128<long> indices) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<nint> Shuffle(System.Runtime.Intrinsics.Vector128<nint> vector, System.Runtime.Intrinsics.Vector128<nint> indices) { throw null; }
+        [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector128<sbyte> Shuffle(System.Runtime.Intrinsics.Vector128<sbyte> vector, System.Runtime.Intrinsics.Vector128<sbyte> indices) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<float> Shuffle(System.Runtime.Intrinsics.Vector128<float> vector, System.Runtime.Intrinsics.Vector128<int> indices) { throw null; }
         [System.CLSCompliantAttribute(false)]
@@ -357,6 +372,13 @@ namespace System.Runtime.Intrinsics
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector128<nuint> Shuffle(System.Runtime.Intrinsics.Vector128<nuint> vector, System.Runtime.Intrinsics.Vector128<nuint> indices) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<byte> ShuffleNative(System.Runtime.Intrinsics.Vector128<byte> vector, System.Runtime.Intrinsics.Vector128<byte> indices) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<double> ShuffleNative(System.Runtime.Intrinsics.Vector128<double> vector, System.Runtime.Intrinsics.Vector128<long> indices) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<short> ShuffleNative(System.Runtime.Intrinsics.Vector128<short> vector, System.Runtime.Intrinsics.Vector128<short> indices) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<int> ShuffleNative(System.Runtime.Intrinsics.Vector128<int> vector, System.Runtime.Intrinsics.Vector128<int> indices) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<long> ShuffleNative(System.Runtime.Intrinsics.Vector128<long> vector, System.Runtime.Intrinsics.Vector128<long> indices) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<nint> ShuffleNative(System.Runtime.Intrinsics.Vector128<nint> vector, System.Runtime.Intrinsics.Vector128<nint> indices) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector128<char> ShuffleNative(System.Runtime.Intrinsics.Vector128<char> vector, System.Runtime.Intrinsics.Vector128<ushort> indices) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<double> ShuffleNative(System.Runtime.Intrinsics.Vector128<double> vector, System.Runtime.Intrinsics.Vector128<long> indices) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<short> ShuffleNative(System.Runtime.Intrinsics.Vector128<short> vector, System.Runtime.Intrinsics.Vector128<short> indices) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<int> ShuffleNative(System.Runtime.Intrinsics.Vector128<int> vector, System.Runtime.Intrinsics.Vector128<int> indices) { throw null; }
@@ -500,6 +522,7 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector256<double> Asin(System.Runtime.Intrinsics.Vector256<double> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<float> Asin(System.Runtime.Intrinsics.Vector256<float> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<byte> AsByte<T>(this System.Runtime.Intrinsics.Vector256<T> vector) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<char> AsChar<T>(this System.Runtime.Intrinsics.Vector256<T> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<double> AsDouble<T>(this System.Runtime.Intrinsics.Vector256<T> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<short> AsInt16<T>(this System.Runtime.Intrinsics.Vector256<T> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<int> AsInt32<T>(this System.Runtime.Intrinsics.Vector256<T> vector) { throw null; }
@@ -554,6 +577,8 @@ namespace System.Runtime.Intrinsics
         public static int CountWhereAllBitsSet<T>(System.Runtime.Intrinsics.Vector256<T> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<byte> Create(byte value) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<byte> Create(byte e0, byte e1, byte e2, byte e3, byte e4, byte e5, byte e6, byte e7, byte e8, byte e9, byte e10, byte e11, byte e12, byte e13, byte e14, byte e15, byte e16, byte e17, byte e18, byte e19, byte e20, byte e21, byte e22, byte e23, byte e24, byte e25, byte e26, byte e27, byte e28, byte e29, byte e30, byte e31) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<char> Create(char value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<char> Create(char e0, char e1, char e2, char e3, char e4, char e5, char e6, char e7, char e8, char e9, char e10, char e11, char e12, char e13, char e14, char e15) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<double> Create(double value) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<double> Create(double e0, double e1, double e2, double e3) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<short> Create(short value) { throw null; }
@@ -566,6 +591,7 @@ namespace System.Runtime.Intrinsics
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector256<nuint> Create(nuint value) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<byte> Create(System.Runtime.Intrinsics.Vector128<byte> lower, System.Runtime.Intrinsics.Vector128<byte> upper) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<char> Create(System.Runtime.Intrinsics.Vector128<char> lower, System.Runtime.Intrinsics.Vector128<char> upper) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<double> Create(System.Runtime.Intrinsics.Vector128<double> lower, System.Runtime.Intrinsics.Vector128<double> upper) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<short> Create(System.Runtime.Intrinsics.Vector128<short> lower, System.Runtime.Intrinsics.Vector128<short> upper) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<int> Create(System.Runtime.Intrinsics.Vector128<int> lower, System.Runtime.Intrinsics.Vector128<int> upper) { throw null; }
@@ -601,6 +627,7 @@ namespace System.Runtime.Intrinsics
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector256<ulong> Create(ulong e0, ulong e1, ulong e2, ulong e3) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<byte> CreateScalar(byte value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<char> CreateScalar(char value) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<double> CreateScalar(double value) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<short> CreateScalar(short value) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<int> CreateScalar(int value) { throw null; }
@@ -619,6 +646,7 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector256<ulong> CreateScalar(ulong value) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<T> CreateScalar<T>(T value) { throw null; }
         public unsafe static System.Runtime.Intrinsics.Vector256<byte> CreateScalarUnsafe(byte value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<char> CreateScalarUnsafe(char value) { throw null; }
         public unsafe static System.Runtime.Intrinsics.Vector256<double> CreateScalarUnsafe(double value) { throw null; }
         public unsafe static System.Runtime.Intrinsics.Vector256<short> CreateScalarUnsafe(short value) { throw null; }
         public unsafe static System.Runtime.Intrinsics.Vector256<int> CreateScalarUnsafe(int value) { throw null; }
@@ -771,6 +799,7 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector256<double> Round(System.Runtime.Intrinsics.Vector256<double> vector, System.MidpointRounding mode) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<float> Round(System.Runtime.Intrinsics.Vector256<float> vector, System.MidpointRounding mode) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<byte> ShiftLeft(System.Runtime.Intrinsics.Vector256<byte> vector, int shiftCount) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<char> ShiftLeft(System.Runtime.Intrinsics.Vector256<char> vector, int shiftCount) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<short> ShiftLeft(System.Runtime.Intrinsics.Vector256<short> vector, int shiftCount) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<int> ShiftLeft(System.Runtime.Intrinsics.Vector256<int> vector, int shiftCount) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<long> ShiftLeft(System.Runtime.Intrinsics.Vector256<long> vector, int shiftCount) { throw null; }
@@ -792,6 +821,7 @@ namespace System.Runtime.Intrinsics
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector256<sbyte> ShiftRightArithmetic(System.Runtime.Intrinsics.Vector256<sbyte> vector, int shiftCount) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<byte> ShiftRightLogical(System.Runtime.Intrinsics.Vector256<byte> vector, int shiftCount) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<char> ShiftRightLogical(System.Runtime.Intrinsics.Vector256<char> vector, int shiftCount) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<short> ShiftRightLogical(System.Runtime.Intrinsics.Vector256<short> vector, int shiftCount) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<int> ShiftRightLogical(System.Runtime.Intrinsics.Vector256<int> vector, int shiftCount) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<long> ShiftRightLogical(System.Runtime.Intrinsics.Vector256<long> vector, int shiftCount) { throw null; }
@@ -813,6 +843,13 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector256<long> Shuffle(System.Runtime.Intrinsics.Vector256<long> vector, System.Runtime.Intrinsics.Vector256<long> indices) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<nint> Shuffle(System.Runtime.Intrinsics.Vector256<nint> vector, System.Runtime.Intrinsics.Vector256<nint> indices) { throw null; }
         [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector256<char> Shuffle(System.Runtime.Intrinsics.Vector256<char> vector, System.Runtime.Intrinsics.Vector256<ushort> indices) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<double> Shuffle(System.Runtime.Intrinsics.Vector256<double> vector, System.Runtime.Intrinsics.Vector256<long> indices) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<short> Shuffle(System.Runtime.Intrinsics.Vector256<short> vector, System.Runtime.Intrinsics.Vector256<short> indices) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<int> Shuffle(System.Runtime.Intrinsics.Vector256<int> vector, System.Runtime.Intrinsics.Vector256<int> indices) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<long> Shuffle(System.Runtime.Intrinsics.Vector256<long> vector, System.Runtime.Intrinsics.Vector256<long> indices) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<nint> Shuffle(System.Runtime.Intrinsics.Vector256<nint> vector, System.Runtime.Intrinsics.Vector256<nint> indices) { throw null; }
+        [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector256<sbyte> Shuffle(System.Runtime.Intrinsics.Vector256<sbyte> vector, System.Runtime.Intrinsics.Vector256<sbyte> indices) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<float> Shuffle(System.Runtime.Intrinsics.Vector256<float> vector, System.Runtime.Intrinsics.Vector256<int> indices) { throw null; }
         [System.CLSCompliantAttribute(false)]
@@ -824,6 +861,13 @@ namespace System.Runtime.Intrinsics
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector256<nuint> Shuffle(System.Runtime.Intrinsics.Vector256<nuint> vector, System.Runtime.Intrinsics.Vector256<nuint> indices) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<byte> ShuffleNative(System.Runtime.Intrinsics.Vector256<byte> vector, System.Runtime.Intrinsics.Vector256<byte> indices) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<double> ShuffleNative(System.Runtime.Intrinsics.Vector256<double> vector, System.Runtime.Intrinsics.Vector256<long> indices) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<short> ShuffleNative(System.Runtime.Intrinsics.Vector256<short> vector, System.Runtime.Intrinsics.Vector256<short> indices) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<int> ShuffleNative(System.Runtime.Intrinsics.Vector256<int> vector, System.Runtime.Intrinsics.Vector256<int> indices) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<long> ShuffleNative(System.Runtime.Intrinsics.Vector256<long> vector, System.Runtime.Intrinsics.Vector256<long> indices) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<nint> ShuffleNative(System.Runtime.Intrinsics.Vector256<nint> vector, System.Runtime.Intrinsics.Vector256<nint> indices) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector256<char> ShuffleNative(System.Runtime.Intrinsics.Vector256<char> vector, System.Runtime.Intrinsics.Vector256<ushort> indices) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<double> ShuffleNative(System.Runtime.Intrinsics.Vector256<double> vector, System.Runtime.Intrinsics.Vector256<long> indices) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<short> ShuffleNative(System.Runtime.Intrinsics.Vector256<short> vector, System.Runtime.Intrinsics.Vector256<short> indices) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<int> ShuffleNative(System.Runtime.Intrinsics.Vector256<int> vector, System.Runtime.Intrinsics.Vector256<int> indices) { throw null; }
@@ -967,6 +1011,7 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector512<double> Asin(System.Runtime.Intrinsics.Vector512<double> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<float> Asin(System.Runtime.Intrinsics.Vector512<float> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<byte> AsByte<T>(this System.Runtime.Intrinsics.Vector512<T> vector) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<char> AsChar<T>(this System.Runtime.Intrinsics.Vector512<T> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<double> AsDouble<T>(this System.Runtime.Intrinsics.Vector512<T> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<short> AsInt16<T>(this System.Runtime.Intrinsics.Vector512<T> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<int> AsInt32<T>(this System.Runtime.Intrinsics.Vector512<T> vector) { throw null; }
@@ -1021,6 +1066,8 @@ namespace System.Runtime.Intrinsics
         public static int CountWhereAllBitsSet<T>(System.Runtime.Intrinsics.Vector512<T> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<byte> Create(byte value) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<byte> Create(byte e0, byte e1, byte e2, byte e3, byte e4, byte e5, byte e6, byte e7, byte e8, byte e9, byte e10, byte e11, byte e12, byte e13, byte e14, byte e15, byte e16, byte e17, byte e18, byte e19, byte e20, byte e21, byte e22, byte e23, byte e24, byte e25, byte e26, byte e27, byte e28, byte e29, byte e30, byte e31, byte e32, byte e33, byte e34, byte e35, byte e36, byte e37, byte e38, byte e39, byte e40, byte e41, byte e42, byte e43, byte e44, byte e45, byte e46, byte e47, byte e48, byte e49, byte e50, byte e51, byte e52, byte e53, byte e54, byte e55, byte e56, byte e57, byte e58, byte e59, byte e60, byte e61, byte e62, byte e63) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<char> Create(char value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<char> Create(char e0, char e1, char e2, char e3, char e4, char e5, char e6, char e7, char e8, char e9, char e10, char e11, char e12, char e13, char e14, char e15, char e16, char e17, char e18, char e19, char e20, char e21, char e22, char e23, char e24, char e25, char e26, char e27, char e28, char e29, char e30, char e31) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<double> Create(double value) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<double> Create(double e0, double e1, double e2, double e3, double e4, double e5, double e6, double e7) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<short> Create(short value) { throw null; }
@@ -1033,6 +1080,7 @@ namespace System.Runtime.Intrinsics
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector512<nuint> Create(nuint value) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<byte> Create(System.Runtime.Intrinsics.Vector256<byte> lower, System.Runtime.Intrinsics.Vector256<byte> upper) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<char> Create(System.Runtime.Intrinsics.Vector256<char> lower, System.Runtime.Intrinsics.Vector256<char> upper) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<double> Create(System.Runtime.Intrinsics.Vector256<double> lower, System.Runtime.Intrinsics.Vector256<double> upper) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<short> Create(System.Runtime.Intrinsics.Vector256<short> lower, System.Runtime.Intrinsics.Vector256<short> upper) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<int> Create(System.Runtime.Intrinsics.Vector256<int> lower, System.Runtime.Intrinsics.Vector256<int> upper) { throw null; }
@@ -1068,6 +1116,7 @@ namespace System.Runtime.Intrinsics
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector512<ulong> Create(ulong e0, ulong e1, ulong e2, ulong e3, ulong e4, ulong e5, ulong e6, ulong e7) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<byte> CreateScalar(byte value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<char> CreateScalar(char value) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<double> CreateScalar(double value) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<short> CreateScalar(short value) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<int> CreateScalar(int value) { throw null; }
@@ -1086,6 +1135,7 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector512<ulong> CreateScalar(ulong value) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<T> CreateScalar<T>(T value) { throw null; }
         public unsafe static System.Runtime.Intrinsics.Vector512<byte> CreateScalarUnsafe(byte value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<char> CreateScalarUnsafe(char value) { throw null; }
         public unsafe static System.Runtime.Intrinsics.Vector512<double> CreateScalarUnsafe(double value) { throw null; }
         public unsafe static System.Runtime.Intrinsics.Vector512<short> CreateScalarUnsafe(short value) { throw null; }
         public unsafe static System.Runtime.Intrinsics.Vector512<int> CreateScalarUnsafe(int value) { throw null; }
@@ -1239,6 +1289,7 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector512<double> Round(System.Runtime.Intrinsics.Vector512<double> vector, System.MidpointRounding mode) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<float> Round(System.Runtime.Intrinsics.Vector512<float> vector, System.MidpointRounding mode) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<byte> ShiftLeft(System.Runtime.Intrinsics.Vector512<byte> vector, int shiftCount) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<char> ShiftLeft(System.Runtime.Intrinsics.Vector512<char> vector, int shiftCount) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<short> ShiftLeft(System.Runtime.Intrinsics.Vector512<short> vector, int shiftCount) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<int> ShiftLeft(System.Runtime.Intrinsics.Vector512<int> vector, int shiftCount) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<long> ShiftLeft(System.Runtime.Intrinsics.Vector512<long> vector, int shiftCount) { throw null; }
@@ -1260,6 +1311,7 @@ namespace System.Runtime.Intrinsics
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector512<sbyte> ShiftRightArithmetic(System.Runtime.Intrinsics.Vector512<sbyte> vector, int shiftCount) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<byte> ShiftRightLogical(System.Runtime.Intrinsics.Vector512<byte> vector, int shiftCount) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<char> ShiftRightLogical(System.Runtime.Intrinsics.Vector512<char> vector, int shiftCount) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<short> ShiftRightLogical(System.Runtime.Intrinsics.Vector512<short> vector, int shiftCount) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<int> ShiftRightLogical(System.Runtime.Intrinsics.Vector512<int> vector, int shiftCount) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<long> ShiftRightLogical(System.Runtime.Intrinsics.Vector512<long> vector, int shiftCount) { throw null; }
@@ -1281,6 +1333,13 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector512<long> Shuffle(System.Runtime.Intrinsics.Vector512<long> vector, System.Runtime.Intrinsics.Vector512<long> indices) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<nint> Shuffle(System.Runtime.Intrinsics.Vector512<nint> vector, System.Runtime.Intrinsics.Vector512<nint> indices) { throw null; }
         [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector512<char> Shuffle(System.Runtime.Intrinsics.Vector512<char> vector, System.Runtime.Intrinsics.Vector512<ushort> indices) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<double> Shuffle(System.Runtime.Intrinsics.Vector512<double> vector, System.Runtime.Intrinsics.Vector512<long> indices) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<short> Shuffle(System.Runtime.Intrinsics.Vector512<short> vector, System.Runtime.Intrinsics.Vector512<short> indices) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<int> Shuffle(System.Runtime.Intrinsics.Vector512<int> vector, System.Runtime.Intrinsics.Vector512<int> indices) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<long> Shuffle(System.Runtime.Intrinsics.Vector512<long> vector, System.Runtime.Intrinsics.Vector512<long> indices) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<nint> Shuffle(System.Runtime.Intrinsics.Vector512<nint> vector, System.Runtime.Intrinsics.Vector512<nint> indices) { throw null; }
+        [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector512<sbyte> Shuffle(System.Runtime.Intrinsics.Vector512<sbyte> vector, System.Runtime.Intrinsics.Vector512<sbyte> indices) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<float> Shuffle(System.Runtime.Intrinsics.Vector512<float> vector, System.Runtime.Intrinsics.Vector512<int> indices) { throw null; }
         [System.CLSCompliantAttribute(false)]
@@ -1292,6 +1351,13 @@ namespace System.Runtime.Intrinsics
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector512<nuint> Shuffle(System.Runtime.Intrinsics.Vector512<nuint> vector, System.Runtime.Intrinsics.Vector512<nuint> indices) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<byte> ShuffleNative(System.Runtime.Intrinsics.Vector512<byte> vector, System.Runtime.Intrinsics.Vector512<byte> indices) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<double> ShuffleNative(System.Runtime.Intrinsics.Vector512<double> vector, System.Runtime.Intrinsics.Vector512<long> indices) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<short> ShuffleNative(System.Runtime.Intrinsics.Vector512<short> vector, System.Runtime.Intrinsics.Vector512<short> indices) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<int> ShuffleNative(System.Runtime.Intrinsics.Vector512<int> vector, System.Runtime.Intrinsics.Vector512<int> indices) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<long> ShuffleNative(System.Runtime.Intrinsics.Vector512<long> vector, System.Runtime.Intrinsics.Vector512<long> indices) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<nint> ShuffleNative(System.Runtime.Intrinsics.Vector512<nint> vector, System.Runtime.Intrinsics.Vector512<nint> indices) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector512<char> ShuffleNative(System.Runtime.Intrinsics.Vector512<char> vector, System.Runtime.Intrinsics.Vector512<ushort> indices) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<double> ShuffleNative(System.Runtime.Intrinsics.Vector512<double> vector, System.Runtime.Intrinsics.Vector512<long> indices) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<short> ShuffleNative(System.Runtime.Intrinsics.Vector512<short> vector, System.Runtime.Intrinsics.Vector512<short> indices) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<int> ShuffleNative(System.Runtime.Intrinsics.Vector512<int> vector, System.Runtime.Intrinsics.Vector512<int> indices) { throw null; }
@@ -1433,6 +1499,7 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector64<double> Asin(System.Runtime.Intrinsics.Vector64<double> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<float> Asin(System.Runtime.Intrinsics.Vector64<float> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<byte> AsByte<T>(this System.Runtime.Intrinsics.Vector64<T> vector) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<char> AsChar<T>(this System.Runtime.Intrinsics.Vector64<T> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<double> AsDouble<T>(this System.Runtime.Intrinsics.Vector64<T> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<short> AsInt16<T>(this System.Runtime.Intrinsics.Vector64<T> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<int> AsInt32<T>(this System.Runtime.Intrinsics.Vector64<T> vector) { throw null; }
@@ -1485,6 +1552,8 @@ namespace System.Runtime.Intrinsics
         public static int CountWhereAllBitsSet<T>(System.Runtime.Intrinsics.Vector64<T> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<byte> Create(byte value) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<byte> Create(byte e0, byte e1, byte e2, byte e3, byte e4, byte e5, byte e6, byte e7) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<char> Create(char value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<char> Create(char e0, char e1, char e2, char e3) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<double> Create(double value) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<short> Create(short value) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<short> Create(short e0, short e1, short e2, short e3) { throw null; }
@@ -1511,6 +1580,7 @@ namespace System.Runtime.Intrinsics
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector64<ulong> Create(ulong value) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<byte> CreateScalar(byte value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<char> CreateScalar(char value) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<double> CreateScalar(double value) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<short> CreateScalar(short value) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<int> CreateScalar(int value) { throw null; }
@@ -1529,6 +1599,7 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector64<ulong> CreateScalar(ulong value) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<T> CreateScalar<T>(T value) { throw null; }
         public unsafe static System.Runtime.Intrinsics.Vector64<byte> CreateScalarUnsafe(byte value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<char> CreateScalarUnsafe(char value) { throw null; }
         public unsafe static System.Runtime.Intrinsics.Vector64<double> CreateScalarUnsafe(double value) { throw null; }
         public unsafe static System.Runtime.Intrinsics.Vector64<short> CreateScalarUnsafe(short value) { throw null; }
         public unsafe static System.Runtime.Intrinsics.Vector64<int> CreateScalarUnsafe(int value) { throw null; }
@@ -1676,6 +1747,7 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector64<double> Round(System.Runtime.Intrinsics.Vector64<double> vector, System.MidpointRounding mode) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<float> Round(System.Runtime.Intrinsics.Vector64<float> vector, System.MidpointRounding mode) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<byte> ShiftLeft(System.Runtime.Intrinsics.Vector64<byte> vector, int shiftCount) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<char> ShiftLeft(System.Runtime.Intrinsics.Vector64<char> vector, int shiftCount) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<short> ShiftLeft(System.Runtime.Intrinsics.Vector64<short> vector, int shiftCount) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<int> ShiftLeft(System.Runtime.Intrinsics.Vector64<int> vector, int shiftCount) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<long> ShiftLeft(System.Runtime.Intrinsics.Vector64<long> vector, int shiftCount) { throw null; }
@@ -1697,6 +1769,7 @@ namespace System.Runtime.Intrinsics
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector64<sbyte> ShiftRightArithmetic(System.Runtime.Intrinsics.Vector64<sbyte> vector, int shiftCount) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<byte> ShiftRightLogical(System.Runtime.Intrinsics.Vector64<byte> vector, int shiftCount) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<char> ShiftRightLogical(System.Runtime.Intrinsics.Vector64<char> vector, int shiftCount) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<short> ShiftRightLogical(System.Runtime.Intrinsics.Vector64<short> vector, int shiftCount) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<int> ShiftRightLogical(System.Runtime.Intrinsics.Vector64<int> vector, int shiftCount) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<long> ShiftRightLogical(System.Runtime.Intrinsics.Vector64<long> vector, int shiftCount) { throw null; }
@@ -1716,6 +1789,11 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector64<int> Shuffle(System.Runtime.Intrinsics.Vector64<int> vector, System.Runtime.Intrinsics.Vector64<int> indices) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<nint> Shuffle(System.Runtime.Intrinsics.Vector64<nint> vector, System.Runtime.Intrinsics.Vector64<nint> indices) { throw null; }
         [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector64<char> Shuffle(System.Runtime.Intrinsics.Vector64<char> vector, System.Runtime.Intrinsics.Vector64<ushort> indices) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<short> Shuffle(System.Runtime.Intrinsics.Vector64<short> vector, System.Runtime.Intrinsics.Vector64<short> indices) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<int> Shuffle(System.Runtime.Intrinsics.Vector64<int> vector, System.Runtime.Intrinsics.Vector64<int> indices) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<nint> Shuffle(System.Runtime.Intrinsics.Vector64<nint> vector, System.Runtime.Intrinsics.Vector64<nint> indices) { throw null; }
+        [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector64<sbyte> Shuffle(System.Runtime.Intrinsics.Vector64<sbyte> vector, System.Runtime.Intrinsics.Vector64<sbyte> indices) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<float> Shuffle(System.Runtime.Intrinsics.Vector64<float> vector, System.Runtime.Intrinsics.Vector64<int> indices) { throw null; }
         [System.CLSCompliantAttribute(false)]
@@ -1725,6 +1803,11 @@ namespace System.Runtime.Intrinsics
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector64<nuint> Shuffle(System.Runtime.Intrinsics.Vector64<nuint> vector, System.Runtime.Intrinsics.Vector64<nuint> indices) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<byte> ShuffleNative(System.Runtime.Intrinsics.Vector64<byte> vector, System.Runtime.Intrinsics.Vector64<byte> indices) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<short> ShuffleNative(System.Runtime.Intrinsics.Vector64<short> vector, System.Runtime.Intrinsics.Vector64<short> indices) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<int> ShuffleNative(System.Runtime.Intrinsics.Vector64<int> vector, System.Runtime.Intrinsics.Vector64<int> indices) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<nint> ShuffleNative(System.Runtime.Intrinsics.Vector64<nint> vector, System.Runtime.Intrinsics.Vector64<nint> indices) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector64<char> ShuffleNative(System.Runtime.Intrinsics.Vector64<char> vector, System.Runtime.Intrinsics.Vector64<ushort> indices) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<short> ShuffleNative(System.Runtime.Intrinsics.Vector64<short> vector, System.Runtime.Intrinsics.Vector64<short> indices) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<int> ShuffleNative(System.Runtime.Intrinsics.Vector64<int> vector, System.Runtime.Intrinsics.Vector64<int> indices) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<nint> ShuffleNative(System.Runtime.Intrinsics.Vector64<nint> vector, System.Runtime.Intrinsics.Vector64<nint> indices) { throw null; }

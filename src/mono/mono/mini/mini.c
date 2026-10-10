@@ -4681,10 +4681,12 @@ mini_get_simd_type_info (MonoClass *klass, guint32 *nelems)
 		*nelems = 4;
 		return MONO_TYPE_R4;
 	} else if (!strcmp (klass_name, "Vector`1") || !strcmp (klass_name, "Vector64`1") || !strcmp (klass_name, "Vector128`1") || !strcmp (klass_name, "Vector256`1") || !strcmp (klass_name, "Vector512`1")) {
-		MonoType *etype = mono_class_get_generic_class (klass)->context.class_inst->type_argv [0];
+		MonoTypeEnum etype = mono_class_get_generic_class (klass)->context.class_inst->type_argv [0]->type;
+		if (etype == MONO_TYPE_CHAR) // e.g. Vector128<char> => MONO_TYPE_U2
+			etype = MONO_TYPE_U2;
 		int size = mono_class_value_size (klass, NULL);
-		*nelems = size / mini_primitive_type_size (etype->type);
-		return etype->type;
+		*nelems = size / mini_primitive_type_size (etype);
+		return etype;
 	} else {
 		printf ("%s\n", klass_name);
 		NOT_IMPLEMENTED;

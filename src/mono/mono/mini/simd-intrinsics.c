@@ -487,12 +487,18 @@ static MonoTypeEnum
 get_underlying_type (MonoType* type)
 {
 	MonoClass* klass = mono_class_from_mono_type_internal (type);
+
+	MonoTypeEnum etype;
 	if (type->type == MONO_TYPE_PTR) // e.g. int* => MONO_TYPE_I4
-		return m_class_get_byval_arg (m_class_get_element_class (klass))->type;
+		etype = m_class_get_byval_arg (m_class_get_element_class (klass))->type;
 	else if (type->type == MONO_TYPE_GENERICINST) // e.g. Vector128<int> => MONO_TYPE_I4
-		return mono_class_get_context (klass)->class_inst->type_argv [0]->type;
+		etype = mono_class_get_context (klass)->class_inst->type_argv [0]->type;
 	else
-		return type->type;
+		etype = type->type;
+
+	if (etype == MONO_TYPE_CHAR)
+		etype = MONO_TYPE_U2;
+	return etype;
 }
 
 static MonoInst*
@@ -565,8 +571,11 @@ emit_xequal (MonoCompile *cfg, MonoClass *klass, MonoTypeEnum element_type, Mono
 	return ret;
 #else
 	MonoInst *ins = emit_simd_ins (cfg, klass, OP_XEQUAL, arg1->dreg, arg2->dreg);
-	if (!COMPILE_LLVM (cfg))
+	if (!COMPILE_LLVM (cfg)) {
 		ins->inst_c1 = mono_class_get_context (klass)->class_inst->type_argv [0]->type;
+		if (ins->inst_c1 == MONO_TYPE_CHAR) // e.g. Vector128<char> => MONO_TYPE_U2
+			ins->inst_c1 = MONO_TYPE_U2;
+	}
 	return ins;
 #endif
 }
@@ -943,6 +952,8 @@ get_vector_t_elem_type (MonoType *vector_type)
 		!strcmp (m_class_get_name (klass), "Vector256`1") ||
 		!strcmp (m_class_get_name (klass), "Vector512`1"));
 	etype = mono_class_get_context (klass)->class_inst->type_argv [0];
+	if (etype->type == MONO_TYPE_CHAR)
+		etype = m_class_get_byval_arg (mono_defaults.uint16_class);
 	return etype;
 }
 

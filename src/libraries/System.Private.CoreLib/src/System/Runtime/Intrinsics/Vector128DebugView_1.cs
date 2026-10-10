@@ -24,6 +24,16 @@ namespace System.Runtime.Intrinsics
             }
         }
 
+        public char[] CharView
+        {
+            get
+            {
+                var items = new char[Vector128<char>.Count];
+                Unsafe.WriteUnaligned(ref Unsafe.As<char, byte>(ref items[0]), _value);
+                return items;
+            }
+        }
+
         public double[] DoubleView
         {
             get

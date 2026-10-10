@@ -210,11 +210,11 @@ namespace JIT.HardwareIntrinsics.General
             var result = {RetVectorType}.ConditionalSelect(
                 {RetVectorType}.Equals<{RetBaseType}>(op1, {RetVectorType}<{RetBaseType}>.Zero),
                 {Opcode}Unsafe.Read<{Op1VectorType}<{Op1BaseType}>>(_dataTable.inArray1Ptr),
-                {RetVectorType}.Create<{RetBaseType}>(1)
+                {RetVectorType}<{RetBaseType}>.One
             );
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(_dataTable.inArray1Ptr, _dataTable.outArrayPtr, mask: 1);
+            ValidateResult(_dataTable.inArray1Ptr, _dataTable.outArrayPtr, mask: ({RetBaseType})1);
         }
 
         public void RunMaskingZeroScenario()
@@ -230,7 +230,7 @@ namespace JIT.HardwareIntrinsics.General
             );
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(_dataTable.inArray1Ptr, _dataTable.outArrayPtr, mask: 0);
+            ValidateResult(_dataTable.inArray1Ptr, _dataTable.outArrayPtr, mask: ({RetBaseType})0);
         }
 
         public void RunBroadcastAndMaskingScenario()
@@ -246,7 +246,7 @@ namespace JIT.HardwareIntrinsics.General
             );
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(_dataTable.inArray1Ptr, _dataTable.outArrayPtr, isBroadcast: true, mask: 0);
+            ValidateResult(_dataTable.inArray1Ptr, _dataTable.outArrayPtr, isBroadcast: true, mask: ({RetBaseType})0);
         }
 
         public void RunClsVarScenario()
