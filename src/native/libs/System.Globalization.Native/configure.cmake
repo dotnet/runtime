@@ -13,6 +13,9 @@ else()
 
     if (CLR_CMAKE_TARGET_UNIX)
         set(CMAKE_REQUIRED_INCLUDES ${UCURR_H} ${ICU_HOMEBREW_INC_PATH})
+        if (DEFINED CMAKE_ICU_DIR)
+            list(APPEND CMAKE_REQUIRED_INCLUDES ${CMAKE_ICU_DIR}/include)
+        endif()
 
         CHECK_C_SOURCE_COMPILES("
             #include <unicode/udat.h>
