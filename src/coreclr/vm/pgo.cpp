@@ -1190,32 +1190,10 @@ HRESULT PgoManager::getPgoInstrumentationResultsInstance(MethodDesc* pMD, BYTE**
     }
 
     StackSArray<ICorJitInfo::PgoInstrumentationSchema> schemaArray;
-    if (ReadInstrumentationSchemaWithLayoutIntoSArray(found->header.GetData(), found->header.countsOffset, 0, &schemaArray))
-    {
-        size_t schemaDataSize = AlignUp(schemaArray.GetCount() * sizeof(ICorJitInfo::PgoInstrumentationSchema), sizeof(size_t));
-        size_t instrumentationDataSize = 0;
-        if (schemaArray.GetCount() > 0)
-        {
-            auto lastSchema = schemaArray[schemaArray.GetCount() - 1];
-            instrumentationDataSize = AlignUp(lastSchema.Offset + lastSchema.Count * InstrumentationKindToSize(lastSchema.InstrumentationKind), sizeof(size_t));
-        }
-        *pAllocatedData = new BYTE[schemaDataSize + instrumentationDataSize];
-        *ppSchema = (ICorJitInfo::PgoInstrumentationSchema*)*pAllocatedData;
-        *pCountSchemaItems = schemaArray.GetCount();
-        memcpy(*pAllocatedData, schemaArray.OpenRawBuffer(), schemaDataSize);
-        schemaArray.CloseRawBuffer();
 
-        size_t* pInstrumentationDataDst = (size_t*)((*pAllocatedData) + schemaDataSize);
-        size_t* pInstrumentationDataDstEnd = (size_t*)((*pAllocatedData) + schemaDataSize + instrumentationDataSize);
-        *pInstrumentationData = (BYTE*)pInstrumentationDataDst;
-        volatile size_t*pSrc = (volatile size_t*)(found->header.GetData() + found->header.countsOffset);
-        // Use a volatile memcpy to copy the instrumentation data into a temporary buffer
-        // This allows the instrumentation data to be made stable for reading during the execution of the jit
-        // and since the copy moves through a volatile pointer, there will be no tearing of individual data elements
-        for (;pInstrumentationDataDst < pInstrumentationDataDstEnd; pInstrumentationDataDst++, pSrc++)
-        {
-            *pInstrumentationDataDst = *pSrc;
-        }
+    if (SnapshotPgoInstrumentationData(found->header.GetData(), found->header.countsOffset, &schemaArray,
+                                      pAllocatedData, ppSchema, pCountSchemaItems, pInstrumentationData))
+    {
         *pPgoSource = ICorJitInfo::PgoSource::Dynamic;
         return S_OK;
     }
