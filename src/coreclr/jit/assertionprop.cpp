@@ -289,6 +289,53 @@ static void optAssertionProp_HWIntrinsic(Compiler* comp, GenTreeHWIntrinsic* tre
             break;
         }
 
+        case GT_RSH:
+        case GT_RSZ:
+        case GT_UDIV:
+        {
+            // A non-negative op1 produces a non-negative result that cannot exceed op1.
+            IntegralRange op1Range = IntegralRange::ForNode(node->gtGetOp1(), compiler);
+            if (op1Range.IsNonNegative())
+            {
+                return {SymbolicIntegerValue::Zero, op1Range.GetUpperBound()};
+            }
+
+            GenTree* op2 = node->gtGetOp2();
+            if (node->OperIs(GT_RSH) || !op2->IsIntegralConst())
+            {
+                break;
+            }
+
+            int64_t op2Value = op2->AsIntConCommon()->IntegralValue();
+
+            if (node->OperIs(GT_RSZ))
+            {
+                // A logical right shift by a non-zero amount always clears the sign bit.
+                const int64_t bitWidth = static_cast<int64_t>(genTypeSize(node) * BITS_PER_BYTE);
+                if ((op2Value > 0) && (op2Value < bitWidth))
+                {
+                    if (varTypeIsLong(node) && (op2Value >= 32))
+                    {
+                        return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::UIntMax};
+                    }
+
+                    return {SymbolicIntegerValue::Zero, UpperBoundForType(rangeType)};
+                }
+            }
+            else
+            {
+                // An unsigned division by a constant greater than one always clears the sign bit.
+                uint64_t divisor =
+                    varTypeIsLong(node) ? static_cast<uint64_t>(op2Value) : static_cast<uint32_t>(op2Value);
+                if (divisor > 1)
+                {
+                    return {SymbolicIntegerValue::Zero, UpperBoundForType(rangeType)};
+                }
+            }
+
+            break;
+        }
+
         case GT_ARR_LENGTH:
         case GT_MDARR_LENGTH:
             return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::ArrayLenMax};
