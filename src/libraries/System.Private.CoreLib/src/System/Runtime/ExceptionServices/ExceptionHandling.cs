@@ -50,12 +50,12 @@ namespace System.Runtime.ExceptionServices
         /// The exception that is currently in flight on the current thread, or <see langword="null"/> if there is no such exception.
         /// </returns>
         /// <remarks>
-        /// An exception is in flight from the point where it is thrown until it is caught by a catch handler.
-        /// This method returns the exception while its exception filters and its finally and fault handlers run,
-        /// but not within the catch handler that caught it.
+        /// An exception is in flight from the point where it is thrown until it is caught without being rethrown.
+        /// This method returns the exception while its exception filters and its finally, fault, and catch handlers run.
         ///
-        /// If another exception is thrown and caught while an exception is in flight, the original exception
-        /// is returned again once the nested exception is caught.
+        /// If another exception is thrown and caught while an exception is in flight, the nested exception
+        /// is returned while its catch handler runs, and the original exception is returned again once the
+        /// nested catch handler completes.
         ///
         /// The returned value is a point-in-time answer. This method is intended for diagnostic purposes, such as
         /// logging the exception that caused a finally block to run.

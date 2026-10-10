@@ -3321,7 +3321,6 @@ void CallCatchFunclet(BYTE* pHandlerIP, REGDISPLAY* pvRegDisplay, ExInfo* exInfo
 
         OBJECTREF throwable = exInfo->GetThrowable();
         throwable = PossiblyUnwrapThrowable(throwable, exInfo->m_frameIter.m_crawl.GetAssembly());
-        exInfo->m_kind = (ExKind)((uint8_t)exInfo->m_kind | (uint8_t)ExKind::CatchHandlerRunningFlag);
         dwResumePC = pCodeManager->CallFunclet(throwable, pHandlerIP, pvRegDisplay, exInfo, false /* isFilterFunclet */);
 
         FixContext(pvRegDisplay->pCurrentContext);

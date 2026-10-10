@@ -486,9 +486,7 @@ namespace System.Runtime
 
             SupersededFlag = 8,
 
-            InstructionFaultFlag = 0x10,
-
-            CatchHandlerRunningFlag = 0x20
+            InstructionFaultFlag = 0x10
         }
 
         [StructLayout(LayoutKind.Explicit)]
@@ -518,7 +516,7 @@ namespace System.Runtime
                 // _frameIter      -- initialized explicitly during dispatch
 
                 _exception = exceptionObj;
-                _kind = (rethrownExInfo._kind & ~ExKind.CatchHandlerRunningFlag) | ExKind.RethrowFlag;
+                _kind = rethrownExInfo._kind | ExKind.RethrowFlag;
                 _notifyDebuggerSP = UIntPtr.Zero;
             }
 
@@ -589,7 +587,7 @@ namespace System.Runtime
         {
             for (; pExInfo != null; pExInfo = (ExInfo*)pExInfo->_pPrevExInfo)
             {
-                if ((pExInfo->_kind & (ExKind.SupersededFlag | ExKind.CatchHandlerRunningFlag)) == 0)
+                if ((pExInfo->_kind & ExKind.SupersededFlag) == 0)
                     return pExInfo->ThrownException;
             }
 
@@ -974,7 +972,6 @@ namespace System.Runtime
             //
             // ------------------------------------------------
             exInfo._idxCurClause = catchingTryRegionIdx;
-            exInfo._kind |= ExKind.CatchHandlerRunningFlag;
             InternalCalls.RhpCallCatchFunclet(
                 exceptionObj, pCatchHandler, frameIter.RegisterSet, ref exInfo);
             // currently, RhpCallCatchFunclet will resume after the catch

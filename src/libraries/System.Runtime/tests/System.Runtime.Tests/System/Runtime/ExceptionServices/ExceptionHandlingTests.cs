@@ -42,7 +42,7 @@ namespace System.Runtime.ExceptionServices.Tests
             }
 
             Assert.Same(exception, inFinally);
-            Assert.Null(inCatch);
+            Assert.Same(exception, inCatch);
             Assert.Null(ExceptionHandling.GetCurrentException());
         }
 
@@ -116,7 +116,7 @@ namespace System.Runtime.ExceptionServices.Tests
             {
             }
 
-            Assert.Null(inCatch);
+            Assert.Same(exception, inCatch);
             Assert.Same(exception, inFinally);
         }
 
@@ -162,7 +162,7 @@ namespace System.Runtime.ExceptionServices.Tests
             }
 
             Assert.Same(inner, inInnerFinally);
-            Assert.Same(outer, inInnerCatch);
+            Assert.Same(inner, inInnerCatch);
             Assert.Same(outer, afterInnerCatch);
             Assert.Null(ExceptionHandling.GetCurrentException());
         }
@@ -200,7 +200,7 @@ namespace System.Runtime.ExceptionServices.Tests
             }
 
             Assert.Same(replacement, inOuterFinally);
-            Assert.Null(inCatch);
+            Assert.Same(replacement, inCatch);
         }
 
         [Fact]
@@ -288,7 +288,7 @@ namespace System.Runtime.ExceptionServices.Tests
             RuntimeWrappedException wrapped = Assert.IsType<RuntimeWrappedException>(inFinally);
             Assert.Same(thrownObject, wrapped.WrappedException);
             Assert.Same(caught, wrapped);
-            Assert.Null(inCatch);
+            Assert.Same(caught, inCatch);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
