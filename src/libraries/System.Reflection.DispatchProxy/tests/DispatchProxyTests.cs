@@ -546,6 +546,122 @@ namespace DispatchProxyTests
             Assert.Null(actualValue);
         }
 
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void Invoke_Init_Property_Setter_And_Getter_Invokes_Correct_Methods(bool useGenericCreate)
+        {
+            List<MethodInfo> invokedMethods = new List<MethodInfo>();
+            object[] invokedArgs = null;
+
+            TestType_IInitPropertyService proxy = CreateHelper<TestType_IInitPropertyService, TestDispatchProxy>(useGenericCreate);
+            ((TestDispatchProxy)proxy).CallOnInvoke = (method, args) =>
+            {
+                invokedMethods.Add(method);
+                invokedArgs ??= args;
+                return "getterValue";
+            };
+
+            PropertyInfo propertyInfo = typeof(TestType_IInitPropertyService).GetProperty(nameof(TestType_IInitPropertyService.ReadInit));
+            propertyInfo.SetValue(proxy, "testValue");
+            string actualValue = proxy.ReadInit;
+
+            Assert.Equal(new[] { propertyInfo.SetMethod, propertyInfo.GetMethod }, invokedMethods);
+            Assert.Equal(new object[] { "testValue" }, invokedArgs);
+            Assert.Equal("getterValue", actualValue);
+
+            MethodInfo proxySetter = proxy.GetType().GetProperty(nameof(TestType_IInitPropertyService.ReadInit)).SetMethod;
+            Assert.Equal(new[] { typeof(IsExternalInit) }, proxySetter.ReturnParameter.GetRequiredCustomModifiers());
+        }
+
+        [Theory]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        public static void Invoke_Method_With_Optional_Custom_Modifier_Invokes_Correct_Method(bool onReturn, bool useGenericCreate)
+        {
+            // System.Reflection.Emit generates the method so that an optional custom modifier sits on its return type or parameter.
+            Type[] modifiers = new[] { typeof(IsConst) };
+            // A distinct assembly name per case: with a shared name, a proxy implemented an earlier case's interface.
+            AssemblyBuilder ab = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName($"OptionalModifierBuilder_{onReturn}_{useGenericCreate}"), AssemblyBuilderAccess.Run);
+            ModuleBuilder modb = ab.DefineDynamicModule("mod");
+            TypeBuilder tb = modb.DefineType("TestType_IOptionalModifierService", TypeAttributes.Public | TypeAttributes.Interface | TypeAttributes.Abstract);
+            tb.DefineMethod("Echo", MethodAttributes.Public | MethodAttributes.Abstract | MethodAttributes.Virtual, CallingConventions.HasThis,
+                typeof(int), null, onReturn ? modifiers : null,
+                new[] { typeof(int) }, null, new[] { onReturn ? null : modifiers });
+            Type interfaceType = tb.CreateType();
+            MethodInfo interfaceMethod = interfaceType.GetMethod("Echo");
+
+            object proxy = useGenericCreate ?
+                typeof(DispatchProxy).GetRuntimeMethod("Create", Type.EmptyTypes).MakeGenericMethod(interfaceType, typeof(TestDispatchProxy)).Invoke(null, null) :
+                DispatchProxy.Create(interfaceType, typeof(TestDispatchProxy));
+
+            MethodInfo invokedMethod = null;
+            object[] invokedArgs = null;
+            ((TestDispatchProxy)proxy).CallOnInvoke = (method, args) =>
+            {
+                invokedMethod = method;
+                invokedArgs = args;
+                return 42;
+            };
+
+            object result = interfaceMethod.Invoke(proxy, new object[] { 7 });
+
+            Assert.Equal(interfaceMethod, invokedMethod);
+            Assert.Equal(new object[] { 7 }, invokedArgs);
+            Assert.Equal(42, result);
+
+            MethodInfo proxyMethod = proxy.GetType().GetMethod("Echo");
+            Assert.Equal(onReturn ? modifiers : Type.EmptyTypes, proxyMethod.ReturnParameter.GetOptionalCustomModifiers());
+            Assert.Equal(onReturn ? Type.EmptyTypes : modifiers, proxyMethod.GetParameters()[0].GetOptionalCustomModifiers());
+        }
+
+        [Theory]
+        [InlineData(true, true)]
+        [InlineData(true, false)]
+        [InlineData(false, true)]
+        [InlineData(false, false)]
+        public static void Invoke_Method_With_Two_Custom_Modifiers_Of_One_Kind_Invokes_Correct_Method(bool required, bool onReturn)
+        {
+            // System.Reflection.Emit generates the method so that two required or two optional custom modifiers sit on its return type or parameter.
+            Type[] modifiers = new[] { typeof(IsVolatile), typeof(IsConst) };
+            Type[] returnModifiers = onReturn ? modifiers : null;
+            Type[][] parameterModifiers = new[] { onReturn ? null : modifiers };
+            AssemblyBuilder ab = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName($"TwoModifiersBuilder_{required}_{onReturn}"), AssemblyBuilderAccess.Run);
+            ModuleBuilder modb = ab.DefineDynamicModule("mod");
+            TypeBuilder tb = modb.DefineType("TestType_ITwoModifiersService", TypeAttributes.Public | TypeAttributes.Interface | TypeAttributes.Abstract);
+            tb.DefineMethod("Echo", MethodAttributes.Public | MethodAttributes.Abstract | MethodAttributes.Virtual, CallingConventions.HasThis,
+                typeof(int), required ? returnModifiers : null, required ? null : returnModifiers,
+                new[] { typeof(int) }, required ? parameterModifiers : null, required ? null : parameterModifiers);
+            Type interfaceType = tb.CreateType();
+            MethodInfo interfaceMethod = interfaceType.GetMethod("Echo");
+            ParameterInfo interfaceModified = onReturn ? interfaceMethod.ReturnParameter : interfaceMethod.GetParameters()[0];
+            Assert.Equal(2, (required ? interfaceModified.GetRequiredCustomModifiers() : interfaceModified.GetOptionalCustomModifiers()).Length);
+
+            object proxy = DispatchProxy.Create(interfaceType, typeof(TestDispatchProxy));
+
+            MethodInfo invokedMethod = null;
+            object[] invokedArgs = null;
+            ((TestDispatchProxy)proxy).CallOnInvoke = (method, args) =>
+            {
+                invokedMethod = method;
+                invokedArgs = args;
+                return 42;
+            };
+
+            object result = interfaceMethod.Invoke(proxy, new object[] { 7 });
+
+            Assert.Equal(interfaceMethod, invokedMethod);
+            Assert.Equal(new object[] { 7 }, invokedArgs);
+            Assert.Equal(42, result);
+
+            MethodInfo proxyMethod = proxy.GetType().GetMethod("Echo");
+            Assert.Equal(interfaceMethod.ReturnParameter.GetRequiredCustomModifiers(), proxyMethod.ReturnParameter.GetRequiredCustomModifiers());
+            Assert.Equal(interfaceMethod.ReturnParameter.GetOptionalCustomModifiers(), proxyMethod.ReturnParameter.GetOptionalCustomModifiers());
+            Assert.Equal(interfaceMethod.GetParameters()[0].GetRequiredCustomModifiers(), proxyMethod.GetParameters()[0].GetRequiredCustomModifiers());
+            Assert.Equal(interfaceMethod.GetParameters()[0].GetOptionalCustomModifiers(), proxyMethod.GetParameters()[0].GetOptionalCustomModifiers());
+        }
 
         [Theory]
         [InlineData(false)]
