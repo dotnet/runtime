@@ -100,12 +100,9 @@ EXTERN_GUID(IID_IILAsmPortablePdbWriter, 0x8b2db1f0, 0x91f5, 0x4c99, 0xbb, 0x07,
 #define INTERFACE IILAsmPortablePdbWriter
 DECLARE_INTERFACE_(IILAsmPortablePdbWriter, IUnknown)
 {
-    STDMETHOD(ComputeSha256PdbStreamChecksum)(                                          // S_OK or error.
-        HRESULT (*computeSha256)(BYTE* pSrc, DWORD srcSize, BYTE* pDst, DWORD dstSize), // [IN]
-        BYTE (&checksum)[32]) PURE;                                                     // [OUT] 256-bit Pdb checksum
-
-    STDMETHOD(ChangePdbStreamGuid)(         // S_OK or error.
-        REFGUID newGuid) PURE;              // [IN] GUID to use as the PDB GUID
+    STDMETHOD(ChangePdbStreamId)(           // S_OK or error.
+        REFGUID newGuid,                    // [IN] GUID to use as the PDB GUID
+        ULONG newTimestamp) PURE;           // [IN] Timestamp to use as the PDB stamp
 };
 
 #ifdef __cplusplus

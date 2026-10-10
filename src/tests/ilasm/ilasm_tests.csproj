@@ -20,6 +20,14 @@
     <None Remove="PortablePdb\Resources\**" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="PortablePdb\TestFiles\TestDeterministicExport.il">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <Link>TestFiles\%(FileName)%(Extension)</Link>
+    </None>
+    <None Include="PortablePdb\TestFiles\TestDeterministicIdentity.il">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <Link>TestFiles\%(FileName)%(Extension)</Link>
+    </None>
     <None Include="PortablePdb\TestFiles\TestDocuments1_unix.il">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <Link>TestFiles\%(FileName)%(Extension)</Link>

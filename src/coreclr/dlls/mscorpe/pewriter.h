@@ -40,6 +40,8 @@ public:
     HRESULT fixup(CeeGenTokenMapper *pMapper);
     HRESULT write(_In_ LPCWSTR fileName);
     HRESULT write(void **ppImage);
+    HRESULT computeImageHash(HRESULT (*computeHash)(BYTE* pSrc, DWORD srcSize, BYTE* pDst, DWORD dstSize),
+                             BYTE* pHash, DWORD hashSize);
 
     // calling these functions is optional
     DWORD      getSectionAlignment();
@@ -124,6 +126,8 @@ private:
     COUNT_T getSectCount() {
         return COUNT_T(sectCur - sectStart);
     }
+
+    size_t getImageSize();
 
 
     IMAGE_DOS_HEADER    m_dosHeader;

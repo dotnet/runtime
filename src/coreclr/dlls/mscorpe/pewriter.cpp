@@ -1445,13 +1445,25 @@ HRESULT PEWriter::write(_In_ LPCWSTR fileName) {
     return hr;
 }
 
+// The size of the file that write(fileName) produces. That is filePos, unless a section's data
+// extends beyond it: with stripped relocations, the .reloc section is still written, but its
+// size is not counted in filePos.
+size_t PEWriter::getImageSize()
+{
+    size_t size = filePos;
+    for (PEWriterSection **cur = getSectStart(); cur < getSectCur(); cur++) {
+        if ((*cur)->m_header != NULL) {
+            size_t sectionEnd = (size_t)(*cur)->m_filePos + (*cur)->dataLen() + (*cur)->m_filePad;
+            if (sectionEnd > size)
+                size = sectionEnd;
+        }
+    }
+    return size;
+}
+
 HRESULT PEWriter::write(void ** ppImage)
 {
-    const unsigned RoundUpVal = VAL32(m_ntHeaders->OptionalHeader.FileAlignment);
-    char *pad = (char *) _alloca(RoundUpVal);
-    memset(pad, 0, RoundUpVal);
-
-    size_t lSize = filePos;
+    size_t lSize = getImageSize();
 
     // allocate the block we are handing back to the caller
     void * pImage = (void *) CoTaskMemAlloc(lSize);
@@ -1480,7 +1492,7 @@ HRESULT PEWriter::write(void ** ppImage)
             pCur = (char*)pImage + (*cur)->m_filePos;
             len = (*cur)->writeMem((void**)&pCur);
             _ASSERTE(len == (*cur)->dataLen());
-            COPY_AND_ADVANCE(pCur, pad, (*cur)->m_filePad);
+            pCur += (*cur)->m_filePad; // the image is already zeroed
         }
     }
 
@@ -1492,6 +1504,24 @@ HRESULT PEWriter::write(void ** ppImage)
 
     // all done
     return S_OK;
+}
+
+// Hash the image that write() would produce now. Must be called after fixup().
+HRESULT PEWriter::computeImageHash(HRESULT (*computeHash)(BYTE* pSrc, DWORD srcSize, BYTE* pDst, DWORD dstSize),
+                                   BYTE* pHash, DWORD hashSize)
+{
+    size_t imageSize = getImageSize();
+    if (imageSize > UINT32_MAX)
+        return COR_E_OVERFLOW;
+
+    void *pImage = NULL;
+    HRESULT hr = write(&pImage);
+    if (FAILED(hr))
+        return hr;
+
+    hr = computeHash((BYTE*)pImage, static_cast<DWORD>(imageSize), pHash, hashSize);
+    CoTaskMemFree(pImage);
+    return hr;
 }
 
 HRESULT PEWriter::getFileTimeStamp(DWORD *pTimeStamp)

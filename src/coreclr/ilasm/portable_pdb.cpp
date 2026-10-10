@@ -160,15 +160,36 @@ exit:
     return hr;
 }
 
-HRESULT PortablePdbWriter::ComputeSha256PdbStreamChecksum(BYTE(&checksum)[32])
+HRESULT PortablePdbWriter::ComputeSha256PdbChecksum(BYTE(&checksum)[32])
 {
-    return m_ilasmPdbWriter->ComputeSha256PdbStreamChecksum(Sha256Hash, checksum);
+    // The checksum is the hash of the entire PDB file with its 20-byte PDB ID zeroed
+    // (see "PDB Checksum Debug Directory Entry" in docs/design/specs/PE-COFF.md).
+    // Serialize the PDB the same way it is saved later, with the ID temporarily zeroed,
+    // then restore the ID.
+    HRESULT hr = S_OK;
+    HRESULT restoreHr = S_OK;
+    DWORD pdbSize = 0;
+    BYTE* pdbData = NULL;
+
+    if (FAILED(hr = m_ilasmPdbWriter->ChangePdbStreamId(GUID(), 0))) goto exit;
+    if (FAILED(hr = m_pdbEmitter->GetSaveSize(cssAccurate, &pdbSize))) goto exit;
+    pdbData = new BYTE[pdbSize];
+    if (FAILED(hr = m_pdbEmitter->SaveToMemory(pdbData, pdbSize))) goto exit;
+    hr = Sha256Hash(pdbData, pdbSize, checksum, sizeof(checksum));
+
+exit:
+    restoreHr = m_ilasmPdbWriter->ChangePdbStreamId(m_pdbStream.id.pdbGuid, m_pdbStream.id.pdbTimeStamp);
+    if (SUCCEEDED(hr))
+        hr = restoreHr;
+    delete[] pdbData;
+    return hr;
 }
 
-HRESULT PortablePdbWriter::ChangePdbStreamGuid(REFGUID newGuid)
+HRESULT PortablePdbWriter::ChangePdbStreamId(REFGUID newGuid, const ULONG newTimestamp)
 {
     m_pdbStream.id.pdbGuid = newGuid;
-    return m_ilasmPdbWriter->ChangePdbStreamGuid(newGuid);
+    m_pdbStream.id.pdbTimeStamp = newTimestamp;
+    return m_ilasmPdbWriter->ChangePdbStreamId(newGuid, newTimestamp);
 }
 
 HRESULT PortablePdbWriter::DefineDocument(char* name, GUID* language)
