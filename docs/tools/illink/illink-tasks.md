@@ -67,9 +67,11 @@ clear or isolate the cache when that distinction is required.
 Cache hits replace the output directory without running ILLink.
 Directories are created in the cache only when storing a successful result. Hits do not replay warnings or other linker diagnostics.
 
-Caching is bypassed with a diagnostic for non-whitespace `ExtraArgs`, custom steps/data,
-dependency-dump options, and explicit task environment overrides. Options supplied through
-`ExtraArgs` remain unsupported for caching; these invocations still run the linker normally.
+Caching is bypassed with a diagnostic for arbitrary `ExtraArgs`, custom steps/data,
+dependency-dump options, and explicit task environment overrides. Runtime's library-build
+arguments for link attributes, substitutions, and assembly search directories are supported.
+Their XML files and search-directory assembly candidates (including sidecars) are content-hashed,
+without changing assembly resolution. Other SDK options supplied through `ExtraArgs` remain unsupported.
 Inherited environment variables are not tracked; disable caching
 when they affect outputs or dependencies beyond the keyed inputs, or require tool-execution
 side effects such as startup hooks or profiling. Unreadable inputs or linker files also
