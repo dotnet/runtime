@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#ifndef DUMPWRITERELF_H
+#define DUMPWRITERELF_H
+
 #ifdef HOST_64BIT
 #define ELF_CLASS ELFCLASS64
 #else
@@ -37,39 +40,53 @@
 #define NT_SIGINFO	0x53494749
 #endif
 
+extern int g_readProcessMemoryErrno;
+
+struct NTFileEntry
+{
+    unsigned long StartAddress;
+    unsigned long EndAddress;
+    unsigned long Offset;
+};
+
 class DumpWriter
 {
 private:
     int m_fd;
-    CrashInfo& m_crashInfo;
-    BYTE m_tempBuffer[0x4000];
+    uint8_t m_tempBuffer[0x4000];
+    ProcessInfo& m_processInfo;
 
     // no public copy constructor
     DumpWriter(const DumpWriter&) = delete;
     void operator=(const DumpWriter&) = delete;
 
 public:
-    DumpWriter(CrashInfo& crashInfo);
+    explicit DumpWriter(ProcessInfo& processInfo);
     virtual ~DumpWriter();
     bool OpenDump(const char* dumpFileName);
-    bool WriteDump();
+    // This method is a template so external createdump can pass std::set
+    // while linked createdump passes DynamicArray
+    template <typename TModuleMappings, typename TDumpRegions>
+    bool WriteDump(const TModuleMappings& moduleMappings, const TDumpRegions& dumpRegions);
     static bool WriteData(int fd, const void* buffer, size_t length);
 
 private:
     bool WriteDiagInfo(size_t size);
     bool WriteProcessInfo();
     bool WriteAuxv();
-    size_t GetNTFileInfoSize(size_t* alignmentBytes = nullptr);
-    bool WriteNTFileInfo();
-    bool WriteThread(const ThreadInfo& thread);
+    template <typename TModuleMappings>
+    size_t GetNTFileInfoSize(const TModuleMappings& moduleMappings, size_t* alignmentBytes = nullptr);
+    template <typename TModuleMappings>
+    bool WriteNTFileInfo(const TModuleMappings& moduleMappings);
+    bool WriteThread(const ThreadSnapshot& thread);
     bool WriteData(const void* buffer, size_t length) { return WriteData(m_fd, buffer, length); }
 
     size_t GetProcessInfoSize() const { return sizeof(Nhdr) + 8 + sizeof(prpsinfo_t); }
-    size_t GetAuxvInfoSize() const { return sizeof(Nhdr) + 8 + m_crashInfo.GetAuxvSize(); }
+    size_t GetAuxvInfoSize() const { return sizeof(Nhdr) + 8 + m_processInfo.GetAuxvSize(); }
     size_t GetThreadInfoSize() const
     {
-        return (m_crashInfo.Signal() != 0 ? (sizeof(Nhdr) + 8 + sizeof(siginfo_t)) : 0)
-              + (m_crashInfo.Threads().size() * ((sizeof(Nhdr) + 8 + sizeof(prstatus_t))
+        return (m_processInfo.Signal() != 0 ? (sizeof(Nhdr) + 8 + sizeof(siginfo_t)) : 0)
+              + (m_processInfo.Threads().size() * ((sizeof(Nhdr) + 8 + sizeof(prstatus_t))
               + (sizeof(Nhdr) + 8 + sizeof(user_fpregs_struct))
 #if defined(__i386__)
               + (sizeof(Nhdr) + 8 + sizeof(user_fpxregs_struct))
@@ -80,3 +97,7 @@ private:
         ));
     }
 };
+
+#include "dumpwriterelf.inl"
+
+#endif // DUMPWRITERELF_H
