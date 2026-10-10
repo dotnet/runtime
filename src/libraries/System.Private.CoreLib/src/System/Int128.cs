@@ -701,8 +701,27 @@ namespace System
         /// <inheritdoc cref="IBinaryInteger{TSelf}.DivRem(TSelf, TSelf)" />
         public static (Int128 Quotient, Int128 Remainder) DivRem(Int128 left, Int128 right)
         {
+#if TARGET_64BIT
+            if ((right == -1) && (left == MinValue))
+            {
+                ThrowHelper.ThrowOverflowException();
+            }
+
+            bool leftNegative = IsNegative(left);
+            bool rightNegative = IsNegative(right);
+            UInt128 dividend = (UInt128)(leftNegative ? -left : left);
+            UInt128 divisor = (UInt128)(rightNegative ? -right : right);
+            (UInt128 quotient, UInt128 remainder) = UInt128.DivRem(dividend, divisor);
+
+            // The unsigned divide already computed the remainder. Its sign follows
+            // the dividend, independently of the quotient's sign.
+            return ((leftNegative != rightNegative) ? -(Int128)quotient : (Int128)quotient,
+                    leftNegative ? -(Int128)remainder : (Int128)remainder);
+#else
+            // Retain the smaller form when 128-bit arithmetic is decomposed into 32-bit limbs.
             Int128 quotient = left / right;
             return (quotient, left - (quotient * right));
+#endif
         }
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.LeadingZeroCount(TSelf)" />
@@ -1119,10 +1138,14 @@ namespace System
 
         /// <inheritdoc cref="IModulusOperators{TSelf, TOther, TResult}.op_Modulus(TSelf, TOther)" />
         public static Int128 operator %(Int128 left, Int128 right)
+#if TARGET_64BIT
+            => DivRem(left, right).Remainder;
+#else
         {
             Int128 quotient = left / right;
             return left - (quotient * right);
         }
+#endif
 
         //
         // IMultiplicativeIdentity
