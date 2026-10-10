@@ -1230,6 +1230,7 @@ int32_t SystemNative_WaitPidExitedNoHang(int32_t pid, int32_t* exitCode, int32_t
         else
         {
             assert(false);
+            result = 0;
         }
     }
     return result;
