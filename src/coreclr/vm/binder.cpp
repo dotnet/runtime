@@ -612,18 +612,20 @@ void CoreLibBinder::Check()
                 // The same NameHandle must be used to retain the scope to look for the nested type.
                 NameHandle nameHandle(GetModule(), mdtBaseType);
 
-                SString splitName(SString::Utf8, name, (COUNT_T)(nestedTypeMaybe - name));
-                nameHandle.SetName(nameSpace, splitName.GetUTF8());
+                do
+                {
+                    SString splitName(SString::Utf8, name, (COUNT_T)(nestedTypeMaybe - name));
+                    nameHandle.SetName(nameSpace, splitName.GetUTF8());
 
-                // The side-effect of updating the scope in the NameHandle is the point of the call.
-                (void)ClassLoader::LoadTypeByNameThrowing(GetModule()->GetAssembly(), &nameHandle);
+                    // Retain the resolved enclosing scope for the next nested type.
+                    (void)ClassLoader::LoadTypeByNameThrowing(GetModule()->GetAssembly(), &nameHandle);
 
-                // Now load the nested type.
-                nameHandle.SetName("", nestedTypeMaybe + 1);
+                    name = nestedTypeMaybe + 1;
+                    nameSpace = "";
+                    nestedTypeMaybe = strchr(name, '+');
+                } while (nestedTypeMaybe != NULL);
 
-                // We don't support nested types in nested types.
-                _ASSERTE(strchr(nameHandle.GetName(), '+') == NULL);
-
+                nameHandle.SetName("", name);
                 // We don't support nested types with explicit namespaces
                 _ASSERTE(strchr(nameHandle.GetName(), '.') == NULL);
                 pMT = ClassLoader::LoadTypeByNameThrowing(GetModule()->GetAssembly(), &nameHandle).AsMethodTable();

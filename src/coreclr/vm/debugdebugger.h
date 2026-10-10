@@ -20,6 +20,77 @@ extern "C" void QCALLTYPE DebugDebugger_CustomNotification(QCall::ObjectHandleOn
 extern "C" BOOL QCALLTYPE DebugDebugger_IsLoggingHelper();
 extern "C" BOOL QCALLTYPE DebugDebugger_IsManagedDebuggerAttached();
 
+#if defined(DEBUGGING_SUPPORTED) && !defined(TARGET_WASM)
+class DebuggerEval;
+class DebuggerFuncEvalResult;
+class DebuggerExternalMemoryOwner;
+
+struct DebuggerFuncEvalContext
+{
+    DebuggerEval* pEval;
+    OBJECTREF* pObjects;
+    void** pInteriors;
+    void** pHomes;
+    INT64* pCapturedArguments;
+    DebuggerFuncEvalResult** ppResult;
+    DebuggerExternalMemoryOwner** ppTemporaryResult;
+    void** pResultByRefs;
+    void* pResultData;
+    void* resultHandle;
+    UINT32 argumentCount;
+    UINT32 parameterCount;
+    UINT32 flags;
+    UINT32 returnElementType;
+};
+
+enum DebuggerFuncEvalFlags
+{
+    FuncEvalNewObject = 1,
+    FuncEvalStatic = 2,
+    FuncEvalVirtual = 4,
+    FuncEvalInterface = 8,
+    FuncEvalShared = 16,
+    FuncEvalExternalResult = 32,
+    FuncEvalValueTypeResult = 64,
+};
+
+struct DebuggerFuncEvalArgument
+{
+    BYTE* pLiteral;
+    UINT32 elementType;
+    UINT32 flags;
+};
+
+enum DebuggerFuncEvalArgumentFlags
+{
+    FuncEvalLiteral = 1,
+    FuncEvalHandle = 2,
+    FuncEvalMemory = 4,
+    FuncEvalRegister = 8,
+};
+
+extern "C" void QCALLTYPE DebugDebugger_GetFuncEvalMethod(
+    DebuggerFuncEvalContext* pContext,
+    QCall::ObjectHandleOnStack declaringType, QCall::ObjectHandleOnStack methodOwner,
+    QCallExceptionStatus* qcallError);
+extern "C" void QCALLTYPE DebugDebugger_PrepareFuncEvalResult(
+    DebuggerFuncEvalContext* pContext, QCallExceptionStatus* qcallError);
+extern "C" void QCALLTYPE DebugDebugger_GetFuncEvalArgument(
+    DebuggerFuncEvalContext* pContext, UINT32 index, DebuggerFuncEvalArgument* pArgument);
+extern "C" void QCALLTYPE DebugDebugger_GetFuncEvalArgumentType(
+    DebuggerFuncEvalContext* pContext, UINT32 index, QCall::ObjectHandleOnStack type, QCallExceptionStatus* qcallError);
+extern "C" HRESULT QCALLTYPE DebugDebugger_GetFuncEvalObject(
+    DebuggerFuncEvalContext* pContext, UINT32 index, BOOL interior, QCall::ObjectHandleOnStack value);
+extern "C" BOOL QCALLTYPE DebugDebugger_ReadFuncEvalPrimitiveRegister(
+    DebuggerFuncEvalContext* pContext, UINT32 index, UINT64* pValue);
+extern "C" void QCALLTYPE DebugDebugger_WriteFuncEvalObjectRegister(
+    DebuggerFuncEvalContext* pContext, UINT32 index, QCall::ObjectHandleOnStack value,
+    QCallExceptionStatus* qcallError);
+extern "C" void QCALLTYPE DebugDebugger_WriteFuncEvalRegister(
+    DebuggerFuncEvalContext* pContext, UINT32 index, void* pValue, UINT32 size,
+    QCallExceptionStatus* qcallError);
+#endif // DEBUGGING_SUPPORTED && !TARGET_WASM
+
 class StackFrameHelper : public Object
 {
     // READ ME:
