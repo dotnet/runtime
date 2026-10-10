@@ -19,16 +19,16 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
         // The HoistedLocals dictionary has a default value of MaybeLattice.Top (effectively null),
         // for any local that has not been discovered to be captured by a nested function.
-        // Once we discover that a local is captured, it gets the value TValueLattice.Top
-        // (in our case the "empty" MultiValue), and from then on reading/writing the local will use this
+        // Once we discover that a local is captured, it gets the top LocalValue,
+        // and from then on reading/writing the local will use this
         // dictionary instead of the per-method dictionary.
-        public DefaultValueDictionary<LocalKey, Maybe<TValue>> HoistedLocals;
+        public DefaultValueDictionary<LocalKey, Maybe<LocalValue<TValue>>> HoistedLocals;
 
         private readonly InterproceduralStateLattice<TValue, TValueLattice> lattice;
 
         public InterproceduralState(
             ValueSet<MethodBodyValue> methods,
-            DefaultValueDictionary<LocalKey, Maybe<TValue>> hoistedLocals,
+            DefaultValueDictionary<LocalKey, Maybe<LocalValue<TValue>>> hoistedLocals,
             InterproceduralStateLattice<TValue, TValueLattice> lattice)
         {
             Methods = methods;
@@ -63,10 +63,10 @@ namespace ILLink.RoslynAnalyzer.DataFlow
             if (existingValue.MaybeValue != null)
                 return; // Already tracked
 
-            HoistedLocals.Set(key, new Maybe<TValue>(lattice.HoistedLocalLattice.ValueLattice.ValueLattice.Top));
+            HoistedLocals.Set(key, new Maybe<LocalValue<TValue>>(lattice.HoistedLocalLattice.ValueLattice.ValueLattice.Top));
         }
 
-        public bool TrySetHoistedLocal(LocalKey key, TValue value)
+        public bool TrySetHoistedLocal(LocalKey key, LocalValue<TValue> value)
         {
             var existingValue = HoistedLocals.Get(key);
             if (existingValue.MaybeValue == null)
@@ -81,7 +81,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
             return true;
         }
 
-        public bool TryGetHoistedLocal(LocalKey key, [NotNullWhen(true)] out TValue? value)
+        public bool TryGetHoistedLocal(LocalKey key, [NotNullWhen(true)] out LocalValue<TValue>? value)
             => (value = HoistedLocals.Get(key).MaybeValue) != null;
     }
 
@@ -91,11 +91,11 @@ namespace ILLink.RoslynAnalyzer.DataFlow
     {
         public readonly ValueSetLattice<MethodBodyValue> MethodLattice;
 
-        public readonly DictionaryLattice<LocalKey, Maybe<TValue>, MaybeLattice<TValue, TValueLattice>> HoistedLocalLattice;
+        public readonly DictionaryLattice<LocalKey, Maybe<LocalValue<TValue>>, MaybeLattice<LocalValue<TValue>, LocalValueLattice<TValue, TValueLattice>>> HoistedLocalLattice;
 
         public InterproceduralStateLattice(
             ValueSetLattice<MethodBodyValue> methodLattice,
-            DictionaryLattice<LocalKey, Maybe<TValue>, MaybeLattice<TValue, TValueLattice>> hoistedLocalLattice
+            DictionaryLattice<LocalKey, Maybe<LocalValue<TValue>>, MaybeLattice<LocalValue<TValue>, LocalValueLattice<TValue, TValueLattice>>> hoistedLocalLattice
         )
         {
             MethodLattice = methodLattice;
