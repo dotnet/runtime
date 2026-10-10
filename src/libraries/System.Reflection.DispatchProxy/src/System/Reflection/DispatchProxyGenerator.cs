@@ -419,25 +419,41 @@ namespace System.Reflection
                 }
             }
 
+            // Reflection returns the custom modifiers of one kind in the reverse of the order DefineMethod takes them in.
+            private static Type[] ToDefineMethodOrder(Type[] modifiers)
+            {
+                if (modifiers.Length < 2)
+                {
+                    return modifiers;
+                }
+
+                Type[] reversed = (Type[])modifiers.Clone();
+                Array.Reverse(reversed);
+                return reversed;
+            }
+
             private MethodBuilder AddMethodImpl(MethodInfo mi, int methodInfoIndex)
             {
                 ParameterInfo[] parameters = mi.GetParameters();
                 Type[] paramTypes = new Type[parameters.Length];
                 Type[][] paramReqMods = new Type[paramTypes.Length][];
+                Type[][] paramOptMods = new Type[paramTypes.Length][];
 
                 for (int i = 0; i < parameters.Length; i++)
                 {
                     paramTypes[i] = parameters[i].ParameterType;
-                    paramReqMods[i] = parameters[i].GetRequiredCustomModifiers();
+                    paramReqMods[i] = ToDefineMethodOrder(parameters[i].GetRequiredCustomModifiers());
+                    paramOptMods[i] = ToDefineMethodOrder(parameters[i].GetOptionalCustomModifiers());
                 }
 
                 MethodAttributes attributes = MethodAttributes.Public;
 
                 attributes |= mi.IsStatic ? MethodAttributes.Static : MethodAttributes.Virtual;
 
+                ParameterInfo returnParameter = mi.ReturnParameter;
                 MethodBuilder mdb = _tb.DefineMethod(mi.Name, attributes, CallingConventions.Standard,
-                    mi.ReturnType, null, null,
-                    paramTypes, paramReqMods, null);
+                    mi.ReturnType, ToDefineMethodOrder(returnParameter.GetRequiredCustomModifiers()), ToDefineMethodOrder(returnParameter.GetOptionalCustomModifiers()),
+                    paramTypes, paramReqMods, paramOptMods);
 
                 if (mi.ContainsGenericParameters)
                 {
