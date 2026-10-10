@@ -280,14 +280,14 @@ namespace System.Xml.Serialization
             foreach (Member member in textOrArrayMembers)
             {
                 object? value = null;
-                SetCollectionObjectWithCollectionMember(ref value, member.Collection!, member.Mapping.TypeDesc!.Type!);
+                SetCollectionObjectWithCollectionMember(ref value, member.Collection!, member.Mapping.TypeDesc!.Type!, member.Mapping.TypeDesc.CollectionBuilder);
                 member.Source!(value);
             }
 
             if (anyAttribute != null)
             {
                 object? value = null;
-                SetCollectionObjectWithCollectionMember(ref value, anyAttribute.Collection!, anyAttribute.Mapping.TypeDesc!.Type!);
+                SetCollectionObjectWithCollectionMember(ref value, anyAttribute.Collection!, anyAttribute.Mapping.TypeDesc!.Type!, anyAttribute.Mapping.TypeDesc.CollectionBuilder);
                 anyAttribute.ArraySource!(value);
             }
 
@@ -547,7 +547,7 @@ namespace System.Xml.Serialization
         }
 
         private static void SetCollectionObjectWithCollectionMember([NotNull] ref object? collection, CollectionMember collectionMember,
-            [DynamicallyAccessedMembers(TrimmerConstants.AllMethods)] Type collectionType)
+            [DynamicallyAccessedMembers(TrimmerConstants.AllMethods)] Type collectionType, CollectionBuilderInfo? collectionBuilder)
         {
             if (collectionType.IsArray)
             {
@@ -568,12 +568,44 @@ namespace System.Xml.Serialization
 
                 collection = a;
             }
+            else if (collectionBuilder != null)
+            {
+                // The collection cannot be populated in place, so anything read into an already assigned
+                // instance would be lost. The whole collection is created from the elements read instead.
+                collection = BuildCollection(collectionBuilder, collectionMember);
+            }
             else
             {
                 collection ??= ReflectionCreateObject(collectionType)!;
 
                 AddObjectsIntoTargetCollection(collection, collectionMember, collectionType);
             }
+        }
+
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
+        private static object BuildCollection(CollectionBuilderInfo collectionBuilder, List<object?> elements)
+        {
+            Array accumulator = collectionBuilder.CreateAccumulator(elements.Count);
+            for (int i = 0; i < elements.Count; i++)
+            {
+                accumulator.SetValue(elements[i], i);
+            }
+
+            return collectionBuilder.Build(accumulator);
+        }
+
+        /// <summary>
+        /// Creates an empty instance of a collection, whether or not it can be constructed directly.
+        /// </summary>
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
+        private static object? ReflectionCreateCollection(TypeDesc typeDesc)
+        {
+            if (typeDesc.CollectionBuilder is CollectionBuilderInfo collectionBuilder)
+            {
+                return collectionBuilder.Build(collectionBuilder.CreateAccumulator(0));
+            }
+
+            return ReflectionCreateObject(typeDesc.Type!);
         }
 
         private static void AddObjectsIntoTargetCollection(object targetCollection, List<object?> sourceCollection,
@@ -1237,7 +1269,7 @@ namespace System.Xml.Serialization
                     };
 
                     Type collectionType = memberMapping.TypeDesc!.Type!;
-                    o = ReflectionCreateObject(memberMapping.TypeDesc.Type!);
+                    o = ReflectionCreateCollection(memberMapping.TypeDesc);
 
                     // When this array is the value of a member that carries an [XmlChoiceIdentifier]
                     // (e.g. one of the choice element types is itself an array), the parallel choice
@@ -1263,7 +1295,14 @@ namespace System.Xml.Serialization
                         ReadEndElement();
                     }
 
-                    SetCollectionObjectWithCollectionMember(ref o, arrayMember.Collection, collectionType);
+                    SetCollectionObjectWithCollectionMember(ref o, arrayMember.Collection, collectionType, memberMapping.TypeDesc.CollectionBuilder);
+                }
+                else if (arrayMapping.TypeDesc!.UsesCollectionBuilder)
+                {
+                    // A collection that is created from its contents is always created, even when the element is
+                    // nil, which is how a collection populated in place has always behaved. Collections that are
+                    // value types are never nillable, so without this they would be left at their default value.
+                    o = ReflectionCreateCollection(arrayMapping.TypeDesc);
                 }
             }
 
@@ -1561,7 +1600,10 @@ namespace System.Xml.Serialization
             object? memberSource = getSource();
             if (memberSource == null)
             {
-                if (readOnly)
+                // Encoded serialization populates a collection through a fixup once the referenced items have been
+                // read, which neither a read-only member nor a collection that has to be created from its complete
+                // contents can do.
+                if (readOnly || typeDesc.UsesCollectionBuilder)
                 {
                     throw CreateReadOnlyCollectionException(typeDesc.CSharpName);
                 }
@@ -1775,7 +1817,11 @@ namespace System.Xml.Serialization
                         // first before we make noise about not being able to set a list property.
                         else if (isList && pi != null && (pi.SetMethod == null || !pi.SetMethod.IsPublic))
                         {
-                            var addMethod = mapping.TypeDesc.Type!.GetMethod("Add");
+                            // A collection built from its complete contents cannot be populated in place, so there is
+                            // nothing an Add method could usefully do here: it either throws or returns a new collection
+                            // that would be discarded. Leaving the source null keeps whatever the getter returns, which
+                            // matches the other serializers and how a collection with no Add method already behaves.
+                            MethodInfo? addMethod = mapping.TypeDesc.UsesCollectionBuilder ? null : mapping.TypeDesc.Type!.GetMethod("Add");
 
                             if (addMethod != null)
                             {
@@ -1821,11 +1867,19 @@ namespace System.Xml.Serialization
                         // This is an odd legacy behavior, but it's what the old serializers did.
                         if (isList && member.Source != null)
                         {
+                            // A collection that is a struct, such as ImmutableArray<T>, is uninitialized when it holds its
+                            // default value rather than when it is null, and a boxed default is never null. Capture that
+                            // default so an absent member ends up empty here too, matching the other serializers.
+                            object? uninitialized = mapping.TypeDesc.UsesCollectionBuilder && mapping.TypeDesc.Type!.IsValueType
+                                ? RuntimeHelpers.GetUninitializedObject(mapping.TypeDesc.Type)
+                                : null;
+
                             member.EnsureCollection = (obj) =>
                             {
-                                if (GetMemberValue(obj, mapping.MemberInfo!) == null)
+                                object? current = GetMemberValue(obj, mapping.MemberInfo!);
+                                if (current == null || current.Equals(uninitialized))
                                 {
-                                    var empty = ReflectionCreateObject(mapping.TypeDesc.Type!);
+                                    var empty = ReflectionCreateCollection(mapping.TypeDesc);
                                     member.Source(empty);
                                 }
                             };
@@ -1906,6 +1960,15 @@ namespace System.Xml.Serialization
                         // collection instance returned by the getter. This matches what the IL-based serializer does.
                         if (memberInfo is PropertyInfo pi && pi.GetSetMethod(nonPublic: true) == null)
                         {
+                            // A collection built from its complete contents cannot be added to: the Add below would
+                            // throw for it, or silently discard the new collection it returns. With no setter there
+                            // is nowhere to put a collection we created either, so the elements read are dropped and
+                            // the getter's value survives, as it does for any collection that cannot be added to.
+                            if (member.Mapping.TypeDesc!.UsesCollectionBuilder)
+                            {
+                                continue;
+                            }
+
                             object? existingCollection = pi.GetValue(o);
                             if (existingCollection != null)
                             {
@@ -1915,7 +1978,7 @@ namespace System.Xml.Serialization
                         else
                         {
                             object? collection = null;
-                            SetCollectionObjectWithCollectionMember(ref collection, member.Collection, member.Mapping.TypeDesc!.Type!);
+                            SetCollectionObjectWithCollectionMember(ref collection, member.Collection, member.Mapping.TypeDesc!.Type!, member.Mapping.TypeDesc.CollectionBuilder);
                             var setMemberValue = GetSetMemberValueDelegate(o, memberInfo.Name);
                             setMemberValue(o, collection);
                         }

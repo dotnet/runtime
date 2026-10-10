@@ -3,7 +3,10 @@
 
 using System;
 using System.Collections;
+using System.Collections.Frozen;
 using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Globalization;
 using System.IO;
@@ -1816,4 +1819,43 @@ public class DateTimeOffsetIXmlSerializableContainer : IXmlSerializable
         Date = (DateTimeOffset)innerSerializer.ReadObject(reader);
         reader.ReadEndElement();
     }
+}
+
+// Collections that cannot be populated in place, and so are created from their complete contents by the
+// collection builder their type declares.
+public class TypeWithReadOnlyCollections
+{
+    public ImmutableArray<int> ImmutableArray { get; set; }
+    public ImmutableList<string> ImmutableList { get; set; }
+    public ReadOnlyCollection<int> ReadOnlyCollection { get; set; }
+    public FrozenSet<int> FrozenSet { get; set; }
+    public ImmutableQueue<int> ImmutableQueue { get; set; }
+
+    // A field rather than a property, which the serializers assign through a different path.
+    public ImmutableArray<string> ImmutableArrayField;
+}
+
+// The mutable counterpart of TypeWithReadOnlyCollections, used to verify that collections created from their
+// contents observe the same nil and absent element behavior as collections populated in place.
+public class TypeWithMutableCollectionMembers
+{
+    public List<int> List { get; set; }
+    public int[] Array { get; set; }
+}
+
+// Get-only collection properties are imported, but a collection created from its complete contents has nowhere
+// to be stored without a setter, so the value the getter returns is left alone.
+public class TypeWithGetOnlyReadOnlyCollections
+{
+    public ImmutableList<string> ImmutableList { get; } = System.Collections.Immutable.ImmutableList.Create("initial");
+    public ReadOnlyCollection<int> ReadOnlyCollection { get; } = new ReadOnlyCollection<int>(new int[] { 42 });
+
+    // Left uninitialized so the getter returns a default struct, which no collection built from its complete
+    // contents can be added to.
+    public ImmutableArray<string> ImmutableArray { get; }
+
+    // Repeated elements rather than a wrapped array, which the reflection based reader accumulates and assigns
+    // through a different path than the wrapped shape above.
+    [XmlElement("Flat")]
+    public ImmutableList<int> Flat { get; } = System.Collections.Immutable.ImmutableList.Create(13);
 }
