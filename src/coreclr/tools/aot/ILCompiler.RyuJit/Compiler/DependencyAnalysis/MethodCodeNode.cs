@@ -49,8 +49,12 @@ namespace ILCompiler.DependencyAnalysis
 
         public override ObjectNodeSection GetSection(NodeFactory factory)
         {
-            return factory.Target.IsWindows ?
-                ObjectNodeSection.ManagedCodeWindowsContentSection : ObjectNodeSection.ManagedCodeUnixContentSection;
+            return factory.Target switch
+            {
+                { IsWasm: true } => ObjectNodeSection.WasmCodeSection,
+                { IsWindows: true } => ObjectNodeSection.ManagedCodeWindowsContentSection,
+                _ => ObjectNodeSection.ManagedCodeUnixContentSection
+            };
         }
 
         public override bool StaticDependenciesAreComputed => _methodCode != null;
@@ -119,7 +123,7 @@ namespace ILCompiler.DependencyAnalysis
         public MethodExceptionHandlingInfoNode EHInfo => _ehInfo;
 
         // TODO-WASM: Appropriately extract funclet kinds from eh clause info
-        public FuncletKind[] GetFuncletKinds() => throw new NotImplementedException();
+        public FuncletKind[] GetFuncletKinds() => _ehInfo == null ? [] : throw new NotImplementedException();
 
         public ISymbolNode GetAssociatedDataNode(NodeFactory factory)
         {
