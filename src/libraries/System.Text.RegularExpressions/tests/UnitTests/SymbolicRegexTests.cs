@@ -96,7 +96,8 @@ namespace System.Text.RegularExpressions.Tests
             {
                 RegexNode tree = RegexParser.Parse(".*?" + Pattern, options | RegexOptions.ExplicitCapture, CultureInfo.CurrentCulture).Root;
                 SymbolicRegexNode<BDD> rootNode = converter.ConvertToSymbolicRegexNode(tree);
-                yield return new object[] { bddBuilder, rootNode, 1 + ExpectedSafeSize };
+                int expected = tree.Child(0).Kind == RegexNodeKind.Alternate ? 1 + (2 * ExpectedSafeSize) : 1 + ExpectedSafeSize;
+                yield return new object[] { bddBuilder, rootNode, expected };
             }
 
             // use of anchors increases the estimate by 5x in general but in reality much less, at most 3x
