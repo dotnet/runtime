@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\ILLink.CacheTool\ILLink.CacheTool.csproj" />
+  </ItemGroup>
+</Project>
