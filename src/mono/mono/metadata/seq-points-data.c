@@ -412,6 +412,7 @@ mono_seq_point_data_read (SeqPointData *data, char *path)
 	size_t len = fread(buffer_orig, fsize, 1, f);
 	if (ferror(f)) {
 		fclose(f);
+		g_free (buffer);
 		return FALSE;
 	}
 	g_assert (len == fsize || (len < GLONG_TO_ULONG(fsize) && feof(f)));
