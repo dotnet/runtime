@@ -91,6 +91,7 @@ internal static class ReflectionTest
         TestInvokeMemberParamsCornerCase.Run();
         TestDefaultInterfaceInvoke.Run();
         TestCovariantReturnInvoke.Run();
+        TestStaticAbstractInvoke.Run();
         TypeConstructionTest.Run();
         TestThreadStaticFields.Run();
         TestByRefReturnInvoke.Run();
@@ -548,6 +549,82 @@ internal static class ReflectionTest
 
             if (((Foo)mi.Invoke(new SuperDerived(), Array.Empty<object>())).State != "SuperDerived")
                 throw new Exception();
+        }
+    }
+
+    class TestStaticAbstractInvoke
+    {
+        interface IStaticAbstract
+        {
+            static abstract int Get();
+            static abstract int Count { get; }
+        }
+
+        interface IStaticAbstract<T>
+        {
+            static abstract void Set(T value);
+        }
+
+        interface IStaticVirtual
+        {
+            static virtual int Get() => 42;
+        }
+
+        public static void Run()
+        {
+            Console.WriteLine(nameof(TestStaticAbstractInvoke));
+
+            // A static abstract method has no body to invoke, bind a delegate to or take the address of
+            MethodInfo mi = typeof(IStaticAbstract).GetMethod(nameof(IStaticAbstract.Get));
+
+            try
+            {
+                mi.Invoke(null, Array.Empty<object>());
+                throw new Exception("Invoke");
+            }
+            catch (NotSupportedException)
+            {
+            }
+
+            try
+            {
+                mi.CreateDelegate<Func<int>>();
+                throw new Exception("CreateDelegate");
+            }
+            catch (NotSupportedException)
+            {
+            }
+
+            try
+            {
+                mi.MethodHandle.GetFunctionPointer();
+                throw new Exception("GetFunctionPointer");
+            }
+            catch (NotSupportedException)
+            {
+            }
+
+            try
+            {
+                typeof(IStaticAbstract).GetProperty(nameof(IStaticAbstract.Count)).GetValue(null);
+                throw new Exception("GetValue");
+            }
+            catch (NotSupportedException)
+            {
+            }
+
+            try
+            {
+                typeof(IStaticAbstract<string>).GetMethod(nameof(IStaticAbstract<string>.Set)).Invoke(null, new object[] { "" });
+                throw new Exception("Generic Invoke");
+            }
+            catch (NotSupportedException)
+            {
+            }
+
+            // A static virtual method with a body is invokable
+            if ((int)typeof(IStaticVirtual).GetMethod(nameof(IStaticVirtual.Get)).Invoke(null, Array.Empty<object>()) != 42)
+                throw new Exception("Static virtual");
         }
     }
 
