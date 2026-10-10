@@ -328,6 +328,16 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_BIT_SET:
         case GT_BIT_CLEAR:
         case GT_BIT_INVERT:
+            if (tree->IsFunnelShift())
+            {
+                // SHRD overwrites the low input. Keep the high input live until
+                // after the result is defined so the initial copy cannot clobber it.
+                tgtPrefUse = BuildUse(tree->gtGetOp1()->gtGetOp1(), lowGprRegs);
+                setDelayFree(BuildUse(tree->gtGetOp2()->gtGetOp1(), lowGprRegs));
+                srcCount = 2;
+                BuildDef(tree, lowGprRegs);
+                break;
+            }
             srcCount = BuildBinaryUses(tree->AsOp());
             assert(dstCount == 1);
             BuildDef(tree);
