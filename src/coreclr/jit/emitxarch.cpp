@@ -4183,6 +4183,22 @@ bool emitter::emitInsCanOnlyWriteSSE2OrAVXReg(instrDesc* id)
         case INS_vcvttsd2usi64:
         case INS_vcvttss2usi32:
         case INS_vcvttss2usi64:
+        case INS_vcvttsd2sis32:
+        case INS_vcvttsd2sis64:
+        case INS_vcvttsd2usis32:
+        case INS_vcvttsd2usis64:
+        case INS_vcvttss2sis32:
+        case INS_vcvttss2sis64:
+        case INS_vcvttss2usis32:
+        case INS_vcvttss2usis64:
+        case INS_vcvtsh2si32:
+        case INS_vcvtsh2si64:
+        case INS_vcvtsh2usi32:
+        case INS_vcvtsh2usi64:
+        case INS_vcvttsh2si32:
+        case INS_vcvttsh2si64:
+        case INS_vcvttsh2usi32:
+        case INS_vcvttsh2usi64:
         {
             // These SSE instructions write to a general purpose integer register.
             return false;
@@ -15235,7 +15251,13 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
                 FALLTHROUGH;
 
             case EA_4BYTE:
-                code |= 0x01;
+#ifdef TARGET_AMD64
+                // EVEX.MOVBE is assigned with RM opcode that does not follow the following rule.
+                if (ins != INS_movbe_apx)
+#endif
+                {
+                    code |= 0x01;
+                }
                 break;
 
 #ifdef TARGET_AMD64
@@ -15250,7 +15272,8 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
                         assert(hasEvexPrefix(code));
                         code = AddRexWPrefix(id, code);
                     }
-                    if ((ins != INS_lzcnt_apx) && (ins != INS_tzcnt_apx) && (ins != INS_popcnt_apx))
+                    if ((ins != INS_lzcnt_apx) && (ins != INS_tzcnt_apx) && (ins != INS_popcnt_apx) &&
+                        (ins != INS_movbe_apx))
                     // These instructions do not support 1-byte inputs and the opcode is exact.
                     {
                         code |= 0x01;
@@ -15790,15 +15813,29 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
 
             case EA_2BYTE:
                 // Output a size prefix for a 16-bit operand
-                dst += emitOutputByte(dst, 0x66);
+                if (TakesEvexPrefix(id))
+                {
+                    assert(IsApxExtendedEvexInstruction(ins));
+                    assert(hasEvexPrefix(code));
+                    // Evex.pp should already be added when adding the prefix.
+                    assert((code & EXTENDED_EVEX_PP_BITS) != 0);
+                }
+                else
+                {
+                    dst += emitOutputByte(dst, 0x66);
+                }
                 FALLTHROUGH;
 
             case EA_4BYTE:
 #ifdef TARGET_AMD64
             case EA_8BYTE:
+                // EVEX.MOVBE is assigned with RM opcode that does not follow the following rule.
+                if (ins != INS_movbe_apx)
 #endif
-                // Set the 'w' bit to get the large version
-                code |= 0x1;
+                {
+                    // Set the 'w' bit to get the large version
+                    code |= 0x1;
+                }
                 break;
 
 #ifdef TARGET_X86

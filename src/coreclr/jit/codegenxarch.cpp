@@ -9036,6 +9036,18 @@ void CodeGen::genAmd64EmitterUnitTestsApx()
     theEmitter->emitIns_S_I(INS_imul_19, EA_4BYTE, 0, 20, 30);
     theEmitter->emitIns_S_I(INS_imul_09, EA_4BYTE, 0, 20, 30);
     theEmitter->emitIns_R_AR(INS_crc32_apx, EA_4BYTE, REG_R17, REG_EAX, 0x14);
+
+    // EVEX MOVBE: the load (0x60) and store (0x61) opcodes are exact, and the 16-bit form uses EVEX.pp.
+    CORINFO_FIELD_HANDLE hnd          = theEmitter->emitFltOrDblConst(1.0, EA_8BYTE);
+    const emitAttr       movbeSizes[] = {EA_2BYTE, EA_4BYTE, EA_8BYTE};
+    for (emitAttr size : movbeSizes)
+    {
+        theEmitter->emitIns_R_AR(INS_movbe_apx, size, REG_R16, REG_EAX, 0x14);
+        theEmitter->emitIns_R_S(INS_movbe_apx, size, REG_R16, 0, 0);
+        theEmitter->emitIns_R_C(INS_movbe_apx, size, REG_R16, hnd, 0);
+        theEmitter->emitIns_AR_R(INS_movbe_apx, size, REG_R16, REG_EAX, 0x14);
+        theEmitter->emitIns_S_R(INS_movbe_apx, size, REG_R16, 0, 0);
+    }
 }
 
 void CodeGen::genAmd64EmitterUnitTestsAvx10v2()
@@ -9361,6 +9373,7 @@ void CodeGen::genAmd64EmitterUnitTestsCCMP()
     CORINFO_FIELD_HANDLE hnd = theEmitter->emitFltOrDblConst(1.0f, EA_4BYTE);
     theEmitter->emitIns_R_C(INS_ccmpe, EA_4BYTE, REG_RAX, hnd, 0, INS_OPTS_EVEX_dfv_cf);
     theEmitter->emitIns_R_C(INS_ccmpe, EA_4BYTE, REG_RAX, hnd, 4, INS_OPTS_EVEX_dfv_cf);
+    theEmitter->emitIns_R_C(INS_ccmpe, EA_2BYTE, REG_RAX, hnd, 0, INS_OPTS_EVEX_dfv_cf);
 }
 
 /*****************************************************************************
