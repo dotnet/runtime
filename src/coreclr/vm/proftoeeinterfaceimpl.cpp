@@ -10921,7 +10921,10 @@ HCIMPL2(EXTERN_C void, ProfileLeave, UINT_PTR clientData, void * platformSpecifi
         // Whidbey Slow-Path ELT
         //
         COR_PRF_FRAME_INFO frameInfo = 0;
-        COR_PRF_FUNCTION_ARGUMENT_RANGE argumentRange;
+        // Zero-initialized: the query leaves the range untouched when it returns early with an error, and
+        // when COR_PRF_ENABLE_FUNCTION_RETVAL is off (this path is also taken for FRAME_INFO or
+        // STACK_SNAPSHOT alone). The hook then receives an empty range instead of indeterminate values.
+        COR_PRF_FUNCTION_ARGUMENT_RANGE argumentRange = {};
 
         HRESULT hr = ProfilingGetFunctionLeave3Info(functionId, (COR_PRF_ELT_INFO)&eltInfo, &frameInfo, &argumentRange);
         _ASSERTE(hr == S_OK);
