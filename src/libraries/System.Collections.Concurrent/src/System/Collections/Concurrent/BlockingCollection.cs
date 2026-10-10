@@ -45,6 +45,7 @@ namespace System.Collections.Concurrent
     public class BlockingCollection<T> : IEnumerable<T>, ICollection, IDisposable, IReadOnlyCollection<T>
     {
         private IProducerConsumerCollection<T> _collection;
+        private int _actualCount;
         private int _boundedCapacity;
         private const int NON_BOUNDED = -1;
         private SemaphoreSlim? _freeNodes;
@@ -92,7 +93,7 @@ namespace System.Collections.Concurrent
             get
             {
                 CheckDisposed();
-                return (IsAddingCompleted && (_occupiedNodes.CurrentCount == 0));
+                return (IsAddingCompleted && (Volatile.Read(ref _actualCount) == 0));
             }
         }
 
@@ -105,7 +106,7 @@ namespace System.Collections.Concurrent
             get
             {
                 CheckDisposed();
-                return _occupiedNodes.CurrentCount;
+                return Volatile.Read(ref _actualCount);
             }
         }
 
@@ -212,6 +213,7 @@ namespace System.Collections.Concurrent
             Debug.Assert(boundedCapacity > 0 || boundedCapacity == NON_BOUNDED);
 
             _collection = collection;
+            _actualCount = collectionCount;
             _boundedCapacity = boundedCapacity;
             _isDisposed = false;
             _consumersCancellationTokenSource = new CancellationTokenSource();
@@ -480,9 +482,12 @@ namespace System.Collections.Concurrent
                 finally
                 {
                     if (addingSucceeded)
+                    {
+                        Interlocked.Increment(ref _actualCount);
                         //After adding an element to the underlying storage, signal to the consumers
                         //waiting on _occupiedNodes that there is a new item added ready to be consumed.
                         _occupiedNodes.Release();
+                    }
                     else
                         //TryAdd did not result in increasing the size of the underlying store and hence we need
                         //to increment back the count of the _freeNodes semaphore.
@@ -706,6 +711,7 @@ namespace System.Collections.Concurrent
                     // removeFaulted implies !removeSucceeded, but the reverse is not true.
                     if (removeSucceeded)
                     {
+                        Interlocked.Decrement(ref _actualCount);
                         if (_freeNodes != null)
                         {
                             Debug.Assert(_boundedCapacity != NON_BOUNDED);
