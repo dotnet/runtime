@@ -116,6 +116,8 @@
              Link="Common\Interop\Unix\Interop.MkFifo.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Stat.cs"
              Link="Common\Interop\Unix\Interop.Stat.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.RealPath.cs"
+             Link="Common\Interop\Unix\Interop.RealPath.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.LChflags.cs"
              Link="Common\Interop\Unix\Interop.LChflags.cs" />
     <Compile Include="FileInfo\GetSetAttributes.Unix.cs" />
