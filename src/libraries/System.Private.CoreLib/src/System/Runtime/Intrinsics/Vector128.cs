@@ -3451,17 +3451,6 @@ namespace System.Runtime.Intrinsics
             return result;
         }
 
-        // This method only exists so that ShuffleNative has the same behaviour when called directly or via
-        // reflection - reflecting into internal runtime methods is not supported, so we don't worry about others
-        // reflecting into these. TODO: figure out if this can be solved in a nicer way.
-
-        [Intrinsic]
-        private static Vector128<T> ShuffleNativeFallback<T, TIndex>(Vector128<T> vector, Vector128<TIndex> indices)
-            where TIndex : IBinaryInteger<TIndex>
-        {
-            return ShuffleFallback(vector, indices);
-        }
-
         /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
         /// <param name="vector">The input vector from which values are selected.</param>
         /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
@@ -3555,6 +3544,7 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<byte> ShuffleNative(Vector128<byte> vector, Vector128<byte> indices)
         {
+#if MONO
             if (Ssse3.IsSupported)
             {
                 return Ssse3.Shuffle(vector, indices);
@@ -3569,34 +3559,90 @@ namespace System.Runtime.Intrinsics
             {
                 return PackedSimd.Swizzle(vector, indices);
             }
+#elif !TARGET_WASM
+            if (IsHardwareAccelerated)
+            {
+                return ShuffleNative(vector, indices);
+            }
+#endif
 
-            return ShuffleNativeFallback(vector, indices);
+            return ShuffleFallback(vector, indices);
         }
 
         /// <inheritdoc cref="ShuffleNative(Vector128{byte}, Vector128{byte})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector128<double> ShuffleNative(Vector128<double> vector, Vector128<long> indices) => ShuffleNativeFallback(vector, indices);
+        public static Vector128<double> ShuffleNative(Vector128<double> vector, Vector128<long> indices)
+        {
+#if !MONO && !TARGET_WASM
+            if (IsHardwareAccelerated)
+            {
+                return ShuffleNative(vector, indices);
+            }
+#endif
+
+            return ShuffleFallback(vector, indices);
+        }
 
         /// <inheritdoc cref="ShuffleNative(Vector128{byte}, Vector128{byte})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector128<short> ShuffleNative(Vector128<short> vector, Vector128<short> indices) => ShuffleNativeFallback(vector, indices);
+        public static Vector128<short> ShuffleNative(Vector128<short> vector, Vector128<short> indices)
+        {
+#if !MONO && !TARGET_WASM
+            if (IsHardwareAccelerated)
+            {
+                return ShuffleNative(vector, indices);
+            }
+#endif
+
+            return ShuffleFallback(vector, indices);
+        }
 
         /// <inheritdoc cref="ShuffleNative(Vector128{byte}, Vector128{byte})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector128<int> ShuffleNative(Vector128<int> vector, Vector128<int> indices) => ShuffleNativeFallback(vector, indices);
+        public static Vector128<int> ShuffleNative(Vector128<int> vector, Vector128<int> indices)
+        {
+#if !MONO && !TARGET_WASM
+            if (IsHardwareAccelerated)
+            {
+                return ShuffleNative(vector, indices);
+            }
+#endif
+
+            return ShuffleFallback(vector, indices);
+        }
 
         /// <inheritdoc cref="ShuffleNative(Vector128{byte}, Vector128{byte})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector128<long> ShuffleNative(Vector128<long> vector, Vector128<long> indices) => ShuffleNativeFallback(vector, indices);
+        public static Vector128<long> ShuffleNative(Vector128<long> vector, Vector128<long> indices)
+        {
+#if !MONO && !TARGET_WASM
+            if (IsHardwareAccelerated)
+            {
+                return ShuffleNative(vector, indices);
+            }
+#endif
+
+            return ShuffleFallback(vector, indices);
+        }
 
         /// <inheritdoc cref="ShuffleNative(Vector128{byte}, Vector128{byte})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector128<nint> ShuffleNative(Vector128<nint> vector, Vector128<nint> indices) => ShuffleNativeFallback(vector, indices);
+        public static Vector128<nint> ShuffleNative(Vector128<nint> vector, Vector128<nint> indices)
+        {
+#if !MONO && !TARGET_WASM
+            if (IsHardwareAccelerated)
+            {
+                return ShuffleNative(vector, indices);
+            }
+#endif
+
+            return ShuffleFallback(vector, indices);
+        }
 
         /// <inheritdoc cref="ShuffleNative(Vector128{byte}, Vector128{byte})" />
         [Intrinsic]
@@ -3604,6 +3650,7 @@ namespace System.Runtime.Intrinsics
         [CLSCompliant(false)]
         public static Vector128<sbyte> ShuffleNative(Vector128<sbyte> vector, Vector128<sbyte> indices)
         {
+#if MONO
             if (Ssse3.IsSupported)
             {
                 return Ssse3.Shuffle(vector, indices);
@@ -3618,38 +3665,94 @@ namespace System.Runtime.Intrinsics
             {
                 return PackedSimd.Swizzle(vector, indices);
             }
+#elif !TARGET_WASM
+            if (IsHardwareAccelerated)
+            {
+                return ShuffleNative(vector, indices);
+            }
+#endif
 
-            return ShuffleNativeFallback(vector, indices);
+            return ShuffleFallback(vector, indices);
         }
 
         /// <inheritdoc cref="ShuffleNative(Vector128{byte}, Vector128{byte})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector128<float> ShuffleNative(Vector128<float> vector, Vector128<int> indices) => ShuffleNativeFallback(vector, indices);
+        public static Vector128<float> ShuffleNative(Vector128<float> vector, Vector128<int> indices)
+        {
+#if !MONO && !TARGET_WASM
+            if (IsHardwareAccelerated)
+            {
+                return ShuffleNative(vector, indices);
+            }
+#endif
+
+            return ShuffleFallback(vector, indices);
+        }
 
         /// <inheritdoc cref="ShuffleNative(Vector128{byte}, Vector128{byte})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
-        public static Vector128<ushort> ShuffleNative(Vector128<ushort> vector, Vector128<ushort> indices) => ShuffleNativeFallback(vector, indices);
+        public static Vector128<ushort> ShuffleNative(Vector128<ushort> vector, Vector128<ushort> indices)
+        {
+#if !MONO && !TARGET_WASM
+            if (IsHardwareAccelerated)
+            {
+                return ShuffleNative(vector, indices);
+            }
+#endif
+
+            return ShuffleFallback(vector, indices);
+        }
 
         /// <inheritdoc cref="ShuffleNative(Vector128{byte}, Vector128{byte})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
-        public static Vector128<uint> ShuffleNative(Vector128<uint> vector, Vector128<uint> indices) => ShuffleNativeFallback(vector, indices);
+        public static Vector128<uint> ShuffleNative(Vector128<uint> vector, Vector128<uint> indices)
+        {
+#if !MONO && !TARGET_WASM
+            if (IsHardwareAccelerated)
+            {
+                return ShuffleNative(vector, indices);
+            }
+#endif
+
+            return ShuffleFallback(vector, indices);
+        }
 
         /// <inheritdoc cref="ShuffleNative(Vector128{byte}, Vector128{byte})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
-        public static Vector128<ulong> ShuffleNative(Vector128<ulong> vector, Vector128<ulong> indices) => ShuffleNativeFallback(vector, indices);
+        public static Vector128<ulong> ShuffleNative(Vector128<ulong> vector, Vector128<ulong> indices)
+        {
+#if !MONO && !TARGET_WASM
+            if (IsHardwareAccelerated)
+            {
+                return ShuffleNative(vector, indices);
+            }
+#endif
+
+            return ShuffleFallback(vector, indices);
+        }
 
         /// <inheritdoc cref="ShuffleNative(Vector128{byte}, Vector128{byte})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
-        public static Vector128<nuint> ShuffleNative(Vector128<nuint> vector, Vector128<nuint> indices) => ShuffleNativeFallback(vector, indices);
+        public static Vector128<nuint> ShuffleNative(Vector128<nuint> vector, Vector128<nuint> indices)
+        {
+#if !MONO && !TARGET_WASM
+            if (IsHardwareAccelerated)
+            {
+                return ShuffleNative(vector, indices);
+            }
+#endif
+
+            return ShuffleFallback(vector, indices);
+        }
 
         /// <inheritdoc cref="Vector64.Sin(Vector64{double})" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

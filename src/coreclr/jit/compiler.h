@@ -5505,7 +5505,8 @@ protected:
                            unsigned simdSize,
                            var_types simdBaseType,
                            bool* canBecomeValid,
-                           bool isShuffleNative) const;
+                           bool isShuffleNative,
+                           bool mustExpand = false) const;
 
     GenTree* impHWIntrinsic(NamedIntrinsic        intrinsic,
                             CORINFO_CLASS_HANDLE  clsHnd,
@@ -5534,7 +5535,8 @@ protected:
                                R2RARG(CORINFO_CONST_LOOKUP* entryPoint),
                                var_types             simdBaseType,
                                var_types             retType,
-                               unsigned              simdSize);
+                               unsigned              simdSize,
+                               bool                  mustExpand);
 
     GenTree* getArgForHWIntrinsic(var_types argType, CORINFO_CLASS_HANDLE argClass);
     GenTree* impNonConstFallback(NamedIntrinsic intrinsic, var_types simdType, var_types simdBaseType);
