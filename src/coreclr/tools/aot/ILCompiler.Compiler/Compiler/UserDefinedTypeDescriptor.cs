@@ -674,6 +674,13 @@ namespace ILCompiler
 
                 if (fieldDesc.IsStatic)
                 {
+                    if (fieldDesc.IsThreadStatic)
+                        threadStaticFields.Add(field);
+                    else if (fieldDesc.HasGCStaticBase)
+                        gcStaticFields.Add(field);
+                    else
+                        nonGcStaticFields.Add(field);
+
                     if (NodeFactory.Target.OperatingSystem != TargetOS.Windows)
                     {
                         StaticDataFieldDescriptor staticDesc = new StaticDataFieldDescriptor
@@ -695,15 +702,10 @@ namespace ILCompiler
                             staticDesc.IsStaticDataInObject = 0;
                         }
 
+                        // The DWARF writer pairs static declarations and locations by index.
+                        fieldsDescs.Add(field);
                         staticsDescs.Add(staticDesc);
                     }
-
-                    if (fieldDesc.IsThreadStatic)
-                        threadStaticFields.Add(field);
-                    else if (fieldDesc.HasGCStaticBase)
-                        gcStaticFields.Add(field);
-                    else
-                        nonGcStaticFields.Add(field);
                 }
                 else
                 {
@@ -719,9 +721,7 @@ namespace ILCompiler
             }
             else
             {
-                fieldsDescs.AddRange(nonGcStaticFields);
-                fieldsDescs.AddRange(gcStaticFields);
-                fieldsDescs.AddRange(threadStaticFields);
+                EmitThreadStaticFieldRegionType(defType, threadStaticFields);
             }
 
             DataFieldDescriptor[] fields = new DataFieldDescriptor[fieldsDescs.Count];
@@ -842,6 +842,39 @@ namespace ILCompiler
 
                 fieldDescs.Add(staticRegionField);
             }
+        }
+
+        private void EmitThreadStaticFieldRegionType(
+            DefType defType,
+            List<DataFieldDescriptor> staticFields)
+        {
+            if (staticFields.Count == 0)
+                return;
+
+            LayoutInt regionSize = defType.ThreadGcStaticFieldSize;
+            ulong emittedRegionSize = regionSize.IsIndeterminate ? 0 : (ulong)regionSize.AsInt;
+
+            ClassFieldsTypeDescriptor fieldsDescriptor = new ClassFieldsTypeDescriptor
+            {
+                Size = emittedRegionSize,
+                FieldsCount = staticFields.Count
+            };
+
+            ClassTypeDescriptor classTypeDescriptor = new ClassTypeDescriptor
+            {
+                IsStruct = 0,
+                Name = Utf8String.Concat(
+                    "__type"u8,
+                    NodeFactory.NameMangler.NodeMangler.ThreadStatics(defType).AsSpan()),
+                BaseClassId = GetTypeIndex(defType.Context.GetWellKnownType(WellKnownType.Object), true),
+                InstanceSize = emittedRegionSize
+            };
+
+            _objectWriter.GetCompleteClassTypeIndex(
+                classTypeDescriptor,
+                fieldsDescriptor,
+                staticFields.ToArray(),
+                null);
         }
 
         private uint GetPrimitiveTypeIndex(TypeDesc type)
