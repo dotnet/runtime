@@ -1,9 +1,7 @@
 <Project DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
 
-  <!-- These tests need to be rewritten to use source generator: https://github.com/dotnet/runtime/issues/53437,
-       so conditioning on RunNativeAotTestApps -->
-  <ItemGroup Condition="'$(RunNativeAotTestApps)' != 'true'">
+  <ItemGroup>
     <TestConsoleAppSourceFiles Include="Collections\Array.cs">
       <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
     </TestConsoleAppSourceFiles>
@@ -11,6 +9,9 @@
       <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
     </TestConsoleAppSourceFiles>
     <TestConsoleAppSourceFiles Include="Collections\ConcurrentQueue.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="Collections\ConcurrentStack.cs">
       <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
     </TestConsoleAppSourceFiles>
     <TestConsoleAppSourceFiles Include="Collections\DictionaryOfTKeyTValue.cs">
@@ -21,10 +22,9 @@
     </TestConsoleAppSourceFiles>
     <TestConsoleAppSourceFiles Include="Collections\Hashtable.cs">
       <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
-      <!-- Hashtable's ctor is getting trimmed on browser-wasm causing this test to fail.
-      These tests should be converted to use the source generator.
-      See https://github.com/dotnet/runtime/issues/53437 -->    
-      <SkipOnTestRuntimes>browser-wasm</SkipOnTestRuntimes>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="Collections\ICollection.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
     </TestConsoleAppSourceFiles>
     <TestConsoleAppSourceFiles Include="Collections\ICollectionOfT.cs">
       <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
@@ -56,17 +56,82 @@
     <TestConsoleAppSourceFiles Include="Collections\ListOfT.cs">
       <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
     </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="Collections\Queue.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="Collections\QueueOfT.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="Collections\Stack.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
     <TestConsoleAppSourceFiles Include="Collections\StackOfT.cs">
       <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
     </TestConsoleAppSourceFiles>
-    <TestConsoleAppSourceFiles Include="EnumConverterTest.cs" />
-    <TestConsoleAppSourceFiles Include="JsonConverterAttributeTest.cs" />
-    <TestConsoleAppSourceFiles Include="StackOrQueueNotRootedTest.cs" />
+    <TestConsoleAppSourceFiles Include="SerializerEntryPoint\Deserialize.FromReader.BoxedObject.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="SerializerEntryPoint\Deserialize.FromReader.TypedObject.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="SerializerEntryPoint\Deserialize.FromSpan.BoxedObject.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="SerializerEntryPoint\Deserialize.FromSpan.TypedObject.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="SerializerEntryPoint\Deserialize.FromString.BoxedObject.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="SerializerEntryPoint\Deserialize.FromString.TypedObject.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="SerializerEntryPoint\DeserializeAsync.FromStream.BoxedObject.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="SerializerEntryPoint\DeserializeAsync.FromStream.TypedObject.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="SerializerEntryPoint\Serialize.ToByteArray.BoxedObject.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="SerializerEntryPoint\Serialize.ToByteArray.TypedObject.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="SerializerEntryPoint\Serialize.ToString.BoxedObject.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="SerializerEntryPoint\Serialize.ToString.BoxedObject.WithWriter.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="SerializerEntryPoint\Serialize.ToString.TypedObject.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="SerializerEntryPoint\Serialize.ToString.TypedObject.WithWriter.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="SerializerEntryPoint\SerializeAsync.ToStream.BoxedObject.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="SerializerEntryPoint\SerializeAsync.ToStream.TypedObject.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="ObjectConvertersTest.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
   </ItemGroup>
 
-  <!-- All tests declared above rely on JsonSerializerIsReflectionEnabledByDefault behavior.-->
   <ItemGroup>
-    <TestConsoleAppSourceFiles Update="@(TestConsoleAppSourceFiles)" EnabledProperties="JsonSerializerIsReflectionEnabledByDefault" />
+    <TestConsoleAppSourceFiles Update="Collections\*.cs;SerializerEntryPoint\*.cs;ObjectConvertersTest.cs"
+                               DisabledProperties="JsonSerializerIsReflectionEnabledByDefault" />
+  </ItemGroup>
+
+  <!-- These tests exercise the reflection-based serializer, which is annotated
+       `RequiresDynamicCode` and therefore not Native AOT compatible. -->
+  <ItemGroup Condition="'$(RunNativeAotTestApps)' != 'true'">
+    <TestConsoleAppSourceFiles Include="EnumConverterTest.cs" EnabledProperties="JsonSerializerIsReflectionEnabledByDefault" />
+    <TestConsoleAppSourceFiles Include="JsonConverterAttributeTest.cs" EnabledProperties="JsonSerializerIsReflectionEnabledByDefault" />
+    <TestConsoleAppSourceFiles Include="StackOrQueueNotRootedTest.cs" EnabledProperties="JsonSerializerIsReflectionEnabledByDefault" />
   </ItemGroup>
 
   <ItemGroup>
