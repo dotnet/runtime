@@ -874,5 +874,17 @@ namespace System.Reflection.Metadata.Ecma335.Tests
             builder.AddStateMachineMethod(MetadataTokens.MethodDefinitionHandle(1), default(MethodDefinitionHandle));
             Assert.Throws<InvalidOperationException>(() => builder.ValidateOrder());
         }
+
+        [Fact]
+        public void CreateBlobBuilderFuncGetsCalled()
+        {
+            bool called = false;
+            _ = new MetadataBuilder(createBlobBuilderFunc: capacity =>
+            {
+                called = true;
+                return new BlobBuilder(capacity);
+            });
+            Assert.True(called);
+        }
     }
 }
