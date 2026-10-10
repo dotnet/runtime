@@ -8683,7 +8683,8 @@ VOID MethodTableBuilder::HandleAutoLayout(MethodTable ** pByValueClassCache)
 
 #ifdef FEATURE_64BIT_ALIGNMENT
             if (GetHalfBakedClass()->IsAlign8Candidate()) {
-                minAlign = 8;
+                // Align8 is a minimum; keep any larger field alignment requirement.
+                minAlign = containsGCPointers ? 8 : max(8u, (unsigned)largestAlignmentRequirement);
             }
             else
 #endif // FEATURE_64BIT_ALIGNMENT
