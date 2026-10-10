@@ -15,6 +15,13 @@ namespace System.Runtime.InteropServices.JavaScript
     {
         public static Task BindAssemblyExports(string? assemblyName)
         {
+            ArgumentException.ThrowIfNullOrEmpty(assemblyName);
+
+            if (TryBindRegisteredAssemblyExports(assemblyName))
+            {
+                return Task.CompletedTask;
+            }
+
             Interop.Runtime.BindAssemblyExports(Marshal.StringToCoTaskMemUTF8(assemblyName));
             return Task.CompletedTask;
         }

@@ -39,6 +39,7 @@ namespace Microsoft.Interop.JavaScript
         public const string ToManagedBigMethod = "ToManagedBig";
         public const string BindJSFunctionMethod = "BindJSFunction";
         public const string BindCSFunctionMethod = "BindManagedFunction";
+        public const string RegisterAssemblyExportsMethod = "RegisterAssemblyExports";
         public const string JSMarshalerTypeGlobal = "global::System.Runtime.InteropServices.JavaScript.JSMarshalerType";
         public const string JSMarshalerTypeGlobalDot = "global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.";
     }

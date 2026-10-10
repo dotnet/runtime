@@ -25,6 +25,7 @@ namespace Microsoft.Interop
             public const string ConfigurationNotSupported = Prefix + "1073";
             public const string JSImportRequiresAllowUnsafeBlocks = Prefix + "1074";
             public const string JSExportRequiresAllowUnsafeBlocks = Prefix + "1075";
+            public const string JSExportInaccessibleNestedType = Prefix + "1076";
         }
 
         private const string Category = "JSImportGenerator";
@@ -178,6 +179,16 @@ namespace Microsoft.Interop
                        DiagnosticSeverity.Error,
                        isEnabledByDefault: true,
                        description: GetResourceString(nameof(SR.JSExportRequiresAllowUnsafeBlocksDescription)));
+
+        public static readonly DiagnosticDescriptor JSExportInaccessibleNestedType =
+                   DiagnosticDescriptorHelper.Create(
+                       Ids.JSExportInaccessibleNestedType,
+                       GetResourceString(nameof(SR.JSExportInaccessibleNestedTypeTitle)),
+                       GetResourceString(nameof(SR.JSExportInaccessibleNestedTypeMessage)),
+                       Category,
+                       DiagnosticSeverity.Warning,
+                       isEnabledByDefault: true,
+                       description: GetResourceString(nameof(SR.JSExportInaccessibleNestedTypeDescription)));
 
         private static LocalizableResourceString GetResourceString(string resourceName)
         {
