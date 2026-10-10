@@ -12061,6 +12061,7 @@ HRESULT Debugger::DeoptimizeMethod(Module* pModule, mdMethodDef methodDef)
         }
     }
 
+#ifdef FEATURE_REJIT
     // Next any JIT methods
     MethodDesc *pMethodDesc = pModule->LookupMethodDef(methodDef);
     if (pMethodDesc != NULL && pModule->HasJitInlineTrackingMap())
@@ -12090,6 +12091,7 @@ HRESULT Debugger::DeoptimizeMethod(Module* pModule, mdMethodDef methodDef)
             DeoptimizeMethodHelper(inlinerModule, inlinerMethodDef);
         }
     }
+#endif // FEATURE_REJIT
 
     return hr;
 }

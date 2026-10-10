@@ -46,11 +46,6 @@ extern "C" UINT_PTR STDCALL GetCurrentIP(void)
     return 0;
 }
 
-extern "C" void STDMETHODCALLTYPE JIT_ProfilerEnterLeaveTailcallStub(UINT_PTR ProfilerHandle)
-{
-    PORTABILITY_ASSERT("JIT_ProfilerEnterLeaveTailcallStub is not implemented on wasm");
-}
-
 extern "C" PCODE STDCALL DelayLoad_MethodCallImpl(TransitionBlock* pTransitionBlock, READYTORUN_IMPORT_THUNK_PORTABLE_ENTRYPOINT* pImportThunkEntry, uint8_t *moduleBase, int32_t rvaOfModuleFixup)
 {
     Module** ppModule = (Module**)(moduleBase + rvaOfModuleFixup);
@@ -617,21 +612,6 @@ LONG CLRNoCatchHandler(EXCEPTION_POINTERS* pExceptionInfo, PVOID pv)
 {
     PORTABILITY_ASSERT("CLRNoCatchHandler is not implemented on wasm");
     return EXCEPTION_CONTINUE_SEARCH;
-}
-
-EXTERN_C void STDMETHODCALLTYPE ProfileEnterNaked(FunctionIDOrClientID functionIDOrClientID)
-{
-    PORTABILITY_ASSERT("ProfileEnterNaked is not implemented on wasm");
-}
-
-EXTERN_C void STDMETHODCALLTYPE ProfileLeaveNaked(UINT_PTR clientData)
-{
-    PORTABILITY_ASSERT("ProfileLeaveNaked is not implemented on wasm");
-}
-
-EXTERN_C void STDMETHODCALLTYPE ProfileTailcallNaked(UINT_PTR clientData)
-{
-    PORTABILITY_ASSERT("ProfileTailcallNaked is not implemented on wasm");
 }
 
 void InitJITWriteBarrierHelpers()

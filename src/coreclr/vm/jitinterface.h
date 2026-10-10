@@ -216,7 +216,9 @@ extern "C"
     void STDCALL JIT_TailCall();                    // JIThelp.asm
 #endif // defined(TARGET_X86) && !defined(UNIX_X86_ABI)
 
+#ifdef PROFILING_SUPPORTED
     void STDMETHODCALLTYPE JIT_ProfilerEnterLeaveTailcallStub(UINT_PTR ProfilerHandle);
+#endif // PROFILING_SUPPORTED
 #if !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
     // TODO: implement stack probing for other architectures https://github.com/dotnet/runtime/issues/13519
     void STDCALL JIT_StackProbe();

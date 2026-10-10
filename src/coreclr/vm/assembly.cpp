@@ -2102,7 +2102,6 @@ void Assembly::BeforeTypeLoad()
     }
     CONTRACTL_END;
 
-#ifdef PROFILING_SUPPORTED
     // After this point, it is possible to load types.
     // We need to notify the profiler now because the profiler may need to inject methods into
     // the module, and to do so reliably, it must have the chance to do so before
@@ -2120,11 +2119,12 @@ void Assembly::BeforeTypeLoad()
     // FILE_LOAD_DELIVER_EVENTS.
     if (!IsProfilerNotified())
     {
+        // This flag also marks the assembly as available to code versioning enumerators.
         SetProfilerNotified();
+#ifdef PROFILING_SUPPORTED
         GetModule()->NotifyProfilerLoadFinished(S_OK);
+#endif // PROFILING_SUPPORTED
     }
-
-#endif
 }
 
 void Assembly::EagerFixups()
@@ -2279,13 +2279,14 @@ void Assembly::DeliverSyncEvents()
 
     GetModule()->NotifyEtwLoadFinished(S_OK);
 
-#ifdef PROFILING_SUPPORTED
     if (!IsProfilerNotified())
     {
+        // This flag also marks the assembly as available to code versioning enumerators.
         SetProfilerNotified();
+#ifdef PROFILING_SUPPORTED
         GetModule()->NotifyProfilerLoadFinished(S_OK);
+#endif // PROFILING_SUPPORTED
     }
-#endif
 
 #ifdef DEBUGGING_SUPPORTED
     GCX_COOP();
