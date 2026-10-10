@@ -10,6 +10,8 @@ namespace System.Collections.Generic
         private const int IntSize = sizeof(int) * 8;
         private readonly Span<int> _span;
 
+        internal Span<int> Span => _span;
+
         internal BitHelper(Span<int> span, bool clear)
         {
             if (clear)
