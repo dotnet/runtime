@@ -2,6 +2,9 @@
   <PropertyGroup>
     <Optimize>True</Optimize>
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <!-- AVX10.2 is not expected on macOS, and instruction-level GCStress needs coredistools,
+         which is not in Core_Root there, so the runtime would fail to start. -->
+    <CLRTestTargetUnsupported Condition="'$(TargetOS)' != 'windows' and '$(TargetOS)' != 'linux'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs" />
