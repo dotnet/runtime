@@ -16,15 +16,20 @@ namespace System.Text.Json.Serialization.Tests
         public class ChunkedReaderStream : Stream
         {
             private readonly IEnumerator<byte[]> _chunkEnumerator;
+            private readonly int _maxReadSize;
             private byte[]? _currentChunk; // Null means EOF.
             private int _currentChunkOffset;
             private long _position;
 
-            public ChunkedReaderStream(IEnumerable<byte[]> chunkProvider)
+            public ChunkedReaderStream(IEnumerable<byte[]> chunkProvider, int maxReadSize = int.MaxValue)
             {
+                Debug.Assert(maxReadSize > 0);
                 _chunkEnumerator = chunkProvider.GetEnumerator();
+                _maxReadSize = maxReadSize;
                 MoveToNextChunk();
             }
+
+            public int ReadCount { get; private set; }
 
             public override bool CanRead => true;
             public override bool CanWrite => false;
@@ -39,6 +44,8 @@ namespace System.Text.Json.Serialization.Tests
                     static void ThrowArgumentException() => throw new ArgumentException();
                 }
 
+                ReadCount++;
+                count = Math.Min(count, _maxReadSize);
                 int bytesRead = 0;
                 while (count > 0)
                 {
