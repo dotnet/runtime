@@ -296,31 +296,35 @@ Then, you can use the `REF<T>` template to create a type name like `SAFEHANDLERE
 
 # Calling into managed code from unmanaged code
 
-Clearly there are places where the CLR must call into managed code from native. For this purpose, we have added a `MethodDescCallSite` class to handle a lot of plumbing for you. Conceptually, all you need to do is find the `MethodDesc*` for the method you want to call, find a managed object for the "this" pointer (if you're calling an instance method), pass in an array of arguments, and deal with the return value. Internally, you'll need to potentially toggle your thread's state to allow the GC to run in preemptive mode, etc.
+The VM calls CoreLib methods marked `[UnmanagedCallersOnly]` through `UnmanagedCallersOnlyCaller`. The binder identifies the entrypoint, and the helper transitions to preemptive GC mode before calling it through the platform's unmanaged ABI. The caller must keep managed references GC-protected and pass their addresses to the managed entrypoint. Instance or virtual dispatch is performed in a managed wrapper rather than by constructing a native argument stack.
 
-Here's a simplified example. Note how this instance uses the binder described in the previous section to call `SafeHandle`'s virtual `ReleaseHandle` method.
+The `InvokeThrowing` variants append an exception-handle argument. The managed entrypoint catches exceptions and stores them through that argument; the native helper rethrows them after returning. For example, `Exception.CreateTargetInvocationException` returns its newly allocated object through an output argument:
 
 ```C++
-void SafeHandle::RunReleaseMethod(SafeHandle* psh)
+OBJECTREF CreateTargetInvocationException(OBJECTREF innerException)
 {
-    CONTRACTL {
+    CONTRACTL
+    {
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-    } CONTRACTL_END;
-
-    SAFEHANDLEREF sh(psh);
-
-    GCPROTECT_BEGIN(sh);
-
-    MethodDescCallSite releaseHandle(s_pReleaseHandleMethod, METHOD__SAFE_HANDLE__RELEASE_HANDLE, (OBJECTREF*)&sh, TypeHandle(), TRUE);
-
-    ARG_SLOT releaseArgs[] = { ObjToArgSlot(sh) };
-    if (!(BOOL)releaseHandle.Call_RetBool(releaseArgs)) {
-        MDA_TRIGGER_ASSISTANT(ReleaseHandleFailed, ReportViolation)(sh->GetTypeHandle(), sh->m_handle);
     }
+    CONTRACTL_END;
 
+    struct
+    {
+        OBJECTREF inner;
+        OBJECTREF result;
+    } gc;
+    gc.inner = innerException;
+    gc.result = nullptr;
+
+    GCPROTECT_BEGIN(gc);
+    UnmanagedCallersOnlyCaller caller{METHOD__EXCEPTION__CREATE_TARGET_INVOCATION_EXCEPTION};
+    caller.InvokeThrowing(&gc.inner, &gc.result);
     GCPROTECT_END();
+
+    return gc.result;
 }
 ```
 
