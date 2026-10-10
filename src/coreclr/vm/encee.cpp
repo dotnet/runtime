@@ -1022,8 +1022,9 @@ PTR_CBYTE EditAndContinueModule::ResolveOrAllocateField(OBJECTREF      thisPoint
 {
     CONTRACTL
     {
-        GC_TRIGGERS;
         THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
     }
     CONTRACTL_END;
 
@@ -1132,10 +1133,13 @@ PTR_EnCEEClassData EditAndContinueModule::GetEnCEEClassData(MethodTable * pMT, B
 void *EnCFieldDesc::GetAddress( void *o)
 {
 #ifndef DACCESS_COMPILE
-    CONTRACTL {
+    CONTRACTL
+    {
         THROWS;
         GC_TRIGGERS;
-    } CONTRACTL_END;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
 
     // can't throw through FieldDesc::GetInstanceField if FORBIDGC_LOADER_USE_ENABLED
     _ASSERTE(! FORBIDGC_LOADER_USE_ENABLED());
@@ -1512,6 +1516,7 @@ EnCAddedStaticField *EnCAddedStaticField::Allocate(EnCFieldDesc *pFD)
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_COOPERATIVE;
     }
     CONTRACTL_END;
 
@@ -1604,8 +1609,9 @@ EnCAddedStaticField * EnCFieldDesc::GetOrAllocateStaticFieldData()
 {
     CONTRACTL
     {
-        GC_TRIGGERS;
         THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
     }
     CONTRACTL_END;
 

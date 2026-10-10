@@ -1791,12 +1791,7 @@ void DebuggerStartUp::WaitForContinueNotification()
 //---------------------------------------------------------------------------------------
 HRESULT Debugger::Startup(void)
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     HRESULT hr = S_OK;
 
@@ -1956,12 +1951,7 @@ HRESULT Debugger::Startup(void)
 //---------------------------------------------------------------------------------------
 HRESULT Debugger::StartupPhase2(Thread * pThread)
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     HRESULT hr = S_OK;
 
@@ -1994,35 +1984,6 @@ HRESULT Debugger::StartupPhase2(Thread * pThread)
 
     return hr;
 }
-
-
-//---------------------------------------------------------------------------------------
-//
-// Public entrypoint into the debugger to force the lazy data to be initialized at a
-// controlled point in time. This is useful for those callers into the debugger (e.g.,
-// ETW rundown) that know they will need the lazy data initialized but cannot afford to
-// have it initialized unpredictably or inside a lock.
-//
-// This may be called more than once, and will know to initialize the lazy data only
-// once.
-//
-
-void Debugger::InitializeLazyDataIfNecessary()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
-
-    if (!HasLazyData())
-    {
-        DebuggerLockHolder lockHolder(this);
-        LazyInit(); // throws
-    }
-}
-
 
 /******************************************************************************
 Lazy initialize stuff once we know we are debugging.
@@ -2880,8 +2841,7 @@ HRESULT Debugger::GetILToNativeMapping(PCODE pNativeCodeStartAddress, ULONG32 cM
 //
 // Notes:
 //     * This function assumes lazy data has already been initialized (in order to
-//         ensure that this doesn't trigger or take the large debugger mutex).  So
-//         callers must guarantee they call InitializeLazyDataIfNecessary() first.
+//         ensure that this doesn't trigger or take the large debugger mutex).
 //     * Either this function fails, and (*prguiILOffset) & (*prguiNativeOffset) will be
 //         untouched OR this function succeeds and (*prguiILOffset) & (*prguiNativeOffset)
 //         will both be non-NULL, set to the parallel arrays this function allocated.
@@ -2918,8 +2878,6 @@ HRESULT Debugger::GetILToNativeMappingIntoArrays(
     _ASSERTE(prguiNativeOffset != NULL);
     _ASSERTE(pNativeCodeStartAddress != (PCODE)NULL);
 
-    // Any caller of GetILToNativeMappingIntoArrays had better call
-    // InitializeLazyDataIfNecessary first!
     _ASSERTE(HasLazyData());
 
     // Get the JIT info by functionId.
@@ -3178,6 +3136,7 @@ void Debugger::getBoundaries(MethodDesc * md,
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
     }
     CONTRACTL_END;
 
@@ -8705,9 +8664,7 @@ void Debugger::SendUserBreakpoint(Thread * thread)
 {
     CONTRACTL
     {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
+        STANDARD_VM_CHECK;
 
         PRECONDITION(thread != NULL);
         PRECONDITION(thread == ::GetThreadNULLOk());
@@ -11719,6 +11676,7 @@ TypeHandle Debugger::TypeDataWalk::ReadTypeHandle()
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
     }
     CONTRACTL_END;
 
@@ -13893,8 +13851,9 @@ void Debugger::SendLogMessage(int iLevel,
 {
     CONTRACTL
     {
-        GC_TRIGGERS;
         THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
     }
     CONTRACTL_END;
 
@@ -13984,8 +13943,9 @@ void Debugger::SendCustomDebuggerNotification(Thread * pThread,
 {
     CONTRACTL
     {
-        GC_TRIGGERS;
         THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
     }
     CONTRACTL_END;
 

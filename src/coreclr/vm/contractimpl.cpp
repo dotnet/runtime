@@ -91,10 +91,13 @@ PTR_MethodTable TypeIDMap::LookupType(UINT32 id)
 // If useFatPointerDispatch = true, return the next Fat ID of the type.
 UINT32 TypeIDMap::GetTypeID(PTR_MethodTable pMT, bool useFatPointerDispatch)
 {
-    CONTRACTL {
+    CONTRACTL
+    {
         THROWS;
         GC_TRIGGERS;
-    } CONTRACTL_END;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
 
     // Lookup the value.
     UINT32 id = LookupTypeID(pMT);
@@ -311,6 +314,7 @@ DispatchMap::CreateEncodedMapping(
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
         PRECONDITION(CheckPointer(pMapBuilder));
         PRECONDITION(CheckPointer(pAllocator));
         PRECONDITION(CheckPointer(ppbMap));
@@ -636,10 +640,7 @@ BOOL DispatchMap::EncodedMapIterator::Next()
 DispatchMap::Iterator::Iterator(MethodTable * pMT)
     : m_mapIt(pMT)
 {
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-    } CONTRACTL_END;
+    WRAPPER_NO_CONTRACT;
 }
 
 //--------------------------------------------------------------------

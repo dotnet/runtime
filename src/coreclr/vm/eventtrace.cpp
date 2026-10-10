@@ -3787,6 +3787,7 @@ VOID ETW::LoaderLog::SendDomainEvent(DWORD dwEventOptions, LPCWSTR wszFriendlyNa
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
         PRECONDITION(AppDomain::GetCurrentDomain() != NULL);
     } CONTRACTL_END;
 
@@ -3840,10 +3841,13 @@ VOID ETW::LoaderLog::SendDomainEvent(DWORD dwEventOptions, LPCWSTR wszFriendlyNa
 /********************************************************/
 VOID ETW::EnumerationLog::SendThreadRundownEvent()
 {
-    CONTRACTL {
+    CONTRACTL
+    {
         THROWS;
         GC_TRIGGERS;
-    } CONTRACTL_END;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
 
 #ifndef DACCESS_COMPILE
     Thread *pThread = NULL;
@@ -3868,10 +3872,13 @@ VOID ETW::EnumerationLog::SendThreadRundownEvent()
 /********************************************************/
 VOID ETW::EnumerationLog::SendGCRundownEvent()
 {
-    CONTRACTL {
+    CONTRACTL
+    {
         THROWS;
         GC_TRIGGERS;
-    } CONTRACTL_END;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
 
     if (GCHeapUtilities::IsGCHeapInitialized())
     {
@@ -3912,10 +3919,13 @@ VOID ETW::EnumerationLog::SendGCRundownEvent()
 
 VOID ETW::LoaderLog::SendAssemblyEvent(Assembly *pAssembly, DWORD dwEventOptions)
 {
-    CONTRACTL {
+    CONTRACTL
+    {
         THROWS;
         GC_TRIGGERS;
-    } CONTRACTL_END;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
 
     if(!pAssembly)
         return;
@@ -4167,10 +4177,13 @@ static void GetCodeViewInfo(Module * pModule, CV_INFO_PDB70 * pCvInfoIL, CV_INFO
 //
 VOID ETW::LoaderLog::SendModuleEvent(Module *pModule, DWORD dwEventOptions, BOOL bFireDomainModuleEvents)
 {
-    CONTRACTL {
+    CONTRACTL
+    {
         THROWS;
         GC_TRIGGERS;
-    } CONTRACTL_END;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
 
     if(!pModule)
         return;
@@ -4369,10 +4382,13 @@ VOID ETW::MethodLog::SendMethodJitStartEvent(
     SString *methodName,
     SString *methodSignature)
 {
-    CONTRACTL {
+    CONTRACTL
+    {
         THROWS;
         GC_TRIGGERS;
-    } CONTRACTL_END;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
 
     Module *pModule = NULL;
     Module *pLoaderModule = NULL; // This must not be used except for getting the ModuleID
@@ -5024,10 +5040,13 @@ VOID ETW::MethodLog::SendHelperEvent(
 /****************************************************************************/
 VOID ETW::MethodLog::SendEventsForNgenMethods(Module *pModule, DWORD dwEventOptions)
 {
-    CONTRACTL {
+    CONTRACTL
+    {
         THROWS;
         GC_TRIGGERS;
-    } CONTRACTL_END;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
 
     if (!pModule)
         return;
@@ -5310,6 +5329,7 @@ VOID ETW::EnumerationLog::IterateAppDomain(DWORD enumerationOptions)
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
         PRECONDITION(AppDomain::GetCurrentDomain() != NULL);
     }
     CONTRACTL_END;
@@ -5383,6 +5403,7 @@ VOID ETW::EnumerationLog::IterateCollectibleLoaderAllocator(AssemblyLoaderAlloca
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
         PRECONDITION(pLoaderAllocator != NULL);
     } CONTRACTL_END;
 
@@ -5428,6 +5449,7 @@ VOID ETW::EnumerationLog::IterateAssembly(Assembly *pAssembly, DWORD enumeration
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
         PRECONDITION(pAssembly != NULL);
     } CONTRACTL_END;
 
@@ -5465,6 +5487,7 @@ VOID ETW::EnumerationLog::IterateModule(Module *pModule, DWORD enumerationOption
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
         PRECONDITION(pModule != NULL);
     } CONTRACTL_END;
 
@@ -5526,10 +5549,13 @@ VOID ETW::EnumerationLog::IterateModule(Module *pModule, DWORD enumerationOption
 // static
 VOID ETW::EnumerationLog::EnumerationHelper(Module *moduleFilter, DWORD enumerationOptions)
 {
-    CONTRACTL {
+    CONTRACTL
+    {
         THROWS;
         GC_TRIGGERS;
-    } CONTRACTL_END;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
 
     if (moduleFilter)
     {
