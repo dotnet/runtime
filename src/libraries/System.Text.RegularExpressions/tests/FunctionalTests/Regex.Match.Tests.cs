@@ -76,6 +76,42 @@ namespace System.Text.RegularExpressions.Tests
             yield return (@"a{2,}?b", "abc", RegexOptions.None, 0, 3, false, string.Empty);
             yield return (@"a{2,}?b", "aabc", RegexOptions.None, 0, 4, true, "aab");
 
+            foreach (RegexOptions options in new[] { RegexOptions.None, RegexOptions.RightToLeft })
+            {
+                if (RegexHelpers.IsNonBacktracking(engine) && options == RegexOptions.RightToLeft)
+                {
+                    continue;
+                }
+
+                yield return (@"(?:a+|){2}", "a", options, 0, 1, true, "a");
+                yield return (@"(?:a+|){2}", "", options, 0, 0, true, "");
+                yield return (@"(?:a+|){2}", "aaa", options, 0, 3, true, "aaa");
+                yield return (@"\A(?:a+|){2}\z", "b", options, 0, 1, false, "");
+                yield return (@"(?:a+|){2,4}", "a", options, 0, 1, true, "a");
+                yield return (@"(?:[^b]+|){2}", "a", options, 0, 1, true, "a");
+                yield return (@"(?:[ab]+|){2}", "b", options, 0, 1, true, "b");
+                yield return (@"(?:(?:ab)+|){2}", "ab", options, 0, 2, true, "ab");
+                yield return (@"(?:(?:a+|){2}){3}", "a", options, 0, 1, true, "a");
+                yield return (@"\A(?:a{1,2}|){2}\z", "", options, 0, 0, true, "");
+                yield return (@"\A(?:a{1,2}|){2}\z", "a", options, 0, 1, true, "a");
+                yield return (@"\A(?:a{1,2}|){2}\z", "aaaa", options, 0, 4, true, "aaaa");
+                yield return (@"\A(?:a{1,2}|){2}\z", "aaaaa", options, 0, 5, false, "");
+                yield return (@"\A(?:a{2,}|){2}\z", "", options, 0, 0, true, "");
+                yield return (@"\A(?:a{2,}|){2}\z", "a", options, 0, 1, false, "");
+                yield return (@"\A(?:a{2,}|){2}\z", "aa", options, 0, 2, true, "aa");
+                yield return (@"\A(?:|a+?){2}?\z", "", options, 0, 0, true, "");
+                yield return (@"\A(?:|a+?){2}?\z", "a", options, 0, 1, true, "a");
+                yield return (@"\A(?:|a+?){2}?\z", "aaa", options, 0, 3, true, "aaa");
+                yield return (@"\A(?:|[^b]+?){2}?\z", "a", options, 0, 1, true, "a");
+                yield return (@"\A(?:|[ab]+?){2}?\z", "b", options, 0, 1, true, "b");
+                yield return (@"\A(?:|(?:ab)+?){2}?\z", "ab", options, 0, 2, true, "ab");
+                yield return (@"\A(?:|a{1,2}?){2}?\z", "a", options, 0, 1, true, "a");
+                yield return (@"\A(?:|a{1,2}?){2}?\z", "aaaaa", options, 0, 5, false, "");
+                yield return (@"\A(?:a+?|){2}?\z", "a", options, 0, 1, true, "a");
+                yield return (@"\A(?:|a+){2}\z", "a", options, 0, 1, true, "a");
+                yield return (@"(?:(?:a+)?){2}", "a", options, 0, 1, true, "a");
+            }
+
             // Optional group wrapping a lazy capturing loop followed by a trailing literal. The input drives the lazy
             // loop to its maximum iteration count and then fails the trailing literal, exercising the loop's give-up
             // backtracking path, which must unwind every matched iteration's state off the backtracking stack. The
