@@ -14,23 +14,23 @@ internal sealed class TransactionNotifyShim : NotificationShimBase, ITransaction
 
     public void Committed(bool fRetaining, IntPtr pNewUOW, int hresult)
     {
-        NotificationType = ShimNotificationType.CommittedNotify;
+        NotificationType = Interop.Xolehlp.ShimNotificationType.CommittedNotify;
         ShimFactory.NewNotification(this);
     }
 
     public void Aborted(IntPtr pboidReason, bool fRetaining, IntPtr pNewUOW, int hresult)
     {
-        NotificationType = ShimNotificationType.AbortedNotify;
+        NotificationType = Interop.Xolehlp.ShimNotificationType.AbortedNotify;
         ShimFactory.NewNotification(this);
     }
 
-    public void HeuristicDecision(OletxTransactionHeuristic dwDecision, IntPtr pboidReason, int hresult)
+    public void HeuristicDecision(Interop.Xolehlp.OletxTransactionHeuristic dwDecision, IntPtr pboidReason, int hresult)
     {
         NotificationType = dwDecision switch
         {
-            OletxTransactionHeuristic.XACTHEURISTIC_ABORT => ShimNotificationType.AbortedNotify,
-            OletxTransactionHeuristic.XACTHEURISTIC_COMMIT => ShimNotificationType.CommittedNotify,
-            _ => ShimNotificationType.InDoubtNotify
+            Interop.Xolehlp.OletxTransactionHeuristic.XACTHEURISTIC_ABORT => Interop.Xolehlp.ShimNotificationType.AbortedNotify,
+            Interop.Xolehlp.OletxTransactionHeuristic.XACTHEURISTIC_COMMIT => Interop.Xolehlp.ShimNotificationType.CommittedNotify,
+            _ => Interop.Xolehlp.ShimNotificationType.InDoubtNotify
         };
 
         ShimFactory.NewNotification(this);
@@ -38,7 +38,7 @@ internal sealed class TransactionNotifyShim : NotificationShimBase, ITransaction
 
     public void Indoubt()
     {
-        NotificationType = ShimNotificationType.InDoubtNotify;
+        NotificationType = Interop.Xolehlp.ShimNotificationType.InDoubtNotify;
         ShimFactory.NewNotification(this);
     }
 }
