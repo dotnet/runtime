@@ -20,8 +20,8 @@ namespace System.Security.Cryptography.X509Certificates
         byte[] PublicKeyValue { get; }
         byte[] SerialNumber { get; }
         string SignatureAlgorithm { get; }
-        DateTime NotAfter { get; }
-        DateTime NotBefore { get; }
+        DateTimeOffset NotAfter { get; }
+        DateTimeOffset NotBefore { get; }
         byte[] RawData { get; }
         byte[] Export(X509ContentType contentType, SafePasswordHandle password);
         byte[] ExportPkcs12(Pkcs12ExportPbeParameters exportParameters, SafePasswordHandle password);
