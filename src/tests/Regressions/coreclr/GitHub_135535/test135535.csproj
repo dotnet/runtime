@@ -3,9 +3,6 @@
     <CLRTestPriority>1</CLRTestPriority>
     <!-- The assert this test pins depends on the stack layout at process start -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
-    <!-- GCFrameRegistration and the checked OBJECTREF table are CoreCLR only -->
-    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' != 'coreclr'">true</CLRTestTargetUnsupported>
-    <NativeAotIncompatible>true</NativeAotIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="test135535.cs" />
