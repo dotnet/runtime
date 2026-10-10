@@ -21,4 +21,10 @@
   <!-- Overriding these targets as these projects won't need to binplace -->
   <Target Name="PublishTestAsSelfContained" />
 
+  <Target Name="CopyTypeMapsForTesting"
+          AfterTargets="Publish"
+          Condition="'$(TypeMapGenerateXmlFile)' == 'true'">
+    <Copy SourceFiles="$(TypeMapXmlFile)" DestinationFiles="$(PublishDir)typemaps.xml" />
+  </Target>
+
 </Project>

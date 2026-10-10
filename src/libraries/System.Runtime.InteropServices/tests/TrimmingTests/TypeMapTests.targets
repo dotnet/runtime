@@ -1,0 +1,52 @@
+<Project>
+  <Target Name="VerifyTypeMapBuild"
+          AfterTargets="Publish"
+          DependsOnTargets="CopyTypeMapsForTesting"
+          Condition="'$(TypeMapGenerateXmlFile)' == 'true' and '$(SkipTypeMapBuildChecks)' != 'true'">
+    <PropertyGroup>
+      <_TypeMapContents>$([System.IO.File]::ReadAllText('$(TypeMapXmlFile)'))</_TypeMapContents>
+      <_TypeMapWritten>$([System.IO.File]::GetLastWriteTimeUtc('$(TypeMapXmlFile)').Ticks)</_TypeMapWritten>
+      <_TypeMapCustomFile>$(IntermediateOutputPath)reports with spaces/type maps.xml</_TypeMapCustomFile>
+      <_TypeMapDisabledFile>$(IntermediateOutputPath)disabled.typemaps.xml</_TypeMapDisabledFile>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_PublishedTypeMap Include="@(ResolvedFileToPublish)"
+                         Condition="'%(FullPath)' == '$(TypeMapXmlFile)'" />
+    </ItemGroup>
+    <Error Condition="'@(_PublishedTypeMap)' != ''" Text="The type map must remain an intermediate artifact." />
+
+    <!-- Distinct project instances prevent cached target results from hiding missing outputs. -->
+    <MSBuild Projects="$(MSBuildProjectFullPath)" Targets="Publish"
+             Properties="SkipTypeMapBuildChecks=true;TypeMapBuildCheck=Unchanged" />
+    <Error Condition="'$(_TypeMapWritten)' != '$([System.IO.File]::GetLastWriteTimeUtc(`$(TypeMapXmlFile)`).Ticks)'"
+           Text="An unchanged publish regenerated the type map." />
+
+    <MakeDir Directories="$(IntermediateOutputPath)reports with spaces" />
+    <MSBuild Projects="$(MSBuildProjectFullPath)" Targets="Publish"
+             Properties="SkipTypeMapBuildChecks=true;TypeMapBuildCheck=Custom;TypeMapXmlFile=$(_TypeMapCustomFile)" />
+    <Error Condition="!Exists('$(_TypeMapCustomFile)')" Text="The configured type map output was not created." />
+    <Error Condition="'$(_TypeMapContents)' != '$([System.IO.File]::ReadAllText(`$(_TypeMapCustomFile)`))'"
+           Text="Changing the output path changed the type map contents." />
+
+    <PropertyGroup>
+      <_TypeMapCustomWritten>$([System.IO.File]::GetLastWriteTimeUtc('$(_TypeMapCustomFile)').Ticks)</_TypeMapCustomWritten>
+    </PropertyGroup>
+    <MSBuild Projects="$(MSBuildProjectFullPath)" Targets="Publish"
+             Properties="SkipTypeMapBuildChecks=true;TypeMapBuildCheck=CustomUnchanged;TypeMapXmlFile=$(_TypeMapCustomFile)" />
+    <Error Condition="'$(_TypeMapCustomWritten)' != '$([System.IO.File]::GetLastWriteTimeUtc(`$(_TypeMapCustomFile)`).Ticks)'"
+           Text="An unchanged publish regenerated the custom type map output." />
+
+    <Delete Files="$(_TypeMapCustomFile)" />
+    <MSBuild Projects="$(MSBuildProjectFullPath)" Targets="Publish"
+             Properties="SkipTypeMapBuildChecks=true;TypeMapBuildCheck=Missing;TypeMapXmlFile=$(_TypeMapCustomFile)" />
+    <Error Condition="!Exists('$(_TypeMapCustomFile)')" Text="Deleting the type map did not regenerate it." />
+    <Error Condition="'$(_TypeMapContents)' != '$([System.IO.File]::ReadAllText(`$(_TypeMapCustomFile)`))'"
+           Text="Regenerating the type map changed its contents." />
+
+    <Delete Files="$(_TypeMapDisabledFile)" />
+    <MSBuild Projects="$(MSBuildProjectFullPath)" Targets="Publish"
+             Properties="SkipTypeMapBuildChecks=true;TypeMapBuildCheck=Disabled;TypeMapGenerateXmlFile=false;TypeMapXmlFile=$(_TypeMapDisabledFile)" />
+    <Error Condition="Exists('$(_TypeMapDisabledFile)')" Text="Type map output was generated while disabled." />
+  </Target>
+</Project>

@@ -78,6 +78,12 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
+        public IEnumerable<KeyValuePair<TypeDesc, TypeDesc>> GetEntries(NodeFactory factory)
+        {
+            foreach ((IEETypeNode key, IEETypeNode value) in GetMarkedEntries(factory))
+                yield return new KeyValuePair<TypeDesc, TypeDesc>(key.Type, value.Type);
+        }
+
         public Vertex CreateTypeMap(NodeFactory factory, NativeWriter writer, Section section, INativeFormatTypeReferenceProvider externalReferences)
         {
             VertexHashtable typeMapHashTable = new VertexHashtable();

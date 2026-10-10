@@ -53,12 +53,14 @@
 
   <Target Name="GenerateProjects"
           DependsOnTargets="GetTestConsoleApps;CreateTestDir"
-          Inputs="@(TestConsoleAppSourceFiles);$(ProjectTemplate);@(TestSupportFiles)"
+          Inputs="@(TestConsoleAppSourceFiles);@(TestConsoleAppSourceFiles->'%(AdditionalSourceFiles)');$(ProjectTemplate);@(TestSupportFiles)"
           Outputs="%(TestConsoleApps.Identity)">
     <PropertyGroup>
       <_projectDir>%(TestConsoleApps.ProjectDir)\</_projectDir>
       <_projectFile>%(TestConsoleApps.ProjectFile)</_projectFile>
       <_projectSourceFile>%(TestConsoleApps.ProjectCompileItems)</_projectSourceFile>
+      <_additionalTargetsImport></_additionalTargetsImport>
+      <_additionalTargetsImport Condition="'%(TestConsoleApps.AdditionalTargets)' != ''">&lt;Import Project=&quot;%(TestConsoleApps.AdditionalTargets)&quot; /&gt;</_additionalTargetsImport>
     </PropertyGroup>
 
     <ItemGroup Condition="'$(AdditionalProjectReferences)' != ''">
@@ -68,6 +70,16 @@
 
     <PropertyGroup>
       <_additionalProjectReferencesString>@(_additionalProjectReference, '%0a')</_additionalProjectReferencesString>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_testProjectReference Remove="@(_testProjectReference)" />
+      <_testProjectReference Include="%(TestConsoleApps.AdditionalProjectReferences)" />
+    </ItemGroup>
+
+    <PropertyGroup>
+      <_additionalProjectReferencesString>$(_additionalProjectReferencesString)
+        @(_testProjectReference->'&lt;ProjectReference Include=&quot;%(FullPath)&quot; SkipUseReferenceAssembly=&quot;true&quot; /&gt;', '%0a')</_additionalProjectReferencesString>
     </PropertyGroup>
 
     <ItemGroup>
@@ -104,6 +116,7 @@
                                                  .Replace('{CoreCLRBuildIntegrationDir}', '$(CoreCLRBuildIntegrationDir)')
                                                  .Replace('{RuntimeHostConfigurationOptions}', '$(_runtimeHostConfigurationOptionsString)')
                                                  .Replace('{AdditionalProjectReferences}', '$(_additionalProjectReferencesString)')
+                                                 .Replace('{AdditionalTargetsImport}', '$(_additionalTargetsImport)')
                                                  .Replace('{RepositoryEngineeringDir}', '$(RepositoryEngineeringDir)')
                                                  .Replace('{MonoAOTCompilerDir}', '$(MonoAOTCompilerDir)')
                                                  .Replace('{MonoProjectRoot}', '$(MonoProjectRoot)')
@@ -143,8 +156,26 @@
           DependsOnTargets="GenerateProjects"
           Returns="@(TestConsoleApps)" />
 
-  <Target Name="PublishTrimmedProjects"
+  <Target Name="BuildTestProjectReferences"
           DependsOnTargets="GenerateProjects">
+
+    <ItemGroup>
+      <_testProjectToBuild Include="%(TestConsoleApps.AdditionalProjectReferences)" />
+    </ItemGroup>
+
+    <MSBuild Projects="@(_testProjectToBuild)"
+             Targets="Restore"
+             Condition="'@(_testProjectToBuild)' != '' and '$(SkipTrimmingProjectsRestore)' != 'true'"
+             Properties="Configuration=$(Configuration)" />
+
+    <MSBuild Projects="@(_testProjectToBuild)"
+             Targets="Build"
+             Condition="'@(_testProjectToBuild)' != ''"
+             Properties="Configuration=$(Configuration);BuildProjectReferences=false" />
+  </Target>
+
+  <Target Name="PublishTrimmedProjects"
+          DependsOnTargets="GenerateProjects;BuildTestProjectReferences">
 
     <MSBuild Projects="@(TestConsoleApps)"
              Targets="Restore"

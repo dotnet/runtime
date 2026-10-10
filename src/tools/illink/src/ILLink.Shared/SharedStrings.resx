@@ -1119,6 +1119,9 @@
   <data name="TypeMapGroupTypeCannotBeStaticallyDeterminedMessage" xml:space="preserve">
     <value>Type '{0}' must not contain signature variables to be used as a type map group.</value>
   </data>
+  <data name="TypeMapOutputInvalidAttribute" xml:space="preserve">
+    <value>Cannot write type map output because attribute '{0}' has invalid constructor arguments.</value>
+  </data>
   <data name="AvoidAssemblyLocationInSingleFileTitle" xml:space="preserve">
     <value>Avoid accessing Assembly file path when publishing as a single file</value>
   </data>

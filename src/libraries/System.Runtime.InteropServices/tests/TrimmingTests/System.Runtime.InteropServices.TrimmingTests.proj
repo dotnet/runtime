@@ -23,8 +23,12 @@
       <DisabledProperties>IlcTrimMetadata</DisabledProperties>
     </TestConsoleAppSourceFiles>
 
-    <TestConsoleAppSourceFiles Include="TypeMap.cs" NativeAotOnly="true">
-      <EnabledProperties>IlcGenerateMstatFile;IlcGenerateDgmlFile</EnabledProperties>
+    <TestConsoleAppSourceFiles Include="TypeMap.cs" Condition="'$(UseMonoRuntime)' != 'true'">
+      <EnabledProperties>IlcGenerateMstatFile;IlcGenerateDgmlFile;TypeMapGenerateXmlFile;Optimize</EnabledProperties>
+      <SkipOnTestRuntimes>browser-wasm</SkipOnTestRuntimes>
+      <AdditionalProjectReferences>$(MSBuildProjectDirectory)/Dependencies/TypeMapTestLibrary.csproj</AdditionalProjectReferences>
+      <AdditionalSourceFiles>$(MSBuildProjectDirectory)/TypeMapTests.targets</AdditionalSourceFiles>
+      <AdditionalTargets>TypeMapTests.targets</AdditionalTargets>
     </TestConsoleAppSourceFiles>
   </ItemGroup>
 
