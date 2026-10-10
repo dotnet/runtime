@@ -1255,7 +1255,7 @@ namespace Microsoft.Extensions.FileProviders
             }
         }
 
-        [Fact]
+        [ConditionalFact]
         [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/WASI/iOS/tvOS")]
         public async Task TokensFiredForNewDirectoryContentsOnRename()
         {
@@ -1270,6 +1270,13 @@ namespace Microsoft.Extensions.FileProviders
             using (var physicalFilesWatcher = new PhysicalFilesWatcher(root.Path + Path.DirectorySeparatorChar, fileSystemWatcher, pollForChanges: false))
             using (var provider = new PhysicalFileProvider(root.Path) { FileWatcher = physicalFilesWatcher })
             {
+                // This test only relies on the watcher events that are injected below via
+                // fileSystemWatcher.CallOnRenamed, which invokes FileSystemWatcher.OnRenamed directly and
+                // so bypasses Filter matching. Setting a Filter that cannot match any of the (randomly
+                // generated) names used by this test suppresses any genuine native events - e.g. ones
+                // belatedly reported by macOS fseventsd for the directory/file creation below.
+                fileSystemWatcher.Filter = "this-filter-does-not-match-anything";
+
                 var oldDirectoryName = Guid.NewGuid().ToString();
                 var oldSubDirectoryName = Guid.NewGuid().ToString();
                 var oldSubDirectoryPath = Path.Combine(oldDirectoryName, oldSubDirectoryName);
