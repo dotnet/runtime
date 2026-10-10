@@ -1426,6 +1426,14 @@ namespace Internal.JitInterface
         private void reportTailCallDecision(CORINFO_METHOD_STRUCT_* callerHnd, CORINFO_METHOD_STRUCT_* calleeHnd, bool fIsTailPrefix, CorInfoTailCall tailCallResult, byte* reason)
 #pragma warning restore CA1822 // Mark members as static
         {
+#if READYTORUN
+            // R2R/interpreter transitions do not preserve tail calls, and explicit tail calls that cannot be
+            // fast are demoted to regular calls. Leave methods with explicit tail calls to the interpreter.
+            if (fIsTailPrefix && MethodBeingCompiled.Context.Target.Architecture == TargetArchitecture.Wasm32)
+            {
+                throw new RequiresRuntimeJitException(nameof(reportTailCallDecision));
+            }
+#endif
         }
 
         private void getEHinfo(CORINFO_METHOD_STRUCT_* ftn, uint EHnumber, ref CORINFO_EH_CLAUSE clause)
