@@ -90,8 +90,7 @@ namespace System.Collections.Immutable
         public void CopyTo(T[] array, int arrayIndex)
         {
             Requires.NotNull(array, nameof(array));
-            Requires.Range(arrayIndex >= 0, nameof(arrayIndex));
-            Requires.Range(array.Length >= arrayIndex + this.Count, nameof(arrayIndex));
+            Requires.Range(arrayIndex >= 0 && (uint)(arrayIndex + this.Count) <= (uint)array.Length, nameof(arrayIndex));
 
             foreach (T item in this)
             {
@@ -131,8 +130,7 @@ namespace System.Collections.Immutable
         void ICollection.CopyTo(Array array, int arrayIndex)
         {
             Requires.NotNull(array, nameof(array));
-            Requires.Range(arrayIndex >= 0, nameof(arrayIndex));
-            Requires.Range(array.Length >= arrayIndex + this.Count, nameof(arrayIndex));
+            Requires.Range(arrayIndex >= 0 && (uint)(arrayIndex + this.Count) <= (uint)array.Length, nameof(arrayIndex));
 
             foreach (T item in this)
             {

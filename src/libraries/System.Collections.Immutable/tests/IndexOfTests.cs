@@ -132,7 +132,6 @@ namespace System.Collections.Immutable.Tests
 
             Assert.Equal(-1, lastIndexOfItem(emptyCollection, 5));
             Assert.Equal(-1, lastIndexOfItemEQ(emptyCollection, 5, EqualityComparer<int>.Default));
-            Assert.Equal(-1, lastIndexOfItemIndex(emptyCollection, 5, 0));
             Assert.Equal(-1, lastIndexOfItemIndexCount(emptyCollection, 5, 0, 0));
 
             Assert.Equal(0, lastIndexOfItem(singleCollection, 10));

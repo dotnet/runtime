@@ -199,8 +199,7 @@ namespace System.Collections.Immutable
             internal void CopyTo(KeyValuePair<TKey, TValue>[] array, int arrayIndex, int dictionarySize)
             {
                 Requires.NotNull(array, nameof(array));
-                Requires.Range(arrayIndex >= 0, nameof(arrayIndex));
-                Requires.Range(array.Length >= arrayIndex + dictionarySize, nameof(arrayIndex));
+                Requires.Range(arrayIndex >= 0 && (uint)(arrayIndex + dictionarySize) <= (uint)array.Length, nameof(arrayIndex));
 
                 foreach (KeyValuePair<TKey, TValue> item in this)
                 {
@@ -214,8 +213,7 @@ namespace System.Collections.Immutable
             internal void CopyTo(Array array, int arrayIndex, int dictionarySize)
             {
                 Requires.NotNull(array, nameof(array));
-                Requires.Range(arrayIndex >= 0, nameof(arrayIndex));
-                Requires.Range(array.Length >= arrayIndex + dictionarySize, nameof(arrayIndex));
+                Requires.Range(arrayIndex >= 0 && (uint)(arrayIndex + dictionarySize) <= (uint)array.Length, nameof(arrayIndex));
 
                 foreach (KeyValuePair<TKey, TValue> item in this)
                 {
