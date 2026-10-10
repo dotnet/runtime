@@ -220,7 +220,7 @@ internal sealed class R2RTestRunner
                 {
                     Assert.True(File.Exists(outputPath), $"R2R image not found: {outputPath}");
                     _output.WriteLine($"  Validating R2R image: {outputPath}");
-                    var reader = new ReadyToRunReader(new SimpleAssemblyResolver(_paths), outputPath);
+                    var reader = new ReadyToRunReader(new SimpleAssemblyResolver(_paths, assemblyPaths), outputPath);
                     compilation.Validate(reader);
                 }
             }

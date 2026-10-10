@@ -1187,10 +1187,12 @@ internal static class R2RAssert
 internal sealed class SimpleAssemblyResolver : IAssemblyResolver
 {
     private readonly TestPaths _paths;
+    private readonly IReadOnlyDictionary<string, string> _assemblyPaths;
 
-    public SimpleAssemblyResolver(TestPaths paths)
+    public SimpleAssemblyResolver(TestPaths paths, IReadOnlyDictionary<string, string> assemblyPaths)
     {
         _paths = paths;
+        _assemblyPaths = assemblyPaths;
     }
 
     public IAssemblyMetadata? FindAssembly(MetadataReader metadataReader, AssemblyReferenceHandle assemblyReferenceHandle, string parentFile)
@@ -1208,6 +1210,9 @@ internal sealed class SimpleAssemblyResolver : IAssemblyResolver
             return null;
 
         string candidate = Path.Combine(dir, simpleName + ".dll");
+        if (!File.Exists(candidate) && _assemblyPaths.TryGetValue(simpleName, out string? assemblyPath))
+            candidate = assemblyPath;
+
         if (!File.Exists(candidate))
             candidate = Path.Combine(_paths.RuntimePackDir, simpleName + ".dll");
 
