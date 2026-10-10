@@ -718,7 +718,7 @@ private:
             GenTree* src;
             if (entry.FromReplacement != nullptr)
             {
-                src = m_compiler->gtNewLclvNode(entry.FromReplacement->LclNum, entry.Type);
+                src = m_compiler->gtNewLclvNode(entry.FromReplacement->LclNum, entry.FromReplacement->AccessType);
 
                 if (entry.FromReplacement != nullptr)
                 {
@@ -1737,10 +1737,12 @@ void ReplaceVisitor::CopyBetweenFields(GenTree*                    store,
                 continue;
             }
 
-            // Overlap. Check for exact match of replacements.
-            // TODO-CQ: Allow copies between small types of different signs, and between TYP_I_IMPL/TYP_BYREF?
+            // Overlap. Small integer replacements can also be copied directly when
+            // only their signedness differs. Global morph restores the destination's extension.
+            bool sameSizeSmallInts = varTypeIsSmall(dstRep->AccessType) && varTypeIsSmall(srcRep->AccessType) &&
+                                     (genTypeSize(dstRep->AccessType) == genTypeSize(srcRep->AccessType));
             if (((dstRep->Offset - dstBaseOffs) == (srcRep->Offset - srcBaseOffs)) &&
-                (dstRep->AccessType == srcRep->AccessType))
+                ((dstRep->AccessType == srcRep->AccessType) || sameSizeSmallInts))
             {
                 plan->CopyBetweenReplacements(dstRep, srcRep, dstRep->Offset - dstBaseOffs);
                 JITDUMP("  V%02u (%s)%s <- V%02u (%s)%s\n", dstRep->LclNum, dstRep->Description,
@@ -1755,10 +1757,21 @@ void ReplaceVisitor::CopyBetweenFields(GenTree*                    store,
             // Partial overlap. Write source back to the struct local. We
             // will handle the destination replacement in a future
             // iteration of the loop.
-            statements->AddStatement(Promotion::CreateWriteBack(m_compiler, srcLcl->GetLclNum(), *srcRep));
-            JITDUMP("  Partial overlap of V%02u (%s)%s <- V%02u (%s)%s. Will read source back before copy\n",
-                    dstRep->LclNum, dstRep->Description, LastUseString(dstLcl, dstRep), srcRep->LclNum,
-                    srcRep->Description, LastUseString(srcLcl, srcRep));
+            if (srcRep->NeedsWriteBack)
+            {
+                statements->AddStatement(Promotion::CreateWriteBack(m_compiler, srcLcl->GetLclNum(), *srcRep));
+                ClearNeedsWriteBack(*srcRep);
+                JITDUMP("  Partial overlap of V%02u (%s)%s <- V%02u (%s)%s. Writing source back before copy\n",
+                        dstRep->LclNum, dstRep->Description, LastUseString(dstLcl, dstRep), srcRep->LclNum,
+                        srcRep->Description, LastUseString(srcLcl, srcRep));
+            }
+            else
+            {
+                JITDUMP("  Partial overlap of V%02u (%s)%s <- V%02u (%s)%s. Skipping write-back: source is already "
+                        "current in its struct local\n",
+                        dstRep->LclNum, dstRep->Description, LastUseString(dstLcl, dstRep), srcRep->LclNum,
+                        srcRep->Description, LastUseString(srcLcl, srcRep));
+            }
             srcRep++;
             continue;
         }
