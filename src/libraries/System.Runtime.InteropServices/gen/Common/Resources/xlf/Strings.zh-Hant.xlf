@@ -84,7 +84,7 @@
       </trans-unit>
       <trans-unit id="BidirectionalMissingRequiredMarshaller">
         <source>The specified parameter needs to be marshalled from managed to unmanaged and unmanaged to managed, but the marshaller type '{0}' does not support it.{1}</source>
-        <target state="new">The specified parameter needs to be marshalled from managed to unmanaged and unmanaged to managed, but the marshaller type '{0}' does not support it.{1}</target>
+        <target state="translated">指定的參數必須從受控封送處理到非受控，以及從非受控封送處理到受控，但封送處理器類型 '{0}' 不支援它。{1}</target>
         <note />
       </trans-unit>
       <trans-unit id="CallerAllocFromManagedMustHaveBufferSizeDescription">
@@ -179,7 +179,7 @@
       </trans-unit>
       <trans-unit id="ComObjectWrapperNotSpecifiedReason">
         <source> The interface '{0}' does not specify 'ComInterfaceOptions.ComObjectWrapper' so no COM object wrapper (RCW) is generated. Marshalling this interface from unmanaged code to managed code will not work.</source>
-        <target state="new"> The interface '{0}' does not specify 'ComInterfaceOptions.ComObjectWrapper' so no COM object wrapper (RCW) is generated. Marshalling this interface from unmanaged code to managed code will not work.</target>
+        <target state="translated"> 介面 '{0}' 未指定 'ComInterfaceOptions.ComObjectWrapper'，因此不產生 COM 物件包裝函式 (RCW)。將此介面從非受控程式碼封送處理到受控程式碼將不可行。</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedDescriptionCom">
@@ -809,12 +809,12 @@
       </trans-unit>
       <trans-unit id="ManagedObjectWrapperNotSpecifiedReason">
         <source> The interface '{0}' does not specify 'ComInterfaceOptions.ManagedObjectWrapper' so no COM object wrapper (CCW) is generated. Marshalling this interface from managed code to unmanaged code will not work.</source>
-        <target state="new"> The interface '{0}' does not specify 'ComInterfaceOptions.ManagedObjectWrapper' so no COM object wrapper (CCW) is generated. Marshalling this interface from managed code to unmanaged code will not work.</target>
+        <target state="translated"> 介面 '{0}' 未指定 'ComInterfaceOptions.ManagedObjectWrapper'，因此不產生 COM 物件包裝函式 (CCW)。將此介面從受控程式碼封送處理到非受控程式碼將不可行。</target>
         <note />
       </trans-unit>
       <trans-unit id="ManagedToUnmanagedMissingRequiredMarshaller">
         <source>The specified parameter needs to be marshalled from managed to unmanaged, but the marshaller type '{0}' does not support it.{1}</source>
-        <target state="new">The specified parameter needs to be marshalled from managed to unmanaged, but the marshaller type '{0}' does not support it.{1}</target>
+        <target state="translated">指定的參數必須從受控封送處理到非受控，但封送處理器類型 '{0}' 不支援它。{1}</target>
         <note />
       </trans-unit>
       <trans-unit id="ManagedTypeMustBeClosedOrMatchArityDescription">
@@ -1361,7 +1361,7 @@
       </trans-unit>
       <trans-unit id="UnmanagedToManagedMissingRequiredMarshaller">
         <source>The specified parameter needs to be marshalled from unmanaged to managed, but the marshaller type '{0}' does not support it.{1}</source>
-        <target state="new">The specified parameter needs to be marshalled from unmanaged to managed, but the marshaller type '{0}' does not support it.{1}</target>
+        <target state="translated">指定的參數必須從非受控封送處理到受控，但封送處理器類型 '{0}' 不支援。{1}</target>
         <note />
       </trans-unit>
       <trans-unit id="UnnecessaryMarshallingInfoDescription">
