@@ -288,50 +288,12 @@ namespace System.Configuration
                 string userConfigPath = isRoaming
                     ? ConfigurationManagerInternalFactory.Instance.ExeRoamingConfigDirectory
                     : ConfigurationManagerInternalFactory.Instance.ExeLocalConfigDirectory;
-
-                Version currentVersion;
-                if (!Version.TryParse(ConfigurationManagerInternalFactory.Instance.ExeProductVersion, out currentVersion))
-                {
-                    return null;
-                }
-
-                Version previousVersion = null;
-                DirectoryInfo previousDirectory = null;
-                string file = null;
-
-                DirectoryInfo parentDirectory = Directory.GetParent(userConfigPath);
-
-                if (parentDirectory.Exists)
-                {
-                    foreach (DirectoryInfo directory in parentDirectory.GetDirectories())
-                    {
-                        Version tempVersion;
-
-                        if (Version.TryParse(directory.Name, out tempVersion) && tempVersion < currentVersion)
-                        {
-                            if (previousVersion == null)
-                            {
-                                previousVersion = tempVersion;
-                                previousDirectory = directory;
-                            }
-                            else if (tempVersion > previousVersion)
-                            {
-                                previousVersion = tempVersion;
-                                previousDirectory = directory;
-                            }
-                        }
-                    }
-
-                    if (previousDirectory != null)
-                    {
-                        file = Path.Combine(previousDirectory.FullName, ConfigurationManagerInternalFactory.Instance.UserConfigFilename);
-                    }
-
-                    if (File.Exists(file))
-                    {
-                        prevConfigFile = file;
-                    }
-                }
+                prevConfigFile = FindPreviousConfigFile(
+                    userConfigPath,
+                    ConfigurationManagerInternalFactory.Instance.ExeProductVersion,
+                    ConfigurationManagerInternalFactory.Instance.UserConfigFilename,
+                    ClientConfigPaths.Current.LegacyConfigDirectoryPrefix,
+                    ClientConfigPaths.Current.StableConfigDirectoryName);
 
                 // Cache for future use.
                 if (isRoaming)
@@ -345,6 +307,195 @@ namespace System.Configuration
             }
 
             return prevConfigFile;
+        }
+
+        internal static string FindPreviousConfigFile(
+            string currentConfigDirectory,
+            string currentVersionString,
+            string userConfigFilename,
+            string legacyDirectoryPrefix,
+            string stableConfigDirectoryName)
+        {
+            if (string.IsNullOrEmpty(currentConfigDirectory) ||
+                string.IsNullOrEmpty(userConfigFilename) ||
+                !Version.TryParse(currentVersionString, out Version currentVersion))
+            {
+                return null;
+            }
+
+            if (string.IsNullOrEmpty(legacyDirectoryPrefix) ||
+                string.IsNullOrEmpty(stableConfigDirectoryName))
+            {
+                return FindPreviousConfigFileUsingExistingBehavior(
+                    currentConfigDirectory,
+                    currentVersion,
+                    userConfigFilename);
+            }
+
+            DirectoryInfo currentVersionDirectory = new DirectoryInfo(currentConfigDirectory);
+            if (!string.Equals(currentVersionDirectory.Name, currentVersionString, StringComparison.Ordinal))
+            {
+                return null;
+            }
+
+            DirectoryInfo currentIdentityDirectory = currentVersionDirectory.Parent;
+            if (currentIdentityDirectory is null)
+            {
+                return null;
+            }
+
+            string previousConfigFile = FindPreviousConfigFile(
+                currentIdentityDirectory,
+                currentVersion,
+                userConfigFilename,
+                out _);
+            if (previousConfigFile is not null)
+            {
+                return previousConfigFile;
+            }
+
+            if (!string.Equals(currentIdentityDirectory.Name, stableConfigDirectoryName, StringComparison.Ordinal))
+            {
+                return null;
+            }
+
+            DirectoryInfo companyDirectory = currentIdentityDirectory.Parent;
+            if (companyDirectory is null || !companyDirectory.Exists)
+            {
+                return null;
+            }
+
+            Version highestVersion = null;
+            string highestVersionConfigFile = null;
+            bool highestVersionIsAmbiguous = false;
+
+            foreach (DirectoryInfo identityDirectory in companyDirectory.GetDirectories())
+            {
+                if (!IsLegacyIdentityDirectoryName(identityDirectory.Name, legacyDirectoryPrefix))
+                {
+                    continue;
+                }
+
+                string candidateConfigFile = FindPreviousConfigFile(
+                    identityDirectory,
+                    currentVersion,
+                    userConfigFilename,
+                    out Version candidateVersion);
+                if (candidateConfigFile is null)
+                {
+                    continue;
+                }
+
+                if (highestVersion is null || candidateVersion > highestVersion)
+                {
+                    highestVersion = candidateVersion;
+                    highestVersionConfigFile = candidateConfigFile;
+                    highestVersionIsAmbiguous = false;
+                }
+                else if (candidateVersion == highestVersion)
+                {
+                    highestVersionIsAmbiguous = true;
+                }
+            }
+
+            return highestVersionIsAmbiguous ? null : highestVersionConfigFile;
+        }
+
+        private static string FindPreviousConfigFileUsingExistingBehavior(
+            string currentConfigDirectory,
+            Version currentVersion,
+            string userConfigFilename)
+        {
+            DirectoryInfo identityDirectory = Directory.GetParent(currentConfigDirectory);
+            if (identityDirectory is null || !identityDirectory.Exists)
+            {
+                return null;
+            }
+
+            Version previousVersion = null;
+            DirectoryInfo previousVersionDirectory = null;
+
+            foreach (DirectoryInfo versionDirectory in identityDirectory.GetDirectories())
+            {
+                if (Version.TryParse(versionDirectory.Name, out Version version) &&
+                    version < currentVersion &&
+                    (previousVersion is null || version > previousVersion))
+                {
+                    previousVersion = version;
+                    previousVersionDirectory = versionDirectory;
+                }
+            }
+
+            if (previousVersionDirectory is null)
+            {
+                return null;
+            }
+
+            string configFile = Path.Combine(previousVersionDirectory.FullName, userConfigFilename);
+            return File.Exists(configFile) ? configFile : null;
+        }
+
+        private static string FindPreviousConfigFile(
+            DirectoryInfo identityDirectory,
+            Version currentVersion,
+            string userConfigFilename,
+            out Version previousVersion)
+        {
+            previousVersion = null;
+            string previousConfigFile = null;
+
+            if (!identityDirectory.Exists)
+            {
+                return null;
+            }
+
+            foreach (DirectoryInfo versionDirectory in identityDirectory.GetDirectories())
+            {
+                if (!Version.TryParse(versionDirectory.Name, out Version version) ||
+                    version >= currentVersion ||
+                    (previousVersion is not null && version <= previousVersion))
+                {
+                    continue;
+                }
+
+                string configFile = Path.Combine(versionDirectory.FullName, userConfigFilename);
+                if (File.Exists(configFile))
+                {
+                    previousVersion = version;
+                    previousConfigFile = configFile;
+                }
+            }
+
+            return previousConfigFile;
+        }
+
+        private static bool IsLegacyIdentityDirectoryName(string directoryName, string prefix)
+        {
+            return IsIdentityDirectoryName(directoryName, prefix + "StrongName_") ||
+                IsIdentityDirectoryName(directoryName, prefix + "Url_") ||
+                IsIdentityDirectoryName(directoryName, prefix + "Path_");
+        }
+
+        private static bool IsIdentityDirectoryName(string directoryName, string prefix)
+        {
+            const int Sha1Base32Length = 32;
+
+            if (!directoryName.StartsWith(prefix, StringComparison.Ordinal) ||
+                directoryName.Length != prefix.Length + Sha1Base32Length)
+            {
+                return false;
+            }
+
+            for (int i = prefix.Length; i < directoryName.Length; i++)
+            {
+                char c = directoryName[i];
+                if (!((c >= 'a' && c <= 'z') || (c >= '0' && c <= '5')))
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         /// <summary>
