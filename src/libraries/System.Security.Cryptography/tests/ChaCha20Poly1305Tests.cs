@@ -317,6 +317,41 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
+        public static void Encrypt_NullSpans()
+        {
+            ReadOnlySpan<byte> key = new byte[KeySizeInBytes];
+            ReadOnlySpan<byte> nonce = new byte[NonceSizeInBytes];
+            ReadOnlySpan<byte> plaintext = ReadOnlySpan<byte>.Empty;
+            ReadOnlySpan<byte> aad = ReadOnlySpan<byte>.Empty;
+            ReadOnlySpan<byte> expectedTag = "4eb972c9a8fb3a1b382bb4d36f5ffad1".HexToByteArray();
+            Span<byte> actualTag = new byte[expectedTag.Length];
+            Span<byte> ciphertext = Span<byte>.Empty;
+
+            using (ChaCha20Poly1305 chaChaPoly = new(key))
+            {
+                chaChaPoly.Encrypt(nonce, plaintext, ciphertext, actualTag, aad);
+            }
+
+            AssertExtensions.SequenceEqual(expectedTag, actualTag);
+        }
+
+        [Fact]
+        public static void Decrypt_NullSpans()
+        {
+            ReadOnlySpan<byte> key = new byte[KeySizeInBytes];
+            ReadOnlySpan<byte> nonce = new byte[NonceSizeInBytes];
+            Span<byte> plaintext = Span<byte>.Empty;
+            ReadOnlySpan<byte> aad = ReadOnlySpan<byte>.Empty;
+            ReadOnlySpan<byte> tag = "4eb972c9a8fb3a1b382bb4d36f5ffad1".HexToByteArray();
+            ReadOnlySpan<byte> ciphertext = ReadOnlySpan<byte>.Empty;
+
+            using (ChaCha20Poly1305 chaChaPoly = new(key))
+            {
+                chaChaPoly.Decrypt(nonce, ciphertext, tag, plaintext, aad);
+            }
+        }
+
+        [Fact]
         public static void UseAfterDispose()
         {
             byte[] key = new byte[32];

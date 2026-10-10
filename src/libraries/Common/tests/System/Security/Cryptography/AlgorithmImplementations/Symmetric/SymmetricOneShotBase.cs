@@ -391,6 +391,112 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
+        [Theory]
+        [InlineData(PaddingMode.None)]
+        [InlineData(PaddingMode.Zeros)]
+        public void EncryptOneShot_Ecb_NullSpans(PaddingMode mode)
+        {
+            using (SymmetricAlgorithm alg = CreateAlgorithm())
+            {
+                alg.Key = Key;
+                int written = alg.EncryptEcb(ReadOnlySpan<byte>.Empty, Span<byte>.Empty, mode);
+                Assert.Equal(0, written);
+
+                bool result = alg.TryEncryptEcb(ReadOnlySpan<byte>.Empty, Span<byte>.Empty, mode, out written);
+                Assert.True(result);
+                Assert.Equal(0, written);
+            }
+        }
+
+        [Theory]
+        [InlineData(PaddingMode.None)]
+        [InlineData(PaddingMode.Zeros)]
+        public void DecryptOneShot_Ecb_NullSpans(PaddingMode mode)
+        {
+            using (SymmetricAlgorithm alg = CreateAlgorithm())
+            {
+                alg.Key = Key;
+                int written = alg.DecryptEcb(ReadOnlySpan<byte>.Empty, Span<byte>.Empty, mode);
+                Assert.Equal(0, written);
+
+                bool result = alg.TryDecryptEcb(ReadOnlySpan<byte>.Empty, Span<byte>.Empty, mode, out written);
+                Assert.True(result);
+                Assert.Equal(0, written);
+            }
+        }
+
+        [Theory]
+        [InlineData(PaddingMode.None)]
+        [InlineData(PaddingMode.Zeros)]
+        public void EncryptOneShot_Cbc_NullSpans(PaddingMode mode)
+        {
+            using (SymmetricAlgorithm alg = CreateAlgorithm())
+            {
+                alg.Key = Key;
+                int written = alg.EncryptCbc(ReadOnlySpan<byte>.Empty, IV, Span<byte>.Empty, mode);
+                Assert.Equal(0, written);
+
+                bool result = alg.TryEncryptCbc(ReadOnlySpan<byte>.Empty, IV, Span<byte>.Empty, out written, mode);
+                Assert.True(result);
+                Assert.Equal(0, written);
+            }
+        }
+
+        [Theory]
+        [InlineData(PaddingMode.None)]
+        [InlineData(PaddingMode.Zeros)]
+        public void DecryptOneShot_Cbc_NullSpans(PaddingMode mode)
+        {
+            using (SymmetricAlgorithm alg = CreateAlgorithm())
+            {
+                alg.Key = Key;
+                int written = alg.DecryptCbc(ReadOnlySpan<byte>.Empty, IV, Span<byte>.Empty, mode);
+                Assert.Equal(0, written);
+
+                bool result = alg.TryDecryptCbc(ReadOnlySpan<byte>.Empty, IV, Span<byte>.Empty, out written, mode);
+                Assert.True(result);
+                Assert.Equal(0, written);
+            }
+        }
+
+        [ConditionalTheory]
+        [InlineData(PaddingMode.None)]
+        [InlineData(PaddingMode.Zeros)]
+        public void EncryptOneShot_Cfb_NullSpans(PaddingMode mode)
+        {
+            using (SymmetricAlgorithm alg = CreateAlgorithm())
+            {
+                SkipTestException.ThrowWhen(alg is RC2);
+
+                alg.Key = Key;
+                int written = alg.EncryptCfb(ReadOnlySpan<byte>.Empty, IV, Span<byte>.Empty, mode, feedbackSizeInBits: 8);
+                Assert.Equal(0, written);
+
+                bool result = alg.TryEncryptCfb(ReadOnlySpan<byte>.Empty, IV, Span<byte>.Empty, out written, mode, feedbackSizeInBits: 8);
+                Assert.True(result);
+                Assert.Equal(0, written);
+            }
+        }
+
+        [ConditionalTheory]
+        [InlineData(PaddingMode.None)]
+        [InlineData(PaddingMode.Zeros)]
+        public void DecryptOneShot_Cfb_NullSpans(PaddingMode mode)
+        {
+            using (SymmetricAlgorithm alg = CreateAlgorithm())
+            {
+                SkipTestException.ThrowWhen(alg is RC2);
+
+                alg.Key = Key;
+                int written = alg.DecryptCfb(ReadOnlySpan<byte>.Empty, IV, Span<byte>.Empty, mode, feedbackSizeInBits: 8);
+                Assert.Equal(0, written);
+
+                bool result = alg.TryDecryptCfb(ReadOnlySpan<byte>.Empty, IV, Span<byte>.Empty, out written, mode, feedbackSizeInBits: 8);
+                Assert.True(result);
+                Assert.Equal(0, written);
+            }
+        }
+
         [Fact]
         public void DerivedTypesDefineTest()
         {
