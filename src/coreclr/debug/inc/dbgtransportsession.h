@@ -833,7 +833,15 @@ private:
     // significant data to vary wildy from event to event).
     DWORD GetEventSize(DebuggerIPCEvent *pEvent);
 
+    // The body of GetEventSize without its assert: if the event's type is known, sets *pcbAdditionalSize to the
+    // number of bytes the event carries beyond the common header and returns true; otherwise returns false.
+    static bool TryGetEventAdditionalSize(DebuggerIPCEvent *pEvent, DWORD *pcbAdditionalSize);
+
 #ifdef _DEBUG
+    // Checks that GetEventSize has a case for every event type declared in dbgipceventtypes.h, apart from the
+    // types the check lists as never sent. Asserts, naming the type, for any declared type without a case.
+    static void CheckGetEventSizeCoverage();
+
     // Debug helper which returns the name associated with a MessageType.
     const char *MessageName(MessageType eType);
 
