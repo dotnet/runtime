@@ -163,6 +163,233 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 type.RequiresPublicMethods();
             }
 
+            [ExpectedWarning("IL2070", nameof(Type.GetMethod), "input")]
+            static void DeconstructTupleLiteralUnannotated(Type input)
+            {
+                (var type, var methodName) = (input, nameof(string.ToString));
+                type.GetMethod(methodName);
+            }
+
+            [ExpectedWarning("IL2080", ".Item2", Tool.Trimmer | Tool.NativeAot, "The nested switch expression is materialized as a ValueTuple.")]
+            static void DeconstructTupleLiteralWithSwitchTupleElement(string value)
+            {
+                ((string methodName, Type type), object instance) = (
+                    value switch
+                    {
+                        "string" => (nameof(string.ToString), typeof(string)),
+                        _ => (nameof(object.ToString), typeof(object))
+                    },
+                    new object());
+                type.GetMethod(methodName);
+            }
+
+            static Type PassToAnnotatedParam(
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type type) => type;
+
+            static object AnnotatedGeneric<
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T>() => null;
+
+            [ExpectedWarning("IL2067", nameof(PassToAnnotatedParam))]
+            [ExpectedWarning("IL2091", nameof(AnnotatedGeneric))]
+            static void DeconstructTupleLiteralEvaluatesElements<TUnannotated>(Type unannotatedParam)
+            {
+                Type x;
+                object y;
+                (x, y) = (PassToAnnotatedParam(unannotatedParam), AnnotatedGeneric<TUnannotated>());
+            }
+
+            [ExpectedWarning("IL2067", nameof(DataFlowTypeExtensions.RequiresPublicMethods))]
+            static void DeconstructTupleLiteralEvaluatesElementAssignments(
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type annotated,
+                Type unannotated)
+            {
+                Type type = annotated;
+                Type x;
+                object y;
+                (x, y) = ((type = unannotated), new object());
+                type.RequiresPublicMethods();
+            }
+
+            [ExpectedWarning("IL2067", nameof(PassToAnnotatedParam))]
+            [ExpectedWarning("IL2091", nameof(AnnotatedGeneric))]
+            [ExpectedWarning("IL2067", nameof(DataFlowTypeExtensions.RequiresPublicMethods))]
+            static void DeconstructConditionalTupleEvaluatesElements<TUnannotated>(
+                bool condition,
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type annotated,
+                Type unannotated)
+            {
+                Type type = annotated;
+                Type x;
+                object y;
+                (x, y) = condition
+                    ? (PassToAnnotatedParam(unannotated), AnnotatedGeneric<TUnannotated>())
+                    : ((type = unannotated), new object());
+                type.RequiresPublicMethods();
+            }
+
+            static void DeconstructConditionalTuple(bool condition)
+            {
+                string methodName;
+                Type type;
+                (methodName, type) = condition
+                    ? (nameof(string.ToString), typeof(string))
+                    : (nameof(object.ToString), typeof(object));
+                type.GetMethod(methodName);
+            }
+
+            [ExpectedWarning("IL2070", Tool.Trimmer | Tool.NativeAot, "Analyzer cannot determine what compiles to ValueTuple or local variables.")]
+            static void DeconstructConditionalTupleUnannotated(bool condition, Type input)
+            {
+                string methodName;
+                Type type;
+                (methodName, type) = condition
+                    ? (nameof(string.ToString), input)
+                    : (nameof(object.ToString), input);
+                type.GetMethod(methodName);
+            }
+
+            [ExpectedWarning("IL2080", ".Item2", Tool.Trimmer | Tool.NativeAot, "Analyzer cannot determine what compiles to ValueTuple or local variables.")]
+            static void DeconstructCoalescedTuple(bool condition)
+            {
+                (string, Type)? tuple = condition
+                    ? (nameof(string.ToString), typeof(string))
+                    : null;
+
+                (string methodName, Type type) = tuple
+                    ?? (nameof(object.ToString), typeof(object));
+                type.GetMethod(methodName);
+            }
+
+            [ExpectedWarning("IL2080", ".Item2")]
+            [ExpectedWarning("IL2080", ".Item2", Tool.Trimmer, "Ref conditional produces one warning for each possible tuple reference.")]
+            [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+            static void DeconstructRefConditionalTuple(bool condition)
+            {
+                var stringTuple = (nameof(string.ToString), typeof(string));
+                var objectTuple = (nameof(object.ToString), typeof(object));
+
+                string methodName;
+                Type type;
+                (methodName, type) = condition
+                    ? ref stringTuple
+                    : ref objectTuple;
+                type.GetMethod(methodName);
+            }
+
+            [ExpectedWarning("IL2069", "input1", nameof(annotatedfield), Tool.Trimmer | Tool.NativeAot, "Analyzer cannot determine what compiles to ValueTuple or local variables.")]
+            [ExpectedWarning("IL2069", "input2", nameof(annotatedfield), Tool.Trimmer | Tool.NativeAot, "Analyzer cannot determine what compiles to ValueTuple or local variables.")]
+            static void DeconstructConditionalTupleToAnnotatedFieldUnannotated(
+                bool condition,
+                Type input1,
+                Type input2)
+            {
+                object instance;
+                (annotatedfield, instance) = condition
+                    ? (input1, new object())
+                    : (input2, new object());
+            }
+
+            static void DeconstructConditionalTupleToAnnotatedFieldAnnotated(
+                bool condition,
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type input1,
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type input2)
+            {
+                object instance;
+                (annotatedfield, instance) = condition
+                    ? (input1, new object())
+                    : (input2, new object());
+            }
+
+            [ExpectedWarning("IL2080", ".Item2")]
+            static void DeconstructConditionalTupleLocal(bool condition)
+            {
+                var tuple = condition
+                    ? (nameof(string.ToString), typeof(string))
+                    : (nameof(object.ToString), typeof(object));
+                var (methodName, type) = tuple;
+                type.GetMethod(methodName);
+            }
+
+            static void DeconstructNestedConditionalTuple(bool condition)
+            {
+                object instance;
+                ((string methodName, Type type), instance) = condition
+                    ? ((nameof(string.ToString), typeof(string)), new object())
+                    : ((nameof(object.ToString), typeof(object)), new object());
+                type.GetMethod(methodName);
+            }
+
+            [ExpectedWarning("IL2080", ".Item2")]
+            static void DeconstructNestedConditionalTupleLocal(bool condition)
+            {
+                var tuple = condition
+                    ? ((nameof(string.ToString), typeof(string)), new object())
+                    : ((nameof(object.ToString), typeof(object)), new object());
+                var ((methodName, type), instance) = tuple;
+                type.GetMethod(methodName);
+            }
+
+            [ExpectedWarning("IL2080", ".Item2", Tool.Trimmer | Tool.NativeAot, "Analyzer cannot determine what compiles to ValueTuple or local variables.")]
+            static void DeconstructSwitchTuple(string value)
+            {
+                (string methodName, Type type) = value switch
+                {
+                    "string" => (nameof(string.ToString), typeof(string)),
+                    "object" => (nameof(object.ToString), typeof(object)),
+                    "int" => (nameof(int.ToString), typeof(int)),
+                    "double" => (nameof(double.ToString), typeof(double)),
+                    "date" => (nameof(DateTime.ToString), typeof(DateTime)),
+                    _ => (nameof(Guid.ToString), typeof(Guid))
+                };
+                type.GetMethod(methodName);
+            }
+
+            [ExpectedWarning("IL2080", ".Item2", Tool.Trimmer | Tool.NativeAot, "Analyzer cannot determine what compiles to ValueTuple or local variables.")]
+            static void DeconstructSwitchTupleUnannotated(string value, Type input)
+            {
+                string methodName;
+                Type type;
+                (methodName, type) = value switch
+                {
+                    "string" => (nameof(string.ToString), input),
+                    "object" => (nameof(object.ToString), input),
+                    "int" => (nameof(int.ToString), input),
+                    "double" => (nameof(double.ToString), input),
+                    "date" => (nameof(DateTime.ToString), input),
+                    _ => (nameof(Guid.ToString), input)
+                };
+                type.GetMethod(methodName);
+            }
+
+            [ExpectedWarning("IL2080", ".Item2", Tool.Trimmer | Tool.NativeAot, "Analyzer cannot determine what compiles to ValueTuple or local variables.")]
+            static void DeconstructSwitchTupleWithThrow(string value)
+            {
+                (string methodName, Type type) = value switch
+                {
+                    null => throw new ArgumentNullException(nameof(value)),
+                    "string" => (nameof(string.ToString), typeof(string)),
+                    "object" => (nameof(object.ToString), typeof(object)),
+                    _ => (nameof(Guid.ToString), typeof(Guid))
+                };
+                type.GetMethod(methodName);
+            }
+
+            [ExpectedWarning("IL2080", ".Item2", Tool.Trimmer | Tool.NativeAot, "Analyzer cannot determine what compiles to ValueTuple or local variables.")]
+            static void DeconstructSwitchOfMixedTupleSources(string value)
+            {
+                var objectTuple = (nameof(object.ToString), typeof(object));
+
+                string methodName;
+                Type type;
+                (methodName, type) = value switch
+                {
+                    "string" => (nameof(string.ToString), typeof(string)),
+                    "object" => objectTuple,
+                    _ => (nameof(Guid.ToString), typeof(Guid))
+                };
+                type.GetMethod(methodName);
+            }
+
             // The swap correctly propagates the annotation from typeWithMethods to first (via second),
             // so no warning is produced here.
             static void DeconstructTupleSwapSuccess(
@@ -392,6 +619,24 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 DeconstructExtensionWithMismatchAnnotation(new());
                 DeconstructNestedTuple(((typeof(string), null), null));
                 DeconstructTupleLiteral(typeof(string));
+                DeconstructTupleLiteralUnannotated(typeof(string));
+                DeconstructTupleLiteralWithSwitchTupleElement("string");
+                DeconstructTupleLiteralEvaluatesElements<object>(typeof(object));
+                DeconstructTupleLiteralEvaluatesElementAssignments(typeof(string), typeof(object));
+                DeconstructConditionalTupleEvaluatesElements<object>(false, typeof(string), typeof(object));
+                DeconstructConditionalTuple(false);
+                DeconstructConditionalTupleUnannotated(false, typeof(string));
+                DeconstructCoalescedTuple(false);
+                DeconstructRefConditionalTuple(false);
+                DeconstructConditionalTupleToAnnotatedFieldUnannotated(false, typeof(string), typeof(object));
+                DeconstructConditionalTupleToAnnotatedFieldAnnotated(false, typeof(string), typeof(object));
+                DeconstructConditionalTupleLocal(false);
+                DeconstructNestedConditionalTuple(false);
+                DeconstructNestedConditionalTupleLocal(false);
+                DeconstructSwitchTuple("string");
+                DeconstructSwitchTupleUnannotated("string", typeof(string));
+                DeconstructSwitchTupleWithThrow("string");
+                DeconstructSwitchOfMixedTupleSources("string");
                 DeconstructTupleSwapSuccess(typeof(string), typeof(string));
                 DeconstructTupleSwap(typeof(string), typeof(string));
                 DeconstructPropertyTargetSideEffect(typeof(string), typeof(string));
