@@ -16214,6 +16214,16 @@ void Compiler::fgValueNumberAddExceptionSet(GenTree* tree)
                 break;
 
             case GT_INTRINSIC:
+                if (tree->AsIntrinsic()->gtIntrinsicName == NI_PRIMITIVE_Log2)
+                {
+                    // The signed Log2 fallback throws ArgumentOutOfRangeException for negative inputs.
+                    ValueNumPair excSet = vnStore->VNPExcSetSingleton(
+                        vnStore->VNPairForFunc(TYP_REF, VNF_HelperOpaqueExc,
+                                               vnStore->VNPairForExpr(compCurBB, TYP_I_IMPL)));
+                    tree->gtVNPair = vnStore->VNPWithExc(tree->gtVNPair, excSet);
+                    break;
+                }
+
                 assert(tree->AsIntrinsic()->gtIntrinsicName == NI_System_Object_GetType);
                 fgValueNumberAddExceptionSetForIndirection(tree, tree->AsIntrinsic()->gtGetOp1());
                 break;

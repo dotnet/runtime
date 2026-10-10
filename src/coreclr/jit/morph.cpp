@@ -14912,17 +14912,18 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt, bool onlyEa
         const unsigned elseLikelihood = qmark->ElseNodeLikelihood();
 
         assert(condBlock->TargetIs(elseBlock));
-        FlowEdge* const thenEdge = fgAddRefPred(remainderBlock, condBlock);
-        FlowEdge* const elseEdge = condBlock->GetTargetEdge();
-        condBlock->SetCond(thenEdge, elseEdge);
+        FlowEdge* const skipEdge = fgAddRefPred(remainderBlock, condBlock);
+        FlowEdge* const thenEdge = condBlock->GetTargetEdge();
+        condBlock->SetCond(skipEdge, thenEdge);
 
         // Since we have no false expr, use the one we'd already created.
         thenBlock = elseBlock;
         elseBlock = nullptr;
 
+        // The reversed condition skips the true expr when the original condition is false.
         thenBlock->inheritWeightPercentage(condBlock, thenLikelihood);
         thenEdge->setLikelihood(thenLikelihood / 100.0);
-        elseEdge->setLikelihood(elseLikelihood / 100.0);
+        skipEdge->setLikelihood(elseLikelihood / 100.0);
     }
     else if (hasFalseExpr)
     {
