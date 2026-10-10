@@ -3,9 +3,11 @@
 
 using System;
 using System.Collections.Generic;
+using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers.Wasm;
 using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
+using Moq;
 using Xunit;
 
 namespace Microsoft.Diagnostics.DataContractReader.Tests;
@@ -51,13 +53,48 @@ public class WasmUnwinderTests
         }
     }
 
-    private static TestPlaceholderTarget CreateTarget(MockMemorySpace.HeapFragment[] fragments)
+    private static TestPlaceholderTarget CreateTarget(MockMemorySpace.HeapFragment[] fragments, ulong? reversePInvokeIp = null)
     {
         TestPlaceholderTarget.Builder builder = new(WasmArch);
         foreach (MockMemorySpace.HeapFragment fragment in fragments)
             builder.MemoryBuilder.AddHeapFragment(fragment);
+        AddGCInfoContracts(builder, reversePInvokeIp);
         return builder.Build();
     }
+
+    // Every IP is managed code; only the method at reversePInvokeIp has a reverse P/Invoke frame in
+    // its GC info. The GC info "address" is the IP, so the header can be selected per method.
+    private static void AddGCInfoContracts(TestPlaceholderTarget.Builder builder, ulong? reversePInvokeIp)
+    {
+        Mock<IExecutionManager> executionManager = new();
+        executionManager
+            .Setup(e => e.GetCodeBlockHandle(It.IsAny<TargetCodePointer>()))
+            .Returns((TargetCodePointer ip) => new CodeBlockHandle(new TargetPointer(ip.Value)));
+        executionManager
+            .Setup(e => e.GetGCInfo(It.IsAny<CodeBlockHandle>(), out It.Ref<TargetPointer>.IsAny, out It.Ref<uint>.IsAny))
+            .Callback(new GetGCInfoCallback((CodeBlockHandle handle, out TargetPointer gcInfo, out uint version) =>
+            {
+                gcInfo = handle.Address;
+                version = 4;
+            }));
+
+        Mock<IGCInfo> gcInfoContract = new();
+        gcInfoContract
+            .Setup(g => g.DecodePlatformSpecificGCInfo(It.IsAny<TargetPointer>(), It.IsAny<uint>()))
+            .Returns((TargetPointer gcInfo, uint _) => new FakeGCInfoHandle(gcInfo.Value));
+        gcInfoContract
+            .Setup(g => g.GetHeader(It.IsAny<IGCInfoHandle>()))
+            .Returns((IGCInfoHandle handle) => default(GCInfoHeader) with
+            {
+                HasReversePInvokeFrame = ((FakeGCInfoHandle)handle).Ip == reversePInvokeIp,
+            });
+
+        builder.AddMockContract(executionManager).AddMockContract(gcInfoContract);
+    }
+
+    private delegate void GetGCInfoCallback(CodeBlockHandle handle, out TargetPointer gcInfo, out uint version);
+
+    private sealed record FakeGCInfoHandle(ulong Ip) : IGCInfoHandle;
 
     // Builds an R2R frame: [0] = function index, [4] = function-local virtual IP / 2.
     private static MockMemorySpace.HeapFragment Frame(ulong address, uint functionIndex, uint localVirtualIPHalf, string name)
@@ -176,7 +213,7 @@ public class WasmUnwinderTests
         WasmUnwinder unwinder = new(target, info);
 
         TargetPointer sp = new(FramesBase);
-        Assert.True(unwinder.TryUnwindOneFrame(ref sp, out TargetCodePointer ip));
+        Assert.True(unwinder.TryUnwindOneFrame(ref sp, TargetCodePointer.Null, out TargetCodePointer ip));
         Assert.Equal(callerBase, sp.Value);
         Assert.Equal(VirtualIpBase + 14, ip.Value); // caller local VIP 7*2
     }
@@ -201,8 +238,75 @@ public class WasmUnwinderTests
         WasmUnwinder unwinder = new(target, info);
 
         TargetPointer sp = new(FramesBase);
-        Assert.True(unwinder.TryUnwindOneFrame(ref sp, out _));
+        Assert.True(unwinder.TryUnwindOneFrame(ref sp, TargetCodePointer.Null, out _));
         Assert.Equal(callerBase, sp.Value);
+    }
+
+    /// <summary>
+    /// Native RtlVirtualUnwind always advances SP to the caller's stack pointer and reports IP 0
+    /// when the caller is not R2R code, so the walk continues through the explicit Frame chain
+    /// from the right stack position.
+    /// </summary>
+    [Fact]
+    public void TryUnwindOneFrame_CallerWithoutVirtualIp_PreservesCallerStackPointer()
+    {
+        const uint leafFrameSize = 0x20;
+        ulong callerBase = FramesBase + leafFrameSize;
+
+        FakeWasmR2RInfo info = new();
+        info.UnwindData[FuncIndexLeaf] = BlobsBase;
+
+        TestPlaceholderTarget target = CreateTarget(
+        [
+            Frame(FramesBase, FuncIndexLeaf, 3, "leaf"),
+            Frame(callerBase, FuncIndexCaller, 7, "nonR2RCaller"),
+            Blob(BlobsBase, [(byte)leafFrameSize], "leafUnwind"),
+        ]);
+        WasmUnwinder unwinder = new(target, info);
+
+        TargetPointer sp = new(FramesBase);
+        Assert.True(unwinder.TryUnwindOneFrame(ref sp, TargetCodePointer.Null, out TargetCodePointer ip));
+        Assert.Equal(callerBase, sp.Value);
+        Assert.Equal(TargetCodePointer.Null, ip);
+    }
+
+    /// <summary>
+    /// A method with a reverse P/Invoke frame is called from native code, so native
+    /// RtlVirtualUnwind reports no R2R caller even when the native caller's stack bytes resemble an
+    /// R2R frame. Funclets share their parent's GC info and are excluded.
+    /// </summary>
+    [Theory]
+    [InlineData(true, false, false)]
+    [InlineData(true, true, true)]
+    [InlineData(false, false, true)]
+    public void TryUnwindOneFrame_ReversePInvokeFrame_DoesNotReadNativeCallerAsR2RFrame(
+        bool hasReversePInvokeFrame, bool isFunclet, bool expectR2RCaller)
+    {
+        const uint frameSize = 0x20;
+        const ulong controlPc = VirtualIpBase + 6;
+        ulong callerSp = FramesBase + frameSize;
+
+        FakeWasmR2RInfo info = new();
+        info.UnwindData[FuncIndexLeaf] = BlobsBase;
+        if (isFunclet)
+            info.Funclets.Add(FuncIndexLeaf);
+        // The caller's bytes are a valid R2R frame record, so only the reverse P/Invoke check can
+        // stop the unwinder from reporting it as an R2R caller.
+        info.VirtualIpBases[FuncIndexCaller] = VirtualIpBase + 0x100;
+
+        TestPlaceholderTarget target = CreateTarget(
+        [
+            Frame(FramesBase, FuncIndexLeaf, 3, "leaf"),
+            Frame(callerSp, FuncIndexCaller, 2, "caller"),
+            Blob(BlobsBase, [(byte)frameSize], "frameSize"),
+        ],
+        reversePInvokeIp: hasReversePInvokeFrame ? controlPc : null);
+        WasmUnwinder unwinder = new(target, info);
+
+        TargetPointer sp = new(FramesBase);
+        Assert.True(unwinder.TryUnwindOneFrame(ref sp, new TargetCodePointer(controlPc), out TargetCodePointer ip));
+        Assert.Equal(callerSp, sp.Value);
+        Assert.Equal(expectR2RCaller ? VirtualIpBase + 0x100 + 4 : 0, ip.Value);
     }
 
     [Fact]
@@ -212,7 +316,7 @@ public class WasmUnwinderTests
         WasmUnwinder unwinder = new(target, new FakeWasmR2RInfo());
 
         TargetPointer sp = new(FramesBase);
-        Assert.False(unwinder.TryUnwindOneFrame(ref sp, out _));
+        Assert.False(unwinder.TryUnwindOneFrame(ref sp, TargetCodePointer.Null, out _));
         Assert.Equal(TargetPointer.Null, sp);
     }
 
@@ -249,7 +353,7 @@ public class WasmUnwinderTests
         WasmUnwinder unwinder = new(target, info);
 
         TargetPointer sp = new(FramesBase);
-        Assert.False(unwinder.TryUnwindOneFrame(ref sp, out _));
+        Assert.False(unwinder.TryUnwindOneFrame(ref sp, TargetCodePointer.Null, out _));
         Assert.Equal(TargetPointer.Null, sp);
     }
 
@@ -268,7 +372,7 @@ public class WasmUnwinderTests
         WasmUnwinder unwinder = new(target, info);
 
         TargetPointer sp = new(FramesBase);
-        Assert.Throws<InvalidOperationException>(() => unwinder.TryUnwindOneFrame(ref sp, out _));
+        Assert.Throws<InvalidOperationException>(() => unwinder.TryUnwindOneFrame(ref sp, TargetCodePointer.Null, out _));
     }
 
     private const uint StackWalkSentinelIndirect = 0;
@@ -354,7 +458,7 @@ public class WasmUnwinderTests
 
     // Parent root method, the two funclets it owns, and an unrelated callee root method, in one
     // R2R module, registered through FunctionTableIndexRangeList exactly as the runtime does.
-    private static TestPlaceholderTarget CreateProducerLayoutTarget(LinearStack stack)
+    private static TestPlaceholderTarget CreateProducerLayoutTarget(LinearStack stack, ulong? reversePInvokeIp = null)
     {
         TestPlaceholderTarget.Builder targetBuilder = new(WasmArch);
         TargetTestHelpers helpers = targetBuilder.MemoryBuilder.TargetTestHelpers;
@@ -422,6 +526,7 @@ public class WasmUnwinderTests
                 [DataType.FunctionTableIndexRangeSection] = new() { Fields = rangeSectionLayout.Fields, Size = rangeSectionLayout.Stride },
             })
             .AddGlobals((Constants.Globals.FunctionTableIndexRangeList, listSlot.Address));
+        AddGCInfoContracts(targetBuilder, reversePInvokeIp);
         return targetBuilder.Build();
     }
 
@@ -515,6 +620,28 @@ public class WasmUnwinderTests
 
         context.Unwind(target);
         AssertLeftR2R(context);
+    }
+
+    /// <summary>
+    /// Unwinding a method with a reverse P/Invoke frame leaves R2R code: the context keeps the
+    /// native caller's SP and clears IP and FP, even though the bytes there resemble the parent's
+    /// R2R frame. Native RtlVirtualUnwind recomputes FP only for an R2R caller.
+    /// </summary>
+    [Fact]
+    public void Unwind_ReversePInvokeFrame_KeepsCallerStackPointerAndClearsInstructionAndFramePointers()
+    {
+        ulong calleeSp = ParentFp - CalleeFrameSize;
+
+        LinearStack stack = new();
+        stack.Terminator(ParentFp + ParentFrameSize);
+        stack.Record(ParentFp, ParentIndex, ParentVipHalf);
+        stack.Record(calleeSp, CalleeIndex, CalleeVipHalf);
+        Target target = CreateProducerLayoutTarget(stack, reversePInvokeIp: CalleeIp);
+
+        WasmContext context = CalleeContext(calleeSp);
+        context.Unwind(target);
+
+        AssertFrame(context, ParentFp, 0, 0, "native caller of reverse P/Invoke");
     }
 
     /// <summary>

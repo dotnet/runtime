@@ -450,7 +450,7 @@ Most of the handlers are implemented in `BaseFrameHandler`. Platform specific co
 
 #### InlinedCallFrame
 
-InlinedCallFrames store and update only the IP, SP, and FP of a given context. If the stored IP (CallerReturnAddress) is 0 then the InlinedCallFrame does not have an active call and should not update the context.
+InlinedCallFrames store and update only the IP, SP, and FP of a given context. If the stored IP (CallerReturnAddress) is 0 then the InlinedCallFrame does not have an active call and should not update the context. On WASM an active InlinedCallFrame directly above an `InterpreterFrame` also records that `InterpreterFrame` in the context's first-argument register; an inactive one does not.
 
 * On ARM, the InlinedCallFrame stores the value of the SP after the prolog (`SPAfterProlog`) to allow unwinding for functions with stackalloc. When a function uses stackalloc, the CallSiteSP can already have been adjusted. This value should be placed in R9.
 * On WASM, a `CallerReturnAddress` of `INLINED_PINVOKE_FROM_R2R` (`1`) marks an active inlined P/Invoke from ReadyToRun code rather than an address. SP is taken from `CallSiteSP`, IP is the R2R virtual IP of the shadow frame at `CallSiteSP`, and FP is the WASM logical frame pointer at `CallSiteSP` (see below). If no virtual IP can be recovered, IP is set to null.
@@ -461,7 +461,7 @@ An active InlinedCallFrame stays the current Frame after its context update so t
 
 #### SoftwareExceptionFrame
 
-SoftwareExceptionFrames store a copy of the context struct. The IP, SP, and all ABI specified (platform specific) callee-saved registers are copied from the stored context to the working context.
+SoftwareExceptionFrames store a copy of the context struct. The IP, SP, and all ABI specified (platform specific) callee-saved registers are copied from the stored context to the working context. On WASM the callee-saved register set is the frame pointer (`InterpreterFP`), so IP, SP, and FP are copied.
 
 **Return Address**: Read from the `ReturnAddress` field on the frame.
 
@@ -476,7 +476,31 @@ When updating the context from a TransitionFrame, the IP, SP, and all ABI specif
 * For an x86 `StubDispatchFrame` without a GCRefMap, resolve its method from the stored MethodDesc or its representative MethodTable and slot. If no method is available, the SP stays at the end of the transition block and the IP is adjusted to the call instruction by subtracting five bytes from the saved return address.
 * On WASM, a transition helper called from R2R code records the caller's R2R linear-stack pointer in `TransitionBlock.StackPointer`, and may leave `ReturnAddress` 0. When `ReturnAddress` is 0 and `StackPointer` is set, the return address is the R2R virtual IP of the frame at `StackPointer` (native `FramedMethodFrame::GetTransitionBlock_Impl`). When `StackPointer` is set and a return address is known, the caller's SP is `StackPointer` and its FP is the WASM logical frame pointer at `StackPointer` (native `TransitionFrame::GetSP`); otherwise the SP is the end of the TransitionBlock and the FP is null. This also applies when the interpreted chain under an `InterpreterFrame` is exhausted and the walker applies the `InterpreterFrame`'s transition.
 
-**WASM logical frame pointer.** R2R frames on WASM keep a record on the linear stack: the function-table index, then the function-local virtual IP / 2. Unwinding one frame (`WasmContext.Unwind`) adds the function's frame size from its unwind data to the frame base, and sets the caller's FP as native `GetWasmFramePointerFromStackPointer` does. For a method, the FP is its own frame base. For a funclet (its `RUNTIME_FUNCTION.BeginAddress` has bit 31 set), the FP is the establishing method's frame. The walker unwinds out of the funclet: if the caller slot holds the `TERMINATE_R2R_STACK_WALK` marker, the funclet was invoked by the VM through `CallFuncletWith[out]Throwable`, and the establishing frame pointer is stored one pointer after the marker. Otherwise the funclet was called by its parent method or funclet, and the walker repeats from there. Each step must move toward the caller, or the frame pointer is unknown (null).
+**WASM logical frame pointer.** R2R frames on WASM keep a record on the linear stack: the function-table index, then the function-local virtual IP / 2. Unwinding one frame (`WasmUnwinder.Unwind`) adds the function's frame size from its unwind data to the frame base, and sets the caller's FP as native `GetWasmFramePointerFromStackPointer` does. For a method, the FP is its own frame base. For a funclet (its `RUNTIME_FUNCTION.BeginAddress` has bit 31 set), the FP is the establishing method's frame. The walker unwinds out of the funclet: if the caller slot holds the `TERMINATE_R2R_STACK_WALK` marker, the funclet was invoked by the VM through `CallFuncletWith[out]Throwable`, and the establishing frame pointer is stored one pointer after the marker. Otherwise the funclet was called by its parent method or funclet, and the walker repeats from there. Each step must move toward the caller, or the frame pointer is unknown (null).
+
+Like native `RtlVirtualUnwind`, unwinding a WASM R2R frame always advances SP to the caller's stack pointer. The caller's IP and FP are null when the caller is not R2R code: when no R2R virtual IP can be read at the caller's SP, or when the frame being unwound has a reverse P/Invoke frame in its GC info (`GCInfoHeader.HasReversePInvokeFrame`) and is not a funclet. A reverse P/Invoke frame's caller is native code, so its stack bytes are never read as an R2R frame. The walker then continues through the explicit Frame chain.
+
+```csharp
+// WasmUnwinder.Unwind: one R2R frame, mirroring native RtlVirtualUnwind / WasmUnwindStackFrameCore.
+void Unwind()
+{
+    TargetPointer frameBase = /* frame base of the R2R frame at SP (frame record: function index, VIP / 2) */;
+    uint functionIndex = target.Read<uint>(frameBase + FunctionIndexOffset);
+    uint frameSize = /* ULEB128 at the start of the function's unwind data */;
+    if (/* no frame at SP, no unwind data, or frameSize == 0 */)
+    {
+        SP = IP = FP = null;  // the walk cannot advance
+        return;
+    }
+
+    SP = frameBase + frameSize;
+    bool callerIsNative = IP != null
+        && !IsFunclet(functionIndex)
+        && GCInfo.GetHeader(/* GC info of the code block containing IP */).HasReversePInvokeFrame;
+    IP = callerIsNative ? null : /* R2R virtual IP at SP, or null if SP has no R2R frame record */;
+    FP = IP != null ? /* WASM logical frame pointer at SP */ : null;
+}
+```
 
 **Return Address**: Read from `TransitionBlock.ReturnAddress`. On WASM, it is derived from `TransitionBlock.StackPointer` when it is 0, as above. For an x86 `StubDispatchFrame` with neither a method nor a GCRefMap, subtract five bytes to return the adjusted call address, matching the context update.
 
