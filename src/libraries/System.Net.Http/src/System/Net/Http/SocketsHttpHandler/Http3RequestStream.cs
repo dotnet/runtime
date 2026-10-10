@@ -300,6 +300,7 @@ namespace System.Net.Http
                         throw new HttpRequestException(HttpRequestError.Unknown, SR.net_http_retry_on_older_version, ex, RequestRetryType.RetryOnLowerHttpVersion);
 
                     case Http3ErrorCode.RequestRejected:
+                        if (NetEventSource.Log.IsEnabled()) Trace($"HTTP3 retry path: peer H3_REQUEST_REJECTED. Exception: {ex}");
                         // The server is rejecting the request without processing it, retry it on a different connection.
                         HttpProtocolException rejectedException = HttpProtocolException.CreateHttp3StreamException(code, ex);
                         throw new HttpRequestException(HttpRequestError.HttpProtocolError, SR.net_http_request_aborted, rejectedException, RequestRetryType.RetryOnConnectionFailure);
@@ -353,6 +354,7 @@ namespace System.Net.Http
                 else
                 {
                     Debug.Assert(_requestBodyCancellationSource.IsCancellationRequested);
+                    if (NetEventSource.Log.IsEnabled()) Trace($"HTTP3 retry path: internal cancellation; callerCanceled={cancellationToken.IsCancellationRequested}. Exception: {ex}");
                     throw new HttpRequestException(HttpRequestError.Unknown, SR.net_http_request_aborted, ex, RequestRetryType.RetryOnConnectionFailure);
                 }
             }

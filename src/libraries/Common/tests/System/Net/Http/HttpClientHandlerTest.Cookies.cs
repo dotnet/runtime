@@ -296,16 +296,35 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
+        protected virtual Action<string> CookieRedirectLog => null;
+        protected virtual GenericLoopbackOptions CookieRedirectOptions => null;
+
         [Fact]
         [SkipOnPlatform(TestPlatforms.Browser, "CookieContainer is not supported on Browser")]
-        public async Task GetAsyncWithRedirect_SetCookieContainer_CorrectCookiesSent()
+        public virtual async Task GetAsyncWithRedirect_SetCookieContainer_CorrectCookiesSent()
         {
             const string path1 = "/foo";
             const string path2 = "/bar";
             const string unusedPath = "/unused";
+            Action<string> log = CookieRedirectLog;
+            Task clientTask = null;
+            Task serverTask = null;
 
-            await LoopbackServerFactory.CreateClientAndServerAsync(async url =>
+            try
             {
+                await LoopbackServerFactory.CreateClientAndServerAsync(
+                    url => clientTask = RunClientAsync(url),
+                    server => serverTask = RunServerAsync(server),
+                    options: CookieRedirectOptions);
+            }
+            finally
+            {
+                log?.Invoke($"Factory finished: client={clientTask?.Status}, server={serverTask?.Status}. Fault aggregation includes up to 3 seconds of grace after the first fault.");
+            }
+
+            async Task RunClientAsync(Uri url)
+            {
+                log?.Invoke("Client: configuring cookies for initial and redirected paths.");
                 Uri url1 = new Uri(url, path1);
                 Uri url2 = new Uri(url, path2);
                 Uri unusedUrl = new Uri(url, unusedPath);
@@ -319,17 +338,46 @@ namespace System.Net.Http.Functional.Tests
                 using (HttpClient client = CreateHttpClient(handler))
                 {
                     client.DefaultRequestHeaders.ConnectionClose = true; // to avoid issues with connection pooling
-                    await client.GetAsync(url1);
+                    try
+                    {
+                        log?.Invoke("Client: starting initial GET and automatic redirect.");
+                        await client.GetAsync(url1);
+                        log?.Invoke("Client: redirected GET completed.");
+                    }
+                    catch (Exception exception) when (log is not null)
+                    {
+                        log($"Client failed before disposal and combinator grace: {exception}");
+                        throw;
+                    }
+                    finally
+                    {
+                        log?.Invoke("Client: disposing HttpClient.");
+                    }
                 }
-            },
-            async server =>
-            {
-                HttpRequestData requestData1 = await server.HandleRequestAsync(HttpStatusCode.Found, new HttpHeaderData[] { new HttpHeaderData("Location", path2) });
-                Assert.Equal("cookie1=value1", requestData1.GetSingleHeaderValue("Cookie"));
+                log?.Invoke("Client: disposed.");
+            }
 
-                HttpRequestData requestData2 = await server.HandleRequestAsync(content: s_simpleContent);
-                Assert.Equal("cookie2=value2", requestData2.GetSingleHeaderValue("Cookie"));
-            });
+            async Task RunServerAsync(GenericLoopbackServer server)
+            {
+                try
+                {
+                    log?.Invoke("Server: handling initial request with 302.");
+                    HttpRequestData requestData1 = await server.HandleRequestAsync(HttpStatusCode.Found, new HttpHeaderData[] { new HttpHeaderData("Location", path2) });
+                    log?.Invoke("Server: initial request handled; checking cookie.");
+                    Assert.Equal("cookie1=value1", requestData1.GetSingleHeaderValue("Cookie"));
+
+                    log?.Invoke("Server: initial cookie checked; handling redirected request with 200.");
+                    HttpRequestData requestData2 = await server.HandleRequestAsync(content: s_simpleContent);
+                    log?.Invoke("Server: redirected request handled; checking cookie.");
+                    Assert.Equal("cookie2=value2", requestData2.GetSingleHeaderValue("Cookie"));
+                    log?.Invoke("Server: redirected cookie checked.");
+                }
+                catch (Exception exception) when (log is not null)
+                {
+                    log($"Server failed before combinator grace: {exception}");
+                    throw;
+                }
+            }
         }
 
         //
