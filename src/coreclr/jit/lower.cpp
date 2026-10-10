@@ -12289,18 +12289,35 @@ bool Lowering::TryDecomposeBlockStoreAsIndirs(GenTreeBlk* blkNode)
     var_types       srcAddrType   = TYP_UNDEF;
     unsigned        srcLclNum     = BAD_VAR_NUM;
     unsigned        srcLclOffs    = 0;
+    GenTreeFlags    srcIndFlags   = GTF_EMPTY;
 
     if (src->OperIs(GT_IND))
     {
         LIR::Use srcAddrUse(BlockRange(), &src->AsIndir()->Addr(), src);
         srcAddrType   = src->AsIndir()->Addr()->TypeGet();
         srcAddrLclNum = srcAddrUse.ReplaceWithLclVar(m_compiler);
+        srcIndFlags   = src->gtFlags & GTF_IND_FLAGS;
     }
     else
     {
         srcLclNum  = src->AsLclVarCommon()->GetLclNum();
         srcLclOffs = src->AsLclVarCommon()->GetLclOffs();
         m_compiler->lvaSetVarDoNotEnregister(srcLclNum DEBUGARG(DoNotEnregisterReason::BlockOp));
+
+        // Fields that cannot be encoded as LCL_FLDs are loaded through the local's address instead.
+        if (!m_compiler->IsValidLclAddr(srcLclNum, srcLclOffs + layout->GetSize() - 1))
+        {
+            src->ChangeOper(GT_LCL_ADDR);
+            src->ChangeType(TYP_I_IMPL);
+            src->AsLclFld()->SetLclOffs(srcLclOffs);
+            src->ClearContained();
+
+            LIR::Use srcAddrUse(BlockRange(), &blkNode->Data(), blkNode);
+            srcAddrType   = TYP_I_IMPL;
+            srcAddrLclNum = srcAddrUse.ReplaceWithLclVar(m_compiler);
+            srcIndFlags   = GTF_IND_NONFAULTING;
+            src           = blkNode->Data();
+        }
     }
 
     auto offsetAddr = [&](unsigned lclNum, var_types lclType, unsigned offset) -> GenTree* {
@@ -12314,13 +12331,12 @@ bool Lowering::TryDecomposeBlockStoreAsIndirs(GenTreeBlk* blkNode)
     };
 
     const GenTreeFlags dstIndFlags = blkNode->gtFlags & GTF_IND_FLAGS;
-    const GenTreeFlags srcIndFlags = src->OperIs(GT_IND) ? (src->gtFlags & GTF_IND_FLAGS) : GTF_EMPTY;
 
     auto emitStore = [&](unsigned offset, var_types scalarType, ClassLayout* runLayout) {
         const var_types valType = (runLayout != nullptr) ? TYP_STRUCT : scalarType;
 
         GenTree* srcVal;
-        if (src->OperIs(GT_IND))
+        if (srcAddrLclNum != BAD_VAR_NUM)
         {
             srcVal = m_compiler->gtNewLoadValueNode(valType, runLayout, offsetAddr(srcAddrLclNum, srcAddrType, offset),
                                                     srcIndFlags);
