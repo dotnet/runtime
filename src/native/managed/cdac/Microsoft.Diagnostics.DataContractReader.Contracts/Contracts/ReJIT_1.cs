@@ -27,6 +27,8 @@ internal readonly struct ReJIT_1 : IReJIT
     {
         kStateRequested = 0x00000000,
 
+        kStateGettingReJITParameters = 0x00000001,
+
         kStateActive = 0x00000002,
 
         kStateMask = 0x0000000F
@@ -55,6 +57,7 @@ internal readonly struct ReJIT_1 : IReJIT
         return ((RejitFlags)ilCodeVersionNode.RejitState & RejitFlags.kStateMask) switch
         {
             RejitFlags.kStateRequested => RejitState.Requested,
+            RejitFlags.kStateGettingReJITParameters => RejitState.GettingReJITParameters,
             RejitFlags.kStateActive => RejitState.Active,
             _ => throw new InvalidOperationException($"Unknown ReJIT state: {ilCodeVersionNode.RejitState}"),
         };

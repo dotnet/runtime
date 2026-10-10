@@ -16,7 +16,7 @@ public class ReJITTests
 {
     private readonly record struct ReJITContractContext(IReJIT ReJIT, Target Target);
 
-    private static Dictionary<DataType, Target.TypeInfo> CreateContractTypes(MockReJITBuilder rejitBuilder)
+    internal static Dictionary<DataType, Target.TypeInfo> CreateContractTypes(MockReJITBuilder rejitBuilder)
         => new()
         {
             [DataType.ProfControlBlock] = TargetTestHelpers.CreateTypeInfo(rejitBuilder.ProfControlBlockLayout),
@@ -119,6 +119,85 @@ public class ReJITTests
         {
             RejitState rejitState = context.ReJIT.GetRejitState(ilCodeVersionHandle);
             Assert.Equal(expectedRejitState, rejitState);
+        }
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetRejitState_GettingReJITParameters_IsReportedNotThrown(MockTarget.Architecture arch)
+    {
+        // RejitFlags::kStateGettingReJITParameters: ReJIT parameter configuration is in progress.
+        ILCodeVersionHandle handle = default;
+        ReJITContractContext context = CreateReJITContract(arch, rejitBuilder =>
+        {
+            handle = ILCodeVersionHandle.CreateExplicit(
+                rejitBuilder.AddExplicitILCodeVersionNode(1, MockReJITBuilder.RejitFlags.kStateGettingReJITParameters).Address);
+        });
+
+        Assert.Equal(RejitState.GettingReJITParameters, context.ReJIT.GetRejitState(handle));
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetRejitIds_SkipsVersionsStillGettingReJITParameters(MockTarget.Architecture arch)
+    {
+        Mock<ICodeVersions> codeVersions = new();
+        List<ILCodeVersionHandle> handles = [];
+        ReJITContractContext context = CreateReJITContract(arch, rejitBuilder =>
+        {
+            handles.Add(ILCodeVersionHandle.CreateExplicit(rejitBuilder.AddExplicitILCodeVersionNode(1, MockReJITBuilder.RejitFlags.kStateActive).Address));
+            handles.Add(ILCodeVersionHandle.CreateExplicit(rejitBuilder.AddExplicitILCodeVersionNode(2, MockReJITBuilder.RejitFlags.kStateGettingReJITParameters).Address));
+        }, mockCodeVersions: codeVersions);
+        TargetPointer methodDesc = new(0x0101_aaa0);
+        codeVersions.Setup(cv => cv.GetILCodeVersions(methodDesc)).Returns(handles);
+        foreach (ILCodeVersionHandle handle in handles)
+            codeVersions.Setup(cv => cv.GetSource(handle)).Returns(CodeVersionSource.ReJIT);
+
+        Assert.Equal([new TargetNUInt(1)], context.ReJIT.GetRejitIds(context.Target, methodDesc).ToList());
+    }
+
+    // Every value of the state nibble (RejitFlags::kStateMask), with the flag bits above it (kSuppressParams and
+    // seeded arbitrary bits): the defined states map regardless of the flags, any other nibble value is rejected.
+    public static IEnumerable<object[]> StateNibbleCases()
+    {
+        Random random = new(135450);
+        uint[] flagBits = [0, (uint)MockReJITBuilder.RejitFlags.kSuppressParams, (uint)random.Next() & ~0xFu, (uint)random.Next() & ~0xFu];
+        foreach (object[] arch in new MockTarget.StdArch())
+        {
+            foreach (uint flags in flagBits)
+            {
+                for (uint state = 0; state <= 0xF; state++)
+                {
+                    yield return [arch[0], state | flags];
+                }
+            }
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(StateNibbleCases))]
+    public void GetRejitState_MapsTheStateNibbleAndIgnoresFlagBits(MockTarget.Architecture arch, uint rawRejitState)
+    {
+        ILCodeVersionHandle handle = default;
+        ReJITContractContext context = CreateReJITContract(arch, rejitBuilder =>
+        {
+            handle = ILCodeVersionHandle.CreateExplicit(rejitBuilder.AddExplicitILCodeVersionNode(1, (MockReJITBuilder.RejitFlags)rawRejitState).Address);
+        });
+
+        RejitState? expected = (rawRejitState & 0xF) switch
+        {
+            0 => RejitState.Requested,
+            1 => RejitState.GettingReJITParameters,
+            2 => RejitState.Active,
+            _ => null,
+        };
+        if (expected is RejitState state)
+        {
+            Assert.Equal(state, context.ReJIT.GetRejitState(handle));
+        }
+        else
+        {
+            Assert.Throws<InvalidOperationException>(() => context.ReJIT.GetRejitState(handle));
         }
     }
 
