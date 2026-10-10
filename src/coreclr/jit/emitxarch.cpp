@@ -7178,7 +7178,7 @@ void emitter::emitIns_R_I(instruction         ins,
 #ifdef TARGET_AMD64
     // mov reg, imm64 is the only opcode which takes a full 8 byte immediate
     // all other opcodes take a sign-extended 4-byte immediate
-    noway_assert(size < EA_8BYTE || ins == INS_mov || ((int)val == val && !EA_IS_CNS_RELOC(attr)));
+    noway_assert(size < EA_8BYTE || ins == INS_mov || (FitsIn<int32_t>(val) && !EA_IS_CNS_RELOC(attr)));
 #endif
 
     UNATIVE_OFFSET sz;
@@ -7209,7 +7209,15 @@ void emitter::emitIns_R_I(instruction         ins,
 
             if (size > EA_4BYTE)
             {
-                sz = 9; // Really it is 10, but we'll add one more later
+                // Really it is 7 and 10, but we'll add one more later
+                if (FitsIn<int32_t>(val) && !EA_IS_CNS_RELOC(attr))
+                {
+                    sz = 6; // Sign-extended 4-byte immediate
+                }
+                else
+                {
+                    sz = 9; // Standard 8-byte immediate
+                }
                 break;
             }
 #endif // TARGET_AMD64
@@ -16974,6 +16982,24 @@ BYTE* emitter::emitOutputRI(BYTE* dst, instrDesc* id)
     }
 
     // The 'mov' opcode is special
+    bool isSignExtendingMov = (size == EA_8BYTE) && FitsIn<int32_t>(val) && !id->idIsCnsReloc();
+    if ((ins == INS_mov) && isSignExtendingMov)
+    {
+        // This is INS_mov and will not take VEX prefix
+        assert(!TakesVexPrefix(ins));
+
+        // Move imm32 sign extended to 64-bit register: mov r/m64, imm32
+        code = insCodeMI(ins) | 0x1; // C7
+        code = AddX86PrefixIfNeededAndNotPresent(id, code, size);
+        code = insEncodeMIreg(id, reg, size, code);
+        code = AddRexWPrefix(id, code);
+
+        dst += emitOutputRexOrSimdPrefixIfNeeded(ins, dst, code);
+        dst += emitOutputWord(dst, code);
+        dst += emitOutputLong(dst, val);
+
+        goto DONE;
+    }
     if (ins == INS_mov)
     {
         code = insCodeACC(ins);
@@ -17305,7 +17331,7 @@ BYTE* emitter::emitOutputIV(BYTE* dst, instrDesc* id)
 
 #ifdef TARGET_AMD64
     // all these opcodes take a sign-extended 4-byte immediate, max
-    noway_assert(size < EA_8BYTE || ((int)val == val && !id->idIsCnsReloc()));
+    noway_assert(size < EA_8BYTE || (FitsIn<int32_t>(val) && !id->idIsCnsReloc()));
 #endif
 
     if (id->idIsCnsReloc())
