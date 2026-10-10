@@ -123,7 +123,35 @@ if [[ "$host_arch" == "wasm" ]]; then
     fi
 fi
 
+# CMake detects the compiler only on a build directory's first configure. Later configures keep the
+# cached compiler even when the toolchain file, CC/CXX or a cmake wrapper such as emcmake now select a
+# different one, for example a new SDK version in the versioned wasm tool cache. Record those inputs
+# next to the cache and reconfigure from scratch when they change.
+compiler_inputs="CMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE:-}"$'\n'"CC=${CC:-}"$'\n'"CXX=${CXX:-}"
+for arg in $cmake_extra_defines "${__UnprocessedCMakeArgs[@]}" "${cmake_extra_defines_wasm[@]}"; do
+    case "$arg" in
+        -DCMAKE_TOOLCHAIN_FILE=*|-DCMAKE_TOOLCHAIN_FILE:*=*) compiler_inputs+=$'\n'"$arg" ;;
+    esac
+done
+# The compiler's version, which changes when the compiler behind an unchanged path is replaced, e.g. by an
+# Xcode update (/usr/bin/clang is a shim) or a distro package upgrade.
+if [[ -n "${CC:-}" ]]; then
+    compiler_inputs+=$'\n'"$("$CC" --version 2>/dev/null | head -n 1)"
+fi
+# The cmake command, including any wrapper such as emcmake or scan-build, resolved to full paths.
+for tool in $cmake_command; do
+    compiler_inputs+=$'\n'"$(command -v "$tool" || echo "$tool")"
+done
+
+compiler_inputs_file="$2/cmake_compiler_inputs.txt"
+cmake_fresh=()
+if [[ -f "$2/CMakeCache.txt" && "$(cat "$compiler_inputs_file" 2>/dev/null)" != "$compiler_inputs" ]]; then
+    echo "CMake compiler inputs changed since $2 was last configured; reconfiguring from scratch."
+    cmake_fresh=("--fresh")
+fi
+
 $cmake_command \
+  "${cmake_fresh[@]}" \
   --no-warn-unused-cli \
   -G "$generator" \
   "-DCMAKE_BUILD_TYPE=$buildtype" \
@@ -132,6 +160,7 @@ $cmake_command \
   "${__UnprocessedCMakeArgs[@]}" \
   "${cmake_extra_defines_wasm[@]}" \
   -S "$1" \
-  -B "$2"
+  -B "$2" \
+  && printf '%s\n' "$compiler_inputs" > "$compiler_inputs_file"
 
 # don't add anything after this line so the cmake exit code gets propagated correctly

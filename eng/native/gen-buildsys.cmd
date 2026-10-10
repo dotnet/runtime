@@ -36,6 +36,8 @@ setlocal enabledelayedexpansion
 
 set __SourceDir=%1
 set __IntermediatesDir=%2
+set "__IntermediatesDirPath=%~2"
+set "__CompilerInputs=CMAKE_TOOLCHAIN_FILE=!CMAKE_TOOLCHAIN_FILE!;CC=!CC!;CXX=!CXX!;VCToolsInstallDir=!VCToolsInstallDir!"
 set __VSVersion=%3
 set __Arch=%4
 set __CmakeGenerator=Visual Studio
@@ -62,7 +64,9 @@ if /i "%__Arch%" == "wasm" (
         exit /B 1
     )
     if /i "%__Os%" == "browser" (
-        set CMakeToolPrefix=emcmake
+        rem emcmake may be a batch file; call it so that control returns to this script.
+        set "CMakeToolPrefix=call emcmake"
+        for %%i in (emcmake.exe emcmake.bat) do set "__CompilerInputs=!__CompilerInputs!;%%i=%%~$PATH:i"
         rem Use WASM-specific tryrun cache to speed up CMake configure
         set __ExtraCmakeParams="-C %__repoRoot%/eng/native/tryrun.browser.cmake" !__ExtraCmakeParams!
     )
@@ -76,6 +80,7 @@ if /i "%__Arch%" == "wasm" (
             set "WASI_SDK_PATH=!WASM_TOOL_CACHE_RESULT!"
         )
         set __CmakeGenerator=Ninja
+        set "__CompilerInputs=!__CompilerInputs!;-DCMAKE_TOOLCHAIN_FILE=!WASI_SDK_PATH!/share/cmake/wasi-sdk-p2.cmake"
         set __ExtraCmakeParams=%__ExtraCmakeParams% -DCLR_CMAKE_TARGET_OS=wasi "-DCMAKE_TOOLCHAIN_FILE=!WASI_SDK_PATH!/share/cmake/wasi-sdk-p2.cmake"
     )
 ) else (
@@ -106,11 +111,15 @@ if /i "%__Os%" == "android" (
         set __ExtraCmakeParams=!__ExtraCmakeParams! "-DANDROID_ABI=armeabi-v7a"
     )
 
+    set "__CompilerInputs=!__CompilerInputs!;-DCMAKE_TOOLCHAIN_FILE=%ANDROID_NDK_ROOT%/build/cmake/android.toolchain.cmake"
     set __ExtraCmakeParams=!__ExtraCmakeParams! "-DCMAKE_TOOLCHAIN_FILE='%ANDROID_NDK_ROOT:\=/%/build/cmake/android.toolchain.cmake'" "-C %__repoRoot%/eng/native/tryrun.cmake"
 )
 
 :loop
 if [%6] == [] goto end_loop
+set "__CurrentArg=%~6"
+if /i "!__CurrentArg:~0,23!" == "-DCMAKE_TOOLCHAIN_FILE=" set "__CompilerInputs=!__CompilerInputs!;!__CurrentArg!"
+if /i "!__CurrentArg:~0,23!" == "-DCMAKE_TOOLCHAIN_FILE:" set "__CompilerInputs=!__CompilerInputs!;!__CurrentArg!"
 set __ExtraCmakeParams=%__ExtraCmakeParams% %6
 shift
 goto loop
@@ -118,9 +127,27 @@ goto loop
 
 set __ExtraCmakeParams="-DCMAKE_INSTALL_PREFIX=%__CMakeBinDir%" "-DCLR_CMAKE_HOST_ARCH=%__Arch%" %__ExtraCmakeParams%
 
+rem CMake detects the compiler only on a build directory's first configure. Later configures keep the
+rem cached compiler even when the toolchain file, CC/CXX, the MSVC toolset or emcmake now select a
+rem different one, for example a new SDK version in the versioned wasm tool cache. Record those inputs
+rem next to the cache and reconfigure from scratch when they change.
+set "__CompilerInputs=!__CompilerInputs:"=!"
+set "__CompilerInputsFile=!__IntermediatesDirPath!\cmake_compiler_inputs.txt"
+set __CMakeFreshArg=
+if exist "!__IntermediatesDirPath!\CMakeCache.txt" (
+    >"!__CompilerInputsFile!.new" echo(!__CompilerInputs!
+    rem fc also fails when there is no record yet.
+    fc /b "!__CompilerInputsFile!" "!__CompilerInputsFile!.new" >nul 2>&1
+    if errorlevel 1 (
+        echo CMake compiler inputs changed since !__IntermediatesDirPath! was last configured; reconfiguring from scratch.
+        set __CMakeFreshArg=--fresh
+    )
+    del "!__CompilerInputsFile!.new" 2>nul
+)
+
 set __CmdLineOptionsUpToDateFile=%__IntermediatesDir%\cmake_cmd_line.txt
 set __CMakeCmdLineCache=
-if not "%__ConfigureOnly%" == "1" (
+if not "%__ConfigureOnly%" == "1" if "%__CMakeFreshArg%" == "" (
     REM MSBuild can't reload from a CMake reconfigure during build correctly, so only do this
     REM command-line up to date check for non-VS generators.
     if "%__CmakeGenerator:Visual Studio=%" == "%__CmakeGenerator%" (
@@ -137,11 +164,12 @@ if not "%__ConfigureOnly%" == "1" (
     )
 )
 
-echo %CMakeToolPrefix% "%CMakePath% %__ExtraCmakeParams% --no-warn-unused-cli -G %__CmakeGenerator% -B %__IntermediatesDir% -S %__SourceDir%"
-%CMakeToolPrefix% "%CMakePath%" %__ExtraCmakeParams% --no-warn-unused-cli -G "%__CmakeGenerator%" -B %__IntermediatesDir% -S %__SourceDir%
+echo %CMakeToolPrefix% "%CMakePath% %__CMakeFreshArg% %__ExtraCmakeParams% --no-warn-unused-cli -G %__CmakeGenerator% -B %__IntermediatesDir% -S %__SourceDir%"
+%CMakeToolPrefix% "%CMakePath%" %__CMakeFreshArg% %__ExtraCmakeParams% --no-warn-unused-cli -G "%__CmakeGenerator%" -B %__IntermediatesDir% -S %__SourceDir%
 
 if "%errorlevel%" == "0" (
     echo %__ExtraCmakeParams% > %__CmdLineOptionsUpToDateFile%
+    >"!__CompilerInputsFile!" echo(!__CompilerInputs!
 )
 
 endlocal
