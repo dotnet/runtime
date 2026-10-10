@@ -40,12 +40,13 @@ namespace System
         }
 
         /// <summary>
-        /// Creates a new array of the specified length, filled with the given value.
+        /// Creates a new array of the specified length, with each element initialized to the specified value.
         /// </summary>
-        /// <param name="length">Required lenght of the array.</param>
-        /// <param name="value">Value to be filled in the array.</param>
-        /// <typeparam name="T">Type of the result array.</typeparam>
-        /// <returns>Array with the specified length initialized with the result from the factory function.</returns>
+        /// <param name="length">The length of the array.</param>
+        /// <param name="value">The value with which to initialize each element.</param>
+        /// <typeparam name="T">The type of the elements in the array.</typeparam>
+        /// <returns>A new array of the specified length, with each element initialized to <paramref name="value"/>.</returns>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="length"/> is negative.</exception>
         public static T[] CreateFilled<T>(int length, T value)
         {
             ArgumentOutOfRangeException.ThrowIfNegative(length);
