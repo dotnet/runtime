@@ -1,0 +1,10 @@
+<Project>
+  <PropertyGroup>
+    <BrowserWasmMibcPackageVersion>1.0.0-prerelease.26501.1</BrowserWasmMibcPackageVersion>
+    <BrowserWasmMibcProfile>$([MSBuild]::NormalizePath('$(NuGetPackageRoot)', 'optimization.browser-wasm.mibc.runtime', '$(BrowserWasmMibcPackageVersion)', 'data', 'DotNet_Blazor_Wasm.mibc'))</BrowserWasmMibcProfile>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageDownload Include="optimization.browser-wasm.MIBC.Runtime"
+                     Version="[$(BrowserWasmMibcPackageVersion)]" />
+  </ItemGroup>
+</Project>
