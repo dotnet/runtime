@@ -133,6 +133,8 @@
              Link="System\IO\PathInternal.Unix.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.PathConf.cs"
              Link="Common\Interop\Unix\Interop.PathConf.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetPwUid.cs"
+             Link="Common\Interop\Unix\Interop.GetPwUid.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MountPoints.FormatInfo.cs"
              Link="Common\Interop\Unix\System.Native\Interop.MountPoints.FormatInfo.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.RealPath.cs"
@@ -145,6 +147,7 @@
              Link="Common\Interop\Unix\Interop.Libraries.cs" />
     <Compile Include="$(CoreLibSharedDir)System\PasteArguments.Unix.cs"
              Link="System\PasteArguments.Unix.cs" />
+    <Compile Include="Tests\Interop\GetPwUidTests.cs" />
   </ItemGroup>
   <!-- Linux and browser specific files -->
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'linux' or '$(TargetPlatformIdentifier)' == 'browser'">
