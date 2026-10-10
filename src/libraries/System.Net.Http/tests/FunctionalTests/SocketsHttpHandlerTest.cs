@@ -4772,7 +4772,7 @@ namespace System.Net.Http.Functional.Tests
             await new[] { serverTask, clientTask }.WhenAllOrAnyFailed(60_000);
         }
 
-        [ConditionalTheory(typeof(SocketsHttpHandlerTest_ConnectCallback), nameof(PlatformSupportsUnixDomainSockets))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.SupportsUnixDomainSocketBinding))]
         [InlineData(true)]
         [InlineData(false)]
         public async Task ConnectCallback_UseUnixDomainSocket_Success(bool useSsl)
@@ -4780,7 +4780,13 @@ namespace System.Net.Http.Functional.Tests
             GenericLoopbackOptions options = new GenericLoopbackOptions() { UseSsl = useSsl };
 
             string guid = $"{Guid.NewGuid():N}";
-            string socketPath = Path.Combine(Path.GetTempPath(), guid);
+            string socketDirectory = PlatformDetection.UnixDomainSocketDirectory;
+            if (PlatformDetection.IsiOS || PlatformDetection.IstvOS)
+            {
+                // Keep the name short for app container paths, and avoid an all-numeric URI host.
+                guid = "s" + guid.Substring(0, 7);
+            }
+            string socketPath = Path.Combine(socketDirectory, guid);
             UnixDomainSocketEndPoint serverEP = new UnixDomainSocketEndPoint(socketPath);
             using Socket listenSocket = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
             listenSocket.Bind(serverEP);
@@ -4793,7 +4799,7 @@ namespace System.Net.Http.Functional.Tests
                 socketsHandler.ConnectCallback = async (context, token) =>
                 {
                     string hostname = context.DnsEndPoint.Host;
-                    UnixDomainSocketEndPoint clientEP = new UnixDomainSocketEndPoint(Path.Combine(Path.GetTempPath(), hostname));
+                    UnixDomainSocketEndPoint clientEP = new UnixDomainSocketEndPoint(Path.Combine(socketDirectory, hostname));
 
                     Socket clientSocket = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
                     await clientSocket.ConnectAsync(clientEP);
@@ -5226,8 +5232,6 @@ namespace System.Net.Http.Functional.Tests
 
             await TestHelper.WhenAllCompletedOrAnyFailedWithTimeout(GenericLoopbackServer.LoopbackServerTimeoutMilliseconds, clientTask, serverTask);
         }
-
-        private static bool PlatformSupportsUnixDomainSockets => Socket.OSSupportsUnixDomainSockets;
 
         private sealed class ReadAheadStream : DelegatingStream
         {

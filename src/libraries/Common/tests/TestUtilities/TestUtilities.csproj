@@ -30,6 +30,7 @@
     <Compile Include="System\AssemblyPathHelper.cs" />
     <!-- We don't compile per but and instead use runtime platform checks. -->
     <Compile Include="System\PlatformDetection.cs" />
+    <Compile Include="System\PlatformDetection.Sockets.cs" />
     <Compile Include="System\PlatformDetection.Unix.cs" />
     <Compile Include="System\PlatformDetection.Windows.cs" />
     <Compile Include="System\WindowsIdentityFixture.cs" />
