@@ -6556,10 +6556,12 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
                 GenTree** operands[] = {&arr, &index, &value};
                 for (GenTree** operand : operands)
                 {
-                    TempInfo temp  = fgMakeTemp(*operand);
-                    *operand       = temp.load;
-                    GenTree* setup = fgMorphTree(temp.store);
-                    argSetup       = argSetup == nullptr ? setup : gtNewOperNode(GT_COMMA, TYP_VOID, argSetup, setup);
+                    TempInfo temp = fgMakeTemp(*operand);
+                    *operand      = temp.load;
+                    // The operand is already morphed and may have generated assertions.
+                    fgMorphTreeDone(temp.store);
+                    argSetup =
+                        argSetup == nullptr ? temp.store : gtNewOperNode(GT_COMMA, TYP_VOID, argSetup, temp.store);
                 }
             }
 
