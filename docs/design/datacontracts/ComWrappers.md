@@ -204,3 +204,41 @@ public TargetPointer GetComWrappersRCWForObject(TargetPointer obj)
     return rcw;
 }
 ```
+
+## Version 2
+
+Version 2 supports RCWs deriving from `System.Runtime.InteropServices.ComWrappersObject`.
+All APIs except `GetComWrappersRCWForObject` retain the Version 1 algorithms.
+
+<!-- BEGIN GENERATED: usage contract=ComWrappers version=c2 diff-from=c1 -->
+### Data descriptor changes from `c1`
+
+| Change | Data Descriptor | Field | Type | Meaning |
+| --- | --- | --- | --- | --- |
+| Added | `System.Runtime.InteropServices.ComWrappersObject` | `_nativeObjectWrapper` | `pointer` | NativeObjectWrapper associated directly with an RCW deriving from ComWrappersObject |
+
+### Global variable changes from `c1`
+
+_No changes._
+
+### Contract dependency changes from `c1`
+
+| Change | Contract Name |
+| --- | --- |
+| Added | `RuntimeTypeSystem` |
+<!-- END GENERATED: usage contract=ComWrappers version=c2 diff-from=c1 -->
+
+### Additional managed types used
+
+| Fully-qualified name | Module | Members read | Purpose |
+| --- | --- | --- | --- |
+| `System.Runtime.InteropServices.ComWrappersObject` | `System.Private.CoreLib` | `_nativeObjectWrapper` | Stores the RCW association directly on objects deriving from this type |
+
+`GetComWrappersRCWForObject` first attempts to resolve the loaded
+`ComWrappersObject` type using `ManagedTypeSource`. If the type is loaded, it walks
+the object's MethodTable parent chain using `RuntimeTypeSystem`. For an object
+deriving from that type, it reads and returns `_nativeObjectWrapper`, including
+null when the object has not been registered as an RCW.
+
+For other objects, or when the base type has not been loaded, it uses the
+Version 1 lookup in `ComWrappers.s_nativeObjectWrapperTable`.

@@ -1,0 +1,63 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System.Runtime.Versioning;
+using System.Threading;
+
+namespace System.Runtime.InteropServices
+{
+    /// <summary>
+    /// Provides an optional base type for objects returned from <see cref="ComWrappers.CreateObject(IntPtr, CreateObjectFlags)"/>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Deriving from this type is not required, but it allows <see cref="ComWrappers"/> to store the state it associates
+    /// with an object in the object itself. Otherwise, that state is kept in a table keyed on the object, which requires
+    /// a hash code for every object that is wrapped. Assigning one is a significant part of the cost of creating a wrapper.
+    /// </para>
+    /// <para>
+    /// This type has no members other than its constructor, and it imposes no requirements on derived types beyond the
+    /// ones that already apply to any object returned from <see cref="ComWrappers.CreateObject(IntPtr, CreateObjectFlags)"/>,
+    /// with one exception: the state lives in a field, so <see cref="object.MemberwiseClone"/> copies it. A shallow copy of
+    /// a wrapper refers to the same native object as the original and also copies its cached COM representation.
+    /// That COM representation refers back to the original managed object, not the copy. Derived types that support
+    /// cloning should construct a new instance instead of using <see cref="object.MemberwiseClone"/>.
+    /// </para>
+    /// </remarks>
+    [UnsupportedOSPlatform("android")]
+    [UnsupportedOSPlatform("browser")]
+    [UnsupportedOSPlatform("ios")]
+    [UnsupportedOSPlatform("tvos")]
+    public abstract class ComWrappersObject
+    {
+        /// <summary>
+        /// The <see cref="ComWrappers.NativeObjectWrapper"/> tracking the native object this instance wraps, if it has
+        /// been registered with a <see cref="ComWrappers"/> instance.
+        /// </summary>
+        /// <remarks>
+        /// This takes the place of the entry that would otherwise be in <c>ComWrappers.s_nativeObjectWrapperTable</c>,
+        /// and it has the same lifetime: the wrapper is kept alive for exactly as long as the object it tracks is.
+        /// It is only ever assigned through <see cref="Interlocked.CompareExchange{T}(ref T, T, T)"/>, so that the
+        /// first registration wins, as it would in the table.
+        /// </remarks>
+        internal ComWrappers.NativeObjectWrapper? _nativeObjectWrapper;
+
+        /// <summary>
+        /// A cached COM representation of this instance, owned by one <see cref="ComWrappers"/> instance.
+        /// </summary>
+        /// <remarks>
+        /// Unlike <see cref="_nativeObjectWrapper"/> this is only a cache, not the record itself. The table it
+        /// shortcuts belongs to a single <see cref="ComWrappers"/> instance rather than being global, so an object
+        /// can have one of these per instance. Concurrent initial writers may cache either owner's representation;
+        /// every reader checks the owner and finds other representations in the table.
+        /// </remarks>
+        internal ComWrappers.ManagedObjectWrapperHolder? _managedObjectWrapper;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ComWrappersObject"/> class.
+        /// </summary>
+        protected ComWrappersObject()
+        {
+        }
+    }
+}

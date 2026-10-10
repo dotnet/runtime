@@ -77,6 +77,9 @@ private:
 public:
     OBJECTREF _wrappedObject;
     DPTR(InteropLib::ABI::ManagedObjectWrapperLayout) _wrapper;
+    // Identifies the ComWrappers instance that created this wrapper. Unused natively, but the managed and
+    // native declarations of this type must agree on size, which CoreLibBinder verifies on startup.
+    uintptr_t _comWrappersId;
     friend struct ::cdac_data<ManagedObjectWrapperHolderObject>;
 };
 
