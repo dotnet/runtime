@@ -97,7 +97,7 @@ ASMCONSTANTS_C_ASSERT(VASigCookie__pPInvokeILStub == offsetof(VASigCookie, pPInv
 ASMCONSTANTS_C_ASSERT(SIZEOF__Frame == sizeof(Frame));
 
 #if !defined(HOST_WINDOWS)
-#define SIZEOF__CONTEXT               0x3e0
+#define SIZEOF__CONTEXT               0x3a0
 #else
 #define SIZEOF__CONTEXT               0x390
 #endif
