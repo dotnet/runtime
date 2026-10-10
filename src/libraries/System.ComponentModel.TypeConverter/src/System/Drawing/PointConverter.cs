@@ -44,8 +44,8 @@ namespace System.Drawing
                 }
 
                 TypeConverter converter = TypeDescriptor.GetConverterTrimUnsafe(typeof(int));
-                int x = (int)converter.ConvertFromString(context, culture, strValue[ranges[0]])!;
-                int y = (int)converter.ConvertFromString(context, culture, strValue[ranges[1]])!;
+                int x = (int)converter.ConvertFromString(context, culture, text[ranges[0]].ToString())!;
+                int y = (int)converter.ConvertFromString(context, culture, text[ranges[1]].ToString())!;
 
                 return new Point(x, y);
             }
