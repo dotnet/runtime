@@ -10,8 +10,8 @@
 // pointers, guarded devirtualization candidates, or runtime lookup with dynamic dictionary expansion.
 // These transformations introduce control flow and so can't easily be done in the importer.
 //
-// A fat function pointer is a pointer with the second least significant bit
-// (aka FAT_POINTER_MASK) set. If the bit is set, the pointer (after clearing the bit)
+// A fat function pointer is a pointer with the FAT_POINTER_MASK bit set.
+// If the bit is set, the pointer (after clearing the bit)
 // actually points to a tuple <method pointer, instantiation argument> where
 // instantiationArgument is a hidden first argument required by method pointer.
 //
@@ -547,7 +547,11 @@ private:
         }
 
     private:
+#ifdef TARGET_WASM
+        const int FAT_POINTER_MASK = 0x80000000;
+#else
         const int FAT_POINTER_MASK = 0x2;
+#endif
 
         GenTree*  m_fptrAddress;
         var_types m_pointerType;
