@@ -15,6 +15,30 @@ typedef struct _PROCESS_BASIC_INFORMATION_ {
 } PROCESS_BASIC_INFORMATION_;
 
 //
+// Writes the dump, retrying on ERROR_PARTIAL_COPY
+//
+static bool
+WriteDump(HANDLE hProcess, int pid, HANDLE hFile, MINIDUMP_TYPE dumpType, PMINIDUMP_EXCEPTION_INFORMATION pExceptionInfo)
+{
+    int retryCount = 10;
+    for (int i = 0; i <= retryCount; i++)
+    {
+        if (MiniDumpWriteDump(hProcess, pid, hFile, dumpType, pExceptionInfo, NULL, NULL))
+        {
+            return true;
+        }
+        int err = GetLastError();
+        if (err != ERROR_PARTIAL_COPY || i == retryCount)
+        {
+            printf_error("MiniDumpWriteDump - %s\n", GetLastErrorString().c_str());
+            return false;
+        }
+        printf_error("Retry %d of MiniDumpWriteDump due to - %s\n", i, GetLastErrorString().c_str());
+    }
+    return false;
+}
+
+//
 // The Windows create dump code
 //
 bool
@@ -23,6 +47,8 @@ CreateDump(const CreateDumpOptions& options)
     HANDLE hFile = INVALID_HANDLE_VALUE;
     HANDLE hProcess = NULL;
     bool result = false;
+    MINIDUMP_EXCEPTION_INFORMATION exceptionInfo;
+    PMINIDUMP_EXCEPTION_INFORMATION pExceptionInfo = NULL;
 
     _ASSERTE(options.CreateDump);
     _ASSERTE(!options.CrashReport);
@@ -57,6 +83,19 @@ CreateDump(const CreateDumpOptions& options)
     }
     printf_status("Writing %s for process %d to file %s\n", GetDumpTypeString(options.DumpType), pid, dumpPath.c_str());
 
+    // If the runtime passed the crash context, add an exception stream to the dump. The pointers are read
+    // out of the target process (ClientPointers); they stay valid because the crashing thread waits for
+    // createdump to finish.
+    if (options.CrashThread != 0 && options.ExceptionPointers != 0)
+    {
+        memset(&exceptionInfo, 0, sizeof(exceptionInfo));
+        exceptionInfo.ThreadId = (DWORD)options.CrashThread;
+        exceptionInfo.ExceptionPointers = (PEXCEPTION_POINTERS)(ULONG_PTR)options.ExceptionPointers;
+        exceptionInfo.ClientPointers = TRUE;
+        pExceptionInfo = &exceptionInfo;
+        printf_status("Crashing thread %u exception pointers %016" PRIx64 "\n", exceptionInfo.ThreadId, options.ExceptionPointers);
+    }
+
     hFile = CreateFileA(dumpPath.c_str(), GENERIC_READ | GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
     if (hFile == INVALID_HANDLE_VALUE)
     {
@@ -64,28 +103,14 @@ CreateDump(const CreateDumpOptions& options)
         goto exit;
     }
 
-    int retryCount = 10;
-    // Retry the write dump on ERROR_PARTIAL_COPY
-    for (int i = 0; i <= retryCount; i++)
+    result = WriteDump(hProcess, pid, hFile, GetMiniDumpType(options.DumpType), pExceptionInfo);
+    if (!result && pExceptionInfo != NULL)
     {
-        if (MiniDumpWriteDump(hProcess, pid, hFile, GetMiniDumpType(options.DumpType), NULL, NULL, NULL))
-        {
-            result = true;
-            break;
-        }
-        else
-        {
-            int err = GetLastError();
-            if (err != ERROR_PARTIAL_COPY || i == retryCount)
-            {
-                printf_error("MiniDumpWriteDump - %s\n", GetLastErrorString().c_str());
-                break;
-            }
-            else
-            {
-                 printf_error("Retry %d of MiniDumpWriteDump due to - %s\n", i, GetLastErrorString().c_str());
-            }
-        }
+        // The exception information must never prevent the dump from being written: retry without it.
+        printf_error("Retrying MiniDumpWriteDump without the exception information\n");
+        SetFilePointer(hFile, 0, NULL, FILE_BEGIN);
+        SetEndOfFile(hFile);
+        result = WriteDump(hProcess, pid, hFile, GetMiniDumpType(options.DumpType), NULL);
     }
 
 exit:
