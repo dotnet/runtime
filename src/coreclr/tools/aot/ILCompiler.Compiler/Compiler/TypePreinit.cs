@@ -103,7 +103,7 @@ namespace ILCompiler
 
             if (status.IsSuccessful)
             {
-                var values = new List<KeyValuePair<FieldDesc, ISerializableValue>>();
+                var values = new List<KeyValuePair<FieldDesc, ISerializableValue>>(preinit._fieldValues.Count);
                 foreach (var kvp in preinit._fieldValues)
                     values.Add(new KeyValuePair<FieldDesc, ISerializableValue>(kvp.Key, kvp.Value));
 

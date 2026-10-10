@@ -950,7 +950,7 @@ namespace ILCompiler
             if (owningTypeToGenerateMetadataFor.HasInstantiation
                 && owningType is TypeReference)
             {
-                List<MetadataRecord> genericArgs = new List<MetadataRecord>();
+                List<MetadataRecord> genericArgs = new List<MetadataRecord>(owningTypeToGenerateMetadataFor.Instantiation.Length);
                 foreach (Internal.TypeSystem.Ecma.EcmaGenericParameter genericParam in owningTypeToGenerateMetadataFor.Instantiation)
                 {
                     genericArgs.Add(new TypeReference

@@ -1193,14 +1193,14 @@ namespace Mono.Linker.Dataflow
             bool isNewObj = operation.OpCode.Code == Code.Newobj;
 
             ValueNodeList methodArguments = PopCallArguments(currentStack, calledMethod, callingMethodIL, isNewObj, operation.Offset);
-            var dereferencedMethodParams = new List<MultiValue>();
+            var dereferencedMethodParams = new ValueNodeList(methodArguments.Count);
             foreach (var argument in methodArguments)
                 dereferencedMethodParams.Add(DereferenceValue(argument, locals, ref interproceduralState));
             MultiValue methodReturnValue = HandleCall(
                 callingMethodIL,
                 calledMethod,
                 operation,
-                new ValueNodeList(dereferencedMethodParams));
+                dereferencedMethodParams);
 
             if (isNewObj || !calledMethod.ReturnsVoid())
                 currentStack.Push(new StackSlot(methodReturnValue));
