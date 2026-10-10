@@ -12,8 +12,8 @@ namespace System.Reflection
     /// A MetadataLoadContext represents a closed universe of Type objects loaded for inspection-only purposes.
     /// Each MetadataLoadContext can have its own binding rules and is isolated from all other MetadataLoadContexts.
     ///
-    /// A MetadataLoadContext serves as a dictionary that binds assembly names to the Assembly instances that its
-    /// MetadataAssemblyResolver returns for them. Loading an assembly into the context does not bind its name.
+    /// A MetadataLoadContext maintains bindings between assembly names and the Assembly instances returned by its
+    /// MetadataAssemblyResolver. Explicitly loading an assembly into the context does not establish such a binding.
     ///
     /// Assemblies are treated strictly as metadata. There are no restrictions on loading assemblies based
     /// on target platform, CPU architecture or pointer size. There are no restrictions on the assembly designated
@@ -119,8 +119,8 @@ namespace System.Reflection
         /// assembly with the same name was already loaded into the MetadataLoadContext, the prior assembly will be returned. If the
         /// two assemblies do not have the same Mvid, this method throws a FileLoadException.
         ///
-        /// Loading an assembly does not bind its name. References to it, and LoadFromAssemblyName(), are resolved only through
-        /// the MetadataAssemblyResolver, which can return this assembly.
+        /// Loading an assembly does not automatically make it available for resolution by name. References to the assembly and
+        /// calls to LoadFromAssemblyName() are resolved through the MetadataAssemblyResolver, which may return the loaded assembly.
         /// </summary>
         public Assembly LoadFromAssemblyPath(string assemblyPath)
         {
@@ -136,8 +136,8 @@ namespace System.Reflection
         /// assembly with the same name was already loaded into the MetadataLoadContext, the prior assembly will be returned. If the
         /// two assemblies do not have the same Mvid, this method throws a FileLoadException.
         ///
-        /// Loading an assembly does not bind its name. References to it, and LoadFromAssemblyName(), are resolved only through
-        /// the MetadataAssemblyResolver, which can return this assembly.
+        /// Loading an assembly does not automatically make it available for resolution by name. References to the assembly and
+        /// calls to LoadFromAssemblyName() are resolved through the MetadataAssemblyResolver, which may return the loaded assembly.
         /// </summary>
         public Assembly LoadFromByteArray(byte[] assembly)
         {
@@ -153,8 +153,8 @@ namespace System.Reflection
         /// assembly with the same name was already loaded into the MetadataLoadContext, the prior assembly will be returned. If the
         /// two assemblies do not have the same Mvid, this method throws a FileLoadException.
         ///
-        /// Loading an assembly does not bind its name. References to it, and LoadFromAssemblyName(), are resolved only through
-        /// the MetadataAssemblyResolver, which can return this assembly.
+        /// Loading an assembly does not automatically make it available for resolution by name. References to the assembly and
+        /// calls to LoadFromAssemblyName() are resolved through the MetadataAssemblyResolver, which may return the loaded assembly.
         ///
         /// The MetadataLoadContext takes ownership of the Stream passed into this method. The original owner must not mutate its position, dispose the Stream or
         /// assume that its position will stay unchanged.
