@@ -66,6 +66,7 @@ namespace
 #endif
 
         JIT_CODE_LOAD = 0,
+        JIT_CODE_DEBUG_INFO = 2,
     };
 
     static bool UseArchTimeStamp()
@@ -145,6 +146,15 @@ namespace
         uint64_t code_index;
         // Null terminated name
         // Optional native code
+    };
+
+    struct JitCodeDebugInfoRecord
+    {
+        RecordHeader header;
+        uint64_t code_addr;
+        uint64_t nr_entry;
+        // Followed by nr_entry variable-sized entries:
+        //   uint64_t address; int32_t line; int32_t discrim; null-terminated file name
     };
 };
 
@@ -279,6 +289,59 @@ exit:
 
             if (!enabled)
                 goto exit;
+
+            // A JIT_CODE_DEBUG_INFO record must immediately precede the
+            // JitCodeLoadRecord it describes (see the perf jitdump specification).
+            if (debugInfo != nullptr)
+            {
+                const PAL_PerfJitDumpDebugInfo* di = (const PAL_PerfJitDumpDebugInfo*)debugInfo;
+                if (di->nrEntries > 0 && di->entries != nullptr && di->fileName != nullptr)
+                {
+                    size_t fileNameLen = strlen(di->fileName) + 1;
+                    size_t entrySize = sizeof(uint64_t) + 2 * sizeof(int32_t) + fileNameLen;
+                    size_t payloadSize = sizeof(JitCodeDebugInfoRecord) + (size_t)di->nrEntries * entrySize;
+                    char* dbgBuffer = (char*)malloc(payloadSize);
+                    if (dbgBuffer != nullptr)
+                    {
+                        JitCodeDebugInfoRecord dbg;
+                        dbg.header.id = JIT_CODE_DEBUG_INFO;
+                        dbg.header.total_size = (uint32_t)payloadSize;
+                        dbg.header.timestamp = record.header.timestamp;
+                        dbg.code_addr = (uint64_t)pCode;
+                        dbg.nr_entry = di->nrEntries;
+
+                        char* cursor = dbgBuffer;
+                        memcpy(cursor, &dbg, sizeof(dbg));
+                        cursor += sizeof(dbg);
+                        for (uint64_t i = 0; i < di->nrEntries; i++)
+                        {
+                            memcpy(cursor, &di->entries[i].address, sizeof(uint64_t));
+                            cursor += sizeof(uint64_t);
+                            memcpy(cursor, &di->entries[i].line, sizeof(int32_t));
+                            cursor += sizeof(int32_t);
+                            memcpy(cursor, &di->entries[i].discrim, sizeof(int32_t));
+                            cursor += sizeof(int32_t);
+                            memcpy(cursor, di->fileName, fileNameLen);
+                            cursor += fileNameLen;
+                        }
+
+                        size_t dbgWritten = 0;
+                        while (dbgWritten < payloadSize)
+                        {
+                            ssize_t w = write(fd, dbgBuffer + dbgWritten, payloadSize - dbgWritten);
+                            if (w == -1)
+                            {
+                                if (errno == EINTR)
+                                    continue;
+                                free(dbgBuffer);
+                                return FatalError();
+                            }
+                            dbgWritten += (size_t)w;
+                        }
+                        free(dbgBuffer);
+                    }
+                }
+            }
 
             // Increment codeIndex while locked
             record.code_index = ++codeIndex;

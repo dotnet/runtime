@@ -9,6 +9,7 @@
 #if defined(FEATURE_PERFMAP) && !defined(DACCESS_COMPILE)
 #include <clrconfignocache.h>
 #include "perfmap.h"
+#include "debugdebugger.h"
 #include "pal.h"
 #include <dn-stdio.h>
 
@@ -34,6 +35,11 @@ bool PerfMap::s_ShowOptimizationTiers = false;
 bool PerfMap::s_GroupStubsOfSameType = false;
 bool PerfMap::s_IndividualAllocationStubReporting = false;
 bool PerfMap::s_LogStubs = false;
+
+// IL-as-source debug info emission (jitdump JIT_CODE_DEBUG_INFO records).
+// Enabled by setting DOTNET_PerfMapIlSourcePath; disabled (zero cost) otherwise.
+static bool s_IlDebugInfoEnabled = false;
+static char s_IlSourcePath[512];
 
 unsigned PerfMap::s_StubsMapped = 0;
 CrstStatic PerfMap::s_csPerfMap;
@@ -87,6 +93,17 @@ void PerfMap::InitializeConfiguration()
     s_GroupStubsOfSameType = (granularity & 1) != 1;
     s_IndividualAllocationStubReporting = (granularity & 2) != 0;
     s_LogStubs = (granularity & 4) == 0;
+
+    CLRConfigStringHolder ilSourcePath(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_PerfMapIlSourcePath));
+    if (ilSourcePath != NULL)
+    {
+        MAKE_UTF8PTR_FROMWIDE_NOTHROW(utf8IlSourcePath, ilSourcePath);
+        if (utf8IlSourcePath != NULL && strlen(utf8IlSourcePath) < sizeof(s_IlSourcePath))
+        {
+            strcpy_s(s_IlSourcePath, sizeof(s_IlSourcePath), utf8IlSourcePath);
+            s_IlDebugInfoEnabled = true;
+        }
+    }
 }
 
 void PerfMap::Enable(PerfMapType type, bool sendExisting)
@@ -360,6 +377,55 @@ void PerfMap::LogJITCompiledMethod(MethodDesc * pMethod, PCODE pCode, size_t cod
         SString line;
         line.Printf(FMT_CODE_ADDR " %zx %s\n", (void*)pCode, codeSize, name.GetUTF8());
 
+        // If jitdump is active, collect the IL-to-native map and emit it as a
+        // JIT_CODE_DEBUG_INFO record referencing synthetic IL "source" files.
+        // Contract with the IL file generator: the IL instruction at offset K
+        // is placed on line K + 2 of the file (line 1 is a generated header).
+        PAL_PerfJitDumpDebugInfo palDebugInfo = {};
+        PAL_PerfJitDumpDebugInfo* pPalDebugInfo = nullptr;
+        NewArrayHolder<PAL_PerfJitDumpDebugEntry> debugEntries;
+        SString ilFileName;
+        if (s_IlDebugInfoEnabled && PAL_PerfJitDump_IsStarted())
+        {
+            uint32_t cMap = 0;
+            uint32_t* rguiNativeOffset = nullptr;
+            uint32_t* rguiILOffset = nullptr;
+            ILToNativeMapArrays context(7000);
+            EECodeInfo codeInfo(pCode);
+            if (codeInfo.IsValid())
+            {
+                DebugInfoRequest request;
+                request.InitFromStartingAddr(pMethod, pCode);
+                codeInfo.GetJitManager()->WalkILOffsets(request, BoundsType::Uninstrumented, &context, ComputeILOffsetArrays);
+                context.GetArrays(&cMap, &rguiNativeOffset, &rguiILOffset);
+            }
+            if (cMap > 0)
+            {
+                debugEntries = new PAL_PerfJitDumpDebugEntry[cMap];
+                uint64_t nEntries = 0;
+                for (uint32_t i = 0; i < cMap; i++)
+                {
+                    uint32_t ilOffset = rguiILOffset[i];
+                    if (ilOffset < (uint32_t)ICorDebugInfo::MAX_MAPPING_VALUE)
+                    {
+                        debugEntries[nEntries].address = (ULONG64)pCode + rguiNativeOffset[i];
+                        debugEntries[nEntries].line = (INT32)(ilOffset + 2);
+                        debugEntries[nEntries].discrim = 0;
+                        nEntries++;
+                    }
+                }
+                if (nEntries > 0)
+                {
+                    ilFileName.Printf("%s/%s/m_%08x.il", s_IlSourcePath,
+                        pMethod->GetModule()->GetSimpleName(), pMethod->GetMemberDef());
+                    palDebugInfo.nrEntries = nEntries;
+                    palDebugInfo.fileName = ilFileName.GetUTF8();
+                    palDebugInfo.entries = debugEntries;
+                    pPalDebugInfo = &palDebugInfo;
+                }
+            }
+        }
+
         {
             CrstHolder ch(&(s_csPerfMap));
 
@@ -368,7 +434,7 @@ void PerfMap::LogJITCompiledMethod(MethodDesc * pMethod, PCODE pCode, size_t cod
                 s_Current->WriteLine(line);
             }
 
-            PAL_PerfJitDump_LogMethod((void*)pCode, codeSize, name.GetUTF8(), nullptr, nullptr, /*reportCodeBlock*/true);
+            PAL_PerfJitDump_LogMethod((void*)pCode, codeSize, name.GetUTF8(), (void*)pPalDebugInfo, nullptr, /*reportCodeBlock*/true);
         }
     }
     EX_CATCH{} EX_END_CATCH
