@@ -2,10 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.IO;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Loader;
 using System.Threading;
 using Xunit;
 using TestLibrary;
@@ -110,6 +112,47 @@ namespace CollectibleThreadStaticShutdownRace
                 crashThread.Join();
             }
 
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static WeakReference RunInCollectibleAlc(string assemblyPath, string typeName, string methodName)
+        {
+            AssemblyLoadContext context = new AssemblyLoadContext(typeName, isCollectible: true);
+            Assembly assembly = context.LoadFromAssemblyPath(assemblyPath);
+            assembly.GetType(typeName)!.GetMethod(methodName)!.Invoke(null, null);
+            context.Unload();
+            return new WeakReference(context);
+        }
+
+        [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155: Collectible assemblies", typeof(Utilities), nameof(Utilities.IsNativeAot))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/40394", TestRuntimes.Mono)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
+        public static void ReuseCollectibleThreadStaticIndex()
+        {
+            string assemblyPath = Path.Combine(AppContext.BaseDirectory, "StaticsUnloaded.dll");
+            WeakReference context = RunInCollectibleAlc(
+                assemblyPath,
+                nameof(ThreadStaticInFlightDataBeforeUnload),
+                nameof(ThreadStaticInFlightDataBeforeUnload.Touch));
+
+            for (int i = 0; i < 100 && context.IsAlive; i++)
+            {
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+            }
+
+            // Native LoaderAllocator cleanup must finish before its TLS index can be reused.
+            for (int i = 0; i < 20; i++)
+            {
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+                Thread.Sleep(10);
+            }
+
+            RunInCollectibleAlc(
+                assemblyPath,
+                nameof(ThreadStaticInFlightDataAfterUnload),
+                nameof(ThreadStaticInFlightDataAfterUnload.Set));
         }
 
         [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155: Collectible assemblies", typeof(Utilities), nameof(Utilities.IsNativeAot))]
