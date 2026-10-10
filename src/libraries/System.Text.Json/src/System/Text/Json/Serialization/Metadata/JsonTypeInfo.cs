@@ -1471,6 +1471,22 @@ namespace System.Text.Json.Serialization.Metadata
         private protected abstract JsonPropertyInfo CreateJsonPropertyInfo(JsonTypeInfo declaringTypeInfo, Type? declaringType, JsonSerializerOptions options);
 
         private protected Dictionary<ParameterLookupKey, JsonParameterInfoValues>? _parameterInfoValuesIndex;
+        private protected JsonParameterInfoValues[]? _parameterInfoValues;
+        internal UnboundConstructorParameterInfo? UnboundConstructorParameterDiagnostic { get; private set; }
+
+        internal readonly struct UnboundConstructorParameterInfo(
+            string parameterName,
+            Type parameterType,
+            string? matchingPropertyName,
+            Type? matchingPropertyType,
+            string? boundParameterName = null)
+        {
+            public string ParameterName { get; } = parameterName;
+            public Type ParameterType { get; } = parameterType;
+            public string? MatchingPropertyName { get; } = matchingPropertyName;
+            public Type? MatchingPropertyType { get; } = matchingPropertyType;
+            public string? BoundParameterName { get; } = boundParameterName;
+        }
 
         // Untyped, root-level serialization methods
         internal abstract void SerializeAsObject(Utf8JsonWriter writer, object? rootValue);
@@ -1592,6 +1608,7 @@ namespace System.Text.Json.Serialization.Metadata
 
             ParameterCount = parameterInfoValues.Length;
             _parameterInfoValuesIndex = parameterIndex;
+            _parameterInfoValues = parameterInfoValues;
         }
 
         internal void ResolveMatchingParameterInfo(JsonPropertyInfo propertyInfo)
@@ -1622,6 +1639,7 @@ namespace System.Text.Json.Serialization.Metadata
 
             List<JsonParameterInfo> parameterCache = new(ParameterCount);
             Dictionary<ParameterLookupKey, JsonParameterInfo> parameterIndex = new(ParameterCount);
+            bool[] boundParameters = new bool[ParameterCount];
 
             foreach (JsonPropertyInfo propertyInfo in _propertyCache)
             {
@@ -1629,6 +1647,11 @@ namespace System.Text.Json.Serialization.Metadata
                 if (parameterInfo is null)
                 {
                     continue;
+                }
+
+                if (parameterInfo.Position < boundParameters.Length)
+                {
+                    boundParameters[parameterInfo.Position] = true;
                 }
 
                 string propertyName = propertyInfo.MemberName ?? propertyInfo.Name;
@@ -1652,8 +1675,46 @@ namespace System.Text.Json.Serialization.Metadata
                 ThrowHelper.ThrowInvalidOperationException_ExtensionDataCannotBindToCtorParam(ExtensionDataProperty.MemberName, ExtensionDataProperty);
             }
 
+            if (parameterCache.Count != ParameterCount && _parameterInfoValues is not null)
+            {
+                foreach (JsonParameterInfoValues param in _parameterInfoValues)
+                {
+                    if (param.Position < boundParameters.Length && !boundParameters[param.Position])
+                    {
+                        JsonPropertyInfo? matchingNameProp = null;
+                        int matchingNameRank = -1;
+                        foreach (JsonPropertyInfo prop in _propertyCache)
+                        {
+                            string propName = prop.MemberName ?? prop.Name;
+                            if (string.Equals(propName, param.Name, StringComparison.OrdinalIgnoreCase))
+                            {
+                                int rank = (prop.PropertyType == param.ParameterType ? 2 : 0) + (prop.AssociatedParameter is null ? 1 : 0);
+                                if (rank > matchingNameRank)
+                                {
+                                    matchingNameProp = prop;
+                                    matchingNameRank = rank;
+                                    if (rank == 3)
+                                    {
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+
+                        UnboundConstructorParameterDiagnostic = new UnboundConstructorParameterInfo(
+                            param.Name,
+                            param.ParameterType,
+                            matchingNameProp?.MemberName ?? matchingNameProp?.Name,
+                            matchingNameProp?.PropertyType,
+                            matchingNameProp?.AssociatedParameter?.Name);
+                        break;
+                    }
+                }
+            }
+
             _parameterCache = parameterCache.ToArray();
             _parameterInfoValuesIndex = null;
+            _parameterInfoValues = null;
         }
 
         internal static void ValidateType(Type type)
