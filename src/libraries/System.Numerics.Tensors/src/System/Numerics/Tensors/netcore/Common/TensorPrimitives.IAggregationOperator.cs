@@ -19,6 +19,15 @@ namespace System.Numerics.Tensors
             static abstract T Invoke(Vector256<T> x);
             static abstract T Invoke(Vector512<T> x);
 
+            /// <summary>
+            /// Whether the operator propagates NaN inputs to its output, as the IEEE 754:2019
+            /// <c>minimum</c>/<c>maximum</c> (and magnitude) functions do. Operators implementing the
+            /// <c>minimumNumber</c>/<c>maximumNumber</c> family return <see langword="false"/>, so the
+            /// reduction does not early-exit on a NaN and the lane-wise operator gets to ignore it
+            /// when a numeric operand is available.
+            /// </summary>
+            static virtual bool PropagatesNaNs => true;
+
             static virtual T IdentityValue => throw new NotSupportedException();
         }
 
