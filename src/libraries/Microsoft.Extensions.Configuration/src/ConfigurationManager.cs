@@ -55,7 +55,8 @@ namespace Microsoft.Extensions.Configuration
             get
             {
                 using ReferenceCountedProviders reference = _providerManager.GetReference();
-                return ConfigurationRoot.GetConfiguration(reference.Providers, key);
+                ConfigurationEngine.Default.Get(reference.Providers, key, out string? value, out _);
+                return value;
             }
             set
             {
