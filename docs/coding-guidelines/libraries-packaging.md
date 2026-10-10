@@ -179,3 +179,25 @@ The above layout is achieved via the following item declaration in the project f
                           buildTransitive\$(NetCoreAppMinimum)\" />
 </ItemGroup>
 ```
+
+### DependencyOnlyTargetFrameworks
+
+`DependencyOnlyTargetFrameworks` is a semicolon-separated list of target frameworks that should emit a NuGet dependency group in the package but ship no `lib/` assembly. No `lib/` or `ref/` assembly is included in the package for these TFMs — consumers fall back to the nearest compatible `lib/` entry for the assembly, but NuGet selects the dependency group that best matches their TFM when resolving package dependencies.
+
+Use this when a compatible framework has inbox assemblies that make a package dependency unnecessary. For example, `net471` has `System.ValueTuple` built in, so a package that depends on `System.ValueTuple` for `net462` consumers should add an empty `net471` dependency group so that `net471` consumers do not see a `System.ValueTuple` dependency at all.
+
+```xml
+<PropertyGroup>
+  <TargetFrameworks>netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
+  <!-- Emit an empty net471 dependency group so net471 consumers don't pull in System.ValueTuple,
+       which is inbox on net471. No lib/net471 assembly is shipped; lib/net462 is the fallback. -->
+  <DependencyOnlyTargetFrameworks>$(NetFrameworkWithValueTuple)</DependencyOnlyTargetFrameworks>
+</PropertyGroup>
+```
+
+The infrastructure in `eng/packaging.targets` handles this automatically when `DependencyOnlyTargetFrameworks` is set:
+
+- The listed TFMs are appended to `TargetFrameworks` so that NuGet restore (including `RestoreUseStaticGraphEvaluation`) and the pack task both see them. When NuGet evaluates the project for, say, `net471`, any `PackageReference` items conditioned on `$(NetFrameworkMinimum)` (= `net462`) are absent, so `project.assets.json` has a `net471` entry without `System.ValueTuple`, which the pack task uses to generate the nuspec dependency group.
+- A single target `ExcludeDependencyOnlyTFMsFromBuildAndP2P` (hooked via `BeforeTargets="GetTargetFrameworksWithPlatformFromInnerBuilds;DispatchToInnerBuilds"`) removes them from `_InnerBuildProjects` before both the P2P TFM query (so consuming projects don't accidentally resolve the dep-only TFM) and the outer build dispatch (so they are not compiled during regular builds). The removed TFMs are not restored, so they are never built as part of `dotnet build`.
+- `IncludeBuildOutput` is set to `false` for dep-only TFM inner builds (invoked by the pack task's `_WalkEachTargetPerFramework`), so no `lib/` entry is added to the package.
+- NuGet warning `NU5128` (dependency group TFM has no matching `lib/` entry) is suppressed, since the absence of a `lib/` entry is intentional — consumers fall back to the nearest compatible `lib/` entry for the assembly.
