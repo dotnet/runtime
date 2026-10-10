@@ -3685,7 +3685,18 @@ ThrowControlForThread(
 
     OBJECTREF throwable = ExInfo::CreateThrowable(&exceptionRecord, TRUE);
     pfef->GetExceptionContext()->ContextFlags |= CONTEXT_EXCEPTION_ACTIVE;
+
+#if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
+    TADDR resumeSSP = ssp;
+#else
+    TADDR resumeSSP = 0;
+#endif
+
+    // The abort can be caught by an interpreted frame further up the stack. Resuming there unwinds the native frames
+    // with a ResumeAfterCatchException, which must not run into the managed frames this thread was redirected from.
+    INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_INTERRUPTED_CONTEXT(pfef->GetExceptionContext(), resumeSSP);
     DispatchManagedException(throwable, pfef->GetExceptionContext());
+    UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_CONTEXT;
 }
 
 #if defined(FEATURE_HIJACK) && !defined(TARGET_UNIX)
