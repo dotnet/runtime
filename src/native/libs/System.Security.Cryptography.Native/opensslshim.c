@@ -204,7 +204,7 @@ static void OpenLibraryOnce(void)
         DlOpen(MAKELIB("111"));
     }
 
-    // While it's still in alpha, OpenSSL 4 from ports is probed last, but not preferred.
+    // OpenSSL 4 from ports is probed last, but not preferred.
     if (libssl == NULL)
     {
         DlOpen(MAKELIB("19"));
