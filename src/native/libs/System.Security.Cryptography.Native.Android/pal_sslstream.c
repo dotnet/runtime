@@ -668,7 +668,11 @@ jobjectArray AndroidCryptoNative_SSLStreamCreateKeyManagersFromKeyStoreEntry(job
 
     INIT_LOCALS(loc, dotnetX509KeyManager);
 
-    loc[dotnetX509KeyManager] = (*env)->NewObject(env, g_DotnetX509KeyManager, g_DotnetX509KeyManagerCtor, privateKeyEntry);
+    loc[dotnetX509KeyManager] = (*env)->NewObject(
+        env,
+        g_DotnetX509KeyManager,
+        g_DotnetX509KeyManagerPrivateKeyEntryCtor,
+        privateKeyEntry);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
     keyManagers = make_java_object_array(env, 1, g_KeyManager, loc[dotnetX509KeyManager]);

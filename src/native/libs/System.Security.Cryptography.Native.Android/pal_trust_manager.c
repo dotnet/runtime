@@ -9,7 +9,7 @@ static _Atomic RemoteCertificateValidationCallback verifyRemoteCertificate;
 // keystore from disk); caching avoids paying that cost on every TLS handshake.
 static _Atomic(jobject) g_cachedDefaultTrustManager = NULL;
 
-ARGS_NON_NULL_ALL void AndroidCryptoNative_RegisterRemoteCertificateValidationCallback(RemoteCertificateValidationCallback callback)
+ARGS_NON_NULL_ALL void SetRemoteCertificateValidationCallback(RemoteCertificateValidationCallback callback)
 {
     atomic_store(&verifyRemoteCertificate, callback);
 }

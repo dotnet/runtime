@@ -246,8 +246,15 @@ namespace System.Net.Security
                     _ => SecurityStatusPalErrorCode.InternalError
                 };
 
-                Exception? validationException = sslContext?.SslStreamProxy.ValidationException;
-                token.Status = new SecurityStatusPal(statusCode, validationException);
+                Exception? exception =
+                    sslContext?.SslStreamProxy.CertificateSelectionException ??
+                    sslContext?.SslStreamProxy.ValidationException;
+                if (exception is not null)
+                {
+                    statusCode = SecurityStatusPalErrorCode.InternalError;
+                }
+
+                token.Status = new SecurityStatusPal(statusCode, exception);
                 sslContext!.ReadPendingWrites(ref token);
                 return token;
             }
