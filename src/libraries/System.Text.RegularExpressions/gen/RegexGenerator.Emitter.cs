@@ -114,11 +114,11 @@ namespace System.Text.RegularExpressions.Generator
         }
 
         /// <summary>Emits the Regex-derived type for a method where we're unable to generate custom code.</summary>
-        private static void EmitRegexLimitedBoilerplate(
-            IndentedTextWriter writer, RegexMethod rm, string reason, LanguageVersion langVer)
+        private static void EmitRegexLimitedBoilerplate(IndentedTextWriter writer, RegexMethod rm)
         {
+            Debug.Assert(!rm.SupportsCodeGeneration);
             string visibility;
-            if (langVer >= LanguageVersion.CSharp11)
+            if (rm.CompilationData.LanguageVersion >= LanguageVersion.CSharp11)
             {
                 visibility = "file";
                 writer.WriteLine($"/// <summary>Caches a <see cref=\"Regex\"/> instance for the {rm.MemberName} method.</summary>");
@@ -128,7 +128,7 @@ namespace System.Text.RegularExpressions.Generator
                 visibility = "internal";
                 writer.WriteLine($"/// <summary>This class supports generated regexes and should not be used by other code directly.</summary>");
             }
-            writer.WriteLine($"/// <remarks>A custom Regex-derived type could not be generated because {reason}.</remarks>");
+            writer.WriteLine($"/// <remarks>A custom Regex-derived type could not be generated because {rm.CodeGenerationUnsupportedReason}.</remarks>");
             writer.WriteLine($"[{s_generatedCodeAttribute}]");
             writer.WriteLine($"{visibility} sealed class {rm.GeneratedName} : Regex");
             writer.WriteLine($"{{");
@@ -148,12 +148,11 @@ namespace System.Text.RegularExpressions.Generator
         private const string HasDefaultTimeoutFieldName = "s_hasTimeout";
 
         /// <summary>Emits the Regex-derived type for a method whose RunnerFactory implementation was generated into <paramref name="runnerFactoryImplementation"/>.</summary>
-        private static void EmitRegexDerivedImplementation(
-            IndentedTextWriter writer, RegexMethod rm, string runnerFactoryImplementation, bool allowUnsafe)
+        private static void EmitRegexDerivedImplementation(IndentedTextWriter writer, RegexMethod rm, string runnerFactoryImplementation)
         {
             writer.WriteLine($"/// <summary>Custom <see cref=\"Regex\"/>-derived type for the {rm.MemberName} method.</summary>");
             writer.WriteLine($"[{s_generatedCodeAttribute}]");
-            if (allowUnsafe)
+            if (rm.CompilationData.AllowUnsafe)
             {
                 writer.WriteLine($"[SkipLocalsInit]");
             }
@@ -229,8 +228,9 @@ namespace System.Text.RegularExpressions.Generator
         }
 
         /// <summary>Emits the code for the RunnerFactory.  This is the actual logic for the regular expression.</summary>
-        private static void EmitRegexDerivedTypeRunnerFactory(IndentedTextWriter writer, RegexMethod rm, Dictionary<string, string[]> requiredHelpers, bool checkOverflow)
+        private static void EmitRegexDerivedTypeRunnerFactory(IndentedTextWriter writer, RegexMethod rm, Dictionary<string, string[]> requiredHelpers)
         {
+            bool checkOverflow = rm.CompilationData.CheckOverflow;
             void EnterCheckOverflow()
             {
                 if (checkOverflow)
