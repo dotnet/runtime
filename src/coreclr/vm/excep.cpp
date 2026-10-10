@@ -9345,6 +9345,21 @@ UINT GetResourceIDForFileLoadExceptionHR(HRESULT hr)
 
 #ifndef DACCESS_COMPILE
 
+Exception *GetExceptionFromCxxSystemError(DWORD errorCode)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    // Match RealCOMPlusThrowWin32's ApplicationException compatibility behavior.
+    return new EEMessageException(kApplicationException, HRESULT_FROM_WIN32(errorCode), 0 /* resid */,
+                                  NULL, NULL, NULL, NULL, NULL, NULL);
+}
+
 //==========================================================================
 // Throw a runtime exception based on the last Win32 error (GetLastError())
 //==========================================================================

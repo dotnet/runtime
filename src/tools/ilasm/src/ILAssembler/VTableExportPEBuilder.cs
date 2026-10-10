@@ -15,10 +15,10 @@ using System.Text;
 namespace ILAssembler;
 
 /// <summary>
-/// A PE builder that extends <see cref="ManagedPEBuilder"/> with VTable fixups,
+/// A PE builder that extends <see cref="ILAssemblerPEBuilder"/> with VTable fixups,
 /// unmanaged exports, and data label reference fixups.
 /// </summary>
-internal sealed class VTableExportPEBuilder : ManagedPEBuilder
+internal sealed class VTableExportPEBuilder : ILAssemblerPEBuilder
 {
     private const string RelocationSectionName = ".reloc";
     private const string SDataSectionName = ".sdata";
