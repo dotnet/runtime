@@ -48,6 +48,8 @@ namespace System
         /// <returns>Array with the specified length initialized with the result from the factory function.</returns>
         public static T[] CreateFilled<T>(int length, T value)
         {
+            ArgumentOutOfRangeException.ThrowIfNegative(length);
+
             T[] array = GC.AllocateUninitializedArray<T>(length);
             Fill(array, value);
             return array;
