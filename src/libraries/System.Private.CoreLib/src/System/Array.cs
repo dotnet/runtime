@@ -40,41 +40,16 @@ namespace System
         }
 
         /// <summary>
-        /// Creates a new array of the specified length, with each element initialized to the specified value.
+        /// Creates a new array of the specified length, filled with the given value.
         /// </summary>
-        /// <param name="length">The length of the array.</param>
-        /// <param name="value">The value with which to initialize each element.</param>
-        /// <typeparam name="T">The type of the elements in the array.</typeparam>
-        /// <returns>A new array of the specified length, with each element initialized to <paramref name="value"/>.</returns>
-        /// <exception cref="ArgumentOutOfRangeException"><paramref name="length"/> is negative.</exception>
+        /// <param name="length">Required lenght of the array.</param>
+        /// <param name="value">Value to be filled in the array.</param>
+        /// <typeparam name="T">Type of the result array.</typeparam>
+        /// <returns>Array with the specified length initialized with the result from the factory function.</returns>
         public static T[] CreateFilled<T>(int length, T value)
         {
-            ArgumentOutOfRangeException.ThrowIfNegative(length);
-
             T[] array = GC.AllocateUninitializedArray<T>(length);
             Fill(array, value);
-            return array;
-        }
-
-        /// <summary>
-        /// Creates a new array of the specified length and initializes each element using the result of the specified factory function.
-        /// </summary>
-        /// <param name="length">The length of the array.</param>
-        /// <param name="factory">A function that produces a value for each element. The function receives the zero-based index of the element to initialize.</param>
-        /// <typeparam name="T">The type of the elements in the array.</typeparam>
-        /// <returns>A new array of the specified length, with each element initialized by <paramref name="factory"/>.</returns>
-        /// <exception cref="ArgumentNullException"><paramref name="factory"/> is <see langword="null"/>.</exception>
-        /// <exception cref="ArgumentOutOfRangeException"><paramref name="length"/> is negative.</exception>
-        public static T[] CreateFilled<T>(int length, Func<int, T> factory)
-        {
-            ArgumentOutOfRangeException.ThrowIfNegative(length);
-            ArgumentNullException.ThrowIfNull(factory);
-
-            T[] array = GC.AllocateUninitializedArray<T>(length);
-
-            for (int i = 0; i < array.Length; i++)
-                array[i] = factory(i);
-
             return array;
         }
 

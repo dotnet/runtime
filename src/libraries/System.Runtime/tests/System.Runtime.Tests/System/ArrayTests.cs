@@ -4631,40 +4631,6 @@ namespace System.Tests
             Assert.All(array2, Assert.Null);
         }
 
-        [Fact]
-        public void CreateFilled_Factory_ValueType()
-        {
-            int[] array = Array.CreateFilled(10, index => index + 1);
-            Assert.Equal(10, array.Length);
-            Assert.Equal(new int[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 }, array);
-        }
-
-        [Fact]
-        public void CreateFilled_Factory_Empty_ValueType()
-        {
-            int[] array = Array.CreateFilled(0, index => index);
-            Assert.Empty(array);
-        }
-
-        [Fact]
-        public void CreateFilled_Factory_ReferenceType()
-        {
-            Foo2[] array = Array.CreateFilled(10, index => new Foo2(index));
-            var expected = new Foo2[10];
-            for (int i = 0; i < 10; i++)
-                expected[i] = new Foo2(i);
-
-            Assert.Equal(10, array.Length);
-            Assert.Equal(expected, array);
-        }
-
-        [Fact]
-        public void CreateFilled_Factory_Empty_ReferenceType()
-        {
-            Foo2[] array = Array.CreateFilled(0, index => new Foo2(index));
-            Assert.Empty(array);
-        }
-
         [Theory]
         [InlineData(0, 10)]
         [InlineData(5, 10)]
@@ -4704,17 +4670,8 @@ namespace System.Tests
         }
 
         [Fact]
-        public void CreateFilled_NullFactory_Throws()
-        {
-            Assert.Throws<ArgumentNullException>("factory", () => Array.CreateFilled<Foo2>(7, (Func<int, Foo2>)null));
-            Assert.Throws<ArgumentNullException>("factory", () => Array.CreateFilled<int>(7, (Func<int, int>)null));
-        }
-
-        [Fact]
         public void CreateFilled_NegativeLength_Throws()
         {
-            Assert.Throws<ArgumentOutOfRangeException>("length", () => Array.CreateFilled<int>(-1, index => index));
-            Assert.Throws<ArgumentOutOfRangeException>("length", () => Array.CreateFilled<object>(-1, index => new object()));
             Assert.Throws<ArgumentOutOfRangeException>("length", () => Array.CreateFilled<object>(-1, new object()));
             Assert.Throws<ArgumentOutOfRangeException>("length", () => Array.CreateFilled<int>(-1, 8));
         }
