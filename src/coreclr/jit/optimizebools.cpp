@@ -724,7 +724,7 @@ bool FoldRangeTests(Compiler* comp, GenTreeOp* cmp1, bool cmp1IsReversed, GenTre
                          &rangeEnd))
     {
         // The range we test via two conditions is not a closed range
-        // TODO: We should support overlapped ranges here, e.g. "X > 10 && x > 100" -> "X > 100"
+        // TODO: If the ranges are disjoint, the condition could be folded to a constant.
         return false;
     }
     assert(rangeStart < rangeEnd);
