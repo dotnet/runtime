@@ -1,14 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 // ===========================================================================
 // File: CEELOAD.CPP
 //
-
-//
-
 // CEELOAD reads in the PE file format using LoadLibrary
 // ===========================================================================
-
 
 #include "common.h"
 
@@ -866,8 +863,6 @@ BOOL Module::IsCollectible()
 }
 
 #ifndef DACCESS_COMPILE
-#include "staticallocationhelpers.inl"
-
 // initialize Crst controlling the Dynamic IL hashtable
 void Module::InitializeDynamicILCrst()
 {
@@ -1559,66 +1554,6 @@ void Module::StartUnload()
 
     SetBeingUnloaded();
 }
-
-#if defined(FEATURE_READYTORUN)
-//---------------------------------------------------------------------------------------
-// Check if the target module is in the same version bubble as this one
-// The current implementation uses the presence of an AssemblyRef for the target module's assembly in
-// the native manifest metadata.
-//
-// Arguments:
-//      * target - target module to check
-//
-// Return Value:
-//      TRUE if the target module is in the same version bubble as this one
-//
-BOOL Module::IsInSameVersionBubble(Module *target)
-{
-    STANDARD_VM_CONTRACT;
-
-    if (this == target)
-    {
-        return TRUE;
-    }
-
-    if (!IsReadyToRun())
-    {
-        return FALSE;
-    }
-
-    NativeImage *nativeImage = this->GetCompositeNativeImage();
-
-    if (nativeImage != NULL)
-    {
-        if (nativeImage == target->GetCompositeNativeImage())
-        {
-            // Fast path for modules contained within the same native image
-            return TRUE;
-        }
-    }
-
-    IMDInternalImport* pMdImport = GetReadyToRunInfo()->GetNativeManifestModule()->GetMDImport();
-    if (pMdImport == NULL)
-        return FALSE;
-
-    LPCUTF8 targetName = target->GetAssembly()->GetSimpleName();
-
-    HENUMInternal assemblyEnum;
-    HRESULT hr = pMdImport->EnumAllInit(mdtAssemblyRef, &assemblyEnum);
-    mdAssemblyRef assemblyRef;
-    while (pMdImport->EnumNext(&assemblyEnum, &assemblyRef))
-    {
-        LPCSTR assemblyName;
-        hr = pMdImport->GetAssemblyRefProps(assemblyRef, NULL, NULL, &assemblyName, NULL, NULL, NULL, NULL);
-        if (strcmp(assemblyName, targetName) == 0)
-        {
-            return TRUE;
-        }
-    }
-
-    return FALSE;
-}
-#endif // FEATURE_READYTORUN
 
 //---------------------------------------------------------------------------------------
 #ifdef PROFILING_SUPPORTED
@@ -3574,6 +3509,16 @@ void Module::RunEagerFixupsUnlocked()
     PTR_READYTORUN_IMPORT_SECTION pSections = GetImportSections(&nSections);
     ReadyToRunLoadedImage *pNativeImage = GetReadyToRunImage();
 
+#ifndef TARGET_WASM
+    TADDR base = dac_cast<TADDR>(pNativeImage->GetBase());
+
+    ExecutionManager::AddCodeRange(
+        base, base + (TADDR)pNativeImage->GetVirtualSize(),
+        ExecutionManager::GetReadyToRunJitManager(),
+        RangeSection::RANGE_SECTION_NONE,
+        this /* pHeapListOrZapModule */);
+#endif // !TARGET_WASM
+
     for (COUNT_T iSection = 0; iSection < nSections; iSection++)
     {
         PTR_READYTORUN_IMPORT_SECTION pSection = pSections + iSection;
@@ -3609,15 +3554,6 @@ void Module::RunEagerFixupsUnlocked()
         }
     }
 
-#ifndef TARGET_WASM
-    TADDR base = dac_cast<TADDR>(pNativeImage->GetBase());
-
-    ExecutionManager::AddCodeRange(
-        base, base + (TADDR)pNativeImage->GetVirtualSize(),
-        ExecutionManager::GetReadyToRunJitManager(),
-        RangeSection::RANGE_SECTION_NONE,
-        this /* pHeapListOrZapModule */);
-#endif // !TARGET_WASM
 }
 #endif // !DACCESS_COMPILE
 

@@ -8,4 +8,5 @@
   </Folder>
   <Project Path="../System.Formats.Nrbf/src/System.Formats.Nrbf.csproj" />
   <Project Path="DotnetFuzzing/DotnetFuzzing.csproj" />
+  <Project Path="System.Net.Security.Fuzzing/System.Net.Security.Fuzzing.csproj" />
 </Solution>

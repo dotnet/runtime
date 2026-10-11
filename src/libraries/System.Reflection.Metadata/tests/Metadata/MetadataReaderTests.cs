@@ -3411,7 +3411,6 @@ namespace System.Reflection.Metadata.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/134943", TestPlatforms.Wasi)]
         public void GetAssemblyName()
         {
             AssertExtensions.Throws<ArgumentNullException>("assemblyFile", () => MetadataReader.GetAssemblyName(null));

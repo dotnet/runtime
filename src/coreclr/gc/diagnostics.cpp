@@ -1769,29 +1769,4 @@ void gc_heap::walk_heap (walk_fn fn, void* context, int gen_number, BOOL walk_la
 #endif //MULTIPLE_HEAPS
 }
 
-void gc_heap::walk_read_only_segment(heap_segment *seg, void *pvContext, object_callback_func pfnMethodTable, object_callback_func pfnObjRef)
-{
-    uint8_t *o = heap_segment_mem(seg);
-
-    int alignment = get_alignment_constant(TRUE);
-
-    while (o < heap_segment_allocated(seg))
-    {
-        pfnMethodTable(pvContext, o);
-
-        if (contain_pointers (o))
-        {
-            go_through_object_nostart (method_table (o), o, size(o), oo,
-                   {
-                       if (*oo)
-                           pfnObjRef(pvContext, oo);
-                   }
-            );
-        }
-
-        o += Align(size(o), alignment);
-    }
-}
-
-
 } // namespace WKS/SVR

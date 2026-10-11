@@ -127,6 +127,9 @@ switch (testCase) {
                 testOutput("DownloadResourceProgress: Finished");
             }
         });
+        dotnet.withDotnetReady(() => {
+            testOutput("onDotnetReady called");
+        });
         break;
     case "AssetIntegrity":
         dotnet.withResourceLoader((type, name, defaultUri, integrity, behavior) => {

@@ -35,6 +35,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\System.Net.Security.Fuzzing\System.Net.Security.Fuzzing.csproj" />
     <PackageReference Include="Microsoft.DotNetFuzzing.TestData" Version="$(MicrosoftDotNetFuzzingTestDataVersion)" />
     <ProjectReference Include="..\..\System.Formats.Nrbf\src\System.Formats.Nrbf.csproj" />
   </ItemGroup>
