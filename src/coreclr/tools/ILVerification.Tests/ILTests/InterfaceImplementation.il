@@ -855,36 +855,6 @@
     }
 }
 
-.class interface public auto ansi abstract IMixedStaticInstance
-{
-    .method public hidebysig newslot abstract virtual instance void M() cil managed
-    {
-    }
-
-    .method public hidebysig newslot abstract virtual static void M(int32 v) cil managed
-    {
-    }
-}
-
-.class public auto ansi beforefieldinit SameNameStaticAndInstanceMethods_ValidType_Valid
-    extends [System.Runtime]System.Object
-    implements IMixedStaticInstance
-{
-    .method private final hidebysig newslot virtual instance void InstanceMethod() cil managed
-    {
-        .override method instance void IMixedStaticInstance::M()
-        .maxstack 0
-        ret
-    }
-
-    .method private hidebysig static void StaticMethod(int32 v) cil managed
-    {
-        .override method void IMixedStaticInstance::M(int32)
-        .maxstack 0
-        ret
-    }
-}
-
 .class public auto ansi beforefieldinit InvalidMethodImplAndMissingMethod_InvalidType_InvalidMethodImpl@InterfaceMethodNotImplemented
     extends [System.Runtime]System.Object
     implements IInterface, class IGenericMethodImpl`1<int32>
@@ -897,10 +867,96 @@
     }
 }
 
-.class public auto ansi beforefieldinit GenericVirtualMethodImplBase`1<T>
+.class public auto ansi abstract beforefieldinit AbstractBaseNonVirtualMethodImpl
     extends [System.Runtime]System.Object
+    implements IInterface
 {
-    .method public hidebysig newslot virtual instance void ExplicitMethod(!T v) cil managed
+    .method public hidebysig instance void InterfaceMethod() cil managed
+    {
+        .override method instance void IInterface::InterfaceMethod()
+        .maxstack 0
+        ret
+    }
+}
+
+.class public auto ansi beforefieldinit InheritedNonVirtualMethodImpl_InvalidType_InvalidMethodImpl
+    extends AbstractBaseNonVirtualMethodImpl
+    implements IInterface
+{
+}
+
+.class interface public auto ansi abstract IMixedStaticInstance
+{
+    .method public hidebysig newslot abstract virtual instance void M() cil managed
+    {
+    }
+
+    .method public hidebysig newslot abstract virtual static void M(int32 x) cil managed
+    {
+    }
+}
+
+.class public auto ansi beforefieldinit SameNameStaticAndInstanceMethods_ValidType_Valid
+    extends [System.Runtime]System.Object
+    implements IMixedStaticInstance
+{
+    .method private final hidebysig newslot virtual instance void M() cil managed
+    {
+        .override method instance void IMixedStaticInstance::M()
+        .maxstack 0
+        ret
+    }
+
+    .method private hidebysig static void M(int32 x) cil managed
+    {
+        .override method void IMixedStaticInstance::M(int32)
+        .maxstack 0
+        ret
+    }
+}
+
+.class interface public auto ansi abstract IOverloadedInterface
+{
+    .method public hidebysig newslot abstract virtual instance void M() cil managed
+    {
+    }
+
+    .method public hidebysig newslot abstract virtual instance void M(int32 x) cil managed
+    {
+    }
+}
+
+.class public auto ansi beforefieldinit OneOverloadNonVirtual_InvalidType_InvalidMethodImpl
+    extends [System.Runtime]System.Object
+    implements IOverloadedInterface
+{
+    .method private final hidebysig newslot virtual instance void M() cil managed
+    {
+        .override method instance void IOverloadedInterface::M()
+        .maxstack 0
+        ret
+    }
+
+    .method private hidebysig instance void M(int32 x) cil managed
+    {
+        .override method instance void IOverloadedInterface::M(int32)
+        .maxstack 0
+        ret
+    }
+}
+
+.class interface public auto ansi abstract IGenericInterface`1<T>
+{
+    .method public hidebysig newslot abstract virtual instance void M(!T x) cil managed
+    {
+    }
+}
+
+.class public auto ansi beforefieldinit GenericBaseClass`1<T>
+    extends [System.Runtime]System.Object
+    implements class IGenericInterface`1<!T>
+{
+    .method public hidebysig newslot virtual instance void M(!T x) cil managed
     {
         .maxstack 0
         ret
@@ -908,12 +964,26 @@
 }
 
 .class public auto ansi beforefieldinit GenericNonVirtualMethodHidesBaseVirtualMethod_InvalidType_InvalidMethodImpl<T>
-    extends class GenericVirtualMethodImplBase`1<!T>
-    implements class IGenericMethodImpl`1<!T>
+    extends class GenericBaseClass`1<!T>
+    implements class IGenericInterface`1<!T>
 {
-    .method public hidebysig instance void ExplicitMethod(!T v) cil managed
+    .method public hidebysig instance void M(!T x) cil managed
     {
-        .override method instance void class IGenericMethodImpl`1<!T>::InterfaceMethod(!0)
+        .override method instance void class IGenericInterface`1<!T>::M(!0)
+        .maxstack 0
+        ret
+    }
+}
+
+.class public sequential ansi sealed beforefieldinit ValueTypeNonVirtualMethod_InvalidType_InvalidMethodImpl
+    extends [System.Runtime]System.ValueType
+    implements IInterface
+{
+    .field private int32 _value
+
+    .method public hidebysig instance void InterfaceMethod() cil managed
+    {
+        .override method instance void IInterface::InterfaceMethod()
         .maxstack 0
         ret
     }
