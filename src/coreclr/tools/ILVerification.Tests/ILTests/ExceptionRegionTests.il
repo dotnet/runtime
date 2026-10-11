@@ -996,9 +996,8 @@
         .try Start to End catch [System.Runtime]System.Exception handler Start to End
     }
 
-    .method public static void Try.SharedWithFinallyAndFault_Invalid_EHClauseOverlap.EHClauseOverlap.EHClauseOverlap() cil managed
+    .method public static void Try.SharedWithFinallyAndFault_Invalid_EHClauseOverlap.EHClauseOverlap() cil managed
     {
-        // Each pair is invalid, even though the three handlers are disjoint.
         ret
     TryStart:
         nop
@@ -1050,6 +1049,25 @@
     End:
         .try OuterTry to OuterHandler finally handler OuterHandler to End
         .try InnerTry to InnerHandler finally handler InnerHandler to OuterHandler
+    }
+
+    .method public static void Try.SharedEndContinuesHandlerVerification_Invalid_EHClauseOrder.StackUnderflow() cil managed
+    {
+        // Despite the invalid EH order, the inner handler must still be verified.
+    OuterTry:
+        br InnerTry
+    InnerHandler:
+        pop
+        endfinally
+    InnerTry:
+        leave MethodEnd
+    SharedEnd:
+    OuterHandler:
+        endfinally
+    MethodEnd:
+        ret
+        .try OuterTry to SharedEnd finally handler OuterHandler to MethodEnd
+        .try InnerTry to SharedEnd finally handler InnerHandler to InnerTry
     }
 
     .method public static void Try.StartsAtCatchEntry_Invalid_TryNonEmptyStack() cil managed

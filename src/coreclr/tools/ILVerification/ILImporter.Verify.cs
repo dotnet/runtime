@@ -262,7 +262,7 @@ namespace Internal.IL
                             var probeItem = _exceptionRegions[j].ILRegion;
 
                             if (currentlySelected.TryOffset < probeItem.TryOffset &&
-                                currentlySelected.TryOffset + currentlySelected.TryLength > probeItem.TryOffset + probeItem.TryLength)
+                                currentlySelected.TryOffset + currentlySelected.TryLength >= probeItem.TryOffset + probeItem.TryLength)
                             {
                                 basicBlock.TryIndex = j;
                             }

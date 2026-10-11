@@ -2,21 +2,30 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using ILVerify;
 
 namespace Internal.IL
 {
     partial class ILImporter
     {
-        private readonly struct ExceptionRegionRange
+        private struct ExceptionRegionRange
         {
             public readonly int StartOffset;
-            public readonly int EndOffset; // Exclusive.
+            public readonly int EndOffset; // Exclusive
+            public readonly ExceptionRegionKind Kind;
+            public readonly int ClauseIndex;
+            public int ParentIndex;
+            public int EnclosingTryIndex;
 
-            public ExceptionRegionRange(int startOffset, int endOffset)
+            public ExceptionRegionRange(int startOffset, int endOffset, ExceptionRegionKind kind, int clauseIndex)
             {
                 StartOffset = startOffset;
                 EndOffset = endOffset;
+                Kind = kind;
+                ClauseIndex = clauseIndex;
+                ParentIndex = -1;
+                EnclosingTryIndex = int.MaxValue;
             }
 
             public bool IsEmpty => StartOffset >= EndOffset;
@@ -24,43 +33,37 @@ namespace Internal.IL
             public bool Overlaps(ExceptionRegionRange other) =>
                 !IsEmpty && !other.IsEmpty && StartOffset < other.EndOffset && other.StartOffset < EndOffset;
 
-            public bool Contains(ExceptionRegionRange other) =>
-                StartOffset <= other.StartOffset && other.EndOffset <= EndOffset;
-
             public bool HasSameBounds(ExceptionRegionRange other) =>
                 StartOffset == other.StartOffset && EndOffset == other.EndOffset;
         }
 
-        private readonly struct ExceptionClauseLayout
+        private enum ExceptionRegionKind
+        {
+            Try,
+            Handler,
+            Filter
+        }
+
+        private struct ExceptionClauseLayout
         {
             public readonly ILExceptionRegionKind Kind;
-            public readonly ExceptionRegionRange Try;
-            public readonly ExceptionRegionRange Handler;
-            public readonly ExceptionRegionRange Filter;
+            public int TryIndex;
+            public int HandlerIndex;
+            public int FilterIndex;
+            public bool HasOverlap;
 
-            public ExceptionClauseLayout(ILExceptionRegion region)
+            public ExceptionClauseLayout(ILExceptionRegionKind kind)
             {
-                Kind = region.Kind;
-                Try = new ExceptionRegionRange(region.TryOffset, region.TryOffset + region.TryLength);
-                Handler = new ExceptionRegionRange(region.HandlerOffset, region.HandlerOffset + region.HandlerLength);
-                Filter = Kind == ILExceptionRegionKind.Filter ?
-                    new ExceptionRegionRange(region.FilterOffset, region.HandlerOffset) : default;
+                Kind = kind;
+                TryIndex = -1;
+                HandlerIndex = -1;
+                FilterIndex = -1;
+                HasOverlap = false;
             }
 
             public bool HasFilter => Kind == ILExceptionRegionKind.Filter;
 
             public bool CanShareTry => Kind is ILExceptionRegionKind.Catch or ILExceptionRegionKind.Filter;
-
-            // A filter immediately precedes its handler, so their union is one interval.
-            public ExceptionRegionRange HandlerAndFilter =>
-                new ExceptionRegionRange(HasFilter ? Filter.StartOffset : Handler.StartOffset, Handler.EndOffset);
-
-            public bool IsDisjointFrom(ExceptionClauseLayout other) =>
-                !Try.Overlaps(other.Try) && !Try.Overlaps(other.HandlerAndFilter) &&
-                !HandlerAndFilter.Overlaps(other.Try) && !HandlerAndFilter.Overlaps(other.HandlerAndFilter);
-
-            public bool IsContainedIn(ExceptionRegionRange region) =>
-                region.Contains(Try) && region.Contains(Handler) && (!HasFilter || region.Contains(Filter));
         }
 
         private void VerifyExceptionRegions()
@@ -68,36 +71,43 @@ namespace Internal.IL
             if (_exceptionRegions.Length == 0)
                 return;
 
-            var clauses = new ExceptionClauseLayout?[_exceptionRegions.Length];
+            var clauses = new ExceptionClauseLayout[_exceptionRegions.Length];
+            var regions = new List<ExceptionRegionRange>(_exceptionRegions.Length);
+            List<int> endfilterOffsets = null;
             for (int i = 0; i < _exceptionRegions.Length; i++)
             {
-                var clause = new ExceptionClauseLayout(_exceptionRegions[i].ILRegion);
-                VerifyExceptionRegionRange(clause.Try);
-                VerifyExceptionRegionRange(clause.Handler);
+                ILExceptionRegion region = _exceptionRegions[i].ILRegion;
+                var clause = new ExceptionClauseLayout(region.Kind);
+                clauses[i] = clause;
+                var tryRegion = new ExceptionRegionRange(region.TryOffset, region.TryOffset + region.TryLength, ExceptionRegionKind.Try, i);
+                var handler = new ExceptionRegionRange(region.HandlerOffset, region.HandlerOffset + region.HandlerLength, ExceptionRegionKind.Handler, i);
+                var filter = clause.HasFilter ?
+                    new ExceptionRegionRange(region.FilterOffset, region.HandlerOffset, ExceptionRegionKind.Filter, i) : default;
+                VerifyExceptionRegionRange(tryRegion);
+                VerifyExceptionRegionRange(handler);
                 if (clause.HasFilter)
                 {
-                    VerifyExceptionRegionRange(clause.Filter);
-                    VerifyExceptionFilterEnd(clause.Filter);
+                    VerifyExceptionRegionRange(filter);
+                    endfilterOffsets ??= FindEndfilterOffsets();
+                    VerifyExceptionFilterEnd(filter, endfilterOffsets);
                 }
 
-                // Empty or internally overlapping clauses cannot participate in containment.
-                // Their diagnostics are independent of the remaining clauses and IL checks.
-                if (clause.Try.IsEmpty || clause.Handler.IsEmpty)
+                if (tryRegion.IsEmpty || handler.IsEmpty)
                     continue;
 
-                _currentInstructionOffset = clause.Try.StartOffset;
-                if (!Check(!clause.Try.Overlaps(clause.HandlerAndFilter), VerifierError.EHClauseOverlap))
+                _currentInstructionOffset = tryRegion.StartOffset;
+                if (!Check(!tryRegion.Overlaps(handler) && (!clause.HasFilter || !tryRegion.Overlaps(filter)),
+                    VerifierError.EHClauseOverlap))
                     continue;
 
-                clauses[i] = clause;
-                // I.12.4.2.7 defines layout in terms of pairs of complete clauses.
-                // Compare each pair independently, including unreachable clauses.
-                for (int j = 0; j < i; j++)
-                {
-                    if (clauses[j] is ExceptionClauseLayout earlier)
-                        VerifyExceptionRegionPair(earlier, clause);
-                }
+                regions.Add(tryRegion);
+                regions.Add(handler);
+                if (clause.HasFilter)
+                    regions.Add(filter);
             }
+
+            FindExceptionRegionParents(clauses, regions);
+            VerifyExceptionClauseRelations(clauses, regions);
         }
 
         private void VerifyExceptionRegionRange(ExceptionRegionRange region)
@@ -112,7 +122,18 @@ namespace Internal.IL
                 VerifierError.EHClauseBoundary);
         }
 
-        private void VerifyExceptionFilterEnd(ExceptionRegionRange filter)
+        private List<int> FindEndfilterOffsets()
+        {
+            var offsets = new List<int>();
+            for (int offset = 0; offset < _ilBytes.Length; offset++)
+            {
+                if (_instructionBoundaries[offset] && GetOpcodeAt(offset) == ILOpcode.endfilter)
+                    offsets.Add(offset);
+            }
+            return offsets;
+        }
+
+        private void VerifyExceptionFilterEnd(ExceptionRegionRange filter, List<int> endfilterOffsets)
         {
             _currentInstructionOffset = filter.StartOffset;
             // I.12.4.2.7 and III.3.34 require exactly one endfilter, lexically last.
@@ -121,68 +142,132 @@ namespace Internal.IL
                 GetOpcodeAt(lastInstruction) == ILOpcode.endfilter, VerifierError.EHClauseFilterEnd))
                 return;
 
-            for (int offset = filter.StartOffset; offset < lastInstruction; offset++)
+            int firstEndfilter = endfilterOffsets.BinarySearch(filter.StartOffset);
+            if (firstEndfilter < 0)
+                firstEndfilter = ~firstEndfilter;
+            Check(firstEndfilter < endfilterOffsets.Count && endfilterOffsets[firstEndfilter] == lastInstruction,
+                VerifierError.EHClauseFilterEnd);
+        }
+
+        private void FindExceptionRegionParents(ExceptionClauseLayout[] clauses, List<ExceptionRegionRange> regions)
+        {
+            regions.Sort(static (first, second) =>
             {
-                if (!Check(!_instructionBoundaries[offset] || GetOpcodeAt(offset) != ILOpcode.endfilter,
-                    VerifierError.EHClauseFilterEnd))
-                    break;
+                int result = first.StartOffset.CompareTo(second.StartOffset);
+                if (result == 0)
+                    result = second.EndOffset.CompareTo(first.EndOffset);
+                if (result == 0)
+                    result = ((int)first.Kind).CompareTo((int)second.Kind);
+                if (result == 0)
+                    result = first.ClauseIndex.CompareTo(second.ClauseIndex);
+                return result;
+            });
+
+            var stack = new Stack<int>();
+            int previousEntry = -1;
+            for (int i = 0; i < regions.Count; i++)
+            {
+                ExceptionRegionRange region = regions[i];
+                switch (region.Kind)
+                {
+                    case ExceptionRegionKind.Try:
+                        clauses[region.ClauseIndex].TryIndex = i;
+                        break;
+                    case ExceptionRegionKind.Handler:
+                        clauses[region.ClauseIndex].HandlerIndex = i;
+                        break;
+                    case ExceptionRegionKind.Filter:
+                        clauses[region.ClauseIndex].FilterIndex = i;
+                        break;
+                }
+
+                // II.19 forbids shared filter/handler entries even if an intervening
+                // try makes the two entry regions non-adjacent in the nesting tree.
+                if (region.Kind != ExceptionRegionKind.Try)
+                {
+                    if (previousEntry >= 0 && regions[previousEntry].StartOffset == region.StartOffset)
+                        ReportExceptionRegionOverlap(clauses, region, regions[previousEntry]);
+                    previousEntry = i;
+                }
+
+                while (stack.Count != 0 && region.StartOffset >= regions[stack.Peek()].EndOffset)
+                    stack.Pop();
+
+                while (stack.Count != 0 && region.EndOffset > regions[stack.Peek()].EndOffset)
+                    ReportExceptionRegionOverlap(clauses, region, regions[stack.Pop()]);
+
+                if (stack.Count != 0)
+                {
+                    int parentIndex = stack.Peek();
+                    ExceptionRegionRange parent = regions[parentIndex];
+                    if (region.HasSameBounds(parent))
+                    {
+                        if (region.Kind == ExceptionRegionKind.Try && parent.Kind == ExceptionRegionKind.Try)
+                        {
+                            if (!clauses[region.ClauseIndex].CanShareTry || !clauses[parent.ClauseIndex].CanShareTry)
+                                ReportExceptionRegionOverlap(clauses, region, parent);
+                            clauses[region.ClauseIndex].TryIndex = parentIndex;
+                        }
+                        else
+                        {
+                            ReportExceptionRegionOverlap(clauses, region, parent);
+                        }
+                        continue;
+                    }
+
+                    region.ParentIndex = parentIndex;
+                    // Propagate the ordering constraint through handlers too, without
+                    // walking every ancestor for deeply nested clauses (I.12.4.2.5).
+                    region.EnclosingTryIndex = parent.EnclosingTryIndex;
+                    if (parent.Kind == ExceptionRegionKind.Try)
+                        region.EnclosingTryIndex = Math.Min(region.EnclosingTryIndex, parent.ClauseIndex);
+                }
+                regions[i] = region;
+                stack.Push(i);
             }
         }
 
-        // Arguments follow their original order in the EH table.
-        private void VerifyExceptionRegionPair(ExceptionClauseLayout earlier, ExceptionClauseLayout later)
+        private void ReportExceptionRegionOverlap(ExceptionClauseLayout[] clauses,
+            ExceptionRegionRange region, ExceptionRegionRange other)
         {
-            _currentInstructionOffset = later.Try.StartOffset;
-
-            // II.19: no two filter or handler entries may have the same address,
-            // even when one region is otherwise correctly nested in the other.
-            bool sameEntry = earlier.Handler.StartOffset == later.Handler.StartOffset ||
-                (earlier.HasFilter && earlier.Filter.StartOffset == later.Handler.StartOffset) ||
-                (later.HasFilter && earlier.Handler.StartOffset == later.Filter.StartOffset) ||
-                (earlier.HasFilter && later.HasFilter && earlier.Filter.StartOffset == later.Filter.StartOffset);
-            if (!Check(!sameEntry, VerifierError.EHClauseOverlap))
-                return;
-
-            if (earlier.Try.HasSameBounds(later.Try))
+            if (!clauses[region.ClauseIndex].HasOverlap)
             {
-                Check(earlier.CanShareTry && later.CanShareTry &&
-                    !earlier.HandlerAndFilter.Overlaps(later.HandlerAndFilter), VerifierError.EHClauseOverlap);
-                return;
+                _currentInstructionOffset = region.StartOffset;
+                VerificationError(VerifierError.EHClauseOverlap);
             }
+            clauses[region.ClauseIndex].HasOverlap = true;
+            clauses[other.ClauseIndex].HasOverlap = true;
+        }
 
-            if (earlier.IsDisjointFrom(later))
-                return;
-
-            // A complete clause must fit inside a single non-filter region of the other.
-            if (earlier.IsContainedIn(later.Try) ||
-                earlier.IsContainedIn(later.Handler) || later.IsContainedIn(earlier.Handler))
-                return;
-
-            if (later.IsContainedIn(earlier.Try))
+        private void VerifyExceptionClauseRelations(ExceptionClauseLayout[] clauses, List<ExceptionRegionRange> regions)
+        {
+            for (int i = 0; i < clauses.Length; i++)
             {
-                // I.12.4.2.5: inner try clauses must precede their enclosing try clause.
-                VerificationError(VerifierError.EHClauseOrder);
-                return;
-            }
+                ExceptionClauseLayout clause = clauses[i];
+                if (clause.TryIndex < 0 || clause.HasOverlap)
+                    continue;
 
-            // Distinguish crossing or shared regions from inconsistent clause nesting.
-            ReadOnlySpan<ExceptionRegionRange> earlierRegions = [earlier.Try, earlier.Handler, earlier.Filter];
-            ReadOnlySpan<ExceptionRegionRange> laterRegions = [later.Try, later.Handler, later.Filter];
-            foreach (ExceptionRegionRange first in earlierRegions)
-            {
-                foreach (ExceptionRegionRange second in laterRegions)
+                _currentInstructionOffset = regions[clause.TryIndex].StartOffset;
+                int parent = regions[clause.TryIndex].ParentIndex;
+                int handlerParent = regions[clause.HandlerIndex].ParentIndex;
+                int filterParent = clause.HasFilter ? regions[clause.FilterIndex].ParentIndex : -1;
+
+                // I.12.4.2.7 requires all parts of a clause to be contained in the
+                // same region. Sorting whole-clause spans would reject valid interleaving.
+                if (parent != handlerParent || (clause.HasFilter && parent != filterParent))
                 {
-                    if (first.Overlaps(second) && (first.HasSameBounds(second) ||
-                        (!first.Contains(second) && !second.Contains(first))))
-                    {
-                        _currentInstructionOffset = second.StartOffset;
-                        VerificationError(VerifierError.EHClauseOverlap);
-                        return;
-                    }
+                    bool sharedTryOverlap =
+                        (handlerParent >= 0 && clauses[regions[handlerParent].ClauseIndex].TryIndex == clause.TryIndex) ||
+                        (filterParent >= 0 && clauses[regions[filterParent].ClauseIndex].TryIndex == clause.TryIndex);
+                    VerificationError(sharedTryOverlap ? VerifierError.EHClauseOverlap : VerifierError.EHClauseNesting);
+                    continue;
                 }
-            }
 
-            VerificationError(VerifierError.EHClauseNesting);
+                if (!Check(parent < 0 || regions[parent].Kind != ExceptionRegionKind.Filter, VerifierError.EHClauseNesting))
+                    continue;
+
+                Check(i < regions[clause.TryIndex].EnclosingTryIndex, VerifierError.EHClauseOrder);
+            }
         }
     }
 }
