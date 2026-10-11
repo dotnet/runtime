@@ -204,12 +204,10 @@ namespace standalone
             return ::GCToEEInterface::WasCurrentThreadCreatedByGC();
         }
 
-#ifdef FEATURE_MULTITHREADING
         bool CreateThread(void (*threadStart)(void*), void* arg, bool is_suspendable, const char* name)
         {
             return ::GCToEEInterface::CreateThread(threadStart, arg, is_suspendable, name);
         }
-#endif // FEATURE_MULTITHREADING
 
         void WalkAsyncPinnedForPromotion(Object* object, ScanContext* sc, promote_func* callback)
         {

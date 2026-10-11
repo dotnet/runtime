@@ -290,7 +290,6 @@ public:
     virtual
     uint8_t* GetLoaderAllocatorObjectForGC(Object* pObject) PURE_VIRTUAL
 
-#ifdef FEATURE_MULTITHREADING
     // Creates and returns a new thread.
     // Parameters:
     //  threadStart - The function that will serve as the thread stub for the
@@ -306,7 +305,6 @@ public:
     //  true if the thread was started successfully, false if not.
     virtual
     bool CreateThread(void (*threadStart)(void*), void* arg, bool is_suspendable, const char* name) PURE_VIRTUAL
-#endif // FEATURE_MULTITHREADING
 
     // When a GC starts, gives the diagnostics code a chance to run.
     virtual
