@@ -42,7 +42,6 @@ export type EmscriptenInternals = {
 };
 
 export type EmscriptenModuleInternal = EmscriptenModule & {
-    onStartupDownloadQueueComputed?: (resourcesLoaded: number, totalResources: number) => void;
     runtimeKeepalivePush(): void;
     runtimeKeepalivePop(): void;
     print(message: string): void;

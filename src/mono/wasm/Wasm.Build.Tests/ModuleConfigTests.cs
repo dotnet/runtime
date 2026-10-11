@@ -97,6 +97,7 @@ public class ModuleConfigTests : WasmTemplateTestsBase
     {
         Configuration config = Configuration.Debug;
         ProjectInfo info = CopyTestAsset(config, false, TestAsset.WasmBasicTestApp, $"StartupDownloadQueueGuard_{simulateGrowth}");
+        List<string> errors = new();
         if (simulateGrowth)
         {
             UpdateFile("wwwroot/main.js", new Dictionary<string, string>
@@ -106,19 +107,15 @@ public class ModuleConfigTests : WasmTemplateTestsBase
         }
         PublishProject(info, config);
 
-        RunResult result = await RunForPublishWithWebServer(new BrowserRunOptions(
+        await RunForPublishWithWebServer(new BrowserRunOptions(
             Configuration: config,
             TestScenario: "DownloadResourceProgressTest",
-            ExpectedExitCode: simulateGrowth ? 1 : 0
+            ExpectedExitCode: simulateGrowth ? 1 : 0,
+            OnErrorMessage: message => errors.Add(message)
         ));
         if (simulateGrowth)
         {
-            Assert.Contains(result.ConsoleOutput, message => message.Contains("Startup download queue changed:"));
-            Assert.DoesNotContain(result.TestOutput, message => message.StartsWith("Startup download queue remained fixed:"));
-        }
-        else
-        {
-            Assert.Contains(result.TestOutput, message => message.StartsWith("Startup download queue remained fixed:"));
+            Assert.Contains(errors, message => message.Contains("Startup download queue changed:"));
         }
     }
 

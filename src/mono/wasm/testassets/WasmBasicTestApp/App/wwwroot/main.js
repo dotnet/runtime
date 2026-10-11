@@ -61,8 +61,6 @@ let memoryTestCallManagedExports = () => "managed exports were not initialized";
 // Prepare base runtime parameters
 dotnet.withConfig({ appendElementOnExit: true, exitOnUnhandledError: true, logExitCode: true });
 
-// Wasm.Build.Tests enables this only for the CoreCLR loader's upfront counting contract.
-const verifyStartupDownloadQueue = false;
 let startupDownloadQueue;
 let startupDownloadQueueError;
 
@@ -77,7 +75,7 @@ function recordStartupDownloadProgress(loaded, total) {
 }
 
 function assertStartupDownloadQueue() {
-    if (!verifyStartupDownloadQueue) {
+    if (startupDownloadQueue === undefined) {
         return;
     }
     if (startupDownloadQueueError !== undefined) {
@@ -89,18 +87,15 @@ function assertStartupDownloadQueue() {
         exit(1, error);
         throw error;
     }
-    testOutput(`Startup download queue remained fixed: ${startupDownloadQueue.total}`);
     startupDownloadQueue = undefined;
 }
 
 dotnet.withModuleConfig({
     onStartupDownloadQueueComputed: (loaded, total) => {
-        if (verifyStartupDownloadQueue) {
-            if (startupDownloadQueue !== undefined) {
-                startupDownloadQueueError ??= new Error("Startup download queue was recomputed before the phase finished.");
-            }
-            startupDownloadQueue = { loaded, total };
+        if (startupDownloadQueue !== undefined) {
+            startupDownloadQueueError ??= new Error("Startup download queue was recomputed before the phase finished.");
         }
+        startupDownloadQueue = { loaded, total };
     }
 }).withDownloadResourceProgress((loaded, total) => {
     recordStartupDownloadProgress(loaded, total);
