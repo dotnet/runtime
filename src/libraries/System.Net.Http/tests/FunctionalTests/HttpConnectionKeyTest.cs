@@ -33,5 +33,40 @@ namespace System.Net.Http.Functional.Tests
             object actualKey = Activator.CreateInstance(keyType, Enum.Parse(connectionKindType, kindString), host, port, sslHostName, proxyUri, identity);
             Assert.Equal(expected, referenceKey.Equals(actualKey));
         }
+
+        [ConditionalTheory(typeof(SocketsHttpHandler), nameof(SocketsHttpHandler.IsSupported))]
+        [InlineData("http://[fe80::1%1]/", "http://[fe80::1%2]/", false)]
+        [InlineData("http://[fe80::1]/", "http://[fe80::1%1]/", false)]
+        [InlineData("http://[fe80::1%eth0]/", "http://[fe80::1%eth1]/", false)]
+        [InlineData("http://[fe80::1%eth0]/", "http://[fe80::1%ETH0]/", false)]
+        [InlineData("http://[fe80::1%1]/", "http://[fe80::1%1]/", true)]
+        [InlineData("http://[fe80::1%1]/", "HTTP://[fe80:0:0:0:0:0:0:1%1]:80/", true)]
+        [InlineData("http://[fe80::1]/", "http://[fe80:0:0:0:0:0:0:1]:80/", true)]
+        [InlineData("http://user@[fe80::1%1]/#first", "http://other@[fe80::1%1]/#second", true)]
+        [InlineData("http://[fe80::1%1]:80/", "http://[fe80::1%1]:81/", false)]
+        [InlineData("http://[fe80::1%1]/", "https://[fe80::1%1]/", false)]
+        [InlineData("http://[fe80::1%1]/first", "http://[fe80::1%1]/second", false)]
+        [InlineData("http://PROXY.TEST/", "http://proxy.test:80/", true)]
+        [InlineData("http://127.0.0.1/", "http://127.1:80/", true)]
+        public void Equals_ProxyUris_DistinguishesIPv6Scope(string firstProxyUri, string secondProxyUri, bool expected)
+        {
+            Type connectionKindType = Type.GetType("System.Net.Http.HttpConnectionKind, System.Net.Http");
+            Type keyType = Type.GetType("System.Net.Http.HttpConnectionPoolManager+HttpConnectionKey, System.Net.Http");
+            object kind = Enum.Parse(connectionKindType, "Http");
+
+            foreach (string sslHostName in new[] { "localhost", "localhost-ssl" })
+            {
+                object firstKey = Activator.CreateInstance(keyType, kind, "localhost", 80, sslHostName, new Uri(firstProxyUri), string.Empty);
+                object secondKey = Activator.CreateInstance(keyType, kind, "localhost", 80, sslHostName, new Uri(secondProxyUri), string.Empty);
+
+                Assert.Equal(expected, firstKey.Equals(secondKey));
+                Assert.Equal(expected, secondKey.Equals(firstKey));
+                Assert.Equal(expected ? 1 : 2, new HashSet<object> { firstKey, secondKey }.Count);
+                if (expected)
+                {
+                    Assert.Equal(firstKey.GetHashCode(), secondKey.GetHashCode());
+                }
+            }
+        }
     }
 }

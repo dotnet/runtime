@@ -584,10 +584,17 @@ namespace System.Net.Http
             }
 
             // In the common case, SslHostName (when present) is equal to Host.  If so, don't include in hash.
-            public override int GetHashCode() =>
-                (SslHostName == Host ?
+            public override int GetHashCode()
+            {
+                int hashCode = SslHostName == Host ?
                     HashCode.Combine(Kind, Host, Port, ProxyUri, Identity) :
-                    HashCode.Combine(Kind, Host, Port, SslHostName, ProxyUri, Identity));
+                    HashCode.Combine(Kind, Host, Port, SslHostName, ProxyUri, Identity);
+
+                // Uri equality ignores IPv6 scope IDs, but they identify distinct proxy endpoints.
+                return ProxyUri is { HostNameType: UriHostNameType.IPv6 } proxyUri ?
+                    HashCode.Combine(hashCode, proxyUri.IdnHost) :
+                    hashCode;
+            }
 
             public override bool Equals([NotNullWhen(true)] object? obj) =>
                 obj is HttpConnectionKey hck &&
@@ -598,6 +605,7 @@ namespace System.Net.Http
                 Host == other.Host &&
                 Port == other.Port &&
                 ProxyUri == other.ProxyUri &&
+                (ProxyUri is not { HostNameType: UriHostNameType.IPv6 } || ProxyUri.IdnHost == other.ProxyUri?.IdnHost) &&
                 SslHostName == other.SslHostName &&
                 Identity == other.Identity;
         }
