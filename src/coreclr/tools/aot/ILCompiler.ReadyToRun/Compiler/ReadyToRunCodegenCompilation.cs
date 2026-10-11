@@ -320,6 +320,7 @@ namespace ILCompiler
         private readonly ReadyToRunCompilationPlan _compilationPlan;
         private readonly Dictionary<MethodDesc, ReadyToRunMethodCompilationInfo> _previousCompilationInfo;
         private readonly bool _isCoreLibCompilation;
+        private readonly HashSet<MethodDesc> _startupEagerMethods;
 
         public ProfileDataManager ProfileData => _profileData;
 
@@ -428,6 +429,11 @@ namespace ILCompiler
                 }
             }
 
+            if (_isCoreLibCompilation && _compilationPlan is not null)
+            {
+                _startupEagerMethods = GetStartupEagerMethods();
+            }
+
             // Generate baseline support specification for InstructionSetSupport. This will prevent usage of the generated
             // code if the runtime environment doesn't support the specified instruction set. Targets that cannot generate
             // code at runtime must not encode "must be absent" assertions, since a failing eager fixup is a fatal startup
@@ -531,12 +537,14 @@ namespace ILCompiler
 
             var methodsByLevel = new List<DependencyNodeCore<NodeFactory>>[_compilationPlan.LevelCount];
             var managedHelpers = new List<MethodWithGCInfo>();
+            var compiledMethods = new HashSet<MethodDesc>();
             for (int level = 0; level < methodsByLevel.Length; level++)
             {
                 IReadOnlyList<MethodDesc> methodsAtLevel = _compilationPlan.GetMethodsAtLevel(level);
                 var methodNodes = new List<DependencyNodeCore<NodeFactory>>(methodsAtLevel.Count);
                 foreach (MethodDesc method in methodsAtLevel)
                 {
+                    compiledMethods.Add(method);
                     MethodWithGCInfo methodNode = NodeFactory.CompiledMethodNode(method);
                     methodNodes.Add(methodNode);
                     if (methodNode.IsJitHelper)
@@ -582,6 +590,104 @@ namespace ILCompiler
             }
 
             ValidateManagedHelpers(managedHelpers);
+            AddStartupEagerFixups(methodsByLevel, compiledMethods);
+        }
+
+        private HashSet<MethodDesc> GetStartupEagerMethods()
+        {
+            var methods = new HashSet<MethodDesc>();
+            AddMethod("System"u8, "AppContext"u8, "Setup");
+            AddMethod("System.Diagnostics.Tracing"u8, "EventSource"u8, "InitializeDefaultEventSources");
+            AddMethod("System"u8, "Environment"u8, "InitializeCommandLineArgs");
+            AddMethod("System"u8, "Environment"u8, "CallEntryPoint");
+            AddMethod("System"u8, "StartupHookProvider"u8, "ManagedStartup");
+            return methods;
+
+            void AddMethod(ReadOnlySpan<byte> namespaceName, ReadOnlySpan<byte> typeName, string methodName)
+            {
+                MetadataType type = TypeSystemContext.SystemModule.GetKnownType(namespaceName, typeName);
+                MethodDesc foundMethod = null;
+                foreach (MethodDesc method in type.GetMethods())
+                {
+                    if (method.GetName() == methodName && method.IsUnmanagedCallersOnly)
+                    {
+                        Debug.Assert(foundMethod is null);
+                        foundMethod = method;
+                    }
+                }
+
+                Debug.Assert(foundMethod is not null);
+                methods.Add(foundMethod);
+            }
+        }
+
+        private void AddStartupEagerFixups(
+            List<DependencyNodeCore<NodeFactory>>[] methodsByLevel,
+            HashSet<MethodDesc> compiledMethods)
+        {
+            if (_startupEagerMethods is null)
+            {
+                return;
+            }
+
+            var eagerMethodClosure = new HashSet<MethodWithGCInfo>();
+            var methodsToVisit = new Stack<MethodWithGCInfo>();
+            var eagerFixups = new HashSet<Signature>();
+
+            foreach (MethodDesc method in _startupEagerMethods)
+            {
+                if (!compiledMethods.Contains(method))
+                {
+                    continue;
+                }
+
+                MethodWithGCInfo methodNode = NodeFactory.CompiledMethodNode(method);
+                if (methodNode.IsEmpty)
+                {
+                    continue;
+                }
+
+                MethodWithToken methodWithToken = new MethodWithToken(
+                    method,
+                    NodeFactory.Resolver.GetModuleTokenForMethod(method, allowDynamicallyCreatedReference: true, throwIfNotFound: true),
+                    constrainedType: null,
+                    unboxing: false,
+                    genericContextObject: method);
+                _dependencyGraph.AddRoot(
+                    SymbolNodeFactory.EagerReadyToRunMethodEntry(methodWithToken),
+                    "Startup method is always invoked");
+
+                methodsToVisit.Push(methodNode);
+                if (methodNode.GuaranteedPrecodeFixups is not null)
+                {
+                    eagerFixups.UnionWith(methodNode.GuaranteedPrecodeFixups);
+                }
+            }
+
+            while (methodsToVisit.TryPop(out MethodWithGCInfo method))
+            {
+                if (!eagerMethodClosure.Add(method) || method.DirectCallTargets is null)
+                {
+                    continue;
+                }
+
+                foreach (MethodWithGCInfo target in method.DirectCallTargets)
+                {
+                    methodsToVisit.Push(target);
+                }
+            }
+
+            foreach (List<DependencyNodeCore<NodeFactory>> methodsAtLevel in methodsByLevel)
+            {
+                foreach (DependencyNodeCore<NodeFactory> dependency in methodsAtLevel)
+                {
+                    var method = (MethodWithGCInfo)dependency;
+                    if (!method.IsEmpty && !eagerMethodClosure.Contains(method))
+                    {
+                        method.ApplyModuleEagerFixups(eagerFixups);
+                    }
+                }
+            }
         }
 
         public ReadyToRunCompilationPlan CreateCompilationPlan()

@@ -113,6 +113,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _moduleEagerFixups.Add(fixup);
         }
 
+        internal HashSet<MethodWithGCInfo> DirectCallTargets => _directCallTargets;
+
+        internal HashSet<Signature> GuaranteedPrecodeFixups => _guaranteedPrecodeFixups;
+
         internal void FinalizePrecodeFixups()
         {
             Debug.Assert(!_precodeFixupsFinalized);
@@ -158,6 +162,17 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     fixup is Import import &&
                     coveredFixups.Contains(import.Signature));
             }
+        }
+
+        internal void ApplyModuleEagerFixups(HashSet<Signature> fixups)
+        {
+            Debug.Assert(_precodeFixupsFinalized);
+
+            _guaranteedPrecodeFixups ??= new HashSet<Signature>();
+            _guaranteedPrecodeFixups.UnionWith(fixups);
+            _fixups.RemoveAll(fixup =>
+                fixup is Import import &&
+                fixups.Contains(import.Signature));
         }
 
         public int Size => _methodCode.Data.Length;
