@@ -1,21 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
-
-//
 
 /*============================================================
-**
 ** File:  COMUtilNative
-**
-**
 **
 ** Purpose: A dumping ground for classes which aren't large
 ** enough to get their own file in the EE.
-**
-**
-**
 ===========================================================*/
+
 #include "common.h"
 #include "object.h"
 #include "excep.h"
@@ -1073,25 +1065,6 @@ FORCEINLINE UINT64 GCInterface::InterlockedAdd (UINT64 *pAugend, UINT64 addend) 
     return newMemValue;
 }
 
-FORCEINLINE UINT64 GCInterface::InterlockedSub(UINT64 *pMinuend, UINT64 subtrahend) {
-    WRAPPER_NO_CONTRACT;
-
-    UINT64 oldMemValue;
-    UINT64 newMemValue;
-
-    do {
-        oldMemValue = *pMinuend;
-        newMemValue = oldMemValue - subtrahend;
-
-        // check for underflow
-        if (newMemValue > oldMemValue)
-            newMemValue = 0;
-
-    } while (InterlockedCompareExchange64((LONGLONG*) pMinuend, (LONGLONG) newMemValue, (LONGLONG) oldMemValue) != (LONGLONG) oldMemValue);
-
-    return newMemValue;
-}
-
 extern "C" void QCALLTYPE GCInterface_AddMemoryPressure(UINT64 bytesAllocated, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
@@ -2006,14 +1979,6 @@ FCIMPL2(MethodTable*, MethodTableNative::GetMethodTableMatchingParentClass, Meth
     FCALL_CONTRACT;
 
     return mt->GetMethodTableMatchingParentClass(parent);
-}
-FCIMPLEND
-
-FCIMPL1(MethodTable*, MethodTableNative::InstantiationArg0, MethodTable* mt);
-{
-    FCALL_CONTRACT;
-
-    return mt->GetInstantiation()[0].AsMethodTable();
 }
 FCIMPLEND
 

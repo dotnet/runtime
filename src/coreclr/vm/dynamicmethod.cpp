@@ -422,6 +422,7 @@ HeapList* HostCodeHeap::InitializeHeapList(CodeHeapRequestInfo *pInfo)
     m_pAllocator = pInfo->GetAllocator();
 
     HeapList* pHp = new HeapList;
+    pHp->isOptimizedCode = false;
 
     TrackAllocation *pTracker = NULL;
 

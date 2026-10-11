@@ -28,4 +28,41 @@ public class JumpThreadPhi
         Assert.Equal(100, Phi_00(1));
         Assert.Equal(103, Phi_00(8));
     }
+
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    private static int Phi_01(bool q, bool r, int u, int v)
+    {
+        int z = 0, w = 0, m = 0, n = 0;
+        if (r)
+        {
+            m = v;
+            n = 1;
+            goto Target;
+        }
+
+        if (q)
+        {
+            z = u;
+            w = 1;
+        }
+
+        if (z != w)
+        {
+            return -1;
+        }
+
+    Target:
+        if (m == n)
+        {
+            return 200;
+        }
+
+        return 100 + n;
+    }
+
+    [Fact]
+    public static void TestPhi01()
+    {
+        Assert.Equal(200, Phi_01(false, false, 0, 0));
+    }
 }

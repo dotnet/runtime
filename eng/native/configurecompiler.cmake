@@ -22,6 +22,16 @@ include(CheckCCompilerFlag)
 include(CheckCXXCompilerFlag)
 include(CheckLinkerFlag)
 
+# Apple platforms like macOS/iOS allow targeting older operating system versions with a single SDK,
+# so the mere presence of a symbol in the SDK does not tell us whether the deployment target supports it.
+# The compiler warns when using an API unavailable at the deployment target. Turn that into an error
+# for feature probes via CMAKE_REQUIRED_FLAGS, so check_symbol_exists() and other compile checks
+# correctly identify whether the API is supported on the target.
+check_c_compiler_flag("-Werror=unguarded-availability" COMPILER_SUPPORTS_W_ERROR_UNGUARDED_AVAILABILITY)
+if(COMPILER_SUPPORTS_W_ERROR_UNGUARDED_AVAILABILITY)
+    set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -Werror=unguarded-availability")
+endif()
+
 # "configureoptimization.cmake" must be included after CLR_CMAKE_HOST_UNIX has been set.
 include(${CMAKE_CURRENT_LIST_DIR}/configureoptimization.cmake)
 

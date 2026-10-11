@@ -13,9 +13,9 @@ public class Async2Pgo
 {
     [SkipOnCoreClr("This test is not compatible with GC stress.", RuntimeTestModes.AnyGCStress)]
     [Fact]
-    public static void EntryPoint()
+    public static async Task EntryPoint()
     {
-        AsyncEntryPoint().Wait();
+        await AsyncEntryPoint();
     }
 
     internal static async Task<int> AsyncEntryPoint()

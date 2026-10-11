@@ -9,5 +9,7 @@ namespace System.Net.Test.Common
         {
             return true;
         }
+
+        public static bool IsGssGetNameAttributeSupported() => false;
     }
 }

@@ -31,6 +31,21 @@ namespace System.Reflection.Context.Tests
         Value2 = 2
     }
 
+    internal unsafe class FunctionPointerHolder
+    {
+        public void CdeclParameter(delegate* unmanaged[Cdecl]<void> f) { }
+        public void ManagedParameter(delegate*<string, int> f) { }
+        public void UnmanagedParameter(delegate* unmanaged<string, int> f) { }
+    }
+
+    internal class GenericMethodOverloads
+    {
+        public void Method() { }
+        public void Method<T>() { }
+        public void Method(string value) { }
+        public void Method<T>(string value) { }
+    }
+
     public class ExtendedTypeTests
     {
         private readonly CustomReflectionContext _customReflectionContext = new TestCustomReflectionContext();
@@ -331,6 +346,212 @@ namespace System.Reflection.Context.Tests
             // Generic parameter T has no constraints
             Type[] constraints = typeParams[0].GetGenericParameterConstraints();
             Assert.Empty(constraints);
+        }
+
+        [Theory]
+        [InlineData(typeof(Span<int>), true)]
+        [InlineData(typeof(ReadOnlySpan<char>), true)]
+        [InlineData(typeof(int), false)]
+        [InlineData(typeof(int?), false)]
+        [InlineData(typeof(List<int>), false)]
+        [InlineData(typeof(TestEnum), false)]
+        public void IsByRefLike_ReturnsUnderlyingValue(Type type, bool expected)
+        {
+            TypeInfo customType = _customReflectionContext.MapType(type.GetTypeInfo());
+            Assert.Equal(expected, customType.IsByRefLike);
+        }
+
+        [Fact]
+        public void GetEnumValuesAsUnderlyingType_ReturnsValues()
+        {
+            TypeInfo customEnumType = _customReflectionContext.MapType(typeof(TestEnum).GetTypeInfo());
+
+            Array values = customEnumType.GetEnumValuesAsUnderlyingType();
+            Assert.Equal(new int[] { 1, 2 }, Assert.IsType<int[]>(values));
+        }
+
+        [Fact]
+        public void GetEnumValuesAsUnderlyingType_ThrowsForNonEnum()
+        {
+            Assert.Throws<ArgumentException>(() => _customTypeInfo.GetEnumValuesAsUnderlyingType());
+        }
+
+        [Fact]
+        public void GetNullableUnderlyingType_ForNullable_ReturnsProjectedType()
+        {
+            TypeInfo customNullableType = _customReflectionContext.MapType(typeof(int?).GetTypeInfo());
+
+            Type underlyingType = customNullableType.GetNullableUnderlyingType();
+            Assert.Equal(ProjectionConstants.CustomType, underlyingType.GetType().FullName);
+            Assert.Equal(typeof(int), underlyingType.UnderlyingSystemType);
+        }
+
+        [Fact]
+        public void GetNullableUnderlyingType_ForNullableDefinition_ReturnsProjectedGenericParameter()
+        {
+            TypeInfo customNullableDef = _customReflectionContext.MapType(typeof(Nullable<>).GetTypeInfo());
+
+            Type underlyingType = customNullableDef.GetNullableUnderlyingType();
+            Assert.Equal(ProjectionConstants.CustomType, underlyingType.GetType().FullName);
+            Assert.True(underlyingType.IsGenericParameter);
+        }
+
+        [Theory]
+        [InlineData(typeof(int))]
+        [InlineData(typeof(TestEnum))]
+        [InlineData(typeof(List<int>))]
+        public void GetNullableUnderlyingType_ForNonNullable_ReturnsNull(Type type)
+        {
+            TypeInfo customType = _customReflectionContext.MapType(type.GetTypeInfo());
+            Assert.Null(customType.GetNullableUnderlyingType());
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/124149", TestRuntimes.Mono)]
+        public void MakeFunctionPointerType_ReturnsProjectedType(bool isUnmanaged)
+        {
+            TypeInfo customReturnType = _customReflectionContext.MapType(typeof(int).GetTypeInfo());
+            TypeInfo customParameterType = _customReflectionContext.MapType(typeof(string).GetTypeInfo());
+
+            Type functionPointerType = customReturnType.MakeFunctionPointerType([customParameterType], isUnmanaged);
+            Assert.Equal(ProjectionConstants.CustomType, functionPointerType.GetType().FullName);
+            Assert.Equal(typeof(int).MakeFunctionPointerType([typeof(string)], isUnmanaged), functionPointerType.UnderlyingSystemType);
+            Assert.True(functionPointerType.IsFunctionPointer);
+            Assert.Equal(isUnmanaged, functionPointerType.IsUnmanagedFunctionPointer);
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/124149", TestRuntimes.Mono)]
+        public void MakeFunctionPointerType_NullOrMixedParameterTypes_ReturnsProjectedType()
+        {
+            TypeInfo customReturnType = _customReflectionContext.MapType(typeof(int).GetTypeInfo());
+            TypeInfo customParameterType = _customReflectionContext.MapType(typeof(string).GetTypeInfo());
+
+            Type noParameters = customReturnType.MakeFunctionPointerType(null);
+            Assert.Equal(ProjectionConstants.CustomType, noParameters.GetType().FullName);
+            Assert.Equal(typeof(int).MakeFunctionPointerType(null), noParameters.UnderlyingSystemType);
+
+            Type mixedParameters = customReturnType.MakeFunctionPointerType([customParameterType, typeof(long)]);
+            Assert.Equal(ProjectionConstants.CustomType, mixedParameters.GetType().FullName);
+            Assert.Equal(typeof(int).MakeFunctionPointerType([typeof(string), typeof(long)]), mixedParameters.UnderlyingSystemType);
+        }
+
+        [Theory]
+        [InlineData(typeof(int), false, false, true, false)]
+        [InlineData(typeof(int[]), true, false, false, false)]
+        [InlineData(typeof(int[,]), false, true, false, false)]
+        [InlineData(typeof(List<int>), false, false, false, true)]
+        [InlineData(typeof(List<>), false, false, true, false)]
+        public void ArrayAndGenericShape_ReturnsUnderlyingValues(Type type, bool isSZArray, bool isVariableBoundArray, bool isTypeDefinition, bool isConstructedGenericType)
+        {
+            TypeInfo customType = _customReflectionContext.MapType(type.GetTypeInfo());
+
+            Assert.Equal(isSZArray, customType.IsSZArray);
+            Assert.Equal(isVariableBoundArray, customType.IsVariableBoundArray);
+            Assert.Equal(isTypeDefinition, customType.IsTypeDefinition);
+            Assert.Equal(isConstructedGenericType, customType.IsConstructedGenericType);
+        }
+
+        [Theory]
+        [InlineData(nameof(FunctionPointerHolder.ManagedParameter), false)]
+        [InlineData(nameof(FunctionPointerHolder.UnmanagedParameter), true)]
+        public void FunctionPointerMembers_ReturnUnderlyingValues(string methodName, bool isUnmanaged)
+        {
+            Type functionPointerType = typeof(FunctionPointerHolder).GetMethod(methodName).GetParameters()[0].ParameterType;
+            TypeInfo customType = _customReflectionContext.MapType(functionPointerType.GetTypeInfo());
+
+            Assert.True(customType.IsFunctionPointer);
+            Assert.Equal(isUnmanaged, customType.IsUnmanagedFunctionPointer);
+            Assert.Empty(customType.GetFunctionPointerCallingConventions());
+
+            Type returnType = customType.GetFunctionPointerReturnType();
+            Assert.Equal(ProjectionConstants.CustomType, returnType.GetType().FullName);
+            Assert.Equal(typeof(int), returnType.UnderlyingSystemType);
+
+            Type parameterType = Assert.Single(customType.GetFunctionPointerParameterTypes());
+            Assert.Equal(ProjectionConstants.CustomType, parameterType.GetType().FullName);
+            Assert.Equal(typeof(string), parameterType.UnderlyingSystemType);
+        }
+
+        [Fact]
+        public void GetFunctionPointerCallingConventions_ForModifiedType_ReturnsProjectedTypes()
+        {
+            ParameterInfo parameter = typeof(FunctionPointerHolder).GetMethod(nameof(FunctionPointerHolder.CdeclParameter)).GetParameters()[0];
+            TypeInfo customType = _customReflectionContext.MapType(parameter.GetModifiedParameterType().GetTypeInfo());
+
+            Type callingConvention = Assert.Single(customType.GetFunctionPointerCallingConventions());
+            Assert.Equal(ProjectionConstants.CustomType, callingConvention.GetType().FullName);
+            Assert.Equal(typeof(System.Runtime.CompilerServices.CallConvCdecl), callingConvention.UnderlyingSystemType);
+        }
+
+        [Fact]
+        public void FunctionPointerMembers_ForNonFunctionPointer_ReturnUnderlyingValues()
+        {
+            Assert.False(_customTypeInfo.IsFunctionPointer);
+            Assert.False(_customTypeInfo.IsUnmanagedFunctionPointer);
+            Assert.Throws<InvalidOperationException>(() => _customTypeInfo.GetFunctionPointerReturnType());
+            Assert.Throws<InvalidOperationException>(() => _customTypeInfo.GetFunctionPointerParameterTypes());
+            Assert.Throws<InvalidOperationException>(() => _customTypeInfo.GetFunctionPointerCallingConventions());
+        }
+
+        [Theory]
+        [InlineData(typeof(NestedTypeContainer), MemberTypes.TypeInfo)]
+        [InlineData(typeof(NestedTypeContainer.NestedType), MemberTypes.NestedType)]
+        public void MemberType_ReturnsUnderlyingValue(Type type, MemberTypes expected)
+        {
+            TypeInfo customType = _customReflectionContext.MapType(type.GetTypeInfo());
+            Assert.Equal(expected, customType.MemberType);
+        }
+
+        [Fact]
+        public void GetMethod_WithGenericParameterCount_ReturnsProjectedMethod()
+        {
+            TypeInfo customType = _customReflectionContext.MapType(typeof(GenericMethodOverloads).GetTypeInfo());
+            MethodInfo[] methods = customType.GetMethods().Where(m => m.Name == nameof(GenericMethodOverloads.Method)).ToArray();
+            Type customStringType = _customReflectionContext.MapType(typeof(string).GetTypeInfo());
+
+            MethodInfo nonGeneric = customType.GetMethod(nameof(GenericMethodOverloads.Method), 0, Type.EmptyTypes);
+            Assert.Equal(methods.Single(m => !m.IsGenericMethodDefinition && m.GetParameters().Length == 0), nonGeneric);
+
+            MethodInfo generic = customType.GetMethod(nameof(GenericMethodOverloads.Method), 1, Type.EmptyTypes);
+            Assert.Equal(methods.Single(m => m.IsGenericMethodDefinition && m.GetParameters().Length == 0), generic);
+
+            MethodInfo genericWithParameter = customType.GetMethod(nameof(GenericMethodOverloads.Method), 1, BindingFlags.Public | BindingFlags.Instance, [customStringType]);
+            Assert.Equal(methods.Single(m => m.IsGenericMethodDefinition && m.GetParameters().Length == 1), genericWithParameter);
+
+            Assert.Null(customType.GetMethod(nameof(GenericMethodOverloads.Method), 2, Type.EmptyTypes));
+        }
+
+        [Theory]
+        [InlineData(typeof(TestObject))]
+        [InlineData(typeof(DerivedTestObject))]
+        public void GetMethod_WithGenericParameterCount_ReturnsAddedGetterForCountZero(Type type)
+        {
+            TypeInfo customType = _customReflectionContext.MapType(type.GetTypeInfo());
+
+            MethodInfo getter = customType.GetMethod("get_number", 0, Type.EmptyTypes);
+            Assert.NotNull(getter);
+            Assert.Equal(customType.GetMethod("get_number", Type.EmptyTypes), getter);
+
+            Assert.Null(customType.GetMethod("get_number", 1, Type.EmptyTypes));
+        }
+
+        [Theory]
+        [InlineData(typeof(TestObject))]
+        [InlineData(typeof(DerivedTestObject))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/135298", TestRuntimes.Mono)]
+        public void GetMethod_WithGenericParameterCount_ReturnsAddedSetterForCountZero(Type type)
+        {
+            TypeInfo customType = _customReflectionContext.MapType(type.GetTypeInfo());
+            Type customIntType = _customReflectionContext.MapType(typeof(int).GetTypeInfo());
+
+            MethodInfo setter = customType.GetMethod("set_number", 0, [customIntType]);
+            Assert.NotNull(setter);
+            Assert.Equal(customType.GetMethod("set_number", [customIntType]), setter);
+
+            Assert.Null(customType.GetMethod("set_number", 1, [customIntType]));
         }
     }
 }

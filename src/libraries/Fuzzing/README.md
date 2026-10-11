@@ -77,6 +77,52 @@ The HTML report can be opened from
 .\coverage-report\html\index.html
 ```
 
+### Collecting source code coverage
+
+Instal prerequisite tools if needed
+
+```powershell
+dotnet tool install --global dotnet-coverage
+dotnet tool install --global dotnet-reportgenerator-globaltool
+```
+
+The following PowerShell commands use `KerberosPacLogonInfoFuzzer` as an example.
+
+```powershell
+$root = $(git rev-parse --show-toplevel)
+$fuzzer = "KerberosPacLogonInfoFuzzer"
+$build = "$root\artifacts\bin\DotnetFuzzing\Debug\net10.0\win-x64"
+$deployment = "$root\src\libraries\Fuzzing\DotnetFuzzing\deployment"
+$corpus = "$deployment\$fuzzer\corpus"
+$coverageDir = "$root\artifacts\pac-coverage"
+
+dotnet-coverage collect `
+    --output "$coverageDir\coverage.cobertura.xml" --output-format cobertura `
+    "$build\DotnetFuzzing.exe" $fuzzer $corpus
+if ($LASTEXITCODE -ne 0) { throw "Seed coverage collection failed" }
+
+reportgenerator `
+    "-reports:$coverageDir\coverage.cobertura.xml" `
+    "-targetdir:$coverageDir\html" `
+    "-reporttypes:Html;TextSummary"
+if ($LASTEXITCODE -ne 0) { throw "Report generation failed" }
+
+Start-Process "$coverage\html\index.html"
+```
+
+`CollectCoverage.ps1` automates the process:
+
+```powershell
+.\CollectCoverage.ps1 KerberosPacLogonInfoFuzzer
+```
+
+It reads target assemblies from `OneFuzzConfig.json` and uses the deployment's `corpus` and
+`generated-corpus` directories when present. For other corpus locations, pass
+`-CorpusDirectories <directory1>,<directory2>`. Use `-BuildDirectory` for a different
+uninstrumented build configuration or framework, and `-OutputDirectory` to select the report location.
+The default report is `artifacts\fuzz-coverage\<fuzzer-name>\html\index.html`.
+The script runs directly from the original build directory. It does not build, fuzz, or install tools. Replay measures saved inputs, not every transient fuzz input.
+
 ## Creating a new fuzzing target
 
 To create a new fuzzing target, you need to create a new class that implements the `IFuzzer` interface.
@@ -105,6 +151,10 @@ internal sealed class IPAddressFuzzer : IFuzzer
 
 Once you've created the new target, you can follow instructions above to run it locally.
 Targets are discovered via reflection, so they will automatically become available for local runs and continuous fuzzing in CI.
+
+`KerberosPacLogonInfoFuzzer` targets `System.Net.Security.Fuzzing`, a helper assembly that links the production PAC logon-info parser source.
+This allows the Unix-only parser to be instrumented on Windows without changing the product assembly.
+Its initial corpus contains the valid PAC logon-info sample used by the parser's functional tests.
 
 ### Running against a sample input
 

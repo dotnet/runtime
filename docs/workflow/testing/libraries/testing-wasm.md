@@ -144,6 +144,83 @@ At the moment supported values are:
 
 By default, `chrome` browser is used.
 
+## CoreCLR ReadyToRun library tests
+
+Build the browser CoreCLR runtime, libraries, packs, and host crossgen2 first:
+
+```bash
+./build.sh clr+libs+host+packs -os browser -c Release /p:AotHostArchitecture=arm64 /p:AotHostOS=osx
+```
+
+Use the architecture and OS of the build machine for `AotHostArchitecture` and `AotHostOS`
+(for example, `x64` and `linux` on an x64 Linux host).
+On macOS, ensure a supported Python installation is ahead of Xcode's Python on `PATH`.
+
+Run a library suite with trimmed ReadyToRun images:
+
+```bash
+XHARNESS_COMMAND=test-browser ./dotnet.sh build /t:Test \
+  src/libraries/System.Runtime/tests/System.IO.UnmanagedMemoryStream.Tests/System.IO.UnmanagedMemoryStream.Tests.csproj \
+  /p:TargetOS=browser /p:TargetArchitecture=wasm /p:RuntimeFlavor=CoreCLR /p:Configuration=Release \
+  /p:TestWasmReadyToRun=true /p:EnableAggressiveTrimming=true \
+  /p:Scenario=WasmTestOnChrome /p:InstallChromeForTests=true
+```
+
+`TestWasmReadyToRun` enables `PublishReadyToRun` only in browser or WASI CoreCLR library test projects.
+Do not pass `PublishReadyToRun=true` globally to `build.sh`: that also attempts to publish
+host-side build tools with ReadyToRun.
+`EnableAggressiveTrimming` selects the shared mobile test trimming configuration, including
+the xUnit and test-utility descriptors and trimming-aware test exclusions.
+Library-specific descriptors retain their existing platform conditions; Apple-only roots
+are not enabled for browser tests. The property must also be passed when building the test utilities.
+R2R browser test apps also set `TEST_READY_TO_RUN_MODE=1`, so existing
+`PlatformDetection.IsReadyToRunCompiled` conditions apply. Quarantines for shared WebAssembly
+R2R issues use `PlatformDetection.IsWasmReadyToRun`, covering browser and WASI R2R while
+leaving interpreter coverage enabled on both hosts.
+
+For the existing CoreCLR library smoke set, use:
+
+```bash
+XHARNESS_COMMAND=test-browser ./build.sh libs.tests -test -os browser -c Release \
+  /p:RuntimeFlavor=CoreCLR /p:TestWasmReadyToRun=true /p:EnableAggressiveTrimming=true \
+  /p:RunSmokeTestsOnly=true /p:Scenario=WasmTestOnChrome /p:InstallChromeForTests=true
+```
+
+Omit `RunSmokeTestsOnly` to build and run all supported library suites. To isolate trimming
+from R2R, keep `EnableAggressiveTrimming=true` and pass `PublishReadyToRun=false`.
+Use clean project-specific `bin` and `obj` browser-wasm outputs when switching modes;
+stale staged assets can otherwise cause assembly-loading failures before tests start.
+
+The `LibraryTestsCoreCLR_R2R` CI jobs use the same configuration and archive the published
+tests for execution on Helix. The existing interpreter jobs remain separate.
+
+For CoreCLR browser applications, set `PublishReadyToRun=true` and
+`PublishReadyToRunComposite=true` to publish a single composite ReadyToRun image and
+component WebCIL stubs instead of per-assembly images. Publishing requires a wasm-capable
+crossgen2 and WebCIL enabled; the composite is loaded before the runtime starts.
+`ReadyToRunTests.PublishRunAllPagesComposite` exercises trimmed, untrimmed, and
+native-relinked publishes in a browser, including asset fingerprinting when
+`USE_FINGERPRINTING_FOR_TESTS=true`.
+
+For WASI, build the CoreCLR runtime, libraries, packs, and host crossgen2 first:
+
+```bash
+./build.sh clr+libs+host+packs -os wasi -arch wasm -c Release \
+  -rc Release -lc Release -hc Release /p:TestAssemblies=false
+```
+
+Then run the focused WASI smoke suite with trimmed composite ReadyToRun images:
+
+```bash
+XHARNESS_COMMAND=test ./build.sh libs.tests -test -os wasi -c Release \
+  /p:RuntimeFlavor=CoreCLR /p:TestWasmReadyToRun=true /p:EnableAggressiveTrimming=true \
+  /p:RunSmokeTestsOnly=true /p:Scenario=WasmTestOnWasmtime
+```
+
+The `LibraryTestsCoreCLR_WASI_R2R` CI job uses this configuration to run
+`System.Collections.Tests`; the existing interpreter smoke job continues to run the broader
+`System.Runtime.Tests` suite separately.
+
 ## AOT library tests
 
 - Building library tests with AOT, and (even) with `EnableAggressiveTrimming` takes 3-9mins on CI, and that adds up for all the assemblies, causing

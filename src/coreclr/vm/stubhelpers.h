@@ -49,6 +49,7 @@ extern "C" void QCALLTYPE StubHelpers_ProfilerEndTransitionCallback(MethodDesc* 
 extern "C" IUnknown* QCALLTYPE StubHelpers_GetCOMIPFromRCWSlow(QCall::ObjectHandleOnStack pSrc, MethodTable* pInterfaceMT, INT32 comSlot, void** ppTarget, BOOL* pfNeedsRelease, QCallExceptionStatus* qcallError);
 
 extern "C" void QCALLTYPE ObjectMarshaler_ConvertToNative(QCall::ObjectHandleOnStack pSrcUNSAFE, VARIANT* pDest, QCallExceptionStatus* qcallError);
+extern "C" void QCALLTYPE ObjectMarshaler_ConvertToNativeVariantArrayElement(QCall::ObjectHandleOnStack pSrcUNSAFE, VARIANT* pDest, QCallExceptionStatus* qcallError);
 extern "C" void QCALLTYPE ObjectMarshaler_ConvertToManaged(VARIANT* pSrc, QCall::ObjectHandleOnStack retObject, QCallExceptionStatus* qcallError);
 
 extern "C" IUnknown* QCALLTYPE InterfaceMarshaler_ConvertToNative(QCall::ObjectHandleOnStack pObjUNSAFE, MethodTable* pItfMT, MethodTable* pClsMT, DWORD dwFlags, QCallExceptionStatus* qcallError);
