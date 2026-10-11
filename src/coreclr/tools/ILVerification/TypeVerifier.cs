@@ -41,7 +41,8 @@ namespace Internal.TypeVerifier
         {
             VerifyBaseType();
 
-            VerifyInterfaces();
+            HashSet<MethodDesc> invalidMethodImplDeclarations = VerifyMethodImpls();
+            VerifyInterfaces(invalidMethodImplDeclarations);
         }
 
         private void VerifyBaseType()
@@ -70,7 +71,29 @@ namespace Internal.TypeVerifier
             }
         }
 
-        public void VerifyInterfaces()
+        private HashSet<MethodDesc> VerifyMethodImpls()
+        {
+            MetadataReader reader = _module.MetadataReader;
+            TypeDefinition typeDefinition = reader.GetTypeDefinition(_typeDefinitionHandle);
+            HashSet<MethodDesc> invalidDeclarations = null;
+
+            foreach (MethodImplementationHandle handle in typeDefinition.GetMethodImplementations())
+            {
+                MethodImplementation methodImpl = reader.GetMethodImplementation(handle);
+                MethodDesc declaration = _module.GetMethod(methodImpl.MethodDeclaration);
+                MethodDesc body = _module.GetMethod(methodImpl.MethodBody);
+
+                if (!VerifyMethodImpl(declaration, body))
+                {
+                    invalidDeclarations ??= new HashSet<MethodDesc>();
+                    invalidDeclarations.Add(declaration);
+                }
+            }
+
+            return invalidDeclarations;
+        }
+
+        private void VerifyInterfaces(HashSet<MethodDesc> invalidMethodImplDeclarations)
         {
             TypeDefinition typeDefinition = _module.MetadataReader.GetTypeDefinition(_typeDefinitionHandle);
             EcmaType type = _module.GetType(_typeDefinitionHandle);
@@ -128,22 +151,7 @@ namespace Internal.TypeVerifier
                             continue;
                         }
 
-                        // Validate the original MethodImpl body before slot resolution can replace it.
-                        bool invalidMethodImpl = false;
-                        MethodImplRecord[] methodImpls = type.FindMethodsImplWithMatchingDeclName(method.Name);
-                        if (methodImpls != null)
-                        {
-                            foreach (MethodImplRecord methodImpl in methodImpls)
-                            {
-                                if (methodImpl.Decl == method && !VerifyMethodImpl(method, methodImpl.Body))
-                                {
-                                    invalidMethodImpl = true;
-                                    break;
-                                }
-                            }
-                        }
-
-                        if (invalidMethodImpl)
+                        if (invalidMethodImplDeclarations is not null && invalidMethodImplDeclarations.Contains(method))
                         {
                             continue;
                         }

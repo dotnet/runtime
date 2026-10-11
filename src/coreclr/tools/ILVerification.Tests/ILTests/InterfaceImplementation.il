@@ -725,3 +725,196 @@
         ret
     }
 }
+
+.class public auto ansi abstract beforefieldinit AbstractNonVirtualMethod_InvalidType_InvalidMethodImpl
+    extends [System.Runtime]System.Object
+    implements IInterface
+{
+    .method private hidebysig instance void ExplicitMethod() cil managed
+    {
+        .override method instance void IInterface::InterfaceMethod()
+        .maxstack 0
+        ret
+    }
+}
+
+.class public auto ansi abstract beforefieldinit AbstractVirtualMethod_ValidType_Valid
+    extends [System.Runtime]System.Object
+    implements IInterface
+{
+    .method private final hidebysig newslot virtual instance void ExplicitMethod() cil managed
+    {
+        .override method instance void IInterface::InterfaceMethod()
+        .maxstack 0
+        ret
+    }
+}
+
+.class interface public auto ansi abstract IDefaultMethodInterface
+{
+    .method public hidebysig newslot virtual instance void InterfaceMethod() cil managed
+    {
+        .maxstack 0
+        ret
+    }
+}
+
+.class public auto ansi beforefieldinit NonVirtualBodyForDefaultInterfaceMethod_InvalidType_InvalidMethodImpl
+    extends [System.Runtime]System.Object
+    implements IDefaultMethodInterface
+{
+    .method private hidebysig instance void ExplicitMethod() cil managed
+    {
+        .override method instance void IDefaultMethodInterface::InterfaceMethod()
+        .maxstack 0
+        ret
+    }
+}
+
+.class public auto ansi beforefieldinit VirtualBodyForDefaultInterfaceMethod_ValidType_Valid
+    extends [System.Runtime]System.Object
+    implements IDefaultMethodInterface
+{
+    .method private final hidebysig newslot virtual instance void ExplicitMethod() cil managed
+    {
+        .override method instance void IDefaultMethodInterface::InterfaceMethod()
+        .maxstack 0
+        ret
+    }
+}
+
+.class public auto ansi beforefieldinit NonVirtualMethodOnInheritedInterface_InvalidType_InvalidMethodImpl
+    extends ExplicitVirtualMethod_ValidType_Valid
+{
+    .method private hidebysig instance void ExplicitMethod() cil managed
+    {
+        .override method instance void IInterface::InterfaceMethod()
+        .maxstack 0
+        ret
+    }
+}
+
+.class public auto ansi beforefieldinit VirtualMethodOnInheritedInterface_ValidType_Valid
+    extends ExplicitVirtualMethod_ValidType_Valid
+{
+    .method private final hidebysig newslot virtual instance void ExplicitMethod() cil managed
+    {
+        .override method instance void IInterface::InterfaceMethod()
+        .maxstack 0
+        ret
+    }
+}
+
+.class interface public auto ansi abstract INonVirtualMethodImpl_InvalidType_InvalidMethodImpl
+    implements IInterface
+{
+    .method private hidebysig instance void ExplicitMethod() cil managed
+    {
+        .override method instance void IInterface::InterfaceMethod()
+        .maxstack 0
+        ret
+    }
+}
+
+.class interface public auto ansi abstract IVirtualMethodImpl_ValidType_Valid
+    implements IInterface
+{
+    .method private final hidebysig newslot virtual instance void ExplicitMethod() cil managed
+    {
+        .override method instance void IInterface::InterfaceMethod()
+        .maxstack 0
+        ret
+    }
+}
+
+.class public auto ansi beforefieldinit InheritedNonVirtualDefaultImplementation_InvalidType_InvalidMethodImpl
+    extends [System.Runtime]System.Object
+    implements INonVirtualMethodImpl_InvalidType_InvalidMethodImpl, IInterface
+{
+}
+
+.class public auto ansi beforefieldinit NonVirtualBodyForClassMethod_InvalidType_InvalidMethodImpl
+    extends VirtualMethodImplBase
+{
+    .method private hidebysig instance void Implementation() cil managed
+    {
+        .override method instance void VirtualMethodImplBase::ExplicitMethod()
+        .maxstack 0
+        ret
+    }
+}
+
+.class public auto ansi beforefieldinit VirtualBodyForClassMethod_ValidType_Valid
+    extends VirtualMethodImplBase
+{
+    .method private final hidebysig newslot virtual instance void Implementation() cil managed
+    {
+        .override method instance void VirtualMethodImplBase::ExplicitMethod()
+        .maxstack 0
+        ret
+    }
+}
+
+.class interface public auto ansi abstract IMixedStaticInstance
+{
+    .method public hidebysig newslot abstract virtual instance void M() cil managed
+    {
+    }
+
+    .method public hidebysig newslot abstract virtual static void M(int32 v) cil managed
+    {
+    }
+}
+
+.class public auto ansi beforefieldinit SameNameStaticAndInstanceMethods_ValidType_Valid
+    extends [System.Runtime]System.Object
+    implements IMixedStaticInstance
+{
+    .method private final hidebysig newslot virtual instance void InstanceMethod() cil managed
+    {
+        .override method instance void IMixedStaticInstance::M()
+        .maxstack 0
+        ret
+    }
+
+    .method private hidebysig static void StaticMethod(int32 v) cil managed
+    {
+        .override method void IMixedStaticInstance::M(int32)
+        .maxstack 0
+        ret
+    }
+}
+
+.class public auto ansi beforefieldinit InvalidMethodImplAndMissingMethod_InvalidType_InvalidMethodImpl@InterfaceMethodNotImplemented
+    extends [System.Runtime]System.Object
+    implements IInterface, class IGenericMethodImpl`1<int32>
+{
+    .method private hidebysig instance void ExplicitMethod() cil managed
+    {
+        .override method instance void IInterface::InterfaceMethod()
+        .maxstack 0
+        ret
+    }
+}
+
+.class public auto ansi beforefieldinit GenericVirtualMethodImplBase`1<T>
+    extends [System.Runtime]System.Object
+{
+    .method public hidebysig newslot virtual instance void ExplicitMethod(!T v) cil managed
+    {
+        .maxstack 0
+        ret
+    }
+}
+
+.class public auto ansi beforefieldinit GenericNonVirtualMethodHidesBaseVirtualMethod_InvalidType_InvalidMethodImpl<T>
+    extends class GenericVirtualMethodImplBase`1<!T>
+    implements class IGenericMethodImpl`1<!T>
+{
+    .method public hidebysig instance void ExplicitMethod(!T v) cil managed
+    {
+        .override method instance void class IGenericMethodImpl`1<!T>::InterfaceMethod(!0)
+        .maxstack 0
+        ret
+    }
+}
