@@ -7781,6 +7781,8 @@ public:
     PhaseStatus optRecognizeAndOptimizeSwitchJumps();
     bool optSwitchConvert(BasicBlock* firstBlock, int testsCount, ssize_t* testValues, weight_t falseLikelihood, GenTree* nodeToTest, bool testingForConversion = false, BitVec* ccmpVec = nullptr);
     bool optSwitchDetectAndConvert(BasicBlock* firstBlock, bool testingForConversion = false, BitVec* ccmpVec = nullptr);
+    bool optSwitchConvertRangeTests(BasicBlock* firstBlock);
+    void optConvertToBitmapSwitch(BasicBlock* firstBlock, GenTree* switchValue, ssize_t minValue, ssize_t maxValue, ssize_t bitVector, BasicBlock* blockIfTrue, BasicBlock* blockIfFalse, BasicBlock* blockIfDefault, weight_t trueLikelihood, weight_t defaultLikelihood, IL_OFFSET codeOffsEnd, BasicBlock* blocksToRemove[], unsigned blocksToRemoveCnt);
 
     PhaseStatus optInvertLoops();    // Invert loops so they're entered at top and tested at bottom.
     PhaseStatus optOptimizeFlow();   // Simplify flow graph and do tail duplication
