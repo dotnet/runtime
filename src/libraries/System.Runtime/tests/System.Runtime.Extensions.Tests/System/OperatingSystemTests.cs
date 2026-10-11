@@ -15,7 +15,6 @@ namespace System.Tests
             "MacCatalyst",
             "iOS",
             "tvOS",
-            "watchOS",
             "Windows",
             "Linux",
             "FreeBSD",
@@ -23,7 +22,7 @@ namespace System.Tests
             "Wasi",
         };
 
-        private static readonly HashSet<string> SupportedApplePlatformNames = new()
+        private static readonly HashSet<string> AllApplePlatformNames = new()
         {
             "macOS",
             "MacCatalyst",
@@ -197,7 +196,7 @@ namespace System.Tests
             Assert.True(currentOSCheck());
 
             Assert.Equal(
-                SupportedApplePlatformNames.Contains(currentOSName),
+                AllApplePlatformNames.Contains(currentOSName),
                 OperatingSystem.IsApplePlatform());
 
             Dictionary<string, bool> allResults = new()
@@ -264,7 +263,6 @@ namespace System.Tests
             AssertVersionChecks(currentOSName.Equals("macOS", StringComparison.OrdinalIgnoreCase), OperatingSystem.IsMacOSVersionAtLeast);
             AssertVersionChecks(currentOSName.Equals("MacCatalyst", StringComparison.OrdinalIgnoreCase), OperatingSystem.IsMacCatalystVersionAtLeast);
             AssertVersionChecks(currentOSName.Equals("tvOS", StringComparison.OrdinalIgnoreCase), OperatingSystem.IsTvOSVersionAtLeast);
-            AssertVersionChecks(currentOSName.Equals("watchOS", StringComparison.OrdinalIgnoreCase), OperatingSystem.IsWatchOSVersionAtLeast);
             AssertVersionChecks(currentOSName.Equals("Windows", StringComparison.OrdinalIgnoreCase), OperatingSystem.IsWindowsVersionAtLeast);
         }
 
