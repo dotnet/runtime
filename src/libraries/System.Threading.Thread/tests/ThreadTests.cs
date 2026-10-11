@@ -1138,6 +1138,53 @@ namespace System.Threading.Threads.Tests
             Assert.True(t.Join(TimeSpan.Zero));
         }
 
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR), nameof(PlatformDetection.IsNotMultithreadingSupported))]
+        [InlineData(0, false)]
+        [InlineData(0, true)]
+        [InlineData(10, false)]
+        [InlineData(10, true)]
+        [InlineData(50, false)]
+        [InlineData(50, true)]
+        public static void JoinSingleThreadTest(int millisecondsTimeout, bool useTimeSpan)
+        {
+            Stopwatch stopwatch = Stopwatch.StartNew();
+            bool joined = useTimeSpan
+                ? Thread.CurrentThread.Join(TimeSpan.FromMilliseconds(millisecondsTimeout))
+                : Thread.CurrentThread.Join(millisecondsTimeout);
+            stopwatch.Stop();
+
+            Assert.False(joined);
+            // Allow for rounding in the wait subsystem's millisecond timer.
+            Assert.InRange(stopwatch.Elapsed.TotalMilliseconds, Math.Max(0, millisecondsTimeout - 1), double.MaxValue);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR), nameof(PlatformDetection.IsNotMultithreadingSupported))]
+        public static void JoinSingleThreadInvalidTest()
+        {
+            Thread current = Thread.CurrentThread;
+            Assert.Throws<ArgumentOutOfRangeException>(() => current.Join(-2));
+            Assert.Throws<ArgumentOutOfRangeException>(() => current.Join(TimeSpan.FromMilliseconds(-2)));
+            Assert.Throws<ArgumentOutOfRangeException>(() => current.Join(TimeSpan.FromMilliseconds((double)int.MaxValue + 1)));
+            Assert.Throws<PlatformNotSupportedException>(() => current.Join());
+            Assert.Throws<PlatformNotSupportedException>(() => current.Join(Timeout.Infinite));
+            Assert.Throws<PlatformNotSupportedException>(() => current.Join(Timeout.InfiniteTimeSpan));
+
+            Thread unstarted = new Thread(() => { });
+            Assert.Throws<ThreadStateException>(() => unstarted.Join(0));
+            Assert.Throws<ThreadStateException>(() => unstarted.Join(10));
+            Assert.Throws<ThreadStateException>(() => unstarted.Join(TimeSpan.Zero));
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR), nameof(PlatformDetection.IsNotMultithreadingSupported))]
+        [InlineData(0)]
+        [InlineData(10)]
+        public static void JoinSingleThreadInterruptedTest(int millisecondsTimeout)
+        {
+            Thread.CurrentThread.Interrupt();
+            Assert.Throws<ThreadInterruptedException>(() => Thread.CurrentThread.Join(millisecondsTimeout));
+            Assert.False(Thread.CurrentThread.Join(millisecondsTimeout));
+        }
+
         [Fact]
         public static void SleepTest()
         {

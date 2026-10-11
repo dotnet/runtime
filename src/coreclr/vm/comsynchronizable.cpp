@@ -710,17 +710,6 @@ extern "C" void QCALLTYPE ThreadNative_GetQCallSpecialException(
     END_QCALL;
 }
 
-#if defined(TARGET_WASM) && defined(FEATURE_MULTITHREADING)
-// Break the thread-static bootstrap recursion in Thread.GetThreadStaticsBase.
-FCIMPL0(void*, ThreadNative::GetThreadStaticsBaseNative)
-{
-    FCALL_CONTRACT;
-
-    return (void*)&t_ThreadStatics;
-}
-FCIMPLEND
-#endif // TARGET_WASM && FEATURE_MULTITHREADING
-
 #ifdef TARGET_WINDOWS
 // This service can be called on unstarted and dead threads.  For unstarted ones, the
 // next wait will be interrupted.  For dead ones, this service quietly does nothing.

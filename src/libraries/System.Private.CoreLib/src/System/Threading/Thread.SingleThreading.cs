@@ -33,15 +33,16 @@ namespace System.Threading
         private bool JoinInternal(int millisecondsTimeout)
         {
             // Only the current thread can have been started, so it is the only thread that can be joined.
-            // A thread can't wait for itself to exit, so the join can only complete without blocking.
+            // It cannot exit during the wait, so a finite join always times out.
             Debug.Assert((ThreadState & ThreadState.Unstarted) == 0 || (millisecondsTimeout == 0));
 
-            if (millisecondsTimeout == 0)
+            if (millisecondsTimeout == Timeout.Infinite)
             {
-                return false;
+                throw new PlatformNotSupportedException();
             }
 
-            throw new PlatformNotSupportedException();
+            SleepInternal(millisecondsTimeout);
+            return false;
         }
 
         // Nothing can be waiting for the only thread to exit.

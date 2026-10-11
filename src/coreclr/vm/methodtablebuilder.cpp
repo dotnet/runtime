@@ -4129,10 +4129,6 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
                 fIsThreadStatic = (hr == S_OK);
             }
 #endif // FEATURE_MULTITHREADING
-            // Without multithreading there is only one thread, so thread statics are laid out
-            // and accessed as regular statics.
-
-
             if (ElementType == ELEMENT_TYPE_VALUETYPE)
             {
                 hr = GetCustomAttribute(bmtMetaData.pFields[i],

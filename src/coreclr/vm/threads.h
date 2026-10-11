@@ -1106,20 +1106,18 @@ public:
     void InitThread();
     BOOL AllocHandles();
 
+#ifdef FEATURE_MULTITHREADING
     //--------------------------------------------------------------
     // If the thread was setup through SetupUnstartedThread, rather
     // than SetupThread, complete the setup here when the thread is
     // actually running.
     //--------------------------------------------------------------
-#ifdef FEATURE_MULTITHREADING
     BOOL HasStarted();
-#endif // FEATURE_MULTITHREADING
 
     // We don't want ::CreateThread() calls scattered throughout the source.
     // Create all new threads here.  The thread is created as suspended, so
     // you must ::ResumeThread to kick it off.  It is guaranteed to create the
     // thread, or throw.
-#ifdef FEATURE_MULTITHREADING
     BOOL CreateNewThread(SIZE_T stackSize, LPTHREAD_START_ROUTINE start, void *args, LPCWSTR pName=NULL);
 #endif // FEATURE_MULTITHREADING
 
@@ -1628,9 +1626,9 @@ public:
         return (ObjectFromHandle(m_ExposedObject) != NULL) ;
     }
 
+#ifdef FEATURE_MULTITHREADING
     // When we create a managed thread, the thread is suspended.  We call StartThread to get
     // the thread start.
-#ifdef FEATURE_MULTITHREADING
     DWORD StartThread();
 #endif // FEATURE_MULTITHREADING
 

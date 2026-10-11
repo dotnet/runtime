@@ -62,18 +62,8 @@ namespace System.Threading
         [DebuggerStepThrough]
         internal static unsafe StaticsHelpers.ThreadLocalData* GetThreadStaticsBase()
         {
-#if TARGET_WASM
-            // Avoid recursively invoking the thread-static-base helper while locating its own base.
-            return (StaticsHelpers.ThreadLocalData*)GetThreadStaticsBaseNative();
-#else
             return (StaticsHelpers.ThreadLocalData*)(((byte*)Unsafe.AsPointer(ref DirectOnThreadLocalData.pNativeThread)) - sizeof(StaticsHelpers.ThreadLocalData));
-#endif
         }
-
-#if TARGET_WASM
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern unsafe void* GetThreadStaticsBaseNative();
-#endif
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static Thread InitializeCurrentThread()

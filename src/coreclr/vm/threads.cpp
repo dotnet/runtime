@@ -2365,6 +2365,7 @@ int Thread::DecExternalCount(BOOL holdingLock)
 //--------------------------------------------------------------------
 Thread::~Thread()
 {
+#ifdef FEATURE_MULTITHREADING
     CONTRACTL {
         NOTHROW;
         GC_TRIGGERS;
@@ -2437,12 +2438,10 @@ Thread::~Thread()
     MarkRedirectContextInUse(m_pSavedRedirectContext);
     m_pSavedRedirectContext = NULL;
 
-#ifdef FEATURE_MULTITHREADING
     if (m_pExceptionDuringStartup)
     {
         Exception::Delete (m_pExceptionDuringStartup);
     }
-#endif // FEATURE_MULTITHREADING
 
     if (!IsAtProcessExit())
     {
@@ -2453,9 +2452,7 @@ Thread::~Thread()
         DestroyStrongHandle(m_StrongHndToExposedObject);
     }
 
-#ifdef FEATURE_MULTITHREADING
     g_pThinLockThreadIdDispenser->DisposeId(GetThreadId());
-#endif // FEATURE_MULTITHREADING
 
     m_tailCallTls.FreeArgBuffer();
 
@@ -2468,6 +2465,7 @@ Thread::~Thread()
 
     // Wait for another thread to leave its loop in DeadlockAwareLock::TryBeginEnterLock
     CrstHolder lock(&g_DeadlockAwareCrst);
+#endif // FEATURE_MULTITHREADING
 }
 
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT

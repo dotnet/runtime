@@ -40,9 +40,6 @@ public:
     };
 
 #ifdef FEATURE_MULTITHREADING
-#ifdef TARGET_WASM
-    FCDECL0(static void*,       GetThreadStaticsBaseNative);
-#endif // TARGET_WASM
     FCDECL1(static void,        Finalize, ThreadBaseObject* pThis);
     FCDECL0(static FC_BOOL_RET, CatchAtSafePoint);
     FCDECL0(static FC_BOOL_RET, CurrentThreadIsFinalizerThread);
