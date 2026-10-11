@@ -1059,6 +1059,10 @@ extern "C" BOOL QCALLTYPE Delegate_BindToMethodName(MethodTable* pDelegateMT, Me
             if (pCurMethod->IsAsyncVariantMethod())
                 continue;
 
+            // We can't match static abstract interface methods (since they have no implementation to call).
+            if (pCurMethod->IsStatic() && pCurMethod->IsAbstract())
+                continue;
+
             if (StrCompFunc(pszMethodName, pCurMethod->GetName()) == 0)
             {
                 // found a matching string, get an associated method desc if needed
@@ -1267,7 +1271,9 @@ void COMDelegate::BindToMethod(MethodTable* pDelegateMT,
         // We can get virtual delegates closed over null through this code path, so be careful to handle that case (no need to
         // virtualize since we're just going to throw NullRefException at invocation time).
         // </TODO>
-        if (pTargetMethod->IsVirtual()
+        // A static method's first argument is not "this", so never virtualize the call on it.
+        if (!pTargetMethod->IsStatic()
+            && pTargetMethod->IsVirtual()
             && pTargetMT != NULL
             && pTargetMethod->GetMethodTable() != pTargetMT)
         {

@@ -100,10 +100,11 @@ namespace System
             // The name matching was case insensitive (no idea why this is
             // different from the constructor above) and we preserve that as
             // well.
-            BindToMethodName(null, rtTarget, method,
-                             DelegateBindingFlags.StaticMethodOnly |
-                             DelegateBindingFlags.OpenDelegateOnly |
-                             DelegateBindingFlags.CaselessMatching);
+            if (!BindToMethodName(null, rtTarget, method,
+                                  DelegateBindingFlags.StaticMethodOnly |
+                                  DelegateBindingFlags.OpenDelegateOnly |
+                                  DelegateBindingFlags.CaselessMatching))
+                throw new ArgumentException(SR.Arg_DlgtTargMeth);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -428,7 +429,15 @@ namespace System
         {
             Delegate d = InternalAlloc(rtType);
 
-            return d.BindToMethodInfo(firstArgument, rtMethod, rtMethod.GetDeclaringTypeInternal(), flags) ? d : null;
+            if (!d.BindToMethodInfo(firstArgument, rtMethod, rtMethod.GetDeclaringTypeInternal(), flags))
+                return null;
+
+            // A static abstract interface method has no implementation to call. Checked after the bind, so a delegate
+            // type that doesn't match is still a bind failure, as on NativeAOT.
+            if (rtMethod.IsStatic && rtMethod.IsAbstract)
+                throw new MemberAccessException(SR.Format(SR.Acc_CallStaticAbstract, rtMethod.DeclaringType, rtMethod.Name));
+
+            return d;
         }
 
         //

@@ -162,15 +162,24 @@ namespace System.Reflection.Tests
 
         private interface IStaticAbstractProperty
         {
-            static abstract int Value { get; }
+            static abstract int Value { get; set; }
         }
 
-        // The getter of a static abstract property has no body to invoke
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
-        public void GetValue_StaticAbstract_NativeAot_ThrowsNotSupportedException()
+        // Mono's GetValue calls the getter through a delegate of its own
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime))]
+        public void GetValue_StaticAbstract_ThrowsMemberAccessException()
         {
             PropertyInfo propertyInfo = GetProperty(typeof(IStaticAbstractProperty), nameof(IStaticAbstractProperty.Value));
-            Assert.Throws<NotSupportedException>(() => propertyInfo.GetValue(null));
+            MemberAccessException ex = Assert.Throws<MemberAccessException>(() => propertyInfo.GetValue(null));
+            Assert.Contains($"{nameof(IStaticAbstractProperty)}.get_{nameof(IStaticAbstractProperty.Value)}", ex.Message);
+        }
+
+        [Fact]
+        public void SetValue_StaticAbstract_ThrowsMemberAccessException()
+        {
+            PropertyInfo propertyInfo = GetProperty(typeof(IStaticAbstractProperty), nameof(IStaticAbstractProperty.Value));
+            MemberAccessException ex = Assert.Throws<MemberAccessException>(() => propertyInfo.SetValue(null, 1));
+            Assert.Contains($"{nameof(IStaticAbstractProperty)}.set_{nameof(IStaticAbstractProperty.Value)}", ex.Message);
         }
 
         [Theory]
