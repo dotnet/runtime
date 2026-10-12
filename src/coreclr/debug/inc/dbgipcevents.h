@@ -101,16 +101,17 @@ typedef enum
 Defines for current version numbers for the runtime and debugger.
 Runtime version must be bumped when:
 1. Any change to IPC events is made.
-2. Layout of DebuggerIPCEvent is changed.
+2. Layout of DebuggerIPCEvent or DebuggerIPCControlBlock is changed.
 Debugger version must be bumped when:
 1. Any change to IPC events is made.
-2. Layout of DebuggerIPCEvent is changed.
+2. Layout of DebuggerIPCEvent or DebuggerIPCControlBlock is changed.
 Debugger min supported version must be bumped when:
 1. Layout of DebuggerIPCEvent is changed in a non-additive manner - e.g., a field is removed, reordered,
 or inserted between other fields in the same struct, without conditioning on the runtime protocol version.
 2. A new runtime->debugger IPC response is awaited without conditioning on the runtime protocol version.
 3. A debugger->runtime IPC event is dropped without conditioning on the runtime protocol version.
 4. Handling of an existing runtime->debugger IPC notification is dropped without conditioning on the runtime protocol version.
+5. Handling of the DebuggerIPCControlBlock is such that the block exposed by an older debugger is no longer understood.
 Note: Any DBI changes other than those to the IPC events that depend on runtime changes
 should be flowed through a COM interface on the DAC.
 */
