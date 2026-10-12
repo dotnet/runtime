@@ -6312,6 +6312,12 @@ PCODE ExecutionManager::getNextJumpStub(MethodDesc* pMD, PCODE target,
         PRECONDITION(m_JumpStubCrst.OwnedByCurrentThread());
     } CONTRACTL_END;
 
+#ifdef _DEBUG
+    // Exercise caller retry paths when a jump stub cannot be allocated within range.
+    if (PEDecoder::GetForceRelocs() && GetRandomInt(10) == 0)
+        return (PCODE)NULL;
+#endif
+
     BYTE *           jumpStub       = NULL;
     BYTE *           jumpStubRW     = NULL;
     bool             isLCG          = pMD && pMD->IsLCGMethod();
