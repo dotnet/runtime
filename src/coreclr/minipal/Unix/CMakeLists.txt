@@ -6,6 +6,13 @@ set(SOURCES
     memory.cpp
 )
 
+if(NOT CLR_CMAKE_TARGET_ARCH_WASM)
+    list(APPEND SOURCES
+        mapping.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/../mapping.cpp
+    )
+endif()
+
 add_library(coreclrminipal_objects
     OBJECT
     ${SOURCES}

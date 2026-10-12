@@ -162,7 +162,7 @@ void VMToOSInterface::DestroyDoubleMemoryMapper(void *mapperHandle)
 extern "C" void* PAL_VirtualReserveFromExecutableMemoryAllocatorWithinRange(const void* lpBeginAddress, const void* lpEndAddress, size_t dwSize, int fStoreAllocationInfo);
 
 #ifdef TARGET_APPLE
-bool IsMapJitFlagNeeded()
+bool VMToOSInterface::IsMapJitFlagNeeded()
 {
     static volatile int isMapJitFlagNeeded = -1;
 

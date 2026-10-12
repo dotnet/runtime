@@ -1,7 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 //
+#ifndef CORECLR_MINIPAL_H
+#define CORECLR_MINIPAL_H
+
 #include <stddef.h>
+#include <stdint.h>
+
+#if !defined(TARGET_WINDOWS) && !defined(TARGET_WASM)
+#include <sys/mman.h>
+#endif // !TARGET_WINDOWS && !TARGET_WASM
 
 // Interface between the runtime and platform specific functionality
 class VMToOSInterface
@@ -9,6 +17,141 @@ class VMToOSInterface
 private:
     ~VMToOSInterface() {}
 public:
+#ifdef TARGET_WINDOWS
+    using MemoryMapHandle = HANDLE;
+    static constexpr MemoryMapHandle InvalidMemoryMapHandle = nullptr;
+    static constexpr bool MappingFailureAllowsCopyFallback = false;
+#else
+    using MemoryMapHandle = int;
+    static constexpr MemoryMapHandle InvalidMemoryMapHandle = -1;
+    static constexpr bool MappingFailureAllowsCopyFallback = true;
+#endif // TARGET_WINDOWS
+
+#ifndef TARGET_WASM
+    enum class MemoryProtection
+    {
+#ifdef TARGET_WINDOWS
+        NoAccess = PAGE_NOACCESS,
+        ReadOnly = PAGE_READONLY,
+        ReadWrite = PAGE_READWRITE,
+        Execute = PAGE_EXECUTE,
+        ExecuteRead = PAGE_EXECUTE_READ,
+        ExecuteReadWrite = PAGE_EXECUTE_READWRITE
+#else
+        NoAccess = PROT_NONE,
+        ReadOnly = PROT_READ,
+        ReadWrite = PROT_READ | PROT_WRITE,
+        Execute = PROT_EXEC,
+        ExecuteRead = PROT_READ | PROT_EXEC,
+        ExecuteReadWrite = PROT_READ | PROT_WRITE | PROT_EXEC
+#endif // TARGET_WINDOWS
+    };
+
+    // Unix mappings borrow the supplied descriptor without duplicating or closing it.
+    // The caller must keep it open until all required views have been mapped.
+    static MemoryMapHandle CreateMemoryMapping(MemoryMapHandle fileHandle, uint64_t size, MemoryProtection protection);
+    static bool CloseMemoryMapping(MemoryMapHandle mapping);
+
+    // The caller retains ownership of the mapping handle or file descriptor.
+    // Non-null addresses replace Windows placeholders or caller-owned Unix reservations.
+    // Unix handle -1 requests anonymous private memory at offset zero.
+    // Private writable file views use copy-on-write protection.
+    // Failures return nullptr or -1 and set GetLastError() on Windows or errno on Unix.
+    static void* MapMemory(MemoryMapHandle mapping, uint64_t offset, void* address, size_t size, MemoryProtection protection, bool shared);
+    static int UnmapMemory(void* address, size_t size);
+
+    // Windows executable backing allows later executable views without making this view executable.
+    static void* MapAnonymousMemory(size_t size, MemoryProtection protection, bool executableBacking = false);
+    static int32_t GetLastMemoryMappingError();
+
+    static bool SupportsPlaceholderMapping();
+    static void* ReserveMemoryPlaceholder(void* address, size_t size);
+    static bool SplitMemoryPlaceholder(void* address, size_t size);
+    static void* CommitMemoryPlaceholder(void* address, size_t size, MemoryProtection protection);
+    static bool ReleaseMemoryReservation(void* address, size_t size = 0);
+    static bool ProtectMemory(void* address, size_t size, MemoryProtection protection);
+    static bool PopulateMemoryPlaceholder(void* address, size_t allocationSize, const void* source,
+        size_t copySize, MemoryProtection protection);
+    static bool UseSharedReadOnlyMapping(size_t sectionAlignment);
+
+    class MemoryMappingHolder
+    {
+        MemoryMapHandle m_mapping = InvalidMemoryMapHandle;
+
+    public:
+        MemoryMappingHolder() = default;
+        ~MemoryMappingHolder()
+        {
+#ifndef DACCESS_COMPILE
+            Reset();
+#endif // !DACCESS_COMPILE
+        }
+
+        MemoryMappingHolder(const MemoryMappingHolder&) = delete;
+        MemoryMappingHolder& operator=(const MemoryMappingHolder&) = delete;
+
+        void Assign(MemoryMapHandle mapping);
+        void Reset();
+        MemoryMapHandle GetValue() const { return m_mapping; }
+    };
+
+    class MemoryMappedViewHolder
+    {
+        void* m_address = nullptr;
+        size_t m_size = 0;
+
+    public:
+        MemoryMappedViewHolder() = default;
+        ~MemoryMappedViewHolder()
+        {
+#ifndef DACCESS_COMPILE
+            Reset();
+#endif // !DACCESS_COMPILE
+        }
+
+        MemoryMappedViewHolder(const MemoryMappedViewHolder&) = delete;
+        MemoryMappedViewHolder& operator=(const MemoryMappedViewHolder&) = delete;
+
+        void Assign(void* address, size_t size);
+        void Swap(MemoryMappedViewHolder& other);
+        void Reset();
+        void* GetValue() const { return m_address; }
+    };
+
+    class MemoryReservationHolder
+    {
+        void* m_address = nullptr;
+        size_t m_size = 0;
+
+    public:
+        MemoryReservationHolder() = default;
+        ~MemoryReservationHolder()
+        {
+#ifndef DACCESS_COMPILE
+            Reset();
+#endif // !DACCESS_COMPILE
+        }
+
+        MemoryReservationHolder(const MemoryReservationHolder&) = delete;
+        MemoryReservationHolder& operator=(const MemoryReservationHolder&) = delete;
+
+        void Assign(void* address, size_t size);
+        void Reset();
+        void* ExtractPrefix(size_t size);
+        void* GetValue() const { return m_address; }
+        size_t GetSize() const { return m_size; }
+    };
+#endif // !TARGET_WASM
+
+#if defined(TARGET_UNIX) && !defined(TARGET_WASM)
+    // Returns an error number directly, without discarding modified private pages.
+    static int MarkMemoryAsNotNeeded(void* address, size_t size);
+#endif // TARGET_UNIX && !TARGET_WASM
+
+#ifdef TARGET_APPLE
+    static bool IsMapJitFlagNeeded();
+#endif // TARGET_APPLE
+
     // Create double mapped memory mapper
     // Parameters:
     //  pHandle                - receives handle of the double mapped memory mapper
@@ -139,3 +282,5 @@ FORCEINLINE uint8_t PalInterlockedCompareExchange128(_Inout_ int64_t volatile *p
     return _InterlockedCompareExchange128(pDst, iValueHigh, iValueLow, pComparandAndResult);
 }
 #endif // defined(HOST_64BIT) && defined(FEATURE_CACHED_INTERFACE_DISPATCH)
+
+#endif // CORECLR_MINIPAL_H

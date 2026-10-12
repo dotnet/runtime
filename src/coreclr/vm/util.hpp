@@ -556,23 +556,6 @@ using CLRMapViewHolder = LifetimeHolder<CLRMapViewTraits>;
 
 BOOL IsIPInModule(PTR_VOID pModuleBaseAddress, PCODE ip);
 
-#ifdef TARGET_UNIX
-struct PALPEFileTraits final
-{
-    using Type = void*;
-    static constexpr Type Default() { return NULL; }
-    static void Free(Type ptr) noexcept
-    {
-        STATIC_CONTRACT_WRAPPER;
-#ifndef DACCESS_COMPILE
-        if (ptr != NULL)
-            PAL_LOADUnloadPEFile(ptr);
-#endif
-    }
-};
-using PALPEFileHolder = LifetimeHolder<PALPEFileTraits>;
-#endif // TARGET_UNIX
-
 #define SetupThreadForComCall(OOMRetVal)            \
     MAKE_CURRENT_THREAD_AVAILABLE_EX(GetThreadNULLOk()); \
     if (CURRENT_THREAD == NULL)                     \
