@@ -543,9 +543,7 @@ namespace System.Diagnostics.Tests
         }
 
         // A waiter in a nested process chain covers the start-up, work and exit of every process beneath it, so its
-        // budget grows with the number of processes below. Giving every level the same WaitInMS gives the root, which
-        // waits for four process lifetimes, the leaf's budget; on slow lanes under test parallelism that is not enough
-        // (https://github.com/dotnet/runtime/issues/118977).
+        // budget grows with the number of processes below.
         private static int ChainWaitInMS(int processesBelow) => WaitInMS * processesBelow;
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
