@@ -424,6 +424,36 @@ namespace System.PrivateUri.Tests
         }
 
         [Theory]
+        [InlineData("http://[fe80::1%1]/", "http://[fe80::1%2]/", false)]
+        [InlineData("http://[fe80::1]/", "http://[fe80::1%0]/", false)]
+        [InlineData("http://[fe80::1%1]/", "HTTP://[FE80:0:0:0:0:0:0:1%1]:80/", true)]
+        [InlineData("file://[fe80::1%eth0]/path", "file://[fe80::1%ETH0]/path", false)]
+        [InlineData("file://[fe80::1%eth0]/PATH", "file://[FE80::1%eth0]/path", true)]
+        [InlineData("mailto:user@[fe80::1%1]", "mailto:user@[fe80::1%2]", false)]
+        public void Equals_IPv6ScopeId(string firstUriString, string secondUriString, bool expected)
+        {
+            foreach (bool hashFirst in new[] { false, true })
+            {
+                var firstUri = new Uri(firstUriString);
+                var secondUri = new Uri(secondUriString);
+
+                if (hashFirst)
+                {
+                    _ = firstUri.GetHashCode();
+                    _ = secondUri.GetHashCode();
+                }
+
+                Assert.Equal(expected, firstUri.Equals(secondUri));
+                Assert.Equal(expected, secondUri.Equals(firstUri));
+                Assert.Equal(expected ? 1 : 2, new HashSet<Uri> { firstUri, secondUri }.Count);
+                if (expected)
+                {
+                    Assert.Equal(firstUri.GetHashCode(), secondUri.GetHashCode());
+                }
+            }
+        }
+
+        [Theory]
         [InlineData("", "")]
         [InlineData("Hello", "Hello")]
         [InlineData("He\\l/lo", "He%5Cl/lo")]

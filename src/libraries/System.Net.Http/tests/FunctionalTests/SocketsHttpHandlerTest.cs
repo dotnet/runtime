@@ -818,6 +818,35 @@ namespace System.Net.Http.Functional.Tests
         public SocketsHttpHandler_HttpClientHandler_Proxy_Test(ITestOutputHelper output) : base(output) { }
 
         [Theory]
+        [InlineData("http")]
+        [InlineData("socks5")]
+        public async Task Proxy_IPv6ScopeChange_ConnectsToSelectedProxy(string proxyScheme)
+        {
+            var proxy = new WebProxy();
+            using var handler = new SocketsHttpHandler { Proxy = proxy };
+            DnsEndPoint endPoint = null;
+            handler.ConnectCallback = (context, _) =>
+            {
+                endPoint = context.DnsEndPoint;
+                throw new InvalidOperationException(nameof(Proxy_IPv6ScopeChange_ConnectsToSelectedProxy));
+            };
+            using var client = new HttpClient(handler);
+
+            for (int scope = 1; scope <= 2; scope++)
+            {
+                var proxyUri = new Uri($"{proxyScheme}://[fe80::1%{scope}]:8080/");
+                proxy.Address = proxyUri;
+                endPoint = null;
+
+                HttpRequestException exception = await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync("http://example.test/"));
+                Assert.Equal(nameof(Proxy_IPv6ScopeChange_ConnectsToSelectedProxy), Assert.IsType<InvalidOperationException>(exception.InnerException).Message);
+                Assert.NotNull(endPoint);
+                Assert.Equal(IPAddress.Parse(proxyUri.IdnHost), IPAddress.Parse(endPoint.Host));
+                Assert.Equal(proxyUri.Port, endPoint.Port);
+            }
+        }
+
+        [Theory]
         [InlineData(true)]
         [InlineData(false)]
         public async Task Proxy_Https_Succeeds(bool secureUri)
