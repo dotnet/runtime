@@ -650,6 +650,44 @@ namespace System.Net.Tests
             }
         }
 
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [Fact]
+        public async Task Read_ChunkedBodyWithManySmallChunks_Success()
+        {
+            const int ChunkCount = 4096;
+
+            Uri listeningUri = new Uri(_factory.ListeningUrl);
+            var request = new StringBuilder(
+                $"POST {listeningUri.PathAndQuery} HTTP/1.1\r\n" +
+                $"Host: {listeningUri.Authority}\r\n" +
+                "Transfer-Encoding: chunked\r\n\r\n");
+            for (int i = 0; i < ChunkCount; i++)
+            {
+                request.Append("1\r\na\r\n");
+            }
+            request.Append("0\r\n\r\n");
+
+            using Socket client = _factory.GetConnectedSocket();
+            byte[] requestBytes = Encoding.ASCII.GetBytes(request.ToString());
+            Task<HttpListenerContext> contextTask = _listener.GetContextAsync();
+            for (int offset = 0; offset < requestBytes.Length;)
+            {
+                int bytesSent = await client.SendAsync(requestBytes.AsMemory(offset), SocketFlags.None);
+                Assert.NotEqual(0, bytesSent);
+                offset += bytesSent;
+            }
+
+            HttpListenerContext context = await contextTask;
+            byte[] buffer = new byte[ChunkCount];
+            int bytesRead = await context.Request.InputStream.ReadAsync(buffer, 0, buffer.Length)
+                .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMilliseconds));
+
+            Assert.Equal(ChunkCount, bytesRead);
+            Assert.All(buffer, b => Assert.Equal((byte)'a', b));
+
+            context.Response.Close();
+        }
+
         [Fact]
         public async Task Read_FromClosedConnectionAsynchronously_ThrowsHttpListenerException()
         {
