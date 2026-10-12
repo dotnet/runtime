@@ -92,7 +92,7 @@ namespace ILCompiler.DependencyAnalysis
                 foreach (var parameter in method.Signature)
                 {
                     TypeDesc parameterType = parameter;
-                    if (parameterType is ParameterizedType parameterizedParameterType)
+                    while (parameterType is ParameterizedType parameterizedParameterType)
                         parameterType = parameterizedParameterType.ParameterType;
 
                     if (parameterType.GetTypeDefinition() is EcmaType ecmaParameterType)
