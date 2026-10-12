@@ -3099,16 +3099,15 @@ void ComMethodTable::LayOutClassMethodTable()
         // IDispatch vtable follows the header
         CopyMemory(this + 1, pDispVtable, cbTempVtable.Value());
 
-        // Set the layout complete flag and release the lock.
-        m_Flags |= enum_LayoutComplete;
-
         // We've successfully laid out the class method table so we need to suppress the release of the
         // memory for the ComCallMethodDescs and store it inside the ComMethodTable so we can
         // release it when we clean up the ComMethodTable.
         m_pMDescr = (BYTE*)pMDMemoryPtr;
-    }
+        amTracker.SuppressRelease();
 
-    amTracker.SuppressRelease();
+        // Publish only after the descriptors and allocation ownership are committed.
+        SetFlags(enum_LayoutComplete);
+    }
 
     LOG((LF_INTEROP, LL_INFO1000, "LayOutClassMethodTable: %s, parent: %s, this: %p  [DONE]\n", m_pMT->GetDebugClassName(), pParentClass ? pParentClass->GetDebugClassName() : 0, this));
 }
@@ -3290,7 +3289,7 @@ BOOL ComMethodTable::LayOutInterfaceMethodTable(MethodTable* pClsMT)
         _ASSERTE(numVtableSlots == cbEmittedSlots);
 
         // Set the layout complete flag and release the lock.
-        m_Flags |= enum_LayoutComplete;
+        SetFlags(enum_LayoutComplete);
     }
 
 #ifdef PROFILING_SUPPORTED
@@ -3337,7 +3336,7 @@ void ComMethodTable::LayOutBasicMethodTable()
 
     //
     // Set up the IUnknown and IDispatch methods. Each thread will write exactly the same values to the
-    // slots so we let it run concurrently and execute a memory barrier by doing InterlockOr at the end.
+    // slots so we let it run concurrently and publish them with an atomic flag update at the end.
     //
 
     // IDispatch vtable follows the header
@@ -3373,9 +3372,31 @@ void ComMethodTable::LayOutBasicMethodTable()
     //
     // Set the layout complete flag.
     //
-    InterlockedOr((LONG*)&m_Flags, enum_LayoutComplete);
+    SetFlags(enum_LayoutComplete);
 
     LOG((LF_INTEROP, LL_INFO1000, "LayOutClassMethodTable: %s, this: %p  [DONE]\n", m_pMT->GetDebugClassName(), this));
+}
+
+void ComMethodTable::GenerateIID()
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    // Metadata generation can throw and trigger GC, so do it outside the commit lock.
+    IID iid;
+    GenerateClassItfGuid(TypeHandle(m_pMT), &iid);
+
+    CrstHolder ch(&g_CreateWrapperTemplateCrst);
+    if (!(VolatileLoad(&m_Flags) & enum_GuidGenerated))
+    {
+        m_IID = iid;
+        SetFlags(enum_GuidGenerated);
+    }
 }
 
 //--------------------------------------------------------------------------

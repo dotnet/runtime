@@ -2,7 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Reflection;
+using System.Reflection.Emit;
 using System.Runtime.InteropServices;
+using System.Threading;
+using System.Threading.Tasks;
 
 using COM;
 
@@ -11,6 +15,124 @@ using Xunit;
 
 public class ExtensionPoints
 {
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public static unsafe void ConcurrentVtablePublication(bool classLayout)
+    {
+        const int MethodCount = 16;
+        const int WorkerCount = 16;
+        Guid unsupportedIID = new Guid("9970D486-61A2-4BF9-8395-0C6D8BFA3D2E");
+
+        for (int iteration = 0; iteration < 8; iteration++)
+        {
+            // Fresh types keep both shared vtables cold on every iteration.
+            ModuleBuilder module = AssemblyBuilder.DefineDynamicAssembly(
+                new AssemblyName($"ConcurrentCCW{iteration}"), AssemblyBuilderAccess.Run).DefineDynamicModule("Main");
+            var visible = new CustomAttributeBuilder(
+                typeof(ComVisibleAttribute).GetConstructor(new[] { typeof(bool) }), new object[] { true });
+            TypeBuilder interfaceBuilder = module.DefineType("ITest",
+                TypeAttributes.Public | TypeAttributes.Interface | TypeAttributes.Abstract);
+            interfaceBuilder.SetCustomAttribute(visible);
+            interfaceBuilder.SetCustomAttribute(new CustomAttributeBuilder(
+                typeof(InterfaceTypeAttribute).GetConstructor(new[] { typeof(ComInterfaceType) }),
+                new object[] { ComInterfaceType.InterfaceIsIUnknown }));
+            for (int slot = 0; slot < MethodCount; slot++)
+            {
+                interfaceBuilder.DefineMethod($"Method{slot}",
+                    MethodAttributes.Public | MethodAttributes.Abstract | MethodAttributes.Virtual,
+                    typeof(int), Type.EmptyTypes);
+            }
+            Type interfaceType = interfaceBuilder.CreateType();
+
+            TypeBuilder classBuilder = module.DefineType("Test", TypeAttributes.Public);
+            classBuilder.SetCustomAttribute(visible);
+            classBuilder.SetCustomAttribute(new CustomAttributeBuilder(
+                typeof(ClassInterfaceAttribute).GetConstructor(new[] { typeof(ClassInterfaceType) }),
+                new object[] { ClassInterfaceType.AutoDual }));
+            classBuilder.AddInterfaceImplementation(interfaceType);
+            for (int slot = 0; slot < MethodCount; slot++)
+            {
+                MethodBuilder method = classBuilder.DefineMethod($"Method{slot}",
+                    MethodAttributes.Public | MethodAttributes.Virtual, typeof(int), Type.EmptyTypes);
+                ILGenerator il = method.GetILGenerator();
+                il.Emit(OpCodes.Ldc_I4, slot);
+                il.Emit(OpCodes.Ret);
+            }
+            Type classType = classBuilder.CreateType();
+
+            var instances = new object[WorkerCount];
+            var interfaces = new nint[WorkerCount];
+            var workers = new Task[WorkerCount];
+            using var start = new Barrier(WorkerCount);
+            try
+            {
+                for (int worker = 0; worker < WorkerCount; worker++)
+                {
+                    instances[worker] = Activator.CreateInstance(classType);
+                    if (classLayout)
+                    {
+                        // An explicit interface does not lay out the class interface.
+                        interfaces[worker] = Marshal.GetComInterfaceForObject(instances[worker], interfaceType);
+                    }
+                }
+
+                for (int worker = 0; worker < WorkerCount; worker++)
+                {
+                    int index = worker;
+                    workers[worker] = Task.Factory.StartNew(() =>
+                    {
+                        nint pointer = 0;
+                        try
+                        {
+                            start.SignalAndWait();
+                            Guid iid = unsupportedIID;
+                            if (classLayout && (index & 1) != 0)
+                            {
+                                // Failed class-IID lookup generates the lazy IID without doing class layout.
+                                Assert.Equal(unchecked((int)0x80004002),
+                                    Marshal.QueryInterface(interfaces[index], in iid, out nint result));
+                                Assert.Equal((nint)0, result);
+                            }
+                            pointer = classLayout
+                                ? Marshal.GetIUnknownForObject(instances[index])
+                                : Marshal.GetComInterfaceForObject(instances[index], interfaceType);
+
+                            iid = new Guid("00000000-0000-0000-C000-000000000046");
+                            Assert.Equal(0, Marshal.QueryInterface(pointer, in iid, out nint unknown));
+                            Marshal.Release(unknown);
+
+                            nint methodInterface = classLayout ? interfaces[index] : pointer;
+                            nint* vtable = *(nint**)methodInterface;
+                            for (int slot = 0; slot < MethodCount; slot++)
+                            {
+                                int value = -1;
+                                var invoke = (delegate* unmanaged[Stdcall]<nint, int*, int>)vtable[3 + slot];
+                                Assert.Equal(0, invoke(methodInterface, &value));
+                                Assert.Equal(slot, value);
+                            }
+                        }
+                        finally
+                        {
+                            if (pointer != 0)
+                                Marshal.Release(pointer);
+                        }
+                    }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+                }
+                Task.WaitAll(workers);
+            }
+            finally
+            {
+                foreach (nint pointer in interfaces)
+                {
+                    if (pointer != 0)
+                        Marshal.Release(pointer);
+                }
+                GC.KeepAlive(instances);
+            }
+        }
+    }
+
     unsafe class MallocSpy : IMallocSpy
     {
         private int _called = 0;

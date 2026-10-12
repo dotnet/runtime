@@ -417,7 +417,7 @@ struct ComMethodTable
         if (IsIClassXOrBasicItf())
             return ifDual;
         else
-            return (CorIfaceAttr)(m_Flags & enum_InterfaceTypeMask);
+            return (CorIfaceAttr)(VolatileLoad(&m_Flags) & enum_InterfaceTypeMask);
     }
 
     CorClassIfaceAttr GetClassInterfaceType()
@@ -425,7 +425,7 @@ struct ComMethodTable
         LIMITED_METHOD_CONTRACT;
 
         _ASSERTE(IsIClassXOrBasicItf());
-        return (CorClassIfaceAttr)(m_Flags & enum_ClassInterfaceTypeMask);
+        return (CorClassIfaceAttr)(VolatileLoad(&m_Flags) & enum_ClassInterfaceTypeMask);
     }
 
     BOOL IsIClassX()
@@ -437,31 +437,31 @@ struct ComMethodTable
     BOOL IsIClassXOrBasicItf()
     {
         LIMITED_METHOD_CONTRACT;
-        return (m_Flags & enum_ClassVtableMask) != 0;
+        return (VolatileLoad(&m_Flags) & enum_ClassVtableMask) != 0;
     }
 
     BOOL IsComClassItf()
     {
         LIMITED_METHOD_CONTRACT;
-        return (m_Flags & enum_ComClassItf) != 0;
+        return (VolatileLoad(&m_Flags) & enum_ComClassItf) != 0;
     }
 
     BOOL IsLayoutComplete()
     {
         LIMITED_METHOD_CONTRACT;
-        return (m_Flags & enum_LayoutComplete) != 0;
+        return (VolatileLoad(&m_Flags) & enum_LayoutComplete) != 0;
     }
 
     BOOL IsComVisible()
     {
         LIMITED_METHOD_CONTRACT;
-        return (m_Flags & enum_ComVisible) != 0;
+        return (VolatileLoad(&m_Flags) & enum_ComVisible) != 0;
     }
 
     BOOL IsBasic()
     {
         LIMITED_METHOD_CONTRACT;
-        return (m_Flags & enum_IsBasic) != 0;
+        return (VolatileLoad(&m_Flags) & enum_IsBasic) != 0;
     }
 
     BOOL HasInvisibleParent()
@@ -639,10 +639,9 @@ struct ComMethodTable
         CONTRACTL_END;
 
         // Generate the IClassX IID if it hasn't been generated yet.
-        if (!(m_Flags & enum_GuidGenerated))
+        if (!(VolatileLoad(&m_Flags) & enum_GuidGenerated))
         {
-            GenerateClassItfGuid(TypeHandle(m_pMT), &m_IID);
-            m_Flags |= enum_GuidGenerated;
+            GenerateIID();
         }
 
         return m_IID;
@@ -657,6 +656,25 @@ struct ComMethodTable
     }
 
 private:
+#ifndef DACCESS_COMPILE
+    void GenerateIID();
+
+    void SetFlags(size_t flags)
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        static_assert(offsetof(ComMethodTable, m_Flags) % alignof(size_t) == 0);
+
+        // Preserve other flags while publishing the payload initialized before this update.
+        size_t oldFlags;
+        do
+        {
+            oldFlags = VolatileLoad(&m_Flags);
+        }
+        while (InterlockedCompareExchangeT(&m_Flags, oldFlags | flags, oldFlags) != oldFlags);
+    }
+#endif // DACCESS_COMPILE
+
     SLOT             m_ptReserved; //= (SLOT) 0xDEADC0FF;  reserved
     PTR_MethodTable  m_pMT; // pointer to the VMs method table
     ULONG            m_cbSlots; // number of slots in the interface (excluding IUnk/IDisp)
