@@ -25899,14 +25899,14 @@ GenTree* Compiler::gtNewSimdGetElementNode(
         int immLowerBound;
         int immUpperBound;
         HWIntrinsicInfo::lookupImmBounds(NI_Sve_DuplicateSelectedScalarToVector, simdSize, simdBaseType, 1,
-                                        &immLowerBound, &immUpperBound);
+                                         &immLowerBound, &immUpperBound);
         if (op2->IsIntegralConst() && (op2->AsIntCon()->IconValue() >= immLowerBound) &&
             (op2->AsIntCon()->IconValue() <= immUpperBound))
         {
             GenTree* boundsCheck =
                 new (this, GT_BOUNDS_CHECK) GenTreeBoundsChk(gtCloneExpr(op2), vectorLength, SCK_ARG_RNG_EXCPN);
             result = gtNewSimdHWIntrinsicNode(getSIMDTypeForSize(simdSize), vector, op2,
-                                            NI_Sve_DuplicateSelectedScalarToVector, simdBaseType, simdSize);
+                                              NI_Sve_DuplicateSelectedScalarToVector, simdBaseType, simdSize);
             result = gtNewSimdToScalarNode(type, result, simdBaseType, simdSize);
             result = gtNewOperNode(GT_COMMA, type, boundsCheck, result);
         }
@@ -25960,7 +25960,7 @@ GenTree* Compiler::gtNewSimdGetElementNode(
             indexMask->AsHWIntrinsic()->SetAuxiliaryType(type);
 
             result = gtNewSimdHWIntrinsicNode(type, indexMask, vector, NI_Sve_ExtractLastActiveElementScalar,
-                                            simdBaseType, simdSize);
+                                              simdBaseType, simdSize);
             result = gtNewOperNode(GT_COMMA, type, boundsCheck, result);
 
             // Ensure the index is evaluated before the bounds check.
