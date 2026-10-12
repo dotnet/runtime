@@ -501,7 +501,7 @@ INT32 rel32UsingJumpStub(INT32 UNALIGNED * pRel32, PCODE target, MethodDesc *pMe
     ClrFlushInstructionCache(pStartRX, cbAligned); \
     PerfMap::LogStubs(__FUNCTION__, "DynamicHelper", (PCODE)pStartRX, cb, PerfMapStubType::Individual); \
     return (PCODE)pStartRX; \
-    }
+    } /* for (;;) */
 
 #define EMIT_DYNAMIC_HELPER_JUMP(target) \
     *p++ = X86_INSTR_JMP_REL32; \
@@ -509,7 +509,7 @@ INT32 rel32UsingJumpStub(INT32 UNALIGNED * pRel32, PCODE target, MethodDesc *pMe
     if (rel32 == 0) \
         continue; \
     SET_UNALIGNED_32(p, rel32); \
-    p += 4
+    p += 4;
 
 PCODE DynamicHelpers::CreateHelper(LoaderAllocator * pAllocator, TADDR arg, PCODE target)
 {
