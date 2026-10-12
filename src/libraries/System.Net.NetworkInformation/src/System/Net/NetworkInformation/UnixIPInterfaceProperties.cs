@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
-using System.IO;
 using System.Net.Sockets;
 
 namespace System.Net.NetworkInformation
@@ -86,27 +84,16 @@ namespace System.Net.NetworkInformation
 
         private static string? GetDnsSuffix()
         {
-            try
-            {
-                return StringParsingHelpers.ParseDnsSuffixFromResolvConfFile(File.ReadAllText(NetworkFiles.EtcResolvConfFile));
-            }
-            catch (FileNotFoundException)
-            {
-                return null;
-            }
+            string? resolverConfig = StringParsingHelpers.ReadResolvConfFile(NetworkFiles.EtcResolvConfFile);
+            return resolverConfig is null ? null : StringParsingHelpers.ParseDnsSuffixFromResolvConfFile(resolverConfig);
         }
 
         private static InternalIPAddressCollection GetDnsAddresses()
         {
-            try
-            {
-                List<IPAddress> internalAddresses = StringParsingHelpers.ParseDnsAddressesFromResolvConfFile(File.ReadAllText(NetworkFiles.EtcResolvConfFile));
-                return new InternalIPAddressCollection(internalAddresses);
-            }
-            catch (FileNotFoundException)
-            {
-                return new InternalIPAddressCollection();
-            }
+            string? resolverConfig = StringParsingHelpers.ReadResolvConfFile(NetworkFiles.EtcResolvConfFile);
+            return resolverConfig is null ?
+                new InternalIPAddressCollection() :
+                new InternalIPAddressCollection(StringParsingHelpers.ParseDnsAddressesFromResolvConfFile(resolverConfig));
         }
     }
 }
