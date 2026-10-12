@@ -25893,21 +25893,22 @@ GenTree* Compiler::gtNewSimdGetElementNode(
         CORINFO_CLASS_HANDLE vectorTHandle = info.compCompHnd->getBuiltinClass(CLASSID_NUMERICS_VECTORT);
         GenTree*             vectorLength  = evalVectorCount(vectorTHandle, simdBaseType);
 
-        GenTree* op2Clone = nullptr;
-        op2 = impCloneExpr(op2, &op2Clone, CHECK_SPILL_ALL, nullptr DEBUGARG("Clone index for Vector<T> bounds check"));
+        GenTree* result = nullptr;
+        GenTree* vector = fgInsertCommaFormTemp(&op1);
 
-        GenTreeBoundsChk* boundsCheck =
-            new (this, GT_BOUNDS_CHECK) GenTreeBoundsChk(op2Clone, vectorLength, SCK_ARG_RNG_EXCPN);
-
-        op2 = gtNewOperNode(GT_COMMA, op2->TypeGet(), boundsCheck, op2);
-
-        if (op2->IsIntegralConst())
+        int immLowerBound;
+        int immUpperBound;
+        HWIntrinsicInfo::lookupImmBounds(NI_Sve_DuplicateSelectedScalarToVector, simdSize, simdBaseType, 1,
+                                        &immLowerBound, &immUpperBound);
+        if (op2->IsIntegralConst() && (op2->AsIntCon()->IconValue() >= immLowerBound) &&
+            (op2->AsIntCon()->IconValue() <= immUpperBound))
         {
-            return gtNewSimdToScalarNode(type,
-                                         gtNewSimdHWIntrinsicNode(type, op1, op2,
-                                                                  NI_Sve_DuplicateSelectedScalarToVector, simdBaseType,
-                                                                  simdSize),
-                                         simdBaseType, simdSize);
+            GenTree* boundsCheck =
+                new (this, GT_BOUNDS_CHECK) GenTreeBoundsChk(gtCloneExpr(op2), vectorLength, SCK_ARG_RNG_EXCPN);
+            result = gtNewSimdHWIntrinsicNode(getSIMDTypeForSize(simdSize), vector, op2,
+                                            NI_Sve_DuplicateSelectedScalarToVector, simdBaseType, simdSize);
+            result = gtNewSimdToScalarNode(type, result, simdBaseType, simdSize);
+            result = gtNewOperNode(GT_COMMA, type, boundsCheck, result);
         }
         else
         {
@@ -25949,13 +25950,25 @@ GenTree* Compiler::gtNewSimdGetElementNode(
                     unreached();
             }
 
+            GenTree* index = fgMakeMultiUse(&op2);
+
+            GenTree* boundsCheck =
+                new (this, GT_BOUNDS_CHECK) GenTreeBoundsChk(gtCloneExpr(index), vectorLength, SCK_ARG_RNG_EXCPN);
+
             GenTree* indexMask =
-                gtNewSimdHWIntrinsicNode(TYP_MASK, gtNewIconNode(0), op2, maskGenerator, simdBaseType, simdSize);
+                gtNewSimdHWIntrinsicNode(TYP_MASK, gtNewIconNode(0), index, maskGenerator, simdBaseType, simdSize);
             indexMask->AsHWIntrinsic()->SetAuxiliaryType(type);
 
-            return gtNewSimdHWIntrinsicNode(type, indexMask, op1, NI_Sve_ExtractLastActiveElementScalar, simdBaseType,
-                                            simdSize);
+            result = gtNewSimdHWIntrinsicNode(type, indexMask, vector, NI_Sve_ExtractLastActiveElementScalar,
+                                            simdBaseType, simdSize);
+            result = gtNewOperNode(GT_COMMA, type, boundsCheck, result);
+
+            // Ensure the index is evaluated before the bounds check.
+            result = gtWrapWithSideEffects(result, op2, GTF_ALL_EFFECT);
         }
+
+        // Ensure the vector is evaluated before the index and bounds check.
+        return gtWrapWithSideEffects(result, op1, GTF_ALL_EFFECT);
     }
 #endif
 
