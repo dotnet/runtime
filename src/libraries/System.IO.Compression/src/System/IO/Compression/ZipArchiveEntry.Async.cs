@@ -739,6 +739,8 @@ public partial class ZipArchiveEntry
             _storedUncompressedData = null;
         }
 
+        ThrowIfZipCryptoLastWriteTimeChangedWithoutReencrypting();
+
         // _storedUncompressedData gets frozen here, and is what gets written to the file
         if (_storedUncompressedData != null || _compressedBytes != null)
         {

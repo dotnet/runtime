@@ -1635,5 +1635,90 @@ namespace System.IO.Compression.Tests
                 }
             }
         }
+
+        /// <summary>
+        /// Changing LastWriteTime on a ZipCrypto-encrypted entry in Update mode without reopening it
+        /// (with its password) to rewrite its data must not silently produce an archive whose correct
+        /// password is subsequently rejected: the password verification bytes baked into the ciphertext
+        /// are derived from the entry's LastWriteTime, so the stale ciphertext and the rewritten header
+        /// would otherwise disagree. Disposing the archive should throw instead.
+        /// </summary>
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public async Task Update_ChangeLastWriteTimeOnZipCryptoEntryWithoutReencrypting_Throws(bool async)
+        {
+            const string password = "pw";
+            using MemoryStream ms = new MemoryStream();
+
+            ZipArchive createArchive = await CreateZipArchive(async, ms, ZipArchiveMode.Create, leaveOpen: true);
+            ZipArchiveEntry created = createArchive.CreateEntry("a.txt", password, ZipEncryptionMethod.ZipCrypto);
+            created.LastWriteTime = new DateTimeOffset(2026, 1, 1, 12, 0, 0, TimeSpan.Zero);
+            using (Stream writeStream = await OpenEntryStream(async, created))
+            using (StreamWriter writer = new StreamWriter(writeStream))
+            {
+                writer.Write("hello");
+            }
+            await DisposeZipArchive(async, createArchive);
+
+            ms.Position = 0;
+            ZipArchive updateArchive = await CreateZipArchive(async, ms, ZipArchiveMode.Update, leaveOpen: true);
+            ZipArchiveEntry entryToModify = updateArchive.GetEntry("a.txt");
+            Assert.NotNull(entryToModify);
+
+            // Only change the timestamp -- do not reopen the entry to rewrite its data.
+            entryToModify.LastWriteTime = new DateTimeOffset(2026, 1, 1, 17, 0, 0, TimeSpan.Zero);
+
+            await Assert.ThrowsAsync<NotSupportedException>(() => DisposeZipArchive(async, updateArchive));
+        }
+
+        /// <summary>
+        /// Changing LastWriteTime on a ZipCrypto-encrypted entry is allowed when the entry is also
+        /// reopened with its password to rewrite its data, since the data (and its password
+        /// verification bytes) gets re-encrypted using the new timestamp.
+        /// </summary>
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public async Task Update_ChangeLastWriteTimeOnZipCryptoEntryAndReencrypt_Succeeds(bool async)
+        {
+            const string password = "pw";
+            using MemoryStream ms = new MemoryStream();
+
+            ZipArchive createArchive = await CreateZipArchive(async, ms, ZipArchiveMode.Create, leaveOpen: true);
+            ZipArchiveEntry created = createArchive.CreateEntry("a.txt", password, ZipEncryptionMethod.ZipCrypto);
+            created.LastWriteTime = new DateTimeOffset(2026, 1, 1, 12, 0, 0, TimeSpan.Zero);
+            using (Stream writeStream = await OpenEntryStream(async, created))
+            using (StreamWriter writer = new StreamWriter(writeStream))
+            {
+                writer.Write("hello");
+            }
+            await DisposeZipArchive(async, createArchive);
+
+            ms.Position = 0;
+            ZipArchive updateArchive = await CreateZipArchive(async, ms, ZipArchiveMode.Update, leaveOpen: true);
+            ZipArchiveEntry entryToModify = updateArchive.GetEntry("a.txt");
+            Assert.NotNull(entryToModify);
+
+            DateTimeOffset newTimestamp = new DateTimeOffset(2026, 1, 1, 17, 0, 0, TimeSpan.Zero);
+            entryToModify.LastWriteTime = newTimestamp;
+            using (Stream rewriteStream = await OpenEntryStream(async, entryToModify, password))
+            using (StreamWriter writer = new StreamWriter(rewriteStream))
+            {
+                writer.Write("hello");
+            }
+            await DisposeZipArchive(async, updateArchive);
+
+            ms.Position = 0;
+            ZipArchive readArchive = await CreateZipArchive(async, ms, ZipArchiveMode.Read, leaveOpen: true);
+            ZipArchiveEntry verify = readArchive.GetEntry("a.txt");
+            Assert.NotNull(verify);
+            Assert.Equal(newTimestamp.DateTime, verify.LastWriteTime.DateTime);
+
+            using (Stream readStream = await OpenEntryStream(async, verify, password))
+            using (StreamReader reader = new StreamReader(readStream))
+            {
+                Assert.Equal("hello", reader.ReadToEnd());
+            }
+            await DisposeZipArchive(async, readArchive);
+        }
     }
 }
