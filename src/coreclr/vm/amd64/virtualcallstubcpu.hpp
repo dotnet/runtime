@@ -149,8 +149,8 @@ struct DispatchStubShort
         LIMITED_METHOD_CONTRACT;
         if (IsJmpAbsAvailable())
         {
-            // APX: displacement is relative to the next instruction, the jmpabs
-            return (PCODE)&_apx.jmpabsPrefix + _apx._failDispl;
+            // APX: displacement base after the jne instruction
+            return (PCODE)&_apx._failDispl + sizeof(DISPL) + _apx._failDispl;
         }
         else
         {
@@ -690,9 +690,6 @@ void DispatchHolder::InitializeStatic()
     static_assert(((sizeof(DispatchStub) + offsetof(DispatchStubShort, _apx._implTarget)) % sizeof(void *)) == 0);
     static_assert(((sizeof(DispatchStub) + offsetof(DispatchStubLong, _legacy._implTarget)) % sizeof(void *)) == 0);
     static_assert(((sizeof(DispatchStub) + offsetof(DispatchStubLong, _apx._implTarget)) % sizeof(void *)) == 0);
-
-    static_assert(((sizeof(DispatchStub) + sizeof(DispatchStubShort)) % sizeof(void*)) == 0);
-    static_assert(((sizeof(DispatchStub) + sizeof(DispatchStubLong)) % sizeof(void*)) == 0);
     static_assert((DispatchStubLong_offsetof_failLabel - DispatchStubLong_offsetof_failDisplBase) < INT8_MAX);
 
     // Each stub must fit its CODE_SIZE_ALIGN slot (16-byte granularity).

@@ -461,7 +461,7 @@ void emitJmpAbsJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target)
     }
     CONTRACTL_END;
 
-    // jmpabs instruction (APX):    D5 00 A1 xx xx xx xx xx xx xx xx
+    // jmpabs instruction (APX)
     pBufferRW[0]  = 0xD5;
     pBufferRW[1]  = 0x00;
     pBufferRW[2]  = 0xA1;

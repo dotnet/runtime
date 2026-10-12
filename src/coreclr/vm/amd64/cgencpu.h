@@ -499,7 +499,7 @@ INT32 rel32UsingJumpStub(INT32 UNALIGNED * pRel32, PCODE target, MethodDesc *pMe
 
 void emitBackToBackJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target);
 
-// Emits raw 11-byte jmpabs instruction (D5 00 A1 + 8-byte immediate)
+// Emits raw 11-byte jmpabs instruction
 // Caller must ensure IsJmpAbsAvailable() == true.
 void emitJmpAbsJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target);
 
