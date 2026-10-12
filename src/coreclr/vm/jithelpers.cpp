@@ -2541,6 +2541,10 @@ PCODE LoadDynamicJitHelper(DynamicCorInfoHelpFunc ftnNum)
 
         pMD = CoreLibBinder::GetMethod(binderId);
         PCODE pFunc = pMD->GetMultiCallableAddrOfCode();
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
+        if (pMD->IsFCall())
+            pFunc = ECall::GetFCallImpl(pMD);
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
         InterlockedCompareExchangeT<PCODE>(&hlpDynamicFuncTable[ftnNum].pfnHelper, (PCODE)pFunc, (PCODE)NULL);
     }
 
