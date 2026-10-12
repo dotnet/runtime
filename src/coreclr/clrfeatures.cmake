@@ -23,12 +23,6 @@ if (CLR_CMAKE_TARGET_ARCH_WASM OR CLR_CMAKE_TARGET_APPLE_MOBILE OR NOT FEATURE_D
   set(FEATURE_STATICALLY_LINKED 1)
 endif()
 
-# FEATURE_MULTITHREADING: Enables support for multiple threads. WebAssembly targets are single-threaded unless
-# threads are explicitly enabled.
-if(NOT DEFINED FEATURE_MULTITHREADING AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
-  set(FEATURE_MULTITHREADING 1)
-endif()
-
 if(FEATURE_MULTITHREADING)
   set(FEATURE_MULTICOREJIT 1)
 else()
