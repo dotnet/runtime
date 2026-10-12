@@ -5540,20 +5540,21 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
 
         if (target->isContainedIntOrIImmed())
         {
+            // A direct call: auipc + jalr with a relocation. No register is needed for the target, and ireg is
+            // left unset because the emitter chooses the auipc and jalr registers itself.
             params.callType = EC_FUNC_TOKEN;
-            params.ireg     = internalRegisters.GetSingle(call);
             params.addr     = (void*)target->AsIntCon()->IconValue();
         }
         else
         {
             params.callType = EC_INDIR_R;
             params.ireg     = target->GetRegNum();
-        }
 
-        // We have already generated code for gtControlExpr evaluating it into a register.
-        // We just need to emit "call reg" in this case.
-        //
-        assert(genIsValidIntReg(params.ireg));
+            // We have already generated code for gtControlExpr evaluating it into a register.
+            // We just need to emit "call reg" in this case.
+            //
+            assert(genIsValidIntReg(params.ireg));
+        }
 
         genEmitCallWithCurrentGC(params);
     }
