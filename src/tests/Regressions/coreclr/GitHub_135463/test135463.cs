@@ -17,6 +17,10 @@ public class Runtime_135463
     private static volatile bool s_readyForCancellation;
     private static volatile int s_counter;
     private static string s_trace;
+    // Set by a call-free store right after a catch while an abort is pending. A call there (like the string
+    // concatenation of s_trace) would carry its own safepoint, where the pending abort can be raised even if
+    // nothing raised it again at the end of the catch.
+    private static volatile bool s_reachedAfterCatch;
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void RunInfiniteLoop()
@@ -52,7 +56,7 @@ public class Runtime_135463
             s_trace += "catch ";
         }
 
-        s_trace += "unreachable ";
+        s_reachedAfterCatch = true;
     }
 
     // The caller catches the abort that was thrown again at the end of the catch block in its callee
@@ -68,7 +72,7 @@ public class Runtime_135463
             s_trace += "caller catch ";
         }
 
-        s_trace += "unreachable ";
+        s_reachedAfterCatch = true;
     }
 
     // A thread is not aborted while it runs a finally block, so the abort stays pending at the end of a catch block
@@ -104,7 +108,7 @@ public class Runtime_135463
             s_trace += "outer catch ";
         }
 
-        s_trace += "unreachable ";
+        s_reachedAfterCatch = true;
     }
 
     private static void CancelWhenReady(CancellationTokenSource cts)
@@ -123,6 +127,7 @@ public class Runtime_135463
         Console.WriteLine(name);
         s_trace = "";
         s_readyForCancellation = false;
+        s_reachedAfterCatch = false;
 
         var cts = new CancellationTokenSource();
         Task.Run(() => CancelWhenReady(cts));
@@ -139,6 +144,7 @@ public class Runtime_135463
 
         Assert.IsType<OperationCanceledException>(exception);
         Assert.Equal(expectedTrace, s_trace);
+        Assert.False(s_reachedAfterCatch);
     }
 
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
