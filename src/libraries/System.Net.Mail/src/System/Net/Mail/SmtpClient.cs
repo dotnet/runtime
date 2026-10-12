@@ -7,6 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Net.NetworkInformation;
+using System.Net.Security;
 using System.Runtime.ExceptionServices;
 using System.Runtime.Versioning;
 using System.Security;
@@ -341,9 +342,41 @@ namespace System.Net.Mail
             }
         }
 
-        /// <summary>
-        /// Certificates used by the client for establishing an SSL connection with the server.
-        /// </summary>
+        /// <summary>Gets or sets the options used to establish a TLS connection.</summary>
+        /// <value>The TLS client authentication options. The default is a new <see cref="SslClientAuthenticationOptions"/> instance.</value>
+        /// <remarks>
+        /// These options are used only when <see cref="EnableSsl"/> is <see langword="true"/>.
+        /// When <see cref="SslClientAuthenticationOptions.TargetHost"/> is <see langword="null"/>,
+        /// the current <see cref="Host"/> is used without modifying the options.
+        /// Changing this object in place, including its nested objects such as
+        /// <see cref="SslClientAuthenticationOptions.ClientCertificates"/>, does not invalidate an existing connection.
+        /// To ensure changes are used for the next send, assign this property again, even to the same instance.
+        /// Assignment invalidates the cached connection so that the next send establishes a new connection.
+        /// Do not modify the options or their nested objects while a send is in progress.
+        /// </remarks>
+        /// <exception cref="ArgumentNullException">The value is <see langword="null"/>.</exception>
+        /// <exception cref="InvalidOperationException">A send operation is in progress.</exception>
+        public SslClientAuthenticationOptions SslOptions
+        {
+            get => _transport.SslOptions;
+            set
+            {
+                ArgumentNullException.ThrowIfNull(value);
+
+                if (_inCall)
+                {
+                    throw new InvalidOperationException(SR.SmtpInvalidOperationDuringSend);
+                }
+
+                _transport.SslOptions = value;
+            }
+        }
+
+        /// <summary>Gets the certificates used by the client to establish a TLS connection with the server.</summary>
+        /// <remarks>
+        /// Returns <see cref="SslClientAuthenticationOptions.ClientCertificates"/> from <see cref="SslOptions"/>,
+        /// initializing an empty collection if necessary. Modifying the collection does not invalidate an existing connection.
+        /// </remarks>
         public X509CertificateCollection ClientCertificates
         {
             get

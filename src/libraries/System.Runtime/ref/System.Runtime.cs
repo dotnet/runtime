@@ -528,6 +528,7 @@ namespace System
         public static void Copy(System.Array sourceArray, long sourceIndex, System.Array destinationArray, long destinationIndex, long length) { }
         public void CopyTo(System.Array array, int index) { }
         public void CopyTo(System.Array array, long index) { }
+        public static T[] CreateFilled<T>(int length, T value) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("The code for an array of the specified type might not be available.")]
         public static System.Array CreateInstance(System.Type elementType, int length) { throw null; }
         public static System.Array CreateInstance(System.Type elementType, int length1, int length2) { throw null; }
@@ -568,6 +569,7 @@ namespace System
         public object? GetValue(long index1, long index2) { throw null; }
         public object? GetValue(long index1, long index2, long index3) { throw null; }
         public object? GetValue(params long[] indices) { throw null; }
+        public object? GetValue(params System.ReadOnlySpan<int> indices) { throw null; }
         public static int IndexOf(System.Array array, object? value) { throw null; }
         public static int IndexOf(System.Array array, object? value, int startIndex) { throw null; }
         public static int IndexOf(System.Array array, object? value, int startIndex, int count) { throw null; }
@@ -594,6 +596,7 @@ namespace System
         public void SetValue(object? value, long index1, long index2) { }
         public void SetValue(object? value, long index1, long index2, long index3) { }
         public void SetValue(object? value, params long[] indices) { }
+        public void SetValue(object? value, params System.ReadOnlySpan<int> indices) { }
         public static void Sort(System.Array array) { }
         public static void Sort(System.Array keys, System.Array? items) { }
         public static void Sort(System.Array keys, System.Array? items, System.Collections.IComparer? comparer) { }

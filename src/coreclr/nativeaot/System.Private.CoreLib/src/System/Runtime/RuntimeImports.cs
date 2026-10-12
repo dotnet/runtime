@@ -404,20 +404,6 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "RhUnbox")]
         internal static extern unsafe void RhUnbox(object? obj, ref byte data, MethodTable* pUnboxToEEType);
 
-        // Busy spin for the given number of iterations.
-        [LibraryImport(RuntimeLibrary, EntryPoint = "RhSpinWait")]
-        [SuppressGCTransition]
-        internal static partial void RhSpinWait(int iterations);
-
-        // Call RhSpinWait with a GC transition
-        [LibraryImport(RuntimeLibrary, EntryPoint = "RhSpinWait")]
-        internal static partial void RhLongSpinWait(int iterations);
-
-        // Yield the cpu to another thread ready to process, if one is available.
-        [LibraryImport(RuntimeLibrary, EntryPoint = "RhYield")]
-        private static partial int _RhYield();
-        internal static bool RhYield() => _RhYield() != 0;
-
 #if !TARGET_UNIX
         // Wait for any object to be signalled, in a way that's compatible with the CLR's behavior in an STA.
         [LibraryImport(RuntimeLibrary)]
@@ -558,14 +544,6 @@ namespace System.Runtime
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhRegisterInlinedThreadStaticRoot")]
         internal static extern void RhRegisterInlinedThreadStaticRoot(ref object? root, TypeManagerHandle module);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhCurrentNativeThreadId")]
-        internal static extern unsafe IntPtr RhCurrentNativeThreadId();
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhCurrentOSThreadId")]
-        internal static extern unsafe ulong RhCurrentOSThreadId();
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetDefaultStackSize")]

@@ -4118,6 +4118,13 @@ namespace Internal.JitInterface
                 _helperCache.Add(ftnNum, helper);
             }
 
+#if READYTORUN
+            if (helper.Method is not null)
+            {
+                AddManagedHelperDependency(helper.Method);
+            }
+#endif
+
             if (pNativeEntrypoint != null)
             {
                 if (helper.EntryPoint.RepresentsIndirectionCell)

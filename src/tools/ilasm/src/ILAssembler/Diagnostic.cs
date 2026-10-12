@@ -66,6 +66,11 @@ public static class DiagnosticIds
     public const string InvalidOctalLiteral = "ILA0046";
     public const string BranchOffsetOutOfRange = "ILA0047";
     public const string InvalidExceptionRegion = "ILA0048";
+    public const string PseudoCustomAttributeInvalidTarget = "ILA0049";
+    public const string PseudoCustomAttributeInvalidValue = "ILA0050";
+    public const string PseudoCustomAttributeInvalidBlob = "ILA0051";
+    public const string PseudoCustomAttributeUnknownArgument = "ILA0052";
+    public const string PseudoCustomAttributeRepeatedArgument = "ILA0053";
 }
 
 internal static class DiagnosticMessageTemplates
@@ -119,4 +124,9 @@ internal static class DiagnosticMessageTemplates
     public const string BranchOffsetOutOfRange = "The offset {1} is too large for short branch instruction '{0}'; truncated";
     public const string InvalidExceptionRegion = "Exception region bounds (try {0} to {1}, handler {2} to {3}) are invalid for a method with {4} bytes of code";
     public const string InvalidFilterOffset = "Exception filter offset {0} is out of range for a method with {1} bytes of code";
+    public const string PseudoCustomAttributeInvalidTarget = "Custom attribute '{0}' cannot be applied to this target";
+    public const string PseudoCustomAttributeInvalidValue = "Custom attribute '{0}' has an invalid argument value";
+    public const string PseudoCustomAttributeInvalidBlob = "Custom attribute '{0}' has a malformed value blob";
+    public const string PseudoCustomAttributeUnknownArgument = "Custom attribute '{0}' does not have a field or property named '{1}'";
+    public const string PseudoCustomAttributeRepeatedArgument = "Custom attribute '{0}' specifies '{1}' more than once";
 }

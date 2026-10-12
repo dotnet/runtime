@@ -315,7 +315,6 @@ set(VM_SOURCES_WKS
     callstubgenerator.cpp
     clrconfignative.cpp
     clrex.cpp
-    comdatetime.cpp
     comdelegate.cpp
     comdependenthandle.cpp
     comdynamic.cpp
@@ -430,7 +429,6 @@ set(VM_HEADERS_WKS
     ceemain.h
     clrconfignative.h
     clrex.h
-    comdatetime.h
     comdelegate.h
     comdependenthandle.h
     comdynamic.h

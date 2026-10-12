@@ -15,6 +15,8 @@ namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
 public unsafe class StackWalkTests
 {
+    private const uint X86TransitionBlockSize = 7 * sizeof(uint);
+
     [Theory]
     [InlineData(false, new byte[] { 0x04, 0x05, 0x21, 0x02 }, uint.MaxValue)]
     [InlineData(false, new byte[] { 0x81, 0x08, 0x0a, 0x30, 0x42, 0x04 }, 8u)]
@@ -125,6 +127,235 @@ public unsafe class StackWalkTests
         Assert.Equal(CallerSp, context.Sp);
         Assert.Equal(ReturnAddress, context.Pc);
         Assert.NotEqual(0u, context.ContextFlags & (uint)LoongArch64Context.ContextFlagsValues.CONTEXT_UNWOUND_TO_CALL);
+    }
+
+    [Theory]
+    [InlineData(nameof(Data.ExternalMethodFrame), new byte[] { 0x00 }, 0u, false)]
+    [InlineData(nameof(Data.ExternalMethodFrame), new byte[] { 0x01 }, 1u, false)]
+    [InlineData(nameof(Data.ExternalMethodFrame), new byte[] { 0x02 }, 2u, false)]
+    [InlineData(nameof(Data.ExternalMethodFrame), new byte[] { 0x03 }, 3u, false)]
+    [InlineData(nameof(Data.ExternalMethodFrame), new byte[] { 0x0f }, 6u, false)]
+    [InlineData(nameof(Data.ExternalMethodFrame), new byte[] { 0x01 }, 1u, true)]
+    [InlineData(nameof(Data.StubDispatchFrame), new byte[] { 0x00 }, 0u, false)]
+    [InlineData(nameof(Data.StubDispatchFrame), new byte[] { 0x01 }, 1u, false)]
+    [InlineData(nameof(Data.StubDispatchFrame), new byte[] { 0x02 }, 2u, false)]
+    [InlineData(nameof(Data.StubDispatchFrame), new byte[] { 0x03 }, 3u, false)]
+    [InlineData(nameof(Data.StubDispatchFrame), new byte[] { 0x0f }, 6u, false)]
+    [InlineData(nameof(Data.StubDispatchFrame), new byte[] { 0x01 }, 1u, true)]
+    public void X86TransitionFrame_UsesGCRefMapForStackPop(string frameType, byte[] gcRefMap, uint stackPopSlots, bool hasMethodDesc)
+    {
+        (TestPlaceholderTarget target, ContextHolder<X86Context> context) =
+            CreateX86TransitionFrameTarget(frameType, gcRefMap, hasMethodDesc);
+
+        new X86FrameHandler(target, context).HandleTransitionFrame(
+            target.ProcessedData.GetOrAdd<Data.FramedMethodFrame>(new TargetPointer(0x1000)));
+
+        AssertX86TransitionFrameContext(context, stackPopSlots);
+        Assert.Equal(0x1234_5678UL, new FrameHelpers(target).GetReturnAddress(
+            target.ProcessedData.GetOrAdd<Data.Frame>(new TargetPointer(0x1000))).Value);
+    }
+
+    [Theory]
+    [InlineData(nameof(Data.FramedMethodFrame))]
+    [InlineData(nameof(Data.ExternalMethodFrame))]
+    [InlineData(nameof(Data.StubDispatchFrame))]
+    public void X86TransitionFrame_UsesSignatureWhenGCRefMapUnavailable(string frameType)
+    {
+        (TestPlaceholderTarget target, ContextHolder<X86Context> context) =
+            CreateX86TransitionFrameTarget(frameType, gcRefMap: null, hasMethodDesc: true, signatureBlob: [0x02]);
+
+        new X86FrameHandler(target, context).HandleTransitionFrame(
+            target.ProcessedData.GetOrAdd<Data.FramedMethodFrame>(new TargetPointer(0x1000)));
+
+        AssertX86TransitionFrameContext(context, stackPopSlots: 2);
+        Assert.Equal(0x1234_5678UL, new FrameHelpers(target).GetReturnAddress(
+            target.ProcessedData.GetOrAdd<Data.Frame>(new TargetPointer(0x1000))).Value);
+    }
+
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public void X86TransitionFrame_StubDispatchWithoutMapOrMethod_AdjustsInstructionPointer(
+        bool hasRepresentativeMethodTable, bool hasUnresolvedIndirection)
+    {
+        (TestPlaceholderTarget target, ContextHolder<X86Context> context) = CreateX86TransitionFrameTarget(
+            nameof(Data.StubDispatchFrame), gcRefMap: null, hasMethodDesc: false,
+            representativeMethodDescAddress: hasRepresentativeMethodTable ? 0u : null,
+            hasUnresolvedIndirection: hasUnresolvedIndirection);
+
+        new X86FrameHandler(target, context).HandleTransitionFrame(
+            target.ProcessedData.GetOrAdd<Data.FramedMethodFrame>(new TargetPointer(0x1000)));
+
+        AssertX86TransitionFrameContext(context, stackPopSlots: 0, instructionPointer: 0x1234_5673);
+        Assert.Equal(0x1234_5673UL, new FrameHelpers(target).GetReturnAddress(
+            target.ProcessedData.GetOrAdd<Data.Frame>(new TargetPointer(0x1000))).Value);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void X86TransitionFrame_StubDispatchUsesRepresentativeMethod(bool hasUnresolvedIndirection)
+    {
+        (TestPlaceholderTarget target, ContextHolder<X86Context> context) = CreateX86TransitionFrameTarget(
+            nameof(Data.StubDispatchFrame), gcRefMap: null, hasMethodDesc: false, signatureBlob: [0x02],
+            representativeMethodDescAddress: 0x6000, hasUnresolvedIndirection: hasUnresolvedIndirection);
+
+        new X86FrameHandler(target, context).HandleTransitionFrame(
+            target.ProcessedData.GetOrAdd<Data.FramedMethodFrame>(new TargetPointer(0x1000)));
+
+        AssertX86TransitionFrameContext(context, stackPopSlots: 2);
+        Assert.Equal(0x1234_5678UL, new FrameHelpers(target).GetReturnAddress(
+            target.ProcessedData.GetOrAdd<Data.Frame>(new TargetPointer(0x1000))).Value);
+    }
+
+    [Theory]
+    [InlineData(RuntimeInfoArchitecture.X86, 0x1234_5673UL)]
+    [InlineData(RuntimeInfoArchitecture.Arm, 0x1234_5678UL)]
+    public void StubDispatchFrame_ReturnAddressWithoutMapOrMethod(
+        RuntimeInfoArchitecture architecture, ulong expectedReturnAddress)
+    {
+        (TestPlaceholderTarget target, _) = CreateX86TransitionFrameTarget(
+            nameof(Data.StubDispatchFrame), gcRefMap: null, hasMethodDesc: false, architecture: architecture);
+
+        Assert.Equal(expectedReturnAddress, new FrameHelpers(target).GetReturnAddress(
+            target.ProcessedData.GetOrAdd<Data.Frame>(new TargetPointer(0x1000))).Value);
+    }
+
+    private static void AssertX86TransitionFrameContext(
+        ContextHolder<X86Context> context, uint stackPopSlots, uint instructionPointer = 0x1234_5678)
+    {
+        Assert.Equal(0x2000u + X86TransitionBlockSize + stackPopSlots * sizeof(uint), context.Context.Esp);
+        Assert.Equal(instructionPointer, context.Context.Eip);
+        Assert.Equal(0x1111_1111u, context.Context.Ebp);
+        Assert.Equal(0x2222_2222u, context.Context.Ebx);
+        Assert.Equal(0x3333_3333u, context.Context.Edi);
+        Assert.Equal(0x4444_4444u, context.Context.Esi);
+        Assert.Equal((uint)X86Context.ContextFlagsValues.CONTEXT_FULL, context.Context.ContextFlags);
+    }
+
+    private static (TestPlaceholderTarget Target, ContextHolder<X86Context> Context) CreateX86TransitionFrameTarget(
+        string frameType, byte[]? gcRefMap, bool hasMethodDesc, byte[]? signatureBlob = null,
+        uint? representativeMethodDescAddress = null, bool hasUnresolvedIndirection = false,
+        RuntimeInfoArchitecture architecture = RuntimeInfoArchitecture.X86)
+    {
+        MockTarget.Architecture arch = new() { IsLittleEndian = true, Is64Bit = false };
+        TestPlaceholderTarget.Builder builder = new(arch);
+        TargetTestHelpers helpers = builder.MemoryBuilder.TargetTestHelpers;
+        const uint FrameIdentifier = 0x100;
+        const uint MethodDescAddress = 0x6000;
+        const uint ImageBase = 0x100000;
+        const uint ImportSectionRva = 0x100;
+        const uint GCRefMapRva = 0x200;
+        TargetPointer indirection = new(ImageBase + ImportSectionRva + 2 * sizeof(uint));
+
+        byte[] frameData = new byte[28];
+        helpers.Write(frameData.AsSpan(0), FrameIdentifier);
+        helpers.Write(frameData.AsSpan(8), 0x2000u);
+        helpers.Write(frameData.AsSpan(12), hasMethodDesc ? MethodDescAddress : 0);
+        helpers.Write(frameData.AsSpan(16), gcRefMap is not null || hasUnresolvedIndirection ? (uint)indirection.Value : 0);
+        helpers.Write(frameData.AsSpan(20), representativeMethodDescAddress.HasValue ? 0x7000u : 0);
+        helpers.Write(frameData.AsSpan(24), 3u);
+        builder.MemoryBuilder.AddHeapFragment(new() { Address = 0x1000, Data = frameData, Name = "Transition frame" });
+
+        byte[] transitionBlock = new byte[X86TransitionBlockSize];
+        helpers.Write(transitionBlock.AsSpan(0), 0x1111_1111u);
+        helpers.Write(transitionBlock.AsSpan(4), 0x2222_2222u);
+        helpers.Write(transitionBlock.AsSpan(8), 0x3333_3333u);
+        helpers.Write(transitionBlock.AsSpan(12), 0x4444_4444u);
+        helpers.Write(transitionBlock.AsSpan(24), 0x1234_5678u);
+        builder.MemoryBuilder.AddHeapFragment(new() { Address = 0x2000, Data = transitionBlock, Name = "Transition block" });
+
+        Mock<IExecutionManager> executionManager = new(MockBehavior.Strict);
+        if (gcRefMap is not null)
+        {
+            byte[] module = new byte[4];
+            helpers.Write(module, 0x4000u);
+            builder.MemoryBuilder.AddHeapFragment(new() { Address = 0x3000, Data = module, Name = "Module" });
+            byte[] r2rInfo = new byte[12];
+            helpers.Write(r2rInfo.AsSpan(0), ImageBase);
+            helpers.Write(r2rInfo.AsSpan(4), 1u);
+            helpers.Write(r2rInfo.AsSpan(8), 0x5000u);
+            builder.MemoryBuilder.AddHeapFragment(new() { Address = 0x4000, Data = r2rInfo, Name = "ReadyToRun info" });
+            byte[] importSection = new byte[20];
+            helpers.Write(importSection.AsSpan(0), ImportSectionRva);
+            helpers.Write(importSection.AsSpan(4), 3u * sizeof(uint));
+            importSection[11] = sizeof(uint);
+            helpers.Write(importSection.AsSpan(16), GCRefMapRva);
+            builder.MemoryBuilder.AddHeapFragment(new() { Address = 0x5000, Data = importSection, Name = "Import section" });
+            // The first two import entries have empty maps; select the third entry.
+            byte[] maps = new byte[6 + gcRefMap.Length];
+            helpers.Write(maps.AsSpan(0), 4u);
+            gcRefMap.CopyTo(maps, 6);
+            builder.MemoryBuilder.AddHeapFragment(new() { Address = ImageBase + GCRefMapRva, Data = maps, Name = "GCRefMaps" });
+            executionManager.Setup(e => e.FindReadyToRunModule(indirection)).Returns(new TargetPointer(0x3000));
+        }
+        else if (hasUnresolvedIndirection)
+        {
+            executionManager.Setup(e => e.FindReadyToRunModule(indirection)).Returns(TargetPointer.Null);
+        }
+
+        Mock<IRuntimeTypeSystem> runtimeTypeSystem = new(MockBehavior.Strict);
+        if (representativeMethodDescAddress.HasValue)
+        {
+            Mock<ITypeHandle> representativeType = new(MockBehavior.Strict);
+            runtimeTypeSystem.Setup(r => r.GetTypeHandle(new TargetPointer(0x7000))).Returns(representativeType.Object);
+            runtimeTypeSystem.Setup(r => r.GetMethodDescForSlot(representativeType.Object, 3))
+                .Returns(new TargetPointer(representativeMethodDescAddress.Value));
+        }
+        Mock<ICallingConvention> callingConvention = new(MockBehavior.Strict);
+        if (signatureBlob is not null)
+        {
+            MethodDescHandle method = new(new TargetPointer(MethodDescAddress));
+            runtimeTypeSystem.Setup(r => r.GetMethodDescHandle(new TargetPointer(MethodDescAddress))).Returns(method);
+            callingConvention.Setup(c => c.TryComputeArgGCRefMapBlob(method, out signatureBlob)).Returns(true);
+        }
+
+        Dictionary<DataType, Target.TypeInfo> types = new()
+        {
+            [DataType.Frame] = CreateTypeInfo((nameof(Data.Frame.Identifier), 0)),
+            [DataType.FramedMethodFrame] = CreateTypeInfo(
+                (nameof(Data.FramedMethodFrame.TransitionBlockPtr), 8), (nameof(Data.FramedMethodFrame.MethodDescPtr), 12)),
+            [DataType.TransitionBlock] = CreateTypeInfo(
+                (nameof(Data.TransitionBlock.CalleeSavedRegisters), 0), (nameof(Data.TransitionBlock.ReturnAddress), 24)) with { Size = X86TransitionBlockSize },
+            [DataType.CalleeSavedRegisters] = CreateTypeInfo(
+                (nameof(X86Context.Ebp), 0), (nameof(X86Context.Ebx), 4), (nameof(X86Context.Edi), 8), (nameof(X86Context.Esi), 12)),
+            [DataType.Module] = CreateTypeInfo((nameof(Data.Module.ReadyToRunInfo), 0)),
+            [DataType.ReadyToRunInfo] = CreateTypeInfo(
+                (nameof(Data.ReadyToRunInfo.LoadedImageBase), 0), (nameof(Data.ReadyToRunInfo.NumImportSections), 4), (nameof(Data.ReadyToRunInfo.ImportSections), 8)),
+        };
+        if (frameType != nameof(Data.FramedMethodFrame))
+        {
+            types[Enum.Parse<DataType>(frameType)] = CreateTypeInfo(
+                (nameof(Data.FramedMethodFrame.MethodDescPtr), 12), (nameof(Data.ExternalMethodFrame.Indirection), 16));
+        }
+        if (frameType == nameof(Data.StubDispatchFrame))
+        {
+            types[DataType.StubDispatchFrame] = CreateTypeInfo(
+                (nameof(Data.StubDispatchFrame.MethodDescPtr), 12), (nameof(Data.StubDispatchFrame.Indirection), 16),
+                (nameof(Data.StubDispatchFrame.RepresentativeMTPtr), 20), (nameof(Data.StubDispatchFrame.RepresentativeSlot), 24));
+        }
+
+        Mock<IRuntimeInfo> runtimeInfo = new(MockBehavior.Strict);
+        runtimeInfo.Setup(r => r.GetTargetArchitecture()).Returns(architecture);
+        TestPlaceholderTarget target = builder
+            .AddTypes(types)
+            .AddGlobals((frameType + "Identifier", FrameIdentifier))
+            .AddMockContract(executionManager)
+            .AddMockContract(runtimeTypeSystem)
+            .AddMockContract(callingConvention)
+            .AddMockContract(runtimeInfo)
+            .Build();
+        ContextHolder<X86Context> context = new()
+        {
+            Context = new X86Context { ContextFlags = (uint)X86Context.ContextFlagsValues.CONTEXT_FULL, Esp = uint.MaxValue },
+        };
+
+        return (target, context);
+
+        static Target.TypeInfo CreateTypeInfo(params (string Name, int Offset)[] fields)
+            => new() { Fields = fields.ToDictionary(f => f.Name, f => new Target.FieldInfo { Offset = f.Offset }) };
     }
 
     [Fact]
@@ -1005,9 +1236,7 @@ public unsafe class StackWalkTests
                 AddWasmR2RFunction(targetBuilder, allocator, functionTableIndex: 5, minVirtualIP: 0x0005_0000, functionBeginAddress: 0x100);
                 AddWasmNullDebugger(targetBuilder, allocator);
 
-                // TransitionBlock: ReturnAddress followed by the (empty) callee-saved register area.
-                MockMemorySpace.HeapFragment transitionBlock = allocator.Allocate((ulong)pointerSize, "TransitionBlock");
-                helpers.WritePointer(transitionBlock.Data.AsSpan(0, pointerSize), NativeCallerIp);
+                ulong transitionBlock = AddWasmTransitionBlock(helpers, allocator, NativeCallerIp, stackPointer: 0);
 
                 // InterpreterFrame derives from FramedMethodFrame.
                 Layout<MockFramedMethodFrame> fmfLayout = frames!.FramedMethodFrameLayout;
@@ -1022,7 +1251,7 @@ public unsafe class StackWalkTests
                 MockFramedMethodFrame fmf = fmfLayout.Create(interpreterFrame);
                 fmf.Identifier = MockFrameBuilder.InterpreterFrameIdentifierValue;
                 fmf.Next = terminator;
-                helpers.WritePointer(interpreterFrame.Data.AsSpan(fmfLayout.Fields.Single(f => f.Name == nameof(Data.FramedMethodFrame.TransitionBlockPtr)).Offset, pointerSize), transitionBlock.Address);
+                helpers.WritePointer(interpreterFrame.Data.AsSpan(fmfLayout.Fields.Single(f => f.Name == nameof(Data.FramedMethodFrame.TransitionBlockPtr)).Offset, pointerSize), transitionBlock);
                 helpers.WritePointer(interpreterFrame.Data.AsSpan(topOffset, pointerSize), imcfLeaf);
                 interpreterFrameAddr = interpreterFrame.Address;
 
@@ -1037,24 +1266,14 @@ public unsafe class StackWalkTests
                 icfAddr = icf.Address;
                 thread!.Frame = icfAddr;
 
-                targetBuilder.AddTypes(new Dictionary<DataType, Target.TypeInfo>
-                {
-                    [DataType.InterpreterFrame] = new() { Fields = interpreterFrameFields, Size = (uint)(isFaultingOffset + pointerSize) },
-                    [DataType.TransitionBlock] = new()
+                targetBuilder
+                    .AddTypes(CreateWasmTransitionBlockTypes(pointerSize))
+                    .AddTypes(new Dictionary<DataType, Target.TypeInfo>
                     {
-                        Fields = new Dictionary<string, Target.FieldInfo>
-                        {
-                            [nameof(Data.TransitionBlock.ReturnAddress)] = new() { Offset = 0 },
-                            [nameof(Data.TransitionBlock.CalleeSavedRegisters)] = new() { Offset = pointerSize },
-                            [nameof(Data.TransitionBlock.ArgumentRegisters)] = new() { Offset = pointerSize },
-                            [nameof(Data.TransitionBlock.FirstGCRefMapSlot)] = new() { Offset = pointerSize },
-                        },
-                        Size = (uint)pointerSize,
-                    },
-                    [DataType.CalleeSavedRegisters] = new() { Fields = new Dictionary<string, Target.FieldInfo>(), Size = 0 },
-                });
+                        [DataType.InterpreterFrame] = new() { Fields = interpreterFrameFields, Size = (uint)(isFaultingOffset + pointerSize) },
+                    });
             },
-            executionManager: CreateInterpreterExecutionManager(InterpIp1, InterpIp2));
+            executionManager: CreateInterpreterExecutionManager([InterpIp1, InterpIp2]));
 
         IStackWalk stackWalk = target.Contracts.StackWalk;
         ThreadData threadData = target.Contracts.Thread.GetThreadData(new TargetPointer(thread!.Address));
@@ -1088,16 +1307,275 @@ public unsafe class StackWalkTests
         Assert.True(walked.Length <= 8, $"Walk did not terminate: {walked.Length} frames");
     }
 
-    private static IExecutionManager CreateInterpreterExecutionManager(params ulong[] interpreterIps)
+    // A WASM TransitionFrame mirrors native TransitionFrame::GetSP / UpdateRegDisplay_Impl: when the
+    // helper recorded the caller's R2R linear-stack pointer and a return address is known (stored, or
+    // derived lazily from that stack pointer as in FramedMethodFrame::GetTransitionBlock_Impl), the
+    // caller is the R2R frame at that stack pointer; otherwise it is the end of the TransitionBlock.
+    [Theory]
+    [InlineData(0ul, true, true)]
+    [InlineData(0x0009_0000ul, true, false)]
+    [InlineData(0x0009_0000ul, false, false)]
+    [InlineData(0ul, false, false)]
+    public void UpdateContextFromFrame_WasmTransitionFrame_MirrorsNativeTransitionBlock(ulong returnAddress, bool hasStackPointer, bool expectDerivedIP)
+    {
+        MockTarget.Architecture wasmArch = new() { IsLittleEndian = true, Is64Bit = false };
+        const uint FunctionTableIndex = 5;
+        const ulong MinVirtualIP = 0x8001_0000;
+        const uint FunctionBeginAddress = 0x100;
+        const uint LocalVirtualIPHalf = 3;
+
+        MockFramedMethodFrame? framedMethodFrame = null;
+        ulong r2rFrame = 0;
+        ulong transitionBlock = 0;
+        TestPlaceholderTarget target = CreateTarget(
+            wasmArch,
+            threadBuilder => threadBuilder.AddThread(1, 1234),
+            frameBuilder => framedMethodFrame = frameBuilder.AddFramedMethodFrame(methodDescPtr: 0),
+            runtimeArchitecture: RuntimeInfoArchitecture.Wasm,
+            configureTarget: targetBuilder =>
+            {
+                TargetTestHelpers helpers = targetBuilder.MemoryBuilder.TargetTestHelpers;
+                MockMemorySpace.BumpAllocator allocator = targetBuilder.MemoryBuilder.CreateAllocator(0x0020_0000, 0x0020_4000);
+                AddWasmR2RFunction(targetBuilder, allocator, FunctionTableIndex, MinVirtualIP, FunctionBeginAddress);
+                r2rFrame = AddWasmR2RFrameRecord(helpers, allocator, FunctionTableIndex, LocalVirtualIPHalf);
+                transitionBlock = AddWasmTransitionBlock(helpers, allocator, returnAddress, hasStackPointer ? r2rFrame : 0);
+                helpers.WritePointer(
+                    framedMethodFrame!.Memory.Span.Slice(framedMethodFrame.Layout.GetField("TransitionBlockPtr").Offset, helpers.PointerSize),
+                    transitionBlock);
+                targetBuilder.AddTypes(CreateWasmTransitionBlockTypes(helpers.PointerSize));
+            });
+
+        ContextHolder<WasmContext> context = new();
+        FrameHelpers frameHelpers = new(target);
+        Data.Frame frame = target.ProcessedData.GetOrAdd<Data.Frame>(framedMethodFrame!.Address);
+        frameHelpers.UpdateContextFromFrame(frame, context);
+
+        ulong expectedIP = expectDerivedIP ? MinVirtualIP + FunctionBeginAddress + LocalVirtualIPHalf * 2 : returnAddress;
+        bool callerIsR2R = hasStackPointer && expectedIP != 0;
+        Assert.Equal(expectedIP, context.InstructionPointer.Value);
+        Assert.Equal(expectedIP, frameHelpers.GetReturnAddress(frame).Value);
+        Assert.Equal(callerIsR2R ? r2rFrame : transitionBlock + 2 * sizeof(uint), context.StackPointer.Value);
+        Assert.Equal(callerIsR2R ? r2rFrame : 0ul, context.FramePointer.Value);
+    }
+
+    // A funclet's frame pointer is its establishing method's frame, not its own record (native
+    // GetWasmFramePointerFromStackPointer). Here the funclet was invoked by the VM through
+    // CallFuncletWith[out]Throwable, so a TERMINATE_R2R_STACK_WALK frame carrying the establishing
+    // frame pointer sits directly above it. Both frame kinds that seed from an R2R stack pointer
+    // (a transition helper's TransitionBlock and an R2R inlined P/Invoke) must report that pointer.
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void UpdateContextFromFrame_WasmFuncletCaller_ReportsEstablishingFramePointer(bool transitionFrame)
+    {
+        MockTarget.Architecture wasmArch = new() { IsLittleEndian = true, Is64Bit = false };
+        const uint ParentIndex = 5;
+        const uint FuncletIndex = 6;
+        const ulong MinVirtualIP = 0x8001_0000;
+        const uint ParentBegin = 0x100;
+        const uint FuncletVipHalf = 0x21;
+        const byte FuncletFrameSize = 16; // AlignUp(2 * TARGET_POINTER_SIZE, STACK_ALIGN) on wasm32
+        const ulong EstablishingFp = 0x0021_0F00;
+
+        MockFramedMethodFrame? framedMethodFrame = null;
+        MockInlinedCallFrame? inlinedCallFrame = null;
+        ulong funcletFrame = 0;
+        TestPlaceholderTarget target = CreateTarget(
+            wasmArch,
+            threadBuilder => threadBuilder.AddThread(1, 1234),
+            frameBuilder =>
+            {
+                if (transitionFrame)
+                    framedMethodFrame = frameBuilder.AddFramedMethodFrame(methodDescPtr: 0);
+                else
+                    inlinedCallFrame = frameBuilder.AddInlinedCallFrame(callerReturnAddress: 1, datum: 0);
+            },
+            runtimeArchitecture: RuntimeInfoArchitecture.Wasm,
+            configureTarget: targetBuilder =>
+            {
+                TargetTestHelpers helpers = targetBuilder.MemoryBuilder.TargetTestHelpers;
+                MockMemorySpace.BumpAllocator allocator = targetBuilder.MemoryBuilder.CreateAllocator(0x0020_0000, 0x0020_4000);
+                AddWasmR2RFunctions(targetBuilder, allocator, ParentIndex, MinVirtualIP,
+                    [(ParentBegin, 0x30), (0x8000_0000 | (ParentBegin + 0x40), FuncletFrameSize)]);
+
+                // The funclet's record, then the VM's terminator frame: [TERMINATE_R2R_STACK_WALK, establishing FP].
+                MockMemorySpace.HeapFragment stack = allocator.Allocate(FuncletFrameSize + 2 * sizeof(uint), "LinearStack");
+                helpers.Write(stack.Data.AsSpan(0, sizeof(uint)), FuncletIndex);
+                helpers.Write(stack.Data.AsSpan(4, sizeof(uint)), FuncletVipHalf);
+                helpers.Write(stack.Data.AsSpan(FuncletFrameSize, sizeof(uint)), 1u);
+                helpers.WritePointer(stack.Data.AsSpan(FuncletFrameSize + sizeof(uint), helpers.PointerSize), EstablishingFp);
+                funcletFrame = stack.Address;
+
+                if (transitionFrame)
+                {
+                    ulong transitionBlock = AddWasmTransitionBlock(helpers, allocator, returnAddress: 0, stackPointer: funcletFrame);
+                    helpers.WritePointer(
+                        framedMethodFrame!.Memory.Span.Slice(framedMethodFrame.Layout.GetField("TransitionBlockPtr").Offset, helpers.PointerSize),
+                        transitionBlock);
+                    targetBuilder.AddTypes(CreateWasmTransitionBlockTypes(helpers.PointerSize));
+                }
+                else
+                {
+                    inlinedCallFrame!.CallSiteSP = funcletFrame;
+                }
+            });
+
+        ContextHolder<WasmContext> context = new();
+        FrameHelpers frameHelpers = new(target);
+        ulong frameAddress = transitionFrame ? framedMethodFrame!.Address : inlinedCallFrame!.Address;
+        frameHelpers.UpdateContextFromFrame(target.ProcessedData.GetOrAdd<Data.Frame>(frameAddress), context);
+
+        // Funclet virtual IPs are relative to the controlling method's base.
+        Assert.Equal(MinVirtualIP + ParentBegin + FuncletVipHalf * 2, context.InstructionPointer.Value);
+        Assert.Equal(funcletFrame, context.StackPointer.Value);
+        Assert.Equal(EstablishingFp, context.FramePointer.Value);
+    }
+
+    // R2R code that enters an interpreted method through a portable-entry-point thunk leaves an
+    // InterpreterFrame whose TransitionBlock records only the R2R caller's linear-stack pointer.
+    // When the interpreted chain is exhausted, the walk must continue into that R2R caller rather
+    // than reporting a native marker at the end of the TransitionBlock and skipping the R2R frames.
+    // Each R2R frame's frame pointer is recomputed from its own stack pointer as the walk unwinds.
+    [Fact]
+    public void CreateStackWalk_WasmInterpreterFrameEnteredFromR2R_ContinuesIntoR2RCaller()
+    {
+        MockTarget.Architecture wasmArch = new() { IsLittleEndian = true, Is64Bit = false };
+        const ulong InterpIp1 = 0x0005_1000;
+        const ulong InterpIp2 = 0x0005_2000;
+        const uint FunctionTableIndex = 5;
+        const ulong MinVirtualIP = 0x8001_0000;
+        const uint FunctionBeginAddress = 0x100;
+        const uint LocalVirtualIPHalf = 3;
+        const uint OuterLocalVirtualIPHalf = 5;
+        const byte R2RFrameSize = 16;
+        const ulong R2RCallerIp = MinVirtualIP + FunctionBeginAddress + LocalVirtualIPHalf * 2;
+        const ulong OuterR2RCallerIp = MinVirtualIP + FunctionBeginAddress + OuterLocalVirtualIPHalf * 2;
+
+        MockThread? thread = null;
+        MockFrameBuilder? frames = null;
+        ulong imcfLeaf = 0;
+        ulong r2rFrame = 0;
+        TestPlaceholderTarget target = CreateTarget(
+            wasmArch,
+            threadBuilder => thread = threadBuilder.AddThread(1, 1234),
+            frameBuilder =>
+            {
+                frames = frameBuilder;
+                ulong imcfRoot = frameBuilder.AddInterpMethodContextFrame(parentPtr: 0, ip: InterpIp2, stack: 0x0006_2000).Address;
+                imcfLeaf = frameBuilder.AddInterpMethodContextFrame(parentPtr: imcfRoot, ip: InterpIp1, stack: 0x0006_1000).Address;
+            },
+            runtimeArchitecture: RuntimeInfoArchitecture.Wasm,
+            configureTarget: targetBuilder =>
+            {
+                TargetTestHelpers helpers = targetBuilder.MemoryBuilder.TargetTestHelpers;
+                int pointerSize = helpers.PointerSize;
+                MockMemorySpace.BumpAllocator allocator = targetBuilder.MemoryBuilder.CreateAllocator(0x0020_0000, 0x0020_4000);
+                AddWasmR2RFunction(targetBuilder, allocator, FunctionTableIndex, MinVirtualIP, FunctionBeginAddress, R2RFrameSize);
+                AddWasmNullDebugger(targetBuilder, allocator);
+
+                // Two R2R frame records, each frame size apart, then a TERMINATE_R2R_STACK_WALK
+                // marker, so the walk ends after the outer caller.
+                MockMemorySpace.HeapFragment r2rStack = allocator.Allocate(2 * R2RFrameSize + 4, "R2RLinearStack");
+                helpers.Write(r2rStack.Data.AsSpan(0, sizeof(uint)), FunctionTableIndex);
+                helpers.Write(r2rStack.Data.AsSpan(4, sizeof(uint)), LocalVirtualIPHalf);
+                helpers.Write(r2rStack.Data.AsSpan(R2RFrameSize, sizeof(uint)), FunctionTableIndex);
+                helpers.Write(r2rStack.Data.AsSpan(R2RFrameSize + 4, sizeof(uint)), OuterLocalVirtualIPHalf);
+                helpers.Write(r2rStack.Data.AsSpan(2 * R2RFrameSize, sizeof(uint)), 1u);
+                r2rFrame = r2rStack.Address;
+
+                ulong transitionBlock = AddWasmTransitionBlock(helpers, allocator, returnAddress: 0, stackPointer: r2rFrame);
+
+                Layout<MockFramedMethodFrame> fmfLayout = frames!.FramedMethodFrameLayout;
+                int topOffset = fmfLayout.Size;
+                int isFaultingOffset = topOffset + pointerSize;
+                Dictionary<string, Target.FieldInfo> interpreterFrameFields = new(TargetTestHelpers.CreateTypeInfo(fmfLayout).Fields)
+                {
+                    [nameof(Data.InterpreterFrame.TopInterpMethodContextFrame)] = new() { Offset = topOffset },
+                    [nameof(Data.InterpreterFrame.IsFaulting)] = new() { Offset = isFaultingOffset },
+                };
+                MockMemorySpace.HeapFragment interpreterFrame = allocator.Allocate((ulong)(isFaultingOffset + pointerSize), "InterpreterFrame");
+                MockFramedMethodFrame fmf = fmfLayout.Create(interpreterFrame);
+                fmf.Identifier = MockFrameBuilder.InterpreterFrameIdentifierValue;
+                fmf.Next = uint.MaxValue;
+                helpers.WritePointer(interpreterFrame.Data.AsSpan(fmfLayout.Fields.Single(f => f.Name == nameof(Data.FramedMethodFrame.TransitionBlockPtr)).Offset, pointerSize), transitionBlock);
+                helpers.WritePointer(interpreterFrame.Data.AsSpan(topOffset, pointerSize), imcfLeaf);
+                thread!.Frame = interpreterFrame.Address;
+
+                targetBuilder
+                    .AddTypes(CreateWasmTransitionBlockTypes(pointerSize))
+                    .AddTypes(new Dictionary<DataType, Target.TypeInfo>
+                    {
+                        [DataType.InterpreterFrame] = new() { Fields = interpreterFrameFields, Size = (uint)(isFaultingOffset + pointerSize) },
+                    });
+            },
+            executionManager: CreateInterpreterExecutionManager([InterpIp1, InterpIp2], managedIps: [R2RCallerIp, OuterR2RCallerIp]));
+
+        IStackWalk stackWalk = target.Contracts.StackWalk;
+        ThreadData threadData = target.Contracts.Thread.GetThreadData(new TargetPointer(thread!.Address));
+        IStackDataFrameHandle[] walked = stackWalk.CreateStackWalk(threadData).Take(16).ToArray();
+
+        (ulong Ip, ulong Sp, ulong Fp)[] frameless = walked
+            .Where(f => f.State == StackWalkState.Frameless)
+            .Select(f => (stackWalk.GetInstructionPointer(f).Value, stackWalk.GetStackPointer(f).Value, stackWalk.GetContextFramePointer(f).Value))
+            .ToArray();
+
+        Assert.Equal([InterpIp1, InterpIp2, R2RCallerIp, OuterR2RCallerIp], frameless.Select(f => f.Ip));
+        Assert.Equal((r2rFrame, r2rFrame), (frameless[2].Sp, frameless[2].Fp));
+        Assert.Equal((r2rFrame + R2RFrameSize, r2rFrame + R2RFrameSize), (frameless[3].Sp, frameless[3].Fp));
+        Assert.True(walked.Length <= 7, $"Walk did not terminate: {walked.Length} frames");
+    }
+
+    private static IExecutionManager CreateInterpreterExecutionManager(ulong[] interpreterIps, ulong[]? managedIps = null)
     {
         Mock<IExecutionManager> executionManager = new();
         executionManager
             .Setup(em => em.GetCodeBlockHandle(It.IsAny<TargetCodePointer>()))
-            .Returns((TargetCodePointer ip) => interpreterIps.Contains(ip.Value) ? new CodeBlockHandle(new TargetPointer(ip.Value)) : null);
+            .Returns((TargetCodePointer ip) => interpreterIps.Contains(ip.Value) || (managedIps?.Contains(ip.Value) ?? false)
+                ? new CodeBlockHandle(new TargetPointer(ip.Value))
+                : null);
         executionManager
             .Setup(em => em.GetCodeKind(It.IsAny<TargetCodePointer>()))
             .Returns((TargetCodePointer ip) => interpreterIps.Contains(ip.Value) ? CodeKind.Interpreter : default);
         return executionManager.Object;
+    }
+
+    // WASM TransitionBlock: m_ReturnAddress, then m_StackPointer. Matches the browser-wasm data
+    // descriptor, where ArgumentRegisters and FirstGCRefMapSlot are sizeof(TransitionBlock).
+    private static Dictionary<DataType, Target.TypeInfo> CreateWasmTransitionBlockTypes(int pointerSize)
+        => new()
+        {
+            [DataType.TransitionBlock] = new()
+            {
+                Fields = new Dictionary<string, Target.FieldInfo>
+                {
+                    [nameof(Data.TransitionBlock.ReturnAddress)] = new() { Offset = 0 },
+                    [nameof(Data.TransitionBlock.StackPointer)] = new() { Offset = pointerSize },
+                    [nameof(Data.TransitionBlock.CalleeSavedRegisters)] = new() { Offset = 0 },
+                    [nameof(Data.TransitionBlock.ArgumentRegisters)] = new() { Offset = 2 * pointerSize },
+                    [nameof(Data.TransitionBlock.FirstGCRefMapSlot)] = new() { Offset = 2 * pointerSize },
+                },
+                Size = (uint)(2 * pointerSize),
+            },
+            [DataType.CalleeSavedRegisters] = new() { Fields = new Dictionary<string, Target.FieldInfo>(), Size = 0 },
+        };
+
+    private static ulong AddWasmTransitionBlock(TargetTestHelpers helpers, MockMemorySpace.BumpAllocator allocator, ulong returnAddress, ulong stackPointer)
+    {
+        int pointerSize = helpers.PointerSize;
+        MockMemorySpace.HeapFragment transitionBlock = allocator.Allocate((ulong)(2 * pointerSize), "TransitionBlock");
+        helpers.WritePointer(transitionBlock.Data.AsSpan(0, pointerSize), returnAddress);
+        helpers.WritePointer(transitionBlock.Data.AsSpan(pointerSize, pointerSize), stackPointer);
+        return transitionBlock.Address;
+    }
+
+    // An R2R linear-stack frame record: the function-table index, then the function-local virtual
+    // IP / 2 (WASM_STACKFRAME_FUNCTION_INDEX_OFFSET / WASM_STACKFRAME_VIRTUALIP_OFFSET).
+    private static ulong AddWasmR2RFrameRecord(TargetTestHelpers helpers, MockMemorySpace.BumpAllocator allocator, uint functionTableIndex, uint localVirtualIPHalf)
+    {
+        MockMemorySpace.HeapFragment frame = allocator.Allocate(8, "R2RShadowFrame");
+        helpers.Write(frame.Data.AsSpan(0, sizeof(uint)), functionTableIndex);
+        helpers.Write(frame.Data.AsSpan(4, sizeof(uint)), localVirtualIPHalf);
+        return frame.Address;
     }
 
     // WASM advertises the Debugger contract, but the in-process debugger is not built there, so
@@ -1114,7 +1592,19 @@ public unsafe class StackWalkTests
         MockMemorySpace.BumpAllocator allocator,
         uint functionTableIndex,
         ulong minVirtualIP,
-        uint functionBeginAddress)
+        uint functionBeginAddress,
+        byte frameSize = 0)
+        => AddWasmR2RFunctions(targetBuilder, allocator, functionTableIndex, minVirtualIP, [(functionBeginAddress, frameSize)]);
+
+    // Registers one R2R module whose RUNTIME_FUNCTIONs occupy consecutive function-table indices
+    // starting at minFunctionTableIndex. BeginAddress bit 31 marks a funclet; a frame size of 0
+    // leaves the unwind data unset.
+    private static void AddWasmR2RFunctions(
+        TestPlaceholderTarget.Builder targetBuilder,
+        MockMemorySpace.BumpAllocator allocator,
+        uint minFunctionTableIndex,
+        ulong minVirtualIP,
+        (uint BeginAddress, byte FrameSize)[] functions)
     {
         MockTarget.Architecture arch = targetBuilder.MemoryBuilder.TargetTestHelpers.Arch;
         TargetTestHelpers helpers = targetBuilder.MemoryBuilder.TargetTestHelpers;
@@ -1133,21 +1623,33 @@ public unsafe class StackWalkTests
             new(nameof(Data.FunctionTableIndexRangeSection.Next), DataType.pointer),
         ]);
 
-        MockMemorySpace.HeapFragment runtimeFunction = allocator.Allocate(runtimeFunctionLayout.Stride, "RuntimeFunction");
-        helpers.Write(runtimeFunction.Data.AsSpan(runtimeFunctionLayout.Fields[nameof(Data.RuntimeFunction.BeginAddress)].Offset, sizeof(uint)), functionBeginAddress);
+        MockMemorySpace.HeapFragment runtimeFunctions = allocator.Allocate(runtimeFunctionLayout.Stride * (ulong)functions.Length, "RuntimeFunctions");
+        for (int i = 0; i < functions.Length; i++)
+        {
+            Span<byte> entry = runtimeFunctions.Data.AsSpan(i * (int)runtimeFunctionLayout.Stride, (int)runtimeFunctionLayout.Stride);
+            helpers.Write(entry.Slice(runtimeFunctionLayout.Fields[nameof(Data.RuntimeFunction.BeginAddress)].Offset, sizeof(uint)), functions[i].BeginAddress);
+            if (functions[i].FrameSize != 0)
+            {
+                // Unwind data is the ULEB128 frame size, addressed as LoadedImageBase (0 here) + UnwindData.
+                Assert.True(functions[i].FrameSize < 0x80);
+                MockMemorySpace.HeapFragment unwindData = allocator.Allocate(1, "UnwindData");
+                unwindData.Data[0] = functions[i].FrameSize;
+                helpers.Write(entry.Slice(runtimeFunctionLayout.Fields[nameof(Data.RuntimeFunction.UnwindData)].Offset, sizeof(uint)), (uint)unwindData.Address);
+            }
+        }
 
         MockReadyToRunInfo r2rInfo = r2rInfoLayout.Create(allocator.Allocate((ulong)r2rInfoLayout.Size, "ReadyToRunInfo"));
         r2rInfo.CompositeInfo = r2rInfo.Address;
-        r2rInfo.NumRuntimeFunctions = 1;
-        r2rInfo.RuntimeFunctions = runtimeFunction.Address;
+        r2rInfo.NumRuntimeFunctions = (uint)functions.Length;
+        r2rInfo.RuntimeFunctions = runtimeFunctions.Address;
         r2rInfo.MinVirtualIP = minVirtualIP;
 
         MockLoaderModule module = moduleLayout.Create(allocator.Allocate((ulong)moduleLayout.Size, "Module"));
         module.ReadyToRunInfo = r2rInfo.Address;
 
         MockMemorySpace.HeapFragment section = allocator.Allocate(rangeSectionLayout.Stride, "FunctionTableIndexRangeSection");
-        helpers.Write(section.Data.AsSpan(rangeSectionLayout.Fields[nameof(Data.FunctionTableIndexRangeSection.MinFunctionTableIndex)].Offset, sizeof(uint)), functionTableIndex);
-        helpers.Write(section.Data.AsSpan(rangeSectionLayout.Fields[nameof(Data.FunctionTableIndexRangeSection.NumRuntimeFunctions)].Offset, sizeof(uint)), 1u);
+        helpers.Write(section.Data.AsSpan(rangeSectionLayout.Fields[nameof(Data.FunctionTableIndexRangeSection.MinFunctionTableIndex)].Offset, sizeof(uint)), minFunctionTableIndex);
+        helpers.Write(section.Data.AsSpan(rangeSectionLayout.Fields[nameof(Data.FunctionTableIndexRangeSection.NumRuntimeFunctions)].Offset, sizeof(uint)), (uint)functions.Length);
         helpers.WritePointer(section.Data.AsSpan(rangeSectionLayout.Fields[nameof(Data.FunctionTableIndexRangeSection.R2RModule)].Offset, helpers.PointerSize), module.Address);
 
         MockMemorySpace.HeapFragment listSlot = allocator.Allocate((ulong)helpers.PointerSize, "FunctionTableIndexRangeListSlot");
