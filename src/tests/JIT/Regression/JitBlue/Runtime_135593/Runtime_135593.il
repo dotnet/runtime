@@ -7,8 +7,13 @@
 // (ECMA-335 I.12.4.2.8.1). This test requires the JIT to reject all four scenarios with
 // InvalidProgramException. The scenario methods are never called: each is compiled through
 // RuntimeHelpers.PrepareMethod inside a try/catch.
+//
+// Disabled on Mono: Mono's RuntimeHelpers.PrepareMethod does not compile anything, so this
+// test cannot observe a rejection there. Mono's JIT rejects only EntryInFilter, its interpreter
+// accepts all four methods, and its LLVM AOT compiler asserts on EntryInFinally.
 
 .assembly extern xunit.core {}
+.assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
 .assembly extern System.Runtime { .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A ) }
 .assembly extern System.Console { .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A ) }
 
@@ -108,6 +113,10 @@
   .method public hidebysig static int32 Main() cil managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = ( 01 00 00 00 )
+    .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, valuetype [Microsoft.DotNet.XUnitExtensions]Xunit.TestRuntimes) = {
+        string('https://github.com/dotnet/runtime/issues/135639')
+        int32(0x2) // Mono
+    }
     .entrypoint
     .maxstack 3
     .locals init (int32 rejected)
