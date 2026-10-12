@@ -628,6 +628,27 @@ mono_link_bblock (MonoCompile *cfg, MonoBasicBlock *from, MonoBasicBlock* to)
 static void
 mono_create_spvar_for_region (MonoCompile *cfg, int region);
 
+/*
+ * Return whether the IL range [START, END) lies strictly inside the handler or filter range of the
+ * handler/filter region REGION.
+ */
+static gboolean
+range_nested_in_handler_region (MonoCompile *cfg, int region, uint32_t start, uint32_t end)
+{
+	MonoExceptionClause *clause = &cfg->header->clauses [(region >> 8) - 1];
+	uint32_t region_start, region_end;
+
+	if ((region & (0xf << 4)) == MONO_REGION_FILTER) {
+		region_start = clause->data.filter_offset;
+		region_end = clause->handler_offset;
+	} else {
+		region_start = clause->handler_offset;
+		region_end = clause->handler_offset + clause->handler_len;
+	}
+
+	return region_start <= start && end <= region_end && (end - start) < (region_end - region_start);
+}
+
 static void
 mark_bb_in_region (MonoCompile *cfg, guint region, uint32_t start, uint32_t end)
 {
@@ -645,8 +666,15 @@ mark_bb_in_region (MonoCompile *cfg, guint region, uint32_t start, uint32_t end)
 			continue;
 		}
 
-		//current region is an early handler, bail
+		//current region is a handler or filter
 		if ((bb->region & (0xf << 4)) != MONO_REGION_TRY) {
+			/*
+			 * ECMA-335 orders nested try blocks only, so a clause nested in the handler of an
+			 * earlier-listed clause is marked after the clause that encloses it. Let the inner
+			 * handler or filter win; otherwise keep the region of the earlier clause.
+			 */
+			if ((region & (0xf << 4)) != MONO_REGION_TRY && range_nested_in_handler_region (cfg, bb->region, start, end))
+				bb->region = region;
 			continue;
 		}
 
@@ -696,24 +724,27 @@ compute_bb_regions (MonoCompile *cfg)
 
 /*
  * Return the index of the innermost finally/fault clause whose handler contains
- * OFFSET, or -1 if there is none. The clauses are ordered from inner to outer,
- * so the first match is the innermost one.
+ * OFFSET, or -1 if there is none. Handler ranges are disjoint or nested, so the
+ * innermost one is the shortest. A clause nested in a handler may be listed after
+ * the clause that encloses it, so the first match is not necessarily the innermost.
  */
 static int
 ip_get_finally_clause_index (MonoCompile *cfg, int offset)
 {
 	MonoMethodHeader *header = cfg->header;
 	MonoExceptionClause *clause;
+	int res = -1;
 
 	for (guint i = 0; i < header->num_clauses; ++i) {
 		clause = &header->clauses [i];
 		if (clause->flags != MONO_EXCEPTION_CLAUSE_FINALLY && clause->flags != MONO_EXCEPTION_CLAUSE_FAULT)
 			continue;
 
-		if (MONO_OFFSET_IN_HANDLER (clause, GINT_TO_UINT32(offset)))
-			return GUINT_TO_INT (i);
+		if (MONO_OFFSET_IN_HANDLER (clause, GINT_TO_UINT32(offset)) &&
+		    (res == -1 || clause->handler_len < header->clauses [res].handler_len))
+			res = GUINT_TO_INT (i);
 	}
-	return -1;
+	return res;
 }
 
 /* Find clauses between ip and target, from inner to outer */
@@ -12331,11 +12362,18 @@ mono_ldptr:
 			MonoInst *load;
 			int handler_offset = -1;
 
+			/*
+			 * The innermost (shortest) enclosing catch or filter handler, whose exception variable holds the
+			 * exception to rethrow. It may be listed after the clause that encloses it.
+			 */
+			guint32 handler_len = 0;
 			for (unsigned int i = 0; i < header->num_clauses; ++i) {
 				MonoExceptionClause *clause = &header->clauses [i];
-				if (MONO_OFFSET_IN_HANDLER (clause, GPTRDIFF_TO_UINT32(ip - header->code)) && !(clause->flags & MONO_EXCEPTION_CLAUSE_FINALLY)) {
+				if (MONO_OFFSET_IN_HANDLER (clause, GPTRDIFF_TO_UINT32(ip - header->code)) &&
+				    (clause->flags == MONO_EXCEPTION_CLAUSE_NONE || clause->flags == MONO_EXCEPTION_CLAUSE_FILTER) &&
+				    (handler_offset == -1 || clause->handler_len < handler_len)) {
 					handler_offset = clause->handler_offset;
-					break;
+					handler_len = clause->handler_len;
 				}
 			}
 

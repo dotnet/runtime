@@ -209,29 +209,43 @@ mono_bblocks_linked (MonoBasicBlock *bb1, MonoBasicBlock *bb2)
 	return FALSE;
 }
 
+/*
+ * Return the region of the innermost handler or filter containing OFFSET, or -1.
+ * Handler and filter ranges are disjoint or nested, so the innermost one is the
+ * shortest. A clause nested in a handler may be listed after the clause that
+ * encloses it, so the first match is not necessarily the innermost.
+ */
 static int
 mono_find_block_region_notry (MonoCompile *cfg, int offset)
 {
 	MonoMethodHeader *header = cfg->header;
 	MonoExceptionClause *clause;
+	int region = -1;
+	guint32 region_len = 0;
 
 	for (guint i = 0; i < header->num_clauses; ++i) {
 		clause = &header->clauses [i];
 		if ((clause->flags == MONO_EXCEPTION_CLAUSE_FILTER) && (GINT_TO_UINT32(offset) >= clause->data.filter_offset) &&
-		    (GINT_TO_UINT32(offset) < (clause->handler_offset)))
-			return ((i + 1) << 8) | MONO_REGION_FILTER | clause->flags;
+		    (GINT_TO_UINT32(offset) < (clause->handler_offset))) {
+			guint32 len = clause->handler_offset - clause->data.filter_offset;
+			if (region == -1 || len < region_len) {
+				region = ((i + 1) << 8) | MONO_REGION_FILTER | clause->flags;
+				region_len = len;
+			}
+		}
 
-		if (MONO_OFFSET_IN_HANDLER (clause, GINT_TO_UINT32(offset))) {
+		if (MONO_OFFSET_IN_HANDLER (clause, GINT_TO_UINT32(offset)) && (region == -1 || clause->handler_len < region_len)) {
 			if (clause->flags == MONO_EXCEPTION_CLAUSE_FINALLY)
-				return ((i + 1) << 8) | MONO_REGION_FINALLY | clause->flags;
+				region = ((i + 1) << 8) | MONO_REGION_FINALLY | clause->flags;
 			else if (clause->flags == MONO_EXCEPTION_CLAUSE_FAULT)
-				return ((i + 1) << 8) | MONO_REGION_FAULT | clause->flags;
+				region = ((i + 1) << 8) | MONO_REGION_FAULT | clause->flags;
 			else
-				return ((i + 1) << 8) | MONO_REGION_CATCH | clause->flags;
+				region = ((i + 1) << 8) | MONO_REGION_CATCH | clause->flags;
+			region_len = clause->handler_len;
 		}
 	}
 
-	return -1;
+	return region;
 }
 
 /*
