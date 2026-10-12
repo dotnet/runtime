@@ -1419,6 +1419,10 @@ public:
 
     void UpdateNewlyAddedTypes();
 
+#if defined(PROFILING_SUPPORTED) || defined(FEATURE_METADATA_UPDATER)
+    void CaptureInitialTypeCounts();
+#endif // PROFILING_SUPPORTED || FEATURE_METADATA_UPDATER
+
 #ifdef PROFILING_SUPPORTED
     BOOL IsProfilerNotified() {LIMITED_METHOD_CONTRACT;  return (m_dwTransientFlags & IS_PROFILER_NOTIFIED) != 0; }
     void NotifyProfilerLoadFinished(HRESULT hr);

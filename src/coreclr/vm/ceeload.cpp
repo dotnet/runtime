@@ -273,6 +273,13 @@ Module::TypeCounts Module::GetCurrentTypeCounts()
     typeCounts.CustomAttributeCount = pMDImport->GetCountWithTokenKind(mdtCustomAttribute);
     return typeCounts;
 }
+
+void Module::CaptureInitialTypeCounts()
+{
+    WRAPPER_NO_CONTRACT;
+
+    m_typeCounts = GetCurrentTypeCounts();
+}
 #endif // PROFILING_SUPPORTED || FEATURE_METADATA_UPDATER
 
 #if PROFILING_SUPPORTED
@@ -291,9 +298,6 @@ void Module::NotifyProfilerLoadFinished(HRESULT hr)
     // the profiler once.
     if (SetTransientFlagInterlocked(IS_PROFILER_NOTIFIED))
     {
-        // Initialize how many types are already present
-        m_typeCounts = GetCurrentTypeCounts();
-
         BOOL profilerCallbackHappened = FALSE;
         // Notify the profiler, this may cause metadata to be updated
         {
@@ -506,10 +510,6 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
 
 #if defined(PROFILING_SUPPORTED_DATA) || defined(FEATURE_METADATA_UPDATER)
     m_typeCounts = {};
-
-#if defined(FEATURE_METADATA_UPDATER) && !defined(PROFILING_SUPPORTED)
-    m_typeCounts = GetCurrentTypeCounts();
-#endif // FEATURE_METADATA_UPDATER && !PROFILING_SUPPORTED
 #endif // PROFILING_SUPPORTED_DATA || FEATURE_METADATA_UPDATER
 
 #ifdef PROFILING_SUPPORTED
