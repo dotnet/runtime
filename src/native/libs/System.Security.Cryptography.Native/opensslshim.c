@@ -128,6 +128,12 @@ static void OpenLibraryOnce(void)
         DlOpen(MAKELIB("10"));
     }
 
+    if (libssl == NULL)
+    {
+        // OpenSSL 4 is supported as a non-preferred fallback.
+        DlOpen(MAKELIB("4"));
+    }
+
 #ifdef __FreeBSD__
     // The ports version of OpenSSL is used over base where possible
     if (libssl == NULL)

@@ -145,8 +145,8 @@ int32_t local_X509_PUBKEY_get0_param(
             return 0;
         }
 
-        *pkeyBytes = pubkey->public_key->data;
-        *pkeyBytesLen = pubkey->public_key->length;
+        *pkeyBytes = ASN1_STRING_get0_data(pubkey->public_key);
+        *pkeyBytesLen = ASN1_STRING_length(pubkey->public_key);
     }
 
     if (palg)
@@ -588,12 +588,15 @@ Return values:
 0 if the hostname is not a match
 Any negative number indicates an error in the arguments.
 */
-static int CheckX509HostnameMatch(ASN1_STRING* candidate, const char* hostname, int cchHostname, int typeMatch)
+static int CheckX509HostnameMatch(const ASN1_STRING* candidate, const char* hostname, int cchHostname, int typeMatch)
 {
     assert(candidate != NULL);
     assert(hostname != NULL);
 
-    if (!candidate->data || !candidate->length)
+    int length = ASN1_STRING_length(candidate);
+    const unsigned char* data = ASN1_STRING_get0_data(candidate);
+
+    if (!data || length == 0)
     {
         return 0;
     }
@@ -603,27 +606,26 @@ static int CheckX509HostnameMatch(ASN1_STRING* candidate, const char* hostname, 
 
     // Since the IDNA punycode conversion was applied already this holds even
     // in Unicode requests.
-    if (candidate->length > cchHostname)
+    if (length > cchHostname)
     {
         return 0;
     }
 
-    char* candidateStr;
     int i;
     int hostnameFirstDot = -1;
 
-    if (candidate->type != typeMatch)
+    if (ASN1_STRING_type(candidate) != typeMatch)
     {
         return 0;
     }
 
-    // Great, candidateStr is just candidate->data!
-    candidateStr = (char*)(candidate->data);
+    // Great, candidateStr is just data!
+    const unsigned char* candidateStr = data;
 
     // First, verify that the string is alphanumeric, plus hyphens or periods and maybe starting with an asterisk.
-    for (i = 0; i < candidate->length; ++i)
+    for (i = 0; i < length; ++i)
     {
-        char c = candidateStr[i];
+        unsigned char c = candidateStr[i];
 
         if ((c < 'A' || c > 'Z') && (c < 'a' || c > 'z') && (c < '0' || c > '9') && (c != '.') && (c != '-') &&
             (c != '*' || i != 0))
@@ -634,7 +636,7 @@ static int CheckX509HostnameMatch(ASN1_STRING* candidate, const char* hostname, 
 
     if (candidateStr[0] != '*')
     {
-        if (candidate->length != cchHostname)
+        if (length != cchHostname)
         {
             return 0;
         }
@@ -684,12 +686,12 @@ static int CheckX509HostnameMatch(ASN1_STRING* candidate, const char* hostname, 
 
         // If what's left over from hostname isn't as long as what's left over from the candidate
         // after the first character was an asterisk, it can't match.
-        if (matchLength != (candidate->length - 1))
+        if (matchLength != (length - 1))
         {
             return 0;
         }
 
-        return !strncasecmp(candidateStr + 1, hostname + hostnameFirstDot, (size_t)matchLength);
+        return !strncasecmp((const char*)(candidateStr + 1), hostname + hostnameFirstDot, (size_t)matchLength);
     }
 }
 
@@ -739,7 +741,7 @@ int32_t local_X509_check_host(X509* x509, const char* name, size_t namelen, unsi
         assert(success == 0);
 
         // This is a shared/interor pointer, do not free!
-        X509_NAME* subject = X509_get_subject_name(x509);
+        const X509_NAME* subject = X509_get_subject_name(x509);
 
         if (subject != NULL)
         {
@@ -748,13 +750,13 @@ int32_t local_X509_check_host(X509* x509, const char* name, size_t namelen, unsi
             while ((i = X509_NAME_get_index_by_NID(subject, NID_commonName, i)) >= 0)
             {
                 // Shared/interior pointers, do not free!
-                X509_NAME_ENTRY* nameEnt = X509_NAME_get_entry(subject, i);
-                ASN1_STRING* cn = X509_NAME_ENTRY_get_data(nameEnt);
+                const X509_NAME_ENTRY* nameEnt = X509_NAME_get_entry(subject, i);
+                const ASN1_STRING* cn = X509_NAME_ENTRY_get_data(nameEnt);
 
                 // For compatibility with previous .NET builds, allow any type of
                 // string for CN, provided it ended up with a single-byte encoding (otherwise
                 // strncasecmp simply won't match).
-                if (CheckX509HostnameMatch(cn, name, (int)namelen, cn->type))
+                if (CheckX509HostnameMatch(cn, name, (int)namelen, ASN1_STRING_type(cn)))
                 {
                     success = 1;
                     break;
@@ -945,6 +947,11 @@ int local_BN_abs_is_word(const BIGNUM *a, const BN_ULONG w)
 int local_BN_is_odd(const BIGNUM* a)
 {
     return (a->top > 0) && (a->d[0] & 1);
+}
+
+const unsigned char* local_ASN1_STRING_get0_data(const ASN1_STRING* x)
+{
+    return x->data;
 }
 
 #endif
