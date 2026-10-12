@@ -819,6 +819,7 @@ namespace System.Net.Http.Functional.Tests
 
         [Theory]
         [InlineData("http")]
+        [InlineData("https")]
         [InlineData("socks5")]
         public async Task Proxy_IPv6ScopeChange_ConnectsToSelectedProxy(string proxyScheme)
         {
