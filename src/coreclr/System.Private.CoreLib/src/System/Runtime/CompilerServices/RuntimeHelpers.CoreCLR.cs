@@ -86,6 +86,13 @@ namespace System.Runtime.CompilerServices
             }
         }
 
+        private static int GetInlineArrayLengthInternal(RuntimeTypeHandle inlineArrayType, RuntimeTypeHandle elementType) =>
+            GetInlineArrayLengthInternal(new QCallTypeHandle(ref inlineArrayType), new QCallTypeHandle(ref elementType));
+
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
+        [LibraryImport(QCall, EntryPoint = "RuntimeHelpers_GetInlineArrayLength")]
+        private static partial int GetInlineArrayLengthInternal(QCallTypeHandle inlineArrayType, QCallTypeHandle elementType);
+
         private static unsafe ref byte GetSpanDataFrom(
             RuntimeFieldHandle fldHandle,
             RuntimeTypeHandle targetTypeHandle,

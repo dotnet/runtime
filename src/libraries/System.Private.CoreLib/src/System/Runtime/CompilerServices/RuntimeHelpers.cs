@@ -161,6 +161,52 @@ namespace System.Runtime.CompilerServices
             => new ReadOnlySpan<T>(ref Unsafe.As<byte, T>(ref GetSpanDataFrom(fldHandle, typeof(T).TypeHandle, out int length)), length);
 #endif
 
+        /// <summary>Creates a span over an inline array.</summary>
+        /// <typeparam name="TInlineArray">The inline-array type.</typeparam>
+        /// <typeparam name="TElement">The element type of the inline array.</typeparam>
+        /// <param name="inlineArray">The inline array.</param>
+        /// <returns>A span over all elements of <paramref name="inlineArray"/>.</returns>
+        /// <exception cref="ArgumentException"><typeparamref name="TInlineArray"/> is not an inline-array type, or its element type is not <typeparamref name="TElement"/>.</exception>
+        /// <remarks>This method is intended for compiler use rather than use directly in code.</remarks>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Span<TElement> InlineArrayAsSpan<TInlineArray, TElement>(ref TInlineArray inlineArray)
+            where TInlineArray : struct, allows ref struct
+        {
+            int length = GetInlineArrayLength<TInlineArray, TElement>();
+            if (length == 0)
+                throw new ArgumentException(SR.Format(SR.Argument_InvalidInlineArray, typeof(TInlineArray), typeof(TElement)), nameof(inlineArray));
+
+            return new Span<TElement>(ref Unsafe.As<TInlineArray, TElement>(ref inlineArray), length);
+        }
+
+        /// <summary>Creates a read-only span over an inline array.</summary>
+        /// <typeparam name="TInlineArray">The inline-array type.</typeparam>
+        /// <typeparam name="TElement">The element type of the inline array.</typeparam>
+        /// <param name="inlineArray">The inline array.</param>
+        /// <returns>A read-only span over all elements of <paramref name="inlineArray"/>.</returns>
+        /// <exception cref="ArgumentException"><typeparamref name="TInlineArray"/> is not an inline-array type, or its element type is not <typeparamref name="TElement"/>.</exception>
+        /// <remarks>This method is intended for compiler use rather than use directly in code.</remarks>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ReadOnlySpan<TElement> InlineArrayAsReadOnlySpan<TInlineArray, TElement>(ref readonly TInlineArray inlineArray)
+            where TInlineArray : struct, allows ref struct
+        {
+            int length = GetInlineArrayLength<TInlineArray, TElement>();
+            if (length == 0)
+                throw new ArgumentException(SR.Format(SR.Argument_InvalidInlineArray, typeof(TInlineArray), typeof(TElement)), nameof(inlineArray));
+
+            return new ReadOnlySpan<TElement>(ref Unsafe.As<TInlineArray, TElement>(ref Unsafe.AsRef(in inlineArray)), length);
+        }
+
+        [Intrinsic]
+        private static int GetInlineArrayLength<TInlineArray, TElement>()
+            where TInlineArray : struct, allows ref struct
+#if NATIVEAOT
+            => throw new PlatformNotSupportedException();
+#else
+            => GetInlineArrayLengthInternal(typeof(TInlineArray).TypeHandle, typeof(TElement).TypeHandle);
+#endif
 
         // The following intrinsics return true if input is a compile-time constant
         // Feel free to add more overloads on demand

@@ -1427,6 +1427,44 @@ extern "C" int32_t QCALLTYPE ReflectionInvocation_SizeOf(QCall::TypeHandle pType
     return handle.GetSize();
 }
 
+int32_t ReflectionInvocation::GetInlineArrayLength(TypeHandle inlineArrayType, TypeHandle elementType)
+{
+    STANDARD_VM_CONTRACT;
+
+    if (!inlineArrayType.IsValueType())
+        return 0;
+
+    MethodTable* pMT = inlineArrayType.AsMethodTable();
+    if (!pMT->GetClass()->IsInlineArray())
+        return 0;
+
+    _ASSERTE(pMT->GetNumInstanceFields() == 1);
+    FieldDesc* pField = pMT->GetApproxFieldDescListRaw();
+    if (pField->GetExactFieldType(inlineArrayType) != elementType)
+        return 0;
+
+    const void* pValue;
+    ULONG cbValue;
+    HRESULT hr = pMT->GetCustomAttribute(WellKnownAttribute::InlineArrayAttribute, &pValue, &cbValue);
+    if (FAILED(hr))
+        ThrowHR(hr);
+
+    // The loader has already validated the attribute and the inline-array layout.
+    _ASSERTE(hr == S_OK && cbValue >= sizeof(INT32) + 2);
+    return GET_UNALIGNED_VAL32(static_cast<const BYTE*>(pValue) + 2);
+}
+
+extern "C" int32_t QCALLTYPE RuntimeHelpers_GetInlineArrayLength(QCall::TypeHandle inlineArrayType, QCall::TypeHandle elementType, QCallExceptionStatus* qcallError)
+{
+    QCALL_CONTRACT;
+
+    int32_t length = 0;
+    BEGIN_QCALL;
+    length = ReflectionInvocation::GetInlineArrayLength(inlineArrayType.AsTypeHandle(), elementType.AsTypeHandle());
+    END_QCALL;
+    return length;
+}
+
 extern "C" void QCALLTYPE ReflectionInvocation_GetBoxInfo(
     QCall::TypeHandle pType,
     PCODE* ppfnAllocator,

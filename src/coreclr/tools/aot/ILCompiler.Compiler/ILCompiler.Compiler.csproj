@@ -436,6 +436,7 @@
     <Compile Include="Compiler\CompilerTypeSystemContext.GeneratedAssembly.cs" />
     <Compile Include="Compiler\CompilerTypeSystemContext.GeneratedAssembly.Sorting.cs" />
     <Compile Include="Compiler\CompilerTypeSystemContext.GetFieldMethodOverrides.cs" />
+    <Compile Include="Compiler\CompilerTypeSystemContext.InlineArrays.cs" />
     <Compile Include="Compiler\CompilerGeneratedInteropStubManager.cs" />
     <Compile Include="Compiler\CustomAttributeExtensions.cs" />
     <Compile Include="Compiler\Dataflow\ArrayValue.cs" />

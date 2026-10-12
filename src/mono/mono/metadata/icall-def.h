@@ -430,6 +430,7 @@ HANDLES(MPROP_4, "get_property_info", ves_icall_RuntimePropertyInfo_get_property
 HANDLES(MPROP_5, "internal_from_handle_type", ves_icall_System_Reflection_RuntimePropertyInfo_internal_from_handle_type, MonoReflectionProperty, 2, (MonoProperty_ptr, MonoType_ptr))
 
 ICALL_TYPE(RUNH, "System.Runtime.CompilerServices.RuntimeHelpers", RUNH_1)
+HANDLES(RUNH_10, "GetInlineArrayLengthInternal", ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_GetInlineArrayLengthInternal, gint32, 2, (MonoQCallTypeHandle, MonoQCallTypeHandle))
 HANDLES(RUNH_1, "GetObjectValue", ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_GetObjectValue, MonoObject, 1, (MonoObject))
 HANDLES(RUNH_6, "GetSpanDataFrom", ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_GetSpanDataFrom, gpointer, 3, (MonoClassField_ptr, MonoType_ptr, gpointer))
 HANDLES(RUNH_2, "GetUninitializedObjectInternal", ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_GetUninitializedObjectInternal, MonoObject, 1, (MonoType_ptr))

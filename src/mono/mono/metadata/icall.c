@@ -973,6 +973,30 @@ ves_icall_System_SpanHelpers_memset (void *p, gint32 value, size_t byte_length)
 	memset (p, value, byte_length);
 }
 
+gint32
+ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_GetInlineArrayLengthInternal (MonoQCallTypeHandle inline_array_type, MonoQCallTypeHandle element_type, MonoError *error)
+{
+	MonoClass *klass = mono_class_from_mono_type_internal (inline_array_type.type);
+	if (!mono_class_init_checked (klass, error))
+		return 0;
+	if (!m_class_is_inlinearray (klass))
+		return 0;
+
+	gpointer iter = NULL;
+	MonoClassField *field;
+	while ((field = mono_class_get_fields_internal (klass, &iter))) {
+		if (mono_field_get_flags (field) & FIELD_ATTRIBUTE_STATIC)
+			continue;
+
+		MonoType *field_type = mono_field_get_type_checked (field, error);
+		if (!field_type || !mono_metadata_type_equal (field_type, element_type.type))
+			return 0;
+
+		return mono_class_get_inlinearray_value (klass);
+	}
+	return 0;
+}
+
 gpointer
 ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_GetSpanDataFrom (MonoClassField *field_handle, MonoType_ptr targetTypeHandle, gpointer countPtr, MonoError *error)
 {

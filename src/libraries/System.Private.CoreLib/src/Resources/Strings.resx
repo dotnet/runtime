@@ -1303,6 +1303,9 @@
   <data name="Argument_InvalidId" xml:space="preserve">
     <value>The specified ID parameter '{0}' is not supported.</value>
   </data>
+  <data name="Argument_InvalidInlineArray" xml:space="preserve">
+    <value>Type '{0}' must be an inline array with elements of type '{1}'.</value>
+  </data>
   <data name="Argument_InvalidKindOfTypeForCA" xml:space="preserve">
     <value>This type cannot be represented as a custom attribute.</value>
   </data>

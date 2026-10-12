@@ -20,6 +20,12 @@ namespace System.Runtime.CompilerServices
             InitializeArray(array, fldHandle.Value);
         }
 
+        private static int GetInlineArrayLengthInternal(RuntimeTypeHandle inlineArrayType, RuntimeTypeHandle elementType) =>
+            GetInlineArrayLengthInternal(new QCallTypeHandle(ref inlineArrayType), new QCallTypeHandle(ref elementType));
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern int GetInlineArrayLengthInternal(QCallTypeHandle inlineArrayType, QCallTypeHandle elementType);
+
         private static unsafe ref byte GetSpanDataFrom(
             RuntimeFieldHandle fldHandle,
             RuntimeTypeHandle targetTypeHandle,

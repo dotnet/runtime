@@ -555,6 +555,194 @@ namespace System.Runtime.CompilerServices.Tests
             public byte b1;
         }
 
+        [InlineArray(1)]
+        private struct SingleElement<T>
+        {
+            private T _element0;
+        }
+
+        [InlineArray(4)]
+        private struct FourElements<T>
+        {
+            private T _element0;
+            public static int StaticField = 42;
+        }
+
+        [InlineArray(4)]
+        private struct FourArrayElements<T>
+        {
+            private T[] _element0;
+        }
+
+#pragma warning disable CS9184 // C# inline-array indexing does not support ref struct buffers.
+        [InlineArray(4)]
+        private ref struct FourElementsRef<T>
+        {
+            public T Element0;
+        }
+#pragma warning restore CS9184
+
+        [Fact]
+        public static void InlineArraySpanConversions()
+        {
+            Byte3 bytes = default;
+            VerifyInlineArraySpans<Byte3, byte>(ref bytes, 3, 7);
+            Assert.Equal(7, bytes[2]);
+
+            SingleElement<long> single = default;
+            VerifyInlineArraySpans<SingleElement<long>, long>(ref single, 1, long.MaxValue);
+            Assert.Equal(long.MaxValue, single[0]);
+
+            FourElements<int> integers = default;
+            VerifyInlineArraySpans<FourElements<int>, int>(ref integers, 4, 123);
+            Assert.Equal(123, integers[3]);
+
+            FourElements<string> strings = default;
+            VerifyInlineArraySpans<FourElements<string>, string>(ref strings, 4, "value");
+            Assert.Equal("value", strings[3]);
+
+            FourElements<object> objects = default;
+            object value = new object();
+            VerifyInlineArraySpans<FourElements<object>, object>(ref objects, 4, value);
+            Assert.Same(value, objects[3]);
+
+            FourElements<(int, string)> tuples = default;
+            VerifyInlineArraySpans<FourElements<(int, string)>, (int, string)>(ref tuples, 4, (123, "value"));
+            Assert.Equal((123, "value"), tuples[3]);
+
+            FourArrayElements<string> arrays = default;
+            string[] array = new[] { "value" };
+            VerifyInlineArraySpans<FourArrayElements<string>, string[]>(ref arrays, 4, array);
+            Assert.Same(array, arrays[3]);
+
+            FourElementsRef<int> refStruct = default;
+            VerifyInlineArraySpans<FourElementsRef<int>, int>(ref refStruct, 4, 456);
+            Assert.Equal(456, refStruct.Element0);
+
+            FourElementsRef<string> refStructWithReferences = default;
+            VerifyInlineArraySpans<FourElementsRef<string>, string>(ref refStructWithReferences, 4, "value");
+            Assert.Equal("value", refStructWithReferences.Element0);
+
+            FourElements<DayOfWeek> enums = default;
+            VerifyInlineArraySpans<FourElements<DayOfWeek>, DayOfWeek>(ref enums, 4, DayOfWeek.Friday);
+            Assert.Equal(DayOfWeek.Friday, enums[3]);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void VerifyInlineArraySpans<TInlineArray, TElement>(ref TInlineArray inlineArray, int length, TElement value)
+            where TInlineArray : struct, allows ref struct
+        {
+            Span<TElement> span = RuntimeHelpers.InlineArrayAsSpan<TInlineArray, TElement>(ref inlineArray);
+            ReadOnlySpan<TElement> readOnlySpan = RuntimeHelpers.InlineArrayAsReadOnlySpan<TInlineArray, TElement>(in inlineArray);
+            Assert.Equal(length, span.Length);
+            Assert.Equal(length, readOnlySpan.Length);
+            Assert.True(Unsafe.AreSame(ref MemoryMarshal.GetReference(span), ref MemoryMarshal.GetReference(readOnlySpan)));
+
+            for (int i = 0; i < length; i++)
+            {
+                span[i] = value;
+                Assert.Equal(value, readOnlySpan[i]);
+            }
+
+            GC.Collect();
+            Assert.Equal(value, span[length - 1]);
+            Assert.Equal(value, readOnlySpan[length - 1]);
+        }
+
+        [Fact]
+        public static void InlineArraySpanConversions_InvalidTypes()
+        {
+            VerifyInvalidInlineArraySpans<int, int>();
+            VerifyInvalidInlineArraySpans<TestStruct, int>();
+            VerifyInvalidInlineArraySpans<Span<int>, int>();
+            VerifyInvalidInlineArraySpans<FourElements<int>, uint>();
+            VerifyInvalidInlineArraySpans<FourElements<string>, object>();
+            VerifyInvalidInlineArraySpans<FourElements<object>, string>();
+            VerifyInvalidInlineArraySpans<FourArrayElements<string>, object[]>();
+            VerifyInvalidInlineArraySpans<FourElements<DayOfWeek>, int>();
+            VerifyInvalidInlineArraySpans<FourElements<int>, DayOfWeek>();
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void VerifyInvalidInlineArraySpans<TInlineArray, TElement>()
+            where TInlineArray : struct, allows ref struct
+        {
+            Assert.Throws<ArgumentException>("inlineArray", static () =>
+            {
+                TInlineArray inlineArray = default;
+                RuntimeHelpers.InlineArrayAsSpan<TInlineArray, TElement>(ref inlineArray);
+            });
+            Assert.Throws<ArgumentException>("inlineArray", static () =>
+            {
+                TInlineArray inlineArray = default;
+                RuntimeHelpers.InlineArrayAsReadOnlySpan<TInlineArray, TElement>(in inlineArray);
+            });
+        }
+
+        [Theory]
+        [InlineData(-1, false)]
+        [InlineData(4, false)]
+        [InlineData(-1, true)]
+        [InlineData(4, true)]
+        public static void InlineArraySpanConversions_Bounds(int index, bool readOnly)
+        {
+            Assert.Throws<IndexOutOfRangeException>(() =>
+            {
+                FourElements<int> inlineArray = default;
+                if (readOnly)
+                {
+                    _ = RuntimeHelpers.InlineArrayAsReadOnlySpan<FourElements<int>, int>(in inlineArray)[index];
+                }
+                else
+                {
+                    _ = RuntimeHelpers.InlineArrayAsSpan<FourElements<int>, int>(ref inlineArray)[index];
+                }
+            });
+        }
+
+        [Fact]
+        public static void InlineArraySpanConversions_ConstantIndex()
+        {
+            FourElements<int> inlineArray = default;
+            inlineArray[2] = 42;
+            Assert.Equal(42, GetInlineArrayElement(ref inlineArray));
+            Assert.Equal(42, GetInlineArrayElementReadOnly(in inlineArray));
+            Assert.Equal(42, GetInlineArrayElementExisting(in inlineArray));
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static int GetInlineArrayElement(ref FourElements<int> inlineArray) =>
+            RuntimeHelpers.InlineArrayAsSpan<FourElements<int>, int>(ref inlineArray)[2];
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static int GetInlineArrayElementReadOnly(ref readonly FourElements<int> inlineArray) =>
+            RuntimeHelpers.InlineArrayAsReadOnlySpan<FourElements<int>, int>(in inlineArray)[2];
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static int GetInlineArrayElementExisting(ref readonly FourElements<int> inlineArray) =>
+            inlineArray[2];
+
+        private sealed class ReadOnlyInlineArrayHolder
+        {
+            public readonly FourElements<int> Buffer;
+
+            public ReadOnlyInlineArrayHolder()
+            {
+                Buffer[2] = 42;
+            }
+        }
+
+        [Fact]
+        public static void InlineArraySpanConversions_ReadOnlyField()
+        {
+            ReadOnlyInlineArrayHolder holder = new ReadOnlyInlineArrayHolder();
+            ReadOnlySpan<int> span = RuntimeHelpers.InlineArrayAsReadOnlySpan<FourElements<int>, int>(in holder.Buffer);
+            ReadOnlySpan<int> existingSpan = holder.Buffer;
+            Assert.Equal(4, span.Length);
+            Assert.Equal(42, span[2]);
+            Assert.True(Unsafe.AreSame(ref MemoryMarshal.GetReference(span), ref MemoryMarshal.GetReference(existingSpan)));
+        }
+
         [Fact]
         public static unsafe void SizeOf()
         {

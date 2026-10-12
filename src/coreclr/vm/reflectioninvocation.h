@@ -46,6 +46,7 @@ class ReflectionInvocation
 {
 public:
     FCDECL0(static FC_BOOL_RET, TryEnsureSufficientExecutionStack);
+    static int32_t GetInlineArrayLength(TypeHandle inlineArrayType, TypeHandle elementType);
 };
 
 extern "C" void QCALLTYPE ReflectionInvocation_CompileMethod(MethodDesc * pMD, QCallExceptionStatus* qcallError);
@@ -89,5 +90,7 @@ extern "C" void QCALLTYPE ReflectionInvocation_GetBoxInfo(
 extern "C" void QCALLTYPE Enum_GetValuesAndNames(QCall::TypeHandle pEnumType, QCall::ObjectHandleOnStack pReturnValues, QCall::ObjectHandleOnStack pReturnNames, BOOL fGetNames, QCallExceptionStatus* qcallError);
 
 extern "C" int32_t QCALLTYPE ReflectionInvocation_SizeOf(QCall::TypeHandle pType);
+
+extern "C" int32_t QCALLTYPE RuntimeHelpers_GetInlineArrayLength(QCall::TypeHandle inlineArrayType, QCall::TypeHandle elementType, QCallExceptionStatus* qcallError);
 
 #endif // _REFLECTIONINVOCATION_H_

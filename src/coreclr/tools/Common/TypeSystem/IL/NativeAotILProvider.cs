@@ -126,7 +126,12 @@ namespace Internal.IL
             else if (owningType.Name == "RuntimeHelpers"u8)
             {
                 if (owningType.Namespace == "System.Runtime.CompilerServices"u8)
+                {
+                    if (method.Name == "GetInlineArrayLength"u8)
+                        return ((CompilerTypeSystemContext)method.Context).GetInlineArrayLengthIntrinsicIL(method);
+
                     return RuntimeHelpersIntrinsics.EmitIL(method);
+                }
             }
             else if (owningType.Name == "Comparer`1"u8)
             {

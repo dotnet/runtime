@@ -427,6 +427,7 @@ static const Entry s_QCall[] =
 #endif // FEATURE_COMINTEROP
     DllImportEntry(ReflectionInvocation_GetGuid)
     DllImportEntry(ReflectionInvocation_SizeOf)
+    DllImportEntry(RuntimeHelpers_GetInlineArrayLength)
     DllImportEntry(ReflectionInvocation_GetBoxInfo)
     DllImportEntry(ReflectionSerialization_GetCreateUninitializedObjectInfo)
 #if defined(FEATURE_COMWRAPPERS)

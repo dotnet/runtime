@@ -40,6 +40,9 @@
 #include "debuginfostore.h"
 #include "safemath.h"
 #include "runtimehandles.h"
+#include "reflectioninvocation.h"
+#include "ilstubresolver.h"
+#include "stubgen.h"
 #include "sigbuilder.h"
 #include "openum.h"
 #include "fieldmarshaler.h"
@@ -7394,6 +7397,32 @@ static bool getILIntrinsicImplementationForRuntimeHelpers(
     _ASSERTE(CoreLibBinder::IsClass(ftn->GetMethodTable(), CLASS__RUNTIME_HELPERS));
 
     mdMethodDef tk = ftn->GetMemberDef();
+
+    if (tk == CoreLibBinder::GetMethod(METHOD__RUNTIME_HELPERS__GET_INLINE_ARRAY_LENGTH)->GetMemberDef())
+    {
+        // Shared instantiations need the exact runtime types, not their canonical forms.
+        if (ftn->IsSharedByGenericInstantiations())
+            return false;
+
+        Instantiation inst = ftn->GetMethodInstantiation();
+        _ASSERTE(inst.GetNumArgs() == 2);
+        int32_t length = ReflectionInvocation::GetInlineArrayLength(inst[0], inst[1]);
+
+        SigTypeContext genericContext;
+        SigTypeContext::InitTypeContext(ftn, &genericContext);
+        ILStubLinker sl(ftn->GetModule(), ftn->GetSignature(), &genericContext, ftn, ILSTUB_LINKER_FLAG_NONE);
+        ILCodeStream* pCode = sl.NewCodeStream(ILStubLinker::kDispatch);
+        pCode->EmitLDC(length);
+        pCode->EmitRET();
+
+        NewHolder<ILStubResolver> resolver = new ILStubResolver();
+        resolver->SetStubMethodDesc(ftn);
+        cxt.Header = resolver->FinalizeILStub(&sl);
+        cxt.TransientResolver = resolver.Extract();
+        getMethodInfoILMethodHeaderHelper(cxt.Header, methInfo);
+        *localSig = {};
+        return true;
+    }
 
     if (tk == CoreLibBinder::GetMethod(METHOD__RUNTIME_HELPERS__IS_BITWISE_EQUATABLE)->GetMemberDef())
     {
