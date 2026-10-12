@@ -337,6 +337,11 @@ namespace System.PrivateUri.Tests
             yield return new object[] { new Uri("http://www.domain.com:100/path?name#fragment"), new Uri("http://www.domain.com:800/path?name#fragment"), false }; // Different port
             yield return new object[] { new Uri("http://www.domain.com:100/path?name#fragment"), new Uri("http://www.domain.com:80/path?name#fragment"), false }; // Different port
 
+            yield return new object[] { new Uri("http://[fe80::1%1]/"), new Uri("http://[fe80::1%2]/"), false };
+            yield return new object[] { new Uri("http://[fe80::1]/"), new Uri("http://[fe80::1%0]/"), false };
+            yield return new object[] { new Uri("http://[fe80::1%1]/"), new Uri("HTTP://[FE80:0:0:0:0:0:0:1%1]:80/"), true };
+            yield return new object[] { new Uri("mailto:user@[fe80::1%1]"), new Uri("mailto:user@[fe80::1%2]"), false };
+
             // File paths
             yield return new object[] { new Uri("file://C:/path1/path2/file"), new Uri("file://C:/path1/path2/file"), true };
             yield return new object[] { new Uri("file://C:/path1/path2/file"), new Uri("file://C:/path1/Path2/File"), true };
@@ -346,6 +351,8 @@ namespace System.PrivateUri.Tests
             yield return new object[] { new Uri("file://C:/path1/path2/file"), new Uri("file://C:/path1/path2/file!"), false };
             yield return new object[] { new Uri("file://C:/path1/path2/file"), new Uri("http://domain.com"), false };
             yield return new object[] { new Uri("file://C:/path1/path2/file"), new Uri(@"\\server\path1\path2\file"), false };
+            yield return new object[] { new Uri("file://[fe80::1%eth0]/path"), new Uri("file://[fe80::1%ETH0]/path"), false };
+            yield return new object[] { new Uri("file://[fe80::1%eth0]/PATH"), new Uri("file://[FE80::1%eth0]/path"), true };
 
             // UNC paths that normalize to the same value as a regular file: URI
             yield return new object[] { new Uri("\\\\\u202a"), new Uri("file:///"), true };
@@ -420,36 +427,6 @@ namespace System.PrivateUri.Tests
                 Assert.Equal(expected, uri2 == uri1);
                 Assert.Equal(!expected, uri1 != uri2);
                 Assert.Equal(!expected, uri2 != uri1);
-            }
-        }
-
-        [Theory]
-        [InlineData("http://[fe80::1%1]/", "http://[fe80::1%2]/", false)]
-        [InlineData("http://[fe80::1]/", "http://[fe80::1%0]/", false)]
-        [InlineData("http://[fe80::1%1]/", "HTTP://[FE80:0:0:0:0:0:0:1%1]:80/", true)]
-        [InlineData("file://[fe80::1%eth0]/path", "file://[fe80::1%ETH0]/path", false)]
-        [InlineData("file://[fe80::1%eth0]/PATH", "file://[FE80::1%eth0]/path", true)]
-        [InlineData("mailto:user@[fe80::1%1]", "mailto:user@[fe80::1%2]", false)]
-        public void Equals_IPv6ScopeId(string firstUriString, string secondUriString, bool expected)
-        {
-            foreach (bool hashFirst in new[] { false, true })
-            {
-                var firstUri = new Uri(firstUriString);
-                var secondUri = new Uri(secondUriString);
-
-                if (hashFirst)
-                {
-                    _ = firstUri.GetHashCode();
-                    _ = secondUri.GetHashCode();
-                }
-
-                Assert.Equal(expected, firstUri.Equals(secondUri));
-                Assert.Equal(expected, secondUri.Equals(firstUri));
-                Assert.Equal(expected ? 1 : 2, new HashSet<Uri> { firstUri, secondUri }.Count);
-                if (expected)
-                {
-                    Assert.Equal(firstUri.GetHashCode(), secondUri.GetHashCode());
-                }
             }
         }
 

@@ -1762,8 +1762,8 @@ namespace System
             if (NotAny(Flags.AllUriInfoSet) || other.NotAny(Flags.AllUriInfoSet))
             {
                 // Try raw compare for _strings as the last chance to keep the working set small
-                // Simple IPv6 parsers must keep scope IDs case-sensitive, even for file URIs.
-                if (string.Equals(_string, other._string, IsUncOrDosPath && (HostType != Flags.IPv6HostType || !_syntax.IsSimple) ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal))
+                // Keep IPv6 scope IDs case-sensitive even when UNC/DOS paths ignore case.
+                if (string.Equals(_string, other._string, IsUncOrDosPath && HostType != Flags.IPv6HostType ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal))
                 {
                     return true;
                 }
@@ -1853,6 +1853,12 @@ namespace System
             string selfUrl = selfInfo.RemoteUrl ??= GetParts(components, UriFormat.SafeUnescaped);
             string otherUrl = otherInfo.RemoteUrl ??= other.GetParts(components, UriFormat.SafeUnescaped);
 
+            // if IsUncOrDosPath is true then we ignore case in the path comparison
+            if (!string.Equals(selfUrl, otherUrl, IsUncOrDosPath ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal))
+            {
+                return false;
+            }
+
             // Scope IDs are omitted from HttpRequestUrl and must be compared separately.
             if (HostType == Flags.IPv6HostType || other.HostType == Flags.IPv6HostType)
             {
@@ -1865,8 +1871,7 @@ namespace System
                 }
             }
 
-            // if IsUncOrDosPath is true then we ignore case in the path comparison
-            return string.Equals(selfUrl, otherUrl, IsUncOrDosPath ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
+            return true;
         }
 
         public Uri MakeRelativeUri(Uri uri)
