@@ -54,7 +54,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public ModuleToken GetModuleTokenForType(EcmaType type, bool allowDynamicallyCreatedReference, bool throwIfNotFound = true)
         {
-            if (_compilationModuleGroup.VersionsWithType(type))
+            // The global module type always has TypeDef token 0x02000001 (ECMA-335 II.22.37),
+            // so its token remains valid even outside the version bubble.
+            if (_compilationModuleGroup.VersionsWithType(type) || type.IsModuleType)
             {
                 return new ModuleToken(type.EcmaModule, (mdToken)MetadataTokens.GetToken(type.Handle));
             }
@@ -438,4 +440,3 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         }
     }
 }
-
