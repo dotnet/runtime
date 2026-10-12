@@ -32,6 +32,36 @@ public static class WasmWebcilModule
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static ref readonly bool AddressIsLittleEndian() => ref BitConverter.IsLittleEndian;
 
+    public sealed class LdtokenType
+    {
+    }
+
+    public sealed class LdtokenHolder<T>
+    {
+    }
+
+    public sealed class OtherLdtokenType
+    {
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static bool FoldTypeTokenEquality() => typeof(LdtokenType) == typeof(LdtokenType);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static bool FoldTypeTokenInequality() => typeof(LdtokenType) == typeof(OtherLdtokenType);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static Type ReadTypeToken() => typeof(LdtokenType);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static RuntimeTypeHandle ReadTypeTokenHandle() => typeof(LdtokenType).TypeHandle;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static Type ReadConstructedTypeToken() => typeof(LdtokenHolder<LdtokenType[]>);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static Type ReadGenericTypeToken<T>() => typeof(T);
+
     public struct SignatureOnlyValue
     {
         public object Reference;
