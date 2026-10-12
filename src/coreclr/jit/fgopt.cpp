@@ -363,12 +363,30 @@ PhaseStatus Compiler::fgPostImportationCleanup()
         }
     }
 
+    // The flow graph optimizations keep the block a catch returns to from
+    // being empty when it is in a different EH region than its successor
+    // (see fgOptimizeEmptyBlock). They do not run when optimizations are
+    // disabled, so do that part here.
+    //
+    bool keptCatchRetTargets = false;
+
+    if (opts.OptimizationDisabled() && (compHndBBtabCount > 0))
+    {
+        for (BasicBlock* const block : Blocks())
+        {
+            if (block->KindIs(BBJ_ALWAYS) && block->isEmpty() && fgKeepCatchRetTargetNonEmpty(block))
+            {
+                keptCatchRetTargets = true;
+            }
+        }
+    }
+
     // If no blocks were removed, we're done.
     // Unless we are an OSR method with a try entry.
     //
     if ((removedBlks == 0) && !(opts.IsOSR() && fgOSREntryBB->hasTryIndex()))
     {
-        return PhaseStatus::MODIFIED_NOTHING;
+        return keptCatchRetTargets ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
     }
 
     // Update all references in the exception handler table.
@@ -747,7 +765,8 @@ PhaseStatus Compiler::fgPostImportationCleanup()
 
     // Did we make any changes?
     //
-    const bool madeChanges = (addedBlocks > 0) || (delCnt > 0) || (removedBlks > 0) || addedTemps;
+    const bool madeChanges =
+        (addedBlocks > 0) || (delCnt > 0) || (removedBlks > 0) || addedTemps || keptCatchRetTargets;
 
     // Note that we have now run post importation cleanup,
     // so we can enable more stringent checking.
@@ -1426,6 +1445,81 @@ bool Compiler::fgOptimizeBranchToEmptyUnconditional(BasicBlock* block, BasicBloc
 }
 
 //-------------------------------------------------------------
+// fgKeepCatchRetTargetNonEmpty:
+//   Add a GT_NO_OP to an empty block that a catch returns to, if the block
+//   is in a different EH region than its successor.
+//
+// Arguments:
+//    block - an empty BBJ_ALWAYS block
+//
+// Returns: true if a GT_NO_OP was added to the block
+//
+// Notes:
+//    When a catch ends with a thread abort pending, the runtime raises the
+//    abort again from the address the catch returns to, and looks the handlers
+//    up for that address. So that address must be inside the EH regions of
+//    the block the catch returns to (see also impImportLeave). An empty block
+//    that falls into its successor generates no code, and the address would
+//    then belong to the successor. The GT_NO_OP makes codegen emit an
+//    instruction for the block.
+//
+bool Compiler::fgKeepCatchRetTargetNonEmpty(BasicBlock* block)
+{
+    assert(block->KindIs(BBJ_ALWAYS));
+    assert(block->isEmpty());
+
+    BasicBlock* const succBlock = block->GetTarget();
+
+    if ((succBlock == nullptr) || BasicBlock::sameEHRegion(block, succBlock))
+    {
+        return false;
+    }
+
+    // The empty block and the block that follows it are in different
+    // EH regions. Does a catch return to the empty block?
+
+    bool isCatchRetTarget = false;
+    for (BasicBlock* const predBlock : block->PredBlocks())
+    {
+        if (predBlock->KindIs(BBJ_EHCATCHRET))
+        {
+            assert(predBlock->TargetIs(block));
+            isCatchRetTarget = true;
+            break;
+        }
+    }
+
+    if (!isCatchRetTarget)
+    {
+        return false;
+    }
+
+    // Insert a NOP in the empty block to ensure we generate code
+    // for the catchret target in the right EH region.
+    GenTree* nop = new (this, GT_NO_OP) GenTree(GT_NO_OP, TYP_VOID);
+
+    if (block->IsLIR())
+    {
+        LIR::AsRange(block).InsertAtEnd(nop);
+        LIR::ReadOnlyRange range(nop, nop);
+        m_pLowering->LowerRange(block, range);
+    }
+    else
+    {
+        Statement* nopStmt = fgNewStmtAtEnd(block, nop);
+        if (fgNodeThreading == NodeThreading::AllTrees)
+        {
+            fgSetStmtSeq(nopStmt);
+        }
+        gtSetStmtInfo(nopStmt);
+    }
+
+    JITDUMP("\nKeeping empty block " FMT_BB " - it is the target of a catch return\n", block->bbNum);
+
+    return true;
+}
+
+//-------------------------------------------------------------
 // fgOptimizeEmptyBlock:
 //   Does flow optimization of an empty block (can remove it in some cases)
 //
@@ -1506,60 +1600,10 @@ bool Compiler::fgOptimizeEmptyBlock(BasicBlock* block)
             // catch be in the correct EH region, for re-raise of thread
             // abort exceptions to work. Insert a NOP in the empty block
             // to ensure we generate code for the block, if we keep it.
+            if (fgKeepCatchRetTargetNonEmpty(block))
             {
-                BasicBlock* succBlock = block->GetTarget();
-
-                if ((succBlock != nullptr) && !BasicBlock::sameEHRegion(block, succBlock))
-                {
-                    // The empty block and the block that follows it are in different
-                    // EH regions. Is this a case where they can't be merged?
-
-                    bool okToMerge = true; // assume it's ok
-                    for (BasicBlock* const predBlock : block->PredBlocks())
-                    {
-                        if (predBlock->KindIs(BBJ_EHCATCHRET))
-                        {
-                            assert(predBlock->TargetIs(block));
-                            okToMerge = false; // we can't get rid of the empty block
-                            break;
-                        }
-                    }
-
-                    if (!okToMerge)
-                    {
-                        // Insert a NOP in the empty block to ensure we generate code
-                        // for the catchret target in the right EH region.
-                        GenTree* nop = new (this, GT_NO_OP) GenTree(GT_NO_OP, TYP_VOID);
-
-                        if (block->IsLIR())
-                        {
-                            LIR::AsRange(block).InsertAtEnd(nop);
-                            LIR::ReadOnlyRange range(nop, nop);
-                            m_pLowering->LowerRange(block, range);
-                        }
-                        else
-                        {
-                            Statement* nopStmt = fgNewStmtAtEnd(block, nop);
-                            if (fgNodeThreading == NodeThreading::AllTrees)
-                            {
-                                fgSetStmtSeq(nopStmt);
-                            }
-                            gtSetStmtInfo(nopStmt);
-                        }
-
-                        madeChanges = true;
-
-#ifdef DEBUG
-                        if (verbose)
-                        {
-                            printf("\nKeeping empty block " FMT_BB " - it is the target of a catch return\n",
-                                   block->bbNum);
-                        }
-#endif // DEBUG
-
-                        break; // go to the next block
-                    }
-                }
+                madeChanges = true;
+                break; // go to the next block
             }
 
             if (!ehCanDeleteEmptyBlock(block))
