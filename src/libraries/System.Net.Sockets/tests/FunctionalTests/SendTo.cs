@@ -78,17 +78,15 @@ namespace System.Net.Sockets.Tests
         // SendTo should validate the remote end point's address family up front (like ReceiveFrom does)
         // instead of failing deep inside the OS PAL with a SocketError.InvalidArgument.
         [Fact]
-        public async Task MismatchedRemoteAddressFamily_Throws_ArgumentException()
+        public async Task AddressFamilyDoesNotMatch_Throws_ArgumentException()
         {
-            using Socket socket = CreateSocket(AddressFamily.InterNetwork); // IPv4 socket
-            IPEndPoint ipv6Endpoint = new IPEndPoint(IPAddress.IPv6Loopback, 1234);
-            byte[] buffer = new byte[32];
+            using var ipv4Socket = CreateSocket();
+            EndPoint ipV6Endpoint = GetGetDummyTestEndpoint(AddressFamily.InterNetworkV6);
+            await AssertThrowsSynchronously<ArgumentException>(() => SendToAsync(ipv4Socket, new ArraySegment<byte>(new byte[1]), ipV6Endpoint));
 
-            await AssertThrowsSynchronously<ArgumentException>(() => SendToAsync(socket, new ArraySegment<byte>(buffer), ipv6Endpoint));
-
-            // The synchronous byte[]/span overloads must behave consistently as well.
-            Assert.Throws<ArgumentException>(() => socket.SendTo(buffer, ipv6Endpoint));
-            Assert.Throws<ArgumentException>(() => socket.SendTo(buffer.AsSpan(), SocketFlags.None, ipv6Endpoint));
+            // The synchronous byte[] and span overloads must behave consistently as well.
+            Assert.Throws<ArgumentException>(() => ipv4Socket.SendTo(new byte[1], ipV6Endpoint));
+            Assert.Throws<ArgumentException>(() => ipv4Socket.SendTo(new byte[1].AsSpan(), SocketFlags.None, ipV6Endpoint));
         }
 
         [Fact]
