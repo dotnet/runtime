@@ -109,9 +109,10 @@ struct CloneInfo : public GuardInfo
     weight_t m_profileScale = 0.0;
 
     // Status of this candidate
-    bool m_checkedCanClone = false;
-    bool m_canClone        = false;
-    bool m_willClone       = false;
+    bool m_hasConflictingRedefinition = false;
+    bool m_checkedCanClone            = false;
+    bool m_canClone                   = false;
+    bool m_willClone                  = false;
 };
 
 struct StoreInfo

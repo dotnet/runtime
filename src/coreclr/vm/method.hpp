@@ -1577,6 +1577,9 @@ public:
     //*******************************************************************************
     // Returns the address of the native code.
     PCODE GetNativeCode();
+#ifndef DACCESS_COMPILE
+    PCODE GetNativeCodeVolatile();
+#endif
 
     // Returns GetNativeCode() if it exists, but also checks to see if there
     // is a non-default code version that is populated with a code body and returns that.

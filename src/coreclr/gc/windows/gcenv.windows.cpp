@@ -19,6 +19,8 @@ GCSystemInfo g_SystemInfo;
 
 static bool g_SeLockMemoryPrivilegeAcquired = false;
 
+static uint32_t g_maxProcessorCount = 0;
+
 static AffinitySet g_processAffinitySet;
 
 namespace {
@@ -500,6 +502,14 @@ void GetGroupForProcessor(uint16_t processor_number, uint16_t* group_number, uin
 //  true if it has succeeded, false if it has failed
 bool GCToOSInterface::Initialize()
 {
+    uint16_t maximumProcessorGroupCount = GetMaximumProcessorGroupCount();
+    if (maximumProcessorGroupCount == 0)
+    {
+        return false;
+    }
+
+    g_maxProcessorCount = static_cast<uint32_t>(maximumProcessorGroupCount) * 64;
+
     SYSTEM_INFO systemInfo;
     GetSystemInfo(&systemInfo);
 
@@ -512,7 +522,7 @@ bool GCToOSInterface::Initialize()
     InitNumaNodeInfo();
     InitCPUGroupInfo();
 
-    if (!g_processAffinitySet.Initialize(GCToOSInterface::GetTotalProcessorCount()))
+    if (!g_processAffinitySet.Initialize(GCToOSInterface::GetMaxProcessorCount()))
     {
         return false;
     }
@@ -1123,7 +1133,8 @@ uint32_t GCToOSInterface::GetTotalProcessorCount()
 
 uint32_t GCToOSInterface::GetMaxProcessorCount()
 {
-    return (uint32_t)g_processAffinitySet.MaxCpuCount();
+    assert(g_maxProcessorCount != 0);
+    return g_maxProcessorCount;
 }
 
 bool GCToOSInterface::CanEnableGCNumaAware()

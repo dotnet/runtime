@@ -298,6 +298,18 @@ namespace System.Net.Http
             }
         }
 
+        internal int InitialHttp2MaxConcurrentStreams
+        {
+            get => _settings._initialHttp2MaxConcurrentStreams;
+            set
+            {
+                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);
+
+                CheckDisposedOrStarted();
+                _settings._initialHttp2MaxConcurrentStreams = value;
+            }
+        }
+
         /// <summary>
         /// Gets or sets the keep alive ping delay. The client will send a keep alive ping to the server if it
         /// doesn't receive any frames on a connection for this period of time. This property is used together with

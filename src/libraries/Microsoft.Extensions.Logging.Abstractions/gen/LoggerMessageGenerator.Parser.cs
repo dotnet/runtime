@@ -598,6 +598,11 @@ namespace Microsoft.Extensions.Logging.Generators
                     return Array.Empty<LoggerClass>();
                 }
 
+                results.Sort((lhs, rhs) =>
+                {
+                    int c = StringComparer.Ordinal.Compare(lhs.Namespace, rhs.Namespace);
+                    return c != 0 ? c : StringComparer.Ordinal.Compare(lhs.Name, rhs.Name);
+                });
                 return results;
             }
 

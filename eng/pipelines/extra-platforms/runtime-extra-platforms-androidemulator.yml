@@ -4,6 +4,7 @@
 #   /azp run runtime-androidemulator
 
 parameters:
+  useHelixMonitor: false
   isExtraPlatformsBuild: false
   isAndroidEmulatorOnlyBuild: false
   isRollingBuild: false
@@ -43,6 +44,7 @@ jobs:
       postBuildSteps:
         - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
           parameters:
+            useHelixMonitor: ${{ parameters.useHelixMonitor }}
             creator: dotnet-bot
             testRunNamePrefixSuffix: Mono_$(_BuildConfig)
       extraVariablesTemplates:
@@ -82,6 +84,7 @@ jobs:
       postBuildSteps:
         - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
           parameters:
+            useHelixMonitor: ${{ parameters.useHelixMonitor }}
             creator: dotnet-bot
             testRunNamePrefixSuffix: Mono_$(_BuildConfig)
       extraVariablesTemplates:
@@ -116,6 +119,7 @@ jobs:
       postBuildSteps:
         - template: /eng/pipelines/libraries/helix.yml
           parameters:
+            useHelixMonitor: ${{ parameters.useHelixMonitor }}
             creator: dotnet-bot
             testRunNamePrefixSuffix: Mono_$(_BuildConfig)
 
@@ -147,6 +151,7 @@ jobs:
       postBuildSteps:
         - template: /eng/pipelines/libraries/helix.yml
           parameters:
+            useHelixMonitor: ${{ parameters.useHelixMonitor }}
             creator: dotnet-bot
             testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
 
@@ -180,5 +185,6 @@ jobs:
       postBuildSteps:
         - template: /eng/pipelines/libraries/helix.yml
           parameters:
+            useHelixMonitor: ${{ parameters.useHelixMonitor }}
             creator: dotnet-bot
             testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)

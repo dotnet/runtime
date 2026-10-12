@@ -1250,16 +1250,13 @@ namespace ILCompiler.DependencyAnalysis
         {
             yield return new DependencyListEntry(_signature, "TypeSignature");
 
-            MethodDesc method = _method;
-            if (method.IsRuntimeDeterminedExactMethod)
-                method = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
-
-            if (!factory.VTable(method.OwningType).HasKnownVirtualMethodUse)
+            MethodDesc canonMethod = _method.GetCanonMethodTarget(CanonicalFormKind.Specific);
+            if (!factory.VTable(canonMethod.OwningType).HasKnownVirtualMethodUse)
             {
-                yield return new DependencyListEntry(factory.VirtualMethodUse(method), "Slot number");
+                yield return new DependencyListEntry(factory.VirtualMethodUse(canonMethod), "Slot number");
             }
 
-            foreach (var dependency in factory.NativeLayout.TemplateConstructableTypes(method.OwningType))
+            foreach (var dependency in factory.NativeLayout.TemplateConstructableTypes(_method.OwningType))
             {
                 yield return new DependencyListEntry(dependency, "template construction dependency");
             }

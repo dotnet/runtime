@@ -27,6 +27,21 @@ namespace System.Net.Http.Functional.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
+    internal static class SocketsHttpHandlerTestExtensions
+    {
+        internal static int GetInitialHttp2MaxConcurrentStreams(this SocketsHttpHandler handler) =>
+            GetInitialHttp2MaxConcurrentStreamsCore(handler);
+
+        internal static void SetInitialHttp2MaxConcurrentStreams(this SocketsHttpHandler handler, int value) =>
+            SetInitialHttp2MaxConcurrentStreamsCore(handler, value);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get_InitialHttp2MaxConcurrentStreams")]
+        private static extern int GetInitialHttp2MaxConcurrentStreamsCore(SocketsHttpHandler handler);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "set_InitialHttp2MaxConcurrentStreams")]
+        private static extern void SetInitialHttp2MaxConcurrentStreamsCore(SocketsHttpHandler handler, int value);
+    }
+
     public class CertificateSetup : IDisposable
     {
         public X509Certificate2 ServerCert => _pkiHolder.EndEntity;
@@ -2645,6 +2660,34 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory]
+        [InlineData(1)]
+        [InlineData(42)]
+        [InlineData(int.MaxValue)]
+        public void InitialHttp2MaxConcurrentStreams_GetSet_Roundtrips(int value)
+        {
+            using var handler = new SocketsHttpHandler();
+            Assert.Equal(100, handler.GetInitialHttp2MaxConcurrentStreams()); // default value
+
+            handler.SetInitialHttp2MaxConcurrentStreams(value);
+            Assert.Equal(value, handler.GetInitialHttp2MaxConcurrentStreams());
+
+            handler.SetInitialHttp2MaxConcurrentStreams(100);
+            Assert.Equal(100, handler.GetInitialHttp2MaxConcurrentStreams());
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(-1)]
+        [InlineData(-42)]
+        [InlineData(int.MinValue)]
+        public void InitialHttp2MaxConcurrentStreams_InvalidValue_ThrowsArgumentOutOfRangeException(int value)
+        {
+            using var handler = new SocketsHttpHandler();
+            Assert.Throws<ArgumentOutOfRangeException>(() => handler.SetInitialHttp2MaxConcurrentStreams(value));
+            Assert.Equal(100, handler.GetInitialHttp2MaxConcurrentStreams());
+        }
+
+        [Theory]
         [InlineData(false)]
         [InlineData(true)]
         public async Task AfterDisposeSendAsync_GettersUsable_SettersThrow(bool dispose)
@@ -2687,6 +2730,7 @@ namespace System.Net.Http.Functional.Tests
                 Assert.Null(handler.ConnectCallback);
                 Assert.Null(handler.PlaintextStreamFilter);
                 Assert.Equal(HttpClientHandlerTestBase.DefaultInitialWindowSize, handler.InitialHttp2StreamWindowSize);
+                Assert.Equal(100, handler.GetInitialHttp2MaxConcurrentStreams());
 
                 Assert.Throws(expectedExceptionType, () => handler.AllowAutoRedirect = false);
                 Assert.Throws(expectedExceptionType, () => handler.AutomaticDecompression = DecompressionMethods.GZip);
@@ -2709,6 +2753,7 @@ namespace System.Net.Http.Functional.Tests
                 Assert.Throws(expectedExceptionType, () => handler.ConnectCallback = (context, token) => default);
                 Assert.Throws(expectedExceptionType, () => handler.PlaintextStreamFilter = (context, token) => default);
                 Assert.Throws(expectedExceptionType, () => handler.InitialHttp2StreamWindowSize = 128 * 1024);
+                Assert.Throws(expectedExceptionType, () => handler.SetInitialHttp2MaxConcurrentStreams(1));
             }
         }
     }
@@ -3012,6 +3057,62 @@ namespace System.Net.Http.Functional.Tests
 
                 await VerifySendTasks(sendTasks0).ConfigureAwait(false);
                 await VerifySendTasks(sendTasks2).ConfigureAwait(false);
+            }
+        }
+
+        [ConditionalTheory(typeof(SocketsHttpHandlerTest_Http2), nameof(SupportsAlpn))]
+        [InlineData(1)]
+        [InlineData(3)]
+        public async Task InitialHttp2MaxConcurrentStreams_LimitsStreamsUsedBeforeSettingsFrameIsReceived(int initialLimit)
+        {
+            const int RequestCount = 5;
+
+            using Http2LoopbackServer server = Http2LoopbackServer.CreateServer();
+
+            using SocketsHttpHandler handler = CreateHandler();
+            handler.EnableMultipleHttp2Connections = false;
+            handler.SetInitialHttp2MaxConcurrentStreams(initialLimit);
+            using HttpClient client = CreateHttpClient(handler);
+
+            var sendTasks = new List<Task<HttpResponseMessage>>();
+            AcquireAllStreamSlots(server, client, sendTasks, RequestCount);
+
+            await using Http2LoopbackConnection connection = await server.AcceptConnectionAsync().WaitAsync(TestHelper.PassingTestTimeout);
+
+            // Read the client's SETTINGS frame, but don't send ours yet.
+            await connection.ReadSettingsAsync().WaitAsync(TestHelper.PassingTestTimeout);
+
+            // Only 'initialLimit' requests may be sent before we advertise our own limit.
+            var streamIds = new List<int>(await AcceptRequests(connection, initialLimit));
+            await AssertNoRequestHeadersSentAsync(connection);
+
+            // Advertise a higher limit. The remaining requests should now be sent.
+            await connection.SendSettingsAsync(ackTimeout: null, [new SettingsEntry { SettingId = SettingId.MaxConcurrentStreams, Value = 100 }]);
+
+            streamIds.AddRange(await AcceptRequests(connection, RequestCount - initialLimit));
+
+            await SendResponses(connection, streamIds);
+            await VerifySendTasks(sendTasks);
+        }
+
+        private static async Task AssertNoRequestHeadersSentAsync(Http2LoopbackConnection connection)
+        {
+            using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(100));
+
+            while (true)
+            {
+                Frame frame;
+                try
+                {
+                    frame = await connection.ReadFrameAsync(cts.Token).ConfigureAwait(false);
+                }
+                catch (OperationCanceledException)
+                {
+                    return;
+                }
+
+                Assert.NotNull(frame);
+                Assert.NotEqual(FrameType.Headers, frame.Type);
             }
         }
 

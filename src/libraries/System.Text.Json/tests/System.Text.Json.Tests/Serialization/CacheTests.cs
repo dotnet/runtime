@@ -165,6 +165,56 @@ namespace System.Text.Json.Serialization.Tests
             JsonSerializer.Deserialize<SimpleTestClass>(json, options);
         }
 
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(3)]
+        [InlineData(4)]
+        [InlineData(5)]
+        [InlineData(6)]
+        [InlineData(7)]
+        public static void PropertyCache_NamesWithSameKeyButDifferentLength_AreDistinct(int shortNameLength)
+        {
+            string shortName = new('a', shortNameLength);
+            string longName =
+                shortName +
+                new string('\0', 7 - shortNameLength) +
+                new string('b', 249 + shortNameLength);
+
+            Assert.Equal(256, longName.Length - shortName.Length);
+
+            var options = new JsonSerializerOptions
+            {
+                TypeInfoResolver = new DefaultJsonTypeInfoResolver
+                {
+                    Modifiers =
+                    {
+                        // Customize the name so the theory can exercise every length with one POCO type.
+                        typeInfo =>
+                        {
+                            if (typeInfo.Type == typeof(PropertyKeyLengthPoco))
+                            {
+                                typeInfo.Properties[0].Name = shortName;
+                            }
+                        }
+                    }
+                }
+            };
+
+            string json = JsonSerializer.Serialize(new Dictionary<string, string> { [longName] = "42" });
+            Assert.Null(JsonSerializer.Deserialize<PropertyKeyLengthPoco>(json, options).Value);
+
+            json = JsonSerializer.Serialize(new Dictionary<string, string> { [shortName] = "42" });
+            Assert.Equal("42", JsonSerializer.Deserialize<PropertyKeyLengthPoco>(json, options).Value);
+        }
+
+        private class PropertyKeyLengthPoco
+        {
+            // The declared name is irrelevant because the resolver replaces it.
+            public string Value { get; set; }
+        }
+
         // Use a common options instance to encourage additional metadata collisions across types. Also since
         // this options is not the default options instance the tests will not use previously cached metadata.
         private static JsonSerializerOptions s_options = new JsonSerializerOptions { IncludeFields = true };
