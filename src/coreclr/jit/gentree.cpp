@@ -8859,10 +8859,15 @@ ExceptionSetFlags GenTree::OperExceptions(Compiler* comp)
 
         case GT_INTRINSIC:
             // If this is an intrinsic that represents the object.GetType(), it can throw an NullReferenceException.
-            // Currently, this is the only intrinsic that can throw an exception.
             if (AsIntrinsic()->gtIntrinsicName == NI_System_Object_GetType)
             {
                 return ExceptionSetFlags::NullReferenceException;
+            }
+
+            // The signed Log2 fallback throws ArgumentOutOfRangeException for negative inputs.
+            if (AsIntrinsic()->gtIntrinsicName == NI_PRIMITIVE_Log2)
+            {
+                return ExceptionSetFlags::UnknownException;
             }
 
             return ExceptionSetFlags::None;
@@ -20620,7 +20625,7 @@ ValueSize GenTreeIndir::ValueSize() const
 // Return Value:
 //    True if this immediate value requires us to record a relocation for it; false otherwise.
 
-bool GenTreeIntConCommon::ImmedValNeedsReloc(Compiler* comp)
+bool GenTreeIntConCommon::ImmedValNeedsReloc(Compiler* comp) const
 {
     return comp->opts.compReloc && IsIconHandle();
 }
@@ -35242,7 +35247,7 @@ bool GenTree::IsNeverNegative(Compiler* comp) const
 
     if (IsIntegralConst())
     {
-        return AsIntConCommon()->IntegralValue() >= 0;
+        return !AsIntConCommon()->ImmedValNeedsReloc(comp) && (AsIntConCommon()->IntegralValue() >= 0);
     }
 
     if (OperIs(GT_LCL_VAR))

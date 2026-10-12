@@ -287,6 +287,25 @@ internal sealed class FrameHelpers
     }
 
     /// <summary>
+    /// Returns the return address recorded in <paramref name="transitionBlock"/>. On WASM, a
+    /// transition helper called from R2R code may store only the caller's linear-stack pointer;
+    /// the return address is then that frame's R2R virtual IP, matching the lazy computation in
+    /// native <c>FramedMethodFrame::GetTransitionBlock_Impl</c>.
+    /// </summary>
+    public TargetCodePointer GetTransitionBlockReturnAddress(Data.TransitionBlock transitionBlock)
+    {
+        if (transitionBlock.ReturnAddress == TargetCodePointer.Null
+            && transitionBlock.StackPointer is TargetPointer stackPointer
+            && stackPointer != TargetPointer.Null)
+        {
+            Wasm.WasmUnwinder unwinder = new(_target, new Wasm.WasmR2RInfo(_target));
+            return unwinder.GetVirtualIP(stackPointer);
+        }
+
+        return transitionBlock.ReturnAddress;
+    }
+
+    /// <summary>
     /// Returns the return address for <paramref name="frame"/>, matching native Frame::GetReturnAddress().
     /// Returns TargetCodePointer.Null if the Frame has no return address (e.g., non-active ICF,
     /// base Frame types, FuncEvalFrame during exception eval).
@@ -319,7 +338,7 @@ internal sealed class FrameHelpers
                     if (FindGCRefMap(dispatchFrame.Indirection) == TargetPointer.Null)
                         return new TargetCodePointer((uint)tb.ReturnAddress - X86FrameHandler.CallInstructionSize);
                 }
-                return tb.ReturnAddress;
+                return GetTransitionBlockReturnAddress(tb);
 
             // SoftwareExceptionFrame: stored m_ReturnAddress
             case FrameType.SoftwareExceptionFrame:

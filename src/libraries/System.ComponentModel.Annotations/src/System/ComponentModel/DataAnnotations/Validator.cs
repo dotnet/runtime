@@ -347,8 +347,13 @@ namespace System.ComponentModel.DataAnnotations
         /// <param name="validationResults">Optional collection to receive <see cref="ValidationResult" />s for the failures.</param>
         /// <param name="cancellationToken">A <see cref="CancellationToken" /> to observe while waiting for the task to complete.</param>
         /// <returns>A <see cref="Task{Boolean}" /> that is <c>true</c> if the value is valid, <c>false</c> if any validation errors are encountered.</returns>
+        /// <exception cref="ArgumentNullException">
+        ///     <paramref name="validationContext" /> is null, or
+        ///     <see cref="ValidationContext.MemberName" /> is null or empty.
+        /// </exception>
         /// <exception cref="ArgumentException">
-        ///     When the <see cref="ValidationContext.MemberName" /> of <paramref name="validationContext" /> is not a valid property.
+        ///     <see cref="ValidationContext.MemberName" /> does not identify a valid public, non-indexer property,
+        ///     or <paramref name="value" /> cannot be assigned to that property.
         /// </exception>
         [RequiresUnreferencedCode("The Type of validationContext.ObjectType cannot be statically discovered.")]
         public static async Task<bool> TryValidatePropertyAsync(
@@ -392,6 +397,7 @@ namespace System.ComponentModel.DataAnnotations
         /// <param name="cancellationToken">A <see cref="CancellationToken" /> to observe while waiting for the task to complete.</param>
         /// <returns>A <see cref="Task{Boolean}" /> that is <c>true</c> if the object is valid, <c>false</c> if any validation errors are encountered.</returns>
         /// <exception cref="ArgumentNullException">When <paramref name="instance" /> is null.</exception>
+        /// <exception cref="ArgumentNullException">When <paramref name="validationContext" /> is null.</exception>
         /// <exception cref="ArgumentException">
         ///     When <paramref name="instance" /> doesn't match the
         ///     <see cref="ValidationContext.ObjectInstance" /> on <paramref name="validationContext" />.
@@ -414,9 +420,10 @@ namespace System.ComponentModel.DataAnnotations
         ///     is <c>true</c>, this method will also evaluate the <see cref="ValidationAttribute" />s for all the immediate
         ///     properties of this object.  This process is not recursive.
         ///     <para>
-        ///         When <paramref name="validateAllProperties" /> is <c>true</c>, properties are validated
-        ///         in parallel. Within each property, synchronous attributes run first; asynchronous
-        ///         attributes run only if all synchronous attributes pass.
+        ///         When <paramref name="validateAllProperties" /> is <c>true</c>, validation is started for each
+        ///         property in sequence. Synchronous attributes for a property run before that property's
+        ///         asynchronous attributes are awaited. Asynchronous validation that remains in progress can
+        ///         overlap with asynchronous validation for other properties.
         ///     </para>
         ///     <para>
         ///         When <paramref name="validationResults" /> is <c>null</c>, validation stops after the
@@ -438,6 +445,7 @@ namespace System.ComponentModel.DataAnnotations
         /// <param name="cancellationToken">A <see cref="CancellationToken" /> to observe while waiting for the task to complete.</param>
         /// <returns>A <see cref="Task{Boolean}" /> that is <c>true</c> if the object is valid, <c>false</c> if any validation errors are encountered.</returns>
         /// <exception cref="ArgumentNullException">When <paramref name="instance" /> is null.</exception>
+        /// <exception cref="ArgumentNullException">When <paramref name="validationContext" /> is null.</exception>
         /// <exception cref="ArgumentException">
         ///     When <paramref name="instance" /> doesn't match the
         ///     <see cref="ValidationContext.ObjectInstance" /> on <paramref name="validationContext" />.
@@ -474,7 +482,7 @@ namespace System.ComponentModel.DataAnnotations
         ///     Asynchronously tests whether the given value is valid against a specified list of <see cref="ValidationAttribute" />s.
         /// </summary>
         /// <remarks>
-        ///     This method will test each <see cref="ValidationAttribute" />s specified.  If
+        ///     This method will test each specified <see cref="ValidationAttribute" />.  If
         ///     <paramref name="validationResults" /> is non-null, this method will add a <see cref="ValidationResult" />
         ///     to it for each validation failure.
         ///     <para>
@@ -488,6 +496,8 @@ namespace System.ComponentModel.DataAnnotations
         /// <param name="validationAttributes">The list of <see cref="ValidationAttribute" />s to validate this <paramref name="value" /> against.</param>
         /// <param name="cancellationToken">A <see cref="CancellationToken" /> to observe while waiting for the task to complete.</param>
         /// <returns>A <see cref="Task{Boolean}" /> that is <c>true</c> if the object is valid, <c>false</c> if any validation errors are encountered.</returns>
+        /// <exception cref="ArgumentNullException">When <paramref name="validationContext" /> is null.</exception>
+        /// <exception cref="ArgumentNullException">When <paramref name="validationAttributes" /> is null.</exception>
         public static async Task<bool> TryValidateValueAsync(
             object? value,
             ValidationContext validationContext,
@@ -517,7 +527,14 @@ namespace System.ComponentModel.DataAnnotations
         /// <param name="validationContext">Describes the object being validated and provides services and context for the validators.</param>
         /// <param name="cancellationToken">A <see cref="CancellationToken" /> to observe while waiting for the task to complete.</param>
         /// <returns>A <see cref="Task" /> representing the asynchronous validation operation.</returns>
-        /// <exception cref="ArgumentNullException">When <paramref name="validationContext" /> is null.</exception>
+        /// <exception cref="ArgumentNullException">
+        ///     <paramref name="validationContext" /> is null, or
+        ///     <see cref="ValidationContext.MemberName" /> is null or empty.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///     <see cref="ValidationContext.MemberName" /> does not identify a valid public, non-indexer property,
+        ///     or <paramref name="value" /> cannot be assigned to that property.
+        /// </exception>
         /// <exception cref="ValidationException">When <paramref name="value" /> is invalid for this property.</exception>
         [RequiresUnreferencedCode("The Type of validationContext.ObjectType cannot be statically discovered.")]
         public static async Task ValidatePropertyAsync(
@@ -610,10 +627,11 @@ namespace System.ComponentModel.DataAnnotations
         /// </summary>
         /// <param name="value">The value to test.</param>
         /// <param name="validationContext">Describes the object being tested.</param>
-        /// <param name="validationAttributes">The list of <see cref="ValidationAttribute" />s to validate against this instance.</param>
+        /// <param name="validationAttributes">The list of <see cref="ValidationAttribute" />s to validate this <paramref name="value" /> against.</param>
         /// <param name="cancellationToken">A <see cref="CancellationToken" /> to observe while waiting for the task to complete.</param>
         /// <returns>A <see cref="Task" /> representing the asynchronous validation operation.</returns>
         /// <exception cref="ArgumentNullException">When <paramref name="validationContext" /> is null.</exception>
+        /// <exception cref="ArgumentNullException">When <paramref name="validationAttributes" /> is null.</exception>
         /// <exception cref="ValidationException">When <paramref name="value" /> is found to be invalid.</exception>
         public static async Task ValidateValueAsync(
             object? value,

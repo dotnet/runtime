@@ -7171,7 +7171,7 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
 
                 GenTree* fallback =
                     new (this, GT_INTRINSIC) GenTreeIntrinsic(retType, op1Dup, intrinsic, method R2RARG(*entryPoint));
-                fallback->gtFlags |= GTF_CALL;
+                fallback->gtFlags |= GTF_CALL | GTF_EXCEPT;
                 GenTree*      cond  = gtNewOperNode(GT_LT, TYP_INT, op1, gtNewZeroConNode(isLong ? TYP_LONG : TYP_INT));
                 GenTreeColon* colon = gtNewColonNode(retType, fallback, result);
                 GenTreeQmark* qmark = gtNewQmarkNode(retType, cond, colon);
