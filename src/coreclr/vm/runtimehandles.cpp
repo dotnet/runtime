@@ -1164,15 +1164,7 @@ FCIMPL1(Object*, RuntimeTypeHandle::InternalAllocNoChecks_FastPath, MethodTable*
 
     _ASSERTE(pMT != nullptr);
 
-    if (pMT->HasFinalizer() ||
-        pMT->IsComObjectType() ||
-        pMT->GetBaseSize() >= LARGE_OBJECT_SIZE ||
-        GCStress<cfg_alloc>::IsEnabled() ||
-        TrackAllocationsEnabled()
-#if defined(_LOGALLOC) && defined(LOGGING)
-        || LoggingOn(LF_GCALLOC, LL_INFO10)
-#endif
-        )
+    if (pMT->HasFinalizer())
     {
         return NULL;
     }

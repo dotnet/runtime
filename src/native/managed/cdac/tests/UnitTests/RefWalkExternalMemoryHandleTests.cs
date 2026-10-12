@@ -368,6 +368,47 @@ public class ExternalMemoryHandleRootTests
         Assert.All(roots, r => Assert.True(r.IsInteriorPointer));
     }
 
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void ValueType_OverlappingByRefFields_ReportInteriorSlotWithoutChangingMemory(MockTarget.Architecture architecture)
+    {
+        const ulong MemoryAddr = 0x6000;
+        const ulong InteriorAddr = 0x7010;
+        TargetPointer[] fields = [new(0x8000), new(0x8100)];
+        Mock<IRuntimeTypeSystem> rts = new(MockBehavior.Strict);
+        ITypeHandle typeHandle = new TargetTypeHandle(new TargetPointer(MethodTableAddr));
+        rts.Setup(r => r.GetTypeHandle(new TargetPointer(MethodTableAddr))).Returns(typeHandle);
+        rts.Setup(r => r.IsValueType(typeHandle)).Returns(true);
+        rts.Setup(r => r.IsByRefLike(typeHandle)).Returns(true);
+        rts.Setup(r => r.ContainsGCPointers(typeHandle)).Returns(false);
+        rts.Setup(r => r.IsInlineArray(typeHandle)).Returns(false);
+        rts.Setup(r => r.GetFieldDescList(typeHandle)).Returns(fields);
+        foreach (TargetPointer field in fields)
+        {
+            rts.Setup(r => r.IsFieldDescStatic(field)).Returns(false);
+            rts.Setup(r => r.GetFieldDescType(field)).Returns(CorElementType.Byref);
+            rts.Setup(r => r.GetFieldDescOffset(field, null)).Returns(0u);
+        }
+
+        TestPlaceholderTarget target = CreateTarget(
+            new TargetPointer(MemoryAddr), isByRef: false, rts,
+            [PointerFragment(MemoryAddr, InteriorAddr, architecture)], architecture: architecture);
+
+        for (int i = 0; i < 2; i++)
+        {
+            IReadOnlyList<ExternalMemoryHandleRootData> roots =
+                target.Contracts.ExternalMemoryHandles.GetRoots(resolveInteriorPointers: false);
+            Assert.NotEmpty(roots);
+            Assert.All(roots, root =>
+            {
+                Assert.True(root.IsInteriorPointer);
+                Assert.Equal(new TargetPointer(MemoryAddr), root.Address);
+                Assert.Equal(new TargetPointer(InteriorAddr), root.Object);
+            });
+            Assert.Equal(new TargetPointer(InteriorAddr), target.ReadPointer(MemoryAddr));
+        }
+    }
+
     [Fact]
     public void NoExternalMemoryHandles_YieldsNoRoots()
     {
@@ -381,6 +422,120 @@ public class ExternalMemoryHandleRootTests
 public class RefWalkExternalMemoryHandleTests
 {
     private static readonly MockTarget.Architecture Arch = new() { IsLittleEndian = true, Is64Bit = true };
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
+    [InlineData(4)]
+    public void HandlePrefix_DuplicatesAcrossBatches_Match(int batchSize)
+    {
+        DacGcReference handle = new()
+        {
+            dwType = CorGCReferenceType.CorHandleStrong,
+            vmDomain = 0x1000,
+            objHnd = 0x2000,
+        };
+        DacGcReference interior = new()
+        {
+            dwType = CorGCReferenceType.CorHandleStrong,
+            vmDomain = 0x1000,
+            pObject = 0x3001,
+        };
+        DacGcReference stack = new() { dwType = CorGCReferenceType.CorReferenceStack };
+        DacGcReference[] cdac = [handle, interior, interior, interior, stack];
+        DacGcReference[] legacy = [handle, interior, stack];
+        RefWalkHandlePrefixValidator validator = new();
+        bool compared = false;
+
+        for (int offset = 0; offset < cdac.Length; offset += batchSize)
+        {
+            int cdacCount = Math.Min(batchSize, cdac.Length - offset);
+            int legacyCount = Math.Min(batchSize, Math.Max(0, legacy.Length - offset));
+            validator.AddBatch(cdac.AsSpan(offset, cdacCount), legacy: false,
+                endOfWalk: offset + cdacCount == cdac.Length);
+            validator.AddBatch(legacy.AsSpan(Math.Min(offset, legacy.Length), legacyCount), legacy: true,
+                endOfWalk: offset + legacyCount >= legacy.Length);
+            if (validator.TryCompare(out bool matches))
+            {
+                Assert.True(matches);
+                Assert.False(compared);
+                compared = true;
+            }
+        }
+
+        Assert.True(compared);
+        Assert.False(validator.TryCompare(out _));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void HandlePrefix_DifferentRoots_DoNotMatch(bool differentFlags)
+    {
+        DacGcReference cdac = new()
+        {
+            dwType = CorGCReferenceType.CorHandleStrong,
+            vmDomain = 0x1000,
+            objHnd = 0x2000,
+        };
+        DacGcReference legacy = cdac;
+        if (differentFlags)
+            legacy.dwType = CorGCReferenceType.CorHandleStrongPinning;
+        else
+            legacy.objHnd = 0x3000;
+
+        RefWalkHandlePrefixValidator validator = new();
+        validator.AddBatch([cdac], legacy: false, endOfWalk: true);
+        Assert.False(validator.TryCompare(out _));
+        validator.AddBatch([legacy], legacy: true, endOfWalk: true);
+        Assert.True(validator.TryCompare(out bool matches));
+        Assert.False(matches);
+    }
+
+    [Fact]
+    public void HandlePrefix_MissingRoot_DoesNotMatch()
+    {
+        DacGcReference root = new() { dwType = CorGCReferenceType.CorHandleStrong, objHnd = 0x2000 };
+        RefWalkHandlePrefixValidator validator = new();
+        validator.AddBatch([root], legacy: false, endOfWalk: true);
+        validator.AddBatch([], legacy: true, endOfWalk: true);
+
+        Assert.True(validator.TryCompare(out bool matches));
+        Assert.False(matches);
+    }
+
+    [Fact]
+    public void HandlePrefix_EmptyWalks_Match()
+    {
+        RefWalkHandlePrefixValidator validator = new();
+        validator.AddBatch([], legacy: false, endOfWalk: true);
+        Assert.False(validator.TryCompare(out _));
+        validator.AddBatch([], legacy: true, endOfWalk: true);
+
+        Assert.True(validator.TryCompare(out bool matches));
+        Assert.True(matches);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void HandlePrefix_LegacyHasRemainingBatches_RequiresCompletion(bool missingRoot)
+    {
+        DacGcReference root = new() { dwType = CorGCReferenceType.CorHandleStrong, objHnd = 0x2000 };
+        DacGcReference extra = new() { dwType = CorGCReferenceType.CorHandleStrong, objHnd = 0x3000 };
+        RefWalkHandlePrefixValidator validator = new();
+        validator.AddBatch([root], legacy: false, endOfWalk: true);
+        validator.AddBatch([root], legacy: true, endOfWalk: false);
+        Assert.True(validator.NeedsLegacyBatch);
+        Assert.False(validator.TryCompare(out _));
+
+        validator.AddBatch([missingRoot ? extra : root], legacy: true, endOfWalk: true);
+
+        Assert.False(validator.NeedsLegacyBatch);
+        Assert.True(validator.TryCompare(out bool matches));
+        Assert.Equal(!missingRoot, matches);
+    }
 
     [Fact]
     public void WalkExternalMemoryHandles_MapsContractRoots()
