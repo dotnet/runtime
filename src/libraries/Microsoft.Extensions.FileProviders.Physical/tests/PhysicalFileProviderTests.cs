@@ -332,7 +332,7 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "Browser/iOS/tvOS always uses Active Polling which doesn't return the same instance between multiple calls to Watch(string)")]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi | TestPlatforms.iOS | TestPlatforms.tvOS, "Browser/WASI/iOS/tvOS always uses Active Polling which doesn't return the same instance between multiple calls to Watch(string)")]
         public void TokenIsSameForSamePath()
         {
             using (var root = new TempDirectory(GetTestFilePath()))
@@ -355,7 +355,7 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/WASI/iOS/tvOS")]
         public async Task TokensFiredOnFileChange()
         {
             using (var root = new TempDirectory(GetTestFilePath()))
@@ -385,7 +385,7 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/WASI/iOS/tvOS")]
         [SkipOnCoreClr("JitStress slows this down too much", RuntimeTestModes.JitStress | RuntimeTestModes.JitStressRegs)]
         public async Task TokenCallbackInvokedOnFileChange()
         {
@@ -422,7 +422,7 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/WASI/iOS/tvOS")]
         public async Task WatcherWithPolling_ReturnsTrueForFileChangedWhenFileSystemWatcherDoesNotRaiseEvents()
         {
             using (var root = new TempDirectory(GetTestFilePath()))
@@ -450,7 +450,7 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/WASI/iOS/tvOS")]
         public async Task WatcherWithPolling_ReturnsTrueForFileRemovedWhenFileSystemWatcherDoesNotRaiseEvents()
         {
             using (var root = new TempDirectory(GetTestFilePath()))
@@ -480,7 +480,7 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/WASI/iOS/tvOS")]
         public async Task TokensFiredOnFileDeleted()
         {
             using (var root = new TempDirectory(GetTestFilePath()))
@@ -815,7 +815,7 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/WASI/iOS/tvOS")]
         public async Task FileChangeTokenNotNotifiedAfterExpiry()
         {
             using (var root = new TempDirectory(GetTestFilePath()))
@@ -847,7 +847,7 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "Browser/iOS/tvOS always uses Active Polling which doesn't return the same instance between multiple calls to Watch(string)")]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi | TestPlatforms.iOS | TestPlatforms.tvOS, "Browser/WASI/iOS/tvOS always uses Active Polling which doesn't return the same instance between multiple calls to Watch(string)")]
         public void TokenIsSameForSamePathCaseInsensitive()
         {
             using (var root = new TempDirectory(GetTestFilePath()))
@@ -863,7 +863,7 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/WASI/iOS/tvOS")]
         public async Task CorrectTokensFiredForMultipleFiles()
         {
             using (var root = new TempDirectory(GetTestFilePath()))
@@ -896,7 +896,7 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/WASI/iOS/tvOS")]
         public async Task TokenNotAffectedByExceptions()
         {
             using (var root = new TempDirectory(GetTestFilePath()))
@@ -1001,7 +1001,7 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/WASI/iOS/tvOS")]
         public async Task TokenFiredOnCreation()
         {
             using (var root = new TempDirectory(GetTestFilePath()))
@@ -1026,7 +1026,7 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/WASI/iOS/tvOS")]
         public async Task TokenFiredOnDeletion()
         {
             using (var root = new TempDirectory(GetTestFilePath()))
@@ -1051,7 +1051,7 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/WASI/iOS/tvOS")]
         public async Task TokenFiredForFilesUnderPathEndingWithSlash()
         {
             using (var root = new TempDirectory(GetTestFilePath()))
@@ -1105,7 +1105,7 @@ namespace Microsoft.Extensions.FileProviders
         [InlineData("///")]
         // Testing Unix specific behaviour on leading slashes.
         [PlatformSpecific(TestPlatforms.AnyUnix)]
-        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/WASI/iOS/tvOS")]
         public async Task TokenFiredForRelativePathStartingWithSlash_Unix(string slashes)
         {
             await TokenFiredForRelativePathStartingWithSlash(slashes);
@@ -1148,7 +1148,7 @@ namespace Microsoft.Extensions.FileProviders
         [InlineData("/\0/")]
         // Testing Unix specific behaviour on leading slashes.
         [PlatformSpecific(TestPlatforms.AnyUnix)]
-        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/WASI/iOS/tvOS")]
         public async Task TokenNotFiredForInvalidPathStartingWithSlash_Unix(string slashes)
         {
             await TokenNotFiredForInvalidPathStartingWithSlash(slashes);
@@ -1179,7 +1179,7 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/WASI/iOS/tvOS")]
         public async Task TokenFiredForGlobbingPatternsPointingToSubDirectory()
         {
             using (var root = new TempDirectory(GetTestFilePath()))
@@ -1206,7 +1206,7 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "Browser/iOS/tvOS always uses Active Polling which doesn't return the same instance between multiple calls to Watch(string)")]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi | TestPlatforms.iOS | TestPlatforms.tvOS, "Browser/WASI/iOS/tvOS always uses Active Polling which doesn't return the same instance between multiple calls to Watch(string)")]
         public void TokensWithForwardAndBackwardSlashesAreSame()
         {
             using (var root = new TempDirectory(GetTestFilePath()))
@@ -1222,7 +1222,7 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/WASI/iOS/tvOS")]
         public async Task TokensFiredForOldAndNewNamesOnRename()
         {
             using (var root = new TempDirectory(GetTestFilePath()))
@@ -1256,7 +1256,7 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/WASI/iOS/tvOS")]
         public async Task TokensFiredForNewDirectoryContentsOnRename()
         {
             var tcsShouldNotFire = new TaskCompletionSource<bool>();
@@ -1329,7 +1329,7 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/WASI/iOS/tvOS")]
         public async Task TokenNotFiredForFileNameStartingWithPeriod()
         {
             using (var root = new TempDirectory(GetTestFilePath()))
@@ -1395,7 +1395,7 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/WASI/iOS/tvOS")]
         public async Task TokensFiredForAllEntriesOnError()
         {
             using (var root = new TempDirectory(GetTestFilePath()))
@@ -1423,7 +1423,7 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/WASI/iOS/tvOS")]
         public async Task WildCardToken_RaisesEventsForNewFilesAdded()
         {
             // Arrange
@@ -1449,7 +1449,7 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/WASI/iOS/tvOS")]
         public async Task WildCardToken_RaisesEventsWhenFileSystemWatcherDoesNotFire()
         {
             // Arrange
@@ -1499,7 +1499,7 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/WASI/iOS/tvOS")]
         public void UsePollingFileWatcher_FileWatcherNotNull_SetterThrows()
         {
             // Arrange
@@ -1520,7 +1520,7 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/WASI/iOS/tvOS")]
         public void UsePollingFileWatcher_FileWatcherNotNull_ReturnsFalse()
         {
             // Arrange
@@ -1542,8 +1542,13 @@ namespace Microsoft.Extensions.FileProviders
 
         [Theory]
         [InlineData(false)]
+        public Task UsePollingFileWatcher_UseActivePolling_HasChanged(bool useWildcard) => UsePollingFileWatcher_UseActivePolling_HasChangedCore(useWildcard);
+
+        [Theory]
         [InlineData(true)]
-        public async Task UsePollingFileWatcher_UseActivePolling_HasChanged(bool useWildcard)
+        public Task UsePollingFileWatcher_UseActivePolling_HasChanged_Wildcard(bool useWildcard) => UsePollingFileWatcher_UseActivePolling_HasChangedCore(useWildcard);
+
+        private async Task UsePollingFileWatcher_UseActivePolling_HasChangedCore(bool useWildcard)
         {
             // Arrange
             using var root = new TempDirectory(GetTestFilePath());
@@ -1571,8 +1576,13 @@ namespace Microsoft.Extensions.FileProviders
 
         [Theory]
         [InlineData(false)]
+        public Task UsePollingFileWatcher_UseActivePolling_HasChanged_FileDeleted(bool useWildcard) => UsePollingFileWatcher_UseActivePolling_HasChanged_FileDeletedCore(useWildcard);
+
+        [Theory]
         [InlineData(true)]
-        public async Task UsePollingFileWatcher_UseActivePolling_HasChanged_FileDeleted(bool useWildcard)
+        public Task UsePollingFileWatcher_UseActivePolling_HasChanged_FileDeleted_Wildcard(bool useWildcard) => UsePollingFileWatcher_UseActivePolling_HasChanged_FileDeletedCore(useWildcard);
+
+        private async Task UsePollingFileWatcher_UseActivePolling_HasChanged_FileDeletedCore(bool useWildcard)
         {
             // Arrange
             using var root = new TempDirectory(GetTestFilePath());
@@ -1620,7 +1630,7 @@ namespace Microsoft.Extensions.FileProviders
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/WASI/iOS/tvOS")]
         public async Task CanDeleteWatchedDirectory(bool useActivePolling)
         {
             using (var root = new TempDirectory(GetTestFilePath()))

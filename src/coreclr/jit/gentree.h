@@ -508,7 +508,6 @@ enum GenTreeFlags : unsigned
     GTF_RET_MERGED              = 0x80000000, // GT_RETURN -- This is a return generated during epilog merging.
 
     GTF_BOX_CLONED              = 0x40000000, // GT_BOX -- this box and its operand has been cloned, cannot assume it to be single-use anymore
-    GTF_BOX_VALUE               = 0x80000000, // GT_BOX -- "box" is on a value type
 
     GTF_QMARK_EARLY_EXPAND      = 0x01000000, // GT_QMARK -- early expansion of the QMARK node is required
 
@@ -528,12 +527,6 @@ enum GenTreeFlags : unsigned
     GTF_DIV_MOD_NO_BY_ZERO      = 0x20000000, // GT_DIV, GT_MOD -- Div or mod definitely does not divide-by-zero.
 
     GTF_DIV_MOD_NO_OVERFLOW     = 0x40000000, // GT_DIV, GT_MOD -- Div or mod definitely does not overflow.
-
-    GTF_ARRLEN_NONFAULTING      = 0x20000000, // GT_ARR_LENGTH  -- An array length operation that cannot fault. Same as GT_IND_NONFAULTING.
-
-    GTF_MDARRLEN_NONFAULTING    = 0x20000000, // GT_MDARR_LENGTH -- An MD array length operation that cannot fault. Same as GT_IND_NONFAULTING.
-
-    GTF_MDARRLOWERBOUND_NONFAULTING = 0x20000000, // GT_MDARR_LOWER_BOUND -- An MD array lower bound operation that cannot fault. Same as GT_IND_NONFAULTING.
 
     GTF_ALLOCOBJ_EMPTY_STATIC = 0x80000000, // GT_ALLOCOBJ -- allocation site is part of an empty static pattern
 
@@ -609,7 +602,6 @@ enum GenTreeDebugFlags : unsigned short
 
     GTF_DEBUG_NODE_MASK         = 0x003E, // These flags are all node (rather than operation) properties.
 
-    GTF_DEBUG_VAR_CSE_REF       = 0x8000, // GT_LCL_VAR -- This is a CSE LCL_VAR node
     GTF_DEBUG_CAST_DONT_FOLD    = 0x4000, // GT_CAST    -- Try to prevent this cast from being folded
 };
 
@@ -4404,7 +4396,6 @@ enum GenTreeCallFlags : unsigned int
                                                      // know when these flags are set.
 
     GTF_CALL_M_DOES_NOT_RETURN         = 0x00002000, // call does not return
-    GTF_CALL_M_STACK_ARRAY             = 0x00004000, // this call is a new array helper for a stack allocated array.
     GTF_CALL_M_FAT_POINTER_CHECK       = 0x00008000, // NativeAOT managed calli needs transformation, that checks
                                                      // special bit in calli address. If it is set, then it is necessary
                                                      // to restore real function address and load hidden argument
@@ -8537,6 +8528,46 @@ public:
     }
 };
 
+// A view of a local occurrence backed by an existing IR node.
+class LocalOccurrence
+{
+    GenTreeLclVarCommon* m_node;
+
+public:
+    explicit LocalOccurrence(GenTreeLclVarCommon* node)
+        : m_node(node)
+    {
+    }
+
+    GenTree* GetNode() const
+    {
+        return m_node;
+    }
+
+    unsigned GetLclNum() const
+    {
+        return m_node->GetLclNum();
+    }
+
+    GenTreeFlags GetFlags() const
+    {
+        return m_node->gtFlags;
+    }
+
+    unsigned GetLclOffs() const
+    {
+        return m_node->GetLclOffs();
+    }
+
+    var_types GetAccessType(Compiler* compiler) const
+    {
+        assert(!m_node->OperIs(GT_LCL_ADDR));
+        return m_node->TypeGet();
+    }
+
+    unsigned GetAccessSize(Compiler* compiler) const;
+};
+
 class LocalsGenTreeList
 {
     Statement* m_stmt;
@@ -8544,15 +8575,15 @@ class LocalsGenTreeList
 public:
     class iterator
     {
-        GenTreeLclVarCommon* m_tree;
+        GenTree* m_tree;
 
     public:
-        explicit iterator(GenTreeLclVarCommon* tree)
+        explicit iterator(GenTree* tree)
             : m_tree(tree)
         {
         }
 
-        GenTreeLclVarCommon* operator*() const
+        GenTree* operator*() const
         {
             return m_tree;
         }
@@ -8560,14 +8591,14 @@ public:
         iterator& operator++()
         {
             assert((m_tree->gtNext == nullptr) || m_tree->gtNext->OperIsLocal() || m_tree->gtNext->OperIs(GT_LCL_ADDR));
-            m_tree = static_cast<GenTreeLclVarCommon*>(m_tree->gtNext);
+            m_tree = m_tree->gtNext;
             return *this;
         }
 
         iterator& operator--()
         {
             assert((m_tree->gtPrev == nullptr) || m_tree->gtPrev->OperIsLocal() || m_tree->gtPrev->OperIs(GT_LCL_ADDR));
-            m_tree = static_cast<GenTreeLclVarCommon*>(m_tree->gtPrev);
+            m_tree = m_tree->gtPrev;
             return *this;
         }
 
@@ -8589,15 +8620,12 @@ public:
         return iterator(nullptr);
     }
 
-    void Remove(GenTreeLclVarCommon* node);
-    void Replace(GenTreeLclVarCommon* firstNode,
-                 GenTreeLclVarCommon* lastNode,
-                 GenTreeLclVarCommon* newFirstNode,
-                 GenTreeLclVarCommon* newLastNode);
+    void Remove(GenTree* node);
+    void Replace(GenTree* firstNode, GenTree* lastNode, GenTree* newFirstNode, GenTree* newLastNode);
 
 private:
-    GenTree** GetForwardEdge(GenTreeLclVarCommon* node);
-    GenTree** GetBackwardEdge(GenTreeLclVarCommon* node);
+    GenTree** GetForwardEdge(GenTree* node);
+    GenTree** GetBackwardEdge(GenTree* node);
 };
 
 // We use the following format when printing the Statement number: Statement->GetID()
@@ -8667,6 +8695,9 @@ public:
 
     GenTreeList       TreeList() const;
     LocalsGenTreeList LocalsTreeList();
+
+    template <typename TVisitor>
+    GenTree::VisitResult VisitLogicalLocalOccurrencesViaLocalsTreeList(TVisitor visitor);
 
     const DebugInfo& GetDebugInfo() const
     {
@@ -10032,7 +10063,7 @@ inline uint64_t GenTree::GetIntegralVectorConstElement(size_t index, var_types s
 inline bool GenTree::IsBoxedValue()
 {
     assert(gtOper != GT_BOX || AsBox()->BoxOp() != nullptr);
-    return (OperIs(GT_BOX)) && (gtFlags & GTF_BOX_VALUE);
+    return OperIs(GT_BOX);
 }
 
 inline GenTree* GenTree::gtGetOp1() const

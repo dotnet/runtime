@@ -8,6 +8,7 @@ using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Text;
+using LabelHandle = ILAssembler.MethodBodyWriter.Label;
 
 namespace ILAssembler
 {
@@ -55,6 +56,19 @@ namespace ILAssembler
             }
         }
 
+        private sealed class MethodBodyContentEqualityComparer : IEqualityComparer<byte[]>
+        {
+            public bool Equals(byte[]? x, byte[]? y) =>
+                x is null ? y is null : y is not null && x.AsSpan().SequenceEqual(y);
+
+            public int GetHashCode(byte[] obj)
+            {
+                HashCode hash = default;
+                hash.AddBytes(obj);
+                return hash.ToHashCode();
+            }
+        }
+
         private sealed class MethodSpecEqualityComparer : IEqualityComparer<(EntityBase, BlobBuilder)>
         {
             public bool Equals((EntityBase, BlobBuilder) x, (EntityBase, BlobBuilder) y)
@@ -92,7 +106,7 @@ namespace ILAssembler
             return Array.Empty<EntityBase>();
         }
 
-        public Blob WriteContentTo(MetadataBuilder builder, BlobBuilder ilStream, IReadOnlyDictionary<string, int> mappedFieldDataNames, bool deterministic)
+        public Blob WriteContentTo(MetadataBuilder builder, BlobBuilder ilStream, IReadOnlyDictionary<string, int> mappedFieldDataNames, bool deterministic, bool fold)
         {
             // Set the assembly handle early since DeclarativeSecurityAttribute needs it
             // The assembly definition handle is always row 1 (there's only ever one assembly per module)
@@ -342,35 +356,17 @@ namespace ILAssembler
             }
 
             var bodyStreamEncoder = new MethodBodyStreamEncoder(ilStream);
+            Dictionary<byte[], int>? foldedBodies = fold ? new(new MethodBodyContentEqualityComparer()) : null;
 
             for (int i = 0; i < GetSeenEntities(TableIndex.MethodDef).Count; i++)
             {
                 MethodDefinitionEntity methodDef = (MethodDefinitionEntity)GetSeenEntities(TableIndex.MethodDef)[i];
 
                 int bodyOffset = -1;
-                if (methodDef.MethodBody.CodeBuilder.Count != 0)
+                if (methodDef.MethodBody.CodeBuilder.Count != 0 || methodDef.ExceptionRegions.Count != 0)
                 {
-                    // Add deferred exception regions now that TypeRef-to-TypeDef resolution is complete.
-                    // Catch clause type handles are read here, after resolution has set the real handle.
-                    foreach (var region in methodDef.ExceptionRegions)
-                    {
-                        switch (region)
-                        {
-                            case ExceptionRegion.CatchRegion catchRegion:
-                                methodDef.MethodBody.ControlFlowBuilder!.AddCatchRegion(catchRegion.TryStart, catchRegion.TryEnd, catchRegion.HandlerStart, catchRegion.HandlerEnd, catchRegion.CatchType.Handle);
-                                break;
-                            case ExceptionRegion.FinallyRegion finallyRegion:
-                                methodDef.MethodBody.ControlFlowBuilder!.AddFinallyRegion(finallyRegion.TryStart, finallyRegion.TryEnd, finallyRegion.HandlerStart, finallyRegion.HandlerEnd);
-                                break;
-                            case ExceptionRegion.FaultRegion faultRegion:
-                                methodDef.MethodBody.ControlFlowBuilder!.AddFaultRegion(faultRegion.TryStart, faultRegion.TryEnd, faultRegion.HandlerStart, faultRegion.HandlerEnd);
-                                break;
-                            case ExceptionRegion.FilterRegion filterRegion:
-                                methodDef.MethodBody.ControlFlowBuilder!.AddFilterRegion(filterRegion.TryStart, filterRegion.TryEnd, filterRegion.HandlerStart, filterRegion.HandlerEnd, filterRegion.FilterStart);
-                                break;
-                        }
-                    }
-
+                    BlobBuilder? serializedBody = fold ? new BlobBuilder() : null;
+                    MethodBodyStreamEncoder encoder = fold ? new(serializedBody!) : bodyStreamEncoder;
                     StandaloneSignatureHandle localsSigHandle = methodDef.LocalsSignature is not null
                         ? (StandaloneSignatureHandle)methodDef.LocalsSignature.Handle
                         : default;
@@ -387,54 +383,27 @@ namespace ILAssembler
                         bodyAttributes |= MethodBodyAttributes.InitLocals;
                     }
 
-                    bool requiresFatHeaderWhenExceptionRegionsAreOmitted =
-                        (methodDef.MaxStack < 8 || bodyAttributes.HasFlag(MethodBodyAttributes.InitLocals))
-                        && methodDef.MethodBody.CodeBuilder.Count < 64
-                        && localsSigHandle.IsNil;
+                    bodyOffset = methodDef.MethodBody.WriteTo(encoder, methodDef.MaxStack,
+                        localsSigHandle, bodyAttributes, methodDef.ExceptionRegions, hasDynamicStackAllocation: true);
 
-                    try
+                    if (fold)
                     {
-                        bodyOffset = bodyStreamEncoder.AddMethodBody(
-                            methodDef.MethodBody,
-                            methodDef.MaxStack,
-                            localsSigHandle,
-                            bodyAttributes,
-                            hasDynamicStackAllocation: true);
-                    }
-                    catch (InvalidOperationException)
-                    {
-                        // Method has unresolved labels or other body errors.
-                        // Emit a minimal valid method body containing the raw IL bytes so
-                        // the PE can still be emitted (error diagnostics are already recorded).
-                        var fallbackBody = bodyStreamEncoder.AddMethodBody(
-                            methodDef.MethodBody.CodeBuilder.Count,
-                            methodDef.MaxStack,
-                            exceptionRegionCount: 0,
-                            hasSmallExceptionRegions: true,
-                            requiresFatHeaderWhenExceptionRegionsAreOmitted ? GetOrCreateEmptyLocalsSignature() : localsSigHandle,
-                            bodyAttributes,
-                            hasDynamicStackAllocation: true);
-                        bodyOffset = fallbackBody.Offset;
-                        var writer1 = new BlobWriter(fallbackBody.Instructions);
-                        methodDef.MethodBody.CodeBuilder.WriteContentTo(ref writer1);
-                    }
-                    catch (ArgumentOutOfRangeException)
-                    {
-                        // Exception handler regions have invalid ranges (e.g., from parse
-                        // errors that produced malformed control flow). Emit the IL in a
-                        // minimal valid method body and omit exception regions in fallback.
-                        // TODO-COMPAT: Emit the invalid exception regions manually
-                        var fallbackBody = bodyStreamEncoder.AddMethodBody(
-                            methodDef.MethodBody.CodeBuilder.Count,
-                            methodDef.MaxStack,
-                            exceptionRegionCount: 0,
-                            hasSmallExceptionRegions: true,
-                            requiresFatHeaderWhenExceptionRegionsAreOmitted ? GetOrCreateEmptyLocalsSignature() : localsSigHandle,
-                            bodyAttributes,
-                            hasDynamicStackAllocation: true);
-                        bodyOffset = fallbackBody.Offset;
-                        var writer2 = new BlobWriter(fallbackBody.Instructions);
-                        methodDef.MethodBody.CodeBuilder.WriteContentTo(ref writer2);
+                        byte[] content = serializedBody!.ToArray();
+                        if (foldedBodies!.TryGetValue(content, out int existingOffset))
+                        {
+                            bodyOffset = existingOffset;
+                        }
+                        else
+                        {
+                            // Fat method headers must be aligned relative to the IL stream.
+                            if ((content[0] & 0x3) == 0x3)
+                            {
+                                ilStream.Align(4);
+                            }
+                            bodyOffset = ilStream.Count;
+                            ilStream.WriteBytes(content);
+                            foldedBodies.Add(content, bodyOffset);
+                        }
                     }
                 }
 
@@ -569,7 +538,7 @@ namespace ILAssembler
                 builder.AddEvent(
                     evt.Attributes,
                     builder.GetOrAddString(evt.Name),
-                    evt.Type?.Handle ?? (EntityHandle)default(TypeDefinitionHandle));
+                    evt.Type?.Handle ?? default(TypeDefinitionHandle));
 
                 foreach (var accessor in evt.Accessors)
                 {
@@ -868,6 +837,34 @@ namespace ILAssembler
                 return typeDef;
             }
             return null;
+        }
+
+        /// <summary>
+        /// Finds the local type definition that a type reference refers to, without assigning or
+        /// reading any handles. Passes that run before <see cref="WriteContentTo"/> resolves
+        /// references need this, because handles are not assigned until emission.
+        /// </summary>
+        public TypeDefinitionEntity? FindLocalTypeDefinition(TypeReferenceEntity typeReference)
+        {
+            switch (typeReference.ResolutionScope)
+            {
+                case TypeReferenceEntity enclosing:
+                    return FindLocalTypeDefinition(enclosing) is { } enclosingTypeDef
+                        ? FindTypeDefinition(enclosingTypeDef, typeReference.Namespace, typeReference.Name)
+                        : null;
+
+                case AssemblyReferenceEntity assemblyReference:
+                    return Assembly is not null
+                        && string.Equals(assemblyReference.Name, Assembly.Name, StringComparison.OrdinalIgnoreCase)
+                        ? FindTypeDefinition(null, typeReference.Namespace, typeReference.Name)
+                        : null;
+
+                case ModuleEntity:
+                    return FindTypeDefinition(null, typeReference.Namespace, typeReference.Name);
+
+                default:
+                    return null;
+            }
         }
 
         public AssemblyReferenceEntity GetOrCreateAssemblyReference(string name, Action<AssemblyReferenceEntity> onCreateAssemblyReference)
@@ -1657,13 +1654,6 @@ namespace ILAssembler
             return GetOrCreateEntity(signature, TableIndex.StandAloneSig, _seenStandaloneSignatures, (sig) => new(sig), _ => { });
         }
 
-        private StandaloneSignatureHandle GetOrCreateEmptyLocalsSignature()
-        {
-            BlobBuilder signature = new();
-            new BlobEncoder(signature).LocalVariableSignature(0);
-            return (StandaloneSignatureHandle)GetOrCreateStandaloneSignature(signature).Handle;
-        }
-
         public DeclarativeSecurityAttributeEntity CreateDeclarativeSecurityAttribute(DeclarativeSecurityAction action, BlobBuilder permissionSet)
         {
             var entity = new DeclarativeSecurityAttributeEntity(action, permissionSet);
@@ -1676,6 +1666,31 @@ namespace ILAssembler
             var entity = new CustomAttributeEntity(constructor, value);
             RecordEntityInTable(TableIndex.CustomAttribute, entity);
             return entity;
+        }
+
+        /// <summary>
+        /// Removes custom attributes that were lowered to metadata bits or auxiliary table rows
+        /// by the pseudo custom attribute pass, and renumbers the handles of the survivors.
+        /// </summary>
+        /// <remarks>
+        /// Nothing in metadata refers to a CustomAttribute handle (a CustomAttribute can never be
+        /// the parent of another custom attribute), so removing rows is safe. Handles are still
+        /// reassigned so that they stay consistent with the emitted row numbers.
+        /// </remarks>
+        public void RemoveCustomAttributes(IReadOnlyCollection<CustomAttributeEntity> toRemove)
+        {
+            if (toRemove.Count == 0 || !_seenEntities.TryGetValue(TableIndex.CustomAttribute, out List<EntityBase>? entities))
+            {
+                return;
+            }
+
+            var removeSet = new HashSet<CustomAttributeEntity>(toRemove);
+            entities.RemoveAll(entity => entity is CustomAttributeEntity customAttribute && removeSet.Contains(customAttribute));
+
+            for (int i = 0; i < entities.Count; i++)
+            {
+                ((IHasHandle)entities[i]).SetHandle(MetadataTokens.EntityHandle(TableIndex.CustomAttribute, i + 1));
+            }
         }
 
         public static MethodImplementationEntity CreateUnrecordedMethodImplementation(MethodDefinitionEntity methodBody, MemberReferenceEntity methodDeclaration)
@@ -1872,6 +1887,8 @@ namespace ILAssembler
             // ClassLayout table fields
             public int? PackingSize { get; set; }
             public int? ClassSize { get; set; }
+            public bool HasExplicitPackingSize { get; set; }
+            public bool HasExplicitClassSize { get; set; }
         }
 
         public sealed class TypeReferenceEntity(EntityBase resolutionScope, string @namespace, string name) : TypeEntity, IHasReflectionNotation
@@ -1974,17 +1991,13 @@ namespace ILAssembler
 
             public StandaloneSignatureEntity? LocalsSignature { get; set; }
 
-            // TODO: https://github.com/dotnet/runtime/issues/127261
-            // InstructionEncoder produces corrupted IL when mixing OpCode() with
-            // direct CodeBuilder.WriteByte() across BlobBuilder chunk boundaries.
-            // Using a larger initial capacity avoids multi-chunk operation.
-            public InstructionEncoder MethodBody { get; } = new(new BlobBuilder(4096), new ControlFlowBuilder());
+            public MethodBodyWriter MethodBody { get; } = new();
 
             public MethodBodyAttributes BodyAttributes { get; set; }
 
             /// <summary>
-            /// Deferred exception regions. Registered during parsing but added to
-            /// <see cref="InstructionEncoder.ControlFlowBuilder"/> during emission
+            /// Deferred exception regions. Registered during parsing but written by
+            /// <see cref="MethodBodyWriter"/> during emission
             /// so that TypeRef-to-TypeDef resolution has completed before catch type
             /// handles are read.
             /// </summary>
@@ -2023,7 +2036,7 @@ namespace ILAssembler
 
         public sealed class ParameterEntity(ParameterAttributes attributes, string? name, BlobBuilder marshallingDescriptor, int sequence) : EntityBase
         {
-            public ParameterAttributes Attributes { get; } = attributes;
+            public ParameterAttributes Attributes { get; set; } = attributes;
             public string? Name { get; } = name;
             public BlobBuilder MarshallingDescriptor { get; set; } = marshallingDescriptor;
             public bool HasCustomAttributes { get; set; }
@@ -2088,6 +2101,12 @@ namespace ILAssembler
             public EntityBase? Owner { get; set; }
             public EntityBase Constructor { get; } = constructor;
             public BlobBuilder Value { get; } = value;
+
+            /// <summary>
+            /// Source location of the originating <c>.custom</c> directive, used to report
+            /// diagnostics from the pseudo custom attribute lowering pass, which runs after parsing.
+            /// </summary>
+            public Location? Location { get; set; }
         }
 
         public sealed class MethodImplementationEntity(TypeDefinitionEntity type, EntityBase methodBody, MemberReferenceEntity methodDeclaration) : EntityBase
@@ -2099,7 +2118,7 @@ namespace ILAssembler
 
         public sealed class FieldDefinitionEntity(FieldAttributes attributes, TypeDefinitionEntity type, string name, BlobBuilder signature) : EntityBase
         {
-            public FieldAttributes Attributes { get; } = attributes;
+            public FieldAttributes Attributes { get; set; } = attributes;
             public TypeDefinitionEntity ContainingType { get; } = type;
             public string Name { get; } = name;
             public BlobBuilder Signature { get; } = signature;
@@ -2109,6 +2128,7 @@ namespace ILAssembler
 
             // FieldLayout table field (explicit field offset)
             public int? Offset { get; set; }
+            public bool HasExplicitOffset { get; set; }
 
             // Constant table entry
             public bool HasConstant { get; set; }
@@ -2123,7 +2143,7 @@ namespace ILAssembler
 
         public sealed class EventEntity(EventAttributes attributes, TypeEntity? type, string name) : EntityBase
         {
-            public EventAttributes Attributes { get; } = attributes;
+            public EventAttributes Attributes { get; set; } = attributes;
             public TypeEntity? Type { get; } = type;
             public string Name { get; } = name;
 
@@ -2232,19 +2252,20 @@ namespace ILAssembler
         public sealed class MethodDebugInfo
         {
             public string? DocumentPath { get; set; }
+            public Guid LanguageGuid { get; set; }
             public List<SequencePoint> SequencePoints { get; } = new();
         }
 
         /// <summary>
         /// A deferred exception region entry. Stored during parsing and applied to the
-        /// <see cref="ControlFlowBuilder"/> during emission, after TypeRef-to-TypeDef resolution.
+        /// <see cref="MethodBodyWriter"/> during emission, after TypeRef-to-TypeDef resolution.
         /// </summary>
-        internal abstract record ExceptionRegion(LabelHandle TryStart, LabelHandle TryEnd, LabelHandle HandlerStart, LabelHandle HandlerEnd)
+        internal abstract record ExceptionRegion(LabelHandle TryStart, LabelHandle TryEnd, LabelHandle HandlerStart, LabelHandle HandlerEnd, Location Location)
         {
-            internal sealed record CatchRegion(LabelHandle TryStart, LabelHandle TryEnd, LabelHandle HandlerStart, LabelHandle HandlerEnd, TypeEntity CatchType) : ExceptionRegion(TryStart, TryEnd, HandlerStart, HandlerEnd);
-            internal sealed record FinallyRegion(LabelHandle TryStart, LabelHandle TryEnd, LabelHandle HandlerStart, LabelHandle HandlerEnd) : ExceptionRegion(TryStart, TryEnd, HandlerStart, HandlerEnd);
-            internal sealed record FaultRegion(LabelHandle TryStart, LabelHandle TryEnd, LabelHandle HandlerStart, LabelHandle HandlerEnd) : ExceptionRegion(TryStart, TryEnd, HandlerStart, HandlerEnd);
-            internal sealed record FilterRegion(LabelHandle TryStart, LabelHandle TryEnd, LabelHandle HandlerStart, LabelHandle HandlerEnd, LabelHandle FilterStart) : ExceptionRegion(TryStart, TryEnd, HandlerStart, HandlerEnd);
+            internal sealed record CatchRegion(LabelHandle TryStart, LabelHandle TryEnd, LabelHandle HandlerStart, LabelHandle HandlerEnd, TypeEntity CatchType, Location Location) : ExceptionRegion(TryStart, TryEnd, HandlerStart, HandlerEnd, Location);
+            internal sealed record FinallyRegion(LabelHandle TryStart, LabelHandle TryEnd, LabelHandle HandlerStart, LabelHandle HandlerEnd, Location Location) : ExceptionRegion(TryStart, TryEnd, HandlerStart, HandlerEnd, Location);
+            internal sealed record FaultRegion(LabelHandle TryStart, LabelHandle TryEnd, LabelHandle HandlerStart, LabelHandle HandlerEnd, Location Location) : ExceptionRegion(TryStart, TryEnd, HandlerStart, HandlerEnd, Location);
+            internal sealed record FilterRegion(LabelHandle TryStart, LabelHandle TryEnd, LabelHandle HandlerStart, LabelHandle HandlerEnd, LabelHandle FilterStart, Location Location) : ExceptionRegion(TryStart, TryEnd, HandlerStart, HandlerEnd, Location);
         }
     }
 }

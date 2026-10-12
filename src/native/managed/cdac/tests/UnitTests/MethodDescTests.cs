@@ -78,7 +78,7 @@ public class MethodDescTests
         MockTarget.Architecture arch,
         Action<MockDescriptors.MockMethodDescriptorsBuilder> configure,
         Mock<IExecutionManager>? mockExecutionManager = null,
-        Mock<IPrecodeStubs>? mockPrecodeStubs = null)
+        Action<TestPlaceholderTarget.Builder>? configureTarget = null)
     {
         var targetBuilder = new TestPlaceholderTarget.Builder(arch);
         MockDescriptors.RuntimeTypeSystem rtsBuilder = new(targetBuilder.MemoryBuilder);
@@ -88,17 +88,15 @@ public class MethodDescTests
         configure(methodDescBuilder);
 
         mockExecutionManager ??= new Mock<IExecutionManager>();
-        mockPrecodeStubs ??= new Mock<IPrecodeStubs>();
-        var target = targetBuilder
+        targetBuilder
             .AddTypes(CreateContractTypes(methodDescBuilder))
             .AddGlobals(CreateContractGlobals(methodDescBuilder))
             .AddContract<IRuntimeTypeSystem>(version: "c1")
             .AddContract<ILoader>(version: "c1")
             .AddMockContract(new Mock<IPlatformMetadata>())
-            .AddMockContract(mockExecutionManager)
-            .AddMockContract(mockPrecodeStubs)
-            .Build();
-        return target.Contracts.RuntimeTypeSystem;
+            .AddMockContract(mockExecutionManager);
+        configureTarget?.Invoke(targetBuilder);
+        return targetBuilder.Build().Contracts.RuntimeTypeSystem;
     }
 
     [Theory]
@@ -852,7 +850,6 @@ public class MethodDescTests
         TargetPointer methodDescAddress = TargetPointer.Null;
         TargetCodePointer nativeCode = new TargetCodePointer(0x0789_abc0);
         Mock<IExecutionManager> mockExecutionManager = new();
-        Mock<IPrecodeStubs> mockPrecodeStubs = new();
 
         IRuntimeTypeSystem rts = CreateRuntimeTypeSystemContract(arch, methodDescBuilder =>
         {
@@ -893,7 +890,7 @@ public class MethodDescTests
             helpers.WritePointer(
                 methodDescBuilder.Builder.BorrowAddressRange(methodDescAddress + methodDescBaseSize, helpers.PointerSize),
                 nativeCode);
-        }, mockExecutionManager, mockPrecodeStubs);
+        }, mockExecutionManager);
 
         mockExecutionManager.Setup(em => em.GetCodeBlockHandle(nativeCode)).Returns((CodeBlockHandle?)null);
         mockExecutionManager.Setup(em => em.NonVirtualEntry2MethodDesc(nativeCode)).Returns(methodDescAddress);
@@ -913,7 +910,6 @@ public class MethodDescTests
         TargetCodePointer nativeCode = new TargetCodePointer(0x0789_abc0);
         TargetPointer wrongMethodDescAddress = new TargetPointer(0xDEAD_BEEF);
         Mock<IExecutionManager> mockExecutionManager = new();
-        Mock<IPrecodeStubs> mockPrecodeStubs = new();
 
         IRuntimeTypeSystem rts = CreateRuntimeTypeSystemContract(arch, methodDescBuilder =>
         {
@@ -954,12 +950,128 @@ public class MethodDescTests
             helpers.WritePointer(
                 methodDescBuilder.Builder.BorrowAddressRange(methodDescAddress + methodDescBaseSize, helpers.PointerSize),
                 nativeCode);
-        }, mockExecutionManager, mockPrecodeStubs);
+        }, mockExecutionManager);
 
         mockExecutionManager.Setup(em => em.GetCodeBlockHandle(nativeCode)).Returns((CodeBlockHandle?)null);
         mockExecutionManager.Setup(em => em.NonVirtualEntry2MethodDesc(nativeCode)).Returns(wrongMethodDescAddress);
 
         Assert.Throws<ArgumentException>(() => rts.GetMethodDescHandle(methodDescAddress));
+    }
+
+    // A populated vtable slot resolves through ExecutionManager.NonVirtualEntry2MethodDesc, as in native
+    // MethodTable::GetMethodDescForSlot_NoThrow, whatever kind of entry point the slot holds.
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetMethodDescForSlot_PopulatedVtableSlot_ResolvesThroughNonVirtualEntry2MethodDesc(MockTarget.Architecture arch)
+    {
+        TargetCodePointer precodeEntryPoint = new(0x0789_ab00);
+        TargetCodePointer jittedEntryPoint = new(0x0789_cd00);
+        TargetPointer precodeMethodDesc = new(0x0101_aaa0);
+        TargetPointer jittedMethodDesc = new(0x0101_bbb0);
+        TargetPointer methodTable = TargetPointer.Null;
+        Mock<IExecutionManager> mockExecutionManager = new();
+        mockExecutionManager.Setup(em => em.NonVirtualEntry2MethodDesc(precodeEntryPoint)).Returns(precodeMethodDesc);
+        mockExecutionManager.Setup(em => em.NonVirtualEntry2MethodDesc(jittedEntryPoint)).Returns(jittedMethodDesc);
+
+        IRuntimeTypeSystem rts = CreateRuntimeTypeSystemContract(arch, methodDescBuilder =>
+        {
+            MockDescriptors.RuntimeTypeSystem rtsBuilder = methodDescBuilder.RTSBuilder;
+            MockEEClass eeClass = rtsBuilder.AddEEClass(string.Empty);
+            eeClass.NumNonVirtualSlots = 0;
+            MockMethodTable mt = rtsBuilder.AddMethodTableWithVtable(string.Empty, [precodeEntryPoint.Value, jittedEntryPoint.Value]);
+            mt.BaseSize = rtsBuilder.Builder.TargetTestHelpers.ObjectBaseSize;
+            eeClass.MethodTable = mt.Address;
+            mt.EEClassOrCanonMT = eeClass.Address;
+            methodTable = mt.Address;
+        }, mockExecutionManager);
+
+        ITypeHandle typeHandle = rts.GetTypeHandle(methodTable);
+        Assert.Equal(precodeMethodDesc, rts.GetMethodDescForSlot(typeHandle, 0));
+        Assert.Equal(jittedMethodDesc, rts.GetMethodDescForSlot(typeHandle, 1));
+    }
+
+    public static IEnumerable<object[]> TemporaryEntryPointValidationData()
+    {
+        foreach (object[] arch in new MockTarget.StdArch())
+        {
+            foreach (bool portableEntrypoints in new[] { false, true })
+            {
+                foreach (bool resolvesToSelf in new[] { true, false })
+                {
+                    yield return [arch[0], portableEntrypoints, resolvesToSelf];
+                }
+            }
+        }
+    }
+
+    // ValidateMethodDescPointer requires a MethodDesc's temporary entry point to resolve back to it.
+    // Without portable entry points it decodes the precode directly, like the legacy DAC's DacValidateMD
+    // (MethodDesc::GetMethodDescFromPrecode), so it does not depend on the ExecutionManager range lookup.
+    // With portable entry points no PrecodeStubs contract is advertised and NonVirtualEntry2MethodDesc is used.
+    [Theory]
+    [MemberData(nameof(TemporaryEntryPointValidationData))]
+    public void Validation_TemporaryEntryPoint_MustResolveToMethodDesc(MockTarget.Architecture arch, bool portableEntrypoints, bool resolvesToSelf)
+    {
+        TargetPointer methodDescAddress = TargetPointer.Null;
+        TargetCodePointer temporaryEntryPoint = new(0x0789_abc0);
+        TargetPointer otherMethodDesc = new(0xDEAD_BEE0);
+        Mock<IExecutionManager> mockExecutionManager = new();
+        Mock<IPrecodeStubs> mockPrecodeStubs = new(MockBehavior.Strict);
+        Target.TypeInfo codeDataType = default;
+
+        IRuntimeTypeSystem rts = CreateRuntimeTypeSystemContract(arch, methodDescBuilder =>
+        {
+            TargetTestHelpers helpers = methodDescBuilder.Builder.TargetTestHelpers;
+            TargetPointer methodTable = AddMethodTable(methodDescBuilder.RTSBuilder);
+            byte chunkSize = (byte)(methodDescBuilder.MethodDescLayout.Size / methodDescBuilder.MethodDescAlignment);
+            MockMethodDescChunk chunk = methodDescBuilder.AddMethodDescChunk(string.Empty, chunkSize);
+            chunk.MethodTable = methodTable.Value;
+            chunk.Size = chunkSize;
+            chunk.Count = 1;
+
+            // MethodDescCodeData holds only the temporary entry point here.
+            codeDataType = new Target.TypeInfo
+            {
+                Fields = new Dictionary<string, Target.FieldInfo> { [nameof(Data.MethodDescCodeData.TemporaryEntryPoint)] = new() { Offset = 0 } },
+                Size = (uint)helpers.PointerSize,
+            };
+            MockMemorySpace.HeapFragment codeData = methodDescBuilder.Builder.CreateAllocator(0x0444_0000, 0x0444_1000)
+                .Allocate((ulong)helpers.PointerSize, "MethodDescCodeData");
+            helpers.WritePointer(codeData.Data.AsSpan(), temporaryEntryPoint);
+
+            MockMethodDesc methodDesc = chunk.GetMethodDescAtChunkIndex(0, methodDescBuilder.MethodDescLayout);
+            methodDesc.Flags = (ushort)MethodClassification.IL;
+            methodDesc.EntryPointFlags = (byte)MethodDescFlags_1.MethodDescEntryPointFlags.TemporaryEntryPointAssigned;
+            methodDesc.CodeData = codeData.Address;
+            methodDescAddress = new TargetPointer(methodDesc.Address);
+        }, mockExecutionManager, targetBuilder =>
+        {
+            targetBuilder.AddTypes(new Dictionary<DataType, Target.TypeInfo> { [DataType.MethodDescCodeData] = codeDataType });
+            if (!portableEntrypoints)
+                targetBuilder.AddMockContract(mockPrecodeStubs);
+        });
+
+        TargetPointer resolved = resolvesToSelf ? methodDescAddress : otherMethodDesc;
+        if (portableEntrypoints)
+        {
+            mockExecutionManager.Setup(em => em.NonVirtualEntry2MethodDesc(temporaryEntryPoint)).Returns(resolved);
+        }
+        else
+        {
+            // The ExecutionManager reports nothing for this address (for example, its range section is not in a
+            // minidump); validation must still succeed through the precode.
+            mockExecutionManager.Setup(em => em.NonVirtualEntry2MethodDesc(temporaryEntryPoint)).Returns(TargetPointer.Null);
+            mockPrecodeStubs.Setup(p => p.GetMethodDescFromStubAddress(temporaryEntryPoint)).Returns(resolved);
+        }
+
+        if (resolvesToSelf)
+        {
+            Assert.Equal(methodDescAddress, rts.GetMethodDescHandle(methodDescAddress).Address);
+        }
+        else
+        {
+            Assert.Throws<ArgumentException>(() => rts.GetMethodDescHandle(methodDescAddress));
+        }
     }
 
     private static TargetPointer AddMethodTable(MockDescriptors.RuntimeTypeSystem rtsBuilder, ushort numVirtuals = 5)

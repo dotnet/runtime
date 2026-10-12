@@ -80,9 +80,13 @@ namespace System.IO.Compression
             _headerCompressionMethod = (ZipCompressionMethod)cd.CompressionMethod;
             // For AES-encrypted entries, the real compression method is stored in the AES extra field (0x9901)
             // Parse it now so that people can see the actual value before opening the entry.
-            if (IsEncrypted && cd.AesExtraField.HasValue)
+            if (IsAesEncrypted)
             {
-                WinZipAesExtraField aesField = cd.AesExtraField.Value;
+                if (cd.AesExtraField is not WinZipAesExtraField aesField)
+                {
+                    throw new InvalidDataException(SR.InvalidAesExtraField);
+                }
+
                 // Set the real compression method from the AES extra field
                 CompressionMethod = (ZipCompressionMethod)aesField.CompressionMethod;
 
@@ -104,7 +108,7 @@ namespace System.IO.Compression
                 }
                 else
                 {
-                    // Encrypted but no AES extra field means ZipCrypto
+                    // Encrypted entries without the AES method indicator use ZipCrypto.
                     Encryption = ZipEncryptionMethod.ZipCrypto;
                 }
                 CompressionMethod = (ZipCompressionMethod)cd.CompressionMethod;
@@ -1057,7 +1061,7 @@ namespace System.IO.Compression
 
         private bool UseAesEncryption => Encryption is ZipEncryptionMethod.Aes128 or ZipEncryptionMethod.Aes192 or ZipEncryptionMethod.Aes256;
 
-        private bool IsAesEncrypted => (ushort)_headerCompressionMethod == WinZipAesMethod;
+        private bool IsAesEncrypted => IsEncrypted && (ushort)_headerCompressionMethod == WinZipAesMethod;
 
         private static int GetAesKeySizeBits(ZipEncryptionMethod encryption)
         {

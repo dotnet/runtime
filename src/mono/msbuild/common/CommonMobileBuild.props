@@ -15,12 +15,5 @@
     <_MonoRuntimeComponentManifestJsonFilePath Condition="'$(_MonoRuntimeComponentManifestJsonFilePath)' == '' and '$(_RuntimeComponentManifestDir)' != ''">$(_RuntimeComponentManifestDir)RuntimeComponentManifest.json</_MonoRuntimeComponentManifestJsonFilePath>
   </PropertyGroup>
 
-  <UsingTask TaskName="MonoRuntimeComponentManifestReadTask" TaskFactory="JsonToItemsTaskFactory.JsonToItemsTaskFactory" AssemblyFile="$(MonoTargetsTasksAssemblyPath)">
-    <ParameterGroup>
-      <_MonoRuntimeComponentSharedLibExt ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="false" Output="true" />
-      <_MonoRuntimeComponentStaticLibExt ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="false" Output="true" />
-      <_MonoRuntimeComponentLinking ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="false" Output="true" />
-      <_MonoRuntimeAvailableComponents ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="false" Output="true" />
-    </ParameterGroup>
-  </UsingTask>
+  <UsingTask TaskName="MonoRuntimeComponentManifestReadTask" AssemblyFile="$(MonoTargetsTasksAssemblyPath)" />
 </Project>

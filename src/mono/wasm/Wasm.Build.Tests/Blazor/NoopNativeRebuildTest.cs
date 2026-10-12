@@ -11,7 +11,7 @@ using Xunit.Abstractions;
 
 namespace Wasm.Build.Tests.Blazor
 {
-    [TestCategory("native"), TestCategory("mono")]
+    [TestCategory("native")]
     public class NoopNativeRebuildTest : BlazorWasmTestBase
     {
         public NoopNativeRebuildTest(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
@@ -61,6 +61,8 @@ namespace Wasm.Build.Tests.Blazor
             var pathsDict = _provider.GetFilesTable(true, objDir);
             pathsDict.Remove("runtime-icall-table.h");
             pathsDict.UpdateTo(unchanged: false, "dotnet.native.wasm", "dotnet.native.js", "emcc-link.rsp");
+            if (IsCoreClrRuntime)
+                pathsDict.UpdateTo(unchanged: false, "dotnet.native.js.symbols");
             var originalStat = _provider.StatFiles(pathsDict);
 
             // build again
