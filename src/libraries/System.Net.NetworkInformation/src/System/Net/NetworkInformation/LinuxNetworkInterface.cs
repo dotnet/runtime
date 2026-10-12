@@ -52,15 +52,7 @@ namespace System.Net.NetworkInformation
                     }
                 }
 
-                string? resolverConfig = null;
-                try
-                {
-                    resolverConfig = StringParsingHelpers.ReadResolvConfFile(NetworkFiles.EtcResolvConfFile);
-                }
-                catch (UnauthorizedAccessException)
-                {
-                }
-
+                string? resolverConfig = StringParsingHelpers.ReadResolvConfFile(NetworkFiles.EtcResolvConfFile);
                 if (resolverConfig is not null)
                 {
                     DnsSuffix = StringParsingHelpers.ParseDnsSuffixFromResolvConfFile(resolverConfig);

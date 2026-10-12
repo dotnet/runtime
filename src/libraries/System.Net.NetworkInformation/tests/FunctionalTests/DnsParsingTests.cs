@@ -43,5 +43,12 @@ namespace System.Net.NetworkInformation.Tests
 
             Assert.Null(StringParsingHelpers.ReadResolvConfFile(fileName));
         }
+
+        [Fact]
+        public void ReadResolvConfFile_Directory_ReturnsNull()
+        {
+            // Reading a directory throws UnauthorizedAccessException, as an unreadable file does.
+            Assert.Null(StringParsingHelpers.ReadResolvConfFile(TestDirectory));
+        }
     }
 }

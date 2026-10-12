@@ -8,15 +8,15 @@ namespace System.Net.NetworkInformation
 {
     internal static partial class StringParsingHelpers
     {
-        // Returns null when the file does not exist. A missing parent directory (e.g. no /etc)
-        // surfaces as DirectoryNotFoundException rather than FileNotFoundException.
+        // Returns null when the file does not exist or access to it is denied. A missing parent directory
+        // (e.g. no /etc) surfaces as DirectoryNotFoundException rather than FileNotFoundException.
         internal static string? ReadResolvConfFile(string filePath)
         {
             try
             {
                 return File.ReadAllText(filePath);
             }
-            catch (Exception e) when (e is FileNotFoundException or DirectoryNotFoundException)
+            catch (Exception e) when (e is FileNotFoundException or DirectoryNotFoundException or UnauthorizedAccessException)
             {
                 return null;
             }
