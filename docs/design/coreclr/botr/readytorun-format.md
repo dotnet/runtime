@@ -238,6 +238,10 @@ struct READYTORUN_IMPORT_SECTION
 stub dispatch slots may be grouped together to simplify resetting of virtual stub dispatch cells into their
 initial state.
 
+On Wasm, `Vector<T>` has a fixed 16-byte layout and does not require a type-layout check.
+Types containing vectors also have fixed layout when their remaining layout is fixed within
+the version bubble. Other targets retain runtime-dependent vector layout checks.
+
 ### READYTORUN_IMPORT_SECTIONS::Signatures
 
 This field points to array of RVAs that is parallel with the array of slots. Each RVA points to fixup
