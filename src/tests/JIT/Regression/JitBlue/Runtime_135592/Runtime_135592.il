@@ -12,8 +12,13 @@
 //
 // The four scenario methods throw inside their nested try and return 1 when the nested handler catches.
 // Three scenarios use filters; CatchInEarlierFinally is a catch-only control.
+//
+// Disabled on Mono: Mono's JIT can leave the blocks of a handler or filter nested in an earlier-listed
+// clause's handler in the enclosing handler's region. FilterInEarlierFinally crashes or hangs on some Mono
+// configurations, and the Mono LLVM AOT compiler asserts on CatchInEarlierFinally.
 
 .assembly extern xunit.core {}
+.assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
 .assembly extern System.Runtime { .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A ) }
 .assembly extern System.Console { .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A ) }
 
@@ -176,6 +181,10 @@
   .method public hidebysig static int32 Main() cil managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = ( 01 00 00 00 )
+    .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, valuetype [Microsoft.DotNet.XUnitExtensions]Xunit.TestRuntimes) = {
+        string('https://github.com/dotnet/runtime/issues/135641')
+        int32(0x2) // Mono
+    }
     .entrypoint
     .maxstack 3
     .locals init (int32 failures)
