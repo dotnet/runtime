@@ -2637,8 +2637,8 @@ public sealed unsafe partial class SOSDacImpl
                 case RejitState.Active:
                     flags = DacpReJitData.Flags.kActive;
                     break;
-                // kStateGettingReJITParameters: the legacy DAC has no case for it and reports kUnknown.
-                case RejitState.GettingReJITParameters:
+                // Any other state, for example kStateGettingReJITParameters: the legacy DAC reports kUnknown.
+                case RejitState.Unknown:
                     break;
                 default:
                     Debug.Fail("Unknown RejitState. cDAC should be updated to understand this new state.");
@@ -5698,8 +5698,8 @@ public sealed unsafe partial class SOSDacImpl
                     case RejitState.Active:
                         pRejitData->flags = DacpReJitData2.Flags.kActive;
                         break;
-                    // kStateGettingReJITParameters: the legacy DAC has no case for it and reports kUnknown.
-                    case RejitState.GettingReJITParameters:
+                    // Any other state, for example kStateGettingReJITParameters: the legacy DAC reports kUnknown.
+                    case RejitState.Unknown:
                         pRejitData->flags = DacpReJitData2.Flags.kUnknown;
                         break;
                     default:

@@ -10,9 +10,8 @@ public enum RejitState
 {
     Requested,
     Active,
-    // ReJIT parameter configuration is in progress (for example, the profiler's GetReJITParameters callback is
-    // running) and the version has not yet become Active.
-    GettingReJITParameters,
+    // Any state the contract does not recognize.
+    Unknown,
 }
 
 public interface IReJIT : IContract

@@ -10,9 +10,9 @@ using Xunit;
 
 namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
-// The SOS ReJIT queries over the real ReJIT contract. The legacy DAC reports an IL code version whose ReJIT is still
-// in progress (RejitFlags::kStateGettingReJITParameters) as kUnknown and succeeds (src/coreclr/debug/daccess/request.cpp,
-// GetReJITInformation and CopyNativeCodeVersionToReJitData).
+// The SOS ReJIT queries over the real ReJIT contract. The legacy DAC reports any state other than kStateRequested and
+// kStateActive as kUnknown and succeeds, including RejitFlags::kStateGettingReJITParameters while a ReJIT is in progress
+// (src/coreclr/debug/daccess/request.cpp, GetReJITInformation and CopyNativeCodeVersionToReJitData).
 public unsafe class SOSDacInterface7ReJITTests
 {
     private const ulong MethodDescAddress = 0x0101_aaa0;
@@ -21,6 +21,9 @@ public unsafe class SOSDacInterface7ReJITTests
     private const int S_OK = 0;
     private const int S_FALSE = 1;
 
+    // The lowest and highest values of the state nibble (kStateMask) that are not a defined ReJIT state.
+    private static readonly uint[] UnrecognizedStates = [0x3, 0xF];
+
     public static IEnumerable<object[]> StateCases()
     {
         foreach (object[] arch in new MockTarget.StdArch())
@@ -28,6 +31,10 @@ public unsafe class SOSDacInterface7ReJITTests
             yield return [arch[0], (uint)MockReJITBuilder.RejitFlags.kStateRequested, DacpReJitData2.Flags.kRequested];
             yield return [arch[0], (uint)MockReJITBuilder.RejitFlags.kStateGettingReJITParameters, DacpReJitData2.Flags.kUnknown];
             yield return [arch[0], (uint)MockReJITBuilder.RejitFlags.kStateActive, DacpReJitData2.Flags.kActive];
+            foreach (uint state in UnrecognizedStates)
+            {
+                yield return [arch[0], state, DacpReJitData2.Flags.kUnknown];
+            }
         }
     }
 
@@ -67,6 +74,10 @@ public unsafe class SOSDacInterface7ReJITTests
             yield return [arch[0], (uint)MockReJITBuilder.RejitFlags.kStateRequested, S_OK];
             yield return [arch[0], (uint)MockReJITBuilder.RejitFlags.kStateGettingReJITParameters, S_FALSE];
             yield return [arch[0], (uint)MockReJITBuilder.RejitFlags.kStateActive, S_FALSE];
+            foreach (uint state in UnrecognizedStates)
+            {
+                yield return [arch[0], state, S_FALSE];
+            }
         }
     }
 
@@ -109,6 +120,10 @@ public unsafe class SOSDacInterface7ReJITTests
             yield return [arch[0], (uint)MockReJITBuilder.RejitFlags.kStateRequested, DacpReJitData.Flags.kRequested];
             yield return [arch[0], (uint)MockReJITBuilder.RejitFlags.kStateGettingReJITParameters, DacpReJitData.Flags.kUnknown];
             yield return [arch[0], (uint)MockReJITBuilder.RejitFlags.kStateActive, DacpReJitData.Flags.kActive];
+            foreach (uint state in UnrecognizedStates)
+            {
+                yield return [arch[0], state, DacpReJitData.Flags.kUnknown];
+            }
         }
     }
 

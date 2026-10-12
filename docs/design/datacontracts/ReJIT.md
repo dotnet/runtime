@@ -9,9 +9,11 @@ public enum RejitState
 {
     Requested,
     Active,
-    GettingReJITParameters,
+    Unknown,
 }
 ```
+
+`GetRejitState` returns `Unknown` for any ReJIT state value that the contract does not recognize.
 
 ```csharp
 bool IsEnabled();
@@ -64,8 +66,6 @@ public enum RejitFlags : uint
 {
     kStateRequested = 0x00000000,
 
-    kStateGettingReJITParameters = 0x00000001,
-
     kStateActive = 0x00000002,
 
     kStateMask = 0x0000000F
@@ -95,9 +95,8 @@ RejitState GetRejitState(ILCodeVersionHandle codeVersion)
         return ((RejitFlags)ilCodeVersionNode.RejitState & RejitFlags.kStateMask) switch
         {
             RejitFlags.kStateRequested => RejitState.Requested,
-            RejitFlags.kStateGettingReJITParameters => RejitState.GettingReJITParameters,
             RejitFlags.kStateActive => RejitState.Active,
-            _ => throw new NotImplementedException($"Unknown ReJIT state: {ilCodeVersionNode.RejitState}"),
+            _ => RejitState.Unknown,
         };
     }
 }

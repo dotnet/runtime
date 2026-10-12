@@ -124,7 +124,7 @@ public class ReJITTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
-    public void GetRejitState_GettingReJITParameters_IsReportedNotThrown(MockTarget.Architecture arch)
+    public void GetRejitState_GettingReJITParameters_IsUnknown(MockTarget.Architecture arch)
     {
         // RejitFlags::kStateGettingReJITParameters: ReJIT parameter configuration is in progress.
         ILCodeVersionHandle handle = default;
@@ -134,7 +134,7 @@ public class ReJITTests
                 rejitBuilder.AddExplicitILCodeVersionNode(1, MockReJITBuilder.RejitFlags.kStateGettingReJITParameters).Address);
         });
 
-        Assert.Equal(RejitState.GettingReJITParameters, context.ReJIT.GetRejitState(handle));
+        Assert.Equal(RejitState.Unknown, context.ReJIT.GetRejitState(handle));
     }
 
     [Theory]
@@ -157,7 +157,7 @@ public class ReJITTests
     }
 
     // Every value of the state nibble (RejitFlags::kStateMask), with the flag bits above it (kSuppressParams and
-    // seeded arbitrary bits): the defined states map regardless of the flags, any other nibble value is rejected.
+    // seeded arbitrary bits): Requested and Active map regardless of the flags, and every other nibble value is Unknown.
     public static IEnumerable<object[]> StateNibbleCases()
     {
         Random random = new(135450);
@@ -184,21 +184,13 @@ public class ReJITTests
             handle = ILCodeVersionHandle.CreateExplicit(rejitBuilder.AddExplicitILCodeVersionNode(1, (MockReJITBuilder.RejitFlags)rawRejitState).Address);
         });
 
-        RejitState? expected = (rawRejitState & 0xF) switch
+        RejitState expected = (rawRejitState & 0xF) switch
         {
             0 => RejitState.Requested,
-            1 => RejitState.GettingReJITParameters,
             2 => RejitState.Active,
-            _ => null,
+            _ => RejitState.Unknown,
         };
-        if (expected is RejitState state)
-        {
-            Assert.Equal(state, context.ReJIT.GetRejitState(handle));
-        }
-        else
-        {
-            Assert.Throws<InvalidOperationException>(() => context.ReJIT.GetRejitState(handle));
-        }
+        Assert.Equal(expected, context.ReJIT.GetRejitState(handle));
     }
 
     [Theory]
