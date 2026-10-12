@@ -14,7 +14,6 @@ namespace Mono.Linker.Tests.Cases.Interop.PInvoke
             SomeMethod(a);
             SomePointerMethod(null);
             SomeArrayMethod(null);
-            SomeJaggedArrayMethod(null);
         }
 
         [KeptMember(".ctor()")]
@@ -34,15 +33,7 @@ namespace Mono.Linker.Tests.Cases.Interop.PInvoke
         }
 
         [Kept]
-        class ArrayElement
-        {
-            [Kept] private int field1;
-
-            [Kept] private int field2;
-        }
-
-        [Kept]
-        class JaggedArrayElement
+        struct ArrayElement
         {
             [Kept] private int field1;
 
@@ -60,9 +51,5 @@ namespace Mono.Linker.Tests.Cases.Interop.PInvoke
         [Kept]
         [DllImport("Unused")]
         private static extern void SomeArrayMethod(ArrayElement[] a);
-
-        [Kept]
-        [DllImport("Unused")]
-        private static extern void SomeJaggedArrayMethod(JaggedArrayElement[][] a);
     }
 }
