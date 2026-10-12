@@ -388,9 +388,8 @@ namespace System.Linq.Tests
         [Fact]
         public void SumOfInt_SourceSumsToOverflowVectorHorizontally_OverflowExceptionThrown()
         {
-            int[] sourceInt = new int[Vector<int>.Count * 4];
-            Array.Fill(sourceInt, 0);
-
+            int[] sourceInt = Array.CreateFilled(Vector<int>.Count * 4, 0);
+            
             for (int i = 0; i < Vector<int>.Count; i++)
             {
                 sourceInt[i] = int.MaxValue - 3;
@@ -407,8 +406,7 @@ namespace System.Linq.Tests
         [MemberData(nameof(SumOverflowsVerticalVectorLanes))]
         public void SumOfInt_SourceSumsToOverflowVectorVertically_OverflowExceptionThrown(int element, int verticalOffset)
         {
-            int[] sourceInt = new int[Vector<int>.Count * 6];
-            Array.Fill(sourceInt, 0);
+            int[] sourceInt = Array.CreateFilled(Vector<int>.Count * 6, 0);
 
             sourceInt[element] = int.MaxValue;
             sourceInt[element + Vector<int>.Count * verticalOffset] = 1;
@@ -435,9 +433,8 @@ namespace System.Linq.Tests
         [Fact]
         public void SumOfLong_SourceSumsToOverflowVectorHorizontally_OverflowExceptionThrown()
         {
-            long[] sourceLong = new long[Vector<long>.Count * 4];
-            Array.Fill(sourceLong, 0);
-
+            long[] sourceLong = Array.CreateFilled<long>(Vector<long>.Count * 4, 0);
+            
             for (int i = 0; i < Vector<long>.Count; i++)
             {
                 sourceLong[i] = long.MaxValue - 3;
@@ -454,9 +451,8 @@ namespace System.Linq.Tests
         [MemberData(nameof(SumOverflowsVerticalVectorLanes))]
         public void SumOfLong_SourceSumsToOverflowVectorVertically_OverflowExceptionThrown(int element, int verticalOffset)
         {
-            long[] sourceLong = new long[Vector<long>.Count * 6];
-            Array.Fill(sourceLong, 0);
-
+            long[] sourceLong = Array.CreateFilled<long>(Vector<long>.Count * 6, 0);
+            
             sourceLong[element] = long.MaxValue;
             sourceLong[element + Vector<long>.Count * verticalOffset] = 1;
 

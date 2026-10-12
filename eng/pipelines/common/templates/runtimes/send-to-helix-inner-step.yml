@@ -30,7 +30,7 @@ steps:
         -warnaserror 0
         /p:HelixUseEntraAuthentication=true
         ${{ parameters.sendParams }}
-    condition: and(succeeded(), eq(variables['Agent.OS'], 'Windows_NT'), ${{ parameters.condition }}, ${{ ne(parameters.sendParams, '') }})
+    condition: and(succeeded(), ${{ eq(parameters.osGroup, 'windows') }}, ${{ parameters.condition }}, ${{ ne(parameters.sendParams, '') }})
     env:
       ${{ insert }}: ${{ parameters.environment }}
       HelixBaseUri: ${{ parameters.helixBaseUri }}
@@ -50,7 +50,7 @@ steps:
         --warnaserror false
         /p:HelixUseEntraAuthentication=true
         ${{ parameters.sendParams }}
-    condition: and(succeeded(), ne(variables['Agent.OS'], 'Windows_NT'), ${{ parameters.condition }}, ${{ ne(parameters.sendParams, '') }})
+    condition: and(succeeded(), ${{ ne(parameters.osGroup, 'windows') }}, ${{ parameters.condition }}, ${{ ne(parameters.sendParams, '') }})
     env:
       ${{ insert }}: ${{ parameters.environment }}
       HelixBaseUri: ${{ parameters.helixBaseUri }}

@@ -1661,7 +1661,7 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall(BasicBlock** pBlock, Statement
 
 //------------------------------------------------------------------------------
 // fgVNBasedIntrinsicExpansionForCall_ReadUtf8 : Expand NI_System_Text_UTF8Encoding_UTF8EncodingSealed_ReadUtf8
-//    when src data is a string literal (UTF16) that can be converted to UTF8, e.g.:
+//    when src data is immutable UTF16 that can be converted to UTF8, e.g.:
 //
 //      string str = "Hello, world!";
 //      int bytesWritten = ReadUtf8(ref str[0], str.Length, buffer, buffer.Length);
@@ -1691,29 +1691,6 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
 
     GenTree* srcPtr = call->gtArgs.GetUserArgByIndex(0)->GetNode();
 
-    // We're interested in a case when srcPtr is a string literal and srcLen is a constant
-    // srcLen doesn't have to match the srcPtr's length, but it should not exceed it.
-    ssize_t               strObjOffset = 0;
-    CORINFO_OBJECT_HANDLE strObj       = nullptr;
-    if (!GetObjectHandleAndOffset(srcPtr, &strObjOffset, &strObj) || ((size_t)strObjOffset > INT_MAX))
-    {
-        // We might want to support more cases here, e.g. ROS<char> RVA data.
-        // Also, we check that strObjOffset (which is in most cases is expected to be just
-        // OFFSETOF__CORINFO_String__chars) doesn't exceed INT_MAX since we'll need to cast
-        // it to int for getObjectContent API.
-        JITDUMP("ReadUtf8: srcPtr is not an object handle\n")
-        return false;
-    }
-
-    assert(strObj != nullptr);
-
-    // We mostly expect string literal objects here, but let's be more agile just in case
-    if (!info.compCompHnd->isObjectImmutable(strObj))
-    {
-        JITDUMP("ReadUtf8: srcPtr is not immutable (not a frozen string object?)\n")
-        return false;
-    }
-
     const GenTree* srcLen = call->gtArgs.GetUserArgByIndex(1)->GetNode();
     if (!srcLen->gtVNPair.BothEqual() || !vnStore->IsVNInt32Constant(srcLen->gtVNPair.GetLiberal()))
     {
@@ -1731,16 +1708,10 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
         return false;
     }
 
-    uint16_t bufferU16[MaxU16BufferSizeInChars];
-
-    // getObjectContent is expected to validate the offset and length
-    // NOTE: (int) casts should not overflow:
-    //  * srcLenCns is <= MaxUTF16BufferSizeInChars
-    //  * strObjOffset is already checked to be <= INT_MAX
-    if (!info.compCompHnd->getObjectContent(strObj, (uint8_t*)bufferU16, (int)(srcLenCnsU16 * sizeof(uint16_t)),
-                                            (int)strObjOffset))
+    uint8_t* bufferU16 = nullptr;
+    if (!GetImmutableDataFromAddress(srcPtr, (int)(srcLenCnsU16 * sizeof(uint16_t)), getAllocator(), &bufferU16))
     {
-        JITDUMP("ReadUtf8: getObjectContent returned false.\n")
+        JITDUMP("ReadUtf8: source data is not available at compile time\n")
         return false;
     }
 
