@@ -8,6 +8,23 @@ namespace Webcil;
 
 public static class WasmWebcilModule
 {
+    public struct SignatureOnlyValue
+    {
+        public object Reference;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static SignatureOnlyValue SignatureOnlyCallee(SignatureOnlyValue value)
+    {
+        return value;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static bool CallSignatureOnlyValue()
+    {
+        return SignatureOnlyCallee(default).Reference is null;
+    }
+
     private static readonly int[] s_primes = new int[] { 3, 5, 7, 11, 13 };
     private static int s_counter;
 
