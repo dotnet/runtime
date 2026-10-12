@@ -86,6 +86,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(true, false)]
         [InlineData(false, false)]
         [InlineData(false, true)]
+        [InlineData(true, true)]
         public async Task InvalidCertificates_CertificateValidationDisabled_Succeeds(bool expired, bool wrongHostName)
         {
             using X509Certificate2 certificate = TestHelper.CreateServerSelfSignedCertificate(
