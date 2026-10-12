@@ -13,7 +13,9 @@ void ExternalMemoryHandle::Init()
 {
     STANDARD_VM_CONTRACT;
 
-    s_crst.Init(CrstExternalMemoryHandle, CrstFlags(CRST_UNSAFE_COOPGC | CRST_TAKEN_DURING_SHUTDOWN));
+    // The debugger helper thread removes handles while the EE is stopped.
+    s_crst.Init(CrstExternalMemoryHandle,
+        CrstFlags(CRST_UNSAFE_ANYMODE | CRST_DEBUGGER_THREAD | CRST_TAKEN_DURING_SHUTDOWN));
 }
 
 ExternalMemoryHandle* ExternalMemoryHandle::Add(TypeHandle type, PTR_VOID pMemory)

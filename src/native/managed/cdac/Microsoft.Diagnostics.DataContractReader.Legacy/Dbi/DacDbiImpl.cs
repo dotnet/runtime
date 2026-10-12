@@ -5354,7 +5354,8 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 #if DEBUG
         if (_legacy is not null && walk.LegacyHandle != 0 && count > 0)
         {
-            // Parity check covers the handle prefix only.
+            // External roots can be duplicated and span different batch boundaries.
+            // Compare complete root sets before the stack-reference portion of each walk.
             DacGcReference[] legacyRefs = new DacGcReference[(int)count];
             uint legacyFetched = 0;
             int hrLocal = _legacy.WalkRefs(walk.LegacyHandle, count, legacyRefs, &legacyFetched);
@@ -5362,37 +5363,25 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             // If this is the case, the cDAC may report S_FALSE while the legacy DAC reports S_OK, or vice versa.
             // Allow divergent success codes, but still validate the rest of the results.
             Debug.ValidateHResult(hr, hrLocal, HResultValidationMode.AllowDivergentSuccess);
-            uint cdacHandlePrefix = CountHandlePrefix(refs, i);
-            uint legacyHandlePrefix = CountHandlePrefix(legacyRefs, legacyFetched);
-            Debug.Assert(
-                cdacHandlePrefix == legacyHandlePrefix,
-                $"cDAC handle-prefix count {cdacHandlePrefix}, legacy {legacyHandlePrefix}");
-
-            uint compare = Math.Min(cdacHandlePrefix, legacyHandlePrefix);
-            for (uint j = 0; j < compare; j++)
+            RefWalkHandlePrefixValidator validator = walk.HandlePrefixValidator;
+            validator.AddBatch(refs.AsSpan(0, (int)i), legacy: false, endOfWalk: hr == HResults.S_FALSE);
+            validator.AddBatch(legacyRefs.AsSpan(0, (int)legacyFetched), legacy: true, endOfWalk: hrLocal == HResults.S_FALSE);
+            while (validator.NeedsLegacyBatch && hrLocal >= 0)
             {
-                Debug.Assert(refs[j].dwType == legacyRefs[j].dwType,
-                    $"refs[{j}].dwType cDAC={refs[j].dwType:X}, legacy={legacyRefs[j].dwType:X}");
-                Debug.Assert(refs[j].vmDomain == legacyRefs[j].vmDomain,
-                    $"refs[{j}].vmDomain cDAC=0x{refs[j].vmDomain:X}, legacy=0x{legacyRefs[j].vmDomain:X}");
-                Debug.Assert(refs[j].objHnd == legacyRefs[j].objHnd,
-                    $"refs[{j}].objHnd cDAC=0x{refs[j].objHnd:X}, legacy=0x{legacyRefs[j].objHnd:X}");
-                Debug.Assert(refs[j].i64ExtraData == legacyRefs[j].i64ExtraData,
-                    $"refs[{j}].i64ExtraData cDAC=0x{refs[j].i64ExtraData:X}, legacy=0x{legacyRefs[j].i64ExtraData:X}");
+                hrLocal = _legacy.WalkRefs(walk.LegacyHandle, count, legacyRefs, &legacyFetched);
+                Debug.ValidateHResult(hr, hrLocal, HResultValidationMode.AllowDivergentSuccess);
+                validator.AddBatch(legacyRefs.AsSpan(0, (int)legacyFetched), legacy: true,
+                    endOfWalk: hrLocal == HResults.S_FALSE);
+                Debug.Assert(hrLocal != HResults.S_OK || legacyFetched > 0,
+                    "Legacy handle-prefix walk did not make progress.");
+                if (legacyFetched == 0)
+                    break;
             }
-        }
 
-        static uint CountHandlePrefix(DacGcReference[] buffer, uint length)
-        {
-            for (uint j = 0; j < length; j++)
+            if (validator.TryCompare(out bool matches))
             {
-                CorGCReferenceType dwType = buffer[j].dwType;
-                if (dwType == CorGCReferenceType.CorReferenceStack)
-                {
-                    return j;
-                }
+                Debug.Assert(matches, "cDAC and legacy handle-prefix root sets differ.");
             }
-            return length;
         }
 #endif
 

@@ -610,9 +610,21 @@ static CorDebugRegister GetArgAddrFromReg( DebuggerIPCE_FuncEvalArgData *pFEAD)
 {
     CorDebugRegister retval = REGISTER_INSTRUCTION_POINTER; // good as default as any
 #if defined(HOST_64BIT)
-    retval = (pFEAD->argHome.kind == RAK_REG ?
-              pFEAD->argHome.reg1 :
-              (CorDebugRegister)((int)REGISTER_IA64_F0 + pFEAD->argHome.floatIndex));
+    if (pFEAD->argHome.kind == RAK_REG)
+    {
+        retval = pFEAD->argHome.reg1;
+    }
+    else
+    {
+        _ASSERTE(pFEAD->argHome.kind == RAK_FLOAT);
+#if defined(TARGET_AMD64)
+        retval = static_cast<CorDebugRegister>(REGISTER_AMD64_XMM0 + pFEAD->argHome.floatIndex);
+#elif defined(TARGET_ARM64)
+        retval = static_cast<CorDebugRegister>(REGISTER_ARM64_V0 + pFEAD->argHome.floatIndex);
+#else
+        PORTABILITY_ASSERT("Floating-point func-eval registers are not supported on this architecture");
+#endif
+    }
 #else  // !HOST_64BIT
     retval = pFEAD->argHome.reg1;
 #endif // !HOST_64BIT
@@ -677,9 +689,9 @@ static void SetFuncEvalRegisterValue(
     WRAPPER_NO_CONTRACT;
 
     _ASSERTE(!pArg->argIsLiteral && pArg->argAddr == static_cast<CORDB_ADDRESS>(0));
+#if !defined(HOST_64BIT)
     bool widePrimitive = pArg->argElementType == ELEMENT_TYPE_I8 ||
         pArg->argElementType == ELEMENT_TYPE_U8 || pArg->argElementType == ELEMENT_TYPE_R8;
-#if !defined(HOST_64BIT)
     if (IsMixedFuncEvalRegisterHome(pArg->argHome.kind))
     {
         AssertValidMixedFuncEvalRegisterHome(pArg);
@@ -712,7 +724,7 @@ static void SetFuncEvalRegisterValue(
     CorDebugRegister reg = GetArgAddrFromReg(pArg);
 #else // HOST_64BIT
     _ASSERTE(pArg->argHome.kind == RAK_REG || pArg->argHome.kind == RAK_FLOAT);
-    CorDebugRegister reg = widePrimitive ? pArg->argHome.reg1 : GetArgAddrFromReg(pArg);
+    CorDebugRegister reg = GetArgAddrFromReg(pArg);
 #endif // !HOST_64BIT
     SetRegisterValue(pDE, reg, pArg->argHome.reg1Addr, static_cast<SIZE_T>(value));
 }
@@ -1498,7 +1510,8 @@ void DebuggerEval::ReleaseFuncEvalResult()
 }
 
 static void InvokeManagedFuncEval(DebuggerFuncEvalContext* pContext, BYTE* pCatcherStackAddr,
-                                  DebuggerFuncEvalResult** ppResult, HRESULT captureResult)
+                                  DebuggerFuncEvalResult** ppResult,
+                                  DebuggerExternalMemoryOwner** ppTemporaryResult, HRESULT captureResult)
 {
     CONTRACTL
     {
@@ -1524,6 +1537,7 @@ static void InvokeManagedFuncEval(DebuggerFuncEvalContext* pContext, BYTE* pCatc
     }
     UnmanagedCallersOnlyCaller caller(METHOD__DEBUGGER__INVOKE_FUNCTION);
     pContext->ppResult = ppResult;
+    pContext->ppTemporaryResult = ppTemporaryResult;
     FuncEvalWrapper(&caller, pContext, pCatcherStackAddr);
 
     {
@@ -1643,7 +1657,6 @@ static void GCProtectArgsAndInvokeManagedFuncEval(DebuggerEval *pDE,
     context.pInteriors = pMaybeInteriorPtrArray;
     context.pHomes = pByRefMaybeInteriorPtrArray;
     context.pCapturedArguments = pBufferForArgsArray;
-    context.ppTemporaryResult = &temporaryResult;
     context.pResultData = pDE->m_result;
     context.argumentCount = pDE->m_argCount;
     Holder<ExternalMemoryHandle**, DoNothing<ExternalMemoryHandle**>, ReleaseFuncEvalArgumentHandles>
@@ -1668,7 +1681,7 @@ static void GCProtectArgsAndInvokeManagedFuncEval(DebuggerEval *pDE,
                 pDE, pBufferForArgsArray, pArgumentHandles);
         }
 
-        InvokeManagedFuncEval(&context, pCatcherStackAddr, &result, captureResult);
+        InvokeManagedFuncEval(&context, pCatcherStackAddr, &result, &temporaryResult, captureResult);
     }
     EX_CATCH
     {

@@ -79,13 +79,14 @@ namespace System.Diagnostics
                 internal bool IsTypedLocal;
                 internal bool IsBoxedTemporary;
                 internal bool UsesInterior;
+                // The by-ref argument aliases its debugger-provided memory home, so mutations need no copy-back.
                 internal bool UsesDirectHome;
             }
 
             private readonly Context* _context;
             private readonly void** _storage;
             private readonly MethodBase _method;
-            private readonly bool _hasReceiver;
+            private readonly bool _hasThis;
             private readonly Argument[] _arguments;
             private readonly object?[] _objects;
             private readonly InvokerEmitUtil.InvokeFunc_Debugger _invoke;
@@ -147,10 +148,10 @@ namespace System.Diagnostics
                 Debug.Assert(method is RuntimeMethodInfo or RuntimeConstructorInfo);
                 Debug.Assert(!IsNewObject() || method is RuntimeConstructorInfo);
                 _method = method;
-                _hasReceiver = !isStatic && !IsNewObject();
+                _hasThis = !isStatic && !IsNewObject();
                 _objects = new object?[argumentCount];
 
-                if (_hasReceiver)
+                if (_hasThis)
                 {
                     NativeArgument input = _arguments[0].Input;
                     if (!IsObject(input.Type) && input.Type != CorElementType.ELEMENT_TYPE_VALUETYPE)
@@ -168,7 +169,7 @@ namespace System.Diagnostics
                 {
                     RuntimeType parameterType = (RuntimeType)parameters[i].ParameterType;
                     bool isByRef = parameterType.IsByRef;
-                    PrepareArgument(i + (_hasReceiver ? 1 : 0),
+                    PrepareArgument(i + (_hasThis ? 1 : 0),
                         isByRef ? (RuntimeType)parameterType.GetElementType()! : parameterType, isByRef, isReceiver: false);
                 }
 
@@ -244,7 +245,7 @@ namespace System.Diagnostics
                 argument.SignatureType = type.IsEnum
                     ? ((RuntimeType)type.GetEnumUnderlyingType()).GetCorElementType()
                     : type.GetCorElementType();
-                int slot = index + (_hasReceiver ? 0 : 1);
+                int slot = index + (_hasThis ? 0 : 1);
 
                 // input.Type describes the debugger's transport representation, not the signature type.
                 // Boxed value types arrive as objects; Nullable<T> specifically arrives as null or boxed T,
@@ -384,16 +385,16 @@ namespace System.Diagnostics
                     return;
                 }
 
-                bool pointerSizedNumeric = IntPtr.Size == sizeof(long)
-                    ? input.Type is CorElementType.ELEMENT_TYPE_I8 or CorElementType.ELEMENT_TYPE_U8 or CorElementType.ELEMENT_TYPE_R8
-                    : input.Type is CorElementType.ELEMENT_TYPE_I4 or CorElementType.ELEMENT_TYPE_U4 or CorElementType.ELEMENT_TYPE_R4;
+                bool pointerSizedInteger = IntPtr.Size == sizeof(long)
+                    ? input.Type is CorElementType.ELEMENT_TYPE_I8 or CorElementType.ELEMENT_TYPE_U8
+                    : input.Type is CorElementType.ELEMENT_TYPE_I4 or CorElementType.ELEMENT_TYPE_U4;
                 if (isByRef && input.HasMemory && !input.IsLiteral && !input.IsHandle &&
                     input.Type == argument.SignatureType)
                 {
                     argument.UsesDirectHome = true;
                     SetStorage(slot, ref ((ByReference*)(_context->Homes + index))->Value);
                 }
-                else if (pointerSizedNumeric && IsObject(argument.SignatureType))
+                else if (pointerSizedInteger && IsObject(argument.SignatureType))
                 {
                     _objects[index] = ReadObject(index, interior: true);
                     argument.UsesInterior = true;
@@ -454,7 +455,7 @@ namespace System.Diagnostics
             [DebuggerHidden]
             internal bool UsesTypedArgument(int slot)
             {
-                int index = slot + (_hasReceiver ? 0 : -1);
+                int index = slot + (_hasThis ? 0 : -1);
                 return _arguments[index].IsTypedLocal;
             }
 
@@ -462,7 +463,7 @@ namespace System.Diagnostics
             internal void InitializeTypedArgument<T>(int slot, [UnscopedRef] ref T storage)
                 where T : allows ref struct
             {
-                int index = slot + (_hasReceiver ? 0 : -1);
+                int index = slot + (_hasThis ? 0 : -1);
                 ref Argument argument = ref _arguments[index];
                 Debug.Assert(argument.IsTypedLocal);
                 Debug.Assert(argument.Input.HasMemory || sizeof(T) <= sizeof(ulong));
@@ -477,7 +478,7 @@ namespace System.Diagnostics
             internal void CopyBackTypedArgument<T>(int slot, ref T storage)
                 where T : allows ref struct
             {
-                int index = slot + (_hasReceiver ? 0 : -1);
+                int index = slot + (_hasThis ? 0 : -1);
                 Debug.Assert(_arguments[index].IsTypedLocal);
                 WriteArgument(index, ref Unsafe.As<T, byte>(ref storage), (uint)sizeof(T));
             }
@@ -485,15 +486,10 @@ namespace System.Diagnostics
             [DebuggerHidden]
             internal bool NeedsCopyBack(int slot)
             {
-                int index = slot + (_hasReceiver ? 0 : -1);
+                Debug.Assert(slot > 0);
+                int index = slot + (_hasThis ? 0 : -1);
                 ref Argument argument = ref _arguments[index];
                 NativeArgument input = argument.Input;
-                if (slot == 0)
-                {
-                    return _hasReceiver && argument.Type.IsValueType &&
-                        input.Type == CorElementType.ELEMENT_TYPE_VALUETYPE && input.IsInRegister;
-                }
-
                 Debug.Assert(argument.IsByRef);
                 if (argument.UsesDirectHome)
                 {
@@ -513,7 +509,7 @@ namespace System.Diagnostics
             internal void CopyBackArgument(int slot)
             {
                 Debug.Assert(NeedsCopyBack(slot));
-                int index = slot + (_hasReceiver ? 0 : -1);
+                int index = slot + (_hasThis ? 0 : -1);
                 ref Argument argument = ref _arguments[index];
                 NativeArgument input = argument.Input;
                 if (argument.IsBoxedTemporary)
