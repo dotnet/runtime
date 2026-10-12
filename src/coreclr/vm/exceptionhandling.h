@@ -28,13 +28,15 @@ CallDescrWorkerUnwindFrameChainHandler(IN     PEXCEPTION_RECORD     pExceptionRe
                                        IN OUT PT_CONTEXT            pContextRecord,
                                        IN OUT PT_DISPATCHER_CONTEXT pDispatcherContext);
 
+struct ExInfo;
+
+VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable, ExInfo *pExInfo);
 VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable, CONTEXT *pExceptionContext, EXCEPTION_RECORD *pExceptionRecord = NULL);
 VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable);
 VOID DECLSPEC_NORETURN DispatchManagedException(RuntimeExceptionKind reKind);
 VOID DECLSPEC_NORETURN DispatchRethrownManagedException();
 VOID DECLSPEC_NORETURN DispatchRethrownManagedException(CONTEXT* pExceptionContext);
 
-struct ExInfo;
 void DECLSPEC_NORETURN DispatchExSecondPass(ExInfo *pExInfo);
 
 enum CLRUnwindStatus { UnwindPending, FirstPassComplete, SecondPassComplete };
