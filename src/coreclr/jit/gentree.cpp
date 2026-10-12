@@ -20625,7 +20625,7 @@ ValueSize GenTreeIndir::ValueSize() const
 // Return Value:
 //    True if this immediate value requires us to record a relocation for it; false otherwise.
 
-bool GenTreeIntConCommon::ImmedValNeedsReloc(Compiler* comp)
+bool GenTreeIntConCommon::ImmedValNeedsReloc(Compiler* comp) const
 {
     return comp->opts.compReloc && IsIconHandle();
 }
@@ -35247,7 +35247,7 @@ bool GenTree::IsNeverNegative(Compiler* comp) const
 
     if (IsIntegralConst())
     {
-        return AsIntConCommon()->IntegralValue() >= 0;
+        return !AsIntConCommon()->ImmedValNeedsReloc(comp) && (AsIntConCommon()->IntegralValue() >= 0);
     }
 
     if (OperIs(GT_LCL_VAR))
