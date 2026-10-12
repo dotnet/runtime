@@ -10,7 +10,6 @@ public enum RejitState
 {
     Requested,
     Active,
-    // Any state the contract does not recognize.
     Unknown,
 }
 

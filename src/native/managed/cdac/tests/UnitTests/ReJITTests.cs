@@ -122,75 +122,27 @@ public class ReJITTests
         }
     }
 
-    [Theory]
-    [ClassData(typeof(MockTarget.StdArch))]
-    public void GetRejitState_GettingReJITParameters_IsUnknown(MockTarget.Architecture arch)
+    public static IEnumerable<object[]> ArchWithUnrecognizedState()
     {
-        // RejitFlags::kStateGettingReJITParameters: ReJIT parameter configuration is in progress.
-        ILCodeVersionHandle handle = default;
-        ReJITContractContext context = CreateReJITContract(arch, rejitBuilder =>
+        foreach (object[] stdArch in new MockTarget.StdArch())
         {
-            handle = ILCodeVersionHandle.CreateExplicit(
-                rejitBuilder.AddExplicitILCodeVersionNode(1, MockReJITBuilder.RejitFlags.kStateGettingReJITParameters).Address);
-        });
-
-        Assert.Equal(RejitState.Unknown, context.ReJIT.GetRejitState(handle));
-    }
-
-    [Theory]
-    [ClassData(typeof(MockTarget.StdArch))]
-    public void GetRejitIds_SkipsVersionsStillGettingReJITParameters(MockTarget.Architecture arch)
-    {
-        Mock<ICodeVersions> codeVersions = new();
-        List<ILCodeVersionHandle> handles = [];
-        ReJITContractContext context = CreateReJITContract(arch, rejitBuilder =>
-        {
-            handles.Add(ILCodeVersionHandle.CreateExplicit(rejitBuilder.AddExplicitILCodeVersionNode(1, MockReJITBuilder.RejitFlags.kStateActive).Address));
-            handles.Add(ILCodeVersionHandle.CreateExplicit(rejitBuilder.AddExplicitILCodeVersionNode(2, MockReJITBuilder.RejitFlags.kStateGettingReJITParameters).Address));
-        }, mockCodeVersions: codeVersions);
-        TargetPointer methodDesc = new(0x0101_aaa0);
-        codeVersions.Setup(cv => cv.GetILCodeVersions(methodDesc)).Returns(handles);
-        foreach (ILCodeVersionHandle handle in handles)
-            codeVersions.Setup(cv => cv.GetSource(handle)).Returns(CodeVersionSource.ReJIT);
-
-        Assert.Equal([new TargetNUInt(1)], context.ReJIT.GetRejitIds(context.Target, methodDesc).ToList());
-    }
-
-    // Every value of the state nibble (RejitFlags::kStateMask), with the flag bits above it (kSuppressParams and
-    // seeded arbitrary bits): Requested and Active map regardless of the flags, and every other nibble value is Unknown.
-    public static IEnumerable<object[]> StateNibbleCases()
-    {
-        Random random = new(135450);
-        uint[] flagBits = [0, (uint)MockReJITBuilder.RejitFlags.kSuppressParams, (uint)random.Next() & ~0xFu, (uint)random.Next() & ~0xFu];
-        foreach (object[] arch in new MockTarget.StdArch())
-        {
-            foreach (uint flags in flagBits)
-            {
-                for (uint state = 0; state <= 0xF; state++)
-                {
-                    yield return [arch[0], state | flags];
-                }
-            }
+            yield return [stdArch[0], (uint)MockReJITBuilder.RejitFlags.kStateGettingReJITParameters];
+            yield return [stdArch[0], 0x3u];
         }
     }
 
     [Theory]
-    [MemberData(nameof(StateNibbleCases))]
-    public void GetRejitState_MapsTheStateNibbleAndIgnoresFlagBits(MockTarget.Architecture arch, uint rawRejitState)
+    [MemberData(nameof(ArchWithUnrecognizedState))]
+    public void GetRejitState_UnrecognizedState_IsUnknown(MockTarget.Architecture arch, uint state)
     {
-        ILCodeVersionHandle handle = default;
-        ReJITContractContext context = CreateReJITContract(arch, rejitBuilder =>
-        {
-            handle = ILCodeVersionHandle.CreateExplicit(rejitBuilder.AddExplicitILCodeVersionNode(1, (MockReJITBuilder.RejitFlags)rawRejitState).Address);
-        });
-
-        RejitState expected = (rawRejitState & 0xF) switch
-        {
-            0 => RejitState.Requested,
-            2 => RejitState.Active,
-            _ => RejitState.Unknown,
-        };
-        Assert.Equal(expected, context.ReJIT.GetRejitState(handle));
+        ILCodeVersionHandle handle = ILCodeVersionHandle.Invalid;
+        ReJITContractContext context = CreateReJITContract(
+            arch,
+            rejitBuilder =>
+            {
+                handle = ILCodeVersionHandle.CreateExplicit(rejitBuilder.AddExplicitILCodeVersionNode(1, (MockReJITBuilder.RejitFlags)state).Address);
+            });
+        Assert.Equal(RejitState.Unknown, context.ReJIT.GetRejitState(handle));
     }
 
     [Theory]

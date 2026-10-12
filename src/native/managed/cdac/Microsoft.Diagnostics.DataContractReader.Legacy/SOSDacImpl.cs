@@ -2598,7 +2598,7 @@ public sealed unsafe partial class SOSDacImpl
         return hr;
     }
 
-    internal void CopyNativeCodeVersionToReJitData(
+    private void CopyNativeCodeVersionToReJitData(
         NativeCodeVersionHandle nativeCodeVersion,
         NativeCodeVersionHandle activeNativeCodeVersion,
         DacpReJitData* pReJitData)
@@ -2637,7 +2637,6 @@ public sealed unsafe partial class SOSDacImpl
                 case RejitState.Active:
                     flags = DacpReJitData.Flags.kActive;
                     break;
-                // Any other state, for example kStateGettingReJITParameters: the legacy DAC reports kUnknown.
                 case RejitState.Unknown:
                     break;
                 default:
@@ -5698,7 +5697,6 @@ public sealed unsafe partial class SOSDacImpl
                     case RejitState.Active:
                         pRejitData->flags = DacpReJitData2.Flags.kActive;
                         break;
-                    // Any other state, for example kStateGettingReJITParameters: the legacy DAC reports kUnknown.
                     case RejitState.Unknown:
                         pRejitData->flags = DacpReJitData2.Flags.kUnknown;
                         break;

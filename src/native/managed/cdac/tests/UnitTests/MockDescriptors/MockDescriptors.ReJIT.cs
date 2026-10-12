@@ -59,8 +59,7 @@ internal sealed class MockReJITBuilder
         kStateRequested = 0x00000000,
         kStateGettingReJITParameters = 0x00000001,
         kStateActive = 0x00000002,
-        kStateMask = 0x0000000F,
-        kSuppressParams = 0x80000000,
+        kStateMask = 0x0000000F
     }
 
     internal MockMemorySpace.Builder Builder { get; }
