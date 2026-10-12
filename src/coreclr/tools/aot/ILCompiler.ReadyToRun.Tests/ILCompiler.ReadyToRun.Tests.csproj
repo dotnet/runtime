@@ -25,6 +25,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="../ILCompiler.Compiler/ILCompiler.Compiler.csproj" Aliases="ilc" />
     <ProjectReference Include="../ILCompiler.Reflection.ReadyToRun/ILCompiler.Reflection.ReadyToRun.csproj" />
     <ProjectReference Include="../ILCompiler.ReadyToRun/ILCompiler.ReadyToRun.csproj" Aliases="crossgen2" />
     <ProjectReference Include="../crossgen2/crossgen2_inbuild.csproj" ReferenceOutputAssembly="false" OutputItemType="Crossgen2InbuildOutputItems" Private="false">
