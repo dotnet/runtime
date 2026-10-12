@@ -144,6 +144,10 @@ foreach ($target in $instrumentationTargets) {
     $pdbName = [System.IO.Path]::ChangeExtension($target.DllName, ".pdb")
     $destPdb = Join-Path $assemblyDir $pdbName
 
+    if ($target.DllName -eq [System.IO.Path]::GetFileName($assemblyPath)) {
+        continue
+    }
+
     # Try runtime directory first
     $sourcePdb = Join-Path $runtimeDir $pdbName
 
@@ -193,6 +197,10 @@ $coverletArgs = @(
     "--use-source-link",
     "--does-not-return-attribute", "DoesNotReturn"
 )
+
+if ($instrumentationTargets.DllName -contains [System.IO.Path]::GetFileName($assemblyPath)) {
+    $coverletArgs += "--include-test-assembly"
+}
 
 # Exclude files based on runtime repository defaults
 # From src/libraries/Directory.Build.props

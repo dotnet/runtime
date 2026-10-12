@@ -1311,6 +1311,9 @@ CDAC_TYPE_END(InterpreterFrame)
 CDAC_TYPE_BEGIN(TransitionBlock)
 CDAC_TYPE_SIZE(sizeof(TransitionBlock))
 CDAC_TYPE_FIELD(TransitionBlock, TYPE(CodePointer), ReturnAddress, offsetof(TransitionBlock, m_ReturnAddress))
+#ifdef TARGET_WASM
+CDAC_TYPE_FIELD(TransitionBlock, T_POINTER, StackPointer, offsetof(TransitionBlock, m_StackPointer))
+#endif // TARGET_WASM
 CDAC_TYPE_FIELD(TransitionBlock, TYPE(CalleeSavedRegisters), CalleeSavedRegisters, offsetof(TransitionBlock, m_calleeSavedRegisters))
 // Offset to argument registers and first GCRefMap slot (platform-specific)
 #if (defined(TARGET_AMD64) && !defined(UNIX_AMD64_ABI)) || defined(TARGET_WASM)
@@ -1922,9 +1925,7 @@ CDAC_GLOBAL_CONTRACT(ObjectiveCMarshal, c1)
 CDAC_GLOBAL_CONTRACT(Object, c1)
 CDAC_GLOBAL_CONTRACT(FeatureFlags, c1)
 CDAC_GLOBAL_CONTRACT(PlatformMetadata, c1)
-#ifdef FEATURE_PORTABLE_ENTRYPOINTS
-CDAC_GLOBAL_CONTRACT(PrecodeStubs, c2)
-#else
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
 CDAC_GLOBAL_CONTRACT(PrecodeStubs, c1)
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
 #ifdef PROFILING_SUPPORTED

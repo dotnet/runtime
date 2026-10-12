@@ -2069,7 +2069,7 @@ ValueNum ValueNumStore::VNForCastOper(var_types castToType, bool srcIsUnsigned)
 
 //------------------------------------------------------------------------
 // VNIgnoreIntToLongCast: Looks through a sign-extending int-to-long cast
-//    or convert long-typed integral constants to int.
+//    or converts non-handle long-typed integral constants to int.
 //
 // Arguments:
 //    vn - The value number to inspect.
@@ -2077,7 +2077,7 @@ ValueNum ValueNumStore::VNForCastOper(var_types castToType, bool srcIsUnsigned)
 // Return Value:
 //    The value number of the original TYP_INT operand if 'vn' is a VNF_Cast
 //    that sign-extends a TYP_INT to TYP_LONG; or the value number of a TYP_INT
-//    constant if 'vn' is a TYP_LONG constant that fits in an int; otherwise, 'vn' itself.
+//    constant if 'vn' is a non-handle TYP_LONG constant that fits in an int; otherwise, 'vn' itself.
 //
 ValueNum ValueNumStore::VNIgnoreIntToLongCast(ValueNum vn)
 {
@@ -2099,9 +2099,9 @@ ValueNum ValueNumStore::VNIgnoreIntToLongCast(ValueNum vn)
             }
         }
 
-        // Also look through any long-typed integral constant that fits in an int.
+        // Also look through any non-handle long-typed integral constant that fits in an int.
         int intCns;
-        if (IsVNIntegralConstant(vn, &intCns))
+        if (!IsVNHandle(vn) && IsVNIntegralConstant(vn, &intCns))
         {
             return VNForIntCon(intCns);
         }
@@ -4936,6 +4936,10 @@ bool ValueNumStore::VNEvalCanFoldBinaryFunc(var_types type, VNFunc func, ValueNu
             case GT_RSZ:
             case GT_ROL:
             case GT_ROR:
+            case GT_GT:
+            case GT_GE:
+            case GT_LT:
+            case GT_LE:
                 if (m_compiler->opts.compReloc && (IsVNHandle(arg0VN) || IsVNHandle(arg1VN)))
                 {
                     return false;
@@ -4944,10 +4948,6 @@ bool ValueNumStore::VNEvalCanFoldBinaryFunc(var_types type, VNFunc func, ValueNu
 
             case GT_EQ:
             case GT_NE:
-            case GT_GT:
-            case GT_GE:
-            case GT_LT:
-            case GT_LE:
                 break;
 
             default:
@@ -16214,6 +16214,16 @@ void Compiler::fgValueNumberAddExceptionSet(GenTree* tree)
                 break;
 
             case GT_INTRINSIC:
+                if (tree->AsIntrinsic()->gtIntrinsicName == NI_PRIMITIVE_Log2)
+                {
+                    // The signed Log2 fallback throws ArgumentOutOfRangeException for negative inputs.
+                    ValueNumPair excSet = vnStore->VNPExcSetSingleton(
+                        vnStore->VNPairForFunc(TYP_REF, VNF_HelperOpaqueExc,
+                                               vnStore->VNPairForExpr(compCurBB, TYP_I_IMPL)));
+                    tree->gtVNPair = vnStore->VNPWithExc(tree->gtVNPair, excSet);
+                    break;
+                }
+
                 assert(tree->AsIntrinsic()->gtIntrinsicName == NI_System_Object_GetType);
                 fgValueNumberAddExceptionSetForIndirection(tree, tree->AsIntrinsic()->gtGetOp1());
                 break;
