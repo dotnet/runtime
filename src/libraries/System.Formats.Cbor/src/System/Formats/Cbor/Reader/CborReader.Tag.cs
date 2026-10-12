@@ -91,6 +91,8 @@ namespace System.Formats.Cbor
         /// <exception cref="InvalidOperationException"><para>The next data item does not have the correct major type.</para>
         /// <para>-or-</para>
         /// <para>The next date item does not have the correct semantic tag.</para></exception>
+        /// <exception cref="ArgumentOutOfRangeException">The decoded Unix time is outside the range of <see cref="DateTimeOffset" />.</exception>
+        /// <exception cref="OverflowException">The encoded integer is outside the range of <see langword="long" />, or the encoded floating-point value is outside the range of <see cref="TimeSpan" />.</exception>
         /// <exception cref="CborContentException"><para>The next value has an invalid CBOR encoding.</para>
         /// <para>-or-</para>
         /// <para>There was an unexpected end of CBOR encoding data.</para>
