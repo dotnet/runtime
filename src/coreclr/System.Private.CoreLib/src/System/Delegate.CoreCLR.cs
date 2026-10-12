@@ -429,15 +429,7 @@ namespace System
         {
             Delegate d = InternalAlloc(rtType);
 
-            if (!d.BindToMethodInfo(firstArgument, rtMethod, rtMethod.GetDeclaringTypeInternal(), flags))
-                return null;
-
-            // A static abstract interface method has no implementation to call. Checked after the bind, so a delegate
-            // type that doesn't match is still a bind failure, as on NativeAOT.
-            if (rtMethod.IsStatic && rtMethod.IsAbstract)
-                throw new MemberAccessException(SR.Format(SR.Acc_CallStaticAbstract, rtMethod.DeclaringType, rtMethod.Name));
-
-            return d;
+            return d.BindToMethodInfo(firstArgument, rtMethod, rtMethod.GetDeclaringTypeInternal(), flags) ? d : null;
         }
 
         //

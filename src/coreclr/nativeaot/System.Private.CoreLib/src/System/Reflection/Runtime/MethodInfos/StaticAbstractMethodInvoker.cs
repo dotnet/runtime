@@ -8,8 +8,9 @@ using Internal.Reflection.Core.Execution;
 
 namespace System.Reflection.Runtime.MethodInfos
 {
-    // A static abstract interface method has no implementation to call: invoking it, binding a delegate to it or
-    // taking its address throws MemberAccessException, as on CoreCLR.
+    // A static abstract interface method has no implementation to call: invoking it or binding a delegate to it throws
+    // MemberAccessException, as on CoreCLR. Taking its address throws PlatformNotSupportedException, as for other
+    // abstract methods.
     internal sealed class StaticAbstractMethodInvoker : MethodBaseInvoker
     {
         private readonly MethodInfo _method;
@@ -69,7 +70,7 @@ namespace System.Reflection.Runtime.MethodInfos
         {
             get
             {
-                throw CreateException();
+                throw new PlatformNotSupportedException();
             }
         }
     }

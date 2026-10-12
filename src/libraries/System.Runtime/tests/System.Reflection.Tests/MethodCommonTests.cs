@@ -312,6 +312,9 @@ namespace System.Reflection.Tests
         [Theory]
         [InlineData(typeof(IStaticAbstractMethods), nameof(IStaticAbstractMethods.NoArgs), null)]
         [InlineData(typeof(IStaticAbstractMethods<int>), nameof(IStaticAbstractMethods<int>.OneArg), new object[] { 42 })]
+        [InlineData(typeof(IStaticAbstractMethods<string>), nameof(IStaticAbstractMethods<string>.OneArg), new object[] { "abc" })]
+        [InlineData(typeof(IStaticAbstractMethods), nameof(IStaticAbstractMethods.SpanReturn), null)]
+        [InlineData(typeof(IStaticAbstractMethods), nameof(IStaticAbstractMethods.RefSpanReturn), null)]
         public void Invoke_StaticAbstract_ThrowsMemberAccessException(Type type, string methodName, object?[]? parameters)
         {
             MethodInfo method = type.GetMethod(methodName)!;
@@ -333,6 +336,8 @@ namespace System.Reflection.Tests
         {
             static abstract void NoArgs();
             static abstract void GenericNoArgs<T>();
+            static abstract Span<int> SpanReturn();
+            static abstract ref Span<int> RefSpanReturn();
         }
 
         protected interface IStaticAbstractMethods<T>

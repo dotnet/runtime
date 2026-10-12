@@ -605,6 +605,8 @@ namespace System.Tests
             Assert.IsType<ArgumentException>(ex.InnerException);
             ex = Assert.Throws<TargetInvocationException>(() => constructor.Invoke(d, new object[] { typeof(DelegateTests), "NoSuchMethod" }));
             Assert.IsType<ArgumentException>(ex.InnerException);
+            ex = Assert.Throws<TargetInvocationException>(() => constructor.Invoke(d, new object[] { typeof(DelegateTests), nameof(ProtectedConstructorWrongSignature) }));
+            Assert.IsType<ArgumentException>(ex.InnerException);
 
             // The match is case insensitive
             constructor.Invoke(d, new object[] { typeof(DelegateTests), "protectedconstructorafter" });
@@ -614,6 +616,8 @@ namespace System.Tests
         private static int ProtectedConstructorBefore() => 1;
 
         public static int ProtectedConstructorAfter() => 2;
+
+        public static void ProtectedConstructorWrongSignature() { }
 
         private interface IProtectedConstructorStaticAbstract
         {

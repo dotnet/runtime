@@ -1308,15 +1308,10 @@ extern "C" void * QCALLTYPE RuntimeMethodHandle_GetFunctionPointer(MethodDesc * 
 
     BEGIN_QCALL;
 
-    // A static abstract interface method has no implementation to call: return null, the caller throws. An open
-    // generic one throws InvalidOperationException from GetMultiCallableAddrOfCode first, as for any other method.
-    if (!(pMethod->IsStatic() && pMethod->IsAbstract()) || pMethod->ContainsGenericVariables())
-    {
-        // Ensure the method is active and all types have been loaded so the function pointer can be used.
-        pMethod->EnsureActive();
-        pMethod->PrepareForUseAsAFunctionPointer();
-        funcPtr = (void*)pMethod->GetMultiCallableAddrOfCode(CORINFO_ACCESS_UNMANAGED_CALLER_MAYBE);
-    }
+    // Ensure the method is active and all types have been loaded so the function pointer can be used.
+    pMethod->EnsureActive();
+    pMethod->PrepareForUseAsAFunctionPointer();
+    funcPtr = (void*)pMethod->GetMultiCallableAddrOfCode(CORINFO_ACCESS_UNMANAGED_CALLER_MAYBE);
 
     END_QCALL;
 

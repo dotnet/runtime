@@ -1093,14 +1093,6 @@ namespace System
         {
             IntPtr ptr = GetFunctionPointer(IRuntimeMethodInfo.GetValue(EnsureNonNullMethodInfo(m_value)));
             GC.KeepAlive(m_value);
-
-            // Null only for a static abstract interface method, which has no implementation to call
-            if (ptr == IntPtr.Zero)
-            {
-                MethodBase method = RuntimeType.GetMethodBase(m_value)!;
-                throw new MemberAccessException(SR.Format(SR.Acc_CallStaticAbstract, method.DeclaringType, method.Name));
-            }
-
             return ptr;
         }
 
