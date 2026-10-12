@@ -117,6 +117,15 @@ BYTE* GenerateDispatchStubCellEntrySlot(LoaderAllocator *pLoaderAllocator, TypeH
 
     VirtualCallStubManager * pMgr = pLoaderAllocator->GetVirtualCallStubManager();
 
+    // Dictionary dispatch cells have no import GCRefMap. Prepare the representative
+    // signature before a call can enter their signature-scanning dispatch frame.
+    MethodTable* pOwnerMT = ownerType.GetMethodTable();
+    MethodDesc* pMethod = pOwnerMT->GetMethodDescForSlot(methodSlot);
+    pMethod->PrepareForUseAsADependencyOfANativeImage();
+    pMethod = MethodDesc::FindOrCreateAssociatedMethodDesc(
+        pMethod, pOwnerMT, FALSE, pMethod->GetMethodInstantiation(), TRUE);
+    pMethod->PrepareForUseAsADependencyOfANativeImage();
+
     DispatchToken token = VirtualCallStubManager::GetTokenFromOwnerAndSlot(ownerType, methodSlot);
 
     PCODE addr;

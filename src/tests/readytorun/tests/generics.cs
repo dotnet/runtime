@@ -62,6 +62,116 @@ public class Program
         TestMDArrayAddressMethod.Run();
         TestNativeLayoutGeneration.Run();
         TestByRefLikeVTables.Run();
+        TestSignatureDependencyPreparation.Run();
+    }
+
+    public static class TestSignatureDependencyPreparation
+    {
+        public sealed class Marker
+        {
+            public int Value;
+        }
+
+        public struct ReferenceValue
+        {
+            public Marker Reference;
+        }
+
+        public struct NestedValue<T>
+        {
+            public ReferenceValue Reference;
+            public T Value;
+        }
+
+        public interface ITransform<T>
+        {
+            T Transform(T value);
+        }
+
+        public class ReferenceTransform<T> : ITransform<T>
+        {
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public virtual T Transform(T value)
+            {
+                GC.Collect(2, GCCollectionMode.Forced, true, true);
+                return value;
+            }
+        }
+
+        public struct ValueTransform<T> : ITransform<T>
+        {
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public T Transform(T value)
+            {
+                GC.Collect(2, GCCollectionMode.Forced, true, true);
+                return value;
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static ReferenceValue RoundTrip(ReferenceValue value)
+        {
+            GC.Collect(2, GCCollectionMode.Forced, true, true);
+            return value;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static NestedValue<T> RoundTripGeneric<T>(NestedValue<T> value)
+        {
+            GC.Collect(2, GCCollectionMode.Forced, true, true);
+            return value;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static T InvokeInterface<T>(ITransform<T> target, T value)
+        {
+            return target.Transform(value);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static T InvokeConstrained<TTarget, T>(TTarget target, T value) where TTarget : struct, ITransform<T>
+        {
+            return target.Transform(value);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static Marker CreateMarker()
+        {
+            return new Marker { Value = 12345 };
+        }
+
+        public static unsafe void Run()
+        {
+            Assert.AreEqual(true, RoundTrip(default).Reference is null);
+            Assert.AreEqual(true, RoundTripGeneric<string>(default).Reference.Reference is null);
+            Assert.AreEqual(0, RoundTripGeneric<int>(default).Value);
+
+            Marker marker = CreateMarker();
+            ReferenceValue value = new ReferenceValue { Reference = marker };
+            Assert.AreEqual(marker, RoundTrip(value).Reference);
+
+            Func<ReferenceValue, ReferenceValue> callback = RoundTrip;
+            Assert.AreEqual(marker, callback(value).Reference);
+            delegate* managed<ReferenceValue, ReferenceValue> pointer = &RoundTrip;
+            Assert.AreEqual(marker, pointer(value).Reference);
+
+            NestedValue<int> nested = new NestedValue<int> { Reference = value, Value = 37 };
+            NestedValue<int> result = RoundTripGeneric(nested);
+            Assert.AreEqual(marker, result.Reference.Reference);
+            Assert.AreEqual(37, result.Value);
+
+            ReferenceTransform<NestedValue<int>> target = new ReferenceTransform<NestedValue<int>>();
+            result = target.Transform(nested);
+            Assert.AreEqual(marker, result.Reference.Reference);
+            result = InvokeInterface(target, nested);
+            Assert.AreEqual(marker, result.Reference.Reference);
+            Assert.AreEqual(37, result.Value);
+
+            result = InvokeConstrained<ValueTransform<NestedValue<int>>, NestedValue<int>>(default, nested);
+            Assert.AreEqual(marker, result.Reference.Reference);
+            Assert.AreEqual(37, result.Value);
+            Assert.AreEqual(12345, marker.Value);
+        }
     }
 
     static void RunTest1()

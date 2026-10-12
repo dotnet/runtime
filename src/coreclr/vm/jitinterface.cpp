@@ -14578,6 +14578,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
     case READYTORUN_FIXUP_MethodEntry_ReadyToRun:
         {
             pMD = ZapSig::DecodeMethod(currentModule, pInfoModule, pBlob);
+            pMD->PrepareForUseAsADependencyOfANativeImage();
 
             if (!pMD->GetModule()->IsReadyToRun())
             {
