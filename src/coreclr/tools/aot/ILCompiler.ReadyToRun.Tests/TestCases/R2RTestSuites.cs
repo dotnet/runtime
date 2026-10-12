@@ -31,6 +31,189 @@ public class R2RTestSuites
     }
 
     [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void GenericTypeTokensUseStandaloneSharedImportCells(bool composite)
+    {
+        CompiledAssembly input = new()
+        {
+            AssemblyName = nameof(GenericTypeTokensUseStandaloneSharedImportCells),
+            SourceResourceNames = ["Webcil/WasmWebcilModule.cs"],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(GenericTypeTokensUseStandaloneSharedImportCells),
+            [
+                new(nameof(GenericTypeTokensUseStandaloneSharedImportCells), [new CrossgenAssembly(input)])
+                {
+                    Options = composite ? [Crossgen2Option.Composite, Crossgen2Option.Optimize] : [Crossgen2Option.Optimize],
+                    OutputFileExtension = TestPaths.IsWasmTarget ? ".wasm" : ".dll",
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            List<ReadyToRunMethod> methods = R2RAssert.GetAllMethods(reader);
+            foreach ((string type, string directMethod) in new[]
+            {
+                ("int", "ReadIntToken"),
+                ("Webcil.WasmWebcilModule+GenericTokenValue", "ReadValueToken"),
+            })
+            {
+                ReadyToRunMethod generic = Assert.Single(methods,
+                    method => method.SignatureString.Contains($".ReadGenericTypeToken<{type}>(", StringComparison.Ordinal));
+                ReadyToRunMethod direct = Assert.Single(methods,
+                    method => method.SignatureString.Contains($".{directMethod}(", StringComparison.Ordinal));
+                FixupCell genericFixup = Assert.Single(generic.Fixups ?? Array.Empty<FixupCell>(),
+                    fixup => fixup.Signature.FixupKind == ReadyToRunFixupKind.TypeHandle);
+                FixupCell directFixup = Assert.Single(direct.Fixups ?? Array.Empty<FixupCell>(),
+                    fixup => fixup.Signature.FixupKind == ReadyToRunFixupKind.TypeHandle);
+                Assert.Equal(directFixup.TableIndex, genericFixup.TableIndex);
+                Assert.Equal(directFixup.CellOffset, genericFixup.CellOffset);
+
+                ReadyToRunImportSection section = reader.ImportSections[(int)genericFixup.TableIndex];
+                ReadyToRunImportSection.ImportSectionEntry entry = section.Entries[(int)genericFixup.CellOffset];
+                int signatureOffset = reader.GetOffset((int)entry.SignatureRVA);
+                byte kind = reader.Image[signatureOffset++];
+                Assert.Equal((byte)ReadyToRunFixupKind.TypeHandle, kind & 0x7F);
+                if ((kind & 0x80) != 0)
+                {
+                    reader.ImageReader.ReadCompressedData(ref signatureOffset);
+                }
+
+                if (type == "int")
+                {
+                    Assert.Equal(0x08, reader.Image[signatureOffset]);
+                }
+                else
+                {
+                    Assert.Equal(0x11, reader.Image[signatureOffset]);
+                    int tokenOffset = signatureOffset + 1;
+                    uint token = reader.ImageReader.ReadCompressedData(ref tokenOffset);
+                    Assert.Equal(0u, token & 3u);
+                }
+            }
+        }
+    }
+
+    [ConditionalTheory(typeof(TestPaths), nameof(TestPaths.IsWasmTarget))]
+    [InlineData(1)]
+    [InlineData(2)]
+    public void DirectCalleesCoverRelocationPrecodeFixups(int parallelism)
+    {
+        CompiledAssembly input = new()
+        {
+            AssemblyName = nameof(DirectCalleesCoverRelocationPrecodeFixups),
+            SourceResourceNames = ["Webcil/WasmWebcilModule.cs"],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(DirectCalleesCoverRelocationPrecodeFixups),
+            [
+                new(nameof(DirectCalleesCoverRelocationPrecodeFixups), [new CrossgenAssembly(input)])
+                {
+                    Options = [Crossgen2Option.Composite, Crossgen2Option.Optimize],
+                    AdditionalArgs =
+                    [
+                        "--unrooted-input-file-paths", TestPaths.SystemPrivateCoreLibPath,
+                        "--two-phase-compilation", "--parallelism", parallelism.ToString(),
+                    ],
+                    OutputFileExtension = ".wasm",
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            List<ReadyToRunMethod> methods = R2RAssert.GetAllMethods(reader);
+            foreach (string name in new[] { "FixupLeaf", "FixupMiddle", "FixupOuter", "UncoveredFixup" })
+            {
+                ReadyToRunMethod method = Assert.Single(methods,
+                    method => method.SignatureString.Contains($".{name}(", StringComparison.Ordinal));
+                IReadOnlyList<FixupCell> fixups = method.Fixups ?? Array.Empty<FixupCell>();
+                if (name is "FixupMiddle" or "FixupOuter")
+                {
+                    Assert.DoesNotContain(fixups, fixup => fixup.Signature.FixupKind == ReadyToRunFixupKind.StringHandle);
+                    Assert.Contains(fixups, fixup => fixup.Signature.FixupKind == ReadyToRunFixupKind.MethodEntry_ReadyToRun);
+                }
+                else
+                {
+                    Assert.Single(fixups, fixup => fixup.Signature.FixupKind == ReadyToRunFixupKind.StringHandle);
+                }
+            }
+        }
+    }
+
+    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsWasmTarget))]
+    public void StartupEagerMethodsHaveNoPrecodeFixups()
+    {
+        CompiledAssembly input = new()
+        {
+            AssemblyName = nameof(StartupEagerMethodsHaveNoPrecodeFixups),
+            SourceResourceNames = ["ManagedHelpers/HelperCalls.cs"],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(StartupEagerMethodsHaveNoPrecodeFixups),
+            [
+                new(nameof(StartupEagerMethodsHaveNoPrecodeFixups), [new CrossgenAssembly(input)])
+                {
+                    Options = [Crossgen2Option.Composite, Crossgen2Option.Optimize],
+                    AdditionalArgs = [TestPaths.SystemPrivateCoreLibPath, "--parallelism", "2"],
+                    OutputFileExtension = ".wasm",
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            List<ReadyToRunMethod> methods = R2RAssert.GetAllMethods(reader);
+            foreach (string name in new[]
+            {
+                "System.AppContext.Setup",
+                "System.Environment.InitializeCommandLineArgs",
+                "System.Environment.CallEntryPoint",
+                "System.StartupHookProvider.ManagedStartup",
+                "System.Diagnostics.Tracing.EventSource.InitializeDefaultEventSources",
+            })
+            {
+                ReadyToRunMethod method = Assert.Single(methods, method =>
+                    method.SignatureString.Contains($"{name}(", StringComparison.Ordinal) &&
+                    method.SignatureString.Contains("Exception*", StringComparison.Ordinal));
+                Assert.Empty(method.Fixups ?? Array.Empty<FixupCell>());
+            }
+
+            ReadyToRunMethod arrayHelper = Assert.Single(methods,
+                method => method.SignatureString.Contains("System.Array.Ctor(", StringComparison.Ordinal) &&
+                    !method.SignatureString.Contains("ObjectHandleOnStack", StringComparison.Ordinal));
+            Assert.Empty(arrayHelper.Fixups ?? Array.Empty<FixupCell>());
+
+            SignatureFormattingOptions formattingOptions = new();
+            List<ReadyToRunImportSection> argumentExceptionSections = new();
+            foreach (ReadyToRunImportSection section in reader.ImportSections)
+            {
+                foreach (ReadyToRunImportSection.ImportSectionEntry entry in section.Entries)
+                {
+                    if (entry.Signature?.FixupKind == ReadyToRunFixupKind.TypeHandle &&
+                        entry.Signature.ToString(formattingOptions).Contains("System.ArgumentException ", StringComparison.Ordinal))
+                    {
+                        argumentExceptionSections.Add(section);
+                    }
+                }
+            }
+
+            ReadyToRunImportSection argumentExceptionSection = Assert.Single(argumentExceptionSections);
+            Assert.Equal(ReadyToRunImportSectionFlags.Eager,
+                argumentExceptionSection.Flags & ReadyToRunImportSectionFlags.Eager);
+            Assert.Contains(reader.ImportSections, section =>
+                section.Type == ReadyToRunImportSectionType.StringHandle &&
+                (section.Flags & ReadyToRunImportSectionFlags.Eager) != 0 &&
+                section.Entries.Count > 0);
+        }
+    }
+
+    [Theory]
     [InlineData(false, false)]
     [InlineData(false, true)]
     [InlineData(true, false)]

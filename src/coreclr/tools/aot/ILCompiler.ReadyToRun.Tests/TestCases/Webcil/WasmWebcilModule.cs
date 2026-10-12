@@ -9,6 +9,26 @@ namespace Webcil;
 public static class WasmWebcilModule
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
+    public static string FixupLeaf() => "transitive-precode-string";
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static string FixupMiddle(bool useCallee)
+    {
+        string value = FixupLeaf();
+        return useCallee ? value : "transitive-precode-string";
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static string FixupOuter(bool useCallee)
+    {
+        string value = FixupMiddle(useCallee);
+        return useCallee ? value : "transitive-precode-string";
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static string UncoveredFixup() => "uncovered-precode-string";
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static nint ReadIntPtrZero() => IntPtr.Zero;
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -61,6 +81,23 @@ public static class WasmWebcilModule
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static Type ReadGenericTypeToken<T>() => typeof(T);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static Type ReadGenericIntToken() => ReadGenericTypeToken<int>();
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static Type ReadIntToken() => typeof(int);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static Type ReadGenericValueToken() => ReadGenericTypeToken<GenericTokenValue>();
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static Type ReadValueToken() => typeof(GenericTokenValue);
+
+    public struct GenericTokenValue
+    {
+        public int Value;
+    }
 
     public struct SignatureOnlyValue
     {

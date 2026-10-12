@@ -67,7 +67,7 @@ namespace ILCompiler.DependencyAnalysis
                 // run first, since those are what establish whether it is even legal to use any
                 // R2R code in the module at all.
                 return new Import(
-                    _codegenNodeFactory.EagerImports,
+                    _codegenNodeFactory.EagerMethodImports,
                     _codegenNodeFactory.MethodSignature(
                         ReadyToRunFixupKind.MethodEntry_ReadyToRun,
                         method,

@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Buffers.Binary;
-using System.Linq;
 using Internal.JitInterface;
 using Internal.Pgo;
 using Internal.Text;
@@ -30,8 +29,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private DebugEHClauseInfo[] _debugEHClauseInfos;
         private List<ISymbolNode> _fixups;
         private HashSet<MethodWithGCInfo> _directCallTargets;
-        private HashSet<Signature> _moduleEagerFixups;
-        private HashSet<Signature> _guaranteedPrecodeFixups;
+        private HashSet<Import> _moduleEagerFixups;
+        private HashSet<Import> _guaranteedPrecodeFixups;
         private bool _precodeFixupsFinalized;
         private MethodDesc[] _inlinedMethods;
         private bool _lateTriggeredCompilation;
@@ -107,27 +106,27 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _directCallTargets.Add(target);
         }
 
-        internal void AddModuleEagerFixup(Signature fixup)
+        internal void AddModuleEagerFixup(Import fixup)
         {
-            _moduleEagerFixups ??= new HashSet<Signature>();
+            _moduleEagerFixups ??= new HashSet<Import>();
             _moduleEagerFixups.Add(fixup);
         }
 
         internal HashSet<MethodWithGCInfo> DirectCallTargets => _directCallTargets;
 
-        internal HashSet<Signature> GuaranteedPrecodeFixups => _guaranteedPrecodeFixups;
+        internal HashSet<Import> GuaranteedPrecodeFixups => _guaranteedPrecodeFixups;
 
         internal void FinalizePrecodeFixups()
         {
             Debug.Assert(!_precodeFixupsFinalized);
             _precodeFixupsFinalized = true;
 
-            HashSet<Signature> coveredFixups = null;
+            HashSet<Import> coveredFixups = null;
 
             if (_moduleEagerFixups is not null)
             {
-                coveredFixups = new HashSet<Signature>(_moduleEagerFixups);
-                _guaranteedPrecodeFixups = new HashSet<Signature>(_moduleEagerFixups);
+                coveredFixups = new HashSet<Import>(_moduleEagerFixups);
+                _guaranteedPrecodeFixups = new HashSet<Import>(_moduleEagerFixups);
             }
 
             if (_directCallTargets is not null)
@@ -138,8 +137,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     if (target._guaranteedPrecodeFixups is null)
                         continue;
 
-                    coveredFixups ??= new HashSet<Signature>();
-                    _guaranteedPrecodeFixups ??= new HashSet<Signature>();
+                    coveredFixups ??= new HashSet<Import>();
+                    _guaranteedPrecodeFixups ??= new HashSet<Import>();
                     coveredFixups.UnionWith(target._guaranteedPrecodeFixups);
                     _guaranteedPrecodeFixups.UnionWith(target._guaranteedPrecodeFixups);
                 }
@@ -149,8 +148,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 if (fixup is Import import)
                 {
-                    _guaranteedPrecodeFixups ??= new HashSet<Signature>();
-                    _guaranteedPrecodeFixups.Add(import.Signature);
+                    _guaranteedPrecodeFixups ??= new HashSet<Import>();
+                    _guaranteedPrecodeFixups.Add(import);
                 }
             }
 
@@ -160,19 +159,19 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 _fixups.RemoveAll(fixup =>
                     fixup is Import import &&
-                    coveredFixups.Contains(import.Signature));
+                    coveredFixups.Contains(import));
             }
         }
 
-        internal void ApplyModuleEagerFixups(HashSet<Signature> fixups)
+        internal void ApplyModuleEagerFixups(HashSet<Import> fixups)
         {
             Debug.Assert(_precodeFixupsFinalized);
 
-            _guaranteedPrecodeFixups ??= new HashSet<Signature>();
+            _guaranteedPrecodeFixups ??= new HashSet<Import>();
             _guaranteedPrecodeFixups.UnionWith(fixups);
             _fixups.RemoveAll(fixup =>
                 fixup is Import import &&
-                fixups.Contains(import.Signature));
+                fixups.Contains(import));
         }
 
         public int Size => _methodCode.Data.Length;
@@ -220,48 +219,21 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public byte[] GetFixupBlob(NodeFactory factory)
         {
-            Relocation[] relocations = GetData(factory, relocsOnly: true).Relocs;
-
-            if (ColdCodeNode != null)
-            {
-                Relocation[] coldRelocations = ColdCodeNode.GetData(factory, relocsOnly: true).Relocs;
-                if (relocations == null)
-                {
-                    relocations = coldRelocations;
-                }
-                else if (coldRelocations != null)
-                {
-                    relocations = Enumerable.Concat(relocations, coldRelocations).ToArray();
-                }
-            }
-
-            if (relocations == null)
-            {
-                return null;
-            }
-
             List<FixupCell> fixupCells = null;
-
-            foreach (Relocation reloc in relocations)
-            {
-                if (reloc.Target is Import fixupCell && fixupCell.EmitPrecode)
-                {
-                    if (fixupCells == null)
-                    {
-                        fixupCells = new List<FixupCell>();
-                    }
-                    fixupCells.Add(new FixupCell(fixupCell.Table.IndexFromBeginningOfArray, fixupCell.OffsetFromBeginningOfArray));
-                }
-            }
 
             foreach (ISymbolNode node in _fixups)
             {
+                Import fixupCell = (Import)node;
+                if (fixupCell.Table.IsEager)
+                {
+                    continue;
+                }
+
                 if (fixupCells == null)
                 {
                     fixupCells = new List<FixupCell>();
                 }
 
-                Import fixupCell = (Import)node;
                 fixupCells.Add(new FixupCell(fixupCell.Table.IndexFromBeginningOfArray, fixupCell.OffsetFromBeginningOfArray));
             }
 

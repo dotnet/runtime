@@ -590,7 +590,7 @@ namespace ILCompiler
             }
 
             ValidateManagedHelpers(managedHelpers);
-            AddStartupEagerFixups(methodsByLevel, compiledMethods);
+            PromoteModuleEagerFixups(methodsByLevel, compiledMethods, managedHelpers);
         }
 
         private HashSet<MethodDesc> GetStartupEagerMethods()
@@ -621,9 +621,10 @@ namespace ILCompiler
             }
         }
 
-        private void AddStartupEagerFixups(
+        private void PromoteModuleEagerFixups(
             List<DependencyNodeCore<NodeFactory>>[] methodsByLevel,
-            HashSet<MethodDesc> compiledMethods)
+            HashSet<MethodDesc> compiledMethods,
+            List<MethodWithGCInfo> managedHelpers)
         {
             if (_startupEagerMethods is null)
             {
@@ -632,7 +633,18 @@ namespace ILCompiler
 
             var eagerMethodClosure = new HashSet<MethodWithGCInfo>();
             var methodsToVisit = new Stack<MethodWithGCInfo>();
-            var eagerFixups = new HashSet<Signature>();
+            var eagerFixups = new HashSet<Import>();
+
+            // Helpers are compilation roots and can be registered eagerly by any live caller,
+            // not just by the native-facing startup methods.
+            foreach (MethodWithGCInfo helper in managedHelpers)
+            {
+                Debug.Assert(helper.Marked);
+                if (!helper.IsEmpty)
+                {
+                    methodsToVisit.Push(helper);
+                }
+            }
 
             foreach (MethodDesc method in _startupEagerMethods)
             {
@@ -658,23 +670,57 @@ namespace ILCompiler
                     "Startup method is always invoked");
 
                 methodsToVisit.Push(methodNode);
-                if (methodNode.GuaranteedPrecodeFixups is not null)
-                {
-                    eagerFixups.UnionWith(methodNode.GuaranteedPrecodeFixups);
-                }
             }
 
             while (methodsToVisit.TryPop(out MethodWithGCInfo method))
             {
-                if (!eagerMethodClosure.Add(method) || method.DirectCallTargets is null)
+                if (!eagerMethodClosure.Add(method))
                 {
                     continue;
                 }
 
-                foreach (MethodWithGCInfo target in method.DirectCallTargets)
+                if (method.GuaranteedPrecodeFixups is not null)
                 {
-                    methodsToVisit.Push(target);
+                    foreach (Import fixup in method.GuaranteedPrecodeFixups)
+                    {
+                        eagerFixups.Add(fixup);
+                        // Eager helper entries also prepare their bodies, even when the
+                        // generated call does not contribute a direct-call edge.
+                        if (fixup.Signature is MethodFixupSignature { IsReadyToRunEntry: true } signature)
+                        {
+                            MethodDesc target = signature.Method.GetCanonMethodTarget(CanonicalFormKind.Specific);
+                            if (compiledMethods.Contains(target))
+                            {
+                                methodsToVisit.Push(NodeFactory.CompiledMethodNode(target));
+                            }
+                        }
+                    }
                 }
+
+                if (method.DirectCallTargets is not null)
+                {
+                    foreach (MethodWithGCInfo target in method.DirectCallTargets)
+                    {
+                        methodsToVisit.Push(target);
+                    }
+                }
+            }
+
+            foreach (Import fixup in eagerFixups)
+            {
+                if (!fixup.Table.IsEager)
+                {
+                    ImportSectionNode table = fixup.Signature switch
+                    {
+                        MethodFixupSignature { RequiresEagerActivation: true } or
+                            ResumptionStubEntryPointSignature or StoreMultiCallableAddrOfCodeSignature => NodeFactory.EagerMethodImports,
+                        _ when fixup.Table == NodeFactory.StringImports => NodeFactory.EagerStringImports,
+                        _ => NodeFactory.EagerImports,
+                    };
+                    fixup.PromoteToEager(table);
+                }
+
+                _dependencyGraph.AddRoot(fixup, "Eager method precode fixup is module-eager");
             }
 
             foreach (List<DependencyNodeCore<NodeFactory>> methodsAtLevel in methodsByLevel)
@@ -682,9 +728,10 @@ namespace ILCompiler
                 foreach (DependencyNodeCore<NodeFactory> dependency in methodsAtLevel)
                 {
                     var method = (MethodWithGCInfo)dependency;
-                    if (!method.IsEmpty && !eagerMethodClosure.Contains(method))
+                    if (!method.IsEmpty)
                     {
                         method.ApplyModuleEagerFixups(eagerFixups);
+                        Debug.Assert(!eagerMethodClosure.Contains(method) || method.Fixups.Count == 0);
                     }
                 }
             }

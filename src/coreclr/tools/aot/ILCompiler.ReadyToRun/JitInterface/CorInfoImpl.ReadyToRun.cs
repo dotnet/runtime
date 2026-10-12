@@ -523,9 +523,16 @@ namespace Internal.JitInterface
 
         partial void RecordRelocationDependencies(ISymbolNode relocTarget)
         {
-            if (relocTarget is Import { Table.IsEager: true } eagerImport)
+            if (relocTarget is Import import)
             {
-                _methodCodeNode.AddModuleEagerFixup(eagerImport.Signature);
+                if (import.Table.IsEager)
+                {
+                    _methodCodeNode.AddModuleEagerFixup(import);
+                }
+                else if (import.EmitPrecode)
+                {
+                    AddPrecodeFixup(import);
+                }
             }
 
             if (relocTarget is MethodWithGCInfo method &&
@@ -543,7 +550,7 @@ namespace Internal.JitInterface
 
             if (node is Import { Table.IsEager: true } eagerImport)
             {
-                _methodCodeNode.AddModuleEagerFixup(eagerImport.Signature);
+                _methodCodeNode.AddModuleEagerFixup(eagerImport);
             }
         }
 

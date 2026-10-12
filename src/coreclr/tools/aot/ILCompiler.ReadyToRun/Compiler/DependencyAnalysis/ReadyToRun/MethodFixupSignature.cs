@@ -41,6 +41,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         }
 
         public MethodDesc Method => _method.Method;
+        internal bool IsReadyToRunEntry => _fixupKind == ReadyToRunFixupKind.MethodEntry_ReadyToRun;
+
+        internal bool RequiresEagerActivation =>
+            _fixupKind is ReadyToRunFixupKind.MethodEntry or ReadyToRunFixupKind.MethodEntry_ReadyToRun;
+
         public bool IsInstantiatingStub { get; }
 
         public override int ClassCode => 150063499;

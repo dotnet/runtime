@@ -9,9 +9,11 @@ using System.Text;
 
 using crossgen2::ILCompiler;
 using crossgen2::Internal.JitInterface;
+using crossgen2::ILCompiler.DependencyAnalysis.ReadyToRun;
 
 using ILCompiler.ReadyToRun.Tests.TestCasesRunner;
 
+using crossgen2::Internal.ReadyToRunConstants;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
@@ -21,6 +23,36 @@ namespace ILCompiler.ReadyToRun.Tests;
 
 public class ReadyToRunLibraryRootProviderTests
 {
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void PrecodeCoverageRequiresTheSameImportCell(bool sharedCell)
+    {
+        ReadyToRunCompilerContext context = CreateContext();
+        MethodDesc method = context.GetWellKnownType(WellKnownType.Int32).GetMethod("GetHashCode"u8, null);
+        MethodWithGCInfo callee = new(method);
+        MethodWithGCInfo caller = new(method);
+        ImportSectionNode table = new("TestImports", ReadyToRunImportSectionType.Unknown,
+            ReadyToRunImportSectionFlags.PCode, 8, emitPrecode: true, emitGCRefMap: false);
+        ReadyToRunHelperSignature signature = new(ReadyToRunHelper.Module);
+        Import calleeCell = new(table, signature);
+        Import callerCell = sharedCell ? calleeCell : new(table, signature);
+        callee.Fixups.Add(calleeCell);
+        callee.FinalizePrecodeFixups();
+        caller.AddDirectCallTarget(callee);
+        caller.Fixups.Add(callerCell);
+        caller.FinalizePrecodeFixups();
+
+        if (sharedCell)
+        {
+            Assert.Empty(caller.Fixups);
+        }
+        else
+        {
+            Assert.Same(callerCell, Assert.Single(caller.Fixups));
+        }
+    }
+
     [Theory]
     [InlineData("System.Numerics", "Vector`1", false)]
     [InlineData("System.Runtime.Intrinsics", "Vector64`1", false)]
