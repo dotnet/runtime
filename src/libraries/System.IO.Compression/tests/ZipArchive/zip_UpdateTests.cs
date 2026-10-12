@@ -1644,10 +1644,13 @@ namespace System.IO.Compression.Tests
         /// would otherwise disagree. Disposing the archive should throw instead.
         /// </summary>
         [Theory]
-        [MemberData(nameof(Get_Booleans_Data))]
-        public async Task Update_ChangeLastWriteTimeOnZipCryptoEntryWithoutReencrypting_Throws(bool async)
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public async Task Update_ChangeLastWriteTimeOnZipCryptoEntryWithoutReencrypting_Throws(bool async, bool sameInstant)
         {
-            const string password = "pw";
+            const string password = "PLACEHOLDER";
             using MemoryStream ms = new MemoryStream();
 
             ZipArchive createArchive = await CreateZipArchive(async, ms, ZipArchiveMode.Create, leaveOpen: true);
@@ -1666,9 +1669,65 @@ namespace System.IO.Compression.Tests
             Assert.NotNull(entryToModify);
 
             // Only change the timestamp -- do not reopen the entry to rewrite its data.
-            entryToModify.LastWriteTime = new DateTimeOffset(2026, 1, 1, 17, 0, 0, TimeSpan.Zero);
+            DateTimeOffset originalTimestamp = entryToModify.LastWriteTime;
+            TimeSpan differentOffset = originalTimestamp.Offset == TimeSpan.Zero ? TimeSpan.FromHours(1) : TimeSpan.Zero;
+            DateTimeOffset newTimestamp = sameInstant
+                ? originalTimestamp.ToOffset(differentOffset)
+                : new DateTimeOffset(2026, 1, 1, 17, 0, 0, TimeSpan.Zero);
+            Assert.NotEqual(originalTimestamp.DateTime, newTimestamp.DateTime);
+            if (sameInstant)
+            {
+                Assert.Equal(originalTimestamp, newTimestamp);
+            }
+            entryToModify.LastWriteTime = newTimestamp;
 
             await Assert.ThrowsAsync<NotSupportedException>(() => DisposeZipArchive(async, updateArchive));
+        }
+
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public async Task Update_ChangeLastWriteTimeWithoutChangingZipCryptoDosTimestamp_Succeeds(bool async, bool changeOffset)
+        {
+            const string password = "PLACEHOLDER";
+            using MemoryStream ms = new MemoryStream();
+
+            ZipArchive createArchive = await CreateZipArchive(async, ms, ZipArchiveMode.Create, leaveOpen: true);
+            ZipArchiveEntry created = createArchive.CreateEntry("a.txt", password, ZipEncryptionMethod.ZipCrypto);
+            created.LastWriteTime = new DateTimeOffset(2026, 1, 1, 12, 0, 0, TimeSpan.Zero);
+            using (Stream writeStream = await OpenEntryStream(async, created))
+            using (StreamWriter writer = new StreamWriter(writeStream))
+            {
+                writer.Write("hello");
+            }
+            await DisposeZipArchive(async, createArchive);
+
+            ms.Position = 0;
+            ZipArchive updateArchive = await CreateZipArchive(async, ms, ZipArchiveMode.Update, leaveOpen: true);
+            ZipArchiveEntry entryToModify = updateArchive.GetEntry("a.txt");
+            Assert.NotNull(entryToModify);
+
+            DateTimeOffset originalTimestamp = entryToModify.LastWriteTime;
+            TimeSpan differentOffset = originalTimestamp.Offset == TimeSpan.Zero ? TimeSpan.FromHours(1) : TimeSpan.Zero;
+            entryToModify.LastWriteTime = changeOffset
+                ? new DateTimeOffset(originalTimestamp.DateTime, differentOffset)
+                : originalTimestamp.AddSeconds(1);
+            Assert.NotEqual(originalTimestamp, entryToModify.LastWriteTime);
+            await DisposeZipArchive(async, updateArchive);
+
+            ms.Position = 0;
+            ZipArchive readArchive = await CreateZipArchive(async, ms, ZipArchiveMode.Read, leaveOpen: true);
+            ZipArchiveEntry verify = readArchive.GetEntry("a.txt");
+            Assert.NotNull(verify);
+            Assert.Equal(originalTimestamp.DateTime, verify.LastWriteTime.DateTime);
+            using (Stream readStream = await OpenEntryStream(async, verify, password))
+            using (StreamReader reader = new StreamReader(readStream))
+            {
+                Assert.Equal("hello", reader.ReadToEnd());
+            }
+            await DisposeZipArchive(async, readArchive);
         }
 
         /// <summary>

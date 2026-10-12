@@ -360,9 +360,10 @@ namespace System.IO.Compression
         /// an indicator value of 1980 January 1 at midnight will be returned.
         /// </summary>
         /// <remarks>
-        /// For a ZipCrypto-encrypted entry read from an existing archive in <see cref="ZipArchiveMode.Update"/>, changing this property without
-        /// also reopening the entry with its password to rewrite its data will cause a <see cref="NotSupportedException"/> when the archive is
-        /// disposed, because the entry's password verification bytes can't be kept consistent with the new timestamp without re-encrypting.
+        /// For a ZipCrypto-encrypted entry that uses a data descriptor and is read from an existing archive in <see cref="ZipArchiveMode.Update"/>,
+        /// changing the timestamp stored in the archive without also reopening the entry with its password to rewrite its data will cause a
+        /// <see cref="NotSupportedException"/> when the archive is disposed, because the entry's password verification bytes can't be kept
+        /// consistent with the new timestamp without re-encrypting.
         /// </remarks>
         /// <exception cref="NotSupportedException">An attempt to set this property was made, but the ZipArchive that this entry belongs to was
         /// opened in read-only mode.</exception>
@@ -1080,7 +1081,10 @@ namespace System.IO.Compression
                 && _storedUncompressedData is null
                 && IsZipCryptoEncrypted
                 && (_generalPurposeBitFlag & BitFlagValues.DataDescriptor) != 0
-                && _lastModified != _originalLastModified)
+                // Compare the DOS timestamps stored in ZIP headers, which omit UTC offsets and have two-second resolution.
+                // ZIP encoding: https://pkware.cachefly.net/webdocs/casestudies/APPNOTE.TXT (section 4.4.6).
+                // DOS field layout: https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-filetimetodosdatetime#parameters
+                && ZipHelper.DateTimeToDosTime(_lastModified.DateTime) != ZipHelper.DateTimeToDosTime(_originalLastModified.DateTime))
             {
                 throw new NotSupportedException(SR.ZipCryptoLastWriteTimeChangeNotSupported);
             }
