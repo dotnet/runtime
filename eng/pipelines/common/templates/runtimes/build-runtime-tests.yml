@@ -5,8 +5,10 @@ parameters:
   buildConfig: ''
   testBuildArgs: ''
   buildAllTestsAsStandalone: false
+  buildSucceededVariable: _RuntimeTestsBuilt
+  logRootName: RuntimeTests
   #arcade-specific parameters
-  condition: always()
+  condition: succeeded()
   continueOnError: false
   displayName: ''
   timeoutInMinutes: ''
@@ -16,17 +18,20 @@ parameters:
 
 steps:
   - ${{ if eq(parameters.osGroup, 'windows') }}:
-    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(crossArg) ci -arch ${{ parameters.archType }} $(buildConfigUpper) $(_nativeSanitizersArg) $(priorityArg) $(runtimeFlavorArgs) ${{ parameters.testBuildArgs }} $(runtimeVariantArg) $(librariesConfigurationArg)
-      displayName: Build Tests
-      condition: and(succeeded(), ${{ parameters.condition }})
+    - script: |
+        echo ##vso[task.setvariable variable=${{ parameters.buildSucceededVariable }}]false && $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(crossArg) ci $(logRootNameArg)${{ parameters.logRootName }} -arch ${{ parameters.archType }} $(buildConfigUpper) $(_nativeSanitizersArg) $(priorityArg) $(runtimeFlavorArgs) ${{ parameters.testBuildArgs }} $(runtimeVariantArg) $(librariesConfigurationArg) && echo ##vso[task.setvariable variable=${{ parameters.buildSucceededVariable }}]true
+      displayName: Build Tests ${{ parameters.logRootName }}
+      condition: ${{ parameters.condition }}
+      continueOnError: ${{ parameters.continueOnError }}
       env:
         ${{ if eq(parameters.buildAllTestsAsStandalone, true) }}:
           BuildAllTestsAsStandalone: true
 
   - ${{ if ne(parameters.osGroup, 'windows') }}:
-    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(crossArg) ci os ${{ parameters.osGroup }} -arch ${{ parameters.archType }} $(buildConfigUpper) $(_nativeSanitizersArg) $(priorityArg) $(runtimeFlavorArgs) ${{ parameters.testBuildArgs }} $(runtimeVariantArg) $(librariesConfigurationArg)
-      displayName: Build Tests
-      condition: and(succeeded(), ${{ parameters.condition }})
+    - script: echo "##vso[task.setvariable variable=${{ parameters.buildSucceededVariable }}]false" && $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(crossArg) ci $(logRootNameArg)${{ parameters.logRootName }} os ${{ parameters.osGroup }} -arch ${{ parameters.archType }} $(buildConfigUpper) $(_nativeSanitizersArg) $(priorityArg) $(runtimeFlavorArgs) ${{ parameters.testBuildArgs }} $(runtimeVariantArg) $(librariesConfigurationArg) && echo "##vso[task.setvariable variable=${{ parameters.buildSucceededVariable }}]true"
+      displayName: Build Tests ${{ parameters.logRootName }}
+      condition: ${{ parameters.condition }}
+      continueOnError: ${{ parameters.continueOnError }}
       env:
         ${{ if eq(parameters.buildAllTestsAsStandalone, true) }}:
           BuildAllTestsAsStandalone: true

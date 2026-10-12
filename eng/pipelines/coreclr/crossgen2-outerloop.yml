@@ -24,12 +24,14 @@ extends:
         - template: /eng/common/core-templates/job/helix-job-monitor.yml
           parameters:
             helixAccessToken: $(HelixApiAccessToken)
-            timeoutInMinutes: 720
+            timeoutInMinutes: 1260
             allowNoHelixJobs: true
 
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
+          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          helixQueueGroup: pr
           buildConfig: checked
           platforms:
           - linux_arm
@@ -42,96 +44,58 @@ extends:
           - windows_arm64
           jobParameters:
             buildArgs: -s clr+libs -c $(_BuildConfig) -lc Release
+            testGroup: outerloop
+            liveLibrariesBuildConfig: Release
+            timeoutInMinutes: 1200
             postBuildSteps:
-              - template: /eng/pipelines/coreclr/templates/build-native-test-assets-step.yml
-              - template: /eng/pipelines/common/upload-artifact-step.yml
+              # Test most platforms in composite mode as the expected mainline shipping mode
+              - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
+                forwardedParameters:
+                - testGroup
                 parameters:
-                  rootFolder: $(Build.SourcesDirectory)/artifacts/bin
-                  includeRootFolder: false
-                  archiveType: $(archiveType)
-                  archiveExtension: $(archiveExtension)
-                  tarCompression: $(tarCompression)
-                  artifactName: Checked_CoreCLR_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
-                  displayName: Build Assets
+                  useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
+                  testBuildArgs: composite
+                  readyToRun: true
+                  compositeBuildMode: true
+                  displayNameArgs: R2R_Composite
+                  timeoutPerTestInMinutes: 30
+                  timeoutPerTestCollectionInMinutes: 90
+              # Composite mode with large version bubble (inputbubble)
+              - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
+                forwardedParameters:
+                - testGroup
+                parameters:
+                  useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
+                  testBuildArgs: generatelayoutonly composite
+                  readyToRun: true
+                  compositeBuildMode: true
+                  largeVersionBubble: true
+                  displayNameArgs: R2R_Composite_LargeVersionBubble
+                  runAfterPreviousFailure: true
+                  timeoutPerTestInMinutes: 30
+                  timeoutPerTestCollectionInMinutes: 90
+                  condition: >-
+                    and(
+                      eq(variables['archType'], 'x64'),
+                      in(variables['osGroup'], 'linux', 'windows')
+                    )
+              # Outerloop testing in non-composite mode
+              - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
+                forwardedParameters:
+                - testGroup
+                parameters:
+                  useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
+                  testBuildArgs: generatelayoutonly crossgen2
+                  readyToRun: true
+                  displayNameArgs: R2R
+                  runAfterPreviousFailure: true
+                  timeoutPerTestInMinutes: 30
+                  timeoutPerTestCollectionInMinutes: 90
             extraVariablesTemplates:
-              - template: /eng/pipelines/common/templates/runtimes/native-test-assets-variables.yml
-                parameters:
-                  testGroup: outerloop
-
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml
-          buildConfig: checked
-          platforms:
-          - CoreClrTestBuildHost # Either osx_x64 or linux_x64
-          jobParameters:
-            testGroup: outerloop
-
-      # Test most platforms in composite mode as the expected mainline shipping mode
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
-          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-          buildConfig: checked
-          platforms:
-          - linux_arm
-          - linux_x64
-          - linux_arm64
-          - osx_arm64
-          - osx_x64
-          - windows_x86
-          - windows_x64
-          - windows_arm64
-          jobParameters:
-            useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
-            testGroup: outerloop
-            readyToRun: true
-            compositeBuildMode: true
-            displayNameArgs: R2R_Composite
-            liveLibrariesBuildConfig: Release
-            unifiedArtifactsName: Checked_CoreCLR_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
-
-      # Composite mode with large version bubble (inputbubble)
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
-          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-          buildConfig: checked
-          platforms:
-          - linux_x64
-          - windows_x64
-          jobParameters:
-            useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
-            testGroup: outerloop
-            readyToRun: true
-            compositeBuildMode: true
-            largeVersionBubble: true
-            displayNameArgs: R2R_Composite_LargeVersionBubble
-            liveLibrariesBuildConfig: Release
-            unifiedArtifactsName: Checked_CoreCLR_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
-
-      # Outerloop testing in non-composite mode
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
-          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-          buildConfig: checked
-          platforms:
-          - linux_arm
-          - linux_arm64
-          - linux_x64
-          - osx_x64
-          - osx_arm64
-          - windows_arm64
-          - windows_x64
-          - windows_x86
-          jobParameters:
-            useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
-            testGroup: outerloop
-            readyToRun: true
-            displayNameArgs: R2R
-            liveLibrariesBuildConfig: Release
-            unifiedArtifactsName: Checked_CoreCLR_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
+              - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
+                forwardedParameters:
+                - testGroup
+                - liveLibrariesBuildConfig
 
       # Build release CoreCLR for Crossgen2 baseline generation
       - template: /eng/pipelines/common/platform-matrix.yml

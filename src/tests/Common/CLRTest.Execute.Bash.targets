@@ -522,9 +522,10 @@ run_out_of_process_tests() {
       oop_exit=$?
       unset __TestOutOfProcessStatusFile
     else
-      # allTargets runners can include tests whose target-specific wrapper was not generated.
-      oop_exit=0
-      echo "Test executable '${PWD}/${oop_wrapper}' was not found on this platform." > "$oop_status"
+      # A planned out-of-process wrapper that is missing on disk is an infrastructure failure,
+      # not a skip: report it as a failing result with a diagnostic message.
+      oop_exit=1
+      echo "Test Infrastructure Failure: planned out-of-process wrapper '${PWD}/${oop_wrapper}' was not found." > "$oop_output"
     fi
 
     {
@@ -820,15 +821,12 @@ $(BashCLRTestExitCodeCheck)
          Note: under the hood, this will rely on Environment.NewLine for line
          endings. This means that if the scripts are being generated on Windows,
          the line endings will need to be changed from CR-LF to Unix (LF) line
-         endings before running the scripts on Unix platforms. In our current lab
-         infra it shouldn't really matter as the execution scripts are regenerated
-         in the 'test run' phase before sending the items to Helix i.o.w. at
-         the point where we already know the exact targeting platform. -->
+         endings before running the scripts on Unix platforms. -->
     <WriteLinesToFile
       File="$(ExecutionBashScriptPath)"
       Lines="$(_CLRTestExecutionScriptText)"
       Overwrite="true" />
-    <Exec Condition="'$(SkipChmodOfGeneratedCommandScript)' != 'true'" Command="chmod +x $(ExecutionBashScriptPath)" EchoOff="true" />
+    <Exec Command="chmod +x $(ExecutionBashScriptPath)" EchoOff="true" />
   </Target>
 
 </Project>

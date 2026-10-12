@@ -114,8 +114,7 @@ namespace TestLibrary
 
                 if (!File.Exists(testExecutable))
                 {
-                    throw new OutOfProcessTestSkippedException(
-                        $"Test executable '{testExecutable}' was not found on this platform.");
+                    throw new FileNotFoundException("Planned out-of-process test executable was not found.", testExecutable);
                 }
 
                 System.IO.Directory.CreateDirectory(outputDir);

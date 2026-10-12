@@ -106,26 +106,22 @@ Please use the following command for help.
 
 ### Unsupported and temporarily disabled tests
 
-To support building all tests for all targets on single target, we use
-the conditional property
+To mark a test as unsupported on a particular target, we use the
+conditional property
 
 ```xml
 <CLRTestTargetUnsupported Condition="...">true</CLRTestTargetUnsupported>
 ```
 
-This property disables building of a test in a default build. It also
-disables running a test in the bash/batch wrapper scripts. It allows the
-test to be built on any target in CI when the `allTargets` option is
-passed to the `build.*` scripts.
+This property disables building of a test in a default build for the
+targets matched by its condition. It also disables running a test in the
+bash/batch wrapper scripts for those targets.
 
 Tests which never should be built or run are marked
 
 ```xml
 <DisableProjectBuild>true</DisableProjectBuild>
 ```
-
-This propoerty should not be conditioned on Target properties to allow
-all tests to be built for `allTargets`.
 
 ## Running Individual Tests
 

@@ -146,7 +146,7 @@ Note that all you really need to know is the set of environment variables set, a
 
 However, here are some useful links if you need to dig deeper into what configuration settings are used, and how.
 The mapping from Azure DevOps pipeline to configuration settings is set by the `scenarios` tags for coreclr
-tests [here](../../../eng/pipelines/common/templates/runtimes/run-test-job.yml) and for libraries tests
+tests [here](../../../eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml) and for libraries tests
 [here](../../../eng/pipelines/libraries/run-test-job.yml).
 These tags are converted to configuration variables [here](../../../src/tests/Common/testenvironment.proj).
 

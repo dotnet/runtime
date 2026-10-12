@@ -13,9 +13,6 @@
     <PortableOS>$(TargetOS.ToLowerInvariant())</PortableOS>
     <PortableOS Condition="'$(PortableOS)' == 'windows'">win</PortableOS>
 
-    <!-- TargetOS=AnyOS is a sentinel value used by tests, ignore it.  -->
-    <PortableOS Condition="'$(PortableOS)' == 'anyos'">$(__PortableTargetOS)</PortableOS>
-
     <!-- Detect linux flavors using __PortableTargetOS from the native script. -->
     <PortableOS Condition="'$(PortableOS)' == 'linux' and '$(__PortableTargetOS)' == 'linux-musl'">linux-musl</PortableOS>
     <PortableOS Condition="'$(PortableOS)' == 'linux' and '$(__PortableTargetOS)' == 'linux-bionic'">linux-bionic</PortableOS>

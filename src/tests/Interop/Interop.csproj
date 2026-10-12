@@ -75,9 +75,8 @@
     <WindowsOnlyCMakeProjectReference Include="ArrayMarshalling/SafeArray/**/CMakeLists.txt" />
 
     <!--
-      Our CMake project reference system validates that we have output artifacts for each referenced directory.
-      For our Windows-only tests, we only build the native assets on Windows. So, we need to remove the CMake project reference
-      for these directories to get the build to pass.
+      The CMake SDK resolves output artifacts for each referenced directory. Our Windows-only
+      directories have no native outputs on other platforms, so remove those references there.
     -->
     <CMakeProjectReference Condition="'$(TargetOS)' != 'windows'" Remove="@(WindowsOnlyCMakeProjectReference)" />
 
