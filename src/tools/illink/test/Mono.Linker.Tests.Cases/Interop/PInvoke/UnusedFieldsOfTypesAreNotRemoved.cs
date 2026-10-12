@@ -27,6 +27,7 @@ namespace Mono.Linker.Tests.Cases.Interop.PInvoke
         }
 
         [Kept]
+        [StructLayout(LayoutKind.Auto)]
         struct PointedTo
         {
             [Kept] private int field1;
@@ -35,6 +36,7 @@ namespace Mono.Linker.Tests.Cases.Interop.PInvoke
         }
 
         [Kept]
+        [StructLayout(LayoutKind.Auto)]
         struct ArrayElement
         {
             [Kept] private int field1;
@@ -43,6 +45,7 @@ namespace Mono.Linker.Tests.Cases.Interop.PInvoke
         }
 
         [Kept]
+        [StructLayout(LayoutKind.Auto)]
         struct PointedToByPointer
         {
             [Kept] private int field1;
@@ -51,6 +54,7 @@ namespace Mono.Linker.Tests.Cases.Interop.PInvoke
         }
 
         [Kept]
+        [StructLayout(LayoutKind.Auto)]
         struct NestedArrayElement
         {
             [Kept] private int field1;
