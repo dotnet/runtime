@@ -2101,7 +2101,7 @@ ValueNum ValueNumStore::VNIgnoreIntToLongCast(ValueNum vn)
 
         // Also look through any non-handle long-typed integral constant that fits in an int.
         int intCns;
-        if (!IsVNHandle(vn) && IsVNIntegralConstant(vn, &intCns))
+        if (IsVNIntegralConstant(vn, &intCns))
         {
             return VNForIntCon(intCns);
         }
@@ -7227,7 +7227,7 @@ bool ValueNumStore::IsVNLog2(ValueNum vn, int* upperBound)
 bool ValueNumStore::IsVNNeverNegative(ValueNum vn)
 {
     auto vnVisitor = [this](ValueNum vn) -> VNVisit {
-        if ((vn == NoVN) || !varTypeIsIntegral(TypeOfVN(vn)))
+        if ((vn == NoVN) || !varTypeIsIntegral(TypeOfVN(vn)) || IsVNHandle(vn))
         {
             return VNVisit::Abort;
         }

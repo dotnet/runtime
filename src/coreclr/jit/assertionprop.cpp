@@ -350,6 +350,11 @@ static void optAssertionProp_HWIntrinsic(Compiler* comp, GenTreeHWIntrinsic* tre
         case GT_CNS_INT:
         case GT_CNS_LNG:
         {
+            if (node->AsIntConCommon()->ImmedValNeedsReloc(compiler))
+            {
+                break;
+            }
+
             if (node->IsIntegralConst(0) || node->IsIntegralConst(1))
             {
                 return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::One};
