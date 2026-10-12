@@ -461,7 +461,7 @@
     }
 }
 
-.class public auto ansi beforefieldinit ExplicitNonVirtualMethod_InvalidType_InvalidMethodImpl
+.class public auto ansi beforefieldinit ExplicitNonVirtualMethod_InvalidType_MethodImplBodyNotVirtual
     extends [System.Runtime]System.Object
     implements IInterface
 {
@@ -496,7 +496,7 @@
     }
 }
 
-.class public sequential ansi sealed beforefieldinit ExplicitNonVirtualMethodOnStruct_InvalidType_InvalidMethodImpl
+.class public sequential ansi sealed beforefieldinit ExplicitNonVirtualMethodOnStruct_InvalidType_MethodImplBodyNotVirtual
     extends [System.Runtime]System.ValueType
     implements IInterface
 {
@@ -581,7 +581,7 @@
     }
 }
 
-.class public auto ansi beforefieldinit NonVirtualMethodHidesBaseVirtualMethod_InvalidType_InvalidMethodImpl
+.class public auto ansi beforefieldinit NonVirtualMethodHidesBaseVirtualMethod_InvalidType_MethodImplBodyNotVirtual
     extends VirtualMethodImplBase
     implements IInterface
 {
@@ -605,13 +605,13 @@
     }
 }
 
-.class public auto ansi beforefieldinit InheritedNonVirtualMethod_InvalidType_InvalidMethodImpl
-    extends ExplicitNonVirtualMethod_InvalidType_InvalidMethodImpl
+.class public auto ansi beforefieldinit InheritedNonVirtualMethod_InvalidType_MethodImplBodyNotVirtual
+    extends ExplicitNonVirtualMethod_InvalidType_MethodImplBodyNotVirtual
     implements IInterface
 {
 }
 
-.class public auto ansi beforefieldinit StaticBodyForInstanceMethod_InvalidType_InvalidMethodImpl
+.class public auto ansi beforefieldinit StaticBodyForInstanceMethod_InvalidType_MethodImplStaticMismatch
     extends [System.Runtime]System.Object
     implements IInterface
 {
@@ -623,7 +623,7 @@
     }
 }
 
-.class public auto ansi beforefieldinit InstanceBodyForStaticMethod_InvalidType_InvalidMethodImpl
+.class public auto ansi beforefieldinit InstanceBodyForStaticMethod_InvalidType_MethodImplStaticMismatch
     extends [System.Runtime]System.Object
     implements IStaticInterface
 {
@@ -636,8 +636,8 @@
     }
 }
 
-.class public auto ansi beforefieldinit InheritedInstanceBodyForStaticMethod_InvalidType_InvalidMethodImpl
-    extends InstanceBodyForStaticMethod_InvalidType_InvalidMethodImpl
+.class public auto ansi beforefieldinit InheritedInstanceBodyForStaticMethod_InvalidType_MethodImplStaticMismatch
+    extends InstanceBodyForStaticMethod_InvalidType_MethodImplStaticMismatch
     implements IStaticInterface
 {
 }
@@ -653,7 +653,7 @@
     }
 }
 
-.class public auto ansi beforefieldinit NonVirtualMethodWithDefault_InvalidType_InvalidMethodImpl
+.class public auto ansi beforefieldinit NonVirtualMethodWithDefault_InvalidType_MethodImplBodyNotVirtual
     extends [System.Runtime]System.Object
     implements IDefaultInstanceInterface, IInterface
 {
@@ -684,7 +684,7 @@
     }
 }
 
-.class public auto ansi beforefieldinit GenericExplicitNonVirtualMethod_InvalidType_InvalidMethodImpl
+.class public auto ansi beforefieldinit GenericExplicitNonVirtualMethod_InvalidType_MethodImplBodyNotVirtual
     extends [System.Runtime]System.Object
     implements class IGenericMethodImpl`1<int32>
 {
@@ -708,7 +708,7 @@
     }
 }
 
-.class public auto ansi beforefieldinit SameNameMethodImplDeclarations_InvalidType_InvalidMethodImpl
+.class public auto ansi beforefieldinit SameNameMethodImplDeclarations_InvalidType_MethodImplBodyNotVirtual
     extends [System.Runtime]System.Object
     implements IInterface, class IGenericMethodImpl`1<int32>
 {
@@ -726,7 +726,7 @@
     }
 }
 
-.class public auto ansi abstract beforefieldinit AbstractNonVirtualMethod_InvalidType_InvalidMethodImpl
+.class public auto ansi abstract beforefieldinit AbstractNonVirtualMethod_InvalidType_MethodImplBodyNotVirtual
     extends [System.Runtime]System.Object
     implements IInterface
 {
@@ -759,7 +759,7 @@
     }
 }
 
-.class public auto ansi beforefieldinit NonVirtualBodyForDefaultInterfaceMethod_InvalidType_InvalidMethodImpl
+.class public auto ansi beforefieldinit NonVirtualBodyForDefaultInterfaceMethod_InvalidType_MethodImplBodyNotVirtual
     extends [System.Runtime]System.Object
     implements IDefaultMethodInterface
 {
@@ -783,7 +783,7 @@
     }
 }
 
-.class public auto ansi beforefieldinit NonVirtualMethodOnInheritedInterface_InvalidType_InvalidMethodImpl
+.class public auto ansi beforefieldinit NonVirtualMethodOnInheritedInterface_InvalidType_MethodImplBodyNotVirtual
     extends ExplicitVirtualMethod_ValidType_Valid
 {
     .method private hidebysig instance void ExplicitMethod() cil managed
@@ -805,7 +805,7 @@
     }
 }
 
-.class interface public auto ansi abstract INonVirtualMethodImpl_InvalidType_InvalidMethodImpl
+.class interface public auto ansi abstract INonVirtualMethodImpl_InvalidType_MethodImplBodyNotVirtual
     implements IInterface
 {
     .method private hidebysig instance void ExplicitMethod() cil managed
@@ -827,13 +827,13 @@
     }
 }
 
-.class public auto ansi beforefieldinit InheritedNonVirtualDefaultImplementation_InvalidType_InvalidMethodImpl
+.class public auto ansi beforefieldinit InheritedNonVirtualDefaultImplementation_InvalidType_MethodImplBodyNotVirtual
     extends [System.Runtime]System.Object
-    implements INonVirtualMethodImpl_InvalidType_InvalidMethodImpl, IInterface
+    implements INonVirtualMethodImpl_InvalidType_MethodImplBodyNotVirtual, IInterface
 {
 }
 
-.class public auto ansi beforefieldinit NonVirtualBodyForClassMethod_InvalidType_InvalidMethodImpl
+.class public auto ansi beforefieldinit NonVirtualBodyForClassMethod_InvalidType_MethodImplBodyNotVirtual
     extends VirtualMethodImplBase
 {
     .method private hidebysig instance void Implementation() cil managed
@@ -855,7 +855,7 @@
     }
 }
 
-.class public auto ansi beforefieldinit InvalidMethodImplAndMissingMethod_InvalidType_InvalidMethodImpl@InterfaceMethodNotImplemented
+.class public auto ansi beforefieldinit InvalidMethodImplAndMissingMethod_InvalidType_MethodImplBodyNotVirtual@InterfaceMethodNotImplemented
     extends [System.Runtime]System.Object
     implements IInterface, class IGenericMethodImpl`1<int32>
 {
@@ -879,7 +879,7 @@
     }
 }
 
-.class public auto ansi beforefieldinit InheritedNonVirtualMethodImpl_InvalidType_InvalidMethodImpl
+.class public auto ansi beforefieldinit InheritedNonVirtualMethodImpl_InvalidType_MethodImplBodyNotVirtual
     extends AbstractBaseNonVirtualMethodImpl
     implements IInterface
 {
@@ -926,7 +926,7 @@
     }
 }
 
-.class public auto ansi beforefieldinit OneOverloadNonVirtual_InvalidType_InvalidMethodImpl
+.class public auto ansi beforefieldinit OneOverloadNonVirtual_InvalidType_MethodImplBodyNotVirtual
     extends [System.Runtime]System.Object
     implements IOverloadedInterface
 {
@@ -963,7 +963,7 @@
     }
 }
 
-.class public auto ansi beforefieldinit GenericNonVirtualMethodHidesBaseVirtualMethod_InvalidType_InvalidMethodImpl<T>
+.class public auto ansi beforefieldinit GenericNonVirtualMethodHidesBaseVirtualMethod_InvalidType_MethodImplBodyNotVirtual<T>
     extends class GenericBaseClass`1<!T>
     implements class IGenericInterface`1<!T>
 {
@@ -975,7 +975,7 @@
     }
 }
 
-.class public sequential ansi sealed beforefieldinit ValueTypeNonVirtualMethod_InvalidType_InvalidMethodImpl
+.class public sequential ansi sealed beforefieldinit ValueTypeNonVirtualMethod_InvalidType_MethodImplBodyNotVirtual
     extends [System.Runtime]System.ValueType
     implements IInterface
 {

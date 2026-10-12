@@ -180,21 +180,21 @@ namespace Internal.TypeVerifier
 
         private bool VerifyMethodImpl(MethodDesc declaration, MethodDesc body)
         {
-            string reason;
+            VerifierError error;
             if (body.Signature.IsStatic != declaration.Signature.IsStatic)
             {
-                reason = "The body and declaration must both be static or both be instance methods.";
+                error = VerifierError.MethodImplStaticMismatch;
             }
             else if (!declaration.Signature.IsStatic && !body.IsVirtual)
             {
-                reason = "An instance method body must be virtual.";
+                error = VerifierError.MethodImplBodyNotVirtual;
             }
             else
             {
                 return true;
             }
 
-            VerificationError(VerifierError.InvalidMethodImpl, Format(body), Format(declaration), reason);
+            VerificationError(error, Format(body), Format(declaration));
             return false;
         }
 
