@@ -141,6 +141,9 @@ if exist "!__IntermediatesDirPath!\CMakeCache.txt" (
     if errorlevel 1 (
         echo CMake compiler inputs changed since !__IntermediatesDirPath! was last configured; reconfiguring from scratch.
         set __CMakeFreshArg=--fresh
+        rem Also delete the previous compiler's outputs: the build tool rebuilds an object only when its command
+        rem line changes, which it doesn't when the compiler at the same path is replaced (e.g. a VS update).
+        if exist "!__CompilerInputsFile!" "%CMakePath%" --build "!__IntermediatesDirPath!" --target clean
     )
     del "!__CompilerInputsFile!.new" 2>nul
 )

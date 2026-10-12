@@ -148,6 +148,11 @@ cmake_fresh=()
 if [[ -f "$2/CMakeCache.txt" && "$(cat "$compiler_inputs_file" 2>/dev/null)" != "$compiler_inputs" ]]; then
     echo "CMake compiler inputs changed since $2 was last configured; reconfiguring from scratch."
     cmake_fresh=("--fresh")
+    # Also delete the previous compiler's outputs: ninja and make rebuild an object only when its command
+    # line changes, which it doesn't when the compiler at the same path is replaced (e.g. an Xcode update).
+    if [[ -f "$compiler_inputs_file" ]]; then
+        cmake --build "$2" --target clean
+    fi
 fi
 
 $cmake_command \
