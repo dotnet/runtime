@@ -35,7 +35,7 @@ struct EventMethodInfo
 // Structure passed out as a cookie when Advise is called.
 struct ConnectionCookie
 {
-    ConnectionCookie(OBJECTHANDLEHolder hndEventProvObj) : m_pNext(NULL), m_hndEventProvObj(std::move(hndEventProvObj))
+    ConnectionCookie(OBJECTHANDLEHolder hndEventProvObj) : m_pNext(NULL), m_hndEventProvObj(std::move(hndEventProvObj)), m_fRemoving(false)
     {
         CONTRACTL
         {
@@ -68,6 +68,8 @@ public:
     DPTR(ConnectionCookie)   m_pNext;
     OBJECTHANDLEHolder  m_hndEventProvObj;
     DWORD               m_id;
+    // Protected by the connection-point lock; claimed cookies remain list-owned and enumerable.
+    bool                m_fRemoving;
 };
 
 // Connection cookie holder used to ensure the cookies are deleted when required.
@@ -118,6 +120,8 @@ public:
     }
 
 private:
+    class RemovalHolder;
+
     // Structures used for the AD callback wrappers.
     struct GetConnectionPointContainer_Args
     {
@@ -147,9 +151,9 @@ private:
     void SetupEventMethods();
     MethodDesc *FindProviderMethodDesc( MethodDesc *pEventMethodDesc, EnumEventMethods MethodType );
     void InvokeProviderMethod( OBJECTREF pProvider, OBJECTREF pSubscriber, MethodDesc *pProvMethodDesc, MethodDesc *pEventMethodDesc );
-    void InsertWithLock(ConnectionCookie* pConCookie);
+    DWORD InsertWithLock(ConnectionCookieHolder& cookieHolder);
     void FindAndRemoveWithLock(ConnectionCookie* pConCookie);
-    ConnectionCookie* FindWithLock(DWORD idOfCookie);
+    ConnectionCookie* FindAndClaimWithLock(DWORD idOfCookie);
 
     ComCallWrapper*                 m_pOwnerWrap;
     GUID                            m_rConnectionIID;
@@ -217,7 +221,10 @@ public:
     HRESULT __stdcall Clone(IEnumConnections **ppEnum);
 
 private:
+    ConnectionCookie* GetNextCookie();
+
     ConnectionPoint*                m_pConnectionPoint;
-    ConnectionCookie*               m_CurrCookie;
+    // A live, ascending-ID cursor. Zero marks exhaustion until Reset.
+    DWORD                           m_NextCookieId;
     ULONG                           m_cbRefCount;
 };

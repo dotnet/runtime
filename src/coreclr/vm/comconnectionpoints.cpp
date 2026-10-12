@@ -51,6 +51,9 @@ ConnectionPoint::~ConnectionPoint()
 
     if (m_apEventMethods)
         delete []m_apEventMethods;
+
+    while (ConnectionCookie* pCookie = m_ConnectionList.RemoveHead())
+        delete pCookie;
 }
 
 HRESULT __stdcall ConnectionPoint::QueryInterface(REFIID riid, void** ppv)
@@ -347,16 +350,55 @@ void ConnectionPoint::AdviseWorker(IUnknown *pUnk, DWORD *pdwCookie)
         ConnectionCookieHolder pConCookie = ConnectionCookie::CreateConnectionCookie(std::move(phndEventItfObj));
 
         // Add the connection cookie to the list.
-        InsertWithLock(pConCookie);
-
-        // Everything went ok so hand back the cookie id.
-        *pdwCookie = pConCookie->m_id;
-
-        pConCookie.SuppressRelease();
+        *pdwCookie = InsertWithLock(pConCookie);
     }
     GCPROTECT_END();
     GCPROTECT_END();
 }
+
+class ConnectionPoint::RemovalHolder
+{
+public:
+    RemovalHolder(ConnectionPoint* pConnectionPoint, DWORD id)
+        : m_pConnectionPoint(pConnectionPoint), m_pCookie(pConnectionPoint->FindAndClaimWithLock(id))
+    {
+        WRAPPER_NO_CONTRACT;
+    }
+
+    ~RemovalHolder()
+    {
+        WRAPPER_NO_CONTRACT;
+
+        if (m_pCookie != nullptr)
+        {
+            // Accessor side effects cannot be rolled back, but the cookie remains retryable.
+            LockHolder lh(m_pConnectionPoint);
+            m_pCookie->m_fRemoving = false;
+        }
+    }
+
+    ConnectionCookie* GetCookie()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_pCookie;
+    }
+
+    ConnectionCookie* Extract()
+    {
+        WRAPPER_NO_CONTRACT;
+        m_pConnectionPoint->FindAndRemoveWithLock(m_pCookie);
+        ConnectionCookie* pCookie = m_pCookie;
+        m_pCookie = nullptr;
+        return pCookie;
+    }
+
+    RemovalHolder(const RemovalHolder&) = delete;
+    RemovalHolder& operator=(const RemovalHolder&) = delete;
+
+private:
+    ConnectionPoint* m_pConnectionPoint;
+    ConnectionCookie* m_pCookie;
+};
 
 void ConnectionPoint::UnadviseWorker(DWORD dwCookie)
 {
@@ -374,8 +416,9 @@ void ConnectionPoint::UnadviseWorker(DWORD dwCookie)
     GCPROTECT_BEGIN(pEventItfObj)
     GCPROTECT_BEGIN(pTCEProviderObj)
     {
-        // The cookie is actually a connection cookie.
-        ConnectionCookieHolder pConCookie = FindWithLock(dwCookie);
+        // The list owns the cookie until the exclusive removal claim succeeds.
+        RemovalHolder removal(this, dwCookie);
+        ConnectionCookie* pConCookie = removal.GetCookie();
 
         // Retrieve the CLR object from the cookie which in fact is the object handle.
         pEventItfObj = (COMOBJECTREF) ObjectFromHandle(pConCookie->m_hndEventProvObj);
@@ -395,7 +438,7 @@ void ConnectionPoint::UnadviseWorker(DWORD dwCookie)
         }
 
         // Remove the connection cookie from the list.
-        FindAndRemoveWithLock(pConCookie);
+        ConnectionCookieHolder removedCookie = removal.Extract();
     }
     GCPROTECT_END();
     GCPROTECT_END();
@@ -577,11 +620,12 @@ void ConnectionPoint::InvokeProviderMethod( OBJECTREF pProvider, OBJECTREF pSubs
     GCPROTECT_END();
 }
 
-void ConnectionPoint::InsertWithLock(ConnectionCookie* pConCookie)
+DWORD ConnectionPoint::InsertWithLock(ConnectionCookieHolder& cookieHolder)
 {
     WRAPPER_NO_CONTRACT;
 
     LockHolder lh(this);
+    ConnectionCookie* pConCookie = cookieHolder;
 
     bool fDone = false;
 
@@ -709,9 +753,13 @@ void ConnectionPoint::InsertWithLock(ConnectionCookie* pConCookie)
     }
 
     m_pLastInserted = pConCookie;
+
+    DWORD id = pConCookie->m_id;
+    cookieHolder.SuppressRelease();
+    return id;
 }
 
-ConnectionCookie* ConnectionPoint::FindWithLock(DWORD idOfCookie)
+ConnectionCookie* ConnectionPoint::FindAndClaimWithLock(DWORD idOfCookie)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -725,6 +773,14 @@ ConnectionCookie* ConnectionPoint::FindWithLock(DWORD idOfCookie)
         while (pCurrentNode && (pCurrentNode->m_id != idOfCookie))
         {
             pCurrentNode = CONNECTIONCOOKIELIST::GetNext(pCurrentNode);
+        }
+
+        if (pCurrentNode != nullptr)
+        {
+            if (pCurrentNode->m_fRemoving)
+                pCurrentNode = nullptr;
+            else
+                pCurrentNode->m_fRemoving = true;
         }
     }
 
@@ -743,7 +799,9 @@ void ConnectionPoint::FindAndRemoveWithLock(ConnectionCookie* pConCookie)
 
     LockHolder lh(this);
 
-    m_ConnectionList.FindAndRemove(pConCookie);
+    _ASSERTE(pConCookie->m_fRemoving);
+    if (!m_ConnectionList.FindAndRemove(pConCookie))
+        EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
 
     if (pConCookie == m_pLastInserted)
     {
@@ -985,7 +1043,7 @@ HRESULT __stdcall ConnectionPointEnum::Clone(IEnumConnectionPoints **ppEnum)
 
 ConnectionEnum::ConnectionEnum(ConnectionPoint *pConnectionPoint)
 : m_pConnectionPoint(pConnectionPoint)
-, m_CurrCookie(pConnectionPoint->GetCookieList()->GetHead())
+, m_NextCookieId(0)
 , m_cbRefCount(0)
 {
     CONTRACTL
@@ -997,6 +1055,10 @@ ConnectionEnum::ConnectionEnum(ConnectionPoint *pConnectionPoint)
 
     ULONG cbRef = SafeAddRefPreemp(m_pConnectionPoint);
     //@TODO(CLE) AddRef logging that doesn't use QI
+
+    ConnectionPoint::LockHolder lh(m_pConnectionPoint);
+    ConnectionCookie* pHead = m_pConnectionPoint->GetCookieList()->GetHead();
+    m_NextCookieId = pHead != nullptr ? pHead->m_id : 0;
 }
 
 ConnectionEnum::~ConnectionEnum()
@@ -1087,6 +1149,24 @@ ULONG __stdcall ConnectionEnum::Release()
     return i;
 }
 
+ConnectionCookie* ConnectionEnum::GetNextCookie()
+{
+    WRAPPER_NO_CONTRACT;
+
+    // The caller holds the connection-point lock. Removed pending IDs are skipped;
+    // insertions (including reused IDs) at or beyond the cursor remain visible.
+    ConnectionCookie* pCookie = m_pConnectionPoint->GetCookieList()->GetHead();
+    if (m_NextCookieId == 0)
+        return nullptr;
+
+    while (pCookie != nullptr && pCookie->m_id < m_NextCookieId)
+        pCookie = CONNECTIONCOOKIELIST::GetNext(pCookie);
+
+    ConnectionCookie* pNext = pCookie != nullptr ? CONNECTIONCOOKIELIST::GetNext(pCookie) : nullptr;
+    m_NextCookieId = pNext != nullptr ? pNext->m_id : 0;
+    return pCookie;
+}
+
 HRESULT __stdcall ConnectionEnum::Next(ULONG cConnections, CONNECTDATA* rgcd, ULONG *pcFetched)
 {
     CONTRACTL
@@ -1110,28 +1190,45 @@ HRESULT __stdcall ConnectionEnum::Next(ULONG cConnections, CONNECTDATA* rgcd, UL
     SetupForComCallHR();
 
     HRESULT hr = S_OK;
-    UINT cFetched;
+    UINT cFetched = 0;
 
-    // Acquire the connection point's lock before we start traversing the connection list.
+    BEGIN_EXTERNAL_ENTRYPOINT(&hr)
     {
-        ConnectionPoint::LockHolder lh(m_pConnectionPoint);
-
+        GCX_COOP_THREAD_EXISTS(GET_THREAD());
+        OBJECTREF pSubscriber = nullptr;
+        GCPROTECT_BEGIN(pSubscriber);
         {
-            // Switch to cooperative GC mode before we manipulate OBJECTREF's.
-            GCX_COOP();
-
-            for (cFetched = 0; cFetched < cConnections && m_CurrCookie; cFetched++)
+            while (cFetched < cConnections)
             {
+                DWORD id;
                 {
-                    CONTRACT_VIOLATION(ThrowsViolation);
-                    rgcd[cFetched].pUnk = GetComIPFromObjectRef((OBJECTREF*)(OBJECTHANDLE)m_CurrCookie->m_hndEventProvObj, ComIpType_Unknown, NULL);
-                    rgcd[cFetched].dwCookie = m_CurrCookie->m_id;
+                    ConnectionPoint::LockHolder lh(m_pConnectionPoint);
+                    ConnectionCookie* pCookie = GetNextCookie();
+                    if (pCookie == nullptr)
+                        break;
+
+                    pSubscriber = ObjectFromHandle(pCookie->m_hndEventProvObj);
+                    id = pCookie->m_id;
                 }
-                m_CurrCookie = CONNECTIONCOOKIELIST::GetNext(m_CurrCookie);
+
+                // COM conversion may allocate or reenter; only the rooted object escapes the lock.
+                rgcd[cFetched].pUnk = GetComIPFromObjectRef(&pSubscriber, ComIpType_Unknown, NULL);
+                rgcd[cFetched].dwCookie = id;
+                cFetched++;
             }
         }
+        GCPROTECT_END();
+    }
+    END_EXTERNAL_ENTRYPOINT;
 
-        // Leave the lock now that we are done traversing the list.
+    if (FAILED(hr))
+    {
+        for (UINT i = 0; i < cFetched; i++)
+        {
+            SafeReleasePreemp(rgcd[i].pUnk);
+            rgcd[i].pUnk = nullptr;
+        }
+        return hr;
     }
 
     // Set the count of fetched connections if the caller desires it.
@@ -1159,9 +1256,8 @@ HRESULT __stdcall ConnectionEnum::Skip(ULONG cConnections)
         ConnectionPoint::LockHolder lh(m_pConnectionPoint);
 
         // Try and skip the requested number of connections.
-        while (m_CurrCookie && cConnections)
+        while (cConnections && GetNextCookie() != nullptr)
         {
-            m_CurrCookie = CONNECTIONCOOKIELIST::GetNext(m_CurrCookie);
             cConnections--;
         }
         // Leave the lock now that we are done traversing the list.
@@ -1187,7 +1283,8 @@ HRESULT __stdcall ConnectionEnum::Reset()
     // connection point lock before we touch the list.
     ConnectionPoint::LockHolder lh(m_pConnectionPoint);
 
-    m_CurrCookie = m_pConnectionPoint->GetCookieList()->GetHead();
+    ConnectionCookie* pHead = m_pConnectionPoint->GetCookieList()->GetHead();
+    m_NextCookieId = pHead != nullptr ? pHead->m_id : 0;
 
     return S_OK;
 }
@@ -1215,6 +1312,11 @@ HRESULT __stdcall ConnectionEnum::Clone(IEnumConnections **ppEnum)
     ConnectionEnum *pConEnum = new(nothrow) ConnectionEnum(m_pConnectionPoint);
     if (!pConEnum)
         return E_OUTOFMEMORY;
+
+    {
+        ConnectionPoint::LockHolder lh(m_pConnectionPoint);
+        pConEnum->m_NextCookieId = m_NextCookieId;
+    }
 
     HRESULT hr = SafeQueryInterfacePreemp(pConEnum, IID_IEnumConnections, (IUnknown**)ppEnum);
     LogInteropQI(pConEnum, IID_IEnumConnections, hr, "ConnectionEnum::Clone: QIing for IID_IEnumConnections");
