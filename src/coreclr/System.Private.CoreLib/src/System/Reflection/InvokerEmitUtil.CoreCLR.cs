@@ -94,23 +94,6 @@ namespace System.Reflection
 
             // Exact typed locals remain live through every allocating nullable copy-back.
             // There is deliberately no managed exception handler around the evaluated call.
-            if (!method.IsStatic && declaringType!.IsValueType)
-            {
-                if (method is ConstructorInfo)
-                {
-                    Label done = il.DefineLabel();
-                    il.Emit(OpCodes.Ldarg_1);
-                    il.Emit(OpCodes.Call, EvaluationMethods.IsNewObject);
-                    il.Emit(OpCodes.Brtrue, done);
-                    EmitCopyBack(0);
-                    il.MarkLabel(done);
-                }
-                else
-                {
-                    EmitCopyBack(0);
-                }
-            }
-
             for (int i = 0; i < parameters.Length; i++)
             {
                 if (parameters[i].ParameterType.IsByRef)
