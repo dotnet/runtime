@@ -8,6 +8,30 @@ namespace Webcil;
 
 public static class WasmWebcilModule
 {
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static nint ReadIntPtrZero() => IntPtr.Zero;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static nuint ReadUIntPtrZero() => UIntPtr.Zero;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static string ReadStringEmpty() => string.Empty;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static bool ReadIsLittleEndian() => BitConverter.IsLittleEndian;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static ref readonly nint AddressIntPtrZero() => ref IntPtr.Zero;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static ref readonly nuint AddressUIntPtrZero() => ref UIntPtr.Zero;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static ref readonly string AddressStringEmpty() => ref string.Empty;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static ref readonly bool AddressIsLittleEndian() => ref BitConverter.IsLittleEndian;
+
     private static readonly int[] s_primes = new int[] { 3, 5, 7, 11, 13 };
     private static int s_counter;
 

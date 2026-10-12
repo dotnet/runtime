@@ -30,6 +30,58 @@ public class R2RTestSuites
         _output = output;
     }
 
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public void StaticFieldIntrinsicsDoNotRequireStaticBaseFixups(bool composite, bool optimize)
+    {
+        CompiledAssembly input = new()
+        {
+            AssemblyName = nameof(StaticFieldIntrinsicsDoNotRequireStaticBaseFixups),
+            SourceResourceNames = ["Webcil/WasmWebcilModule.cs"],
+        };
+        List<Crossgen2Option> options = new();
+        if (composite)
+            options.Add(Crossgen2Option.Composite);
+        if (optimize)
+            options.Add(Crossgen2Option.Optimize);
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(StaticFieldIntrinsicsDoNotRequireStaticBaseFixups),
+            [
+                new(nameof(StaticFieldIntrinsicsDoNotRequireStaticBaseFixups), [new CrossgenAssembly(input)])
+                {
+                    Options = options,
+                    OutputFileExtension = TestPaths.IsWasmTarget ? ".wasm" : ".dll",
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            List<ReadyToRunMethod> methods = R2RAssert.GetAllMethods(reader);
+            foreach (string suffix in new[] { "IntPtrZero", "UIntPtrZero", "StringEmpty", "IsLittleEndian" })
+            {
+                ReadyToRunMethod read = Assert.Single(methods,
+                    method => method.SignatureString.Contains($".Read{suffix}(", StringComparison.Ordinal));
+                foreach (FixupCell fixup in read.Fixups ?? Array.Empty<FixupCell>())
+                {
+                    Assert.Equal(ReadyToRunFixupKind.StringHandle, fixup.Signature.FixupKind);
+                }
+
+                ReadyToRunMethod address = Assert.Single(methods,
+                    method => method.SignatureString.Contains($".Address{suffix}(", StringComparison.Ordinal));
+                if (TestPaths.IsWasmTarget)
+                {
+                    Assert.Contains(address.Fixups ?? Array.Empty<FixupCell>(),
+                        fixup => fixup.Signature.FixupKind == ReadyToRunFixupKind.TypeHandle);
+                }
+            }
+        }
+    }
+
     [ConditionalTheory(typeof(TestPaths), nameof(TestPaths.IsXArchTarget))]
     [InlineData(1)]
     [InlineData(2)]
