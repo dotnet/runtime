@@ -3568,10 +3568,45 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
 void CodeGen::genCompareInt(GenTreeOp* treeNode)
 {
     assert(treeNode->OperIsCmpCompare());
+
+    GenTree* const op1   = treeNode->gtGetOp1();
+    GenTree* const op2   = treeNode->gtGetOp2();
+    GenTree*       value = nullptr;
+
+    if (treeNode->OperIs(GT_EQ, GT_NE))
+    {
+        if (op1->isContained() && op1->IsIntegralConst(0))
+        {
+            value = op2;
+        }
+        else if (op2->isContained() && op2->IsIntegralConst(0))
+        {
+            value = op1;
+        }
+    }
+
     genConsumeOperands(treeNode);
 
+    if (value != nullptr)
+    {
+        const bool canUseValueDirectly = treeNode->OperIs(GT_NE) && ((treeNode->gtFlags & GTF_RELOP_JMP_USED) != 0) &&
+                                         (genActualType(value->TypeGet()) == TYP_INT);
+
+        if (!canUseValueDirectly)
+        {
+            GetEmitter()->emitIns(genActualType(value->TypeGet()) == TYP_LONG ? INS_i64_eqz : INS_i32_eqz);
+            if (treeNode->OperIs(GT_NE))
+            {
+                GetEmitter()->emitIns(INS_i32_eqz);
+            }
+        }
+
+        WasmProduceReg(treeNode);
+        return;
+    }
+
     instruction ins;
-    switch (PackOperAndType(treeNode->OperGet(), genActualType(treeNode->gtGetOp1()->TypeGet())))
+    switch (PackOperAndType(treeNode->OperGet(), genActualType(op1->TypeGet())))
     {
         case PackOperAndType(GT_EQ, TYP_INT):
             ins = INS_i32_eq;
