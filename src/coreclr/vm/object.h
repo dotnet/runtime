@@ -1,13 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
+
 // OBJECT.H
 //
 // Definitions of a CLR Object
-//
 
 // See code:EEStartup#TableOfContents for overview
-
 
 #ifndef _OBJECT_H_
 #define _OBJECT_H_
@@ -414,9 +412,6 @@ inline void InitValueClass(void *dest, MethodTable *pMT)
     WRAPPER_NO_CONTRACT;
     ZeroMemoryInGCHeap(dest, pMT->GetNumInstanceFieldBytes());
 }
-
-// Initialize value class argument
-void InitValueClassArg(ArgDestination *argDest, MethodTable *pMT);
 
 #define SetObjectReference(_d,_r)        SetObjectReferenceUnchecked(_d, _r)
 #define CopyValueClass(_d,_s,_m)         CopyValueClassUnchecked(_d,_s,_m)

@@ -43,11 +43,32 @@ namespace System.ComponentModel.DataAnnotations
         ///     Subclasses must provide a synchronous validation implementation or throw an appropriate exception
         ///     to indicate that synchronous validation is not supported.
         /// </summary>
+        /// <remarks>
+        ///     <para>
+        ///         Synchronous validation consumers invoke this method. Provide a synchronous implementation when it
+        ///         can evaluate the applicable rule, and return a validation error when the rule rejects the value.
+        ///         If a required rule applies but cannot be evaluated synchronously, throw
+        ///         <see cref="InvalidOperationException" /> with a message directing callers to an asynchronous
+        ///         validation entry point. An unsupported invocation does not establish that the value is invalid.
+        ///     </para>
+        ///     <para>
+        ///         Return <see cref="ValidationResult.Success" /> without evaluating the rule only when the rule does
+        ///         not apply. Do not return success merely because a required asynchronous check applies but cannot run
+        ///         synchronously. Success does not indicate pending validation or arrange a later asynchronous invocation.
+        ///     </para>
+        ///     <para>
+        ///         Do not implement this method by blocking on asynchronous work through
+        ///         <c>Task&lt;TResult&gt;.Result</c>, <c>Task.Wait()</c>, or
+        ///         <c>GetAwaiter().GetResult()</c>. Wrapping the asynchronous operation in
+        ///         <c>Task.Run</c> does not make a blocking wait appropriate.
+        ///     </para>
+        /// </remarks>
         /// <param name="value">The value to validate.</param>
         /// <param name="validationContext">
         ///     A <see cref="ValidationContext" /> instance that provides context about the validation operation,
         ///     such as the object and member being validated. Provides access to services required to perform
-        ///     validation using <see cref="IServiceProvider" />.
+        ///     validation using <see cref="IServiceProvider" />. This value can be <see langword="null" /> when the
+        ///     contextless <see cref="ValidationAttribute.IsValid(object?)" /> overload invokes this method.
         /// </param>
         /// <returns>
         ///     <see cref="ValidationResult.Success" /> when validation is valid.
@@ -71,10 +92,17 @@ namespace System.ComponentModel.DataAnnotations
         ///     When validation is invalid, the result is an instance of <see cref="ValidationResult" />.
         /// </returns>
         /// <remarks>
-        ///     Implementations must observe the supplied <paramref name="cancellationToken" /> and stop work promptly
-        ///     when cancellation is requested. The validation infrastructure may cancel this token after a validation
-        ///     failure to stop sibling validators and awaits all started validation tasks before returning. An
-        ///     implementation that ignores cancellation can delay failure and short-circuiting.
+        ///     <para>
+        ///         This method must perform all applicable checks, including checks that can run synchronously.
+        ///         The synchronous <see cref="IsValid(object?, ValidationContext)" /> implementation is not
+        ///         automatically invoked before this method. Share common checks through a helper when needed.
+        ///     </para>
+        ///     <para>
+        ///         Implementations must observe the supplied <paramref name="cancellationToken" /> and stop work
+        ///         promptly when cancellation is requested. The validation infrastructure may cancel this token after
+        ///         a validation failure to stop sibling validators and awaits all started validation tasks before
+        ///         returning. An implementation that ignores cancellation can delay failure and short-circuiting.
+        ///     </para>
         /// </remarks>
         protected abstract Task<ValidationResult?> IsValidAsync(
             object? value,

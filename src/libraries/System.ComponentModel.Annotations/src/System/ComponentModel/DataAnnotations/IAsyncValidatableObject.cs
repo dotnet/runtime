@@ -17,10 +17,21 @@ namespace System.ComponentModel.DataAnnotations
     ///     is not called on the async path. The synchronous <see cref="Validator"/>
     ///     APIs continue to invoke <see cref="IValidatableObject.Validate"/>.
     ///     <para>
-    ///         Implementors should provide a synchronous fallback in
-    ///         <see cref="IValidatableObject.Validate"/> for compatibility with callers that
-    ///         do not use the async APIs, or throw <see cref="InvalidOperationException"/>
-    ///         if no synchronous implementation is feasible.
+    ///         Provide a synchronous implementation of <see cref="IValidatableObject.Validate"/> when it can
+    ///         evaluate the applicable rules, returning validation errors for rules that reject the object.
+    ///         If a required rule applies but cannot be evaluated synchronously, throw
+    ///         <see cref="InvalidOperationException"/> with a message directing callers to an asynchronous
+    ///         validation entry point.
+    ///     </para>
+    ///     <para>
+    ///         Returning no validation errors without evaluating a rule is appropriate only when the rule does not
+    ///         apply. Do not return an empty result merely because a required asynchronous check applies but cannot
+    ///         run synchronously. An empty result does not indicate pending validation or arrange a later asynchronous
+    ///         invocation.
+    ///     </para>
+    ///     <para>
+    ///         Do not implement <see cref="IValidatableObject.Validate"/> by blocking on asynchronous work or
+    ///         asynchronously enumerated results.
     ///     </para>
     /// </remarks>
     public interface IAsyncValidatableObject : IValidatableObject
@@ -39,10 +50,14 @@ namespace System.ComponentModel.DataAnnotations
         ///     as each validation check completes.
         /// </returns>
         /// <remarks>
-        ///     Implementors should also provide a synchronous implementation of
-        ///     <see cref="IValidatableObject.Validate"/> for compatibility with callers that
-        ///     do not use the async APIs, or throw <see cref="InvalidOperationException"/>
-        ///     if no synchronous implementation is feasible.
+        ///     <para>
+        ///         This method must perform all applicable checks, including checks that can run synchronously.
+        ///     </para>
+        ///     <para>
+        ///         The asynchronous <see cref="Validator"/> APIs do not automatically invoke
+        ///         <see cref="IValidatableObject.Validate"/> before this method. Share common checks through a helper
+        ///         when needed.
+        ///     </para>
         /// </remarks>
         IAsyncEnumerable<ValidationResult> ValidateAsync(
             ValidationContext validationContext,

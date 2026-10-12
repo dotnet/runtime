@@ -14,7 +14,6 @@
 #ifdef FEATURE_COMINTEROP
 #include "olevariant.h"
 #endif // FEATURE_COMINTEROP
-#include "comdatetime.h"
 #include "fieldmarshaler.h"
 
 LocalDesc ILReflectionObjectMarshaler::GetManagedType()

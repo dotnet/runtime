@@ -9,11 +9,13 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: read
+  contents: none
   pull-requests: read
   issues: read
 
 checkout:
+  repository: ${{ github.repository }}
+  ref: ${{ github.event.pull_request.base.sha }}
   fetch-depth: 1
 
 tools:

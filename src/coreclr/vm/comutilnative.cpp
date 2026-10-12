@@ -1,21 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
-
-//
 
 /*============================================================
-**
 ** File:  COMUtilNative
-**
-**
 **
 ** Purpose: A dumping ground for classes which aren't large
 ** enough to get their own file in the EE.
-**
-**
-**
 ===========================================================*/
+
 #include "common.h"
 #include "object.h"
 #include "excep.h"
@@ -1069,25 +1061,6 @@ FORCEINLINE UINT64 GCInterface::InterlockedAdd (UINT64 *pAugend, UINT64 addend) 
             newMemValue = UINT64_MAX;
         }
     } while (InterlockedCompareExchange64((LONGLONG*) pAugend, (LONGLONG) newMemValue, (LONGLONG) oldMemValue) != (LONGLONG) oldMemValue);
-
-    return newMemValue;
-}
-
-FORCEINLINE UINT64 GCInterface::InterlockedSub(UINT64 *pMinuend, UINT64 subtrahend) {
-    WRAPPER_NO_CONTRACT;
-
-    UINT64 oldMemValue;
-    UINT64 newMemValue;
-
-    do {
-        oldMemValue = *pMinuend;
-        newMemValue = oldMemValue - subtrahend;
-
-        // check for underflow
-        if (newMemValue > oldMemValue)
-            newMemValue = 0;
-
-    } while (InterlockedCompareExchange64((LONGLONG*) pMinuend, (LONGLONG) newMemValue, (LONGLONG) oldMemValue) != (LONGLONG) oldMemValue);
 
     return newMemValue;
 }
