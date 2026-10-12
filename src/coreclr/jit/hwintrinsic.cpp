@@ -3201,21 +3201,6 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
                     msk     = gtNewSimdIsNegativeNode(retType, msk, simdBaseType, simdSize);
                     retNode = gtNewSimdCndSelNode(retType, msk, ovf, tmpDup2, simdBaseType, simdSize);
                 }
-#elif defined(TARGET_ARM64)
-                if (simdSize == SIZE_UNKNOWN)
-                {
-                    intrinsic = NI_Sve_AddSaturate;
-                }
-                else if ((simdSize == 8) && varTypeIsLong(simdBaseType))
-                {
-                    intrinsic = NI_AdvSimd_AddSaturateScalar;
-                }
-                else
-                {
-                    intrinsic = NI_AdvSimd_AddSaturate;
-                }
-
-                retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseType, simdSize);
 #endif
             }
             break;
@@ -5273,17 +5258,6 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
                     msk     = gtNewSimdIsNegativeNode(retType, msk, simdBaseType, simdSize);
                     retNode = gtNewSimdCndSelNode(retType, msk, ovf, tmpDup2, simdBaseType, simdSize);
                 }
-#elif defined(TARGET_ARM64)
-                intrinsic = NI_AdvSimd_SubtractSaturate;
-
-                if ((simdSize == 8) && varTypeIsLong(simdBaseType))
-                {
-                    intrinsic = NI_AdvSimd_SubtractSaturateScalar;
-                }
-
-                retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseType, simdSize);
-#else
-                unreached();
 #endif
             }
             break;
