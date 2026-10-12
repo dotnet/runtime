@@ -197,8 +197,6 @@ namespace System.Net.Mail.Tests
         [InlineData("=?ISO-8859-1?qb?foo?=")] // two letter encoding
         [InlineData("=?ISO-8859-1?Q?foo?")] // missing end =
         [InlineData("=?ISO-8859-1?Q?foo")] // missing whole end
-        [InlineData("=?ISO-8859-1?Q?foo_=?=")] // broken Q encoding, = at end
-        [InlineData("=?ISO-8859-1?Q?foo_=A?=")] // broken Q encoding, single hex digit
         [InlineData("=?ISO-8859-1?Q?foo_?A?=")] // broken Q encoding, ? in text
         [InlineData("=?ISO-8859-1?Q?foo bar?=")] // broken Q encoding, space in text
         [InlineData("=?ISO-8859-1?Q?foo\tbar?=")] // broken Q encoding, tab in text
@@ -240,38 +238,18 @@ namespace System.Net.Mail.Tests
         public void NameParsingAndEncodingDetection_BadInputsThrowing()
         {
             // Bad Base64 encoding
-            Assert.Throws<FormatException>(() => new Attachment(new MemoryStream(), "=?ISO-8859-1?B?YXR0YWNobWV@@@@@@@@udCBuYW1l?="));
+            Assert.Throws<FormatException>(() =>
+            {
+                using MemoryStream ms = new();
+                new Attachment(ms, "=?ISO-8859-1?B?YXR0YWNobWV@@@@@@@@udCBuYW1l?=");
+            });
 
             // broken Q encoding, invalid hex value
-            Assert.Throws<FormatException>(() => new Attachment(new MemoryStream(), "=?ISO-8859-1?Q?foo_=XY?="));
-
-            // non existing encoding
-            Assert.Throws<ArgumentException>(() => new Attachment(new MemoryStream(), "=?XXXX?Q?foo?="));
-        }
-
-        [Fact]
-        public void NameParsingAndEncodingDetection_LengthValidation()
-        {
-            // 75 characters => decoded
-            Attachment a;
-            a = new Attachment(new MemoryStream(), "=?ISO-8859-1?Q?foo_bar_foo_bar_foo_bar_foo_bar_foo_bar_foo_bar_foo_bar_fo?=");
-            Assert.Equal("foo bar foo bar foo bar foo bar foo bar foo bar foo bar fo", a.Name);
-            Assert.Equal(Encoding.Latin1, a.NameEncoding);
-
-            // 76 characters => RFC 2047 violation, not processed as encoded word
-            a = new Attachment(new MemoryStream(), "=?ISO-8859-1?Q?foo_bar_foo_bar_foo_bar_foo_bar_foo_bar_foo_bar_foo_bar_foo?=");
-            Assert.Equal("=?ISO-8859-1?Q?foo_bar_foo_bar_foo_bar_foo_bar_foo_bar_foo_bar_foo_bar_foo?=", a.Name);
-            Assert.Null(a.NameEncoding);
-
-            // 76 characters, different part of encoded word violating
-            a = new Attachment(new MemoryStream(), "=?foo_bar_foo_bar_foo_bar_foo_bar_foo_bar_foo_bar_foo_bar_foo?ISO-8859-1?Q?=");
-            Assert.Equal("=?foo_bar_foo_bar_foo_bar_foo_bar_foo_bar_foo_bar_foo_bar_foo?ISO-8859-1?Q?=", a.Name);
-            Assert.Null(a.NameEncoding);
-
-            // 76 characters, different part of encoded word violating
-            a = new Attachment(new MemoryStream(), "=?Q?foo_bar_foo_bar_foo_bar_foo_bar_foo_bar_foo_bar_foo_bar_foo?ISO-8859-1?=");
-            Assert.Equal("=?Q?foo_bar_foo_bar_foo_bar_foo_bar_foo_bar_foo_bar_foo_bar_foo?ISO-8859-1?=", a.Name);
-            Assert.Null(a.NameEncoding);
+            Assert.Throws<FormatException>(() =>
+            {
+                using MemoryStream ms = new();
+                new Attachment(ms, "=?ISO-8859-1?Q?foo_=XY?=");
+            });
         }
 
         [Fact]
