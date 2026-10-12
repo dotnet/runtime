@@ -26919,10 +26919,10 @@ void gc_heap::get_msl_wait_time (size_t* soh_msl_wait_time, size_t* uoh_msl_wait
     {
         gc_heap* hp = g_heaps[i];
 
-        soh_msl_wait_time += hp->more_space_lock_soh.msl_wait_time;
+        *soh_msl_wait_time += hp->more_space_lock_soh.msl_wait_time;
         hp->more_space_lock_soh.msl_wait_time = 0;
 
-        uoh_msl_wait_time += hp->more_space_lock_uoh.msl_wait_time;
+        *uoh_msl_wait_time += hp->more_space_lock_uoh.msl_wait_time;
         hp->more_space_lock_uoh.msl_wait_time = 0;
     }
 }
