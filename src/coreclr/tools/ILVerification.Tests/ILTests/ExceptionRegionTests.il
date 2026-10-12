@@ -1051,6 +1051,63 @@
         .try InnerTry to InnerHandler finally handler InnerHandler to OuterHandler
     }
 
+    .method public static void Try.NestedInHandlerInTry_Valid() cil managed
+    {
+        .maxstack 1
+    OuterTry:
+        nop
+    MidTry:
+        leave MethodEnd
+    MidHandler:
+        nop
+    InnerTry:
+        leave InnerEnd
+    InnerHandler:
+        pop
+        leave InnerEnd
+    InnerEnd:
+        endfinally
+    MidEnd:
+        leave MethodEnd
+    OuterHandler:
+        pop
+        leave MethodEnd
+    MethodEnd:
+        ret
+        .try InnerTry to InnerHandler catch [System.Runtime]System.Exception handler InnerHandler to InnerEnd
+        .try MidTry to MidHandler finally handler MidHandler to MidEnd
+        .try OuterTry to OuterHandler catch [System.Runtime]System.Exception handler OuterHandler to MethodEnd
+    }
+
+    .method public static void Try.NestedInHandlerAfterOuterTry_Invalid_EHClauseOrder() cil managed
+    {
+        // The intervening handler does not remove the enclosing try's ordering constraint.
+        .maxstack 1
+    OuterTry:
+        nop
+    MidTry:
+        leave MethodEnd
+    MidHandler:
+        nop
+    InnerTry:
+        leave InnerEnd
+    InnerHandler:
+        pop
+        leave InnerEnd
+    InnerEnd:
+        endfinally
+    MidEnd:
+        leave MethodEnd
+    OuterHandler:
+        pop
+        leave MethodEnd
+    MethodEnd:
+        ret
+        .try MidTry to MidHandler finally handler MidHandler to MidEnd
+        .try OuterTry to OuterHandler catch [System.Runtime]System.Exception handler OuterHandler to MethodEnd
+        .try InnerTry to InnerHandler catch [System.Runtime]System.Exception handler InnerHandler to InnerEnd
+    }
+
     .method public static void Try.SharedEndContinuesHandlerVerification_Invalid_EHClauseOrder.StackUnderflow() cil managed
     {
         // Despite the invalid EH order, the inner handler must still be verified.
@@ -1086,6 +1143,30 @@
         ret
         .try CatchStart to InnerHandler finally handler InnerHandler to CatchEnd
         .try OuterTry to CatchStart catch [System.Runtime]System.Exception handler CatchStart to MethodEnd
+    }
+
+    .method public static void Try.StartsAtFilterEntry_Invalid_EHClauseNesting.TryNonEmptyStack() cil managed
+    {
+        .maxstack 1
+    OuterTry:
+        nop
+        leave MethodEnd
+    FilterStart:
+        pop
+        leave FilterEnd
+    InnerHandler:
+        pop
+        leave FilterEnd
+    FilterEnd:
+        ldc.i4.1
+        endfilter
+    OuterHandler:
+        pop
+        leave MethodEnd
+    MethodEnd:
+        ret
+        .try FilterStart to InnerHandler catch [System.Runtime]System.Exception handler InnerHandler to FilterEnd
+        .try OuterTry to FilterStart filter FilterStart handler OuterHandler to MethodEnd
     }
 
     .method public static void MethodEntry.Catch_Invalid_FallthroughIntoHandler() cil managed
@@ -1545,6 +1626,44 @@
             }
         HandlerEnd:
             endfault
+        }
+    MethodEnd:
+        ret
+    }
+
+    .method public static void Filter.NestedInFilterHandler_Valid() cil managed
+    {
+        .maxstack 1
+
+        .try
+        {
+            nop
+            leave MethodEnd
+        }
+        filter
+        {
+            pop
+            ldc.i4.1
+            endfilter
+        }
+        {
+            pop
+            .try
+            {
+                nop
+                leave MethodEnd
+            }
+            filter
+            {
+                isinst [System.Runtime]System.Exception
+                pop
+                ldc.i4.1
+                endfilter
+            }
+            {
+                pop
+                leave MethodEnd
+            }
         }
     MethodEnd:
         ret

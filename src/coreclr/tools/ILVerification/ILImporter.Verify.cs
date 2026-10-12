@@ -2475,8 +2475,8 @@ namespace Internal.IL
         {
             if (Check(_currentBasicBlock.HandlerIndex.HasValue, VerifierError.Endfinally))
             {
-                Check(_exceptionRegions[_currentBasicBlock.HandlerIndex.Value].ILRegion.Kind == ILExceptionRegionKind.Finally ||
-                    _exceptionRegions[_currentBasicBlock.HandlerIndex.Value].ILRegion.Kind == ILExceptionRegionKind.Fault, VerifierError.Endfinally);
+                Check(_exceptionRegions[_currentBasicBlock.HandlerIndex.Value].ILRegion.Kind
+                    is ILExceptionRegionKind.Finally or ILExceptionRegionKind.Fault, VerifierError.Endfinally);
             }
 
             EmptyTheStack();
