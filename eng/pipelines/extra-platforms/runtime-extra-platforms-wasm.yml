@@ -4,6 +4,7 @@
 #   /azp run runtime-wasm
 
 parameters:
+  useHelixMonitor: false
   isExtraPlatformsBuild: false
   isWasmOnlyBuild: false
   isRollingBuild: false
@@ -23,6 +24,7 @@ jobs:
   # AOT Library tests - browser_wasm
   - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
     parameters:
+      useHelixMonitor: ${{ parameters.useHelixMonitor }}
       platforms:
         - browser_wasm
         - browser_wasm_win
@@ -34,6 +36,7 @@ jobs:
   # AOT Library tests - wasi_wasm
   - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
     parameters:
+      useHelixMonitor: ${{ parameters.useHelixMonitor }}
       platforms:
         - wasi_wasm
         - wasi_wasm_win
@@ -46,6 +49,7 @@ jobs:
   # High resource AOT Library tests
   - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
     parameters:
+      useHelixMonitor: ${{ parameters.useHelixMonitor }}
       platforms:
         - browser_wasm
         - browser_wasm_win
@@ -65,6 +69,7 @@ jobs:
   # these run on runtime also
   - template: /eng/pipelines/common/templates/wasm-library-tests.yml
     parameters:
+      useHelixMonitor: ${{ parameters.useHelixMonitor }}
       platforms:
         - browser_wasm
       # Don't run for rolling builds, as this is covered
@@ -77,6 +82,7 @@ jobs:
   # Library tests with full threading
   - template: /eng/pipelines/common/templates/wasm-library-tests.yml
     parameters:
+      useHelixMonitor: ${{ parameters.useHelixMonitor }}
       platforms:
         - browser_wasm
         #- browser_wasm_win
@@ -93,6 +99,7 @@ jobs:
   # EAT Library tests - only run on linux
   - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
     parameters:
+      useHelixMonitor: ${{ parameters.useHelixMonitor }}
       platforms:
         - browser_wasm
       nameSuffix: _EAT
@@ -104,6 +111,7 @@ jobs:
   # AOT Library tests - browser_wasm
   - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
     parameters:
+      useHelixMonitor: ${{ parameters.useHelixMonitor }}
       platforms:
         - browser_wasm
         - browser_wasm_win
@@ -117,6 +125,7 @@ jobs:
   # AOT Library tests - wasi_wasm
   - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
     parameters:
+      useHelixMonitor: ${{ parameters.useHelixMonitor }}
       platforms:
         - wasi_wasm
         - wasi_wasm_win
@@ -131,6 +140,7 @@ jobs:
   # High resource AOT Library tests
   - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
     parameters:
+      useHelixMonitor: ${{ parameters.useHelixMonitor }}
       platforms:
         - browser_wasm
         - browser_wasm_win
@@ -145,6 +155,7 @@ jobs:
   # Wasi - run only smoke tests by default
   - template: /eng/pipelines/common/templates/wasm-library-tests.yml
     parameters:
+      useHelixMonitor: ${{ parameters.useHelixMonitor }}
       platforms:
         - wasi_wasm
         - wasi_wasm_win
@@ -184,6 +195,7 @@ jobs:
   # Browser Wasm.Build.Tests
   - template: /eng/pipelines/common/templates/browser-wasm-build-tests.yml
     parameters:
+      useHelixMonitor: ${{ parameters.useHelixMonitor }}
       platforms:
         - browser_wasm
         - browser_wasm_win
@@ -191,6 +203,7 @@ jobs:
 
   - template: /eng/pipelines/common/templates/simple-wasm-build-tests.yml
     parameters:
+      useHelixMonitor: ${{ parameters.useHelixMonitor }}
       platforms:
         - wasi_wasm
         - wasi_wasm_win
@@ -200,6 +213,7 @@ jobs:
 
   - template: /eng/pipelines/common/templates/wasm-runtime-tests.yml
     parameters:
+      useHelixMonitor: ${{ parameters.useHelixMonitor }}
       platforms:
         - browser_wasm
       extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
@@ -209,6 +223,7 @@ jobs:
 - ${{ if and(ne(parameters.isRollingBuild, true), ne(parameters.excludeOptional, true)) }}:
   - template: /eng/pipelines/common/templates/wasm-library-tests.yml
     parameters:
+      useHelixMonitor: ${{ parameters.useHelixMonitor }}
       platforms:
         - wasi_wasm
         - wasi_wasm_win

@@ -10,6 +10,7 @@ export function mono_wasm_browser_entropy (bufferPtr: number, bufferLength: numb
         return -1;
     }
 
+    bufferPtr = bufferPtr >>> 0;
     const memoryView = localHeapViewU8();
     const targetView = memoryView.subarray(bufferPtr, bufferPtr + bufferLength);
 

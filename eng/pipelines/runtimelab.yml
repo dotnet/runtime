@@ -42,6 +42,8 @@ variables:
   - ${{ if and(ne(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest')) }}:
     - name: TeamName
       value: dotnet-core
+  - name: enableHelixJobMonitor
+    value: true
 
 extends:
   template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
@@ -49,9 +51,17 @@ extends:
     stages:
     - stage: Build
       jobs:
+        - ${{ if eq(variables['enableHelixJobMonitor'], true) }}:
+          - template: /eng/common/core-templates/job/helix-job-monitor.yml
+            parameters:
+              helixAccessToken: $(HelixApiAccessToken)
+              timeoutInMinutes: 540
+              allowNoHelixJobs: true
+
         #
         # Build the whole product with Checked CoreCLR and run runtime tests
         #
+
         - template: /eng/pipelines/common/platform-matrix.yml
           parameters:
             jobTemplate: /eng/pipelines/common/global-build-job.yml
@@ -66,6 +76,7 @@ extends:
               postBuildSteps:
                 - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
                   parameters:
+                    useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
                     creator: dotnet-bot
                     testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
               extraVariablesTemplates:
@@ -88,6 +99,7 @@ extends:
               postBuildSteps:
                 - template: /eng/pipelines/libraries/helix.yml
                   parameters:
+                    useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
                     creator: dotnet-bot
                     testRunNamePrefixSuffix: Libraries_$(_BuildConfig)
               extraVariablesTemplates:
