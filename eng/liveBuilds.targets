@@ -281,6 +281,7 @@
         Exclude="$(LibrariesSharedFrameworkDir)libminipal.a;
                  $(LibrariesSharedFrameworkDir)libSystem.IO.Compression.Native.a;
                  $(LibrariesSharedFrameworkDir)libz.a;
+                 $(LibrariesSharedFrameworkDir)dotnet.native.js;
                  $(LibrariesSharedFrameworkDir)libBrowserHost.js.map;
                  $(LibrariesSharedFrameworkDir)libSystem.Native.Browser.js.map;
                  $(LibrariesSharedFrameworkDir)libSystem.Native.Browser.Utils.js.map;
@@ -291,10 +292,14 @@
       <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(IsTestsCommonProject)' != 'true'"
                              Include="
         $(HostSharedFrameworkDir)libBrowserHost.a;
-        $(HostSharedFrameworkDir)dotnet.native.js;
-        $(HostSharedFrameworkDir)dotnet.native.js.symbols;
-        $(HostSharedFrameworkDir)dotnet.native.wasm;
         "
+        IsNative="true" />
+
+      <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(IsTestsCommonProject)' != 'true'"
+                             Include="
+        $(LibrariesSharedFrameworkDir)dotnet.native.js;
+        $(LibrariesSharedFrameworkDir)dotnet.native.js.symbols;
+        $(LibrariesSharedFrameworkDir)dotnet.native.wasm;"
         IsNative="true" />
 
       <!-- Headers included by the CoreCLR native relink generated sources (see BrowserWasmApp.CoreCLR.targets).
