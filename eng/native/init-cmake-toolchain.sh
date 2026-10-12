@@ -10,7 +10,8 @@ fi
 
 CMAKE_CONFIGURE_COMMAND_WRAPPER=
 CMAKE_INITIAL_CACHE=
-CMAKE_TOOLCHAIN_FILE=
+# An exported empty toolchain prevents emcmake from selecting Emscripten.
+unset CMAKE_TOOLCHAIN_FILE
 CLR_CMAKE_TARGET_OS=
 
 if [ "$build_arch" = "wasm" ]; then

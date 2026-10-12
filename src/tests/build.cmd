@@ -246,7 +246,8 @@ set __MsbuildErr=/flp2:ErrorsOnly;LogFile=!__BuildErr!
 set __MsbuildBinLog=/bl:!__BuildBinLog!
 set __Logging='!__MsbuildLog!' '!__MsbuildWrn!' '!__MsbuildErr!' '!__MsbuildBinLog!'
 
-set BuildCommand=powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -Command "%__RepoRootDir%\eng\common\msbuild.ps1" %__ArcadeScriptArgs%^
+REM The caller handles failures, so Arcade must not turn CI failures into exit code 0.
+set BuildCommand=powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -Command "$disablePipelineSetResult = $true; & '%__RepoRootDir%\eng\common\msbuild.ps1'" %__ArcadeScriptArgs%^
   %__RepoRootDir%\src\tests\build.proj -warnAsError:0 /t:TestBuild /nodeReuse:false^
   /p:RestoreDefaultOptimizationDataPackage=false /p:PortableBuild=true^
   /p:UsePartialNGENOptimization=false /maxcpucount %__Logging%^

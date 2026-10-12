@@ -25,8 +25,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <TestBuildSteps Include="RestorePackages" />
     <TestBuildSteps Include="NativeBuild" />
+    <TestBuildSteps Include="RestorePackages"
+                    Condition="'$(__SkipManaged)' != '1' or '$(__SkipGenerateLayout)' != '1' or $(MonoAot) or $(MonoFullAot)" />
     <TestBuildSteps Include="ManagedBuild" />
     <TestBuildSteps Include="GenerateLayout" />
     <TestBuildSteps Include="CrossgenFramework" />
@@ -193,8 +194,13 @@
       Condition="'$(__SkipRestorePackages)' != '1'" />
 
   <Target Name="NativeBuild"
-      DependsOnTargets="RestorePackages"
       Condition="'$(__GenerateLayoutOnly)' != '1' and '$(__SkipNative)' != '1'">
+    <!-- Restore native dependencies separately so native-only builds do not need managed packages.
+         Use separate restore properties so the build reevaluates the generated package imports. -->
+    <MSBuild Projects="build-native.proj"
+             Targets="Restore"
+             Properties="MSBuildRestoreSessionId=$([System.Guid]::NewGuid());SetTFMForRestore=true"
+             Condition="'$(__SkipRestorePackages)' != '1'" />
     <Message Importance="High" Text="$(MsgPrefix)Building native test components" />
     <MSBuild Projects="build-native.proj"
              Targets="BuildNativeTests" />

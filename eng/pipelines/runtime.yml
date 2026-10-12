@@ -759,10 +759,14 @@ extends:
             testGroup: innerloop
             nameSuffix: Native_GCC
             buildArgs: -s clr.native+libs.native+mono+host.native -c $(_BuildConfig) -gcc
+            extraVariablesTemplates:
+              - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
+                parameters:
+                  testGroup: innerloop
             postBuildSteps:
               - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests.yml
                 parameters:
-                  testBuildArgs: skipmanaged skipgeneratelayout skiprestorepackages -gcc
+                  testBuildArgs: skipmanaged skipgeneratelayout -gcc
             condition: >-
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),

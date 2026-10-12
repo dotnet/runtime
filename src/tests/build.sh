@@ -113,7 +113,8 @@ build_Tests()
     # Disable warnAsError - https://github.com/dotnet/runtime/issues/11077
     nextCommand="\"$__RepoRootDir/eng/common/msbuild.sh\" $__ArcadeScriptArgs --warnAsError false ${buildArgs[@]}"
     echo "Building tests via $nextCommand"
-    eval $nextCommand
+    # The caller handles failures, so Arcade must not turn CI failures into exit code 0.
+    disable_pipeline_set_result=true eval $nextCommand
 
     # Make sure everything is OK
     if [[ "$?" -ne 0 ]]; then
