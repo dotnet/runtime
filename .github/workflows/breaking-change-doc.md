@@ -13,6 +13,10 @@ permissions:
   pull-requests: read
   issues: read
 
+checkout:
+  repository: ${{ github.repository }}
+  ref: ${{ github.event.pull_request.base.sha }}
+
 tools:
   bash: ["pwsh", "gh"]
 

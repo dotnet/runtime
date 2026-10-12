@@ -100,6 +100,47 @@ namespace System.IO.Compression
             Assert.Throws<IOException>(() => ZstandardDictionary.Train(samples, sampleLengths, maxDictionarySize));
         }
 
+        [Theory]
+        [InlineData(new int[] { 1, 1, 1, 1, 1, 1, 100 })]
+        [InlineData(new int[] { 1, 1, 1, 1, 2, 1, 100 })]
+        [InlineData(new int[] { 1, 1, 1, 1, 3, 1, 100 })]
+        [InlineData(new int[] { 1, 1, 1, 1, 1, 1, 100, 100 })]
+        [InlineData(new int[] { 1, 1, 1, 1, 1, 1, 1, 100, 100, 100 })]
+        [InlineData(new int[] { 1, 1, 1, 1, 1, 1, 1 })]
+        public void Train_InsufficientTrainingBytes_ThrowsIOException(int[] sampleLengths)
+        {
+            byte[] samples = new byte[sampleLengths.Sum()];
+
+            IOException exception = Assert.Throws<IOException>(() => ZstandardDictionary.Train(samples, sampleLengths, 256));
+            IOException expected = Assert.Throws<IOException>(() => ZstandardDictionary.Train(new byte[10], new int[] { 2, 2, 4, 1, 1 }, 256));
+
+            Assert.Equal(expected.Message, exception.Message);
+        }
+
+        [Theory]
+        [InlineData(4)]
+        [InlineData(5)]
+        public void Train_MinimumTrainingBytes_Succeeds(int fifthSampleLength)
+        {
+            int[] sampleLengths = [1, 1, 1, 1, fifthSampleLength, 1, 100];
+            byte[] samples = new byte[sampleLengths.Sum()];
+
+            using ZstandardDictionary dictionary = ZstandardDictionary.Train(samples, sampleLengths, 256);
+
+            Assert.InRange(dictionary.Data.Length, 1, 256);
+        }
+
+        [Fact]
+        public void Train_InsufficientTrainingBytes_PreservesArgumentValidation()
+        {
+            byte[] samples = new byte[106];
+
+            Assert.Throws<ArgumentOutOfRangeException>("maxDictionarySize", () => ZstandardDictionary.Train(samples, new int[] { 1, 1, 1, 1, 1, 1, 100 }, 255));
+            Assert.Throws<ArgumentException>("sampleLengths", () => ZstandardDictionary.Train(samples, new int[] { 1, 1, 1, 1, 1, 1, 99 }, 256));
+            Assert.Throws<ArgumentException>("sampleLengths", () => ZstandardDictionary.Train(samples, new int[] { 0, 1, 1, 1, 1, 1, 101 }, 256));
+            Assert.Throws<ArgumentException>("sampleLengths", () => ZstandardDictionary.Train(samples, new int[] { -1, 1, 1, 1, 1, 1, 102 }, 256));
+        }
+
         [Fact]
         public void Train_ValidSamples_Succeeds()
         {

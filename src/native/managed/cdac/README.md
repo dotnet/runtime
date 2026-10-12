@@ -161,9 +161,11 @@ Build from the runtime repo root:
 ./build.sh clr+clr.hosts+libs+tools.cdac -c Debug -lc Release
 ```
 
-The debug build of the runtime (`-rc Debug`, which is the default when `-c Debug` is used)
-is required for the brittle DAC to delegate to the cDAC. Release build of the libraries
-(`-lc Release`) is highly recommended for a faster inner loop.
+A Debug runtime is not required: when the cDAC is enabled, the legacy DAC can delegate to
+it in Debug, Checked and Release runtime builds on the platforms that support it. The
+`#if DEBUG` cross-validation still requires the legacy DAC to match the runtime build; the
+testhost produced by the command above has both from the same build. Release build of the
+libraries (`-lc Release`) is highly recommended for a faster inner loop.
 
 Once the initial build is done, shorter incremental rebuilds can be done with:
 
@@ -194,9 +196,10 @@ to set `DOTNET_ENABLE_CDAC=1` on each test process.
 ### CI pipeline
 
 The `runtime-diagnostics.yml` pipeline runs the SOS tests automatically on every PR that
-touches `src/native/managed/cdac/**` or `src/coreclr/debug/runtimeinfo/**`. It runs the
-tests twice — once with `-useCdac` (cDAC path) and once without (legacy DAC path) — on
-Windows x64.
+touches `src/native/managed/cdac/**` or `src/coreclr/debug/runtimeinfo/**`. The SOSTests
+stage builds a Release runtime and the cDAC for each platform in `sosPlatforms` (Windows
+x64, x86 and arm64, Linux x64 and arm64, macOS x64 and arm64), and SOS.Tests covers both
+the legacy DAC and the cDAC configurations.
 
 > **Note:** The runtime and diagnostics repos must be on the same major version. CLRMD
 > validates the DAC binary version against the runtime, so a cross-major-version mismatch

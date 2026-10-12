@@ -322,7 +322,7 @@ namespace System.Net.Quic.Tests
 
             await using QuicListener listener = await CreateQuicListener(listenerOptions);
             QuicClientConnectionOptions clientOptions = CreateQuicClientOptions(listener.LocalEndPoint);
-            clientOptions.ClientAuthenticationOptions.ClientCertificates = new X509CertificateCollection() { ClientCertificate };
+            clientOptions.ClientAuthenticationOptions.ClientCertificateContext = QuicTestCollection.ClientCertificateContext;
             Task<QuicConnection> clientTask = CreateQuicConnection(clientOptions).AsTask();
 
             // This will propagate the AuthenticationException since the client certificate is not trusted.
@@ -402,6 +402,7 @@ namespace System.Net.Quic.Tests
                 ConnectionOptionsCallback = (_, _, _) =>
                 {
                     var serverOptions = CreateQuicServerOptions();
+                    serverOptions.ServerAuthenticationOptions.ServerCertificateContext = null;
                     serverOptions.ServerAuthenticationOptions.ServerCertificate = null;
                     serverOptions.ServerAuthenticationOptions.ServerCertificateSelectionCallback = (sender, hostName) =>
                     {
@@ -475,6 +476,7 @@ namespace System.Net.Quic.Tests
                 ConnectionOptionsCallback = (_, _, _) =>
                 {
                     var serverOptions = CreateQuicServerOptions();
+                    serverOptions.ServerAuthenticationOptions.ServerCertificateContext = null;
                     serverOptions.ServerAuthenticationOptions.ServerCertificate = null;
                     serverOptions.ServerAuthenticationOptions.ServerCertificateSelectionCallback = (sender, hostName) =>
                     {
@@ -508,6 +510,7 @@ namespace System.Net.Quic.Tests
                 ConnectionOptionsCallback = (_, _, _) =>
                 {
                     var serverOptions = CreateQuicServerOptions();
+                    serverOptions.ServerAuthenticationOptions.ServerCertificateContext = null;
                     serverOptions.ServerAuthenticationOptions.ServerCertificate = certificate;
                     return ValueTask.FromResult(serverOptions);
                 }
@@ -541,6 +544,7 @@ namespace System.Net.Quic.Tests
                 ConnectionOptionsCallback = (_, _, _) =>
                 {
                     var serverOptions = CreateQuicServerOptions();
+                    serverOptions.ServerAuthenticationOptions.ServerCertificateContext = null;
                     serverOptions.ServerAuthenticationOptions.ServerCertificate = certificate;
                     return ValueTask.FromResult(serverOptions);
                 }
@@ -578,32 +582,49 @@ namespace System.Net.Quic.Tests
                 // [ActiveIssue("https://github.com/dotnet/runtime/issues/119641")]
                 forceRsaCertificate: !PlatformDetection.IsWindows);
             X509Certificate2 certificate = pkiHolder.EndEntity;
-
-            var listenerOptions = new QuicListenerOptions()
+            SslStreamCertificateContext serverContext = SslStreamCertificateContext.Create(certificate, pkiHolder.IssuerChain, offline: true);
+            try
             {
-                ListenEndPoint = new IPEndPoint(ipAddress, 0),
-                ApplicationProtocols = new List<SslApplicationProtocol>() { ApplicationProtocol },
-                ConnectionOptionsCallback = (_, _, _) =>
+                var listenerOptions = new QuicListenerOptions()
                 {
-                    var serverOptions = CreateQuicServerOptions();
-                    serverOptions.ServerAuthenticationOptions.ServerCertificate = certificate;
-                    return ValueTask.FromResult(serverOptions);
+                    ListenEndPoint = new IPEndPoint(ipAddress, 0),
+                    ApplicationProtocols = new List<SslApplicationProtocol>() { ApplicationProtocol },
+                    ConnectionOptionsCallback = (_, _, _) =>
+                    {
+                        var serverOptions = CreateQuicServerOptions();
+                        serverOptions.ServerAuthenticationOptions.ServerCertificate = null;
+                        serverOptions.ServerAuthenticationOptions.ServerCertificateContext = serverContext;
+                        return ValueTask.FromResult(serverOptions);
+                    }
+                };
+
+                // Use whatever endpoint, it'll get overwritten in CreateConnectedQuicConnection.
+                QuicClientConnectionOptions clientOptions = CreateQuicClientOptions(listenerOptions.ListenEndPoint);
+                clientOptions.ClientAuthenticationOptions.RemoteCertificateValidationCallback = (sender, cert, chain, errors) =>
+                {
+                    Assert.Equal(certificate.Subject, cert.Subject);
+                    Assert.Equal(certificate.Issuer, cert.Issuer);
+                    Assert.Equal(expectsError ? SslPolicyErrors.RemoteCertificateNameMismatch : SslPolicyErrors.None, errors & SslPolicyErrors.RemoteCertificateNameMismatch);
+                    return true;
+                };
+
+                (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection(clientOptions, listenerOptions);
+                try
+                {
+                    await clientConnection.DisposeAsync();
                 }
-            };
-
-            // Use whatever endpoint, it'll get overwritten in CreateConnectedQuicConnection.
-            QuicClientConnectionOptions clientOptions = CreateQuicClientOptions(listenerOptions.ListenEndPoint);
-            clientOptions.ClientAuthenticationOptions.RemoteCertificateValidationCallback = (sender, cert, chain, errors) =>
+                finally
+                {
+                    await serverConnection.DisposeAsync();
+                }
+            }
+            finally
             {
-                Assert.Equal(certificate.Subject, cert.Subject);
-                Assert.Equal(certificate.Issuer, cert.Issuer);
-                Assert.Equal(expectsError ? SslPolicyErrors.RemoteCertificateNameMismatch : SslPolicyErrors.None, errors & SslPolicyErrors.RemoteCertificateNameMismatch);
-                return true;
-            };
-
-            (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection(clientOptions, listenerOptions);
-            await clientConnection.DisposeAsync();
-            await serverConnection.DisposeAsync();
+                foreach (X509Certificate2 intermediate in serverContext.IntermediateCertificates)
+                {
+                    intermediate.Dispose();
+                }
+            }
         }
 
         public enum ClientCertSource
@@ -667,7 +688,7 @@ namespace System.Net.Quic.Tests
                     break;
 
                 case ClientCertSource.CertificateContext:
-                    clientOptions.ClientAuthenticationOptions.ClientCertificateContext = SslStreamCertificateContext.Create(ClientCertificate, null);
+                    clientOptions.ClientAuthenticationOptions.ClientCertificateContext = QuicTestCollection.ClientCertificateContext;
                     break;
             }
             (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection(clientOptions, listener);
