@@ -44,8 +44,8 @@ namespace System.Net
 {
     internal sealed class HttpConnection
     {
-        private static readonly AsyncCallback s_onreadCallback = new AsyncCallback(OnRead);
         private const int BufferSize = 8192;
+        private const int MaxRequestHeaderSize = 65536;
         private Socket? _socket;
         private readonly Stream _stream;
         private readonly HttpEndPointListener _epl;
@@ -70,6 +70,8 @@ namespace System.Net
         private InputState _inputState = InputState.RequestLine;
         private LineState _lineState = LineState.None;
         private int _position;
+        private int _requestHeaderBytesRead;
+        private static readonly AsyncCallback s_onreadCallback = new AsyncCallback(OnRead);
 
         public HttpConnection(Socket sock, HttpEndPointListener epl, bool secure, X509Certificate cert)
         {
@@ -134,6 +136,7 @@ namespace System.Net
             _prefix = null;
             _memoryStream = new MemoryStream();
             _position = 0;
+            _requestHeaderBytesRead = 0;
             _inputState = InputState.RequestLine;
             _lineState = LineState.None;
             _context = new HttpListenerContext(this);
@@ -192,8 +195,7 @@ namespace System.Net
             {
                 if (_reuses == 1)
                     _timeout = 15000;
-                _timer.Change(_timeout, Timeout.Infinite);
-                _stream.BeginRead(_buffer, 0, BufferSize, s_onreadCallback, this);
+                StartReading();
             }
             catch
             {
@@ -237,38 +239,104 @@ namespace System.Net
             return _responseStream;
         }
 
+        /// <summary>
+        /// Issues reads in a loop. The BCL stream types used here (NetworkStream/SslStream) reliably
+        /// set <see cref="IAsyncResult.CompletedSynchronously"/> to true *before* invoking the callback
+        /// when a read completes inline (e.g. data was already buffered). That lets us process such
+        /// completions right here, in a loop, instead of recursing into OnRead -> BeginRead -> OnRead
+        /// -> ..., which could otherwise grow the stack without bound for a client that keeps sending
+        /// data that's always immediately available to read. Truly asynchronous completions are
+        /// handled by <see cref="OnRead"/>, which resumes this loop on a fresh call stack once data
+        /// arrives.
+        /// </summary>
+        private void StartReading()
+        {
+            while (true)
+            {
+                // Re-arm per fragment, not just once, so a connection whose client has gone away
+                // or stalled gets cleaned up after _timeout of silence, instead of only ever being
+                // checked against the timeout from the request's very first read.
+                _timer.Change(_timeout, Timeout.Infinite);
+
+                IAsyncResult ares;
+                try
+                {
+                    ares = _stream.BeginRead(_buffer!, 0, BufferSize, s_onreadCallback, this);
+                }
+                catch
+                {
+                    _timer.Change(Timeout.Infinite, Timeout.Infinite);
+                    CloseSocket();
+                    Unbind();
+                    return;
+                }
+
+                if (!ares.CompletedSynchronously)
+                {
+                    // OnRead will process this once the real read completes.
+                    return;
+                }
+
+                bool more;
+                try
+                {
+                    more = ProcessRead(ares);
+                }
+                catch
+                {
+                    Close(true);
+                    return;
+                }
+
+                if (!more)
+                {
+                    return;
+                }
+            }
+        }
+
         private static void OnRead(IAsyncResult ares)
         {
+            if (ares.CompletedSynchronously)
+            {
+                // The StartReading loop that issued this read is still on the stack and will
+                // process the result itself; returning here (instead of processing again) avoids
+                // double-processing and avoids recursing back into BeginRead from this callback.
+                return;
+            }
+
             HttpConnection? cnc = null;
             try
             {
                 cnc = (HttpConnection)ares.AsyncState!;
-                cnc.OnReadInternal(ares);
-            }
-            catch
-            {
-                cnc?.Close(true);
-                return;
-            }
-        }
-
-        private void OnReadInternal(IAsyncResult ares)
-        {
-            _timer.Change(Timeout.Infinite, Timeout.Infinite);
-            int nread;
-            try
-            {
-                nread = _stream.EndRead(ares);
-                _memoryStream!.Write(_buffer!, 0, nread);
-                if (_memoryStream.Length > 32768)
+                if (cnc.ProcessRead(ares))
                 {
-                    SendError(HttpStatusDescription.Get(400), 400);
-                    Close(true);
-                    return;
+                    cnc.StartReading();
                 }
             }
             catch
             {
+                cnc?.Close(true);
+            }
+        }
+
+        /// <summary>
+        /// Returns true if the caller (StartReading, either looping itself or via the fresh call
+        /// below) should issue another read; false once this request is done being driven through
+        /// this read loop (bound to a context, or the connection was torn down).
+        /// </summary>
+        private bool ProcessRead(IAsyncResult ares)
+        {
+            int nread;
+            try
+            {
+                nread = _stream.EndRead(ares);
+                _timer.Change(Timeout.Infinite, Timeout.Infinite);
+                _memoryStream!.Write(_buffer!, 0, nread);
+            }
+            catch
+            {
+                _timer.Change(Timeout.Infinite, Timeout.Infinite);
                 if (_memoryStream != null && _memoryStream.Length > 0)
                     SendError();
                 if (_socket != null)
@@ -276,48 +344,49 @@ namespace System.Net
                     CloseSocket();
                     Unbind();
                 }
-                return;
+                return false;
             }
 
             if (nread == 0)
             {
                 CloseSocket();
                 Unbind();
-                return;
+                return false;
             }
 
-            if (ProcessInput(_memoryStream))
+            if (!ProcessInput(_memoryStream))
             {
-                if (!_context.HaveError)
-                    _context.Request.FinishInitialization();
-
-                if (_context.HaveError)
-                {
-                    SendError();
-                    Close(true);
-                    return;
-                }
-
-                if (!_epl.BindContext(_context))
-                {
-                    const int NotFoundErrorCode = 404;
-                    SendError(HttpStatusDescription.Get(NotFoundErrorCode), NotFoundErrorCode);
-                    Close(true);
-                    return;
-                }
-                HttpListener listener = _context._listener!;
-                if (_lastListener != listener)
-                {
-                    RemoveConnection();
-                    listener.AddConnection(this);
-                    _lastListener = listener;
-                }
-
-                _contextBound = true;
-                listener.RegisterContext(_context);
-                return;
+                return true;
             }
-            _stream.BeginRead(_buffer!, 0, BufferSize, s_onreadCallback, this);
+
+            if (!_context.HaveError)
+                _context.Request.FinishInitialization();
+
+            if (_context.HaveError)
+            {
+                SendError();
+                Close(true);
+                return false;
+            }
+
+            if (!_epl.BindContext(_context))
+            {
+                const int NotFoundErrorCode = 404;
+                SendError(HttpStatusDescription.Get(NotFoundErrorCode), NotFoundErrorCode);
+                Close(true);
+                return false;
+            }
+            HttpListener listener = _context._listener!;
+            if (_lastListener != listener)
+            {
+                RemoveConnection();
+                listener.AddConnection(this);
+                _lastListener = listener;
+            }
+
+            _contextBound = true;
+            listener.RegisterContext(_context);
+            return false;
         }
 
         private void RemoveConnection()
@@ -362,6 +431,13 @@ namespace System.Net
                 {
                     line = ReadLine(buffer, _position, len - _position, ref used);
                     _position += used;
+                    if (used > MaxRequestHeaderSize - _requestHeaderBytesRead)
+                    {
+                        _context.ErrorMessage = HttpStatusDescription.Get(400)!;
+                        _context.ErrorStatus = 400;
+                        return true;
+                    }
+                    _requestHeaderBytesRead += used;
                 }
                 catch
                 {

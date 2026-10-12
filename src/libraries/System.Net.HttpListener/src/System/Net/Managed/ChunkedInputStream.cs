@@ -108,13 +108,72 @@ namespace System.Net
             ares._count = 8192;
             ReadBufferState rb = new ReadBufferState(buffer, offset, size, ares);
             rb.InitialCount += nread;
-            base.BeginReadCore(ares._buffer, ares._offset, ares._count, OnRead, rb);
+            ReadNextChunkFragment(rb);
             return ares;
+        }
+
+        // Issues the inner base-stream read in a loop. base.BeginReadCore's real-network-read path
+        // (NetworkStream/SslStream) reliably sets IAsyncResult.CompletedSynchronously to true
+        // *before* invoking the callback when the read completes inline; its buffered/short-circuit
+        // paths instead return a HttpStreamAsyncResult whose Complete() always dispatches the
+        // callback via Task.Run (i.e. always on a fresh stack) and whose CompletedSynchronously is
+        // always false. Either way, it's safe to let a "CompletedSynchronously == false" result be
+        // handled by OnRead: that only happens when there's genuinely no risk of unbounded stack
+        // growth. "CompletedSynchronously == true" results are processed right here, in a loop,
+        // instead of recursing into OnRead -> BeginReadCore -> OnRead -> ..., which could otherwise
+        // grow the stack without bound for a chunked body made of many immediately-available chunks.
+        private void ReadNextChunkFragment(ReadBufferState rb)
+        {
+            while (true)
+            {
+                IAsyncResult baseAres;
+                try
+                {
+                    baseAres = base.BeginReadCore(rb.Ares._buffer!, rb.Ares._offset, rb.Ares._count, OnRead, rb);
+                }
+                catch (Exception e)
+                {
+                    _context.Connection.SendError(e.Message, 400);
+                    rb.Ares.Complete(e);
+                    return;
+                }
+
+                if (!baseAres.CompletedSynchronously)
+                {
+                    // OnRead will process this once the real read completes.
+                    return;
+                }
+
+                if (!ProcessChunkFragment(baseAres, rb))
+                {
+                    return;
+                }
+            }
         }
 
         private void OnRead(IAsyncResult base_ares)
         {
+            if (base_ares.CompletedSynchronously)
+            {
+                // The ReadNextChunkFragment loop that issued this read is still on the stack and
+                // will process the result itself; returning here (instead of processing again)
+                // avoids double-processing and avoids recursing back into BeginReadCore from this
+                // callback.
+                return;
+            }
+
             ReadBufferState rb = (ReadBufferState)base_ares.AsyncState!;
+            if (ProcessChunkFragment(base_ares, rb))
+            {
+                ReadNextChunkFragment(rb);
+            }
+        }
+
+        // Returns true if another inner read should be issued (either by looping, if called from
+        // there, or via the fresh call above); false once the outer HttpStreamAsyncResult has been
+        // completed (successfully or with an error) and no further reads are needed.
+        private bool ProcessChunkFragment(IAsyncResult base_ares, ReadBufferState rb)
+        {
             HttpStreamAsyncResult ares = rb.Ares;
             try
             {
@@ -124,7 +183,7 @@ namespace System.Net
                     _no_more_data = true;
                     ares._count = rb.InitialCount - rb.Count;
                     ares.Complete();
-                    return;
+                    return false;
                 }
 
                 _decoder.Write(ares._buffer!, ares._offset, nread);
@@ -136,16 +195,17 @@ namespace System.Net
                     _no_more_data = !_decoder.WantMore && nread == 0;
                     ares._count = rb.InitialCount - rb.Count;
                     ares.Complete();
-                    return;
+                    return false;
                 }
                 ares._offset = 0;
                 ares._count = Math.Min(8192, _decoder.ChunkLeft + 6);
-                base.BeginReadCore(ares._buffer!, ares._offset, ares._count, OnRead, rb);
+                return true;
             }
             catch (Exception e)
             {
                 _context.Connection.SendError(e.Message, 400);
                 ares.Complete(e);
+                return false;
             }
         }
 
