@@ -21823,6 +21823,13 @@ CORINFO_CLASS_HANDLE Compiler::gtGetHelperCallClassHandle(GenTreeCall* call, boo
             {
                 GenTree* valueArg = call->gtArgs.GetUserArgByIndex(1)->GetNode();
                 castHnd           = gtGetClassHandle(valueArg, pIsExact, pIsNonNull);
+
+                // A failed isinst returns null even for a non-null value, only cast helpers preserve non-nullness.
+                if ((helper == CORINFO_HELP_ISINSTANCEOFINTERFACE) || (helper == CORINFO_HELP_ISINSTANCEOFARRAY) ||
+                    (helper == CORINFO_HELP_ISINSTANCEOFCLASS) || (helper == CORINFO_HELP_ISINSTANCEOFANY))
+                {
+                    *pIsNonNull = false;
+                }
             }
 
             // We don't know at jit time if the cast will succeed or fail, but if it
