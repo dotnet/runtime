@@ -27,7 +27,6 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetOS)' == 'browser'">
     <WasmFilesToIncludeFromPublishDir Include="$(AssemblyName).dll" />
-    <WasmFilesToIncludeFromPublishDir Include="$(AssemblyName).pdb" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="ExceptionTestAssembly\ExceptionTestAssembly.csproj" />
