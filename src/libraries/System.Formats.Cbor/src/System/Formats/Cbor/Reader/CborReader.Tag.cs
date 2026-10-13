@@ -133,12 +133,7 @@ namespace System.Formats.Cbor
                         throw new CborContentException(SR.Cbor_Reader_InvalidUnixTimeEncoding);
                 }
             }
-            catch (ArgumentOutOfRangeException e)
-            {
-                RestoreCheckpoint(in checkpoint);
-                throw new InvalidOperationException(SR.Cbor_Reader_UnixTimeOutOfRange, e);
-            }
-            catch (OverflowException e)
+            catch (Exception e) when (e is ArgumentOutOfRangeException or OverflowException)
             {
                 RestoreCheckpoint(in checkpoint);
                 throw new InvalidOperationException(SR.Cbor_Reader_UnixTimeOutOfRange, e);
