@@ -102,8 +102,6 @@ namespace System.Diagnostics
         {
             // First, stop and collect the entire process tree before killing any process.
             // This is necessary because killing a parent process may cause children with
-            // PR_SET_PDEATHSIG to be killed by the kernel immediately, making it impossible
-            // to discover their descendants afterward.
             List<Process> stoppedProcesses = [];
             try
             {
