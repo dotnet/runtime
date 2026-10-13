@@ -83,6 +83,11 @@ namespace System.ComponentModel.DataAnnotations
         ///         failure.  If <paramref name="validationResults" /> is non-null, then all validation attributes will be
         ///         evaluated.
         ///     </para>
+        ///     <para>
+        ///         Validation runs in three stages: property validation, type-level attribute validation, and object-level validation.
+        ///         Each stage runs only if the preceding stages succeed.
+        ///         Object-level validation invokes <see cref="IValidatableObject.Validate" /> if implemented.
+        ///     </para>
         /// </remarks>
         /// <param name="instance">The object instance to test.  It cannot be <c>null</c>.</param>
         /// <param name="validationContext">Describes the object to validate and provides services and context for the validators.</param>
@@ -116,6 +121,11 @@ namespace System.ComponentModel.DataAnnotations
         ///     <para>
         ///         For any given property, if it has a <see cref="RequiredAttribute" /> that fails validation, no other validators
         ///         will be evaluated for that property.
+        ///     </para>
+        ///     <para>
+        ///         Validation runs in three stages: property validation, type-level attribute validation, and object-level validation.
+        ///         Each stage runs only if the preceding stages succeed.
+        ///         Object-level validation invokes <see cref="IValidatableObject.Validate" /> if implemented.
         ///     </para>
         /// </remarks>
         /// <param name="instance">The object instance to test.  It cannot be null.</param>
@@ -235,6 +245,11 @@ namespace System.ComponentModel.DataAnnotations
         /// </summary>
         /// <remarks>
         ///     This method evaluates all <see cref="ValidationAttribute" />s attached to the object's type.
+        ///     <para>
+        ///         Validation runs in three stages: property validation, type-level attribute validation, and object-level validation.
+        ///         Each stage runs only if the preceding stages succeed.
+        ///         Object-level validation invokes <see cref="IValidatableObject.Validate" /> if implemented.
+        ///     </para>
         /// </remarks>
         /// <param name="instance">The object instance to test.  It cannot be null.</param>
         /// <param name="validationContext">
@@ -260,6 +275,11 @@ namespace System.ComponentModel.DataAnnotations
         /// <remarks>
         ///     This method evaluates all <see cref="ValidationAttribute" />s attached to the object's type.
         ///     If <paramref name="validateAllProperties" /> is <c>true</c> it also validates all the object's properties.
+        ///     <para>
+        ///         Validation runs in three stages: property validation, type-level attribute validation, and object-level validation.
+        ///         Each stage runs only if the preceding stages succeed.
+        ///         Object-level validation invokes <see cref="IValidatableObject.Validate" /> if implemented.
+        ///     </para>
         /// </remarks>
         /// <param name="instance">The object instance to test.  It cannot be null.</param>
         /// <param name="validationContext">
@@ -393,6 +413,13 @@ namespace System.ComponentModel.DataAnnotations
         ///     the <see cref="ValidationAttribute" />s on individual properties of the object unless
         ///     <see cref="TryValidateObjectAsync(object, ValidationContext, ICollection{ValidationResult}?, bool, CancellationToken)" />
         ///     is called with <c>validateAllProperties</c> set to <see langword="true" />.
+        ///     <para>
+        ///         Validation runs in three stages: property validation, type-level attribute validation, and object-level validation.
+        ///         Each stage runs only if the preceding stages succeed.
+        ///         Object-level validation prefers invoking <see cref="IAsyncValidatableObject.ValidateAsync" /> when implemented,
+        ///         with <see cref="IValidatableObject.Validate" /> as a fallback for objects that implement only the synchronous interface.
+        ///         It does not invoke both.
+        ///     </para>
         /// </remarks>
         /// <param name="instance">The object instance to test.  It cannot be <c>null</c>.</param>
         /// <param name="validationContext">Describes the object to validate and provides services and context for the validators.</param>
@@ -440,6 +467,13 @@ namespace System.ComponentModel.DataAnnotations
         ///     <para>
         ///         Returns <see cref="Task{Boolean}" /> for interoperability with standard async
         ///         composition patterns such as <c>Task.WhenAll</c> and <c>Task.WhenAny</c>.
+        ///     </para>
+        ///     <para>
+        ///         Validation runs in three stages: property validation, type-level attribute validation, and object-level validation.
+        ///         Each stage runs only if the preceding stages succeed.
+        ///         Object-level validation prefers invoking <see cref="IAsyncValidatableObject.ValidateAsync" /> when implemented,
+        ///         with <see cref="IValidatableObject.Validate" /> as a fallback for objects that implement only the synchronous interface.
+        ///         It does not invoke both.
         ///     </para>
         /// </remarks>
         /// <param name="instance">The object instance to test.  It cannot be null.</param>
@@ -580,6 +614,13 @@ namespace System.ComponentModel.DataAnnotations
         ///         This overload does not evaluate other property-level validation attributes. To evaluate those attributes,
         ///         call the overload that accepts <c>validateAllProperties</c> with that argument set to <see langword="true" />.
         ///     </para>
+        ///     <para>
+        ///         Validation runs in three stages: property validation, type-level attribute validation, and object-level validation.
+        ///         Each stage runs only if the preceding stages succeed.
+        ///         Object-level validation prefers invoking <see cref="IAsyncValidatableObject.ValidateAsync" /> when implemented,
+        ///         with <see cref="IValidatableObject.Validate" /> as a fallback for objects that implement only the synchronous interface.
+        ///         It does not invoke both.
+        ///     </para>
         /// </remarks>
         /// <param name="instance">The object instance to test.  It cannot be null.</param>
         /// <param name="validationContext">Describes the object being validated and provides services and context for the validators.</param>
@@ -614,6 +655,13 @@ namespace System.ComponentModel.DataAnnotations
         ///     <para>
         ///         If <paramref name="validateAllProperties" /> is <see langword="true" />, the method also evaluates other
         ///         validation attributes on the object's immediate properties. This process does not recursively validate property values.
+        ///     </para>
+        ///     <para>
+        ///         Validation runs in three stages: property validation, type-level attribute validation, and object-level validation.
+        ///         Each stage runs only if the preceding stages succeed.
+        ///         Object-level validation prefers invoking <see cref="IAsyncValidatableObject.ValidateAsync" /> when implemented,
+        ///         with <see cref="IValidatableObject.Validate" /> as a fallback for objects that implement only the synchronous interface.
+        ///         It does not invoke both.
         ///     </para>
         /// </remarks>
         /// <param name="instance">The object instance to test.  It cannot be null.</param>
