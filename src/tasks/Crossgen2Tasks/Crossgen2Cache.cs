@@ -16,6 +16,8 @@ internal sealed class Crossgen2Cache
     private readonly string _root;
     private readonly TaskLoggingHelper _log;
 
+    internal static StringComparer PathComparer { get; } = OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
+
     internal readonly struct Diagnostic
     {
         internal string Text { get; }
@@ -57,10 +59,10 @@ internal sealed class Crossgen2Cache
             if (string.IsNullOrEmpty(root))
             {
                 string? home = Environment.GetEnvironmentVariable("XDG_CACHE_HOME");
-                if (string.IsNullOrEmpty(home) || !Path.IsPathRooted(home))
+                if (string.IsNullOrEmpty(home) || !Path.IsPathFullyQualified(home))
                 {
                     home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-                    if (string.IsNullOrEmpty(home) || !Path.IsPathRooted(home))
+                    if (string.IsNullOrEmpty(home) || !Path.IsPathFullyQualified(home))
                     {
                         throw new InvalidDataException("No absolute user cache location is available.");
                     }
@@ -91,41 +93,32 @@ internal sealed class Crossgen2Cache
     internal static string InputPath(string path)
     {
         // These strings are embedded in a response file, not passed as an argv array.
-        if (!Path.IsPathRooted(path) || path.IndexOfAny(new[] { '"', '\r', '\n', '*', '?' }) >= 0)
+        if (!Path.IsPathFullyQualified(path) || path.IndexOfAny(new[] { '"', '\r', '\n', '*', '?' }) >= 0)
         {
             throw new InvalidDataException($"Unsupported response-file path: '{path}'.");
         }
-        return Path.GetFullPath(path);
+        string fullPath = Path.GetFullPath(path);
+        if (OperatingSystem.IsWindows())
+        {
+            string relative = path.Substring(Path.GetPathRoot(path)!.Length).Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
+            if (fullPath.StartsWith(@"\\?\", StringComparison.Ordinal) ||
+                fullPath.StartsWith(@"\\.\", StringComparison.Ordinal) ||
+                relative.Contains(':') ||
+                relative.Split(Path.DirectorySeparatorChar).Any(part => part is not ("." or "..") && (part.EndsWith('.') || part.EndsWith(' '))))
+            {
+                throw new InvalidDataException($"Unsupported Windows path alias: '{path}'.");
+            }
+        }
+        return fullPath;
     }
 
-    internal string ComputeKey(string tool, string jit, string input, ITaskItem[] references,
+    internal string ComputeKey(string[] compilerDependencies, string input, ITaskItem[] references,
         ITaskItem[]? profiles, string[] outputs, string response, string command, string diagnosticPolicy, string workingDirectory)
     {
-        tool = InputPath(tool);
-        string toolDirectory = Path.GetDirectoryName(tool)!;
-        if (Path.GetFileName(tool) != "crossgen2" || (File.GetAttributes(tool) & FileAttributes.ReparsePoint) != 0)
-        {
-            throw new InvalidDataException("The compiler must be a directly deployed crossgen2 executable, not a launcher or symbolic link.");
-        }
-        using (FileStream stream = File.OpenRead(tool))
-        {
-            if (stream.ReadByte() != 0x7f || stream.ReadByte() != 'E' || stream.ReadByte() != 'L' || stream.ReadByte() != 'F')
-            {
-                throw new InvalidDataException("Only a directly executed native ELF crossgen2 deployment is supported.");
-            }
-        }
-        foreach (string extension in new[] { ".dll", ".deps.json", ".runtimeconfig.json", ".runtimeconfig.dev.json" })
-        {
-            if (Exists(Path.ChangeExtension(tool, extension)))
-            {
-                throw new InvalidDataException("Managed/apphost crossgen2 deployments are not supported.");
-            }
-        }
-
         using var data = new MemoryStream();
         using var writer = new BinaryWriter(data, Encoding.UTF8, leaveOpen: true);
-        var inputs = new HashSet<string>(StringComparer.Ordinal);
-        writer.Write("crossgen2-task-cache-v1");
+        var inputs = new HashSet<string>(PathComparer);
+        writer.Write("crossgen2-task-cache-v2");
         writer.Write(Path.GetFullPath(workingDirectory));
         writer.Write(Directory.GetCurrentDirectory());
         writer.Write(RuntimeInformation.OSDescription);
@@ -141,15 +134,18 @@ internal sealed class Crossgen2Cache
             writer.Write(output);
             string rootPrefix = _root.EndsWith(Path.DirectorySeparatorChar.ToString(), StringComparison.Ordinal)
                 ? _root : _root + Path.DirectorySeparatorChar;
-            if (output == _root.TrimEnd(Path.DirectorySeparatorChar) || output.StartsWith(rootPrefix, StringComparison.Ordinal))
+            if (PathComparer.Equals(output, _root.TrimEnd(Path.DirectorySeparatorChar)) ||
+                (output.Length >= rootPrefix.Length && PathComparer.Equals(output.Substring(0, rootPrefix.Length), rootPrefix)))
             {
                 throw new InvalidDataException("Outputs must be outside the cache.");
             }
         }
         AddFile(typeof(RunReadyToRunCompiler).Assembly.Location);
-        AddFile(tool);
-        AddFile(string.IsNullOrEmpty(jit) ? Path.Combine(toolDirectory, "libclrjit_unix_x64_x64.so") : jit);
-        AddFile(Path.Combine(toolDirectory, "libjitinterface_x64.so"));
+        writer.Write(compilerDependencies.Length);
+        foreach (string dependency in compilerDependencies)
+        {
+            AddFile(dependency);
+        }
         AddAssembly(input);
         writer.Write(references.Length);
         foreach (ITaskItem reference in references)
@@ -172,7 +168,7 @@ internal sealed class Crossgen2Cache
         data.Position = 0;
         return Hash(data);
 
-        void AddFile(string path, bool optional = false)
+        void AddFile(string path, bool optional = false, BlobContentId? symbolIdentity = null)
         {
             path = InputPath(path);
             inputs.Add(path);
@@ -180,6 +176,10 @@ internal sealed class Crossgen2Cache
             try
             {
                 using FileStream file = File.OpenRead(path);
+                if (symbolIdentity.HasValue)
+                {
+                    Crossgen2CacheInvocation.ValidateInputSymbols(file, symbolIdentity.Value);
+                }
                 writer.Write(true);
                 writer.Write(Hash(file));
             }
@@ -199,6 +199,10 @@ internal sealed class Crossgen2Cache
             AddFile(path);
             using FileStream stream = File.OpenRead(path);
             using var pe = new PEReader(stream);
+            if (!pe.HasMetadata)
+            {
+                throw new InvalidDataException($"Compiler assembly input has no managed metadata: '{path}'.");
+            }
             MetadataReader metadata = pe.GetMetadataReader();
             if (metadata.AssemblyFiles.Count != 0)
             {
@@ -210,12 +214,19 @@ internal sealed class Crossgen2Cache
             writer.Write(symbols.Length);
             foreach (DebugDirectoryEntry entry in symbols)
             {
-                string pdb = pe.ReadCodeViewDebugDirectoryData(entry).Path;
+                CodeViewDebugDirectoryData codeView = pe.ReadCodeViewDebugDirectoryData(entry);
+                string pdb = codeView.Path;
+                var identity = new BlobContentId(codeView.Guid, entry.Stamp);
                 if (Path.IsPathRooted(pdb))
                 {
-                    AddFile(pdb, optional: true);
+                    if (!Path.IsPathFullyQualified(pdb) && Path.GetPathRoot(pdb)!.Length != 1)
+                    {
+                        throw new InvalidDataException($"Drive-relative CodeView path is not supported: '{pdb}'.");
+                    }
+                    // Unix-style CodeView paths in Windows assemblies are rooted on the compiler's current drive.
+                    AddFile(Path.GetFullPath(pdb, Path.GetFullPath(workingDirectory)), optional: true, symbolIdentity: identity);
                 }
-                AddFile(Path.Combine(Path.GetDirectoryName(path)!, Path.GetFileName(pdb)), optional: true);
+                AddFile(Path.Combine(Path.GetDirectoryName(path)!, Path.GetFileName(pdb)), optional: true, symbolIdentity: identity);
             }
         }
     }
@@ -382,22 +393,5 @@ internal sealed class Crossgen2Cache
     {
         using SHA256 sha = SHA256.Create();
         return BitConverter.ToString(sha.ComputeHash(stream)).Replace("-", "");
-    }
-
-    private static bool Exists(string path)
-    {
-        try
-        {
-            File.GetAttributes(path);
-            return true;
-        }
-        catch (FileNotFoundException)
-        {
-            return false;
-        }
-        catch (DirectoryNotFoundException)
-        {
-            return false;
-        }
     }
 }

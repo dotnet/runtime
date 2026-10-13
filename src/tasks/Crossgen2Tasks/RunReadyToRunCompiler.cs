@@ -434,32 +434,22 @@ namespace Microsoft.NET.Build.Tasks
                         (!string.IsNullOrEmpty(Crossgen2ContainerFormat) && Crossgen2ContainerFormat != "pe") ||
                         HasUnsafeExtraArguments(Crossgen2ExtraCommandLineArgs) ||
                         HasUnsafeExtraArguments(Crossgen2CompositeExtraCommandLineArgs) ||
-                        !RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ||
-                        RuntimeInformation.ProcessArchitecture != Architecture.X64 ||
-                        Crossgen2Tool.GetMetadata(MetadataKeys.TargetOS) != "linux" ||
-                        Crossgen2Tool.GetMetadata(MetadataKeys.TargetArch) != "x64" ||
-                        Path.GetFullPath(pathToTool) != Path.GetFullPath(Crossgen2Tool.ItemSpec))
+                        !Crossgen2CacheInvocation.SupportsTarget(Crossgen2Tool) ||
+                        !Crossgen2Cache.PathComparer.Equals(Crossgen2Cache.InputPath(pathToTool), Crossgen2Cache.InputPath(Crossgen2Tool.ItemSpec)))
                     {
-                        cache.Report("bypass: unsupported invocation (requires native Linux-x64, non-composite PE crossgen2 without unrecognized extra arguments or environment overrides)");
+                        cache.Report("bypass: unsupported invocation (requires native Linux-x64 or Windows-x64 crossgen2 targeting its host, with non-composite PE output and without unrecognized extra arguments or environment overrides)");
                     }
                     else
                     {
-                        string image = Crossgen2Cache.InputPath(_outputR2RImage);
-                        string map = Path.ChangeExtension(image, ".ni.r2rmap");
-                        if (_emitSymbols && (Crossgen2Tool.GetMetadata(MetadataKeys.PerfmapFormatVersion) != "1" ||
-                            Crossgen2Cache.InputPath(_outputPDBImage) != map))
-                        {
-                            cache.Report("bypass: symbols require a version-1 perf map beside the image with the compiler-generated filename");
-                        }
-                        else
-                        {
-                            outputs = new[] { image, map };
-                            key = cache.ComputeKey(pathToTool, Crossgen2Tool.GetMetadata(MetadataKeys.JitPath),
-                                _inputAssembly, ImplementationAssemblyReferences, Crossgen2PgoFiles,
-                                outputs, responseFileCommands, commandLineCommands,
-                                string.Join("\n", ShowCompilerWarnings, LogStandardErrorAsError, StandardOutputImportance, StandardErrorImportance),
-                                GetWorkingDirectory() ?? Directory.GetCurrentDirectory());
-                        }
+                        Crossgen2CacheInvocation invocation = Crossgen2CacheInvocation.Create(pathToTool,
+                            Crossgen2Tool.GetMetadata(MetadataKeys.JitPath), _outputR2RImage, _outputPDBImage,
+                            _emitSymbols, Crossgen2Tool.GetMetadata(MetadataKeys.PerfmapFormatVersion));
+                        outputs = invocation.Outputs;
+                        key = cache.ComputeKey(invocation.CompilerDependencies,
+                            _inputAssembly, ImplementationAssemblyReferences, Crossgen2PgoFiles,
+                            outputs, responseFileCommands, commandLineCommands,
+                            string.Join("\n", ShowCompilerWarnings, LogStandardErrorAsError, StandardOutputImportance, StandardErrorImportance),
+                            GetWorkingDirectory() ?? Directory.GetCurrentDirectory());
                     }
                 }
                 catch (Exception ex) when (Crossgen2Cache.IsCacheFailure(ex))

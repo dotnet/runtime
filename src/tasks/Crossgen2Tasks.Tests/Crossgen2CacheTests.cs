@@ -20,7 +20,7 @@ namespace Crossgen2Tasks.Tests;
 
 public class Crossgen2CacheTests
 {
-    [LinuxX64Theory]
+    [CachePlatformTheory]
     [InlineData("")]
     [InlineData("false")]
     [InlineData("invalid")]
@@ -43,7 +43,7 @@ public class Crossgen2CacheTests
         }
     }, setting).Dispose();
 
-    [LinuxX64Theory]
+    [CachePlatformTheory]
     [InlineData("")]
     [InlineData("false")]
     [InlineData("invalid")]
@@ -61,7 +61,7 @@ public class Crossgen2CacheTests
         Assert.Equal(0, warm.Executions);
     }, setting).Dispose();
 
-    [LinuxX64Theory]
+    [CachePlatformTheory]
     [InlineData(false)]
     [InlineData(true)]
     public void RoundTripPreservesOutputsAndDiagnostics(bool showWarnings) => RemoteExecutor.Invoke(value =>
@@ -94,7 +94,7 @@ public class Crossgen2CacheTests
         Assert.Equal("do not delete", File.ReadAllText(neighbor));
     }, showWarnings.ToString()).Dispose();
 
-    [LinuxX64Theory]
+    [CachePlatformTheory]
     [InlineData("input")]
     [InlineData("reference")]
     [InlineData("profile")]
@@ -152,7 +152,7 @@ public class Crossgen2CacheTests
         Assert.Equal(0, warm.Executions);
     }, dependency).Dispose();
 
-    [LinuxX64Theory]
+    [CachePlatformTheory]
     [InlineData("timestamp")]
     [InlineData("pdb-add")]
     [InlineData("pdb-remove")]
@@ -177,7 +177,7 @@ public class Crossgen2CacheTests
                 File.SetLastWriteTimeUtc(fixture.Input, DateTime.UtcNow.AddHours(1));
                 break;
             case "pdb-add":
-                File.WriteAllText(pdb, "new symbols");
+                File.Copy(Path.ChangeExtension(typeof(Crossgen2CacheTests).Assembly.Location, ".pdb"), pdb);
                 break;
             case "pdb-remove":
                 File.Delete(pdb);
@@ -202,7 +202,7 @@ public class Crossgen2CacheTests
         Assert.Equal(value == "timestamp" ? 0 : 1, changed.Executions);
     }, change).Dispose();
 
-    [LinuxX64Theory]
+    [CachePlatformTheory]
     [InlineData("extra-output")]
     [InlineData("response-file")]
     [InlineData("composite-extra")]
@@ -218,6 +218,11 @@ public class Crossgen2CacheTests
     [InlineData("arch")]
     [InlineData("missing-profile")]
     [InlineData("missing-jit")]
+    [InlineData("missing-support")]
+    [InlineData("non-native")]
+    [InlineData("managed-assembly")]
+    [InlineData("native-reference")]
+    [InlineData("target-os")]
     [InlineData("unreadable-profile")]
     [InlineData("bad-input")]
     [InlineData("invalid-root")]
@@ -248,11 +253,25 @@ public class Crossgen2CacheTests
             case "environment": task.EnvironmentVariables = new[] { "SOMETHING=1" }; break;
             case "loader": Environment.SetEnvironmentVariable("LD_LIBRARY_PATH", fixture.Root); break;
             case "container": task.Crossgen2ContainerFormat = "wasm"; break;
-            case "symbols": task.Crossgen2Tool.SetMetadata("PerfmapFormatVersion", "0"); break;
+            case "symbols":
+                if (OperatingSystem.IsWindows())
+                {
+                    task.CompilationEntry.SetMetadata("OutputPDBImage", fixture.Map + ".wrong");
+                }
+                else
+                {
+                    task.Crossgen2Tool.SetMetadata("PerfmapFormatVersion", "0");
+                }
+                break;
             case "symbol-path": task.CompilationEntry.SetMetadata("OutputPDBImage", fixture.Map + ".wrong"); break;
             case "arch": task.Crossgen2Tool.SetMetadata("TargetArch", "arm64"); break;
             case "missing-profile": File.Delete(fixture.Profile); break;
             case "missing-jit": File.Delete(fixture.Jit); break;
+            case "missing-support": File.Delete(fixture.Support); break;
+            case "non-native": File.WriteAllText(fixture.Tool, "not a native compiler"); break;
+            case "managed-assembly": File.Copy(fixture.Input, fixture.Tool, overwrite: true); break;
+            case "native-reference": task.ImplementationAssemblyReferences = new[] { new TaskItem(fixture.Tool) }; break;
+            case "target-os": task.Crossgen2Tool.SetMetadata("TargetOS", OperatingSystem.IsWindows() ? "linux" : "windows"); break;
             case "unreadable-profile":
                 File.Delete(fixture.Profile);
                 Directory.CreateDirectory(fixture.Profile);
@@ -268,7 +287,7 @@ public class Crossgen2CacheTests
         Assert.Contains(task.Engine.Messages, m => m.Contains("cache bypass:", StringComparison.Ordinal));
     }, shape).Dispose();
 
-    [LinuxX64Theory]
+    [CachePlatformTheory]
     [InlineData("--embed-pgo-data")]
     [InlineData("--target-allows-runtime-code-generation:true")]
     [InlineData("--target-allows-runtime-code-generation:false")]
@@ -289,7 +308,7 @@ public class Crossgen2CacheTests
         Assert.Equal(0, hit.Executions);
     }, args).Dispose();
 
-    [LinuxX64Theory]
+    [CachePlatformTheory]
     [InlineData("--target-allows-runtime-code-generation:maybe")]
     [InlineData("--embed-pgo-data;--out:\"elsewhere.dll\"")]
     [InlineData("--unknown-flag")]
@@ -303,7 +322,7 @@ public class Crossgen2CacheTests
         Assert.Contains(task.Engine.Messages, m => m.Contains("cache bypass:", StringComparison.Ordinal));
     }, args).Dispose();
 
-    [LinuxX64Theory]
+    [CachePlatformTheory]
     [InlineData(null)]
     [InlineData("pe")]
     public void DefaultOrExplicitPeContainerFormatIsCached(string format) => RemoteExecutor.Invoke(value =>
@@ -320,7 +339,7 @@ public class Crossgen2CacheTests
         Assert.Equal(0, hit.Executions);
     }, format ?? "<null>").Dispose();
 
-    [LinuxX64Theory]
+    [CachePlatformTheory]
     [InlineData(false)]
     [InlineData(true)]
     public void FailuresAreNotCached(bool logError) => RemoteExecutor.Invoke(value =>
@@ -337,7 +356,7 @@ public class Crossgen2CacheTests
         Assert.Equal(1, retry.Executions);
     }, logError.ToString()).Dispose();
 
-    [LinuxX64Theory]
+    [CachePlatformTheory]
     [InlineData("corruption")]
     [InlineData("manifest-corruption")]
     [InlineData("partial-restore")]
@@ -394,7 +413,75 @@ public class Crossgen2CacheTests
         }
     }, scenario).Dispose();
 
-    [LinuxX64Fact]
+    [CachePlatformTheory]
+    [InlineData("present")]
+    [InlineData("absent")]
+    [InlineData("corruption")]
+    [InlineData("disabled")]
+    [InlineData("directory-change")]
+    public void SeparateSymbolDirectoryIsCached(string scenario) => RemoteExecutor.Invoke(value =>
+    {
+        using var fixture = new Fixture();
+        string directory = Path.Combine(fixture.Root, "PDB");
+        Directory.CreateDirectory(directory);
+        string symbols = Path.Combine(directory, Path.GetFileName(fixture.Map));
+        string neighbor = Path.Combine(directory, "unrelated.txt");
+        File.WriteAllText(neighbor, "do not delete");
+        Directory.CreateDirectory(Path.GetDirectoryName(fixture.Map)!);
+        File.WriteAllText(fixture.Map, "unrelated adjacent symbols");
+        File.WriteAllText(symbols, "stale symbols");
+
+        MockCompiler Create()
+        {
+            MockCompiler task = fixture.Create();
+            task.CompilationEntry.SetMetadata("OutputPDBImage", symbols);
+            task.ProduceMap = value != "absent";
+            return task;
+        }
+
+        MockCompiler miss = Create();
+        Assert.True(miss.Execute());
+        Assert.Equal(1, miss.Executions);
+        Assert.Contains(miss.Engine.Messages, m => m.Contains("cache stored:", StringComparison.Ordinal));
+        Assert.Equal(value != "absent", File.Exists(symbols));
+        File.Delete(fixture.Output);
+        File.WriteAllText(symbols, "stale symbols");
+        if (value == "corruption")
+        {
+            string entry = Directory.GetDirectories(Path.Combine(fixture.Cache, "v1")).Single();
+            File.WriteAllText(Path.Combine(entry, "1"), "corrupt");
+        }
+        if (value == "directory-change")
+        {
+            directory = Path.Combine(fixture.Root, "other PDB");
+            Directory.CreateDirectory(directory);
+            symbols = Path.Combine(directory, Path.GetFileName(fixture.Map));
+        }
+        MockCompiler next = Create();
+        if (value == "disabled")
+        {
+            next.CompilationEntry.SetMetadata("EmitSymbols", "false");
+        }
+        Assert.True(next.Execute());
+        Assert.Equal(value is "corruption" or "disabled" or "directory-change" ? 1 : 0, next.Executions);
+        Assert.Equal("image", File.ReadAllText(fixture.Output));
+        if (value is "absent" or "disabled")
+        {
+            Assert.False(File.Exists(symbols));
+        }
+        else
+        {
+            Assert.Equal("map", File.ReadAllText(symbols));
+        }
+        MockCompiler warm = Create();
+        warm.CompilationEntry.SetMetadata("EmitSymbols", value == "disabled" ? "false" : "true");
+        Assert.True(warm.Execute());
+        Assert.Equal(value == "corruption" ? 1 : 0, warm.Executions);
+        Assert.Equal("do not delete", File.ReadAllText(neighbor));
+        Assert.Equal("unrelated adjacent symbols", File.ReadAllText(fixture.Map));
+    }, scenario).Dispose();
+
+    [CachePlatformFact]
     public void SharedCacheSupportsDistinctOutputsAndRacingPublication() => RemoteExecutor.Invoke(() =>
     {
         using var fixture = new Fixture();
@@ -418,7 +505,7 @@ public class Crossgen2CacheTests
         Assert.Empty(Directory.GetDirectories(Path.Combine(fixture.Cache, "v1"), "*.tmp"));
     }).Dispose();
 
-    [LinuxX64Fact]
+    [CachePlatformFact]
     public void DefaultCacheLocation() => RemoteExecutor.Invoke(() =>
     {
         using var fixture = new Fixture();
@@ -428,22 +515,170 @@ public class Crossgen2CacheTests
         Assert.True(Directory.Exists(Path.Combine(fixture.Cache, "crossgen2", "v1")));
     }).Dispose();
 
-    [RealCrossgen2Theory]
+    [WindowsCacheTheory]
     [InlineData(false)]
     [InlineData(true)]
-    public void RealCompilerMissAndHitMatchUncachedExecution(bool symbols) => RemoteExecutor.Invoke(value =>
+    public void SymbolWriterIdentityDependsOnSymbolGeneration(bool symbols) => RemoteExecutor.Invoke(value =>
+    {
+        using var fixture = new Fixture();
+        MockCompiler first = fixture.Create();
+        first.CompilationEntry.SetMetadata("EmitSymbols", value);
+        Assert.True(first.Execute());
+        Assert.Contains(first.Engine.Messages, m => m.Contains("cache stored:", StringComparison.Ordinal));
+        File.WriteAllText(fixture.SymbolWriter, "changed symbol writer");
+        MockCompiler next = fixture.Create();
+        next.CompilationEntry.SetMetadata("EmitSymbols", value);
+        Assert.True(next.Execute());
+        Assert.Equal(bool.Parse(value) ? 1 : 0, next.Executions);
+        File.Delete(fixture.SymbolWriter);
+        MockCompiler missing = fixture.Create();
+        missing.CompilationEntry.SetMetadata("EmitSymbols", value);
+        Assert.True(missing.Execute());
+        Assert.Equal(bool.Parse(value) ? 1 : 0, missing.Executions);
+        if (bool.Parse(value))
+        {
+            Assert.Contains(missing.Engine.Messages, m => m.Contains("cache bypass:", StringComparison.Ordinal));
+        }
+    }, symbols.ToString()).Dispose();
+
+    [WindowsCacheTheory]
+    [InlineData("input.dll", ".ni.pdb")]
+    [InlineData("input.exe", ".ni.pdb")]
+    [InlineData("input.ni.dll", ".pdb")]
+    [InlineData("input.NI.EXE", ".pdb")]
+    public void NativePdbFilenameMatchesCompilerConvention(string name, string extension) => RemoteExecutor.Invoke((file, suffix) =>
+    {
+        using var fixture = new Fixture();
+        MockCompiler first = fixture.Create(file);
+        string image = first.CompilationEntry.GetMetadata("OutputR2RImage");
+        string pdb = Path.ChangeExtension(image, suffix);
+        first.CompilationEntry.SetMetadata("OutputPDBImage", pdb);
+        Assert.True(first.Execute());
+        Assert.Contains(first.Engine.Messages, m => m.Contains("cache stored:", StringComparison.Ordinal));
+        File.Delete(image);
+        File.WriteAllText(pdb, "stale");
+        MockCompiler hit = fixture.Create(file);
+        hit.CompilationEntry.SetMetadata("OutputPDBImage", pdb);
+        Assert.True(hit.Execute());
+        Assert.Equal(0, hit.Executions);
+        Assert.Equal("map", File.ReadAllText(pdb));
+    }, name, extension).Dispose();
+
+    [WindowsCacheTheory]
+    [InlineData("drive-relative")]
+    [InlineData("root-relative")]
+    [InlineData("alternate-stream")]
+    [InlineData("trailing-dot")]
+    [InlineData("trailing-space")]
+    [InlineData("device")]
+    public void WindowsAmbiguousPathsAreRejected(string shape)
+    {
+        string root = Path.GetPathRoot(Path.GetTempPath())!;
+        string path = shape switch
+        {
+            "drive-relative" => root.TrimEnd('\\') + "input.dll",
+            "root-relative" => @"\input.dll",
+            "alternate-stream" => Path.Combine(root, "input.dll:stream"),
+            "trailing-dot" => Path.Combine(root, "out.", "input.dll"),
+            "trailing-space" => Path.Combine(root, "out ", "input.dll"),
+            "device" => @"\\?\" + Path.Combine(root, "input.dll"),
+            _ => throw new InvalidOperationException()
+        };
+        Assert.Throws<InvalidDataException>(() => Crossgen2Cache.InputPath(path));
+    }
+
+    [WindowsCacheTheory]
+    [InlineData("cache")]
+    [InlineData("input")]
+    public void WindowsCaseAliasesAreRejected(string location) => RemoteExecutor.Invoke(value =>
+    {
+        using var fixture = new Fixture();
+        MockCompiler task = fixture.Create();
+        Crossgen2Cache cache = Crossgen2Cache.FromEnvironment(task.Log)!;
+        string image = value == "cache" ? Path.Combine(fixture.Cache.ToUpperInvariant(), "output.dll") : fixture.Input.ToUpperInvariant();
+        Assert.Throws<InvalidDataException>(() => cache.ComputeKey(new[] { fixture.Tool, fixture.Jit, fixture.Support },
+            fixture.Input, task.ImplementationAssemblyReferences, task.Crossgen2PgoFiles,
+            new[] { Crossgen2Cache.InputPath(image), fixture.Map }, "", "", "", fixture.Root));
+    }, location).Dispose();
+
+    [WindowsCacheTheory]
+    [InlineData("non-portable")]
+    [InlineData("mismatched")]
+    [InlineData("drive-relative")]
+    [InlineData("absent")]
+    public void ExternalInputSymbolReadersBypass(string shape) => RemoteExecutor.Invoke(value =>
+    {
+        using var fixture = new Fixture();
+        string pdb = Path.ChangeExtension(fixture.Input, ".pdb");
+        if (value == "non-portable")
+        {
+            File.WriteAllText(pdb, "not a portable PDB");
+        }
+        else if (value is "mismatched" or "drive-relative")
+        {
+            using FileStream stream = File.Open(fixture.Input, FileMode.Open, FileAccess.ReadWrite);
+            using var pe = new PEReader(stream, PEStreamOptions.LeaveOpen);
+            DebugDirectoryEntry entry = pe.ReadDebugDirectory().Single(e => e.Type == DebugDirectoryEntryType.CodeView);
+            if (value == "mismatched")
+            {
+                stream.Position = entry.DataPointer + 4;
+                int first = stream.ReadByte();
+                stream.Position--;
+                stream.WriteByte((byte)(first ^ 1));
+            }
+            else
+            {
+                stream.Position = entry.DataPointer + 24;
+                stream.Write(System.Text.Encoding.UTF8.GetBytes(Path.GetPathRoot(fixture.Root)!.TrimEnd('\\') + "input.pdb\0"));
+            }
+        }
+        else
+        {
+            File.Delete(pdb);
+        }
+        MockCompiler task = fixture.Create();
+        Assert.True(task.Execute());
+        Assert.Equal(1, task.Executions);
+        if (value == "absent")
+        {
+            Assert.Contains(task.Engine.Messages, m => m.Contains("cache stored:", StringComparison.Ordinal));
+            MockCompiler hit = fixture.Create();
+            Assert.True(hit.Execute());
+            Assert.Equal(0, hit.Executions);
+        }
+        else
+        {
+            Assert.Contains(task.Engine.Messages, m => m.Contains("cache bypass:", StringComparison.Ordinal));
+            Assert.False(Directory.Exists(fixture.Cache));
+        }
+    }, shape).Dispose();
+
+    [RealCrossgen2Theory]
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public void RealCompilerMissAndHitMatchUncachedExecution(bool symbols, bool separateDirectory) => RemoteExecutor.Invoke((value, separate) =>
     {
         using var fixture = new Fixture();
         string tool = Environment.GetEnvironmentVariable("CROSSGEN2_CACHE_TEST_TOOL")!;
         string runtime = Path.GetDirectoryName(typeof(object).Assembly.Location)!;
+        string output = Path.Combine(fixture.Root, "out", "System.Linq.dll");
+        string symbolsPath = Path.ChangeExtension(output, Fixture.SymbolExtension);
+        if (bool.Parse(separate))
+        {
+            string directory = Path.Combine(fixture.Root, "PDB");
+            Directory.CreateDirectory(directory);
+            symbolsPath = Path.Combine(directory, Path.GetFileName(symbolsPath));
+        }
         MockCompiler Create()
         {
-            MockCompiler task = fixture.Create();
+            MockCompiler task = fixture.Create("System.Linq.dll");
             task.RealTool = true;
             task.Crossgen2Tool.ItemSpec = tool;
             task.CompilationEntry.ItemSpec = Path.Combine(runtime, "System.Linq.dll");
             task.CompilationEntry.SetMetadata("EmitSymbols", value);
-            task.ImplementationAssemblyReferences = Directory.GetFiles(runtime, "*.dll").Select(p => new TaskItem(p)).ToArray();
+            task.CompilationEntry.SetMetadata("OutputPDBImage", symbolsPath);
+            task.ImplementationAssemblyReferences = Directory.GetFiles(runtime, "*.dll").Where(HasMetadata).Select(p => new TaskItem(p)).ToArray();
             task.Crossgen2PgoFiles = Array.Empty<ITaskItem>();
             return task;
         }
@@ -452,25 +687,55 @@ public class Crossgen2CacheTests
         MockCompiler uncached = Create();
         Assert.True(uncached.Execute(), string.Join(Environment.NewLine, uncached.Engine.Messages));
         Assert.Equal(1, uncached.Executions);
-        byte[] image = File.ReadAllBytes(fixture.Output);
-        byte[]? map = bool.Parse(value) ? File.ReadAllBytes(fixture.Map) : null;
+        byte[] image = File.ReadAllBytes(output);
+        byte[]? map = bool.Parse(value) ? File.ReadAllBytes(symbolsPath) : null;
         Environment.SetEnvironmentVariable("CROSSGEN2_EXPERIMENTAL_CACHE", "true");
         MockCompiler miss = Create();
         Assert.True(miss.Execute(), string.Join(Environment.NewLine, miss.Engine.Messages));
         Assert.Equal(1, miss.Executions);
         Assert.Contains(miss.Engine.Messages, m => m.Contains("cache stored:", StringComparison.Ordinal));
-        Assert.Equal(image, File.ReadAllBytes(fixture.Output));
-        File.Delete(fixture.Output);
-        File.Delete(fixture.Map);
+        byte[] cachedImage = File.ReadAllBytes(output);
+        if (OperatingSystem.IsWindows() && bool.Parse(value))
+        {
+            Assert.Equal(NormalizeNativePdbIdentity(image), NormalizeNativePdbIdentity(cachedImage));
+        }
+        else
+        {
+            Assert.Equal(image, cachedImage);
+            if (map is not null)
+            {
+                Assert.Equal(map, File.ReadAllBytes(symbolsPath));
+            }
+        }
+        byte[]? cachedSymbols = bool.Parse(value) ? File.ReadAllBytes(symbolsPath) : null;
+        File.Delete(output);
+        File.Delete(symbolsPath);
         MockCompiler hit = Create();
         Assert.True(hit.Execute(), string.Join(Environment.NewLine, hit.Engine.Messages));
         Assert.Equal(0, hit.Executions);
-        Assert.Equal(image, File.ReadAllBytes(fixture.Output));
-        if (map is not null)
+        Assert.Equal(cachedImage, File.ReadAllBytes(output));
+        if (cachedSymbols is not null)
         {
-            Assert.Equal(map, File.ReadAllBytes(fixture.Map));
+            Assert.Equal(cachedSymbols, File.ReadAllBytes(symbolsPath));
         }
-    }, symbols.ToString()).Dispose();
+    }, symbols.ToString(), separateDirectory.ToString()).Dispose();
+
+    private static byte[] NormalizeNativePdbIdentity(byte[] image)
+    {
+        const int DebugDirectoryEntrySize = 28;
+        const int GuidSize = 16;
+        byte[] normalized = (byte[])image.Clone();
+        using var pe = new PEReader(new MemoryStream(image));
+        Assert.True(pe.PEHeaders.TryGetDirectoryOffset(pe.PEHeaders.PEHeader!.DebugTableDirectory, out int directory));
+        DebugDirectoryEntry[] entries = pe.ReadDebugDirectory().ToArray();
+        int index = Array.FindIndex(entries, entry => entry.Type == DebugDirectoryEntryType.CodeView &&
+            pe.ReadCodeViewDebugDirectoryData(entry).Path.EndsWith(".ni.pdb", StringComparison.OrdinalIgnoreCase));
+        Assert.True(index >= 0);
+        // The native PDB writer generates a fresh timestamp/GUID and patches them into the image.
+        Array.Clear(normalized, directory + index * DebugDirectoryEntrySize + sizeof(uint), sizeof(uint));
+        Array.Clear(normalized, entries[index].DataPointer + sizeof(uint), GuidSize);
+        return normalized;
+    }
 
     private static Guid ReadMvid(string path)
     {
@@ -480,6 +745,13 @@ public class Crossgen2CacheTests
         return reader.GetGuid(reader.GetModuleDefinition().Mvid);
     }
 
+    private static bool HasMetadata(string path)
+    {
+        using FileStream stream = File.OpenRead(path);
+        using var pe = new PEReader(stream);
+        return pe.HasMetadata;
+    }
+
     private sealed class Fixture : IDisposable
     {
         internal string Root { get; } = Path.Combine(Path.GetTempPath(), "crossgen-cache-tests-" + Guid.NewGuid().ToString("N"));
@@ -487,11 +759,13 @@ public class Crossgen2CacheTests
         internal string Input => Path.Combine(Root, "input.dll");
         internal string Reference => Path.Combine(Root, "reference.dll");
         internal string Profile => Path.Combine(Root, "profile.mibc");
-        internal string Tool => Path.Combine(Root, "crossgen2");
-        internal string Jit => Path.Combine(Root, "libclrjit_unix_x64_x64.so");
-        internal string Support => Path.Combine(Root, "libjitinterface_x64.so");
+        internal string Tool => Path.Combine(Root, OperatingSystem.IsWindows() ? "crossgen2.exe" : "crossgen2");
+        internal string Jit => Path.Combine(Root, OperatingSystem.IsWindows() ? "clrjit_win_x64_x64.dll" : "libclrjit_unix_x64_x64.so");
+        internal string Support => Path.Combine(Root, OperatingSystem.IsWindows() ? "jitinterface_x64.dll" : "libjitinterface_x64.so");
+        internal string SymbolWriter => Path.Combine(Root, "Microsoft.DiaSymReader.Native.dll");
         internal string Output => Path.Combine(Root, "out", "input.dll");
-        internal string Map => Path.ChangeExtension(Output, ".ni.r2rmap");
+        internal string Map => Path.ChangeExtension(Output, SymbolExtension);
+        internal static string SymbolExtension => OperatingSystem.IsWindows() ? ".ni.pdb" : ".ni.r2rmap";
 
         internal Fixture()
         {
@@ -507,10 +781,18 @@ public class Crossgen2CacheTests
                 byte[] name = System.Text.Encoding.UTF8.GetBytes("input.pdb\0");
                 stream.Write(name);
             }
-            File.WriteAllText(Path.ChangeExtension(Input, ".pdb"), "symbols");
-            File.WriteAllBytes(Tool, new byte[] { 0x7f, (byte)'E', (byte)'L', (byte)'F', 0 });
+            File.Copy(Path.ChangeExtension(typeof(Crossgen2CacheTests).Assembly.Location, ".pdb"), Path.ChangeExtension(Input, ".pdb"));
+            if (OperatingSystem.IsWindows())
+            {
+                File.Copy(Environment.ProcessPath!, Tool);
+            }
+            else
+            {
+                File.WriteAllBytes(Tool, new byte[] { 0x7f, (byte)'E', (byte)'L', (byte)'F', 0 });
+            }
             File.WriteAllText(Jit, "jit");
             File.WriteAllText(Support, "support");
+            File.WriteAllText(SymbolWriter, "symbol writer");
             File.WriteAllText(Profile, "profile");
             Environment.SetEnvironmentVariable("CROSSGEN2_EXPERIMENTAL_CACHE", "true");
             Environment.SetEnvironmentVariable("CROSSGEN2_EXPERIMENTAL_CACHE_PATH", Cache);
@@ -519,13 +801,13 @@ public class Crossgen2CacheTests
         internal MockCompiler Create(string name = "input.dll")
         {
             var tool = new TaskItem(Tool);
-            tool.SetMetadata("TargetOS", "linux");
+            tool.SetMetadata("TargetOS", OperatingSystem.IsWindows() ? "windows" : "linux");
             tool.SetMetadata("TargetArch", "x64");
             tool.SetMetadata("PerfmapFormatVersion", "1");
             var compilation = new TaskItem(Input);
             string output = Path.Combine(Root, "out", name);
             compilation.SetMetadata("OutputR2RImage", output);
-            compilation.SetMetadata("OutputPDBImage", Path.ChangeExtension(output, ".ni.r2rmap"));
+            compilation.SetMetadata("OutputPDBImage", Path.ChangeExtension(output, SymbolExtension));
             compilation.SetMetadata("EmitSymbols", "true");
             var task = new MockCompiler
             {
@@ -598,35 +880,46 @@ public class Crossgen2CacheTests
     }
 }
 
-public sealed class LinuxX64FactAttribute : FactAttribute
+public sealed class CachePlatformFactAttribute : FactAttribute
 {
-    public LinuxX64FactAttribute()
+    public CachePlatformFactAttribute()
     {
-        if (!OperatingSystem.IsLinux() || RuntimeInformation.ProcessArchitecture != Architecture.X64)
+        if ((!OperatingSystem.IsLinux() && !OperatingSystem.IsWindows()) || RuntimeInformation.ProcessArchitecture != Architecture.X64)
         {
-            Skip = "The experimental cache supports Linux x64 only.";
+            Skip = "The experimental cache supports Linux x64 and Windows x64 only.";
         }
     }
 }
 
-public class LinuxX64TheoryAttribute : TheoryAttribute
+public class CachePlatformTheoryAttribute : TheoryAttribute
 {
-    public LinuxX64TheoryAttribute()
+    public CachePlatformTheoryAttribute()
     {
-        if (!OperatingSystem.IsLinux() || RuntimeInformation.ProcessArchitecture != Architecture.X64)
+        if ((!OperatingSystem.IsLinux() && !OperatingSystem.IsWindows()) || RuntimeInformation.ProcessArchitecture != Architecture.X64)
         {
-            Skip = "The experimental cache supports Linux x64 only.";
+            Skip = "The experimental cache supports Linux x64 and Windows x64 only.";
         }
     }
 }
 
-public sealed class RealCrossgen2TheoryAttribute : LinuxX64TheoryAttribute
+public sealed class RealCrossgen2TheoryAttribute : CachePlatformTheoryAttribute
 {
     public RealCrossgen2TheoryAttribute()
     {
         if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("CROSSGEN2_CACHE_TEST_TOOL")))
         {
-            Skip = "Set CROSSGEN2_CACHE_TEST_TOOL to a native Linux-x64 crossgen2 deployment.";
+            Skip = "Set CROSSGEN2_CACHE_TEST_TOOL to a native crossgen2 deployment for this host.";
+        }
+    }
+}
+
+public sealed class WindowsCacheTheoryAttribute : CachePlatformTheoryAttribute
+{
+    public WindowsCacheTheoryAttribute()
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            Skip = "This test exercises Windows deployment or path conventions.";
         }
     }
 }
