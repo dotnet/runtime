@@ -20,6 +20,8 @@ static const instruction INS_I_store = INS_i64_store;
 static const instruction INS_I_const = INS_i64_const;
 static const instruction INS_I_add   = INS_i64_add;
 static const instruction INS_I_and   = INS_i64_and;
+static const instruction INS_I_or    = INS_i64_or;
+static const instruction INS_I_shl   = INS_i64_shl;
 static const instruction INS_I_eqz   = INS_i64_eqz;
 static const instruction INS_I_mul   = INS_i64_mul;
 static const instruction INS_I_sub   = INS_i64_sub;
@@ -32,6 +34,8 @@ static const instruction INS_I_store = INS_i32_store;
 static const instruction INS_I_const = INS_i32_const;
 static const instruction INS_I_add   = INS_i32_add;
 static const instruction INS_I_and   = INS_i32_and;
+static const instruction INS_I_or    = INS_i32_or;
+static const instruction INS_I_shl   = INS_i32_shl;
 static const instruction INS_I_eqz   = INS_i32_eqz;
 static const instruction INS_I_mul   = INS_i32_mul;
 static const instruction INS_I_sub   = INS_i32_sub;
@@ -183,9 +187,28 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
         assert(m_compiler->lvaWasmVirtualIP != BAD_VAR_NUM);
         assert(m_compiler->lvaWasmFunctionIndex != BAD_VAR_NUM);
 
-        // fp[0] == functionIndex
+        // Helpers may be called without a PEP, so their identity is independent of the caller.
         GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetFramePointerRegIndex());
-        GetEmitter()->emitFuncletAddressConstant(0 /* funcletId for main method */);
+        if (m_compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_WASM_MANAGED_HELPER))
+        {
+            GetEmitter()->emitIns_I(INS_i32_const_frameidentity, EA_HANDLE_CNS_RELOC,
+                                    reinterpret_cast<cnsval_ssize_t>(m_compiler->info.compMethodHnd));
+        }
+        else if (m_compiler->lvaWasmPortableEntryPointArg != BAD_VAR_NUM)
+        {
+            unsigned pepIndex = WasmRegToIndex(
+                m_compiler->lvaGetParameterABIInfo(m_compiler->lvaWasmPortableEntryPointArg).Segment(0).GetRegister());
+            GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, pepIndex);
+        }
+        else
+        {
+            // Reverse P/Invokes have no PEP argument. Positive odd identities retain their table index.
+            GetEmitter()->emitFuncletAddressConstant(0);
+            GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, 1);
+            GetEmitter()->emitIns(INS_I_shl);
+            GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, 1);
+            GetEmitter()->emitIns(INS_I_or);
+        }
         GetEmitter()->emitIns_S(ins_Store(TYP_I_IMPL), EA_PTRSIZE, m_compiler->lvaWasmFunctionIndex, 0);
 
         // Ensure the resume IP is initialized to a non-resuming value.
@@ -546,7 +569,7 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
     //
     if (func->needsUnwindableFrame)
     {
-        // We need two stack slots for the function index and for the funclet virtual IP.
+        // We need two stack slots for the frame identity and for the funclet virtual IP.
         // We also need to keep SP aligned.
         //
         size_t slotSize  = 2 * TARGET_POINTER_SIZE;
@@ -561,7 +584,9 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
         GetEmitter()->emitIns_I(INS_local_set, EA_PTRSIZE, GetStackPointerRegIndex());
 
         GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetStackPointerRegIndex());
-        GetEmitter()->emitFuncletAddressConstant((cnsval_ssize_t)funcletIndex);
+        GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetFramePointerRegIndex());
+        GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, 2);
+        GetEmitter()->emitIns(INS_I_add);
         GetEmitter()->emitIns_I(ins_Store(TYP_I_IMPL), EA_PTRSIZE, 0);
     }
 }
@@ -2146,6 +2171,13 @@ void CodeGen::genCodeForConstant(GenTree* treeNode)
         icon = treeNode->AsIntConCommon();
         if (icon->IsIconHandle())
         {
+            if (icon->IsIconHandle(GTF_ICON_WASM_FRAME_IDENTITY))
+            {
+                GetEmitter()->emitIns_I(INS_i32_const_frameidentity, EA_HANDLE_CNS_RELOC, icon->IntegralValue());
+                WasmProduceReg(treeNode);
+                return;
+            }
+
             // Wasm has no absolute-address literals; every handle is materialized as a module-base-
             // relative constant and relocated. compReloc is always on for a real AOT compile, so a
             // handle only reaches here without needing a reloc under a cross-VM SuperPMI replay.

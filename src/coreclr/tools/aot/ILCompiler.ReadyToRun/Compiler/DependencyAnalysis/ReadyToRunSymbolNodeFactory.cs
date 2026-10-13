@@ -67,12 +67,22 @@ namespace ILCompiler.DependencyAnalysis
                 // run first, since those are what establish whether it is even legal to use any
                 // R2R code in the module at all.
                 return new Import(
-                    _codegenNodeFactory.EagerImports,
+                    _codegenNodeFactory.EagerMethodImports,
                     _codegenNodeFactory.MethodSignature(
                         ReadyToRunFixupKind.MethodEntry_ReadyToRun,
                         method,
                         isInstantiatingStub: false),
                     sortLast: true);
+            });
+
+            _precodeReadyToRunMethodEntries = new NodeCache<MethodWithToken, Import>(method =>
+            {
+                return new PrecodeHelperImport(
+                    _codegenNodeFactory,
+                    _codegenNodeFactory.MethodSignature(
+                        ReadyToRunFixupKind.MethodEntry_ReadyToRun,
+                        method,
+                        isInstantiatingStub: false));
             });
 
             _instructionSetSupportFixups = new NodeCache<string, Import>(key =>
@@ -320,12 +330,18 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         private NodeCache<MethodWithToken, Import> _eagerReadyToRunMethodEntries;
+        private NodeCache<MethodWithToken, Import> _precodeReadyToRunMethodEntries;
         private NodeCache<string, Import> _instructionSetSupportFixups;
         private NodeCache<MethodWithGCInfo, Import> _resumptionStubEntryPointFixups;
 
         public Import EagerReadyToRunMethodEntry(MethodWithToken method)
         {
             return _eagerReadyToRunMethodEntries.GetOrAdd(method);
+        }
+
+        public Import PrecodeReadyToRunMethodEntry(MethodWithToken method)
+        {
+            return _precodeReadyToRunMethodEntries.GetOrAdd(method);
         }
 
         public Import PerMethodInstructionSetSupportFixup(InstructionSetSupport instructionSetSupport)
@@ -408,9 +424,22 @@ namespace ILCompiler.DependencyAnalysis
 
         private Import CreateTypeHandleHelper(TypeDesc type)
         {
+            TypeDesc elementType = type;
+            while (elementType is ArrayType arrayType)
+            {
+                elementType = arrayType.ElementType;
+            }
+
+            TypeFixupSignature signature = _codegenNodeFactory.TypeSignature(ReadyToRunFixupKind.TypeHandle, type);
+            if (elementType.IsPrimitive || elementType.IsString || elementType.IsObject ||
+                elementType.IsWellKnownType(WellKnownType.TypedReference))
+            {
+                return new Import(_codegenNodeFactory.EagerImports, signature);
+            }
+
             return new PrecodeHelperImport(
                 _codegenNodeFactory,
-                _codegenNodeFactory.TypeSignature(ReadyToRunFixupKind.TypeHandle, type));
+                signature);
         }
 
         private Import CreateDeclaringTypeHandleHelper(MethodWithToken method)

@@ -135,6 +135,7 @@ namespace ILCompiler.ObjectWriter
                     switch (reloc.Type)
                     {
                         case RelocType.WASM_METHOD_RELATIVE_VIRTUAL_IP_I32:
+                        case RelocType.WASM_METHOD_FRAME_IDENTITY_SLEB:
                         {
                             Relocation.WriteValue(reloc.Type, pData, reloc.Addend + addend);
                             break;

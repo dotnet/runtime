@@ -341,10 +341,14 @@ fi
       </CLRTestBashPreCommands>
       <CLRTestBashPreCommands Condition="'$(CLRTestKind)' == 'BuildAndRun' and '$(TargetOS)' == 'wasi'"><![CDATA[
 $(CLRTestBashPreCommands)
+__WasiCrossgen2OutputDirectory="IL-CG2"
+if [ ! -z ${WholeProgramCompositeBuildMode+x} ]; then
+  __WasiCrossgen2OutputDirectory="IL-CG2-WholeProgram"
+fi
 __WasiCorerun="$CORE_ROOT/corerun"
 __WasiR2RArgs=
 if [ ! -z ${RunCrossGen2+x} ] && [ "$(CrossGenTest)" != "false" ]; then
-  __WasiCorerun="$PWD/IL-CG2/wasi-r2r/corerun-composite.wasm"
+  __WasiCorerun="$PWD/$__WasiCrossgen2OutputDirectory/wasi-r2r/corerun-composite.wasm"
   if [ ! -f "$__WasiCorerun" ]; then
     echo "The WASI ReadyToRun host was not produced: $__WasiCorerun"
     exit 1
@@ -453,6 +457,7 @@ run_browser_test() {
     # Defaults to the shared host from CORE_ROOT. A CoreCLR run script replaces this with the
     # test's own corerun when one was built next to the test assemblies.
     local corerun_js="${CORE_ROOT}/corerun.js"
+    local managed_core_root="${R2RTestCoreRoot:-${CORE_ROOT}}"
     # Set explicitly so an ambient value can never be inherited.
     export __TestNativeAssetsLinked=false
 $(BashSelectTestCorerun)
@@ -464,7 +469,7 @@ $(BashSelectTestCorerun)
     echo CLRTestExecutionArguments: ${CLRTestExecutionArguments[@]}
     echo node version: `node -v`
     echo Timeout in ms: $__TestTimeout
-    cmd=( node --experimental-wasm-exnref --stack-size=8192 "${corerun_js}" -c "${CORE_ROOT}" $(CoreRunArgs) "${PWD}/${ExePath}" "${CLRTestExecutionArguments[@]}" )
+    cmd=( node --experimental-wasm-exnref --stack-size=8192 "${corerun_js}" -c "${managed_core_root}" $(CoreRunArgs) "${PWD}/${ExePath}" "${CLRTestExecutionArguments[@]}" )
     echo Running: "${cmd[@]}"
     run_with_timeout $__TestTimeout "${cmd[@]}"
   fi

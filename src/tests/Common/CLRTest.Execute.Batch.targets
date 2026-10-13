@@ -380,6 +380,13 @@ IF NOT DEFINED RunWithNodeJS (
     REM Defaults to the shared host from CORE_ROOT. A CoreCLR run script replaces this with the
     REM test's own corerun when one was built next to the test assemblies.
     set "__CorerunJs=!__CoreRootWin!\corerun.js"
+    set "__ManagedCoreRoot=!__CoreRootUnix!"
+    if defined R2RTestCoreRoot (
+        set "__ManagedCoreRoot=!R2RTestCoreRoot!"
+        set "__ManagedCoreRoot=!__ManagedCoreRoot:\=/!"
+        if "!__ManagedCoreRoot:~1,1!"==":" set "__ManagedCoreRoot=/!__ManagedCoreRoot:~3!"
+        set "CORE_LIBRARIES=!__ManagedCoreRoot!"
+    )
     REM Set explicitly so an ambient value can never be inherited.
     set "__TestNativeAssetsLinked=false"
 $(BatchSelectTestCorerun)
@@ -391,7 +398,7 @@ $(BatchSelectTestCorerun)
     ECHO CLRTestExecutionArguments: %CLRTestExecutionArguments%
     ECHO Timeout in ms: !__TestTimeout!
     
-    set "__RunCmd=node --experimental-wasm-exnref --stack-size=8192 "!__CorerunJs!" -c "!__CoreRootUnix!" $(CoreRunArgs) "!__ExePathUnix!" %CLRTestExecutionArguments%"
+    set "__RunCmd=node --experimental-wasm-exnref --stack-size=8192 "!__CorerunJs!" -c "!__ManagedCoreRoot!" $(CoreRunArgs) "!__ExePathUnix!" %CLRTestExecutionArguments%"
     ECHO Running: !__RunCmd!
 
     IF EXIST "$(AssemblyName).HasOutOfProcessTests" (

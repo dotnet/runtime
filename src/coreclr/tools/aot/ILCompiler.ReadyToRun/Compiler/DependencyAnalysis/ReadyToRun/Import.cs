@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using Internal.Text;
 using Internal.TypeSystem;
 
@@ -13,7 +14,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     /// </summary>
     public class Import : EmbeddedObjectNode, ISymbolDefinitionNode, ISortableSymbolNode, IObjectNodeWithAlignment
     {
-        public readonly ImportSectionNode Table;
+        public ImportSectionNode Table { get; private set; }
 
         internal readonly SignatureEmbeddedPointerIndirectionNode ImportSignature;
 
@@ -34,6 +35,15 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         protected override void OnMarked(NodeFactory factory)
         {
             Table.AddImport(factory, this);
+        }
+
+        internal void PromoteToEager(ImportSectionNode table)
+        {
+            // Marking embeds the cell and its signature pointer in their final table.
+            Debug.Assert(!Marked);
+            Debug.Assert(table.IsEager && !table.EmitPrecode);
+            Debug.Assert(Table.EntrySize == table.EntrySize);
+            Table = table;
         }
 
         protected override string GetName(NodeFactory factory)

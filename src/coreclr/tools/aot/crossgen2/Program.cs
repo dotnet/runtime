@@ -723,6 +723,30 @@ namespace ILCompiler
 
                     builder.UsePrintReproInstructions(CreateReproArgumentString);
 
+                    bool useTwoPhaseCompilation = Get(_command.TwoPhaseCompilation);
+                    if (!useTwoPhaseCompilation &&
+                        typeSystemContext.Target.Architecture == TargetArchitecture.Wasm32 &&
+                        optimizationMode != OptimizationMode.None)
+                    {
+                        foreach (EcmaModule compilationModule in compilationGroup.CompilationModuleSet)
+                        {
+                            if (compilationModule == typeSystemContext.SystemModule)
+                            {
+                                useTwoPhaseCompilation = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (useTwoPhaseCompilation)
+                    {
+                        using ReadyToRunCodegenCompilation discoveryCompilation = (ReadyToRunCodegenCompilation)builder.ToCompilation();
+                        ReadyToRunCompilationPlan compilationPlan = discoveryCompilation.CreateCompilationPlan();
+                        builder
+                            .UseCompilationPlan(compilationPlan)
+                            .UseILProvider(new ReadyToRunILProvider(compilationGroup));
+                    }
+
                     compilation = (ReadyToRunCodegenCompilation)builder.ToCompilation();
 
                 }

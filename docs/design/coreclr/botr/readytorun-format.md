@@ -238,6 +238,34 @@ struct READYTORUN_IMPORT_SECTION
 stub dispatch slots may be grouped together to simplify resetting of virtual stub dispatch cells into their
 initial state.
 
+#### Compiler promotion of method fixups
+
+For two-phase compilations containing CoreLib, crossgen2 records explicit and relocation-derived
+precode requirements while compiling methods in callee-first levels. After precompilation and before
+the final dependency traversal, it collects the preparation closure of startup entry points and
+already-rooted managed JIT helpers, including targets of `MethodEntry_ReadyToRun` fixups.
+
+The compiler promotes the actual required import cells into eager sections, preserving the
+`StringHandle` classification for string cells. Validation and data fixups precede eager method
+activation. Covered cells are removed from per-method fixup lists, including those of eagerly
+prepared methods. Precompilation does not itself root every candidate method.
+
+Concrete `TYPE_HANDLE` imports for built-in types encoded directly by `CorElementType`
+(including `string`, `object`, and `TypedReference`) and arrays of those types are placed in
+module-eager sections as they are encountered. This includes multidimensional and nested arrays,
+but not enums, other token-dependent types, pointers, or byrefs. These cells are omitted from
+per-method fixup lists in both single-phase and two-phase compilations; only imports reached by
+the final dependency traversal are emitted.
+
+Concrete type-handle imports are interned by resolved type, not by the original IL token. For example,
+`typeof(T)` in a specialization with `T = int` uses the same cell as `typeof(int)` and encodes
+`ELEMENT_TYPE_I4`; a context-dependent generic-parameter token is not used as a type-definition
+reference. Runtime dictionary lookups in shared generic code remain runtime lookups.
+
+On Wasm, `Vector<T>` has a fixed 16-byte layout and does not require a type-layout check.
+Types containing vectors also have fixed layout when their remaining layout is fixed within
+the version bubble. Other targets retain runtime-dependent vector layout checks.
+
 ### READYTORUN_IMPORT_SECTIONS::Signatures
 
 This field points to array of RVAs that is parallel with the array of slots. Each RVA points to fixup

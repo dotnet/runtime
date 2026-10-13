@@ -568,6 +568,10 @@ namespace ILCompiler.DependencyAnalysis
             {
                 return new WasmMethodRelativeVirtualIPNode(this, method);
             });
+            _wasmMethodFrameIdentities = new(method =>
+            {
+                return new WasmMethodFrameIdentityNode(this, method);
+            });
         }
 
         public int CompilationCurrentPhase { get; private set; }
@@ -613,6 +617,10 @@ namespace ILCompiler.DependencyAnalysis
         public DebugInfoTableNode DebugInfoTable;
 
         public ImportSectionNode EagerImports;
+
+        public ImportSectionNode EagerMethodImports;
+
+        public ImportSectionNode EagerStringImports;
 
         public ImportSectionNode MethodImports;
 
@@ -1216,6 +1224,26 @@ namespace ILCompiler.DependencyAnalysis
                 emitGCRefMap: false);
             ImportSectionsTable.AddEmbeddedObject(EagerImports);
 
+            EagerStringImports = new ImportSectionNode(
+                "EagerStringImports",
+                ReadyToRunImportSectionType.StringHandle,
+                ReadyToRunImportSectionFlags.Eager,
+                (byte)Target.PointerSize,
+                emitPrecode: false,
+                emitGCRefMap: false);
+            ImportSectionsTable.AddEmbeddedObject(EagerStringImports);
+
+            // All eager validation and data-cell fixups must precede method activation,
+            // which can permanently publish R2R code and consume those cells.
+            EagerMethodImports = new ImportSectionNode(
+                "Z_EagerMethodImports",
+                ReadyToRunImportSectionType.Unknown,
+                ReadyToRunImportSectionFlags.Eager,
+                (byte)Target.PointerSize,
+                emitPrecode: false,
+                emitGCRefMap: false);
+            ImportSectionsTable.AddEmbeddedObject(EagerMethodImports);
+
             // All ready-to-run images have a module import helper which gets patched by the runtime on image load
             ModuleImport = new Import(EagerImports, new ReadyToRunHelperSignature(
                 ReadyToRunHelper.Module));
@@ -1324,6 +1352,8 @@ namespace ILCompiler.DependencyAnalysis
             graph.AddRoot(ImportSectionsTable, "Import sections table is always generated");
             graph.AddRoot(ModuleImport, "Module import is always generated");
             graph.AddRoot(EagerImports, "Eager imports are always generated");
+            graph.AddRoot(EagerStringImports, "Eager string imports are always generated");
+            graph.AddRoot(EagerMethodImports, "Eager method imports are always generated");
             graph.AddRoot(MethodImports, "Method imports are always generated");
             graph.AddRoot(DispatchImports, "Dispatch imports are always generated");
             graph.AddRoot(HelperImports, "Helper imports are always generated");
@@ -1501,6 +1531,7 @@ namespace ILCompiler.DependencyAnalysis
         private NodeCache<WasmFuncType, WasmTypeNode> _wasmTypeNodes;
 
         private NodeCache<MethodWithGCInfo, WasmMethodRelativeVirtualIPNode> _wasmMethodRelativeVirtualIPs;
+        private NodeCache<MethodWithGCInfo, WasmMethodFrameIdentityNode> _wasmMethodFrameIdentities;
 
         private readonly struct WasmUnboxingStubKey : IEquatable<WasmUnboxingStubKey>
         {
@@ -1556,6 +1587,11 @@ namespace ILCompiler.DependencyAnalysis
         internal WasmMethodRelativeVirtualIPNode WasmMethodRelativeVirtualIP(MethodWithGCInfo method)
         {
             return _wasmMethodRelativeVirtualIPs.GetOrAdd(method);
+        }
+
+        internal WasmMethodFrameIdentityNode WasmMethodFrameIdentity(MethodWithGCInfo method)
+        {
+            return _wasmMethodFrameIdentities.GetOrAdd(method);
         }
     }
 }
