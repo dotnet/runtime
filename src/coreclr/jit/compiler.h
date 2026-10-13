@@ -1813,7 +1813,7 @@ class emitLocation;
 // Unwind Information V3 for a function or funclet. Like the V1 codes in FuncInfoDsc, the prolog
 // WODs and their IP offsets are filled from the end of their arrays backwards, which leaves them
 // in the reverse execution order V3 requires. Maximum of 31 prolog WODs, each at most the size of
-// WOD_ALLOC_HUGE.
+// WOD_ALLOC_HUGE; the JIT emits at most 24 (see "Limits" in unwindamd64.cpp).
 struct UnwindInfoV3
 {
     UNWIND_INFO_V3 header;

@@ -515,6 +515,29 @@ void Compiler::unwindSaveRegWindows(regNumber reg, unsigned offset)
 //     before the instruction is emitted, where the V1 functions are called after.
 //   * V3 can describe PUSH2 and the APX registers R16-R31, which V1 cannot.
 //
+// Limits. A prolog holds at most UNWIND_INFO_V3_MAX_OPS (31) WODs. The JIT emits at most 22: 10
+// integer callee-saves, XMM6-XMM15, the stack allocation and WOD_SET_FPREG. An OSR prolog emits at
+// most 24: it never reports a frame register, but adds allocations for the Tier0 frame, the fake
+// call slot and the frame chain link.
+//
+// UNW_FLAG_LARGE widens SizeOfProlog and the prolog IP offsets from 8 to 16 bits, so it is needed
+// only if a prolog exceeds 255 bytes. The prolog contains at most:
+//
+//   * stack allocation: 7 bytes
+//   * 10 integer callee-saves: 30 bytes (3 bytes per register, as PUSH2 or a PPX push)
+//   * 10 XMM callee-saves: 90 bytes (10 movaps with disp32)
+//   * frame pointer setup: 8 bytes (lea with disp32)
+//   * vzeroupper: 3 bytes
+//
+// That is 138 bytes, leaving about 120 for the rest: the stack probe, the varargs shadow-slot
+// spills, or the OSR saves. Counting those, the worst case is about 181 bytes (OSR), or 199 once
+// R30 and R31, nonvolatile in the Windows ABI, are saved. So UNW_FLAG_LARGE is not implemented;
+// the noway_asserts in unwindAllocWodV3 guard the WOD count and the prolog IP offsets, as V1 does
+// for its 8-bit code offsets. If one ever fires, UNW_FLAG_LARGE can be added then.
+//
+// By the same calculation the worst-case epilog is about 140 bytes, so EPILOG_INFO_LARGE should
+// not be needed either.
+//
 
 void Compiler::unwindBegPrologV3()
 {
@@ -561,11 +584,24 @@ BYTE* Compiler::unwindAllocWodV3(FuncInfoDsc* func, unsigned size)
     // TODO-Unwind-V3: Nothing sets NumberOfOps yet, so this holds trivially until the V3
     // reserve path fills it in, as unwindReserveFuncHelper does CountOfUnwindCodes for V1.
     assert(uwi->header.NumberOfOps == 0);
-    assert(uwi->ipOffsetSlot > 0);
-    assert(uwi->wodSlot >= size);
+
+    // Codegen stays well within the limits checked below; see "Limits" above.
+    //
+    // If this fires, the prolog has more than UNWIND_INFO_V3_MAX_OPS (31) WODs, the most that
+    // NumberOfOps can hold.
+    noway_assert(uwi->ipOffsetSlot > 0);
+
+    // If this fires, the WOD pool is full. The pool holds 31 of the largest WOD, so the check above
+    // fires first; this one only guards the buffer.
+    noway_assert(uwi->wodSlot >= size);
 
     unsigned int cbProlog = unwindGetCurrentOffset(func);
+
+    // If this fires, a prolog IP offset is beyond 255 bytes, so the prolog would need
+    // UNW_FLAG_LARGE (16-bit offsets and SizeOfProlog).
     noway_assert((BYTE)cbProlog == cbProlog);
+    // TODO-Unwind-V3: This checks where each WOD's instruction starts. SizeOfProlog, the end of the
+    // last one, must also fit in 8 bits; noway_assert that in the V3 reserve path when it sets it.
     uwi->ipOffsets[--uwi->ipOffsetSlot] = (BYTE)cbProlog;
 
     return &uwi->wods[uwi->wodSlot -= size];
