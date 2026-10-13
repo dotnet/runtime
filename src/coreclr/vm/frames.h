@@ -946,7 +946,17 @@ public:
     virtual TADDR GetReturnAddressPtr()
     {
         LIMITED_METHOD_DAC_CONTRACT;
+#if defined(TARGET_POWERPC64)
+        // On ppc64le (ELFv2 ABI) the stub prologues save LR at 16(%r1) *before*
+        // the frame-allocation stdu, so LR lands in the caller's LR save slot:
+        //   caller_sp + 16  ==  GetTransitionBlock() + sizeof(TransitionBlock) + 16
+        // The TransitionBlock::m_ReturnAddress field (at offset 16 inside the new
+        // frame) is overwritten by the first callee's own prolog and therefore
+        // cannot be used to recover the return address to the managed caller.
+        return GetTransitionBlock() + sizeof(TransitionBlock) + 16;
+#else
         return GetTransitionBlock() + TransitionBlock::GetOffsetOfReturnAddress();
+#endif
     }
 
     //---------------------------------------------------------------

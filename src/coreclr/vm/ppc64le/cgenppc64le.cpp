@@ -70,6 +70,33 @@ void TransitionFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
     UpdateRegDisplayFromCalleeSavedRegisters(pRD, GetCalleeSavedRegisters());
     ClearRegDisplayArgumentAndScratchRegisters(pRD);
 
+    // On PPC64LE, the stub prolog saves the caller's R31 (the frame pointer of the
+    // managed frame that called into the stub) at [old_SP - 8], which is the
+    // m_saveFrameAddress field of the TransitionBlock (offset 488).  The
+    // m_calleeSavedRegisters.R31 slot (offset 336) holds the stub's own frame
+    // pointer (new_SP) and must NOT be used to restore R31 in the resume context.
+    //
+    //   std  r31, -8(r1)   ; before stdu  → stored in m_saveFrameAddress
+    //   stdu r1, -496(r1)
+    //   mr   r31, r1       ; stub's own FP
+    //   std  r31, 336(r1)  ; stored in m_calleeSavedRegisters.R31  ← wrong slot
+    //
+    // Override the context pointer so UpdateNonvolatileRegisters restores the
+    // correct value (the calling managed frame's R31) from m_saveFrameAddress.
+    //
+    // The stub prolog stores the caller's R31 at [old_SP - 8] = m_saveFrameAddress
+    // (TransitionBlock offset 488). The m_calleeSavedRegisters.R31 slot set above
+    // by UpdateRegDisplayFromCalleeSavedRegisters holds the stub's own SP (wrong).
+    //
+    // DAC note: GetTransitionBlock() is a target address; dereference through
+    // PTR_TADDR for cross-process safety.
+    {
+        TADDR saveFrameAddrSlot = GetTransitionBlock() + offsetof(TransitionBlock, m_saveFrameAddress);
+        PTR_TADDR pSaveFrameAddr = dac_cast<PTR_TADDR>(saveFrameAddrSlot);
+        pRD->pCurrentContext->R31 = (DWORD64)*pSaveFrameAddr;
+        pRD->pCurrentContextPointers->R31 = (DWORD64*)pSaveFrameAddr;
+    }
+
     SyncRegDisplayToCurrentContext(pRD);
 
     LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    TransitionFrame::UpdateRegDisplay(ip:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
