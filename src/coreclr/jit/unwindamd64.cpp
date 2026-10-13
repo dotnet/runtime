@@ -508,7 +508,7 @@ void Compiler::unwindSaveRegWindows(regNumber reg, unsigned offset)
 // Unwind Information V3 prolog encoding.
 //
 // These mirror the unwind*Windows functions above, encoding the same prolog operations as V3
-// winding operation descriptors (WODs, see win64unwindv3.h). Two differences matter to callers:
+// winding operation descriptors (WODs, see win64unwind.h). Two differences matter to callers:
 //
 //   * A V3 IP offset is the offset of the instruction that performs the operation, where V1's
 //     CodeOffset is the offset of the instruction after it. So these must be called immediately
