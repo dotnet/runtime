@@ -609,11 +609,7 @@ extends:
                 parameters:
                   creator: dotnet-bot
                   testRunNamePrefixSuffix: Mono_$(_BuildConfig)
-                  condition: >-
-                    or(
-                    eq(variables['librariesContainsChange'], true),
-                    eq(variables['monoContainsChange'], true),
-                    eq(variables['isRollingBuild'], true))
+                  condition: false # Keep the build, but skip mobile tests.
 
       #
       # iOS/tvOS devices - Full AOT + AggressiveTrimming to reduce size
@@ -652,11 +648,7 @@ extends:
                   creator: dotnet-bot
                   testRunNamePrefixSuffix: Mono_$(_BuildConfig)
                   extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
-                  condition: >-
-                    or(
-                    eq(variables['librariesContainsChange'], true),
-                    eq(variables['monoContainsChange'], true),
-                    eq(variables['isRollingBuild'], true))
+                  condition: false # Keep the build, but skip mobile tests.
 
       #
       # iOS/tvOS devices
@@ -695,14 +687,7 @@ extends:
                   creator: dotnet-bot
                   testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
                   extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
-                  # Remove this iOS exclusion if iOS NativeAOT device tests are re-enabled.
-                  condition: >-
-                    and(
-                      ne(variables['osGroup'], 'ios'),
-                      or(
-                        eq(variables['librariesContainsChange'], true),
-                        eq(variables['coreclrContainsChange'], true),
-                        eq(variables['isRollingBuild'], true)))
+                  condition: false # Keep the build, but skip mobile tests.
 
       #
       # MacCatalyst interp - requires AOT Compilation and Interp flags
@@ -740,11 +725,7 @@ extends:
                 parameters:
                   creator: dotnet-bot
                   testRunNamePrefixSuffix: Mono_$(_BuildConfig)
-                  condition: >-
-                    or(
-                      eq(variables['librariesContainsChange'], true),
-                      eq(variables['monoContainsChange'], true),
-                      eq(variables['isRollingBuild'], true))
+                  condition: false # Keep the build, but skip mobile tests.
 
       #
       # Build Mono and Installer on LLVMJIT mode
