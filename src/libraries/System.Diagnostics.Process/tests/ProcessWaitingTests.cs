@@ -541,6 +541,10 @@ namespace System.Diagnostics.Tests
             Assert.Equal(1, linesReceived);
         }
 
+        // A waiter in a nested process chain covers the start-up, work and exit of every process beneath it, so its
+        // budget grows with the number of processes below.
+        private static int ChainWaitInMS(int processesBelow) => WaitInMS * processesBelow;
+
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void WaitChain()
         {
@@ -552,19 +556,19 @@ namespace System.Diagnostics.Tests
                     {
                         Process child3 = CreateProcess(() => RemoteExecutor.SuccessExitCode);
                         child3.Start();
-                        Assert.True(child3.WaitForExit(WaitInMS));
+                        Assert.True(child3.WaitForExit(ChainWaitInMS(1)));
                         return child3.ExitCode;
                     });
                     child2.Start();
-                    Assert.True(child2.WaitForExit(WaitInMS));
+                    Assert.True(child2.WaitForExit(ChainWaitInMS(2)));
                     return child2.ExitCode;
                 });
                 child1.Start();
-                Assert.True(child1.WaitForExit(WaitInMS));
+                Assert.True(child1.WaitForExit(ChainWaitInMS(3)));
                 return child1.ExitCode;
             });
             root.Start();
-            Assert.True(root.WaitForExit(WaitInMS));
+            Assert.True(root.WaitForExit(ChainWaitInMS(4)));
             Assert.Equal(RemoteExecutor.SuccessExitCode, root.ExitCode);
         }
 
@@ -579,7 +583,7 @@ namespace System.Diagnostics.Tests
                     {
                         Process child3 = CreateProcess(() => RemoteExecutor.SuccessExitCode);
                         child3.Start();
-                        using (var cts = new CancellationTokenSource(WaitInMS))
+                        using (var cts = new CancellationTokenSource(ChainWaitInMS(1)))
                         {
                             await child3.WaitForExitAsync(cts.Token);
                             Assert.True(child3.HasExited);
@@ -588,7 +592,7 @@ namespace System.Diagnostics.Tests
                         return child3.ExitCode;
                     });
                     child2.Start();
-                    using (var cts = new CancellationTokenSource(WaitInMS))
+                    using (var cts = new CancellationTokenSource(ChainWaitInMS(2)))
                     {
                         await child2.WaitForExitAsync(cts.Token);
                         Assert.True(child2.HasExited);
@@ -597,7 +601,7 @@ namespace System.Diagnostics.Tests
                     return child2.ExitCode;
                 });
                 child1.Start();
-                using (var cts = new CancellationTokenSource(WaitInMS))
+                using (var cts = new CancellationTokenSource(ChainWaitInMS(3)))
                 {
                     await child1.WaitForExitAsync(cts.Token);
                     Assert.True(child1.HasExited);
@@ -606,7 +610,7 @@ namespace System.Diagnostics.Tests
                 return child1.ExitCode;
             });
             root.Start();
-            using (var cts = new CancellationTokenSource(WaitInMS))
+            using (var cts = new CancellationTokenSource(ChainWaitInMS(4)))
             {
                 await root.WaitForExitAsync(cts.Token);
                 Assert.True(root.HasExited);
