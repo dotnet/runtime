@@ -19,8 +19,6 @@
 #include <dn-u16.h>
 #include "corhlpr.h"
 
-#ifdef HOST_WINDOWS
-
 namespace
 {
     HRESULT GetMachineAndDirectoryAddress(ICorDebugDataTarget* dataTarget,
@@ -119,6 +117,8 @@ namespace
         return hr;
     }
 }
+
+#ifdef HOST_WINDOWS
 
 // Returns the RVA of the resource section for the module specified by the given data target and module base.
 // Returns failure if the module doesn't have a resource section.
@@ -441,18 +441,8 @@ HRESULT ReadFromDataTarget(ICorDebugDataTarget* pDataTarget,
     return hr;
 }
 
-#if TARGET_WINDOWS
-
-extern "C" bool
-TryGetSymbol(ICorDebugDataTarget* dataTarget, uint64_t baseAddress, const char* symbolName, uint64_t* symbolAddress)
+bool PEReader::TryLookupSymbol(ICorDebugDataTarget* dataTarget, uint64_t baseAddress, const char* symbolName, uint64_t* symbolAddress)
 {
-    if (symbolAddress == nullptr)
-    {
-        return false;
-    }
-
-    *symbolAddress = 0;
-
     DWORD exportTableRva;
     if (FAILED(GetMachineAndDirectoryAddress(dataTarget, baseAddress, IMAGE_DIRECTORY_ENTRY_EXPORT, nullptr, &exportTableRva)))
     {
@@ -528,4 +518,3 @@ TryGetSymbol(ICorDebugDataTarget* dataTarget, uint64_t baseAddress, const char* 
 
     return false;
 }
-#endif

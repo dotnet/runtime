@@ -835,6 +835,55 @@ interface ICorDebugDataTarget4 : IUnknown
 };
 
 /*
+ * Target information supplied by the debugger.
+ */
+typedef enum CorDebugTargetArchitecture
+{
+    CORDB_ARCH_UNKNOWN = 0,
+    CORDB_ARCH_X86 = 1,
+    CORDB_ARCH_AMD64 = 2,
+    CORDB_ARCH_ARM = 3,
+    CORDB_ARCH_ARM64 = 4,
+    CORDB_ARCH_LOONGARCH64 = 5,
+    CORDB_ARCH_RISCV64 = 6,
+    CORDB_ARCH_WASM = 7
+} CorDebugTargetArchitecture;
+
+typedef enum CorDebugTargetOperatingSystem
+{
+    CORDB_OS_UNKNOWN = 0,
+    CORDB_OS_WINDOWS = 1,
+    CORDB_OS_LINUX = 2,
+    CORDB_OS_OSX = 3
+} CorDebugTargetOperatingSystem;
+
+typedef struct CorDebugTargetInfo
+{
+    CorDebugTargetArchitecture arch;
+    CorDebugTargetOperatingSystem os;
+    ULONG32 pointerSize;
+} CorDebugTargetInfo;
+
+/*
+ * Optional extension to ICorDebugDataTarget.
+ */
+[
+    object,
+    uuid(E7F595E2-98BB-45DA-B1BE-520107FCCB57),
+    local,
+    pointer_default(unique)
+]
+interface ICorDebugDataTarget5 : IUnknown
+{
+    /*
+     * Returns architecture, exact OS, and pointer size in bytes.
+     * Unrecognized OS or architecture values are reported as UNKNOWN with S_OK.
+     * A pointer size of zero means that the size is unavailable.
+     */
+    HRESULT GetTargetInfo([out] CorDebugTargetInfo *pTargetInfo);
+};
+
+/*
  * Mutable extension to the data target.  This version of ICorDebugDataTarget
  * can be implemented by targets that wish to support modification of the target
  * process (such as for live invasive debugging).
