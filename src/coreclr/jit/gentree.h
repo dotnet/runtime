@@ -1648,11 +1648,7 @@ public:
 
     static bool OperMayOverflow(genTreeOps gtOper)
     {
-        return StaticOperIs(gtOper, GT_ADD, GT_SUB, GT_MUL, GT_CAST)
-#if !defined(TARGET_64BIT)
-               || StaticOperIs(gtOper, GT_ADD_HI, GT_SUB_HI)
-#endif
-            ;
+        return StaticOperIs(gtOper, GT_ADD, GT_SUB, GT_MUL, GT_CAST, GT_ADD_HI, GT_SUB_HI);
     }
 
     bool OperMayOverflow() const
@@ -1818,12 +1814,10 @@ public:
 
     bool OperConsumesFlags() const
     {
-#if !defined(TARGET_64BIT)
         if (OperIs(GT_ADD_HI, GT_SUB_HI))
         {
             return true;
         }
-#endif
 #if defined(TARGET_ARM64)
         if (OperIs(GT_CCMP, GT_SELECT_INCCC, GT_SELECT_INVCC, GT_SELECT_NEGCC))
         {
@@ -2250,11 +2244,7 @@ public:
 
     void SetUnsigned()
     {
-#if defined(TARGET_64BIT)
-        assert(OperIsCompare() || OperIsMul() || OperIs(GT_ADD, GT_SUB, GT_CAST));
-#else
         assert(OperIsCompare() || OperIsMul() || OperIs(GT_ADD, GT_SUB, GT_CAST, GT_ADD_HI, GT_SUB_HI));
-#endif
         gtFlags |= GTF_UNSIGNED;
     }
 

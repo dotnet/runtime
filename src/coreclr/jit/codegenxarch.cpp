@@ -953,9 +953,9 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
     }
     else
     {
-        isValidOper |= treeNode->OperIs(GT_AND, GT_OR, GT_XOR);
+        isValidOper |= treeNode->OperIs(GT_AND, GT_OR, GT_XOR, GT_ADD_HI, GT_SUB_HI);
 #ifndef TARGET_64BIT
-        isValidOper |= treeNode->OperIs(GT_ADD_LO, GT_ADD_HI, GT_SUB_LO, GT_SUB_HI);
+        isValidOper |= treeNode->OperIs(GT_ADD_LO, GT_SUB_LO);
 #endif
     }
     assert(isValidOper);
@@ -1127,11 +1127,7 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
 
     if (treeNode->gtOverflowEx())
     {
-#if !defined(TARGET_64BIT)
         assert(oper == GT_ADD || oper == GT_SUB || oper == GT_ADD_HI || oper == GT_SUB_HI);
-#else
-        assert(oper == GT_ADD || oper == GT_SUB);
-#endif
         genCheckOverflow(treeNode);
     }
     genProduceReg(treeNode);
@@ -1931,11 +1927,11 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
 #if !defined(TARGET_64BIT)
         case GT_ADD_LO:
-        case GT_ADD_HI:
         case GT_SUB_LO:
-        case GT_SUB_HI:
 #endif // !defined(TARGET_64BIT)
 
+        case GT_ADD_HI:
+        case GT_SUB_HI:
         case GT_ADD:
         case GT_SUB:
             genCodeForBinary(treeNode->AsOp());
@@ -4572,18 +4568,18 @@ instruction CodeGen::genGetInsForOper(genTreeOps oper, var_types type)
         case GT_XOR:
             ins = INS_xor;
             break;
+        case GT_ADD_HI:
+            ins = INS_adc;
+            break;
+        case GT_SUB_HI:
+            ins = INS_sbb;
+            break;
 #if !defined(TARGET_64BIT)
         case GT_ADD_LO:
             ins = INS_add;
             break;
-        case GT_ADD_HI:
-            ins = INS_adc;
-            break;
         case GT_SUB_LO:
             ins = INS_sub;
-            break;
-        case GT_SUB_HI:
-            ins = INS_sbb;
             break;
         case GT_LSH_HI:
             ins = INS_shld;
