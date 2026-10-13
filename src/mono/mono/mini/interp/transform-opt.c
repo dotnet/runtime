@@ -1231,22 +1231,16 @@ insert_tiering_defs (TransformData *td)
 		}
 	}
 
-	gboolean has_eh_patchpoints = FALSE;
-	for (int i = td->bblocks_count_no_eh; i < td->bblocks_count_eh; i++) {
-		if (td->bblocks [i]->patchpoint_bb) {
-			has_eh_patchpoints = TRUE;
-			break;
-		}
-	}
-	if (!has_eh_patchpoints)
-		return;
-
 	// OSR in a finally handler can resume at its caller's continuation. EH blocks
 	// are outside the SSA CFG, so preserve the IL locals live across this return.
 	for (int i = 0; i < td->bblocks_count_no_eh; i++) {
 		InterpBasicBlock *bb = td->bblocks [i];
 		for (InterpInst *ins = bb->first_ins; ins != NULL; ins = ins->next) {
 			if (ins->opcode != MINT_TIER_PATCHPOINT_DATA)
+				continue;
+			InterpInst *call = ins->prev;
+			g_assert (call && call->opcode == MINT_CALL_HANDLER);
+			if (!td->clause_has_patchpoint [call->data [2]])
 				continue;
 			unsigned int k;
 			mono_bitset_foreach_bit (bb->live_out_set, k, td->renamable_vars_size) {
