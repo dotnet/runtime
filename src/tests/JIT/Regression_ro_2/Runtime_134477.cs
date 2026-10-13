@@ -10,7 +10,7 @@ public class Runtime_134477
     public static volatile byte s_state;
     private static int s_data;
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public static void TestEntryPoint()
     {
         Thread t = new Thread(Test) { IsBackground = true };
