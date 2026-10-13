@@ -343,12 +343,12 @@ namespace System.Formats.Cbor.Tests
         [InlineData("c11b0000003afff44180")] // one second after DateTimeOffset.MaxValue
         [InlineData("c1fb425d1a94a2000000")] // 5e11 seconds, within TimeSpan's range
         [InlineData("c1fbc2374876e8000000")] // -1e11 seconds, within TimeSpan's range
-        public static void ReadUnixTimeSeconds_OutOfDateTimeRange_ShouldThrowOverflowException(string hexEncoding)
+        public static void ReadUnixTimeSeconds_OutOfDateTimeRange_ShouldThrowInvalidOperationException(string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
 
-            OverflowException exception = Assert.Throws<OverflowException>(() => reader.ReadUnixTimeSeconds());
+            InvalidOperationException exception = Assert.Throws<InvalidOperationException>(() => reader.ReadUnixTimeSeconds());
             Assert.IsType<ArgumentOutOfRangeException>(exception.InnerException);
             Assert.Equal(encoding.Length, reader.BytesRemaining);
             Assert.Equal(0, reader.CurrentDepth);
@@ -365,13 +365,15 @@ namespace System.Formats.Cbor.Tests
         [InlineData("c1fbfe37e43c8800759c")] // -1e300 seconds
         [InlineData("c1fa7f7fffff")] // float.MaxValue seconds
         [InlineData("c1faff7fffff")] // -float.MaxValue seconds
-        public static void ReadUnixTimeSeconds_OutOfNumericRange_ShouldThrowOverflowException(string hexEncoding)
+        public static void ReadUnixTimeSeconds_OutOfNumericRange_ShouldThrowInvalidOperationException(string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
 
-            Assert.Throws<OverflowException>(() => reader.ReadUnixTimeSeconds());
+            InvalidOperationException exception = Assert.Throws<InvalidOperationException>(() => reader.ReadUnixTimeSeconds());
+            Assert.IsType<OverflowException>(exception.InnerException);
             Assert.Equal(encoding.Length, reader.BytesRemaining);
+            Assert.Equal(0, reader.CurrentDepth);
             Assert.Equal(CborReaderState.Tag, reader.PeekState());
 
             reader.SkipValue();
@@ -391,7 +393,7 @@ namespace System.Formats.Cbor.Tests
             Assert.Equal(1, reader.ReadInt32());
             int bytesRemaining = reader.BytesRemaining;
 
-            Assert.Throws<OverflowException>(() => reader.ReadUnixTimeSeconds());
+            Assert.Throws<InvalidOperationException>(() => reader.ReadUnixTimeSeconds());
             Assert.Equal(bytesRemaining, reader.BytesRemaining);
             Assert.Equal(1, reader.CurrentDepth);
             Assert.Equal(CborReaderState.Tag, reader.PeekState());
