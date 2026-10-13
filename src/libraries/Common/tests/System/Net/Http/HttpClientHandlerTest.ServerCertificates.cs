@@ -2,12 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+#if WINHTTPHANDLER_TEST
+using System.ComponentModel;
+#endif
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Security;
+using System.Net.Sockets;
 using System.Net.Test.Common;
 using System.Runtime.InteropServices;
+using System.Security.Authentication;
 using System.Security.Authentication.ExtendedProtection;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
@@ -26,7 +31,9 @@ namespace System.Net.Http.Functional.Tests
 
     public abstract partial class HttpClientHandler_ServerCertificates_Test : HttpClientHandlerTestBase
     {
+#if WINHTTPHANDLER_TEST
         private static bool ClientSupportsDHECipherSuites => (!PlatformDetection.IsWindows || PlatformDetection.IsWindows10Version1607OrGreater);
+#endif
 
         public HttpClientHandler_ServerCertificates_Test(ITestOutputHelper output) : base(output) { }
 
@@ -211,25 +218,86 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        public static readonly object[][] CertificateValidationServers =
+        [Theory]
+        [InlineData(true, false)]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        public async Task NoCallback_BadCertificate_ThrowsException(bool expired, bool wrongHostName)
         {
-            new object[] { Configuration.Http.ExpiredCertRemoteServer },
-            new object[] { Configuration.Http.SelfSignedCertRemoteServer },
-            new object[] { Configuration.Http.WrongHostNameCertRemoteServer },
-        };
+            using X509Certificate2 certificate = TestHelper.CreateServerSelfSignedCertificate(
+                name: wrongHostName ? "not-localhost" : "localhost", expired: expired);
 
-        [OuterLoop("Uses external servers")]
-        [ConditionalTheory(typeof(HttpClientHandler_ServerCertificates_Test), nameof(ClientSupportsDHECipherSuites))]
-        [MemberData(nameof(CertificateValidationServers))]
-        public async Task NoCallback_BadCertificate_ThrowsException(string url)
-        {
             using (HttpClientHandler handler = CreateHttpClientHandler(allowTlsResume: false))
             using (HttpClient client = CreateHttpClient(handler))
             {
-                await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(url));
+                bool customChainPolicy = ConfigureCertificateChainPolicy(handler, certificate, trustCertificate: expired || wrongHostName);
+
+                await LoopbackServer.CreateClientAndServerAsync(async uri =>
+                {
+                    HttpRequestException exception = await Assert.ThrowsAsync<HttpRequestException>(
+                        () => client.GetAsync(new UriBuilder(uri) { Host = "localhost" }.Uri));
+#if WINHTTPHANDLER_TEST
+                    const int ErrorWinHttpSecureFailure = 12175;
+                    Assert.Equal(ErrorWinHttpSecureFailure, Assert.IsAssignableFrom<Win32Exception>(exception.InnerException).NativeErrorCode);
+#else
+                    if (customChainPolicy)
+                    {
+                        Assert.Equal(HttpRequestError.SecureConnectionError, exception.HttpRequestError);
+                        Assert.IsType<AuthenticationException>(exception.InnerException);
+                    }
+#endif
+                }, async server =>
+                {
+                    try
+                    {
+                        if (customChainPolicy || IsWinHttpHandler)
+                        {
+                            await server.AcceptConnectionAsync(_ => Task.CompletedTask);
+                        }
+                        else
+                        {
+                            // Native handlers may report generic errors, so acceptance must produce a successful response.
+                            await server.HandleRequestAsync();
+                        }
+                    }
+                    catch (Exception e) when (e is AuthenticationException or IOException)
+                    {
+                        _output.WriteLine($"Expected certificate validation failure: {e}");
+                    }
+                },
+                options: new LoopbackServer.Options
+                {
+                    UseSsl = true,
+                    Certificate = certificate,
+                    SslProtocols = SslProtocols.None,
+                });
             }
         }
 
+        [Fact]
+        public async Task LoopbackServer_AuthenticationFailure_DisposesStream()
+        {
+            bool streamDisposed = false;
+            var expectedException = new IOException("Simulated TLS transport failure.");
+            using var stream = new DelegateStream(
+                canReadFunc: () => true,
+                canWriteFunc: () => true,
+                readAsyncFunc: (_, _, _, _) => Task.FromException<int>(expectedException),
+                writeAsyncFunc: (_, _, _, _) => Task.CompletedTask,
+                disposeFunc: disposing => streamDisposed |= disposing);
+            using var socket = new SocketWrapper(new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp));
+            using X509Certificate2 certificate = TestHelper.CreateServerSelfSignedCertificate();
+            var options = new LoopbackServer.Options { UseSsl = true, Certificate = certificate };
+#if !NETFRAMEWORK
+            options.CertificateContext = SslStreamCertificateContext.Create(certificate, null);
+#endif
+
+            IOException exception = await Assert.ThrowsAsync<IOException>(() => LoopbackServer.Connection.CreateAsync(socket, stream, options));
+            Assert.Same(expectedException, exception.GetBaseException());
+            Assert.True(streamDisposed);
+        }
+
+#if WINHTTPHANDLER_TEST
         [OuterLoop("Uses external servers")]
         [ConditionalFact(typeof(HttpClientHandler_ServerCertificates_Test), nameof(ClientSupportsDHECipherSuites))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/106634", typeof(PlatformDetection), nameof(PlatformDetection.IsAlpine))]
@@ -255,70 +323,85 @@ namespace System.Net.Http.Functional.Tests
                 await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(Configuration.Http.RevokedCertRemoteServer));
             }
         }
+#endif
 
-        public static readonly object[][] CertificateValidationServersAndExpectedPolicies =
+        [Theory]
+        [InlineData(true, false, SslPolicyErrors.RemoteCertificateChainErrors)]
+        [InlineData(false, false, SslPolicyErrors.RemoteCertificateChainErrors)]
+        [InlineData(false, true, SslPolicyErrors.RemoteCertificateNameMismatch)]
+        public async Task UseCallback_BadCertificate_ExpectedPolicyErrors(bool expired, bool wrongHostName, SslPolicyErrors expectedErrors)
         {
-            new object[] { Configuration.Http.ExpiredCertRemoteServer, SslPolicyErrors.RemoteCertificateChainErrors },
-            new object[] { Configuration.Http.WrongHostNameCertRemoteServer , SslPolicyErrors.RemoteCertificateNameMismatch},
-        };
+            using X509Certificate2 certificate = TestHelper.CreateServerSelfSignedCertificate(
+                name: wrongHostName ? "not-localhost" : "localhost", expired: expired);
 
-        private async Task UseCallback_BadCertificate_ExpectedPolicyErrors_Helper(string url, string useHttp2String, SslPolicyErrors expectedErrors)
-        {
-            HttpClientHandler handler = CreateHttpClientHandler(useHttp2String, allowTlsResume: false);
-            using (HttpClient client = CreateHttpClient(handler, useHttp2String))
+            using (HttpClientHandler handler = CreateHttpClientHandler(allowTlsResume: false))
+            using (HttpClient client = CreateHttpClient(handler))
             {
+                bool customChainPolicy = ConfigureCertificateChainPolicy(handler, certificate, trustCertificate: expired || wrongHostName);
+                X509ChainStatusFlags expectedChainStatus = expired ? X509ChainStatusFlags.NotTimeValid :
+                    wrongHostName ? X509ChainStatusFlags.NoError : X509ChainStatusFlags.UntrustedRoot;
+
+                if (!customChainPolicy)
+                {
+                    // Native handlers cannot trust the generated root without changing the OS certificate store.
+                    expectedErrors |= SslPolicyErrors.RemoteCertificateChainErrors;
+                    expectedChainStatus |= X509ChainStatusFlags.UntrustedRoot;
+                }
+
+                string expectedThumbprint = certificate.Thumbprint;
                 bool callbackCalled = false;
 
                 handler.ServerCertificateCustomValidationCallback = (request, cert, chain, errors) =>
                 {
-                    // https://github.com/dotnet/corefx/issues/21922#issuecomment-315555237
-                    X509ChainStatusFlags flags = chain.ChainStatus.Aggregate(X509ChainStatusFlags.NoError, (cur, status) => cur | status.Status);
-                    if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX) &&
-                        flags == X509ChainStatusFlags.RevocationStatusUnknown)
-                    {
-                        expectedErrors |= SslPolicyErrors.RemoteCertificateChainErrors;
-                    }
-
                     callbackCalled = true;
                     Assert.NotNull(request);
                     Assert.NotNull(cert);
                     Assert.NotNull(chain);
+                    Assert.Equal(expectedThumbprint, cert.Thumbprint);
                     Assert.Equal(expectedErrors, errors);
+                    Assert.Equal(expectedChainStatus, chain.ChainStatus.Aggregate(
+                        X509ChainStatusFlags.NoError, (flags, status) => flags | status.Status));
                     return true;
                 };
 
-                using (HttpResponseMessage response = await client.GetAsync(url))
+                await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
                 {
+                    using HttpResponseMessage response = await client.GetAsync(new UriBuilder(uri) { Host = "localhost" }.Uri);
                     Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-                }
+                }, server => server.HandleRequestAsync(),
+                options: new GenericLoopbackOptions
+                {
+                    UseSsl = true,
+                    Certificate = certificate,
+                    SslProtocols = SslProtocols.None,
+                });
 
                 Assert.True(callbackCalled);
             }
         }
 
-        [OuterLoop("Uses external servers")]
-        [Theory]
-        [MemberData(nameof(CertificateValidationServersAndExpectedPolicies))]
-        public async Task UseCallback_BadCertificate_ExpectedPolicyErrors(string url, SslPolicyErrors expectedErrors)
+        private static bool ConfigureCertificateChainPolicy(HttpClientHandler handler, X509Certificate2 certificate, bool trustCertificate)
         {
-            const int SEC_E_BUFFER_TOO_SMALL = unchecked((int)0x80090321);
+#if !WINHTTPHANDLER_TEST
+            if (GetUnderlyingSocketsHttpHandler(handler) is SocketsHttpHandler socketsHandler)
+            {
+                var policy = new X509ChainPolicy
+                {
+                    TrustMode = X509ChainTrustMode.CustomRootTrust,
+                    RevocationMode = X509RevocationMode.NoCheck,
+                    DisableCertificateDownloads = true,
+                };
 
-            if (!ClientSupportsDHECipherSuites)
-            {
-                return;
-            }
+                if (trustCertificate)
+                {
+                    policy.CustomTrustStore.Add(certificate);
+                }
 
-            try
-            {
-                await UseCallback_BadCertificate_ExpectedPolicyErrors_Helper(url, UseVersion.ToString(), expectedErrors);
+                socketsHandler.SslOptions.CertificateChainPolicy = policy;
+                return true;
             }
-            catch (HttpRequestException e) when (e.InnerException?.GetType().Name == "WinHttpException" &&
-                e.InnerException.HResult == SEC_E_BUFFER_TOO_SMALL &&
-                !PlatformDetection.IsWindows10Version1607OrGreater)
-            {
-                // Testing on old Windows versions can hit https://github.com/dotnet/runtime/issues/17005
-                // Ignore SEC_E_BUFFER_TOO_SMALL error on such cases.
-            }
+#endif
+            return false;
         }
 
         [Theory]

@@ -481,26 +481,35 @@ namespace System.Net.Test.Common
                 if (httpOptions.UseSsl)
                 {
                     var sslStream = new SslStream(stream, false, delegate { return true; });
+                    try
+                    {
 #if !NETFRAMEWORK
-                    SslServerAuthenticationOptions sslOptions = new SslServerAuthenticationOptions()
-                    {
-                        AllowTlsResume = httpOptions.AllowTlsResume,
-                        EnabledSslProtocols = httpOptions.SslProtocols,
-                        ServerCertificateContext = httpOptions.CertificateContext ?? SslStreamCertificateContext.Create(Configuration.Certificates.GetServerCertificate(), null),
-                        ClientCertificateRequired = true,
-                    };
+                        SslServerAuthenticationOptions sslOptions = new SslServerAuthenticationOptions()
+                        {
+                            AllowTlsResume = httpOptions.AllowTlsResume,
+                            EnabledSslProtocols = httpOptions.SslProtocols,
+                            ServerCertificateContext = httpOptions.CertificateContext ?? SslStreamCertificateContext.Create(Configuration.Certificates.GetServerCertificate(), null),
+                            ClientCertificateRequired = true,
+                        };
 
-                    await sslStream.AuthenticateAsServerAsync(sslOptions, default).ConfigureAwait(false);
+                        await sslStream.AuthenticateAsServerAsync(sslOptions, default).ConfigureAwait(false);
 #else
-                    using (X509Certificate2 cert = httpOptions.Certificate ?? Configuration.Certificates.GetServerCertificate())
-                    {
-                        await sslStream.AuthenticateAsServerAsync(
-                            cert,
-                            clientCertificateRequired: true, // allowed but not required
-                            enabledSslProtocols: httpOptions.SslProtocols,
-                            checkCertificateRevocation: false).ConfigureAwait(false);
-                    }
+                        using (X509Certificate2 cert = httpOptions.Certificate ?? Configuration.Certificates.GetServerCertificate())
+                        {
+                            await sslStream.AuthenticateAsServerAsync(
+                                cert,
+                                clientCertificateRequired: true, // allowed but not required
+                                enabledSslProtocols: httpOptions.SslProtocols,
+                                checkCertificateRevocation: false).ConfigureAwait(false);
+                        }
 #endif
+                    }
+                    catch
+                    {
+                        sslStream.Dispose();
+                        throw;
+                    }
+
                     stream = sslStream;
                 }
 
