@@ -581,17 +581,10 @@ namespace System.Runtime
         }
 
         // Returns the exception that is currently in flight on the current thread, including one being handled
-        // by a catch handler, starting the search from the given ExInfo (the head of the thread's ExInfo chain).
-        // Exceptions that were superseded by a nested exception are skipped.
+        // by a catch handler, or null if there is no exception in flight.
         internal static object? GetCurrentException(ExInfo* pExInfo)
         {
-            for (; pExInfo != null; pExInfo = (ExInfo*)pExInfo->_pPrevExInfo)
-            {
-                if ((pExInfo->_kind & ExKind.SupersededFlag) == 0)
-                    return pExInfo->ThrownException;
-            }
-
-            return null;
+            return pExInfo != null ? pExInfo->ThrownException : null;
         }
 
         //
