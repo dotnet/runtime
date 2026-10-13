@@ -4257,10 +4257,9 @@ void MethodDesc::PrepareForUseAsADependencyOfANativeImageWorker()
     // The current requirement is only that valuetypes can be resolved to their type defs as much
     // as is possible. (If the method is actually called, then this will not throw, but there
     // are cases where we call this method and we are unaware if this method will actually be called
-    // or accessed as a native image dependency. This explains the contract (STANDARD_VM_CONTRACT)
-    //  - This method should be callable only when general purpose VM code can be called
-    // , as well as the TRY/CATCH.
-    //  - This function should not introduce failures
+    // or accessed as a native image dependency.) Resolving valuetypes may throw and trigger GC,
+    // so this method requires general purpose VM execution, but accepts either GC mode (MODE_ANY).
+    // Nonterminal exceptions are swallowed to avoid introducing failures.
 
     EX_TRY
     {

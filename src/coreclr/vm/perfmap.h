@@ -47,7 +47,13 @@ public:
 
     static void LogJITCompiledMethod(MethodDesc * pMethod, PCODE pCode, size_t codeSize, PrepareCodeConfig *pConfig)
     {
-        STANDARD_VM_CONTRACT;
+        CONTRACTL
+        {
+            THROWS;
+            GC_NOTRIGGER;
+            MODE_PREEMPTIVE;
+        }
+        CONTRACTL_END;
     }
 
     static void LogPreCompiledMethod(MethodDesc * pMethod, PCODE pCode)
