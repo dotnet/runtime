@@ -666,12 +666,11 @@ private:
         static_assert(offsetof(ComMethodTable, m_Flags) % alignof(size_t) == 0);
 
         // Preserve other flags while publishing the payload initialized before this update.
-        size_t oldFlags;
-        do
-        {
-            oldFlags = VolatileLoad(&m_Flags);
-        }
-        while (InterlockedCompareExchangeT(&m_Flags, oldFlags | flags, oldFlags) != oldFlags);
+#ifdef HOST_64BIT
+        InterlockedOr64(reinterpret_cast<LONG64*>(&m_Flags), static_cast<LONG64>(flags));
+#else
+        InterlockedOr(reinterpret_cast<LONG*>(&m_Flags), static_cast<LONG>(flags));
+#endif // HOST_64BIT
     }
 #endif // DACCESS_COMPILE
 
