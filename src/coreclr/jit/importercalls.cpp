@@ -4861,7 +4861,9 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
             case NI_System_Half_ReciprocalSqrtEstimate:
             {
 #if defined(TARGET_XARCH)
-                if (compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
+                // An estimate's result can depend on AVX10v1 support, so preserve its negative
+                // ISA dependency in ReadyToRun. Sqrt is precise and needs no such dependency.
+                if (compOpportunisticallyDependsOn(InstructionSet_AVX10v1, ni != NI_System_Half_Sqrt))
                 {
                     NamedIntrinsic opId = lookupHalfIntrinsic(ni);
                     assert(opId != NI_Illegal);
@@ -4876,7 +4878,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                     retNode      = impSimdToScalarHalf(retNode, sig->retTypeSigClass);
                 }
 #elif defined(TARGET_ARM64)
-                if (compOpportunisticallyDependsOn(InstructionSet_Fp16))
+                if (compOpportunisticallyDependsOn(InstructionSet_Fp16, ni != NI_System_Half_Sqrt))
                 {
                     NamedIntrinsic opId = lookupHalfIntrinsic(ni);
                     assert(opId != NI_Illegal);
