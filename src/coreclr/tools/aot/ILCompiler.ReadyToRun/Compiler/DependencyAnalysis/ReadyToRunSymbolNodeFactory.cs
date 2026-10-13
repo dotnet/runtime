@@ -424,9 +424,22 @@ namespace ILCompiler.DependencyAnalysis
 
         private Import CreateTypeHandleHelper(TypeDesc type)
         {
+            TypeDesc elementType = type;
+            while (elementType is ArrayType arrayType)
+            {
+                elementType = arrayType.ElementType;
+            }
+
+            TypeFixupSignature signature = _codegenNodeFactory.TypeSignature(ReadyToRunFixupKind.TypeHandle, type);
+            if (elementType.IsPrimitive || elementType.IsString || elementType.IsObject ||
+                elementType.IsWellKnownType(WellKnownType.TypedReference))
+            {
+                return new Import(_codegenNodeFactory.EagerImports, signature);
+            }
+
             return new PrecodeHelperImport(
                 _codegenNodeFactory,
-                _codegenNodeFactory.TypeSignature(ReadyToRunFixupKind.TypeHandle, type));
+                signature);
         }
 
         private Import CreateDeclaringTypeHandleHelper(MethodWithToken method)
