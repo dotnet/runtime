@@ -22,6 +22,7 @@ namespace ILCompiler.DependencyAnalysis
         private FrameInfo[] _frameInfos;
         private byte[] _gcInfo;
         private MethodExceptionHandlingInfoNode _ehInfo;
+        private FuncletKind[] _funcletKinds;
         private DebugLocInfo[] _debugLocInfos;
         private DebugVarInfo[] _debugVarInfos;
         private DebugEHClauseInfo[] _debugEHClauseInfos;
@@ -122,8 +123,13 @@ namespace ILCompiler.DependencyAnalysis
         public byte[] GCInfo => _gcInfo;
         public MethodExceptionHandlingInfoNode EHInfo => _ehInfo;
 
-        // TODO-WASM: Appropriately extract funclet kinds from eh clause info
-        public FuncletKind[] GetFuncletKinds() => _ehInfo == null ? [] : throw new NotImplementedException();
+        public FuncletKind[] GetFuncletKinds() => _funcletKinds ?? [];
+
+        public void InitializeFuncletKinds(FuncletKind[] funcletKinds)
+        {
+            Debug.Assert(_funcletKinds is null);
+            _funcletKinds = funcletKinds;
+        }
 
         public ISymbolNode GetAssociatedDataNode(NodeFactory factory)
         {
