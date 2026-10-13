@@ -79,8 +79,16 @@ namespace System.Net.Mime
             {
                 ArgumentException.ThrowIfNullOrEmpty(value);
 
+                if (!MimeBasePart.IsAscii(value, false))
+                {
+                    throw new ArgumentException(SR.DispositionTypeInvalid, nameof(value));
+                }
+
+                StringBuilder sb = new();
+                MailBnfHelper.GetTokenOrQuotedString(value, sb, false);
+
                 _isChanged = true;
-                _dispositionType = value;
+                _dispositionType = sb.ToString();
             }
         }
 
