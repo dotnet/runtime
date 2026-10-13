@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -14,9 +15,15 @@ namespace System.Threading
     /// </summary>
     public sealed partial class Mutex : WaitHandle
     {
+        [FeatureSwitchDefinition("System.Threading.Mutex.UnsafeDefaultMutexScopeGlobal")]
+        private static bool UnsafeDefaultMutexScopeGlobal { get; } =
+            AppContext.TryGetSwitch("System.Threading.Mutex.UnsafeDefaultMutexScopeGlobal", out bool enabled) && enabled;
+
         private void CreateMutexCore(bool initiallyOwned, string? name, out bool createdNew)
         {
-            SafeWaitHandle mutexHandle = CreateMutexCore(initiallyOwned, name, out int errorCode, out string? errorDetails);
+            bool isUserScope = !string.IsNullOrEmpty(name) && !UnsafeDefaultMutexScopeGlobal;
+            SafeWaitHandle mutexHandle =
+                CreateMutexCore(initiallyOwned, name, isUserScope, out int errorCode, out string? errorDetails);
             if (mutexHandle.IsInvalid)
             {
                 mutexHandle.SetHandleAsInvalid();
@@ -42,7 +49,8 @@ namespace System.Threading
             // with parameters to allow us to view & edit the ACL.  This will
             // fail if we don't have permission to view or edit the ACL's.
             // If that happens, ask for less permissions.
-            SafeWaitHandle myHandle = OpenMutexCore(name, out int errorCode, out string? errorDetails);
+            SafeWaitHandle myHandle =
+                OpenMutexCore(name, isUserScope: !UnsafeDefaultMutexScopeGlobal, out int errorCode, out string? errorDetails);
 
             if (myHandle.IsInvalid)
             {
@@ -86,11 +94,13 @@ namespace System.Threading
         private static unsafe SafeWaitHandle CreateMutexCore(
             bool initialOwner,
             string? name,
+            bool isUserScope,
             out int errorCode,
             out string? errorDetails)
         {
             byte* systemCallErrors = stackalloc byte[SystemCallErrorsBufferSize];
-            SafeWaitHandle mutexHandle = CreateMutex(initialOwner, name, systemCallErrors, SystemCallErrorsBufferSize);
+            SafeWaitHandle mutexHandle =
+                CreateMutex(initialOwner, name, isUserScope, systemCallErrors, SystemCallErrorsBufferSize);
 
             // Get the error code even if the handle is valid, as it could be ERROR_ALREADY_EXISTS, indicating that the mutex
             // already exists and was opened
@@ -100,10 +110,14 @@ namespace System.Threading
             return mutexHandle;
         }
 
-        private static unsafe SafeWaitHandle OpenMutexCore(string name, out int errorCode, out string? errorDetails)
+        private static unsafe SafeWaitHandle OpenMutexCore(
+            string name,
+            bool isUserScope,
+            out int errorCode,
+            out string? errorDetails)
         {
             byte* systemCallErrors = stackalloc byte[SystemCallErrorsBufferSize];
-            SafeWaitHandle mutexHandle = OpenMutex(name, systemCallErrors, SystemCallErrorsBufferSize);
+            SafeWaitHandle mutexHandle = OpenMutex(name, isUserScope, systemCallErrors, SystemCallErrorsBufferSize);
             errorCode = mutexHandle.IsInvalid ? Marshal.GetLastPInvokeError() : Interop.Errors.ERROR_SUCCESS;
             errorDetails = mutexHandle.IsInvalid ? GetErrorDetails(systemCallErrors) : null;
             return mutexHandle;
@@ -127,9 +141,18 @@ namespace System.Threading
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "PAL_CreateMutexW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
-        private static unsafe partial SafeWaitHandle CreateMutex([MarshalAs(UnmanagedType.Bool)] bool initialOwner, string? name, byte* systemCallErrors, uint systemCallErrorsBufferSize);
+        private static unsafe partial SafeWaitHandle CreateMutex(
+            [MarshalAs(UnmanagedType.Bool)] bool initialOwner,
+            string? name,
+            [MarshalAs(UnmanagedType.Bool)] bool isUserScope,
+            byte* systemCallErrors,
+            uint systemCallErrorsBufferSize);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "PAL_OpenMutexW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
-        private static unsafe partial SafeWaitHandle OpenMutex(string name, byte* systemCallErrors, uint systemCallErrorsBufferSize);
+        private static unsafe partial SafeWaitHandle OpenMutex(
+            string name,
+            [MarshalAs(UnmanagedType.Bool)] bool isUserScope,
+            byte* systemCallErrors,
+            uint systemCallErrorsBufferSize);
     }
 }

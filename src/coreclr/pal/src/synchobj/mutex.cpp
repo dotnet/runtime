@@ -34,8 +34,6 @@ SET_DEFAULT_DEBUG_CHANNEL(SYNC); // some headers have code with asserts, so do t
 #include <time.h>
 #include <unistd.h>
 
-#include "pal/sharedmemory.inl"
-
 using namespace CorUnix;
 
 /* ------------------- Definitions ------------------------------*/
@@ -103,7 +101,7 @@ CreateMutexW(
     IN BOOL bInitialOwner,
     IN LPCWSTR lpName)
 {
-    return PAL_CreateMutexW(bInitialOwner, lpName, nullptr, 0);
+    return PAL_CreateMutexW(bInitialOwner, lpName, false /* bCurrentUserOnly */, nullptr, 0);
 }
 
 /*++
@@ -127,6 +125,7 @@ PALAPI
 PAL_CreateMutexW(
     IN BOOL bInitialOwner,
     IN LPCWSTR lpName,
+    IN BOOL bCurrentUserOnly,
     IN LPSTR lpSystemCallErrors,
     IN DWORD dwSystemCallErrorsBufferSize)
 {
@@ -136,10 +135,11 @@ PAL_CreateMutexW(
     char utf8Name[SHARED_MEMORY_MAX_NAME_CHAR_COUNT + 1];
 
     PERF_ENTRY(PAL_CreateMutexW);
-    ENTRY("PAL_CreateMutexW(bInitialOwner=%d, lpName=%p (%S), lpSystemCallErrors=%p, dwSystemCallErrorsBufferSize=%d\n",
+    ENTRY("PAL_CreateMutexW(bInitialOwner=%d, lpName=%p (%S), bCurrentUserOnly=%d, lpSystemCallErrors=%p, dwSystemCallErrorsBufferSize=%d\n",
           bInitialOwner,
           lpName,
           lpName?lpName:W16_NULLSTRING,
+          bCurrentUserOnly,
           lpSystemCallErrors,
           dwSystemCallErrorsBufferSize);
 
@@ -185,6 +185,7 @@ PAL_CreateMutexW(
             nullptr,
             bInitialOwner,
             lpName == nullptr ? nullptr : utf8Name,
+            bCurrentUserOnly,
             &hMutex
             );
     }
@@ -252,6 +253,7 @@ CorUnix::InternalCreateMutex(
     LPSECURITY_ATTRIBUTES lpMutexAttributes,
     BOOL bInitialOwner,
     LPCSTR lpName,
+    BOOL bCurrentUserOnly,
     HANDLE *phMutex
     )
 {
@@ -267,11 +269,12 @@ CorUnix::InternalCreateMutex(
     _ASSERTE(NULL != phMutex);
 
     ENTRY("InternalCreateMutex(pthr=%p, lpMutexAttributes=%p, bInitialOwner=%d"
-        ", lpName=%p, phMutex=%p)\n",
+        ", lpName=%p, bCurrentUserOnly=%d, phMutex=%p)\n",
         pthr,
         lpMutexAttributes,
         bInitialOwner,
         lpName,
+        bCurrentUserOnly,
         phMutex
         );
 
@@ -331,7 +334,13 @@ CorUnix::InternalCreateMutex(
         SharedMemoryProcessDataHeader *processDataHeader;
         try
         {
-            processDataHeader = NamedMutexProcessData::CreateOrOpen(errors, lpName, !!bInitialOwner, &createdNamedMutex);
+            processDataHeader =
+                NamedMutexProcessData::CreateOrOpen(
+                    errors,
+                    lpName,
+                    !!bCurrentUserOnly,
+                    !!bInitialOwner,
+                    &createdNamedMutex);
         }
         catch (SharedMemoryException ex)
         {
@@ -557,7 +566,7 @@ OpenMutexA (
         goto OpenMutexAExit;
     }
 
-    palError = InternalOpenMutex(nullptr, pthr, lpName, &hMutex);
+    palError = InternalOpenMutex(nullptr, pthr, lpName, false /* bCurrentUserOnly */, &hMutex);
 
 OpenMutexAExit:
     if (NO_ERROR != palError)
@@ -585,7 +594,7 @@ OpenMutexW(
        IN BOOL bInheritHandle,
        IN LPCWSTR lpName)
 {
-    return PAL_OpenMutexW(lpName, nullptr, 0);
+    return PAL_OpenMutexW(lpName, false /* bCurrentUserOnly */, nullptr, 0);
 }
 
 /*++
@@ -607,6 +616,7 @@ HANDLE
 PALAPI
 PAL_OpenMutexW(
        IN LPCWSTR lpName,
+       IN BOOL bCurrentUserOnly,
        IN LPSTR lpSystemCallErrors,
        IN DWORD dwSystemCallErrorsBufferSize)
 {
@@ -616,9 +626,10 @@ PAL_OpenMutexW(
     char utf8Name[SHARED_MEMORY_MAX_NAME_CHAR_COUNT + 1];
 
     PERF_ENTRY(PAL_OpenMutexW);
-    ENTRY("PAL_OpenMutexW(lpName=%p (%S), lpSystemCallErrors=%p, dwSystemCallErrorsBufferSize=%d)\n",
+    ENTRY("PAL_OpenMutexW(lpName=%p (%S), bCurrentUserOnly=%d, lpSystemCallErrors=%p, dwSystemCallErrorsBufferSize=%d)\n",
           lpName,
           lpName?lpName:W16_NULLSTRING,
+          bCurrentUserOnly,
           lpSystemCallErrors,
           dwSystemCallErrorsBufferSize);
 
@@ -657,7 +668,13 @@ PAL_OpenMutexW(
         }
 
         SharedMemorySystemCallErrors errors(lpSystemCallErrors, (int)dwSystemCallErrorsBufferSize);
-        palError = InternalOpenMutex(&errors, pthr, lpName == nullptr ? nullptr : utf8Name, &hMutex);
+        palError =
+            InternalOpenMutex(
+                &errors,
+                pthr,
+                lpName == nullptr ? nullptr : utf8Name,
+                bCurrentUserOnly,
+                &hMutex);
     }
 
 OpenMutexWExit:
@@ -689,6 +706,7 @@ CorUnix::InternalOpenMutex(
     SharedMemorySystemCallErrors *errors,
     CPalThread *pthr,
     LPCSTR lpName,
+    BOOL bCurrentUserOnly,
     HANDLE *phMutex
     )
 {
@@ -703,9 +721,10 @@ CorUnix::InternalOpenMutex(
     _ASSERTE(NULL != phMutex);
 
     ENTRY("InternalOpenMutex(pthr=%p, "
-        "lpName=%p, phMutex=%p)\n",
+        "lpName=%p, bCurrentUserOnly=%d, phMutex=%p)\n",
         pthr,
         lpName,
+        bCurrentUserOnly,
         phMutex
         );
 
@@ -725,7 +744,7 @@ CorUnix::InternalOpenMutex(
         SharedMemoryProcessDataHeader *processDataHeader;
         try
         {
-            processDataHeader = NamedMutexProcessData::Open(errors, lpName);
+            processDataHeader = NamedMutexProcessData::Open(errors, lpName, !!bCurrentUserOnly);
         }
         catch (SharedMemoryException ex)
         {
@@ -1088,20 +1107,39 @@ const DWORD NamedMutexProcessData::PollLoopMaximumSleepMilliseconds = 100;
 SharedMemoryProcessDataHeader *NamedMutexProcessData::CreateOrOpen(
     SharedMemorySystemCallErrors *errors,
     LPCSTR name,
+    bool isUserScope,
     bool acquireLockIfCreated,
     bool *createdRef)
 {
-    return CreateOrOpen(errors, name, true /* createIfNotExist */, acquireLockIfCreated, createdRef);
+    return
+        CreateOrOpen(
+            errors,
+            name,
+            isUserScope,
+            true /* createIfNotExist */,
+            acquireLockIfCreated,
+            createdRef);
 }
 
-SharedMemoryProcessDataHeader *NamedMutexProcessData::Open(SharedMemorySystemCallErrors *errors, LPCSTR name)
+SharedMemoryProcessDataHeader *NamedMutexProcessData::Open(
+    SharedMemorySystemCallErrors *errors,
+    LPCSTR name,
+    bool isUserScope)
 {
-    return CreateOrOpen(errors, name, false /* createIfNotExist */, false /* acquireLockIfCreated */, nullptr /* createdRef */);
+    return
+        CreateOrOpen(
+            errors,
+            name,
+            isUserScope,
+            false /* createIfNotExist */,
+            false /* acquireLockIfCreated */,
+            nullptr /* createdRef */);
 }
 
 SharedMemoryProcessDataHeader *NamedMutexProcessData::CreateOrOpen(
     SharedMemorySystemCallErrors *errors,
     LPCSTR name,
+    bool isUserScope,
     bool createIfNotExist,
     bool acquireLockIfCreated,
     bool *createdRef)
@@ -1119,8 +1157,10 @@ SharedMemoryProcessDataHeader *NamedMutexProcessData::CreateOrOpen(
         bool m_acquiredCreationDeletionFileLock;
         SharedMemoryProcessDataHeader *m_processDataHeader;
     #if !NAMED_MUTEX_USE_PTHREAD_MUTEX
-        PathCharString *m_lockFilePath;
-        SIZE_T m_sessionDirectoryPathCharCount;
+        int m_lockFilesDirectoryFileDescriptor;
+        PathCharString *m_sessionDirectoryName;
+        int m_sessionDirectoryFileDescriptor;
+        LPCSTR m_fileName;
         bool m_createdLockFile;
         int m_lockFileDescriptor;
     #endif // !NAMED_MUTEX_USE_PTHREAD_MUTEX
@@ -1131,8 +1171,10 @@ SharedMemoryProcessDataHeader *NamedMutexProcessData::CreateOrOpen(
             m_acquiredCreationDeletionFileLock(false),
             m_processDataHeader(nullptr),
         #if !NAMED_MUTEX_USE_PTHREAD_MUTEX
-            m_lockFilePath(nullptr),
-            m_sessionDirectoryPathCharCount(0),
+            m_lockFilesDirectoryFileDescriptor(-1),
+            m_sessionDirectoryName(nullptr),
+            m_sessionDirectoryFileDescriptor(-1),
+            m_fileName(nullptr),
             m_createdLockFile(false),
             m_lockFileDescriptor(-1),
         #endif // !NAMED_MUTEX_USE_PTHREAD_MUTEX
@@ -1152,22 +1194,36 @@ SharedMemoryProcessDataHeader *NamedMutexProcessData::CreateOrOpen(
 
                 if (m_createdLockFile)
                 {
-                    _ASSERTE(m_lockFilePath != nullptr);
-                    unlink(*m_lockFilePath);
+                    _ASSERTE(m_sessionDirectoryFileDescriptor != -1);
+                    _ASSERTE(m_fileName != nullptr);
+                    unlinkat(m_sessionDirectoryFileDescriptor, m_fileName, 0);
                 }
 
-                if (m_sessionDirectoryPathCharCount != 0)
+                if (m_sessionDirectoryFileDescriptor != -1)
                 {
-                    _ASSERTE(m_lockFilePath != nullptr);
-                    m_lockFilePath->CloseBuffer(m_sessionDirectoryPathCharCount);
-                    rmdir(*m_lockFilePath);
+                    SharedMemoryHelpers::CloseFile(m_sessionDirectoryFileDescriptor);
+                }
+
+                if (m_sessionDirectoryName != nullptr)
+                {
+                    _ASSERTE(m_lockFilesDirectoryFileDescriptor != -1);
+                    unlinkat(
+                        m_lockFilesDirectoryFileDescriptor,
+                        *m_sessionDirectoryName,
+                        AT_REMOVEDIR);
+                }
+
+                if (m_lockFilesDirectoryFileDescriptor != -1)
+                {
+                    SharedMemoryHelpers::CloseFile(m_lockFilesDirectoryFileDescriptor);
                 }
             }
         #endif // !NAMED_MUTEX_USE_PTHREAD_MUTEX
 
             if (m_acquiredCreationDeletionFileLock)
             {
-                SharedMemoryManager::ReleaseCreationDeletionFileLock();
+                _ASSERTE(m_processDataHeader != nullptr);
+                SharedMemoryManager::ReleaseCreationDeletionFileLock(m_processDataHeader->GetId());
             }
 
             if (!m_cancel && m_processDataHeader != nullptr)
@@ -1192,6 +1248,7 @@ SharedMemoryProcessDataHeader *NamedMutexProcessData::CreateOrOpen(
         SharedMemoryProcessDataHeader::CreateOrOpen(
             errors,
             name,
+            isUserScope,
             SharedMemorySharedDataHeader(SharedMemoryType::Mutex, SyncSystemVersion),
             sizeof(NamedMutexSharedData),
             createIfNotExist,
@@ -1200,6 +1257,13 @@ SharedMemoryProcessDataHeader *NamedMutexProcessData::CreateOrOpen(
     {
         *createdRef = created;
     }
+    if (processDataHeader == nullptr)
+    {
+        _ASSERTE(!created);
+        _ASSERTE(!createIfNotExist);
+        return nullptr;
+    }
+    autoCleanup.m_processDataHeader = processDataHeader;
     if (created)
     {
         // If the shared memory file was created, the creation/deletion file lock would have been acquired so that we can
@@ -1207,12 +1271,6 @@ SharedMemoryProcessDataHeader *NamedMutexProcessData::CreateOrOpen(
         _ASSERTE(SharedMemoryManager::IsCreationDeletionFileLockAcquired());
         autoCleanup.m_acquiredCreationDeletionFileLock = true;
     }
-    if (processDataHeader == nullptr)
-    {
-        _ASSERTE(!createIfNotExist);
-        return nullptr;
-    }
-    autoCleanup.m_processDataHeader = processDataHeader;
 
     if (created)
     {
@@ -1223,28 +1281,56 @@ SharedMemoryProcessDataHeader *NamedMutexProcessData::CreateOrOpen(
     if (processDataHeader->GetData() == nullptr)
     {
     #if !NAMED_MUTEX_USE_PTHREAD_MUTEX
+        const SharedMemoryId *id = processDataHeader->GetId();
+
         // Create the lock files directory
-        SharedMemoryHelpers::BuildSharedFilesPath(lockFilePath, SHARED_MEMORY_LOCK_FILES_DIRECTORY_NAME);
-        if (created)
+        SharedMemoryHelpers::BuildLockFilesDirectoryPath(lockFilePath, id);
+        int lockFilesDirectoryFileDescriptor =
+            SharedMemoryHelpers::EnsureDirectoryExists(
+                errors,
+                SharedMemoryManager::GetRuntimeDirectoryFileDescriptor(id),
+                SHARED_MEMORY_LOCK_FILES_DIRECTORY_NAME,
+                lockFilePath,
+                id,
+                created);
+        if (lockFilesDirectoryFileDescriptor == -1)
         {
-            SharedMemoryHelpers::EnsureDirectoryExists(errors, lockFilePath, true /* isGlobalLockAcquired */);
+            _ASSERTE(!created);
+            return nullptr;
         }
+        autoCleanup.m_lockFilesDirectoryFileDescriptor = lockFilesDirectoryFileDescriptor;
 
         // Create the session directory
-        SharedMemoryId *id = processDataHeader->GetId();
-        SharedMemoryHelpers::VerifyStringOperation(lockFilePath.Append('/'));
-        SharedMemoryHelpers::VerifyStringOperation(id->AppendSessionDirectoryName(lockFilePath));
-        if (created)
+        PathCharString sessionDirectoryName;
+        SharedMemoryHelpers::VerifyStringOperation(id->AppendSessionDirectoryName(sessionDirectoryName));
+        SharedMemoryHelpers::BuildSessionDirectoryPath(lockFilePath, id, true /* isLockFile */);
+        int sessionDirectoryFileDescriptor =
+            SharedMemoryHelpers::EnsureDirectoryExists(
+                errors,
+                lockFilesDirectoryFileDescriptor,
+                sessionDirectoryName,
+                lockFilePath,
+                id,
+                created);
+        if (sessionDirectoryFileDescriptor == -1)
         {
-            SharedMemoryHelpers::EnsureDirectoryExists(errors, lockFilePath, true /* isGlobalLockAcquired */);
-            autoCleanup.m_lockFilePath = &lockFilePath;
-            autoCleanup.m_sessionDirectoryPathCharCount = lockFilePath.GetCount();
+            _ASSERTE(!created);
+            return nullptr;
         }
+        autoCleanup.m_sessionDirectoryName = &sessionDirectoryName;
+        autoCleanup.m_sessionDirectoryFileDescriptor = sessionDirectoryFileDescriptor;
+        autoCleanup.m_fileName = id->GetName();
 
         // Create or open the lock file
-        SharedMemoryHelpers::VerifyStringOperation(lockFilePath.Append('/'));
-        SharedMemoryHelpers::VerifyStringOperation(lockFilePath.Append(id->GetName(), id->GetNameCharCount()));
-        int lockFileDescriptor = SharedMemoryHelpers::CreateOrOpenFile(errors, lockFilePath, created);
+        SharedMemoryHelpers::BuildPath(lockFilePath, id, true /* isLockFile */);
+        int lockFileDescriptor =
+            SharedMemoryHelpers::CreateOrOpenFile(
+                errors,
+                sessionDirectoryFileDescriptor,
+                id->GetName(),
+                lockFilePath,
+                id,
+                created);
         if (lockFileDescriptor == -1)
         {
             _ASSERTE(!created);
@@ -1287,6 +1373,14 @@ SharedMemoryProcessDataHeader *NamedMutexProcessData::CreateOrOpen(
             MutexTryAcquireLockResult tryAcquireLockResult = processData->TryAcquireLock(errors, 0);
             _ASSERTE(tryAcquireLockResult == MutexTryAcquireLockResult::AcquiredLock);
         }
+
+    #if !NAMED_MUTEX_USE_PTHREAD_MUTEX
+        SharedMemoryHelpers::CloseFile(sessionDirectoryFileDescriptor);
+        autoCleanup.m_sessionDirectoryFileDescriptor = -1;
+        autoCleanup.m_sessionDirectoryName = nullptr;
+        SharedMemoryHelpers::CloseFile(lockFilesDirectoryFileDescriptor);
+        autoCleanup.m_lockFilesDirectoryFileDescriptor = -1;
+    #endif // !NAMED_MUTEX_USE_PTHREAD_MUTEX
     }
 
     autoCleanup.m_cancel = true;
@@ -1404,24 +1498,61 @@ void NamedMutexProcessData::Close(bool isAbruptShutdown, bool releaseSharedData)
         return;
     }
 
+    int lockFilesDirectoryFileDescriptor = -1;
+    int sessionDirectoryFileDescriptor = -1;
     try
     {
-        // Delete the lock file, and the session directory if it's not empty
-        PathCharString path;
-        SharedMemoryHelpers::BuildSharedFilesPath(path, SHARED_MEMORY_LOCK_FILES_DIRECTORY_NAME);
-        SharedMemoryId *id = m_processDataHeader->GetId();
-        SharedMemoryHelpers::VerifyStringOperation(path.Append('/'));
-        SharedMemoryHelpers::VerifyStringOperation(id->AppendSessionDirectoryName(path));
-        SharedMemoryHelpers::VerifyStringOperation(path.Append('/'));
-        SIZE_T sessionDirectoryPathCharCount = path.GetCount();
-        SharedMemoryHelpers::VerifyStringOperation(path.Append(id->GetName(), id->GetNameCharCount()));
-        unlink(path);
-        path.CloseBuffer(sessionDirectoryPathCharCount);
-        rmdir(path);
+        // Delete the lock file, and the session directory if it's empty.
+        const SharedMemoryId *id = m_processDataHeader->GetId();
+        PathCharString lockFilesDirectoryPath;
+        SharedMemoryHelpers::BuildLockFilesDirectoryPath(lockFilesDirectoryPath, id);
+        lockFilesDirectoryFileDescriptor =
+            SharedMemoryHelpers::EnsureDirectoryExists(
+                nullptr,
+                SharedMemoryManager::GetRuntimeDirectoryFileDescriptor(id),
+                SHARED_MEMORY_LOCK_FILES_DIRECTORY_NAME,
+                lockFilesDirectoryPath,
+                id,
+                false /* createIfNotExist */);
+        if (lockFilesDirectoryFileDescriptor != -1)
+        {
+            PathCharString sessionDirectoryName;
+            SharedMemoryHelpers::VerifyStringOperation(id->AppendSessionDirectoryName(sessionDirectoryName));
+            PathCharString sessionDirectoryPath;
+            SharedMemoryHelpers::BuildSessionDirectoryPath(
+                sessionDirectoryPath,
+                id,
+                true /* isLockFile */);
+            sessionDirectoryFileDescriptor =
+                SharedMemoryHelpers::EnsureDirectoryExists(
+                    nullptr,
+                    lockFilesDirectoryFileDescriptor,
+                    sessionDirectoryName,
+                    sessionDirectoryPath,
+                    id,
+                    false /* createIfNotExist */);
+            if (sessionDirectoryFileDescriptor != -1)
+            {
+                unlinkat(sessionDirectoryFileDescriptor, id->GetName(), 0);
+                SharedMemoryHelpers::CloseFile(sessionDirectoryFileDescriptor);
+                sessionDirectoryFileDescriptor = -1;
+            }
+            unlinkat(lockFilesDirectoryFileDescriptor, sessionDirectoryName, AT_REMOVEDIR);
+            SharedMemoryHelpers::CloseFile(lockFilesDirectoryFileDescriptor);
+            lockFilesDirectoryFileDescriptor = -1;
+        }
     }
     catch (SharedMemoryException)
     {
         // Ignore the error, just don't release shared data
+    }
+    if (sessionDirectoryFileDescriptor != -1)
+    {
+        SharedMemoryHelpers::CloseFile(sessionDirectoryFileDescriptor);
+    }
+    if (lockFilesDirectoryFileDescriptor != -1)
+    {
+        SharedMemoryHelpers::CloseFile(lockFilesDirectoryFileDescriptor);
     }
 #endif // !NAMED_MUTEX_USE_PTHREAD_MUTEX
 }
