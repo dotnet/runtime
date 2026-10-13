@@ -7558,7 +7558,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 // The strict order of evaluation is 'array', 'index', 'value', range-check
                 // and then store. However, the tree we create does the range-check before
                 // evaluating 'value'. So to maintain strict ordering, we spill the stack.
-                if ((impStackTop().val->gtFlags & GTF_SIDE_EFFECT) != 0)
+                if ((impStackTop().val->gtFlags & GTF_OBS_EFFECT) != 0)
                 {
                     impSpillSideEffects(false,
                                         CHECK_SPILL_ALL DEBUGARG("Strict ordering of exceptions for Array store"));
