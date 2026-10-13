@@ -1,0 +1,24 @@
+<Project>
+  <!-- Published manifests are built in dotnet/sdk; these bands are for workload testing.
+       Use an SDK-versioned VMR package if it is newer than the SDK specified in global.json. -->
+  <PropertyGroup>
+    <_WorkloadGlobalJsonPath>$(MSBuildThisFileDirectory)../global.json</_WorkloadGlobalJsonPath>
+  </PropertyGroup>
+  <Target Name="CalculateWorkloadSdkVersion">
+    <PropertyGroup>
+      <_GlobalJsonContent>$([System.IO.File]::ReadAllText('$(_WorkloadGlobalJsonPath)'))</_GlobalJsonContent>
+      <_GlobalJsonSdkVersion Condition="'$(_GlobalJsonContent)' != ''">$([System.Text.RegularExpressions.Regex]::Match($(_GlobalJsonContent), '"sdk"\s*:\s*\{[^\}]*"version"\s*:\s*"([^"]+)"', System.Text.RegularExpressions.RegexOptions.Singleline).Groups[1].Value)</_GlobalJsonSdkVersion>
+      <_DotnetSdkVersion>$(MicrosoftDotNetGenAPITaskPackageVersion)</_DotnetSdkVersion>
+      <SdkVersionForWorkloadTesting Condition="$([System.String]::Compare('$(_GlobalJsonSdkVersion)', '$(_DotnetSdkVersion)')) &lt;= 0">$(_DotnetSdkVersion)</SdkVersionForWorkloadTesting>
+      <SdkVersionForWorkloadTesting Condition="'$(SdkVersionForWorkloadTesting)' == ''">$(_GlobalJsonSdkVersion)</SdkVersionForWorkloadTesting>
+      <SdkMajorVersion>$([System.String]::Copy('$(SdkVersionForWorkloadTesting)').Split('.')[0])</SdkMajorVersion>
+      <SdkBandVersion>$(SdkMajorVersion).0.100</SdkBandVersion>
+      <SdkPreReleaseLabel>$([System.Text.RegularExpressions.Regex]::Match($(SdkVersionForWorkloadTesting), '-(?!rtm|servicing)(.+)\.[^.]+\.[^.]+$').Groups[1].Value)</SdkPreReleaseLabel>
+      <SdkBandVersionForWorkload_FromRuntimeVersions Condition="'$(SdkPreReleaseLabel)' == ''">$(SdkBandVersion)</SdkBandVersionForWorkload_FromRuntimeVersions>
+      <SdkBandVersionForWorkload_FromRuntimeVersions Condition="'$(SdkPreReleaseLabel)' != ''">$(SdkBandVersion)-$(SdkPreReleaseLabel)</SdkBandVersionForWorkload_FromRuntimeVersions>
+    </PropertyGroup>
+    <ItemGroup>
+      <WorkloadSdkBandVersions Include="$(SdkBandVersion)" SupportsMachineArch="true" />
+    </ItemGroup>
+  </Target>
+</Project>

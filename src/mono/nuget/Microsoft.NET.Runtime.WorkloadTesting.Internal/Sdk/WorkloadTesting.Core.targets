@@ -4,13 +4,11 @@
     <SdkWithNoWorkloadForTestingPath>$(ArtifactsBinDir)dotnet-none\</SdkWithNoWorkloadForTestingPath>
     <SdkWithNoWorkloadForTestingPath>$([MSBuild]::NormalizeDirectory($(SdkWithNoWorkloadForTestingPath)))</SdkWithNoWorkloadForTestingPath>
 
-    <SdkWithNoWorkloadStampPath>$(SdkWithNoWorkloadForTestingPath)version-$(SdkVersionForWorkloadTesting).stamp</SdkWithNoWorkloadStampPath>
     <SdkWithNoWorkload_WorkloadStampPath>$(SdkWithNoWorkloadForTestingPath)workload.stamp</SdkWithNoWorkload_WorkloadStampPath>
 
     <SdkWithWorkloadForTestingPath Condition="'$(SdkWithWorkloadForTestingPath)' == ''">$(ArtifactsBinDir)dotnet-latest\</SdkWithWorkloadForTestingPath>
     <SdkWithWorkloadForTestingPath Condition="'$(SdkWithWorkloadForTestingPath)' != ''">$([MSBuild]::NormalizeDirectory($(SdkWithWorkloadForTestingPath)))</SdkWithWorkloadForTestingPath>
 
-    <SdkWithWorkloadStampPath>$(SdkWithWorkloadForTestingPath)version-$(SdkVersionForWorkloadTesting).stamp</SdkWithWorkloadStampPath>
     <SdkWithWorkload_WorkloadStampPath>$(SdkWithWorkloadForTestingPath)workload.stamp</SdkWithWorkload_WorkloadStampPath>
 
     <TemplateNuGetConfigPathForWorkloadTesting Condition="'$(TemplateNuGetConfigPathForWorkloadTesting)' == '' and '$(RepoRoot)' != ''">$(RepoRoot)NuGet.config</TemplateNuGetConfigPathForWorkloadTesting>
@@ -20,13 +18,13 @@
   <PropertyGroup Condition="'$(InstallWorkloadForTesting)' == 'true'">
     <_SdkForWorkloadTestingBasePath>$(ArtifactsBinDir)</_SdkForWorkloadTestingBasePath>
     <_SdkWithNoWorkloadPath>$([MSBuild]::NormalizeDirectory($(_SdkForWorkloadTestingBasePath), 'dotnet-none'))</_SdkWithNoWorkloadPath>
-    <_SdkWithNoWorkloadStampPath>$([MSBuild]::NormalizePath($(_SdkWithNoWorkloadPath), '.version-for-none-$(SdkVersionForWorkloadTesting).stamp'))</_SdkWithNoWorkloadStampPath>
 
     <_DotNetPath>$([MSBuild]::NormalizePath($(_SdkWithNoWorkloadPath), 'dotnet'))</_DotNetPath>
     <_DotNetPath Condition="$([MSBuild]::IsOSPlatform('windows'))">$(_DotNetPath).exe</_DotNetPath>
 
     <PreparePackagesForWorkloadInstall Condition="'$(PreparePackagesForWorkloadInstall)' == ''">true</PreparePackagesForWorkloadInstall>
     <InstallWorkloadUsingArtifactsDependsOn>
+      InitializeWorkloadTestingInputs;
       $(InstallWorkloadUsingArtifactsDependsOn);
       GetNuGetsToBuildForWorkloadTesting;
       _PreparePackagesForWorkloadInstall;
@@ -46,23 +44,32 @@
     <_DotNetInstallScriptPath>$(ArtifactsObjDir)$(_DotNetInstallScriptName)</_DotNetInstallScriptPath>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(SdkVersionForWorkloadTesting)' != ''">
-    <_DotNetInstallCommand Condition="!$([MSBuild]::IsOSPlatform('windows'))"
-            >$(_DotNetInstallScriptPath) -i $(_SdkWithNoWorkloadPath) -v $(SdkVersionForWorkloadTesting)</_DotNetInstallCommand>
-    <_DotNetInstallCommand Condition="$([MSBuild]::IsOSPlatform('windows'))"
-            >$(_DotNetInstallScriptPath) -InstallDir $(_SdkWithNoWorkloadPath) -Version $(SdkVersionForWorkloadTesting)</_DotNetInstallCommand>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(SdkVersionForWorkloadTesting)' == ''">
-    <_DotNetInstallCommand Condition="'$(DotNetInstallArgumentsForWorkloadsTesting)' != ''">$(_DotNetInstallScriptPath) $(DotNetInstallArgumentsForWorkloadsTesting)</_DotNetInstallCommand>
-  </PropertyGroup>
+  <Target Name="InitializeWorkloadTestingInputs" DependsOnTargets="$(InitializeWorkloadTestingInputsDependsOn)">
+    <PropertyGroup>
+      <SdkWithNoWorkloadStampPath>$(SdkWithNoWorkloadForTestingPath)version-$(SdkVersionForWorkloadTesting).stamp</SdkWithNoWorkloadStampPath>
+      <SdkWithWorkloadStampPath>$(SdkWithWorkloadForTestingPath)version-$(SdkVersionForWorkloadTesting).stamp</SdkWithWorkloadStampPath>
+      <_SdkWithNoWorkloadStampPath Condition="'$(InstallWorkloadForTesting)' == 'true'">$([MSBuild]::NormalizePath($(_SdkWithNoWorkloadPath), '.version-for-none-$(SdkVersionForWorkloadTesting).stamp'))</_SdkWithNoWorkloadStampPath>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(SdkVersionForWorkloadTesting)' != ''">
+      <_DotNetInstallCommand Condition="!$([MSBuild]::IsOSPlatform('windows'))"
+              >$(_DotNetInstallScriptPath) -i $(_SdkWithNoWorkloadPath) -v $(SdkVersionForWorkloadTesting)</_DotNetInstallCommand>
+      <_DotNetInstallCommand Condition="$([MSBuild]::IsOSPlatform('windows'))"
+              >$(_DotNetInstallScriptPath) -InstallDir $(_SdkWithNoWorkloadPath) -Version $(SdkVersionForWorkloadTesting)</_DotNetInstallCommand>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(SdkVersionForWorkloadTesting)' == ''">
+      <_DotNetInstallCommand Condition="'$(DotNetInstallArgumentsForWorkloadsTesting)' != ''">$(_DotNetInstallScriptPath) $(DotNetInstallArgumentsForWorkloadsTesting)</_DotNetInstallCommand>
+    </PropertyGroup>
+  </Target>
 
   <ItemGroup>
     <DefaultPropertiesForNuGetBuild Include="Configuration=$(Configuration)" />
     <DefaultPropertiesForNuGetBuild Include="ContinuousIntegrationBuild=$(ContinuousIntegrationBuild)" />
   </ItemGroup>
 
-  <Target Name="ProvisionDotNetForWorkloadTesting" Condition="!Exists($(_SdkWithNoWorkloadStampPath))">
+  <Target Name="ProvisionDotNetForWorkloadTesting"
+          DependsOnTargets="InitializeWorkloadTestingInputs;_ProvisionDotNetForWorkloadTesting" />
+
+  <Target Name="_ProvisionDotNetForWorkloadTesting" Condition="!Exists($(_SdkWithNoWorkloadStampPath))">
     <Error Text="%24(_SdkWithNoWorkloadPath) is not set" Condition="'$(_SdkWithNoWorkloadPath)' == ''" />
     <Error Text="%24(_DotNetInstallCommand) not set" Condition="'$(_DotNetInstallCommand)' == ''" />
 
@@ -94,7 +101,7 @@
 
   </Target>
 
-  <Target Name="_GetDotNetVersion">
+  <Target Name="_GetDotNetVersion" DependsOnTargets="InitializeWorkloadTestingInputs">
     <PropertyGroup>
       <_DotNetVersionCommand>$(_DotNetPath) --version</_DotNetVersionCommand>
     </PropertyGroup>
@@ -198,6 +205,7 @@
   </Target>
 
   <Target Name="_InstallWorkloads"
+          DependsOnTargets="InitializeWorkloadTestingInputs"
           Inputs="@(AvailableNuGetsInArtifacts)"
           Outputs="@(_SdkWithWorkloadToInstall->'%(StampPath)');$(_SdkWithNoWorkloadStampPath)">
     <ItemGroup>
