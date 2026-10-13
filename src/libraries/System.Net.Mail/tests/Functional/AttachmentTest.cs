@@ -277,5 +277,61 @@ namespace System.Net.Mail.Tests
             Attachment attach = Attachment.CreateAttachmentFromString("test", "attachment-name");
             Assert.Equal(TransferEncoding.QuotedPrintable, attach.TransferEncoding);
         }
+
+        // For backward compatibility, we allows some non-compliant with RFC2045
+        [Theory]
+        [InlineData("a")]
+        [InlineData("fň")]
+        [InlineData("foo-_:;()[]bar")]
+        [InlineData("foo\"bar")]
+        [InlineData("foo=bar")]
+        [InlineData("foo@bar")]
+        public void ContentId_Validation_Valid(string contentId)
+        {
+            Attachment attach = Attachment.CreateAttachmentFromString("test", "attachment-name");
+            attach.ContentId = contentId;
+            Assert.Equal(contentId, attach.ContentId);
+        }
+
+        [Theory]
+        [InlineData("foo<bar")]
+        [InlineData("foo>bar")]
+        [InlineData("<foobar>")]
+        [InlineData("foo\rbar")]
+        [InlineData("foo\nbar")]
+        [InlineData("foo\r\nbar")]
+        public void ContentId_Validation_Invalid(string contentId)
+        {
+            Attachment attach = Attachment.CreateAttachmentFromString("test", "attachment-name");
+            Assert.Throws<ArgumentException>(() =>
+            {
+                attach.ContentId = contentId;
+            });
+        }
+
+        [Fact]
+        public void ContentId_Validation_Empty()
+        {
+            // toggles between spcified and random generated content id
+
+            Attachment attach = Attachment.CreateAttachmentFromString("test", "attachment-name");
+
+            attach.ContentId = "foo";
+            Assert.Equal("foo", attach.ContentId);
+
+            attach.ContentId = "";
+            var guid1 = attach.ContentId;
+            Guid.ParseExact(guid1, "D");
+
+            attach.ContentId = "bar";
+            Assert.Equal("bar", attach.ContentId);
+
+            attach.ContentId = null;
+            var guid2 = attach.ContentId;
+            Guid.ParseExact(guid2, "D");
+
+            Assert.NotEqual(guid1, guid2);
+        }
+
     }
 }
