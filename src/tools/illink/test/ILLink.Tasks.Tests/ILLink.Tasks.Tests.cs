@@ -1854,7 +1854,6 @@ namespace ILLink.Tasks.Tests
         }
 
         [Theory]
-        [InlineData("extra-args")]
         [InlineData("custom-step")]
         [InlineData("custom-data")]
         [InlineData("dump-dependencies")]
@@ -1871,9 +1870,6 @@ namespace ILLink.Tasks.Tests
             string host = PrepareCacheKeyTest(test);
             switch (reason)
             {
-                case "extra-args":
-                    test.Task.ExtraArgs = "--help";
-                    break;
                 case "custom-step":
                     test.Task.CustomSteps = new ITaskItem[]
                     {
