@@ -5,6 +5,49 @@
 #include "elfreader.h"
 #include "machoreader.h"
 
+enum class TargetOperatingSystem
+{
+    Unknown,
+    Windows,
+    Linux,
+    OSX
+};
+
+static TargetOperatingSystem
+GetTargetOperatingSystem(ICorDebugDataTarget* dataTarget, uint64_t baseAddress)
+{
+    CorDebugPlatform platform;
+    if (FAILED(dataTarget->GetPlatform(&platform)))
+    {
+        return TargetOperatingSystem::Unknown;
+    }
+    switch (platform)
+    {
+        case CORDB_PLATFORM_WINDOWS_X86:
+        case CORDB_PLATFORM_WINDOWS_AMD64:
+        case CORDB_PLATFORM_WINDOWS_ARM64:
+            return TargetOperatingSystem::Windows;
+        default:
+            break;
+    }
+
+    BYTE magic[4];
+    ULONG32 read = 0;
+    if (FAILED(dataTarget->ReadVirtual(baseAddress, magic, sizeof(magic), &read)) || read != sizeof(magic))
+    {
+        return TargetOperatingSystem::Unknown;
+    }
+    if (memcmp(magic, "\177ELF", sizeof(magic)) == 0)
+    {
+        return TargetOperatingSystem::Linux;
+    }
+    if (memcmp(magic, "\xcf\xfa\xed\xfe", sizeof(magic)) == 0)
+    {
+        return TargetOperatingSystem::OSX;
+    }
+    return TargetOperatingSystem::Unknown;
+}
+
 extern "C" bool
 TryGetSymbol(ICorDebugDataTarget* dataTarget, uint64_t baseAddress, const char* symbolName, uint64_t* symbolAddress)
 {
@@ -14,27 +57,13 @@ TryGetSymbol(ICorDebugDataTarget* dataTarget, uint64_t baseAddress, const char* 
     }
     *symbolAddress = 0;
 
-    CorDebugTargetInfo targetInfo = {};
-    ICorDebugDataTarget5* target = nullptr;
-    HRESULT hr = dataTarget->QueryInterface(IID_ICorDebugDataTarget5, reinterpret_cast<void**>(&target));
-    if (FAILED(hr))
+    switch (GetTargetOperatingSystem(dataTarget, baseAddress))
     {
-        return false;
-    }
-    hr = target->GetTargetInfo(&targetInfo);
-    target->Release();
-    if (FAILED(hr))
-    {
-        return false;
-    }
-
-    switch (targetInfo.os)
-    {
-        case CORDB_OS_WINDOWS:
+        case TargetOperatingSystem::Windows:
             return PEReader::TryLookupSymbol(dataTarget, baseAddress, symbolName, symbolAddress);
-        case CORDB_OS_LINUX:
+        case TargetOperatingSystem::Linux:
             return TryGetElfSymbol(dataTarget, baseAddress, symbolName, symbolAddress);
-        case CORDB_OS_OSX:
+        case TargetOperatingSystem::OSX:
             return TryGetMachOSymbol(dataTarget, baseAddress, symbolName, symbolAddress);
         default:
             return false;
