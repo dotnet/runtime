@@ -422,7 +422,7 @@ namespace System.Text.Json
         [DoesNotReturn]
         public static void ThrowInvalidOperationException_ConstructorParameterIncompleteBinding(JsonTypeInfo jsonTypeInfo)
         {
-            if (jsonTypeInfo.UnboundConstructorParameterDiagnostic is { } info)
+            if (JsonTypeInfo.GetUnboundConstructorParameterDiagnostic(jsonTypeInfo) is { } info)
             {
                 if (info.MatchingPropertyName is not null)
                 {
@@ -464,12 +464,6 @@ namespace System.Text.Json
             }
 
             throw new InvalidOperationException(SR.Format(SR.ConstructorParamIncompleteBinding, jsonTypeInfo.Type));
-        }
-
-        [DoesNotReturn]
-        public static void ThrowInvalidOperationException_ConstructorParameterIncompleteBinding(Type parentType)
-        {
-            throw new InvalidOperationException(SR.Format(SR.ConstructorParamIncompleteBinding, parentType));
         }
 
         [DoesNotReturn]

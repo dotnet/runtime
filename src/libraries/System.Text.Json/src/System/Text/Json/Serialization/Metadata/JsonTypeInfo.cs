@@ -1472,9 +1472,15 @@ namespace System.Text.Json.Serialization.Metadata
 
         private protected Dictionary<ParameterLookupKey, JsonParameterInfoValues>? _parameterInfoValuesIndex;
         private protected JsonParameterInfoValues[]? _parameterInfoValues;
-        internal UnboundConstructorParameterInfo? UnboundConstructorParameterDiagnostic { get; private set; }
+        private static readonly ConditionalWeakTable<JsonTypeInfo, UnboundConstructorParameterInfo> s_unboundParameterDiagnostics = new();
 
-        internal readonly struct UnboundConstructorParameterInfo(
+        internal static UnboundConstructorParameterInfo? GetUnboundConstructorParameterDiagnostic(JsonTypeInfo jsonTypeInfo)
+        {
+            s_unboundParameterDiagnostics.TryGetValue(jsonTypeInfo, out UnboundConstructorParameterInfo? diagnostic);
+            return diagnostic;
+        }
+
+        internal sealed class UnboundConstructorParameterInfo(
             string parameterName,
             Type parameterType,
             string? matchingPropertyName,
@@ -1701,12 +1707,13 @@ namespace System.Text.Json.Serialization.Metadata
                             }
                         }
 
-                        UnboundConstructorParameterDiagnostic = new UnboundConstructorParameterInfo(
+                        s_unboundParameterDiagnostics.Remove(this);
+                        s_unboundParameterDiagnostics.Add(this, new UnboundConstructorParameterInfo(
                             param.Name,
                             param.ParameterType,
                             matchingNameProp?.MemberName ?? matchingNameProp?.Name,
                             matchingNameProp?.PropertyType,
-                            matchingNameProp?.AssociatedParameter?.Name);
+                            matchingNameProp?.AssociatedParameter?.Name));
                         break;
                     }
                 }
