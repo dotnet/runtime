@@ -12365,7 +12365,7 @@ void CEEJitInfo::recordRelocation(void *       location,
                     // When m_fAllowRel32 == FALSE, the JIT will use a RELATIVE32s for direct code targets only.
                     // Use jump stub.
                     //
-                    delta = rel32UsingJumpStub(fixupLocation, (PCODE)target, m_pMethodBeingCompiled, NULL, false /* throwOnOutOfMemoryWithinRange */);
+                    delta = rel32UsingJumpStub(fixupLocation, (PCODE)target, m_pMethodBeingCompiled);
                     if (delta == 0)
                     {
                         // This forces the JIT to retry the method, which allows us to reserve more space for jump stubs and have a higher chance that
@@ -12380,8 +12380,8 @@ void CEEJitInfo::recordRelocation(void *       location,
             }
         }
 
-                LOG((LF_JIT, LL_INFO100000, "Encoded a PCREL32 at" FMT_ADDR "to" FMT_ADDR "+%d,  delta is 0x%04x\n",
-                         DBG_ADDR(fixupLocation), DBG_ADDR(target), addlDelta, (UINT32)delta));
+        LOG((LF_JIT, LL_INFO100000, "Encoded a PCREL32 at" FMT_ADDR "to" FMT_ADDR "+%d,  delta is 0x%04x\n",
+                    DBG_ADDR(fixupLocation), DBG_ADDR(target), addlDelta, (UINT32)delta));
 
         // Write the 32-bits pc-relative delta into location
         *fixupLocationRW = (INT32) delta;
@@ -12440,8 +12440,7 @@ void CEEJitInfo::recordRelocation(void *       location,
                                                           (PCODE)  target,
                                                           (BYTE *) loAddr,
                                                           (BYTE *) hiAddr,
-                                                          NULL,
-                                                          false);
+                                                          NULL);
             }
 
             // Keep track of conservative estimate of how much memory may be needed by jump stubs. We will use it to reserve extra memory
@@ -12558,7 +12557,7 @@ void CEEJitInfo::recordRelocation(void *       location,
                 if (hiAddr < location)
                     hiAddr = (BYTE*)UINT64_MAX; // overflow
 
-                PCODE jumpStubAddr = ExecutionManager::jumpStub(m_pMethodBeingCompiled, (PCODE)target, loAddr, hiAddr, nullptr, false);
+                PCODE jumpStubAddr = ExecutionManager::jumpStub(m_pMethodBeingCompiled, (PCODE)target, loAddr, hiAddr, nullptr);
 
                 // Keep track of conservative estimate of how much memory may be needed by jump stubs. We will use it
                 // to reserve extra memory on retry to increase chances that the retry succeeds.

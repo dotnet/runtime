@@ -193,5 +193,7 @@ namespace ILVerify
         InvalidBaseType, // Type has an invalid base type.
         BadTypeSpec, // Invalid TypeSpec metadata.
         ConstrainedTypeNoInterfaceImpl, // The type operand of the constrained prefix must implement the interface declaring the static virtual method.
+        MethodImplStaticMismatch, // The MethodImpl body and declaration must both be static or both be instance methods.
+        MethodImplBodyNotVirtual, // An instance MethodImpl body must be virtual.
     }
 }

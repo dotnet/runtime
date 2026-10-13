@@ -531,6 +531,7 @@ static const Entry s_QCall[] =
     DllImportEntry(CallFilterFunclet)
     DllImportEntry(EHEnumInitFromStackFrameIterator)
     DllImportEntry(EHEnumNext)
+    DllImportEntry(GetCurrentExInfo)
     DllImportEntry(AppendExceptionStackFrame)
     DllImportEntry(InitClassHelper)
     DllImportEntry(ResolveVirtualFunctionPointer)
