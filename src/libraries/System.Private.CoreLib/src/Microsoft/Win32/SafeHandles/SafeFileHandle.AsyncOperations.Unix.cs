@@ -47,7 +47,12 @@ namespace Microsoft.Win32.SafeHandles
             internal void Init(long offset, IReadOnlyList<Memory<byte>> buffers, CancellationToken cancellationToken)
             {
                 _offset = offset;
-                _buffers = buffers;
+                // Copy the buffer list so the caller can't mutate it during the operation.
+                int count = buffers.Count;
+                var copy = new Memory<byte>[count];
+                for (int i = 0; i < count; i++)
+                    copy[i] = buffers[i];
+                _buffers = copy;
                 _cancellationToken = cancellationToken;
             }
 
@@ -239,7 +244,12 @@ namespace Microsoft.Win32.SafeHandles
             internal void Init(long offset, IReadOnlyList<ReadOnlyMemory<byte>> buffers, int bufferIndex, int bufferOffset, CancellationToken cancellationToken)
             {
                 _offset = offset;
-                _buffers = buffers;
+                // Copy the buffer list so the caller can't mutate it during the operation.
+                int count = buffers.Count;
+                var copy = new ReadOnlyMemory<byte>[count];
+                for (int i = 0; i < count; i++)
+                    copy[i] = buffers[i];
+                _buffers = copy;
                 _bufferIndex = bufferIndex;
                 _bufferOffset = bufferOffset;
                 _cancellationToken = cancellationToken;

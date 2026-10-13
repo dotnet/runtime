@@ -136,7 +136,7 @@ namespace System.IO
             }
         }
 
-        internal static unsafe void WriteAtOffset(SafeFileHandle handle, ReadOnlySpan<byte> buffer, long fileOffset, OSFileStreamStrategy? strategy = null)
+        internal static unsafe void WriteAtOffset(SafeFileHandle handle, ReadOnlySpan<byte> buffer, long fileOffset)
         {
             if (buffer.IsEmpty)
             {
@@ -145,7 +145,7 @@ namespace System.IO
 
             if (handle.IsAsync)
             {
-                WriteSyncUsingAsyncHandle(handle, buffer, fileOffset, strategy);
+                WriteSyncUsingAsyncHandle(handle, buffer, fileOffset);
                 return;
             }
 
@@ -155,17 +155,24 @@ namespace System.IO
                 if (Interop.Kernel32.WriteFile(handle, pinned, buffer.Length, out int numBytesWritten, &overlapped) != 0)
                 {
                     Debug.Assert(numBytesWritten == buffer.Length);
-                    strategy?.OnIncompleteOperation(buffer.Length - numBytesWritten, 0);
                     return;
                 }
 
-                strategy?.OnIncompleteOperation(buffer.Length, 0);
                 int errorCode = FileStreamHelpers.GetLastWin32ErrorAndDisposeHandleIfInvalid(handle);
                 throw Win32Marshal.GetExceptionForWin32Error(errorCode, handle.Path);
             }
         }
 
-        private static unsafe void WriteSyncUsingAsyncHandle(SafeFileHandle fileHandle, ReadOnlySpan<byte> buffer, long fileOffset, OSFileStreamStrategy? strategy)
+        internal static void WriteAtOffset(SafeFileHandle handle, ReadOnlySpan<byte> buffer, ref long fileOffset)
+        {
+            // On Windows, WriteFile writes all requested bytes or throws; no partial-write loop is needed.
+            // Update fileOffset only after a successful write so that callers observing position after a
+            // failure see 0 bytes transferred (which is correct for Windows).
+            WriteAtOffset(handle, buffer, fileOffset);
+            fileOffset += buffer.Length;
+        }
+
+        private static unsafe void WriteSyncUsingAsyncHandle(SafeFileHandle fileHandle, ReadOnlySpan<byte> buffer, long fileOffset)
         {
             if (buffer.IsEmpty)
             {
@@ -216,8 +223,6 @@ namespace System.IO
 
                         errorCode = FileStreamHelpers.GetLastWin32ErrorAndDisposeHandleIfInvalid(fileHandle);
                     }
-
-                    strategy?.OnIncompleteOperation(buffer.Length, 0);
 
                     throw errorCode switch
                     {

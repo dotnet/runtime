@@ -11,10 +11,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Threading.Tasks.Sources;
 using AsyncResult = System.Threading.UnixHandleAsyncContext.AsyncResult;
-using OnCompletedResult = System.Threading.UnixHandleAsyncContext.OnCompletedResult;
-using SyncResult = System.Threading.UnixHandleAsyncContext.SyncResult;
 
 namespace Microsoft.Win32.SafeHandles
 {
@@ -59,8 +56,7 @@ namespace Microsoft.Win32.SafeHandles
         private bool _isLocked;
         private NullableBool _isBlocking;
         private UnixHandleAsyncContext? _asyncContext;
-        private ReadOperation? _cachedReadOp;
-        private WriteOperation? _cachedWriteOp;
+        private UnixHandleAsyncContext.Operation? _cachedOp;
 
         public SafeFileHandle() : this(ownsHandle: true)
         {
@@ -160,6 +156,7 @@ namespace Microsoft.Win32.SafeHandles
                 if (_asyncContext == null)
                 {
                     EnsureHandleNonBlocking();
+                    // No need to dispose a new context because it doesn't hold disposable resources until first use.
                     Interlocked.CompareExchange(ref _asyncContext, new UnixHandleAsyncContext(this), null);
                 }
                 return _asyncContext!;
@@ -167,21 +164,21 @@ namespace Microsoft.Win32.SafeHandles
         }
 
         private ReadOperation RentReadOperation()
-            => Interlocked.Exchange(ref _cachedReadOp, null) ?? new ReadOperation(this);
+            => Interlocked.Exchange(ref _cachedOp, null) is ReadOperation cached ? cached : new ReadOperation(this);
 
         private WriteOperation RentWriteOperation()
-            => Interlocked.Exchange(ref _cachedWriteOp, null) ?? new WriteOperation(this);
+            => Interlocked.Exchange(ref _cachedOp, null) is WriteOperation cached ? cached : new WriteOperation(this);
 
         private void ReturnReadOperation(ReadOperation op)
         {
             op.Reset();
-            Volatile.Write(ref _cachedReadOp, op);
+            Volatile.Write(ref _cachedOp, op);
         }
 
         private void ReturnWriteOperation(WriteOperation op)
         {
             op.Reset();
-            Volatile.Write(ref _cachedWriteOp, op);
+            Volatile.Write(ref _cachedOp, op);
         }
 
         internal bool SupportsRandomAccess
@@ -252,8 +249,11 @@ namespace Microsoft.Win32.SafeHandles
 
         protected override void Dispose(bool disposing)
         {
-            _asyncContext?.AbortAndDispose();
             base.Dispose(disposing);
+
+            // If _asyncContext is null, it might get assigned but it isn't usable because we called base.Dispose.
+            // If there was a context that was used, this disposes it.
+            _asyncContext?.AbortAndDispose();
         }
 
         protected override bool ReleaseHandle()
@@ -692,19 +692,6 @@ namespace Microsoft.Win32.SafeHandles
             return status.Size;
         }
 
-        internal int ReadAt(long offset, Span<byte> buffer)
-        {
-            while (true)
-            {
-                if (TryCompleteReadAt(offset, buffer, out int readResult, out Interop.ErrorInfo errorInfo))
-                {
-                    return CheckFileCall(readResult, errorInfo);
-                }
-
-                Interop.Sys.Poll(this, Interop.PollEvents.POLLIN, timeout: -1, out _);
-            }
-        }
-
         internal ValueTask<int> ReadAtAsync(long offset, Memory<byte> destination, CancellationToken cancellationToken, OSFileStreamStrategy? strategy = null)
             => UseThreadPoolForAsync
                 ? ReadAtAsyncThreadPool(offset, destination, cancellationToken, strategy)
@@ -738,7 +725,7 @@ namespace Microsoft.Win32.SafeHandles
             {
                 return new ValueTask<int>(op, op.Version);
             }
-            else if (result == AsyncResult.Completed)
+            else if (result == AsyncResult.Completed) // The operation completed synchronously.
             {
                 int completedResult = (int)op.ReadResult;
                 Exception? exception = op.Exception;
@@ -752,29 +739,7 @@ namespace Microsoft.Win32.SafeHandles
                 return new ValueTask<int>(completedResult);
             }
 
-            throw new OperationCanceledException();
-        }
-
-        internal void WriteAt(long offset, ReadOnlySpan<byte> buffer, OSFileStreamStrategy? strategy = null)
-        {
-            if (buffer.IsEmpty)
-            {
-                return;
-            }
-
-            while (true)
-            {
-                if (TryCompleteWriteAt(offset, buffer, out int bytesWritten, out Interop.ErrorInfo errorInfo, strategy))
-                {
-                    CheckFileCall(errorInfo);
-                    return;
-                }
-
-                buffer = buffer.Slice(bytesWritten);
-                offset += bytesWritten;
-
-                Interop.Sys.Poll(this, Interop.PollEvents.POLLOUT, timeout: -1, out _);
-            }
+            throw new OperationCanceledException(cancellationToken);
         }
 
         internal ValueTask WriteAtAsync(long offset, ReadOnlyMemory<byte> source, CancellationToken cancellationToken, OSFileStreamStrategy? strategy = null)
@@ -824,7 +789,7 @@ namespace Microsoft.Win32.SafeHandles
             {
                 return new ValueTask(op, op.Version);
             }
-            else if (result == AsyncResult.Completed)
+            else if (result == AsyncResult.Completed) // The operation completed synchronously.
             {
                 Exception? exception = op.Exception;
 
@@ -837,19 +802,7 @@ namespace Microsoft.Win32.SafeHandles
                 return default;
             }
 
-            throw new OperationCanceledException();
-        }
-
-        internal long ReadAt(long offset, IReadOnlyList<Memory<byte>> buffers)
-        {
-            while (true)
-            {
-                if (TryCompleteReadAt(offset, buffers, out long readResult, out Interop.ErrorInfo errorInfo))
-                {
-                    return CheckFileCall(readResult, errorInfo);
-                }
-                Interop.Sys.Poll(this, Interop.PollEvents.POLLIN, timeout: -1, out _);
-            }
+            throw new OperationCanceledException(cancellationToken);
         }
 
         internal ValueTask<long> ReadAtAsync(long offset, IReadOnlyList<Memory<byte>> buffers, CancellationToken cancellationToken)
@@ -883,7 +836,7 @@ namespace Microsoft.Win32.SafeHandles
             {
                 return new ValueTask<long>(op, op.Version);
             }
-            else if (result == AsyncResult.Completed)
+            else if (result == AsyncResult.Completed) // The operation completed synchronously.
             {
                 long completedResult = op.ReadResult;
                 Exception? exception = op.Exception;
@@ -897,24 +850,7 @@ namespace Microsoft.Win32.SafeHandles
                 return new ValueTask<long>(completedResult);
             }
 
-            throw new OperationCanceledException();
-        }
-
-        internal void WriteAt(long offset, IReadOnlyList<ReadOnlyMemory<byte>> buffers)
-        {
-            int bufferIndex = 0;
-            int bufferOffset = 0;
-
-            while (true)
-            {
-                if (TryCompleteWriteAt(ref offset, buffers, ref bufferIndex, ref bufferOffset, out Interop.ErrorInfo errorInfo))
-                {
-                    CheckFileCall(errorInfo);
-                    return;
-                }
-
-                Interop.Sys.Poll(this, Interop.PollEvents.POLLOUT, timeout: -1, out _);
-            }
+            throw new OperationCanceledException(cancellationToken);
         }
 
         internal ValueTask WriteAtAsync(long offset, IReadOnlyList<ReadOnlyMemory<byte>> buffers, CancellationToken cancellationToken)
@@ -953,7 +889,7 @@ namespace Microsoft.Win32.SafeHandles
             {
                 return new ValueTask(op, op.Version);
             }
-            else if (result == AsyncResult.Completed)
+            else if (result == AsyncResult.Completed) // The operation completed synchronously.
             {
                 Exception? exception = op.Exception;
 
@@ -966,10 +902,10 @@ namespace Microsoft.Win32.SafeHandles
                 return default;
             }
 
-            throw new OperationCanceledException();
+            throw new OperationCanceledException(cancellationToken);
         }
 
-        private bool TryCompleteReadAt(long offset, IReadOnlyList<Memory<byte>> buffers, out long readResult, out Interop.ErrorInfo errorInfo)
+        internal bool TryCompleteReadAt(long offset, IReadOnlyList<Memory<byte>> buffers, out long readResult, out Interop.ErrorInfo errorInfo)
         {
             if (SupportsRandomAccess)
             {
@@ -1042,7 +978,7 @@ namespace Microsoft.Win32.SafeHandles
             }
         }
 
-        private bool TryCompleteReadAt(long offset, Span<byte> buffer, out int readResult, out Interop.ErrorInfo errorInfo, OSFileStreamStrategy? strategy = null)
+        internal bool TryCompleteReadAt(long offset, Span<byte> buffer, out int readResult, out Interop.ErrorInfo errorInfo, OSFileStreamStrategy? strategy = null)
         {
             if (SupportsRandomAccess)
             {
@@ -1110,7 +1046,7 @@ namespace Microsoft.Win32.SafeHandles
             return true;
         }
 
-        private bool TryCompleteWriteAt(ref long offset, IReadOnlyList<ReadOnlyMemory<byte>> buffers, ref int bufferIndex, ref int bufferOffset, out Interop.ErrorInfo errorInfo)
+        internal bool TryCompleteWriteAt(ref long offset, IReadOnlyList<ReadOnlyMemory<byte>> buffers, ref int bufferIndex, ref int bufferOffset, out Interop.ErrorInfo errorInfo)
         {
             if (SupportsRandomAccess)
             {
@@ -1223,7 +1159,7 @@ namespace Microsoft.Win32.SafeHandles
             }
         }
 
-        private bool TryCompleteWriteAt(long offset, ReadOnlySpan<byte> buffer, out int bytesWritten, out Interop.ErrorInfo errorInfo, OSFileStreamStrategy? strategy = null)
+        internal bool TryCompleteWriteAt(long offset, ReadOnlySpan<byte> buffer, out int bytesWritten, out Interop.ErrorInfo errorInfo, OSFileStreamStrategy? strategy = null)
         {
             if (SupportsRandomAccess)
             {
@@ -1287,7 +1223,7 @@ namespace Microsoft.Win32.SafeHandles
             }
         }
 
-        private int CheckFileCall(int result, Interop.ErrorInfo errorInfo)
+        internal int CheckFileCall(int result, Interop.ErrorInfo errorInfo)
         {
             if (result == -1)
             {
@@ -1296,7 +1232,7 @@ namespace Microsoft.Win32.SafeHandles
             return result;
         }
 
-        private long CheckFileCall(long result, Interop.ErrorInfo errorInfo)
+        internal long CheckFileCall(long result, Interop.ErrorInfo errorInfo)
         {
             if (result == -1)
             {
@@ -1305,7 +1241,7 @@ namespace Microsoft.Win32.SafeHandles
             return result;
         }
 
-        private void CheckFileCall(Interop.ErrorInfo errorInfo)
+        internal void CheckFileCall(Interop.ErrorInfo errorInfo)
         {
             if (errorInfo.Error != Interop.Error.SUCCESS)
             {

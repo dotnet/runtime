@@ -15,10 +15,30 @@ namespace System.IO
             FileStreamHelpers.CheckFileCall(Interop.Sys.FTruncate(handle, length), handle.Path);
 
         internal static unsafe int ReadAtOffset(SafeFileHandle handle, Span<byte> buffer, long fileOffset)
-            => handle.ReadAt(fileOffset, buffer);
+        {
+            while (true)
+            {
+                if (handle.TryCompleteReadAt(fileOffset, buffer, out int readResult, out Interop.ErrorInfo errorInfo))
+                {
+                    return handle.CheckFileCall(readResult, errorInfo);
+                }
+
+                Interop.Sys.Poll(handle, Interop.PollEvents.POLLIN, timeout: -1, out _);
+            }
+        }
 
         internal static unsafe long ReadScatterAtOffset(SafeFileHandle handle, IReadOnlyList<Memory<byte>> buffers, long fileOffset)
-            => handle.ReadAt(fileOffset, buffers);
+        {
+            while (true)
+            {
+                if (handle.TryCompleteReadAt(fileOffset, buffers, out long readResult, out Interop.ErrorInfo errorInfo))
+                {
+                    return handle.CheckFileCall(readResult, errorInfo);
+                }
+
+                Interop.Sys.Poll(handle, Interop.PollEvents.POLLIN, timeout: -1, out _);
+            }
+        }
 
         internal static ValueTask<int> ReadAtOffsetAsync(SafeFileHandle handle, Memory<byte> buffer, long fileOffset, CancellationToken cancellationToken, OSFileStreamStrategy? strategy = null)
             => handle.ReadAtAsync(fileOffset, buffer, cancellationToken, strategy);
@@ -26,11 +46,48 @@ namespace System.IO
         private static ValueTask<long> ReadScatterAtOffsetAsync(SafeFileHandle handle, IReadOnlyList<Memory<byte>> buffers, long fileOffset, CancellationToken cancellationToken)
             => handle.ReadAtAsync(fileOffset, buffers, cancellationToken);
 
-        internal static unsafe void WriteAtOffset(SafeFileHandle handle, ReadOnlySpan<byte> buffer, long fileOffset, OSFileStreamStrategy? strategy = null)
-            => handle.WriteAt(fileOffset, buffer, strategy);
+        internal static unsafe void WriteAtOffset(SafeFileHandle handle, ReadOnlySpan<byte> buffer, long fileOffset)
+            => WriteAtOffset(handle, buffer, ref fileOffset);
+
+        internal static void WriteAtOffset(SafeFileHandle handle, ReadOnlySpan<byte> buffer, ref long fileOffset)
+        {
+            if (buffer.IsEmpty)
+            {
+                return;
+            }
+
+            while (true)
+            {
+                if (handle.TryCompleteWriteAt(fileOffset, buffer, out int bytesWritten, out Interop.ErrorInfo errorInfo))
+                {
+                    fileOffset += bytesWritten;
+                    handle.CheckFileCall(errorInfo);
+                    return;
+                }
+
+                fileOffset += bytesWritten;
+                buffer = buffer.Slice(bytesWritten);
+
+                Interop.Sys.Poll(handle, Interop.PollEvents.POLLOUT, timeout: -1, out _);
+            }
+        }
 
         internal static unsafe void WriteGatherAtOffset(SafeFileHandle handle, IReadOnlyList<ReadOnlyMemory<byte>> buffers, long fileOffset)
-            => handle.WriteAt(fileOffset, buffers);
+        {
+            int bufferIndex = 0;
+            int bufferOffset = 0;
+
+            while (true)
+            {
+                if (handle.TryCompleteWriteAt(ref fileOffset, buffers, ref bufferIndex, ref bufferOffset, out Interop.ErrorInfo errorInfo))
+                {
+                    handle.CheckFileCall(errorInfo);
+                    return;
+                }
+
+                Interop.Sys.Poll(handle, Interop.PollEvents.POLLOUT, timeout: -1, out _);
+            }
+        }
 
         internal static ValueTask WriteAtOffsetAsync(SafeFileHandle handle, ReadOnlyMemory<byte> buffer, long fileOffset, CancellationToken cancellationToken, OSFileStreamStrategy? strategy = null)
             => handle.WriteAtAsync(fileOffset, buffer, cancellationToken, strategy);
