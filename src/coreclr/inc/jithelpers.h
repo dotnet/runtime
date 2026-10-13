@@ -172,7 +172,6 @@
     DYNAMICJITHELPER(CORINFO_HELP_CHECKED_ASSIGN_REF, RhpCheckedAssignRef,METHOD__NIL)
 
     DYNAMICJITHELPER(CORINFO_HELP_BULK_WRITEBARRIER, NULL, METHOD__BUFFER__MEMCOPYGC)
-    // This no-GC helper must call the native worker without entering the prestub.
     JITHELPER(CORINFO_HELP_BULK_WRITEBARRIER_SMALL, Buffer::BulkMoveWithWriteBarrier, METHOD__NIL)
 
     // Accessing fields
