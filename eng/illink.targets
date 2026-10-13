@@ -176,6 +176,9 @@
   </Target>
 
   <Target Name="PrepareForAssembliesTrim">
+    <ItemGroup>
+      <_ILLinkSourceRoot Include="$(RepoRoot)" MappedPath="/_/" />
+    </ItemGroup>
     <!-- ILLink.Tasks arguments common to runs for both individual libraries and for the entire runtime pack -->
     <PropertyGroup>
       <!-- don't remove attributes after build, our tooling is not ready for that -->
@@ -265,6 +268,7 @@
     </PropertyGroup>
 
     <ILLink AssemblyPaths="$(ILLinkTrimInputPath)$(TargetName)$(TargetExt)"
+            SourceRoots="@(_ILLinkSourceRoot)"
             RootAssemblyNames="@(ILLinkTrimInputAssembly)"
             OutputDirectory="$(ILLinkTrimOutputPath)"
             ExtraArgs="$(ILLinkArgs)"
