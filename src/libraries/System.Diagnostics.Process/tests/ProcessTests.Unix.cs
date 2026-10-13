@@ -714,6 +714,64 @@ namespace System.Diagnostics.Tests
             Assert.True(processReaped);
         }
 
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [PlatformSpecific(TestPlatforms.OSX)]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void WaitForExit_StoppedChild_DoesNotPreventReapingOtherChildren(bool useAsync)
+        {
+            RemoteExecutor.Invoke(async useAsyncString =>
+            {
+                const uint StoppedProcessStatus = 4; // SSTOP in sys/proc.h.
+                const int StopSignal = 17; // SIGSTOP on macOS.
+                using Process stopped = Process.Start("/bin/sleep", "300");
+                using Process exiting = Process.Start("/bin/sleep", "300");
+                int stoppedPid = stopped.Id;
+                int exitingPid = exiting.Id;
+                using ManualResetEventSlim sigChildReceived = new();
+                using PosixSignalRegistration registration = PosixSignalRegistration.Create(PosixSignal.SIGCHLD, context =>
+                {
+                    context.Cancel = true;
+                    sigChildReceived.Set();
+                });
+
+                try
+                {
+                    Assert.Equal(0, kill(stoppedPid, StopSignal));
+
+                    Assert.True(SpinWait.SpinUntil(
+                        () => Interop.libproc.GetProcessInfoById(stoppedPid) is { } info &&
+                            info.pbsd.pbi_status == StoppedProcessStatus, WaitInMS));
+
+                    sigChildReceived.Reset();
+                    Assert.Equal(0, kill(Environment.ProcessId, Interop.Sys.GetPlatformSignalNumber(PosixSignal.SIGCHLD)));
+                    Assert.True(sigChildReceived.Wait(WaitInMS));
+
+                    Assert.Equal(0, kill(exitingPid, SIGKILL));
+                    if (bool.Parse(useAsyncString))
+                    {
+                        using CancellationTokenSource cts = new(WaitInMS);
+                        await exiting.WaitForExitAsync(cts.Token);
+                    }
+                    else
+                    {
+                        Assert.True(exiting.WaitForExit(WaitInMS));
+                    }
+                    Assert.True(exiting.HasExited);
+                }
+                finally
+                {
+                    // Bypass managed process locks so cleanup also works if the reaper is stuck.
+                    Assert.Equal(0, kill(stoppedPid, SIGKILL));
+                    Assert.True(stopped.WaitForExit(WaitInMS));
+                    exiting.Kill();
+                    Assert.True(exiting.WaitForExit(WaitInMS));
+                }
+
+                return RemoteExecutor.SuccessExitCode;
+            }, useAsync.ToString()).Dispose();
+        }
+
         private static Process CreateShortProcess()
         {
             Process process = new Process();
