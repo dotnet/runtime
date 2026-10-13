@@ -371,23 +371,27 @@ public partial class ZipArchiveEntry
 
             if (_originallyInArchive)
             {
-                Stream decompressor = await OpenInReadModeAsync(checkOpenable: false, default, cancellationToken).ConfigureAwait(false);
-
-                await using (decompressor)
+                Stream? decompressor = null;
+                try
                 {
-                    try
+                    decompressor = await OpenInReadModeAsync(checkOpenable: false, default, cancellationToken).ConfigureAwait(false);
+                    await decompressor.CopyToAsync(_storedUncompressedData, cancellationToken).ConfigureAwait(false);
+                }
+                catch (InvalidDataException)
+                {
+                    await _storedUncompressedData.DisposeAsync().ConfigureAwait(false);
+                    _storedUncompressedData = null;
+                    _currentlyOpenForWrite = false;
+                    _everOpenedForWrite = false;
+                    _derivedZipCryptoKeyMaterial = null;
+                    _derivedAesKeyMaterial = null;
+                    throw;
+                }
+                finally
+                {
+                    if (decompressor is not null)
                     {
-                        await decompressor.CopyToAsync(_storedUncompressedData, cancellationToken).ConfigureAwait(false);
-                    }
-                    catch (InvalidDataException)
-                    {
-                        await _storedUncompressedData.DisposeAsync().ConfigureAwait(false);
-                        _storedUncompressedData = null;
-                        _currentlyOpenForWrite = false;
-                        _everOpenedForWrite = false;
-                        _derivedZipCryptoKeyMaterial = null;
-                        _derivedAesKeyMaterial = null;
-                        throw;
+                        await decompressor.DisposeAsync().ConfigureAwait(false);
                     }
                 }
             }
@@ -589,14 +593,26 @@ public partial class ZipArchiveEntry
         await ThrowIfNotOpenableAsync(needToUncompress: true, needToLoadIntoMemory: true, cancellationToken).ConfigureAwait(false);
 
         long offset = await GetOffsetOfCompressedDataAsync(cancellationToken).ConfigureAwait(false);
-        Stream compressedStream = new SubReadStream(_archive.ArchiveStream, offset, _compressedSize);
+        await using Stream compressedStream = new SubReadStream(_archive.ArchiveStream, offset, _compressedSize);
 
-        Stream decrypted = await WinZipAesStream.CreateAsync(
-            baseStream: compressedStream,
-            keyMaterial: aesKeys,
-            totalStreamSize: _compressedSize,
-            encrypting: false,
-            cancellationToken: cancellationToken).ConfigureAwait(false);
+        Stream decrypted;
+        try
+        {
+            decrypted = await WinZipAesStream.CreateAsync(
+                baseStream: compressedStream,
+                keyMaterial: aesKeys,
+                totalStreamSize: _compressedSize,
+                encrypting: false,
+                cancellationToken: cancellationToken).ConfigureAwait(false);
+        }
+        catch (InvalidDataException)
+        {
+            _currentlyOpenForWrite = false;
+            _everOpenedForWrite = false;
+            _derivedZipCryptoKeyMaterial = null;
+            _derivedAesKeyMaterial = null;
+            throw;
+        }
 
         return await StoreDecryptedDataForUpdateAsync(decrypted, cancellationToken).ConfigureAwait(false);
     }

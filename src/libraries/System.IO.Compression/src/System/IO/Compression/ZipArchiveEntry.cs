@@ -686,31 +686,28 @@ namespace System.IO.Compression
 
                 if (_originallyInArchive)
                 {
-                    Stream decompressor = !password.IsEmpty
-                        ? OpenInReadMode(checkOpenable: false, password)
-                        : OpenInReadMode(checkOpenable: false);
-
-                    using (decompressor)
+                    Stream? decompressor = null;
+                    try
                     {
-                        try
-                        {
-                            decompressor.CopyTo(_storedUncompressedData);
-                        }
-                        catch (InvalidDataException)
-                        {
-                            // this is the case where the archive say the entry is deflate, but deflateStream
-                            // throws an InvalidDataException. This property should only be getting accessed in
-                            // Update mode, so we want to make sure _storedUncompressedData stays null so
-                            // that later when we dispose the archive, this entry loads the compressedBytes, and
-                            // copies them straight over
-                            _storedUncompressedData.Dispose();
-                            _storedUncompressedData = null;
-                            _currentlyOpenForWrite = false;
-                            _everOpenedForWrite = false;
-                            _derivedZipCryptoKeyMaterial = null;
-                            _derivedAesKeyMaterial = null;
-                            throw;
-                        }
+                        decompressor = !password.IsEmpty
+                            ? OpenInReadMode(checkOpenable: false, password)
+                            : OpenInReadMode(checkOpenable: false);
+                        decompressor.CopyTo(_storedUncompressedData);
+                    }
+                    catch (InvalidDataException)
+                    {
+                        // Keep the original compressed bytes when loading the entry fails in Update mode.
+                        _storedUncompressedData.Dispose();
+                        _storedUncompressedData = null;
+                        _currentlyOpenForWrite = false;
+                        _everOpenedForWrite = false;
+                        _derivedZipCryptoKeyMaterial = null;
+                        _derivedAesKeyMaterial = null;
+                        throw;
+                    }
+                    finally
+                    {
+                        decompressor?.Dispose();
                     }
                 }
 
