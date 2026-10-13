@@ -361,9 +361,9 @@ namespace System.IO.Compression
         /// </summary>
         /// <remarks>
         /// For a ZipCrypto-encrypted entry that uses a data descriptor and is read from an existing archive in <see cref="ZipArchiveMode.Update"/>,
-        /// changing the timestamp stored in the archive without also reopening the entry with its password to rewrite its data will cause a
-        /// <see cref="NotSupportedException"/> when the archive is disposed, because the entry's password verification bytes can't be kept
-        /// consistent with the new timestamp without re-encrypting.
+        /// changing this property in a way that changes the password verification byte without also reopening the entry with its password to
+        /// rewrite its data will cause a <see cref="NotSupportedException"/> when the archive is disposed, because the existing encrypted data
+        /// can't be kept consistent with the new timestamp without re-encrypting.
         /// </remarks>
         /// <exception cref="NotSupportedException">An attempt to set this property was made, but the ZipArchive that this entry belongs to was
         /// opened in read-only mode.</exception>
@@ -1066,25 +1066,19 @@ namespace System.IO.Compression
             // If data descriptor IS used, the check byte is the MSB of the DOS time from the *local* header.
             // Use _originalLastModified (the time baked into the entry's on-disk ciphertext), not
             // _lastModified, since LastWriteTime may have been changed since without re-encrypting.
-            return (byte)((ZipHelper.DateTimeToDosTime(_originalLastModified.DateTime) >> 8) & 0xFF);
+            return GetZipCryptoTimeCheckByte(_originalLastModified);
         }
 
-        /// <summary>
-        /// Refuses a LastWriteTime change on a ZipCrypto entry whose data isn't being re-encrypted this
-        /// session, since the ciphertext's password verification bytes are baked in using the old
-        /// timestamp and would otherwise silently corrupt the entry. Shared by the sync and async write
-        /// paths.
-        /// </summary>
-        private void ThrowIfZipCryptoLastWriteTimeChangedWithoutReencrypting()
+        private static byte GetZipCryptoTimeCheckByte(DateTimeOffset timestamp) =>
+            (byte)(ZipHelper.DateTimeToDosTime(timestamp.DateTime) >> 8);
+
+        internal void ThrowIfZipCryptoLastWriteTimeChangedWithoutReencrypting()
         {
             if (_originallyInArchive
-                && _storedUncompressedData is null
                 && IsZipCryptoEncrypted
                 && (_generalPurposeBitFlag & BitFlagValues.DataDescriptor) != 0
-                // Compare the DOS timestamps stored in ZIP headers, which omit UTC offsets and have two-second resolution.
-                // ZIP encoding: https://pkware.cachefly.net/webdocs/casestudies/APPNOTE.TXT (section 4.4.6).
-                // DOS field layout: https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-filetimetodosdatetime#parameters
-                && ZipHelper.DateTimeToDosTime(_lastModified.DateTime) != ZipHelper.DateTimeToDosTime(_originalLastModified.DateTime))
+                && (Changes & ZipArchive.ChangeState.StoredData) == 0
+                && GetZipCryptoTimeCheckByte(_lastModified) != GetZipCryptoTimeCheckByte(_originalLastModified))
             {
                 throw new NotSupportedException(SR.ZipCryptoLastWriteTimeChangeNotSupported);
             }
@@ -1831,8 +1825,6 @@ namespace System.IO.Compression
                 _storedUncompressedData.Dispose();
                 _storedUncompressedData = null;
             }
-
-            ThrowIfZipCryptoLastWriteTimeChangedWithoutReencrypting();
 
             // _storedUncompressedData gets frozen here, and is what gets written to the file
             if (_storedUncompressedData != null || _compressedBytes != null)
