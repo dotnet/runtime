@@ -116,7 +116,7 @@ namespace System.Reflection
 
         /// <summary>
         /// Loads an assembly from a specific path on the disk into the MetadataLoadContext. If a prior
-        /// assembly with the same name was already loaded into the MetadataLoadContext, the prior assembly will be returned. If the
+        /// assembly with the same name was already loaded into the MetadataLoadContext, the prior assembly is returned. If the
         /// two assemblies do not have the same Mvid, this method throws a FileLoadException.
         ///
         /// Loading an assembly does not automatically make it available for resolution by name. References to the assembly and
@@ -133,7 +133,7 @@ namespace System.Reflection
 
         /// <summary>
         /// Loads an assembly from a byte array into the MetadataLoadContext. If a prior
-        /// assembly with the same name was already loaded into the MetadataLoadContext, the prior assembly will be returned. If the
+        /// assembly with the same name was already loaded into the MetadataLoadContext, the prior assembly is returned. If the
         /// two assemblies do not have the same Mvid, this method throws a FileLoadException.
         ///
         /// Loading an assembly does not automatically make it available for resolution by name. References to the assembly and
@@ -150,7 +150,7 @@ namespace System.Reflection
 
         /// <summary>
         /// Loads an assembly from a stream into the MetadataLoadContext. If a prior
-        /// assembly with the same name was already loaded into the MetadataLoadContext, the prior assembly will be returned. If the
+        /// assembly with the same name was already loaded into the MetadataLoadContext, the prior assembly is returned. If the
         /// two assemblies do not have the same Mvid, this method throws a FileLoadException.
         ///
         /// Loading an assembly does not automatically make it available for resolution by name. References to the assembly and
@@ -173,9 +173,6 @@ namespace System.Reflection
         /// Resolves the supplied assembly name to an assembly. If an assembly was previously bound to this name, that assembly is returned.
         /// Otherwise, the MetadataLoadContext calls the specified MetadataAssemblyResolver. If the resolver returns null, this method throws a FileNotFoundException.
         /// That failure is remembered as well: later requests for the same name throw without calling the resolver again.
-        ///
-        /// Note that this behavior matches the behavior of AssemblyLoadContext.LoadFromAssemblyName() but does not match the behavior of
-        /// Assembly.ReflectionOnlyLoad(). (the latter gives up without raising its resolve event.)
         /// </summary>
         public Assembly LoadFromAssemblyName(string assemblyName)
         {
@@ -192,9 +189,6 @@ namespace System.Reflection
         /// Resolves the supplied assembly name to an assembly. If an assembly was previously bound to this name, that assembly is returned.
         /// Otherwise, the MetadataLoadContext calls the specified MetadataAssemblyResolver. If the resolver returns null, this method throws a FileNotFoundException.
         /// That failure is remembered as well: later requests for the same name throw without calling the resolver again.
-        ///
-        /// Note that this behavior matches the behavior of AssemblyLoadContext.LoadFromAssemblyName() resolve event but does not match the behavior of
-        /// Assembly.ReflectionOnlyLoad(). (the latter gives up without raising its resolve event.)
         /// </summary>
         public Assembly LoadFromAssemblyName(AssemblyName assemblyName)
         {
