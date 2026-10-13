@@ -3,6 +3,7 @@
 
 using System.Runtime.CompilerServices;
 using System.Threading;
+using TestLibrary;
 using Xunit;
 
 public class Runtime_134477
