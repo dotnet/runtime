@@ -68,12 +68,12 @@ internal sealed class Crossgen2CacheInvocation
                     (pe.PEHeaders.CoffHeader.Characteristics & Characteristics.ExecutableImage) == 0 ||
                     (pe.PEHeaders.CoffHeader.Characteristics & Characteristics.Dll) != 0)
                 {
-                    throw new InvalidDataException("Only a directly executed native Windows-x64 crossgen2 deployment is supported.");
+                    throw new InvalidDataException("Only a directly executed Windows-x64 crossgen2 executable or managed single-file bundle is supported.");
                 }
             }
             else if (stream.ReadByte() != 0x7f || stream.ReadByte() != 'E' || stream.ReadByte() != 'L' || stream.ReadByte() != 'F')
             {
-                throw new InvalidDataException("Only a directly executed native ELF crossgen2 deployment is supported.");
+                throw new InvalidDataException("Only a directly executed ELF crossgen2 executable or managed single-file bundle is supported.");
             }
         }
         foreach (string extension in new[] { ".dll", ".deps.json", ".runtimeconfig.json", ".runtimeconfig.dev.json" })
@@ -91,7 +91,7 @@ internal sealed class Crossgen2CacheInvocation
             {
                 continue;
             }
-            throw new InvalidDataException("Managed/apphost crossgen2 deployments are not supported.");
+            throw new InvalidDataException("Unbundled managed/apphost crossgen2 deployments are not supported.");
         }
 
         string directory = Path.GetDirectoryName(tool)!;

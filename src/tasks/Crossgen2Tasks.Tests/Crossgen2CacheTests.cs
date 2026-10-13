@@ -14,6 +14,8 @@ using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.NET.Build.Tasks;
+using Microsoft.NET.HostModel.AppHost;
+using Microsoft.NET.HostModel.Bundle;
 using Xunit;
 
 namespace Crossgen2Tasks.Tests;
@@ -151,6 +153,61 @@ public class Crossgen2CacheTests
         Assert.True(warm.Execute());
         Assert.Equal(0, warm.Executions);
     }, dependency).Dispose();
+
+    [WindowsCacheTheory]
+    [InlineData("bundle")]
+    [InlineData("external-runtime")]
+    public void ManagedSingleFileUsesExperimentalToolchainIdentity(string change) => RemoteExecutor.Invoke(value =>
+    {
+        using var fixture = new Fixture();
+        string testDirectory = Path.GetDirectoryName(typeof(Crossgen2CacheTests).Assembly.Location)!;
+        string source = Path.Combine(fixture.Root, "bundle-source");
+        Directory.CreateDirectory(source);
+        string host = Path.Combine(source, "crossgen2.exe");
+        string assembly = Path.Combine(source, "testhost.dll");
+        HostWriter.CreateAppHost(Path.Combine(testDirectory, "bundle-apphost.exe"), host, "testhost.dll");
+        File.Copy(Path.Combine(testDirectory, "testhost.dll"), assembly);
+        string runtime = Path.Combine(fixture.Root, "external-runtime", "coreclr.dll");
+        Directory.CreateDirectory(Path.GetDirectoryName(runtime)!);
+        File.WriteAllText(runtime, "runtime-one");
+
+        void Bundle()
+        {
+            var bundler = new Bundler("crossgen2.exe", fixture.Root, BundleOptions.None,
+                OSPlatform.Windows, Architecture.X64, targetFrameworkVersion: typeof(object).Assembly.GetName().Version, appAssemblyName: "testhost");
+            Assert.Equal(fixture.Tool, bundler.GenerateBundle(new[]
+            {
+                new FileSpec(host, "crossgen2.exe"),
+                new FileSpec(assembly, "testhost.dll"),
+                new FileSpec(Path.ChangeExtension(typeof(Crossgen2CacheTests).Assembly.Location, ".runtimeconfig.json"), "testhost.runtimeconfig.json")
+            }));
+            Assert.True(Bundler.IsBundle(fixture.Tool, out long offset));
+            Assert.True(offset > 0);
+        }
+
+        Bundle();
+        MockCompiler miss = fixture.Create();
+        Assert.True(miss.Execute());
+        Assert.Equal(1, miss.Executions);
+        Assert.Contains(miss.Engine.Messages, m => m.Contains("cache stored:", StringComparison.Ordinal));
+        if (value == "bundle")
+        {
+            byte[] bytes = File.ReadAllBytes(assembly);
+            bytes[32] ^= 1;
+            File.WriteAllBytes(assembly, bytes);
+            Bundle();
+        }
+        else
+        {
+            File.WriteAllText(runtime, "runtime-two");
+        }
+        MockCompiler next = fixture.Create();
+        Assert.True(next.Execute());
+        Assert.Equal(value == "bundle" ? 1 : 0, next.Executions);
+        MockCompiler warm = fixture.Create();
+        Assert.True(warm.Execute());
+        Assert.Equal(0, warm.Executions);
+    }, change).Dispose();
 
     [CachePlatformTheory]
     [InlineData("timestamp")]
@@ -908,7 +965,7 @@ public sealed class RealCrossgen2TheoryAttribute : CachePlatformTheoryAttribute
     {
         if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("CROSSGEN2_CACHE_TEST_TOOL")))
         {
-            Skip = "Set CROSSGEN2_CACHE_TEST_TOOL to a native crossgen2 deployment for this host.";
+            Skip = "Set CROSSGEN2_CACHE_TEST_TOOL to a directly executed crossgen2 deployment for this host.";
         }
     }
 }

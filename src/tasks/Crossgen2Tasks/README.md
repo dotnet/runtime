@@ -29,8 +29,11 @@ its process environment during parallel builds.
 
 ### Supported contract
 
-This first version supports **native Linux-x64 or Windows-x64 crossgen2, targeting
+This first version supports **directly executed Linux-x64 or Windows-x64 crossgen2, targeting
 the corresponding host OS and x64 architecture, with non-composite PE output**.
+NativeAOT executables and self-contained or framework-dependent managed single-file
+bundles are supported, including the repository's self-contained in-build compiler.
+Managed hosting-runtime identity is intentionally not resolved; see the assumptions below.
 Optional task-supplied MIBC profiles, Linux version-1 perf maps, and Windows native
 PDBs are supported. It requires fully qualified, non-wildcard input/output paths that can be
 represented safely in the task's response file. It does not parse extra command
@@ -63,7 +66,7 @@ Legacy crossgen, crossgen2 version 5, separate PDB-generation tasks, composites,
 legacy MVID-named maps, Mach-O/Wasm containers, unrecognized extra
 arguments (including response files, maps, repro packages, and codegen options
 outside the allowlist above), explicit `ToolTask.EnvironmentVariables`, command
-processors, and managed-host/apphost deployments bypass caching. No target opts
+processors, `DotNetHostPath` invocations, and unbundled managed/apphost deployments bypass caching. No target opts
 these callers in or rewrites their arguments. The direct compiler CLI is unchanged.
 
 ### Identity and assumptions
@@ -71,7 +74,7 @@ these callers in or rewrites their arguments. The direct compiler CLI is unchang
 Each eligible invocation hashes a versioned, length-delimited description using
 full SHA-256 content hashes. It includes:
 
-* The task assembly and actual invoked native compiler. The selected JIT is
+* The task assembly and entire invoked compiler executable or single-file bundle. The selected JIT is
   explicit `JitPath`, or adjacent `libclrjit_unix_x64_x64.so` on Linux /
   `clrjit_win_x64_x64.dll` on Windows. The adjacent support library is
   `libjitinterface_x64.so` on Linux / `jitinterface_x64.dll` on Windows. Windows
@@ -90,8 +93,10 @@ full SHA-256 content hashes. It includes:
 symbol-output conventions; the key computation, storage, restoration, and
 diagnostic replay remain shared.
 
-The deployment must be the actual native compiler, not a wrapper. Linux requires
-an ELF executable; Windows requires a native x64 PE executable without a CLR header.
+The deployment must be the actual compiler executable or single-file bundle, not
+a wrapper. Linux requires an ELF executable; Windows requires an x64 PE executable
+without a CLR header. These executable checks intentionally accept both NativeAOT
+and managed single-file deployments; they do not distinguish the two.
 A symbolic-link executable or adjacent managed DLL/deps/runtimeconfig bypasses.
 Unreadable dependencies never become empty hashes. File timestamps, lengths,
 MVIDs, and version strings are not input identities.
@@ -118,9 +123,36 @@ The cache deliberately does not identify OS native libraries, kernel/CPU state,
 or arbitrary inherited environment settings. Known loader overrides
 `LD_LIBRARY_PATH`, `LD_PRELOAD`, and `LD_AUDIT` bypass. Other inherited settings
 that introduce dependencies, alter native loading/codegen, or require execution
-side effects require disabling or isolating the cache. NativeAOT's bundled runtime
-is covered by the compiler hash; managed child-runtime resolution is not attempted.
+side effects require disabling or isolating the cache.
 Absolute paths remain in keys: there is no promise of cross-worktree reuse.
+
+### Experimental managed-hosting policy
+
+Like the [experimental ILLink task cache](https://github.com/dotnet/runtime/blob/72f0f94d975ccff3730cb19c338bee6d5c7fac8d/docs/design/tools/illink/task-cache.md#input-identity-and-eligibility), this cache does not resolve or hash the
+managed runtime that executes the child compiler. The executable hash covers
+NativeAOT's compiled runtime and any managed assemblies, runtime components, and
+configuration embedded in a single-file bundle. It does not cover externally
+resolved managed-runtime components, separately deployed hosting dependencies,
+or their resolution context. The explicit JIT, support-library, and symbol-writer
+hashes above remain part of the key for either deployment.
+
+The runtime hosting MSBuild is not a reliable identity for a managed child
+compiler. A bundled runtimeconfig describes requested frameworks and roll-forward
+policy, not necessarily the exact runtime that will execute the compiler.
+No installed hostfxr or shared-runtime trees are scanned, and no runtime-resolution
+process is launched for cache lookup.
+
+Roslyn's [compiler-output cache](https://github.com/dotnet/roslyn/blob/f955706493c2ef5d90bb1c2d76c13a27436c2669/docs/compilers/Design/compiler-output-cache-experiment.md)
+runs inside the compiler server and includes compiler and runtime informational
+versions, framework description, and OS description in its deterministic key.
+That runtime identity describes the process actually performing compilation.
+An MSBuild-task cache cannot substitute MSBuild's runtime identity for the child
+compiler's, so it retains ILLink's explicit runtime-stability assumption instead.
+
+**Runtime or hosting-dependency changes not reflected in other keyed files may
+reuse an entry.** Clear or isolate the cache, or disable caching, when those changes
+must invalidate prior results. This is an intentional experimental limitation,
+not a promise of complete managed-deployment identity.
 
 ### Deferred Windows input-symbol support
 
@@ -184,8 +216,8 @@ need no changes for this narrow shape.
 ```
 
 The tests use isolated child processes for environment configuration. Set
-`CROSSGEN2_CACHE_TEST_TOOL` to an existing native Linux-x64 `crossgen2` or
-Windows-x64 `crossgen2.exe` executable to also run the real compiler equivalence tests against the test host's
+`CROSSGEN2_CACHE_TEST_TOOL` to an existing directly executed Linux-x64 `crossgen2` or
+Windows-x64 `crossgen2.exe` executable or single-file bundle to also run the real compiler equivalence tests against the test host's
 `System.Linq.dll` and runtime references. Those tests compare uncached, miss/store,
 and restored images/symbol files and count actual compiler executions.
 Symbol-enabled cases cover both adjacent and separate symbol directories. Independent

@@ -10,6 +10,12 @@
     <PackageReference Include="Microsoft.Build.Framework" Version="$(MicrosoftBuildFrameworkVersion)" />
     <PackageReference Include="Microsoft.Build.Utilities.Core" Version="$(MicrosoftBuildUtilitiesCoreVersion)" />
     <PackageReference Include="Microsoft.DotNet.RemoteExecutor" Version="$(MicrosoftDotNetRemoteExecutorVersion)" />
+    <Reference Include="$(MSBuildBinPath)/Microsoft.NET.HostModel.dll" />
     <Reference Include="$(MSBuildBinPath)/NuGet.Frameworks.dll" />
+  </ItemGroup>
+  <ItemGroup Condition="$([MSBuild]::IsOSPlatform('Windows'))">
+    <Content Include="$(NetCoreRoot)packs\Microsoft.NETCore.App.Host.win-x64\$(BundledNETCoreAppPackageVersion)\runtimes\win-x64\native\apphost.exe"
+             Link="bundle-apphost.exe"
+             CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

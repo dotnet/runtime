@@ -437,7 +437,7 @@ namespace Microsoft.NET.Build.Tasks
                         !Crossgen2CacheInvocation.SupportsTarget(Crossgen2Tool) ||
                         !Crossgen2Cache.PathComparer.Equals(Crossgen2Cache.InputPath(pathToTool), Crossgen2Cache.InputPath(Crossgen2Tool.ItemSpec)))
                     {
-                        cache.Report("bypass: unsupported invocation (requires native Linux-x64 or Windows-x64 crossgen2 targeting its host, with non-composite PE output and without unrecognized extra arguments or environment overrides)");
+                        cache.Report("bypass: unsupported invocation (requires directly executed Linux-x64 or Windows-x64 crossgen2 targeting its host, with non-composite PE output and without unrecognized extra arguments or environment overrides)");
                     }
                     else
                     {
