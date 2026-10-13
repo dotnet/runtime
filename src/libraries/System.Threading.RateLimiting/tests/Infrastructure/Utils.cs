@@ -235,6 +235,9 @@ namespace System.Threading.RateLimiting.Tests
 
         public Action<bool> DisposeImpl = _ => { };
         protected override void Dispose(bool disposing) => DisposeImpl(disposing);
+
+        public Func<ValueTask> DisposeAsyncCoreImpl = () => default;
+        protected override ValueTask DisposeAsyncCore() => DisposeAsyncCoreImpl();
     }
 
     internal sealed class ThrowDisposeLease : RateLimitLease

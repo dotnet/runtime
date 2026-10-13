@@ -45,6 +45,42 @@ namespace System.Threading.RateLimiting.Test
             Assert.True(limiter.AttemptAcquire().IsAcquired);
         }
 
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(true, false)]
+        [InlineData(false, true)]
+        [InlineData(true, true)]
+        public async Task LeaseDisposeAsyncReleasesPermitsOnce(bool disposeTwice, bool syncDisposeFirst)
+        {
+            var limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions
+            {
+                PermitLimit = 2,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 0
+            });
+            var lease1 = limiter.AttemptAcquire();
+            var lease2 = limiter.AttemptAcquire();
+            Assert.True(lease1.IsAcquired);
+            Assert.True(lease2.IsAcquired);
+            Assert.Equal(0, limiter.GetStatistics()!.CurrentAvailablePermits);
+
+            if (syncDisposeFirst)
+            {
+                lease1.Dispose();
+            }
+            await lease1.DisposeAsync();
+            if (disposeTwice)
+            {
+                await lease1.DisposeAsync();
+            }
+
+            Assert.Equal(1, limiter.GetStatistics()!.CurrentAvailablePermits);
+
+            await lease2.DisposeAsync();
+
+            Assert.Equal(2, limiter.GetStatistics()!.CurrentAvailablePermits);
+        }
+
         [Fact]
         public override async Task CanAcquireResourceAsync()
         {

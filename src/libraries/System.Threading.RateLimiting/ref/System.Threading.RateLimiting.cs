@@ -109,13 +109,15 @@ namespace System.Threading.RateLimiting
         public long TotalFailedLeases { get { throw null; } init { } }
         public long TotalSuccessfulLeases { get { throw null; } init { } }
     }
-    public abstract partial class RateLimitLease : System.IDisposable
+    public abstract partial class RateLimitLease : System.IAsyncDisposable, System.IDisposable
     {
         protected RateLimitLease() { }
         public abstract bool IsAcquired { get; }
         public abstract System.Collections.Generic.IEnumerable<string> MetadataNames { get; }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
+        public System.Threading.Tasks.ValueTask DisposeAsync() { throw null; }
+        protected virtual System.Threading.Tasks.ValueTask DisposeAsyncCore() { throw null; }
         public virtual System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>> GetAllMetadata() { throw null; }
         public abstract bool TryGetMetadata(string metadataName, out object? metadata);
         public bool TryGetMetadata<T>(System.Threading.RateLimiting.MetadataName<T> metadataName, [System.Diagnostics.CodeAnalysis.MaybeNullAttribute] out T metadata) { throw null; }

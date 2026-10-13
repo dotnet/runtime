@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace System.Threading.RateLimiting
 {
@@ -65,20 +67,39 @@ namespace System.Threading.RateLimiting
 
         protected override void Dispose(bool disposing)
         {
-            if (_leases is null)
+            ValueTask task = DisposeLeasesAsync(useAsync: false);
+            Debug.Assert(task.IsCompleted);
+            task.GetAwaiter().GetResult();
+        }
+
+        protected override ValueTask DisposeAsyncCore() => DisposeLeasesAsync(useAsync: true);
+
+        private async ValueTask DisposeLeasesAsync(bool useAsync)
+        {
+            RateLimitLease[]? leases = _leases;
+            if (leases is null)
             {
                 return;
             }
+
+            _leases = null;
 
             List<Exception>? exceptions = null;
             // Dispose in reverse order
             // Avoids issues where dispose might unblock a queued acquire and then the acquire fails when acquiring the next limiter.
             // When disposing in reverse order there wont be any issues of unblocking an acquire that affects acquires on limiters in the chain after it
-            for (int i = _leases.Length - 1; i >= 0; i--)
+            for (int i = leases.Length - 1; i >= 0; i--)
             {
                 try
                 {
-                    _leases[i].Dispose();
+                    if (useAsync)
+                    {
+                        await leases[i].DisposeAsync().ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        leases[i].Dispose();
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -86,8 +107,6 @@ namespace System.Threading.RateLimiting
                     exceptions.Add(ex);
                 }
             }
-
-            _leases = null;
 
             if (exceptions is not null)
             {

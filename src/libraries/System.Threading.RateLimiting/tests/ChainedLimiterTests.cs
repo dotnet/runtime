@@ -1045,6 +1045,98 @@ namespace System.Threading.RateLimiting.Tests
         }
 
         [Fact]
+        public async Task LeasesAreDisposedAsyncInReverseOrder()
+        {
+            var limiter1 = new CustomizableLimiter();
+            var limiter2 = new CustomizableLimiter();
+            using var chainedLimiter = RateLimiter.CreateChained(limiter1, limiter2);
+
+            var order = new System.Collections.Generic.List<int>();
+            var customizableLease1 = new CustomizableLease();
+            customizableLease1.DisposeAsyncCoreImpl = () =>
+            {
+                order.Add(1);
+                return default;
+            };
+            limiter1.AttemptAcquireCoreImpl = _ => customizableLease1;
+
+            var customizableLease2 = new CustomizableLease();
+            customizableLease2.DisposeAsyncCoreImpl = () =>
+            {
+                order.Add(2);
+                return default;
+            };
+            limiter2.AttemptAcquireCoreImpl = _ => customizableLease2;
+
+            var lease = chainedLimiter.AttemptAcquire();
+            Assert.True(lease.IsAcquired);
+
+            await lease.DisposeAsync();
+            await lease.DisposeAsync();
+
+            Assert.Equal(new[] { 2, 1 }, order);
+        }
+
+        [Fact]
+        public async Task LeaseDisposeAsyncThrowsAggregateAndDisposesAllLeases()
+        {
+            var limiter1 = new CustomizableLimiter();
+            var limiter2 = new CustomizableLimiter();
+            var limiter3 = new CustomizableLimiter();
+            using var chainedLimiter = RateLimiter.CreateChained(limiter1, limiter2, limiter3);
+
+            var disposed1 = false;
+            var disposed3 = false;
+            limiter1.AttemptAcquireCoreImpl = _ => new CustomizableLease { DisposeAsyncCoreImpl = () => { disposed1 = true; return default; } };
+            limiter2.AttemptAcquireCoreImpl = _ => new CustomizableLease { DisposeAsyncCoreImpl = () => throw new InvalidOperationException() };
+            limiter3.AttemptAcquireCoreImpl = _ => new CustomizableLease { DisposeAsyncCoreImpl = () => { disposed3 = true; return default; } };
+
+            var lease = chainedLimiter.AttemptAcquire();
+            Assert.True(lease.IsAcquired);
+
+            var ex = await Assert.ThrowsAsync<AggregateException>(async () => await lease.DisposeAsync());
+            Assert.IsType<InvalidOperationException>(Assert.Single(ex.InnerExceptions));
+            Assert.True(disposed1);
+            Assert.True(disposed3);
+        }
+
+        [Fact]
+        public async Task LeaseDisposeAsyncReleasesConcurrencyPermits()
+        {
+            var limiter1 = new ConcurrencyLimiter(new ConcurrencyLimiterOptions { PermitLimit = 1, QueueLimit = 0 });
+            var limiter2 = new ConcurrencyLimiter(new ConcurrencyLimiterOptions { PermitLimit = 1, QueueLimit = 0 });
+            using var chainedLimiter = RateLimiter.CreateChained(limiter1, limiter2);
+
+            var lease = chainedLimiter.AttemptAcquire();
+            Assert.True(lease.IsAcquired);
+            Assert.False(chainedLimiter.AttemptAcquire().IsAcquired);
+
+            await lease.DisposeAsync();
+
+            Assert.Equal(1, limiter1.GetStatistics()!.CurrentAvailablePermits);
+            Assert.Equal(1, limiter2.GetStatistics()!.CurrentAvailablePermits);
+        }
+
+        [Fact]
+        public async Task LeaseDisposeAsyncCallsDisposeAsyncCoreThenDisposeFalse()
+        {
+            var calls = new System.Collections.Generic.List<string>();
+            var lease = new CustomizableLease
+            {
+                DisposeAsyncCoreImpl = () =>
+                {
+                    calls.Add("core");
+                    return default;
+                },
+                DisposeImpl = disposing => calls.Add($"dispose:{disposing}")
+            };
+
+            await lease.DisposeAsync();
+
+            Assert.Equal(new[] { "core", "dispose:False" }, calls);
+        }
+
+        [Fact]
         public void LeasesAreDisposedInReverseOrderWhenAcquireThrows()
         {
             var limiter1 = new CustomizableLimiter();

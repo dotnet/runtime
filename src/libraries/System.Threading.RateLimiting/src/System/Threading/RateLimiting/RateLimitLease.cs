@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Threading.Tasks;
 
 namespace System.Threading.RateLimiting
 {
@@ -10,7 +11,7 @@ namespace System.Threading.RateLimiting
     /// Abstraction for leases returned by <see cref="RateLimiter"/> implementations.
     /// A lease represents the success or failure to acquire a resource and contains potential metadata that is relevant to the acquisition operation.
     /// </summary>
-    public abstract class RateLimitLease : IDisposable
+    public abstract class RateLimitLease : IAsyncDisposable, IDisposable
     {
         /// <summary>
         /// Represents whether lease acquisition was successful.
@@ -85,5 +86,31 @@ namespace System.Threading.RateLimiting
         /// </summary>
         /// <param name="disposing"></param>
         protected virtual void Dispose(bool disposing) { }
+
+        /// <summary>
+        /// DisposeAsync method for implementations to write. Override to perform asynchronous cleanup;
+        /// <see cref="DisposeAsync"/> calls <see cref="Dispose(bool)"/> with <see langword="false"/> after this method completes.
+        /// </summary>
+        /// <returns>ValueTask representing the completion of the asynchronous cleanup.</returns>
+        protected virtual ValueTask DisposeAsyncCore()
+        {
+            return default;
+        }
+
+        /// <summary>
+        /// Disposes the lease asynchronously.
+        /// </summary>
+        /// <returns>ValueTask representing the completion of the disposal.</returns>
+        public async ValueTask DisposeAsync()
+        {
+            // Perform async cleanup.
+            await DisposeAsyncCore().ConfigureAwait(false);
+
+            // Dispose of unmanaged resources.
+            Dispose(false);
+
+            // Suppress finalization.
+            GC.SuppressFinalize(this);
+        }
     }
 }
