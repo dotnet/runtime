@@ -149,6 +149,9 @@ X509ChainContext* AndroidCryptoNative_X509ChainCreateContext(jobject /*X509Certi
             loc[trustedCert] = loc[anchor] = NULL;
 
             jobject candidate = i < 0 ? cert : extraStore[i];
+            if (i >= 0 && (*env)->IsSameObject(env, candidate, cert))
+                continue;
+
             if (FindTrustedCertificate(env, loc[keyStore], candidate, &loc[trustedCert]) != SUCCESS)
                 goto cleanup;
             if (loc[trustedCert] == NULL)
