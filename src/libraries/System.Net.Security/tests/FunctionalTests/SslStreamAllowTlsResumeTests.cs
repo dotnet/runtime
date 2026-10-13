@@ -7,6 +7,7 @@ using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 using System.Linq;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 using Microsoft.DotNet.XUnitExtensions;
 
@@ -354,7 +355,20 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
-        public Task DifferentEncryptionPolicy_NoResume()
+        public async Task DifferentEncryptionPolicy_NoResume()
+        {
+            // Other tests can evict the process-wide Schannel credentials between connections.
+            if (PlatformDetection.IsWindows && RemoteExecutor.IsSupported)
+            {
+                await RemoteExecutor.Invoke(static () => new SslStreamTlsResumeTests().DifferentEncryptionPolicy_NoResumeCore()).DisposeAsync();
+            }
+            else
+            {
+                await DifferentEncryptionPolicy_NoResumeCore();
+            }
+        }
+
+        private Task DifferentEncryptionPolicy_NoResumeCore()
         {
             SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions
                 {
