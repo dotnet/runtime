@@ -91,8 +91,7 @@ The .NET Foundation licenses this file to you under the MIT license.
     <ExportsFile Condition="$(ExportsFile) == '' and '$(BuildingFrameworkLibrary)' != 'true'">$(NativeIntermediateOutputPath)$(TargetName)$(ExportsFileExt)</ExportsFile>
 
     <IlcCompileOutput>$(NativeObject)</IlcCompileOutput>
-    <TypeMapXmlFile Condition="'$(TypeMapGenerateXmlFile)' == 'true' and '$(TypeMapXmlFile)' == ''">$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '$(IntermediateOutputPath)', '$(TargetName).typemaps.xml'))</TypeMapXmlFile>
-    <_IlcTypeMapXmlFile Condition="'$(TypeMapGenerateXmlFile)' == 'true' and '$(BuildingFrameworkLibrary)' != 'true'">$(TypeMapXmlFile)</_IlcTypeMapXmlFile>
+    <_IlcTypeMapXmlFile Condition="'$(TypeMapXmlFile)' != '' and '$(BuildingFrameworkLibrary)' != 'true'">$(TypeMapXmlFile)</_IlcTypeMapXmlFile>
 
     <LinkNativeDependsOn>IlcCompile</LinkNativeDependsOn>
 

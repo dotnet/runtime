@@ -19,9 +19,10 @@ ILLink and NativeAOT ILC accept `--output-typemaps <file>` to write a UTF-8 XML
 sidecar describing their retained type maps. This is an opt-in intermediate build
 artifact, independent of dependency tracing. It does not root any additional
 types or maps.
-In SDK builds, `TypeMapXmlFile` specifies the output path and defaults to the
-intermediate output directory. The sidecar is not published or bundled with the
-application.
+In SDK builds, setting `TypeMapXmlFile` to a non-empty path enables generation
+and selects the output path. If it is unset or empty, no artifact is written.
+SDK consumers can choose an intermediate path so the sidecar is not published
+or bundled with the application.
 
 ```xml
 <typemaps>

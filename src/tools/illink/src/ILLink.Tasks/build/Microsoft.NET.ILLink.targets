@@ -85,8 +85,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     <_ExtraTrimmerArgs>$(_ExtraTrimmerArgs) --typemap-entry-assembly "$(TypeMapEntryAssembly)"</_ExtraTrimmerArgs>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TypeMapGenerateXmlFile)' == 'true'">
-    <TypeMapXmlFile Condition="'$(TypeMapXmlFile)' == ''">$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '$(IntermediateOutputPath)', '$(TargetName).typemaps.xml'))</TypeMapXmlFile>
+  <PropertyGroup Condition="'$(TypeMapXmlFile)' != ''">
     <_TrimmerTypeMapXmlFile>$(TypeMapXmlFile)</_TrimmerTypeMapXmlFile>
     <_ExtraTrimmerArgs>$(_ExtraTrimmerArgs) --output-typemaps "$(TypeMapXmlFile)"</_ExtraTrimmerArgs>
   </PropertyGroup>
