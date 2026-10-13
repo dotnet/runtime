@@ -1,5 +1,6 @@
 set(SOURCES
     ${RUNTIME_DIR}/windows/CLREventBase.cpp
+    allocation.cpp
     doublemapping.cpp
     dn-u16.cpp
     dn-stdio.cpp

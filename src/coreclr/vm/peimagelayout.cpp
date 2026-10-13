@@ -10,6 +10,7 @@
 
 #ifdef TARGET_UNIX
 #include <errno.h>
+#include <stdlib.h>
 #include <sys/stat.h>
 #include <unistd.h>
 #include "dn-stdio.h"
@@ -503,24 +504,24 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
     }
 }
 
-static PEImagePart AllocatedPart(PVOID part, SIZE_T size = 0)
+static SIZE_T AllocatedPart(PVOID part)
 {
-    return { (SIZE_T)part + 1, size };
+    return (SIZE_T)part + 1;
 }
 
-static PEImagePart MappedPart(PVOID part, SIZE_T size)
+static SIZE_T MappedPart(PVOID part)
 {
-    return { (SIZE_T)part, size };
+    return (SIZE_T)part;
 }
 
-static PVOID PtrFromPart(const PEImagePart& part)
+static PVOID PtrFromPart(SIZE_T part)
 {
-    return (PVOID)(part.taggedAddress & ~1);
+    return (PVOID)(part & ~1);
 }
 
-static SIZE_T IsAllocatedPart(const PEImagePart& part)
+static SIZE_T IsAllocatedPart(SIZE_T part)
 {
-    return part.taggedAddress & 1;
+    return part & 1;
 }
 
 void ConvertedImageLayout::FreeImageParts()
@@ -528,29 +529,37 @@ void ConvertedImageLayout::FreeImageParts()
     LIMITED_METHOD_CONTRACT;
     for (int i = 0; i < ConvertedImageLayout::MAX_PARTS; i++)
     {
-        PEImagePart imagePart = this->m_imageParts[i];
-        if (imagePart.taggedAddress == 0)
+        SIZE_T imagePart = this->m_imageParts[i];
+        if (imagePart == 0)
             break;
+
+        SIZE_T nextPart = i + 1 < ConvertedImageLayout::MAX_PARTS ? this->m_imageParts[i + 1] : 0;
+        this->m_imageParts[i] = 0;
+        // A final untagged pointer marks the end of the reservation, not a mapped view.
+        if (nextPart == 0)
+        {
+            _ASSERTE(!IsAllocatedPart(imagePart));
+            break;
+        }
 
 #ifdef TARGET_WASM
         _ASSERTE(IsAllocatedPart(imagePart));
-        ClrVirtualFree(PtrFromPart(imagePart), 0, MEM_RELEASE);
+        free(PtrFromPart(imagePart));
 #else
+        SIZE_T partSize = reinterpret_cast<SIZE_T>(PtrFromPart(nextPart)) - reinterpret_cast<SIZE_T>(PtrFromPart(imagePart));
         if (IsAllocatedPart(imagePart))
         {
-            if (!VMToOSInterface::ReleaseMemoryReservation(PtrFromPart(imagePart), imagePart.size))
+            if (!VMToOSInterface::ReleaseMemoryReservation(PtrFromPart(imagePart), partSize))
                 LOG((LF_LOADER, LL_INFO100, "PEImage: Could not release image reservation (0x%08x)\n",
                     static_cast<unsigned>(VMToOSInterface::GetLastMemoryMappingError())));
         }
         else
         {
-            if (VMToOSInterface::UnmapMemory(PtrFromPart(imagePart), imagePart.size) != 0)
+            if (VMToOSInterface::UnmapMemory(PtrFromPart(imagePart), partSize) != 0)
                 LOG((LF_LOADER, LL_INFO100, "PEImage: Could not unmap image part (0x%08x)\n",
                     static_cast<unsigned>(VMToOSInterface::GetLastMemoryMappingError())));
         }
 #endif // TARGET_WASM
-
-        this->m_imageParts[i] = {};
     }
 }
 
@@ -922,7 +931,7 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner, const BYTE* array, COUNT_T siz
     }
 }
 
-void* FlatImageLayout::LoadImageByCopyingParts(PEImagePart* m_imageParts) const
+void* FlatImageLayout::LoadImageByCopyingParts(SIZE_T* m_imageParts) const
 {
     CONTRACTL
     {
@@ -932,6 +941,21 @@ void* FlatImageLayout::LoadImageByCopyingParts(PEImagePart* m_imageParts) const
     }
     CONTRACTL_END;
 
+    S_SIZE_T allocSize(GetVirtualSize());
+    allocSize.AlignUp(g_SystemInfo.dwAllocationGranularity);
+    if (allocSize.IsOverflow())
+        ThrowOutOfMemory();
+
+#ifdef TARGET_WASM
+    void* base = nullptr;
+    int error = posix_memalign(&base, g_SystemInfo.dwAllocationGranularity, allocSize.Value());
+    if (error == ENOMEM)
+        ThrowOutOfMemory();
+    if (error != 0)
+        ThrowHR(HRESULTFromErr(error));
+
+    memset(base, 0, allocSize.Value());
+#else
     void* preferredBase = NULL;
 #ifdef FEATURE_ENABLE_NO_ADDRESS_SPACE_RANDOMIZATION
     if (g_useDefaultBaseAddr)
@@ -940,14 +964,7 @@ void* FlatImageLayout::LoadImageByCopyingParts(PEImagePart* m_imageParts) const
     }
 #endif // FEATURE_ENABLE_NO_ADDRESS_SPACE_RANDOMIZATION
 
-    DWORD allocationType = MEM_RESERVE | MEM_COMMIT;
-    DWORD initialProtection = PAGE_READWRITE;
-#if defined(HOST_UNIX) && defined(FEATURE_DYNAMIC_CODE_COMPILED)
-    // Tell PAL to use the executable memory allocator to satisfy this request for virtual memory.
-    // This is required on MacOS and otherwise will allow us to place native R2R code close to the
-    // coreclr library and thus improve performance by avoiding jump stubs in managed code.
-    allocationType |= MEM_RESERVE_EXECUTABLE;
-#endif
+    VMToOSInterface::MemoryProtection initialProtection = VMToOSInterface::MemoryProtection::ReadWrite;
 #if defined(HOST_OSX) && defined(HOST_ARM64)
     // On Apple Silicon, allocating the image region as plain PAGE_READWRITE and then promoting
     // executable sections to PAGE_EXECUTE_READ via mprotect has been observed to
@@ -956,39 +973,37 @@ void* FlatImageLayout::LoadImageByCopyingParts(PEImagePart* m_imageParts) const
     //
     // Avoid the unreliable transition - reserve the whole region as PAGE_NOACCESS first, then
     // commit each section directly with its final protection.
-    allocationType &= ~MEM_COMMIT;
-    initialProtection = PAGE_NOACCESS;
+    initialProtection = VMToOSInterface::MemoryProtection::NoAccess;
 #endif
 
-    COUNT_T allocSize = ALIGN_UP(this->GetVirtualSize(), g_SystemInfo.dwAllocationGranularity);
-    LPVOID base = ClrVirtualAlloc(preferredBase, allocSize, allocationType, initialProtection);
+    void* base = VMToOSInterface::AllocateMemory(preferredBase, allocSize.Value(), initialProtection);
     if (base == NULL && preferredBase != NULL)
-        base = ClrVirtualAlloc(NULL, allocSize, allocationType, initialProtection);
+        base = VMToOSInterface::AllocateMemory(nullptr, allocSize.Value(), initialProtection);
 
     if (base == NULL)
-        ThrowLastError();
+        ThrowHR(VMToOSInterface::GetLastMemoryMappingError());
+#endif // TARGET_WASM
 
     // when loading by copying we have only one part to free.
     m_imageParts[0] = AllocatedPart(base);
+    m_imageParts[1] = MappedPart(static_cast<BYTE*>(base) + allocSize.Value());
 
     IMAGE_SECTION_HEADER* sectionStart = IMAGE_FIRST_SECTION(FindNTHeaders());
     IMAGE_SECTION_HEADER* sectionEnd = sectionStart + VAL16(FindNTHeaders()->FileHeader.NumberOfSections);
 
 #if defined(HOST_OSX) && defined(HOST_ARM64)
-    _ASSERTE((allocationType & MEM_COMMIT) == 0);
-    _ASSERTE(initialProtection != PAGE_READWRITE);
+    _ASSERTE(initialProtection == VMToOSInterface::MemoryProtection::NoAccess);
 
     DWORD sizeOfHeaders = VAL32(FindNTHeaders()->OptionalHeader.SizeOfHeaders);
 
     // Commit and copy headers, then apply read-only protection.
-    if (ClrVirtualAlloc(base, sizeOfHeaders, MEM_COMMIT, PAGE_READWRITE) == NULL)
-        ThrowLastError();
+    if (!VMToOSInterface::ProtectMemory(base, sizeOfHeaders, VMToOSInterface::MemoryProtection::ReadWrite))
+        ThrowHR(VMToOSInterface::GetLastMemoryMappingError());
 
     CopyMemory(base, (void*)GetBase(), sizeOfHeaders);
 
-    DWORD oldProtection; // PAL layer doesn't properly set the previous protection, so we don't try to validate it here.
-    if (!ClrVirtualProtect((void*)base, sizeOfHeaders, PAGE_READONLY, &oldProtection))
-        ThrowLastError();
+    if (!VMToOSInterface::ProtectMemory(base, sizeOfHeaders, VMToOSInterface::MemoryProtection::ReadOnly))
+        ThrowHR(VMToOSInterface::GetLastMemoryMappingError());
 
     // Commit and copy each section with its desired protection.
     for (IMAGE_SECTION_HEADER* section = sectionStart; section < sectionEnd; section++)
@@ -1001,8 +1016,10 @@ void* FlatImageLayout::LoadImageByCopyingParts(PEImagePart* m_imageParts) const
         BYTE* sectionBase = (BYTE*)base + VAL32(section->VirtualAddress);
         DWORD copySize = min(VAL32(section->SizeOfRawData), virtualSize);
 
-        if (ClrVirtualAlloc(sectionBase, virtualSize, MEM_COMMIT, isExec ? PAGE_EXECUTE_READWRITE : PAGE_READWRITE) == NULL)
-            ThrowLastError();
+        VMToOSInterface::MemoryProtection protection = isExec
+            ? VMToOSInterface::MemoryProtection::ExecuteReadWrite : VMToOSInterface::MemoryProtection::ReadWrite;
+        if (!VMToOSInterface::ProtectMemory(sectionBase, virtualSize, protection))
+            ThrowHR(VMToOSInterface::GetLastMemoryMappingError());
 
         if (isExec)
             PAL_JitWriteProtect(true);
@@ -1015,9 +1032,8 @@ void* FlatImageLayout::LoadImageByCopyingParts(PEImagePart* m_imageParts) const
         }
         else if ((section->Characteristics & IMAGE_SCN_MEM_WRITE) == 0)
         {
-            DWORD oldProt;
-            if (!ClrVirtualProtect(sectionBase, virtualSize, PAGE_READONLY, &oldProt))
-                ThrowLastError();
+            if (!VMToOSInterface::ProtectMemory(sectionBase, virtualSize, VMToOSInterface::MemoryProtection::ReadOnly))
+                ThrowHR(VMToOSInterface::GetLastMemoryMappingError());
         }
     }
 #else
@@ -1042,29 +1058,32 @@ void* FlatImageLayout::LoadImageByCopyingParts(PEImagePart* m_imageParts) const
         section++;
     }
 
+#ifndef TARGET_WASM
     // Apply write protection to copied headers
-    DWORD oldProtection;
-    if (!ClrVirtualProtect((void*)base, VAL32(FindNTHeaders()->OptionalHeader.SizeOfHeaders),
-        PAGE_READONLY, &oldProtection))
-        ThrowLastError();
+    if (!VMToOSInterface::ProtectMemory(base, VAL32(FindNTHeaders()->OptionalHeader.SizeOfHeaders),
+        VMToOSInterface::MemoryProtection::ReadOnly))
+        ThrowHR(VMToOSInterface::GetLastMemoryMappingError());
 
     // Finally, apply proper protection to copied sections
     for (section = sectionStart; section < sectionEnd; section++)
     {
         // Add appropriate page protection.
-        DWORD newProtection = section->Characteristics & IMAGE_SCN_MEM_EXECUTE ?
-            PAGE_EXECUTE_READ :
-            section->Characteristics & IMAGE_SCN_MEM_WRITE ?
-            PAGE_READWRITE :
-            PAGE_READONLY;
+        DWORD virtualSize = VAL32(section->Misc.VirtualSize);
+        if (virtualSize == 0)
+            continue;
 
-        if (!ClrVirtualProtect((void*)((BYTE*)base + VAL32(section->VirtualAddress)),
-            VAL32(section->Misc.VirtualSize),
-            newProtection, &oldProtection))
+        VMToOSInterface::MemoryProtection newProtection = section->Characteristics & IMAGE_SCN_MEM_EXECUTE ?
+            VMToOSInterface::MemoryProtection::ExecuteRead :
+            section->Characteristics & IMAGE_SCN_MEM_WRITE ?
+            VMToOSInterface::MemoryProtection::ReadWrite :
+            VMToOSInterface::MemoryProtection::ReadOnly;
+
+        if (!VMToOSInterface::ProtectMemory((BYTE*)base + VAL32(section->VirtualAddress), virtualSize, newProtection))
         {
-            ThrowLastError();
+            ThrowHR(VMToOSInterface::GetLastMemoryMappingError());
         }
     }
+#endif // !TARGET_WASM
 #endif // defined(HOST_OSX) && defined(HOST_ARM64)
 
     return base;
@@ -1072,7 +1091,7 @@ void* FlatImageLayout::LoadImageByCopyingParts(PEImagePart* m_imageParts) const
 
 #ifndef TARGET_WASM
 
-void* FlatImageLayout::LoadImageByMappingParts(PEImagePart* imageParts) const
+void* FlatImageLayout::LoadImageByMappingParts(SIZE_T* imageParts) const
 {
     CONTRACTL
     {
@@ -1097,8 +1116,8 @@ void* FlatImageLayout::LoadImageByMappingParts(PEImagePart* imageParts) const
     COUNT_T sectionCount = GetNumberOfSections();
     IMAGE_SECTION_HEADER* sections = FindFirstSection();
 
-    // Each section can contribute a hole, a mapped view, and a copied tail.
-    if (static_cast<UINT64>(sectionCount) * 3 + 3 > ConvertedImageLayout::MAX_PARTS)
+    // Each section can contribute a hole, a mapped view, and a copied tail. Keep one slot for the end boundary.
+    if (static_cast<UINT64>(sectionCount) * 3 + 3 >= ConvertedImageLayout::MAX_PARTS)
         return nullptr;
 
     S_SIZE_T imageSize(GetVirtualSize());
@@ -1160,8 +1179,9 @@ void* FlatImageLayout::LoadImageByMappingParts(PEImagePart* imageParts) const
         void* part = remaining.ExtractPrefix(partSize);
         if (part == nullptr)
             ThrowHR(VMToOSInterface::GetLastMemoryMappingError());
-        _ASSERTE(imagePartIndex < ConvertedImageLayout::MAX_PARTS);
-        imageParts[imagePartIndex++] = AllocatedPart(part, partSize);
+        _ASSERTE(imagePartIndex + 1 < ConvertedImageLayout::MAX_PARTS);
+        imageParts[imagePartIndex++] = AllocatedPart(part);
+        imageParts[imagePartIndex] = MappedPart(static_cast<BYTE*>(part) + partSize);
         return part;
     };
     auto mapPart = [&](UINT64 fileOffset, SIZE_T partSize, VMToOSInterface::MemoryProtection protection, bool shared) -> bool
@@ -1175,7 +1195,7 @@ void* FlatImageLayout::LoadImageByMappingParts(PEImagePart* imageParts) const
             LOG((LF_LOADER, LL_INFO100, "PEImage: Mapping failed (0x%08x), loading by copying\n", static_cast<unsigned>(error)));
             return false;
         }
-        imageParts[imagePartIndex - 1] = MappedPart(part, partSize);
+        imageParts[imagePartIndex - 1] = MappedPart(part);
         return true;
     };
 

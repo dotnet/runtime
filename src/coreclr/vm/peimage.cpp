@@ -105,13 +105,15 @@ PEImage::~PEImage()
 
     if (m_pLayoutLock)
         delete m_pLayoutLock;
+    if (m_hFile != VMToOSInterface::InvalidFileHandle)
+    {
 #ifdef TARGET_UNIX
-    if (m_hFile >= 0 && close(m_hFile) != 0)
-        LOG((LF_LOADER, LL_INFO100, "PEImage: Could not close file descriptor (%d)\n", errno));
+        if (close(m_hFile) != 0)
+            LOG((LF_LOADER, LL_INFO100, "PEImage: Could not close file descriptor (%d)\n", errno));
 #else
-    if(m_hFile!=INVALID_HANDLE_VALUE)
         CloseHandle(m_hFile);
 #endif // TARGET_UNIX
+    }
 
     for (unsigned int i=0;i<ARRAY_SIZE(m_pLayouts);i++)
     {
@@ -564,11 +566,7 @@ PEImage::PEImage(const WCHAR* path):
     m_refCount(1),
     m_bInHashMap(FALSE),
     m_probeExtensionResult(),
-#ifdef TARGET_UNIX
-    m_hFile(-1),
-#else
-    m_hFile(INVALID_HANDLE_VALUE),
-#endif // TARGET_UNIX
+    m_hFile(VMToOSInterface::InvalidFileHandle),
     m_dwPEKind(0),
     m_dwMachine(0),
     m_pMDImport(NULL)
@@ -779,7 +777,6 @@ PTR_PEImage PEImage::CreateFromHMODULE(HMODULE hMod)
 }
 #endif // !TARGET_UNIX
 
-#ifdef TARGET_UNIX
 VMToOSInterface::MemoryMapHandle PEImage::GetFileHandle()
 {
     CONTRACTL
@@ -789,7 +786,7 @@ VMToOSInterface::MemoryMapHandle PEImage::GetFileHandle()
     }
     CONTRACTL_END;
 
-    if (m_hFile < 0)
+    if (m_hFile == VMToOSInterface::InvalidFileHandle)
     {
         HRESULT hr = TryOpenFile(/* takeLock */ false);
         if (FAILED(hr))
@@ -798,29 +795,6 @@ VMToOSInterface::MemoryMapHandle PEImage::GetFileHandle()
 
     return m_hFile;
 }
-#else
-VMToOSInterface::MemoryMapHandle PEImage::GetFileHandle()
-{
-    CONTRACTL
-    {
-        STANDARD_VM_CHECK;
-        PRECONDITION(m_pLayoutLock->IsWriterLock());
-    }
-    CONTRACTL_END;
-
-    if (m_hFile!=INVALID_HANDLE_VALUE)
-        return m_hFile;
-
-    HRESULT hr = TryOpenFile(/*takeLock*/ false);
-
-    if (m_hFile == INVALID_HANDLE_VALUE)
-    {
-        EEFileLoadException::Throw(GetPathToLoad(), hr);
-    }
-
-    return m_hFile;
-}
-#endif // TARGET_UNIX
 
 HRESULT PEImage::TryOpenFile(bool takeLock)
 {
@@ -830,10 +804,10 @@ HRESULT PEImage::TryOpenFile(bool takeLock)
 
     SimpleWriteLockHolder lock(m_pLayoutLock, takeLock);
 
-#ifdef TARGET_UNIX
-    if (m_hFile >= 0)
+    if (m_hFile != VMToOSInterface::InvalidFileHandle)
         return S_OK;
 
+#ifdef TARGET_UNIX
     // Encoding conversion mutates SString storage; keep the shared image-cache key unchanged.
     StackSString filePath(GetPathToLoad());
     const char* path = filePath.GetUTF8();
@@ -891,9 +865,6 @@ HRESULT PEImage::TryOpenFile(bool takeLock)
     m_hFile = descriptor;
     return S_OK;
 #else
-    if (m_hFile != INVALID_HANDLE_VALUE)
-        return S_OK;
-
     ErrorModeHolder mode{};
     m_hFile = WszCreateFile((LPCWSTR)GetPathToLoad(),
                           // the file may have native code sections, make sure we are allowed to execute the file
@@ -903,7 +874,7 @@ HRESULT PEImage::TryOpenFile(bool takeLock)
                           OPEN_EXISTING,
                           FILE_ATTRIBUTE_NORMAL,
                           NULL);
-    if (m_hFile != INVALID_HANDLE_VALUE)
+    if (m_hFile != VMToOSInterface::InvalidFileHandle)
             return S_OK;
 
     DWORD dwLastError = GetLastError();

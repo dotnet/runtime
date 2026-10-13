@@ -141,11 +141,7 @@ public:
 
 #ifndef DACCESS_COMPILE
     VMToOSInterface::MemoryMapHandle GetFileHandle();
-#ifdef TARGET_UNIX
-    HRESULT TryOpenFile(bool takeLock = true);
-#else
     HRESULT TryOpenFile(bool takeLock = false);
-#endif // TARGET_UNIX
 #endif
 
     void GetMVID(GUID *pMvid);

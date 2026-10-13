@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "minipal.h"
+#include <minipal/log.h>
 #include <minipal/ospagesize.h>
 
 #include <assert.h>
@@ -21,7 +22,6 @@ typedef int32_t HRESULT;
 #endif
 
 extern "C" void* PAL_VirtualReserveFromExecutableMemoryAllocatorWithinRange(const void* beginAddress, const void* endAddress, size_t size, int storeAllocationInfo);
-extern "C" int32_t VirtualFree(void* address, size_t size, uint32_t freeType);
 
 #if defined(HOST_OSX) && defined(HOST_ARM64)
 extern "C" void PAL_JitWriteProtect(bool writeEnable);
@@ -145,6 +145,86 @@ int32_t VMToOSInterface::GetLastMemoryMappingError()
     return HRESULTFromErr(errno);
 }
 
+void* VMToOSInterface::AllocateMemory(void* address, size_t size, MemoryProtection protection)
+{
+    assert(IsValidMemoryProtection(static_cast<int>(protection)));
+
+    size_t pageSize = minipal_getpagesize();
+    if (size % pageSize != 0 || !IsValidMemoryRange(address, size, pageSize))
+    {
+        errno = EINVAL;
+        return nullptr;
+    }
+
+    int nativeProtection = GetNativeProtection(protection);
+    int flags = MAP_ANON | MAP_PRIVATE;
+#ifdef TARGET_APPLE
+    bool jitMapping = IsJitMappingRequired();
+    if (jitMapping)
+    {
+        flags |= MAP_JIT;
+    }
+#endif // TARGET_APPLE
+
+    if (address == nullptr)
+    {
+        constexpr size_t allocationGranularity = 64 * 1024;
+        if (size > SIZE_MAX - (allocationGranularity - 1))
+        {
+            errno = ENOMEM;
+            return nullptr;
+        }
+
+        size_t reservationSize = (size + allocationGranularity - 1) & ~(allocationGranularity - 1);
+        void* allocation = PAL_VirtualReserveFromExecutableMemoryAllocatorWithinRange(
+            nullptr, reinterpret_cast<void*>(SIZE_MAX), reservationSize, 0);
+        if (allocation != nullptr)
+        {
+            int error = 0;
+            size_t ownedSize = reservationSize;
+            // The caller owns only the requested pages, not the allocator's 64 KiB rounding.
+            if (reservationSize != size)
+            {
+                if (munmap(static_cast<char*>(allocation) + size, reservationSize - size) != 0)
+                    error = errno;
+                else
+                    ownedSize = size;
+            }
+
+            if (error == 0 && nativeProtection != PROT_NONE)
+            {
+#ifdef TARGET_APPLE
+                if (jitMapping)
+                {
+                    // Keep the executable allocator's MAP_JIT backing.
+                    if (mprotect(allocation, size, nativeProtection) != 0)
+                        error = errno;
+                }
+                else
+#endif // TARGET_APPLE
+                if (mmap(allocation, size, nativeProtection, flags | MAP_FIXED, -1, 0) == MAP_FAILED)
+                {
+                    error = errno;
+                }
+            }
+
+            if (error != 0)
+            {
+                if (munmap(allocation, ownedSize) != 0)
+                    minipal_log_print_error("Releasing failed memory allocation failed with error %d.\n", errno);
+                errno = error;
+                return nullptr;
+            }
+
+            return allocation;
+        }
+    }
+
+    // A preferred address is a hint; never replace memory the caller does not own.
+    void* result = mmap(address, size, nativeProtection, flags, -1, 0);
+    return result == MAP_FAILED ? nullptr : result;
+}
+
 void* VMToOSInterface::MapMemory(MemoryMapHandle fd, uint64_t offset, void* address, size_t size, MemoryProtection protection, bool shared)
 {
     if (fd < -1)
@@ -254,52 +334,7 @@ bool VMToOSInterface::SupportsPlaceholderMapping()
 
 void* VMToOSInterface::ReserveMemoryPlaceholder(void* address, size_t size)
 {
-    size_t pageSize = minipal_getpagesize();
-    if (size % pageSize != 0 || !IsValidMemoryRange(address, size, pageSize))
-    {
-        errno = EINVAL;
-        return nullptr;
-    }
-
-    if (address == nullptr)
-    {
-        constexpr size_t allocationGranularity = 64 * 1024;
-        if (size > SIZE_MAX - (allocationGranularity - 1))
-        {
-            errno = ENOMEM;
-            return nullptr;
-        }
-
-        size_t reservationSize = (size + allocationGranularity - 1) & ~(allocationGranularity - 1);
-        void* reservation = PAL_VirtualReserveFromExecutableMemoryAllocatorWithinRange(
-            nullptr, reinterpret_cast<void*>(SIZE_MAX), reservationSize, 0);
-        if (reservation != nullptr)
-        {
-            // The caller owns only the requested pages, not the allocator's 64 KiB rounding.
-            if (reservationSize != size &&
-                munmap(static_cast<char*>(reservation) + size, reservationSize - size) != 0)
-            {
-                int error = errno;
-                munmap(reservation, reservationSize);
-                errno = error;
-                return nullptr;
-            }
-
-            return reservation;
-        }
-    }
-
-    int flags = MAP_ANON | MAP_PRIVATE;
-#ifdef TARGET_APPLE
-    if (IsJitMappingRequired())
-    {
-        flags |= MAP_JIT;
-    }
-#endif // TARGET_APPLE
-
-    // A preferred address is a hint; never replace memory the caller does not own.
-    void* result = mmap(address, size, PROT_NONE, flags, -1, 0);
-    return result == MAP_FAILED ? nullptr : result;
+    return AllocateMemory(address, size, MemoryProtection::NoAccess);
 }
 
 bool VMToOSInterface::SplitMemoryPlaceholder(void* address, size_t size)
@@ -330,39 +365,25 @@ void* VMToOSInterface::CommitMemoryPlaceholder(void* address, size_t size, Memor
 
 bool VMToOSInterface::ReleaseMemoryReservation(void* address, size_t size)
 {
-    if (size != 0)
-    {
-        return IsValidPlaceholderRange(address, size) && munmap(address, size) == 0;
-    }
-
-    if (address == nullptr || reinterpret_cast<uintptr_t>(address) % minipal_getpagesize() != 0)
-    {
-        errno = EINVAL;
-        return false;
-    }
-
-    // Size-zero parts belong to the legacy PAL VirtualAlloc copying fallback.
-    constexpr uint32_t memRelease = 0x8000;
-    if (!VirtualFree(address, 0, memRelease))
-    {
-        errno = EFAULT;
-        return false;
-    }
-
-    return true;
+    return IsValidPlaceholderRange(address, size) && munmap(address, size) == 0;
 }
 
 bool VMToOSInterface::ProtectMemory(void* address, size_t size, MemoryProtection protection)
 {
     assert(IsValidMemoryProtection(static_cast<int>(protection)));
 
-    if (address == nullptr || !IsValidMemoryRange(address, size, minipal_getpagesize()))
+    uintptr_t start = reinterpret_cast<uintptr_t>(address);
+    size_t pageSize = minipal_getpagesize();
+    uintptr_t pageStart = start & ~(pageSize - 1);
+    size_t offsetInPage = start - pageStart;
+    if (address == nullptr || size == 0 || size > SIZE_MAX - offsetInPage ||
+        !IsValidMemoryRange(reinterpret_cast<void*>(pageStart), size + offsetInPage, pageSize))
     {
         errno = EINVAL;
         return false;
     }
 
-    return mprotect(address, size, GetNativeProtection(protection)) == 0;
+    return mprotect(reinterpret_cast<void*>(pageStart), size + offsetInPage, GetNativeProtection(protection)) == 0;
 }
 
 bool VMToOSInterface::PopulateMemoryPlaceholder(void* address, size_t allocationSize, const void* source, size_t copySize, MemoryProtection finalProtection)

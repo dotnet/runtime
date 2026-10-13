@@ -19,10 +19,12 @@ private:
 public:
 #ifdef TARGET_WINDOWS
     using MemoryMapHandle = HANDLE;
+    static inline const MemoryMapHandle InvalidFileHandle = INVALID_HANDLE_VALUE;
     static constexpr MemoryMapHandle InvalidMemoryMapHandle = nullptr;
     static constexpr bool MappingFailureAllowsCopyFallback = false;
 #else
     using MemoryMapHandle = int;
+    static constexpr MemoryMapHandle InvalidFileHandle = -1;
     static constexpr MemoryMapHandle InvalidMemoryMapHandle = -1;
     static constexpr bool MappingFailureAllowsCopyFallback = true;
 #endif // TARGET_WINDOWS
@@ -64,11 +66,19 @@ public:
     static void* MapAnonymousMemory(size_t size, MemoryProtection protection, bool executableBacking = false);
     static int32_t GetLastMemoryMappingError();
 
+    // Allocate zero-initialized, page-aligned memory.
+    // The size must be a nonzero multiple of the system page size.
+    // Release the allocation with ReleaseMemoryReservation and its original size.
+    static void* AllocateMemory(void* address, size_t size, MemoryProtection protection);
+
+    // Use placeholders to map file-backed sections at fixed offsets within one contiguous address range.
+    // Replacing parts of the reservation preserves ownership of those addresses, avoiding races with other
+    // allocations and allowing unmodified file-backed pages to stay shared instead of copying the image.
     static bool SupportsPlaceholderMapping();
     static void* ReserveMemoryPlaceholder(void* address, size_t size);
     static bool SplitMemoryPlaceholder(void* address, size_t size);
     static void* CommitMemoryPlaceholder(void* address, size_t size, MemoryProtection protection);
-    static bool ReleaseMemoryReservation(void* address, size_t size = 0);
+    static bool ReleaseMemoryReservation(void* address, size_t size);
     static bool ProtectMemory(void* address, size_t size, MemoryProtection protection);
     static bool PopulateMemoryPlaceholder(void* address, size_t allocationSize, const void* source,
         size_t copySize, MemoryProtection protection);

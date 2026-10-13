@@ -263,12 +263,6 @@ struct cdac_data<PEImageLayout>
 
 typedef ReleaseHolder<PEImageLayout> PEImageLayoutHolder;
 
-struct PEImagePart
-{
-    SIZE_T taggedAddress;
-    SIZE_T size;
-};
-
 // A simple layout where data stays the same as in the input (file or a byte array)
 class FlatImageLayout : public PEImageLayout
 {
@@ -278,9 +272,9 @@ public:
 #ifndef DACCESS_COMPILE
     FlatImageLayout(PEImage* pOwner);
     FlatImageLayout(PEImage* pOwner, const BYTE* array, COUNT_T size);
-    void* LoadImageByCopyingParts(PEImagePart* m_imageParts) const;
+    void* LoadImageByCopyingParts(SIZE_T* m_imageParts) const;
 #if !defined(TARGET_WASM)
-    void* LoadImageByMappingParts(PEImagePart* m_imageParts) const;
+    void* LoadImageByMappingParts(SIZE_T* m_imageParts) const;
 #endif
 #endif
 
@@ -307,7 +301,7 @@ public:
 #endif
 private:
     PT_RUNTIME_FUNCTION m_pExceptionDir;
-    PEImagePart         m_imageParts[MAX_PARTS];
+    SIZE_T              m_imageParts[MAX_PARTS];
 };
 
 #ifdef TARGET_WINDOWS
