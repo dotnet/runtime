@@ -343,13 +343,15 @@ namespace System.Formats.Cbor.Tests
         [InlineData("c11b0000003afff44180")] // one second after DateTimeOffset.MaxValue
         [InlineData("c1fb425d1a94a2000000")] // 5e11 seconds, within TimeSpan's range
         [InlineData("c1fbc2374876e8000000")] // -1e11 seconds, within TimeSpan's range
-        public static void ReadUnixTimeSeconds_OutOfDateTimeRange_ShouldThrowArgumentOutOfRangeException(string hexEncoding)
+        public static void ReadUnixTimeSeconds_OutOfDateTimeRange_ShouldThrowOverflowException(string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
             var reader = new CborReader(encoding);
 
-            Assert.Throws<ArgumentOutOfRangeException>(() => reader.ReadUnixTimeSeconds());
+            OverflowException exception = Assert.Throws<OverflowException>(() => reader.ReadUnixTimeSeconds());
+            Assert.IsType<ArgumentOutOfRangeException>(exception.InnerException);
             Assert.Equal(encoding.Length, reader.BytesRemaining);
+            Assert.Equal(0, reader.CurrentDepth);
             Assert.Equal(CborReaderState.Tag, reader.PeekState());
 
             reader.SkipValue();
@@ -361,6 +363,8 @@ namespace System.Formats.Cbor.Tests
         [InlineData("c13bffffffffffffffff")] // -1 - ulong.MaxValue
         [InlineData("c1fb7e37e43c8800759c")] // 1e300 seconds
         [InlineData("c1fbfe37e43c8800759c")] // -1e300 seconds
+        [InlineData("c1fa7f7fffff")] // float.MaxValue seconds
+        [InlineData("c1faff7fffff")] // -float.MaxValue seconds
         public static void ReadUnixTimeSeconds_OutOfNumericRange_ShouldThrowOverflowException(string hexEncoding)
         {
             byte[] encoding = hexEncoding.HexToByteArray();
@@ -371,6 +375,30 @@ namespace System.Formats.Cbor.Tests
             Assert.Equal(CborReaderState.Tag, reader.PeekState());
 
             reader.SkipValue();
+            Assert.Equal(CborReaderState.Finished, reader.PeekState());
+        }
+
+        [Theory]
+        [InlineData("c11b7fffffffffffffff")]
+        [InlineData("c1fb425d1a94a2000000")]
+        [InlineData("c11bffffffffffffffff")]
+        public static void ReadUnixTimeSeconds_OutOfRangeMapKey_ShouldPreserveReaderState(string hexEncoding)
+        {
+            byte[] encoding = $"a20101{hexEncoding}02".HexToByteArray();
+            var reader = new CborReader(encoding, CborConformanceMode.Strict);
+            reader.ReadStartMap();
+            Assert.Equal(1, reader.ReadInt32());
+            Assert.Equal(1, reader.ReadInt32());
+            int bytesRemaining = reader.BytesRemaining;
+
+            Assert.Throws<OverflowException>(() => reader.ReadUnixTimeSeconds());
+            Assert.Equal(bytesRemaining, reader.BytesRemaining);
+            Assert.Equal(1, reader.CurrentDepth);
+            Assert.Equal(CborReaderState.Tag, reader.PeekState());
+
+            reader.SkipValue();
+            Assert.Equal(2, reader.ReadInt32());
+            reader.ReadEndMap();
             Assert.Equal(CborReaderState.Finished, reader.PeekState());
         }
 
