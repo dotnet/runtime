@@ -5,6 +5,7 @@
 #include <cassert>
 #include <condition_variable>
 #include <mutex>
+#include <optional>
 #include <error_codes.h>
 #include <pal.h>
 #include <trace.h>
@@ -24,7 +25,6 @@
 #include "runtime_config.h"
 #include "sdk_info.h"
 #include "sdk_resolver.h"
-#include "roll_fwd_on_no_candidate_fx_option.h"
 #include "bundle/info.h"
 #include "install_info.h"
 
@@ -336,7 +336,7 @@ namespace
         fx_definition_t& app,
         const pal::string_t& app_candidate,
         pal::string_t& runtime_config,
-        const runtime_config_t::settings_t& override_settings)
+        const std::optional<roll_forward_option>& override_roll_forward)
     {
         // Check for the runtimeconfig.json file specified at the command line
         if (!runtime_config.empty() && !pal::fullpath(&runtime_config))
@@ -358,7 +358,7 @@ namespace
             get_runtime_config_paths_from_arg(runtime_config, &config_file, &dev_config_file);
         }
 
-        app.parse_runtime_config(config_file, dev_config_file, override_settings);
+        app.parse_runtime_config(config_file, dev_config_file, override_roll_forward);
         if (!app.get_runtime_config().is_valid())
         {
             trace::error(_X("Invalid runtimeconfig.json [%s] [%s]"), app.get_runtime_config().get_path().c_str(), app.get_runtime_config().get_dev_path().c_str());
@@ -429,20 +429,7 @@ namespace
             return StatusCode::InvalidArgFailure;
         }
 
-        runtime_config_t::settings_t override_settings;
-
-        // `Roll forward` is set to Minor (2) (roll_forward_option::Minor) by default.
-        // For backward compatibility there are two settings:
-        //  - rollForward (the new one) which has more possible values
-        //  - rollForwardOnNoCandidateFx (the old one) with only 0-Off, 1-Minor, 2-Major
-        // It can be changed through:
-        // 1. Command line argument --roll-forward or --roll-forward-on-no-candidate-fx
-        // 2. DOTNET_ROLL_FORWARD env var.
-        // 3. Runtimeconfig json file ('rollForward' or 'rollForwardOnNoCandidateFx' property in "framework" section).
-        // 4. Runtimeconfig json file ('rollForward' or 'rollForwardOnNoCandidateFx' property in a "runtimeOptions" section).
-        // 5. DOTNET_ROLL_FORWARD_ON_NO_CANDIDATE_FX env var.
-        // The conflicts will be resolved by following the priority rank described above (from 1 to 5, lower number wins over higher number).
-        // The env var condition is verified in the config file processing
+        std::optional<roll_forward_option> override_roll_forward;
 
         pal::string_t roll_forward = command_line::get_option_value(opts, known_options::roll_forward, _X(""));
         if (roll_forward.length() > 0)
@@ -454,29 +441,14 @@ namespace
                 return StatusCode::InvalidArgFailure;
             }
 
-            override_settings.set_roll_forward(val);
-        }
-
-        pal::string_t roll_fwd_on_no_candidate_fx = command_line::get_option_value(opts, known_options::roll_forward_on_no_candidate_fx, _X(""));
-        if (roll_fwd_on_no_candidate_fx.length() > 0)
-        {
-            if (override_settings.has_roll_forward)
-            {
-                trace::error(_X("It's invalid to use both '%s' and '%s' command line options."),
-                    command_line::get_option_name(known_options::roll_forward),
-                    command_line::get_option_name(known_options::roll_forward_on_no_candidate_fx));
-                return StatusCode::InvalidArgFailure;
-            }
-
-            auto val = static_cast<roll_fwd_on_no_candidate_fx_option>(pal::xtoi(roll_fwd_on_no_candidate_fx.c_str()));
-            override_settings.set_roll_forward(roll_fwd_on_no_candidate_fx_to_roll_forward(val));
+            override_roll_forward = val;
         }
 
         // Read config
         fx_definition_vector_t fx_definitions;
         auto app = new fx_definition_t();
         fx_definitions.push_back(std::unique_ptr<fx_definition_t>(app));
-        int rc = read_config(*app, app_candidate, runtime_config, override_settings);
+        int rc = read_config(*app, app_candidate, runtime_config, override_roll_forward);
         if (rc != StatusCode::Success)
             return rc;
 
@@ -490,7 +462,7 @@ namespace
             pal::string_t fx_version_specified = command_line::get_option_value(opts, known_options::fx_version, _X(""));
             if (fx_version_specified.length() > 0)
             {
-                // This will also set roll forward defaults on the ref
+                // This also disables roll forward for the framework reference.
                 app_config.set_fx_version(fx_version_specified);
             }
 
@@ -503,7 +475,7 @@ namespace
                 pal::getenv(_X("DOTNET_ADDITIONAL_DEPS"), &additional_deps_serialized);
             }
 
-            rc = fx_resolver_t::resolve_frameworks_for_app(host_info.dotnet_root, override_settings, app_config, fx_definitions, mode == host_mode_t::muxer ? app_candidate.c_str() : host_info.host_path.c_str());
+            rc = fx_resolver_t::resolve_frameworks_for_app(host_info.dotnet_root, override_roll_forward, app_config, fx_definitions, mode == host_mode_t::muxer ? app_candidate.c_str() : host_info.host_path.c_str());
             if (rc != StatusCode::Success)
             {
                 return rc;
@@ -644,19 +616,19 @@ namespace
         auto app = new fx_definition_t();
         fx_definitions.push_back(std::unique_ptr<fx_definition_t>(app));
 
-        const runtime_config_t::settings_t override_settings;
-        int rc = read_config(*app, host_info.app_path, runtime_config_path, override_settings);
+        const std::optional<roll_forward_option> override_roll_forward;
+        int rc = read_config(*app, host_info.app_path, runtime_config_path, override_roll_forward);
         if (rc != StatusCode::Success)
             return rc;
 
-        const runtime_config_t app_config = app->get_runtime_config();
+        const runtime_config_t& app_config = app->get_runtime_config();
         if (!app_config.get_is_framework_dependent())
         {
             trace::error(_X("Initialization for self-contained components is not supported"));
             return StatusCode::InvalidConfigFile;
         }
 
-        rc = fx_resolver_t::resolve_frameworks_for_app(host_info.dotnet_root, override_settings, app_config, fx_definitions, host_info.host_path.c_str());
+        rc = fx_resolver_t::resolve_frameworks_for_app(host_info.dotnet_root, override_roll_forward, app_config, fx_definitions, host_info.host_path.c_str());
         if (rc != StatusCode::Success)
             return rc;
 
@@ -686,12 +658,12 @@ namespace
     {
         // Read config
         fx_definition_t app;
-        const runtime_config_t::settings_t override_settings;
-        int rc = read_config(app, host_info.app_path, runtime_config_path, override_settings);
+        const std::optional<roll_forward_option> override_roll_forward;
+        int rc = read_config(app, host_info.app_path, runtime_config_path, override_roll_forward);
         if (rc != StatusCode::Success)
             return rc;
 
-        const runtime_config_t app_config = app.get_runtime_config();
+        const runtime_config_t& app_config = app.get_runtime_config();
         if (!app_config.get_is_framework_dependent())
         {
             trace::error(_X("Initialization for self-contained components is not supported"));
