@@ -7681,10 +7681,12 @@ int Compiler::lvaAllocateTemps(int stkOffs, bool mustDoubleAlign)
             spillTempSize += size;
             lvaIncrementFrameSize(size);
 #ifdef TARGET_POWERPC64
-            stkOffs += size;
             // PPC64LE: embed the same LINKAGE_AREA + paramSave base that
             // lvaAllocLocalAndSetVirtualOffset uses, so tdAdjustTempOffs(0)
             // produces the correct absolute SP-relative offset.
+            // The offset must be the START of the slot (recorded before advancing
+            // stkOffs); otherwise the last temp lands one slot too high, on top of
+            // the first callee-saved register save slot.
             {
                 const int LINKAGE_AREA_SIZE    = 32;
                 const int PARAM_SAVE_AREA_SIZE = 64;
@@ -7695,6 +7697,7 @@ int Compiler::lvaAllocateTemps(int stkOffs, bool mustDoubleAlign)
                 }
                 temp->tdSetTempOffs(stkOffs + LINKAGE_AREA_SIZE + paramSaveArea);
             }
+            stkOffs += size;
 #else
             stkOffs -= size;
             temp->tdSetTempOffs(stkOffs);
