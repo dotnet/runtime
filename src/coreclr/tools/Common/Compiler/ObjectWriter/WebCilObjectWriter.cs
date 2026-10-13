@@ -5,9 +5,11 @@ using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Numerics;
+using System.Text;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysis.Wasm;
 using ILCompiler.DependencyAnalysisFramework;
@@ -28,14 +30,22 @@ namespace ILCompiler.ObjectWriter
         public const int WebcilSectionAlignment = 16;
 
         protected override CodeDataLayout LayoutMode => CodeDataLayout.Separate;
+        private protected override bool ShouldDeduplicateFunctionBodies => true;
 
         // We use 2 Wasm data segments for webcil,
         // 1 for the payload size, and the second for the payload itself.
         const int NumDataSegments = 2;
 
-        public WebCilObjectWriter(NodeFactory factory, ObjectWritingOptions options, OutputInfoBuilder outputInfoBuilder)
+        private readonly bool _emitNameSection;
+
+        public WebCilObjectWriter(
+            NodeFactory factory,
+            ObjectWritingOptions options,
+            OutputInfoBuilder outputInfoBuilder,
+            bool emitNameSection)
             : base(factory, options, outputInfoBuilder)
         {
+            _emitNameSection = emitNameSection;
         }
 
         private Dictionary<SortableDependencyNode.ObjectNodeOrder, Utf8String> _wellKnownSymbols = new();
@@ -248,20 +258,20 @@ namespace ILCompiler.ObjectWriter
         private protected override void EmitSectionsAndLayout()
         {
 #if READYTORUN
-            int expectedFunctionIndex = -1;
+            int expectedTableSlot = -1;
             foreach (ILCompiler.DependencyAnalysis.ReadyToRun.MethodWithGCInfo method in _nodeFactory.EnumerateCompiledMethods())
             {
                 Utf8String methodName = new(method.GetMangledName(_nodeFactory.NameMangler));
-                int functionIndex = _wasmSymbolManager.GetSymbol(methodName).Index;
+                int tableSlot = GetTableSlot(methodName);
 
-                if (expectedFunctionIndex == -1)
+                if (expectedTableSlot == -1)
                 {
-                    expectedFunctionIndex = functionIndex;
+                    expectedTableSlot = tableSlot;
                 }
 
-                Debug.Assert(functionIndex == expectedFunctionIndex,
-                    $"R2R method {method.Method} has wasm function index {functionIndex}, expected {expectedFunctionIndex}");
-                expectedFunctionIndex += method.FrameInfos.Length;
+                Debug.Assert(tableSlot == expectedTableSlot,
+                    $"R2R method {method.Method} has wasm table slot {tableSlot}, expected {expectedTableSlot}");
+                expectedTableSlot += method.FrameInfos.Length;
             }
 #endif
 
@@ -545,11 +555,14 @@ namespace ILCompiler.ObjectWriter
             dataSection.EmitToStream(outputFileStream);
 #endif
 
-            // The name section goes last, after the data section, as tooling expects. It is the only
-            // record of function names now that they are no longer carried by the export table, and
-            // wasm-merge -g synthesizes the merged module's names from it.
-            WasmNameSection nameSection = new WasmNameSection(_wasmSymbolManager.GetDefinitions(WasmIndexSpace.Function));
-            nameSection.EmitToStream(outputFileStream);
+            if (_emitNameSection)
+            {
+                // The name section goes last, after the data section, as tooling expects. It is the only
+                // in-image record of function names now that they are no longer carried by the export table,
+                // and wasm-merge -g synthesizes the merged module's names from it.
+                WasmNameSection nameSection = new WasmNameSection(_wasmSymbolManager.GetDefinitions(WasmIndexSpace.Function));
+                nameSection.EmitToStream(outputFileStream);
+            }
 
             if (_outputInfoBuilder is not null)
             {
@@ -568,6 +581,18 @@ namespace ILCompiler.ObjectWriter
                 {
                     _outputInfoBuilder.RemapMethodNodeOffsets(codeSectionIndex, _codeOffsetMap);
                 }
+            }
+        }
+
+        public void EmitSymbolMap(string path)
+        {
+            Console.WriteLine($"Emitting WebAssembly symbol map: {path}");
+            using var writer = new StreamWriter(path, append: false, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+            foreach (WasmSymbol symbol in _wasmSymbolManager.GetDefinitions(WasmIndexSpace.Function))
+            {
+                writer.Write(symbol.Index.ToString(CultureInfo.InvariantCulture));
+                writer.Write(':');
+                writer.WriteLine(symbol.Name);
             }
         }
 
@@ -860,14 +885,9 @@ namespace ILCompiler.ObjectWriter
 
                     case RelocType.WASM_TYPE_INDEX_LEB:
                     case RelocType.WASM_GLOBAL_INDEX_LEB:
-                    case RelocType.WASM_TABLE_INDEX_I32:
-                    case RelocType.WASM_TABLE_INDEX_I64:
-                    case RelocType.WASM_TABLE_INDEX_SLEB:
-                    case RelocType.WASM_TABLE_INDEX_REL_I32:
                     case RelocType.WASM_FUNCTION_INDEX_LEB:
                     {
-                        // These relocations reference a wasm structural index (function, type,
-                        // table entry, or well-known global). For R2R we self-resolve them here to
+                        // These relocations reference a Wasm structural index. For R2R we self-resolve them here to
                         // the index assigned when the symbol was registered into its index space.
                         if (!_wasmSymbolManager.TryGetSymbol(reloc.SymbolName, out WasmSymbol symbol))
                         {
@@ -881,6 +901,23 @@ namespace ILCompiler.ObjectWriter
                         else
                         {
                             Relocation.WriteValue(reloc.Type, pData, symbol.Index + addend);
+                        }
+                        break;
+                    }
+
+                    case RelocType.WASM_TABLE_INDEX_I32:
+                    case RelocType.WASM_TABLE_INDEX_I64:
+                    case RelocType.WASM_TABLE_INDEX_SLEB:
+                    case RelocType.WASM_TABLE_INDEX_REL_I32:
+                    {
+                        long tableSlot = GetTableSlot(reloc.SymbolName);
+                        if (shrink && Relocation.IsVariableLength(reloc.Type))
+                        {
+                            actualLength = Relocation.WriteVariableLengthValue(reloc.Type, pData, tableSlot + addend);
+                        }
+                        else
+                        {
+                            Relocation.WriteValue(reloc.Type, pData, tableSlot + addend);
                         }
                         break;
                     }
@@ -1109,15 +1146,9 @@ namespace ILCompiler.ObjectWriter
 
         private protected override void WriteElements()
         {
-            // Generate the function pointer table element that contains function pointers for all of our functions.
-            // Function indices are assigned sequentially (0..MethodCount-1) so that
-            // (image_function_pointer_base + 0) == function index 0.
-            int[] functionIndices = _wasmSymbolManager.GetDefinitions(WasmIndexSpace.Function)
-                .Select(symbol => symbol.Index)
-                .ToArray();
-
+            // Table slots preserve R2R runtime-function order even when multiple slots refer to one function body.
             // The table slice is installed by an active segment at the host-supplied table base.
-            WriteElementSegment(functionIndices, TableBaseOffsetExpr);
+            WriteElementSegment(GetTableSlotFunctionIndices(), TableBaseOffsetExpr);
         }
     }
 }

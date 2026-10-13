@@ -456,24 +456,6 @@ void Uninit()
     }
 } // Uninit
 
-HRESULT IsClassRefInScope(mdTypeRef classref)
-{
-    HRESULT     hr = S_OK;
-    const char  *pszNameSpace;
-    const char  *pszClassName;
-    mdTypeDef   classdef;
-    mdToken     tkRes;
-
-    IfFailRet(g_pImport->GetNameOfTypeRef(classref, &pszNameSpace, &pszClassName));
-    MAKE_NAME_IF_NONE(pszClassName,classref);
-    IfFailRet(g_pImport->GetResolutionScopeOfTypeRef(classref, &tkRes));
-
-    hr = g_pImport->FindTypeDef(pszNameSpace, pszClassName,
-        (TypeFromToken(tkRes) == mdtTypeRef) ? tkRes : mdTokenNil, &classdef);
-
-    return hr;
-}
-
 BOOL EnumClasses()
 {
     HRESULT         hr;

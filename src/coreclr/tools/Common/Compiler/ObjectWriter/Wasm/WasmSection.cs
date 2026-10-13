@@ -119,9 +119,9 @@ namespace ILCompiler.ObjectWriter
         }
     }
 
-    internal abstract class WasmCustomSection : WasmSection
+    internal class WasmCustomSection : WasmSection
     {
-        protected WasmCustomSection(Stream stream, Utf8String customSectionName, int sectionIndex)
+        public WasmCustomSection(Stream stream, Utf8String customSectionName, int sectionIndex)
             : base(WasmSectionType.Custom, stream, customSectionName, sectionIndex)
         {
             Debug.Assert(stream is not null);
@@ -144,6 +144,39 @@ namespace ILCompiler.ObjectWriter
         protected virtual int CustomPayloadPrefixSize => 0;
 
         protected virtual int EncodeCustomPayloadPrefix(Span<byte> destination) => 0;
+    }
+
+    /// <summary>
+    /// A custom section containing relocations for another WebAssembly section.
+    /// </summary>
+    internal sealed class WasmRelocationSection : WasmCustomSection
+    {
+        private readonly int _targetSectionIndex;
+        private readonly int _relocationCount;
+
+        public WasmRelocationSection(
+            Stream stream,
+            Utf8String name,
+            int sectionIndex,
+            int targetSectionIndex,
+            int relocationCount)
+            : base(stream, name, sectionIndex)
+        {
+            Debug.Assert(targetSectionIndex >= 0);
+            Debug.Assert(relocationCount >= 0);
+            _targetSectionIndex = targetSectionIndex;
+            _relocationCount = relocationCount;
+        }
+
+        protected override int CustomPayloadPrefixSize => checked(
+            (int)DwarfHelper.SizeOfULEB128((ulong)_targetSectionIndex) +
+            (int)DwarfHelper.SizeOfULEB128((ulong)_relocationCount));
+
+        protected override int EncodeCustomPayloadPrefix(Span<byte> destination)
+        {
+            int written = DwarfHelper.WriteULEB128(destination, (ulong)_targetSectionIndex); // section: the index of the target section.
+            return written + DwarfHelper.WriteULEB128(destination.Slice(written), (ulong)_relocationCount); // count: count of entries to follow.
+        }
     }
 
     internal sealed class PaddingWasmSection : IWasmSection

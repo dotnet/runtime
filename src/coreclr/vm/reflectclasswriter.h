@@ -7,8 +7,6 @@
 #ifndef _REFCLASSWRITER_H_
 #define _REFCLASSWRITER_H_
 
-#include "iceefilegen.h"
-
 // RefClassWriter
 // This will create a Class
 class RefClassWriter {
@@ -16,7 +14,6 @@ protected:
     friend class COMDynamicWrite;
 	IMDInternalEmit*		m_emitter;			// Emit interface.
 	IMDInternalImport*		m_internalimport;	// Scopeless internal import interface
-    ICeeGenInternal*	    m_pCeeGen;
 	ULONG					m_ulResourceSize;
 
 public:
@@ -25,7 +22,6 @@ public:
     }
 
 	HRESULT		Init(
-        ICeeGenInternal *pCeeGen,
         IMDInternalEmit *pEmitter,
         IMDInternalImport *pInternalImport,
         LPCWSTR szName);
@@ -38,11 +34,6 @@ public:
 	IMDInternalImport* GetMDImport() {
         LIMITED_METHOD_CONTRACT;
 		return m_internalimport;
-	}
-
-    ICeeGenInternal* GetCeeGen() {
-        LIMITED_METHOD_CONTRACT;
-		return m_pCeeGen;
 	}
 
 	~RefClassWriter();

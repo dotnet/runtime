@@ -24,8 +24,6 @@ export type CSFnHandle = {
 export type MemOffset = number | VoidPtr | NativePointer | ManagedPointer;
 export type NumberOrPointer = number | VoidPtr | NativePointer | ManagedPointer;
 
-// how we extended emscripten Module
-export type DotnetModule = EmscriptenModule & DotnetModuleConfig;
 export type DotnetModuleInternal = EmscriptenModule & DotnetModuleConfig & EmscriptenModuleInternal;
 
 // these are values from the last re-link with emcc/workload
@@ -43,7 +41,7 @@ export type EmscriptenInternals = {
     updateMemoryViews: () => void,
 };
 
-export type EmscriptenModuleInternal = EmscriptenModule & DotnetModuleConfig & {
+export type EmscriptenModuleInternal = EmscriptenModule & {
     runtimeKeepalivePush(): void;
     runtimeKeepalivePop(): void;
     print(message: string): void;

@@ -143,8 +143,7 @@ namespace System.Xml
 
         private static char[] CreateDefaultIndentChars()
         {
-            var result = new char[IndentArrayLength];
-            Array.Fill(result, DefaultIndentChar);
+            char[] result = Array.CreateFilled(IndentArrayLength, DefaultIndentChar);
             return result;
         }
 

@@ -462,4 +462,10 @@
   <data name="BadTypeSpec" xml:space="preserve">
     <value>Invalid TypeSpec metadata.</value>
   </data>
+  <data name="MethodImplStaticMismatch" xml:space="preserve">
+    <value>MethodImpl body '{0}' and declaration '{1}' must both be static or both be instance methods.</value>
+  </data>
+  <data name="MethodImplBodyNotVirtual" xml:space="preserve">
+    <value>Instance MethodImpl body '{0}' for declaration '{1}' must be virtual.</value>
+  </data>
 </root>

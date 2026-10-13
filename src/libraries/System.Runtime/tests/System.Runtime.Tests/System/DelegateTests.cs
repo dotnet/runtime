@@ -503,6 +503,45 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void OpenDelegateToPrivateGenericBaseMethodDoesNotPolluteDerivedCache()
+        {
+            const BindingFlags Flags = BindingFlags.Instance | BindingFlags.NonPublic;
+            MethodInfo method = typeof(PrivateGenericBase<string>).GetMethod("Secret", Flags);
+            Func<PrivateGenericDerived, int> openDelegate = method.CreateDelegate<Func<PrivateGenericDerived, int>>();
+
+            Assert.DoesNotContain(typeof(PrivateGenericDerived).GetMethods(Flags), m => m.Name == "Secret");
+            Assert.Equal(42, openDelegate(new PrivateGenericDerived()));
+            Assert.Equal(typeof(PrivateGenericBase<string>), openDelegate.Method.DeclaringType);
+            Assert.Equal(typeof(PrivateGenericBase<string>), openDelegate.Method.ReflectedType);
+            Assert.DoesNotContain(typeof(PrivateGenericDerived).GetMethods(Flags), m => m.Name == "Secret");
+
+            Func<int> closedDelegate = method.CreateDelegate<Func<int>>(new PrivateGenericDerived());
+            Assert.Equal(42, closedDelegate());
+            Assert.Equal(typeof(PrivateGenericBase<string>), closedDelegate.Method.ReflectedType);
+        }
+
+        private class PrivateGenericBase<T>
+        {
+            private int Secret() => 42;
+            public int PublicMethod() => 43;
+        }
+
+        private class PrivateGenericDerived : PrivateGenericBase<string> { }
+
+        [Fact]
+        public static void OpenDelegateToPublicGenericBaseMethodUsesBaseReflectedType()
+        {
+            MethodInfo method = typeof(PrivateGenericBase<string>).GetMethod(nameof(PrivateGenericBase<string>.PublicMethod));
+            Func<PrivateGenericDerived, int> openDelegate = method.CreateDelegate<Func<PrivateGenericDerived, int>>();
+            Func<int> closedDelegate = method.CreateDelegate<Func<int>>(new PrivateGenericDerived());
+
+            Assert.Equal(43, openDelegate(new PrivateGenericDerived()));
+            Assert.Equal(typeof(PrivateGenericBase<string>), openDelegate.Method.DeclaringType);
+            Assert.Equal(closedDelegate.Method.ReflectedType, openDelegate.Method.ReflectedType);
+            Assert.Equal(typeof(PrivateGenericBase<string>), openDelegate.Method.ReflectedType);
+        }
+
+        [Fact]
         public static void SameMethodObtainedViaDelegateAndReflectionAreSameForClass()
         {
             var m1 = ((MethodCallExpression)((Expression<Action>)(() => new Class().M())).Body).Method;
