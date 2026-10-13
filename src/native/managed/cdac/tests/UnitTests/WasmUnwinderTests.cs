@@ -26,6 +26,10 @@ public class WasmUnwinderTests
     private const uint FuncIndexLeaf = 10;
     private const uint FuncIndexCaller = 11;
 
+    // Virtual IP of the leaf frame being unwound (local VIP / 2 of 3); its GC info has no reverse
+    // P/Invoke frame unless a test passes it as reversePInvokeIp.
+    private static readonly TargetCodePointer LeafControlPC = new(VirtualIpBase + 6);
+
     private sealed class FakeWasmR2RInfo : IWasmR2RInfo
     {
         public Dictionary<uint, ulong> VirtualIpBases { get; } = new();
@@ -213,7 +217,7 @@ public class WasmUnwinderTests
         WasmUnwinder unwinder = new(target, info);
 
         TargetPointer sp = new(FramesBase);
-        Assert.True(unwinder.TryUnwindOneFrame(ref sp, TargetCodePointer.Null, out TargetCodePointer ip));
+        Assert.True(unwinder.TryUnwindOneFrame(ref sp, LeafControlPC, out TargetCodePointer ip));
         Assert.Equal(callerBase, sp.Value);
         Assert.Equal(VirtualIpBase + 14, ip.Value); // caller local VIP 7*2
     }
@@ -238,7 +242,7 @@ public class WasmUnwinderTests
         WasmUnwinder unwinder = new(target, info);
 
         TargetPointer sp = new(FramesBase);
-        Assert.True(unwinder.TryUnwindOneFrame(ref sp, TargetCodePointer.Null, out _));
+        Assert.True(unwinder.TryUnwindOneFrame(ref sp, LeafControlPC, out _));
         Assert.Equal(callerBase, sp.Value);
     }
 
@@ -265,7 +269,7 @@ public class WasmUnwinderTests
         WasmUnwinder unwinder = new(target, info);
 
         TargetPointer sp = new(FramesBase);
-        Assert.True(unwinder.TryUnwindOneFrame(ref sp, TargetCodePointer.Null, out TargetCodePointer ip));
+        Assert.True(unwinder.TryUnwindOneFrame(ref sp, LeafControlPC, out TargetCodePointer ip));
         Assert.Equal(callerBase, sp.Value);
         Assert.Equal(TargetCodePointer.Null, ip);
     }
@@ -316,8 +320,30 @@ public class WasmUnwinderTests
         WasmUnwinder unwinder = new(target, new FakeWasmR2RInfo());
 
         TargetPointer sp = new(FramesBase);
-        Assert.False(unwinder.TryUnwindOneFrame(ref sp, TargetCodePointer.Null, out _));
+        Assert.False(unwinder.TryUnwindOneFrame(ref sp, LeafControlPC, out _));
         Assert.Equal(TargetPointer.Null, sp);
+    }
+
+    /// <summary>
+    /// Native RtlVirtualUnwind asserts that the control PC is an R2R virtual IP; without it the
+    /// reverse P/Invoke boundary cannot be checked, so the unwinder throws instead of guessing.
+    /// </summary>
+    [Fact]
+    public void TryUnwindOneFrame_NullControlPC_Throws()
+    {
+        FakeWasmR2RInfo info = new();
+        info.UnwindData[FuncIndexLeaf] = BlobsBase;
+
+        TestPlaceholderTarget target = CreateTarget(
+        [
+            Frame(FramesBase, FuncIndexLeaf, 3, "leaf"),
+            Blob(BlobsBase, [0x20], "frameSize"),
+        ]);
+        WasmUnwinder unwinder = new(target, info);
+
+        TargetPointer sp = new(FramesBase);
+        Assert.Throws<InvalidOperationException>(() => unwinder.TryUnwindOneFrame(ref sp, TargetCodePointer.Null, out _));
+        Assert.Equal(FramesBase, sp.Value);
     }
 
     [Fact]
@@ -353,7 +379,7 @@ public class WasmUnwinderTests
         WasmUnwinder unwinder = new(target, info);
 
         TargetPointer sp = new(FramesBase);
-        Assert.False(unwinder.TryUnwindOneFrame(ref sp, TargetCodePointer.Null, out _));
+        Assert.False(unwinder.TryUnwindOneFrame(ref sp, LeafControlPC, out _));
         Assert.Equal(TargetPointer.Null, sp);
     }
 
@@ -372,7 +398,7 @@ public class WasmUnwinderTests
         WasmUnwinder unwinder = new(target, info);
 
         TargetPointer sp = new(FramesBase);
-        Assert.Throws<InvalidOperationException>(() => unwinder.TryUnwindOneFrame(ref sp, TargetCodePointer.Null, out _));
+        Assert.Throws<InvalidOperationException>(() => unwinder.TryUnwindOneFrame(ref sp, LeafControlPC, out _));
     }
 
     private const uint StackWalkSentinelIndirect = 0;

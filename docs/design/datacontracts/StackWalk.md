@@ -484,6 +484,10 @@ Like native `RtlVirtualUnwind`, unwinding a WASM R2R frame always advances SP to
 // WasmUnwinder.Unwind: one R2R frame, mirroring native RtlVirtualUnwind / WasmUnwindStackFrameCore.
 void Unwind()
 {
+    // Native RtlVirtualUnwind asserts that IP is an R2R virtual IP.
+    if (IP == null)
+        throw new InvalidOperationException();
+
     TargetPointer frameBase = /* frame base of the R2R frame at SP (frame record: function index, VIP / 2) */;
     uint functionIndex = target.Read<uint>(frameBase + FunctionIndexOffset);
     uint frameSize = /* ULEB128 at the start of the function's unwind data */;
@@ -494,8 +498,7 @@ void Unwind()
     }
 
     SP = frameBase + frameSize;
-    bool callerIsNative = IP != null
-        && !IsFunclet(functionIndex)
+    bool callerIsNative = !IsFunclet(functionIndex)
         && GCInfo.GetHeader(/* GC info of the code block containing IP */).HasReversePInvokeFrame;
     IP = callerIsNative ? null : /* R2R virtual IP at SP, or null if SP has no R2R frame record */;
     FP = IP != null ? /* WASM logical frame pointer at SP */ : null;

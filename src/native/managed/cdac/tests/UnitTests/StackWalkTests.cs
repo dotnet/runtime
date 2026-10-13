@@ -1595,6 +1595,80 @@ public unsafe class StackWalkTests
         Assert.True(walked.Length <= 7, $"Walk did not terminate: {walked.Length} frames");
     }
 
+    // An R2R method with an active inlined P/Invoke, entered from code that is not R2R (an
+    // interpreter transition or native code). Its InlinedCallFrame lives inside the method's own
+    // linear-stack frame. Like native RtlVirtualUnwind, unwinding the method keeps the caller's SP
+    // even though the caller has no R2R virtual IP, so the walk passes the InlinedCallFrame
+    // (frame address below the caller SP) and reports the method exactly once. With the caller SP
+    // lost, the InlinedCallFrame would be re-applied after every unwind and the method reported
+    // again.
+    [Fact]
+    public void CreateStackWalk_WasmR2RMethodWithNonR2RCaller_PassesInlinedCallFrameInItsFrame()
+    {
+        MockTarget.Architecture wasmArch = new() { IsLittleEndian = true, Is64Bit = false };
+        const uint FunctionTableIndex = 5;
+        const ulong MinVirtualIP = 0x8001_0000;
+        const uint FunctionBeginAddress = 0x100;
+        const uint LocalVirtualIPHalf = 3;
+        const byte R2RFrameSize = 0x70;
+        const ulong R2RIp = MinVirtualIP + FunctionBeginAddress + LocalVirtualIPHalf * 2;
+        const ulong InlinedPInvokeFromR2R = 1;
+        const uint TerminateR2RStackWalk = 1;
+
+        MockThread? thread = null;
+        MockInlinedCallFrame? icf = null;
+        int icfSize = 0;
+        ulong r2rFrame = 0;
+        TestPlaceholderTarget target = CreateTarget(
+            wasmArch,
+            threadBuilder => thread = threadBuilder.AddThread(1, 1234),
+            frameBuilder =>
+            {
+                icf = frameBuilder.AddInlinedCallFrame(InlinedPInvokeFromR2R, datum: 0);
+                icfSize = frameBuilder.InlinedCallFrameLayout.Size;
+            },
+            runtimeArchitecture: RuntimeInfoArchitecture.Wasm,
+            configureTarget: targetBuilder =>
+            {
+                TargetTestHelpers helpers = targetBuilder.MemoryBuilder.TargetTestHelpers;
+                MockMemorySpace.BumpAllocator allocator = targetBuilder.MemoryBuilder.CreateAllocator(0x0020_0000, 0x0020_4000);
+                AddWasmR2RFunction(targetBuilder, allocator, FunctionTableIndex, MinVirtualIP, FunctionBeginAddress, R2RFrameSize);
+                AddWasmNullDebugger(targetBuilder, allocator);
+
+                // The method's frame record sits just below the InlinedCallFrame, and its caller's
+                // stack pointer is above it. The caller slot holds TERMINATE_R2R_STACK_WALK, so the
+                // caller has no R2R virtual IP.
+                r2rFrame = icf!.Address - 0x10;
+                ulong callerSp = r2rFrame + R2RFrameSize;
+                Assert.True(icf.Address + (ulong)icfSize <= callerSp);
+
+                byte[] record = new byte[8];
+                helpers.Write(record.AsSpan(0, sizeof(uint)), FunctionTableIndex);
+                helpers.Write(record.AsSpan(4, sizeof(uint)), LocalVirtualIPHalf);
+                targetBuilder.MemoryBuilder.AddHeapFragment(new MockMemorySpace.HeapFragment { Address = r2rFrame, Data = record, Name = "R2RFrame" });
+
+                byte[] callerRecord = new byte[8];
+                helpers.Write(callerRecord.AsSpan(0, sizeof(uint)), TerminateR2RStackWalk);
+                targetBuilder.MemoryBuilder.AddHeapFragment(new MockMemorySpace.HeapFragment { Address = callerSp, Data = callerRecord, Name = "NonR2RCaller" });
+
+                icf.CallSiteSP = r2rFrame;
+                thread!.Frame = icf.Address;
+            },
+            executionManager: CreateInterpreterExecutionManager([], managedIps: [R2RIp]));
+
+        IStackWalk stackWalk = target.Contracts.StackWalk;
+        ThreadData threadData = target.Contracts.Thread.GetThreadData(new TargetPointer(thread!.Address));
+        IStackDataFrameHandle[] walked = stackWalk.CreateStackWalk(threadData).Take(16).ToArray();
+
+        (ulong Ip, ulong Sp)[] frameless = walked
+            .Where(f => f.State == StackWalkState.Frameless)
+            .Select(f => (stackWalk.GetInstructionPointer(f).Value, stackWalk.GetStackPointer(f).Value))
+            .ToArray();
+
+        Assert.Equal([(R2RIp, r2rFrame)], frameless);
+        Assert.True(walked.Length <= 3, $"Walk did not terminate: {walked.Length} frames");
+    }
+
     private static IExecutionManager CreateInterpreterExecutionManager(ulong[] interpreterIps, ulong[]? managedIps = null)
     {
         Mock<IExecutionManager> executionManager = new();
@@ -1736,10 +1810,6 @@ public unsafe class StackWalkTests
             .AddGlobals((Constants.Globals.FunctionTableIndexRangeList, listSlot.Address));
     }
 
-    // When an active InlinedCallFrame is directly followed by an InterpreterFrame, WasmFrameHandler
-    // stashes the InterpreterFrame address into the synthetic first-argument register
-    // (InterpreterWalkFramePointer) so the subsequent interpreter virtual unwind can recover the
-    // owning frame -- mirroring native SetFirstArgReg on the P/Invoke-into-interpreter transition.
     /// <summary>
     /// Native InlinedCallFrame::UpdateRegDisplay_Impl returns before recording the owning
     /// InterpreterFrame when the frame has no active call.
@@ -1831,6 +1901,10 @@ public unsafe class StackWalkTests
         Assert.Equal(0x0004_1040ul, context.FramePointer.Value);
     }
 
+    // When an active InlinedCallFrame is directly followed by an InterpreterFrame, WasmFrameHandler
+    // stashes the InterpreterFrame address into the synthetic first-argument register
+    // (InterpreterWalkFramePointer) so the subsequent interpreter virtual unwind can recover the
+    // owning frame -- mirroring native SetFirstArgReg on the P/Invoke-into-interpreter transition.
     [Fact]
     public void UpdateContextFromFrame_WasmInlinedCallFrameOverInterpreterFrame_StashesInterpreterFrame()
     {

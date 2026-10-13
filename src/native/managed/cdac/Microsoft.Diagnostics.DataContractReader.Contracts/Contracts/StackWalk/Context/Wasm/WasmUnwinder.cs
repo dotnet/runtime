@@ -148,10 +148,15 @@ internal sealed class WasmUnwinder
     /// </summary>
     /// <param name="controlPC">
     /// The virtual IP of the frame at <paramref name="sp"/>, used to detect a reverse P/Invoke
-    /// frame as native <c>RtlVirtualUnwind</c> does. Pass null when it is unknown.
+    /// frame as native <c>RtlVirtualUnwind</c> does.
     /// </param>
+    /// <exception cref="InvalidOperationException"><paramref name="controlPC"/> is null.</exception>
     public bool TryUnwindOneFrame(ref TargetPointer sp, TargetCodePointer controlPC, out TargetCodePointer ip)
     {
+        // Native RtlVirtualUnwind asserts that the control PC is an R2R virtual IP.
+        if (controlPC == TargetCodePointer.Null)
+            throw new InvalidOperationException($"Cannot unwind the WASM R2R frame at SP 0x{sp.Value:X} without its virtual IP.");
+
         ip = TargetCodePointer.Null;
         if (!TryGetFramePointer(sp, out TargetPointer frameBase))
         {
@@ -212,8 +217,7 @@ internal sealed class WasmUnwinder
 
     private bool IsReversePInvokeFrame(uint functionIndex, TargetCodePointer controlPC)
     {
-        if (controlPC == TargetCodePointer.Null ||
-            !_r2rInfo.TryIsFunclet(functionIndex, out bool isFunclet) ||
+        if (!_r2rInfo.TryIsFunclet(functionIndex, out bool isFunclet) ||
             isFunclet ||
             _target.Contracts.ExecutionManager.GetCodeBlockHandle(controlPC) is not CodeBlockHandle codeBlock)
         {
