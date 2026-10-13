@@ -27,6 +27,7 @@
 #define xerr std::wcerr
 #define xout std::wcout
 #define DIR_SEPARATOR L'\\'
+#define DIR_SEPARATOR_STR L"\\"
 #define PATH_SEPARATOR L';'
 #define PATH_MAX MAX_PATH
 #define _X(s) L ## s
@@ -44,6 +45,7 @@
 #define xerr std::cerr
 #define xout std::cout
 #define DIR_SEPARATOR '/'
+#define DIR_SEPARATOR_STR "/"
 #define PATH_SEPARATOR ':'
 #undef _X
 #define _X(s) s

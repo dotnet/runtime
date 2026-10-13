@@ -36,6 +36,7 @@ namespace CorUnix
         LPSECURITY_ATTRIBUTES lpMutexAttributes,
         BOOL bInitialOwner,
         LPCSTR lpName,
+        BOOL bIsUserScope,
         HANDLE *phMutex
         );
 
@@ -49,6 +50,7 @@ namespace CorUnix
     InternalOpenMutex(
         CPalThread *pThread,
         LPCSTR lpName,
+        BOOL bIsUserScope,
         HANDLE *phMutex
         );
 
@@ -74,8 +76,13 @@ Design
   find any other sync object with a timed wait with the necessary properties, so polling is done for timed waits.
 
 Shared memory files
-- Session-scoped mutexes (name not prefixed, or prefixed with Local) go in /tmp/.dotnet/shm/session<sessionId>/<mutexName>
-- Globally-scoped mutexes (name prefixed with Global) go in /tmp/.dotnet/shm/global/<mutexName>
+- Session-scoped mutexes (name not prefixed, or prefixed with Local) go in
+  <scopeBase>/<runtimeDirectory>/shm/session<sessionId>/<mutexName>
+- Globally-scoped mutexes (name prefixed with Global) go in
+  <scopeBase>/<runtimeDirectory>/shm/global/<mutexName>
+- The scope base is selected independently for current-user-only and all-users mutexes
+- runtimeDirectory is .dotnet, except that user-scoped mutexes in an Apple application-group container use .dotnet-uid to
+  avoid colliding with global-scoped mutexes that use the same user-specific scope base
 - Contains shared state, and is mmap'ped into the process, see SharedMemorySharedDataHeader and NamedMutexSharedData for data
   stored
 - Creation and deletion is synchronized using an exclusive file lock on the shm directory
@@ -92,7 +99,7 @@ Shared memory files
 Lock files when using file locks:
 - In addition to the shared memory file, we need another file for the actual synchronization file lock, since a file lock on the
   shared memory file is used for lifetime purposes.
-- These files go in /tmp/.dotnet/lockfiles/session<sessionId>|global/<mutexName>
+- These files go in <scopeBase>/<runtimeDirectory>/lockfiles/session<sessionId>|global/<mutexName>
 - The file is empty, and is only used for file locks
 
 Process data
@@ -214,10 +221,10 @@ private:
     bool m_hasRefFromLockOwnerThread;
 
 public:
-    static SharedMemoryProcessDataHeader *CreateOrOpen(LPCSTR name, bool acquireLockIfCreated, bool *createdRef);
-    static SharedMemoryProcessDataHeader *Open(LPCSTR name);
+    static SharedMemoryProcessDataHeader *CreateOrOpen(LPCSTR name, bool isUserScope, bool acquireLockIfCreated, bool *createdRef);
+    static SharedMemoryProcessDataHeader *Open(LPCSTR name, bool isUserScope);
 private:
-    static SharedMemoryProcessDataHeader *CreateOrOpen(LPCSTR name, bool createIfNotExist, bool acquireLockIfCreated, bool *createdRef);
+    static SharedMemoryProcessDataHeader *CreateOrOpen(LPCSTR name, bool isUserScope, bool createIfNotExist, bool acquireLockIfCreated, bool *createdRef);
 
 public:
     NamedMutexProcessData(
@@ -232,7 +239,7 @@ public:
     virtual bool CanClose() const override;
     virtual bool HasImplicitRef() const override;
     virtual void SetHasImplicitRef(bool value) override;
-    virtual void Close(bool isAbruptShutdown, bool releaseSharedData) override;
+    virtual void Close(bool isAbruptShutdown, bool releaseSharedData, int runtimeDirectoryFileDescriptor) override;
 
 public:
     bool IsLockOwnedByCurrentThread() const
