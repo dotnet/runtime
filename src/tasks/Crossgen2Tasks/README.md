@@ -89,6 +89,9 @@ full SHA-256 content hashes. It includes:
 * Effective normalized command/response strings, diagnostic policy, absolute
   output/working paths, host OS/architecture, cultures, and `DOTNET_PROCESSOR_COUNT`.
 
+Caching requires an on-disk task assembly. If it is embedded in a single-file
+MSBuild host and has no assembly location, the invocation visibly bypasses caching.
+
 `Crossgen2CacheInvocation` resolves platform-specific deployment dependencies and
 symbol-output conventions; the key computation, storage, restoration, and
 diagnostic replay remain shared.

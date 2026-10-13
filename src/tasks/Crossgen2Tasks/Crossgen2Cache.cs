@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Globalization;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
@@ -13,6 +14,7 @@ namespace Microsoft.NET.Build.Tasks;
 // Port together with RunReadyToRunCompiler to dotnet/sdk.
 internal sealed class Crossgen2Cache
 {
+    private static readonly SearchValues<char> s_unsupportedPathCharacters = SearchValues.Create("\"\r\n*?");
     private readonly string _root;
     private readonly TaskLoggingHelper _log;
 
@@ -93,7 +95,7 @@ internal sealed class Crossgen2Cache
     internal static string InputPath(string path)
     {
         // These strings are embedded in a response file, not passed as an argv array.
-        if (!Path.IsPathFullyQualified(path) || path.IndexOfAny(new[] { '"', '\r', '\n', '*', '?' }) >= 0)
+        if (!Path.IsPathFullyQualified(path) || path.AsSpan().ContainsAny(s_unsupportedPathCharacters))
         {
             throw new InvalidDataException($"Unsupported response-file path: '{path}'.");
         }
@@ -140,7 +142,14 @@ internal sealed class Crossgen2Cache
                 throw new InvalidDataException("Outputs must be outside the cache.");
             }
         }
-        AddFile(typeof(RunReadyToRunCompiler).Assembly.Location);
+#pragma warning disable IL3000 // MSBuild tasks are loaded from assemblies on disk.
+        string taskAssemblyPath = typeof(RunReadyToRunCompiler).Assembly.Location;
+#pragma warning restore IL3000
+        if (string.IsNullOrEmpty(taskAssemblyPath))
+        {
+            throw new InvalidDataException("The task assembly has no on-disk location.");
+        }
+        AddFile(taskAssemblyPath);
         writer.Write(compilerDependencies.Length);
         foreach (string dependency in compilerDependencies)
         {
@@ -392,6 +401,6 @@ internal sealed class Crossgen2Cache
     private static string Hash(Stream stream)
     {
         using SHA256 sha = SHA256.Create();
-        return BitConverter.ToString(sha.ComputeHash(stream)).Replace("-", "");
+        return Convert.ToHexString(sha.ComputeHash(stream));
     }
 }
