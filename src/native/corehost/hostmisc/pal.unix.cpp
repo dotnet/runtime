@@ -283,9 +283,7 @@ bool pal::get_default_breadcrumb_store(string_t* recv)
     if (!pal::directory_exists(ext))
     {
         trace::info(_X("Directory core breadcrumbs [%s] was not specified or found"), ext.c_str());
-        ext.clear();
-        append_path(&ext, _X("opt"));
-        append_path(&ext, _X("corebreadcrumbs"));
+        ext.assign(DIR_SEPARATOR_STR _X("opt") DIR_SEPARATOR_STR _X("corebreadcrumbs"));
         if (!pal::directory_exists(ext))
         {
             trace::info(_X("Fallback directory core breadcrumbs at [%s] was not found"), ext.c_str());
@@ -293,9 +291,11 @@ bool pal::get_default_breadcrumb_store(string_t* recv)
         }
     }
 
-    if (access(ext.c_str(), (R_OK | W_OK)) != 0)
+    // Writing breadcrumbs creates files at known paths, which requires write and search permission on the directory.
+    if (access(ext.c_str(), (W_OK | X_OK)) != 0)
     {
-        trace::info(_X("Breadcrumb store [%s] is not ACL-ed with rw-"), ext.c_str());
+        trace::info(_X("Breadcrumb store [%s] is not writable"), ext.c_str());
+        return false;
     }
 
     recv->assign(ext);
@@ -315,9 +315,7 @@ bool pal::get_default_servicing_directory(string_t* recv)
     if (!pal::directory_exists(ext))
     {
         trace::info(_X("Directory core servicing at [%s] was not specified or found"), ext.c_str());
-        ext.clear();
-        append_path(&ext, _X("opt"));
-        append_path(&ext, _X("coreservicing"));
+        ext.assign(DIR_SEPARATOR_STR _X("opt") DIR_SEPARATOR_STR _X("coreservicing"));
         if (!pal::directory_exists(ext))
         {
             trace::info(_X("Fallback directory core servicing at [%s] was not found"), ext.c_str());
@@ -325,9 +323,11 @@ bool pal::get_default_servicing_directory(string_t* recv)
         }
     }
 
-    if (access(ext.c_str(), R_OK) != 0)
+    // Servicing assets are looked up by known path, which requires search permission on the directory.
+    if (access(ext.c_str(), X_OK) != 0)
     {
-        trace::info(_X("Directory core servicing at [%s] was not ACL-ed properly"), ext.c_str());
+        trace::info(_X("Directory core servicing at [%s] is not accessible"), ext.c_str());
+        return false;
     }
 
     recv->assign(ext);

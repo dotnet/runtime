@@ -8,10 +8,17 @@ namespace System
     internal static partial class LocalAppContextSwitches
     {
         internal const int DefaultMaxDecryptionDepth = 64;
+        internal const int DefaultMaxCanonicalizationAttributesPerElement = 512;
+        internal const int DefaultMaxCount = 256;
         internal const string DangerousMaxRecursionDepthAppContextSwitch = "System.Security.Cryptography.Xml.DangerousMaxRecursionDepth";
+        internal const string DangerousMaxCanonicalizationAttributesPerElementAppContextSwitch = "System.Security.Cryptography.Xml.DangerousMaxCanonicalizationAttributesPerElement";
         internal const string AllowDangerousEncryptedXmlTransformsAppContextSwitch = "System.Security.Cryptography.Xml.AllowDangerousEncryptedXmlTransforms";
+        internal const string CryptoXmlMaxInputDocumentDepthAppContextSwitch = "System.Security.Cryptography.Xml.CryptoXmlMaxInputDocumentDepth";
+        internal const string CryptoXmlAllowDtdProcessingAppContextSwitch = "System.Security.Cryptography.Xml.CryptoXmlAllowDtdProcessing";
+        internal const string AllowNonCertificateX509DataAppContextSwitch = "System.Security.Cryptography.Xml.AllowNonCertificateX509Data";
         internal const string MaxTransformsPerChainAppContextSwitch = "System.Security.Cryptography.Xml.MaxTransformsPerChain";
         internal const string MaxDecryptedDataElementsAppContextSwitch = "System.Security.Cryptography.Xml.MaxDecryptedDataElements";
+        internal const string DangerousMaxDecryptionCountAppContextSwitch = "System.Security.Cryptography.Xml.DangerousMaxDecryptionCount";
         internal const string AllowUnsafeTruncatedHmacSignatureVerificationAppContextSwitch = "Switch.System.Security.Cryptography.Xml.SignedXml.AllowUnsafeTruncatedHmacSignatureVerification";
 
         internal const int DefaultMaxTransformsPerChain = 20;
@@ -26,12 +33,62 @@ namespace System
             GetInt32Config(DangerousMaxRecursionDepthAppContextSwitch, DefaultMaxDecryptionDepth, allowNegative: false);
 
         /// <summary>
+        /// Gets the maximum number of attributes, and separately of namespace declarations, that
+        /// canonicalization will render for a single element.
+        /// Configurable via AppContext data "System.Security.Cryptography.Xml.DangerousMaxCanonicalizationAttributesPerElement".
+        /// Default value is 512. A value of 0 means infinite (no limit).
+        /// </summary>
+        /// <remarks>
+        /// Canonicalization scans the pending render lists linearly for each candidate name, so lists
+        /// of unbounded size make the work quadratic in the size of a single element, on a path that
+        /// processes attacker-supplied documents. Bounding the lists keeps that work constant per
+        /// element. The bound also depends on <see cref="DangerousMaxRecursionDepth"/> to limit how
+        /// many ancestor declarations can be in scope at once; setting that switch to 0 removes the
+        /// depth limit and reintroduces the quadratic behavior.
+        /// </remarks>
+        internal static int DangerousMaxCanonicalizationAttributesPerElement { get; } =
+            GetInt32Config(
+                DangerousMaxCanonicalizationAttributesPerElementAppContextSwitch,
+                DefaultMaxCanonicalizationAttributesPerElement,
+                allowNegative: false);
+
+        /// <summary>
         /// Gets whether to enforce safe transforms for XML encryption by default.
         /// Configurable via AppContext switch "System.Security.Cryptography.Xml.AllowDangerousEncryptedXmlTransforms".
         /// Default value is false.
         /// </summary>
         internal static bool AllowDangerousEncryptedXmlTransforms { get; } =
             GetBooleanConfig(AllowDangerousEncryptedXmlTransformsAppContextSwitch, defaultValue: false);
+
+        /// <summary>
+        /// Gets the maximum input-document depth (XmlReader.Depth) accepted by the cryptographic XML
+        /// ingestion and decrypt re-parse paths.
+        /// Configurable via AppContext data "System.Security.Cryptography.Xml.CryptoXmlMaxInputDocumentDepth".
+        /// Defaults to <see cref="DangerousMaxRecursionDepth"/>. A value of 0 means infinite (no limit).
+        /// </summary>
+        internal static int CryptoXmlMaxInputDocumentDepth { get; } = GetCryptoXmlMaxInputDocumentDepth();
+
+        private static int GetCryptoXmlMaxInputDocumentDepth()
+        {
+            int value = GetInt32Config(CryptoXmlMaxInputDocumentDepthAppContextSwitch, DangerousMaxRecursionDepth, allowNegative: false);
+            return value;
+        }
+
+        /// <summary>
+        /// Gets whether DTD processing is allowed on the cryptographic XML ingestion and re-parse paths.
+        /// Configurable via AppContext switch "System.Security.Cryptography.Xml.CryptoXmlAllowDtdProcessing".
+        /// Default value is false.
+        /// </summary>
+        internal static bool CryptoXmlAllowDtdProcessing { get; } =
+            GetBooleanConfig(CryptoXmlAllowDtdProcessingAppContextSwitch, defaultValue: false);
+
+        /// <summary>
+        /// Gets whether X509Certificate XML elements allow legacy non-certificate formats.
+        /// Configurable via AppContext switch "System.Security.Cryptography.Xml.AllowNonCertificateX509Data".
+        /// Default value is false. Configure before first use of XML cryptography; the value is cached.
+        /// </summary>
+        internal static bool AllowNonCertificateX509Data { get; } =
+            GetBooleanConfig(AllowNonCertificateX509DataAppContextSwitch, defaultValue: false);
 
         /// <summary>
         /// Gets the maximum number of transforms allowed in a deserialized transform chain.
@@ -49,6 +106,14 @@ namespace System
         /// </summary>
         internal static int MaxDecryptedDataElements { get; } =
             GetInt32Config(MaxDecryptedDataElementsAppContextSwitch, DefaultMaxDecryptedDataElements, allowNegative: false);
+
+        /// <summary>
+        /// Gets the maximum number of encrypted elements processed during a decryption operation.
+        /// Configurable via AppContext data "System.Security.Cryptography.Xml.DangerousMaxDecryptionCount".
+        /// Default value is 256. A value of 0 means infinite (no limit).
+        /// </summary>
+        internal static int DangerousMaxDecryptionCount { get; } =
+            GetInt32Config(DangerousMaxDecryptionCountAppContextSwitch, DefaultMaxCount, allowNegative: false);
 
         /// <summary>
         /// Gets whether HMAC signature verification accepts truncated signature values.
