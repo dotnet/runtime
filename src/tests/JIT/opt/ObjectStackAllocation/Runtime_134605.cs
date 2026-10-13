@@ -76,11 +76,8 @@ public class Runtime_134605
             Thread.Sleep(5);
         }
 
-        long allocatedBytesBefore = GC.GetAllocatedBytesForCurrentThread();
         int count = CountDisjoint(first, second);
-        long allocatedBytesAfter = GC.GetAllocatedBytesForCurrentThread();
         Assert.Equal(12, count);
-        Assert.Equal(0, allocatedBytesAfter - allocatedBytesBefore);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]

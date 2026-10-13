@@ -1637,7 +1637,9 @@ namespace Internal.IL
 
                 CheckDelegateCreation(actualFtn, actualObj);
 
-                if (!IsDelegateAssignable(actualFtn.Method, methodType, actualObj))
+                // A function pointer that did not come from ldftn/ldvirtftn carries no method;
+                // StackMethod has already been reported for it above.
+                if (actualFtn.IsMethod && !IsDelegateAssignable(actualFtn.Method, methodType, actualObj))
                     VerificationError(VerifierError.DelegateCtor);
             }
             else

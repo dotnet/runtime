@@ -1558,7 +1558,7 @@ static PCODE PatchpointRequiredPolicy(TransitionBlock* pTransitionBlock, int* co
             if ((oldFlags & PerPatchpointInfo::patchpoint_triggered) == PerPatchpointInfo::patchpoint_triggered)
             {
                 LOG((LF_TIEREDCOMPILATION, LL_INFO1000, "PatchpointRequiredPolicy: AWAITING OSR method for patchpoint [%d] (0x%p)\n", ppId, (void*)ip));
-                __SwitchToThread(0, backoffs++);
+                minipal_switch_to_thread(backoffs++);
                 continue;
             }
 
@@ -1570,7 +1570,7 @@ static PCODE PatchpointRequiredPolicy(TransitionBlock* pTransitionBlock, int* co
             if (!triggerTransition)
             {
                 LOG((LF_TIEREDCOMPILATION, LL_INFO1000, "PatchpointRequiredPolicy: (lost race) AWAITING OSR method for patchpoint [%d] (0x%p)\n", ppId, (void*)ip));
-                __SwitchToThread(0, backoffs++);
+                minipal_switch_to_thread(backoffs++);
                 continue;
             }
 

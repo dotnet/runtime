@@ -760,7 +760,7 @@ namespace System.Diagnostics.Tests
             ToString_Async(V2Methods.ThrowsSoonValueTaskSource, MethodExceptionStrings["ThrowsSoonValueTaskSource"]);
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsRuntimeAsyncSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50957", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50957", typeof(PlatformDetection), nameof(PlatformDetection.IsWasm))]
         [MemberData(nameof(Ctor_Async_TestData))]
         [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
         public async Task ToString_Async(Func<Task> asyncMethod, string[] expectedPatterns)

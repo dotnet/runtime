@@ -594,7 +594,7 @@ namespace System.DirectoryServices.Protocols
 
             try
             {
-                error = BerPal.ScanNextPtr(berElement, new string(fmt, 1), ref ptrResult);
+                error = BerPal.ScanNextMultiByteArray(berElement, new string(fmt, 1), ref ptrResult);
 
                 if (!BerPal.IsBerDecodeError(error))
                 {

@@ -850,7 +850,6 @@ namespace System.Reflection.Emit
         {
             lock (SyncRoot)
             {
-                // This method will define an initialized Data in .sdata.
                 // We will create a fake TypeDef to represent the data with size. This TypeDef
                 // will be the signature for the Field.
                 if (_hasGlobalBeenCreated)
@@ -866,7 +865,6 @@ namespace System.Reflection.Emit
         {
             lock (SyncRoot)
             {
-                // This method will define an uninitialized Data in .sdata.
                 // We will create a fake TypeDef to represent the data with size. This TypeDef
                 // will be the signature for the Field.
 

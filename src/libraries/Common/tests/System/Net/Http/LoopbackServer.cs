@@ -431,6 +431,7 @@ namespace System.Net.Test.Common
 
         public class Options : GenericLoopbackOptions
         {
+            public bool AllowTlsResume { get; set; } = true;
             public bool WebSocketEndpoint { get; set; } = false;
             public Func<Stream, Stream> StreamWrapper { get; set; }
             public string Username { get; set; }
@@ -483,6 +484,7 @@ namespace System.Net.Test.Common
 #if !NETFRAMEWORK
                     SslServerAuthenticationOptions sslOptions = new SslServerAuthenticationOptions()
                     {
+                        AllowTlsResume = httpOptions.AllowTlsResume,
                         EnabledSslProtocols = httpOptions.SslProtocols,
                         ServerCertificateContext = httpOptions.CertificateContext ?? SslStreamCertificateContext.Create(Configuration.Certificates.GetServerCertificate(), null),
                         ClientCertificateRequired = true,

@@ -5,6 +5,7 @@ using System;
 using System.Diagnostics;
 using System.Collections.Generic;
 using System.IO;
+using System.Numerics;
 using ILCompiler.DependencyAnalysis;
 using Internal.JitInterface;
 using Internal.Text;
@@ -17,6 +18,41 @@ namespace ILCompiler.ObjectWriter
     internal sealed partial class WasmRelocatableObjectWriter : WasmObjectWriter
     {
         private WasmDataSection _dataSection;
+
+        // https://github.com/WebAssembly/tool-conventions/blob/main/Linking.md
+        private enum SymbolKind : byte
+        {
+            Function = 0, // SYMTAB_FUNCTION
+            Data = 1, // SYMTAB_DATA
+            Global = 2, // SYMTAB_GLOBAL
+            Tag = 4, // SYMTAB_EVENT
+            Table = 5, // SYMTAB_TABLE
+        }
+
+        private const uint UndefinedSymbol = 0x10; // WASM_SYM_UNDEFINED
+        private const uint ExportedSymbol = 0x20; // WASM_SYM_EXPORTED
+        private const byte SegmentInfoSubsection = 5; // WASM_SEGMENT_INFO
+        private const byte SymbolTableSubsection = 8; // WASM_SYMBOL_TABLE
+        private const uint LinkingVersion = 2;
+
+        private enum WasmRelocationType : byte
+        {
+            FunctionIndexLeb = 0, // R_WASM_FUNCTION_INDEX_LEB
+            TableIndexSleb = 1, // R_WASM_TABLE_INDEX_SLEB
+            TableIndexI32 = 2, // R_WASM_TABLE_INDEX_I32
+            MemoryAddrLeb = 3, // R_WASM_MEMORY_ADDR_LEB
+            MemoryAddrSleb = 4, // R_WASM_MEMORY_ADDR_SLEB
+            MemoryAddrI32 = 5, // R_WASM_MEMORY_ADDR_I32
+            TypeIndexLeb = 6, // R_WASM_TYPE_INDEX_LEB
+            GlobalIndexLeb = 7, // R_WASM_GLOBAL_INDEX_LEB
+            MemoryAddrRelSleb = 11, // R_WASM_MEMORY_ADDR_REL_SLEB
+            MemoryAddrI64 = 16, // R_WASM_MEMORY_ADDR_I64
+            TableIndexI64 = 19, // R_WASM_TABLE_INDEX_I64
+            MemoryAddrLocrelI32 = 23, // R_WASM_MEMORY_ADDR_LOCREL_I32
+        }
+
+        private readonly Dictionary<Utf8String, int> _linkingSymbolIndices = new();
+        private readonly Dictionary<int, List<SymbolicRelocation>> _relocations = new();
 
         public WasmRelocatableObjectWriter(NodeFactory factory, ObjectWritingOptions options, OutputInfoBuilder outputInfoBuilder = null) : base(factory, options, outputInfoBuilder)
         {
@@ -61,153 +97,283 @@ namespace ILCompiler.ObjectWriter
 
             FinalizeSectionEntryCounts();
             _dataSection?.AssignSegmentLayout();
-            ResolveSectionRelocations();
 
-            EmitWasmHeader(outputFileStream);
-
+            List<IWasmSection> sections = new();
+            Dictionary<int, int> fileSectionIndices = new();
             foreach (int index in SectionEmitOrder)
             {
-                IWasmSection section = _sections[index] as IWasmSection;
-                if (section == null)
+                if (_sections[index] is IWasmSection section)
                 {
-                    continue;
+                    fileSectionIndices.Add(index, sections.Count);
+                    sections.Add(section);
                 }
-                _sections[index].EmitToStream(outputFileStream);
             }
 
-            _dataSection?.EmitToStream(outputFileStream);
-        }
-
-        private void ResolveSectionRelocations()
-        {
-            foreach ((int sectionIndex, List<SymbolicRelocation> relocations) in _resolvableRelocations)
+            int dataSectionIndex = sections.Count;
+            if (_dataSection is not null)
             {
-                SectionDataEmitter section = _sections[sectionIndex];
-                if (section is not WasmSection && section is not WasmDataSegmentEmitter)
+                sections.Add(_dataSection);
+            }
+
+            using MemoryStream linking = CreateLinkingSection();
+            sections.Add(new WasmCustomSection(linking, new Utf8String("linking"), sections.Count));
+            Dictionary<int, (string Name, MemoryStream Entries, int Count)> relocationSections = new();
+            try
+            {
+                foreach ((int sectionIndex, List<SymbolicRelocation> relocations) in _relocations)
+                {
+                    SectionDataEmitter section = _sections[sectionIndex];
+                    (int contentOffset, int targetSectionIndex, string name) = section switch
+                    {
+                        WasmSection wasmSection => (
+                            wasmSection.ContentSize - (int)wasmSection.ContentReadStream.Length,
+                            fileSectionIndices[sectionIndex],
+                            "reloc.CODE"),
+                        WasmDataSegmentEmitter segment => (
+                            _dataSection.GetSegmentContentOffset(segment),
+                            dataSectionIndex,
+                            "reloc.DATA"),
+                        _ => throw new UnreachableException(),
+                    };
+                    if (!relocationSections.TryGetValue(targetSectionIndex, out var relocationSection))
+                    {
+                        relocationSection = (name, new MemoryStream(), 0);
+                        relocationSections.Add(targetSectionIndex, relocationSection);
+                    }
+                    WriteRelocationEntries(section, contentOffset, relocations, relocationSection.Entries);
+                    relocationSections[targetSectionIndex] = (relocationSection.Name, relocationSection.Entries, relocationSection.Count + relocations.Count);
+                }
+
+                foreach ((int targetSectionIndex, var relocationSection) in relocationSections)
+                {
+                    sections.Add(new WasmRelocationSection(
+                        relocationSection.Entries,
+                        new Utf8String(relocationSection.Name),
+                        sections.Count,
+                        targetSectionIndex,
+                        relocationSection.Count));
+                }
+
+                EmitWasmHeader(outputFileStream);
+                foreach (IWasmSection section in sections)
+                {
+                    section.EmitToStream(outputFileStream);
+                }
+            }
+            finally
+            {
+                foreach (var relocationSection in relocationSections.Values)
+                {
+                    relocationSection.Entries.Dispose();
+                }
+            }
+        }
+
+        private MemoryStream CreateLinkingSection()
+        {
+            MemoryStream linking = new();
+            WriteULEB128(linking, LinkingVersion); // version: the version of linking metadata contained in this section.
+            using MemoryStream symbols = new();
+            using MemoryStream entries = new();
+
+            foreach (WasmIndexSpace indexSpace in new[] { WasmIndexSpace.Function, WasmIndexSpace.Global, WasmIndexSpace.Table, WasmIndexSpace.Tag })
+            {
+                foreach (WasmSymbol symbol in _wasmSymbolManager.GetDefinitions(indexSpace))
+                {
+                    WriteIndexedSymbol(entries, symbol);
+                }
+            }
+
+            foreach ((Utf8String name, SymbolDefinition definition) in _definedSymbols)
+            {
+                if (_wasmSymbolManager.TryGetSymbol(name, out WasmSymbol symbol) && symbol.IndexSpace == WasmIndexSpace.Function)
+                {
+                    if (!_linkingSymbolIndices.ContainsKey(name))
+                    {
+                        WriteIndexedSymbol(entries, symbol);
+                    }
+                    continue;
+                }
+
+                if (_sections[definition.SectionIndex] is not WasmDataSegmentEmitter segment)
                 {
                     continue;
                 }
 
-                using Stream originalStream = section.ContentReadStream;
-                MemoryStream resolvedStream = new((int)originalStream.Length);
-                originalStream.Position = 0;
-                originalStream.CopyTo(resolvedStream);
-                ResolveRelocations(sectionIndex, resolvedStream, relocations, sectionStart: 0);
-                section.ContentReadStream = resolvedStream;
+                AddSymbolIndex(name);
+                entries.WriteByte((byte)SymbolKind.Data); // kind: the symbol type (SYMTAB_DATA).
+                WriteULEB128(entries, 0); // flags: a bitfield containing flags for this symbol.
+                WriteName(entries, name); // name_len/name_data: the UTF-8 symbol name.
+                WriteULEB128(entries, (ulong)_dataSection.GetSegmentIndex(segment)); // index: the index of the data segment.
+                WriteULEB128(entries, checked((ulong)definition.Value)); // offset: the offset within the segment.
+                WriteULEB128(entries, (ulong)definition.Size); // size: the size of the symbol.
+            }
+
+            foreach (Utf8String name in GetUndefinedSymbols())
+            {
+                if (_linkingSymbolIndices.ContainsKey(name))
+                {
+                    continue;
+                }
+
+                AddSymbolIndex(name);
+                entries.WriteByte((byte)SymbolKind.Data); // kind: the symbol type (SYMTAB_DATA).
+                WriteULEB128(entries, UndefinedSymbol); // flags: a bitfield containing flags for this symbol.
+                WriteName(entries, name); // name_len/name_data: the UTF-8 symbol name.
+            }
+
+            WriteULEB128(symbols, (ulong)_linkingSymbolIndices.Count); // count: number of syminfo entries in infos.
+            entries.Position = 0;
+            entries.CopyTo(symbols); // infos: sequence of syminfo entries.
+            WriteSubsection(linking, SymbolTableSubsection, symbols);
+
+            if (_dataSection is not null)
+            {
+                using MemoryStream segments = new();
+                WriteULEB128(segments, (ulong)_dataSection.SegmentCount); // count: number of segment entries in segments.
+                foreach (WasmDataSegmentEmitter segment in _dataSection.Segments)
+                {
+                    WriteName(segments, segment.SectionName); // name_len/name_data: the UTF-8 segment name.
+                    WriteULEB128(segments, (ulong)BitOperations.Log2((uint)segment.MemoryAlignment)); // alignment: required segment alignment, encoded as a power of 2.
+                    WriteULEB128(segments, 0); // flags: a bitfield containing flags for this segment.
+                }
+                WriteSubsection(linking, SegmentInfoSubsection, segments);
+            }
+
+            return linking;
+        }
+
+        private void AddSymbolIndex(Utf8String name) =>
+            _linkingSymbolIndices.Add(name, _linkingSymbolIndices.Count);
+
+        private void WriteIndexedSymbol(Stream entries, WasmSymbol symbol)
+        {
+            AddSymbolIndex(symbol.Name);
+            SymbolKind kind = symbol.IndexSpace switch
+            {
+                WasmIndexSpace.Function => SymbolKind.Function,
+                WasmIndexSpace.Global => SymbolKind.Global,
+                WasmIndexSpace.Table => SymbolKind.Table,
+                WasmIndexSpace.Tag => SymbolKind.Tag,
+                _ => throw new UnreachableException(),
+            };
+            uint flags = symbol.IsImport ? UndefinedSymbol : 0;
+            if (!symbol.IsImport && _definedSymbols.TryGetValue(symbol.Name, out SymbolDefinition definition) && definition.Global)
+            {
+                flags |= ExportedSymbol;
+            }
+            entries.WriteByte((byte)kind); // kind: the symbol type.
+            WriteULEB128(entries, flags); // flags: a bitfield containing flags for this symbol.
+            WriteULEB128(entries, (ulong)symbol.Index); // index: the index of the Wasm object corresponding to the symbol.
+            if (!symbol.IsImport)
+            {
+                WriteName(entries, symbol.Name); // name_len/name_data: the optional UTF-8 symbol name, omitted for imports.
             }
         }
 
-        private Dictionary<int, List<SymbolicRelocation>> _resolvableRelocations = new();
+        private static void WriteULEB128(Stream stream, ulong value)
+        {
+            Span<byte> buffer = stackalloc byte[10];
+            int size = DwarfHelper.WriteULEB128(buffer, value);
+            stream.Write(buffer.Slice(0, size));
+        }
+
+        private static void WriteSLEB128(Stream stream, long value)
+        {
+            Span<byte> buffer = stackalloc byte[10];
+            int size = DwarfHelper.WriteSLEB128(buffer, value);
+            stream.Write(buffer.Slice(0, size));
+        }
+
+        private static void WriteName(Stream stream, Utf8String name)
+        {
+            WriteULEB128(stream, (ulong)name.Length); // name_len: the length of name_data in bytes.
+            stream.Write(name.AsSpan()); // name_data: UTF-8 encoding of the name.
+        }
+
+        private static void WriteSubsection(Stream stream, byte kind, MemoryStream payload)
+        {
+            stream.WriteByte(kind); // type: code identifying the type of subsection.
+            WriteULEB128(stream, (ulong)payload.Length); // payload_len: size of this subsection in bytes.
+            payload.Position = 0;
+            payload.CopyTo(stream); // payload_data: content of this subsection, of length payload_len.
+        }
+
         private protected override void EmitRelocations(int sectionIndex, List<SymbolicRelocation> relocationList)
         {
-            foreach (var reloc in relocationList)
+            if (relocationList.Count > 0)
             {
-                if (!_resolvableRelocations.TryGetValue(sectionIndex, out List<SymbolicRelocation> resolvable))
-                {
-                    _resolvableRelocations[sectionIndex] = resolvable = new List<SymbolicRelocation>();
-                }
-                // Unconditionally add the reloc to our resolvable list; we do some amount of relocation resolution
-                // for all relocation types.
-                resolvable.Add(reloc);
+                _relocations.Add(sectionIndex, relocationList);
             }
         }
 
-        private unsafe void ResolveRelocations(int sectionIndex, MemoryStream sectionStream, List<SymbolicRelocation> relocs, long sectionStart = 0)
+        private unsafe void WriteRelocationEntries(SectionDataEmitter section, int contentOffset, List<SymbolicRelocation> relocs, MemoryStream payload)
         {
-            // TODO: We also need to emit relocations in the reloc section for the linker to resolve.
+            using Stream originalStream = section.ContentReadStream;
+            MemoryStream sectionStream = new((int)originalStream.Length);
+            originalStream.Position = 0;
+            originalStream.CopyTo(sectionStream);
             byte[] relocScratchBuffer = new byte[Relocation.MaxSize];
 
             foreach (SymbolicRelocation reloc in relocs)
             {
                 int size = Relocation.GetSize(reloc.Type);
-                if (size > relocScratchBuffer.Length)
+                bool isFunction = _wasmSymbolManager.TryGetSymbol(reloc.SymbolName, out WasmSymbol symbol) &&
+                    symbol.IndexSpace == WasmIndexSpace.Function;
+                WasmRelocationType type = reloc.Type switch
                 {
-                    throw new InvalidOperationException($"Unsupported relocation size for relocation: {reloc.Type}");
-                }
+                    RelocType.WASM_FUNCTION_INDEX_LEB => WasmRelocationType.FunctionIndexLeb,
+                    RelocType.WASM_TYPE_INDEX_LEB => WasmRelocationType.TypeIndexLeb,
+                    RelocType.WASM_GLOBAL_INDEX_LEB => WasmRelocationType.GlobalIndexLeb,
+                    RelocType.WASM_TABLE_INDEX_SLEB => WasmRelocationType.TableIndexSleb,
+                    RelocType.WASM_TABLE_INDEX_I32 => WasmRelocationType.TableIndexI32,
+                    RelocType.WASM_TABLE_INDEX_I64 => WasmRelocationType.TableIndexI64,
+                    RelocType.WASM_MEMORY_ADDR_LEB => WasmRelocationType.MemoryAddrLeb,
+                    RelocType.WASM_MEMORY_ADDR_SLEB => WasmRelocationType.MemoryAddrSleb,
+                    RelocType.WASM_MEMORY_ADDR_REL_SLEB when isFunction => WasmRelocationType.TableIndexSleb,
+                    RelocType.WASM_MEMORY_ADDR_REL_SLEB => WasmRelocationType.MemoryAddrRelSleb,
+                    RelocType.IMAGE_REL_BASED_HIGHLOW when isFunction => WasmRelocationType.TableIndexI32,
+                    RelocType.IMAGE_REL_BASED_HIGHLOW => WasmRelocationType.MemoryAddrI32,
+                    RelocType.IMAGE_REL_BASED_DIR64 => WasmRelocationType.MemoryAddrI64,
+                    RelocType.IMAGE_REL_BASED_RELPTR32 => WasmRelocationType.MemoryAddrLocrelI32,
+                    _ => throw new NotSupportedException($"Relocation type {reloc.Type} for symbol '{reloc.SymbolName}' in section {section.SectionName} not yet implemented"),
+                };
 
-                SymbolDefinition definedSymbol = _definedSymbols[reloc.SymbolName];
-
-                // We need a pinned raw pointer here for manipulation with Relocation.WriteValue
-                fixed (byte* pData = ReadRelocToDataSpan(reloc, relocScratchBuffer, sectionStart))
+                sectionStream.Position = reloc.Offset;
+                sectionStream.ReadExactly(relocScratchBuffer.AsSpan(0, size));
+                fixed (byte* pData = relocScratchBuffer)
                 {
-                    long addend = Relocation.ReadValue(reloc.Type, pData);
-
-                    switch (reloc.Type)
+                    long addend = reloc.Addend + Relocation.ReadValue(reloc.Type, pData);
+                    bool hasAddend = type is WasmRelocationType.MemoryAddrLeb or WasmRelocationType.MemoryAddrSleb or
+                        WasmRelocationType.MemoryAddrI32 or WasmRelocationType.MemoryAddrI64 or
+                        WasmRelocationType.MemoryAddrRelSleb or WasmRelocationType.MemoryAddrLocrelI32;
+                    if (!hasAddend && addend != 0)
                     {
-                        case RelocType.WASM_METHOD_RELATIVE_VIRTUAL_IP_I32:
-                        {
-                            Relocation.WriteValue(reloc.Type, pData, reloc.Addend + addend);
-                            break;
-                        }
-                        case RelocType.WASM_TYPE_INDEX_LEB:
-                        case RelocType.WASM_GLOBAL_INDEX_LEB:
-                        case RelocType.WASM_TABLE_INDEX_I32:
-                        case RelocType.WASM_TABLE_INDEX_I64:
-                        case RelocType.WASM_TABLE_INDEX_SLEB:
-                        case RelocType.WASM_TABLE_INDEX_REL_I32:
-                        case RelocType.WASM_FUNCTION_INDEX_LEB:
-                        case RelocType.WASM_MEMORY_ADDR_REL_SLEB when
-                            _sections[definedSymbol.SectionIndex] is WasmSection { Type: WasmSectionType.Code }:
-                        {
-                            // These relocations reference a wasm structural index (function, type,
-                            // table entry, or well-known global). We self-resolve them here to
-                            // the index assigned when the symbol was registered into its index space.
-                            if (!_wasmSymbolManager.TryGetSymbol(reloc.SymbolName, out WasmSymbol symbol))
-                            {
-                                throw new InvalidOperationException($"Symbol '{reloc.SymbolName}' was not registered. Relocation type {reloc.Type}.");
-                            }
-                            Relocation.WriteValue(reloc.Type, pData, symbol.Index + addend);
-                            break;
-                        }
-                        case RelocType.WASM_CLR_RESTORE_CONTEXT_EXCEPTION_TAG_LEB:
-                        {
-                            WasmSymbol symbol = _wasmSymbolManager.GetSymbol(RtlRestoreContextTagName);
-                            Debug.Assert(symbol.IndexSpace == WasmIndexSpace.Tag);
-                            Relocation.WriteValue(reloc.Type, pData, symbol.Index + addend);
-                            break;
-                        }
-                        case RelocType.IMAGE_REL_BASED_HIGHLOW:
-                        {
-                            if (_sections[definedSymbol.SectionIndex] is WasmDataSegmentEmitter segment)
-                            {
-long targetAddress = segment.GetMemoryAddressOfOffset((int)(definedSymbol.Value + addend)) + reloc.Addend;
-                                Relocation.WriteValue(reloc.Type, pData, targetAddress);
-                            }
-                            else
-                            {
-                                throw new NotImplementedException();
-                            }
-                            break;
-                        }
-
-                        default:
-                            // TODO-WASM: add other cases as needed;
-                            // ignoring other reloc types for now
-                            throw new NotSupportedException($"Relocation type {reloc.Type} for symbol '{reloc.SymbolName}' at "
-                                + $"offset 0x{reloc.Offset:X} in section {_sections[sectionIndex].SectionName} not yet implemented");
-
+                        throw new NotSupportedException($"Nonzero addend for {reloc.Type} relocation to '{reloc.SymbolName}'");
                     }
 
-                    WriteRelocFromDataSpan(reloc, pData, sectionStart);
+                    payload.WriteByte((byte)type); // type: the relocation type.
+                    WriteULEB128(payload, checked((ulong)(contentOffset + reloc.Offset))); // offset: offset of the value to rewrite, relative to the section's contents.
+                    // index: the symbol index, or the type index for R_WASM_TYPE_INDEX_LEB.
+                    WriteULEB128(payload, (ulong)(type == WasmRelocationType.TypeIndexLeb
+                        ? symbol.Index : _linkingSymbolIndices[reloc.SymbolName]));
+                    if (hasAddend)
+                    {
+                        WriteSLEB128(payload, addend); // addend: addend to add to the address.
+                    }
+
+                    long value = type is WasmRelocationType.FunctionIndexLeb or WasmRelocationType.TypeIndexLeb or WasmRelocationType.GlobalIndexLeb
+                        ? symbol.Index : 0;
+                    Relocation.WriteValue(reloc.Type, pData, value);
+                    sectionStream.Position = reloc.Offset;
+                    sectionStream.Write(relocScratchBuffer.AsSpan(0, size));
                 }
             }
 
-            Span<byte> ReadRelocToDataSpan(SymbolicRelocation reloc, byte[] buffer, long sectionStart)
-            {
-                Span<byte> relocContents = buffer.AsSpan(0, Relocation.GetSize(reloc.Type));
-                sectionStream.Position = reloc.Offset + sectionStart;
-                sectionStream.ReadExactly(relocContents);
-                return relocContents;
-            }
-
-            void WriteRelocFromDataSpan(SymbolicRelocation reloc, byte* pData, long sectionStart)
-            {
-                sectionStream.Position = reloc.Offset + sectionStart;
-                sectionStream.Write(new Span<byte>(pData, Relocation.GetSize(reloc.Type)));
-            }
+            section.ContentReadStream = sectionStream;
         }
 
-        // TODO: This is a temporary workaround for the fact that we don't yet emit a COMDAT section (or any reloc / linking sections)
+        // COMDAT groups are not supported yet.
         private protected override bool UsesSubsectionsViaSymbols => true;
 
         private protected override SectionDataEmitter CreateDataSection(
@@ -232,39 +398,11 @@ long targetAddress = segment.GetMemoryAddressOfOffset((int)(definedSymbol.Value 
         {
         }
 
-        private const int RtlRestoreContextTagIndex = 0;
-        private static readonly WasmFuncType RtlRestoreContextTagSignature = new(
-            new([]),
-            new([]));
-        private const int StackPointerGlobalIndex = 0;
-        private const int ImageBaseGlobalIndex = 1;
-        private const int TableBaseGlobalIndex = 2;
-        private const int AsyncContinuationGlobalIndex = 3;
-        private static readonly Utf8String RtlRestoreContextTagName = new Utf8String("rtlRestoreContextTag");
-        private WasmImport[] CreateDefaultGlobalImports()
-        {
-            // TODO: This is copied from the webcil writer as a workaround until reloc sections are emitted properly.
-            // These should eventually be resolved to relocs + imports according to the relocation / linking wasm spec, and no default imports should be required.
-            int rtlRestoreContextTagTypeIndex = RegisterSignature(RtlRestoreContextTagSignature);
-
-            return
-            [
-                new WasmImport("env", WasmWellKnownGlobalSymbolNode.StackPointerName, import: new WasmGlobalImportType(WasmValueType.I32, WasmMutabilityType.Mut), index: StackPointerGlobalIndex),
-                new WasmImport("env", WasmWellKnownGlobalSymbolNode.ImageBaseName, import: new WasmGlobalImportType(WasmValueType.I32, WasmMutabilityType.Const), index: ImageBaseGlobalIndex),
-                new WasmImport("env", WasmWellKnownGlobalSymbolNode.TableBaseName, import: new WasmGlobalImportType(WasmValueType.I32, WasmMutabilityType.Const), index: TableBaseGlobalIndex),
-                new WasmImport("env", WasmWellKnownGlobalSymbolNode.AsyncContinuationName, import: new WasmGlobalImportType(WasmValueType.I32, WasmMutabilityType.Mut), index: AsyncContinuationGlobalIndex),
-                new WasmImport("env", "table", import: new WasmTableImportType(), index: 0),
-                new WasmImport("env", RtlRestoreContextTagName.ToString(), import: new WasmTagImportType(rtlRestoreContextTagTypeIndex), index: RtlRestoreContextTagIndex),
-                new WasmImport("env", "memory", import: new WasmMemoryImportType(WasmLimitType.HasMin, /* TODO: This is an arbitrary number */ 32))
-            ];
-        }
-
         private protected override void WriteImports()
         {
-            foreach (WasmImport import in CreateDefaultGlobalImports())
-            {
-                WriteImport(import);
-            }
+            WriteImport(new WasmImport("env", WasmWellKnownGlobalSymbolNode.StackPointerName, import: new WasmGlobalImportType(WasmValueType.I32, WasmMutabilityType.Mut)));
+            WriteImport(new WasmImport("env", "__indirect_function_table", new WasmTableImportType()));
+            WriteImport(new WasmImport("env", "memory", new WasmMemoryImportType(WasmLimitType.HasMin, 0)));
         }
 
         private protected override void WriteExports()
