@@ -262,6 +262,20 @@ After calling `ActivateModule`, the host calls `DoRuntimeDeferredModuleActivatio
 | Compiler and R2R format | No new helper or thunk. One new PEP flag and a check in the existing helper. | Existing helper |
 
 
+## Implementation phases
+
+### 1. Support delayed resolution of R2R code within the same module.
+
+Using either call-counting in the interpreter or a timer in the host JavaScript code, force methods to be interpreted (even if R2R code exists for them in the primary module) before installing R2R code. This doesn't require any changes to crossgen2 or the webcil format.
+
+### 2. Split some wasm function bodies into the cold module.
+
+Leave all other R2R metadata (fixups, EH and GC info, etc) in the primary module, but move some cold wasm method bodies to a cold module. `ActivateModule` only has to update the global function table. Requires changes from crossgen2, the host, and the runtime.
+
+### 3. Move metadata for aux methods into the auxiliary module.
+
+Move the `RuntimeFunctions` table entries and fixups to the auxiliary module, and have method activation resolve this info using the Auxiliary Module Metadata entries.
+
 ## Appendix: Method activation PEP state table
 
 The table covers every combination of four values:
