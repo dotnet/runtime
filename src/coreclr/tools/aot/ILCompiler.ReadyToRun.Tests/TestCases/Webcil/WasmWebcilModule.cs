@@ -8,6 +8,63 @@ namespace Webcil;
 
 public static class WasmWebcilModule
 {
+    public sealed class LdtokenType
+    {
+    }
+
+    public sealed class LdtokenHolder<T>
+    {
+    }
+
+    public struct GenericTokenValue
+    {
+        public int Value;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static Type ReadIntrinsicTypeToken(int index) => index switch
+    {
+        0 => typeof(void),
+        1 => typeof(bool),
+        2 => typeof(char),
+        3 => typeof(sbyte),
+        4 => typeof(byte),
+        5 => typeof(short),
+        6 => typeof(ushort),
+        7 => typeof(int),
+        8 => typeof(uint),
+        9 => typeof(long),
+        10 => typeof(ulong),
+        11 => typeof(float),
+        12 => typeof(double),
+        13 => typeof(nint),
+        14 => typeof(nuint),
+        15 => typeof(string),
+        16 => typeof(object),
+        17 => typeof(TypedReference),
+        18 => typeof(bool[]),
+        19 => typeof(int[,]),
+        20 => typeof(int[][]),
+        21 => typeof(string[]),
+        22 => typeof(object[,,]),
+        23 => typeof(int[,][]),
+        _ => typeof(nuint[]),
+    };
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static Type ReadTokenDependentTypeToken(int index) => index switch
+    {
+        0 => typeof(GenericTokenValue),
+        1 => typeof(LdtokenType),
+        2 => typeof(DayOfWeek),
+        3 => typeof(decimal),
+        4 => typeof(Half),
+        5 => typeof(int?),
+        6 => typeof(LdtokenHolder<int>),
+        7 => typeof(LdtokenType[]),
+        _ => typeof(GenericTokenValue[,][]),
+    };
+
     private static readonly int[] s_primes = new int[] { 3, 5, 7, 11, 13 };
     private static int s_counter;
 

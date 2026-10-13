@@ -30,6 +30,77 @@ public class R2RTestSuites
         _output = output;
     }
 
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public void IntrinsicTypeHandlesAreModuleEager(bool composite, bool optimize)
+    {
+        CompiledAssembly input = new()
+        {
+            AssemblyName = nameof(IntrinsicTypeHandlesAreModuleEager),
+            SourceResourceNames = ["Webcil/WasmWebcilModule.cs"],
+        };
+        List<Crossgen2Option> options = new();
+        if (composite)
+            options.Add(Crossgen2Option.Composite);
+        if (optimize)
+            options.Add(Crossgen2Option.Optimize);
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(IntrinsicTypeHandlesAreModuleEager),
+            [
+                new(nameof(IntrinsicTypeHandlesAreModuleEager), [new CrossgenAssembly(input)])
+                {
+                    Options = options,
+                    OutputFileExtension = TestPaths.IsWasmTarget ? ".wasm" : ".dll",
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            string[] types =
+            [
+                "void", "bool", "char", "sbyte", "byte", "short", "ushort", "int", "uint",
+                "long", "ulong", "float", "double", "IntPtr", "UIntPtr", "string", "object",
+                "typedbyref", "bool[]", "int[...,...]", "int[][]", "string[]", "object[...,...,...]",
+                "int[][...,...]", "UIntPtr[]",
+            ];
+            SignatureFormattingOptions formatting = new();
+            foreach (string type in types)
+            {
+                ReadyToRunImportSection section = Assert.Single(reader.ImportSections,
+                    section => section.Entries.Any(entry =>
+                        entry.Signature?.FixupKind == ReadyToRunFixupKind.TypeHandle &&
+                        entry.Signature.ToString(formatting) == $"{type} (TYPE_HANDLE)"));
+                Assert.Equal(ReadyToRunImportSectionFlags.Eager, section.Flags & ReadyToRunImportSectionFlags.Eager);
+                Assert.Single(section.Entries, entry =>
+                    entry.Signature?.FixupKind == ReadyToRunFixupKind.TypeHandle &&
+                    entry.Signature.ToString(formatting) == $"{type} (TYPE_HANDLE)");
+            }
+
+            List<ReadyToRunMethod> methods = R2RAssert.GetAllMethods(reader);
+            ReadyToRunMethod intrinsic = Assert.Single(methods,
+                method => method.SignatureString.Contains(".ReadIntrinsicTypeToken(", StringComparison.Ordinal));
+            Assert.DoesNotContain(intrinsic.Fixups ?? Array.Empty<FixupCell>(),
+                fixup => fixup.Signature.FixupKind == ReadyToRunFixupKind.TypeHandle);
+
+            ReadyToRunMethod tokenDependent = Assert.Single(methods,
+                method => method.SignatureString.Contains(".ReadTokenDependentTypeToken(", StringComparison.Ordinal));
+            Assert.Equal(9, (tokenDependent.Fixups ?? Array.Empty<FixupCell>()).Count(
+                fixup => fixup.Signature.FixupKind == ReadyToRunFixupKind.TypeHandle));
+            foreach (FixupCell fixup in tokenDependent.Fixups ?? Array.Empty<FixupCell>())
+            {
+                if (fixup.Signature.FixupKind == ReadyToRunFixupKind.TypeHandle)
+                {
+                    Assert.Equal((ReadyToRunImportSectionFlags)0, reader.ImportSections[(int)fixup.TableIndex].Flags & ReadyToRunImportSectionFlags.Eager);
+                }
+            }
+        }
+    }
+
     [ConditionalTheory(typeof(TestPaths), nameof(TestPaths.IsXArchTarget))]
     [InlineData(1)]
     [InlineData(2)]

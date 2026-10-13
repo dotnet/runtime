@@ -226,6 +226,12 @@ struct READYTORUN_IMPORT_SECTION
 | ReadyToRunImportSectionFlags::PCode    | 0x0004  | Section contains pointers to code
 
 
+Concrete `TYPE_HANDLE` imports for built-in types encoded directly by `CorElementType`
+(including `string`, `object`, and `TypedReference`) and arrays of those types are placed in
+module-eager sections as they are encountered. This includes multidimensional and nested arrays,
+but not enums, other token-dependent types, pointers, or byrefs. These cells are omitted from
+per-method fixup lists; only imports reached by the final dependency traversal are emitted.
+
 ### READYTORUN_IMPORT_SECTIONS::Type
 
 | ReadyToRunImportSectionType                 | Value  | Description
