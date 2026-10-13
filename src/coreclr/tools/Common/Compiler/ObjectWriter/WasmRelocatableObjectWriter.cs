@@ -344,6 +344,16 @@ namespace ILCompiler.ObjectWriter
                 fixed (byte* pData = relocScratchBuffer)
                 {
                     long addend = reloc.Addend + Relocation.ReadValue(reloc.Type, pData);
+                    Utf8String symbolName = reloc.SymbolName;
+                    if (isFunction && addend != 0)
+                    {
+                        // The JIT encodes funclet references as parent + ordinal, but the linker can reorder table entries.
+                        Utf8String funcletName = GetFuncletName(symbolName, checked((int)addend - 1));
+                        symbol = _wasmSymbolManager.GetSymbol(funcletName);
+                        Debug.Assert(symbol.IndexSpace == WasmIndexSpace.Function);
+                        symbolName = funcletName;
+                        addend = 0;
+                    }
                     bool hasAddend = type is WasmRelocationType.MemoryAddrLeb or WasmRelocationType.MemoryAddrSleb or
                         WasmRelocationType.MemoryAddrI32 or WasmRelocationType.MemoryAddrI64 or
                         WasmRelocationType.MemoryAddrRelSleb or WasmRelocationType.MemoryAddrLocrelI32;
@@ -356,7 +366,7 @@ namespace ILCompiler.ObjectWriter
                     WriteULEB128(payload, checked((ulong)(contentOffset + reloc.Offset))); // offset: offset of the value to rewrite, relative to the section's contents.
                     // index: the symbol index, or the type index for R_WASM_TYPE_INDEX_LEB.
                     WriteULEB128(payload, (ulong)(type == WasmRelocationType.TypeIndexLeb
-                        ? symbol.Index : _linkingSymbolIndices[reloc.SymbolName]));
+                        ? symbol.Index : _linkingSymbolIndices[symbolName]));
                     if (hasAddend)
                     {
                         WriteSLEB128(payload, addend); // addend: addend to add to the address.
