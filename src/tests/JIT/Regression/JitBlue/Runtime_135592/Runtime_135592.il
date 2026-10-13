@@ -12,10 +12,6 @@
 //
 // The four scenario methods throw inside their nested try and return 1 when the nested handler catches.
 // Three scenarios use filters; CatchInEarlierFinally is a catch-only control.
-//
-// Disabled on Mono: Mono's JIT can leave the blocks of a handler or filter nested in an earlier-listed
-// clause's handler in the enclosing handler's region. FilterInEarlierFinally crashes or hangs on some Mono
-// configurations, and the Mono LLVM AOT compiler asserts on CatchInEarlierFinally.
 
 .assembly extern xunit.core {}
 .assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }

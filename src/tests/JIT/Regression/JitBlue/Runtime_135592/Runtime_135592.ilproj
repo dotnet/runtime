@@ -1,5 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk.IL">
   <PropertyGroup>
+    <CLRTestPriority>1</CLRTestPriority>
     <MonoAotIncompatible>true</MonoAotIncompatible>  <!-- https://github.com/dotnet/runtime/issues/135641 -->
   </PropertyGroup>
   <PropertyGroup>
