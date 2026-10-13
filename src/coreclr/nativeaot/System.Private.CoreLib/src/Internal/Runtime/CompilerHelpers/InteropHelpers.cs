@@ -445,17 +445,17 @@ namespace Internal.Runtime.CompilerHelpers
         /// <summary>
         /// Retrieves the function pointer for the current open static delegate that is being called
         /// </summary>
-        public static IntPtr GetCurrentCalleeOpenStaticDelegateFunctionPointer()
+        public static IntPtr GetCurrentCalleeOpenStaticDelegateFunctionPointer(IntPtr pContext)
         {
-            return PInvokeMarshal.GetCurrentCalleeOpenStaticDelegateFunctionPointer();
+            return PInvokeMarshal.GetCurrentCalleeOpenStaticDelegateFunctionPointer(pContext);
         }
 
         /// <summary>
         /// Retrieves the current delegate that is being called
         /// </summary>
-        public static T GetCurrentCalleeDelegate<T>() where T : Delegate
+        public static T GetCurrentCalleeDelegate<T>(IntPtr pContext) where T : Delegate
         {
-            return PInvokeMarshal.GetCurrentCalleeDelegate<T>();
+            return PInvokeMarshal.GetCurrentCalleeDelegate<T>(pContext);
         }
 
         public static IntPtr ConvertManagedComInterfaceToNative(object pUnk, Guid interfaceGuid)

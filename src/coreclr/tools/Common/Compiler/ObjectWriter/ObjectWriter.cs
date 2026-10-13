@@ -297,6 +297,10 @@ namespace ILCompiler.ObjectWriter
             return symbolName;
         }
 
+        private protected virtual void PrepareImportsForUndefinedSymbols()
+        {
+        }
+
         private protected virtual void EmitSectionsAndLayout()
         {
         }
@@ -305,7 +309,7 @@ namespace ILCompiler.ObjectWriter
 
         partial void EmitDebugInfo(IReadOnlyCollection<DependencyNode> nodes, Logger logger);
 
-        private SortedSet<Utf8String> GetUndefinedSymbols()
+        private protected SortedSet<Utf8String> GetUndefinedSymbols()
         {
             SortedSet<Utf8String> undefinedSymbolSet = new SortedSet<Utf8String>();
             foreach (var relocationList in _sectionIndexToRelocations)
@@ -358,6 +362,11 @@ namespace ILCompiler.ObjectWriter
             List<ChecksumsToCalculate> checksumRelocations = [];
             foreach (DependencyNode depNode in nodes)
             {
+                if (_nodeFactory.Target.IsWasm && depNode is INodeWithTypeSignature methodDeclaration)
+                {
+                    RecordMethodDeclaration(methodDeclaration);
+                }
+
                 // TODO-WASM: emit symbol ranges properly when code and data are separated
                 // Right now we still need to determine placements for some traditionally text-placed nodes,
                 // such as DebugDirectoryEntryNode and AssemblyStubNode
@@ -398,6 +407,23 @@ namespace ILCompiler.ObjectWriter
                     currentSymbolName = GetMangledName(symbolNode);
                 }
 
+                if (node is WasmTypeNode signature)
+                {
+                    RecordMethodSignature(signature);
+                }
+
+                if (node is INodeWithTypeSignature codeNode && _nodeFactory.Target.IsWasm)
+                {
+                    Debug.Assert(codeNode.Signature != null, $"Wasm code node {codeNode.GetType()} has null signature");
+
+                    RecordMethodDefinition(codeNode);
+                }
+
+                if (TryRecordFoldedObjectNode(node, nodeContents, currentSymbolName))
+                {
+                    continue;
+                }
+
                 ObjectNodeSection section = node.GetSection(_nodeFactory);
                 SectionWriter sectionWriter = ShouldShareSymbol(node, section) ?
                     GetOrCreateSection(section, currentSymbolName, currentSymbolName) :
@@ -410,21 +436,6 @@ namespace ILCompiler.ObjectWriter
 
                 bool isMethod = node is IPCodeSymbolNode;
                 long thumbBit = _nodeFactory.Target.Architecture == TargetArchitecture.ARM && isMethod ? 1 : 0;
-
-                if (node is WasmTypeNode signature)
-                {
-                    RecordMethodSignature(signature);
-                }
-
-                if (node is INodeWithTypeSignature codeNode && _nodeFactory.Target.IsWasm)
-                {
-                    Debug.Assert(codeNode.Signature != null, $"Wasm code node {codeNode.GetType()} has null signature");
-
-                    // Record only information we can get from the MethodDesc here. The actual
-                    // body will be emitted by the call to EmitData() at the end
-                    // of this loop iteration.
-                    RecordMethodDeclaration(codeNode);
-                }
 
                 foreach (ISymbolDefinitionNode n in nodeContents.DefinedSymbols)
                 {
@@ -518,6 +529,8 @@ namespace ILCompiler.ObjectWriter
                 sectionWriter.EmitData(nodeContents.Data);
             }
 
+            RecordFoldedSymbolDefinitions(_definedSymbols);
+
             foreach (ISymbolRangeNode range in symbolRangeNodes)
             {
                 ISymbolNode startNode = range.StartNode(_nodeFactory);
@@ -585,6 +598,7 @@ namespace ILCompiler.ObjectWriter
             }
             blocksToRelocate.Clear();
 
+            PrepareImportsForUndefinedSymbols();
             EmitSectionsAndLayout();
 
             if (_options.HasFlag(ObjectWritingOptions.GenerateDebugInfo))
@@ -622,9 +636,24 @@ namespace ILCompiler.ObjectWriter
             Debug.Assert(LayoutMode == CodeDataLayout.Separate);
         }
 
+        private protected virtual void RecordMethodDefinition(INodeWithTypeSignature node)
+        {
+            Debug.Assert(LayoutMode == CodeDataLayout.Separate);
+        }
+
         private protected virtual void RecordMethodSignature(WasmTypeNode signature)
         {
             Debug.Assert(LayoutMode == CodeDataLayout.Separate);
+        }
+
+        private protected virtual bool TryRecordFoldedObjectNode(
+            ObjectNode node,
+            ObjectData nodeContents,
+            Utf8String currentSymbolName) => false;
+
+        private protected virtual void RecordFoldedSymbolDefinitions(
+            IDictionary<Utf8String, SymbolDefinition> definedSymbols)
+        {
         }
 
         private protected virtual void RecordWellKnownSymbol(Utf8String currentSymbolName, SortableDependencyNode.ObjectNodeOrder classCode)
@@ -646,7 +675,7 @@ namespace ILCompiler.ObjectWriter
             EmitSymbolDefinition(startSymbol.SectionIndex, rangeNodeName, startSymbol.Value, checked((int)(endSymbol.Value - startSymbol.Value + endSymbol.Size)));
         }
 
-        private static string GetNodeTypeName(Type nodeType)
+        private protected static string GetNodeTypeName(Type nodeType)
         {
             string name = nodeType.ToString();
             int firstGeneric = name.IndexOf('[');

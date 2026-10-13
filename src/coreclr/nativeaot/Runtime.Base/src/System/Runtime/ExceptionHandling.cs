@@ -580,6 +580,13 @@ namespace System.Runtime
 #endif // !NATIVEAOT
         }
 
+        // Returns the exception that is currently in flight on the current thread, including one being handled
+        // by a catch handler, or null if there is no exception in flight.
+        internal static object? GetCurrentException(ExInfo* pExInfo)
+        {
+            return pExInfo != null ? pExInfo->ThrownException : null;
+        }
+
         //
         // Called by RhpThrowHwEx
         //

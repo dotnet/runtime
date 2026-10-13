@@ -6,6 +6,7 @@
 #include <error_codes.h>
 #include <nethost.h>
 #include "comhost_test.h"
+#include "ijwhost_test.h"
 #include <hostfxr.h>
 #include "host_context_test.h"
 #include "resolve_component_dependencies_test.h"
@@ -493,28 +494,72 @@ int main(const int argc, const pal::char_t *argv[])
 
         const pal::char_t *scenario = argv[2];
         int count = pal::xtoi(argv[3]);
-        const pal::string_t comhost_path = argv[4];
-        const pal::string_t clsid_str = argv[5];
-
         bool success = false;
-        if (pal::strcmp(scenario, _X("synchronous")) == 0)
+        if (pal::strcmp(scenario, _X("loadcontext")) == 0)
         {
+            int argument_count = argc - 4;
+            if (count <= 0 || (argument_count % 2) != 0 || count != argument_count / 2)
+            {
+                std::cerr << "Invalid arguments" << std::endl;
+                return -1;
+            }
+
+            std::vector<pal::string_t> comhost_paths;
+            std::vector<pal::string_t> clsid_strings;
+            comhost_paths.reserve(count);
+            clsid_strings.reserve(count);
+            for (int i = 0; i < count; ++i)
+            {
+                comhost_paths.push_back(argv[4 + (i * 2)]);
+                clsid_strings.push_back(argv[5 + (i * 2)]);
+            }
+
+            success = comhost_test::load_context(comhost_paths, clsid_strings);
+        }
+        else if (pal::strcmp(scenario, _X("synchronous")) == 0)
+        {
+            const pal::string_t comhost_path = argv[4];
+            const pal::string_t clsid_str = argv[5];
             success = comhost_test::synchronous(comhost_path, clsid_str, count);
         }
         else if (pal::strcmp(scenario, _X("concurrent")) == 0)
         {
+            const pal::string_t comhost_path = argv[4];
+            const pal::string_t clsid_str = argv[5];
             success = comhost_test::concurrent(comhost_path, clsid_str, count);
         }
         else if (pal::strcmp(scenario, _X("errorinfo")) == 0)
         {
+            const pal::string_t comhost_path = argv[4];
+            const pal::string_t clsid_str = argv[5];
             success = comhost_test::errorinfo(comhost_path, clsid_str, count);
         }
         else if (pal::strcmp(scenario, _X("typelib")) == 0)
         {
+            const pal::string_t comhost_path = argv[4];
             success = comhost_test::typelib(comhost_path, count);
         }
 
         return success ? EXIT_SUCCESS : EXIT_FAILURE;
+    }
+    else if (pal::strcmp(command, _X("ijwhost_loadcontext")) == 0)
+    {
+        // args: ... <ijw_library_path> <entry_point> [<ijw_library_path> <entry_point> ...]
+        if (argc < 6 || (argc % 2) != 0)
+        {
+            std::cerr << "Invalid arguments" << std::endl;
+            return -1;
+        }
+
+        std::vector<pal::string_t> library_paths;
+        std::vector<pal::string_t> entry_points;
+        for (int i = 2; i < argc; i += 2)
+        {
+            library_paths.push_back(argv[i]);
+            entry_points.push_back(argv[i + 1]);
+        }
+
+        return ijwhost_test::load_context(library_paths, entry_points) ? EXIT_SUCCESS : EXIT_FAILURE;
     }
     else if (pal::strcmp(command, _X("ijwhost")) == 0)
     {
@@ -538,35 +583,7 @@ int main(const int argc, const pal::char_t *argv[])
             }
         }
 
-        const pal::string_t ijw_library_path = argv[2];
-        std::vector<char> entry_point_name = tostr(argv[3]);
-
-        pal::dll_t ijw_library;
-        if (!pal::load_library(&ijw_library_path, &ijw_library))
-        {
-            std::cout << "Failed to load library: " << tostr(ijw_library_path).data() << std::endl;
-            return EXIT_FAILURE;
-        }
-
-        // Test is assuming __cdecl, no arguments, and void return for simplicity
-        typedef void(__cdecl *entry_point_fn)();
-        entry_point_fn entry_point = reinterpret_cast<entry_point_fn>(pal::get_symbol(ijw_library, entry_point_name.data()));
-        if (entry_point == nullptr)
-        {
-            std::cout << "Failed to find entry point: " << entry_point_name.data() << std::endl;
-            return EXIT_FAILURE;
-        }
-        try
-        {
-            entry_point();
-        }
-        catch (...)
-        {
-            // entry_point will throw in some tests, this is expected.
-            // We must catch this exception to ensure that the CRT does not pop a modal dialog
-            return EXIT_FAILURE;
-        }
-        return EXIT_SUCCESS;
+        return ijwhost_test::run(argv[2], argv[3]) ? EXIT_SUCCESS : EXIT_FAILURE;
     }
 #endif
     else if (pal::strcmp(command, _X("get_native_search_directories")) == 0)

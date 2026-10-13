@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-//
-
 #ifndef PEIMAGEVIEW_INL_
 #define PEIMAGEVIEW_INL_
 
@@ -65,23 +63,6 @@ inline PEImageLayout::PEImageLayout()
     , m_pOwner(NULL)
 {
     LIMITED_METHOD_CONTRACT;
-}
-
-inline BOOL PEImageLayout::CompareBase(UPTR base, UPTR mapping)
-{
-    CONTRACTL
-    {
-        PRECONDITION(CheckPointer((PEImageLayout *)mapping));
-        PRECONDITION(CheckPointer((PEImageLayout *)(base<<1),NULL_OK));
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-    if (base==0) //we were searching for 'Any'
-        return TRUE;
-    return ((PEImageLayout*)mapping)->GetBase()==((PEImageLayout*)(base<<1))->GetBase();
-
 }
 
 // -----------------------------------------------

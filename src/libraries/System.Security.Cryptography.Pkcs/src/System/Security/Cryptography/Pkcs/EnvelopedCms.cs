@@ -9,7 +9,7 @@ using Internal.Cryptography;
 
 namespace System.Security.Cryptography.Pkcs
 {
-    public sealed class EnvelopedCms
+    public sealed partial class EnvelopedCms
     {
         //
         // Constructors
@@ -206,6 +206,19 @@ namespace System.Security.Cryptography.Pkcs
         {
             ArgumentNullException.ThrowIfNull(recipientInfo);
 
+            if (privateKey is not null and not RSA)
+            {
+                CheckStateForDecryption();
+                throw new CryptographicException(SR.Cryptography_Cms_Ktri_RSARequired);
+            }
+
+            DecryptWithKey(
+                recipientInfo,
+                privateKey is RSA rsa ? rsa : EnvelopedCmsKey.None.Instance);
+        }
+
+        private void DecryptWithKey(RecipientInfo recipientInfo, EnvelopedCmsKey privateKey)
+        {
             CheckStateForDecryption();
 
             X509Certificate2Collection extraStore = new X509Certificate2Collection();
@@ -248,7 +261,7 @@ namespace System.Security.Cryptography.Pkcs
                 newContentInfo = _decryptorPal!.TryDecrypt(
                     recipientInfo,
                     cert,
-                    null,
+                    EnvelopedCmsKey.None.Instance,
                     originatorCerts,
                     extraStore,
                     out exception);
