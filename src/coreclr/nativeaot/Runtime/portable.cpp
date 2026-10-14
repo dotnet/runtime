@@ -289,12 +289,8 @@ FCIMPLEND
 EXTERN_C void * ReturnFromUniversalTransitionTailCall;
 void * ReturnFromUniversalTransitionTailCall;
 
-#if !defined (HOST_ARM64)
-#ifdef HOST_WASM
-FCIMPL_NO_SS(void, RhpAssignRef, Object** dst, Object* ref)
-#else
-FCIMPL2(void, RhpAssignRef, Object ** dst, Object * ref)
-#endif
+#if !defined(HOST_ARM64) && !defined(HOST_WASM)
+FCIMPL2_RAW(void, RhpAssignRef, Object ** dst, Object * ref)
 {
     // @TODO: FEATURE_PORTABLE_HELPERS - Null check
     *dst = ref;
@@ -302,11 +298,7 @@ FCIMPL2(void, RhpAssignRef, Object ** dst, Object * ref)
 }
 FCIMPLEND
 
-#ifdef HOST_WASM
-FCIMPL_NO_SS(void, RhpCheckedAssignRef, Object** dst, Object* ref)
-#else
-FCIMPL2(void, RhpCheckedAssignRef, Object ** dst, Object * ref)
-#endif
+FCIMPL2_RAW(void, RhpCheckedAssignRef, Object ** dst, Object * ref)
 {
     // @TODO: FEATURE_PORTABLE_HELPERS - Null check
     *dst = ref;
