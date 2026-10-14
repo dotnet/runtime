@@ -209,6 +209,31 @@ DWORD SectionCharacteristicsToPageProtection(UINT characteristics)
 
     return pageProtection;
 }
+
+// Translate the small subset of Win32 PAGE_* protection constants used by ApplyBaseRelocations
+// (below) into the equivalent VMToOSInterface::MemoryProtection value.
+static VMToOSInterface::MemoryProtection Win32ProtectionToMemoryProtection(DWORD protection)
+{
+    switch (protection)
+    {
+    case PAGE_READONLY:
+        return VMToOSInterface::MemoryProtection::ReadOnly;
+    case PAGE_READWRITE:
+        return VMToOSInterface::MemoryProtection::ReadWrite;
+    case PAGE_WRITECOPY:
+        // The PAL never offered true copy-on-write page protection outside of file mappings; writable
+        // relocation targets that need write-copy semantics are treated as ordinary read-write, matching
+        // prior ClrVirtualProtect/PAL behavior for this non-file-backed-mapping code path.
+        return VMToOSInterface::MemoryProtection::ReadWrite;
+    case PAGE_EXECUTE_READ:
+        return VMToOSInterface::MemoryProtection::ExecuteRead;
+    case PAGE_EXECUTE_READWRITE:
+        return VMToOSInterface::MemoryProtection::ExecuteReadWrite;
+    default:
+        _ASSERTE(!"Unsupported page protection requested while applying base relocations");
+        return VMToOSInterface::MemoryProtection::NoAccess;
+    }
+}
 #endif // TARGET_UNIX
 
 void PEImageLayout::InitDecoders(void* data, COUNT_T size)
@@ -362,6 +387,10 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
                 // Disable writing on Apple Silicon
                 if (bExecRegion)
                     PAL_JitWriteProtect(false);
+#elif defined(TARGET_UNIX)
+                if (!VMToOSInterface::ProtectMemory(pWriteableRegion, cbWriteableRegion,
+                                                     Win32ProtectionToMemoryProtection(dwOldProtection)))
+                    ThrowLastError();
 #else
                 if (!ClrVirtualProtect(pWriteableRegion, cbWriteableRegion,
                                        dwOldProtection, &dwOldProtection))
@@ -395,7 +424,13 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
 #endif
                 }
 #endif // TARGET_UNIX
-#if !(defined(__APPLE__) && defined(HOST_ARM64))
+#if defined(__APPLE__) && defined(HOST_ARM64)
+                // No-op: writing was already enabled above via PAL_JitWriteProtect.
+#elif defined(TARGET_UNIX)
+                if (!VMToOSInterface::ProtectMemory(pWriteableRegion, cbWriteableRegion,
+                                                     Win32ProtectionToMemoryProtection(dwNewProtection)))
+                    ThrowLastError();
+#else
                 if (!ClrVirtualProtect(pWriteableRegion, cbWriteableRegion,
                                        dwNewProtection, &dwOldProtection))
                     ThrowLastError();
@@ -480,6 +515,11 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
         // Disable writing on Apple Silicon
         if (bExecRegion)
             PAL_JitWriteProtect(false);
+#elif defined(TARGET_UNIX)
+        // Restore the protection
+        if (!VMToOSInterface::ProtectMemory(pWriteableRegion, cbWriteableRegion,
+                                             Win32ProtectionToMemoryProtection(dwOldProtection)))
+            ThrowLastError();
 #else
         // Restore the protection
         if (!ClrVirtualProtect(pWriteableRegion, cbWriteableRegion,

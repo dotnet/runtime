@@ -9,6 +9,7 @@
 
 #include "stdafx.h"
 #include <clrdata.h>
+#include <minipal.h>
 #include "typestring.h"
 #include "holder.h"
 #include "debuginfostore.h"
@@ -1583,8 +1584,13 @@ DacInstanceManager::Alloc(TADDR addr, ULONG32 size, DAC_USAGE_TYPE usage)
         }
         else
         {
+#ifdef TARGET_UNIX
+             block = (DAC_INSTANCE_BLOCK*)
+                VMToOSInterface::AllocateMemory(NULL, blockSize, VMToOSInterface::MemoryProtection::ReadWrite);
+#else
              block = (DAC_INSTANCE_BLOCK*)
                 ClrVirtualAlloc(NULL, blockSize, MEM_COMMIT, PAGE_READWRITE);
+#endif
         }
 
         if (!block)
@@ -1678,7 +1684,11 @@ DacInstanceManager::ReturnAlloc(DAC_INSTANCE* inst)
             _ASSERTE(pPrevBlock->next == block);
             pPrevBlock->next = block->next;
         }
+#ifdef TARGET_UNIX
+        VMToOSInterface::ReleaseMemoryReservation(block, block->bytesFree + block->bytesUsed);
+#else
         ClrVirtualFree(block, 0, MEM_RELEASE);
+#endif
     }
 }
 
@@ -1807,7 +1817,11 @@ void DacInstanceManager::Flush(bool fSaveBlock)
     {
         if (m_unusedBlock != NULL)
         {
+#ifdef TARGET_UNIX
+            VMToOSInterface::ReleaseMemoryReservation(m_unusedBlock, DAC_INSTANCE_BLOCK_ALLOCATION);
+#else
             ClrVirtualFree(m_unusedBlock, 0, MEM_RELEASE);
+#endif
             m_unusedBlock = NULL;
         }
     }
@@ -1943,7 +1957,11 @@ DacInstanceManager::FreeAllBlocks(bool fSaveBlock)
         }
         else
         {
+#ifdef TARGET_UNIX
+            VMToOSInterface::ReleaseMemoryReservation(block, block->bytesFree + block->bytesUsed);
+#else
             ClrVirtualFree(block, 0, MEM_RELEASE);
+#endif
         }
     }
 }

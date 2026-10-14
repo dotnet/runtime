@@ -21,6 +21,7 @@
 #include "common.h"
 #include <stddef.h>
 #include "cachelinealloc.h"
+#include <minipal.h>
 
 #include "threads.h"
 #include "excep.h"
@@ -92,7 +93,11 @@ void *CCacheLineAllocator::VAlloc(ULONG cbSize)
     // helper to call virtual free to release memory
 
     int i =0;
+#ifdef TARGET_UNIX
+    void* pv = VMToOSInterface::AllocateMemory (NULL, cbSize, VMToOSInterface::MemoryProtection::ReadWrite);
+#else
     void* pv = ClrVirtualAlloc (NULL, cbSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+#endif
     if (pv != NULL)
     {
         LPCacheLine tempPtr = m_registryList.GetHead();
@@ -121,7 +126,11 @@ LNew:
         else
         {
             // couldn't find space to register this page
+#ifdef TARGET_UNIX
+            VMToOSInterface::ReleaseMemoryReservation(pv, cbSize);
+#else
             ClrVirtualFree(pv, 0, MEM_RELEASE);
+#endif
             return NULL;
         }
     }
@@ -149,7 +158,13 @@ void CCacheLineAllocator::VFree(void* pv)
 
     // helper to call virtual free to release memory
 
+#ifdef TARGET_UNIX
+    // VAlloc is only ever called with AllocSize (4096 * 16); VFree releases that same extent.
+    const size_t AllocSize = 4096 * 16;
+    bRes = VMToOSInterface::ReleaseMemoryReservation(pv, AllocSize);
+#else
     bRes = ClrVirtualFree (pv, 0, MEM_RELEASE);
+#endif
 }
 
 ///////////////////////////////////////////////////////

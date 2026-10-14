@@ -5264,7 +5264,7 @@ static void DebugLogMBIFlags(UINT uState, UINT uProtect)
 #endif // !TARGET_UNIX
 }
 
-
+#ifndef TARGET_UNIX
 static void DebugLogStackRegionMBIs(UINT_PTR uLowAddress, UINT_PTR uHighAddress)
 {
     CONTRACTL
@@ -5348,6 +5348,7 @@ void Thread::DebugLogStackMBIs()
 
     DebugLogStackRegionMBIs(uStackLimit, uStackBase);
 }
+#endif // !TARGET_UNIX
 #endif // _DEBUG
 
 NOINLINE void AllocateSomeStack(){

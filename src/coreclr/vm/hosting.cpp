@@ -9,31 +9,7 @@
 #include "corhost.h"
 #include "threads.h"
 
-#ifdef TARGET_UNIX
-#include <minipal.h>
-
-static VMToOSInterface::MemoryProtection ClrWin32ProtectToMemoryProtection(DWORD flProtect)
-{
-    switch (flProtect)
-    {
-    case PAGE_NOACCESS:
-        return VMToOSInterface::MemoryProtection::NoAccess;
-    case PAGE_READONLY:
-        return VMToOSInterface::MemoryProtection::ReadOnly;
-    case PAGE_READWRITE:
-        return VMToOSInterface::MemoryProtection::ReadWrite;
-    case PAGE_EXECUTE:
-        return VMToOSInterface::MemoryProtection::Execute;
-    case PAGE_EXECUTE_READ:
-        return VMToOSInterface::MemoryProtection::ExecuteRead;
-    case PAGE_EXECUTE_READWRITE:
-        return VMToOSInterface::MemoryProtection::ExecuteReadWrite;
-    default:
-        _ASSERTE(!"Unsupported page protection requested through ClrVirtual* APIs");
-        return VMToOSInterface::MemoryProtection::NoAccess;
-    }
-}
-#endif // TARGET_UNIX
+#ifdef HOST_WINDOWS
 
 LPVOID ClrVirtualAlloc(LPVOID lpAddress, SIZE_T dwSize, DWORD flAllocationType, DWORD flProtect) {
     CONTRACTL
@@ -53,7 +29,6 @@ LPVOID ClrVirtualAlloc(LPVOID lpAddress, SIZE_T dwSize, DWORD flAllocationType, 
         _ASSERTE (lpAddress || (dwSize % g_SystemInfo.dwAllocationGranularity) == 0);
 #endif
 
-#ifndef TARGET_UNIX
     {
 
         LPVOID p = NULL;
@@ -97,65 +72,25 @@ LPVOID ClrVirtualAlloc(LPVOID lpAddress, SIZE_T dwSize, DWORD flAllocationType, 
 
         return p;
     }
-#else // TARGET_UNIX
-    _ASSERTE((flAllocationType & ~(MEM_COMMIT | MEM_RESERVE)) == 0);
-
-    VMToOSInterface::MemoryProtection protection = ClrWin32ProtectToMemoryProtection(flProtect);
-
-    LPVOID p;
-    if ((flAllocationType & MEM_RESERVE) != 0)
-    {
-        p = VMToOSInterface::AllocateMemory(lpAddress, dwSize, protection);
-    }
-    else
-    {
-        // MEM_COMMIT only, over a previously reserved range.
-        p = VMToOSInterface::CommitReservedMemory(lpAddress, dwSize, protection);
-    }
-
-    if (p == NULL)
-    {
-        STRESS_LOG_OOM_STACK(dwSize);
-    }
-
-    return p;
-#endif // TARGET_UNIX
 }
 
 BOOL ClrVirtualFree(LPVOID lpAddress, SIZE_T dwSize, DWORD dwFreeType)
 {
     WRAPPER_NO_CONTRACT;
-#ifndef TARGET_UNIX
     return (BOOL)(BYTE)::VirtualFree (lpAddress, dwSize, dwFreeType);
-#else
-    if (dwFreeType == MEM_DECOMMIT)
-    {
-        return VMToOSInterface::DecommitMemory(lpAddress, dwSize) ? TRUE : FALSE;
-    }
-
-    _ASSERTE(dwFreeType == MEM_RELEASE);
-    return VMToOSInterface::ReleaseMemoryReservation(lpAddress, dwSize) ? TRUE : FALSE;
-#endif
 }
 
 SIZE_T ClrVirtualQuery(LPCVOID lpAddress, PMEMORY_BASIC_INFORMATION lpBuffer, SIZE_T dwLength)
 {
     WRAPPER_NO_CONTRACT;
-    // All remaining callers of ClrVirtualQuery are Windows-only code paths; the raw PAL
-    // VirtualQuery API has been removed from non-Windows builds.
-#ifdef HOST_WINDOWS
     return ::VirtualQuery(lpAddress, lpBuffer, dwLength);
-#else
-    _ASSERTE(!"ClrVirtualQuery is not supported on non-Windows platforms");
-    return 0;
-#endif
 }
 
-#if defined(_DEBUG) && !defined(TARGET_UNIX)
+#ifdef _DEBUG
 static VolatilePtr<BYTE> s_pStartOfUEFSection = NULL;
 static VolatilePtr<BYTE> s_pEndOfUEFSectionBoundary = NULL;
 static Volatile<DWORD> s_dwProtection = 0;
-#endif // _DEBUG && !TARGET_UNIX
+#endif // _DEBUG
 
 BOOL ClrVirtualProtect(LPVOID lpAddress, SIZE_T dwSize, DWORD flNewProtect, PDWORD lpflOldProtect)
 {
@@ -200,7 +135,7 @@ BOOL ClrVirtualProtect(LPVOID lpAddress, SIZE_T dwSize, DWORD flNewProtect, PDWO
     //
     // We assert if either of the two conditions above are true.
 
-#if defined(_DEBUG) && !defined(TARGET_UNIX)
+#ifdef _DEBUG
    // We do this check in debug/checked builds only
 
     // Do we have the UEF details?
@@ -272,22 +207,12 @@ BOOL ClrVirtualProtect(LPVOID lpAddress, SIZE_T dwSize, DWORD flNewProtect, PDWO
                 "Do not virtual protect the section in which UEF lives!");
         }
     }
-#endif // _DEBUG && !TARGET_UNIX
+#endif // _DEBUG
 
-#ifndef TARGET_UNIX
     return ::VirtualProtect(lpAddress, dwSize, flNewProtect, lpflOldProtect);
-#else
-    // The PAL's VirtualProtect has never offered a real old-protection query on Unix (it always
-    // returned a dummy fixed value), so the only non-Windows consumers of this return value already
-    // tolerate it not reflecting the true previous protection.
-    if (lpflOldProtect != NULL)
-    {
-        *lpflOldProtect = PAGE_EXECUTE_READWRITE;
-    }
-
-    return VMToOSInterface::ProtectMemory(lpAddress, dwSize, ClrWin32ProtectToMemoryProtection(flNewProtect)) ? TRUE : FALSE;
-#endif
 }
+
+#endif // HOST_WINDOWS
 
 // Locking routines supplied by the EE to the other DLLs of the CLR.  In a _DEBUG
 // build of the EE, we poison the Crst as a poor man's attempt to do some argument

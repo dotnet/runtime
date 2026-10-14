@@ -809,7 +809,11 @@ void* ExecutableAllocator::Reserve(size_t size)
             // and thus improve performance by avoiding jump stubs in managed code.
             allocationType |= MEM_RESERVE_EXECUTABLE;
 #endif
+#ifdef HOST_UNIX
+            result = (BYTE*)VMToOSInterface::ReserveMemoryWithinRange(nullptr, nullptr, size);
+#else
             result = (BYTE*)ClrVirtualAlloc(NULL, size, allocationType, PAGE_NOACCESS);
+#endif
         }
     }
 

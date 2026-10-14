@@ -29,6 +29,7 @@
 #endif
 
 #include "disassembler.h"
+#include <minipal.h>
 
 /****************************************************************************/
 
@@ -485,8 +486,12 @@ void GCCoverageInfo::SprinkleBreakpoints(
     // For prejitted code we have to remove the write-protect on the code page
     if (fZapped)
     {
+#ifdef TARGET_UNIX
+        VMToOSInterface::ProtectMemory(codeStart, codeSize, VMToOSInterface::MemoryProtection::ExecuteReadWrite);
+#else
         DWORD oldProtect;
         ClrVirtualProtect(codeStart, codeSize, PAGE_EXECUTE_READWRITE, &oldProtect);
+#endif
         writeableOffset = 0;
     }
     else
@@ -1098,6 +1103,14 @@ void GCCoverageInfo::SprinkleBreakpoints(
     // For prejitted code we have to remove the write-protect on the code page
     if (fZapped)
     {
+#ifdef TARGET_UNIX
+        VMToOSInterface::ProtectMemory((BYTE*)methodRegion.hotStartAddress, methodRegion.hotSize, VMToOSInterface::MemoryProtection::ExecuteReadWrite);
+
+        if (methodRegion.coldSize > 0)
+        {
+            VMToOSInterface::ProtectMemory((BYTE*)methodRegion.coldStartAddress, methodRegion.coldSize, VMToOSInterface::MemoryProtection::ExecuteReadWrite);
+        }
+#else
         DWORD oldProtect;
         ClrVirtualProtect((BYTE*)methodRegion.hotStartAddress, methodRegion.hotSize, PAGE_EXECUTE_READWRITE, &oldProtect);
 
@@ -1105,6 +1118,7 @@ void GCCoverageInfo::SprinkleBreakpoints(
         {
             ClrVirtualProtect((BYTE*)methodRegion.coldStartAddress, methodRegion.coldSize, PAGE_EXECUTE_READWRITE, &oldProtect);
         }
+#endif
     }
 
     GcInfoDecoder safePointDecoder(gcInfoToken, (GcInfoDecoderFlags)0, 0);

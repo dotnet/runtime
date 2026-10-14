@@ -3,6 +3,7 @@
 
 #include "common.h"
 #include "frozenobjectheap.h"
+#include <minipal.h>
 
 // Default size to reserve for a frozen segment
 #define FOH_SEGMENT_DEFAULT_SIZE (4 * 1024 * 1024)
@@ -127,7 +128,12 @@ FrozenObjectSegment::FrozenObjectSegment(size_t sizeHint) :
     _ASSERT(m_Size > FOH_COMMIT_SIZE);
     _ASSERT(m_Size % FOH_COMMIT_SIZE == 0);
 
-    void* alloc = ClrVirtualAlloc(nullptr, m_Size, MEM_RESERVE, PAGE_READWRITE);
+    void* alloc;
+#ifdef TARGET_UNIX
+    alloc = VMToOSInterface::ReserveMemoryWithinRange(nullptr, nullptr, m_Size);
+#else
+    alloc = ClrVirtualAlloc(nullptr, m_Size, MEM_RESERVE, PAGE_READWRITE);
+#endif
     if (alloc == nullptr)
     {
         // Try again with the default FOH size
@@ -136,7 +142,11 @@ FrozenObjectSegment::FrozenObjectSegment(size_t sizeHint) :
             m_Size = FOH_SEGMENT_DEFAULT_SIZE;
             _ASSERT(m_Size > FOH_COMMIT_SIZE);
             _ASSERT(m_Size % FOH_COMMIT_SIZE == 0);
+#ifdef TARGET_UNIX
+            alloc = VMToOSInterface::ReserveMemoryWithinRange(nullptr, nullptr, m_Size);
+#else
             alloc = ClrVirtualAlloc(nullptr, m_Size, MEM_RESERVE, PAGE_READWRITE);
+#endif
         }
 
         if (alloc == nullptr)
@@ -146,10 +156,18 @@ FrozenObjectSegment::FrozenObjectSegment(size_t sizeHint) :
     }
 
     // Commit a chunk in advance
+#ifdef TARGET_UNIX
+    void* committedAlloc = VMToOSInterface::CommitReservedMemory(alloc, FOH_COMMIT_SIZE, VMToOSInterface::MemoryProtection::ReadWrite);
+#else
     void* committedAlloc = ClrVirtualAlloc(alloc, FOH_COMMIT_SIZE, MEM_COMMIT, PAGE_READWRITE);
+#endif
     if (committedAlloc == nullptr)
     {
+#ifdef TARGET_UNIX
+        VMToOSInterface::ReleaseMemoryReservation(alloc, m_Size);
+#else
         ClrVirtualFree(alloc, 0, MEM_RELEASE);
+#endif
         ThrowOutOfMemory();
     }
 
@@ -231,7 +249,11 @@ Object* FrozenObjectSegment::TryAllocateObject(PTR_MethodTable type, size_t obje
         // Make sure we don't go out of bounds during this commit
         _ASSERT(m_SizeCommitted + FOH_COMMIT_SIZE <= m_Size);
 
+#ifdef TARGET_UNIX
+        if (VMToOSInterface::CommitReservedMemory(m_pStart + m_SizeCommitted, FOH_COMMIT_SIZE, VMToOSInterface::MemoryProtection::ReadWrite) == nullptr)
+#else
         if (ClrVirtualAlloc(m_pStart + m_SizeCommitted, FOH_COMMIT_SIZE, MEM_COMMIT, PAGE_READWRITE) == nullptr)
+#endif
         {
             ThrowOutOfMemory();
         }
