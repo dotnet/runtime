@@ -488,7 +488,7 @@ namespace ILCompiler.ObjectWriter
             return _dwarfBuilder = new DwarfBuilder(
                 _nodeFactory.NameMangler,
                 _nodeFactory.Target,
-                useDwarf5: false);
+                _options.HasFlag(ObjectWritingOptions.UseDwarf5));
         }
 
         private protected override void EmitDebugFunctionInfo(
