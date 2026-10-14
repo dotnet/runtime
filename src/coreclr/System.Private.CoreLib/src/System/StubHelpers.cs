@@ -542,6 +542,20 @@ namespace System.StubHelpers
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ObjectMarshaler_ConvertToNative")]
         private static partial void ConvertToNative(ObjectHandleOnStack objSrc, IntPtr pDstVariant);
 
+        internal static void ConvertToNativeVariantArrayElement(object objSrc, IntPtr pDstVariant)
+        {
+            // The destination must already hold a previously-marshaled VARIANT (this
+            // overload only replaces an existing array element in place); objSrc itself
+            // has no narrower type assumption than ConvertToNative since a VT_VARIANT
+            // array element can hold any VARIANT-compatible managed type.
+            Debug.Assert(pDstVariant != IntPtr.Zero);
+            ConvertToNativeVariantArrayElement(ObjectHandleOnStack.Create(ref objSrc), pDstVariant);
+        }
+
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ObjectMarshaler_ConvertToNativeVariantArrayElement")]
+        private static partial void ConvertToNativeVariantArrayElement(ObjectHandleOnStack objSrc, IntPtr pDstVariant);
+
         internal static object ConvertToManaged(IntPtr pSrcVariant)
         {
             object? retObject = null;
@@ -2036,9 +2050,11 @@ namespace System.StubHelpers
     }
 
     [SupportedOSPlatform("windows")]
-    internal sealed class HeterogeneousInterfaceArrayElementMarshaler : IArrayElementMarshaler<object?, HeterogeneousInterfaceArrayElementMarshaler>
+    internal sealed class TypedClassInterfaceArrayElementMarshaler<TArrayElement, TInterface> : IArrayElementMarshaler<TArrayElement?, TypedClassInterfaceArrayElementMarshaler<TArrayElement, TInterface>>
+        where TArrayElement : class
+        where TInterface : class
     {
-        public static unsafe void ConvertToUnmanaged(ref object? managed, byte* unmanaged)
+        public static unsafe void ConvertToUnmanaged(ref TArrayElement? managed, byte* unmanaged)
         {
             if (managed is null)
             {
@@ -2046,14 +2062,11 @@ namespace System.StubHelpers
             }
             else
             {
-                // Resolve the default COM interface for each element based on its runtime type.
-                // This matches the heterogeneous path in MarshalInterfaceArrayComToOleHelper
-                // where GetDefaultInterfaceMTForClass is called per-element.
-                *(IntPtr*)unmanaged = Marshal.GetComInterfaceForObject(managed, managed.GetType());
+                *(IntPtr*)unmanaged = Marshal.GetComInterfaceForObject(managed, typeof(TInterface));
             }
         }
 
-        public static unsafe void ConvertToManaged(ref object? managed, byte* unmanaged)
+        public static unsafe void ConvertToManaged(ref TArrayElement? managed, byte* unmanaged)
         {
             IntPtr pUnk = *(IntPtr*)unmanaged;
             if (pUnk == IntPtr.Zero)
@@ -2062,7 +2075,7 @@ namespace System.StubHelpers
             }
             else
             {
-                managed = Marshal.GetObjectForIUnknown(pUnk);
+                managed = (TArrayElement)Marshal.GetObjectForIUnknown(pUnk);
             }
         }
 
@@ -2075,7 +2088,53 @@ namespace System.StubHelpers
             }
         }
 
-        static unsafe nuint IArrayElementMarshaler<object?, HeterogeneousInterfaceArrayElementMarshaler>.UnmanagedSize => (nuint)sizeof(IntPtr);
+        static unsafe nuint IArrayElementMarshaler<TArrayElement?, TypedClassInterfaceArrayElementMarshaler<TArrayElement, TInterface>>.UnmanagedSize => (nuint)sizeof(IntPtr);
+    }
+
+    [SupportedOSPlatform("windows")]
+    internal sealed class TypedClassArrayElementMarshaler<TArrayElement, TIsDispatch> : IArrayElementMarshaler<TArrayElement?, TypedClassArrayElementMarshaler<TArrayElement, TIsDispatch>>
+        where TArrayElement : class
+        where TIsDispatch : IMarshalerOption
+    {
+        public static unsafe void ConvertToUnmanaged(ref TArrayElement? managed, byte* unmanaged)
+        {
+            if (managed is null)
+            {
+                *(IntPtr*)unmanaged = IntPtr.Zero;
+            }
+            else if (TIsDispatch.Enabled)
+            {
+                *(IntPtr*)unmanaged = Marshal.GetIDispatchForObject(managed);
+            }
+            else
+            {
+                *(IntPtr*)unmanaged = Marshal.GetIUnknownForObject(managed);
+            }
+        }
+
+        public static unsafe void ConvertToManaged(ref TArrayElement? managed, byte* unmanaged)
+        {
+            IntPtr pUnk = *(IntPtr*)unmanaged;
+            if (pUnk == IntPtr.Zero)
+            {
+                managed = null;
+            }
+            else
+            {
+                managed = (TArrayElement)Marshal.GetObjectForIUnknown(pUnk);
+            }
+        }
+
+        public static unsafe void Free(byte* unmanaged)
+        {
+            IntPtr pUnk = *(IntPtr*)unmanaged;
+            if (pUnk != IntPtr.Zero)
+            {
+                Marshal.Release(pUnk);
+            }
+        }
+
+        static unsafe nuint IArrayElementMarshaler<TArrayElement?, TypedClassArrayElementMarshaler<TArrayElement, TIsDispatch>>.UnmanagedSize => (nuint)sizeof(IntPtr);
     }
 
     internal sealed class VariantArrayElementMarshaler<TNativeDataValid> : IArrayElementMarshaler<object?, VariantArrayElementMarshaler<TNativeDataValid>>
@@ -2088,11 +2147,12 @@ namespace System.StubHelpers
                 // Native buffer is uninitialized — zero it so ConvertToNative
                 // doesn't see garbage VT_BYREF bits.
                 *(ComVariant*)unmanaged = default;
+                ObjectMarshaler.ConvertToNative(managed!, (IntPtr)unmanaged);
             }
-            // When TNativeDataValid is enabled, the existing VARIANT may have
-            // VT_BYREF set. ConvertToNative checks vt & VT_BYREF and calls
-            // MarshalOleRefVariantForObject to write through the byref pointer.
-            ObjectMarshaler.ConvertToNative(managed!, (IntPtr)unmanaged);
+            else
+            {
+                ObjectMarshaler.ConvertToNativeVariantArrayElement(managed!, (IntPtr)unmanaged);
+            }
         }
 
         public static unsafe void ConvertToManaged(ref object? managed, byte* unmanaged)

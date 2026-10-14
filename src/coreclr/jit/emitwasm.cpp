@@ -235,11 +235,17 @@ void emitter::emitIns_MemargAddress(instruction ins, emitAttr attr, void* addres
 
 void emitter::emitFuncletAddressConstant(cnsval_ssize_t funcletId)
 {
-    // Load our table base, then load our funclet pointer offset, then sum them.
-    emitIns_I(INS_global_get, EA_HANDLE_CNS_RELOC,
-              (cnsval_ssize_t)(size_t)m_compiler->eeGetWasmWellKnownGlobals()->tableBase);
+    // NativeAOT uses absolute table indices; R2R adds the module's table base.
+    if (!m_compiler->IsNativeAot())
+    {
+        emitIns_I(INS_global_get, EA_HANDLE_CNS_RELOC,
+                  (cnsval_ssize_t)(size_t)m_compiler->eeGetWasmWellKnownGlobals()->tableBase);
+    }
     emitIns_I(INS_i32_const_funcletptr, EA_PTRSIZE, (cnsval_ssize_t)funcletId);
-    emitIns(INS_i32_add);
+    if (!m_compiler->IsNativeAot())
+    {
+        emitIns(INS_i32_add);
+    }
 }
 
 //------------------------------------------------------------------------

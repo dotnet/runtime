@@ -47,7 +47,7 @@ namespace System.Runtime.Serialization
         {
             Type memberType = type;
             object? memberValue = value;
-            bool originValueIsNullableOfT = (memberType.IsGenericType && memberType.GetGenericTypeDefinition() == Globals.TypeOfNullable);
+            bool originValueIsNullableOfT = (memberType.IsGenericType && memberType.GetGenericTypeDefinition() == typeof(Nullable<>));
             if (memberType.IsValueType && !originValueIsNullableOfT)
             {
                 Debug.Assert(memberValue != null);
@@ -85,14 +85,14 @@ namespace System.Runtime.Serialization
                 else
                 {
                     PrimitiveDataContract? primitiveContract = originValueIsNullableOfT ? PrimitiveDataContract.GetPrimitiveDataContract(memberType) : primitiveContractForParamType;
-                    if (primitiveContract != null && primitiveContract.UnderlyingType != Globals.TypeOfObject && !writeXsiType)
+                    if (primitiveContract != null && primitiveContract.UnderlyingType != typeof(object) && !writeXsiType)
                     {
                         primitiveContract.WriteXmlValue(xmlWriter, memberValue, context);
                     }
                     else
                     {
                         if (memberValue == null &&
-                            (memberType == Globals.TypeOfObject
+                            (memberType == typeof(object)
                             || (originValueIsNullableOfT && memberType.IsValueType)))
                         {
                             context.WriteNull(xmlWriter, memberType, DataContract.IsTypeSerializable(memberType));
@@ -119,7 +119,7 @@ namespace System.Runtime.Serialization
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         protected static bool ReflectionTryWritePrimitive(XmlWriterDelegator xmlWriter, XmlObjectSerializerWriteContext context, object? value, XmlDictionaryString name, XmlDictionaryString? ns, PrimitiveDataContract? primitiveContract)
         {
-            if (primitiveContract == null || primitiveContract.UnderlyingType == Globals.TypeOfObject)
+            if (primitiveContract == null || primitiveContract.UnderlyingType == typeof(object))
                 return false;
 
             primitiveContract.WriteXmlElement(xmlWriter, value, context, name, ns);
@@ -152,11 +152,11 @@ namespace System.Runtime.Serialization
         private static object ResolveAdapterType(object obj)
         {
             Type type = obj.GetType();
-            if (type == Globals.TypeOfDateTimeOffset)
+            if (type == typeof(DateTimeOffset))
             {
                 obj = DateTimeOffsetAdapter.GetDateTimeOffsetAdapter((DateTimeOffset)obj);
             }
-            else if (type == Globals.TypeOfMemoryStream)
+            else if (type == typeof(System.IO.MemoryStream))
             {
                 obj = MemoryStreamAdapter.GetMemoryStreamAdapter((MemoryStream)obj);
             }

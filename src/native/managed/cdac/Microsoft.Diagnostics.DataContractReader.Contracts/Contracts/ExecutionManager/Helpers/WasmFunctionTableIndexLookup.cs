@@ -93,6 +93,19 @@ internal sealed class WasmFunctionTableIndexLookup
         }
     }
 
+    // Mirrors ExecutionManager::IsFuncletFunctionIndex.
+    public bool TryIsFunclet(uint functionTableIndex, out bool isFunclet)
+    {
+        isFunclet = false;
+        Data.FunctionTableIndexRangeSection? section = FindSection(functionTableIndex);
+        if (section is null)
+            return false;
+
+        Data.ReadyToRunInfo r2rInfo = GetReadyToRunInfo(section);
+        isFunclet = _runtimeFunctions.IsFunclet(GetRuntimeFunction(r2rInfo, functionTableIndex - section.MinFunctionTableIndex));
+        return true;
+    }
+
     public bool TryGetUnwindData(uint functionTableIndex, out TargetPointer unwindDataAddress)
     {
         unwindDataAddress = TargetPointer.Null;

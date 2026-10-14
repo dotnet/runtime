@@ -189,10 +189,9 @@ namespace Internal.JitInterface
                         break;
 
                     case CFI_OPCODE.CFI_NEGATE_RA_STATE:
+                        // Sign before frame setup so signing SP == CFA.
                         Debug.Assert(cfaRegister == spReg);
                         Debug.Assert(cfaOffset == 0);
-                        // TODO-PAC: Support prologs that adjust SP before signing LR.
-                        // Currently we require PAC to be emitted before any stack adjustment.
                         Debug.Assert(spOffset == 0);
                         shouldAddPacOpCode = true;
                         break;

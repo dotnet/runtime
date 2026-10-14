@@ -1,13 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
+
 // OBJECT.H
 //
 // Definitions of a CLR Object
-//
 
 // See code:EEStartup#TableOfContents for overview
-
 
 #ifndef _OBJECT_H_
 #define _OBJECT_H_
@@ -415,9 +413,6 @@ inline void InitValueClass(void *dest, MethodTable *pMT)
     ZeroMemoryInGCHeap(dest, pMT->GetNumInstanceFieldBytes());
 }
 
-// Initialize value class argument
-void InitValueClassArg(ArgDestination *argDest, MethodTable *pMT);
-
 #define SetObjectReference(_d,_r)        SetObjectReferenceUnchecked(_d, _r)
 #define CopyValueClass(_d,_s,_m)         CopyValueClassUnchecked(_d,_s,_m)
 #define CopyValueClassArg(_d,_s,_m,_o)   CopyValueClassArgUnchecked(_d,_s,_m,_o)
@@ -444,7 +439,6 @@ class ArrayBase : public Object
     friend class Object;
     friend OBJECTREF AllocateSzArray(MethodTable *pArrayMT, INT32 length, GC_ALLOC_FLAGS flags);
     friend OBJECTREF TryAllocateFrozenSzArray(MethodTable* pArrayMT, INT32 length);
-    friend class JIT_TrialAlloc;
     friend class CheckAsmOffsets;
     friend struct _DacGlobals;
 
@@ -611,7 +605,6 @@ class PtrArray : public ArrayBase
 {
     friend class GCHeap;
     friend class ClrDataAccess;
-    friend class JIT_TrialAlloc;
     friend class CheckAsmOffsets;
 
 public:
@@ -784,7 +777,6 @@ class StringObject : public Object
     friend class ClrDataAccess;
 #endif
     friend class GCHeap;
-    friend class JIT_TrialAlloc;
     friend class CheckAsmOffsets;
     friend class COMString;
 
