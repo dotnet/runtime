@@ -6,15 +6,29 @@ This doc outlines a design for a logical ReadyToRun (R2R) module which is distri
 
 Loading the primary module makes the logical R2R module functional and usable. Methods whose compiled code has not yet arrived remain callable through R2R-to-interpreter thunks. Auxiliary modules can arrive later.
 
-During the first execution of a method whose body is in the auxiliary module (an "aux method"), a new fixup kind, `READYTORUN_FIXUP_Auxiliary_Module` identifies the method as an aux method. The method's `_pActualCode` is set to the interpreter thunk with the correct signature, and `kPrefersInterpreterEntryPoint` is set, as well as a new flag, `kAuxiliaryModulePending`. This flag marks the method as requiring activation once the module has been marked activated. An alternative tracking of methods that require activation which creates a queue of pending methods and drains the queue incrementally once the module is activated is described at the end of this document. The runtime will also mark the module as pending activation.
+The way these auxiliary modules and the methods they hold code for ("aux methods") begin with unoptimized, interpreted code, and later are updated with more optimized code is analogous to code tiering. Therefore, the existing tiering, code versioning, and call counting code will be utilized (with some modifications) for the delayed arrival of R2R code.
 
-Once the auxiliary module is downloaded and marked as pending activation, the host calls the exported `ActivateModule` function, which copies over all data required for methods to be activated and executed, fills the global function table (table 0) with funcrefs, and marks itself as activated via a well-known location in the primary module's data. Once the module is activated, its methods can be activated.
+Auxiliary modules will hold the wasm method bodies for their aux methods, as well as their fixup data, GC info, and EH info in the `RuntimeFunctions` table. The runtime therefore must support N `RuntimeFunctions` tables per logical R2R module, with one table per physical Wasm file, spreading the EH and GC info across the auxiliary modules.
 
-The interpreter will check for the `kAuxiliaryModulePending` flag as it checks `kPrefersInterpreterEntryPoint`. If set, it will also check the well-known location in the primary module to see if the auxiliary module has been activated. If the module has been activated, the method will be activated. Note this could cause significant work to be done when running fixups. That issue is what the pending method queue + draining alternative seeks to address.
-
-The runtime must support N `RuntimeFunctions` tables per logical R2R module, with one table per physical Wasm file, spreading the EH and GC info across the auxiliary modules. Alternatively, the primary module must hold all entries. In this case, the Virtual IP field must be present for each RuntimeFunction entry, though GC and EH info could be zero and filled in by the auxiliary module.
+Auxiliary modules export a function, `ActivateModule()`, which copies all its data into the shared memory, and fills in its allotted range in the global function table. Once the module is activated, the tiering system can run fixups and enable calling the R2R code.
 
 This design currently supports single-threaded hosting only. Auxiliary-module installation and method activation run on the runtime's single execution thread. Multithreaded hosting is outside the scope of this design.
+
+## Flow
+
+During the first interpreter execution / compilation of bytecode of any method (not just aux methods), the interpreter will insert code at the beginning of the method to decrement its call counter and, if it has reached 0, call the `CallCountingStub.TargetForThresholdReached` method with the required arguments. `TargetForThresholdReached` will queue the method for "tiering". Tiering means resolving and activating its R2R code once its aux module is available (if it's an aux method), or removing the call-counting bytecode (if it's not an aux method).
+
+Auxiliary modules are downloaded eagerly unless it is determined better to wait and download on demand.
+
+To reduce cold download size, the mapping of method to auxiliary module resides in a separate module that is downloaded eagerly.
+
+Once the mapping is available, the runtime can begin to drain the queue of methods that need tiering. Methods in the queue that are not aux methods may have their callcounting bytecode removed (or not), and are removed from the queue. Aux methods will be added to a separate, module-specific queue to be drained again once the aux module is downloaded and activated.
+
+Once the auxiliary module is downloaded and marked as pending activation (via a flag in a well known location, or its module-specific aux method queue being non-empty), the host calls the exported `ActivateModule` function, which copies over all data required for methods to be activated and executed, fills the global function table (table 0) with funcrefs, and marks itself as activated via a well-known location in the primary module's data. Once the module is activated, its methods can be activated/tiered up.
+
+Tiering currently assumes a background worker thread can be created to compile the optimized versions of methods. However, WASM is single-threaded and cannot follow that same pattern. Instead, the queue of methods to tier up will be drained incrementally by the host.
+
+For each module-specific queue of aux methods, the host will check if the module has been downloaded and activated, and tier up methods in the queue by running fixups, setting the PEP to point to the method's entry in the global function table, and clearing `kPrefersInterpreterEntryPoint`.
 
 ## Primary Module
 
@@ -31,11 +45,9 @@ The primary module contains:
 - All string-referenced thunks.
 - Shared R2R-to-interpreter thunks, one per signature shape needed by auxiliary methods. An unactivated aux method's PEP points at the thunk for its signature.
 - An element segment defining the primary module's own callable methods and thunks. The slot range reserved for methods in auxiliary modules is left empty and is filled during activation of the auxiliary module.
-- `MethodDefEntryPoints` and `InstanceMethodEntryPoints` for the entire logical module.
+- `MethodDefEntryPoints` and `InstanceMethodEntryPoints` for the methods in the primary module.
 
 ### Aux Method Fixups
-
-For an aux method, the first fixup of its fixup list is an auxiliary-module marker `READYTORUN_FIXUP_Auxiliary_Module` identifying the module that holds its compiled code. In the initial implementation, this is assumed to be the only auxiliary module. Future implementations may append an ID to indicate which auxiliary module the method body belongs to.
 
 The method's entry in `MethodDefEntryPoints` (or `InstanceMethodEntryPoints`) is unchanged and points to the method's fixup list at a fixed address in the primary module. Before the auxiliary module loads, the fixup list holds only the marker's bytes, followed by reserved zero-filled space for the rest of the list. The complete list, including the marker, is stored in the auxiliary module's passive data. During auxiliary module activation, the module rewrites the entire fixup list, with identical bytes for the marker. No separate lookup structure or per-module fixup-list address is required.
 
@@ -43,7 +55,7 @@ The compiler must encode the complete fixup list, with the marker as its first f
 
 ### Method activation behavior
 
-If activation is unsuccessful because fixup resolution fails, the `kAuxiliaryModulePending` flag is cleared and the `kPrefersInterpreterEntryPoint` flag is left set. Method activation should not be retried after a failure, and the runtime should treat the method as any other interpreter-only method.
+If activation is unsuccessful because fixup resolution fails, the `kPrefersInterpreterEntryPoint` flag is left set. Method activation should not be retried after a failure, and the runtime should treat the method as any other interpreter-only method.
 
 ## Auxiliary Modules
 
@@ -65,22 +77,25 @@ It exports:
 
 - `ActivateModule()`, a method which copies the module's data into its allotted range in the primary module's memory, installs funcrefs to all of the module's compiled methods and funclets into its allotted range of table 0, and marks itself as loaded via a well-known flag in the primary module's memory. Note that installing a funcref does not mean the method is activated and ready to be executed.
 
-## Auxiliary-Module Metadata
+## Auxiliary Module EntryPoints
+
+The Auxiliary module entrypoints module contains the `MethodDefEntryPoints` and `InstanceMethodEntryPoints` for the aux methods. These sections tell which index in the `RuntimeFunctions` table to find information for the method. A single logical `RuntimeFunctions` is spread across the primary and auxiliary modules. Using the length of the primary module's `RuntimeFunctions`, and the `MethodCount` field in each Auxiliary module metadata entry (see below), the owning auxiliary module can be determined.
+
+## Auxiliary Module Metadata
 
 Metadata for each auxiliary module resides at a well-defined location in the primary module. This metadata enables the runtime to activate the module.
 
-The Auxiliary module metadata table has a header with 2 fields, the `VirtualIPSpan` (the total virtual IP span of the entire logical module, divided by 2), and the `AuxiliaryModuleCount` (the number of auxiliary modules). The runtime reserves a virtual IP range of `VirtualIPSpan * 2` for the module without needing all `RuntimeFunction` sections to be present.
-
-Following the header are `AuxiliaryModuleCount` entries with the following data:
+The Auxiliary Module Metadata table is a count-prefixed array of entries with the following fields:
 
 | Field | Meaning |
 |---|---|
-| Filename RVA | RVA of the string naming the auxiliary module. |
-| First method table index | Primary-module-relative table index of the first slot assigned to the auxiliary module. |
+| `FilenameRVA` | RVA of the string naming the auxiliary module. |
+| `RelativeTableBase` | Primary-module-relative table index of the first slot assigned to the auxiliary module. |
 | `MethodCount` | Number of runtime-function slots assigned to the auxiliary module, **including funclet slots**. Defines the number of entries in its `RuntimeFunctions` table and the length of its contiguous function-table range. |
-| Auxiliary `RuntimeFunctions` table RVA | RVA of that physical module's runtime-function table. The table contains `MethodCount` records. |
+| `RuntimeFunctionsRVA` | RVA of this physical module's runtime-function table. The table contains `MethodCount` records. |
+| `MethodDefEntryPointsRVA` | RVA of this auxiliary module's MethodDefEntryPoints section |
+| `InstanceMethodEntryPointsRVA` | RVA of this auxiliary modules InstanceMethodEntryPoints section |
 | `INITIALIZED_FLAG` | Initialization state, described below. |
-| `REQUEST_COUNT` | Initially `0`; incremented when R2R metadata identifies a method in this auxiliary module as required. |
 
 ### Module Initialization states
 
@@ -109,7 +124,7 @@ auxiliaryRuntimeFunctionIndex = auxiliaryRelativeIndex
 
 Activating method A must also complete the required fixups for any method B that A calls directly, even if B was not independently requested.
 
-A method's activation state is **not activated** (`_pActualCode` not set, or `kAuxiliaryModulePending` set), **activation-in-progress** (in a visited set local to the activation walk or a new flag on the PEP is set), or **activated** (`kAuxiliaryModulePending` clear and `kPrefersInterpreterEntryPoint` not set). Encountering an activation-in-progress dependency records the dependency rather than recursively restarting its activation.
+An aux method's may be **unvisited** (it has no interpreter bytecode or R2R code), **interpreted** (`kPrefersInterpreterEntryPoint` is set), **activation-in-progress** (currently being tiered up, and present in a visited set during recursive activation of direct-called methods), or **activated** (`kPrefersInterpreterEntryPoint` not set). Encountering an activation-in-progress dependency must record the dependency rather than infinitely recursiving and restarting its activation.
 
 Mutually dependent methods, such as A calling B and B calling A, are completed as an activation set. A and B must be activated at the same time and must both succeed activation, or they both fail.
 
@@ -155,9 +170,6 @@ The compiler must:
 - Emit in each auxiliary module an element segment that fills its slot range in the imported table 0 with that module's methods and funclets, so `ActivateModule` can install every funcref.
 
 ### Partition data and emit auxiliary metadata
-
-> [!NOTE]
-> Data partitioning is not strictly required for correctness. Fully populating the primary module's data would work, and data partitioning may be postponed to later implementation phases.
 
 The compiler must identify memory regions belonging to auxiliary modules and communicate that ownership to the Wasm module writers. Memory owned by the auxiliary modules must not include any target locations of any fixups that may run before the auxiliary module is loaded. The auxiliary module should be able to use `memory.init` instructions to fill data, and must not overwrite any fixup cells that have been resolved.
 
@@ -276,55 +288,5 @@ Leave all other R2R metadata (fixups, EH and GC info, etc) in the primary module
 
 Move the `RuntimeFunctions` table entries and fixups to the auxiliary module, and have method activation resolve this info using the Auxiliary Module Metadata entries.
 
-## Appendix: Method activation PEP state table
-
-The table covers every combination of four values:
-
-- **`pep._pActualCode`:** what the PEP dispatches to: `0` (never prepared), `Thunk` (R2R-to-interpreter thunk), or `R2R` (an index naming valid R2R code; for an auxiliary method, its own slot in table 0).
-- **`pep.kPreferInterp`:** `kPrefersInterpreterEntryPoint`.
-- **`pep.kAuxPending`:** `kAuxiliaryModulePending`.
-- **`AuxModuleMetadata.INITIALIZED_FLAG`:** the owning auxiliary module's `INITIALIZED_FLAG` is `1`, meaning `ActivateModule` has run and table 0 holds valid function references to the auxiliary module's bodies. It is meaningless for methods that are not in an auxiliary module.
-
-| # | `_pActualCode` | `kPreferInterp` | `kAuxPending` | `ModInit` | Status | Meaning |
-|---|---|---|---|---|---|---|
-| 1 | `0` | 0 | 0 | 0 | Valid | Method not yet prepared. The owning module is not loaded, or the method is not in an auxiliary module. |
-| 2 | `0` | 0 | 0 | 1 | Same as 1 | Not yet prepared. `ModInit` is irrelevant until the marker fixup is seen. |
-| 3 | `0` | 0 | 1 | 0 | Invalid | Marker processing sets the thunk and the flags together. |
-| 4 | `0` | 0 | 1 | 1 | Invalid | As row 3. |
-| 5 | `0` | 1 | 0 | 0 | Invalid | Interpreter preference is set when the method is prepared, which also sets `_pActualCode`. |
-| 6 | `0` | 1 | 0 | 1 | Invalid | As row 5. |
-| 7 | `0` | 1 | 1 | 0 | Invalid | As row 3. |
-| 8 | `0` | 1 | 1 | 1 | Invalid | As row 3. |
-| 9 | `Interpreter thunk` | 0 | 0 | 0 | Invalid | A thunk means the method is interpreted, so interpreter preference must be set. |
-| 10 | `Interpreter thunk` | 0 | 0 | 1 | Invalid | As row 9. |
-| 11 | `Interpreter thunk` | 0 | 1 | 0 | Invalid | Pending implies interpreter preference. |
-| 12 | `Interpreter thunk` | 0 | 1 | 1 | Invalid | As row 11. |
-| 13 | `Interpreter thunk` | 1 | 0 | 0 | Valid | Interpreter-only method: no R2R code exists, or it was rejected. An auxiliary method should never be in this state. |
-| 14 | `Interpreter thunk` | 1 | 0 | 1 | Valid | For aux methods, this means the method activation failed and the method will always be interpreted. |
-| 15 | `Interpreter thunk` | 1 | 1 | 0 | Valid | Auxiliary method whose module has not loaded. Runs in the interpreter and waits for `ActivateModule`. |
-| 16 | `Interpreter thunk` | 1 | 1 | 1 | Valid | Auxiliary method whose module is activated. Either no call has happened since module activation, or activation is currently running. |
-| 17 | `R2R` | 0 | 0 | 0 | Valid | R2R code in the primary module, or a method outside an auxiliary module. |
-| 18 | `R2R` | 0 | 0 | 1 | Same as 17 | Also the state of an activated auxiliary method, where `ModInit` must be `1`. |
-| 19 | `R2R` | 0 | 1 | 0 | Invalid | Pending means not activated, so `_pActualCode` cannot name R2R code. |
-| 20 | `R2R` | 0 | 1 | 1 | Invalid | As row 19. |
-| 21 | `R2R` | 1 | 0 | 0 | Invalid | Interpreter preference is cleared when R2R code is valid and activated. |
-| 22 | `R2R` | 1 | 0 | 1 | Invalid | As row 21. |
-| 23 | `R2R` | 1 | 1 | 0 | Invalid | `_pActualCode` cannot name an auxiliary slot before the module loads, because the slot is still empty. |
-| 24 | `R2R` | 1 | 1 | 1 | Transient | Inside activation, after `_pActualCode` is repointed and before the flags are cleared. Single-threaded hosting makes it unobservable. |
-
-Valid, distinct states and how an auxiliary method moves between them:
-
-```text
-1 (unprepared)
-  → 13   no R2R code, or R2R code rejected (not an auxiliary method)
-  → 17   R2R code found in the primary module
-  → 15   marker seen, module not loaded
-  → 16 → 18   marker seen, module loaded: activated synchronously
-15 → 16   ActivateModule runs (funcrefs installed, ModInit becomes 1)
-16 → 18   first call or direct-call closure activation succeeds
-16 → 14   activation fails: the method is always interpreted on future calls
-```
-
-
 > [!NOTE]
-> This document was formatted and edited from the supplied design text by GitHub Copilot.
+> This document was written and edited with assistance from GitHub Copilot.
