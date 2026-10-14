@@ -95,6 +95,7 @@ enum ICodeManagerFlags
     ReportFPBasedSlotsOnly
                     =   0x0200, // EnumGCRefs/EnumerateLiveSlots should only include
                                 // slots that are based on the frame pointer
+    GcRootScan      =   0x0400, // Unwind is for GC root scanning; skip copying FP/vector context state
 };
 
 //*****************************************************************************

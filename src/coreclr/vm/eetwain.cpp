@@ -769,6 +769,26 @@ bool EECodeManager::IsGcSafe( EECodeInfo     *pCodeInfo,
 
 #endif // !USE_GC_INFO_DECODER
 
+static inline void CopyCallerContextForGCScan(T_CONTEXT *pDst, const T_CONTEXT *pSrc)
+{
+#if defined(TARGET_AMD64)
+    pDst->ContextFlags = pSrc->ContextFlags & ~(CONTEXT_FLOATING_POINT & CONTEXT_AREA_MASK);
+    pDst->EFlags = pSrc->EFlags;
+    memcpy(&pDst->Rax, &pSrc->Rax, offsetof(T_CONTEXT, FltSave) - offsetof(T_CONTEXT, Rax));
+#elif defined(TARGET_ARM64)
+    memcpy(pDst, pSrc, offsetof(T_CONTEXT, V));
+    pDst->ContextFlags &= ~(CONTEXT_FLOATING_POINT & CONTEXT_AREA_MASK);
+#elif defined(TARGET_ARM)
+    memcpy(pDst, pSrc, offsetof(T_CONTEXT, Fpscr));
+    pDst->ContextFlags &= ~(CONTEXT_FLOATING_POINT & CONTEXT_AREA_MASK);
+#elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+    memcpy(pDst, pSrc, offsetof(T_CONTEXT, F));
+    pDst->ContextFlags &= ~(CONTEXT_FLOATING_POINT & CONTEXT_AREA_MASK);
+#else
+    *pDst = *pSrc;
+#endif
+}
+
 void EECodeManager::EnsureCallerContextIsValid( PREGDISPLAY  pRD, EECodeInfo * pCodeInfo /*= NULL*/, unsigned flags /*= 0*/)
 {
     CONTRACTL
@@ -798,7 +818,14 @@ void EECodeManager::EnsureCallerContextIsValid( PREGDISPLAY  pRD, EECodeInfo * p
         else
         {
             // We need to make a copy here (instead of switching the pointers), in order to preserve the current context
-            *(pRD->pCallerContext) = *(pRD->pCurrentContext);
+            if (flags & GcRootScan)
+            {
+                CopyCallerContextForGCScan(pRD->pCallerContext, pRD->pCurrentContext);
+            }
+            else
+            {
+                *(pRD->pCallerContext) = *(pRD->pCurrentContext);
+            }
             *(pRD->pCallerContextPointers) = *(pRD->pCurrentContextPointers);
 #if defined(TARGET_ARM64)
             pRD->CallerContextSpForPacSign = 0;
@@ -2221,7 +2248,14 @@ void InterpreterCodeManager::EnsureCallerContextIsValid(PREGDISPLAY  pRD, EECode
     if( !pRD->IsCallerContextValid )
     {
         // We need to make a copy here (instead of switching the pointers), in order to preserve the current context
-        *(pRD->pCallerContext) = *(pRD->pCurrentContext);
+        if (flags & GcRootScan)
+        {
+            CopyCallerContextForGCScan(pRD->pCallerContext, pRD->pCurrentContext);
+        }
+        else
+        {
+            *(pRD->pCallerContext) = *(pRD->pCurrentContext);
+        }
         TADDR sp = (TADDR)GetRegdisplaySP(pRD);
         VirtualUnwindInterpreterCallFrame(sp, pRD->pCallerContext);
         // Preserve the context pointers, they are used by floating point registers unwind starting at the original context.

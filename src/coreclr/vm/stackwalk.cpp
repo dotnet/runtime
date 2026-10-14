@@ -1084,8 +1084,12 @@ BOOL StackFrameIterator::Init(Thread *    pThread,
 
     m_crawl.pRD = pRegDisp;
 
+    _ASSERTE(!(flags & GC_ROOT_SCAN) || !(flags & (UNWIND_FLOATS | PROFILER_DO_STACK_SNAPSHOT | NOTIFY_ON_U2M_TRANSITIONS | NOTIFY_ON_NO_FRAME_TRANSITIONS | NOTIFY_ON_INITIAL_NATIVE_CONTEXT)));
+
     m_codeManFlags = (ICodeManagerFlags)
-        (((flags & (QUICKUNWIND | LIGHTUNWIND)) ? 0 : UpdateAllRegs) | ((flags & LIGHTUNWIND) ? LightUnwind : 0));
+        (((flags & (QUICKUNWIND | LIGHTUNWIND)) ? 0 : UpdateAllRegs) |
+         ((flags & LIGHTUNWIND) ? LightUnwind : 0) |
+         ((flags & GC_ROOT_SCAN) ? GcRootScan : 0));
     m_scanFlag = ExecutionManager::GetScanFlags();
 
     m_pNextExInfo = (PTR_ExInfo)pThread->GetExceptionState()->GetCurrentExceptionTracker();
@@ -1189,8 +1193,12 @@ BOOL StackFrameIterator::ResetRegDisp(PREGDISPLAY pRegDisp,
 
     m_crawl.pRD = pRegDisp;
 
+    _ASSERTE(!(m_flags & GC_ROOT_SCAN) || !(m_flags & (UNWIND_FLOATS | PROFILER_DO_STACK_SNAPSHOT | NOTIFY_ON_U2M_TRANSITIONS | NOTIFY_ON_NO_FRAME_TRANSITIONS | NOTIFY_ON_INITIAL_NATIVE_CONTEXT)));
+
     m_codeManFlags = (ICodeManagerFlags)
-        (((m_flags & (QUICKUNWIND | LIGHTUNWIND)) ? 0 : UpdateAllRegs) | ((m_flags & LIGHTUNWIND) ? LightUnwind : 0));
+        (((m_flags & (QUICKUNWIND | LIGHTUNWIND)) ? 0 : UpdateAllRegs) |
+         ((m_flags & LIGHTUNWIND) ? LightUnwind : 0) |
+         ((m_flags & GC_ROOT_SCAN) ? GcRootScan : 0));
 
     // make sure the REGDISPLAY is synchronized with the CONTEXT
     UpdateRegDisp();
