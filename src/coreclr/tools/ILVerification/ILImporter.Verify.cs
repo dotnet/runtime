@@ -1607,7 +1607,7 @@ namespace Internal.IL
 
             if (opcode == ILOpcode.callvirt)
             {
-                Check(methodType != null, VerifierError.CallVirtOnStatic);
+                FatalCheck(methodType != null, VerifierError.CallVirtOnStatic);
                 Check(!methodType.IsValueType, VerifierError.CallVirtOnValueType);
             }
             else if (opcode != ILOpcode.newobj)
