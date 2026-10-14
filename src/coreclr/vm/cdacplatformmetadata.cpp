@@ -14,7 +14,7 @@ void CDacPlatformMetadata::Init()
     (&g_cdacPlatformMetadata)->codePointerFlags = CDacCodePointerFlags::HasArm32ThumbBit;
 #elif defined(TARGET_ARM64)
     // TODO PAC-RET: set HasArm64PtrAuth if arm64e for TARGET_APPLE
-    CLRConfig::ConfigDWORDInfo jitPacEnabledConfig { W("JitPacEnabled"), 0, CLRConfig::LookupOptions::Default };
+    CLRConfig::ConfigDWORDInfo jitPacEnabledConfig { W("JitPacEnabled"), 1, CLRConfig::LookupOptions::Default };
     (&g_cdacPlatformMetadata)->codePointerFlags =
         CLRConfig::GetConfigValue(jitPacEnabledConfig) != 0
             ? CDacCodePointerFlags::HasArm64PtrAuth
