@@ -57,9 +57,9 @@ namespace Microsoft.Interop
 
         public string InstanceIdentifier { get; init; } = string.Empty;
 
-        public RefKind RefKind { get; init; } = RefKind.None;
+        public ByRefMarshalKind RefKind { get; init; } = ByRefMarshalKind.None;
 
-        public bool IsByRef => RefKind != RefKind.None;
+        public bool IsByRef => RefKind != ByRefMarshalKind.None;
 
         public ScopedKind ScopedKind { get; init; } = ScopedKind.None;
 

@@ -17,14 +17,14 @@ public static class ManagedTypeInfoFactory
         {
             string typeName = type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
             string diagnosticFormattedName = type.ToDisplayString();
-            SpecialType specialType = type.SpecialType.ToInteropSpecialType();
-            if (specialType != SpecialType.None)
+            WellKnownType wellKnownType = type.SpecialType.ToWellKnownType();
+            if (wellKnownType != WellKnownType.None)
             {
-                return new SpecialTypeInfo(typeName, diagnosticFormattedName, specialType);
+                return new WellKnownTypeInfo(typeName, diagnosticFormattedName, wellKnownType);
             }
             if (type.TypeKind == TypeKind.Enum)
             {
-                return new EnumTypeInfo(typeName, diagnosticFormattedName, ((INamedTypeSymbol)type).EnumUnderlyingType!.SpecialType.ToInteropSpecialType());
+                return new EnumTypeInfo(typeName, diagnosticFormattedName, ((INamedTypeSymbol)type).EnumUnderlyingType!.SpecialType.ToWellKnownType());
             }
             if (type.TypeKind == TypeKind.Pointer)
             {

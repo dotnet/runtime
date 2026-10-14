@@ -233,8 +233,8 @@ namespace Microsoft.Interop
                     .OfType<IMethodSymbol>()
                     .FirstOrDefault(m => m is { IsStatic: true, Parameters.Length: 2, ReturnsVoid: false }
                         && managedType.IsConstructedFromEqualTypes(m.Parameters[0].Type)
-                        && m.Parameters[1].Type.SpecialType == Microsoft.CodeAnalysis.SpecialType.System_Int32
-                        && m.Parameters[1].RefKind == Microsoft.CodeAnalysis.RefKind.Out);
+                        && m.Parameters[1].Type.SpecialType == SpecialType.System_Int32
+                        && m.Parameters[1].RefKind == RefKind.Out);
             }
 
             internal static IMethodSymbol? AllocateContainerForUnmanagedElementsWithCallerAllocatedBuffer(ITypeSymbol type, ITypeSymbol managedType, ITypeSymbol spanOfT)
@@ -244,8 +244,8 @@ namespace Microsoft.Interop
                     .OfType<IMethodSymbol>()
                     .Where(m => m is { IsStatic: true, Parameters.Length: 3, ReturnsVoid: false }
                         && managedType.IsConstructedFromEqualTypes(m.Parameters[0].Type)
-                        && m.Parameters[2].Type.SpecialType == Microsoft.CodeAnalysis.SpecialType.System_Int32
-                        && m.Parameters[2].RefKind == Microsoft.CodeAnalysis.RefKind.Out);
+                        && m.Parameters[2].Type.SpecialType == SpecialType.System_Int32
+                        && m.Parameters[2].RefKind == RefKind.Out);
 
                 foreach (IMethodSymbol method in methods)
                 {
@@ -274,7 +274,7 @@ namespace Microsoft.Interop
                 return type.GetMembers(ShapeMemberNames.LinearCollection.Stateless.GetUnmanagedValuesDestination)
                     .OfType<IMethodSymbol>()
                     .FirstOrDefault(m => m is { IsStatic: true, Parameters.Length: 2, ReturnsVoid: false, ReturnType: INamedTypeSymbol returnType }
-                        && m.Parameters[1].Type.SpecialType == Microsoft.CodeAnalysis.SpecialType.System_Int32
+                        && m.Parameters[1].Type.SpecialType == SpecialType.System_Int32
                         && SymbolEqualityComparer.Default.Equals(spanOfT, returnType.ConstructedFrom));
             }
 
@@ -284,7 +284,7 @@ namespace Microsoft.Interop
                 return type.GetMembers(ShapeMemberNames.LinearCollection.Stateless.AllocateContainerForManagedElements)
                     .OfType<IMethodSymbol>()
                     .FirstOrDefault(m => m is { IsStatic: true, Parameters.Length: 2, ReturnsVoid: false }
-                        && m.Parameters[1].Type.SpecialType == Microsoft.CodeAnalysis.SpecialType.System_Int32
+                        && m.Parameters[1].Type.SpecialType == SpecialType.System_Int32
                         && managedType.IsConstructedFromEqualTypes(m.ReturnType));
             }
 
@@ -294,7 +294,7 @@ namespace Microsoft.Interop
                 return type.GetMembers(ShapeMemberNames.LinearCollection.Stateless.AllocateContainerForManagedElementsFinally)
                     .OfType<IMethodSymbol>()
                     .FirstOrDefault(m => m is { IsStatic: true, Parameters.Length: 2, ReturnsVoid: false }
-                        && m.Parameters[1].Type.SpecialType == Microsoft.CodeAnalysis.SpecialType.System_Int32
+                        && m.Parameters[1].Type.SpecialType == SpecialType.System_Int32
                         && managedType.IsConstructedFromEqualTypes(m.ReturnType));
             }
 
@@ -314,7 +314,7 @@ namespace Microsoft.Interop
                 return type.GetMembers(ShapeMemberNames.LinearCollection.Stateless.GetUnmanagedValuesSource)
                     .OfType<IMethodSymbol>()
                     .FirstOrDefault(m => m is { IsStatic: true, Parameters.Length: 2, ReturnsVoid: false, ReturnType: INamedTypeSymbol returnType }
-                        && m.Parameters[1].Type.SpecialType == Microsoft.CodeAnalysis.SpecialType.System_Int32
+                        && m.Parameters[1].Type.SpecialType == SpecialType.System_Int32
                         && SymbolEqualityComparer.Default.Equals(readOnlySpanOfT, returnType.ConstructedFrom));
             }
         }
@@ -626,7 +626,7 @@ namespace Microsoft.Interop
                 return type.GetMembers(ShapeMemberNames.LinearCollection.Stateful.GetManagedValuesDestination)
                     .OfType<IMethodSymbol>()
                     .FirstOrDefault(m => m is { IsStatic: false, Parameters.Length: 1, ReturnsVoid: false, ReturnType: INamedTypeSymbol returnType }
-                        && m.Parameters[0].Type.SpecialType == Microsoft.CodeAnalysis.SpecialType.System_Int32
+                        && m.Parameters[0].Type.SpecialType == SpecialType.System_Int32
                         && SymbolEqualityComparer.Default.Equals(spanOfT, returnType.ConstructedFrom));
             }
 
@@ -636,7 +636,7 @@ namespace Microsoft.Interop
                 return type.GetMembers(ShapeMemberNames.LinearCollection.Stateful.GetUnmanagedValuesSource)
                     .OfType<IMethodSymbol>()
                     .FirstOrDefault(m => m is { IsStatic: false, Parameters.Length: 1, ReturnsVoid: false, ReturnType: INamedTypeSymbol returnType }
-                        && m.Parameters[0].Type.SpecialType == Microsoft.CodeAnalysis.SpecialType.System_Int32
+                        && m.Parameters[0].Type.SpecialType == SpecialType.System_Int32
                         && SymbolEqualityComparer.Default.Equals(readOnlySpanOfT, returnType.ConstructedFrom));
             }
         }

@@ -24,7 +24,7 @@ public static class TypePositionInfoFactory
             return new TypePositionInfo(ManagedTypeInfo.CreateTypeInfoForTypeSymbol(paramSymbol.Type), marshallingInfo)
             {
                 InstanceIdentifier = CodeWriterHelpers.EscapeIdentifier(paramSymbol.Name),
-                RefKind = paramSymbol.RefKind.ToInteropRefKind(),
+                RefKind = paramSymbol.RefKind.ToByRefMarshalKind(),
                 ByValueContentsMarshalKind = GetByValueContentsMarshalKind(paramSymbol.GetAttributes(), compilation),
                 ScopedKind = paramSymbol.ScopedKind.ToInteropScopedKind(),
                 IsExplicitThis = ((ParameterSyntax?)paramSymbol.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax())?.Modifiers.Any(SyntaxKind.ThisKeyword) ?? false

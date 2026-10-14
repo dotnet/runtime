@@ -238,7 +238,7 @@ namespace Microsoft.Interop
                 string numElementsIdentifier = MarshallerHelpers.GetNumElementsIdentifier(TypeInfo, context);
                 writer.WriteLine($"int {numElementsIdentifier};");
                 writer.WriteLine(MarshallerHelpers.SkipInitOrDefaultInit(
-                    new TypePositionInfo(SpecialTypeInfo.Int32, NoMarshallingInfo.Instance)
+                    new TypePositionInfo(WellKnownTypeInfo.Int32, NoMarshallingInfo.Instance)
                     {
                         InstanceIdentifier = numElementsIdentifier
                     }, context));

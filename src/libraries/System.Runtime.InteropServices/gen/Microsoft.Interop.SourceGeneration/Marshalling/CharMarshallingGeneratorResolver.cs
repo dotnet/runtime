@@ -22,7 +22,7 @@ namespace Microsoft.Interop
 
         public ResolvedGenerator Create(TypePositionInfo info, StubCodeContext context)
         {
-            if (info.ManagedType is SpecialTypeInfo { SpecialType: SpecialType.System_Char })
+            if (info.ManagedType is WellKnownTypeInfo { SpecialType: WellKnownType.System_Char })
             {
                 return CreateCharMarshaller(info, context);
             }

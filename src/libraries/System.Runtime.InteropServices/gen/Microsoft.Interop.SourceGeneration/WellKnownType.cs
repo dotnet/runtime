@@ -4,7 +4,7 @@
 namespace Microsoft.Interop;
 
 /// <summary>Identifies types with special marshalling or code-generation rules.</summary>
-public enum SpecialType
+public enum WellKnownType
 {
     /// <summary>No special type classification.</summary>
     None,
@@ -45,21 +45,21 @@ public enum SpecialType
 }
 
 /// <summary>Classifies the primitive types used in marshalling.</summary>
-public static class SpecialTypeExtensions
+public static class WellKnownTypeExtensions
 {
     /// <summary>Determines whether a type can represent a collection element count.</summary>
     /// <param name="type">The type to classify.</param>
     /// <returns><see langword="true"/> if the type is integral; otherwise, <see langword="false"/>.</returns>
-    public static bool IsIntegralType(this SpecialType type) => type is
-        SpecialType.System_SByte or SpecialType.System_Byte
-        or SpecialType.System_Int16 or SpecialType.System_UInt16
-        or SpecialType.System_Int32 or SpecialType.System_UInt32
-        or SpecialType.System_Int64 or SpecialType.System_UInt64
-        or SpecialType.System_IntPtr or SpecialType.System_UIntPtr;
+    public static bool IsIntegralType(this WellKnownType type) => type is
+        WellKnownType.System_SByte or WellKnownType.System_Byte
+        or WellKnownType.System_Int16 or WellKnownType.System_UInt16
+        or WellKnownType.System_Int32 or WellKnownType.System_UInt32
+        or WellKnownType.System_Int64 or WellKnownType.System_UInt64
+        or WellKnownType.System_IntPtr or WellKnownType.System_UIntPtr;
 
     /// <summary>Determines whether a type is always blittable.</summary>
     /// <param name="type">The type to classify.</param>
     /// <returns><see langword="true"/> if the type is always blittable; otherwise, <see langword="false"/>.</returns>
-    public static bool IsAlwaysBlittable(this SpecialType type) => type.IsIntegralType()
-        || type is SpecialType.System_Void or SpecialType.System_Single or SpecialType.System_Double;
+    public static bool IsAlwaysBlittable(this WellKnownType type) => type.IsIntegralType()
+        || type is WellKnownType.System_Void or WellKnownType.System_Single or WellKnownType.System_Double;
 }

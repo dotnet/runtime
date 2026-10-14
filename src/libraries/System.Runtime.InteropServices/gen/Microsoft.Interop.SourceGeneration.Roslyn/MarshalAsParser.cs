@@ -119,7 +119,7 @@ namespace Microsoft.Interop
                     bool hasUseSiteData = useSiteAttributes.TryGetUseSiteAttributeInfo(indirectionDepth, out UseSiteAttributeData iidUseSiteAttributeData);
                     bool hasIidParameterInfo = hasUseSiteData && iidUseSiteAttributeData.IidParameterIndexInfo is not null;
                     bool supportedShape = unmanagedType == UnmanagedType.Interface
-                        && type.SpecialType == Microsoft.CodeAnalysis.SpecialType.System_Object
+                        && type.SpecialType == SpecialType.System_Object
                         && IsOutParameter(attributeData)
                         && hasIidParameterInfo;
 
@@ -159,7 +159,7 @@ namespace Microsoft.Interop
         // or as 'in' (REFIID semantics) or 'ref'.
         private static bool IsValidIidParameter(TypePositionInfo info)
             => IsGuidType(info)
-                && info.RefKind is RefKind.None or RefKind.In or RefKind.Ref;
+                && info.RefKind is ByRefMarshalKind.None or ByRefMarshalKind.In or ByRefMarshalKind.Ref;
 
         private static bool IsOutParameter(AttributeData attributeData)
             => attributeData.ApplicationSyntaxReference?.GetSyntax() is AttributeSyntax

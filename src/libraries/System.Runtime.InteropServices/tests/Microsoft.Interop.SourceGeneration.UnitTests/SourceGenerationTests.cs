@@ -81,19 +81,19 @@ public class SourceGenerationTests
     }
 
     [Theory]
-    [InlineData(RefKind.None, ScopedKind.None, "", "")]
-    [InlineData(RefKind.Ref, ScopedKind.ScopedRef, "scoped ref", "ref")]
-    [InlineData(RefKind.In, ScopedKind.ScopedRef, "scoped in", "in")]
-    [InlineData(RefKind.Out, ScopedKind.ScopedRef, "out", "out")]
-    [InlineData(RefKind.RefReadOnlyParameter, ScopedKind.ScopedRef, "scoped ref readonly", "in")]
-    [InlineData(RefKind.None, ScopedKind.ScopedValue, "scoped", "")]
-    public void ParameterModifiersAreDerivedFromModelEnums(RefKind refKind, ScopedKind scopedKind, string modifiers, string argumentKeyword)
+    [InlineData(ByRefMarshalKind.None, ScopedKind.None, "", "")]
+    [InlineData(ByRefMarshalKind.Ref, ScopedKind.ScopedRef, "scoped ref", "ref")]
+    [InlineData(ByRefMarshalKind.In, ScopedKind.ScopedRef, "scoped in", "in")]
+    [InlineData(ByRefMarshalKind.Out, ScopedKind.ScopedRef, "out", "out")]
+    [InlineData(ByRefMarshalKind.RefReadOnlyParameter, ScopedKind.ScopedRef, "scoped ref readonly", "in")]
+    [InlineData(ByRefMarshalKind.None, ScopedKind.ScopedValue, "scoped", "")]
+    public void ParameterModifiersAreDerivedFromModelEnums(ByRefMarshalKind refKind, ScopedKind scopedKind, string modifiers, string argumentKeyword)
     {
         TypePositionInfo parameter = CreateSignature()[0] with { RefKind = refKind, ScopedKind = scopedKind };
 
         Assert.Equal(modifiers, MarshallerHelpers.GetManagedParameterModifiers(parameter));
         Assert.Equal(argumentKeyword, MarshallerHelpers.GetManagedArgumentRefKindKeyword(parameter));
-        Assert.Equal(refKind != RefKind.None, parameter.IsByRef);
+        Assert.Equal(refKind != ByRefMarshalKind.None, parameter.IsByRef);
     }
 
     [Fact]
@@ -110,16 +110,16 @@ public class SourceGenerationTests
     }
 
     [Theory]
-    [InlineData(SpecialType.System_Int32, true, true)]
-    [InlineData(SpecialType.System_UIntPtr, true, true)]
-    [InlineData(SpecialType.System_Void, false, true)]
-    [InlineData(SpecialType.System_Double, false, true)]
-    [InlineData(SpecialType.System_Boolean, false, false)]
-    [InlineData(SpecialType.System_Char, false, false)]
-    [InlineData(SpecialType.System_String, false, false)]
-    [InlineData(SpecialType.System_Enum, false, false)]
-    [InlineData(SpecialType.None, false, false)]
-    public void SpecialTypeClassificationUsesOnlyMarshallingSemantics(SpecialType type, bool integral, bool blittable)
+    [InlineData(WellKnownType.System_Int32, true, true)]
+    [InlineData(WellKnownType.System_UIntPtr, true, true)]
+    [InlineData(WellKnownType.System_Void, false, true)]
+    [InlineData(WellKnownType.System_Double, false, true)]
+    [InlineData(WellKnownType.System_Boolean, false, false)]
+    [InlineData(WellKnownType.System_Char, false, false)]
+    [InlineData(WellKnownType.System_String, false, false)]
+    [InlineData(WellKnownType.System_Enum, false, false)]
+    [InlineData(WellKnownType.None, false, false)]
+    public void WellKnownTypeClassificationUsesOnlyMarshallingSemantics(WellKnownType type, bool integral, bool blittable)
     {
         Assert.Equal(integral, type.IsIntegralType());
         Assert.Equal(blittable, type.IsAlwaysBlittable());
@@ -127,13 +127,13 @@ public class SourceGenerationTests
 
     private static ImmutableArray<TypePositionInfo> CreateSignature() =>
     [
-        new(SpecialTypeInfo.Int32, NoMarshallingInfo.Instance)
+        new(WellKnownTypeInfo.Int32, NoMarshallingInfo.Instance)
         {
             ManagedIndex = 0,
             NativeIndex = 0,
             InstanceIdentifier = "value"
         },
-        new(SpecialTypeInfo.Void, NoMarshallingInfo.Instance)
+        new(WellKnownTypeInfo.Void, NoMarshallingInfo.Instance)
         {
             ManagedIndex = TypePositionInfo.ReturnIndex,
             NativeIndex = TypePositionInfo.ReturnIndex

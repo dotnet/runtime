@@ -529,7 +529,7 @@ public class CodeWritingTests
         Compilation compilation = TestUtils.CreateCompilation(source);
         Assert.DoesNotContain(compilation.GetDiagnostics(), static diagnostic => diagnostic.Severity == DiagnosticSeverity.Error);
         INamedTypeSymbol definition = compilation.GetTypeByMetadataName("TUnmanagedElement.Marshaller`2")!;
-        ITypeSymbol managedElement = compilation.GetSpecialType(Microsoft.CodeAnalysis.SpecialType.System_Int32);
+        ITypeSymbol managedElement = compilation.GetSpecialType(SpecialType.System_Int32);
         INamedTypeSymbol entryPoint = definition.Construct(managedElement, definition.TypeParameters[1]);
         Assert.True(ManualTypeMarshallingHelper.TryGetLinearCollectionMarshallersFromEntryType(
             entryPoint,

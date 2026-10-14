@@ -16,7 +16,7 @@ namespace Microsoft.Interop
 
         public static BoundGenerators Create(ImmutableArray<TypePositionInfo> elementTypeInfo, IMarshallingGeneratorResolver generatorResolver, StubCodeContext context, IUnboundMarshallingGenerator fallbackGenerator, out ImmutableArray<GeneratorDiagnostic> generatorBindingDiagnostics)
         {
-            IBoundMarshallingGenerator defaultBoundGenerator = fallbackGenerator.Bind(new TypePositionInfo(SpecialTypeInfo.Void, NoMarshallingInfo.Instance), context);
+            IBoundMarshallingGenerator defaultBoundGenerator = fallbackGenerator.Bind(new TypePositionInfo(WellKnownTypeInfo.Void, NoMarshallingInfo.Instance), context);
             BoundGenerators result = new();
 
             ImmutableArray<IBoundMarshallingGenerator>.Builder signatureMarshallers = ImmutableArray.CreateBuilder<IBoundMarshallingGenerator>();
@@ -251,9 +251,9 @@ namespace Microsoft.Interop
 
         public bool ManagedNativeSameReturn => ManagedReturnMarshaller.TypeInfo.IsNativeReturnPosition;
 
-        public bool IsManagedVoidReturn => ManagedReturnMarshaller.TypeInfo.ManagedType == SpecialTypeInfo.Void;
+        public bool IsManagedVoidReturn => ManagedReturnMarshaller.TypeInfo.ManagedType == WellKnownTypeInfo.Void;
 
-        public bool IsUnmanagedVoidReturn => NativeReturnMarshaller.TypeInfo.ManagedType == SpecialTypeInfo.Void;
+        public bool IsUnmanagedVoidReturn => NativeReturnMarshaller.TypeInfo.ManagedType == WellKnownTypeInfo.Void;
 
         public bool HasManagedExceptionMarshaller => !ManagedExceptionMarshaller.IsForwarder();
 

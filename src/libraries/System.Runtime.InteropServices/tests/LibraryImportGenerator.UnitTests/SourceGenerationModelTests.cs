@@ -7,21 +7,17 @@ using Microsoft.CodeAnalysis;
 using Microsoft.Interop;
 using Microsoft.Interop.UnitTests;
 using Xunit;
-using InteropRefKind = Microsoft.Interop.RefKind;
 using InteropScopedKind = Microsoft.Interop.ScopedKind;
-using InteropSpecialType = Microsoft.Interop.SpecialType;
-using RoslynRefKind = Microsoft.CodeAnalysis.RefKind;
 using RoslynScopedKind = Microsoft.CodeAnalysis.ScopedKind;
-using RoslynSpecialType = Microsoft.CodeAnalysis.SpecialType;
 
 namespace LibraryImportGenerator.UnitTests;
 
 public class SourceGenerationModelTests
 {
     [Theory]
-    [InlineData("int", typeof(SpecialTypeInfo))]
-    [InlineData("string", typeof(SpecialTypeInfo))]
-    [InlineData("global::System.Enum", typeof(SpecialTypeInfo))]
+    [InlineData("int", typeof(WellKnownTypeInfo))]
+    [InlineData("string", typeof(WellKnownTypeInfo))]
+    [InlineData("global::System.Enum", typeof(WellKnownTypeInfo))]
     [InlineData("object", typeof(ReferenceTypeInfo))]
     [InlineData("decimal", typeof(ValueTypeInfo))]
     [InlineData("global::System.DateTime", typeof(ValueTypeInfo))]
@@ -46,35 +42,35 @@ public class SourceGenerationModelTests
     }
 
     [Theory]
-    [InlineData(RoslynSpecialType.System_Object)]
-    [InlineData(RoslynSpecialType.System_Decimal)]
-    [InlineData(RoslynSpecialType.System_DateTime)]
-    [InlineData(RoslynSpecialType.System_Array)]
-    [InlineData(RoslynSpecialType.System_Nullable_T)]
-    public void CompilerOnlySpecialTypesAreNotAddedToCore(RoslynSpecialType type)
+    [InlineData(SpecialType.System_Object)]
+    [InlineData(SpecialType.System_Decimal)]
+    [InlineData(SpecialType.System_DateTime)]
+    [InlineData(SpecialType.System_Array)]
+    [InlineData(SpecialType.System_Nullable_T)]
+    public void CompilerOnlySpecialTypesAreNotAddedToCore(SpecialType type)
     {
-        Assert.Equal(InteropSpecialType.None, type.ToInteropSpecialType());
+        Assert.Equal(WellKnownType.None, type.ToWellKnownType());
     }
 
     [Fact]
-    public void EveryCoreSpecialTypeHasAnExplicitCompilerMapping()
+    public void EveryCoreWellKnownTypeHasAnExplicitCompilerMapping()
     {
-        foreach (InteropSpecialType type in Enum.GetValues<InteropSpecialType>())
+        foreach (WellKnownType type in Enum.GetValues<WellKnownType>())
         {
-            RoslynSpecialType compilerType = Enum.Parse<RoslynSpecialType>(type.ToString());
-            Assert.Equal(type, compilerType.ToInteropSpecialType());
+            SpecialType compilerType = Enum.Parse<SpecialType>(type.ToString());
+            Assert.Equal(type, compilerType.ToWellKnownType());
         }
     }
 
     [Theory]
-    [InlineData(RoslynRefKind.None, InteropRefKind.None)]
-    [InlineData(RoslynRefKind.In, InteropRefKind.In)]
-    [InlineData(RoslynRefKind.Out, InteropRefKind.Out)]
-    [InlineData(RoslynRefKind.Ref, InteropRefKind.Ref)]
-    [InlineData(RoslynRefKind.RefReadOnlyParameter, InteropRefKind.RefReadOnlyParameter)]
-    public void RefKindsAreConvertedExplicitly(RoslynRefKind source, InteropRefKind expected)
+    [InlineData(RefKind.None, ByRefMarshalKind.None)]
+    [InlineData(RefKind.In, ByRefMarshalKind.In)]
+    [InlineData(RefKind.Out, ByRefMarshalKind.Out)]
+    [InlineData(RefKind.Ref, ByRefMarshalKind.Ref)]
+    [InlineData(RefKind.RefReadOnlyParameter, ByRefMarshalKind.RefReadOnlyParameter)]
+    public void RefKindsAreConvertedExplicitly(RefKind source, ByRefMarshalKind expected)
     {
-        Assert.Equal(expected, source.ToInteropRefKind());
+        Assert.Equal(expected, source.ToByRefMarshalKind());
     }
 
     [Theory]
@@ -99,7 +95,7 @@ public class SourceGenerationModelTests
         IParameterSymbol parameter = ((IMethodSymbol)compilation.GetTypeByMetadataName("C")!.GetMembers("M").Single()).Parameters[0];
         TypePositionInfo model = TypePositionInfo.CreateForParameter(parameter, NoMarshallingInfo.Instance, compilation);
 
-        Assert.Equal(parameter.RefKind.ToInteropRefKind(), model.RefKind);
+        Assert.Equal(parameter.RefKind.ToByRefMarshalKind(), model.RefKind);
         Assert.Equal(parameter.ScopedKind.ToInteropScopedKind(), model.ScopedKind);
         Assert.Equal("@event", model.InstanceIdentifier);
         Assert.Equal(TypePositionInfo.UnsetIndex, model.ManagedIndex);

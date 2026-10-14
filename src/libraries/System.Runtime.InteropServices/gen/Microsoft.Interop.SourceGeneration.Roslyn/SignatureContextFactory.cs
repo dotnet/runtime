@@ -126,7 +126,7 @@ namespace Microsoft.Interop
                     return new TypePositionInfo(errorInfo.ManagedType, errorInfo.MarshallingInfo)
                     {
                         InstanceIdentifier = "__error",
-                        RefKind = nativeIndex == TypePositionInfo.ReturnIndex ? RefKind.None : RefKind.Out,
+                        RefKind = nativeIndex == TypePositionInfo.ReturnIndex ? ByRefMarshalKind.None : ByRefMarshalKind.Out,
                         ManagedIndex = TypePositionInfo.ErrorIndex,
                         NativeIndex = nativeIndex,
                         IsErrorHandlingPosition = true,
@@ -144,7 +144,7 @@ namespace Microsoft.Interop
                         {
                             infos.Add(CreateErrorInfo(TypePositionInfo.ReturnIndex));
                         }
-                        else if (returnInfo.ManagedType == SpecialTypeInfo.Void)
+                        else if (returnInfo.ManagedType == WellKnownTypeInfo.Void)
                         {
                             infos[returnIndex] = returnInfo with { NativeIndex = TypePositionInfo.UnsetIndex };
                             infos.Add(CreateErrorInfo(TypePositionInfo.ReturnIndex));
@@ -154,7 +154,7 @@ namespace Microsoft.Interop
                     case ErrorHandlingLocation.HiddenReturnValue:
                         int hiddenReturnIndex = infos.Count - 1;
                         TypePositionInfo hiddenReturnInfo = infos[hiddenReturnIndex];
-                        if (hiddenReturnInfo.ManagedType == SpecialTypeInfo.Void)
+                        if (hiddenReturnInfo.ManagedType == WellKnownTypeInfo.Void)
                         {
                             infos[hiddenReturnIndex] = hiddenReturnInfo with { NativeIndex = TypePositionInfo.UnsetIndex };
                         }
@@ -164,7 +164,7 @@ namespace Microsoft.Interop
                             // position while moving it to a final out parameter in the native signature.
                             infos[hiddenReturnIndex] = hiddenReturnInfo with
                             {
-                                RefKind = RefKind.Out,
+                                RefKind = ByRefMarshalKind.Out,
                                 NativeIndex = method.Parameters.Length,
                             };
                         }
@@ -174,7 +174,7 @@ namespace Microsoft.Interop
 
                     case ErrorHandlingLocation.LastParameter:
                         TypePositionInfo lastParameter = GetLastManagedParameter(infos);
-                        Debug.Assert(lastParameter is { RefKind: RefKind.Out or RefKind.Ref }
+                        Debug.Assert(lastParameter is { RefKind: ByRefMarshalKind.Out or ByRefMarshalKind.Ref }
                             && MatchesManagedType(lastParameter));
                         infos.Add(CreateErrorInfo(lastParameter.NativeIndex));
                         break;

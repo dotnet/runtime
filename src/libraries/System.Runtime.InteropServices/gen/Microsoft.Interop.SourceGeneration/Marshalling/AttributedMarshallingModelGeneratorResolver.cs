@@ -83,7 +83,7 @@ namespace Microsoft.Interop
                     }
                 }
 
-                if (type is not SpecialTypeInfo specialType || !specialType.SpecialType.IsIntegralType())
+                if (type is not WellKnownTypeInfo specialType || !specialType.SpecialType.IsIntegralType())
                 {
                     return new GeneratorDiagnostic.NotSupported(info)
                     {
@@ -91,7 +91,7 @@ namespace Microsoft.Interop
                     };
                 }
 
-                requiresCast = specialType.SpecialType != SpecialType.System_Int32;
+                requiresCast = specialType.SpecialType != WellKnownType.System_Int32;
 
                 return null;
             }
@@ -102,7 +102,7 @@ namespace Microsoft.Interop
             if (Options.RuntimeMarshallingDisabled || marshallerData.IsStrictlyBlittable)
                 return true;
 
-            if (marshallerData.NativeType is SpecialTypeInfo specialType && specialType.SpecialType.IsAlwaysBlittable())
+            if (marshallerData.NativeType is WellKnownTypeInfo specialType && specialType.SpecialType.IsAlwaysBlittable())
                 return true;
 
             if (marshallerData.NativeType is PointerTypeInfo)
@@ -346,7 +346,7 @@ namespace Microsoft.Interop
 
             // In an unmanaged-to-managed stub where a value is passed by 'ref',
             // we own the original value once we replace it with the new value we're passing out to the caller.
-            if (info.RefKind == RefKind.Ref)
+            if (info.RefKind == ByRefMarshalKind.Ref)
             {
                 return FreeStrategy.FreeOriginal;
             }
@@ -409,9 +409,9 @@ namespace Microsoft.Interop
             return null;
         }
 
-        private static RefKind CreateElementRefKind(RefKind refKind, ByValueContentsMarshalKind byValueContentsMarshalKind)
+        private static ByRefMarshalKind CreateElementRefKind(ByRefMarshalKind refKind, ByValueContentsMarshalKind byValueContentsMarshalKind)
         {
-            if (refKind == RefKind.None)
+            if (refKind == ByRefMarshalKind.None)
             {
                 return byValueContentsMarshalKind.GetRefKindForByValueContentsKind();
             }

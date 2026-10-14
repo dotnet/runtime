@@ -26,12 +26,12 @@ public static class MarshallerDiagnosticHelpers
             if (stubDirection is MarshalDirection.ManagedToUnmanaged)
                 return;
 
-            if (!(info.RefKind is RefKind.Out
+            if (!(info.RefKind is ByRefMarshalKind.Out
                     || info.ManagedIndex is TypePositionInfo.ReturnIndex)
                 && info.MarshallingAttributeInfo is NativeLinearCollectionMarshallingInfo collectionMarshallingInfo
                 && collectionMarshallingInfo.ElementCountInfo is CountElementCountInfo countInfo)
             {
-                if (countInfo.ElementInfo.IsByRef && countInfo.ElementInfo.RefKind is RefKind.Out)
+                if (countInfo.ElementInfo.IsByRef && countInfo.ElementInfo.RefKind is ByRefMarshalKind.Out)
                 {
                     Location location = TypePositionInfo.GetLocation(info, symbol);
                     generatorDiagnostics.ReportDiagnostic(

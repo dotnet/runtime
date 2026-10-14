@@ -16,7 +16,7 @@ namespace Microsoft.Interop
                 if (info.IsManagedReturnPosition)
                     continue;
 
-                if (info.RefKind == RefKind.Out && !info.IsErrorHandlingPosition)
+                if (info.RefKind == ByRefMarshalKind.Out && !info.IsErrorHandlingPosition)
                 {
                     initializations.WriteLine(MarshallerHelpers.DefaultInit(info, context));
                 }

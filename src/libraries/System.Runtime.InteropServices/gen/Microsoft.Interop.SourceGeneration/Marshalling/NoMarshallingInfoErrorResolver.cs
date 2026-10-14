@@ -39,8 +39,8 @@ namespace Microsoft.Interop
         private static ImmutableDictionary<ManagedTypeInfo, string> DefaultTypeToErrorMessageMap(string stringMarshallingAttribute)
             => ImmutableDictionary.CreateRange(new Dictionary<ManagedTypeInfo, string>
             {
-                { SpecialTypeInfo.String, string.Format(SR.MarshallingStringOrCharAsUndefinedNotSupported, stringMarshallingAttribute) },
-                { SpecialTypeInfo.Boolean, SR.MarshallingBoolAsUndefinedNotSupported },
+                { WellKnownTypeInfo.String, string.Format(SR.MarshallingStringOrCharAsUndefinedNotSupported, stringMarshallingAttribute) },
+                { WellKnownTypeInfo.Boolean, SR.MarshallingBoolAsUndefinedNotSupported },
             });
     }
 }

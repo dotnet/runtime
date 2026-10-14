@@ -59,7 +59,7 @@ namespace Microsoft.Interop
 
             static unsafe bool IsStrictlyBlittableWorker(ITypeSymbol t, ImmutableHashSet<ITypeSymbol> seenTypes, Compilation compilation)
             {
-                if (t.SpecialType is not Microsoft.CodeAnalysis.SpecialType.None)
+                if (t.SpecialType is not SpecialType.None)
                 {
                     return t.SpecialType.IsAlwaysBlittable();
                 }
@@ -78,7 +78,7 @@ namespace Microsoft.Interop
                             return true;
                         }
 
-                        if (t.ContainingAssembly.Equals(compilation.GetSpecialType(Microsoft.CodeAnalysis.SpecialType.System_Object).ContainingAssembly, SymbolEqualityComparer.Default))
+                        if (t.ContainingAssembly.Equals(compilation.GetSpecialType(SpecialType.System_Object).ContainingAssembly, SymbolEqualityComparer.Default))
                         {
                             if (t.ToDisplayString() == TypeNames.System_Guid) // .NET has established that Guid is blittable and matches the shape of the Win32 GUID type exactly and always will.
                             {
@@ -165,9 +165,9 @@ namespace Microsoft.Interop
             return true;
         }
 
-        public static bool IsIntegralType(this Microsoft.CodeAnalysis.SpecialType type) => type.ToInteropSpecialType().IsIntegralType();
+        public static bool IsIntegralType(this SpecialType type) => type.ToWellKnownType().IsIntegralType();
 
-        public static bool IsAlwaysBlittable(this Microsoft.CodeAnalysis.SpecialType type) => type.ToInteropSpecialType().IsAlwaysBlittable();
+        public static bool IsAlwaysBlittable(this SpecialType type) => type.ToWellKnownType().IsAlwaysBlittable();
 
         public static bool IsConstructedFromEqualTypes(this ITypeSymbol type, ITypeSymbol other)
         {

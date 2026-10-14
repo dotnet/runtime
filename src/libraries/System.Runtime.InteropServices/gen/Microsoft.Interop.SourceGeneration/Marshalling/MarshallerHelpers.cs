@@ -8,14 +8,14 @@ namespace Microsoft.Interop
 {
     public static class MarshallerHelpers
     {
-        public static RefKind GetRefKindForByValueContentsKind(this ByValueContentsMarshalKind byValue)
+        public static ByRefMarshalKind GetRefKindForByValueContentsKind(this ByValueContentsMarshalKind byValue)
         {
             return byValue switch
             {
-                ByValueContentsMarshalKind.Default => RefKind.None,
-                ByValueContentsMarshalKind.In => RefKind.In,
-                ByValueContentsMarshalKind.InOut => RefKind.Ref,
-                ByValueContentsMarshalKind.Out => RefKind.Out,
+                ByValueContentsMarshalKind.Default => ByRefMarshalKind.None,
+                ByValueContentsMarshalKind.In => ByRefMarshalKind.In,
+                ByValueContentsMarshalKind.InOut => ByRefMarshalKind.Ref,
+                ByValueContentsMarshalKind.Out => ByRefMarshalKind.Out,
                 _ => throw new System.ArgumentOutOfRangeException(nameof(byValue))
             };
         }
@@ -90,7 +90,7 @@ namespace Microsoft.Interop
 
         internal static bool CanUseCallerAllocatedBuffer(TypePositionInfo info, StubCodeContext context)
         {
-            return context.SingleFrameSpansNativeContext && (!info.IsByRef || info.RefKind == RefKind.In || info.RefKind == RefKind.RefReadOnlyParameter);
+            return context.SingleFrameSpansNativeContext && (!info.IsByRef || info.RefKind == ByRefMarshalKind.In || info.RefKind == ByRefMarshalKind.RefReadOnlyParameter);
         }
 
         /// <summary>
@@ -257,7 +257,7 @@ namespace Microsoft.Interop
             {
                 if (info.IsErrorHandlingPosition)
                 {
-                    return info.RefKind == RefKind.Ref
+                    return info.RefKind == ByRefMarshalKind.Ref
                         ? MarshalDirection.Bidirectional
                         : MarshalDirection.UnmanagedToManaged;
                 }
@@ -272,12 +272,12 @@ namespace Microsoft.Interop
                 }
                 switch (info.RefKind)
                 {
-                    case RefKind.In:
-                    case RefKind.RefReadOnlyParameter:
+                    case ByRefMarshalKind.In:
+                    case ByRefMarshalKind.RefReadOnlyParameter:
                         return MarshalDirection.ManagedToUnmanaged;
-                    case RefKind.Ref:
+                    case ByRefMarshalKind.Ref:
                         return MarshalDirection.Bidirectional;
-                    case RefKind.Out:
+                    case ByRefMarshalKind.Out:
                         return MarshalDirection.UnmanagedToManaged;
                 }
                 throw new UnreachableException("An element is either a return value or passed by value or by ref.");
@@ -294,12 +294,12 @@ namespace Microsoft.Interop
             }
             switch (info.RefKind)
             {
-                case RefKind.In:
-                case RefKind.RefReadOnlyParameter:
+                case ByRefMarshalKind.In:
+                case ByRefMarshalKind.RefReadOnlyParameter:
                     return MarshalDirection.UnmanagedToManaged;
-                case RefKind.Ref:
+                case ByRefMarshalKind.Ref:
                     return MarshalDirection.Bidirectional;
-                case RefKind.Out:
+                case ByRefMarshalKind.Out:
                     return MarshalDirection.ManagedToUnmanaged;
             }
             throw new UnreachableException("An element is either a return value or passed by value or by ref.");
@@ -332,7 +332,7 @@ namespace Microsoft.Interop
             // "out" parameters are implicitly scoped, so we can't put the "scoped" keyword on them.
             // All other cases of explicit parameters are only scoped when the "scoped" keyword is present.
             // When the "scoped" keyword is present, it must be present on all declarations.
-            if (typeInfo.ScopedKind != ScopedKind.None && typeInfo.RefKind != RefKind.Out)
+            if (typeInfo.ScopedKind != ScopedKind.None && typeInfo.RefKind != ByRefMarshalKind.Out)
             {
                 modifiers.Add("scoped");
             }
@@ -341,17 +341,17 @@ namespace Microsoft.Interop
             {
                 switch (typeInfo.RefKind)
                 {
-                    case RefKind.In:
+                    case ByRefMarshalKind.In:
                         modifiers.Add("in");
                         break;
-                    case RefKind.Ref:
+                    case ByRefMarshalKind.Ref:
                         modifiers.Add("ref");
                         break;
 
-                    case RefKind.Out:
+                    case ByRefMarshalKind.Out:
                         modifiers.Add("out");
                         break;
-                    case RefKind.RefReadOnlyParameter:
+                    case ByRefMarshalKind.RefReadOnlyParameter:
                         modifiers.Add("ref readonly");
                         break;
                     default:
@@ -371,11 +371,11 @@ namespace Microsoft.Interop
         {
             return typeInfo.RefKind switch
             {
-                RefKind.None => string.Empty,
-                RefKind.In => "in",
-                RefKind.Ref => "ref",
-                RefKind.Out => "out",
-                RefKind.RefReadOnlyParameter => "in",
+                ByRefMarshalKind.None => string.Empty,
+                ByRefMarshalKind.In => "in",
+                ByRefMarshalKind.Ref => "ref",
+                ByRefMarshalKind.Out => "out",
+                ByRefMarshalKind.RefReadOnlyParameter => "in",
                 _ => throw new NotImplementedException($"Support for some RefKind: {typeInfo.RefKind}")
             };
         }

@@ -37,26 +37,26 @@ namespace Microsoft.Interop
             switch (info)
             {
                 // Blittable primitives with no marshalling info or with a compatible [MarshalAs] attribute.
-                case { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_SByte }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.I1, _) }
-                    or { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_Byte }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.U1, _) }
-                    or { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_Int16 }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.I2, _) }
-                    or { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_UInt16 }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.U2, _) }
-                    or { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_Int32 }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.I4 or UnmanagedType.Error, _) }
-                    or { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_UInt32 }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.U4 or UnmanagedType.Error, _) }
-                    or { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_Int64 }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.I8, _) }
-                    or { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_UInt64 }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.U8, _) }
-                    or { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_IntPtr }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.SysInt, _) }
-                    or { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_UIntPtr }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.SysUInt, _) }
-                    or { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_Single }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.R4, _) }
-                    or { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_Double }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.R8, _) }:
+                case { ManagedType: WellKnownTypeInfo { SpecialType: WellKnownType.System_SByte }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.I1, _) }
+                    or { ManagedType: WellKnownTypeInfo { SpecialType: WellKnownType.System_Byte }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.U1, _) }
+                    or { ManagedType: WellKnownTypeInfo { SpecialType: WellKnownType.System_Int16 }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.I2, _) }
+                    or { ManagedType: WellKnownTypeInfo { SpecialType: WellKnownType.System_UInt16 }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.U2, _) }
+                    or { ManagedType: WellKnownTypeInfo { SpecialType: WellKnownType.System_Int32 }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.I4 or UnmanagedType.Error, _) }
+                    or { ManagedType: WellKnownTypeInfo { SpecialType: WellKnownType.System_UInt32 }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.U4 or UnmanagedType.Error, _) }
+                    or { ManagedType: WellKnownTypeInfo { SpecialType: WellKnownType.System_Int64 }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.I8, _) }
+                    or { ManagedType: WellKnownTypeInfo { SpecialType: WellKnownType.System_UInt64 }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.U8, _) }
+                    or { ManagedType: WellKnownTypeInfo { SpecialType: WellKnownType.System_IntPtr }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.SysInt, _) }
+                    or { ManagedType: WellKnownTypeInfo { SpecialType: WellKnownType.System_UIntPtr }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.SysUInt, _) }
+                    or { ManagedType: WellKnownTypeInfo { SpecialType: WellKnownType.System_Single }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.R4, _) }
+                    or { ManagedType: WellKnownTypeInfo { SpecialType: WellKnownType.System_Double }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.R8, _) }:
                     // TODO: Report the MarshalAs attribute as unnecessary
                     return ResolvedGenerator.Resolved(s_blittable.Bind(info, context));
 
                 // Enum with no marshalling info
                 case { ManagedType: EnumTypeInfo enumType, MarshallingAttributeInfo: NoMarshallingInfo }:
                     // Check that the underlying type is not bool or char. C# does not allow this, but ECMA-335 does.
-                    SpecialType underlyingSpecialType = enumType.UnderlyingType;
-                    if (underlyingSpecialType == SpecialType.System_Boolean || underlyingSpecialType == SpecialType.System_Char)
+                    WellKnownType underlyingSpecialType = enumType.UnderlyingType;
+                    if (underlyingSpecialType == WellKnownType.System_Boolean || underlyingSpecialType == WellKnownType.System_Char)
                     {
                         return ResolvedGenerator.NotSupported(info, context, new(info));
                     }
@@ -71,15 +71,15 @@ namespace Microsoft.Interop
                     return ResolvedGenerator.Resolved(s_blittable.Bind(info, context));
 
                 // Bool with marshalling info
-                case { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_Boolean }, MarshallingAttributeInfo: MarshalAsInfo(UnmanagedType.U1, _) }:
+                case { ManagedType: WellKnownTypeInfo { SpecialType: WellKnownType.System_Boolean }, MarshallingAttributeInfo: MarshalAsInfo(UnmanagedType.U1, _) }:
                     return ResolvedGenerator.Resolved(s_byteBool.Bind(info, context));
-                case { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_Boolean }, MarshallingAttributeInfo: MarshalAsInfo(UnmanagedType.I1, _) }:
+                case { ManagedType: WellKnownTypeInfo { SpecialType: WellKnownType.System_Boolean }, MarshallingAttributeInfo: MarshalAsInfo(UnmanagedType.I1, _) }:
                     return ResolvedGenerator.Resolved(s_signed_byteBool.Bind(info, context));
-                case { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_Boolean }, MarshallingAttributeInfo: MarshalAsInfo(UnmanagedType.U4, _) }:
+                case { ManagedType: WellKnownTypeInfo { SpecialType: WellKnownType.System_Boolean }, MarshallingAttributeInfo: MarshalAsInfo(UnmanagedType.U4, _) }:
                     return ResolvedGenerator.Resolved(s_winBool.Bind(info, context));
-                case { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_Boolean }, MarshallingAttributeInfo: MarshalAsInfo(UnmanagedType.I4 or UnmanagedType.Bool, _) }:
+                case { ManagedType: WellKnownTypeInfo { SpecialType: WellKnownType.System_Boolean }, MarshallingAttributeInfo: MarshalAsInfo(UnmanagedType.I4 or UnmanagedType.Bool, _) }:
                     return ResolvedGenerator.Resolved(s_signed_winBool.Bind(info, context));
-                case { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_Boolean }, MarshallingAttributeInfo: MarshalAsInfo(UnmanagedType.VariantBool, _) }:
+                case { ManagedType: WellKnownTypeInfo { SpecialType: WellKnownType.System_Boolean }, MarshallingAttributeInfo: MarshalAsInfo(UnmanagedType.VariantBool, _) }:
                     return ResolvedGenerator.Resolved(s_variantBool.Bind(info, context));
 
                 // Delegate types
@@ -91,7 +91,7 @@ namespace Microsoft.Interop
                     return ResolvedGenerator.Resolved(s_delegate.Bind(info, context));
 
                 // void
-                case { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_Void } }:
+                case { ManagedType: WellKnownTypeInfo { SpecialType: WellKnownType.System_Void } }:
                     return ResolvedGenerator.Resolved(s_forwarder.Bind(info, context));
 
                 default:

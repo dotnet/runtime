@@ -22,7 +22,7 @@ namespace Microsoft.Interop
 
         public ManagedTypeInfo AsNativeType(TypePositionInfo info)
         {
-            Debug.Assert(info.ManagedType is SpecialTypeInfo { SpecialType: SpecialType.System_Boolean });
+            Debug.Assert(info.ManagedType is WellKnownTypeInfo { SpecialType: WellKnownType.System_Boolean });
             return _nativeType;
         }
 
@@ -95,7 +95,7 @@ namespace Microsoft.Interop
         /// </summary>
         /// <param name="signed">True if the byte should be signed, otherwise false</param>
         public ByteBoolMarshaller(bool signed)
-            : base(signed ? SpecialTypeInfo.SByte : SpecialTypeInfo.Byte, trueValue: 1, falseValue: 0, compareToTrue: false)
+            : base(signed ? WellKnownTypeInfo.SByte : WellKnownTypeInfo.Byte, trueValue: 1, falseValue: 0, compareToTrue: false)
         {
         }
     }
@@ -113,7 +113,7 @@ namespace Microsoft.Interop
         /// </summary>
         /// <param name="signed">True if the int should be signed, otherwise false</param>
         public WinBoolMarshaller(bool signed)
-            : base(signed ? SpecialTypeInfo.Int32 : SpecialTypeInfo.UInt32, trueValue: 1, falseValue: 0, compareToTrue: false)
+            : base(signed ? WellKnownTypeInfo.Int32 : WellKnownTypeInfo.UInt32, trueValue: 1, falseValue: 0, compareToTrue: false)
         {
         }
     }
@@ -126,7 +126,7 @@ namespace Microsoft.Interop
         private const short VARIANT_TRUE = -1;
         private const short VARIANT_FALSE = 0;
         public VariantBoolMarshaller()
-            : base(SpecialTypeInfo.Int16, trueValue: VARIANT_TRUE, falseValue: VARIANT_FALSE, compareToTrue: true)
+            : base(WellKnownTypeInfo.Int16, trueValue: VARIANT_TRUE, falseValue: VARIANT_FALSE, compareToTrue: true)
         {
         }
     }

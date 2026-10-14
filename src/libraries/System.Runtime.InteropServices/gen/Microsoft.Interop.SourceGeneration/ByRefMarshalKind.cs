@@ -4,7 +4,7 @@
 namespace Microsoft.Interop;
 
 /// <summary>Describes how a signature element is passed by reference.</summary>
-public enum RefKind
+public enum ByRefMarshalKind
 {
     /// <summary>The element is passed by value.</summary>
     None,

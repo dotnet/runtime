@@ -1,9 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using RoslynRefKind = Microsoft.CodeAnalysis.RefKind;
+using Microsoft.CodeAnalysis;
 using RoslynScopedKind = Microsoft.CodeAnalysis.ScopedKind;
-using RoslynSpecialType = Microsoft.CodeAnalysis.SpecialType;
 
 namespace Microsoft.Interop;
 
@@ -12,39 +11,39 @@ public static class RoslynTypeExtensions
 {
     /// <summary>Maps the special types needed by the marshalling model.</summary>
     /// <param name="type">The compiler type classification.</param>
-    /// <returns>The corresponding classification, or <see cref="SpecialType.None"/> for a general type.</returns>
-    public static SpecialType ToInteropSpecialType(this RoslynSpecialType type) => type switch
+    /// <returns>The corresponding classification, or <see cref="WellKnownType.None"/> for a general type.</returns>
+    public static WellKnownType ToWellKnownType(this SpecialType type) => type switch
     {
-        RoslynSpecialType.System_Enum => SpecialType.System_Enum,
-        RoslynSpecialType.System_Void => SpecialType.System_Void,
-        RoslynSpecialType.System_Boolean => SpecialType.System_Boolean,
-        RoslynSpecialType.System_Char => SpecialType.System_Char,
-        RoslynSpecialType.System_SByte => SpecialType.System_SByte,
-        RoslynSpecialType.System_Byte => SpecialType.System_Byte,
-        RoslynSpecialType.System_Int16 => SpecialType.System_Int16,
-        RoslynSpecialType.System_UInt16 => SpecialType.System_UInt16,
-        RoslynSpecialType.System_Int32 => SpecialType.System_Int32,
-        RoslynSpecialType.System_UInt32 => SpecialType.System_UInt32,
-        RoslynSpecialType.System_Int64 => SpecialType.System_Int64,
-        RoslynSpecialType.System_UInt64 => SpecialType.System_UInt64,
-        RoslynSpecialType.System_Single => SpecialType.System_Single,
-        RoslynSpecialType.System_Double => SpecialType.System_Double,
-        RoslynSpecialType.System_String => SpecialType.System_String,
-        RoslynSpecialType.System_IntPtr => SpecialType.System_IntPtr,
-        RoslynSpecialType.System_UIntPtr => SpecialType.System_UIntPtr,
-        _ => SpecialType.None
+        SpecialType.System_Enum => WellKnownType.System_Enum,
+        SpecialType.System_Void => WellKnownType.System_Void,
+        SpecialType.System_Boolean => WellKnownType.System_Boolean,
+        SpecialType.System_Char => WellKnownType.System_Char,
+        SpecialType.System_SByte => WellKnownType.System_SByte,
+        SpecialType.System_Byte => WellKnownType.System_Byte,
+        SpecialType.System_Int16 => WellKnownType.System_Int16,
+        SpecialType.System_UInt16 => WellKnownType.System_UInt16,
+        SpecialType.System_Int32 => WellKnownType.System_Int32,
+        SpecialType.System_UInt32 => WellKnownType.System_UInt32,
+        SpecialType.System_Int64 => WellKnownType.System_Int64,
+        SpecialType.System_UInt64 => WellKnownType.System_UInt64,
+        SpecialType.System_Single => WellKnownType.System_Single,
+        SpecialType.System_Double => WellKnownType.System_Double,
+        SpecialType.System_String => WellKnownType.System_String,
+        SpecialType.System_IntPtr => WellKnownType.System_IntPtr,
+        SpecialType.System_UIntPtr => WellKnownType.System_UIntPtr,
+        _ => WellKnownType.None
     };
 
     /// <summary>Converts a compiler reference kind into a signature reference kind.</summary>
     /// <param name="kind">The compiler reference kind.</param>
     /// <returns>The corresponding signature reference kind.</returns>
-    public static RefKind ToInteropRefKind(this RoslynRefKind kind) => kind switch
+    public static ByRefMarshalKind ToByRefMarshalKind(this RefKind kind) => kind switch
     {
-        RoslynRefKind.None => RefKind.None,
-        RoslynRefKind.Ref => RefKind.Ref,
-        RoslynRefKind.Out => RefKind.Out,
-        RoslynRefKind.In => RefKind.In,
-        RoslynRefKind.RefReadOnlyParameter => RefKind.RefReadOnlyParameter,
+        RefKind.None => ByRefMarshalKind.None,
+        RefKind.Ref => ByRefMarshalKind.Ref,
+        RefKind.Out => ByRefMarshalKind.Out,
+        RefKind.In => ByRefMarshalKind.In,
+        RefKind.RefReadOnlyParameter => ByRefMarshalKind.RefReadOnlyParameter,
         _ => throw new UnreachableException($"Unexpected reference kind: {kind}.")
     };
 
