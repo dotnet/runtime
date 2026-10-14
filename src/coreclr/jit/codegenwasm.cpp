@@ -734,7 +734,7 @@ void CodeGen::genEmitStartBlock(BasicBlock* block)
             }
             else if (interval->IsTry() && m_compiler->IsNativeAot())
             {
-                // Preserve interval nesting without CoreCLR's catch-resumption tag during NativeAOT bringup.
+                // TODO-NativeAOT-WASM: Preserve interval nesting without CoreCLR's catch-resumption tag during NativeAOT bringup.
                 GetEmitter()->emitIns_BlockTy(INS_block);
             }
             else if (interval->IsTry())
