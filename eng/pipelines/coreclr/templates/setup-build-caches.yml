@@ -26,15 +26,15 @@ steps:
     # configurations without competing for the same immutable cache key.
     # Roslyn's own deterministic key accounts for legs that override the
     # matrix configuration in their build arguments.
+    # Start a new cache generation so unpruned snapshots are not restored.
     - task: Cache@2
       displayName: Roslyn compiler cache
       continueOnError: true
       inputs:
-        key: roslyn | v2 | ${{ parameters.osGroup }}${{ parameters.osSubgroup }} | ${{ parameters.archType }} | ${{ parameters.nameSuffix }} | "$(buildConfigUpper)" | "$(Build.BuildId)"
+        key: roslyn | v3 | ${{ parameters.osGroup }}${{ parameters.osSubgroup }} | ${{ parameters.archType }} | ${{ parameters.nameSuffix }} | "$(buildConfigUpper)" | "$(Build.BuildId)"
         path: $(Pipeline.Workspace)/.roslyn-cache
         restoreKeys: |
-          roslyn | v2 | ${{ parameters.osGroup }}${{ parameters.osSubgroup }} | ${{ parameters.archType }} | ${{ parameters.nameSuffix }} | "$(buildConfigUpper)"
-          roslyn | v1 | ${{ parameters.osGroup }}${{ parameters.osSubgroup }} | ${{ parameters.archType }} | ${{ parameters.nameSuffix }}
+          roslyn | v3 | ${{ parameters.osGroup }}${{ parameters.osSubgroup }} | ${{ parameters.archType }} | ${{ parameters.nameSuffix }} | "$(buildConfigUpper)"
 
     - ${{ if ne(parameters.osGroup, 'windows') }}:
       - script: |
