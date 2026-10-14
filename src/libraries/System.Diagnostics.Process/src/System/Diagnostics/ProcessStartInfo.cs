@@ -449,14 +449,28 @@ namespace System.Diagnostics
             {
                 throw new InvalidOperationException(SR.ArgumentAndArgumentListInitialized);
             }
+
+            // Per .NET's published security baselines, process arguments are trusted, and callers are responsible
+            // for their contents. The checks below are purely hygienic and should not be misconstrued as a primary
+            // security mitigation.
+            if (Arguments.Contains('\0'))
+            {
+                throw new ArgumentException(SR.Argument_NullCharInArgument, nameof(Arguments));
+            }
+
             if (HasArgumentList)
             {
                 int argumentCount = ArgumentList.Count;
                 for (int i = 0; i < argumentCount; i++)
                 {
-                    if (ArgumentList[i] is null)
+                    string? argument = ArgumentList[i];
+                    if (argument is null)
                     {
                         throw new ArgumentNullException($"ArgumentList[{i}]");
+                    }
+                    else if (argument.Contains('\0'))
+                    {
+                        throw new ArgumentException(SR.Argument_NullCharInArgument, $"ArgumentList[{i}]");
                     }
                 }
             }

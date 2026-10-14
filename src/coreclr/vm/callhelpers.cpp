@@ -139,68 +139,6 @@ void CopyReturnedFpStructFromRegisters(void* dest, UINT64 returnRegs[2], FpStruc
 }
 #endif // TARGET_RISCV64 || TARGET_LOONGARCH64
 
-// Helper for VM->managed calls with simple signatures.
-void* DispatchCallSimple(
-    SIZE_T *pSrc,
-    DWORD numStackSlotsToCopy,
-    PCODE pTargetAddress,
-    BOOL fCriticalCall)
-{
-    CONTRACTL
-    {
-        GC_TRIGGERS;
-        THROWS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-#ifdef DEBUGGING_SUPPORTED
-    if (CORDebuggerTraceCall())
-        g_pDebugInterface->TraceCall((const BYTE *)pTargetAddress);
-#endif // DEBUGGING_SUPPORTED
-
-    CallDescrData callDescrData;
-
-#ifdef CALLDESCR_ARGREGS
-    callDescrData.pSrc = pSrc + NUM_ARGUMENT_REGISTERS;
-    callDescrData.numStackSlots = numStackSlotsToCopy;
-    callDescrData.pArgumentRegisters = (ArgumentRegisters *)pSrc;
-#else
-    callDescrData.pSrc = pSrc;
-    callDescrData.numStackSlots = numStackSlotsToCopy;
-#endif
-
-#ifdef CALLDESCR_RETBUFFARGREG
-    UINT64 retBuffArgPlaceholder = 0;
-    callDescrData.pRetBuffArg = &retBuffArgPlaceholder;
-#endif
-
-#ifdef CALLDESCR_FPARGREGS
-    callDescrData.pFloatArgumentRegisters = NULL;
-#endif
-#ifdef CALLDESCR_REGTYPEMAP
-    callDescrData.dwRegTypeMap = 0;
-#endif
-    callDescrData.fpReturnSize = 0;
-    callDescrData.pTarget = pTargetAddress;
-
-#ifdef TARGET_WASM
-    static_assert(2*sizeof(ARGHOLDER_TYPE) == INTERP_STACK_SLOT_SIZE);
-    callDescrData.nArgsSize = numStackSlotsToCopy * sizeof(ARGHOLDER_TYPE)*2;
-    callDescrData.hasRetBuff = false;
-    LPVOID pOrigSrc = callDescrData.pSrc;
-    callDescrData.pSrc = (LPVOID)_alloca(callDescrData.nArgsSize);
-    for (int i = 0; i < numStackSlotsToCopy; i++)
-    {
-        ((ARGHOLDER_TYPE*)callDescrData.pSrc)[i*2] = ((ARGHOLDER_TYPE*)pOrigSrc)[i];
-    }
-#endif // TARGET_WASM
-
-    CallDescrWorkerWithHandler(&callDescrData, fCriticalCall);
-
-    return *(void **)(&callDescrData.returnValue);
-}
-
 #ifdef CALLDESCR_REGTYPEMAP
 //*******************************************************************************
 void FillInRegTypeMap(int argOffset, CorElementType typ, BYTE * pMap)
@@ -460,6 +398,7 @@ void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *
     #ifdef ENREGISTERED_PARAMTYPE_MAXSIZE
                         if (m_argIt.IsArgPassedByRef())
                         {
+                            _ASSERTE(!GCHeapUtilities::GetGCHeap()->IsHeapPointer(pSrc));
                             *(PVOID*)pDest = pSrc;
                         }
                         else
@@ -503,6 +442,7 @@ void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *
 #ifdef TARGET_WASM
     callDescrData.nArgsSize = nStackBytes;
     callDescrData.hasRetBuff = false;
+    callDescrData.pTransitionBlock = (TransitionBlock*)pTransitionBlock;
     _ASSERTE(!m_argIt.HasRetBuffArg());
 #endif // TARGET_WASM
 

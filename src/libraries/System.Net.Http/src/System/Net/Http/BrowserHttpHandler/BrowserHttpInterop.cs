@@ -139,14 +139,15 @@ namespace System.Net.Http
 
         public static async Task CancellationHelper(Task promise, CancellationToken cancellationToken, JSObject jsController)
         {
-            Http.CancellationHelper.ThrowIfCancellationRequested(cancellationToken);
-
             if (promise.IsCompletedSuccessfully)
             {
+                Http.CancellationHelper.ThrowIfCancellationRequested(cancellationToken);
                 return;
             }
             try
             {
+                // the promise is already in flight, so it has to be awaited even when the token is
+                // already cancelled - otherwise its later rejection is never observed
                 using (var operationRegistration = cancellationToken.Register(static s =>
                 {
                     (Task _promise, JSObject _jsController) = ((Task, JSObject))s!;
@@ -159,6 +160,7 @@ namespace System.Net.Http
                 {
                     await promise.ConfigureAwait(false);
                 }
+                Http.CancellationHelper.ThrowIfCancellationRequested(cancellationToken);
             }
             catch (OperationCanceledException oce) when (cancellationToken.IsCancellationRequested)
             {
@@ -181,9 +183,9 @@ namespace System.Net.Http
 
         public static async Task<T> CancellationHelper<T>(Task<T> promise, CancellationToken cancellationToken, JSObject jsController)
         {
-            Http.CancellationHelper.ThrowIfCancellationRequested(cancellationToken);
             if (promise.IsCompletedSuccessfully)
             {
+                Http.CancellationHelper.ThrowIfCancellationRequested(cancellationToken);
                 return promise.Result;
             }
             await CancellationHelper((Task)promise, cancellationToken, jsController).ConfigureAwait(false);

@@ -666,9 +666,9 @@ namespace Internal.Runtime.Augments
 
         private static TypeLoaderCallbacks s_typeLoaderCallbacks;
 
-        public static object CreateThunksHeap(IntPtr commonStubAddress)
+        public static object CreateThunksHeap()
         {
-            return ThunksHeap.CreateThunksHeap(commonStubAddress);
+            return ThunksHeap.CreateThunksHeap();
         }
 
         public static IntPtr AllocateThunk(object thunksHeap)

@@ -1664,8 +1664,6 @@ private:
 
     PER_HEAP_ISOLATED_METHOD void fire_committed_usage_event();
 
-    PER_HEAP_ISOLATED_METHOD void walk_read_only_segment(heap_segment *seg, void *pvContext, object_callback_func pfnMethodTable, object_callback_func pfnObjRef);
-
     PER_HEAP_ISOLATED_METHOD int get_plan_gen_num (int gen_number);
 
     // region is only needed for regions and gen is only needed otherwise for these
@@ -1794,8 +1792,6 @@ private:
                                                      , int number_of_heaps
 #endif //MULTIPLE_HEAPS
         );
-
-    PER_HEAP_ISOLATED_METHOD void shutdown_gc();
 
     PER_HEAP_ISOLATED_METHOD void suspend_EE ();
     PER_HEAP_ISOLATED_METHOD void restart_EE ();
@@ -2251,11 +2247,7 @@ private:
                                                         uint64_t loh_size,
                                                         BOOL disallow_full_blocking);
 
-    PER_HEAP_METHOD BOOL loh_allocated_for_no_gc();
-
     PER_HEAP_ISOLATED_METHOD void release_no_gc_loh_segments();
-
-    PER_HEAP_ISOLATED_METHOD void thread_no_gc_loh_segments();
 
     PER_HEAP_METHOD void check_and_set_no_gc_oom();
 
@@ -2511,7 +2503,6 @@ private:
     PER_HEAP_ISOLATED_METHOD void reset_write_watch_for_gc_heap(void* base_address, size_t region_size);
     PER_HEAP_ISOLATED_METHOD void get_write_watch_for_gc_heap(bool reset, void *base_address, size_t region_size, void** dirty_pages, uintptr_t* dirty_page_count_ref, bool is_runtime_suspended);
     PER_HEAP_METHOD void switch_one_quantum();
-    PER_HEAP_METHOD void reset_ww_by_chunk (uint8_t* start_address, size_t total_reset_size);
     PER_HEAP_METHOD void switch_on_reset (BOOL concurrent_p, size_t* current_total_reset_size, size_t last_reset_size);
     PER_HEAP_METHOD void reset_write_watch (BOOL concurrent_p);
 #endif //BACKGROUND_GC

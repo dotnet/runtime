@@ -17,6 +17,16 @@ public static class WasmWebcilModule
         return left + right;
     }
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void FoldableBodyOne()
+    {
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void FoldableBodyTwo()
+    {
+    }
+
     // Reads static data, which forces the JIT to materialize the imageBase address via a
     // 'global.get' of the wasm imageBase well-known global.
     public static int SumStaticData(int index)
@@ -49,7 +59,20 @@ public static class WasmWebcilModule
     }
 
     [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
-    public static int CatchException(int value)
+    public static int CatchExceptionOne(int value)
+    {
+        try
+        {
+            return 100 / value;
+        }
+        catch (DivideByZeroException)
+        {
+            return -1;
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
+    public static int CatchExceptionTwo(int value)
     {
         try
         {

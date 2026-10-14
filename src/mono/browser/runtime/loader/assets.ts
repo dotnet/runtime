@@ -628,8 +628,7 @@ function download_resource (asset: AssetEntryInternal): LoadingResource {
             }
 
             resourcesLoaded++;
-            if (loaderHelpers.onDownloadResourceProgress)
-                loaderHelpers.onDownloadResourceProgress(resourcesLoaded, totalResources.size);
+            loaderHelpers.callbacks.downloadResourceProgress?.(resourcesLoaded, totalResources.size);
         });
         return response;
     } catch (err) {

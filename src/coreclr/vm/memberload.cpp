@@ -1,14 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
-// File: memberload.cpp
-//
-
-
-//
-
-//
-// ============================================================================
 
 #include "common.h"
 #include "clsload.hpp"
@@ -1367,33 +1358,6 @@ MemberLoader::FindMethodByName(MethodTable * pMT, LPCUTF8 pszName, FM_Flags flag
 
 //*******************************************************************************
 MethodDesc *
-MemberLoader::FindPropertyMethod(MethodTable * pMT, LPCUTF8 pszName, EnumPropertyMethods Method, FM_Flags flags)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        PRECONDITION(Method < 2);
-    } CONTRACTL_END;
-
-    // The format strings for the getter and setter. These must stay in synch with the
-    // EnumPropertyMethods enum defined in class.h
-    static const LPCUTF8 aFormatStrings[] =
-    {
-        "get_%s",
-        "set_%s"
-    };
-
-    CQuickBytes qbMethName;
-    size_t len = strlen(pszName) + strlen(aFormatStrings[Method]) + 1;
-    LPUTF8 strMethName = (LPUTF8) qbMethName.AllocThrows(len);
-    sprintf_s(strMethName, len, aFormatStrings[Method], pszName);
-
-    return FindMethodByName(pMT, strMethName, flags);
-}
-
-//*******************************************************************************
-MethodDesc *
 MemberLoader::FindEventMethod(MethodTable * pMT, LPCUTF8 pszName, EnumEventMethods Method, FM_Flags flags)
     {
     CONTRACTL {
@@ -1404,7 +1368,7 @@ MemberLoader::FindEventMethod(MethodTable * pMT, LPCUTF8 pszName, EnumEventMetho
     } CONTRACTL_END;
 
     // The format strings for the getter and setter. These must stay in synch with the
-    // EnumPropertyMethods enum defined in class.h
+    // EnumEventMethods enum defined in memberload.h
     static const LPCUTF8 aFormatStrings[] =
     {
         "add_%s",

@@ -132,7 +132,7 @@ namespace System.Runtime.Serialization.DataContracts
                 // Setting XmlName might be redundant. But I don't want to miss an edge case.
                 _baseContract.XmlName = baseTypeName;
                 ImportBaseType(baseType);
-                IsFlags = type.IsDefined(Globals.TypeOfFlagsAttribute, false);
+                IsFlags = type.IsDefined(typeof(FlagsAttribute), false);
                 ImportDataMembers();
 
                 XmlDictionary dictionary = new XmlDictionary(2 + Members.Count);
@@ -208,7 +208,7 @@ namespace System.Runtime.Serialization.DataContracts
 
             private void ImportBaseType(Type baseType)
             {
-                _isULong = (baseType == Globals.TypeOfULong);
+                _isULong = (baseType == typeof(ulong));
             }
 
             [MemberNotNull(nameof(_members))]
@@ -226,7 +226,7 @@ namespace System.Runtime.Serialization.DataContracts
                     bool enumMemberValid = false;
                     if (_hasDataContract)
                     {
-                        object[] memberAttributes = field.GetCustomAttributes(Globals.TypeOfEnumMemberAttribute, false).ToArray();
+                        object[] memberAttributes = field.GetCustomAttributes(typeof(EnumMemberAttribute), false).ToArray();
                         if (memberAttributes != null && memberAttributes.Length > 0)
                         {
                             if (memberAttributes.Length > 1)
@@ -247,7 +247,7 @@ namespace System.Runtime.Serialization.DataContracts
                             enumMemberValid = true;
                         }
 
-                        object[] dataMemberAttributes = field.GetCustomAttributes(Globals.TypeOfDataMemberAttribute, false).ToArray();
+                        object[] dataMemberAttributes = field.GetCustomAttributes(typeof(DataMemberAttribute), false).ToArray();
                         if (dataMemberAttributes != null && dataMemberAttributes.Length > 0)
                             ThrowInvalidDataContractException(SR.Format(SR.DataMemberOnEnumField, DataContract.GetClrTypeFullName(field.DeclaringType!), field.Name));
                     }
