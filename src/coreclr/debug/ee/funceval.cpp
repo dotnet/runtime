@@ -27,7 +27,7 @@
 
 #ifndef DACCESS_COMPILE
 
-MethodDesc* g_pDebuggerInvokeFunctionMethodDesc = nullptr;
+extern MethodDesc* g_pDebuggerInvokeFunctionMethodDesc;
 
 // Bootstrap protection must precede the first managed entry, including metadata loading
 // and thunk generation. Objects, possible interior values, and writable argument homes

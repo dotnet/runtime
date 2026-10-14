@@ -20,10 +20,9 @@
 
 extern MethodDesc* g_pThreadStartCallbackMethodDesc;
 extern MethodDesc* g_pGCRunFinalizersMethodDesc;
-// The debugger func-eval implementation is not linked on WebAssembly.
-#if defined(DEBUGGING_SUPPORTED) && !defined(TARGET_WASM)
+#ifdef DEBUGGING_SUPPORTED
 extern MethodDesc* g_pDebuggerInvokeFunctionMethodDesc;
-#endif // DEBUGGING_SUPPORTED && !TARGET_WASM
+#endif // DEBUGGING_SUPPORTED
 
 #if defined(TARGET_X86)
 #define USE_CURRENT_CONTEXT_IN_FILTER
@@ -73,6 +72,10 @@ inline void RestoreNonvolatileRegisterPointers(PT_KNONVOLATILE_CONTEXT_POINTERS 
 }
 #endif
 #ifndef DACCESS_COMPILE
+
+#ifdef DEBUGGING_SUPPORTED
+MethodDesc* g_pDebuggerInvokeFunctionMethodDesc = nullptr;
+#endif // DEBUGGING_SUPPORTED
 
 // o Functions and funclets are tightly associated.  In fact, they are laid out in contiguous memory.
 //   They also present some interesting issues with respect to EH because we will see callstacks with
@@ -4003,9 +4006,9 @@ CLR_BOOL SfiNextWorker(StackFrameIterator* pThis, uint* uExCollideClauseIdx, CLR
                     (pMethodDesc == g_pEnvironmentCallEntryPointMethodDesc ||
                      pMethodDesc == g_pThreadStartCallbackMethodDesc ||
                      pMethodDesc == g_pGCRunFinalizersMethodDesc
-#if defined(DEBUGGING_SUPPORTED) && !defined(TARGET_WASM)
+#ifdef DEBUGGING_SUPPORTED
                      || pMethodDesc == VolatileLoad(&g_pDebuggerInvokeFunctionMethodDesc)
-#endif // DEBUGGING_SUPPORTED && !TARGET_WASM
+#endif // DEBUGGING_SUPPORTED
                      ))
                 {
                     // Runtime-invoked UCO entrypoint calls should behave like the
