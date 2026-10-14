@@ -12,4 +12,6 @@ namespace comhost_test
     bool errorinfo(const pal::string_t &comhost_path, const pal::string_t &clsid_str, int count);
 
     bool typelib(const pal::string_t &comhost_path, int count);
+
+    bool load_context(const std::vector<pal::string_t> &comhost_paths, const std::vector<pal::string_t> &clsid_strings);
 }

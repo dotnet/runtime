@@ -151,7 +151,7 @@ namespace System.Net.Mail.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser, "Not passing as internal System.Net.Mail.MailWriter stripped from build")]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi, "Not passing as internal System.Net.Mail.MailWriter stripped from build")]
         public void SendMailMessageTest()
         {
             string expected = @"X-Sender: from@example.com
@@ -223,7 +223,7 @@ blah blah
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser, "Not passing as internal System.Net.Mail.MailWriter stripped from build")]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi, "Not passing as internal System.Net.Mail.MailWriter stripped from build")]
         public void SentSpecialLengthMailAttachment_Base64Decode_Success()
         {
             // The special length follows pattern: (3N - 1) * 0x4400 + 1

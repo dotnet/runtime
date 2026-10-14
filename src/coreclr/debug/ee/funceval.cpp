@@ -1535,7 +1535,9 @@ static void GCProtectAllPassedArgs(DebuggerEval *pDE,
                 }
                 else
                 {
-                    pObjectRefArray[currArgIndex] = *((OBJECTREF *)CORDB_ADDRESS_TO_PTR(pFEAD->argAddr));
+                    // The address can be an interpreter stack slot, which is not viewed through a checked OBJECTREF
+                    // (see LOCAL_VAR_OBJREF in interpexec.cpp): read it as a raw pointer.
+                    pObjectRefArray[currArgIndex] = ObjectToOBJECTREF(*((Object **)CORDB_ADDRESS_TO_PTR(pFEAD->argAddr)));
 
                     INDEBUG(pDataLocationArray[currArgIndex] |= DL_ObjectRefArray);
                 }
@@ -2813,18 +2815,27 @@ void PackArgumentArray(DebuggerEval *pDE,
         size = max(size, (unsigned)ENREGISTERED_RETURNTYPE_MAXSIZE);
 #endif
 
-        BYTE * pTemp = new (interopsafe) BYTE[ALIGN_UP(sizeof(ValueClassInfo), 8) + size];
+        LPVOID pData;
+        if (RetValueType.IsByRefLike())
+        {
+            pData = pDE->CreateExternalMemory(RetValueType.GetMethodTable(), size);
+            memset(pData, 0, size);
+        }
+        else
+        {
+            BYTE * pTemp = new (interopsafe) BYTE[ALIGN_UP(sizeof(ValueClassInfo), 8) + size];
 
-        ValueClassInfo * pValueClassInfo = (ValueClassInfo *)pTemp;
-        LPVOID pData = pTemp + ALIGN_UP(sizeof(ValueClassInfo), 8);
+            ValueClassInfo * pValueClassInfo = (ValueClassInfo *)pTemp;
+            pData = pTemp + ALIGN_UP(sizeof(ValueClassInfo), 8);
 
-        memset(pData, 0, size);
+            memset(pData, 0, size);
 
-        pValueClassInfo->pData = pData;
-        pValueClassInfo->pMT = RetValueType.GetMethodTable();
+            pValueClassInfo->pData = pData;
+            pValueClassInfo->pMT = RetValueType.GetMethodTable();
 
-        pValueClassInfo->pNext = *ppProtectedValueClasses;
-        *ppProtectedValueClasses = pValueClassInfo;
+            pValueClassInfo->pNext = *ppProtectedValueClasses;
+            *ppProtectedValueClasses = pValueClassInfo;
+        }
 
         pArguments[currArgSlot++] = PtrToArgSlot(pData);
         *ppRetValue = pData;
@@ -2906,7 +2917,7 @@ void UnpackFuncEvalResult(DebuggerEval *pDE,
         pDE->m_result[0] = ObjToArgSlot(newObj);
         pDE->m_retValueBoxing = Debugger::AllBoxed;
     }
-    else if (!RetValueType.IsNull())
+    else if (!RetValueType.IsNull() && !RetValueType.IsByRefLike())
     {
         LOG((LF_CORDB, LL_EVERYTHING, "FuncEval call is saving a boxed VC return value.\n"));
 
@@ -2939,10 +2950,16 @@ void UnpackFuncEvalResult(DebuggerEval *pDE,
     }
     else
     {
-        //
-        // Other FuncEvals return primitives as unboxed.
-        //
-        pDE->m_retValueBoxing = Debugger::OnlyPrimitivesUnboxed;
+        pDE->m_retValueBoxing = pDE->m_resultType.IsByRefLike()
+            ? Debugger::NoValueTypeBoxing
+            : Debugger::OnlyPrimitivesUnboxed;
+
+        if (pDE->m_resultType.IsByRefLike() && pDE->m_externalMemoryOwner == NULL)
+        {
+            SIZE_T size = pDE->m_resultType.GetMethodTable()->GetNumInstanceFieldBytes();
+            BYTE *pResult = pDE->CreateExternalMemory(pDE->m_resultType.GetMethodTable(), size);
+            memcpy(pResult, pDE->m_result, size);
+        }
     }
 
     LOG((LF_CORDB, LL_INFO10000, "FuncEval call has saved the return value.\n"));
@@ -2955,7 +2972,7 @@ void UnpackFuncEvalResult(DebuggerEval *pDE,
     CorElementType retClassET = pDE->m_resultType.GetSignatureCorElementType();
 
     if ((pDE->m_retValueBoxing == Debugger::AllBoxed) ||
-        !RetValueType.IsNull() ||
+        (!RetValueType.IsNull() && !RetValueType.IsByRefLike()) ||
         IsElementTypeSpecial(retClassET))
     {
         LOG((LF_CORDB, LL_EVERYTHING, "Creating strong handle for boxed DoNormalFuncEval result.\n"));
@@ -3338,7 +3355,7 @@ static void DoNormalFuncEval( DebuggerEval *pDE,
     OBJECTREF retObject = NULL;
     GCPROTECT_BEGIN(retObject);
 
-    if ((pDE->m_evalType != DB_IPCE_FET_NEW_OBJECT) && !RetValueType.IsNull())
+    if ((pDE->m_evalType != DB_IPCE_FET_NEW_OBJECT) && !RetValueType.IsNull() && !RetValueType.IsByRefLike())
     {
         ValidateFuncEvalReturnType(pDE->m_evalType, RetValueType.GetMethodTable());
         RetValueType.GetMethodTable()->EnsureInstanceActive();

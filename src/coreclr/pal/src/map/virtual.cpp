@@ -1708,20 +1708,11 @@ void ExecutableMemoryAllocator::TryReserveInitialMemory()
     if (m_startAddress == nullptr)
     {
         // We were not able to reserve any memory near libcoreclr. Try to reserve approximately 2 GB of address space somewhere
-        // anyway:
-        //   - This sets aside address space that can be used for executable code, such that jumps/calls between such code may
-        //     continue to use short relative addresses instead of long absolute addresses that would currently require jump
-        //     stubs.
-        //   - The inability to allocate memory in a specific range for jump stubs is an unrecoverable problem. This reservation
-        //     would mitigate such issues that can become prevalent depending on which security features are enabled and to what
-        //     extent, such as in particular, PaX's RANDMMAP:
-        //       - https://en.wikibooks.org/wiki/Grsecurity/Appendix/Grsecurity_and_PaX_Configuration_Options
-        //   - Jump stubs for executable code residing in this region can request memory from this allocator
-        //   - Native images can be loaded into this address space, including any jump stubs that are required for its helper
-        //     table. This satisfies the vast majority of practical cases where the total amount of loaded native image memory
-        //     does not exceed approximately 2 GB.
-        //   - The code heap allocator for the JIT can allocate from this address space. Beyond this reservation, one can use
-        //     the DOTNET_CodeHeapReserveForJumpStubs environment variable to reserve space for jump stubs.
+        // anyway.
+        // 
+        // This sets aside address space that can be used for executable code, such that jumps/calls between such code may
+        // continue to use short relative addresses instead of long absolute addresses that would currently require jump
+        // stubs.
         sizeOfAllocation = (initialReserveLimit != -1) ? initialReserveLimit : MaxExecutableMemorySize;
         m_startAddress = ReserveVirtualMemory(pthrCurrent, nullptr, sizeOfAllocation, MEM_RESERVE_EXECUTABLE);
         if (m_startAddress == nullptr)

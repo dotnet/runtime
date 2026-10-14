@@ -852,7 +852,7 @@ struct StrongHandleHolderTraits final
 {
     using Type = OBJECTHANDLE;
     static constexpr Type Default() { return NULL; }
-    static void Free(Type handle)
+    static void Free(Type handle) noexcept
     {
         WRAPPER_NO_CONTRACT;
         if (handle != NULL)

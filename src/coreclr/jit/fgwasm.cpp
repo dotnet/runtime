@@ -2022,6 +2022,61 @@ PhaseStatus Compiler::fgWasmControlFlow()
             }
         }
     }
+
+    // Verify that an adjacent forward edge that cannot fall through, because a Try or
+    // ExnRefWrapper interval ends at its target (see BasicBlock::CanRemoveJumpToTarget),
+    // has a plain Block interval enclosing the source and ending at the target, so the
+    // explicit branch codegen emits has a label to bind to. For example, a callfinally
+    // whose continuation follows the end of a try_table:
+    //
+    //   block                ;; Block interval ending at the continuation
+    //     try_table ...
+    //       ...
+    //       call_indirect    ;; call the finally
+    //       br 1             ;; branch to the continuation
+    //     end                ;; end of try_table
+    //     unreachable        ;; fall-through from the try_table would trap here
+    //   end
+    //   ...                  ;; continuation
+    //
+    for (unsigned cursor = 0; cursor < numBlocks; cursor++)
+    {
+        BasicBlock* const block = initialLayout[cursor];
+        BasicBlock* const next  = initialLayout[cursor + 1];
+
+        bool const fallsToNext = (block->KindIs(BBJ_ALWAYS, BBJ_CALLFINALLYRET) && block->TargetIs(next)) ||
+                                 (block->KindIs(BBJ_COND) && block->FalseTargetIs(next));
+        if (!fallsToNext)
+        {
+            continue;
+        }
+
+        bool endsTryOrWrapper = false;
+        bool hasBlockTarget   = false;
+        for (WasmInterval* const interval : *fgWasmIntervals)
+        {
+            if (interval->End() != (cursor + 1))
+            {
+                continue;
+            }
+
+            if (interval->IsTry() || interval->IsExnRefWrapper())
+            {
+                endsTryOrWrapper = true;
+            }
+            else if (!interval->IsLoop() && (interval->Start() <= cursor))
+            {
+                hasBlockTarget = true;
+            }
+        }
+
+        if (endsTryOrWrapper && !hasBlockTarget)
+        {
+            JITDUMP(FMT_BB "[%u] -> " FMT_BB "[%u] crosses a Try/ExnRefWrapper end without a Block target\n",
+                    block->bbNum, cursor, next->bbNum, cursor + 1);
+            assert(!"Wasm fall-through across a Try/ExnRefWrapper end needs a Block target");
+        }
+    }
 #endif
 
     // -----------------------------------------------

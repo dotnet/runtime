@@ -47,6 +47,7 @@ namespace System.Net.Security.Tests
                     ClientCertificates = certBundle,
                     EnabledSslProtocols = SslProtocols.Tls12,
                     CertificateRevocationCheckMode = X509RevocationMode.NoCheck,
+                    AllowTlsResume = false,
                     AllowRenegotiation = true
                 };
 

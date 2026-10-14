@@ -36,9 +36,9 @@ namespace ILCompiler
         /// </summary>
         private ReadyToRunCompilationModuleGroupBase _compilationGroup;
 
-        public ReadyToRunMetadataFieldLayoutAlgorithm()
+        public ReadyToRunMetadataFieldLayoutAlgorithm(bool targetIsSingleThreaded)
         {
-            _moduleFieldLayoutMap = new ModuleFieldLayoutMap();
+            _moduleFieldLayoutMap = new ModuleFieldLayoutMap(targetIsSingleThreaded);
         }
 
         /// <summary>
@@ -67,6 +67,16 @@ namespace ILCompiler
         /// </summary>
         private class ModuleFieldLayoutMap : LockFreeReaderHashtable<EcmaModule, ModuleFieldLayout>
         {
+            /// <summary>
+            /// When true, the target runtime lays out [ThreadStatic] fields as regular statics.
+            /// </summary>
+            private readonly bool _targetIsSingleThreaded;
+
+            public ModuleFieldLayoutMap(bool targetIsSingleThreaded)
+            {
+                _targetIsSingleThreaded = targetIsSingleThreaded;
+            }
+
             protected override bool CompareKeyToValue(EcmaModule key, ModuleFieldLayout value)
             {
                 return key == value.Module;
@@ -431,12 +441,16 @@ namespace ILCompiler
 
             /// <summary>
             /// Try to locate the ThreadStatic custom attribute on the field (much like EcmaField.cs does in the method InitializeFieldFlags).
+            /// Single-threaded targets lay out thread statics as regular statics, so this always returns false for them.
             /// </summary>
             /// <param name="fieldDef">Field definition</param>
             /// <param name="metadataReader">Metadata reader for the module</param>
-            /// <returns>true when the field is marked with the ThreadStatic custom attribute</returns>
-            private static bool IsFieldThreadStatic(in FieldDefinition fieldDef, MetadataReader metadataReader)
+            /// <returns>true when the field is marked with the ThreadStatic custom attribute and the target lays it out as thread-static</returns>
+            private bool IsFieldThreadStatic(in FieldDefinition fieldDef, MetadataReader metadataReader)
             {
+                if (_targetIsSingleThreaded)
+                    return false;
+
                 return !metadataReader.GetCustomAttributeHandle(fieldDef.GetCustomAttributes(), "System", "ThreadStaticAttribute").IsNil;
             }
 

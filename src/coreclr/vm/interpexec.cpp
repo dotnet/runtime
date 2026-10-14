@@ -887,6 +887,15 @@ static void InterpBreakpoint(const int32_t *ip, const InterpMethodContextFrame *
 #define LOCAL_VAR_ADDR(offset,type) ((type*)(stack + (offset)))
 #define LOCAL_VAR(offset,type) (*LOCAL_VAR_ADDR(offset, type))
 
+// Object references in interpreter stack slots are reported to the GC through the interpreter's GC
+// info and are copied, overwritten and reused without the native OBJECTREF lifecycle. The checked
+// OBJECTREF tracking of debug builds (Thread::dangerousObjRefs) is keyed by address and cannot follow
+// those lifetimes, so a slot is never viewed through a checked OBJECTREF: the copy constructor and
+// operator-> validate the address they read from. Slots are read and written as raw Object pointers
+// and converted to and from native OBJECTREF locals, which keep the usual checking and protection.
+#define LOCAL_VAR_OBJREF(offset) ObjectToOBJECTREF(LOCAL_VAR(offset, Object*))
+#define SET_LOCAL_VAR_OBJREF(offset,objref) (LOCAL_VAR(offset, Object*) = OBJECTREFToObject(objref))
+
 // Helper that saves the current IP into the frame before throwing.
 // This ensures EH and GC can unwind the interpreter frame correctly.
 NOINLINE static void InterpThrow(InterpMethodContextFrame* pFrame, const int32_t* ip, RuntimeExceptionKind exType)
@@ -1243,7 +1252,7 @@ extern "C" ContinuationObject* AsyncHelpers_ResumeInterpreterContinuationWorker(
     // All the incoming args and locals should be zeroed out, except for the continuation argument
     InterpMethod *pMethod = pSuspendData->methodStartIP->Method;
     memset(sp, 0, pMethod->allocaSize);
-    *(CONTINUATIONREF*)(sp + pSuspendData->continuationArgOffset) = contRef;
+    *(Object**)(sp + pSuspendData->continuationArgOffset) = OBJECTREFToObject(contRef);
 
     frames.interpMethodContextFrame.startIp = pSuspendData->methodStartIP;
     frames.interpMethodContextFrame.pStack = sp;
@@ -1356,6 +1365,42 @@ static void ShiftDelegateCallArgs(int8_t* stack, int32_t callArgsOffset, int32_t
         size_t firstAlignedSrcOffset = ALIGN_UP(INTERP_STACK_SLOT_SIZE + sizeOfArgsUpto16ByteAlignment, INTERP_STACK_ALIGNMENT);
         memmove(argsBase + firstAlignedDstOffset, argsBase + firstAlignedSrcOffset, totalArgsSize - firstAlignedDstOffset);
     }
+}
+
+// Resolves the virtual method that a call through pMD dispatches to for the given 'this' object, read
+// from an interpreter stack slot. The resolution takes the receiver by OBJECTREF* and can trigger a GC,
+// so it is given a GC-protected native local rather than the slot's address (see LOCAL_VAR_OBJREF).
+static MethodDesc* ResolveVirtualCallTarget(MethodDesc* pMD, Object* pThisObj, MethodTable* pObjMT)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
+    MethodDesc* pTarget;
+    OBJECTREF thisObj = ObjectToOBJECTREF(pThisObj);
+    GCPROTECT_BEGIN(thisObj);
+    pTarget = CallWithSEHWrapper(
+        [pMD, &thisObj, pObjMT]() {
+            MethodDesc* pTarget;
+            GCX_PREEMP_REGION_BEGIN();
+            pTarget = pMD->GetMethodDescOfVirtualizedCode(&thisObj, pObjMT, pMD->GetMethodTable());
+            GCX_PREEMP_REGION_END();
+            return pTarget;
+        });
+    GCPROTECT_END();
+    return pTarget;
+}
+
+// Resolves the target of an open virtual delegate for the given 'this' object, read from an interpreter
+// stack slot (see ResolveVirtualCallTarget for the protection of the receiver).
+static MethodDesc* ResolveOpenVirtualDelegateTarget(DELEGATEREF delegateObj, Object* pThisObj)
+{
+    MethodDesc* pDeclMD = COMDelegate::GetMethodDescForOpenVirtualDelegate(delegateObj);
+    return ResolveVirtualCallTarget(pDeclMD, pThisObj, pThisObj->GetMethodTable());
 }
 
 static void UpdateFrameForTailCall(InterpMethodContextFrame *pFrame, PTR_InterpByteCodeStart targetIp, int8_t *callArgsAddress)
@@ -2870,7 +2915,7 @@ SWITCH_OPCODE:
                 INTOP_CASE(INTOP_STIND_O)
                 {
                     char *dst = LOCAL_VAR(ip[1], char*);
-                    OBJECTREF storeObj = LOCAL_VAR(ip[2], OBJECTREF);
+                    OBJECTREF storeObj = LOCAL_VAR_OBJREF(ip[2]);
                     NULL_CHECK(dst);
                     SetObjectReferenceUnchecked((OBJECTREF*)(dst + ip[3]), storeObj);
                     ip += 4;
@@ -2903,7 +2948,6 @@ SWITCH_OPCODE:
                 }
                 INTOP_CASE(INTOP_CALL_HELPER_P_P)
                 {
-                    pFrame->ip = ip;
                     void* helperArg = pMethod->pDataItems[ip[3]];
 
                     MethodDesc *pILTargetMethod = NULL;
@@ -2923,14 +2967,17 @@ SWITCH_OPCODE:
 
                     _ASSERTE(helperFtn != NULL);
 
-                    LOCAL_VAR(ip[1], void*) = Call_HELPER_FTN_P_P(helperFtn, helperArg);
+                    int32_t resultVar = ip[1];
+                    // Same as INTOP_CALL: the stack walk treats the ip as a return address and moves it back by
+                    // STACKWALK_CONTROLPC_ADJUST_OFFSET, so record the ip of the next instruction.
                     ip += 4;
+                    pFrame->ip = ip;
+                    LOCAL_VAR(resultVar, void*) = Call_HELPER_FTN_P_P(helperFtn, helperArg);
                     INTOP_NEXT;
                 }
 
                 INTOP_CASE(INTOP_CALL_HELPER_P_S)
                 {
-                    pFrame->ip = ip;
                     void* helperArg = LOCAL_VAR(ip[2], void*);
 
                     MethodDesc *pILTargetMethod = NULL;
@@ -2949,8 +2996,10 @@ SWITCH_OPCODE:
 
                     _ASSERTE(helperFtn != NULL);
 
-                    LOCAL_VAR(ip[1], void*) = Call_HELPER_FTN_P_P(helperFtn, helperArg);
+                    int32_t resultVar = ip[1];
                     ip += 4;
+                    pFrame->ip = ip;
+                    LOCAL_VAR(resultVar, void*) = Call_HELPER_FTN_P_P(helperFtn, helperArg);
                     INTOP_NEXT;
                 }
 
@@ -2960,7 +3009,7 @@ SWITCH_OPCODE:
 
                     if (typeHandle == nullptr)
                     {
-                        LOCAL_VAR(ip[1], OBJECTREF) = nullptr;
+                        LOCAL_VAR(ip[1], Object*) = nullptr;
                     }
                     else
                     {
@@ -2971,7 +3020,7 @@ SWITCH_OPCODE:
                             pFrame->ip = ip;
                             runtimeType = handle.GetManagedClassObject();
                         }
-                        LOCAL_VAR(ip[1], OBJECTREF) = runtimeType;
+                        SET_LOCAL_VAR_OBJREF(ip[1], runtimeType);
                     }
 
                     ip += 3;
@@ -2980,7 +3029,6 @@ SWITCH_OPCODE:
 
                 INTOP_CASE(INTOP_CALL_HELPER_P_PS)
                 {
-                    pFrame->ip = ip;
                     void* helperArg1 = pMethod->pDataItems[ip[4]];
                     void* helperArg2 = LOCAL_VAR(ip[2], void*);
 
@@ -3001,14 +3049,15 @@ SWITCH_OPCODE:
                     }
 
                     _ASSERTE(helperFtn != NULL);
-                    LOCAL_VAR(ip[1], void*) = Call_HELPER_FTN_P_PP(helperFtn, helperArg1, helperArg2);
+                    int32_t resultVar = ip[1];
                     ip += 5;
+                    pFrame->ip = ip;
+                    LOCAL_VAR(resultVar, void*) = Call_HELPER_FTN_P_PP(helperFtn, helperArg1, helperArg2);
                     INTOP_NEXT;
                 }
 
                 INTOP_CASE(INTOP_CALL_HELPER_P_SP)
                 {
-                    pFrame->ip = ip;
                     void* helperArg1 = LOCAL_VAR(ip[2], void*);
                     void* helperArg2 = pMethod->pDataItems[ip[4]];
 
@@ -3029,13 +3078,17 @@ SWITCH_OPCODE:
                     }
 
                     _ASSERTE(helperFtn != NULL);
-                    LOCAL_VAR(ip[1], void*) = Call_HELPER_FTN_P_PP(helperFtn, helperArg1, helperArg2);
+                    int32_t resultVar = ip[1];
                     ip += 5;
+                    pFrame->ip = ip;
+                    LOCAL_VAR(resultVar, void*) = Call_HELPER_FTN_P_PP(helperFtn, helperArg1, helperArg2);
                     INTOP_NEXT;
                 }
 
                 INTOP_CASE(INTOP_CALL_HELPER_P_G)
                 {
+                    // DoGenericLookup can throw and trigger a GC. Its exceptions mark this frame faulting, so for them
+                    // the ip is not adjusted and has to be the start of this instruction.
                     pFrame->ip = ip;
                     InterpGenericLookup *pLookup = (InterpGenericLookup*)&pMethod->pDataItems[ip[4]];
                     void* helperArg = DoGenericLookup(LOCAL_VAR(ip[2], void*), pLookup);
@@ -3056,8 +3109,10 @@ SWITCH_OPCODE:
                     }
 
                     _ASSERTE(helperFtn != NULL);
-                    LOCAL_VAR(ip[1], void*) = Call_HELPER_FTN_P_P(helperFtn, helperArg);
+                    int32_t resultVar = ip[1];
                     ip += 5;
+                    pFrame->ip = ip;
+                    LOCAL_VAR(resultVar, void*) = Call_HELPER_FTN_P_P(helperFtn, helperArg);
                     INTOP_NEXT;
                 }
 
@@ -3085,8 +3140,10 @@ SWITCH_OPCODE:
                     }
 
                     _ASSERTE(helperFtn != NULL);
-                    LOCAL_VAR(ip[1], void*) = Call_HELPER_FTN_P_PP(helperFtn, helperArg1, helperArg2);
+                    int32_t resultVar = ip[1];
                     ip += 6;
+                    pFrame->ip = ip;
+                    LOCAL_VAR(resultVar, void*) = Call_HELPER_FTN_P_PP(helperFtn, helperArg1, helperArg2);
                     INTOP_NEXT;
                 }
 
@@ -3114,14 +3171,15 @@ SWITCH_OPCODE:
                     }
 
                     _ASSERTE(helperFtn != NULL);
-                    LOCAL_VAR(ip[1], void*) = Call_HELPER_FTN_P_PP(helperFtn, helperArg1, helperArg2);
+                    int32_t resultVar = ip[1];
                     ip += 6;
+                    pFrame->ip = ip;
+                    LOCAL_VAR(resultVar, void*) = Call_HELPER_FTN_P_PP(helperFtn, helperArg1, helperArg2);
                     INTOP_NEXT;
                 }
 
                 INTOP_CASE(INTOP_CALL_HELPER_P_PA)
                 {
-                    pFrame->ip = ip;
                     void* helperArg1 = pMethod->pDataItems[ip[4]];
                     void* helperArg2 = LOCAL_VAR_ADDR(ip[2], void*);
 
@@ -3141,8 +3199,10 @@ SWITCH_OPCODE:
                         goto CALL_INTERP_METHOD;
                     }
 
-                    LOCAL_VAR(ip[1], void*) = Call_HELPER_FTN_P_PP(helperFtn, helperArg1, helperArg2);
+                    int32_t resultVar = ip[1];
                     ip += 5;
+                    pFrame->ip = ip;
+                    LOCAL_VAR(resultVar, void*) = Call_HELPER_FTN_P_PP(helperFtn, helperArg1, helperArg2);
                     INTOP_NEXT;
                 }
 
@@ -3172,14 +3232,14 @@ SWITCH_OPCODE:
                     }
 
                     _ASSERTE(helperFtn != NULL);
-                    Call_HELPER_FTN_V_PPP(helperFtn, helperArg1, helperArg2, helperArg3);
                     ip += 6;
+                    pFrame->ip = ip;
+                    Call_HELPER_FTN_V_PPP(helperFtn, helperArg1, helperArg2, helperArg3);
                     INTOP_NEXT;
                 }
 
                 INTOP_CASE(INTOP_CALL_HELPER_V_APS)
                 {
-                    pFrame->ip = ip;
                     void* helperArg1 = LOCAL_VAR_ADDR(ip[1], void*);
                     void* helperArg2 = pMethod->pDataItems[ip[4]];
                     void* helperArg3 = LOCAL_VAR(ip[2], void*);
@@ -3202,14 +3262,14 @@ SWITCH_OPCODE:
                     }
 
                     _ASSERTE(helperFtn != NULL);
-                    Call_HELPER_FTN_V_PPP(helperFtn, helperArg1, helperArg2, helperArg3);
                     ip += 5;
+                    pFrame->ip = ip;
+                    Call_HELPER_FTN_V_PPP(helperFtn, helperArg1, helperArg2, helperArg3);
                     INTOP_NEXT;
                 }
 
                 INTOP_CASE(INTOP_CALL_HELPER_V_SA)
                 {
-                    pFrame->ip = ip;
                     void* helperArg1 = LOCAL_VAR(ip[1], void*);
                     void* helperArg2 = LOCAL_VAR_ADDR(ip[2], void*);
 
@@ -3230,13 +3290,13 @@ SWITCH_OPCODE:
                     }
 
                     _ASSERTE(helperFtn != NULL);
-                    Call_HELPER_FTN_V_PP(helperFtn, helperArg1, helperArg2);
                     ip += 4;
+                    pFrame->ip = ip;
+                    Call_HELPER_FTN_V_PP(helperFtn, helperArg1, helperArg2);
                     INTOP_NEXT;
                 }
                 INTOP_CASE(INTOP_CALL_HELPER_V_SS)
                 {
-                    pFrame->ip = ip;
                     void* helperArg1 = LOCAL_VAR(ip[1], void*);
                     void* helperArg2 = LOCAL_VAR(ip[2], void*);
                     MethodDesc *pILTargetMethod = NULL;
@@ -3256,14 +3316,14 @@ SWITCH_OPCODE:
                     }
 
                     _ASSERTE(helperFtn != NULL);
-                    Call_HELPER_FTN_V_PP(helperFtn, helperArg1, helperArg2);
                     ip += 4;
+                    pFrame->ip = ip;
+                    Call_HELPER_FTN_V_PP(helperFtn, helperArg1, helperArg2);
                     INTOP_NEXT;
                 }
 
                 INTOP_CASE(INTOP_CALL_HELPER_V_SSS)
                 {
-                    pFrame->ip = ip;
                     void* helperArg1 = LOCAL_VAR(ip[1], void*);
                     void* helperArg2 = LOCAL_VAR(ip[2], void*);
                     void* helperArg3 = LOCAL_VAR(ip[3], void*);
@@ -3285,8 +3345,9 @@ SWITCH_OPCODE:
                     }
 
                     _ASSERTE(helperFtn != NULL);
-                    Call_HELPER_FTN_V_PPP(helperFtn, helperArg1, helperArg2, helperArg3);
                     ip += 5;
+                    pFrame->ip = ip;
+                    Call_HELPER_FTN_V_PPP(helperFtn, helperArg1, helperArg2, helperArg3);
                     INTOP_NEXT;
                 }
 
@@ -3301,10 +3362,10 @@ SWITCH_OPCODE:
 
                     MethodDesc *pMD = (MethodDesc*)pMethod->pDataItems[methodSlot];
 
-                    OBJECTREF *pThisArg = LOCAL_VAR_ADDR(callArgsOffset, OBJECTREF);
-                    NULL_CHECK(*pThisArg);
+                    Object *pThisObj = LOCAL_VAR(callArgsOffset, Object*);
+                    NULL_CHECK(pThisObj);
 
-                    MethodTable *pObjMT = (*pThisArg)->GetMethodTable();
+                    MethodTable *pObjMT = pThisObj->GetMethodTable();
 
                     // Interpreter-FIXME: It would be nice to have these caches initialized at compile time instead
                     // Obtain the cached dispatch token or initialize it
@@ -3327,15 +3388,9 @@ SWITCH_OPCODE:
 
                     if (targetMethod == NULL)
                     {
-                        // miss, resolve the virtual method and cache it
-                        targetMethod = CallWithSEHWrapper(
-                            [&pMD, &pThisArg, pObjMT]() {
-                                MethodDesc *pTarget;
-                                GCX_PREEMP_REGION_BEGIN();
-                                pTarget = pMD->GetMethodDescOfVirtualizedCode(pThisArg, pObjMT, pMD->GetMethodTable());
-                                GCX_PREEMP_REGION_END();
-                                return pTarget;
-                            });
+                        // miss, resolve the virtual method and cache it. The receiver is re-read from its slot:
+                        // CreateDispatchTokenForMethod above can trigger a GC.
+                        targetMethod = ResolveVirtualCallTarget(pMD, LOCAL_VAR(callArgsOffset, Object*), pObjMT);
                         g_InterpDispatchCache.Insert(dispatchToken, pObjMT, targetMethod, (uint16_t)dispatchTokenHash);
                     }
 
@@ -3376,6 +3431,24 @@ SWITCH_OPCODE:
                             InvokeUnmanagedCalliWithTransition(calliFunctionPointer, cookie, stack, pFrame, callArgsAddress, returnValueAddress);
                         }
                     }
+#ifdef FEATURE_CACHED_INTERFACE_DISPATCH
+                    else if (calliFunctionPointer == (PCODE)CID_VirtualOpenDelegateDispatch)
+                    {
+                        // For an open virtual delegate, _methodPtrAux is CID_VirtualOpenDelegateDispatch,
+                        // which expects the address of _methodPtrAux in a hidden argument that calli cannot
+                        // express; resolve the target as INTOP_CALLDELEGATE does.
+                        // Workaround for https://github.com/dotnet/runtime/issues/134733.
+
+                        // The shuffle thunk's 'this' is the delegate.
+                        DELEGATEREF delegateObj = (DELEGATEREF)LOCAL_VAR_OBJREF(0);
+                        _ASSERTE(((MethodDesc*)pMethod->methodHnd)->IsILStub() && ((MethodDesc*)pMethod->methodHnd)->AsDynamicMethodDesc()->IsDelegateShuffleThunk());
+                        _ASSERTE(delegateObj != NULL && delegateObj->GetMethodPtrAux() == calliFunctionPointer);
+                        Object *pThisObj = *(Object**)callArgsAddress;
+                        NULL_CHECK(pThisObj);
+                        targetMethod = ResolveOpenVirtualDelegateTarget(delegateObj, pThisObj);
+                        goto CALL_INTERP_METHOD;
+                    }
+#endif // FEATURE_CACHED_INTERFACE_DISPATCH
 #ifndef FEATURE_PORTABLE_ENTRYPOINTS
 // If we're not using portable entrypoints, we can use NonVirtualEntry2MethodDesc to figure out where tailcalls go. Since this is
 // somewhat expensive, we only do it for tailcalls which are relatively rare.
@@ -3473,17 +3546,17 @@ SWITCH_OPCODE:
                     int32_t targetArgsSize = ip[5];
                     ip += 6;
 
-                    DELEGATEREF* delegateObj = LOCAL_VAR_ADDR(callArgsOffset, DELEGATEREF);
-                    NULL_CHECK(*delegateObj);
-                    PCODE targetAddress = (*delegateObj)->GetMethodPtr();
-                    DelegateEEClass *pDelClass = (DelegateEEClass*)(*delegateObj)->GetMethodTable()->GetClass();
+                    DELEGATEREF delegateObj = (DELEGATEREF)LOCAL_VAR_OBJREF(callArgsOffset);
+                    NULL_CHECK(delegateObj);
+                    PCODE targetAddress = delegateObj->GetMethodPtr();
+                    DelegateEEClass *pDelClass = (DelegateEEClass*)delegateObj->GetMethodTable()->GetClass();
                     if (pDelClass->m_pInstRetBuffCallStub == targetAddress ||
                         pDelClass->m_pStaticCallStub == targetAddress)
                     {
                         // This implies that we're using a delegate shuffle thunk to strip off the first parameter to the method
                         // and call the actual underlying method. We allow for tail-calls to work and for greater efficiency in the
                         // interpreter by skipping the shuffle thunk and calling the actual target method directly.
-                        PCODE actualTarget = (*delegateObj)->GetMethodPtrAux();
+                        PCODE actualTarget = delegateObj->GetMethodPtrAux();
 
                         // Detect open virtual dispatch scenario
                         bool isOpenVirtual = false;
@@ -3500,18 +3573,9 @@ SWITCH_OPCODE:
 
                         if (isOpenVirtual)
                         {
-                            targetMethod = COMDelegate::GetMethodDescForOpenVirtualDelegate(*delegateObj);
-                            OBJECTREF *pThisArg = LOCAL_VAR_ADDR(callArgsOffset + INTERP_STACK_SLOT_SIZE, OBJECTREF);
-                            NULL_CHECK(*pThisArg);
-                            targetMethod = CallWithSEHWrapper(
-                                [&targetMethod, &pThisArg]() {
-                                    MethodTable* pMT = (*pThisArg)->GetMethodTable();
-                                    MethodDesc *pTarget;
-                                    GCX_PREEMP_REGION_BEGIN();
-                                    pTarget = targetMethod->GetMethodDescOfVirtualizedCode(pThisArg, pMT, targetMethod->GetMethodTable());
-                                    GCX_PREEMP_REGION_END();
-                                    return pTarget;
-                                });
+                            Object *pThisObj = LOCAL_VAR(callArgsOffset + INTERP_STACK_SLOT_SIZE, Object*);
+                            NULL_CHECK(pThisObj);
+                            targetMethod = ResolveOpenVirtualDelegateTarget(delegateObj, pThisObj);
                         }
                         else
                         {
@@ -3568,8 +3632,9 @@ SWITCH_OPCODE:
                         }
                     }
 
-                    OBJECTREF targetMethodObj = (*delegateObj)->GetTarget();
-                    LOCAL_VAR(callArgsOffset, OBJECTREF) = targetMethodObj;
+                    // Re-read the delegate from its slot: PrepareInterpreterCode above can trigger a GC.
+                    OBJECTREF targetMethodObj = ((DELEGATEREF)LOCAL_VAR_OBJREF(callArgsOffset))->GetTarget();
+                    SET_LOCAL_VAR_OBJREF(callArgsOffset, targetMethodObj);
 
                     if ((targetMethod = NonVirtualEntry2MethodDesc(targetAddress)) != NULL)
                     {
@@ -3689,9 +3754,9 @@ CALL_INTERP_METHOD:
                     OBJECTREF objRef = AllocateObject(pMTNewObj);
 
                     // This is return value
-                    LOCAL_VAR(returnOffset, OBJECTREF) = objRef;
+                    SET_LOCAL_VAR_OBJREF(returnOffset, objRef);
                     // Set `this` arg for ctor call
-                    LOCAL_VAR (callArgsOffset, OBJECTREF) = objRef;
+                    SET_LOCAL_VAR_OBJREF(callArgsOffset, objRef);
                     ip += 6;
 
                     goto CALL_INTERP_SLOT;
@@ -3706,9 +3771,9 @@ CALL_INTERP_METHOD:
                     OBJECTREF objRef = AllocateObject((MethodTable*)pMethod->pDataItems[ip[4]]);
 
                     // This is return value
-                    LOCAL_VAR(returnOffset, OBJECTREF) = objRef;
+                    SET_LOCAL_VAR_OBJREF(returnOffset, objRef);
                     // Set `this` arg for ctor call
-                    LOCAL_VAR (callArgsOffset, OBJECTREF) = objRef;
+                    SET_LOCAL_VAR_OBJREF(callArgsOffset, objRef);
                     ip += 5;
 
                     goto CALL_INTERP_SLOT;
@@ -3716,7 +3781,7 @@ CALL_INTERP_METHOD:
                 INTOP_CASE(INTOP_NEWMDARR)
                 {
                     pFrame->ip = ip;
-                    LOCAL_VAR(ip[1], OBJECTREF) = CreateMultiDimArray((MethodTable*)pMethod->pDataItems[ip[3]], stack, ip[2], ip[4]);
+                    SET_LOCAL_VAR_OBJREF(ip[1], CreateMultiDimArray((MethodTable*)pMethod->pDataItems[ip[3]], stack, ip[2], ip[4]));
                     ip += 5;
                     INTOP_NEXT;
                 }
@@ -3726,7 +3791,7 @@ CALL_INTERP_METHOD:
                     InterpGenericLookup *pLookup = (InterpGenericLookup*)&pMethod->pDataItems[ip[4]];
                     MethodTable *pMTArray = (MethodTable*)DoGenericLookup(LOCAL_VAR(ip[3], void*), pLookup);
 
-                    LOCAL_VAR(ip[1], OBJECTREF) = CreateMultiDimArray(pMTArray, stack, ip[2], ip[5]);
+                    SET_LOCAL_VAR_OBJREF(ip[1], CreateMultiDimArray(pMTArray, stack, ip[2], ip[5]));
                     ip += 6;
                     INTOP_NEXT;
                 }
@@ -3804,7 +3869,7 @@ CALL_INTERP_METHOD:
                 INTOP_CASE(INTOP_THROW)
                 {
                     pFrame->ip = ip;
-                    OBJECTREF throwable = LOCAL_VAR(ip[1], OBJECTREF);
+                    OBJECTREF throwable = LOCAL_VAR_OBJREF(ip[1]);
                     if (!throwable)
                     {
                         EEException ex(kNullReferenceException);
@@ -3831,12 +3896,11 @@ CALL_INTERP_METHOD:
                 INTOP_CASE(INTOP_LOAD_EXCEPTION)
                     // This opcode loads the exception object coming from a catch / filter funclet caller to a variable.
                     _ASSERTE(pExceptionClauseArgs != NULL);
-                    LOCAL_VAR(ip[1], OBJECTREF) = pExceptionClauseArgs->throwable;
+                    SET_LOCAL_VAR_OBJREF(ip[1], pExceptionClauseArgs->throwable);
                     ip += 2;
                     INTOP_NEXT;
                 INTOP_CASE(INTOP_UNBOX_ANY)
                 {
-                    pFrame->ip = ip;
                     int dreg = ip[1];
                     int sreg = ip[2];
                     MethodTable *pMT = (MethodTable*)pMethod->pDataItems[ip[4]];
@@ -3860,9 +3924,9 @@ CALL_INTERP_METHOD:
                     }
 
                     // private static ref byte Unbox(MethodTable* toTypeHnd, object obj)
-                    LOCAL_VAR(dreg, void*) = Call_HELPER_FTN_BOX_UNBOX(helper, pMT, src);
-
                     ip += 5;
+                    pFrame->ip = ip;
+                    LOCAL_VAR(dreg, void*) = Call_HELPER_FTN_BOX_UNBOX(helper, pMT, src);
                     INTOP_NEXT;
                 }
                 INTOP_CASE(INTOP_UNBOX_END)
@@ -3904,9 +3968,9 @@ CALL_INTERP_METHOD:
                     }
 
                     // private static ref byte Unbox(MethodTable* toTypeHnd, object obj)
-                    LOCAL_VAR(dreg, void*) = Call_HELPER_FTN_BOX_UNBOX(helper, pMTBoxedObj, src);
-
                     ip += 6;
+                    pFrame->ip = ip;
+                    LOCAL_VAR(dreg, void*) = Call_HELPER_FTN_BOX_UNBOX(helper, pMTBoxedObj, src);
                     INTOP_NEXT;
                 }
                 INTOP_CASE(INTOP_UNBOX_END_GENERIC)
@@ -3931,7 +3995,7 @@ CALL_INTERP_METHOD:
                     HELPER_FTN_NEWARR helper = GetPossiblyIndirectHelper<HELPER_FTN_NEWARR>(pMethod, ip[4]);
 
                     Object* arr = Call_HELPER_FTN_NEWARR(helper, arrayClsHnd, (intptr_t)length);
-                    LOCAL_VAR(ip[1], OBJECTREF) = ObjectToOBJECTREF(arr);
+                    LOCAL_VAR(ip[1], Object*) = arr;
 
                     ip += 5;
                     INTOP_NEXT;
@@ -3947,7 +4011,7 @@ CALL_INTERP_METHOD:
                     HELPER_FTN_NEWARR helper = GetPossiblyIndirectHelper<HELPER_FTN_NEWARR>(pMethod, ip[4]);
 
                     Object* arr = Call_HELPER_FTN_NEWARR(helper, arrayClsHnd, (intptr_t)length);
-                    LOCAL_VAR(ip[1], OBJECTREF) = ObjectToOBJECTREF(arr);
+                    LOCAL_VAR(ip[1], Object*) = arr;
 
                     ip += 6;
                     INTOP_NEXT;
@@ -4122,7 +4186,7 @@ do {                                                                           \
                     if (idx >= len)
                         INTERP_THROW(kIndexOutOfRangeException);
 
-                    OBJECTREF elemRef = LOCAL_VAR(ip[3], OBJECTREF);
+                    OBJECTREF elemRef = LOCAL_VAR_OBJREF(ip[3]);
 
                     if (elemRef != NULL)
                     {
@@ -4133,7 +4197,7 @@ do {                                                                           \
                         // ObjIsInstanceOf can trigger GC, so the object references have to be re-fetched
                         arr = LOCAL_VAR(ip[1], ArrayBase*);
                         VALIDATEOBJECT(arr);
-                        elemRef = LOCAL_VAR(ip[3], OBJECTREF);
+                        elemRef = LOCAL_VAR_OBJREF(ip[3]);
                     }
 
                     uint8_t* pData = arr->GetDataPtr();
@@ -4203,11 +4267,10 @@ do {                                                                           \
                 }
                 INTOP_CASE(INTOP_LDELEMA_REF)
                 {
-                    BASEARRAYREF arrayRef = LOCAL_VAR(ip[2], BASEARRAYREF);
-                    if (arrayRef == NULL)
+                    ArrayBase* arr = LOCAL_VAR(ip[2], ArrayBase*);
+                    if (arr == NULL)
                         INTERP_THROW(kNullReferenceException);
 
-                    ArrayBase* arr = (ArrayBase*)OBJECTREFToObject(arrayRef);
                     uint32_t len = arr->GetNumComponents();
                     uint32_t idx = (uint32_t)LOCAL_VAR(ip[3], int32_t);
                     if (idx >= len)
@@ -4231,11 +4294,10 @@ do {                                                                           \
                 INTOP_CASE(INTOP_LDELEMA_REF_GENERIC)
                 {
                     pFrame->ip = ip;
-                    BASEARRAYREF arrayRef = LOCAL_VAR(ip[2], BASEARRAYREF);
-                    if (arrayRef == NULL)
+                    ArrayBase* arr = LOCAL_VAR(ip[2], ArrayBase*);
+                    if (arr == NULL)
                         INTERP_THROW(kNullReferenceException);
 
-                    ArrayBase* arr = (ArrayBase*)OBJECTREFToObject(arrayRef);
                     uint32_t len = arr->GetNumComponents();
                     uint32_t idx = (uint32_t)LOCAL_VAR(ip[3], int32_t);
                     if (idx >= len)
@@ -4608,7 +4670,7 @@ do                                                                      \
                         callArgsOffset = pMethod->allocaSize;
 
                         // Pass argument to the target method
-                        LOCAL_VAR(callArgsOffset, OBJECTREF) = pInterpreterFrame->GetContinuation();
+                        SET_LOCAL_VAR_OBJREF(callArgsOffset, pInterpreterFrame->GetContinuation());
                         LOCAL_VAR(callArgsOffset + INTERP_STACK_SLOT_SIZE, MethodTable*) = pContinuationType;
                         if (opcode == INTOP_HANDLE_CONTINUATION_GENERIC)
                         {
@@ -4624,19 +4686,19 @@ do                                                                      \
 
                     OBJECTREF chainedContinuation = pInterpreterFrame->GetContinuation();
                     pInterpreterFrame->SetContinuation(NULL);
-                    OBJECTREF* pDest = LOCAL_VAR_ADDR(ip[1], OBJECTREF);
+                    Object** pDest = LOCAL_VAR_ADDR(ip[1], Object*);
                     if (opcode == INTOP_HANDLE_CONTINUATION_GENERIC)
                     {
                         uintptr_t context = LOCAL_VAR(ip[2], uintptr_t);
                         ip += ipAdjust;
                         Object* chainedContinuationObj = OBJECTREFToObject(chainedContinuation);
-                        *pDest = ObjectToOBJECTREF((Object*)Call_HELPER_FTN_P_PPIP(helperFtnGeneric, chainedContinuationObj, pContinuationType, pAsyncSuspendData->keepAliveOffset, (void*)context));
+                        *pDest = (Object*)Call_HELPER_FTN_P_PPIP(helperFtnGeneric, chainedContinuationObj, pContinuationType, pAsyncSuspendData->keepAliveOffset, (void*)context);
                     }
                     else
                     {
                         ip += ipAdjust;
                         Object* chainedContinuationObj = OBJECTREFToObject(chainedContinuation);
-                        *pDest = ObjectToOBJECTREF((Object*)Call_HELPER_FTN_P_PP(helperFtn, chainedContinuationObj, pContinuationType));
+                        *pDest = (Object*)Call_HELPER_FTN_P_PP(helperFtn, chainedContinuationObj, pContinuationType);
                     }
                     INTOP_NEXT;
                 }
@@ -4644,11 +4706,11 @@ do                                                                      \
                 INTOP_CASE(INTOP_CAPTURE_CONTEXT_ON_SUSPEND)
                 {
                     pFrame->ip = ip;
-                    CONTINUATIONREF continuation = LOCAL_VAR(ip[2], CONTINUATIONREF);
+                    CONTINUATIONREF continuation = (CONTINUATIONREF)LOCAL_VAR_OBJREF(ip[2]);
 
                     if (continuation == NULL)
                     {
-                        LOCAL_VAR(ip[1], CONTINUATIONREF) = continuation;
+                        SET_LOCAL_VAR_OBJREF(ip[1], continuation);
                         // No continuation to handle.
                         ip += 4;
                         INTOP_NEXT;
@@ -4673,7 +4735,7 @@ do                                                                      \
                             }
                         );
                     }
-                    continuation = LOCAL_VAR(ip[2], CONTINUATIONREF);
+                    continuation = (CONTINUATIONREF)LOCAL_VAR_OBJREF(ip[2]);
                     continuation->SetFlags(pAsyncSuspendData->flags);
 
                     PTR_OBJECTREF pExecutionContext = continuation->GetExecutionContextObjectStorageOrNull();
@@ -4705,20 +4767,20 @@ do                                                                      \
 
                 INTOP_CASE(INTOP_RESTORE_CONTEXTS_ON_SUSPEND)
                 {
-                    CONTINUATIONREF newContinuation = LOCAL_VAR(ip[2], CONTINUATIONREF);
-                    CONTINUATIONREF continuationArg = LOCAL_VAR(ip[3], CONTINUATIONREF);
+                    CONTINUATIONREF newContinuation = (CONTINUATIONREF)LOCAL_VAR_OBJREF(ip[2]);
+                    CONTINUATIONREF continuationArg = (CONTINUATIONREF)LOCAL_VAR_OBJREF(ip[3]);
 
                     int32_t resumed = continuationArg != NULL;
                     if ((newContinuation == NULL) || resumed)
                     {
-                        LOCAL_VAR(ip[1], CONTINUATIONREF) = newContinuation;
+                        SET_LOCAL_VAR_OBJREF(ip[1], newContinuation);
                         // No continuation to handle.
                         ip += 6;
                         INTOP_NEXT;
                     }
 
-                    OBJECTREF executionContext = LOCAL_VAR(ip[4], OBJECTREF);
-                    OBJECTREF syncContext = LOCAL_VAR(ip[4] + INTERP_STACK_SLOT_SIZE, OBJECTREF);
+                    OBJECTREF executionContext = LOCAL_VAR_OBJREF(ip[4]);
+                    OBJECTREF syncContext = LOCAL_VAR_OBJREF(ip[4] + INTERP_STACK_SLOT_SIZE);
 
                     InterpAsyncSuspendData *pAsyncSuspendData = (InterpAsyncSuspendData*)pMethod->pDataItems[ip[5]];
                     MethodDesc *restoreContextsMethod = pAsyncSuspendData->restoreContextsOnSuspensionMethod;
@@ -4727,8 +4789,8 @@ do                                                                      \
                     callArgsOffset = pMethod->allocaSize;
                     // Pass argument to the target method
                     LOCAL_VAR(callArgsOffset, int32_t) = resumed;
-                    LOCAL_VAR(callArgsOffset + INTERP_STACK_SLOT_SIZE, OBJECTREF) = executionContext;
-                    LOCAL_VAR(callArgsOffset + INTERP_STACK_SLOT_SIZE * 2, OBJECTREF) = syncContext;
+                    SET_LOCAL_VAR_OBJREF(callArgsOffset + INTERP_STACK_SLOT_SIZE, executionContext);
+                    SET_LOCAL_VAR_OBJREF(callArgsOffset + INTERP_STACK_SLOT_SIZE * 2, syncContext);
                     targetMethod = restoreContextsMethod;
                     ip += 6;
                     goto CALL_INTERP_METHOD;
@@ -4736,7 +4798,7 @@ do                                                                      \
 
                 INTOP_CASE(INTOP_GET_CONTINUATION)
                 {
-                    LOCAL_VAR(ip[1], OBJECTREF) = pInterpreterFrame->GetContinuation();
+                    SET_LOCAL_VAR_OBJREF(ip[1], pInterpreterFrame->GetContinuation());
                     pInterpreterFrame->SetContinuation(NULL);
                     ip += 2;
                     INTOP_NEXT;
@@ -4744,7 +4806,7 @@ do                                                                      \
 
                 INTOP_CASE(INTOP_SET_CONTINUATION)
                 {
-                    pInterpreterFrame->SetContinuation(LOCAL_VAR(ip[1], CONTINUATIONREF));
+                    pInterpreterFrame->SetContinuation(LOCAL_VAR_OBJREF(ip[1]));
                     ip += 2;
                     INTOP_NEXT;
                 }
@@ -4760,7 +4822,7 @@ do                                                                      \
                 {
                     pFrame->ip = ip;
                     InterpAsyncSuspendData *pAsyncSuspendData = (InterpAsyncSuspendData*)pMethod->pDataItems[ip[2]];
-                    CONTINUATIONREF continuation = LOCAL_VAR(ip[1], CONTINUATIONREF);
+                    CONTINUATIONREF continuation = (CONTINUATIONREF)LOCAL_VAR_OBJREF(ip[1]);
 
                     if (continuation == NULL)
                     {
@@ -4878,7 +4940,7 @@ do                                                                      \
 
                 INTOP_CASE(INTOP_CHECK_FOR_CONTINUATION)
                 {
-                    CONTINUATIONREF continuation = LOCAL_VAR(ip[1], CONTINUATIONREF);
+                    CONTINUATIONREF continuation = (CONTINUATIONREF)LOCAL_VAR_OBJREF(ip[1]);
                     _ASSERTE(pInterpreterFrame->GetContinuation() == NULL);
                     if (continuation != NULL)
                     {
