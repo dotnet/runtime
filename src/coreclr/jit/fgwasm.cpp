@@ -2466,21 +2466,16 @@ PhaseStatus Compiler::fgWasmSpillRefs()
 
         for (GenTree* tree : LIR::AsRange(block))
         {
-            bool removedCurrentTreeDefs = false;
             if (tree->IsCall())
             {
-                // If we have a managed non-helper call, consume the call's operands from the defs list BEFORE spilling
-                // any live refs. This is because a GC-ref node which is only live INTO (and not across) another managed
+                // If we have a call, consume the call's operands from the defs list BEFORE spilling
+                // any live refs. This is because a GC-ref node which is only live INTO (and not across) another call
                 // call does not need extra GC protection. The callee is responsible for ensuring the GC safety of any
                 // incoming GC ref args.
-                if (!tree->AsCall()->IsUnmanaged() && !tree->AsCall()->IsHelperCall())
-                {
-                    tree->VisitOperands([&removeUses, &defs](GenTree* op) {
-                        removeUses(op, defs, removeUses);
-                        return GenTree::VisitResult::Continue;
-                    });
-                    removedCurrentTreeDefs = true;
-                }
+                tree->VisitOperands([&removeUses, &defs](GenTree* op) {
+                    removeUses(op, defs, removeUses);
+                    return GenTree::VisitResult::Continue;
+                });
 
                 // For any ref/byref values which are still live at the point of a call, spill them into pinned slots
                 // on the stack where the GC can see them so it won't move them. These cases should only be for nested
@@ -2563,11 +2558,10 @@ PhaseStatus Compiler::fgWasmSpillRefs()
                 continue;
             }
 
-            if (!removedCurrentTreeDefs)
+            if (!tree->IsCall())
             {
-                // If we haven't already removed the current tree's defs, do so now. These operands are no longer
-                // meaningfully live. Note that we should have already removed the defs for any operands of a non-helper
-                // managed call.
+                // If the tree isn't a call, then we haven't already removed the current tree's operands from the defs list. These operands are no longer
+                // meaningfully live so we should remove them now.
                 assert(!tree->IsCall() || tree->AsCall()->IsUnmanaged() || tree->AsCall()->IsHelperCall());
                 tree->VisitOperands([&removeUses, &defs](GenTree* op) {
                     removeUses(op, defs, removeUses);
