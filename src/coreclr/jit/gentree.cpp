@@ -25955,9 +25955,9 @@ GenTree* Compiler::gtNewSimdGetElementNode(
             GenTree* boundsCheck =
                 new (this, GT_BOUNDS_CHECK) GenTreeBoundsChk(gtCloneExpr(index), vectorLength, SCK_ARG_RNG_EXCPN);
 
-            GenTree* indexMask =
-                gtNewSimdHWIntrinsicNode(TYP_MASK, gtNewIconNode(0), index, maskGenerator, simdBaseType, simdSize);
-            indexMask->AsHWIntrinsic()->SetAuxiliaryType(type);
+            GenTree* indexMask = gtNewSimdHWIntrinsicNode(TYP_MASK, gtNewIconNode(0, index->TypeGet()), index,
+                                                          maskGenerator, simdBaseType, simdSize);
+            indexMask->AsHWIntrinsic()->SetAuxiliaryType(index->TypeGet());
 
             result = gtNewSimdHWIntrinsicNode(type, indexMask, vector, NI_Sve_ExtractLastActiveElementScalar,
                                               simdBaseType, simdSize);
