@@ -4,6 +4,7 @@
 #include "stdafx.h"
 
 #include <minipal/mutex.h>
+#include <minipal.h>
 
 #include "mscoree.h"
 #include "clrinternal.h"
@@ -38,24 +39,91 @@ void ClrLeaveCriticalSection(CRITSEC_COOKIE cookie) noexcept
     minipal_mutex_leave((minipal_mutex*)cookie);
 }
 
+#ifdef HOST_UNIX
+static VMToOSInterface::MemoryProtection ClrWin32ProtectToMemoryProtection(DWORD flProtect)
+{
+    switch (flProtect)
+    {
+    case PAGE_NOACCESS:
+        return VMToOSInterface::MemoryProtection::NoAccess;
+    case PAGE_READONLY:
+        return VMToOSInterface::MemoryProtection::ReadOnly;
+    case PAGE_READWRITE:
+        return VMToOSInterface::MemoryProtection::ReadWrite;
+    case PAGE_EXECUTE:
+        return VMToOSInterface::MemoryProtection::Execute;
+    case PAGE_EXECUTE_READ:
+        return VMToOSInterface::MemoryProtection::ExecuteRead;
+    case PAGE_EXECUTE_READWRITE:
+        return VMToOSInterface::MemoryProtection::ExecuteReadWrite;
+    default:
+        _ASSERTE(!"Unsupported page protection requested through ClrVirtual* APIs");
+        return VMToOSInterface::MemoryProtection::NoAccess;
+    }
+}
+#endif // HOST_UNIX
+
 LPVOID ClrVirtualAlloc(LPVOID lpAddress, SIZE_T dwSize, DWORD flAllocationType, DWORD flProtect)
 {
+#ifdef HOST_WINDOWS
     return VirtualAlloc(lpAddress, dwSize, flAllocationType, flProtect);
+#else
+    _ASSERTE((flAllocationType & ~(MEM_COMMIT | MEM_RESERVE)) == 0);
+
+    VMToOSInterface::MemoryProtection protection = ClrWin32ProtectToMemoryProtection(flProtect);
+
+    if ((flAllocationType & MEM_RESERVE) != 0)
+    {
+        return VMToOSInterface::AllocateMemory(lpAddress, dwSize, protection);
+    }
+
+    // MEM_COMMIT only, over a previously reserved range.
+    return VMToOSInterface::CommitReservedMemory(lpAddress, dwSize, protection);
+#endif
 }
 
 BOOL ClrVirtualFree(LPVOID lpAddress, SIZE_T dwSize, DWORD dwFreeType)
 {
+#ifdef HOST_WINDOWS
     return VirtualFree(lpAddress, dwSize, dwFreeType);
+#else
+    if (dwFreeType == MEM_DECOMMIT)
+    {
+        return VMToOSInterface::DecommitMemory(lpAddress, dwSize) ? TRUE : FALSE;
+    }
+
+    _ASSERTE(dwFreeType == MEM_RELEASE);
+    return VMToOSInterface::ReleaseMemoryReservation(lpAddress, dwSize) ? TRUE : FALSE;
+#endif
 }
 
 SIZE_T ClrVirtualQuery(LPCVOID lpAddress, PMEMORY_BASIC_INFORMATION lpBuffer, SIZE_T dwLength)
 {
+    // All remaining callers of ClrVirtualQuery are Windows-only code paths; the raw PAL
+    // VirtualQuery API has been removed from non-Windows builds.
+#ifdef HOST_WINDOWS
     return VirtualQuery(lpAddress, lpBuffer, dwLength);
+#else
+    _ASSERTE(!"ClrVirtualQuery is not supported on non-Windows platforms");
+    return 0;
+#endif
 }
 
 BOOL ClrVirtualProtect(LPVOID lpAddress, SIZE_T dwSize, DWORD flNewProtect, PDWORD lpflOldProtect)
 {
+#ifdef HOST_WINDOWS
     return VirtualProtect(lpAddress, dwSize, flNewProtect, lpflOldProtect);
+#else
+    // The PAL's VirtualProtect has never offered a real old-protection query on Unix (it always
+    // returned a dummy fixed value), so non-Windows callers of this non-EE wrapper cannot rely on
+    // *lpflOldProtect to reflect the true previous protection either.
+    if (lpflOldProtect != NULL)
+    {
+        *lpflOldProtect = PAGE_EXECUTE_READWRITE;
+    }
+
+    return VMToOSInterface::ProtectMemory(lpAddress, dwSize, ClrWin32ProtectToMemoryProtection(flNewProtect)) ? TRUE : FALSE;
+#endif
 }
 
 //------------------------------------------------------------------------------

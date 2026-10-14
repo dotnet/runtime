@@ -71,6 +71,26 @@ public:
     // Release the allocation with ReleaseMemoryReservation and its original size.
     static void* AllocateMemory(void* address, size_t size, MemoryProtection protection);
 
+    // Allocate a page-aligned, nonzero-sized reservation whose starting address lies
+    // within [rangeStart, rangeEnd), when a range is specified. Passing both rangeStart
+    // and rangeEnd as nullptr requests an allocation anywhere in the address space, and
+    // is equivalent to calling ReserveMemoryPlaceholder(nullptr, size).
+    // Release the allocation with ReleaseMemoryReservation and its original size.
+    static void* ReserveMemoryWithinRange(void* rangeStart, void* rangeEnd, size_t size);
+
+    // Commit a page-aligned, nonzero-sized range previously returned by
+    // ReserveMemoryWithinRange. Unlike CommitMemoryPlaceholder, the reservation does not
+    // need placeholder support and is not split or replaced; the existing address range
+    // simply becomes accessible with the requested protection.
+    static void* CommitReservedMemory(void* address, size_t size, MemoryProtection protection);
+
+    // Decommit (but do not release) a page-aligned, nonzero-sized range previously
+    // committed via AllocateMemory, CommitMemoryPlaceholder, CommitReservedMemory, or
+    // PopulateMemoryPlaceholder. Decommitted memory still belongs to the caller's
+    // reservation; it is zero-filled on a later recommit and no longer occupies
+    // physical/backing storage in the meantime.
+    static bool DecommitMemory(void* address, size_t size);
+
     // Use placeholders to map file-backed sections at fixed offsets within one contiguous address range.
     // Replacing parts of the reservation preserves ownership of those addresses, avoiding races with other
     // allocations and allowing unmodified file-backed pages to stay shared instead of copying the image.

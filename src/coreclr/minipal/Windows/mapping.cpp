@@ -256,6 +256,85 @@ bool VMToOSInterface::ReleaseMemoryReservation(void* address, size_t)
     return VirtualFree(address, 0, MEM_RELEASE) != FALSE;
 }
 
+void* VMToOSInterface::ReserveMemoryWithinRange(void* rangeStart, void* rangeEnd, size_t size)
+{
+    if (size == 0)
+    {
+        SetLastError(ERROR_INVALID_PARAMETER);
+        return nullptr;
+    }
+
+    if (rangeStart == nullptr && rangeEnd == nullptr)
+    {
+        return VirtualAlloc(nullptr, size, MEM_RESERVE, PAGE_NOACCESS);
+    }
+
+    if (rangeEnd <= rangeStart)
+    {
+        SetLastError(ERROR_INVALID_PARAMETER);
+        return nullptr;
+    }
+
+    constexpr uintptr_t granularity = 64 * 1024;
+    uintptr_t tryAddress = reinterpret_cast<uintptr_t>(rangeStart) & ~(granularity - 1);
+    uintptr_t end = reinterpret_cast<uintptr_t>(rangeEnd);
+
+    while (tryAddress + size <= end)
+    {
+        MEMORY_BASIC_INFORMATION mbInfo;
+        if (VirtualQuery(reinterpret_cast<LPCVOID>(tryAddress), &mbInfo, sizeof(mbInfo)) == 0)
+        {
+            break;
+        }
+
+        if (mbInfo.State == MEM_FREE && mbInfo.RegionSize >= size)
+        {
+            void* result = VirtualAlloc(reinterpret_cast<void*>(tryAddress), size, MEM_RESERVE, PAGE_NOACCESS);
+            if (result != nullptr)
+            {
+                return result;
+            }
+
+            // Another thread may have raced us for this region; keep scanning forward.
+            tryAddress += granularity;
+        }
+        else
+        {
+            tryAddress = (tryAddress + granularity > reinterpret_cast<uintptr_t>(mbInfo.BaseAddress) + mbInfo.RegionSize)
+                ? tryAddress + granularity
+                : reinterpret_cast<uintptr_t>(mbInfo.BaseAddress) + mbInfo.RegionSize;
+        }
+    }
+
+    SetLastError(ERROR_NOT_ENOUGH_MEMORY);
+    return nullptr;
+}
+
+bool VMToOSInterface::DecommitMemory(void* address, size_t size)
+{
+    if (address == nullptr || !IsValidMemoryRange(address, size))
+    {
+        SetLastError(ERROR_INVALID_PARAMETER);
+        return false;
+    }
+
+    return VirtualFree(address, size, MEM_DECOMMIT) != FALSE;
+}
+
+void* VMToOSInterface::CommitReservedMemory(void* address, size_t size, MemoryProtection protection)
+{
+    DWORD nativeProtection = static_cast<DWORD>(protection);
+    assert(IsValidMemoryProtection(nativeProtection));
+
+    if (address == nullptr || !IsValidMemoryRange(address, size))
+    {
+        SetLastError(ERROR_INVALID_PARAMETER);
+        return nullptr;
+    }
+
+    return VirtualAlloc(address, size, MEM_COMMIT, nativeProtection);
+}
+
 bool VMToOSInterface::ProtectMemory(void* address, size_t size, MemoryProtection protection)
 {
     DWORD nativeProtection = static_cast<DWORD>(protection);

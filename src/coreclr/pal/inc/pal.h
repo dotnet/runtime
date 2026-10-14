@@ -2278,24 +2278,6 @@ PAL_GetExecutableMemoryAllocatorPreferredRange(
     OUT PVOID *start,
     OUT PVOID *end);
 
-PALIMPORT
-LPVOID
-PALAPI
-VirtualAlloc(
-         IN LPVOID lpAddress,
-         IN SIZE_T dwSize,
-         IN DWORD flAllocationType,
-         IN DWORD flProtect);
-
-PALIMPORT
-BOOL
-PALAPI
-VirtualFree(
-        IN LPVOID lpAddress,
-        IN SIZE_T dwSize,
-        IN DWORD dwFreeType);
-
-
 #if defined(HOST_OSX) && defined(HOST_ARM64)
 
 PALIMPORT
@@ -2310,16 +2292,6 @@ PAL_JitWriteProtect(bool writeEnable);
 
 #endif // defined(HOST_OSX) && defined(HOST_ARM64)
 
-
-PALIMPORT
-BOOL
-PALAPI
-VirtualProtect(
-           IN LPVOID lpAddress,
-           IN SIZE_T dwSize,
-           IN DWORD flNewProtect,
-           OUT PDWORD lpflOldProtect);
-
 typedef struct _MEMORY_BASIC_INFORMATION {
     PVOID BaseAddress;
     PVOID AllocationBase_PAL_Undefined;
@@ -2329,14 +2301,6 @@ typedef struct _MEMORY_BASIC_INFORMATION {
     DWORD Protect;
     DWORD Type;
 } MEMORY_BASIC_INFORMATION, *PMEMORY_BASIC_INFORMATION;
-
-PALIMPORT
-SIZE_T
-PALAPI
-VirtualQuery(
-         IN LPCVOID lpAddress,
-         OUT PMEMORY_BASIC_INFORMATION lpBuffer,
-         IN SIZE_T dwLength);
 
 #define MoveMemory memmove
 #define CopyMemory memcpy

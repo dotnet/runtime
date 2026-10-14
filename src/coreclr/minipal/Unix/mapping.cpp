@@ -368,6 +368,91 @@ bool VMToOSInterface::ReleaseMemoryReservation(void* address, size_t size)
     return IsValidPlaceholderRange(address, size) && munmap(address, size) == 0;
 }
 
+void* VMToOSInterface::ReserveMemoryWithinRange(void* rangeStart, void* rangeEnd, size_t size)
+{
+    size_t pageSize = minipal_getpagesize();
+    if (size == 0 || size % pageSize != 0)
+    {
+        errno = EINVAL;
+        return nullptr;
+    }
+
+    if (rangeStart == nullptr && rangeEnd == nullptr)
+    {
+        return AllocateMemory(nullptr, size, MemoryProtection::NoAccess);
+    }
+
+    if (rangeEnd <= rangeStart)
+    {
+        errno = EINVAL;
+        return nullptr;
+    }
+
+    // Prefer the executable near-code allocator; it already understands range requests.
+    void* allocation = PAL_VirtualReserveFromExecutableMemoryAllocatorWithinRange(rangeStart, rangeEnd, size, 0);
+    if (allocation != nullptr)
+    {
+        return allocation;
+    }
+
+    constexpr size_t granularity = 64 * 1024;
+    uintptr_t tryAddress = reinterpret_cast<uintptr_t>(rangeStart) & ~(granularity - 1);
+    uintptr_t end = reinterpret_cast<uintptr_t>(rangeEnd);
+
+    while (tryAddress + size <= end)
+    {
+        // A non-fixed mmap hint is honored only when the kernel can satisfy it exactly;
+        // otherwise it silently returns a different address, which we treat as "unavailable"
+        // and release rather than risk clobbering memory outside the requested range.
+        void* result = mmap(reinterpret_cast<void*>(tryAddress), size, PROT_NONE, MAP_ANON | MAP_PRIVATE, -1, 0);
+        if (result == MAP_FAILED)
+        {
+            break;
+        }
+
+        if (reinterpret_cast<uintptr_t>(result) == tryAddress)
+        {
+            return result;
+        }
+
+        munmap(result, size);
+        tryAddress += granularity;
+    }
+
+    errno = ENOMEM;
+    return nullptr;
+}
+
+void* VMToOSInterface::CommitReservedMemory(void* address, size_t size, MemoryProtection protection)
+{
+    assert(IsValidMemoryProtection(static_cast<int>(protection)));
+
+    if (!IsValidPlaceholderRange(address, size))
+    {
+        return nullptr;
+    }
+
+    // The reservation is already backed by anonymous pages from AllocateMemory/ReserveMemoryWithinRange;
+    // committing on Unix just means making those pages accessible with the requested protection.
+    return mprotect(address, size, GetNativeProtection(protection)) == 0 ? address : nullptr;
+}
+
+bool VMToOSInterface::DecommitMemory(void* address, size_t size)
+{
+    size_t pageSize = minipal_getpagesize();
+    if (!IsValidMemoryRange(address, size, pageSize) || size % pageSize != 0)
+    {
+        errno = EINVAL;
+        return false;
+    }
+
+    // Re-establish a fresh, zero-filled anonymous mapping over the range rather than using
+    // madvise(MADV_DONTNEED): the pages must become immediately non-resident and the range
+    // must keep its PROT_NONE-equivalent "decommitted" semantics until recommitted.
+    void* result = mmap(address, size, PROT_NONE, MAP_ANON | MAP_PRIVATE | MAP_FIXED, -1, 0);
+    return result != MAP_FAILED;
+}
+
 bool VMToOSInterface::ProtectMemory(void* address, size_t size, MemoryProtection protection)
 {
     assert(IsValidMemoryProtection(static_cast<int>(protection)));

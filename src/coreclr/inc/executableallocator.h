@@ -180,7 +180,7 @@ private:
     static bool IsDoubleMappingEnabled();
 
     // Release memory allocated via DoubleMapping for either templates or normal double mapped data
-    void ReleaseWorker(void* pRX, bool releaseTemplate) noexcept;
+    void ReleaseWorker(void* pRX, size_t size, bool releaseTemplate) noexcept;
 
     // Initialize the allocator instance
     bool Initialize();
@@ -250,8 +250,9 @@ public:
     void* Commit(void* pStart, size_t size, bool isExecutable);
 
     // Release the executable memory block starting at the passed in address that was allocated
-    // by one of the ReserveXXX methods.
-    void Release(void* pRX) noexcept;
+    // by one of the ReserveXXX methods. The size must be the size originally requested from
+    // that reserve call.
+    void Release(void* pRX, size_t size) noexcept;
 
     // Map the specified block of executable memory as RW
     void* MapRW(void* pRX, size_t size, CacheableMapping cacheMapping);

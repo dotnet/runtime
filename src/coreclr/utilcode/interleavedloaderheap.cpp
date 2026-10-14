@@ -79,7 +79,7 @@ UnlockedInterleavedLoaderHeap::~UnlockedInterleavedLoaderHeap()
         }
         else
         {
-            ExecutableAllocator::Instance()->Release(pVirtualAddress);
+            ExecutableAllocator::Instance()->Release(pVirtualAddress, pSearch->dwVirtualSize);
         }
 
         delete pSearch;
@@ -177,7 +177,7 @@ BOOL UnlockedInterleavedLoaderHeap::UnlockedReservePages(size_t dwSizeToCommit)
     }
 
     // Own the reserved memory for automatic cleanup on the error paths below.
-    pDataHolder = pData;
+    pDataHolder = ReservedMemoryBlock{ pData, dwSizeToReserve };
 
     // When the user passes in the reserved memory, the commit size is 0 and is adjusted to be the sizeof(LoaderHeap).
     // If for some reason this is not true then we just catch this via an assertion and the dev who changed code
