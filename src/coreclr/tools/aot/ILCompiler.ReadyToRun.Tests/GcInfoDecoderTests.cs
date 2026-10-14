@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.IO;
 using System.Reflection.PortableExecutable;
 using ILCompiler.Reflection.ReadyToRun;
@@ -207,51 +206,6 @@ public class GcInfoDecoderTests
         Assert.Equal(frameSize, info.BytesUnwind);
         Assert.Equal(4u, info.VirtualIPCount);
         Assert.Equal(size, info.Size);
-    }
-
-    [Theory]
-    [InlineData(0, 0x00000000u, 0x00001234u)]
-    [InlineData(1, 0x80000004u, 0x00005678u)]
-    [InlineData(2, 0x00010008u, 0x00009ABCu)]
-    public void WasmRuntimeFunctionBytePlanesPreserveWords(int entryIndex, uint virtualIP, uint unwindRva)
-    {
-        byte[] encoded =
-        [
-            0x55, 0xAA,
-            0x00, 0x04, 0x08,
-            0x00, 0x00, 0x00,
-            0x00, 0x00, 0x01,
-            0x00, 0x80, 0x00,
-            0x34, 0x78, 0xBC,
-            0x12, 0x56, 0x9A,
-            0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00,
-            0xFF, 0xFF, 0xFF, 0xFF,
-            0x02, 0x01, 0x00, 0x00,
-        ];
-        using MemoryStream stream = new(encoded);
-        NativeReader reader = new(stream);
-
-        Assert.Equal(virtualIP, reader.ReadUInt32FromBytePlanes(2, 3, entryIndex, 0));
-        Assert.Equal(unwindRva, reader.ReadUInt32FromBytePlanes(2, 3, entryIndex, 4));
-        int offset = 26;
-        Assert.Equal(uint.MaxValue, reader.ReadUInt32(ref offset));
-        Assert.Equal(258u, reader.ReadUInt32(ref offset));
-    }
-
-    [Theory]
-    [InlineData(0, 0, 0, 0)]
-    [InlineData(0, 1, -1, 0)]
-    [InlineData(0, 1, 1, 0)]
-    [InlineData(0, 1, 0, -1)]
-    [InlineData(0, 1, 0, 5)]
-    [InlineData(-1, 1, 0, 0)]
-    public void WasmRuntimeFunctionBytePlanesRejectInvalidIndices(int offset, int count, int index, int plane)
-    {
-        using MemoryStream stream = new(new byte[8]);
-        NativeReader reader = new(stream);
-
-        Assert.Throws<ArgumentOutOfRangeException>(() => reader.ReadUInt32FromBytePlanes(offset, count, index, plane));
     }
 
     private static GcInfo DecodeWasmSlotTable(byte[] slotTable)

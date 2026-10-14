@@ -52,11 +52,7 @@ namespace ILCompiler.ObjectWriter
         private protected override void RecordWellKnownSymbol(Utf8String currentSymbolName, SortableDependencyNode.ObjectNodeOrder classCode)
         {
             if (classCode is SortableDependencyNode.ObjectNodeOrder.CorHeaderNode
-                or SortableDependencyNode.ObjectNodeOrder.DebugDirectoryNode
-#if READYTORUN
-                or SortableDependencyNode.ObjectNodeOrder.RuntimeFunctionsTableNode
-#endif
-                )
+                or SortableDependencyNode.ObjectNodeOrder.DebugDirectoryNode)
             {
 
                 bool added = _wellKnownSymbols.TryAdd(classCode, currentSymbolName);
@@ -361,49 +357,6 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-#if READYTORUN
-        private void EncodeRuntimeFunctionBytePlanes(WebcilSection[] webcilSections)
-        {
-            if (!_wellKnownSymbols.TryGetValue(SortableDependencyNode.ObjectNodeOrder.RuntimeFunctionsTableNode, out Utf8String name))
-            {
-                return;
-            }
-
-            SymbolDefinition definition = _definedSymbols[name];
-            const int RecordSize = 8;
-            int size = checked((int)definition.Size - RecordSize);
-            Debug.Assert(size >= 0 && size % RecordSize == 0);
-            int count = size / RecordSize;
-
-            foreach (WebcilSection section in webcilSections)
-            {
-                if (section.SectionIndex != definition.SectionIndex)
-                {
-                    continue;
-                }
-
-                // RVAs must be resolved before transposing; leave the sentinel and table base untouched.
-                Stream stream = section.ContentReadStream;
-                stream.Position = definition.Value;
-                byte[] records = new byte[size];
-                stream.ReadExactly(records);
-                byte[] planes = new byte[size];
-                for (int plane = 0; plane < RecordSize; plane++)
-                {
-                    for (int entry = 0; entry < count; entry++)
-                    {
-                        planes[plane * count + entry] = records[entry * RecordSize + plane];
-                    }
-                }
-                stream.Position = definition.Value;
-                stream.Write(planes);
-                return;
-            }
-
-            throw new InvalidOperationException("The runtime-function table was not found in a WebCIL data section.");
-        }
-#endif
-
         private void ResolveAsyncResumeInfoRelocations(
             int sectionIndex,
             Stream sourceStream,
@@ -539,9 +492,6 @@ namespace ILCompiler.ObjectWriter
             webcilSections = _sections.Sections.OfType<WebcilSection>().ToArray();
             WebcilHeader webcilHeader = LayoutWebcilPayload(webcilSections);
             ResolveWebcilSectionRelocations(webcilSections);
-#if READYTORUN
-            EncodeRuntimeFunctionBytePlanes(webcilSections);
-#endif
             WebcilPayloadDataSegment webcilPayloadSegment = new(
                 webcilHeader,
                 webcilSections,

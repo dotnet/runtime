@@ -43,11 +43,6 @@ public:
     void ForbidProcessMoreILBodyFixups() { m_fForbidLoadILBodyFixups = true; }
     bool IsForbidProcessMoreILBodyFixups() { return m_fForbidLoadILBodyFixups; }
 #ifdef TARGET_WASM
-    bool HasRuntimeFunctionBytePlanes() const
-    {
-        return (m_pCoreHeader->Flags & READYTORUN_FLAG_RUNTIME_FUNCTION_BYTE_PLANES) != 0;
-    }
-
     bool MinVirtualIPSet() const { return m_minVirtualIP != 0; }
     void SetMinVirtualIP(TADDR minVirtualIP) { m_minVirtualIP = minVirtualIP; }
     TADDR GetMinVirtualIP() const

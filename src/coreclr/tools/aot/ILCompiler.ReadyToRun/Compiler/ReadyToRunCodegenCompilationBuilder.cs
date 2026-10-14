@@ -307,10 +307,6 @@ namespace ILCompiler
             {
                 flags |= ReadyToRunFlags.READYTORUN_FLAG_VerifyGCModeTransitions;
             }
-            if (_context.Target.Architecture == TargetArchitecture.Wasm32)
-            {
-                flags |= ReadyToRunFlags.READYTORUN_FLAG_RuntimeFunctionBytePlanes;
-            }
             flags |= _compilationGroup.GetReadyToRunFlags();
 
             NodeFactory factory = new NodeFactory(

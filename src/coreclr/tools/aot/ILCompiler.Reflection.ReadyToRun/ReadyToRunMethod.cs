@@ -636,7 +636,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                     curOffset = coldOffset;
                     runtimeFunctionId = coldRuntimeFunctionId;
                 }
-                int startRva = _readyToRunReader.ReadRuntimeFunctionInt32(ref curOffset);
+                int startRva = _readyToRunReader.ImageReader.ReadInt32(ref curOffset);
                 bool isFunclet = false;
                 if (_readyToRunReader.Machine == Machine.ArmThumb2)
                 {
@@ -655,7 +655,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                 {
                     endRva = _readyToRunReader.ImageReader.ReadInt32(ref curOffset);
                 }
-                int unwindRva = _readyToRunReader.ReadRuntimeFunctionInt32(ref curOffset);
+                int unwindRva = _readyToRunReader.ImageReader.ReadInt32(ref curOffset);
                 int unwindOffset = _readyToRunReader.CompositeReader.GetOffset(unwindRva);
 
                 BaseUnwindInfo unwindInfo = null;
