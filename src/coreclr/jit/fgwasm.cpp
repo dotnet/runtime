@@ -2479,8 +2479,8 @@ PhaseStatus Compiler::fgWasmSpillRefs()
 
                 // For any ref/byref values which are still live at the point of a call, spill them into pinned slots
                 // on the stack where the GC can see them so it won't move them. These cases should only be for nested
-                // calls like F(x, G()) where x is a GC ref OR for unmanaged/helper calls where we are unsure about GC behavior of the
-                // callee.
+                // calls like F(x, G()) where x is a GC ref OR for unmanaged/helper calls where we are unsure about GC
+                // behavior of the callee.
                 if (!defs.empty())
                 {
                     if (m_wasmSpillSlots == nullptr)
@@ -2560,8 +2560,8 @@ PhaseStatus Compiler::fgWasmSpillRefs()
 
             if (!tree->IsCall())
             {
-                // If the tree isn't a call, then we haven't already removed the current tree's operands from the defs list. These operands are no longer
-                // meaningfully live so we should remove them now.
+                // If the tree isn't a call, then we haven't already removed the current tree's operands from the defs
+                // list. These operands are no longer meaningfully live so we should remove them now.
                 assert(!tree->IsCall() || tree->AsCall()->IsUnmanaged() || tree->AsCall()->IsHelperCall());
                 tree->VisitOperands([&removeUses, &defs](GenTree* op) {
                     removeUses(op, defs, removeUses);
