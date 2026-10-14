@@ -6,8 +6,7 @@
 #pragma hdrstop
 #endif
 
-// Must match INTERP_STACK_SLOT_SIZE in interpreter/inc/interpretershared.h.
-static constexpr unsigned InterpStackSlotSize = 8;
+#include "interpmethod.h"
 
 const char*            Target::g_tgtCPUName           = "interp";
 const Target::ArgOrder Target::g_tgtArgOrder          = ARG_ORDER_L2R;
@@ -40,8 +39,8 @@ InterpClassifier::InterpClassifier(const ClassifierInfo& info)
 //
 // Notes:
 //   Every argument is passed by value on the interpreter stack, in order, in a
-//   slot whose size is rounded up to the interpreter stack slot size. This must
-//   match how the interpreter lays out call arguments.
+//   slot whose size is rounded up to INTERP_STACK_SLOT_SIZE. This must match how
+//   the interpreter lays out call arguments.
 //
 ABIPassingInformation InterpClassifier::Classify(Compiler*    comp,
                                                  var_types    type,
@@ -50,9 +49,9 @@ ABIPassingInformation InterpClassifier::Classify(Compiler*    comp,
 {
     unsigned size = varTypeIsStruct(type) ? structLayout->GetSize() : genTypeSize(type);
 
-    // TODO-Interp: arguments that need 16-byte alignment (e.g. Vector128) are not handled yet.
+    // TODO-Interp: arguments that need INTERP_STACK_ALIGNMENT (e.g. Vector128) are not handled yet.
     unsigned          offset = m_stackArgSize;
     ABIPassingSegment seg    = ABIPassingSegment::OnStack(offset, 0, size);
-    m_stackArgSize += roundUp(size, InterpStackSlotSize);
+    m_stackArgSize += roundUp(size, INTERP_STACK_SLOT_SIZE);
     return ABIPassingInformation::FromSegmentByValue(comp, seg);
 }

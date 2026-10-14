@@ -330,6 +330,7 @@ set( JIT_WASM_SOURCES
 set( JIT_INTERP_SOURCES
   codegeninterp.cpp
   emitinterp.cpp
+  interpdump.cpp
   lowerinterp.cpp
   regallocinterp.cpp
   registeropsinterp.cpp
@@ -532,9 +533,11 @@ set( JIT_WASM_HEADERS
 )
 
 set( JIT_INTERP_HEADERS
+    codegeninterp.h
     emitfmtsinterp.h
     emitinterp.h
     instrsinterp.h
+    interpdump.h
     regallocinterp.h
     registerinterp.h
     registeropsinterp.h

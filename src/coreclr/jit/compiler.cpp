@@ -6363,6 +6363,15 @@ int Compiler::compCompileAfterInit(CORINFO_MODULE_HANDLE classPtr,
 
 #endif // DEBUG
 
+#ifdef TARGET_INTERP
+    // Methods that are not opted in fall back to the next code generator.
+    if (!compIsForInlining() &&
+        !JitConfig.Interpreter().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
+    {
+        return CORJIT_SKIPPED;
+    }
+#endif // TARGET_INTERP
+
     /* Setup an error trap */
 
     struct Param
