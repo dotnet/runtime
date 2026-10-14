@@ -1185,6 +1185,7 @@ namespace Microsoft.Extensions.Configuration
         /// Because the accessor is virtual, invoking it on any instance still dispatches to the actual
         /// most-derived override at run time.
         /// </summary>
+        [RequiresUnreferencedCode(PropertyTrimmingWarningMessage)]
         private static MethodInfo? GetEffectiveAccessor(PropertyInfo property, bool getter)
         {
             MethodInfo? accessor = getter ? property.GetMethod : property.SetMethod;
