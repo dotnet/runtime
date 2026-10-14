@@ -29,6 +29,32 @@ public unsafe class DacDbiImplTests
     private const uint DebuggerIgnorePdbsPriv = 0x00008000;
     private const ulong CorDBDefaultEnCFunctionVersion = 1;
 
+    [Theory]
+    [InlineData("wasm", "Browser", TargetArchitecture.Wasm, TargetOperatingSystem.Browser, 4u)]
+    [InlineData("wasm", "Unix", TargetArchitecture.Wasm, TargetOperatingSystem.Unix, 4u)]
+    [InlineData("arm64", "Apple", TargetArchitecture.Arm64, TargetOperatingSystem.Apple, 8u)]
+    [InlineData("x64", "Windows", TargetArchitecture.AMD64, TargetOperatingSystem.Windows, 8u)]
+    public void GetTargetInfo_ReportsOperatingSystem(
+        string architecture,
+        string operatingSystem,
+        TargetArchitecture expectedArchitecture,
+        TargetOperatingSystem expectedOperatingSystem,
+        uint pointerSize)
+    {
+        MockTarget.Architecture arch = new() { IsLittleEndian = true, Is64Bit = pointerSize == 8 };
+        Target target = RuntimeInfoTests.CreateTarget(arch,
+            [(Constants.Globals.Architecture, architecture), (Constants.Globals.OperatingSystem, operatingSystem)]);
+        DacDbiImpl dacDbi = new(target, legacyObj: null, new());
+        TargetInfo targetInfo = default;
+
+        int hr = dacDbi.GetTargetInfo(&targetInfo);
+
+        Assert.Equal(System.HResults.S_OK, hr);
+        Assert.Equal(expectedArchitecture, targetInfo.Arch);
+        Assert.Equal(expectedOperatingSystem, targetInfo.OS);
+        Assert.Equal(pointerSize, targetInfo.PointerSize);
+    }
+
     private static (DacDbiImpl DacDbi, TestPlaceholderTarget Target) CreateDacDbiWithLoader(
         MockTarget.Architecture arch,
         Action<MockLoaderBuilder, TestPlaceholderTarget.Builder> configure)

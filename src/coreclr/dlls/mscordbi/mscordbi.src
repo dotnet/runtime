@@ -22,8 +22,7 @@ EXPORTS
     CoreCLRCreateCordbObjectEx private
     CoreCLRCreateCordbObject3 private
 
-#if defined(HOST_UNIX)
+#if defined(FEATURE_DBGIPC_TRANSPORT_DI)
     DllGetClassObject private
-#endif // HOST_UNIX
-
+#endif // FEATURE_DBGIPC_TRANSPORT_DI
 

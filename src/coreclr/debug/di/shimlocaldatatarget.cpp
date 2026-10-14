@@ -278,7 +278,22 @@ HRESULT STDMETHODCALLTYPE
 ShimLocalDataTarget::GetPlatform(
         CorDebugPlatform *pPlatform)
 {
-    return E_NOTIMPL;
+#ifdef HOST_UNIX
+#error ShimLocalDataTarget is not implemented on PAL systems yet
+#endif
+    // Assume that we're running on Windows for now.
+#if defined(HOST_X86)
+    *pPlatform = CORDB_PLATFORM_WINDOWS_X86;
+#elif defined(HOST_AMD64)
+    *pPlatform = CORDB_PLATFORM_WINDOWS_AMD64;
+#elif defined(HOST_ARM)
+    *pPlatform = CORDB_PLATFORM_WINDOWS_ARM;
+#elif defined(HOST_ARM64)
+    *pPlatform = CORDB_PLATFORM_WINDOWS_ARM64;
+#else
+#error Unknown Processor.
+#endif
+    return S_OK;
 }
 
 // impl of interface method ICorDebugDataTarget::ReadVirtual

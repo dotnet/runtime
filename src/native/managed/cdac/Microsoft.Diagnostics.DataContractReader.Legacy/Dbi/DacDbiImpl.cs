@@ -6608,7 +6608,8 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             {
                 Contracts.RuntimeInfoOperatingSystem.Windows => TargetOperatingSystem.Windows,
                 Contracts.RuntimeInfoOperatingSystem.Unix => TargetOperatingSystem.Unix,
-                Contracts.RuntimeInfoOperatingSystem.Apple => TargetOperatingSystem.Unix,
+                Contracts.RuntimeInfoOperatingSystem.Browser => TargetOperatingSystem.Browser,
+                Contracts.RuntimeInfoOperatingSystem.Apple => TargetOperatingSystem.Apple,
                 _ => TargetOperatingSystem.Unknown,
             };
 

@@ -248,7 +248,39 @@ HRESULT STDMETHODCALLTYPE
 ShimRemoteDataTarget::GetPlatform(
         CorDebugPlatform *pPlatform)
 {
-    return E_NOTIMPL;
+#ifdef HOST_UNIX
+     #if defined(HOST_X86)
+         *pPlatform = CORDB_PLATFORM_POSIX_X86;
+     #elif defined(HOST_AMD64)
+         *pPlatform = CORDB_PLATFORM_POSIX_AMD64;
+     #elif defined(HOST_ARM)
+         *pPlatform = CORDB_PLATFORM_POSIX_ARM;
+     #elif defined(HOST_ARM64)
+         *pPlatform = CORDB_PLATFORM_POSIX_ARM64;
+     #elif defined(HOST_LOONGARCH64)
+         *pPlatform = CORDB_PLATFORM_POSIX_LOONGARCH64;
+     #elif defined(HOST_RISCV64)
+         *pPlatform = CORDB_PLATFORM_POSIX_RISCV64;
+     #else
+         #error Unknown Processor.
+     #endif
+#else
+    #if defined(HOST_X86)
+        *pPlatform = CORDB_PLATFORM_WINDOWS_X86;
+    #elif defined(HOST_AMD64)
+        *pPlatform = CORDB_PLATFORM_WINDOWS_AMD64;
+    #elif defined(HOST_ARM)
+        *pPlatform = CORDB_PLATFORM_WINDOWS_ARM;
+    #elif defined(HOST_ARM64)
+        *pPlatform = CORDB_PLATFORM_WINDOWS_ARM64;
+    #elif defined(HOST_LOONGARCH64)
+        *pPlatform = CORDB_PLATFORM_WINDOWS_LOONGARCH64;
+    #else
+        #error Unknown Processor.
+    #endif
+#endif
+
+    return S_OK;
 }
 
 // impl of interface method ICorDebugDataTarget::ReadVirtual
@@ -363,7 +395,7 @@ ShimRemoteDataTarget::GetThreadContext(
     ReturnFailureIfStateNotOk();
 
     // GetThreadContext() is currently not implemented in ShimRemoteDataTarget, which is used with our pipe transport
-    // (HOST_UNIX). Pipe transport is used on POSIX system, but occasionally we can turn it on for Windows for testing,
+    // (FEATURE_DBGIPC_TRANSPORT_DI). Pipe transport is used on POSIX system, but occasionally we can turn it on for Windows for testing,
     // and then we'd like to have same behavior as on POSIX system (zero context).
     //
     // We don't have a good way to implement GetThreadContext() in ShimRemoteDataTarget yet, because we have no way to convert a thread ID to a

@@ -168,10 +168,10 @@ class NeuterList;
 
 struct IDacDbiInterface;
 
-#if defined(HOST_UNIX)
+#if defined(FEATURE_DBGIPC_TRANSPORT_DI)
 class DbgTransportTarget;
 class DbgTransportSession;
-#endif // HOST_UNIX
+#endif // FEATURE_DBGIPC_TRANSPORT_DI
 
 // @dbgtodo  private shim hook - the RS has private hooks into the shim to help bridge the V2/V3 gap.
 // This helps provide a working dogfooding story throughout our transition.
@@ -803,13 +803,13 @@ public:
         // between RCET, W32ET, and user threads.
         LL_PROCESS_LOCK = 2,
 
-#if defined(HOST_UNIX)
+#if defined(FEATURE_DBGIPC_TRANSPORT_DI)
         LL_DBG_TRANSPORT_MANAGER_LOCK = 1,
 
         LL_DBG_TRANSPORT_TARGET_LOCK = 0,
 
         LL_DD_MARSHAL_LOCK = 0,
-#endif // HOST_UNIX
+#endif // FEATURE_DBGIPC_TRANSPORT_DI
 
         // These are all leaf locks (they don't take any other lock once they're held).
         LL_PROCESS_LIST_LOCK = 0,
@@ -1155,11 +1155,11 @@ typedef enum {
 struct NativePatch
 {
     void * pAddress; // pointer into the LS address space.
-    ULONG32 opcode; // opcode to restore with.
+    PRD_TYPE opcode; // opcode to restore with.
 
     inline bool operator==(NativePatch p2)
     {
-        return (pAddress == p2.pAddress) && (opcode == p2.opcode);
+        return memcmp(this, &p2, sizeof(p2)) == 0;
     }
 };
 
@@ -1168,13 +1168,13 @@ struct NativePatch
 //-----------------------------------------------------------------------------
 
 // Remove the int3 from the remote address
-HRESULT RemoveRemotePatch(CordbProcess * pProcess, const void * pRemoteAddress, ULONG32 opcode);
+HRESULT RemoveRemotePatch(CordbProcess * pProcess, const void * pRemoteAddress, PRD_TYPE opcode);
 
 // This flavor is assuming our caller already knows the opcode.
 HRESULT ApplyRemotePatch(CordbProcess * pProcess, const void * pRemoteAddress);
 
 // Apply the patch and get the opcode that we're replacing.
-HRESULT ApplyRemotePatch(CordbProcess * pProcess, const void * pRemoteAddress, ULONG32 * pOpcode);
+HRESULT ApplyRemotePatch(CordbProcess * pProcess, const void * pRemoteAddress, PRD_TYPE * pOpcode);
 
 
 class CordbHashTable;
@@ -2241,9 +2241,9 @@ public:
     // CorDebug
     //-----------------------------------------------------------
 
-#if defined(HOST_UNIX)
+#if defined(FEATURE_DBGIPC_TRANSPORT_DI)
     static COM_METHOD CreateObjectTelesto(REFIID id, void ** pObject);
-#endif // HOST_UNIX
+#endif // FEATURE_DBGIPC_TRANSPORT_DI
     static COM_METHOD CreateObject(CorDebugInterfaceVersion iDebuggerVersion, DWORD pid, LPCWSTR lpApplicationGroupId, LPCWSTR lpwstrDacModulePath, REFIID id, void** object);
 
     //-----------------------------------------------------------
@@ -3281,12 +3281,6 @@ public:
     // Writes a buffer to the target
     void SafeWriteBuffer(TargetBuffer tb, const BYTE * pLocalBuffer);
 
-    // Reads the breakpoint opcode from the target, using the target's instruction width.
-    HRESULT SafeReadBreakpointInstruction(CORDB_ADDRESS pRemotePtr, ULONG32 * pOpcode);
-
-    // Writes an opcode to the target, using the target's instruction width.
-    HRESULT SafeWriteBreakpointInstruction(CORDB_ADDRESS pRemotePtr, ULONG32 opcode);
-
 #if defined(FEATURE_INTEROP_DEBUGGING)
     void DuplicateHandleToLocalProcess(CLREventBase * pLocalEvent, RemoteHANDLE * pRemoteHandle);
 #endif // FEATURE_INTEROP_DEBUGGING
@@ -3609,9 +3603,6 @@ public:
     IDacDbiInterface * GetDAC();
 
     HRESULT GetTargetInfo(IDacDbiInterface::TargetInfo * pTargetInfo);
-
-    // Get the width, in bytes, of the breakpoint opcode in the target's instruction stream.
-    HRESULT GetTargetBreakpointOpcodeSize(ULONG32 * pcbSize);
 
     HRESULT GetStackwalkControlPCAdjustOffset(ULONG32 * pcbOffset);
 
@@ -4131,7 +4122,7 @@ private:
     CUnmanagedThreadHashTableImpl m_unmanagedThreadHashTable;
     DWORD m_dwOutOfProcessStepping;
     bool m_fOutOfProcessSetThreadContextEventReceived;
-    HRESULT EnableInPlaceSingleStepping(UnmanagedThreadTracker * pCurThread, CORDB_ADDRESS_TYPE *patchSkipAddr, ULONG32 opcode);
+    HRESULT EnableInPlaceSingleStepping(UnmanagedThreadTracker * pCurThread, CORDB_ADDRESS_TYPE *patchSkipAddr, PRD_TYPE opcode);
 public:
     void HandleDebugEventForInPlaceStepping(const DEBUG_EVENT * pEvent);
     bool CanDetach(); // Must only be called on the Win32ET, determines if it is safe to detach. Only used by W32ETA_CAN_DETACH
@@ -10168,7 +10159,7 @@ private:
         {
             MachineInfo machineInfo;
             ProcessDescriptor processDescriptor;
-#if !defined(HOST_UNIX)
+#if !defined(FEATURE_DBGIPC_TRANSPORT_DI)
             bool fWin32Attach;
 #endif
             CordbProcess *pProcess;
@@ -10176,7 +10167,7 @@ private:
             // Wrapper to determine if we're interop-debugging.
             bool IsInteropDebugging()
             {
-#if !defined(HOST_UNIX)
+#if !defined(FEATURE_DBGIPC_TRANSPORT_DI)
                 return fWin32Attach;
 #else
                 return false;

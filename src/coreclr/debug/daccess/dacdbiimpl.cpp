@@ -7815,7 +7815,11 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetTargetInfo(OUT TargetInfo * pT
     pTargetInfo->arch = kArchUnknown;
 #endif
 
-#if defined(TARGET_UNIX)
+#if defined(TARGET_BROWSER)
+    pTargetInfo->os = kOSBrowser;
+#elif defined(TARGET_APPLE)
+    pTargetInfo->os = kOSApple;
+#elif defined(TARGET_UNIX)
     pTargetInfo->os = kOSUnix;
 #elif defined(TARGET_WINDOWS)
     pTargetInfo->os = kOSWindows;

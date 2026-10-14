@@ -1076,7 +1076,7 @@ HRESULT ShimProcess::DebugActiveProcess(
 
         _ASSERTE(SUCCEEDED(hr));
 
-#if !defined(HOST_UNIX)
+#if !defined(FEATURE_DBGIPC_TRANSPORT_DI)
         // Don't do this when we are remote debugging since we won't be getting the loader breakpoint.
         // We don't support JIT attach in remote debugging scenarios anyway.
         //
@@ -1109,7 +1109,7 @@ HRESULT ShimProcess::DebugActiveProcess(
                 ARRAY_SIZE(waitSet),
                 WaitHandle::Infinite);
         }
-#endif //!HOST_UNIX
+#endif //!FEATURE_DBGIPC_TRANSPORT_DI
     }
     EX_CATCH_HRESULT(hr);
 
@@ -6660,9 +6660,15 @@ HRESULT CordbProcess::FindPatchByAddress(CORDB_ADDRESS address, bool *pfPatchFou
     if (*pfPatchFound == false)
     {
         // Read one instruction from the faulting address...
-        ULONG32 TrapCheck = 0;
-        HRESULT hr2 = SafeReadBreakpointInstruction(address, &TrapCheck);
-        if (SUCCEEDED(hr2) && (TrapCheck != (ULONG32) CORDbg_BREAK_INSTRUCTION))
+#if defined(TARGET_ARM) || defined(TARGET_ARM64)
+        PRD_TYPE TrapCheck = 0;
+#else
+        BYTE TrapCheck = 0;
+#endif
+
+        HRESULT hr2 = SafeReadStruct(address, &TrapCheck);
+
+        if (SUCCEEDED(hr2) && (TrapCheck != CORDbg_BREAK_INSTRUCTION))
         {
             LOG((LF_CORDB, LL_INFO1000, "CP::FPBA: patchFound=true based on odd missing int 3 case.\n"));
 
@@ -6699,19 +6705,16 @@ HRESULT CordbProcess::WriteMemory(CORDB_ADDRESS address, DWORD size,
     DWORD fCheckInt3 = configCheckInt3.val(CLRConfig::INTERNAL_DbgCheckInt3);
     if (fCheckInt3)
     {
-        IDacDbiInterface::TargetInfo targetInfo;
-        if (SUCCEEDED(GetTargetInfo(&targetInfo)) &&
-            (targetInfo.arch == IDacDbiInterface::kArchX86 || targetInfo.arch == IDacDbiInterface::kArchAMD64))
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
+        if (size == 1 && buffer[0] == 0xCC)
         {
-            if (size == 1 && buffer[0] == 0xCC)
-            {
-                CONSISTENCY_CHECK_MSGF(false,
-                    ("You're using ICorDebugProcess::WriteMemory() to write an 'int3' (1 byte 0xCC) at address 0x%p.\n"
-                    "If you're trying to set a breakpoint, you should be using ICorDebugProcess::SetUnmanagedBreakpoint() instead.\n"
-                    "(This assert is only enabled under the CLR knob DbgCheckInt3.)\n",
-                    CORDB_ADDRESS_TO_PTR(address)));
-            }
+            CONSISTENCY_CHECK_MSGF(false,
+                ("You're using ICorDebugProcess::WriteMemory() to write an 'int3' (1 byte 0xCC) at address 0x%p.\n"
+                "If you're trying to set a breakpoint, you should be using ICorDebugProcess::SetUnmanagedBreakpoint() instead.\n"
+                "(This assert is only enabled under the CLR knob DbgCheckInt3.)\n",
+                CORDB_ADDRESS_TO_PTR(address)));
         }
+#endif // TARGET_X86 || TARGET_AMD64
 
         // check if we're replaced an opcode.
         if (size == 1)
@@ -8203,45 +8206,6 @@ HRESULT CordbProcess::SafeReadBuffer(TargetBuffer tb, BYTE * pLocalBuffer, BOOL 
     return S_OK;
 }
 
-//-----------------------------------------------------------------------------
-// Returns the width, in bytes, of the breakpoint opcode in the target's
-// instruction stream, determined from the target's architecture at runtime.
-//-----------------------------------------------------------------------------
-HRESULT CordbProcess::GetTargetBreakpointOpcodeSize(ULONG32 * pcbSize)
-{
-    _ASSERTE(pcbSize != NULL);
-
-    IDacDbiInterface::TargetInfo targetInfo;
-    HRESULT hr = GetTargetInfo(&targetInfo);
-    if (FAILED(hr))
-        return hr;
-
-    switch (targetInfo.arch)
-    {
-        case IDacDbiInterface::kArchX86:
-        case IDacDbiInterface::kArchAMD64:
-        case IDacDbiInterface::kArchWasm:
-            *pcbSize = 1;
-            break;
-
-        case IDacDbiInterface::kArchArm:
-            *pcbSize = 2;
-            break;
-
-        case IDacDbiInterface::kArchArm64:
-        case IDacDbiInterface::kArchLoongArch64:
-        case IDacDbiInterface::kArchRiscV64:
-            *pcbSize = 4;
-            break;
-
-        default:
-            _ASSERTE(!"NYI: breakpoint opcode size for this target architecture");
-            return E_NOTIMPL;
-    }
-
-    return S_OK;
-}
-
 HRESULT CordbProcess::GetStackwalkControlPCAdjustOffset(ULONG32 * pcbOffset)
 {
     _ASSERTE(pcbOffset != NULL);
@@ -8275,50 +8239,6 @@ HRESULT CordbProcess::GetStackwalkControlPCAdjustOffset(ULONG32 * pcbOffset)
     }
 
     return S_OK;
-}
-
-//-----------------------------------------------------------------------------
-// Reads the breakpoint opcode from the target using the target's instruction
-// width. The value is zero-extended into pOpcode.
-//-----------------------------------------------------------------------------
-HRESULT CordbProcess::SafeReadBreakpointInstruction(CORDB_ADDRESS pRemotePtr, ULONG32 * pOpcode)
-{
-    ULONG32 cbSize = 0;
-    HRESULT hr = GetTargetBreakpointOpcodeSize(&cbSize);
-    if (FAILED(hr))
-        return hr;
-
-    _ASSERTE(cbSize <= sizeof(ULONG32));
-
-    *pOpcode = 0;
-    EX_TRY
-    {
-        TargetBuffer tb(pRemotePtr, cbSize);
-        SafeReadBuffer(tb, (PBYTE) pOpcode);
-    }
-    EX_CATCH_HRESULT(hr);
-    return hr;
-}
-
-//-----------------------------------------------------------------------------
-// Writes an opcode to the target using the target's instruction width.
-//-----------------------------------------------------------------------------
-HRESULT CordbProcess::SafeWriteBreakpointInstruction(CORDB_ADDRESS pRemotePtr, ULONG32 opcode)
-{
-    ULONG32 cbSize = 0;
-    HRESULT hr = GetTargetBreakpointOpcodeSize(&cbSize);
-    if (FAILED(hr))
-        return hr;
-
-    _ASSERTE(cbSize <= sizeof(ULONG32));
-
-    EX_TRY
-    {
-        TargetBuffer tb(pRemotePtr, cbSize);
-        SafeWriteBuffer(tb, (const BYTE *) &opcode);
-    }
-    EX_CATCH_HRESULT(hr);
-    return hr;
 }
 
 CordbAppDomain * CordbProcess::GetAppDomain()
@@ -8525,12 +8445,18 @@ bool CordbProcess::IsBreakOpcodeAtAddress(const void * address)
 {
     // There should have been an int3 there already. Since we already put it in there,
     // we should be able to safely read it out.
-    ULONG32 opcodeTest = 0;
+#if defined(TARGET_ARM) || defined(TARGET_ARM64)
+    PRD_TYPE opcodeTest = 0;
+#elif defined(TARGET_AMD64) || defined(TARGET_X86)
+    BYTE opcodeTest = 0;
+#else
+    PORTABILITY_ASSERT("NYI: Architecture specific opcode type to read");
+#endif
 
-    HRESULT hr = SafeReadBreakpointInstruction(PTR_TO_CORDB_ADDRESS(address), &opcodeTest);
+    HRESULT hr = SafeReadStruct(PTR_TO_CORDB_ADDRESS(address), &opcodeTest);
     SIMPLIFYING_ASSUMPTION_SUCCEEDED(hr);
 
-    return (opcodeTest == (ULONG32) CORDbg_BREAK_INSTRUCTION);
+    return (opcodeTest == CORDbg_BREAK_INSTRUCTION);
 }
 #endif // FEATURE_INTEROP_DEBUGGING
 
@@ -8584,14 +8510,20 @@ CordbProcess::SetUnmanagedBreakpointInternal(CORDB_ADDRESS address, ULONG32 bufs
     HRESULT hr = S_OK;
 
     NativePatch * p = NULL;
-    ULONG32 opcode = 0;
-    ULONG32 cbOpcode = 0;
-    hr = GetTargetBreakpointOpcodeSize(&cbOpcode);
-    if (FAILED(hr))
-        goto ErrExit;
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
+    const BYTE patch = CORDbg_BREAK_INSTRUCTION;
+    BYTE opcode;
+#elif defined(TARGET_ARM64)
+    const PRD_TYPE patch = CORDbg_BREAK_INSTRUCTION;
+    PRD_TYPE opcode;
+#else
+    PORTABILITY_ASSERT("NYI: CordbProcess::SetUnmanagedBreakpoint, interop debugging NYI on this platform");
+    hr = E_NOTIMPL;
+    goto ErrExit;
+#endif
 
     // Make sure args are good
-    if ((buffer == NULL) || (bufsize < cbOpcode) || (bufLen == NULL))
+    if ((buffer == NULL) || (bufsize < sizeof(patch)) || (bufLen == NULL))
     {
         hr = E_INVALIDARG;
         goto ErrExit;
@@ -8612,14 +8544,24 @@ CordbProcess::SetUnmanagedBreakpointInternal(CORDB_ADDRESS address, ULONG32 bufs
         goto ErrExit;
     }
 
+
+    // Read out opcode. 1 byte on x86
+
     hr = ApplyRemotePatch(this, CORDB_ADDRESS_TO_PTR(address), &p->opcode);
     if (FAILED(hr))
         goto ErrExit;
 
     // It's all successful, so now update our out-params & internal bookkeaping.
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
+    opcode = (BYTE)p->opcode;
+    buffer[0] = opcode;
+#elif defined(TARGET_ARM64)
     opcode = p->opcode;
-    memcpy_s(buffer, bufsize, &opcode, cbOpcode);
-    *bufLen = cbOpcode;
+    memcpy_s(buffer, bufsize, &opcode, sizeof(opcode));
+#else
+    PORTABILITY_ASSERT("NYI: CordbProcess::SetUnmanagedBreakpoint, interop debugging NYI on this platform");
+#endif
+    *bufLen = sizeof(opcode);
 
     p->pAddress = CORDB_ADDRESS_TO_PTR(address);
     p->opcode = opcode;
@@ -8658,7 +8600,7 @@ CordbProcess::ClearUnmanagedBreakpoint(CORDB_ADDRESS address)
     _ASSERTE(!ThreadHoldsProcessLock());
 
     HRESULT hr = S_OK;
-    ULONG32 opcode;
+    PRD_TYPE opcode;
 
     Lock();
 
@@ -9180,7 +9122,7 @@ bool CordbProcess::CopyManagedEventFromTarget(
     // described in the comment for code:IEventChannel.  In this case, we are just transferring the IPC
     // event from the native pipeline to the event channel, and the event channel will read it directly from
     // the send buffer on the LS.  See code:CordbRCEventThread::WaitForIPCEventFromProcess.
-#if !defined(HOST_UNIX)
+#if !defined(FEATURE_DBGIPC_TRANSPORT_DI)
     hr = SafeReadStruct(ptrRemoteManagedEvent, pLocalManagedEvent);
 #else
     // For Mac remote debugging the address returned above is actually a local address.
@@ -10592,7 +10534,7 @@ bool CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
         bool m_fIsInPlaceSingleStep = false;
         bool m_fHasDebuggerPatchSkip = false;
         bool m_fClearSetIP = false;
-        ULONG32 m_opcode = 0;
+        PRD_TYPE m_opcode = 0;
 
     public:
         void Update(DT_CONTEXT * pContext)
@@ -10602,7 +10544,7 @@ bool CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
             this->m_fIsInPlaceSingleStep = (pContext->R8 & 0x1) != 0;
             this->m_fHasDebuggerPatchSkip = (pContext->R8 & 0x2) != 0;
             this->m_fClearSetIP = (pContext->R8 & 0x4) != 0;
-            this->m_opcode = (ULONG32)pContext->R9;
+            this->m_opcode = (PRD_TYPE)pContext->R9;
         }
 
         TADDR ContextAddr() { return m_lsContextAddr; }
@@ -10610,7 +10552,7 @@ bool CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
         bool IsInPlaceSingleStep() { return m_fIsInPlaceSingleStep; }
         bool HasDebuggerPatchSkip() { return m_fHasDebuggerPatchSkip; }
         bool IsClearSetIP() { return m_fClearSetIP; }
-        ULONG32 Opcode() { return m_opcode; }
+        PRD_TYPE Opcode() { return m_opcode; }
 
         HRESULT IsValid()
         {
@@ -10824,7 +10766,7 @@ bool CordbProcess::HandleSetThreadContextNeeded(DWORD dwThreadId)
 #endif
 }
 
-HRESULT CordbProcess::EnableInPlaceSingleStepping(UnmanagedThreadTracker * pCurThread, CORDB_ADDRESS_TYPE *patchSkipAddr, ULONG32 opcode)
+HRESULT CordbProcess::EnableInPlaceSingleStepping(UnmanagedThreadTracker * pCurThread, CORDB_ADDRESS_TYPE *patchSkipAddr, PRD_TYPE opcode)
 {
     if (pCurThread == NULL || patchSkipAddr == NULL)
     {
@@ -12683,8 +12625,14 @@ void CordbProcess::HandleDebugEventForInteropDebugging(const DEBUG_EVENT * pEven
         DbiGetThreadContext(pUnmanagedThread->m_handle, &tempDebugContext);
         CordbUnmanagedThread::LogContext(&tempDebugContext);
 
-        ULONG32 breakpointOpcodeSize = 0;
-        IfFailThrow(GetTargetBreakpointOpcodeSize(&breakpointOpcodeSize));
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
+        const ULONG_PTR breakpointOpcodeSize = 1;
+#elif defined(TARGET_ARM64)
+        const ULONG_PTR breakpointOpcodeSize = 4;
+#else
+        const ULONG_PTR breakpointOpcodeSize = 1;
+        PORTABILITY_ASSERT("NYI: Breakpoint size offset for this platform");
+#endif
         _ASSERTE(CORDbgGetIP(&tempDebugContext) == pEvent->u.Exception.ExceptionRecord.ExceptionAddress ||
             (DWORD)(size_t)CORDbgGetIP(&tempDebugContext) == ((DWORD)(size_t)pEvent->u.Exception.ExceptionRecord.ExceptionAddress)+breakpointOpcodeSize);
     }
@@ -13604,7 +13552,7 @@ HRESULT CordbWin32EventThread::SendDebugActiveProcessEvent(
 
     m_actionData.attachData.machineInfo = machineInfo;
     m_actionData.attachData.processDescriptor = *pProcessDescriptor;
-#if !defined(HOST_UNIX)
+#if !defined(FEATURE_DBGIPC_TRANSPORT_DI)
     m_actionData.attachData.fWin32Attach = fWin32Attach;
 #endif
     m_actionData.attachData.pProcess = pProcess;
@@ -14240,7 +14188,7 @@ void CordbWin32EventThread::ExitProcess(bool fDetach)
 
     // For the Mac remote debugging transport, DebugActiveProcessStop() is a nop.  The transport will be
     // shut down later when we neuter the CordbProcess.
-#if !defined(HOST_UNIX)
+#if !defined(FEATURE_DBGIPC_TRANSPORT_DI)
     // @dbgtodo shim: this is a primitive workaround for interop-detach
     // Eventually, the Debugger owns the detach pipeline, so this won't be necessary.
     if (fDetach && (m_pProcess != NULL))
@@ -14257,7 +14205,7 @@ void CordbWin32EventThread::ExitProcess(bool fDetach)
             return;
         }
     }
-#endif // !HOST_UNIX
+#endif // !FEATURE_DBGIPC_TRANSPORT_DI
 
 
     // We don't really care if we're on the Win32 thread or not here. We just want to be sure that

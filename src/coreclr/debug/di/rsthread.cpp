@@ -510,7 +510,7 @@ HRESULT CordbThread::GetHandle(HANDLE * phThreadHandle)
         return E_NOTIMPL;
     }
 
-#if !defined(HOST_UNIX)
+#if !defined(FEATURE_DBGIPC_TRANSPORT_DI)
     HRESULT hr = S_OK;
     EX_TRY
     {
@@ -519,7 +519,7 @@ HRESULT CordbThread::GetHandle(HANDLE * phThreadHandle)
         *phThreadHandle = hThread;
     }
     EX_CATCH_HRESULT(hr);
-#else  // HOST_UNIX
+#else  // FEATURE_DBGIPC_TRANSPORT_DI
     // In the old SL implementation of Mac debugging, we return a thread handle faked up by the PAL on the Mac.
     // The returned handle is meaningless.  Here we explicitly return E_NOTIMPL.  We plan to deprecate this
     // function in Dev10 anyway.
@@ -527,7 +527,7 @@ HRESULT CordbThread::GetHandle(HANDLE * phThreadHandle)
     // @dbgtodo  Mac - Check with VS to see if they need the thread handle, e.g. for waiting on thread
     // termination.
     HRESULT hr = E_NOTIMPL;
-#endif // !HOST_UNIX
+#endif // !FEATURE_DBGIPC_TRANSPORT_DI
 
     return hr;
 }
@@ -4030,12 +4030,9 @@ void CordbUnmanagedThread::SetupForSkipBreakpoint(NativePatch * pNativePatch)
         fTrapOnSkip = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_DbgTrapOnSkip);
     }
 #endif
-    IDacDbiInterface::TargetInfo targetInfo;
-    IfFailThrow(GetProcess()->GetTargetInfo(&targetInfo));
-    if (targetInfo.arch == IDacDbiInterface::kArchX86)
-    {
-        STRESS_LOG2(LF_CORDB, LL_INFO100, "CUT::SetupSkip. addr=%p. Opcode=%x\n", pNativePatch->pAddress, (DWORD) pNativePatch->opcode);
-    }
+#if defined(TARGET_X86)
+    STRESS_LOG2(LF_CORDB, LL_INFO100, "CUT::SetupSkip. addr=%p. Opcode=%x\n", pNativePatch->pAddress, (DWORD) pNativePatch->opcode);
+#endif
 
     // Replace the BP w/ the opcode.
     RemoveRemotePatch(GetProcess(), pNativePatch->pAddress, pNativePatch->opcode);
@@ -4279,22 +4276,41 @@ BOOL CordbUnmanagedThread::IsExceptionFromLastRaiseException(const EXCEPTION_REC
 // This flavor is assuming our caller already knows the opcode.
 HRESULT ApplyRemotePatch(CordbProcess * pProcess, const void * pRemoteAddress)
 {
-    ULONG32 patch = CORDbg_BREAK_INSTRUCTION;
-    HRESULT hr = pProcess->SafeWriteBreakpointInstruction(PTR_TO_CORDB_ADDRESS(pRemoteAddress), patch);
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
+    const BYTE patch = CORDbg_BREAK_INSTRUCTION;
+#elif defined(TARGET_ARM64)
+    const PRD_TYPE patch = CORDbg_BREAK_INSTRUCTION;
+#else
+    const BYTE patch = 0;
+    PORTABILITY_ASSERT("NYI: ApplyRemotePatch for this platform");
+#endif
+    HRESULT hr = pProcess->SafeWriteStruct(PTR_TO_CORDB_ADDRESS(pRemoteAddress), &patch);
     SIMPLIFYING_ASSUMPTION_SUCCEEDED(hr);
     return S_OK;
 }
 
 
 // Get the opcode that we're replacing.
-HRESULT ApplyRemotePatch(CordbProcess * pProcess, const void * pRemoteAddress, ULONG32 * pOpcode)
+HRESULT ApplyRemotePatch(CordbProcess * pProcess, const void * pRemoteAddress, PRD_TYPE * pOpcode)
 {
-    HRESULT hr = pProcess->SafeReadBreakpointInstruction(PTR_TO_CORDB_ADDRESS(pRemoteAddress), pOpcode);
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
+    // Read out opcode. 1 byte on x86
+    BYTE opcode;
+#elif defined(TARGET_ARM64)
+    // Read out opcode. 4 bytes on arm64
+    PRD_TYPE opcode;
+#else
+    BYTE opcode;
+    PORTABILITY_ASSERT("NYI: ApplyRemotePatch for this platform");
+#endif
+
+    HRESULT hr = pProcess->SafeReadStruct(PTR_TO_CORDB_ADDRESS(pRemoteAddress), &opcode);
     if (FAILED(hr))
     {
         return hr;
     }
 
+    *pOpcode = (PRD_TYPE) opcode;
     ApplyRemotePatch(pProcess, pRemoteAddress);
     return S_OK;
 }
@@ -4302,9 +4318,20 @@ HRESULT ApplyRemotePatch(CordbProcess * pProcess, const void * pRemoteAddress, U
 //-----------------------------------------------------------------------------
 // Remove the int3 from the remote address
 //-----------------------------------------------------------------------------
-HRESULT RemoveRemotePatch(CordbProcess * pProcess, const void * pRemoteAddress, ULONG32 opcode)
+HRESULT RemoveRemotePatch(CordbProcess * pProcess, const void * pRemoteAddress, PRD_TYPE opcode)
 {
-    pProcess->SafeWriteBreakpointInstruction(PTR_TO_CORDB_ADDRESS(pRemoteAddress), opcode);
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
+    // Replace the BP w/ the opcode.
+    BYTE opcode2 = (BYTE) opcode;
+#elif defined(TARGET_ARM64)
+    // 4 bytes on arm64
+    PRD_TYPE opcode2 = opcode;
+#else
+    PRD_TYPE opcode2 = opcode;
+    PORTABILITY_ASSERT("NYI: RemoveRemotePatch for this platform");
+#endif
+
+    pProcess->SafeWriteStruct(PTR_TO_CORDB_ADDRESS(pRemoteAddress), &opcode2);
 
     // This may fail because the module has been unloaded.  In which case, the patch is also
     // gone so it makes sense to return success.

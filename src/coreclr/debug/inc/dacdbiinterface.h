@@ -2240,6 +2240,8 @@ public:
         kOSUnknown = 0,
         kOSWindows,
         kOSUnix,
+        kOSBrowser,
+        kOSApple,
     } TargetOperatingSystem;
 
     struct TargetInfo

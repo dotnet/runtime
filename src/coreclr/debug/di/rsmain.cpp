@@ -1711,7 +1711,7 @@ HRESULT Cordb::DebugActiveProcessCommon(ICorDebugRemoteTarget * pRemoteTarget,
             return S_FALSE;
         }
 
-#if defined(HOST_UNIX)
+#if defined(FEATURE_DBGIPC_TRANSPORT_DI)
         // This is where we queue the managed attach event in Whidbey.  In the new architecture, the Windows
         // pipeline gets a loader breakpoint when native attach is completed, and that's where we queue the
         // managed attach event.  See how we handle the loader breakpoint in code:ShimProcess::DefaultEventHandler.
@@ -1725,7 +1725,7 @@ HRESULT Cordb::DebugActiveProcessCommon(ICorDebugRemoteTarget * pRemoteTarget,
             hr = pProcess->QueueManagedAttach();
             pProcess->Unlock();
         }
-#endif // HOST_UNIX
+#endif // FEATURE_DBGIPC_TRANSPORT_DI
 
         *ppProcess = (ICorDebugProcess*) pProcess;
     }
@@ -1889,14 +1889,14 @@ void Cordb::EnsureCanLaunchOrAttach(BOOL fWin32DebuggingEnabled)
     // Made it this far, we succeeded.
 }
 
-#if defined(HOST_UNIX)
+#if defined(FEATURE_DBGIPC_TRANSPORT_DI)
 // CoreCLR activates debugger objects via direct COM rather than the shim (just like V1). For now we share the
 // same debug engine version as V2, though this may change in the future.
 HRESULT Cordb::CreateObjectTelesto(REFIID id, void ** pObject)
 {
     return CreateObject(CorDebugVersion_2_0, ProcessDescriptor::UNINITIALIZED_PID, NULL, NULL, id, pObject);
 }
-#endif // HOST_UNIX
+#endif // FEATURE_DBGIPC_TRANSPORT_DI
 
 // Static
 // Used to create an instance for a ClassFactory (thus an external ref).

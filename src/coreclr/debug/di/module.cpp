@@ -1222,7 +1222,7 @@ HRESULT CordbModule::GetNameWorker(ULONG32 cchName, ULONG32 *pcchName, _Out_writ
         szTempName = GetModulePath();
     );
 
-#if defined(HOST_UNIX)
+#if defined(FEATURE_DBGIPC_TRANSPORT_DI)
     // To support VS when debugging remotely we act like the Compact Framework and return the assembly name
     // when asked for the name of an in-memory module.
     if (szTempName == NULL)
@@ -1251,7 +1251,7 @@ HRESULT CordbModule::GetNameWorker(ULONG32 cchName, ULONG32 *pcchName, _Out_writ
     }
 
 
-#endif // HOST_UNIX
+#endif // FEATURE_DBGIPC_TRANSPORT_DI
 
 
     EX_TRY_ALLOW_DATATARGET_MISSING_MEMORY

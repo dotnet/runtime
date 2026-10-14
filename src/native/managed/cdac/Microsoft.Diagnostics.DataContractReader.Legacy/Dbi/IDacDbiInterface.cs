@@ -964,6 +964,8 @@ public enum TargetOperatingSystem
     Unknown = 0,
     Windows,
     Unix,
+    Browser,
+    Apple,
 }
 
 [StructLayout(LayoutKind.Sequential)]

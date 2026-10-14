@@ -285,7 +285,7 @@ struct MSLAYOUT DebuggerIPCControlBlock
 
 };
 
-#if defined(HOST_UNIX)
+#if defined(FEATURE_DBGIPC_TRANSPORT_VM) || defined(FEATURE_DBGIPC_TRANSPORT_DI)
 
 // We need an alternate definition for the control block if using the transport, because the control block has to be sent over the transport
 // In particular we can't nest the send/receive buffers inside of it and we don't use any of the remote handles
@@ -353,8 +353,11 @@ struct MSLAYOUT DebuggerIPCControlBlockTransport
 
 };
 
+#endif // defined(FEATURE_DBGIPC_TRANSPORT_VM) || defined(FEATURE_DBGIPC_TRANSPORT_DI)
+
+#if defined(FEATURE_DBGIPC_TRANSPORT_VM) || defined(FEATURE_DBGIPC_TRANSPORT_DI)
 #include "dbgtransportsession.h"
-#endif // defined(HOST_UNIX)
+#endif // defined(FEATURE_DBGIPC_TRANSPORT_VM) || defined(FEATURE_DBGIPC_TRANSPORT_DI)
 
 #define INITIAL_APP_DOMAIN_INFO_LIST_SIZE   16
 

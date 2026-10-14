@@ -116,14 +116,14 @@ void CordbStackWalk::DeleteAll()
         HRESULT hr = S_OK;
         EX_TRY
         {
-#if defined(HOST_UNIX)
+#if defined(FEATURE_DBGIPC_TRANSPORT_DI)
             // For Mac debugging, it's not safe to call into the DAC once
             // code:INativeEventPipeline::TerminateProcess is called.  This is because the transport will not
             // work anymore.  The sole purpose of calling DeleteStackWalk() is to release the resources and
             // memory allocated for the stackwalk.  In the remote debugging case, the memory is allocated in
             // the debuggee process.  If the process is already terminated, then it's ok to skip the call.
             if (!GetProcess()->m_exiting)
-#endif // HOST_UNIX
+#endif // FEATURE_DBGIPC_TRANSPORT_DI
             {
                 // This Delete call shouldn't actually throw. Worst case, the DDImpl leaked memory.
                 IfFailThrow(GetProcess()->GetDAC()->DeleteStackWalk(m_pSFIHandle));
