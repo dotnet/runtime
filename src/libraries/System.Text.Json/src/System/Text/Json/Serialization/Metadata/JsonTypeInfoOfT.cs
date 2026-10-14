@@ -106,6 +106,7 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 _parameterInfoValuesIndex = null;
                 _parameterInfoValues = null;
+                UnboundConstructorParameterDiagnostic = null;
                 CreateObjectWithArgs = null;
                 ParameterCount = 0;
 

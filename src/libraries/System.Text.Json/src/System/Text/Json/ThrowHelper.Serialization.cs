@@ -422,7 +422,7 @@ namespace System.Text.Json
         [DoesNotReturn]
         public static void ThrowInvalidOperationException_ConstructorParameterIncompleteBinding(JsonTypeInfo jsonTypeInfo)
         {
-            if (JsonTypeInfo.GetUnboundConstructorParameterDiagnostic(jsonTypeInfo) is { } info)
+            if (jsonTypeInfo.UnboundConstructorParameterDiagnostic is { } info)
             {
                 if (info.MatchingPropertyName is not null)
                 {
