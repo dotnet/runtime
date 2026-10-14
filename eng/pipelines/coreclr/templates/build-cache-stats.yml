@@ -13,6 +13,8 @@ parameters:
 
 steps:
   # Roslyn compiler cache
+  # Run after all compilation steps, including test builds, and before Cache@2's
+  # post-job save so only entries used or created during this build are retained.
   - ${{ if or(eq(parameters.osGroup, 'windows'), and(or(eq(parameters.osGroup, 'linux'), eq(parameters.osGroup, 'freebsd'), eq(parameters.osGroup, 'openbsd'), eq(parameters.osGroup, 'osx')), or(eq(parameters.archType, 'x64'), eq(parameters.archType, 'arm64')))) }}:
     - ${{ if ne(parameters.osGroup, 'windows') }}:
       - script: |
@@ -33,10 +35,19 @@ steps:
               exit 0
           fi
 
-          "$dotnet" "$compilerServer" \
+          if ! "$dotnet" "$compilerServer" \
             "-cachestats:${ROSLYN_CACHE_BUILD_START}" \
-            "-cachepath:${ROSLYN_CACHE_PATH}" || true
-        displayName: Roslyn compiler cache stats
+            "-cachepath:${ROSLYN_CACHE_PATH}"; then
+              echo "##vso[task.logissue type=warning]Failed to show Roslyn compiler cache statistics."
+          fi
+
+          echo "Purging Roslyn compiler cache entries unused since build start (${ROSLYN_CACHE_BUILD_START})."
+          if ! "$dotnet" "$compilerServer" \
+            "-purgecache:${ROSLYN_CACHE_BUILD_START}" \
+            "-cachepath:${ROSLYN_CACHE_PATH}"; then
+              echo "##vso[task.logissue type=warning]Failed to purge Roslyn compiler cache."
+          fi
+        displayName: Roslyn compiler cache stats and purge
         condition: always()
 
     - ${{ if eq(parameters.osGroup, 'windows') }}:
@@ -64,8 +75,17 @@ steps:
             Write-Warning "Roslyn compiler cache statistics exited with code $LASTEXITCODE."
           }
 
+          Write-Host "Purging Roslyn compiler cache entries unused since build start ($env:ROSLYN_CACHE_BUILD_START)."
+          & $dotnet $compilerServer `
+            "-purgecache:$env:ROSLYN_CACHE_BUILD_START" `
+            "-cachepath:$env:ROSLYN_CACHE_PATH"
+
+          if ($LASTEXITCODE -ne 0) {
+            Write-Warning "Roslyn compiler cache purge exited with code $LASTEXITCODE."
+          }
+
           exit 0
-        displayName: Roslyn compiler cache stats
+        displayName: Roslyn compiler cache stats and purge
         condition: always()
 
   # sccache native compiler cache

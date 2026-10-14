@@ -362,7 +362,6 @@ extends:
             preBuildSteps:
               - template: /eng/pipelines/coreclr/templates/setup-build-caches.yml
             postBuildSteps:
-              - template: /eng/pipelines/coreclr/templates/build-cache-stats.yml
               - template: /eng/pipelines/libraries/helix.yml
                 parameters:
                   creator: dotnet-bot
@@ -385,6 +384,7 @@ extends:
                         eq(variables['archType'], 'arm64'),
                         eq(variables['coreclrContainsChange'], true)),
                       eq(variables['isRollingBuild'], true))
+              - template: /eng/pipelines/coreclr/templates/build-cache-stats.yml
             condition: >-
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
@@ -430,7 +430,6 @@ extends:
             preBuildSteps:
               - template: /eng/pipelines/coreclr/templates/setup-build-caches.yml
             postBuildSteps:
-              - template: /eng/pipelines/coreclr/templates/build-cache-stats.yml
               - template: /eng/pipelines/libraries/helix.yml
                 parameters:
                   helixBuildConfig: Release
@@ -450,6 +449,7 @@ extends:
                     or(
                       eq(variables['installerContainsChange'], true),
                       eq(variables['isRollingBuild'], true))
+              - template: /eng/pipelines/coreclr/templates/build-cache-stats.yml
             condition: >-
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
@@ -476,7 +476,6 @@ extends:
             preBuildSteps:
               - template: /eng/pipelines/coreclr/templates/setup-build-caches.yml
             postBuildSteps:
-              - template: /eng/pipelines/coreclr/templates/build-cache-stats.yml
               - template: /eng/pipelines/installer/helix-queues-setup.yml
                 parameters:
                   creator: dotnet-bot
@@ -485,6 +484,7 @@ extends:
                     or(
                       eq(variables['installerContainsChange'], true),
                       eq(variables['isRollingBuild'], true))
+              - template: /eng/pipelines/coreclr/templates/build-cache-stats.yml
             condition: >-
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
@@ -518,7 +518,6 @@ extends:
             preBuildSteps:
               - template: /eng/pipelines/coreclr/templates/setup-build-caches.yml
             postBuildSteps:
-              - template: /eng/pipelines/coreclr/templates/build-cache-stats.yml
               - template: /eng/pipelines/libraries/helix.yml
                 parameters:
                   helixBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
@@ -543,6 +542,7 @@ extends:
                       eq(variables['coreclrContainsChange'], true),
                       eq(variables['runtimeTestsContainsChange'], true),
                       eq(variables['isRollingBuild'], true))
+              - template: /eng/pipelines/coreclr/templates/build-cache-stats.yml
             extraVariablesTemplates:
               - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
                 parameters:
@@ -571,12 +571,12 @@ extends:
             preBuildSteps:
               - template: /eng/pipelines/coreclr/templates/setup-build-caches.yml
             postBuildSteps:
-              - template: /eng/pipelines/coreclr/templates/build-cache-stats.yml
               - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
                 parameters:
                   creator: dotnet-bot
                   testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
                   useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
+              - template: /eng/pipelines/coreclr/templates/build-cache-stats.yml
             extraVariablesTemplates:
               - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
                 parameters:
@@ -644,12 +644,12 @@ extends:
             preBuildSteps:
               - template: /eng/pipelines/coreclr/templates/setup-build-caches.yml
             postBuildSteps:
-              - template: /eng/pipelines/coreclr/templates/build-cache-stats.yml
               - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
                 parameters:
                   creator: dotnet-bot
                   testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
                   useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
+              - template: /eng/pipelines/coreclr/templates/build-cache-stats.yml
             extraVariablesTemplates:
               - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
                 parameters:
@@ -720,7 +720,6 @@ extends:
             preBuildSteps:
               - template: /eng/pipelines/coreclr/templates/setup-build-caches.yml
             postBuildSteps:
-              - template: /eng/pipelines/coreclr/templates/build-cache-stats.yml
               - template: /eng/pipelines/common/upload-artifact-step.yml
                 parameters:
                   rootFolder: $(Build.SourcesDirectory)/artifacts/bin
@@ -737,6 +736,7 @@ extends:
                   testRunNamePrefixSuffix: coreclr_checked
                   testScope: innerloop
                   useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
+              - template: /eng/pipelines/coreclr/templates/build-cache-stats.yml
             condition: >-
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
@@ -949,7 +949,6 @@ extends:
             preBuildSteps:
               - template: /eng/pipelines/coreclr/templates/setup-build-caches.yml
             postBuildSteps:
-              - template: /eng/pipelines/coreclr/templates/build-cache-stats.yml
               - template: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
                 parameters:
                   creator: dotnet-bot
@@ -957,6 +956,7 @@ extends:
                   liveLibrariesBuildConfig: Release
                   testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
                   useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
+              - template: /eng/pipelines/coreclr/templates/build-cache-stats.yml
             extraVariablesTemplates:
               - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
                 parameters:
@@ -992,12 +992,12 @@ extends:
               - template: /eng/pipelines/coreclr/templates/setup-build-caches.yml
             # extra steps, run tests
             postBuildSteps:
-              - template: /eng/pipelines/coreclr/templates/build-cache-stats.yml
               - template: /eng/pipelines/libraries/helix.yml
                 parameters:
                   creator: dotnet-bot
                   testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
                   useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
+              - template: /eng/pipelines/coreclr/templates/build-cache-stats.yml
             condition: >-
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
