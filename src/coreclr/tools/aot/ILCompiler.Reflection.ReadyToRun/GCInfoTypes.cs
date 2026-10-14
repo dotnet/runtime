@@ -173,8 +173,8 @@ namespace ILCompiler.Reflection.ReadyToRun
                     INTERRUPTIBLE_RANGE_DELTA2_ENCBASE = 5;
                     REGISTER_ENCBASE = 3;
                     REGISTER_DELTA_ENCBASE = REGISTER_ENCBASE;
-                    STACK_SLOT_ENCBASE = 6;
-                    STACK_SLOT_DELTA_ENCBASE = 4;
+                    STACK_SLOT_ENCBASE = 3;
+                    STACK_SLOT_DELTA_ENCBASE = 3;
                     NUM_SAFE_POINTS_ENCBASE = 4;
                     NUM_INTERRUPTIBLE_RANGES_ENCBASE = 1;
                     POINTER_SIZE_ENCBASE = 3;
@@ -259,6 +259,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                 case Machine.Amd64:
                     return (x << 3);
                 case Machine.ArmThumb2:
+                case WasmMachine.Wasm32:
                     return (x << 2);
                 case Machine.Arm64:
                 case Machine.LoongArch64:
@@ -282,6 +283,8 @@ namespace ILCompiler.Reflection.ReadyToRun
                     return ((x ^ 22) & 0x3);
                 case Machine.RiscV64:
                     return (x ^ 8);
+                case WasmMachine.Wasm32:
+                    return (x ^ 2);
             }
             return x;
         }

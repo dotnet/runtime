@@ -1893,7 +1893,7 @@ static void WasmUnwindStackFrameCore(TADDR* pSP, TADDR* pIP, UINT_PTR ImageBase,
     else
     {
         PTR_BYTE pUnwindData = dac_cast<PTR_BYTE>(FunctionEntry->UnwindData + ImageBase);
-        *pSP = fp + DecodeULEB128AsU32(&pUnwindData); // Unwind the frame pointer to the callers stack pointer
+        *pSP = fp + DecodeULEB128AsU32(&pUnwindData) * 16; // Unwind the frame pointer to the callers stack pointer
         // A reverse-pinvoke frame's caller is native, not an R2R shadow frame; leave the IP unset so the walk
         // continues via the Frame chain instead of reading the native caller SP as a shadow frame.
         *pIP = callerIsNative ? 0 : GetWasmVirtualIPFromStackPointer(*pSP);

@@ -110,7 +110,7 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
         {
             _machine = machine;
 
-            if (imageReader.ReadBits(1, ref bitOffset) != 0)
+            if (machine != WasmMachine.Wasm32 && imageReader.ReadBits(1, ref bitOffset) != 0)
             {
                 NumRegisters = imageReader.DecodeVarLengthUnsigned(gcInfoTypes.NUM_REGISTERS_ENCBASE, ref bitOffset);
             }
@@ -177,6 +177,25 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
 
         private void DecodeStackSlots(NativeReader imageReader, Machine machine, GcInfoTypes gcInfoTypes, uint nSlots, bool isUntracked, ref int bitOffset)
         {
+            if (machine == WasmMachine.Wasm32)
+            {
+                GcSlotFlags previousFlags = (GcSlotFlags)7;
+                int offset = 0;
+                for (int i = 0; i < nSlots; i++)
+                {
+                    GcSlotFlags slotFlags = previousFlags == GcSlotFlags.GC_SLOT_BASE
+                        ? GcSlotFlags.GC_SLOT_BASE
+                        : (GcSlotFlags)imageReader.ReadBits(2, ref bitOffset);
+                    offset = slotFlags != previousFlags
+                        ? imageReader.DecodeVarLengthSigned(gcInfoTypes.STACK_SLOT_ENCBASE, ref bitOffset)
+                        : offset + (int)imageReader.DecodeVarLengthUnsigned(gcInfoTypes.STACK_SLOT_DELTA_ENCBASE, ref bitOffset);
+                    int byteOffset = gcInfoTypes.DenormalizeStackSlot(offset);
+                    GcSlots.Add(new GcSlot(GcSlots.Count, -1, new GcStackSlot(byteOffset, GcStackSlotBase.GC_FRAMEREG_REL), slotFlags, isUntracked));
+                    previousFlags = slotFlags;
+                }
+                return;
+            }
+
             // We have stack slots left and more room to predecode
             GcStackSlotBase spBase = (GcStackSlotBase)imageReader.ReadBits(2, ref bitOffset);
             int normSpOffset = imageReader.DecodeVarLengthSigned(gcInfoTypes.STACK_SLOT_ENCBASE, ref bitOffset);
@@ -195,7 +214,7 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
                 }
                 else
                 {
-                    int normSpOffsetDelta = imageReader.DecodeVarLengthSigned(gcInfoTypes.STACK_SLOT_DELTA_ENCBASE, ref bitOffset);
+                    int normSpOffsetDelta = (int)imageReader.DecodeVarLengthUnsigned(gcInfoTypes.STACK_SLOT_DELTA_ENCBASE, ref bitOffset);
                     normSpOffset += normSpOffsetDelta;
                     spOffset = gcInfoTypes.DenormalizeStackSlot(normSpOffset);
                 }
