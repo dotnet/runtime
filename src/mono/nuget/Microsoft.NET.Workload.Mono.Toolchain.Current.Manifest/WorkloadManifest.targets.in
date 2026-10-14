@@ -212,9 +212,8 @@
     <Import Project="Sdk.targets" Sdk="Microsoft.NET.Runtime.MonoTargets.Sdk.${NetVersion}" />
   </ImportGroup>
 
-  <!-- CoreCLR browser-wasm: only needs the WebAssembly.Sdk (build targets + emscripten).
-       No MonoTargets.Sdk, no MonoAOTCompiler, no AOT.Cross pack — the SDK resolves
-       the CoreCLR runtime pack and crossgen2 via its own KnownRuntimePack/KnownCrossgen2Pack. -->
+  <!-- CoreCLR uses WebAssembly.Sdk for native builds, without Mono tooling.
+       The .NET SDK resolves the runtime and crossgen2 packs. -->
   <ImportGroup Condition="'$(TargetsCurrent)' == 'true' and '$(RuntimeIdentifier)' == 'browser-wasm' and '$(UsingBrowserRuntimeWorkload)' == 'true' and '$(UseMonoRuntime)' == 'false'">
     <Import Project="Sdk.props" Sdk="Microsoft.NET.Runtime.WebAssembly.Sdk.${NetVersion}" />
     <Import Project="Sdk.targets" Sdk="Microsoft.NET.Runtime.WebAssembly.Sdk.${NetVersion}" />

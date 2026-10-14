@@ -224,8 +224,15 @@ namespace Internal.IL
             _instructionBoundaries = new bool[_ilBytes.Length];
 
             FindBasicBlocks();
-            FindEnclosingExceptionRegions();
             InitialPass();
+            VerifyExceptionRegions();
+            FindEnclosingExceptionRegions();
+
+            // ECMA-335 I.12.4.2.8.1 forbids filters and handlers at method entry.
+            _currentInstructionOffset = 0;
+            Check(!_basicBlocks[0].HandlerIndex.HasValue, VerifierError.FallthroughIntoHandler);
+            Check(!_basicBlocks[0].FilterIndex.HasValue, VerifierError.FallthroughIntoFilter);
+
             ImportBasicBlocks();
         }
 
@@ -255,7 +262,7 @@ namespace Internal.IL
                             var probeItem = _exceptionRegions[j].ILRegion;
 
                             if (currentlySelected.TryOffset < probeItem.TryOffset &&
-                                currentlySelected.TryOffset + currentlySelected.TryLength > probeItem.TryOffset + probeItem.TryLength)
+                                currentlySelected.TryOffset + currentlySelected.TryLength >= probeItem.TryOffset + probeItem.TryLength)
                             {
                                 basicBlock.TryIndex = j;
                             }
@@ -274,7 +281,7 @@ namespace Internal.IL
                             var probeItem = _exceptionRegions[j].ILRegion;
 
                             if (currentlySelected.HandlerOffset < probeItem.HandlerOffset &&
-                                currentlySelected.HandlerOffset + currentlySelected.HandlerLength > probeItem.HandlerOffset + probeItem.HandlerLength)
+                                currentlySelected.HandlerOffset + currentlySelected.HandlerLength >= probeItem.HandlerOffset + probeItem.HandlerLength)
                             {
                                 basicBlock.HandlerIndex = j;
                             }
@@ -289,6 +296,15 @@ namespace Internal.IL
                         }
                     }
                 }
+
+                // Empty regions can mark an entry without enclosing the block. Do not
+                // initialize an EH entry stack from an unrelated enclosing region.
+                basicBlock.TryStart &= basicBlock.TryIndex.HasValue &&
+                    _exceptionRegions[basicBlock.TryIndex.Value].ILRegion.TryOffset == offset;
+                basicBlock.HandlerStart &= basicBlock.HandlerIndex.HasValue &&
+                    _exceptionRegions[basicBlock.HandlerIndex.Value].ILRegion.HandlerOffset == offset;
+                basicBlock.FilterStart &= basicBlock.FilterIndex.HasValue &&
+                    _exceptionRegions[basicBlock.FilterIndex.Value].ILRegion.FilterOffset == offset;
             }
         }
 
@@ -823,7 +839,7 @@ namespace Internal.IL
                     }
                     isValid = false;
                 }
-                else if (target.HandlerIndex == null)
+                else if (target.FilterIndex == null)
                 {
                     if (reportErrors)
                     {
@@ -1107,7 +1123,7 @@ namespace Internal.IL
                     VerificationError(VerifierError.DelegatePattern);
                     return;
                 }
-                else
+                if (!ftn.Method.Signature.IsStatic)
                 {
                     // See "Rules for non-virtual call to a non-final virtual method" in ImportCall
                     if (ftn.Method.IsVirtual && !ftn.Method.IsFinal && !obj.IsBoxedValueType)
@@ -1131,7 +1147,7 @@ namespace Internal.IL
                 VerificationError(VerifierError.DelegatePattern);
         }
 
-        bool IsDelegateAssignable(MethodDesc targetMethod, TypeDesc delegateType, TypeDesc firstArg)
+        bool IsDelegateAssignable(MethodDesc targetMethod, TypeDesc delegateType, StackValue firstArg)
         {
             var invokeMethod = delegateType.GetMethod("Invoke"u8, null);
             if (invokeMethod == null)
@@ -1177,23 +1193,19 @@ namespace Internal.IL
 
             int consumedArgs = 0;
 
-            TypeDesc firstInvokeArg;
             if (isOpenDelegate)
             {
                 // If we're looking at an open delegate but the caller has provided a target it's not a match.
-                if (firstArg != null)
+                if (firstArg.Type != null)
                     return false;
 
-                firstInvokeArg = invokeSignature[0];
                 consumedArgs++;
             }
             else
             {
                 // If we're looking at a closed delegate but the caller has not provided a target it's not a match.
-                if (firstArg == null)
+                if (firstArg.Type == null)
                     return false;
-
-                firstInvokeArg = firstArg;
             }
 
             TypeDesc firstTargetArg;
@@ -1219,7 +1231,14 @@ namespace Internal.IL
                     firstTargetArg = firstTargetArg.MakeByRefType();
             }
 
-            if (!IsAssignable(firstInvokeArg, firstTargetArg))
+            // For a closed delegate it is the target pushed on the stack, so compare against the stack value itself:
+            // it keeps track of boxed value types, which are object references and assignable to anything they can be cast to
+            // (e.g. a boxed int32 target for ToString()).
+            bool firstArgAssignable = isOpenDelegate
+                ? IsAssignable(invokeSignature[0], firstTargetArg)
+                : IsAssignable(firstArg, StackValue.CreateObjRef(firstTargetArg));
+
+            if (!firstArgAssignable)
                 return false;
 
             // We better have same number of remaining args
@@ -1322,49 +1341,39 @@ namespace Internal.IL
 
         void StartImportingBasicBlock(BasicBlock basicBlock)
         {
+            _currentInstructionOffset = basicBlock.StartOffset;
             _delegateCreateStart = null;
             _isThisInitialized = basicBlock.IsThisInitialized;
 
             if (basicBlock.TryStart)
             {
-                Check(basicBlock.EntryStack == null || basicBlock.EntryStack.Length == 0, VerifierError.TryNonEmptyStack);
-
                 for (int i = 0; i < _exceptionRegions.Length; i++)
                 {
                     var r = _exceptionRegions[i];
 
-                    if (basicBlock.StartOffset != r.ILRegion.TryOffset)
+                    if (basicBlock.StartOffset != r.ILRegion.TryOffset || r.ILRegion.TryLength == 0)
                         continue;
 
-                    if (r.ILRegion.Kind == ILExceptionRegionKind.Filter)
+                    if (r.ILRegion.Kind == ILExceptionRegionKind.Filter && _validTargetOffsets[r.ILRegion.FilterOffset])
                     {
                         var filterBlock = _basicBlocks[r.ILRegion.FilterOffset];
                         PropagateThisState(basicBlock, filterBlock);
                         MarkBasicBlock(filterBlock);
                     }
 
-                    var handlerBlock = _basicBlocks[r.ILRegion.HandlerOffset];
-                    PropagateThisState(basicBlock, handlerBlock);
-                    MarkBasicBlock(handlerBlock);
+                    if (r.ILRegion.HandlerLength != 0 && _validTargetOffsets[r.ILRegion.HandlerOffset])
+                    {
+                        var handlerBlock = _basicBlocks[r.ILRegion.HandlerOffset];
+                        PropagateThisState(basicBlock, handlerBlock);
+                        MarkBasicBlock(handlerBlock);
+                    }
                 }
             }
 
             if (basicBlock.FilterStart || basicBlock.HandlerStart)
             {
-                ExceptionRegion r;
-                if (basicBlock.HandlerIndex.HasValue)
-                {
-                    r = _exceptionRegions[basicBlock.HandlerIndex.Value];
-                }
-                else if (basicBlock.FilterIndex.HasValue)
-                {
-                    r = _exceptionRegions[basicBlock.FilterIndex.Value];
-                }
-                else
-                {
-                    Debug.Fail("Block marked as filter / handler start but no filter / handler index set.");
-                    return;
-                }
+                ExceptionRegion r = _exceptionRegions[basicBlock.FilterStart ?
+                    basicBlock.FilterIndex.Value : basicBlock.HandlerIndex.Value];
 
                 if (r.ILRegion.Kind == ILExceptionRegionKind.Filter || r.ILRegion.Kind == ILExceptionRegionKind.Catch)
                 {
@@ -1399,6 +1408,13 @@ namespace Internal.IL
                     if (basicBlock.EntryStack == null)
                         basicBlock.EntryStack = s_emptyStack;
                 }
+            }
+
+            if (basicBlock.TryStart)
+            {
+                // A catch/filter entry supplies an exception object even when no predecessor
+                // propagated a stack. Check after initializing that entry stack.
+                Check(basicBlock.EntryStack == null || basicBlock.EntryStack.Length == 0, VerifierError.TryNonEmptyStack);
             }
 
             if (basicBlock.EntryStack?.Length > 0)
@@ -1553,12 +1569,27 @@ namespace Internal.IL
             TypeDesc constrained = null;
             bool tailCall = false;
 
+            MethodDesc method = ResolveMethodToken(token);
+            MethodSignature sig = method.Signature;
+
             if (opcode != ILOpcode.newobj)
             {
-                if (HasPendingPrefix(Prefix.Constrained) && opcode == ILOpcode.callvirt)
+                if (HasPendingPrefix(Prefix.Constrained))
                 {
-                    ClearPendingPrefix(Prefix.Constrained);
-                    constrained = _constrained;
+                    if (opcode == ILOpcode.callvirt)
+                    {
+                        ClearPendingPrefix(Prefix.Constrained);
+                        constrained = _constrained;
+                    }
+                    else if (opcode == ILOpcode.call && method.IsVirtual && sig.IsStatic && method.OwningType.IsInterface)
+                    {
+                        ClearPendingPrefix(Prefix.Constrained);
+                        constrained = _constrained;
+
+                        // The constrained type must implement the interface declaring the static virtual method
+                        if (!constrained.CanCastTo(method.OwningType))
+                            VerificationError(VerifierError.ConstrainedTypeNoInterfaceImpl, constrained, method.OwningType);
+                    }
                 }
 
                 if (HasPendingPrefix(Prefix.Tail))
@@ -1572,10 +1603,6 @@ namespace Internal.IL
             // if (sig.isVarArg())
             //      eeGetCallSiteSig(memberRef, getCurrentModuleHandle(), getCurrentContext(), &sig, false);
 
-            MethodDesc method = ResolveMethodToken(token);
-
-            MethodSignature sig = method.Signature;
-
             TypeDesc methodType = sig.IsStatic ? null : method.OwningType;
 
             if (opcode == ILOpcode.callvirt)
@@ -1587,7 +1614,9 @@ namespace Internal.IL
             {
                 EcmaMethod ecmaMethod = method.GetTypicalMethodDefinition() as EcmaMethod;
                 if (ecmaMethod != null)
-                    Check(!ecmaMethod.IsAbstract, VerifierError.CallAbstract);
+                {
+                    Check(!ecmaMethod.IsAbstract || (method.OwningType.IsInterface && constrained != null), VerifierError.CallAbstract);
+                }
             }
 
             if (opcode == ILOpcode.newobj && methodType.IsDelegate)
@@ -1608,7 +1637,9 @@ namespace Internal.IL
 
                 CheckDelegateCreation(actualFtn, actualObj);
 
-                if (!IsDelegateAssignable(actualFtn.Method, methodType, actualObj.Type))
+                // A function pointer that did not come from ldftn/ldvirtftn carries no method;
+                // StackMethod has already been reported for it above.
+                if (actualFtn.IsMethod && !IsDelegateAssignable(actualFtn.Method, methodType, actualObj))
                     VerificationError(VerifierError.DelegateCtor);
             }
             else
@@ -1820,6 +1851,18 @@ namespace Internal.IL
                 _delegateCreateStart = _currentInstructionOffset;
 
                 instance = null;
+
+                if (HasPendingPrefix(Prefix.Constrained) && method.IsVirtual &&
+                    method.Signature.IsStatic && method.OwningType.IsInterface)
+                {
+                    ClearPendingPrefix(Prefix.Constrained);
+                    if (!_constrained.CanCastTo(method.OwningType))
+                        VerificationError(VerifierError.ConstrainedTypeNoInterfaceImpl, _constrained, method.OwningType);
+                }
+                else
+                {
+                    Check(!method.IsAbstract, VerifierError.CallAbstract);
+                }
             }
             else if (opCode == ILOpcode.ldvirtftn)
             {
@@ -2432,9 +2475,11 @@ namespace Internal.IL
 
         void ImportEndFinally()
         {
-            Check(_currentBasicBlock.HandlerIndex.HasValue, VerifierError.Endfinally);
-            Check(_exceptionRegions[_currentBasicBlock.HandlerIndex.Value].ILRegion.Kind == ILExceptionRegionKind.Finally ||
-                _exceptionRegions[_currentBasicBlock.HandlerIndex.Value].ILRegion.Kind == ILExceptionRegionKind.Fault, VerifierError.Endfinally);
+            if (Check(_currentBasicBlock.HandlerIndex.HasValue, VerifierError.Endfinally))
+            {
+                Check(_exceptionRegions[_currentBasicBlock.HandlerIndex.Value].ILRegion.Kind
+                    is ILExceptionRegionKind.Finally or ILExceptionRegionKind.Fault, VerifierError.Endfinally);
+            }
 
             EmptyTheStack();
         }
@@ -2656,8 +2701,8 @@ namespace Internal.IL
 
         void ImportEndFilter()
         {
-            Check(_currentBasicBlock.FilterIndex.HasValue, VerifierError.Endfilter);
-            Check(_currentOffset == _exceptionRegions[_currentBasicBlock.FilterIndex.Value].ILRegion.HandlerOffset, VerifierError.Endfilter);
+            if (Check(_currentBasicBlock.FilterIndex.HasValue, VerifierError.Endfilter))
+                Check(_currentOffset == _exceptionRegions[_currentBasicBlock.FilterIndex.Value].ILRegion.HandlerOffset, VerifierError.Endfilter);
 
             var result = Pop(allowUninitThis: true);
             Check(result.Kind == StackValueKind.Int32, VerifierError.StackUnexpected, result);

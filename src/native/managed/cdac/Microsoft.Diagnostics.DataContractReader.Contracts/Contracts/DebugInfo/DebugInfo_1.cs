@@ -123,16 +123,14 @@ internal sealed class DebugInfo_1(Target target) : IDebugInfo
             throw new InvalidOperationException($"No CodeBlockHandle found for native code {pCode}.");
         TargetPointer debugInfo = _eman.GetDebugInfo(cbh, out bool _);
 
-        // Compute code offset from the method's native code entry point, not from the code block start.
-        // GetStartAddress returns the start of the current code block (which may be a funclet for exception
-        // handlers). Variable location offsets are always relative to the method entry point, so we must use
-        // GetNativeCode from the NativeCodeVersion, matching the native DAC's GetMethodVarInfo which uses
-        // NativeCodeVersion::GetNativeCode() for this purpose
+        // Variable offsets are relative to the method's code start, not the code block start
+        // (GetStartAddress may be a funclet). Map the native code version's entry point to the code
+        // it starts: interpreter bytecode, or on portable-entrypoint targets the R2R virtual IP.
         ICodeVersions cv = _target.Contracts.CodeVersions;
         NativeCodeVersionHandle ncvh = cv.GetNativeCodeVersionForIP(pCode);
         if (!ncvh.Valid)
             throw new InvalidOperationException($"No NativeCodeVersion found for native code {pCode}.");
-        TargetCodePointer nativeCodeStart = cv.GetNativeCode(ncvh);
+        TargetCodePointer nativeCodeStart = _eman.GetDiagnosticCodeStartFromEntryPoint(cv.GetNativeCode(ncvh));
         codeOffset = (uint)(CodePointerUtils.AddressFromCodePointer(pCode, _target) - CodePointerUtils.AddressFromCodePointer(nativeCodeStart, _target));
 
         if (debugInfo == TargetPointer.Null)

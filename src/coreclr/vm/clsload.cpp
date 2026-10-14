@@ -2851,11 +2851,13 @@ void ClassLoader::NotifyLoad(TypeHandle typeHnd)
         LOG((LF_CLASSLOADER, LL_INFO100, "Successfully loaded class %s\n", pMT->GetDebugClassName()));
 
 #ifdef DEBUGGING_SUPPORTED
+#ifdef FEATURE_METADATA_PERSISTENCE
         {
             Module * pModule = pMT->GetModule();
             // Update metadata for dynamic module.
             pModule->UpdateDynamicMetadataIfNeeded();
         }
+#endif
 
         if (CORDebuggerAttached())
         {

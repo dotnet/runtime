@@ -29,7 +29,7 @@ namespace TestLibrary
 
         public static bool IsSimulator => RuntimeInformation.RuntimeIdentifier.StartsWith("iossimulator") || RuntimeInformation.RuntimeIdentifier.StartsWith("tvossimulator");
 
-        public static bool IsBuiltInComEnabled => IsWindows && !Utilities.IsCoreClrInterpreter
+        public static bool IsBuiltInComEnabled => IsWindows && IsCoreCLR && !Utilities.IsCoreClrInterpreter
                                             && (AppContext.TryGetSwitch("System.Runtime.InteropServices.BuiltInComInterop.IsSupported", out bool isEnabled)
                                                 ? isEnabled
                                                 : true);
@@ -111,6 +111,8 @@ namespace TestLibrary
         public static bool IsBrowser => OperatingSystem.IsBrowser();
         public static bool IsWasi => OperatingSystem.IsWasi();
         public static bool IsWasm => IsBrowser || IsWasi;
+        public static bool IsReadyToRunCompiled => Environment.GetEnvironmentVariable("TEST_READY_TO_RUN_MODE") == "1";
+        public static bool IsWasmReadyToRun => IsWasm && IsReadyToRunCompiled;
         public static bool IsNotMultithreadingSupported => !IsMultithreadingSupported;
         public static bool IsMultithreadingSupported => RuntimeFeature.IsMultithreadingSupported;
 

@@ -494,7 +494,7 @@ EEHashEntry_t *EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::FindItem(Ke
 #ifndef DACCESS_COMPILE
         nTry ++;
         if (nTry == 20) {
-            __SwitchToThread(0, ++dwSwitchCount);
+            minipal_switch_to_thread(++dwSwitchCount);
             nTry = 0;
         }
 #endif // #ifndef DACCESS_COMPILE

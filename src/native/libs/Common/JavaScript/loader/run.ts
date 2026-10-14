@@ -11,6 +11,7 @@ import { loaderConfig, validateLoaderConfig } from "./config";
 import { fetchAssembly, fetchIcu, fetchNativeSymbols, fetchPdb, fetchSatelliteAssemblies, fetchVfs, fetchMainWasm, loadDotnetModule, loadJSModule, nativeModulePromiseController, verifyAllAssetsDownloaded, callLibraryInitializerOnRuntimeReady, callLibraryInitializerOnRuntimeConfigLoaded, prefetchAllResources, prefetchJSModuleLinks, resolveAllDownloadsQueued } from "./assets";
 import { initPolyfillsLoader } from "./polyfills";
 import { validateEngineFeatures } from "./bootstrap";
+import { loaderCallbacks } from "./callbacks";
 
 const runMainPromiseController = createPromiseCompletionSource<number>();
 
@@ -44,9 +45,7 @@ export async function createRuntime(downloadOnly: boolean, httpCacheOnly: boolea
             Module.runtimeKeepalivePush();
             await initializeCoreCLR();
 
-            if (typeof Module.onDotnetReady === "function") {
-                await Module.onDotnetReady();
-            }
+            await loaderCallbacks.dotnetReady?.();
 
             const resources = loaderConfig.resources;
             // modulesAfterRuntimeReady were only prefetched during download(), now load and call onRuntimeReady.
@@ -58,15 +57,13 @@ export async function createRuntime(downloadOnly: boolean, httpCacheOnly: boolea
 
         const resources = loaderConfig.resources;
 
-        // Run config initialization once: onConfigLoaded, modulesAfterConfigLoaded, polyfills.
+        // Run config initialization once: callbacks, modulesAfterConfigLoaded, polyfills.
         // This must happen before any asset fetches so that URL overrides take effect.
         let modulesAfterConfigLoadedPromises: [JsAsset, Promise<any>][] = [];
         if (!configInitialized) {
             await validateEngineFeatures();
 
-            if (typeof Module.onConfigLoaded === "function") {
-                await Module.onConfigLoaded(loaderConfig);
-            }
+            await loaderCallbacks.configLoaded?.(loaderConfig);
             validateLoaderConfig();
 
             modulesAfterConfigLoadedPromises = normalizeCollection(resources.modulesAfterConfigLoaded).map((a) => [a, callLibraryInitializerOnRuntimeConfigLoaded(a)]);
@@ -89,7 +86,7 @@ export async function createRuntime(downloadOnly: boolean, httpCacheOnly: boolea
                 Module.printErr = Module.err;
             }
 
-            // after onConfigLoaded hooks that could install polyfills, our polyfills can be initialized
+            // after config-loaded callbacks that could install polyfills, our polyfills can be initialized
             await initPolyfillsLoader();
 
             configInitialized = true;
@@ -181,9 +178,7 @@ export async function createRuntime(downloadOnly: boolean, httpCacheOnly: boolea
             return;
         }
 
-        if (typeof Module.onDotnetReady === "function") {
-            await Module.onDotnetReady();
-        }
+        await loaderCallbacks.dotnetReady?.();
 
         await Promise.all([...modulesAfterConfigLoadedPromises, ...modulesAfterRuntimeReadyPromises].map(callLibraryInitializerOnRuntimeReady));
 

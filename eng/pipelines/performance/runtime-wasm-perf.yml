@@ -38,6 +38,7 @@ extends:
           runtimeRepoAlias: self
           performanceRepoAlias: performance
           runProfile: 'v8'
+          runMono: false
           jobParameters:
             onlySanityCheck: true
           #downloadSpecificBuild:

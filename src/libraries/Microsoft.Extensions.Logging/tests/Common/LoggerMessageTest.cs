@@ -254,7 +254,6 @@ namespace Microsoft.Extensions.Logging.Test
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50875", TestPlatforms.Android)]
         public void DefineMessage_WithNoParameters_ThrowsException_WhenFormatString_HasNamedParameters()
         {
             // Arrange
@@ -276,7 +275,6 @@ namespace Microsoft.Extensions.Logging.Test
         [InlineData(4)]
         [InlineData(5)]
         [InlineData(6)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50875", TestPlatforms.Android)]
         public void DefineMessage_ThrowsException_WhenExpectedFormatStringParameterCount_NotFound(
             int expectedNamedParameterCount)
         {
@@ -321,7 +319,6 @@ namespace Microsoft.Extensions.Logging.Test
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50875", TestPlatforms.Android)]
         public void DefineScope_WithNoParameters_ThrowsException_WhenFormatString_HasNamedParameters()
         {
             // Arrange
@@ -343,7 +340,6 @@ namespace Microsoft.Extensions.Logging.Test
         [InlineData(4)]
         [InlineData(5)]
         [InlineData(6)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50875", TestPlatforms.Android)]
         public void DefineScope_ThrowsException_WhenExpectedFormatStringParameterCount_NotFound(
             int expectedNamedParameterCount)
         {

@@ -561,13 +561,14 @@ struct HWIntrinsicInfo
 
     static const HWIntrinsicInfo& lookup(NamedIntrinsic id);
 
-    static NamedIntrinsic lookupId(Compiler*         comp,
-                                   CORINFO_SIG_INFO* sig,
-                                   const char*       className,
-                                   const char*       methodName,
-                                   const char*       innerEnclosingClassName,
-                                   const char*       outerEnclosingClassName,
-                                   bool              isXplatIntrinsic);
+    static NamedIntrinsic lookupId(CORINFO_SIG_INFO* sig, CORINFO_InstructionSet isa, const char* methodName);
+
+    static CORINFO_InstructionSet lookupVectorIsa(uint32_t size);
+
+    static NamedIntrinsic resolveId(Compiler*              comp,
+                                    NamedIntrinsic         id,
+                                    CORINFO_InstructionSet isa,
+                                    bool                   isXplatIntrinsic);
 
     static unsigned lookupSimdSize(Compiler* comp, NamedIntrinsic id, CORINFO_SIG_INFO* sig);
 

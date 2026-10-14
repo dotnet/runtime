@@ -18,5 +18,17 @@ namespace Internal.TypeSystem
 
             return result;
         }
+
+        public static long AlignUp(this long val, long alignment)
+        {
+            Debug.Assert(val >= 0 && alignment >= 0);
+
+            // alignment must be a power of 2 for this implementation to work (need modulo otherwise)
+            Debug.Assert(0 == (alignment & (alignment - 1)));
+            long result = (val + (alignment - 1)) & ~(alignment - 1);
+            Debug.Assert(result >= val);      // check for overflow
+
+            return result;
+        }
     }
 }

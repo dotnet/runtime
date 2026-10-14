@@ -445,6 +445,85 @@ namespace System.Numerics.Tensors.Tests
         }
 
         #region Span -> Destination
+        public static IEnumerable<object[]> Tan_RangeReductionInputs()
+        {
+            foreach (int length in new[] { 0, 1, 2, 3, 4, 7, 8, 9, 15, 16, 17, 31, 32, 33, 65 })
+            {
+                for (int inputKind = 0; inputKind < 6; inputKind++)
+                {
+                    yield return new object[] { length, inputKind };
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(Tan_RangeReductionInputs))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/135117", typeof(Helpers), nameof(Helpers.IsWasmWithAcceleratedVector128))]
+        public void Tan_RangeReduction(int length, int inputKind)
+        {
+            using BoundedMemory<T> source = CreateTensor(length);
+            using BoundedMemory<T> destination = CreateTensor(length);
+            T[] expected = new T[length];
+            T? tolerance = Helpers.DetermineTolerance<T>(doubleTolerance: 3e-13, floatTolerance: 1e-4f);
+            for (int i = 0; i < length; i++)
+            {
+                T pole = (T.CreateChecked(i % 16) + T.CreateChecked(0.5)) * T.Pi;
+                T value = (i % 4) switch
+                {
+                    0 => T.BitDecrement(pole),
+                    1 => T.BitIncrement(pole),
+                    2 => -T.BitDecrement(pole),
+                    _ => -T.BitIncrement(pole),
+                };
+                if (i == 0)
+                {
+                    value = T.CreateChecked(-32.986717f);
+                }
+                switch (inputKind)
+                {
+                    case 1:
+                        value = T.CreateChecked(i % 33 - 16) * T.CreateChecked(0.3125);
+                        break;
+                    case 2:
+                    case 5:
+                        T count = T.CreateChecked(i / 16 * 31 + 21);
+                        T boundary = count * (T.Pi / T.CreateChecked(2)) +
+                            count * T.CreateChecked((inputKind == 2 ? 0.99 : 1.01) / 256);
+                        value = i / 16 % 2 == 0 ? boundary : -boundary;
+                        break;
+                    case 3:
+                        T limit = T.CreateSaturating(typeof(T) == typeof(double) ? 8388608 : 1048576);
+                        value = (i % 4) switch
+                        {
+                            0 => T.BitDecrement(limit),
+                            1 => T.BitIncrement(limit),
+                            2 => -T.BitDecrement(limit),
+                            _ => -T.BitIncrement(limit),
+                        };
+                        break;
+                    case 4:
+                        value = i == length - 1 ? T.CreateChecked(-32.986717f) :
+                            T.CreateChecked(i % 7 - 3) * T.CreateChecked(0.125);
+                        break;
+                }
+
+                source[i] = value;
+                expected[i] = T.Tan(value);
+            }
+
+            TensorPrimitives.Tan<T>(source.Span, destination.Span);
+            for (int i = 0; i < length; i++)
+            {
+                AssertEqualTolerance(expected[i], destination[i], tolerance);
+            }
+
+            TensorPrimitives.Tan<T>(source.Span, source.Span);
+            for (int i = 0; i < length; i++)
+            {
+                AssertEqualTolerance(expected[i], source[i], tolerance);
+            }
+        }
+
         public static IEnumerable<object[]> SpanDestinationFunctionsToTest()
         {
             // The current trigonometric algorithm depends on hardware FMA support for best precision.
@@ -532,6 +611,7 @@ namespace System.Numerics.Tensors.Tests
 
         [Theory]
         [MemberData(nameof(SpanDestinationFunctionsToTest))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/135117", typeof(Helpers), nameof(Helpers.IsWasmWithAcceleratedVector128))]
         public void SpanDestinationFunctions_InPlace(SpanDestinationDelegate tensorPrimitivesMethod, Func<T, T> expectedMethod, T? tolerance = null)
         {
             Assert.All(Helpers.TensorLengthsIncluding0, tensorLength =>
@@ -2628,11 +2708,8 @@ namespace System.Numerics.Tensors.Tests
             T value42 = T.CreateTruncating(42);
             T value84 = T.CreateTruncating(84);
 
-            T[] values1 = new T[100];
-            T[] values2 = new T[100];
-
-            Array.Fill(values1, value42);
-            Array.Fill(values2, value84);
+            T[] values1 = Array.CreateFilled(100, value42);
+            T[] values2 = Array.CreateFilled(100, value84);
 
             Assert.Equal(0, TensorPrimitives.HammingBitDistance<T>(values1, values1));
             Assert.Equal(600, TensorPrimitives.HammingBitDistance<T>(values1, values2));
@@ -2805,10 +2882,9 @@ namespace System.Numerics.Tensors.Tests
             {
                 // Span x, span min, span max
                 {
-                    T[] min = new T[length];
-                    T[] max = new T[length];
-                    Array.Fill(min, zero);
-                    Array.Fill(max, two);
+                    T[] min = Array.CreateFilled(length, zero);
+                    T[] max = Array.CreateFilled(length, two);
+                    
                     min[offendingIndex] = two;
                     max[offendingIndex] = zero;
 
@@ -2822,8 +2898,7 @@ namespace System.Numerics.Tensors.Tests
 
                 // Span x, span min, scalar max
                 {
-                    T[] min = new T[length];
-                    Array.Fill(min, zero);
+                    T[] min = Array.CreateFilled(length, zero);
                     min[offendingIndex] = two;
 
                     TensorPrimitives.Clamp<T>(x, min, one, destination);
@@ -2836,8 +2911,7 @@ namespace System.Numerics.Tensors.Tests
 
                 // Span x, scalar min, span max
                 {
-                    T[] max = new T[length];
-                    Array.Fill(max, two);
+                    T[] max = Array.CreateFilled(length, two);
                     max[offendingIndex] = zero;
 
                     TensorPrimitives.Clamp<T>(x, one, max, destination);
@@ -2860,10 +2934,8 @@ namespace System.Numerics.Tensors.Tests
 
                 // Scalar x, span min, span max
                 {
-                    T[] min = new T[length];
-                    T[] max = new T[length];
-                    Array.Fill(min, zero);
-                    Array.Fill(max, two);
+                    T[] min = Array.CreateFilled(length, zero);
+                    T[] max = Array.CreateFilled(length, two);
                     min[offendingIndex] = two;
                     max[offendingIndex] = zero;
 
@@ -2877,8 +2949,7 @@ namespace System.Numerics.Tensors.Tests
 
                 // Scalar x, span min, scalar max
                 {
-                    T[] min = new T[length];
-                    Array.Fill(min, zero);
+                    T[] min = Array.CreateFilled(length, zero);
                     min[offendingIndex] = two;
 
                     TensorPrimitives.Clamp<T>(one, min, one, destination);
@@ -2891,8 +2962,7 @@ namespace System.Numerics.Tensors.Tests
 
                 // Scalar x, scalar min, span max
                 {
-                    T[] max = new T[length];
-                    Array.Fill(max, two);
+                    T[] max = Array.CreateFilled(length, two);
                     max[offendingIndex] = zero;
 
                     TensorPrimitives.Clamp<T>(one, one, max, destination);

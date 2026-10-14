@@ -3311,13 +3311,22 @@ void ArrayMarshalInfo::InitElementInfo(CorNativeType arrayNativeType, MarshalInf
 
     m_thElement = thElement;
 
-    if (m_thElement.IsPointer())
+    if ((arrayNativeType == NATIVE_TYPE_ARRAY || arrayNativeType == NATIVE_TYPE_FIXEDARRAY)
+        && (m_thElement.IsPointer() || m_thElement.IsFnPtrType()))
     {
-        m_flags = (ArrayMarshalInfoFlags)(m_flags | amiIsPtr);
-        m_thElement = ((ParamTypeDesc*)m_thElement.AsTypeDesc())->GetModifiedType();
+        // Marshal pointer-sized values without losing the declared element type.
+        etElement = ELEMENT_TYPE_I;
     }
+    else
+    {
+        if (m_thElement.IsPointer())
+        {
+            m_flags = (ArrayMarshalInfoFlags)(m_flags | amiIsPtr);
+            m_thElement = ((ParamTypeDesc*)m_thElement.AsTypeDesc())->GetModifiedType();
+        }
 
-    etElement = m_thElement.GetSignatureCorElementType();
+        etElement = m_thElement.GetSignatureCorElementType();
+    }
 
     if (IsAMIPtr(m_flags) && (etElement > ELEMENT_TYPE_R8))
     {
@@ -3589,7 +3598,7 @@ bool IsUnsupportedTypedrefReturn(MetaSig& msig)
 
 #include "stubhelpers.h"
 
-extern "C" void QCALLTYPE StubHelpers_CreateCustomMarshaler(MethodDesc* pMD, mdToken paramToken, TypeHandle hndManagedType, QCall::ObjectHandleOnStack retObject)
+extern "C" void QCALLTYPE StubHelpers_CreateCustomMarshaler(MethodDesc* pMD, mdToken paramToken, TypeHandle hndManagedType, QCall::ObjectHandleOnStack retObject, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 

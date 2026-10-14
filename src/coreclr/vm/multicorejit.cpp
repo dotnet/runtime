@@ -10,6 +10,7 @@
 //
 
 #include "common.h"
+#include "CLREventBase.h"
 #include "vars.hpp"
 #include "eeconfig.h"
 #include "dllimport.h"
@@ -1058,7 +1059,7 @@ HRESULT MulticoreJitRecorder::StartProfile(const WCHAR * pRoot, const WCHAR * pF
                 {
                     MulticoreJitTrace(("Delay main thread %d ms", g_MulticoreJitDelay));
 
-                    ClrSleepEx(g_MulticoreJitDelay, FALSE);
+                    minipal_sleep(g_MulticoreJitDelay);
                 }
 
                 player.SuppressRelease();
@@ -1546,7 +1547,7 @@ DWORD MulticoreJitManager::EncodeModuleHelper(void * pModuleContext, Module * pR
 //    wszProfile  - profile name
 //    ptrNativeAssemblyBinder - the binding context
 //
-extern "C" void QCALLTYPE MultiCoreJIT_InternalStartProfile(_In_z_ LPCWSTR wszProfile, INT_PTR ptrNativeAssemblyBinder)
+extern "C" void QCALLTYPE MultiCoreJIT_InternalStartProfile(_In_z_ LPCWSTR wszProfile, INT_PTR ptrNativeAssemblyBinder, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -1565,7 +1566,7 @@ extern "C" void QCALLTYPE MultiCoreJIT_InternalStartProfile(_In_z_ LPCWSTR wszPr
 }
 
 
-extern "C" void QCALLTYPE MultiCoreJIT_InternalSetProfileRoot(_In_z_ LPCWSTR wszProfilePath)
+extern "C" void QCALLTYPE MultiCoreJIT_InternalSetProfileRoot(_In_z_ LPCWSTR wszProfilePath, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 

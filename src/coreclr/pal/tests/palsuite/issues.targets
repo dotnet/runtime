@@ -17,5 +17,10 @@
             <Issue>https://github.com/dotnet/runtime/issues/42291</Issue>
         </ExcludeList>
     </ItemGroup>
+    <ItemGroup Condition="'$(TargetArchitecture)' == 'arm64' and '$(TargetOS)' == 'osx'">
+        <ExcludeList Include="exception_handling/pal_sxs/test1/paltest_pal_sxs_test1">
+            <Issue>https://github.com/dotnet/runtime/issues/122345</Issue>
+        </ExcludeList>
+    </ItemGroup>
 
 </Project>

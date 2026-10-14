@@ -57,6 +57,18 @@ namespace System.Threading
 
         private Thread() { }
 
+        internal static Exception GetQCallSpecialException(nint status)
+        {
+            Exception? exception = null;
+            GetQCallSpecialException(status, ObjectHandleOnStack.Create(ref exception));
+            Debug.Assert(exception is not null);
+            return exception;
+        }
+
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_GetQCallSpecialException")]
+        private static partial void GetQCallSpecialException(nint status, ObjectHandleOnStack exception);
+
         public int ManagedThreadId
         {
             [Intrinsic]
@@ -92,6 +104,7 @@ namespace System.Threading
             }
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_Start")]
         private static unsafe partial Interop.BOOL StartInternal(ThreadHandle t, int stackSize, int priority, Interop.BOOL isThreadPool, char* pThreadName, ObjectHandleOnStack exception);
 
@@ -110,43 +123,6 @@ namespace System.Threading
             pThread->OnThreadExited();
         }
 
-        // Max iterations to be done in SpinWait without switching GC modes.
-        private const int SpinWaitCoopThreshold = 1024;
-
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_SpinWait")]
-        [SuppressGCTransition]
-        private static partial void SpinWaitInternal(int iterations);
-
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_SpinWait")]
-        private static partial void LongSpinWaitInternal(int iterations);
-
-        [MethodImpl(MethodImplOptions.NoInlining)] // Slow path method. Make sure that the caller frame does not pay for PInvoke overhead.
-        private static void LongSpinWait(int iterations) => LongSpinWaitInternal(iterations);
-
-        /// <summary>
-        /// Wait for a length of time proportional to 'iterations'.  Each iteration is should
-        /// only take a few machine instructions.  Calling this API is preferable to coding
-        /// a explicit busy loop because the hardware can be informed that it is busy waiting.
-        /// </summary>
-        public static void SpinWait(int iterations)
-        {
-            if (!RuntimeFeature.IsMultithreadingSupported) return;
-
-            if (iterations < SpinWaitCoopThreshold)
-            {
-                SpinWaitInternal(iterations);
-            }
-            else
-            {
-                LongSpinWait(iterations);
-            }
-        }
-
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_YieldThread")]
-        private static partial Interop.BOOL YieldInternal();
-
-        public static bool Yield() => YieldInternal() != Interop.BOOL.FALSE;
-
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static Thread InitializeCurrentThread()
         {
@@ -155,6 +131,7 @@ namespace System.Threading
             return t_currentThread = thread!;
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_GetCurrentThread")]
         private static partial void GetCurrentThread(ObjectHandleOnStack thread);
 
@@ -164,6 +141,7 @@ namespace System.Threading
             Initialize(ObjectHandleOnStack.Create(ref _this));
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_Initialize")]
         private static partial void Initialize(ObjectHandleOnStack thread);
 
@@ -179,6 +157,7 @@ namespace System.Threading
             GC.KeepAlive(this);
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_InformThreadNameChange", StringMarshalling = StringMarshalling.Utf16)]
         private static partial void InformThreadNameChange(ThreadHandle t, string? name, int len);
 
@@ -222,6 +201,7 @@ namespace System.Threading
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_GetIsBackground")]
         private static partial Interop.BOOL GetIsBackground(ThreadHandle t);
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_SetIsBackground")]
         private static partial void SetIsBackground(ThreadHandle t, Interop.BOOL value);
 
@@ -250,6 +230,7 @@ namespace System.Threading
             }
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_SetPriority")]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static partial void SetPriority(ObjectHandleOnStack thread, int priority);
@@ -272,9 +253,6 @@ namespace System.Threading
                 _mayNeedResetForThreadPool = true;
             }
         }
-
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_GetCurrentOSThreadId")]
-        private static partial ulong GetCurrentOSThreadId();
 
         /// <summary>
         /// Return the thread state as a consistent set of bits.  This is more
@@ -320,9 +298,11 @@ namespace System.Threading
         /// single-threaded or multi-threaded apartment.
         /// </summary>
 #if FEATURE_COMINTEROP_APARTMENT_SUPPORT
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_GetApartmentState")]
         private static partial int GetApartmentState(ObjectHandleOnStack t);
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_SetApartmentState")]
         private static partial int SetApartmentState(ObjectHandleOnStack t, int state);
 
@@ -418,9 +398,11 @@ namespace System.Threading
         }
 
 #if TARGET_WINDOWS
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_Interrupt")]
         private static partial void Interrupt(ThreadHandle t);
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_GetOSHandle")]
         private static partial SafeWaitHandle GetOSHandle(ThreadHandle t);
 
@@ -439,16 +421,6 @@ namespace System.Threading
             return joinEvent.SafeWaitHandle;
         }
 #endif
-
-        /// <summary>
-        /// Max value to be passed into <see cref="SpinWait(int)"/> for optimal delaying. This value is normalized to be
-        /// appropriate for the processor.
-        /// </summary>
-        internal static int OptimalMaxSpinWaitsPerSpinIteration
-        {
-            [MethodImpl(MethodImplOptions.InternalCall)]
-            get;
-        }
 
         private static class DirectOnThreadLocalData
         {
@@ -584,9 +556,11 @@ namespace System.Threading
             }
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_ReentrantWaitAny")]
         internal static unsafe partial int ReentrantWaitAny([MarshalAs(UnmanagedType.Bool)] bool alertable, int timeout, int count, IntPtr* handles);
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_CheckForPendingInterrupt")]
         internal static partial void CheckForPendingInterrupt();
 

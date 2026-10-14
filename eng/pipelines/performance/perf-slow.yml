@@ -2,9 +2,6 @@ parameters:
 - name: runPrivateJobs
   type: boolean
   default: false
-- name: runScheduledJobs
-  type: boolean
-  default: false
 - name: onlySanityCheck
   type: boolean
   default: false
@@ -14,8 +11,7 @@ trigger:
   branches:
     include:
     - main
-    - release/9.0
-    - release/8.0
+    - release/*.0
   paths:
     include:
     - '*'
@@ -36,26 +32,29 @@ resources:
 
 variables:
   - template: /eng/pipelines/common/variables.yml
-
-schedules:
-- cron: "30 2 * * *"
-  displayName: Every night at 2:30AM
-  branches:
-    include:
-    - main
-  always: true
+  - name: enableHelixJobMonitor
+    value: true
 
 extends:
   template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
   parameters:
     stages:
     - stage: Build
+      variables:
+      # The standalone monitor does not inherit the submitter jobs' variable groups.
+      - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+        - group: DotNet-HelixApi-Access
       jobs:
+      - template: /eng/common/core-templates/job/helix-job-monitor.yml
+        parameters:
+          helixAccessToken: $(HelixApiAccessToken)
+          timeoutInMinutes: 540
+          allowNoHelixJobs: true
+
       - ${{ if ne(variables['System.TeamProject'], 'public') }}:
         - template: /eng/pipelines/runtime-slow-perf-jobs.yml@performance
           parameters:
-            ${{ if or(in(variables['Build.Reason'], 'Schedule'), parameters.runScheduledJobs) }}:
-              runScheduledJobs: true
+            runMono: false
             ${{ if or(notin(variables['Build.Reason'], 'Schedule', 'Manual'), parameters.runPrivateJobs) }}:
               runPrivateJobs: true
             runtimeRepoAlias: self

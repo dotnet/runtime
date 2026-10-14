@@ -431,6 +431,7 @@ namespace System.Net.Test.Common
 
         public class Options : GenericLoopbackOptions
         {
+            public bool AllowTlsResume { get; set; } = true;
             public bool WebSocketEndpoint { get; set; } = false;
             public Func<Stream, Stream> StreamWrapper { get; set; }
             public string Username { get; set; }
@@ -480,25 +481,35 @@ namespace System.Net.Test.Common
                 if (httpOptions.UseSsl)
                 {
                     var sslStream = new SslStream(stream, false, delegate { return true; });
+                    try
+                    {
 #if !NETFRAMEWORK
-                    SslServerAuthenticationOptions sslOptions = new SslServerAuthenticationOptions()
-                    {
-                        EnabledSslProtocols = httpOptions.SslProtocols,
-                        ServerCertificateContext = httpOptions.CertificateContext ?? SslStreamCertificateContext.Create(Configuration.Certificates.GetServerCertificate(), null),
-                        ClientCertificateRequired = true,
-                    };
+                        SslServerAuthenticationOptions sslOptions = new SslServerAuthenticationOptions()
+                        {
+                            AllowTlsResume = httpOptions.AllowTlsResume,
+                            EnabledSslProtocols = httpOptions.SslProtocols,
+                            ServerCertificateContext = httpOptions.CertificateContext ?? SslStreamCertificateContext.Create(Configuration.Certificates.GetServerCertificate(), null),
+                            ClientCertificateRequired = true,
+                        };
 
-                    await sslStream.AuthenticateAsServerAsync(sslOptions, default).ConfigureAwait(false);
+                        await sslStream.AuthenticateAsServerAsync(sslOptions, default).ConfigureAwait(false);
 #else
-                    using (X509Certificate2 cert = httpOptions.Certificate ?? Configuration.Certificates.GetServerCertificate())
-                    {
-                        await sslStream.AuthenticateAsServerAsync(
-                            cert,
-                            clientCertificateRequired: true, // allowed but not required
-                            enabledSslProtocols: httpOptions.SslProtocols,
-                            checkCertificateRevocation: false).ConfigureAwait(false);
-                    }
+                        using (X509Certificate2 cert = httpOptions.Certificate ?? Configuration.Certificates.GetServerCertificate())
+                        {
+                            await sslStream.AuthenticateAsServerAsync(
+                                cert,
+                                clientCertificateRequired: true, // allowed but not required
+                                enabledSslProtocols: httpOptions.SslProtocols,
+                                checkCertificateRevocation: false).ConfigureAwait(false);
+                        }
 #endif
+                    }
+                    catch
+                    {
+                        sslStream.Dispose();
+                        throw;
+                    }
+
                     stream = sslStream;
                 }
 
@@ -815,16 +826,13 @@ namespace System.Net.Test.Common
                     requestData.Headers.Add(new HttpHeaderData(name, value, raw: lineBytes, rawValueStart: offset + 1));
                 }
 
-                if (requestData.Method != "GET")
+                if (requestData.GetHeaderValueCount("Content-Length") != 0)
                 {
-                    if (requestData.GetHeaderValueCount("Content-Length") != 0)
-                    {
-                        _contentLength = int.Parse(requestData.GetSingleHeaderValue("Content-Length"));
-                    }
-                    else if (requestData.GetHeaderValueCount("Transfer-Encoding") != 0 && requestData.GetSingleHeaderValue("Transfer-Encoding") == "chunked")
-                    {
-                        _contentLength = -1;
-                    }
+                    _contentLength = int.Parse(requestData.GetSingleHeaderValue("Content-Length"));
+                }
+                else if (requestData.GetHeaderValueCount("Transfer-Encoding") != 0 && requestData.GetSingleHeaderValue("Transfer-Encoding") == "chunked")
+                {
+                    _contentLength = -1;
                 }
 
                 if (readBody)

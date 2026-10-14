@@ -178,7 +178,7 @@ public:
         HandlerState(Thread * pThread);
         HandlerState(Thread * pThread, NonNullThread dummy);
 
-        void CleanupTry();
+        void CleanupTry() noexcept;
         void SetupCatch(INDEBUG_COMMA(_In_z_ const char * szFile) int lineNum);
 #ifdef LOGGING // Use parent implementation that inlines into nothing in retail build
         void SucceedCatch();

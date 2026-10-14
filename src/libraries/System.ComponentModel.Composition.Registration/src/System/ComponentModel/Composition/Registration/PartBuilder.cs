@@ -11,7 +11,6 @@ namespace System.ComponentModel.Composition.Registration
     public class PartBuilder
     {
         private static readonly List<Attribute> s_importingConstructorList = new List<Attribute>() { new ImportingConstructorAttribute() };
-        private static readonly Type s_exportAttributeType = typeof(ExportAttribute);
         private readonly List<ExportBuilder> _typeExportBuilders;
         private bool _setCreationPolicy;
         private CreationPolicy _creationPolicy;
@@ -211,7 +210,7 @@ namespace System.ComponentModel.Composition.Registration
                 {
                     Type attrType = attr.GetType();
                     // Perf optimization, relies on short circuit evaluation, often a property attribute is an ExportAttribute
-                    if (attrType != s_exportAttributeType && attrType.IsDefined(typeof(MetadataAttributeAttribute), true))
+                    if (attrType != typeof(ExportAttribute) && attrType.IsDefined(typeof(MetadataAttributeAttribute), true))
                     {
                         return true;
                     }

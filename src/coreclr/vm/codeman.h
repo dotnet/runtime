@@ -1,17 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-
-
-
 /******************************************************************************
-
 Module Name:
-
     codeman.h
 
 Abstract:
-
     Wrapper to facilitate multiple JITcompiler support in the CLR
 
     The ExecutionManager is responsible for managing the RangeSections.
@@ -51,7 +45,6 @@ Abstract:
                        +--------+      R                           +--------+      R
                        |ICodeMan|                                  |ICodeMan|     (RangeSections)
                        +--------+                                  +--------+
-
 ******************************************************************************/
 
 #ifndef __CODEMAN_HPP__
@@ -457,7 +450,7 @@ class CodeHeapRequestInfo final
     bool         m_isDynamicDomain;
     bool         m_isCollectible;
     bool         m_isInterpreted;
-    bool         m_throwOnOutOfMemoryWithinRange;
+    bool         m_isOptimizedCode;
 
 public:
     CodeHeapRequestInfo(MethodDesc* pMD);
@@ -472,10 +465,16 @@ public:
     const BYTE* GetLoAddr()                     { return m_loAddr;             }
     const BYTE* GetHiAddr()                     { return m_hiAddr;             }
 
+    // Requests for specific memory ranges return NULL instead of throwing OutOfMemoryException if the request cannot be satisfied.
+    bool   IsSpecificMemoryRangeRequested()     { return m_loAddr != NULL || m_hiAddr != NULL; }
+
     bool   IsCollectible()                      { return m_isCollectible;      }
 
     bool   IsInterpreted()                      { return m_isInterpreted;      }
     void   SetInterpreted()                     { m_isInterpreted = true;      }
+
+    bool   IsOptimizedCode()                    { return m_isOptimizedCode;    }
+    void   SetOptimizedCode()                   { m_isOptimizedCode = true;    }
 
     size_t GetRequestSize()                     { return m_requestSize;        }
     void   SetRequestSize(size_t requestSize)   { m_requestSize = requestSize; }
@@ -485,9 +484,6 @@ public:
 
     size_t GetReserveForJumpStubs()             { return m_reserveForJumpStubs; }
     void   SetReserveForJumpStubs(size_t size)  { m_reserveForJumpStubs = size; }
-
-    bool   GetThrowOnOutOfMemoryWithinRange()   { return m_throwOnOutOfMemoryWithinRange; }
-    void   SetThrowOnOutOfMemoryWithinRange(bool value) { m_throwOnOutOfMemoryWithinRange = value; }
 };
 
 //-----------------------------------------------------------------------------
@@ -572,12 +568,17 @@ struct HeapList
     PTR_DWORD           pHdrMap;        // bit array used to find the start of methods
 
     size_t              maxCodeHeapSize;// Size of the entire contiguous block of memory
-    size_t              reserveForJumpStubs; // Amount of memory reserved for jump stubs in this block
 
     PTR_LoaderAllocator pLoaderAllocator; // LoaderAllocator of HeapList
 #if defined(TARGET_64BIT)
     BYTE*               CLRPersonalityRoutine;  // jump thunk to personality routine, NULL if there is no personality routine (e.g. interpreter code heap)
 #endif
+
+    // Cached copy of the RANGE_SECTION_OPTIMIZEDCODE bit on the heap's
+    // RangeSection. Lets CanUseCodeHeap reject heap/request mismatches
+    // without a per-allocation FindCodeRange lookup. Set at heap creation
+    // time in NewCodeHeap; never changes afterwards.
+    bool                isOptimizedCode;
 
     TADDR GetModuleBase()
     {
@@ -770,6 +771,7 @@ public:
 struct RangeSection
 {
     friend class RangeSectionMap;
+    // [cDAC] [ExecutionManager]: Contract depends on these values.
     enum RangeSectionFlags
     {
         RANGE_SECTION_NONE          = 0x0,
@@ -778,6 +780,7 @@ struct RangeSection
         RANGE_SECTION_RANGELIST     = 0x4,
         RANGE_SECTION_INTERPRETER   = 0x8,
         RANGE_SECTION_VIRTUALIP     = 0x10, // This range section contains virtual IPs (e.g. for ReadyToRun code) instead of actual code addresses in linear memory
+        RANGE_SECTION_OPTIMIZEDCODE = 0x20,
     };
 
 #ifdef FEATURE_READYTORUN
@@ -2058,7 +2061,7 @@ public:
     void CleanupCodeHeaps();
 
     template<typename TCodeHeader>
-    void AllocCode(MethodDesc* pMD, size_t blockSize, size_t reserveForJumpStubs, unsigned alignment, void** ppCodeHeader, void** ppCodeHeaderRW,
+    void AllocCode(MethodDesc* pMD, size_t blockSize, size_t reserveForJumpStubs, unsigned alignment, bool isTier1Code, void** ppCodeHeader, void** ppCodeHeaderRW,
                    size_t* pAllocatedSize, HeapList** ppCodeHeap , BYTE** ppRealHeader
                  , UINT nUnwindInfos
                   );
@@ -2294,8 +2297,7 @@ public:
 
     JumpStubBlockHeader* AllocJumpStubBlock(MethodDesc* pMD, DWORD numJumps,
                                             BYTE * loAddr, BYTE * hiAddr,
-                                            LoaderAllocator *pLoaderAllocator,
-                                            bool throwOnOutOfMemoryWithinRange);
+                                            LoaderAllocator *pLoaderAllocator);
 
     void *              AllocCodeFragmentBlock(size_t blockSize, unsigned alignment, LoaderAllocator *pLoaderAllocator, StubCodeBlockKind kind);
 #endif // !DACCESS_COMPILE
@@ -2349,26 +2351,6 @@ public:
 
 private :
     Crst                m_JitLoadLock;
-
-#ifdef TARGET_AMD64
-private:
-    //
-    // List of reserved memory blocks to be used for jump stub allocation if no suitable memory block is found
-    // via the regular mechanism
-    //
-    struct EmergencyJumpStubReserve
-    {
-        EmergencyJumpStubReserve * m_pNext;
-        BYTE *   m_ptr;
-        SIZE_T   m_size;
-        SIZE_T   m_free;
-    };
-    EmergencyJumpStubReserve * m_pEmergencyJumpStubReserveList;
-
-public:
-    BYTE * AllocateFromEmergencyJumpStubReserve(const BYTE * loAddr, const BYTE * hiAddr, SIZE_T * pReserveSize);
-    VOID EnsureJumpStubReserve(BYTE * pImageBase, SIZE_T imageSize, SIZE_T reserveSize);
-#endif
 
 public:
     ICorJitCompiler *   m_jit;
@@ -2640,12 +2622,12 @@ public:
 #endif
 
 #if !defined(DACCESS_COMPILE) && defined(HOST_64BIT)
+    // Returns NULL if no jump stub can be allocated within the requested range.
     static PCODE jumpStub(MethodDesc* pMD,
                           PCODE target,
                           BYTE * loAddr,
                           BYTE * hiAddr,
-                          LoaderAllocator *pLoaderAllocator = NULL,
-                          bool throwOnOutOfMemoryWithinRange = true);
+                          LoaderAllocator *pLoaderAllocator = NULL);
 #endif // !defined(DACCESS_COMPILE) && defined(HOST_64BIT)
 
 private:
@@ -2719,8 +2701,7 @@ private:
     static PCODE getNextJumpStub(MethodDesc* pMD,
                                  PCODE target,
                                  BYTE * loAddr,  BYTE * hiAddr,
-                                 LoaderAllocator *pLoaderAllocator,
-                                 bool throwOnOutOfMemoryWithinRange);
+                                 LoaderAllocator *pLoaderAllocator);
 #endif // !defined(DACCESS_COMPILE) && defined(HOST_64BIT)
 
 private:
@@ -2802,12 +2783,23 @@ struct cdac_data<ExecutionManager>
 {
     static constexpr void* const CodeRangeMapAddress = (void*)&ExecutionManager::g_codeRangeMap.Data[0];
     static constexpr PTR_EEJitManager* EEJitManagerAddress = &ExecutionManager::m_pEEJitManager;
+#ifdef FEATURE_INTERPRETER
+    static constexpr PTR_InterpreterJitManager* InterpreterJitManagerAddress = &ExecutionManager::m_pInterpreterJitManager;
+#endif // FEATURE_INTERPRETER
 #ifdef TARGET_WASM
+    static constexpr VirtualIPRangeSection** VirtualIPRangeListAddress = &ExecutionManager::s_pVirtualIPRangeList;
     static constexpr FunctionTableIndexRangeSection** FunctionTableIndexRangeListAddress = &ExecutionManager::s_pFunctionTableIndexRangeList;
 #endif // TARGET_WASM
 };
 
 #ifdef TARGET_WASM
+template<>
+struct cdac_data<VirtualIPRangeSection>
+{
+    static constexpr size_t RangeSection = offsetof(VirtualIPRangeSection, rangeSection);
+    static constexpr size_t Next = offsetof(VirtualIPRangeSection, pNext);
+};
+
 template<>
 struct cdac_data<FunctionTableIndexRangeSection>
 {
@@ -3356,8 +3348,6 @@ inline TADDR InterpreterJitManager::JitTokenToStartAddress(const METHODTOKEN& Me
 #endif // FEATURE_INTERPRETER
 
 #include "codeman.inl"
-
-void ThrowOutOfMemoryWithinRange();
 
 bool SafeToReportGenericParamContext(CrawlFrame* pCF);
 

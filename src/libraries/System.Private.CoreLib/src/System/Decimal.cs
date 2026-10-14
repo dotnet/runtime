@@ -956,6 +956,10 @@ namespace System
 
         public static explicit operator double(decimal value) => DecCalc.VarR8FromDec(in value);
 
+        internal static Half VarHalfFromDec(in decimal value) => DecCalc.VarHalfFromDec(in value);
+
+        internal static BFloat16 VarBFloat16FromDec(in decimal value) => DecCalc.VarBFloat16FromDec(in value);
+
         public static decimal operator +(decimal d) => d;
 
         public static decimal operator -(decimal d) => new decimal(in d, d._flags ^ SignMask);
