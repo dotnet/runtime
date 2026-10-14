@@ -1058,6 +1058,40 @@ public unsafe class DacDbiImplTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
+    public void IsDiagnosticsHiddenOrLCGMethod_DistinguishesExplicitlyHiddenLCG(MockTarget.Architecture arch)
+    {
+        MethodDescHandle methodDesc = new(new TargetPointer(0x1000));
+        (bool ExplicitlyHidden, bool DiagnosticsHidden, bool LCG, DynamicMethodType Expected)[] cases =
+        [
+            (true, true, true, DynamicMethodType.kDiagnosticHiddenLCGMethod),
+            (false, true, false, DynamicMethodType.kDiagnosticHidden),
+            (false, false, true, DynamicMethodType.kLCGMethod),
+            (false, false, false, DynamicMethodType.kNone),
+            (false, true, true, DynamicMethodType.kDiagnosticHidden),
+        ];
+
+        foreach (var testCase in cases)
+        {
+            var rts = new Mock<IRuntimeTypeSystem>();
+            rts.Setup(r => r.GetMethodDescHandle(methodDesc.Address)).Returns(methodDesc);
+            rts.Setup(r => r.IsDiagnosticsHiddenLCGMethod(methodDesc)).Returns(testCase.ExplicitlyHidden);
+            rts.Setup(r => r.IsDiagnosticsHidden(methodDesc)).Returns(testCase.DiagnosticsHidden);
+            rts.Setup(r => r.IsDynamicMethod(methodDesc)).Returns(testCase.LCG);
+            TestPlaceholderTarget target = new TestPlaceholderTarget.Builder(arch)
+                .AddMockContract(rts)
+                .Build();
+            DacDbiImpl dacDbi = new(target, legacyObj: null, new());
+            int result = -1;
+
+            int hr = dacDbi.IsDiagnosticsHiddenOrLCGMethod(methodDesc.Address.Value, &result);
+
+            Assert.Equal(System.HResults.S_OK, hr);
+            Assert.Equal((int)testCase.Expected, result);
+        }
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
     public void GetNativeCodeInfo_FillsDataForAsyncVariant(MockTarget.Architecture arch)
     {
         const ulong Assembly = 0x1000;

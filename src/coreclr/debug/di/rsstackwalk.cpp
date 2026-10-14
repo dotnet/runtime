@@ -545,9 +545,9 @@ HRESULT CordbStackWalk::GetFrameWorker(ICorDebugFrame ** ppFrame)
             IDacDbiInterface::DynamicMethodType methodType;
             IfFailThrow(pDAC->IsDiagnosticsHiddenOrLCGMethod(
                 pJITFuncData->vmNativeCodeMethodDescToken, &methodType));
-            if (methodType == IDacDbiInterface::kDiagnosticHidden)
+            if (methodType == IDacDbiInterface::kDiagnosticHiddenLCGMethod)
             {
-                // Keep the unwind context, but do not expose a frame for runtime plumbing.
+                // Preserve interop stitching frames; suppress only explicitly hidden LCG methods.
                 return S_FALSE;
             }
         }
@@ -820,7 +820,8 @@ HRESULT CordbAsyncStackWalk::PopulateFrame()
 
         IDacDbiInterface::DynamicMethodType dynMethodType;
         IfFailThrow(pDac->IsDiagnosticsHiddenOrLCGMethod(codeData.vmNativeCodeMethodDescToken, &dynMethodType));
-        if (dynMethodType == IDacDbiInterface::kDiagnosticHidden)
+        if (dynMethodType == IDacDbiInterface::kDiagnosticHidden ||
+            dynMethodType == IDacDbiInterface::kDiagnosticHiddenLCGMethod)
         {
             // Skipping async frame creation for async thunks. These can not be converted to a CordbAsyncFrame as they lack DebugInfo
             // Async Thunks appear on the continuation chain when runtime async calls library async code through a thunk.

@@ -4923,7 +4923,8 @@ BOOL CordbInternalFrame::ConvertInternalFrameForILMethodWithoutMetadata(
     {
         return FALSE;
     }
-    else if (type == IDacDbiInterface::kDiagnosticHidden)
+    else if (type == IDacDbiInterface::kDiagnosticHidden ||
+             type == IDacDbiInterface::kDiagnosticHiddenLCGMethod)
     {
         return TRUE;
     }
@@ -7004,7 +7005,8 @@ BOOL CordbNativeFrame::ConvertNativeFrameForILMethodWithoutMetadata(
     {
         return FALSE;
     }
-    else if (type == IDacDbiInterface::kDiagnosticHidden)
+    else if (type == IDacDbiInterface::kDiagnosticHidden ||
+             type == IDacDbiInterface::kDiagnosticHiddenLCGMethod)
     {
         return TRUE;
     }
