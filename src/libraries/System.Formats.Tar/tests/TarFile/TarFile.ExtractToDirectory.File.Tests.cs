@@ -12,6 +12,19 @@ namespace System.Formats.Tar.Tests
 {
     public partial class TarFile_ExtractToDirectory_File_Tests : TarFile_ExtractToDirectory_Tests
     {
+        // ensures that the link name is in the correct format for the current OS.
+        private static string NormalizePathSeparators(string path)
+        {
+            if (OperatingSystem.IsWindows())
+            {
+                return path.Replace('/', '\\');
+            }
+            else
+            {
+                return path;
+            }
+        }
+
         protected override Task ExtractArchive(MemoryStream archive, string destinationDirectoryName, bool overwriteFiles, bool useOptions, bool async, CancellationToken cancellationToken = default)
         {
             string archivePath = GetTestFilePath();
@@ -361,7 +374,7 @@ namespace System.Formats.Tar.Tests
             using (TarWriter writer = new TarWriter(archiveStream))
             {
                 PaxTarEntry link = new PaxTarEntry(TarEntryType.SymbolicLink, "link");
-                link.LinkName = "dir/file";
+                link.LinkName = NormalizePathSeparators("dir/file");
                 writer.WriteEntry(link);
 
                 PaxTarEntry file = new PaxTarEntry(TarEntryType.RegularFile, "dir/file");
@@ -495,7 +508,7 @@ namespace System.Formats.Tar.Tests
                 // symlink: "link" -> "/tmp/outside"
                 writer.WriteEntry(new PaxTarEntry(TarEntryType.SymbolicLink, "link")
                 {
-                    LinkName = linkTarget
+                    LinkName = NormalizePathSeparators(linkTarget)
                 });
 
                 // file: "link/test.txt" with "hello"
@@ -541,7 +554,7 @@ namespace System.Formats.Tar.Tests
 
                 writer.WriteEntry(new PaxTarEntry(TarEntryType.SymbolicLink, "a/b/c") { LinkName = "." });
 
-                writer.WriteEntry(new PaxTarEntry(TarEntryType.SymbolicLink, "a/b/c/d") { LinkName = "../../outside" });
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.SymbolicLink, "a/b/c/d") { LinkName = NormalizePathSeparators("../../outside") });
 
                 var pwned = new PaxTarEntry(TarEntryType.RegularFile, "a/d/pwned.txt")
                 {
@@ -590,7 +603,7 @@ namespace System.Formats.Tar.Tests
                 // symlink: "link" -> "/tmp/outside" (absolute path outside destDir)
                 writer.WriteEntry(new PaxTarEntry(TarEntryType.SymbolicLink, "link")
                 {
-                    LinkName = "/tmp/outside"
+                    LinkName = NormalizePathSeparators("/tmp/outside")
                 });
             }
 
@@ -613,7 +626,7 @@ namespace System.Formats.Tar.Tests
             using (TarWriter writer = new TarWriter(stream, leaveOpen: false))
             {
                 writer.WriteEntry(new PaxTarEntry(TarEntryType.Directory, "a/"));
-                writer.WriteEntry(new PaxTarEntry(TarEntryType.SymbolicLink, "a/link") { LinkName = "../b" });
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.SymbolicLink, "a/link") { LinkName = NormalizePathSeparators("../b") });
                 writer.WriteEntry(new PaxTarEntry(TarEntryType.Directory, "b/"));
             }
 
@@ -648,7 +661,7 @@ namespace System.Formats.Tar.Tests
                 writer.WriteEntry(new PaxTarEntry(TarEntryType.Directory, "a/"));
                 writer.WriteEntry(new PaxTarEntry(TarEntryType.SymbolicLink, "a/b") { LinkName = "." });
                 writer.WriteEntry(new PaxTarEntry(TarEntryType.SymbolicLink, "a/b/c") { LinkName = "." });
-                writer.WriteEntry(new PaxTarEntry(TarEntryType.SymbolicLink, "a/b/c/escape") { LinkName = "../../.." });
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.SymbolicLink, "a/b/c/escape") { LinkName = NormalizePathSeparators("../../..") });
                 writer.WriteEntry(new PaxTarEntry(TarEntryType.RegularFile, "a/b/c/escape/pwned"));
             }
 
@@ -732,7 +745,7 @@ namespace System.Formats.Tar.Tests
             using (TarWriter writer = new TarWriter(stream, leaveOpen: false))
             {
                 // ext/link -> ../.. (escapes beyond externalDir)
-                writer.WriteEntry(new PaxTarEntry(TarEntryType.SymbolicLink, "ext/link") { LinkName = "../.." });
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.SymbolicLink, "ext/link") { LinkName = NormalizePathSeparators("../..") });
             }
 
             Assert.Throws<IOException>(() => TarFile.ExtractToDirectory(tarPath, destDir, overwriteFiles: true));
@@ -757,8 +770,8 @@ namespace System.Formats.Tar.Tests
             {
                 writer.WriteEntry(new PaxTarEntry(TarEntryType.Directory, "a/"));
                 writer.WriteEntry(new PaxTarEntry(TarEntryType.Directory, "b/"));
-                writer.WriteEntry(new PaxTarEntry(TarEntryType.SymbolicLink, "a/link1") { LinkName = "../b" });
-                writer.WriteEntry(new PaxTarEntry(TarEntryType.SymbolicLink, "b/link2") { LinkName = "../a" });
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.SymbolicLink, "a/link1") { LinkName = NormalizePathSeparators("../b") });
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.SymbolicLink, "b/link2") { LinkName = NormalizePathSeparators("../a") });
             }
 
             TarFile.ExtractToDirectory(tarPath, destDir, overwriteFiles: true);
@@ -785,8 +798,8 @@ namespace System.Formats.Tar.Tests
                 writer.WriteEntry(new PaxTarEntry(TarEntryType.Directory, "a/"));
                 writer.WriteEntry(new PaxTarEntry(TarEntryType.Directory, "b/"));
                 writer.WriteEntry(new PaxTarEntry(TarEntryType.Directory, "c/"));
-                writer.WriteEntry(new PaxTarEntry(TarEntryType.SymbolicLink, "a/link") { LinkName = "../b" });
-                writer.WriteEntry(new PaxTarEntry(TarEntryType.SymbolicLink, "a/link") { LinkName = "../c" });
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.SymbolicLink, "a/link") { LinkName = NormalizePathSeparators("../b") });
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.SymbolicLink, "a/link") { LinkName = NormalizePathSeparators("../c") });
             }
 
             TarFile.ExtractToDirectory(tarPath, destDir, overwriteFiles: true);
@@ -812,7 +825,7 @@ namespace System.Formats.Tar.Tests
             {
                 writer.WriteEntry(new PaxTarEntry(TarEntryType.Directory, "a/"));
                 writer.WriteEntry(new PaxTarEntry(TarEntryType.Directory, "b/"));
-                writer.WriteEntry(new PaxTarEntry(TarEntryType.SymbolicLink, "a/link") { LinkName = "../b" });
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.SymbolicLink, "a/link") { LinkName = NormalizePathSeparators("../b") });
                 writer.WriteEntry(new PaxTarEntry(TarEntryType.RegularFile, "a/link")
                 {
                     DataStream = new MemoryStream(Encoding.UTF8.GetBytes("content"))
@@ -843,7 +856,7 @@ namespace System.Formats.Tar.Tests
             using (TarWriter writer = new TarWriter(stream, leaveOpen: false))
             {
                 writer.WriteEntry(new PaxTarEntry(TarEntryType.Directory, "target/"));
-                writer.WriteEntry(new PaxTarEntry(TarEntryType.SymbolicLink, "link") { LinkName = absoluteTarget });
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.SymbolicLink, "link") { LinkName = NormalizePathSeparators(absoluteTarget) });
             }
 
             TarFile.ExtractToDirectory(tarPath, destDir, overwriteFiles: true);
@@ -871,7 +884,7 @@ namespace System.Formats.Tar.Tests
             using (TarWriter writer = new TarWriter(stream, leaveOpen: false))
             {
                 writer.WriteEntry(new PaxTarEntry(TarEntryType.Directory, "b/"));
-                writer.WriteEntry(new PaxTarEntry(TarEntryType.SymbolicLink, "link") { LinkName = absoluteTarget });
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.SymbolicLink, "link") { LinkName = NormalizePathSeparators(absoluteTarget) });
             }
 
             TarFile.ExtractToDirectory(tarPath, destDir, overwriteFiles: true);
@@ -903,8 +916,8 @@ namespace System.Formats.Tar.Tests
                 writer.WriteEntry(new PaxTarEntry(TarEntryType.Directory, "a/"));
                 writer.WriteEntry(new PaxTarEntry(TarEntryType.Directory, "b/"));
                 writer.WriteEntry(new PaxTarEntry(TarEntryType.Directory, "b/sub/"));
-                writer.WriteEntry(new PaxTarEntry(TarEntryType.SymbolicLink, "a/link1") { LinkName = "../b" });
-                writer.WriteEntry(new PaxTarEntry(TarEntryType.SymbolicLink, "a/link2") { LinkName = "link1/../b/sub" });
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.SymbolicLink, "a/link1") { LinkName = NormalizePathSeparators("../b") });
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.SymbolicLink, "a/link2") { LinkName = NormalizePathSeparators("link1/../b/sub") });
             }
 
             TarFile.ExtractToDirectory(tarPath, destDir, overwriteFiles: true);
@@ -939,11 +952,11 @@ namespace System.Formats.Tar.Tests
                     writer.WriteEntry(new PaxTarEntry(TarEntryType.Directory, $"d{i}/"));
                 }
                 // link_0 -> ../d0 (base case)
-                writer.WriteEntry(new PaxTarEntry(TarEntryType.SymbolicLink, "d0/link_0") { LinkName = "../d0" });
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.SymbolicLink, "d0/link_0") { LinkName = NormalizePathSeparators("../d0") });
                 // link_N -> ../d{N-1}/link_{N-1} — each follows the previous, all deferred
                 for (int i = 1; i < count; i++)
                 {
-                    writer.WriteEntry(new PaxTarEntry(TarEntryType.SymbolicLink, $"d{i}/link_{i}") { LinkName = $"../d{i - 1}/link_{i - 1}" });
+                    writer.WriteEntry(new PaxTarEntry(TarEntryType.SymbolicLink, $"d{i}/link_{i}") { LinkName = NormalizePathSeparators($"../d{i - 1}/link_{i - 1}") });
                 }
             }
 
