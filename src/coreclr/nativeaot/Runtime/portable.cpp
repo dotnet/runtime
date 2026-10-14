@@ -23,6 +23,7 @@
 #include "thread.h"
 #include "threadstore.h"
 #include "threadstore.inl"
+#include "thread.inl"
 
 #include "MethodTable.h"
 #include "TypeManager.h"
@@ -127,11 +128,23 @@ FCIMPL2(Array *, RhpNewArrayFast, MethodTable * pArrayEEType, intptr_t numElemen
 }
 FCIMPLEND
 
+#ifdef HOST_WASM
+FCIMPL2(Array*, RhpNewPtrArrayFast, MethodTable* pArrayEEType, intptr_t numElements)
+{
+    return RhpNewArrayFast_IMPL(callersStackPointer, pArrayEEType, numElements);
+}
+FCIMPLEND
+#endif // HOST_WASM
+
 FCIMPL2(String *, RhNewString, MethodTable * pArrayEEType, intptr_t numElements)
 {
     // TODO: Implement. We tail call to RhpNewArrayFast for now since there's a bunch of TODOs in the places
     // that matter anyway.
+#ifdef HOST_WASM
+    return (String*)RhpNewArrayFast_IMPL(callersStackPointer, pArrayEEType, numElements);
+#else
     return (String*)RhpNewArrayFast(pArrayEEType, numElements);
+#endif
 }
 FCIMPLEND
 
@@ -277,7 +290,11 @@ EXTERN_C void * ReturnFromUniversalTransitionTailCall;
 void * ReturnFromUniversalTransitionTailCall;
 
 #if !defined (HOST_ARM64)
+#ifdef HOST_WASM
+FCIMPL_NO_SS(void, RhpAssignRef, Object** dst, Object* ref)
+#else
 FCIMPL2(void, RhpAssignRef, Object ** dst, Object * ref)
+#endif
 {
     // @TODO: FEATURE_PORTABLE_HELPERS - Null check
     *dst = ref;
@@ -285,7 +302,11 @@ FCIMPL2(void, RhpAssignRef, Object ** dst, Object * ref)
 }
 FCIMPLEND
 
+#ifdef HOST_WASM
+FCIMPL_NO_SS(void, RhpCheckedAssignRef, Object** dst, Object* ref)
+#else
 FCIMPL2(void, RhpCheckedAssignRef, Object ** dst, Object * ref)
+#endif
 {
     // @TODO: FEATURE_PORTABLE_HELPERS - Null check
     *dst = ref;
