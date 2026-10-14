@@ -25,6 +25,7 @@ namespace AppHost.Bundle.Tests
             CommandResult result = Command.Create(path)
                 .EnableTracingAndCaptureOutputs()
                 .DotNetRoot(selfContained ? null : HostTestContext.BuiltDotNet.BinPath)
+                .EnvironmentVariable(Constants.BundleExtractBase.EnvironmentVariable, Path.Combine(Path.GetDirectoryName(path), "extract"))
                 .Execute();
             if (deleteApp)
             {
@@ -64,7 +65,7 @@ namespace AppHost.Bundle.Tests
         [InlineData(BundleOptions.BundleAllContent)]
         public void FrameworkDependent(BundleOptions options)
         {
-            var singleFile = sharedTestState.FrameworkDependentApp.Bundle(options);
+            var singleFile = sharedTestState.FrameworkDependentApp.Bundle(options, out Manifest manifest);
 
             // Run the bundled app
             bool shouldExtract = options.HasFlag(BundleOptions.BundleAllContent);
@@ -73,6 +74,10 @@ namespace AppHost.Bundle.Tests
 
             if (shouldExtract)
             {
+                sharedTestState.FrameworkDependentApp
+                    .GetExtractionDir(Path.Combine(Path.GetDirectoryName(singleFile), "extract"), manifest)
+                    .Should().Exist();
+
                 // Run the bundled app again (reuse extracted files)
                 RunTheApp(singleFile, selfContained: false)
                     .And.ReuseExtraction();
@@ -86,7 +91,7 @@ namespace AppHost.Bundle.Tests
         [InlineData(BundleOptions.BundleAllContent | BundleOptions.EnableCompression)]
         public void SelfContained(BundleOptions options)
         {
-            var singleFile = sharedTestState.SelfContainedApp.Bundle(options);
+            var singleFile = sharedTestState.SelfContainedApp.Bundle(options, out Manifest manifest);
 
             // Run the bundled app
             bool shouldExtract = options.HasFlag(BundleOptions.BundleAllContent);
@@ -95,6 +100,10 @@ namespace AppHost.Bundle.Tests
 
             if (shouldExtract)
             {
+                sharedTestState.SelfContainedApp
+                    .GetExtractionDir(Path.Combine(Path.GetDirectoryName(singleFile), "extract"), manifest)
+                    .Should().Exist();
+
                 // Run the bundled app again (reuse extracted files)
                 RunTheApp(singleFile, selfContained: true)
                     .And.ReuseExtraction();
