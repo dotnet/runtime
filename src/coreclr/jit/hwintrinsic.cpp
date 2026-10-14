@@ -5348,11 +5348,14 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
                 return nullptr;
             }
 #elif defined(TARGET_ARM64)
+            if (simdSize == SIZE_UNKNOWN)
+            {
+                // SVE WithElement is handled by the managed implementation.
+                return nullptr;
+            }
+
             bool     isIndexConst = true;
             GenTree* indexOp      = impStackTop(1).val;
-
-            // TODO-SVE: Implement WithElement when it becomes intrinsified.
-            assert(simdSize != SIZE_UNKNOWN);
 
             if (!indexOp->OperIsConst())
             {
