@@ -522,10 +522,11 @@ namespace System.Formats.Tar.Tests
         public void ExtractToDirectory_RejectsChainedSymlinkDirectoryTraversal_WithNestedFile()
         {
             // dir a/
-            // symlink a/b ? .
-            // symlink a/b/c ? .
-            // symlink a/b/c/d ? ../../outside
-            // file a/d/pwned.txt escapes
+            // symlink a/b → .
+            // symlink a/b/c → .
+            // symlink a/b/c/d → ../../outside
+            // file a/d/ pwned.txt escapes
+
             using TempDirectory root = new TempDirectory();
             string destDir = Path.Combine(root.Path, "dest");
             Directory.CreateDirectory(destDir);
@@ -574,5 +575,390 @@ namespace System.Formats.Tar.Tests
             Assert.False(Directory.Exists(outsideDir), "outside/directory should not have been created.");
             Assert.False(File.Exists(Path.Combine(outsideDir, "pwned.txt")), "pwned.txt should not have been written outside destination.");
         }
+
+        [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
+        public void ExtractToDirectory_RejectsSymlinkDirectoryTraversal()
+        {
+            using TempDirectory root = new TempDirectory();
+            string destDir = Path.Combine(root.Path, "dest");
+            Directory.CreateDirectory(destDir);
+
+            string tarPath = Path.Combine(root.Path, "symlink_dir_traversal.tar");
+            using (FileStream stream = new FileStream(tarPath, FileMode.Create, FileAccess.Write))
+            using (TarWriter writer = new TarWriter(stream, leaveOpen: false))
+            {
+                // symlink: "link" -> "/tmp/outside" (absolute path outside destDir)
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.SymbolicLink, "link")
+                {
+                    LinkName = "/tmp/outside"
+                });
+            }
+
+            Assert.Throws<IOException>(() => TarFile.ExtractToDirectory(tarPath, destDir, overwriteFiles: true));
+        }
+
+        [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
+        public void ExtractToDirectory_DefersSymlinkWithDotDot()
+        {
+            // Symlinks whose target contains '..' are deferred: a placeholder file is created
+            // during extraction, and the real symlink replaces it after all entries are processed.
+            // This prevents subsequent entries from following the symlink to escape the destination.
+
+            using TempDirectory root = new TempDirectory();
+            string destDir = Path.Combine(root.Path, "dest");
+            Directory.CreateDirectory(destDir);
+
+            string tarPath = Path.Combine(root.Path, "deferred_symlink.tar");
+            using (FileStream stream = new FileStream(tarPath, FileMode.Create, FileAccess.Write))
+            using (TarWriter writer = new TarWriter(stream, leaveOpen: false))
+            {
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.Directory, "a/"));
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.SymbolicLink, "a/link") { LinkName = "../b" });
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.Directory, "b/"));
+            }
+
+            TarFile.ExtractToDirectory(tarPath, destDir, overwriteFiles: true);
+
+            string linkPath = Path.Combine(destDir, "a", "link");
+            FileSystemInfo linkInfo = new FileInfo(linkPath);
+            Assert.Equal("../b", linkInfo.LinkTarget);
+        }
+
+        [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
+        public void ExtractToDirectory_DeferredSymlinkBlocksTraversal()
+        {
+            // A file entry after a deferred symlink cannot follow the symlink to write
+            // outside the destination directory, because the symlink is a placeholder file
+            // during extraction.
+            //
+            // dir a/
+            // symlink a/b -> .
+            // symlink a/b/c -> .
+            // symlink a/b/c/escape -> ../../..   (deferred: contains '..')
+            // file a/b/c/escape/pwned            (would escape via chained symlinks if not deferred)
+
+            using TempDirectory root = new TempDirectory();
+            string destDir = Path.Combine(root.Path, "dest");
+            Directory.CreateDirectory(destDir);
+
+            string tarPath = Path.Combine(root.Path, "chained_symlink_traversal.tar");
+            using (FileStream stream = new FileStream(tarPath, FileMode.Create, FileAccess.Write))
+            using (TarWriter writer = new TarWriter(stream, leaveOpen: false))
+            {
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.Directory, "a/"));
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.SymbolicLink, "a/b") { LinkName = "." });
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.SymbolicLink, "a/b/c") { LinkName = "." });
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.SymbolicLink, "a/b/c/escape") { LinkName = "../../.." });
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.RegularFile, "a/b/c/escape/pwned"));
+            }
+
+            // The file entry "a/b/c/escape/pwned" cannot follow the 'escape' symlink because
+            // it is a placeholder file during extraction. Creating the file's parent directory
+            // will fail because 'escape' is a regular file, not a directory.
+            Assert.ThrowsAny<IOException>(() => TarFile.ExtractToDirectory(tarPath, destDir, overwriteFiles: true));
+
+            // The file must not exist at the root (where the symlink chain would have led).
+            Assert.False(File.Exists(Path.Combine(root.Path, "pwned")));
+        }
+
+        [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
+        public void ExtractToDirectory_AllowsSymlinkToDestinationDirectory()
+        {
+            using TempDirectory root = new TempDirectory();
+            string destDir = Path.Combine(root.Path, "dest");
+            Directory.CreateDirectory(destDir);
+
+            string tarPath = Path.Combine(root.Path, "symlink_to_dest.tar");
+            using (FileStream stream = new FileStream(tarPath, FileMode.Create, FileAccess.Write))
+            using (TarWriter writer = new TarWriter(stream, leaveOpen: false))
+            {
+                // symlink: "link" -> "." (points to the destination directory itself)
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.SymbolicLink, "link") { LinkName = "." });
+            }
+
+            TarFile.ExtractToDirectory(tarPath, destDir, overwriteFiles: true);
+
+            string linkPath = Path.Combine(destDir, "link");
+            Assert.True(Directory.Exists(linkPath), "symlink should have been created.");
+            FileSystemInfo linkInfo = new FileInfo(linkPath);
+            Assert.Equal(".", linkInfo.LinkTarget);
+        }
+        [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
+        public void ExtractToDirectory_DeferredSymlinkAllowedUnderExistingExternalSymlink()
+        {
+            // When the destination contains an existing symlink that points outside,
+            // a deferred symlink (with '..') under that external location is allowed
+            // as long as it stays within the directory the existing symlink resolved to.
+
+            using TempDirectory root = new TempDirectory();
+            string destDir = Path.Combine(root.Path, "dest");
+            Directory.CreateDirectory(destDir);
+
+            // Create an external directory and an existing symlink in dest pointing to it.
+            string externalDir = Path.Combine(root.Path, "external");
+            Directory.CreateDirectory(Path.Combine(externalDir, "sub"));
+            Directory.CreateSymbolicLink(Path.Combine(destDir, "ext"), externalDir);
+
+            string tarPath = Path.Combine(root.Path, "deferred_under_external.tar");
+            using (FileStream stream = new FileStream(tarPath, FileMode.Create, FileAccess.Write))
+            using (TarWriter writer = new TarWriter(stream, leaveOpen: false))
+            {
+                // ext/sub/link -> .. (resolves to externalDir, stays within it)
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.SymbolicLink, "ext/sub/link") { LinkName = ".." });
+            }
+
+            TarFile.ExtractToDirectory(tarPath, destDir, overwriteFiles: true);
+
+            string linkPath = Path.Combine(destDir, "ext", "sub", "link");
+            Assert.Equal("..", new FileInfo(linkPath).LinkTarget);
+        }
+
+        [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
+        public void ExtractToDirectory_DeferredSymlinkRejectedWhenEscapingExternalSymlink()
+        {
+            // When the destination contains an existing symlink that points outside,
+            // a deferred symlink that escapes beyond that external directory is rejected.
+
+            using TempDirectory root = new TempDirectory();
+            string destDir = Path.Combine(root.Path, "dest");
+            Directory.CreateDirectory(destDir);
+
+            string externalDir = Path.Combine(root.Path, "external");
+            Directory.CreateDirectory(externalDir);
+            Directory.CreateSymbolicLink(Path.Combine(destDir, "ext"), externalDir);
+
+            string tarPath = Path.Combine(root.Path, "escape_external.tar");
+            using (FileStream stream = new FileStream(tarPath, FileMode.Create, FileAccess.Write))
+            using (TarWriter writer = new TarWriter(stream, leaveOpen: false))
+            {
+                // ext/link -> ../.. (escapes beyond externalDir)
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.SymbolicLink, "ext/link") { LinkName = "../.." });
+            }
+
+            Assert.Throws<IOException>(() => TarFile.ExtractToDirectory(tarPath, destDir, overwriteFiles: true));
+        }
+
+        [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
+        public void ExtractToDirectory_CircularDeferredSymlinksAllowed()
+        {
+            // Circular symlinks that contain '..' but stay within the destination are allowed.
+            // The cycle detection (visitedLinks) prevents infinite recursion during resolution.
+            //
+            // a/link1 -> ../b
+            // b/link2 -> ../a
+
+            using TempDirectory root = new TempDirectory();
+            string destDir = Path.Combine(root.Path, "dest");
+            Directory.CreateDirectory(destDir);
+
+            string tarPath = Path.Combine(root.Path, "circular_deferred.tar");
+            using (FileStream stream = new FileStream(tarPath, FileMode.Create, FileAccess.Write))
+            using (TarWriter writer = new TarWriter(stream, leaveOpen: false))
+            {
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.Directory, "a/"));
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.Directory, "b/"));
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.SymbolicLink, "a/link1") { LinkName = "../b" });
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.SymbolicLink, "b/link2") { LinkName = "../a" });
+            }
+
+            TarFile.ExtractToDirectory(tarPath, destDir, overwriteFiles: true);
+
+            string link1Path = Path.Combine(destDir, "a", "link1");
+            string link2Path = Path.Combine(destDir, "b", "link2");
+            Assert.Equal("../b", new FileInfo(link1Path).LinkTarget);
+            Assert.Equal("../a", new FileInfo(link2Path).LinkTarget);
+        }
+        [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
+        public void ExtractToDirectory_OverwriteDeferredSymlink()
+        {
+            // When a second symlink entry overwrites a previously deferred symlink,
+            // the placeholder is replaced and the final symlink uses the second target.
+
+            using TempDirectory root = new TempDirectory();
+            string destDir = Path.Combine(root.Path, "dest");
+            Directory.CreateDirectory(destDir);
+
+            string tarPath = Path.Combine(root.Path, "overwrite_deferred.tar");
+            using (FileStream stream = new FileStream(tarPath, FileMode.Create, FileAccess.Write))
+            using (TarWriter writer = new TarWriter(stream, leaveOpen: false))
+            {
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.Directory, "a/"));
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.Directory, "b/"));
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.Directory, "c/"));
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.SymbolicLink, "a/link") { LinkName = "../b" });
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.SymbolicLink, "a/link") { LinkName = "../c" });
+            }
+
+            TarFile.ExtractToDirectory(tarPath, destDir, overwriteFiles: true);
+
+            string linkPath = Path.Combine(destDir, "a", "link");
+            Assert.Equal("../c", new FileInfo(linkPath).LinkTarget);
+        }
+
+        [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
+        public void ExtractToDirectory_AbsoluteSymlinkWithinDestination()
+        {
+            // A symlink with a fully qualified target that points within the destination
+            // is allowed and is not deferred (no '..').
+
+            using TempDirectory root = new TempDirectory();
+            string destDir = Path.Combine(root.Path, "dest");
+            Directory.CreateDirectory(destDir);
+
+            string absoluteTarget = Path.Combine(destDir, "target");
+
+            string tarPath = Path.Combine(root.Path, "absolute_symlink.tar");
+            using (FileStream stream = new FileStream(tarPath, FileMode.Create, FileAccess.Write))
+            using (TarWriter writer = new TarWriter(stream, leaveOpen: false))
+            {
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.Directory, "target/"));
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.SymbolicLink, "link") { LinkName = absoluteTarget });
+            }
+
+            TarFile.ExtractToDirectory(tarPath, destDir, overwriteFiles: true);
+
+            string linkPath = Path.Combine(destDir, "link");
+            Assert.Equal(absoluteTarget, new FileInfo(linkPath).LinkTarget);
+        }
+
+        [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
+        public void ExtractToDirectory_DeferredSymlinkWithAbsoluteTarget()
+        {
+            // A deferred symlink (contains '..') with a fully qualified target that
+            // resolves within the destination is allowed. Exercises the
+            // rootPath = resolvedDestinationPath path in ResolvePathInRootOrDestination.
+
+            using TempDirectory root = new TempDirectory();
+            string destDir = Path.Combine(root.Path, "dest");
+            Directory.CreateDirectory(destDir);
+
+            // Absolute target with '..' that resolves back into dest.
+            string absoluteTarget = Path.Combine(destDir, "a", "..", "b");
+
+            string tarPath = Path.Combine(root.Path, "deferred_absolute.tar");
+            using (FileStream stream = new FileStream(tarPath, FileMode.Create, FileAccess.Write))
+            using (TarWriter writer = new TarWriter(stream, leaveOpen: false))
+            {
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.Directory, "b/"));
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.SymbolicLink, "link") { LinkName = absoluteTarget });
+            }
+
+            TarFile.ExtractToDirectory(tarPath, destDir, overwriteFiles: true);
+
+            string linkPath = Path.Combine(destDir, "link");
+            Assert.Equal(absoluteTarget, new FileInfo(linkPath).LinkTarget);
+        }
+
+        [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
+        public void ExtractToDirectory_ChainedDeferredSymlinks()
+        {
+            // Two deferred symlinks where resolving the second one's target
+            // passes through the first one, forcing recursive resolution
+            // during CreatePendingLinks.
+            //
+            // a/link1 -> ../b             (deferred: contains '..')
+            // a/link2 -> link1/../b/sub   (deferred: contains '..',
+            //                              resolving encounters link1 as pending link,
+            //                              triggering recursive creation of link1 first)
+
+            using TempDirectory root = new TempDirectory();
+            string destDir = Path.Combine(root.Path, "dest");
+            Directory.CreateDirectory(destDir);
+
+            string tarPath = Path.Combine(root.Path, "chained_deferred.tar");
+            using (FileStream stream = new FileStream(tarPath, FileMode.Create, FileAccess.Write))
+            using (TarWriter writer = new TarWriter(stream, leaveOpen: false))
+            {
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.Directory, "a/"));
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.Directory, "b/"));
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.Directory, "b/sub/"));
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.SymbolicLink, "a/link1") { LinkName = "../b" });
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.SymbolicLink, "a/link2") { LinkName = "link1/../b/sub" });
+            }
+
+            TarFile.ExtractToDirectory(tarPath, destDir, overwriteFiles: true);
+
+            string link1Path = Path.Combine(destDir, "a", "link1");
+            string link2Path = Path.Combine(destDir, "a", "link2");
+            Assert.Equal("../b", new FileInfo(link1Path).LinkTarget);
+            Assert.Equal("link1/../b/sub", new FileInfo(link2Path).LinkTarget);
+        }
+
+        [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
+        public void ExtractToDirectory_ExceedsMaxSymlinkDepth()
+        {
+            // A chain of deferred symlinks that exceeds MaxSymlinkDepth (40)
+            // should throw during CreatePendingLinks.
+            //
+            // Each link_N -> ../link_{N-1} (deferred because of '..').
+            // Resolving link_41's target chains through all 41 preceding
+            // symlinks, exceeding the depth limit.
+
+            using TempDirectory root = new TempDirectory();
+            string destDir = Path.Combine(root.Path, "dest");
+            Directory.CreateDirectory(destDir);
+
+            string tarPath = Path.Combine(root.Path, "deep_symlinks.tar");
+            using (FileStream stream = new FileStream(tarPath, FileMode.Create, FileAccess.Write))
+            using (TarWriter writer = new TarWriter(stream, leaveOpen: false))
+            {
+                const int count = 42;
+                for (int i = 0; i < count; i++)
+                {
+                    writer.WriteEntry(new PaxTarEntry(TarEntryType.Directory, $"d{i}/"));
+                }
+                // link_0 -> ../d0 (base case)
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.SymbolicLink, "d0/link_0") { LinkName = "../d0" });
+                // link_N -> ../d{N-1}/link_{N-1} — each follows the previous, all deferred
+                for (int i = 1; i < count; i++)
+                {
+                    writer.WriteEntry(new PaxTarEntry(TarEntryType.SymbolicLink, $"d{i}/link_{i}") { LinkName = $"../d{i - 1}/link_{i - 1}" });
+                }
+            }
+
+            Assert.Throws<IOException>(() => TarFile.ExtractToDirectory(tarPath, destDir, overwriteFiles: true));
+        }
+
+        [Fact]
+        public void ExtractToDirectory_RejectsChainedSymlinkDirectoryTraversal()
+        {
+            // Try several first-component lengths so we don't depend on exact offset arithmetic.
+            for (int L = 1; L <= 4; L++)
+            {
+                string comp = new string('X', L);
+                string real = $"/tmp/real{L}";
+                string destLink = $"/tmp/d{L}";
+                string tar = $"/tmp/evil{L}.tar";
+                string escaped = $"/tmp/pwned{L}.txt";
+
+                if (Directory.Exists(real)) Directory.Delete(real, true);
+                Directory.CreateDirectory(real);
+                if (Path.Exists(destLink)) File.Delete(destLink);
+                Directory.CreateSymbolicLink(destLink, real);   // dest /tmp/dL is a SYMLINK -> /tmp/realL
+                if (File.Exists(escaped)) File.Delete(escaped);
+
+                // Build the malicious archive with literal entry names (writer sets names directly).
+                using (var fs = File.Create(tar))
+                using (var w = new TarWriter(fs, TarEntryFormat.Pax))
+                {
+                    w.WriteEntry(new PaxTarEntry(TarEntryType.Directory, comp + "/"));
+                    var b = new PaxTarEntry(TarEntryType.SymbolicLink, comp + "/b"); b.LinkName = "."; w.WriteEntry(b);
+                    var c = new PaxTarEntry(TarEntryType.SymbolicLink, comp + "/b/c"); c.LinkName = "."; w.WriteEntry(c);
+                    var d = new PaxTarEntry(TarEntryType.SymbolicLink, comp + "/b/c/d"); d.LinkName = "../.."; w.WriteEntry(d);
+                    var f = new PaxTarEntry(TarEntryType.RegularFile, comp + $"/d/pwned{L}.txt");
+                    f.DataStream = new MemoryStream(Encoding.UTF8.GetBytes("PWNED")); w.WriteEntry(f);
+                }
+
+                string status;
+                try { TarFile.ExtractToDirectory(tar, destLink, overwriteFiles: true); status = "extract-returned"; }
+                catch (Exception ex) { status = "THREW " + ex.GetType().Name + ": " + ex.Message.Split('\n')[0]; }
+
+                bool esc = File.Exists(escaped);   // /tmp/pwnedL.txt is OUTSIDE the dest /tmp/dL (-> /tmp/realL)
+                Assert.False(esc, $"Traversal confirmed: {escaped} was created outside destination {destLink} (-> {real})");
+            }
+        }
     }
 }
+
+
+

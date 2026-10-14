@@ -3,6 +3,7 @@
 
 using System.Buffers;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
@@ -17,8 +18,32 @@ namespace System.Formats.Tar
     // Static class containing a variety of helper methods.
     internal static partial class TarHelpers
     {
+        private const int MaxSymlinkDepth = 40;
+
         internal const short RecordSize = 512;
         internal const int MaxBufferLength = 4096;
+
+        internal struct ExtractState
+        {
+            internal SortedDictionary<string, UnixFileMode>? PendingModes;
+            internal Stack<(string, DateTimeOffset)> DirectoryModificationTimes;
+            internal Dictionary<FileId, (string SymlinkPath, string LinkTarget)> PendingLinks;
+            internal TarHardLinkMode HardLinkMode;
+
+            public ExtractState()
+            {
+                PendingModes = CreatePendingModesDictionary();
+                DirectoryModificationTimes = new();
+                PendingLinks = new();
+            }
+
+            internal readonly void Apply(string destinationDirectoryPath)
+            {
+                CreatePendingLinks(destinationDirectoryPath, PendingLinks);
+                SetPendingModes(PendingModes);
+                SetPendingModificationTimes(DirectoryModificationTimes);
+            }
+        }
 
         internal const UnixFileMode ValidUnixFileModes =
             UnixFileMode.UserRead |
@@ -475,6 +500,203 @@ namespace System.Formats.Tar
             {
                 // Some OSes like Android might not support setting the last write time, the extraction should not fail because of that
             }
+        }
+
+        // We delayed creating some symbolic links because they might target locations outside the destination.
+        // Any symlink that is in the destination directory at call time is either one that points in the destination or one that we are allowed to follow outside.
+        public static void CreatePendingLinks(string destinationDirectoryFullPath, Dictionary<FileId, (string SymlinkPath, string LinkTarget)> pendingLinks)
+        {
+            Debug.Assert(destinationDirectoryFullPath[^1] == Path.DirectorySeparatorChar);
+
+            (string resolvedDestinationDirectoryFullPath, int destinationSymlinkDepth) = RealPath(destinationDirectoryFullPath);
+
+            while (pendingLinks.Count > 0)
+            {
+                using var enumerator = pendingLinks.GetEnumerator();
+                enumerator.MoveNext();
+                (FileId fileId, (string symlinkPath, string linkTarget)) = enumerator.Current;
+                int symlinkDepth = destinationSymlinkDepth;
+                AddPendingLink(destinationDirectoryFullPath, resolvedDestinationDirectoryFullPath, destinationSymlinkDepth, destinationDirectoryFullPath, fileId, symlinkPath, linkTarget, pendingLinks, visitedLinks: null, out _, ref symlinkDepth);
+            }
+        }
+
+        private static (string resolvedPath, int symlinkDepth) RealPath(string fullPath)
+        {
+            Debug.Assert(fullPath[^1] == Path.DirectorySeparatorChar);
+
+            int symlinkDepth = 0;
+            string? root = Path.GetPathRoot(fullPath);
+            ResolvePathInRootOrDestination(root!, root!, 0, ref root, root!, fullPath.AsSpan(root!.Length), pendingLinks: null, out string resolvedPath, visitedLinks: null, ref symlinkDepth);
+            // Ensure DirectorySeparatorChar.
+            if (!resolvedPath.EndsWith(Path.DirectorySeparatorChar))
+            {
+                resolvedPath += Path.DirectorySeparatorChar;
+            }
+            return (resolvedPath, symlinkDepth);
+        }
+
+        private static void AddPendingLink(string destinationDirectoryFullPath, string resolvedDestinationPath, int destinationSymlinkDepth, string rootPath, FileId fileId, string symlinkPath, string linkTarget, Dictionary<FileId, (string SymlinkPath, string LinkTarget)> pendingLinks, HashSet<FileId>? visitedLinks, out string resolvedFullPath, ref int symlinkDepth)
+        {
+            Debug.Assert(destinationDirectoryFullPath[^1] == Path.DirectorySeparatorChar);
+            Debug.Assert(rootPath is not null);
+
+            string? rootPathLocal = rootPath;
+            ReadOnlySpan<char> relativeLinkPath = symlinkPath.AsSpan(destinationDirectoryFullPath.Length);
+            string resolvedPath = resolvedDestinationPath;
+            ReadOnlySpan<char> directoryPath = Path.GetDirectoryName(relativeLinkPath);
+            if (!directoryPath.IsEmpty)
+            {
+                if (!ResolvePathInRootOrDestination(destinationDirectoryFullPath, resolvedDestinationPath, destinationSymlinkDepth, ref rootPathLocal, resolvedPath, directoryPath, pendingLinks, out resolvedPath, visitedLinks, ref symlinkDepth))
+                {
+                    resolvedFullPath = resolvedPath;
+                    throw new IOException(SR.Format(SR.TarExtractingResultsLinkOutside, linkTarget, destinationDirectoryFullPath));
+                }
+                Debug.Assert(rootPathLocal is not null);
+            }
+
+            if (!ResolvePathInRootOrDestination(destinationDirectoryFullPath, resolvedDestinationPath, destinationSymlinkDepth, ref rootPathLocal, resolvedPath, linkTarget, pendingLinks, out resolvedFullPath, visitedLinks, ref symlinkDepth))
+            {
+                throw new IOException(SR.Format(SR.TarExtractingResultsLinkOutside, linkTarget, destinationDirectoryFullPath));
+            }
+            Debug.Assert(rootPathLocal is not null);
+
+            if (pendingLinks.Remove(fileId))
+            {
+                File.Delete(symlinkPath);
+                File.CreateSymbolicLink(symlinkPath, linkTarget);
+            }
+        }
+
+        internal static bool FullPathIsEqualOrNested(string fullPath, string nestedFullPath)
+        {
+            Debug.Assert(fullPath[^1] == Path.DirectorySeparatorChar);
+
+            return nestedFullPath.StartsWith(fullPath, PathInternal.StringComparison)
+                || string.Equals(nestedFullPath, fullPath.TrimEnd(Path.DirectorySeparatorChar), PathInternal.StringComparison);
+        }
+
+        // Returns if the path formed by combining baseFullPath and relativePath resides targets in either the root path or the destination path.
+        // The root path tracks a location that may not be in the destination path but which is reachable and considered a root that a delayed link target may point under.
+        private static bool ResolvePathInRootOrDestination(string destinationDirectoryFullPath, string resolvedDestinationPath, int destinationSymlinkDepth, ref string? rootPath, string baseFullPath, ReadOnlySpan<char> relativePath, Dictionary<FileId, (string SymlinkPath, string LinkTarget)>? pendingLinks, out string resolvedFullPath, HashSet<FileId>? visitedLinks, ref int symlinkDepth)
+        {
+            resolvedFullPath = baseFullPath;
+            bool checkExists = true;
+
+            foreach (Range range in relativePath.SplitAny(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar))
+            {
+                ReadOnlySpan<char> component = relativePath[range];
+                if (component.IsEmpty || component is ".")
+                {
+                    continue;
+                }
+                if (component is "..")
+                {
+                    // GetDirectoryName returns null at the root, map back to root (.. on / yields /).
+                    resolvedFullPath = Path.GetDirectoryName(resolvedFullPath) ?? resolvedFullPath;
+                    if (!ResolvedPathIsInRootOrDestination(rootPath, resolvedFullPath))
+                    {
+                        return false;
+                    }
+                    continue;
+                }
+
+                string componentPath = Path.Join(resolvedFullPath, component);
+
+                // TryGetPathInfo throws on error and returns false when the path does not exist.
+                if (!checkExists || !TryGetPathInfo(componentPath, out FileId fileId, out bool isSymlink))
+                {
+                    // Path doesn't exist; remaining components can't exist either.
+                    resolvedFullPath = componentPath;
+                    checkExists = false;
+                    continue;
+                }
+
+                string? linkTarget = null;
+                (string SymlinkPath, string LinkTarget) pendingLink = default;
+                if (isSymlink)
+                {
+                    linkTarget = new FileInfo(componentPath).LinkTarget;
+                }
+                else if (pendingLinks?.TryGetValue(fileId, out pendingLink) == true)
+                {
+                    linkTarget = pendingLink.LinkTarget;
+                }
+
+                if (linkTarget is not null)
+                {
+                    if (++symlinkDepth > MaxSymlinkDepth)
+                    {
+                        throw new IOException(SR.Format(SR.IO_TooManySymbolicLinkLevels, componentPath));
+                    }
+
+                    // To allow creating symbolic links that cause loops we need to detect the loops.
+                    // visitedLinks tracks the links we've followed.
+                    visitedLinks ??= new HashSet<FileId>();
+                    if (!visitedLinks.Add(fileId))
+                    {
+                        // Already visited.
+                        visitedLinks.Clear(); // Clear the set so callers detect circularity via Remove returning false below.
+                        resolvedFullPath = componentPath;
+                        break;
+                    }
+
+                    string resolveFrom;
+                    ReadOnlySpan<char> resolveTarget;
+                    if (Path.IsPathFullyQualified(linkTarget))
+                    {
+                        resolveFrom = Path.GetPathRoot(linkTarget)!;
+                        resolveTarget = linkTarget.AsSpan(resolveFrom.Length);
+                        // Pending fully qualified links must point inside the destination.
+                        if (!isSymlink) // pending link
+                        {
+                            rootPath = resolvedDestinationPath;
+                        }
+                    }
+                    else
+                    {
+                        resolveFrom = resolvedFullPath;
+                        resolveTarget = linkTarget;
+                    }
+
+                    if (isSymlink)
+                    {
+                        // Existing symlinks are not limited to a root path.
+                        string? symlinkRootPath = null;
+                        if (!ResolvePathInRootOrDestination(destinationDirectoryFullPath, resolvedDestinationPath, destinationSymlinkDepth, ref symlinkRootPath, resolveFrom, resolveTarget, pendingLinks, out resolvedFullPath, visitedLinks, ref symlinkDepth))
+                        {
+                            return false;
+                        }
+                        // Update root path to limit where pending links can point in addition to the destination.
+                        rootPath = resolvedFullPath;
+                        if (!rootPath.EndsWith(Path.DirectorySeparatorChar))
+                        {
+                            rootPath += Path.DirectorySeparatorChar;
+                        }
+                    }
+                    else
+                    {
+                        // Pending link. If no rootPath was set yet, limit to the destination dir.
+                        AddPendingLink(destinationDirectoryFullPath, resolvedDestinationPath, destinationSymlinkDepth, rootPath ?? destinationDirectoryFullPath, fileId, pendingLink.SymlinkPath!, pendingLink.LinkTarget!, pendingLinks!, visitedLinks, out resolvedFullPath, ref symlinkDepth);
+                    }
+
+                    if (!visitedLinks.Remove(fileId))
+                    {
+                        // Circular reference detected by ResolvePathInRootOrDestination.
+                        break;
+                    }
+                }
+                else
+                {
+                    resolvedFullPath = componentPath;
+                }
+            }
+
+            return ResolvedPathIsInRootOrDestination(rootPath, resolvedFullPath);
+
+            bool ResolvedPathIsInRootOrDestination(string? currentRootPath, string resolvedPath)
+                => currentRootPath is null
+                || FullPathIsEqualOrNested(destinationDirectoryFullPath, resolvedPath)
+                || (!ReferenceEquals(currentRootPath, destinationDirectoryFullPath) && FullPathIsEqualOrNested(currentRootPath, resolvedPath));
         }
     }
 }
