@@ -134,6 +134,9 @@ namespace System.Net.Sockets.Tests
                         server.Send(new byte[] { 42 }, SocketFlags.None);
                         server.Send(new byte[] { 43 }, SocketFlags.OutOfBand);
 
+                        // SIOCATMARK is already 0 before any data arrives, so wait for the OOB data itself.
+                        Assert.True(client.Poll(TimeSpan.FromSeconds(10), SelectMode.SelectError));
+
                         // OOB data received, but read pointer not at mark.
                         Assert.True(SpinWait.SpinUntil(() =>
                         {
