@@ -372,6 +372,7 @@ TGcInfoDecoder<GcInfoEncoding>::TGcInfoDecoder(
 #ifdef PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
     m_NumSafePoints = (UINT32) m_Reader.DecodeVarLengthUnsigned(GcInfoEncoding::NUM_SAFE_POINTS_ENCBASE);
     m_SafePointIndex = m_NumSafePoints;
+    _ASSERTE(GcInfoEncoding::HAS_TRACKED_SLOTS || m_NumSafePoints == 0);
 #endif
 
     if (slimHeader || !GcInfoEncoding::HAS_INTERRUPTIBLE_RANGES)
@@ -384,7 +385,7 @@ TGcInfoDecoder<GcInfoEncoding>::TGcInfoDecoder(
     }
 
 #ifdef PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
-    if(flags & (DECODE_GC_LIFETIMES | DECODE_INTERRUPTIBILITY))
+    if(GcInfoEncoding::HAS_TRACKED_SLOTS && (flags & (DECODE_GC_LIFETIMES | DECODE_INTERRUPTIBILITY)))
     {
         if(m_NumSafePoints)
         {
@@ -401,7 +402,7 @@ TGcInfoDecoder<GcInfoEncoding>::TGcInfoDecoder(
             m_SafePointIndex = FindSafePoint(offset);
         }
     }
-    else if(flags & DECODE_FOR_RANGES_CALLBACK)
+    else if(GcInfoEncoding::HAS_TRACKED_SLOTS && (flags & DECODE_FOR_RANGES_CALLBACK))
     {
         // Note that normalization as a code offset can be different than
         //  normalization as code length
@@ -769,7 +770,11 @@ template <typename GcInfoEncoding> bool TGcInfoDecoder<GcInfoEncoding>::Enumerat
 
 
 #ifdef PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
-    if(m_SafePointIndex < m_NumSafePoints && !executionAborted)
+    if constexpr (!GcInfoEncoding::HAS_TRACKED_SLOTS)
+    {
+        _ASSERTE(m_NumSafePoints == 0 && m_NumInterruptibleRanges == 0);
+    }
+    else if(m_SafePointIndex < m_NumSafePoints && !executionAborted)
     {
         // Skip interruptibility information
         for(UINT32 i=0; i<m_NumInterruptibleRanges; i++)
@@ -839,6 +844,7 @@ template <typename GcInfoEncoding> bool TGcInfoDecoder<GcInfoEncoding>::Enumerat
     if (reportUntrackedOnly)
         goto ReportUntracked;
 
+    if constexpr (GcInfoEncoding::HAS_TRACKED_SLOTS)
     {
         UINT32 numSlots = slotDecoder.GetNumTracked();
 
@@ -1185,7 +1191,8 @@ template <typename GcInfoEncoding> void GcSlotDecoder<GcInfoEncoding>::DecodeSlo
         numStackSlots = 0;
         m_NumUntracked = 0;
     }
-    m_NumSlots = GetNumRegisters() + numStackSlots + m_NumUntracked;
+    _ASSERTE(GcInfoEncoding::HAS_TRACKED_SLOTS || numStackSlots == 0);
+    m_NumSlots = GetNumRegisters() + (GcInfoEncoding::HAS_TRACKED_SLOTS ? numStackSlots : 0) + m_NumUntracked;
 
     UINT32 i = 0;
 
@@ -1223,7 +1230,7 @@ template <typename GcInfoEncoding> void GcSlotDecoder<GcInfoEncoding>::DecodeSlo
         }
     }
 
-    if((numStackSlots > 0) && (i < MAX_PREDECODED_SLOTS))
+    if(GcInfoEncoding::HAS_TRACKED_SLOTS && (numStackSlots > 0) && (i < MAX_PREDECODED_SLOTS))
     {
         // We have stack slots left and more room to predecode
 
@@ -1310,7 +1317,7 @@ template <typename GcInfoEncoding> void GcSlotDecoder<GcInfoEncoding>::DecodeSlo
             }
         }
 
-        if(numStackSlots > 0)
+        if(GcInfoEncoding::HAS_TRACKED_SLOTS && numStackSlots > 0)
         {
             if(i == GetNumRegisters())
             {
@@ -1334,7 +1341,7 @@ template <typename GcInfoEncoding> void GcSlotDecoder<GcInfoEncoding>::DecodeSlo
 
         if(m_NumUntracked > 0)
         {
-            if(i == GetNumRegisters() + numStackSlots)
+            if(i == GetNumTracked())
             {
                 // Skip the first untracked slot
 

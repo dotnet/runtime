@@ -493,7 +493,7 @@ public:
 
     UINT32 GetNumTracked()
     {
-        return m_NumSlots - m_NumUntracked;
+        return GcInfoEncoding::HAS_TRACKED_SLOTS ? m_NumSlots - m_NumUntracked : 0;
     }
 
     UINT32 GetNumRegisters()

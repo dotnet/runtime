@@ -618,6 +618,7 @@ struct AMD64GcInfoEncoding {
     static const int LIVESTATE_RLE_RUN_ENCBASE = 2;
     static const int LIVESTATE_RLE_SKIP_ENCBASE = 4;
     static const bool HAS_REGISTER_SLOTS = true;
+    static const bool HAS_TRACKED_SLOTS = true;
     static const bool HAS_STACK_SLOT_BASE = true;
     static const bool STACK_SLOT_FLAGS_FIRST = false;
     static const bool HAS_FIXED_STACK_PARAMETER_SCRATCH_AREA = true;
@@ -680,6 +681,7 @@ struct ARM32GcInfoEncoding {
     static const int LIVESTATE_RLE_RUN_ENCBASE = 2;
     static const int LIVESTATE_RLE_SKIP_ENCBASE = 4;
     static const bool HAS_REGISTER_SLOTS = true;
+    static const bool HAS_TRACKED_SLOTS = true;
     static const bool HAS_STACK_SLOT_BASE = true;
     static const bool STACK_SLOT_FLAGS_FIRST = false;
     static const bool HAS_FIXED_STACK_PARAMETER_SCRATCH_AREA = true;
@@ -745,6 +747,7 @@ struct ARM64GcInfoEncoding {
     static const int LIVESTATE_RLE_RUN_ENCBASE = 2;
     static const int LIVESTATE_RLE_SKIP_ENCBASE = 4;
     static const bool HAS_REGISTER_SLOTS = true;
+    static const bool HAS_TRACKED_SLOTS = true;
     static const bool HAS_STACK_SLOT_BASE = true;
     static const bool STACK_SLOT_FLAGS_FIRST = false;
     static const bool HAS_FIXED_STACK_PARAMETER_SCRATCH_AREA = true;
@@ -808,6 +811,7 @@ struct LoongArch64GcInfoEncoding {
     static const int LIVESTATE_RLE_RUN_ENCBASE = 2;
     static const int LIVESTATE_RLE_SKIP_ENCBASE = 4;
     static const bool HAS_REGISTER_SLOTS = true;
+    static const bool HAS_TRACKED_SLOTS = true;
     static const bool HAS_STACK_SLOT_BASE = true;
     static const bool STACK_SLOT_FLAGS_FIRST = false;
     static const bool HAS_FIXED_STACK_PARAMETER_SCRATCH_AREA = true;
@@ -872,6 +876,7 @@ struct RISCV64GcInfoEncoding {
     static const int LIVESTATE_RLE_RUN_ENCBASE = 2;
     static const int LIVESTATE_RLE_SKIP_ENCBASE = 4;
     static const bool HAS_REGISTER_SLOTS = true;
+    static const bool HAS_TRACKED_SLOTS = true;
     static const bool HAS_STACK_SLOT_BASE = true;
     static const bool STACK_SLOT_FLAGS_FIRST = false;
     static const bool HAS_FIXED_STACK_PARAMETER_SCRATCH_AREA = true;
@@ -931,6 +936,7 @@ struct X86GcInfoEncoding {
     static const int LIVESTATE_RLE_RUN_ENCBASE = 2;
     static const int LIVESTATE_RLE_SKIP_ENCBASE = 4;
     static const bool HAS_REGISTER_SLOTS = true;
+    static const bool HAS_TRACKED_SLOTS = true;
     static const bool HAS_STACK_SLOT_BASE = true;
     static const bool STACK_SLOT_FLAGS_FIRST = false;
     static const bool HAS_FIXED_STACK_PARAMETER_SCRATCH_AREA = true;
@@ -992,6 +998,8 @@ struct Wasm32GcInfoEncoding {
     static const int LIVESTATE_RLE_SKIP_ENCBASE = 4;
     // Register-free encodings omit the register-presence bit from the slot table.
     static const bool HAS_REGISTER_SLOTS = false;
+    // The wire format retains a zero tracked-slot count, but Wasm R2R only reports untracked roots.
+    static const bool HAS_TRACKED_SLOTS = false;
     // All slots are frame-relative, so no per-slot stack base is encoded.
     static const bool HAS_STACK_SLOT_BASE = false;
     // Equal flags use offset deltas; ordinary flags are implicit after their first slot.
@@ -1061,6 +1069,7 @@ struct InterpreterGcInfoEncoding {
     static const int LIVESTATE_RLE_RUN_ENCBASE = 2;
     static const int LIVESTATE_RLE_SKIP_ENCBASE = 4;
     static const bool HAS_REGISTER_SLOTS = false;
+    static const bool HAS_TRACKED_SLOTS = true;
     static const bool HAS_STACK_SLOT_BASE = true;
     static const bool STACK_SLOT_FLAGS_FIRST = false;
     static const bool HAS_FIXED_STACK_PARAMETER_SCRATCH_AREA = false;

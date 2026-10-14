@@ -1500,6 +1500,7 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
 
     if(numStackSlots > 0)
     {
+        _ASSERTE(GcInfoEncoding::HAS_TRACKED_SLOTS);
         GcSlotDesc *pSlotDesc;
         do
         {
