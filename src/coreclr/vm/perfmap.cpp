@@ -428,10 +428,9 @@ void PerfMap::LogPreCompiledMethod(MethodDesc * pMethod, PCODE pCode)
 // register in InterpExecMethod
 void PerfMap::LogInterpreterMethod(MethodDesc * pMethod, PCODE irAddress, size_t irSize)
 {
-    CONTRACTL{
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_PREEMPTIVE;
+    CONTRACTL
+    {
+        STANDARD_VM_CHECK;
         PRECONDITION(pMethod != nullptr);
         PRECONDITION(irAddress != nullptr);
         PRECONDITION(irSize > 0);
