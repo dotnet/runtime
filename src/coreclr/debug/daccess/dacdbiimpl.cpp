@@ -5646,7 +5646,11 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::IsDiagnosticsHiddenOrLCGMethod(VM
 
         MethodDesc * pMD = vmMethodDesc.GetDacPtr();
 
-        if (pMD->IsDiagnosticsHidden())
+        if (pMD->IsDiagnosticsHiddenLCGMethod())
+        {
+            *pRetVal = kDiagnosticHiddenLCGMethod;
+        }
+        else if (pMD->IsDiagnosticsHidden())
         {
             *pRetVal = kDiagnosticHidden;
         }
