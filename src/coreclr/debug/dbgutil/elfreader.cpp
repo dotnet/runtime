@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#if !defined(HOST_WASM) && (defined(HOST_WINDOWS) || defined(HOST_OSX) || defined(__linux__))
+
 #include <windows.h>
 #include <clrdata.h>
 #include <cor.h>
@@ -688,3 +690,5 @@ Elf32_Ehdr::Elf32_Ehdr() {}
 Elf64_Ehdr::Elf64_Ehdr() {}
 
 #endif // HOST_WINDOWS
+
+#endif
