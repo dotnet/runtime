@@ -97,10 +97,12 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     unreached();
 }
 
+#if defined(DEBUG) || defined(LATE_DISASM)
 emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(instrDesc* id)
 {
     unreached();
 }
+#endif // defined(DEBUG) || defined(LATE_DISASM)
 
 void emitter::emitDispInst(instruction ins)
 {

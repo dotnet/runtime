@@ -507,6 +507,46 @@ void CodeGen::genBeginFnProlog()
     unreached();
 }
 
+void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
+{
+    unreached();
+}
+
+void CodeGen::genEnregisterOSRArgsAndLocals(regNumber initReg, bool* pInitRegZeroed)
+{
+    unreached();
+}
+
+void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroed)
+{
+    unreached();
+}
+
+void CodeGen::genOSRHandleTier0CalleeSavedRegistersAndFrame()
+{
+    unreached();
+}
+
+void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pInitRegZeroed, regMaskTP maskArgRegsLiveIn)
+{
+    unreached();
+}
+
+void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, bool* pInitRegZeroed)
+{
+    unreached();
+}
+
+void CodeGen::genReportGenericContextArg(regNumber initReg, bool* pInitRegZeroed)
+{
+    unreached();
+}
+
+void CodeGen::genCaptureFuncletPrologEpilogInfo()
+{
+    unreached();
+}
+
 void CodeGen::genFnEpilog(BasicBlock* block)
 {
     unreached();
