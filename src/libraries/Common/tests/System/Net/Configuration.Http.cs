@@ -37,9 +37,6 @@ namespace System.Net.Test.Common
             public static string TLSv11RemoteServer => GetValue("DOTNET_TEST_HTTPHOST_TLS11", "https://www.ssllabs.com:10302/");
             public static string TLSv12RemoteServer => GetValue("DOTNET_TEST_HTTPHOST_TLS12", "https://www.ssllabs.com:10303/");
 
-            public static string ExpiredCertRemoteServer => GetValue("DOTNET_TEST_HTTPHOST_EXPIREDCERT", "https://expired.badssl.com/");
-            public static string WrongHostNameCertRemoteServer => GetValue("DOTNET_TEST_HTTPHOST_WRONGHOSTNAME", "https://wrong.host.badssl.com/");
-            public static string SelfSignedCertRemoteServer => GetValue("DOTNET_TEST_HTTPHOST_SELFSIGNEDCERT", "https://self-signed.badssl.com/");
             public static string RevokedCertRemoteServer => GetValue("DOTNET_TEST_HTTPHOST_REVOKEDCERT", "https://revoked.badssl.com/");
 
             public static string EchoClientCertificateRemoteServer => GetValue("DOTNET_TEST_HTTPHOST_ECHOCLIENTCERT", "https://corefx-net-tls.azurewebsites.net/EchoClientCertificate.ashx");

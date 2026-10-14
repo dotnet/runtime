@@ -23,7 +23,7 @@ internal sealed class IlasmRootCommand : RootCommand
         new("--debug", "-g") { Description = "Disable JIT optimization, create PDB file, use sequence points from PDB" };
 
     public Option<DebugMode?> DebugMode { get; } =
-        new("--debug-mode") { Description = "Debug mode: 'impl' (implicit sequence points) or 'opt' (enable JIT optimization)" };
+        new("--debug-mode") { Description = "Debug mode: 'impl' (disable JIT optimization, JIT uses implicit sequence points instead of those in the PDB) or 'opt' (enable JIT optimization, JIT uses implicit sequence points)" };
 
     public Option<bool> Optimize { get; } =
         new("--optimize", "-O") { Description = "Optimize long instructions to short" };

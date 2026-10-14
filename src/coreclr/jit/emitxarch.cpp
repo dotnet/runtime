@@ -10568,6 +10568,52 @@ bool emitter::IsRedundantStackMov(instruction ins, insFormat fmt, emitAttr size,
     return false;
 }
 
+//------------------------------------------------------------------------
+// TryEmitLclAddrAsMov: Emit `lea reg, [lclVar]` as `mov reg, base` when the resolved frame
+//                      offset is zero.
+//
+// Arguments:
+//    attr - The emit attribute
+//    ireg - The destination register
+//    varx - The variable index used for the memory address
+//    offs - The offset added to the memory address from varx
+//
+// Return Value:
+//    true if a mov was emitted in place of the lea; otherwise, false.
+//
+// Notes:
+//    The mov is a byte shorter -- rbp/r13 as base force a disp8 and rsp forces a SIB -- and
+//    is a candidate for move elimination, where-as lea always occupies an execution port.
+//
+bool emitter::TryEmitLclAddrAsMov(emitAttr attr, regNumber ireg, int varx, int offs)
+{
+    if (m_compiler->lvaDoneFrameLayout != Compiler::FINAL_FRAME_LAYOUT)
+    {
+        // The frame address is still an estimate.
+        return false;
+    }
+
+    bool fpBased;
+    int  adr = m_compiler->lvaFrameAddress(varx, &fpBased);
+
+#if !FEATURE_FIXED_OUT_ARGS
+    if (!fpBased)
+    {
+        // An SP relative displacement is adjusted by emitCurStackLvl when the instruction is
+        // issued, so a zero here is not a zero in the encoding.
+        return false;
+    }
+#endif
+
+    if ((adr + offs) != 0)
+    {
+        return false;
+    }
+
+    emitIns_Mov(INS_mov, attr, ireg, fpBased ? REG_FPBASE : REG_SPBASE, /* canSkip */ false);
+    return true;
+}
+
 void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber ireg, int varx, int offs, insOpts instOptions)
 {
     insFormat fmt = (ins == INS_xchg) ? IF_SRW_RRW : emitInsModeFormat(ins, IF_SRD_RRD);
@@ -10610,6 +10656,11 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber ireg, int va
     insFormat fmt = emitInsModeFormat(ins, IF_RRD_SRD);
 
     if (IsMovInstruction(ins) && IsRedundantStackMov(ins, fmt, attr, ireg, varx, offs))
+    {
+        return;
+    }
+
+    if ((ins == INS_lea) && TryEmitLclAddrAsMov(attr, ireg, varx, offs))
     {
         return;
     }
