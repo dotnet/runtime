@@ -17,6 +17,7 @@ namespace System.Net.Security.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
+    [Collection(nameof(DisableParallelization))]
     [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux)]
     public class SslStreamTlsResumeTests
     {
