@@ -802,18 +802,7 @@ void* ExecutableAllocator::Reserve(size_t size)
         }
         else
         {
-            DWORD allocationType = MEM_RESERVE;
-#if defined(HOST_UNIX) && defined(FEATURE_DYNAMIC_CODE_COMPILED)
-            // Tell PAL to use the executable memory allocator to satisfy this request for virtual memory.
-            // This will allow us to place JIT'ed code close to the coreclr library
-            // and thus improve performance by avoiding jump stubs in managed code.
-            allocationType |= MEM_RESERVE_EXECUTABLE;
-#endif
-#ifdef HOST_UNIX
             result = (BYTE*)VMToOSInterface::ReserveMemoryWithinRange(nullptr, nullptr, size);
-#else
-            result = (BYTE*)ClrVirtualAlloc(NULL, size, allocationType, PAGE_NOACCESS);
-#endif
         }
     }
 

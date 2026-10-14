@@ -1399,11 +1399,7 @@ uint8_t *
 ep_rt_valloc0 (size_t buffer_size)
 {
 	STATIC_CONTRACT_NOTHROW;
-#ifdef TARGET_UNIX
 	return reinterpret_cast<uint8_t *>(VMToOSInterface::AllocateMemory (NULL, buffer_size, VMToOSInterface::MemoryProtection::ReadWrite));
-#else
-	return reinterpret_cast<uint8_t *>(ClrVirtualAlloc (NULL, buffer_size, MEM_COMMIT, PAGE_READWRITE));
-#endif
 }
 
 static
@@ -1416,11 +1412,7 @@ ep_rt_vfree (
 	STATIC_CONTRACT_NOTHROW;
 
 	if (buffer)
-#ifdef TARGET_UNIX
 		VMToOSInterface::ReleaseMemoryReservation (buffer, buffer_size);
-#else
-		ClrVirtualFree (buffer, 0, MEM_RELEASE);
-#endif
 }
 
 static

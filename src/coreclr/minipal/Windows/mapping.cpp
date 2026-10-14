@@ -55,7 +55,7 @@ bool VMToOSInterface::SupportsPlaceholderMapping()
 static bool IsValidMemoryProtection(DWORD nativeProtection)
 {
     constexpr DWORD allowedProtections = PAGE_NOACCESS | PAGE_READONLY | PAGE_READWRITE |
-        PAGE_EXECUTE | PAGE_EXECUTE_READ | PAGE_EXECUTE_READWRITE;
+        PAGE_WRITECOPY | PAGE_EXECUTE | PAGE_EXECUTE_READ | PAGE_EXECUTE_READWRITE;
     return nativeProtection != 0 && (nativeProtection & (nativeProtection - 1)) == 0 &&
         (nativeProtection & allowedProtections) != 0;
 }

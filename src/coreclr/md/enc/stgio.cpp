@@ -883,11 +883,7 @@ HRESULT StgIO::MapFileToMem(            // Return code.
             memset(m_rgPageMap, 0, sizeof(BYTE) * (iMaxSize / m_iPageSize));
 
             // Allocate space for the file contents.
-#ifdef TARGET_UNIX
             if ((m_pBaseData = m_pData = VMToOSInterface::ReserveMemoryWithinRange(nullptr, nullptr, iMaxSize)) == 0)
-#else
-            if ((m_pBaseData = m_pData = ::ClrVirtualAlloc(0, iMaxSize, MEM_RESERVE, PAGE_NOACCESS)) == 0)
-#endif
             {
                 hr = PostError(OutOfMemory());
                 goto ErrExit;
@@ -1014,15 +1010,9 @@ HRESULT StgIO::GetPtrForMem(            // Return code.
             }
 
             // First commit the memory for this part of the file.
-#ifdef TARGET_UNIX
             if (VMToOSInterface::CommitReservedMemory((void *) ((DWORD_PTR) m_pData + iOffset),
                     iSize, VMToOSInterface::MemoryProtection::ReadWrite) == 0)
                 return (PostError(OutOfMemory()));
-#else
-            if (::ClrVirtualAlloc((void *) ((DWORD_PTR) m_pData + iOffset),
-                    iSize, MEM_COMMIT, PAGE_READWRITE) == 0)
-                return (PostError(OutOfMemory()));
-#endif
 
             // Now load that portion of the file from disk.
             if (FAILED(hr = Seek(iOffset, FILE_BEGIN)) ||
@@ -1034,13 +1024,8 @@ HRESULT StgIO::GetPtrForMem(            // Return code.
             // Change the memory to read only to avoid any modifications.  Any faults
             // that occur indicate a bug whereby the engine is trying to write to
             // protected memory.
-#ifdef TARGET_UNIX
             _ASSERTE(VMToOSInterface::ProtectMemory((void *) ((DWORD_PTR) m_pData + iOffset),
                     iSize, VMToOSInterface::MemoryProtection::ReadOnly));
-#else
-            _ASSERTE(::ClrVirtualAlloc((void *) ((DWORD_PTR) m_pData + iOffset),
-                    iSize, MEM_COMMIT, PAGE_READONLY) != 0);
-#endif
 
             // Record each new loaded page.
             for (;  j<i;  j++)
@@ -1245,13 +1230,8 @@ void StgIO::FreePageMap()
         delete [] m_rgPageMap;
         m_rgPageMap = 0;
         ULONG iMaxSize = (((m_cbData - 1) & ~(m_iPageSize - 1)) + m_iPageSize);
-#ifdef TARGET_UNIX
         VERIFY(VMToOSInterface::DecommitMemory(m_pBaseData, iMaxSize));
         VERIFY(VMToOSInterface::ReleaseMemoryReservation(m_pBaseData, iMaxSize));
-#else
-        VERIFY(::ClrVirtualFree(m_pBaseData, iMaxSize, MEM_DECOMMIT));
-        VERIFY(::ClrVirtualFree(m_pBaseData, 0, MEM_RELEASE));
-#endif
         m_pBaseData = 0;
         m_cbData = 0;
     }

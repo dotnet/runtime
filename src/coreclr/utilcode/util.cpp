@@ -405,14 +405,10 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
     }
 
     // If pMinAddr is BOT_MEMORY and pMaxAddr is TOP_MEMORY
-    // then we can call ClrVirtualAlloc instead
+    // then we can call VMToOSInterface::ReserveMemoryWithinRange instead
     if ((pMinAddr == (BYTE *) BOT_MEMORY) && (pMaxAddr == (BYTE *) TOP_MEMORY))
     {
-#ifdef HOST_UNIX
         return (BYTE*)VMToOSInterface::ReserveMemoryWithinRange(nullptr, nullptr, dwSize);
-#else
-        return (BYTE*) ClrVirtualAlloc(nullptr, dwSize, flAllocationType, flProtect);
-#endif
     }
 
 #ifdef HOST_UNIX

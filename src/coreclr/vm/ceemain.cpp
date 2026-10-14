@@ -478,29 +478,16 @@ void InitGSCookie()
     volatile GSCookie * pGSCookiePtr = GetProcessGSCookiePtr();
 
 #ifdef FEATURE_READONLY_GS_COOKIE
-#ifdef TARGET_UNIX
-    // The GS cookie is stored in a read only data segment. The PAL layer is unable to extract the old
-    // protection for regions that were not allocated via the minipal reservation APIs, so we know the
-    // page is read-only and can restore it to that directly below without querying for it.
+    // The GS cookie is stored in a read only data segment. There is no reliable way to query the
+    // previous protection for arbitrary read-only data pages across platforms, so we know the page
+    // is read-only and can restore it to that directly below without querying for it.
     if (!VMToOSInterface::ProtectMemory((LPVOID)pGSCookiePtr, sizeof(GSCookie), VMToOSInterface::MemoryProtection::ReadWrite))
     {
         ThrowLastError();
     }
-#else
-    // The GS cookie is stored in a read only data segment
-    DWORD oldProtection;
-    if(!ClrVirtualProtect((LPVOID)pGSCookiePtr, sizeof(GSCookie), PAGE_READWRITE, &oldProtection))
-    {
-        ThrowLastError();
-    }
-#endif // TARGET_UNIX
 #endif // FEATURE_READONLY_GS_COOKIE
 
 #ifndef TARGET_UNIX
-    // The GSCookie cannot be in a writeable page
-    assert(((oldProtection & (PAGE_READWRITE|PAGE_WRITECOPY|PAGE_EXECUTE_READWRITE|
-                              PAGE_EXECUTE_WRITECOPY|PAGE_WRITECOMBINE)) == 0));
-
     // Forces VC cookie to be initialized.
     void * pf = &__security_check_cookie;
     pf = NULL;
@@ -522,17 +509,10 @@ void InitGSCookie()
     *pGSCookiePtr = val;
 
 #ifdef FEATURE_READONLY_GS_COOKIE
-#ifdef TARGET_UNIX
     if (!VMToOSInterface::ProtectMemory((LPVOID)pGSCookiePtr, sizeof(GSCookie), VMToOSInterface::MemoryProtection::ReadOnly))
     {
         ThrowLastError();
     }
-#else
-    if(!ClrVirtualProtect((LPVOID)pGSCookiePtr, sizeof(GSCookie), oldProtection, &oldProtection))
-    {
-        ThrowLastError();
-    }
-#endif // TARGET_UNIX
 #endif // FEATURE_READONLY_GS_COOKIE
 }
 
@@ -1048,13 +1028,8 @@ void EEStartupHelper()
         // contribute to the process' working set. it is needed only as a "shadow" for a mini-metadata
         // buffer that will be set up and reported / updated in the Watson process (the
         // DacStreamsManager class coordinates this)
-#ifdef TARGET_UNIX
         g_MiniMetaDataBuffAddress = (TADDR) VMToOSInterface::AllocateMemory(NULL,
                                                 g_MiniMetaDataBuffMaxSize, VMToOSInterface::MemoryProtection::ReadWrite);
-#else
-        g_MiniMetaDataBuffAddress = (TADDR) ClrVirtualAlloc(NULL,
-                                                g_MiniMetaDataBuffMaxSize, MEM_COMMIT, PAGE_READWRITE);
-#endif
 #endif // FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
 
         g_fEEStarted = TRUE;

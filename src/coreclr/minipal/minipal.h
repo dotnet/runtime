@@ -36,6 +36,7 @@ public:
         NoAccess = PAGE_NOACCESS,
         ReadOnly = PAGE_READONLY,
         ReadWrite = PAGE_READWRITE,
+        WriteCopy = PAGE_WRITECOPY,
         Execute = PAGE_EXECUTE,
         ExecuteRead = PAGE_EXECUTE_READ,
         ExecuteReadWrite = PAGE_EXECUTE_READWRITE
@@ -43,6 +44,9 @@ public:
         NoAccess = PROT_NONE,
         ReadOnly = PROT_READ,
         ReadWrite = PROT_READ | PROT_WRITE,
+        // The PAL never offered true copy-on-write page protection outside of file mappings;
+        // treat write-copy the same as ordinary read-write on Unix.
+        WriteCopy = PROT_READ | PROT_WRITE,
         Execute = PROT_EXEC,
         ExecuteRead = PROT_READ | PROT_EXEC,
         ExecuteReadWrite = PROT_READ | PROT_WRITE | PROT_EXEC
