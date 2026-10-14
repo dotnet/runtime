@@ -74,9 +74,11 @@ static void ValidateFuncEvalReturnType(DebuggerIPCE_FuncEvalType evalType, Metho
     }
     CONTRACTL_END;
 
-    if ((evalType == DB_IPCE_FET_NEW_OBJECT || evalType == DB_IPCE_FET_NEW_OBJECT_NC) && pMT->IsAbstract())
+    // COMPAT: Debuggers request abstract/static class construction to force class initialization.
+    // Run the class constructor and return null rather than allocating an abstract instance.
+    if ((evalType == DB_IPCE_FET_NEW_OBJECT || evalType == DB_IPCE_FET_NEW_OBJECT_NC) && pMT->IsInterface())
     {
-        COMPlusThrow(kMemberAccessException, pMT->IsInterface() ? W("Acc_CreateInterface") : W("Acc_CreateAbst"));
+        COMPlusThrow(kMemberAccessException, W("Acc_CreateInterface"));
     }
 
     if (pMT == g_pStringClass)
@@ -1509,6 +1511,47 @@ void DebuggerEval::ReleaseFuncEvalResult()
     }
 }
 
+static void ValidateFuncEvalArgumentCount(DebuggerEval* pDE)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
+    IMDInternalImport* pImport = pDE->m_debuggerModule->GetRuntimeModule()->GetMDImport();
+    PCCOR_SIGNATURE signature;
+    ULONG signatureSize;
+    IfFailThrow(pImport->GetSigOfMethodDef(pDE->m_methodToken, &signatureSize, &signature));
+    SigParser parser(signature, signatureSize);
+    uint32_t callingConvention;
+    IfFailThrow(parser.GetCallingConvInfo(&callingConvention));
+    if (!isCallConv(callingConvention, IMAGE_CEE_CS_CALLCONV_DEFAULT))
+    {
+        // Unsupported calling conventions are validated when resolving the target method.
+        return;
+    }
+    if ((callingConvention & IMAGE_CEE_CS_CALLCONV_GENERIC) != 0)
+    {
+        IfFailThrow(parser.GetData(nullptr));
+    }
+
+    uint32_t parameterCount;
+    IfFailThrow(parser.GetData(&parameterCount));
+    DWORD methodAttributes;
+    IfFailThrow(pImport->GetMethodDefProps(pDE->m_methodToken, &methodAttributes));
+    UINT64 argumentCount = static_cast<UINT64>(pDE->m_argCount) +
+        (pDE->m_evalType == DB_IPCE_FET_NEW_OBJECT ? 1 : 0);
+    UINT64 expectedCount = static_cast<UINT64>(parameterCount) + (IsMdStatic(methodAttributes) ? 0 : 1);
+    if (argumentCount != expectedCount)
+    {
+        // Report debugger protocol errors through the native eval catch, before managed first chance.
+        COMPlusThrow(kTargetParameterCountException, W("Arg_ParmCnt"));
+    }
+}
+
 static void InvokeManagedFuncEval(DebuggerFuncEvalContext* pContext, BYTE* pCatcherStackAddr,
                                   DebuggerFuncEvalResult** ppResult,
                                   DebuggerExternalMemoryOwner** ppTemporaryResult, HRESULT captureResult)
@@ -1530,6 +1573,8 @@ static void InvokeManagedFuncEval(DebuggerFuncEvalContext* pContext, BYTE* pCatc
         COMPlusThrow(kArgumentException, W("Argument_BadObjRef"));
     }
     IfFailThrow(captureResult);
+
+    ValidateFuncEvalArgumentCount(pContext->pEval);
 
     if (VolatileLoad(&g_pDebuggerInvokeFunctionMethodDesc) == nullptr)
     {
@@ -1799,7 +1844,7 @@ void FuncEvalHijackRealWorker(DebuggerEval *pDE, Thread* pThread, FuncEvalFrame*
                 }
                 else
                 {
-                    newObj = AllocateObject(th.GetMethodTable());
+                    newObj = pOwningMT->IsAbstract() ? NULL : AllocateObject(pOwningMT);
                     pDE->m_retValueBoxing = Debugger::AllBoxed;
 
                     OBJECTHANDLE oh = AppDomain::GetCurrentDomain()->CreateStrongHandle(newObj);

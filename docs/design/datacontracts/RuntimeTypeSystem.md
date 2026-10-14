@@ -270,6 +270,9 @@ partial interface IRuntimeTypeSystem : IContract
     // A IL Stub method is also a StoredSigMethodDesc, and a NoMetadataMethod
     public virtual bool IsILStub(MethodDescHandle methodDesc);
 
+    // Return true for runtime plumbing omitted from diagnostic stacks, code viewing, and stepping.
+    public virtual bool IsDiagnosticsHidden(MethodDescHandle methodDesc);
+
     // Return true if a MethodDesc represents an IL stub with a special MethodDesc context arg
     public virtual bool HasMDContextArg(MethodDescHandle);
 
@@ -1579,6 +1582,7 @@ And the following enumeration definitions
     {
         IsLCGMethod = 0x00004000,
         IsILStub = 0x00008000,
+        IsDiagnosticsHidden = 0x00020000,
         ILStubTypeMask = 0x000007FF,
     }
 
@@ -1909,6 +1913,25 @@ And the various apis are implemented with the following algorithms
         uint ExtendedFlags = // Read ExtendedFlags field from StoredSigMethodDesc contract using address methodDescHandle.Address
 
         return ((DynamicMethodDescExtendedFlags)ExtendedFlags).HasFlag(DynamicMethodDescExtendedFlags.IsILStub);
+    }
+
+    public bool IsDiagnosticsHidden(MethodDescHandle methodDescHandle)
+    {
+        if (IsILStub(methodDescHandle))
+            return true;
+
+        MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
+        if (methodDesc.Classification == MethodDescClassification.Dynamic)
+        {
+            uint extendedFlags = // Read ExtendedFlags field from StoredSigMethodDesc
+            if (((DynamicMethodDescExtendedFlags)extendedFlags).HasFlag(DynamicMethodDescExtendedFlags.IsDiagnosticsHidden))
+                return true;
+        }
+
+        AsyncMethodFlags flags = GetAsyncMethodFlags(methodDescHandle);
+        return IsWrapperStub(methodDescHandle) ||
+            (flags.HasFlag(AsyncMethodFlags.Thunk) &&
+                (flags.HasFlag(AsyncMethodFlags.ReturnDroppingThunk) || !flags.HasFlag(AsyncMethodFlags.IsAsyncVariant)));
     }
 
     public bool IsIL(MethodDescHandle methodDescHandle)
