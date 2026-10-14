@@ -103,9 +103,11 @@ bool RhInitializeFinalization()
     }
 #endif
 
+#ifndef HOST_WASM
     // Create the finalizer thread itself.
     if (!PalStartFinalizerThread(FinalizerStart, &g_FinalizerEvent))
         return false;
+#endif // !HOST_WASM
 
     return true;
 }
