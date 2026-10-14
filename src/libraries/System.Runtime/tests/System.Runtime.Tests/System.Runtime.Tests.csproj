@@ -32,7 +32,7 @@
     <WithoutCategories Condition="'$(EnableAdditionalTimezoneChecks)' != 'true'">$(WithoutCategories);AdditionalTimezoneChecks</WithoutCategories>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetsAppleMobile)' == 'true' and '$(EnableAggressiveTrimming)' == 'true' and '$(UseNativeAotRuntime)' != 'true'">
+  <PropertyGroup Condition="('$(TargetsAppleMobile)' == 'true' or '$(TargetsWasi)' == 'true') and '$(EnableAggressiveTrimming)' == 'true' and '$(UseNativeAotRuntime)' != 'true'">
     <OverrideDefaultValueAndDesignerHostSupport>true</OverrideDefaultValueAndDesignerHostSupport>
   </PropertyGroup>
 
@@ -340,6 +340,7 @@
     <Compile Include="System\Runtime\CompilerServices\RuntimeFeatureTests.cs" />
     <Compile Include="System\Runtime\CompilerServices\RuntimeWrappedExceptionTests.cs" />
     <Compile Include="System\Runtime\ExceptionServices\ExceptionDispatchInfoTests.cs" />
+    <Compile Include="System\Runtime\ExceptionServices\ExceptionHandlingTests.cs" />
     <Compile Include="System\Text\EncodingTests.cs" />
     <Compile Include="System\Text\RuneTests.cs" />
     <Compile Include="System\Text\RuneTests.TestData.cs" />

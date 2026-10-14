@@ -2869,7 +2869,8 @@ void Rationalizer::RewriteParameterField(BasicBlock* block, GenTreeLclFld* fld)
         // Insert explicit normalization for small types (the LCL_FLD we
         // are replacing comes with this normalization). This is only required
         // if we didn't get the normalization via a right shift.
-        if (varTypeIsSmall(fld) && (regSegment->Offset + genTypeSize(fld) != genTypeSize(registerType)))
+        if (varTypeIsSmall(fld) &&
+            (fld->GetLclOffs() - regSegment->Offset + genTypeSize(fld) != genTypeSize(registerType)))
         {
             value = m_compiler->gtNewCastNode(TYP_INT, value, false, fld->TypeGet());
         }

@@ -17,12 +17,7 @@ public class Async2ManagedThreadId
     // Verify that Environment.CurrentManagedThreadId == Thread.CurrentThread.ManagedThreadId
     // both before and after an await that is known to suspend/resume (Task.Delay(1)).
     [Fact]
-    public static void TestThreadIdMatchesCurrentThread()
-    {
-        TestThreadIdMatchesCurrentThreadAsync().GetAwaiter().GetResult();
-    }
-
-    private static async Task TestThreadIdMatchesCurrentThreadAsync()
+    public static async Task TestThreadIdMatchesCurrentThreadAsync()
     {
         Assert.Equal(Environment.CurrentManagedThreadId, Thread.CurrentThread.ManagedThreadId);
         await Task.Delay(1);
@@ -32,12 +27,7 @@ public class Async2ManagedThreadId
     // Verify that after an await that resumes on a specific different thread, the thread ID
     // reflects the actual resumption thread, not the thread from before the await.
     [Fact]
-    public static void TestThreadIdReflectsResumptionThread()
-    {
-        TestThreadIdReflectsResumptionThreadAsync().GetAwaiter().GetResult();
-    }
-
-    private static async Task TestThreadIdReflectsResumptionThreadAsync()
+    public static async Task TestThreadIdReflectsResumptionThreadAsync()
     {
         int threadIdBefore = Environment.CurrentManagedThreadId;
 

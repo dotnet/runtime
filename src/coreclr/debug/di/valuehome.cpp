@@ -701,6 +701,7 @@ void RemoteValueHome::CreateInternalValue(CordbType *       pType,
                                   TargetBuffer(m_remoteValue.pAddress + offset, size),
                                   MemoryRange(localAddress, localSize),
                                   NULL, // remote reg
+                                  VMPTR_DebuggerExternalMemoryOwner::NullPtr(),
                                   ppValue);  // throws
 } // RemoteValueHome::CreateInternalValue
 
@@ -825,6 +826,7 @@ void RegisterValueHome::CreateInternalValue(CordbType *       pType,
                                   EMPTY_BUFFER,  // remote address
                                   MemoryRange(localAddress, size),
                                   pRegHolder,
+                                  VMPTR_DebuggerExternalMemoryOwner::NullPtr(),
                                   ppValue);  // throws
 } // RegisterValueHome::CreateInternalValue
 
@@ -1153,4 +1155,3 @@ RefValueHome::RefValueHome(CordbProcess *                pProcess,
 
 
 } // RefValueHome::RefValueHome
-

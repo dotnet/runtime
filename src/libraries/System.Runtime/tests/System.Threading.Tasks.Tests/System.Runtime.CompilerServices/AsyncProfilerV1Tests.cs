@@ -1767,7 +1767,7 @@ namespace System.Threading.Tasks.Tests
         // compiler emits a generic state machine (<Marker>d__N`1). Instantiated with a reference type the JIT
         // reaches the async body through the shared (__Canon) generic code, whose per-instantiation MethodDesc
         // is an instantiating (wrapper) stub. The V1 methodId is the native code start of MoveNext, so
-        // RuntimeMethodHandle_GetNativeCode must peel wrapper stubs to the shared body's code for the id to map
+        // RuntimeMethodHandle_GetDiagnosticCodeStart must peel wrapper stubs to the shared body's code for the id to map
         // back to a managed method; otherwise a frame would carry a stub thunk address that resolves to null.
         [RuntimeAsyncMethodGeneration(false)]
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -1799,7 +1799,7 @@ namespace System.Threading.Tasks.Tests
         // or JIT-map data.
         //
         // A reference type (string) reaches the shared __Canon body through an instantiating (wrapper) stub that
-        // RuntimeMethodHandle_GetNativeCode must peel; a value type (int) is fully specialized into its own code
+        // RuntimeMethodHandle_GetDiagnosticCodeStart must peel; a value type (int) is fully specialized into its own code
         // (no wrapper stub) and resolves directly. Both must symbolize to their managed names.
         [ConditionalTheory(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncAndThreadingSupported), nameof(IsNotMonoRuntime))]
         [InlineData(typeof(string))]
@@ -3187,7 +3187,6 @@ namespace System.Threading.Tasks.Tests
         }
 
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/134145", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmReadyToRun))]
         public async Task StateMachineAsync_SingleThread_ChainEventsAndCallstack()
         {
             var events = await CollectEventsAsync(ResumeStateMachineAsyncCallstackKeyword | StateMachineAsyncCoreKeywords | StateMachineAsyncMethodKeywords, async () =>
@@ -3261,7 +3260,6 @@ namespace System.Threading.Tasks.Tests
         }
 
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/134145", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmReadyToRun))]
         public async Task StateMachineAsync_ValueTask_SingleThread_ChainEventsAndCallstack()
         {
             var events = await CollectEventsAsync(ResumeStateMachineAsyncCallstackKeyword | StateMachineAsyncCoreKeywords | StateMachineAsyncMethodKeywords, async () =>
@@ -3338,7 +3336,6 @@ namespace System.Threading.Tasks.Tests
         }
 
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/134145", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmReadyToRun))]
         public async Task StateMachineAsync_PoolingValueTask_SingleThread_ChainEventsAndCallstack()
         {
             var events = await CollectEventsAsync(ResumeStateMachineAsyncCallstackKeyword | StateMachineAsyncCoreKeywords | StateMachineAsyncMethodKeywords, async () =>

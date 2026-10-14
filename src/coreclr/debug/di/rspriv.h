@@ -3343,8 +3343,6 @@ public:
 
     void MarkAllThreadsDirty();
 
-    bool CheckIfLSExited();
-
     void Lock()
     {
         // Lock Hierarchy - shouldn't have List lock when taking/release the process lock.
@@ -3987,9 +3985,6 @@ public:
 #define DPT_TERMINATING_INDEX (UINT32_MAX)
     // Index into m_pPatchTable of the first patch (first used entry).
     ULONG                  m_iFirstPatch;
-
-    // Initializes the DAC
-    void InitDac();
 
     // copy new data from LS DCB to RS buffer
     void UpdateRightSideDCB();
@@ -8696,6 +8691,7 @@ public:
                                TargetBuffer                   remoteValue,
                                MemoryRange                    localValue,
                                EnregisteredValueHomeHolder *  ppRemoteRegAddr,
+                               VMPTR_DebuggerExternalMemoryOwner vmExternalMemoryOwner,
                                ICorDebugValue**               ppValue);
 
     // Create the proper ICDValue instance based on the given element type.
@@ -8705,6 +8701,7 @@ public:
                                   TargetBuffer                   remoteValue,
                                   MemoryRange                    localValue,
                                   EnregisteredValueHomeHolder *  ppRemoteRegAddr,
+                                  VMPTR_DebuggerExternalMemoryOwner vmExternalMemoryOwner,
                                   ICorDebugValue**               ppValue);
 
     // Create the proper ICDValue instance based on the given remote heap object
@@ -9325,6 +9322,8 @@ public:
                        TargetBuffer                   remoteValue,
                        EnregisteredValueHomeHolder *  ppRemoteRegAddr);
     virtual ~CordbVCObjectValue();
+    virtual void Neuter();
+    virtual void NeuterLeftSideResources();
 
 #ifdef _DEBUG
     virtual const char * DbgGetName() { return "CordbVCObjectValue"; }
@@ -9422,6 +9421,7 @@ public:
 
     // Initializes the Right-Side's representation of a Value Class object.
     HRESULT Init(MemoryRange localValue);
+    void SetExternalMemoryOwner(VMPTR_DebuggerExternalMemoryOwner vmExternalMemoryOwner);
     //HRESULT ResolveValueClass();
     CordbClass *GetClass();
 
@@ -9440,6 +9440,8 @@ private:
 
     // location information
     ValueHome * m_pValueHome;
+
+    VMPTR_DebuggerExternalMemoryOwner m_vmExternalMemoryOwner;
 };
 
 
@@ -10014,8 +10016,10 @@ public:
     // This is an External reference, which keeps the Value from being neutered
     // on a NeuterAtWill sweep.
     RSExtSmartPtr<CordbHandleValue> m_pHandleValue;
+    RSExtSmartPtr<CordbVCObjectValue> m_pValueClassResult;
 
     DebuggerIPCE_ExpandedTypeData m_resultType;
+    VMPTR_DebuggerExternalMemoryOwner m_vmExternalMemoryOwner;
     VMPTR_AppDomain            m_resultAppDomainToken;
 
     // Left-side memory that needs to be freed.
@@ -10382,17 +10386,13 @@ enum CordbUnmanagedThreadState
     CUTS_None                        = 0x0000,
     CUTS_Deleted                     = 0x0001,
     CUTS_FirstChanceHijacked         = 0x0002,
-    // Set when interop debugging needs the SS flag to be enabled
-    // regardless of what the user wants it to be
-    CUTS_IsSSFlagNeeded              = 0x0004,
+    // unused                        = 0x0004,
     CUTS_GenericHijacked             = 0x0008,
-    // when the m_raiseExceptionEntryContext is valid
-    CUTS_HasRaiseExceptionEntryCtx   = 0x0010,
+    // unused                        = 0x0010,
     CUTS_BlockingForSync             = 0x0020,
     CUTS_Suspended                   = 0x0040,
     CUTS_IsSpecialDebuggerThread     = 0x0080,
-    // when the thread is re-executing RaiseException to retrigger an exception
-    CUTS_IsRaiseExceptionHijacked    = 0x0100,
+    // unused                        = 0x0100,
     CUTS_HasIBEvent                  = 0x0200,
     CUTS_HasOOBEvent                 = 0x0400,
     CUTS_HasSpecialStackOverflowCase = 0x0800,
@@ -10401,9 +10401,7 @@ enum CordbUnmanagedThreadState
 #endif
     CUTS_SkippingNativePatch         = 0x2000,
     CUTS_HasContextSet               = 0x4000,
-    // Set when interop debugging is making use of the single step flag
-    // but the user has not set it
-    CUTS_IsSSFlagHidden              = 0x8000
+    // unused                        = 0x8000,
 
 };
 
@@ -10454,10 +10452,6 @@ public:
     HRESULT GetThreadContext(DT_CONTEXT * pContext);
     HRESULT SetThreadContext(DT_CONTEXT * pContext);
 
-    // Turns on and off the internal usage of the SS flag
-    VOID BeginStepping();
-    VOID EndStepping();
-
     // An accessor for &m_context, this value generally stores
     // a context we may need to restore after a hijack completes
     DT_CONTEXT * GetHijackCtx();
@@ -10483,10 +10477,6 @@ public:
 #endif
     BOOL IsSkippingNativePatch() { LIMITED_METHOD_CONTRACT; return m_state & CUTS_SkippingNativePatch; }
     BOOL IsContextSet() { LIMITED_METHOD_CONTRACT; return m_state & CUTS_HasContextSet; }
-    BOOL IsSSFlagNeeded() { LIMITED_METHOD_CONTRACT; return m_state & CUTS_IsSSFlagNeeded; }
-    BOOL IsSSFlagHidden() { LIMITED_METHOD_CONTRACT; return m_state & CUTS_IsSSFlagHidden; }
-    BOOL HasRaiseExceptionEntryCtx() { LIMITED_METHOD_CONTRACT; return m_state & CUTS_HasRaiseExceptionEntryCtx; }
-    BOOL IsRaiseExceptionHijacked() { LIMITED_METHOD_CONTRACT; return m_state & CUTS_IsRaiseExceptionHijacked; }
 
     void SetState(CordbUnmanagedThreadState state)
     {
@@ -10496,11 +10486,6 @@ public:
         _ASSERTE(!IsSuspended() || !IsFirstChanceHijacked());
     }
     void ClearState(CordbUnmanagedThreadState state) {LIMITED_METHOD_CONTRACT;  m_state = (CordbUnmanagedThreadState)(m_state & ~state); }
-
-    void HijackToRaiseException();
-    void RestoreFromRaiseExceptionHijack();
-    void ClearRaiseExceptionEntryContext();
-    BOOL IsExceptionFromLastRaiseException(const EXCEPTION_RECORD* pExceptionRecord);
 
     CordbUnmanagedEvent *IBEvent()  {LIMITED_METHOD_CONTRACT;  return &m_IBEvent; }
     CordbUnmanagedEvent *IBEvent2() {LIMITED_METHOD_CONTRACT;  return &m_IBEvent2; }
@@ -10548,15 +10533,6 @@ private:
     // See CordbUnmanagedThread::GetThreadContext for details
     DT_CONTEXT                 m_context;
 
-    // The context of the thread the last time it called into kernel32!RaiseException
-    DT_CONTEXT                 m_raiseExceptionEntryContext;
-
-    DWORD                      m_raiseExceptionExceptionCode;
-    DWORD                      m_raiseExceptionExceptionFlags;
-    DWORD                      m_raiseExceptionNumberParameters;
-    ULONG_PTR                  m_raiseExceptionExceptionInformation[EXCEPTION_MAXIMUM_PARAMETERS];
-
-
     // the SEH handler which was the leaf when SaveCurrentSeh was called (prior to hijack)
     REMOTE_PTR                 m_pSavedLeafSeh;
 
@@ -10580,7 +10556,6 @@ public:
 
     bool GetEEPGCDisabled();
     void GetEEState(bool *threadStepping, bool *specialManagedException);
-    bool GetEEFrame();
 };
 #endif // FEATURE_INTEROP_DEBUGGING
 

@@ -1,10 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// ===========================================================================
-// File: JITinterface.CPP
-// ===========================================================================
-
 #include "common.h"
 #include <inttypes.h>
 #include "jitinterface.h"
@@ -1168,9 +1164,15 @@ void* CEEInfo::getClassThreadStaticDynamicInfo(CORINFO_CLASS_HANDLE cls)
 
     JIT_TO_EE_TRANSITION_LEAF();
 
+#ifdef FEATURE_MULTITHREADING
     TypeHandle clsTypeHandle(cls);
     PTR_MethodTable pMT = clsTypeHandle.AsMethodTable();
     result = pMT->GetThreadStaticsInfo();
+#else
+    // Without multithreading, thread statics are laid out as regular statics, so the JIT never asks for TLS info.
+    result = NULL;
+    UNREACHABLE();
+#endif // FEATURE_MULTITHREADING
 
     EE_TO_JIT_TRANSITION_LEAF();
 
@@ -1224,9 +1226,11 @@ CorInfoHelpFunc CEEInfo::getSharedStaticsHelper(FieldDesc * pField, MethodTable 
         {
             if (noCtor)
             {
+#ifdef FEATURE_MULTITHREADING
                 if (pFieldMT == CoreLibBinder::GetExistingClass(CLASS__DIRECTONTHREADLOCALDATA))
                     helper = CanJITOptimizeTLSAccess() ? CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2 : CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2_NOJITOPT; // ALWAYS use this helper, as its needed to ensure basic thread static access works
                 else
+#endif // FEATURE_MULTITHREADING
                     helper = CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR;
             }
             else
@@ -1295,6 +1299,7 @@ uint32_t CEEInfo::getThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field, bool isG
 
     JIT_TO_EE_TRANSITION();
 
+#ifdef FEATURE_MULTITHREADING
     FieldDesc* fieldDesc = (FieldDesc*)field;
     _ASSERTE(fieldDesc->IsThreadStatic());
     MethodTable *pMT = fieldDesc->GetEnclosingMethodTable();
@@ -1310,6 +1315,10 @@ uint32_t CEEInfo::getThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field, bool isG
     }
 
     _ASSERTE(typeIndex != TypeIDProvider::INVALID_TYPE_ID);
+#else
+    // Without multithreading, thread statics are laid out as regular statics, so the JIT never asks for TLS info.
+    UNREACHABLE();
+#endif // FEATURE_MULTITHREADING
 
     EE_TO_JIT_TRANSITION();
     return typeIndex;
@@ -1324,7 +1333,12 @@ void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO*
     } CONTRACTL_END;
 
     JIT_TO_EE_TRANSITION();
+#ifdef FEATURE_MULTITHREADING
     GetThreadLocalStaticBlocksInfo(pInfo);
+#else
+    // Without multithreading, thread statics are laid out as regular statics, so the JIT never asks for TLS info.
+    UNREACHABLE();
+#endif // FEATURE_MULTITHREADING
     EE_TO_JIT_TRANSITION();
 }
 
@@ -1426,6 +1440,7 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
 
                 pResult->helper = getSharedStaticsHelper(pField, pFieldMT);
             }
+#ifdef FEATURE_MULTITHREADING
             else if (pField->IsThreadStatic())
             {
                  // We always treat accessing thread statics as if we are in domain neutral code.
@@ -1473,6 +1488,7 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
                     }
                 }
             }
+#endif // FEATURE_MULTITHREADING
             else
             {
                 fieldAccessor = CORINFO_FIELD_STATIC_ADDRESS;
@@ -3437,23 +3453,6 @@ void CEEInfo::AddTransientMethodDetails(TransientMethodDetails details)
     if (m_transientDetails == NULL)
         m_transientDetails = new SArray<TransientMethodDetails, FALSE>();
     m_transientDetails->Append(std::move(details));
-}
-
-TransientMethodDetails CEEInfo::RemoveTransientMethodDetails(MethodDesc* pMD)
-{
-    STANDARD_VM_CONTRACT;
-    _ASSERTE(pMD != NULL);
-
-    TransientMethodDetails local{};
-    TransientMethodDetails* details;
-    if (FindTransientMethodDetails(pMD, &details))
-    {
-        // Details found, move contents to return
-        // and default initialize the found instance.
-        local = std::move(*details);
-        *details = {};
-    }
-    return local;
 }
 
 bool CEEInfo::FindTransientMethodDetails(MethodDesc* pMD, TransientMethodDetails** details)
@@ -8270,6 +8269,7 @@ void CEEInfo::reportInliningDecision (CORINFO_METHOD_HANDLE inlinerHnd,
         MethodDesc *pCaller = m_pMethodBeingCompiled;
         pCallee->GetModule()->AddInlining(pCaller, pCallee);
 
+#ifdef PROFILING_SUPPORTED
         if (CORProfilerEnableRejit())
         {
             ModuleID modId = 0;
@@ -8301,6 +8301,7 @@ void CEEInfo::reportInliningDecision (CORINFO_METHOD_HANDLE inlinerHnd,
                 ReJitManager::RequestReJIT(1, &modId, &methodDef, static_cast<COR_PRF_REJIT_FLAGS>(0));
             }
         }
+#endif // PROFILING_SUPPORTED
     }
 #endif // defined FEATURE_REJIT && !defined(DACCESS_COMPILE)
 
@@ -12386,7 +12387,7 @@ void CEEJitInfo::recordRelocation(void *       location,
                     // When m_fAllowRel32 == FALSE, the JIT will use a RELATIVE32s for direct code targets only.
                     // Use jump stub.
                     //
-                    delta = rel32UsingJumpStub(fixupLocation, (PCODE)target, m_pMethodBeingCompiled, NULL, false /* throwOnOutOfMemoryWithinRange */);
+                    delta = rel32UsingJumpStub(fixupLocation, (PCODE)target, m_pMethodBeingCompiled);
                     if (delta == 0)
                     {
                         // This forces the JIT to retry the method, which allows us to reserve more space for jump stubs and have a higher chance that
@@ -12401,8 +12402,8 @@ void CEEJitInfo::recordRelocation(void *       location,
             }
         }
 
-                LOG((LF_JIT, LL_INFO100000, "Encoded a PCREL32 at" FMT_ADDR "to" FMT_ADDR "+%d,  delta is 0x%04x\n",
-                         DBG_ADDR(fixupLocation), DBG_ADDR(target), addlDelta, (UINT32)delta));
+        LOG((LF_JIT, LL_INFO100000, "Encoded a PCREL32 at" FMT_ADDR "to" FMT_ADDR "+%d,  delta is 0x%04x\n",
+                    DBG_ADDR(fixupLocation), DBG_ADDR(target), addlDelta, (UINT32)delta));
 
         // Write the 32-bits pc-relative delta into location
         *fixupLocationRW = (INT32) delta;
@@ -12461,8 +12462,7 @@ void CEEJitInfo::recordRelocation(void *       location,
                                                           (PCODE)  target,
                                                           (BYTE *) loAddr,
                                                           (BYTE *) hiAddr,
-                                                          NULL,
-                                                          false);
+                                                          NULL);
             }
 
             // Keep track of conservative estimate of how much memory may be needed by jump stubs. We will use it to reserve extra memory
@@ -12579,7 +12579,7 @@ void CEEJitInfo::recordRelocation(void *       location,
                 if (hiAddr < location)
                     hiAddr = (BYTE*)UINT64_MAX; // overflow
 
-                PCODE jumpStubAddr = ExecutionManager::jumpStub(m_pMethodBeingCompiled, (PCODE)target, loAddr, hiAddr, nullptr, false);
+                PCODE jumpStubAddr = ExecutionManager::jumpStub(m_pMethodBeingCompiled, (PCODE)target, loAddr, hiAddr, nullptr);
 
                 // Keep track of conservative estimate of how much memory may be needed by jump stubs. We will use it
                 // to reserve extra memory on retry to increase chances that the retry succeeds.
@@ -13062,7 +13062,15 @@ CORJIT_FLAGS* CEECodeGenInfo::getJitFlagsInternal()
 }
 
 /*********************************************************************/
-HRESULT CEEJitInfo::allocPgoInstrumentationBySchema(
+#ifdef FEATURE_PGO
+static bool InterpreterPgoInstrumentationEnabled()
+{
+    static ConfigDWORD s_interpPgo;
+    return s_interpPgo.val(CLRConfig::INTERNAL_InterpPGO) != 0;
+}
+#endif // FEATURE_PGO
+
+HRESULT CEECodeGenInfo::allocPgoInstrumentationBySchema(
             CORINFO_METHOD_HANDLE ftnHnd, /* IN */
             PgoInstrumentationSchema* pSchema, /* IN/OUT */
             uint32_t countSchemaItems, /* IN */
@@ -13081,9 +13089,10 @@ HRESULT CEEJitInfo::allocPgoInstrumentationBySchema(
 
 #ifdef FEATURE_PGO
 
-    // Only try instrumenting tiering-eligible methods
+    // Only try instrumenting tiering-eligible methods, unless interpreter PGO is enabled, in
+    // which case we instrument every method for offline profile collection.
     MethodDesc* pMD = (MethodDesc*)ftnHnd;
-    if (pMD->IsEligibleForTieredCompilation())
+    if (pMD->IsEligibleForTieredCompilation() || InterpreterPgoInstrumentationEnabled())
     {
         hr = PgoManager::allocPgoInstrumentationBySchema(pMD, m_ILHeader, pSchema, countSchemaItems, pInstrumentationData);
     }
@@ -13092,7 +13101,7 @@ HRESULT CEEJitInfo::allocPgoInstrumentationBySchema(
         hr = E_NOTIMPL;
     }
 #else
-    _ASSERTE(!"allocMethodBlockCounts not implemented on CEEJitInfo!");
+    _ASSERTE(!"allocMethodBlockCounts not implemented on CEECodeGenInfo!");
     hr = E_NOTIMPL;
 #endif // !FEATURE_PGO
 
@@ -13101,9 +13110,9 @@ HRESULT CEEJitInfo::allocPgoInstrumentationBySchema(
     return hr;
 }
 
-// Consider implementing getBBProfileData on CEEJitInfo.  This will allow us
+// Consider implementing getBBProfileData on CEECodeGenInfo.  This will allow us
 // to use profile info in codegen for non zapped images.
-HRESULT CEEJitInfo::getPgoInstrumentationResults(
+HRESULT CEECodeGenInfo::getPgoInstrumentationResults(
             CORINFO_METHOD_HANDLE      ftnHnd,
             PgoInstrumentationSchema **pSchema,                    // pointer to the schema table which describes the instrumentation results (pointer will not remain valid after jit completes)
             uint32_t *                 pCountSchemaItems,          // pointer to the count schema items
@@ -13164,7 +13173,7 @@ HRESULT CEEJitInfo::getPgoInstrumentationResults(
     *pPgoSource = pDataCur->m_pgoSource;
     hr = pDataCur->m_hr;
 #else
-    _ASSERTE(!"getPgoInstrumentationResults not implemented on CEEJitInfo!");
+    _ASSERTE(!"getPgoInstrumentationResults not implemented on CEECodeGenInfo!");
     hr = E_NOTIMPL;
 #endif
 
@@ -14448,9 +14457,9 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
 
             if (!th.IsTypeDesc())
             {
-                if (currentModule->IsReadyToRun())
+                if (g_fEEStarted)
                 {
-                    // We do not emit activation fixups for version resilient references. Activate the target explicitly.
+                    // Activate the target explicitly.
                     th.AsMethodTable()->EnsureInstanceActive();
                 }
             }
@@ -14464,9 +14473,9 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
         {
             MethodDesc * pMD = ZapSig::DecodeMethod(currentModule, pInfoModule, pBlob);
 
-            if (currentModule->IsReadyToRun())
+            if (g_fEEStarted)
             {
-                // We do not emit activation fixups for version resilient references. Activate the target explicitly.
+                // Activate the target explicitly.
                 pMD->EnsureActive();
             }
 
@@ -14496,9 +14505,9 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
                     COMPlusThrowHR(COR_E_TYPELOAD);
             }
 
-            if (currentModule->IsReadyToRun())
+            if (g_fEEStarted)
             {
-                // We do not emit activation fixups for version resilient references. Activate the target explicitly.
+                // Activate the target explicitly.
                 pDeclaringMT->EnsureInstanceActive();
             }
 
@@ -14542,9 +14551,9 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
 
             pMD->PrepareForUseAsADependencyOfANativeImage();
 
-            if (currentModule->IsReadyToRun())
+            if (g_fEEStarted)
             {
-                // We do not emit activation fixups for version resilient references. Activate the target explicitly.
+                // Activate the target explicitly.
                 pMD->EnsureActive();
             }
 
@@ -14563,9 +14572,9 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
 
             pMD->PrepareForUseAsADependencyOfANativeImage();
 
-            if (currentModule->IsReadyToRun())
+            if (g_fEEStarted)
             {
-                // We do not emit activation fixups for version resilient references. Activate the target explicitly.
+                // Activate the target explicitly.
                 pMD->EnsureActive();
             }
 
@@ -14576,14 +14585,44 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
         {
             pMD = ZapSig::DecodeMethod(currentModule, pInfoModule, pBlob);
 
-            if (currentModule->IsReadyToRun())
+            if (g_fEEStarted)
             {
-                // We do not emit activation fixups for version resilient references. Activate the target explicitly.
+                // Activate the target explicitly.
                 pMD->EnsureActive();
             }
 
         MethodEntry:
             result = pMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_UNMANAGED_CALLER_MAYBE);
+        }
+        break;
+
+    case READYTORUN_FIXUP_MethodEntry_ReadyToRun:
+        {
+            pMD = ZapSig::DecodeMethod(currentModule, pInfoModule, pBlob);
+
+            if (!pMD->GetModule()->IsReadyToRun())
+            {
+                return FALSE;
+            }
+
+            if (g_fEEStarted)
+            {
+                pMD->EnsureActive();
+            }
+
+            PrepareCodeConfig config(NativeCodeVersion(pMD), FALSE, TRUE);
+            PCODE pEntryPoint = pMD->GetModule()->GetReadyToRunInfo()->GetEntryPoint(pMD, &config, TRUE /* fFixups */);
+            if (pEntryPoint == (PCODE)NULL)
+            {
+                return FALSE;
+            }
+
+            if (pMD->PublishPrecompiledCode(&config, pEntryPoint, false) != pEntryPoint)
+            {
+                return FALSE;
+            }
+
+            result = pEntryPoint;
         }
         break;
 
@@ -14624,6 +14663,11 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
 
             // We can take address of RVA field only since ngened code is domain neutral
             _ASSERTE(pField->IsRVA());
+
+            if (g_fEEStarted)
+            {
+                pField->GetModule()->EnsureActive();
+            }
 
             result = (size_t)pField->GetStaticAddressHandle(NULL);
         }
@@ -15942,7 +15986,8 @@ void CEEInfo::GetProfilingHandle(bool                      *pbHookFunction,
 }
 
 bool CEEInfo::notifyInstructionSetUsage(CORINFO_InstructionSet instructionSet,
-                                        bool supportEnabled)
+                                        bool supportEnabled,
+                                        bool preserveNegativeDependency)
 {
     LIMITED_METHOD_CONTRACT;
     // Do nothing. This api does not provide value in JIT scenarios and

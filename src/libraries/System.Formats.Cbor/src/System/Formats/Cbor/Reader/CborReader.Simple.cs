@@ -179,6 +179,12 @@ namespace System.Formats.Cbor
                     AdvanceDataItemCounters();
                     return (CborSimpleValue)value;
                 default:
+                    // Additional information values 28-30 are reserved: https://www.rfc-editor.org/rfc/rfc8949.html#section-3.3
+                    if (header.AdditionalInfo is > CborAdditionalInfo.Additional64BitData and < CborAdditionalInfo.IndefiniteLength)
+                    {
+                        throw new CborContentException(SR.Cbor_Reader_InvalidCbor_InvalidSimpleValueEncoding);
+                    }
+
                     throw new InvalidOperationException(SR.Cbor_Reader_NotASimpleValueEncoding);
             }
         }
