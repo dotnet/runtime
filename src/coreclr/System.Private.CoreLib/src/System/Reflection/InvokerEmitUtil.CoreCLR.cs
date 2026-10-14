@@ -25,7 +25,8 @@ namespace System.Reflection
                 returnType: typeof(object),
                 delegateParameters,
                 typeof(object).Module,
-                skipVisibility: true);
+                skipVisibility: true,
+                isDiagnosticsHidden: true);
 
             ILGenerator il = dm.GetILGenerator();
             ReadOnlySpan<ParameterInfo> parameters = method.GetParametersAsSpan();

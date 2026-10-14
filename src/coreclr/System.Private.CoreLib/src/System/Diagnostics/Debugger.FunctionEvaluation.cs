@@ -138,11 +138,8 @@ namespace System.Diagnostics
                 Debug.Assert(declaringType is not null);
                 Debug.Assert(methodOwner is not null);
                 bool isStatic = (context->Flags & EvaluationFlags.Static) != 0;
-                if ((ulong)context->ArgumentCount + (IsNewObject() ? 1UL : 0UL) !=
-                    (ulong)context->ParameterCount + (isStatic ? 0UL : 1UL))
-                {
-                    throw new TargetParameterCountException(SR.Arg_ParmCnt);
-                }
+                Debug.Assert((ulong)context->ArgumentCount + (IsNewObject() ? 1UL : 0UL) ==
+                    (ulong)context->ParameterCount + (isStatic ? 0UL : 1UL));
 
                 MethodBase? method = RuntimeType.GetMethodBase(declaringType, methodOwner);
                 Debug.Assert(method is RuntimeMethodInfo or RuntimeConstructorInfo);
@@ -207,7 +204,8 @@ namespace System.Diagnostics
                     SetStorage(resultSlot, ref *(byte*)_context->ResultData);
                 }
 
-                object? newObject = _invoke(this, _storage);
+                bool abstractNewObject = IsNewObject() && _method.DeclaringType!.IsAbstract;
+                object? newObject = abstractNewObject ? null : _invoke(this, _storage);
                 if (UsesValueTypeResult)
                 {
                     RuntimeType type = IsNewObject()
@@ -219,7 +217,7 @@ namespace System.Diagnostics
                 else if (IsNewObject() && !UsesExternalResult)
                 {
                     resultObject = newObject;
-                    Debug.Assert(resultObject is not null);
+                    Debug.Assert(resultObject is not null || abstractNewObject);
                 }
 
                 // Matches native's boxing-policy computation (DebuggerEval::m_retValueBoxing) so the

@@ -651,6 +651,7 @@ public class MethodDescTests
         TargetPointer normalMethod = TargetPointer.Null;
         TargetPointer ilStubMethod = TargetPointer.Null;
         TargetPointer lcgMethod = TargetPointer.Null;
+        TargetPointer hiddenLcgMethod = TargetPointer.Null;
         TargetPointer unboxingStubMethod = TargetPointer.Null;
         TargetPointer instantiatingStubMethod = TargetPointer.Null;
         TargetPointer asyncThunkMethod = TargetPointer.Null;
@@ -680,11 +681,11 @@ public class MethodDescTests
             {
                 uint methodDescSize = (uint)methodDescBuilder.DynamicMethodDescLayout.Size;
                 uint methodDescSizeByAlignment = methodDescSize / methodDescBuilder.MethodDescAlignment;
-                byte chunkSize = (byte)(2 * methodDescSizeByAlignment);
+                byte chunkSize = (byte)(3 * methodDescSizeByAlignment);
                 MockMethodDescChunk chunk = methodDescBuilder.AddMethodDescChunk("dynamic", chunkSize);
                 chunk.MethodTable = methodTable.Value;
                 chunk.Size = chunkSize;
-                chunk.Count = 2;
+                chunk.Count = 3;
 
                 MockDynamicMethodDesc ilStub = chunk.GetMethodDescAtChunkIndex(0, methodDescBuilder.DynamicMethodDescLayout);
                 ilStub.Flags = (ushort)MethodClassification.Dynamic;
@@ -698,6 +699,14 @@ public class MethodDescTests
                 lcg.Slot = 1;
                 lcg.ExtendedFlags = (uint)RuntimeTypeSystem_1.DynamicMethodDescExtendedFlags.IsLCGMethod;
                 lcgMethod = new TargetPointer(lcg.Address);
+
+                MockDynamicMethodDesc hiddenLcg = chunk.GetMethodDescAtChunkIndex((int)(2 * methodDescSizeByAlignment), methodDescBuilder.DynamicMethodDescLayout);
+                hiddenLcg.ChunkIndex = (byte)(2 * methodDescSizeByAlignment);
+                hiddenLcg.Flags = (ushort)MethodClassification.Dynamic;
+                hiddenLcg.Slot = 2;
+                hiddenLcg.ExtendedFlags = (uint)(RuntimeTypeSystem_1.DynamicMethodDescExtendedFlags.IsLCGMethod |
+                    RuntimeTypeSystem_1.DynamicMethodDescExtendedFlags.IsDiagnosticsHidden);
+                hiddenLcgMethod = new TargetPointer(hiddenLcg.Address);
             }
 
             // Unboxing stub (diagnostics hidden via IsWrapperStub -> IsUnboxingStub)
@@ -816,6 +825,7 @@ public class MethodDescTests
         // Normal IL method: not hidden by any primitive
         {
             MethodDescHandle handle = rts.GetMethodDescHandle(normalMethod);
+            Assert.False(rts.IsDiagnosticsHidden(handle));
             Assert.False(rts.IsILStub(handle));
             Assert.Equal(AsyncMethodFlags.None, rts.GetAsyncMethodFlags(handle));
             Assert.False(rts.IsWrapperStub(handle));
@@ -825,6 +835,7 @@ public class MethodDescTests
         // IL stub: hidden via IsILStub
         {
             MethodDescHandle handle = rts.GetMethodDescHandle(ilStubMethod);
+            Assert.True(rts.IsDiagnosticsHidden(handle));
             Assert.True(rts.IsILStub(handle));
             Assert.False(rts.IsDynamicMethod(handle));
         }
@@ -832,15 +843,24 @@ public class MethodDescTests
         // LCG method: not hidden, is LCG
         {
             MethodDescHandle handle = rts.GetMethodDescHandle(lcgMethod);
+            Assert.False(rts.IsDiagnosticsHidden(handle));
             Assert.False(rts.IsILStub(handle));
             Assert.Equal(AsyncMethodFlags.None, rts.GetAsyncMethodFlags(handle));
             Assert.False(rts.IsWrapperStub(handle));
             Assert.True(rts.IsDynamicMethod(handle));
         }
 
+        {
+            MethodDescHandle handle = rts.GetMethodDescHandle(hiddenLcgMethod);
+            Assert.True(rts.IsDiagnosticsHidden(handle));
+            Assert.True(rts.IsDynamicMethod(handle));
+            Assert.False(rts.IsILStub(handle));
+        }
+
         // Unboxing stub: hidden via IsWrapperStub
         {
             MethodDescHandle handle = rts.GetMethodDescHandle(unboxingStubMethod);
+            Assert.True(rts.IsDiagnosticsHidden(handle));
             Assert.True(rts.IsWrapperStub(handle));
             Assert.False(rts.IsDynamicMethod(handle));
         }
@@ -848,6 +868,7 @@ public class MethodDescTests
         // Instantiating stub: hidden via IsWrapperStub
         {
             MethodDescHandle handle = rts.GetMethodDescHandle(instantiatingStubMethod);
+            Assert.True(rts.IsDiagnosticsHidden(handle));
             Assert.True(rts.IsWrapperStub(handle));
             Assert.False(rts.IsDynamicMethod(handle));
         }
@@ -855,30 +876,35 @@ public class MethodDescTests
         // Async thunk (not variant, not return-dropping): Thunk only
         {
             MethodDescHandle handle = rts.GetMethodDescHandle(asyncThunkMethod);
+            Assert.True(rts.IsDiagnosticsHidden(handle));
             Assert.Equal(AsyncMethodFlags.Thunk, rts.GetAsyncMethodFlags(handle));
         }
 
         // Async non-thunk: has async data but no flags set
         {
             MethodDescHandle handle = rts.GetMethodDescHandle(asyncNonThunkMethod);
+            Assert.False(rts.IsDiagnosticsHidden(handle));
             Assert.Equal(AsyncMethodFlags.None, rts.GetAsyncMethodFlags(handle));
         }
 
         // Async thunk with NativeCodeSlot: Thunk only (verifies offset calculation)
         {
             MethodDescHandle handle = rts.GetMethodDescHandle(asyncThunkWithNativeCodeSlotMethod);
+            Assert.True(rts.IsDiagnosticsHidden(handle));
             Assert.Equal(AsyncMethodFlags.Thunk, rts.GetAsyncMethodFlags(handle));
         }
 
         // Async variant thunk (variant, not return-dropping): Thunk | IsAsyncVariant
         {
             MethodDescHandle handle = rts.GetMethodDescHandle(asyncVariantThunkMethod);
+            Assert.False(rts.IsDiagnosticsHidden(handle));
             Assert.Equal(AsyncMethodFlags.Thunk | AsyncMethodFlags.IsAsyncVariant, rts.GetAsyncMethodFlags(handle));
         }
 
         // Async return-dropping thunk: Thunk | IsAsyncVariant | ReturnDroppingThunk
         {
             MethodDescHandle handle = rts.GetMethodDescHandle(asyncReturnDroppingThunkMethod);
+            Assert.True(rts.IsDiagnosticsHidden(handle));
             Assert.Equal(AsyncMethodFlags.Thunk | AsyncMethodFlags.IsAsyncVariant | AsyncMethodFlags.ReturnDroppingThunk, rts.GetAsyncMethodFlags(handle));
         }
     }

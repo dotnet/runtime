@@ -2253,7 +2253,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 
             data.v.mapping = (int)CorDebugMappingResult.MAPPING_NO_INFO;
             data.v.fVarArgs = (byte)(rts.IsVarArg(md) ? 1 : 0);
-            data.v.fNoMetadata = (byte)((rts.IsNoMetadataMethod(md, out _) || rts.IsILStub(md) || IsDiagnosticsHidden(rts.GetAsyncMethodFlags(md)) || rts.IsWrapperStub(md)) ? 1 : 0);
+            data.v.fNoMetadata = (byte)((rts.IsNoMetadataMethod(md, out _) || rts.IsDiagnosticsHidden(md)) ? 1 : 0);
             GenericContextLoc genericContextLoc = rts.GetGenericContextLoc(md);
             if (genericContextLoc != GenericContextLoc.None)
             {
@@ -2325,10 +2325,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         IStackWalk stackWalk = _target.Contracts.StackWalk;
         return gcInfo.GetAmbientSP(gcInfoHandle, nativeOffset, stackWalk.GetContextFramePointer(handle), stackWalk.GetStackPointer(handle));
     }
-
-    private static bool IsDiagnosticsHidden(AsyncMethodFlags flags)
-        => flags.HasFlag(AsyncMethodFlags.Thunk)
-            && (flags.HasFlag(AsyncMethodFlags.ReturnDroppingThunk) || !flags.HasFlag(AsyncMethodFlags.IsAsyncVariant));
 
     private static bool HasClassOrMethodInstantiation(IRuntimeTypeSystem rts, MethodDescHandle md)
     {
@@ -2666,7 +2662,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             Contracts.IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
             Contracts.MethodDescHandle md = rts.GetMethodDescHandle(new TargetPointer(vmMethodDesc));
-            if (rts.IsILStub(md) || IsDiagnosticsHidden(rts.GetAsyncMethodFlags(md)) || rts.IsWrapperStub(md))
+            if (rts.IsDiagnosticsHidden(md))
             {
                 *pRetVal = (int)DynamicMethodType.kDiagnosticHidden;
             }
