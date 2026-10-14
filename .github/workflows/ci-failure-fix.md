@@ -8,7 +8,7 @@ permissions:
   pull-requests: read
 
 on:
-  schedule: every 12h
+  schedule: daily on weekdays
   workflow_dispatch:
   roles: [admin, maintainer, write]
   permissions: {}
@@ -95,6 +95,8 @@ steps:
       path: /tmp/gh-aw/agent
 
 safe-outputs:
+  report-failure-as-issue: false
+  report-failed-jobs: false
   create-pull-request:
     title-prefix: "[ci-fix] "
     draft: true
@@ -111,7 +113,7 @@ safe-outputs:
     allowed-labels: [agentic-workflows]
   add-comment:
     target: "*"
-    max: 10
+    max: 3
   data:
     type: object
     properties:
@@ -148,7 +150,7 @@ You are a CI remediation agent. Each scheduled run, you walk the open `[ci-scan]
 
 You are the *mitigation* stage. `ci-failure-scan` only detects failures and files KBEs; it never disables tests. **You never mute, skip, or disable a test, and you never add `[ActiveIssue]` / `Skip` / `<*Incompatible>` annotations.** A failure is removed either by a real fix PR or by a human the PR/comment loops in. A "help wanted" PR is a genuine best-effort code change plus an ask for review — never a test-disable dressed up as a fix. The agent runs read-only; all writes go through `safe-outputs`.
 
-To suggest changes, edit this file or comment on the PRs/comments it produces — the [`ci-failure-scan-feedback`](ci-failure-scan-feedback.md) workflow reads recent runs and that feedback daily, and opens (or updates) a single draft PR with proposed edits to either prompt.
+To suggest changes, edit this file or comment on the PRs/comments it produces — the [`ci-failure-scan-feedback`](ci-failure-scan-feedback.md) workflow reads recent runs and that feedback every two weeks and lists proposed edits to either prompt in the `[ci-scan-feedback] KPI Tracker` issue.
 
 ## Hard rules — non-negotiable
 
@@ -398,7 +400,7 @@ Linked KBE: #<n>
 - Suspected regressing change: <dotnet/runtime#<n> | none identified>
 
 ---
-Filed by [`ci-failure-fix`](https://github.com/dotnet/runtime/blob/main/.github/workflows/ci-failure-fix.md), which attempts validated fixes for `[ci-scan]` Known Build Errors and otherwise loops in owners. Comment here or on the workflow file to suggest changes; [`ci-failure-scan-feedback`](https://github.com/dotnet/runtime/blob/main/.github/workflows/ci-failure-scan-feedback.md) reads in-scope feedback daily and opens (or updates) a PR with prompt edits.
+Filed by [`ci-failure-fix`](https://github.com/dotnet/runtime/blob/main/.github/workflows/ci-failure-fix.md), which attempts validated fixes for `[ci-scan]` Known Build Errors and otherwise loops in owners. Comment here or on the workflow file to suggest changes; [`ci-failure-scan-feedback`](https://github.com/dotnet/runtime/blob/main/.github/workflows/ci-failure-scan-feedback.md) reads in-scope feedback every two weeks and lists proposed prompt edits in its KPI tracker issue.
 ````
 
 Keep the diff <= 20 lines, single file. Never stage a test-disabling change.
@@ -439,7 +441,7 @@ Linked KBE: #<n>
 - Area owners (`area-<x>`): <@individual-owner>, `@dotnet/<team>`
 
 ---
-Filed by [`ci-failure-fix`](https://github.com/dotnet/runtime/blob/main/.github/workflows/ci-failure-fix.md). Comment here or on the workflow file to suggest changes; [`ci-failure-scan-feedback`](https://github.com/dotnet/runtime/blob/main/.github/workflows/ci-failure-scan-feedback.md) reads in-scope feedback daily and opens (or updates) a PR with prompt edits.
+Filed by [`ci-failure-fix`](https://github.com/dotnet/runtime/blob/main/.github/workflows/ci-failure-fix.md). Comment here or on the workflow file to suggest changes; [`ci-failure-scan-feedback`](https://github.com/dotnet/runtime/blob/main/.github/workflows/ci-failure-scan-feedback.md) reads in-scope feedback every two weeks and lists proposed prompt edits in its KPI tracker issue.
 ````
 
 ### Template: Loop-in comment body (Branch COMMENT — last resort)

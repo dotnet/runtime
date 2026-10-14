@@ -445,8 +445,6 @@ BEGIN
     IDS_EE_THREAD_INTERRUPTED               "Thread was interrupted from a waiting state."
     IDS_EE_OUT_OF_MEMORY                    "Insufficient memory to continue the execution of the program."
 
-    IDS_EE_OUT_OF_MEMORY_WITHIN_RANGE       "Insufficient memory within specified address space range to continue the execution of the program."
-
     IDS_EE_ARRAY_DIMENSIONS_EXCEEDED        "Array dimensions exceeded supported range."
 
     IDS_EE_OUT_OF_SYNCBLOCKS                "Internal limitation: attempt to create more than 2^26 SyncBlocks."

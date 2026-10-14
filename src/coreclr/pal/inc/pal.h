@@ -126,7 +126,6 @@ extern bool g_arm64_atomics_present;
 #define __assume(condition) do { if (!(condition)) __builtin_unreachable(); } while (0)
 #endif // __has_builtin(__builtin_assume)
 
-#define __annotation(x)
 #endif //!MSC_VER
 
 #define UNALIGNED
@@ -395,9 +394,6 @@ typedef struct _SECURITY_ATTRIBUTES {
             BOOL bInheritHandle;
 } SECURITY_ATTRIBUTES, *PSECURITY_ATTRIBUTES, *LPSECURITY_ATTRIBUTES;
 
-#define FILE_READ_DATA            ( 0x0001 )    // file & pipe
-#define FILE_APPEND_DATA          ( 0x0004 )    // file
-
 #define GENERIC_READ               (0x80000000L)
 #define GENERIC_WRITE              (0x40000000L)
 
@@ -411,12 +407,6 @@ typedef struct _SECURITY_ATTRIBUTES {
 #define OPEN_ALWAYS                4
 #define TRUNCATE_EXISTING          5
 
-#define FILE_ATTRIBUTE_READONLY                 0x00000001
-#define FILE_ATTRIBUTE_HIDDEN                   0x00000002
-#define FILE_ATTRIBUTE_SYSTEM                   0x00000004
-#define FILE_ATTRIBUTE_DIRECTORY                0x00000010
-#define FILE_ATTRIBUTE_ARCHIVE                  0x00000020
-#define FILE_ATTRIBUTE_DEVICE                   0x00000040
 #define FILE_ATTRIBUTE_NORMAL                   0x00000080
 
 #define FILE_FLAG_WRITE_THROUGH    0x80000000
@@ -564,23 +554,9 @@ GetFullPathNameW(
 PALIMPORT
 DWORD
 PALAPI
-GetTempPathW(
-         IN DWORD nBufferLength,
-         OUT LPWSTR lpBuffer);
-
-PALIMPORT
-DWORD
-PALAPI
 GetTempPathA(
          IN DWORD nBufferLength,
          OUT LPSTR lpBuffer);
-
-
-#ifdef UNICODE
-#define GetTempPath GetTempPathW
-#else
-#define GetTempPath GetTempPathA
-#endif
 
 PALIMPORT
 DWORD
@@ -614,7 +590,6 @@ GetCurrentThread();
 
 typedef struct _STARTUPINFOW STARTUPINFOW, *LPSTARTUPINFOW;
 typedef STARTUPINFOW STARTUPINFO;
-typedef LPSTARTUPINFOW LPSTARTUPINFO;
 
 typedef struct _PROCESS_INFORMATION PROCESS_INFORMATION, *PPROCESS_INFORMATION, *LPPROCESS_INFORMATION;
 
@@ -659,8 +634,6 @@ BOOL
 PALAPI
 SwitchToThread();
 
-#define DEBUG_PROCESS                     0x00000001
-#define DEBUG_ONLY_THIS_PROCESS           0x00000002
 #define CREATE_SUSPENDED                  0x00000004
 #define STACK_SIZE_PARAM_IS_A_RESERVATION 0x00010000
 
@@ -754,8 +727,6 @@ typedef struct _FLOATING_SAVE_AREA {
     DWORD   Cr0NpxState;
 } FLOATING_SAVE_AREA;
 
-typedef FLOATING_SAVE_AREA *PFLOATING_SAVE_AREA;
-
 typedef struct _CONTEXT {
     ULONG ContextFlags;
 
@@ -789,15 +760,6 @@ typedef struct _CONTEXT {
 
     UCHAR   ExtendedRegisters[MAXIMUM_SUPPORTED_EXTENSION];
 } CONTEXT, *PCONTEXT, *LPCONTEXT;
-
-// To support saving and loading xmm register context we need to know the offset in the ExtendedRegisters
-// section at which they are stored. This has been determined experimentally since I have found no
-// documentation thus far but it corresponds to the offset we'd expect if a fxsave instruction was used to
-// store the regular FP state along with the XMM registers at the start of the extended registers section.
-// Technically the offset doesn't really matter if no code in the PAL or runtime knows what the offset should
-// be either (as long as we're consistent across GetThreadContext() and SetThreadContext() and we don't
-// support any other values in the ExtendedRegisters) but we might as well be as accurate as we can.
-#define CONTEXT_EXREG_XMM_OFFSET 160
 
 typedef struct _KNONVOLATILE_CONTEXT {
 
@@ -1376,9 +1338,6 @@ typedef struct _IMAGE_ARM_RUNTIME_FUNCTION_ENTRY {
 // Define initial Cpsr/Fpscr value
 //
 
-#define INITIAL_CPSR 0x10
-#define INITIAL_FPSCR 0
-
 // begin_ntoshvp
 
 //
@@ -1574,9 +1533,6 @@ typedef union IMAGE_ARM64_RUNTIME_FUNCTION_ENTRY_XDATA {
 // however, almost no one implements more than 4 of each.
 //
 
-#define LOONGARCH64_MAX_BREAKPOINTS     8
-#define LOONGARCH64_MAX_WATCHPOINTS     2
-
 typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
 
     //
@@ -1693,9 +1649,6 @@ typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
 // will track. Architecturally, RISCV64 supports up to 16. In practice,
 // however, almost no one implements more than 4 of each.
 //
-
-#define RISCV64_MAX_BREAKPOINTS     8
-#define RISCV64_MAX_WATCHPOINTS     2
 
 typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
 
@@ -2497,23 +2450,13 @@ WideCharToMultiByte(
 #define EXCEPTION_NESTED_CALL 0x10      // Nested exception handler call
 #define EXCEPTION_TARGET_UNWIND 0x20    // Target unwind in progress
 #define EXCEPTION_COLLIDED_UNWIND 0x40  // Collided exception handler call
-#define EXCEPTION_SKIP_VEH 0x200
 
 #define EXCEPTION_UNWIND (EXCEPTION_UNWINDING | EXCEPTION_EXIT_UNWIND | \
                           EXCEPTION_TARGET_UNWIND | EXCEPTION_COLLIDED_UNWIND)
 
-#define IS_DISPATCHING(Flag) ((Flag & EXCEPTION_UNWIND) == 0)
-#define IS_UNWINDING(Flag) ((Flag & EXCEPTION_UNWIND) != 0)
-#define IS_TARGET_UNWIND(Flag) (Flag & EXCEPTION_TARGET_UNWIND)
-
 #define EXCEPTION_IS_SIGNAL 0x100
 
 #define EXCEPTION_MAXIMUM_PARAMETERS 15
-
-// Index in the ExceptionInformation array where we will keep the reference
-// to the native exception that needs to be deleted when dispatching
-// exception in managed code.
-#define NATIVE_EXCEPTION_ASYNC_SLOT (EXCEPTION_MAXIMUM_PARAMETERS-1)
 
 typedef struct _EXCEPTION_RECORD {
     DWORD ExceptionCode;
@@ -2553,14 +2496,7 @@ typedef struct _RUNTIME_FUNCTION {
 } RUNTIME_FUNCTION, *PRUNTIME_FUNCTION;
 #endif // HOST_ARM64
 
-#define STANDARD_RIGHTS_REQUIRED  (0x000F0000L)
 #define SYNCHRONIZE               (0x00100000L)
-#define READ_CONTROL              (0x00020000L)
-#define MAXIMUM_ALLOWED           (0x02000000L)
-
-#define MUTANT_QUERY_STATE        (0x0001)
-#define MUTANT_ALL_ACCESS         (STANDARD_RIGHTS_REQUIRED | SYNCHRONIZE | MUTANT_QUERY_STATE)
-#define MUTEX_ALL_ACCESS          MUTANT_ALL_ACCESS
 
 PALIMPORT
 VOID
@@ -2920,8 +2856,6 @@ Define_InterlockMethod(
     __sync_sub_and_fetch(lpAddend, (LONG)1)
 )
 
-#define InterlockedDecrementRelease InterlockedDecrement
-
 Define_InterlockMethod(
     LONGLONG,
     InterlockedDecrement64(IN OUT LONGLONG volatile *lpAddend),
@@ -3238,12 +3172,8 @@ GetSystemInfo(
 //
 // The types of events that can be logged.
 //
-#define EVENTLOG_SUCCESS                0x0000
 #define EVENTLOG_ERROR_TYPE             0x0001
-#define EVENTLOG_WARNING_TYPE           0x0002
 #define EVENTLOG_INFORMATION_TYPE       0x0004
-#define EVENTLOG_AUDIT_SUCCESS          0x0008
-#define EVENTLOG_AUDIT_FAILURE          0x0010
 
 #if defined FEATURE_PAL_ANSI
 #include "palprivate.h"
@@ -3288,7 +3218,6 @@ PALIMPORT WCHAR * __cdecl PAL_wcscpy(WCHAR *, const WCHAR *);
 PALIMPORT WCHAR * __cdecl PAL_wcsncpy(WCHAR *, const WCHAR *, size_t);
 PALIMPORT DLLEXPORT const WCHAR * __cdecl PAL_wcschr(const WCHAR *, WCHAR);
 PALIMPORT DLLEXPORT const WCHAR * __cdecl PAL_wcsrchr(const WCHAR *, WCHAR);
-PALIMPORT WCHAR _WConst_return * __cdecl PAL_wcspbrk(const WCHAR *, const WCHAR *);
 PALIMPORT DLLEXPORT WCHAR _WConst_return * __cdecl PAL_wcsstr(const WCHAR *, const WCHAR *);
 PALIMPORT DLLEXPORT ULONG __cdecl PAL_wcstoul(const WCHAR *, WCHAR **, int);
 PALIMPORT DLLEXPORT ULONGLONG __cdecl PAL__wcstoui64(const WCHAR *, WCHAR **, int);
@@ -3322,8 +3251,6 @@ inline WCHAR *PAL_wcschr(WCHAR* S, WCHAR C)
         {return ((WCHAR *)PAL_wcschr((const WCHAR *)S, C)); }
 inline WCHAR *PAL_wcsrchr(WCHAR* S, WCHAR C)
         {return ((WCHAR *)PAL_wcsrchr((const WCHAR *)S, C)); }
-inline WCHAR *PAL_wcspbrk(WCHAR* S, const WCHAR* P)
-        {return ((WCHAR *)PAL_wcspbrk((const WCHAR *)S, P)); }
 inline WCHAR *PAL_wcsstr(WCHAR* S, const WCHAR* P)
         {return ((WCHAR *)PAL_wcsstr((const WCHAR *)S, P)); }
 }
@@ -3372,7 +3299,6 @@ unsigned int __cdecl _rotr(unsigned int value, int shift)
 #endif // !__has_builtin(_rotr)
 
 PALIMPORT DLLEXPORT char * __cdecl PAL_getenv(const char *);
-PALIMPORT DLLEXPORT int __cdecl _putenv(const char *);
 
 #ifndef ERANGE
 #define ERANGE          34
@@ -3414,8 +3340,6 @@ private:
         TargetIp = ex.TargetIp;
         RecordsOnStack = ex.RecordsOnStack;
         IsExternal = ex.IsExternal;
-        ManagedToNativeExceptionCallback = ex.ManagedToNativeExceptionCallback;
-        ManagedToNativeExceptionCallbackContext = ex.ManagedToNativeExceptionCallbackContext;
 
         ex.Clear();
     }
@@ -3441,9 +3365,6 @@ public:
     // the well known runtime helpers
     bool IsExternal;
 
-    void(*ManagedToNativeExceptionCallback)(void* context);
-    void* ManagedToNativeExceptionCallbackContext;
-
     PAL_SEHException(EXCEPTION_RECORD *pExceptionRecord, CONTEXT *pContextRecord, bool onStack = false)
     {
         ExceptionPointers.ExceptionRecord = pExceptionRecord;
@@ -3452,8 +3373,6 @@ public:
         TargetIp = 0;
         RecordsOnStack = onStack;
         IsExternal = false;
-        ManagedToNativeExceptionCallback = NULL;
-        ManagedToNativeExceptionCallbackContext = NULL;
     }
 
     PAL_SEHException()
@@ -3492,8 +3411,6 @@ public:
         TargetIp = 0;
         RecordsOnStack = false;
         IsExternal = false;
-        ManagedToNativeExceptionCallback = NULL;
-        ManagedToNativeExceptionCallbackContext = NULL;
     }
 
     bool HasTargetFrame()
@@ -3509,19 +3426,6 @@ public:
     EXCEPTION_RECORD* GetExceptionRecord()
     {
         return ExceptionPointers.ExceptionRecord;
-    }
-
-    bool HasPropagateExceptionCallback()
-    {
-        return ManagedToNativeExceptionCallback != NULL;
-    }
-
-    void SetPropagateExceptionCallback(
-        void(*callback)(void*),
-        void* context)
-    {
-        ManagedToNativeExceptionCallback = callback;
-        ManagedToNativeExceptionCallbackContext = context;
     }
 };
 
@@ -3665,8 +3569,6 @@ public:
 #define PAL_CPP_THROW(type, obj) { throw obj; }
 #define PAL_CPP_RETHROW { throw; }
 #define PAL_CPP_TRY                     try { HardwareExceptionHolder
-#define PAL_CPP_CATCH_EXCEPTION(ident)  } catch (Exception *ident) {
-#define PAL_CPP_CATCH_EXCEPTION_NOARG   } catch (Exception *) {
 #define PAL_CPP_CATCH_DERIVED(type, ident) } catch (type *ident) {
 #define PAL_CPP_CATCH_NON_DERIVED(type, ident) } catch (type ident) {
 #define PAL_CPP_CATCH_NON_DERIVED_NOARG(type) } catch (type) {
@@ -3693,7 +3595,6 @@ public:
 #define MAKEDLLNAME(x) MAKEDLLNAME_A(x)
 #endif
 
-#define PAL_SHLIB_PREFIX    "lib"
 #define PAL_SHLIB_PREFIX_W  u"lib"
 
 #if __APPLE__
@@ -3704,19 +3605,12 @@ public:
 #define PAL_SHLIB_SUFFIX_W  u".so"
 #endif
 
-#define DBG_EXCEPTION_HANDLED            ((DWORD   )0x00010001L)
 #define DBG_CONTINUE                     ((DWORD   )0x00010002L)
 #define DBG_EXCEPTION_NOT_HANDLED        ((DWORD   )0x80010001L)
 
-#define DBG_TERMINATE_THREAD             ((DWORD   )0x40010003L)
-#define DBG_TERMINATE_PROCESS            ((DWORD   )0x40010004L)
 #define DBG_CONTROL_C                    ((DWORD   )0x40010005L)
-#define DBG_RIPEXCEPTION                 ((DWORD   )0x40010007L)
-#define DBG_CONTROL_BREAK                ((DWORD   )0x40010008L)
-#define DBG_COMMAND_EXCEPTION            ((DWORD   )0x40010009L)
 
 #define STATUS_USER_APC                  ((DWORD   )0x000000C0L)
-#define STATUS_GUARD_PAGE_VIOLATION      ((DWORD   )0x80000001L)
 #define STATUS_DATATYPE_MISALIGNMENT     ((DWORD   )0x80000002L)
 #define STATUS_BREAKPOINT                ((DWORD   )0x80000003L)
 #define STATUS_SINGLE_STEP               ((DWORD   )0x80000004L)
@@ -3724,7 +3618,6 @@ public:
 #define STATUS_UNWIND_CONSOLIDATE        ((DWORD   )0x80000029L)
 #define STATUS_ACCESS_VIOLATION          ((DWORD   )0xC0000005L)
 #define STATUS_IN_PAGE_ERROR             ((DWORD   )0xC0000006L)
-#define STATUS_INVALID_HANDLE            ((DWORD   )0xC0000008L)
 #define STATUS_NO_MEMORY                 ((DWORD   )0xC0000017L)
 #define STATUS_ILLEGAL_INSTRUCTION       ((DWORD   )0xC000001DL)
 #define STATUS_NONCONTINUABLE_EXCEPTION  ((DWORD   )0xC0000025L)
@@ -3741,7 +3634,6 @@ public:
 #define STATUS_INTEGER_OVERFLOW          ((DWORD   )0xC0000095L)
 #define STATUS_PRIVILEGED_INSTRUCTION    ((DWORD   )0xC0000096L)
 #define STATUS_STACK_OVERFLOW            ((DWORD   )0xC00000FDL)
-#define STATUS_CONTROL_C_EXIT            ((DWORD   )0xC000013AL)
 
 #define WAIT_IO_COMPLETION                  STATUS_USER_APC
 
@@ -3755,7 +3647,6 @@ public:
 #define EXCEPTION_FLT_INEXACT_RESULT        STATUS_FLOAT_INEXACT_RESULT
 #define EXCEPTION_FLT_INVALID_OPERATION     STATUS_FLOAT_INVALID_OPERATION
 #define EXCEPTION_FLT_OVERFLOW              STATUS_FLOAT_OVERFLOW
-#define EXCEPTION_FLT_STACK_CHECK           STATUS_FLOAT_STACK_CHECK
 #define EXCEPTION_FLT_UNDERFLOW             STATUS_FLOAT_UNDERFLOW
 #define EXCEPTION_INT_DIVIDE_BY_ZERO        STATUS_INTEGER_DIVIDE_BY_ZERO
 #define EXCEPTION_INT_OVERFLOW              STATUS_INTEGER_OVERFLOW
@@ -3765,10 +3656,6 @@ public:
 #define EXCEPTION_NONCONTINUABLE_EXCEPTION  STATUS_NONCONTINUABLE_EXCEPTION
 #define EXCEPTION_STACK_OVERFLOW            STATUS_STACK_OVERFLOW
 #define EXCEPTION_INVALID_DISPOSITION       STATUS_INVALID_DISPOSITION
-#define EXCEPTION_GUARD_PAGE                STATUS_GUARD_PAGE_VIOLATION
-#define EXCEPTION_INVALID_HANDLE            STATUS_INVALID_HANDLE
-
-#define CONTROL_C_EXIT                      STATUS_CONTROL_C_EXIT
 
 /******************* HRESULT types ****************************************/
 

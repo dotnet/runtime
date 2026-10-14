@@ -21,9 +21,34 @@ namespace ILAssembler.Tests
 {
     public class SourceDirectiveTests
     {
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void Optimization_SequencePointsFollowEmittedInstructionSizes(bool optimize)
+        {
+            string source = DocumentCompilerTestHelpers.MethodSource("""
+                .line 10,10:1,2 'test.cs'
+                ldc.i4 0
+                .line 20,20:1,2 'test.cs'
+                ldarg 0
+                .line 30,30:1,2 'test.cs'
+                br END
+                .line 40,40:1,2 'test.cs'
+                END: ret
+                """);
+            using MetadataReaderProvider provider = MetadataReaderProvider.FromPortablePdbImage(
+                DocumentCompilerTestHelpers.CompileAndGetPortablePdb(source, new Options { Optimize = optimize, Debug = true }));
+            MetadataReader reader = provider.GetMetadataReader();
+            SequencePoint[] points = reader.GetMethodDebugInformation(reader.MethodDebugInformation.Single())
+                .GetSequencePoints().ToArray();
+            Assert.Equal(optimize ? new[] { 0, 1, 2, 7 } : new[] { 0, 5, 9, 14 }, points.Select(point => point.Offset));
+            Assert.Equal(new[] { 10, 20, 30, 40 }, points.Select(point => point.StartLine));
+        }
+
         private const string CSharpLanguageGuid = "{3F5162F8-07C6-11D3-9053-00C04FA302A1}";
         private const string CSharpVendorGuid = "{994B45C4-E6E9-11D2-903F-00C04FA302A1}";
         private const string DocumentTypeGuid = "{5A869D0B-6611-11D3-BD2A-0000F80849BD}";
+        private const string VisualBasicLanguageGuid = "{3A12D0B8-C26C-11D0-B442-00A0244A1DD2}";
 
         [Fact]
         public void LanguageDecl_DoesNotThrow()
@@ -134,7 +159,7 @@ namespace ILAssembler.Tests
 
 
         [Fact]
-        public void PdbGeneration_WithLineAndLanguageDirectives_CreatesValidEmbeddedPdb()
+        public void PdbGeneration_WithLineAndLanguageDirectives_CreatesValidPdb()
         {
             string source = $$"""
                 .assembly test { }
@@ -153,17 +178,10 @@ namespace ILAssembler.Tests
                 }
                 """;
 
-            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            CompilationResult result = DocumentCompilerTestHelpers.CompileAndGetResult(source, new Options { Debug = true });
 
-            // Verify debug directory exists with embedded PDB
-            var debugDirectory = pe.ReadDebugDirectory();
-            Assert.NotEmpty(debugDirectory);
-
-            var embeddedPdbEntry = debugDirectory.FirstOrDefault(e => e.Type == DebugDirectoryEntryType.EmbeddedPortablePdb);
-            Assert.NotEqual(default, embeddedPdbEntry);
-
-            // Read the embedded PDB and verify contents
-            var pdbProvider = pe.ReadEmbeddedPortablePdbDebugDirectoryData(embeddedPdbEntry);
+            // Read the PDB and verify contents
+            using var pdbProvider = DocumentCompilerTestHelpers.GetPortablePdbReaderProvider(result);
             var pdbReader = pdbProvider.GetMetadataReader();
 
             // Verify document exists with correct name and language
@@ -180,7 +198,7 @@ namespace ILAssembler.Tests
         }
 
         [Fact]
-        public void PdbGeneration_LanguageWithVendorAndDocumentType_CreatesValidEmbeddedPdb()
+        public void PdbGeneration_LanguageWithVendorAndDocumentType_CreatesValidPdb()
         {
             string source = $$"""
                 .assembly test { }
@@ -199,17 +217,10 @@ namespace ILAssembler.Tests
                 }
                 """;
 
-            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            CompilationResult result = DocumentCompilerTestHelpers.CompileAndGetResult(source, new Options { Debug = true });
 
-            // Verify debug directory exists with embedded PDB
-            var debugDirectory = pe.ReadDebugDirectory();
-            Assert.NotEmpty(debugDirectory);
-
-            var embeddedPdbEntry = debugDirectory.FirstOrDefault(e => e.Type == DebugDirectoryEntryType.EmbeddedPortablePdb);
-            Assert.NotEqual(default, embeddedPdbEntry);
-
-            // Read the embedded PDB and verify contents
-            var pdbProvider = pe.ReadEmbeddedPortablePdbDebugDirectoryData(embeddedPdbEntry);
+            // Read the PDB and verify contents
+            using var pdbProvider = DocumentCompilerTestHelpers.GetPortablePdbReaderProvider(result);
             var pdbReader = pdbProvider.GetMetadataReader();
 
             // Verify document exists with correct name and language
@@ -241,12 +252,36 @@ namespace ILAssembler.Tests
                 }
                 """;
 
-            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            CompilationResult result = DocumentCompilerTestHelpers.CompileAndGetResult(source, new Options());
+            using var pe = new PEReader(DocumentCompilerTestHelpers.Serialize(result));
 
-            // Verify no embedded PDB when no debug directives
-            var debugDirectory = pe.ReadDebugDirectory();
-            var embeddedPdbEntry = debugDirectory.FirstOrDefault(e => e.Type == DebugDirectoryEntryType.EmbeddedPortablePdb);
-            Assert.Equal(default, embeddedPdbEntry);
+            // Verify no PDB and no debug directory when no debug directives
+            Assert.Null(result.PortablePdb);
+            Assert.Empty(pe.ReadDebugDirectory());
+        }
+
+        [Fact]
+        public void LineDirective_WithoutDebugOrPdb_ProducesNoPdb()
+        {
+            string source = """
+                .assembly test { }
+                .class public auto ansi beforefieldinit Test
+                {
+                    .method public static void TestMethod() cil managed
+                    {
+                        .line 10 "test.cs"
+                        nop
+                        ret
+                    }
+                }
+                """;
+
+            CompilationResult result = DocumentCompilerTestHelpers.CompileAndGetResult(source, new Options());
+            using var pe = new PEReader(DocumentCompilerTestHelpers.Serialize(result));
+
+            // As in native ilasm, .line alone produces no PDB: only /DEBUG or /PDB does.
+            Assert.Null(result.PortablePdb);
+            Assert.Empty(pe.ReadDebugDirectory());
         }
 
 
@@ -326,12 +361,12 @@ namespace ILAssembler.Tests
                 }
                 """;
 
-            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            CompilationResult result = DocumentCompilerTestHelpers.CompileAndGetResult(source, new Options { Debug = true });
+            using var pe = new PEReader(DocumentCompilerTestHelpers.Serialize(result));
             var reader = pe.GetMetadataReader();
             var methodHandle = reader.MethodDefinitions.Single(handle => reader.GetString(reader.GetMethodDefinition(handle).Name) == "TestMethod");
 
-            var embeddedPdbEntry = pe.ReadDebugDirectory().Single(entry => entry.Type == DebugDirectoryEntryType.EmbeddedPortablePdb);
-            using var pdbProvider = pe.ReadEmbeddedPortablePdbDebugDirectoryData(embeddedPdbEntry);
+            using var pdbProvider = DocumentCompilerTestHelpers.GetPortablePdbReaderProvider(result);
             var pdbReader = pdbProvider.GetMetadataReader();
             var debugHandle = MetadataTokens.MethodDebugInformationHandle(MetadataTokens.GetRowNumber(methodHandle));
             var debugInfo = pdbReader.GetMethodDebugInformation(debugHandle);
@@ -379,14 +414,12 @@ namespace ILAssembler.Tests
                 }
                 """;
 
-            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            CompilationResult result = DocumentCompilerTestHelpers.CompileAndGetResult(source, new Options { Debug = true });
+            using var pe = new PEReader(DocumentCompilerTestHelpers.Serialize(result));
             var reader = pe.GetMetadataReader();
             var methodHandle = reader.MethodDefinitions
                 .Single(handle => reader.GetString(reader.GetMethodDefinition(handle).Name) == "M");
-            var embeddedPdb = Assert.Single(
-                pe.ReadDebugDirectory(),
-                entry => entry.Type == DebugDirectoryEntryType.EmbeddedPortablePdb);
-            using var pdbProvider = pe.ReadEmbeddedPortablePdbDebugDirectoryData(embeddedPdb);
+            using var pdbProvider = DocumentCompilerTestHelpers.GetPortablePdbReaderProvider(result);
             var pdbReader = pdbProvider.GetMetadataReader();
             var debugInformation = pdbReader.GetMethodDebugInformation(
                 MetadataTokens.MethodDebugInformationHandle(MetadataTokens.GetRowNumber(methodHandle)));
@@ -419,11 +452,8 @@ namespace ILAssembler.Tests
                 }
                 """;
 
-            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
-            var embeddedPdb = Assert.Single(
-                pe.ReadDebugDirectory(),
-                entry => entry.Type == DebugDirectoryEntryType.EmbeddedPortablePdb);
-            using var pdbProvider = pe.ReadEmbeddedPortablePdbDebugDirectoryData(embeddedPdb);
+            CompilationResult result = DocumentCompilerTestHelpers.CompileAndGetResult(source, new Options { Debug = true });
+            using var pdbProvider = DocumentCompilerTestHelpers.GetPortablePdbReaderProvider(result);
             var pdbReader = pdbProvider.GetMetadataReader();
             var document = pdbReader.GetDocument(Assert.Single(pdbReader.Documents));
 
@@ -451,11 +481,8 @@ namespace ILAssembler.Tests
                 }
                 """;
 
-            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
-            var embeddedPdb = Assert.Single(
-                pe.ReadDebugDirectory(),
-                entry => entry.Type == DebugDirectoryEntryType.EmbeddedPortablePdb);
-            using var pdbProvider = pe.ReadEmbeddedPortablePdbDebugDirectoryData(embeddedPdb);
+            CompilationResult result = DocumentCompilerTestHelpers.CompileAndGetResult(source, new Options { Debug = true });
+            using var pdbProvider = DocumentCompilerTestHelpers.GetPortablePdbReaderProvider(result);
             var pdbReader = pdbProvider.GetMetadataReader();
             var document = pdbReader.GetDocument(Assert.Single(pdbReader.Documents));
 
@@ -506,10 +533,7 @@ namespace ILAssembler.Tests
             var imageBuilder = new BlobBuilder();
             image!.Serialize(imageBuilder);
             using var pe = new PEReader(imageBuilder.ToImmutableArray());
-            var embeddedPdbEntry = Assert.Single(
-                pe.ReadDebugDirectory(),
-                entry => entry.Type == DebugDirectoryEntryType.EmbeddedPortablePdb);
-            using var pdbProvider = pe.ReadEmbeddedPortablePdbDebugDirectoryData(embeddedPdbEntry);
+            using var pdbProvider = DocumentCompilerTestHelpers.GetPortablePdbReaderProvider(image);
             var pdbReader = pdbProvider.GetMetadataReader();
             var documentNames = pdbReader.Documents
                 .Select(handle => pdbReader.GetString(pdbReader.GetDocument(handle).Name))
@@ -519,6 +543,59 @@ namespace ILAssembler.Tests
             Assert.Contains(documentNames, name => name.Contains("doc1.cs", StringComparison.Ordinal));
             Assert.Contains(documentNames, name => name.Contains("doc2.cs", StringComparison.Ordinal));
             Assert.Equal(pe.GetMetadataReader().MethodDefinitions.Count, pdbReader.MethodDebugInformation.Count);
+        }
+
+        [Fact]
+        public void MultiDocumentCompile_WithDifferentLanguages_PreservesEachPdbDocumentLanguage()
+        {
+            ImmutableArray<SourceText> documents =
+            [
+                new SourceText($$"""
+                    .assembly test { }
+                    .language '{{CSharpLanguageGuid}}'
+                    .class public auto ansi First
+                    {
+                        .method public static void M1() cil managed
+                        {
+                            .line 10 "first.cs"
+                            nop
+                            ret
+                        }
+                    }
+                    """, "first.il"),
+                new SourceText($$"""
+                    .language '{{VisualBasicLanguageGuid}}'
+                    .class public auto ansi Second
+                    {
+                        .method public static void M2() cil managed
+                        {
+                            .line 20 "second.vb"
+                            nop
+                            ret
+                        }
+                    }
+                    """, "second.il"),
+            ];
+
+            DocumentCompiler compiler = new();
+            (ImmutableArray<Diagnostic> diagnostics, CompilationResult? result) = compiler.Compile(
+                documents,
+                _ => throw new InvalidOperationException("Unexpected include"),
+                _ => throw new InvalidOperationException("Unexpected resource"),
+                new Options { Pdb = true });
+
+            Assert.Empty(diagnostics);
+            Assert.NotNull(result);
+
+            using MetadataReaderProvider pdbProvider =
+                DocumentCompilerTestHelpers.GetPortablePdbReaderProvider(result!);
+            MetadataReader pdbReader = pdbProvider.GetMetadataReader();
+            Dictionary<string, Guid> documentLanguages = pdbReader.Documents.ToDictionary(
+                handle => pdbReader.GetString(pdbReader.GetDocument(handle).Name),
+                handle => pdbReader.GetGuid(pdbReader.GetDocument(handle).Language));
+
+            Assert.Equal(Guid.Parse(CSharpLanguageGuid), documentLanguages["first.cs"]);
+            Assert.Equal(Guid.Parse(VisualBasicLanguageGuid), documentLanguages["second.vb"]);
         }
 
         [Fact]
@@ -567,11 +644,8 @@ namespace ILAssembler.Tests
                 .Single(handle => reader.GetString(reader.GetMethodDefinition(handle).Name) == "M1");
             MethodDefinitionHandle secondMethod = reader.MethodDefinitions
                 .Single(handle => reader.GetString(reader.GetMethodDefinition(handle).Name) == "M2");
-            DebugDirectoryEntry embeddedPdb = Assert.Single(
-                pe.ReadDebugDirectory(),
-                entry => entry.Type == DebugDirectoryEntryType.EmbeddedPortablePdb);
             using MetadataReaderProvider pdbProvider =
-                pe.ReadEmbeddedPortablePdbDebugDirectoryData(embeddedPdb);
+                DocumentCompilerTestHelpers.GetPortablePdbReaderProvider(result);
             MetadataReader pdbReader = pdbProvider.GetMetadataReader();
 
             MethodDebugInformation firstDebugInformation = pdbReader.GetMethodDebugInformation(
@@ -619,14 +693,8 @@ namespace ILAssembler.Tests
             Assert.Contains(diagnostics, diagnostic => diagnostic.Severity == DiagnosticSeverity.Error);
             Assert.NotNull(result);
 
-            var image = new BlobBuilder();
-            result!.Serialize(image);
-            using var pe = new PEReader(image.ToImmutableArray());
-            DebugDirectoryEntry embeddedPdb = Assert.Single(
-                pe.ReadDebugDirectory(),
-                entry => entry.Type == DebugDirectoryEntryType.EmbeddedPortablePdb);
             using MetadataReaderProvider pdbProvider =
-                pe.ReadEmbeddedPortablePdbDebugDirectoryData(embeddedPdb);
+                DocumentCompilerTestHelpers.GetPortablePdbReaderProvider(result!);
             MetadataReader pdbReader = pdbProvider.GetMetadataReader();
             Document document = pdbReader.GetDocument(Assert.Single(pdbReader.Documents));
 

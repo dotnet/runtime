@@ -1,14 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
-// File: DispatchInfo.cpp
-//
 
+// File: DispatchInfo.cpp
 //
 // Implementation of helpers used to expose IDispatch
 // and IDispatchEx to COM.
-//
-
 
 #include "common.h"
 
@@ -2255,107 +2251,6 @@ bool DispatchInfo::IsPropertyAccessorVisible(bool fIsSetter, OBJECTREF* pMemberI
     }
 
     return false;
-}
-
-MethodDesc* DispatchInfo::GetFieldInfoMD(BinderMethodID Method, TypeHandle hndFieldInfoType)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END
-
-    MethodDesc *pMD;
-
-    // If the current class is the standard implementation then return the cached method desc
-    if (CoreLibBinder::IsClass(hndFieldInfoType.GetMethodTable(), CLASS__FIELD))
-    {
-        pMD = CoreLibBinder::GetMethod(Method);
-    }
-    else
-    {
-        pMD = MemberLoader::FindMethod(hndFieldInfoType.GetMethodTable(),
-                CoreLibBinder::GetMethodName(Method), CoreLibBinder::GetMethodSig(Method));
-    }
-    _ASSERTE(pMD && "Unable to find specified FieldInfo method");
-
-    // Return the specified method desc.
-    return pMD;
-}
-
-MethodDesc* DispatchInfo::GetPropertyInfoMD(BinderMethodID Method, TypeHandle hndPropInfoType)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END
-
-    MethodDesc *pMD;
-
-    // If the current class is the standard implementation then return the cached method desc if present.
-    if (CoreLibBinder::IsClass(hndPropInfoType.GetMethodTable(), CLASS__PROPERTY))
-    {
-        pMD = CoreLibBinder::GetMethod(Method);
-    }
-    else
-    {
-        pMD = MemberLoader::FindMethod(hndPropInfoType.GetMethodTable(),
-                CoreLibBinder::GetMethodName(Method), CoreLibBinder::GetMethodSig(Method));
-    }
-    _ASSERTE(pMD && "Unable to find specified PropertyInfo method");
-
-    // Return the specified method desc.
-    return pMD;
-}
-
-MethodDesc* DispatchInfo::GetMethodInfoMD(BinderMethodID Method, TypeHandle hndMethodInfoType)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END
-
-    MethodDesc *pMD;
-
-    // If the current class is the standard implementation then return the cached method desc.
-    if (CoreLibBinder::IsClass(hndMethodInfoType.GetMethodTable(), CLASS__METHOD))
-    {
-        pMD = CoreLibBinder::GetMethod(Method);
-    }
-    else
-    {
-        pMD = MemberLoader::FindMethod(hndMethodInfoType.GetMethodTable(),
-                CoreLibBinder::GetMethodName(Method), CoreLibBinder::GetMethodSig(Method));
-    }
-    _ASSERTE(pMD && "Unable to find specified MethodInfo method");
-
-    // Return the specified method desc.
-    return pMD;
-}
-
-MethodDesc* DispatchInfo::GetCustomAttrProviderMD(TypeHandle hndCustomAttrProvider)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    MethodTable *pMT = hndCustomAttrProvider.AsMethodTable();
-    MethodDesc *pMD = pMT->GetMethodDescForInterfaceMethod(CoreLibBinder::GetMethod(METHOD__ICUSTOM_ATTR_PROVIDER__GET_CUSTOM_ATTRIBUTES), TRUE /* throwOnConflict */);
-
-    // Return the specified method desc.
-    return pMD;
 }
 
 // This method synchronizes the DispatchInfo's members with the ones in the method tables type.

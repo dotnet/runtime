@@ -91,7 +91,7 @@ namespace System.Formats.Tar
             set
             {
                 _header._gid = value;
-                _header.SyncNumericExtendedAttribute(TarHeader.PaxEaGid, value, TarHeader.Octal8ByteFieldMaxValue);
+                _header.SyncNumericExtendedAttribute(TarHeader.PaxEaGid, TarHeader.UidGidAsUnsigned(value), TarHeader.Octal8ByteFieldMaxValue);
             }
         }
 
@@ -186,7 +186,7 @@ namespace System.Formats.Tar
             set
             {
                 _header._uid = value;
-                _header.SyncNumericExtendedAttribute(TarHeader.PaxEaUid, value, TarHeader.Octal8ByteFieldMaxValue);
+                _header.SyncNumericExtendedAttribute(TarHeader.PaxEaUid, TarHeader.UidGidAsUnsigned(value), TarHeader.Octal8ByteFieldMaxValue);
             }
         }
 

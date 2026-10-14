@@ -33,6 +33,11 @@ namespace System.Reflection.Context.Virtual
             }
         }
 
+        public override bool HasSameMetadataDefinitionAs(MemberInfo other)
+        {
+            return UnderlyingMethod.HasSameMetadataDefinitionAs(other);
+        }
+
         public override bool Equals([NotNullWhen(true)] object? o)
         {
             return o is InheritedMethodInfo other &&

@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-
 using System;
 using System.Collections.Generic;
 
@@ -11,7 +10,14 @@ public record Location(SourceSpan Span, SourceText Source)
 {
     internal static Location From(Antlr4.Runtime.IToken token, IReadOnlyDictionary<string, SourceText> sourceDocuments)
     {
-        return new Location(GetSourceSpan(token), sourceDocuments[token.TokenSource.InputStream.SourceName]);
+        string sourceName =
+            token.TokenSource?.InputStream?.SourceName ??
+            token.TokenSource?.SourceName ??
+            string.Empty;
+        SourceText source = sourceDocuments.TryGetValue(sourceName, out SourceText? sourceDocument)
+            ? sourceDocument
+            : new SourceText(string.Empty, sourceName);
+        return new Location(GetSourceSpan(token), source);
     }
 
     internal static SourceSpan GetSourceSpan(Antlr4.Runtime.IToken? token)

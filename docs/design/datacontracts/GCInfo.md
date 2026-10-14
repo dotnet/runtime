@@ -4,6 +4,15 @@ This contract is for fetching information related to GCInfo associated with nati
 
 The GCInfo contract has platform specific implementations as GCInfo differs per architecture. With the exception of x86, all platforms have a common encoding scheme with different encoding lengths and normalization functions for data. x86 uses an entirely different scheme which is partially supported by this contract.
 
+WebAssembly uses the common decoder with `Wasm32GcInfoEncoding` traits from
+`src/coreclr/inc/gcinfotypes.h`: code lengths/offsets and stack offsets are
+unscaled, the code-length encoding base is 6, and there is no fixed stack
+parameter scratch area. The platform encoding has no interruptible-range
+count in its fat header (`HAS_INTERRUPTIBLE_RANGES` is false).
+`DecodeInterpreterGCInfo` uses the separate interpreter traits even on
+WebAssembly, including its code-length encoding base of 8 and its
+interruptible-range count field.
+
 ## APIs of contract
 
 ```csharp
@@ -656,6 +665,9 @@ For encodings without interruptible ranges (`HAS_INTERRUPTIBLE_RANGES` is false,
 
 **Slot filtering**: Before reporting any slot, the algorithm checks:
 - **Scratch registers**: Only reported for the active/leaf frame (`ActiveStackFrame` flag).
+  Valid Wasm GC info never contains register slots, so the WebAssembly platform
+  decoder's scratch-register predicate always returns false and asserts in debug
+  builds if called, mirroring the native unsupported-platform fallback.
 - **Scratch stack slots**: Only reported for the active/leaf frame (slots in the outgoing/scratch area).
 - **FP-based-only mode** (`ReportFPBasedSlotsOnly`): Only frame-register-relative stack slots are reported; all register slots and non-frame-relative stack slots are skipped.
 
