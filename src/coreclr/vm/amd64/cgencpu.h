@@ -484,11 +484,24 @@ inline TADDR GetSecondArgReg(CONTEXT *context)
 
 extern "C" void* GetCurrentSP();
 
-// Get Rel32 destination, emit jumpStub if necessary
+// true when the APX jmpabs instruction is available; set by EEJitManager::SetCpuInfo() at startup. A DAC global.
+GVAL_DECL(bool, g_isJmpAbsAvailable);
+
+inline bool IsJmpAbsAvailable()
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    return g_isJmpAbsAvailable;
+}
+
+// Get Rel32 destination, emit jumpStub if necessary. Returns 0 if allocation within range fails.
 INT32 rel32UsingJumpStub(INT32 UNALIGNED * pRel32, PCODE target, MethodDesc *pMethod,
-    LoaderAllocator *pLoaderAllocator = NULL, bool throwOnOutOfMemoryWithinRange = true);
+    LoaderAllocator *pLoaderAllocator = NULL);
 
 void emitBackToBackJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target);
+
+// Emits raw 11-byte jmpabs instruction
+// Caller must ensure IsJmpAbsAvailable() == true.
+void emitJmpAbsJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target);
 
 bool isBackToBackJump(PCODE pCode);
 PCODE decodeBackToBackJump(PCODE pCode);

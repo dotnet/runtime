@@ -2002,8 +2002,9 @@ Determining if a method supports multiple code versions:
         MethodDesc md = _methodDescs[methodDesc.Address];
         if (md.IsEligibleForTieredCompilation)
             return true;
-        // MethodDesc::IsEligibleForReJIT
-        if (_target.Contracts.ReJIT.IsEnabled())
+        // MethodDesc::IsEligibleForReJIT. The ReJIT contract is advertised only with PROFILING_SUPPORTED;
+        // targets without it (wasm) also lack FEATURE_REJIT, so nothing is ReJIT-eligible.
+        if (_target.Contracts.TryGetContract(out IReJIT reJit) && reJit.IsEnabled())
         {
             if (!md.IsIL)
                 return false;

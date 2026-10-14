@@ -1069,5 +1069,530 @@ namespace ILAssembler.Tests
                     .Select(type => reader.GetString(type.Name))
                     .ToArray();
         }
+
+        private static string TypeWithAttribute(string attributeType, string constructor = ".ctor()", string value = "( 01 00 00 00 )") => $$"""
+            .assembly extern mscorlib { }
+            .assembly test { }
+            .class public auto ansi Test extends [mscorlib]System.Object
+            {
+                .custom instance void [mscorlib]{{attributeType}}::{{constructor}} = {{value}}
+            }
+            """;
+
+        private static TypeDefinition GetTestType(MetadataReader reader) =>
+            reader.GetTypeDefinition(reader.TypeDefinitions
+                .Single(handle => reader.GetString(reader.GetTypeDefinition(handle).Name) == "Test"));
+
+        private static (ImmutableArray<Diagnostic> Diagnostics, ImmutableArray<byte> Image)
+            CompileErrorTolerant(string source)
+        {
+            var compiler = new DocumentCompiler();
+            var (diagnostics, result) = compiler.Compile(
+                new SourceText(source, "test.il"),
+                _ => { Assert.Fail("Expected no includes"); return default; },
+                _ => { Assert.Fail("Expected no resources"); return default; },
+                new Options { PseudoAttributes = true, ErrorTolerant = true });
+
+            Assert.NotNull(result);
+            var image = new BlobBuilder();
+            result!.Serialize(image);
+            return (diagnostics, image.ToImmutableArray());
+        }
+
+        public static TheoryData<string, TypeAttributes> PseudoAttributeTypeFlagData { get; } = new()
+        {
+            { "System.Runtime.InteropServices.ComImportAttribute", TypeAttributes.Import },
+            { "System.SerializableAttribute", TypeAttributes.Serializable },
+            { "System.Runtime.CompilerServices.SpecialNameAttribute", TypeAttributes.SpecialName },
+            { "System.Runtime.InteropServices.WindowsRuntime.WindowsRuntimeImportAttribute", TypeAttributes.WindowsRuntime },
+        };
+
+        [Theory]
+        [MemberData(nameof(PseudoAttributeTypeFlagData))]
+        public void PseudoCustomAttribute_OnType_LowersToFlagAndDropsAttribute(string attributeType, TypeAttributes expected)
+        {
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(TypeWithAttribute(attributeType), new Options { PseudoAttributes = true });
+            var reader = pe.GetMetadataReader();
+            var testType = GetTestType(reader);
+
+            Assert.Equal(expected, testType.Attributes & expected);
+            Assert.Empty(testType.GetCustomAttributes());
+        }
+
+        [Theory]
+        [InlineData("System.Runtime.InteropServices.GuidAttribute", ".ctor(string)", "( 01 00 24 30 31 32 33 34 35 36 37 2D 30 31 32 33 2D 30 31 32 33 2D 30 31 32 33 2D 30 30 31 31 32 32 33 33 34 34 35 35 00 00 )")]
+        [InlineData("System.Runtime.InteropServices.InterfaceTypeAttribute", ".ctor(int16)", "( 01 00 01 00 00 00 )")]
+        [InlineData("System.Runtime.InteropServices.InterfaceTypeAttribute", ".ctor(int16)", "( 01 00 03 00 00 00 )")]
+        [InlineData("System.Runtime.InteropServices.ClassInterfaceAttribute", ".ctor(int16)", "( 01 00 02 00 00 00 )")]
+        [InlineData("System.Runtime.InteropServices.GuidAttribute", ".ctor(string)", "( 01 00 04 6E 6F 70 65 00 00 )")]
+        [InlineData("System.Runtime.InteropServices.InterfaceTypeAttribute", ".ctor(int16)", "( 01 00 07 00 00 00 )")]
+        [InlineData("System.Runtime.InteropServices.ClassInterfaceAttribute", ".ctor(int16)", "( 01 00 09 00 00 00 )")]
+        [InlineData("System.Runtime.InteropServices.TypeLibVersionAttribute", ".ctor(int32, int32)", "( 01 00 FF FF FF FF 00 00 00 00 00 00 )")]
+        [InlineData("System.Runtime.InteropServices.ComCompatibleVersionAttribute", ".ctor(int32, int32, int32, int32)", "( 01 00 FF FF FF FF 00 00 00 00 00 00 00 00 00 00 00 00 00 00 )")]
+        [InlineData("System.Security.AllowPartiallyTrustedCallersAttribute", ".ctor()", "( FF FF )")]
+        [InlineData("System.Runtime.InteropServices.GuidAttribute", ".ctor(string)", "( FF FF )")]
+        [InlineData("System.Runtime.InteropServices.GuidAttribute", ".ctor(string)", "( 01 00 24 30 31 32 33 34 35 36 37 2D 30 31 32 33 2D 30 31 32 33 2D 30 31 32 33 2D 30 30 31 31 32 32 33 33 34 34 35 35 )")]
+        public void PseudoCustomAttribute_WithoutMetadataTransform_IsEmittedUnchanged(string attributeType, string constructor, string value)
+        {
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(
+                TypeWithAttribute(attributeType, constructor, value),
+                new Options { PseudoAttributes = true });
+            var reader = pe.GetMetadataReader();
+
+            var attribute = reader.GetCustomAttribute(Assert.Single(GetTestType(reader).GetCustomAttributes()));
+            Assert.Equal(
+                Convert.FromHexString(value.Replace("(", "").Replace(")", "").Replace(" ", "")),
+                reader.GetBlobBytes(attribute.Value));
+        }
+
+        [Fact]
+        public void PseudoCustomAttribute_SerializableOnMethod_ReportsInvalidTarget()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .method public static void M() cil managed
+                    {
+                        .custom instance void [mscorlib]System.SerializableAttribute::.ctor() = ( 01 00 00 00 )
+                        ret
+                    }
+                }
+                """;
+
+            var diagnostics = DocumentCompilerTestHelpers.CompileAndGetDiagnostics(source, new Options { PseudoAttributes = true });
+            var diagnostic = Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticIds.PseudoCustomAttributeInvalidTarget, diagnostic.Id);
+            Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
+        }
+
+        [Theory]
+        [InlineData("( 01 00 00 00 00 00 00 00 )", TypeAttributes.SequentialLayout)]
+        [InlineData("( 01 00 01 00 00 00 00 00 )", TypeAttributes.ExtendedLayout)]
+        [InlineData("( 01 00 02 00 00 00 00 00 )", TypeAttributes.ExplicitLayout)]
+        [InlineData("( 01 00 03 00 00 00 00 00 )", TypeAttributes.AutoLayout)]
+        public void PseudoCustomAttribute_StructLayout_SetsLayoutMask(string value, TypeAttributes expected)
+        {
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(
+                TypeWithAttribute("System.Runtime.InteropServices.StructLayoutAttribute", ".ctor(int32)", value),
+                new Options { PseudoAttributes = true });
+            var reader = pe.GetMetadataReader();
+            var testType = GetTestType(reader);
+
+            Assert.Equal(expected, testType.Attributes & TypeAttributes.LayoutMask);
+            Assert.Empty(testType.GetCustomAttributes());
+        }
+
+        [Fact]
+        public void PseudoCustomAttribute_StructLayout_NamedArgumentsSetClassLayoutAndCharSet()
+        {
+            // LayoutKind.Explicit with Pack = 4, Size = 16 and CharSet = Unicode (3).
+            string value = "( 01 00 02 00 00 00 03 00 53 08 04 50 61 63 6B 04 00 00 00 "
+                + "53 08 04 53 69 7A 65 10 00 00 00 "
+                + "53 55 26 53 79 73 74 65 6D 2E 52 75 6E 74 69 6D 65 2E 49 6E 74 65 72 6F 70 53 65 72 76 69 63 65 73 2E 43 68 61 72 53 65 74 "
+                + "07 43 68 61 72 53 65 74 03 00 00 00 )";
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(
+                TypeWithAttribute("System.Runtime.InteropServices.StructLayoutAttribute", ".ctor(int32)", value),
+                new Options { PseudoAttributes = true });
+            var reader = pe.GetMetadataReader();
+            var testType = GetTestType(reader);
+
+            Assert.Equal(TypeAttributes.ExplicitLayout, testType.Attributes & TypeAttributes.LayoutMask);
+            Assert.Equal(TypeAttributes.UnicodeClass, testType.Attributes & TypeAttributes.StringFormatMask);
+
+            var layout = testType.GetLayout();
+            Assert.Equal(4, layout.PackingSize);
+            Assert.Equal(16, layout.Size);
+            Assert.Empty(testType.GetCustomAttributes());
+        }
+
+        [Theory]
+        [InlineData("01 00 00 00", TypeAttributes.AnsiClass)]
+        [InlineData("02 00 00 00", TypeAttributes.AnsiClass)]
+        [InlineData("03 00 00 00", TypeAttributes.UnicodeClass)]
+        [InlineData("04 00 00 00", TypeAttributes.AutoClass)]
+        public void PseudoCustomAttribute_StructLayoutCharSet_NormalizesNone(string valueBytes, TypeAttributes expected)
+        {
+            string value = "( 01 00 00 00 00 00 01 00 "
+                + "53 55 26 53 79 73 74 65 6D 2E 52 75 6E 74 69 6D 65 2E 49 6E 74 65 72 6F 70 53 65 72 76 69 63 65 73 2E 43 68 61 72 53 65 74 "
+                + $"07 43 68 61 72 53 65 74 {valueBytes} )";
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(
+                TypeWithAttribute("System.Runtime.InteropServices.StructLayoutAttribute", ".ctor(int32)", value),
+                new Options { PseudoAttributes = true });
+            var reader = pe.GetMetadataReader();
+
+            Assert.Equal(expected, GetTestType(reader).Attributes & TypeAttributes.StringFormatMask);
+        }
+
+        [Fact]
+        public void PseudoCustomAttribute_LaterStructLayoutAttributeOverwritesEarlierAttribute()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi sealed Test extends [mscorlib]System.ValueType
+                {
+                    .custom instance void [mscorlib]System.Runtime.InteropServices.StructLayoutAttribute::.ctor(int32) = ( 01 00 00 00 00 00 02 00 53 08 04 50 61 63 6B 04 00 00 00 53 08 04 53 69 7A 65 10 00 00 00 )
+                    .custom instance void [mscorlib]System.Runtime.InteropServices.StructLayoutAttribute::.ctor(int32) = ( 01 00 02 00 00 00 02 00 53 08 04 50 61 63 6B 08 00 00 00 53 08 04 53 69 7A 65 20 00 00 00 )
+                    .field public int32 Value
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options { PseudoAttributes = true });
+            var reader = pe.GetMetadataReader();
+            var testType = GetTestType(reader);
+            var layout = testType.GetLayout();
+
+            Assert.Equal(TypeAttributes.ExplicitLayout, testType.Attributes & TypeAttributes.LayoutMask);
+            Assert.Equal(8, layout.PackingSize);
+            Assert.Equal(32, layout.Size);
+        }
+
+        [Fact]
+        public void PseudoCustomAttribute_InvalidStructLayoutDoesNotPartiallyOverwriteEarlierAttribute()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi sealed Test extends [mscorlib]System.ValueType
+                {
+                    .custom instance void [mscorlib]System.Runtime.InteropServices.StructLayoutAttribute::.ctor(int32) = ( 01 00 00 00 00 00 03 00 53 08 04 50 61 63 6B 04 00 00 00 53 08 04 53 69 7A 65 10 00 00 00 53 55 26 53 79 73 74 65 6D 2E 52 75 6E 74 69 6D 65 2E 49 6E 74 65 72 6F 70 53 65 72 76 69 63 65 73 2E 43 68 61 72 53 65 74 07 43 68 61 72 53 65 74 03 00 00 00 )
+                    .custom instance void [mscorlib]System.Runtime.InteropServices.StructLayoutAttribute::.ctor(int32) = ( 01 00 02 00 00 00 02 00 53 08 04 50 61 63 6B 08 00 00 00 53 55 26 53 79 73 74 65 6D 2E 52 75 6E 74 69 6D 65 2E 49 6E 74 65 72 6F 70 53 65 72 76 69 63 65 73 2E 43 68 61 72 53 65 74 07 43 68 61 72 53 65 74 05 00 00 00 )
+                    .field public int32 Value
+                }
+                """;
+
+            var (diagnostics, image) = CompileErrorTolerant(source);
+            var diagnostic = Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticIds.PseudoCustomAttributeInvalidValue, diagnostic.Id);
+
+            using var pe = new PEReader(image);
+            var reader = pe.GetMetadataReader();
+            var testType = GetTestType(reader);
+            var layout = testType.GetLayout();
+
+            Assert.Equal(TypeAttributes.SequentialLayout, testType.Attributes & TypeAttributes.LayoutMask);
+            Assert.Equal(TypeAttributes.UnicodeClass, testType.Attributes & TypeAttributes.StringFormatMask);
+            Assert.Equal(4, layout.PackingSize);
+            Assert.Equal(16, layout.Size);
+        }
+
+        [Fact]
+        public void PseudoCustomAttribute_DynamicSecurityMethod_SetsRequireSecObjectAndIsDropped()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .method public static void M() cil managed
+                    {
+                        .custom instance void [mscorlib]System.Security.DynamicSecurityMethodAttribute::.ctor() = ( 01 00 00 00 )
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options { PseudoAttributes = true });
+            var reader = pe.GetMetadataReader();
+            var method = reader.MethodDefinitions
+                .Select(reader.GetMethodDefinition)
+                .Single(definition => reader.GetString(definition.Name) == "M");
+
+            Assert.Equal(MethodAttributes.RequireSecObject, method.Attributes & MethodAttributes.RequireSecObject);
+            Assert.Empty(method.GetCustomAttributes());
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void PseudoCustomAttribute_SuppressUnmanagedCodeSecurity_SetsHasSecurityAndIsKept(bool onType)
+        {
+            string attribute = ".custom instance void [mscorlib]System.Security.SuppressUnmanagedCodeSecurityAttribute::.ctor() = ( 01 00 00 00 )";
+            string source = onType
+                ? $$"""
+                    .assembly extern mscorlib { }
+                    .assembly test { }
+                    .class public auto ansi Test extends [mscorlib]System.Object
+                    {
+                        {{attribute}}
+                    }
+                    """
+                : $$"""
+                    .assembly extern mscorlib { }
+                    .assembly test { }
+                    .class public auto ansi Test extends [mscorlib]System.Object
+                    {
+                        .method public static void M() cil managed
+                        {
+                            {{attribute}}
+                            ret
+                        }
+                    }
+                    """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options { PseudoAttributes = true });
+            var reader = pe.GetMetadataReader();
+
+            if (onType)
+            {
+                var testType = GetTestType(reader);
+                Assert.Equal(TypeAttributes.HasSecurity, testType.Attributes & TypeAttributes.HasSecurity);
+                Assert.Single(testType.GetCustomAttributes());
+            }
+            else
+            {
+                var method = reader.MethodDefinitions
+                    .Select(reader.GetMethodDefinition)
+                    .Single(definition => reader.GetString(definition.Name) == "M");
+                Assert.Equal(MethodAttributes.HasSecurity, method.Attributes & MethodAttributes.HasSecurity);
+                Assert.Single(method.GetCustomAttributes());
+            }
+        }
+
+        [Theory]
+        [InlineData("System.Security.DynamicSecurityMethodAttribute")]
+        [InlineData("System.Security.SuppressUnmanagedCodeSecurityAttribute")]
+        public void PseudoCustomAttribute_SecurityAttributeOnField_ReportsInvalidTarget(string attributeType)
+        {
+            string source = $$"""
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .field public int32 Value
+                    .custom instance void [mscorlib]{{attributeType}}::.ctor() = ( FF FF DE AD )
+                }
+                """;
+
+            var diagnostics = DocumentCompilerTestHelpers.CompileAndGetDiagnostics(source, new Options { PseudoAttributes = true });
+            Assert.Equal(DiagnosticIds.PseudoCustomAttributeInvalidTarget, Assert.Single(diagnostics).Id);
+        }
+
+        [Fact]
+        public void PseudoCustomAttribute_DynamicSecurityMethodOnType_ReportsInvalidTarget()
+        {
+            var diagnostics = DocumentCompilerTestHelpers.CompileAndGetDiagnostics(
+                TypeWithAttribute("System.Security.DynamicSecurityMethodAttribute"),
+                new Options { PseudoAttributes = true });
+
+            Assert.Equal(DiagnosticIds.PseudoCustomAttributeInvalidTarget, Assert.Single(diagnostics).Id);
+        }
+
+        [Fact]
+        public void PseudoCustomAttribute_UnknownNamedArgument_ReportsDiagnostic()
+        {
+            // StructLayoutAttribute with a named field named "Bogus".
+            string value = "( 01 00 00 00 00 00 01 00 53 08 05 42 6F 67 75 73 01 00 00 00 )";
+
+            var diagnostics = DocumentCompilerTestHelpers.CompileAndGetDiagnostics(
+                TypeWithAttribute("System.Runtime.InteropServices.StructLayoutAttribute", ".ctor(int32)", value),
+                new Options { PseudoAttributes = true });
+
+            var diagnostic = Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticIds.PseudoCustomAttributeUnknownArgument, diagnostic.Id);
+        }
+
+        [Fact]
+        public void PseudoCustomAttribute_StructLayout_ExplicitPackAndSizeDirectivesWin()
+        {
+            // LayoutKind.Sequential with Pack = 16, on a type that also declares .pack and .size.
+            // The native assembler emits the ClassLayout row for the explicit directives in a later
+            // phase than the one that applies the attribute, so the directives take precedence.
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public sequential ansi sealed Test extends [mscorlib]System.ValueType
+                {
+                    .custom instance void [mscorlib]System.Runtime.InteropServices.StructLayoutAttribute::.ctor(int32) = ( 01 00 00 00 00 00 01 00 53 08 04 50 61 63 6B 10 00 00 00 )
+                    .pack 4
+                    .size 32
+                    .field public int32 Value
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options { PseudoAttributes = true });
+            var reader = pe.GetMetadataReader();
+            var layout = GetTestType(reader).GetLayout();
+
+            Assert.Equal(4, layout.PackingSize);
+            Assert.Equal(32, layout.Size);
+        }
+
+        [Fact]
+        public void PseudoCustomAttribute_ModuleScopedOwnerDoesNotResolveToCurrentModule()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .module extern Other.netmodule
+                .class public auto ansi Contoso.External extends [mscorlib]System.Object
+                {
+                }
+                .custom (class [.module Other.netmodule]Contoso.External) instance void [mscorlib]System.SerializableAttribute::.ctor() = ( 01 00 00 00 )
+                """;
+
+            var (diagnostics, image) = CompileErrorTolerant(source);
+            var diagnostic = Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticIds.PseudoCustomAttributeInvalidTarget, diagnostic.Id);
+
+            using var pe = new PEReader(image);
+            var reader = pe.GetMetadataReader();
+            var localType = reader.GetTypeDefinition(reader.TypeDefinitions
+                .Single(handle => reader.GetString(reader.GetTypeDefinition(handle).Name) == "External"));
+
+            Assert.Equal(default, localType.Attributes & TypeAttributes.Serializable);
+            Assert.Equal(0, reader.GetTableRowCount(TableIndex.CustomAttribute));
+        }
+
+        [Fact]
+        public void PseudoCustomAttribute_NonPseudoAttribute_IsStillEmitted()
+        {
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(
+                TypeWithAttribute("System.ObsoleteAttribute"),
+                new Options { PseudoAttributes = true });
+            var reader = pe.GetMetadataReader();
+
+            Assert.Single(GetTestType(reader).GetCustomAttributes());
+        }
+
+        [Fact]
+        public void PseudoCustomAttribute_LoweredAttribute_DoesNotShiftRemainingAttributeOwners()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi First extends [mscorlib]System.Object
+                {
+                    .custom instance void [mscorlib]System.ObsoleteAttribute::.ctor() = ( 01 00 00 00 )
+                    .custom instance void [mscorlib]System.SerializableAttribute::.ctor() = ( 01 00 00 00 )
+                }
+                .class public auto ansi Second extends [mscorlib]System.Object
+                {
+                    .custom instance void [mscorlib]System.ObsoleteAttribute::.ctor() = ( 01 00 00 00 )
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options { PseudoAttributes = true });
+            var reader = pe.GetMetadataReader();
+
+            foreach (string typeName in new[] { "First", "Second" })
+            {
+                var typeDefinition = reader.GetTypeDefinition(reader.TypeDefinitions
+                    .Single(handle => reader.GetString(reader.GetTypeDefinition(handle).Name) == typeName));
+                var attribute = reader.GetCustomAttribute(Assert.Single(typeDefinition.GetCustomAttributes()));
+                var constructor = reader.GetMemberReference((MemberReferenceHandle)attribute.Constructor);
+                var declaringType = reader.GetTypeReference((TypeReferenceHandle)constructor.Parent);
+                Assert.Equal("ObsoleteAttribute", reader.GetString(declaringType.Name));
+            }
+
+            var first = reader.GetTypeDefinition(reader.TypeDefinitions
+                .Single(handle => reader.GetString(reader.GetTypeDefinition(handle).Name) == "First"));
+            Assert.Equal(TypeAttributes.Serializable, first.Attributes & TypeAttributes.Serializable);
+        }
+
+        [Theory]
+        [InlineData("( FF FF DE AD BE EF )")]
+        [InlineData("( )")]
+        [InlineData("( 01 )")]
+        [InlineData("( 01 00 )")]
+        [InlineData("( 01 00 00 )")]
+        [InlineData("( 01 00 00 00 FF )")]
+        [InlineData("( 01 00 01 00 )")]
+        public void PseudoCustomAttribute_ZeroArgDescriptor_MalformedBlobReportsDiagnostic(string value)
+        {
+            var diagnostics = DocumentCompilerTestHelpers.CompileAndGetDiagnostics(
+                TypeWithAttribute("System.SerializableAttribute", ".ctor()", value),
+                new Options { PseudoAttributes = true });
+
+            var diagnostic = Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticIds.PseudoCustomAttributeInvalidBlob, diagnostic.Id);
+            Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
+
+            var (errorTolerantDiagnostics, image) = CompileErrorTolerant(
+                TypeWithAttribute("System.SerializableAttribute", ".ctor()", value));
+            using var pe = new PEReader(image);
+            var reader = pe.GetMetadataReader();
+
+            Assert.Equal(DiagnosticIds.PseudoCustomAttributeInvalidBlob, Assert.Single(errorTolerantDiagnostics).Id);
+            Assert.Equal(default, GetTestType(reader).Attributes & TypeAttributes.Serializable);
+            Assert.Empty(GetTestType(reader).GetCustomAttributes());
+        }
+
+        [Theory]
+        [InlineData("( 01 00 02 00 )")]
+        [InlineData("( 01 00 02 00 00 )")]
+        [InlineData("( 01 00 02 00 00 80 )")]
+        [InlineData("( 01 00 02 00 FF FF )")]
+        [InlineData("( 01 00 02 00 00 00 FF )")]
+        public void PseudoCustomAttribute_InvalidNamedArgumentCountReportsDiagnostic(string value)
+        {
+            var diagnostics = DocumentCompilerTestHelpers.CompileAndGetDiagnostics(
+                TypeWithAttribute(
+                    "System.Runtime.InteropServices.StructLayoutAttribute",
+                    ".ctor(int16)",
+                    value),
+                new Options { PseudoAttributes = true });
+
+            var diagnostic = Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticIds.PseudoCustomAttributeInvalidBlob, diagnostic.Id);
+            Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
+        }
+
+        [Theory]
+        [InlineData("53", "80 08")]
+        [InlineData("80 53", "08")]
+        [InlineData("80 54", "80 08")]
+        public void PseudoCustomAttribute_NamedArgumentTypeUsesBlobReaderEncoding(string kindBytes, string typeBytes)
+        {
+            string value = $"( 01 00 00 00 00 00 01 00 {kindBytes} {typeBytes} 04 50 61 63 6B 04 00 00 00 )";
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(
+                TypeWithAttribute("System.Runtime.InteropServices.StructLayoutAttribute", ".ctor(int32)", value),
+                new Options { PseudoAttributes = true });
+            var reader = pe.GetMetadataReader();
+
+            Assert.Equal(4, GetTestType(reader).GetLayout().PackingSize);
+        }
+
+        [Theory]
+        [InlineData("FF")]
+        [InlineData("81 00")]
+        [InlineData("80")]
+        public void PseudoCustomAttribute_InvalidSerializationTypeReportsInvalidBlob(string typeBytes)
+        {
+            string value = $"( 01 00 00 00 00 00 01 00 53 {typeBytes} )";
+            var diagnostics = DocumentCompilerTestHelpers.CompileAndGetDiagnostics(
+                TypeWithAttribute("System.Runtime.InteropServices.StructLayoutAttribute", ".ctor(int32)", value),
+                new Options { PseudoAttributes = true });
+
+            Assert.Equal(DiagnosticIds.PseudoCustomAttributeInvalidBlob, Assert.Single(diagnostics).Id);
+        }
+
+        [Fact]
+        public void PseudoCustomAttribute_TruncatedFixedArg_ReportsInvalidBlobDiagnostic()
+        {
+            // A blob that is too short to supply all fixed arguments must produce
+            // PseudoCustomAttributeInvalidBlob and no output image in normal mode.
+            // Blob: 01 00 (valid prolog) 01 (1 byte; I4 requires 4 bytes) -- truncated.
+            var compiler = new DocumentCompiler();
+            var (diagnostics, result) = compiler.Compile(
+                new SourceText(
+                    TypeWithAttribute(
+                        "System.Runtime.InteropServices.StructLayoutAttribute",
+                        ".ctor(int32)",
+                        "( 01 00 01 )"),
+                    "test.il"),
+                _ => { Assert.Fail("Expected no includes"); return default; },
+                _ => { Assert.Fail("Expected no resources"); return default; },
+                new Options { PseudoAttributes = true });
+
+            var diagnostic = Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticIds.PseudoCustomAttributeInvalidBlob, diagnostic.Id);
+            Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
+            Assert.Null(result);
+        }
     }
 }

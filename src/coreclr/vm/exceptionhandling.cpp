@@ -3420,6 +3420,13 @@ struct ExtendedEHClauseEnumerator : EH_CLAUSE_ENUMERATOR
     unsigned EHCount;
 };
 
+extern "C" ExInfo* QCALLTYPE GetCurrentExInfo()
+{
+    QCALL_CONTRACT_NO_GC_TRANSITION;
+
+    return (ExInfo*)GetThread()->GetExceptionState()->GetCurrentExceptionTracker();
+}
+
 extern "C" CLR_BOOL QCALLTYPE EHEnumInitFromStackFrameIterator(StackFrameIterator *pFrameIter, IJitManager::MethodRegionInfo* pMethodRegionInfo, EH_CLAUSE_ENUMERATOR * pEHEnum)
 {
     QCALL_CONTRACT_NO_GC_TRANSITION;
