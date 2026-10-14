@@ -257,9 +257,7 @@ void Module::UpdateNewlyAddedTypes()
 
     m_typeCounts = currTypeCounts;
 }
-#endif // PROFILING_SUPPORTED || FEATURE_METADATA_UPDATER
 
-#if defined(PROFILING_SUPPORTED) || defined(FEATURE_METADATA_UPDATER)
 Module::TypeCounts Module::GetCurrentTypeCounts()
 {
     WRAPPER_NO_CONTRACT;

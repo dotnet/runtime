@@ -1417,9 +1417,8 @@ public:
                                               DEBUGGER_INFO_SHIFT_PRIV);
     }
 
-    void UpdateNewlyAddedTypes();
-
 #if defined(PROFILING_SUPPORTED) || defined(FEATURE_METADATA_UPDATER)
+    void UpdateNewlyAddedTypes();
     void CaptureInitialTypeCounts();
 #endif // PROFILING_SUPPORTED || FEATURE_METADATA_UPDATER
 
