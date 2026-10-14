@@ -15,6 +15,11 @@ namespace System.Runtime
         {
         }
 
+        internal static object? GetCurrentException(ExInfo* pExInfo)
+        {
+            return null;
+        }
+
         [RuntimeExport("RhpThrowEx")]
         private static void RhpThrowEx(object exception)
         {
