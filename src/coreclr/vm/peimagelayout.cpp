@@ -178,56 +178,47 @@ PEImageLayout *PEImageLayout::LoadNative(LPCWSTR fullPath)
 #endif // TARGET_WINDOWS
 }
 
-DWORD SectionCharacteristicsToPageProtection(UINT characteristics)
+// Translate section characteristics into the matching VMToOSInterface::MemoryProtection value.
+static VMToOSInterface::MemoryProtection SectionCharacteristicsToMemoryProtection(UINT characteristics)
 {
     _ASSERTE((characteristics & VAL32(IMAGE_SCN_MEM_READ)) != 0);
-    DWORD pageProtection;
 
     if ((characteristics & VAL32(IMAGE_SCN_MEM_WRITE)) != 0)
     {
         if ((characteristics & VAL32(IMAGE_SCN_MEM_EXECUTE)) != 0)
         {
-            pageProtection = PAGE_EXECUTE_READWRITE;
+            return VMToOSInterface::MemoryProtection::ExecuteReadWrite;
         }
         else
         {
-            pageProtection = PAGE_READWRITE;
+            return VMToOSInterface::MemoryProtection::ReadWrite;
         }
     }
     else
     {
         if ((characteristics & VAL32(IMAGE_SCN_MEM_EXECUTE)) != 0)
         {
-            pageProtection = PAGE_EXECUTE_READ;
+            return VMToOSInterface::MemoryProtection::ExecuteRead;
         }
         else
         {
-            pageProtection = PAGE_READONLY;
+            return VMToOSInterface::MemoryProtection::ReadOnly;
         }
     }
-
-    return pageProtection;
 }
 
-// Translate the small subset of Win32 PAGE_* protection constants used by ApplyBaseRelocations
-// (below) into the equivalent VMToOSInterface::MemoryProtection value.
-static VMToOSInterface::MemoryProtection Win32ProtectionToMemoryProtection(DWORD protection)
+// Whether the given protection grants execute access, used to decide whether a region of
+// relocated code needs an instruction cache flush.
+static bool IsExecutableProtection(VMToOSInterface::MemoryProtection protection)
 {
     switch (protection)
     {
-    case PAGE_READONLY:
-        return VMToOSInterface::MemoryProtection::ReadOnly;
-    case PAGE_READWRITE:
-        return VMToOSInterface::MemoryProtection::ReadWrite;
-    case PAGE_WRITECOPY:
-        return VMToOSInterface::MemoryProtection::WriteCopy;
-    case PAGE_EXECUTE_READ:
-        return VMToOSInterface::MemoryProtection::ExecuteRead;
-    case PAGE_EXECUTE_READWRITE:
-        return VMToOSInterface::MemoryProtection::ExecuteReadWrite;
+    case VMToOSInterface::MemoryProtection::Execute:
+    case VMToOSInterface::MemoryProtection::ExecuteRead:
+    case VMToOSInterface::MemoryProtection::ExecuteReadWrite:
+        return true;
     default:
-        _ASSERTE(!"Unsupported page protection requested while applying base relocations");
-        return VMToOSInterface::MemoryProtection::NoAccess;
+        return false;
     }
 }
 
@@ -325,7 +316,8 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
     // Minimize number of calls to VirtualProtect by keeping a whole section unprotected at a time.
     BYTE * pWriteableRegion = NULL;
     SIZE_T cbWriteableRegion = 0;
-    DWORD dwOldProtection = 0;
+    bool hasOldProtection = false;
+    VMToOSInterface::MemoryProtection oldProtection = VMToOSInterface::MemoryProtection::NoAccess;
 
     BYTE * pFlushRegion = NULL;
     SIZE_T cbFlushRegion = 0;
@@ -373,21 +365,18 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
         if (IsPEFormat() && (SIZE_T)(pageAddress - pWriteableRegion) >= cbWriteableRegion)
         {
             // Restore the protection
-            if (dwOldProtection != 0)
+            if (hasOldProtection)
             {
 #if defined(__APPLE__) && defined(HOST_ARM64)
-                BOOL bExecRegion = (dwOldProtection & (PAGE_EXECUTE | PAGE_EXECUTE_READ |
-                    PAGE_EXECUTE_READWRITE | PAGE_EXECUTE_WRITECOPY)) != 0;
-
                 // Disable writing on Apple Silicon
-                if (bExecRegion)
+                if (IsExecutableProtection(oldProtection))
                     PAL_JitWriteProtect(false);
 #else
-                if (!VMToOSInterface::ProtectMemory(pWriteableRegion, cbWriteableRegion,
-                                                     Win32ProtectionToMemoryProtection(dwOldProtection)))
+                if (!VMToOSInterface::ProtectMemory(pWriteableRegion, cbWriteableRegion, oldProtection))
                     ThrowLastError();
 #endif // __APPLE__ && HOST_ARM64
-                dwOldProtection = 0;
+                hasOldProtection = false;
+                oldProtection = VMToOSInterface::MemoryProtection::NoAccess;
             }
 
             USHORT fixup = VAL16(fixups[0]);
@@ -401,7 +390,8 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
             // Unprotect the section if it is not writable
             if (((pSection->Characteristics & VAL32(IMAGE_SCN_MEM_WRITE)) == 0))
             {
-                DWORD dwNewProtection = relocationMustWriteCopy ? PAGE_WRITECOPY : PAGE_READWRITE;
+                VMToOSInterface::MemoryProtection newProtection = relocationMustWriteCopy ?
+                    VMToOSInterface::MemoryProtection::WriteCopy : VMToOSInterface::MemoryProtection::ReadWrite;
 #if defined(TARGET_UNIX)
                 if (((pSection->Characteristics & VAL32(IMAGE_SCN_MEM_EXECUTE)) != 0))
                 {
@@ -411,18 +401,18 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
 #else
                     // On SELinux, we cannot change protection that doesn't have execute access rights
                     // to one that has it, so we need to set the protection to RWX instead of RW
-                    dwNewProtection = PAGE_EXECUTE_READWRITE;
+                    newProtection = VMToOSInterface::MemoryProtection::ExecuteReadWrite;
 #endif
                 }
 #endif // TARGET_UNIX
 #if defined(__APPLE__) && defined(HOST_ARM64)
                 // No-op: writing was already enabled above via PAL_JitWriteProtect.
 #else
-                if (!VMToOSInterface::ProtectMemory(pWriteableRegion, cbWriteableRegion,
-                                                     Win32ProtectionToMemoryProtection(dwNewProtection)))
+                if (!VMToOSInterface::ProtectMemory(pWriteableRegion, cbWriteableRegion, newProtection))
                     ThrowLastError();
 #endif // __APPLE__ && HOST_ARM64
-                dwOldProtection = SectionCharacteristicsToPageProtection(pSection->Characteristics);
+                oldProtection = SectionCharacteristicsToMemoryProtection(pSection->Characteristics);
+                hasOldProtection = true;
             }
         }
 
@@ -468,10 +458,7 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
 
         if (IsPEFormat())
         {
-            BOOL bExecRegion = (dwOldProtection & (PAGE_EXECUTE | PAGE_EXECUTE_READ |
-                PAGE_EXECUTE_READWRITE | PAGE_EXECUTE_WRITECOPY)) != 0;
-
-            if (bExecRegion && pEndAddressToFlush != NULL)
+            if (IsExecutableProtection(oldProtection) && pEndAddressToFlush != NULL)
             {
                 // If the current page is not next to the pending region to flush, flush the current pending region and start a new one
                 if (pageAddress >= pFlushRegion + cbFlushRegion + cbPageSize || pageAddress < pFlushRegion)
@@ -491,19 +478,15 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
     }
     _ASSERTE(dirSize == dirPos || !IsPEFormat());
 
-    if (dwOldProtection != 0)
+    if (hasOldProtection)
     {
 #if defined(__APPLE__) && defined(HOST_ARM64)
-        BOOL bExecRegion = (dwOldProtection & (PAGE_EXECUTE | PAGE_EXECUTE_READ |
-            PAGE_EXECUTE_READWRITE | PAGE_EXECUTE_WRITECOPY)) != 0;
-
         // Disable writing on Apple Silicon
-        if (bExecRegion)
+        if (IsExecutableProtection(oldProtection))
             PAL_JitWriteProtect(false);
 #else
         // Restore the protection
-        if (!VMToOSInterface::ProtectMemory(pWriteableRegion, cbWriteableRegion,
-                                             Win32ProtectionToMemoryProtection(dwOldProtection)))
+        if (!VMToOSInterface::ProtectMemory(pWriteableRegion, cbWriteableRegion, oldProtection))
             ThrowLastError();
 #endif // __APPLE__ && HOST_ARM64
     }
