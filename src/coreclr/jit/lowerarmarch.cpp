@@ -2109,8 +2109,7 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
         //
         // For equality, we test whether this sequence returned zero.
         LIR::Use originalUse;
-        BlockRange().TryGetUse(node, &originalUse);
-        originalUse.AssertIsValid();
+        bool     foundUse = BlockRange().TryGetUse(node, &originalUse);
 
         node->ResetHWIntrinsicId(NI_Sve_CompareNotEqualTo, m_compiler, node->Op(1), node->Op(2));
         node->gtType = TYP_MASK;
@@ -2133,7 +2132,16 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
             BlockRange().InsertAfter(zero, result);
         }
 
-        originalUse.ReplaceWith(result);
+        if (foundUse)
+        {
+            originalUse.ReplaceWith(result);
+        }
+        else
+        {
+            assert(node->IsUnusedValue());
+            node->ClearUnusedValue();
+            result->SetUnusedValue();
+        }
 
         // We've added a few nodes here starting with this mask node, so continue from there.
         return node;
