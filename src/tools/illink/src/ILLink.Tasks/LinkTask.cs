@@ -880,7 +880,9 @@ namespace ILLink.Tasks
 
         private static string Quote(string path)
         {
-            return $"\"{path.TrimEnd('\\')}\"";
+            // Double trailing backslashes so they do not escape the closing quote.
+            int trailingBackslashes = path.Length - path.TrimEnd('\\').Length;
+            return $"\"{path}{new string('\\', trailingBackslashes)}\"";
         }
 
         protected override string GenerateCommandLineCommands()

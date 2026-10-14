@@ -212,6 +212,23 @@ namespace ILLink.Tasks.Tests
         }
 
         [Theory]
+        [InlineData(@"C:\")]
+        [InlineData(@"C:\path with spaces\")]
+        [InlineData(@"\\server\share\")]
+        [InlineData(@"\")]
+        [InlineData(@"C:\directory\\")]
+        public void QuotedPathsPreserveTrailingBackslashes(string path)
+        {
+            MethodInfo quote = typeof(ILLink).GetMethod("Quote", BindingFlags.Static | BindingFlags.NonPublic);
+            string quotedPath = (string)quote.Invoke(null, new object[] { path });
+            using var response = new StringReader("-d " + quotedPath + "\n--ignore-link-attributes true");
+            var arguments = new Queue<string>();
+            Driver.ParseResponseFile(response, arguments);
+
+            Assert.Equal(new[] { "-d", path, "--ignore-link-attributes", "true" }, arguments);
+        }
+
+        [Theory]
         [InlineData(new object[] { new string[] { "combined_output.xml" } })]
         public void TestRootDescriptorFiles(string[] rootDescriptorFiles)
         {
