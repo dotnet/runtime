@@ -1383,7 +1383,8 @@ OBJECTREF EECodeManager::GetInstance( PREGDISPLAY    pContext,
 
     return NULL;
 #else // !USE_GC_INFO_DECODER
-    PTR_VOID token = EECodeManager::GetExactGenericsToken(pContext, pCodeInfo);
+    PTR_VOID token = NULL;
+    GetParamContextType(pContext, pCodeInfo, &token);
 
     OBJECTREF oRef = ObjectToOBJECTREF(PTR_Object(dac_cast<TADDR>(token)));
     VALIDATEOBJECTREF(oRef);
@@ -1392,9 +1393,20 @@ OBJECTREF EECodeManager::GetInstance( PREGDISPLAY    pContext,
 }
 
 GenericParamContextType EECodeManager::GetParamContextType(PREGDISPLAY     pContext,
-                                                           EECodeInfo *    pCodeInfo)
+                                                           EECodeInfo *    pCodeInfo,
+                                                           PTR_VOID *      ppGenericsToken /*= NULL*/,
+                                                           bool *          pIsInProlog /*= NULL*/)
 {
     LIMITED_METHOD_DAC_CONTRACT;
+
+    if (ppGenericsToken != NULL)
+    {
+        *ppGenericsToken = NULL;
+    }
+    if (pIsInProlog != NULL)
+    {
+        *pIsInProlog = false;
+    }
 
 #ifndef USE_GC_INFO_DECODER
     /* Extract the necessary information from the info block header */
@@ -1403,11 +1415,23 @@ GenericParamContextType EECodeManager::GetParamContextType(PREGDISPLAY     pCont
     hdrInfo    *hdrInfoBody;
     PTR_CBYTE   table = pCodeInfo->DecodeGCHdrInfo(&hdrInfoBody);
 
-    if (!hdrInfoBody->genericsContext ||
-        hdrInfoBody->prologOffs != hdrInfo::NOT_IN_PROLOG ||
-        hdrInfoBody->epilogOffs != hdrInfo::NOT_IN_EPILOG)
+    bool inPrologOrEpilog = (hdrInfoBody->prologOffs != hdrInfo::NOT_IN_PROLOG ||
+                             hdrInfoBody->epilogOffs != hdrInfo::NOT_IN_EPILOG);
+    if (pIsInProlog != NULL)
+    {
+        *pIsInProlog = inPrologOrEpilog;
+    }
+
+    if (!hdrInfoBody->genericsContext || inPrologOrEpilog)
     {
         return GENERIC_PARAM_CONTEXT_NONE;
+    }
+
+    if (ppGenericsToken != NULL)
+    {
+        TADDR fp = GetRegdisplayFP(pContext);
+        TADDR taParamTypeArg = *PTR_TADDR(fp - GetParamTypeArgOffset(hdrInfoBody));
+        *ppGenericsToken = PTR_VOID(taParamTypeArg);
     }
 
     if (hdrInfoBody->genericsContextIsMethodDesc)
@@ -1423,21 +1447,42 @@ GenericParamContextType EECodeManager::GetParamContextType(PREGDISPLAY     pCont
 
     GcInfoDecoder gcInfoDecoder(
             gcInfoToken,
-            GcInfoDecoderFlags (DECODE_GENERICS_INST_CONTEXT)
+            GcInfoDecoderFlags (DECODE_GENERICS_INST_CONTEXT | DECODE_PROLOG_LENGTH)
             );
 
     INT32 spOffsetGenericsContext = gcInfoDecoder.GetGenericsInstContextStackSlot();
     if (spOffsetGenericsContext != NO_GENERICS_INST_CONTEXT)
     {
+        bool isInProlog = (pCodeInfo->GetRelOffset() < gcInfoDecoder.GetPrologSize());
+        if (pIsInProlog != NULL)
+        {
+            *pIsInProlog = isInProlog;
+        }
+
+        GenericParamContextType paramContextType;
         if (gcInfoDecoder.HasMethodDescGenericsInstContext())
         {
-            return GENERIC_PARAM_CONTEXT_METHODDESC;
+            paramContextType = GENERIC_PARAM_CONTEXT_METHODDESC;
         }
         else if (gcInfoDecoder.HasMethodTableGenericsInstContext())
         {
-            return GENERIC_PARAM_CONTEXT_METHODTABLE;
+            paramContextType = GENERIC_PARAM_CONTEXT_METHODTABLE;
         }
-        return GENERIC_PARAM_CONTEXT_THIS;
+        else
+        {
+            paramContextType = GENERIC_PARAM_CONTEXT_THIS;
+        }
+
+        if (ppGenericsToken != NULL && !(pIsInProlog != NULL && isInProlog))
+        {
+            TADDR baseStackSlot = gcInfoDecoder.HasStackBaseRegister()
+                ? GetFP(pContext->pCurrentContext)
+                : GetSP(pContext->pCurrentContext);
+            TADDR taSlot = (TADDR)(spOffsetGenericsContext + baseStackSlot);
+            *ppGenericsToken = PTR_VOID(*PTR_TADDR(taSlot));
+        }
+
+        return paramContextType;
     }
     return GENERIC_PARAM_CONTEXT_NONE;
 #endif // USE_GC_INFO_DECODER
@@ -1473,26 +1518,14 @@ PTR_VOID EECodeManager::GetParamTypeArg(PREGDISPLAY     pContext,
     return PTR_VOID(taParamTypeArg);
 
 #else // !USE_GC_INFO_DECODER
-    return EECodeManager::GetExactGenericsToken(pContext, pCodeInfo);
+    PTR_VOID token = NULL;
+    GetParamContextType(pContext, pCodeInfo, &token);
+    return token;
 
 #endif // USE_GC_INFO_DECODER
 }
 
 #if defined(USE_GC_INFO_DECODER)
-/*
-    Returns the generics token.  This is used by GetInstance() and GetParamTypeArg() on WIN64.
-*/
-//static
-PTR_VOID EECodeManager::GetExactGenericsToken(PREGDISPLAY     pContext,
-                                              EECodeInfo *    pCodeInfo)
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    return EECodeManager::GetExactGenericsToken(GetSP(pContext->pCurrentContext),
-                                                GetFP(pContext->pCurrentContext),
-                                                pCodeInfo);
-}
-
 //static
 PTR_VOID EECodeManager::GetExactGenericsToken(TADDR           sp,
                                               TADDR           fp,
@@ -2341,8 +2374,19 @@ PTR_VOID InterpreterCodeManager::GetParamTypeArg(PREGDISPLAY     pContext,
 }
 
 GenericParamContextType InterpreterCodeManager::GetParamContextType(PREGDISPLAY     pContext,
-                                            EECodeInfo *    pCodeInfo)
+                                                                    EECodeInfo *    pCodeInfo,
+                                                                    PTR_VOID *      ppGenericsToken /*= NULL*/,
+                                                                    bool *          pIsInProlog /*= NULL*/)
 {
+    if (ppGenericsToken != NULL)
+    {
+        *ppGenericsToken = NULL;
+    }
+    if (pIsInProlog != NULL)
+    {
+        *pIsInProlog = false;
+    }
+
     MethodDesc *pMD = pCodeInfo->GetMethodDesc();
     GenericParamContextType paramContextType = GENERIC_PARAM_CONTEXT_NONE;
 
@@ -2352,6 +2396,33 @@ GenericParamContextType InterpreterCodeManager::GetParamContextType(PREGDISPLAY 
         paramContextType = GENERIC_PARAM_CONTEXT_METHODTABLE;
     else if (pMD->AcquiresInstMethodTableFromThis())
         paramContextType = GENERIC_PARAM_CONTEXT_THIS;
+
+    if (paramContextType != GENERIC_PARAM_CONTEXT_NONE && (ppGenericsToken != NULL || pIsInProlog != NULL))
+    {
+        GCInfoToken gcInfoToken = pCodeInfo->GetGCInfoToken();
+        InterpreterGcInfoDecoder gcInfoDecoder(
+                gcInfoToken,
+                GcInfoDecoderFlags (DECODE_GENERICS_INST_CONTEXT | DECODE_PROLOG_LENGTH)
+                );
+
+        bool isInProlog = (pCodeInfo->GetRelOffset() < gcInfoDecoder.GetPrologSize());
+        if (pIsInProlog != NULL)
+        {
+            *pIsInProlog = isInProlog;
+        }
+
+        if (ppGenericsToken != NULL && !(pIsInProlog != NULL && isInProlog))
+        {
+            INT32 spOffsetGenericsContext = gcInfoDecoder.GetGenericsInstContextStackSlot();
+            if (spOffsetGenericsContext != NO_GENERICS_INST_CONTEXT)
+            {
+                PTR_InterpMethodContextFrame frame = dac_cast<PTR_InterpMethodContextFrame>(GetSP(pContext->pCurrentContext));
+                TADDR baseStackSlot = dac_cast<TADDR>((uintptr_t)frame->pStack);
+                TADDR taSlot = (TADDR)(spOffsetGenericsContext + baseStackSlot);
+                *ppGenericsToken = PTR_VOID(*PTR_TADDR(taSlot));
+            }
+        }
+    }
 
     return paramContextType;
 }

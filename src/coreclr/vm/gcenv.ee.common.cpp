@@ -86,65 +86,6 @@ unsigned FindFirstInterruptiblePoint(CrawlFrame* pCF, unsigned offs, unsigned en
 
 #endif
 
-//-----------------------------------------------------------------------------
-// Determine whether we should report the generic parameter context
-//
-// This is meant to detect following situations:
-//
-// When a ThreadAbortException is raised
-// in the prolog of a managed method, before the location for the generics
-// context has been initialized; when such a TAE is raised, we are open to a
-// race with the GC (e.g. while creating the managed object for the TAE).
-// The GC would cause a stack walk, and if we report the stack location for
-// the generic param context at this time we'd crash.
-// The long term solution is to avoid raising TAEs in any non-GC safe points,
-// and to additionally ensure that we do not expose the runtime to TAE
-// starvation.
-//
-// When we're in the process of resolution of an interface method and the
-// interface method happens to have a default implementation. Normally,
-// such methods require a generic context, but since we didn't resolve the
-// method to an implementation yet, we don't have the right context (in fact,
-// there's no context provided by the caller).
-// See code:getMethodSigInternal
-//
-bool SafeToReportGenericParamContext(CrawlFrame* pCF)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    if (!pCF->IsFrameless() && pCF->GetFrame()->GetFrameIdentifier() == FrameIdentifier::StubDispatchFrame)
-    {
-        return !(dac_cast<PTR_StubDispatchFrame>(pCF->GetFrame()))->SuppressParamTypeArg();
-    }
-
-    if (!pCF->IsFrameless() || !(pCF->IsActiveFrame() || pCF->IsInterrupted()))
-    {
-        return true;
-    }
-
-#ifndef USE_GC_INFO_DECODER
-
-    ICodeManager * pEECM = pCF->GetCodeManager();
-    if (pEECM != NULL && pEECM->IsInPrologOrEpilog(pCF->GetRelOffset(), pCF->GetGCInfoToken(), NULL))
-    {
-        return false;
-    }
-
-#else  // USE_GC_INFO_DECODER
-
-    GcInfoDecoder gcInfoDecoder(pCF->GetGCInfoToken(),
-            DECODE_PROLOG_LENGTH);
-    UINT32 prologLength = gcInfoDecoder.GetPrologSize();
-    if (pCF->GetRelOffset() < prologLength)
-    {
-        return false;
-    }
-
-#endif // USE_GC_INFO_DECODER
-
-    return true;
-}
-
 /*
  * CheckDoubleReporting()
  *
@@ -383,23 +324,38 @@ StackWalkAction GcStackCrawlCallBack(CrawlFrame* pCF, VOID* pData)
             if (fReportGCReferences)
             {
                 GenericParamContextType paramContextType = GENERIC_PARAM_CONTEXT_NONE;
+                PTR_VOID paramTypeArg = NULL;
+                bool safeToReport = true;
 
                 if (pCF->IsFrameless())
                 {
-                    if (pMD->AcquiresInstMethodTableFromThis() ||
-                        pMD->RequiresInstMethodTableArg() ||
+                    if (pMD->RequiresInstMethodTableArg() ||
                         pMD->RequiresInstMethodDescArg())
                     {
+                        bool isInProlog = false;
+                        bool checkProlog = pCF->IsActiveFrame() || pCF->IsInterrupted();
                         // We need to grab the Context Type here because there are cases where the MethodDesc
                         // is shared, and thus indicates there should be an instantion argument, but the JIT
                         // was still allowed to optimize it away and we won't grab it below because we're not
                         // reporting any references from this frame.
-                        paramContextType = pCF->GetCodeManager()->GetParamContextType(pCF->GetRegisterSet(), pCF->GetCodeInfo());
+                        paramContextType = pCF->GetCodeManager()->GetParamContextType(
+                            pCF->GetRegisterSet(),
+                            pCF->GetCodeInfo(),
+                            &paramTypeArg,
+                            checkProlog ? &isInProlog : NULL);
+                        safeToReport = !isInProlog;
+                    }
+#ifdef _DEBUG
+                    else if (pMD->AcquiresInstMethodTableFromThis())
+                    {
+                        GenericParamContextType debugContextType = pCF->GetCodeManager()->GetParamContextType(pCF->GetRegisterSet(), pCF->GetCodeInfo());
+                        _ASSERTE(debugContextType == GENERIC_PARAM_CONTEXT_NONE || debugContextType == GENERIC_PARAM_CONTEXT_THIS);
                     }
                     else
                     {
                         _ASSERTE(pCF->GetCodeManager()->GetParamContextType(pCF->GetRegisterSet(), pCF->GetCodeInfo()) == GENERIC_PARAM_CONTEXT_NONE);
                     }
+#endif // _DEBUG
                 }
                 else
                 {
@@ -407,15 +363,28 @@ StackWalkAction GcStackCrawlCallBack(CrawlFrame* pCF, VOID* pData)
                         paramContextType = GENERIC_PARAM_CONTEXT_METHODDESC;
                     else if (pMD->RequiresInstMethodTableArg())
                         paramContextType = GENERIC_PARAM_CONTEXT_METHODTABLE;
+
+                    if (paramContextType != GENERIC_PARAM_CONTEXT_NONE)
+                    {
+                        if (pCF->GetFrame()->GetFrameIdentifier() == FrameIdentifier::StubDispatchFrame &&
+                            (dac_cast<PTR_StubDispatchFrame>(pCF->GetFrame()))->SuppressParamTypeArg())
+                        {
+                            safeToReport = false;
+                        }
+                        else
+                        {
+                            paramTypeArg = pCF->GetParamTypeArg();
+                        }
+                    }
                 }
 
-                if (paramContextType != GENERIC_PARAM_CONTEXT_NONE && SafeToReportGenericParamContext(pCF))
+                if (paramContextType != GENERIC_PARAM_CONTEXT_NONE && safeToReport)
                 {
                     // Handle the case where the method is a static shared generic method and we need to keep the type
                     // of the generic parameters alive
                     if (paramContextType == GENERIC_PARAM_CONTEXT_METHODDESC)
                     {
-                        MethodDesc *pMDReal = dac_cast<PTR_MethodDesc>(pCF->GetParamTypeArg());
+                        MethodDesc *pMDReal = dac_cast<PTR_MethodDesc>(paramTypeArg);
                         // Async methods may be in a state when the context is not yet restored from continuation.
                         // We will allow that. The context is reachable via continuation in such case.
                         _ASSERTE((pMDReal != NULL) || !pCF->IsFrameless() || pMD->IsAsyncMethod());
@@ -426,7 +395,7 @@ StackWalkAction GcStackCrawlCallBack(CrawlFrame* pCF, VOID* pData)
                     }
                     else if (paramContextType == GENERIC_PARAM_CONTEXT_METHODTABLE)
                     {
-                        MethodTable *pMTReal = dac_cast<PTR_MethodTable>(pCF->GetParamTypeArg());
+                        MethodTable *pMTReal = dac_cast<PTR_MethodTable>(paramTypeArg);
                         // Async methods may be in a state when the context is not yet restored from continuation.
                         // We will allow that. The context is reachable via continuation in such case.
                         _ASSERTE((pMTReal != NULL) || !pCF->IsFrameless() || pMD->IsAsyncMethod());

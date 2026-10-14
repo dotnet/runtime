@@ -3356,6 +3356,4 @@ inline TADDR InterpreterJitManager::JitTokenToStartAddress(const METHODTOKEN& Me
 
 #include "codeman.inl"
 
-bool SafeToReportGenericParamContext(CrawlFrame* pCF);
-
 #endif // !__CODEMAN_HPP__

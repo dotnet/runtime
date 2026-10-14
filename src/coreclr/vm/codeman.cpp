@@ -3610,9 +3610,16 @@ TypeHandle InterpreterJitManager::ResolveEHClause(EE_ILEXCEPTION_CLAUSE* pEHClau
     {
         _ASSERTE(!HasCachedTypeHandle(pEHClause));
 
-        GenericParamContextType paramContextType = pCf->GetCodeManager()->GetParamContextType(pCf->GetRegisterSet(), pCf->GetCodeInfo());
-        _ASSERTE(SafeToReportGenericParamContext(pCf));
-        if (SafeToReportGenericParamContext(pCf))
+        PTR_VOID genericsToken = NULL;
+        bool isInProlog = false;
+        bool checkProlog = pCf->IsActiveFrame() || pCf->IsInterrupted();
+        GenericParamContextType paramContextType = pCf->GetCodeManager()->GetParamContextType(
+            pCf->GetRegisterSet(),
+            pCf->GetCodeInfo(),
+            &genericsToken,
+            checkProlog ? &isInProlog : NULL);
+        _ASSERTE(!isInProlog);
+        if (!isInProlog)
         {
             MethodDesc *pMD = pCf->GetFunction();
             TypeHandle declaringType = (TypeHandle)pMD->GetMethodTable();
@@ -3621,12 +3628,12 @@ TypeHandle InterpreterJitManager::ResolveEHClause(EE_ILEXCEPTION_CLAUSE* pEHClau
             // of the generic parameters alive
             if (paramContextType == GENERIC_PARAM_CONTEXT_METHODDESC)
             {
-                pMD = dac_cast<PTR_MethodDesc>(pCf->GetParamTypeArg());
+                pMD = dac_cast<PTR_MethodDesc>(genericsToken);
                 declaringType = (TypeHandle)pMD->GetMethodTable();
             }
             else if (paramContextType == GENERIC_PARAM_CONTEXT_METHODTABLE)
             {
-                declaringType = (TypeHandle)dac_cast<PTR_MethodTable>(pCf->GetParamTypeArg());
+                declaringType = (TypeHandle)dac_cast<PTR_MethodTable>(genericsToken);
             }
             else
             {
