@@ -9465,12 +9465,25 @@ void emitter::emitIns_R_ARX(
     assert(!CodeGen::instIsFP(ins) && (EA_SIZE(attr) <= EA_64BYTE) && (reg != REG_NA));
     noway_assert(emitVerifyEncodable(ins, EA_SIZE(attr), reg));
 
-    if ((ins == INS_lea) && (reg == base) && (index == REG_NA) && (disp == 0))
+    if ((ins == INS_lea) && (index == REG_NA) && (disp == 0))
     {
-        // Maybe the emitter is not the common place for this optimization, but it's a better choke point
-        // for all the emitIns(ins, tree), we would have to be analyzing at each call site
-        //
-        return;
+        if (reg == base)
+        {
+            return;
+        }
+
+        if (base != REG_NA)
+        {
+#if defined(TARGET_AMD64)
+            if ((reg != REG_SPBASE) || (base != REG_FPBASE))
+#endif
+            {
+                // AMD64 epilogs require LEA to restore RSP from RBP.
+                // A zero-offset, base-only LEA is otherwise just a register move.
+                emitIns_Mov(INS_mov, attr, reg, base, /* canSkip */ true);
+                return;
+            }
+        }
     }
 
     UNATIVE_OFFSET sz;
