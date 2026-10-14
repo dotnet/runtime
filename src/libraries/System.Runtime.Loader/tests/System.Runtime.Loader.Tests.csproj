@@ -10,7 +10,7 @@
     <!-- Also ask Mono to use make sequence points even without a debugger attached to match "dotnet watch" behavior -->
     <WasmXHarnessMonoArgs Condition="'$(TargetOS)' == 'browser'">--setenv=DOTNET_MODIFIABLE_ASSEMBLIES=debug --setenv=MONO_DEBUG=gen-seq-points</WasmXHarnessMonoArgs>
 
-    <!-- CoreCLR does not build the metadata updater for wasm, so ApplyUpdate tests are excluded for CoreCLR on WASI below. -->
+    <!-- CoreCLR does not build the metadata updater for WASI, so its ApplyUpdate tests are excluded below. -->
     <!-- disabled due to https://github.com/dotnet/runtime/issues/65672 -->
     <XUnitUseRandomizedTestOrderer>false</XUnitUseRandomizedTestOrderer>
     <MetadataUpdaterSupport>true</MetadataUpdaterSupport>
@@ -19,8 +19,8 @@
     <EnableAotAnalyzer>false</EnableAotAnalyzer>
   </PropertyGroup>
 
-  <!-- ActiveIssue https://github.com/dotnet/runtime/issues/114526 deadlocks on linux CI -->
-  <ItemGroup Condition="('$(ContinuousIntegrationBuild)' != 'true' or '$(TargetOS)' != 'browser' or '$(OS)' == 'Windows_NT') and ('$(TargetOS)' != 'wasi' or '$(RuntimeFlavor)' != 'CoreCLR')">
+  <!-- ActiveIssue https://github.com/dotnet/runtime/issues/114526: hot reload tests deadlock on Linux CI; CoreCLR isn't known to hit this. -->
+  <ItemGroup Condition="('$(ContinuousIntegrationBuild)' != 'true' or '$(TargetOS)' != 'browser' or '$(OS)' == 'Windows_NT' or '$(RuntimeFlavor)' == 'CoreCLR') and ('$(TargetOS)' != 'wasi' or '$(RuntimeFlavor)' != 'CoreCLR')">
     <Compile Include="ApplyUpdateTest.cs" />
     <Compile Include="ApplyUpdateUtil.cs" />
     <Compile Include="MetadataUpdateHandlerAttributeTest.cs" />
@@ -72,8 +72,8 @@
     <ProjectReference Include="ReferencedClassLibVersion2\ReferencedClassLibVersion2.csproj" ReferenceOutputAssembly="false" OutputItemType="EmbeddedResource" Link="ReferencedClassLibVersion2.dll" />
   </ItemGroup>
 
-  <!-- ActiveIssue https://github.com/dotnet/runtime/issues/114526 deadlocks on linux CI -->
-  <ItemGroup Condition="('$(ContinuousIntegrationBuild)' != 'true' or '$(TargetOS)' != 'browser' or '$(OS)' == 'Windows_NT') and ('$(TargetOS)' != 'wasi' or '$(RuntimeFlavor)' != 'CoreCLR')">
+  <!-- ActiveIssue https://github.com/dotnet/runtime/issues/114526: hot reload tests deadlock on Linux CI; CoreCLR isn't known to hit this. -->
+  <ItemGroup Condition="('$(ContinuousIntegrationBuild)' != 'true' or '$(TargetOS)' != 'browser' or '$(OS)' == 'Windows_NT' or '$(RuntimeFlavor)' == 'CoreCLR') and ('$(TargetOS)' != 'wasi' or '$(RuntimeFlavor)' != 'CoreCLR')">
     <!-- ApplyUpdate tests -->
     <ProjectReference Include="ApplyUpdate\System.Reflection.Metadata.ApplyUpdate.Test.AsyncMethodChange\System.Reflection.Metadata.ApplyUpdate.Test.AsyncMethodChange.csproj" />
     <ProjectReference Include="ApplyUpdate\System.Reflection.Metadata.ApplyUpdate.Test.CustomAttributeDelete\System.Reflection.Metadata.ApplyUpdate.Test.CustomAttributeDelete.csproj" />

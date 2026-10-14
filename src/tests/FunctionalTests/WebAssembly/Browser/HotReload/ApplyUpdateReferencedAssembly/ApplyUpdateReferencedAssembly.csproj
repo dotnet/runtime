@@ -18,7 +18,7 @@
     <Compile Include="MethodBody1.cs" />
   </ItemGroup>
 
-  <!-- ActiveIssue https://github.com/dotnet/runtime/issues/114526 deadlocks on linux CI -->
+  <!-- ActiveIssue https://github.com/dotnet/runtime/issues/114526: hot reload tests deadlock on Linux CI; CoreCLR isn't known to hit this. -->
   <Import Project="$(RepositoryEngineeringDir)testing\hotreload-delta-gen.targets"
-          Condition="'$(OS)' == 'Windows_NT' or '$(ContinuousIntegrationBuild)' != 'true'" />
+          Condition="'$(OS)' == 'Windows_NT' or '$(ContinuousIntegrationBuild)' != 'true' or '$(RuntimeFlavor)' == 'CoreCLR'" />
 </Project>
