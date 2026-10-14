@@ -61,5 +61,4 @@ internal static class CodePointerUtils
         }
         return returnAddress;
     }
-
 }

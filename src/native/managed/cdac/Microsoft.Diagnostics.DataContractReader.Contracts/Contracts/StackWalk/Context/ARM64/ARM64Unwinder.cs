@@ -51,8 +51,7 @@ internal class ARM64Unwinder(Target target)
 
     public bool Unwind(ref ARM64Context context)
     {
-        TargetCodePointer controlPc = context.InstructionPointer;
-        if (_eman.GetCodeBlockHandle(controlPc) is not CodeBlockHandle cbh)
+        if (_eman.GetCodeBlockHandle(context.InstructionPointer) is not CodeBlockHandle cbh)
             return false;
 
         TargetPointer imageBase = _eman.GetUnwindInfoBaseAddress(cbh);
@@ -124,9 +123,7 @@ internal class ARM64Unwinder(Target target)
         }
         else
         {
-            TargetCodePointer controlPc = context.InstructionPointer;
-            TargetPointer controlPcAddress = CodePointerUtils.AddressFromCodePointer(controlPc, _target);
-            controlPcRva = (uint)(controlPcAddress - imageBase);
+            controlPcRva = (uint)(context.Pc - imageBase);
         }
 
         //
