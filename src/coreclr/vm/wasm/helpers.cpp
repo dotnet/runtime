@@ -508,6 +508,45 @@ EXTERN_C __attribute__((naked)) void F_CALL_CONV JIT_PollGC(uintptr_t callersSta
            [JIT_PollGCRarePath] "i" (JIT_PollGCRarePath));
 }
 
+// EventPipe CPU-sampling samplepoint helper for R2R (native wasm) code on single-threaded WASM.
+// Emitted by the JIT at method entry and loop back-edges when a method matches the
+// WasmPerformanceInstrumentation filter. Cooperative throughout; on an active sampling session it
+// anchors a managed stack walk with an InlinedCallFrame derived from the caller's shadow SP, then
+// delegates to the shared SamplingProfiler_OnSamplepoint (which owns the adaptive skip counter).
+#if defined(FEATURE_PERFTRACING) && defined(PERFTRACING_DISABLE_THREADS)
+EXTERN_C bool SamplingProfiler_IsActive();
+EXTERN_C void SamplingProfiler_OnSamplepoint();
+#endif
+
+HCIMPL0(void, JIT_WasmProfSamplepoint)
+{
+    FCALL_CONTRACT;
+
+#if defined(FEATURE_PERFTRACING) && defined(PERFTRACING_DISABLE_THREADS)
+    if (!SamplingProfiler_IsActive())
+        return;
+
+    Thread* pThread = GetThread();
+
+    // Anchor the walk with a cooperative InlinedCallFrame (JIT_PInvokeBeginImpl's setup minus the
+    // preemptive transition): StackWalkFrames starts from a zeroed context and walks the Frame chain.
+    InlinedCallFrame inlinedCallFrame;
+    ::new ((void*)&inlinedCallFrame) InlinedCallFrame();
+    inlinedCallFrame.m_pCallSiteSP          = (void*)callersStackPointer;
+    inlinedCallFrame.m_pCallerReturnAddress = INLINED_PINVOKE_FROM_R2R;
+    inlinedCallFrame.m_pCalleeSavedFP       = 0;
+    inlinedCallFrame.m_pThread              = pThread;
+    inlinedCallFrame.Push();
+
+    SamplingProfiler_OnSamplepoint();
+
+    inlinedCallFrame.Pop();
+#else
+    UNREFERENCED_PARAMETER(callersStackPointer);
+#endif // FEATURE_PERFTRACING && PERFTRACING_DISABLE_THREADS
+}
+HCIMPLEND
+
 void InitJITHelpers1()
 {
     /* no-op WASM-TODO do we need to do anything for the interpreter? */

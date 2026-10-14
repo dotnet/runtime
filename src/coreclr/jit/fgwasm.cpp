@@ -2433,7 +2433,7 @@ PhaseStatus Compiler::fgWasmSpillRefs()
 
         for (GenTree* tree : LIR::AsRange(block))
         {
-            if (tree->IsCall())
+            if (tree->IsCall() && IsPotentialGCSafePoint(tree))
             {
                 // For any ref/byref values live at the point of a call, spill them into pinned slots
                 //  on the stack where the GC can see them so it won't move them.
@@ -3486,6 +3486,80 @@ void Compiler::fgWasmEhTransformTry(ArrayStack<BasicBlock*>* catchRetBlocks,
         LIR::Range range = LIR::SeqTree(this, rethrowNode);
         LIR::AsRange(rethrowBlock).InsertAtEnd(std::move(range));
     }
+}
+
+//-----------------------------------------------------------------------------
+// fgWasmProfInstrument: insert EventPipe CPU-sampling samplepoints
+//
+// Returns:
+//   suitable phase status
+//
+// Notes:
+//   Mirrors the interpreter's INTOP_PROF_SAMPLEPOINT placement (see
+//   src/coreclr/interpreter/compiler.cpp): one samplepoint at method entry and
+//   one on every loop back-edge. Emitted only for methods matching the
+//   WasmPerformanceInstrumentation MethodSet filter (same key the interpreter
+//   uses, so both engines share the filter and the runtime skip counter).
+//
+//   Each samplepoint is a call to CORINFO_HELP_WASM_PROF_SAMPLEPOINT. The later
+//   fgWasmVirtualIP phase inserts its per-block Virtual IP store ahead of the
+//   samplepoint, giving the cooperative stack walk a correct Virtual IP.
+//
+PhaseStatus Compiler::fgWasmProfInstrument()
+{
+    // Codegen only supports single-threaded wasm today; the shared runtime skip
+    // counter and cooperative sampling both assume PERFTRACING_DISABLE_THREADS.
+    assert(!WASM_THREAD_SUPPORT);
+
+    if (!JitConfig.WasmPerformanceInstrumentation().contains(info.compMethodHnd, info.compClassHnd,
+                                                             &info.compMethodInfo->args))
+    {
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
+    auto insertSamplepoint = [this](BasicBlock* block) {
+        GenTree* samplepoint = gtNewHelperCallNode(CORINFO_HELP_WASM_PROF_SAMPLEPOINT, TYP_VOID);
+        samplepoint          = fgMorphCall(samplepoint->AsCall());
+        gtSetEvalOrder(samplepoint);
+        LIR::AsRange(block).InsertAtBeginning(LIR::SeqTree(this, samplepoint));
+    };
+
+    unsigned samplepointsAdded = 0;
+
+    // A DFS back edge identifies its ancestor target as a loop header. Sample at
+    // every unique loop header, including loops formed through EH flow.
+    // Unlike fgHasCycleWithoutGCSafePoint we do NOT skip BBF_GC_SAFE_POINT blocks:
+    // the framework is not instrumented, so a loop calling only BCL methods would
+    // otherwise never sample.
+    FlowGraphDfsTree* const dfsTree = fgComputeDfs();
+    BitVecTraits            traits  = dfsTree->PostOrderTraits();
+    BitVec                  samplepointBlocks(BitVecOps::MakeEmpty(&traits));
+
+    // Method entry.
+    BitVecOps::AddElemD(&traits, samplepointBlocks, fgFirstBB->bbPostorderNum);
+
+    for (unsigned i = 0; i < dfsTree->GetPostOrderCount(); i++)
+    {
+        BasicBlock* const source = dfsTree->GetPostOrder(i);
+        source->VisitAllSuccs(this, [&](BasicBlock* target) {
+            assert(dfsTree->Contains(target));
+            if (dfsTree->IsAncestor(target, source))
+            {
+                BitVecOps::AddElemD(&traits, samplepointBlocks, target->bbPostorderNum);
+            }
+
+            return BasicBlockVisit::Continue;
+        });
+    }
+
+    BitVecOps::VisitBits(&traits, samplepointBlocks, [&](unsigned postorderNum) {
+        insertSamplepoint(dfsTree->GetPostOrder(postorderNum));
+        samplepointsAdded++;
+        return true;
+    });
+
+    JITDUMP("Added %u Wasm profiler samplepoint(s)\n", samplepointsAdded);
+    return (samplepointsAdded > 0) ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 
 //-----------------------------------------------------------------------------
