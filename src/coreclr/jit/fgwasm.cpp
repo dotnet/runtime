@@ -2470,17 +2470,16 @@ PhaseStatus Compiler::fgWasmSpillRefs()
             {
                 // If we have a call, consume the call's operands from the defs list BEFORE spilling
                 // any live refs. This is because a GC-ref node which is only live INTO (and not across) another call
-                // call does not need extra GC protection. The callee is responsible for ensuring the GC safety of any
+                // does not need extra GC protection. The callee is responsible for ensuring the GC safety of any
                 // incoming GC ref args.
                 tree->VisitOperands([&removeUses, &defs](GenTree* op) {
                     removeUses(op, defs, removeUses);
                     return GenTree::VisitResult::Continue;
                 });
 
-                // For any ref/byref values which are still live at the point of a call, spill them into pinned slots
-                // on the stack where the GC can see them so it won't move them. These cases should only be for nested
-                // calls like F(x, G()) where x is a GC ref OR for unmanaged/helper calls where we are unsure about GC
-                // behavior of the callee.
+                // For any ref/byref values which are still live at the point of a call and not consumed by the current
+                // call, spill them into pinned slots on the stack where the GC can see them so it won't move them.
+                // These cases should only be for nested calls like F(x, G()) where x is a GC ref.
                 if (!defs.empty())
                 {
                     if (m_wasmSpillSlots == nullptr)
