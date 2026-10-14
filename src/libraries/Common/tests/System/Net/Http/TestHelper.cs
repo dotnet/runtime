@@ -152,6 +152,76 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        public static (X509Certificate2 Certificate, X509Certificate2 RootCertificate) CreateExpiredServerCertificate(string name)
+        {
+            DateTimeOffset now = DateTimeOffset.UtcNow;
+
+            using RSA rootKey = RSA.Create();
+            var rootRequest = new CertificateRequest(
+                $"CN={name} Test Root",
+                rootKey,
+                HashAlgorithmName.SHA256,
+                RSASignaturePadding.Pkcs1);
+            rootRequest.CertificateExtensions.Add(new X509BasicConstraintsExtension(true, false, 0, true));
+            rootRequest.CertificateExtensions.Add(new X509KeyUsageExtension(X509KeyUsageFlags.KeyCertSign | X509KeyUsageFlags.CrlSign, true));
+            rootRequest.CertificateExtensions.Add(new X509SubjectKeyIdentifierExtension(rootRequest.PublicKey, false));
+
+            using X509Certificate2 rootWithPrivateKey = rootRequest.CreateSelfSigned(now.AddMonths(-3), now.AddYears(1));
+
+            using RSA serverKey = RSA.Create();
+            var serverRequest = new CertificateRequest(
+                $"CN={name}",
+                serverKey,
+                HashAlgorithmName.SHA256,
+                RSASignaturePadding.Pkcs1);
+            serverRequest.CertificateExtensions.Add(new X509BasicConstraintsExtension(false, false, 0, true));
+            serverRequest.CertificateExtensions.Add(new X509KeyUsageExtension(
+                X509KeyUsageFlags.DigitalSignature | X509KeyUsageFlags.KeyEncipherment | X509KeyUsageFlags.DataEncipherment,
+                false));
+            serverRequest.CertificateExtensions.Add(
+                new X509EnhancedKeyUsageExtension(
+                    new OidCollection { new Oid("1.3.6.1.5.5.7.3.1", null) },
+                    false));
+
+            SubjectAlternativeNameBuilder builder = new SubjectAlternativeNameBuilder();
+            builder.AddDnsName(name);
+            builder.AddIpAddress(IPAddress.Loopback);
+            builder.AddIpAddress(IPAddress.IPv6Loopback);
+            serverRequest.CertificateExtensions.Add(builder.Build());
+
+            byte[] serialNumber = new byte[8];
+            using (RandomNumberGenerator randomNumberGenerator = RandomNumberGenerator.Create())
+            {
+                randomNumberGenerator.GetBytes(serialNumber);
+            }
+            serialNumber[0] &= 0x7f;
+            serialNumber[0] |= 0x01;
+
+            using X509Certificate2 serverWithoutPrivateKey = serverRequest.Create(
+                rootWithPrivateKey,
+                now.AddMonths(-2),
+                now.AddMonths(-1),
+                serialNumber);
+
+            X509Certificate2 certificateWithPrivateKey = serverWithoutPrivateKey.CopyWithPrivateKey(serverKey);
+            X509Certificate2 certificate;
+            if (PlatformDetection.IsWindows)
+            {
+                using (certificateWithPrivateKey)
+                {
+                    certificate = X509CertificateLoader.LoadPkcs12(
+                        certificateWithPrivateKey.Export(X509ContentType.Pfx),
+                        (string?)null);
+                }
+            }
+            else
+            {
+                certificate = certificateWithPrivateKey;
+            }
+
+            return (certificate, X509CertificateLoader.LoadCertificate(rootWithPrivateKey.RawData));
+        }
+
 #if NET
         public static SocketsHttpHandler CreateSocketsHttpHandler(bool allowAllCertificates = false)
         {
