@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Reflection.Metadata;
 using Internal.TypeSystem;
 
@@ -15,7 +16,7 @@ namespace ILVerify
         internal EntityHandle MetadataHandle { get; set; }
         public string Message { get; internal set; }
         public object[] Args { get; internal set; }
-        public ErrorArgument[] ErrorArguments { get; set; }
+        public ErrorArgument[] ErrorArguments { get; set; } = Array.Empty<ErrorArgument>();
 
         public T GetArgumentValue<T>(string name)
         {

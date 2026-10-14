@@ -485,6 +485,7 @@ namespace ILVerify
                     builder.Add(new VerificationResult()
                     {
                         Code = code,
+                        Type = typeHandle,
                         Message = $"[MD]: Error: {_stringResourceManager.Value.GetString(code.ToString(), CultureInfo.InvariantCulture)}",
                         Args = args
                     });
