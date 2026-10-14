@@ -2995,7 +2995,8 @@ public:
     {
         // Flags for DynamicMethodDesc
         // Define new flags in descending order. This allows the IL type enumeration to increase naturally.
-        // [cDAC] [RuntimeTypeSystem]: Contract depends on the values of FlagIsLCGMethod, FlagIsILStub, and ILStubTypeMask.
+        // [cDAC] [RuntimeTypeSystem]: Contract depends on the values of FlagIsLCGMethod, FlagIsILStub,
+        // FlagIsDiagnosticsHidden, and ILStubTypeMask.
         FlagNone                = 0x00000000,
         FlagPublic              = 0x00000800,
         FlagStatic              = 0x00001000,
@@ -3003,7 +3004,7 @@ public:
         FlagIsLCGMethod         = 0x00004000,
         FlagIsILStub            = 0x00008000,
         // unused               = 0x00010000,
-        // unused               = 0x00020000,
+        FlagIsDiagnosticsHidden = 0x00020000,
         FlagMask                = 0x0003f800,
         StackArgSizeMask        = 0xfffc0000, // native stack arg size for IL stubs
         ILStubTypeMask          = ~(FlagMask | StackArgSizeMask)
