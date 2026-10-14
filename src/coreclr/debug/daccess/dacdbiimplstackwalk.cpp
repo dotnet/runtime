@@ -654,6 +654,7 @@ FramePointer DacDbiInterfaceImpl::GetFramePointerWorker(StackFrameIterator * pIt
 #ifdef TARGET_X86
             fp = ComputeX86FramePointer(pRD->pCurrentContext);
 #else
+            pCF->GetCodeManager()->EnsureCallerContextIsValid(pRD, pCF->GetCodeInfo());
             fp = FramePointer::MakeFramePointer(GetRegdisplayStackMark(pRD));
 #endif
             break;
@@ -673,6 +674,7 @@ FramePointer DacDbiInterfaceImpl::GetFramePointerWorker(StackFrameIterator * pIt
             UINT_PTR PCTAddr = pHijackedContext->Esp - sizeof(DWORD);
             fp = FramePointer::MakeFramePointer(PCTAddr);
 #else
+            ExecutionManager::GetDefaultCodeManager()->EnsureCallerContextIsValid(pRD, NULL);
             fp = FramePointer::MakeFramePointer(GetRegdisplayStackMark(pRD));
 #endif
             break;

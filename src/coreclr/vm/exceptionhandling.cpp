@@ -2364,6 +2364,7 @@ bool ExInfo::IsInStackRegionUnwoundBySpecifiedException(CrawlFrame * pCF, PTR_Ex
     CallerStackFrame csfToCheck;
     if (pCF->IsFrameless())
     {
+        pCF->GetCodeManager()->EnsureCallerContextIsValid(pCF->GetRegisterSet(), pCF->GetCodeInfo());
         csfToCheck = CallerStackFrame::FromRegDisplay(pCF->GetRegisterSet());
     }
     else
@@ -2472,12 +2473,20 @@ bool ExInfo::HasFrameBeenUnwoundByAnyActiveException(CrawlFrame * pCF)
     // Enumerate all (nested) exception trackers and see if any of them has unwound the
     // specified CrawlFrame.
     Thread * pTargetThread = pCF->pThread;
+    PTR_ExInfo pTopExInfo = (PTR_ExInfo)pTargetThread->GetExceptionState()->GetCurrentExceptionTracker();
+    if (pTopExInfo == NULL)
+    {
+        return false;
+    }
+
     bool fHasFrameBeenUnwound = false;
 
+    if (StressLog::StressLogOn(LF_EH | LF_GCROOTS, LL_INFO100))
     {
         CallerStackFrame csfToCheck;
         if (pCF->IsFrameless())
         {
+            pCF->GetCodeManager()->EnsureCallerContextIsValid(pCF->GetRegisterSet(), pCF->GetCodeInfo());
             csfToCheck = CallerStackFrame::FromRegDisplay(pCF->GetRegisterSet());
         }
         else
@@ -2488,7 +2497,6 @@ bool ExInfo::HasFrameBeenUnwoundByAnyActiveException(CrawlFrame * pCF)
                     pCF, pCF->IsFrameless() ? "Yes" : "No", pCF->IsFrameless() ? "CallerSP" : "Address", (void*)csfToCheck.SP);
     }
 
-    PTR_ExInfo pTopExInfo = (PTR_ExInfo)pTargetThread->GetExceptionState()->GetCurrentExceptionTracker();
     for (PTR_ExInfo pCurrentExInfo = pTopExInfo; pCurrentExInfo != NULL; pCurrentExInfo = dac_cast<PTR_ExInfo>(pCurrentExInfo->m_pPrevNestedInfo))
     {
         STRESS_LOG2(LF_EH|LF_GCROOTS, LL_INFO100, "Checking lower bound %p, upper bound %p\n", (void*)pCurrentExInfo->m_ScannedStackRange.GetLowerBound().SP, (void*)pCurrentExInfo->m_ScannedStackRange.GetUpperBound().SP);
@@ -2536,6 +2544,7 @@ StackFrame ExInfo::GetStackFrameForParentCheck(CrawlFrame * pCF)
     // any dynamic stack allocation.  The stackwalker uses the current SP, i.e. the SP after all
     // dynamic stack allocations.  Thus, we cannot do an equality check.  Instead, we get the
     // CallerStackFrame, which is the caller SP.
+    pCF->GetCodeManager()->EnsureCallerContextIsValid(pCF->GetRegisterSet(), pCF->GetCodeInfo());
     sfResult = (StackFrame)CallerStackFrame::FromRegDisplay(pCF->GetRegisterSet());
 
     return sfResult;
@@ -2566,7 +2575,6 @@ bool ExInfo::IsUnwoundToTargetParentFrame(CrawlFrame * pCF, StackFrame sfParent)
         MODE_ANY;
         PRECONDITION( CheckPointer(pCF, NULL_NOT_OK) );
         PRECONDITION( pCF->IsFrameless() );
-        PRECONDITION( pCF->GetRegisterSet()->IsCallerContextValid );
     }
     CONTRACTL_END;
 
@@ -2678,6 +2686,7 @@ StackFrame ExInfo::GetCallerSPOfParentOfNonExceptionallyInvokedFunclet(CrawlFram
     PREGDISPLAY pRD = pCF->GetRegisterSet();
 
     // Ensure that the caller Context is valid.
+    pCF->GetCodeManager()->EnsureCallerContextIsValid(pRD, pCF->GetCodeInfo());
     _ASSERTE(pRD->IsCallerContextValid);
 
     // Make a copy of the caller context
@@ -2716,6 +2725,7 @@ StackFrame ExInfo::FindParentStackFrameHelper(CrawlFrame* pCF,
 
     // At this point, we need a valid caller SP and the CallerStackFrame::FromRegDisplay
     // asserts that the RegDisplay contains one.
+    pCF->GetCodeManager()->EnsureCallerContextIsValid(pRegDisplay, pCF->GetCodeInfo());
     CallerStackFrame csfCurrent = CallerStackFrame::FromRegDisplay(pRegDisplay);
     bool fIsFilterFunclet = pCF->IsFilterFunclet();
 

@@ -1617,7 +1617,8 @@ void * EECodeManager::GetGSCookieAddr(PREGDISPLAY     pContext,
     {
         if(relOffset >= gcInfoDecoder.GetGSCookieValidRangeStart())
         {
-            TADDR ptr = GetCallerSp(pContext) + spOffsetGSCookie;
+            EnsureCallerContextIsValid(pContext, pCodeInfo, flags);
+            TADDR ptr = GetSP(pContext->pCallerContext) + spOffsetGSCookie;
 
             // Detect the end of GS cookie scope by comparing its address with SP
             // gcInfoDecoder.GetGSCookieValidRangeEnd() is not accurate. It does not

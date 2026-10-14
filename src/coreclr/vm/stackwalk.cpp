@@ -2226,6 +2226,11 @@ StackWalkAction StackFrameIterator::NextRaw(void)
             goto Cleanup;
         }
 
+        _ASSERTE((m_crawl.pFrame == FRAME_TOP) ||
+                 (dac_cast<TADDR>(m_crawl.pFrame) >= (TADDR)GetRegdisplaySP(m_crawl.pRD)) ||
+                 (m_crawl.pFrame->GetFrameIdentifier() == FrameIdentifier::FaultingExceptionFrame)
+                 INTERPRETER_ONLY(|| (GetIP(m_crawl.pRD->pCurrentContext) == InterpreterFrame::DummyCallerIP)));
+
 #ifdef FEATURE_INTERPRETER
         if (GetIP(m_crawl.pRD->pCurrentContext) == InterpreterFrame::DummyCallerIP)
         {
@@ -2582,11 +2587,41 @@ BOOL StackFrameIterator::CheckForSkippedFrames(void)
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
 
+    if (m_crawl.pFrame == FRAME_TOP)
+    {
+        return FALSE;
+    }
+
     BOOL   fHandleSkippedFrames = FALSE;
     TADDR pvReferenceSP;
 
     // Can the caller handle skipped frames;
     fHandleSkippedFrames = (m_flags & HANDLESKIPPEDFRAMES);
+
+#if defined(TARGET_64BIT)
+    if (!m_crawl.pRD->IsCallerContextValid && !fHandleSkippedFrames && m_crawl.isFrameless)
+    {
+        TADDR frameAddr = dac_cast<TADDR>(m_crawl.pFrame);
+        TADDR currentSP = GetRegdisplaySP(m_crawl.pRD);
+        if (frameAddr >= currentSP)
+        {
+            if (m_crawl.pFrame->GetFrameIdentifier() == FrameIdentifier::InlinedCallFrame)
+            {
+                PTR_InlinedCallFrame pICF = dac_cast<PTR_InlinedCallFrame>(m_crawl.pFrame);
+                if (currentSP != dac_cast<TADDR>(pICF->GetCallSiteSP()) &&
+                    GetFP(m_crawl.pRD->pCurrentContext) != pICF->GetCalleeSavedFP())
+                {
+                    return FALSE;
+                }
+            }
+            else if (!m_crawl.pFrame->NeedsUpdateRegDisplay() ||
+                     GetControlPC(m_crawl.pRD) != m_crawl.pFrame->GetReturnAddress())
+            {
+                return FALSE;
+            }
+        }
+    }
+#endif // TARGET_64BIT
 
     // Order the Frames relative to the caller SP of the methods
     // this makes it so that any Frame that is in a managed call
@@ -2669,6 +2704,7 @@ void StackFrameIterator::PreProcessingForManagedFrames(void)
         // However, because we might visit intervening explicit Frames
         // that will clear the .isFirst flag, we need to set it back here.
 
+        m_crawl.GetCodeManager()->EnsureCallerContextIsValid(m_crawl.pRD, &m_crawl.codeInfo, m_codeManFlags);
         CONSISTENCY_CHECK(m_crawl.pRD->IsCallerContextValid);
         CONSISTENCY_CHECK((LPVOID)GetSP(m_crawl.pRD->pCallerContext) == m_pvResumableFrameTargetSP);
         m_pvResumableFrameTargetSP = NULL;

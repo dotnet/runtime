@@ -1743,6 +1743,10 @@ StackWalkAction DebuggerWalkStackProc(CrawlFrame *pCF, void *data)
         }
 
         d->info.md = md;
+        if (pCF->IsFrameless())
+        {
+            pCF->GetCodeManager()->EnsureCallerContextIsValid(&(d->regDisplay), pCF->GetCodeInfo());
+        }
         CopyREGDISPLAY(&(d->info.registers), &(d->regDisplay));
 
 #if defined(TARGET_AMD64)

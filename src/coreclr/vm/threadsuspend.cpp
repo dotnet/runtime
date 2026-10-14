@@ -4679,7 +4679,7 @@ StackWalkAction SWCB_GetExecutionState(CrawlFrame *pCF, VOID *pData)
                 }
                 else
                 {
-                        // We already have the caller context available at this point
+                    pCF->GetCodeManager()->EnsureCallerContextIsValid(pRDT, pCF->GetCodeInfo());
                     _ASSERTE(pRDT->IsCallerContextValid);
 #if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
