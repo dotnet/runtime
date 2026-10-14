@@ -123,7 +123,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         public static void ImportSubjectPublicKeyInfo_AlgorithmErrorsInAsn()
         {
 #if !NETFRAMEWORK // Does not support exporting RSA SPKI
-            if (!OperatingSystem.IsBrowser())
+            if (!OperatingSystem.IsBrowser() && !OperatingSystem.IsWasi())
             {
                 // RSA key
                 using RSA rsa = RSA.Create();
@@ -161,7 +161,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         public static void ImportPkcs8PrivateKey_AlgorithmErrorsInAsn()
         {
 #if !NETFRAMEWORK // Does not support exporting RSA PKCS#8 private key
-            if (!OperatingSystem.IsBrowser())
+            if (!OperatingSystem.IsBrowser() && !OperatingSystem.IsWasi())
             {
                 // RSA key isn't valid for SLH-DSA
                 using RSA rsa = RSA.Create();

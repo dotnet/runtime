@@ -79,6 +79,10 @@ partial interface IRuntimeTypeSystem : IContract
     public virtual bool ContainsGCPointers(ITypeHandle typeHandle);
     // True if the MethodTable represents a byref-like value type (Span<T>, ReadOnlySpan<T>, any ref struct).
     public virtual bool IsByRefLike(ITypeHandle typeHandle);
+    // True if the type is a compiler-generated inline array buffer type (EEClass::IsInlineArray):
+    // its single declared instance field is repeated across the whole GetNumInstanceFieldBytes
+    // span, one element per (field size) bytes, rather than declared once per element.
+    public virtual bool IsInlineArray(ITypeHandle typeHandle);
     // If the type is an HFA (or HVA on ARM64), returns true and sets elementSize
     // to 4, 8, or 16. Returns false otherwise (including on targets that don't
     // define FEATURE_HFA). Mirrors MethodTable::GetHFAType in
@@ -562,7 +566,7 @@ static class RuntimeTypeSystem_1_Helpers
 | `EEClass` | `NumStaticFields` | `uint16` | Count of static fields of the EEClass |
 | `EEClass` | `NumThreadStaticFields` | `uint16` | Count of threadstatic fields of the EEClass |
 | `EEClass` | `OptionalFields` | `pointer` | Pointer to the `EEClassOptionalFields` for this type, or null if it has none |
-| `EEClass` | `VMFlags` | `uint32` | Optional flags for the EEClass. Bit `0x40` (`VMFLAG_HASLAYOUT`) indicates the EEClass is a `LayoutEEClass` and its `LayoutInfo` may be read |
+| `EEClass` | `VMFlags` | `uint32` | Optional flags for the EEClass. Bit `0x40` (`VMFLAG_HASLAYOUT`) indicates the EEClass is a `LayoutEEClass` and its `LayoutInfo` may be read. Bit `0x10000` (`VMFLAG_INLINE_ARRAY`) indicates the type is a compiler-generated inline array buffer whose single declared instance field is repeated across the whole array |
 | `EEClassLayoutInfo` | `AlignmentRequirement` | `uint8` | Largest alignment requirement of all members of the type |
 | `EEClassLayoutInfo` | `Flags` | `uint8` | Layout flags. Bit `0x01` (`e_BLITTABLE`) indicates the type is blittable |
 | `EEClassLayoutInfo` | `LayoutType` | `uint8` | Layout kind: `Auto` (0), `Sequential` (1), `Explicit` (2), `CStruct` (3), `CUnion` (4) |
@@ -604,6 +608,7 @@ static class RuntimeTypeSystem_1_Helpers
 | `MethodDesc` | `Flags` | `uint16` | The method's flags |
 | `MethodDesc` | `Flags3AndTokenRemainder` | `uint16` | More flags for the method, and the low bits of the method's token's RID |
 | `MethodDesc` | `GCCoverageInfo` | `pointer` | The method's GCCover debug info, if supported |
+| `MethodDesc` | `InterpreterCode` | `pointer` | Pointer to the method's `InterpByteCodeStart`, or the poison value 1 if the method will never be interpreted (only defined if `FEATURE_INTERPRETER` is enabled) |
 | `MethodDesc` | `Slot` | `uint16` | The method's slot |
 | `MethodDescChunk` | *(type size)* | `uint32` | Size of the data descriptor layout |
 | `MethodDescChunk` | `Count` | `uint8` | The number of MethodDesc entries in this chunk, minus 1. |
@@ -645,9 +650,9 @@ static class RuntimeTypeSystem_1_Helpers
 | `SystemVEightByteRegistersInfo` | `EightByteSize0` | `uint8` | Byte size of the first eightbyte |
 | `SystemVEightByteRegistersInfo` | `EightByteSize1` | `uint8` | Byte size of the second eightbyte |
 | `SystemVEightByteRegistersInfo` | `NumEightBytes` | `uint8` | Number of eightbyte slots used to pass the value type in registers (0 if not passed in registers) |
-| `ThreadStaticsInfo` | *(type size)* | `uint32` | Size in bytes of the thread-statics information stored immediately before MethodTable auxiliary data |
-| `ThreadStaticsInfo` | `GCTlsIndex` | `pointer` | Pointer to GC thread local storage index |
-| `ThreadStaticsInfo` | `NonGCTlsIndex` | `pointer` | Pointer to non-GC thread local storage index |
+| `ThreadStaticsInfo` | *(type size)* | `uint32` | Size in bytes of the thread-statics information stored immediately before MethodTable auxiliary data (optional; absent on runtimes built without multithreading support) |
+| `ThreadStaticsInfo` | `GCTlsIndex` | `pointer` | Pointer to GC thread local storage index (optional; absent on runtimes built without multithreading support) |
+| `ThreadStaticsInfo` | `NonGCTlsIndex` | `pointer` | Pointer to non-GC thread local storage index (optional; absent on runtimes built without multithreading support) |
 | `TypedByRef` | `Data` | `pointer` | Managed pointer (the byref) stored in a System.TypedReference value |
 | `TypedByRef` | `Type` | `pointer` | Raw TypeHandle pointer of the referent type |
 | `TypeDesc` | `TypeAndFlags` | `uint32` | The lower 8 bits are the CorElementType of the TypeDesc, the upper 24 bits are reserved for flags |
@@ -666,7 +671,7 @@ static class RuntimeTypeSystem_1_Helpers
 | `CoreLib` | `pointer` | Pointer to the CoreLibBinder data containing well-known core library type handles |
 | `ExceptionMethodTable` | `pointer` | A pointer to the address of the System.Exception MethodTable (g_pExceptionClass) |
 | `FieldOffsetBigRVA` | `uint32` | Sentinel value of FieldDesc::DWord2 indicating the field is an RVA static whose offset is too large to encode in the bitfield; the real offset must be read from the field's metadata (FieldDefinition.GetRelativeVirtualAddress). |
-| `FieldOffsetDynamicRVA` | `uint32` | Sentinel FieldDesc offset for an EnC-added RVA field whose enclosing type is not yet loaded |
+| `FieldOffsetDynamicRVA` | `uint32` | Sentinel FieldDesc offset for token-backed RVA field data, including Reflection.Emit fields and EnC-added fields whose enclosing type was not yet loaded when the field was added |
 | `FreeObjectMethodTable` | `pointer` | A pointer to the address of a MethodTable used by the GC to indicate reclaimed memory |
 | `MethodDescAlignment` | `uint64` | MethodDescChunk trailing data is allocated in multiples of this constant.  The size (in bytes) of each MethodDesc (or subclass) instance is a multiple of this constant. |
 | `MethodDescTokenRemainderBitCount` | `uint8` | Number of bits in the token remainder in MethodDesc |
@@ -826,6 +831,8 @@ static class RuntimeTypeSystem_1_Helpers
     public bool ContainsGCPointers(ITypeHandle TypeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[TypeHandle.Address].Flags.ContainsGCPointers;
 
     public bool IsByRefLike(ITypeHandle typeHandle) => typeHandle.IsMethodTable() && _methodTables[typeHandle.Address].Flags.IsByRefLike;
+
+    public bool IsInlineArray(ITypeHandle typeHandle) => typeHandle.IsMethodTable() && GetClassData(typeHandle).IsInlineArray;
 
     // Mirrors MethodTable::GetHFAType in src/coreclr/vm/class.cpp. Pseudocode:
     //
@@ -1025,7 +1032,9 @@ static class RuntimeTypeSystem_1_Helpers
 
     public TargetPointer GetGCThreadStaticsBasePointer(ITypeHandle typeHandle, TargetPointer threadPtr)
     {
-        if (!typeHandle.IsMethodTable())
+        // Also covers non-MethodTable handles, and runtimes without multithreading support,
+        // where [ThreadStatic] fields are regular statics and ThreadStaticsInfo is absent.
+        if (GetNumThreadStaticFields(typeHandle) == 0)
             return TargetPointer.Null;
         MethodTable_1 methodTable = _methodTables[typeHandle.Address];
         TargetPointer threadStaticsInfoSize = target.GetTypeInfo(DataType.ThreadStaticsInfo).Size;
@@ -1038,7 +1047,7 @@ static class RuntimeTypeSystem_1_Helpers
 
     public TargetPointer GetNonGCThreadStaticsBasePointer(ITypeHandle typeHandle, TargetPointer threadPtr)
     {
-        if (!typeHandle.IsMethodTable())
+        if (GetNumThreadStaticFields(typeHandle) == 0)
             return TargetPointer.Null;
         MethodTable_1 methodTable = _methodTables[typeHandle.Address];
         TargetPointer threadStaticsInfoSize = target.GetTypeInfo(DataType.ThreadStaticsInfo).Size;
@@ -1523,7 +1532,7 @@ The contract depends on the following other contracts
 | PlatformMetadata |
 | ReJIT |
 | ExecutionManager |
-| PrecodeStubs |
+| PrecodeStubs (when advertised) |
 
 And the following enumeration definitions
 
@@ -1997,8 +2006,9 @@ Determining if a method supports multiple code versions:
         MethodDesc md = _methodDescs[methodDesc.Address];
         if (md.IsEligibleForTieredCompilation)
             return true;
-        // MethodDesc::IsEligibleForReJIT
-        if (_target.Contracts.ReJIT.IsEnabled())
+        // MethodDesc::IsEligibleForReJIT. The ReJIT contract is advertised only with PROFILING_SUPPORTED;
+        // targets without it (wasm) also lack FEATURE_REJIT, so nothing is ReJIT-eligible.
+        if (_target.Contracts.TryGetContract(out IReJIT reJit) && reJit.IsEnabled())
         {
             if (!md.IsIL)
                 return false;
@@ -2329,23 +2339,6 @@ Getting a MethodDesc for a certain slot in a MethodTable
         }
     }
 
-    private readonly TargetPointer GetMethodDescForEntrypoint(TargetCodePointer pCode)
-    {
-        // Standard path, ask ExecutionManager for the MethodDesc
-        IExecutionManager executionManager = _target.Contracts.ExecutionManager;
-        if (executionManager.GetCodeBlockHandle(pCode) is CodeBlockHandle cbh)
-        {
-            TargetPointer methodDescPtr = executionManager.GetMethodDesc(cbh);
-            return methodDescPtr;
-        }
-
-        // Stub path, read address as a Precode and get the MethodDesc from it
-        {
-            TargetPointer methodDescPtr = _target.Contracts.PrecodeStubs.GetMethodDescFromStubAddress(pCode);
-            return methodDescPtr;
-        }
-    }
-
     public IEnumerable<TargetPointer> GetIntroducedMethodDescs(ITypeHandle typeHandle)
     {
         if (!typeHandle.IsMethodTable())
@@ -2420,7 +2413,7 @@ Getting a MethodDesc for a certain slot in a MethodTable
             return TargetPointer.Null;
         }
 
-        return GetMethodDescForEntrypoint(pCode);
+        return _target.Contracts.ExecutionManager.NonVirtualEntry2MethodDesc(pCode);
     }
 ```
 

@@ -178,45 +178,44 @@ VOID EEClass::FixupFieldDescForEnC(MethodTable * pMT, EnCFieldDesc *pFD, mdField
     DWORD fieldAttrs[1];
     IfFailThrow(pImport->GetFieldDefProps(fieldDefs[0], &fieldAttrs[0]));
 
-    MethodTableBuilder::bmtMetaDataInfo bmtMetaData;
-    bmtMetaData.cFields = ARRAY_SIZE(fieldDefs);
-    bmtMetaData.pFields = fieldDefs;
-    bmtMetaData.pFieldAttrs = fieldAttrs;
+    AllocMemTracker dummyAmTracker;
+    EEClass* pClass = pMT->GetClass();
+    MethodTableBuilder builder(pMT, pClass,
+                               pStackingAllocator,
+                               &dummyAmTracker);
+    builder.bmtAllocator = pMT->GetLoaderAllocator();
+
+    builder.bmtMetaData.cFields = ARRAY_SIZE(fieldDefs);
+    builder.bmtMetaData.pFields = fieldDefs;
+    builder.bmtMetaData.pFieldAttrs = fieldAttrs;
 
     // We need to alloc the memory, but don't have to fill it in.  InitializeFieldDescs
     // will copy pFD (1st arg) into here.
     FieldDesc* fieldDescs[1];
-    MethodTableBuilder::bmtMethAndFieldDescs bmtMFDescs;
-    bmtMFDescs.ppFieldDescList = fieldDescs;
-
-    MethodTableBuilder::bmtFieldPlacement bmtFP;
+    builder.bmtMFDescs.ppFieldDescList = fieldDescs;
 
     // This simulates the environment that BuildMethodTableThrowing creates
     // just enough to run InitializeFieldDescs
-    MethodTableBuilder::bmtErrorInfo bmtError;
-    bmtError.pModule = pModule;
-    bmtError.cl = pMT->GetCl();
-    bmtError.dMethodDefInError = mdTokenNil;
-    bmtError.szMethodNameForError = NULL;
+    builder.bmtError.pModule = pModule;
+    builder.bmtError.cl = pMT->GetCl();
+    builder.bmtError.dMethodDefInError = mdTokenNil;
+    builder.bmtError.szMethodNameForError = NULL;
 
-    MethodTableBuilder::bmtInternalInfo bmtInternal;
-    bmtInternal.pModule = pModule;
-    bmtInternal.pInternalImport = pImport;
-    bmtInternal.pParentMT = pMT->GetParentMethodTable();
+    builder.bmtInternal.pModule = pModule;
+    builder.bmtInternal.pInternalImport = pImport;
+    builder.bmtInternal.pParentMT = pMT->GetParentMethodTable();
 
-    MethodTableBuilder::bmtProperties bmtProp;
-    bmtProp.fIsValueClass = !!pMT->IsValueType();
-
-    MethodTableBuilder::bmtEnumFieldInfo bmtEnumFields(bmtInternal.pInternalImport);
+    builder.bmtProp.fIsValueClass = !!pMT->IsValueType();
+    builder.bmtEnumFields.m_pInternalImport = pImport;
 
     if (pFD->IsStatic())
     {
-        bmtEnumFields.dwNumStaticFields = 1;
+        builder.bmtEnumFields.dwNumStaticFields = 1;
     }
     else
     {
         _ASSERTE(!pMT->IsValueType());
-        bmtEnumFields.dwNumInstanceFields = 1;
+        builder.bmtEnumFields.dwNumInstanceFields = 1;
     }
 
     // If not NULL, it means there are some by-value fields, and this contains an entry for each instance or static field,
@@ -224,47 +223,17 @@ VOID EEClass::FixupFieldDescForEnC(MethodTable * pMT, EnCFieldDesc *pFD, mdField
     // come first, statics come second.
     MethodTable** pByValueClassCache = NULL;
 
-    AllocMemTracker dummyAmTracker;
-
-    EEClass* pClass = pMT->GetClass();
-    MethodTableBuilder builder(pMT, pClass,
-                               pStackingAllocator,
-                               &dummyAmTracker);
-
     TypeHandle thisTH(pMT);
     SigTypeContext typeContext(thisTH);
     MethodTableBuilder::bmtGenericsInfo genericsInfo;
     genericsInfo.typeContext = typeContext;
 
-    builder.SetBMTData(pMT->GetLoaderAllocator(),
-                       &bmtError,
-                       &bmtProp,
-                       NULL,
-                       NULL,
-                       NULL,
-                       &bmtMetaData,
-                       NULL,
-                       &bmtMFDescs,
-                       &bmtFP,
-                       &bmtInternal,
-                       NULL,
-                       NULL,
-                       &genericsInfo,
-                       &bmtEnumFields);
+    builder.bmtGenerics = &genericsInfo;
 
     {
         GCX_PREEMP();
         unsigned totalDeclaredFieldSize = 0;
-        builder.InitializeFieldDescs(pFD,
-                                 &bmtInternal,
-                                 &genericsInfo,
-                                 &bmtMetaData,
-                                 &bmtEnumFields,
-                                 &bmtError,
-                                 &pByValueClassCache,
-                                 &bmtMFDescs,
-                                 &bmtFP,
-                                 &totalDeclaredFieldSize);
+        builder.InitializeFieldDescs(pFD, &pByValueClassCache, &totalDeclaredFieldSize);
     }
 
     dummyAmTracker.SuppressRelease();
@@ -800,27 +769,13 @@ HRESULT EEClass::AddMethodDesc(
         // that caches StackingAllocator, use a local StackingAllocator instead.
     StackingAllocator stackingAllocator;
 
-    MethodTableBuilder::bmtInternalInfo bmtInternal;
-    bmtInternal.pModule = pModule;
-    bmtInternal.pInternalImport = NULL;
-    bmtInternal.pParentMT = NULL;
-
     MethodTableBuilder builder(pMT,
                                 pClass,
                                 &stackingAllocator,
                                 &dummyAmTracker);
 
-    builder.SetBMTData(pMT->GetLoaderAllocator(),
-                        NULL,
-                        NULL,
-                        NULL,
-                        NULL,
-                        NULL,
-                        NULL,
-                        NULL,
-                        NULL,
-                        NULL,
-                        &bmtInternal);
+    builder.bmtAllocator = pAllocator;
+    builder.bmtInternal.pModule = pModule;
 
     // Initialize the new MethodDesc
     EX_TRY

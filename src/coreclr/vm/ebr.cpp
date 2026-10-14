@@ -194,7 +194,7 @@ EbrCollector::EnterCriticalRegion()
 }
 
 void
-EbrCollector::ExitCriticalRegion()
+EbrCollector::ExitCriticalRegion() noexcept
 {
     CONTRACTL
     {

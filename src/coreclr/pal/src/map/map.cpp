@@ -811,7 +811,7 @@ See MSDN doc.
 BOOL
 PALAPI
 UnmapViewOfFile(
-        IN LPCVOID lpBaseAddress)
+        IN LPCVOID lpBaseAddress) noexcept
 {
     PAL_ERROR palError;
     CPalThread *pThread;

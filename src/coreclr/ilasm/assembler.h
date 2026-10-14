@@ -1,8 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-/************************************************************************/
-/*                           Assembler.h                                */
-/************************************************************************/
 
 #ifndef Assember_h
 #define Assember_h
@@ -1244,8 +1241,6 @@ public:
         //return m_TypeDefDList.FIND(szName);
     };
     unsigned NumTypeDefs() {return m_TypeDefDList.COUNT();};
-private:
-    HRESULT GetCAName(mdToken tkCA, _Out_ LPWSTR *ppszName);
 
 public:
     void RecordTypeConstraints(GenericParamConstraintList* pGPCList, int numTyPars, TyParDescr* tyPars);
@@ -1264,5 +1259,3 @@ public:
 #ifdef _MSC_VER
 #pragma warning(default : 4640)
 #endif
-
-

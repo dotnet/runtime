@@ -63,7 +63,6 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="$(CoreClrProjectRoot)System.Private.CoreLib\src\System\Reflection\RuntimeParameterInfo.cs" />
     <!-- TODO: (async) once we know which helpers can actually be shared, move those to libraries partition -->
     <Compile Include="$(CoreClrProjectRoot)System.Private.CoreLib\src\System\Runtime\CompilerServices\AsyncHelpers.CoreCLR.cs" />
     <Compile Include="$(CoreClrProjectRoot)System.Private.CoreLib\src\System\Runtime\CompilerServices\AsyncHelpers.ValueTaskSourceContinuation.cs" />
@@ -72,7 +71,6 @@
     <Compile Include="$(CoreClrProjectRoot)System.Private.CoreLib\src\System\Runtime\CompilerServices\RuntimeAsyncTaskContinuation.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Internal\Runtime\CompilerHelpers\DelegateHelpers.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\LibraryInitializer.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\ReachabilityInstrumentationSupport.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\ReflectionHelpers.cs" />
@@ -205,6 +203,7 @@
     <Compile Include="System\Runtime\CompilerServices\RuntimeFeature.NativeAot.cs" />
     <Compile Include="System\Runtime\CompilerServices\StaticClassConstructionContext.cs" />
     <Compile Include="System\Runtime\ExceptionIDs.cs" />
+    <Compile Include="System\Runtime\ExceptionServices\ExceptionHandling.NativeAot.cs" />
     <Compile Include="System\Runtime\GCSettings.NativeAot.cs" />
     <Compile Include="System\Runtime\InteropServices\TypeMapLazyDictionary.NativeAot.cs" />
     <Compile Include="System\Runtime\TypeLoaderExports.cs" />

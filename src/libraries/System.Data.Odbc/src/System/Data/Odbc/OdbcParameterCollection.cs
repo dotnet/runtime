@@ -12,8 +12,6 @@ namespace System.Data.Odbc
     {
         private bool _rebindCollection;   // The collection needs to be (re)bound
 
-        private static readonly Type s_itemType = typeof(OdbcParameter);
-
         internal OdbcParameterCollection() : base()
         {
         }

@@ -91,7 +91,7 @@ namespace System.Formats.Tar
             set
             {
                 _header._gid = value;
-                _header.SyncNumericExtendedAttribute(TarHeader.PaxEaGid, value, TarHeader.Octal8ByteFieldMaxValue);
+                _header.SyncNumericExtendedAttribute(TarHeader.PaxEaGid, TarHeader.UidGidAsUnsigned(value), TarHeader.Octal8ByteFieldMaxValue);
             }
         }
 
@@ -186,7 +186,7 @@ namespace System.Formats.Tar
             set
             {
                 _header._uid = value;
-                _header.SyncNumericExtendedAttribute(TarHeader.PaxEaUid, value, TarHeader.Octal8ByteFieldMaxValue);
+                _header.SyncNumericExtendedAttribute(TarHeader.PaxEaUid, TarHeader.UidGidAsUnsigned(value), TarHeader.Octal8ByteFieldMaxValue);
             }
         }
 
@@ -422,12 +422,6 @@ namespace System.Formats.Tar
         // already present on disk before extraction
         private static bool FilePathEscapesDirectory(string destinationDirectoryPath, string fileDestinationPath)
         {
-            // Windows is case insensitive while Linux is case sensitive
-            // This ensures the comparison is consistent with how the OS would resolve the paths
-            StringComparison pathComparison = OperatingSystem.IsWindows()
-                ? StringComparison.OrdinalIgnoreCase
-                : StringComparison.Ordinal;
-
             string resolvedDest = ResolvePhysicalPath(destinationDirectoryPath);
 
             // Use the logical destination path for computing the relative path
@@ -443,9 +437,10 @@ namespace System.Formats.Tar
             // Normalize file path (resolves .. and . but not symlinks)
             string normalizedFile = Path.GetFullPath(fileDestinationPath);
 
+            // Windows supports per-directory case sensitivity, so containment checks must use ordinal comparisons.
             // Guard with StartsWith before computing relative path
-            if (!normalizedFile.StartsWith(logicalPrefix, pathComparison) &&
-                !normalizedFile.Equals(logicalDest, pathComparison))
+            if (!normalizedFile.StartsWith(logicalPrefix, StringComparison.Ordinal) &&
+                !normalizedFile.Equals(logicalDest, StringComparison.Ordinal))
             {
                 return true;
             }
@@ -465,8 +460,8 @@ namespace System.Formats.Tar
                 current = ResolveSymlink(current);
 
                 string normalizedCurrent = Path.GetFullPath(current);
-                if (!normalizedCurrent.StartsWith(destPrefix, pathComparison) &&
-                    !normalizedCurrent.Equals(resolvedDest, pathComparison))
+                if (!normalizedCurrent.StartsWith(destPrefix, StringComparison.Ordinal) &&
+                    !normalizedCurrent.Equals(resolvedDest, StringComparison.Ordinal))
                 {
                     return true;
                 }
@@ -525,7 +520,8 @@ namespace System.Formats.Tar
 
             string fullPath = Path.GetFullPath(qualifiedPath); // Removes relative segments
 
-            return fullPath.StartsWith(destinationDirectoryFullPath, PathInternal.StringComparison) ? fullPath : null;
+            // Windows supports per-directory case sensitivity, so containment checks must use ordinal comparisons.
+            return fullPath.StartsWith(destinationDirectoryFullPath, StringComparison.Ordinal) ? fullPath : null;
         }
 
         // Extracts the current entry into the filesystem, regardless of the entry type.

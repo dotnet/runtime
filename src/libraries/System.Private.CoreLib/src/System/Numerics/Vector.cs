@@ -1739,11 +1739,11 @@ namespace System.Numerics
         {
             if (typeof(T) == typeof(float))
             {
-                return VectorMath.IsEvenIntegerSingle<Vector<float>, Vector<uint>>(vector.As<T, float>()).As<float, T>();
+                return VectorMath.IsEvenInteger<Vector<float>, float>(vector.As<T, float>()).As<float, T>();
             }
             else if (typeof(T) == typeof(double))
             {
-                return VectorMath.IsEvenIntegerDouble<Vector<double>, Vector<ulong>>(vector.As<T, double>()).As<double, T>();
+                return VectorMath.IsEvenInteger<Vector<double>, double>(vector.As<T, double>()).As<double, T>();
             }
             return IsZero(vector & Vector<T>.One);
         }
@@ -1783,7 +1783,7 @@ namespace System.Numerics
         {
             if ((typeof(T) == typeof(float)) || (typeof(T) == typeof(double)))
             {
-                return IsFinite(vector) & Equals(vector, Truncate(vector));
+                return IsZero(vector - Truncate(vector));
             }
             return Vector<T>.AllBitsSet;
         }
@@ -1862,11 +1862,11 @@ namespace System.Numerics
         {
             if (typeof(T) == typeof(float))
             {
-                return VectorMath.IsOddIntegerSingle<Vector<float>, Vector<uint>>(vector.As<T, float>()).As<float, T>();
+                return VectorMath.IsOddInteger<Vector<float>, float>(vector.As<T, float>()).As<float, T>();
             }
             else if (typeof(T) == typeof(double))
             {
-                return VectorMath.IsOddIntegerDouble<Vector<double>, Vector<ulong>>(vector.As<T, double>()).As<double, T>();
+                return VectorMath.IsOddInteger<Vector<double>, double>(vector.As<T, double>()).As<double, T>();
             }
             return ~IsZero(vector & Vector<T>.One);
         }

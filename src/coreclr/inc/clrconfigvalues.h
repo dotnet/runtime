@@ -347,9 +347,7 @@ CONFIG_DWORD_INFO(INTERNAL_JitUseScalableVectorT, W("JitUseScalableVectorT"), 0,
 /// Loader heap
 ///
 CONFIG_DWORD_INFO(INTERNAL_LoaderHeapCallTracing, W("LoaderHeapCallTracing"), 0, "Loader heap troubleshooting")
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_CodeHeapReserveForJumpStubs, W("CodeHeapReserveForJumpStubs"), 1, "Percentage of code heap to reserve for jump stubs")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_Tier1CodeHeapReserveSize, W("Tier1CodeHeapReserveSize"), 16 * 1024 * 1024, "Minimum virtual address space, in bytes, reserved for each Tier1 code heap")
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_BreakOnOutOfMemoryWithinRange, W("BreakOnOutOfMemoryWithinRange"), 0, "Break before out of memory within range exception is thrown")
 
 ///
 /// Log
@@ -613,7 +611,7 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_EventPipeProcNumbers, W("EventPipeProcNumbers"
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_EventPipeOutputStreaming, W("EventPipeOutputStreaming"), 1, "Enable/disable streaming for trace file set in DOTNET_EventPipeOutputPath.  Non-zero values enable streaming.")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_EventPipeBufferingMode, W("EventPipeBufferingMode"), 0, "Buffering mode for the DOTNET_EnableEventPipe startup session: 0 = Drop (default, lossy), 1 = Block (non-lossy); any other value is an invalid configuration and the startup session will not start. Block requires a streaming session (DOTNET_EventPipeOutputStreaming=1); requesting it for a non-streaming file session is an unsupported configuration that fails to start the session.")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_EventPipeEnableStackwalk, W("EventPipeEnableStackwalk"), 1, "Set to 0 to disable collecting stacks for EventPipe events.")
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_EventPipeThreadSamplingRate, W("EventPipeThreadSamplingRate"), 0, "Desired sample interval in milliseconds for EventPipe thread time sampling profiler. 0 means use the default.")
+RETAIL_CONFIG_DWORD_INFO_EX(INTERNAL_EventPipeThreadSamplingRate, W("EventPipeThreadSamplingRate"), 0, "Desired sample interval in milliseconds for EventPipe thread time sampling profiler. 0 means use the default.", CLRConfig::LookupOptions::ParseIntegerAsBase10)
 
 //
 // Generational Aware Analysis
