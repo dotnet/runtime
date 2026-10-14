@@ -37,23 +37,13 @@ public:
     // Log an interpreter IR bytecode range to the perfmap
     static void LogInterpreterMethod(MethodDesc * pMethod, PCODE irAddress, size_t irSize)
     {
-        CONTRACTL{
-            NOTHROW;
-            GC_NOTRIGGER;
-            MODE_PREEMPTIVE;
-        } CONTRACTL_END;
+        STANDARD_VM_CONTRACT;
     }
 #endif
 
     static void LogJITCompiledMethod(MethodDesc * pMethod, PCODE pCode, size_t codeSize, PrepareCodeConfig *pConfig)
     {
-        CONTRACTL
-        {
-            THROWS;
-            GC_NOTRIGGER;
-            MODE_PREEMPTIVE;
-        }
-        CONTRACTL_END;
+        STANDARD_VM_CONTRACT;
     }
 
     static void LogPreCompiledMethod(MethodDesc * pMethod, PCODE pCode)

@@ -322,9 +322,7 @@ void PerfMap::WriteLine(SString& line)
 void PerfMap::LogJITCompiledMethod(MethodDesc * pMethod, PCODE pCode, size_t codeSize, PrepareCodeConfig *pConfig)
 {
     CONTRACTL{
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_PREEMPTIVE;
+        STANDARD_VM_CHECK;
         PRECONDITION(pMethod != nullptr);
         PRECONDITION(pCode != nullptr);
         PRECONDITION(codeSize > 0);
