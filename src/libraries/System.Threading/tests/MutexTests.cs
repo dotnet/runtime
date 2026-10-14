@@ -1100,6 +1100,47 @@ namespace System.Threading.Tests
             | UnixFileMode.UserWrite
             | UnixFileMode.UserExecute;
 
+        [ConditionalTheory(nameof(IsRemoteExecutorAndCrossProcessNamedMutexSupported))]
+        [InlineData(null)]
+        [InlineData(false)]
+        [InlineData(true)]
+        [PlatformSpecific(TestPlatforms.Linux)]
+        public void NamedMutex_DefaultScope_UsesExpectedSharedMemoryPath(bool? unsafeDefaultMutexScopeGlobal)
+        {
+            string userRuntimeDirectory = GetTestFilePath();
+            Directory.CreateDirectory(userRuntimeDirectory);
+
+            RemoteInvokeOptions remoteInvokeOptions = new();
+            remoteInvokeOptions.StartInfo.EnvironmentVariables["XDG_RUNTIME_DIR"] = userRuntimeDirectory;
+            if (unsafeDefaultMutexScopeGlobal.HasValue)
+            {
+                remoteInvokeOptions.RuntimeConfigurationOptions["System.Threading.Mutex.UnsafeDefaultMutexScopeGlobal"] =
+                    unsafeDefaultMutexScopeGlobal.Value;
+            }
+
+            RemoteExecutor.Invoke(
+                (userRuntimeDirectory, useGlobalScope) =>
+                {
+                    string name = Guid.NewGuid().ToString("N");
+                    string mutexName = $"Global\\{name}";
+                    string userPath = Path.Combine(userRuntimeDirectory, ".dotnet", "shm", "global", name);
+                    string globalPath = Path.Combine(GlobalSharedMemoryDirectory, name);
+                    bool isGlobalScope = bool.Parse(useGlobalScope);
+
+                    using Mutex mutex = new(false, mutexName, out bool createdNew);
+                    Assert.True(createdNew);
+                    Assert.Equal(!isGlobalScope, File.Exists(userPath));
+                    Assert.Equal(isGlobalScope, File.Exists(globalPath));
+
+                    using Mutex openedMutex = Mutex.OpenExisting(mutexName);
+                    Assert.True(Mutex.TryOpenExisting(mutexName, out Mutex existingMutex));
+                    existingMutex.Dispose();
+                },
+                userRuntimeDirectory,
+                (unsafeDefaultMutexScopeGlobal == true).ToString(),
+                remoteInvokeOptions).Dispose();
+        }
+
         [ConditionalFact(nameof(IsRemoteExecutorAndCrossProcessNamedMutexSupported))]
         [PlatformSpecific(TestPlatforms.Linux)]
         [UnsupportedOSPlatform("windows")]
