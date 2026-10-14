@@ -386,11 +386,20 @@ StackWalkAction GcStackCrawlCallBack(CrawlFrame* pCF, VOID* pData)
 
                 if (pCF->IsFrameless())
                 {
-                    // We need to grab the Context Type here because there are cases where the MethodDesc
-                    // is shared, and thus indicates there should be an instantion argument, but the JIT
-                    // was still allowed to optimize it away and we won't grab it below because we're not
-                    // reporting any references from this frame.
-                    paramContextType = pCF->GetCodeManager()->GetParamContextType(pCF->GetRegisterSet(), pCF->GetCodeInfo());
+                    if (pMD->AcquiresInstMethodTableFromThis() ||
+                        pMD->RequiresInstMethodTableArg() ||
+                        pMD->RequiresInstMethodDescArg())
+                    {
+                        // We need to grab the Context Type here because there are cases where the MethodDesc
+                        // is shared, and thus indicates there should be an instantion argument, but the JIT
+                        // was still allowed to optimize it away and we won't grab it below because we're not
+                        // reporting any references from this frame.
+                        paramContextType = pCF->GetCodeManager()->GetParamContextType(pCF->GetRegisterSet(), pCF->GetCodeInfo());
+                    }
+                    else
+                    {
+                        _ASSERTE(pCF->GetCodeManager()->GetParamContextType(pCF->GetRegisterSet(), pCF->GetCodeInfo()) == GENERIC_PARAM_CONTEXT_NONE);
+                    }
                 }
                 else
                 {
