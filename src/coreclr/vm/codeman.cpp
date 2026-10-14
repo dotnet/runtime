@@ -4673,6 +4673,7 @@ BOOL EECodeGenManager::JitCodeToMethodInfoWorker(
     if (pCodeInfo)
     {
         pCodeInfo->m_methodToken = METHODTOKEN(pRangeSection, dac_cast<TADDR>(pCHdr));
+        pCodeInfo->m_gcInfoToken = { NULL, 0 };
 
         // This can be counted on for Jitted code. For NGEN code in the case
         // where we have hot/cold splitting this isn't valid and we need to
@@ -7245,6 +7246,7 @@ BOOL ReadyToRunJitManager::JitCodeToMethodInfo(RangeSection * pRangeSection,
     {
         // We are using RUNTIME_FUNCTION as METHODTOKEN
         pCodeInfo->m_methodToken = METHODTOKEN(pRangeSection, dac_cast<TADDR>(FunctionEntry));
+        pCodeInfo->m_gcInfoToken = { NULL, 0 };
 
         AMD64_ONLY(_ASSERTE((RawFunctionEntry->UnwindData & RUNTIME_FUNCTION_INDIRECT) == 0));
         pCodeInfo->m_pFunctionEntry = RawFunctionEntry;
