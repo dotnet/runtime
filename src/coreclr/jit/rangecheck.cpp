@@ -297,8 +297,11 @@ void RangeCheck::Widen(BasicBlock* block, GenTree* tree, Range* pRange)
 
     Range& range = *pRange;
 
-    // Try to deduce the lower bound, if it is not known already.
-    if (range.LowerLimit().IsDependent() || range.LowerLimit().IsUnknown())
+    // Try to deduce the lower bound, if it is not known already. A negative constant lower bound is
+    // also worth improving: e.g. a weak "i > len - 8" loop-exit bound merged with the initial value.
+    const Limit lowerLimit = range.LowerLimit();
+    if (lowerLimit.IsDependent() || lowerLimit.IsUnknown() ||
+        (lowerLimit.IsConstant() && (lowerLimit.GetConstant() < 0)))
     {
         // To determine the lower bound, ask if the loop increases monotonically.
         bool increasing = IsMonotonicallyIncreasing(tree, false);
@@ -306,7 +309,22 @@ void RangeCheck::Widen(BasicBlock* block, GenTree* tree, Range* pRange)
         {
             JITDUMP("[%06d] is monotonically increasing.\n", Compiler::dspTreeID(tree));
             ClearRangeMap();
-            *pRange = GetRangeWorker(block, tree, true DEBUGARG(0));
+            Range widened = GetRangeWorker(block, tree, true DEBUGARG(0));
+            if (!lowerLimit.IsConstant())
+            {
+                *pRange = widened;
+            }
+            else if (widened.LowerLimit().IsConstant() &&
+                     (widened.LowerLimit().GetConstant() > lowerLimit.GetConstant()))
+            {
+                // Both ranges are valid, so keep the original upper limit.
+                Range tightened  = range;
+                tightened.lLimit = widened.LowerLimit();
+                if (tightened.IsValid())
+                {
+                    *pRange = tightened;
+                }
+            }
         }
     }
 }
@@ -1138,6 +1156,44 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
 }
 
 //------------------------------------------------------------------------
+// AreVNsEqual: Check whether the assertions prove "vn1 == vn2".
+//
+// Arguments:
+//    comp       - the compiler instance
+//    assertions - the assertions to use
+//    vn1        - the first value number
+//    vn2        - the second value number
+//
+// Return Value:
+//    true if there is a "vn1 == vn2" (or "vn2 == vn1") assertion.
+//
+static bool AreVNsEqual(Compiler* comp, ASSERT_VALARG_TP assertions, ValueNum vn1, ValueNum vn2)
+{
+    if (!comp->optAssertionHasAssertionsForVN(vn1) || !comp->optAssertionHasAssertionsForVN(vn2))
+    {
+        return false;
+    }
+
+    BitVecOps::Iter iter(comp->apTraits, assertions);
+    unsigned        index = 0;
+    while (iter.NextElem(&index))
+    {
+        const Compiler::AssertionDsc& curAssertion = comp->optGetAssertion(GetAssertionIndex(index));
+        if (curAssertion.KindIs(Compiler::OAK_EQUAL) && curAssertion.GetOp1().KindIs(Compiler::O1K_VN) &&
+            curAssertion.GetOp2().KindIs(Compiler::O2K_VN_ADD_CNS) && (curAssertion.GetOp2().GetCns() == 0))
+        {
+            ValueNum op1VN = curAssertion.GetOp1().GetVN();
+            ValueNum op2VN = curAssertion.GetOp2().GetVN();
+            if (((op1VN == vn1) && (op2VN == vn2)) || ((op1VN == vn2) && (op2VN == vn1)))
+            {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+//------------------------------------------------------------------------
 // MergeEdgeAssertionsWorker: Worker for MergeEdgeAssertions that takes a visited set and recursion
 //    budget for VN-to-VN assertion lookups.
 //
@@ -1315,6 +1371,14 @@ void RangeCheck::MergeEdgeAssertionsWorker(Compiler*                        comp
             {
                 cmpOper = Compiler::AssertionDsc::ToCompareOper(curAssertion.GetKind(), &isUnsigned);
                 limit   = Limit(Limit::keBinOpArray, boundVN, boundCns);
+            }
+            // Same, but the bound is known to be equal to the preferred bound, e.g. "a.Length == b.Length".
+            else if (canUseCheckedBounds && (normalLclVN == curAssertion.GetOp1().GetVN()) &&
+                     (preferredBoundVN != ValueNumStore::NoVN) &&
+                     AreVNsEqual(comp, assertions, boundVN, preferredBoundVN))
+            {
+                cmpOper = Compiler::AssertionDsc::ToCompareOper(curAssertion.GetKind(), &isUnsigned);
+                limit   = Limit(Limit::keBinOpArray, preferredBoundVN, boundCns);
             }
             else if (normalLclVNMatchesOp2)
             {
