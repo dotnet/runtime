@@ -2234,11 +2234,6 @@ StackWalkAction StackFrameIterator::NextRaw(void)
             goto Cleanup;
         }
 
-        _ASSERTE((m_crawl.pFrame == FRAME_TOP) ||
-                 (dac_cast<TADDR>(m_crawl.pFrame) >= (TADDR)GetRegdisplaySP(m_crawl.pRD)) ||
-                 (m_crawl.pFrame->GetFrameIdentifier() == FrameIdentifier::FaultingExceptionFrame)
-                 INTERPRETER_ONLY(|| (GetIP(m_crawl.pRD->pCurrentContext) == InterpreterFrame::DummyCallerIP)));
-
 #ifdef FEATURE_INTERPRETER
         if (GetIP(m_crawl.pRD->pCurrentContext) == InterpreterFrame::DummyCallerIP)
         {
@@ -2247,6 +2242,10 @@ StackWalkAction StackFrameIterator::NextRaw(void)
             LOG((LF_GCROOTS, LL_INFO10000, "STACKWALK: Transitioning from last interpreted frame under InterpreterFrame %p to native frame (IP=%p, SP=%p)\n", pInterpreterFrame, (void*)GetControlPC(m_crawl.pRD), (void*)GetRegdisplaySP(m_crawl.pRD)));
         }
 #endif // FEATURE_INTERPRETER
+
+        _ASSERTE((m_crawl.pFrame == FRAME_TOP) ||
+                 (dac_cast<TADDR>(m_crawl.pFrame) >= (TADDR)GetRegdisplaySP(m_crawl.pRD)) ||
+                 (m_crawl.pFrame->GetFrameIdentifier() == FrameIdentifier::FaultingExceptionFrame));
 
 #define FAIL_IF_SPECULATIVE_WALK(condition)             \
         if (m_flags & PROFILER_DO_STACK_SNAPSHOT)       \
