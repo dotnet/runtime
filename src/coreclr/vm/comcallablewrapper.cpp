@@ -4356,7 +4356,7 @@ ComCallWrapperTemplate* ComCallWrapperTemplate::CreateTemplate(TypeHandle thClas
 
         // If the class is visible from COM, then give out the IClassX IID.
         if (pRetTemplate->m_pClassComMT->IsComVisible())
-            GenerateClassItfGuid(thClass, &IClassXIID);
+            IClassXIID = GenerateClassItfGuid(thClass);
 
 #if defined(_DEBUG)
         CHAR rIID[MINIPAL_GUID_BUFFER_LEN];

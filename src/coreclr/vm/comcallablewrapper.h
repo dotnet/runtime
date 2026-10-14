@@ -641,7 +641,7 @@ struct ComMethodTable
         // Generate the IClassX IID if it hasn't been generated yet.
         if (!(m_Flags & enum_GuidGenerated))
         {
-            GenerateClassItfGuid(TypeHandle(m_pMT), &m_IID);
+            m_IID = GenerateClassItfGuid(TypeHandle(m_pMT));
             m_Flags |= enum_GuidGenerated;
         }
 
