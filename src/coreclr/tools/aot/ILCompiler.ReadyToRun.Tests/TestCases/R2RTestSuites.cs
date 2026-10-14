@@ -31,11 +31,13 @@ public class R2RTestSuites
     }
 
     [Theory]
-    [InlineData(false, false)]
-    [InlineData(false, true)]
-    [InlineData(true, false)]
-    [InlineData(true, true)]
-    public void IntrinsicTypeHandlesAreModuleEager(bool composite, bool optimize)
+    [InlineData(false, false, false)]
+    [InlineData(false, true, false)]
+    [InlineData(true, false, false)]
+    [InlineData(true, true, false)]
+    [InlineData(true, false, true)]
+    [InlineData(true, true, true)]
+    public void IntrinsicTypeHandlesAreModuleEager(bool composite, bool optimize, bool includeCoreLib)
     {
         CompiledAssembly input = new()
         {
@@ -48,37 +50,45 @@ public class R2RTestSuites
         if (optimize)
             options.Add(Crossgen2Option.Optimize);
 
+        List<string> additionalArgs = new();
+        if (!optimize)
+            additionalArgs.Add("--optimize-disabled");
+        if (includeCoreLib)
+            additionalArgs.AddRange(["--unrooted-input-file-paths", TestPaths.SystemPrivateCoreLibPath]);
+
         new R2RTestRunner(_output).Run(new R2RTestCase(
             nameof(IntrinsicTypeHandlesAreModuleEager),
             [
                 new(nameof(IntrinsicTypeHandlesAreModuleEager), [new CrossgenAssembly(input)])
                 {
                     Options = options,
+                    AdditionalArgs = additionalArgs,
                     OutputFileExtension = TestPaths.IsWasmTarget ? ".wasm" : ".dll",
                     Validate = Validate,
                 },
             ]));
 
-        static void Validate(ReadyToRunReader reader)
+        void Validate(ReadyToRunReader reader)
         {
             string[] types =
             [
                 "void", "bool", "char", "sbyte", "byte", "short", "ushort", "int", "uint",
                 "long", "ulong", "float", "double", "IntPtr", "UIntPtr", "string", "object",
-                "typedbyref", "bool[]", "int[...,...]", "int[][]", "string[]", "object[...,...,...]",
+                "typedbyref",
+            ];
+            string[] arrayTypes =
+            [
+                "bool[]", "int[...,...]", "int[][]", "string[]", "object[...,...,...]",
                 "int[][...,...]", "UIntPtr[]",
             ];
             SignatureFormattingOptions formatting = new();
             foreach (string type in types)
             {
-                ReadyToRunImportSection section = Assert.Single(reader.ImportSections,
-                    section => section.Entries.Any(entry =>
-                        entry.Signature?.FixupKind == ReadyToRunFixupKind.TypeHandle &&
-                        entry.Signature.ToString(formatting) == $"{type} (TYPE_HANDLE)"));
-                Assert.Equal(ReadyToRunImportSectionFlags.Eager, section.Flags & ReadyToRunImportSectionFlags.Eager);
-                Assert.Single(section.Entries, entry =>
-                    entry.Signature?.FixupKind == ReadyToRunFixupKind.TypeHandle &&
-                    entry.Signature.ToString(formatting) == $"{type} (TYPE_HANDLE)");
+                ValidateTypeHandle(type, eager: true);
+            }
+            foreach (string type in arrayTypes)
+            {
+                ValidateTypeHandle(type, eager: includeCoreLib);
             }
 
             List<ReadyToRunMethod> methods = R2RAssert.GetAllMethods(reader);
@@ -86,6 +96,18 @@ public class R2RTestSuites
                 method => method.SignatureString.Contains(".ReadIntrinsicTypeToken(", StringComparison.Ordinal));
             Assert.DoesNotContain(intrinsic.Fixups ?? Array.Empty<FixupCell>(),
                 fixup => fixup.Signature.FixupKind == ReadyToRunFixupKind.TypeHandle);
+
+            ReadyToRunMethod intrinsicArray = Assert.Single(methods,
+                method => method.SignatureString.Contains(".ReadIntrinsicArrayTypeToken(", StringComparison.Ordinal));
+            IReadOnlyList<FixupCell> arrayFixups = intrinsicArray.Fixups ?? Array.Empty<FixupCell>();
+            Assert.Equal(includeCoreLib ? 0 : arrayTypes.Length,
+                arrayFixups.Count(fixup => fixup.Signature.FixupKind == ReadyToRunFixupKind.TypeHandle));
+            foreach (string type in arrayTypes)
+            {
+                Assert.Equal(!includeCoreLib, arrayFixups.Any(fixup =>
+                    fixup.Signature.FixupKind == ReadyToRunFixupKind.TypeHandle &&
+                    fixup.Signature.ToString(formatting) == $"{type} (TYPE_HANDLE)"));
+            }
 
             ReadyToRunMethod tokenDependent = Assert.Single(methods,
                 method => method.SignatureString.Contains(".ReadTokenDependentTypeToken(", StringComparison.Ordinal));
@@ -97,6 +119,19 @@ public class R2RTestSuites
                 {
                     Assert.Equal((ReadyToRunImportSectionFlags)0, reader.ImportSections[(int)fixup.TableIndex].Flags & ReadyToRunImportSectionFlags.Eager);
                 }
+            }
+
+            void ValidateTypeHandle(string type, bool eager)
+            {
+                ReadyToRunImportSection section = Assert.Single(reader.ImportSections,
+                    section => section.Entries.Any(entry =>
+                        entry.Signature?.FixupKind == ReadyToRunFixupKind.TypeHandle &&
+                        entry.Signature.ToString(formatting) == $"{type} (TYPE_HANDLE)"));
+                Assert.Equal(eager ? ReadyToRunImportSectionFlags.Eager : (ReadyToRunImportSectionFlags)0,
+                    section.Flags & ReadyToRunImportSectionFlags.Eager);
+                Assert.Single(section.Entries, entry =>
+                    entry.Signature?.FixupKind == ReadyToRunFixupKind.TypeHandle &&
+                    entry.Signature.ToString(formatting) == $"{type} (TYPE_HANDLE)");
             }
         }
     }

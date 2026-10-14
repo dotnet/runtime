@@ -226,11 +226,10 @@ struct READYTORUN_IMPORT_SECTION
 | ReadyToRunImportSectionFlags::PCode    | 0x0004  | Section contains pointers to code
 
 
-Concrete `TYPE_HANDLE` imports for built-in types encoded directly by `CorElementType`
-(including `string`, `object`, and `TypedReference`) and arrays of those types are placed in
-module-eager sections as they are encountered. This includes multidimensional and nested arrays,
-but not enums, other token-dependent types, pointers, or byrefs. These cells are omitted from
-per-method fixup lists; only imports reached by the final dependency traversal are emitted.
+Module-eager fixups in `System.Private.CoreLib`, including composite images containing
+`System.Private.CoreLib`, may refer to any type, method, or field in CoreLib and may trigger
+loading of CoreLib types needed to resolve those references. In other modules, module-eager
+fixups must not trigger type loading; the required types must already be loaded.
 
 ### READYTORUN_IMPORT_SECTIONS::Type
 

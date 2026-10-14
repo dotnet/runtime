@@ -41,13 +41,18 @@ public static class WasmWebcilModule
         14 => typeof(nuint),
         15 => typeof(string),
         16 => typeof(object),
-        17 => typeof(TypedReference),
-        18 => typeof(bool[]),
-        19 => typeof(int[,]),
-        20 => typeof(int[][]),
-        21 => typeof(string[]),
-        22 => typeof(object[,,]),
-        23 => typeof(int[,][]),
+        _ => typeof(TypedReference),
+    };
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static Type ReadIntrinsicArrayTypeToken(int index) => index switch
+    {
+        0 => typeof(bool[]),
+        1 => typeof(int[,]),
+        2 => typeof(int[][]),
+        3 => typeof(string[]),
+        4 => typeof(object[,,]),
+        5 => typeof(int[,][]),
         _ => typeof(nuint[]),
     };
 
