@@ -2662,7 +2662,11 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             Contracts.IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
             Contracts.MethodDescHandle md = rts.GetMethodDescHandle(new TargetPointer(vmMethodDesc));
-            if (rts.IsDiagnosticsHidden(md))
+            if (rts.IsDiagnosticsHiddenLCGMethod(md))
+            {
+                *pRetVal = (int)DynamicMethodType.kDiagnosticHiddenLCGMethod;
+            }
+            else if (rts.IsDiagnosticsHidden(md))
             {
                 *pRetVal = (int)DynamicMethodType.kDiagnosticHidden;
             }

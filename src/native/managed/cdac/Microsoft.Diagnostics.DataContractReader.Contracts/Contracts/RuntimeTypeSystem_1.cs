@@ -1893,6 +1893,19 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
                 (flags.HasFlag(AsyncMethodFlags.ReturnDroppingThunk) || !flags.HasFlag(AsyncMethodFlags.IsAsyncVariant)));
     }
 
+    public bool IsDiagnosticsHiddenLCGMethod(MethodDescHandle methodDescHandle)
+    {
+        MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
+        if (methodDesc.Classification != MethodClassification.Dynamic)
+        {
+            return false;
+        }
+
+        DynamicMethodDesc dynamicMethod = AsDynamicMethodDesc(methodDesc);
+        return dynamicMethod.IsDynamicMethod &&
+            dynamicMethod.ExtendedFlags.HasFlag(DynamicMethodDescExtendedFlags.IsDiagnosticsHidden);
+    }
+
     public bool HasMDContextArg(MethodDescHandle methodDescHandle)
     {
         MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];

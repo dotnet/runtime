@@ -778,6 +778,7 @@ public:
     inline bool IsLCGMethod();
 
     inline bool IsDiagnosticsHidden();
+    inline bool IsDiagnosticsHiddenLCGMethod();
 
     inline DWORD IsPInvoke()
     {

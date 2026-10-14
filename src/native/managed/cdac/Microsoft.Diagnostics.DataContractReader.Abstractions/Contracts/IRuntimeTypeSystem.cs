@@ -315,6 +315,9 @@ public interface IRuntimeTypeSystem : IContract
     // Return true for runtime plumbing omitted from diagnostic stacks, code viewing, and stepping.
     bool IsDiagnosticsHidden(MethodDescHandle methodDesc) => throw new NotImplementedException();
 
+    // Return true for an LCG method explicitly marked as diagnostics-hidden.
+    bool IsDiagnosticsHiddenLCGMethod(MethodDescHandle methodDesc) => throw new NotImplementedException();
+
     // Return true if a MethodDesc represents an IL stub with a special MethodDesc context arg
     bool HasMDContextArg(MethodDescHandle methodDesc) => throw new NotImplementedException();
 
