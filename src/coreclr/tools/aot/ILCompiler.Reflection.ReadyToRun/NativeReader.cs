@@ -87,6 +87,32 @@ namespace ILCompiler.Reflection.ReadyToRun
             return _littleEndian ? BinaryPrimitives.ReadUInt32LittleEndian(bytes) : BinaryPrimitives.ReadUInt32BigEndian(bytes);
         }
 
+        /// <summary>Reads a little-endian word from consecutive byte planes of eight-byte records.</summary>
+        /// <param name="tableOffset">The starting image offset of the table.</param>
+        /// <param name="entryCount">The number of records in each plane.</param>
+        /// <param name="entryIndex">The index of the record.</param>
+        /// <param name="firstPlane">The index of the word's least-significant byte plane.</param>
+        /// <returns>The decoded word.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">An index or count is outside the table bounds.</exception>
+        public uint ReadUInt32FromBytePlanes(int tableOffset, int entryCount, int entryIndex, int firstPlane)
+        {
+            ArgumentOutOfRangeException.ThrowIfNegative(tableOffset);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(entryCount);
+            if ((uint)entryIndex >= (uint)entryCount)
+                throw new ArgumentOutOfRangeException(nameof(entryIndex));
+            if ((uint)firstPlane > 4)
+                throw new ArgumentOutOfRangeException(nameof(firstPlane));
+
+            uint value = 0;
+            for (int i = 0; i < sizeof(uint); i++)
+            {
+                int position = checked(tableOffset + (firstPlane + i) * entryCount + entryIndex);
+                value |= (uint)ReadByte(ref position) << (i * BITS_PER_BYTE);
+            }
+
+            return value;
+        }
+
         // <summary>
         /// Extracts an unsigned 16bit value from the image byte array
         /// </summary>

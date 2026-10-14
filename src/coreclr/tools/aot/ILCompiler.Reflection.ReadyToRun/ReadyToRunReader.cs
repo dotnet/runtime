@@ -1219,6 +1219,29 @@ namespace ILCompiler.Reflection.ReadyToRun
             }
         }
 
+        /// <summary>Reads a word from the runtime-function table, advancing its logical record offset.</summary>
+        /// <param name="offset">The image offset in the equivalent array-of-records layout.</param>
+        /// <returns>The decoded word.</returns>
+        public int ReadRuntimeFunctionInt32(ref int offset)
+        {
+            if (Machine != WasmMachine.Wasm32 ||
+                (ReadyToRunHeader.Flags & (uint)ReadyToRunFlags.READYTORUN_FLAG_RuntimeFunctionBytePlanes) == 0)
+            {
+                return ImageReader.ReadInt32(ref offset);
+            }
+
+            ReadyToRunSection section = ReadyToRunHeader.Sections[ReadyToRunSectionType.RuntimeFunctions];
+            if (section.Size % 8 != 0)
+                throw new BadImageFormatException("The byte-plane runtime-function table size must be a multiple of eight.");
+
+            int tableOffset = CompositeReader.GetOffset(section.RelativeVirtualAddress);
+            int relativeOffset = checked(offset - tableOffset);
+            uint value = ImageReader.ReadUInt32FromBytePlanes(tableOffset, section.Size / 8, relativeOffset / 8, relativeOffset % 8);
+            offset = checked(offset + sizeof(int));
+
+            return unchecked((int)value);
+        }
+
         /// <summary>
         /// Scan method fixups for ResumptionStubEntryPoint entries, mark the corresponding
         /// runtime functions as entry points, and create ReadyToRunMethod entries for them
@@ -1235,7 +1258,7 @@ namespace ILCompiler.Reflection.ReadyToRun
             for (int i = 0; i < nRuntimeFunctions; i++)
             {
                 int entryOffset = runtimeFunctionsOffset + i * runtimeFunctionSize;
-                uint beginAddress = BitConverter.ToUInt32(Image, entryOffset);
+                uint beginAddress = unchecked((uint)ReadRuntimeFunctionInt32(ref entryOffset));
                 stubRvaToMethodIndexMap[beginAddress] = i;
             }
 

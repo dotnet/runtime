@@ -20,7 +20,7 @@
 // If you update this, ensure you run `git grep MINIMUM_READYTORUN_MAJOR_VERSION`
 // and handle pending work.
 #define READYTORUN_MAJOR_VERSION 32
-#define READYTORUN_MINOR_VERSION 0x0000
+#define READYTORUN_MINOR_VERSION 0x0001
 
 #define MINIMUM_READYTORUN_MAJOR_VERSION 26
 
@@ -80,6 +80,7 @@
 // R2R Version 30 requires implicit byref arguments to always be outside of the GC heap
 // R2R Version 31 adds READYTORUN_FIXUP_MethodEntry_ReadyToRun for initializing a
 // method's ReadyToRun entry point and fixups.
+// R2R Version 32.1 adds flagged eight-byte-plane encoding of WebAssembly runtime-function tables.
 
 struct READYTORUN_CORE_HEADER
 {
@@ -121,6 +122,7 @@ enum ReadyToRunFlag
     READYTORUN_FLAG_STRIPPED_INLINING_INFO      = 0x00000400,   // Inlining info has been stripped from the image
     READYTORUN_FLAG_STRIPPED_DEBUG_INFO         = 0x00000800,   // Debug info has been stripped from the image
     READYTORUN_FLAG_VERIFY_GC_MODE_TRANSITIONS  = 0x00001000,   // Code in this image verifies that GC mode transitions are legal. WebAssembly only; its catch resumption points call READYTORUN_HELPER_ResumeAfterCatch.
+    READYTORUN_FLAG_RUNTIME_FUNCTION_BYTE_PLANES = 0x00002000, // WebAssembly runtime-function records are transposed into eight byte planes; the sentinel and min table index remain linear.
 };
 
 enum class ReadyToRunSectionType : uint32_t

@@ -522,12 +522,12 @@ namespace R2RDump
                     }
                     while (rtfOffset < rtfEndOffset)
                     {
-                        int startRva = _r2r.ImageReader.ReadInt32(ref rtfOffset);
+                        int startRva = _r2r.ReadRuntimeFunctionInt32(ref rtfOffset);
                         if (isWasmRtf)
                         {
                             bool isFunclet = (startRva & unchecked((int)0x80000000)) != 0;
                             int virtualIP = startRva & 0x7FFFFFFF;
-                            int unwindRvaW = _r2r.ImageReader.ReadInt32(ref rtfOffset);
+                            int unwindRvaW = _r2r.ReadRuntimeFunctionInt32(ref rtfOffset);
                             _writer.WriteLine($"{rtfIndex,7} | {virtualIP,10} | {(isFunclet ? "  yes  " : "  no   ")} | {unwindRvaW:X8}");
                         }
                         else
@@ -537,7 +537,7 @@ namespace R2RDump
                             {
                                 endRva = _r2r.ImageReader.ReadInt32(ref rtfOffset);
                             }
-                            int unwindRva = _r2r.ImageReader.ReadInt32(ref rtfOffset);
+                            int unwindRva = _r2r.ReadRuntimeFunctionInt32(ref rtfOffset);
                             string endRvaText = (endRva != -1 ? endRva.ToString("x8") : "        ");
                             _writer.WriteLine($"{rtfIndex,7} | {startRva:X8} | {endRvaText} | {unwindRva:X8}");
                         }

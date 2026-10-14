@@ -899,6 +899,35 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
     {
         m_pRuntimeFunctions = (T_RUNTIME_FUNCTION *)m_pComposite->GetLayout()->GetDirectoryData(pRuntimeFunctionsDir);
         m_nRuntimeFunctions = pRuntimeFunctionsDir->Size / sizeof(T_RUNTIME_FUNCTION);
+#ifdef TARGET_WASM
+        if (m_pComposite->HasRuntimeFunctionBytePlanes())
+        {
+            static_assert(sizeof(T_RUNTIME_FUNCTION) == 8);
+            if (pRuntimeFunctionsDir->Size % sizeof(T_RUNTIME_FUNCTION) != 0)
+                ThrowHR(COR_E_BADIMAGEFORMAT);
+
+            if (m_isComponentAssembly)
+            {
+                m_pRuntimeFunctions = m_pCompositeInfo->GetRuntimeFunctions();
+            }
+            else
+            {
+                const BYTE* pEncoded = reinterpret_cast<const BYTE*>(m_pRuntimeFunctions);
+                SIZE_T size = pRuntimeFunctionsDir->Size;
+                BYTE* pDecoded = static_cast<BYTE*>(pamTracker->Track(
+                    pLoaderAllocator->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(size) + S_SIZE_T(2 * sizeof(DWORD)))));
+                for (DWORD plane = 0; plane < sizeof(T_RUNTIME_FUNCTION); plane++)
+                {
+                    for (DWORD entry = 0; entry < m_nRuntimeFunctions; entry++)
+                    {
+                        pDecoded[entry * sizeof(T_RUNTIME_FUNCTION) + plane] = pEncoded[plane * m_nRuntimeFunctions + entry];
+                    }
+                }
+                memcpy(pDecoded + size, pEncoded + size, 2 * sizeof(DWORD));
+                m_pRuntimeFunctions = reinterpret_cast<T_RUNTIME_FUNCTION*>(pDecoded);
+            }
+        }
+#endif // TARGET_WASM
     }
     else
     {

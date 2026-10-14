@@ -107,7 +107,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         /// <summary>
         /// Read the virtual IP count from a WASM unwind blob.
-        /// The blob format is: ULEB128(frameSize) followed by ULEB128(virtualIPCount).
+        /// The blob format is: ULEB128(frameSize / 16) followed by ULEB128(virtualIPCount).
         /// </summary>
         private static uint GetFunctionLocalVirtualIPCountFromUnwindBlob(byte[] blobData)
         {
