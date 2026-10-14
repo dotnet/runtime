@@ -1216,7 +1216,9 @@ bool Lowering::TryMakeIndirAndStoreAdjacent(GenTreeIndir* prevIndir, GenTreeLclV
         {
             // 'cur' is part of data flow of 'store', so we will be moving the
             // currently recorded effects past 'cur'.
-            if (m_scratchSideEffects.InterferesWith(m_compiler, cur, true))
+            // MarkTree does not track implicit flags dependencies.
+            if (cur->OperConsumesFlags() || cur->gtSetFlags() ||
+                m_scratchSideEffects.InterferesWith(m_compiler, cur, true))
             {
                 JITDUMP("Giving up due to interference with [%06u]\n", Compiler::dspTreeID(cur));
                 return false;
