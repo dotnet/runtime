@@ -652,6 +652,8 @@ public class MethodDescTests
         TargetPointer ilStubMethod = TargetPointer.Null;
         TargetPointer lcgMethod = TargetPointer.Null;
         TargetPointer hiddenLcgMethod = TargetPointer.Null;
+        TargetPointer hiddenNonLcgMethod = TargetPointer.Null;
+        TargetPointer hiddenILStubMethod = TargetPointer.Null;
         TargetPointer unboxingStubMethod = TargetPointer.Null;
         TargetPointer instantiatingStubMethod = TargetPointer.Null;
         TargetPointer asyncThunkMethod = TargetPointer.Null;
@@ -681,11 +683,11 @@ public class MethodDescTests
             {
                 uint methodDescSize = (uint)methodDescBuilder.DynamicMethodDescLayout.Size;
                 uint methodDescSizeByAlignment = methodDescSize / methodDescBuilder.MethodDescAlignment;
-                byte chunkSize = (byte)(3 * methodDescSizeByAlignment);
+                byte chunkSize = (byte)(5 * methodDescSizeByAlignment);
                 MockMethodDescChunk chunk = methodDescBuilder.AddMethodDescChunk("dynamic", chunkSize);
                 chunk.MethodTable = methodTable.Value;
                 chunk.Size = chunkSize;
-                chunk.Count = 3;
+                chunk.Count = 5;
 
                 MockDynamicMethodDesc ilStub = chunk.GetMethodDescAtChunkIndex(0, methodDescBuilder.DynamicMethodDescLayout);
                 ilStub.Flags = (ushort)MethodClassification.Dynamic;
@@ -707,6 +709,21 @@ public class MethodDescTests
                 hiddenLcg.ExtendedFlags = (uint)(RuntimeTypeSystem_1.DynamicMethodDescExtendedFlags.IsLCGMethod |
                     RuntimeTypeSystem_1.DynamicMethodDescExtendedFlags.IsDiagnosticsHidden);
                 hiddenLcgMethod = new TargetPointer(hiddenLcg.Address);
+
+                MockDynamicMethodDesc hiddenNonLcg = chunk.GetMethodDescAtChunkIndex((int)(3 * methodDescSizeByAlignment), methodDescBuilder.DynamicMethodDescLayout);
+                hiddenNonLcg.ChunkIndex = (byte)(3 * methodDescSizeByAlignment);
+                hiddenNonLcg.Flags = (ushort)MethodClassification.Dynamic;
+                hiddenNonLcg.Slot = 3;
+                hiddenNonLcg.ExtendedFlags = (uint)RuntimeTypeSystem_1.DynamicMethodDescExtendedFlags.IsDiagnosticsHidden;
+                hiddenNonLcgMethod = new TargetPointer(hiddenNonLcg.Address);
+
+                MockDynamicMethodDesc hiddenILStub = chunk.GetMethodDescAtChunkIndex((int)(4 * methodDescSizeByAlignment), methodDescBuilder.DynamicMethodDescLayout);
+                hiddenILStub.ChunkIndex = (byte)(4 * methodDescSizeByAlignment);
+                hiddenILStub.Flags = (ushort)MethodClassification.Dynamic;
+                hiddenILStub.Slot = 4;
+                hiddenILStub.ExtendedFlags = (uint)(RuntimeTypeSystem_1.DynamicMethodDescExtendedFlags.IsILStub |
+                    RuntimeTypeSystem_1.DynamicMethodDescExtendedFlags.IsDiagnosticsHidden);
+                hiddenILStubMethod = new TargetPointer(hiddenILStub.Address);
             }
 
             // Unboxing stub (diagnostics hidden via IsWrapperStub -> IsUnboxingStub)
@@ -853,8 +870,33 @@ public class MethodDescTests
         {
             MethodDescHandle handle = rts.GetMethodDescHandle(hiddenLcgMethod);
             Assert.True(rts.IsDiagnosticsHidden(handle));
+            Assert.True(rts.IsDiagnosticsHiddenLCGMethod(handle));
             Assert.True(rts.IsDynamicMethod(handle));
             Assert.False(rts.IsILStub(handle));
+        }
+
+        {
+            MethodDescHandle handle = rts.GetMethodDescHandle(hiddenNonLcgMethod);
+            Assert.True(rts.IsDiagnosticsHidden(handle));
+            Assert.False(rts.IsDynamicMethod(handle));
+            Assert.False(rts.IsILStub(handle));
+        }
+
+        {
+            MethodDescHandle handle = rts.GetMethodDescHandle(hiddenILStubMethod);
+            Assert.True(rts.IsDiagnosticsHidden(handle));
+            Assert.False(rts.IsDynamicMethod(handle));
+            Assert.True(rts.IsILStub(handle));
+        }
+
+        foreach (TargetPointer method in new[]
+        {
+            normalMethod, ilStubMethod, lcgMethod, hiddenNonLcgMethod, hiddenILStubMethod,
+            unboxingStubMethod, instantiatingStubMethod, asyncThunkMethod, asyncNonThunkMethod,
+            asyncThunkWithNativeCodeSlotMethod, asyncVariantThunkMethod, asyncReturnDroppingThunkMethod,
+        })
+        {
+            Assert.False(rts.IsDiagnosticsHiddenLCGMethod(rts.GetMethodDescHandle(method)));
         }
 
         // Unboxing stub: hidden via IsWrapperStub

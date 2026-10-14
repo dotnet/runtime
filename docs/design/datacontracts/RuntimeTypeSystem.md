@@ -273,6 +273,9 @@ partial interface IRuntimeTypeSystem : IContract
     // Return true for runtime plumbing omitted from diagnostic stacks, code viewing, and stepping.
     public virtual bool IsDiagnosticsHidden(MethodDescHandle methodDesc);
 
+    // Return true for an LCG method explicitly marked as diagnostics-hidden.
+    public virtual bool IsDiagnosticsHiddenLCGMethod(MethodDescHandle methodDesc);
+
     // Return true if a MethodDesc represents an IL stub with a special MethodDesc context arg
     public virtual bool HasMDContextArg(MethodDescHandle);
 
@@ -1932,6 +1935,15 @@ And the various apis are implemented with the following algorithms
         return IsWrapperStub(methodDescHandle) ||
             (flags.HasFlag(AsyncMethodFlags.Thunk) &&
                 (flags.HasFlag(AsyncMethodFlags.ReturnDroppingThunk) || !flags.HasFlag(AsyncMethodFlags.IsAsyncVariant)));
+    }
+
+    public bool IsDiagnosticsHiddenLCGMethod(MethodDescHandle methodDescHandle)
+    {
+        if (!IsDynamicMethod(methodDescHandle))
+            return false;
+
+        uint extendedFlags = // Read ExtendedFlags field from StoredSigMethodDesc
+        return ((DynamicMethodDescExtendedFlags)extendedFlags).HasFlag(DynamicMethodDescExtendedFlags.IsDiagnosticsHidden);
     }
 
     public bool IsIL(MethodDescHandle methodDescHandle)
