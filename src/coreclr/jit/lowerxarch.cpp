@@ -7570,10 +7570,11 @@ void Lowering::ContainCheckIndir(GenTreeIndir* node)
         // The address of an indirection that requires its address in a reg.
         // Skip any further processing that might otherwise make it contained.
     }
-    else if (addr->OperIs(GT_LCL_ADDR) && IsContainableLclAddr(addr->AsLclFld(), node->Size()))
+    else if (addr->OperIs(GT_LCL_ADDR) && !node->IsVolatile() && IsContainableLclAddr(addr->AsLclFld(), node->Size()))
     {
         // These nodes go into an addr mode:
         // - GT_LCL_ADDR is a stack addr mode.
+        // Volatile accesses are not contained so that the emitter's stack move peephole cannot remove them.
         MakeSrcContained(node, addr);
     }
     else if (addr->IsCnsIntOrI())
