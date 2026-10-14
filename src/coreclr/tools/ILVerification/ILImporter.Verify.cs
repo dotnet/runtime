@@ -2865,6 +2865,7 @@ namespace Internal.IL
         void ReportFallthroughAtEndOfMethod()
         {
             VerificationError(VerifierError.MethodFallthrough);
+            AbortMethodVerification();
         }
 
         void ReportMethodEndInsideInstruction()
