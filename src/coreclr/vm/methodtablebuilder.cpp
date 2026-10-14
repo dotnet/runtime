@@ -3747,23 +3747,23 @@ MethodTableBuilder::EnumerateClassMethods()
         SigBuilder covariantElementSigBuilder;
         PCCOR_SIGNATURE pCovariantElementSig = NULL;
         ULONG cbCovariantElementSig = 0;
-        if (bmtMetaData->fHasCovariantOverride &&
+        if (bmtMetaData.fHasCovariantOverride &&
             (implType == METHOD_IMPL) &&
             !IsTaskReturning(returnKind) &&
             !IsMiAsync(dwImplFlags) &&
             IsMdVirtual(dwMemberAttrs))
         {
-            for (DWORD impls = 0; impls < bmtMethod->dwNumberMethodImpls; impls++)
+            for (DWORD impls = 0; impls < bmtMethod.dwNumberMethodImpls; impls++)
             {
-                if ((bmtMetaData->rgMethodImplTokens[impls].methodBody == tok) &&
-                    bmtMetaData->rgMethodImplTokens[impls].fRequiresCovariantReturnTypeChecking)
+                if ((bmtMetaData.rgMethodImplTokens[impls].methodBody == tok) &&
+                    bmtMetaData.rgMethodImplTokens[impls].fRequiresCovariantReturnTypeChecking)
                 {
                     isCovariantTaskOverride = TryGetCovariantOverrideAsyncVariantReturnType(
                         pMDInternalImport,
                         GetModule(),
                         GetCl(),
                         bmtGenerics->GetNumGenericArgs(),
-                        bmtMetaData->rgMethodImplTokens[impls].methodDecl,
+                        bmtMetaData.rgMethodImplTokens[impls].methodDecl,
                         &covariantElementSigBuilder,
                         &pCovariantElementSig,
                         &cbCovariantElementSig);
