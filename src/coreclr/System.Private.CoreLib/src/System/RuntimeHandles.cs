@@ -1864,9 +1864,11 @@ namespace System
             byte[] sig,
             int sigLen,
             ObjectHandleOnStack resolver,
+            [MarshalAs(UnmanagedType.Bool)] bool isDiagnosticsHidden,
             ObjectHandleOnStack result);
 
-        internal static IRuntimeMethodInfo GetDynamicMethod(RuntimeModule module, string name, byte[] sig, Resolver resolver)
+        internal static IRuntimeMethodInfo GetDynamicMethod(RuntimeModule module, string name, byte[] sig,
+            Resolver resolver, bool isDiagnosticsHidden)
         {
             IRuntimeMethodInfo? methodInfo = null;
             GetDynamicMethod(
@@ -1875,6 +1877,7 @@ namespace System
                 sig,
                 sig.Length,
                 ObjectHandleOnStack.Create(ref resolver),
+                isDiagnosticsHidden,
                 ObjectHandleOnStack.Create(ref methodInfo));
             return methodInfo!;
         }

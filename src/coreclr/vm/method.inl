@@ -177,7 +177,9 @@ inline bool MethodDesc::IsDiagnosticsHidden()
     //   tolerate if the runtime-implemented frame is missing because they can still see the managed target method.
 
     WRAPPER_NO_CONTRACT;
-    if (IsILStub())
+    if (IsILStub() ||
+        (GetClassification() == mcDynamic &&
+            AsDynamicMethodDesc()->HasFlags(DynamicMethodDesc::FlagIsDiagnosticsHidden)))
     {
         return true;
     }
@@ -236,4 +238,3 @@ inline MethodDescBackpatchInfoTracker * MethodDesc::GetBackpatchInfoTracker()
 }
 
 #endif  // _METHOD_INL_
-

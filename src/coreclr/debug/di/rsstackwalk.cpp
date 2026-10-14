@@ -540,6 +540,18 @@ HRESULT CordbStackWalk::GetFrameWorker(ICorDebugFrame ** ppFrame)
         // on the stack.
         Debugger_JITFuncData * pJITFuncData = &(frameData.v.jitFuncData);
 
+        if (frameData.v.fNoMetadata)
+        {
+            IDacDbiInterface::DynamicMethodType methodType;
+            IfFailThrow(pDAC->IsDiagnosticsHiddenOrLCGMethod(
+                pJITFuncData->vmNativeCodeMethodDescToken, &methodType));
+            if (methodType == IDacDbiInterface::kDiagnosticHidden)
+            {
+                // Keep the unwind context, but do not expose a frame for runtime plumbing.
+                return S_FALSE;
+            }
+        }
+
         // Lookup the appdomain that the thread was in when it was executing code for this frame. We pass this
         // to the frame when we create it so we can properly resolve locals in that frame later.
         CordbAppDomain * pCurrentAppDomain = GetProcess()->GetAppDomain();

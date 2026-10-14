@@ -1006,6 +1006,7 @@ public unsafe class DacDbiImplTests
         var rts = new Mock<IRuntimeTypeSystem>();
         rts.Setup(r => r.GetMethodDescHandle(methodDesc)).Returns(methodDescHandle);
         rts.Setup(r => r.GetAsyncMethodFlags(methodDescHandle)).Returns(AsyncMethodFlags.None);
+        rts.Setup(r => r.IsDiagnosticsHidden(methodDescHandle)).Returns(false);
         rts.Setup(r => r.GetNativeCode(methodDescHandle)).Returns(entryPoint);
 
         var codeVersions = new Mock<ICodeVersions>();
@@ -1085,6 +1086,7 @@ public unsafe class DacDbiImplTests
         rts.Setup(r => r.GetMethodDescHandle(methodDesc)).Returns(methodDescHandle);
         rts.Setup(r => r.GetMethodDescHandle(asyncVariant)).Returns(asyncVariantHandle);
         rts.Setup(r => r.GetAsyncMethodFlags(methodDescHandle)).Returns(AsyncMethodFlags.Thunk);
+        rts.Setup(r => r.IsDiagnosticsHidden(methodDescHandle)).Returns(true);
         rts.Setup(r => r.GetAsyncVariant(methodDescHandle)).Returns(asyncVariant);
         rts.Setup(r => r.GetNativeCode(asyncVariantHandle)).Returns(interpreterPrecode);
         rts.Setup(r => r.GetMethodTable(asyncVariantHandle)).Throws(new VirtualReadException());
