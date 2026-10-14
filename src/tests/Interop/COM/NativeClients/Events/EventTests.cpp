@@ -409,11 +409,45 @@ namespace
 
         ComSmartPtr<IEnumConnections> connections;
         THROW_IF_FAILED(cp->EnumConnections(&connections));
+
+        for (ULONG batchSize : {1u, 3u})
+        {
+            THROW_IF_FAILED(connections->Reset());
+            for (ULONG i = 0; i < 3; i += batchSize)
+            {
+                CONNECTDATA data[3]{};
+                ULONG fetched;
+                THROW_FAIL_IF_FALSE(connections->Next(batchSize, data, &fetched) == S_OK);
+                THROW_FAIL_IF_FALSE(fetched == batchSize);
+                for (ULONG j = 0; j < fetched; j++)
+                {
+                    ComSmartPtr<IUnknown> enumerated;
+                    enumerated.Attach(data[j].pUnk);
+                    THROW_FAIL_IF_FALSE(data[j].dwCookie == cookies[i + j]);
+                }
+            }
+        }
+
+        THROW_IF_FAILED(connections->Reset());
+        THROW_FAIL_IF_FALSE(connections->Skip(2) == S_OK);
+        ComSmartPtr<IEnumConnections> stableClone;
+        THROW_IF_FAILED(connections->Clone(&stableClone));
+        for (IEnumConnections* current : {connections.p, stableClone.p})
+        {
+            CONNECTDATA data{};
+            ULONG fetched;
+            THROW_FAIL_IF_FALSE(current->Next(1, &data, &fetched) == S_OK);
+            ComSmartPtr<IUnknown> enumerated;
+            enumerated.Attach(data.pUnk);
+            THROW_FAIL_IF_FALSE(fetched == 1 && data.dwCookie == cookies[2]);
+        }
+
+        THROW_IF_FAILED(connections->Reset());
         THROW_IF_FAILED(cp->Unadvise(cookies[0]));
         THROW_FAIL_IF_FALSE(connections->Skip(1) == S_OK);
+        THROW_IF_FAILED(cp->Unadvise(cookies[2]));
         ComSmartPtr<IEnumConnections> clone;
         THROW_IF_FAILED(connections->Clone(&clone));
-        THROW_IF_FAILED(cp->Unadvise(cookies[2]));
         DWORD inserted;
         THROW_IF_FAILED(cp->Advise(static_cast<TestingEvents*>(sink.p), &inserted));
         THROW_FAIL_IF_FALSE(inserted == cookies[2]);

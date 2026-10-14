@@ -120,6 +120,7 @@ public:
     }
 
 private:
+    friend class ConnectionEnum;
     class RemovalHolder;
 
     // Structures used for the AD callback wrappers.
@@ -165,6 +166,7 @@ private:
     int                             m_NumEventMethods;
     ULONG                           m_cbRefCount;
     ConnectionCookie*               m_pLastInserted;
+    UINT64                          m_CookieListVersion;
 
     const static DWORD      idUpperLimit        = 0xFFFFFFFF;
 };
@@ -224,6 +226,9 @@ private:
     ConnectionCookie* GetNextCookie();
 
     ConnectionPoint*                m_pConnectionPoint;
+    // Only dereferenced under the lock after validating the list version.
+    ConnectionCookie*               m_pNextCookie;
+    UINT64                          m_CookieListVersion;
     // A live, ascending-ID cursor. Zero marks exhaustion until Reset.
     DWORD                           m_NextCookieId;
     ULONG                           m_cbRefCount;

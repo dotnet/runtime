@@ -27,6 +27,7 @@ ConnectionPoint::ConnectionPoint(ComCallWrapper *pWrap, MethodTable *pEventMT)
 , m_NumEventMethods(0)
 , m_cbRefCount(0)
 , m_pLastInserted(NULL)
+, m_CookieListVersion(0)
 {
     CONTRACTL
     {
@@ -754,6 +755,10 @@ DWORD ConnectionPoint::InsertWithLock(ConnectionCookieHolder& cookieHolder)
 
     m_pLastInserted = pConCookie;
 
+    // Saturation disables enumeration caching rather than allowing stale versions to match.
+    if (m_CookieListVersion != UINT64_MAX)
+        m_CookieListVersion++;
+
     DWORD id = pConCookie->m_id;
     cookieHolder.SuppressRelease();
     return id;
@@ -802,6 +807,9 @@ void ConnectionPoint::FindAndRemoveWithLock(ConnectionCookie* pConCookie)
     _ASSERTE(pConCookie->m_fRemoving);
     if (!m_ConnectionList.FindAndRemove(pConCookie))
         EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
+
+    if (m_CookieListVersion != UINT64_MAX)
+        m_CookieListVersion++;
 
     if (pConCookie == m_pLastInserted)
     {
@@ -1043,6 +1051,8 @@ HRESULT __stdcall ConnectionPointEnum::Clone(IEnumConnectionPoints **ppEnum)
 
 ConnectionEnum::ConnectionEnum(ConnectionPoint *pConnectionPoint)
 : m_pConnectionPoint(pConnectionPoint)
+, m_pNextCookie(nullptr)
+, m_CookieListVersion(0)
 , m_NextCookieId(0)
 , m_cbRefCount(0)
 {
@@ -1058,6 +1068,8 @@ ConnectionEnum::ConnectionEnum(ConnectionPoint *pConnectionPoint)
 
     ConnectionPoint::LockHolder lh(m_pConnectionPoint);
     ConnectionCookie* pHead = m_pConnectionPoint->GetCookieList()->GetHead();
+    m_pNextCookie = pHead;
+    m_CookieListVersion = m_pConnectionPoint->m_CookieListVersion;
     m_NextCookieId = pHead != nullptr ? pHead->m_id : 0;
 }
 
@@ -1153,17 +1165,29 @@ ConnectionCookie* ConnectionEnum::GetNextCookie()
 {
     WRAPPER_NO_CONTRACT;
 
-    // The caller holds the connection-point lock. Removed pending IDs are skipped;
-    // insertions (including reused IDs) at or beyond the cursor remain visible.
-    ConnectionCookie* pCookie = m_pConnectionPoint->GetCookieList()->GetHead();
+    _ASSERTE(m_pConnectionPoint->m_Lock.OwnedByCurrentThread());
+
     if (m_NextCookieId == 0)
         return nullptr;
 
-    while (pCookie != nullptr && pCookie->m_id < m_NextCookieId)
-        pCookie = CONNECTIONCOOKIELIST::GetNext(pCookie);
+    UINT64 version = m_pConnectionPoint->m_CookieListVersion;
+    ConnectionCookie* pCookie;
+    if (m_CookieListVersion != version || version == UINT64_MAX)
+    {
+        // Never dereference the cache after a mutation. Removed pending IDs are skipped;
+        // insertions (including reused IDs) at or beyond the cursor remain visible.
+        pCookie = m_pConnectionPoint->GetCookieList()->GetHead();
+        while (pCookie != nullptr && pCookie->m_id < m_NextCookieId)
+            pCookie = CONNECTIONCOOKIELIST::GetNext(pCookie);
+    }
+    else
+    {
+        pCookie = m_pNextCookie;
+    }
 
-    ConnectionCookie* pNext = pCookie != nullptr ? CONNECTIONCOOKIELIST::GetNext(pCookie) : nullptr;
-    m_NextCookieId = pNext != nullptr ? pNext->m_id : 0;
+    m_pNextCookie = pCookie != nullptr ? CONNECTIONCOOKIELIST::GetNext(pCookie) : nullptr;
+    m_CookieListVersion = version;
+    m_NextCookieId = m_pNextCookie != nullptr ? m_pNextCookie->m_id : 0;
     return pCookie;
 }
 
@@ -1284,6 +1308,8 @@ HRESULT __stdcall ConnectionEnum::Reset()
     ConnectionPoint::LockHolder lh(m_pConnectionPoint);
 
     ConnectionCookie* pHead = m_pConnectionPoint->GetCookieList()->GetHead();
+    m_pNextCookie = pHead;
+    m_CookieListVersion = m_pConnectionPoint->m_CookieListVersion;
     m_NextCookieId = pHead != nullptr ? pHead->m_id : 0;
 
     return S_OK;
@@ -1315,6 +1341,8 @@ HRESULT __stdcall ConnectionEnum::Clone(IEnumConnections **ppEnum)
 
     {
         ConnectionPoint::LockHolder lh(m_pConnectionPoint);
+        pConEnum->m_pNextCookie = m_pNextCookie;
+        pConEnum->m_CookieListVersion = m_CookieListVersion;
         pConEnum->m_NextCookieId = m_NextCookieId;
     }
 
