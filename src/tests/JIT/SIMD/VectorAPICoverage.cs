@@ -95,6 +95,10 @@ public class Coverage
         Assert.Equal(1u, Vector.ShiftRightLogical(new Vector<uint>(0x80000000), 31)[0]);
 
     [Fact]
+    public static void ShiftRightLogicalIntTest() =>
+        Assert.Equal(1, Vector.ShiftRightLogical(new Vector<int>(int.MinValue), 31)[0]);
+
+    [Fact]
     public static void ShiftRightLogicalOperatorTest() => Assert.Equal(1u, (new Vector<uint>(0x80000000) >>> 31)[0]);
 
     [Fact]
