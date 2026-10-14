@@ -389,6 +389,7 @@ namespace ILCompiler.ObjectWriter
                         RelocType.WASM_TABLE_INDEX_I32 => WasmRelocationType.TableIndexI32,
                         RelocType.WASM_TABLE_INDEX_I64 => WasmRelocationType.TableIndexI64,
                         RelocType.WASM_MEMORY_ADDR_LEB => WasmRelocationType.MemoryAddrLeb,
+                        RelocType.WASM_MEMORY_ADDR_SLEB when isFunction => WasmRelocationType.TableIndexSleb,
                         RelocType.WASM_MEMORY_ADDR_SLEB => WasmRelocationType.MemoryAddrSleb,
                         RelocType.WASM_MEMORY_ADDR_REL_SLEB when isFunction => WasmRelocationType.TableIndexSleb,
                         RelocType.WASM_MEMORY_ADDR_REL_SLEB => WasmRelocationType.MemoryAddrRelSleb,

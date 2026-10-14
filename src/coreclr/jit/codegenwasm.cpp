@@ -2176,11 +2176,18 @@ void CodeGen::genCodeForConstant(GenTree* treeNode)
         icon = treeNode->AsIntConCommon();
         if (icon->IsIconHandle())
         {
-            // Wasm has no absolute-address literals; every handle is materialized as a module-base-
-            // relative constant and relocated. compReloc is always on for a real AOT compile, so a
-            // handle only reaches here without needing a reloc under a cross-VM SuperPMI replay.
+            // Handles need linker relocations for NativeAOT or image-relative relocations for R2R.
+            // A handle only reaches here without needing a reloc under a cross-VM SuperPMI replay.
             assert(icon->ImmedValNeedsReloc(m_compiler) || m_compiler->RunningSuperPmiReplay());
-            GetEmitter()->emitAddressConstant((void*)icon->IntegralValue());
+            if ((treeNode->gtLIRFlags & LIR::Flags::FoldedAddr) != LIR::Flags::None)
+            {
+                assert(m_compiler->IsNativeAot());
+                GetEmitter()->emitIns_I(INS_i32_const, EA_PTRSIZE, 0);
+            }
+            else
+            {
+                GetEmitter()->emitAddressConstant((void*)icon->IntegralValue());
+            }
             WasmProduceReg(treeNode);
             return;
         }
@@ -3150,11 +3157,18 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
 
     if (addr->isContained() && !addr->OperIs(GT_LEA))
     {
-        // A contained address constant folds into the memarg offset, so emit just the image base here.
+        // A contained address constant folds into the memarg offset, so emit just the address base here.
         //
         assert(addr->IsIconHandle() && !tree->TypeIs(TYP_SIMD12));
         assert(addr->AsIntConCommon()->ImmedValNeedsReloc(m_compiler));
-        GetEmitter()->emitImageBase();
+        if (m_compiler->IsNativeAot())
+        {
+            GetEmitter()->emitIns_I(INS_i32_const, EA_PTRSIZE, 0);
+        }
+        else
+        {
+            GetEmitter()->emitImageBase();
+        }
         GetEmitter()->emitIns_MemargAddress(ins_Load(type), emitActualTypeSize(type),
                                             (void*)addr->AsIntConCommon()->IntegralValue());
     }
@@ -3219,6 +3233,11 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
         else if (type == TYP_SIMD12)
         {
             genStoreIndTypeSimd12(tree);
+        }
+        else if (addr->IsIconHandle() && ((addr->gtLIRFlags & LIR::Flags::FoldedAddr) != LIR::Flags::None))
+        {
+            GetEmitter()->emitIns_MemargAddress(ins_Store(type), emitActualTypeSize(type),
+                                                (void*)addr->AsIntConCommon()->IntegralValue());
         }
         else
         {

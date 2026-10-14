@@ -45,9 +45,9 @@ public:
             MultiplyUsed = 0x08, // Set by lowering on nodes that the RA should allocate into
                                  // a dedicated register (WASM local), for multiple uses.
 
-            FoldedAddr = 0x10, // Set by lowering on a GT_LCL_ADDR whose frame offset is folded into
-                               // the memarg of the indirection using it. Codegen for such a node
-                               // emits just the frame pointer.
+            FoldedAddr = 0x10, // The address offset is folded into its indirection's memarg.
+                               // A GT_LCL_ADDR emits just the frame pointer; a NativeAOT
+                               // global-address constant emits zero.
 #endif                         // TARGET_WASM
         };
     };
