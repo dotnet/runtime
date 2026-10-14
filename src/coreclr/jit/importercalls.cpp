@@ -1822,12 +1822,12 @@ GenTree* Compiler::impThrowIfNull(GenTreeCall* call)
     // Case 1b: value-type (non-nullable) boxed via CORINFO_HELP_BOX helper.
     // In Tier0 (and other size-constrained modes) struct boxes are emitted as a
     // direct helper call rather than GT_BOX. The helper always returns non-null,
-    // so the ThrowIfNull is a no-op aside from the side effects of computing the
-    // helper's address argument and the valueName.
+    // so the ThrowIfNull is a no-op aside from argument evaluation and the null
+    // check performed when reading the boxed value.
     //
     //  ArgumentNullException_ThrowIfNull(CORINFO_HELP_BOX(clsHnd, addr), valueName)
     //    ->
-    //  NOP (with side-effects of addr and valueName preserved)
+    //  NOP (with argument side effects and the addr null check preserved)
     //
     if (value->IsHelperCall(CORINFO_HELP_BOX))
     {
@@ -1844,6 +1844,11 @@ GenTree* Compiler::impThrowIfNull(GenTreeCall* call)
         unsigned boxedAddrTmp    = lvaGrabTemp(true DEBUGARG("boxedAddr spilled"));
         unsigned boxedArgNameTmp = lvaGrabTemp(true DEBUGARG("boxedArg spilled"));
         impStoreToTemp(boxedAddrTmp, boxHelperAddrArg, CHECK_SPILL_ALL);
+        if (fgAddrCouldBeNull(boxHelperAddrArg))
+        {
+            GenTree* addr = gtNewLclvNode(boxedAddrTmp, boxHelperAddrArg->TypeGet());
+            impAppendTree(gtNewNullCheck(addr), CHECK_SPILL_ALL, impCurStmtDI);
+        }
         impStoreToTemp(boxedArgNameTmp, valueName, CHECK_SPILL_ALL);
         return gtNewNothingNode();
     }
