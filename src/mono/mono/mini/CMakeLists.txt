@@ -119,6 +119,8 @@ set(mini_common_sources
     interp-stubs.c
     aot-runtime.h
     ee.h
+    hostinformation.h
+    hostinformation.c
     mini-runtime.h
     llvmonly-runtime.h
     llvmonly-runtime.c

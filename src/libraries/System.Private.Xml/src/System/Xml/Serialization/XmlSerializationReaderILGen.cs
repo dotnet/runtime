@@ -2967,13 +2967,13 @@ namespace System.Xml.Serialization
         // surfaced consistently.
         private void WriteHandleUnknownAttributes()
         {
-            MethodInfo XmlSerializationReader_GetNullAttr = typeof(XmlSerializationReader).GetMethod(
-                "GetNullAttr",
+            MethodInfo XmlSerializationReader_get_Reader = typeof(XmlSerializationReader).GetMethod(
+                "get_Reader",
                 CodeGenerator.InstanceBindingFlags,
                 Type.EmptyTypes
                 )!;
-            MethodInfo XmlSerializationReader_get_Reader = typeof(XmlSerializationReader).GetMethod(
-                "get_Reader",
+            MethodInfo XmlReader_get_HasAttributes = typeof(XmlReader).GetMethod(
+                "get_HasAttributes",
                 CodeGenerator.InstanceBindingFlags,
                 Type.EmptyTypes
                 )!;
@@ -3003,14 +3003,10 @@ namespace System.Xml.Serialization
                 Type.EmptyTypes
                 )!;
 
-            // When the element is marked xsi:nil, the nil marker (and the element itself) is consumed
-            // by the following ReadNull() call, so its attributes must not be surfaced as unknown. This
-            // also matches the struct path, where a nil element returns before its attributes are read.
-            // if (!GetNullAttr()) {
             ilg.Ldarg(0);
-            ilg.Call(XmlSerializationReader_GetNullAttr);
-            ilg.Ldc(false);
-            ilg.If(Cmp.EqualTo);
+            ilg.Call(XmlSerializationReader_get_Reader);
+            ilg.Call(XmlReader_get_HasAttributes);
+            ilg.If();
             {
                 // while (Reader.MoveToNextAttribute()) {
                 //     if (!IsXmlnsAttribute(Reader.Name)) {
@@ -3051,11 +3047,6 @@ namespace System.Xml.Serialization
 
         private void WriteArray(string source, string? arrayName, ArrayMapping arrayMapping, bool readOnly, bool isNullable, int elementIndex)
         {
-            if (!arrayMapping.IsSoap)
-            {
-                WriteHandleUnknownAttributes();
-            }
-
             MethodInfo XmlSerializationReader_ReadNull = typeof(XmlSerializationReader).GetMethod(
                 "ReadNull",
                 CodeGenerator.InstanceBindingFlags,
@@ -3065,6 +3056,11 @@ namespace System.Xml.Serialization
             ilg.Call(XmlSerializationReader_ReadNull);
             ilg.IfNot();    // if (!ReadNull()) { // EnterScope
             ilg.EnterScope();
+
+            if (!arrayMapping.IsSoap)
+            {
+                WriteHandleUnknownAttributes();
+            }
 
             MemberMapping memberMapping = new MemberMapping();
             memberMapping.Elements = arrayMapping.Elements;
@@ -3203,10 +3199,6 @@ namespace System.Xml.Serialization
             }
             else if (element.Mapping is PrimitiveMapping)
             {
-                if (!element.Mapping.IsSoap)
-                {
-                    WriteHandleUnknownAttributes();
-                }
                 bool doEndIf = false;
                 if (element.IsNullable)
                 {
@@ -3230,6 +3222,10 @@ namespace System.Xml.Serialization
                     WriteSourceEnd(source, element.Mapping.TypeDesc.Type!);
                     ilg.Else();
                     doEndIf = true;
+                }
+                if (!element.Mapping.IsSoap)
+                {
+                    WriteHandleUnknownAttributes();
                 }
                 if (element.Default != null && element.Default != DBNull.Value && element.Mapping.TypeDesc!.IsValueType)
                 {

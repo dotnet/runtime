@@ -44,11 +44,11 @@ bool interceptor_ICJI::notifyMethodInfoUsage(CORINFO_METHOD_HANDLE ftn)
     return temp;
 }
 
-bool interceptor_ICJI::notifyInstructionSetUsage(CORINFO_InstructionSet instructionSet, bool supported)
+bool interceptor_ICJI::notifyInstructionSetUsage(CORINFO_InstructionSet instructionSet, bool supported, bool preserveNegativeDependency)
 {
     mc->cr->AddCall("notifyInstructionSetUsage");
-    bool result = original_ICorJitInfo->notifyInstructionSetUsage(instructionSet, supported);
-    mc->recNotifyInstructionSetUsage(instructionSet, supported, result);
+    bool result = original_ICorJitInfo->notifyInstructionSetUsage(instructionSet, supported, preserveNegativeDependency);
+    mc->recNotifyInstructionSetUsage(instructionSet, supported, preserveNegativeDependency, result);
     return result;
 }
 
@@ -1633,15 +1633,6 @@ void interceptor_ICJI::getAddressOfPInvokeTarget(CORINFO_METHOD_HANDLE method, C
     mc->cr->AddCall("getAddressOfPInvokeTarget");
     original_ICorJitInfo->getAddressOfPInvokeTarget(method, pLookup);
     mc->recGetAddressOfPInvokeTarget(method, pLookup);
-}
-
-// Generate a cookie based on the signature to pass to CORINFO_HELP_PINVOKE_CALLI
-LPVOID interceptor_ICJI::GetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig, void** ppIndirection)
-{
-    mc->cr->AddCall("GetCookieForPInvokeCalliSig");
-    LPVOID temp = original_ICorJitInfo->GetCookieForPInvokeCalliSig(szMetaSig, ppIndirection);
-    mc->recGetCookieForPInvokeCalliSig(szMetaSig, ppIndirection, temp);
-    return temp;
 }
 
 // Generate a cookie based on the signature to pass to INTOP_CALLI

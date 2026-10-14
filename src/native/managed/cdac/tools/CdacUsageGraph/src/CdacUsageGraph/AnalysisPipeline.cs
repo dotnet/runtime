@@ -25,28 +25,35 @@ internal sealed class AnalysisPipeline
         new JsonReportWriter(),
     ];
 
-    private readonly AnalysisOptions _options;
+    private readonly UsageGraphAnalysisOptions _options;
 
-    public AnalysisPipeline(AnalysisOptions options) => _options = options;
+    public AnalysisPipeline(UsageGraphAnalysisOptions options) => _options = options;
 
-    /// <summary>
-    /// Builds the usage graph for the cDAC source rooted at <paramref name="cdacRoot"/> (phases A-D).
-    /// Shared by the report pipeline, the <c>docs</c> command and the tests so they all analyze the
-    /// same way.
-    /// </summary>
-    public static UsageGraph BuildGraph(string cdacRoot)
+    public static UsageGraph BuildGraph(UsageGraphAnalysisOptions options)
     {
-        if (!Directory.Exists(Path.Combine(cdacRoot, CdacSymbols.ContractsProjectDirectory)))
-            throw new InvalidOperationException($"Could not find the cDAC Contracts project under '{cdacRoot}'; pass --cdac-root.");
+        ArgumentNullException.ThrowIfNull(options);
+        if (!File.Exists(options.ContractsProjectPath))
+        {
+            throw new InvalidOperationException(
+                $"Could not find the cDAC Contracts project at '{options.ContractsProjectPath}'.");
+        }
 
-        return BuildGraph(CdacCompilationLoader.Load(cdacRoot), cdacRoot);
+        return BuildGraph(
+            CdacCompilationLoader.LoadProject(options.ContractsProjectPath),
+            options.SourceRoot,
+            options.ContractRegistrationTypeName);
     }
 
-    private static UsageGraph BuildGraph(CSharpCompilation compilation, string cdacRoot)
+    private static UsageGraph BuildGraph(
+        CSharpCompilation compilation,
+        string cdacRoot,
+        string contractRegistrationTypeName)
     {
         // Phase B: discovery.
         DataTypeIndex index = DataTypeDiscovery.BuildIndex(compilation);
-        IReadOnlyList<ContractRegistration> registrations = ContractRegistrationParser.Parse(compilation);
+        IReadOnlyList<ContractRegistration> registrations = ContractRegistrationParser.Parse(
+            compilation,
+            contractRegistrationTypeName);
 
         // Sanity guard: if discovery found no Data types or no registrations, the compilation
         // input has drifted (renamed anchor types, missing source) -- fail fast rather than emit
@@ -62,15 +69,15 @@ internal sealed class AnalysisPipeline
 
     public int Run()
     {
-        string cdacRoot = _options.CdacRoot.FullName;
-
         // Phases A-D.
-        UsageGraph graph = BuildGraph(cdacRoot);
+        UsageGraph graph = BuildGraph(_options);
         Console.WriteLine($"Discovered {graph.DataTypeCount} Data types.");
         Console.WriteLine($"Parsed {graph.Contracts.Count} contract versions.");
 
         // Phase E: emit.
-        string outDir = _options.OutputDirectory.FullName;
+        string outDir = _options.OutputDirectory
+            ?? throw new InvalidOperationException(
+                "An output directory is required to emit usage graph reports.");
         Directory.CreateDirectory(outDir);
         Console.WriteLine($"Wrote outputs to {outDir}");
         foreach (IReportWriter writer in s_writers)

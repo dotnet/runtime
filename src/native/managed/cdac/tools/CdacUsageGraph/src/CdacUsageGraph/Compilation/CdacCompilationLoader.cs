@@ -14,12 +14,8 @@ namespace CdacUsageGraph.Compilation;
 /// </summary>
 internal static class CdacCompilationLoader
 {
-    public static CSharpCompilation Load(string cdacRoot)
+    public static CSharpCompilation LoadProject(string projectPath)
     {
-        string projectPath = Path.Combine(
-            cdacRoot,
-            CdacSymbols.ContractsProjectDirectory,
-            CdacSymbols.ContractsProjectFile);
         if (!File.Exists(projectPath))
             throw new InvalidOperationException($"Could not find the cDAC Contracts project at '{projectPath}'.");
 

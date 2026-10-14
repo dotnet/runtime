@@ -2,24 +2,24 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.CommandLine;
-using System.CommandLine.Parsing;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
-using System.Text;
 
 namespace ILAssembler;
 
 internal sealed class Program
 {
     private readonly IlasmRootCommand _command;
+    private readonly ParseResult _result;
 
-    public Program(IlasmRootCommand command)
+    public Program(IlasmRootCommand command, ParseResult result)
     {
         _command = command;
+        _result = result;
     }
 
     public int Run()
@@ -30,7 +30,7 @@ internal sealed class Program
             stopwatch = Stopwatch.StartNew();
         }
 
-        string[]? inputFiles = _command.Result.GetValue(_command.InputFilePaths);
+        string[]? inputFiles = _result.GetValue(_command.InputFilePaths);
         bool quiet = Get(_command.Quiet);
 
         if (!Get(_command.NoLogo) && !quiet)
@@ -63,6 +63,13 @@ internal sealed class Program
         int exitCode = 0;
         try
         {
+            // As in native ilasm, the PDB is <output without extension>.pdb beside the output, and without
+            // --deterministic the image's CodeView entry records the PDB's full path. With --deterministic it
+            // records only the PDB's file name and extension, so that a deterministic image does not depend on
+            // the directory it is written to. Native ilasm records the full path in both modes; this follows
+            // the native linker's /PDBALTPATH:%_PDB% convention instead.
+            string pdbPath = OutputFileWriter.GetPdbPath(outputPath);
+
             // Report each file being assembled
             foreach (string file in inputFiles)
             {
@@ -72,21 +79,18 @@ internal sealed class Program
                 }
             }
 
-            // Concatenate all input files
-            var contentBuilder = new StringBuilder();
+            // Build individual SourceText for each input file
+            var documents = ImmutableArray.CreateBuilder<SourceText>(inputFiles.Length);
             foreach (string file in inputFiles)
             {
-                contentBuilder.AppendLine(File.ReadAllText(file));
+                documents.Add(new SourceText(File.ReadAllText(file), file));
             }
-            string content = contentBuilder.ToString();
-
-            // Use the first file as the primary document for source tracking
-            var document = new SourceText(content, inputFiles[0]);
 
             // Build options
             bool errorTolerant = Get(_command.ErrorTolerant);
             var options = new Options
             {
+                Dll = isDll,
                 NoAutoInherit = Get(_command.NoAutoInherit),
                 ErrorTolerant = errorTolerant,
             };
@@ -137,10 +141,6 @@ internal sealed class Program
             {
                 options.Machine = Machine.Amd64;
             }
-            else if (Get(_command.TargetArm))
-            {
-                options.Machine = Machine.Arm;
-            }
             else if (Get(_command.TargetArm64))
             {
                 options.Machine = Machine.Arm64;
@@ -165,7 +165,10 @@ internal sealed class Program
             options.AssemblyName = Get(_command.AssemblyName);
             options.KeyFile = Get(_command.KeyFile);
             options.Optimize = Get(_command.Optimize);
+            options.PseudoAttributes = Get(_command.PseudoAttributes);
             options.Fold = Get(_command.Fold);
+            options.OutputFileName = Path.GetFileName(outputPath);
+            options.PdbFilePath = options.Deterministic ? Path.GetFileName(pdbPath) : pdbPath;
 
             // Set up include path for #include directive resolution
             string? includePath = Get(_command.IncludePath);
@@ -219,8 +222,8 @@ internal sealed class Program
 
             // Compile
             var compiler = new DocumentCompiler();
-            var (diagnostics, peBuilder) = compiler.Compile(
-                document,
+            var (diagnostics, compilationResult) = compiler.Compile(
+                documents.ToImmutable(),
                 LoadIncludedDocument,
                 LoadResource,
                 options);
@@ -241,7 +244,7 @@ internal sealed class Program
             }
 
             // In error-tolerant mode, continue even with errors
-            if (peBuilder is null)
+            if (compilationResult is null)
             {
                 Console.Error.WriteLine("***** FAILURE *****");
                 return 1;
@@ -253,11 +256,22 @@ internal sealed class Program
                 return 1;
             }
 
-            // Write output
-            using var outputStream = File.Create(outputPath);
+            // Write the image, then the PDB beside it (or, when there is none, remove the PDB of the image
+            // that was replaced).
+            // Every failure above returns before this, leaving the existing files as they are.
             var blobBuilder = new BlobBuilder();
-            peBuilder.Serialize(blobBuilder);
-            blobBuilder.WriteContentTo(outputStream);
+            compilationResult.Serialize(blobBuilder);
+            OutputWriteResult written = OutputFileWriter.Write(
+                outputPath,
+                pdbPath,
+                stream => blobBuilder.WriteContentTo(stream),
+                compilationResult.PortablePdb);
+            if (written == OutputWriteResult.PdbWouldOverwriteOutput)
+            {
+                Console.Error.WriteLine($"Error: The PDB file '{pdbPath}' would overwrite the output file");
+                Console.Error.WriteLine("***** FAILURE *****");
+                return 1;
+            }
 
             if (hasErrors)
             {
@@ -286,12 +300,47 @@ internal sealed class Program
         return exitCode;
     }
 
-    private T Get<T>(Argument<T> argument) => _command.Result.GetValue(argument)!;
+    private T Get<T>(Argument<T> argument) => _result.GetValue(argument)!;
 
-    private T Get<T>(Option<T> option) => _command.Result.GetValue(option)!;
+    private T Get<T>(Option<T> option) => _result.GetValue(option)!;
 
-    private static int Main(string[] args) =>
-        new IlasmRootCommand()
-            .Parse(args)
+    private static int Main(string[] args)
+    {
+        IlasmRootCommand command = new();
+        string[] normalizedArgs;
+        try
+        {
+            normalizedArgs = NativeCommandLine.Normalize(args, command);
+        }
+        catch (ArgumentException e)
+        {
+            Console.Error.WriteLine($"Error: {e.Message}");
+            return 1;
+        }
+
+        command.SetAction(result =>
+        {
+            if (result.GetValue(command.WaitForDebugger))
+            {
+                Console.WriteLine("Waiting for debugger to attach. Press ENTER to continue");
+                Console.ReadLine();
+            }
+
+            try
+            {
+                return new Program(command, result).Run();
+            }
+            catch (Exception e)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.Error.WriteLine("Error: " + e.Message);
+                Console.ResetColor();
+                return 1;
+            }
+        });
+
+        return command
+            .Parse(normalizedArgs)
             .Invoke();
+    }
 }

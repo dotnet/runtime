@@ -34,7 +34,7 @@ public class MetaDataImportDumpTests : DumpTestBase
         MetadataReader? reader = ecmaMetadata.GetMetadata(moduleHandle);
         Assert.NotNull(reader);
 
-        return (reader, new MetaDataImportImpl(reader));
+        return (reader, new MetaDataImportImpl(reader, legacyImport: null, new()));
     }
 
     [ConditionalTheory]

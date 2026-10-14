@@ -102,6 +102,9 @@ namespace ILCompiler.DependencyAnalysis
         {
             var dependencyList = new DependencyList();
 
+            if (_type.IsInterface)
+                dependencyList.Add(factory.InterfaceUse(_type.GetTypeDefinition()), "Interface is used");
+
             dependencyList.Add(factory.NecessaryTypeSymbol(_type), "Reflection invisible type for a visible type");
 
             // Ask the metadata manager if we have any dependencies due to the presence of the EEType.

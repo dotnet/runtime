@@ -48,7 +48,7 @@ namespace ILCompiler.ReadyToRun
                     continue;
 
                 var groupType = map.Key;
-                dependencies.Add(new DependencyListEntry(_importReferenceProvider.GetImportToType(groupType), "Type Map Assembly Target"));
+                dependencies.Add(new DependencyListEntry(_importReferenceProvider.GetImportToType(groupType, _assemblyTypeMaps.AssociatedModule), "Type Map Assembly Target"));
                 foreach (var targetModule in map.Value.TargetModules)
                 {
                     dependencies.Add(new DependencyListEntry(_importReferenceProvider.GetImportToModule(targetModule), "Type Map Assembly Target"));
@@ -79,7 +79,7 @@ namespace ILCompiler.ReadyToRun
                     continue;
 
                 var groupType = map.Key;
-                Vertex groupTypeVertex = _importReferenceProvider.EncodeReferenceToType(writer, groupType);
+                Vertex groupTypeVertex = _importReferenceProvider.EncodeReferenceToType(writer, groupType, _assemblyTypeMaps.AssociatedModule);
                 VertexSequence modules = new();
                 foreach (var targetModule in map.Value.TargetModules)
                 {

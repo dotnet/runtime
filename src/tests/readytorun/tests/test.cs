@@ -157,13 +157,6 @@ public class MyClass : IMyInterface
    }
 
 #if V2
-    public string MovedToBaseClass()
-    {
-        return "MovedToBaseClass";
-    }
-#endif
-
-#if V2
     public virtual string ChangedToVirtual()
     {
         return null;
@@ -195,7 +188,26 @@ public class MyClass : IMyInterface
     }
 }
 
-public class MyChildClass : MyClass
+#if V2
+public class MyIntermediateClass : MyClass
+{
+    public string MovedToBaseClass()
+    {
+        return "MovedToBaseClass";
+    }
+    public string MovedToBaseClassGeneric<T>()
+    {
+        return "MovedToBaseClassGeneric";
+    }
+}
+#endif
+
+public class MyChildClass
+#if V2
+ : MyIntermediateClass
+#else
+ : MyClass
+#endif
 {
     public MyChildClass()
     {
@@ -205,6 +217,10 @@ public class MyChildClass : MyClass
     public string MovedToBaseClass()
     {
         return "MovedToBaseClass";
+    }
+    public string MovedToBaseClassGeneric<T>()
+    {
+        return "MovedToBaseClassGeneric";
     }
 #endif
 
@@ -272,14 +288,6 @@ public class MyGeneric<T,U>
     }
 
 #if V2
-    public string MovedToBaseClass<W>()
-    {
-        typeof(Dictionary<W,W>).ToString();
-        return typeof(List<W>).ToString();
-    }
-#endif
-
-#if V2
     public virtual string ChangedToVirtual<W>()
     {
         return null;
@@ -310,7 +318,28 @@ public class MyGeneric<T,U>
     }
 }
 
-public class MyChildGeneric<T> : MyGeneric<T,T>
+#if V2
+public class MyIntermediateGeneric<T, U> : MyGeneric<T,U>
+{
+    public string MovedToBaseClass<W>()
+    {
+        typeof(Dictionary<W,W>).ToString();
+        return typeof(List<W>).ToString();
+    }
+    public string MovedToBaseClass()
+    {
+        return "MyIntermediateGeneric.MovedToBaseClass";
+    }
+}
+#endif
+
+
+public class MyChildGeneric<T>
+#if V2
+ : MyIntermediateGeneric<T,T>
+#else
+ : MyGeneric<T,T>
+#endif
 {
     public MyChildGeneric()
     {
@@ -321,6 +350,10 @@ public class MyChildGeneric<T> : MyGeneric<T,T>
     {
         return typeof(List<W>).ToString();
     }
+    public string MovedToBaseClass()
+    {
+        return "MyIntermediateGeneric.MovedToBaseClass";
+    }
 #endif
 
 #if V2
@@ -328,6 +361,41 @@ public class MyChildGeneric<T> : MyGeneric<T,T>
     {
         typeof(Dictionary<Int32, W>).ToString();
         return typeof(List<W>).ToString();
+    }
+#endif
+}
+
+#if V2
+// V1 declares these methods on DeclaringTypeHandleChild<T, U>. V2 moves them to an intermediate base and transforms
+// the exact declaring type from <T, U> to <U, T[]> so the runtime hierarchy walk must recover more than the TypeDef.
+public class DeclaringTypeHandleIntermediate<TFirst, TSecond>
+{
+    public Type MovedToBaseClass<TMethod>()
+    {
+        return typeof(TMethod);
+    }
+
+    public static Type[] StaticMovedToBaseClass()
+    {
+        return new Type[] { typeof(TFirst), typeof(TSecond) };
+    }
+}
+#endif
+
+public class DeclaringTypeHandleChild<T, U>
+#if V2
+    : DeclaringTypeHandleIntermediate<U, T[]>
+#endif
+{
+#if !V2
+    public Type MovedToBaseClass<TMethod>()
+    {
+        return typeof(TMethod);
+    }
+
+    public static Type[] StaticMovedToBaseClass()
+    {
+        return new Type[] { typeof(U), typeof(T[]) };
     }
 #endif
 }

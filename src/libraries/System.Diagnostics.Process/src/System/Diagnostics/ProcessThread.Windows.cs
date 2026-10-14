@@ -174,7 +174,7 @@ namespace System.Diagnostics
         private SafeThreadHandle OpenThreadHandle(int access)
         {
             EnsureState(State.IsLocal);
-            return ProcessManager.OpenThread((int)_threadInfo._threadId, access);
+            return ProcessManager.OpenThread((uint)_threadInfo._threadId, access);
         }
     }
 }

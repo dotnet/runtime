@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+namespace JitTest_Generics_Typeof_valueTypeBoxing;
+
 /* Unboxing where a parameter is types as System.ValueType, or System.Enum, and then is unboxed to its scalar type 
  */
 using System;
@@ -224,6 +226,7 @@ int tmp = 1;
         Console.WriteLine("-----------{0}", i++);
     }
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

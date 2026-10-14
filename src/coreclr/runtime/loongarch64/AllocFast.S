@@ -14,7 +14,7 @@
         //
         // a0 contains MethodTable pointer
         //
-        ld.w  $a2, $a0, OFFSETOF__ee_alloc_context + OFFSETOF__MethodTable__m_uBaseSize
+        ld.w  $a2, $a0, OFFSETOF__MethodTable__m_uBaseSize
 
         //
         // a0: MethodTable pointer

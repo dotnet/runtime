@@ -9,10 +9,17 @@
 #include "common.h"
 #include "gcinterface.h"
 
-void BridgeResetData();
+void BridgeResetData(bool resetPendingBridgeHandles);
 MarkCrossReferencesArgs* ProcessBridgeObjects();
 
+// Decides whether this collection should hand a fresh set of cross references to the client.
+// Returns false when the client is still processing a previous set, since the new one would
+// just be discarded.
+bool ShouldProcessBridgeObjects();
+
 void RegisterBridgeObject(Object *object, uintptr_t context);
+void RegisterPendingBridgeHandle(uintptr_t handle);
+uintptr_t* GetPendingBridgeHandles(size_t* count);
 uint8_t** GetRegisteredBridges(size_t *pNumBridges);
 
 #endif // FEATURE_JAVAMARSHAL

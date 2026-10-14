@@ -17,23 +17,36 @@ namespace Microsoft.Extensions.Caching.Memory
         // which typically is not using expiration tokens or callbacks
         private sealed class CacheEntryTokens
         {
-            private List<IChangeToken>? _expirationTokens;
+            private ExpirationTokensList? _expirationTokens;
             private List<IDisposable>? _expirationTokenRegistrations;
             private List<PostEvictionCallbackRegistration>? _postEvictionCallbacks; // this is not really related to tokens, but was moved here to shrink typical CacheEntry size
 
-            internal List<IChangeToken> ExpirationTokens => _expirationTokens ??= new List<IChangeToken>();
+            internal ExpirationTokensList ExpirationTokens
+            {
+                get
+                {
+                    ExpirationTokensList? expirationTokens = _expirationTokens;
+                    if (expirationTokens is not null)
+                    {
+                        return expirationTokens;
+                    }
+
+                    expirationTokens = new ExpirationTokensList(this);
+                    return Interlocked.CompareExchange(ref _expirationTokens, expirationTokens, null) ?? expirationTokens;
+                }
+            }
+
             internal List<PostEvictionCallbackRegistration> PostEvictionCallbacks => _postEvictionCallbacks ??= new List<PostEvictionCallbackRegistration>();
 
             internal void AttachTokens(CacheEntry cacheEntry)
             {
-                List<IChangeToken>? expirationTokens = _expirationTokens;
+                ExpirationTokensList? expirationTokens = _expirationTokens;
                 if (expirationTokens is not null)
                 {
                     lock (this)
                     {
-                        for (int i = 0; i < expirationTokens.Count; i++)
+                        foreach (IChangeToken expirationToken in expirationTokens.Snapshot)
                         {
-                            IChangeToken expirationToken = expirationTokens[i];
                             if (expirationToken.ActiveChangeCallbacks)
                             {
                                 _expirationTokenRegistrations ??= new List<IDisposable>(1);
@@ -47,12 +60,11 @@ namespace Microsoft.Extensions.Caching.Memory
 
             internal bool CheckForExpiredTokens(CacheEntry cacheEntry)
             {
-                List<IChangeToken>? expirationTokens = _expirationTokens;
+                ExpirationTokensList? expirationTokens = _expirationTokens;
                 if (expirationTokens is not null)
                 {
-                    for (int i = 0; i < expirationTokens.Count; i++)
+                    foreach (IChangeToken expiredToken in expirationTokens.Snapshot)
                     {
-                        IChangeToken expiredToken = expirationTokens[i];
                         if (expiredToken.HasChanged)
                         {
                             cacheEntry.SetExpired(EvictionReason.TokenExpired);
@@ -65,18 +77,14 @@ namespace Microsoft.Extensions.Caching.Memory
 
             internal bool CanPropagateTokens() => _expirationTokens != null;
 
+            internal void EnableConcurrentReads() => _expirationTokens?.EnableConcurrentReads();
+
             internal void PropagateTokens(CacheEntry parentEntry)
             {
-                if (_expirationTokens != null)
+                ExpirationTokensList? expirationTokens = _expirationTokens;
+                if (expirationTokens is not null)
                 {
-                    lock (this)
-                    {
-                        CacheEntryTokens parentTokens = parentEntry.GetOrCreateTokens();
-                        lock (parentTokens)
-                        {
-                            parentTokens.ExpirationTokens.AddRange(_expirationTokens);
-                        }
-                    }
+                    parentEntry.GetOrCreateExpirationTokens().AddRange(expirationTokens.Snapshot);
                 }
             }
 

@@ -34,14 +34,14 @@
 #define TERMINATE_R2R_STACK_WALK_FP_OFFSET 4 // The framepointer is a pointer value, and therefore should be pointer aligned
 #endif
 
-struct StringToWasmSigThunk
+struct StringToPortableSigThunk
 {
     const char* key;
     void*       value;
 };
 
-extern const StringToWasmSigThunk g_wasmThunks[];
-extern const size_t g_wasmThunksCount;
+extern const StringToPortableSigThunk g_portableCallHelperThunks[];
+extern const size_t g_portableCallHelperThunksCount;
 
 struct ReverseThunkMapValue
 {

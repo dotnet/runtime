@@ -20,6 +20,7 @@
 #include "generics.h"
 #include "stackwalk.h"
 #include "virtualcallstub.h"
+#include "externalmemoryhandle.h"
 
 #include "dacdbiimpl.h"
 
@@ -320,8 +321,7 @@ DacDbiInterfaceInstance(
                 if (cdac.IsValid())
                 {
                     ReleaseHolder<IUnknown> cdacInterface;
-                    cdac.CreateDacDbiInterface(&cdacInterface);
-                    if (cdacInterface != nullptr)
+                    if (cdac.CreateDacDbiInterface(&cdacInterface) == S_OK && cdacInterface != nullptr)
                     {
                         IDacDbiInterface* pCDacDbi = nullptr;
                         HRESULT hr = cdacInterface->QueryInterface(__uuidof(IDacDbiInterface), (void**)&pCDacDbi);
@@ -991,8 +991,7 @@ mdSignature DacDbiInterfaceImpl::GetILCodeAndSigHelper(Module *       pModule,
     TADDR pTargetIL = pModule->GetDynamicIL(mdMethodToken);
 
     // Method not overridden - get the original copy of the IL by going to the PE file/RVA
-    // If this is in a dynamic module then don't even attempt this since ReflectionModule::GetIL isn't
-    // implemented for DAC.
+    // Dynamic modules have no PE-backed fallback.
     if (pTargetIL == 0 && !pModule->IsReflectionEmit())
     {
         pTargetIL = (TADDR)pModule->GetIL(methodRVA);
@@ -5522,6 +5521,11 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetVarArgSig(CORDB_ADDRESS VASigC
 {
     DD_ENTER_MAY_THROW;
 
+#ifndef FEATURE_VARARGS
+    *pArgBase = (CORDB_ADDRESS)NULL;
+    *pRetVal = TargetBuffer();
+    return E_NOTIMPL;
+#else // FEATURE_VARARGS
     HRESULT hr = S_OK;
     EX_TRY
     {
@@ -5548,6 +5552,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetVarArgSig(CORDB_ADDRESS VASigC
     }
     EX_CATCH_HRESULT(hr);
     return hr;
+#endif // FEATURE_VARARGS
 }
 
 // returns TRUE if the type requires 8-byte alignment
@@ -6641,7 +6646,7 @@ HRESULT DacHeapWalker::Init(CORDB_ADDRESS start, CORDB_ADDRESS end)
     if (threadStore != NULL)
     {
         int count = (int)threadStore->ThreadCountInEE();
-        mAllocInfo = new (nothrow) AllocInfo[count + 1];
+        mAllocInfo = new (nothrow) AllocInfo[count];
         if (mAllocInfo == NULL)
             return E_OUTOFMEMORY;
 
@@ -6668,14 +6673,6 @@ HRESULT DacHeapWalker::Init(CORDB_ADDRESS start, CORDB_ADDRESS end)
                 j++;
             }
         }
-        gc_alloc_context globalCtx = ((ee_alloc_context)g_global_alloc_context).m_GCAllocContext;
-        if (globalCtx.alloc_ptr != nullptr)
-        {
-            mAllocInfo[j].Ptr = (CORDB_ADDRESS)globalCtx.alloc_ptr;
-            mAllocInfo[j].Limit = (CORDB_ADDRESS)globalCtx.alloc_limit;
-            j++;
-        }
-
         mAllocContextCount = j;
     }
 
@@ -7718,11 +7715,11 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::EnumerateAsyncLocals(VMPTR_Method
             {
                 return hr;
             }
-            nativeCodeStartAddr = PCODEToPINSTR(requestedNativeCodeVersion.GetNativeCode());
+            nativeCodeStartAddr = PCODEToPINSTR(GetInterpreterCodeFromEntryPointIfPresent(requestedNativeCodeVersion.GetNativeCode()));
         }
         else
         {
-            nativeCodeStartAddr = PCODEToPINSTR(pMethodDesc->GetNativeCode());
+            nativeCodeStartAddr = PCODEToPINSTR(GetInterpreterCodeFromEntryPointIfPresent(pMethodDesc->GetNativeCode()));
         }
 
         DebugInfoRequest request;
@@ -7795,7 +7792,8 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetGenericArgTokenIndex(VMPTR_Met
 
 DacRefWalker::DacRefWalker(ClrDataAccess *dac, BOOL walkStacks, UINT32 handleMask, BOOL resolvePointers)
     : mDac(dac), mWalkStacks(walkStacks), mHandleMask(handleMask), mStackWalker(NULL),
-      mResolvePointers(resolvePointers), mHandleWalker(NULL)
+      mResolvePointers(resolvePointers), mHandleWalker(NULL), mExternalMemoryHandleIndex(0),
+      mExternalMemoryHeapInitialized(false)
 {
 }
 
@@ -7818,6 +7816,11 @@ HRESULT DacRefWalker::Init()
     if (mWalkStacks && SUCCEEDED(hr))
     {
         hr = NextThread();
+    }
+
+    if ((mHandleMask & CorHandleStrong) && SUCCEEDED(hr))
+    {
+        hr = WalkExternalMemoryHandles();
     }
 
     return hr;
@@ -7866,6 +7869,74 @@ UINT32 DacRefWalker::GetHandleWalkerMask()
     return result;
 }
 
+HRESULT DacRefWalker::WalkExternalMemoryHandles()
+{
+    ExternalMemoryScanContext context(this);
+    ExternalMemoryHandle::GCScanRoots(ExternalMemoryHandleCallback, &context);
+    return context.Result;
+}
+
+void DacRefWalker::ExternalMemoryHandleCallback(PTR_PTR_Object ppObj, ScanContext *sc, uint32_t flags)
+{
+    ExternalMemoryScanContext* context = static_cast<ExternalMemoryScanContext*>(sc);
+    DacRefWalker* walker = context->Walker;
+
+    DacGcReference data = {};
+    data.vmDomain.SetDacTargetPtr(AppDomain::GetCurrentDomain().GetAddr());
+    data.dwType = CorHandleStrong;
+    data.i64ExtraData = 0;
+
+    if (flags & GC_CALL_INTERIOR)
+    {
+        CLRDATA_ADDRESS object = walker->ReadPointer(ppObj.GetAddr());
+        if (object == 0 || object == (CLRDATA_ADDRESS)~0)
+            return;
+
+        if (walker->mResolvePointers)
+        {
+            if (!walker->mExternalMemoryHeapInitialized)
+            {
+                HRESULT hr = walker->mExternalMemoryHeap.Init();
+                if (FAILED(hr))
+                {
+                    context->Result = hr;
+                    return;
+                }
+
+                walker->mExternalMemoryHeapInitialized = true;
+            }
+
+            CORDB_ADDRESS resolvedObject = 0;
+            HRESULT hr = walker->mExternalMemoryHeap.ListNearObjects((CORDB_ADDRESS)object, NULL, &resolvedObject, NULL);
+            if (FAILED(hr))
+                return;
+
+            object = TO_CDADDR(resolvedObject);
+        }
+
+        data.pObject = CLRDATA_ADDRESS_TO_TADDR(object) | 1;
+    }
+    else
+    {
+        data.objHnd.SetDacTargetPtr(ppObj.GetAddr());
+    }
+
+    if (!walker->mExternalMemoryHandles.Add(data))
+        context->Result = E_OUTOFMEMORY;
+}
+
+CLRDATA_ADDRESS DacRefWalker::ReadPointer(TADDR address)
+{
+    ULONG32 bytesRead = 0;
+    TADDR result = 0;
+    HRESULT hr = mDac->m_pTarget->ReadVirtual(address, (BYTE*)&result, sizeof(TADDR), &bytesRead);
+
+    if (FAILED(hr) || bytesRead != sizeof(TADDR))
+        return (CLRDATA_ADDRESS)~0;
+
+    return TO_CDADDR(result);
+}
+
 
 
 HRESULT DacRefWalker::Next(ULONG celt, DacGcReference roots[], ULONG *pceltFetched)
@@ -7888,6 +7959,11 @@ HRESULT DacRefWalker::Next(ULONG celt, DacGcReference roots[], ULONG *pceltFetch
             if (FAILED(hr))
                 return hr;
         }
+    }
+
+    while (total < celt && mExternalMemoryHandleIndex < mExternalMemoryHandles.GetCount())
+    {
+        roots[total++] = mExternalMemoryHandles.Get(mExternalMemoryHandleIndex++);
     }
 
     while (total < celt && mStackWalker)

@@ -38,13 +38,9 @@ public:
 
     void MergeHandler(BasicBlock* block, BasicBlock* firstTryBlock, BasicBlock* lastTryBlock)
     {
-        // A handler can be reached from any point in the try region.
-        // A local is mutated at handler entry if it was mutated at try
-        // entry or mutated anywhere within the try region.
-        for (BasicBlock* tryBlock = firstTryBlock; tryBlock != lastTryBlock->Next(); tryBlock = tryBlock->Next())
+        for (FlowEdge* pred = m_compiler->BlockPredsWithEH(block); pred != nullptr; pred = pred->getNextPredEdge())
         {
-            VarSetOps::UnionD(m_compiler, m_mutatedVarsIn[block->bbNum], m_mutatedVarsIn[tryBlock->bbNum]);
-            VarSetOps::UnionD(m_compiler, m_mutatedVarsIn[block->bbNum], m_mutatedVars[tryBlock->bbNum]);
+            Merge(block, pred->getSourceBlock(), pred->getDupCount());
         }
     }
 
@@ -129,6 +125,23 @@ static bool IsDefaultValue(GenTree* node)
 }
 
 //------------------------------------------------------------------------
+// MarkIfTracked:
+//   Mark a tracked VarDsc in the specified varset.
+//
+// Parameters:
+//   compiler - The compiler instance.
+//   varDsc   - The var.
+//   mutated  - [in/out] The set to update.
+//
+static void MarkIfTracked(Compiler* compiler, LclVarDsc* varDsc, VARSET_TP& mutated)
+{
+    if (varDsc->lvTracked)
+    {
+        VarSetOps::AddElemD(compiler, mutated, varDsc->lvVarIndex);
+    }
+}
+
+//------------------------------------------------------------------------
 // MarkMutatedVarDsc:
 //   Mark a VarDsc (or its promoted fields) in the specified varset.
 //
@@ -139,64 +152,57 @@ static bool IsDefaultValue(GenTree* node)
 //
 static void MarkMutatedVarDsc(Compiler* compiler, LclVarDsc* varDsc, VARSET_TP& mutated)
 {
-    if (varDsc->lvTracked)
-    {
-        VarSetOps::AddElemD(compiler, mutated, varDsc->lvVarIndex);
-        return;
-    }
-
     if (varDsc->lvPromoted)
     {
         for (unsigned i = 0; i < varDsc->lvFieldCnt; i++)
         {
             LclVarDsc* fieldDsc = compiler->lvaGetDesc(varDsc->lvFieldLclStart + i);
-            if (fieldDsc->lvTracked)
-            {
-                VarSetOps::AddElemD(compiler, mutated, fieldDsc->lvVarIndex);
-            }
+            MarkIfTracked(compiler, fieldDsc, mutated);
         }
+    }
+    else
+    {
+        MarkIfTracked(compiler, varDsc, mutated);
     }
 }
 
 //------------------------------------------------------------------------
-// UpdateMutatedLocal:
-//   If the given node is a local store or LCL_ADDR, and the local is tracked,
-//   mark it as mutated in the provided set. Stores of a default (zero) value
-//   are not considered mutations.
+// UpdateMutatedLocals:
+//   Mark tracked locals defined by the given node or whose address is taken
+//   as mutated in the provided set. Stores of a default (zero) value are not
+//   considered mutations if the prolog will zero the local.
 //
 // Parameters:
 //   compiler - The compiler instance.
 //   node     - The IR node to check.
 //   mutated  - [in/out] The set to update.
 //
-static void UpdateMutatedLocal(Compiler* compiler, GenTree* node, VARSET_TP& mutated)
+static void UpdateMutatedLocals(Compiler* compiler, GenTree* node, VARSET_TP& mutated)
 {
-    if (node->OperIsLocalStore())
-    {
-        // If this is a zero initialization then we do not need to consider it
-        // mutated if we know the prolog will zero it anyway (otherwise we
-        // could be skipping this explicit zero init on resumption).
-        // We could improve this a bit by still skipping it but inserting
-        // explicit zero init on resumption, but these cases seem to be rare
-        // and that would require tracking additional information.
-        if (IsDefaultValue(node->AsLclVarCommon()->Data()) &&
-            !compiler->fgVarNeedsExplicitZeroInit(node->AsLclVarCommon()->GetLclNum(), /* bbInALoop */ false,
-                                                  /* bbIsReturn */ false))
-        {
-            return;
-        }
-    }
-    else if (node->OperIs(GT_LCL_ADDR))
-    {
-        // Fall through
-    }
-    else
+    // If this is a zero initialization then we do not need to consider it
+    // mutated if we know the prolog will zero it anyway (otherwise we
+    // could be skipping this explicit zero init on resumption).
+    // We could improve this a bit by still skipping it but inserting
+    // explicit zero init on resumption, but these cases seem to be rare
+    // and that would require tracking additional information.
+    if (node->OperIsLocalStore() && IsDefaultValue(node->Data()) &&
+        !compiler->fgVarNeedsExplicitZeroInit(node->AsLclVarCommon()->GetLclNum(), /* bbInALoop */ false,
+                                              /* bbIsReturn */ false))
     {
         return;
     }
 
-    LclVarDsc* varDsc = compiler->lvaGetDesc(node->AsLclVarCommon());
-    MarkMutatedVarDsc(compiler, varDsc, mutated);
+    if (node->OperIs(GT_LCL_ADDR))
+    {
+        MarkMutatedVarDsc(compiler, compiler->lvaGetDesc(node->AsLclVarCommon()), mutated);
+        return;
+    }
+
+    auto visitDef = [&](const auto& def) {
+        MarkIfTracked(compiler, compiler->lvaGetDesc(def.GetLclNum()), mutated);
+        return GenTree::VisitResult::Continue;
+    };
+    node->VisitLogicalLocalDefs(compiler, visitDef);
 }
 
 #ifdef DEBUG
@@ -229,8 +235,8 @@ void AsyncAnalysis::PrintVarSet(Compiler* comp, VARSET_VALARG_TP set)
 //   that are mutated to a non-default value.
 //
 //   A tracked local is considered mutated if:
-//     - It has a store (STORE_LCL_VAR / STORE_LCL_FLD) whose data operand is
-//       not a zero constant.
+//     - It is defined by a node other than a zero store that can rely on
+//       prolog initialization.
 //     - It has a LCL_ADDR use (address taken that we cannot reason about).
 //
 void DefaultValueAnalysis::ComputePerBlockMutatedVars()
@@ -248,7 +254,7 @@ void DefaultValueAnalysis::ComputePerBlockMutatedVars()
 
         for (GenTree* node : LIR::AsRange(block))
         {
-            UpdateMutatedLocal(m_compiler, node, mutated);
+            UpdateMutatedLocals(m_compiler, node, mutated);
         }
     }
 
@@ -264,7 +270,7 @@ void DefaultValueAnalysis::ComputePerBlockMutatedVars()
 //   Transfer function: mutatedOut[B] = mutatedIn[B] | mutated[B]
 //   Merge: mutatedIn[B] = union of mutatedOut[pred] for all preds
 //
-//   At entry, only parameters and OSR locals are considered mutated.
+//   At entry, parameters, parameter register targets, and OSR locals are considered mutated.
 //
 void DefaultValueAnalysis::ComputeInterBlockDefaultValues()
 {
@@ -275,13 +281,13 @@ void DefaultValueAnalysis::ComputeInterBlockDefaultValues()
         VarSetOps::AssignNoCopy(m_compiler, m_mutatedVarsIn[i], VarSetOps::MakeEmpty(m_compiler));
     }
 
-    // Parameters and OSR locals are considered mutated at method entry.
+    // Parameters, parameter register targets, and OSR locals are non-default at method entry.
     for (unsigned i = 0; i < m_compiler->lvaTrackedCount; i++)
     {
         unsigned   lclNum = m_compiler->lvaTrackedToVarNum[i];
         LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
 
-        if (varDsc->lvIsParam || varDsc->lvIsOSRLocal)
+        if (varDsc->lvIsParam || varDsc->lvIsParamRegTarget || varDsc->lvIsOSRLocal)
         {
             VarSetOps::AddElemD(m_compiler, m_mutatedVarsIn[m_compiler->fgFirstBB->bbNum], varDsc->lvVarIndex);
         }
@@ -335,27 +341,19 @@ void DefaultValueAnalysis::DumpMutatedVarsIn()
 #endif
 
 //------------------------------------------------------------------------
-// MarkMutatedLocal:
-//   If the given node is a local store or LCL_ADDR, and the local is tracked,
-//   mark it as mutated in the provided set. Unlike UpdateMutatedLocal, all
-//   stores count as mutations (including stores of default values).
+// MarkMutatedLocals:
+//   Mark tracked locals defined by the given node, whose address is taken,
+//   or accessed through an implicit byref as mutated in the provided set.
+//   Unlike UpdateMutatedLocals, stores of default values also count as mutations.
 //
 // Parameters:
 //   compiler - The compiler instance.
 //   node     - The IR node to check.
 //   mutated  - [in/out] The set to update.
 //
-static void MarkMutatedLocal(Compiler* compiler, GenTree* node, VARSET_TP& mutated)
+static void MarkMutatedLocals(Compiler* compiler, GenTree* node, VARSET_TP& mutated)
 {
-    if (node->IsCall())
-    {
-        auto visitDef = [&](GenTreeLclVarCommon* lcl) {
-            MarkMutatedVarDsc(compiler, compiler->lvaGetDesc(lcl), mutated);
-            return GenTree::VisitResult::Continue;
-        };
-        node->VisitLocalDefNodes(compiler, visitDef);
-    }
-    else if (node->OperIsLocalStore() || node->OperIs(GT_LCL_ADDR))
+    if (node->OperIs(GT_LCL_ADDR))
     {
         MarkMutatedVarDsc(compiler, compiler->lvaGetDesc(node->AsLclVarCommon()), mutated);
     }
@@ -366,7 +364,11 @@ static void MarkMutatedLocal(Compiler* compiler, GenTree* node, VARSET_TP& mutat
     }
     else
     {
-        return;
+        auto visitDef = [&](const auto& def) {
+            MarkIfTracked(compiler, compiler->lvaGetDesc(def.GetLclNum()), mutated);
+            return GenTree::VisitResult::Continue;
+        };
+        node->VisitLogicalLocalDefs(compiler, visitDef);
     }
 }
 
@@ -552,7 +554,7 @@ void PreservedValueAnalysis::ComputePerBlockMutatedVars()
 
         while (node != nullptr)
         {
-            MarkMutatedLocal(m_compiler, node, mutated);
+            MarkMutatedLocals(m_compiler, node, mutated);
             node = node->gtNext;
         }
     }
@@ -696,14 +698,14 @@ void AsyncAnalysis::StartBlock(BasicBlock* block)
 void AsyncAnalysis::Update(GenTree* node)
 {
     m_updater.UpdateLife<true>(node);
-    UpdateMutatedLocal(m_compiler, node, m_mutatedValues);
+    UpdateMutatedLocals(m_compiler, node, m_mutatedValues);
 
     // If this is an async call then we can reach defs after resumption now.
     // Make sure defs happening as part of the call are included as mutated since resumption.
     m_resumeReachable |= node->IsCall() && node->AsCall()->IsAsync();
     if (m_resumeReachable)
     {
-        MarkMutatedLocal(m_compiler, node, m_mutatedSinceResumption);
+        MarkMutatedLocals(m_compiler, node, m_mutatedSinceResumption);
     }
 }
 

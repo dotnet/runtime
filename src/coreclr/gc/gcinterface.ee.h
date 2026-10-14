@@ -467,6 +467,14 @@ public:
 
     virtual
     void TriggerClientBridgeProcessing(MarkCrossReferencesArgs* args) PURE_VIRTUAL
+
+    // The following method is available only with EE_INTERFACE_MAJOR_VERSION >= 5
+
+    // Returns true when the client is still processing cross references handed to it by a
+    // previous call to TriggerClientBridgeProcessing. While that is the case any new set of
+    // cross references would be discarded by the client, so the GC can skip computing it.
+    virtual
+    bool IsClientBridgeProcessingActive() PURE_VIRTUAL
 };
 
 #endif // _GCINTERFACE_EE_H_

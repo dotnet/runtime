@@ -5,8 +5,9 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
-using System.Reflection.Runtime.ParameterInfos;
+using System.Reflection.Runtime.General;
 
+using Internal.Metadata.NativeFormat;
 using Internal.Reflection.Core.Execution;
 
 namespace System.Reflection.Runtime.MethodInfos
@@ -28,9 +29,36 @@ namespace System.Reflection.Runtime.MethodInfos
             }
         }
 
-        public abstract override IEnumerable<CustomAttributeData> CustomAttributes { get; }
-
         public abstract override Type DeclaringType { get; }
+
+        public sealed override object[] GetCustomAttributes(bool inherit) =>
+            RuntimeCustomAttribute.GetCustomAttributes(this, (RuntimeType)typeof(object));
+
+        public sealed override object[] GetCustomAttributes(Type attributeType, bool inherit)
+        {
+            ArgumentNullException.ThrowIfNull(attributeType);
+
+            if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
+                throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
+
+            return RuntimeCustomAttribute.GetCustomAttributes(this, attributeRuntimeType);
+        }
+
+        public sealed override IList<CustomAttributeData> GetCustomAttributesData() => RuntimeCustomAttributeData.GetCustomAttributesInternal(this);
+
+        internal virtual MetadataReader? GetMetadataReader() => null;
+
+        internal virtual CustomAttributeHandleCollection GetCustomAttributeHandles() => default;
+
+        public sealed override bool IsDefined(Type attributeType, bool inherit)
+        {
+            ArgumentNullException.ThrowIfNull(attributeType);
+
+            if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
+                throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
+
+            return RuntimeCustomAttribute.IsDefined(this, attributeRuntimeType);
+        }
 
         [RequiresUnreferencedCode("Trimming may change method bodies. For example it can change some instructions, remove branches or local variables.")]
         public sealed override MethodBody GetMethodBody()

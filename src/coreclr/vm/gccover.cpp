@@ -20,7 +20,6 @@
 #pragma warning(disable:4663)
 
 #include "eeconfig.h"
-#include "utsem.h"
 #include "gccover.h"
 #include "virtualcallstub.h"
 #include "threadsuspend.h"
@@ -887,9 +886,6 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
     // Do the actual stress work
     //
 
-    // BUG(github #10318) - when not using allocation contexts, the alloc lock
-    // must be acquired here. Until fixed, this assert prevents random heap corruption.
-    assert(GCHeapUtilities::UseThreadAllocationContexts());
     GCHeapUtilities::GetGCHeap()->StressHeap(&t_runtime_thread_locals.alloc_context.m_GCAllocContext);
 
     // StressHeap can exit early w/o forcing a SuspendEE to trigger the instruction update
@@ -1195,9 +1191,6 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
     // Do the actual stress work
     //
 
-    // BUG(github #10318)- when not using allocation contexts, the alloc lock
-    // must be acquired here. Until fixed, this assert prevents random heap corruption.
-    assert(GCHeapUtilities::UseThreadAllocationContexts());
     GCHeapUtilities::GetGCHeap()->StressHeap(&t_runtime_thread_locals.alloc_context.m_GCAllocContext);
 
     // StressHeap can exit early w/o forcing a SuspendEE to trigger the instruction update

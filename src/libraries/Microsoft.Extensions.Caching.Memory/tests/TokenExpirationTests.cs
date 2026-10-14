@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Caching.Memory.Infrastructure;
@@ -13,16 +14,17 @@ namespace Microsoft.Extensions.Caching.Memory
 {
     public class TokenExpirationTests
     {
-        private IMemoryCache CreateCache()
+        private IMemoryCache CreateCache(bool trackLinkedCacheEntries = false)
         {
-            return CreateCache(new SystemClock());
+            return CreateCache(new SystemClock(), trackLinkedCacheEntries);
         }
 
-        private IMemoryCache CreateCache(ISystemClock clock)
+        private IMemoryCache CreateCache(ISystemClock clock, bool trackLinkedCacheEntries = false)
         {
             return new MemoryCache(new MemoryCacheOptions()
             {
                 Clock = clock,
+                TrackLinkedCacheEntries = trackLinkedCacheEntries,
             });
         }
 
@@ -57,7 +59,7 @@ namespace Microsoft.Extensions.Caching.Memory
             Assert.Null(expirationToken.Registration);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void FireTokenRemovesItem()
         {
             var cache = CreateCache();
@@ -82,7 +84,7 @@ namespace Microsoft.Extensions.Caching.Memory
             Assert.True(callbackInvoked.WaitOne(TimeSpan.FromSeconds(30)), "Callback");
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void ExpiredLazyTokenRemovesItemOnNextAccess()
         {
             var cache = CreateCache();
@@ -110,7 +112,7 @@ namespace Microsoft.Extensions.Caching.Memory
             Assert.True(callbackInvoked.WaitOne(TimeSpan.FromSeconds(30)), "Callback");
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void ExpiredLazyTokenRemovesItemInBackground()
         {
             var clock = new TestClock();
@@ -139,7 +141,7 @@ namespace Microsoft.Extensions.Caching.Memory
             Assert.False(found);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void RemoveItemDisposesTokenRegistration()
         {
             var cache = CreateCache();
@@ -162,7 +164,7 @@ namespace Microsoft.Extensions.Caching.Memory
             Assert.True(callbackInvoked.WaitOne(TimeSpan.FromSeconds(30)), "Callback");
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void ClearingCacheDisposesTokenRegistration()
         {
             var cache = (MemoryCache)CreateCache();
@@ -185,7 +187,7 @@ namespace Microsoft.Extensions.Caching.Memory
             Assert.True(callbackInvoked.WaitOne(TimeSpan.FromSeconds(30)), "Callback");
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void AddExpiredTokenPreventsCaching()
         {
             var cache = CreateCache();
@@ -230,7 +232,7 @@ namespace Microsoft.Extensions.Caching.Memory
             Assert.Null(result);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void PostEvictionCallbacksGetInvokedWhenMemoryCacheEntriesExpireWithAnActiveChangeToken()
         {
             using var cache = new MemoryCache(new MemoryCacheOptions());
@@ -257,6 +259,102 @@ namespace Microsoft.Extensions.Caching.Memory
             cts.Cancel();
             Assert.True(callbackInvoked.WaitOne(TimeSpan.FromSeconds(10)));
             Assert.False(cache.TryGetValue(key, out _));
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void ExpirationTokensBehaveLikeAList(bool concurrentReadsEnabled)
+        {
+            var cache = CreateCache(trackLinkedCacheEntries: concurrentReadsEnabled);
+            using ICacheEntry entry = cache.CreateEntry("myKey");
+            IList<IChangeToken> tokens = entry.ExpirationTokens;
+            entry.SetValue(new object());
+            if (concurrentReadsEnabled)
+            {
+                entry.Dispose();
+            }
+
+            var first = new TestExpirationToken();
+            var second = new TestExpirationToken();
+            var third = new TestExpirationToken();
+
+            Assert.Empty(tokens);
+            Assert.False(tokens.IsReadOnly);
+
+            tokens.Add(first);
+            tokens.Add(third);
+            tokens.Insert(1, second);
+            Assert.Equal(new[] { first, second, third }, tokens);
+            Assert.Equal(3, tokens.Count);
+
+            Assert.Same(second, tokens[1]);
+            Assert.Equal(2, tokens.IndexOf(third));
+            Assert.True(tokens.Contains(second));
+            Assert.Throws<ArgumentOutOfRangeException>(() => tokens[3]);
+            Assert.Throws<ArgumentOutOfRangeException>(() => tokens.Insert(4, first));
+            Assert.Throws<ArgumentOutOfRangeException>(() => tokens.RemoveAt(3));
+
+            var target = new IChangeToken[4];
+            tokens.CopyTo(target, 1);
+            Assert.Equal(new IChangeToken[] { null, first, second, third }, target);
+
+            tokens[0] = third;
+            Assert.Same(third, tokens[0]);
+
+            Assert.True(tokens.Remove(second));
+            Assert.False(tokens.Remove(second));
+            Assert.Equal(new[] { third, third }, tokens);
+
+            tokens.RemoveAt(0);
+            Assert.Same(third, Assert.Single(tokens));
+
+            tokens.Clear();
+            Assert.Empty(tokens);
+
+            tokens.Add(first);
+            Assert.Same(first, Assert.Single(tokens));
+            tokens.Clear();
+            Assert.Empty(tokens);
+        }
+
+        [Theory]
+        [InlineData(1, false)] // append into spare capacity while building
+        [InlineData(4, false)] // grow while building
+        [InlineData(1, true)] // append into spare capacity with concurrent reads
+        [InlineData(4, true)] // grow with concurrent reads
+        public void ExpirationTokensEnumeratorUsesSnapshotWhileAdding(int initialCount, bool concurrentReadsEnabled)
+        {
+            var cache = CreateCache(trackLinkedCacheEntries: concurrentReadsEnabled);
+            using ICacheEntry entry = cache.CreateEntry("myKey");
+            var expected = new List<IChangeToken>(initialCount);
+
+            for (int i = 0; i < initialCount; i++)
+            {
+                var token = new TestExpirationToken();
+                expected.Add(token);
+                entry.AddExpirationToken(token);
+            }
+
+            entry.SetValue(new object());
+            if (concurrentReadsEnabled)
+            {
+                entry.Dispose();
+            }
+
+            using IEnumerator<IChangeToken> enumerator = entry.ExpirationTokens.GetEnumerator();
+            Assert.True(enumerator.MoveNext()); // captures the current state and visible count
+
+            var actual = new List<IChangeToken>(initialCount) { enumerator.Current };
+            entry.AddExpirationToken(new TestExpirationToken());
+
+            while (enumerator.MoveNext())
+            {
+                actual.Add(enumerator.Current);
+            }
+
+            Assert.Equal(expected, actual);
+            Assert.Equal(initialCount + 1, entry.ExpirationTokens.Count);
         }
 
         internal class TestToken : IChangeToken

@@ -168,7 +168,6 @@ HRESULT EEConfig::Init()
 #endif
 
 #ifdef _DEBUG
-    fShouldInjectFault = 0;
     testThreadAbort = 0;
 #endif
 
@@ -233,7 +232,6 @@ HRESULT EEConfig::Init()
 HRESULT EEConfig::Cleanup()
 {
     CONTRACTL {
-        FORBID_FAULT;
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
@@ -293,7 +291,6 @@ HRESULT EEConfig::sync()
         THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
-        INJECT_FAULT (return E_OUTOFMEMORY);
     } CONTRACTL_END;
 
     ETWOnStartup (EEConfigSync_V1, EEConfigSyncEnd_V1);
@@ -636,8 +633,6 @@ HRESULT EEConfig::sync()
     iPerfNumAllocsThreshold = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_PerfNumAllocsThreshold);
     iPerfAllocsSizeThreshold = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_PerfAllocsSizeThreshold);
 
-    fShouldInjectFault = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_InjectFault);
-
     testThreadAbort = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_HostTestThreadAbort);
 
 #endif //_DEBUG
@@ -860,7 +855,6 @@ HRESULT EEConfig::ParseMethList(_In_z_ LPWSTR str, MethodNamesList** out) {
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        INJECT_FAULT(return E_OUTOFMEMORY);
         PRECONDITION(CheckPointer(str, NULL_OK));
         PRECONDITION(CheckPointer(out));
     } CONTRACTL_END;
@@ -943,7 +937,6 @@ HRESULT EEConfig::ParseTypeList(_In_z_ LPWSTR str, TypeNamesList** out)
         MODE_ANY;
         PRECONDITION(CheckPointer(out));
         PRECONDITION(CheckPointer(str, NULL_OK));
-        INJECT_FAULT(return E_OUTOFMEMORY);
     } CONTRACTL_END;
 
     HRESULT hr = S_OK;
@@ -1066,7 +1059,6 @@ HRESULT TypeNamesList::Init(_In_z_ LPCWSTR str)
         NOTHROW;
         GC_NOTRIGGER;
         PRECONDITION(CheckPointer(str));
-        INJECT_FAULT(return E_OUTOFMEMORY);
     } CONTRACTL_END;
 
     pNames = NULL;
@@ -1148,7 +1140,6 @@ TypeNamesList::~TypeNamesList()
 {
     CONTRACTL {
         NOTHROW;
-        FORBID_FAULT;
         GC_NOTRIGGER;
         MODE_ANY;
     } CONTRACTL_END;

@@ -17,6 +17,7 @@ public interface ITestInfo
     string DisplayNameForFiltering { get; }
     string Method { get; }
     string ContainingType { get; }
+    bool IsAsync { get; }
 
     CodeBuilder GenerateTestExecution(ITestReporterWrapper testReporterWrapper);
 }
@@ -51,16 +52,24 @@ public sealed class BasicTestMethod : ITestInfo
 
         TestNameExpression = displayNameExpression ?? $"$\"{externAlias}::{ContainingType}.{Method}({string.Join(", ", argumentsForName)})\"";
 
+        IsAsync = IsAwaitable(method.ReturnType);
+        string awaitPrefix = IsAsync ? "await " : "";
         if (method.IsStatic)
         {
-            _executionStatement = $"{externAlias}::{ContainingType}.{Method}({args});";
+            _executionStatement = $"{awaitPrefix}{externAlias}::{ContainingType}.{Method}({args});";
         }
         else
         {
-            _executionStatement = $"using ({externAlias}::{ContainingType} obj = new()) obj.{Method}({args});";
+            _executionStatement = $"using ({externAlias}::{ContainingType} obj = new()) {awaitPrefix}obj.{Method}({args});";
         }
     }
 
+    internal static bool IsAwaitable(ITypeSymbol type) =>
+        type is INamedTypeSymbol { Name: "Task" or "ValueTask" } namedType
+        && namedType.ContainingNamespace.ToDisplayString() == "System.Threading.Tasks"
+        && namedType.Arity <= 1;
+
+    public bool IsAsync { get; }
     public string TestNameExpression { get; }
     public string DisplayNameForFiltering { get; }
     public string Method { get; }
@@ -104,9 +113,11 @@ public sealed class LegacyStandaloneEntryPointTestMethod : ITestInfo
         TestNameExpression = $"\"{externAlias}::{ContainingType}.{Method}()\"";
         DisplayNameForFiltering = $"{ContainingType}.{Method}()";
 
-        _executionStatement = $"Xunit.Assert.Equal(100, {externAlias}::{ContainingType}.{Method}());";
+        IsAsync = BasicTestMethod.IsAwaitable(method.ReturnType);
+        _executionStatement = $"Xunit.Assert.Equal(100, {(IsAsync ? "await " : "")}{externAlias}::{ContainingType}.{Method}());";
     }
 
+    public bool IsAsync { get; }
     public string TestNameExpression { get; }
     public string DisplayNameForFiltering { get; }
     public string Method { get; }
@@ -125,7 +136,8 @@ public sealed class LegacyStandaloneEntryPointTestMethod : ITestInfo
         return obj is LegacyStandaloneEntryPointTestMethod other
             && TestNameExpression == other.TestNameExpression
             && Method == other.Method
-            && ContainingType == other.ContainingType; ;
+            && ContainingType == other.ContainingType
+            && IsAsync == other.IsAsync;
     }
 
     public override int GetHashCode()
@@ -140,6 +152,7 @@ public sealed class LegacyStandaloneEntryPointTestMethod : ITestInfo
 
 public sealed class ConditionalTest : ITestInfo
 {
+    public bool IsAsync => _innerTest.IsAsync;
     public ConditionalTest(ITestInfo innerTest, string condition, string? skipReason = null)
     {
         TestNameExpression = innerTest.TestNameExpression;
@@ -301,6 +314,7 @@ public sealed class ConditionalTest : ITestInfo
 
 public sealed class MemberDataTest : ITestInfo
 {
+    public bool IsAsync => _innerTest.IsAsync;
     public string TestNameExpression { get; }
     public string DisplayNameForFiltering { get; }
     public string Method { get; }
@@ -375,6 +389,7 @@ public sealed class MemberDataTest : ITestInfo
 
 public sealed class OutOfProcessTest : ITestInfo
 {
+    public bool IsAsync => false;
     public string TestNameExpression { get; }
     public string DisplayNameForFiltering { get; }
     public string Method { get; }
@@ -425,6 +440,7 @@ public sealed class OutOfProcessTest : ITestInfo
 
 public sealed class TestWithCustomDisplayName : ITestInfo
 {
+    public bool IsAsync => _inner.IsAsync;
     public string DisplayNameForFiltering { get; }
     public string TestNameExpression => $@"""{DisplayNameForFiltering.Replace(@"\", @"\\")}""";
     public string Method => _inner.Method;
@@ -471,6 +487,7 @@ public sealed class TestWithCustomDisplayName : ITestInfo
 /// </summary>
 public sealed class AlwaysSkippedTest : ITestInfo
 {
+    public bool IsAsync => false;
     public AlwaysSkippedTest(ITestInfo innerTest, string skipReason)
     {
         TestNameExpression = innerTest.TestNameExpression;

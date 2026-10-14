@@ -108,6 +108,12 @@ public unsafe class Program
         }
 
         {
+            Console.WriteLine($" -- unmanaged tail");
+            var b = CallFunctionPointers.CallUnmanagedTailCharChar(cbDefault, a);
+            Assert.Equal(expected, b);
+        }
+
+        {
             Console.WriteLine($" -- unmanaged cdecl");
             var b = CallFunctionPointers.CallUnmanagedCdeclCharChar(cbCdecl, a);
             Assert.Equal(expected, b);

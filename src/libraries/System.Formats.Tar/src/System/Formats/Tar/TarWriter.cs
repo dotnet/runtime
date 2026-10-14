@@ -247,10 +247,7 @@ namespace System.Formats.Tar
             ArgumentNullException.ThrowIfNull(entry);
             ValidateEntryLinkName(entry._header._typeFlag, entry._header._linkName);
             ValidateStreamsSeekability(entry);
-
-            ValueTask vt = WriteEntryCoreAsync<SyncReadWriteAdapter>(entry, CancellationToken.None);
-            Debug.Assert(vt.IsCompleted, "Synchronous WriteEntry completed asynchronously.");
-            vt.GetAwaiter().GetResult();
+            WriteEntryInternal(entry);
         }
 
         /// <summary>
@@ -300,6 +297,44 @@ namespace System.Formats.Tar
             ValidateEntryLinkName(entry._header._typeFlag, entry._header._linkName);
             ValidateStreamsSeekability(entry);
             return WriteEntryCoreAsync<AsyncReadWriteAdapter>(entry, cancellationToken).AsTask();
+        }
+
+        private void WriteEntryInternal(TarEntry entry)
+        {
+            Span<byte> buffer = stackalloc byte[TarHelpers.RecordSize];
+            buffer.Clear();
+
+            switch (entry.Format)
+            {
+                case TarEntryFormat.V7:
+                    entry._header.WriteAsV7(_archiveStream, buffer);
+                    break;
+
+                case TarEntryFormat.Ustar:
+                    entry._header.WriteAsUstar(_archiveStream, buffer);
+                    break;
+
+                case TarEntryFormat.Pax:
+                    if (entry._header._typeFlag is TarEntryType.GlobalExtendedAttributes)
+                    {
+                        entry._header.WriteAsPaxGlobalExtendedAttributes(_archiveStream, buffer, _nextGlobalExtendedAttributesEntryNumber++);
+                    }
+                    else
+                    {
+                        entry._header.WriteAsPax(_archiveStream, buffer);
+                    }
+                    break;
+
+                case TarEntryFormat.Gnu:
+                    entry._header.WriteAsGnu(_archiveStream, buffer);
+                    break;
+
+                default:
+                    Debug.Assert(entry.Format == TarEntryFormat.Unknown, "Missing format handler");
+                    throw new InvalidDataException(SR.Format(SR.TarInvalidFormat, Format));
+            }
+
+            _wroteEntries = true;
         }
 
         // Portion of the WriteEntry methods that rents a buffer and writes to the archive.
@@ -379,5 +414,16 @@ namespace System.Formats.Tar
                 }
             }
         }
+
+        // Creates a new, empty entry of the type appropriate for the current archive Format.
+        private TarEntry CreateEntryForFormat(TarEntryType entryType, string entryName) =>
+            Format switch
+            {
+                TarEntryFormat.V7 => new V7TarEntry(entryType, entryName),
+                TarEntryFormat.Ustar => new UstarTarEntry(entryType, entryName),
+                TarEntryFormat.Pax => new PaxTarEntry(entryType, entryName),
+                TarEntryFormat.Gnu => new GnuTarEntry(entryType, entryName),
+                _ => throw new InvalidDataException(SR.Format(SR.TarInvalidFormat, Format)),
+            };
     }
 }

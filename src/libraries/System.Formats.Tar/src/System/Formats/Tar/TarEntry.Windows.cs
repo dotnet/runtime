@@ -32,15 +32,6 @@ namespace System.Formats.Tar
             throw new InvalidOperationException(SR.IO_FifoFiles_NotSupported);
         }
 
-        // Windows specific implementation of the method that extracts the current entry as a hard link.
-        private void ExtractAsHardLink(string targetFilePath, string hardLinkFilePath)
-        {
-            Debug.Assert(EntryType is TarEntryType.HardLink);
-            Debug.Assert(!string.IsNullOrEmpty(targetFilePath));
-            Debug.Assert(!string.IsNullOrEmpty(hardLinkFilePath));
-            File.CreateHardLink(hardLinkFilePath, targetFilePath);
-        }
-
         // Best-effort attempt to mark the file as sparse on Windows so subsequent unwritten ranges
         // remain real holes (unallocated extents) rather than being zero-filled on disk. The call
         // is silently ignored if the underlying file system does not support sparse files

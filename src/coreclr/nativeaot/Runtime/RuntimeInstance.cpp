@@ -10,6 +10,7 @@
 #include "rhassert.h"
 #include "slist.h"
 #include "holder.h"
+#include "NativePrimitiveDecoder.h"
 #include "Crst.h"
 #include "rhbinder.h"
 #include "RuntimeInstance.h"
@@ -153,7 +154,7 @@ PTR_uint8_t RuntimeInstance::GetTargetOfUnboxingAndInstantiatingStub(PTR_VOID Co
             uint8_t flags = *pData++;
 
             if ((flags & (uint8_t)AssociatedDataFlags::HasUnboxingStubTarget) != 0)
-                return pData + *dac_cast<PTR_int32_t>(pData);
+                return pData + NativePrimitiveDecoder::PeekInt32(pData);
         }
     }
 

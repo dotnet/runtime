@@ -1661,7 +1661,7 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall(BasicBlock** pBlock, Statement
 
 //------------------------------------------------------------------------------
 // fgVNBasedIntrinsicExpansionForCall_ReadUtf8 : Expand NI_System_Text_UTF8Encoding_UTF8EncodingSealed_ReadUtf8
-//    when src data is a string literal (UTF16) that can be converted to UTF8, e.g.:
+//    when src data is immutable UTF16 that can be converted to UTF8, e.g.:
 //
 //      string str = "Hello, world!";
 //      int bytesWritten = ReadUtf8(ref str[0], str.Length, buffer, buffer.Length);
@@ -1691,29 +1691,6 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
 
     GenTree* srcPtr = call->gtArgs.GetUserArgByIndex(0)->GetNode();
 
-    // We're interested in a case when srcPtr is a string literal and srcLen is a constant
-    // srcLen doesn't have to match the srcPtr's length, but it should not exceed it.
-    ssize_t               strObjOffset = 0;
-    CORINFO_OBJECT_HANDLE strObj       = nullptr;
-    if (!GetObjectHandleAndOffset(srcPtr, &strObjOffset, &strObj) || ((size_t)strObjOffset > INT_MAX))
-    {
-        // We might want to support more cases here, e.g. ROS<char> RVA data.
-        // Also, we check that strObjOffset (which is in most cases is expected to be just
-        // OFFSETOF__CORINFO_String__chars) doesn't exceed INT_MAX since we'll need to cast
-        // it to int for getObjectContent API.
-        JITDUMP("ReadUtf8: srcPtr is not an object handle\n")
-        return false;
-    }
-
-    assert(strObj != nullptr);
-
-    // We mostly expect string literal objects here, but let's be more agile just in case
-    if (!info.compCompHnd->isObjectImmutable(strObj))
-    {
-        JITDUMP("ReadUtf8: srcPtr is not immutable (not a frozen string object?)\n")
-        return false;
-    }
-
     const GenTree* srcLen = call->gtArgs.GetUserArgByIndex(1)->GetNode();
     if (!srcLen->gtVNPair.BothEqual() || !vnStore->IsVNInt32Constant(srcLen->gtVNPair.GetLiberal()))
     {
@@ -1731,16 +1708,10 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
         return false;
     }
 
-    uint16_t bufferU16[MaxU16BufferSizeInChars];
-
-    // getObjectContent is expected to validate the offset and length
-    // NOTE: (int) casts should not overflow:
-    //  * srcLenCns is <= MaxUTF16BufferSizeInChars
-    //  * strObjOffset is already checked to be <= INT_MAX
-    if (!info.compCompHnd->getObjectContent(strObj, (uint8_t*)bufferU16, (int)(srcLenCnsU16 * sizeof(uint16_t)),
-                                            (int)strObjOffset))
+    uint8_t* bufferU16 = nullptr;
+    if (!GetImmutableDataFromAddress(srcPtr, (int)(srcLenCnsU16 * sizeof(uint16_t)), getAllocator(), &bufferU16))
     {
-        JITDUMP("ReadUtf8: getObjectContent returned false.\n")
+        JITDUMP("ReadUtf8: source data is not available at compile time\n")
         return false;
     }
 
@@ -2064,8 +2035,10 @@ static int PickCandidatesForTypeCheck(Compiler*              comp,
             case CORINFO_HELP_CHKCASTCLASS:
             case CORINFO_HELP_CHKCASTARRAY:
             case CORINFO_HELP_CHKCASTANY:
-                likelihoods[0] = 50; // 50% speculative guess
-                candidates[0]  = NO_CLASS_HANDLE;
+                *typeCheckFailed = helper == CORINFO_HELP_CHKCASTCLASS ? TypeCheckFailedAction::CallHelper_Specialized
+                                                                       : TypeCheckFailedAction::CallHelper;
+                likelihoods[0]   = 50; // 50% speculative guess
+                candidates[0]    = NO_CLASS_HANDLE;
                 return 1;
 
             default:
@@ -2145,29 +2118,19 @@ static int PickCandidatesForTypeCheck(Compiler*              comp,
     const bool isCastToExact = comp->info.compCompHnd->isExactType(castToCls);
     if (isCastToExact && ((helper == CORINFO_HELP_CHKCASTCLASS) || (helper == CORINFO_HELP_CHKCASTARRAY)))
     {
-        // obj is string
-        // obj is string[]
+        // (string)obj
+        // (string[])obj
         //
-        if ((helper == CORINFO_HELP_CHKCASTCLASS))
-        {
-            // (string)obj
-            //
-            // Fallback for this expansion always throws InvalidCastException
-            // TODO: can we do the same for string[]? (importer did not)
-            *typeCheckFailed = TypeCheckFailedAction::CallHelper_AlwaysThrows;
+        // Fallback for this expansion always throws InvalidCastException.
+        // Exactness excludes array covariance and primitive-array interchange.
+        *typeCheckFailed = TypeCheckFailedAction::CallHelper_AlwaysThrows;
 
-            // Assume that exceptions are rare
-            likelihoods[0] = 100;
+        // Assume that exceptions are rare
+        likelihoods[0] = 100;
 
-            // Update the common denominator class to be more exact as
-            // the fallback always throws anyway, so we don't have to worry about what it returns.
-            *commonCls = castToCls;
-        }
-        else
-        {
-            // 50% chance of successful type check (speculative guess)
-            likelihoods[0] = 50;
-        }
+        // Update the common denominator class to be more exact as
+        // the fallback always throws anyway, so we don't have to worry about what it returns.
+        *commonCls    = castToCls;
         candidates[0] = castToCls;
         return 1;
     }
@@ -2177,8 +2140,6 @@ static int PickCandidatesForTypeCheck(Compiler*              comp,
         // obj is string[]
         //
         // Fallbacks for these expansions simply return null
-        // TODO: should we keep the helper call for ISINSTANCEOFARRAY like we do for CHKCASTARRAY above?
-        // The logic is copied from the importer.
         *typeCheckFailed = TypeCheckFailedAction::ReturnNull;
 
         // We're done, there is no need in consulting with PGO data
@@ -2299,6 +2260,13 @@ static int PickCandidatesForTypeCheck(Compiler*              comp,
         }
         if (castResult == TypeCompareState::Must)
         {
+            // The specialized helper skips null and exact-type checks. A failed guard against
+            // a subclass would not rule out the target class itself.
+            if ((helper == CORINFO_HELP_CHKCASTCLASS) && (candidates[0] == castToCls))
+            {
+                *typeCheckFailed = TypeCheckFailedAction::CallHelper_Specialized;
+            }
+
             // return actual object on successful type check
             *typeCheckPassed = TypeCheckPassedAction::ReturnObj;
             return 1;
@@ -2805,25 +2773,34 @@ PhaseStatus Compiler::fgExpandStackArrayAllocations()
     {
         for (Statement* const stmt : block->Statements())
         {
-            if ((stmt->GetRootNode()->gtFlags & GTF_CALL) == 0)
-            {
-                continue;
-            }
+            // A single statement can contain more than one allocation. Expanding one splits
+            // the statement's tree and leaves the remainder (which may hold further
+            // allocations) in "stmt", so keep rescanning it until nothing is left to expand.
+            //
+            bool expanded = true;
 
-            for (GenTree* const tree : stmt->TreeList())
+            while (expanded)
             {
-                if (!tree->IsCall())
+                expanded = false;
+
+                if ((stmt->GetRootNode()->gtFlags & GTF_CALL) == 0)
                 {
-                    continue;
+                    break;
                 }
 
-                if (fgExpandStackArrayAllocation(block, stmt, tree->AsCall()))
+                for (GenTree* const tree : stmt->TreeList())
                 {
-                    // If we expand, we split the statement's tree
-                    // so will be done with this statment.
-                    //
-                    modified = true;
-                    break;
+                    if (!tree->IsCall())
+                    {
+                        continue;
+                    }
+
+                    if (fgExpandStackArrayAllocation(block, stmt, tree->AsCall()))
+                    {
+                        modified = true;
+                        expanded = true;
+                        break;
+                    }
                 }
             }
         }

@@ -2048,7 +2048,7 @@ mono_main (int argc, char* argv[])
 			g_print ("Mono JIT compiler version %s\nCopyright (C) Novell, Inc, Xamarin Inc and Contributors. www.mono-project.com\n", build);
 			g_free (build);
 			char *info = mono_get_version_info ();
-			g_print (info);
+			g_print ("%s", info);
 			g_free (info);
 
 			gc_descr = mono_gc_get_description ();

@@ -33,7 +33,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             CommandResult result = Command.Create(sharedState.ComSxsPath, args)
                 .EnableTracingAndCaptureOutputs()
                 .DotNetRoot(HostTestContext.BuiltDotNet.BinPath)
-                .MultilevelLookup(false)
                 .Execute();
 
             result.Should().Pass()
@@ -51,7 +50,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             CommandResult result = Command.Create(sharedState.ComSxsPath, args)
                 .EnableTracingAndCaptureOutputs()
                 .DotNetRoot(HostTestContext.BuiltDotNet.BinPath)
-                .MultilevelLookup(false)
                 .Execute();
 
             result.Should().Pass()
@@ -71,7 +69,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             CommandResult result = Command.Create(app.AppExe, args)
                 .EnableTracingAndCaptureOutputs()
                 .DotNetRoot(HostTestContext.BuiltDotNet.BinPath)
-                .MultilevelLookup(false)
                 .Execute();
 
             result.Should().Pass()

@@ -34,12 +34,12 @@
       </trans-unit>
       <trans-unit id="DerivedTypeIsNotSupportedMessageFormat">
         <source>Specified type '{0}' is not a supported derived type for the polymorphic type '{1}'. Derived types must be assignable to the base type.</source>
-        <target state="new">Specified type '{0}' is not a supported derived type for the polymorphic type '{1}'. Derived types must be assignable to the base type.</target>
+        <target state="translated">Der angegebene Typ „{0}“ ist kein unterstützter abgeleiteter Typ für den polymorphen Typ „{1}“. Abgeleitete Typen müssen dem Basistyp zuweisbar sein.</target>
         <note />
       </trans-unit>
       <trans-unit id="DerivedTypeIsNotSupportedTitle">
         <source>Derived type is not a supported polymorphic derived type.</source>
-        <target state="new">Derived type is not a supported polymorphic derived type.</target>
+        <target state="translated">Der abgeleitete Typ ist kein unterstützter polymorpher abgeleiteter Typ.</target>
         <note />
       </trans-unit>
       <trans-unit id="DuplicateTypeNameMessageFormat">
@@ -64,42 +64,42 @@
       </trans-unit>
       <trans-unit id="DerivedTypeDiscriminatorCollisionMessageFormat">
         <source>The type discriminator '{0}' is specified more than once for the polymorphic type '{1}'. Derived types must correspond to unique discriminators.</source>
-        <target state="new">The type discriminator '{0}' is specified more than once for the polymorphic type '{1}'. Derived types must correspond to unique discriminators.</target>
+        <target state="translated">Der Typdiskriminator „{0}“ wurde für den polymorphen Typ „{1}“ mehr als einmal angegeben. Abgeleitete Typen müssen eindeutige Diskriminatoren haben.</target>
         <note />
       </trans-unit>
       <trans-unit id="DerivedTypeDiscriminatorCollisionTitle">
         <source>Derived types produce a duplicate type discriminator.</source>
-        <target state="new">Derived types produce a duplicate type discriminator.</target>
+        <target state="translated">Abgeleitete Typen erzeugen einen doppelten Typdiskriminator.</target>
         <note />
       </trans-unit>
       <trans-unit id="InferClosedTypePolymorphismOnNonClosedTypeMessageFormat">
         <source>The type '{0}' enables JsonPolymorphicAttribute.InferClosedTypePolymorphism but is not a closed type, so no derived types can be inferred. Declare the type 'closed' or register its derived types using JsonDerivedTypeAttribute.</source>
-        <target state="new">The type '{0}' enables JsonPolymorphicAttribute.InferClosedTypePolymorphism but is not a closed type, so no derived types can be inferred. Declare the type 'closed' or register its derived types using JsonDerivedTypeAttribute.</target>
+        <target state="translated">Der Typ „{0}“ aktiviert JsonPolymorphicAttribute.InferClosedTypePolymorphism, ist aber kein geschlossener Typ, sodass auf keine abgeleiteten Typen rückgeschlossen werden kann. Deklarieren Sie den Typ „closed“, oder registrieren Sie seine abgeleiteten Typen mit jsonDerivedTypeAttribute.</target>
         <note />
       </trans-unit>
       <trans-unit id="InferClosedTypePolymorphismOnNonClosedTypeTitle">
         <source>Inferred closed type polymorphism is enabled on a type that is not a closed type.</source>
-        <target state="new">Inferred closed type polymorphism is enabled on a type that is not a closed type.</target>
+        <target state="translated">Der inferierte Polymorphismus geschlossener Typen ist für einen Typ aktiviert, der kein geschlossener Typ ist.</target>
         <note />
       </trans-unit>
       <trans-unit id="InferClosedTypePolymorphismWithExplicitDerivedTypesMessageFormat">
         <source>The type '{0}' enables JsonPolymorphicAttribute.InferClosedTypePolymorphism but also declares JsonDerivedTypeAttribute. Explicit registrations replace inference, so only the derived types declared explicitly are serialized polymorphically.</source>
-        <target state="new">The type '{0}' enables JsonPolymorphicAttribute.InferClosedTypePolymorphism but also declares JsonDerivedTypeAttribute. Explicit registrations replace inference, so only the derived types declared explicitly are serialized polymorphically.</target>
+        <target state="translated">Der Typ „{0}“ aktiviert JsonPolymorphicAttribute.InferClosedTypePolymorphism, deklariert aber auch JsonDerivedTypeAttribute. Explizite Registrierungen ersetzen den Rückschluss, sodass nur die explizit deklarierten abgeleiteten Typen polymorph serialisiert werden.</target>
         <note />
       </trans-unit>
       <trans-unit id="InferClosedTypePolymorphismWithExplicitDerivedTypesTitle">
         <source>Inferred closed type polymorphism has no effect on a type that registers derived types explicitly.</source>
-        <target state="new">Inferred closed type polymorphism has no effect on a type that registers derived types explicitly.</target>
+        <target state="translated">Der abgeleitete Polymorphismus geschlossener Typen hat keine Auswirkungen auf einen Typ, der abgeleitete Typen explizit registriert.</target>
         <note />
       </trans-unit>
       <trans-unit id="InferredDerivedTypeIsNotAccessibleMessageFormat">
         <source>The inferred derived type '{0}' is less accessible than the polymorphic base type '{1}'. Inferred derived types must be at least as accessible as the base type.</source>
-        <target state="new">The inferred derived type '{0}' is less accessible than the polymorphic base type '{1}'. Inferred derived types must be at least as accessible as the base type.</target>
+        <target state="translated">Der inferierte abgeleitete Typ „{0}“ ist weniger zugänglich als der polymorphe Basistyp „{1}“. Inferierte abgeleitete Typen müssen mindestens so zugänglich sein wie der Basistyp.</target>
         <note />
       </trans-unit>
       <trans-unit id="InferredDerivedTypeIsNotAccessibleTitle">
         <source>Inferred derived type is less accessible than the polymorphic base type.</source>
-        <target state="new">Inferred derived type is less accessible than the polymorphic base type.</target>
+        <target state="translated">Der inferierte abgeleitete Typ ist weniger zugänglich als der polymorphe Basistyp.</target>
         <note />
       </trans-unit>
       <trans-unit id="JsonConverterAttributeInvalidTypeMessageFormat">

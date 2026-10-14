@@ -56,6 +56,13 @@ void *mono_win_vectored_exception_handle;
 #define W32_SEH_HANDLE_EX(_ex) \
 	if (_ex##_handler) _ex##_handler(er->ExceptionCode, &info, ctx)
 
+static void
+seh_restore_context (void)
+{
+	MonoJitTlsData *jit_tls = mono_tls_get_jit_tls ();
+	mono_restore_context (&jit_tls->ex_ctx);
+}
+
 static LONG CALLBACK seh_unhandled_exception_filter(EXCEPTION_POINTERS* ep)
 {
 #ifndef MONO_CROSS_COMPILE
@@ -156,8 +163,10 @@ static LONG CALLBACK seh_vectored_exception_handler(EXCEPTION_POINTERS* ep)
 				/* need to restore stack protection once stack is unwound
 				 * restore_stack will restore stack protection and then
 				 * resume control to the saved stack_restore_ctx */
-				mono_sigctx_to_monoctx (ctx, &jit_tls->stack_restore_ctx);
-				ctx->Rip = (guint64)restore_stack;
+				jit_tls->stack_restore_ctx = jit_tls->ex_ctx;
+				MONO_CONTEXT_SET_IP (&jit_tls->ex_ctx, restore_stack);
+				MONO_CONTEXT_SET_SP (&jit_tls->ex_ctx,
+					ALIGN_DOWN_TO ((guint64)MONO_CONTEXT_GET_SP (&jit_tls->ex_ctx), 16) - 8);
 			}
 		} else {
 			info.handled = FALSE;
@@ -825,6 +834,19 @@ mono_arch_handle_exception (void *sigctx, gpointer obj)
 	mono_sigctx_to_monoctx (sigctx, &mctx);
 
 	mono_handle_exception (&mctx, obj);
+
+#ifdef TARGET_WIN32
+	/*
+	 * Windows validates exception continuation IPs when hardware stack protection is
+	 * enabled. Resume in native runtime code rather than an unregistered JIT handler.
+	 * Keep the handler context in TLS and provide the native entry point with an
+	 * aligned stack, a return-address slot, and the Win64 argument home area.
+	 */
+	MonoJitTlsData *jit_tls = mono_tls_get_jit_tls ();
+	jit_tls->ex_ctx = mctx;
+	MONO_CONTEXT_SET_IP (&mctx, seh_restore_context);
+	MONO_CONTEXT_SET_SP (&mctx, ALIGN_DOWN_TO ((guint64)MONO_CONTEXT_GET_SP (&mctx), 16) - 40);
+#endif
 
 	mono_monoctx_to_sigctx (&mctx, sigctx);
 

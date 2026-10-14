@@ -93,6 +93,7 @@ namespace ILLink.RoslynAnalyzer.Tests
                     public int Accessor
                     {
                         unsafe get => 0;
+                        set { }
                     }
 
                     public void Outer()
@@ -114,8 +115,8 @@ namespace ILLink.RoslynAnalyzer.Tests
             var source = """
                 class C
                 {
-                    static unsafe C() { }
-                    unsafe ~C() { }
+                    static {|CS9377:unsafe|} C() { }
+                    {|CS9377:unsafe|} ~C() { }
                 }
                 """;
 

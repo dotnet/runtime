@@ -43,7 +43,7 @@ namespace System.IO.Compression
         {
             if (OperatingSystem.IsBrowser())
             {
-                throw new PlatformNotSupportedException(SR.WinZipEncryptionNotSupportedOnBrowser);
+                throw new PlatformNotSupportedException(SR.WinZipEncryptionNotSupportedOnPlatform);
             }
 
             return WinZipAesKeyMaterial.GetSaltSize(keySizeBits);
@@ -56,7 +56,7 @@ namespace System.IO.Compression
         {
             if (OperatingSystem.IsBrowser())
             {
-                throw new PlatformNotSupportedException(SR.WinZipEncryptionNotSupportedOnBrowser);
+                throw new PlatformNotSupportedException(SR.WinZipEncryptionNotSupportedOnPlatform);
             }
             return WinZipAesKeyMaterial.Create(password, salt, keySizeBits);
         }
@@ -68,7 +68,7 @@ namespace System.IO.Compression
         {
             if (OperatingSystem.IsBrowser())
             {
-                throw new PlatformNotSupportedException(SR.WinZipEncryptionNotSupportedOnBrowser);
+                throw new PlatformNotSupportedException(SR.WinZipEncryptionNotSupportedOnPlatform);
             }
 
             ArgumentNullException.ThrowIfNull(baseStream);
@@ -88,7 +88,7 @@ namespace System.IO.Compression
         {
             if (OperatingSystem.IsBrowser())
             {
-                throw new PlatformNotSupportedException(SR.WinZipEncryptionNotSupportedOnBrowser);
+                throw new PlatformNotSupportedException(SR.WinZipEncryptionNotSupportedOnPlatform);
             }
 
             ArgumentNullException.ThrowIfNull(baseStream);
@@ -108,7 +108,7 @@ namespace System.IO.Compression
         {
             if (OperatingSystem.IsBrowser())
             {
-                throw new PlatformNotSupportedException(SR.WinZipEncryptionNotSupportedOnBrowser);
+                throw new PlatformNotSupportedException(SR.WinZipEncryptionNotSupportedOnPlatform);
             }
             int saltSize = keyMaterial.SaltSize;
 
@@ -157,7 +157,7 @@ namespace System.IO.Compression
         {
             if (OperatingSystem.IsBrowser())
             {
-                throw new PlatformNotSupportedException(SR.WinZipEncryptionNotSupportedOnBrowser);
+                throw new PlatformNotSupportedException(SR.WinZipEncryptionNotSupportedOnPlatform);
             }
 
             _baseStream = baseStream;

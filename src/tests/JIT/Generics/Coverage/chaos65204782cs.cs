@@ -39,7 +39,7 @@ using Xunit;
 /// ShowOutputInConsole:	False
 /// CompileAndRun:	False
 /// </code></remarks>
-namespace Chaos
+namespace JitTest_Generics_Coverage_chaos65204782cs
 {
     using System;
 
@@ -3452,6 +3452,7 @@ namespace Chaos
     public class Program
     {
         [SkipOnCoreClr("This test is not compatible with GC stress.", RuntimeTestModes.AnyGCStress)]
+        [OuterLoop]
         [Fact]
         public static void TestEntryPoint()
         {

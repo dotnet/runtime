@@ -1,16 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 // ===========================================================================
 // File: zapsig.cpp
-//
 //
 // This module contains helper functions used to encode and manipulate
 // signatures for scenarios where runtime-specific signatures
 // including specific generic instantiations are persisted,
 // like Ready-To-Run decoding, and Multi-core JIT recording/playback
-//
 // ===========================================================================
-
 
 #include "common.h"
 #include "zapsig.h"
@@ -297,7 +295,6 @@ BOOL ZapSig::GetSignatureForTypeHandle(TypeHandle      handle,
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        FORBID_FAULT;
         PRECONDITION(CheckPointer(pModule));
         PRECONDITION(CheckPointer(pZapSigContext));
         PRECONDITION(CheckPointer(pZapSigContext->pModuleContext));
@@ -539,26 +536,6 @@ BOOL ZapSig::GetSignatureForTypeHandle(TypeHandle      handle,
     return TRUE;
 }
 
-/*static*/
-BOOL ZapSig::CompareTypeHandleFieldToTypeHandle(TypeHandle *pTypeHnd, TypeHandle typeHnd2)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        FORBID_FAULT;
-        PRECONDITION(CheckPointer(pTypeHnd));
-        PRECONDITION(CheckPointer(typeHnd2));
-    }
-    CONTRACTL_END
-
-    // Ensure that the compiler won't fetch the value twice
-    SIZE_T fixup = VolatileLoadWithoutBarrier((SIZE_T *)pTypeHnd);
-
-    return TypeHandle::FromTAddr(fixup) == typeHnd2;
-}
-
 #ifndef DACCESS_COMPILE
 ModuleBase *ZapSig::DecodeModuleFromIndex(Module *fromModule,
                                       DWORD index)
@@ -590,14 +567,11 @@ ModuleBase *ZapSig::DecodeModuleFromIndex(Module *fromModule,
     {
         index -= assemblyRefMax;
 
-        if (fromModule->GetReadyToRunInfo()->IsImageVersionAtLeast(6,3))
+        if (index == 1)
         {
-            if (index == 1)
-            {
-                return fromModule->GetReadyToRunInfo()->GetNativeManifestModule();
-            }
-            index--;
+            return fromModule->GetReadyToRunInfo()->GetNativeManifestModule();
         }
+        index--;
 
         pAssembly = fromModule->GetNativeMetadataAssemblyRefFromCache(index);
 
@@ -630,7 +604,6 @@ ModuleBase *ZapSig::DecodeModuleFromIndexIfLoaded(Module *fromModule,
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
     }
     CONTRACTL_END;
 
@@ -655,14 +628,11 @@ ModuleBase *ZapSig::DecodeModuleFromIndexIfLoaded(Module *fromModule,
     {
         index -= assemblyRefMax;
 
-        if (fromModule->GetReadyToRunInfo()->IsImageVersionAtLeast(6,3))
+        if (index == 1)
         {
-            if (index == 1)
-            {
-                return fromModule->GetReadyToRunInfo()->GetNativeManifestModule();
-            }
-            index--;
+            return fromModule->GetReadyToRunInfo()->GetNativeManifestModule();
         }
+        index--;
 
         pAssembly = fromModule->GetNativeMetadataAssemblyRefFromCache(index);
         if (pAssembly == NULL)

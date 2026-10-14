@@ -1,0 +1,52 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    This project builds a runtime-less .NET project that can be compiled with ilcompiler with the generated .rsp
+    and then linked with native libs to create a very barebones executable. Based off zerosharp. Helpful during
+    platform bringup, like ongoing wasm work, to be able to perform some validation before a runtime and CoreLib are buildable.
+  -->
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <Platforms>x64;x86;wasm</Platforms>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+    <Configurations>Debug;Release;Checked</Configurations>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <RunAnalyzers>false</RunAnalyzers>
+    <NoStdLib>true</NoStdLib>
+    <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
+    <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <AutoGenerateBindingRedirects>false</AutoGenerateBindingRedirects>
+    <RuntimeMetadataVersion>v4.0.30319</RuntimeMetadataVersion>
+    <UseAppHost>false</UseAppHost>
+  </PropertyGroup>
+
+  <!-- Strip every resolved reference so csc compiles zerosharp.cs against no metadata at all. -->
+  <Target Name="RemoveAllReferences" BeforeTargets="CoreCompile">
+    <ItemGroup>
+      <ReferencePathWithRefAssemblies Remove="@(ReferencePathWithRefAssemblies)" />
+      <ReferencePath Remove="@(ReferencePath)" />
+      <Reference Remove="@(Reference)" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="GenerateReproProjectResponseFile"
+          AfterTargets="Build"
+          Condition="'$(BuildingInsideVisualStudio)' != 'true'">
+
+    <ItemGroup>
+      <ReproResponseLines Include="$(OutputPath)$(AssemblyName)$(TargetExt)" />
+      <ReproResponseLines Include="--targetarch:$(Platform)" />
+      <ReproResponseLines Include="-o:$(OutputPath)$(AssemblyName).obj" />
+      <ReproResponseLines Include="-O" Condition="'$(Optimize)' == 'true'" />
+      <ReproResponseLines Include="--systemmodule:reproZero" />
+    </ItemGroup>
+
+    <WriteLinesToFile File="$(OutputPath)compile-with-$(LibrariesConfiguration)-libs.rsp"
+                      Lines="@(ReproResponseLines)"
+                      Overwrite="true"
+                      WriteOnlyWhenDifferent="true" />
+  </Target>
+</Project>

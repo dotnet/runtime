@@ -971,9 +971,45 @@ namespace Microsoft.Extensions.Options.Tests
             }
         }
 
+        private sealed class TrackingAsyncSuccessAttribute : AsyncValidationAttribute
+        {
+            private static int s_asyncCalls;
+            private static int s_syncCalls;
+
+            public static int AsyncCalls => Volatile.Read(ref s_asyncCalls);
+            public static int SyncCalls => Volatile.Read(ref s_syncCalls);
+
+            public static void Reset()
+            {
+                Volatile.Write(ref s_asyncCalls, 0);
+                Volatile.Write(ref s_syncCalls, 0);
+            }
+
+            protected override ValidationResult? IsValid(object? value, ValidationContext validationContext)
+            {
+                Interlocked.Increment(ref s_syncCalls);
+                return ValidationResult.Success;
+            }
+
+            protected override Task<ValidationResult?> IsValidAsync(
+                object? value,
+                ValidationContext validationContext,
+                CancellationToken cancellationToken)
+            {
+                Interlocked.Increment(ref s_asyncCalls);
+                return Task.FromResult<ValidationResult?>(ValidationResult.Success);
+            }
+        }
+
         private class AsyncAnnotatedOptions
         {
             [AsyncOnlyFail]
+            public string? Value { get; set; }
+        }
+
+        private class AsyncDataAnnotationsOptions
+        {
+            [TrackingAsyncSuccess]
             public string? Value { get; set; }
         }
 
@@ -1096,8 +1132,84 @@ namespace Microsoft.Extensions.Options.Tests
                 .ValidateOnStart();
 
             using ServiceProvider sp = services.BuildServiceProvider();
+            IValidateOptions<AnnotatedOptions> registered =
+                Assert.Single(sp.GetServices<IValidateOptions<AnnotatedOptions>>());
+            Assert.IsAssignableFrom<IAsyncValidateOptions<AnnotatedOptions>>(registered);
+            Assert.Empty(sp.GetServices<IAsyncValidateOptions<AnnotatedOptions>>());
+
             var asyncValidator = sp.GetRequiredService<IAsyncStartupValidator>();
             await asyncValidator.ValidateAsync(CancellationToken.None);
+        }
+
+        [Fact]
+        public void ValidateDataAnnotations_MultipleNames_UseMatchingValidators()
+        {
+            var services = new ServiceCollection();
+            services.AddOptions<AnnotatedOptions>("one").ValidateDataAnnotations();
+            services.AddOptions<AnnotatedOptions>("two").ValidateDataAnnotations();
+
+            using ServiceProvider sp = services.BuildServiceProvider();
+            IOptionsMonitor<AnnotatedOptions> monitor = sp.GetRequiredService<IOptionsMonitor<AnnotatedOptions>>();
+
+            OptionsValidationException first = Assert.Throws<OptionsValidationException>(() => monitor.Get("one"));
+            OptionsValidationException second = Assert.Throws<OptionsValidationException>(() => monitor.Get("two"));
+
+            Assert.Equal("one", first.OptionsName);
+            Assert.Equal("two", second.OptionsName);
+            Assert.Single(first.Failures);
+            Assert.Single(second.Failures);
+        }
+
+        [Fact]
+        public void ValidateDataAnnotations_CalledMultipleTimesForSameName_RegistersSingleValidator()
+        {
+            var services = new ServiceCollection();
+            services.AddOptions<AnnotatedOptions>("named")
+                .ValidateDataAnnotations()
+                .ValidateDataAnnotations();
+
+            using ServiceProvider sp = services.BuildServiceProvider();
+            IValidateOptions<AnnotatedOptions> validator =
+                Assert.Single(sp.GetServices<IValidateOptions<AnnotatedOptions>>());
+
+            ValidateOptionsResult result = validator.Validate("named", new AnnotatedOptions());
+
+            Assert.True(result.Failed);
+            Assert.Single(result.Failures);
+        }
+
+        [Fact]
+        public async Task ValidateDataAnnotations_SnapshotUsesSyncFallbackWithoutRepeatingAsyncValidation()
+        {
+            TrackingAsyncSuccessAttribute.Reset();
+            var services = new ServiceCollection();
+            services.AddOptions<AsyncDataAnnotationsOptions>()
+                .Configure(o => o.Value = "value")
+                .ValidateDataAnnotations()
+                .ValidateOnStart();
+
+            using ServiceProvider sp = services.BuildServiceProvider();
+            IOptions<AsyncDataAnnotationsOptions> options =
+                sp.GetRequiredService<IOptions<AsyncDataAnnotationsOptions>>();
+            IOptionsMonitor<AsyncDataAnnotationsOptions> monitor =
+                sp.GetRequiredService<IOptionsMonitor<AsyncDataAnnotationsOptions>>();
+            AsyncDataAnnotationsOptions preStartWinner = options.Value;
+            Assert.Equal(1, TrackingAsyncSuccessAttribute.SyncCalls);
+            Assert.Equal(0, TrackingAsyncSuccessAttribute.AsyncCalls);
+
+            await sp.GetRequiredService<IAsyncStartupValidator>().ValidateAsync(CancellationToken.None);
+            Assert.Equal(1, TrackingAsyncSuccessAttribute.SyncCalls);
+            Assert.Equal(1, TrackingAsyncSuccessAttribute.AsyncCalls);
+
+            using (IServiceScope scope = sp.CreateScope())
+            {
+                _ = scope.ServiceProvider.GetRequiredService<IOptionsSnapshot<AsyncDataAnnotationsOptions>>().Value;
+            }
+
+            Assert.Equal(2, TrackingAsyncSuccessAttribute.SyncCalls);
+            Assert.Equal(1, TrackingAsyncSuccessAttribute.AsyncCalls);
+            Assert.Same(preStartWinner, options.Value);
+            Assert.Same(preStartWinner, monitor.CurrentValue);
         }
 
         [Fact]

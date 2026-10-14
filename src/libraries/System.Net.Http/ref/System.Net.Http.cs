@@ -476,6 +476,7 @@ namespace System.Net.Http
         public bool EnableMultipleHttp2Connections { get { throw null; } set { } }
         public bool EnableMultipleHttp3Connections { get { throw null; } set { } }
         public System.TimeSpan Expect100ContinueTimeout { get { throw null; } set { } }
+        public int InitialHttp2MaxConcurrentStreams { get { throw null; } set { } }
         public int InitialHttp2StreamWindowSize { get { throw null; } set { } }
         [System.Runtime.Versioning.UnsupportedOSPlatformGuardAttribute("browser")]
         public static bool IsSupported { get { throw null; } }

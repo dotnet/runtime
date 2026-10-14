@@ -51,16 +51,21 @@ endif (CLR_CMAKE_TARGET_WIN32)
 
 add_library_clr(mdruntime_dac ${MDRUNTIME_SOURCES})
 set_target_properties(mdruntime_dac PROPERTIES DAC_COMPONENT TRUE)
+target_compile_definitions(mdruntime_dac PRIVATE FEATURE_METADATA_PUBLIC_INTERFACES)
 target_precompile_headers(mdruntime_dac PRIVATE stdafx.h)
 
 add_library_clr(mdruntime_wks OBJECT ${MDRUNTIME_SOURCES})
 target_compile_definitions(mdruntime_wks PRIVATE FEATURE_METADATA_EMIT_ALL)
+if (FEATURE_CORPROFILER)
+    target_compile_definitions(mdruntime_wks PRIVATE FEATURE_METADATA_PUBLIC_INTERFACES)
+endif()
 target_precompile_headers(mdruntime_wks PRIVATE stdafx.h)
 
 add_library_clr(mdruntime-dbi ${MDRUNTIME_SOURCES})
 set_target_properties(mdruntime-dbi PROPERTIES DBI_COMPONENT TRUE)
+target_compile_definitions(mdruntime-dbi PRIVATE FEATURE_METADATA_PUBLIC_INTERFACES)
 target_precompile_headers(mdruntime-dbi PRIVATE stdafx.h)
 
 add_library_clr(mdruntime_ppdb ${MDRUNTIME_SOURCES})
-target_compile_definitions(mdruntime_ppdb PRIVATE FEATURE_METADATA_EMIT_ALL FEATURE_METADATA_EMIT_PORTABLE_PDB)
+target_compile_definitions(mdruntime_ppdb PRIVATE FEATURE_METADATA_EMIT_ALL FEATURE_METADATA_EMIT_PORTABLE_PDB FEATURE_METADATA_PERSISTENCE FEATURE_METADATA_PUBLIC_INTERFACES SELF_NO_HOST)
 target_precompile_headers(mdruntime_ppdb PRIVATE stdafx.h)

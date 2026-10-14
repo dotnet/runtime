@@ -182,6 +182,7 @@ void TreeLifeUpdater<ForCodeGen>::UpdateLifeVar(GenTree* tree, GenTreeLclVarComm
             }
         }
 
+#if HAS_FIXED_REGISTER_SET
         if (ForCodeGen && ((lclVarTree->gtFlags & GTF_SPILL) != 0))
         {
             m_compiler->codeGen->genSpillVar(tree);
@@ -195,6 +196,7 @@ void TreeLifeUpdater<ForCodeGen>::UpdateLifeVar(GenTree* tree, GenTreeLclVarComm
                 }
             }
         }
+#endif // HAS_FIXED_REGISTER_SET
     }
     else if (varDsc->lvPromoted)
     {
@@ -310,7 +312,7 @@ void TreeLifeUpdater<ForCodeGen>::UpdateLife(GenTree* tree)
             UpdateLifeVar(tree, lcl);
             return GenTree::VisitResult::Continue;
         };
-        tree->VisitLocalDefNodes(m_compiler, visitDef);
+        tree->VisitPhysicalLocalDefNodes(m_compiler, visitDef);
     }
     else if (GeneralLclAddrHandling && tree->OperIs(GT_LCL_ADDR))
     {

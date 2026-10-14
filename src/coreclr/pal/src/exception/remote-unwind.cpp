@@ -38,11 +38,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "config.h"
 #include "pal/palinternal.h"
-#include "pal/dbgmsg.h"
-#include "pal/debug.h"
+#include "pal_assert.h"
 #include "pal_endian.h"
 #include "pal.h"
-#define __STDC_FORMAT_MACROS
 #include <inttypes.h>
 #include <dlfcn.h>
 
@@ -57,8 +55,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include <libunwind.h>
 
-SET_DEFAULT_DEBUG_CHANNEL(EXCEPT);
-
 #define TRACE_VERBOSE
 
 #include "crosscomp.h"
@@ -68,7 +64,6 @@ SET_DEFAULT_DEBUG_CHANNEL(EXCEPT);
 #else // HOST_UNIX
 
 #include <windows.h>
-#define __STDC_FORMAT_MACROS
 #include <inttypes.h>
 #include <libunwind.h>
 #include "debugmacros.h"
@@ -77,11 +72,6 @@ SET_DEFAULT_DEBUG_CHANNEL(EXCEPT);
 #define CONTEXT T_CONTEXT
 
 typedef BOOL(*UnwindReadMemoryCallback)(PVOID address, PVOID buffer, SIZE_T size);
-
-#define ASSERT(x, ...)
-#define TRACE(x, ...)
-#undef ERROR
-#define ERROR(x, ...)
 
 #ifdef TARGET_64BIT
 #define ElfW(foo) Elf64_ ## foo
@@ -467,7 +457,7 @@ ReadEncodedPointer(
         break;
 
     default:
-        ASSERT("ReadEncodedPointer: invalid encoding format %x\n", encoding);
+        _ASSERTE(!"ReadEncodedPointer: invalid encoding format");
         return false;
     }
 
@@ -494,7 +484,7 @@ ReadEncodedPointer(
     case DW_EH_PE_textrel:
     case DW_EH_PE_datarel:
     default:
-        ASSERT("ReadEncodedPointer: invalid application type %x\n", encoding);
+        _ASSERTE(!"ReadEncodedPointer: invalid application type");
         return false;
     }
 
@@ -640,7 +630,7 @@ ParseCie(
             return false;
         }
         if (cieId != expectedId) {
-            ASSERT("ParseCie: unexpected cie id %x\n", cieId);
+            _ASSERTE(!"ParseCie: unexpected CIE ID");
             return false;
         }
     }
@@ -662,7 +652,7 @@ ParseCie(
             return false;
         }
         if (cieId != expectedId) {
-            ASSERT("ParseCie: unexpected cie id %lx\n", cieId);
+            _ASSERTE(!"ParseCie: unexpected CIE ID");
             return false;
         }
     }
@@ -672,7 +662,7 @@ ParseCie(
         return false;
     }
     if (version != 1 && version != DWARF_CIE_VERSION) {
-        ASSERT("ParseCie: invalid cie version %x\n", version);
+        _ASSERTE(!"ParseCie: invalid CIE version");
         return false;
     }
 
@@ -774,7 +764,7 @@ ParseCie(
                 done = true;
                 break;
             }
-            ASSERT("ParseCie: unexpected argumentation string '%s'\n", augmentationString[i]);
+            _ASSERTE(!"ParseCie: unexpected augmentation string");
             return false;
         }
 
@@ -957,16 +947,6 @@ SearchCompactEncodingSection(
     }
     int32_t offset = ip - info->BaseAddress;
 
-    TRACE("Unwind %p offset %08x ver %d common off: %08x common cnt: %d pers off: %08x pers cnt: %d index off: %08x index cnt: %d\n",
-        (void*)compactUnwindSectionAddr,
-        offset,
-        sectionHeader.version,
-        sectionHeader.commonEncodingsArraySectionOffset,
-        sectionHeader.commonEncodingsArrayCount,
-        sectionHeader.personalityArraySectionOffset,
-        sectionHeader.personalityArrayCount,
-        sectionHeader.indexSectionOffset,
-        sectionHeader.indexCount);
 
     if (sectionHeader.version != UNWIND_SECTION_VERSION) {
         return false;
@@ -979,7 +959,6 @@ SearchCompactEncodingSection(
         return false;
     }
     if (!found) {
-        ERROR("Top level index not found\n");
         return false;
     }
 
@@ -1014,18 +993,15 @@ SearchCompactEncodingSection(
         }
 
         encoding = pageEntry.encoding;
-        TRACE("Second level regular: %08x for offset %08x\n", encoding, offset);
         funcStart = pageEntry.functionOffset + info->BaseAddress;
         if (found) {
             funcEnd = pageEntryNext.functionOffset + info->BaseAddress;
         }
         else {
             funcEnd = firstLevelNextPageFunctionOffset + info->BaseAddress;
-            TRACE("Second level regular pageEntry not found start %p end %p\n", (void*)funcStart, (void*)funcEnd);
         }
 
         if (ip < funcStart || ip > funcEnd) {
-            ERROR("ip %p not in regular second level\n", (void*)ip);
             return false;
         }
     }
@@ -1049,13 +1025,10 @@ SearchCompactEncodingSection(
         }
         else {
             funcEnd = firstLevelNextPageFunctionOffset + info->BaseAddress;
-            TRACE("Second level compressed pageEntry not found start %p end %p\n", (void*)funcStart, (void*)funcEnd);
         }
 
-        TRACE("Second level compressed: funcStart %p funcEnd %p pageEntry %08x pageEntryNext %08x\n", (void*)funcStart, (void*)funcEnd, pageEntry, pageEntryNext);
 
         if (ip < funcStart || ip > funcEnd) {
-            ERROR("ip %p not in compressed second level\n", (void*)ip);
             return false;
         }
 
@@ -1067,26 +1040,22 @@ SearchCompactEncodingSection(
             if (!ReadValue32(info, &addr, &encoding)) {
                 return false;
             }
-            TRACE("Second level compressed common table: %08x for offset %08x encodingIndex %d\n", encoding, pageOffset, encodingIndex);
         }
         else
         {
             // Encoding is in page specific table
             uint16_t pageEncodingIndex = encodingIndex - (uint16_t)sectionHeader.commonEncodingsArrayCount;
             if (pageEncodingIndex >= pageHeader.encodingsCount) {
-                ERROR("pageEncodingIndex(%d) > page specific table encodingsCount(%d)\n", pageEncodingIndex, pageHeader.encodingsCount);
                 return false;
             }
             unw_word_t addr = secondLevelAddr + pageHeader.encodingsPageOffset + (pageEncodingIndex * sizeof(uint32_t));
             if (!ReadValue32(info, &addr, &encoding)) {
                 return false;
             }
-            TRACE("Second level compressed page specific table: %08x for offset %08x\n", encoding, pageOffset);
         }
     }
     else
     {
-        ERROR("Invalid __unwind_info\n");
         return false;
     }
 
@@ -1101,8 +1070,6 @@ SearchCompactEncodingSection(
             return false;
         }
         if (!found || funcStartOffset != lsdaEntry.functionOffset || lsdaEntry.lsdaOffset == 0) {
-            ERROR("lsda not found(%d), not exact match (%08x != %08x) or lsda(%08x) == 0\n",
-                found, funcStartOffset, lsdaEntry.functionOffset, lsdaEntry.lsdaOffset);
             return false;
         }
         lsda = lsdaEntry.lsdaOffset + info->BaseAddress;
@@ -1114,7 +1081,6 @@ SearchCompactEncodingSection(
         --personalityIndex; // change 1-based to zero-based index
         if (personalityIndex > sectionHeader.personalityArrayCount)
         {
-            ERROR("Invalid personality index\n");
             return false;
         }
         int32_t personalityDelta;
@@ -1139,7 +1105,6 @@ SearchCompactEncodingSection(
     pip->unwind_info = 0;
     pip->unwind_info_size = 0;
 
-    TRACE("Encoding %08x start %p end %p found for ip %p\n", encoding, (void*)funcStart, (void*)funcEnd, (void*)ip);
     return true;
 }
 
@@ -1163,13 +1128,11 @@ SearchDwarfSection(
         unw_word_t fdeEndAddr;
         dwarf_cie_info_t dci;
         if (!ExtractFde(info, &addr, &fdeEndAddr, &ipStart, &ipEnd, &dci)) {
-            ERROR("ExtractFde FAILED for ip %p\n", (void*)ip);
             break;
         }
 
         if (ip >= ipStart && ip < ipEnd) {
             if (!ExtractProcInfoFromFde(info, &fdeAddr, pip, need_unwind_info)) {
-                ERROR("ExtractProcInfoFromFde FAILED for ip %p\n", (void*)ip);
                 break;
             }
             return true;
@@ -1188,7 +1151,6 @@ GetProcInfo(unw_word_t ip, unw_proc_info_t *pip, libunwindInfo* info, bool* step
 
     mach_header_64 header;
     if (!info->ReadMemory((void*)info->BaseAddress, &header, sizeof(mach_header_64))) {
-        ERROR("Reading header %p\n", (void*)info->BaseAddress);
         return false;
     }
     // Read load commands
@@ -1196,12 +1158,10 @@ GetProcInfo(unw_word_t ip, unw_proc_info_t *pip, libunwindInfo* info, bool* step
     load_command* commands = (load_command*)malloc(header.sizeofcmds);
     if (commands == nullptr)
     {
-        ERROR("Failed to allocate %d byte load commands\n", header.sizeofcmds);
         return false;
     }
     if (!info->ReadMemory(commandsAddress, commands, header.sizeofcmds))
     {
-        ERROR("Failed to read load commands at %p of %d\n", commandsAddress, header.sizeofcmds);
         return false;
     }
     unw_word_t compactUnwindSectionAddr = 0;
@@ -1272,13 +1232,11 @@ GetProcInfo(unw_word_t ip, unw_proc_info_t *pip, libunwindInfo* info, bool* step
 #error unsupported architecture
 #endif
                     if (SearchDwarfSection(info, ip, ehframeSectionAddr, ehframeSectionSize, dwarfOffsetHint, pip, need_unwind_info)) {
-                        TRACE("SUCCESS: found in eh frame from compact hint for %p\n", (void*)ip);
                         return true;
                     }
                 }
             }
             // Need to do a compact step based on pip->format and pip->start_ip
-            TRACE("Compact step %p format %08x start_ip %p\n", (void*)ip, pip->format, (void*)pip->start_ip);
             *step = true;
             return true;
         }
@@ -1288,12 +1246,10 @@ GetProcInfo(unw_word_t ip, unw_proc_info_t *pip, libunwindInfo* info, bool* step
     if (ehframeSectionAddr != 0)
     {
         if (SearchDwarfSection(info, ip, ehframeSectionAddr, ehframeSectionSize, 0, pip, need_unwind_info)) {
-            TRACE("SUCCESS: found in eh frame for %p\n", (void*)ip);
             return true;
         }
     }
 
-    ERROR("Unwind info not found for %p format %08x ehframeSectionAddr %p ehframeSectionSize %p\n", (void*)ip, pip->format, (void*)ehframeSectionAddr, (void*)ehframeSectionSize);
     return false;
 }
 
@@ -1349,7 +1305,6 @@ StepWithCompactEncodingRBPFrame(const libunwindInfo* info, compact_unwind_encodi
                 }
                 break;
             default:
-                ERROR("Invalid register for RBP frame %08x\n", compactEncoding);
                 return false;
         }
         savedRegistersLocations = (savedRegistersLocations >> 3);
@@ -1371,8 +1326,6 @@ StepWithCompactEncodingRBPFrame(const libunwindInfo* info, compact_unwind_encodi
         return false;
     }
 
-    TRACE("SUCCESS: compact step encoding %08x rip %p rsp %p rbp %p\n",
-        compactEncoding, (void*)context->Rip, (void*)context->Rsp, (void*)context->Rbp);
     return true;
 }
 
@@ -1401,7 +1354,6 @@ StepWithCompactEncodingFrameless(const libunwindInfo* info, compact_unwind_encod
         stack_size *= 8;
     }
 
-    TRACE("Frameless function: encoding %08x stack size %d register count %d\n", compactEncoding, stack_size, register_count);
 
     // We need to include (up to) 6 registers in 10 bits.
     // That would be 18 bits if we just used 3 bits per reg to indicate
@@ -1515,7 +1467,6 @@ StepWithCompactEncodingFrameless(const libunwindInfo* info, compact_unwind_encod
                 context->Rbp = reg;
                 break;
             default:
-                ERROR("Bad register for frameless\n");
                 break;
         }
     }
@@ -1528,8 +1479,6 @@ StepWithCompactEncodingFrameless(const libunwindInfo* info, compact_unwind_encod
     context->Rip = ip;
     context->Rsp = savedRegisters;
 
-    TRACE("SUCCESS: frameless encoding %08x rip %p rsp %p rbp %p\n",
-        compactEncoding, (void*)context->Rip, (void*)context->Rsp, (void*)context->Rbp);
     return true;
 }
 
@@ -1555,7 +1504,6 @@ StepWithCompactNoEncoding(const libunwindInfo* info)
         }
         // Is the IP pointing just after a "syscall" opcode + 1?
         if (opcode != AMD64_SYSCALL_OPCODE) {
-            ERROR("StepWithCompactNoEncoding: not in syscall wrapper function\n");
             return false;
         }
     }
@@ -1567,7 +1515,6 @@ StepWithCompactNoEncoding(const libunwindInfo* info)
     }
     info->Context->Rip = ip;
     info->Context->Rsp += sizeof(uint64_t);
-    TRACE("StepWithCompactNoEncoding: SUCCESS new rip %p rsp %p\n", (void*)info->Context->Rip, (void*)info->Context->Rsp);
     return true;
 }
 
@@ -1590,17 +1537,14 @@ StepWithCompactNoEncoding(const libunwindInfo* info)
     uint32_t opcode;
     unw_word_t addr = info->Context->Pc - sizeof(opcode);
     if (!ReadValue32(info, &addr, &opcode)) {
-        ERROR("StepWithCompactNoEncoding: can read opcode %p\n", (void*)addr);
         return false;
     }
     // Is the IP pointing just after a "syscall" opcode?
     if (opcode != ARM64_SYSCALL_OPCODE) {
-        ERROR("StepWithCompactNoEncoding: not in syscall wrapper function\n");
         return false;
     }
     // Pop the return address from the stack
     info->Context->Pc = info->Context->Lr;
-    TRACE("StepWithCompactNoEncoding: SUCCESS new pc %p sp %p\n", (void*)info->Context->Pc, (void*)info->Context->Sp);
     return true;
 }
 
@@ -1732,8 +1676,6 @@ StepWithCompactEncodingArm64(const libunwindInfo* info, compact_unwind_encoding_
     {
         context->Sp = addr;
     }
-    TRACE("SUCCESS: compact step encoding %08x pc %p sp %p fp %p lr %p\n",
-        compactEncoding, (void*)context->Pc, (void*)context->Sp, (void*)context->Fp, (void*)context->Lr);
     return true;
 }
 
@@ -1774,7 +1716,6 @@ StepWithCompactEncoding(const libunwindInfo* info, compact_unwind_encoding_t com
 #else
 #error unsupported architecture
 #endif
-    ERROR("Invalid encoding %08x\n", compactEncoding);
     return false;
 }
 
@@ -1812,7 +1753,6 @@ static void UnwindContextToContext(unw_cursor_t *cursor, CONTEXT *winContext)
     unw_get_reg(cursor, UNW_ARM_R10, (unw_word_t *) &winContext->R10);
     unw_get_reg(cursor, UNW_ARM_R11, (unw_word_t *) &winContext->R11);
     unw_get_reg(cursor, UNW_ARM_R14, (unw_word_t *) &winContext->Lr);
-    TRACE("sp %p pc %p lr %p\n", winContext->Sp, winContext->Pc, winContext->Lr);
 #elif defined(TARGET_ARM64)
     unw_get_reg(cursor, UNW_REG_IP, (unw_word_t *) &winContext->Pc);
     unw_get_reg(cursor, UNW_REG_SP, (unw_word_t *) &winContext->Sp);
@@ -1834,7 +1774,6 @@ static void UnwindContextToContext(unw_cursor_t *cursor, CONTEXT *winContext)
     // errors with "this target does not support pointer authentication"
     winContext->Pc = winContext->Pc & MACOS_ARM64_POINTER_AUTH_MASK;
 #endif // __APPLE__
-    TRACE("sp %p pc %p lr %p fp %p\n", winContext->Sp, winContext->Pc, winContext->Lr, winContext->Fp);
 #elif defined(TARGET_LOONGARCH64)
     unw_get_reg(cursor, UNW_REG_IP, (unw_word_t *) &winContext->Pc);
     unw_get_reg(cursor, UNW_REG_SP, (unw_word_t *) &winContext->Sp);
@@ -1849,7 +1788,6 @@ static void UnwindContextToContext(unw_cursor_t *cursor, CONTEXT *winContext)
     unw_get_reg(cursor, UNW_LOONGARCH64_R29, (unw_word_t *) &winContext->S6);
     unw_get_reg(cursor, UNW_LOONGARCH64_R30, (unw_word_t *) &winContext->S7);
     unw_get_reg(cursor, UNW_LOONGARCH64_R31, (unw_word_t *) &winContext->S8);
-    TRACE("sp %p pc %p fp %p ra %p\n", winContext->Sp, winContext->Pc, winContext->Fp, winContext->Ra);
 #elif defined(TARGET_S390X)
     unw_get_reg(cursor, UNW_REG_IP, (unw_word_t *) &winContext->PSWAddr);
     unw_get_reg(cursor, UNW_REG_SP, (unw_word_t *) &winContext->R15);
@@ -1862,7 +1800,6 @@ static void UnwindContextToContext(unw_cursor_t *cursor, CONTEXT *winContext)
     unw_get_reg(cursor, UNW_S390X_R12, (unw_word_t *) &winContext->R12);
     unw_get_reg(cursor, UNW_S390X_R13, (unw_word_t *) &winContext->R13);
     unw_get_reg(cursor, UNW_S390X_R14, (unw_word_t *) &winContext->R14);
-    TRACE("sp %p pc %p lr %p\n", winContext->R15, winContext->PSWAddr, winContext->R14);
 #elif defined(TARGET_POWERPC64)
     //TODO
     unw_get_reg(cursor, UNW_REG_IP, (unw_word_t *) &winContext->Nip);
@@ -1902,7 +1839,6 @@ static void UnwindContextToContext(unw_cursor_t *cursor, CONTEXT *winContext)
     unw_get_reg(cursor, UNW_RISCV_X25, (unw_word_t *) &winContext->S9);
     unw_get_reg(cursor, UNW_RISCV_X26, (unw_word_t *) &winContext->S10);
     unw_get_reg(cursor, UNW_RISCV_X27, (unw_word_t *) &winContext->S11);
-    TRACE("sp %p gp %p fp %p tp %p ra %p\n", winContext->Sp, winContext->Gp, winContext->Fp, winContext->Tp, winContext->Ra);
 #else
 #error unsupported architecture
 #endif
@@ -1919,7 +1855,7 @@ access_mem(unw_addr_space_t as, unw_word_t addr, unw_word_t *valp, int write, vo
 {
     if (write)
     {
-        ASSERT("Memory write must never be called by libunwind during stackwalk\n");
+        _ASSERTE(!"Memory write must never be called by libunwind during stack walk");
         return -UNW_EINVAL;
     }
     const auto *info = (libunwindInfo*)arg;
@@ -1939,7 +1875,7 @@ access_reg(unw_addr_space_t as, unw_regnum_t regnum, unw_word_t *valp, int write
 {
     if (write)
     {
-        ASSERT("Register write must never be called by libunwind during stackwalk\n");
+        _ASSERTE(!"Register write must never be called by libunwind during stack walk");
         return -UNW_EREADONLYREG;
     }
 
@@ -2060,24 +1996,23 @@ access_reg(unw_addr_space_t as, unw_regnum_t regnum, unw_word_t *valp, int write
 #error unsupported architecture
 #endif
     default:
-        ASSERT("Attempt to read an unknown register %d\n", regnum);
+        _ASSERTE(!"Attempt to read an unknown register");
         return -UNW_EBADREG;
     }
-    TRACE("REG: %d %p\n", regnum, (void*)*valp);
     return UNW_ESUCCESS;
 }
 
 static int
 access_fpreg(unw_addr_space_t as, unw_regnum_t regnum, unw_fpreg_t *fpvalp, int write, void *arg)
 {
-    ASSERT("Not supposed to be ever called\n");
+    _ASSERTE(!"Unexpected libunwind callback");
     return -UNW_EINVAL;
 }
 
 static int
 resume(unw_addr_space_t as, unw_cursor_t *cp, void *arg)
 {
-    ASSERT("Not supposed to be ever called\n");
+    _ASSERTE(!"Unexpected libunwind callback");
     return -UNW_EINVAL;
 }
 
@@ -2103,25 +2038,21 @@ find_proc_info(unw_addr_space_t as, unw_word_t ip, unw_proc_info_t *pip, int nee
 
     Ehdr ehdr;
     if (!info->ReadMemory((void*)info->BaseAddress, &ehdr, sizeof(ehdr))) {
-        ERROR("ELF: reading ehdr %p\n", info->BaseAddress);
         return -UNW_EINVAL;
     }
     Phdr* phdrAddr = reinterpret_cast<Phdr*>(info->BaseAddress + ehdr.e_phoff);
     int phnum = ehdr.e_phnum;
-    TRACE("ELF: base %p ip %p e_type %d e_phnum %d e_phoff %p\n", info->BaseAddress, ip, ehdr.e_type, ehdr.e_phnum, ehdr.e_phoff);
 
     unw_word_t loadbias = info->BaseAddress;
     for (int i = 0; i < phnum; i++)
     {
         Phdr ph;
         if (!info->ReadMemory(phdrAddr + i, &ph, sizeof(ph))) {
-            ERROR("ELF: reading phdrAddr %p\n", phdrAddr + i);
             return -UNW_EINVAL;
         }
         if (ph.p_type == PT_LOAD && ph.p_offset == 0)
         {
             loadbias -= ph.p_vaddr;
-            TRACE("PHDR: loadbias %p\n", loadbias);
             break;
         }
     }
@@ -2144,11 +2075,8 @@ find_proc_info(unw_addr_space_t as, unw_word_t ip, unw_proc_info_t *pip, int nee
     {
         Phdr ph;
         if (!info->ReadMemory(phdrAddr, &ph, sizeof(ph))) {
-            ERROR("ELF: reading phdrAddr %p\n", phdrAddr);
             return -UNW_EINVAL;
         }
-        TRACE("ELF: phdr %p type %d (%x) vaddr %" PRIxA " memsz %" PRIxA " paddr %" PRIxA " filesz %" PRIxA " offset %" PRIxA " align %" PRIxA "\n",
-            phdrAddr, ph.p_type, ph.p_type, ph.p_vaddr, ph.p_memsz, ph.p_paddr, ph.p_filesz, ph.p_offset, ph.p_align);
 
         switch (ph.p_type)
         {
@@ -2156,7 +2084,6 @@ find_proc_info(unw_addr_space_t as, unw_word_t ip, unw_proc_info_t *pip, int nee
             if ((ip >= (loadbias + ph.p_vaddr)) && (ip < (loadbias + ph.p_vaddr + ph.p_memsz))) {
                 start_ip = loadbias + ph.p_vaddr;
                 end_ip = start_ip + ph.p_memsz;
-                TRACE("ELF: found start_ip/end_ip\n");
             }
             break;
 
@@ -2187,11 +2114,9 @@ find_proc_info(unw_addr_space_t as, unw_word_t ip, unw_proc_info_t *pip, int nee
         {
             Dyn dyn;
             if (!info->ReadMemory(dynamicAddr, &dyn, sizeof(dyn))) {
-                ERROR("ELF: reading dynamicAddr %p\n", dynamicAddr);
                 return -UNW_EINVAL;
             }
             if (dyn.d_tag == DT_PLTGOT) {
-                TRACE("ELF: dyn %p tag %d (%x) d_ptr %p\n", dynamicAddr, dyn.d_tag, dyn.d_tag, dyn.d_un.d_ptr);
                 pip->gp = dyn.d_un.d_ptr;
                 break;
             }
@@ -2210,19 +2135,16 @@ find_proc_info(unw_addr_space_t as, unw_word_t ip, unw_proc_info_t *pip, int nee
     // or HP-libunwind version 1.6 and earlier.
 
     if (ehFrameHdrAddr == 0) {
-        ASSERT("ELF: No PT_GNU_EH_FRAME program header\n");
+        _ASSERTE(!"ELF: No PT_GNU_EH_FRAME program header");
         return -UNW_EINVAL;
     }
     eh_frame_hdr ehFrameHdr;
     if (!info->ReadMemory((PVOID)ehFrameHdrAddr, &ehFrameHdr, sizeof(eh_frame_hdr))) {
-        ERROR("ELF: reading ehFrameHdrAddr %p\n", ehFrameHdrAddr);
         return -UNW_EINVAL;
     }
-    TRACE("ehFrameHdrAddr %p version %d eh_frame_ptr_enc %d fde_count_enc %d table_enc %d\n",
-        ehFrameHdrAddr, ehFrameHdr.version, ehFrameHdr.eh_frame_ptr_enc, ehFrameHdr.fde_count_enc, ehFrameHdr.table_enc);
 
     if (ehFrameHdr.version != DW_EH_VERSION) {
-        ASSERT("ehFrameHdr version %x not supported\n", ehFrameHdr.version);
+        _ASSERTE(!"Unsupported eh_frame_hdr version");
         return -UNW_EBADVERSION;
     }
     unw_word_t addr = ehFrameHdrAddr + sizeof(eh_frame_hdr);
@@ -2231,24 +2153,20 @@ find_proc_info(unw_addr_space_t as, unw_word_t ip, unw_proc_info_t *pip, int nee
 
     // Decode the eh_frame_hdr info
     if (!ReadEncodedPointer(info, &addr, ehFrameHdr.eh_frame_ptr_enc, UINTPTR_MAX, &ehFrameStart)) {
-        ERROR("decoding eh_frame_ptr\n");
         return -UNW_EINVAL;
     }
     if (!ReadEncodedPointer(info, &addr, ehFrameHdr.fde_count_enc, UINTPTR_MAX, &fdeCount)) {
-        ERROR("decoding fde_count_enc\n");
         return -UNW_EINVAL;
     }
-    TRACE("ehFrameStart %p fdeCount %p ip offset %08x\n", ehFrameStart, fdeCount, (int32_t)(ip - ehFrameHdrAddr));
 
     // If there are no frame table entries
     if (fdeCount == 0) {
-        TRACE("No frame table entries\n");
         return -UNW_ENOINFO;
     }
 
     // We assume this encoding
     if (ehFrameHdr.table_enc != (DW_EH_PE_datarel | DW_EH_PE_sdata4)) {
-        ASSERT("Table encoding not supported %x\n", ehFrameHdr.table_enc);
+        _ASSERTE(!"Unsupported eh_frame_hdr table encoding");
         return -UNW_EINVAL;
     }
 
@@ -2257,11 +2175,9 @@ find_proc_info(unw_addr_space_t as, unw_word_t ip, unw_proc_info_t *pip, int nee
     table_entry_t entryNext;
     bool found;
     if (!BinarySearchEntries(info, ip - ehFrameHdrAddr, addr, fdeCount, &entry, &entryNext, false, &found)) {
-        ERROR("LookupTableEntry\n");
         return -UNW_EINVAL;
     }
     unw_word_t fdeAddr = entry.fde_offset + ehFrameHdrAddr;
-    TRACE("start_ip %08x fde_offset %08x fdeAddr %p found %d\n", entry.start_ip, entry.fde_offset, fdeAddr, found);
 
     // Unwind info not found
     if (!found) {
@@ -2270,12 +2186,10 @@ find_proc_info(unw_addr_space_t as, unw_word_t ip, unw_proc_info_t *pip, int nee
 
     // Now get the unwind info
     if (!ExtractProcInfoFromFde(info, &fdeAddr, pip, need_unwind_info)) {
-        ERROR("ExtractProcInfoFromFde\n");
         return -UNW_EINVAL;
     }
 
     if (ip < pip->start_ip || ip >= pip->end_ip) {
-        TRACE("ip %p not in range start_ip %p end_ip %p\n", ip, pip->start_ip, pip->end_ip);
         return -UNW_ENOINFO;
     }
     info->FunctionStart = pip->start_ip;
@@ -2354,10 +2268,8 @@ PAL_VirtualUnwindOutOfProc(CONTEXT *context, PULONG64 functionStart, SIZE_T base
     unw_proc_info_t procInfo;
     bool step;
 #if defined(TARGET_AMD64)
-    TRACE("Unwind: rip %p rsp %p rbp %p\n", (void*)context->Rip, (void*)context->Rsp, (void*)context->Rbp);
     result = GetProcInfo(context->Rip, &procInfo, &info, &step, false);
 #elif defined(TARGET_ARM64)
-    TRACE("Unwind: pc %p sp %p fp %p\n", (void*)context->Pc, (void*)context->Sp, (void*)context->Fp);
     result = GetProcInfo(context->Pc, &procInfo, &info, &step, false);
     if (result && step)
     {
@@ -2376,12 +2288,7 @@ PAL_VirtualUnwindOutOfProc(CONTEXT *context, PULONG64 functionStart, SIZE_T base
                     (opcode & ARM64_BLR_OPCODE_MASK) == ARM64_BLR_OPCODE ||
                     (opcode & ARM64_BLRA_OPCODE_MASK) == ARM64_BLRA_OPCODE)
                 {
-                    TRACE("Unwind: getting unwind info for PC - 1 opcode %08x\n", opcode);
                     result = GetProcInfo(context->Pc - 1, &procInfo, &info, &step, false);
-                }
-                else
-                {
-                    TRACE("Unwind: not BL* opcode %08x\n", opcode);
                 }
             }
         }
@@ -2459,14 +2366,11 @@ PAL_GetUnwindInfoSize(SIZE_T baseAddress, ULONG64 ehFrameHdrAddr, UnwindReadMemo
 
     eh_frame_hdr ehFrameHdr;
     if (!info.ReadMemory((PVOID)ehFrameHdrAddr, &ehFrameHdr, sizeof(eh_frame_hdr))) {
-        ERROR("ELF: reading ehFrameHdrAddr %p\n", ehFrameHdrAddr);
         return FALSE;
     }
-    TRACE("ehFrameHdrAddr %p version %d eh_frame_ptr_enc %d fde_count_enc %d table_enc %d\n",
-        ehFrameHdrAddr, ehFrameHdr.version, ehFrameHdr.eh_frame_ptr_enc, ehFrameHdr.fde_count_enc, ehFrameHdr.table_enc);
 
     if (ehFrameHdr.version != DW_EH_VERSION) {
-        ASSERT("ehFrameHdr version %x not supported\n", ehFrameHdr.version);
+        _ASSERTE(!"Unsupported eh_frame_hdr version");
         return FALSE;
     }
     unw_word_t addr = ehFrameHdrAddr + sizeof(eh_frame_hdr);
@@ -2475,21 +2379,16 @@ PAL_GetUnwindInfoSize(SIZE_T baseAddress, ULONG64 ehFrameHdrAddr, UnwindReadMemo
 
     // Decode the eh_frame_hdr info
     if (!ReadEncodedPointer(&info, &addr, ehFrameHdr.eh_frame_ptr_enc, UINTPTR_MAX, &ehFramePtr)) {
-        ERROR("decoding eh_frame_ptr\n");
         return FALSE;
     }
     if (!ReadEncodedPointer(&info, &addr, ehFrameHdr.fde_count_enc, UINTPTR_MAX, &fdeCount)) {
-        ERROR("decoding fde_count_enc\n");
         return FALSE;
     }
-    TRACE("ehFrameStart %p fdeCount %p\n", ehFrameStart, fdeCount);
 
     // If there are no frame table entries
     if (fdeCount == 0) {
-        TRACE("No frame table entries\n");
         return FALSE;
     }
-
     uint64_t totalSize = 0;
     uint64_t encounteredCieCount = 0;
     uint64_t encounteredFdeCount = 0;
@@ -2519,7 +2418,7 @@ PAL_GetUnwindInfoSize(SIZE_T baseAddress, ULONG64 ehFrameHdrAddr, UnwindReadMemo
             }
             else
             {
-                ASSERT("Length encoding not supported: %08x\n", initialLength32);
+                _ASSERTE(!"Unsupported eh_frame length encoding");
                 return FALSE;
             }
         }

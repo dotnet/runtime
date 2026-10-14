@@ -34,7 +34,7 @@ namespace KeywordNames
     }
 
     [OptionsValidator]
-    public partial class FirstValidator : IValidateOptions<FirstModel>
+    public partial class FirstValidator : IAsyncValidateOptions<FirstModel>
     {
     }
 }

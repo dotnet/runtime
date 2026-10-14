@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.IO;
@@ -19,7 +19,7 @@ namespace Tracing.Tests.Common
 {
     public class Logger
     {
-        public static Logger logger = new Logger();
+        public static Logger logger = new();
         private TextWriter _log;
         private Stopwatch _sw;
         public Logger(TextWriter log = null)
@@ -31,7 +31,10 @@ namespace Tracing.Tests.Common
         public void Log(string message)
         {
             if (!_sw.IsRunning)
+            {
                 _sw.Start();
+            }
+
             _log.WriteLine($"{_sw.Elapsed.TotalSeconds,5:f1}s: {message}");
         }
     }
@@ -75,7 +78,7 @@ namespace Tracing.Tests.Common
     }
 
     // This event source is used by the test infra to
-    // to ensure that providers have finished being enabled
+    // ensure that providers have finished being enabled
     // for the session being observed. Since the client API
     // returns the pipe for reading _before_ it finishes
     // enabling the providers to write to that session,
@@ -86,8 +89,8 @@ namespace Tracing.Tests.Common
     // to synchronize.
     public sealed class SentinelEventSource : EventSource
     {
-        private SentinelEventSource() {}
-        public static SentinelEventSource Log = new SentinelEventSource();
+        private SentinelEventSource() { }
+        public static SentinelEventSource Log = new();
         public void SentinelEvent() { WriteEvent(1, "SentinelEvent"); }
     }
 
@@ -100,7 +103,8 @@ namespace Tracing.Tests.Common
         // A count of -1 indicates that you are only testing for the presence of the provider
         // and don't care about the number of events sent
         private Dictionary<string, ExpectedEventCount> _expectedEventCounts;
-        private Dictionary<string, int> _actualEventCounts = new Dictionary<string, int>();
+        private Dictionary<string, int> _actualEventCounts = new();
+        private int _droppedEvents;
 
         // A function to be called with the EventPipeEventSource _before_
         // the call to `source.Process()`.  The function should return another
@@ -118,25 +122,39 @@ namespace Tracing.Tests.Common
         /// </summary>
         private EventPipeSession _eventPipeSession;
 
+        // The buffer size requested for a session for storing events.
+        private int _circularBufferMB;
+
+        // Controls event writing behavior when buffers are full. Drop the event or Block until there is space available.
+        private EventPipeBufferingMode _bufferingMode;
+
+        // Whether to fail the test if any events are lost. Only Block buffer mode tests are required to retain all events.
+        private bool _failOnEventsLost;
+
         /// <summary>
         /// This is the list of EventPipe providers for the sentinel EventSource that indicates that the process is ready
         /// </summary>
-        private List<EventPipeProvider> _sentinelProviders = new List<EventPipeProvider>()
+        private List<EventPipeProvider> _sentinelProviders = new()
         {
             new EventPipeProvider("SentinelEventSource", EventLevel.Verbose, -1)
         };
 
-        IpcTraceTest(
+        private IpcTraceTest(
             Dictionary<string, ExpectedEventCount> expectedEventCounts,
             Action eventGeneratingAction,
             List<EventPipeProvider> providers,
             int circularBufferMB,
-            Func<EventPipeEventSource, Func<int>> optionalTraceValidator = null)
+            Func<EventPipeEventSource, Func<int>> optionalTraceValidator = null,
+            EventPipeBufferingMode bufferingMode = EventPipeBufferingMode.Drop,
+            bool failOnEventsLost = false)
         {
             _eventGeneratingAction = eventGeneratingAction;
             _expectedEventCounts = expectedEventCounts;
             _testProviders = providers;
+            _circularBufferMB = circularBufferMB;
             _optionalTraceValidator = optionalTraceValidator;
+            _bufferingMode = bufferingMode;
+            _failOnEventsLost = failOnEventsLost;
         }
 
         private int Fail(string message = "")
@@ -150,7 +168,7 @@ namespace Tracing.Tests.Common
             Logger.logger.Log("}\n");
             Logger.logger.Log("Expected:");
             Logger.logger.Log("{");
-            foreach (var (k, v) in _expectedEventCounts)
+            foreach ((string k, ExpectedEventCount v) in _expectedEventCounts)
             {
                 Logger.logger.Log($"\t\"{k}\" = {v}");
             }
@@ -158,7 +176,7 @@ namespace Tracing.Tests.Common
 
             Logger.logger.Log("Actual:");
             Logger.logger.Log("{");
-            foreach (var (k, v) in _actualEventCounts)
+            foreach ((string k, int v) in _actualEventCounts)
             {
                 Logger.logger.Log($"\t\"{k}\" = {v}");
             }
@@ -177,19 +195,20 @@ namespace Tracing.Tests.Common
             //
             // see: https://github.com/dotnet/runtime/pull/1794 for details on the issue
             //
-            var emptyConcurrentDictionary = new ConcurrentDictionary<string, string>();
+            ConcurrentDictionary<string, string> emptyConcurrentDictionary = new();
             emptyConcurrentDictionary["foo"] = "bar";
-            var __count = emptyConcurrentDictionary.Count;
+            int __count = emptyConcurrentDictionary.Count;
 
-            var isClean = IpcTraceTest.EnsureCleanEnvironment();
+            bool isClean = IpcTraceTest.EnsureCleanEnvironment();
             if (!isClean)
+            {
                 return -1;
+            }
             // CollectTracing returns before EventPipe::Enable has returned, so the
             // the sources we want to listen for may not have been enabled yet.
             // We'll use this sentinel EventSource to check if Enable has finished
-            ManualResetEvent sentinelEventReceived = new ManualResetEvent(false);
-            var sentinelTask = new Task(() =>
-            {
+            ManualResetEvent sentinelEventReceived = new(false);
+            Task sentinelTask = new(() => {
                 Logger.logger.Log("Started sending sentinel events...");
                 while (!sentinelEventReceived.WaitOne(50))
                 {
@@ -200,19 +219,26 @@ namespace Tracing.Tests.Common
             sentinelTask.Start();
 
             int processId = Process.GetCurrentProcess().Id;
-            object threadSync = new object(); // for locking eventpipeSession access
+            object threadSync = new(); // for locking eventpipeSession access
             Func<int> optionalTraceValidationCallback = null;
-            DiagnosticsClient client = new DiagnosticsClient(processId);
+            DiagnosticsClient client = new(processId);
 #if DIAGNOSTICS_RUNTIME
             if (OperatingSystem.IsAndroid() || OperatingSystem.IsIOS() || OperatingSystem.IsTvOS())
-                client = new DiagnosticsClient(new IpcEndpointConfig("127.0.0.1:9000", IpcEndpointConfig.TransportType.TcpSocket, IpcEndpointConfig.PortType.Listen));
-#endif
-            var readerTask = new Task(() =>
             {
+                client = new DiagnosticsClient(new IpcEndpointConfig("127.0.0.1:9000", IpcEndpointConfig.TransportType.TcpSocket, IpcEndpointConfig.PortType.Listen));
+            }
+#endif
+            Task readerTask = new(() => {
                 Logger.logger.Log("Connecting to EventPipe...");
                 try
                 {
-                    _eventPipeSession = client.StartEventPipeSession(_testProviders.Concat(_sentinelProviders), enableRundownProvider);
+                    EventPipeSessionConfiguration config = new(
+                        _testProviders.Concat(_sentinelProviders),
+                        circularBufferSizeMB: _circularBufferMB,
+                        rundownKeyword: enableRundownProvider ? EventPipeSession.DefaultRundownKeyword : 0,
+                        requestStackwalk: true,
+                        bufferingMode: _bufferingMode);
+                    _eventPipeSession = client.StartEventPipeSession(config);
                 }
                 catch (DiagnosticsClientException ex)
                 {
@@ -220,96 +246,138 @@ namespace Tracing.Tests.Common
                     Logger.logger.Log(ex.ToString());
                     throw new ApplicationException("Failed to connect to EventPipe");
                 }
-                using (var eventPipeStream = new StreamProxy(_eventPipeSession.EventStream))
-                {
-                    Logger.logger.Log("Creating EventPipeEventSource...");
-                    using (EventPipeEventSource source = new EventPipeEventSource(eventPipeStream))
+
+                using StreamProxy eventPipeStream = new(_eventPipeSession.EventStream);
+                Logger.logger.Log("Creating EventPipeEventSource...");
+                using EventPipeEventSource source = new(eventPipeStream);
+                Logger.logger.Log("EventPipeEventSource created");
+
+                source.Dynamic.All += (eventData) => {
+                    try
                     {
-                        Logger.logger.Log("EventPipeEventSource created");
-
-                        source.Dynamic.All += (eventData) =>
+                        if (eventData.ProviderName == "SentinelEventSource")
                         {
-                            try
+                            if (!sentinelEventReceived.WaitOne(0))
                             {
-                                if (eventData.ProviderName == "SentinelEventSource")
-                                {
-                                    if (!sentinelEventReceived.WaitOne(0))
-                                        Logger.logger.Log("Saw sentinel event");
-                                    sentinelEventReceived.Set();
-                                }
-                                else if (_actualEventCounts.TryGetValue(eventData.ProviderName, out _))
-                                {
-                                    _actualEventCounts[eventData.ProviderName]++;
-                                }
-                                else
-                                {
-                                    Logger.logger.Log($"Saw new provider '{eventData.ProviderName}'");
-                                    _actualEventCounts[eventData.ProviderName] = 1;
-                                }
+                                Logger.logger.Log("Saw sentinel event");
                             }
-                            catch (Exception e)
-                            {
-                                Logger.logger.Log("Exception in Dynamic.All callback " + e.ToString());
-                            }
-                        };
-                        Logger.logger.Log("Dynamic.All callback registered");
 
-                        if (_optionalTraceValidator != null)
-                        {
-                            Logger.logger.Log("Running optional trace validator");
-                            optionalTraceValidationCallback = _optionalTraceValidator(source);
-                            Logger.logger.Log("Finished running optional trace validator");
+                            sentinelEventReceived.Set();
                         }
 
-                        Logger.logger.Log("Starting stream processing...");
-                        try
+                        else if (_actualEventCounts.TryGetValue(eventData.ProviderName, out _))
                         {
-                            source.Process();
+                            _actualEventCounts[eventData.ProviderName]++;
                         }
-                        catch (Exception)
+                        else
                         {
-                            Logger.logger.Log($"Exception thrown while reading; dumping culprit stream to disk...");
-                            eventPipeStream.DumpStreamToDisk();
-                            // rethrow it to fail the test
-                            throw;
+                            Logger.logger.Log($"Saw new provider '{eventData.ProviderName}'");
+                            _actualEventCounts[eventData.ProviderName] = 1;
                         }
-                        Logger.logger.Log("Stopping stream processing");
-                        Logger.logger.Log($"Dropped {source.EventsLost} events");
                     }
+                    catch (Exception e)
+                    {
+                        Logger.logger.Log("Exception in Dynamic.All callback " + e.ToString());
+                    }
+                };
+                Logger.logger.Log("Dynamic.All callback registered");
+
+                if (_optionalTraceValidator != null)
+                {
+                    Logger.logger.Log("Running optional trace validator");
+                    optionalTraceValidationCallback = _optionalTraceValidator(source);
+                    Logger.logger.Log("Finished running optional trace validator");
                 }
+
+                Logger.logger.Log("Starting stream processing...");
+                try
+                {
+                    source.Process();
+                    _droppedEvents = source.EventsLost;
+                }
+                catch (Exception)
+                {
+                    Logger.logger.Log($"Exception thrown while reading; dumping culprit stream to disk...");
+                    eventPipeStream.DumpStreamToDisk();
+                    // rethrow it to fail the test
+                    throw;
+                }
+                Logger.logger.Log("Stopping stream processing");
+                Logger.logger.Log($"Dropped {source.EventsLost} events");
             });
 
-            var waitSentinelEventTask = new Task(() => {
+            Task waitSentinelEventTask = new(() => {
                 sentinelEventReceived.WaitOne();
             });
 
             readerTask.Start();
             waitSentinelEventTask.Start();
 
-            // Will throw if the reader task throws any exceptions before signaling sentinelEventReceived.
+            // Runtime delta (dotnet/runtime#47529): wait on either task so a reader that faults during connect
+            // (before signaling the sentinel) surfaces its exception instead of hanging here forever.
             Task.WaitAny(readerTask, waitSentinelEventTask);
+            if (readerTask.IsCompleted)
+            {
+                sentinelEventReceived.Set();
+                sentinelTask.Wait();
+                readerTask.GetAwaiter().GetResult();
+                return Fail("Reader task completed before event generation");
+            }
 
             Logger.logger.Log("Starting event generating action...");
             _eventGeneratingAction();
             Logger.logger.Log("Stopping event generating action");
 
-            var stopTask = Task.Run(() =>
-            {
+            // Should throw if the reader task throws any exceptions
+            CancellationTokenSource tokenSource = new();
+            CancellationToken ct = tokenSource.Token;
+            readerTask.ContinueWith((task) => {
+                // if our reader task died earlier, we need to break the infinite wait below.
+                // We'll allow the AggregateException to be thrown and fail the test though.
+                Logger.logger.Log($"Task stats: isFaulted: {task.IsFaulted}, Exception == null: {task.Exception == null}");
+                if (task.IsFaulted || task.Exception != null)
+                {
+                    tokenSource.Cancel();
+                }
+
+                return task;
+            });
+
+            Task stopTask = Task.Run(() => {
                 Logger.logger.Log("Sending StopTracing command...");
                 lock (threadSync) // eventpipeSession
                 {
                     _eventPipeSession.Stop();
                 }
                 Logger.logger.Log("Finished StopTracing command");
-            });
+            }, ct);
 
-            // Should throw if the reader task throws any exceptions
-            Task.WaitAll(readerTask, stopTask);
-            Logger.logger.Log("Reader task finished");
-
-            foreach (var (provider, expectedCount) in _expectedEventCounts)
+            try
             {
-                if (_actualEventCounts.TryGetValue(provider, out var actualCount))
+                Task.WaitAll(new Task[] { readerTask, stopTask }, ct);
+            }
+            catch (OperationCanceledException)
+            {
+                Logger.logger.Log($"A task faulted");
+                Logger.logger.Log($"\treaderTask.IsFaulted = {readerTask.IsFaulted}");
+                if (readerTask.Exception != null)
+                {
+                    throw readerTask.Exception;
+                }
+                return -1;
+            }
+
+            Logger.logger.Log("Reader task finished");
+            Logger.logger.Log($"Dropped {_droppedEvents} events");
+
+            if (_failOnEventsLost && _droppedEvents > 0)
+            {
+                return Fail($"Expected zero dropped events, but the reader reported {_droppedEvents} dropped events");
+            }
+
+            foreach ((string provider, ExpectedEventCount expectedCount) in _expectedEventCounts)
+            {
+                if (_actualEventCounts.TryGetValue(provider, out int actualCount))
                 {
                     if (!expectedCount.Validate(actualCount))
                     {
@@ -342,16 +410,17 @@ namespace Tracing.Tests.Common
         // run into these zombie pipes if there are failures over time.
         // Note: Windows has some guarantees about named pipes not living longer
         // the process that created them, so we don't need to check on that platform.
-        static public bool EnsureCleanEnvironment()
+        // Runtime delta: diagnosticport performs this check before running its test cases.
+        public static bool EnsureCleanEnvironment()
         {
             if (!OperatingSystem.IsWindows() && !OperatingSystem.IsBrowser() && !OperatingSystem.IsWasi() && !OperatingSystem.IsIOS() && !OperatingSystem.IsTvOS())
             {
-                Func<(IEnumerable<IGrouping<int,FileInfo>>, List<int>)> GetPidsAndSockets = () =>
+                Func<(IEnumerable<IGrouping<int, FileInfo>>, List<int>)> GetPidsAndSockets = () =>
                 {
-                    IEnumerable<IGrouping<int,FileInfo>> currentIpcs = Directory.GetFiles(Path.GetTempPath(), "dotnet-diagnostic*")
+                    IEnumerable<IGrouping<int, FileInfo>> currentIpcs = Directory.GetFiles(Path.GetTempPath(), "dotnet-diagnostic*")
                         .Select(filename =>
                         {
-                            var match = Regex.Match(filename, @"dotnet-diagnostic-(?<pid>\d+)");
+                            Match match = Regex.Match(filename, @"dotnet-diagnostic-(?<pid>\d+)");
                             if (match.Success && match.Groups["pid"].Success && !string.IsNullOrEmpty(match.Groups["pid"].Value))
                             {
                                 return new { pid = int.Parse(match.Groups["pid"].Value), fileInfo = new FileInfo(filename) };
@@ -400,19 +469,27 @@ namespace Tracing.Tests.Common
             Dictionary<string, ExpectedEventCount> expectedEventCounts,
             Action eventGeneratingAction,
             List<EventPipeProvider> providers,
-            int circularBufferMB=1024,
+            int circularBufferMB = 1024,
             Func<EventPipeEventSource, Func<int>> optionalTraceValidator = null,
-            bool enableRundownProvider = true)
+            bool enableRundownProvider = true,
+            EventPipeBufferingMode bufferingMode = EventPipeBufferingMode.Drop,
+            bool failOnEventsLost = false)
         {
             Logger.logger.Log("==TEST STARTING==");
-            var test = new IpcTraceTest(expectedEventCounts, eventGeneratingAction, providers, circularBufferMB, optionalTraceValidator);
+            IpcTraceTest test = new(expectedEventCounts, eventGeneratingAction, providers, circularBufferMB, optionalTraceValidator, bufferingMode, failOnEventsLost);
+            // Runtime delta: surface a clean failure (and log the exception) instead of letting it propagate.
             try
             {
-                var ret = test.Validate(enableRundownProvider);
+                int ret = test.Validate(enableRundownProvider);
                 if (ret == 100)
+                {
                     Logger.logger.Log("==TEST FINISHED: PASSED!==");
+                }
                 else
+                {
                     Logger.logger.Log("==TEST FINISHED: FAILED!==");
+                }
+
                 return ret;
             }
             catch (Exception e)

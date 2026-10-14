@@ -21,8 +21,72 @@ namespace System.Diagnostics
 
         internal static bool SupportsAtomicNonInheritablePipeCreation => Interop.Sys.IsAtomicNonInheritablePipeCreationSupported;
 
-        private static bool IsExecutable(string fullPath)
-            => Interop.Sys.Access(fullPath, Interop.Sys.AccessMode.X_OK) == 0 && !Directory.Exists(fullPath);
+        private static bool IsExecutable(ReadOnlySpan<char> fullPath)
+            => Interop.Sys.Access(fullPath, Interop.Sys.AccessMode.X_OK) == 0 &&
+               Interop.Sys.Stat(fullPath, out Interop.Sys.FileStatus fileStatus) == 0 &&
+               (fileStatus.Mode & Interop.Sys.FileTypes.S_IFMT) != Interop.Sys.FileTypes.S_IFDIR;
+
+        private static bool IsExecutable(ReadOnlySpan<char> directory, ReadOnlySpan<char> fileName, ref ValueStringBuilder pathBuilder)
+        {
+            if (directory.IsEmpty || fileName.IsEmpty)
+            {
+                return false;
+            }
+
+            pathBuilder.Length = 0;
+
+            pathBuilder.Append(directory);
+            if (!directory.EndsWith(Path.DirectorySeparatorChar))
+            {
+                pathBuilder.Append(Path.DirectorySeparatorChar);
+            }
+            pathBuilder.Append(fileName);
+
+            return IsExecutable(pathBuilder.AsSpan());
+        }
+
+        internal static string? FindProgramInPath(string program)
+        {
+            ValueStringBuilder pathBuilder = new(stackalloc char[256]);
+            try
+            {
+                return FindProgramInPath(program, ref pathBuilder);
+            }
+            finally
+            {
+                pathBuilder.Dispose();
+            }
+        }
+
+        private static string? FindProgramInPath(string program, ref ValueStringBuilder pathBuilder)
+        {
+            string? pathEnvVar = Environment.GetEnvironmentVariable("PATH");
+            if (pathEnvVar is null)
+            {
+                return null;
+            }
+
+            ReadOnlySpan<char> pathEnvVarSpan = pathEnvVar;
+            int segmentStart = 0;
+            while (segmentStart < pathEnvVarSpan.Length)
+            {
+                int segmentLength = pathEnvVarSpan[segmentStart..].IndexOf(Path.PathSeparator);
+                if (segmentLength < 0)
+                {
+                    segmentLength = pathEnvVarSpan.Length - segmentStart;
+                }
+
+                ReadOnlySpan<char> segment = pathEnvVarSpan.Slice(segmentStart, segmentLength);
+                segmentStart += segmentLength + 1;
+
+                if (IsExecutable(segment, program, ref pathBuilder))
+                {
+                    return pathBuilder.ToString();
+                }
+            }
+
+            return null;
+        }
 
         internal static unsafe void EnsureInitialized()
         {
@@ -305,28 +369,32 @@ namespace System.Diagnostics
 
             // Then check the executable's directory
             string? path = Environment.ProcessPath;
-            if (path != null)
+            ValueStringBuilder pathBuilder = new(stackalloc char[256]);
+            try
             {
-                try
+                if (!string.IsNullOrEmpty(path))
                 {
-                    path = Path.Combine(Path.GetDirectoryName(path)!, filename);
-                    if (IsExecutable(path))
+                    ReadOnlySpan<char> executableDirectory = Path.GetDirectoryName(path.AsSpan());
+                    if (IsExecutable(executableDirectory, filename, ref pathBuilder))
                     {
-                        return path;
+                        return pathBuilder.ToString();
                     }
                 }
-                catch (ArgumentException) { } // ignore any errors in data that may come from the exe path
-            }
 
-            // Then check the current directory
-            path = Path.Combine(Directory.GetCurrentDirectory(), filename);
-            if (IsExecutable(path))
+                // Then check the current directory
+                string currentDirectory = Directory.GetCurrentDirectory();
+                if (IsExecutable(currentDirectory, filename, ref pathBuilder))
+                {
+                    return pathBuilder.ToString();
+                }
+
+                // Then check each directory listed in the PATH environment variables
+                return FindProgramInPath(filename, ref pathBuilder);
+            }
+            finally
             {
-                return path;
+                pathBuilder.Dispose();
             }
-
-            // Then check each directory listed in the PATH environment variables
-            return FindProgramInPath(filename);
         }
 
         /// <summary>Parses a command-line argument string into a list of arguments.</summary>
