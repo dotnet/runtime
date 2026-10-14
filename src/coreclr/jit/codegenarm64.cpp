@@ -4885,7 +4885,7 @@ void CodeGen::genCodeForSelect(GenTreeOp* tree)
         ins = (op2 == nullptr) ? INS_cinc : INS_csinc;
     }
 
-    if (tree->OperIs(GT_SELECT, GT_SELECT_INV, GT_SELECT_NEG))
+    if (tree->OperIs(GT_SELECT, GT_SELECT_INC, GT_SELECT_INV, GT_SELECT_NEG))
     {
         opcond = tree->AsConditional()->gtCond;
         genConsumeRegs(opcond);
