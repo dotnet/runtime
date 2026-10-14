@@ -2377,6 +2377,9 @@ private:
 
 public:
     static void Init();
+#ifdef FEATURE_READYTORUN
+    static void SetupGcCoverageForPrecompiledCode(PCODE pCode);
+#endif // FEATURE_READYTORUN
 #endif
 
     friend struct ::cdac_data<MethodDesc>;

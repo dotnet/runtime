@@ -8,7 +8,7 @@
 
 /* This file holds code that is designed to test GC pointer tracking in
    fully interruptible code.  We basically do a GC everywhere we can in
-   jitted code
+   managed code
  */
 /****************************************************************************/
 
@@ -31,6 +31,18 @@
 #include "disassembler.h"
 
 /****************************************************************************/
+
+GCStressCodeWriter::GCStressCodeWriter(BYTE* address, size_t size)
+    : m_addressRW(address)
+{
+    WRAPPER_NO_CONTRACT;
+
+    if (!ExecutionManager::IsReadyToRunCode(PINSTRToPCODE((TADDR)address)))
+    {
+        m_writer.AssignExecutableWriterHolder(address, size);
+        m_addressRW = m_writer.GetRW();
+    }
+}
 
 bool IsGcCoverageInterruptInstruction(PBYTE instrPtr)
 {
@@ -93,9 +105,6 @@ void SetupAndSprinkleBreakpoints(
 {
     _ASSERTE(!nativeCodeVersion.IsNull());
 
-    // CONSIDER: does anyone call this with fZapped == true ? are there plans?
-    _ASSERTE(!fZapped);
-
     // Allocate room for the GCCoverageInfo and copy of the method instructions
     MethodDesc *pMD = nativeCodeVersion.GetMethodDesc();
     size_t memSize = sizeof(GCCoverageInfo) + methodRegionInfo.hotSize + methodRegionInfo.coldSize;
@@ -130,7 +139,7 @@ void SetupAndSprinkleBreakpoints(
     nativeCodeVersion.SetGCCoverageInfo(gcCover);
 }
 
-void SetupAndSprinkleBreakpointsForJittedMethod(NativeCodeVersion               nativeCodeVersion,
+void SetupAndSprinkleBreakpointsForMethod(NativeCodeVersion                     nativeCodeVersion,
                                                 PCODE                           codeStart
                                                )
 {
@@ -151,12 +160,12 @@ void SetupAndSprinkleBreakpointsForJittedMethod(NativeCodeVersion               
     SetupAndSprinkleBreakpoints(nativeCodeVersion,
                                 &codeInfo,
                                 methodRegionInfo,
-                                FALSE
+                                ExecutionManager::IsReadyToRunCode(codeStart)
                                );
 }
 
 /****************************************************************************/
-/* called when a method is first jitted when GCStress level 4 or 8 is on */
+/* called before publishing a method when GCStress level 4 or 8 is on */
 
 void SetupGcCoverage(NativeCodeVersion nativeCodeVersion, BYTE* methodStartPtr)
 {
@@ -192,7 +201,7 @@ void SetupGcCoverage(NativeCodeVersion nativeCodeVersion, BYTE* methodStartPtr)
     }
 
     PCODE codeStart = (PCODE) methodStartPtr;
-    SetupAndSprinkleBreakpointsForJittedMethod(nativeCodeVersion, codeStart);
+    SetupAndSprinkleBreakpointsForMethod(nativeCodeVersion, codeStart);
 }
 
 // There are some code path in DoGcStress to return without doing a GC but
@@ -486,7 +495,8 @@ void GCCoverageInfo::SprinkleBreakpoints(
     if (fZapped)
     {
         DWORD oldProtect;
-        ClrVirtualProtect(codeStart, codeSize, PAGE_EXECUTE_READWRITE, &oldProtect);
+        if (!ClrVirtualProtect(codeStart, codeSize, PAGE_EXECUTE_READWRITE, &oldProtect))
+            ThrowLastError();
         writeableOffset = 0;
     }
     else
@@ -813,7 +823,7 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
         PBYTE target = getTargetOfCall((BYTE*) instrPtr, regs, (BYTE**)&nextInstr);
         if (target != 0)
         {
-            ExecutableWriterHolder<BYTE> nextInstrWriterHolder(nextInstr, sizeof(DWORD));
+            GCStressCodeWriter nextInstrWriterHolder(nextInstr, sizeof(DWORD));
             if (!pThread->PreemptiveGCDisabled())
             {
                 // We are in preemptive mode in JITTed code. This implies that we are into IL stub
@@ -956,7 +966,7 @@ void replaceSafePointInstructionWithGcStressInstr(GcInfoDecoder* decoder, UINT32
     // The instruction about to be replaced cannot already be a gcstress instruction
     _ASSERTE(!IsGcCoverageInterruptInstruction(instrPtr));
 
-    ExecutableWriterHolder<BYTE> instrPtrWriterHolder(instrPtr, sizeof(DWORD));
+    GCStressCodeWriter instrPtrWriterHolder(instrPtr, sizeof(DWORD));
 #if defined(TARGET_ARM)
     size_t instrLen = GetARMInstructionLength(instrPtr);
 
@@ -1031,7 +1041,7 @@ bool replaceInterruptibleRangesWithGcStressInstr (UINT32 startOffset, UINT32 sto
     // Need to do two iterations if interruptible range spans across hot & cold region
     while(acrossHotRegion--)
     {
-        ExecutableWriterHolder<BYTE> instrPtrWriterHolder(rangeStart, rangeStop - rangeStart);
+        GCStressCodeWriter instrPtrWriterHolder(rangeStart, rangeStop - rangeStart);
         PBYTE instrPtrRW =  instrPtrWriterHolder.GetRW();
         PBYTE rangeStopRW = instrPtrRW + (rangeStop - rangeStart);
         while(instrPtrRW < rangeStopRW)
@@ -1099,11 +1109,13 @@ void GCCoverageInfo::SprinkleBreakpoints(
     if (fZapped)
     {
         DWORD oldProtect;
-        ClrVirtualProtect((BYTE*)methodRegion.hotStartAddress, methodRegion.hotSize, PAGE_EXECUTE_READWRITE, &oldProtect);
+        if (!ClrVirtualProtect((BYTE*)methodRegion.hotStartAddress, methodRegion.hotSize, PAGE_EXECUTE_READWRITE, &oldProtect))
+            ThrowLastError();
 
         if (methodRegion.coldSize > 0)
         {
-            ClrVirtualProtect((BYTE*)methodRegion.coldStartAddress, methodRegion.coldSize, PAGE_EXECUTE_READWRITE, &oldProtect);
+            if (!ClrVirtualProtect((BYTE*)methodRegion.coldStartAddress, methodRegion.coldSize, PAGE_EXECUTE_READWRITE, &oldProtect))
+                ThrowLastError();
         }
     }
 
@@ -1258,7 +1270,7 @@ bool IsGcCoverageInterrupt(LPVOID ip)
 
 void RemoveGcCoverageInterrupt(TADDR instrPtr, BYTE * savedInstrPtr, GCCoverageInfo* gcCover, DWORD offset)
 {
-    ExecutableWriterHolder<void> instrPtrWriterHolder((void*)instrPtr, 4);
+    GCStressCodeWriter instrPtrWriterHolder((BYTE*)instrPtr, 4);
 #ifdef TARGET_ARM
     if (GetARMInstructionLength(savedInstrPtr) == 2)
         *(WORD *)instrPtrWriterHolder.GetRW()  = *(WORD *)savedInstrPtr;
