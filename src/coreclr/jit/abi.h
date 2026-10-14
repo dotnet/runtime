@@ -351,6 +351,24 @@ public:
                                    WellKnownArg wellKnownParam);
 };
 
+class InterpClassifier
+{
+    unsigned m_stackArgSize = 0;
+
+public:
+    InterpClassifier(const ClassifierInfo& info);
+
+    unsigned StackSize()
+    {
+        return m_stackArgSize;
+    }
+
+    ABIPassingInformation Classify(Compiler*    comp,
+                                   var_types    type,
+                                   ClassLayout* structLayout,
+                                   WellKnownArg wellKnownParam);
+};
+
 #if defined(TARGET_X86)
 typedef X86Classifier PlatformClassifier;
 #elif defined(WINDOWS_AMD64_ABI)
@@ -367,6 +385,8 @@ typedef RiscV64Classifier PlatformClassifier;
 typedef LoongArch64Classifier PlatformClassifier;
 #elif defined(TARGET_WASM)
 typedef WasmClassifier PlatformClassifier;
+#elif defined(TARGET_INTERP)
+typedef InterpClassifier PlatformClassifier;
 #endif
 
 #ifdef SWIFT_SUPPORT

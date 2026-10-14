@@ -62,6 +62,8 @@ inline bool compUnixX86Abi()
 #define TARGET_READABLE_NAME "RISCV64"
 #elif defined(TARGET_WASM32)
 #define TARGET_READABLE_NAME "WASM32"
+#elif defined(TARGET_INTERP)
+#define TARGET_READABLE_NAME "INTERP"
 #else
 #error Unsupported or unset target architecture
 #endif
@@ -93,7 +95,7 @@ inline bool compUnixX86Abi()
 #define REGMASK_BITS              64
 #define CSE_CONST_SHARED_LOW_BITS 12
 
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASM) || defined(TARGET_INTERP)
 #define REGMASK_BITS              32
 #define CSE_CONST_SHARED_LOW_BITS 12
 
@@ -112,10 +114,11 @@ inline bool compUnixX86Abi()
 //                       be assigned during register allocation.
 //    REG_NA           - Used to indicate that a register is either not yet assigned or not required.
 //
-#if defined(TARGET_ARM) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_WASM)
+#if defined(TARGET_ARM) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_WASM) ||           \
+    defined(TARGET_INTERP)
 enum _regNumber_enum : unsigned
 {
-#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_WASM)
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_WASM) || defined(TARGET_INTERP)
 // LA64 and RV64 don't require JITREG_ workaround for Android (see register.h)
 #define REGDEF(name, rnum, mask, sname) REG_##name = rnum,
 #define REGALIAS(alias, realname)       REG_##alias = REG_##realname,
@@ -423,7 +426,8 @@ public:
     }
 };
 
-#if defined(TARGET_ARM) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_WASM)
+#if defined(TARGET_ARM) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_WASM) ||           \
+    defined(TARGET_INTERP)
 
 #define REGDEF(name, rnum, mask, sname)                                                                                \
     static constexpr regMaskTP RBM_##name =                                                                            \
@@ -606,6 +610,8 @@ static uint32_t BitScanForward(const regMaskTP& mask)
 #include "targetriscv64.h"
 #elif defined(TARGET_WASM)
 #include "targetwasm.h"
+#elif defined(TARGET_INTERP)
+#include "targetinterp.h"
 #else
 #error Unsupported or unset target architecture
 #endif

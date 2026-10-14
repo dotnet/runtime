@@ -227,6 +227,7 @@
     <SubsetName Include="Clr.Hosts" Description="The CoreCLR corerun test host." />
     <SubsetName Include="Clr.Jit" Description="The JIT for the CoreCLR .NET runtime." />
     <SubsetName Include="Clr.WasmJit" Description="The cross-targeting WebAssembly JIT compiler for the CoreCLR .NET runtime." />
+    <SubsetName Include="Clr.InterpJit" OnDemand="true" Description="The JIT compiler that generates CoreCLR interpreter bytecode." />
     <SubsetName Include="Clr.AllJits" Description="All of the cross-targeting JIT compilers for the CoreCLR .NET runtime." />
     <SubsetName Include="Clr.AllJitsCommunity" Description="All of the cross-targeting JIT compilers for the CoreCLR .NET runtime, including community targets." />
     <SubsetName Include="Clr.Spmi" Description="SuperPMI, a tool for CoreCLR JIT testing." />
@@ -339,6 +340,10 @@
 
   <PropertyGroup Condition="$(_subset.Contains('+clr.wasmjit+'))">
     <ClrRuntimeBuildSubsets>$(ClrRuntimeBuildSubsets);ClrWasmJitSubset=true</ClrRuntimeBuildSubsets>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="$(_subset.Contains('+clr.interpjit+'))">
+    <ClrRuntimeBuildSubsets>$(ClrRuntimeBuildSubsets);ClrInterpJitSubset=true</ClrRuntimeBuildSubsets>
   </PropertyGroup>
 
   <PropertyGroup Condition="$(_subset.Contains('+clr.paltests+'))">

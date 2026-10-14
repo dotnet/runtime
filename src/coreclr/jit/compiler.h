@@ -7031,6 +7031,10 @@ public:
 #endif // DEBUG
 #endif // TARGET_WASM
 
+#ifdef TARGET_INTERP
+    void genInterpCode(void** methodCodePtr, uint32_t* methodCodeSize);
+#endif // TARGET_INTERP
+
     PhaseStatus fgSetBlockOrder();
     bool fgHasCycleWithoutGCSafePoint();
 
@@ -9729,7 +9733,7 @@ public:
 #elif defined(TARGET_RISCV64)
             reg     = REG_T5;
             regMask = RBM_T5;
-#elif defined(TARGET_WASM)
+#elif defined(TARGET_WASM) || defined(TARGET_INTERP)
             reg     = REG_NA;
             regMask = RBM_NONE;
 #else
@@ -13935,6 +13939,10 @@ const instruction INS_BREAKPOINT = INS_ebreak;
 
 #ifdef TARGET_WASM
 const instruction INS_BREAKPOINT = INS_unreachable;
+#endif
+
+#ifdef TARGET_INTERP
+const instruction INS_BREAKPOINT = INS_breakpoint;
 #endif
 
 /*****************************************************************************/
