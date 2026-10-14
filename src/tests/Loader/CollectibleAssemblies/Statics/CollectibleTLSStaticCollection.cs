@@ -124,9 +124,8 @@ namespace CollectibleThreadStaticShutdownRace
             return new WeakReference(context);
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155: Collectible assemblies", typeof(Utilities), nameof(Utilities.IsNativeAot))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/40394", TestRuntimes.Mono)]
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported), nameof(PlatformDetection.IsCollectibleAssembliesSupported))]
         public static void ReuseCollectibleThreadStaticIndex()
         {
             string assemblyPath = Path.Combine(AppContext.BaseDirectory, "StaticsUnloaded.dll");
@@ -141,12 +140,13 @@ namespace CollectibleThreadStaticShutdownRace
                 GC.WaitForPendingFinalizers();
             }
 
+            Assert.False(context.IsAlive);
+
             // Native LoaderAllocator cleanup must finish before its TLS index can be reused.
-            for (int i = 0; i < 20; i++)
+            for (int i = 0; i < 5; i++)
             {
                 GC.Collect();
                 GC.WaitForPendingFinalizers();
-                Thread.Sleep(10);
             }
 
             RunInCollectibleAlc(
@@ -155,9 +155,8 @@ namespace CollectibleThreadStaticShutdownRace
                 nameof(ThreadStaticInFlightDataAfterUnload.Set));
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155: Collectible assemblies", typeof(Utilities), nameof(Utilities.IsNativeAot))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/40394", TestRuntimes.Mono)]
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported), nameof(PlatformDetection.IsCollectibleAssembliesSupported))]
         public static void TestEntryPoint()
         {
             s_getAnIntField = typeof(CollectibleThreadStaticShutdownRace).GetField("s_getAnInt");
