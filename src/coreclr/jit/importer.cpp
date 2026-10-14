@@ -2721,12 +2721,24 @@ GenTree* Compiler::impImportLdvirtftn(GenTree*                thisPtr,
         call = gtNewVirtualFunctionLookupHelperCallNode(CORINFO_HELP_GVMLOOKUP_FOR_SLOT, TYP_I_IMPL, thisPtr,
                                                         dispatchCell);
     }
+#ifdef TARGET_WASM
+    else if (IsNativeAot() && isInterface)
+    {
+        GenTree* dispatchCell = impLookupToTree(&pCallInfo->codePointerLookup, GTF_ICON_GLOBAL_PTR, nullptr);
+        call = gtNewVirtualFunctionLookupHelperCallNode(CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT, TYP_I_IMPL, thisPtr,
+                                                        dispatchCell);
+    }
+#endif
 
-    // Wasm R2R cannot use the CORINFO_HELP_READYTORUN_VIRTUAL_FUNC_PTR fast path because it
+    // CoreCLR Wasm R2R cannot use the CORINFO_HELP_READYTORUN_VIRTUAL_FUNC_PTR fast path because it
     // relies on DelayLoad_Helper_Obj dynamic-helper thunks, which are not implemented on wasm.
     // Fall through to the runtime CORINFO_HELP_VIRTUAL_FUNC_PTR helper instead.
-#if defined(FEATURE_READYTORUN) && !defined(TARGET_WASM)
+#ifdef FEATURE_READYTORUN
+#ifdef TARGET_WASM
+    else if (IsNativeAot())
+#else
     else if (IsAot())
+#endif
     {
         if (!pCallInfo->exactContextNeedsRuntimeLookup)
         {
@@ -2742,7 +2754,7 @@ GenTree* Compiler::impImportLdvirtftn(GenTree*                thisPtr,
             call = gtNewRuntimeLookupHelperCallNode(&pCallInfo->codePointerLookup.runtimeLookup, ctxTree, nullptr);
         }
     }
-#endif // FEATURE_READYTORUN && !TARGET_WASM
+#endif // FEATURE_READYTORUN
 
     if (call == nullptr)
     {
