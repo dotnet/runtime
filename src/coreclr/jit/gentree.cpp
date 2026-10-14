@@ -5561,7 +5561,7 @@ bool Compiler::gtCanSwapOrder(GenTree* firstNode, GenTree* secondNode)
         // op1 has side efects that can't be reordered.
         // Check for some special cases where we still may be able to swap.
 
-        if (secondNode->gtFlags & strictEffects)
+        if (secondNode->gtFlags & (strictEffects | GTF_ORDER_SIDEEFF))
         {
             // op2 has also has non reorderable side effects - can't swap.
             canSwap = false;
