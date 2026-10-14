@@ -16,6 +16,8 @@ namespace Mono.Linker.Tests.Cases.Interop.PInvoke
             SomeArrayMethod(null);
             SomePointerToPointerMethod(null);
             SomeArrayOfArraysMethod(null);
+            SomePointerReturnMethod();
+            SomeArrayReturnMethod();
         }
 
         [KeptMember(".ctor()")]
@@ -63,6 +65,24 @@ namespace Mono.Linker.Tests.Cases.Interop.PInvoke
         }
 
         [Kept]
+        [StructLayout(LayoutKind.Auto)]
+        struct PointedToByReturn
+        {
+            [Kept] private int field1;
+
+            [Kept] private int field2;
+        }
+
+        [Kept]
+        [StructLayout(LayoutKind.Auto)]
+        struct ReturnedArrayElement
+        {
+            [Kept] private int field1;
+
+            [Kept] private int field2;
+        }
+
+        [Kept]
         [DllImport("Unused")]
         private static extern void SomeMethod(A a);
 
@@ -81,5 +101,13 @@ namespace Mono.Linker.Tests.Cases.Interop.PInvoke
         [Kept]
         [DllImport("Unused")]
         private static extern void SomeArrayOfArraysMethod(NestedArrayElement[][] a);
+
+        [Kept]
+        [DllImport("Unused")]
+        private static extern unsafe PointedToByReturn* SomePointerReturnMethod();
+
+        [Kept]
+        [DllImport("Unused")]
+        private static extern ReturnedArrayElement[] SomeArrayReturnMethod();
     }
 }
