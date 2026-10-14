@@ -7991,13 +7991,6 @@ GenTree* Lowering::FindAddSubCompareOperand(GenTreeOp* node, GenTree** other, Ge
         relop = findCompare(*condOp, addCns);
     }
 
-    // The flags consumer needs "other" in a register and it must not be a constant that may be
-    // materialized with a flags-clobbering instruction.
-    if ((relop == nullptr) || (*other)->IsCnsIntOrI())
-    {
-        return nullptr;
-    }
-
     return relop;
 }
 
@@ -8025,7 +8018,9 @@ GenTree* Lowering::TryLowerAddSubOfCompare(GenTreeOp* node)
     GenTree* addCns;
     GenTree* relop = FindAddSubCompareOperand(node, &other, &condOp, &addCns);
 
-    if ((relop == nullptr) || !relop->OperIs(GT_EQ, GT_NE, GT_LT, GT_LE, GT_GE, GT_GT))
+    // The flags consumer needs "other" in a register and it must not be a constant that may be
+    // materialized with a flags-clobbering instruction.
+    if ((relop == nullptr) || other->IsCnsIntOrI() || !relop->OperIs(GT_EQ, GT_NE, GT_LT, GT_LE, GT_GE, GT_GT))
     {
         return nullptr;
     }
@@ -8037,6 +8032,16 @@ GenTree* Lowering::TryLowerAddSubOfCompare(GenTreeOp* node)
     {
         return nullptr;
     }
+
+#ifdef TARGET_XARCH
+    // Keep "*p = *p + cond" as a read-modify-write add. The store address is not lowered yet.
+    LIR::Use use;
+    if (other->OperIs(GT_IND) && BlockRange().TryGetUse(node, &use) && use.User()->OperIs(GT_STOREIND) &&
+        (use.User()->AsStoreInd()->Data() == node))
+    {
+        return nullptr;
+    }
+#endif
 
 #ifndef TARGET_64BIT
     if (varTypeIsLong(cmpOp1) || varTypeIsLong(cmpOp2))
@@ -11896,9 +11901,7 @@ bool Lowering::TryMakeIndirsAdjacent(GenTreeIndir* prevIndir, GenTreeIndir* indi
         {
             // 'cur' is part of data flow of 'indir', so we will be moving the
             // currently recorded effects past 'cur'.
-            // MarkTree does not track implicit flags dependencies.
-            if (cur->OperConsumesFlags() || cur->gtSetFlags() ||
-                m_scratchSideEffects.InterferesWith(m_compiler, cur, true))
+            if (m_scratchSideEffects.InterferesWith(m_compiler, cur, true))
             {
                 JITDUMP("Giving up due to interference with [%06u]\n", Compiler::dspTreeID(cur));
                 return false;
