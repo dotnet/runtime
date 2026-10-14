@@ -69,7 +69,6 @@ namespace Microsoft.Extensions.Http.Tests.Logging
             using var request = new HttpRequestMessage(HttpMethod.Get, "http://example.com");
 
             Exception actualException = await Assert.ThrowsAnyAsync<Exception>(() => SendRequestAsync(client, request, useAsync));
-            Assert.Same(exception, actualException);
             Assert.Equal(!rejectBeforePrimaryHandler, primaryHandler.Invoked);
 
             WriteContext[] messages = sink.Writes.ToArray();
@@ -81,10 +80,13 @@ namespace Microsoft.Extensions.Http.Tests.Logging
             WriteContext[] failures = messages.Where(m => m.EventId.Id == EventIds.RequestFailed.Id).ToArray();
             if (exception is OperationCanceledException)
             {
+                // HttpClient on .NET Framework replaces cancellation exceptions.
+                Assert.IsAssignableFrom<OperationCanceledException>(actualException);
                 Assert.Empty(failures);
                 return;
             }
 
+            Assert.Same(exception, actualException);
             Assert.Equal(rejectBeforePrimaryHandler ? 1 : 2, failures.Length);
             AssertFailureLog(
                 Assert.Single(failures, m => m.LoggerName == OuterLoggerName),
