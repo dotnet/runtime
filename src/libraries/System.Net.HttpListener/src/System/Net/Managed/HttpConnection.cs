@@ -427,7 +427,7 @@ namespace System.Net
                 {
                     // A CR must be immediately followed by a LF. Reject a bare CR, as http.sys does,
                     // rather than dropping it and joining the text on either side of it.
-                    throw new ProtocolViolationException();
+                    throw new ProtocolViolationException("Missing \\n after \\r");
                 }
 
                 if (b == 13)
