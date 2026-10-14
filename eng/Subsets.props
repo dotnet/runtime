@@ -56,7 +56,7 @@
     <SdkToolsSupported Condition="'$(_SdkToolsSupportedOS)' == 'true' and '$(_SdkToolsSupportedArch)' == 'true'">true</SdkToolsSupported>
 
     <_UseNativeAotForComponentsCrossOS Condition="'$(CrossBuild)' == 'true' and '$(_hostArchitecture)' == '$(_targetArchitecture)' and '$(_hostOS)' != 'windows'">true</_UseNativeAotForComponentsCrossOS>
-    <UseNativeAotForComponents Condition="'$(NativeAotSupported)' == 'true' and ('$(TargetOS)' == '$(HostOS)' or '$(_UseNativeAotForComponentsCrossOS)' == 'true') and '$(TargetsLinuxBionic)' != 'true'">true</UseNativeAotForComponents>
+    <UseNativeAotForComponents Condition="'$(NativeAotSupported)' == 'true' and ('$(TargetOS)' == '$(HostOS)' or '$(_UseNativeAotForComponentsCrossOS)' == 'true') and '$(TargetsLinuxBionic)' != 'true' and '$(TargetsOpenHarmony)' != 'true'">true</UseNativeAotForComponents>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -77,6 +77,8 @@
     <DefaultSubsets Condition="'$(TargetsLinuxBionic)' == 'true' and '$(CoreCLRSupported)' == 'true' and '$(MonoSupported)' != 'true'">clr+libs+host+packs</DefaultSubsets>
     <DefaultSubsets Condition="'$(TargetsLinuxBionic)' == 'true' and '$(CoreCLRSupported)' != 'true' and '$(MonoSupported)' == 'true'">clr.nativeaotruntime+clr.nativeaotlibs+mono+libs+host+packs</DefaultSubsets>
     <DefaultSubsets Condition="'$(TargetsLinuxBionic)' == 'true' and '$(CoreCLRSupported)' != 'true' and '$(MonoSupported)' != 'true'">clr.nativeaotruntime+clr.nativeaotlibs+libs+packs</DefaultSubsets>
+    <!-- OHOS is CoreCLR + NativeAOT only (no Mono dependency). -->
+    <DefaultSubsets Condition="'$(TargetsOpenHarmony)' == 'true'">clr.nativeaotruntime+clr.nativeaotlibs+clr+libs+host+packs</DefaultSubsets>
     <DefaultSubsets Condition="'$(TargetsBrowser)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR'">clr+libs+tools+host+packs</DefaultSubsets>
     <!-- In source build, mono is only supported as primary runtime flavor. -->
     <DefaultSubsets Condition="'$(DotNetBuildSourceOnly)' == 'true' and '$(PrimaryRuntimeFlavor)' != 'Mono'">clr+libs+tools+host+packs</DefaultSubsets>
@@ -566,6 +568,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+tools.illink+'))">
+    <ProjectToBuild Include="$(ToolsProjectRoot)illink\src\ILLink.CacheTool\ILLink.CacheTool.csproj" Category="tools" />
     <ProjectToBuild Include="$(ToolsProjectRoot)illink\src\linker\Mono.Linker.csproj" Category="tools" />
     <ProjectToBuild Include="$(ToolsProjectRoot)illink\src\ILLink.Tasks\ILLink.Tasks.csproj" Category="tools" />
     <ProjectToBuild Include="$(ToolsProjectRoot)illink\src\ILLink.RoslynAnalyzer\ILLink.RoslynAnalyzer.csproj" Category="tools" />
@@ -574,6 +577,8 @@
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+tools.illinktests+'))">
+    <ProjectToBuild Include="$(ToolsProjectRoot)illink\test\ILLink.CacheTool.Tests\ILLink.CacheTool.Tests.csproj"
+      Test="true" Category="tools"/>
     <ProjectToBuild Include="$(ToolsProjectRoot)illink\test\Mono.Linker.Tests\Mono.Linker.Tests.csproj"
       Test="true" Category="tools"/>
     <ProjectToBuild Include="$(ToolsProjectRoot)illink\test\Mono.Linker.Tests.Cases\Mono.Linker.Tests.Cases.csproj"

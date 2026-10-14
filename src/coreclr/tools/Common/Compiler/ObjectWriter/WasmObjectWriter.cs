@@ -178,7 +178,13 @@ namespace ILCompiler.ObjectWriter
         {
             WasmSectionType sectionType = GetWasmSectionType(section);
             SectionDataEmitter wasmSection;
-            if (sectionType == WasmSectionType.Data)
+            if (section.Type == SectionType.Debug)
+            {
+                Utf8String sectionName = new(section.Name);
+                wasmSection = new WasmCustomSection(sectionStream, sectionName, sectionIndex);
+                EmitSymbolDefinition(sectionIndex, sectionName);
+            }
+            else if (sectionType == WasmSectionType.Data)
             {
                 wasmSection = CreateDataSection(section, sectionIndex, sectionStream);
             }

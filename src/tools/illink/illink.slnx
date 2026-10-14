@@ -13,6 +13,7 @@
   </Folder>
   <Folder Name="/test/">
     <Project Path="../../coreclr/tools/ILVerification/ILVerification.csproj" />
+    <Project Path="test/ILLink.CacheTool.Tests/ILLink.CacheTool.Tests.csproj" />
     <Project Path="test/ILLink.RoslynAnalyzer.Tests.Generator/ILLink.RoslynAnalyzer.Tests.Generator.csproj" />
     <Project Path="test/ILLink.RoslynAnalyzer.Tests/ILLink.RoslynAnalyzer.Tests.csproj" />
     <Project Path="test/ILLink.Tasks.Tests/ILLink.Tasks.Tests.csproj" />
@@ -20,6 +21,7 @@
     <Project Path="test/Mono.Linker.Tests.Cases/Mono.Linker.Tests.Cases.csproj" />
     <Project Path="test/Mono.Linker.Tests/Mono.Linker.Tests.csproj" />
   </Folder>
+  <Project Path="src/ILLink.CacheTool/ILLink.CacheTool.csproj" />
   <Project Path="src/ILLink.Shared/ILLink.Shared.shproj" />
   <Project Path="src/ILLink.Tasks/ILLink.Tasks.csproj" />
   <Project Path="src/linker/Mono.Linker.csproj" />

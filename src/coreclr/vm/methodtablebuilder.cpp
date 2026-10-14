@@ -3645,17 +3645,22 @@ MethodTableBuilder::EnumerateClassFields()
 
                 bmtEnumFields.dwNumStaticFields++;
 
-                // If this static field is thread static, then we need
-                // to increment bmtEnumFields.dwNumThreadStaticFields
-                hr = GetCustomAttribute(tok,
-                                        WellKnownAttribute::ThreadStatic,
-                                        NULL, NULL);
-                IfFailThrow(hr);
-                if (hr == S_OK)
+#ifdef FEATURE_MULTITHREADING
+                if (!IsFdHasFieldRVA(dwMemberAttrs))
                 {
-                    // It's a thread static, so increment the count
-                    bmtEnumFields.dwNumThreadStaticFields++;
+                    // If this static field is thread static, then we need
+                    // to increment bmtEnumFields.dwNumThreadStaticFields
+                    hr = GetCustomAttribute(tok,
+                                            WellKnownAttribute::ThreadStatic,
+                                            NULL, NULL);
+                    IfFailThrow(hr);
+                    if (hr == S_OK)
+                    {
+                        // It's a thread static, so increment the count
+                        bmtEnumFields.dwNumThreadStaticFields++;
+                    }
                 }
+#endif // FEATURE_MULTITHREADING
             }
         }
         else
@@ -4114,16 +4119,16 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
 
             HRESULT hr;
 
-            hr = GetCustomAttribute(bmtMetaData.pFields[i],
-                                    WellKnownAttribute::ThreadStatic,
-                                    NULL, NULL);
-            IfFailThrow(hr);
-            if (hr == S_OK)
+#ifdef FEATURE_MULTITHREADING
+            if (!fHasRVA)
             {
-                fIsThreadStatic = TRUE;
+                hr = GetCustomAttribute(bmtMetaData.pFields[i],
+                                        WellKnownAttribute::ThreadStatic,
+                                        NULL, NULL);
+                IfFailThrow(hr);
+                fIsThreadStatic = (hr == S_OK);
             }
-
-
+#endif // FEATURE_MULTITHREADING
             if (ElementType == ELEMENT_TYPE_VALUETYPE)
             {
                 hr = GetCustomAttribute(bmtMetaData.pFields[i],
@@ -4134,14 +4139,6 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
                 {
                     bmtFP.fHasFixedAddressValueTypes = true;
                 }
-            }
-
-
-            // Do some sanity checks that we are not mixing context and thread
-            // relative statics.
-            if (fHasRVA && fIsThreadStatic)
-            {
-                IfFailThrow(COR_E_TYPELOAD);
             }
         }
 

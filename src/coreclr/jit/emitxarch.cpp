@@ -9027,7 +9027,7 @@ void emitter::emitIns_C_R(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE f
     noway_assert(emitVerifyEncodable(ins, size, reg));
 
     instrDesc* id  = emitNewInstrDsp(attr, offs);
-    insFormat  fmt = (ins == INS_xchg) ? IF_MRW_RRW : emitInsModeFormat(ins, IF_MRD_RRD);
+    insFormat  fmt = (ins == INS_xchg) || (ins == INS_xadd) ? IF_MRW_RRW : emitInsModeFormat(ins, IF_MRD_RRD);
 
     id->idIns(ins);
     id->idInsFmt(fmt);
@@ -9513,7 +9513,7 @@ void emitter::emitIns_ARX_R(instruction    ins,
     }
     else
     {
-        fmt = (ins == INS_xchg) ? IF_ARW_RRW : emitInsModeFormat(ins, IF_ARD_RRD);
+        fmt = (ins == INS_xchg) || (ins == INS_xadd) ? IF_ARW_RRW : emitInsModeFormat(ins, IF_ARD_RRD);
 
         noway_assert(emitVerifyEncodable(ins, EA_SIZE(attr), reg));
         assert(!CodeGen::instIsFP(ins) && (EA_SIZE(attr) <= EA_64BYTE));
@@ -10616,7 +10616,7 @@ bool emitter::TryEmitLclAddrAsMov(emitAttr attr, regNumber ireg, int varx, int o
 
 void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber ireg, int varx, int offs, insOpts instOptions)
 {
-    insFormat fmt = (ins == INS_xchg) ? IF_SRW_RRW : emitInsModeFormat(ins, IF_SRD_RRD);
+    insFormat fmt = (ins == INS_xchg) || (ins == INS_xadd) ? IF_SRW_RRW : emitInsModeFormat(ins, IF_SRD_RRD);
     if (IsMovInstruction(ins) && IsRedundantStackMov(ins, fmt, attr, ireg, varx, offs))
     {
         return;

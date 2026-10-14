@@ -412,24 +412,11 @@ void Thread::Destroy()
     ASSERT(m_pGCFrameRegistrations == NULL);
 }
 
-#ifdef HOST_WASM
-extern OBJECTREF * t_pShadowStackTop;
-extern OBJECTREF * t_pShadowStackBottom;
-
-void GcScanWasmShadowStack(ScanFunc* pfnEnumCallback, ScanContext* pvCallbackData)
-{
-    // Wasm does not permit iteration of stack frames so is uses a shadow stack instead
-    EnumGcRefsInRegionConservatively(t_pShadowStackBottom, t_pShadowStackTop, pfnEnumCallback, pvCallbackData);
-}
-#endif
-
 void Thread::GcScanRoots(ScanFunc * pfnEnumCallback, ScanContext * pvCallbackData)
 {
     this->CrossThreadUnhijack();
 
-#ifdef HOST_WASM
-    GcScanWasmShadowStack(pfnEnumCallback, pvCallbackData);
-#else
+#ifndef HOST_WASM
     StackFrameIterator frameIterator(this, GetTransitionFrame());
     GcScanRootsWorker(pfnEnumCallback, pvCallbackData, frameIterator);
 #endif

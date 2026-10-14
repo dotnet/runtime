@@ -1960,11 +1960,13 @@ void AssemblyLoaderAllocator::CleanupHandles()
     CONTRACTL_END;
 
 
+#ifdef FEATURE_MULTITHREADING
     if (m_hLoaderAllocatorObjectHandle != NULL)
     {
         GCX_COOP();
         FreeTLSIndicesForLoaderAllocator(this);
     }
+#endif // FEATURE_MULTITHREADING
 
     // This method doesn't take a lock around RemoveHead because it's supposed to
     // be called only from Terminate
