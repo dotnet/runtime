@@ -1530,8 +1530,8 @@ static void ValidateFuncEvalArgumentCount(DebuggerEval* pDE)
     IfFailThrow(parser.GetCallingConvInfo(&callingConvention));
     if (!isCallConv(callingConvention, IMAGE_CEE_CS_CALLCONV_DEFAULT))
     {
-        // Unsupported calling conventions are validated when resolving the target method.
-        return;
+        // Report debugger protocol errors through the native eval catch, before managed first chance.
+        COMPlusThrow(kArgumentException, W("Argument_CORDBBadVarArgCallConv"));
     }
     if ((callingConvention & IMAGE_CEE_CS_CALLCONV_GENERIC) != 0)
     {
