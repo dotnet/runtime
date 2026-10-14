@@ -389,5 +389,34 @@ namespace System.Net.Mime.Tests
             var reparsed = new ContentDisposition(serialized);
             Assert.Equal(encoded, reparsed.FileName);
         }
+
+        [Theory]
+        [InlineData("inline")]
+        [InlineData("attachment")]
+        [InlineData("foo")]
+        [InlineData("foo_bar")]
+        [InlineData("foo@bar")]
+        public void ContentDisposition_Type_Validation_Valid(string dispositionType)
+        {
+            var cd = new ContentDisposition();
+            cd.DispositionType = dispositionType;
+            Assert.Equal(dispositionType, cd.DispositionType);
+        }
+
+        [Theory]
+        [InlineData("foo\rbar")]
+        [InlineData("foo\nbar")]
+        [InlineData("foo\r\nbar")]
+        [InlineData("foo; abc=bar")] // You can pass this to ctor, but not to property
+        [InlineData("foo\"bar")] // You can pass this to ctor, but not to property
+        [InlineData("fň")]
+        public void ContentDisposition_Type_Validation_Invalid(string dispositionType)
+        {
+            var cd = new ContentDisposition();
+            Assert.Throws<ArgumentException>(() =>
+            {
+                cd.DispositionType = dispositionType;
+            });
+        }
     }
 }

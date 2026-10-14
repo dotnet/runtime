@@ -79,16 +79,15 @@ namespace System.Net.Mime
             {
                 ArgumentException.ThrowIfNullOrEmpty(value);
 
-                if (!MimeBasePart.IsAscii(value, false))
+                // RFC allows IANA registered token or X- extension token. We do not validate extensively.
+                // For backward compatibility we restrict only chars which can interfere with other part of syntax.
+                if (!MimeBasePart.IsAscii(value, false) || value.AsSpan().ContainsAny(';', '"'))
                 {
                     throw new ArgumentException(SR.DispositionTypeInvalid, nameof(value));
                 }
 
-                StringBuilder sb = new();
-                MailBnfHelper.GetTokenOrQuotedString(value, sb, false);
-
                 _isChanged = true;
-                _dispositionType = sb.ToString();
+                _dispositionType = value;
             }
         }
 
