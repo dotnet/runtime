@@ -27,6 +27,10 @@ Copyright (c) .NET Foundation. All rights reserved.
     <PublishReadyToRunStripDebugInfo Condition="'$(PublishReadyToRunStripDebugInfo)' == '' and '$(DebuggerSupport)' != 'true' and '$(Configuration)' != 'Debug'">true</PublishReadyToRunStripDebugInfo>
     <PublishReadyToRunCrossgen2ExtraArgs Condition="'$(Configuration)' == 'Debug'">$(PublishReadyToRunCrossgen2ExtraArgs);--wasm-debug-info=all</PublishReadyToRunCrossgen2ExtraArgs>
     <PublishReadyToRunCrossgen2ExtraArgs Condition="'$(Configuration)' != 'Debug'">$(PublishReadyToRunCrossgen2ExtraArgs);--wasm-debug-info=none</PublishReadyToRunCrossgen2ExtraArgs>
+    <!-- This target is imported after Microsoft.NET.CrossGen.targets, so add strip arguments here when that SDK target
+         has not already added them from the strip properties above. -->
+    <PublishReadyToRunCrossgen2ExtraArgs Condition="'$(PublishReadyToRunStripInliningInfo)' == 'true' and !$([System.String]::Copy('$(PublishReadyToRunCrossgen2ExtraArgs)').Contains('--strip-inlining-info'))">$(PublishReadyToRunCrossgen2ExtraArgs);--strip-inlining-info</PublishReadyToRunCrossgen2ExtraArgs>
+    <PublishReadyToRunCrossgen2ExtraArgs Condition="'$(PublishReadyToRunStripDebugInfo)' == 'true' and !$([System.String]::Copy('$(PublishReadyToRunCrossgen2ExtraArgs)').Contains('--strip-debug-info'))">$(PublishReadyToRunCrossgen2ExtraArgs);--strip-debug-info</PublishReadyToRunCrossgen2ExtraArgs>
     <!-- Compile every assembly into one shared (large) version bubble. -->
     <PublishReadyToRunCrossgen2ExtraArgs>$(PublishReadyToRunCrossgen2ExtraArgs);--opt-cross-module:*</PublishReadyToRunCrossgen2ExtraArgs>
   </PropertyGroup>
