@@ -187,6 +187,7 @@ Unwinding call frames on the stack usually requires an OS specific implementatio
 | `Module` | `ReadyToRunInfo` | `pointer` | Pointer to the module's ReadyToRun information |
 | `Object` | `m_pMethTab` | `pointer` | Method table for the object |
 | `PInvokeCalliFrame` | `VASigCookiePtr` | `pointer` | Pointer to the varargs signature cookie for the unmanaged call |
+| `PortableEntryPoint` | `ActualCode` | `pointer` | Native code for the entrypoint; on WebAssembly R2R code this is a function-table index (only defined if `FeaturePortableEntrypoints` is enabled) |
 | `ReadyToRunInfo` | `ImportSections` | `pointer` | Pointer to the array of ReadyToRun import sections |
 | `ReadyToRunInfo` | `LoadedImageBase` | `pointer` | Base address of the loaded R2R image |
 | `ReadyToRunInfo` | `MinVirtualIP` | `pointer` | Base virtual IP assigned to the ReadyToRun module on WebAssembly |
@@ -196,7 +197,6 @@ Unwinding call frames on the stack usually requires an OS specific implementatio
 | `ResumableFrame` | `TargetContextPtr` | `pointer` | Pointer to the Frame's Target Context |
 | `RuntimeFunction` | *(type size)* | `uint32` | Size of a runtime function entry in bytes |
 | `RuntimeFunction` | `BeginAddress` | `uint32` | Begin address of the function. On ARM32, bit 0 is the Thumb bit; on WebAssembly, bit 31 marks a funclet and is excluded from address arithmetic. |
-| `RuntimeFunction` | `UnwindData` | `uint32` | Pointer to the unwind info for the function |
 | `SoftwareExceptionFrame` | `ReturnAddress` | `CodePointer` | Return address saved in Frame |
 | `SoftwareExceptionFrame` | `TargetContext` | `pointer` | Context object saved in Frame |
 | `String` | `m_StringLength` | `uint32` | Length of the string in UTF-16 characters |
