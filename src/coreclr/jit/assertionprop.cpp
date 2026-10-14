@@ -120,11 +120,12 @@ static Range GetBoundMinusXRange(Compiler* comp, GenTree* tree, BasicBlock* bloc
     }
 
     // X in [lo, Bnd + k] with lo >= 0 and k <= 0 means that "Bnd - X" can't overflow and is in [-k, Bnd - lo].
+    // k == INT32_MIN is excluded since "-k" would overflow.
     Range        xRange = GetRange(comp, tree->gtGetOp2(), block, BitVecOps::UninitVal(), /*fast*/ false, bndVN);
     const Limit& xLo    = xRange.LowerLimit();
     const Limit& xHi    = xRange.UpperLimit();
     if (xLo.IsConstant() && (xLo.GetConstant() >= 0) && xHi.IsBinOpArray() && (xHi.vn == bndVN) &&
-        (xHi.GetConstant() <= 0))
+        (xHi.GetConstant() <= 0) && (xHi.GetConstant() > INT32_MIN))
     {
         return Range(Limit(Limit::keConstant, -xHi.GetConstant()),
                      Limit(Limit::keBinOpArray, bndVN, -xLo.GetConstant()));

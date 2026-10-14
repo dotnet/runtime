@@ -308,6 +308,16 @@ void RangeCheck::Widen(BasicBlock* block, GenTree* tree, Range* pRange)
         if (increasing)
         {
             JITDUMP("[%06d] is monotonically increasing.\n", Compiler::dspTreeID(tree));
+
+            // Monotonicity assumes the defs don't overflow, but DoesVarDefOverflow skips that check for
+            // a non-dependent lower limit. Re-check with a dependent one, as for the dependent case.
+            if (lowerLimit.IsConstant() &&
+                ComputeDoesOverflow(block, tree, Range(Limit(Limit::keDependent), range.UpperLimit())))
+            {
+                JITDUMP("[%06d] may overflow, not widening.\n", Compiler::dspTreeID(tree));
+                return;
+            }
+
             ClearRangeMap();
             Range widened = GetRangeWorker(block, tree, true DEBUGARG(0));
             if (!lowerLimit.IsConstant())
