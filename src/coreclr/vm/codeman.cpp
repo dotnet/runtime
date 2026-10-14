@@ -7221,7 +7221,8 @@ BOOL ReadyToRunJitManager::JitCodeToMethodInfo(RangeSection * pRangeSection,
 
 #ifdef FEATURE_COLD_R2R_CODE
     const int lookupIndex = HotColdMappingLookupTable::LookupMappingForMethod(pInfo, (ULONG)MethodIndex);
-    if ((lookupIndex != -1) && ((lookupIndex & 1) == 1))
+    const bool isColdCode = (lookupIndex != -1) && ((lookupIndex & 1) == 1);
+    if (isColdCode)
     {
         // If the MethodIndex happens to be the cold code block, turn it into the associated hot code block
         MethodIndex = pInfo->m_pHotColdMap[lookupIndex];
@@ -7247,17 +7248,29 @@ BOOL ReadyToRunJitManager::JitCodeToMethodInfo(RangeSection * pRangeSection,
 
         AMD64_ONLY(_ASSERTE((RawFunctionEntry->UnwindData & RUNTIME_FUNCTION_INDIRECT) == 0));
         pCodeInfo->m_pFunctionEntry = RawFunctionEntry;
-        MethodRegionInfo methodRegionInfo;
-        JitTokenToMethodRegionInfo(pCodeInfo->m_methodToken, &methodRegionInfo);
-        if ((methodRegionInfo.coldSize > 0) && (currentInstr >= methodRegionInfo.coldStartAddress))
+#ifdef FEATURE_COLD_R2R_CODE
+        if (isColdCode)
         {
+            MethodRegionInfo methodRegionInfo;
+            JitTokenToMethodRegionInfo(pCodeInfo->m_methodToken, &methodRegionInfo);
+            _ASSERTE((methodRegionInfo.coldSize > 0) && (currentInstr >= methodRegionInfo.coldStartAddress));
             pCodeInfo->m_relOffset = (DWORD)
                 (methodRegionInfo.hotSize + (currentInstr - methodRegionInfo.coldStartAddress));
         }
         else
+#endif // FEATURE_COLD_R2R_CODE
         {
-            pCodeInfo->m_relOffset = (DWORD)(currentInstr - methodRegionInfo.hotStartAddress);
+            pCodeInfo->m_relOffset = (DWORD)(currentInstr - JitTokenToStartAddress(pCodeInfo->m_methodToken));
         }
+
+#ifdef _DEBUG
+        MethodRegionInfo debugMethodRegionInfo;
+        JitTokenToMethodRegionInfo(pCodeInfo->m_methodToken, &debugMethodRegionInfo);
+        DWORD expectedRelOffset = ((debugMethodRegionInfo.coldSize > 0) && (currentInstr >= debugMethodRegionInfo.coldStartAddress))
+            ? (DWORD)(debugMethodRegionInfo.hotSize + (currentInstr - debugMethodRegionInfo.coldStartAddress))
+            : (DWORD)(currentInstr - debugMethodRegionInfo.hotStartAddress);
+        _ASSERTE(pCodeInfo->m_relOffset == expectedRelOffset);
+#endif // _DEBUG
     }
 
     return TRUE;
