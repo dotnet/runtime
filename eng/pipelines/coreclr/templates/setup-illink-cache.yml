@@ -7,14 +7,15 @@ parameters:
 steps:
   # Use the same branch-scoped restore policy as the compiler caches. Each job
   # works on its own restored copy, so post-build purge cannot affect another job.
+  # Keep Debug and Release snapshots separate in rolling builds.
   - task: Cache@2
     displayName: ILLink task cache
     continueOnError: true
     inputs:
-      key: illink | v1 | ${{ parameters.osGroup }}${{ parameters.osSubgroup }} | ${{ parameters.archType }} | ${{ parameters.nameSuffix }} | "$(Build.BuildId)"
+      key: illink | v1 | ${{ parameters.osGroup }}${{ parameters.osSubgroup }} | ${{ parameters.archType }} | ${{ parameters.nameSuffix }} | "$(buildConfigUpper)" | "$(Build.BuildId)"
       path: $(Pipeline.Workspace)/.illink-cache
       restoreKeys: |
-        illink | v1 | ${{ parameters.osGroup }}${{ parameters.osSubgroup }} | ${{ parameters.archType }} | ${{ parameters.nameSuffix }}
+        illink | v1 | ${{ parameters.osGroup }}${{ parameters.osSubgroup }} | ${{ parameters.archType }} | ${{ parameters.nameSuffix }} | "$(buildConfigUpper)"
 
   - script: |
       set -euo pipefail
