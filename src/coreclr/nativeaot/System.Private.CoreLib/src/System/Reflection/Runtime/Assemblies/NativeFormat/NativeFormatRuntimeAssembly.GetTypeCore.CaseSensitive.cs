@@ -19,7 +19,7 @@ namespace System.Reflection.Runtime.Assemblies.NativeFormat
             string name = fullName.Substring(separator + 1);
 
             MetadataReader reader = Scope.Reader;
-            ScopeDefinition scopeDefinition = ScopeDefinition;
+            ScopeDefinition scopeDefinition = Scope.ScopeDefinition;
 
             foreach (TypeDefinitionHandle candidateType in scopeDefinition.TypeDefinitions)
             {

@@ -73,7 +73,7 @@ namespace System.Reflection.Runtime.Assemblies.NativeFormat
             LowLevelDictionary<string, QHandle> dict = new LowLevelDictionary<string, QHandle>();
 
             MetadataReader reader = Scope.Reader;
-            ScopeDefinition scopeDefinition = ScopeDefinition;
+            ScopeDefinition scopeDefinition = Scope.ScopeDefinition;
             foreach (TypeDefinitionHandle typeDefinitionHandle in scopeDefinition.TypeDefinitions)
             {
                 TypeDefinition typeDefinition = typeDefinitionHandle.GetTypeDefinition(reader);

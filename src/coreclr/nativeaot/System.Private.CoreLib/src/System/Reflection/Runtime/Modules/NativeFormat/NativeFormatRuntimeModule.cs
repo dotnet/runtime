@@ -24,7 +24,7 @@ namespace System.Reflection.Runtime.Modules.NativeFormat
 
         internal sealed override MetadataReader GetMetadataReader() => _assembly.Scope.Reader;
 
-        internal sealed override CustomAttributeHandleCollection GetCustomAttributeHandles() => _assembly.ScopeDefinition.ModuleCustomAttributes;
+        internal sealed override CustomAttributeHandleCollection GetCustomAttributeHandles() => _assembly.Scope.ScopeDefinition.ModuleCustomAttributes;
 
         public sealed override int MetadataToken
         {
@@ -38,7 +38,7 @@ namespace System.Reflection.Runtime.Modules.NativeFormat
         {
             get
             {
-                byte[] mvid = _assembly.ScopeDefinition.Mvid.ToArray();
+                byte[] mvid = _assembly.Scope.ScopeDefinition.Mvid.ToArray();
                 if (mvid.Length == 0)
                     return default(Guid); // Workaround for TFS 441076 - Module data not emitted for facade assemblies.
                 return new Guid(mvid);
@@ -50,7 +50,7 @@ namespace System.Reflection.Runtime.Modules.NativeFormat
             get
             {
                 QScopeDefinition scope = _assembly.Scope;
-                return scope.Reader.GetString(_assembly.ScopeDefinition.ModuleName);
+                return scope.Reader.GetString(scope.ScopeDefinition.ModuleName);
             }
         }
 
@@ -74,7 +74,7 @@ namespace System.Reflection.Runtime.Modules.NativeFormat
         {
             QScopeDefinition scope = _assembly.Scope;
             MetadataReader reader = scope.Reader;
-            return _assembly.ScopeDefinition.GlobalModuleType.GetNamedType(reader);
+            return scope.ScopeDefinition.GlobalModuleType.GetNamedType(reader);
         }
 
         private readonly NativeFormatRuntimeAssembly _assembly;

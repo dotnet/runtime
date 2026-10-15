@@ -378,24 +378,17 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
         {
             get
             {
-                Handle namespaceHandle = Handle.FromIntToken(_lazyNamespaceDefinitionHandle);
-                if (namespaceHandle.IsNil)
+                Handle namespaceOrEnclosingType = _typeDefinition.NamespaceOrEnclosingType;
+                while (namespaceOrEnclosingType.HandleType == HandleType.TypeDefinition)
                 {
-                    namespaceHandle = _typeDefinition.NamespaceOrEnclosingType;
-                    while (namespaceHandle.HandleType == HandleType.TypeDefinition)
-                    {
-                        TypeDefinition typeDefinition = namespaceHandle.ToTypeDefinitionHandle(_reader).GetTypeDefinition(_reader);
-                        namespaceHandle = typeDefinition.NamespaceOrEnclosingType;
-                    }
-
-                    _lazyNamespaceDefinitionHandle = namespaceHandle.ToIntToken();
+                    TypeDefinition typeDefinition = namespaceOrEnclosingType.ToTypeDefinitionHandle(_reader).GetTypeDefinition(_reader);
+                    namespaceOrEnclosingType = typeDefinition.NamespaceOrEnclosingType;
                 }
 
-                return namespaceHandle.ToNamespaceDefinitionHandle(_reader).GetNamespaceDefinition(_reader);
+                return namespaceOrEnclosingType.ToNamespaceDefinitionHandle(_reader).GetNamespaceDefinition(_reader);
             }
         }
 
         private volatile string _lazyNamespace;
-        private volatile int _lazyNamespaceDefinitionHandle;
     }
 }

@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
-using System.Reflection.Runtime.Assemblies.NativeFormat;
 using System.Runtime.CompilerServices;
 
 using Internal.Metadata.NativeFormat;
@@ -80,11 +79,7 @@ namespace System.Reflection.Runtime.General
 
         public static RuntimeAssemblyName ToRuntimeAssemblyName(this ScopeDefinitionHandle scopeDefinitionHandle, MetadataReader reader)
         {
-            return NativeFormatRuntimeAssembly.GetRuntimeAssembly(reader, scopeDefinitionHandle).RuntimeAssemblyName;
-        }
-
-        internal static RuntimeAssemblyName ToRuntimeAssemblyName(this ScopeDefinition scopeDefinition, MetadataReader reader)
-        {
+            ScopeDefinition scopeDefinition = scopeDefinitionHandle.GetScopeDefinition(reader);
             return CreateRuntimeAssemblyNameFromMetadata(
                 reader,
                 scopeDefinition.Name,
