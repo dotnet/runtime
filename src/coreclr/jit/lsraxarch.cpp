@@ -2463,8 +2463,12 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                     srcCount = BuildOperandUses(op1, SRBM_EDX);
                     srcCount += BuildOperandUses(op2, ForceLowGprForApxIfNeeded(op2, availableIntRegs & ~SRBM_EDX,
                                                                                 canHWIntrinsicUseApxRegs));
-                    BuildDef(intrinsicTree, apxAwareRegCandidates, 0);
-                    BuildDef(intrinsicTree, apxAwareRegCandidates, 1);
+                    // Keep the row multiplier in RDX across consecutive MULX
+                    // operations instead of overwriting it with each low half.
+                    SingleTypeRegSet rowDefs = ForceLowGprForApxIfNeeded(op1, availableIntRegs & ~SRBM_EDX,
+                                                                       canHWIntrinsicUseApxRegs);
+                    BuildDef(intrinsicTree, rowDefs, 0);
+                    BuildDef(intrinsicTree, rowDefs, 1);
                     buildUses = false;
                     break;
                 }

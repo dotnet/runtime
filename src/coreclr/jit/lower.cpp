@@ -14403,6 +14403,15 @@ bool Lowering::TryLowerMultiplyCarryChain()
         lane.add[1]->AsOp()->gtOp2 = lane.low;
         lane.add[0]->ChangeOper(GT_ADCX);
         lane.add[1]->ChangeOper(GT_ADOX);
+        for (GenTree* add : lane.add)
+        {
+            for (GenTree* operand : add->Operands())
+            {
+                operand->ClearContained();
+                operand->ClearRegOptional();
+            }
+            ContainCheckBinary(add->AsOp());
+        }
         for (GenTree* adc : lane.adc)
         {
             LIR::Use use;
@@ -14904,10 +14913,54 @@ bool Lowering::TryLowerMultiplyCarryRows()
                 node->gtFlags |= GTF_HW_MULX;
             }
         }
+        // Containment may have swapped the commutative BigMul operands and
+        // put a row constant in RDX. Prefer the invariant multiplier common
+        // to all lanes as MULX's implicit operand, so it stays in RDX.
+        unsigned multiplierLocal = BAD_VAR_NUM;
+        GenTreeHWIntrinsic* firstProduct = lanes[first].product->AsHWIntrinsic();
+        for (unsigned operandIndex = 1; operandIndex <= 2; operandIndex++)
+        {
+            GenTree* operand = firstProduct->Op(operandIndex);
+            if (!operand->OperIs(GT_LCL_VAR) ||
+                m_compiler->lvaGetDesc(operand->AsLclVar()->GetLclNum())->IsAddressExposed() ||
+                !IsInvariantInRange(operand, lanes[last].product))
+            {
+                continue;
+            }
+            unsigned local = operand->AsLclVar()->GetLclNum();
+            bool shared = true;
+            for (size_t i = first + 1; i <= last; i++)
+            {
+                GenTreeHWIntrinsic* product = lanes[i].product->AsHWIntrinsic();
+                bool found = false;
+                for (unsigned j = 1; j <= 2; j++)
+                {
+                    found |= product->Op(j)->OperIs(GT_LCL_VAR) &&
+                             product->Op(j)->AsLclVar()->GetLclNum() == local;
+                }
+                shared &= found;
+            }
+            if (shared)
+            {
+                multiplierLocal = local;
+                break;
+            }
+        }
         for (size_t i = first; i <= last; i++)
         {
             Lane& lane = lanes[i];
             lane.product->gtFlags |= GTF_HW_MULX;
+            if (multiplierLocal != BAD_VAR_NUM)
+            {
+                GenTreeHWIntrinsic* product = lane.product->AsHWIntrinsic();
+                if (product->Op(2)->OperIs(GT_LCL_VAR) &&
+                    product->Op(2)->AsLclVar()->GetLclNum() == multiplierLocal)
+                {
+                    std::swap(product->Op(1), product->Op(2));
+                }
+                product->Op(1)->ClearContained();
+                product->Op(1)->ClearRegOptional();
+            }
             if (lane.addCount == 0)
             {
                 continue;
@@ -15793,6 +15846,17 @@ bool Lowering::TryLowerMultiplyCarryLoop()
     second->AsOp()->gtOp2 = lowRead;
     first->ChangeOper(GT_ADCX);
     second->ChangeOper(GT_ADOX);
+    // Operand roles changed: the old contained/optional operand can now be
+    // the destructive destination. Recompute containment before allocation.
+    for (GenTree* add : {first, second})
+    {
+        for (GenTree* operand : add->Operands())
+        {
+            operand->ClearContained();
+            operand->ClearRegOptional();
+        }
+        ContainCheckBinary(add->AsOp());
+    }
     for (GenTree* adc : adcs)
     {
         LIR::Use use;
@@ -15828,12 +15892,14 @@ bool Lowering::TryLowerMultiplyCarryLoop()
 bool Lowering::LowerFullAdders()
 {
     // Bound the whole-method definition analysis and the number of candidates.
+    // Composite field helpers contain several independent six-word chains;
+    // their bit proofs need more room than one isolated arithmetic operation.
     unsigned nodeCount = 0;
     for (BasicBlock* block : m_compiler->Blocks())
     {
         for (GenTree* node : LIR::AsRange(block))
         {
-            if (++nodeCount > 2048)
+            if (++nodeCount > 8192)
             {
                 return false;
             }
@@ -15963,12 +16029,62 @@ bool Lowering::LowerFullAdders()
                     continue;
                 }
                 LIR::Use use;
-                if (!BlockRange().TryGetUse(output, &use) || !use.User()->OperIs(GT_STORE_LCL_VAR) ||
-                    use.User()->AsLclVar()->GetLclNum() != local)
+                if (!BlockRange().TryGetUse(output, &use) || !use.User()->OperIs(GT_STORE_LCL_VAR))
                 {
                     continue;
                 }
-                if (adders.size() == 32)
+                unsigned outputLocal = use.User()->AsLclVar()->GetLclNum();
+                LclVarDsc* outputDsc = m_compiler->lvaGetDesc(outputLocal);
+                if (!outputDsc->lvTracked || outputDsc->IsAddressExposed() || outputDsc->lvIsParam)
+                {
+                    continue;
+                }
+                if (outputLocal != local)
+                {
+                    // A promoted input can be redefined through its parent.
+                    // The seed proof below deliberately handles scalar locals only.
+                    if (dsc->lvIsStructField)
+                    {
+                        continue;
+                    }
+                    // Copy propagation can give the first carry a different local
+                    // from subsequent full-adder outputs. Accept this seed only
+                    // when every definition of its input is independently a bit.
+                    bool seeded = false;
+                    bool bitInput = true;
+                    for (BasicBlock* definitionBlock : m_compiler->Blocks())
+                    {
+                        for (GenTree* definition : LIR::AsRange(definitionBlock))
+                        {
+                            if (!definition->OperIsLocal() || definition->AsLclVarCommon()->GetLclNum() != local ||
+                                definition->OperIs(GT_LCL_VAR))
+                            {
+                                continue;
+                            }
+                            if (!definition->OperIs(GT_STORE_LCL_VAR))
+                            {
+                                bitInput = false;
+                                continue;
+                            }
+                            GenTree* bit = definition->gtGetOp1();
+                            if (bit->OperIs(GT_CAST) && !bit->gtOverflow() && bit->TypeIs(TYP_LONG) &&
+                                bit->gtGetOp1()->TypeIs(TYP_INT))
+                            {
+                                bit = bit->gtGetOp1();
+                            }
+                            bool isBit = bit->IsIntegralConst(0) || bit->IsIntegralConst(1) ||
+                                         bit->OperIs(GT_SETCC) || bit->OperIsCompare();
+                            seeded |= isBit;
+                            bitInput &= isBit;
+                        }
+                    }
+                    if (!seeded || !bitInput)
+                    {
+                        continue;
+                    }
+                }
+                local = outputLocal;
+                if (adders.size() == 128)
                 {
                     return false;
                 }
@@ -16049,6 +16165,7 @@ bool Lowering::LowerFullAdders()
                     if (definition.carryLocal == adder.carryLocal && definition.output == value)
                     {
                         fullAdder = true;
+                        initialized |= definition.input->AsLclVar()->GetLclNum() != adder.carryLocal;
                     }
                 }
                 if (!fullAdder)
@@ -16202,6 +16319,40 @@ bool Lowering::IsCarryFlagsCrossing(GenTree* node)
 #endif
     }
 #ifdef TARGET_AMD64
+    if (node->OperIs(GT_HWINTRINSIC))
+    {
+        GenTreeHWIntrinsic* product = node->AsHWIntrinsic();
+        if (product->GetHWIntrinsicId() == NI_X86Base_X64_BigMul &&
+            product->GetSimdBaseType() == TYP_ULONG)
+        {
+            if ((node->gtFlags & GTF_HW_MULX) != 0)
+            {
+                return true;
+            }
+            // A scalar unsigned product between carry limbs can preserve CF/OF
+            // with MULX. Restrict new conversions to local operands: clearing
+            // containment must not turn an accepted zero constant into XOR.
+            if (product->Op(1)->OperIs(GT_LCL_VAR) && product->Op(2)->OperIs(GT_LCL_VAR) &&
+                // Runtime's AVX2 group includes BMI2 (the MULX requirement).
+                m_compiler->compOpportunisticallyDependsOn(InstructionSet_AVX2))
+            {
+                product->Op(1)->ClearContained();
+                product->Op(1)->ClearRegOptional();
+                product->Op(2)->ClearContained();
+                product->Op(2)->ClearRegOptional();
+                node->gtFlags |= GTF_HW_MULX;
+                return true;
+            }
+        }
+    }
+    if (node->OperIs(GT_STORE_LCL_VAR) && node->TypeIs(TYP_STRUCT) &&
+        node->gtGetOp1()->OperIs(GT_HWINTRINSIC) && (node->gtGetOp1()->gtFlags & GTF_HW_MULX) != 0)
+    {
+        // The multi-register product's stores/copies preserve the flags too.
+        GenTreeHWIntrinsic* product = node->gtGetOp1()->AsHWIntrinsic();
+        return product->GetHWIntrinsicId() == NI_X86Base_X64_BigMul &&
+               product->GetSimdBaseType() == TYP_ULONG;
+    }
     if (node->isContained())
     {
         return true;
@@ -16210,8 +16361,16 @@ bool Lowering::IsCarryFlagsCrossing(GenTree* node)
     {
         case GT_LEA:
             return true;
+        case GT_NOT:
+            // Integer NOT preserves CF and OF, unlike NEG and XOR.
+            return node->TypeIs(TYP_INT, TYP_LONG);
         case GT_IND:
             return node->TypeIs(TYP_INT, TYP_LONG, TYP_BYREF) && ((node->gtFlags & GTF_IND_VOLATILE) == 0);
+        case GT_STOREIND:
+            // Plain integer stores preserve CF/OF. Exclude GC stores (write
+            // barriers), volatile accesses and an uncontained zero operand.
+            return node->TypeIs(TYP_INT, TYP_LONG) && ((node->gtFlags & GTF_IND_VOLATILE) == 0) &&
+                   (!node->AsStoreInd()->Data()->IsIntegralConst(0) || node->AsStoreInd()->Data()->isContained());
         case GT_CNS_INT:
             return node->TypeIs(TYP_INT, TYP_LONG) && !node->IsIntegralConst(0);
         case GT_CAST:
@@ -16343,16 +16502,41 @@ void Lowering::LowerCarryChains()
             // Only nodes whose code cannot write flags may cross the flags edge; see IsCarryFlagsCrossing.
             GenTree* crossing = producer->gtNext;
             unsigned scan     = 64;
-            for (; crossing != nullptr && crossing != restore && scan != 0; crossing = crossing->gtNext, scan--)
+            for (; crossing != nullptr && crossing != restore && scan != 0; scan--)
             {
-                if (crossing == cc || crossing == cast || crossing == constant)
+                GenTree* next = crossing->gtNext;
+                if (crossing != cc && crossing != cast && crossing != constant && !IsCarryFlagsCrossing(crossing))
                 {
-                    continue;
+                    // Masked correction operands clobber CF if left between limbs.
+                    // Hoist only a closed invariant mask tree before the producer;
+                    // SideEffectSet checks definitions, memory and exception order.
+                    GenTree* hoistBefore = producer;
+                    unsigned rootBudget = 64;
+                    while (hoistBefore->OperConsumesFlags() && rootBudget != 0)
+                    {
+                        GenTree* previous = hoistBefore->gtPrev;
+                        for (; previous != nullptr && rootBudget != 0 && IsCarryFlagsCrossing(previous);
+                             previous = previous->gtPrev, rootBudget--)
+                        {
+                        }
+                        if (previous == nullptr || !previous->gtSetFlags())
+                        {
+                            break;
+                        }
+                        hoistBefore = previous;
+                        rootBudget--;
+                    }
+                    GenTree* moveStart = nullptr;
+                    if (!crossing->OperIs(GT_AND, GT_OR, GT_XOR) || crossing->gtSetFlags() ||
+                        hoistBefore->OperConsumesFlags() || rootBudget == 0 ||
+                        !IsCarryOperandAvailable(crossing, hoistBefore, &moveStart) || moveStart == nullptr)
+                    {
+                        break;
+                    }
+                    LIR::Range moved = BlockRange().Remove(moveStart, crossing);
+                    BlockRange().InsertBefore(hoistBefore, std::move(moved));
                 }
-                if (!IsCarryFlagsCrossing(crossing))
-                {
-                    break;
-                }
+                crossing = next;
             }
             if (crossing != restore)
             {
@@ -16778,9 +16962,11 @@ bool Lowering::IsCarryOperandAvailable(GenTree* operand, GenTree* producer, GenT
         }
     }
 
-    if (operand->OperIs(GT_IND))
+    if (operand->OperIs(GT_IND) ||
+        (operand->OperIs(GT_AND, GT_OR, GT_XOR, GT_NOT) && operand->TypeIs(TYP_INT, TYP_LONG) &&
+         !operand->gtSetFlags() && !operand->OperConsumesFlags()))
     {
-        // Move the load together with its address calculation. A closed range
+        // Move a load or pure mask expression together with its address calculation. A closed range
         // ensures that no intermediate value has a use left behind. Check all
         // crossed nodes for aliasing, exception ordering, and local definitions.
         bool               isClosed;
@@ -17003,11 +17189,54 @@ bool Lowering::TryLowerAddCarry(GenTreeOp* add)
         }
 #endif
         GenTree* operands[] = {(combine || negate) ? other->gtGetOp1() : other, combine ? other->gtGetOp2() : nullptr};
-        GenTree* moveStart[2] = {};
-        if (!IsCarryOperandAvailable(operands[0], producer, &moveStart[0]) ||
-            (combine && !IsCarryOperandAvailable(operands[1], producer, &moveStart[1])))
+        // Moving flag-writing operand expressions immediately before ADC/SBB
+        // would destroy its incoming carry. Hoist before the chain's root.
+        GenTree* availableAt = producer;
+        unsigned rootBudget = 64;
+        while (availableAt->OperConsumesFlags() && rootBudget != 0)
         {
-            continue;
+            GenTree* previous = availableAt->gtPrev;
+            for (; previous != nullptr && rootBudget != 0 && IsCarryFlagsCrossing(previous);
+                 previous = previous->gtPrev, rootBudget--)
+            {
+            }
+            if (previous == nullptr || !previous->gtSetFlags())
+            {
+                break;
+            }
+            availableAt = previous;
+            rootBudget--;
+        }
+        GenTree* moveStart[2] = {};
+        bool keepPosition = false;
+        if (availableAt->OperConsumesFlags() || rootBudget == 0 ||
+            !IsCarryOperandAvailable(operands[0], availableAt, &moveStart[0]) ||
+            (combine && !IsCarryOperandAvailable(operands[1], availableAt, &moveStart[1])))
+        {
+            // A preceding output store can alias a following input load. Keep
+            // the final ADC/SBB at its original position instead of moving the
+            // load across that store, provided every surviving node preserves
+            // flags. The nested ADD/SUB is removed when forming the full adder.
+            GenTree* crossing = producer->gtNext;
+            unsigned scan = 64;
+            for (; crossing != nullptr && crossing != add && scan != 0; crossing = crossing->gtNext, scan--)
+            {
+                if (crossing == carry || crossing == cast || crossing == store || crossing == value ||
+                    ((combine || negate) && crossing == other))
+                {
+                    continue;
+                }
+                if (!IsCarryFlagsCrossing(crossing))
+                {
+                    break;
+                }
+            }
+            if (crossing != add)
+            {
+                continue;
+            }
+            moveStart[0] = moveStart[1] = nullptr;
+            keepPosition = true;
         }
 
         // Inserting ADC/SBB changes flags. No later consumer may observe the
@@ -17034,14 +17263,14 @@ bool Lowering::TryLowerAddCarry(GenTreeOp* add)
         if (!combine)
         {
             operands[1] = m_compiler->gtNewZeroConNode(add->TypeGet());
-            BlockRange().InsertBefore(producer, operands[1]);
+            BlockRange().InsertBefore(availableAt, operands[1]);
         }
         for (unsigned i = 0; i < 2; i++)
         {
             if (moveStart[i] != nullptr)
             {
                 LIR::Range range = BlockRange().Remove(moveStart[i], operands[i]);
-                BlockRange().InsertBefore(producer, std::move(range));
+                BlockRange().InsertBefore(availableAt, std::move(range));
             }
             operands[i]->ClearContained();
             operands[i]->ClearRegOptional();
@@ -17060,8 +17289,11 @@ bool Lowering::TryLowerAddCarry(GenTreeOp* add)
         add->ChangeOper(add->OperIs(GT_SUB) ? GT_SUB_BORROW : (borrow ? GT_ADD_BORROW : GT_ADD_CARRY));
         add->gtOp1 = operands[0];
         add->gtOp2 = operands[1];
-        BlockRange().Remove(add);
-        BlockRange().InsertAfter(producer, add);
+        if (!keepPosition)
+        {
+            BlockRange().Remove(add);
+            BlockRange().InsertAfter(producer, add);
+        }
         BlockRange().Remove(carry);
         if (cast != nullptr)
         {
