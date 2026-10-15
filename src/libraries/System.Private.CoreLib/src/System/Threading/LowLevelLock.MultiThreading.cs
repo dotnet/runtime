@@ -145,7 +145,9 @@ namespace System.Threading
         {
             VerifyIsNotLocked();
 
+#if !FEATURE_MULTITHREADING || FEATURE_WASM_MANAGED_THREADS
             RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
+#endif
 
             // Atomically either register this thread as a waiter or acquire the lock.
             uint collisions = 0;

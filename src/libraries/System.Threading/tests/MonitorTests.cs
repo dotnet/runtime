@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -10,6 +11,100 @@ namespace System.Threading.Tests
     public static class MonitorTests
     {
         private const int FailTimeoutMilliseconds = 30000;
+
+        [Theory]
+        [InlineData(1, false, false)]
+        [InlineData(64, false, false)]
+        [InlineData(65, false, false)]
+        [InlineData(65, true, false)]
+        [InlineData(64, false, true)]
+        [InlineData(65, true, true)]
+        public static void HeaderStateSurvivesRecursionAndHashCode(int depth, bool hashBefore, bool finalizable)
+        {
+            object obj = finalizable ? new FinalizableLockObject() : new object();
+            if (finalizable)
+            {
+                GC.SuppressFinalize(obj);
+            }
+
+            int hashCode = hashBefore ? RuntimeHelpers.GetHashCode(obj) : 0;
+            int entered = 0;
+            try
+            {
+                while (entered < depth)
+                {
+                    Monitor.Enter(obj);
+                    entered++;
+                    Assert.True(Monitor.IsEntered(obj));
+                }
+
+                if (!hashBefore)
+                {
+                    hashCode = RuntimeHelpers.GetHashCode(obj);
+                }
+
+                GC.Collect();
+                Assert.Equal(hashCode, RuntimeHelpers.GetHashCode(obj));
+                Assert.True(Monitor.IsEntered(obj));
+            }
+            finally
+            {
+                while (entered != 0)
+                {
+                    Monitor.Exit(obj);
+                    entered--;
+                    Assert.Equal(entered != 0, Monitor.IsEntered(obj));
+                }
+            }
+        }
+
+        private sealed class FinalizableLockObject
+        {
+            ~FinalizableLockObject() => GC.KeepAlive(this);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void PulseRequiresOwnershipWithoutWaiters(bool pulseAll)
+        {
+            object obj = new();
+            Assert.Throws<SynchronizationLockException>(Pulse);
+            lock (obj)
+            {
+                Pulse();
+            }
+            Assert.Throws<SynchronizationLockException>(Pulse);
+
+            void Pulse()
+            {
+                if (pulseAll)
+                {
+                    Monitor.PulseAll(obj);
+                }
+                else
+                {
+                    Monitor.Pulse(obj);
+                }
+            }
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR), nameof(PlatformDetection.IsNotMultithreadingSupported))]
+        [InlineData(-2)]
+        [InlineData(-1)]
+        [InlineData(0)]
+        [InlineData(1)]
+        public static void SingleThreadedWaitRemainsUnsupported(int millisecondsTimeout)
+        {
+            object obj = new();
+            Assert.Throws<ArgumentNullException>(() => Monitor.Wait(null, millisecondsTimeout));
+            Assert.Throws<PlatformNotSupportedException>(() => Monitor.Wait(obj, millisecondsTimeout));
+            lock (obj)
+            {
+                Assert.Throws<PlatformNotSupportedException>(() => Monitor.Wait(obj, millisecondsTimeout));
+                Assert.True(Monitor.IsEntered(obj));
+            }
+        }
 
         // Attempts a single recursive acquisition/release cycle of a newly-created lock.
         [Fact]
