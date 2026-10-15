@@ -7873,6 +7873,54 @@ bool emitter::IsRedundantMov(
 #endif // TARGET_64BIT
     }
 
+#ifdef TARGET_AMD64
+    // LSRA may keep a MULX row multiplier in a home register and insert the
+    // same RDX copy at every lane. MULX and the carry arithmetic preserve RDX.
+    // Look back only through known integer instructions in a safe peephole
+    // region; any write to either register (including a partial write) ends it.
+    if ((ins == INS_mov) && (fmt == IF_RWR_RRD) && (size == EA_8BYTE) && (dst == REG_RDX) &&
+        genIsValidIntReg(src) && emitCanPeepholeLastIns())
+    {
+        bool sawMulx = false;
+        bool redundant = false;
+        emitPeepholeIterateLastInstrs([&](instrDesc* id) {
+            if ((id->idIns() == INS_mov) && (id->idInsFmt() == IF_RWR_RRD) &&
+                (id->idOpSize() == EA_8BYTE) && (id->idReg1() == dst) && (id->idReg2() == src))
+            {
+                redundant = sawMulx;
+                return PEEPHOLE_ABORT;
+            }
+            switch (id->idIns())
+            {
+                case INS_mulx:
+                    sawMulx = true;
+                    break;
+                case INS_mov:
+                case INS_add:
+                case INS_sub:
+                case INS_adc:
+                case INS_sbb:
+                case INS_adcx:
+                case INS_adox:
+                case INS_test:
+                    break;
+                default:
+                    return PEEPHOLE_ABORT;
+            }
+            if (emitIsInstrWritingToReg(id, dst) || emitIsInstrWritingToReg(id, src))
+            {
+                return PEEPHOLE_ABORT;
+            }
+            return PEEPHOLE_CONTINUE;
+        });
+        if (redundant)
+        {
+            JITDUMP("\n -- suppressing repeated MULX multiplier copy to RDX.\n");
+            return true;
+        }
+    }
+#endif // TARGET_AMD64
+
     // TODO-XArch-CQ: Certain instructions, such as movaps vs movups, are equivalent in
     // functionality even if their actual identifier differs and we should optimize these
 

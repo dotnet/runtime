@@ -182,6 +182,9 @@ private:
     void     LowerMultiplyCarryLoops();
     bool     TryLowerMultiplyCarryLoop();
     bool     TryLowerMultiplyCarryChain();
+    bool     TryLowerMultiplyCarryRows();
+    void     LowerMaskSelects();
+    bool     TryLowerMaskSelect();
     void     TryLowerMultiplyCarryBackedge();
     void     LowerMultiplyCarryMultiplier();
     void     LowerMultiplyCarryLoads();
@@ -192,6 +195,7 @@ private:
     void TryLowerCarryLoop(
         GenTree* sum, GenTree* restore, GenTree* cc, GenTree* cast, GenTree* store, unsigned carryLocal);
     bool IsCarryOperandAvailable(GenTree* operand, GenTree* producer, GenTree** moveStart);
+    bool IsCarryFlagsCrossing(GenTree* node);
 #endif
     GenTree* LowerJTrue(GenTreeOp* jtrue);
 #ifdef TARGET_RISCV64
@@ -694,8 +698,9 @@ private:
     bool        m_blockMayHaveSetCC    = true;
     bool        m_hasAddCarry          = false;
     BasicBlock* m_lastSubtractionBlock = nullptr;
-    unsigned    m_carryLocalScanBudget = 65536; // Node/block budget for current-IR dead-on-exit proofs.
-    unsigned    m_carryUseScanBudget   = 4096;  // Extra node visits beyond the bounded local carry-use scans.
+    unsigned    m_carryLocalScanBudget = 262144; // Node/block budget for current-IR dead-on-exit proofs.
+    unsigned    m_carryUseScanBudget   = 65536;  // Extra node visits beyond the bounded local carry-use scans.
+    unsigned    m_maskSelectScanBudget = 65536; // Node visits for the block rescans of LowerMaskSelects.
 #endif
 
 #ifdef FEATURE_FIXED_OUT_ARGS
