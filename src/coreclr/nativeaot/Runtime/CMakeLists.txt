@@ -200,6 +200,7 @@ else()
     ${RUNTIME_DIR}/unix/CLREventBase.cpp
     unix/PalUnix.cpp
     unix/PalCreateDump.cpp
+    unix/cgroupcpu.cpp
     ${GC_DIR}/unix/events.cpp
   )
 
@@ -219,7 +220,6 @@ else()
   endif()
 
   list(APPEND FULL_RUNTIME_SOURCES
-    unix/cgroupcpu.cpp
     unix/HardwareExceptions.cpp
     unix/NativeContext.cpp
     unix/UnixSignals.cpp
