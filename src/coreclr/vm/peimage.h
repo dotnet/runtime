@@ -1,11 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// --------------------------------------------------------------------------------
-// PEImage.h
-//
-
-// --------------------------------------------------------------------------------
-
 
 #ifndef PEIMAGE_H_
 #define PEIMAGE_H_
@@ -110,7 +104,7 @@ public:
     BOOL Equals(PEImage* pImage);
 
     ULONG AddRef();
-    ULONG Release();
+    ULONG Release() noexcept;
 
 #ifndef DACCESS_COMPILE
     static PTR_PEImage CreateFromByteArray(const BYTE* array, COUNT_T size);
@@ -167,7 +161,6 @@ public:
     void GetPEKindAndMachine(DWORD* pdwKind, DWORD* pdwMachine);
 
     BOOL IsILOnly();
-    BOOL IsReferenceAssembly();
     BOOL IsComponentAssembly();
 
     PTR_CVOID GetNativeManifestMetadata(COUNT_T* pSize = NULL);
@@ -336,7 +329,7 @@ struct PEImageHolderTraits final
 {
     using Type = PEImage*;
     static constexpr Type Default() { return NULL; }
-    static void Free(Type i)
+    static void Free(Type i) noexcept
     {
         WRAPPER_NO_CONTRACT;
         if (i != NULL)

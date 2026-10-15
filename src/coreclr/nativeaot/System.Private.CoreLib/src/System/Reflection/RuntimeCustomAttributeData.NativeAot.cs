@@ -7,10 +7,13 @@ using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.InteropServices;
 
+using System.Reflection.Runtime.EventInfos;
 using System.Reflection.Runtime.FieldInfos;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.MethodInfos;
 using System.Reflection.Runtime.MethodInfos.NativeFormat;
+using System.Reflection.Runtime.Modules;
+using System.Reflection.Runtime.PropertyInfos;
 using System.Reflection.Runtime.TypeInfos;
 using System.Reflection.Runtime.TypeInfos.NativeFormat;
 
@@ -18,11 +21,45 @@ using Internal.Metadata.NativeFormat;
 
 namespace System.Reflection
 {
+    internal readonly struct QCustomAttributeList(MetadataReader? reader, CustomAttributeHandleCollection handles)
+    {
+        public MetadataReader? Reader { get; } = reader;
+        public CustomAttributeHandleCollection Handles { get; } = handles;
+
+        public QCustomAttributeList(RuntimeType target)
+            : this(target.GetMetadataReader(), target.GetCustomAttributeHandles()) { }
+
+        public QCustomAttributeList(RuntimeFieldInfo target)
+            : this(target.GetMetadataReader(), target.GetCustomAttributeHandles()) { }
+
+        public QCustomAttributeList(RuntimeMethodInfo target)
+            : this(target.GetMetadataReader(), target.GetCustomAttributeHandles()) { }
+
+        public QCustomAttributeList(RuntimeConstructorInfo target)
+            : this(target.GetMetadataReader(), target.GetCustomAttributeHandles()) { }
+
+        public QCustomAttributeList(RuntimeEventInfo target)
+            : this(target.GetMetadataReader(), target.GetCustomAttributeHandles()) { }
+
+        public QCustomAttributeList(RuntimePropertyInfo target)
+            : this(target.GetMetadataReader(), target.GetCustomAttributeHandles()) { }
+
+        public QCustomAttributeList(RuntimeModule target)
+            : this(target.GetMetadataReader(), target.GetCustomAttributeHandles()) { }
+
+        public QCustomAttributeList(RuntimeAssembly target)
+            : this(target.GetMetadataReader(), target.GetCustomAttributeHandles()) { }
+
+        public QCustomAttributeList(RuntimeParameterInfo target)
+            : this(target.GetMetadataReader(), target.GetCustomAttributeHandles()) { }
+    }
+
     internal sealed partial class RuntimeCustomAttributeData : CustomAttributeData
     {
-        internal static IList<CustomAttributeData> GetCustomAttributes(
-            MetadataReader? reader, CustomAttributeHandleCollection customAttributeHandles)
+        private static IList<CustomAttributeData> GetCustomAttributes(QCustomAttributeList attributeList)
         {
+            MetadataReader? reader = attributeList.Reader;
+            CustomAttributeHandleCollection customAttributeHandles = attributeList.Handles;
             if (reader is null || customAttributeHandles.Count == 0)
                 return Array.Empty<CustomAttributeData>();
 
@@ -145,6 +182,22 @@ namespace System.Reflection
 
     internal sealed partial class CustomAttributeEncodedArgument
     {
+        private static CustomAttributeEncodedArgument ParseCustomAttributeValue(
+            ref CustomAttributeDataParser parser, CustomAttributeType type, MetadataReader _)
+        {
+            return parser.ParseArgument(type);
+        }
+
+        private static CustomAttributeType ParseNamedArgumentTarget(
+            ref CustomAttributeDataParser parser, MetadataReader module, out string? argumentName)
+        {
+            NamedArgument namedArgument = parser.GetNamedArgument();
+            RuntimeType argumentType = (RuntimeType)namedArgument.Type.Resolve(module, default).ToType();
+            CustomAttributeType type = new CustomAttributeType(argumentType);
+            argumentName = namedArgument.Name.GetString(module);
+            return type;
+        }
+
         internal static object? ParseValue(MetadataReader reader, Handle value, RuntimeType argumentType)
         {
             try
@@ -162,10 +215,14 @@ namespace System.Reflection
         /// <summary>
         /// Used to parse NativeFormat custom attribute data.
         /// </summary>
-        private readonly struct CustomAttributeDataParser
+        private struct CustomAttributeDataParser
         {
             private readonly CustomAttribute _attribute;
             private readonly MetadataReader _reader;
+            private HandleCollection.Enumerator _fixedArguments;
+            private NamedArgumentHandleCollection.Enumerator _namedArguments;
+            private Handle _namedArgumentValue;
+            private bool _parsingNamedArguments;
 
             public CustomAttributeDataParser(CustomAttribute attribute, MetadataReader reader)
             {
@@ -173,9 +230,43 @@ namespace System.Reflection
                 _reader = reader;
             }
 
-            public CustomAttribute Attribute => _attribute;
+            public bool ValidateProlog()
+            {
+                if (_reader is null)
+                    return false;
 
-            public bool ValidateProlog() => _reader is not null;
+                _fixedArguments = _attribute.FixedArguments.GetEnumerator();
+                return true;
+            }
+
+            public int GetNamedArgumentCount() => _attribute.NamedArguments.Count;
+
+            public NamedArgument GetNamedArgument()
+            {
+                if (!_parsingNamedArguments)
+                {
+                    _namedArguments = _attribute.NamedArguments.GetEnumerator();
+                    _parsingNamedArguments = true;
+                }
+
+                if (!_namedArguments.MoveNext())
+                    throw new BadImageFormatException();
+
+                NamedArgument namedArgument = _namedArguments.Current.GetNamedArgument(_reader);
+                _namedArgumentValue = namedArgument.Value;
+                return namedArgument;
+            }
+
+            public CustomAttributeEncodedArgument ParseArgument(CustomAttributeType type)
+            {
+                if (_parsingNamedArguments)
+                    return ParseValue(_namedArgumentValue, type);
+
+                if (!_fixedArguments.MoveNext())
+                    throw new BadImageFormatException();
+
+                return ParseValue(_fixedArguments.Current, type);
+            }
 
             public CustomAttributeEncodedArgument ParseValue(Handle value, CustomAttributeType type)
             {
@@ -506,16 +597,16 @@ namespace System.Reflection
     internal static partial class RuntimeCustomAttribute
     {
         private static bool IsCustomAttributeDefined(
-            MetadataReader? reader,
-            CustomAttributeHandleCollection customAttributeHandles,
+            QCustomAttributeList customAttributes,
             RuntimeType attributeFilterType,
             bool mustBeInheritable = false)
         {
+            MetadataReader? reader = customAttributes.Reader;
             if (reader is null)
                 return false;
 
             ListBuilder<object> derivedAttributes = default;
-            foreach (CustomAttributeHandle customAttributeHandle in customAttributeHandles)
+            foreach (CustomAttributeHandle customAttributeHandle in customAttributes.Handles)
             {
                 CustomAttribute customAttribute = customAttributeHandle.GetCustomAttribute(reader);
                 if (FilterCustomAttributeRecord(
@@ -558,16 +649,16 @@ namespace System.Reflection
                             "attribute instantiation which is present in the code linker has analyzed.")]
         private static void AddCustomAttributes(
             ref ListBuilder<object> attributes,
-            MetadataReader? reader,
-            CustomAttributeHandleCollection customAttributeHandles,
+            QCustomAttributeList customAttributes,
             RuntimeType? attributeFilterType,
             bool mustBeInheritable,
             ListBuilder<object> derivedAttributes)
         {
+            MetadataReader? reader = customAttributes.Reader;
             if (reader is null)
                 return;
 
-            foreach (CustomAttributeHandle customAttributeHandle in customAttributeHandles)
+            foreach (CustomAttributeHandle customAttributeHandle in customAttributes.Handles)
             {
                 CustomAttribute customAttribute = customAttributeHandle.GetCustomAttribute(reader);
 

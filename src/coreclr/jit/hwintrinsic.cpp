@@ -1228,8 +1228,12 @@ NamedIntrinsic HWIntrinsicInfo::resolveId(Compiler*              comp,
 {
     assert(isa != InstructionSet_ILLEGAL);
 
-    bool     isHWIntrinsicEnabled      = (JitConfig.EnableHWIntrinsic() != 0);
-    bool     isIsaSupported            = isHWIntrinsicEnabled && comp->compSupportsHWIntrinsic(isa);
+    bool preserveNegativeDependency = (id == NI_Vector_MaxNative) || (id == NI_Vector_MinNative) ||
+                                      (id == NI_Vector_ShuffleNative) || (id == NI_Vector_ShuffleNativeFallback);
+
+    bool isHWIntrinsicEnabled = (JitConfig.EnableHWIntrinsic() != 0);
+    bool isIsaSupported       = isHWIntrinsicEnabled && comp->compSupportsHWIntrinsic(isa, preserveNegativeDependency);
+
     bool     isHardwareAcceleratedProp = (id == NI_IsHardwareAccelerated);
     bool     isSupportedProp           = (id == NI_IsSupported);
     uint32_t vectorByteLength          = 0;
@@ -1837,13 +1841,14 @@ GenTree* Compiler::addRangeCheckForHWIntrinsic(GenTree* immOp, int immLowerBound
 // compSupportsHWIntrinsic: check whether a given instruction is enabled via configuration
 //
 // Arguments:
-//    isa - Instruction set
+//    isa                        - Instruction set
+//    preserveNegativeDependency - Whether to retain an unsupported ISA prerequisite in CoreLib
 //
 // Return Value:
 //    true iff the given instruction set is enabled via configuration (environment variables, etc.).
-bool Compiler::compSupportsHWIntrinsic(CORINFO_InstructionSet isa)
+bool Compiler::compSupportsHWIntrinsic(CORINFO_InstructionSet isa, bool preserveNegativeDependency)
 {
-    return compHWIntrinsicDependsOn(isa);
+    return compHWIntrinsicDependsOn(isa, preserveNegativeDependency);
 }
 
 //------------------------------------------------------------------------
@@ -2897,7 +2902,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 //    entryPoint      -- The entry point information required for R2R scenarios
 //    simdBaseJitType -- generic argument of the intrinsic.
 //    retType         -- return type of the intrinsic.
-//    mustExpand      -- true if the intrinsic must return a GenTree*; otherwise, false
+//    simdSize        -- size of the SIMD value, in bytes.
 //
 // Return Value:
 //    the expanded intrinsic.
@@ -2916,8 +2921,7 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
                                      CORINFO_SIG_INFO* sig R2RARG(CORINFO_CONST_LOOKUP* entryPoint),
                                      var_types             simdBaseType,
                                      var_types             retType,
-                                     unsigned              simdSize,
-                                     bool                  mustExpand)
+                                     unsigned              simdSize)
 {
     assert(HWIntrinsicInfo::lookupIsa(intrinsic) == InstructionSet_Vector);
 
@@ -2931,10 +2935,18 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
             switch (intrinsic)
             {
                 case NI_Vector_Abs:
+                {
+                    potentiallyNotSupported = varTypeIsSigned(simdBaseType);
+                    break;
+                }
+
                 case NI_Vector_IsNegative:
                 case NI_Vector_IsPositive:
                 {
-                    potentiallyNotSupported = varTypeIsSigned(simdBaseType);
+                    // The 256-bit signed integer comparisons used for sign checks require AVX2.
+                    // Floating-point sign checks reinterpret the lanes as signed integers and use
+                    // the same comparison path.
+                    potentiallyNotSupported = !varTypeIsUnsigned(simdBaseType);
                     break;
                 }
 
@@ -3019,7 +3031,9 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
             }
         }
 
-        if (potentiallyNotSupported && !compOpportunisticallyDependsOn(InstructionSet_AVX2))
+        bool isShuffleNative = (intrinsic == NI_Vector_ShuffleNative) || (intrinsic == NI_Vector_ShuffleNativeFallback);
+
+        if (potentiallyNotSupported && !compOpportunisticallyDependsOn(InstructionSet_AVX2, isShuffleNative))
         {
             return nullptr;
         }
@@ -3613,11 +3627,6 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
             assert(sig->numArgs == 1);
             assert(simdBaseType == TYP_FLOAT);
 
-            if (BlockNonDeterministicIntrinsics(mustExpand))
-            {
-                break;
-            }
-
             op1     = impSIMDPopStack();
             retNode = gtNewSimdCvtNativeNode(retType, op1, TYP_INT, simdBaseType, simdSize);
             break;
@@ -3650,13 +3659,8 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
             assert(sig->numArgs == 1);
             assert(simdBaseType == TYP_DOUBLE);
 
-            if (BlockNonDeterministicIntrinsics(mustExpand))
-            {
-                break;
-            }
-
 #if defined(TARGET_XARCH)
-            if (!compOpportunisticallyDependsOn(InstructionSet_AVX512))
+            if (!compOpportunisticallyDependsOn(InstructionSet_AVX512, true))
             {
                 break;
             }
@@ -3749,13 +3753,8 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
             assert(sig->numArgs == 1);
             assert(simdBaseType == TYP_FLOAT);
 
-            if (BlockNonDeterministicIntrinsics(mustExpand))
-            {
-                break;
-            }
-
 #if defined(TARGET_XARCH)
-            if (!compOpportunisticallyDependsOn(InstructionSet_AVX512))
+            if (!compOpportunisticallyDependsOn(InstructionSet_AVX512, true))
             {
                 break;
             }
@@ -3793,13 +3792,8 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
             assert(sig->numArgs == 1);
             assert(simdBaseType == TYP_DOUBLE);
 
-            if (BlockNonDeterministicIntrinsics(mustExpand))
-            {
-                break;
-            }
-
 #if defined(TARGET_XARCH)
-            if (!compOpportunisticallyDependsOn(InstructionSet_AVX512))
+            if (!compOpportunisticallyDependsOn(InstructionSet_AVX512, true))
             {
                 break;
             }
@@ -3824,9 +3818,6 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector_CreateAlternatingSequence:
         {
             assert(sig->numArgs == 2);
-
-            impSpillSideEffect(true, stackState.esStackDepth -
-                                         2 DEBUGARG("Spilling op1 side effects for vector CreateAlternatingSequence"));
 
             op2 = impPopStack().val;
             op1 = impPopStack().val;
@@ -3867,9 +3858,6 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
                 break;
             }
 
-            impSpillSideEffect(true, stackState.esStackDepth -
-                                         2 DEBUGARG("Spilling op1 side effects for vector CreateGeometricSequence"));
-
             op2 = impPopStack().val;
             op1 = impPopStack().val;
 
@@ -3906,9 +3894,6 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
                 break;
             }
 #endif
-
-            impSpillSideEffect(true, stackState.esStackDepth -
-                                         2 DEBUGARG("Spilling op1 side effects for vector CreateSequence"));
 
             op2 = impPopStack().val;
             op1 = impPopStack().val;
@@ -4229,8 +4214,7 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
 
             if (varTypeIsFloating(simdBaseType))
             {
-                // The code for handling floating-point is decently complex but also expected
-                // to be rare, so we fallback to the managed implementation, which is accelerated
+                // Use the managed implementation for floating-point classification.
                 break;
             }
 
@@ -4301,8 +4285,7 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
 
             if (varTypeIsFloating(simdBaseType))
             {
-                // The code for handling floating-point is decently complex but also expected
-                // to be rare, so we fallback to the managed implementation, which is accelerated
+                // Use the managed implementation for floating-point classification.
                 break;
             }
 
@@ -4570,11 +4553,6 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 3);
 
-            if (BlockNonDeterministicIntrinsics(mustExpand))
-            {
-                break;
-            }
-
 #if defined(TARGET_ARM64)
             if (varTypeIsFloating(simdBaseType))
             {
@@ -4595,7 +4573,7 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
 #if defined(TARGET_XARCH)
             if (isFmaSupported)
             {
-                isFmaSupported = compExactlyDependsOn(InstructionSet_AVX2);
+                isFmaSupported = compExactlyDependsOn(InstructionSet_AVX2, true);
             }
 #elif defined(TARGET_WASM)
             isFmaSupported = false;
@@ -4896,20 +4874,7 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert((sig->numArgs == 2) || (sig->numArgs == 3));
 
-            bool isShuffleNative    = (intrinsic != NI_Vector_Shuffle);
-            bool isNonDeterministic = isShuffleNative;
-
-#if defined(TARGET_ARM64) || defined(TARGET_WASM)
-            if (isNonDeterministic)
-            {
-                isNonDeterministic = genTypeSize(simdBaseType) > 1;
-            }
-#endif
-
-            if (isNonDeterministic && BlockNonDeterministicIntrinsics(mustExpand))
-            {
-                break;
-            }
+            bool isShuffleNative = (intrinsic != NI_Vector_Shuffle);
 
             GenTree* indices = impStackTop(0).val;
 
@@ -4999,7 +4964,7 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
 
             op1 = impSIMDPopStack();
 
-            retNode = gtNewSimdStoreAlignedNode(op2, op1, simdBaseType, simdSize);
+            retNode = gtNewSimdStoreAlignedNode(op2, op1, simdBaseType, simdSize, /* reverseOps */ true);
             break;
         }
 
@@ -5030,7 +4995,7 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
 
             op1 = impSIMDPopStack();
 
-            retNode = gtNewSimdStoreNonTemporalNode(op2, op1, simdBaseType, simdSize);
+            retNode = gtNewSimdStoreNonTemporalNode(op2, op1, simdBaseType, simdSize, /* reverseOps */ true);
             break;
         }
 
@@ -5070,7 +5035,7 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
 
             op1 = impSIMDPopStack();
 
-            retNode = gtNewSimdStoreNode(op2, op1, simdBaseType, simdSize);
+            retNode = gtNewSimdStoreNode(op2, op1, simdBaseType, simdSize, /* reverseOps */ true);
             break;
         }
 
@@ -5639,8 +5604,17 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
                 {
                     break;
                 }
-                impSpillSideEffect(true, stackState.esStackDepth -
-                                             2 DEBUGARG("Spilling op1 side effects for vector integer division"));
+
+                // These paths in gtNewSimdBinOpNode consume each operand once in HIR.
+                bool isDirectDivision = varTypeIsInt(simdBaseType) &&
+                                        (((simdSize == 16) && compOpportunisticallyDependsOn(InstructionSet_AVX)) ||
+                                         ((simdSize == 32) && compOpportunisticallyDependsOn(InstructionSet_AVX512)));
+
+                if (!isDirectDivision)
+                {
+                    impSpillSideEffect(true, stackState.esStackDepth -
+                                                 2 DEBUGARG("Spilling op1 side effects for vector integer division"));
+                }
 #else
                 // We can't trivially handle division for integral types using SIMD
                 break;
@@ -5794,11 +5768,6 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
     {
         assert(sig->numArgs == 2);
         assert(retNode == nullptr);
-
-        if (isNative && BlockNonDeterministicIntrinsics(mustExpand))
-        {
-            return nullptr;
-        }
 
         op2 = impSIMDPopStack();
         op1 = impSIMDPopStack();

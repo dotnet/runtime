@@ -600,7 +600,7 @@ BOOL CLRConfig::IsConfigOptionSpecified(LPCWSTR name)
 // Deallocation function for code:CLRConfig::FreeConfigString
 //
 // static
-void CLRConfig::FreeConfigString(_In_z_ LPWSTR str)
+void CLRConfig::FreeConfigString(_In_z_ LPWSTR str) noexcept
 {
     LIMITED_METHOD_CONTRACT;
 

@@ -78,8 +78,10 @@ class Generics
         TestVariantDispatchUnconstructedTypes.Run();
         TestMDArrayAddressMethod.Run();
         TestNativeLayoutGeneration.Run();
+        TestInterfaceDispatchTemplateDependencies.Run();
         TestByRefLikeVTables.Run();
         TestFunctionPointerLoading.Run();
+        TestTemplateArrayLayout.Run();
 
         return 100;
     }
@@ -766,6 +768,43 @@ class Generics
             }
         }
 
+        interface IHierarchy
+        {
+            Type GetBaseArgument();
+            Type GetDerivedArgument();
+        }
+
+        struct Value<T> { }
+
+        class GenericBase<T>
+        {
+            public virtual Type GetBaseArgument() => typeof(T);
+        }
+
+        class Middle<T, U> : GenericBase<U>, IHierarchy
+        {
+            public virtual Type GetDerivedArgument() => typeof(T);
+        }
+
+        class ReferenceDerived<T> : Middle<T, string> { }
+        class ValueDerived<T> : Middle<T, int> { }
+        class NestedValueDerived<T> : Middle<T, Value<T>> { }
+
+        class EmptyDictionaryBase<T> : IHierarchy
+        {
+            public Type GetBaseArgument() => typeof(int);
+            public virtual Type GetDerivedArgument() => typeof(int);
+        }
+
+        class EmptyDictionaryDerived<T> : EmptyDictionaryBase<T>
+        {
+            public override Type GetDerivedArgument() => typeof(T);
+        }
+
+        class ReusedDictionaryDerived<T> : EmptyDictionaryDerived<T> { }
+
+        private static Type s_argument = typeof(TestSlotsInHierarchy);
+
         public static void Run()
         {
             var derived = new Derived<string>();
@@ -776,6 +815,24 @@ class Generics
 
             if (derived.Cast("Hello") != "Hello")
                 throw new Exception();
+
+            CheckHierarchy(new ReferenceDerived<object>(), typeof(object), typeof(string));
+            CheckHierarchy(new ValueDerived<object>(), typeof(object), typeof(int));
+            CheckHierarchy(new NestedValueDerived<object>(), typeof(object), typeof(Value<object>));
+            CheckHierarchy(new EmptyDictionaryDerived<object>(), typeof(object), typeof(int));
+            CheckHierarchy(new ReusedDictionaryDerived<object>(), typeof(object), typeof(int));
+
+            CheckHierarchy((IHierarchy)Activator.CreateInstance(typeof(ReferenceDerived<>).MakeGenericType(s_argument)), s_argument, typeof(string));
+            CheckHierarchy((IHierarchy)Activator.CreateInstance(typeof(ValueDerived<>).MakeGenericType(s_argument)), s_argument, typeof(int));
+            CheckHierarchy((IHierarchy)Activator.CreateInstance(typeof(NestedValueDerived<>).MakeGenericType(s_argument)), s_argument, typeof(Value<>).MakeGenericType(s_argument));
+            CheckHierarchy((IHierarchy)Activator.CreateInstance(typeof(EmptyDictionaryDerived<>).MakeGenericType(s_argument)), s_argument, typeof(int));
+            CheckHierarchy((IHierarchy)Activator.CreateInstance(typeof(ReusedDictionaryDerived<>).MakeGenericType(s_argument)), s_argument, typeof(int));
+        }
+
+        private static void CheckHierarchy(IHierarchy value, Type derivedArgument, Type baseArgument)
+        {
+            if (value.GetBaseArgument() != baseArgument || value.GetDerivedArgument() != derivedArgument)
+                throw new Exception("Unexpected hierarchy dictionary");
         }
     }
 
@@ -2426,6 +2483,49 @@ class Generics
         }
     }
 
+    class TestInterfaceDispatchTemplateDependencies
+    {
+        static Type s_atomType = typeof(Atom);
+
+        class Atom { }
+        class Bar<T> { }
+
+        interface IFoo<in T>
+        {
+            int Method();
+        }
+
+        class Foo : IFoo<object>
+        {
+            public int Method() => 42;
+        }
+
+        interface ITest
+        {
+            int Method();
+        }
+
+        class Gen<T> : ITest
+        {
+            public int Method()
+            {
+                // Use variance so only the interface dispatch cell requires the Bar<T> template.
+                IFoo<Bar<T>> foo = GetFoo();
+                return foo.Method();
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static IFoo<object> GetFoo() => new Foo();
+
+        public static void Run()
+        {
+            var instance = (ITest)Activator.CreateInstance(typeof(Gen<>).MakeGenericType(s_atomType));
+            if (instance.Method() != 42)
+                throw new Exception("Unexpected interface dispatch result.");
+        }
+    }
+
     class TestInterfaceVTableTracking
     {
         class Gen<T> { }
@@ -2486,11 +2586,25 @@ class Generics
     {
         struct Mine<T> { }
 
+        struct BranchMine<T> { }
+
         [MethodImpl(MethodImplOptions.NoInlining)]
         static bool CallWithNullable<T>(object m)
         {
             return m is T;
         }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool CallWithNullableBranch<T>(object m)
+        {
+            if (m is T)
+                return Matched();
+
+            return false;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool Matched() => true;
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         static bool CallWithReferenceType<T>(object m)
@@ -2504,6 +2618,15 @@ class Generics
                 throw new Exception();
 
             if (CallWithNullable<Nullable<Mine<object>>>(new Mine<string>()))
+                throw new Exception();
+
+            if (!CallWithNullableBranch<Nullable<BranchMine<object>>>(new BranchMine<object>()))
+                throw new Exception();
+
+            if (CallWithNullableBranch<Nullable<BranchMine<object>>>(new BranchMine<string>()))
+                throw new Exception();
+
+            if (CallWithNullableBranch<Nullable<BranchMine<object>>>(null))
                 throw new Exception();
 
             if (!CallWithReferenceType<object>(new Mine<object>()))
@@ -2653,6 +2776,128 @@ class Generics
                 if (!t.TypeHandle.Equals(typeof(delegate*<AlsoAlsoGen<Atom>, MyGen<Atom>>).TypeHandle))
                     throw new Exception();
             }
+        }
+    }
+
+    class TestTemplateArrayLayout
+    {
+        class Payload
+        {
+            public Payload() { }
+
+            public override string ToString() => "payload";
+        }
+
+        struct NoReferences<T>
+        {
+            public long Number;
+            public byte Tail;
+            public override string ToString() => $"{Number}:{Tail}";
+        }
+
+        struct AllReferences<T>
+        {
+            public T First;
+            public object Second;
+            public override string ToString() => $"{First}:{Second}";
+        }
+
+        struct MixedReferences<T>
+        {
+            public byte Head;
+            public T First;
+            public long Number;
+            public object Second;
+            public byte Tail;
+            public override string ToString() => $"{Head}:{First}:{Number}:{Second}:{Tail}";
+        }
+
+        interface ITest
+        {
+            void Run();
+        }
+
+        class Test<T> : ITest where T : new()
+        {
+            public void Run()
+            {
+                Check<T>(() => new T(), new T().ToString());
+                Check<NoReferences<T>>(
+                    () => new NoReferences<T> { Number = 123456789, Tail = 42 },
+                    "123456789:42");
+                Check<AllReferences<T>>(
+                    () => new AllReferences<T> { First = new T(), Second = new string('a', 23) },
+                    $"{new T()}:{new string('a', 23)}");
+                Check<MixedReferences<T>>(
+                    () => new MixedReferences<T> { Head = 17, First = new T(), Number = 123456789, Second = new string('b', 29), Tail = 42 },
+                    $"17:{new T()}:123456789:{new string('b', 29)}:42");
+                Check<MixedReferences<T>?>(
+                    () => new MixedReferences<T> { Head = 17, First = new T(), Number = 123456789, Second = new string('c', 31), Tail = 42 },
+                    $"17:{new T()}:123456789:{new string('c', 31)}:42");
+            }
+
+            private static void Check<TElement>(Func<TElement> createValue, string expected)
+            {
+                Type rankOneType = typeof(TElement).MakeArrayType(1);
+                if (rankOneType.IsSZArray || rankOneType.GetArrayRank() != 1 || rankOneType.TypeHandle.Equals(typeof(TElement[]).TypeHandle))
+                    throw new Exception($"Unexpected rank-one MD array type: {rankOneType}");
+
+                Array[] arrays =
+                [
+                    new TElement[3],
+                    new TElement[2, 3],
+                    new TElement[2, 2, 3],
+                ];
+
+                for (int i = 0; i < arrays.Length; i++)
+                {
+                    Array array = arrays[i];
+                    Type expectedType = i == 0 ? typeof(TElement[]) : typeof(TElement).MakeArrayType(i + 1);
+                    if (array.GetType() != expectedType)
+                        throw new Exception($"Unexpected array type: {array.GetType()}");
+
+                    Fill(array, createValue);
+                    GC.Collect(2, GCCollectionMode.Forced, blocking: true, compacting: true);
+                }
+
+                foreach (Array array in arrays)
+                {
+                    foreach (object value in array)
+                    {
+                        if (value.ToString() != expected)
+                            throw new Exception($"Unexpected array value: {value}");
+                    }
+                }
+            }
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            private static void Fill<TElement>(Array array, Func<TElement> createValue)
+            {
+                int[] indices = new int[array.Rank];
+                for (int i = 0; i < array.Length; i++)
+                {
+                    int remaining = i;
+                    for (int dimension = array.Rank - 1; dimension >= 0; dimension--)
+                    {
+                        indices[dimension] = remaining % array.GetLength(dimension);
+                        remaining /= array.GetLength(dimension);
+                    }
+
+                    array.SetValue(createValue(), indices);
+                }
+            }
+        }
+
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
+        private static Type s_payloadType = typeof(Payload);
+
+        public static void Run()
+        {
+            new Test<object>().Run();
+
+            Type testType = typeof(Test<>).MakeGenericType(s_payloadType);
+            ((ITest)Activator.CreateInstance(testType)).Run();
+            ((ITest)Activator.CreateInstance(testType)).Run();
         }
     }
 

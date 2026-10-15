@@ -493,7 +493,9 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
             _numSafePoints = _reader.DecodeVarLengthUnsigned(TTraits.NUM_SAFE_POINTS_ENCBASE, ref _bitOffset);
         }
 
-        _numInterruptibleRanges = _reader.DecodeVarLengthUnsigned(TTraits.NUM_INTERRUPTIBLE_RANGES_ENCBASE, ref _bitOffset);
+        _numInterruptibleRanges = TTraits.HAS_INTERRUPTIBLE_RANGES
+            ? _reader.DecodeVarLengthUnsigned(TTraits.NUM_INTERRUPTIBLE_RANGES_ENCBASE, ref _bitOffset)
+            : 0;
     }
 
     private void EnsureDecodedTo(DecodePoints point)
@@ -975,6 +977,12 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
             if (safePointIndex < _numSafePoints && !executionAborted)
             {
                 // We have a safe point match — skip interruptible range computation
+            }
+            else if (!TTraits.HAS_INTERRUPTIBLE_RANGES)
+            {
+                // Outside of safe points only untracked slots can be reported. Report them for aborted
+                // frames too: an aborted funclet shares them with parent frames that are skipped.
+                return ReportUntrackedAndSucceed();
             }
             else
             {

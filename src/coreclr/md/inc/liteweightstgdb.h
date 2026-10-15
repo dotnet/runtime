@@ -85,13 +85,9 @@ class CLiteWeightStgdbRW : public CLiteWeightStgdb<CMiniMdRW>
     friend class RegMeta;
     friend HRESULT TranslateSigHelper(
             IMDInternalImport*      pImport,
-            IMDInternalImport*      pAssemImport,
-            const void*             pbHashValue,
-            ULONG                   cbHashValue,
             PCCOR_SIGNATURE         pbSigBlob,
             ULONG                   cbSigBlob,
-            IMetaDataAssemblyEmit*  pAssemEmit,
-            IMetaDataEmit*          emit,
+            IMDInternalEmit*        emit,
             CQuickBytes*            pqkSigEmit,
             ULONG*                  pcbSig);
 public:

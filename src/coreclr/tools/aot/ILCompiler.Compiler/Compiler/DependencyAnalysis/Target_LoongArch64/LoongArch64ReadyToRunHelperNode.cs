@@ -6,6 +6,7 @@ using System.Diagnostics;
 
 using ILCompiler.DependencyAnalysis.LoongArch64;
 
+using Internal.ReadyToRunConstants;
 using Internal.Text;
 using Internal.TypeSystem;
 
@@ -138,7 +139,7 @@ namespace ILCompiler.DependencyAnalysis
                         if (targetMethod.OwningType.IsInterface)
                         {
                             encoder.EmitMOV(encoder.TargetRegister.Arg1, factory.DispatchCell(targetMethod));
-                            encoder.EmitJMP(factory.ExternFunctionSymbol(s_RhpResolveInterfaceMethod));
+                            encoder.EmitJMP(factory.ReadyToRunHelper(ReadyToRunHelper.ResolveInterfaceMethod));
                         }
                         else
                         {

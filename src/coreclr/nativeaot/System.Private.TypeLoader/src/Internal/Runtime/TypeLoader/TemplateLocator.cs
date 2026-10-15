@@ -10,7 +10,7 @@ using Internal.TypeSystem;
 
 namespace Internal.Runtime.TypeLoader
 {
-    internal struct TemplateLocator
+    internal static class TemplateLocator
     {
         private const uint BadTokenFixupValue = 0xFFFFFFFF;
 
@@ -19,14 +19,9 @@ namespace Internal.Runtime.TypeLoader
         //
         public static TypeDesc TryGetTypeTemplate(TypeDesc concreteType, ref NativeLayoutInfo nativeLayoutInfo)
         {
-            return TryGetTypeTemplate_Internal(concreteType, CanonicalFormKind.Specific, out nativeLayoutInfo.Module, out nativeLayoutInfo.Offset);
-        }
-
-        private static TypeDesc TryGetTypeTemplate_Internal(TypeDesc concreteType, CanonicalFormKind kind, out NativeFormatModuleInfo nativeLayoutInfoModule, out uint nativeLayoutInfoToken)
-        {
-            nativeLayoutInfoModule = null;
-            nativeLayoutInfoToken = 0;
-            var canonForm = concreteType.ConvertToCanonForm(kind);
+            nativeLayoutInfo.Module = null;
+            nativeLayoutInfo.Offset = 0;
+            var canonForm = concreteType.ConvertToCanonForm(CanonicalFormKind.Specific);
             var hashCode = canonForm.GetHashCode();
 
             foreach (NativeFormatModuleInfo moduleInfo in ModuleList.EnumerateModules())
@@ -45,18 +40,18 @@ namespace Internal.Runtime.TypeLoader
                     RuntimeTypeHandle candidateTemplateTypeHandle = externalFixupsTable.GetRuntimeTypeHandleFromIndex(entryParser.GetUnsigned());
                     TypeDesc candidateTemplate = concreteType.Context.ResolveRuntimeTypeHandle(candidateTemplateTypeHandle);
 
-                    if (canonForm == candidateTemplate.ConvertToCanonForm(kind))
+                    if (canonForm == candidateTemplate.ConvertToCanonForm(CanonicalFormKind.Specific))
                     {
                         TypeLoaderLogger.WriteLine("Found template for type " + concreteType.ToString() + ": " + candidateTemplate.ToString());
-                        nativeLayoutInfoToken = entryParser.GetUnsigned();
-                        if (nativeLayoutInfoToken == BadTokenFixupValue)
+                        nativeLayoutInfo.Offset = entryParser.GetUnsigned();
+                        if (nativeLayoutInfo.Offset == BadTokenFixupValue)
                         {
                             // TODO: once multifile gets fixed up, make this throw a BadImageFormatException
                             TypeLoaderLogger.WriteLine("ERROR: template not fixed up, skipping");
                             continue;
                         }
 
-                        nativeLayoutInfoModule = moduleInfo;
+                        nativeLayoutInfo.Module = moduleInfo;
                         return candidateTemplate;
                     }
                 }
@@ -71,13 +66,9 @@ namespace Internal.Runtime.TypeLoader
         //
         public static InstantiatedMethod TryGetGenericMethodTemplate(InstantiatedMethod concreteMethod, out NativeFormatModuleInfo nativeLayoutInfoModule, out uint nativeLayoutInfoToken)
         {
-            return TryGetGenericMethodTemplate_Internal(concreteMethod, CanonicalFormKind.Specific, out nativeLayoutInfoModule, out nativeLayoutInfoToken);
-        }
-        private static InstantiatedMethod TryGetGenericMethodTemplate_Internal(InstantiatedMethod concreteMethod, CanonicalFormKind kind, out NativeFormatModuleInfo nativeLayoutInfoModule, out uint nativeLayoutInfoToken)
-        {
             nativeLayoutInfoModule = null;
             nativeLayoutInfoToken = 0;
-            var canonForm = concreteMethod.GetCanonMethodTarget(kind);
+            var canonForm = concreteMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
             var hashCode = canonForm.GetHashCode();
 
             foreach (NativeFormatModuleInfo moduleInfo in ModuleList.EnumerateModules())
@@ -110,7 +101,7 @@ namespace Internal.Runtime.TypeLoader
                     var candidateTemplate = (InstantiatedMethod)context.GetMethod(ref methodSignatureParser);
                     Debug.Assert(candidateTemplate.Instantiation.Length > 0);
 
-                    if (canonForm == candidateTemplate.GetCanonMethodTarget(kind))
+                    if (canonForm == candidateTemplate.GetCanonMethodTarget(CanonicalFormKind.Specific))
                     {
                         TypeLoaderLogger.WriteLine("Found template for generic method " + concreteMethod.ToString() + ": " + candidateTemplate.ToString());
                         nativeLayoutInfoModule = moduleInfo;
