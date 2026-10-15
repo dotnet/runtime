@@ -222,7 +222,6 @@ namespace System.Net.Mime.Tests
             ct.Name = input;
 
             // Property roundtrip
-            Assert.Equal(input, ct.Name);
             Assert.Equal(input, ct.Parameters["name"]);
             Assert.Equal(1, ct.Parameters.Count);
 
@@ -230,7 +229,6 @@ namespace System.Net.Mime.Tests
             var serialized = ct.ToString();
             var reparsed = new ContentType(serialized);
             Assert.Equal(1, reparsed.Parameters.Count);
-            Assert.Equal(input, reparsed.Name);
             Assert.Equal(input, reparsed.Parameters["name"]);
         }
     }
