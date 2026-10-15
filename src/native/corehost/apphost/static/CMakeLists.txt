@@ -40,7 +40,7 @@ set(HEADERS
 )
 
 # TODO: https://github.com/dotnet/runtime/issues/111523
-if (NOT CLR_CMAKE_TARGET_ANDROID)
+if (NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_OPENHARMONY)
     add_compile_definitions(NATIVE_LIBS_EMBEDDED)
 endif()
 
@@ -158,7 +158,9 @@ else()
     )
 
     if(NOT CLR_CMAKE_TARGET_ANDROID)
-        list(APPEND NATIVE_LIBS System.Net.Security.Native-Static)
+        if(NOT CLR_CMAKE_TARGET_OPENHARMONY)
+            list(APPEND NATIVE_LIBS System.Net.Security.Native-Static)
+        endif()
 
         if(NOT CLR_CMAKE_TARGET_APPLE)
             list(APPEND NATIVE_LIBS System.Security.Cryptography.Native.OpenSsl-Static)
@@ -290,9 +292,15 @@ target_link_libraries(
     singlefilehost
     PRIVATE
     ${NATIVE_LIBS}
-
-    $<LINK_LIBRARY:WHOLE_ARCHIVE,runtimeinfo>
 )
+
+# Force the whole runtimeinfo archive into the link; the WHOLE_ARCHIVE generator
+# expression is not usable with the OpenHarmony NDK toolchain, so use --whole-archive.
+if(CLR_CMAKE_TARGET_OPENHARMONY)
+    target_link_options(singlefilehost PRIVATE "-Wl,--whole-archive,$<TARGET_FILE:runtimeinfo>;-Wl,--no-whole-archive")
+else()
+    target_link_libraries(singlefilehost PRIVATE $<LINK_LIBRARY:WHOLE_ARCHIVE,runtimeinfo>)
+endif()
 
 target_link_libraries(singlefilehost PRIVATE hostmisc)
 
