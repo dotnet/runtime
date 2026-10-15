@@ -455,13 +455,29 @@ two consecutive ULEB128 values:
 
 | Order | Encoding | Value
 |------:|:---------|:-----
-|     1 | ULEB128  | Frame size in bytes (the number of bytes to unwind from the stack)
+|     1 | ULEB128  | Frame size divided by 16 (the number of 16-byte units to unwind from the stack)
 |     2 | ULEB128  | Virtual IP count divided by 2 (the number of virtual IPs logically present in the function, halved)
+
+ReadyToRun format 33.0 uses this scaled frame size and the compact Wasm GC encoding described
+below. Earlier Wasm images use incompatible encodings and must be regenerated. The Wasm runtime
+and managed reader reject them before interpreting their unwind or GC metadata; native targets
+retain their existing minimum supported format version.
 
 The virtual IP count (after multiplying by 2) gives the span of virtual IPs covered by this
 function or funclet. All virtual IPs are forced to even numbers so that the runtime can force all virtual
 ips to have odd numbers and fit into the address space in a manner which cannot conflict with either interpreter
 IPs or PortableEntryPoint structures.
+
+### GC info (wasm)
+
+Wasm GC slot tables omit the register-presence bit and per-slot stack base: roots are implicitly
+frame-relative, with offsets stored in 4-byte pointer units. Slim headers use normalized zero
+for the default frame register. Slot flags precede offsets; equal-flag runs use unsigned offset
+deltas, and ordinary object flags are implicit after their first slot in each section.
+
+Wasm ReadyToRun reports only untracked roots. The zero tracked-slot and safepoint counts remain
+in the stream, but its runtime decoder omits tracked-slot descriptor and lifetime parsing.
+The interpreter retains tracked-root support and its own register-free encoding.
 
 ## ReadyToRunSectionType.MethodDefEntryPoints
 

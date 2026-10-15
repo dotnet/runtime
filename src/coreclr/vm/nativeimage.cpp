@@ -298,6 +298,13 @@ NativeImage *NativeImage::Open(
         COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
     }
 
+#ifdef TARGET_WASM
+    if (pHeader->MajorVersion < MINIMUM_WASM_READYTORUN_MAJOR_VERSION)
+    {
+        COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+    }
+#endif // TARGET_WASM
+
     NewHolder<NativeImage> image = new NativeImage(pAssemblyBinder, loadedImageHolder.Extract(), nativeImageFileName);
     AllocMemTracker amTracker;
     image->Initialize(pHeader, pLoaderAllocator, &amTracker);

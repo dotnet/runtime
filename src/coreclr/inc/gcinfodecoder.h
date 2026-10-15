@@ -493,17 +493,51 @@ public:
 
     UINT32 GetNumTracked()
     {
-        return m_NumSlots - m_NumUntracked;
+        return GcInfoEncoding::HAS_TRACKED_SLOTS ? m_NumSlots - m_NumUntracked : 0;
     }
 
     UINT32 GetNumRegisters()
     {
-        return m_NumRegisters;
+        return GcInfoEncoding::HAS_REGISTER_SLOTS ? m_NumRegisters : 0;
     }
 
     const GcSlotDesc* GetSlotDesc(UINT32 slotIndex);
 
 private:
+    static GcStackSlotBase ReadStackSlotBase(BitStreamReader& reader)
+    {
+        return GcInfoEncoding::HAS_STACK_SLOT_BASE ? (GcStackSlotBase)reader.Read(2) : GC_FRAMEREG_REL;
+    }
+
+    static INT32 ReadStackSlotOffset(BitStreamReader& reader, GcSlotFlags& flags, INT32 previousOffset, bool first)
+    {
+        bool absolute;
+        if constexpr (GcInfoEncoding::STACK_SLOT_FLAGS_FIRST)
+        {
+            GcSlotFlags previousFlags = first ? static_cast<GcSlotFlags>(7) : flags;
+            flags = previousFlags == GC_SLOT_BASE ? GC_SLOT_BASE : static_cast<GcSlotFlags>(reader.Read(2));
+            absolute = flags != previousFlags;
+        }
+        else
+        {
+            absolute = first || flags != GC_SLOT_BASE;
+        }
+
+        INT32 offset = absolute
+            ? static_cast<INT32>(reader.DecodeVarLengthSigned(GcInfoEncoding::STACK_SLOT_ENCBASE))
+            : previousOffset + static_cast<INT32>(reader.DecodeVarLengthUnsigned(GcInfoEncoding::STACK_SLOT_DELTA_ENCBASE));
+
+        if constexpr (!GcInfoEncoding::STACK_SLOT_FLAGS_FIRST)
+        {
+            if (absolute)
+            {
+                flags = static_cast<GcSlotFlags>(reader.Read(2));
+            }
+        }
+
+        return offset;
+    }
+
     GcSlotDesc m_SlotArray[MAX_PREDECODED_SLOTS];
     BitStreamReader m_SlotReader;
     UINT32 m_NumSlots;
@@ -744,7 +778,7 @@ private:
         const GcSlotDesc* pSlot = slotDecoder.GetSlotDesc(slotIndex);
         bool reportFpBasedSlotsOnly = (inputFlags & ReportFPBasedSlotsOnly);
 
-        if(slotIndex < slotDecoder.GetNumRegisters())
+        if(GcInfoEncoding::HAS_REGISTER_SLOTS && slotIndex < slotDecoder.GetNumRegisters())
         {
             UINT32 regNum = pSlot->Slot.RegisterNumber;
             if( ( reportScratchSlots || !IsScratchRegister( regNum, pRD ) ) && !reportFpBasedSlotsOnly )
@@ -798,4 +832,3 @@ typedef TGcInfoDecoder<InterpreterGcInfoEncoding> InterpreterGcInfoDecoder;
 
 
 #endif // _GC_INFO_DECODER_
-

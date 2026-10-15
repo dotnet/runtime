@@ -617,6 +617,10 @@ struct AMD64GcInfoEncoding {
     static const int POINTER_SIZE_ENCBASE = 3;
     static const int LIVESTATE_RLE_RUN_ENCBASE = 2;
     static const int LIVESTATE_RLE_SKIP_ENCBASE = 4;
+    static const bool HAS_REGISTER_SLOTS = true;
+    static const bool HAS_TRACKED_SLOTS = true;
+    static const bool HAS_STACK_SLOT_BASE = true;
+    static const bool STACK_SLOT_FLAGS_FIRST = false;
     static const bool HAS_FIXED_STACK_PARAMETER_SCRATCH_AREA = true;
     static const bool HAS_INTERRUPTIBLE_RANGES = true;
 };
@@ -676,6 +680,10 @@ struct ARM32GcInfoEncoding {
     static const int POINTER_SIZE_ENCBASE = 3;
     static const int LIVESTATE_RLE_RUN_ENCBASE = 2;
     static const int LIVESTATE_RLE_SKIP_ENCBASE = 4;
+    static const bool HAS_REGISTER_SLOTS = true;
+    static const bool HAS_TRACKED_SLOTS = true;
+    static const bool HAS_STACK_SLOT_BASE = true;
+    static const bool STACK_SLOT_FLAGS_FIRST = false;
     static const bool HAS_FIXED_STACK_PARAMETER_SCRATCH_AREA = true;
     static const bool HAS_INTERRUPTIBLE_RANGES = true;
 };
@@ -738,6 +746,10 @@ struct ARM64GcInfoEncoding {
     static const int POINTER_SIZE_ENCBASE = 3;
     static const int LIVESTATE_RLE_RUN_ENCBASE = 2;
     static const int LIVESTATE_RLE_SKIP_ENCBASE = 4;
+    static const bool HAS_REGISTER_SLOTS = true;
+    static const bool HAS_TRACKED_SLOTS = true;
+    static const bool HAS_STACK_SLOT_BASE = true;
+    static const bool STACK_SLOT_FLAGS_FIRST = false;
     static const bool HAS_FIXED_STACK_PARAMETER_SCRATCH_AREA = true;
     static const bool HAS_INTERRUPTIBLE_RANGES = true;
 };
@@ -798,6 +810,10 @@ struct LoongArch64GcInfoEncoding {
     static const int POINTER_SIZE_ENCBASE = 3;
     static const int LIVESTATE_RLE_RUN_ENCBASE = 2;
     static const int LIVESTATE_RLE_SKIP_ENCBASE = 4;
+    static const bool HAS_REGISTER_SLOTS = true;
+    static const bool HAS_TRACKED_SLOTS = true;
+    static const bool HAS_STACK_SLOT_BASE = true;
+    static const bool STACK_SLOT_FLAGS_FIRST = false;
     static const bool HAS_FIXED_STACK_PARAMETER_SCRATCH_AREA = true;
     static const bool HAS_INTERRUPTIBLE_RANGES = true;
 };
@@ -859,6 +875,10 @@ struct RISCV64GcInfoEncoding {
     static const int POINTER_SIZE_ENCBASE = 3;
     static const int LIVESTATE_RLE_RUN_ENCBASE = 2;
     static const int LIVESTATE_RLE_SKIP_ENCBASE = 4;
+    static const bool HAS_REGISTER_SLOTS = true;
+    static const bool HAS_TRACKED_SLOTS = true;
+    static const bool HAS_STACK_SLOT_BASE = true;
+    static const bool STACK_SLOT_FLAGS_FIRST = false;
     static const bool HAS_FIXED_STACK_PARAMETER_SCRATCH_AREA = true;
     static const bool HAS_INTERRUPTIBLE_RANGES = true;
 };
@@ -915,6 +935,10 @@ struct X86GcInfoEncoding {
     static const int POINTER_SIZE_ENCBASE = 3;
     static const int LIVESTATE_RLE_RUN_ENCBASE = 2;
     static const int LIVESTATE_RLE_SKIP_ENCBASE = 4;
+    static const bool HAS_REGISTER_SLOTS = true;
+    static const bool HAS_TRACKED_SLOTS = true;
+    static const bool HAS_STACK_SLOT_BASE = true;
+    static const bool STACK_SLOT_FLAGS_FIRST = false;
     static const bool HAS_FIXED_STACK_PARAMETER_SCRATCH_AREA = true;
     static const bool HAS_INTERRUPTIBLE_RANGES = true;
 };
@@ -927,17 +951,16 @@ struct X86GcInfoEncoding {
 
 #define TargetGcInfoEncoding Wasm32GcInfoEncoding
 
-// TODO-WASM: Investigate normalizing stack slots to save space based on wasm stack alignment
-
 struct Wasm32GcInfoEncoding {
     static const uint32_t NUM_NORM_CODE_OFFSETS_PER_CHUNK = (64);
     static const uint32_t NUM_NORM_CODE_OFFSETS_PER_CHUNK_LOG2 = (6);
-    static inline constexpr int32_t NORMALIZE_STACK_SLOT (int32_t x) { return (x); }
-    static inline constexpr int32_t DENORMALIZE_STACK_SLOT (int32_t x) { return (x); }
+    static inline constexpr int32_t NORMALIZE_STACK_SLOT (int32_t x) { return (x / TARGET_POINTER_SIZE); }
+    static inline constexpr int32_t DENORMALIZE_STACK_SLOT (int32_t x) { return (x * TARGET_POINTER_SIZE); }
     static inline constexpr uint32_t NORMALIZE_CODE_LENGTH (uint32_t x) { return (x); }
     static inline constexpr uint32_t DENORMALIZE_CODE_LENGTH (uint32_t x) { return (x); }
-    static inline constexpr uint32_t NORMALIZE_STACK_BASE_REGISTER (uint32_t x) { return (x); }
-    static inline constexpr uint32_t DENORMALIZE_STACK_BASE_REGISTER (uint32_t x) { return (x); }
+    // Slim headers identify the default frame register by normalized zero.
+    static inline constexpr uint32_t NORMALIZE_STACK_BASE_REGISTER (uint32_t x) { return (x ^ 2); }
+    static inline constexpr uint32_t DENORMALIZE_STACK_BASE_REGISTER (uint32_t x) { return (x ^ 2); }
     static inline constexpr uint32_t NORMALIZE_SIZE_OF_STACK_AREA (uint32_t x) { return (x); }
     static inline constexpr uint32_t DENORMALIZE_SIZE_OF_STACK_AREA (uint32_t x) { return (x); }
     static const bool CODE_OFFSETS_NEED_NORMALIZATION = false;
@@ -965,14 +988,22 @@ struct Wasm32GcInfoEncoding {
     static const int INTERRUPTIBLE_RANGE_DELTA2_ENCBASE = 5;
     static const int REGISTER_ENCBASE = 3;
     static const int REGISTER_DELTA_ENCBASE = REGISTER_ENCBASE;
-    static const int STACK_SLOT_ENCBASE = 6;
-    static const int STACK_SLOT_DELTA_ENCBASE = 4;
+    static const int STACK_SLOT_ENCBASE = 3;
+    static const int STACK_SLOT_DELTA_ENCBASE = 3;
     static const int NUM_SAFE_POINTS_ENCBASE = 4;
     static const int NUM_INTERRUPTIBLE_RANGES_ENCBASE = 1;
     static const int NUM_EH_CLAUSES_ENCBASE = 2;
     static const int POINTER_SIZE_ENCBASE = 3;
     static const int LIVESTATE_RLE_RUN_ENCBASE = 2;
     static const int LIVESTATE_RLE_SKIP_ENCBASE = 4;
+    // Register-free encodings omit the register-presence bit from the slot table.
+    static const bool HAS_REGISTER_SLOTS = false;
+    // The wire format retains a zero tracked-slot count, but Wasm R2R only reports untracked roots.
+    static const bool HAS_TRACKED_SLOTS = false;
+    // All slots are frame-relative, so no per-slot stack base is encoded.
+    static const bool HAS_STACK_SLOT_BASE = false;
+    // Equal flags use offset deltas; ordinary flags are implicit after their first slot.
+    static const bool STACK_SLOT_FLAGS_FIRST = true;
     static const bool HAS_FIXED_STACK_PARAMETER_SCRATCH_AREA = false;
     static const bool HAS_INTERRUPTIBLE_RANGES = false;
 };
@@ -1037,6 +1068,10 @@ struct InterpreterGcInfoEncoding {
     static const int POINTER_SIZE_ENCBASE = 3;
     static const int LIVESTATE_RLE_RUN_ENCBASE = 2;
     static const int LIVESTATE_RLE_SKIP_ENCBASE = 4;
+    static const bool HAS_REGISTER_SLOTS = false;
+    static const bool HAS_TRACKED_SLOTS = true;
+    static const bool HAS_STACK_SLOT_BASE = true;
+    static const bool STACK_SLOT_FLAGS_FIRST = false;
     static const bool HAS_FIXED_STACK_PARAMETER_SCRATCH_AREA = false;
     static const bool HAS_INTERRUPTIBLE_RANGES = true;
 };
