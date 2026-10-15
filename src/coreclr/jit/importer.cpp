@@ -6244,6 +6244,14 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             {
                 assert(compCanHavePatchpoints());
 
+                // A backedge source may have requested a patchpoint here before our entry stack was known.
+                //
+                if (block->HasFlag(BBF_OSR_PATCHPOINT) && (stackState.esStackDepth != 0))
+                {
+                    JITDUMP("\nRemoving patchpoint from " FMT_BB " as it has non-empty stack on entry.\n", block->bbNum);
+                    block->RemoveFlags(BBF_OSR_PATCHPOINT);
+                }
+
                 // By default we use the "adaptive" strategy.
                 //
                 // This can create both source and target patchpoints within a given
@@ -6337,7 +6345,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                                 // We may already have decided to put a patchpoint in succBlock. If not, add one.
                                 //
-                                if (succBlock->HasFlag(BBF_OSR_PATCHPOINT))
+                                if (!succBlock->HasFlag(BBF_OSR_PATCHPOINT))
                                 {
                                     // In some cases the target may not be stack-empty at entry.
                                     // If so, we will bypass patchpoints for this backedge.
