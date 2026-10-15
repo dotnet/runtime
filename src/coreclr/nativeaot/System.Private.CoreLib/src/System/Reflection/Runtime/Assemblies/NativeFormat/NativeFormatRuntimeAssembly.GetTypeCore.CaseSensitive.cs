@@ -19,9 +19,9 @@ namespace System.Reflection.Runtime.Assemblies.NativeFormat
             string name = fullName.Substring(separator + 1);
 
             MetadataReader reader = Scope.Reader;
-            ScopeDefinition scopeDefinition = Scope.ScopeDefinition;
+            TypeDefinitionGroup typeDefinitionGroup = Scope.ScopeDefinition.TypeDefinitionGroup.GetTypeDefinitionGroup(reader);
 
-            foreach (TypeDefinitionHandle candidateType in scopeDefinition.TypeDefinitions)
+            foreach (TypeDefinitionHandle candidateType in typeDefinitionGroup.TypeDefinitions)
             {
                 TypeDefinition typeDefinition = candidateType.GetTypeDefinition(reader);
                 if (typeDefinition.Name.StringEquals(name, reader))
@@ -33,7 +33,7 @@ namespace System.Reflection.Runtime.Assemblies.NativeFormat
             }
 
             // No match found in this assembly - see if there's a matching type forwarder.
-            foreach (TypeForwarderHandle typeForwarderHandle in scopeDefinition.TypeForwarders)
+            foreach (TypeForwarderHandle typeForwarderHandle in typeDefinitionGroup.TypeForwarders)
             {
                 TypeForwarder typeForwarder = typeForwarderHandle.GetTypeForwarder(reader);
                 if (typeForwarder.Name.StringEquals(name, reader))

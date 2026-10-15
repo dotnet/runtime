@@ -4688,8 +4688,7 @@ namespace Internal.Metadata.NativeFormat
             offset = streamReader.Read(offset, out _revisionNumber);
             offset = streamReader.Read(offset, out _publicKey);
             offset = streamReader.Read(offset, out _culture);
-            offset = streamReader.Read(offset, out _typeDefinitions);
-            offset = streamReader.Read(offset, out _typeForwarders);
+            offset = streamReader.Read(offset, out _typeDefinitionGroup);
             offset = streamReader.Read(offset, out _entryPoint);
             offset = streamReader.Read(offset, out _globalModuleType);
             offset = streamReader.Read(offset, out _customAttributes);
@@ -4727,11 +4726,8 @@ namespace Internal.Metadata.NativeFormat
         public ConstantStringValueHandle Culture => _culture;
         private readonly ConstantStringValueHandle _culture;
 
-        public TypeDefinitionHandleCollection TypeDefinitions => _typeDefinitions;
-        private readonly TypeDefinitionHandleCollection _typeDefinitions;
-
-        public TypeForwarderHandleCollection TypeForwarders => _typeForwarders;
-        private readonly TypeForwarderHandleCollection _typeForwarders;
+        public TypeDefinitionGroupHandle TypeDefinitionGroup => _typeDefinitionGroup;
+        private readonly TypeDefinitionGroupHandle _typeDefinitionGroup;
 
         public QualifiedMethodHandle EntryPoint => _entryPoint;
         private readonly QualifiedMethodHandle _entryPoint;
@@ -5051,6 +5047,90 @@ namespace Internal.Metadata.NativeFormat
         public override string ToString() => string.Format("{0:X8}", _value);
         #endif
     } // TypeDefinitionHandle
+
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
+    public readonly partial struct TypeDefinitionGroup
+    {
+        private readonly MetadataReader _reader;
+        private readonly TypeDefinitionGroupHandle _handle;
+
+        internal TypeDefinitionGroup(MetadataReader reader, TypeDefinitionGroupHandle handle)
+        {
+            _reader = reader;
+            _handle = handle;
+            uint offset = (uint)handle.Offset;
+            NativeReader streamReader = reader._streamReader;
+            offset = streamReader.Read(offset, out _typeDefinitions);
+            offset = streamReader.Read(offset, out _typeForwarders);
+        }
+
+        public TypeDefinitionGroupHandle Handle => _handle;
+
+        public TypeDefinitionHandleCollection TypeDefinitions => _typeDefinitions;
+        private readonly TypeDefinitionHandleCollection _typeDefinitions;
+
+        public TypeForwarderHandleCollection TypeForwarders => _typeForwarders;
+        private readonly TypeForwarderHandleCollection _typeForwarders;
+    } // TypeDefinitionGroup
+
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
+    public readonly partial struct TypeDefinitionGroupHandle
+    {
+        internal readonly int _value;
+
+        internal TypeDefinitionGroupHandle(Handle handle) : this(handle._value)
+        {
+        }
+
+        internal TypeDefinitionGroupHandle(int value)
+        {
+            HandleType hType = (HandleType)((uint)value >> 25);
+            Debug.Assert(hType == HandleType.TypeDefinitionGroup || hType == HandleType.Null);
+            _value = (value & 0x01FFFFFF) | (((int)HandleType.TypeDefinitionGroup) << 25);
+            _Validate();
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (obj is TypeDefinitionGroupHandle)
+                return _value == ((TypeDefinitionGroupHandle)obj)._value;
+            else if (obj is Handle)
+                return _value == ((Handle)obj)._value;
+            else
+                return false;
+        } // Equals
+
+        public bool Equals(TypeDefinitionGroupHandle handle) => _value == handle._value;
+
+        public bool Equals(Handle handle) => _value == handle._value;
+
+        public override int GetHashCode() => (int)_value;
+
+        public static implicit operator Handle(TypeDefinitionGroupHandle handle)
+            => new Handle(handle._value);
+
+        internal int Offset => (_value & 0x01FFFFFF);
+
+        public TypeDefinitionGroup GetTypeDefinitionGroup(MetadataReader reader)
+            => new TypeDefinitionGroup(reader, this);
+
+        public bool IsNil => (_value & 0x01FFFFFF) == 0;
+
+        [System.Diagnostics.Conditional("DEBUG")]
+        internal void _Validate()
+        {
+            if ((HandleType)((uint)_value >> 25) != HandleType.TypeDefinitionGroup)
+                throw new ArgumentException();
+        } // _Validate
+
+        #if DEBUG
+        public override string ToString() => string.Format("{0:X8}", _value);
+        #endif
+    } // TypeDefinitionGroupHandle
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
@@ -5889,75 +5969,6 @@ namespace Internal.Metadata.NativeFormat
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
 #endif
-    public readonly partial struct TypeForwarderHandleCollection
-    {
-        private readonly NativeReader _reader;
-        private readonly uint _offset;
-
-        internal TypeForwarderHandleCollection(NativeReader reader, uint offset)
-        {
-            _offset = offset;
-            _reader = reader;
-        }
-
-        public int Count
-        {
-            get
-            {
-                uint count;
-                _reader.DecodeUnsigned(_offset, out count);
-                return (int)count;
-            }
-        } // Count
-
-        public Enumerator GetEnumerator()
-        {
-            return new Enumerator(_reader, _offset);
-        } // GetEnumerator
-
-#if SYSTEM_PRIVATE_CORELIB
-        [CLSCompliant(false)]
-#endif
-        public struct Enumerator
-        {
-            private readonly NativeReader _reader;
-            private uint _offset;
-            private uint _remaining;
-            private TypeForwarderHandle _current;
-
-            internal Enumerator(NativeReader reader, uint offset)
-            {
-                _reader = reader;
-                _offset = reader.DecodeUnsigned(offset, out _remaining);
-                _current = default(TypeForwarderHandle);
-            }
-
-            public TypeForwarderHandle Current
-            {
-                get
-                {
-                    return _current;
-                }
-            } // Current
-
-            public bool MoveNext()
-            {
-                if (_remaining == 0)
-                    return false;
-                _remaining--;
-                _offset = _reader.Read(_offset, out _current);
-                return true;
-            } // MoveNext
-
-            public void Dispose()
-            {
-            } // Dispose
-        } // Enumerator
-    } // TypeForwarderHandleCollection
-
-#if SYSTEM_PRIVATE_CORELIB
-    [CLSCompliant(false)]
-#endif
     public readonly partial struct MethodHandleCollection
     {
         private readonly NativeReader _reader;
@@ -6230,6 +6241,75 @@ namespace Internal.Metadata.NativeFormat
             } // Dispose
         } // Enumerator
     } // EventHandleCollection
+
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
+    public readonly partial struct TypeForwarderHandleCollection
+    {
+        private readonly NativeReader _reader;
+        private readonly uint _offset;
+
+        internal TypeForwarderHandleCollection(NativeReader reader, uint offset)
+        {
+            _offset = offset;
+            _reader = reader;
+        }
+
+        public int Count
+        {
+            get
+            {
+                uint count;
+                _reader.DecodeUnsigned(_offset, out count);
+                return (int)count;
+            }
+        } // Count
+
+        public Enumerator GetEnumerator()
+        {
+            return new Enumerator(_reader, _offset);
+        } // GetEnumerator
+
+#if SYSTEM_PRIVATE_CORELIB
+        [CLSCompliant(false)]
+#endif
+        public struct Enumerator
+        {
+            private readonly NativeReader _reader;
+            private uint _offset;
+            private uint _remaining;
+            private TypeForwarderHandle _current;
+
+            internal Enumerator(NativeReader reader, uint offset)
+            {
+                _reader = reader;
+                _offset = reader.DecodeUnsigned(offset, out _remaining);
+                _current = default(TypeForwarderHandle);
+            }
+
+            public TypeForwarderHandle Current
+            {
+                get
+                {
+                    return _current;
+                }
+            } // Current
+
+            public bool MoveNext()
+            {
+                if (_remaining == 0)
+                    return false;
+                _remaining--;
+                _offset = _reader.Read(_offset, out _current);
+                return true;
+            } // MoveNext
+
+            public void Dispose()
+            {
+            } // Dispose
+        } // Enumerator
+    } // TypeForwarderHandleCollection
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
@@ -7423,6 +7503,11 @@ namespace Internal.Metadata.NativeFormat
             return new TypeDefinitionHandle(this);
         } // ToTypeDefinitionHandle
 
+        public TypeDefinitionGroupHandle ToTypeDefinitionGroupHandle(MetadataReader reader)
+        {
+            return new TypeDefinitionGroupHandle(this);
+        } // ToTypeDefinitionGroupHandle
+
         public TypeForwarderHandle ToTypeForwarderHandle(MetadataReader reader)
         {
             return new TypeForwarderHandle(this);
@@ -7812,6 +7897,11 @@ namespace Internal.Metadata.NativeFormat
         {
             return new TypeDefinition(this, handle);
         } // GetTypeDefinition
+
+        public TypeDefinitionGroup GetTypeDefinitionGroup(TypeDefinitionGroupHandle handle)
+        {
+            return new TypeDefinitionGroup(this, handle);
+        } // GetTypeDefinitionGroup
 
         public TypeForwarder GetTypeForwarder(TypeForwarderHandle handle)
         {

@@ -501,14 +501,20 @@ internal sealed class SchemaDef
                 new MemberDef("RevisionNumber", "ushort", MemberDefFlags.Compare),
                 new MemberDef("PublicKey", "Byte", MemberDefFlags.Array | MemberDefFlags.Compare),
                 new MemberDef("Culture", "ConstantStringValue", MemberDefFlags.RecordRef | MemberDefFlags.Child | MemberDefFlags.Compare),
-                new MemberDef("TypeDefinitions", "TypeDefinition", MemberDefFlags.Map | MemberDefFlags.RecordRef | MemberDefFlags.Child),
-                new MemberDef("TypeForwarders", "TypeForwarder", MemberDefFlags.Map | MemberDefFlags.RecordRef | MemberDefFlags.Child),
+                new MemberDef("TypeDefinitionGroup", "TypeDefinitionGroup", MemberDefFlags.RecordRef | MemberDefFlags.Child),
                 new MemberDef("EntryPoint", "QualifiedMethod", MemberDefFlags.RecordRef),
                 new MemberDef("GlobalModuleType", "TypeDefinition", MemberDefFlags.RecordRef),
                 new MemberDef("CustomAttributes", "CustomAttribute", MemberDefFlags.List | MemberDefFlags.RecordRef | MemberDefFlags.Child),
                 new MemberDef("ModuleName", "ConstantStringValue", MemberDefFlags.RecordRef | MemberDefFlags.Child | MemberDefFlags.Compare),
                 new MemberDef("Mvid", "Byte", MemberDefFlags.Array | MemberDefFlags.Compare),
                 new MemberDef("ModuleCustomAttributes", "CustomAttribute", MemberDefFlags.List | MemberDefFlags.RecordRef | MemberDefFlags.Child),
+            }
+        ),
+        new RecordDef(
+            name: "TypeDefinitionGroup",
+            members: new MemberDef[] {
+                new MemberDef("TypeDefinitions", "TypeDefinition", MemberDefFlags.Map | MemberDefFlags.RecordRef | MemberDefFlags.Child | MemberDefFlags.EnumerateForHashCode),
+                new MemberDef("TypeForwarders", "TypeForwarder", MemberDefFlags.Map | MemberDefFlags.RecordRef | MemberDefFlags.Child | MemberDefFlags.EnumerateForHashCode),
             }
         ),
         new RecordDef(
