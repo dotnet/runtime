@@ -10,6 +10,7 @@ parameters:
   platform: ''
   shouldContinueOnError: false
   osSubgroup: ''
+  enableILLinkCache: false
 
   # sccache version. Keep the version in sync across platforms so all jobs
   # cache against the same compiler-launcher behavior.
@@ -52,8 +53,7 @@ steps:
           Write-Host "##vso[task.setvariable variable=ROSLYN_CACHE_BUILD_START]$buildStart"
         displayName: Configure Roslyn compiler cache
 
-  # sccache native compiler cache
-  - ${{ if and(or(eq(parameters.osGroup, 'linux'), eq(parameters.osGroup, 'freebsd'), eq(parameters.osGroup, 'openbsd'), eq(parameters.osGroup, 'osx')), or(eq(parameters.archType, 'x64'), eq(parameters.archType, 'arm64'))) }}:
+  - ${{ if eq(parameters.enableILLinkCache, true) }}:
     - template: /eng/pipelines/coreclr/templates/setup-illink-cache.yml
       parameters:
         osGroup: ${{ parameters.osGroup }}
@@ -61,6 +61,8 @@ steps:
         archType: ${{ parameters.archType }}
         nameSuffix: ${{ parameters.nameSuffix }}
 
+  # sccache native compiler cache
+  - ${{ if and(or(eq(parameters.osGroup, 'linux'), eq(parameters.osGroup, 'freebsd'), eq(parameters.osGroup, 'openbsd'), eq(parameters.osGroup, 'osx')), or(eq(parameters.archType, 'x64'), eq(parameters.archType, 'arm64'))) }}:
     # Set up the Azure Pipeline Cache for sccache's local cache directory.
     # Use a rolling key so each build can update the cache; restoreKeys
     # falls back to the most recent saved entry.
