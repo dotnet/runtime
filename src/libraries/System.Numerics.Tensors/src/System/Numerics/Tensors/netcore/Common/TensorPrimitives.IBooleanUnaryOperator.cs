@@ -86,16 +86,13 @@ namespace System.Numerics.Tensors
                 if (i <= oneVectorFromEnd)
                 {
                     // Loop handling one vector at a time.
-                    do
+                    for (; i <= oneVectorFromEnd; i += Vector512<T>.Count)
                     {
-                        if (TAnyAll.ShouldEarlyExit(TOperator.Invoke(Vector512.LoadUnsafe(ref xRef, (uint)i))))
+                        if (TAnyAll.ShouldEarlyExit(TOperator.Invoke(Vector512.Create(x.Slice(i)))))
                         {
                             return !TAnyAll.DefaultResult;
                         }
-
-                        i += Vector512<T>.Count;
                     }
-                    while (i <= oneVectorFromEnd);
 
                     // Handle any remaining elements with a final vector.
                     if (i != x.Length &&
@@ -114,16 +111,13 @@ namespace System.Numerics.Tensors
                 if (i <= oneVectorFromEnd)
                 {
                     // Loop handling one vector at a time.
-                    do
+                    for (; i <= oneVectorFromEnd; i += Vector256<T>.Count)
                     {
-                        if (TAnyAll.ShouldEarlyExit(TOperator.Invoke(Vector256.LoadUnsafe(ref xRef, (uint)i))))
+                        if (TAnyAll.ShouldEarlyExit(TOperator.Invoke(Vector256.Create(x.Slice(i)))))
                         {
                             return !TAnyAll.DefaultResult;
                         }
-
-                        i += Vector256<T>.Count;
                     }
-                    while (i <= oneVectorFromEnd);
 
                     // Handle any remaining elements with a final vector.
                     if (i != x.Length &&
@@ -142,16 +136,13 @@ namespace System.Numerics.Tensors
                 if (i <= oneVectorFromEnd)
                 {
                     // Loop handling one vector at a time.
-                    do
+                    for (; i <= oneVectorFromEnd; i += Vector128<T>.Count)
                     {
-                        if (TAnyAll.ShouldEarlyExit(TOperator.Invoke(Vector128.LoadUnsafe(ref xRef, (uint)i))))
+                        if (TAnyAll.ShouldEarlyExit(TOperator.Invoke(Vector128.Create(x.Slice(i)))))
                         {
                             return !TAnyAll.DefaultResult;
                         }
-
-                        i += Vector128<T>.Count;
                     }
-                    while (i <= oneVectorFromEnd);
 
                     // Handle any remaining elements with a final vector.
                     if (i != x.Length &&
@@ -166,7 +157,7 @@ namespace System.Numerics.Tensors
 
             while (i < x.Length)
             {
-                if (TAnyAll.ShouldEarlyExit(TOperator.Invoke(Unsafe.Add(ref xRef, i))))
+                if (TAnyAll.ShouldEarlyExit(TOperator.Invoke(x[i])))
                 {
                     return !TAnyAll.DefaultResult;
                 }

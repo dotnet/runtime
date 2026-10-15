@@ -63,7 +63,9 @@ namespace System.Numerics.Tensors
             ValidateOutputSpansNonOverlapping(x.Length, destination1, destination2);
 
             ref T sourceRef = ref MemoryMarshal.GetReference(x);
+            destination1 = destination1.Slice(0, x.Length);
             ref T destination1Ref = ref MemoryMarshal.GetReference(destination1);
+            destination2 = destination2.Slice(0, x.Length);
             ref T destination2Ref = ref MemoryMarshal.GetReference(destination2);
             int i = 0, oneVectorFromEnd;
 
@@ -73,15 +75,12 @@ namespace System.Numerics.Tensors
                 if (i <= oneVectorFromEnd)
                 {
                     // Loop handling one input vector / two destination vectors at a time.
-                    do
+                    for (; i <= oneVectorFromEnd; i += Vector512<T>.Count)
                     {
-                        (Vector512<T> first, Vector512<T> second) = TUnaryOperator.Invoke(Vector512.LoadUnsafe(ref sourceRef, (uint)i));
-                        first.StoreUnsafe(ref destination1Ref, (uint)i);
-                        second.StoreUnsafe(ref destination2Ref, (uint)i);
-
-                        i += Vector512<T>.Count;
+                        (Vector512<T> first, Vector512<T> second) = TUnaryOperator.Invoke(Vector512.Create(x.Slice(i)));
+                        first.CopyTo(destination1.Slice(i));
+                        second.CopyTo(destination2.Slice(i));
                     }
-                    while (i <= oneVectorFromEnd);
 
                     // Handle any remaining elements with a final input vector.
                     if (i != x.Length)
@@ -103,15 +102,12 @@ namespace System.Numerics.Tensors
                 if (i <= oneVectorFromEnd)
                 {
                     // Loop handling one input vector / two destination vectors at a time.
-                    do
+                    for (; i <= oneVectorFromEnd; i += Vector256<T>.Count)
                     {
-                        (Vector256<T> first, Vector256<T> second) = TUnaryOperator.Invoke(Vector256.LoadUnsafe(ref sourceRef, (uint)i));
-                        first.StoreUnsafe(ref destination1Ref, (uint)i);
-                        second.StoreUnsafe(ref destination2Ref, (uint)i);
-
-                        i += Vector256<T>.Count;
+                        (Vector256<T> first, Vector256<T> second) = TUnaryOperator.Invoke(Vector256.Create(x.Slice(i)));
+                        first.CopyTo(destination1.Slice(i));
+                        second.CopyTo(destination2.Slice(i));
                     }
-                    while (i <= oneVectorFromEnd);
 
                     // Handle any remaining elements with a final input vector.
                     if (i != x.Length)
@@ -133,15 +129,12 @@ namespace System.Numerics.Tensors
                 if (i <= oneVectorFromEnd)
                 {
                     // Loop handling one input vector / two destination vectors at a time.
-                    do
+                    for (; i <= oneVectorFromEnd; i += Vector128<T>.Count)
                     {
-                        (Vector128<T> first, Vector128<T> second) = TUnaryOperator.Invoke(Vector128.LoadUnsafe(ref sourceRef, (uint)i));
-                        first.StoreUnsafe(ref destination1Ref, (uint)i);
-                        second.StoreUnsafe(ref destination2Ref, (uint)i);
-
-                        i += Vector128<T>.Count;
+                        (Vector128<T> first, Vector128<T> second) = TUnaryOperator.Invoke(Vector128.Create(x.Slice(i)));
+                        first.CopyTo(destination1.Slice(i));
+                        second.CopyTo(destination2.Slice(i));
                     }
-                    while (i <= oneVectorFromEnd);
 
                     // Handle any remaining elements with a final input vector.
                     if (i != x.Length)
@@ -159,9 +152,9 @@ namespace System.Numerics.Tensors
 
             while (i < x.Length)
             {
-                (T first, T second) = TUnaryOperator.Invoke(Unsafe.Add(ref sourceRef, i));
-                Unsafe.Add(ref destination1Ref, i) = first;
-                Unsafe.Add(ref destination2Ref, i) = second;
+                (T first, T second) = TUnaryOperator.Invoke(x[i]);
+                destination1[i] = first;
+                destination2[i] = second;
                 i++;
             }
         }
@@ -198,7 +191,9 @@ namespace System.Numerics.Tensors
 
             ref T xRef = ref MemoryMarshal.GetReference(x);
             ref T yRef = ref MemoryMarshal.GetReference(y);
+            destination1 = destination1.Slice(0, x.Length);
             ref T destination1Ref = ref MemoryMarshal.GetReference(destination1);
+            destination2 = destination2.Slice(0, x.Length);
             ref T destination2Ref = ref MemoryMarshal.GetReference(destination2);
             int i = 0, oneVectorFromEnd;
 
@@ -208,15 +203,12 @@ namespace System.Numerics.Tensors
                 if (i <= oneVectorFromEnd)
                 {
                     // Loop handling one input vector / two destination vectors at a time.
-                    do
+                    for (; i <= oneVectorFromEnd; i += Vector512<T>.Count)
                     {
-                        (Vector512<T> first, Vector512<T> second) = TOperator.Invoke(Vector512.LoadUnsafe(ref xRef, (uint)i), Vector512.LoadUnsafe(ref yRef, (uint)i));
-                        first.StoreUnsafe(ref destination1Ref, (uint)i);
-                        second.StoreUnsafe(ref destination2Ref, (uint)i);
-
-                        i += Vector512<T>.Count;
+                        (Vector512<T> first, Vector512<T> second) = TOperator.Invoke(Vector512.Create(x.Slice(i)), Vector512.Create(y.Slice(i)));
+                        first.CopyTo(destination1.Slice(i));
+                        second.CopyTo(destination2.Slice(i));
                     }
-                    while (i <= oneVectorFromEnd);
 
                     // Handle any remaining elements with a final input vector.
                     if (i != x.Length)
@@ -256,15 +248,12 @@ namespace System.Numerics.Tensors
                 if (i <= oneVectorFromEnd)
                 {
                     // Loop handling one input vector / two destination vectors at a time.
-                    do
+                    for (; i <= oneVectorFromEnd; i += Vector256<T>.Count)
                     {
-                        (Vector256<T> first, Vector256<T> second) = TOperator.Invoke(Vector256.LoadUnsafe(ref xRef, (uint)i), Vector256.LoadUnsafe(ref yRef, (uint)i));
-                        first.StoreUnsafe(ref destination1Ref, (uint)i);
-                        second.StoreUnsafe(ref destination2Ref, (uint)i);
-
-                        i += Vector256<T>.Count;
+                        (Vector256<T> first, Vector256<T> second) = TOperator.Invoke(Vector256.Create(x.Slice(i)), Vector256.Create(y.Slice(i)));
+                        first.CopyTo(destination1.Slice(i));
+                        second.CopyTo(destination2.Slice(i));
                     }
-                    while (i <= oneVectorFromEnd);
 
                     // Handle any remaining elements with a final input vector.
                     if (i != x.Length)
@@ -304,15 +293,12 @@ namespace System.Numerics.Tensors
                 if (i <= oneVectorFromEnd)
                 {
                     // Loop handling one input vector / two destination vectors at a time.
-                    do
+                    for (; i <= oneVectorFromEnd; i += Vector128<T>.Count)
                     {
-                        (Vector128<T> first, Vector128<T> second) = TOperator.Invoke(Vector128.LoadUnsafe(ref xRef, (uint)i), Vector128.LoadUnsafe(ref yRef, (uint)i));
-                        first.StoreUnsafe(ref destination1Ref, (uint)i);
-                        second.StoreUnsafe(ref destination2Ref, (uint)i);
-
-                        i += Vector128<T>.Count;
+                        (Vector128<T> first, Vector128<T> second) = TOperator.Invoke(Vector128.Create(x.Slice(i)), Vector128.Create(y.Slice(i)));
+                        first.CopyTo(destination1.Slice(i));
+                        second.CopyTo(destination2.Slice(i));
                     }
-                    while (i <= oneVectorFromEnd);
 
                     // Handle any remaining elements with a final input vector.
                     if (i != x.Length)
@@ -348,9 +334,9 @@ namespace System.Numerics.Tensors
 
             while (i < x.Length)
             {
-                (T first, T second) = TOperator.Invoke(Unsafe.Add(ref xRef, i), Unsafe.Add(ref yRef, i));
-                Unsafe.Add(ref destination1Ref, i) = first;
-                Unsafe.Add(ref destination2Ref, i) = second;
+                (T first, T second) = TOperator.Invoke(x[i], y[i]);
+                destination1[i] = first;
+                destination2[i] = second;
                 i++;
             }
         }
@@ -379,7 +365,9 @@ namespace System.Numerics.Tensors
             ValidateOutputSpansNonOverlapping(x.Length, destination1, destination2);
 
             ref T xRef = ref MemoryMarshal.GetReference(x);
+            destination1 = destination1.Slice(0, x.Length);
             ref T destination1Ref = ref MemoryMarshal.GetReference(destination1);
+            destination2 = destination2.Slice(0, x.Length);
             ref T destination2Ref = ref MemoryMarshal.GetReference(destination2);
             int i = 0, oneVectorFromEnd;
 
@@ -391,15 +379,12 @@ namespace System.Numerics.Tensors
                     Vector512<T> yVec = Vector512.Create(y);
 
                     // Loop handling one input vector / two destination vectors at a time.
-                    do
+                    for (; i <= oneVectorFromEnd; i += Vector512<T>.Count)
                     {
-                        (Vector512<T> first, Vector512<T> second) = TOperator.Invoke(Vector512.LoadUnsafe(ref xRef, (uint)i), yVec);
-                        first.StoreUnsafe(ref destination1Ref, (uint)i);
-                        second.StoreUnsafe(ref destination2Ref, (uint)i);
-
-                        i += Vector512<T>.Count;
+                        (Vector512<T> first, Vector512<T> second) = TOperator.Invoke(Vector512.Create(x.Slice(i)), yVec);
+                        first.CopyTo(destination1.Slice(i));
+                        second.CopyTo(destination2.Slice(i));
                     }
-                    while (i <= oneVectorFromEnd);
 
                     // Handle any remaining elements with a final input vector.
                     if (i != x.Length)
@@ -441,15 +426,12 @@ namespace System.Numerics.Tensors
                     Vector256<T> yVec = Vector256.Create(y);
 
                     // Loop handling one input vector / two destination vectors at a time.
-                    do
+                    for (; i <= oneVectorFromEnd; i += Vector256<T>.Count)
                     {
-                        (Vector256<T> first, Vector256<T> second) = TOperator.Invoke(Vector256.LoadUnsafe(ref xRef, (uint)i), yVec);
-                        first.StoreUnsafe(ref destination1Ref, (uint)i);
-                        second.StoreUnsafe(ref destination2Ref, (uint)i);
-
-                        i += Vector256<T>.Count;
+                        (Vector256<T> first, Vector256<T> second) = TOperator.Invoke(Vector256.Create(x.Slice(i)), yVec);
+                        first.CopyTo(destination1.Slice(i));
+                        second.CopyTo(destination2.Slice(i));
                     }
-                    while (i <= oneVectorFromEnd);
 
                     // Handle any remaining elements with a final input vector.
                     if (i != x.Length)
@@ -491,15 +473,12 @@ namespace System.Numerics.Tensors
                     Vector128<T> yVec = Vector128.Create(y);
 
                     // Loop handling one input vector / two destination vectors at a time.
-                    do
+                    for (; i <= oneVectorFromEnd; i += Vector128<T>.Count)
                     {
-                        (Vector128<T> first, Vector128<T> second) = TOperator.Invoke(Vector128.LoadUnsafe(ref xRef, (uint)i), yVec);
-                        first.StoreUnsafe(ref destination1Ref, (uint)i);
-                        second.StoreUnsafe(ref destination2Ref, (uint)i);
-
-                        i += Vector128<T>.Count;
+                        (Vector128<T> first, Vector128<T> second) = TOperator.Invoke(Vector128.Create(x.Slice(i)), yVec);
+                        first.CopyTo(destination1.Slice(i));
+                        second.CopyTo(destination2.Slice(i));
                     }
-                    while (i <= oneVectorFromEnd);
 
                     // Handle any remaining elements with a final input vector.
                     if (i != x.Length)
@@ -535,9 +514,9 @@ namespace System.Numerics.Tensors
 
             while (i < x.Length)
             {
-                (T first, T second) = TOperator.Invoke(Unsafe.Add(ref xRef, i), y);
-                Unsafe.Add(ref destination1Ref, i) = first;
-                Unsafe.Add(ref destination2Ref, i) = second;
+                (T first, T second) = TOperator.Invoke(x[i], y);
+                destination1[i] = first;
+                destination2[i] = second;
                 i++;
             }
         }
