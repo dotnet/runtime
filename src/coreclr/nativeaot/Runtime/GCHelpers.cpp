@@ -454,10 +454,10 @@ EXTERN_C uint64_t QCALLTYPE RhGetGenerationBudget(int generation)
     return pHeap->GetGenerationBudget(generation);
 }
 
-EXTERN_C void QCALLTYPE RhEnableNoGCRegionCallback(NoGCRegionCallbackFinalizerWorkItem* pCallback, int64_t totalSize)
+EXTERN_C enable_no_gc_region_callback_status QCALLTYPE RhEnableNoGCRegionCallback(NoGCRegionCallbackFinalizerWorkItem* pCallback, int64_t totalSize)
 {
     IGCHeap* pHeap = GCHeapUtilities::GetGCHeap();
-    pHeap->EnableNoGCRegionCallback(pCallback, totalSize);
+    return pHeap->EnableNoGCRegionCallback(pCallback, totalSize);
 }
 
 EXTERN_C int64_t QCALLTYPE RhGetTotalAllocatedBytesPrecise()
