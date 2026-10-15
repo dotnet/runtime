@@ -685,6 +685,23 @@ function fetchResource (asset: AssetEntryInternal): Promise<Response> {
         }
     }
 
+    return fetchResourceWithCacheRecovery(asset, url, fetchOptions);
+}
+
+async function fetchResourceWithCacheRecovery (asset: AssetEntryInternal, url: string, fetchOptions: RequestInit): Promise<Response> {
+    try {
+        const response = await loaderHelpers.fetch_like(url, fetchOptions);
+        if (fetchOptions.cache !== "force-cache" || (response.ok && response.headers.get("Content-Length") !== "0")) {
+            return response;
+        }
+    } catch (err) {
+        if (fetchOptions.cache !== "force-cache") {
+            throw err;
+        }
+    }
+
+    mono_log_debug(() => `Retrying download '${asset.name}' with cache reload`);
+    asset.cache = fetchOptions.cache = "reload";
     return loaderHelpers.fetch_like(url, fetchOptions);
 }
 
