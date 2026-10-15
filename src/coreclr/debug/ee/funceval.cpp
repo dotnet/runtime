@@ -1535,7 +1535,9 @@ static void GCProtectAllPassedArgs(DebuggerEval *pDE,
                 }
                 else
                 {
-                    pObjectRefArray[currArgIndex] = *((OBJECTREF *)CORDB_ADDRESS_TO_PTR(pFEAD->argAddr));
+                    // The address can be an interpreter stack slot, which is not viewed through a checked OBJECTREF
+                    // (see LOCAL_VAR_OBJREF in interpexec.cpp): read it as a raw pointer.
+                    pObjectRefArray[currArgIndex] = ObjectToOBJECTREF(*((Object **)CORDB_ADDRESS_TO_PTR(pFEAD->argAddr)));
 
                     INDEBUG(pDataLocationArray[currArgIndex] |= DL_ObjectRefArray);
                 }

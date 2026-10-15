@@ -1164,9 +1164,15 @@ void* CEEInfo::getClassThreadStaticDynamicInfo(CORINFO_CLASS_HANDLE cls)
 
     JIT_TO_EE_TRANSITION_LEAF();
 
+#ifdef FEATURE_MULTITHREADING
     TypeHandle clsTypeHandle(cls);
     PTR_MethodTable pMT = clsTypeHandle.AsMethodTable();
     result = pMT->GetThreadStaticsInfo();
+#else
+    // Without multithreading, thread statics are laid out as regular statics, so the JIT never asks for TLS info.
+    result = NULL;
+    UNREACHABLE();
+#endif // FEATURE_MULTITHREADING
 
     EE_TO_JIT_TRANSITION_LEAF();
 
@@ -1220,9 +1226,11 @@ CorInfoHelpFunc CEEInfo::getSharedStaticsHelper(FieldDesc * pField, MethodTable 
         {
             if (noCtor)
             {
+#ifdef FEATURE_MULTITHREADING
                 if (pFieldMT == CoreLibBinder::GetExistingClass(CLASS__DIRECTONTHREADLOCALDATA))
                     helper = CanJITOptimizeTLSAccess() ? CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2 : CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2_NOJITOPT; // ALWAYS use this helper, as its needed to ensure basic thread static access works
                 else
+#endif // FEATURE_MULTITHREADING
                     helper = CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR;
             }
             else
@@ -1291,6 +1299,7 @@ uint32_t CEEInfo::getThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field, bool isG
 
     JIT_TO_EE_TRANSITION();
 
+#ifdef FEATURE_MULTITHREADING
     FieldDesc* fieldDesc = (FieldDesc*)field;
     _ASSERTE(fieldDesc->IsThreadStatic());
     MethodTable *pMT = fieldDesc->GetEnclosingMethodTable();
@@ -1306,6 +1315,10 @@ uint32_t CEEInfo::getThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field, bool isG
     }
 
     _ASSERTE(typeIndex != TypeIDProvider::INVALID_TYPE_ID);
+#else
+    // Without multithreading, thread statics are laid out as regular statics, so the JIT never asks for TLS info.
+    UNREACHABLE();
+#endif // FEATURE_MULTITHREADING
 
     EE_TO_JIT_TRANSITION();
     return typeIndex;
@@ -1320,7 +1333,12 @@ void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO*
     } CONTRACTL_END;
 
     JIT_TO_EE_TRANSITION();
+#ifdef FEATURE_MULTITHREADING
     GetThreadLocalStaticBlocksInfo(pInfo);
+#else
+    // Without multithreading, thread statics are laid out as regular statics, so the JIT never asks for TLS info.
+    UNREACHABLE();
+#endif // FEATURE_MULTITHREADING
     EE_TO_JIT_TRANSITION();
 }
 
@@ -1422,6 +1440,7 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
 
                 pResult->helper = getSharedStaticsHelper(pField, pFieldMT);
             }
+#ifdef FEATURE_MULTITHREADING
             else if (pField->IsThreadStatic())
             {
                  // We always treat accessing thread statics as if we are in domain neutral code.
@@ -1469,6 +1488,7 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
                     }
                 }
             }
+#endif // FEATURE_MULTITHREADING
             else
             {
                 fieldAccessor = CORINFO_FIELD_STATIC_ADDRESS;
@@ -8249,6 +8269,7 @@ void CEEInfo::reportInliningDecision (CORINFO_METHOD_HANDLE inlinerHnd,
         MethodDesc *pCaller = m_pMethodBeingCompiled;
         pCallee->GetModule()->AddInlining(pCaller, pCallee);
 
+#ifdef PROFILING_SUPPORTED
         if (CORProfilerEnableRejit())
         {
             ModuleID modId = 0;
@@ -8280,6 +8301,7 @@ void CEEInfo::reportInliningDecision (CORINFO_METHOD_HANDLE inlinerHnd,
                 ReJitManager::RequestReJIT(1, &modId, &methodDef, static_cast<COR_PRF_REJIT_FLAGS>(0));
             }
         }
+#endif // PROFILING_SUPPORTED
     }
 #endif // defined FEATURE_REJIT && !defined(DACCESS_COMPILE)
 
@@ -12365,7 +12387,7 @@ void CEEJitInfo::recordRelocation(void *       location,
                     // When m_fAllowRel32 == FALSE, the JIT will use a RELATIVE32s for direct code targets only.
                     // Use jump stub.
                     //
-                    delta = rel32UsingJumpStub(fixupLocation, (PCODE)target, m_pMethodBeingCompiled, NULL, false /* throwOnOutOfMemoryWithinRange */);
+                    delta = rel32UsingJumpStub(fixupLocation, (PCODE)target, m_pMethodBeingCompiled);
                     if (delta == 0)
                     {
                         // This forces the JIT to retry the method, which allows us to reserve more space for jump stubs and have a higher chance that
@@ -12380,8 +12402,8 @@ void CEEJitInfo::recordRelocation(void *       location,
             }
         }
 
-                LOG((LF_JIT, LL_INFO100000, "Encoded a PCREL32 at" FMT_ADDR "to" FMT_ADDR "+%d,  delta is 0x%04x\n",
-                         DBG_ADDR(fixupLocation), DBG_ADDR(target), addlDelta, (UINT32)delta));
+        LOG((LF_JIT, LL_INFO100000, "Encoded a PCREL32 at" FMT_ADDR "to" FMT_ADDR "+%d,  delta is 0x%04x\n",
+                    DBG_ADDR(fixupLocation), DBG_ADDR(target), addlDelta, (UINT32)delta));
 
         // Write the 32-bits pc-relative delta into location
         *fixupLocationRW = (INT32) delta;
@@ -12440,8 +12462,7 @@ void CEEJitInfo::recordRelocation(void *       location,
                                                           (PCODE)  target,
                                                           (BYTE *) loAddr,
                                                           (BYTE *) hiAddr,
-                                                          NULL,
-                                                          false);
+                                                          NULL);
             }
 
             // Keep track of conservative estimate of how much memory may be needed by jump stubs. We will use it to reserve extra memory
@@ -12558,7 +12579,7 @@ void CEEJitInfo::recordRelocation(void *       location,
                 if (hiAddr < location)
                     hiAddr = (BYTE*)UINT64_MAX; // overflow
 
-                PCODE jumpStubAddr = ExecutionManager::jumpStub(m_pMethodBeingCompiled, (PCODE)target, loAddr, hiAddr, nullptr, false);
+                PCODE jumpStubAddr = ExecutionManager::jumpStub(m_pMethodBeingCompiled, (PCODE)target, loAddr, hiAddr, nullptr);
 
                 // Keep track of conservative estimate of how much memory may be needed by jump stubs. We will use it
                 // to reserve extra memory on retry to increase chances that the retry succeeds.

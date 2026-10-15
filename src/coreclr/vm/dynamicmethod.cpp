@@ -324,7 +324,7 @@ HeapList* HostCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, EECodeGenMana
     HeapList *pHp = pCodeHeap->InitializeHeapList(pInfo);
     if (pHp == NULL)
     {
-        _ASSERTE(!pInfo->GetThrowOnOutOfMemoryWithinRange());
+        _ASSERTE(pInfo->IsSpecificMemoryRangeRequested());
         return NULL;
     }
 
@@ -334,7 +334,7 @@ HeapList* HostCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, EECodeGenMana
     pCodeHeap.SuppressRelease();
 
     LOG((LF_BCL, LL_INFO10, "Level1 - CodeHeap created {0x%p}\n", (HostCodeHeap*)pCodeHeap));
-    _ASSERTE((pHp != NULL) || !pInfo->GetThrowOnOutOfMemoryWithinRange());
+    _ASSERTE((pHp != NULL) || pInfo->IsSpecificMemoryRangeRequested());
     return pHp;
 }
 
@@ -396,15 +396,11 @@ HeapList* HostCodeHeap::InitializeHeapList(CodeHeapRequestInfo *pInfo)
     // reserve ReserveBlockSize rounded-up to VIRTUAL_ALLOC_RESERVE_GRANULARITY of memory
     ReserveBlockSize = ALIGN_UP(ReserveBlockSize, VIRTUAL_ALLOC_RESERVE_GRANULARITY);
 
-    if (pInfo->GetLoAddr() != NULL || pInfo->GetHiAddr() != NULL)
+    if (pInfo->IsSpecificMemoryRangeRequested())
     {
         m_pBaseAddr = (BYTE*)ExecutableAllocator::Instance()->ReserveWithinRange(ReserveBlockSize, pInfo->GetLoAddr(), pInfo->GetHiAddr());
         if (!m_pBaseAddr)
-        {
-            if (pInfo->GetThrowOnOutOfMemoryWithinRange())
-                ThrowOutOfMemoryWithinRange();
             return NULL;
-        }
     }
     else
     {
@@ -462,7 +458,6 @@ HeapList* HostCodeHeap::InitializeHeapList(CodeHeapRequestInfo *pInfo)
     pHp->endAddress = pHp->startAddress;
 
     pHp->maxCodeHeapSize = m_TotalBytesAvailable - (pTracker ? pTracker->size : 0);
-    pHp->reserveForJumpStubs = 0;
 
 #if defined(TARGET_64BIT)
     if (pHp->CLRPersonalityRoutine != NULL)

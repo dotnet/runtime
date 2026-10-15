@@ -1095,6 +1095,122 @@ namespace System.Threading.Tests
             | UnixFileMode.OtherRead
             | UnixFileMode.OtherWrite
             | UnixFileMode.OtherExecute;
+        private const UnixFileMode OwnerUserRwx =
+            UnixFileMode.UserRead
+            | UnixFileMode.UserWrite
+            | UnixFileMode.UserExecute;
+
+        [ConditionalTheory(nameof(IsRemoteExecutorAndCrossProcessNamedMutexSupported))]
+        [InlineData(null)]
+        [InlineData(false)]
+        [InlineData(true)]
+        [PlatformSpecific(TestPlatforms.Linux)]
+        public void NamedMutex_DefaultScope_UsesExpectedSharedMemoryPath(bool? unsafeDefaultMutexScopeGlobal)
+        {
+            string userRuntimeDirectory = GetTestFilePath();
+            Directory.CreateDirectory(userRuntimeDirectory);
+
+            RemoteInvokeOptions remoteInvokeOptions = new();
+            remoteInvokeOptions.StartInfo.EnvironmentVariables["XDG_RUNTIME_DIR"] = userRuntimeDirectory;
+            if (unsafeDefaultMutexScopeGlobal.HasValue)
+            {
+                remoteInvokeOptions.RuntimeConfigurationOptions["System.Threading.Mutex.UnsafeDefaultMutexScopeGlobal"] =
+                    unsafeDefaultMutexScopeGlobal.Value;
+            }
+
+            RemoteExecutor.Invoke(
+                (userRuntimeDirectory, useGlobalScope) =>
+                {
+                    string name = Guid.NewGuid().ToString("N");
+                    string mutexName = $"Global\\{name}";
+                    string userPath = Path.Combine(userRuntimeDirectory, ".dotnet", "shm", "global", name);
+                    string globalPath = Path.Combine(GlobalSharedMemoryDirectory, name);
+                    bool isGlobalScope = bool.Parse(useGlobalScope);
+
+                    using Mutex mutex = new(false, mutexName, out bool createdNew);
+                    Assert.True(createdNew);
+                    Assert.Equal(!isGlobalScope, File.Exists(userPath));
+                    Assert.Equal(isGlobalScope, File.Exists(globalPath));
+
+                    using Mutex openedMutex = Mutex.OpenExisting(mutexName);
+                    Assert.True(Mutex.TryOpenExisting(mutexName, out Mutex existingMutex));
+                    existingMutex.Dispose();
+                },
+                userRuntimeDirectory,
+                (unsafeDefaultMutexScopeGlobal == true).ToString(),
+                remoteInvokeOptions).Dispose();
+        }
+
+        [ConditionalFact(nameof(IsRemoteExecutorAndCrossProcessNamedMutexSupported))]
+        [PlatformSpecific(TestPlatforms.Linux)]
+        [UnsupportedOSPlatform("windows")]
+        public void NamedMutex_UserScopedSharedMemoryFallbackPathIsCreated()
+        {
+            string homeDirectory = GetTestFilePath();
+            Directory.CreateDirectory(homeDirectory);
+
+            RemoteInvokeOptions remoteInvokeOptions = new();
+            remoteInvokeOptions.StartInfo.EnvironmentVariables["HOME"] = homeDirectory;
+            remoteInvokeOptions.StartInfo.EnvironmentVariables["XDG_RUNTIME_DIR"] = string.Empty;
+
+            RemoteExecutor.Invoke(
+                homeDirectory =>
+                {
+                    string sharedMemoryBaseDirectory = Path.Combine(
+                        homeDirectory,
+                        ".dotnet",
+                        "corefx",
+                        "Runtime",
+                        "SharedMemory");
+                    string name = Guid.NewGuid().ToString("N");
+                    string sharedMemoryDirectory = Path.Combine(sharedMemoryBaseDirectory, ".dotnet", "shm", "global");
+                    NamedWaitHandleOptions options =
+                        new() { CurrentUserOnly = true, CurrentSessionOnly = false };
+                    using Mutex mutex = new($"Global\\{name}", options);
+                    Assert.True(File.Exists(Path.Combine(sharedMemoryDirectory, name)));
+                    Assert.Equal(OwnerUserRwx, File.GetUnixFileMode(Path.Combine(sharedMemoryBaseDirectory, ".dotnet")));
+                    Assert.Equal(OwnerUserRwx, File.GetUnixFileMode(Path.Combine(sharedMemoryBaseDirectory, ".dotnet", "shm")));
+                    Assert.Equal(OwnerUserRwx, File.GetUnixFileMode(sharedMemoryDirectory));
+                },
+                homeDirectory,
+                remoteInvokeOptions).Dispose();
+        }
+
+        [ConditionalFact(nameof(IsRemoteExecutorAndCrossProcessNamedMutexSupported))]
+        [PlatformSpecific(TestPlatforms.Linux)]
+        [UnsupportedOSPlatform("windows")]
+        public void NamedMutex_SharedMemoryDirectoryReplacementDoesNotRedirectFileAccess()
+        {
+            string userRuntimeDirectory = GetTestFilePath();
+            Directory.CreateDirectory(userRuntimeDirectory);
+
+            RemoteInvokeOptions remoteInvokeOptions = new();
+            remoteInvokeOptions.StartInfo.EnvironmentVariables["XDG_RUNTIME_DIR"] = userRuntimeDirectory;
+
+            RemoteExecutor.Invoke(
+                userRuntimeDirectory =>
+                {
+                    NamedWaitHandleOptions options =
+                        new() { CurrentUserOnly = true, CurrentSessionOnly = false };
+                    string firstName = Guid.NewGuid().ToString("N");
+
+                    using Mutex firstMutex = new($"Global\\{firstName}", options);
+
+                    string runtimeDirectory = Path.Combine(userRuntimeDirectory, ".dotnet");
+                    string sharedMemoryDirectory = Path.Combine(runtimeDirectory, "shm");
+                    string originalSharedMemoryDirectory = Path.Combine(runtimeDirectory, "shm-original");
+                    Directory.Move(sharedMemoryDirectory, originalSharedMemoryDirectory);
+                    Directory.CreateDirectory(Path.Combine(sharedMemoryDirectory, "global"), OwnerUserRwx);
+
+                    string secondName = Guid.NewGuid().ToString("N");
+                    using Mutex secondMutex = new($"Global\\{secondName}", options);
+
+                    Assert.True(File.Exists(Path.Combine(originalSharedMemoryDirectory, "global", secondName)));
+                    Assert.False(File.Exists(Path.Combine(sharedMemoryDirectory, "global", secondName)));
+                },
+                userRuntimeDirectory,
+                remoteInvokeOptions).Dispose();
+        }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile))]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
