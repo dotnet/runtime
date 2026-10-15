@@ -185,6 +185,18 @@ void PalGetPDBInfo(HANDLE hOsHandle, GUID * pGuidSignature, _Out_ uint32_t * pdw
 #endif
 }
 
+#ifdef FEATURE_HIJACK
+static void UnmaskActivationSignal()
+{
+    sigset_t signal_set;
+    sigemptyset(&signal_set);
+    sigaddset(&signal_set, INJECT_ACTIVATION_SIGNAL);
+
+    int sigmaskRet = pthread_sigmask(SIG_UNBLOCK, &signal_set, NULL);
+    _ASSERTE(sigmaskRet == 0);
+}
+#endif // FEATURE_HIJACK
+
 // This functions configures behavior of the signals that are not
 // related to hardware exception handling.
 void ConfigureSignals()
@@ -374,8 +386,7 @@ void PalAttachThread(void* thread)
 #endif
 
 #ifdef FEATURE_HIJACK
-    int sigmaskRet = minipal_unmask_activation_signal();
-    _ASSERTE(sigmaskRet == 0);
+    UnmaskActivationSignal();
 #endif // FEATURE_HIJACK
 }
 

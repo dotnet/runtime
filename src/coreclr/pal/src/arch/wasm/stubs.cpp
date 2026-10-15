@@ -294,6 +294,11 @@ void SEHCleanupSignals(bool isChildProcess)
 }
 
 extern "C" VOID PALAPI
+PAL_UnmaskActivationSignal(VOID)
+{
+}
+
+extern "C" VOID PALAPI
 PAL_EnableCrashReportBeforeSignalChaining(void)
 {
     // No-op: WASI has no signal delivery.
