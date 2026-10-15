@@ -11699,6 +11699,37 @@ NamedIntrinsic Compiler::resolveNamedIntrinsic(CORINFO_METHOD_HANDLE method, Nam
 
     if (isSupportQuery)
     {
+#if defined(TARGET_LOONGARCH64)
+        const char* className              = nullptr;
+        const char* namespaceName          = nullptr;
+        const char* enclosingClassNames[2] = {nullptr};
+        info.compCompHnd->getMethodNameFromMetadata(method, &className, &namespaceName, enclosingClassNames,
+                                                ArrLen(enclosingClassNames));
+        if ((strncmp(className, "BH", 2) == 0) && opts.compSupportsISA.HasInstructionSet(InstructionSet_LAM_BH))
+        {
+            if (!IsTargetAbi(CORINFO_NATIVEAOT_ABI) || compExactlyDependsOn(InstructionSet_LAM_BH))
+            {
+                result = NI_IsSupported_True;
+            }
+            else
+            {
+                assert(IsTargetAbi(CORINFO_NATIVEAOT_ABI));
+                result = NI_IsSupported_Dynamic;
+            }
+        }
+        if ((strncmp(className, "CAS", 3) == 0) && opts.compSupportsISA.HasInstructionSet(InstructionSet_LAM_CAS))
+        {
+            if (!IsTargetAbi(CORINFO_NATIVEAOT_ABI) || compExactlyDependsOn(InstructionSet_LAM_CAS))
+            {
+                result = NI_IsSupported_True;
+            }
+            else
+            {
+                assert(IsTargetAbi(CORINFO_NATIVEAOT_ABI));
+                result = NI_IsSupported_Dynamic;
+            }
+        }
+#endif
         return (result == NI_Illegal) ? NI_IsSupported_False : result;
     }
 
@@ -12660,36 +12691,6 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
 
                                     result = NI_IsSupported_Type;
                                 }
-#if defined(TARGET_LOONGARCH64)
-                                else if ((strncmp(className, "BH", 2) == 0) &&
-                                         opts.compSupportsISA.HasInstructionSet(InstructionSet_LAM_BH))
-                                {
-                                    if (!IsTargetAbi(CORINFO_NATIVEAOT_ABI) ||
-                                        compExactlyDependsOn(InstructionSet_LAM_BH))
-                                    {
-                                        result = NI_IsSupported_True;
-                                    }
-                                    else
-                                    {
-                                        assert(IsTargetAbi(CORINFO_NATIVEAOT_ABI));
-                                        result = NI_IsSupported_Dynamic;
-                                    }
-                                }
-                                else if ((strncmp(className, "CAS", 3) == 0) &&
-                                         opts.compSupportsISA.HasInstructionSet(InstructionSet_LAM_CAS))
-                                {
-                                    if (!IsTargetAbi(CORINFO_NATIVEAOT_ABI) ||
-                                        compExactlyDependsOn(InstructionSet_LAM_CAS))
-                                    {
-                                        result = NI_IsSupported_True;
-                                    }
-                                    else
-                                    {
-                                        assert(IsTargetAbi(CORINFO_NATIVEAOT_ABI));
-                                        result = NI_IsSupported_Dynamic;
-                                    }
-                                }
-#endif
                                 else
                                 {
                                     result = NI_IsSupported;
