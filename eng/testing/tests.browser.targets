@@ -94,11 +94,11 @@
   </Target>
 
   <!-- CoreCLR-only, test-infra-only. Library tests crossgen inside the nested publish and then serve the BUILD
-       output from bin/, so the build staging reads obj/R2R (_WasmBuildPrebuiltR2RDirectory). That stages the
-       composite component stubs, but the composite owner is not an assembly: the SDK defines it only as a
-       publish asset, so it never reaches bin/ or the build boot config. Define it as a build asset with the
-       same trait so the boot config lists it as a composite image. This cannot live in the WebAssembly SDK:
-       in a real publish the build phase runs before crossgen, so the owner does not exist yet. -->
+       output from bin/, so the build staging reads obj/R2R. That stages the composite component stubs, but the
+       composite owner is not an assembly: the SDK defines it only as a publish asset, so it never reaches bin/
+       or the build boot config. Define it as a build asset with the same trait so the boot config lists it as a
+       composite image. This cannot live in the WebAssembly SDK: in a real publish the build phase runs before
+       crossgen, so the owner may be missing or stale. -->
   <Target Name="_WasmCoreClrAddCompositeR2RBuildAsset"
           Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(PublishReadyToRun)' == 'true' and '$(PublishReadyToRunComposite)' == 'true' and '$(WasmBuildingForNestedPublish)' != 'true'"
           DependsOnTargets="_WasmCoreClrSelectR2RDirectories"
