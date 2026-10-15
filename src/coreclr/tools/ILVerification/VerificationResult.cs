@@ -28,11 +28,11 @@ namespace ILVerify
         {
             argumentValue = default;
 
-            for (int i = 0; i < ErrorArguments.Length; i++)
+            foreach (ErrorArgument argument in ErrorArguments)
             {
-                if (ErrorArguments[i].Name == name)
+                if (argument.Name == name)
                 {
-                    argumentValue = (T)ErrorArguments[i].Value;
+                    argumentValue = (T)argument.Value;
                     return true;
                 }
             }
