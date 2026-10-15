@@ -2432,6 +2432,17 @@ inline bool treeIsNonExceptGCSafePoint(GenTree* tree, Compiler* comp)
 
 PhaseStatus Compiler::fgWasmFindGCRefCandidates()
 {
+
+#define DISP_SAFEPOINT(msg, block, tree, liveInto)                                                                     \
+    do                                                                                                                 \
+    {                                                                                                                  \
+        JITDUMP((msg), (block)->bbNum);                                                                                \
+        DISPNODE((tree));                                                                                              \
+        JITDUMP("Live across: ");                                                                                      \
+        JITDUMPEXEC(dumpConvertedVarSet(this, (liveInto)));                                                            \
+        JITDUMP("\n");                                                                                                 \
+    } while (0)
+
     if (lvaTrackedCount == 0)
     {
         return PhaseStatus::MODIFIED_NOTHING;
@@ -2461,21 +2472,13 @@ PhaseStatus Compiler::fgWasmFindGCRefCandidates()
             if (treeIsNonExceptGCSafePoint(tree, this))
             {
                 VarSetOps::UnionD(this, liveAcrossGC, liveInto);
-                JITDUMP("GC safepoint in " FMT_BB ":\n", block->bbNum);
-                DISPNODE(tree);
-                JITDUMP("\n  Live across: ");
-                JITDUMPEXEC(dumpConvertedVarSet(this, liveInto));
-                JITDUMP("\n");
+                DISP_SAFEPOINT("GC safepoint in " FMT_BB ":\n", block, tree, liveInto);
             }
             else if (tree->OperMayThrow(this))
             {
                 VarSetOps::IntersectionD(this, liveInto, ehLive);
                 VarSetOps::UnionD(this, liveAcrossGC, liveInto);
-                JITDUMP("EH-Only GC safepoint in " FMT_BB ":\n", block->bbNum);
-                DISPNODE(tree);
-                JITDUMP("\n  Live across: ");
-                JITDUMPEXEC(dumpConvertedVarSet(this, liveInto));
-                JITDUMP("\n");
+                DISP_SAFEPOINT("EH-Only GC safepoint in " FMT_BB ":\n", block, tree, liveInto);
             }
 
             // We use GeneralLclAddrHandling=false here, since for consistency we want to treat a local value as live
@@ -2500,11 +2503,8 @@ PhaseStatus Compiler::fgWasmFindGCRefCandidates()
     // Build our set of candiates from gc-ref typed locals which are not live across a safepoint
     m_wasmGCRefCandidates  = new (this, CMK_WasmGCRefCandidates) BitVec();
     *m_wasmGCRefCandidates = VarSetOps::MakeEmpty(this);
-    JITDUMP("Building GC ref candidates for %d tracked locals (excluding those live across GC safepoints):\n",
-            lvaTrackedCount);
     for (unsigned varIndex = 0; varIndex < lvaTrackedCount; varIndex++)
     {
-        JITDUMP("Considering tracked var V%02u\n", varIndex);
         LclVarDsc* varDsc = lvaGetDescByTrackedIndex(varIndex);
         if (varTypeIsGC(varDsc->TypeGet()) && !VarSetOps::IsMember(this, liveAcrossGC, varIndex))
         {
