@@ -958,27 +958,27 @@ namespace System.Tests
 
             Assert.True(BinaryIntegerHelper<sbyte>.TryWriteBigEndian((sbyte)0x00, destination, out bytesWritten));
             Assert.Equal(1, bytesWritten);
-            Assert.Equal(new byte[] { 0x00 }, destination.ToArray());
+            Assert.Equal<byte>([0x00], destination);
 
             Assert.True(BinaryIntegerHelper<sbyte>.TryWriteBigEndian((sbyte)0x01, destination, out bytesWritten));
             Assert.Equal(1, bytesWritten);
-            Assert.Equal(new byte[] { 0x01 }, destination.ToArray());
+            Assert.Equal<byte>([0x01], destination);
 
             Assert.True(BinaryIntegerHelper<sbyte>.TryWriteBigEndian((sbyte)0x7F, destination, out bytesWritten));
             Assert.Equal(1, bytesWritten);
-            Assert.Equal(new byte[] { 0x7F }, destination.ToArray());
+            Assert.Equal<byte>([0x7F], destination);
 
             Assert.True(BinaryIntegerHelper<sbyte>.TryWriteBigEndian(unchecked((sbyte)0x80), destination, out bytesWritten));
             Assert.Equal(1, bytesWritten);
-            Assert.Equal(new byte[] { 0x80 }, destination.ToArray());
+            Assert.Equal<byte>([0x80], destination);
 
             Assert.True(BinaryIntegerHelper<sbyte>.TryWriteBigEndian(unchecked((sbyte)0xFF), destination, out bytesWritten));
             Assert.Equal(1, bytesWritten);
-            Assert.Equal(new byte[] { 0xFF }, destination.ToArray());
+            Assert.Equal<byte>([0xFF], destination);
 
             Assert.False(BinaryIntegerHelper<sbyte>.TryWriteBigEndian(default, Span<byte>.Empty, out bytesWritten));
             Assert.Equal(0, bytesWritten);
-            Assert.Equal(new byte[] { 0xFF }, destination.ToArray());
+            Assert.Equal<byte>([0xFF], destination);
         }
 
         [Fact]
@@ -989,27 +989,27 @@ namespace System.Tests
 
             Assert.True(BinaryIntegerHelper<sbyte>.TryWriteLittleEndian((sbyte)0x00, destination, out bytesWritten));
             Assert.Equal(1, bytesWritten);
-            Assert.Equal(new byte[] { 0x00 }, destination.ToArray());
+            Assert.Equal<byte>([0x00], destination);
 
             Assert.True(BinaryIntegerHelper<sbyte>.TryWriteLittleEndian((sbyte)0x01, destination, out bytesWritten));
             Assert.Equal(1, bytesWritten);
-            Assert.Equal(new byte[] { 0x01 }, destination.ToArray());
+            Assert.Equal<byte>([0x01], destination);
 
             Assert.True(BinaryIntegerHelper<sbyte>.TryWriteLittleEndian((sbyte)0x7F, destination, out bytesWritten));
             Assert.Equal(1, bytesWritten);
-            Assert.Equal(new byte[] { 0x7F }, destination.ToArray());
+            Assert.Equal<byte>([0x7F], destination);
 
             Assert.True(BinaryIntegerHelper<sbyte>.TryWriteLittleEndian(unchecked((sbyte)0x80), destination, out bytesWritten));
             Assert.Equal(1, bytesWritten);
-            Assert.Equal(new byte[] { 0x80 }, destination.ToArray());
+            Assert.Equal<byte>([0x80], destination);
 
             Assert.True(BinaryIntegerHelper<sbyte>.TryWriteLittleEndian(unchecked((sbyte)0xFF), destination, out bytesWritten));
             Assert.Equal(1, bytesWritten);
-            Assert.Equal(new byte[] { 0xFF }, destination.ToArray());
+            Assert.Equal<byte>([0xFF], destination);
 
             Assert.False(BinaryIntegerHelper<sbyte>.TryWriteLittleEndian(default, Span<byte>.Empty, out bytesWritten));
             Assert.Equal(0, bytesWritten);
-            Assert.Equal(new byte[] { 0xFF }, destination.ToArray());
+            Assert.Equal<byte>([0xFF], destination);
         }
 
         //

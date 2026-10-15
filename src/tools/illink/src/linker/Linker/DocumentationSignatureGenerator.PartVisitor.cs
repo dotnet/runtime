@@ -42,7 +42,7 @@ namespace Mono.Linker
                     builder.Append("[0:");
                     for (int i = 1; i < arrayType.Rank; i++)
                     {
-                        if (arrayType.Dimensions[0].LowerBound != 0)
+                        if (arrayType.Dimensions[i].LowerBound != 0)
                             throw new NotImplementedException();
                         builder.Append(",0:");
                     }

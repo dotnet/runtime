@@ -144,30 +144,16 @@ namespace System.IO.Compression
         {
             ArgumentOutOfRangeException.ThrowIfNegative(inputLength);
 
-            // For inputs up to 2 GiB, delegate to the native compressBound() function, which returns
-            // the exact upper bound for the zlib implementation linked into the current process
-            // (either classic zlib or zlib-ng, depending on platform and build flags). The 2^31
-            // threshold keeps the value within the uint P/Invoke signature on all platforms.
-
-            // Browser/WASI builds do not link the native compression library,
-            // so fall through to the managed formula on those platforms.
-            if (inputLength <= (1L << 31) && !OperatingSystem.IsBrowser() && !OperatingSystem.IsWasi())
-            {
-                return Interop.ZLib.compressBound((uint)inputLength);
-            }
-
-            // For larger inputs, compute the bound in managed code using zlib-ng's quick-strategy
-            // formula. It is strictly larger than classic zlib's compressBound(), so it is a safe
-            // upper bound regardless of which implementation is linked at runtime.
-            // See: src/native/external/zlib-ng/compress.c and zutil.h.
-            // Use ulong to avoid overflow; reject inputs whose bound does not fit in long.
+            // This method does not know which windowLog2 or quality the caller will use, so
+            // compute the maximum of the bounds used by zlib-ng's deflateBound(). The code below mimics the logic
+            // to compute the maximum possible size returned by deflateBound. Our API doesn't expose all knobs
+            // so z_stream's strstart and gzhead are always null. We also don't handle the s390 corner case.
             ulong sourceLength = (ulong)inputLength;
-            ulong maxCompressedLength = sourceLength
-                + (sourceLength == 0 ? 1u : 0u)
-                + (sourceLength < 9 ? 1u : 0u)
-                + ((sourceLength + 7) >> 3)
-                + 3   // DEFLATE_BLOCK_OVERHEAD: (3 + 15 + 6) >> 3
-                + 6;  // ZLIB_WRAPLEN: zlib header (2 bytes) + Adler32 trailer (4 bytes)
+            const ulong wrapLength = 6; // GZIP_WRAPLEN is 18, GZipEncoder compensates for the rest
+            ulong maxCompressedLength = sourceLength + ((sourceLength + 7) >> 3) + ((sourceLength + 63) >> 6) + 5;
+            ulong storedBlockBound = sourceLength + (sourceLength >> 5) + (sourceLength >> 7) + (sourceLength >> 11) + 7;
+
+            maxCompressedLength = Math.Max(maxCompressedLength, storedBlockBound) + wrapLength;
 
             if (maxCompressedLength > long.MaxValue)
             {

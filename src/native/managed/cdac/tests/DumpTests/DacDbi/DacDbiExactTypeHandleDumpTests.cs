@@ -27,7 +27,7 @@ public class DacDbiExactTypeHandleDumpTests : DumpTestBase
 {
     protected override string DebuggeeName => "ExactTypeHandle";
 
-    private DacDbiImpl CreateDacDbi() => new DacDbiImpl(Target, legacyObj: null);
+    private DacDbiImpl CreateDacDbi() => new DacDbiImpl(Target, legacyObj: null, new());
 
     /// <summary>
     /// All non-null heap objects reachable from Strong / Pinned / WeakLong / Dependent handles

@@ -23,6 +23,70 @@ public class HardwareEh
 	public const long c_VALUE = 34252;
 	public delegate bool TestDelegate();
 
+    [Theory]
+    [InlineData(0, typeof(DivideByZeroException))]
+    [InlineData(1, typeof(OverflowException))]
+    [InlineData(2, typeof(NullReferenceException))]
+    public static void NestedHardwareExceptions(int operation, Type exceptionType)
+    {
+        int finallyCount = 0;
+
+        for (int i = 0; i < 16; i++)
+        {
+            bool caught = false;
+
+            try
+            {
+                try
+                {
+                    TriggerHardwareException(operation);
+                }
+                finally
+                {
+                    Assert.Throws<NullReferenceException>(() => TriggerHardwareException(2));
+                    finallyCount++;
+                }
+            }
+            catch (Exception ex) when (FilterHardwareException(ex, exceptionType))
+            {
+                caught = true;
+            }
+
+            Assert.True(caught);
+            Assert.Equal(i + 1, finallyCount);
+        }
+    }
+
+    private static bool FilterHardwareException(Exception exception, Type exceptionType)
+    {
+        Assert.Throws<DivideByZeroException>(() => TriggerHardwareException(0));
+        return exception.GetType() == exceptionType;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int Divide(int dividend, int divisor)
+    {
+        return dividend / divisor;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void TriggerHardwareException(int operation)
+    {
+        switch (operation)
+        {
+            case 0:
+                Divide(1, 0);
+                break;
+            case 1:
+                Divide(int.MinValue, -1);
+                break;
+            case 2:
+                int[] values = null;
+                GC.KeepAlive(values[0]);
+                break;
+        }
+    }
+
 	[Fact]
 	public static int TestEntryPoint()
 	{

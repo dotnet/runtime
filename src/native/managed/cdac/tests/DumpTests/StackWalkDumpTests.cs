@@ -159,7 +159,7 @@ public class StackWalkDumpTests : DumpTestBase
                 continue;
 
             IXCLRDataMethodInstance methodInstance = new ClrDataMethodInstance(
-                Target, methodDesc, TargetPointer.Null, legacyImpl: null);
+                Target, methodDesc, TargetPointer.Null, legacyImpl: null, new());
             ulong handle = 0;
             int hr = methodInstance.StartEnumExtents(&handle);
 
@@ -385,7 +385,7 @@ public class StackWalkDumpTests : DumpTestBase
         InitializeDumpTest(config, "VarargPInvoke", "full");
         IStackWalk stackWalk = Target.Contracts.StackWalk;
         IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
-        ISOSDacInterface sosDac = new SOSDacImpl(Target, legacyObj: null);
+        ISOSDacInterface sosDac = new SOSDacImpl(Target, legacyObj: null, new());
 
         ThreadData crashingThread = DumpTestHelpers.FindThreadWithMethod(Target, "Main");
         IEnumerable<IStackDataFrameHandle> frames = DumpTestStackWalker.LegacyVisibleFrames(stackWalk, crashingThread);
@@ -435,7 +435,7 @@ public class StackWalkDumpTests : DumpTestBase
                 continue;
 
             IXCLRDataMethodInstance methodInstance = new ClrDataMethodInstance(
-                Target, mdHandle, TargetPointer.Null, legacyImpl: null);
+                Target, mdHandle, TargetPointer.Null, legacyImpl: null, new());
             uint mapNeeded;
             int hr = methodInstance.GetILAddressMap(0, &mapNeeded, null);
             Assert.True(hr < 0, $"Expected failure HRESULT for ILStub GetILAddressMap, got 0x{hr:X8}");
@@ -455,7 +455,7 @@ public class StackWalkDumpTests : DumpTestBase
         InitializeDumpTest(config, "VarargPInvoke", "full");
         IStackWalk stackWalk = Target.Contracts.StackWalk;
         IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
-        ISOSDacInterface sosDac = new SOSDacImpl(Target, legacyObj: null);
+        ISOSDacInterface sosDac = new SOSDacImpl(Target, legacyObj: null, new());
 
         ThreadData crashingThread = DumpTestHelpers.FindThreadWithMethod(Target, "Main");
         IEnumerable<IStackDataFrameHandle> frames = DumpTestStackWalker.LegacyVisibleFrames(stackWalk, crashingThread);
@@ -504,7 +504,7 @@ public class StackWalkDumpTests : DumpTestBase
         InitializeDumpTest(config, "VarargPInvoke", "full");
         IStackWalk stackWalk = Target.Contracts.StackWalk;
         IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
-        ISOSDacInterface sosDac = new SOSDacImpl(Target, legacyObj: null);
+        ISOSDacInterface sosDac = new SOSDacImpl(Target, legacyObj: null, new());
 
         ThreadData crashingThread = DumpTestHelpers.FindThreadWithMethod(Target, "Main");
         IEnumerable<IStackDataFrameHandle> frames = DumpTestStackWalker.LegacyVisibleFrames(stackWalk, crashingThread);
@@ -578,7 +578,7 @@ public class StackWalkDumpTests : DumpTestBase
 
             MethodDescHandle methodDesc = rts.GetMethodDescHandle(methodDescPtr);
             if (DumpTestHelpers.GetMethodName(Target, methodDesc) == methodName)
-                return new ClrDataMethodInstance(Target, methodDesc, TargetPointer.Null, legacyImpl: null);
+                return new ClrDataMethodInstance(Target, methodDesc, TargetPointer.Null, legacyImpl: null, new());
         }
 
         Assert.Fail($"{methodName} not found on the crashing thread's stack");

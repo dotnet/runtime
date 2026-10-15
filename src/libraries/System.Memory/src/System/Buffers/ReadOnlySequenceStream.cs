@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 namespace System.Buffers
 {
     /// <summary>
-    /// Provides a seekable, read-only <see cref="Stream"/> over a <see cref="ReadOnlySequence{Byte}"/>.
+    /// Provides a read-only, non-seekable <see cref="Stream"/> for reading from a <see cref="ReadOnlySequence{Byte}"/>.
     /// </summary>
     /// <remarks>
     /// <para>The underlying sequence is not copied; reads are served directly from its segments.</para>
@@ -18,7 +18,6 @@ namespace System.Buffers
     {
         private ReadOnlySequence<byte> _sequence;
         private SequencePosition _position;
-        private long _absolutePosition;
         private bool _isDisposed;
         private CachedCompletedInt32Task _lastReadTask;
 
@@ -30,15 +29,20 @@ namespace System.Buffers
         {
             _sequence = source;
             _position = source.Start;
-            _absolutePosition = 0;
-            _isDisposed = false;
         }
 
         /// <inheritdoc />
         public override bool CanRead => !_isDisposed;
 
         /// <inheritdoc />
-        public override bool CanSeek => !_isDisposed;
+        /// <summary>Gets a value indicating whether the <see cref="ReadOnlySequenceStream"/> supports seeking.</summary>
+        // Keep this intentionally non-seekable: backward positioning requires traversing segments
+        // again from the beginning, making repeated seeks worst-case O(N). ReadOnlySequence<T>
+        // segment boundaries may be indirectly controlled by an untrusted network client through
+        // packet framing, so even correct stitching logic can produce adversarial fragmentation.
+        // Consumers must remain resilient against the worst technically compliant implementation
+        // rather than assuming ASP.NET-like segmentation.
+        public override bool CanSeek => false;
 
         /// <inheritdoc />
         public override bool CanWrite => false;
@@ -46,43 +50,20 @@ namespace System.Buffers
         private void EnsureNotDisposed() => ObjectDisposedException.ThrowIf(_isDisposed, this);
 
         /// <inheritdoc />
-        public override long Length
-        {
-            get
-            {
-                EnsureNotDisposed();
-                return _sequence.Length;
-            }
-        }
+        /// <summary>Gets the length of the stream. This property is not supported and always throws a <see cref="NotSupportedException"/>.</summary>
+        /// <exception cref="NotSupportedException">In all cases.</exception>
+        // Keep Length and Position unsupported to match the standard contract encoded by the
+        // stream conformance tests for streams where CanSeek is false, even though the underlying
+        // sequence can provide its length cheaply.
+        public override long Length => throw new NotSupportedException(SR.NotSupported_UnseekableStream);
 
         /// <inheritdoc />
+        /// <summary>Gets or sets the position within the current stream. This property is not supported and always throws a <see cref="NotSupportedException"/>.</summary>
+        /// <exception cref="NotSupportedException">In all cases.</exception>
         public override long Position
         {
-            get
-            {
-                EnsureNotDisposed();
-                return _absolutePosition;
-            }
-            set
-            {
-                EnsureNotDisposed();
-                ArgumentOutOfRangeException.ThrowIfNegative(value);
-
-                if (value >= _sequence.Length)
-                {
-                    _position = _sequence.End;
-                }
-                else if (value >= _absolutePosition)
-                {
-                    _position = _sequence.GetPosition(value - _absolutePosition, _position);
-                }
-                else
-                {
-                    _position = _sequence.GetPosition(value, _sequence.Start);
-                }
-
-                _absolutePosition = value;
-            }
+            get => throw new NotSupportedException(SR.NotSupported_UnseekableStream);
+            set => throw new NotSupportedException(SR.NotSupported_UnseekableStream);
         }
 
         /// <inheritdoc />
@@ -97,11 +78,6 @@ namespace System.Buffers
         {
             EnsureNotDisposed();
 
-            if (_absolutePosition >= _sequence.Length)
-            {
-                return 0;
-            }
-
             ReadOnlySequence<byte> remaining = _sequence.Slice(_position);
             int n = (int)Math.Min(remaining.Length, buffer.Length);
             if (n <= 0)
@@ -111,7 +87,6 @@ namespace System.Buffers
 
             remaining.Slice(0, n).CopyTo(buffer);
             _position = _sequence.GetPosition(n, _position);
-            _absolutePosition += n;
             return n;
         }
 
@@ -159,19 +134,18 @@ namespace System.Buffers
             ValidateCopyToArguments(destination, bufferSize);
             EnsureNotDisposed();
 
-            if (_absolutePosition >= _sequence.Length)
+            ReadOnlySequence<byte> remaining = _sequence.Slice(_position);
+            if (remaining.IsEmpty)
             {
                 return;
             }
 
-            ReadOnlySequence<byte> remaining = _sequence.Slice(_position);
             foreach (ReadOnlyMemory<byte> segment in remaining)
             {
                 destination.Write(segment.Span);
             }
 
             _position = _sequence.End;
-            _absolutePosition = _sequence.Length;
         }
 
         /// <inheritdoc />
@@ -185,76 +159,49 @@ namespace System.Buffers
                 return Task.FromCanceled(cancellationToken);
             }
 
-            if (_absolutePosition >= _sequence.Length)
+            ReadOnlySequence<byte> remaining = _sequence.Slice(_position);
+            if (remaining.IsEmpty)
             {
                 return Task.CompletedTask;
             }
 
-            return CopyToAsyncCore(destination, cancellationToken);
+            return CopyToAsyncCore(remaining, destination, cancellationToken);
         }
 
-        private async Task CopyToAsyncCore(Stream destination, CancellationToken cancellationToken)
+        private async Task CopyToAsyncCore(ReadOnlySequence<byte> remaining, Stream destination, CancellationToken cancellationToken)
         {
-            ReadOnlySequence<byte> remaining = _sequence.Slice(_position);
             foreach (ReadOnlyMemory<byte> segment in remaining)
             {
                 await destination.WriteAsync(segment, cancellationToken).ConfigureAwait(false);
             }
 
             _position = _sequence.End;
-            _absolutePosition = _sequence.Length;
         }
 
         /// <inheritdoc />
+        /// <summary>Writes a sequence of bytes to the stream. This method is not supported and always throws a <see cref="NotSupportedException"/>.</summary>
+        /// <exception cref="NotSupportedException">In all cases.</exception>
         public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException(SR.NotSupported_UnwritableStream);
 
         /// <inheritdoc/>
+        /// <summary>Writes a sequence of bytes to the stream. This method is not supported and always throws a <see cref="NotSupportedException"/>.</summary>
+        /// <exception cref="NotSupportedException">In all cases.</exception>
         public override void Write(ReadOnlySpan<byte> buffer) => throw new NotSupportedException(SR.NotSupported_UnwritableStream);
 
         /// <inheritdoc/>
+        /// <summary>Asynchronously writes a sequence of bytes to the stream. This method is not supported and always throws a <see cref="NotSupportedException"/>.</summary>
+        /// <exception cref="NotSupportedException">In all cases.</exception>
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) => throw new NotSupportedException(SR.NotSupported_UnwritableStream);
 
         /// <inheritdoc/>
+        /// <summary>Asynchronously writes a sequence of bytes to the stream. This method is not supported and always throws a <see cref="NotSupportedException"/>.</summary>
+        /// <exception cref="NotSupportedException">In all cases.</exception>
         public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default) => throw new NotSupportedException(SR.NotSupported_UnwritableStream);
 
         /// <inheritdoc/>
-        public override long Seek(long offset, SeekOrigin origin)
-        {
-            EnsureNotDisposed();
-
-            long basePosition = origin switch
-            {
-                SeekOrigin.Begin => 0L,
-                SeekOrigin.Current => _absolutePosition,
-                SeekOrigin.End => _sequence.Length,
-                _ => throw new ArgumentException(SR.Argument_InvalidSeekOrigin, nameof(origin))
-            };
-
-            ArgumentOutOfRangeException.ThrowIfGreaterThan(offset, long.MaxValue - basePosition);
-
-            long absolutePosition = basePosition + offset;
-
-            if (absolutePosition < 0)
-            {
-                throw new IOException(SR.IO_SeekBeforeBegin);
-            }
-
-            if (absolutePosition >= _sequence.Length)
-            {
-                _position = _sequence.End;
-            }
-            else if (absolutePosition >= _absolutePosition)
-            {
-                _position = _sequence.GetPosition(absolutePosition - _absolutePosition, _position);
-            }
-            else
-            {
-                _position = _sequence.GetPosition(absolutePosition, _sequence.Start);
-            }
-
-            _absolutePosition = absolutePosition;
-            return absolutePosition;
-        }
+        /// <summary>Sets the current position of the stream. This method is not supported and always throws a <see cref="NotSupportedException"/>.</summary>
+        /// <exception cref="NotSupportedException">In all cases.</exception>
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException(SR.NotSupported_UnseekableStream);
 
         /// <inheritdoc />
         public override void Flush() { }
@@ -264,6 +211,8 @@ namespace System.Buffers
             cancellationToken.IsCancellationRequested ? Task.FromCanceled(cancellationToken) : Task.CompletedTask;
 
         /// <inheritdoc />
+        /// <summary>Sets the length of the stream. This method is not supported and always throws a <see cref="NotSupportedException"/>.</summary>
+        /// <exception cref="NotSupportedException">In all cases.</exception>
         public override void SetLength(long value) => throw new NotSupportedException(SR.NotSupported_UnwritableStream);
 
         /// <inheritdoc />

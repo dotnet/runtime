@@ -6,4 +6,7 @@
   <ItemGroup>
     <Compile Include="complex3.il" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

@@ -9,9 +9,11 @@
 extern bool g_diagnostics;
 extern bool g_diagnosticsVerbose;
 
+#include <minipal/types.h>
+
 #ifdef HOST_UNIX
-extern void trace_printf(const char* format, ...);
-extern void trace_verbose_printf(const char* format, ...);
+extern void trace_printf(const char* format, ...) MINIPAL_ATTR_FORMAT_PRINTF(1, 2);
+extern void trace_verbose_printf(const char* format, ...) MINIPAL_ATTR_FORMAT_PRINTF(1, 2);
 #define TRACE(args...) trace_printf(args)
 #define TRACE_VERBOSE(args...) trace_verbose_printf(args)
 #else
@@ -91,12 +93,11 @@ typedef int T_CONTEXT;
 #include <elf.h>
 #include <link.h>
 #endif
-#define __STDC_FORMAT_MACROS
-#include <inttypes.h>
 #else
 #include <winternl.h>
 #include <dbghelp.h>
 #endif
+#include <inttypes.h>
 #include <map>
 #include <set>
 #include <vector>
@@ -166,5 +167,5 @@ extern DWORD GetTempPathWrapper(IN DWORD nBufferLength, OUT LPSTR lpBuffer);
 #else
 #define GetTempPathWrapper GetTempPathA
 #endif
-extern void printf_status(const char* format, ...);
-extern void printf_error(const char* format, ...);
+extern void printf_status(const char* format, ...) MINIPAL_ATTR_FORMAT_PRINTF(1, 2);
+extern void printf_error(const char* format, ...) MINIPAL_ATTR_FORMAT_PRINTF(1, 2);

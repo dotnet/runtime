@@ -14,7 +14,7 @@
     <_iOSSampleFiles Include="$(RepoTasksDir)AppleAppBuilder\Templates\runtime.m" />
     <_iOSSampleFiles Include="$(RepoTasksDir)AppleAppBuilder\Templates\runtime.h" />
 
-    <PackageFile Include="@(_iOSSampleFiles)" TargetPath="tools\$(NetCoreAppToolCurrent)\" />
+    <PackageFile Include="@(_iOSSampleFiles)" TargetPath="tools\net\" />
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />

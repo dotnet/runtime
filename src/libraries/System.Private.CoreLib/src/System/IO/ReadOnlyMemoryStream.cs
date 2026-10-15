@@ -7,11 +7,8 @@ using System.Threading.Tasks;
 namespace System.IO
 {
     /// <summary>
-    /// Provides a seekable, read-only <see cref="Stream"/> over a <see cref="ReadOnlyMemory{Byte}"/>.
+    /// Provides a seekable, read-only <see cref="Stream"/> for reading from a <see cref="ReadOnlyMemory{Byte}"/>.
     /// </summary>
-    /// <remarks>
-    /// <para>The stream cannot be written to. <see cref="CanWrite"/> always returns <see langword="false"/>.</para>
-    /// </remarks>
     public sealed class ReadOnlyMemoryStream : Stream
     {
         private ReadOnlyMemory<byte> _memory;
@@ -22,7 +19,11 @@ namespace System.IO
         /// <summary>
         /// Initializes a new instance of the <see cref="ReadOnlyMemoryStream"/> class over the specified <see cref="ReadOnlyMemory{Byte}"/>.
         /// </summary>
-        /// <param name="source">The <see cref="ReadOnlyMemory{Byte}"/> to wrap.</param>
+        /// <param name="source">The memory region from which to create the stream.</param>
+        /// <remarks>
+        /// The existing contents of <paramref name="source"/> are immediately readable.
+        /// Clear rented or reused memory before constructing the stream if its existing contents should not be exposed.
+        /// </remarks>
         public ReadOnlyMemoryStream(ReadOnlyMemory<byte> source)
         {
             _memory = source;
@@ -214,21 +215,33 @@ namespace System.IO
         }
 
         /// <inheritdoc/>
+        /// <summary>Sets the length of the stream. This method is not supported and always throws a <see cref="NotSupportedException"/>.</summary>
+        /// <exception cref="NotSupportedException">In all cases.</exception>
         public override void SetLength(long value) => throw new NotSupportedException(SR.NotSupported_UnwritableStream);
 
         /// <inheritdoc/>
+        /// <summary>Writes a sequence of bytes to the stream. This method is not supported and always throws a <see cref="NotSupportedException"/>.</summary>
+        /// <exception cref="NotSupportedException">In all cases.</exception>
         public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException(SR.NotSupported_UnwritableStream);
 
         /// <inheritdoc/>
+        /// <summary>Writes a sequence of bytes to the stream. This method is not supported and always throws a <see cref="NotSupportedException"/>.</summary>
+        /// <exception cref="NotSupportedException">In all cases.</exception>
         public override void Write(ReadOnlySpan<byte> buffer) => throw new NotSupportedException(SR.NotSupported_UnwritableStream);
 
         /// <inheritdoc/>
+        /// <summary>Writes a byte to the stream. This method is not supported and always throws a <see cref="NotSupportedException"/>.</summary>
+        /// <exception cref="NotSupportedException">In all cases.</exception>
         public override void WriteByte(byte value) => throw new NotSupportedException(SR.NotSupported_UnwritableStream);
 
         /// <inheritdoc/>
+        /// <summary>Asynchronously writes a sequence of bytes to the stream. This method is not supported and always throws a <see cref="NotSupportedException"/>.</summary>
+        /// <exception cref="NotSupportedException">In all cases.</exception>
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) => throw new NotSupportedException(SR.NotSupported_UnwritableStream);
 
         /// <inheritdoc/>
+        /// <summary>Asynchronously writes a sequence of bytes to the stream. This method is not supported and always throws a <see cref="NotSupportedException"/>.</summary>
+        /// <exception cref="NotSupportedException">In all cases.</exception>
         public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default) => throw new NotSupportedException(SR.NotSupported_UnwritableStream);
 
         /// <inheritdoc/>

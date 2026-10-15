@@ -1,12 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //---------------------------------------------------------------------------------
 // stdinterfaces.cpp
 //
 // Defines various standard com interfaces
-
 //---------------------------------------------------------------------------------
-
 
 #include "common.h"
 
@@ -36,7 +35,7 @@
 #include "cgencpu.h"
 #include "interopconverter.h"
 #include "cominterfacemarshaler.h"
-#include "eecontract.h"
+#include <contract.h>
 #include "stdinterfaces_internal.h"
 #include "interoputil.inl"
 
@@ -354,49 +353,6 @@ Unknown_ReleaseSpecial_Internal(IUnknown* pUnk)
     return cbRef;
 } // Unknown_Release
 
-
-HRESULT __stdcall
-Unknown_QueryInterface_IErrorInfo_Simple(IUnknown* pUnk, REFIID riid, void** ppv)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_PREEMPTIVE;
-        PRECONDITION(CheckPointer(pUnk));
-        PRECONDITION(IsInProcCCWTearOff(pUnk));
-        PRECONDITION(CheckPointer(ppv, NULL_OK));
-    }
-    CONTRACTL_END;
-
-    HRESULT hr = S_OK;
-
-    if (!ppv)
-        return E_POINTER;
-    *ppv = NULL;
-
-    EX_TRY
-    {
-        hr = E_NOINTERFACE;
-
-        _ASSERTE(!IsInnerUnknown(pUnk) && IsSimpleTearOff(pUnk));
-
-        SimpleComCallWrapper* pSimpleWrap = SimpleComCallWrapper::GetWrapperFromIP(pUnk);
-
-        // we must not switch to cooperative GC mode here, so respond only to the
-        // two interfaces we always support
-        if (riid == IID_IUnknown || riid == IID_IErrorInfo)
-        {
-            *ppv = pUnk;
-            pSimpleWrap->AddRef();
-            hr = S_OK;
-        }
-    }
-    EX_CATCH_HRESULT_NO_ERRORINFO(hr);
-
-    return hr;
-}  // Unknown_QueryInterface_IErrorInfo_Simple
-
 // ---------------------------------------------------------------------------
 ULONG __stdcall
 Unknown_ReleaseSpecial_IErrorInfo_Internal(IUnknown* pUnk)
@@ -664,7 +620,6 @@ HRESULT GetITypeInfoForEEClass(MethodTable *pClass, ITypeInfo **ppTI, bool bClas
         DISABLED(NOTHROW);
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(return E_OUTOFMEMORY);
     }
     CONTRACTL_END;
 
@@ -920,7 +875,6 @@ IErrorInfo *GetSupportedErrorInfo(IUnknown *iface, REFIID riid)
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(iface));
     }
     CONTRACTL_END;
@@ -1254,7 +1208,6 @@ Dispatch_GetIDsOfNames(IDispatch* pDisp, REFIID riid, _In_reads_(cNames) OLECHAR
         NOTHROW;
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
-        INJECT_FAULT(return E_OUTOFMEMORY);
         PRECONDITION(CheckPointer(pDisp));
         PRECONDITION(IsInProcCCWTearOff(pDisp));
         PRECONDITION(CheckPointer(rgszNames, NULL_OK));
@@ -1289,7 +1242,6 @@ Dispatch_Invoke
         THROWS; // InternalDispatchImpl_Invoke can throw if it encounters CE
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
-        INJECT_FAULT(return E_OUTOFMEMORY);
         PRECONDITION(CheckPointer(pDisp));
         PRECONDITION(IsInProcCCWTearOff(pDisp));
     }

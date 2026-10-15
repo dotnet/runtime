@@ -337,14 +337,8 @@ static BasicBlock* optRangeCheckCloning_DoClone(Compiler*             comp,
                 statementFound = true;
 
                 // Find the bndChk in the statement
-                Compiler::fgWalkResult result = comp->fgWalkTreePre(
-                    stmt->GetRootNodePointer(),
-                    [](GenTree** pTree, Compiler::fgWalkData* data) -> Compiler::fgWalkResult {
-                    return (*pTree == (GenTree*)data->pCallbackData) ? Compiler::WALK_ABORT : Compiler::WALK_CONTINUE;
-                },
-                    info.BndChk());
                 // We don't need to validate bndChkParent - RemoveBoundsChk will do it for us
-                assert(result == Compiler::WALK_ABORT);
+                assert(comp->gtFindLink(stmt, info.BndChk()).result != nullptr);
                 break;
             }
         }

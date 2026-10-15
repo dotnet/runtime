@@ -1,10 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
+
 // OBJECT.CPP
 //
 // Definitions of a CLR Object
-//
 
 #include "common.h"
 
@@ -139,7 +138,7 @@ INT32 Object::GetHashCodeEx()
                     }
                     else
                     {
-                        __SwitchToThread(0, ++dwSwitchCount);
+                        minipal_switch_to_thread(++dwSwitchCount);
                     }
                     continue;
                 }
@@ -247,7 +246,6 @@ TypeHandle Object::GetGCSafeTypeHandleIfPossible() const
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pInterfaceMT));
         PRECONDITION(pInterfaceMT->IsInterface());
     }
@@ -305,7 +303,6 @@ void Object::ValidateHeap(BOOL bDeep)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
 #if defined (VERIFY_HEAP)
     //no need to verify next object's header in this case
@@ -318,7 +315,6 @@ void Object::SetOffsetObjectRef(DWORD dwOffset, size_t dwValue)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
     STATIC_CONTRACT_MODE_COOPERATIVE;
 
     OBJECTREF*  location;
@@ -334,7 +330,6 @@ void SetObjectReferenceUnchecked(OBJECTREF *dst,OBJECTREF ref)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
     STATIC_CONTRACT_MODE_COOPERATIVE;
     STATIC_CONTRACT_CANNOT_TAKE_LOCK;
 
@@ -353,7 +348,6 @@ void CopyValueClassUnchecked(void* dest, void* src, MethodTable *pMT)
 
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
     STATIC_CONTRACT_MODE_COOPERATIVE;
 
     _ASSERTE(!pMT->IsArray());  // bunch of assumptions about arrays wrong.
@@ -399,7 +393,6 @@ void CopyValueClassArgUnchecked(ArgDestination *argDest, void* src, MethodTable 
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
     STATIC_CONTRACT_MODE_COOPERATIVE;
 
 #if defined(UNIX_AMD64_ABI)
@@ -433,36 +426,6 @@ void CopyValueClassArgUnchecked(ArgDestination *argDest, void* src, MethodTable 
     CopyValueClassUnchecked(argDest->GetDestinationAddress(), src, pMT);
 }
 
-// Initialize the value class argument to zeros
-void InitValueClassArg(ArgDestination *argDest, MethodTable *pMT)
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
-    STATIC_CONTRACT_MODE_COOPERATIVE;
-
-#if defined(UNIX_AMD64_ABI)
-
-    if (argDest->IsStructPassedInRegs())
-    {
-        argDest->ZeroStructInRegisters(pMT->GetNumInstanceFieldBytes());
-        return;
-    }
-
-#endif
-
-#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    if (argDest->IsStructPassedInRegs())
-    {
-        *(UINT64*)(argDest->GetStructGenRegDestinationAddress()) = 0;
-        *(UINT64*)(argDest->GetDestinationAddress()) = 0;
-        return;
-    }
-#endif
-
-    InitValueClass(argDest->GetDestinationAddress(), pMT);
-}
-
 #if defined (VERIFY_HEAP)
 
 #include "dbginterface.h"
@@ -486,7 +449,6 @@ VOID Object::Validate(BOOL bDeep, BOOL bVerifyNextHeader, BOOL bVerifySyncBlock)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
     STATIC_CONTRACT_MODE_COOPERATIVE;
     STATIC_CONTRACT_CANNOT_TAKE_LOCK;
 
@@ -518,7 +480,7 @@ VOID Object::Validate(BOOL bDeep, BOOL bVerifyNextHeader, BOOL bVerifySyncBlock)
 
 
     {   // ValidateInner can throw or fault on failure which violates contract.
-        CONTRACT_VIOLATION(ThrowsViolation | FaultViolation);
+        CONTRACT_VIOLATION(ThrowsViolation);
 
         // using inner helper because of TRY and stack objects with destructors.
         ValidateInner(bDeep, bVerifyNextHeader, bVerifySyncBlock);
@@ -529,7 +491,6 @@ VOID Object::ValidateInner(BOOL bDeep, BOOL bVerifyNextHeader, BOOL bVerifySyncB
 {
     STATIC_CONTRACT_THROWS; // See CONTRACT_VIOLATION above
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FAULT; // See CONTRACT_VIOLATION above
     STATIC_CONTRACT_MODE_COOPERATIVE;
     STATIC_CONTRACT_CANNOT_TAKE_LOCK;
 
@@ -622,7 +583,8 @@ VOID Object::ValidateInner(BOOL bDeep, BOOL bVerifyNextHeader, BOOL bVerifySyncB
     }
     EX_CATCH
     {
-        STRESS_LOG3(LF_ASSERT, LL_ALWAYS, "Detected use of corrupted OBJECTREF: %p [MT=%p] (lastTest=%d)", this, lastTest > 0 ? (*(size_t*)this) : 0, lastTest);
+        STRESS_LOG3(LF_ASSERT, LL_ALWAYS, "Detected use of corrupted OBJECTREF: %p [MT=%p] (lastTest=%d)", this,
+                    (void*)(size_t)(lastTest > 0 ? (*(size_t*)this) : 0), lastTest);
         CHECK_AND_TEAR_DOWN(!"Detected use of a corrupted OBJECTREF. Possible GC hole.");
     }
     EX_END_CATCH
@@ -837,7 +799,6 @@ OBJECTREF::OBJECTREF()
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     m_asObj = (Object*)POISONC;
     Thread::ObjectRefNew(this);
@@ -851,7 +812,6 @@ OBJECTREF::OBJECTREF(const OBJECTREF & objref)
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_MODE_COOPERATIVE;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     VALIDATEOBJECT(objref.m_asObj);
 
@@ -885,7 +845,6 @@ OBJECTREF::OBJECTREF(const OBJECTREF *pObjref, tagVolatileLoadWithoutBarrier tag
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_MODE_COOPERATIVE;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     Object* objrefAsObj = VolatileLoadWithoutBarrier(&pObjref->m_asObj);
     VALIDATEOBJECT(objrefAsObj);
@@ -919,7 +878,6 @@ OBJECTREF::OBJECTREF(TADDR nul)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     //_ASSERTE(nul == 0);
     m_asObj = (Object*)nul;
@@ -945,7 +903,6 @@ OBJECTREF::OBJECTREF(Object *pObject)
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_MODE_COOPERATIVE;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     DEBUG_ONLY_FUNCTION;
 
@@ -978,7 +935,6 @@ int OBJECTREF::operator!() const
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     // We don't do any validation here, as we want to allow zero comparison in preemptive mode
     return !m_asObj;
@@ -991,7 +947,6 @@ int OBJECTREF::operator==(const OBJECTREF &objref) const
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     if (objref.m_asObj != NULL) // Allow comparison to zero in preemptive mode
     {
@@ -1029,7 +984,6 @@ int OBJECTREF::operator!=(const OBJECTREF &objref) const
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     if (objref.m_asObj != NULL)  // Allow comparison to zero in preemptive mode
     {
@@ -1069,7 +1023,6 @@ Object* OBJECTREF::operator->()
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     VALIDATEOBJECT(m_asObj);
         // If this assert fires, you probably did not protect
@@ -1094,7 +1047,6 @@ const Object* OBJECTREF::operator->() const
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     VALIDATEOBJECT(m_asObj);
         // If this assert fires, you probably did not protect
@@ -1123,7 +1075,6 @@ OBJECTREF& OBJECTREF::operator=(const OBJECTREF &objref)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     VALIDATEOBJECT(objref.m_asObj);
 
@@ -1157,7 +1108,6 @@ OBJECTREF& OBJECTREF::operator=(TADDR nul)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     _ASSERTE(nul == 0);
     Thread::ObjectRefAssign(this);
@@ -1414,7 +1364,6 @@ OBJECTREF Nullable::Box(void* srcPtr, MethodTable* nullableMT)
     }
     CONTRACTL_END;
 
-    FAULT_NOT_FATAL();      // FIX_NOW: why do we need this?
 
     Nullable* src = (Nullable*) srcPtr;
 

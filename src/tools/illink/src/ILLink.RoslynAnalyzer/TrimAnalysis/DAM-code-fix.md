@@ -6,10 +6,10 @@ The DAM warning pattern can be annotated in a way that makes the reflection usag
 Once initialized, the analyzer walks the compiler-generated AST of the program to determine coherent  use of DAM attributes and where they may be necessary. This is achieved by considering uses of annotated fields, methods, and parameters. If an inconsistent use is detected, the analyzer will trigger a warning and report a diagnostic.
 
 ### How information passes from Analyzer to Code Fix
-The DAM Analyzer reports diagnostics that contain information about the specific warning, including the warning ID (`descriptor`), the location of the warning (`location`), the location where a code fix may be applied (`additionalLocations`), the argument to be included in the DAM attribute to be applied (`properties`), and any additional arguments (`messageArgs`). These diagnostics are then unpacked by the Code Fixer.
+The DAM Analyzer reports diagnostics that contain information about the specific warning, including the warning ID (`descriptor`), the location of the warning (`location`), the argument to be included in the DAM attribute (`properties`), and any additional arguments (`messageArgs`). Override and interface mismatch diagnostics use the warning location as the code fix target. Data-flow diagnostics also include the declaration where the code fix may be applied in `additionalLocations`, because that declaration can differ from the warning location.
 
 ### How the Code Fix changes the file
-The Code Fix uses `SyntaxGenerator` to create the DAM attribute to add from the DAM argument passed through the `properties` dictionary.  The Syntax Node that the attribute is applied to is found from the `additionalLocations` of the diagnostic. `SyntaxEditor` applies the attribute to the location specified and update the original document.
+The Code Fix uses `SyntaxGenerator` to create the DAM attribute from the DAM argument passed through the `properties` dictionary. For override and interface mismatches, the target syntax node is found from the diagnostic's warning location. For data-flow diagnostics, it is found from `additionalLocations`. The target location's syntax tree identifies the document to edit, which can differ from the document containing the warning. `SyntaxEditor` then applies the attribute to the target node.
 
 ## Future Work
 1. **Multiple Arguments:** The Code Fix does not support the case where there are multiple arguments present on a node (i.e. `DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.PublicFields)`).

@@ -60,7 +60,7 @@ namespace System.Formats.Cbor
             {
                 ReadExpectedTag(expectedTag: CborTag.DateTimeString);
 
-                switch (PeekState())
+                switch (PeekStateEnsuringDataAvailable())
                 {
                     case CborReaderState.TextString:
                     case CborReaderState.StartIndefiniteLengthTextString:
@@ -90,7 +90,9 @@ namespace System.Formats.Cbor
         /// <returns>The decoded value.</returns>
         /// <exception cref="InvalidOperationException"><para>The next data item does not have the correct major type.</para>
         /// <para>-or-</para>
-        /// <para>The next date item does not have the correct semantic tag.</para></exception>
+        /// <para>The next date item does not have the correct semantic tag.</para>
+        /// <para>-or-</para>
+        /// <para>The decoded Unix time is outside the range supported by <see cref="DateTimeOffset" />.</para></exception>
         /// <exception cref="CborContentException"><para>The next value has an invalid CBOR encoding.</para>
         /// <para>-or-</para>
         /// <para>There was an unexpected end of CBOR encoding data.</para>
@@ -108,7 +110,7 @@ namespace System.Formats.Cbor
             {
                 ReadExpectedTag(expectedTag: CborTag.UnixTimeSeconds);
 
-                switch (PeekState())
+                switch (PeekStateEnsuringDataAvailable())
                 {
                     case CborReaderState.UnsignedInteger:
                     case CborReaderState.NegativeInteger:
@@ -131,9 +133,15 @@ namespace System.Formats.Cbor
                         throw new CborContentException(SR.Cbor_Reader_InvalidUnixTimeEncoding);
                 }
             }
-            catch
+            catch (Exception e)
             {
                 RestoreCheckpoint(in checkpoint);
+
+                if (e is ArgumentOutOfRangeException or OverflowException)
+                {
+                    throw new InvalidOperationException(SR.Cbor_Reader_UnixTimeOutOfRange, e);
+                }
+
                 throw;
             }
         }
@@ -165,7 +173,7 @@ namespace System.Formats.Cbor
                     _ => throw new InvalidOperationException(SR.Cbor_Reader_InvalidBigNumEncoding),
                 };
 
-                switch (PeekState())
+                switch (PeekStateEnsuringDataAvailable())
                 {
                     case CborReaderState.ByteString:
                     case CborReaderState.StartIndefiniteLengthByteString:
@@ -208,7 +216,7 @@ namespace System.Formats.Cbor
             {
                 ReadExpectedTag(expectedTag: CborTag.DecimalFraction);
 
-                if (PeekState() != CborReaderState.StartArray || ReadStartArray() != 2)
+                if (PeekStateEnsuringDataAvailable() != CborReaderState.StartArray || ReadStartArray() != 2)
                 {
                     throw new CborContentException(SR.Cbor_Reader_InvalidDecimalEncoding);
                 }
@@ -216,7 +224,7 @@ namespace System.Formats.Cbor
                 decimal mantissa; // signed integral component of the decimal value
                 long exponent;    // base-10 exponent
 
-                switch (PeekState())
+                switch (PeekStateEnsuringDataAvailable())
                 {
                     case CborReaderState.UnsignedInteger:
                     case CborReaderState.NegativeInteger:
@@ -227,7 +235,7 @@ namespace System.Formats.Cbor
                         throw new CborContentException(SR.Cbor_Reader_InvalidDecimalEncoding);
                 }
 
-                switch (PeekState())
+                switch (PeekStateEnsuringDataAvailable())
                 {
                     case CborReaderState.UnsignedInteger:
                         mantissa = ReadUInt64();
@@ -264,6 +272,22 @@ namespace System.Formats.Cbor
                 RestoreCheckpoint(in checkpoint);
                 throw;
             }
+        }
+
+        // Semantic tag readers consume multiple tokens atomically, so a truncated non-final
+        // buffer surfaces as an unexpected end of buffer rather than as NeedsMoreData;
+        // the reader state is rolled back via checkpoint so the caller can retry
+        // after supplying more data.
+        private CborReaderState PeekStateEnsuringDataAvailable()
+        {
+            CborReaderState state = PeekState();
+
+            if (state == CborReaderState.NeedsMoreData)
+            {
+                throw new CborContentException(SR.Cbor_Reader_InvalidCbor_UnexpectedEndOfBuffer);
+            }
+
+            return state;
         }
 
         private void ReadExpectedTag(CborTag expectedTag)

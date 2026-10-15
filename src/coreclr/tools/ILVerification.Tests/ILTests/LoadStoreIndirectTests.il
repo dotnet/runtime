@@ -140,7 +140,7 @@
 
         ldloca.s    V_0
         ldstr       "Hello"
-        stobj       string
+        stobj       [System.Runtime]System.String
         ret
     }
 

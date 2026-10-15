@@ -184,7 +184,7 @@ void BaseAssemblySpec::Init(SString& assemblyDisplayName)
     parseAsAssemblySpec.InvokeThrowing(pAssemblyDisplayName, (void*)this);
 }
 
-extern "C" void QCALLTYPE AssemblyName_InitializeAssemblySpec(NativeAssemblyNameParts* pAssemblyNameParts, BaseAssemblySpec* pAssemblySpec)
+extern "C" void QCALLTYPE AssemblyName_InitializeAssemblySpec(NativeAssemblyNameParts* pAssemblyNameParts, BaseAssemblySpec* pAssemblySpec, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 

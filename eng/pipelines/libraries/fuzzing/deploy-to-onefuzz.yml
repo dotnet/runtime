@@ -132,6 +132,14 @@ extends:
           inputs:
             onefuzzOSes: 'Windows'
           env:
+            onefuzzDropDirectory: $(fuzzerProject)/deployment/KerberosPacLogonInfoFuzzer
+            SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+          displayName: Send KerberosPacLogonInfoFuzzer to OneFuzz
+
+        - task: onefuzz-task@0
+          inputs:
+            onefuzzOSes: 'Windows'
+          env:
             onefuzzDropDirectory: $(fuzzerProject)/deployment/NrbfDecoderFuzzer
             SYSTEM_ACCESSTOKEN: $(System.AccessToken)
           displayName: Send NrbfDecoderFuzzer to OneFuzz
@@ -199,6 +207,14 @@ extends:
             onefuzzDropDirectory: $(fuzzerProject)/deployment/Utf8JsonWriterFuzzer
             SYSTEM_ACCESSTOKEN: $(System.AccessToken)
           displayName: Send Utf8JsonWriterFuzzer to OneFuzz
+
+        - task: onefuzz-task@0
+          inputs:
+            onefuzzOSes: 'Windows'
+          env:
+            onefuzzDropDirectory: $(fuzzerProject)/deployment/WebSocketFuzzer
+            SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+          displayName: Send WebSocketFuzzer to OneFuzz
 
         - task: onefuzz-task@0
           inputs:

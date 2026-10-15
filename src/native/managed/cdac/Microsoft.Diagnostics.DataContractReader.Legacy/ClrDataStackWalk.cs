@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
+using System.Threading;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 
@@ -14,6 +15,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 [GeneratedComClass]
 public sealed unsafe partial class ClrDataStackWalk : IXCLRDataStackWalk
 {
+    private readonly Lock _apiLock;
     private readonly TargetPointer _threadAddr;
     private readonly CLRDataStackWalkFlag _flags;
     private readonly Target _target;
@@ -25,8 +27,9 @@ public sealed unsafe partial class ClrDataStackWalk : IXCLRDataStackWalk
     private ulong _stackPointerBeforeFiltering;
     private ulong _stackSizeSkipped;
 
-    public ClrDataStackWalk(TargetPointer threadAddr, CLRDataStackWalkFlag flags, Target target, IXCLRDataStackWalk? legacyImpl)
+    public ClrDataStackWalk(TargetPointer threadAddr, CLRDataStackWalkFlag flags, Target target, IXCLRDataStackWalk? legacyImpl, Lock apiLock)
     {
+        _apiLock = apiLock;
         _threadAddr = threadAddr;
         _flags = flags;
         _target = target;
@@ -81,6 +84,7 @@ public sealed unsafe partial class ClrDataStackWalk : IXCLRDataStackWalk
 
     int IXCLRDataStackWalk.GetContext(uint contextFlags, uint contextBufSize, uint* contextSize, [MarshalUsing(CountElementName = "contextBufSize"), Out] byte[] contextBuf)
     {
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
 
         if (_currentFrameIsValid)
@@ -128,16 +132,17 @@ public sealed unsafe partial class ClrDataStackWalk : IXCLRDataStackWalk
 
     int IXCLRDataStackWalk.GetFrame(DacComNullableByRef<IXCLRDataFrame> frame)
     {
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
+        int hrLocal = HResults.S_OK;
 
         IXCLRDataFrame? legacyFrame = null;
         if (_legacyImpl is not null)
         {
             DacComNullableByRef<IXCLRDataFrame> legacyFrameOut = new(isNullRef: false);
-            int hrLocal = _legacyImpl.GetFrame(legacyFrameOut);
-            if (hrLocal < 0)
-                return hrLocal;
-            legacyFrame = legacyFrameOut.Interface;
+            hrLocal = _legacyImpl.GetFrame(legacyFrameOut);
+            if (hrLocal >= 0)
+                legacyFrame = legacyFrameOut.Interface;
         }
 
         try
@@ -145,17 +150,21 @@ public sealed unsafe partial class ClrDataStackWalk : IXCLRDataStackWalk
             if (!_currentFrameIsValid)
                 throw new ArgumentException();
 
-            frame.Interface = new ClrDataFrame(_target, _threadAddr, _dataFrames.Current, legacyFrame);
+            frame.Interface = new ClrDataFrame(_target, _threadAddr, _dataFrames.Current, legacyFrame, _apiLock);
         }
         catch (System.Exception ex)
         {
             hr = ex.HResult;
         }
 
+        if (_legacyImpl is not null)
+            Debug.ValidateHResult(hr, hrLocal);
+
         return hr;
     }
     int IXCLRDataStackWalk.GetFrameType(CLRDataSimpleFrameType* simpleType, CLRDataDetailedFrameType* detailedType)
     {
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -210,6 +219,7 @@ public sealed unsafe partial class ClrDataStackWalk : IXCLRDataStackWalk
     }
     int IXCLRDataStackWalk.GetStackSizeSkipped(ulong* stackSizeSkipped)
     {
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -237,6 +247,7 @@ public sealed unsafe partial class ClrDataStackWalk : IXCLRDataStackWalk
     }
     int IXCLRDataStackWalk.Next()
     {
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr;
         try
         {
@@ -264,6 +275,7 @@ public sealed unsafe partial class ClrDataStackWalk : IXCLRDataStackWalk
     }
     int IXCLRDataStackWalk.Request(uint reqCode, uint inBufferSize, byte* inBuffer, uint outBufferSize, byte* outBuffer)
     {
+        using Lock.Scope scope = _apiLock.EnterScope();
         const uint DACSTACKPRIV_REQUEST_FRAME_DATA = 0xf0000000;
 
         int hr = HResults.S_OK;
@@ -320,6 +332,7 @@ public sealed unsafe partial class ClrDataStackWalk : IXCLRDataStackWalk
     }
     int IXCLRDataStackWalk.SetContext(uint contextSize, [In, MarshalUsing(CountElementName = "contextSize")] byte[] context)
     {
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -347,5 +360,9 @@ public sealed unsafe partial class ClrDataStackWalk : IXCLRDataStackWalk
     }
 
     int IXCLRDataStackWalk.SetContext2(uint flags, uint contextSize, [In, MarshalUsing(CountElementName = "contextSize")] byte[] context)
-        => HResults.E_NOTIMPL;
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+
+        return HResults.E_NOTIMPL;
+    }
 }

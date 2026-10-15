@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+namespace JitTest_Directed_UnrollLoop_loop6;
+
 using System;
 using Xunit;
 internal struct VT
@@ -176,6 +178,7 @@ public class loop6
             System.Console.WriteLine("f8 failed");
     }
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

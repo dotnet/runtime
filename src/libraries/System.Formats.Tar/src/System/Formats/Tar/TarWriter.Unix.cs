@@ -62,14 +62,7 @@ namespace System.Formats.Tar
 
             FileSystemInfo info = entryType is TarEntryType.Directory ? new DirectoryInfo(fullPath) : new FileInfo(fullPath);
 
-            TarEntry entry = Format switch
-            {
-                TarEntryFormat.V7 => new V7TarEntry(entryType, entryName),
-                TarEntryFormat.Ustar => new UstarTarEntry(entryType, entryName),
-                TarEntryFormat.Pax => new PaxTarEntry(entryType, entryName),
-                TarEntryFormat.Gnu => new GnuTarEntry(entryType, entryName),
-                _ => throw new InvalidDataException(SR.Format(SR.TarInvalidFormat, Format)),
-            };
+            TarEntry entry = CreateEntryForFormat(entryType, entryName);
 
             if (entryType is TarEntryType.BlockDevice or TarEntryType.CharacterDevice)
             {

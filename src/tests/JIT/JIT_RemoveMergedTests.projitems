@@ -10,6 +10,7 @@
     <MergedWrapperProjectReference Remove="opt/**/*.??proj" />
     <MergedWrapperProjectReference Remove="Performance/**/*.??proj" />
     <MergedWrapperProjectReference Remove="Regression/**/*.??proj" />
+    <MergedWrapperProjectReference Remove="Regression_*/**/*.??proj" />
     <MergedWrapperProjectReference Remove="SIMD/**/*.??proj" />
   </ItemGroup>
 </Project>

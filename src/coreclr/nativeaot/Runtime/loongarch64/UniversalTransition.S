@@ -46,7 +46,7 @@
 //
 // RhpUniversalTransition
 //
-// At input to this function, a0-7, f0-7 and the stack may contain any number of arguments.
+// At input to this function, a0-a7, f0-f7 and the stack may contain any number of arguments.
 //
 // In addition, there are 2 extra arguments passed in the intra-procedure-call scratch register:
 //  t7 will contain the managed function that is to be called by this transition function
@@ -99,7 +99,7 @@
         fst.d  $f6, $sp, FLOAT_ARG_OFFSET + 0x30
         fst.d  $f7, $sp, FLOAT_ARG_OFFSET + 0x38
 
-        // Space for return buffer data (0x40 bytes)
+        // Space for return buffer data (0x10 bytes)
 
         // Save argument registers
         st.d  $a0, $sp, ARGUMENT_REGISTERS_OFFSET

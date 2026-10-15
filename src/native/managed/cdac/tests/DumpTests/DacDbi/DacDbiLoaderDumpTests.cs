@@ -16,7 +16,7 @@ namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 public class DacDbiLoaderDumpTests : DumpTestBase
 {
     protected override string DebuggeeName => "StackRefs";
-    private DacDbiImpl CreateDacDbi() => new DacDbiImpl(Target, legacyObj: null);
+    private DacDbiImpl CreateDacDbi() => new DacDbiImpl(Target, legacyObj: null, new());
 
     private IEnumerable<ModuleHandle> GetAllModules()
     {

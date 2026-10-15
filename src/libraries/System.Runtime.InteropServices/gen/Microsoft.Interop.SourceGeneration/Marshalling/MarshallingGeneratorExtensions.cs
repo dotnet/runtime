@@ -1,68 +1,55 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
-using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
-using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Microsoft.Interop
 {
     public static class MarshallingGeneratorExtensions
     {
+        private const string ParameterIdentifierSuffix = "param";
+
         /// <summary>
-        /// Gets the return type for the unmanaged signature that represents the provided <paramref name="info"/>.
+        /// Gets the return type for the unmanaged signature.
         /// </summary>
-        /// <param name="generator">The marshalling generator for this <paramref name="info"/></param>
-        /// <param name="info">Object to marshal</param>
-        public static TypeSyntax AsReturnType(this IBoundMarshallingGenerator generator)
+        public static string AsReturnType(this IBoundMarshallingGenerator generator)
         {
             return generator.NativeSignatureBehavior switch
             {
-                SignatureBehavior.ManagedTypeAndAttributes => generator.TypeInfo.ManagedType.Syntax,
-                SignatureBehavior.NativeType => generator.NativeType.Syntax,
-                SignatureBehavior.PointerToNativeType => PointerType(generator.NativeType.Syntax),
+                SignatureBehavior.ManagedTypeAndAttributes => generator.TypeInfo.ManagedType.FullTypeName,
+                SignatureBehavior.NativeType => generator.NativeType.FullTypeName,
+                SignatureBehavior.PointerToNativeType => $"{generator.NativeType.FullTypeName}*",
                 _ => throw new InvalidOperationException()
             };
         }
-        /// <summary>
-        /// Gets any attributes that should be applied to the return type for this <paramref name="info"/>.
-        /// </summary>
-        /// <param name="generator">The marshalling generator for this <paramref name="info"/></param>
-        /// <param name="info">Object to marshal</param>
-        /// <returns>Attributes for the return type for this <paramref name="info"/>, or <c>null</c> if no attributes should be added.</returns>
-        public static AttributeListSyntax? GenerateAttributesForReturnType(this IBoundMarshallingGenerator generator)
-        {
-            if (generator.NativeSignatureBehavior != SignatureBehavior.ManagedTypeAndAttributes)
-            {
-                return null;
-            }
 
-            if (generator.TypeInfo.MarshallingAttributeInfo is IForwardedMarshallingInfo forwarded
-                && forwarded.TryCreateAttributeSyntax(out AttributeSyntax forwardedAttribute))
+        /// <summary>
+        /// Gets the attribute bodies for the unmanaged return type, without brackets or a return target.
+        /// </summary>
+        public static string? GenerateAttributesForReturnType(this IBoundMarshallingGenerator generator)
+        {
+            if (generator.NativeSignatureBehavior == SignatureBehavior.ManagedTypeAndAttributes
+                && generator.TypeInfo.MarshallingAttributeInfo is IForwardedMarshallingInfo forwarded
+                && forwarded.TryCreateAttribute(out string? attribute))
             {
-                return AttributeList(SingletonSeparatedList(forwardedAttribute));
+                return attribute;
             }
 
             return null;
         }
 
-        private const string ParameterIdentifierSuffix = "param";
-
         /// <summary>
-        /// Gets a parameter for the unmanaged signature that represents the provided <paramref name="info"/> in the given <paramref name="context"/>.
+        /// Gets a parameter for the unmanaged signature.
         /// </summary>
-        /// <param name="generator">The marshalling generator for this <paramref name="info"/></param>
-        /// <param name="context">The stub marshalling context</param>
-        public static ParameterSyntax AsParameter(this IBoundMarshallingGenerator generator, StubIdentifierContext context)
+        public static GeneratedParameter AsParameter(this IBoundMarshallingGenerator generator, StubIdentifierContext context)
         {
             SignatureBehavior behavior = generator.NativeSignatureBehavior;
             if (behavior == SignatureBehavior.ManagedTypeAndAttributes)
             {
                 return GenerateForwardingParameter(generator.TypeInfo, context.GetIdentifiers(generator.TypeInfo).managed);
             }
+
             string identifierName;
             if (generator.CodeContext.Direction == MarshalDirection.ManagedToUnmanaged)
             {
@@ -92,81 +79,71 @@ namespace Microsoft.Interop
             {
                 throw new ArgumentException("Context direction must be ManagedToUnmanaged or UnmanagedToManaged");
             }
-            return Parameter(Identifier(identifierName))
-                .WithType(behavior switch
-                {
-                    SignatureBehavior.NativeType => generator.NativeType.Syntax,
-                    SignatureBehavior.PointerToNativeType => PointerType(generator.NativeType.Syntax),
-                    _ => throw new InvalidOperationException()
-                });
+
+            string type = behavior switch
+            {
+                SignatureBehavior.NativeType => generator.NativeType.FullTypeName,
+                SignatureBehavior.PointerToNativeType => $"{generator.NativeType.FullTypeName}*",
+                _ => throw new InvalidOperationException()
+            };
+            return new GeneratedParameter(type, identifierName);
         }
 
-        private static ParameterSyntax GenerateForwardingParameter(TypePositionInfo info, string identifier)
+        private static GeneratedParameter GenerateForwardingParameter(TypePositionInfo info, string identifier)
         {
-            ParameterSyntax param = Parameter(Identifier(identifier))
-                .WithModifiers(MarshallerHelpers.GetManagedParameterModifiers(info))
-                .WithType(info.ManagedType.Syntax);
-
-            List<AttributeSyntax> rehydratedAttributes = new();
-            if (info.MarshallingAttributeInfo is IForwardedMarshallingInfo forwardedMarshallingInfo
-                && forwardedMarshallingInfo.TryCreateAttributeSyntax(out AttributeSyntax forwardedAttribute))
+            List<string> attributes = [];
+            if (info.MarshallingAttributeInfo is IForwardedMarshallingInfo forwarded
+                && forwarded.TryCreateAttribute(out string? attribute))
             {
-                rehydratedAttributes.Add(forwardedAttribute);
+                attributes.Add(attribute);
             }
             if (info.ByValueContentsMarshalKind.HasFlag(ByValueContentsMarshalKind.In))
             {
-                rehydratedAttributes.Add(Attribute(IdentifierName(TypeNames.System_Runtime_InteropServices_InAttribute)));
+                attributes.Add(TypeNames.GlobalAlias + TypeNames.System_Runtime_InteropServices_InAttribute);
             }
             if (info.ByValueContentsMarshalKind.HasFlag(ByValueContentsMarshalKind.Out))
             {
-                rehydratedAttributes.Add(Attribute(IdentifierName(TypeNames.System_Runtime_InteropServices_OutAttribute)));
+                attributes.Add(TypeNames.GlobalAlias + TypeNames.System_Runtime_InteropServices_OutAttribute);
             }
 
-            if (rehydratedAttributes.Count > 0)
-            {
-                param = param.AddAttributeLists(AttributeList(SeparatedList(rehydratedAttributes)));
-            }
-
-            return param;
+            return new GeneratedParameter(
+                info.ManagedType.FullTypeName,
+                identifier,
+                MarshallerHelpers.GetManagedParameterModifiers(info),
+                attributes.Count == 0 ? null : string.Join(", ", attributes));
         }
 
         /// <summary>
-        /// Gets an argument expression for the unmanaged signature that can be used to pass a value of the provided <paramref name="info" /> in the specified <paramref name="context" />.
+        /// Gets an argument for passing a value across the managed/native boundary.
         /// </summary>
-        /// <param name="generator">The marshalling generator for this <paramref name="info"/></param>
-        /// <param name="info">Object to marshal</param>
-        /// <param name="context">Marshalling context</param>
-        public static ArgumentSyntax AsArgument(this IBoundMarshallingGenerator generator, StubIdentifierContext context)
+        public static string AsArgument(this IBoundMarshallingGenerator generator, StubIdentifierContext context)
         {
             TypePositionInfo info = generator.TypeInfo;
             (string managedIdentifier, string nativeIdentifier) = context.GetIdentifiers(info);
             return generator.ValueBoundaryBehavior switch
             {
-                ValueBoundaryBehavior.ManagedIdentifier when !info.IsByRef => Argument(IdentifierName(managedIdentifier)),
-                ValueBoundaryBehavior.ManagedIdentifier when info.IsByRef => Argument(IdentifierName(managedIdentifier)).WithRefKindKeyword(MarshallerHelpers.GetManagedArgumentRefKindKeyword(info)),
-                ValueBoundaryBehavior.NativeIdentifier => Argument(IdentifierName(nativeIdentifier)),
-                ValueBoundaryBehavior.AddressOfNativeIdentifier => Argument(PrefixUnaryExpression(SyntaxKind.AddressOfExpression, IdentifierName(nativeIdentifier))),
-                ValueBoundaryBehavior.CastNativeIdentifier => Argument(CastExpression(generator.AsParameter(context).Type, IdentifierName(nativeIdentifier))),
+                ValueBoundaryBehavior.ManagedIdentifier when !info.IsByRef => managedIdentifier,
+                ValueBoundaryBehavior.ManagedIdentifier => $"{MarshallerHelpers.GetManagedArgumentRefKindKeyword(info)} {managedIdentifier}",
+                ValueBoundaryBehavior.NativeIdentifier => nativeIdentifier,
+                ValueBoundaryBehavior.AddressOfNativeIdentifier => $"&{nativeIdentifier}",
+                ValueBoundaryBehavior.CastNativeIdentifier => $"({generator.AsParameter(context).Type}){nativeIdentifier}",
                 _ => throw new InvalidOperationException()
             };
         }
 
-        public static ArgumentSyntax AsManagedArgument(this IBoundMarshallingGenerator generator, StubIdentifierContext context)
+        public static string AsManagedArgument(this IBoundMarshallingGenerator generator, StubIdentifierContext context)
         {
             TypePositionInfo info = generator.TypeInfo;
-            var (managedIdentifier, _) = context.GetIdentifiers(info);
-            if (info.IsByRef)
-            {
-                return Argument(IdentifierName(managedIdentifier)).WithRefKindKeyword(MarshallerHelpers.GetManagedArgumentRefKindKeyword(info));
-            }
-            return Argument(IdentifierName(managedIdentifier));
+            string managedIdentifier = context.GetIdentifiers(info).managed;
+            return info.IsByRef
+                ? $"{MarshallerHelpers.GetManagedArgumentRefKindKeyword(info)} {managedIdentifier}"
+                : managedIdentifier;
         }
 
-        public static ExpressionSyntax GenerateNativeByRefInitialization(this IBoundMarshallingGenerator generator, StubIdentifierContext context)
+        public static string GenerateNativeByRefInitialization(this IBoundMarshallingGenerator generator, StubIdentifierContext context)
         {
-            TypePositionInfo info = generator.TypeInfo;
-            string paramIdentifier = context.GetAdditionalIdentifier(info, ParameterIdentifierSuffix);
-            return RefExpression(PrefixUnaryExpression(SyntaxKind.PointerIndirectionExpression, IdentifierName(paramIdentifier)));
+            string paramIdentifier = context.GetAdditionalIdentifier(generator.TypeInfo, ParameterIdentifierSuffix);
+            return $"ref *{paramIdentifier}";
         }
 
         public static bool IsForwarder(this IBoundMarshallingGenerator generator) => generator is BoundMarshallingGenerator { IsForwarder: true };

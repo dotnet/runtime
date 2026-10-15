@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Text;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
@@ -39,37 +40,58 @@ namespace ILCompiler.ReadyToRun
 
         public Vertex CreateTypeMap(NodeFactory factory, NativeWriter writer, Section section, INativeFormatTypeReferenceProvider externalReferences)
         {
-            Vertex typeMapGroupVertex = externalReferences.EncodeReferenceToType(writer, TypeMapGroup);
+            Vertex typeMapGroupVertex = externalReferences.EncodeReferenceToType(writer, TypeMapGroup, TriggeringModule);
             if (map.ThrowingMethodStub is not null)
             {
                 // We don't write out the throwing method stub for R2R
                 // as emitting loose methods is not supported/very expensive.
                 // Instead, we defer to the runtime to generate the type map
                 // and throw on error cases.
-                return section.Place(writer.GetTuple(typeMapGroupVertex, writer.GetUnsignedConstant(0))); // Invalid type map state
+                return section.Place(writer.GetTuple(
+                    typeMapGroupVertex,
+                    writer.GetUnsignedConstant(ReadyToRunTypeMapEncoding.RuntimeAttributeFallback)));
             }
 
             VertexHashtable typeMapHashTable = new();
+            VertexSequence namedEntries = new();
+            bool hasNamedEntries = false;
 
             Section typeMapEntriesSection = writer.NewSection();
 
-            foreach ((string key, (TypeDesc type, _)) in map.TypeMap)
+            foreach ((string key, TypeMapMetadata.ExternalTypeMapEntry mapEntry) in map.TypeMap)
             {
-                Vertex keyVertex = writer.GetStringConstant(key);
-                Vertex valueVertex = externalReferences.EncodeReferenceToType(writer, type);
-                Vertex entry = writer.GetTuple(keyVertex, valueVertex);
-                typeMapHashTable.Append((uint)VersionResilientHashCode.NameHashCode(Encoding.UTF8.GetBytes(key)), typeMapEntriesSection.Place(entry));
+                if (ReadyToRunTypeMapEncoding.IsTypeDescEncodable(factory, TriggeringModule, mapEntry.Type))
+                {
+                    Vertex entry = writer.GetTuple(
+                        writer.GetStringConstant(key),
+                        externalReferences.EncodeReferenceToType(writer, mapEntry.Type, TriggeringModule));
+                    typeMapHashTable.Append((uint)VersionResilientHashCode.NameHashCode(Encoding.UTF8.GetBytes(key)), typeMapEntriesSection.Place(entry));
+                }
+                else
+                {
+                    Debug.Assert(TriggeringModule.Assembly == mapEntry.DeclaringModule.Assembly);
+                    namedEntries.Append(writer.GetTuple(
+                        writer.GetStringConstant(key),
+                        writer.GetStringConstant(mapEntry.SerializedTypeName)));
+                    hasNamedEntries = true;
+                }
             }
 
-            Vertex typeMapStateVertex = writer.GetUnsignedConstant(1); // Valid type map state
-            Vertex tuple = writer.GetTuple(typeMapGroupVertex, typeMapStateVertex, typeMapHashTable);
+            uint typeMapState = hasNamedEntries
+                ? ReadyToRunTypeMapEncoding.PrecomputedFixupsAndTypeNames
+                : ReadyToRunTypeMapEncoding.PrecomputedFixups;
+            Vertex typeMapStateVertex = writer.GetUnsignedConstant(typeMapState);
+            Vertex typeMapData = hasNamedEntries
+                ? writer.GetTuple(typeMapHashTable, namedEntries)
+                : typeMapHashTable;
+            Vertex tuple = writer.GetTuple(typeMapGroupVertex, typeMapStateVertex, typeMapData);
             return section.Place(tuple);
         }
 
         public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory context) => [];
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context)
         {
-            yield return new DependencyListEntry(importProvider.GetImportToType(TypeMapGroup), $"Type map '{TypeMapGroup}' key type");
+            yield return new DependencyListEntry(importProvider.GetImportToType(TypeMapGroup, TriggeringModule), $"Type map '{TypeMapGroup}' key type");
 
             if (map.ThrowingMethodStub is not null)
             {
@@ -78,7 +100,10 @@ namespace ILCompiler.ReadyToRun
 
             foreach (var entry in map.TypeMap)
             {
-                yield return new DependencyListEntry(importProvider.GetImportToType(entry.Value.type), $"External type map entry target for key '{entry.Key}'");
+                if (ReadyToRunTypeMapEncoding.IsTypeDescEncodable(context, TriggeringModule, entry.Value.Type))
+                {
+                    yield return new DependencyListEntry(importProvider.GetImportToType(entry.Value.Type, TriggeringModule), $"External type map entry target for key '{entry.Key}'");
+                }
             }
         }
         public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory context) => [];

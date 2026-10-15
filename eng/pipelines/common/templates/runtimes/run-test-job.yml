@@ -6,6 +6,8 @@ parameters:
   hostedOs: ''
   container: ''
   testGroup: ''
+  # ISA stress scenarios supplied by jit-outerloop-pipeline.yml.
+  jitIsaStressScenarios: []
   crossBuild: false
   readyToRun: false
   hotColdSplitting: false
@@ -243,6 +245,16 @@ jobs:
         artifactName: '$(nativeTestArtifactName)'
         displayName: 'native test artifacts'
 
+    # Browser tests that carry their own native library are linked into a test-specific corerun
+    # during copynativeonly. That needs two things this job would otherwise lack: em++, since
+    # nothing here builds natively and so nothing has populated the shared wasm tool cache that
+    # eng/native/gen-buildsys.sh resolves; and WasmAppBuilder built at $(TasksConfiguration),
+    # which follows the test build's Checked configuration while the downloaded artifacts only
+    # carry the product build's Release tasks.
+    - ${{ if eq(parameters.osGroup, 'browser') }}:
+      - script: $(Build.SourcesDirectory)/build$(scriptExt) -subset provision.emsdk+tasks -os browser -arch $(archType) -c $(buildConfigUpper) -ci
+        displayName: Provision Emscripten SDK and build tasks
+
     # Publish native test components to test output folder. Sadly we cannot do this
     # during product build (so that we could zip up the files in their final test location
     # and directly unzip them there after download). Unfortunately the logic to copy
@@ -373,38 +385,8 @@ jobs:
           scenarios:
           - jitstress_random_1
           - jitstress_random_2
-        ${{ if in(parameters.testGroup, 'jitstress-isas-arm') }}:
-          scenarios:
-          - jitstress_isas_nohwintrinsic
-        ${{ if in(parameters.testGroup, 'jitstress-isas-x86') }}:
-          scenarios:
-          - jitstress_isas_nohwintrinsic
-          - jitstress_isas_x86_evex
-          - jitstress_isas_x86_noavx
-          - jitstress_isas_x86_noavx2
-          - jitstress_isas_x86_noavx512
-          - jitstress_isas_x86_vectort128
-          - jitstress_isas_x86_vectort512
-          - jitstress_isas_x86_noavx512_vectort128
-          - jitstress_isas_1_x86_evex
-          - jitstress_isas_1_x86_noavx
-          - jitstress_isas_1_x86_noavx2
-          - jitstress_isas_1_x86_noavx512
-          - jitstress_isas_1_x86_vectort128
-          - jitstress_isas_1_x86_vectort512
-          - jitstress_isas_1_x86_noavx512_vectort128
-          - jitstress_isas_2_x86_evex
-          - jitstress_isas_2_x86_noavx
-          - jitstress_isas_2_x86_noavx2
-          - jitstress_isas_2_x86_noavx512
-          - jitstress_isas_2_x86_vectort128
-          - jitstress_isas_2_x86_vectort512
-          - jitstress_isas_2_x86_noavx512_vectort128
-        ${{ if in(parameters.testGroup, 'jitstress-isas-avx512') }}:
-          scenarios:
-          - jitstress_isas_x86_evex
-          - jitstress_isas_x86_noavx512
-          - jitstressregs0x2000
+        ${{ if in(parameters.testGroup, 'jitstress-isas-arm', 'jitstress-isas-avx512', 'jitstress-isas-x86') }}:
+          scenarios: ${{ parameters.jitIsaStressScenarios }}
         ${{ if in(parameters.testGroup, 'jitstressregs-x86') }}:
           scenarios:
           - jitstressregs1_x86_noavx
@@ -538,6 +520,7 @@ jobs:
         ${{ if in(parameters.testGroup, 'ilasm') }}:
           scenarios:
           - ilasmroundtrip
+          - managedilasmroundtrip
 
     ########################################################################################################
     #

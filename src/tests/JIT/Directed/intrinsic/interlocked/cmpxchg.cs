@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+namespace JitTest_Directed_intrinsic_interlocked_cmpxchg;
+
 using System;
 using System.Threading;
 using System.Runtime.CompilerServices;
@@ -34,6 +36,7 @@ public class CMPXCHG
             }
         }
     }
+    [OuterLoop]
     [Fact]
     public static void TestEntryPoint()
     {

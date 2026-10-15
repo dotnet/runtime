@@ -442,9 +442,7 @@ namespace System.Numerics
         /// <summary>Explicitly converts a <see cref="decimal" /> value to its nearest representable <see cref="BFloat16"/> value.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to its nearest representable <see cref="BFloat16"/> value.</returns>
-        // Round through double, not float: decimal -> double is correctly rounded and double (53-bit significand)
-        // -> BFloat16 is an innocuous double rounding (53 >= 2 * 8 + 2), so the result is correctly rounded.
-        public static explicit operator BFloat16(decimal value) => (BFloat16)(double)value;
+        public static explicit operator BFloat16(decimal value) => decimal.VarBFloat16FromDec(in value);
 
         /// <summary>Explicitly converts a <see cref="double" /> value to its nearest representable <see cref="BFloat16"/> value.</summary>
         /// <param name="value">The value to convert.</param>
@@ -2045,22 +2043,10 @@ namespace System.Numerics
         public static BFloat16 CosPi(BFloat16 x) => (BFloat16)float.CosPi((float)x);
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.DegreesToRadians(TSelf)" />
-        public static BFloat16 DegreesToRadians(BFloat16 degrees)
-        {
-            // NOTE: Don't change the algorithm without consulting the DIM
-            // which elaborates on why this implementation was chosen
-
-            return (BFloat16)float.DegreesToRadians((float)degrees);
-        }
+        public static BFloat16 DegreesToRadians(BFloat16 degrees) => (BFloat16)float.DegreesToRadians((float)degrees);
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.RadiansToDegrees(TSelf)" />
-        public static BFloat16 RadiansToDegrees(BFloat16 radians)
-        {
-            // NOTE: Don't change the algorithm without consulting the DIM
-            // which elaborates on why this implementation was chosen
-
-            return (BFloat16)float.RadiansToDegrees((float)radians);
-        }
+        public static BFloat16 RadiansToDegrees(BFloat16 radians) => (BFloat16)float.RadiansToDegrees((float)radians);
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Sin(TSelf)" />
         public static BFloat16 Sin(BFloat16 x) => (BFloat16)float.Sin((float)x);

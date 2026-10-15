@@ -71,29 +71,6 @@ void gc_heap::switch_one_quantum()
     disable_preemptive (true);
 }
 
-void gc_heap::reset_ww_by_chunk (uint8_t* start_address, size_t total_reset_size)
-{
-    size_t reset_size = 0;
-    size_t remaining_reset_size = 0;
-    size_t next_reset_size = 0;
-
-    while (reset_size != total_reset_size)
-    {
-        remaining_reset_size = total_reset_size - reset_size;
-        next_reset_size = ((remaining_reset_size >= ww_reset_quantum) ?
-            ww_reset_quantum : remaining_reset_size);
-        if (next_reset_size)
-        {
-            reset_write_watch_for_gc_heap(start_address, next_reset_size);
-            reset_size += next_reset_size;
-
-            switch_one_quantum();
-        }
-    }
-
-    assert (reset_size == total_reset_size);
-}
-
 // This does a Sleep(1) for every reset ww_reset_quantum bytes of reset
 // we do concurrently.
 void gc_heap::switch_on_reset (BOOL concurrent_p, size_t* current_total_reset_size, size_t last_reset_size)
@@ -2671,7 +2648,6 @@ void gc_heap::background_grow_c_mark_list()
     dprintf (2, ("stack copy buffer overflow"));
     uint8_t** new_c_mark_list = 0;
     {
-        FAULT_NOT_FATAL();
         if (c_mark_list_length >= (SIZE_T_MAX / (2 * sizeof (uint8_t*))))
         {
             should_drain_p = TRUE;
@@ -2697,7 +2673,7 @@ void gc_heap::background_grow_c_mark_list()
         assert (new_c_mark_list);
         memcpy (new_c_mark_list, c_mark_list, c_mark_list_length*sizeof(uint8_t*));
         c_mark_list_length = c_mark_list_length*2;
-        dprintf (5555, ("h%d replacing mark list at %Ix with %Ix", heap_number, (size_t)c_mark_list, (size_t)new_c_mark_list));
+        dprintf (5555, ("h%d replacing mark list at %zx with %zx", heap_number, (size_t)c_mark_list, (size_t)new_c_mark_list));
         delete[] c_mark_list;
         c_mark_list = new_c_mark_list;
     }
@@ -2789,7 +2765,7 @@ void gc_heap::add_to_bgc_th_creation_history (size_t gc_index, size_t count_crea
 {
     if ((count_created != 0) || (count_created_th_existed != 0) || (count_creation_failed != 0))
     {
-        dprintf (6666, ("ADDING to BGC th hist entry%d gc index %Id, created %d, %d th existed, %d failed",
+        dprintf (6666, ("ADDING to BGC th hist entry%d gc index %zd, created %zu, %zu th existed, %zu failed",
             bgc_th_creation_hist_index, gc_index, count_created, count_created_th_existed, count_creation_failed));
 
         bgc_thread_creation_history* current_hist = &bgc_th_creation_hist[bgc_th_creation_hist_index];
@@ -3128,10 +3104,10 @@ void gc_heap::bgc_thread_function()
 
             // this is the case where we have more background GC threads than heaps
             // - wait until we're told to continue...
-            dprintf (6666, ("BGC%Id h%d going idle (%d heaps), idle count is now %d",
+            dprintf (6666, ("BGC%zd h%d going idle (%d heaps), idle count is now %d",
                 VolatileLoadWithoutBarrier (&settings.gc_index), heap_number, n_heaps, VolatileLoadWithoutBarrier (&dynamic_heap_count_data.idle_bgc_thread_count)));
             bgc_idle_thread_event.Wait(INFINITE, FALSE);
-            dprintf (6666, ("BGC%Id h%d woke from idle (%d heaps), idle count is now %d",
+            dprintf (6666, ("BGC%zd h%d woke from idle (%d heaps), idle count is now %d",
                 VolatileLoadWithoutBarrier (&settings.gc_index), heap_number, n_heaps, VolatileLoadWithoutBarrier (&dynamic_heap_count_data.idle_bgc_thread_count)));
             continue;
         }

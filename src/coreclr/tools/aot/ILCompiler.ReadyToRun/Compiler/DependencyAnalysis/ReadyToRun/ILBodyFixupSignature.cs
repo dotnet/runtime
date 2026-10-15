@@ -51,6 +51,15 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _signatureMethod = signatureMethod;
         }
 
+        /// <summary>
+        /// Returns the method a compiled method's own IL body fixup is created for, or null if the compiled method cannot have one.
+        /// </summary>
+        public static MethodDesc GetSignatureMethodForCompiledMethod(MethodDesc compiledMethod)
+        {
+            MethodDesc typicalDef = compiledMethod.GetTypicalMethodDefinition();
+            return typicalDef is EcmaMethod or AsyncMethodVariant ? typicalDef : null;
+        }
+
         public override int ClassCode => 308579267;
 
         protected override void OnMarked(NodeFactory context)

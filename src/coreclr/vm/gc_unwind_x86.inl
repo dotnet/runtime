@@ -3635,10 +3635,10 @@ bool EnumGcRefsX86(PREGDISPLAY     pContext,
        do not contain ANY arguments except 'this' (even if they
        were statically declared */
 
-    if (info.varargs) {
-#ifdef FEATURE_NATIVEAOT
-        PORTABILITY_ASSERT("EnumGCRefs: VarArgs");
+#if !defined(FEATURE_VARARGS)
+    _ASSERTE(!info.varargs);
 #else
+    if (info.varargs) {
         LOG((LF_GCINFO, LL_INFO100, "Reporting incoming vararg GC refs\n"));
 
         PTR_BYTE argsStart;
@@ -3659,8 +3659,8 @@ bool EnumGcRefsX86(PREGDISPLAY     pContext,
         PTR_VASigCookie varArgSig = *PTR_PTR_VASigCookie(argsStart);
 
         promoteVarArgs(argsStart, varArgSig, pCtx);
-#endif
     }
+#endif // FEATURE_VARARGS
 
     return true;
 }

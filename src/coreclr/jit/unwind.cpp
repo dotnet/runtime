@@ -404,7 +404,7 @@ void Compiler::DumpCfiInfo(bool                  isHotCode,
                 printf("    CodeOffset: 0x%02X Op: NegateRAState\n", codeOffset);
                 break;
             default:
-                printf("    Unrecognized CFI_CODE: 0x%llX\n", *(UINT64*)pCode);
+                printf("    Unrecognized CFI_CODE: 0x%llX\n", (unsigned long long)*(UINT64*)pCode);
                 break;
         }
     }

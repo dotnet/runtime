@@ -56,6 +56,20 @@
     <NoWarn>$(NoWarn);IL2121</NoWarn>
   </PropertyGroup>
 
+  <Target Name="_RootWasmTestRunnerForTrimming"
+          BeforeTargets="PrepareForILLink"
+          Condition="'$(TestFramework)' == 'xunit' and '$(PublishTrimmed)' == 'true' and '$(EnableAggressiveTrimming)' != 'true'">
+    <ItemGroup>
+      <TrimmerRootAssembly Include="WasmTestRunner" RootMode="all" />
+
+      <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptor.xunit.xml" Condition="'$(SkipXunitTrimmerDescriptor)' != 'true'" />
+
+      <!-- Only root TestUtilities when it is actually in the link set; some trimmed apps don't reference it. -->
+      <_ResolvedTestUtilities Include="@(ResolvedFileToPublish)" Condition="'%(ResolvedFileToPublish.FileName)' == 'TestUtilities'" />
+      <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptor.TestUtilities.xml" Condition="'$(SkipTestUtilitiesReference)' != 'true' and '@(_ResolvedTestUtilities)' != ''" />
+    </ItemGroup>
+  </Target>
+
   <PropertyGroup>
     <BuildAOTTestsOn Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(Scenario)' == 'BuildWasmApps'">helix</BuildAOTTestsOn>
     <BuildAOTTestsOn Condition="'$(BuildAOTTestsOnHelix)' == 'true'">helix</BuildAOTTestsOn>
@@ -73,8 +87,14 @@
 
       So, set those parameters explicitly here.
       -->
-    <_ExtraTrimmerArgs Condition="'$(WasmEnableSIMD)' != 'false'">$(_ExtraTrimmerArgs) --substitutions "$(BrowserProjectRoot)build\ILLink.Substitutions.WasmIntrinsics.xml"</_ExtraTrimmerArgs>
-    <_ExtraTrimmerArgs Condition="'$(WasmEnableSIMD)' == 'false'">$(_ExtraTrimmerArgs) --substitutions "$(BrowserProjectRoot)build\ILLink.Substitutions.NoWasmIntrinsics.xml"</_ExtraTrimmerArgs>
+    <_WasmIntrinsicsSubstitutions Condition="'$(WasmEnableSIMD)' != 'false'">WasmIntrinsics</_WasmIntrinsicsSubstitutions>
+    <_WasmIntrinsicsSubstitutions Condition="'$(WasmEnableSIMD)' == 'false'">NoWasmIntrinsics</_WasmIntrinsicsSubstitutions>
+    <!-- WasmEnableSIMD is about native codegen, and CoreCLR browser-wasm forces it on, but the CoreCLR
+         interpreter maps every System.Runtime.Intrinsics arch intrinsic except get_IsSupported to
+         PlatformNotSupportedException. Only crossgen'd code can execute them, so without ReadyToRun stubbing
+         IsSupported to true leaves a guarded SIMD path unconditionally reachable and it throws at startup. -->
+    <_WasmIntrinsicsSubstitutions Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(PublishReadyToRun)' != 'true'">NoWasmIntrinsics</_WasmIntrinsicsSubstitutions>
+    <_ExtraTrimmerArgs>$(_ExtraTrimmerArgs) --substitutions "$(BrowserProjectRoot)build\ILLink.Substitutions.$(_WasmIntrinsicsSubstitutions).xml"</_ExtraTrimmerArgs>
   </PropertyGroup>
 
   <ItemGroup>
@@ -102,7 +122,7 @@
   </ItemGroup>
 
   <Target Name="BundleTestWasmApp" DependsOnTargets="$(BundleTestWasmAppDependsOn)" Condition="'$(IsWasmProject)' != 'false'">
-    <ForceMSBuildGC />
+    <ForceMSBuildGC Condition="'$(RuntimeFlavor)' != 'CoreCLR'" />
   </Target>
 
   <UsingTask Condition="'$(BuildAOTTestsOnHelix)' == 'true'"
@@ -184,16 +204,18 @@
     <Copy SourceFiles="@(_WasmExtraFilesToCopy)" DestinationFiles="$(BundleDir)\extraFiles\%(_WasmExtraFilesToCopy.TargetPath)" />
   </Target>
 
-  <!-- linker automatically picks up the .pdb files, but they are not added to the publish list.
-       Add them explicitly here, so they can be used with WasmAppBuilder -->
+  <!-- Add PDBs adjacent to the selected assemblies, including linker output, to the publish list for WasmAppBuilder.
+       Replace existing PDBs at the same publish path so the symbols match the selected assembly,
+       including when a runtime-pack DLL replaces a project-reference DLL. -->
   <Target Name="AddPdbFilesToPublishList" AfterTargets="ILLink" Condition="'$(DebuggerSupport)' == 'true'">
     <ItemGroup>
       <_PdbFilesToCheck Include="$([System.IO.Path]::ChangeExtension('%(ResolvedFileToPublish.Identity)', '.pdb'))"
-                        Condition="'%(ResolvedFileToPublish.Extension)' == '.dll'" />
+                        Condition="'%(ResolvedFileToPublish.Extension)' == '.dll'"
+                        RelativePath="$([System.IO.Path]::ChangeExtension('%(ResolvedFileToPublish.RelativePath)', '.pdb'))" />
 
-      <ResolvedFileToPublish Include="@(_PdbFilesToCheck)"
-                             Condition="Exists(%(_PdbFilesToCheck.Identity))"
-                             RelativePath="%(_PdbFilesToCheck.FileName)%(_PdbFilesToCheck.Extension)" />
+      <_PdbFilesToPublish Include="@(_PdbFilesToCheck)" Condition="Exists('%(_PdbFilesToCheck.Identity)')" />
+      <ResolvedFileToPublish Remove="@(_PdbFilesToPublish)" MatchOnMetadata="RelativePath" MatchOnMetadataOptions="PathLike" />
+      <ResolvedFileToPublish Include="@(_PdbFilesToPublish)" />
     </ItemGroup>
   </Target>
 

@@ -13,6 +13,8 @@
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <!-- Test expects particular JIT optimization levels -->
     <JitOptimizationSensitive>true</JitOptimizationSensitive>
+    <!-- This test uses EventPipe sessions that are too slow under GC stress -->
+    <GCStressIncompatible>true</GCStressIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs" />

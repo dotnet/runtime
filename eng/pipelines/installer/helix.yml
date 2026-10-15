@@ -4,6 +4,7 @@ parameters:
   osSubgroup: ''
   creator: ''
   helixQueues: ''
+  condition: always()
   useHelixMonitor: false
 
 steps:
@@ -38,3 +39,4 @@ steps:
         Creator: ${{ parameters.creator }}
         HelixTargetQueues: ${{ join('+', parameters.helixQueues) }}
       UseHelixMonitor: ${{ parameters.useHelixMonitor }}
+      condition: and(succeeded(), ${{ parameters.condition }})

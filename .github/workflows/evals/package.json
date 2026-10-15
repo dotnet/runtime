@@ -1,6 +1,9 @@
 {
   "private": true,
+  "scripts": {
+    "test": "node --test kbe-search.test.mjs"
+  },
   "dependencies": {
-    "@microsoft/vally-cli": "0.7.0"
+    "@microsoft/vally-cli": "0.14.0"
   }
 }

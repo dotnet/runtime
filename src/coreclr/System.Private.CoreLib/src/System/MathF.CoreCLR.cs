@@ -17,97 +17,97 @@ namespace System
         /// <safety>Implemented by the runtime as an FCall that computes a result from the argument values alone; it dereferences no caller-supplied memory.</safety>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static safe extern float Acos(float x);
+        public static extern safe float Acos(float x);
 
         /// <safety>Implemented by the runtime as an FCall that computes a result from the argument values alone; it dereferences no caller-supplied memory.</safety>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static safe extern float Acosh(float x);
+        public static extern safe float Acosh(float x);
 
         /// <safety>Implemented by the runtime as an FCall that computes a result from the argument values alone; it dereferences no caller-supplied memory.</safety>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static safe extern float Asin(float x);
+        public static extern safe float Asin(float x);
 
         /// <safety>Implemented by the runtime as an FCall that computes a result from the argument values alone; it dereferences no caller-supplied memory.</safety>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static safe extern float Asinh(float x);
+        public static extern safe float Asinh(float x);
 
         /// <safety>Implemented by the runtime as an FCall that computes a result from the argument values alone; it dereferences no caller-supplied memory.</safety>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static safe extern float Atan(float x);
+        public static extern safe float Atan(float x);
 
         /// <safety>Implemented by the runtime as an FCall that computes a result from the argument values alone; it dereferences no caller-supplied memory.</safety>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static safe extern float Atanh(float x);
+        public static extern safe float Atanh(float x);
 
         /// <safety>Implemented by the runtime as an FCall that computes a result from the argument values alone; it dereferences no caller-supplied memory.</safety>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static safe extern float Atan2(float y, float x);
+        public static extern safe float Atan2(float y, float x);
 
         /// <safety>Implemented by the runtime as an FCall that computes a result from the argument values alone; it dereferences no caller-supplied memory.</safety>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static safe extern float Cbrt(float x);
+        public static extern safe float Cbrt(float x);
 
         /// <safety>Implemented by the runtime as an FCall that computes a result from the argument values alone; it dereferences no caller-supplied memory.</safety>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static safe extern float Ceiling(float x);
+        public static extern safe float Ceiling(float x);
 
         /// <safety>Implemented by the runtime as an FCall that computes a result from the argument values alone; it dereferences no caller-supplied memory.</safety>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static safe extern float Cos(float x);
+        public static extern safe float Cos(float x);
 
         /// <safety>Implemented by the runtime as an FCall that computes a result from the argument values alone; it dereferences no caller-supplied memory.</safety>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static safe extern float Cosh(float x);
+        public static extern safe float Cosh(float x);
 
         /// <safety>Implemented by the runtime as an FCall that computes a result from the argument values alone; it dereferences no caller-supplied memory.</safety>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static safe extern float Exp(float x);
+        public static extern safe float Exp(float x);
 
         /// <safety>Implemented by the runtime as an FCall that computes a result from the argument values alone; it dereferences no caller-supplied memory.</safety>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static safe extern float Floor(float x);
+        public static extern safe float Floor(float x);
 
         /// <safety>Implemented by the runtime as an FCall that computes a result from the argument values alone; it dereferences no caller-supplied memory.</safety>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static safe extern float FusedMultiplyAdd(float x, float y, float z);
+        public static extern safe float FusedMultiplyAdd(float x, float y, float z);
 
         /// <safety>Implemented by the runtime as an FCall that computes a result from the argument values alone; it dereferences no caller-supplied memory.</safety>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static safe extern float Log(float x);
+        public static extern safe float Log(float x);
 
         /// <safety>Implemented by the runtime as an FCall that computes a result from the argument values alone; it dereferences no caller-supplied memory.</safety>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static safe extern float Log2(float x);
+        public static extern safe float Log2(float x);
 
         /// <safety>Implemented by the runtime as an FCall that computes a result from the argument values alone; it dereferences no caller-supplied memory.</safety>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static safe extern float Log10(float x);
+        public static extern safe float Log10(float x);
 
         /// <safety>Implemented by the runtime as an FCall that computes a result from the argument values alone; it dereferences no caller-supplied memory.</safety>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static safe extern float Pow(float x, float y);
+        public static extern safe float Pow(float x, float y);
 
         /// <safety>Implemented by the runtime as an FCall that computes a result from the argument values alone; it dereferences no caller-supplied memory.</safety>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static safe extern float Sin(float x);
+        public static extern safe float Sin(float x);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe (float Sin, float Cos) SinCos(float x)
@@ -125,22 +125,22 @@ namespace System
         /// <safety>Implemented by the runtime as an FCall that computes a result from the argument values alone; it dereferences no caller-supplied memory.</safety>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static safe extern float Sinh(float x);
+        public static extern safe float Sinh(float x);
 
         /// <safety>Implemented by the runtime as an FCall that computes a result from the argument values alone; it dereferences no caller-supplied memory.</safety>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static safe extern float Sqrt(float x);
+        public static extern safe float Sqrt(float x);
 
         /// <safety>Implemented by the runtime as an FCall that computes a result from the argument values alone; it dereferences no caller-supplied memory.</safety>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static safe extern float Tan(float x);
+        public static extern safe float Tan(float x);
 
         /// <safety>Implemented by the runtime as an FCall that computes a result from the argument values alone; it dereferences no caller-supplied memory.</safety>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static safe extern float Tanh(float x);
+        public static extern safe float Tanh(float x);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern unsafe float ModF(float x, float* intptr);

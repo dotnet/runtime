@@ -25,9 +25,6 @@
 
 #include "palclr.h"
 
-#undef CreateSemaphore
-#define CreateSemaphore(_secattr, _count, _maxcount, _name) CreateSemaphoreExW((_secattr), (_count), (_maxcount), (_name), 0, MAXIMUM_ALLOWED | SYNCHRONIZE | SEMAPHORE_MODIFY_STATE)
-
 #undef GetFileVersionInfo
 #define GetFileVersionInfo(_filename, _handle, _len, _data) GetFileVersionInfoEx(0, (_filename), (_handle), (_len), (_data))
 #undef GetFileVersionInfoSize

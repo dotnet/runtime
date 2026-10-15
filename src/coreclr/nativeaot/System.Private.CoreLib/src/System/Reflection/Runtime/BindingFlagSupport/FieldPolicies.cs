@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Runtime.TypeInfos;
 
 namespace System.Reflection.Runtime.BindingFlagSupport
@@ -16,13 +15,6 @@ namespace System.Reflection.Runtime.BindingFlagSupport
         public static readonly FieldPolicies Instance = new FieldPolicies();
 
         public FieldPolicies() : base(MemberTypeIndex.Field) { }
-
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
-            Justification = "Reflection implementation")]
-        public sealed override IEnumerable<FieldInfo> GetDeclaredMembers(Type type)
-        {
-            return type.GetFields(DeclaredOnlyLookup);
-        }
 
         public sealed override IEnumerable<FieldInfo> CoreGetDeclaredMembers(RuntimeTypeInfo type, NameFilter? optionalNameFilter, RuntimeTypeInfo reflectedType)
         {
@@ -39,8 +31,6 @@ namespace System.Reflection.Runtime.BindingFlagSupport
             isVirtual = false;
             isNewSlot = false;
         }
-
-        public sealed override bool ImplicitlyOverrides(FieldInfo baseMember, FieldInfo derivedMember) => false;
 
         public sealed override bool IsSuppressedByMoreDerivedMember(FieldInfo member, FieldInfo[] priorMembers, int startIndex, int endIndex)
         {

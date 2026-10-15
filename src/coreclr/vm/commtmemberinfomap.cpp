@@ -102,7 +102,6 @@ EEHashEntry_t * EEModuleTokenHashTableHelper::AllocateEntry(EEModuleTokenPair *p
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        INJECT_FAULT(return NULL);
         PRECONDITION(CheckPointer(pKey));
     }
     CONTRACTL_END;
@@ -1585,7 +1584,6 @@ void ComMTMemberInfoMap::PopulateMemberHashtable()
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 

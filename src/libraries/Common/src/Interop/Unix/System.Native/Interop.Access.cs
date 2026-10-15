@@ -1,7 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 internal static partial class Interop
 {
@@ -17,5 +19,8 @@ internal static partial class Interop
 
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_Access", StringMarshalling = StringMarshalling.Utf8, SetLastError = true)]
         internal static partial int Access(string path, AccessMode mode);
+
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_Access", SetLastError = true)]
+        internal static partial int Access([MarshalUsing(typeof(SpanOfCharAsUtf8StringMarshaller))] ReadOnlySpan<char> path, AccessMode mode);
     }
 }

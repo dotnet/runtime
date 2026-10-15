@@ -36,6 +36,8 @@ namespace ILVerify
             new("--verbose") { Description = "Verbose output" };
         public Option<bool> Tokens { get; } =
             new("--tokens", "-t") { Description = "Include metadata tokens in error messages" };
+        public Option<bool> MetadataReferencesOnly { get; } =
+            new("--metadata-references-only") { Description = "Only validate metadata references" };
 
         public ParseResult Result;
 
@@ -55,6 +57,7 @@ namespace ILVerify
             Options.Add(Statistics);
             Options.Add(Verbose);
             Options.Add(Tokens);
+            Options.Add(MetadataReferencesOnly);
 
             this.SetAction(result =>
             {

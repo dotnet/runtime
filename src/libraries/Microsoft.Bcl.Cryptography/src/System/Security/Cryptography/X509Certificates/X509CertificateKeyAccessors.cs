@@ -537,6 +537,154 @@ namespace System.Security.Cryptography.X509Certificates
 #endif
         }
 
+#if NET11_0_OR_GREATER || NETFRAMEWORK
+        /// <summary>
+        ///   Gets the <see cref="CompositeMLKem"/> public key from this certificate.
+        /// </summary>
+        /// <param name="certificate">
+        ///   The X.509 certificate that contains the public key.
+        /// </param>
+        /// <returns>
+        ///   The public key, or <see langword="null"/> if this certificate does not have a Composite ML-KEM public key.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="certificate"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   The certificate has a Composite ML-KEM public key, but the platform does not support Composite ML-KEM.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   The public key was invalid, or otherwise could not be imported.
+        /// </exception>
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
+        public static CompositeMLKem? GetCompositeMLKemPublicKey(this X509Certificate2 certificate)
+        {
+            ArgumentNullException.ThrowIfNull(certificate);
+
+#if NET11_0_OR_GREATER
+            return certificate.GetCompositeMLKemPublicKey();
+#else
+            if (CompositeMLKemAlgorithm.GetAlgorithmFromOid(certificate.GetKeyAlgorithm()) is null)
+            {
+                return null;
+            }
+
+            ArraySegment<byte> encoded = GetCertificateSubjectPublicKeyInfo(certificate);
+
+            try
+            {
+                return CompositeMLKem.ImportSubjectPublicKeyInfo(encoded);
+            }
+            finally
+            {
+                // SubjectPublicKeyInfo does not need to clear since it's public
+                CryptoPool.Return(encoded, clearSize: 0);
+            }
+#endif
+        }
+
+        /// <summary>
+        ///   Gets the <see cref="CompositeMLKem"/> private key from this certificate.
+        /// </summary>
+        /// <param name="certificate">
+        ///   The X.509 certificate that contains the private key.
+        /// </param>
+        /// <returns>
+        ///   The private key, or <see langword="null"/> if this certificate does not have a Composite ML-KEM private key.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="certificate"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   Retrieving a Composite ML-KEM private key from a certificate is not supported on this platform.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred accessing the private key.
+        /// </exception>
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
+        public static CompositeMLKem? GetCompositeMLKemPrivateKey(this X509Certificate2 certificate)
+        {
+            ArgumentNullException.ThrowIfNull(certificate);
+
+#if NET11_0_OR_GREATER
+            return certificate.GetCompositeMLKemPrivateKey();
+#else
+            if (CompositeMLKemAlgorithm.GetAlgorithmFromOid(certificate.GetKeyAlgorithm()) is null)
+            {
+                return null;
+            }
+
+            throw new PlatformNotSupportedException();
+#endif
+        }
+
+        /// <summary>
+        ///   Combines a private key with a certificate containing the associated public key into a
+        ///   new instance that can access the private key.
+        /// </summary>
+        /// <param name="certificate">
+        ///   The X.509 certificate that contains the public key.
+        /// </param>
+        /// <param name="privateKey">
+        ///   The Composite ML-KEM private key that corresponds to the Composite ML-KEM public key in this certificate.
+        /// </param>
+        /// <returns>
+        ///   A new certificate with the <see cref="X509Certificate2.HasPrivateKey" /> property set to <see langword="true"/>.
+        ///   The current certificate isn't modified.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="certificate"/> or <paramref name="privateKey"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   The specified private key doesn't match the public key for this certificate.
+        /// </exception>
+        /// <exception cref="InvalidOperationException">
+        ///   The certificate already has an associated private key.
+        /// </exception>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   Combining a certificate and a Composite ML-KEM private key is not supported on this platform.
+        /// </exception>
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
+        public static X509Certificate2 CopyWithPrivateKey(this X509Certificate2 certificate, CompositeMLKem privateKey)
+        {
+            ArgumentNullException.ThrowIfNull(certificate);
+            ArgumentNullException.ThrowIfNull(privateKey);
+
+#if NET11_0_OR_GREATER
+            return certificate.CopyWithPrivateKey(privateKey);
+#else
+            if (!Helpers.IsOSPlatformWindows)
+                throw new PlatformNotSupportedException();
+
+            if (certificate.HasPrivateKey)
+                throw new InvalidOperationException(SR.Cryptography_Cert_AlreadyHasPrivateKey);
+
+            using (CompositeMLKem? publicKey = GetCompositeMLKemPublicKey(certificate))
+            {
+                if (publicKey is null)
+                {
+                    throw new ArgumentException(SR.Cryptography_PrivateKey_WrongAlgorithm);
+                }
+
+                if (publicKey.Algorithm != privateKey.Algorithm)
+                {
+                    throw new ArgumentException(SR.Cryptography_PrivateKey_DoesNotMatch, nameof(privateKey));
+                }
+
+                byte[] pk1 = publicKey.ExportEncapsulationKey();
+                byte[] pk2 = privateKey.ExportEncapsulationKey();
+
+                if (!pk1.SequenceEqual(pk2))
+                {
+                    throw new ArgumentException(SR.Cryptography_PrivateKey_DoesNotMatch, nameof(privateKey));
+                }
+            }
+
+            throw new PlatformNotSupportedException();
+#endif
+        }
+#endif
+
 #if !NET
         private static ArraySegment<byte> GetCertificateSubjectPublicKeyInfo(X509Certificate2 certificate)
         {

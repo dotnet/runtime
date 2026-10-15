@@ -103,12 +103,46 @@ namespace __OptionValidationGeneratedAttributes
         public bool ConvertValueInInvariantCulture { get; set; }
         public override string FormatErrorMessage(string name) =>
                 string.Format(global::System.Globalization.CultureInfo.CurrentCulture, GetValidationErrorMessage(), name, Minimum, Maximum);
+        public override string FormatMessage([global::System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, string name)
+        {
+            EnsureInitialized();
+
+            return string.Format(global::System.Globalization.CultureInfo.CurrentCulture, format, name, Minimum, Maximum);
+        }
         private readonly bool _needToConvertMinMax;
         private volatile bool _initialized;
         private readonly object _lock = new();
         private const string MinMaxError = "The minimum and maximum values must be set to valid values.";
 
         public override bool IsValid(object? value)
+        {
+            EnsureInitialized();
+
+            if (value is null or string { Length: 0 })
+            {
+                return true;
+            }
+
+            global::System.Globalization.CultureInfo formatProvider = ConvertValueInInvariantCulture ? global::System.Globalization.CultureInfo.InvariantCulture : global::System.Globalization.CultureInfo.CurrentCulture;
+            object? convertedValue;
+
+            try
+            {
+                convertedValue = ConvertValue(value, formatProvider);
+            }
+            catch (global::System.Exception e) when (e is global::System.FormatException or global::System.InvalidCastException or global::System.NotSupportedException or global::System.OverflowException)
+            {
+                return false;
+            }
+
+            var min = (global::System.IComparable)Minimum;
+            var max = (global::System.IComparable)Maximum;
+
+            return
+                (MinimumIsExclusive ? min.CompareTo(convertedValue) < 0 : min.CompareTo(convertedValue) <= 0) &&
+                (MaximumIsExclusive ? max.CompareTo(convertedValue) > 0 : max.CompareTo(convertedValue) >= 0);
+        }
+        private void EnsureInitialized()
         {
             if (!_initialized)
             {
@@ -139,30 +173,6 @@ namespace __OptionValidationGeneratedAttributes
                     }
                 }
             }
-
-            if (value is null or string { Length: 0 })
-            {
-                return true;
-            }
-
-            global::System.Globalization.CultureInfo formatProvider = ConvertValueInInvariantCulture ? global::System.Globalization.CultureInfo.InvariantCulture : global::System.Globalization.CultureInfo.CurrentCulture;
-            object? convertedValue;
-
-            try
-            {
-                convertedValue = ConvertValue(value, formatProvider);
-            }
-            catch (global::System.Exception e) when (e is global::System.FormatException or global::System.InvalidCastException or global::System.NotSupportedException or global::System.OverflowException)
-            {
-                return false;
-            }
-
-            var min = (global::System.IComparable)Minimum;
-            var max = (global::System.IComparable)Maximum;
-
-            return
-                (MinimumIsExclusive ? min.CompareTo(convertedValue) < 0 : min.CompareTo(convertedValue) <= 0) &&
-                (MaximumIsExclusive ? max.CompareTo(convertedValue) > 0 : max.CompareTo(convertedValue) >= 0);
         }
         private string GetValidationErrorMessage()
         {

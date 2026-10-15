@@ -43,7 +43,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(aot: false)]
-        [TestCategory("native-mono")]
+        [TestCategory("native"), TestCategory("mono")]
         [SkipOnPlatform(TestPlatforms.AnyUnix, "The cmd.exe quoting behavior this covers is Windows-specific.")]
         public async Task NativeBuildWithSpecialCharsInTempPath(Configuration config, bool aot)
         {
@@ -79,7 +79,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(aot: true)]
-        [TestCategory("native-mono")]
+        [TestCategory("native"), TestCategory("mono")]
         public void AOTNotSupportedWithNoTrimming(Configuration config, bool aot)
         {
             ProjectInfo info = CreateWasmTemplateProject(
@@ -98,7 +98,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(config: Configuration.Release, aot: true)]
-        [TestCategory("native-mono")]
+        [TestCategory("native"), TestCategory("mono")]
         public void IntermediateBitcodeToObjectFilesAreNotLLVMIR(Configuration config, bool aot)
         {
             string printFileTypeTarget = @"
@@ -131,7 +131,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(config: Configuration.Release, aot: true)]
-        [TestCategory("native-mono")]
+        [TestCategory("native"), TestCategory("mono")]
         public void NativeBuildIsRequired(Configuration config, bool aot)
         {
             ProjectInfo info = CreateWasmTemplateProject(
@@ -151,6 +151,9 @@ namespace Wasm.Build.Tests
             Configuration config = Configuration.Debug;
             ProjectInfo info = CopyTestAsset(config, false, TestAsset.WasmBasicTestApp, "ZipArchiveInteropTest", extraProperties: "<WasmBuildNative>true</WasmBuildNative>");
             BuildProject(info, config, new BuildOptions(AssertAppBundle: false));
+            BuildPaths paths = GetBuildPaths(config, forPublish: false);
+            string pinvokeTableFileName = IsCoreClrRuntime ? "callhelpers-pinvoke.cpp" : "pinvoke-table.h";
+            Assert.DoesNotContain("System_Security_Cryptography", File.ReadAllText(Path.Combine(paths.ObjWasmDir, pinvokeTableFileName)));
             RunResult result = await RunForBuildWithDotnetRun(new BrowserRunOptions(config, TestScenario: "ZipArchiveInteropTest"));
             Assert.Collection(
                 result.TestOutput,

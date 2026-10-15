@@ -782,6 +782,16 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 types[index].RequiresAll();
             }
 
+            // Tuple-swapping elements accessed through an implicit indexer (using the
+            // System.Index '^' operator) used to crash the analyzer, because Roslyn
+            // marks an implicit indexer reference that is a deconstruction assignment
+            // target as a write without also marking it as a reference.
+            static void TestTupleSwap()
+            {
+                Span<int> span = stackalloc int[4];
+                (span[^1], span[^2]) = (span[^2], span[^1]);
+            }
+
             class IndexWithTypeWithDam
             {
                 class DamOnIndexOnly
@@ -925,6 +935,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 TestWrite();
                 TestNullCoalescingAssignment();
                 TestSpanIndexerAccess();
+                TestTupleSwap();
                 IndexWithTypeWithDam.Test();
             }
         }

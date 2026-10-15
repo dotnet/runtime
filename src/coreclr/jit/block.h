@@ -447,13 +447,16 @@ enum BasicBlockFlags : uint64_t
     BBF_ASYNC_RESUMPTION               = MAKE_BBFLAG(36), // Block is a resumption block in an async method
     BBF_CATCH_RESUMPTION               = MAKE_BBFLAG(37), // Block is a resumption from a catch
     BBF_THROW_HELPER                   = MAKE_BBFLAG(38), // Block is a call to a throw helper
+    BBF_STALE_PREDICATE                = MAKE_BBFLAG(39), // Block's branch condition VN only describes flow that
+                                                         // actually passes through the block (set/used by RBO)
 
     // The following are sets of flags.
 
     // Flags to update when two blocks are compacted
 
     BBF_COMPACT_UPD = BBF_GC_SAFE_POINT | BBF_NEEDS_GCPOLL | BBF_HAS_JMP | BBF_BACKWARD_JUMP | \
-                      BBF_HAS_NEWOBJ | BBF_HAS_NEWARR | BBF_HAS_MDARRAYREF | BBF_MAY_HAVE_BOUNDS_CHECKS,
+                      BBF_HAS_NEWOBJ | BBF_HAS_NEWARR | BBF_HAS_MDARRAYREF | BBF_MAY_HAVE_BOUNDS_CHECKS | \
+                      BBF_RECURSIVE_TAILCALL,
 
     // Flags a block should not have had before it is split.
 
@@ -478,7 +481,8 @@ enum BasicBlockFlags : uint64_t
     // have actually copied one of these type of tree nodes, but if we only copy a portion of the block's statements,
     // we don't know (unless we actually pay close attention during the copy).
 
-    BBF_COPY_PROPAGATE = BBF_HAS_NEWOBJ | BBF_HAS_NEWARR | BBF_HAS_MDARRAYREF | BBF_MAY_HAVE_BOUNDS_CHECKS,
+    BBF_COPY_PROPAGATE = BBF_HAS_NEWOBJ | BBF_HAS_NEWARR | BBF_HAS_MDARRAYREF | BBF_MAY_HAVE_BOUNDS_CHECKS | \
+                         BBF_RECURSIVE_TAILCALL,
 };
 
 FORCEINLINE

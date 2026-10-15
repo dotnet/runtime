@@ -67,6 +67,12 @@
     <Compile Include="$(CommonTestPath)System\IO\CallTrackingStream.cs" Link="Common\System\IO\CallTrackingStream.cs" />
     <Compile Include="$(CommonTestPath)System\IO\DelegateStream.cs" Link="Common\System\IO\DelegateStream.cs" />
     <Compile Include="$(CommonTestPath)System\IO\WrappedMemoryStream.cs" Link="Common\System\IO\WrappedMemoryStream.cs" />
+    <Compile Include="GB18030\DirectoryInfoTests.cs" />
+    <Compile Include="GB18030\DirectoryTestBase.cs" />
+    <Compile Include="GB18030\DirectoryTests.cs" />
+    <Compile Include="GB18030\FileInfoTests.cs" />
+    <Compile Include="GB18030\FileTestBase.cs" />
+    <Compile Include="GB18030\FileTests.cs" />
     <Compile Include="TestDataProvider\TestDataProvider.cs" />
     <Compile Include="TextReader\CharArrayTextReader.cs" />
     <Compile Include="TextReader\TextReaderTests.cs" />
@@ -79,4 +85,5 @@
   <ItemGroup>
     <ProjectReference Include="$(CommonTestPath)StreamConformanceTests\StreamConformanceTests.csproj" />
   </ItemGroup>
+  <Import Project="$(CommonTestPath)ComplianceTests\GB18030\GB18030.Shared.projitems" />
 </Project>

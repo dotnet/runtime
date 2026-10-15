@@ -238,6 +238,10 @@ void AppendCorInfoTypeWithModModifiers(StringPrinter* printer, CorInfoTypeWithMo
     {
         printer->Append("COPY_WITH_HELPER__");
     }
+    if ((corInfoTypeWithMod & CORINFO_TYPE_MOD_SECRET_STUB_ARGUMENT) == CORINFO_TYPE_MOD_SECRET_STUB_ARGUMENT)
+    {
+        printer->Append("SECRET_STUB_ARGUMENT__");
+    }
 }
 
 //------------------------------------------------------------------------

@@ -68,10 +68,7 @@ namespace Microsoft.Extensions.Configuration
                 }
 
                 // Maintain existing references, but replace list with copy containing new item.
-                _refCountedProviders.Providers = new List<IConfigurationProvider>(_refCountedProviders.Providers)
-                {
-                    provider
-                };
+                _refCountedProviders.Providers = [.. _refCountedProviders.Providers, provider];
             }
         }
 

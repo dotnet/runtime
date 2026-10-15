@@ -163,7 +163,7 @@ namespace System.Threading.Tasks.Tests
 
         // Asserts the async dispatch method the stitcher recognizes by name still exists under that name.
         // Keys mirror the string constants in the stitcher's AsyncStitchBoundary classifier.
-        private static void AssertAsyncDispatchMethodExists(string key)
+        private static MethodInfo AssertAsyncDispatchMethodExists(string key)
         {
             MethodInfo? method = key switch
             {
@@ -184,6 +184,16 @@ namespace System.Threading.Tasks.Tests
 
             Assert.True(method is not null,
                 $"Async dispatch method for contract key '{key}' was not found; the CPU stitcher recognizes it by name.");
+            return method!;
+        }
+
+        private static void AssertMethodImplementationFlags(
+            MethodInfo method, MethodImplAttributes requiredFlags, string contractKey)
+        {
+            MethodImplAttributes actualFlags = method.GetMethodImplementationFlags();
+            Assert.True((actualFlags & requiredFlags) == requiredFlags,
+                $"Async dispatch method for contract key '{contractKey}' must have implementation flags " +
+                $"'{requiredFlags}' but had '{actualFlags}'.");
         }
 
         // ------------------------------------------------------------------------------------------------
@@ -223,20 +233,29 @@ namespace System.Threading.Tasks.Tests
         // Captures the current thread's physical managed stack UNFILTERED and returns the stitcher-recognized
         // async boundary labels in leaf->root order. Must be called from inside a resumed async continuation
         // (while the async profiler is active) so the dispatch machinery is on the stack.
-        private static List<string> CaptureAsyncBoundarySequence() => CaptureAsyncStack().Boundaries;
+        private static (List<string> Boundaries, List<string> DiagnosticFrames) CaptureAsyncBoundarySequence()
+        {
+            var capture = CaptureAsyncStack();
+            return (capture.Boundaries, capture.DiagnosticFrames);
+        }
 
-        // Captures the physical stack once and returns, both leaf->root: the stitcher boundary labels, and the
-        // per-frame declaring type names. The declaring type names let inline-completion tests locate a
-        // still-completing child's state-machine frame (its method name is the compiler-generated MoveNext, so
-        // it is identified by its declaring state-machine type name) relative to the resuming parent frame.
-        private static (List<string> Boundaries, List<string> DeclaringTypeNames) CaptureAsyncStack()
+        // Captures the physical stack once and returns, all leaf->root: the stitcher boundary labels, the
+        // per-frame declaring type names, and diagnostic frame names. The declaring type names let
+        // inline-completion tests locate a still-completing child's state-machine frame (its method name is the
+        // compiler-generated MoveNext, so it is identified by its declaring state-machine type name) relative
+        // to the resuming parent frame. The diagnostic names preserve every captured frame for failure output.
+        private static (List<string> Boundaries, List<string> DeclaringTypeNames, List<string> DiagnosticFrames) CaptureAsyncStack()
         {
             var boundaries = new List<string>();
             var typeNames = new List<string>();
+            var diagnosticFrames = new List<string>();
             foreach (StackFrame frame in new StackTrace(fNeedFileInfo: false).GetFrames())
             {
                 DiagnosticMethodInfo? info = DiagnosticMethodInfo.Create(frame);
-                typeNames.Add(info?.DeclaringTypeName ?? string.Empty);
+                string typeName = info?.DeclaringTypeName ?? "<unknown-type>";
+                string methodName = info?.Name ?? "<unknown-method>";
+                typeNames.Add(typeName);
+                diagnosticFrames.Add($"{typeName}::{methodName}");
 
                 string? label = ClassifyAsyncBoundaryFrame(info);
                 if (label is not null)
@@ -245,13 +264,16 @@ namespace System.Threading.Tasks.Tests
                 }
             }
 
-            return (boundaries, typeNames);
+            return (boundaries, typeNames, diagnosticFrames);
         }
 
         // Asserts that expectedLeafToRoot appears as an ordered subsequence of the captured boundary labels
         // (leaf->root). Subsequence (not contiguous) matching tolerates unrelated frames between boundaries
         // and repeated boundaries from nested resumes, while still enforcing the required relative order.
-        private static void AssertBoundarySubsequence(List<string> capturedLeafToRoot, params string[] expectedLeafToRoot)
+        private static void AssertBoundarySubsequence(
+            List<string> capturedLeafToRoot,
+            List<string> diagnosticFramesLeafToRoot,
+            params string[] expectedLeafToRoot)
         {
             int matched = 0;
             foreach (string label in capturedLeafToRoot)
@@ -264,13 +286,17 @@ namespace System.Threading.Tasks.Tests
 
             Assert.True(matched == expectedLeafToRoot.Length,
                 $"Expected async boundary frames [{string.Join(" -> ", expectedLeafToRoot)}] (leaf->root) were not all " +
-                $"present in order. Captured boundaries (leaf->root): [{string.Join(" -> ", capturedLeafToRoot)}].");
+                $"present in order. Captured boundaries (leaf->root): [{string.Join(" -> ", capturedLeafToRoot)}]. " +
+                $"Captured diagnostic frames (leaf->root): [{string.Join(" -> ", diagnosticFramesLeafToRoot)}].");
         }
 
         // Asserts each expected fragment appears (as a substring of a declaring type name) as an ordered
         // subsequence of the captured declaring type names (leaf->root), tolerating unrelated frames between.
         // Used to locate specific user state-machine frames by the method name embedded in their generated type.
-        private static void AssertFrameOrder(List<string> capturedLeafToRoot, params string[] expectedFragmentsLeafToRoot)
+        private static void AssertFrameOrder(
+            List<string> capturedLeafToRoot,
+            List<string> diagnosticFramesLeafToRoot,
+            params string[] expectedFragmentsLeafToRoot)
         {
             int matched = 0;
             foreach (string typeName in capturedLeafToRoot)
@@ -284,7 +310,8 @@ namespace System.Threading.Tasks.Tests
 
             Assert.True(matched == expectedFragmentsLeafToRoot.Length,
                 $"Expected frames [{string.Join(" -> ", expectedFragmentsLeafToRoot)}] (leaf->root) were not all present " +
-                $"in order. Captured declaring types (leaf->root): [{string.Join(" -> ", capturedLeafToRoot)}].");
+                $"in order. Captured declaring types (leaf->root): [{string.Join(" -> ", capturedLeafToRoot)}]. " +
+                $"Captured diagnostic frames (leaf->root): [{string.Join(" -> ", diagnosticFramesLeafToRoot)}].");
         }
 
         private const string AsyncProfilerEventSourceName = "System.Runtime.CompilerServices.AsyncProfilerEventSource";
@@ -435,12 +462,12 @@ namespace System.Threading.Tasks.Tests
         // StateMachine frame, i.e. the native code of MoveNext (see AsyncStateMachineDiagnostics<T>.
         // ResolveMethodId). This covers frame name resolution and the console dump uniformly on Mono.
         //
-        // The IntPtr overload of GetNativeCodeInternal only exists on Mono (CoreCLR's takes an
+        // The IntPtr overload of GetDiagnosticCodeStart only exists on Mono (CoreCLR's takes an
         // IRuntimeMethodInfo), so this reflection yields null on CoreCLR/NativeAOT and the fallback is a
         // no-op there, leaving the robust IP->name resolution untouched.
-        private static readonly MethodInfo? s_getNativeCodeInternalMethod =
+        private static readonly MethodInfo? s_getDiagnosticCodeStartMethod =
             typeof(RuntimeMethodHandle).GetMethod(
-                "GetNativeCodeInternal",
+                "GetDiagnosticCodeStart",
                 BindingFlags.Static | BindingFlags.NonPublic,
                 null,
                 new[] { typeof(IntPtr) },
@@ -497,14 +524,14 @@ namespace System.Threading.Tasks.Tests
         // and keyed by address. No-op except on Mono.
         private static void SnapshotStateMachineMethodIds()
         {
-            if (s_getNativeCodeInternalMethod is null)
+            if (s_getDiagnosticCodeStartMethod is null)
             {
                 return;
             }
 
             foreach ((string methodName, IntPtr moveNextHandle) in s_stateMachineMoveNextMethods.Value)
             {
-                object? nativeCode = s_getNativeCodeInternalMethod.Invoke(null, new object[] { moveNextHandle });
+                object? nativeCode = s_getDiagnosticCodeStartMethod.Invoke(null, new object[] { moveNextHandle });
                 if (nativeCode is IntPtr ip && ip != IntPtr.Zero)
                 {
                     s_methodIdToName.TryAdd((ulong)(nuint)ip, methodName);
@@ -521,7 +548,7 @@ namespace System.Threading.Tasks.Tests
         // No-op except on Mono.
         private static void SnapshotStateMachineMethodIdFor(MethodInfo asyncMethod)
         {
-            if (s_getNativeCodeInternalMethod is null)
+            if (s_getDiagnosticCodeStartMethod is null)
             {
                 return;
             }
@@ -536,7 +563,7 @@ namespace System.Threading.Tasks.Tests
                 return;
             }
 
-            object? nativeCode = s_getNativeCodeInternalMethod.Invoke(null, new object[] { moveNext.MethodHandle.Value });
+            object? nativeCode = s_getDiagnosticCodeStartMethod.Invoke(null, new object[] { moveNext.MethodHandle.Value });
             if (nativeCode is IntPtr ip && ip != IntPtr.Zero)
             {
                 s_methodIdToName.TryAdd((ulong)(nuint)ip, asyncMethod.Name);
@@ -548,7 +575,7 @@ namespace System.Threading.Tasks.Tests
         // methods run (a MoveNext has no code start until it has first run). No-op except on Mono.
         private static string? ResolveStateMachineMethodNameFromId(ulong methodId)
         {
-            if (s_getNativeCodeInternalMethod is null || methodId == 0)
+            if (s_getDiagnosticCodeStartMethod is null || methodId == 0)
             {
                 return null;
             }
