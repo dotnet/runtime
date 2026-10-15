@@ -865,28 +865,34 @@ namespace System.IO.Compression
 
                 if (readOriginalData)
                 {
-                    Stream decompressor = await streamTask.ConfigureAwait(false);
+                    Stream? decompressor = null;
                     try
                     {
-                        try
-                        {
-                            await TAdapter.CopyToAsync(decompressor, _storedUncompressedData, token).ConfigureAwait(false);
-                        }
-                        catch (InvalidDataException)
-                        {
-                            MemoryStream storedUncompressedData = _storedUncompressedData;
-                            await TAdapter.DisposeAsync(storedUncompressedData).ConfigureAwait(false);
-                            _storedUncompressedData = null;
-                            _currentlyOpenForWrite = false;
-                            _everOpenedForWrite = false;
-                            _derivedZipCryptoKeyMaterial = null;
-                            _derivedAesKeyMaterial = null;
-                            throw;
-                        }
+                        // Acquiring the stream (e.g. validating the ZipCrypto check byte or AES auth code) can
+                        // fail with InvalidDataException on a wrong password, so it must be inside this try/catch
+                        // too, not just the copy below - otherwise a wrong-password failure would leave
+                        // _currentlyOpenForWrite set and _storedUncompressedData allocated, and a subsequent
+                        // retry with the correct password would fail with UpdateModeOneStream.
+                        decompressor = await streamTask.ConfigureAwait(false);
+                        await TAdapter.CopyToAsync(decompressor, _storedUncompressedData, token).ConfigureAwait(false);
+                    }
+                    catch (InvalidDataException)
+                    {
+                        MemoryStream storedUncompressedData = _storedUncompressedData;
+                        await TAdapter.DisposeAsync(storedUncompressedData).ConfigureAwait(false);
+                        _storedUncompressedData = null;
+                        _currentlyOpenForWrite = false;
+                        _everOpenedForWrite = false;
+                        _derivedZipCryptoKeyMaterial = null;
+                        _derivedAesKeyMaterial = null;
+                        throw;
                     }
                     finally
                     {
-                        await TAdapter.DisposeAsync(decompressor).ConfigureAwait(false);
+                        if (decompressor is not null)
+                        {
+                            await TAdapter.DisposeAsync(decompressor).ConfigureAwait(false);
+                        }
                     }
                 }
 
