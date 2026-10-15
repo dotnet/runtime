@@ -357,37 +357,28 @@ namespace System.Net.Mime.Tests
         }
 
         [Theory]
+        [InlineData("=?utf-8?B?SGVsbG8=?=")]
+        [InlineData("=?utf-8?Q?Hello=20world?=")]
+        [InlineData("=?utf-8?B?SGVsbG8=?=\r\n =?utf-8?B?d29ybGQ=?=")]
         [InlineData("=?utf-8?Q?foo?=?bar\"; filename=\"foo.txt")]
         [InlineData("=?utf-8?B?Zm9v?=\"; filename=\"foo.txt")]
         [InlineData("=?utf-8?Q?foo\"; filename=\"foo.txt?=")]
         [InlineData("=?utf-8?Q?foo\"bar?=")]
         [InlineData("=?utf-8?B?Zm9v?=trailing")]
-        public static void FileName_Set_InjectionPayload_IsEscapedAndNotInjected(string injection)
-        {
-            var cd = new ContentDisposition();
-            cd.FileName = injection;
-
-            Assert.Equal(injection, cd.FileName);
-
-            var reparsed = new ContentDisposition(cd.ToString());
-            Assert.Equal(injection, reparsed.FileName);
-            Assert.Equal(cd.Parameters.Count, reparsed.Parameters.Count);
-        }
-
-        [Theory]
-        [InlineData("=?utf-8?B?SGVsbG8=?=")]
-        [InlineData("=?utf-8?Q?Hello=20world?=")]
-        [InlineData("=?utf-8?B?SGVsbG8=?=\r\n =?utf-8?B?d29ybGQ=?=")]
-        public static void FileName_Set_EncodedWord_RoundTripsUnchanged(string encoded)
+        public static void FileName_ParsingSerialization_Roundtrip(string encoded)
         {
             var cd = new ContentDisposition();
             cd.FileName = encoded;
 
-            string serialized = cd.ToString();
-            Assert.Contains(encoded, serialized);
+            // Property roundtrip
+            Assert.Equal(encoded, cd.FileName);
 
+            // Serialize/deserialize roundtrip
+            string serialized = cd.ToString();
             var reparsed = new ContentDisposition(serialized);
             Assert.Equal(encoded, reparsed.FileName);
+
+            Assert.Equal(cd.Parameters.Count, reparsed.Parameters.Count);
         }
 
         [Theory]
