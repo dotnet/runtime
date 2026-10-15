@@ -302,7 +302,6 @@ namespace ILVerify
                 {
                     Code = VerifierError.TokenResolve,
                     MetadataHandle = handle,
-                    ErrorArguments = Array.Empty<ErrorArgument>(),
                     Message = $"Unable to validate metadata reference ({handle.Kind}) because this metadata form is not supported: {e.Message}"
                 };
             }
@@ -435,7 +434,6 @@ namespace ILVerify
                 {
                     Code = e.Code,
                     Method = methodHandle,
-                    ErrorArguments = Array.Empty<ErrorArgument>(),
                     Message = e.Message
                 });
             }
@@ -485,6 +483,7 @@ namespace ILVerify
                     builder.Add(new VerificationResult()
                     {
                         Code = code,
+                        Type = typeHandle,
                         Message = $"[MD]: Error: {_stringResourceManager.Value.GetString(code.ToString(), CultureInfo.InvariantCulture)}",
                         Args = args
                     });
@@ -518,7 +517,6 @@ namespace ILVerify
                 {
                     Code = e.Code,
                     Type = typeHandle,
-                    ErrorArguments = Array.Empty<ErrorArgument>(),
                     // Type verification results are printed directly, so metadata errors include the prefix in the message.
                     Message = e.Code == VerifierError.None ? e.Message : $"[MD]: Error: {e.Message}"
                 });
