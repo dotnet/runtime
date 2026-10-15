@@ -25,7 +25,7 @@ namespace System.IO.Compression
         protected override int InvalidQualityTooLow => -1;
         protected override int InvalidQualityTooHigh => 12;
         protected override int InvalidWindowLogTooLow => 9;
-        protected override int InvalidWindowLogTooHigh => 25;
+        protected override int InvalidWindowLogTooHigh => 31;
 
         public class BrotliEncoderAdapter : EncoderAdapter
         {
