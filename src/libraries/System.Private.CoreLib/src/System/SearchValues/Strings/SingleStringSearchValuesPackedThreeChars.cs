@@ -398,11 +398,24 @@ namespace System.Buffers
             Vector128<ushort> input0 = Vector128.LoadUnsafe(ref Unsafe.AddByteOffset(ref searchSpace, byteOffset));
             Vector128<ushort> input1 = Vector128.LoadUnsafe(ref Unsafe.AddByteOffset(ref searchSpace, byteOffset + (uint)Vector128<byte>.Count));
 
-            return Sse2.IsSupported
-                ? Sse2.PackUnsignedSaturate(input0.AsInt16(), input1.AsInt16())
-                : PackedSimd.IsSupported
-                    ? PackedSimd.ConvertNarrowingSaturateUnsigned(input0.AsInt16(), input1.AsInt16())
-                    : AdvSimd.Arm64.UnzipEven(input0.AsByte(), input1.AsByte());
+            if (Sse2.IsSupported)
+            {
+                return Sse2.PackUnsignedSaturate(input0.AsInt16(), input1.AsInt16());
+            }
+            else if (AdvSimd.Arm64.IsSupported)
+            {
+                return AdvSimd.Arm64.UnzipEven(input0.AsByte(), input1.AsByte());
+            }
+            else if (PackedSimd.IsSupported)
+            {
+                return PackedSimd.ConvertNarrowingSaturateUnsigned(input0.AsInt16(), input1.AsInt16());
+            }
+            else
+            {
+                // We explicitly recheck each IsSupported query to ensure that the trimmer can see which paths are live/dead
+                ThrowHelper.ThrowUnreachableException();
+                return default;
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
