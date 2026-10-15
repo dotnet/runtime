@@ -1166,20 +1166,28 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
 }
 
 //------------------------------------------------------------------------
-// AreVNsEqual: Check whether the assertions prove "vn1 == vn2".
+// IsBoundLessOrEqual: Check whether the assertions prove "lo <= hi" (or "lo == hi" when equalOnly)
+//    via a short chain of assertions, e.g. "a == b" and "b <= c" prove "a <= c".
 //
 // Arguments:
 //    comp       - the compiler instance
 //    assertions - the assertions to use
-//    vn1        - the first value number
-//    vn2        - the second value number
+//    lo         - the value number expected to be the smaller one
+//    hi         - the value number expected to be the bigger one
+//    equalOnly  - only follow "==" assertions
+//    budget     - the maximum chain length
 //
 // Return Value:
-//    true if there is a "vn1 == vn2" (or "vn2 == vn1") assertion.
+//    true if the assertions prove "lo <= hi" (or "lo == hi" when equalOnly).
 //
-static bool AreVNsEqual(Compiler* comp, ASSERT_VALARG_TP assertions, ValueNum vn1, ValueNum vn2)
+static bool IsBoundLessOrEqual(
+    Compiler* comp, ASSERT_VALARG_TP assertions, ValueNum lo, ValueNum hi, bool equalOnly, int budget)
 {
-    if (!comp->optAssertionHasAssertionsForVN(vn1) || !comp->optAssertionHasAssertionsForVN(vn2))
+    if (lo == hi)
+    {
+        return true;
+    }
+    if ((budget <= 0) || !comp->optAssertionHasAssertionsForVN(lo))
     {
         return false;
     }
@@ -1189,18 +1197,68 @@ static bool AreVNsEqual(Compiler* comp, ASSERT_VALARG_TP assertions, ValueNum vn
     while (iter.NextElem(&index))
     {
         const Compiler::AssertionDsc& curAssertion = comp->optGetAssertion(GetAssertionIndex(index));
-        if (curAssertion.KindIs(Compiler::OAK_EQUAL) && curAssertion.GetOp1().KindIs(Compiler::O1K_VN) &&
-            curAssertion.GetOp2().KindIs(Compiler::O2K_VN_ADD_CNS) && (curAssertion.GetOp2().GetCns() == 0))
+        if (!curAssertion.GetOp1().KindIs(Compiler::O1K_VN) ||
+            !curAssertion.GetOp2().KindIs(Compiler::O2K_VN_ADD_CNS) || (curAssertion.GetOp2().GetCns() != 0))
         {
-            ValueNum op1VN = curAssertion.GetOp1().GetVN();
-            ValueNum op2VN = curAssertion.GetOp2().GetVN();
-            if (((op1VN == vn1) && (op2VN == vn2)) || ((op1VN == vn2) && (op2VN == vn1)))
-            {
-                return true;
-            }
+            continue;
+        }
+
+        ValueNum op1VN = curAssertion.GetOp1().GetVN();
+        ValueNum op2VN = curAssertion.GetOp2().GetVN();
+        ValueNum next  = ValueNumStore::NoVN;
+        if (curAssertion.KindIs(Compiler::OAK_EQUAL))
+        {
+            next = (op1VN == lo) ? op2VN : ((op2VN == lo) ? op1VN : ValueNumStore::NoVN);
+        }
+        else if (!equalOnly && curAssertion.KindIs(Compiler::OAK_LE, Compiler::OAK_LT) && (op1VN == lo))
+        {
+            next = op2VN;
+        }
+        else if (!equalOnly && curAssertion.KindIs(Compiler::OAK_GE, Compiler::OAK_GT) && (op2VN == lo))
+        {
+            next = op1VN;
+        }
+
+        if ((next != ValueNumStore::NoVN) && IsBoundLessOrEqual(comp, assertions, next, hi, equalOnly, budget - 1))
+        {
+            return true;
         }
     }
     return false;
+}
+
+//------------------------------------------------------------------------
+// CanUsePreferredBound: Check whether "X <relop> (Bnd + cns)" assertion can be expressed as
+//    "X <relop> (PreferredBnd + cns)".
+//
+// Arguments:
+//    comp             - the compiler instance
+//    assertions       - the assertions to use
+//    assertion        - the "X <relop> (Bnd + cns)" assertion
+//    preferredBoundVN - the never negative preferred bound
+//
+// Return Value:
+//    true if "Bnd == PreferredBnd", or "Bnd <= PreferredBnd" for an upper limit.
+//
+static bool CanUsePreferredBound(Compiler*                     comp,
+                                 ASSERT_VALARG_TP              assertions,
+                                 const Compiler::AssertionDsc& assertion,
+                                 ValueNum                      preferredBoundVN)
+{
+    const int      maxChain = 3;
+    const ValueNum boundVN  = assertion.GetOp2().GetVN();
+    const int      boundCns = assertion.GetOp2().GetCns();
+
+    // "X <= Bnd + cns" and "Bnd <= PreferredBnd" imply "X <= PreferredBnd + cns" when neither
+    // "Bnd + cns" nor "PreferredBnd + cns" can overflow: cns <= 0 and Bnd is never negative.
+    if (assertion.KindIs(Compiler::OAK_LT, Compiler::OAK_LE) && (boundCns <= 0) &&
+        IsBoundLessOrEqual(comp, assertions, boundVN, preferredBoundVN, /*equalOnly*/ false, maxChain) &&
+        ((boundCns == 0) || assertion.GetOp2().IsVNNeverNegative() ||
+         comp->optIsNeverNegativeCheckedBound(boundVN, assertions)))
+    {
+        return true;
+    }
+    return IsBoundLessOrEqual(comp, assertions, boundVN, preferredBoundVN, /*equalOnly*/ true, maxChain);
 }
 
 //------------------------------------------------------------------------
@@ -1375,11 +1433,11 @@ void RangeCheck::MergeEdgeAssertionsWorker(Compiler*                        comp
                 ((boundCns != 0) && comp->vnStore->IsVNBinFuncWithConst(normalLclVN, VNF_ADD, &addOp, &addCns) &&
                  (addOp == boundVN) && (addCns == boundCns));
 
-            // The bound is known to be equal to the preferred bound, e.g. "a.Length == b.Length".
+            // The bound is related to the preferred bound, e.g. "a.Length == b.Length" or "a.Length <= b.Length".
             // Checked first so the limit is expressed via the preferred bound even if the bound is never negative.
             if (canUseCheckedBounds && (normalLclVN == curAssertion.GetOp1().GetVN()) &&
                 (preferredBoundVN != ValueNumStore::NoVN) && (boundVN != preferredBoundVN) &&
-                AreVNsEqual(comp, assertions, boundVN, preferredBoundVN))
+                CanUsePreferredBound(comp, assertions, curAssertion, preferredBoundVN))
             {
                 cmpOper = Compiler::AssertionDsc::ToCompareOper(curAssertion.GetKind(), &isUnsigned);
                 limit   = Limit(Limit::keBinOpArray, preferredBoundVN, boundCns);
