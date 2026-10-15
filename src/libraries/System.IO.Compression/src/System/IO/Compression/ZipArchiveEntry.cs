@@ -2533,22 +2533,20 @@ namespace System.IO.Compression
             byte[] rented = ArrayPool<byte>.Shared.Rent(Zip64DataDescriptorCrcAndSizesBufferLength);
             try
             {
-                Span<byte> writeBuffer = rented.AsSpan(0, Zip64DataDescriptorCrcAndSizesBufferLength);
-
                 WriteCrcAndSizesInLocalHeaderInitialize(zip64HeaderUsed, out long finalPosition, out bool pretendStreaming, out uint compressedSizeTruncated, out uint uncompressedSizeTruncated);
 
                 if (pretendStreaming)
                 {
-                    WriteCrcAndSizesInLocalHeaderPrepareForZip64PretendStreaming(writeBuffer);
+                    WriteCrcAndSizesInLocalHeaderPrepareForZip64PretendStreaming(rented.AsSpan(0, Zip64DataDescriptorCrcAndSizesBufferLength));
                     await TAdapter.WriteAsync(_archive.ArchiveStream, rented.AsMemory(0, MetadataBufferLength), cancellationToken).ConfigureAwait(false);
                 }
 
-                WriteCrcAndSizesInLocalHeaderPrepareFor32bitValuesWriting(pretendStreaming, writeBuffer, compressedSizeTruncated, uncompressedSizeTruncated);
+                WriteCrcAndSizesInLocalHeaderPrepareFor32bitValuesWriting(pretendStreaming, rented.AsSpan(0, Zip64DataDescriptorCrcAndSizesBufferLength), compressedSizeTruncated, uncompressedSizeTruncated);
                 await TAdapter.WriteAsync(_archive.ArchiveStream, rented.AsMemory(0, CrcAndSizesBufferLength), cancellationToken).ConfigureAwait(false);
 
                 if (zip64HeaderUsed)
                 {
-                    WriteCrcAndSizesInLocalHeaderPrepareForWritingWhenZip64HeaderUsed(writeBuffer);
+                    WriteCrcAndSizesInLocalHeaderPrepareForWritingWhenZip64HeaderUsed(rented.AsSpan(0, Zip64DataDescriptorCrcAndSizesBufferLength));
                     await TAdapter.WriteAsync(_archive.ArchiveStream, rented.AsMemory(0, Zip64SizesBufferLength), cancellationToken).ConfigureAwait(false);
                 }
 
@@ -2556,7 +2554,7 @@ namespace System.IO.Compression
 
                 if (pretendStreaming)
                 {
-                    WriteCrcAndSizesInLocalHeaderPrepareForWritingDataDescriptor(writeBuffer);
+                    WriteCrcAndSizesInLocalHeaderPrepareForWritingDataDescriptor(rented.AsSpan(0, Zip64DataDescriptorCrcAndSizesBufferLength));
                     await TAdapter.WriteAsync(_archive.ArchiveStream, rented.AsMemory(0, Zip64DataDescriptorCrcAndSizesBufferLength), cancellationToken).ConfigureAwait(false);
                 }
             }
