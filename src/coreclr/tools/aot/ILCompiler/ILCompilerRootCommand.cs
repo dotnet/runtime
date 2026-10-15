@@ -118,6 +118,8 @@ namespace ILCompiler
             new("--parallelism") { CustomParser = MakeParallelism, DefaultValueFactory = MakeParallelism, Description = "Maximum number of threads to use during compilation" };
         public Option<string> InstructionSet { get; } =
             new("--instruction-set") { Description = "Instruction set to allow or disallow" };
+        public Option<bool> AssumeNoConcurrency { get; } =
+            new("--assume-no-concurrency") { Description = "RISC-V: assert that the target runs on one hart and is never preempted. Required to build without the A extension, because Interlocked then lowers to a non-atomic read/modify/write" };
         public Option<int> MaxVectorTBitWidth { get; } =
             new("--max-vectort-bitwidth") { Description = "Maximum width, in bits, that Vector<T> is allowed to be" };
         public Option<string> Guard { get; } =
@@ -243,6 +245,7 @@ namespace ILCompiler
             Options.Add(RuntimeKnobs);
             Options.Add(Parallelism);
             Options.Add(InstructionSet);
+            Options.Add(AssumeNoConcurrency);
             Options.Add(MaxVectorTBitWidth);
             Options.Add(Guard);
             Options.Add(Dehydrate);
@@ -352,7 +355,7 @@ namespace ILCompiler
 
             Console.WriteLine("Valid switches for {0} are: '{1}'. The default value is '{2}'\n", "--targetos", string.Join("', '", Helpers.ValidOS), Helpers.GetTargetOS(null).ToString().ToLowerInvariant());
 
-            Console.WriteLine(string.Format("Valid switches for {0} are: '{1}'. The default value is '{2}'\n", "--targetarch", string.Join("', '", Helpers.ValidArchitectures), Helpers.GetTargetArchitecture(null).ToString().ToLowerInvariant()));
+            Console.WriteLine(string.Format("Valid switches for {0} are: '{1}'. The default value is '{2}'\n", "--targetarch", string.Join("', '", Helpers.ValidArchitecturesNativeAot), Helpers.GetTargetArchitecture(null).ToString().ToLowerInvariant()));
 
             Console.WriteLine("The allowable values for the --instruction-set option are described in the table below. Each architecture has a different set of valid " +
                 "instruction sets, and multiple instruction sets may be specified by separating the instructions sets by a ','. By default other instruction sets not " +
@@ -360,7 +363,7 @@ namespace ILCompiler
                 "All such light-up can be disallowed by specifying '-optimistic'. The instruction sets supported by the machine invoking the tool can be targeted by " +
                 "specifying 'native'. For example 'native', 'avx,aes', 'avx,aes,-avx2', or 'avx,aes,-optimistic'");
 
-            foreach (string arch in Helpers.ValidArchitectures)
+            foreach (string arch in Helpers.ValidArchitecturesNativeAot)
             {
                 TargetArchitecture targetArch = Helpers.GetTargetArchitecture(arch);
                 bool first = true;

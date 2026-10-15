@@ -39,6 +39,11 @@ namespace Internal.TypeSystem
         /// model for armel execution model
         /// </summary>
         NativeAotArmel,
+        /// <summary>
+        /// RISC-V lp64 (soft-float) execution model: no F/D extensions, floating-point
+        /// values are passed in integer registers and computed by the soft-float helpers
+        /// </summary>
+        NativeAotRiscV64SoftFloat,
     }
 
     /// <summary>

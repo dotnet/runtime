@@ -18,7 +18,7 @@ namespace System.CommandLine
     internal static partial class Helpers
     {
         public static InstructionSetSupport ConfigureInstructionSetSupport(string instructionSet, int maxVectorTBitWidth, bool isVectorTOptimistic, TargetArchitecture targetArchitecture, TargetOS targetOS,
-            string mustNotBeMessage, string invalidImplicationMessage, Logger logger, bool allowOptimistic, bool isReadyToRun)
+            string mustNotBeMessage, string invalidImplicationMessage, Logger logger, bool allowOptimistic, bool isReadyToRun, TargetAbi targetAbi)
         {
             InstructionSetSupportBuilder instructionSetSupportBuilder = new(targetArchitecture);
 
@@ -93,6 +93,21 @@ namespace System.CommandLine
             {
                 instructionSetSupportBuilder.AddSupportedInstructionSet("base");
                 instructionSetSupportBuilder.AddSupportedInstructionSet("simd128");
+            }
+            else if (targetArchitecture == TargetArchitecture.RiscV64)
+            {
+                // The rv64gc baseline: D implies F, so "d", "c" and "a" cover the G+C
+                // extensions. The lp64 (soft-float) ABI target has no F/D by definition;
+                // it still defaults to C and A, and a reduced-ISA target drops those with
+                // --instruction-set=-a,-c. Dropping A also requires ilc's
+                // --assume-no-concurrency, because Interlocked is not atomic without it.
+                instructionSetSupportBuilder.AddSupportedInstructionSet("base");
+                if (targetAbi != TargetAbi.NativeAotRiscV64SoftFloat)
+                {
+                    instructionSetSupportBuilder.AddSupportedInstructionSet("d");
+                }
+                instructionSetSupportBuilder.AddSupportedInstructionSet("c");
+                instructionSetSupportBuilder.AddSupportedInstructionSet("a");
             }
 
             bool throttleAvx512 = false;

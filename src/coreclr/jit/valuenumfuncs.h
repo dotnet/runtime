@@ -208,6 +208,12 @@ ValueNumFuncDef(HWI_INTRINSIC_END, -1, false, false)
 #define VNF_HWI_LAST  (VNF_HWI_INTRINSIC_END - 1)
 #endif // FEATURE_HW_INTRINSICS
 
+    // Three-way floating-point comparisons of the soft-float compare helpers
+    // (CORINFO_HELP_FLTCMP_LE & co). Not commutative: swapping the operands
+    // negates the result, and the two forms differ for unordered operands.
+    ValueNumFuncDef(SoftFPCmpLE, 2, false, false)
+    ValueNumFuncDef(SoftFPCmpGE, 2, false, false)
+
 #if defined(TARGET_RISCV64)
     // Signed/Unsigned integer min/max intrinsics
     ValueNumFuncDef(MinInt, 2, true, false)

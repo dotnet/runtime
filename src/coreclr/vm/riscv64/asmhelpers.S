@@ -489,8 +489,10 @@ NESTED_ENTRY OnHijackTripThread, _TEXT, NoHandler
     sd  a2, 136(sp)
 
     // save any FP/HFA return value(s)
+#if __riscv_flen >= 64
     fsd  f0, 144(sp)
     fsd  f1, 152(sp)
+#endif
 
     addi  a0, sp, 0
     call  C_FUNC(OnHijackWorker)
@@ -504,8 +506,10 @@ NESTED_ENTRY OnHijackTripThread, _TEXT, NoHandler
     ld  a2, 136(sp)
 
     // restore any FP/HFA return value(s)
+#if __riscv_flen >= 64
     fld  f0, 144(sp)
     fld  f1, 152(sp)
+#endif
 
     EPILOG_RESTORE_REG_PAIR   s1, s2, 16
     EPILOG_RESTORE_REG_PAIR   s3, s4, 32
@@ -1206,7 +1210,9 @@ NESTED_ENTRY CallJittedMethodRetDouble, _TEXT, NoHandler
     ld a4, 24(fp)
     sd a2, 0(a4)
     ld a2, 16(fp)
+#if __riscv_flen >= 64
     fsd fa0, 0(a2)
+#endif
     EPILOG_STACK_RESTORE
     EPILOG_RESTORE_REG_PAIR_INDEXED fp, ra, 32
     EPILOG_RETURN
@@ -1230,7 +1236,9 @@ NESTED_ENTRY CallJittedMethodRetFloat, _TEXT, NoHandler
     ld a4, 24(fp)
     sd a2, 0(a4)
     ld a2, 16(fp)
+#if __riscv_flen != 0
     fsw fa0, 0(a2)
+#endif
     EPILOG_STACK_RESTORE
     EPILOG_RESTORE_REG_PAIR_INDEXED fp, ra, 32
     EPILOG_RETURN
@@ -1279,8 +1287,10 @@ NESTED_ENTRY CallJittedMethodRet2Double, _TEXT, NoHandler
     ld a4, 24(fp)
     sd a2, 0(a4)
     ld a2, 16(fp)
+#if __riscv_flen >= 64
     fsd fa0, 0(a2)
     fsd fa1, 8(a2)
+#endif
     EPILOG_STACK_RESTORE
     EPILOG_RESTORE_REG_PAIR_INDEXED fp, ra, 32
     EPILOG_RETURN
@@ -1304,8 +1314,10 @@ NESTED_ENTRY CallJittedMethodRet2Float, _TEXT, NoHandler
     ld a4, 24(fp)
     sd a2, 0(a4)
     ld a2, 16(fp)
+#if __riscv_flen != 0
     fsw fa0, 0(a2)
     fsw fa1, 4(a2)
+#endif
     EPILOG_STACK_RESTORE
     EPILOG_RESTORE_REG_PAIR_INDEXED fp, ra, 32
     EPILOG_RETURN
@@ -1329,7 +1341,9 @@ NESTED_ENTRY CallJittedMethodRetFloatInt, _TEXT, NoHandler
     ld a4, 24(fp)
     sd a2, 0(a4)
     ld a2, 16(fp)
+#if __riscv_flen >= 64
     fsd fa0, 0(a2)
+#endif
     sd a0, 8(a2)
     EPILOG_STACK_RESTORE
     EPILOG_RESTORE_REG_PAIR_INDEXED fp, ra, 32
@@ -1355,7 +1369,9 @@ NESTED_ENTRY CallJittedMethodRetIntFloat, _TEXT, NoHandler
     sd a2, 0(a4)
     ld a2, 16(fp)
     sd a0, 0(a2)
+#if __riscv_flen >= 64
     fsd fa0, 8(a2)
+#endif
     EPILOG_STACK_RESTORE
     EPILOG_RESTORE_REG_PAIR_INDEXED fp, ra, 32
     EPILOG_RETURN
@@ -1434,7 +1450,9 @@ NESTED_ENTRY InterpreterStubRetDouble, _TEXT, NoHandler
     mv a1, s1 // the IR bytecode pointer
     mv a2, zero
     call C_FUNC(ExecuteInterpretedMethod)
+#if __riscv_flen >= 64
     fld fa0, 0(a0)
+#endif
     EPILOG_RESTORE_REG_PAIR_INDEXED   fp, ra,   16
     EPILOG_RETURN
 NESTED_END InterpreterStubRetDouble, _TEXT
@@ -1470,8 +1488,10 @@ NESTED_ENTRY InterpreterStubRet2Double, _TEXT, NoHandler
     mv a1, s1 // the IR bytecode pointer
     mv a2, zero
     call C_FUNC(ExecuteInterpretedMethod)
+#if __riscv_flen >= 64
     fld fa0, 0(a0)
     fld fa1, 8(a0)
+#endif
     EPILOG_RESTORE_REG_PAIR_INDEXED   fp, ra,   16
     EPILOG_RETURN
 NESTED_END InterpreterStubRet2Double, _TEXT
@@ -1483,7 +1503,9 @@ NESTED_ENTRY InterpreterStubRetFloat, _TEXT, NoHandler
     mv a1, s1 // the IR bytecode pointer
     mv a2, zero
     call C_FUNC(ExecuteInterpretedMethod)
+#if __riscv_flen != 0
     flw fa0, 0(a0)
+#endif
     EPILOG_RESTORE_REG_PAIR_INDEXED   fp, ra,   16
     EPILOG_RETURN
 NESTED_END InterpreterStubRetFloat, _TEXT
@@ -1495,8 +1517,10 @@ NESTED_ENTRY InterpreterStubRet2Float, _TEXT, NoHandler
     mv a1, s1 // the IR bytecode pointer
     mv a2, zero
     call C_FUNC(ExecuteInterpretedMethod)
+#if __riscv_flen != 0
     flw fa0, 0(a0)
     flw fa1, 4(a0)
+#endif
     EPILOG_RESTORE_REG_PAIR_INDEXED   fp, ra,   16
     EPILOG_RETURN
 NESTED_END InterpreterStubRet2Float, _TEXT
@@ -1508,7 +1532,9 @@ NESTED_ENTRY InterpreterStubRetFloatInt, _TEXT, NoHandler
     mv a1, s1 // the IR bytecode pointer
     mv a2, zero
     call C_FUNC(ExecuteInterpretedMethod)
+#if __riscv_flen >= 64
     fld fa0, 0(a0)
+#endif
     ld a0, 8(a0)
     EPILOG_RESTORE_REG_PAIR_INDEXED   fp, ra,   16
     EPILOG_RETURN
@@ -1522,7 +1548,9 @@ NESTED_ENTRY InterpreterStubRetIntFloat, _TEXT, NoHandler
     mv a2, zero
     call C_FUNC(ExecuteInterpretedMethod)
     ld a1, 0(a0)
+#if __riscv_flen >= 64
     fld fa0, 8(a0)
+#endif
     mv a0, a1
     EPILOG_RESTORE_REG_PAIR_INDEXED   fp, ra,   16
     EPILOG_RETURN
@@ -1979,9 +2007,14 @@ ALTERNATE_ENTRY Store_A7
 LEAF_END Store_A1_A2_A3_A4_A5_A6_A7
 
 // Float point load/store routines
+//
+// The symbols are always defined because the call stub generator references
+// them; without an FPU nothing is routed through fa0-fa7, so they are unused.
 
 LEAF_ENTRY Load_FA0
+#if __riscv_flen >= 64
     fld fa0, 0(t3)
+#endif
     addi t3, t3, 8
     ld t4, 0(t2)
     addi t2, t2, 8
@@ -1989,8 +2022,10 @@ LEAF_ENTRY Load_FA0
 LEAF_END Load_FA0
 
 LEAF_ENTRY Load_FA0_FA1
+#if __riscv_flen >= 64
     fld fa0, 0(t3)
     fld fa1, 8(t3)
+#endif
     addi t3, t3, 16
     ld t4, 0(t2)
     addi t2, t2, 8
@@ -1998,11 +2033,15 @@ LEAF_ENTRY Load_FA0_FA1
 LEAF_END Load_FA0_FA1
 
 LEAF_ENTRY Load_FA0_FA1_FA2
+#if __riscv_flen >= 64
     fld fa0, 0(t3)
     fld fa1, 8(t3)
+#endif
     addi t3, t3, 16
 ALTERNATE_ENTRY Load_FA2
+#if __riscv_flen >= 64
     fld fa2, 0(t3)
+#endif
     addi t3, t3, 8
     ld t4, 0(t2)
     addi t2, t2, 8
@@ -2010,12 +2049,16 @@ ALTERNATE_ENTRY Load_FA2
 LEAF_END Load_FA0_FA1_FA2
 
 LEAF_ENTRY Load_FA0_FA1_FA2_FA3
+#if __riscv_flen >= 64
     fld fa0, 0(t3)
     fld fa1, 8(t3)
+#endif
     addi t3, t3, 16
 ALTERNATE_ENTRY Load_FA2_FA3
+#if __riscv_flen >= 64
     fld fa2, 0(t3)
     fld fa3, 8(t3)
+#endif
     addi t3, t3, 16
     ld t4, 0(t2)
     addi t2, t2, 8
@@ -2023,15 +2066,21 @@ ALTERNATE_ENTRY Load_FA2_FA3
 LEAF_END Load_FA0_FA1_FA2_FA3
 
 LEAF_ENTRY Load_FA0_FA1_FA2_FA3_FA4
+#if __riscv_flen >= 64
     fld fa0, 0(t3)
     fld fa1, 8(t3)
+#endif
     addi t3, t3, 16
 ALTERNATE_ENTRY Load_FA2_FA3_FA4
+#if __riscv_flen >= 64
     fld fa2, 0(t3)
     fld fa3, 8(t3)
+#endif
     addi t3, t3, 16
 ALTERNATE_ENTRY Load_FA4
+#if __riscv_flen >= 64
     fld fa4, 0(t3)
+#endif
     addi t3, t3, 8
     ld t4, 0(t2)
     addi t2, t2, 8
@@ -2039,16 +2088,22 @@ ALTERNATE_ENTRY Load_FA4
 LEAF_END Load_FA0_FA1_FA2_FA3_FA4
 
 LEAF_ENTRY Load_FA0_FA1_FA2_FA3_FA4_FA5
+#if __riscv_flen >= 64
     fld fa0, 0(t3)
     fld fa1, 8(t3)
+#endif
     addi t3, t3, 16
 ALTERNATE_ENTRY Load_FA2_FA3_FA4_FA5
+#if __riscv_flen >= 64
     fld fa2, 0(t3)
     fld fa3, 8(t3)
+#endif
     addi t3, t3, 16
 ALTERNATE_ENTRY Load_FA4_FA5
+#if __riscv_flen >= 64
     fld fa4, 0(t3)
     fld fa5, 8(t3)
+#endif
     addi t3, t3, 16
     ld t4, 0(t2)
     addi t2, t2, 8
@@ -2056,19 +2111,27 @@ ALTERNATE_ENTRY Load_FA4_FA5
 LEAF_END Load_FA0_FA1_FA2_FA3_FA4_FA5
 
 LEAF_ENTRY Load_FA0_FA1_FA2_FA3_FA4_FA5_FA6
+#if __riscv_flen >= 64
     fld fa0, 0(t3)
     fld fa1, 8(t3)
+#endif
     addi t3, t3, 16
 ALTERNATE_ENTRY Load_FA2_FA3_FA4_FA5_FA6
+#if __riscv_flen >= 64
     fld fa2, 0(t3)
     fld fa3, 8(t3)
+#endif
     addi t3, t3, 16
 ALTERNATE_ENTRY Load_FA4_FA5_FA6
+#if __riscv_flen >= 64
     fld fa4, 0(t3)
     fld fa5, 8(t3)
+#endif
     addi t3, t3, 16
 ALTERNATE_ENTRY Load_FA6
+#if __riscv_flen >= 64
     fld fa6, 0(t3)
+#endif
     addi t3, t3, 8
     ld t4, 0(t2)
     addi t2, t2, 8
@@ -2076,20 +2139,28 @@ ALTERNATE_ENTRY Load_FA6
 LEAF_END Load_FA0_FA1_FA2_FA3_FA4_FA5_FA6
 
 LEAF_ENTRY Load_FA0_FA1_FA2_FA3_FA4_FA5_FA6_FA7
+#if __riscv_flen >= 64
     fld fa0, 0(t3)
     fld fa1, 8(t3)
+#endif
     addi t3, t3, 16
 ALTERNATE_ENTRY Load_FA2_FA3_FA4_FA5_FA6_FA7
+#if __riscv_flen >= 64
     fld fa2, 0(t3)
     fld fa3, 8(t3)
+#endif
     addi t3, t3, 16
 ALTERNATE_ENTRY Load_FA4_FA5_FA6_FA7
+#if __riscv_flen >= 64
     fld fa4, 0(t3)
     fld fa5, 8(t3)
+#endif
     addi t3, t3, 16
 ALTERNATE_ENTRY Load_FA6_FA7
+#if __riscv_flen >= 64
     fld fa6, 0(t3)
     fld fa7, 8(t3)
+#endif
     addi t3, t3, 16
     ld t4, 0(t2)
     addi t2, t2, 8
@@ -2098,7 +2169,9 @@ LEAF_END Load_FA0_FA1_FA2_FA3_FA4_FA5_FA6_FA7
 
 // Additional Load_FA* routines starting from FA1, FA3, FA5, FA7
 LEAF_ENTRY Load_FA1
+#if __riscv_flen >= 64
     fld fa1, 0(t3)
+#endif
     addi t3, t3, 8
     ld t4, 0(t2)
     addi t2, t2, 8
@@ -2106,8 +2179,10 @@ LEAF_ENTRY Load_FA1
 LEAF_END Load_FA1
 
 LEAF_ENTRY Load_FA1_FA2
+#if __riscv_flen >= 64
     fld fa1, 0(t3)
     fld fa2, 8(t3)
+#endif
     addi t3, t3, 16
     ld t4, 0(t2)
     addi t2, t2, 8
@@ -2115,9 +2190,11 @@ LEAF_ENTRY Load_FA1_FA2
 LEAF_END Load_FA1_FA2
 
 LEAF_ENTRY Load_FA1_FA2_FA3
+#if __riscv_flen >= 64
     fld fa1, 0(t3)
     fld fa2, 8(t3)
     fld fa3, 16(t3)
+#endif
     addi t3, t3, 24
     ld t4, 0(t2)
     addi t2, t2, 8
@@ -2125,10 +2202,12 @@ LEAF_ENTRY Load_FA1_FA2_FA3
 LEAF_END Load_FA1_FA2_FA3
 
 LEAF_ENTRY Load_FA1_FA2_FA3_FA4
+#if __riscv_flen >= 64
     fld fa1, 0(t3)
     fld fa2, 8(t3)
     fld fa3, 16(t3)
     fld fa4, 24(t3)
+#endif
     addi t3, t3, 32
     ld t4, 0(t2)
     addi t2, t2, 8
@@ -2136,11 +2215,13 @@ LEAF_ENTRY Load_FA1_FA2_FA3_FA4
 LEAF_END Load_FA1_FA2_FA3_FA4
 
 LEAF_ENTRY Load_FA1_FA2_FA3_FA4_FA5
+#if __riscv_flen >= 64
     fld fa1, 0(t3)
     fld fa2, 8(t3)
     fld fa3, 16(t3)
     fld fa4, 24(t3)
     fld fa5, 32(t3)
+#endif
     addi t3, t3, 40
     ld t4, 0(t2)
     addi t2, t2, 8
@@ -2148,12 +2229,14 @@ LEAF_ENTRY Load_FA1_FA2_FA3_FA4_FA5
 LEAF_END Load_FA1_FA2_FA3_FA4_FA5
 
 LEAF_ENTRY Load_FA1_FA2_FA3_FA4_FA5_FA6
+#if __riscv_flen >= 64
     fld fa1, 0(t3)
     fld fa2, 8(t3)
     fld fa3, 16(t3)
     fld fa4, 24(t3)
     fld fa5, 32(t3)
     fld fa6, 40(t3)
+#endif
     addi t3, t3, 48
     ld t4, 0(t2)
     addi t2, t2, 8
@@ -2161,6 +2244,7 @@ LEAF_ENTRY Load_FA1_FA2_FA3_FA4_FA5_FA6
 LEAF_END Load_FA1_FA2_FA3_FA4_FA5_FA6
 
 LEAF_ENTRY Load_FA1_FA2_FA3_FA4_FA5_FA6_FA7
+#if __riscv_flen >= 64
     fld fa1, 0(t3)
     fld fa2, 8(t3)
     fld fa3, 16(t3)
@@ -2168,6 +2252,7 @@ LEAF_ENTRY Load_FA1_FA2_FA3_FA4_FA5_FA6_FA7
     fld fa5, 32(t3)
     fld fa6, 40(t3)
     fld fa7, 48(t3)
+#endif
     addi t3, t3, 56
     ld t4, 0(t2)
     addi t2, t2, 8
@@ -2175,7 +2260,9 @@ LEAF_ENTRY Load_FA1_FA2_FA3_FA4_FA5_FA6_FA7
 LEAF_END Load_FA1_FA2_FA3_FA4_FA5_FA6_FA7
 
 LEAF_ENTRY Load_FA3
+#if __riscv_flen >= 64
     fld fa3, 0(t3)
+#endif
     addi t3, t3, 8
     ld t4, 0(t2)
     addi t2, t2, 8
@@ -2183,8 +2270,10 @@ LEAF_ENTRY Load_FA3
 LEAF_END Load_FA3
 
 LEAF_ENTRY Load_FA3_FA4
+#if __riscv_flen >= 64
     fld fa3, 0(t3)
     fld fa4, 8(t3)
+#endif
     addi t3, t3, 16
     ld t4, 0(t2)
     addi t2, t2, 8
@@ -2192,9 +2281,11 @@ LEAF_ENTRY Load_FA3_FA4
 LEAF_END Load_FA3_FA4
 
 LEAF_ENTRY Load_FA3_FA4_FA5
+#if __riscv_flen >= 64
     fld fa3, 0(t3)
     fld fa4, 8(t3)
     fld fa5, 16(t3)
+#endif
     addi t3, t3, 24
     ld t4, 0(t2)
     addi t2, t2, 8
@@ -2202,10 +2293,12 @@ LEAF_ENTRY Load_FA3_FA4_FA5
 LEAF_END Load_FA3_FA4_FA5
 
 LEAF_ENTRY Load_FA3_FA4_FA5_FA6
+#if __riscv_flen >= 64
     fld fa3, 0(t3)
     fld fa4, 8(t3)
     fld fa5, 16(t3)
     fld fa6, 24(t3)
+#endif
     addi t3, t3, 32
     ld t4, 0(t2)
     addi t2, t2, 8
@@ -2213,11 +2306,13 @@ LEAF_ENTRY Load_FA3_FA4_FA5_FA6
 LEAF_END Load_FA3_FA4_FA5_FA6
 
 LEAF_ENTRY Load_FA3_FA4_FA5_FA6_FA7
+#if __riscv_flen >= 64
     fld fa3, 0(t3)
     fld fa4, 8(t3)
     fld fa5, 16(t3)
     fld fa6, 24(t3)
     fld fa7, 32(t3)
+#endif
     addi t3, t3, 40
     ld t4, 0(t2)
     addi t2, t2, 8
@@ -2225,7 +2320,9 @@ LEAF_ENTRY Load_FA3_FA4_FA5_FA6_FA7
 LEAF_END Load_FA3_FA4_FA5_FA6_FA7
 
 LEAF_ENTRY Load_FA5
+#if __riscv_flen >= 64
     fld fa5, 0(t3)
+#endif
     addi t3, t3, 8
     ld t4, 0(t2)
     addi t2, t2, 8
@@ -2233,8 +2330,10 @@ LEAF_ENTRY Load_FA5
 LEAF_END Load_FA5
 
 LEAF_ENTRY Load_FA5_FA6
+#if __riscv_flen >= 64
     fld fa5, 0(t3)
     fld fa6, 8(t3)
+#endif
     addi t3, t3, 16
     ld t4, 0(t2)
     addi t2, t2, 8
@@ -2242,9 +2341,11 @@ LEAF_ENTRY Load_FA5_FA6
 LEAF_END Load_FA5_FA6
 
 LEAF_ENTRY Load_FA5_FA6_FA7
+#if __riscv_flen >= 64
     fld fa5, 0(t3)
     fld fa6, 8(t3)
     fld fa7, 16(t3)
+#endif
     addi t3, t3, 24
     ld t4, 0(t2)
     addi t2, t2, 8
@@ -2252,7 +2353,9 @@ LEAF_ENTRY Load_FA5_FA6_FA7
 LEAF_END Load_FA5_FA6_FA7
 
 LEAF_ENTRY Load_FA7
+#if __riscv_flen >= 64
     fld fa7, 0(t3)
+#endif
     addi t3, t3, 8
     ld t4, 0(t2)
     addi t2, t2, 8
@@ -2260,7 +2363,9 @@ LEAF_ENTRY Load_FA7
 LEAF_END Load_FA7
 
 LEAF_ENTRY Store_FA0
+#if __riscv_flen >= 64
     fsd fa0, 0(t3)
+#endif
     addi t3, t3, 8
     ld t4, 0(t2)
     addi t2, t2, 8
@@ -2268,8 +2373,10 @@ LEAF_ENTRY Store_FA0
 LEAF_END Store_FA0
 
 LEAF_ENTRY Store_FA0_FA1
+#if __riscv_flen >= 64
     fsd fa0, 0(t3)
     fsd fa1, 8(t3)
+#endif
     addi t3, t3, 16
     ld t4, 0(t2)
     addi t2, t2, 8
@@ -2277,11 +2384,15 @@ LEAF_ENTRY Store_FA0_FA1
 LEAF_END Store_FA0_FA1
 
 LEAF_ENTRY Store_FA0_FA1_FA2
+#if __riscv_flen >= 64
     fsd fa0, 0(t3)
     fsd fa1, 8(t3)
+#endif
     addi t3, t3, 16
 ALTERNATE_ENTRY Store_FA2
+#if __riscv_flen >= 64
     fsd fa2, 0(t3)
+#endif
     addi t3, t3, 8
     ld t4, 0(t2)
     addi t2, t2, 8
@@ -2289,12 +2400,16 @@ ALTERNATE_ENTRY Store_FA2
 LEAF_END Store_FA0_FA1_FA2
 
 LEAF_ENTRY Store_FA0_FA1_FA2_FA3
+#if __riscv_flen >= 64
     fsd fa0, 0(t3)
     fsd fa1, 8(t3)
+#endif
     addi t3, t3, 16
 ALTERNATE_ENTRY Store_FA2_FA3
+#if __riscv_flen >= 64
     fsd fa2, 0(t3)
     fsd fa3, 8(t3)
+#endif
     addi t3, t3, 16
     ld t4, 0(t2)
     addi t2, t2, 8
@@ -2302,15 +2417,21 @@ ALTERNATE_ENTRY Store_FA2_FA3
 LEAF_END Store_FA0_FA1_FA2_FA3
 
 LEAF_ENTRY Store_FA0_FA1_FA2_FA3_FA4
+#if __riscv_flen >= 64
     fsd fa0, 0(t3)
     fsd fa1, 8(t3)
+#endif
     addi t3, t3, 16
 ALTERNATE_ENTRY Store_FA2_FA3_FA4
+#if __riscv_flen >= 64
     fsd fa2, 0(t3)
     fsd fa3, 8(t3)
+#endif
     addi t3, t3, 16
 ALTERNATE_ENTRY Store_FA4
+#if __riscv_flen >= 64
     fsd fa4, 0(t3)
+#endif
     addi t3, t3, 8
     ld t4, 0(t2)
     addi t2, t2, 8
@@ -2318,16 +2439,22 @@ ALTERNATE_ENTRY Store_FA4
 LEAF_END Store_FA0_FA1_FA2_FA3_FA4
 
 LEAF_ENTRY Store_FA0_FA1_FA2_FA3_FA4_FA5
+#if __riscv_flen >= 64
     fsd fa0, 0(t3)
     fsd fa1, 8(t3)
+#endif
     addi t3, t3, 16
 ALTERNATE_ENTRY Store_FA2_FA3_FA4_FA5
+#if __riscv_flen >= 64
     fsd fa2, 0(t3)
     fsd fa3, 8(t3)
+#endif
     addi t3, t3, 16
 ALTERNATE_ENTRY Store_FA4_FA5
+#if __riscv_flen >= 64
     fsd fa4, 0(t3)
     fsd fa5, 8(t3)
+#endif
     addi t3, t3, 16
     ld t4, 0(t2)
     addi t2, t2, 8
@@ -2335,19 +2462,27 @@ ALTERNATE_ENTRY Store_FA4_FA5
 LEAF_END Store_FA0_FA1_FA2_FA3_FA4_FA5
 
 LEAF_ENTRY Store_FA0_FA1_FA2_FA3_FA4_FA5_FA6
+#if __riscv_flen >= 64
     fsd fa0, 0(t3)
     fsd fa1, 8(t3)
+#endif
     addi t3, t3, 16
 ALTERNATE_ENTRY Store_FA2_FA3_FA4_FA5_FA6
+#if __riscv_flen >= 64
     fsd fa2, 0(t3)
     fsd fa3, 8(t3)
+#endif
     addi t3, t3, 16
 ALTERNATE_ENTRY Store_FA4_FA5_FA6
+#if __riscv_flen >= 64
     fsd fa4, 0(t3)
     fsd fa5, 8(t3)
+#endif
     addi t3, t3, 16
 ALTERNATE_ENTRY Store_FA6
+#if __riscv_flen >= 64
     fsd fa6, 0(t3)
+#endif
     addi t3, t3, 8
     ld t4, 0(t2)
     addi t2, t2, 8
@@ -2355,20 +2490,28 @@ ALTERNATE_ENTRY Store_FA6
 LEAF_END Store_FA0_FA1_FA2_FA3_FA4_FA5_FA6
 
 LEAF_ENTRY Store_FA0_FA1_FA2_FA3_FA4_FA5_FA6_FA7
+#if __riscv_flen >= 64
     fsd fa0, 0(t3)
     fsd fa1, 8(t3)
+#endif
     addi t3, t3, 16
 ALTERNATE_ENTRY Store_FA2_FA3_FA4_FA5_FA6_FA7
+#if __riscv_flen >= 64
     fsd fa2, 0(t3)
     fsd fa3, 8(t3)
+#endif
     addi t3, t3, 16
 ALTERNATE_ENTRY Store_FA4_FA5_FA6_FA7
+#if __riscv_flen >= 64
     fsd fa4, 0(t3)
     fsd fa5, 8(t3)
+#endif
     addi t3, t3, 16
 ALTERNATE_ENTRY Store_FA6_FA7
+#if __riscv_flen >= 64
     fsd fa6, 0(t3)
     fsd fa7, 8(t3)
+#endif
     addi t3, t3, 16
     ld t4, 0(t2)
     addi t2, t2, 8
@@ -2377,7 +2520,9 @@ LEAF_END Store_FA0_FA1_FA2_FA3_FA4_FA5_FA6_FA7
 
 // Additional Store_FA* routines starting from FA1, FA3, FA5, FA7
 LEAF_ENTRY Store_FA1
+#if __riscv_flen >= 64
     fsd fa1, 0(t3)
+#endif
     addi t3, t3, 8
     ld t4, 0(t2)
     addi t2, t2, 8
@@ -2385,8 +2530,10 @@ LEAF_ENTRY Store_FA1
 LEAF_END Store_FA1
 
 LEAF_ENTRY Store_FA1_FA2
+#if __riscv_flen >= 64
     fsd fa1, 0(t3)
     fsd fa2, 8(t3)
+#endif
     addi t3, t3, 16
     ld t4, 0(t2)
     addi t2, t2, 8
@@ -2394,9 +2541,11 @@ LEAF_ENTRY Store_FA1_FA2
 LEAF_END Store_FA1_FA2
 
 LEAF_ENTRY Store_FA1_FA2_FA3
+#if __riscv_flen >= 64
     fsd fa1, 0(t3)
     fsd fa2, 8(t3)
     fsd fa3, 16(t3)
+#endif
     addi t3, t3, 24
     ld t4, 0(t2)
     addi t2, t2, 8
@@ -2404,10 +2553,12 @@ LEAF_ENTRY Store_FA1_FA2_FA3
 LEAF_END Store_FA1_FA2_FA3
 
 LEAF_ENTRY Store_FA1_FA2_FA3_FA4
+#if __riscv_flen >= 64
     fsd fa1, 0(t3)
     fsd fa2, 8(t3)
     fsd fa3, 16(t3)
     fsd fa4, 24(t3)
+#endif
     addi t3, t3, 32
     ld t4, 0(t2)
     addi t2, t2, 8
@@ -2415,11 +2566,13 @@ LEAF_ENTRY Store_FA1_FA2_FA3_FA4
 LEAF_END Store_FA1_FA2_FA3_FA4
 
 LEAF_ENTRY Store_FA1_FA2_FA3_FA4_FA5
+#if __riscv_flen >= 64
     fsd fa1, 0(t3)
     fsd fa2, 8(t3)
     fsd fa3, 16(t3)
     fsd fa4, 24(t3)
     fsd fa5, 32(t3)
+#endif
     addi t3, t3, 40
     ld t4, 0(t2)
     addi t2, t2, 8
@@ -2427,12 +2580,14 @@ LEAF_ENTRY Store_FA1_FA2_FA3_FA4_FA5
 LEAF_END Store_FA1_FA2_FA3_FA4_FA5
 
 LEAF_ENTRY Store_FA1_FA2_FA3_FA4_FA5_FA6
+#if __riscv_flen >= 64
     fsd fa1, 0(t3)
     fsd fa2, 8(t3)
     fsd fa3, 16(t3)
     fsd fa4, 24(t3)
     fsd fa5, 32(t3)
     fsd fa6, 40(t3)
+#endif
     addi t3, t3, 48
     ld t4, 0(t2)
     addi t2, t2, 8
@@ -2440,6 +2595,7 @@ LEAF_ENTRY Store_FA1_FA2_FA3_FA4_FA5_FA6
 LEAF_END Store_FA1_FA2_FA3_FA4_FA5_FA6
 
 LEAF_ENTRY Store_FA1_FA2_FA3_FA4_FA5_FA6_FA7
+#if __riscv_flen >= 64
     fsd fa1, 0(t3)
     fsd fa2, 8(t3)
     fsd fa3, 16(t3)
@@ -2447,6 +2603,7 @@ LEAF_ENTRY Store_FA1_FA2_FA3_FA4_FA5_FA6_FA7
     fsd fa5, 32(t3)
     fsd fa6, 40(t3)
     fsd fa7, 48(t3)
+#endif
     addi t3, t3, 56
     ld t4, 0(t2)
     addi t2, t2, 8
@@ -2454,7 +2611,9 @@ LEAF_ENTRY Store_FA1_FA2_FA3_FA4_FA5_FA6_FA7
 LEAF_END Store_FA1_FA2_FA3_FA4_FA5_FA6_FA7
 
 LEAF_ENTRY Store_FA3
+#if __riscv_flen >= 64
     fsd fa3, 0(t3)
+#endif
     addi t3, t3, 8
     ld t4, 0(t2)
     addi t2, t2, 8
@@ -2462,8 +2621,10 @@ LEAF_ENTRY Store_FA3
 LEAF_END Store_FA3
 
 LEAF_ENTRY Store_FA3_FA4
+#if __riscv_flen >= 64
     fsd fa3, 0(t3)
     fsd fa4, 8(t3)
+#endif
     addi t3, t3, 16
     ld t4, 0(t2)
     addi t2, t2, 8
@@ -2471,9 +2632,11 @@ LEAF_ENTRY Store_FA3_FA4
 LEAF_END Store_FA3_FA4
 
 LEAF_ENTRY Store_FA3_FA4_FA5
+#if __riscv_flen >= 64
     fsd fa3, 0(t3)
     fsd fa4, 8(t3)
     fsd fa5, 16(t3)
+#endif
     addi t3, t3, 24
     ld t4, 0(t2)
     addi t2, t2, 8
@@ -2481,10 +2644,12 @@ LEAF_ENTRY Store_FA3_FA4_FA5
 LEAF_END Store_FA3_FA4_FA5
 
 LEAF_ENTRY Store_FA3_FA4_FA5_FA6
+#if __riscv_flen >= 64
     fsd fa3, 0(t3)
     fsd fa4, 8(t3)
     fsd fa5, 16(t3)
     fsd fa6, 24(t3)
+#endif
     addi t3, t3, 32
     ld t4, 0(t2)
     addi t2, t2, 8
@@ -2492,11 +2657,13 @@ LEAF_ENTRY Store_FA3_FA4_FA5_FA6
 LEAF_END Store_FA3_FA4_FA5_FA6
 
 LEAF_ENTRY Store_FA3_FA4_FA5_FA6_FA7
+#if __riscv_flen >= 64
     fsd fa3, 0(t3)
     fsd fa4, 8(t3)
     fsd fa5, 16(t3)
     fsd fa6, 24(t3)
     fsd fa7, 32(t3)
+#endif
     addi t3, t3, 40
     ld t4, 0(t2)
     addi t2, t2, 8
@@ -2504,7 +2671,9 @@ LEAF_ENTRY Store_FA3_FA4_FA5_FA6_FA7
 LEAF_END Store_FA3_FA4_FA5_FA6_FA7
 
 LEAF_ENTRY Store_FA5
+#if __riscv_flen >= 64
     fsd fa5, 0(t3)
+#endif
     addi t3, t3, 8
     ld t4, 0(t2)
     addi t2, t2, 8
@@ -2512,8 +2681,10 @@ LEAF_ENTRY Store_FA5
 LEAF_END Store_FA5
 
 LEAF_ENTRY Store_FA5_FA6
+#if __riscv_flen >= 64
     fsd fa5, 0(t3)
     fsd fa6, 8(t3)
+#endif
     addi t3, t3, 16
     ld t4, 0(t2)
     addi t2, t2, 8
@@ -2521,9 +2692,11 @@ LEAF_ENTRY Store_FA5_FA6
 LEAF_END Store_FA5_FA6
 
 LEAF_ENTRY Store_FA5_FA6_FA7
+#if __riscv_flen >= 64
     fsd fa5, 0(t3)
     fsd fa6, 8(t3)
     fsd fa7, 16(t3)
+#endif
     addi t3, t3, 24
     ld t4, 0(t2)
     addi t2, t2, 8
@@ -2531,7 +2704,9 @@ LEAF_ENTRY Store_FA5_FA6_FA7
 LEAF_END Store_FA5_FA6_FA7
 
 LEAF_ENTRY Store_FA7
+#if __riscv_flen >= 64
     fsd fa7, 0(t3)
+#endif
     addi t3, t3, 8
     ld t4, 0(t2)
     addi t2, t2, 8

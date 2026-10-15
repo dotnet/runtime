@@ -41,6 +41,22 @@ namespace Internal.JitInterface
         CORINFO_HELP_FLTREM,
         CORINFO_HELP_DBLREM,
 
+        // Soft-float helpers (targets without an FPU); see corinfo.h
+        CORINFO_HELP_FLTADD,
+        CORINFO_HELP_FLTSUB,
+        CORINFO_HELP_FLTMUL,
+        CORINFO_HELP_FLTDIV,
+        CORINFO_HELP_DBLADD,
+        CORINFO_HELP_DBLSUB,
+        CORINFO_HELP_DBLMUL,
+        CORINFO_HELP_DBLDIV,
+        CORINFO_HELP_FLTCMP_LE,
+        CORINFO_HELP_FLTCMP_GE,
+        CORINFO_HELP_DBLCMP_LE,
+        CORINFO_HELP_DBLCMP_GE,
+        CORINFO_HELP_FLT2DBL,
+        CORINFO_HELP_DBL2FLT,
+
         /* Allocating a new object. Always use ICorClassInfo::getNewHelper() to decide
            which is the right helper to use to allocate an object of a given type. */
 

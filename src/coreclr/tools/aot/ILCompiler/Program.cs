@@ -109,7 +109,20 @@ namespace ILCompiler
             InstructionSetSupport instructionSetSupport = Helpers.ConfigureInstructionSetSupport(Get(_command.InstructionSet), Get(_command.MaxVectorTBitWidth), isVectorTOptimistic, targetArchitecture, targetOS,
                 "Unrecognized instruction set {0}", "Unsupported combination of instruction sets: {0}/{1}", logger,
                 allowOptimistic: _command.OptimizationMode != OptimizationMode.PreferSize,
-                isReadyToRun: false);
+                isReadyToRun: false,
+                targetAbi: targetAbi);
+
+            if (targetArchitecture == TargetArchitecture.RiscV64 &&
+                !instructionSetSupport.IsInstructionSetSupported(InstructionSet.RiscV64_A) &&
+                !Get(_command.AssumeNoConcurrency))
+            {
+                // Without A there is no atomic memory operation to emit, so Interlocked and
+                // CmpXchg lower to a plain read/modify/write. Whether that is sufficient is a
+                // property of the execution environment, not of the ISA or the ABI, so it has
+                // to be asserted rather than inferred.
+                throw new CommandLineException(
+                    "Building without the A extension requires --assume-no-concurrency (one hart, no preemption): Interlocked operations are not atomic without it.");
+            }
 
             string systemModuleName = Get(_command.SystemModuleName);
             string reflectionData = Get(_command.ReflectionData);

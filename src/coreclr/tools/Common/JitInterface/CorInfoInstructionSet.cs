@@ -63,6 +63,10 @@ namespace Internal.JitInterface
         RiscV64_Zbb = InstructionSet_RiscV64.Zbb,
         RiscV64_Zbs = InstructionSet_RiscV64.Zbs,
         RiscV64_Zicond = InstructionSet_RiscV64.Zicond,
+        RiscV64_F = InstructionSet_RiscV64.F,
+        RiscV64_D = InstructionSet_RiscV64.D,
+        RiscV64_C = InstructionSet_RiscV64.C,
+        RiscV64_A = InstructionSet_RiscV64.A,
         Wasm32_WasmBase = InstructionSet_Wasm32.WasmBase,
         Wasm32_PackedSimd = InstructionSet_Wasm32.PackedSimd,
         Wasm32_Vector128 = InstructionSet_Wasm32.Vector128,
@@ -215,6 +219,10 @@ namespace Internal.JitInterface
         Zbb = 3,
         Zbs = 4,
         Zicond = 5,
+        F = 6,
+        D = 7,
+        C = 8,
+        A = 9,
     }
 
     public enum InstructionSet_Wasm32
@@ -615,6 +623,14 @@ namespace Internal.JitInterface
                             resultflags.AddInstructionSet(InstructionSet.RiscV64_RiscV64Base);
                         if (resultflags.HasInstructionSet(InstructionSet.RiscV64_Zicond))
                             resultflags.AddInstructionSet(InstructionSet.RiscV64_RiscV64Base);
+                        if (resultflags.HasInstructionSet(InstructionSet.RiscV64_F))
+                            resultflags.AddInstructionSet(InstructionSet.RiscV64_RiscV64Base);
+                        if (resultflags.HasInstructionSet(InstructionSet.RiscV64_D))
+                            resultflags.AddInstructionSet(InstructionSet.RiscV64_F);
+                        if (resultflags.HasInstructionSet(InstructionSet.RiscV64_C))
+                            resultflags.AddInstructionSet(InstructionSet.RiscV64_RiscV64Base);
+                        if (resultflags.HasInstructionSet(InstructionSet.RiscV64_A))
+                            resultflags.AddInstructionSet(InstructionSet.RiscV64_RiscV64Base);
                         break;
 
                     case TargetArchitecture.Wasm32:
@@ -926,6 +942,14 @@ namespace Internal.JitInterface
                             resultflags.AddInstructionSet(InstructionSet.RiscV64_Zbs);
                         if (resultflags.HasInstructionSet(InstructionSet.RiscV64_RiscV64Base))
                             resultflags.AddInstructionSet(InstructionSet.RiscV64_Zicond);
+                        if (resultflags.HasInstructionSet(InstructionSet.RiscV64_RiscV64Base))
+                            resultflags.AddInstructionSet(InstructionSet.RiscV64_F);
+                        if (resultflags.HasInstructionSet(InstructionSet.RiscV64_F))
+                            resultflags.AddInstructionSet(InstructionSet.RiscV64_D);
+                        if (resultflags.HasInstructionSet(InstructionSet.RiscV64_RiscV64Base))
+                            resultflags.AddInstructionSet(InstructionSet.RiscV64_C);
+                        if (resultflags.HasInstructionSet(InstructionSet.RiscV64_RiscV64Base))
+                            resultflags.AddInstructionSet(InstructionSet.RiscV64_A);
                         break;
 
                     case TargetArchitecture.Wasm32:
@@ -1188,6 +1212,10 @@ namespace Internal.JitInterface
                     yield return new InstructionSetInfo("zbb", "", InstructionSet.RiscV64_Zbb, true);
                     yield return new InstructionSetInfo("zbs", "", InstructionSet.RiscV64_Zbs, true);
                     yield return new InstructionSetInfo("zicond", "", InstructionSet.RiscV64_Zicond, true);
+                    yield return new InstructionSetInfo("f", "", InstructionSet.RiscV64_F, true);
+                    yield return new InstructionSetInfo("d", "", InstructionSet.RiscV64_D, true);
+                    yield return new InstructionSetInfo("c", "", InstructionSet.RiscV64_C, true);
+                    yield return new InstructionSetInfo("a", "", InstructionSet.RiscV64_A, true);
                     break;
 
                 case TargetArchitecture.Wasm32:
