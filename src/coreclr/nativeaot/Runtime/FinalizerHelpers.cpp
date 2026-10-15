@@ -103,9 +103,11 @@ bool RhInitializeFinalization()
     }
 #endif
 
+#ifdef FEATURE_MULTITHREADING
     // Create the finalizer thread itself.
     if (!PalStartFinalizerThread(FinalizerStart, &g_FinalizerEvent))
         return false;
+#endif // FEATURE_MULTITHREADING
 
     return true;
 }

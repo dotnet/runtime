@@ -26,6 +26,11 @@ namespace System.Numerics.Tests
             yield return new object[] { -746.000005337263383695030642m, (ushort)0xC43B };
             yield return new object[] { 128917739299112.37073918939888m, (ushort)0x56EB };
             yield return new object[] { 100000000000000000000m, (ushort)0x60AD };
+
+            // Decimal values just above or below BFloat16 midpoints must round to the nearer neighbor.
+            yield return new object[] { 1.0039062500000000000000000001m, (ushort)0x3F81 };
+            yield return new object[] { 3.0234374999999999999999999999m, (ushort)0x4041 };
+            yield return new object[] { 0.0000000000000173749903353837m, (ushort)0x289D };
         }
 
         [Theory]

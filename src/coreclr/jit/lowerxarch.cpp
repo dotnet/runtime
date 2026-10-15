@@ -2234,11 +2234,16 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             // or uint) and for a source vector of any width, provided the element being
             // extracted is one of the first four. That is all count_s can encode and all
             // that resides in the low 128 bits, which is the only part insertps reads.
+            //
+            // A floating-point CreateScalarUnsafe whose user is another HW intrinsic has
+            // already been removed by the time we get here (operands are lowered before
+            // their users), so we must also recognize the bare extraction as op2.
 
-            if ((count_s == 0) && op2->OperIsHWIntrinsic(NI_Vector_CreateScalarUnsafe))
+            if ((count_s == 0) && op2->OperIsHWIntrinsic())
             {
-                GenTreeHWIntrinsic* createScalar = op2->AsHWIntrinsic();
-                GenTree*            scalarOp     = createScalar->Op(1);
+                GenTreeHWIntrinsic* createScalar =
+                    op2->OperIsHWIntrinsic(NI_Vector_CreateScalarUnsafe) ? op2->AsHWIntrinsic() : nullptr;
+                GenTree* scalarOp = (createScalar != nullptr) ? createScalar->Op(1) : op2;
 
                 if (scalarOp->OperIsHWIntrinsic() && (genTypeSize(scalarOp->AsHWIntrinsic()->GetSimdBaseType()) == 4))
                 {
@@ -2290,7 +2295,11 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                         }
 
                         BlockRange().Remove(extract);
-                        BlockRange().Remove(createScalar);
+
+                        if (createScalar != nullptr)
+                        {
+                            BlockRange().Remove(createScalar);
+                        }
                     }
                 }
             }
@@ -7561,10 +7570,11 @@ void Lowering::ContainCheckIndir(GenTreeIndir* node)
         // The address of an indirection that requires its address in a reg.
         // Skip any further processing that might otherwise make it contained.
     }
-    else if (addr->OperIs(GT_LCL_ADDR) && IsContainableLclAddr(addr->AsLclFld(), node->Size()))
+    else if (addr->OperIs(GT_LCL_ADDR) && !node->IsVolatile() && IsContainableLclAddr(addr->AsLclFld(), node->Size()))
     {
         // These nodes go into an addr mode:
         // - GT_LCL_ADDR is a stack addr mode.
+        // Volatile accesses are not contained so that the emitter's stack move peephole cannot remove them.
         MakeSrcContained(node, addr);
     }
     else if (addr->IsCnsIntOrI())
@@ -8162,7 +8172,8 @@ void Lowering::ContainCheckStoreLoc(GenTreeLclVarCommon* storeLoc) const
     assert(storeLoc->OperIsLocalStore());
     GenTree* op1 = storeLoc->gtGetOp1();
 
-    if (op1->OperIs(GT_BITCAST))
+    // A small store implicitly truncates its source, so it cannot store directly from the other type.
+    if (op1->OperIs(GT_BITCAST) && !varTypeIsSmall(storeLoc))
     {
         // If we know that the source of the bitcast will be in a register, then we can make
         // the bitcast itself contained. This will allow us to store directly from the other

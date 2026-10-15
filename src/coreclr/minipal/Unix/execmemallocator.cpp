@@ -231,18 +231,9 @@ namespace
         if (s_startAddress == nullptr)
         {
             // Reservation near this library failed; try to reserve approximately 2 GB of address space
-            // anywhere:
-            //   - This sets aside address space usable for executable code, so that jumps/calls between
-            //     such code may continue to use short relative addresses instead of long absolute
-            //     addresses that would require jump stubs.
-            //   - The inability to allocate memory in a specific range for jump stubs is an unrecoverable
-            //     problem. This reservation mitigates such issues, which can become prevalent depending
-            //     on which security features are enabled, such as PaX's RANDMMAP.
-            //   - Native images and their jump-stub helper tables can be loaded into this address space,
-            //     satisfying the vast majority of practical cases.
-            //   - The code heap allocator for the JIT can allocate from this address space; beyond this
-            //     reservation, DOTNET_CodeHeapReserveForJumpStubs can reserve additional space for jump
-            //     stubs.
+            // anywhere. This sets aside address space usable for executable code, so that jumps/calls
+            // between such code may continue to use short relative addresses instead of long absolute
+            // addresses that would require jump stubs.
             sizeOfAllocation = (initialReserveLimit != -1) ? initialReserveLimit : MaxExecutableMemorySize;
             s_startAddress = ReserveFromOS(nullptr, sizeOfAllocation);
             if (s_startAddress == nullptr)

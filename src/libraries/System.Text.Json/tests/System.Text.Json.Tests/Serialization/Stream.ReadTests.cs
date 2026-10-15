@@ -3,6 +3,8 @@
 
 using System.Collections.Generic;
 using System.IO;
+using System.Text.Encodings.Web;
+using System.Text.Json.Serialization.Metadata;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -32,6 +34,91 @@ namespace System.Text.Json.Serialization.Tests
                 SimpleTestClass obj = await Serializer.DeserializeWrapper<SimpleTestClass>(stream, options);
                 obj.Verify();
             }
+        }
+
+        [Theory]
+        [MemberData(nameof(NullableStructWithNullMemberTestData))]
+        public async Task ReadNullableStructWithNullMember(Type type, bool useSourceGeneration, string expectedJson)
+        {
+            string json = expectedJson.Replace("}", ",\"Ignored\":null}");
+            foreach (int bufferSize in new[] { 1, 16, 32, 64, 128, 16 * 1024 })
+            {
+                JsonSerializerOptions options = CreateNullableStructOptions(useSourceGeneration, bufferSize);
+                for (int offset = 0; offset < json.Length; offset++)
+                {
+                    int padding = Math.Max(0, bufferSize - json.Length) + offset;
+                    using Utf8MemoryStream stream = new(new string(' ', padding) + json);
+                    object result = await Serializer.DeserializeWrapper(stream, type, options);
+                    Assert.Equal(expectedJson, JsonSerializer.Serialize(result, type, options));
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> NullableStructWithNullMemberTestData()
+        {
+            (Type Type, string Json)[] cases =
+            [
+                (typeof((int, int?)?[]), """[null,{"Item1":1,"Item2":null},{"Item1":2,"Item2":3},null]"""),
+                (typeof(KeyValuePair<int, int?>?[]), """[null,{"Key":1,"Value":null},{"Key":2,"Value":3},null]"""),
+                (typeof(Memory<int?>?[]), "[null,[1,null],[2,3],null]"),
+                (typeof(ReadOnlyMemory<int?>?[]), "[null,[1,null],[2,3],null]"),
+            ];
+
+            foreach ((Type type, string json) in cases)
+            {
+                yield return new object[] { type, false, json };
+                yield return new object[] { type, true, json };
+            }
+        }
+
+        [Theory]
+        [InlineData(1, 1, false)]
+        [InlineData(1, 1, true)]
+        [InlineData(16, 3, false)]
+        [InlineData(16, 3, true)]
+        [InlineData(64, 7, false)]
+        [InlineData(64, 7, true)]
+        [InlineData(16 * 1024, 257, false)]
+        [InlineData(16 * 1024, 257, true)]
+        public async Task ReadNullableStructWithBufferGrowth(int bufferSize, int readSize, bool useSourceGeneration)
+        {
+            JsonSerializerOptions options = CreateNullableStructOptions(useSourceGeneration, bufferSize);
+            options.Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping;
+            string key = new string('k', Math.Max(512, 2 * bufferSize + 1)) + "\u20AC\\\"\n";
+            KeyValuePair<string, string?>?[] expected =
+            [
+                null,
+                new(key, null),
+                new("key", "value"),
+                new(key, null),
+                null,
+            ];
+
+            byte[] data = JsonSerializer.SerializeToUtf8Bytes(expected, options);
+            using ChunkedReaderStream stream = new(new[] { data }, maxReadSize: readSize);
+            KeyValuePair<string, string?>?[] result = await Serializer.DeserializeWrapper<KeyValuePair<string, string?>?[]>(stream, options);
+
+            Assert.Equal(expected, result);
+            Assert.Equal(data.Length, stream.Position);
+            Assert.True(stream.ReadCount > data.Length / readSize);
+        }
+
+        internal static JsonSerializerOptions CreateNullableStructOptions(bool useSourceGeneration, int bufferSize = 64)
+            => new()
+            {
+                DefaultBufferSize = bufferSize,
+                IncludeFields = true,
+                TypeInfoResolver = useSourceGeneration ? NullableStructContext.Default : new DefaultJsonTypeInfoResolver(),
+            };
+
+        [JsonSourceGenerationOptions(GenerationMode = JsonSourceGenerationMode.Metadata, IncludeFields = true)]
+        [JsonSerializable(typeof((int, int?)?[]))]
+        [JsonSerializable(typeof(KeyValuePair<int, int?>?[]))]
+        [JsonSerializable(typeof(KeyValuePair<string, string?>?[]))]
+        [JsonSerializable(typeof(Memory<int?>?[]))]
+        [JsonSerializable(typeof(ReadOnlyMemory<int?>?[]))]
+        private partial class NullableStructContext : JsonSerializerContext
+        {
         }
 
         [Fact]

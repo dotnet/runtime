@@ -950,12 +950,12 @@ void __stdcall UpdateGenerationBounds()
         s_currentGenerationTable->Refresh();
     }
 #endif // PROFILING_SUPPORTED
-#ifdef ENABLE_CONTRACTS_IMPL
+#if defined(PROFILING_SUPPORTED) && defined(ENABLE_CONTRACTS_IMPL)
     {
         LONG result = InterlockedDecrement(&s_generationTableWriterCount);
         _ASSERTE(result == 0);
     }
-#endif
+#endif // PROFILING_SUPPORTED && ENABLE_CONTRACTS_IMPL
 }
 
 void __stdcall ProfilerAddNewRegion(int generation, uint8_t* rangeStart, uint8_t* rangeEnd, uint8_t* rangeEndReserved)
@@ -3375,6 +3375,7 @@ HRESULT ProfToEEInterfaceImpl::GetThreadStaticAddress2(ClassID classId,
         return E_INVALIDARG;
     }
 
+#ifdef FEATURE_MULTITHREADING
     //
     // Verify this field is of the right type
     //
@@ -3409,6 +3410,10 @@ HRESULT ProfToEEInterfaceImpl::GetThreadStaticAddress2(ClassID classId,
     *ppAddress = pAddress;
 
     return S_OK;
+#else
+    // Without multithreading there are no thread statics; [ThreadStatic] fields are regular statics.
+    return E_INVALIDARG;
+#endif // FEATURE_MULTITHREADING
 }
 
 /*
