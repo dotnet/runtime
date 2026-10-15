@@ -33,6 +33,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="..\Common\InvocationCache\InvocationCache.cs" Link="InvocationCache\InvocationCache.cs" />
+    <Compile Include="..\Common\InvocationCache\InvocationCacheEntry.cs" Link="InvocationCache\InvocationCacheEntry.cs" />
+    <Compile Include="..\Common\InvocationCache\InvocationCacheOutputs.cs" Link="InvocationCache\InvocationCacheOutputs.cs" />
     <InternalsVisibleTo Include="Crossgen2Tasks.Tests" />
     <Content Include="Microsoft.NET.CrossGen.targets" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="ShimFilesSimulatingLogicInSdkRepo/Microsoft.NET.CrossGen.props"

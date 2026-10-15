@@ -183,11 +183,18 @@ claim that the compiler ran; timing text, if any, describes the original run.
 External tool side effects are not replayed. Cache diagnostics are additional
 normal-importance messages. Tool failures retain normal exit/error reporting.
 
-Entries live under `<cache>/v1/<SHA-256>/` with indexed output files, a binary
-manifest containing output hashes and diagnostics, and a manifest checksum.
+Entries live under `<cache>/v2/<lowercase-SHA-256>/` with indexed files in `outputs/`,
+a binary manifest containing output hashes and diagnostics, and a manifest checksum.
+The shared storage implementation under `src/tasks/Common/InvocationCache` is
+compiled into the task assembly; it captures and restores the declared file set,
+including optional-file absence. ILLink uses the same storage sources with an
+owned-directory contract. Its existing v1 directory format is unchanged; old
+crossgen2 v1 entries are not read or migrated.
 Writers copy into unique cache-local staging directories and publish complete
-immutable entries with one directory rename. Racing publishers never overwrite
+immutable entries with one directory rename. Nonblocking per-entry writer mutexes
+avoid duplicate publication work. Racing publishers never overwrite
 an existing entry. Readers validate the manifest and every output before copying.
+Successful stores and hits update a best-effort `last-used` marker.
 Concurrent tasks may share storage while writing distinct outputs; concurrent
 tasks writing the same owned file are unsupported.
 
@@ -205,7 +212,8 @@ on-disk format guarantee.
 
 The hook belongs in the mirrored `RunReadyToRunCompiler`, with `Crossgen2Cache.cs`
 and `Crossgen2CacheInvocation.cs` ported alongside it to
-`dotnet/sdk/src/Tasks/Microsoft.NET.Build.Tasks`. Shipping
+`dotnet/sdk/src/Tasks/Microsoft.NET.Build.Tasks`, together with the shared
+`src/tasks/Common/InvocationCache` sources. Shipping
 SDK behavior does not change merely by building this repository. The SDK port also
 needs its own framework builds/tests and SDK resource/localization integration.
 `Microsoft.NET.CrossGen.targets`, compiler resolution, and output preparation

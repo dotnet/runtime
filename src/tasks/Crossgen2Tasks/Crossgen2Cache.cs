@@ -17,6 +17,7 @@ internal sealed class Crossgen2Cache
     private static readonly SearchValues<char> s_unsupportedPathCharacters = SearchValues.Create("\"\r\n*?");
     private readonly string _root;
     private readonly TaskLoggingHelper _log;
+    private readonly InvocationCache _storage;
 
     internal static StringComparer PathComparer { get; } = OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
 
@@ -36,6 +37,7 @@ internal sealed class Crossgen2Cache
     {
         _root = root;
         _log = log;
+        _storage = new InvocationCache(root, log, "Crossgen2", MessageImportance.Normal, versionDirectory: "v2");
     }
 
     internal static Crossgen2Cache? FromEnvironment(TaskLoggingHelper log)
@@ -117,10 +119,11 @@ internal sealed class Crossgen2Cache
     internal string ComputeKey(string[] compilerDependencies, string input, ITaskItem[] references,
         ITaskItem[]? profiles, string[] outputs, string response, string command, string diagnosticPolicy, string workingDirectory)
     {
+        DeclareOutputs(outputs).Validate(_root);
         using var data = new MemoryStream();
         using var writer = new BinaryWriter(data, Encoding.UTF8, leaveOpen: true);
         var inputs = new HashSet<string>(PathComparer);
-        writer.Write("crossgen2-task-cache-v2");
+        writer.Write("crossgen2-task-cache-v3");
         writer.Write(Path.GetFullPath(workingDirectory));
         writer.Write(Directory.GetCurrentDirectory());
         writer.Write(RuntimeInformation.OSDescription);
@@ -134,13 +137,6 @@ internal sealed class Crossgen2Cache
         foreach (string output in outputs)
         {
             writer.Write(output);
-            string rootPrefix = _root.EndsWith(Path.DirectorySeparatorChar.ToString(), StringComparison.Ordinal)
-                ? _root : _root + Path.DirectorySeparatorChar;
-            if (PathComparer.Equals(output, _root.TrimEnd(Path.DirectorySeparatorChar)) ||
-                (output.Length >= rootPrefix.Length && PathComparer.Equals(output.Substring(0, rootPrefix.Length), rootPrefix)))
-            {
-                throw new InvalidDataException("Outputs must be outside the cache.");
-            }
         }
 #pragma warning disable IL3000 // MSBuild tasks are loaded from assemblies on disk.
         string taskAssemblyPath = typeof(RunReadyToRunCompiler).Assembly.Location;
@@ -175,7 +171,7 @@ internal sealed class Crossgen2Cache
         }
         writer.Flush();
         data.Position = 0;
-        return Hash(data);
+        return Hash(data).ToLowerInvariant();
 
         void AddFile(string path, bool optional = false, BlobContentId? symbolIdentity = null)
         {
@@ -242,46 +238,9 @@ internal sealed class Crossgen2Cache
 
     internal bool TryRestore(string key, string[] outputs, DateTime timestamp, out List<Diagnostic> diagnostics)
     {
-        diagnostics = new List<Diagnostic>();
-        string entry = Path.Combine(_root, "v1", key);
-        if (!Directory.Exists(entry))
+        var restoredDiagnostics = new List<Diagnostic>();
+        bool restored = _storage.TryRestore(key, DeclareOutputs(outputs), timestamp, reader =>
         {
-            Report($"miss: {key}");
-            return false;
-        }
-        try
-        {
-            string manifest = Path.Combine(entry, "manifest");
-            using (FileStream file = File.OpenRead(manifest))
-            {
-                if (Hash(file) != File.ReadAllText(Path.Combine(entry, "manifest.sha256")))
-                {
-                    throw new InvalidDataException("Cached manifest checksum mismatch.");
-                }
-            }
-            using var reader = new BinaryReader(File.OpenRead(manifest), Encoding.UTF8);
-            if (reader.ReadInt32() != 1 || reader.ReadInt32() != outputs.Length)
-            {
-                throw new InvalidDataException("Invalid cache manifest.");
-            }
-            var present = new bool[outputs.Length];
-            for (int i = 0; i < outputs.Length; i++)
-            {
-                present[i] = reader.ReadBoolean();
-                if (present[i])
-                {
-                    string expected = reader.ReadString();
-                    using FileStream file = File.OpenRead(Path.Combine(entry, i.ToString(CultureInfo.InvariantCulture)));
-                    if (Hash(file) != expected)
-                    {
-                        throw new InvalidDataException("Cached output checksum mismatch.");
-                    }
-                }
-            }
-            if (!present[0])
-            {
-                throw new InvalidDataException("The native image is missing.");
-            }
             int count = reader.ReadInt32();
             if (count < 0 || count > reader.BaseStream.Length - reader.BaseStream.Position)
             {
@@ -294,108 +253,40 @@ internal sealed class Crossgen2Cache
                 {
                     throw new InvalidDataException("Invalid diagnostic importance.");
                 }
-                diagnostics.Add(new Diagnostic(reader.ReadString(), importance));
+                restoredDiagnostics.Add(new Diagnostic(reader.ReadString(), importance));
             }
-            if (reader.BaseStream.Position != reader.BaseStream.Length)
-            {
-                throw new InvalidDataException("Trailing cache manifest data.");
-            }
-            for (int i = 0; i < outputs.Length; i++)
-            {
-                if (present[i])
-                {
-                    File.Copy(Path.Combine(entry, i.ToString(CultureInfo.InvariantCulture)), outputs[i], overwrite: true);
-                    File.SetLastWriteTimeUtc(outputs[i], timestamp);
-                }
-                else
-                {
-                    File.Delete(outputs[i]);
-                }
-            }
-            Report($"hit: {key}");
-            return true;
-        }
-        catch (Exception ex) when (IsCacheFailure(ex))
+        });
+        if (!restored)
         {
-            Report($"restore failed; running compiler: {ex.Message}");
-            diagnostics.Clear();
-            return false;
+            restoredDiagnostics.Clear();
         }
+        diagnostics = restoredDiagnostics;
+        return restored;
     }
 
     internal void Store(string key, string[] outputs, List<Diagnostic> diagnostics)
     {
-        string parent = Path.Combine(_root, "v1");
-        string entry = Path.Combine(parent, key);
-        string? staging = null;
-        try
+        _storage.Store(key, DeclareOutputs(outputs), writer =>
         {
-            if (Directory.Exists(entry))
+            writer.Write(diagnostics.Count);
+            foreach (Diagnostic diagnostic in diagnostics)
             {
-                return;
+                writer.Write((int)diagnostic.Importance);
+                writer.Write(diagnostic.Text);
             }
-            Directory.CreateDirectory(parent);
-            staging = Path.Combine(parent, key + "." + Guid.NewGuid().ToString("N") + ".tmp");
-            Directory.CreateDirectory(staging);
-            using (var writer = new BinaryWriter(File.Create(Path.Combine(staging, "manifest")), Encoding.UTF8))
-            {
-                writer.Write(1);
-                writer.Write(outputs.Length);
-                for (int i = 0; i < outputs.Length; i++)
-                {
-                    string copy = Path.Combine(staging, i.ToString(CultureInfo.InvariantCulture));
-                    bool present;
-                    try
-                    {
-                        File.Copy(outputs[i], copy);
-                        present = true;
-                    }
-                    catch (FileNotFoundException) when (i != 0)
-                    {
-                        present = false;
-                    }
-                    writer.Write(present);
-                    if (present)
-                    {
-                        using FileStream file = File.OpenRead(copy);
-                        writer.Write(Hash(file));
-                    }
-                }
-                writer.Write(diagnostics.Count);
-                foreach (Diagnostic diagnostic in diagnostics)
-                {
-                    writer.Write((int)diagnostic.Importance);
-                    writer.Write(diagnostic.Text);
-                }
-            }
-            using (FileStream file = File.OpenRead(Path.Combine(staging, "manifest")))
-            {
-                File.WriteAllText(Path.Combine(staging, "manifest.sha256"), Hash(file));
-            }
-            // Complete immutable entries become visible in one cache-local rename.
-            // A racing publisher may win; never overwrite its entry.
-            Directory.Move(staging, entry);
-            staging = null;
-            Report($"stored: {key}");
-        }
-        catch (Exception ex) when (IsCacheFailure(ex))
+        });
+    }
+
+    internal void CleanOutputs(string[] outputs) => _storage.CleanOutputs(DeclareOutputs(outputs));
+
+    private static InvocationCacheOutputs DeclareOutputs(string[] outputs)
+    {
+        var files = new InvocationCacheFile[outputs.Length];
+        for (int i = 0; i < outputs.Length; i++)
         {
-            Report($"store skipped: {ex.Message}");
+            files[i] = new InvocationCacheFile(outputs[i], required: i == 0);
         }
-        finally
-        {
-            if (staging is not null)
-            {
-                try
-                {
-                    Directory.Delete(staging, recursive: true);
-                }
-                catch (Exception ex) when (IsCacheFailure(ex))
-                {
-                    Report($"staging cleanup failed: {ex.Message}");
-                }
-            }
-        }
+        return InvocationCacheOutputs.FromFiles(files);
     }
 
     private static string Hash(Stream stream)

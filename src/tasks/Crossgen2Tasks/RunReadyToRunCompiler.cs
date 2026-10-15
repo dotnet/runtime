@@ -474,10 +474,7 @@ namespace Microsoft.NET.Build.Tasks
 
             // Remove only the declared outputs, including any partially restored files.
             // A cleanup failure must fail the task rather than reuse stale optional outputs.
-            foreach (string output in outputs)
-            {
-                File.Delete(output);
-            }
+            cache.CleanOutputs(outputs);
 
             _cacheDiagnostics = new List<Crossgen2Cache.Diagnostic>();
             int exitCode;

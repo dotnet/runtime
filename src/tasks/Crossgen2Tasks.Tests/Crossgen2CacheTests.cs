@@ -284,6 +284,7 @@ public class Crossgen2CacheTests
     [InlineData("bad-input")]
     [InlineData("invalid-root")]
     [InlineData("outputs-in-cache")]
+    [InlineData("cache-in-output")]
     [InlineData("relative-reference")]
     [InlineData("path-injection")]
     public void UnsupportedAndUnreadableInvocationsBypass(string shape) => RemoteExecutor.Invoke(value =>
@@ -336,6 +337,7 @@ public class Crossgen2CacheTests
             case "bad-input": File.WriteAllText(fixture.Input, "not a PE"); break;
             case "invalid-root": Environment.SetEnvironmentVariable("CROSSGEN2_EXPERIMENTAL_CACHE_PATH", fixture.Profile); break;
             case "outputs-in-cache": Environment.SetEnvironmentVariable("CROSSGEN2_EXPERIMENTAL_CACHE_PATH", fixture.Root + Path.DirectorySeparatorChar); break;
+            case "cache-in-output": Environment.SetEnvironmentVariable("CROSSGEN2_EXPERIMENTAL_CACHE_PATH", Path.Combine(fixture.Output, "cache")); break;
             case "relative-reference": task.ImplementationAssemblyReferences = new[] { new TaskItem("relative.dll") }; break;
             case "path-injection": task.ImplementationAssemblyReferences = new[] { new TaskItem(fixture.Reference + "\"\n--map") }; break;
         }
@@ -428,12 +430,12 @@ public class Crossgen2CacheTests
         File.WriteAllText(fixture.Map, "stale map");
         if (value == "corruption")
         {
-            string entry = Directory.GetDirectories(Path.Combine(fixture.Cache, "v1")).Single();
-            File.WriteAllText(Path.Combine(entry, "0"), "corrupt");
+            string entry = Directory.GetDirectories(Path.Combine(fixture.Cache, "v2")).Single();
+            File.WriteAllText(Path.Combine(entry, "outputs", "0"), "corrupt");
         }
         if (value == "manifest-corruption")
         {
-            string entry = Directory.GetDirectories(Path.Combine(fixture.Cache, "v1")).Single();
+            string entry = Directory.GetDirectories(Path.Combine(fixture.Cache, "v2")).Single();
             File.WriteAllText(Path.Combine(entry, "manifest"), "corrupt");
         }
         if (value == "partial-restore")
@@ -505,8 +507,8 @@ public class Crossgen2CacheTests
         File.WriteAllText(symbols, "stale symbols");
         if (value == "corruption")
         {
-            string entry = Directory.GetDirectories(Path.Combine(fixture.Cache, "v1")).Single();
-            File.WriteAllText(Path.Combine(entry, "1"), "corrupt");
+            string entry = Directory.GetDirectories(Path.Combine(fixture.Cache, "v2")).Single();
+            File.WriteAllText(Path.Combine(entry, "outputs", "1"), "corrupt");
         }
         if (value == "directory-change")
         {
@@ -557,9 +559,10 @@ public class Crossgen2CacheTests
         MockCompiler owner = fixture.Create();
         Crossgen2Cache cache = Crossgen2Cache.FromEnvironment(owner.Log)!;
         File.WriteAllText(fixture.Output, "image");
-        Parallel.For(0, 8, _ => cache.Store("publication-test", new[] { fixture.Output, fixture.Map }, new()));
-        Assert.True(cache.TryRestore("publication-test", new[] { fixture.Output, fixture.Map }, DateTime.UtcNow, out _));
-        Assert.Empty(Directory.GetDirectories(Path.Combine(fixture.Cache, "v1"), "*.tmp"));
+        string key = new string('a', 64);
+        Parallel.For(0, 8, _ => cache.Store(key, new[] { fixture.Output, fixture.Map }, new()));
+        Assert.True(cache.TryRestore(key, new[] { fixture.Output, fixture.Map }, DateTime.UtcNow, out _));
+        Assert.Empty(Directory.GetDirectories(Path.Combine(fixture.Cache, "v2"), "*.tmp"));
     }).Dispose();
 
     [CachePlatformFact]
@@ -569,7 +572,7 @@ public class Crossgen2CacheTests
         Environment.SetEnvironmentVariable("CROSSGEN2_EXPERIMENTAL_CACHE_PATH", null);
         Environment.SetEnvironmentVariable("XDG_CACHE_HOME", fixture.Cache);
         Assert.True(fixture.Create().Execute());
-        Assert.True(Directory.Exists(Path.Combine(fixture.Cache, "crossgen2", "v1")));
+        Assert.True(Directory.Exists(Path.Combine(fixture.Cache, "crossgen2", "v2")));
     }).Dispose();
 
     [WindowsCacheTheory]

@@ -14,6 +14,7 @@ using System.Security.Cryptography;
 using System.Text;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
+using Microsoft.NET.Build.Tasks;
 
 namespace ILLink.Tasks
 {
@@ -281,11 +282,7 @@ namespace ILLink.Tasks
 
             try
             {
-                string outputDirectory = Path.GetFullPath(OutputDirectory.ItemSpec);
-                if (Directory.Exists(outputDirectory))
-                    Directory.Delete(outputDirectory, recursive: true);
-
-                Directory.CreateDirectory(outputDirectory);
+                InvocationCacheOutputs.FromDirectory(OutputDirectory.ItemSpec).Clean();
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {

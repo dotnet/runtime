@@ -15,6 +15,7 @@ using System.Threading;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 using Microsoft.DotNet.RemoteExecutor;
+using Microsoft.NET.Build.Tasks;
 using Mono.Linker;
 using Xunit;
 
@@ -1020,6 +1021,119 @@ namespace ILLink.Tasks.Tests
         public void CacheHasNoTaskParameters()
         {
             Assert.DoesNotContain(typeof(ILLink).GetProperties(), property => property.Name.Contains("Cache"));
+        }
+
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public void SharedCacheRestoresDeclaredOutputContract(bool ownedDirectory, bool includeOptional)
+        {
+            using var test = new CacheTestDirectory();
+            var task = new MockTask { BuildEngine = test.BuildEngine };
+            var cache = new InvocationCache(test.Cache.CacheDirectory, task.Log, "Test");
+            test.WriteSource("image.dll", "image");
+            if (includeOptional)
+                test.WriteSource(Path.Combine("symbols", "image.pdb"), "symbols");
+
+            cache.Store(CacheTestDirectory.Key, Contract(test.Source));
+            Directory.CreateDirectory(Path.Combine(test.Output, "symbols"));
+            string stale = Path.Combine(test.Output, "unrelated.txt");
+            File.WriteAllText(stale, "keep unless the whole directory is owned");
+            File.WriteAllText(Path.Combine(test.Output, "symbols", "image.pdb"), "stale symbols");
+
+            Assert.True(cache.TryRestore(CacheTestDirectory.Key, Contract(test.Output), CacheTestDirectory.Timestamp));
+            Assert.Equal("image", File.ReadAllText(Path.Combine(test.Output, "image.dll")));
+            Assert.Equal(includeOptional, File.Exists(Path.Combine(test.Output, "symbols", "image.pdb")));
+            if (includeOptional)
+                Assert.Equal("symbols", File.ReadAllText(Path.Combine(test.Output, "symbols", "image.pdb")));
+            Assert.Equal(!ownedDirectory, File.Exists(stale));
+            Assert.Equal(CacheTestDirectory.Timestamp, File.GetLastWriteTimeUtc(Path.Combine(test.Output, "image.dll")));
+
+            InvocationCacheOutputs Contract(string directory) => ownedDirectory
+                ? InvocationCacheOutputs.FromDirectory(directory)
+                : InvocationCacheOutputs.FromFiles(
+                    new InvocationCacheFile(Path.Combine(directory, "image.dll")),
+                    new InvocationCacheFile(Path.Combine(directory, "symbols", "image.pdb"), required: false));
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void SharedCacheValidatesMetadataBeforeModifyingOutputs(bool ownedDirectory)
+        {
+            using var test = new CacheTestDirectory();
+            var task = new MockTask { BuildEngine = test.BuildEngine };
+            var cache = new InvocationCache(test.Cache.CacheDirectory, task.Log, "Test");
+            test.WriteSource("image.dll", "cached");
+            cache.Store(CacheTestDirectory.Key, Contract(test.Source), writer => writer.Write(123));
+            Directory.CreateDirectory(test.Output);
+            string image = Path.Combine(test.Output, "image.dll");
+            File.WriteAllText(image, "untouched");
+
+            Assert.False(cache.TryRestore(CacheTestDirectory.Key, Contract(test.Output), CacheTestDirectory.Timestamp,
+                reader =>
+                {
+                    Assert.Equal(123, reader.ReadInt32());
+                    throw new InvalidDataException("Invalid tool metadata.");
+                }));
+            Assert.Equal("untouched", File.ReadAllText(image));
+            Assert.Contains(test.BuildEngine.Messages, message => message.Message.Contains("Invalid tool metadata."));
+
+            Assert.True(cache.TryRestore(CacheTestDirectory.Key, Contract(test.Output), CacheTestDirectory.Timestamp,
+                reader => Assert.Equal(123, reader.ReadInt32())));
+            Assert.Equal("cached", File.ReadAllText(image));
+
+            InvocationCacheOutputs Contract(string directory) => ownedDirectory
+                ? InvocationCacheOutputs.FromDirectory(directory)
+                : InvocationCacheOutputs.FromFiles(new InvocationCacheFile(Path.Combine(directory, "image.dll")));
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void SharedCacheRequiresDeclaredFiles(bool required)
+        {
+            using var test = new CacheTestDirectory();
+            var task = new MockTask { BuildEngine = test.BuildEngine };
+            var cache = new InvocationCache(test.Cache.CacheDirectory, task.Log, "Test");
+            InvocationCacheOutputs outputs = InvocationCacheOutputs.FromFiles(
+                new InvocationCacheFile(Path.Combine(test.Output, "missing.dll"), required));
+            cache.Store(CacheTestDirectory.Key, outputs);
+            Assert.Equal(!required, Directory.Exists(test.Entry));
+            if (required)
+                Assert.Contains(test.BuildEngine.Messages, message => message.Message.Contains("store failed"));
+            else
+                Assert.True(cache.TryRestore(CacheTestDirectory.Key, outputs, CacheTestDirectory.Timestamp));
+            Assert.Empty(Directory.GetDirectories(Path.Combine(cache.CacheDirectory, "v1"), "*.tmp"));
+        }
+
+        [Theory]
+        [InlineData("duplicate")]
+        [InlineData("nested")]
+        [InlineData("cache-child")]
+        [InlineData("cache-parent")]
+        public void SharedCacheRejectsOverlappingFileDeclarations(string overlap)
+        {
+            using var test = new CacheTestDirectory();
+            var task = new MockTask { BuildEngine = test.BuildEngine };
+            var cache = new InvocationCache(test.Cache.CacheDirectory, task.Log, "Test");
+            string first = Path.Combine(test.Output, "image.dll");
+            string second = overlap switch
+            {
+                "duplicate" => first,
+                "nested" => Path.Combine(first, "child"),
+                "cache-child" => Path.Combine(cache.CacheDirectory, "output.dll"),
+                "cache-parent" => test.Root,
+                _ => throw new InvalidOperationException()
+            };
+            InvocationCacheOutputs outputs = InvocationCacheOutputs.FromFiles(
+                new InvocationCacheFile(first), new InvocationCacheFile(second));
+            Assert.Throws<ArgumentException>(() => cache.Store(CacheTestDirectory.Key, outputs));
+            Assert.Throws<ArgumentException>(() => cache.TryRestore(CacheTestDirectory.Key, outputs, CacheTestDirectory.Timestamp));
+            Assert.Throws<ArgumentException>(() => cache.CleanOutputs(outputs));
+            Assert.False(Directory.Exists(cache.CacheDirectory));
         }
 
         [Theory]
