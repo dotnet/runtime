@@ -90,7 +90,9 @@ namespace System.Formats.Cbor
         /// <returns>The decoded value.</returns>
         /// <exception cref="InvalidOperationException"><para>The next data item does not have the correct major type.</para>
         /// <para>-or-</para>
-        /// <para>The next date item does not have the correct semantic tag.</para></exception>
+        /// <para>The next date item does not have the correct semantic tag.</para>
+        /// <para>-or-</para>
+        /// <para>The decoded Unix time is outside the range supported by <see cref="DateTimeOffset" />.</para></exception>
         /// <exception cref="CborContentException"><para>The next value has an invalid CBOR encoding.</para>
         /// <para>-or-</para>
         /// <para>There was an unexpected end of CBOR encoding data.</para>
@@ -131,9 +133,15 @@ namespace System.Formats.Cbor
                         throw new CborContentException(SR.Cbor_Reader_InvalidUnixTimeEncoding);
                 }
             }
-            catch
+            catch (Exception e)
             {
                 RestoreCheckpoint(in checkpoint);
+
+                if (e is ArgumentOutOfRangeException or OverflowException)
+                {
+                    throw new InvalidOperationException(SR.Cbor_Reader_UnixTimeOutOfRange, e);
+                }
+
                 throw;
             }
         }

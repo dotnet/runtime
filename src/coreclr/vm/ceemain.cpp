@@ -1024,7 +1024,18 @@ void EEStartupHelper()
 
         SystemDomain::System()->DefaultDomain()->SetupSharedStatics();
 
+#ifdef FEATURE_MULTITHREADING
         InitializeThreadStaticData();
+#else
+        {
+            // There is only one thread, so publish its managed Thread object for Thread.CurrentThread.
+            GCX_COOP();
+            g_pThreadClass->CheckRunClassInitThrowing();
+            FieldDesc* pCurrentThreadField = CoreLibBinder::GetField(FIELD__THREAD__CURRENT_THREAD);
+            OBJECTREF exposedThread = GetThread()->GetExposedObject();
+            pCurrentThreadField->SetStaticOBJECTREF(exposedThread);
+        }
+#endif // FEATURE_MULTITHREADING
 
 #ifdef FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
         // retrieve configured max size for the mini-metadata buffer (defaults to 64KB)
@@ -1697,11 +1708,13 @@ static void RuntimeThreadShutdown(void* thread)
 #endif // TARGET_UNIX
         pThread->DetachThread(TRUE);
     }
+#ifdef FEATURE_MULTITHREADING
     else
     {
         // Since we don't actually cleanup the TLS data along this path, verify that it is already cleaned up
         AssertThreadStaticDataFreed();
     }
+#endif // FEATURE_MULTITHREADING
 
     ThreadDetaching();
 }

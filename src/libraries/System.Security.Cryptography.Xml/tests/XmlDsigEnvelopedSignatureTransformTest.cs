@@ -9,8 +9,12 @@
 // (C) 2004 Novell Inc.
 
 using System.IO;
+using System.Text;
 using System.Xml;
 using Xunit;
+#if NET
+using Microsoft.DotNet.RemoteExecutor;
+#endif
 
 namespace System.Security.Cryptography.Xml.Tests
 {
@@ -139,5 +143,67 @@ namespace System.Security.Cryptography.Xml.Tests
             XmlNodeList xnl = (XmlNodeList)transform.GetOutput();
             AssertEquals(doc.ChildNodes, xnl, "EnvelopedSignature result");
         }
+
+#if NET
+        private const int DeepInputDepth = 100000;
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static void DeepStreamInput_LoadInput_Throws()
+        {
+            RemoteExecutor.Invoke(static () =>
+            {
+                byte[] payload = Encoding.UTF8.GetBytes(BuildDeepXml(DeepInputDepth));
+                Assert.Throws<CryptographicException>(() =>
+                {
+                    using MemoryStream ms = new MemoryStream(payload);
+                    XmlDsigEnvelopedSignatureTransform envTransform = new XmlDsigEnvelopedSignatureTransform();
+                    envTransform.LoadInput(ms);
+                    envTransform.GetOutput();
+                });
+            }).Dispose();
+        }
+
+        private static string BuildDeepXml(int depth)
+        {
+            StringBuilder sb = new StringBuilder(depth * 7 + 1);
+            for (int i = 0; i < depth; i++)
+                sb.Append("<a>");
+            sb.Append('x');
+            for (int i = 0; i < depth; i++)
+                sb.Append("</a>");
+            return sb.ToString();
+        }
+
+        private const string DtdPayload = "<!DOCTYPE r []><r>x</r>";
+        private const string CryptoXmlAllowDtdProcessingAppContextSwitch = "System.Security.Cryptography.Xml.CryptoXmlAllowDtdProcessing";
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static void DtdStreamInput_LoadInput_Throws()
+        {
+            RemoteExecutor.Invoke(static () =>
+            {
+                Assert.Throws<XmlException>(() =>
+                {
+                    using MemoryStream ms = new MemoryStream(Encoding.UTF8.GetBytes(DtdPayload));
+                    XmlDsigEnvelopedSignatureTransform envTransform = new XmlDsigEnvelopedSignatureTransform();
+                    envTransform.LoadInput(ms);
+                    envTransform.GetOutput();
+                });
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static void DtdStreamInput_LoadInput_WithOptIn_Succeeds()
+        {
+            RemoteExecutor.Invoke(static () =>
+            {
+                AppContext.SetSwitch(CryptoXmlAllowDtdProcessingAppContextSwitch, true);
+                using MemoryStream ms = new MemoryStream(Encoding.UTF8.GetBytes(DtdPayload));
+                XmlDsigEnvelopedSignatureTransform envTransform = new XmlDsigEnvelopedSignatureTransform();
+                envTransform.LoadInput(ms);
+                Assert.NotNull(envTransform.GetOutput());
+            }).Dispose();
+        }
+#endif
     }
 }
