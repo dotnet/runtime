@@ -20,7 +20,7 @@ extern "C" void QCALLTYPE DebugDebugger_CustomNotification(QCall::ObjectHandleOn
 extern "C" BOOL QCALLTYPE DebugDebugger_IsLoggingHelper();
 extern "C" BOOL QCALLTYPE DebugDebugger_IsManagedDebuggerAttached();
 
-#if defined(DEBUGGING_SUPPORTED) && !defined(TARGET_WASM)
+#ifdef DEBUGGING_SUPPORTED
 class DebuggerEval;
 class DebuggerFuncEvalResult;
 class DebuggerExternalMemoryOwner;
@@ -89,7 +89,7 @@ extern "C" void QCALLTYPE DebugDebugger_WriteFuncEvalObjectRegister(
 extern "C" void QCALLTYPE DebugDebugger_WriteFuncEvalRegister(
     DebuggerFuncEvalContext* pContext, UINT32 index, void* pValue, UINT32 size,
     QCallExceptionStatus* qcallError);
-#endif // DEBUGGING_SUPPORTED && !TARGET_WASM
+#endif // DEBUGGING_SUPPORTED
 
 class StackFrameHelper : public Object
 {
