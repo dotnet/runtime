@@ -654,7 +654,6 @@ FramePointer DacDbiInterfaceImpl::GetFramePointerWorker(StackFrameIterator * pIt
 #ifdef TARGET_X86
             fp = ComputeX86FramePointer(pRD->pCurrentContext);
 #else
-            pCF->GetCodeManager()->EnsureCallerContextIsValid(pRD, pCF->GetCodeInfo());
             fp = FramePointer::MakeFramePointer(GetRegdisplayStackMark(pRD));
 #endif
             break;
@@ -674,7 +673,10 @@ FramePointer DacDbiInterfaceImpl::GetFramePointerWorker(StackFrameIterator * pIt
             UINT_PTR PCTAddr = pHijackedContext->Esp - sizeof(DWORD);
             fp = FramePointer::MakeFramePointer(PCTAddr);
 #else
-            ExecutionManager::GetDefaultCodeManager()->EnsureCallerContextIsValid(pRD, NULL);
+#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+            // These stack marks require the caller SP, including for native contexts.
+            pCF->EnsureCallerContextIsValid();
+#endif // TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
             fp = FramePointer::MakeFramePointer(GetRegdisplayStackMark(pRD));
 #endif
             break;

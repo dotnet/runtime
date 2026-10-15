@@ -842,7 +842,7 @@ void EECodeManager::EnsureCallerContextIsValid( PREGDISPLAY  pRD, EECodeInfo * p
     _ASSERTE( pRD->IsCallerContextValid );
 }
 
-size_t EECodeManager::GetCallerSp( PREGDISPLAY  pRD )
+size_t EECodeManager::GetCallerSp( PREGDISPLAY  pRD, EECodeInfo * pCodeInfo, unsigned flags )
 {
     CONTRACTL {
         NOTHROW;
@@ -852,7 +852,10 @@ size_t EECodeManager::GetCallerSp( PREGDISPLAY  pRD )
 
     if (!pRD->IsCallerContextValid)
     {
-        ExecutionManager::GetDefaultCodeManager()->EnsureCallerContextIsValid(pRD, NULL);
+        ICodeManager * pCM = (pCodeInfo != NULL && pCodeInfo->IsValid())
+            ? pCodeInfo->GetCodeManager()
+            : ExecutionManager::GetDefaultCodeManager();
+        pCM->EnsureCallerContextIsValid(pRD, pCodeInfo, flags);
     }
 
     return GetSP(pRD->pCallerContext);
@@ -1286,7 +1289,7 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pRD,
             VASigCookieOffset = argit.GetVASigCookieOffset() - TransitionBlock::GetOffsetOfArgs();
         }
 
-        PTR_BYTE prevSP = dac_cast<PTR_BYTE>(GetCallerSp(pRD));
+        PTR_BYTE prevSP = dac_cast<PTR_BYTE>(GetCallerSp(pRD, pCodeInfo, flags));
 
         _ASSERTE(prevSP + VASigCookieOffset >= dac_cast<PTR_BYTE>(GetSP(pRD->pCurrentContext)));
 
@@ -1644,8 +1647,7 @@ void * EECodeManager::GetGSCookieAddr(PREGDISPLAY     pContext,
     {
         if(relOffset >= gcInfoDecoder.GetGSCookieValidRangeStart())
         {
-            EnsureCallerContextIsValid(pContext, pCodeInfo, flags);
-            TADDR ptr = GetSP(pContext->pCallerContext) + spOffsetGSCookie;
+            TADDR ptr = GetCallerSp(pContext, pCodeInfo, flags) + spOffsetGSCookie;
 
             // Detect the end of GS cookie scope by comparing its address with SP
             // gcInfoDecoder.GetGSCookieValidRangeEnd() is not accurate. It does not

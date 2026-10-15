@@ -4679,9 +4679,8 @@ StackWalkAction SWCB_GetExecutionState(CrawlFrame *pCF, VOID *pData)
                 }
                 else
                 {
-                    pCF->GetCodeManager()->EnsureCallerContextIsValid(pRDT, pCF->GetCodeInfo());
-                    _ASSERTE(pRDT->IsCallerContextValid);
 #if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+                    T_KNONVOLATILE_CONTEXT_POINTERS * pCallerContextPointers = pCF->GetCallerContextPointers();
 
                     // Why do we use CallerContextPointers below?
                     //
@@ -4701,9 +4700,9 @@ StackWalkAction SWCB_GetExecutionState(CrawlFrame *pCF, VOID *pData)
                     // work for them. See comment in code:Compiler::genPushCalleeSavedRegisters.
 
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-                    if (pRDT->pCallerContextPointers->Ra == &pRDT->pContext->Ra)
+                    if (pCallerContextPointers->Ra == &pRDT->pContext->Ra)
 #else
-                    if(pRDT->pCallerContextPointers->Lr == &pRDT->pContext->Lr)
+                    if(pCallerContextPointers->Lr == &pRDT->pContext->Lr)
 #endif
                     {
                         // This is the case when we are either:
@@ -4740,11 +4739,11 @@ StackWalkAction SWCB_GetExecutionState(CrawlFrame *pCF, VOID *pData)
                         // pushed on the stack. We get it to determine the return address
                         // in the caller of the current non-interruptible frame.
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-                        pES->m_ppvRetAddrPtr = (void **) pRDT->pCallerContextPointers->Ra;
+                        pES->m_ppvRetAddrPtr = (void **) pCallerContextPointers->Ra;
 #else
-                        pES->m_ppvRetAddrPtr = (void **) pRDT->pCallerContextPointers->Lr;
+                        pES->m_ppvRetAddrPtr = (void **) pCallerContextPointers->Lr;
 #if defined(TARGET_ARM64)
-                        pES->m_pSpForPacSign = (void *)pRDT->CallerContextSpForPacSign;
+                        pES->m_pSpForPacSign = (void *)pCF->GetCallerContextSpForPacSign();
 #endif // TARGET_ARM64
 #endif
                     }
@@ -4753,7 +4752,7 @@ StackWalkAction SWCB_GetExecutionState(CrawlFrame *pCF, VOID *pData)
                     pES->m_FirstPass = FALSE;
                     action = SWA_CONTINUE;
 #elif defined(TARGET_AMD64)
-                    pES->m_ppvRetAddrPtr = (void **) (EECodeManager::GetCallerSp(pRDT) - sizeof(void*));
+                    pES->m_ppvRetAddrPtr = (void **) (pCF->GetCallerSp() - sizeof(void*));
 #else // TARGET_X86 || TARGET_AMD64
                     PORTABILITY_ASSERT("Platform NYI");
 #endif // _TARGET_???_

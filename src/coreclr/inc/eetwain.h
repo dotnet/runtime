@@ -518,7 +518,7 @@ HRESULT FixContextForEnC(PCONTEXT        pCtx,
 #endif // #ifndef DACCESS_COMPILE
 
     virtual void EnsureCallerContextIsValid( PREGDISPLAY pRD, EECodeInfo * pCodeInfo = NULL, unsigned flags = 0);
-    static size_t GetCallerSp( PREGDISPLAY  pRD );
+    static size_t GetCallerSp( PREGDISPLAY  pRD, EECodeInfo * pCodeInfo, unsigned flags );
 #ifdef TARGET_X86
     static size_t GetResumeSp( PCONTEXT  pContext );
 #endif // TARGET_X86

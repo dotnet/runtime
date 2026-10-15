@@ -104,6 +104,8 @@ struct StackFrame
 //    In the long term, we should look at merging the two SP formats and have one consistent abstraction.
 //
 
+class CrawlFrame;
+
 struct CallerStackFrame : StackFrame
 {
     CallerStackFrame() : StackFrame()
@@ -114,11 +116,14 @@ struct CallerStackFrame : StackFrame
     {
     }
 
+    // Use the CrawlFrame overload when the caller context may need to be prepared.
     static inline CallerStackFrame FromRegDisplay(REGDISPLAY* pRD)
     {
         _ASSERTE(pRD->IsCallerContextValid);
         return CallerStackFrame(GetSP(pRD->pCallerContext));
     }
+
+    static inline CallerStackFrame FromRegDisplay(CrawlFrame* pCF);
 };
 
 #endif  // __STACKFRAME_H

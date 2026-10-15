@@ -285,6 +285,55 @@ public:
         return pRD;
     }
 
+    void EnsureCallerContextIsValid()
+    {
+        WRAPPER_NO_CONTRACT;
+        SUPPORTS_DAC;
+
+        if (!pRD->IsCallerContextValid)
+        {
+            ICodeManager *pCM = isFrameless ? GetCodeManager() : ExecutionManager::GetDefaultCodeManager();
+            pCM->EnsureCallerContextIsValid(pRD, isFrameless ? &codeInfo : NULL, codeManFlags);
+        }
+    }
+
+    PT_CONTEXT GetCallerContext()
+    {
+        WRAPPER_NO_CONTRACT;
+        SUPPORTS_DAC;
+
+        EnsureCallerContextIsValid();
+        return pRD->pCallerContext;
+    }
+
+    T_KNONVOLATILE_CONTEXT_POINTERS* GetCallerContextPointers()
+    {
+        WRAPPER_NO_CONTRACT;
+        SUPPORTS_DAC;
+
+        EnsureCallerContextIsValid();
+        return pRD->pCallerContextPointers;
+    }
+
+#if defined(TARGET_ARM64)
+    TADDR GetCallerContextSpForPacSign()
+    {
+        WRAPPER_NO_CONTRACT;
+        SUPPORTS_DAC;
+
+        EnsureCallerContextIsValid();
+        return pRD->CallerContextSpForPacSign;
+    }
+#endif // TARGET_ARM64
+
+    TADDR GetCallerSp()
+    {
+        WRAPPER_NO_CONTRACT;
+        SUPPORTS_DAC;
+
+        return GetSP(GetCallerContext());
+    }
+
     EECodeInfo * GetCodeInfo()
     {
         LIMITED_METHOD_DAC_CONTRACT;
@@ -430,6 +479,7 @@ private:
     bool              fShouldParentToFuncletSkipReportingGCReferences;
     bool              fShouldCrawlframeReportGCReferences;
     bool              fShouldParentFrameUseUnwindTargetPCforGCReporting;
+    uint16_t          codeManFlags;
     EE_ILEXCEPTION_CLAUSE ehClauseForCatch;
     Thread*           pThread;
 
@@ -439,6 +489,11 @@ private:
     friend class Frame; // added to allow 'friend void CrawlFrame::GotoNextFrame();' declaration in class Frame, frames.h
     void GotoNextFrame();
 };
+
+inline CallerStackFrame CallerStackFrame::FromRegDisplay(CrawlFrame* pCF)
+{
+    return CallerStackFrame(pCF->GetCallerSp());
+}
 
 void GcEnumObject(LPVOID pData, OBJECTREF *pObj);
 StackWalkAction GcStackCrawlCallBack(CrawlFrame* pCF, VOID* pData);

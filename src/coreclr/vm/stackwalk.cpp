@@ -1090,6 +1090,7 @@ BOOL StackFrameIterator::Init(Thread *    pThread,
         (((flags & (QUICKUNWIND | LIGHTUNWIND)) ? 0 : UpdateAllRegs) |
          ((flags & LIGHTUNWIND) ? LightUnwind : 0) |
          ((flags & GC_ROOT_SCAN) ? GcRootScan : 0));
+    m_crawl.codeManFlags = static_cast<uint16_t>(m_codeManFlags);
     m_scanFlag = ExecutionManager::GetScanFlags();
 
     m_pNextExInfo = (PTR_ExInfo)pThread->GetExceptionState()->GetCurrentExceptionTracker();
@@ -1199,6 +1200,7 @@ BOOL StackFrameIterator::ResetRegDisp(PREGDISPLAY pRegDisp,
         (((m_flags & (QUICKUNWIND | LIGHTUNWIND)) ? 0 : UpdateAllRegs) |
          ((m_flags & LIGHTUNWIND) ? LightUnwind : 0) |
          ((m_flags & GC_ROOT_SCAN) ? GcRootScan : 0));
+    m_crawl.codeManFlags = static_cast<uint16_t>(m_codeManFlags);
 
     // make sure the REGDISPLAY is synchronized with the CONTEXT
     UpdateRegDisp();
@@ -1229,8 +1231,7 @@ BOOL StackFrameIterator::ResetRegDisp(PREGDISPLAY pRegDisp,
         {
             // On 64-bit and ARM, we stop at the explicit frames contained in a managed stack frame
             // before the managed stack frame itself.
-            m_crawl.GetCodeManager()->EnsureCallerContextIsValid(m_crawl.pRD, NULL, m_codeManFlags);
-            curSP = GetSP(m_crawl.pRD->pCallerContext);
+            curSP = m_crawl.GetCallerSp();
         }
 
 #if defined(TARGET_X86)
@@ -1364,6 +1365,7 @@ void StackFrameIterator::ResetCrawlFrame()
     m_crawl.isFilterFuncletCached = false;
     m_crawl.fShouldParentToFuncletSkipReportingGCReferences = false;
     m_crawl.fShouldParentFrameUseUnwindTargetPCforGCReporting = false;
+    m_crawl.codeManFlags = 0;
 
     m_crawl.pThread = this->m_pThread;
 
@@ -2389,8 +2391,7 @@ StackWalkAction StackFrameIterator::NextRaw(void)
                         // better not be suspended.
                         CONSISTENCY_CHECK(!(m_flags & THREAD_IS_SUSPENDED));
 
-                        m_crawl.GetCodeManager()->EnsureCallerContextIsValid(m_crawl.pRD, NULL, m_codeManFlags);
-                        m_pvResumableFrameTargetSP = (LPVOID)GetSP(m_crawl.pRD->pCallerContext);
+                        m_pvResumableFrameTargetSP = (LPVOID)m_crawl.GetCallerSp();
                     }
                 }
             }
@@ -2635,9 +2636,7 @@ BOOL StackFrameIterator::CheckForSkippedFrames(void)
     // frame will be reported before its containing method.
 
     // This should always succeed!  If it doesn't, it's a bug somewhere else!
-    ICodeManager *pCodeManager = (m_crawl.isFrameless) ? m_crawl.GetCodeManager() : ExecutionManager::GetDefaultCodeManager();
-    pCodeManager->EnsureCallerContextIsValid(m_crawl.pRD, &m_cachedCodeInfo, m_codeManFlags);
-    pvReferenceSP = GetSP(m_crawl.pRD->pCallerContext);
+    pvReferenceSP = EECodeManager::GetCallerSp(m_crawl.pRD, m_crawl.isFrameless ? &m_cachedCodeInfo : NULL, m_codeManFlags);
 
     if ( !( (m_crawl.pFrame != FRAME_TOP) &&
             (dac_cast<TADDR>(m_crawl.pFrame) < pvReferenceSP) )
@@ -2711,9 +2710,7 @@ void StackFrameIterator::PreProcessingForManagedFrames(void)
         // However, because we might visit intervening explicit Frames
         // that will clear the .isFirst flag, we need to set it back here.
 
-        m_crawl.GetCodeManager()->EnsureCallerContextIsValid(m_crawl.pRD, &m_crawl.codeInfo, m_codeManFlags);
-        CONSISTENCY_CHECK(m_crawl.pRD->IsCallerContextValid);
-        CONSISTENCY_CHECK((LPVOID)GetSP(m_crawl.pRD->pCallerContext) == m_pvResumableFrameTargetSP);
+        CONSISTENCY_CHECK((LPVOID)m_crawl.GetCallerSp() == m_pvResumableFrameTargetSP);
         m_pvResumableFrameTargetSP = NULL;
         m_crawl.isFirst = true;
     }
