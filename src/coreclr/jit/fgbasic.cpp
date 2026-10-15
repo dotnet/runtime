@@ -3670,6 +3670,18 @@ void Compiler::fgFindBasicBlocks()
             BADCODE3("end of hnd block beyond end of method for try", " at offset %04X", tryBegOff);
         }
 
+        // The method entry (IL offset 0) must not lie inside a handler or filter.
+        // Entry into these regions is controlled by the exception-handling mechanism
+        // (ECMA-335 I.12.4.2.8.1).
+        if (hndBegOff == 0)
+        {
+            BADCODE3("method entry inside handler for try", " at offset %04X", tryBegOff);
+        }
+        if ((clause.Flags & CORINFO_EH_CLAUSE_FILTER) && (filterBegOff == 0))
+        {
+            BADCODE3("method entry inside filter for try", " at offset %04X", tryBegOff);
+        }
+
         HBtab->ebdID              = impInlineRoot()->compEHID++;
         HBtab->ebdTryBegOffset    = tryBegOff;
         HBtab->ebdTryEndOffset    = tryEndOff;
