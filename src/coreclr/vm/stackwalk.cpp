@@ -2594,7 +2594,7 @@ BOOL StackFrameIterator::CheckForSkippedFrames(void)
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
 
-    if (m_crawl.pFrame == FRAME_TOP)
+    if ((m_flags & GC_ROOT_SCAN) && m_crawl.pFrame == FRAME_TOP)
     {
         return FALSE;
     }
@@ -2606,7 +2606,7 @@ BOOL StackFrameIterator::CheckForSkippedFrames(void)
     fHandleSkippedFrames = (m_flags & HANDLESKIPPEDFRAMES);
 
 #if defined(TARGET_64BIT)
-    if (!m_crawl.pRD->IsCallerContextValid && !fHandleSkippedFrames && m_crawl.isFrameless)
+    if ((m_flags & GC_ROOT_SCAN) && !m_crawl.pRD->IsCallerContextValid && !fHandleSkippedFrames && m_crawl.isFrameless)
     {
         TADDR frameAddr = dac_cast<TADDR>(m_crawl.pFrame);
         TADDR currentSP = GetRegdisplaySP(m_crawl.pRD);
