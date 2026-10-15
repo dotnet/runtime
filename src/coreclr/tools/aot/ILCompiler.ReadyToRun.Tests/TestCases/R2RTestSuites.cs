@@ -82,7 +82,9 @@ public class R2RTestSuites
             {
                 ReadyToRunMethod method = Assert.Single(methods,
                     method => method.SignatureString.Contains($".{name}(", StringComparison.Ordinal));
-                string expectedType = name == "ReadConstructedTypeToken" ? "Webcil.LdtokenHolder`1" : "Webcil.LdtokenType";
+                string expectedType = name == "ReadConstructedTypeToken"
+                    ? "Webcil.WasmWebcilModule+LdtokenHolder`1"
+                    : "Webcil.WasmWebcilModule+LdtokenType";
                 SignatureFormattingOptions formatting = new();
                 Assert.Contains(method.Fixups ?? Array.Empty<FixupCell>(),
                     fixup => fixup.Signature.FixupKind == ReadyToRunFixupKind.TypeHandle &&
