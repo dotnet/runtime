@@ -2177,15 +2177,13 @@ HRESULT CodeVersionManager::EnumerateDomainClosedMethodDescs(
 
     _ASSERTE(AppDomain::GetCurrentDomain() == pAppDomainToSearch);
 
-    // Default to the broader flags; without profiling support no assembly is ever marked
-    // available to profilers, so kIncludeAvailableToProfilers below would match nothing.
+    // these are the default flags which won't actually be used in shared mode other than
+    // asserting they were specified with their default values
     AssemblyIterationFlags assemFlags = (AssemblyIterationFlags)(kIncludeLoaded | kIncludeExecution);
-#ifdef PROFILING_SUPPORTED
     if (pAppDomainToSearch != NULL)
     {
         assemFlags = (AssemblyIterationFlags)(kIncludeAvailableToProfilers | kIncludeExecution);
     }
-#endif // PROFILING_SUPPORTED
     LoadedMethodDescIterator it;
     if (pMethodDesc->ReturnsTaskOrValueTask() || pMethodDesc->IsAsyncVariantMethod())
     {

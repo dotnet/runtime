@@ -862,13 +862,22 @@ private:
 
 #if defined(PROFILING_SUPPORTED_DATA) || defined(FEATURE_METADATA_UPDATER)
 private:
-    DWORD                   m_dwTypeCount;
-    DWORD                   m_dwExportedTypeCount;
-    DWORD                   m_dwCustomAttributeCount;
+    struct TypeCounts final
+    {
+        DWORD TypeCount;
+        DWORD ExportedTypeCount;
+        DWORD CustomAttributeCount;
 
-#ifndef DACCESS_COMPILE
-    void InitializeMetadataRowCounts();
-#endif
+        bool operator==(const TypeCounts& other) const
+        {
+            return TypeCount == other.TypeCount
+                && ExportedTypeCount == other.ExportedTypeCount
+                && CustomAttributeCount == other.CustomAttributeCount;
+        }
+    };
+    TypeCounts GetCurrentTypeCounts();
+
+    TypeCounts              m_typeCounts;
 #endif // PROFILING_SUPPORTED_DATA || FEATURE_METADATA_UPDATER
 
 protected:
@@ -1039,7 +1048,7 @@ public:
         return m_pPEAssembly->GetMDImport();
     }
 
-#ifdef PROFILING_SUPPORTED
+#if !defined(DACCESS_COMPILE) && (defined(PROFILING_SUPPORTED) || defined(FEATURE_METADATA_UPDATER))
     IMetaDataEmit *GetEmitter()
     {
         WRAPPER_NO_CONTRACT;
@@ -1053,7 +1062,9 @@ public:
 
         return m_pPEAssembly->GetRWImporter();
     }
+#endif // !DACCESS_COMPILE && (PROFILING_SUPPORTED || FEATURE_METADATA_UPDATER)
 
+#ifdef PROFILING_SUPPORTED
     HRESULT GetReadablePublicMetaDataInterface(DWORD dwOpenFlags, REFIID riid, LPVOID * ppvInterface);
 #endif // PROFILING_SUPPORTED
 
@@ -1406,7 +1417,10 @@ public:
                                               DEBUGGER_INFO_SHIFT_PRIV);
     }
 
+#if defined(PROFILING_SUPPORTED) || defined(FEATURE_METADATA_UPDATER)
     void UpdateNewlyAddedTypes();
+    void CaptureInitialTypeCounts();
+#endif // PROFILING_SUPPORTED || FEATURE_METADATA_UPDATER
 
 #ifdef PROFILING_SUPPORTED
     BOOL IsProfilerNotified() {LIMITED_METHOD_CONTRACT;  return (m_dwTransientFlags & IS_PROFILER_NOTIFIED) != 0; }
@@ -1417,11 +1431,11 @@ public:
     BOOL HasReadyToRunInlineTrackingMap();
     COUNT_T GetReadyToRunInliners(PTR_Module inlineeOwnerMod, mdMethodDef inlineeTkn, COUNT_T inlinersSize, MethodInModule inliners[], BOOL *incompleteData);
 #endif // FEATURE_INLINE_TRACKING
-#if defined(PROFILING_SUPPORTED) && !defined(DACCESS_COMPILE)
+#if defined(FEATURE_REJIT) && !defined(DACCESS_COMPILE)
     BOOL HasJitInlineTrackingMap();
     PTR_JITInlineTrackingMap GetJitInlineTrackingMap() { LIMITED_METHOD_CONTRACT; return m_pJitInlinerTrackingMap; }
     void AddInlining(MethodDesc *inliner, MethodDesc *inlinee);
-#endif // defined(PROFILING_SUPPORTED) && !defined(DACCESS_COMPILE)
+#endif // defined(FEATURE_REJIT) && !defined(DACCESS_COMPILE)
 
 public:
     void NotifyEtwLoadFinished(HRESULT hr);
@@ -1664,9 +1678,9 @@ private:
 
     DebuggerSpecificData  m_debuggerSpecificData;
 
-#if defined(FEATURE_INLINE_TRACKING) && (defined(PROFILING_SUPPORTED) || defined(PROFILING_SUPPORTED_DATA))
+#if defined(FEATURE_INLINE_TRACKING) && defined(FEATURE_REJIT)
     PTR_JITInlineTrackingMap m_pJitInlinerTrackingMap;
-#endif // FEATURE_INLINE_TRACKING && (PROFILING_SUPPORTED || PROFILING_SUPPORTED_DATA)
+#endif // FEATURE_INLINE_TRACKING && FEATURE_REJIT
 
     // a.dll calls a method in b.dll and that method call a method in c.dll. When ngening
     // a.dll it is possible then method in b.dll can be inlined. When that happens a.dll R2R image stores

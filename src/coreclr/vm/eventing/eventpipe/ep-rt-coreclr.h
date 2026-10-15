@@ -1972,7 +1972,11 @@ bool
 ep_rt_thread_has_started (ep_rt_thread_handle_t thread_handle)
 {
 	STATIC_CONTRACT_NOTHROW;
+#ifdef FEATURE_MULTITHREADING
 	return thread_handle != NULL && thread_handle->HasStarted ();
+#else
+	return thread_handle != NULL;
+#endif // FEATURE_MULTITHREADING
 }
 
 static

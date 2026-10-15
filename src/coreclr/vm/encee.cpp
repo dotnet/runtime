@@ -213,11 +213,9 @@ HRESULT EditAndContinueModule::ApplyEditAndContinue(
     EncReleaseHolder<IMDInternalImportENC> pIMDInternalImportENC;
     IfFailRet(pMDImport->QueryInterface(IID_IMDInternalImportENC, (void **)&pIMDInternalImportENC));
 
-#ifdef PROFILING_SUPPORTED
-    // Preserve public metadata wrapper initialization for profiling builds.
+    // get an emitter interface
     EncReleaseHolder<IMetaDataEmit> pEmitter;
     IfFailRet(GetMDPublicInterfaceFromInternal(pMDImport, IID_IMetaDataEmit, (void **)&pEmitter));
-#endif // PROFILING_SUPPORTED
 
     // Copy the delta IL into our RVA-able IL memory
     BYTE* pLocalILMemory = (BYTE*)(void*)GetLoaderAllocator()->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(cbDeltaIL));

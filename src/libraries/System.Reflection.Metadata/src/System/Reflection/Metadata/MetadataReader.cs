@@ -236,7 +236,7 @@ namespace System.Reflection.Metadata
         {
             // storage header:
             memReader.ReadUInt16();
-            int streamCount = memReader.ReadInt16();
+            int streamCount = memReader.ReadUInt16();
 
             var streamHeaders = new StreamHeader[streamCount];
             for (int i = 0; i < streamHeaders.Length; i++)
