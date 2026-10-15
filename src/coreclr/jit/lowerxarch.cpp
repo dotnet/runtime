@@ -8946,77 +8946,77 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
 
                 default:
                 SIZE_FROM_TUPLE_TYPE:
+                {
+                    switch (tupleType)
                     {
-                        switch (tupleType)
+                        case INS_TT_NONE:
+                        case INS_TT_FULL:
+                        case INS_TT_FULL_MEM:
                         {
-                            case INS_TT_NONE:
-                            case INS_TT_FULL:
-                            case INS_TT_FULL_MEM:
-                            {
-                                // full parent size required
-                                break;
-                            }
+                            // full parent size required
+                            break;
+                        }
 
-                            case INS_TT_HALF:
-                            case INS_TT_HALF_MEM:
+                        case INS_TT_HALF:
+                        case INS_TT_HALF_MEM:
+                        {
+                            expectedSize /= 2;
+                            break;
+                        }
+
+                        case INS_TT_QUARTER_MEM:
+                        {
+                            expectedSize /= 4;
+                            break;
+                        }
+
+                        case INS_TT_EIGHTH_MEM:
+                        {
+                            expectedSize /= 8;
+                            break;
+                        }
+
+                        case INS_TT_MOVDDUP:
+                        {
+                            if (expectedSize == genTypeSize(TYP_SIMD16))
                             {
                                 expectedSize /= 2;
-                                break;
                             }
-
-                            case INS_TT_QUARTER_MEM:
-                            {
-                                expectedSize /= 4;
-                                break;
-                            }
-
-                            case INS_TT_EIGHTH_MEM:
-                            {
-                                expectedSize /= 8;
-                                break;
-                            }
-
-                            case INS_TT_MOVDDUP:
-                            {
-                                if (expectedSize == genTypeSize(TYP_SIMD16))
-                                {
-                                    expectedSize /= 2;
-                                }
-                                break;
-                            }
-
-                            case INS_TT_TUPLE1_FIXED:
-                            case INS_TT_TUPLE1_SCALAR:
-                            {
-                                expectedSize = CodeGenInterface::instInputSize(ins);
-                                break;
-                            }
-
-                            case INS_TT_TUPLE2:
-                            {
-                                expectedSize = CodeGenInterface::instInputSize(ins) * 2;
-                                break;
-                            }
-
-                            case INS_TT_TUPLE4:
-                            {
-                                expectedSize = CodeGenInterface::instInputSize(ins) * 4;
-                                break;
-                            }
-
-                            case INS_TT_TUPLE8:
-                            {
-                                expectedSize = CodeGenInterface::instInputSize(ins) * 8;
-                                break;
-                            }
-
-                            default:
-                            {
-                                unreached();
-                            }
+                            break;
                         }
-                        break;
+
+                        case INS_TT_TUPLE1_FIXED:
+                        case INS_TT_TUPLE1_SCALAR:
+                        {
+                            expectedSize = CodeGenInterface::instInputSize(ins);
+                            break;
+                        }
+
+                        case INS_TT_TUPLE2:
+                        {
+                            expectedSize = CodeGenInterface::instInputSize(ins) * 2;
+                            break;
+                        }
+
+                        case INS_TT_TUPLE4:
+                        {
+                            expectedSize = CodeGenInterface::instInputSize(ins) * 4;
+                            break;
+                        }
+
+                        case INS_TT_TUPLE8:
+                        {
+                            expectedSize = CodeGenInterface::instInputSize(ins) * 8;
+                            break;
+                        }
+
+                        default:
+                        {
+                            unreached();
+                        }
                     }
+                    break;
+                }
             }
             break;
         }
