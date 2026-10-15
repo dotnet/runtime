@@ -603,11 +603,7 @@ typedef StateHolder<DoNothing, EnsurePreemptive> EnsurePreemptiveModeIfException
 
 Thread* SetupThread()
 {
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     Thread* pThread;
     if ((pThread = GetThreadNULLOk()) != NULL)
@@ -808,9 +804,11 @@ Thread* SetupThreadNoThrow(HRESULT *pHR)
 #ifdef FEATURE_MULTITHREADING
 Thread* SetupUnstartedThread(SetupUnstartedThreadFlags flags)
 {
-    CONTRACTL {
+    CONTRACTL
+    {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
     }
     CONTRACTL_END;
 
@@ -1181,11 +1179,7 @@ void ReportCopiedWriteBarriersToEventTracing(DWORD eventOptions)
 
 void InitThreadManagerTracingData()
 {
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 #ifndef FEATURE_PORTABLE_HELPERS
     ReportCopiedWriteBarriersToPerfMap();
 
@@ -1202,11 +1196,7 @@ void InitThreadManagerTracingData()
 //---------------------------------------------------------------------------
 void InitThreadManager()
 {
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
 #ifndef FEATURE_PORTABLE_HELPERS
     // All patched helpers should fit into one page.
@@ -1330,9 +1320,11 @@ static  DWORD dwHashCodeSeed = 123456789;
 //--------------------------------------------------------------------
 Thread::Thread()
 {
-    CONTRACTL {
+    CONTRACTL
+    {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
     }
     CONTRACTL_END;
 
@@ -3019,12 +3011,7 @@ DWORD MsgWaitHelper(int numWaiters, HANDLE* phEvent, BOOL bWaitAll, DWORD millis
 
 DWORD Thread::DoReentrantWaitAny(int numWaiters, HANDLE* pHandles, DWORD timeout, WaitMode mode)
 {
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
 #ifdef TARGET_WINDOWS
     return DoAppropriateAptStateWait(numWaiters, pHandles, FALSE, timeout, mode);
@@ -3036,12 +3023,7 @@ DWORD Thread::DoReentrantWaitAny(int numWaiters, HANDLE* pHandles, DWORD timeout
 
 DWORD Thread::DoReentrantWaitWithRetry(HANDLE handle, DWORD timeout, WaitMode mode)
 {
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
 #ifdef TARGET_UNIX
     _ASSERTE(handle == GetThreadHandle());
@@ -3163,9 +3145,11 @@ void Thread::UserInterrupt(ThreadInterruptMode mode)
 // Correspondence between an EE Thread and an exposed System.Thread:
 OBJECTREF Thread::GetExposedObject()
 {
-    CONTRACTL {
+    CONTRACTL
+    {
         THROWS;
         GC_TRIGGERS;
+        MODE_COOPERATIVE;
     }
     CONTRACTL_END;
 
@@ -3600,11 +3584,7 @@ public:
 
 void Thread::PrepareApartmentAndContext()
 {
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
 #ifdef TARGET_UNIX
     m_OSThreadId = ::PAL_GetCurrentOSThreadId();
@@ -3939,11 +3919,7 @@ ThreadStore::ThreadStore()
 
 void ThreadStore::InitThreadStore()
 {
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     s_pThreadStore = new ThreadStore;
 
@@ -4274,9 +4250,11 @@ bool ThreadStore::ShouldTriggerGCForDeadThreads()
 
 void ThreadStore::TriggerGCForDeadThreadsIfNecessary()
 {
-    CONTRACTL {
+    CONTRACTL
+    {
         THROWS;
         GC_TRIGGERS;
+        MODE_COOPERATIVE;
     }
     CONTRACTL_END;
 
@@ -4470,11 +4448,7 @@ BOOL CLREventWaitWithTry(CLREventBase *pEvent, DWORD timeout, BOOL fAlertable, D
 // wait before tearing down the EE.
 void ThreadStore::WaitForOtherThreads()
 {
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     CHECK_ONE_STORE();
 
