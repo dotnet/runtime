@@ -334,6 +334,14 @@ public:
         return GetSP(GetCallerContext());
     }
 
+    CallerStackFrame GetCallerStackFrame()
+    {
+        WRAPPER_NO_CONTRACT;
+        SUPPORTS_DAC;
+
+        return CallerStackFrame(GetCallerSp());
+    }
+
     EECodeInfo * GetCodeInfo()
     {
         LIMITED_METHOD_DAC_CONTRACT;
@@ -489,11 +497,6 @@ private:
     friend class Frame; // added to allow 'friend void CrawlFrame::GotoNextFrame();' declaration in class Frame, frames.h
     void GotoNextFrame();
 };
-
-inline CallerStackFrame CallerStackFrame::FromRegDisplay(CrawlFrame* pCF)
-{
-    return CallerStackFrame(pCF->GetCallerSp());
-}
 
 void GcEnumObject(LPVOID pData, OBJECTREF *pObj);
 StackWalkAction GcStackCrawlCallBack(CrawlFrame* pCF, VOID* pData);

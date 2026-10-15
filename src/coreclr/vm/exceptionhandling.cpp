@@ -2364,7 +2364,7 @@ bool ExInfo::IsInStackRegionUnwoundBySpecifiedException(CrawlFrame * pCF, PTR_Ex
     CallerStackFrame csfToCheck;
     if (pCF->IsFrameless())
     {
-        csfToCheck = CallerStackFrame::FromRegDisplay(pCF);
+        csfToCheck = pCF->GetCallerStackFrame();
     }
     else
     {
@@ -2485,7 +2485,7 @@ bool ExInfo::HasFrameBeenUnwoundByAnyActiveException(CrawlFrame * pCF)
         CallerStackFrame csfToCheck;
         if (pCF->IsFrameless())
         {
-            csfToCheck = CallerStackFrame::FromRegDisplay(pCF);
+            csfToCheck = pCF->GetCallerStackFrame();
         }
         else
         {
@@ -2542,7 +2542,7 @@ StackFrame ExInfo::GetStackFrameForParentCheck(CrawlFrame * pCF)
     // any dynamic stack allocation.  The stackwalker uses the current SP, i.e. the SP after all
     // dynamic stack allocations.  Thus, we cannot do an equality check.  Instead, we get the
     // CallerStackFrame, which is the caller SP.
-    sfResult = (StackFrame)CallerStackFrame::FromRegDisplay(pCF);
+    sfResult = (StackFrame)pCF->GetCallerStackFrame();
 
     return sfResult;
 }
@@ -2714,7 +2714,7 @@ StackFrame ExInfo::FindParentStackFrameHelper(CrawlFrame* pCF,
     StackFrame sfResult;
 
     // At this point, we need a valid caller SP.
-    CallerStackFrame csfCurrent = CallerStackFrame::FromRegDisplay(pCF);
+    CallerStackFrame csfCurrent = pCF->GetCallerStackFrame();
     bool fIsFilterFunclet = pCF->IsFilterFunclet();
 
     // We can't do this on an unmanaged thread.
@@ -3119,7 +3119,7 @@ void CallCatchFunclet(BYTE* pHandlerIP, REGDISPLAY* pvRegDisplay, ExInfo* exInfo
 #ifdef _DEBUG
         _ASSERTE(exInfo->m_sfCallerOfActualHandlerFrame == exInfo->m_frameIter.m_crawl.GetCallerSp());
 #endif
-        exInfo->m_csfEnclosingClause = CallerStackFrame::FromRegDisplay(&exInfo->m_frameIter.m_crawl);
+        exInfo->m_csfEnclosingClause = exInfo->m_frameIter.m_crawl.GetCallerStackFrame();
 
         MethodDesc *pMD = exInfo->m_frameIter.m_crawl.GetFunction();
         // Profiler, debugger and ETW events
@@ -3300,7 +3300,7 @@ void ResumeAtInterceptionLocation(REGDISPLAY* pvRegDisplay)
 
     pExInfo->m_ScannedStackRange.ExtendUpperBound(targetSp);
 
-    PopExplicitFrames(pThread, (void*)targetSp, (void*)CallerStackFrame::FromRegDisplay(&pExInfo->m_frameIter.m_crawl).SP);
+    PopExplicitFrames(pThread, (void*)targetSp, (void*)pExInfo->m_frameIter.m_crawl.GetCallerStackFrame().SP);
 
     // This must be done before we pop the ExInfos.
     BOOL fIntercepted = pThread->GetExceptionState()->GetFlags()->DebuggerInterceptInfo();
@@ -3347,7 +3347,7 @@ void CallFinallyFunclet(BYTE* pHandlerIP, REGDISPLAY* pvRegDisplay, ExInfo* exIn
     Thread* pThread = GetThread();
     pThread->DecPreventAbort();
 
-    exInfo->m_csfEnclosingClause = CallerStackFrame::FromRegDisplay(&exInfo->m_frameIter.m_crawl);
+    exInfo->m_csfEnclosingClause = exInfo->m_frameIter.m_crawl.GetCallerStackFrame();
 
     MethodDesc *pMD = exInfo->m_frameIter.m_crawl.GetFunction();
     // Profiler, debugger and ETW events
@@ -3381,7 +3381,7 @@ extern "C" CLR_BOOL QCALLTYPE CallFilterFunclet(QCall::ObjectHandleOnStack excep
 
     ExInfo* pExInfo = (ExInfo*)pThread->GetExceptionState()->GetCurrentExceptionTracker();
 
-    pExInfo->m_csfEnclosingClause = CallerStackFrame::FromRegDisplay(&pExInfo->m_frameIter.m_crawl);
+    pExInfo->m_csfEnclosingClause = pExInfo->m_frameIter.m_crawl.GetCallerStackFrame();
     MethodDesc *pMD = pExInfo->m_frameIter.m_crawl.GetFunction();
     // Profiler, debugger and ETW events
     TADDR spForDebugger = GetSpForDiagnosticReporting(pvRegDisplay);
@@ -3637,7 +3637,7 @@ static void NotifyExceptionPassStarted(StackFrameIterator *pThis, Thread *pThrea
         pExInfo->m_csfEnclosingClause.Clear();
         if (pExInfo->m_idxCurClause != 0xffffffff) //  the reverse pinvoke case doesn't have the m_idxCurClause set
         {
-            pExInfo->m_sfCallerOfActualHandlerFrame = CallerStackFrame::FromRegDisplay(&pExInfo->m_frameIter.m_crawl);
+            pExInfo->m_sfCallerOfActualHandlerFrame = pExInfo->m_frameIter.m_crawl.GetCallerStackFrame();
 
             // the 1st pass has just ended, so the m_CurrentClause is the catch clause
             pExInfo->m_ClauseForCatch = pExInfo->m_CurrentClause;
