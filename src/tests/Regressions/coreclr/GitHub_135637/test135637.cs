@@ -14,7 +14,9 @@ using Xunit;
 
 // A thread abort that is raised again after a catch block has swallowed it is dispatched from the address the catch
 // returns to. The block the catch returns to has to generate code of its own when it ends an enclosing EH region,
-// otherwise that address belongs to the code that follows it and the abort reaches different handlers.
+// otherwise that address belongs to the code that follows it and the abort reaches different handlers. That block can
+// be empty, as in unoptimized code or at the head of a loop, or contain only nodes that generate no code, as
+// GC.KeepAlive of an argument does in optimized code.
 public class Runtime_135637
 {
     private static volatile bool s_readyForCancellation;
@@ -118,6 +120,100 @@ public class Runtime_135637
         s_reachedAfterCatch = true;
     }
 
+    // The catch returns to a block in the enclosing try that only keeps an argument alive. The store after the call
+    // keeps the try from ending with a call, after which the JIT may emit a nop that would hide the problem.
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    private static void KeepAliveAfterCatch(object o)
+    {
+        try
+        {
+            try
+            {
+                RunInfiniteLoop();
+                s_counter = 0;
+            }
+            catch (ThreadAbortException)
+            {
+                s_trace += "inner ";
+            }
+
+            GC.KeepAlive(o);
+        }
+        catch (ThreadAbortException)
+        {
+            s_trace += "outer ";
+        }
+
+        s_reachedAfterCatch = true;
+    }
+
+    // Same, with a finally that the code after the catch leaves
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    private static void KeepAliveThenFinally(object o)
+    {
+        try
+        {
+            try
+            {
+                try
+                {
+                    RunInfiniteLoop();
+                    s_counter = 0;
+                }
+                catch (ThreadAbortException)
+                {
+                    s_trace += "catch ";
+                }
+
+                GC.KeepAlive(o);
+            }
+            finally
+            {
+                s_finallyRan = true;
+                s_trace += "finally ";
+            }
+        }
+        catch (ThreadAbortException)
+        {
+            s_trace += "outer ";
+        }
+
+        s_reachedAfterCatch = true;
+    }
+
+    // The catch returns to the head of a loop whose body is the catch's try. The abort raised again at the end of the
+    // catch must reach the outer catch; if it is raised inside the try, the same catch runs again, so stop after a few
+    // times.
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    private static void CatchInLoop()
+    {
+        int count = 0;
+        try
+        {
+            while (true)
+            {
+                try
+                {
+                    RunInfiniteLoop();
+                }
+                catch (ThreadAbortException)
+                {
+                    s_trace += "catch ";
+                    if (++count == 3)
+                    {
+                        break;
+                    }
+                }
+            }
+        }
+        catch (ThreadAbortException)
+        {
+            s_trace += "outer ";
+        }
+
+        s_reachedAfterCatch = true;
+    }
+
     private static void CancelWhenReady(CancellationTokenSource cts)
     {
         while (!s_readyForCancellation)
@@ -168,5 +264,8 @@ public class Runtime_135637
         RunAndAbort(nameof(CatchThenFinally), CatchThenFinally, "catch finally outer ", expectedFinallyRan: true);
         RunAndAbort(nameof(LeaveOutOfOuterTry), LeaveOutOfOuterTry, "inner outer ", expectedFinallyRan: false);
         RunAndAbort(nameof(ConsecutiveTry), ConsecutiveTry, "inner ", expectedFinallyRan: false);
+        RunAndAbort(nameof(KeepAliveAfterCatch), () => KeepAliveAfterCatch(new object()), "inner outer ", expectedFinallyRan: false);
+        RunAndAbort(nameof(KeepAliveThenFinally), () => KeepAliveThenFinally(new object()), "catch finally outer ", expectedFinallyRan: true);
+        RunAndAbort(nameof(CatchInLoop), CatchInLoop, "catch outer ", expectedFinallyRan: false);
     }
 }
