@@ -205,6 +205,8 @@ else()
 
   if(CLR_CMAKE_TARGET_ARCH_WASM)
     list(APPEND COMMON_RUNTIME_SOURCES
+      wasm/PInvoke.cpp
+      ${RUNTIME_DIR}/wasm/writebarriers.cpp
       ${GC_DIR}/wasm/gcenv.cpp
     )
     include_directories(${GC_DIR}/unix)
