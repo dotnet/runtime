@@ -101,7 +101,10 @@ static Range GetRange(Compiler*        comp,
 //
 static Range GetBoundMinusXRange(Compiler* comp, GenTree* tree, BasicBlock* block, ValueNum bndVN)
 {
-    if (tree->OperIs(GT_LCL_VAR) && tree->AsLclVar()->HasSsaName())
+    // Walk through local copies, e.g. CSE uses "tmp = cse" and defs "tmp = COMMA(STORE(cse, Bnd - X), cse)".
+    // SSA copy chains are acyclic (they end at a PHI or a non-local value), so this terminates.
+    tree = tree->gtEffectiveVal();
+    while (tree->OperIs(GT_LCL_VAR) && tree->AsLclVar()->HasSsaName())
     {
         LclVarDsc*           varDsc   = comp->lvaGetDesc(tree->AsLclVar());
         LclSsaVarDsc*        ssaDef   = varDsc->GetPerSsaData(tree->AsLclVar()->GetSsaNum());
@@ -110,7 +113,7 @@ static Range GetBoundMinusXRange(Compiler* comp, GenTree* tree, BasicBlock* bloc
         {
             return Limit(Limit::keUnknown);
         }
-        tree  = defStore->Data();
+        tree  = defStore->Data()->gtEffectiveVal();
         block = ssaDef->GetBlock();
     }
 
