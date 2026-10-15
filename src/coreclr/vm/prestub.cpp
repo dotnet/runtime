@@ -428,50 +428,61 @@ PCODE MethodDesc::GetPrecompiledCode(PrepareCodeConfig* pConfig, bool shouldTier
     if (pCode != (PCODE)NULL)
     {
         LOG_USING_R2R_CODE(this);
-
-#ifdef FEATURE_TIERED_COMPILATION
-        // Finalize the optimization tier before SetNativeCode() is called
-        bool shouldCountCalls = shouldTier && pConfig->FinalizeOptimizationTierForTier0Load();
-#endif
-
-        if (pConfig->SetNativeCode(pCode, &pCode))
-        {
-#ifdef FEATURE_CODE_VERSIONING
-            pConfig->SetGeneratedOrLoadedNewCode();
-#endif
-#ifdef FEATURE_TIERED_COMPILATION
-            if (shouldCountCalls)
-            {
-                _ASSERTE(!pConfig->GetCodeVersion().IsFinalTier());
-                pConfig->SetShouldCountCalls();
-            }
-#endif
-
-#ifdef FEATURE_MULTICOREJIT
-            // Multi-core JIT is only applicable to the default code version. A method is recorded in the profile only when
-            // SetNativeCode() above succeeds to avoid recording duplicates in the multi-core JIT profile. Successful loads
-            // of R2R code are also recorded.
-            if (pConfig->NeedsMulticoreJitNotification())
-            {
-                _ASSERTE(pConfig->GetCodeVersion().IsDefaultVersion());
-                _ASSERTE(!pConfig->IsForMulticoreJit());
-
-                MulticoreJitManager & mcJitManager = GetAppDomain()->GetMulticoreJitManager();
-                if (mcJitManager.IsRecorderActive())
-                {
-                    if (MulticoreJitManager::IsMethodSupported(this))
-                    {
-                        mcJitManager.RecordMethodJitOrLoad(this);
-                    }
-                }
-            }
-#endif
-        }
+        pCode = PublishPrecompiledCode(pConfig, pCode, shouldTier);
     }
 #endif // FEATURE_READYTORUN
 
     return pCode;
 }
+
+#ifdef FEATURE_READYTORUN
+PCODE MethodDesc::PublishPrecompiledCode(PrepareCodeConfig* pConfig, PCODE pCode, bool shouldTier)
+{
+    STANDARD_VM_CONTRACT;
+    _ASSERTE(pCode != (PCODE)NULL);
+
+#ifdef FEATURE_TIERED_COMPILATION
+    // Finalize the optimization tier before SetNativeCode() is called
+    bool shouldCountCalls = shouldTier && pConfig->FinalizeOptimizationTierForTier0Load();
+#endif
+
+    if (pConfig->SetNativeCode(pCode, &pCode))
+    {
+#ifdef FEATURE_CODE_VERSIONING
+        pConfig->SetGeneratedOrLoadedNewCode();
+#endif
+#ifdef FEATURE_TIERED_COMPILATION
+        if (shouldCountCalls)
+        {
+            _ASSERTE(!pConfig->GetCodeVersion().IsFinalTier());
+            pConfig->SetShouldCountCalls();
+        }
+#endif
+
+#ifdef FEATURE_MULTICOREJIT
+        // Multi-core JIT is only applicable to the default code version. A method is recorded in the profile only when
+        // SetNativeCode() above succeeds to avoid recording duplicates in the multi-core JIT profile. Successful loads
+        // of R2R code are also recorded.
+        if (pConfig->NeedsMulticoreJitNotification())
+        {
+            _ASSERTE(pConfig->GetCodeVersion().IsDefaultVersion());
+            _ASSERTE(!pConfig->IsForMulticoreJit());
+
+            MulticoreJitManager & mcJitManager = GetAppDomain()->GetMulticoreJitManager();
+            if (mcJitManager.IsRecorderActive())
+            {
+                if (MulticoreJitManager::IsMethodSupported(this))
+                {
+                    mcJitManager.RecordMethodJitOrLoad(this);
+                }
+            }
+        }
+#endif
+    }
+
+    return pCode;
+}
+#endif // FEATURE_READYTORUN
 
 PCODE MethodDesc::GetPrecompiledR2RCode(PrepareCodeConfig* pConfig)
 {
@@ -549,8 +560,8 @@ PCODE MethodDesc::GetMulticoreJitCode(PrepareCodeConfig* pConfig, bool* pWasTier
     _ASSERTE(pWasTier0 != NULL);
     _ASSERTE(!*pWasTier0);
 
-    MulticoreJitCodeInfo codeInfo;
 #ifdef FEATURE_MULTICOREJIT
+    MulticoreJitCodeInfo codeInfo;
     // Quick check before calling expensive out of line function on this method's domain has code JITted by background thread
     MulticoreJitManager & mcJitManager = GetAppDomain()->GetMulticoreJitManager();
     if (mcJitManager.GetMulticoreJitCodeStorage().GetRemainingMethodCount() > 0)
@@ -573,9 +584,10 @@ PCODE MethodDesc::GetMulticoreJitCode(PrepareCodeConfig* pConfig, bool* pWasTier
         #endif
         }
     }
-#endif // FEATURE_MULTICOREJIT
-
     return codeInfo.GetEntryPoint();
+#else
+    return (PCODE)NULL;
+#endif // FEATURE_MULTICOREJIT
 }
 
 // ********************************************************************
@@ -2991,11 +3003,8 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(
 
                 _ASSERTE(!pMD->GetMethodTable()->IsGenericTypeDefinition() || pMD->GetMethodTable()->GetNumGenericArgs() == 0);
 
-                if (pModule->IsReadyToRun())
-                {
-                    // We do not emit activation fixups for version resilient references. Activate the target explicitly.
-                    pMD->EnsureActive();
-                }
+                // Activate the target explicitly.
+                pMD->EnsureActive();
 
                 break;
             }
@@ -3008,11 +3017,8 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(
 
                 pMD->PrepareForUseAsADependencyOfANativeImage();
 
-                if (pModule->IsReadyToRun())
-                {
-                    // We do not emit activation fixups for version resilient references. Activate the target explicitly.
-                    pMD->EnsureActive();
-                }
+                // Activate the target explicitly.
+                pMD->EnsureActive();
 
                 break;
             }
@@ -3028,11 +3034,8 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(
 
                 pMD->PrepareForUseAsADependencyOfANativeImage();
 
-                if (pModule->IsReadyToRun())
-                {
-                    // We do not emit activation fixups for version resilient references. Activate the target explicitly.
-                    pMD->EnsureActive();
-                }
+                // Activate the target explicitly.
+                pMD->EnsureActive();
 
                 break;
             }
@@ -3052,12 +3055,9 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(
 
                     fVirtual = true;
                 }
-                else
-                if (pModule->IsReadyToRun())
-                {
-                    // We do not emit activation fixups for version resilient references. Activate the target explicitly.
-                    pMD->EnsureActive();
-                }
+
+                // Activate the target explicitly.
+                pMD->EnsureActive();
                 break;
             }
 
@@ -3345,6 +3345,7 @@ static PCODE getHelperForSharedStatic(Module * pModule, ReadyToRunFixupKind kind
 
     switch(helpFunc)
     {
+#ifdef FEATURE_MULTITHREADING
         case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2:
         case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2_NOJITOPT:
         {
@@ -3359,6 +3360,7 @@ static PCODE getHelperForSharedStatic(Module * pModule, ReadyToRunFixupKind kind
         case CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE:
             pArgs->arg0 = (TADDR)pMT->GetThreadStaticsInfo();
             break;
+#endif // FEATURE_MULTITHREADING
 
         case CORINFO_HELP_GETDYNAMIC_GCSTATIC_BASE_NOCTOR:
         case CORINFO_HELP_GETPINNED_GCSTATIC_BASE_NOCTOR:
@@ -3399,11 +3401,13 @@ static PCODE getHelperForStaticBase(Module * pModule, ReadyToRunFixupKind kind, 
     bool noCtor = pMT->IsClassInitedOrPreinited();
     bool threadStatic = (kind == READYTORUN_FIXUP_ThreadStaticBaseNonGC || kind == READYTORUN_FIXUP_ThreadStaticBaseGC);
 
+#ifdef FEATURE_MULTITHREADING
     // Special case for DirectOnThreadLocalData: return helper that gets the address of the pThread field
     if (threadStatic && !GCStatic && pMT == CoreLibBinder::GetExistingClass(CLASS__DIRECTONTHREADLOCALDATA))
     {
         return CEEJitInfo::getHelperFtnStatic(CORINFO_HELP_GETDIRECTONTHREADLOCALDATA_NONGCTHREADSTATIC_BASE);
     }
+#endif // FEATURE_MULTITHREADING
 
     CorInfoHelpFunc helper;
 
@@ -3664,11 +3668,13 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
     Statics:
         th.AsMethodTable()->EnsureInstanceActive();
         th.AsMethodTable()->CheckRunClassInitThrowing();
+#ifdef FEATURE_MULTITHREADING
         if (kind == READYTORUN_FIXUP_ThreadStaticBaseNonGC || kind == READYTORUN_FIXUP_ThreadStaticBaseGC ||
             (kind == READYTORUN_FIXUP_FieldAddress && pFD->IsThreadStatic()))
         {
             th.AsMethodTable()->EnsureTlsIndexAllocated();
         }
+#endif // FEATURE_MULTITHREADING
         fReliable = true;
         break;
 
@@ -4007,12 +4013,14 @@ extern "C" SIZE_T STDCALL DynamicHelperWorker(TransitionBlock * pTransitionBlock
         case READYTORUN_FIXUP_StaticBaseGC:
             result = (SIZE_T)th.AsMethodTable()->GetGCStaticsBasePointer();
             break;
+#ifdef FEATURE_MULTITHREADING
         case READYTORUN_FIXUP_ThreadStaticBaseNonGC:
             result = (SIZE_T)th.AsMethodTable()->GetNonGCThreadStaticsBasePointer();
             break;
         case READYTORUN_FIXUP_ThreadStaticBaseGC:
             result = (SIZE_T)th.AsMethodTable()->GetGCThreadStaticsBasePointer();
             break;
+#endif // FEATURE_MULTITHREADING
         case READYTORUN_FIXUP_CctorTrigger:
             break;
         case READYTORUN_FIXUP_FieldAddress:

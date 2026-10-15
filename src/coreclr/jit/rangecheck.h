@@ -764,28 +764,44 @@ struct RangeOps
         const Limit& xUpper = x.UpperLimit();
         const Limit& yUpper = y.UpperLimit();
 
+        // Computes "a - b" when both limits are constants or both are "$bnd + cns" with the same $bnd.
+        // $bnd is never negative, so "$bnd + cns" can't overflow (and is exact) when cns <= 0.
+        auto limitDiff = [](const Limit& a, const Limit& b, int64_t* diff) -> bool {
+            if ((a.IsConstant() && b.IsConstant()) || (a.IsBinOpArray() && b.IsBinOpArray() && (a.vn == b.vn) &&
+                                                       (a.GetConstant() <= 0) && (b.GetConstant() <= 0)))
+            {
+                *diff = (int64_t)a.GetConstant() - (int64_t)b.GetConstant();
+                return true;
+            }
+            return false;
+        };
+
         // For unsigned comparisons, we only support non-negative ranges.
         // NOTE: it's not applicable for EQ and NE.
         if (isUnsigned && (relop != GT_EQ) && (relop != GT_NE))
         {
-            if (!xLower.IsConstant() || !yLower.IsConstant() || (xLower.GetConstant() < 0) ||
-                (yLower.GetConstant() < 0))
+            auto isNonNegative = [](const Limit& l) {
+                return (l.IsConstant() && (l.GetConstant() >= 0)) || (l.IsBinOpArray() && (l.GetConstant() == 0));
+            };
+
+            if (!isNonNegative(xLower) || !isNonNegative(yLower))
             {
                 // Relops always return either 0 or 1.
                 return Range(Limit(Limit::keConstant, 0), Limit(Limit::keConstant, 1));
             }
         }
 
+        int64_t diff;
         switch (relop)
         {
             case GT_GE:
             case GT_LT:
-                if (xLower.IsConstant() && yUpper.IsConstant() && (xLower.GetConstant() >= yUpper.GetConstant()))
+                if (limitDiff(xLower, yUpper, &diff) && (diff >= 0))
                 {
                     return Range(Limit(Limit::keConstant, relop == GT_GE ? 1 : 0));
                 }
 
-                if (xUpper.IsConstant() && yLower.IsConstant() && (xUpper.GetConstant() < yLower.GetConstant()))
+                if (limitDiff(xUpper, yLower, &diff) && (diff < 0))
                 {
                     return Range(Limit(Limit::keConstant, relop == GT_GE ? 0 : 1));
                 }
@@ -793,12 +809,12 @@ struct RangeOps
 
             case GT_GT:
             case GT_LE:
-                if (xLower.IsConstant() && yUpper.IsConstant() && (xLower.GetConstant() > yUpper.GetConstant()))
+                if (limitDiff(xLower, yUpper, &diff) && (diff > 0))
                 {
                     return Range(Limit(Limit::keConstant, relop == GT_GT ? 1 : 0));
                 }
 
-                if (xUpper.IsConstant() && yLower.IsConstant() && (xUpper.GetConstant() <= yLower.GetConstant()))
+                if (limitDiff(xUpper, yLower, &diff) && (diff <= 0))
                 {
                     return Range(Limit(Limit::keConstant, relop == GT_GT ? 0 : 1));
                 }
@@ -808,8 +824,8 @@ struct RangeOps
             case GT_NE:
                 // If the ranges do not overlap, then EQ is always false, NE is always true.
                 // Example: x = [6..10], y = [0..5] -> EQ is always false, NE is always true.
-                if ((xLower.IsConstant() && yUpper.IsConstant() && (xLower.GetConstant() > yUpper.GetConstant())) ||
-                    (xUpper.IsConstant() && yLower.IsConstant() && (xUpper.GetConstant() < yLower.GetConstant())))
+                if ((limitDiff(xLower, yUpper, &diff) && (diff > 0)) ||
+                    (limitDiff(xUpper, yLower, &diff) && (diff < 0)))
                 {
                     return Range(Limit(Limit::keConstant, relop == GT_EQ ? 0 : 1));
                 }

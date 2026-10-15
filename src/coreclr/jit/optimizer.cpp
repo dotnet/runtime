@@ -4032,6 +4032,12 @@ bool Compiler::optIsProfitableToHoistTree(GenTree*              tree,
         varInOutCount    = hoistCtxt->m_loopVarInOutFPCount;
 
         availRegCount = CNT_CALLEE_SAVED_FLOAT;
+#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
+        if (loopContainsCall && varTypeNeedsPartialCalleeSave(tree->TypeGet()))
+        {
+            availRegCount = 0;
+        }
+#endif
         if (!loopContainsCall)
         {
             availRegCount += CNT_CALLEE_TRASH_FLOAT - 1;
@@ -5713,6 +5719,14 @@ void Compiler::optRemoveRedundantZeroInits()
 
     for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->GetUniqueSucc())
     {
+        // The scan assumes that all paths from the prolog to this block went through the blocks analyzed so far. Other
+        // predecessors (e.g. a catch handler that rejoins here) may have referenced or redefined the locals we track.
+        if ((block != fgFirstBB) && (BlockPredsWithEH(block)->getNextPredEdge() != nullptr))
+        {
+            JITDUMP(FMT_BB " has multiple predecessors, stopping the block scan\n", block->bbNum);
+            break;
+        }
+
         if (m_dfsTree->HasCycle())
         {
             // See if this block is a cycle entry

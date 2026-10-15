@@ -630,7 +630,6 @@ namespace System.ComponentModel.Composition
         //  Test cases for AssemblyCatalog(string codebase, ICompositionElement definitionOrigin, ReflectionContext reflectionContext) constructor
         //=========================================================================================================================================
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/134943", TestPlatforms.Wasi)]
         public void Constructor8_ValueAsAssemblyArgument_ShouldSetAssemblyProperty()
         {
             AssemblyCatalogConstructorTests.Constructor_ValueAsAssemblyArgument_ShouldSetAssemblyProperty((a) =>
@@ -1018,7 +1017,6 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/134943", TestPlatforms.Wasi)]
         public void ICompositionElementDisplayName_ShouldIncludeDerivedCatalogTypeNameAndAssemblyFullName()
         {
             var expectations = Expectations.GetAssemblies();
@@ -1047,7 +1045,6 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/134943", TestPlatforms.Wasi)]
         public void NonStaticallyReferencedAssembly()
         {
             string testAssembly = "System.ComponentModel.Composition.Noop.Assembly.dll";

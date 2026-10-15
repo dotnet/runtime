@@ -137,7 +137,7 @@ IEnumerable<TargetNUInt> GetRejitIds(TargetPointer methodDesc)
 
     foreach (ILCodeVersionHandle ilCodeVersionHandle in ilCodeVersions)
     {
-        if (GetRejitState(ilCodeVersionHandle) == RejitState.Active)
+        if (cv.GetSource(ilCodeVersionHandle) == CodeVersionSource.ReJIT && GetRejitState(ilCodeVersionHandle) == RejitState.Active)
         {
             yield return GetRejitId(ilCodeVersionHandle);
         }

@@ -50,7 +50,7 @@ public sealed class DocumentCompiler
             };
 
             actions ??= new GrammarActions(loadedDocuments, options, resourceLocator);
-            actions.BeginDocument();
+            actions.BeginDocument(document.Path);
 
             CILParser parser = new(new UnbufferedTokenStream(preprocessor))
             {

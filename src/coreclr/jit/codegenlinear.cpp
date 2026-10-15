@@ -1331,6 +1331,8 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
             // for 64-bit local, or 8-bit cmp for 16-bit local).
             //
             // * For byrefs it can differ in GC-ness (TYP_I_IMPL vs TYP_BYREF).
+            // We use the local's GC-ness since the register keeps holding the
+            // local after this use and later uses won't update its GC state.
             //
             // In the NOL case the potential use of subrange assertions means
             // we always have to normalize, even if 'lcl' is wide; we could
@@ -1340,11 +1342,6 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
             // unspilling.
             //
             var_types unspillType = varDsc->lvNormalizeOnLoad() ? varDsc->TypeGet() : varDsc->GetStackSlotHomeType();
-
-            if (varTypeIsGC(lcl))
-            {
-                unspillType = lcl->TypeGet();
-            }
 
             bool reSpill   = ((unspillTree->gtFlags & GTF_SPILL) != 0);
             bool isLastUse = lcl->IsLastUse(0);
@@ -2582,7 +2579,7 @@ void CodeGen::genCodeForSetcc(GenTreeCC* setcc)
  * disassembler.
  *
  * Possible values for JitEmitUnitTestsSections:
- * Amd64: all, sse2
+ * Amd64: all, lea, sse2
  * Arm64: all, general, advsimd, sve
  * Wasm:  all, simd
  */
@@ -2624,6 +2621,10 @@ void CodeGen::genEmitterUnitTests()
     bool unitTestSectionAll = (strstr(unitTestSection, "all") != nullptr);
 
 #if defined(TARGET_AMD64)
+    if (unitTestSectionAll || (strstr(unitTestSection, "lea") != nullptr))
+    {
+        genAmd64EmitterUnitTestsLea();
+    }
     if (unitTestSectionAll || (strstr(unitTestSection, "sse2") != nullptr))
     {
         genAmd64EmitterUnitTestsSse2();
