@@ -145,26 +145,31 @@ public class R2RTestSuites
         }
     }
 
-    [Fact]
-    public void BoxIsInstOfValueTypeFolds()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void CastFoldingRespectsVersionBubble(bool inputBubble)
     {
-        var boxIsInstFolding = new CompiledAssembly
+        var castFolding = new CompiledAssembly
         {
-            AssemblyName = nameof(BoxIsInstOfValueTypeFolds),
-            SourceResourceNames = ["CastFolding/BoxIsInstFolding.cs"],
+            AssemblyName = nameof(CastFoldingRespectsVersionBubble),
+            SourceResourceNames = ["CastFolding/CastFolding.cs"],
         };
 
+        // With --input-bubble and no explicit bubble references, the framework is in the version bubble.
+        List<Crossgen2Option> options = inputBubble ? [Crossgen2Option.InputBubble, Crossgen2Option.Optimize] : [Crossgen2Option.Optimize];
+
         new R2RTestRunner(_output).Run(new R2RTestCase(
-            nameof(BoxIsInstOfValueTypeFolds),
+            nameof(CastFoldingRespectsVersionBubble),
             [
-                new(nameof(BoxIsInstOfValueTypeFolds), [new CrossgenAssembly(boxIsInstFolding)])
+                new(nameof(CastFoldingRespectsVersionBubble), [new CrossgenAssembly(castFolding)])
                 {
-                    Options = [Crossgen2Option.Optimize],
+                    Options = options,
                     Validate = Validate,
                 },
             ]));
 
-        static void Validate(ReadyToRunReader reader)
+        void Validate(ReadyToRunReader reader)
         {
             // Box and isinst reference their types through NEW_OBJECT/IS_INSTANCE_OF imports
             // or TYPE_HANDLE fixups depending on the target, so look for the type in any import.
@@ -183,15 +188,28 @@ public class R2RTestSuites
 
             string diagnostic = $"Imported types: [{string.Join(", ", importedTypes)}]";
 
-            // An interface cast may succeed in a later version, so it isn't folded.
-            Assert.True(importedTypes.Contains("ControlStruct"), diagnostic);
-            Assert.True(importedTypes.Contains("INotImplemented"), diagnostic);
-
             // Value type casts to other non-interface types fold, along with their boxes.
             Assert.False(importedTypes.Contains("char"), diagnostic);
             Assert.False(importedTypes.Contains("byte"), diagnostic);
             Assert.False(importedTypes.Contains("SourceStruct"), diagnostic);
             Assert.False(importedTypes.Contains("TargetStruct"), diagnostic);
+
+            // Casts to interfaces fold only when every type in the hierarchy is in the version bubble,
+            // which includes System.Object and System.ValueType only with the framework in the bubble.
+            Assert.True(importedTypes.Contains("ControlStruct") != inputBubble, diagnostic);
+            Assert.True(importedTypes.Contains("INotImplemented") != inputBubble, diagnostic);
+            Assert.True(importedTypes.Contains("INotImplementedByClass") != inputBubble, diagnostic);
+
+            // Interfaces have no base type, so typeof(...) assignability checks between them fold whenever
+            // the target and every inherited interface are in the version bubble, including for shared
+            // generics. Per assembly, IsAssignableFrom stays only for the IComparable target and
+            // IsAssignableTo only for the interface that inherits IDisposable.
+            Assert.True(importedTypes.Any(s => s.Contains("System.Type.IsAssignableFrom(", StringComparison.Ordinal)) != inputBubble, diagnostic);
+            Assert.True(importedTypes.Any(s => s.Contains("System.Type.IsAssignableTo(", StringComparison.Ordinal)) != inputBubble, diagnostic);
+
+            // Variant and COM casts are never folded.
+            Assert.True(importedTypes.Contains("IVariant`1<SealedClass>"), diagnostic);
+            Assert.True(importedTypes.Contains("INotImplementedByCom"), diagnostic);
         }
     }
 

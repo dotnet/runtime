@@ -3179,13 +3179,8 @@ namespace Internal.JitInterface
             // In R2R it is a breaking change for a previously positive
             // cast to become negative, but not for a previously negative
             // cast to become positive. So in R2R a negative result is
-            // reported back as May, unless it can't change across versions:
-            // a value type can gain interfaces (or become an enum), but its
-            // other cast targets are fixed.
-            if (result == TypeCompareState.MustNot &&
-                !(fromType.IsValueType && !fromType.IsNullable &&
-                  !toType.IsInterface && !toType.IsWellKnownType(WellKnownType.Enum) &&
-                  !fromType.HasTypeEquivalence && !toType.HasTypeEquivalence))
+            // reported back as May, unless it can't change across versions.
+            if (result == TypeCompareState.MustNot && !IsNegativeCastResultVersionResilient(fromType, toType))
             {
                 result = TypeCompareState.May;
             }
