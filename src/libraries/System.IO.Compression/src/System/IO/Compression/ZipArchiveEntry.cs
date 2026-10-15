@@ -1636,7 +1636,18 @@ namespace System.IO.Compression
                 SetupEncryptionKeyMaterial(password);
             }
 
-            GetReadModeDecryptionState(password, out WinZipAesKeyMaterial? aesKeys, out ZipCryptoKeys? zipCryptoKeys, out byte zipCryptoCheckByte);
+            WinZipAesKeyMaterial? aesKeys = null;
+            ZipCryptoKeys? zipCryptoKeys = null;
+            byte zipCryptoCheckByte = 0;
+
+            // Decryption state is only needed when existing encrypted content actually has to be loaded from the
+            // archive: entries not originally in the archive have no salt to derive keys from, and if the
+            // uncompressed data is already buffered in memory there's nothing left to decrypt.
+            if (loadExistingContent && _originallyInArchive && _storedUncompressedData is null)
+            {
+                GetReadModeDecryptionState(password, out aesKeys, out zipCryptoKeys, out zipCryptoCheckByte);
+            }
+
             return OpenInUpdateModeWithPasswordCoreAsync<TAdapter>(loadExistingContent, aesKeys, zipCryptoKeys, zipCryptoCheckByte, cancellationToken);
         }
 
