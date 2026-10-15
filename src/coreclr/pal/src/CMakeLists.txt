@@ -162,7 +162,6 @@ set(SOURCES
   locale/unicode.cpp
   map/common.cpp
   map/map.cpp
-  map/virtual.cpp
   misc/cgroup.cpp
   misc/dbgmsg.cpp
   misc/environ.cpp

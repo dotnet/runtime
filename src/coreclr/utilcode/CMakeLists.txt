@@ -67,8 +67,13 @@ endif(CLR_CMAKE_TARGET_WIN32)
 set(UTILCODE_SOURCES
   ${UTILCODE_COMMON_SOURCES}
   allocmemtracker.cpp
-  executableallocator.cpp
 )
+
+if(CLR_CMAKE_TARGET_ARCH_WASM)
+  list(APPEND UTILCODE_SOURCES executableallocator.wasm.cpp)
+else()
+  list(APPEND UTILCODE_SOURCES executableallocator.cpp)
+endif()
 
 set(UTILCODE_DAC_SOURCES
   ${UTILCODE_COMMON_SOURCES}

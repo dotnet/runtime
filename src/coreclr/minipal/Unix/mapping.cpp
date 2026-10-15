@@ -21,12 +21,6 @@ typedef int32_t HRESULT;
 #define MAP_ANON MAP_ANONYMOUS
 #endif
 
-extern "C" void* PAL_VirtualReserveFromExecutableMemoryAllocatorWithinRange(const void* beginAddress, const void* endAddress, size_t size, int storeAllocationInfo);
-
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-extern "C" void PAL_JitWriteProtect(bool writeEnable);
-#endif // HOST_OSX && HOST_ARM64
-
 #ifndef NDEBUG
 static bool IsValidMemoryProtection(int nativeProtection)
 {
@@ -94,7 +88,7 @@ static void CopyMemoryToPlaceholder(void* address, const void* source, size_t si
 #if defined(HOST_OSX) && defined(HOST_ARM64)
     if (executable)
     {
-        PAL_JitWriteProtect(true);
+        VMToOSInterface::JitWriteProtect(true);
     }
 #endif // HOST_OSX && HOST_ARM64
 
@@ -106,7 +100,7 @@ static void CopyMemoryToPlaceholder(void* address, const void* source, size_t si
 #if defined(HOST_OSX) && defined(HOST_ARM64)
     if (executable)
     {
-        PAL_JitWriteProtect(false);
+        VMToOSInterface::JitWriteProtect(false);
     }
 #endif // HOST_OSX && HOST_ARM64
 
@@ -176,8 +170,8 @@ void* VMToOSInterface::AllocateMemory(void* address, size_t size, MemoryProtecti
         }
 
         size_t reservationSize = (size + allocationGranularity - 1) & ~(allocationGranularity - 1);
-        void* allocation = PAL_VirtualReserveFromExecutableMemoryAllocatorWithinRange(
-            nullptr, reinterpret_cast<void*>(SIZE_MAX), reservationSize, 0);
+        void* allocation = VMToOSInterface::ReserveMemoryFromExecutableAllocatorWithinRange(
+            nullptr, reinterpret_cast<void*>(SIZE_MAX), reservationSize);
         if (allocation != nullptr)
         {
             int error = 0;
@@ -388,14 +382,30 @@ void* VMToOSInterface::ReserveMemoryWithinRange(void* rangeStart, void* rangeEnd
         return nullptr;
     }
 
+    constexpr size_t granularity = 64 * 1024;
+    if (size > SIZE_MAX - (granularity - 1))
+    {
+        errno = ENOMEM;
+        return nullptr;
+    }
+
+    size_t reservationSize = (size + granularity - 1) & ~(granularity - 1);
     // Prefer the executable near-code allocator; it already understands range requests.
-    void* allocation = PAL_VirtualReserveFromExecutableMemoryAllocatorWithinRange(rangeStart, rangeEnd, size, 0);
+    void* allocation = VMToOSInterface::ReserveMemoryFromExecutableAllocatorWithinRange(rangeStart, rangeEnd, reservationSize);
     if (allocation != nullptr)
     {
+        if (reservationSize != size && munmap(static_cast<char*>(allocation) + size, reservationSize - size) != 0)
+        {
+            int error = errno;
+            if (munmap(allocation, reservationSize) != 0)
+                minipal_log_print_error("Releasing failed memory reservation failed with error %d.\n", errno);
+            errno = error;
+            return nullptr;
+        }
+
         return allocation;
     }
 
-    constexpr size_t granularity = 64 * 1024;
     uintptr_t tryAddress = reinterpret_cast<uintptr_t>(rangeStart) & ~(granularity - 1);
     uintptr_t end = reinterpret_cast<uintptr_t>(rangeEnd);
 

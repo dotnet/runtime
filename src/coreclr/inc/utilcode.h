@@ -475,6 +475,7 @@ inline BOOL RunningInWow64()
 BOOL RunningInWow64();
 #endif
 
+#ifndef TARGET_WASM
 //
 // Allocate free memory within the range [pMinAddr..pMaxAddr] using
 // ClrVirtualQuery to find free memory and ClrVirtualAlloc to allocate it.
@@ -484,6 +485,7 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
                                    SIZE_T dwSize,
                                    DWORD flAllocationType,
                                    DWORD flProtect);
+#endif // !TARGET_WASM
 
 #ifdef HOST_WINDOWS
 

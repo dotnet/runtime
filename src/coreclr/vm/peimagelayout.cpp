@@ -313,11 +313,13 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
     COUNT_T dirSize;
     TADDR dir = GetDirectoryEntryData(IMAGE_DIRECTORY_ENTRY_BASERELOC, &dirSize);
 
-    // Minimize number of calls to VirtualProtect by keeping a whole section unprotected at a time.
+#ifndef TARGET_WASM
+    // Minimize protection changes by keeping a whole section unprotected at a time.
     BYTE * pWriteableRegion = NULL;
     SIZE_T cbWriteableRegion = 0;
     bool hasOldProtection = false;
     VMToOSInterface::MemoryProtection oldProtection = VMToOSInterface::MemoryProtection::NoAccess;
+#endif // !TARGET_WASM
 
     BYTE * pFlushRegion = NULL;
     SIZE_T cbFlushRegion = 0;
@@ -360,6 +362,7 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
         // VirtualAddress, so GetBase() + rva is the correct address (equivalent to GetRvaData(rva)).
         BYTE * pageAddress = (BYTE *)GetBase() + rva;
 
+#ifndef TARGET_WASM
         // Check whether the page is outside the unprotected region.
         // Webcil data is already writable, so skip memory protection management.
         if (IsPEFormat() && (SIZE_T)(pageAddress - pWriteableRegion) >= cbWriteableRegion)
@@ -370,7 +373,7 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
 #if defined(__APPLE__) && defined(HOST_ARM64)
                 // Disable writing on Apple Silicon
                 if (IsExecutableProtection(oldProtection))
-                    PAL_JitWriteProtect(false);
+                    VMToOSInterface::JitWriteProtect(false);
 #else
                 if (!VMToOSInterface::ProtectMemory(pWriteableRegion, cbWriteableRegion, oldProtection))
                     ThrowLastError();
@@ -397,7 +400,7 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
                 {
 #if defined(__APPLE__) && defined(HOST_ARM64)
                     // Enable writing on Apple Silicon
-                    PAL_JitWriteProtect(true);
+                    VMToOSInterface::JitWriteProtect(true);
 #else
                     // On SELinux, we cannot change protection that doesn't have execute access rights
                     // to one that has it, so we need to set the protection to RWX instead of RW
@@ -406,7 +409,7 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
                 }
 #endif // TARGET_UNIX
 #if defined(__APPLE__) && defined(HOST_ARM64)
-                // No-op: writing was already enabled above via PAL_JitWriteProtect.
+                // Writing was already enabled above via VMToOSInterface::JitWriteProtect.
 #else
                 if (!VMToOSInterface::ProtectMemory(pWriteableRegion, cbWriteableRegion, newProtection))
                     ThrowLastError();
@@ -415,6 +418,7 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
                 hasOldProtection = true;
             }
         }
+#endif // !TARGET_WASM
 
         BYTE* pEndAddressToFlush = NULL;
         for (COUNT_T fixupIndex = 0; fixupIndex < fixupsCount; fixupIndex++)
@@ -456,6 +460,7 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
             }
         }
 
+#ifndef TARGET_WASM
         if (IsPEFormat())
         {
             if (IsExecutableProtection(oldProtection) && pEndAddressToFlush != NULL)
@@ -473,23 +478,26 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
                 cbFlushRegion = pEndAddressToFlush - pFlushRegion;
             }
         }
+#endif // !TARGET_WASM
 
         dirPos += fixupsSize;
     }
     _ASSERTE(dirSize == dirPos || !IsPEFormat());
 
+#ifndef TARGET_WASM
     if (hasOldProtection)
     {
 #if defined(__APPLE__) && defined(HOST_ARM64)
         // Disable writing on Apple Silicon
         if (IsExecutableProtection(oldProtection))
-            PAL_JitWriteProtect(false);
+            VMToOSInterface::JitWriteProtect(false);
 #else
         // Restore the protection
         if (!VMToOSInterface::ProtectMemory(pWriteableRegion, cbWriteableRegion, oldProtection))
             ThrowLastError();
 #endif // __APPLE__ && HOST_ARM64
     }
+#endif // !TARGET_WASM
 #if defined(TARGET_UNIX) && !defined(TARGET_WASM)
     if (dirSize != 0)
     {
@@ -1025,13 +1033,13 @@ void* FlatImageLayout::LoadImageByCopyingParts(SIZE_T* m_imageParts) const
             ThrowHR(VMToOSInterface::GetLastMemoryMappingError());
 
         if (isExec)
-            PAL_JitWriteProtect(true);
+            VMToOSInterface::JitWriteProtect(true);
 
         CopyMemory(sectionBase, (BYTE*)GetBase() + VAL32(section->PointerToRawData), copySize);
 
         if (isExec)
         {
-            PAL_JitWriteProtect(false);
+            VMToOSInterface::JitWriteProtect(false);
         }
         else if ((section->Characteristics & IMAGE_SCN_MEM_WRITE) == 0)
         {

@@ -7,9 +7,9 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#if !defined(TARGET_WINDOWS) && !defined(TARGET_WASM)
+#if !defined(TARGET_WINDOWS)
 #include <sys/mman.h>
-#endif // !TARGET_WINDOWS && !TARGET_WASM
+#endif // !TARGET_WINDOWS
 
 // Interface between the runtime and platform specific functionality
 class VMToOSInterface
@@ -29,7 +29,6 @@ public:
     static constexpr bool MappingFailureAllowsCopyFallback = true;
 #endif // TARGET_WINDOWS
 
-#ifndef TARGET_WASM
     enum class MemoryProtection
     {
 #ifdef TARGET_WINDOWS
@@ -53,6 +52,7 @@ public:
 #endif // TARGET_WINDOWS
     };
 
+#ifndef TARGET_WASM
     // Unix mappings borrow the supplied descriptor without duplicating or closing it.
     // The caller must keep it open until all required views have been mapped.
     static MemoryMapHandle CreateMemoryMapping(MemoryMapHandle fileHandle, uint64_t size, MemoryProtection protection);
@@ -69,10 +69,13 @@ public:
     // Windows executable backing allows later executable views without making this view executable.
     static void* MapAnonymousMemory(size_t size, MemoryProtection protection, bool executableBacking = false);
     static int32_t GetLastMemoryMappingError();
+#endif // !TARGET_WASM
 
     // Allocate zero-initialized, page-aligned memory.
     // The size must be a nonzero multiple of the system page size.
     // Release the allocation with ReleaseMemoryReservation and its original size.
+    // WASM uses aligned heap storage and supports only ReadWrite and NoAccess;
+    // NoAccess denotes a logical reservation, not inaccessible pages.
     static void* AllocateMemory(void* address, size_t size, MemoryProtection protection);
 
     // Allocate a page-aligned, nonzero-sized reservation whose starting address lies
@@ -86,6 +89,7 @@ public:
     // ReserveMemoryWithinRange. Unlike CommitMemoryPlaceholder, the reservation does not
     // need placeholder support and is not split or replaced; the existing address range
     // simply becomes accessible with the requested protection.
+    // WASM reservations are already accessible; committing ReadWrite preserves their contents.
     static void* CommitReservedMemory(void* address, size_t size, MemoryProtection protection);
 
     // Decommit (but do not release) a page-aligned, nonzero-sized range previously
@@ -93,8 +97,11 @@ public:
     // PopulateMemoryPlaceholder. Decommitted memory still belongs to the caller's
     // reservation; it is zero-filled on a later recommit and no longer occupies
     // physical/backing storage in the meantime.
+    // WASM zeroes the range without reclaiming or protecting its linear memory.
     static bool DecommitMemory(void* address, size_t size);
+    static bool ReleaseMemoryReservation(void* address, size_t size);
 
+#ifndef TARGET_WASM
     // Use placeholders to map file-backed sections at fixed offsets within one contiguous address range.
     // Replacing parts of the reservation preserves ownership of those addresses, avoiding races with other
     // allocations and allowing unmodified file-backed pages to stay shared instead of copying the image.
@@ -102,7 +109,6 @@ public:
     static void* ReserveMemoryPlaceholder(void* address, size_t size);
     static bool SplitMemoryPlaceholder(void* address, size_t size);
     static void* CommitMemoryPlaceholder(void* address, size_t size, MemoryProtection protection);
-    static bool ReleaseMemoryReservation(void* address, size_t size);
     static bool ProtectMemory(void* address, size_t size, MemoryProtection protection);
     static bool PopulateMemoryPlaceholder(void* address, size_t allocationSize, const void* source,
         size_t copySize, MemoryProtection protection);
@@ -180,12 +186,39 @@ public:
 #if defined(TARGET_UNIX) && !defined(TARGET_WASM)
     // Returns an error number directly, without discarding modified private pages.
     static int MarkMemoryAsNotNeeded(void* address, size_t size);
+
+    // Opportunistically reserves a pool of virtual memory located close to this library (within a 2 GB
+    // range), for later use by ReserveMemoryFromExecutableAllocatorWithinRange. Should be called once,
+    // early during process startup while the address space is still mostly empty.
+    // Returns false if synchronization could not be initialized.
+    static bool InitializeExecutableMemoryAllocator();
+
+    // Reserves (but does not commit) size bytes from the executable memory allocator's pool if the
+    // entire reservation fits within [rangeStart, rangeEnd), returning its address. Returns nullptr
+    // if the request cannot be satisfied, including if the allocator was never initialized or has run
+    // out of reserved memory; the caller should then fall back to reserving memory through other means.
+    // The size is rounded up to 64 KB. The caller owns that entire reservation and must release
+    // or trim it using the rounded size.
+    static void* ReserveMemoryFromExecutableAllocatorWithinRange(const void* rangeStart, const void* rangeEnd, size_t size);
+
+    // Gets the address range that ReserveMemoryFromExecutableAllocatorWithinRange prefers to allocate
+    // from, which may include this library's own loaded range if that range is nearby.
+    static void GetExecutableMemoryAllocatorPreferredRange(void** start, void** end);
 #endif // TARGET_UNIX && !TARGET_WASM
 
 #ifdef TARGET_APPLE
     static bool IsMapJitFlagNeeded();
 #endif // TARGET_APPLE
 
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+    // Nested scopes enable JIT writes on this thread until the outermost scope exits.
+    static void JitWriteProtect(bool writeEnable);
+#elif defined(HOST_IOS) || defined(HOST_TVOS) || defined(HOST_MACCATALYST)
+    // These platforms do not allow JIT write protection changes.
+    static void JitWriteProtect(bool) {}
+#endif // HOST_OSX && HOST_ARM64
+
+#ifndef TARGET_WASM
     // Create double mapped memory mapper
     // Parameters:
     //  pHandle                - receives handle of the double mapped memory mapper
@@ -288,6 +321,7 @@ public:
     // Return:
     //  true if it succeeded, false if it failed
     static bool FreeThunksFromTemplate(void* thunks, size_t templateSize);
+#endif // !TARGET_WASM
 
     // Allocate aligned memory block
     // Parameters:

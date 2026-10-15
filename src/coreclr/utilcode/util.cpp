@@ -343,6 +343,7 @@ HRESULT FakeCoCreateInstanceEx(REFCLSID       rclsid,
     return hr;
 }
 
+#ifndef TARGET_WASM
 // Reserves free memory within the range [pMinAddr..pMaxAddr] using
 // ClrVirtualQuery to find free memory and ClrVirtualAlloc to reserve it.
 //
@@ -497,6 +498,7 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
     return pResult;
 #endif // HOST_UNIX
 }
+#endif // !TARGET_WASM
 
 #ifdef HOST_WINDOWS
 //******************************************************************************

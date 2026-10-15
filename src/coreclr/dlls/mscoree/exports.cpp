@@ -14,6 +14,7 @@
 #include <utilcode.h>
 #include <corhost.h>
 #include <configuration.h>
+#include <minipal.h>
 #include "../../vm/ceemain.h"
 #ifdef FEATURE_GDBJIT
 #include "../../vm/gdbjithelpers.h"
@@ -313,6 +314,15 @@ int coreclr_initialize(
     {
         return hr;
     }
+
+#ifndef TARGET_WASM
+    // Repeated hosting initialization must not reset the allocator's pool.
+    static const bool executableMemoryAllocatorInitialized = VMToOSInterface::InitializeExecutableMemoryAllocator();
+    if (!executableMemoryAllocatorInitialized)
+    {
+        return E_OUTOFMEMORY;
+    }
+#endif // !TARGET_WASM
 #endif
 
     if (hostContract != nullptr)

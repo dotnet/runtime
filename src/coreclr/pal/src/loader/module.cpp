@@ -29,7 +29,6 @@ SET_DEFAULT_DEBUG_CHANNEL(LOADER); // some headers have code with asserts, so do
 #include "pal/utils.h"
 #include "pal/init.h"
 #include "pal/environ.h"
-#include "pal/virtual.h"
 #include "pal/map.hpp"
 #include "pal/stackstring.hpp"
 
@@ -39,6 +38,7 @@ SET_DEFAULT_DEBUG_CHANNEL(LOADER); // some headers have code with asserts, so do
 #include <limits.h>
 #include <dlfcn.h>
 #include <stdlib.h>
+#include <minipal/ospagesize.h>
 
 #if defined(TARGET_WASI)
 #include "pal/wasi/pal_wasi_missing.h"
@@ -239,7 +239,7 @@ GetProcAddress(
        because of the address range reserved for ordinals contain can
        be a valid string address on non-Windows systems
     */
-    if ((DWORD_PTR)lpProcName < GetVirtualPageSize())
+    if ((DWORD_PTR)lpProcName < minipal_getpagesize())
     {
         ASSERT("Attempt to locate symbol by ordinal?!\n");
     }

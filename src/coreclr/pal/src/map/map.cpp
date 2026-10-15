@@ -21,7 +21,6 @@ Abstract:
 #include "pal/palinternal.h"
 #include "pal/dbgmsg.h"
 #include "pal/init.h"
-#include "pal/virtual.h"
 #include "common.h"
 #include "pal/map.hpp"
 #include "pal/thread.hpp"
@@ -34,6 +33,7 @@ Abstract:
 #include <unistd.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <minipal/ospagesize.h>
 
 using namespace CorUnix;
 
@@ -1629,14 +1629,14 @@ BOOL MAPGetRegionInfo(LPVOID lpAddress,
         real_map_sz = pView->NumberOfBytesToMap;
 #endif
 
-        MappedSize = ALIGN_UP(real_map_sz, GetVirtualPageSize());
+        MappedSize = ALIGN_UP(real_map_sz, minipal_getpagesize());
         if ( real_map_addr <= lpAddress &&
              (VOID *)((UINT_PTR)real_map_addr+MappedSize) > lpAddress )
         {
             if (lpBuffer)
             {
                 SIZE_T regionSize = MappedSize + (UINT_PTR) real_map_addr -
-                       ALIGN_DOWN((UINT_PTR)lpAddress, GetVirtualPageSize());
+                       ALIGN_DOWN((UINT_PTR)lpAddress, minipal_getpagesize());
 
                 lpBuffer->BaseAddress = lpAddress;
                 lpBuffer->AllocationProtect = 0;

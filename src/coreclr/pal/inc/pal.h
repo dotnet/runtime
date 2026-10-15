@@ -147,7 +147,6 @@ extern bool g_arm64_atomics_present;
 
 #define PAL_INITIALIZE_NONE                         0x00
 #define PAL_INITIALIZE_SYNC_THREAD                  0x01
-#define PAL_INITIALIZE_EXEC_ALLOCATOR               0x02
 #define PAL_INITIALIZE_STD_HANDLES                  0x04
 #define PAL_INITIALIZE_REGISTER_SIGTERM_HANDLER     0x08
 #define PAL_INITIALIZE_DEBUGGER_EXCEPTIONS          0x10
@@ -165,7 +164,6 @@ extern bool g_arm64_atomics_present;
 
 // PAL_InitializeCoreCLR() flags
 #define PAL_INITIALIZE_CORECLR         (PAL_INITIALIZE | \
-                                        PAL_INITIALIZE_EXEC_ALLOCATOR | \
                                         PAL_INITIALIZE_REGISTER_SIGTERM_HANDLER | \
                                         PAL_INITIALIZE_DEBUGGER_EXCEPTIONS | \
                                         PAL_INITIALIZE_ENSURE_STACK_SIZE | \
@@ -2261,36 +2259,6 @@ PALIMPORT
 LPCSTR
 PALAPI
 PAL_GetLoadLibraryError();
-
-PALIMPORT
-LPVOID
-PALAPI
-PAL_VirtualReserveFromExecutableMemoryAllocatorWithinRange(
-    IN LPCVOID lpBeginAddress,
-    IN LPCVOID lpEndAddress,
-    IN SIZE_T dwSize,
-    IN BOOL storeAllocationInfo);
-
-PALIMPORT
-void
-PALAPI
-PAL_GetExecutableMemoryAllocatorPreferredRange(
-    OUT PVOID *start,
-    OUT PVOID *end);
-
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-
-PALIMPORT
-VOID
-PALAPI
-PAL_JitWriteProtect(bool writeEnable);
-
-#elif defined(HOST_IOS) || defined(HOST_TVOS) || defined(HOST_MACCATALYST)
-
-// Define empty macro for platforms that don't allow JIT write protection
-#define PAL_JitWriteProtect(writeEnable) do { } while(0)
-
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
 
 typedef struct _MEMORY_BASIC_INFORMATION {
     PVOID BaseAddress;

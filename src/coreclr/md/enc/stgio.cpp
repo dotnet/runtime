@@ -1021,11 +1021,13 @@ HRESULT StgIO::GetPtrForMem(            // Return code.
                 return (hr);
             }
 
+#ifndef TARGET_WASM
             // Change the memory to read only to avoid any modifications.  Any faults
             // that occur indicate a bug whereby the engine is trying to write to
             // protected memory.
             _ASSERTE(VMToOSInterface::ProtectMemory((void *) ((DWORD_PTR) m_pData + iOffset),
                     iSize, VMToOSInterface::MemoryProtection::ReadOnly));
+#endif // !TARGET_WASM
 
             // Record each new loaded page.
             for (;  j<i;  j++)

@@ -1,6 +1,5 @@
 set(SOURCES
     ${RUNTIME_DIR}/unix/CLREventBase.cpp
-    doublemapping.cpp
     dn-u16.cpp
     dn-stdio.cpp
     memory.cpp
@@ -8,6 +7,8 @@ set(SOURCES
 
 if(NOT CLR_CMAKE_TARGET_ARCH_WASM)
     list(APPEND SOURCES
+        doublemapping.cpp
+        execmemallocator.cpp
         mapping.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/../mapping.cpp
     )

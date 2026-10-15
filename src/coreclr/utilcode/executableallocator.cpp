@@ -124,7 +124,7 @@ bool ExecutableAllocator::IsDoubleMappingEnabled()
 {
     LIMITED_METHOD_CONTRACT;
 
-#if defined(HOST_APPLE) && defined(HOST_ARM64) || defined(HOST_WASM)
+#if defined(HOST_APPLE) && defined(HOST_ARM64)
     return false;
 #else
     return g_isWXorXEnabled;
@@ -201,7 +201,7 @@ void ExecutableAllocator::InitPreferredRange()
 {
 #ifdef TARGET_UNIX
     void *start, *end;
-    PAL_GetExecutableMemoryAllocatorPreferredRange(&start, &end);
+    VMToOSInterface::GetExecutableMemoryAllocatorPreferredRange(&start, &end);
     g_preferredRangeMin = (BYTE *)start;
     g_preferredRangeMax = (BYTE *)end;
 #endif
