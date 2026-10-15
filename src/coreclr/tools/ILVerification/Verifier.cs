@@ -17,6 +17,28 @@ using Internal.TypeVerifier;
 
 namespace ILVerify
 {
+    /// <summary>
+    /// Verifies the IL and metadata of modules read through <see cref="PEReader"/> instances.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A <see cref="Verifier"/> is not thread-safe. Do not call its methods, or enumerate sequences it returned,
+    /// on more than one thread at the same time. Calls that do not overlap may come from different threads.
+    /// </para>
+    /// <para>
+    /// The <c>Verify</c> methods return lazily evaluated sequences. Verification, including the
+    /// <see cref="IResolver"/> calls it needs, happens while the returned sequence is enumerated.
+    /// <see cref="SetSystemModuleName"/> calls the <see cref="IResolver"/> immediately.
+    /// </para>
+    /// <para>
+    /// The verifier creates a module for each <see cref="PEReader"/> it uses, whether passed to a <c>Verify</c>
+    /// method or returned by the <see cref="IResolver"/>. It may keep reading from that reader after the enumeration
+    /// that first used it has completed. Keep each such <see cref="PEReader"/> undisposed, and the
+    /// memory it reads alive and unchanged, until the <see cref="Verifier"/> and every sequence it returned are no
+    /// longer used. The verifier does not dispose them. To limit the memory held when verifying many distinct images,
+    /// use a new <see cref="Verifier"/> for each group of images and release the previous one.
+    /// </para>
+    /// </remarks>
     public class Verifier
     {
         private Lazy<ResourceManager> _stringResourceManager =
