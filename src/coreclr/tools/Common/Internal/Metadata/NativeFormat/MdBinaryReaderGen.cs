@@ -915,18 +915,6 @@ namespace Internal.Metadata.NativeFormat
             return offset;
         } // Read
 
-        public static uint Read(this NativeReader reader, uint offset, out NamespaceDefinitionHandleCollection values)
-        {
-            values = new NamespaceDefinitionHandleCollection(reader, offset);
-            uint count;
-            offset = reader.DecodeUnsigned(offset, out count);
-            for (uint i = 0; i < count; ++i)
-            {
-                offset = reader.SkipInteger(offset);
-            }
-            return offset;
-        } // Read
-
         public static uint Read(this NativeReader reader, uint offset, out MethodHandleCollection values)
         {
             values = new MethodHandleCollection(reader, offset);

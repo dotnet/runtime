@@ -501,7 +501,8 @@ internal sealed class SchemaDef
                 new MemberDef("RevisionNumber", "ushort", MemberDefFlags.Compare),
                 new MemberDef("PublicKey", "Byte", MemberDefFlags.Array | MemberDefFlags.Compare),
                 new MemberDef("Culture", "ConstantStringValue", MemberDefFlags.RecordRef | MemberDefFlags.Child | MemberDefFlags.Compare),
-                new MemberDef("RootNamespaceDefinition", "NamespaceDefinition", MemberDefFlags.RecordRef | MemberDefFlags.Child),
+                new MemberDef("TypeDefinitions", "TypeDefinition", MemberDefFlags.Map | MemberDefFlags.RecordRef | MemberDefFlags.Child),
+                new MemberDef("TypeForwarders", "TypeForwarder", MemberDefFlags.Map | MemberDefFlags.RecordRef | MemberDefFlags.Child),
                 new MemberDef("EntryPoint", "QualifiedMethod", MemberDefFlags.RecordRef),
                 new MemberDef("GlobalModuleType", "TypeDefinition", MemberDefFlags.RecordRef),
                 new MemberDef("CustomAttributes", "CustomAttribute", MemberDefFlags.List | MemberDefFlags.RecordRef | MemberDefFlags.Child),
@@ -528,17 +529,16 @@ internal sealed class SchemaDef
             name: "NamespaceDefinition",
             flags: RecordDefFlags.CustomCompare,
             members: new MemberDef[] {
-                new MemberDef("ParentScopeOrNamespace", new string[] { "NamespaceDefinition", "ScopeDefinition" }, MemberDefFlags.RecordRef | MemberDefFlags.Compare),
+                new MemberDef("Scope", "ScopeDefinition", MemberDefFlags.RecordRef | MemberDefFlags.Compare),
+                // The full namespace name, including dots.
                 new MemberDef("Name", "ConstantStringValue", MemberDefFlags.RecordRef | MemberDefFlags.Child | MemberDefFlags.Compare),
-                new MemberDef("TypeDefinitions", "TypeDefinition", MemberDefFlags.Map | MemberDefFlags.RecordRef | MemberDefFlags.Child),
-                new MemberDef("TypeForwarders", "TypeForwarder", MemberDefFlags.Map | MemberDefFlags.RecordRef | MemberDefFlags.Child),
-                new MemberDef("NamespaceDefinitions", "NamespaceDefinition", MemberDefFlags.Map | MemberDefFlags.RecordRef | MemberDefFlags.Child),
             }
         ),
         new RecordDef(
             name: "NamespaceReference",
             members: new MemberDef[] {
-                new MemberDef("ParentScopeOrNamespace", new string[] { "NamespaceReference", "ScopeReference" }, MemberDefFlags.RecordRef),
+                new MemberDef("Scope", "ScopeReference", MemberDefFlags.RecordRef),
+                // The full namespace name, including dots.
                 new MemberDef("Name", "ConstantStringValue", MemberDefFlags.RecordRef | MemberDefFlags.Child),
             }
         ),
@@ -749,7 +749,7 @@ internal sealed class SchemaDef
         new RecordDef(
             name: "TypeForwarder",
             members: new MemberDef[] {
-                new MemberDef("Scope", "ScopeReference", MemberDefFlags.RecordRef),
+                new MemberDef("Namespace", "NamespaceReference", MemberDefFlags.RecordRef),
                 new MemberDef("Name", "ConstantStringValue", MemberDefFlags.RecordRef | MemberDefFlags.Child | MemberDefFlags.Name),
                 new MemberDef("NestedTypes", "TypeForwarder", MemberDefFlags.List | MemberDefFlags.RecordRef | MemberDefFlags.Child),
                 // COMPLETENESS: new MemberDef("CustomAttributes", "CustomAttribute", MemberDefFlags.List | MemberDefFlags.RecordRef | MemberDefFlags.Child),
