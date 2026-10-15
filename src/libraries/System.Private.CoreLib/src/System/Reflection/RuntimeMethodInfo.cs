@@ -84,11 +84,6 @@ namespace System.Reflection
             {
                 throw new MemberAccessException(SR.Format(SR.Acc_CallStaticAbstract, declaringType, Name));
             }
-            // method is abstract class
-            else if (IsAbstract)
-            {
-                throw new MemberAccessException();
-            }
             else if (ReturnType.IsByRef)
             {
                 Type elementType = ReturnType.GetElementType()!;

@@ -1431,11 +1431,12 @@ namespace System.Reflection.Tests
             }
         }
 
-        // A static abstract method in an abstract class or in a sealed interface, which C# can't declare, is rejected as one
-        // in an interface. The method comes from its token: Type.GetMethod would list the type's methods, and a Checked
-        // CoreLib asserts there that a non-virtual method of a class isn't abstract.
+        // A static abstract method in an abstract class, sealed or not, or in a sealed interface is rejected as one in an
+        // interface. The method comes from its token: Type.GetMethod would list the type's methods, and a Checked CoreLib
+        // asserts there that a non-virtual method of a class isn't abstract.
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR), nameof(PlatformDetection.IsReflectionEmitSupported))]
         [InlineData(TypeAttributes.Public | TypeAttributes.Abstract, (MethodAttributes)0)]
+        [InlineData(TypeAttributes.Public | TypeAttributes.Abstract | TypeAttributes.Sealed, (MethodAttributes)0)]
         [InlineData(TypeAttributes.Public | TypeAttributes.Interface | TypeAttributes.Abstract | TypeAttributes.Sealed, MethodAttributes.Virtual)]
         public void CreateDelegate_EmittedStaticAbstract_ThrowsMemberAccessException(TypeAttributes typeAttributes, MethodAttributes virtualAttribute)
         {

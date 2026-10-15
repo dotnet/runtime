@@ -1017,20 +1017,6 @@ static PCODE GetVirtualCallStub(MethodDesc *method, TypeHandle scopeType)
         );
 }
 
-// Only abstract types (interfaces included) can declare a static abstract method, and the type's flags are cached,
-// unlike the method's attributes. Sealed classes are skipped, so the methods of a C# static class (abstract and sealed)
-// read no metadata here; this misses a static abstract method in an abstract sealed class, which C# can't declare.
-static bool IsStaticAbstractMethod(MethodDesc* pMD)
-{
-    WRAPPER_NO_CONTRACT;
-
-    if (!pMD->IsStatic())
-        return false;
-
-    MethodTable* pMT = pMD->GetMethodTable();
-    return pMT->IsAbstract() && (pMT->IsInterface() || !pMT->IsSealed()) && pMD->IsAbstract();
-}
-
 extern "C" BOOL QCALLTYPE Delegate_BindToMethodName(MethodTable* pDelegateMT, MethodTable *pTargetMT,
     QCall::TypeHandle pMethodType, LPCUTF8 pszMethodName, DelegateBindingFlags flags, QCall::ObjectHandleOnStack targetParameter, BindToMethodDetails *pBindToMethodDetails,
     QCallExceptionStatus* qcallError)
@@ -1069,16 +1055,16 @@ extern "C" BOOL QCALLTYPE Delegate_BindToMethodName(MethodTable* pDelegateMT, Me
             if (pCurMethod->IsGenericMethodDefinition())
                 continue;
 
+            // We can't match static abstract methods (since they have no implementation to call).
+            if (pCurMethod->IsStaticAbstract())
+                continue;
+
             // We can't match async variants (since we have only name).
             if (pCurMethod->IsAsyncVariantMethod())
                 continue;
 
             if (StrCompFunc(pszMethodName, pCurMethod->GetName()) == 0)
             {
-                // We can't match static abstract methods (since they have no implementation to call).
-                if (IsStaticAbstractMethod(pCurMethod))
-                    continue;
-
                 // found a matching string, get an associated method desc if needed
                 // Use unboxing stubs for instance and virtual methods on value types.
                 // If this is a open delegate to an instance method BindToMethod will rebind it to the non-unboxing method.
@@ -1157,7 +1143,7 @@ extern "C" BOOL QCALLTYPE Delegate_BindToMethodInfo(MethodTable* pDelegateMT, Me
         COMPlusThrow(kArgumentException, W("Arg_DlgtTargMeth"));
 
     // A static abstract method has no implementation to call.
-    if (IsStaticAbstractMethod(method))
+    if (method->IsStaticAbstract())
         COMPlusThrow(kMemberAccessException, W("Acc_BindStaticAbstract"));
 
     // get the invoke of the delegate
