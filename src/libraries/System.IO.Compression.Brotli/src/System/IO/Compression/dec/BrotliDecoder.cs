@@ -80,12 +80,11 @@ namespace System.IO.Compression
         /// <param name="bytesConsumed">The total number of bytes that were read from <paramref name="source" />.</param>
         /// <param name="bytesWritten">The total number of bytes that were written in the <paramref name="destination" />.</param>
         /// <returns>One of the enumeration values that indicates the status of the decompression operation.</returns>
-        /// <exception cref="System.IO.IOException">The window size declared by <paramref name="source" /> is greater than the configured maximum.</exception>
         /// <remarks>The return value can be as follows:
         /// - <see cref="System.Buffers.OperationStatus.Done" />: <paramref name="source" /> was successfully and completely decompressed into <paramref name="destination" />.
         /// - <see cref="System.Buffers.OperationStatus.DestinationTooSmall" />: There is not enough space in <paramref name="destination" /> to decompress <paramref name="source" />.
         /// - <see cref="System.Buffers.OperationStatus.NeedMoreData" />: The decompression action is partially done at least one more byte is required to complete the decompression task. This method should be called again with more input to decompress.
-        /// - <see cref="System.Buffers.OperationStatus.InvalidData" />: The data in <paramref name="source" /> is invalid and could not be decompressed.</remarks>
+        /// - <see cref="System.Buffers.OperationStatus.InvalidData" />: The data in <paramref name="source" /> is invalid and could not be decompressed, or the window size it declares is greater than the configured maximum.</remarks>
         public OperationStatus Decompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesConsumed, out int bytesWritten)
         {
             EnsureInitialized();
@@ -102,7 +101,7 @@ namespace System.IO.Compression
                         return OperationStatus.NeedMoreData;
 
                     case OperationStatus.Done when windowBits > _maxWindowLog2:
-                        throw new IOException(SR.Format(SR.BrotliDecoder_MaxWindowLog2Exceeded, windowBits, _maxWindowLog2));
+                        return OperationStatus.InvalidData;
 
                     default:
                         // A malformed header is reported by the native decoder, so that the error matches what callers that did not

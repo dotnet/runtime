@@ -161,9 +161,6 @@
   <data name="BrotliDecoder_InvalidSetParameter" xml:space="preserve">
     <value>The BrotliDecoder {0} can not be changed at current decoder state.</value>
   </data>
-  <data name="BrotliDecoder_MaxWindowLog2Exceeded" xml:space="preserve">
-    <value>The Brotli stream requires a window size of 2^{0} bytes, which is greater than the maxWindowLog2 of 2^{1} bytes allowed by the decompression options.</value>
-  </data>
   <!-- BrotliStream.Compress -->
   <data name="BrotliStream_Compress_UnsupportedOperation" xml:space="preserve">
     <value>Can not perform Read operations on a BrotliStream constructed with CompressionMode.Compress.</value>
