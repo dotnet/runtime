@@ -6950,8 +6950,6 @@ public:
 
     bool fgBlockIsGoodTailDuplicationCandidate(BasicBlock* block, unsigned* lclNum);
 
-    bool fgKeepCatchRetTargetNonEmpty(BasicBlock* block);
-
     bool fgOptimizeEmptyBlock(BasicBlock* block);
 
     bool fgLeadsToEmptyBlockCycle(BasicBlock* block);

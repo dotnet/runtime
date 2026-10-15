@@ -893,12 +893,20 @@ void CodeGen::genEmitEndBlock(BasicBlock* block)
                 }
 #endif // TARGET_AMD64
 
+                // A block a catch returns to must emit at least one instruction.
+                if (genIsCatchRetTargetWithoutCode(block))
+                {
+                    instGen(INS_nop);
+                }
+
                 removedJmp = true;
                 break;
             }
 #ifdef TARGET_XARCH
-            // Do not remove a jump between hot and cold regions.
-            bool isRemovableJmpCandidate = !m_compiler->fgInDifferentRegions(block, block->GetTarget());
+            // Do not remove a jump between hot and cold regions, or a jump that is the only
+            // instruction of a block a catch returns to.
+            bool isRemovableJmpCandidate =
+                !m_compiler->fgInDifferentRegions(block, block->GetTarget()) && !genIsCatchRetTargetWithoutCode(block);
 
             inst_JMP(EJ_jmp, block->GetTarget(), isRemovableJmpCandidate);
 #else  // !TARGET_XARCH
@@ -967,6 +975,49 @@ void CodeGen::genEmitEndBlock(BasicBlock* block)
         }
     }
 #endif // FEATURE_LOOP_ALIGN
+}
+
+//------------------------------------------------------------------------
+// genIsCatchRetTargetWithoutCode: check whether a catch returns to a block
+//   that has not emitted any code so far
+//
+// Arguments:
+//   block - the block whose code is being generated
+//
+// Return Value:
+//   true if 'block' is the target of a catch return and nothing has been
+//   emitted since its label
+//
+// Notes:
+//   When a catch returns with a thread abort pending, the runtime raises the
+//   abort again at the address the catch returns to and finds the handlers
+//   for it by that address. That address must be inside the EH regions of
+//   the block the catch returns to (see impImportLeave), so the block must
+//   emit at least one instruction of its own: if it emits none, the address
+//   belongs to the code that follows it. Whether the block emits anything is
+//   only known here: it can be empty in the IR, or have nodes that generate
+//   no code.
+//
+bool CodeGen::genIsCatchRetTargetWithoutCode(BasicBlock* block)
+{
+    // The target of a catch return always has a label, so nothing has been
+    // emitted for the block if the emitter is still at the start of the
+    // label's instruction group.
+    if ((block->bbEmitCookie != GetEmitter()->emitCurIG) || GetEmitter()->emitCurIGnonEmpty())
+    {
+        return false;
+    }
+
+    for (BasicBlock* const predBlock : block->PredBlocks())
+    {
+        if (predBlock->KindIs(BBJ_EHCATCHRET))
+        {
+            assert(block->HasFlag(BBF_HAS_LABEL));
+            return true;
+        }
+    }
+
+    return false;
 }
 
 // TODO-WASM-Factoring: this ifdef factoring is temporary. The end factoring should look like this:
