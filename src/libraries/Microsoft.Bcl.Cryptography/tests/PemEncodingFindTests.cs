@@ -38,6 +38,26 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
+        public void Find_Success_EmptyPreebPrefixed()
+        {
+            string content = "-----BEGIN -----BEGIN TEST-----\nZm9v\n-----END TEST-----";
+            AssertPemFound(content,
+                expectedLocation: 11..55,
+                expectedBase64: 32..36,
+                expectedLabel: 22..26);
+        }
+
+        [Fact]
+        public void Find_Success_EmptyPreebPrefixedMismatchedPosteb()
+        {
+            string content = "-----BEGIN -----BEGIN A-----END A-----END A-----";
+            AssertPemFound(content,
+                expectedLocation: 11..48,
+                expectedBase64: 28..33,
+                expectedLabel: 22..23);
+        }
+
+        [Fact]
         public void Find_Success_CompletePreebPrefixedDifferentLabel()
         {
             string content = "-----BEGIN FAIL----- -----BEGIN TEST-----\nZm9v\n-----END TEST-----";
