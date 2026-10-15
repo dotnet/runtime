@@ -11704,7 +11704,7 @@ NamedIntrinsic Compiler::resolveNamedIntrinsic(CORINFO_METHOD_HANDLE method, Nam
         const char* namespaceName          = nullptr;
         const char* enclosingClassNames[2] = {nullptr};
         info.compCompHnd->getMethodNameFromMetadata(method, &className, &namespaceName, enclosingClassNames,
-                                                ArrLen(enclosingClassNames));
+                                                    ArrLen(enclosingClassNames));
         if ((strncmp(className, "BH", 2) == 0) && opts.compSupportsISA.HasInstructionSet(InstructionSet_LAM_BH))
         {
             if (!IsTargetAbi(CORINFO_NATIVEAOT_ABI) || compExactlyDependsOn(InstructionSet_LAM_BH))
