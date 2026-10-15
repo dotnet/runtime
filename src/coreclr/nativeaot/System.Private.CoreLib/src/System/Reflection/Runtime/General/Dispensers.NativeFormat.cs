@@ -41,17 +41,17 @@ namespace System.Reflection.Runtime.Assemblies.NativeFormat
 {
     internal sealed partial class NativeFormatRuntimeAssembly
     {
-        internal static RuntimeAssembly GetRuntimeAssembly(MetadataReader reader, ScopeDefinitionHandle scope)
+        internal static NativeFormatRuntimeAssembly GetRuntimeAssembly(MetadataReader reader, ScopeDefinitionHandle scope)
         {
             return s_scopeToAssemblyDispenser.GetOrAdd(new RuntimeAssemblyKey(reader, scope));
         }
 
-        private static readonly Dispenser<RuntimeAssemblyKey, RuntimeAssembly> s_scopeToAssemblyDispenser =
-            DispenserFactory.CreateDispenserV<RuntimeAssemblyKey, RuntimeAssembly>(
+        private static readonly Dispenser<RuntimeAssemblyKey, NativeFormatRuntimeAssembly> s_scopeToAssemblyDispenser =
+            DispenserFactory.CreateDispenserV<RuntimeAssemblyKey, NativeFormatRuntimeAssembly>(
                 DispenserScenario.Scope_Assembly,
                 delegate (RuntimeAssemblyKey qScopeDefinition)
                 {
-                    return (RuntimeAssembly)new NativeFormat.NativeFormatRuntimeAssembly(qScopeDefinition.Reader, qScopeDefinition.Handle);
+                    return new NativeFormatRuntimeAssembly(qScopeDefinition.Reader, qScopeDefinition.Handle);
                 }
         );
 

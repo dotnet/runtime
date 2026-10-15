@@ -22,11 +22,13 @@ namespace System.Reflection.Runtime.Assemblies.NativeFormat
         private NativeFormatRuntimeAssembly(MetadataReader reader, ScopeDefinitionHandle scope)
         {
             Scope = new QScopeDefinition(reader, scope);
+            ScopeDefinition = scope.GetScopeDefinition(reader);
+            RuntimeAssemblyName = ScopeDefinition.ToRuntimeAssemblyName(reader);
         }
 
         internal sealed override MetadataReader GetMetadataReader() => Scope.Reader;
 
-        internal sealed override CustomAttributeHandleCollection GetCustomAttributeHandles() => Scope.ScopeDefinition.CustomAttributes;
+        internal sealed override CustomAttributeHandleCollection GetCustomAttributeHandles() => ScopeDefinition.CustomAttributes;
 
         public sealed override IEnumerable<TypeInfo> DefinedTypes
         {
@@ -34,7 +36,7 @@ namespace System.Reflection.Runtime.Assemblies.NativeFormat
             get
             {
                 MetadataReader reader = Scope.Reader;
-                ScopeDefinition scopeDefinition = Scope.ScopeDefinition;
+                ScopeDefinition scopeDefinition = ScopeDefinition;
                 IEnumerable<TypeDefinitionHandle> allTopLevelTypes = scopeDefinition.TypeDefinitions.AsEnumerable();
                 IEnumerable<TypeDefinitionHandle> allTypes = reader.GetTransitiveTypes(allTopLevelTypes, publicOnly: false);
                 foreach (TypeDefinitionHandle typeDefinitionHandle in allTypes)
@@ -48,7 +50,7 @@ namespace System.Reflection.Runtime.Assemblies.NativeFormat
             get
             {
                 MetadataReader reader = Scope.Reader;
-                ScopeDefinition scopeDefinition = Scope.ScopeDefinition;
+                ScopeDefinition scopeDefinition = ScopeDefinition;
                 IEnumerable<TypeDefinitionHandle> allTopLevelTypes = scopeDefinition.TypeDefinitions.AsEnumerable();
                 IEnumerable<TypeDefinitionHandle> allTypes = reader.GetTransitiveTypes(allTopLevelTypes, publicOnly: true);
                 foreach (TypeDefinitionHandle typeDefinitionHandle in allTypes)
@@ -62,7 +64,7 @@ namespace System.Reflection.Runtime.Assemblies.NativeFormat
             {
                 MetadataReader reader = Scope.Reader;
 
-                QualifiedMethodHandle entrypointHandle = Scope.ScopeDefinition.EntryPoint;
+                QualifiedMethodHandle entrypointHandle = ScopeDefinition.EntryPoint;
                 if (!entrypointHandle.IsNil)
                 {
                     QualifiedMethod entrypointMethod = entrypointHandle.GetQualifiedMethod(reader);
@@ -81,7 +83,7 @@ namespace System.Reflection.Runtime.Assemblies.NativeFormat
             get
             {
                 MetadataReader reader = Scope.Reader;
-                ScopeDefinition scopeDefinition = Scope.ScopeDefinition;
+                ScopeDefinition scopeDefinition = ScopeDefinition;
                 foreach (TypeForwarderHandle typeForwarderHandle in scopeDefinition.TypeForwarders)
                 {
                     TypeForwarder typeForwarder = typeForwarderHandle.GetTypeForwarder(reader);
@@ -130,13 +132,7 @@ namespace System.Reflection.Runtime.Assemblies.NativeFormat
             }
         }
 
-        internal sealed override RuntimeAssemblyName RuntimeAssemblyName
-        {
-            get
-            {
-                return Scope.Handle.ToRuntimeAssemblyName(Scope.Reader);
-            }
-        }
+        internal sealed override RuntimeAssemblyName RuntimeAssemblyName { get; }
 
         public sealed override bool Equals(object obj)
         {
@@ -161,5 +157,7 @@ namespace System.Reflection.Runtime.Assemblies.NativeFormat
         }
 
         internal QScopeDefinition Scope { get; }
+
+        internal ScopeDefinition ScopeDefinition { get; }
     }
 }
