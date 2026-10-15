@@ -254,11 +254,8 @@ public class Runtime_135637
         Assert.False(s_reachedAfterCatch);
     }
 
-    // The handlers that see the abort raised again after a catch follow from the code the JIT lays out for the
-    // catch's return. Under the interpreter the outer catch of LeaveOutOfOuterTry does not run.
-    public static bool IsTestCodeCompiled => PlatformDetection.IsMultithreadingSupported && !Utilities.IsCoreClrInterpreter;
-
-    [ConditionalFact(typeof(Runtime_135637), nameof(IsTestCodeCompiled))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/135871", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public static void TestEntryPoint()
     {
         RunAndAbort(nameof(CatchThenFinally), CatchThenFinally, "catch finally outer ", expectedFinallyRan: true);
