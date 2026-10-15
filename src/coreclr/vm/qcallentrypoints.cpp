@@ -106,7 +106,7 @@ static const Entry s_QCall[] =
     DllImportEntry(DebugDebugger_CustomNotification)
     DllImportEntry(DebugDebugger_IsLoggingHelper)
     DllImportEntry(DebugDebugger_IsManagedDebuggerAttached)
-#if defined(DEBUGGING_SUPPORTED) && !defined(TARGET_WASM)
+#if defined(DEBUGGING_SUPPORTED)
     DllImportEntry(DebugDebugger_GetFuncEvalMethod)
     DllImportEntry(DebugDebugger_PrepareFuncEvalResult)
     DllImportEntry(DebugDebugger_GetFuncEvalArgument)
@@ -115,7 +115,7 @@ static const Entry s_QCall[] =
     DllImportEntry(DebugDebugger_ReadFuncEvalPrimitiveRegister)
     DllImportEntry(DebugDebugger_WriteFuncEvalObjectRegister)
     DllImportEntry(DebugDebugger_WriteFuncEvalRegister)
-#endif // DEBUGGING_SUPPORTED && !TARGET_WASM
+#endif // DEBUGGING_SUPPORTED
     DllImportEntry(Delegate_BindToMethodName)
     DllImportEntry(Delegate_BindToMethodInfo)
     DllImportEntry(Delegate_InitializeVirtualCallStub)

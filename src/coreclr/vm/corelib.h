@@ -1069,7 +1069,7 @@ DEFINE_CLASS(DEBUGGER,              Diagnostics,            Debugger)
 DEFINE_METHOD(DEBUGGER,             INVOKE_FUNCTION,        InvokeFunction,     SM_IntPtr_RetVoid)
 DEFINE_METHOD(DEBUGGER,             USERBREAKPOINT,         UserBreakpoint,     SM_RetVoid)
 
-#if defined(DEBUGGING_SUPPORTED) && !defined(TARGET_WASM)
+#if defined(DEBUGGING_SUPPORTED)
 DEFINE_CLASS_U(Diagnostics, Debugger+FunctionEvaluation+Context, DebuggerFuncEvalContext)
 DEFINE_FIELD_U(Evaluation,        DebuggerFuncEvalContext, pEval)
 DEFINE_FIELD_U(Objects,           DebuggerFuncEvalContext, pObjects)
@@ -1090,7 +1090,7 @@ DEFINE_CLASS_U(Diagnostics, Debugger+FunctionEvaluation+NativeArgument, Debugger
 DEFINE_FIELD_U(Literal,         DebuggerFuncEvalArgument, pLiteral)
 DEFINE_FIELD_U(ElementType,     DebuggerFuncEvalArgument, elementType)
 DEFINE_FIELD_U(Flags,           DebuggerFuncEvalArgument, flags)
-#endif // DEBUGGING_SUPPORTED && !TARGET_WASM
+#endif // DEBUGGING_SUPPORTED
 
 DEFINE_CLASS(BUFFER,                System,                 Buffer)
 DEFINE_METHOD(BUFFER,               MEMCPY_PTRBYTE_ARRBYTE, Memcpy,                 SM_PtrByte_Int_ArrByte_Int_Int_RetVoid)
