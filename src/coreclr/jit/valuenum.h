@@ -1371,10 +1371,11 @@ public:
         return ConstantValueInternal<T>(vn DEBUGARG(true));
     }
 
+    // Returns true if vn is a non-handle integral constant that fits in T.
     template <typename T>
     bool IsVNIntegralConstant(ValueNum vn, T* value)
     {
-        if (!IsVNConstant(vn) || !varTypeIsIntegral(TypeOfVN(vn)))
+        if (!IsVNConstantNonHandle(vn) || !varTypeIsIntegral(TypeOfVN(vn)))
         {
             *value = 0;
             return false;

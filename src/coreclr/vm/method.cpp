@@ -3219,8 +3219,10 @@ bool MethodDesc::DetermineIsEligibleForTieredCompilationInvariantForAllMethodsIn
         // be tiered currently, so make the method ineligible for tiering to avoid some unnecessary overhead
         (g_pConfig->TieredCompilation_QuickJit() || GetMethodTable()->GetModule()->IsReadyToRun()) &&
 
+#ifdef PROFILING_SUPPORTED
         // Policy - Tiered compilation is not disabled by the profiler
         !CORProfilerDisableTieredCompilation() &&
+#endif // PROFILING_SUPPORTED
 
         // Policy - Generating optimized code is not disabled
         !IsJitOptimizationDisabledForAllMethodsInChunk();

@@ -2234,11 +2234,16 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             // or uint) and for a source vector of any width, provided the element being
             // extracted is one of the first four. That is all count_s can encode and all
             // that resides in the low 128 bits, which is the only part insertps reads.
+            //
+            // A floating-point CreateScalarUnsafe whose user is another HW intrinsic has
+            // already been removed by the time we get here (operands are lowered before
+            // their users), so we must also recognize the bare extraction as op2.
 
-            if ((count_s == 0) && op2->OperIsHWIntrinsic(NI_Vector_CreateScalarUnsafe))
+            if ((count_s == 0) && op2->OperIsHWIntrinsic())
             {
-                GenTreeHWIntrinsic* createScalar = op2->AsHWIntrinsic();
-                GenTree*            scalarOp     = createScalar->Op(1);
+                GenTreeHWIntrinsic* createScalar =
+                    op2->OperIsHWIntrinsic(NI_Vector_CreateScalarUnsafe) ? op2->AsHWIntrinsic() : nullptr;
+                GenTree* scalarOp = (createScalar != nullptr) ? createScalar->Op(1) : op2;
 
                 if (scalarOp->OperIsHWIntrinsic() && (genTypeSize(scalarOp->AsHWIntrinsic()->GetSimdBaseType()) == 4))
                 {
@@ -2290,7 +2295,11 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                         }
 
                         BlockRange().Remove(extract);
-                        BlockRange().Remove(createScalar);
+
+                        if (createScalar != nullptr)
+                        {
+                            BlockRange().Remove(createScalar);
+                        }
                     }
                 }
             }
@@ -7561,10 +7570,12 @@ void Lowering::ContainCheckIndir(GenTreeIndir* node)
         // The address of an indirection that requires its address in a reg.
         // Skip any further processing that might otherwise make it contained.
     }
-    else if (addr->OperIs(GT_LCL_ADDR) && IsContainableLclAddr(addr->AsLclFld(), node->ValueSize()))
+    else if (addr->OperIs(GT_LCL_ADDR) && !node->IsVolatile() &&
+             IsContainableLclAddr(addr->AsLclFld(), node->ValueSize()))
     {
         // These nodes go into an addr mode:
         // - GT_LCL_ADDR is a stack addr mode.
+        // Volatile accesses are not contained so that the emitter's stack move peephole cannot remove them.
         MakeSrcContained(node, addr);
     }
     else if (addr->IsCnsIntOrI())
@@ -8162,7 +8173,8 @@ void Lowering::ContainCheckStoreLoc(GenTreeLclVarCommon* storeLoc) const
     assert(storeLoc->OperIsLocalStore());
     GenTree* op1 = storeLoc->gtGetOp1();
 
-    if (op1->OperIs(GT_BITCAST))
+    // A small store implicitly truncates its source, so it cannot store directly from the other type.
+    if (op1->OperIs(GT_BITCAST) && !varTypeIsSmall(storeLoc))
     {
         // If we know that the source of the bitcast will be in a register, then we can make
         // the bitcast itself contained. This will allow us to store directly from the other
@@ -8934,77 +8946,77 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
 
                 default:
                 SIZE_FROM_TUPLE_TYPE:
-                {
-                    switch (tupleType)
                     {
-                        case INS_TT_NONE:
-                        case INS_TT_FULL:
-                        case INS_TT_FULL_MEM:
+                        switch (tupleType)
                         {
-                            // full parent size required
-                            break;
-                        }
+                            case INS_TT_NONE:
+                            case INS_TT_FULL:
+                            case INS_TT_FULL_MEM:
+                            {
+                                // full parent size required
+                                break;
+                            }
 
-                        case INS_TT_HALF:
-                        case INS_TT_HALF_MEM:
-                        {
-                            expectedSize /= 2;
-                            break;
-                        }
-
-                        case INS_TT_QUARTER_MEM:
-                        {
-                            expectedSize /= 4;
-                            break;
-                        }
-
-                        case INS_TT_EIGHTH_MEM:
-                        {
-                            expectedSize /= 8;
-                            break;
-                        }
-
-                        case INS_TT_MOVDDUP:
-                        {
-                            if (expectedSize == genTypeSize(TYP_SIMD16))
+                            case INS_TT_HALF:
+                            case INS_TT_HALF_MEM:
                             {
                                 expectedSize /= 2;
+                                break;
                             }
-                            break;
-                        }
 
-                        case INS_TT_TUPLE1_FIXED:
-                        case INS_TT_TUPLE1_SCALAR:
-                        {
-                            expectedSize = CodeGenInterface::instInputSize(ins);
-                            break;
-                        }
+                            case INS_TT_QUARTER_MEM:
+                            {
+                                expectedSize /= 4;
+                                break;
+                            }
 
-                        case INS_TT_TUPLE2:
-                        {
-                            expectedSize = CodeGenInterface::instInputSize(ins) * 2;
-                            break;
-                        }
+                            case INS_TT_EIGHTH_MEM:
+                            {
+                                expectedSize /= 8;
+                                break;
+                            }
 
-                        case INS_TT_TUPLE4:
-                        {
-                            expectedSize = CodeGenInterface::instInputSize(ins) * 4;
-                            break;
-                        }
+                            case INS_TT_MOVDDUP:
+                            {
+                                if (expectedSize == genTypeSize(TYP_SIMD16))
+                                {
+                                    expectedSize /= 2;
+                                }
+                                break;
+                            }
 
-                        case INS_TT_TUPLE8:
-                        {
-                            expectedSize = CodeGenInterface::instInputSize(ins) * 8;
-                            break;
-                        }
+                            case INS_TT_TUPLE1_FIXED:
+                            case INS_TT_TUPLE1_SCALAR:
+                            {
+                                expectedSize = CodeGenInterface::instInputSize(ins);
+                                break;
+                            }
 
-                        default:
-                        {
-                            unreached();
+                            case INS_TT_TUPLE2:
+                            {
+                                expectedSize = CodeGenInterface::instInputSize(ins) * 2;
+                                break;
+                            }
+
+                            case INS_TT_TUPLE4:
+                            {
+                                expectedSize = CodeGenInterface::instInputSize(ins) * 4;
+                                break;
+                            }
+
+                            case INS_TT_TUPLE8:
+                            {
+                                expectedSize = CodeGenInterface::instInputSize(ins) * 8;
+                                break;
+                            }
+
+                            default:
+                            {
+                                unreached();
+                            }
                         }
+                        break;
                     }
-                    break;
-                }
             }
             break;
         }

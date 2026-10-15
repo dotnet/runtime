@@ -9948,6 +9948,7 @@ BYTE* Debugger::SerializeModuleMetaData(Module * pModule, DWORD * countBytes)
 
     LOG((LF_CORDB, LL_INFO10000, "Debugger::SMMD called\n"));
 
+#if defined(PROFILING_SUPPORTED) || defined(FEATURE_METADATA_UPDATER)
     // Do not release the emitter. This is a weak reference.
     IMetaDataEmit *pEmitter = pModule->GetEmitter();
     _ASSERTE(pEmitter != NULL);
@@ -10006,6 +10007,11 @@ BYTE* Debugger::SerializeModuleMetaData(Module * pModule, DWORD * countBytes)
     pInternalEmitter->SetMDUpdateMode(originalUpdateMode, NULL);
     LOG((LF_CORDB, LL_INFO10000, "Debugger::SMMD exiting\n"));
     return metadataBuffer;
+#else
+    (void)pModule;
+    *countBytes = 0;
+    ThrowHR(E_NOTIMPL);
+#endif // PROFILING_SUPPORTED || FEATURE_METADATA_UPDATER
 }
 
 //---------------------------------------------------------------------------------------
@@ -12061,6 +12067,7 @@ HRESULT Debugger::DeoptimizeMethod(Module* pModule, mdMethodDef methodDef)
         }
     }
 
+#ifdef FEATURE_REJIT
     // Next any JIT methods
     MethodDesc *pMethodDesc = pModule->LookupMethodDef(methodDef);
     if (pMethodDesc != NULL && pModule->HasJitInlineTrackingMap())
@@ -12090,6 +12097,7 @@ HRESULT Debugger::DeoptimizeMethod(Module* pModule, mdMethodDef methodDef)
             DeoptimizeMethodHelper(inlinerModule, inlinerMethodDef);
         }
     }
+#endif // FEATURE_REJIT
 
     return hr;
 }
