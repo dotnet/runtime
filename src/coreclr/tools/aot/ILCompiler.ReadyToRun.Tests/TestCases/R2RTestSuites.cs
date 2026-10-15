@@ -166,33 +166,32 @@ public class R2RTestSuites
 
         static void Validate(ReadyToRunReader reader)
         {
-            // Helper cells are bound lazily and aren't listed in per-method fixups, so check the import sections.
+            // Box and isinst reference their types through NEW_OBJECT/IS_INSTANCE_OF imports
+            // or TYPE_HANDLE fixups depending on the target, so look for the type in any import.
             var formattingOptions = new SignatureFormattingOptions();
-            var isInstImports = new List<string>();
-            var newObjectImports = new List<string>();
+            var importedTypes = new HashSet<string>();
             foreach (ReadyToRunImportSection section in reader.ImportSections)
             {
                 foreach (ReadyToRunImportSection.ImportSectionEntry entry in section.Entries)
                 {
-                    if (entry.Signature?.FixupKind == ReadyToRunFixupKind.IsInstanceOf)
-                        isInstImports.Add(entry.Signature.ToString(formattingOptions));
-                    else if (entry.Signature?.FixupKind == ReadyToRunFixupKind.NewObject)
-                        newObjectImports.Add(entry.Signature.ToString(formattingOptions));
+                    string? signature = entry.Signature?.ToString(formattingOptions);
+                    int kindStart = signature?.LastIndexOf(" (", StringComparison.Ordinal) ?? -1;
+                    if (kindStart > 0)
+                        importedTypes.Add(signature![..kindStart]);
                 }
             }
 
-            string diagnostic =
-                $"IsInstanceOf: [{string.Join(", ", isInstImports)}]; NewObject: [{string.Join(", ", newObjectImports)}]";
+            string diagnostic = $"Imported types: [{string.Join(", ", importedTypes)}]";
 
-            // A cast to an interface may start succeeding in a later version, so it must not be folded.
-            Assert.True(isInstImports.Exists(s => s.StartsWith("INotImplemented ", StringComparison.Ordinal)), diagnostic);
-            Assert.True(newObjectImports.Exists(s => s.StartsWith("ControlStruct ", StringComparison.Ordinal)), diagnostic);
+            // An interface cast may succeed in a later version, so it isn't folded.
+            Assert.True(importedTypes.Contains("ControlStruct"), diagnostic);
+            Assert.True(importedTypes.Contains("INotImplemented"), diagnostic);
 
-            // Casts of a boxed value type to a different non-interface type fail in every version,
-            // so both the box and the cast helper are folded away. The shared canonical body of
-            // Classify<T> still casts (but doesn't box), so its IsInstanceOf imports remain.
-            Assert.True(newObjectImports.Count == 1, diagnostic);
-            Assert.False(isInstImports.Exists(s => s.StartsWith("TargetStruct ", StringComparison.Ordinal)), diagnostic);
+            // Value type casts to other non-interface types fold, along with their boxes.
+            Assert.False(importedTypes.Contains("char"), diagnostic);
+            Assert.False(importedTypes.Contains("byte"), diagnostic);
+            Assert.False(importedTypes.Contains("SourceStruct"), diagnostic);
+            Assert.False(importedTypes.Contains("TargetStruct"), diagnostic);
         }
     }
 

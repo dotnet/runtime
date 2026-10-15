@@ -24,18 +24,8 @@ public struct ControlStruct
 
 public static class BoxIsInstFolding
 {
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static int Classify<T>(T value)
-    {
-        if (value is byte or sbyte)
-            return 1;
-        if (value is short or ushort or char)
-            return 2;
-        return 3;
-    }
-
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static int ClassifyChar(char c) => Classify(c);
+    public static bool CharIsByte(char c) => (object)c is byte;
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static bool StructIsOtherStruct(SourceStruct s) => (object)s is TargetStruct;
