@@ -1255,7 +1255,7 @@ namespace Microsoft.Extensions.FileProviders
             }
         }
 
-        [ConditionalFact]
+        [Fact]
         [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/WASI/iOS/tvOS")]
         public async Task TokensFiredForNewDirectoryContentsOnRename()
         {
