@@ -440,14 +440,13 @@ EXTERN_C void QCALLTYPE RhEnumerateConfigurationValues(void* configurationContex
 GCHeapHardLimitInfo g_gcHeapHardLimitInfo;
 bool g_gcHeapHardLimitInfoSpecified = false;
 
-FCIMPL1(void, RhRefreshMemoryLimit, GCHeapHardLimitInfo heapHardLimitInfo)
+EXTERN_C int QCALLTYPE RhRefreshMemoryLimit(GCHeapHardLimitInfo heapHardLimitInfo)
 {
     IGCHeap* pHeap = GCHeapUtilities::GetGCHeap();
     g_gcHeapHardLimitInfo = heapHardLimitInfo;
     g_gcHeapHardLimitInfoSpecified = true;
-    pHeap->RefreshMemoryLimit();
+    return pHeap->RefreshMemoryLimit();
 }
-FCIMPLEND
 
 EXTERN_C uint64_t QCALLTYPE RhGetGenerationBudget(int generation)
 {

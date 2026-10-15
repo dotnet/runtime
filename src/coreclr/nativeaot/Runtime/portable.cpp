@@ -324,11 +324,10 @@ FCIMPL2(Object *, RhpCheckedXchg, Object ** location, Object * value)
 }
 FCIMPLEND
 
-FCIMPL1(HRESULT, RhAllocateThunksMapping, void ** ppThunksSection)
+EXTERN_C HRESULT QCALLTYPE RhAllocateThunksMapping(void** ppThunksSection)
 {
     return E_FAIL;
 }
-FCIMPLEND
 
 FCIMPL0(void *, RhpGetThunksBase)
 {

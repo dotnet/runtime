@@ -263,7 +263,7 @@ typedef uint8_t CODE_LOCATION;
          "local.get 0\n" /* Capture callersStackPointer onto the stack for setting the __stack_pointer */ \
          "global.get __stack_pointer\n" /* Get current value of stack global */ \
          "local.set 0\n"  /* Store current stack global into callersStackPointer local */ \
-         "global.set __stack_pointer\n" /* Set stack global to the initial value of callersStackPointer, which is the current stack pointer for the interpreter call */
+         "global.set __stack_pointer\n" /* Set stack global to the initial value of callersStackPointer, which is the current stack pointer for the managed caller */
 
 #define WASM_WRAPPER_FUNC_EPILOG(_method) \
              "call %0\n" /* Call the actual implementation function*/ \
