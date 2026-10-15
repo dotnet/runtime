@@ -33,10 +33,9 @@ namespace System.IO.Compression
         /// <summary>
         /// Gets or sets the base-2 logarithm of the window size for a Brotli compression stream.
         /// </summary>
-        /// <exception cref="ArgumentOutOfRangeException" accessor="set">The value is less than 10 or greater than 30.</exception>
+        /// <exception cref="ArgumentOutOfRangeException" accessor="set">The value is less than 10 or greater than 24.</exception>
         /// <remarks>
-        /// The value is expressed as the base-2 logarithm of the size in bytes of the sliding window used by the LZ77 algorithm. Larger window sizes can improve compression ratio but use more memory. Range is from 10 to 30. The default value is 22.
-        /// Values greater than 24 produce a stream that uses the "Large Window Brotli" extension, which is not part of RFC 7932 and which decoders must explicitly opt into. Such values also require a <see cref="Quality"/> greater than 2.
+        /// The value is expressed as the base-2 logarithm of the size in bytes of the sliding window used by the LZ77 algorithm. Larger window sizes can improve compression ratio but use more memory. Range is from 10 to 24. The default value is 22.
         /// </remarks>
         public int WindowLog2
         {
@@ -44,7 +43,7 @@ namespace System.IO.Compression
             set
             {
                 ArgumentOutOfRangeException.ThrowIfLessThan(value, BrotliUtils.WindowBits_Min, nameof(value));
-                ArgumentOutOfRangeException.ThrowIfGreaterThan(value, BrotliUtils.WindowBits_MaxLarge, nameof(value));
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(value, BrotliUtils.WindowBits_Max, nameof(value));
 
                 _windowLog2 = value;
             }

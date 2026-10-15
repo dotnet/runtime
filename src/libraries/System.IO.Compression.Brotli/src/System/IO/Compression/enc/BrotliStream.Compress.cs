@@ -36,12 +36,9 @@ namespace System.IO.Compression
         /// <param name="compressionOptions">The Brotli options for fine tuning the compression stream.</param>
         /// <param name="leaveOpen"><see langword="true" /> to leave the stream open after disposing the <see cref="System.IO.Compression.BrotliStream" /> object; otherwise, <see langword="false" />.</param>
         /// <exception cref="ArgumentNullException"><paramref name="stream"/> or <paramref name="compressionOptions"/> is <see langword="null" />.</exception>
-        /// <exception cref="ArgumentException"><see cref="BrotliCompressionOptions.WindowLog2"/> is greater than 24, which requires the "Large Window Brotli" extension, but <see cref="BrotliCompressionOptions.Quality"/> is too low for the encoder to use it.</exception>
         public BrotliStream(Stream stream, BrotliCompressionOptions compressionOptions, bool leaveOpen = false) : this(stream, CompressionMode.Compress, leaveOpen)
         {
             ArgumentNullException.ThrowIfNull(compressionOptions);
-
-            BrotliUtils.ValidateLargeWindowQuality(compressionOptions.Quality, compressionOptions.WindowLog2);
 
             _encoder.SetQuality(compressionOptions.Quality);
             _encoder.SetWindow(compressionOptions.WindowLog2);

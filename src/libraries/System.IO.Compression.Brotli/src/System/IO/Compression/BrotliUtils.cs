@@ -15,26 +15,26 @@ namespace System.IO.Compression
         public const int Quality_Min = 0;
         public const int Quality_Default = 4;
         public const int Quality_Max = 11;
-        /// <summary>
-        /// The highest quality that uses static entropy codes (MAX_QUALITY_FOR_STATIC_ENTROPY_CODES). The native encoder silently
-        /// disables large-window mode at or below this quality, clamping the window back to <see cref="WindowBits_Max"/>.
-        /// </summary>
-        public const int Quality_MaxForStaticEntropyCodes = 2;
 
         /// <summary>
         /// Reads the window size declared by the header of a Brotli stream without consuming any input.
         /// </summary>
         /// <param name="source">A buffer positioned at the start of a Brotli stream.</param>
         /// <param name="windowBits">When this method returns <see cref="OperationStatus.Done"/>, the declared base-2 logarithm of the window size.</param>
+        /// <param name="largeWindowEnabled">
+        /// <see langword="true"/> if the decoder has "Large Window Brotli" enabled; otherwise, <see langword="false"/>.
+        /// </param>
         /// <returns>
         /// <see cref="OperationStatus.Done"/> if the window size was determined; <see cref="OperationStatus.NeedMoreData"/> if
         /// <paramref name="source"/> is too short to determine it; otherwise <see cref="OperationStatus.InvalidData"/>.
         /// </returns>
         /// <remarks>
         /// The header is read least-significant-bit first and occupies at most 14 bits. This mirrors DecodeWindowBits and the
-        /// BROTLI_STATE_LARGE_WINDOW_BITS state of the native decoder.
+        /// BROTLI_STATE_LARGE_WINDOW_BITS state of the native decoder: when <paramref name="largeWindowEnabled"/> is
+        /// <see langword="false"/>, the "Large Window Brotli" escape is rejected as soon as it is recognized, without waiting
+        /// for the byte that would otherwise carry the window size, matching the native decoder's behavior.
         /// </remarks>
-        internal static OperationStatus TryGetWindowBits(ReadOnlySpan<byte> source, out int windowBits)
+        internal static OperationStatus TryGetWindowBits(ReadOnlySpan<byte> source, out int windowBits, bool largeWindowEnabled)
         {
             // The header is a variable-length prefix, read least-significant-bit first:
             //   bit 0 == 0         -> window is 16
@@ -74,6 +74,13 @@ namespace System.IO.Compression
                 return OperationStatus.Done;
             }
 
+            // The native decoder rejects the escape outright when Large Window Brotli is disabled, without ever looking at
+            // the reserved bit or the window size that would otherwise follow.
+            if (!largeWindowEnabled)
+            {
+                return OperationStatus.InvalidData;
+            }
+
             // The escape is followed by a reserved bit that must be zero, and then by the window size itself.
             if ((header & 0b1000_0000) != 0)
             {
@@ -89,17 +96,6 @@ namespace System.IO.Compression
             return windowBits is < WindowBits_Min or > WindowBits_MaxLarge
                 ? OperationStatus.InvalidData
                 : OperationStatus.Done;
-        }
-
-        /// <summary>
-        /// Validates that a large window size is paired with a quality that the native encoder will honor.
-        /// </summary>
-        internal static void ValidateLargeWindowQuality(int quality, int windowLog2)
-        {
-            if (windowLog2 > WindowBits_Max && quality <= Quality_MaxForStaticEntropyCodes)
-            {
-                throw new ArgumentException(SR.Format(SR.BrotliEncoder_LargeWindowQuality, windowLog2, quality, Quality_MaxForStaticEntropyCodes));
-            }
         }
 
         internal static int GetQualityFromCompressionLevel(CompressionLevel compressionLevel) =>

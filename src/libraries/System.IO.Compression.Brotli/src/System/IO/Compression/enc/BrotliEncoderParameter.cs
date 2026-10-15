@@ -10,7 +10,6 @@ namespace System.IO.Compression
     /// LGBlock - Recommended input block size. Encoder may reduce this value, e.g. if input is much smaller than window size. Range is from BROTLI_MIN_INPUT_BLOCK_BITS to BROTLI_MAX_INPUT_BLOCK_BITS. Bigger input block size allows better compression, but consumes more memory.
     /// LCModeling-  Flag that affects usage of "literal context modeling" format feature. This flag is a "decoding-speed vs compression ratio" trade-off.
     /// SizeHint - Estimated total input size for all BrotliEncoderCompressStream calls. The default value is 0, which means that the total input size is unknown.
-    /// LargeWindow - Flag that determines if "Large Window Brotli" is used, allowing LGWin to range up to BROTLI_LARGE_MAX_WINDOW_BITS instead of BROTLI_MAX_WINDOW_BITS.
     /// </summary>
     internal enum BrotliEncoderParameter
     {
@@ -19,7 +18,6 @@ namespace System.IO.Compression
         LGWin,
         LGBlock,
         LCModeling,
-        SizeHint,
-        LargeWindow
+        SizeHint
     }
 }
