@@ -255,7 +255,7 @@ public class Runtime_135637
     }
 
     [ActiveIssue("https://github.com/dotnet/runtime/issues/135871", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR), nameof(PlatformDetection.IsMultithreadingSupported))]
     public static void TestEntryPoint()
     {
         RunAndAbort(nameof(CatchThenFinally), CatchThenFinally, "catch finally outer ", expectedFinallyRan: true);
