@@ -4395,8 +4395,9 @@ public:
 
 #if defined(TARGET_WASM)
     unsigned lvaWasmSpArg = BAD_VAR_NUM; // lcl var index of Wasm stack pointer arg
+    unsigned lvaWasmPortableEntryPointArg = BAD_VAR_NUM; // lcl var index of the incoming portable entrypoint
     unsigned lvaWasmVirtualIP = BAD_VAR_NUM; // Wasm virtual IP slot
-    unsigned lvaWasmFunctionIndex = BAD_VAR_NUM; // Wasm function index slot
+    unsigned lvaWasmFunctionIndex = BAD_VAR_NUM; // Wasm frame identity slot
     unsigned lvaWasmResumeIP = BAD_VAR_NUM; // Wasm catch resumption IP slot
 
     struct WasmSpillSlot
