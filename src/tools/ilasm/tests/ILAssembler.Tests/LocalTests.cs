@@ -688,11 +688,18 @@ namespace ILAssembler.Tests
         [InlineData("4294967295")]
         [InlineData("040000000000")]
         [InlineData("0x10000000000000000")]
+        [InlineData("0xFFFFFFFFFFFFFFFF")]
+        [InlineData("18446744073709551615")]
+        [InlineData("01777777777777777777777")]
+        [InlineData("02000000000000000000000")]
+        [InlineData("-02000000000000000000000")]
         public void ExplicitSlot_OutsideTheSixteenBitRange_IsReportedAndTakesTheNextSlot(string slot)
         {
             // The message names the slot as written: 2147483648 does not fit an int32, and is not reported as
             // the negative value it wraps to. The literals past 32 bits would wrap to 0, and 4294967295 to -1
-            // ("no explicit slot"); slot 0 is taken first, so x taking slot 1 shows that none of them did.
+            // ("no explicit slot"), as would 0xFFFFFFFFFFFFFFFF, 18446744073709551615 and 01777777777777777777777
+            // read as an int64, and the octal literals of 2^64 to 0; slot 0 is taken first, so x taking slot 1
+            // shows that none of them did.
             string source = OneMethod($$"""
                 .locals init ([0] int32 a, [{{slot}}] int32 x)
                 ldloc x
@@ -717,6 +724,8 @@ namespace ILAssembler.Tests
         [InlineData("65535")]
         [InlineData("0xFFFF")]
         [InlineData("0177777")]
+        [InlineData("0x0000000000000000000000FFFF")]
+        [InlineData("0000000000000000000000177777")]
         public void ExplicitSlot_65535_IsInRangeHoweverWritten(string slot)
         {
             // The slots before 65535 are never typed, so each gets an undefined-type error; nothing else is
@@ -796,6 +805,30 @@ namespace ILAssembler.Tests
             using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
 
             Assert.Equal(["stloc 1"], GetLocalOperands(pe));
+        }
+
+        [Theory]
+        [InlineData("09")]
+        [InlineData("-018")]
+        public void ExplicitSlot_InvalidOctal_IsReportedOnlyAsAnInvalidLiteral(string slot)
+        {
+            // The int32 rule reports the literal and reads it as 0. The slot is not read another way (as decimal,
+            // or as out of range) and reported again.
+            string source = OneMethod($$"""
+                .locals init ([{{slot}}] int32 x)
+                ldloc x
+                pop
+                ret
+                """);
+
+            (ImmutableArray<Diagnostic> diagnostics, CompilationResult? result) =
+                DocumentCompilerTestHelpers.CompileWithDiagnostics(source, new Options { ErrorTolerant = true });
+
+            Diagnostic diagnostic = Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticIds.InvalidOctalLiteral, diagnostic.Id);
+            Assert.NotNull(result);
+            using var pe = new PEReader(DocumentCompilerTestHelpers.Serialize(result!));
+            Assert.Equal(["ldloc 0"], GetLocalOperands(pe));
         }
 
         [Fact]

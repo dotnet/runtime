@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Globalization;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using Antlr4.Runtime;
@@ -73,15 +74,20 @@ internal sealed partial class GrammarActions
     }
 
     /// <summary>
-    /// Reads the value of an <c>[n]</c> slot literal as the grammar's integer token writes it (an optional
-    /// <c>-</c>, then <c>0x</c> and hexadecimal digits, <c>0</c> and octal digits, or decimal digits) without
-    /// narrowing it. A magnitude past <see cref="MaximumLocalSlot"/> + 1 reads as <see cref="MaximumLocalSlot"/> + 1
-    /// with the literal's sign, so a literal of any length that is outside the slot range reads as a value outside
-    /// it, and none reads as <c>-1</c>.
+    /// Reads the value of an <c>[n]</c> slot literal without narrowing it. The bases are those of
+    /// <see cref="ParseInt32"/>: <c>0x</c> is hexadecimal, and any other leading <c>0</c> is octal. A decimal or
+    /// hexadecimal magnitude is read with
+    /// <see cref="ulong.TryParse(ReadOnlySpan{char}, NumberStyles, IFormatProvider, out ulong)"/>. An octal
+    /// literal, for which <see cref="NumberStyles"/> has no option, is read as <see cref="ParseInt32"/> reads it
+    /// (<see cref="ParseIntegerValue(ReadOnlySpan{char}, out long)"/>), and one with more significant digits than
+    /// <see cref="MaximumLocalSlot"/> (0177777) is past the slot range, whatever its low 64 bits are. A magnitude
+    /// past <see cref="MaximumLocalSlot"/> + 1, including one past 64 bits, reads as
+    /// <see cref="MaximumLocalSlot"/> + 1 with the literal's sign, so that a literal of any base outside the slot
+    /// range reads as a value outside it, and not as <c>-1</c>.
     /// </summary>
     /// <returns>
-    /// The value, or <see langword="null"/> for a literal with a digit its base does not have (an invalid octal
-    /// literal, which <see cref="ParseInt32"/> reports).
+    /// The value, or <see langword="null"/> for an octal literal with an 8 or a 9 in it, which
+    /// <see cref="ParseInt32"/> reports.
     /// </returns>
     /// <remarks>
     /// Only local slots are read this way. A raw <c>[n]</c> on a parameter keeps <see cref="ParseInt32"/>'s value.
@@ -95,34 +101,33 @@ internal sealed partial class GrammarActions
             digits = digits.Slice(1);
         }
 
-        // The same bases as ParseInt32: 0x is hexadecimal, and any other leading 0 is octal.
-        int radix = 10;
-        if (digits.StartsWith("0x".AsSpan()))
+        long magnitude;
+        if (digits.StartsWith("0".AsSpan()) && !digits.StartsWith("0x".AsSpan()))
         {
-            radix = 16;
-            digits = digits.Slice(2);
-        }
-        else if (digits.StartsWith("0".AsSpan()))
-        {
-            radix = 8;
-        }
-
-        long magnitude = 0;
-        foreach (char c in digits)
-        {
-            int digit = c switch
-            {
-                >= '0' and <= '9' => c - '0',
-                >= 'a' and <= 'f' => c - 'a' + 10,
-                >= 'A' and <= 'F' => c - 'A' + 10,
-                _ => radix,
-            };
-            if (digit >= radix)
+            if (!ParseIntegerValue(digits, out long octal))
             {
                 return null;
             }
 
-            magnitude = Math.Min(magnitude * radix + digit, MaximumLocalSlot + 1);
+            // ParseIntegerValue keeps only the low 64 bits of a longer octal literal. MaximumLocalSlot is 0177777, six
+            // significant digits, so a magnitude with more is past the slot range, and one with six or fewer is exact.
+            magnitude = digits.TrimStart('0').Length > 6
+                ? MaximumLocalSlot + 1
+                : Math.Min(octal, MaximumLocalSlot + 1);
+        }
+        else
+        {
+            NumberStyles style = NumberStyles.None;
+            if (digits.StartsWith("0x".AsSpan()))
+            {
+                style = NumberStyles.AllowHexSpecifier;
+                digits = digits.Slice(2);
+            }
+
+            // The integer token has only digits of the base here, so the parse fails only for a magnitude past 64 bits.
+            magnitude = ulong.TryParse(digits, style, CultureInfo.InvariantCulture, out ulong value)
+                ? (long)Math.Min(value, (ulong)MaximumLocalSlot + 1)
+                : MaximumLocalSlot + 1;
         }
 
         return negative ? -magnitude : magnitude;
