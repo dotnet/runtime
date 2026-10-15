@@ -5165,27 +5165,27 @@ void PromoteCarefully(promote_func   fn,
     (*fn) (ppObj, sc, flags);
 }
 
-struct ValueClassByRefSearchContext : ScanContext
-{
-    TADDR address;
-    bool found;
-
-    explicit ValueClassByRefSearchContext(TADDR address)
-        : address(address), found(false)
-    {
-        LIMITED_METHOD_CONTRACT;
-    }
-
-    static void Match(PTR_PTR_Object fieldRef, ScanContext* sc, uint32_t)
-    {
-        LIMITED_METHOD_CONTRACT;
-        ValueClassByRefSearchContext* context = static_cast<ValueClassByRefSearchContext*>(sc);
-        context->found |= dac_cast<TADDR>(fieldRef) == context->address;
-    }
-};
-
 class ByRefPointerOffsetsReporter
 {
+    struct ValueClassByRefSearchContext : ScanContext
+    {
+        TADDR address;
+        bool found;
+
+        explicit ValueClassByRefSearchContext(TADDR address)
+            : address(address), found(false)
+        {
+            LIMITED_METHOD_CONTRACT;
+        }
+
+        static void Match(PTR_PTR_Object fieldRef, ScanContext* sc, uint32_t)
+        {
+            LIMITED_METHOD_CONTRACT;
+            ValueClassByRefSearchContext* context = static_cast<ValueClassByRefSearchContext*>(sc);
+            context->found |= dac_cast<TADDR>(fieldRef) == context->address;
+        }
+    };
+
     struct OverlappingFields
     {
         PTR_MethodTable methodTable;
