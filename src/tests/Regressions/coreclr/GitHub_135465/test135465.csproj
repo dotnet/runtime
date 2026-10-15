@@ -7,9 +7,6 @@
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
     <!-- Only optimized IL closes the loops with a branch to itself, a leave and a switch -->
     <Optimize>True</Optimize>
-    <!-- The interpreter is CoreCLR-VM specific -->
-    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' != 'coreclr'">true</CLRTestTargetUnsupported>
-    <NativeAotIncompatible>true</NativeAotIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="test135465.cs" />
