@@ -2735,6 +2735,13 @@ void Compiler::fgLinkBasicBlocks()
         {
             case BBJ_COND:
             {
+                // The false target is the next block, so there must be one.
+                //
+                if (curBBdesc->IsLast())
+                {
+                    BADCODE("Fall thru the end of a method");
+                }
+
                 BasicBlock* const trueTarget  = fgLookupBB(curBBdesc->GetTargetOffs());
                 BasicBlock* const falseTarget = curBBdesc->Next();
                 FlowEdge* const   trueEdge    = fgAddRefPred<initializingPreds>(trueTarget, curBBdesc);
@@ -2768,11 +2775,6 @@ void Compiler::fgLinkBasicBlocks()
                 if (trueTarget->bbNum <= curBBdesc->bbNum)
                 {
                     fgMarkBackwardJump(trueTarget, curBBdesc);
-                }
-
-                if (curBBdesc->IsLast())
-                {
-                    BADCODE("Fall thru the end of a method");
                 }
 
                 break;
