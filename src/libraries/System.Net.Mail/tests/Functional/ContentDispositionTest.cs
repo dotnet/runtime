@@ -398,8 +398,8 @@ namespace System.Net.Mime.Tests
         [InlineData("foo\rbar")]
         [InlineData("foo\nbar")]
         [InlineData("foo\r\nbar")]
-        [InlineData("foo; abc=bar")] // You can pass this to ctor, but not to property
-        [InlineData("foo\"bar")] // You can pass this to ctor, but not to property
+        [InlineData("foo; abc=bar")] // You can pass this to ctor, but not to property of already parsed disposition
+        [InlineData("foo\"bar")]
         [InlineData("fň")]
         public void ContentDisposition_Type_Validation_Invalid(string dispositionType)
         {
