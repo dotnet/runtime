@@ -417,7 +417,7 @@ struct ComMethodTable
         if (IsIClassXOrBasicItf())
             return ifDual;
         else
-            return (CorIfaceAttr)(VolatileLoad(&m_Flags) & enum_InterfaceTypeMask);
+            return (CorIfaceAttr)(m_Flags & enum_InterfaceTypeMask);
     }
 
     CorClassIfaceAttr GetClassInterfaceType()
@@ -425,7 +425,7 @@ struct ComMethodTable
         LIMITED_METHOD_CONTRACT;
 
         _ASSERTE(IsIClassXOrBasicItf());
-        return (CorClassIfaceAttr)(VolatileLoad(&m_Flags) & enum_ClassInterfaceTypeMask);
+        return (CorClassIfaceAttr)(m_Flags & enum_ClassInterfaceTypeMask);
     }
 
     BOOL IsIClassX()
@@ -437,13 +437,13 @@ struct ComMethodTable
     BOOL IsIClassXOrBasicItf()
     {
         LIMITED_METHOD_CONTRACT;
-        return (VolatileLoad(&m_Flags) & enum_ClassVtableMask) != 0;
+        return (m_Flags & enum_ClassVtableMask) != 0;
     }
 
     BOOL IsComClassItf()
     {
         LIMITED_METHOD_CONTRACT;
-        return (VolatileLoad(&m_Flags) & enum_ComClassItf) != 0;
+        return (m_Flags & enum_ComClassItf) != 0;
     }
 
     BOOL IsLayoutComplete()
@@ -455,13 +455,13 @@ struct ComMethodTable
     BOOL IsComVisible()
     {
         LIMITED_METHOD_CONTRACT;
-        return (VolatileLoad(&m_Flags) & enum_ComVisible) != 0;
+        return (m_Flags & enum_ComVisible) != 0;
     }
 
     BOOL IsBasic()
     {
         LIMITED_METHOD_CONTRACT;
-        return (VolatileLoad(&m_Flags) & enum_IsBasic) != 0;
+        return (m_Flags & enum_IsBasic) != 0;
     }
 
     BOOL HasInvisibleParent()
@@ -558,38 +558,6 @@ struct ComMethodTable
         return (ComCallMethodDesc *)pCMD;
     }
 
-    BOOL OwnedbyThisMT(unsigned slotIndex)
-    {
-        CONTRACTL
-        {
-            WRAPPER(THROWS);
-            WRAPPER(GC_TRIGGERS);
-            MODE_ANY;
-        }
-        CONTRACTL_END;
-
-        if (!IsIClassXOrBasicItf())
-            return TRUE;
-
-        if (m_pMDescr != NULL)
-        {
-            // These are the methods from the default interfaces such as IUnknown.
-            unsigned cbExtraSlots = GetNumExtraSlots(GetInterfaceType());
-
-            // Refer to ComMethodTable::LayOutClassMethodTable().
-            ULONG cbSize     = *(ULONG *)m_pMDescr;
-            ULONG cbNewSlots = cbSize / sizeof(ComCallMethodDesc);
-            _ASSERTE( (cbSize % sizeof(ComCallMethodDesc)) == 0);
-
-            // m_cbSlots is the total number of methods in addition to the ones from the
-            // default interfaces.  cbNewSlots is the total number of methods introduced
-            // by this class (== m_cbSlots - <slots from parent MT>).
-            return slotIndex >= (cbExtraSlots + m_cbSlots - cbNewSlots);
-        }
-
-        return FALSE;
-    }
-
     ComMethodTable *GetParentClassComMT();
 
     static inline PTR_ComMethodTable ComMethodTableFromIP(PTR_IUnknown pUnk)
@@ -679,7 +647,6 @@ private:
     ULONG            m_cbSlots; // number of slots in the interface (excluding IUnk/IDisp)
     LONG             m_cbRefCount; // ref-count the vtable as it is being shared
     size_t           m_Flags; // make sure this is initialized to zero
-    LPVOID           m_pMDescr; // pointer to methoddescr.s owned by this MT
     ITypeInfo*       m_pITypeInfo; // cached pointer to ITypeInfo
     DispatchInfo*    m_pDispatchInfo; // The dispatch info used to expose IDispatch to COM.
     IID              m_IID; // The IID of the interface.
@@ -688,7 +655,7 @@ private:
     // SLOT              m_slots[]; // vtable entries (m_cbSlots of them, plus the 3 or 7 from IUnk/IDisp)
     // For interface COM method tables, an inline ComCallMethodDesc m_comCallMethodDesc[] array (m_cbSlots entries)
     // may follow the slots. For class-interface layouts, the ComCallMethodDesc[] block is allocated separately and
-    // referenced via m_pMDescr. Basic COM method tables may have no ComCallMethodDesc descriptors at all.
+    // referenced by the entry thunks. Basic COM method tables may have no ComCallMethodDesc descriptors at all.
 
     friend struct ::cdac_data<ComMethodTable>;
 };
