@@ -178,7 +178,13 @@ namespace ILCompiler.ObjectWriter
         {
             WasmSectionType sectionType = GetWasmSectionType(section);
             SectionDataEmitter wasmSection;
-            if (sectionType == WasmSectionType.Data)
+            if (section.Type == SectionType.Debug)
+            {
+                Utf8String sectionName = new(section.Name);
+                wasmSection = new WasmCustomSection(sectionStream, sectionName, sectionIndex);
+                EmitSymbolDefinition(sectionIndex, sectionName);
+            }
+            else if (sectionType == WasmSectionType.Data)
             {
                 wasmSection = CreateDataSection(section, sectionIndex, sectionStream);
             }
@@ -329,20 +335,23 @@ namespace ILCompiler.ObjectWriter
             for (int i = 0; i < funcletKinds.Length; i++)
             {
                 WasmFuncType funcletSignature = GetFuncletType(funcletKinds[i], pointerType);
-                Utf8String funcletName = new Utf8String($"{mangledNodeName}_funclet_{i}");
+                Utf8String funcletName = GetFuncletName(new Utf8String(mangledNodeName), i);
                 RegisterFunctionSymbol(funcletName);
                 RegisterTableSlot(funcletName, funcletName);
                 RegisterStubIndexAndSignature(funcletSignature);
             }
         }
 
+        private protected static Utf8String GetFuncletName(Utf8String methodName, int index) =>
+            new($"{methodName}_funclet_{index}");
+
         private static WasmFuncType GetFuncletType(FuncletKind funcletKind, WasmValueType pointerType)
         {
             return funcletKind switch
             {
                 FuncletKind.CatchOrFilterHandler or FuncletKind.Filter => new WasmFuncType(
-                    new([pointerType, pointerType, pointerType]), new([pointerType])), // (FP, SP, EXN) -> RESULT
-                _ => new WasmFuncType(new([pointerType, pointerType]), new([])), // (FP, SP) -> void
+                    new([pointerType, pointerType, pointerType]), new([pointerType])), // (SP, FP, EXN) -> RESULT
+                _ => new WasmFuncType(new([pointerType, pointerType]), new([])), // (SP, FP) -> void
             };
         }
 

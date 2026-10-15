@@ -1216,7 +1216,9 @@ bool Lowering::TryMakeIndirAndStoreAdjacent(GenTreeIndir* prevIndir, GenTreeLclV
         {
             // 'cur' is part of data flow of 'store', so we will be moving the
             // currently recorded effects past 'cur'.
-            if (m_scratchSideEffects.InterferesWith(m_compiler, cur, true))
+            // MarkTree does not track implicit flags dependencies.
+            if (cur->OperConsumesFlags() || cur->gtSetFlags() ||
+                m_scratchSideEffects.InterferesWith(m_compiler, cur, true))
             {
                 JITDUMP("Giving up due to interference with [%06u]\n", Compiler::dspTreeID(cur));
                 return false;
@@ -3442,6 +3444,11 @@ void Lowering::TryLowerCnsIntCselToCinc(GenTreeOp* select, GenTree* cond)
                     GenTree* revCond = m_compiler->gtReverseCond(cond);
                     assert(cond == revCond); // Ensure `gtReverseCond` did not create a new node.
                 }
+                else
+                {
+                    std::swap(select->gtOp1, select->gtOp2);
+                }
+
                 BlockRange().Remove(select->gtOp2, true);
                 select->gtOp2 = nullptr;
                 select->SetOper(GT_SELECT_INC);
