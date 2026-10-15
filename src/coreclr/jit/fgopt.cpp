@@ -1504,8 +1504,8 @@ bool Compiler::fgOptimizeEmptyBlock(BasicBlock* block)
             // from its successor block, if the block is the target of a
             // catch return. It is required that the return address of a
             // catch be in the correct EH region, for re-raise of thread
-            // abort exceptions to work. Codegen makes sure that the block
-            // generates an instruction (see genIsCatchRetTargetWithoutCode).
+            // abort exceptions to work. Insert a NOP in the empty block
+            // to ensure we generate code for the block, if we keep it.
             {
                 BasicBlock* succBlock = block->GetTarget();
 
@@ -1527,8 +1527,36 @@ bool Compiler::fgOptimizeEmptyBlock(BasicBlock* block)
 
                     if (!okToMerge)
                     {
-                        JITDUMP("\nKeeping empty block " FMT_BB " - it is the target of a catch return\n",
-                                block->bbNum);
+                        // Insert a NOP in the empty block to ensure we generate code
+                        // for the catchret target in the right EH region.
+                        GenTree* nop = new (this, GT_NO_OP) GenTree(GT_NO_OP, TYP_VOID);
+
+                        if (block->IsLIR())
+                        {
+                            LIR::AsRange(block).InsertAtEnd(nop);
+                            LIR::ReadOnlyRange range(nop, nop);
+                            m_pLowering->LowerRange(block, range);
+                        }
+                        else
+                        {
+                            Statement* nopStmt = fgNewStmtAtEnd(block, nop);
+                            if (fgNodeThreading == NodeThreading::AllTrees)
+                            {
+                                fgSetStmtSeq(nopStmt);
+                            }
+                            gtSetStmtInfo(nopStmt);
+                        }
+
+                        madeChanges = true;
+
+#ifdef DEBUG
+                        if (verbose)
+                        {
+                            printf("\nKeeping empty block " FMT_BB " - it is the target of a catch return\n",
+                                   block->bbNum);
+                        }
+#endif // DEBUG
+
                         break; // go to the next block
                     }
                 }
