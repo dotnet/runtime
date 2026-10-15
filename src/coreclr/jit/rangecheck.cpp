@@ -1375,20 +1375,21 @@ void RangeCheck::MergeEdgeAssertionsWorker(Compiler*                        comp
                 ((boundCns != 0) && comp->vnStore->IsVNBinFuncWithConst(normalLclVN, VNF_ADD, &addOp, &addCns) &&
                  (addOp == boundVN) && (addCns == boundCns));
 
-            // A bound checked on another path need not be nonnegative here.
+            // The bound is known to be equal to the preferred bound, e.g. "a.Length == b.Length".
+            // Checked first so the limit is expressed via the preferred bound even if the bound is never negative.
             if (canUseCheckedBounds && (normalLclVN == curAssertion.GetOp1().GetVN()) &&
-                (curAssertion.GetOp2().IsVNNeverNegative() || (boundVN == preferredBoundVN)))
-            {
-                cmpOper = Compiler::AssertionDsc::ToCompareOper(curAssertion.GetKind(), &isUnsigned);
-                limit   = Limit(Limit::keBinOpArray, boundVN, boundCns);
-            }
-            // Same, but the bound is known to be equal to the preferred bound, e.g. "a.Length == b.Length".
-            else if (canUseCheckedBounds && (normalLclVN == curAssertion.GetOp1().GetVN()) &&
-                     (preferredBoundVN != ValueNumStore::NoVN) &&
-                     AreVNsEqual(comp, assertions, boundVN, preferredBoundVN))
+                (preferredBoundVN != ValueNumStore::NoVN) && (boundVN != preferredBoundVN) &&
+                AreVNsEqual(comp, assertions, boundVN, preferredBoundVN))
             {
                 cmpOper = Compiler::AssertionDsc::ToCompareOper(curAssertion.GetKind(), &isUnsigned);
                 limit   = Limit(Limit::keBinOpArray, preferredBoundVN, boundCns);
+            }
+            // A bound checked on another path need not be nonnegative here.
+            else if (canUseCheckedBounds && (normalLclVN == curAssertion.GetOp1().GetVN()) &&
+                     (curAssertion.GetOp2().IsVNNeverNegative() || (boundVN == preferredBoundVN)))
+            {
+                cmpOper = Compiler::AssertionDsc::ToCompareOper(curAssertion.GetKind(), &isUnsigned);
+                limit   = Limit(Limit::keBinOpArray, boundVN, boundCns);
             }
             else if (normalLclVNMatchesOp2)
             {
