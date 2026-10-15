@@ -11007,7 +11007,7 @@ public:
     // on which the function is executed (except for CoreLib, unless preserveNegativeDependency is true)
     bool compExactlyDependsOn(CORINFO_InstructionSet isa, bool preserveNegativeDependency = false) const
     {
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_RISCV64)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
         // ISA usage for non-deterministic intrinsics always notifies the EE regardless of the cache, to make sure
         // that the method preserves a negative ISA prerequisite.
         if (preserveNegativeDependency || (opts.compSupportsISAReported.HasInstructionSet(isa) == false))

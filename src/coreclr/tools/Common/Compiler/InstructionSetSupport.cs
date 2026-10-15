@@ -89,6 +89,7 @@ namespace ILCompiler
             }
             else if (architecture is TargetArchitecture.LoongArch64)
             {
+                if (potentialType.Namespace != "System.Runtime.Intrinsics.LoongArch"u8)
                 return "";
             }
             else if (architecture is TargetArchitecture.RiscV64)
