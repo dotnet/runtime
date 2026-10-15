@@ -28,6 +28,17 @@ namespace System.Net.Http.Tests
         }
 
         [Fact]
+        public void ContentLength_ReadValue_TryComputeLengthNotInvokedAfterDisposeAndReturnsNull()
+        {
+            ComputeLengthHttpContent content = new ComputeLengthHttpContent(() => { throw new ShouldNotBeInvokedException(); });
+            _headers = new HttpContentHeaders(content);
+            content.Dispose();
+
+            // After disposing the content, the delegate is not invoked and null is returned.
+            Assert.Null(_headers.ContentLength);
+        }
+
+        [Fact]
         public void ContentLength_ReadValue_TryComputeLengthInvoked()
         {
             _headers = new HttpContentHeaders(new ComputeLengthHttpContent(() => 15));
