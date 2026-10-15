@@ -6693,7 +6693,7 @@ GenTree* Compiler::impRotateHelper(var_types baseType, genTreeOps rotateOper)
             uint32_t cns1 = static_cast<uint32_t>(op1->AsIntConCommon()->IconValue());
             uint32_t res =
                 (rotateOper == GT_ROL) ? BitOperations::RotateLeft(cns1, cns2) : BitOperations::RotateRight(cns1, cns2);
-            return gtNewIconNode(res, baseType);
+            return gtNewIconNode(static_cast<int32_t>(res), baseType);
         }
     }
 
