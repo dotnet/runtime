@@ -95,6 +95,16 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
+        public void Find_Success_PostebEndingOverlap()
+        {
+            string content = "-----BEGIN FOO-----\nSTUF HERE\n-----END -----BEGIN BAR-----\nmore stuf\n-----END BAR-----";
+            AssertPemFound(content,
+                expectedLocation: 39..86,
+                expectedBase64: 59..68,
+                expectedLabel: 50..53);
+        }
+
+        [Fact]
         public void Find_Success_LargeLabel()
         {
             string label = new string('A', 275);
