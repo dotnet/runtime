@@ -53,6 +53,8 @@ public static class WasmWebcilModule
         3 => typeof(string[]),
         4 => typeof(object[,,]),
         5 => typeof(int[,][]),
+        6 => typeof(int[]),
+        7 => typeof(int[][,]),
         _ => typeof(nuint[]),
     };
 

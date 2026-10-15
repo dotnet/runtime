@@ -78,50 +78,50 @@ public class R2RTestSuites
             ];
             string[] arrayTypes =
             [
-                "bool[]", "int[...,...]", "int[][]", "string[]", "object[...,...,...]",
-                "int[][...,...]", "UIntPtr[]",
+                "bool[]", "int[]", "string[]", "UIntPtr[]",
+            ];
+            string[] lazyArrayTypes =
+            [
+                "int[...,...]", "int[][]", "object[...,...,...]", "int[][...,...]",
+                "int[...,...][]",
+            ];
+            string[] tokenDependentTypes =
+            [
+                "Webcil.WasmWebcilModule+GenericTokenValue",
+                "Webcil.WasmWebcilModule+LdtokenType",
+                "System.DayOfWeek", "System.Decimal", "System.Half", "System.Nullable`1<int>",
+                "Webcil.WasmWebcilModule+LdtokenHolder`1<int>",
+                "Webcil.WasmWebcilModule+LdtokenType[]",
+                "Webcil.WasmWebcilModule+GenericTokenValue[][...,...]",
             ];
             SignatureFormattingOptions formatting = new();
-            foreach (string type in types)
-            {
-                ValidateTypeHandle(type, eager: true);
-            }
-            foreach (string type in arrayTypes)
-            {
-                ValidateTypeHandle(type, eager: includeCoreLib);
-            }
 
             List<ReadyToRunMethod> methods = R2RAssert.GetAllMethods(reader);
             ReadyToRunMethod intrinsic = Assert.Single(methods,
                 method => method.SignatureString.Contains(".ReadIntrinsicTypeToken(", StringComparison.Ordinal));
-            Assert.DoesNotContain(intrinsic.Fixups ?? Array.Empty<FixupCell>(),
-                fixup => fixup.Signature.FixupKind == ReadyToRunFixupKind.TypeHandle);
-
             ReadyToRunMethod intrinsicArray = Assert.Single(methods,
                 method => method.SignatureString.Contains(".ReadIntrinsicArrayTypeToken(", StringComparison.Ordinal));
-            IReadOnlyList<FixupCell> arrayFixups = intrinsicArray.Fixups ?? Array.Empty<FixupCell>();
-            Assert.Equal(includeCoreLib ? 0 : arrayTypes.Length,
-                arrayFixups.Count(fixup => fixup.Signature.FixupKind == ReadyToRunFixupKind.TypeHandle));
-            foreach (string type in arrayTypes)
-            {
-                Assert.Equal(!includeCoreLib, arrayFixups.Any(fixup =>
-                    fixup.Signature.FixupKind == ReadyToRunFixupKind.TypeHandle &&
-                    fixup.Signature.ToString(formatting) == $"{type} (TYPE_HANDLE)"));
-            }
-
             ReadyToRunMethod tokenDependent = Assert.Single(methods,
                 method => method.SignatureString.Contains(".ReadTokenDependentTypeToken(", StringComparison.Ordinal));
-            Assert.Equal(9, (tokenDependent.Fixups ?? Array.Empty<FixupCell>()).Count(
-                fixup => fixup.Signature.FixupKind == ReadyToRunFixupKind.TypeHandle));
-            foreach (FixupCell fixup in tokenDependent.Fixups ?? Array.Empty<FixupCell>())
+
+            foreach (string type in types)
             {
-                if (fixup.Signature.FixupKind == ReadyToRunFixupKind.TypeHandle)
-                {
-                    Assert.Equal((ReadyToRunImportSectionFlags)0, reader.ImportSections[(int)fixup.TableIndex].Flags & ReadyToRunImportSectionFlags.Eager);
-                }
+                ValidateTypeHandle(type, intrinsic, eager: true);
+            }
+            foreach (string type in arrayTypes)
+            {
+                ValidateTypeHandle(type, intrinsicArray, eager: includeCoreLib);
+            }
+            foreach (string type in lazyArrayTypes)
+            {
+                ValidateTypeHandle(type, intrinsicArray, eager: false);
+            }
+            foreach (string type in tokenDependentTypes)
+            {
+                ValidateTypeHandle(type, tokenDependent, eager: false);
             }
 
-            void ValidateTypeHandle(string type, bool eager)
+            void ValidateTypeHandle(string type, ReadyToRunMethod method, bool eager)
             {
                 ReadyToRunImportSection section = Assert.Single(reader.ImportSections,
                     section => section.Entries.Any(entry =>
@@ -132,6 +132,9 @@ public class R2RTestSuites
                 Assert.Single(section.Entries, entry =>
                     entry.Signature?.FixupKind == ReadyToRunFixupKind.TypeHandle &&
                     entry.Signature.ToString(formatting) == $"{type} (TYPE_HANDLE)");
+                Assert.Equal(eager ? 0 : 1, (method.Fixups ?? Array.Empty<FixupCell>()).Count(fixup =>
+                    fixup.Signature.FixupKind == ReadyToRunFixupKind.TypeHandle &&
+                    fixup.Signature.ToString(formatting) == $"{type} (TYPE_HANDLE)"));
             }
         }
     }

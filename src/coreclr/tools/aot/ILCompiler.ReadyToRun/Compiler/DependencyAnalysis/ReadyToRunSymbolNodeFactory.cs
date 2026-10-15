@@ -418,16 +418,15 @@ namespace ILCompiler.DependencyAnalysis
         private Import CreateTypeHandleHelper(TypeDesc type)
         {
             TypeDesc elementType = type;
-            while (elementType is ArrayType arrayType)
+            // Other modules forbid type loading during eager fixups, and array types may not exist yet.
+            if (_compilesCoreLib && type is ArrayType { IsSzArray: true } arrayType)
             {
                 elementType = arrayType.ElementType;
             }
 
             TypeFixupSignature signature = _codegenNodeFactory.TypeSignature(ReadyToRunFixupKind.TypeHandle, type);
-            // Other modules forbid type loading during eager fixups, and array types may not exist yet.
-            if ((type is not ArrayType || _compilesCoreLib) &&
-                (elementType.IsPrimitive || elementType.IsString || elementType.IsObject ||
-                 elementType.IsWellKnownType(WellKnownType.TypedReference)))
+            if (elementType.IsPrimitive || elementType.IsString || elementType.IsObject ||
+                elementType.IsWellKnownType(WellKnownType.TypedReference))
             {
                 return new Import(_codegenNodeFactory.EagerImports, signature);
             }
