@@ -726,6 +726,93 @@ namespace System.Buffers.Text.Tests
             Assert.Equal(charsRest.Length, written);
             Assert.Equal(expectedText.Substring(outputSize), new string(charsRest));
         }
+
+        [Theory]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(3)]
+        [InlineData(4)]
+        [InlineData(5)]
+        [InlineData(15)]
+        [InlineData(16)]
+        [InlineData(17)]
+        [InlineData(31)]
+        [InlineData(32)]
+        [InlineData(33)]
+        [InlineData(47)]
+        [InlineData(48)]
+        [InlineData(49)]
+        [InlineData(63)]
+        [InlineData(64)]
+        [InlineData(65)]
+        [InlineData(95)]
+        [InlineData(96)]
+        [InlineData(97)]
+        public void EncodeWithPaddingGuardedBuffers(int numBytes)
+        {
+            // Source and destinations are followed by a poison page, so any read or write past the end
+            // of a span faults instead of going unnoticed. Lengths sit on the scalar and vector block
+            // boundaries (16, 32, 48 source bytes per iteration) with 0, 1 and 2 byte tails.
+            byte[] sourceBytes = SequentialBytes(numBytes);
+            string expectedText = PaddedReference(sourceBytes);
+            int paddedLength = expectedText.Length;
+
+            // A destination one element short only has room for whole blocks.
+            int shortWritten = (paddedLength - 1) / 4 * 4;
+            int shortConsumed = shortWritten / 4 * 3;
+            string shortText = expectedText.Substring(0, shortWritten);
+
+            using BoundedMemory<byte> sourceMemory = BoundedMemory.AllocateFromExistingData(sourceBytes);
+            sourceMemory.MakeReadonly();
+            ReadOnlySpan<byte> source = sourceMemory.Span;
+
+            using (BoundedMemory<byte> utf8 = BoundedMemory.Allocate<byte>(paddedLength))
+            {
+                Assert.Equal(OperationStatus.Done, Base64Url.EncodeToUtf8(source, utf8.Span, out int consumed, out int written, Base64UrlFormattingOptions.IncludePadding));
+                Assert.Equal(numBytes, consumed);
+                Assert.Equal(paddedLength, written);
+                Assert.Equal(expectedText, Encoding.ASCII.GetString(utf8.Span));
+            }
+
+            using (BoundedMemory<byte> utf8 = BoundedMemory.Allocate<byte>(paddedLength - 1))
+            {
+                Assert.Equal(OperationStatus.DestinationTooSmall, Base64Url.EncodeToUtf8(source, utf8.Span, out int consumed, out int written, Base64UrlFormattingOptions.IncludePadding));
+                Assert.Equal(shortConsumed, consumed);
+                Assert.Equal(shortWritten, written);
+                Assert.Equal(shortText, Encoding.ASCII.GetString(utf8.Span.Slice(0, written)));
+            }
+
+            using (BoundedMemory<char> chars = BoundedMemory.Allocate<char>(paddedLength))
+            {
+                Assert.Equal(OperationStatus.Done, Base64Url.EncodeToChars(source, chars.Span, out int consumed, out int written, Base64UrlFormattingOptions.IncludePadding));
+                Assert.Equal(numBytes, consumed);
+                Assert.Equal(paddedLength, written);
+                Assert.Equal(expectedText, new string(chars.Span));
+            }
+
+            using (BoundedMemory<char> chars = BoundedMemory.Allocate<char>(paddedLength - 1))
+            {
+                Assert.Equal(OperationStatus.DestinationTooSmall, Base64Url.EncodeToChars(source, chars.Span, out int consumed, out int written, Base64UrlFormattingOptions.IncludePadding));
+                Assert.Equal(shortConsumed, consumed);
+                Assert.Equal(shortWritten, written);
+                Assert.Equal(shortText, new string(chars.Span.Slice(0, written)));
+            }
+
+            using (BoundedMemory<byte> buffer = BoundedMemory.Allocate<byte>(paddedLength))
+            {
+                source.CopyTo(buffer.Span);
+                Assert.True(Base64Url.TryEncodeToUtf8InPlace(buffer.Span, numBytes, out int written, Base64UrlFormattingOptions.IncludePadding));
+                Assert.Equal(paddedLength, written);
+                Assert.Equal(expectedText, Encoding.ASCII.GetString(buffer.Span));
+            }
+
+            using (BoundedMemory<byte> buffer = BoundedMemory.Allocate<byte>(paddedLength - 1))
+            {
+                source.CopyTo(buffer.Span);
+                Assert.False(Base64Url.TryEncodeToUtf8InPlace(buffer.Span, numBytes, out int written, Base64UrlFormattingOptions.IncludePadding));
+                Assert.Equal(0, written);
+            }
+        }
 #endif
     }
 }

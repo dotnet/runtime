@@ -100,6 +100,37 @@ namespace DotnetFuzzing.Fuzzers
                 Assert.SequenceEqual(bytes, tryEncode.Slice(0, bytesDecoded));
             }
 
+            { // IncludePadding
+                int paddedLength = Base64Url.GetEncodedLength(bytes.Length, Base64UrlFormattingOptions.IncludePadding);
+                using PooledBoundedMemory<char> paddedCharsPoisoned = PooledBoundedMemory<char>.Rent(paddedLength, PoisonPagePlacement.After);
+                using PooledBoundedMemory<byte> paddedUtf8Poisoned = PooledBoundedMemory<byte>.Rent(paddedLength, PoisonPagePlacement.After);
+                Span<char> paddedChars = paddedCharsPoisoned.Span;
+                Span<byte> paddedUtf8 = paddedUtf8Poisoned.Span;
+                decoderDest.Clear();
+
+                OperationStatus status = Base64Url.EncodeToChars(input, paddedChars, out int bytesConsumed, out int bytesEncoded, Base64UrlFormattingOptions.IncludePadding);
+
+                Assert.Equal(OperationStatus.Done, status);
+                Assert.Equal(bytes.Length, bytesConsumed);
+                Assert.Equal(paddedLength, bytesEncoded);
+                Assert.Equal(Base64Url.EncodeToString(input, Base64UrlFormattingOptions.IncludePadding), new string(paddedChars));
+                Assert.Equal(Convert.ToBase64String(input).Replace('+', '-').Replace('/', '_'), new string(paddedChars));
+
+                status = Base64Url.DecodeFromChars(paddedChars, decoderDest, out int bytesRead, out int bytesDecoded);
+
+                Assert.Equal(OperationStatus.Done, status);
+                Assert.Equal(bytes.Length, bytesDecoded);
+                Assert.Equal(paddedLength, bytesRead);
+                Assert.SequenceEqual(bytes, decoderDest.Slice(0, bytesDecoded));
+
+                input.CopyTo(paddedUtf8);
+
+                Assert.Equal(true, Base64Url.TryEncodeToUtf8InPlace(paddedUtf8, input.Length, out bytesEncoded, Base64UrlFormattingOptions.IncludePadding));
+                Assert.Equal(paddedLength, bytesEncoded);
+                Assert.Equal(bytes.Length, Base64Url.DecodeFromUtf8InPlace(paddedUtf8));
+                Assert.SequenceEqual(bytes, paddedUtf8.Slice(0, bytes.Length));
+            }
+
             { // Decode the random input directly, Assert IsValid result matches with decoded result
                 decoderDest.Clear();
                 if (Base64Url.IsValid(input, out int decodedLength))
