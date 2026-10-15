@@ -226,6 +226,9 @@ protected:
     unsigned                   GetStackPointerRegIndex() const;
     unsigned                   GetFramePointerRegIndex() const;
     void                       ensureCurrentFuncIsUnwindable();
+    bool                       genWasmSharedPrologue(unsigned frameSize, int zeroHi, int zeroLo);
+    bool                       genWasmSharedPrologueUsed = false;
+    unsigned                   genWasmSharedPrologueHome = BAD_VAR_NUM;
     void                       genEmitIf(WasmValueType blockType = WasmValueType::Invalid);
     void                       genEmitEndIf();
     void                       genEmitBeginBlock(WasmValueType blockType = WasmValueType::Invalid);

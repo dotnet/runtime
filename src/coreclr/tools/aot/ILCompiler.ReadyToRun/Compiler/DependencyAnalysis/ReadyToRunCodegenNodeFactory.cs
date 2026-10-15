@@ -461,6 +461,9 @@ namespace ILCompiler.DependencyAnalysis
                 return new WasmR2RToInterpreterThunkNode(this, key);
             });
 
+            _wasmPrologueHelpers = new NodeCache<CorInfoHelpFunc, WasmPrologueHelperNode>(key =>
+                new WasmPrologueHelperNode(this, key));
+
             _wasmInterpreterToR2RThunks = new NodeCache<WasmSignature, WasmInterpreterToR2RThunkNode>(key =>
             {
                 return new WasmInterpreterToR2RThunkNode(this, key);
@@ -1013,6 +1016,9 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         private NodeCache<WasmSignature, WasmR2RToInterpreterThunkNode> _wasmR2RToInterpreterThunks;
+        private NodeCache<CorInfoHelpFunc, WasmPrologueHelperNode> _wasmPrologueHelpers;
+
+        public WasmPrologueHelperNode WasmPrologueHelper(CorInfoHelpFunc helper) => _wasmPrologueHelpers.GetOrAdd(helper);
         public WasmR2RToInterpreterThunkNode WasmR2RToInterpreterThunk(WasmSignature wasmSignature)
         {
             return _wasmR2RToInterpreterThunks.GetOrAdd(wasmSignature);

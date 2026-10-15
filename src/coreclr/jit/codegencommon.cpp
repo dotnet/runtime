@@ -5686,8 +5686,13 @@ void CodeGen::genFnProlog()
 
     if (maskStackAlloc == RBM_NONE)
     {
-        genAllocLclFrame(m_compiler->compLclFrameSize + extraFrameSize, initReg, &initRegZeroed,
-                         calleeRegArgMaskLiveIn);
+#ifdef TARGET_WASM
+        if (!genWasmSharedPrologue(m_compiler->compLclFrameSize + extraFrameSize, untrLclHi, untrLclLo))
+#endif
+        {
+            genAllocLclFrame(m_compiler->compLclFrameSize + extraFrameSize, initReg, &initRegZeroed,
+                            calleeRegArgMaskLiveIn);
+        }
     }
 #endif // !TARGET_ARM64 && !TARGET_LOONGARCH64 && !TARGET_RISCV64
 
