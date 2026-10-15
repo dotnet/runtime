@@ -766,7 +766,21 @@ bool Compiler::optRedundantDominatingBranch(BasicBlock* const block)
         return false;
     }
 
-    if (block->hasSideEffects())
+    // Blocks along the path to block become unconditionally executed, so besides having no side effects,
+    // they must not depend on a dominating check (GTF_ORDER_SIDEEFF), e.g. a load made non-faulting by it.
+    //
+    auto hasSideEffects = [](BasicBlock* b) {
+        for (Statement* const stmt : b->NonPhiStatements())
+        {
+            if ((stmt->GetRootNode()->gtFlags & (GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF)) != 0)
+            {
+                return true;
+            }
+        }
+        return false;
+    };
+
+    if (hasSideEffects(block))
     {
         return false;
     }
@@ -819,7 +833,7 @@ bool Compiler::optRedundantDominatingBranch(BasicBlock* const block)
     auto skipSideEffectFreeBlocks = [=](BasicBlock* b) {
         BitVecTraits traits(fgBBNumMax + 1, this);
         BitVec       visitedBlocks = BitVecOps::MakeEmpty(&traits);
-        while (!b->hasSideEffects() && b->KindIs(BBJ_ALWAYS))
+        while (!hasSideEffects(b) && b->KindIs(BBJ_ALWAYS))
         {
             b = b->GetUniqueSucc();
 
@@ -876,7 +890,7 @@ bool Compiler::optRedundantDominatingBranch(BasicBlock* const block)
                 break;
             }
 
-            if (domBlockProbe->hasSideEffects())
+            if (hasSideEffects(domBlockProbe))
             {
                 domBlockProbe = nullptr;
                 break;
@@ -1137,7 +1151,7 @@ bool Compiler::optRedundantDominatingBranch(BasicBlock* const block)
         //
         if (!domMayHaveSideEffects)
         {
-            domMayHaveSideEffects = domBlockProbe->hasSideEffects();
+            domMayHaveSideEffects = hasSideEffects(domBlockProbe);
         }
 
         if (domMayHaveSideEffects)
