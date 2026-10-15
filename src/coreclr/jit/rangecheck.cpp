@@ -599,6 +599,12 @@ Range RangeCheck::GetRangeFromAssertionsWorker(
 #endif
     }
 
+    if (varTypeIsFloating(vnType))
+    {
+        // Integer ranges don't describe floating point values (e.g. int->float casts may round).
+        return Limit(Limit::keUnknown);
+    }
+
     //
     // First, let's see if we can tighten the range based on VN information.
     //
@@ -1303,7 +1309,9 @@ void RangeCheck::MergeEdgeAssertionsWorker(Compiler*                        comp
                 ((boundCns != 0) && comp->vnStore->IsVNBinFuncWithConst(normalLclVN, VNF_ADD, &addOp, &addCns) &&
                  (addOp == boundVN) && (addCns == boundCns));
 
-            if (canUseCheckedBounds && (normalLclVN == curAssertion.GetOp1().GetVN()))
+            // A bound checked on another path need not be nonnegative here.
+            if (canUseCheckedBounds && (normalLclVN == curAssertion.GetOp1().GetVN()) &&
+                (curAssertion.GetOp2().IsVNNeverNegative() || (boundVN == preferredBoundVN)))
             {
                 cmpOper = Compiler::AssertionDsc::ToCompareOper(curAssertion.GetKind(), &isUnsigned);
                 limit   = Limit(Limit::keBinOpArray, boundVN, boundCns);
@@ -1324,7 +1332,9 @@ void RangeCheck::MergeEdgeAssertionsWorker(Compiler*                        comp
                     limit = Limit(Limit::keConstant, comp->vnStore->ConstantValue<int>(curAssertion.GetOp1().GetVN()));
                 }
                 // Otherwise, report it as "normalLclVN <relop> some-other-checked-bound (op1.vn)".
-                else if (canUseCheckedBounds && comp->vnStore->IsVNCheckedBound(curAssertion.GetOp1().GetVN()))
+                else if (canUseCheckedBounds && comp->vnStore->IsVNCheckedBound(curAssertion.GetOp1().GetVN()) &&
+                         (comp->vnStore->IsVNNeverNegative(curAssertion.GetOp1().GetVN()) ||
+                          (curAssertion.GetOp1().GetVN() == preferredBoundVN)))
                 {
                     // Since we are swapping the operands, we also need to swap the comparison operator
                     cmpOper =
@@ -1402,7 +1412,8 @@ void RangeCheck::MergeEdgeAssertionsWorker(Compiler*                        comp
         else if (canUseCheckedBounds && curAssertion.KindIs(Compiler::OAK_EQUAL, Compiler::OAK_NOT_EQUAL) &&
                  (curAssertion.GetOp1().GetVN() == normalLclVN) &&
                  curAssertion.GetOp2().KindIs(Compiler::O2K_VN_ADD_CNS) && (curAssertion.GetOp2().GetCns() == 0) &&
-                 comp->vnStore->IsVNCheckedBound(curAssertion.GetOp2().GetVN()))
+                 comp->vnStore->IsVNCheckedBound(curAssertion.GetOp2().GetVN()) &&
+                 (curAssertion.GetOp2().IsVNNeverNegative() || (curAssertion.GetOp2().GetVN() == preferredBoundVN)))
         {
             const ValueNum boundVN = curAssertion.GetOp2().GetVN();
 
@@ -2144,9 +2155,11 @@ bool RangeCheck::DoesVarDefOverflow(BasicBlock* block, GenTreeLclVarCommon* lcl,
 
     // But only if the range from the assertion is more strict than the global
     // range computed; otherwise we might still have used the def's value to
-    // tighten the range of the global range.
+    // tighten the range of the global range. A dependent limit doesn't qualify:
+    // Widen resolves it later assuming the defs don't overflow.
     Range merged = RangeOps::Merge(range, assertionRange, false);
-    if (merged.LowerLimit().Equals(range.LowerLimit()) && merged.UpperLimit().Equals(range.UpperLimit()))
+    if (!range.LowerLimit().IsDependent() && !range.UpperLimit().IsDependent() &&
+        merged.LowerLimit().Equals(range.LowerLimit()) && merged.UpperLimit().Equals(range.UpperLimit()))
     {
         return false;
     }
@@ -2229,7 +2242,7 @@ bool RangeCheck::ComputeDoesOverflow(BasicBlock* block, GenTree* expr, const Ran
     }
     // These operators don't overflow themselves, but their ranges are derived from the operands'
     // ranges, so an overflow in an operand's def chain still invalidates the result.
-    else if (expr->OperIs(GT_AND, GT_RSH, GT_RSZ, GT_UMOD, GT_NEG))
+    else if (expr->OperIs(GT_AND, GT_RSH, GT_RSZ, GT_UMOD, GT_NEG) || expr->OperIsCompare())
     {
         overflows = false;
         for (GenTree* operand : expr->Operands())

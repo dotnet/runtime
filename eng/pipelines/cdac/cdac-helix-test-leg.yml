@@ -69,7 +69,7 @@ jobs:
       timeoutInMinutes: 180
       ${{ if parameters.dependsOnCdacBuild }}:
         dependsOnGlobalBuilds:
-        - nameSuffix: CdacBuild
+        - nameSuffix: Build
       ${{ if ne(length(parameters.extraDependsOn), 0) }}:
         dependsOn: ${{ parameters.extraDependsOn }}
       preBuildSteps:

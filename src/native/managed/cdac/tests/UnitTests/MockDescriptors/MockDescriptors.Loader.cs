@@ -166,6 +166,12 @@ internal sealed class MockLoaderModule : TypedView
         set => WritePointerField(GrowableSymbolStreamFieldName, value);
     }
 
+    public ulong DynamicILBlobTable
+    {
+        get => ReadPointerField(DynamicILBlobTableFieldName);
+        set => WritePointerField(DynamicILBlobTableFieldName, value);
+    }
+
     public int MemberRefToDescMapOffset => Layout.GetField(MemberRefToDescMapFieldName).Offset;
 }
 
@@ -233,6 +239,18 @@ internal sealed class MockLoaderAssembly : TypedView
         get => ReadPointerField(ModuleFieldName);
         set => WritePointerField(ModuleFieldName, value);
     }
+
+    public uint NotifyFlags
+    {
+        get => ReadUInt32Field(NotifyFlagsFieldName);
+        set => WriteUInt32Field(NotifyFlagsFieldName, value);
+    }
+
+    public bool IsLoaded
+    {
+        get => ReadByteField(IsLoadedFieldName) != 0;
+        set => WriteByteField(IsLoadedFieldName, value ? (byte)1 : (byte)0);
+    }
 }
 
 internal sealed class MockEEConfig : TypedView
@@ -288,8 +306,14 @@ internal sealed class MockLoaderBuilder
     internal Layout<MockLoaderHeapBlock> LoaderHeapBlockLayout { get; }
     internal Layout<MockCGrowableSymbolStream> CGrowableSymbolStreamLayout { get; }
     internal Layout<MockModuleLookupMap> ModuleLookupMapLayout { get; }
+    internal Layout DynamicILBlobTableLayout { get; }
+    internal Layout AppDomainLayout { get; }
+    internal Layout ArrayListBaseLayout { get; }
+    internal Layout ArrayListBlockLayout { get; }
 
     private readonly MockMemorySpace.BumpAllocator _allocator;
+    private readonly Layout _dynamicILBlobTableHeaderLayout;
+    private readonly Dictionary<ulong, MockLoaderAssembly> _assemblies = new();
 
     public MockLoaderBuilder(MockMemorySpace.Builder builder)
         : this(builder, (DefaultAllocationRangeStart, DefaultAllocationRangeEnd))
@@ -310,6 +334,38 @@ internal sealed class MockLoaderBuilder
         LoaderHeapBlockLayout = MockLoaderHeapBlock.CreateLayout(builder.TargetTestHelpers.Arch);
         CGrowableSymbolStreamLayout = MockCGrowableSymbolStream.CreateLayout(builder.TargetTestHelpers.Arch);
         ModuleLookupMapLayout = MockModuleLookupMap.CreateLayout(builder.TargetTestHelpers.Arch);
+
+        _dynamicILBlobTableHeaderLayout = new SequentialLayoutBuilder("DynamicILBlobTable header", builder.TargetTestHelpers.Arch)
+            .AddPointerField("Table")
+            .AddUInt32Field("TableSize")
+            .Build();
+        Layout entryLayout = new SequentialLayoutBuilder("DynamicILBlobTable entry", builder.TargetTestHelpers.Arch)
+            .AddUInt32Field("EntryMethodToken")
+            .AddPointerField("EntryIL")
+            .Build();
+        // The descriptor combines container offsets with entry offsets and the entry size.
+        DynamicILBlobTableLayout = new Layout(
+            "DynamicILBlobTable",
+            builder.TargetTestHelpers.Arch,
+            entryLayout.Size,
+            [.. _dynamicILBlobTableHeaderLayout.Fields, .. entryLayout.Fields]);
+
+        // An ArrayListBase embeds its first block, and a block's elements start at ArrayStart.
+        // AssemblyList is last so that the first block's elements can follow the AppDomain.
+        ArrayListBlockLayout = new SequentialLayoutBuilder("ArrayListBlock", builder.TargetTestHelpers.Arch)
+            .AddPointerField("Next")
+            .AddUInt32Field("Size")
+            .AddPointerField("ArrayStart")
+            .Build();
+        ArrayListBaseLayout = new SequentialLayoutBuilder("ArrayListBase", builder.TargetTestHelpers.Arch)
+            .AddUInt32Field("Count")
+            .AddField("FirstBlock", ArrayListBlockLayout.Size)
+            .Build();
+        AppDomainLayout = new SequentialLayoutBuilder("AppDomain", builder.TargetTestHelpers.Arch)
+            .AddPointerField("RootAssembly")
+            .AddPointerField("FriendlyName")
+            .AddField("AssemblyList", ArrayListBaseLayout.Size)
+            .Build();
     }
 
     internal MockLoaderHeap AddLoaderHeap(ulong firstBlockAddress = 0)
@@ -361,7 +417,30 @@ internal sealed class MockLoaderBuilder
         MockLoaderAssembly assembly = AssemblyLayout.Create(_allocator.Allocate((ulong)AssemblyLayout.Size, "Assembly"));
         assembly.Module = module.Address;
         module.Assembly = assembly.Address;
+        _assemblies[assembly.Address] = assembly;
         return module;
+    }
+
+    internal MockLoaderAssembly GetAssembly(MockLoaderModule module) => _assemblies[module.Assembly];
+
+    // Adds an AppDomain whose assembly list holds the modules' assemblies, in order, in its first block.
+    internal ulong AddAppDomain(params MockLoaderModule[] modules)
+    {
+        TargetTestHelpers helpers = Builder.TargetTestHelpers;
+        int assemblyList = AppDomainLayout.GetField("AssemblyList").Offset;
+        int firstBlock = assemblyList + ArrayListBaseLayout.GetField("FirstBlock").Offset;
+        int arrayStart = firstBlock + ArrayListBlockLayout.GetField("ArrayStart").Offset;
+        int size = Math.Max(AppDomainLayout.Size, arrayStart + (modules.Length * helpers.PointerSize));
+        MockMemorySpace.HeapFragment appDomain = _allocator.Allocate((ulong)size, "AppDomain");
+
+        helpers.Write(appDomain.Data.AsSpan(assemblyList + ArrayListBaseLayout.GetField("Count").Offset), (uint)modules.Length);
+        helpers.Write(appDomain.Data.AsSpan(firstBlock + ArrayListBlockLayout.GetField("Size").Offset), (uint)modules.Length);
+        for (int i = 0; i < modules.Length; i++)
+        {
+            helpers.WritePointer(appDomain.Data.AsSpan(arrayStart + (i * helpers.PointerSize)), modules[i].Assembly);
+        }
+
+        return appDomain.Address;
     }
 
     internal MockEEConfig AddEEConfig(uint modifiableAssemblies)
@@ -390,6 +469,30 @@ internal sealed class MockLoaderBuilder
         map.TableData = table.Address;
         map.Count = (uint)entries.Length + 1;
         map.SupportedFlagsMask = 3;
+    }
+
+    // Entries are supplied in SHash bucket order, including empty slots.
+    internal void SetDynamicILBlobTable(MockLoaderModule module, params (uint Token, ulong IL)[] entries)
+    {
+        TargetTestHelpers helpers = Builder.TargetTestHelpers;
+        MockMemorySpace.HeapFragment header = _allocator.Allocate((ulong)_dynamicILBlobTableHeaderLayout.Size, "DynamicILBlobTable");
+        helpers.Write(header.Data.AsSpan(_dynamicILBlobTableHeaderLayout.GetField("TableSize").Offset), (uint)entries.Length);
+
+        if (entries.Length > 0)
+        {
+            int entrySize = DynamicILBlobTableLayout.Size;
+            MockMemorySpace.HeapFragment table = _allocator.Allocate(checked((ulong)entries.Length * (ulong)entrySize), "DynamicILBlobTable entries");
+            helpers.WritePointer(header.Data.AsSpan(_dynamicILBlobTableHeaderLayout.GetField("Table").Offset), table.Address);
+
+            for (int i = 0; i < entries.Length; i++)
+            {
+                Span<byte> entry = table.Data.AsSpan(i * entrySize, entrySize);
+                helpers.Write(entry.Slice(DynamicILBlobTableLayout.GetField("EntryMethodToken").Offset), entries[i].Token);
+                helpers.WritePointer(entry.Slice(DynamicILBlobTableLayout.GetField("EntryIL").Offset), entries[i].IL);
+            }
+        }
+
+        module.DynamicILBlobTable = header.Address;
     }
 
     /// <summary>

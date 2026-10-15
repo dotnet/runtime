@@ -16,6 +16,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.Serialization.DataContracts;
 using System.Text;
 using System.Xml;
+using System.Xml.Serialization;
 
 using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContracts.DataContract>;
 
@@ -479,17 +480,17 @@ namespace System.Runtime.Serialization.DataContracts
                         dataContract = new EnumDataContract(type);
                     else if (type.IsGenericParameter)
                         dataContract = new GenericParameterDataContract(type);
-                    else if (Globals.TypeOfIXmlSerializable.IsAssignableFrom(type))
+                    else if (typeof(IXmlSerializable).IsAssignableFrom(type))
                         dataContract = new XmlDataContract(type);
                     else
                     {
                         if (type.IsPointer)
-                            type = Globals.TypeOfReflectionPointer;
+                            type = typeof(System.Reflection.Pointer);
 
                         if (!CollectionDataContract.TryCreate(type, out dataContract))
                         {
 #pragma warning disable SYSLIB0050 // Type.IsSerializable is obsolete
-                            if (!type.IsSerializable && !type.IsDefined(Globals.TypeOfDataContractAttribute, false) && !ClassDataContract.IsNonAttributedTypeValidForSerialization(type))
+                            if (!type.IsSerializable && !type.IsDefined(typeof(DataContractAttribute), false) && !ClassDataContract.IsNonAttributedTypeValidForSerialization(type))
                             {
                                 ThrowInvalidDataContractException(SR.Format(SR.TypeNotSerializable, type), type);
                             }
@@ -552,13 +553,13 @@ namespace System.Runtime.Serialization.DataContracts
                 // Replace the DataTimeOffset ISerializable type passed in with the internal DateTimeOffsetAdapter DataContract type.
                 // DateTimeOffsetAdapter is used for serialization/deserialization purposes to bypass the ISerializable implementation
                 // on DateTimeOffset; which does not work in partial trust and to ensure correct schema import/export scenarios.
-                if (type == Globals.TypeOfDateTimeOffset)
+                if (type == typeof(DateTimeOffset))
                 {
-                    return Globals.TypeOfDateTimeOffsetAdapter;
+                    return typeof(DateTimeOffsetAdapter);
                 }
-                if (type == Globals.TypeOfMemoryStream)
+                if (type == typeof(System.IO.MemoryStream))
                 {
-                    return Globals.TypeOfMemoryStreamAdapter;
+                    return typeof(MemoryStreamAdapter);
                 }
                 return type;
             }
@@ -567,25 +568,25 @@ namespace System.Runtime.Serialization.DataContracts
             // Any change to this method should be reflected in GetDataContractAdapterType
             internal static Type GetDataContractOriginalType(Type type)
             {
-                if (type == Globals.TypeOfDateTimeOffsetAdapter)
+                if (type == typeof(DateTimeOffsetAdapter))
                 {
-                    return Globals.TypeOfDateTimeOffset;
+                    return typeof(DateTimeOffset);
                 }
-                if (type == Globals.TypeOfMemoryStreamAdapter)
+                if (type == typeof(MemoryStreamAdapter))
                 {
-                    return Globals.TypeOfMemoryStream;
+                    return typeof(System.IO.MemoryStream);
                 }
                 return type;
             }
             private static RuntimeTypeHandle GetDataContractAdapterTypeHandle(RuntimeTypeHandle typeHandle)
             {
-                if (Globals.TypeOfDateTimeOffset.TypeHandle.Equals(typeHandle))
+                if (typeof(DateTimeOffset).TypeHandle.Equals(typeHandle))
                 {
-                    return Globals.TypeOfDateTimeOffsetAdapter.TypeHandle;
+                    return typeof(DateTimeOffsetAdapter).TypeHandle;
                 }
-                if (Globals.TypeOfMemoryStream.TypeHandle.Equals(typeHandle))
+                if (typeof(System.IO.MemoryStream).TypeHandle.Equals(typeHandle))
                 {
-                    return Globals.TypeOfMemoryStreamAdapter.TypeHandle;
+                    return typeof(MemoryStreamAdapter).TypeHandle;
                 }
                 return typeHandle;
             }
@@ -595,7 +596,7 @@ namespace System.Runtime.Serialization.DataContracts
             internal static DataContract? GetBuiltInDataContract(Type type)
             {
                 if (type.IsInterface && !CollectionDataContract.IsCollectionInterface(type))
-                    type = Globals.TypeOfObject;
+                    type = typeof(object);
 
                 return s_typeToBuiltInContract.GetOrAdd(type, static (Type key) =>
                 {
@@ -928,7 +929,7 @@ namespace System.Runtime.Serialization.DataContracts
                         s_clrTypeStrings = new Dictionary<string, XmlDictionaryString>();
                         try
                         {
-                            s_clrTypeStrings.Add(Globals.TypeOfInt.Assembly.FullName!, s_clrTypeStringsDictionary.Add(Globals.MscorlibAssemblyName));
+                            s_clrTypeStrings.Add(typeof(int).Assembly.FullName!, s_clrTypeStringsDictionary.Add(Globals.MscorlibAssemblyName));
                         }
                         catch (Exception ex) when (!ExceptionUtility.IsFatal(ex))
                         {
@@ -988,7 +989,7 @@ namespace System.Runtime.Serialization.DataContracts
                 // with schema importing it doesn't make sense, but there is a building period while we're still figuring out all the data types and contracts
                 // where the underlying type may be null.) Anyway... might it make sense to re-instate this if clause - but use it to throw an exception if
                 // we don't meet the criteria? That way we can maintain nullable semantics and not do anything silly trying to keep them simple.
-                //if (classType.IsSerializable || classType.IsDefined(Globals.TypeOfDataContractAttribute, false))
+                //if (classType.IsSerializable || classType.IsDefined(typeof(DataContractAttribute), false))
                 {
                     _typeForInitialization = classType;
                 }
@@ -1123,12 +1124,12 @@ namespace System.Runtime.Serialization.DataContracts
                 type.IsSerializable ||
 #pragma warning restore SYSLIB0050
                 type.IsEnum ||
-                type.IsDefined(Globals.TypeOfDataContractAttribute, false) ||
+                type.IsDefined(typeof(DataContractAttribute), false) ||
                 type.IsInterface ||
                 type.IsPointer ||
                 //Special casing DBNull as its considered a Primitive but is no longer Serializable
-                type == Globals.TypeOfDBNull ||
-                Globals.TypeOfIXmlSerializable.IsAssignableFrom(type))
+                type == typeof(DBNull) ||
+                typeof(IXmlSerializable).IsAssignableFrom(type))
             {
                 return true;
             }
@@ -1186,7 +1187,7 @@ namespace System.Runtime.Serialization.DataContracts
         internal static Type UnwrapRedundantNullableType(Type type)
         {
             Type nullableType = type;
-            while (type.IsGenericType && type.GetGenericTypeDefinition() == Globals.TypeOfNullable)
+            while (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>))
             {
                 nullableType = type;
                 type = type.GetGenericArguments()[0];
@@ -1196,7 +1197,7 @@ namespace System.Runtime.Serialization.DataContracts
 
         internal static Type UnwrapNullableType(Type type)
         {
-            while (type.IsGenericType && type.GetGenericTypeDefinition() == Globals.TypeOfNullable)
+            while (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>))
                 type = type.GetGenericArguments()[0];
             return type;
         }
@@ -1346,7 +1347,7 @@ namespace System.Runtime.Serialization.DataContracts
             {
                 xmlName = builtInContract.XmlName;
             }
-            else if (Globals.TypeOfIXmlSerializable.IsAssignableFrom(type))
+            else if (typeof(IXmlSerializable).IsAssignableFrom(type))
             {
                 SchemaExporter.GetXmlTypeInfo(type, out XmlQualifiedName xmlTypeName, out _, out _);
                 xmlName = xmlTypeName;
@@ -1364,7 +1365,7 @@ namespace System.Runtime.Serialization.DataContracts
         {
             dataContractAttribute = null;
 
-            object[] dataContractAttributes = type.GetCustomAttributes(Globals.TypeOfDataContractAttribute, false).ToArray();
+            object[] dataContractAttributes = type.GetCustomAttributes(typeof(DataContractAttribute), false).ToArray();
             if (dataContractAttributes != null && dataContractAttributes.Length > 0)
             {
 #if DEBUG
@@ -1389,7 +1390,7 @@ namespace System.Runtime.Serialization.DataContracts
         internal static XmlQualifiedName GetCollectionXmlName(Type type, Type itemType, HashSet<Type> previousCollectionTypes, out CollectionDataContractAttribute? collectionContractAttribute)
         {
             string? name, ns;
-            object[] collectionContractAttributes = type.GetCustomAttributes(Globals.TypeOfCollectionDataContractAttribute, false).ToArray();
+            object[] collectionContractAttributes = type.GetCustomAttributes(typeof(CollectionDataContractAttribute), false).ToArray();
             if (collectionContractAttributes != null && collectionContractAttributes.Length > 0)
             {
 #if DEBUG
@@ -1457,7 +1458,7 @@ namespace System.Runtime.Serialization.DataContracts
             XmlQualifiedName itemName;
             if (IsValueType && isNullable)
             {
-                GenericInfo genericInfo = new GenericInfo(DataContract.GetXmlName(Globals.TypeOfNullable), Globals.TypeOfNullable.FullName!);
+                GenericInfo genericInfo = new GenericInfo(DataContract.GetXmlName(typeof(Nullable<>)), typeof(Nullable<>).FullName!);
                 genericInfo.Add(new GenericInfo(XmlName, null));
                 genericInfo.AddToLevel(0, 1);
                 itemName = genericInfo.GetExpandedXmlName();
@@ -1949,7 +1950,7 @@ namespace System.Runtime.Serialization.DataContracts
         {
             return !type.IsValueType ||
                     (type.IsGenericType &&
-                    type.GetGenericTypeDefinition() == Globals.TypeOfNullable);
+                    type.GetGenericTypeDefinition() == typeof(Nullable<>));
         }
 
         [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
@@ -1972,7 +1973,7 @@ namespace System.Runtime.Serialization.DataContracts
                     return;
 
                 typesChecked.Add(type, type);
-                object[] knownTypeAttributes = type.GetCustomAttributes(Globals.TypeOfKnownTypeAttribute, false).ToArray();
+                object[] knownTypeAttributes = type.GetCustomAttributes(typeof(KnownTypeAttribute), false).ToArray();
                 if (knownTypeAttributes != null)
                 {
                     KnownTypeAttribute kt;
@@ -2010,7 +2011,7 @@ namespace System.Runtime.Serialization.DataContracts
                             if (method == null)
                                 DataContract.ThrowInvalidDataContractException(SR.Format(SR.KnownTypeAttributeUnknownMethod, methodName, DataContract.GetClrTypeFullName(type)), type);
 
-                            if (!Globals.TypeOfTypeEnumerable.IsAssignableFrom(method.ReturnType))
+                            if (!typeof(IEnumerable<Type>).IsAssignableFrom(method.ReturnType))
                                 DataContract.ThrowInvalidDataContractException(SR.Format(SR.KnownTypeAttributeReturnType, DataContract.GetClrTypeFullName(type), methodName), type);
 
                             object? types = method.Invoke(null, Array.Empty<object>());
@@ -2047,9 +2048,9 @@ namespace System.Runtime.Serialization.DataContracts
                     try
                     {
                         if (DataContract.GetDataContract(type) is CollectionDataContract collectionDataContract && collectionDataContract.IsDictionary &&
-                            collectionDataContract.ItemType.GetGenericTypeDefinition() == Globals.TypeOfKeyValue)
+                            collectionDataContract.ItemType.GetGenericTypeDefinition() == typeof(KeyValue<,>))
                         {
-                            DataContract itemDataContract = DataContract.GetDataContract(Globals.TypeOfKeyValuePair.MakeGenericType(collectionDataContract.ItemType.GetGenericArguments()));
+                            DataContract itemDataContract = DataContract.GetDataContract(typeof(System.Collections.Generic.KeyValuePair<,>).MakeGenericType(collectionDataContract.ItemType.GetGenericArguments()));
                             knownDataContracts ??= new DataContractDictionary();
 
                             knownDataContracts.TryAdd(itemDataContract.XmlName, itemDataContract);

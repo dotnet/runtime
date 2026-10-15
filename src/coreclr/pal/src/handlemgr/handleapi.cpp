@@ -229,7 +229,7 @@ not required in the PAL, so we'll always return FALSE.
 BOOL
 PALAPI
 CloseHandle(
-        IN OUT HANDLE hObject)
+        IN OUT HANDLE hObject) noexcept
 {
     CPalThread *pThread;
     PAL_ERROR palError;
