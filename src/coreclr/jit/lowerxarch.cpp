@@ -7570,10 +7570,11 @@ void Lowering::ContainCheckIndir(GenTreeIndir* node)
         // The address of an indirection that requires its address in a reg.
         // Skip any further processing that might otherwise make it contained.
     }
-    else if (addr->OperIs(GT_LCL_ADDR) && IsContainableLclAddr(addr->AsLclFld(), node->Size()))
+    else if (addr->OperIs(GT_LCL_ADDR) && !node->IsVolatile() && IsContainableLclAddr(addr->AsLclFld(), node->Size()))
     {
         // These nodes go into an addr mode:
         // - GT_LCL_ADDR is a stack addr mode.
+        // Volatile accesses are not contained so that the emitter's stack move peephole cannot remove them.
         MakeSrcContained(node, addr);
     }
     else if (addr->IsCnsIntOrI())
@@ -8171,7 +8172,8 @@ void Lowering::ContainCheckStoreLoc(GenTreeLclVarCommon* storeLoc) const
     assert(storeLoc->OperIsLocalStore());
     GenTree* op1 = storeLoc->gtGetOp1();
 
-    if (op1->OperIs(GT_BITCAST))
+    // A small store implicitly truncates its source, so it cannot store directly from the other type.
+    if (op1->OperIs(GT_BITCAST) && !varTypeIsSmall(storeLoc))
     {
         // If we know that the source of the bitcast will be in a register, then we can make
         // the bitcast itself contained. This will allow us to store directly from the other
