@@ -420,7 +420,7 @@ namespace Microsoft.NET.Build.Tasks
             DateTime timestamp = DateTime.UtcNow;
             Crossgen2Cache cache = Crossgen2Cache.FromEnvironment(Log);
             string key = null;
-            string[] outputs = null;
+            InvocationCacheOutputs outputs = null;
             if (cache is not null)
             {
                 try
@@ -444,10 +444,10 @@ namespace Microsoft.NET.Build.Tasks
                         Crossgen2CacheInvocation invocation = Crossgen2CacheInvocation.Create(pathToTool,
                             Crossgen2Tool.GetMetadata(MetadataKeys.JitPath), _outputR2RImage, _outputPDBImage,
                             _emitSymbols, Crossgen2Tool.GetMetadata(MetadataKeys.PerfmapFormatVersion));
-                        outputs = invocation.Outputs;
-                        key = cache.ComputeKey(invocation.CompilerDependencies,
+                        outputs = cache.DeclareOutputs(invocation.Outputs);
+                        key = Crossgen2Cache.ComputeKey(invocation.CompilerDependencies,
                             _inputAssembly, ImplementationAssemblyReferences, Crossgen2PgoFiles,
-                            outputs, responseFileCommands, commandLineCommands,
+                            invocation.Outputs, responseFileCommands, commandLineCommands,
                             string.Join("\n", ShowCompilerWarnings, LogStandardErrorAsError, StandardOutputImportance, StandardErrorImportance),
                             GetWorkingDirectory() ?? Directory.GetCurrentDirectory());
                     }

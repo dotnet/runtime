@@ -560,8 +560,9 @@ public class Crossgen2CacheTests
         Crossgen2Cache cache = Crossgen2Cache.FromEnvironment(owner.Log)!;
         File.WriteAllText(fixture.Output, "image");
         string key = new string('a', 64);
-        Parallel.For(0, 8, _ => cache.Store(key, new[] { fixture.Output, fixture.Map }, new()));
-        Assert.True(cache.TryRestore(key, new[] { fixture.Output, fixture.Map }, DateTime.UtcNow, out _));
+        InvocationCacheOutputs outputs = cache.DeclareOutputs(new[] { fixture.Output, fixture.Map });
+        Parallel.For(0, 8, _ => cache.Store(key, outputs, new()));
+        Assert.True(cache.TryRestore(key, outputs, DateTime.UtcNow, out _));
         Assert.Empty(Directory.GetDirectories(Path.Combine(fixture.Cache, "v2"), "*.tmp"));
     }).Dispose();
 
@@ -656,9 +657,17 @@ public class Crossgen2CacheTests
         MockCompiler task = fixture.Create();
         Crossgen2Cache cache = Crossgen2Cache.FromEnvironment(task.Log)!;
         string image = value == "cache" ? Path.Combine(fixture.Cache.ToUpperInvariant(), "output.dll") : fixture.Input.ToUpperInvariant();
-        Assert.Throws<InvalidDataException>(() => cache.ComputeKey(new[] { fixture.Tool, fixture.Jit, fixture.Support },
-            fixture.Input, task.ImplementationAssemblyReferences, task.Crossgen2PgoFiles,
-            new[] { Crossgen2Cache.InputPath(image), fixture.Map }, "", "", "", fixture.Root));
+        string[] paths = new[] { Crossgen2Cache.InputPath(image), fixture.Map };
+        if (value == "cache")
+        {
+            Assert.Throws<ArgumentException>(() => cache.DeclareOutputs(paths));
+        }
+        else
+        {
+            Assert.Throws<InvalidDataException>(() => Crossgen2Cache.ComputeKey(new[] { fixture.Tool, fixture.Jit, fixture.Support },
+                fixture.Input, task.ImplementationAssemblyReferences, task.Crossgen2PgoFiles,
+                paths, "", "", "", fixture.Root));
+        }
     }, location).Dispose();
 
     [WindowsCacheTheory]

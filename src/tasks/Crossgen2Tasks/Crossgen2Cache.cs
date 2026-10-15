@@ -116,10 +116,9 @@ internal sealed class Crossgen2Cache
         return fullPath;
     }
 
-    internal string ComputeKey(string[] compilerDependencies, string input, ITaskItem[] references,
+    internal static string ComputeKey(string[] compilerDependencies, string input, ITaskItem[] references,
         ITaskItem[]? profiles, string[] outputs, string response, string command, string diagnosticPolicy, string workingDirectory)
     {
-        DeclareOutputs(outputs).Validate(_root);
         using var data = new MemoryStream();
         using var writer = new BinaryWriter(data, Encoding.UTF8, leaveOpen: true);
         var inputs = new HashSet<string>(PathComparer);
@@ -236,10 +235,10 @@ internal sealed class Crossgen2Cache
         }
     }
 
-    internal bool TryRestore(string key, string[] outputs, DateTime timestamp, out List<Diagnostic> diagnostics)
+    internal bool TryRestore(string key, InvocationCacheOutputs outputs, DateTime timestamp, out List<Diagnostic> diagnostics)
     {
         var restoredDiagnostics = new List<Diagnostic>();
-        bool restored = _storage.TryRestore(key, DeclareOutputs(outputs), timestamp, reader =>
+        bool restored = _storage.TryRestore(key, outputs, timestamp, reader =>
         {
             int count = reader.ReadInt32();
             if (count < 0 || count > reader.BaseStream.Length - reader.BaseStream.Position)
@@ -264,9 +263,9 @@ internal sealed class Crossgen2Cache
         return restored;
     }
 
-    internal void Store(string key, string[] outputs, List<Diagnostic> diagnostics)
+    internal void Store(string key, InvocationCacheOutputs outputs, List<Diagnostic> diagnostics)
     {
-        _storage.Store(key, DeclareOutputs(outputs), writer =>
+        _storage.Store(key, outputs, writer =>
         {
             writer.Write(diagnostics.Count);
             foreach (Diagnostic diagnostic in diagnostics)
@@ -277,16 +276,18 @@ internal sealed class Crossgen2Cache
         });
     }
 
-    internal void CleanOutputs(string[] outputs) => _storage.CleanOutputs(DeclareOutputs(outputs));
+    internal void CleanOutputs(InvocationCacheOutputs outputs) => _storage.CleanOutputs(outputs);
 
-    private static InvocationCacheOutputs DeclareOutputs(string[] outputs)
+    internal InvocationCacheOutputs DeclareOutputs(string[] paths)
     {
-        var files = new InvocationCacheFile[outputs.Length];
-        for (int i = 0; i < outputs.Length; i++)
+        var files = new InvocationCacheFile[paths.Length];
+        for (int i = 0; i < paths.Length; i++)
         {
-            files[i] = new InvocationCacheFile(outputs[i], required: i == 0);
+            files[i] = new InvocationCacheFile(paths[i], required: i == 0);
         }
-        return InvocationCacheOutputs.FromFiles(files);
+        InvocationCacheOutputs outputs = InvocationCacheOutputs.FromFiles(files);
+        outputs.Validate(_root);
+        return outputs;
     }
 
     private static string Hash(Stream stream)

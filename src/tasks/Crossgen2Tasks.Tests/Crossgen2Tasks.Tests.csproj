@@ -6,6 +6,7 @@
     <UseDefaultTestHost>true</UseDefaultTestHost>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="../Common/InvocationCache.Tests/InvocationCacheTests.cs" Link="InvocationCacheTests.cs" />
     <ProjectReference Include="../Crossgen2Tasks/Crossgen2Tasks.csproj" />
     <PackageReference Include="Microsoft.Build.Framework" Version="$(MicrosoftBuildFrameworkVersion)" />
     <PackageReference Include="Microsoft.Build.Utilities.Core" Version="$(MicrosoftBuildUtilitiesCoreVersion)" />

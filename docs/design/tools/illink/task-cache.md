@@ -23,13 +23,15 @@ sources under `src/tasks/Common/InvocationCache`, compiled into the task assembl
 `ILLinkCache` retains ILLink's environment configuration and cache-directory policy;
 the task retains input identity and invocation eligibility. The extraction preserves
 the v1 entry format, writer mutex names, diagnostics, and purge behavior.
+The task declares one owned-directory `InvocationCacheOutputs` contract and reuses
+it for restoration, normal-execution cleanup, and storage.
 
 ```csharp
 internal sealed class ILLinkCache
 {
     internal static ILLinkCache? TryCreate(string? cacheDirectory, TaskLoggingHelper log);
-    internal bool TryRestore(string inputHash, string outputDirectory, DateTime outputTimestampUtc);
-    internal void Store(string inputHash, string outputDirectory);
+    internal bool TryRestore(string inputHash, InvocationCacheOutputs outputs, DateTime outputTimestampUtc);
+    internal void Store(string inputHash, InvocationCacheOutputs outputs);
 }
 ```
 

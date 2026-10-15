@@ -38,9 +38,6 @@ internal class InvocationCache
         _versionDirectory = versionDirectory;
     }
 
-    internal bool TryRestore(string inputHash, string outputDirectory, DateTime outputTimestampUtc)
-        => TryRestore(inputHash, InvocationCacheOutputs.FromDirectory(outputDirectory), outputTimestampUtc);
-
     internal bool TryRestore(string inputHash, InvocationCacheOutputs outputs, DateTime outputTimestampUtc,
         Action<BinaryReader>? readMetadata = null)
     {
@@ -87,9 +84,6 @@ internal class InvocationCache
             return false;
         }
     }
-
-    internal void Store(string inputHash, string outputDirectory)
-        => Store(inputHash, InvocationCacheOutputs.FromDirectory(outputDirectory));
 
     internal void Store(string inputHash, InvocationCacheOutputs outputs, Action<BinaryWriter>? writeMetadata = null)
     {
