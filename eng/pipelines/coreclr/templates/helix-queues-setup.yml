@@ -129,9 +129,9 @@ jobs:
     # Linux x64
     - ${{ if eq(parameters.platform, 'linux_x64') }}:
       - ${{ if eq(variables['System.TeamProject'], 'public') }}:
-        - AzureLinux.4.Amd64.Open
+        - AzureLinux.3.Amd64.Open
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
-        - AzureLinux.4.Amd64
+        - AzureLinux.3.Amd64
 
     # OSX arm64
     - ${{ if eq(parameters.platform, 'osx_arm64') }}:

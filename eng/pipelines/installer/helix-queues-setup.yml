@@ -41,7 +41,7 @@ steps:
 
     # Linux x64
     - ${{ if eq(parameters.platform, 'linux_x64') }}:
-      - AzureLinux.4.Amd64.Open
+      - AzureLinux.3.Amd64.Open
 
     # OSX arm64
     - ${{ if eq(parameters.platform, 'osx_arm64') }}:

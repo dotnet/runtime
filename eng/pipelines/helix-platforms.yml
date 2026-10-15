@@ -84,12 +84,12 @@ variables:
   # ===========================================
 
   # Linux x64
-  # Latest: Azure Linux 4.0
+  # Latest: Azure Linux 3.0
   - name: helix_linux_x64_latest
-    value: AzureLinux.4.Amd64.Open
+    value: AzureLinux.3.Amd64.Open
 
   - name: helix_linux_x64_latest_internal
-    value: AzureLinux.4.Amd64
+    value: AzureLinux.3.Amd64
 
   # Oldest: Ubuntu 24.04
   - name: helix_linux_x64_oldest
