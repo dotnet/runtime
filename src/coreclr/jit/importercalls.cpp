@@ -7182,7 +7182,7 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
                 qmark->SetThenNodeLikelihood(0);
 
                 unsigned tmp = lvaGrabTemp(true DEBUGARG("Grabbing temp for Log2 Qmark"));
-                impStoreToTemp(tmp, qmark, CHECK_SPILL_NONE);
+                impStoreToTemp(tmp, qmark, CHECK_SPILL_ALL);
                 result = gtNewLclvNode(tmp, retType);
             }
 #endif // FEATURE_HW_INTRINSICS
