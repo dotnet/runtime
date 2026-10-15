@@ -48,12 +48,17 @@ public class R2RTestSuites
         if (optimize)
             options.Add(Crossgen2Option.Optimize);
 
+        List<string> additionalArgs = new();
+        if (!optimize)
+            additionalArgs.Add("--optimize-disabled");
+
         new R2RTestRunner(_output).Run(new R2RTestCase(
             nameof(TypeTokensOnlyRequireFixupsWhenReferencedByCode),
             [
                 new(nameof(TypeTokensOnlyRequireFixupsWhenReferencedByCode), [new CrossgenAssembly(input)])
                 {
                     Options = options,
+                    AdditionalArgs = additionalArgs,
                     OutputFileExtension = TestPaths.IsWasmTarget ? ".wasm" : ".dll",
                     Validate = Validate,
                 },
@@ -77,8 +82,11 @@ public class R2RTestSuites
             {
                 ReadyToRunMethod method = Assert.Single(methods,
                     method => method.SignatureString.Contains($".{name}(", StringComparison.Ordinal));
+                string expectedType = name == "ReadConstructedTypeToken" ? "Webcil.LdtokenHolder`1" : "Webcil.LdtokenType";
+                SignatureFormattingOptions formatting = new();
                 Assert.Contains(method.Fixups ?? Array.Empty<FixupCell>(),
-                    fixup => fixup.Signature.FixupKind == ReadyToRunFixupKind.TypeHandle);
+                    fixup => fixup.Signature.FixupKind == ReadyToRunFixupKind.TypeHandle &&
+                        fixup.Signature.ToString(formatting).Contains(expectedType, StringComparison.Ordinal));
             }
         }
     }
