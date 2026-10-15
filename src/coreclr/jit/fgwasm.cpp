@@ -2406,17 +2406,6 @@ PhaseStatus Compiler::fgWasmControlFlow()
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
-// Identify locals which are considered to be GC-safe. By GC-safe,
-// we mean unexposed to any possible GC collections, and thus safe from being moved by the GC
-// These locals do not need to be spilled to the Wasm shadow stack for GC safety, and thus can safely be assigned
-// homes in Wasm locals.
-//  We mark a local as GC-safe if and only if it is never live across a GC safepoint. GC safepoints are:
-// -  GC poll points (GT_GCPOLL)
-// -  All user Calls (GT_CALL)
-// -  Helper calls and any node which might generate a helper call  (except for helpers marked as GC safe, which at this
-// point are only write barriers)
-//     => This includes any node which can throw.
-// - Invocation of a finally funclet
 inline bool treeIsNonExceptGCSafePoint(GenTree* tree, Compiler* comp)
 {
     if (tree->IsCall())
@@ -2430,9 +2419,28 @@ inline bool treeIsNonExceptGCSafePoint(GenTree* tree, Compiler* comp)
     return tree->OperIs(GT_GCPOLL);
 }
 
+
+//------------------------------------------------------------------------
+// fgWasmFindGCRefCandidates: Identify GC ref locals which are candidates to live in Wasm locals by determining if they
+// are GC-safe (unexposed to GC).
+//
+// Notes:
+//    This is a dataflow analysis which uses existing liveness information to identify JIT locals which may be placed in Wasm locals at regalloc time. 
+//    We limit these to locals which do not require a gc-visible home. For Wasm, a gc-visible home is on the shadow stack. 
+//    We mark a gc-ref local as a candidate for a Wasm local if the analysis determines there is no liveness across a GC safepoint for the local definition itself. 
+//    A GC safepoint is an operation whose codegen instructions may trigger a GC. We split safepoints into exceptional and non-exceptional safepoints. 
+//    Non exceptional safepoints are:
+//      - Any explicit GC_POLL
+//      - All calls, except helpers marked as NO_GC
+//      - Invocations of a finally funclet (the only safepoint not explicitly expressed as an LIR node)
+//    Exceptional safepoints are: 
+//       - Any node NOT otherwise in the first category which may throw. In these cases the only possible GC collecting path is the throwing path.
+//         Exceptional safepoint nodes are treated differently, because locals live into them are only meaningfully exposed to GC if they are also live into
+//         a reachable handler block.
+//    IMPORTANT: A tree temporary that is the result of a LCL_VAR may still be live across a safepoint even if the local is dead at that safepoint from a liveness perspective. 
+//    fgWasmSpillRefs handles these cases by checking the list of candidates generated from this pass and giving a temporary a gc-visible home if necessary.
 PhaseStatus Compiler::fgWasmFindGCRefCandidates()
 {
-
 #define DISP_SAFEPOINT(msg, block, tree, liveInto)                                                                     \
     do                                                                                                                 \
     {                                                                                                                  \
@@ -2481,8 +2489,6 @@ PhaseStatus Compiler::fgWasmFindGCRefCandidates()
                 DISP_SAFEPOINT("EH-Only GC safepoint in " FMT_BB ":\n", block, tree, liveInto);
             }
 
-            // We use GeneralLclAddrHandling=false here, since for consistency we want to treat a local value as live
-            // until its value is actually read.
             lifeUpdater.UpdateLife<false>(tree);
         }
 
@@ -2696,9 +2702,8 @@ PhaseStatus Compiler::fgWasmSpillRefs()
 
                 // If a value is just a GT_LCL_VAR that isn't address-exposed, by construction we ensure that
                 // it won't be mutated between its def (here) and its use (the call that would produce a spill).
-                // If the local is NOT a gc ref wasm local candidate, we don't need to spill it since it will already
-                // have a pinned stack home. If the local IS a gc ref wasm local candidate however, we may still need to
-                // spill it if it is live across another call before its use.
+                // If the local is NOT a gc ref wasm local candidate, then it will be assigned a pinned stack home
+                // by RA already. Otherwise, temporary reads of candidates that are live across a call still need to be spilled.
                 if (!dsc->IsAddressExposed() && !isRefLocalCandidate)
                 {
                     continue;
