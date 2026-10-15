@@ -289,7 +289,7 @@ FCIMPLEND
 EXTERN_C void * ReturnFromUniversalTransitionTailCall;
 void * ReturnFromUniversalTransitionTailCall;
 
-#if !defined(HOST_ARM64) && !defined(HOST_WASM)
+#if !defined(HOST_WASM)
 FCIMPL2_RAW(void, RhpAssignRef, Object ** dst, Object * ref)
 {
     // @TODO: FEATURE_PORTABLE_HELPERS - Null check
