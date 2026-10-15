@@ -3363,7 +3363,7 @@ inline unsigned genTreeHashAdd(unsigned old, ValueSize add)
     uint64_t data = *reinterpret_cast<uint64_t*>(&add);
     unsigned hash = old;
     hash          = genTreeHashAdd(hash, (unsigned)data);
-    hash          = genTreeHashAdd(hash, (unsigned)(data >> sizeof(unsigned)));
+    hash          = genTreeHashAdd(hash, (unsigned)(data >> (8 * sizeof(unsigned))));
     return hash;
 }
 
@@ -22211,9 +22211,10 @@ void GenTreeArrAddr::ParseArrayAddress(Compiler* comp, GenTree** pArr, ValueNum*
 
     if (!elemValueSize.IsExact())
     {
+        assert(constIndexOffset == 0);
         if (inxVN == ValueNumStore::NoVN)
         {
-            *pInxVN = vnStore->VNForPtrSizeIntCon(constIndexOffset);
+            *pInxVN = vnStore->VNForPtrSizeIntCon(0);
         }
         else
         {

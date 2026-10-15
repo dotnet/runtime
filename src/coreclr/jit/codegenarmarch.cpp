@@ -1554,6 +1554,14 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
 #ifdef TARGET_ARM64
     if (varTypeHasUnknownSize(node->gtElemType))
     {
+        if (!index->TypeIs(TYP_I_IMPL))
+        {
+            // We require zero extension for madd here.
+            const regNumber tmpReg2 = internalRegisters.Extract(node);
+            GetEmitter()->emitIns_Mov(INS_mov, EA_4BYTE, tmpReg2, indexReg, /* canSkip */ false);
+            indexReg = tmpReg2;
+        }
+
         if (node->gtElemType == TYP_SIMD)
         {
             // tmpReg = VL
