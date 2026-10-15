@@ -293,10 +293,6 @@ void SEHCleanupSignals(bool isChildProcess)
     (void)isChildProcess;
 }
 
-void UnmaskActivationSignal()
-{
-}
-
 extern "C" VOID PALAPI
 PAL_EnableCrashReportBeforeSignalChaining(void)
 {

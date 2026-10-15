@@ -54,6 +54,22 @@ inline size_t minipal_get_current_thread_id(void)
  */
 int minipal_set_thread_name(pthread_t thread, const char* name);
 
+#if !defined(HOST_BROWSER) && !defined(HOST_WASI)
+/**
+ * Block the runtime activation signal for the current thread.
+ *
+ * @return 0 on success, or an error code if the operation fails.
+ */
+int minipal_mask_activation_signal(void);
+
+/**
+ * Unblock the runtime activation signal for the current thread.
+ *
+ * @return 0 on success, or an error code if the operation fails.
+ */
+int minipal_unmask_activation_signal(void);
+#endif // !HOST_BROWSER && !HOST_WASI
+
 #ifdef __cplusplus
 }
 #endif // extern "C"

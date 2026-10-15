@@ -16,6 +16,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#if !defined(HOST_BROWSER) && !defined(HOST_WASI)
+#include <signal.h>
+#endif // !HOST_BROWSER && !HOST_WASI
+
 #if defined(__linux__)
 #include <sys/syscall.h>
 #include <unistd.h>
@@ -112,3 +116,29 @@ int minipal_set_thread_name(pthread_t thread, const char* name)
 #endif
 #endif
 }
+
+#if !defined(HOST_BROWSER) && !defined(HOST_WASI)
+static int SetActivationSignalMask(int operation)
+{
+    sigset_t signalSet;
+    sigemptyset(&signalSet);
+
+#ifdef SIGRTMIN
+    sigaddset(&signalSet, SIGRTMIN);
+#else
+    sigaddset(&signalSet, SIGUSR1);
+#endif
+
+    return pthread_sigmask(operation, &signalSet, NULL);
+}
+
+int minipal_mask_activation_signal(void)
+{
+    return SetActivationSignalMask(SIG_BLOCK);
+}
+
+int minipal_unmask_activation_signal(void)
+{
+    return SetActivationSignalMask(SIG_UNBLOCK);
+}
+#endif // !HOST_BROWSER && !HOST_WASI

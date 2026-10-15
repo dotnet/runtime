@@ -24,6 +24,7 @@ SET_DEFAULT_DEBUG_CHANNEL(EXCEPT); // some headers have code with asserts, so do
 #include "pal/palinternal.h"
 
 #include <clrconfignocache.h>
+#include <minipal/thread.h>
 
 #include <errno.h>
 #include <signal.h>
@@ -285,7 +286,6 @@ BOOL SEHInitializeSignals(CorUnix::CPalThread *pthrCurrent, DWORD flags)
 
         handle_signal(INJECT_ACTIVATION_SIGNAL, inject_activation_handler, &g_previous_activation);
         g_registered_activation_handler = true;
-        UnmaskActivationSignal();
     }
 #endif
 
@@ -549,32 +549,6 @@ static void sigfpe_handler(int code, siginfo_t *siginfo, void *context)
     invoke_previous_action(&g_previous_sigfpe, code, siginfo, context);
 }
 
-void UnmaskActivationSignal()
-{
-    sigset_t signal_set;
-    sigemptyset(&signal_set);
-    sigaddset(&signal_set, INJECT_ACTIVATION_SIGNAL);
-
-    int sigmaskRet = pthread_sigmask(SIG_UNBLOCK, &signal_set, NULL);
-    if (sigmaskRet != 0)
-    {
-        ASSERT("pthread_sigmask failed; error number is %d\n", sigmaskRet);
-    }
-}
-
-void MaskActivationSignal()
-{
-    sigset_t signal_set;
-    sigemptyset(&signal_set);
-    sigaddset(&signal_set, INJECT_ACTIVATION_SIGNAL);
-
-    int sigmaskRet = pthread_sigmask(SIG_BLOCK, &signal_set, NULL);
-    if (sigmaskRet != 0)
-    {
-        ASSERT("pthread_sigmask failed; error number is %d\n", sigmaskRet);
-    }
-}
-
 #if !HAVE_MACH_EXCEPTIONS
 
 /*++
@@ -601,13 +575,21 @@ extern "C" void signal_handler_worker(int code, siginfo_t *siginfo, void *contex
         // Unmask the activation signal now that we are running on the original stack of the thread
         // except for the stack overflow case when we are actually running on a special stack overflow
         // stack.
-        UnmaskActivationSignal();
+        int sigmaskRet = minipal_unmask_activation_signal();
+        if (sigmaskRet != 0)
+        {
+            ASSERT("pthread_sigmask failed; error number is %d\n", sigmaskRet);
+        }
     }
 
     returnPoint->returnFromHandler = common_signal_handler(code, siginfo, context, 2, (size_t)0, (size_t)siginfo->si_addr);
 
     // We are going to return to the alternate stack, so block the activation signal again
-    MaskActivationSignal();
+    int sigmaskRet = minipal_mask_activation_signal();
+    if (sigmaskRet != 0)
+    {
+        ASSERT("pthread_sigmask failed; error number is %d\n", sigmaskRet);
+    }
 
     RtlRestoreContext(&returnPoint->context, NULL);
 }
