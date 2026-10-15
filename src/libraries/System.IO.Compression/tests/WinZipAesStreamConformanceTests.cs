@@ -165,6 +165,41 @@ namespace System.IO.Compression.Tests
             Assert.Equal(plaintext, decryptedStream.ToArray());
         }
 
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task DecryptingStream_InvalidSizeOrTruncatedStream_ThrowsInvalidDataException(bool async)
+        {
+            const int PasswordVerifierSize = 2;
+            const int AuthenticationCodeSize = 10;
+            int headerSize = SaltSize + PasswordVerifierSize;
+
+            (byte[] encryptedData, object decryptKeyMaterial) = CreateEncryptedData("payload"u8.ToArray());
+
+            // Declared totalStreamSize smaller than header + auth code
+            await AssertCreateThrowsInvalidDataException(encryptedData, decryptKeyMaterial, headerSize + AuthenticationCodeSize - 1, async);
+
+            // Stream truncated inside the salt/verifier header (while totalStreamSize claims to be valid)
+            await AssertCreateThrowsInvalidDataException(encryptedData[..(headerSize - 1)], decryptKeyMaterial, encryptedData.Length, async);
+
+            // Stream truncated inside the trailing 10-byte authentication code
+            await AssertCreateThrowsInvalidDataException(encryptedData[..^1], decryptKeyMaterial, encryptedData.Length, async);
+        }
+
+        private static async Task AssertCreateThrowsInvalidDataException(byte[] streamBytes, object keyMaterial, int declaredTotalStreamSize, bool async)
+        {
+            using var encryptedStream = new MemoryStream(streamBytes);
+            if (async)
+            {
+                await Assert.ThrowsAsync<InvalidDataException>(() => CreateDecryptingStream(encryptedStream, keyMaterial, declaredTotalStreamSize, async: true));
+            }
+            else
+            {
+                TargetInvocationException ex = Assert.Throws<TargetInvocationException>(() => CreateDecryptingStream(encryptedStream, keyMaterial, declaredTotalStreamSize, async: false).GetAwaiter().GetResult());
+                Assert.IsType<InvalidDataException>(ex.InnerException);
+            }
+        }
+
         private static async Task<Stream> CreateDecryptingStream(Stream encryptedStream, object keyMaterial, int encryptedDataLength, bool async)
         {
             object[] arguments =

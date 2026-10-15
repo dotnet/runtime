@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Runtime.Versioning;
@@ -15,6 +16,7 @@ namespace System.IO.Compression
     {
         private const int BlockSize = 16; // AES block size in bytes
         private const int KeystreamBufferSize = 4096; // Pre-generate 4KB of keystream (256 blocks)
+        private const int VerificationBufferSize = 81920; // Match Stream.CopyTo default buffer size for sequential HMAC scan
         private const int PasswordVerifierSize = 2;
         private const int AuthenticationCodeSize = 10;
 
@@ -27,8 +29,7 @@ namespace System.IO.Compression
         private readonly byte[] _passwordVerifier;
         private bool _headerWritten;
         private bool _disposed;
-        // During decryption: set to true after the stored auth code is read and verified during creation.
-        // During encryption: set to true after the computed auth code has been written.
+        // Set to true during encryption after the computed auth code has been written.
         private bool _authCodeFinalized;
         private readonly long _totalStreamSize;
         private readonly bool _leaveOpen;
@@ -85,11 +86,10 @@ namespace System.IO.Compression
                 throw new NotSupportedException(SR.SeekingNotSupported);
             }
 
-            ReadAndValidateHeaderCore(isAsync: false, baseStream, keyMaterial, CancellationToken.None).GetAwaiter().GetResult();
-
             var stream = new WinZipAesStream(baseStream, keyMaterial, totalStreamSize, encrypting, leaveOpen);
             try
             {
+                ReadAndValidateHeaderCore(isAsync: false, baseStream, keyMaterial, CancellationToken.None).GetAwaiter().GetResult();
                 stream.VerifyAuthenticationCodeCoreAsync(isAsync: false, CancellationToken.None).GetAwaiter().GetResult();
                 return stream;
             }
@@ -122,11 +122,10 @@ namespace System.IO.Compression
                 throw new NotSupportedException(SR.SeekingNotSupported);
             }
 
-            await ReadAndValidateHeaderCore(isAsync: true, baseStream, keyMaterial, cancellationToken).ConfigureAwait(false);
-
             var stream = new WinZipAesStream(baseStream, keyMaterial, totalStreamSize, encrypting, leaveOpen);
             try
             {
+                await ReadAndValidateHeaderCore(isAsync: true, baseStream, keyMaterial, cancellationToken).ConfigureAwait(false);
                 await stream.VerifyAuthenticationCodeCoreAsync(isAsync: true, cancellationToken).ConfigureAwait(false);
                 return stream;
             }
@@ -148,26 +147,25 @@ namespace System.IO.Compression
             }
             int saltSize = keyMaterial.SaltSize;
 
-            // Read salt from stream
             byte[] fileSalt = new byte[saltSize];
-            if (isAsync)
-            {
-                await baseStream.ReadExactlyAsync(fileSalt, cancellationToken).ConfigureAwait(false);
-            }
-            else
-            {
-                baseStream.ReadExactly(fileSalt);
-            }
-
-            // Read the 2-byte password verifier from stream
             byte[] verifier = new byte[PasswordVerifierSize];
-            if (isAsync)
+            try
             {
-                await baseStream.ReadExactlyAsync(verifier, cancellationToken).ConfigureAwait(false);
+                // Read salt and 2-byte password verifier from stream
+                if (isAsync)
+                {
+                    await baseStream.ReadExactlyAsync(fileSalt, cancellationToken).ConfigureAwait(false);
+                    await baseStream.ReadExactlyAsync(verifier, cancellationToken).ConfigureAwait(false);
+                }
+                else
+                {
+                    baseStream.ReadExactly(fileSalt);
+                    baseStream.ReadExactly(verifier);
+                }
             }
-            else
+            catch (EndOfStreamException)
             {
-                baseStream.ReadExactly(verifier);
+                throw new InvalidDataException(SR.TruncatedEncryptionHeader);
             }
 
             // Verify the salt matches. In WinZip AES, the salt is stored in the archive
@@ -187,7 +185,6 @@ namespace System.IO.Compression
 
         /// <summary>
         /// Private constructor — used by Create/CreateAsync.
-        /// For decryption, the header must already be validated before calling this constructor.
         /// </summary>
         private WinZipAesStream(Stream baseStream, WinZipAesKeyMaterial keyMaterial, long totalStreamSize, bool encrypting, bool leaveOpen)
         {
@@ -203,8 +200,6 @@ namespace System.IO.Compression
             _encrypting = encrypting;
             _totalStreamSize = totalStreamSize;
             _leaveOpen = leaveOpen;
-
-            _aes = Aes.Create();
 
             _salt = keyMaterial.Salt;
             _passwordVerifier = keyMaterial.PasswordVerifier;
@@ -227,6 +222,7 @@ namespace System.IO.Compression
                 }
             }
 
+            _aes = Aes.Create();
             _hmac = IncrementalHash.CreateHMAC(HashAlgorithmName.SHA1, keyMaterial.HmacKey);
             _aes.SetKey(keyMaterial.EncryptionKey);
         }
@@ -249,36 +245,6 @@ namespace System.IO.Compression
             }
         }
 
-        private void ValidateAuthCode()
-        {
-            Debug.Assert(!_encrypting, "ValidateAuthCode should only be called during decryption.");
-
-            if (_authCodeFinalized)
-            {
-                return;
-            }
-
-            byte[] storedAuth = new byte[AuthenticationCodeSize];
-            _baseStream.ReadExactly(storedAuth);
-            FinalizeAndCompareHMAC(storedAuth);
-            _authCodeFinalized = true;
-        }
-
-        private async Task ValidateAuthCodeAsync(CancellationToken cancellationToken)
-        {
-            Debug.Assert(!_encrypting, "ValidateAuthCode should only be called during decryption.");
-
-            if (_authCodeFinalized)
-            {
-                return;
-            }
-
-            byte[] storedAuth = new byte[AuthenticationCodeSize];
-            await _baseStream.ReadExactlyAsync(storedAuth, cancellationToken).ConfigureAwait(false);
-            FinalizeAndCompareHMAC(storedAuth);
-            _authCodeFinalized = true;
-        }
-
         private async Task VerifyAuthenticationCodeCoreAsync(bool isAsync, CancellationToken cancellationToken)
         {
             Debug.Assert(!_encrypting);
@@ -288,31 +254,52 @@ namespace System.IO.Compression
             long encryptedDataStart = _baseStream.Position;
             long remaining = _encryptedDataSize;
 
-            while (remaining > 0)
+            if (remaining > 0)
             {
-                int bytesToRead = (int)Math.Min(remaining, KeystreamBufferSize);
-                // This buffer is still depleted, so it can hold ciphertext until the first keystream generation overwrites it.
-                int bytesRead = isAsync
-                    ? await _baseStream.ReadAsync(_keystreamBuffer.AsMemory(0, bytesToRead), cancellationToken).ConfigureAwait(false)
-                    : _baseStream.Read(_keystreamBuffer, 0, bytesToRead);
-
-                if (bytesRead == 0)
+                int bufferSize = (int)Math.Min(remaining, VerificationBufferSize);
+                byte[] buffer = ArrayPool<byte>.Shared.Rent(bufferSize);
+                try
                 {
-                    throw new InvalidDataException(SR.UnexpectedEndOfStream);
+                    while (remaining > 0)
+                    {
+                        int bytesToRead = (int)Math.Min(remaining, buffer.Length);
+                        int bytesRead = isAsync
+                            ? await _baseStream.ReadAsync(buffer.AsMemory(0, bytesToRead), cancellationToken).ConfigureAwait(false)
+                            : _baseStream.Read(buffer, 0, bytesToRead);
+
+                        if (bytesRead == 0)
+                        {
+                            throw new InvalidDataException(SR.UnexpectedEndOfStream);
+                        }
+
+                        _hmac.AppendData(buffer.AsSpan(0, bytesRead));
+                        remaining -= bytesRead;
+                    }
                 }
-
-                _hmac.AppendData(_keystreamBuffer.AsSpan(0, bytesRead));
-                remaining -= bytesRead;
+                finally
+                {
+                    ArrayPool<byte>.Shared.Return(buffer);
+                }
             }
 
-            if (isAsync)
+            byte[] storedAuth = new byte[AuthenticationCodeSize];
+            try
             {
-                await ValidateAuthCodeAsync(cancellationToken).ConfigureAwait(false);
+                if (isAsync)
+                {
+                    await _baseStream.ReadExactlyAsync(storedAuth, cancellationToken).ConfigureAwait(false);
+                }
+                else
+                {
+                    _baseStream.ReadExactly(storedAuth);
+                }
             }
-            else
+            catch (EndOfStreamException)
             {
-                ValidateAuthCode();
+                throw new InvalidDataException(SR.UnexpectedEndOfStream);
             }
+
+            FinalizeAndCompareHMAC(storedAuth);
 
             _baseStream.Seek(encryptedDataStart, SeekOrigin.Begin);
             _hmac.Dispose();

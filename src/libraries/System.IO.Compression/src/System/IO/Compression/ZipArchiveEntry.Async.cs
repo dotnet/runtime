@@ -593,7 +593,7 @@ public partial class ZipArchiveEntry
         await ThrowIfNotOpenableAsync(needToUncompress: true, needToLoadIntoMemory: true, cancellationToken).ConfigureAwait(false);
 
         long offset = await GetOffsetOfCompressedDataAsync(cancellationToken).ConfigureAwait(false);
-        await using Stream compressedStream = new SubReadStream(_archive.ArchiveStream, offset, _compressedSize);
+        Stream compressedStream = new SubReadStream(_archive.ArchiveStream, offset, _compressedSize);
 
         Stream decrypted;
         try
