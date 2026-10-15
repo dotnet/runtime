@@ -18,6 +18,12 @@ The feature is experimental. Its configuration and behavior may change or be rem
 
 ## API shape
 
+Storage, manifest validation, publication, and directory restoration are shared
+sources under `src/tasks/Common/InvocationCache`, compiled into the task assembly.
+`ILLinkCache` retains ILLink's environment configuration and cache-directory policy;
+the task retains input identity and invocation eligibility. The extraction preserves
+the v1 entry format, writer mutex names, diagnostics, and purge behavior.
+
 ```csharp
 internal sealed class ILLinkCache
 {
