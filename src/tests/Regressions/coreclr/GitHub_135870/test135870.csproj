@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <CLRTestPriority>1</CLRTestPriority>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <NativeAotIncompatible>true</NativeAotIncompatible>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="test135870.cs" />
+    <!-- Force a discarded JIT attempt on Debug and Checked runtimes. -->
+    <CLRTestEnvironmentVariable Include="DOTNET_ForceRelocs" Value="1" />
+    <CLRTestEnvironmentVariable Include="DOTNET_JitEnableOptionalRelocs" Value="1" />
+    <CLRTestEnvironmentVariable Include="DOTNET_EnableWriteXorExecute" Value="1" />
+  </ItemGroup>
+</Project>
