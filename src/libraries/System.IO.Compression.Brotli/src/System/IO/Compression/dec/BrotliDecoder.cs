@@ -93,9 +93,12 @@ namespace System.IO.Compression
             bytesConsumed = 0;
             bytesWritten = 0;
 
-            if (_maxWindowLog2 != 0 && !_windowValidated)
+            // An empty destination makes no decompression progress, so no input is actually consumed below; deferring
+            // validation until a call that can make progress prevents the caller from swapping out the unconsumed input
+            // for a stream with a different window size and bypassing the check entirely.
+            if (_maxWindowLog2 != 0 && !_windowValidated && !destination.IsEmpty)
             {
-                switch (BrotliUtils.TryGetWindowBits(source, out int windowBits))
+                switch (BrotliUtils.TryGetWindowBits(source, out int windowBits, EffectiveMaxWindowLog2 > BrotliUtils.WindowBits_Max))
                 {
                     case OperationStatus.NeedMoreData:
                         return OperationStatus.NeedMoreData;
