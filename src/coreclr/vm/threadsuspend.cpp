@@ -827,6 +827,7 @@ BOOL Thread::IsSafeToInjectThreadAbort(PTR_CONTEXT pContextToCheck)
 
     EECodeInfo codeInfo(GetIP(pContextToCheck));
     _ASSERTE(codeInfo.IsValid());
+    _ASSERTE(codeInfo.GetCodeManager()->IsGcSafe(&codeInfo, codeInfo.GetRelOffset()));
 
     // Check if the method uses a frame register. If it does not, then RSP will be used by the OS as the frame register
     // and returned as the EstablisherFrame. This is fine at any instruction in the method (including epilog) since there is always a
@@ -3690,7 +3691,7 @@ ThrowControlForThread(
 
 #if defined(FEATURE_HIJACK) && !defined(TARGET_UNIX)
 // This function is called by UserAbort.
-// It forces a thread to abort if allowed and the thread is running managed code.
+// It forces a thread to abort if allowed and the thread is at a GC-safe point in managed code.
 BOOL Thread::HandleJITCaseForAbort()
 {
     CONTRACTL {
@@ -3721,10 +3722,9 @@ BOOL Thread::HandleJITCaseForAbort()
 
     if (success)
     {
-        PCODE curIP = GetIP(&ctx);
-
-        // check if this is code managed by the code manager (ie. in the code heap)
-        if (ExecutionManager::IsManagedCode(curIP))
+        EECodeInfo codeInfo(GetIP(&ctx));
+        if (codeInfo.IsValid() &&
+            codeInfo.GetCodeManager()->IsGcSafe(&codeInfo, codeInfo.GetRelOffset()))
         {
             return ResumeUnderControl(&ctx);
         }

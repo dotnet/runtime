@@ -3611,50 +3611,43 @@ TypeHandle InterpreterJitManager::ResolveEHClause(EE_ILEXCEPTION_CLAUSE* pEHClau
         _ASSERTE(!HasCachedTypeHandle(pEHClause));
 
         PTR_VOID genericsToken = NULL;
-        bool isInProlog = false;
-        bool checkProlog = pCf->IsActiveFrame() || pCf->IsInterrupted();
         GenericParamContextType paramContextType = pCf->GetCodeManager()->GetParamContextType(
             pCf->GetRegisterSet(),
             pCf->GetCodeInfo(),
-            &genericsToken,
-            checkProlog ? &isInProlog : NULL);
-        _ASSERTE(!isInProlog);
-        if (!isInProlog)
+            &genericsToken);
+        MethodDesc *pMD = pCf->GetFunction();
+        TypeHandle declaringType = (TypeHandle)pMD->GetMethodTable();
+
+        // Handle the case where the method is a static shared generic method and we need to keep the type
+        // of the generic parameters alive
+        if (paramContextType == GENERIC_PARAM_CONTEXT_METHODDESC)
         {
-            MethodDesc *pMD = pCf->GetFunction();
-            TypeHandle declaringType = (TypeHandle)pMD->GetMethodTable();
-
-            // Handle the case where the method is a static shared generic method and we need to keep the type
-            // of the generic parameters alive
-            if (paramContextType == GENERIC_PARAM_CONTEXT_METHODDESC)
-            {
-                pMD = dac_cast<PTR_MethodDesc>(genericsToken);
-                declaringType = (TypeHandle)pMD->GetMethodTable();
-            }
-            else if (paramContextType == GENERIC_PARAM_CONTEXT_METHODTABLE)
-            {
-                declaringType = (TypeHandle)dac_cast<PTR_MethodTable>(genericsToken);
-            }
-            else
-            {
-                _ASSERTE(paramContextType == GENERIC_PARAM_CONTEXT_THIS);
-                GCX_COOP();
-                declaringType = (TypeHandle)dac_cast<PTR_MethodTable>(pCf->GetExactGenericArgsToken());
-                if (declaringType.IsNull())
-                {
-                    COMPlusThrow(kNullReferenceException, W("NullReference_This"));
-                }
-            }
-
-            _ASSERTE(!declaringType.IsNull());
-
-            SigTypeContext typeContext(pMD, declaringType);
-
-            Module* pModule = pMD->GetModule();
-
-            thResolved = ClassLoader::LoadTypeDefOrRefOrSpecThrowing(pModule, pEHClause->ClassToken, &typeContext,
-                                                       ClassLoader::ReturnNullIfNotFound);
+            pMD = dac_cast<PTR_MethodDesc>(genericsToken);
+            declaringType = (TypeHandle)pMD->GetMethodTable();
         }
+        else if (paramContextType == GENERIC_PARAM_CONTEXT_METHODTABLE)
+        {
+            declaringType = (TypeHandle)dac_cast<PTR_MethodTable>(genericsToken);
+        }
+        else
+        {
+            _ASSERTE(paramContextType == GENERIC_PARAM_CONTEXT_THIS);
+            GCX_COOP();
+            declaringType = (TypeHandle)dac_cast<PTR_MethodTable>(pCf->GetExactGenericArgsToken());
+            if (declaringType.IsNull())
+            {
+                COMPlusThrow(kNullReferenceException, W("NullReference_This"));
+            }
+        }
+
+        _ASSERTE(!declaringType.IsNull());
+
+        SigTypeContext typeContext(pMD, declaringType);
+
+        Module* pModule = pMD->GetModule();
+
+        thResolved = ClassLoader::LoadTypeDefOrRefOrSpecThrowing(pModule, pEHClause->ClassToken, &typeContext,
+                                                   ClassLoader::ReturnNullIfNotFound);
     }
 
     return thResolved;

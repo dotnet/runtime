@@ -325,15 +325,12 @@ StackWalkAction GcStackCrawlCallBack(CrawlFrame* pCF, VOID* pData)
             {
                 GenericParamContextType paramContextType = GENERIC_PARAM_CONTEXT_NONE;
                 PTR_VOID paramTypeArg = NULL;
-                bool safeToReport = true;
 
                 if (pCF->IsFrameless())
                 {
                     if (pMD->RequiresInstMethodTableArg() ||
                         pMD->RequiresInstMethodDescArg())
                     {
-                        bool isInProlog = false;
-                        bool checkProlog = pCF->IsActiveFrame() || pCF->IsInterrupted();
                         // We need to grab the Context Type here because there are cases where the MethodDesc
                         // is shared, and thus indicates there should be an instantion argument, but the JIT
                         // was still allowed to optimize it away and we won't grab it below because we're not
@@ -341,9 +338,7 @@ StackWalkAction GcStackCrawlCallBack(CrawlFrame* pCF, VOID* pData)
                         paramContextType = pCF->GetCodeManager()->GetParamContextType(
                             pCF->GetRegisterSet(),
                             pCF->GetCodeInfo(),
-                            &paramTypeArg,
-                            checkProlog ? &isInProlog : NULL);
-                        safeToReport = !isInProlog;
+                            &paramTypeArg);
                     }
 #ifdef _DEBUG
                     else if (pMD->AcquiresInstMethodTableFromThis())
@@ -369,7 +364,7 @@ StackWalkAction GcStackCrawlCallBack(CrawlFrame* pCF, VOID* pData)
                         if (pCF->GetFrame()->GetFrameIdentifier() == FrameIdentifier::StubDispatchFrame &&
                             (dac_cast<PTR_StubDispatchFrame>(pCF->GetFrame()))->SuppressParamTypeArg())
                         {
-                            safeToReport = false;
+                            paramContextType = GENERIC_PARAM_CONTEXT_NONE;
                         }
                         else
                         {
@@ -378,7 +373,7 @@ StackWalkAction GcStackCrawlCallBack(CrawlFrame* pCF, VOID* pData)
                     }
                 }
 
-                if (paramContextType != GENERIC_PARAM_CONTEXT_NONE && safeToReport)
+                if (paramContextType != GENERIC_PARAM_CONTEXT_NONE)
                 {
                     // Handle the case where the method is a static shared generic method and we need to keep the type
                     // of the generic parameters alive

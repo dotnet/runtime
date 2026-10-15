@@ -230,11 +230,10 @@ virtual PTR_VOID GetParamTypeArg(PREGDISPLAY     pContext,
                                  EECodeInfo *    pCodeInfo) = 0;
 
 // Returns the type of the context parameter (this, methodtable, methoddesc, or none),
-// and optionally retrieves the generics token and whether the current offset is in the prolog.
+// and optionally retrieves the generics token.
 virtual GenericParamContextType GetParamContextType(PREGDISPLAY     pContext,
                                                     EECodeInfo *    pCodeInfo,
-                                                    PTR_VOID *      ppGenericsToken = NULL,
-                                                    bool *          pIsInProlog = NULL) = 0;
+                                                    PTR_VOID *      ppGenericsToken = NULL) = 0;
 
 /*
     Returns the offset of the GuardStack cookie if it exists.
@@ -431,11 +430,10 @@ PTR_VOID GetParamTypeArg(PREGDISPLAY     pContext,
                          EECodeInfo *    pCodeInfo);
 
 // Returns the type of the context parameter (this, methodtable, methoddesc, or none),
-// and optionally retrieves the generics token and whether the current offset is in the prolog.
+// and optionally retrieves the generics token.
 virtual GenericParamContextType GetParamContextType(PREGDISPLAY     pContext,
                                                     EECodeInfo *    pCodeInfo,
-                                                    PTR_VOID *      ppGenericsToken = NULL,
-                                                    bool *          pIsInProlog = NULL);
+                                                    PTR_VOID *      ppGenericsToken = NULL);
 
 #ifdef USE_GC_INFO_DECODER
 /*
@@ -604,8 +602,7 @@ PTR_VOID GetParamTypeArg(PREGDISPLAY     pContext,
 
 virtual GenericParamContextType GetParamContextType(PREGDISPLAY     pContext,
                                                     EECodeInfo *    pCodeInfo,
-                                                    PTR_VOID *      ppGenericsToken = NULL,
-                                                    bool *          pIsInProlog = NULL);
+                                                    PTR_VOID *      ppGenericsToken = NULL);
 
 virtual
 void * GetGSCookieAddr(PREGDISPLAY     pContext,
