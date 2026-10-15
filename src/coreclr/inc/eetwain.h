@@ -95,7 +95,7 @@ enum ICodeManagerFlags
     ReportFPBasedSlotsOnly
                     =   0x0200, // EnumGCRefs/EnumerateLiveSlots should only include
                                 // slots that are based on the frame pointer
-    GcRootScan      =   0x0400, // Unwind is for GC root scanning; skip copying FP/vector context state
+    GcRootScan      =   0x0400, // GC root scan: skip FP/vector context copies and report generic loader allocators
 };
 
 //*****************************************************************************
@@ -200,6 +200,8 @@ virtual bool HasTailCalls(EECodeInfo *pCodeInfo) = 0;
     the virtual register set. Same reference location cannot be enumerated
     multiple times (but all differenct references pointing to the same
     object have to be individually enumerated).
+    With GcRootScan, hCallBack is a GCCONTEXT and promotion also reports
+    the generic context's loader allocator.
     Returns success of operation.
 */
 virtual bool EnumGcRefs(PREGDISPLAY     pContext,

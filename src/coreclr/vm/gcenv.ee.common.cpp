@@ -217,7 +217,7 @@ StackWalkAction GcStackCrawlCallBack(CrawlFrame* pCF, VOID* pData)
             ICodeManager * pCM = pCF->GetCodeManager();
             _ASSERTE(pCM != NULL);
 
-            unsigned flags = pCF->GetCodeManagerFlags();
+            unsigned flags = pCF->GetCodeManagerFlags() | GcRootScan;
 
     #ifdef TARGET_X86
             STRESS_LOG3(LF_GCROOTS, LL_INFO1000, "Scanning Frameless method %pM EIP = %p &EIP = %p\n",
@@ -321,11 +321,16 @@ StackWalkAction GcStackCrawlCallBack(CrawlFrame* pCF, VOID* pData)
                 GcReportLoaderAllocator(gcctx->f, gcctx->sc, pMD->GetLoaderAllocator());
             }
 
-            if (fReportGCReferences)
+            if (fReportGCReferences
+#ifdef USE_GC_INFO_DECODER
+                && !pCF->IsFrameless()
+#endif
+                )
             {
                 GenericParamContextType paramContextType = GENERIC_PARAM_CONTEXT_NONE;
                 PTR_VOID paramTypeArg = NULL;
 
+#ifndef USE_GC_INFO_DECODER
                 if (pCF->IsFrameless())
                 {
                     if (pMD->RequiresInstMethodTableArg() ||
@@ -353,6 +358,7 @@ StackWalkAction GcStackCrawlCallBack(CrawlFrame* pCF, VOID* pData)
 #endif // _DEBUG
                 }
                 else
+#endif // !USE_GC_INFO_DECODER
                 {
                     if (pMD->RequiresInstMethodDescArg())
                         paramContextType = GENERIC_PARAM_CONTEXT_METHODDESC;

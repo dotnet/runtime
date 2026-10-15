@@ -1084,6 +1084,37 @@ FCIMPL1(void, GCReporting::Unregister, GCFrame* frame)
 FCIMPLEND
 #endif // !DACCESS_COMPILE
 
+#if defined(USE_GC_INFO_DECODER) && !defined(DACCESS_COMPILE)
+template <typename GcInfoEncoding>
+static void ReportGenericsContext(TGcInfoDecoder<GcInfoEncoding>& gcInfoDecoder,
+                                  TADDR baseStackSlot,
+                                  EECodeInfo* pCodeInfo,
+                                  GCCONTEXT* gcctx)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    bool isMethodDesc = gcInfoDecoder.HasMethodDescGenericsInstContext();
+    if (!isMethodDesc && !gcInfoDecoder.HasMethodTableGenericsInstContext())
+    {
+        return;
+    }
+
+    INT32 spOffsetGenericsContext = gcInfoDecoder.GetGenericsInstContextStackSlot();
+    _ASSERTE(spOffsetGenericsContext != NO_GENERICS_INST_CONTEXT);
+    PTR_VOID paramTypeArg = PTR_VOID(*PTR_TADDR(baseStackSlot + spOffsetGenericsContext));
+
+    // Async methods can restore this context from the continuation after resuming.
+    _ASSERTE(paramTypeArg != NULL || pCodeInfo->GetMethodDesc()->IsAsyncMethod());
+    if (paramTypeArg != NULL)
+    {
+        LoaderAllocator* pLoaderAllocator = isMethodDesc
+            ? static_cast<MethodDesc*>(paramTypeArg)->GetLoaderAllocator()
+            : static_cast<MethodTable*>(paramTypeArg)->GetLoaderAllocator();
+        GcReportLoaderAllocator(gcctx->f, gcctx->sc, pLoaderAllocator);
+    }
+}
+#endif // USE_GC_INFO_DECODER && !DACCESS_COMPILE
+
 #ifndef USE_GC_INFO_DECODER
 
 /*****************************************************************************
@@ -1221,9 +1252,25 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pRD,
 
     GcInfoDecoder gcInfoDecoder(
                         gcInfoToken,
-                        GcInfoDecoderFlags (DECODE_GC_LIFETIMES | DECODE_SECURITY_OBJECT | DECODE_VARARG),
+                        GcInfoDecoderFlags (DECODE_GC_LIFETIMES | DECODE_SECURITY_OBJECT | DECODE_VARARG | DECODE_GENERICS_INST_CONTEXT),
                         curOffs
                         );
+
+#ifndef DACCESS_COMPILE
+    if ((flags & GcRootScan) != 0)
+    {
+        GCCONTEXT* gcctx = static_cast<GCCONTEXT*>(hCallBack);
+        if (gcctx->sc->promotion &&
+            (gcInfoDecoder.HasMethodDescGenericsInstContext() || gcInfoDecoder.HasMethodTableGenericsInstContext()))
+        {
+            TADDR baseStackSlot = gcInfoDecoder.HasStackBaseRegister()
+                ? GetFP(pRD->pCurrentContext)
+                : GetSP(pRD->pCurrentContext);
+            // The context is live even when live-slot enumeration skips the frame.
+            ReportGenericsContext(gcInfoDecoder, baseStackSlot, pCodeInfo, gcctx);
+        }
+    }
+#endif // !DACCESS_COMPILE
 
     if (!gcInfoDecoder.EnumerateLiveSlots(
                         pRD,
@@ -2325,9 +2372,23 @@ bool InterpreterCodeManager::EnumGcRefs(PREGDISPLAY     pContext,
 
     InterpreterGcInfoDecoder gcInfoDecoder(
                                            gcInfoToken,
-                                           GcInfoDecoderFlags (DECODE_GC_LIFETIMES | DECODE_SECURITY_OBJECT | DECODE_VARARG),
+                                           GcInfoDecoderFlags (DECODE_GC_LIFETIMES | DECODE_SECURITY_OBJECT | DECODE_VARARG | DECODE_GENERICS_INST_CONTEXT),
                                            curOffs
                                            );
+
+#ifndef DACCESS_COMPILE
+    if ((flags & GcRootScan) != 0)
+    {
+        GCCONTEXT* gcctx = static_cast<GCCONTEXT*>(hCallBack);
+        if (gcctx->sc->promotion &&
+            (gcInfoDecoder.HasMethodDescGenericsInstContext() || gcInfoDecoder.HasMethodTableGenericsInstContext()))
+        {
+            PTR_InterpMethodContextFrame frame = dac_cast<PTR_InterpMethodContextFrame>(GetSP(pContext->pCurrentContext));
+            TADDR baseStackSlot = dac_cast<TADDR>((uintptr_t)frame->pStack);
+            ReportGenericsContext(gcInfoDecoder, baseStackSlot, pCodeInfo, gcctx);
+        }
+    }
+#endif // !DACCESS_COMPILE
 
     if (!gcInfoDecoder.EnumerateLiveSlots(
                                           pContext,
