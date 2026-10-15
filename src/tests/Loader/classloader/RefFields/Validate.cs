@@ -19,6 +19,21 @@ public class Validate
         [FieldOffset(0)] public Guid Guid;
     }
 
+    private ref struct Spans
+    {
+        public Span<int> First;
+        public Span<int> Second;
+        public Span<int> Third;
+        public Span<int> Fourth;
+    }
+
+    [StructLayout(LayoutKind.Explicit)]
+    private ref struct OverlappingSpans
+    {
+        [FieldOffset(0)] public Spans First;
+        [FieldOffset(0)] public Spans Second;
+    }
+
     [ActiveIssue("expected failure: unsupported type with ref field fails at AOT compile time, not runtime", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
     [Fact]
     public static void Validate_Invalid_RefField_Fails()
@@ -60,6 +75,38 @@ public class Validate
     {
         Console.WriteLine($"{nameof(Validate_RefStructWithRefField_Load)}...");
         var t = typeof(WithRefField);
+    }
+
+    [Fact]
+    public static void Validate_Overlapping_RefFields()
+    {
+        Console.WriteLine($"{nameof(Validate_Overlapping_RefFields)}...");
+
+        OverlappingSpans value = default;
+        value.First.First = new int[10];
+        value.First.First.Fill(1);
+        value.First.Second = new int[10];
+        value.First.Second.Fill(2);
+        value.First.Third = new int[10];
+        value.First.Third.Fill(3);
+        value.First.Fourth = new int[10];
+        value.First.Fourth.Fill(4);
+
+        Validate_Overlapping_RefFields_Worker(value);
+    }
+
+    // Keep the by-value argument live across the callee's JIT transition under GC stress.
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void Validate_Overlapping_RefFields_Worker(OverlappingSpans value)
+    {
+        Assert.Equal(1, value.First.First[0]);
+        Assert.Equal(2, value.First.Second[0]);
+        Assert.Equal(3, value.First.Third[0]);
+        Assert.Equal(4, value.First.Fourth[0]);
+        Assert.Equal(1, value.Second.First[0]);
+        Assert.Equal(2, value.Second.Second[0]);
+        Assert.Equal(3, value.Second.Third[0]);
+        Assert.Equal(4, value.Second.Fourth[0]);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
