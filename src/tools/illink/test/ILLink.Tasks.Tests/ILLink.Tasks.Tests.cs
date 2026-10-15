@@ -15,6 +15,7 @@ using System.Threading;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 using Microsoft.DotNet.RemoteExecutor;
+using Microsoft.NET.Build.Tasks;
 using Mono.Linker;
 using Xunit;
 
@@ -1188,7 +1189,7 @@ namespace ILLink.Tasks.Tests
             test.WriteSource("app.dll", "assembly");
             DateTimeOffset beforeStore = DateTimeOffset.UtcNow;
             test.Cache.Store(CacheTestDirectory.Key, test.Source);
-            string marker = Path.Combine(test.Entry, ILLinkCacheEntry.LastUsedFileName);
+            string marker = Path.Combine(test.Entry, InvocationCacheEntry.LastUsedFileName);
             Assert.InRange(DateTimeOffset.ParseExact(File.ReadAllText(marker), "O", CultureInfo.InvariantCulture),
                 beforeStore, DateTimeOffset.UtcNow);
             File.WriteAllText(marker, DateTimeOffset.MinValue.ToString("O", CultureInfo.InvariantCulture));
@@ -1198,7 +1199,7 @@ namespace ILLink.Tasks.Tests
 
             Assert.InRange(DateTimeOffset.ParseExact(File.ReadAllText(marker), "O", CultureInfo.InvariantCulture),
                 beforeRestore, DateTimeOffset.UtcNow);
-            Assert.False(File.Exists(Path.Combine(test.Output, ILLinkCacheEntry.LastUsedFileName)));
+            Assert.False(File.Exists(Path.Combine(test.Output, InvocationCacheEntry.LastUsedFileName)));
             Assert.Empty(Directory.GetFiles(test.Entry, "*.tmp"));
         }
 
@@ -1208,7 +1209,7 @@ namespace ILLink.Tasks.Tests
             using var test = new CacheTestDirectory();
             test.WriteSource("app.dll", "assembly");
             test.Cache.Store(CacheTestDirectory.Key, test.Source);
-            string marker = Path.Combine(test.Entry, ILLinkCacheEntry.LastUsedFileName);
+            string marker = Path.Combine(test.Entry, InvocationCacheEntry.LastUsedFileName);
             File.Delete(marker);
             Directory.CreateDirectory(marker);
 
@@ -1226,7 +1227,7 @@ namespace ILLink.Tasks.Tests
             using var test = new CacheTestDirectory();
             test.WriteSource("app.dll", "assembly");
             test.Cache.Store(CacheTestDirectory.Key, test.Source);
-            string marker = Path.Combine(test.Entry, ILLinkCacheEntry.LastUsedFileName);
+            string marker = Path.Combine(test.Entry, InvocationCacheEntry.LastUsedFileName);
             string oldTimestamp = DateTimeOffset.MinValue.ToString("O", CultureInfo.InvariantCulture);
             File.WriteAllText(marker, oldTimestamp);
             File.WriteAllText(Path.Combine(test.Entry, "outputs", "app.dll"), "corrupt");
@@ -1250,7 +1251,7 @@ namespace ILLink.Tasks.Tests
                 File.WriteAllText(Path.Combine(test.Root, "start"), "");
             }
 
-            string marker = Path.Combine(test.Entry, ILLinkCacheEntry.LastUsedFileName);
+            string marker = Path.Combine(test.Entry, InvocationCacheEntry.LastUsedFileName);
             Assert.InRange(DateTimeOffset.ParseExact(File.ReadAllText(marker), "O", CultureInfo.InvariantCulture),
                 beforeRestore, DateTimeOffset.UtcNow);
             Assert.Empty(Directory.GetFiles(test.Entry, "*.tmp"));
