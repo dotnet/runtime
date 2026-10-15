@@ -24,6 +24,7 @@
 #include "eeprofinterfaces.h"
 #include "dynamicinterfacecastable.h"
 #include "comsynchronizable.h"
+#include "comutilnative.h"
 
 #ifndef TARGET_UNIX
 // Included for referencing __report_gsfailure

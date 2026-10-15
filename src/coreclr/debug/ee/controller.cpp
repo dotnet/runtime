@@ -9,7 +9,6 @@
 
 // Putting code & #includes, #defines, etc, before the stdafx.h will
 // cause the code,etc, to be silently ignored
-//
 
 #include "stdafx.h"
 #include "openum.h"
@@ -924,26 +923,6 @@ DebuggerControllerPatch *DebuggerPatchTable::GetNextPatch(DebuggerControllerPatc
 
     return NULL;
 }
-
-#ifdef _DEBUG
-void DebuggerPatchTable::CheckPatchTable()
-{
-    if ((TADDR)NULL != m_pcEntries)
-    {
-        LOG((LF_CORDB,LL_INFO1000, "DPT:CPT: %u\n", m_iEntries));
-        DebuggerControllerPatch *dcp;
-        ULONG i = 0;
-        while (i++ < m_iEntries)
-        {
-            dcp = (DebuggerControllerPatch*)&(((DebuggerControllerPatch *)m_pcEntries)[i]);
-            if (dcp->opcode != 0 )
-            {
-                dcp->LogInstance();
-            }
-        }
-    }
-}
-#endif // _DEBUG
 
 // Count how many patches are in the table.
 // Use for asserts
@@ -3893,32 +3872,6 @@ struct PatchTargetVisitorData
     DebuggerController* controller;
     FramePointer maxFrame;
 };
-
-VOID DebuggerController::PatchTargetVisitor(TADDR pVirtualTraceCallTarget, VOID* pUserData)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    DebuggerController* controller = ((PatchTargetVisitorData*) pUserData)->controller;
-    FramePointer maxFrame = ((PatchTargetVisitorData*) pUserData)->maxFrame;
-
-    EX_TRY
-    {
-        CONTRACT_VIOLATION(GCViolation);    // PatchTrace throws, which implies GC-triggers
-        TraceDestination trace;
-        trace.InitForUnmanagedStub(pVirtualTraceCallTarget);
-        controller->PatchTrace(&trace, maxFrame, true);
-    }
-    EX_CATCH
-    {
-        // not much we can do here
-    }
-    EX_END_CATCH
-}
 
 //
 // DisableTraceCall disables call events on the controller

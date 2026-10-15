@@ -136,7 +136,7 @@ work that was never reached will count as unused. Likewise, incremental builds t
 linking do not refresh cache usage. Skip purge if the cache may still be in use, including
 during cancellation. Do not share a live directory with another job while purging.
 
-Runtime's jobs that use `setup-sccache.yml` also enable ILLink caching under its existing
+Runtime's jobs that use `setup-build-caches.yml` also enable ILLink caching under its
 Unix x64/arm64 platform gate. `setup-illink-cache.yml` restores a branch-scoped Azure
 Pipelines snapshot into `$(Pipeline.Workspace)/.illink-cache`, enables the experiment, and
 records build start. `global-build-job.yml` runs `purge-illink-cache.yml` after all post-build

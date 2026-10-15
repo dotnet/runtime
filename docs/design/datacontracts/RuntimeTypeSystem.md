@@ -1529,7 +1529,7 @@ The contract depends on the following other contracts
 | PlatformMetadata |
 | ReJIT |
 | ExecutionManager |
-| PrecodeStubs |
+| PrecodeStubs (when advertised) |
 
 And the following enumeration definitions
 
@@ -2002,8 +2002,9 @@ Determining if a method supports multiple code versions:
         MethodDesc md = _methodDescs[methodDesc.Address];
         if (md.IsEligibleForTieredCompilation)
             return true;
-        // MethodDesc::IsEligibleForReJIT
-        if (_target.Contracts.ReJIT.IsEnabled())
+        // MethodDesc::IsEligibleForReJIT. The ReJIT contract is advertised only with PROFILING_SUPPORTED;
+        // targets without it (wasm) also lack FEATURE_REJIT, so nothing is ReJIT-eligible.
+        if (_target.Contracts.TryGetContract(out IReJIT reJit) && reJit.IsEnabled())
         {
             if (!md.IsIL)
                 return false;
@@ -2332,23 +2333,6 @@ Getting a MethodDesc for a certain slot in a MethodTable
         }
     }
 
-    private readonly TargetPointer GetMethodDescForEntrypoint(TargetCodePointer pCode)
-    {
-        // Standard path, ask ExecutionManager for the MethodDesc
-        IExecutionManager executionManager = _target.Contracts.ExecutionManager;
-        if (executionManager.GetCodeBlockHandle(pCode) is CodeBlockHandle cbh)
-        {
-            TargetPointer methodDescPtr = executionManager.GetMethodDesc(cbh);
-            return methodDescPtr;
-        }
-
-        // Stub path, read address as a Precode and get the MethodDesc from it
-        {
-            TargetPointer methodDescPtr = _target.Contracts.PrecodeStubs.GetMethodDescFromStubAddress(pCode);
-            return methodDescPtr;
-        }
-    }
-
     public IEnumerable<TargetPointer> GetIntroducedMethodDescs(ITypeHandle typeHandle)
     {
         if (!typeHandle.IsMethodTable())
@@ -2423,7 +2407,7 @@ Getting a MethodDesc for a certain slot in a MethodTable
             return TargetPointer.Null;
         }
 
-        return GetMethodDescForEntrypoint(pCode);
+        return _target.Contracts.ExecutionManager.NonVirtualEntry2MethodDesc(pCode);
     }
 ```
 

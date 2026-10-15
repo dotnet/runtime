@@ -87,7 +87,6 @@ namespace System.CodeDom.Tests
 
         [Theory]
         [MemberData(nameof(BasePath_TestData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/134943", TestPlatforms.Wasi)]
         public void BasePath_Get(string tempDir)
         {
             var collection = new TempFileCollection(tempDir);
@@ -103,7 +102,6 @@ namespace System.CodeDom.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/134943", TestPlatforms.Wasi)]
         public void AddFileExtension()
         {
             string tempDirectory = TempDirectory();
@@ -132,7 +130,6 @@ namespace System.CodeDom.Tests
         [InlineData(true, false)]
         [InlineData(false, true)]
         [InlineData(false, false)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/134943", TestPlatforms.Wasi)]
         public void AddFile(bool fileExists, bool keepFile)
         {
             string directory = TempDirectory();
@@ -166,7 +163,6 @@ namespace System.CodeDom.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/134943", TestPlatforms.Wasi)]
         public void AddFile_MultipleFiles_DeletesAllIfKeepFilesFalse(bool keepFiles)
         {
             string directory = TempDirectory();
@@ -252,7 +248,6 @@ namespace System.CodeDom.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/134943", TestPlatforms.Wasi)]
         public void Delete()
         {
             string directory = TempDirectory();

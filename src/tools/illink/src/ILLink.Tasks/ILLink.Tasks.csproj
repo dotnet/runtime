@@ -65,6 +65,7 @@
   </ItemGroup>
 
   <Import Project="$(RepositoryEngineeringDir)PackageDownloadAndReference.targets" />
+  <Import Project="$(RepositoryEngineeringDir)DiaSymReaderNative.targets" Condition="'$(TargetOS)' == 'windows'" />
 
   <ItemGroup>
     <!--

@@ -1064,7 +1064,6 @@ DEFINE_CLASS(BUFFER,                System,                 Buffer)
 DEFINE_METHOD(BUFFER,               MEMCPY_PTRBYTE_ARRBYTE, Memcpy,                 SM_PtrByte_Int_ArrByte_Int_Int_RetVoid)
 DEFINE_METHOD(BUFFER,               MEMCPY,                 Memcpy,                 SM_PtrByte_PtrByte_Int_RetVoid)
 DEFINE_METHOD(BUFFER,               MEMCOPYGC,              BulkMoveWithWriteBarrier, SM_RefByte_RefByte_UIntPtr_RetVoid)
-DEFINE_METHOD(BUFFER,               MEMCOPYGC_SMALL,        BulkMoveWithWriteBarrierInternal, SM_RefByte_RefByte_UIntPtr_RetVoid)
 
 DEFINE_CLASS(STUBHELPERS,           StubHelpers,            StubHelpers)
 #ifdef FEATURE_COMINTEROP
@@ -1270,7 +1269,8 @@ DEFINE_CLASS(BSTR_ARRAY_ELEMENT_MARSHALER,     StubHelpers,  BSTRArrayElementMar
 DEFINE_CLASS(CURRENCY_ARRAY_ELEMENT_MARSHALER, StubHelpers,  CurrencyArrayElementMarshaler)
 DEFINE_CLASS(INTERFACE_ARRAY_ELEMENT_MARSHALER, StubHelpers, InterfaceArrayElementMarshaler`1)
 DEFINE_CLASS(TYPED_INTERFACE_ARRAY_ELEMENT_MARSHALER, StubHelpers, TypedInterfaceArrayElementMarshaler`1)
-DEFINE_CLASS(HETEROGENEOUS_INTERFACE_ARRAY_ELEMENT_MARSHALER, StubHelpers, HeterogeneousInterfaceArrayElementMarshaler)
+DEFINE_CLASS(TYPED_CLASS_INTERFACE_ARRAY_ELEMENT_MARSHALER, StubHelpers, TypedClassInterfaceArrayElementMarshaler`2)
+DEFINE_CLASS(TYPED_CLASS_ARRAY_ELEMENT_MARSHALER, StubHelpers, TypedClassArrayElementMarshaler`2)
 DEFINE_CLASS(VARIANT_ARRAY_ELEMENT_MARSHALER,  StubHelpers,  VariantArrayElementMarshaler`1)
 #endif // FEATURE_COMINTEROP
 DEFINE_CLASS(MARSHALER_OPTION_ENABLED,  StubHelpers,         IMarshalerOption+EnabledOption)

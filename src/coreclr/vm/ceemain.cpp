@@ -857,6 +857,8 @@ void EEStartupHelper()
         g_pEEShutDownEvent = new CLREvent();
         g_pEEShutDownEvent->CreateManualEvent(FALSE);
 
+        ExecutionManager::Init();
+
         VirtualCallStubManager::InitStatic();
 
         // Setup the domains. Threads are started in a default domain.
@@ -865,8 +867,6 @@ void EEStartupHelper()
         SystemDomain::Attach();
 
         COMDelegate::Init();
-
-        ExecutionManager::Init();
 
 #ifdef FEATURE_PERFMAP
         PerfMap::SignalDependenciesReady();

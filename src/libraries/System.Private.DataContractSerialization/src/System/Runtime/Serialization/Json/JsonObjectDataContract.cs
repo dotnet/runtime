@@ -47,7 +47,7 @@ namespace System.Runtime.Serialization.Json
                     break;
                 case JsonGlobals.arrayString:
                     // Read as object array
-                    return DataContractJsonSerializer.ReadJsonValue(DataContract.GetDataContract(Globals.TypeOfObjectArray), jsonReader, context);
+                    return DataContractJsonSerializer.ReadJsonValue(DataContract.GetDataContract(typeof(object[])), jsonReader, context);
                 default:
                     throw XmlObjectSerializer.CreateSerializationException(SR.Format(SR.JsonUnexpectedAttributeValue, contentMode));
             }
@@ -67,7 +67,7 @@ namespace System.Runtime.Serialization.Json
         {
             if (value == null)
             {
-                throw new XmlException(SR.Format(SR.XmlInvalidConversion, value, Globals.TypeOfInt));
+                throw new XmlException(SR.Format(SR.XmlInvalidConversion, value, typeof(int)));
             }
 
             if (!value.AsSpan().ContainsAny('.', 'e', 'E'))
