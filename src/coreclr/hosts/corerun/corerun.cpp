@@ -690,7 +690,7 @@ static int run(const configuration& config)
         tpa = {};
     }
 
-    host_runtime_contract& host_contract = *new host_runtime_contract{
+    host_runtime_contract host_contract = {
         sizeof(host_runtime_contract),
         &contract_context,
         &get_runtime_property,
