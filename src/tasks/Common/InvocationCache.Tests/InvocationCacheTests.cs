@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
+
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -17,6 +19,155 @@ namespace Microsoft.NET.Build.Tasks.Tests;
 
 public class InvocationCacheTests
 {
+    private const string EnabledEnvironmentVariable = "INVOCATION_CACHE_TEST_ENABLED";
+    private const string PathEnvironmentVariable = "INVOCATION_CACHE_TEST_PATH";
+
+    [Theory]
+    [InlineData(null, false, false)]
+    [InlineData("", false, false)]
+    [InlineData("false", false, false)]
+    [InlineData("FALSE", false, false)]
+    [InlineData("true", true, false)]
+    [InlineData("TrUe", true, false)]
+    [InlineData("1", false, true)]
+    [InlineData("invalid", false, true)]
+    public void CacheEnvironmentConfiguration(string? setting, bool enabled, bool invalid)
+    {
+        RemoteExecutor.Invoke(static (value, expectedEnabled, expectedInvalid) =>
+        {
+            Environment.SetEnvironmentVariable(EnabledEnvironmentVariable, value == "<unset>" ? null : value);
+            string directory = Path.Combine(Path.GetTempPath(), "invocation-cache-" + Guid.NewGuid().ToString("N"));
+            Environment.SetEnvironmentVariable(PathEnvironmentVariable, directory);
+            var buildEngine = new CacheBuildEngine();
+            var task = new CacheTask { BuildEngine = buildEngine };
+            InvocationCache? cache = InvocationCache.TryCreateFromEnvironment(task.Log, "Test",
+                EnabledEnvironmentVariable, PathEnvironmentVariable, "test-tool");
+
+            Assert.Equal(bool.Parse(expectedEnabled), cache is not null);
+            if (cache is not null)
+                Assert.Equal(directory, cache.CacheDirectory);
+            if (bool.Parse(expectedInvalid))
+            {
+                BuildMessageEventArgs message = Assert.Single(buildEngine.Messages);
+                Assert.Equal($"Test caching is disabled because {EnabledEnvironmentVariable} must be 'true' or 'false'.", message.Message);
+                Assert.Equal(MessageImportance.Low, message.Importance);
+            }
+            else
+            {
+                Assert.Empty(buildEngine.Messages);
+            }
+            Assert.False(Directory.Exists(directory));
+        }, setting ?? "<unset>", enabled.ToString(), invalid.ToString()).Dispose();
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("true")]
+    [InlineData("false")]
+    [InlineData("cache directory")]
+    public void CacheEnvironmentDirectory(string? directory)
+    {
+        RemoteExecutor.Invoke(static value =>
+        {
+            string? path = value == "<unset>" ? null : value;
+            Environment.SetEnvironmentVariable(EnabledEnvironmentVariable, "true");
+            Environment.SetEnvironmentVariable(PathEnvironmentVariable, path);
+            var task = new CacheTask { BuildEngine = new CacheBuildEngine() };
+
+            InvocationCache? cache = InvocationCache.TryCreateFromEnvironment(task.Log, "Test",
+                EnabledEnvironmentVariable, PathEnvironmentVariable, "test-tool");
+
+            Assert.NotNull(cache);
+            Assert.Equal(InvocationCache.TryCreate(path, task.Log, "Test", "test-tool")!.CacheDirectory, cache.CacheDirectory);
+        }, directory ?? "<unset>").Dispose();
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    public void CacheUsesPlatformDefaultDirectory(string? cacheDirectory)
+    {
+        var task = new CacheTask { BuildEngine = new CacheBuildEngine() };
+        string expectedDirectory;
+        if (OperatingSystem.IsWindows())
+        {
+            expectedDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "test-tool");
+        }
+        else if (OperatingSystem.IsMacOS())
+        {
+            expectedDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Library", "Caches", "test-tool");
+        }
+        else
+        {
+            string? cacheHome = Environment.GetEnvironmentVariable("XDG_CACHE_HOME");
+            expectedDirectory = !string.IsNullOrEmpty(cacheHome) && Path.IsPathRooted(cacheHome)
+                ? Path.Combine(cacheHome, "test-tool")
+                : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".cache", "test-tool");
+        }
+
+        InvocationCache? cache = InvocationCache.TryCreate(cacheDirectory, task.Log, "Test", "test-tool");
+
+        Assert.NotNull(cache);
+        Assert.Equal(Path.GetFullPath(expectedDirectory), cache.CacheDirectory);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void CacheDirectoryOverrideDoesNotCreateDirectory(bool absolutePath)
+    {
+        string directoryName = "invocation-cache-" + Guid.NewGuid().ToString("N");
+        string cacheDirectory = absolutePath ? Path.Combine(Path.GetTempPath(), directoryName) : directoryName;
+        var task = new CacheTask { BuildEngine = new CacheBuildEngine() };
+
+        InvocationCache? cache = InvocationCache.TryCreate(cacheDirectory, task.Log, "Test", "test-tool");
+
+        Assert.NotNull(cache);
+        Assert.Equal(Path.GetFullPath(cacheDirectory), cache.CacheDirectory);
+        Assert.False(Directory.Exists(cache.CacheDirectory));
+    }
+
+    [Fact]
+    public void InvalidCacheDirectoryBypassesCaching()
+    {
+        var buildEngine = new CacheBuildEngine();
+        var task = new CacheTask { BuildEngine = buildEngine };
+
+        Assert.Null(InvocationCache.TryCreate("invalid\0path", task.Log, "Test", "test-tool"));
+        BuildMessageEventArgs message = Assert.Single(buildEngine.Messages);
+        Assert.StartsWith("Test caching is disabled because the cache directory 'invalid\0path' could not be resolved:", message.Message);
+        Assert.Equal(MessageImportance.Low, message.Importance);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("relative")]
+    [InlineData("absolute")]
+    public void CacheDefaultDirectoryHonorsPlatformAndXdgHome(string? setting)
+    {
+        RemoteExecutor.Invoke(static value =>
+        {
+            string? cacheHome = value == "<unset>" ? null
+                : value == "absolute" ? Path.Combine(Path.GetTempPath(), "invocation-cache-" + Guid.NewGuid().ToString("N"))
+                : value;
+            Environment.SetEnvironmentVariable("XDG_CACHE_HOME", cacheHome);
+            var task = new CacheTask { BuildEngine = new CacheBuildEngine() };
+            string home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            string expectedDirectory = OperatingSystem.IsWindows()
+                ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "test-tool")
+                : OperatingSystem.IsMacOS()
+                    ? Path.Combine(home, "Library", "Caches", "test-tool")
+                    : Path.Combine(value == "absolute" ? cacheHome! : Path.Combine(home, ".cache"), "test-tool");
+
+            InvocationCache? cache = InvocationCache.TryCreate(null, task.Log, "Test", "test-tool");
+
+            Assert.NotNull(cache);
+            Assert.Equal(Path.GetFullPath(expectedDirectory), cache.CacheDirectory);
+        }, setting ?? "<unset>").Dispose();
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
@@ -53,7 +204,7 @@ public class InvocationCacheTests
         }
         Assert.Equal("ordinary file", File.ReadAllText(Path.Combine(test.Output, "Link.semaphore")));
         Assert.Equal(files.Count, Directory.GetFiles(Path.Combine(test.Entry, "outputs"), "*", SearchOption.AllDirectories).Length);
-        Assert.Empty(Directory.GetDirectories(Path.GetDirectoryName(test.Entry), "*.tmp"));
+        Assert.Empty(Directory.GetDirectories(test.Entries, "*.tmp"));
 
         File.WriteAllText(Path.Combine(test.Output, "app.dll"), "modified restored output");
         Assert.Equal("assembly", File.ReadAllText(Path.Combine(test.Entry, "outputs", "app.dll")));
@@ -103,7 +254,7 @@ public class InvocationCacheTests
         Assert.True(test.Cache.TryRestore(CacheTestDirectory.Key, test.Output, CacheTestDirectory.Timestamp));
 
         Assert.Equal("assembly", File.ReadAllText(Path.Combine(test.Output, "app.dll")));
-        Assert.Contains(test.BuildEngine.Messages, message => message.Message.Contains("last-used update failed"));
+        Assert.Contains(test.BuildEngine.Messages, message => message.Message?.Contains("last-used update failed") is true);
         Assert.Empty(Directory.GetFiles(test.Entry, "*.tmp"));
         Assert.Empty(test.BuildEngine.Errors);
     }
@@ -167,8 +318,8 @@ public class InvocationCacheTests
         test.Cache.Store(CacheTestDirectory.Key, test.Source);
         Assert.True(test.Cache.TryRestore(CacheTestDirectory.Key, test.Output, CacheTestDirectory.Timestamp));
         Assert.Equal("first", File.ReadAllText(Path.Combine(test.Output, "app.dll")));
-        Assert.Contains(test.BuildEngine.Messages, message => message.Message.Contains("already exists"));
-        Assert.Empty(Directory.GetDirectories(Path.GetDirectoryName(test.Entry), "*.tmp"));
+        Assert.Contains(test.BuildEngine.Messages, message => message.Message?.Contains("already exists") is true);
+        Assert.Empty(Directory.GetDirectories(test.Entries, "*.tmp"));
     }
 
     [Theory]
@@ -222,7 +373,7 @@ public class InvocationCacheTests
         Assert.False(File.Exists(Path.Combine(test.Output, "b.dll")));
         Assert.False(File.Exists(Path.Combine(test.Root, "escaped.dll")));
         Assert.True(Directory.Exists(test.Entry));
-        Assert.Contains(test.BuildEngine.Messages, message => message.Message.Contains("restore failed"));
+        Assert.Contains(test.BuildEngine.Messages, message => message.Message?.Contains("restore failed") is true);
     }
 
     [Fact]
@@ -249,7 +400,7 @@ public class InvocationCacheTests
         test.WriteSource("app.dll", "assembly");
         if (failPublication)
         {
-            Directory.CreateDirectory(Path.GetDirectoryName(test.Entry));
+            Directory.CreateDirectory(test.Entries);
             File.WriteAllText(test.Entry, "blocks publication");
         }
         else
@@ -261,11 +412,11 @@ public class InvocationCacheTests
 
         Assert.Equal("assembly", File.ReadAllText(Path.Combine(test.Source, "app.dll")));
         Assert.False(Directory.Exists(test.Entry));
-        Assert.Contains(test.BuildEngine.Messages, message => message.Message.Contains("store failed"));
+        Assert.Contains(test.BuildEngine.Messages, message => message.Message?.Contains("store failed") is true);
         if (failPublication)
         {
             Assert.Equal("blocks publication", File.ReadAllText(test.Entry));
-            Assert.Empty(Directory.GetDirectories(Path.GetDirectoryName(test.Entry), "*.tmp"));
+            Assert.Empty(Directory.GetDirectories(test.Entries, "*.tmp"));
         }
     }
 
@@ -280,7 +431,7 @@ public class InvocationCacheTests
         {
             RunOnOtherThread(() => test.Cache.Store(CacheTestDirectory.Key, test.Source));
             Assert.False(Directory.Exists(test.Cache.CacheDirectory));
-            Assert.Contains(test.BuildEngine.Messages, message => message.Message.Contains("another writer"));
+            Assert.Contains(test.BuildEngine.Messages, message => message.Message?.Contains("another writer") is true);
 
             string otherKey = new string('b', 64);
             RunOnOtherThread(() => test.Cache.Store(otherKey, test.Source));
@@ -334,7 +485,7 @@ public class InvocationCacheTests
         Assert.True(test.Cache.TryRestore(CacheTestDirectory.Key, test.Output, CacheTestDirectory.Timestamp));
         Assert.Equal(contents, File.ReadAllText(Path.Combine(test.Output, "app.dll")));
         Assert.Equal("symbols", File.ReadAllText(Path.Combine(test.Output, "app.pdb")));
-        Assert.Single(Directory.GetDirectories(Path.GetDirectoryName(test.Entry)));
+        Assert.Single(Directory.GetDirectories(test.Entries));
     }
 
     [Fact]
@@ -379,7 +530,7 @@ public class InvocationCacheTests
         test.Cache.Store(CacheTestDirectory.Key, test.Source);
 
         Assert.True(test.Cache.TryRestore(CacheTestDirectory.Key, test.Output, CacheTestDirectory.Timestamp));
-        Assert.Contains(test.BuildEngine.Messages, message => message.Message.Contains("abandoned"));
+        Assert.Contains(test.BuildEngine.Messages, message => message.Message?.Contains("abandoned") is true);
     }
 
     [Theory]
@@ -396,7 +547,7 @@ public class InvocationCacheTests
 
     private static void RunOnOtherThread(Action action)
     {
-        ExceptionDispatchInfo exception = null;
+        ExceptionDispatchInfo? exception = null;
         var thread = new Thread(() =>
         {
             try
@@ -420,10 +571,11 @@ public class InvocationCacheTests
         internal string Root { get; } = Path.Combine(Path.GetTempPath(), "invocation-cache-tests-" + Guid.NewGuid().ToString("N"));
         internal string Source => Path.Combine(Root, "source");
         internal string Output => Path.Combine(Root, "output");
-        internal string Entry => Path.Combine(Cache.CacheDirectory, InvocationCacheEntry.VersionDirectory, Key);
+        internal string Entries => Path.Combine(Cache.CacheDirectory, InvocationCacheEntry.VersionDirectory);
+        internal string Entry => Path.Combine(Entries, Key);
         internal CacheBuildEngine BuildEngine { get; } = new();
         internal InvocationCache Cache { get; }
-        internal string MutexName => (string)typeof(InvocationCache).GetMethod("GetWriterMutexName", BindingFlags.NonPublic | BindingFlags.Instance).Invoke(Cache, new object[] { Key });
+        internal string MutexName => Assert.IsType<string>(typeof(InvocationCache).GetMethod("GetWriterMutexName", BindingFlags.NonPublic | BindingFlags.Instance)!.Invoke(Cache, new object[] { Key }));
 
         internal CacheTestDirectory()
         {
@@ -435,7 +587,7 @@ public class InvocationCacheTests
         internal void WriteSource(string relativePath, string contents)
         {
             string path = Path.Combine(Source, relativePath);
-            Directory.CreateDirectory(Path.GetDirectoryName(path));
+            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
             File.WriteAllText(path, contents);
         }
 

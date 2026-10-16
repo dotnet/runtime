@@ -11,23 +11,26 @@ The feature is experimental. Its configuration and behavior may change or be rem
 - Enable caching only through the `ILLINK_EXPERIMENTAL_CACHE` environment variable set to `true` (case-insensitive). Unset, empty, or `false` disables caching; invalid boolean values disable caching with a diagnostic. Disabled caching performs no cache I/O, even if a cache directory already exists.
 - Use the optional `ILLINK_EXPERIMENTAL_CACHE_PATH` environment variable for the directory override. Unset or empty selects the platform default. Selecting a directory does not enable caching, and path values are never interpreted as booleans.
 - Use platform-specific default directories: `$XDG_CACHE_HOME/illink` on Linux/other XDG Unix, falling back to `$HOME/.cache/illink`; `$HOME/Library/Caches/illink` on macOS; `LocalApplicationData/illink` on Windows.
-- Resolve defaults inside `ILLinkCache.TryCreate` through a private helper, not in targets. Resolve relative overrides against the current working directory.
+- Resolve defaults inside the shared `InvocationCache.TryCreate` helper, not in targets. Resolve relative overrides against the current working directory.
 - Ignore relative `XDG_CACHE_HOME` values. If no usable user location is available, skip caching with a diagnostic rather than fall back to the working directory or shared temporary storage.
 - Read configuration from the task process's environment on each invocation. Set it before starting MSBuild; do not change process-wide environment settings during parallel builds. Reused build processes must receive the intended environment. There are no cache task parameters, MSBuild property wiring, or linker command-line switches.
 - Do not promise stability or migration support for the on-disk format.
 
 ## API shape
 
-Storage, manifest validation, publication, and directory restoration are shared
+Configuration, storage, manifest validation, publication, and directory restoration are shared
 sources under `src/tasks/Common/InvocationCache`, compiled into the task assembly.
-`ILLinkCache` retains ILLink's environment configuration and cache-directory policy;
-the task retains input identity and invocation eligibility. The extraction preserves
+The task supplies ILLink's environment-variable names, cache-directory name, and
+diagnostic label, and retains input identity and invocation eligibility. The extraction preserves
 the v1 entry format, writer mutex names, diagnostics, and purge behavior.
 
 ```csharp
-internal sealed class ILLinkCache
+internal sealed partial class InvocationCache
 {
-    internal static ILLinkCache? TryCreate(string? cacheDirectory, TaskLoggingHelper log);
+    internal static InvocationCache? TryCreateFromEnvironment(TaskLoggingHelper log, string toolName,
+        string enabledEnvironmentVariable, string pathEnvironmentVariable, string cacheDirectoryName);
+    internal static InvocationCache? TryCreate(string? cacheDirectory, TaskLoggingHelper log,
+        string toolName, string cacheDirectoryName);
     internal bool TryRestore(string inputHash, string outputDirectory, DateTime outputTimestampUtc);
     internal void Store(string inputHash, string outputDirectory);
 }

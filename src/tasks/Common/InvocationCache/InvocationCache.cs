@@ -16,7 +16,7 @@ using Microsoft.Build.Utilities;
 
 namespace Microsoft.NET.Build.Tasks;
 
-internal class InvocationCache
+internal sealed partial class InvocationCache
 {
     private const int FormatVersion = 1;
     private readonly TaskLoggingHelper _log;
@@ -184,7 +184,7 @@ internal class InvocationCache
         return Path.Combine(CacheDirectory, InvocationCacheEntry.VersionDirectory, inputHash);
     }
 
-    protected string GetWriterMutexName(string inputHash)
+    private string GetWriterMutexName(string inputHash)
     {
         string directory = CacheDirectory.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))

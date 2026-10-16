@@ -50,6 +50,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="$(RepoRoot)src\tasks\Common\InvocationCache\InvocationCache.Configuration.cs" Link="InvocationCache\InvocationCache.Configuration.cs" />
     <Compile Include="$(RepoRoot)src\tasks\Common\InvocationCache\InvocationCache.cs" Link="InvocationCache\InvocationCache.cs" />
     <Compile Include="$(RepoRoot)src\tasks\Common\InvocationCache\InvocationCacheEntry.cs" Link="InvocationCache\InvocationCacheEntry.cs" />
     <InternalsVisibleTo Include="ILLink.Tasks.Tests" />

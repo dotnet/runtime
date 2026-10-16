@@ -14,6 +14,7 @@ using System.Security.Cryptography;
 using System.Text;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
+using Microsoft.NET.Build.Tasks;
 
 namespace ILLink.Tasks
 {
@@ -271,7 +272,8 @@ namespace ILLink.Tasks
         protected override int ExecuteTool(string pathToTool, string responseFileCommands, string commandLineCommands)
         {
             DateTime outputTimestampUtc = DateTime.UtcNow;
-            ILLinkCache cache = ILLinkCache.TryCreateFromEnvironment(Log);
+            InvocationCache cache = InvocationCache.TryCreateFromEnvironment(Log, "ILLink",
+                "ILLINK_EXPERIMENTAL_CACHE", "ILLINK_EXPERIMENTAL_CACHE_PATH", "illink");
             string inputHash = null;
             if (cache is not null && !TryComputeCacheKey(pathToTool, commandLineCommands, responseFileCommands, out inputHash))
                 cache = null;
