@@ -23,8 +23,8 @@ namespace ILCompiler
         private readonly Dictionary<MethodDesc, MethodCodeNode> _nodes;
         private readonly Dictionary<MethodDesc, Export> _exports = new();
         private readonly Dictionary<MethodDesc, Export> _nativeBodies = new();
-        private readonly HashSet<MethodDesc> _pending = new();
-        private readonly HashSet<MethodDesc> _rejected = new();
+        private readonly HashSet<(MethodDesc Method, bool InlineOnly)> _pending = new();
+        private readonly HashSet<(MethodDesc Method, bool InlineOnly)> _rejected = new();
         private readonly Dictionary<MethodDesc, string> _addresses = new();
         private readonly ISymbolNode _reversePInvokeEnter;
         private readonly ISymbolNode _reversePInvokeExit;
@@ -34,7 +34,7 @@ namespace ILCompiler
 
         internal readonly SortedDictionary<string, string> Intrinsics = new(StringComparer.Ordinal);
 
-        internal sealed record Export(MethodCodeNode Node, ScalarType ReturnType, ScalarType[] Parameters, string Body)
+        internal sealed record Export(MethodDesc Method, ScalarType ReturnType, ScalarType[] Parameters, string Body)
         {
             public string Symbol;
             public HashSet<MethodDesc> References;
@@ -91,7 +91,7 @@ namespace ILCompiler
 
                 foreach (Export export in exporter._exports.Values.Concat(exporter._nativeBodies.Values).OrderBy(e => e.Symbol, StringComparer.Ordinal))
                 {
-                    bool unmanaged = export.Node.Method.IsUnmanagedCallersOnly;
+                    bool unmanaged = export.Method.IsUnmanagedCallersOnly;
                     string parameters = string.Join(", ", export.Parameters.Select((type, index) => $"{exporter.FormatSignatureType(type, unmanaged)} %arg{index}"));
                     string attributes = export.InlineOnly ? " alwaysinline" : "";
                     writer.WriteLine($"define available_externally {exporter.FormatSignatureType(export.ReturnType, unmanaged, isReturn: true)} {Quote(export.Symbol)}({parameters}){attributes} {{\n{export.Body}}}\n");
@@ -155,26 +155,7 @@ namespace ILCompiler
             if (method.IsUnmanagedCallersOnly)
                 throw new UnsupportedException("A managed call cannot target an unmanaged entry point");
 
-            Export export = TryExport(method) ?? throw new UnsupportedException($"Call target is not a verified scalar method: {method}");
-            if (!nativeBody)
-                return export;
-
-            if (!_nativeBodies.TryGetValue(method, out Export inlineBody))
-            {
-                // A native frame has no managed GC information, rely on LLVM's inliner here but never let a missed inline resolve to a method body.
-                // available_externally never emits an out-of-line definition for that symbol, regardless of whether inlining succeeds.
-                // So if the method end up not being inlined, the linker will error out on the missing symbol.
-                var translator = new LlvmLtoILTranslator(this, method, _compilation.GetMethodIL(method), nativeBody: true);
-                string body = translator.Translate();
-                inlineBody = export with
-                {
-                    Body = body,
-                    Symbol = "__llvm_lto_inline_" + export.Node.GetMangledName(_compilation.NameMangler),
-                    InlineOnly = true,
-                };
-                _nativeBodies.Add(method, inlineBody);
-            }
-            return inlineBody;
+            return TryExport(method, inlineOnly: nativeBody) ?? throw new UnsupportedException($"Call target is not a verified scalar method: {method}");
         }
 
         internal string GetAddress(MethodDesc method)
@@ -196,24 +177,29 @@ namespace ILCompiler
             return symbol;
         }
 
-        private Export TryExport(MethodDesc method)
+        private Export TryExport(MethodDesc method, bool inlineOnly = false)
         {
-            if (_exports.TryGetValue(method, out Export existing))
+            Dictionary<MethodDesc, Export> exports = inlineOnly ? _nativeBodies : _exports;
+            if (exports.TryGetValue(method, out Export existing))
                 return existing;
 
-            if (_rejected.Contains(method) || _pending.Contains(method))
+            var key = (method, inlineOnly);
+            if (_rejected.Contains(key) || _pending.Contains(key))
                 return null;
 
-            _pending.Add(method);
+            _pending.Add(key);
 
             try
             {
-                if (!_nodes.TryGetValue(method, out MethodCodeNode node) || method is not EcmaMethod ||
+                if (!_nodes.TryGetValue(method, out MethodCodeNode node) && !inlineOnly)
+                    throw new UnsupportedException("Missing RyuJIT body");
+
+                if (method is not EcmaMethod ||
                     method.HasInstantiation || method.OwningType.HasInstantiation ||
                     method.IsPInvoke || method.IsInternalCall || method.IsIntrinsic ||
                     method.IsNoInlining || method.IsNoOptimization || method.IsSynchronized || method.IsAsync || method.RequireSecObject ||
                     method.OwningType.HasStaticConstructor || method.Signature.Flags != MethodSignatureFlags.Static ||
-                    node.ShouldSkipEmittingObjectNode(_compilation.NodeFactory) || node.EHInfo != null)
+                    (node != null && (node.ShouldSkipEmittingObjectNode(_compilation.NodeFactory) || node.EHInfo != null)))
                     throw new UnsupportedException("Unsupported calling, initialization, or optimization semantics");
 
                 if (method.IsUnmanagedCallersOnly && (method.GetUnmanagedCallersOnlyMethodCallingConventions() is not (UnmanagedCallingConventions.Cdecl or UnmanagedCallingConventions.Stdcall) ||
@@ -224,69 +210,73 @@ namespace ILCompiler
                 if (il == null || il.GetExceptionRegions().Length != 0)
                     throw new UnsupportedException("Missing IL or exception regions");
 
-                var translator = new LlvmLtoILTranslator(this, method, il, nativeBody: method.IsUnmanagedCallersOnly);
+                var translator = new LlvmLtoILTranslator(this, method, il, nativeBody: inlineOnly || method.IsUnmanagedCallersOnly);
                 string body = translator.Translate();
 
-                ObjectNode.ObjectData code = node.GetData(_compilation.NodeFactory, relocsOnly: false);
-                if (code == null)
-                    throw new UnsupportedException("Missing RyuJIT body");
-
-                bool hasReversePInvokeEnter = false;
-                bool hasReversePInvokeExit = false;
-                foreach (Relocation relocation in code.Relocs ?? [])
+                if (node != null)
                 {
-                    if (method.IsUnmanagedCallersOnly && ReferenceEquals(relocation.Target, _reversePInvokeEnter))
+                    ObjectNode.ObjectData code = node.GetData(_compilation.NodeFactory, relocsOnly: false);
+                    if (code == null)
+                        throw new UnsupportedException("Missing RyuJIT body");
+
+                    bool hasReversePInvokeEnter = false;
+                    bool hasReversePInvokeExit = false;
+                    foreach (Relocation relocation in code.Relocs ?? [])
                     {
-                        hasReversePInvokeEnter = true;
-                        continue;
-                    }
-                    if (method.IsUnmanagedCallersOnly && ReferenceEquals(relocation.Target, _reversePInvokeExit))
-                    {
-                        hasReversePInvokeExit = true;
-                        continue;
-                    }
-                    // Switch dispatch can use relocations to offsets in this body.
-                    // Recursive IL calls have already failed the dependency check.
-                    if (ReferenceEquals(relocation.Target, node))
-                        continue;
-                    if (relocation.Target is IMethodNode target && translator.References.Contains(target.Method))
-                        continue;
-                    if (translator.NativeMathHelpers.Contains(relocation.Target.GetMangledName(_compilation.NameMangler)))
-                        continue;
-                    if (relocation.Target is MethodReadOnlyDataNode data)
-                    {
-                        var contents = data.GetData(_compilation.NodeFactory, relocsOnly: false);
-                        if ((contents.Relocs ?? []).All(r => ReferenceEquals(r.Target, node)))
+                        if (method.IsUnmanagedCallersOnly && ReferenceEquals(relocation.Target, _reversePInvokeEnter))
+                        {
+                            hasReversePInvokeEnter = true;
                             continue;
+                        }
+                        if (method.IsUnmanagedCallersOnly && ReferenceEquals(relocation.Target, _reversePInvokeExit))
+                        {
+                            hasReversePInvokeExit = true;
+                            continue;
+                        }
+                        // Switch dispatch can use relocations to offsets in this body.
+                        // Recursive IL calls have already failed the dependency check.
+                        if (ReferenceEquals(relocation.Target, node))
+                            continue;
+                        if (relocation.Target is IMethodNode target && translator.References.Contains(target.Method))
+                            continue;
+                        if (translator.NativeMathHelpers.Contains(relocation.Target.GetMangledName(_compilation.NameMangler)))
+                            continue;
+                        if (relocation.Target is MethodReadOnlyDataNode data)
+                        {
+                            var contents = data.GetData(_compilation.NodeFactory, relocsOnly: false);
+                            if ((contents.Relocs ?? []).All(r => ReferenceEquals(r.Target, node)))
+                                continue;
+                        }
+
+                        // Polls, throw helpers, statics, and instrumentation must keep
+                        // their runtime semantics, even if the source IL looks scalar.
+                        throw new UnsupportedException($"Unmodelled native relocation: {relocation.Target.GetMangledName(_compilation.NameMangler)}");
                     }
 
-                    // Polls, throw helpers, statics, and instrumentation must keep
-                    // their runtime semantics, even if the source IL looks scalar.
-                    throw new UnsupportedException($"Unmodelled native relocation: {relocation.Target.GetMangledName(_compilation.NameMangler)}");
+                    if (method.IsUnmanagedCallersOnly && (!hasReversePInvokeEnter || !hasReversePInvokeExit))
+                        throw new UnsupportedException("Unexpected reverse P/Invoke transition sequence");
                 }
 
-                if (method.IsUnmanagedCallersOnly && (!hasReversePInvokeEnter || !hasReversePInvokeExit))
-                    throw new UnsupportedException("Unexpected reverse P/Invoke transition sequence");
-
-                var export = new Export(node, translator.ReturnType, translator.Parameters, body)
+                var export = new Export(method, translator.ReturnType, translator.Parameters, body)
                 {
-                    Symbol = GetAddress(method),
+                    Symbol = inlineOnly ? "__llvm_lto_inline_" + _compilation.NameMangler.GetMangledMethodName(method) : GetAddress(method),
                     References = translator.References,
                     NativeMathHelpers = translator.NativeMathHelpers,
+                    InlineOnly = inlineOnly,
                 };
-                _exports.Add(method, export);
+                exports.Add(method, export);
                 return export;
             }
             catch (Exception ex) when (ex is UnsupportedException or TypeSystemException)
             {
-                _rejected.Add(method);
+                _rejected.Add(key);
                 if (_compilation.Logger.IsVerbose)
                     _compilation.Logger.LogMessage($"LLVM LTO IR skipped '{method}': {ex.Message}");
                 return null;
             }
             finally
             {
-                _pending.Remove(method);
+                _pending.Remove(key);
             }
         }
 

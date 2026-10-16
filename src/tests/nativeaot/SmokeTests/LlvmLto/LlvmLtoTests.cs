@@ -3,7 +3,6 @@
 
 using System;
 using System.IO;
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
@@ -107,6 +106,12 @@ internal static unsafe class ManagedExports
     [UnmanagedCallersOnly(EntryPoint = "ManagedUIntToDouble", CallConvs = new[] { typeof(CallConvCdecl) })]
     public static double UIntToDouble(ulong x) => x;
 
+    [UnmanagedCallersOnly(EntryPoint = "ManagedUIntToFloat", CallConvs = new[] { typeof(CallConvCdecl) })]
+    public static float UIntToFloat(ulong x) => x;
+
+    [UnmanagedCallersOnly(EntryPoint = "ManagedUIntToFloatViaDouble", CallConvs = new[] { typeof(CallConvCdecl) })]
+    public static float UIntToFloatViaDouble(ulong x) => (float)(double)x;
+
     [UnmanagedCallersOnly(EntryPoint = "ManagedDoubleToInt", CallConvs = new[] { typeof(CallConvCdecl) })]
     public static int DoubleToInt(double x) => (int)x;
 
@@ -174,7 +179,10 @@ internal static unsafe class ManagedExports
     public static void Empty() { }
 
     [UnmanagedCallersOnly(EntryPoint = "ManagedCallback", CallConvs = new[] { typeof(CallConvCdecl) })]
-    public static int Callback(int x) => unchecked(x + 9);
+    public static int Callback(int x) => AddCallbackOffset(x);
+
+    // This helper has no separate root or address use; RyuJIT can omit its body.
+    private static int AddCallbackOffset(int x) => unchecked(x + 9);
 
     [UnmanagedCallersOnly(EntryPoint = "ManagedQuoted%arg0", CallConvs = new[] { typeof(CallConvCdecl) })]
     public static int QuotedAdd(int x, int y) => unchecked(x + y);
@@ -195,7 +203,7 @@ internal static unsafe class ManagedHelpers
         return AddPositive(x, y);
     }
 
-    public static int AddPositive(int x, int y) => unchecked(x + y);
+    private static int AddPositive(int x, int y) => unchecked(x + y);
     public static delegate* unmanaged[Cdecl]<int, int, int> GetQuotedPointer() => &ManagedExports.QuotedAdd;
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -316,6 +324,10 @@ internal static unsafe class LlvmLtoTests
     private static extern int NativeFloatCompare(double x, double y);
     [DllImport("llvmltonative", EntryPoint = "NativeUIntToDouble", CallingConvention = CallingConvention.Cdecl)]
     private static extern double NativeUIntToDouble(ulong x);
+    [DllImport("llvmltonative", EntryPoint = "NativeUIntToFloat", CallingConvention = CallingConvention.Cdecl)]
+    private static extern float NativeUIntToFloat(ulong x);
+    [DllImport("llvmltonative", EntryPoint = "NativeUIntToFloatViaDouble", CallingConvention = CallingConvention.Cdecl)]
+    private static extern float NativeUIntToFloatViaDouble(ulong x);
     [DllImport("llvmltonative", EntryPoint = "NativeDoubleToInt", CallingConvention = CallingConvention.Cdecl)]
     private static extern int NativeDoubleToInt(double x);
     [DllImport("llvmltonative", EntryPoint = "NativeDoubleToUInt", CallingConvention = CallingConvention.Cdecl)]
@@ -374,7 +386,6 @@ internal static unsafe class LlvmLtoTests
     [DllImport("llvmltonative", CallingConvention = CallingConvention.Cdecl)]
     private static extern int NativeForeignThread(int x, int y);
 
-    [DynamicDependency(DynamicallyAccessedMemberTypes.PublicMethods, typeof(ManagedHelpers))]
     private static int Main()
     {
         VerifyLlvmLto();
@@ -444,6 +455,16 @@ internal static unsafe class LlvmLtoTests
         foreach (int x in integers)
             if (!Same(NativeUIntToDouble((ulong)(long)x), (double)(ulong)(long)x))
                 return 12;
+        // Values around a float rounding midpoint distinguish a direct conversion
+        // from an explicit conversion through double.
+        ulong[] unsignedIntegers = [ 0, 1, uint.MaxValue, ulong.MaxValue,
+            0x8000007FFFFFFFFF, 0x8000008000000000, 0x8000008000000001, 0x4000004000000001 ];
+        foreach (ulong x in unsignedIntegers)
+            if (!Same(NativeUIntToFloat(x), (float)x) || !Same(NativeUIntToFloatViaDouble(x), (float)(double)x))
+                return 209;
+        if (BitConverter.SingleToInt32Bits(NativeUIntToFloat(0x8000008000000001)) != 0x5F000001 ||
+            BitConverter.SingleToInt32Bits(NativeUIntToFloatViaDouble(0x8000008000000001)) != 0x5F000000)
+            return 210;
         foreach (double x in doubles)
         {
             if (NativeDoubleToInt(x) != (int)x) return 201;
@@ -589,7 +610,7 @@ internal static unsafe class LlvmLtoTests
         string optimized = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "LlvmLtoTests.Optimized.ll"));
         string[] exports = [ "Add", "Subtract", "Wide", "Shift", "Convert", "Compare", "Locals", "Branch", "Float",
             "Phi", "Switch", "Narrow", "SmallArguments", "Enum", "NativeInt", "FloatArithmetic", "DoubleArithmetic", "FloatCompare",
-            "UIntToDouble", "DoubleToInt", "DoubleToUInt", "DoubleToLong", "DoubleToULong", "DoubleToByte", "DoubleToSByte",
+            "UIntToDouble", "UIntToFloat", "UIntToFloatViaDouble", "DoubleToInt", "DoubleToUInt", "DoubleToLong", "DoubleToULong", "DoubleToByte", "DoubleToSByte",
             "LocalAddress", "LocalBitcast", "Compose", "PointerGetter", "PointerSelect", "KnownCalli", "SafeDivide", "SafeRemainder",
             "Void", "Math", "MathF", "Callback", "Quoted%arg0", "QuotedPointerGetter" ];
 
@@ -616,7 +637,7 @@ internal static unsafe class LlvmLtoTests
             throw new Exception("An unsupported method was exported to LLVM.");
 
         // Inspect the linker's actual optimized IR instead of target-specific opcodes.
-        foreach (string name in new[] { "NativeFold", "NativeKnownPointer", "NativePhi", "NativeCompose", "NativeKnownCalli", "NativeVoid", "NativeCallback", "NativeTransitionStress", "NativeThreadEntry" })
+        foreach (string name in new[] { "NativeFold", "NativeKnownPointer", "NativePhi", "NativeCompose", "NativeKnownCalli", "NativeVoid", "NativeCallback", "NativeTransitionStress", "NativeThreadEntry", "NativeUIntToFloat", "NativeUIntToFloatViaDouble" })
         {
             string body = FindBody(optimized, name) ?? throw new Exception("Missing native LTO body: " + name);
             // Scalar code is inlined, but required runtime transitions remain calls.

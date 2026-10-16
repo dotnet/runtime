@@ -480,7 +480,7 @@ namespace ILCompiler
             }
             if (op is ILOpcode.conv_i or ILOpcode.conv_u or ILOpcode.conv_i1 or ILOpcode.conv_u1 or ILOpcode.conv_i2 or ILOpcode.conv_u2 or ILOpcode.conv_i4 or ILOpcode.conv_u4 or ILOpcode.conv_i8 or ILOpcode.conv_u8 or ILOpcode.conv_r4 or ILOpcode.conv_r8 or ILOpcode.conv_r_un)
             {
-                Push(state, Conversion(op, Pop(state)));
+                Push(state, Conversion(instruction, Pop(state)));
                 return false;
             }
             if (op == ILOpcode.ldftn)
@@ -690,12 +690,16 @@ namespace ILCompiler
             return Emit(left.Type, $"{operation} {left.Type.IR} {left.Operand}, {right.Operand}", constant);
         }
 
-        private Value Conversion(ILOpcode op, Value value)
+        private Value Conversion(Instruction instruction, Value value)
         {
+            ILOpcode op = instruction.Op;
             bool unsigned = op is ILOpcode.conv_u or ILOpcode.conv_u1 or ILOpcode.conv_u2 or ILOpcode.conv_u4 or ILOpcode.conv_u8 or ILOpcode.conv_r_un;
             if (op is ILOpcode.conv_r4 or ILOpcode.conv_r8 or ILOpcode.conv_r_un)
             {
-                var target = new ScalarType(ScalarKind.Float, op == ILOpcode.conv_r4 ? 32 : 64);
+                byte[] ilBytes = _il.GetILBytes();
+                bool singlePrecision = op == ILOpcode.conv_r4 ||
+                    (op == ILOpcode.conv_r_un && instruction.Next < ilBytes.Length && ilBytes[instruction.Next] == (byte)ILOpcode.conv_r4);
+                var target = new ScalarType(ScalarKind.Float, singlePrecision ? 32 : 64);
                 if (value.Type.Kind == ScalarKind.Float)
                     return Convert(value, target);
                 if (!value.Type.IsInteger)
