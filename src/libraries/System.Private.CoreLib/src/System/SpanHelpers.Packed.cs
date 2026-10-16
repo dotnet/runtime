@@ -1185,24 +1185,14 @@ namespace System
         [CompExactlyDependsOn(typeof(PackedSimd))]
         internal static Vector128<byte> PackSources(Vector128<short> source0, Vector128<short> source1)
         {
+            Debug.Assert(Sse2.IsSupported || PackedSimd.IsSupported);
             // Pack two vectors of characters into bytes. While the type is Vector128<short>, these are really UInt16 characters.
             // X86 and WASM: Downcast every character using saturation.
             // - Values <= 32767 result in min(value, 255).
             // - Values  > 32767 result in 0. Because of this we can't accept needles that contain 0.
-            if (Sse2.IsSupported)
-            {
-                return Sse2.PackUnsignedSaturate(source0, source1).AsByte();
-            }
-            else if (PackedSimd.IsSupported)
-            {
-                return PackedSimd.ConvertNarrowingSaturateUnsigned(source0, source1);
-            }
-            else
-            {
-                // We explicitly recheck each IsSupported query to ensure that the trimmer can see which paths are live/dead
-                ThrowHelper.ThrowUnreachableException();
-                return default;
-            }
+            return Sse2.IsSupported
+                ? Sse2.PackUnsignedSaturate(source0, source1).AsByte()
+                : PackedSimd.ConvertNarrowingSaturateUnsigned(source0, source1);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
