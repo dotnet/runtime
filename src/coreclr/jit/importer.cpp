@@ -374,16 +374,16 @@ void Compiler::impAppendStmt(Statement* stmt, unsigned chkLevel, bool checkConsu
         // 1. All locals which can be modified indirectly are marked as address-exposed or with
         //    "lvHasLdAddrOp" -- we will rely on "impSpillSideEffects(spillGlobEffects: true)"
         //    below to spill them.
-        // 2. Trees that assign to unaliased locals are always top-level (this avoids having to
-        //    walk down the tree here), and are a subset of what is recognized here.
+        // 2. Trees that assign to unaliased locals are always top-level, possibly under COMMAs (this
+        //    avoids having to walk down the tree here), and are a subset of what is recognized here.
         //
         // If any of the above are violated (say for some temps), the relevant code must spill
         // things manually.
         //
         LclVarDsc* dstVarDsc = nullptr;
-        if (expr->OperIsLocalStore())
+        if (expr->gtEffectiveVal()->OperIsLocalStore())
         {
-            dstVarDsc = lvaGetDesc(expr->AsLclVarCommon());
+            dstVarDsc = lvaGetDesc(expr->gtEffectiveVal()->AsLclVarCommon());
         }
         else if (expr->OperIs(GT_CALL, GT_RET_EXPR)) // The special case of calls with return buffers.
         {
