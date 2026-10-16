@@ -5923,15 +5923,14 @@ void Compiler::optRemoveRedundantZeroInits()
                             // insert a call to CORINFO_HELP_INIT_PINVOKE_FRAME but that is not a gc-safe point.
                             assert(s_helperCallProperties.IsNoGC(CORINFO_HELP_INIT_PINVOKE_FRAME));
 
-#ifdef TARGET_WASM
-                            // Wasm reports all gc locals on the frame as untracked slots.
-                            const bool reportedAsUntracked = true;
-#else
-                            const bool reportedAsUntracked = !lclDsc->lvTracked;
-#endif
                             // An untracked gc slot is reported whenever its frame is, and this phase can't
                             // rule out every gc-safe point before the store, so it keeps its prolog zeroing.
-                            if (!lclDsc->HasGCPtr() || (!reportedAsUntracked && !GetInterruptible() && !hasGCSafePoint))
+                            // Wasm reports all gc locals on the frame as untracked slots.
+#ifdef TARGET_WASM
+                            if (!lclDsc->HasGCPtr())
+#else
+                            if (!lclDsc->HasGCPtr() || (lclDsc->lvTracked && !GetInterruptible() && !hasGCSafePoint))
+#endif
                             {
                                 // The local hasn't been used and won't be reported to the gc between
                                 // the prolog and this explicit initialization. Therefore, it doesn't
