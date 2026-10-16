@@ -165,7 +165,12 @@ internal class GcScanner
             case FrameType.CallCountingHelperFrame:
             case FrameType.PrestubMethodFrame:
             {
-                PromoteCallerStack(frameAddress, scanContext);
+                Data.FramedMethodFrame frame = _target.ProcessedData.GetOrAdd<Data.FramedMethodFrame>(frameAddress);
+                TargetPointer gcRefMap = _frameHelpers.GetGCRefMapFromMethodDesc(frame.MethodDescPtr);
+                if (gcRefMap != TargetPointer.Null)
+                    PromoteCallerStackUsingGCRefMap(frame.TransitionBlockPtr, gcRefMap, scanContext);
+                else
+                    PromoteCallerStack(frameAddress, scanContext);
                 break;
             }
 

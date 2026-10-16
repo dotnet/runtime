@@ -278,6 +278,7 @@ struct MethodDescCodeData final
     NativeCodeVersion::OptimizationTier OptimizationTier;
 #endif // FEATURE_CODE_VERSIONING
     PCODE TemporaryEntryPoint;
+    PTR_BYTE GCRefMap;
 #ifdef FEATURE_INTERPRETER
     InterpreterCalliCookie CalliCookie;
 #endif // FEATURE_INTERPRETER
@@ -1883,13 +1884,18 @@ public:
 
     void WalkValueTypeParameters(MethodTable *pMT, WalkValueTypeParameterFnPtr function, void *pData);
 
-    // Load closed value-type signature layouts before publishing a callable native-image dependency.
+    PTR_BYTE GetGCRefMap();
+    void SetGCRefMap(PTR_BYTE pGCRefMap);
+
+    // Load closed value-type signature layouts for signature-scanning frames and ABI lowering.
     void PrepareForUseAsADependencyOfANativeImage()
     {
         WRAPPER_NO_CONTRACT;
         if (!HaveNativeImageDependenciesBeenPrepared())
             PrepareForUseAsADependencyOfANativeImageWorker();
     }
+
+    void PrepareForUseAsACallTargetOfANativeImage(PTR_BYTE pGCRefMap = nullptr);
 
     bool HaveNativeImageDependenciesBeenPrepared()
     {

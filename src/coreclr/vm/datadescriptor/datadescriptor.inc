@@ -23,7 +23,7 @@
 // src/native/managed/cdac/Microsoft.Diagnostics.DataContractReader.Contracts/Contracts/RuntimeInfo_1.cs
 // to match.
 #ifndef CDAC_RECOMMENDED_READER_VERSION
-#define CDAC_RECOMMENDED_READER_VERSION 2
+#define CDAC_RECOMMENDED_READER_VERSION 3
 #endif
 
 // When changes will break existing diagnostic tools (changes that are incompatible with the existing data contracts)
@@ -885,6 +885,7 @@ CDAC_TYPE_END(PortableEntryPoint)
 
 CDAC_TYPE_BEGIN(MethodDescCodeData)
 CDAC_TYPE_INDETERMINATE(MethodDescCodeData)
+CDAC_TYPE_FIELD(MethodDescCodeData, T_POINTER, GCRefMap, offsetof(MethodDescCodeData,GCRefMap))
 CDAC_TYPE_FIELD(MethodDescCodeData, TYPE(CodePointer), TemporaryEntryPoint, offsetof(MethodDescCodeData,TemporaryEntryPoint))
 #ifdef FEATURE_CODE_VERSIONING
 CDAC_TYPE_FIELD(MethodDescCodeData, T_POINTER, VersioningState, offsetof(MethodDescCodeData,VersioningState))
@@ -1941,7 +1942,7 @@ CDAC_GLOBAL_CONTRACT(RuntimeInfo, c1)
 CDAC_GLOBAL_CONTRACT(RuntimeTypeSystem, c1)
 CDAC_GLOBAL_CONTRACT(SHash, c1)
 CDAC_GLOBAL_CONTRACT(Signature, c1)
-CDAC_GLOBAL_CONTRACT(StackWalk, c1)
+CDAC_GLOBAL_CONTRACT(StackWalk, c2)
 CDAC_GLOBAL_CONTRACT(StressLog, c2)
 CDAC_GLOBAL_CONTRACT(SyncBlock, c1)
 CDAC_GLOBAL_CONTRACT(Thread, c1)

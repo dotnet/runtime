@@ -325,6 +325,44 @@ InterpreterCalliCookie MethodDesc::GetCalliCookie()
 
 #endif //!DACCESS_COMPILE
 
+PTR_BYTE MethodDesc::GetGCRefMap()
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    PTR_MethodDescCodeData codeData = VolatileLoad(&m_codeData);
+    return codeData != nullptr ? VolatileLoad(&codeData->GCRefMap) : nullptr;
+}
+
+#ifndef DACCESS_COMPILE
+void MethodDesc::SetGCRefMap(PTR_BYTE pGCRefMap)
+{
+    STANDARD_VM_CONTRACT;
+    _ASSERTE(pGCRefMap != nullptr);
+
+    // The map belongs to a non-collectible ReadyToRun image and outlives this MethodDesc.
+    PTR_BYTE pExistingMap = GetGCRefMap();
+    if (pExistingMap == nullptr)
+    {
+        IfFailThrow(EnsureCodeDataExists(nullptr));
+        pExistingMap = InterlockedCompareExchangeT(&m_codeData->GCRefMap, pGCRefMap, nullptr);
+    }
+
+#ifdef _DEBUG
+    if (pExistingMap != nullptr)
+    {
+        // Check other imports without resolving signature types to recompute the map.
+        BYTE value;
+        do
+        {
+            value = *pGCRefMap++;
+            _ASSERTE(value == *pExistingMap++);
+        }
+        while ((value & 0x80) != 0);
+    }
+#endif // _DEBUG
+}
+#endif // !DACCESS_COMPILE
+
 #ifdef FEATURE_CODE_VERSIONING
 PTR_MethodDescVersioningState MethodDesc::GetMethodDescVersionState()
 {
@@ -3029,6 +3067,12 @@ void MethodDesc::EnsurePortableEntryPointIsCallableFromR2R(PCODE entryPoint)
     }
 #endif
 
+    if (!pMD->IsWrapperStub() && !pMD->IsVersionable() &&
+        PortableEntryPoint::HasNativeEntryPoint(entryPoint))
+    {
+        return;
+    }
+
     pMD->PrepareForUseAsADependencyOfANativeImage();
     if (pep->HasNativeCode())
     {
@@ -3957,6 +4001,16 @@ MethodDesc::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     // automatically picks up any prestubs and such.
     GetMethodDescChunk()->EnumMemoryRegions(flags);
 
+    PTR_BYTE pGCRefMap = GetGCRefMap();
+    if (pGCRefMap != nullptr)
+    {
+        PTR_BYTE pEnd = pGCRefMap;
+        while ((*pEnd++ & 0x80) != 0)
+        {
+        }
+        DacEnumMemoryRegion(dac_cast<TADDR>(pGCRefMap), pEnd - pGCRefMap);
+    }
+
     if (HasPrecode())
     {
         GetPrecode()->EnumMemoryRegions(flags);
@@ -4270,6 +4324,42 @@ static void LoadNativeImageSignatureType(const SigPointer& signature, Module* pM
         if (th.IsNull())
             COMPlusThrowHR(COR_E_TYPELOAD);
     }
+}
+
+void MethodDesc::PrepareForUseAsACallTargetOfANativeImage(PTR_BYTE pGCRefMap)
+{
+    STANDARD_VM_CONTRACT;
+
+    if (HaveNativeImageDependenciesBeenPrepared())
+        return;
+
+    if (!IsWrapperStub())
+    {
+        if (pGCRefMap != nullptr)
+        {
+            SetGCRefMap(pGCRefMap);
+            return;
+        }
+
+        if (GetGCRefMap() != nullptr)
+            return;
+
+        if (!IsVersionable())
+        {
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+            PCODE entryPoint = GetPortableEntryPointIfExists();
+            if (entryPoint != 0 && PortableEntryPoint::HasNativeEntryPoint(entryPoint))
+                return;
+#else // !FEATURE_PORTABLE_ENTRYPOINTS
+            if (!IsVtableMethod() && IsPointingToStableNativeCode() &&
+                ExecutionManager::IsReadyToRunCode(GetNativeCode()))
+                return;
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
+        }
+    }
+
+    // A cached map is not signature-layout readiness for ABI lowering or mapless dispatch.
+    PrepareForUseAsADependencyOfANativeImageWorker();
 }
 
 void MethodDesc::PrepareForUseAsADependencyOfANativeImageWorker()

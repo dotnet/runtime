@@ -14547,7 +14547,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
             _ASSERTE(pInfoModule->IsFullModule());
             pMD = MemberLoader::GetMethodDescFromMethodDef(static_cast<Module*>(pInfoModule), MethodDef, FALSE);
 
-            pMD->PrepareForUseAsADependencyOfANativeImage();
+            pMD->PrepareForUseAsACallTargetOfANativeImage();
 
             if (g_fEEStarted)
             {
@@ -14568,7 +14568,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
             MemberLoader::GetDescFromMemberRef(pInfoModule, MemberRef, &pMD, &pFD, &typeContext, FALSE /* strict metadata checks */, &th);
             _ASSERTE(pMD != NULL);
 
-            pMD->PrepareForUseAsADependencyOfANativeImage();
+            pMD->PrepareForUseAsACallTargetOfANativeImage();
 
             if (g_fEEStarted)
             {
@@ -14582,6 +14582,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
     case READYTORUN_FIXUP_MethodEntry:
         {
             pMD = ZapSig::DecodeMethod(currentModule, pInfoModule, pBlob);
+            pMD->PrepareForUseAsACallTargetOfANativeImage();
 
             if (g_fEEStarted)
             {
@@ -14597,7 +14598,8 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
     case READYTORUN_FIXUP_MethodEntry_ReadyToRun:
         {
             pMD = ZapSig::DecodeMethod(currentModule, pInfoModule, pBlob);
-            pMD->PrepareForUseAsADependencyOfANativeImage();
+            if (pMD->IsWrapperStub() || pMD->IsVtableMethod())
+                pMD->PrepareForUseAsADependencyOfANativeImage();
 
             if (!pMD->GetModule()->IsReadyToRun())
             {

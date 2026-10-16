@@ -83,6 +83,38 @@ public class Program
             public T Value;
         }
 
+        public interface IColdTransform
+        {
+            ReferenceValue Transform(ReferenceValue value);
+        }
+
+        public sealed class ColdReferenceTransform : IColdTransform
+        {
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public ReferenceValue Transform(ReferenceValue value)
+            {
+                GC.Collect(2, GCCollectionMode.Forced, true, true);
+                return value;
+            }
+        }
+
+        public struct ColdValueTransform : IColdTransform
+        {
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public ReferenceValue Transform(ReferenceValue value)
+            {
+                GC.Collect(2, GCCollectionMode.Forced, true, true);
+                return value;
+            }
+        }
+
+        public struct LargeValue
+        {
+            public Marker First;
+            public Marker Second;
+            public Marker Third;
+        }
+
         public interface ITransform<T>
         {
             T Transform(T value);
@@ -140,8 +172,40 @@ public class Program
             return new Marker { Value = 12345 };
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static LargeValue RoundTripManyArguments(
+            Marker first, Marker second, Marker third, Marker fourth, Marker fifth, Marker sixth,
+            Marker seventh, Marker eighth, Marker ninth, Marker tenth, ref Marker reference, LargeValue value)
+        {
+            GC.Collect(2, GCCollectionMode.Forced, true, true);
+            Assert.AreEqual(12345, first.Value);
+            Assert.AreEqual(12345, second.Value);
+            Assert.AreEqual(12345, third.Value);
+            Assert.AreEqual(12345, fourth.Value);
+            Assert.AreEqual(12345, fifth.Value);
+            Assert.AreEqual(12345, sixth.Value);
+            Assert.AreEqual(12345, seventh.Value);
+            Assert.AreEqual(12345, eighth.Value);
+            Assert.AreEqual(12345, ninth.Value);
+            Assert.AreEqual(12345, tenth.Value);
+            Assert.AreEqual(12345, reference.Value);
+            reference = value.Third;
+
+            return value;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void RunColdInterface(IColdTransform target)
+        {
+            ReferenceValue result = target.Transform(new ReferenceValue { Reference = CreateMarker() });
+            Assert.AreEqual(12345, result.Reference.Value);
+        }
+
         public static unsafe void Run()
         {
+            RunColdInterface(new ColdReferenceTransform());
+            RunColdInterface(new ColdValueTransform());
+
             Assert.AreEqual(true, RoundTrip(default).Reference is null);
             Assert.AreEqual(true, RoundTripGeneric<string>(default).Reference.Reference is null);
             Assert.AreEqual(0, RoundTripGeneric<int>(default).Value);
@@ -171,6 +235,18 @@ public class Program
             Assert.AreEqual(marker, result.Reference.Reference);
             Assert.AreEqual(37, result.Value);
             Assert.AreEqual(12345, marker.Value);
+
+            for (int i = 0; i < 16; i++)
+            {
+                Marker reference = CreateMarker();
+                LargeValue manyArguments = RoundTripManyArguments(
+                    CreateMarker(), CreateMarker(), CreateMarker(), CreateMarker(), CreateMarker(),
+                    CreateMarker(), CreateMarker(), CreateMarker(), CreateMarker(), CreateMarker(), ref reference,
+                    new LargeValue { First = CreateMarker(), Second = CreateMarker(), Third = CreateMarker() });
+                Assert.AreEqual(12345, manyArguments.First.Value);
+                Assert.AreEqual(12345, manyArguments.Second.Value);
+                Assert.AreEqual(reference, manyArguments.Third);
+            }
         }
     }
 

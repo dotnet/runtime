@@ -1214,7 +1214,7 @@ Dictionary::PopulateEntry(
 #endif
 
                 if (isReadyToRunModule)
-                    pResolvedMD->PrepareForUseAsADependencyOfANativeImage();
+                    pResolvedMD->PrepareForUseAsACallTargetOfANativeImage();
 
                 result = (CORINFO_GENERIC_HANDLE)pResolvedMD->GetMultiCallableAddrOfCode();
             }
@@ -1222,7 +1222,7 @@ Dictionary::PopulateEntry(
             if (kind == MethodEntrySlot)
             {
                 if (isReadyToRunModule)
-                    pMethod->PrepareForUseAsADependencyOfANativeImage();
+                    pMethod->PrepareForUseAsACallTargetOfANativeImage();
 
                 result = (CORINFO_GENERIC_HANDLE)pMethod->GetMultiCallableAddrOfCode();
             }
@@ -1231,7 +1231,7 @@ Dictionary::PopulateEntry(
             {
                 _ASSERTE((methodFlags & ENCODE_METHOD_SIG_SlotInsteadOfToken) == 0);
                 if (isReadyToRunModule)
-                    pMethod->PrepareForUseAsADependencyOfANativeImage();
+                    pMethod->PrepareForUseAsACallTargetOfANativeImage();
 
                 PCODE *ppCode = (PCODE*)(void*)pMethod->GetLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(PCODE)));
                 *ppCode = pMethod->GetMultiCallableAddrOfCode();

@@ -120,6 +120,12 @@ TargetPointer GetExactGenericArgsToken(IStackDataFrameHandle stackDataFrameHandl
 ```
 
 ## Version 1
+
+Version 1 targets prepare signature layouts before using signature-scanning transition frames.
+Version 2 retains the algorithms below, with the cached-map extensions described in
+[Version 2](#version-2). The reader shares their implementation and treats the cached-map field
+as optional when inspecting a Version 1 target.
+
 To create a full walk of the managed stack, two types of 'stacks' must be read.
 
 1. True call frames on the thread's stack
@@ -184,6 +190,8 @@ Unwinding call frames on the stack usually requires an OS specific implementatio
 | `InterpMethodContextFrame` | `Stack` | `pointer` | Pointer to the stack base for this interpreted method, used as the frame pointer when interpreter GC info uses a stack-base register |
 | `InterpreterFrame` | `IsFaulting` | `uint8` | Boolean indicating whether the topmost interpreted frame has thrown an exception. When set, the context for the top interpreted frame must include CONTEXT_EXCEPTION_ACTIVE so exception unwinders treat the IP as a faulting instruction rather than a return-from-call |
 | `InterpreterFrame` | `TopInterpMethodContextFrame` | `pointer` | Pointer to the InterpreterFrame's top InterpMethodContextFrame |
+| `MethodDesc` | `CodeData` | `pointer` | Pointer to per-method code data containing entry-point and code-versioning state |
+| `MethodDescCodeData` | `GCRefMap` | `pointer` | Optional cached ReadyToRun method-entry GC reference map used by prestub and call-counting frames |
 | `Module` | `ReadyToRunInfo` | `pointer` | Pointer to the module's ReadyToRun information |
 | `Object` | `m_pMethTab` | `pointer` | Method table for the object |
 | `PInvokeCalliFrame` | `VASigCookiePtr` | `pointer` | Pointer to the varargs signature cookie for the unmanaged call |
@@ -472,7 +480,7 @@ TransitionFrames hold a pointer to a `TransitionBlock`. The TransitionBlock hold
 When updating the context from a TransitionFrame, the IP, SP, and all ABI specified callee-saved registers are copied over.
 
 * On ARM, the additional register values stored in `ArgumentRegisters` are copied over. The `TransitionBlock` holds a pointer to the `ArgumentRegister` struct containing these values.
-* On x86, the caller SP also skips callee-popped stack arguments. For `ExternalMethodFrame` and `StubDispatchFrame`, the argument size comes from the frame's GCRefMap, including when its MethodDesc is null. `ReadStackPop()` gives the number of pointer-sized slots to add to the SP. If no GCRefMap is available, MethodDesc-backed frames use the argument map computed from their signature. `PInvokeCalliFrame` instead uses `VASigCookie.SizeOfArgs`.
+* On x86, the caller SP also skips callee-popped stack arguments. For `ExternalMethodFrame` and `StubDispatchFrame`, the argument size comes from the frame's GCRefMap, including when its MethodDesc is null. `PrestubMethodFrame` and `CallCountingHelperFrame` instead use `MethodDescCodeData.GCRefMap` when available. `ReadStackPop()` gives the number of pointer-sized slots to add to the SP. If no GCRefMap is available, MethodDesc-backed frames use the argument map computed from their signature. `PInvokeCalliFrame` instead uses `VASigCookie.SizeOfArgs`.
 * For an x86 `StubDispatchFrame` without a GCRefMap, resolve its method from the stored MethodDesc or its representative MethodTable and slot. If no method is available, the SP stays at the end of the transition block and the IP is adjusted to the call instruction by subtracting five bytes from the saved return address.
 * On WASM, a transition helper called from R2R code records the caller's R2R linear-stack pointer in `TransitionBlock.StackPointer`, and may leave `ReturnAddress` 0. When `ReturnAddress` is 0 and `StackPointer` is set, the return address is the R2R virtual IP of the frame at `StackPointer` (native `FramedMethodFrame::GetTransitionBlock_Impl`). When `StackPointer` is set and a return address is known, the caller's SP is `StackPointer` and its FP is the WASM logical frame pointer at `StackPointer` (native `TransitionFrame::GetSP`); otherwise the SP is the end of the TransitionBlock and the FP is null. This also applies when the interpreted chain under an `InterpreterFrame` is exhausted and the walker applies the `InterpreterFrame`'s transition.
 
@@ -784,10 +792,10 @@ At each frame yielded by `Filter`, the walk determines whether to scan for GC re
 
 - **StubDispatchFrame / ExternalMethodFrame**: Resolve GCRefMap via `FindGCRefMap` using the frame's `Indirection` pointer, otherwise fall back to signature-based scanning.
 - **DynamicHelperFrame**: Use flag-based scanning (`DynamicHelperFrameFlags`).
-- **PrestubMethodFrame / CallCountingHelperFrame**: Use signature-based scanning.
+- **PrestubMethodFrame / CallCountingHelperFrame**: Read `MethodDesc.CodeData` from the frame's `MethodDescPtr`, then use `MethodDescCodeData.GCRefMap` if both pointers are non-null. If no map is available, use signature-based scanning.
 - Other frame types: No GC roots to report.
 
-See [GCRefMap Format and Resolution](#gcrefmap-format-and-resolution) for the GCRefMap scanning path. The signature-based scanning fallback (`PromoteCallerStack`) is currently a stub awaiting an `ICallingConvention` contract port; the stress harness handles the resulting gaps via a deferred-frame sentinel (see [tests/StressTests/known-issues.md](../../../src/native/managed/cdac/tests/StressTests/known-issues.md) and tracking issue [dotnet/runtime#127765](https://github.com/dotnet/runtime/issues/127765)).
+See [GCRefMap Format and Resolution](#gcrefmap-format-and-resolution) for the GCRefMap scanning path. The signature-based scanning fallback (`PromoteCallerStack`) uses `CallingConvention.TryComputeArgGCRefMapBlob`. If the target data does not provide enough signature layout information, the frame is marked as deferred.
 
 #### GCFrame and Exception Tracker Roots
 
@@ -801,6 +809,14 @@ Both sets carry a non-zero, stack-resident `Source` and `StackPointer` set to th
 ### GCRefMap Format and Resolution
 
 A **GCRefMap** is a compact per-callsite encoding that describes which stack slots in a `TransitionBlock` contain GC references. GCRefMaps are pre-computed by the ReadyToRun compiler and stored in the PE image's import section auxiliary data.
+
+Lazy method-entry resolution can cache an import's map in the target's `MethodDescCodeData.GCRefMap`.
+The cached pointer remains valid because collectible modules do not participate in ReadyToRun.
+It describes the exact, non-wrapper method's incoming calling convention and can be reused by
+prestub and call-counting frames, including after code-version transitions. It must not be reused
+for dispatch frames, which can suppress a hidden instantiation argument. A cached map does not
+imply that the method's signature value types have been loaded for ABI lowering or signature-based
+scanning. If the field is absent or null, readers retain the signature-based fallback.
 
 The GCRefMap encoding format — including token values, bit encoding, lookup table structure, and per-architecture position semantics — is documented in the [ReadyToRun format specification](../coreclr/botr/readytorun-format.md#readytorun_import_sectionsauxiliarydata).
 
@@ -840,3 +856,29 @@ The x86 GCInfo decoder lives under the [GCInfo contract](GCInfo.md) at `src/nati
 The x86 architecture uses a custom unwinding algorithm defined in `gc_unwind_x86.inl`. The cDAC uses a copy of this algorithm ported to managed code in `X86Unwinder.cs`.
 
 Currently there isn't great documentation on the algorithm, beyond inspecting the implementations.
+
+## Version 2
+
+Version 2 supports `MethodDescCodeData.GCRefMap` for `PrestubMethodFrame` and
+`CallCountingHelperFrame`. The cached method-entry map supplies argument roots and, on x86,
+the stack-pop count without resolving the method signature. A missing code-data pointer or
+null map retains the signature-based path. Dispatch frames do not use this cached map because
+their hidden-instantiation-argument convention can differ.
+
+The runtime publishes Version 2 when ReadyToRun imports can leave signature layouts unloaded.
+An older reader must not apply Version 1's signature-only algorithm to such a target.
+The API surface and all other stack-walking algorithms are unchanged.
+
+<!-- BEGIN GENERATED: usage contract=StackWalk version=c2 diff-from=c1 -->
+### Data descriptor changes from `c1`
+
+_No changes._
+
+### Global variable changes from `c1`
+
+_No changes._
+
+### Contract dependency changes from `c1`
+
+_No changes._
+<!-- END GENERATED: usage contract=StackWalk version=c2 diff-from=c1 -->

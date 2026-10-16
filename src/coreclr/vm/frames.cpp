@@ -1491,6 +1491,21 @@ void ProtectValueClassFrame::GcScanRoots_Impl(promote_func *fn, ScanContext *sc)
 //
 //
 
+PTR_BYTE TransitionFrame::GetGCRefMapFromMethodDesc()
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    // Dispatch frames can suppress a hidden instantiation argument, unlike method-entry frames.
+    switch (GetFrameIdentifier())
+    {
+    case FrameIdentifier::PrestubMethodFrame:
+    case FrameIdentifier::CallCountingHelperFrame:
+        return GetFunction()->GetGCRefMap();
+    default:
+        return nullptr;
+    }
+}
+
 void TransitionFrame::PromoteCallerStack(promote_func* fn, ScanContext* sc)
 {
     WRAPPER_NO_CONTRACT;
@@ -1514,6 +1529,13 @@ void TransitionFrame::PromoteCallerStack(promote_func* fn, ScanContext* sc)
     pFunction = GetFunction();
     if (pFunction == NULL)
         return;
+
+    PTR_BYTE pGCRefMap = GetGCRefMapFromMethodDesc();
+    if (pGCRefMap != nullptr)
+    {
+        PromoteCallerStackUsingGCRefMap(fn, sc, pGCRefMap);
+        return;
+    }
 
     // Now get the signature...
     Signature callSignature = pFunction->GetSignature();

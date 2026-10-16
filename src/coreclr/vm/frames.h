@@ -908,6 +908,8 @@ public:
 #endif //defined (_DEBUG) && defined (DACCESS_COMPILE)
 
     // For use by classes deriving from FramedMethodFrame.
+    PTR_BYTE GetGCRefMapFromMethodDesc();
+
     void PromoteCallerStack(promote_func* fn, ScanContext* sc);
 
     void PromoteCallerStackHelper(promote_func* fn, ScanContext* sc,

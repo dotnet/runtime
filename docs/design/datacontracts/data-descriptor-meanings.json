@@ -378,6 +378,7 @@
     "MethodDescChunk.MethodTable": "The method table set of methods belongs to",
     "MethodDescChunk.Next": "The next chunk of methods",
     "MethodDescChunk.Size": "The size of this MethodDescChunk  following this MethodDescChunk header, minus 1. In multiples of MethodDescAlignment",
+    "MethodDescCodeData.GCRefMap": "Optional cached ReadyToRun method-entry GC reference map used by prestub and call-counting frames",
     "MethodDescCodeData.OptimizationTier": "Optimization tier of the method's current native code",
     "MethodDescCodeData.TemporaryEntryPoint": "Temporary code entry point used before the method has a stable entry point",
     "MethodDescCodeData.VersioningState": "The IL versioning state associated with a method descriptor",

@@ -941,8 +941,6 @@ MethodDesc *ZapSig::DecodeMethod(ModuleBase *pInfoModule,
     if (ppAfterSig != NULL)
         *ppAfterSig = sig.GetPtr();
 
-    pMethod->PrepareForUseAsADependencyOfANativeImage();
-
     return pMethod;
 }
 

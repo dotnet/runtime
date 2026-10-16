@@ -164,6 +164,17 @@ internal sealed class FrameHelpers
         return TargetPointer.Null;
     }
 
+    public TargetPointer GetGCRefMapFromMethodDesc(TargetPointer methodDescPtr)
+    {
+        if (methodDescPtr == TargetPointer.Null)
+            return TargetPointer.Null;
+
+        Data.MethodDesc methodDesc = _target.ProcessedData.GetOrAdd<Data.MethodDesc>(methodDescPtr);
+        return methodDesc.CodeData != TargetPointer.Null
+            ? _target.ProcessedData.GetOrAdd<Data.MethodDescCodeData>(methodDesc.CodeData).GCRefMap ?? TargetPointer.Null
+            : TargetPointer.Null;
+    }
+
     public TargetPointer GetMethodDescPtr(TargetPointer framePtr)
     {
         Data.Frame frame = _target.ProcessedData.GetOrAdd<Data.Frame>(framePtr);

@@ -615,6 +615,7 @@ static class RuntimeTypeSystem_1_Helpers
 | `MethodDescChunk` | `MethodTable` | `pointer` | The method table set of methods belongs to |
 | `MethodDescChunk` | `Next` | `pointer` | The next chunk of methods |
 | `MethodDescChunk` | `Size` | `uint8` | The size of this MethodDescChunk  following this MethodDescChunk header, minus 1. In multiples of MethodDescAlignment |
+| `MethodDescCodeData` | `GCRefMap` | `pointer` | Optional cached ReadyToRun method-entry GC reference map used by prestub and call-counting frames |
 | `MethodDescCodeData` | `OptimizationTier` | `uint32` | Optimization tier of the method's current native code |
 | `MethodDescCodeData` | `TemporaryEntryPoint` | `CodePointer` | Temporary code entry point used before the method has a stable entry point |
 | `MethodDescCodeData` | `VersioningState` | `pointer` | The IL versioning state associated with a method descriptor |

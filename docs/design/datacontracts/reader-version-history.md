@@ -26,3 +26,17 @@ Added support for discovering the interpreter JIT manager and enumerating its co
 This is an additive data-descriptor change. Version 1 readers ignore the new global and continue
 to enumerate EE JIT code heaps. Version 2 readers tolerate the interpreter global being absent and
 report no interpreter manager or interpreter code heaps in that case.
+
+## Version 3
+
+Added support for cached ReadyToRun argument maps on `MethodDescCodeData`:
+
+- Prestub and call-counting frames use `GCRefMap` for GC root enumeration when available.
+- On x86, these frames also use the cached map's stack-pop count when unwinding.
+- Readers retain signature-based scanning when no map is cached or the field is absent.
+
+Updating the reader is recommended because methods reached through ReadyToRun imports no longer
+need their signature value types loaded solely for these frame transitions.
+Such targets publish `StackWalk` version `c2`, so older readers cannot silently use the
+signature-only algorithm when signature layouts have not been loaded. Version 3 readers also
+support `c1` targets, where the cached-map field may be absent.
