@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
+
 namespace System.Numerics
 {
     /// <summary>Defines an integer type that is represented in a base-2 format.</summary>
@@ -398,6 +400,63 @@ namespace System.Numerics
                 ThrowHelper.ThrowOverflowException();
             }
             return value;
+        }
+
+        /// <summary>
+        /// Reverses the order of the bits in a number.
+        /// </summary>
+        /// <param name="value">The value whose bits are reversed.</param>
+        /// <returns>The result of reversing the bits of <paramref name="value" />.</returns>
+        static virtual TSelf ReverseBits(TSelf value)
+        {
+            if (!typeof(TSelf).IsValueType)
+            {
+                ArgumentNullException.ThrowIfNull(value);
+            }
+
+            const int StackallocThreshold = 256;
+
+            int byteCount = value!.GetByteCount();
+            byte[]? rented = null;
+            Span<byte> bytes = byteCount <= StackallocThreshold
+                ? stackalloc byte[StackallocThreshold]
+                : rented = ArrayPool<byte>.Shared.Rent(byteCount);
+            bytes = bytes.Slice(0, byteCount);
+
+            try
+            {
+                if (BitConverter.IsLittleEndian)
+                {
+                    value.WriteLittleEndian(bytes);
+                }
+                else
+                {
+                    value.WriteBigEndian(bytes);
+                }
+
+                foreach (ref byte b in bytes)
+                {
+                    b = byte.ReverseBits(b);
+                }
+
+                bool isUnsigned = !TSelf.IsNegative(TSelf.AllBitsSet);
+
+                if (BitConverter.IsLittleEndian)
+                {
+                    return TSelf.ReadBigEndian(bytes, isUnsigned);
+                }
+                else
+                {
+                    return TSelf.ReadLittleEndian(bytes, isUnsigned);
+                }
+            }
+            finally
+            {
+                if (rented is not null)
+                {
+                    ArrayPool<byte>.Shared.Return(rented);
+                }
+            }
         }
 
         /// <summary>Rotates a value left by a given amount.</summary>
