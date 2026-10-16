@@ -1143,6 +1143,7 @@ class SuperPMICollect:
                     # <dll to compile>                 /// one line per input assembly
                     # -o:<output dll>
                     # --composite                      /// composite mode only
+                    # -O                               /// composite mode only
                     # -u:"<reference_dir>\<other>.dll" /// composite mode only, for each unrooted input
                     # -r:<reference_dir>\System.*.dll
                     # -r:<reference_dir>\Microsoft.*.dll
@@ -1179,6 +1180,8 @@ class SuperPMICollect:
                             # bubble as -u unrooted composite inputs, contributing methods and
                             # generic instantiations as dependencies without independent rooting.
                             rsp_write_handle.write("--composite" + "\n")
+                            # Composite mode does not infer optimization from assembly attributes.
+                            rsp_write_handle.write("-O" + "\n")
                             # crossgen2 keys modules by assembly simple name, so exclude by
                             # simple name rather than file name: a rooted `Foo.exe` and a
                             # reference `Foo.dll` are the same module to it, and loading both
