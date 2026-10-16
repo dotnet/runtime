@@ -1164,7 +1164,7 @@ namespace Internal.JitInterface
                     yield return new InstructionSetInfo("fp16", "", InstructionSet.ARM64_Fp16, true);
                     yield return new InstructionSetInfo("sha1", "Sha1", InstructionSet.ARM64_Sha1, true);
                     yield return new InstructionSetInfo("sha2", "Sha256", InstructionSet.ARM64_Sha256, true);
-                    yield return new InstructionSetInfo("lse", "", InstructionSet.ARM64_Atomics, true);
+                    yield return new InstructionSetInfo("lse", "Lse", InstructionSet.ARM64_Atomics, true);
                     yield return new InstructionSetInfo("Vector64", "", InstructionSet.ARM64_Vector64, false);
                     yield return new InstructionSetInfo("Vector128", "", InstructionSet.ARM64_Vector128, false);
                     yield return new InstructionSetInfo("VectorT", "", InstructionSet.ARM64_VectorT, false);
@@ -1602,6 +1602,9 @@ namespace Internal.JitInterface
                                 return InstructionSet.ARM64_Sha256_Arm64;
                             else
                                 return InstructionSet.ARM64_Sha256;
+
+                        case "Lse":
+                            return InstructionSet.ARM64_Atomics;
 
                         case "Sve":
                             if (nestedTypeName == "Arm64")
@@ -2212,6 +2215,16 @@ namespace Internal.JitInterface
                                 yield return nestedType;
                             }
                         }
+                    }
+                }
+                break;
+
+                case (InstructionSet.ARM64_Atomics, TargetArchitecture.ARM64):
+                {
+                    var type = context.SystemModule.GetType("System.Runtime.Intrinsics.Arm"u8, "Lse"u8, false);
+                    if (type != null)
+                    {
+                        yield return type;
                     }
                 }
                 break;
