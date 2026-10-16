@@ -3,9 +3,11 @@
 
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 
+using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
 using Debug = System.Diagnostics.Debug;
@@ -30,10 +32,17 @@ namespace ILCompiler.DependencyAnalysis
 
             if (typeRef.ResolutionScope.Kind == HandleKind.AssemblyReference)
             {
-                // Resolve to an EcmaType to go through any forwarders.
-                var ecmaType = (EcmaType)_module.GetObject(Handle);
-                EcmaAssembly referencedAssembly = (EcmaAssembly)ecmaType.Module;
-                return factory.AssemblyReference(_module, referencedAssembly);
+                if (_module.GetObject(Handle, NotFoundBehavior.ReturnNull) is EcmaType ecmaType)
+                    return factory.AssemblyReference(_module, (EcmaAssembly)ecmaType.Module);
+
+                AssemblyReference assemblyReference = _module.MetadataReader.GetAssemblyReference((AssemblyReferenceHandle)typeRef.ResolutionScope);
+                AssemblyNameInfo referenceName = new AssemblyNameInfo(
+                    name: _module.MetadataReader.GetString(assemblyReference.Name),
+                    version: assemblyReference.Version,
+                    cultureName: _module.MetadataReader.GetString(assemblyReference.Culture),
+                    flags: (AssemblyNameFlags)assemblyReference.Flags,
+                    publicKeyOrToken: _module.MetadataReader.GetBlobContent(assemblyReference.PublicKeyOrToken));
+                return factory.AssemblyReference(_module, referenceName);
             }
             else
             {
@@ -48,9 +57,11 @@ namespace ILCompiler.DependencyAnalysis
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
-            yield return new(GetResolutionScopeNode(factory), "Resolution Scope of a type reference");
+            TokenWriterNode resolutionScopeNode = GetResolutionScopeNode(factory);
+            if (resolutionScopeNode is not null)
+                yield return new(resolutionScopeNode, "Resolution Scope of a type reference");
 
-            var typeDescObject = _module.GetObject(Handle);
+            var typeDescObject = _module.GetObject(Handle, NotFoundBehavior.ReturnNull);
             if (typeDescObject is EcmaType typeDef && factory.IsModuleTrimmed(typeDef.Module))
             {
                 yield return new(factory.TypeDefinition(typeDef.Module, typeDef.Handle), "Target of a type reference");
