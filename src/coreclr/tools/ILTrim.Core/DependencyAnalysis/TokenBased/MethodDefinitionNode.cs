@@ -80,7 +80,11 @@ namespace ILCompiler.DependencyAnalysis
 
                 EcmaMethod method = (EcmaMethod)_module.GetMethod(Handle);
 
-                if (method.Signature.ReturnType.GetTypeDefinition() is EcmaType ecmaReturnType)
+                TypeDesc returnType = method.Signature.ReturnType;
+                while (returnType is ParameterizedType parameterizedReturnType)
+                    returnType = parameterizedReturnType.ParameterType;
+
+                if (returnType.GetTypeDefinition() is EcmaType ecmaReturnType)
                 {
                     AddInteropFields(factory, dependencies, ecmaReturnType);
                     AddInteropAllocatedType(factory, dependencies, ecmaReturnType);
@@ -92,8 +96,8 @@ namespace ILCompiler.DependencyAnalysis
                 foreach (var parameter in method.Signature)
                 {
                     TypeDesc parameterType = parameter;
-                    if (parameterType is ByRefType byRefParameterType)
-                        parameterType = byRefParameterType.ParameterType;
+                    while (parameterType is ParameterizedType parameterizedParameterType)
+                        parameterType = parameterizedParameterType.ParameterType;
 
                     if (parameterType.GetTypeDefinition() is EcmaType ecmaParameterType)
                     {
