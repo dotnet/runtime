@@ -1887,7 +1887,7 @@ namespace System.Net.Security.Tests
                     : peer.AuthenticateAsServerAsync(new SslServerAuthenticationOptions
                     {
                         ServerCertificateContext = peerCertificateContext,
-                        ClientCertificateRequired = true,
+                        ClientCertificateRequired = false,
                         EnabledSslProtocols = SslProtocols.Tls12,
                         AllowTlsResume = false,
                     });
