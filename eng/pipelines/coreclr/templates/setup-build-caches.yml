@@ -26,7 +26,6 @@ steps:
     # configurations without competing for the same immutable cache key.
     # Roslyn's own deterministic key accounts for legs that override the
     # matrix configuration in their build arguments.
-    # Start a new cache generation so unpruned snapshots are not restored.
     - task: Cache@2
       displayName: Roslyn compiler cache
       continueOnError: true
