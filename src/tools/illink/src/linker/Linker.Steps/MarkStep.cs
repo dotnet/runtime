@@ -2031,12 +2031,8 @@ namespace Mono.Linker.Steps
             _typeMapHandler.ProcessType(type);
             Annotations.MarkRelevantToVariantCasting(type);
 
-            TypeDefinition? baseType = Context.TryResolve(type.BaseType);
-            while (baseType is not null && !Annotations.IsRelevantToVariantCasting(baseType))
-            {
-                Annotations.MarkRelevantToVariantCasting(baseType);
-                baseType = Context.TryResolve(baseType.BaseType);
-            }
+            if (Context.TryResolve(type.BaseType) is TypeDefinition baseType && !Annotations.IsRelevantToVariantCasting(baseType))
+                MarkRelevantToVariantCasting(baseType);
         }
 
         internal void MarkMethodVisibleToReflection(MethodReference method, in DependencyInfo reason, in MessageOrigin origin, bool suppressTrimAnalysisWarnings = false)
