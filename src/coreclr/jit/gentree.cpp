@@ -22152,8 +22152,14 @@ void GenTreeArrAddr::ParseArrayAddress(Compiler* comp, GenTree** pArr, ValueNum*
     target_ssize_t elemSize         = static_cast<target_ssize_t>(elemSizeUn);
     target_ssize_t constIndexOffset = offset - firstElemOffset;
 
-    // This should be divisible by the element size...
-    assert((constIndexOffset % elemSize) == 0);
+    // The offset was accumulated with wrapping arithmetic, e.g. (x + C) * 3 becomes x * 3 + 3C where 3C may wrap
+    // to a value that isn't a multiple of the element size. We can't recover the constant index then, give up.
+    if ((constIndexOffset % elemSize) != 0)
+    {
+        *pArr = nullptr;
+        return;
+    }
+
     target_ssize_t constIndex = constIndexOffset / elemSize;
 
     ValueNumStore* vnStore = comp->GetValueNumStore();
