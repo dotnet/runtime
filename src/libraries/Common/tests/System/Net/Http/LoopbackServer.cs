@@ -857,6 +857,8 @@ namespace System.Net.Test.Common
                 else if (_contentLength < 0)
                 {
                     // Chunked Encoding
+                    const int ArrayMaxLength = 0X7FFFFFC7; // same as Array.MaxLength
+                    int length = 0;
                     while (true)
                     {
                         string chunkHeader = await ReadLineAsync().ConfigureAwait(false);
@@ -871,18 +873,26 @@ namespace System.Net.Test.Common
                         byte[] chunk = new byte[chunkLength];
                         await ReadBlockAsync(chunk, 0, chunkLength).ConfigureAwait(false);
                         await ReadLineAsync().ConfigureAwait(false);
-                        if (buffer == null)
+                        int newLength = checked(length + chunkLength);
+                        if (buffer is null)
                         {
                             buffer = chunk;
                         }
                         else
                         {
-                            byte[] newBuffer = new byte[buffer.Length + chunkLength];
+                            if (newLength > buffer.Length)
+                            {
+                                Array.Resize(ref buffer, Math.Max(newLength, (int)Math.Min((long)buffer.Length * 2, ArrayMaxLength)));
+                            }
 
-                            buffer.CopyTo(newBuffer, 0);
-                            chunk.CopyTo(newBuffer, buffer.Length);
-                            buffer = newBuffer;
+                            chunk.CopyTo(buffer, length);
                         }
+                        length = newLength;
+                    }
+
+                    if (buffer is not null)
+                    {
+                        Array.Resize(ref buffer, length);
                     }
                 }
 
