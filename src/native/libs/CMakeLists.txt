@@ -161,6 +161,10 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
         add_subdirectory(System.Security.Cryptography.Native.Apple)
     elseif (CLR_CMAKE_TARGET_ANDROID AND NOT FORCE_ANDROID_OPENSSL)
         add_subdirectory(System.Security.Cryptography.Native.Android)
+    elseif (CLR_CMAKE_TARGET_OPENHARMONY)
+        # OpenHarmony has no krb5/gssapi in its sysroot, so skip System.Net.Security.Native.
+        # Cryptography uses the OpenSSL built for OpenHarmony (passed via OPENSSL_* cache vars).
+        add_subdirectory(System.Security.Cryptography.Native)
     elseif (FORCE_ANDROID_OPENSSL)
         add_subdirectory(System.Security.Cryptography.Native)
     else ()
