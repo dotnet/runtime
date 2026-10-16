@@ -1182,9 +1182,7 @@ namespace ILCompiler
                             ThrowHelper.ThrowInvalidProgramException();
                         }
 
-                        ILOpcode normalizedOpcode = opcode >= ILOpcode.br ?
-                            opcode - ILOpcode.br + ILOpcode.br_s :
-                            opcode;
+                        ILOpcode normalizedOpcode = ILScalarSemantics.NormalizeBranch(opcode);
 
                         bool branchTaken;
                         if (normalizedOpcode == ILOpcode.brtrue_s || normalizedOpcode == ILOpcode.brfalse_s)
@@ -1213,54 +1211,15 @@ namespace ILCompiler
 
                             if (value1.ValueKind.WithNormalizedNativeInt(context) == StackValueKind.Int32 && value2.ValueKind.WithNormalizedNativeInt(context) == StackValueKind.Int32)
                             {
-                                branchTaken = normalizedOpcode switch
-                                {
-                                    ILOpcode.blt_s => value1.Value.AsInt32() < value2.Value.AsInt32(),
-                                    ILOpcode.blt_un_s => (uint)value1.Value.AsInt32() < (uint)value2.Value.AsInt32(),
-                                    ILOpcode.bgt_s => value1.Value.AsInt32() > value2.Value.AsInt32(),
-                                    ILOpcode.bgt_un_s => (uint)value1.Value.AsInt32() > (uint)value2.Value.AsInt32(),
-                                    ILOpcode.bge_s => value1.Value.AsInt32() >= value2.Value.AsInt32(),
-                                    ILOpcode.bge_un_s => (uint)value1.Value.AsInt32() >= (uint)value2.Value.AsInt32(),
-                                    ILOpcode.beq_s => value1.Value.AsInt32() == value2.Value.AsInt32(),
-                                    ILOpcode.bne_un_s => value1.Value.AsInt32() != value2.Value.AsInt32(),
-                                    ILOpcode.ble_s => value1.Value.AsInt32() <= value2.Value.AsInt32(),
-                                    ILOpcode.ble_un_s => (uint)value1.Value.AsInt32() <= (uint)value2.Value.AsInt32(),
-                                    _ => throw new NotImplementedException() // unreachable
-                                };
+                                branchTaken = ILScalarSemantics.Compare(normalizedOpcode, 32, (uint)value1.Value.AsInt32(), (uint)value2.Value.AsInt32());
                             }
                             else if (value1.ValueKind.WithNormalizedNativeInt(context) == StackValueKind.Int64 && value2.ValueKind.WithNormalizedNativeInt(context) == StackValueKind.Int64)
                             {
-                                branchTaken = normalizedOpcode switch
-                                {
-                                    ILOpcode.blt_s => value1.Value.AsInt64() < value2.Value.AsInt64(),
-                                    ILOpcode.blt_un_s => (ulong)value1.Value.AsInt64() < (ulong)value2.Value.AsInt64(),
-                                    ILOpcode.bgt_s => value1.Value.AsInt64() > value2.Value.AsInt64(),
-                                    ILOpcode.bgt_un_s => (ulong)value1.Value.AsInt64() > (ulong)value2.Value.AsInt64(),
-                                    ILOpcode.bge_s => value1.Value.AsInt64() >= value2.Value.AsInt64(),
-                                    ILOpcode.bge_un_s => (ulong)value1.Value.AsInt64() >= (ulong)value2.Value.AsInt64(),
-                                    ILOpcode.beq_s => value1.Value.AsInt64() == value2.Value.AsInt64(),
-                                    ILOpcode.bne_un_s => value1.Value.AsInt64() != value2.Value.AsInt64(),
-                                    ILOpcode.ble_s => value1.Value.AsInt64() <= value2.Value.AsInt64(),
-                                    ILOpcode.ble_un_s => (ulong)value1.Value.AsInt64() <= (ulong)value2.Value.AsInt64(),
-                                    _ => throw new NotImplementedException() // unreachable
-                                };
+                                branchTaken = ILScalarSemantics.Compare(normalizedOpcode, 64, (ulong)value1.Value.AsInt64(), (ulong)value2.Value.AsInt64());
                             }
                             else if (value1.ValueKind == StackValueKind.Float && value2.ValueKind == StackValueKind.Float)
                             {
-                                branchTaken = normalizedOpcode switch
-                                {
-                                    ILOpcode.blt_s => value1.Value.AsDouble() < value2.Value.AsDouble(),
-                                    ILOpcode.blt_un_s => !(value1.Value.AsDouble() >= value2.Value.AsDouble()),
-                                    ILOpcode.bgt_s => value1.Value.AsDouble() > value2.Value.AsDouble(),
-                                    ILOpcode.bgt_un_s => !(value1.Value.AsDouble() <= value2.Value.AsDouble()),
-                                    ILOpcode.bge_s => value1.Value.AsDouble() >= value2.Value.AsDouble(),
-                                    ILOpcode.bge_un_s => !(value1.Value.AsDouble() < value2.Value.AsDouble()),
-                                    ILOpcode.beq_s => value1.Value.AsDouble() == value2.Value.AsDouble(),
-                                    ILOpcode.bne_un_s => value1.Value.AsDouble() != value2.Value.AsDouble(),
-                                    ILOpcode.ble_s => value1.Value.AsDouble() <= value2.Value.AsDouble(),
-                                    ILOpcode.ble_un_s => !(value1.Value.AsDouble() > value2.Value.AsDouble()),
-                                    _ => throw new NotImplementedException() // unreachable
-                                };
+                                branchTaken = ILScalarSemantics.Compare(normalizedOpcode, value1.Value.AsDouble(), value2.Value.AsDouble());
                             }
                             else
                             {
@@ -1459,21 +1418,10 @@ namespace ILCompiler
                                 && value1.Value.AsInt32() == int.MinValue && value2.Value.AsInt32() == -1)
                                 return Status.Fail(methodIL.OwningMethod, opcode, "Overflow");
 
-                            int result = opcode switch
-                            {
-                                ILOpcode.or => value1.Value.AsInt32() | value2.Value.AsInt32(),
-                                ILOpcode.shl => value1.Value.AsInt32() << value2.Value.AsInt32(),
-                                ILOpcode.add => value1.Value.AsInt32() + value2.Value.AsInt32(),
-                                ILOpcode.sub => value1.Value.AsInt32() - value2.Value.AsInt32(),
-                                ILOpcode.and => value1.Value.AsInt32() & value2.Value.AsInt32(),
-                                ILOpcode.mul => value1.Value.AsInt32() * value2.Value.AsInt32(),
-                                ILOpcode.div => value1.Value.AsInt32() / value2.Value.AsInt32(),
-                                ILOpcode.div_un => (int)((uint)value1.Value.AsInt32() / (uint)value2.Value.AsInt32()),
-                                ILOpcode.rem => value1.Value.AsInt32() % value2.Value.AsInt32(),
-                                ILOpcode.rem_un => (int)((uint)value1.Value.AsInt32() % (uint)value2.Value.AsInt32()),
-                                _ => throw new NotImplementedException(), // unreachable
-                            };
+                            if (!ILScalarSemantics.TryBinary(opcode, 32, (uint)value1.Value.AsInt32(), (uint)value2.Value.AsInt32(), out ulong resultBits))
+                                return Status.Fail(methodIL.OwningMethod, opcode);
 
+                            int result = unchecked((int)resultBits);
                             stack.Push(isNint ? StackValueKind.NativeInt : StackValueKind.Int32, ValueTypeValue.FromInt32(result));
                         }
                         else if (value1.ValueKind.WithNormalizedNativeInt(context) == StackValueKind.Int64 && value2.ValueKind.WithNormalizedNativeInt(context) == StackValueKind.Int64)
@@ -1485,21 +1433,10 @@ namespace ILCompiler
                                 && value1.Value.AsInt64() == long.MinValue && value2.Value.AsInt64() == -1)
                                 return Status.Fail(methodIL.OwningMethod, opcode, "Overflow");
 
-                            long result = opcode switch
-                            {
-                                ILOpcode.or => value1.Value.AsInt64() | value2.Value.AsInt64(),
-                                ILOpcode.shl => value1.Value.AsInt64() << (int)value2.Value.AsInt64(),
-                                ILOpcode.add => value1.Value.AsInt64() + value2.Value.AsInt64(),
-                                ILOpcode.sub => value1.Value.AsInt64() - value2.Value.AsInt64(),
-                                ILOpcode.and => value1.Value.AsInt64() & value2.Value.AsInt64(),
-                                ILOpcode.mul => value1.Value.AsInt64() * value2.Value.AsInt64(),
-                                ILOpcode.div => value1.Value.AsInt64() / value2.Value.AsInt64(),
-                                ILOpcode.div_un => (long)((ulong)value1.Value.AsInt64() / (ulong)value2.Value.AsInt64()),
-                                ILOpcode.rem => value1.Value.AsInt64() % value2.Value.AsInt64(),
-                                ILOpcode.rem_un => (long)((ulong)value1.Value.AsInt64() % (ulong)value2.Value.AsInt64()),
-                                _ => throw new NotImplementedException(), // unreachable
-                            };
+                            if (!ILScalarSemantics.TryBinary(opcode, 64, (ulong)value1.Value.AsInt64(), (ulong)value2.Value.AsInt64(), out ulong resultBits))
+                                return Status.Fail(methodIL.OwningMethod, opcode);
 
+                            long result = unchecked((long)resultBits);
                             stack.Push(isNint ? StackValueKind.NativeInt : StackValueKind.Int64, ValueTypeValue.FromInt64(result));
                         }
                         else if (value1.ValueKind == StackValueKind.Float && value2.ValueKind == StackValueKind.Float)

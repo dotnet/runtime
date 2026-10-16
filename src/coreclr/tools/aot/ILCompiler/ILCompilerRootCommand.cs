@@ -20,6 +20,8 @@ namespace ILCompiler
             new("--reference", "-r") { CustomParser = result => Helpers.BuildPathDictionary(result.Tokens, false), DefaultValueFactory = result => Helpers.BuildPathDictionary(result.Tokens, false), Description = "Reference file(s) for compilation" };
         public Option<string> OutputFilePath { get; } =
             new("--out", "-o") { Description = "Output file path" };
+        public Option<bool> LlvmLto { get; } =
+            new("--llvm-lto") { Description = "Write optimization-only LLVM IR for LTO" };
         public Option<bool> Optimize { get; } =
             new("--optimize", "-O") { Description = "Enable optimizations" };
         public Option<bool> OptimizeSpace { get; } =
@@ -194,6 +196,7 @@ namespace ILCompiler
             Arguments.Add(InputFilePaths);
             Options.Add(ReferenceFiles);
             Options.Add(OutputFilePath);
+            Options.Add(LlvmLto);
             Options.Add(Optimize);
             Options.Add(OptimizeSpace);
             Options.Add(OptimizeTime);
