@@ -264,7 +264,7 @@
   <data name="InitOnly" xml:space="preserve">
     <value>Cannot change initonly field outside its .ctor.</value>
   </data>
-  <data name="LdftnConstructor" xml:space="preserve">
+  <data name="LdftnCtor" xml:space="preserve">
     <value>ldftn/ldvirtftn not allowed on .ctor.</value>
   </data>
   <data name="LdftnNonFinalVirtual" xml:space="preserve">
@@ -408,6 +408,9 @@
   <data name="TailRetVoid" xml:space="preserve">
     <value>Void ret type expected for tail call.</value>
   </data>
+  <data name="TailStackEmpty" xml:space="preserve">
+    <value>Stack not empty after tail call.</value>
+  </data>
   <data name="ThisMismatch" xml:space="preserve">
     <value>The 'this' parameter to the call must be the calling method's 'this' parameter.</value>
   </data>
@@ -428,6 +431,9 @@
   </data>
   <data name="Unaligned" xml:space="preserve">
     <value>Missing ldind, stind, ldfld, stfld, ldobj, stobj, initblk, cpblk.</value>
+  </data>
+  <data name="UnalignedAlignment" xml:space="preserve">
+    <value>Alignment specified for 'unaligned.' must be 1, 2, or 4.</value>
   </data>
   <data name="UninitStack" xml:space="preserve">
     <value>Uninitialized item on stack.</value>

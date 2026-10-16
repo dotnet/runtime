@@ -2779,6 +2779,7 @@ namespace Internal.IL
 
         void ImportUnalignedPrefix(byte alignment)
         {
+            Check(alignment is 1 or 2 or 4, VerifierError.UnalignedAlignment);
             CheckPendingPrefix(_pendingPrefix & ~Prefix.Volatile);
             _pendingPrefix |= Prefix.Unaligned;
         }

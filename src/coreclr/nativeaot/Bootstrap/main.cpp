@@ -150,16 +150,22 @@ MANAGED_RUNTIME_EXPORT(ObjectiveCMarshalGetUnhandledExceptionPropagationHandler)
 
 typedef void (MANAGED_RUNTIME_EXPORT_CALLCONV *pfn)();
 
+#ifdef FEATURE_MULTITHREADING
 #if defined(_WIN32)
 extern "C" int ThreadEntryPoint(void* pContext);
 #else
 extern "C" size_t ThreadEntryPoint(void* pContext);
 #endif
+#endif // FEATURE_MULTITHREADING
 
 static const pfn c_classlibFunctions[] = {
     &MANAGED_RUNTIME_EXPORT_NAME(GetRuntimeException),
     &MANAGED_RUNTIME_EXPORT_NAME(RuntimeFailFast),
+#ifdef FEATURE_MULTITHREADING
     (pfn)&ThreadEntryPoint,
+#else
+    nullptr,
+#endif
     &MANAGED_RUNTIME_EXPORT_NAME(AppendExceptionStackFrame),
     &MANAGED_RUNTIME_EXPORT_NAME(ResolveDispatch),
     &MANAGED_RUNTIME_EXPORT_NAME(GetSystemArrayEEType),
