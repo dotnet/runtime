@@ -1440,23 +1440,23 @@ FCIMPL1(void, RhpReversePInvokeReturn, ReversePInvokeFrame * pFrame)
 }
 FCIMPLEND
 
-#ifdef FEATURE_PORTABLE_HELPERS
+#if defined(FEATURE_PORTABLE_HELPERS) && !defined(HOST_WASM)
 
-FCIMPL1(void, RhpPInvoke2, PInvokeTransitionFrame* pFrame)
+FCIMPL1(void, RhpPInvoke, PInvokeTransitionFrame* pFrame)
 {
     Thread * pCurThread = ThreadStore::RawGetCurrentThread();
     pCurThread->InlinePInvoke(pFrame);
 }
 FCIMPLEND
 
-FCIMPL1(void, RhpPInvokeReturn2, PInvokeTransitionFrame* pFrame)
+FCIMPL1(void, RhpPInvokeReturn, PInvokeTransitionFrame* pFrame)
 {
     //reenter cooperative mode
     pFrame->m_pThread->InlinePInvokeReturn(pFrame);
 }
 FCIMPLEND
 
-#endif //FEATURE_PORTABLE_HELPERS
+#endif // FEATURE_PORTABLE_HELPERS && !HOST_WASM
 
 #endif // !DACCESS_COMPILE
 
