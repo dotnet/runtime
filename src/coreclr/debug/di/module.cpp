@@ -3358,14 +3358,16 @@ HRESULT CordbReJitILCode::Init(DacSharedReJitInfo* pSharedReJitInfo)
         // Read in the section header to see how many small clauses there are
         IMAGE_COR_ILMETHOD_SECT_SMALL sectionHeader = { 0 };
         IfFailRet(GetProcess()->SafeReadStruct(ehClauseHeader, &sectionHeader));
-        ULONG32 m_cClauses = (sectionHeader.DataSize - 4) / sizeof(IMAGE_COR_ILMETHOD_SECT_SMALL);
+        // The small clauses start after the 2 byte section header and a 2 byte Reserved field
+        const ULONG32 cbSmallSectionHeader = offsetof(IMAGE_COR_ILMETHOD_SECT_EH_SMALL, Clauses);
+        m_cClauses = (sectionHeader.DataSize - cbSmallSectionHeader) / sizeof(IMAGE_COR_ILMETHOD_SECT_EH_CLAUSE_SMALL);
         if (m_cClauses > 10000) // sanity check the data before allocating
         {
             return CORDBG_E_TARGET_INCONSISTENT;
         }
 
         // Read in the clauses
-        TargetBuffer buffer(ehClauseHeader + sizeof(IMAGE_COR_ILMETHOD_SECT_SMALL), m_cClauses*sizeof(IMAGE_COR_ILMETHOD_SECT_EH_CLAUSE_SMALL));
+        TargetBuffer buffer(ehClauseHeader + cbSmallSectionHeader, m_cClauses*sizeof(IMAGE_COR_ILMETHOD_SECT_EH_CLAUSE_SMALL));
         NewArrayHolder<IMAGE_COR_ILMETHOD_SECT_EH_CLAUSE_SMALL> pClauses = new (nothrow)IMAGE_COR_ILMETHOD_SECT_EH_CLAUSE_SMALL[m_cClauses];
         if (pClauses == NULL)
             return E_OUTOFMEMORY;
