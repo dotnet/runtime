@@ -114,13 +114,12 @@ namespace System.Data.Common
         public bool ConvertValueToBoolean(string keyName, bool defaultValue)
         {
             string? value;
-            // TODO: Is it possible for _parsetable to contain a null value here? If so there's a bug here, investigate.
             return _parsetable.TryGetValue(keyName, out value) ?
-                ConvertValueToBooleanInternal(keyName, value!) :
+                ConvertValueToBooleanInternal(keyName, value) :
                 defaultValue;
         }
 
-        internal static bool ConvertValueToBooleanInternal(string keyName, string stringValue)
+        internal static bool ConvertValueToBooleanInternal(string keyName, string? stringValue)
         {
             if (CompareInsensitiveInvariant(stringValue, "true") || CompareInsensitiveInvariant(stringValue, "yes"))
                 return true;
@@ -128,7 +127,7 @@ namespace System.Data.Common
                 return false;
             else
             {
-                string tmp = stringValue.Trim();  // Remove leading & trailing whitespace.
+                string? tmp = stringValue?.Trim();  // Remove leading & trailing whitespace.
                 if (CompareInsensitiveInvariant(tmp, "true") || CompareInsensitiveInvariant(tmp, "yes"))
                     return true;
                 else if (CompareInsensitiveInvariant(tmp, "false") || CompareInsensitiveInvariant(tmp, "no"))
@@ -140,7 +139,7 @@ namespace System.Data.Common
             }
         }
 
-        private static bool CompareInsensitiveInvariant(string strvalue, string strconst) =>
+        private static bool CompareInsensitiveInvariant(string? strvalue, string strconst) =>
             (0 == StringComparer.OrdinalIgnoreCase.Compare(strvalue, strconst));
 
         [System.Diagnostics.Conditional("DEBUG")]
