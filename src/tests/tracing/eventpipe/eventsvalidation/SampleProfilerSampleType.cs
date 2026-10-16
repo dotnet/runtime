@@ -119,8 +119,7 @@ namespace Tracing.Tests.SampleProfilerSampleType
                     void AddMethod(MethodLoadUnloadVerboseTraceData data)
                     {
                         bool isPollingMethod = data.MethodNamespace == "System.Threading.Thread" &&
-                            (data.MethodName is "PollGC" or "PollGCWorker" ||
-                                data.MethodName.StartsWith("<PollGC>g__PollGCWorker|", StringComparison.Ordinal));
+                            data.MethodName is "PollGC" or "PollGCWorker";
                         bool isWorkloadMethod = data.MethodNamespace == typeof(SampleProfilerSampleType).FullName &&
                             data.MethodName == nameof(PollGCWorker);
                         if (isPollingMethod || isWorkloadMethod)
