@@ -60,10 +60,10 @@ namespace System.IO.Compression
         {
             Assert.Throws<ArgumentOutOfRangeException>("window", () => new BrotliEncoder(10, -1));
             Assert.Throws<ArgumentOutOfRangeException>("window", () => new BrotliEncoder(10, 9));
-            Assert.Throws<ArgumentOutOfRangeException>("window", () => new BrotliEncoder(10, 31));
+            Assert.Throws<ArgumentOutOfRangeException>("window", () => new BrotliEncoder(10, 25));
             Assert.Throws<ArgumentOutOfRangeException>("window", () => BrotliEncoder.TryCompress(new ReadOnlySpan<byte>(), new Span<byte>(), out int bytesWritten, 6, -1));
             Assert.Throws<ArgumentOutOfRangeException>("window", () => BrotliEncoder.TryCompress(new ReadOnlySpan<byte>(), new Span<byte>(), out int bytesWritten, 6, 9));
-            Assert.Throws<ArgumentOutOfRangeException>("window", () => BrotliEncoder.TryCompress(new ReadOnlySpan<byte>(), new Span<byte>(), out int bytesWritten, 6, 31));
+            Assert.Throws<ArgumentOutOfRangeException>("window", () => BrotliEncoder.TryCompress(new ReadOnlySpan<byte>(), new Span<byte>(), out int bytesWritten, 6, 25));
         }
 
         [Fact]
@@ -107,7 +107,7 @@ namespace System.IO.Compression
             Assert.Equal(22, options.WindowLog2); // default value
             Assert.Throws<ArgumentOutOfRangeException>("value", () => options.WindowLog2 = -1);
             Assert.Throws<ArgumentOutOfRangeException>("value", () => options.WindowLog2 = 9);
-            Assert.Throws<ArgumentOutOfRangeException>("value", () => options.WindowLog2 = 31);
+            Assert.Throws<ArgumentOutOfRangeException>("value", () => options.WindowLog2 = 25);
         }
 
         [Theory]
