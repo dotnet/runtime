@@ -5,6 +5,7 @@
 #include "common.h"
 
 #include "syncclean.hpp"
+#include "threadstatics.h"
 #include "virtualcallstub.h"
 #include "threadsuspend.h"
 
@@ -23,6 +24,8 @@ void SyncClean::CleanUp()
 
     // Give others we want to reclaim during the GC sync point a chance to do it
     VirtualCallStubManager::ReclaimAll();
+
+    CleanupRetiredTLSIndices();
 
 #ifdef FEATURE_INTERPRETER
     // Reclaim dead interpreter dispatch cache entries
