@@ -131,7 +131,8 @@ namespace System.Data
                 if (isLeft && isRight)
                     return;
 
-                ExpressionNode e = isLeft ? expr._right : expr._left;
+                // If neither operand was analyzed, keep the whole node so that both of them are evaluated.
+                ExpressionNode e = isLeft ? expr._right : isRight ? expr._left : expr;
                 _linearExpression = (_linearExpression == null ? e : new BinaryNode(_table, Operators.And, e, _linearExpression));
                 return;
             }
