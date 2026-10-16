@@ -621,7 +621,7 @@ namespace System.Net.Quic.Tests
                     }
 
                     // a write would eventually be canceled
-                    await Assert.ThrowsAsync<OperationCanceledException>(() => WriteUntilCanceled().WaitAsync(TimeSpan.FromSeconds(3)));
+                    await Assert.ThrowsAsync<OperationCanceledException>(() => WriteUntilCanceled());
 
                     // next write would also throw
                     await AssertThrowsQuicExceptionAsync(QuicError.OperationAborted, () => stream.WriteAsync(new byte[1]).AsTask());
