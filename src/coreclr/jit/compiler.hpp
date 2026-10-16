@@ -3319,6 +3319,16 @@ inline bool Compiler::IsPotentialGCSafePoint(GenTree* tree) const
         }
     }
 
+#ifdef TARGET_WASM
+    // Wasm has no hardware exceptions, so a tree that may throw becomes a call to a throw helper.
+    // Wasm also reports every GC slot on the frame for the whole method, including while the
+    // exception is dispatched, so such a tree is a gc safe point for all of them.
+    if ((tree->gtFlags & GTF_EXCEPT) != 0)
+    {
+        return true;
+    }
+#endif // TARGET_WASM
+
     // TYP_STRUCT-typed stores might be converted into calls (with gc safe points) in Lower.
     // This is quite a conservative fix as it's hard to prove Lower won't do it at this point.
     if (tree->OperIsLocalStore())
