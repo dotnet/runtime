@@ -70,7 +70,7 @@ namespace System.Threading.Tests
             s.CheckedWait();
 
             s = new Semaphore(0, 2);
-            Assert.False(s.WaitOne(ThreadTestHelpers.ExpectedTimeoutMilliseconds));
+            ThreadTestHelpers.AssertWaitTimeout(() => s.WaitOne(ThreadTestHelpers.ExpectedTimeoutMilliseconds));
         }
 
         [Fact]
@@ -147,7 +147,7 @@ namespace System.Threading.Tests
             ss[1].Release();
             ss[2].Release();
             Assert.False(WaitHandle.WaitAll(ss, 0));
-            Assert.False(WaitHandle.WaitAll(ss, ThreadTestHelpers.ExpectedTimeoutMilliseconds));
+            ThreadTestHelpers.AssertWaitTimeout(() => WaitHandle.WaitAll(ss, ThreadTestHelpers.ExpectedTimeoutMilliseconds));
             for (int i = 0; i < ss.Length; ++i)
             {
                 Assert.Equal(i == 1 || i == 2, ss[i].WaitOne(0));
@@ -166,9 +166,9 @@ namespace System.Threading.Tests
                     new Semaphore(0, 1)
                 };
             Assert.Equal(WaitHandle.WaitTimeout, WaitHandle.WaitAny(ss, 0));
-            Assert.Equal(WaitHandle.WaitTimeout, WaitHandle.WaitAny(ss, ThreadTestHelpers.ExpectedTimeoutMilliseconds));
+            ThreadTestHelpers.AssertWaitTimeout(() => WaitHandle.WaitAny(ss, ThreadTestHelpers.ExpectedTimeoutMilliseconds));
             Assert.False(WaitHandle.WaitAll(ss, 0));
-            Assert.False(WaitHandle.WaitAll(ss, ThreadTestHelpers.ExpectedTimeoutMilliseconds));
+            ThreadTestHelpers.AssertWaitTimeout(() => WaitHandle.WaitAll(ss, ThreadTestHelpers.ExpectedTimeoutMilliseconds));
             for (int i = 0; i < ss.Length; ++i)
             {
                 Assert.False(ss[i].WaitOne(0));

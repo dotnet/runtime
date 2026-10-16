@@ -93,21 +93,21 @@ namespace System.Threading.Tests
             using (EventWaitHandle are = new EventWaitHandle(false, EventResetMode.AutoReset))
             {
                 Assert.False(are.WaitOne(0));
-                Assert.False(are.WaitOne(ThreadTestHelpers.ExpectedTimeoutMilliseconds));
+                ThreadTestHelpers.AssertWaitTimeout(() => are.WaitOne(ThreadTestHelpers.ExpectedTimeoutMilliseconds));
                 are.Set();
                 Assert.True(are.WaitOne(0));
                 Assert.False(are.WaitOne(0));
-                Assert.False(are.WaitOne(ThreadTestHelpers.ExpectedTimeoutMilliseconds));
+                ThreadTestHelpers.AssertWaitTimeout(() => are.WaitOne(ThreadTestHelpers.ExpectedTimeoutMilliseconds));
                 are.Set();
                 are.Reset();
                 Assert.False(are.WaitOne(0));
-                Assert.False(are.WaitOne(ThreadTestHelpers.ExpectedTimeoutMilliseconds));
+                ThreadTestHelpers.AssertWaitTimeout(() => are.WaitOne(ThreadTestHelpers.ExpectedTimeoutMilliseconds));
             }
 
             using (EventWaitHandle mre = new EventWaitHandle(false, EventResetMode.ManualReset))
             {
                 Assert.False(mre.WaitOne(0));
-                Assert.False(mre.WaitOne(ThreadTestHelpers.ExpectedTimeoutMilliseconds));
+                ThreadTestHelpers.AssertWaitTimeout(() => mre.WaitOne(ThreadTestHelpers.ExpectedTimeoutMilliseconds));
                 mre.Set();
                 Assert.True(mre.WaitOne(0));
                 Assert.True(mre.WaitOne(0));
@@ -115,7 +115,7 @@ namespace System.Threading.Tests
                 Assert.True(mre.WaitOne(0));
                 mre.Reset();
                 Assert.False(mre.WaitOne(0));
-                Assert.False(mre.WaitOne(ThreadTestHelpers.ExpectedTimeoutMilliseconds));
+                ThreadTestHelpers.AssertWaitTimeout(() => mre.WaitOne(ThreadTestHelpers.ExpectedTimeoutMilliseconds));
             }
         }
 

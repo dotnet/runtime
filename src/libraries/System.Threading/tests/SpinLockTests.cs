@@ -12,6 +12,107 @@ namespace System.Threading.Tests
     /// </summary>
     public class SpinLockTests
     {
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void EnterExitWithoutOtherThreads(bool trackOwner)
+        {
+            SpinLock spinLock = new(trackOwner);
+            for (int i = 0; i < 3; i++)
+            {
+                Assert.False(spinLock.IsHeld);
+                bool taken = false;
+                spinLock.Enter(ref taken);
+                Assert.True(taken);
+                Assert.True(spinLock.IsHeld);
+
+                bool secondTaken = false;
+                if (trackOwner)
+                {
+                    Assert.True(spinLock.IsHeldByCurrentThread);
+                    Assert.Throws<LockRecursionException>(() => spinLock.TryEnter(ref secondTaken));
+                }
+                else
+                {
+                    Assert.Throws<InvalidOperationException>(() => spinLock.IsHeldByCurrentThread);
+                    spinLock.TryEnter(ref secondTaken);
+                }
+                Assert.False(secondTaken);
+
+                switch (i)
+                {
+                    case 0: spinLock.Exit(); break;
+                    case 1: spinLock.Exit(useMemoryBarrier: false); break;
+                    case 2: spinLock.Exit(useMemoryBarrier: true); break;
+                }
+                Assert.False(spinLock.IsHeld);
+            }
+
+            bool invalidTaken = true;
+            Assert.Throws<ArgumentException>(() => spinLock.TryEnter(-2, ref invalidTaken));
+            Assert.False(invalidTaken);
+            invalidTaken = true;
+            Assert.Throws<ArgumentOutOfRangeException>(() => spinLock.TryEnter(TimeSpan.FromMilliseconds(-2), ref invalidTaken));
+            Assert.True(invalidTaken);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR), nameof(PlatformDetection.IsMultithreadingSupported))]
+        public static void AnonymousSelfContentionHonorsFiniteTimeout()
+        {
+            SpinLock spinLock = new(enableThreadOwnerTracking: false);
+            bool taken = false;
+            spinLock.Enter(ref taken);
+            try
+            {
+                bool secondTaken = false;
+                Stopwatch stopwatch = Stopwatch.StartNew();
+                spinLock.TryEnter(10, ref secondTaken);
+                Assert.False(secondTaken);
+                Assert.True(spinLock.IsHeld);
+                Assert.InRange(stopwatch.Elapsed.TotalMilliseconds, 9, double.MaxValue);
+            }
+            finally
+            {
+                spinLock.Exit();
+            }
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR), nameof(PlatformDetection.IsNotMultithreadingSupported))]
+        [InlineData(-1)]
+        [InlineData(1)]
+        [InlineData(10)]
+        public static void AnonymousSelfContentionWithoutThreadsThrows(int millisecondsTimeout)
+        {
+            SpinLock spinLock = new(enableThreadOwnerTracking: false);
+            bool taken = false;
+            spinLock.TryEnter(millisecondsTimeout, ref taken);
+            Assert.True(taken);
+
+            try
+            {
+                bool secondTaken = false;
+                spinLock.TryEnter(ref secondTaken);
+                Assert.False(secondTaken);
+
+                Assert.Throws<PlatformNotSupportedException>(() => spinLock.TryEnter(millisecondsTimeout, ref secondTaken));
+                Assert.False(secondTaken);
+                Assert.Throws<PlatformNotSupportedException>(() => spinLock.TryEnter(TimeSpan.FromMilliseconds(millisecondsTimeout), ref secondTaken));
+                Assert.False(secondTaken);
+                Assert.Throws<PlatformNotSupportedException>(() => spinLock.Enter(ref secondTaken));
+                Assert.False(secondTaken);
+                Assert.True(spinLock.IsHeld);
+            }
+            finally
+            {
+                spinLock.Exit();
+            }
+
+            taken = false;
+            spinLock.TryEnter(millisecondsTimeout, ref taken);
+            Assert.True(taken);
+            spinLock.Exit();
+        }
+
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void EnterExit()
         {
