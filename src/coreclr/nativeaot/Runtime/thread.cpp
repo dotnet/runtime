@@ -412,24 +412,11 @@ void Thread::Destroy()
     ASSERT(m_pGCFrameRegistrations == NULL);
 }
 
-#ifdef HOST_WASM
-extern OBJECTREF * t_pShadowStackTop;
-extern OBJECTREF * t_pShadowStackBottom;
-
-void GcScanWasmShadowStack(void * pfnEnumCallback, void * pvCallbackData)
-{
-    // Wasm does not permit iteration of stack frames so is uses a shadow stack instead
-    EnumGcRefsInRegionConservatively(t_pShadowStackBottom, t_pShadowStackTop, pfnEnumCallback, pvCallbackData);
-}
-#endif
-
 void Thread::GcScanRoots(ScanFunc * pfnEnumCallback, ScanContext * pvCallbackData)
 {
     this->CrossThreadUnhijack();
 
-#ifdef HOST_WASM
-    GcScanWasmShadowStack(pfnEnumCallback, pvCallbackData);
-#else
+#ifndef HOST_WASM
     StackFrameIterator frameIterator(this, GetTransitionFrame());
     GcScanRootsWorker(pfnEnumCallback, pvCallbackData, frameIterator);
 #endif
@@ -472,6 +459,7 @@ bool Thread::GcScanRoots(GcScanRootsCallbackFunc * pfnEnumCallback, void * token
 }
 #endif //DACCESS_COMPILE
 
+#ifndef TARGET_WASM
 void Thread::GcScanRootsWorker(ScanFunc * pfnEnumCallback, ScanContext * pvCallbackData, StackFrameIterator & frameIterator)
 {
     PTR_OBJECTREF    pHijackedReturnValue = NULL;
@@ -594,6 +582,7 @@ void Thread::GcScanRootsWorker(ScanFunc * pfnEnumCallback, ScanContext * pvCallb
         }
     }
 }
+#endif // !TARGET_WASM
 
 #ifndef DACCESS_COMPILE
 
@@ -1380,24 +1369,6 @@ FCIMPL2(void, RhRegisterInlinedThreadStaticRoot, Object** root, TypeManager* typ
 }
 FCIMPLEND
 
-// This is function is used to quickly query a value that can uniquely identify a thread
-FCIMPL0(uint8_t*, RhCurrentNativeThreadId)
-{
-#ifndef TARGET_UNIX
-    return PalNtCurrentTeb();
-#else
-    return (uint8_t*)ThreadStore::RawGetCurrentThread();
-#endif // TARGET_UNIX
-}
-FCIMPLEND
-
-// This function is used to get the OS thread identifier for the current thread.
-FCIMPL0(uint64_t, RhCurrentOSThreadId)
-{
-    return PalGetCurrentOSThreadId();
-}
-FCIMPLEND
-
 FCIMPL0(size_t, RhGetDefaultStackSize)
 {
     return GetDefaultStackSizeSetting();
@@ -1469,23 +1440,23 @@ FCIMPL1(void, RhpReversePInvokeReturn, ReversePInvokeFrame * pFrame)
 }
 FCIMPLEND
 
-#ifdef FEATURE_PORTABLE_HELPERS
+#if defined(FEATURE_PORTABLE_HELPERS) && !defined(HOST_WASM)
 
-FCIMPL1(void, RhpPInvoke2, PInvokeTransitionFrame* pFrame)
+FCIMPL1(void, RhpPInvoke, PInvokeTransitionFrame* pFrame)
 {
     Thread * pCurThread = ThreadStore::RawGetCurrentThread();
     pCurThread->InlinePInvoke(pFrame);
 }
 FCIMPLEND
 
-FCIMPL1(void, RhpPInvokeReturn2, PInvokeTransitionFrame* pFrame)
+FCIMPL1(void, RhpPInvokeReturn, PInvokeTransitionFrame* pFrame)
 {
     //reenter cooperative mode
     pFrame->m_pThread->InlinePInvokeReturn(pFrame);
 }
 FCIMPLEND
 
-#endif //FEATURE_PORTABLE_HELPERS
+#endif // FEATURE_PORTABLE_HELPERS && !HOST_WASM
 
 #endif // !DACCESS_COMPILE
 

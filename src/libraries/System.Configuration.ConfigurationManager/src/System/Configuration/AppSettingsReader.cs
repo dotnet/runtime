@@ -13,7 +13,6 @@ namespace System.Configuration
     public class AppSettingsReader
     {
         private readonly NameValueCollection _map;
-        private static readonly Type s_stringType = typeof(string);
         private const string NullString = "None";
 
         public AppSettingsReader()
@@ -37,7 +36,7 @@ namespace System.Configuration
 
             if (val == null) throw new InvalidOperationException(SR.Format(SR.AppSettingsReaderNoKey, key));
 
-            if (type == s_stringType)
+            if (type == typeof(string))
             {
                 // It's a string, so we can ALMOST just return the value.  The only
                 // tricky point is that if it's the string "(None)", then we want to

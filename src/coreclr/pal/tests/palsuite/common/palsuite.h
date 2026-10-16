@@ -2,15 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*============================================================================
-**
 ** Source:  palsuite.h
 **
 ** Purpose: Define constants and implement functions that are useful to
 **          multiple function categories. If common functions are useful
 **          only amongst the test cases for a particular function, a separate
 **          header file is placed in the root of those test cases.
-**
-**
 **==========================================================================*/
 
 #ifndef __PALSUITE_H__
@@ -188,7 +185,6 @@ DeleteFileW(
 #define wcsncmp       PAL_wcsncmp
 #define wcschr        PAL_wcschr
 #define wcsrchr        PAL_wcsrchr
-#define wcspbrk       PAL_wcspbrk
 #define wcsstr        PAL_wcsstr
 #define wcscmp        PAL_wcscmp
 #define wcsncpy       PAL_wcsncpy

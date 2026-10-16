@@ -1,13 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //*****************************************************************************
 // MetaModelRW.cpp
 //
-
-//
 // Implementation for the Read/Write MiniMD code.
-//
 //*****************************************************************************
+
 #include "stdafx.h"
 #include <limits.h>
 #include <posterror.h>
@@ -1233,16 +1232,17 @@ CMiniMdRW::MapToken(    // Return value from user callback.
     mdToken tkn)        // Token type.
 {
     HRESULT     hr = S_OK;
-    TOKENREC   *pTokenRec;
-    MDTOKENMAP *pMovementMap;
     // If not change, done.
     if (from == to)
         return S_OK;
 
+#ifdef FEATURE_METADATA_PERSISTENCE
+    MDTOKENMAP *pMovementMap;
     pMovementMap = GetTokenMovementMap();
     _ASSERTE(GetTokenMovementMap() != NULL);
     if (pMovementMap != NULL)
-        IfFailRet(pMovementMap->AppendRecord( TokenFromRid(from, tkn), false, TokenFromRid(to, tkn), &pTokenRec ));
+        IfFailRet(pMovementMap->AppendRecord(TokenFromRid(from, tkn), TokenFromRid(to, tkn)));
+#endif
 
     // Notify client.
     if (m_pHandler != NULL)
@@ -1792,6 +1792,7 @@ ErrExit:
     return hr;
 } // CMiniMdRW::InitNew
 
+#ifdef FEATURE_METADATA_PERSISTENCE
 //*****************************************************************************
 // Determine how big the tables would be when saved.
 //*****************************************************************************
@@ -2133,6 +2134,8 @@ int CMiniMdRW::IsPoolEmpty(             // True or false.
     return true;
 } // CMiniMdRW::IsPoolEmpty
 
+#endif
+
 // --------------------------------------------------------------------------------------
 //
 // Gets user string (*Data) at index (nIndex) and fills the index (*pnNextIndex) of the next user string
@@ -2225,6 +2228,7 @@ bool CMiniMdRW::CanHaveCustomAttribute( // Can a given table have a custom attri
 } // CMiniMdRW::CanHaveCustomAttribute
 #endif //_DEBUG
 
+#ifdef FEATURE_METADATA_PERSISTENCE
 //---------------------------------------------------------------------------------------
 //
 // Perform any available pre-save optimizations.
@@ -3344,6 +3348,8 @@ CMiniMdRW::SavePoolToStream(
     return hr;
 } // CMiniMdRW::SavePoolToStream
 
+#endif
+
 //*****************************************************************************
 // Expand a table from the initial (hopeful) 2-byte column sizes to the large
 //  (but always adequate) 4-byte column sizes.
@@ -3562,6 +3568,7 @@ ErrExit:
 } // CMiniMdRW::ExpandTableColumns
 
 
+#ifdef FEATURE_METADATA_PERSISTENCE
 //*****************************************************************************
 // Used by caller to let us know save is completed.
 //*****************************************************************************
@@ -3632,6 +3639,7 @@ CMiniMdRW::FixUpRefToDef()
 {
     return NOERROR;
 } // CMiniMdRW::FixUpRefToDef
+#endif
 
 //*****************************************************************************
 // Given a table with a pointer (index) to a sequence of rows in another
@@ -5023,74 +5031,6 @@ ErrExit:
     return hr;
 } // CMiniMdRW::FindMethodImplHelper
 
-
-//*****************************************************************************
-// Find helper for a GenericParam.
-// This will trigger GenericParam table to be sorted if it is not.
-//*****************************************************************************
-__checkReturn
-HRESULT
-CMiniMdRW::FindGenericParamHelper(
-    mdToken        tkOwner,     // Token for the GenericParams' owner.
-    HENUMInternal *phEnum)      // fill in the enum
-{
-    HRESULT     hr = NOERROR;
-    RID         ridStart, ridEnd;       // Start, end of range of tokens.
-    RID         index;                  // A loop counter.
-    GenericParamRec *pGenericParam;
-    CLookUpHash *pHashTable = m_pLookUpHashes[TBL_GenericParam];
-
-    if (IsSorted(TBL_GenericParam))
-    {
-        mdToken tk;
-        tk = encodeToken(RidFromToken(tkOwner), TypeFromToken(tkOwner), mdtTypeOrMethodDef, ARRAY_SIZE(mdtTypeOrMethodDef));
-        IfFailGo(SearchTableForMultipleRows(TBL_GenericParam,
-                            _COLDEF(GenericParam,Owner),
-                            tk,
-                            &ridEnd,
-                            &ridStart));
-        HENUMInternal::InitSimpleEnum(mdtGenericParam, ridStart, ridEnd, phEnum);
-    }
-    else if (pHashTable)
-    {
-        TOKENHASHENTRY *p;
-        ULONG       iHash;
-        int         pos;
-
-        // Hash the data.
-        HENUMInternal::InitDynamicArrayEnum(phEnum);
-        iHash = HashToken(tkOwner);
-
-        // Go through every entry in the hash chain looking for ours.
-        for (p = pHashTable->FindFirst(iHash, pos);
-             p;
-             p = pHashTable->FindNext(pos))
-        {
-            IfFailGo(GetGenericParamRecord(p->tok, &pGenericParam));
-            if (getOwnerOfGenericParam(pGenericParam) == tkOwner)
-            {
-                IfFailGo( HENUMInternal::AddElementToEnum(phEnum, TokenFromRid(p->tok, mdtGenericParam)) );
-            }
-        }
-    }
-    else
-    {
-        // linear search
-        HENUMInternal::InitDynamicArrayEnum(phEnum);
-        for (index = 1; index <= getCountGenericParams(); index++)
-        {
-            IfFailGo(GetGenericParamRecord(index, &pGenericParam));
-            if (getOwnerOfGenericParam(pGenericParam) == tkOwner)
-            {
-                IfFailGo( HENUMInternal::AddElementToEnum(phEnum, TokenFromRid(index, mdtGenericParam)) );
-            }
-        }
-    }
-ErrExit:
-    return hr;
-} // CMiniMdRW::FindGenericParamHelper
-
-
 //*****************************************************************************
 // Find helper for a GenericParamConstraint.
 // This will trigger GenericParamConstraint table to be sorted if it is not.
@@ -6270,92 +6210,6 @@ CMiniMdRW::AddNamedItemToHash(
 ErrExit:
     return hr;
 } // CMiniMdRW::AddNamedItemToHash
-
-//*****************************************************************************
-// If the hash is built, search for the item.
-//*****************************************************************************
-CMiniMdRW::HashSearchResult
-CMiniMdRW::FindNamedItemFromHash(
-    ULONG     ixTbl,    // Table with the item.
-    LPCUTF8   szName,   // Name of item.
-    mdToken   tkParent, // Token of parent, if any.
-    mdToken * ptk)      // Return if found.
-{
-    // If the table is there, look for the item in the chain of items.
-    if (m_pNamedItemHash != NULL)
-    {
-        TOKENHASHENTRY *p;              // Hash entry from chain.
-        ULONG       iHash;              // Item's hash value.
-        int         pos;                // Position in hash chain.
-        mdToken     type;               // Type of the item being sought.
-
-        type = g_TblIndex[ixTbl].m_Token;
-
-        // Hash the data.
-        iHash = HashNamedItem(tkParent, szName);
-
-        // Go through every entry in the hash chain looking for ours.
-        for (p = m_pNamedItemHash->FindFirst(iHash, pos);
-             p != NULL;
-             p = m_pNamedItemHash->FindNext(pos))
-        {   // Check that the item is from the right table.
-            if (TypeFromToken(p->tok) != (ULONG)type)
-            {
-                //<TODO>@FUTURE: if using the named item hash for multiple tables, remove
-                //  this check.  Until then, debugging aid.</TODO>
-                _ASSERTE(!"Table mismatch in hash chain");
-                continue;
-            }
-            // Item is in the right table, do the deeper check.
-            if (CompareNamedItems(ixTbl, p->tok, szName, tkParent) == S_OK)
-            {
-                *ptk = p->tok;
-                return Found;
-            }
-        }
-
-        return NotFound;
-    }
-    else
-    {
-        return NoTable;
-    }
-} // CMiniMdRW::FindNamedItemFromHash
-
-//*****************************************************************************
-// Check a given mr token to see if this one is a match.
-//*****************************************************************************
-__checkReturn
-HRESULT
-CMiniMdRW::CompareNamedItems(   // S_OK match, S_FALSE no match.
-    ULONG   ixTbl,      // Table with the item.
-    mdToken tk,         // Token to check.
-    LPCUTF8 szName,     // Name of item.
-    mdToken tkParent)   // Token of parent, if any.
-{
-    HRESULT hr;
-    BYTE   *pNamedItem;         // Item to check.
-    LPCUTF8 szNameUtf8Tmp;      // Name of item to check.
-
-    // Get the record.
-    IfFailRet(m_Tables[ixTbl].GetRecord(RidFromToken(tk), &pNamedItem));
-
-    // Name is cheaper to get than coded token parent, and fails pretty quickly.
-    IfFailRet(getString(GetCol(ixTbl, g_TblIndex[ixTbl].m_iName, pNamedItem), &szNameUtf8Tmp));
-    if (strcmp(szNameUtf8Tmp, szName) != 0)
-        return S_FALSE;
-
-    // Name matched, try parent, if any.
-    if (g_TblIndex[ixTbl].m_iParent != (ULONG)-1)
-    {
-        mdToken tkPar = GetToken(ixTbl, g_TblIndex[ixTbl].m_iParent, pNamedItem);
-        if (tkPar != tkParent)
-            return S_FALSE;
-    }
-
-    // Made it to here, so everything matched.
-    return S_OK;
-} // CMiniMdRW::CompareNamedItems
 
 //*****************************************************************************
 // Add <md, td> entry to the MethodDef map look up table

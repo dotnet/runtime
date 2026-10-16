@@ -874,8 +874,11 @@ void Compiler::fgSetPreferredInitCctor()
 GenTreeCall* Compiler::fgGetSharedCCtor(CORINFO_CLASS_HANDLE cls)
 {
 #if defined(TARGET_WASM)
-    // Wasm does not support dynamically created helpers
-    return fgGetStaticsCCtorHelper(cls, CORINFO_HELP_INITCLASS);
+    // CoreCLR Wasm does not support dynamically created helpers.
+    if (!IsNativeAot())
+    {
+        return fgGetStaticsCCtorHelper(cls, CORINFO_HELP_INITCLASS);
+    }
 #endif
 
 #ifdef FEATURE_READYTORUN
@@ -927,7 +930,11 @@ bool Compiler::fgAddrCouldBeNull(GenTree* addr)
             return !addr->IsBoxedValue();
 
         case GT_LCL_VAR:
-            return !lvaIsImplicitByRefLocal(addr->AsLclVar()->GetLclNum());
+        {
+            // Implicit byrefs and return buffers always point to caller-allocated storage.
+            const unsigned lclNum = addr->AsLclVar()->GetLclNum();
+            return !lvaIsImplicitByRefLocal(lclNum) && (lclNum != impInlineRoot()->info.compRetBuffArg);
+        }
 
         case GT_COMMA:
             return fgAddrCouldBeNull(addr->AsOp()->gtOp2);
@@ -1007,6 +1014,9 @@ bool Compiler::fgAddrCouldBeHeap(GenTree* addr)
     target_ssize_t offset;
     gtPeelOffsets(&op, &offset);
 
+    // After LSRA the base of a contained address mode may be wrapped in a COPY/RELOAD
+    op = op->gtSkipReloadOrCopy();
+
     // Ignore the offset for locals
 
     if (op->OperIs(GT_LCL_ADDR))
@@ -1017,6 +1027,12 @@ bool Compiler::fgAddrCouldBeHeap(GenTree* addr)
     if (op->OperIsScalarLocal() && (op->AsLclVarCommon()->GetLclNum() == impInlineRoot()->info.compRetBuffArg))
     {
         // RetBuf is known to be on the stack
+        return false;
+    }
+
+    if (op->OperIs(GT_LCL_VAR) && lvaIsImplicitByRefLocal(op->AsLclVar()->GetLclNum()))
+    {
+        // Implicit byrefs are known to not be on the heap
         return false;
     }
 
@@ -1121,7 +1137,13 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
     }
 
 #ifdef FEATURE_READYTORUN
+#ifdef TARGET_WASM
+    // Wasm can't use the dynamically composed ReadyToRun delegate constructor helpers,
+    // so ReadyToRun uses GetDelegateCtor below, like the JIT.
+    if (IsAot() && IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+#else
     if (IsAot())
+#endif
     {
         if (IsTargetAbi(CORINFO_NATIVEAOT_ABI))
         {
@@ -1169,9 +1191,7 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
             }
         }
         // ReadyToRun has this optimization for a non-virtual function pointers only for now.
-#ifndef TARGET_WASM // TODO-WASM: Wasm doesn't use the dynamically composed helpers yet. When we do, we probably will
-                    // need to use a different set of arguments to construct the right helper call to avoid dynamically
-                    // composing a helper
+#ifndef TARGET_WASM
         else if ((oper == GT_FTN_ADDR) && (ldftnToken != nullptr))
         {
             JITDUMP("optimized\n");
@@ -1212,6 +1232,16 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
             *ExactContextHnd = nullptr;
 
             call->gtCallMethHnd = alternateCtor;
+
+#ifdef FEATURE_READYTORUN
+            if (IsAot())
+            {
+                // The importer computed the entry point for the original constructor.
+                CORINFO_CONST_LOOKUP entryPoint;
+                info.compCompHnd->getFunctionEntryPoint(alternateCtor, &entryPoint);
+                call->setEntryPoint(entryPoint);
+            }
+#endif
 
             CallArg* lastArg = nullptr;
             if (ctorData.pArg3 != nullptr)
@@ -1864,12 +1894,10 @@ void Compiler::fgAddReversePInvokeEnterExit()
     if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TRACK_TRANSITIONS))
     {
         GenTree* stubArgument;
-        if (info.compPublishStubParam)
+        if (compHasSecretStubArgument())
         {
-            // If we have a secret param for a Reverse P/Invoke, that means that we are in an IL stub.
-            // In this case, the method handle we pass down to the Reverse P/Invoke helper should be
-            // the target method, which is passed in the secret parameter.
-            stubArgument = gtNewLclvNode(lvaStubArgumentVar, TYP_I_IMPL);
+            // Reverse P/Invoke IL stubs receive UMEntryThunkData in the secret parameter.
+            stubArgument = gtNewLclvNode(lvaGetSecretStubArgumentVar(), TYP_I_IMPL);
         }
         else
         {
@@ -2606,9 +2634,10 @@ PhaseStatus Compiler::fgAddInternal()
 
         LclVarDsc* varDsc = lvaGetDesc(lvaInlinedPInvokeFrameVar);
         // Make room for the inlined frame.
-        const CORINFO_EE_INFO* eeInfo = eeGetEEInfo();
-        unsigned frameSize            = info.compPublishStubParam ? eeInfo->inlinedCallFrameInfo.sizeWithSecretStubArg
-                                                                  : eeInfo->inlinedCallFrameInfo.size;
+        const CORINFO_EE_INFO* eeInfo          = eeGetEEInfo();
+        const bool             hasMDContextArg = info.compIsVarArgs && opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB);
+        unsigned               frameSize =
+            hasMDContextArg ? eeInfo->inlinedCallFrameInfo.sizeWithSecretStubArg : eeInfo->inlinedCallFrameInfo.size;
         lvaSetStruct(lvaInlinedPInvokeFrameVar, typGetBlkLayout(frameSize), false);
     }
 
@@ -5813,18 +5842,8 @@ bool FlowGraphNaturalLoop::MatchLimit(unsigned iterVar, GenTree* test, NaturalLo
 
     Compiler* comp = m_dfsTree->GetCompiler();
 
-    // Obtain the relop from the "test" tree.
-    GenTree* relop;
-    if (test->OperIs(GT_JTRUE))
-    {
-        relop = test->gtGetOp1();
-    }
-    else
-    {
-        assert(test->OperIs(GT_STORE_LCL_VAR));
-        relop = test->AsLclVar()->Data();
-    }
-
+    assert(test->OperIs(GT_JTRUE));
+    GenTree* relop = test->gtGetOp1();
     noway_assert(relop->OperIsCompare());
 
     GenTree* opr1 = relop->AsOp()->gtOp1;

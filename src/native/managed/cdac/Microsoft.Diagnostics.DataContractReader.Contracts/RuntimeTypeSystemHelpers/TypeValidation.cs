@@ -9,39 +9,19 @@ namespace Microsoft.Diagnostics.DataContractReader.RuntimeTypeSystemHelpers;
 internal sealed class TypeValidation
 {
     private readonly Target _target;
-    private TargetPointer _continuationMethodTablePointer;
-    private TargetPointer _continuationSingletonEEClassPointer;
+    private readonly CachedValue<TargetPointer> _continuationMethodTablePointer;
+    private readonly CachedValue<TargetPointer> _continuationSingletonEEClassPointer;
 
-    internal TypeValidation(Target target, TargetPointer continuationMethodTablePointer, TargetPointer continuationSingletonEEClassPointer)
+    internal TypeValidation(Target target, CachedValue<TargetPointer> continuationMethodTablePointer, CachedValue<TargetPointer> continuationSingletonEEClassPointer)
     {
         _target = target;
         _continuationMethodTablePointer = continuationMethodTablePointer;
         _continuationSingletonEEClassPointer = continuationSingletonEEClassPointer;
     }
 
-    private TargetPointer ContinuationMethodTablePointer
-    {
-        get
-        {
-            if (_continuationMethodTablePointer != TargetPointer.Null)
-                return _continuationMethodTablePointer;
-            _continuationMethodTablePointer = _target.ReadPointer(
-                _target.ReadGlobalPointer(Constants.Globals.ContinuationMethodTable));
-            return _continuationMethodTablePointer;
-        }
-    }
+    private TargetPointer ContinuationMethodTablePointer => _continuationMethodTablePointer;
 
-    private TargetPointer ContinuationSingletonEEClassPointer
-    {
-        get
-        {
-            if (_continuationSingletonEEClassPointer != TargetPointer.Null)
-                return _continuationSingletonEEClassPointer;
-            _continuationSingletonEEClassPointer = _target.ReadPointer(
-                _target.ReadGlobalPointer(Constants.Globals.ContinuationSingletonEEClass));
-            return _continuationSingletonEEClassPointer;
-        }
-    }
+    private TargetPointer ContinuationSingletonEEClassPointer => _continuationSingletonEEClassPointer;
 
     // This doesn't need as many properties as MethodTable because we don't want to be operating on
     // a NonValidatedMethodTable for too long

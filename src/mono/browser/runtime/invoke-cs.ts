@@ -11,13 +11,13 @@ import {
     get_sig, get_signature_argument_count,
     bound_cs_function_symbol, get_signature_version, alloc_stack_frame, get_signature_type,
 } from "./marshal";
-import { MonoMethod, JSFunctionSignature, BoundMarshalerToCs, BoundMarshalerToJs, MarshalerType } from "./types/internal";
+import { JSFunctionSignature, BoundMarshalerToCs, BoundMarshalerToJs, MarshalerType, CSFnHandle } from "./types/internal";
 import { assert_js_interop } from "./invoke-js";
 import { startMeasure, MeasuredBlock, endMeasure } from "./profiler";
-import { bind_assembly_exports, invoke_async_jsexport, invoke_sync_jsexport } from "./managed-exports";
+import { bind_assembly_exports, invoke_async_jsexport_by_handle, invoke_sync_jsexport_by_handle } from "./managed-exports";
 import { mono_log_debug } from "./logging";
 
-export function mono_wasm_bind_cs_function (method: MonoMethod, assemblyName: string, namespaceName: string, shortClassName: string, methodName: string, signatureHash: number, signature: JSFunctionSignature): void {
+export function mono_wasm_bind_cs_function (handle: CSFnHandle, assemblyName: string, namespaceName: string, shortClassName: string, methodName: string, signatureHash: number, signature: JSFunctionSignature): void {
     const fullyQualifiedName = `[${assemblyName}] ${namespaceName}.${shortClassName}:${methodName}`;
     const mark = startMeasure();
     mono_log_debug(() => `Binding [JSExport] ${namespaceName}.${shortClassName}:${methodName} from ${assemblyName} assembly`);
@@ -54,7 +54,7 @@ export function mono_wasm_bind_cs_function (method: MonoMethod, assemblyName: st
     const res_converter = bind_arg_marshal_to_js(res_sig, res_marshaler_type, 1);
 
     const closure: BindingClosure = {
-        method,
+        handle,
         fullyQualifiedName,
         args_count,
         arg_marshalers,
@@ -109,7 +109,7 @@ export function mono_wasm_bind_cs_function (method: MonoMethod, assemblyName: st
 }
 
 function bind_fn_0V (closure: BindingClosure) {
-    const method = closure.method;
+    const handle = closure.handle;
     const fqn = closure.fullyQualifiedName;
     if (!WasmEnableThreads) (<any>closure) = null;
     return function bound_fn_0V () {
@@ -121,7 +121,7 @@ function bind_fn_0V (closure: BindingClosure) {
             const size = 2;
             const args = alloc_stack_frame(size);
             // call C# side
-            invoke_sync_jsexport(method, args);
+            invoke_sync_jsexport_by_handle(handle, args);
         } finally {
             if (loaderHelpers.is_runtime_running()) Module.stackRestore(sp);
 
@@ -131,7 +131,7 @@ function bind_fn_0V (closure: BindingClosure) {
 }
 
 function bind_fn_1V (closure: BindingClosure) {
-    const method = closure.method;
+    const handle = closure.handle;
     const marshaler1 = closure.arg_marshalers[0]!;
     const fqn = closure.fullyQualifiedName;
     if (!WasmEnableThreads) (<any>closure) = null;
@@ -146,7 +146,7 @@ function bind_fn_1V (closure: BindingClosure) {
             marshaler1(args, arg1);
 
             // call C# side
-            invoke_sync_jsexport(method, args);
+            invoke_sync_jsexport_by_handle(handle, args);
         } finally {
             if (loaderHelpers.is_runtime_running()) Module.stackRestore(sp);
 
@@ -156,7 +156,7 @@ function bind_fn_1V (closure: BindingClosure) {
 }
 
 function bind_fn_1R (closure: BindingClosure) {
-    const method = closure.method;
+    const handle = closure.handle;
     const marshaler1 = closure.arg_marshalers[0]!;
     const res_converter = closure.res_converter!;
     const fqn = closure.fullyQualifiedName;
@@ -172,7 +172,7 @@ function bind_fn_1R (closure: BindingClosure) {
             marshaler1(args, arg1);
 
             // call C# side
-            invoke_sync_jsexport(method, args);
+            invoke_sync_jsexport_by_handle(handle, args);
 
             const js_result = res_converter(args);
             return js_result;
@@ -185,7 +185,7 @@ function bind_fn_1R (closure: BindingClosure) {
 }
 
 function bind_fn_1RA (closure: BindingClosure) {
-    const method = closure.method;
+    const handle = closure.handle;
     const marshaler1 = closure.arg_marshalers[0]!;
     const res_converter = closure.res_converter!;
     const fqn = closure.fullyQualifiedName;
@@ -205,7 +205,7 @@ function bind_fn_1RA (closure: BindingClosure) {
 
             try {
                 // call C# side
-                invoke_async_jsexport(runtimeHelpers.managedThreadTID, method, args, size);
+                invoke_async_jsexport_by_handle(runtimeHelpers.managedThreadTID, handle, args, size);
             } catch (ex) {
                 // the throw unwinds past end_marshal_task_to_js, which would otherwise adopt it
                 release_eager_task_holder(promise);
@@ -225,7 +225,7 @@ function bind_fn_1RA (closure: BindingClosure) {
 }
 
 function bind_fn_2R (closure: BindingClosure) {
-    const method = closure.method;
+    const handle = closure.handle;
     const marshaler1 = closure.arg_marshalers[0]!;
     const marshaler2 = closure.arg_marshalers[1]!;
     const res_converter = closure.res_converter!;
@@ -243,7 +243,7 @@ function bind_fn_2R (closure: BindingClosure) {
             marshaler2(args, arg2);
 
             // call C# side
-            invoke_sync_jsexport(method, args);
+            invoke_sync_jsexport_by_handle(handle, args);
 
             const js_result = res_converter(args);
             return js_result;
@@ -256,7 +256,7 @@ function bind_fn_2R (closure: BindingClosure) {
 }
 
 function bind_fn_2RA (closure: BindingClosure) {
-    const method = closure.method;
+    const handle = closure.handle;
     const marshaler1 = closure.arg_marshalers[0]!;
     const marshaler2 = closure.arg_marshalers[1]!;
     const res_converter = closure.res_converter!;
@@ -278,7 +278,7 @@ function bind_fn_2RA (closure: BindingClosure) {
 
             try {
                 // call C# side
-                invoke_async_jsexport(runtimeHelpers.managedThreadTID, method, args, size);
+                invoke_async_jsexport_by_handle(runtimeHelpers.managedThreadTID, handle, args, size);
             } catch (ex) {
                 // the throw unwinds past end_marshal_task_to_js, which would otherwise adopt it
                 release_eager_task_holder(promise);
@@ -301,7 +301,7 @@ function bind_fn (closure: BindingClosure) {
     const args_count = closure.args_count;
     const arg_marshalers = closure.arg_marshalers;
     const res_converter = closure.res_converter;
-    const method = closure.method;
+    const handle = closure.handle;
     const fqn = closure.fullyQualifiedName;
     const is_async = closure.is_async;
     const is_discard_no_wait = closure.is_discard_no_wait;
@@ -330,7 +330,7 @@ function bind_fn (closure: BindingClosure) {
             // call C# side
             if (is_async) {
                 try {
-                    invoke_async_jsexport(runtimeHelpers.managedThreadTID, method, args, size);
+                    invoke_async_jsexport_by_handle(runtimeHelpers.managedThreadTID, handle, args, size);
                 } catch (ex) {
                     // the throw unwinds past end_marshal_task_to_js, which would otherwise adopt it
                     release_eager_task_holder(js_result);
@@ -340,9 +340,9 @@ function bind_fn (closure: BindingClosure) {
                 js_result = end_marshal_task_to_js(args, undefined, js_result);
             } else if (is_discard_no_wait) {
                 // call C# side, fire and forget
-                invoke_async_jsexport(runtimeHelpers.managedThreadTID, method, args, size);
+                invoke_async_jsexport_by_handle(runtimeHelpers.managedThreadTID, handle, args, size);
             } else {
-                invoke_sync_jsexport(method, args);
+                invoke_sync_jsexport_by_handle(handle, args);
                 if (res_converter) {
                     js_result = res_converter(args);
                 }
@@ -359,7 +359,7 @@ function bind_fn (closure: BindingClosure) {
 type BindingClosure = {
     fullyQualifiedName: string,
     args_count: number,
-    method: MonoMethod,
+    handle: CSFnHandle,
     arg_marshalers: (BoundMarshalerToCs)[],
     res_converter: BoundMarshalerToJs | undefined,
     is_async: boolean,

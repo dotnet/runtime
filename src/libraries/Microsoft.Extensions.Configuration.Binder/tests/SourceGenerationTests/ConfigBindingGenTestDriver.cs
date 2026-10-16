@@ -18,7 +18,7 @@ using Xunit;
 
 namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
 {
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles), nameof(PlatformDetection.IsMultithreadingSupported))] // Roslyn workspaces block on SemaphoreSlim
     public partial class ConfigurationBindingGeneratorTests : ConfigurationBinderTestsBase
     {
         internal sealed class ConfigBindingGenTestDriver

@@ -5,7 +5,7 @@
 
 #include "stdafx.h"
 
-#ifdef FEATURE_METADATA_IN_VM
+#ifdef FEATURE_ISYM_READER
 
 // This importer is only used to satisfy the symbol binder's non-null parameter.
 // It is intentionally inert so we do not materialize the module's real public importer.
@@ -155,4 +155,4 @@ IMetaDataImport2* GetNoopMetaDataImport2()
     return &g_NoopMetadataImport;
 }
 
-#endif // FEATURE_METADATA_IN_VM
+#endif // FEATURE_ISYM_READER

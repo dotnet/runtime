@@ -54,6 +54,14 @@ endif()
 
 OPTION(CLR_CMAKE_ENABLE_CODE_COVERAGE "Enable code coverage" OFF)
 
+# WebAssembly targets are single-threaded unless threads are explicitly enabled.
+if(NOT DEFINED FEATURE_MULTITHREADING AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
+  set(FEATURE_MULTITHREADING 1)
+endif()
+if(FEATURE_MULTITHREADING)
+  add_compile_definitions(FEATURE_MULTITHREADING)
+endif()
+
 #----------------------------------------------------
 # Cross target Component build specific configuration
 #----------------------------------------------------
@@ -177,9 +185,7 @@ if ((NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_WASI) OR CLR_CROSS_CO
 endif ()
 
 if(NOT CLR_CROSS_COMPONENTS_BUILD)
-  if(NOT CLR_CMAKE_HOST_ARCH_WASM)
-    add_subdirectory(nativeaot)
-  endif()
+  add_subdirectory(nativeaot)
 endif(NOT CLR_CROSS_COMPONENTS_BUILD)
 
 # Above projects do not build with these compile options

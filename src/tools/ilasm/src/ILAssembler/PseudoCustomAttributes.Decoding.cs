@@ -1,0 +1,270 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System;
+using System.Collections.Immutable;
+using System.Reflection.Metadata;
+
+namespace ILAssembler;
+
+internal static partial class PseudoCustomAttributes
+{
+    private readonly record struct EncodedArgumentType(
+        SerializationTypeCode Type,
+        SerializationTypeCode ArrayType = SerializationTypeCode.Invalid,
+        SerializationTypeCode EnumUnderlyingType = SerializationTypeCode.Invalid,
+        string? EnumName = null);
+
+    private static EncodedArgumentType ReadEncodedArgumentType(ref BlobReader reader)
+    {
+        SerializationTypeCode type = reader.ReadSerializationTypeCode();
+        SerializationTypeCode arrayType = SerializationTypeCode.Invalid;
+        if (type == SerializationTypeCode.SZArray)
+        {
+            arrayType = reader.ReadSerializationTypeCode();
+        }
+
+        SerializationTypeCode effectiveType =
+            type == SerializationTypeCode.SZArray ? arrayType : type;
+        if (effectiveType == SerializationTypeCode.Invalid)
+        {
+            throw new BadImageFormatException();
+        }
+
+        string? enumName = null;
+        if (effectiveType == SerializationTypeCode.Enum)
+        {
+            enumName = reader.ReadSerializedString();
+            if (enumName is null)
+            {
+                throw new BadImageFormatException();
+            }
+        }
+
+        return new(type, arrayType, EnumName: enumName);
+    }
+
+    private static CustomAttributeTypedArgument<SerializationTypeCode> ReadArgument(
+        ref BlobReader reader,
+        SerializationTypeCode type,
+        SerializationTypeCode enumUnderlyingType = SerializationTypeCode.Invalid)
+    {
+        SerializationTypeCode effectiveType =
+            type == SerializationTypeCode.Enum ? enumUnderlyingType : type;
+
+        object? value = effectiveType switch
+        {
+            SerializationTypeCode.Boolean => reader.ReadBoolean(),
+            SerializationTypeCode.SByte => reader.ReadSByte(),
+            SerializationTypeCode.Byte => reader.ReadByte(),
+            SerializationTypeCode.Char => reader.ReadChar(),
+            SerializationTypeCode.Int16 => reader.ReadInt16(),
+            SerializationTypeCode.UInt16 => reader.ReadUInt16(),
+            SerializationTypeCode.Int32 => reader.ReadInt32(),
+            SerializationTypeCode.UInt32 => reader.ReadUInt32(),
+            SerializationTypeCode.Int64 => reader.ReadInt64(),
+            SerializationTypeCode.UInt64 => reader.ReadUInt64(),
+            SerializationTypeCode.Single => reader.ReadSingle(),
+            SerializationTypeCode.Double => reader.ReadDouble(),
+            SerializationTypeCode.String or SerializationTypeCode.Type => reader.ReadSerializedString(),
+            _ => throw new BadImageFormatException(),
+        };
+
+        return new(type, value);
+    }
+
+    private static unsafe bool TryParseArguments(
+        LoweringContext context,
+        KnownAttribute known,
+        out CustomAttributeValue<SerializationTypeCode> arguments)
+    {
+        byte[] blob = context.Attribute.Value.ToArray();
+        fixed (byte* blobPointer = blob)
+        {
+            var reader = new BlobReader(blobPointer, blob.Length);
+            try
+            {
+                if (reader.ReadUInt16() != 0x0001)
+                {
+                    arguments = default;
+                    return context.InvalidBlob();
+                }
+
+                var fixedArguments =
+                    ImmutableArray.CreateBuilder<CustomAttributeTypedArgument<SerializationTypeCode>>(
+                        known.FixedArguments.Length);
+                foreach (SerializationTypeCode type in known.FixedArguments)
+                {
+                    fixedArguments.Add(ReadArgument(ref reader, type));
+                }
+
+                if (!TryParseNamedArguments(context, known, ref reader,
+                    out ImmutableArray<CustomAttributeNamedArgument<SerializationTypeCode>> namedArguments))
+                {
+                    arguments = default;
+                    return false;
+                }
+
+                if (reader.RemainingBytes != 0)
+                {
+                    arguments = default;
+                    return context.InvalidBlob();
+                }
+
+                arguments = new(fixedArguments.MoveToImmutable(), namedArguments);
+                return true;
+            }
+            catch (BadImageFormatException)
+            {
+                arguments = default;
+                return context.InvalidBlob();
+            }
+        }
+    }
+
+    private static bool TryParseNamedArguments(
+        LoweringContext context,
+        KnownAttribute known,
+        ref BlobReader reader,
+        out ImmutableArray<CustomAttributeNamedArgument<SerializationTypeCode>> namedArguments)
+    {
+        ushort actualCount = reader.ReadUInt16();
+        var arguments =
+            ImmutableArray.CreateBuilder<CustomAttributeNamedArgument<SerializationTypeCode>>(
+                Math.Min(actualCount, (ushort)known.NamedArguments.Length));
+        var seenArguments = new bool[known.NamedArguments.Length];
+
+        for (int i = 0; i < actualCount; i++)
+        {
+            var kind = (CustomAttributeNamedArgumentKind)reader.ReadSerializationTypeCode();
+            if (kind is not (CustomAttributeNamedArgumentKind.Field or CustomAttributeNamedArgumentKind.Property))
+            {
+                namedArguments = default;
+                return context.InvalidBlob();
+            }
+
+            EncodedArgumentType actual = ReadEncodedArgumentType(ref reader);
+            string? argumentName = reader.ReadSerializedString();
+            if (string.IsNullOrEmpty(argumentName))
+            {
+                namedArguments = default;
+                return context.InvalidBlob();
+            }
+
+            int match = -1;
+            for (int candidate = 0; candidate < known.NamedArguments.Length; candidate++)
+            {
+                NamedArgument descriptor = known.NamedArguments[candidate];
+
+                if (descriptor.Type != SerializationTypeCode.TaggedObject)
+                {
+                    if (actual.Type != descriptor.Type)
+                    {
+                        continue;
+                    }
+
+                    if (actual.Type == SerializationTypeCode.SZArray
+                        && descriptor.ArrayType != SerializationTypeCode.TaggedObject
+                        && actual.ArrayType != descriptor.ArrayType)
+                    {
+                        continue;
+                    }
+                }
+
+                if (descriptor.Name != argumentName)
+                {
+                    continue;
+                }
+
+                if (descriptor.Type == SerializationTypeCode.Enum
+                    || (descriptor.Type == SerializationTypeCode.SZArray && descriptor.ArrayType == SerializationTypeCode.Enum))
+                {
+                    if (!EnumNameMatches(descriptor.EnumName, actual.EnumName))
+                    {
+                        continue;
+                    }
+
+                    actual = actual with { EnumUnderlyingType = descriptor.EnumType };
+                }
+
+                match = candidate;
+                break;
+            }
+
+            if (match < 0)
+            {
+                namedArguments = default;
+                return context.UnknownArgument(argumentName);
+            }
+
+            if (seenArguments[match])
+            {
+                namedArguments = default;
+                return context.RepeatedArgument(argumentName);
+            }
+
+            seenArguments[match] = true;
+            CustomAttributeTypedArgument<SerializationTypeCode> value =
+                ReadArgument(ref reader, actual.Type, actual.EnumUnderlyingType);
+            arguments.Add(new(argumentName, kind, value.Type, value.Value));
+        }
+
+        namedArguments = arguments.ToImmutable();
+        return true;
+    }
+
+    private static CustomAttributeNamedArgument<SerializationTypeCode>? FindNamedArgument(
+        CustomAttributeValue<SerializationTypeCode> arguments,
+        string name)
+    {
+        foreach (CustomAttributeNamedArgument<SerializationTypeCode> argument in arguments.NamedArguments)
+        {
+            if (argument.Name == name)
+            {
+                return argument;
+            }
+        }
+
+        return null;
+    }
+
+    private static short GetInt16(object? value) => value switch
+    {
+        short signed => signed,
+        ushort unsigned => unchecked((short)unsigned),
+        _ => throw new BadImageFormatException(),
+    };
+
+    private static int GetInt32(object? value) => value switch
+    {
+        short signed => unchecked((ushort)signed),
+        ushort unsigned => unsigned,
+        int signed => signed,
+        uint unsigned => unchecked((int)unsigned),
+        _ => throw new BadImageFormatException(),
+    };
+
+    private static bool GetBoolean(object? value) =>
+        value is bool boolean ? boolean : throw new BadImageFormatException();
+
+    private static string GetString(object? value) => value as string ?? "";
+
+    /// <summary>
+    /// Matches an enum type name against a descriptor name, allowing the blob to carry an
+    /// assembly-qualified name whose namespace-qualified prefix matches.
+    /// </summary>
+    private static bool EnumNameMatches(string descriptorName, string? actualName)
+    {
+        if (actualName is null || descriptorName.Length > actualName.Length)
+        {
+            return false;
+        }
+
+        if (!actualName.AsSpan(0, descriptorName.Length).SequenceEqual(descriptorName))
+        {
+            return false;
+        }
+
+        return descriptorName.Length == actualName.Length || actualName[descriptorName.Length] == ',';
+    }
+}

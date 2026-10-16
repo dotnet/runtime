@@ -3080,13 +3080,7 @@ VOID MarshalInfo::DumpMarshalInfo(Module* pModule, SigPointer sig, const SigType
 #if defined(FEATURE_COMINTEROP)
 DispParamMarshaler *MarshalInfo::GenerateDispParamMarshaler()
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     NewHolder<DispParamMarshaler> pDispParamMarshaler = NULL;
 
@@ -3311,13 +3305,22 @@ void ArrayMarshalInfo::InitElementInfo(CorNativeType arrayNativeType, MarshalInf
 
     m_thElement = thElement;
 
-    if (m_thElement.IsPointer())
+    if ((arrayNativeType == NATIVE_TYPE_ARRAY || arrayNativeType == NATIVE_TYPE_FIXEDARRAY)
+        && (m_thElement.IsPointer() || m_thElement.IsFnPtrType()))
     {
-        m_flags = (ArrayMarshalInfoFlags)(m_flags | amiIsPtr);
-        m_thElement = ((ParamTypeDesc*)m_thElement.AsTypeDesc())->GetModifiedType();
+        // Marshal pointer-sized values without losing the declared element type.
+        etElement = ELEMENT_TYPE_I;
     }
+    else
+    {
+        if (m_thElement.IsPointer())
+        {
+            m_flags = (ArrayMarshalInfoFlags)(m_flags | amiIsPtr);
+            m_thElement = ((ParamTypeDesc*)m_thElement.AsTypeDesc())->GetModifiedType();
+        }
 
-    etElement = m_thElement.GetSignatureCorElementType();
+        etElement = m_thElement.GetSignatureCorElementType();
+    }
 
     if (IsAMIPtr(m_flags) && (etElement > ELEMENT_TYPE_R8))
     {

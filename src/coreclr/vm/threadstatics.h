@@ -41,6 +41,10 @@
 #ifndef __THREADLOCALSTORAGE_H__
 #define __THREADLOCALSTORAGE_H__
 
+#ifndef FEATURE_MULTITHREADING
+#error Thread static storage is only supported in builds with FEATURE_MULTITHREADING.
+#endif // !FEATURE_MULTITHREADING
+
 class Thread;
 
 // [cDAC] [Thread]: Contract depends on the values of NonCollectible, Collectible, and DirectOnThreadLocalData.
@@ -344,13 +348,13 @@ public:
 PTR_VOID GetThreadLocalStaticBaseNoCreate(Thread *pThreadLocalData, TLSIndex index);
 
 #ifndef DACCESS_COMPILE
+void InitializeCurrentThreadsStaticData(Thread* pThread);
+void FreeThreadStaticData(Thread* pThread);
+void AssertThreadStaticDataFreed();
 void ScanThreadStaticRoots(Thread* pThread, promote_func* fn, ScanContext* sc);
 PTR_MethodTable LookupMethodTableForThreadStaticKnownToBeAllocated(TLSIndex index);
 void InitializeThreadStaticData();
-void InitializeCurrentThreadsStaticData(Thread* pThread);
 void FreeLoaderAllocatorHandlesForTLSData(Thread* pThread);
-void FreeThreadStaticData(Thread* pThread);
-void AssertThreadStaticDataFreed();
 void GetTLSIndexForThreadStatic(MethodTable* pMT, bool gcStatic, TLSIndex* pIndex, uint32_t bytesNeeded);
 void FreeTLSIndicesForLoaderAllocator(LoaderAllocator *pLoaderAllocator);
 void* GetThreadLocalStaticBase(TLSIndex index);
