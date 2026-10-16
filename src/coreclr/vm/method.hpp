@@ -1885,9 +1885,19 @@ public:
     void WalkValueTypeParameters(MethodTable *pMT, WalkValueTypeParameterFnPtr function, void *pData);
 
     PTR_BYTE GetGCRefMap();
+    // Borrow only ABI-compatible maps; receiver-specific slot relationships are immutable
+    // DispatchMap data. Memoize hits only when code data already exists; never allocate here.
+    PTR_BYTE FindGCRefMap(MethodTable* pReceiverMT = nullptr, bool isDispatch = false);
     void SetGCRefMap(PTR_BYTE pGCRefMap);
 
+    // Publish on the already-resolved call declaration; do not search slots or decode maps.
+    // Every supported R2R image uses contextual THIS, so no format check is necessary.
+    // Without an import map, use only this method's cached map or prepare signature layouts.
+    void PrepareForUseAsAVirtualCallTargetOfANativeImage(PTR_BYTE pGCRefMap = nullptr);
+
     // Load closed value-type signature layouts for signature-scanning frames and ABI lowering.
+    // Required for interpreter ABI lowering, explicit-context shared bodies, GVMs, and map misses.
+    // A GCRefMap hit alone never promises layout readiness.
     void PrepareForUseAsADependencyOfANativeImage()
     {
         WRAPPER_NO_CONTRACT;
@@ -1895,6 +1905,10 @@ public:
             PrepareForUseAsADependencyOfANativeImageWorker();
     }
 
+    // Prepare an exact method entrypoint, not a virtual-dispatch stub or an interpreter ABI.
+    // Non-wrapper, non-GVM targets without an explicit context argument can use supplied or
+    // cached GCRefMaps instead of loading layouts. nullptr permits reuse, not forced loading.
+    // Callers requiring signature layouts must use PrepareForUseAsADependencyOfANativeImage.
     void PrepareForUseAsACallTargetOfANativeImage(PTR_BYTE pGCRefMap = nullptr);
 
     bool HaveNativeImageDependenciesBeenPrepared()
@@ -1925,6 +1939,7 @@ public:
 #endif
 private:
     void PrepareForUseAsADependencyOfANativeImageWorker();
+    PTR_BYTE CacheGCRefMapIfCodeDataExists(PTR_BYTE pGCRefMap);
 
     //================================================================
     // The actual data stored in a MethodDesc follows.

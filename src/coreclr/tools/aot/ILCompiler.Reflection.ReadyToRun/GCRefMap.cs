@@ -18,17 +18,20 @@ namespace ILCompiler.Reflection.ReadyToRun
         GCREFMAP_METHOD_PARAM = 3,
         GCREFMAP_TYPE_PARAM = 4,
         GCREFMAP_VASIG_COOKIE = 5,
+        GCREFMAP_THIS = 6,
     }
 
     public struct GCRefMapEntry
     {
         public readonly int Offset;
         public readonly CORCOMPILE_GCREFMAP_TOKENS Token;
+        public readonly bool ThisIsInterior;
 
-        public GCRefMapEntry(int offset, CORCOMPILE_GCREFMAP_TOKENS token)
+        public GCRefMapEntry(int offset, CORCOMPILE_GCREFMAP_TOKENS token, bool thisIsInterior = false)
         {
             Offset = offset;
             Token = token;
+            ThisIsInterior = thisIsInterior;
         }
     }
 
@@ -61,6 +64,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         private int _offset;
         private int _pendingByte;
         private int _pos;
+        public bool ThisIsInterior { get; private set; }
 
         public GCRefMapDecoder(ReadyToRunReader reader, int offset)
         {
@@ -146,7 +150,10 @@ namespace ILCompiler.Reflection.ReadyToRun
                 else
                 {
                     _pos++;
-                    return (CORCOMPILE_GCREFMAP_TOKENS)((ext >> 1) + 3);
+                    CORCOMPILE_GCREFMAP_TOKENS token = (CORCOMPILE_GCREFMAP_TOKENS)((ext >> 1) + 3);
+                    if (token == CORCOMPILE_GCREFMAP_TOKENS.GCREFMAP_THIS)
+                        ThisIsInterior = GetBit() != 0;
+                    return token;
                 }
             }
             _pos++;
@@ -172,7 +179,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                 if (token != CORCOMPILE_GCREFMAP_TOKENS.GCREFMAP_SKIP)
                 {
                     int offset = transitionBlock.OffsetFromGCRefMapPos(pos);
-                    entries.Add(new GCRefMapEntry(offset, token));
+                    entries.Add(new GCRefMapEntry(offset, token, token == CORCOMPILE_GCREFMAP_TOKENS.GCREFMAP_THIS && ThisIsInterior));
                 }
             }
 

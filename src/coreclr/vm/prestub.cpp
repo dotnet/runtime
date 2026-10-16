@@ -1735,6 +1735,9 @@ PCODE MakeUnboxingStubWorker(MethodDesc *pMD)
 
     _ASSERTE(pUnboxedMD != NULL && pUnboxedMD != pMD);
 
+    if (pUnboxedMD->RequiresInstArg())
+        pUnboxedMD->PrepareForUseAsADependencyOfANativeImage();
+
 #ifdef FEATURE_PORTABLE_SHUFFLE_THUNKS
     StackSArray<ShuffleEntry> portableShuffle;
     BOOL usePortableShuffle = FALSE;
@@ -1798,6 +1801,8 @@ PCODE MakeInstantiatingStubWorker(MethodDesc *pMD)
     // Fetch the shared code associated with this instantiation
     pSharedMD = pMD->GetWrappedMethodDesc();
     _ASSERTE(pSharedMD != NULL && pSharedMD != pMD);
+    // The wrapper inserts a generic context argument that is absent from dispatch maps.
+    pSharedMD->PrepareForUseAsADependencyOfANativeImage();
 
     if (pMD->HasMethodInstantiation())
     {
@@ -3041,7 +3046,7 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(
                 pMD = ZapSig::DecodeMethod(pModule, pInfoModule, pBlob, &th);
 
         VirtualEntry:
-                pMD->PrepareForUseAsADependencyOfANativeImage();
+                pMD->PrepareForUseAsAVirtualCallTargetOfANativeImage(pEMFrame->GetGCRefMap());
 
                 if (pMD->IsVtableMethod())
                 {

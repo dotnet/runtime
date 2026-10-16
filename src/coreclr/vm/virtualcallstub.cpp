@@ -109,14 +109,14 @@ BYTE* GenerateDispatchStubCellEntrySlot(LoaderAllocator *pLoaderAllocator, TypeH
 
     VirtualCallStubManager * pMgr = pLoaderAllocator->GetVirtualCallStubManager();
 
-    // Dictionary dispatch cells have no import GCRefMap. Prepare the representative
-    // signature before a call can enter their signature-scanning dispatch frame.
+    // A declaration map can protect dictionary dispatch cells even without an import map.
     MethodTable* pOwnerMT = ownerType.GetMethodTable();
     MethodDesc* pMethod = pOwnerMT->GetMethodDescForSlot(methodSlot);
-    pMethod->PrepareForUseAsADependencyOfANativeImage();
+    pMethod->PrepareForUseAsAVirtualCallTargetOfANativeImage();
+    PTR_BYTE declarationMap = pMethod->GetGCRefMap();
     pMethod = MethodDesc::FindOrCreateAssociatedMethodDesc(
         pMethod, pOwnerMT, FALSE, pMethod->GetMethodInstantiation(), TRUE);
-    pMethod->PrepareForUseAsADependencyOfANativeImage();
+    pMethod->PrepareForUseAsAVirtualCallTargetOfANativeImage(declarationMap);
 
     DispatchToken token = VirtualCallStubManager::GetTokenFromOwnerAndSlot(ownerType, methodSlot);
 
@@ -2483,6 +2483,26 @@ VirtualCallStubManager::Resolver(
             CONSISTENCY_CHECK((!implSlot.IsNull() || pMT->IsInterface()) && "Valid method implementation was not found.");
             COMPlusThrow(kEntryPointNotFoundException);
         }
+    }
+
+    // Typed tokens identify the call declaration without a hierarchy search. Its contextual
+    // receiver map also protects the implementation's method-entry transitions.
+    pMD = implSlot.GetMethodDesc();
+    if (pMD != nullptr)
+    {
+        PTR_BYTE declarationMap = nullptr;
+        if (token.IsTypedToken())
+        {
+            MethodTable* pDeclarationMT = GetTypeFromToken(token);
+            // A missing slot would make GetMethodDescForSlot_NoThrow enumerate definitions.
+            if (pDeclarationMT->GetCanonicalMethodTable()->GetSlot(token.GetSlotNumber()) != 0)
+            {
+                MethodDesc* pDeclaration = pDeclarationMT->GetMethodDescForSlot_NoThrow(token.GetSlotNumber());
+                if (pDeclaration != nullptr)
+                    declarationMap = pDeclaration->GetGCRefMap();
+            }
+        }
+        pMD->PrepareForUseAsAVirtualCallTargetOfANativeImage(declarationMap);
     }
 
     *ppTarget = implSlot.GetTarget();

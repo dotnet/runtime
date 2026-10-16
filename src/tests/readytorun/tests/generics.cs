@@ -100,6 +100,19 @@ public class Program
 
         public struct ColdValueTransform : IColdTransform
         {
+            public Marker State;
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public ReferenceValue Transform(ReferenceValue value)
+            {
+                GC.Collect(2, GCCollectionMode.Forced, true, true);
+                Assert.AreEqual(12345, State.Value);
+                return value;
+            }
+        }
+
+        public class InheritedTransform
+        {
             [MethodImpl(MethodImplOptions.NoInlining)]
             public ReferenceValue Transform(ReferenceValue value)
             {
@@ -108,11 +121,79 @@ public class Program
             }
         }
 
+        public sealed class DerivedInheritedTransform : InheritedTransform, IColdTransform
+        {
+        }
+
+        public interface IDefaultTransform<T> : IColdTransform
+        {
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            ReferenceValue IColdTransform.Transform(ReferenceValue value)
+            {
+                GC.Collect(2, GCCollectionMode.Forced, true, true);
+                Assert.AreEqual(typeof(T), typeof(string));
+                return value;
+            }
+        }
+
+        public sealed class DefaultTransform : IDefaultTransform<string>
+        {
+        }
+
+        public class DispatchResult
+        {
+            public Marker Reference;
+        }
+
+        public sealed class DerivedDispatchResult : DispatchResult
+        {
+        }
+
+        public class CovariantBase
+        {
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public virtual object Transform(ReferenceValue value) => value.Reference;
+        }
+
+        public class CovariantMiddle : CovariantBase
+        {
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public override DispatchResult Transform(ReferenceValue value) => new DispatchResult { Reference = value.Reference };
+        }
+
+        public sealed class CovariantLeaf : CovariantMiddle
+        {
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public override DerivedDispatchResult Transform(ReferenceValue value)
+            {
+                GC.Collect(2, GCCollectionMode.Forced, true, true);
+                return new DerivedDispatchResult { Reference = value.Reference };
+            }
+        }
+
         public struct LargeValue
         {
             public Marker First;
             public Marker Second;
             public Marker Third;
+        }
+
+        public interface ILargeTransform
+        {
+            LargeValue Transform(LargeValue value);
+        }
+
+        public struct LargeValueTransform : ILargeTransform
+        {
+            public Marker State;
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            public LargeValue Transform(LargeValue value)
+            {
+                GC.Collect(2, GCCollectionMode.Forced, true, true);
+                Assert.AreEqual(12345, State.Value);
+                return value;
+            }
         }
 
         public interface ITransform<T>
@@ -201,10 +282,47 @@ public class Program
             Assert.AreEqual(12345, result.Reference.Value);
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void RunCovariantBase(CovariantBase target)
+        {
+            DispatchResult result = (DispatchResult)target.Transform(new ReferenceValue { Reference = CreateMarker() });
+            Assert.AreEqual(12345, result.Reference.Value);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void RunCovariantMiddle(CovariantMiddle target)
+        {
+            DispatchResult result = target.Transform(new ReferenceValue { Reference = CreateMarker() });
+            Assert.AreEqual(12345, result.Reference.Value);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void RunLargeInterface(ILargeTransform target)
+        {
+            LargeValue result = target.Transform(new LargeValue
+            {
+                First = CreateMarker(),
+                Second = CreateMarker(),
+                Third = CreateMarker()
+            });
+            Assert.AreEqual(12345, result.First.Value);
+            Assert.AreEqual(12345, result.Second.Value);
+            Assert.AreEqual(12345, result.Third.Value);
+        }
+
         public static unsafe void Run()
         {
             RunColdInterface(new ColdReferenceTransform());
-            RunColdInterface(new ColdValueTransform());
+            ColdValueTransform valueTarget = new ColdValueTransform { State = CreateMarker() };
+            RunColdInterface(valueTarget);
+            Assert.AreEqual(12345, valueTarget.Transform(new ReferenceValue { Reference = CreateMarker() }).Reference.Value);
+            RunColdInterface(new DerivedInheritedTransform());
+            RunColdInterface(new DefaultTransform());
+            RunCovariantBase(new CovariantLeaf());
+            RunCovariantMiddle(new CovariantLeaf());
+            LargeValueTransform largeTarget = new LargeValueTransform { State = CreateMarker() };
+            RunLargeInterface(largeTarget);
+            Assert.AreEqual(12345, largeTarget.Transform(new LargeValue { First = CreateMarker() }).First.Value);
 
             Assert.AreEqual(true, RoundTrip(default).Reference is null);
             Assert.AreEqual(true, RoundTripGeneric<string>(default).Reference.Reference is null);
@@ -235,6 +353,8 @@ public class Program
             Assert.AreEqual(marker, result.Reference.Reference);
             Assert.AreEqual(37, result.Value);
             Assert.AreEqual(12345, marker.Value);
+            Assert.AreEqual(marker, InvokeInterface<object>(new ReferenceTransform<object>(), marker));
+            Assert.AreEqual(marker, InvokeInterface<object>(new ValueTransform<object>(), marker));
 
             for (int i = 0; i < 16; i++)
             {

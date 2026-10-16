@@ -191,7 +191,15 @@ Unwinding call frames on the stack usually requires an OS specific implementatio
 | `InterpreterFrame` | `IsFaulting` | `uint8` | Boolean indicating whether the topmost interpreted frame has thrown an exception. When set, the context for the top interpreted frame must include CONTEXT_EXCEPTION_ACTIVE so exception unwinders treat the IP as a faulting instruction rather than a return-from-call |
 | `InterpreterFrame` | `TopInterpMethodContextFrame` | `pointer` | Pointer to the InterpreterFrame's top InterpMethodContextFrame |
 | `MethodDesc` | `CodeData` | `pointer` | Pointer to per-method code data containing entry-point and code-versioning state |
+| `MethodDesc` | `Flags` | `uint16` | The method's flags |
 | `MethodDescCodeData` | `GCRefMap` | `pointer` | Optional cached ReadyToRun method-entry GC reference map used by prestub and call-counting frames |
+| `MethodTable` | `AuxiliaryData` | `pointer` | Pointer to the AuxiliaryData of a method table |
+| `MethodTable` | `InterfaceMap` | `pointer` | Optional pointer to the array of interface MethodTable pointers used for contextual virtual argument-map lookup |
+| `MethodTable` | `MTFlags` | `uint32` | One of the flags fields on MethodTable |
+| `MethodTable` | `MTFlags2` | `uint32` | One of the flags fields on MethodTable |
+| `MethodTable` | `NumInterfaces` | `uint16` | Number of interfaces of MethodTable |
+| `MethodTable` | `NumVirtuals` | `uint16` | Number of virtual methods in MethodTable |
+| `MethodTable` | `ParentMethodTable` | `pointer` | Parent type pointer of MethodTable |
 | `Module` | `ReadyToRunInfo` | `pointer` | Pointer to the module's ReadyToRun information |
 | `Object` | `m_pMethTab` | `pointer` | Method table for the object |
 | `PInvokeCalliFrame` | `VASigCookiePtr` | `pointer` | Pointer to the varargs signature cookie for the unmanaged call |
@@ -239,10 +247,12 @@ Unwinding call frames on the stack usually requires an OS specific implementatio
 | --- |
 | `CallingConvention` |
 | `Debugger` |
+| `EcmaMetadata` |
 | `Exception` |
 | `ExecutionManager` |
 | `GC` |
 | `GCInfo` |
+| `Loader` |
 | `Object` |
 | `PlatformMetadata` |
 | `RuntimeInfo` |
@@ -894,3 +904,117 @@ _No changes._
 
 _No changes._
 <!-- END GENERATED: usage contract=StackWalk version=c2 diff-from=c1 -->
+
+## Version 3
+
+Version 3 adds virtual method-entry map lookup to the Version 2 algorithms. Both GC root
+enumeration and x86 frame unwinding use the same lookup. Import maps on `ExternalMethodFrame`
+and `StubDispatchFrame` take precedence over method-entry maps.
+
+### Contextual receiver token
+
+`GCRefMap` token `THIS` has value 6. It uses the two-bit escape followed by extended integer
+7, then one extra bit describing whether the original call site's receiver was interior.
+Existing tokens 0 through 5 retain their encoding. The extra bit must be consumed even when
+the frame overrides its interpretation:
+
+- `ExternalMethodFrame` uses the encoded fallback.
+- `StubDispatchFrame` always reports an object reference.
+- `PrestubMethodFrame` and `CallCountingHelperFrame` report an interior pointer only when
+  the method's owning type is a value type and the method is not an unboxing stub.
+
+All supported ReadyToRun instance import maps use `THIS`: the runtime's minimum supported
+ReadyToRun major version is 33. No per-map format flag or receiver-token validation is needed.
+Signature-synthesized maps may continue to use concrete `REF` and `INTERIOR` tokens; synthetic
+maps for explicit-context shared bodies are not eligible for declaration-map borrowing.
+
+### Loaded virtual declaration lookup
+
+Reject methods with a method instantiation and, for non-dispatch bodies, methods whose
+generic context is an explicit method-descriptor or method-table argument. First try the
+method's own cached map. For an instance method,
+enumerate the owning type's method definitions for the same slot, excluding unboxing stubs.
+Try every matching definition until a shareable map is found, then search ancestors in
+nearest-to-farthest order while the slot remains virtual in each type. An interface searches
+only its own definitions. Do not use the current vtable entry or restrict the search to the
+ultimate slot introducer: publication can attach a map to an overriding call declaration.
+
+Declaration-map eligibility is determined from loaded method metadata: reject method
+instantiations and methods requiring an explicit method-descriptor or method-table argument.
+Return an eligible method's raw cached map without decoding its contents. Skip missing or
+ineligible maps and continue searching same-slot definitions and eligible ancestors.
+Publication attaches an import map directly to the already-resolved call declaration,
+without traversing the hierarchy, decoding maps, or checking an image-format flag during
+preparation. The runtime rejects images predating the contextual-receiver format; legacy
+concrete import-map rejection is not part of Version 3 lookup.
+If lookup in the method's owning type fails, obtain the actual receiver type from the saved
+`this` object for reference types, boxed wrappers, and dispatch frames. Do not dereference
+`this` for constructors, static methods, excluded generic bodies, or unboxed value-type bodies.
+Reading method metadata to recognize `.ctor` does not load signature value-type layouts.
+When metadata is unavailable, do not dereference a potentially synthetic constructor receiver;
+retain the signature fallback, which can defer frames whose layouts are unavailable.
+
+When the method belongs to an interface, first find its exact interface method-table pointer
+and source slot in the receiver hierarchy's dispatch maps. Normalize the matching target slot
+through the final receiver's vtable to obtain the actual implementation MethodDesc, then search
+its owning type and eligible ancestors for same-slot declaration maps. Interface and class
+slot ordinals are not interchangeable. If resolution fails, no map can be shared.
+
+For subsequent dispatch-map comparisons, match methods by defining module and metadata token,
+async-variant and return-dropping-variant identity, and canonical owning MethodTable identity.
+Do not compare slot ordinals alone or blindly search the receiver's raw target slot: an
+inherited nonvirtual method can have the same ordinal as an unrelated derived virtual method.
+
+For the receiver and each parent:
+
+1. Locate its dispatch map at `AuxiliaryData + sizeof(MethodTableAuxiliaryData)` when
+   `MTFlags2 & 0x4` is set; otherwise consult its canonical method table. Interpret the encoded
+   map in the original, actual method-table context.
+2. For each class alias `(source, target)`, normalize both endpoints through the final receiver's
+   vtable. If either method matches the implementation's definition and canonical owner, try
+   shareable maps from both same-slot declaration searches beginning at the map-owning type,
+   including overriding declarations on eligible ancestors.
+3. For each interface entry whose target normalizes to the same implementation definition and
+   canonical owner, read the interface pointer from the map owner's `InterfaceMap[typeID - 1]`,
+   then try the interface's source-slot declaration map. Each interface array element is one
+   target pointer.
+
+Missing final receiver vtable methods do not match. If lookup finds no map, retain the
+signature-based fallback and deferred-frame behavior described above.
+
+The native runtime can memoize a successful complex lookup in the target method's existing
+`MethodDescCodeData.GCRefMap` when the method requires no instantiation argument, without
+allocating code data. cDAC and DAC do not write this cache.
+The reader consumes a preexisting native memoized map through the own-cached-map path above.
+
+### Dispatch-map encoding
+
+Dispatch integers are MSB-first: count leading ones before a zero, at most five. Read
+`(1 << ones) - 1` payload bits and add the corresponding base from
+`[0, 1, 3, 11, 139, 32907]`. Invalid prefixes are rejected.
+
+The Version 3 header is `(numberOfInterfaceTypes << 1) | hasClassAliases`. When the low bit
+is set, read an alias count and that many absolute `(sourceSlot, targetSlot)` pairs.
+The interface portion is unchanged: each type group encodes a type-ID delta plus one,
+entry count, and a `hasNegatives` bit. Type IDs start at -1. Source and target slots start
+at -1 within each group and use deltas plus one. If negative target deltas are enabled,
+decode `0 -> 0, 1 -> +1, 2 -> -1, 3 -> +2, ...`. Older dispatch maps have an unshifted
+interface-type count with no alias prefix.
+
+### Data descriptor and dependency changes from `c2`
+
+<!-- BEGIN GENERATED: usage contract=StackWalk version=c3 diff-from=c2 -->
+### Data descriptor changes from `c2`
+
+| Change | Data Descriptor | Field | Type | Meaning |
+| --- | --- | --- | --- | --- |
+| Added | `MethodTableAuxiliaryData` | *(type size)* | `uint32` | Size of the auxiliary data before the inline encoded dispatch map |
+
+### Global variable changes from `c2`
+
+_No changes._
+
+### Contract dependency changes from `c2`
+
+_No changes._
+<!-- END GENERATED: usage contract=StackWalk version=c3 diff-from=c2 -->

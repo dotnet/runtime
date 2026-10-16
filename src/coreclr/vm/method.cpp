@@ -30,6 +30,7 @@
 #include "fieldmarshaler.h"
 #include "versionresilienthashcode.h"
 #include "typehashingalgorithms.h"
+#include "contractimpl.h"
 
 #ifdef FEATURE_COMINTEROP
 #include "comcallablewrapper.h"
@@ -333,6 +334,158 @@ PTR_BYTE MethodDesc::GetGCRefMap()
     return codeData != nullptr ? VolatileLoad(&codeData->GCRefMap) : nullptr;
 }
 
+static PTR_BYTE GetShareableGCRefMap(MethodDesc* pMD)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    if (pMD == nullptr || pMD->HasMethodInstantiation() || pMD->RequiresInstArg())
+        return nullptr;
+    return pMD->GetGCRefMap();
+}
+
+static PTR_BYTE FindGCRefMapForSlot(MethodTable* pMT, DWORD slot)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    do
+    {
+        // Publication stays on the resolved declaration. Overrides can therefore hold
+        // a map even when the method that originally introduced the slot does not.
+        for (MethodTable::IntroducedMethodIterator it(pMT, FALSE); it.IsValid(); it.Next())
+        {
+            MethodDesc* pMD = it.GetMethodDesc();
+            if (pMD->GetSlot() == slot && !pMD->IsUnboxingStub())
+            {
+                PTR_BYTE map = GetShareableGCRefMap(pMD);
+                if (map != nullptr)
+                    return map;
+            }
+        }
+        if (pMT->IsInterface() || slot >= pMT->GetNumVirtuals())
+            break;
+        pMT = pMT->GetParentMethodTable();
+    }
+    while (pMT != nullptr && slot < pMT->GetNumVirtuals());
+
+    return nullptr;
+}
+
+static bool IsSameGCRefMapImplementation(MethodDesc* pMethod, MethodDesc* pCandidate)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    return pCandidate != nullptr && pMethod->HasSameMethodDefAs(pCandidate) &&
+        pMethod->GetMethodTable()->GetCanonicalMethodTable() == pCandidate->GetMethodTable()->GetCanonicalMethodTable();
+}
+
+PTR_BYTE MethodDesc::CacheGCRefMapIfCodeDataExists(PTR_BYTE pGCRefMap)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+#ifndef DACCESS_COMPILE
+    // Lookup runs under frame/GC contracts: never allocate code data or make pages writable.
+    PTR_MethodDescCodeData codeData = VolatileLoad(&m_codeData);
+    if (codeData != nullptr && !RequiresInstArg())
+        InterlockedCompareExchangeT(&codeData->GCRefMap, pGCRefMap, nullptr);
+#endif // !DACCESS_COMPILE
+    return pGCRefMap;
+}
+
+PTR_BYTE MethodDesc::FindGCRefMap(MethodTable* pReceiverMT, bool isDispatch)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    if (HasMethodInstantiation() || (!isDispatch && RequiresInstArg()))
+        return nullptr;
+
+    PTR_BYTE map = GetGCRefMap();
+    if (map != nullptr)
+        return map;
+
+    if (IsStatic())
+        return nullptr;
+
+    MethodTable* pOwner = GetMethodTable();
+    map = FindGCRefMapForSlot(pOwner, GetSlot());
+    if (map != nullptr)
+        return CacheGCRefMapIfCodeDataExists(map);
+
+    if (pReceiverMT == nullptr)
+        pReceiverMT = pOwner;
+    if (pReceiverMT->IsInterface())
+        return nullptr;
+
+    MethodDesc* pImplementation = this;
+    if (pOwner->IsInterface())
+    {
+        // Interface and class slot numbers occupy different spaces. Find the implementation
+        // before looking for other declarations unified with its class slot.
+        bool found = false;
+        for (MethodTable* pMT = pReceiverMT; pMT != nullptr && !found; pMT = pMT->GetParentMethodTable())
+        {
+            for (DispatchMap::EncodedMapIterator it(pMT->GetDispatchMap()); it.IsValid(); it.Next())
+            {
+                DispatchMapEntry* entry = it.Entry();
+                if (entry->GetSlotNumber() == GetSlot() &&
+                    pMT->GetInterfaceMap()[entry->GetTypeID().GetInterfaceNum()].GetMethodTable() == pOwner)
+                {
+                    MethodDesc* pTarget = pReceiverMT->GetMethodDescForSlot_NoThrow(entry->GetTargetSlotNumber());
+                    if (pTarget != nullptr)
+                    {
+                        pImplementation = pTarget;
+                        found = true;
+                    }
+                    break;
+                }
+            }
+        }
+        if (!found)
+            return nullptr;
+        map = FindGCRefMapForSlot(pImplementation->GetMethodTable(), pImplementation->GetSlot());
+        if (map != nullptr)
+            return CacheGCRefMapIfCodeDataExists(map);
+    }
+
+    for (MethodTable* pMT = pReceiverMT; pMT != nullptr; pMT = pMT->GetParentMethodTable())
+    {
+        DispatchMap* dispatchMap = pMT->GetDispatchMap();
+        if (dispatchMap == nullptr)
+            continue;
+
+        UINT32 source, target;
+        DispatchMap::ClassSlotIterator aliases(dispatchMap);
+        while (aliases.Next(&source, &target))
+        {
+            // The current receiver's final vtable incorporates inherited, chained unification.
+            MethodDesc* pSource = pReceiverMT->GetMethodDescForSlot_NoThrow(source);
+            MethodDesc* pTarget = pReceiverMT->GetMethodDescForSlot_NoThrow(target);
+            if (IsSameGCRefMapImplementation(pImplementation, pSource) ||
+                IsSameGCRefMapImplementation(pImplementation, pTarget))
+            {
+                map = FindGCRefMapForSlot(pMT, source);
+                if (map != nullptr)
+                    return CacheGCRefMapIfCodeDataExists(map);
+                map = FindGCRefMapForSlot(pMT, target);
+                if (map != nullptr)
+                    return CacheGCRefMapIfCodeDataExists(map);
+            }
+        }
+
+        for (DispatchMap::EncodedMapIterator it(dispatchMap); it.IsValid(); it.Next())
+        {
+            DispatchMapEntry* entry = it.Entry();
+            MethodDesc* pTarget = pReceiverMT->GetMethodDescForSlot_NoThrow(entry->GetTargetSlotNumber());
+            if (!IsSameGCRefMapImplementation(pImplementation, pTarget))
+                continue;
+            MethodTable* pInterface = pMT->GetInterfaceMap()[entry->GetTypeID().GetInterfaceNum()].GetMethodTable();
+            map = FindGCRefMapForSlot(pInterface, entry->GetSlotNumber());
+            if (map != nullptr)
+                return CacheGCRefMapIfCodeDataExists(map);
+        }
+    }
+    return nullptr;
+}
+
 #ifndef DACCESS_COMPILE
 void MethodDesc::SetGCRefMap(PTR_BYTE pGCRefMap)
 {
@@ -340,26 +493,11 @@ void MethodDesc::SetGCRefMap(PTR_BYTE pGCRefMap)
     _ASSERTE(pGCRefMap != nullptr);
 
     // The map belongs to a non-collectible ReadyToRun image and outlives this MethodDesc.
-    PTR_BYTE pExistingMap = GetGCRefMap();
-    if (pExistingMap == nullptr)
+    if (GetGCRefMap() == nullptr)
     {
         IfFailThrow(EnsureCodeDataExists(nullptr));
-        pExistingMap = InterlockedCompareExchangeT(&m_codeData->GCRefMap, pGCRefMap, nullptr);
+        InterlockedCompareExchangeT(&m_codeData->GCRefMap, pGCRefMap, nullptr);
     }
-
-#ifdef _DEBUG
-    if (pExistingMap != nullptr)
-    {
-        // Check other imports without resolving signature types to recompute the map.
-        BYTE value;
-        do
-        {
-            value = *pGCRefMap++;
-            _ASSERTE(value == *pExistingMap++);
-        }
-        while ((value & 0x80) != 0);
-    }
-#endif // _DEBUG
 }
 #endif // !DACCESS_COMPILE
 
@@ -4331,7 +4469,7 @@ void MethodDesc::PrepareForUseAsACallTargetOfANativeImage(PTR_BYTE pGCRefMap)
     if (HaveNativeImageDependenciesBeenPrepared())
         return;
 
-    if (!IsWrapperStub())
+    if (!IsWrapperStub() && !RequiresInstArg() && !HasMethodInstantiation())
     {
         if (pGCRefMap != nullptr)
         {
@@ -4356,8 +4494,27 @@ void MethodDesc::PrepareForUseAsACallTargetOfANativeImage(PTR_BYTE pGCRefMap)
         }
     }
 
-    // A cached map is not signature-layout readiness for ABI lowering or mapless dispatch.
+    // Explicit-context bodies and wrappers can have a different incoming argument layout.
     PrepareForUseAsADependencyOfANativeImageWorker();
+}
+
+void MethodDesc::PrepareForUseAsAVirtualCallTargetOfANativeImage(PTR_BYTE pGCRefMap)
+{
+    STANDARD_VM_CONTRACT;
+
+    if (HaveNativeImageDependenciesBeenPrepared())
+        return;
+    if (!IsStatic() && !IsCtor() && !HasMethodInstantiation() && !RequiresInstArg())
+    {
+        if (pGCRefMap != nullptr)
+        {
+            SetGCRefMap(pGCRefMap);
+            return;
+        }
+        else if (GetGCRefMap() != nullptr)
+            return;
+    }
+    PrepareForUseAsADependencyOfANativeImage();
 }
 
 void MethodDesc::PrepareForUseAsADependencyOfANativeImageWorker()

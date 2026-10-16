@@ -69,6 +69,42 @@ public class R2RTestSuites
     }
 
     [ConditionalTheory(typeof(TestPaths), nameof(TestPaths.IsXArchTarget))]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ContextualReceiverMapsPreserveCallsiteKind(bool interior)
+    {
+        CompiledAssembly input = new()
+        {
+            AssemblyName = nameof(ContextualReceiverMapsPreserveCallsiteKind),
+            SourceResourceNames = ["Webcil/WasmWebcilModule.cs"],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(ContextualReceiverMapsPreserveCallsiteKind),
+            [
+                new(nameof(ContextualReceiverMapsPreserveCallsiteKind), [new CrossgenAssembly(input)])
+                {
+                    Validate = Validate,
+                },
+            ]));
+
+        void Validate(ReadyToRunReader reader)
+        {
+            string typeName = interior ? "ReceiverMapValue.RoundTrip" : "IReceiverMap.RoundTrip";
+            ReadyToRunImportSection.ImportSectionEntry entry = Assert.Single(
+                reader.ImportSections.SelectMany(section => section.Entries),
+                entry => entry.Signature?.ToString(new SignatureFormattingOptions())
+                    .Contains(typeName, StringComparison.Ordinal) == true);
+            Assert.NotNull(entry.GCRefMap);
+            GCRefMapEntry receiver = Assert.Single(entry.GCRefMap.Entries,
+                entry => entry.Token == CORCOMPILE_GCREFMAP_TOKENS.GCREFMAP_THIS);
+            Assert.Equal(interior, receiver.ThisIsInterior);
+            Assert.Equal(8, entry.GCRefMap.Entries.Count(entry => entry.Token == CORCOMPILE_GCREFMAP_TOKENS.GCREFMAP_REF));
+            Assert.Single(entry.GCRefMap.Entries, entry => entry.Token == CORCOMPILE_GCREFMAP_TOKENS.GCREFMAP_INTERIOR);
+        }
+    }
+
+    [ConditionalTheory(typeof(TestPaths), nameof(TestPaths.IsXArchTarget))]
     [InlineData(1)]
     [InlineData(2)]
     public void ManagedHelperEagerRegistration(int parallelism)

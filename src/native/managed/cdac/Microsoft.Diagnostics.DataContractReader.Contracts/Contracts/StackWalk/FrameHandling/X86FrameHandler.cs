@@ -41,7 +41,7 @@ internal class X86FrameHandler(Target target, ContextHolder<X86Context> contextH
         {
             case FrameType.PrestubMethodFrame:
             case FrameType.CallCountingHelperFrame:
-                TargetPointer gcRefMap = _frameHelpers.GetGCRefMapFromMethodDesc(framedMethodFrame.MethodDescPtr);
+                TargetPointer gcRefMap = _frameHelpers.GetGCRefMapForFrame(framedMethodFrame.Address);
                 if (gcRefMap != TargetPointer.Null)
                 {
                     decoder = new(_target, gcRefMap);
@@ -72,7 +72,16 @@ internal class X86FrameHandler(Target target, ContextHolder<X86Context> contextH
                     }
                     else
                     {
-                        hasDecoder = TryCreateSignatureGCRefMapDecoder(methodDescPtr, out decoder);
+                        TargetPointer dispatchMap = _frameHelpers.GetGCRefMapForFrame(framedMethodFrame.Address);
+                        if (dispatchMap != TargetPointer.Null)
+                        {
+                            decoder = new(_target, dispatchMap);
+                            hasDecoder = true;
+                        }
+                        else
+                        {
+                            hasDecoder = TryCreateSignatureGCRefMapDecoder(methodDescPtr, out decoder);
+                        }
                     }
                 }
                 break;
