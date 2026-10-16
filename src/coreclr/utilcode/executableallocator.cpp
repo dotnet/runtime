@@ -166,7 +166,12 @@ void ExecutableAllocator::InitLazyPreferredRange(size_t base, size_t size, int r
     // to coreclr.dll.  This avoids having to create jump stubs for calls to
     // helpers and R2R images loaded close to coreclr.dll.
     //
+#if defined(TARGET_ARM64)
+    // ARM64 B/BL instructions have a +/-128 MiB reach; leave a 64 KiB margin.
+    SIZE_T reach = 0x07FF0000u;
+#else
     SIZE_T reach = 0x7FFF0000u;
+#endif
 
     // We will choose the preferred code region based on the address of coreclr.dll. The JIT helpers
     // in coreclr.dll are the most heavily called functions.
