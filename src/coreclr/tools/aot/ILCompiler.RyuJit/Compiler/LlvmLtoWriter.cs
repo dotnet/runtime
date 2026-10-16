@@ -10,8 +10,10 @@ using System.Text;
 
 using ILCompiler.DependencyAnalysis;
 using Internal.IL;
+using Internal.ReadyToRunConstants;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
+using Internal.TypeSystem.Interop;
 
 namespace ILCompiler
 {
@@ -20,15 +22,24 @@ namespace ILCompiler
         private readonly RyuJitCompilation _compilation;
         private readonly Dictionary<MethodDesc, MethodCodeNode> _nodes;
         private readonly Dictionary<MethodDesc, Export> _exports = new();
+        private readonly Dictionary<MethodDesc, Export> _nativeBodies = new();
         private readonly HashSet<MethodDesc> _pending = new();
         private readonly HashSet<MethodDesc> _rejected = new();
         private readonly Dictionary<MethodDesc, string> _addresses = new();
+        private readonly ISymbolNode _reversePInvokeEnter;
+        private readonly ISymbolNode _reversePInvokeExit;
+
+        internal readonly string ReversePInvokeEnter;
+        internal readonly string ReversePInvokeExit;
 
         internal readonly SortedDictionary<string, string> Intrinsics = new(StringComparer.Ordinal);
 
         internal sealed record Export(MethodCodeNode Node, ScalarType ReturnType, ScalarType[] Parameters, string Body)
         {
             public string Symbol;
+            public HashSet<MethodDesc> References;
+            public HashSet<string> NativeMathHelpers;
+            public bool InlineOnly;
         }
 
         internal sealed class UnsupportedException(string reason) : Exception(reason);
@@ -37,6 +48,10 @@ namespace ILCompiler
         {
             _compilation = compilation;
             _nodes = methods.ToDictionary(node => node.Method);
+            _reversePInvokeEnter = compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelper.ReversePInvokeEnter);
+            _reversePInvokeExit = compilation.NodeFactory.ReadyToRunHelper(ReadyToRunHelper.ReversePInvokeExit);
+            ReversePInvokeEnter = Quote(_reversePInvokeEnter.GetMangledName(compilation.NameMangler));
+            ReversePInvokeExit = Quote(_reversePInvokeExit.GetMangledName(compilation.NameMangler));
         }
 
         public static void Write(string path, RyuJitCompilation compilation, IEnumerable<MethodCodeNode> methods)
@@ -52,6 +67,12 @@ namespace ILCompiler
                 writer.WriteLine("; NativeAOT optimization IR. Link with RyuJIT object.");
                 writer.WriteLine($"target triple = \"{targetTriple}\"");
 
+                if (exporter._exports.Keys.Any(method => method.IsUnmanagedCallersOnly))
+                {
+                    writer.WriteLine($"declare void {exporter.ReversePInvokeEnter}(ptr)");
+                    writer.WriteLine($"declare void {exporter.ReversePInvokeExit}(ptr)");
+                }
+
                 foreach (string declaration in exporter.Intrinsics.Values)
                     writer.WriteLine(declaration);
 
@@ -60,18 +81,20 @@ namespace ILCompiler
                     if (!exporter._exports.ContainsKey(address.Key))
                     {
                         MethodSignature signature = address.Key.Signature;
-                        bool managed = !address.Key.IsUnmanagedCallersOnly;
+                        bool unmanaged = address.Key.IsUnmanagedCallersOnly;
                         string types = string.Join(", ", Enumerable.Range(0, signature.Length).Select(i =>
-                            (managed ? ScalarType.From(signature[i]).AbiType : ScalarType.From(signature[i])).IR));
+                            exporter.FormatSignatureType(ScalarType.From(signature[i]), unmanaged)));
                         ScalarType returnType = ScalarType.From(signature.ReturnType, allowVoid: true);
-                        writer.WriteLine($"declare {(managed ? returnType.AbiType : returnType).IR} {Quote(address.Value)}({types})");
+                        writer.WriteLine($"declare {exporter.FormatSignatureType(returnType, unmanaged, isReturn: true)} {Quote(address.Value)}({types})");
                     }
                 }
 
-                foreach (Export export in exporter._exports.Values.OrderBy(e => e.Symbol, StringComparer.Ordinal))
+                foreach (Export export in exporter._exports.Values.Concat(exporter._nativeBodies.Values).OrderBy(e => e.Symbol, StringComparer.Ordinal))
                 {
-                    string parameters = string.Join(", ", export.Parameters.Select((type, index) => $"{type.AbiType.IR} %arg{index}"));
-                    writer.WriteLine($"define available_externally {export.ReturnType.AbiType.IR} {Quote(export.Symbol)}({parameters}) {{\n{export.Body}}}\n");
+                    bool unmanaged = export.Node.Method.IsUnmanagedCallersOnly;
+                    string parameters = string.Join(", ", export.Parameters.Select((type, index) => $"{exporter.FormatSignatureType(type, unmanaged)} %arg{index}"));
+                    string attributes = export.InlineOnly ? " alwaysinline" : "";
+                    writer.WriteLine($"define available_externally {exporter.FormatSignatureType(export.ReturnType, unmanaged, isReturn: true)} {Quote(export.Symbol)}({parameters}){attributes} {{\n{export.Body}}}\n");
                 }
             }
 
@@ -106,7 +129,53 @@ namespace ILCompiler
             return $"{architecture}-{platform}";
         }
 
-        internal Export GetCallee(MethodDesc method) => TryExport(method) ?? throw new UnsupportedException($"Call target is not a verified scalar method: {method}");
+        private string FormatSignatureType(ScalarType type, bool unmanaged, bool isReturn = false)
+        {
+            if (!unmanaged)
+                return type.AbiType.IR;
+
+            TargetDetails target = _compilation.TypeSystemContext.Target;
+            // Match the native ABI's signext/zeroext attributes for narrow integers.
+            bool requiresSmallIntegerExtension = target.Architecture switch
+            {
+                TargetArchitecture.X64 => !target.IsWindows,
+                TargetArchitecture.ARM64 => target.IsApplePlatform,
+                _ => false,
+            };
+            if (type.Kind == ScalarKind.Integer && type.Bits < 32 && requiresSmallIntegerExtension)
+            {
+                string extension = type.Unsigned ? "zeroext" : "signext";
+                return isReturn ? $"{extension} {type.IR}" : $"{type.IR} {extension}";
+            }
+            return type.IR;
+        }
+
+        internal Export GetCallee(MethodDesc method, bool nativeBody)
+        {
+            if (method.IsUnmanagedCallersOnly)
+                throw new UnsupportedException("A managed call cannot target an unmanaged entry point");
+
+            Export export = TryExport(method) ?? throw new UnsupportedException($"Call target is not a verified scalar method: {method}");
+            if (!nativeBody)
+                return export;
+
+            if (!_nativeBodies.TryGetValue(method, out Export inlineBody))
+            {
+                // A native frame has no managed GC information, rely on LLVM's inliner here but never let a missed inline resolve to a method body.
+                // available_externally never emits an out-of-line definition for that symbol, regardless of whether inlining succeeds.
+                // So if the method end up not being inlined, the linker will error out on the missing symbol.
+                var translator = new LlvmLtoILTranslator(this, method, _compilation.GetMethodIL(method), nativeBody: true);
+                string body = translator.Translate();
+                inlineBody = export with
+                {
+                    Body = body,
+                    Symbol = "__llvm_lto_inline_" + export.Node.GetMangledName(_compilation.NameMangler),
+                    InlineOnly = true,
+                };
+                _nativeBodies.Add(method, inlineBody);
+            }
+            return inlineBody;
+        }
 
         internal string GetAddress(MethodDesc method)
         {
@@ -141,25 +210,41 @@ namespace ILCompiler
             {
                 if (!_nodes.TryGetValue(method, out MethodCodeNode node) || method is not EcmaMethod ||
                     method.HasInstantiation || method.OwningType.HasInstantiation ||
-                    method.IsUnmanagedCallersOnly || method.IsPInvoke || method.IsInternalCall || method.IsIntrinsic ||
+                    method.IsPInvoke || method.IsInternalCall || method.IsIntrinsic ||
                     method.IsNoInlining || method.IsNoOptimization || method.IsSynchronized || method.IsAsync || method.RequireSecObject ||
                     method.OwningType.HasStaticConstructor || method.Signature.Flags != MethodSignatureFlags.Static ||
                     node.ShouldSkipEmittingObjectNode(_compilation.NodeFactory) || node.EHInfo != null)
                     throw new UnsupportedException("Unsupported calling, initialization, or optimization semantics");
 
+                if (method.IsUnmanagedCallersOnly && (method.GetUnmanagedCallersOnlyMethodCallingConventions() is not (UnmanagedCallingConventions.Cdecl or UnmanagedCallingConventions.Stdcall) ||
+                     MarshalHelpers.IsMarshallingRequired(method.Signature, ((MetadataType)method.OwningType).Module)))
+                    throw new UnsupportedException("Unsupported unmanaged calling convention or non-blittable signature");
+
                 MethodIL il = _compilation.GetMethodIL(method);
                 if (il == null || il.GetExceptionRegions().Length != 0)
                     throw new UnsupportedException("Missing IL or exception regions");
 
-                var translator = new LlvmLtoILTranslator(this, method, il);
+                var translator = new LlvmLtoILTranslator(this, method, il, nativeBody: method.IsUnmanagedCallersOnly);
                 string body = translator.Translate();
 
                 ObjectNode.ObjectData code = node.GetData(_compilation.NodeFactory, relocsOnly: false);
                 if (code == null)
                     throw new UnsupportedException("Missing RyuJIT body");
 
+                bool hasReversePInvokeEnter = false;
+                bool hasReversePInvokeExit = false;
                 foreach (Relocation relocation in code.Relocs ?? [])
                 {
+                    if (method.IsUnmanagedCallersOnly && ReferenceEquals(relocation.Target, _reversePInvokeEnter))
+                    {
+                        hasReversePInvokeEnter = true;
+                        continue;
+                    }
+                    if (method.IsUnmanagedCallersOnly && ReferenceEquals(relocation.Target, _reversePInvokeExit))
+                    {
+                        hasReversePInvokeExit = true;
+                        continue;
+                    }
                     // Switch dispatch can use relocations to offsets in this body.
                     // Recursive IL calls have already failed the dependency check.
                     if (ReferenceEquals(relocation.Target, node))
@@ -180,7 +265,15 @@ namespace ILCompiler
                     throw new UnsupportedException($"Unmodelled native relocation: {relocation.Target.GetMangledName(_compilation.NameMangler)}");
                 }
 
-                var export = new Export(node, translator.ReturnType, translator.Parameters, body) { Symbol = GetAddress(method) };
+                if (method.IsUnmanagedCallersOnly && (!hasReversePInvokeEnter || !hasReversePInvokeExit))
+                    throw new UnsupportedException("Unexpected reverse P/Invoke transition sequence");
+
+                var export = new Export(node, translator.ReturnType, translator.Parameters, body)
+                {
+                    Symbol = GetAddress(method),
+                    References = translator.References,
+                    NativeMathHelpers = translator.NativeMathHelpers,
+                };
                 _exports.Add(method, export);
                 return export;
             }

@@ -3,28 +3,11 @@
 
 using System;
 using System.IO;
-using System.Runtime;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
-
-// This test deliberately uses the runtime helper ABI. The native helpers are
-// bounded, non-allocating scalar functions called in cooperative mode. These
-// attributes do not describe a supported public interop surface.
-namespace System.Runtime
-{
-    [AttributeUsage(AttributeTargets.Method)]
-    internal sealed class RuntimeExportAttribute : Attribute
-    {
-        public RuntimeExportAttribute(string name) { }
-    }
-
-    [AttributeUsage(AttributeTargets.Method)]
-    internal sealed class RuntimeImportAttribute : Attribute
-    {
-        public RuntimeImportAttribute(string name) { }
-    }
-}
+using System.Threading;
 
 internal enum ScalarEnum : short { MinusOne = -1, Zero = 0, One = 1 }
 internal enum MathOperation { Abs, Sqrt, Floor, Ceiling, Truncate, CopySign, Identity }
@@ -33,25 +16,25 @@ internal static unsafe class ManagedExports
 {
     // Integer operations.
 
-    [RuntimeExport("ManagedAdd")]
+    [UnmanagedCallersOnly(EntryPoint = "ManagedAdd", CallConvs = new[] { typeof(CallConvCdecl) })]
     public static int Add(int x, int y) => unchecked(x + y);
 
-    [RuntimeExport("ManagedSubtract")]
+    [UnmanagedCallersOnly(EntryPoint = "ManagedSubtract", CallConvs = new[] { typeof(CallConvCdecl) })]
     public static int Subtract(int x, int y) => unchecked(x - y);
 
-    [RuntimeExport("ManagedWide")]
+    [UnmanagedCallersOnly(EntryPoint = "ManagedWide", CallConvs = new[] { typeof(CallConvCdecl) })]
     public static long Wide(long x, long y) => unchecked((x - y) ^ (x * y));
 
-    [RuntimeExport("ManagedShift")]
+    [UnmanagedCallersOnly(EntryPoint = "ManagedShift", CallConvs = new[] { typeof(CallConvCdecl) })]
     public static long Shift(long x, int count) => (x << count) ^ (x >> count) ^ (long)((ulong)x >> count);
 
-    [RuntimeExport("ManagedConvert")]
+    [UnmanagedCallersOnly(EntryPoint = "ManagedConvert", CallConvs = new[] { typeof(CallConvCdecl) })]
     public static long Convert(int x) => (long)x + (long)(uint)x;
 
-    [RuntimeExport("ManagedCompare")]
+    [UnmanagedCallersOnly(EntryPoint = "ManagedCompare", CallConvs = new[] { typeof(CallConvCdecl) })]
     public static int Compare(ulong x, ulong y) => x > y ? 1 : 0;
 
-    [RuntimeExport("ManagedLocals")]
+    [UnmanagedCallersOnly(EntryPoint = "ManagedLocals", CallConvs = new[] { typeof(CallConvCdecl) })]
     public static int Locals(int x, int y)
     {
         int saved = unchecked(x * y);
@@ -59,13 +42,13 @@ internal static unsafe class ManagedExports
         return unchecked(saved + x - y);
     }
 
-    [RuntimeExport("ManagedBranch")]
+    [UnmanagedCallersOnly(EntryPoint = "ManagedBranch", CallConvs = new[] { typeof(CallConvCdecl) })]
     public static int Branch(int x) => x < 0 ? -x : x;
 
-    [RuntimeExport("ManagedPhi")]
+    [UnmanagedCallersOnly(EntryPoint = "ManagedPhi", CallConvs = new[] { typeof(CallConvCdecl) })]
     public static int Phi(int x, int y) => unchecked((x > y ? x : y) + (x < 0 ? 7 : 11));
 
-    [RuntimeExport("ManagedSwitch")]
+    [UnmanagedCallersOnly(EntryPoint = "ManagedSwitch", CallConvs = new[] { typeof(CallConvCdecl) })]
     public static int Switch(int x)
     {
         switch (x)
@@ -80,25 +63,25 @@ internal static unsafe class ManagedExports
         }
     }
 
-    [RuntimeExport("ManagedNarrow")]
+    [UnmanagedCallersOnly(EntryPoint = "ManagedNarrow", CallConvs = new[] { typeof(CallConvCdecl) })]
     public static byte Narrow(int x) => unchecked((byte)(x + 129));
 
-    [RuntimeExport("ManagedSmallArguments")]
-    public static short SmallArguments(sbyte x, ushort y, char z, bool flag) => unchecked((short)(flag ? x + y + z : x - y - z));
+    [UnmanagedCallersOnly(EntryPoint = "ManagedSmallArguments", CallConvs = new[] { typeof(CallConvCdecl) })]
+    public static short SmallArguments(sbyte x, ushort y, ushort z, byte flag) => unchecked((short)(flag != 0 ? x + y + z : x - y - z));
 
-    [RuntimeExport("ManagedEnum")]
+    [UnmanagedCallersOnly(EntryPoint = "ManagedEnum", CallConvs = new[] { typeof(CallConvCdecl) })]
     public static ScalarEnum Enum(ScalarEnum x) => unchecked((ScalarEnum)((short)x + 1));
 
-    [RuntimeExport("ManagedNativeInt")]
+    [UnmanagedCallersOnly(EntryPoint = "ManagedNativeInt", CallConvs = new[] { typeof(CallConvCdecl) })]
     public static nint NativeInt(nint x, int count) => ((x + 5) >> count) ^ (nint)(uint)x;
 
-    [RuntimeExport("ManagedSafeDivide")]
+    [UnmanagedCallersOnly(EntryPoint = "ManagedSafeDivide", CallConvs = new[] { typeof(CallConvCdecl) })]
     public static int SafeDivide(int x) => x / 3;
 
-    [RuntimeExport("ManagedSafeRemainder")]
+    [UnmanagedCallersOnly(EntryPoint = "ManagedSafeRemainder", CallConvs = new[] { typeof(CallConvCdecl) })]
     public static ulong SafeRemainder(ulong x) => x % 7;
 
-    [RuntimeExport("ManagedLocalAddress")]
+    [UnmanagedCallersOnly(EntryPoint = "ManagedLocalAddress", CallConvs = new[] { typeof(CallConvCdecl) })]
     public static int LocalAddress(int x, int y)
     {
         int value = x;
@@ -109,43 +92,43 @@ internal static unsafe class ManagedExports
 
     // Floating-point operations.
 
-    [RuntimeExport("ManagedFloat")]
+    [UnmanagedCallersOnly(EntryPoint = "ManagedFloat", CallConvs = new[] { typeof(CallConvCdecl) })]
     public static double Floating(double x) => x + 1;
 
-    [RuntimeExport("ManagedFloatArithmetic")]
+    [UnmanagedCallersOnly(EntryPoint = "ManagedFloatArithmetic", CallConvs = new[] { typeof(CallConvCdecl) })]
     public static float FloatArithmetic(float x, float y) => (x + y) - x;
 
-    [RuntimeExport("ManagedDoubleArithmetic")]
+    [UnmanagedCallersOnly(EntryPoint = "ManagedDoubleArithmetic", CallConvs = new[] { typeof(CallConvCdecl) })]
     public static double DoubleArithmetic(double x, double y) => (x - y) * 2.0 / y;
 
-    [RuntimeExport("ManagedFloatCompare")]
+    [UnmanagedCallersOnly(EntryPoint = "ManagedFloatCompare", CallConvs = new[] { typeof(CallConvCdecl) })]
     public static int FloatCompare(double x, double y) => x < y ? 1 : x > y ? 2 : x == y ? 3 : 4;
 
-    [RuntimeExport("ManagedUIntToDouble")]
+    [UnmanagedCallersOnly(EntryPoint = "ManagedUIntToDouble", CallConvs = new[] { typeof(CallConvCdecl) })]
     public static double UIntToDouble(ulong x) => x;
 
-    [RuntimeExport("ManagedDoubleToInt")]
+    [UnmanagedCallersOnly(EntryPoint = "ManagedDoubleToInt", CallConvs = new[] { typeof(CallConvCdecl) })]
     public static int DoubleToInt(double x) => (int)x;
 
-    [RuntimeExport("ManagedDoubleToUInt")]
+    [UnmanagedCallersOnly(EntryPoint = "ManagedDoubleToUInt", CallConvs = new[] { typeof(CallConvCdecl) })]
     public static uint DoubleToUInt(double x) => (uint)x;
 
-    [RuntimeExport("ManagedDoubleToLong")]
+    [UnmanagedCallersOnly(EntryPoint = "ManagedDoubleToLong", CallConvs = new[] { typeof(CallConvCdecl) })]
     public static long DoubleToLong(double x) => (long)x;
 
-    [RuntimeExport("ManagedDoubleToULong")]
+    [UnmanagedCallersOnly(EntryPoint = "ManagedDoubleToULong", CallConvs = new[] { typeof(CallConvCdecl) })]
     public static ulong DoubleToULong(double x) => (ulong)x;
 
-    [RuntimeExport("ManagedDoubleToByte")]
+    [UnmanagedCallersOnly(EntryPoint = "ManagedDoubleToByte", CallConvs = new[] { typeof(CallConvCdecl) })]
     public static byte DoubleToByte(double x) => (byte)x;
 
-    [RuntimeExport("ManagedDoubleToSByte")]
+    [UnmanagedCallersOnly(EntryPoint = "ManagedDoubleToSByte", CallConvs = new[] { typeof(CallConvCdecl) })]
     public static sbyte DoubleToSByte(double x) => (sbyte)x;
 
-    [RuntimeExport("ManagedLocalBitcast")]
+    [UnmanagedCallersOnly(EntryPoint = "ManagedLocalBitcast", CallConvs = new[] { typeof(CallConvCdecl) })]
     public static int LocalBitcast(float x) => *(int*)&x;
 
-    [RuntimeExport("ManagedMath")]
+    [UnmanagedCallersOnly(EntryPoint = "ManagedMath", CallConvs = new[] { typeof(CallConvCdecl) })]
     public static double MathIntrinsic(double x, double y, MathOperation operation) => operation switch
     {
         MathOperation.Abs => Math.Abs(x),
@@ -157,7 +140,7 @@ internal static unsafe class ManagedExports
         _ => x,
     };
 
-    [RuntimeExport("ManagedMathF")]
+    [UnmanagedCallersOnly(EntryPoint = "ManagedMathF", CallConvs = new[] { typeof(CallConvCdecl) })]
     public static float MathFIntrinsic(float x, float y, MathOperation operation) => operation switch
     {
         MathOperation.Abs => MathF.Abs(x),
@@ -171,70 +154,96 @@ internal static unsafe class ManagedExports
 
     // Calls and function pointers.
 
-    [RuntimeExport("ManagedCompose")]
-    public static int Compose(int x) => ManagedExports.Add(x, 2) ^ ManagedExports.Subtract(x, 3);
+    [UnmanagedCallersOnly(EntryPoint = "ManagedCompose", CallConvs = new[] { typeof(CallConvCdecl) })]
+    public static int Compose(int x) => ManagedHelpers.Add(x, 2) ^ ManagedHelpers.Add(x, -3);
 
-    [RuntimeExport("ManagedPointerGetter")]
-    public static delegate*<int, int, int> PointerGetter() => &ManagedExports.Add;
+    [UnmanagedCallersOnly(EntryPoint = "ManagedPointerGetter", CallConvs = new[] { typeof(CallConvCdecl) })]
+    public static delegate* unmanaged[Cdecl]<int, int, int> PointerGetter() => &ManagedExports.Add;
 
-    [RuntimeExport("ManagedPointerSelect")]
-    public static delegate*<int, int, int> PointerSelect(delegate*<int, int, int> left, delegate*<int, int, int> right, int choose) => choose == 0 ? left : right;
+    [UnmanagedCallersOnly(EntryPoint = "ManagedPointerSelect", CallConvs = new[] { typeof(CallConvCdecl) })]
+    public static delegate* unmanaged[Cdecl]<int, int, int> PointerSelect(delegate* unmanaged[Cdecl]<int, int, int> left, delegate* unmanaged[Cdecl]<int, int, int> right, int choose) => choose == 0 ? left : right;
 
-    [RuntimeExport("ManagedKnownCalli")]
+    [UnmanagedCallersOnly(EntryPoint = "ManagedKnownCalli", CallConvs = new[] { typeof(CallConvCdecl) })]
     public static int KnownCalli(int x)
     {
-        delegate*<int, int, int> callback = &ManagedExports.Add;
+        delegate*<int, int, int> callback = &ManagedHelpers.Add;
         return callback(x, 1);
     }
 
-    [RuntimeExport("ManagedVoid")]
+    [UnmanagedCallersOnly(EntryPoint = "ManagedVoid")]
     public static void Empty() { }
+
+    [UnmanagedCallersOnly(EntryPoint = "ManagedCallback", CallConvs = new[] { typeof(CallConvCdecl) })]
+    public static int Callback(int x) => unchecked(x + 9);
+
+    [UnmanagedCallersOnly(EntryPoint = "ManagedQuoted%arg0", CallConvs = new[] { typeof(CallConvCdecl) })]
+    public static int QuotedAdd(int x, int y) => unchecked(x + y);
+
+    [UnmanagedCallersOnly(EntryPoint = "ManagedQuotedPointerGetter", CallConvs = new[] { typeof(CallConvCdecl) })]
+    public static delegate* unmanaged[Cdecl]<int, int, int> QuotedPointerGetter() => ManagedHelpers.GetQuotedPointer();
+}
+
+internal static unsafe class ManagedHelpers
+{
+    // Exercise LLVM inlining of nested calls, multiple returns, and quoted symbols.
+    public static int Add(int x, int y)
+    {
+        if (x < 0)
+            return unchecked(x + y);
+        if (x == 0)
+            return y;
+        return AddPositive(x, y);
+    }
+
+    public static int AddPositive(int x, int y) => unchecked(x + y);
+    public static delegate* unmanaged[Cdecl]<int, int, int> GetQuotedPointer() => &ManagedExports.QuotedAdd;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static int NoInline(int x) => unchecked(x + 7);
+    public static int Recursive(int x) => x == 0 ? 0 : Recursive(x - 1);
 }
 
 internal static unsafe class RejectedExports
 {
     public static int Field;
 
-    [RuntimeExport("RejectedNoInline"), MethodImpl(MethodImplOptions.NoInlining)]
+    [UnmanagedCallersOnly(EntryPoint = "RejectedNoInline", CallConvs = new[] { typeof(CallConvCdecl) }), MethodImpl(MethodImplOptions.NoInlining)]
     public static int NoInline(int x) => unchecked(x + 7);
 
-    [RuntimeExport("RejectedNoOptimization"), MethodImpl(MethodImplOptions.NoOptimization)]
+    [UnmanagedCallersOnly(EntryPoint = "RejectedNoOptimization", CallConvs = new[] { typeof(CallConvCdecl) }), MethodImpl(MethodImplOptions.NoOptimization)]
     public static int NoOptimization(int x) => unchecked(x + 7);
 
-    [RuntimeExport("RejectedCall")]
-    public static int Call(int x) => NoInline(x);
+    [UnmanagedCallersOnly(EntryPoint = "RejectedCall", CallConvs = new[] { typeof(CallConvCdecl) })]
+    public static int Call(int x) => ManagedHelpers.NoInline(x);
 
-    [RuntimeExport("RejectedField")]
+    [UnmanagedCallersOnly(EntryPoint = "RejectedField", CallConvs = new[] { typeof(CallConvCdecl) })]
     public static int ReadField() => Field;
 
-    [RuntimeExport("RejectedChecked")]
+    [UnmanagedCallersOnly(EntryPoint = "RejectedChecked", CallConvs = new[] { typeof(CallConvCdecl) })]
     public static int Checked(int x) => checked(x + 1);
 
-    [RuntimeExport("RejectedDivision")]
+    [UnmanagedCallersOnly(EntryPoint = "RejectedDivision", CallConvs = new[] { typeof(CallConvCdecl) })]
     public static int Divide(int x, int y) => x / y;
 
-    [RuntimeExport("RejectedReference")]
-    public static int Reference(object x) => x == null ? 0 : 1;
+    [UnmanagedCallersOnly(EntryPoint = "RejectedReference", CallConvs = new[] { typeof(CallConvCdecl) })]
+    public static int Reference(nint x) { object value = x == 0 ? null : new object(); return value == null ? 0 : 1; }
 
-    [UnmanagedCallersOnly(EntryPoint = "RejectedUnmanagedEntry")]
-    public static int UnmanagedEntry(int x) => unchecked(x + 9);
+    [UnmanagedCallersOnly(EntryPoint = "RejectedFunctionPointerCall", CallConvs = new[] { typeof(CallConvCdecl) })]
+    public static unsafe int Indirect(delegate* unmanaged[Cdecl]<int, int, int> callback, int x, int y) => callback(x, y);
 
-    [RuntimeExport("RejectedFunctionPointerCall")]
-    public static unsafe int Indirect(delegate*<int, int, int> callback, int x, int y) => callback(x, y);
-
-    [RuntimeExport("RejectedPointerRead")]
+    [UnmanagedCallersOnly(EntryPoint = "RejectedPointerRead", CallConvs = new[] { typeof(CallConvCdecl) })]
     public static int PointerRead(int* pointer) => *pointer;
 
-    [RuntimeExport("RejectedDivideMinusOne")]
+    [UnmanagedCallersOnly(EntryPoint = "RejectedDivideMinusOne", CallConvs = new[] { typeof(CallConvCdecl) })]
     public static int DivideMinusOne(int x) => x / -1;
 
-    [RuntimeExport("RejectedLoop")]
+    [UnmanagedCallersOnly(EntryPoint = "RejectedLoop", CallConvs = new[] { typeof(CallConvCdecl) })]
     public static int Loop(int count) { int sum = 0; for (int i = 0; i < count; i++) sum += i; return sum; }
 
-    [RuntimeExport("RejectedRecursive")]
-    public static int Recursive(int x) => x == 0 ? 0 : Recursive(x - 1);
+    [UnmanagedCallersOnly(EntryPoint = "RejectedRecursive", CallConvs = new[] { typeof(CallConvCdecl) })]
+    public static int Recursive(int x) => ManagedHelpers.Recursive(x);
 
-    [RuntimeExport("RejectedEH")]
+    [UnmanagedCallersOnly(EntryPoint = "RejectedEH", CallConvs = new[] { typeof(CallConvCdecl) })]
     public static int ExceptionHandling(int x) { try { return x; } finally { RejectedExports.Field = x; } }
 }
 
@@ -243,7 +252,7 @@ internal static class TypeWithConstructor
     public static int Field;
     static TypeWithConstructor() { Field = 23; }
 
-    [RuntimeExport("RejectedClassConstructor")]
+    [UnmanagedCallersOnly(EntryPoint = "RejectedClassConstructor", CallConvs = new[] { typeof(CallConvCdecl) })]
     public static int Leaf(int x) => unchecked(x + 1);
 }
 
@@ -269,91 +278,103 @@ internal static class PreinitScalarFixture
 internal static unsafe class LlvmLtoTests
 {
     // Integer operations.
-    [RuntimeImport("NativeWide"), MethodImpl(MethodImplOptions.InternalCall)]
+    [DllImport("llvmltonative", EntryPoint = "NativeWide", CallingConvention = CallingConvention.Cdecl)]
     private static extern long NativeWide(long x, long y);
-    [RuntimeImport("NativeShift"), MethodImpl(MethodImplOptions.InternalCall)]
+    [DllImport("llvmltonative", EntryPoint = "NativeShift", CallingConvention = CallingConvention.Cdecl)]
     private static extern long NativeShift(long x, int count);
-    [RuntimeImport("NativeConvert"), MethodImpl(MethodImplOptions.InternalCall)]
+    [DllImport("llvmltonative", EntryPoint = "NativeConvert", CallingConvention = CallingConvention.Cdecl)]
     private static extern long NativeConvert(int x);
-    [RuntimeImport("NativeCompare"), MethodImpl(MethodImplOptions.InternalCall)]
+    [DllImport("llvmltonative", EntryPoint = "NativeCompare", CallingConvention = CallingConvention.Cdecl)]
     private static extern int NativeCompare(ulong x, ulong y);
-    [RuntimeImport("NativeLocals"), MethodImpl(MethodImplOptions.InternalCall)]
+    [DllImport("llvmltonative", EntryPoint = "NativeLocals", CallingConvention = CallingConvention.Cdecl)]
     private static extern int NativeLocals(int x, int y);
-    [RuntimeImport("NativePhi"), MethodImpl(MethodImplOptions.InternalCall)]
+    [DllImport("llvmltonative", EntryPoint = "NativePhi", CallingConvention = CallingConvention.Cdecl)]
     private static extern int NativePhi(int x, int y);
-    [RuntimeImport("NativeSwitch"), MethodImpl(MethodImplOptions.InternalCall)]
+    [DllImport("llvmltonative", EntryPoint = "NativeSwitch", CallingConvention = CallingConvention.Cdecl)]
     private static extern int NativeSwitch(int x);
-    [RuntimeImport("NativeNarrow"), MethodImpl(MethodImplOptions.InternalCall)]
+    [DllImport("llvmltonative", EntryPoint = "NativeNarrow", CallingConvention = CallingConvention.Cdecl)]
     private static extern byte NativeNarrow(int x);
-    [RuntimeImport("NativeSmallArguments"), MethodImpl(MethodImplOptions.InternalCall)]
-    private static extern short NativeSmallArguments(sbyte x, ushort y, char z, bool flag);
-    [RuntimeImport("NativeEnum"), MethodImpl(MethodImplOptions.InternalCall)]
+    [DllImport("llvmltonative", EntryPoint = "NativeSmallArguments", CallingConvention = CallingConvention.Cdecl)]
+    private static extern short NativeSmallArguments(sbyte x, ushort y, ushort z, byte flag);
+    [DllImport("llvmltonative", EntryPoint = "NativeEnum", CallingConvention = CallingConvention.Cdecl)]
     private static extern ScalarEnum NativeEnum(ScalarEnum x);
-    [RuntimeImport("NativeNativeInt"), MethodImpl(MethodImplOptions.InternalCall)]
+    [DllImport("llvmltonative", EntryPoint = "NativeNativeInt", CallingConvention = CallingConvention.Cdecl)]
     private static extern nint NativeNativeInt(nint x, int count);
-    [RuntimeImport("NativeSafeDivide"), MethodImpl(MethodImplOptions.InternalCall)]
+    [DllImport("llvmltonative", EntryPoint = "NativeSafeDivide", CallingConvention = CallingConvention.Cdecl)]
     private static extern int NativeSafeDivide(int x);
-    [RuntimeImport("NativeSafeRemainder"), MethodImpl(MethodImplOptions.InternalCall)]
+    [DllImport("llvmltonative", EntryPoint = "NativeSafeRemainder", CallingConvention = CallingConvention.Cdecl)]
     private static extern ulong NativeSafeRemainder(ulong x);
-    [RuntimeImport("NativeLocalAddress"), MethodImpl(MethodImplOptions.InternalCall)]
+    [DllImport("llvmltonative", EntryPoint = "NativeLocalAddress", CallingConvention = CallingConvention.Cdecl)]
     private static extern int NativeLocalAddress(int x, int y);
 
     // Floating-point operations.
-    [RuntimeImport("NativeFloatArithmetic"), MethodImpl(MethodImplOptions.InternalCall)]
+    [DllImport("llvmltonative", EntryPoint = "NativeFloatArithmetic", CallingConvention = CallingConvention.Cdecl)]
     private static extern float NativeFloatArithmetic(float x, float y);
-    [RuntimeImport("NativeDoubleArithmetic"), MethodImpl(MethodImplOptions.InternalCall)]
+    [DllImport("llvmltonative", EntryPoint = "NativeDoubleArithmetic", CallingConvention = CallingConvention.Cdecl)]
     private static extern double NativeDoubleArithmetic(double x, double y);
-    [RuntimeImport("NativeFloatCompare"), MethodImpl(MethodImplOptions.InternalCall)]
+    [DllImport("llvmltonative", EntryPoint = "NativeFloatCompare", CallingConvention = CallingConvention.Cdecl)]
     private static extern int NativeFloatCompare(double x, double y);
-    [RuntimeImport("NativeUIntToDouble"), MethodImpl(MethodImplOptions.InternalCall)]
+    [DllImport("llvmltonative", EntryPoint = "NativeUIntToDouble", CallingConvention = CallingConvention.Cdecl)]
     private static extern double NativeUIntToDouble(ulong x);
-    [RuntimeImport("NativeDoubleToInt"), MethodImpl(MethodImplOptions.InternalCall)]
+    [DllImport("llvmltonative", EntryPoint = "NativeDoubleToInt", CallingConvention = CallingConvention.Cdecl)]
     private static extern int NativeDoubleToInt(double x);
-    [RuntimeImport("NativeDoubleToUInt"), MethodImpl(MethodImplOptions.InternalCall)]
+    [DllImport("llvmltonative", EntryPoint = "NativeDoubleToUInt", CallingConvention = CallingConvention.Cdecl)]
     private static extern uint NativeDoubleToUInt(double x);
-    [RuntimeImport("NativeDoubleToLong"), MethodImpl(MethodImplOptions.InternalCall)]
+    [DllImport("llvmltonative", EntryPoint = "NativeDoubleToLong", CallingConvention = CallingConvention.Cdecl)]
     private static extern long NativeDoubleToLong(double x);
-    [RuntimeImport("NativeDoubleToULong"), MethodImpl(MethodImplOptions.InternalCall)]
+    [DllImport("llvmltonative", EntryPoint = "NativeDoubleToULong", CallingConvention = CallingConvention.Cdecl)]
     private static extern ulong NativeDoubleToULong(double x);
-    [RuntimeImport("NativeDoubleToByte"), MethodImpl(MethodImplOptions.InternalCall)]
+    [DllImport("llvmltonative", EntryPoint = "NativeDoubleToByte", CallingConvention = CallingConvention.Cdecl)]
     private static extern byte NativeDoubleToByte(double x);
-    [RuntimeImport("NativeDoubleToSByte"), MethodImpl(MethodImplOptions.InternalCall)]
+    [DllImport("llvmltonative", EntryPoint = "NativeDoubleToSByte", CallingConvention = CallingConvention.Cdecl)]
     private static extern sbyte NativeDoubleToSByte(double x);
-    [RuntimeImport("NativeLocalBitcast"), MethodImpl(MethodImplOptions.InternalCall)]
+    [DllImport("llvmltonative", EntryPoint = "NativeLocalBitcast", CallingConvention = CallingConvention.Cdecl)]
     private static extern int NativeLocalBitcast(float x);
-    [RuntimeImport("NativeMath"), MethodImpl(MethodImplOptions.InternalCall)]
+    [DllImport("llvmltonative", EntryPoint = "NativeMath", CallingConvention = CallingConvention.Cdecl)]
     private static extern double NativeMath(double x, double y, MathOperation operation);
-    [RuntimeImport("NativeMathF"), MethodImpl(MethodImplOptions.InternalCall)]
+    [DllImport("llvmltonative", EntryPoint = "NativeMathF", CallingConvention = CallingConvention.Cdecl)]
     private static extern float NativeMathF(float x, float y, MathOperation operation);
 
     // Calls and function pointers.
-    [RuntimeImport("NativeFold"), MethodImpl(MethodImplOptions.InternalCall)]
+    [DllImport("llvmltonative", EntryPoint = "NativeFold", CallingConvention = CallingConvention.Cdecl)]
     private static extern int NativeFold(int x);
-    [RuntimeImport("NativeCompose"), MethodImpl(MethodImplOptions.InternalCall)]
+    [DllImport("llvmltonative", EntryPoint = "NativeCompose", CallingConvention = CallingConvention.Cdecl)]
     private static extern int NativeCompose(int x);
-    [RuntimeImport("NativeVoid"), MethodImpl(MethodImplOptions.InternalCall)]
+    [DllImport("llvmltonative", EntryPoint = "NativeVoid", CallingConvention = CallingConvention.Cdecl)]
     private static extern int NativeVoid();
-    [RuntimeImport("NativeNoInline"), MethodImpl(MethodImplOptions.InternalCall)]
+    [DllImport("llvmltonative", EntryPoint = "NativeNoInline", CallingConvention = CallingConvention.Cdecl)]
     private static extern int NativeNoInline(int x);
-    [RuntimeImport("NativeKnownPointer"), MethodImpl(MethodImplOptions.InternalCall)]
+    [DllImport("llvmltonative", EntryPoint = "NativeKnownPointer", CallingConvention = CallingConvention.Cdecl)]
     private static extern int NativeKnownPointer(int x);
-    [RuntimeImport("NativeRuntimePointer"), MethodImpl(MethodImplOptions.InternalCall)]
+    [DllImport("llvmltonative", EntryPoint = "NativeRuntimePointer", CallingConvention = CallingConvention.Cdecl)]
     private static extern int NativeRuntimePointer(nint callback, int x, int y);
-    [RuntimeImport("NativeGetPointer"), MethodImpl(MethodImplOptions.InternalCall)]
+    [DllImport("llvmltonative", EntryPoint = "NativeGetPointer", CallingConvention = CallingConvention.Cdecl)]
     private static extern nint NativeGetPointer();
-    [RuntimeImport("NativeThroughManagedPointer"), MethodImpl(MethodImplOptions.InternalCall)]
+    [DllImport("llvmltonative", EntryPoint = "NativeThroughManagedPointer", CallingConvention = CallingConvention.Cdecl)]
     private static extern int NativeThroughManagedPointer(int x);
-    [RuntimeImport("NativePointerSelect"), MethodImpl(MethodImplOptions.InternalCall)]
+    [DllImport("llvmltonative", EntryPoint = "NativePointerSelect", CallingConvention = CallingConvention.Cdecl)]
     private static extern int NativePointerSelect(int x);
-    [RuntimeImport("NativeKnownCalli"), MethodImpl(MethodImplOptions.InternalCall)]
+    [DllImport("llvmltonative", EntryPoint = "NativeKnownCalli", CallingConvention = CallingConvention.Cdecl)]
     private static extern int NativeKnownCalli(int x);
 
     // Unmanaged callbacks retain both forward and reverse transitions.
-    [DllImport("llvmltonative", EntryPoint = "NativeCallback")]
+    [DllImport("llvmltonative", EntryPoint = "NativeCallback", CallingConvention = CallingConvention.Cdecl)]
     private static extern int NativeCallback(int x);
-    [DllImport("llvmltonative", EntryPoint = "NativeCallbackPointer")]
+    [DllImport("llvmltonative", EntryPoint = "NativeCallbackPointer", CallingConvention = CallingConvention.Cdecl)]
     private static extern int NativeCallbackPointer(nint callback, int x);
 
+    [DllImport("llvmltonative", CallingConvention = CallingConvention.Cdecl)]
+    private static extern int NativeRejectedIndirect(nint callback, int x, int y);
+    [DllImport("llvmltonative", CallingConvention = CallingConvention.Cdecl)]
+    private static extern int NativeClassConstructor(int x);
+    [DllImport("llvmltonative", CallingConvention = CallingConvention.Cdecl)]
+    private static extern int NativeQuotedPointer(int x);
+    [DllImport("llvmltonative", CallingConvention = CallingConvention.Cdecl)]
+    private static extern int NativeTransitionStress(int count);
+    [DllImport("llvmltonative", CallingConvention = CallingConvention.Cdecl)]
+    private static extern int NativeForeignThread(int x, int y);
+
+    [DynamicDependency(DynamicallyAccessedMemberTypes.PublicMethods, typeof(ManagedHelpers))]
     private static int Main()
     {
         VerifyLlvmLto();
@@ -378,7 +399,7 @@ internal static unsafe class LlvmLtoTests
         foreach (int x in integers)
         {
             if (NativeConvert(x) != (long)x + (long)(uint)x) return 1;
-            if (NativeSwitch(x) != ManagedExports.Switch(x)) return 101;
+            if (NativeSwitch(x) != (x switch { 0 => 71, 1 => 13, 2 => -37, 3 => 5, 4 => 101, 5 => -9, _ => unchecked(x + 19) })) return 101;
             if (NativeNarrow(x) != unchecked((byte)(x + 129))) return 102;
             if (NativeEnum((ScalarEnum)x) != unchecked((ScalarEnum)((short)x + 1))) return 103;
             if (NativeSafeDivide(x) != x / 3) return 108;
@@ -390,7 +411,7 @@ internal static unsafe class LlvmLtoTests
                 if (NativePhi(x, y) != unchecked((x > y ? x : y) + (x < 0 ? 7 : 11)) ||
                     NativeLocalAddress(x, y) != (unchecked(x + y) ^ x) ||
                     NativeNativeInt((nint)(long)x, y) != ((((nint)(long)x + 5) >> y) ^ (nint)(uint)x) ||
-                    NativeSmallArguments((sbyte)x, (ushort)y, (char)x, (y & 1) == 0) !=
+                    NativeSmallArguments((sbyte)x, (ushort)y, (ushort)x, (byte)((y & 1) == 0 ? 1 : 0)) !=
                         unchecked((short)((y & 1) == 0 ? (sbyte)x + (ushort)y + (char)x : (sbyte)x - (ushort)y - (char)x)))
                     return 11;
             }
@@ -477,9 +498,9 @@ internal static unsafe class LlvmLtoTests
     private static int TestCallsAndFunctionPointers(int[] integers)
     {
         RejectedExports.Field = 17;
-        delegate*<int, int, int> addPointer = &ManagedExports.Add;
-        delegate*<int, int, int> subtractPointer = &ManagedExports.Subtract;
-        delegate* unmanaged<int, int> unmanagedPointer = &RejectedExports.UnmanagedEntry;
+        delegate* unmanaged[Cdecl]<int, int, int> addPointer = &ManagedExports.Add;
+        delegate* unmanaged[Cdecl]<int, int, int> subtractPointer = &ManagedExports.Subtract;
+        delegate* unmanaged[Cdecl]<int, int> unmanagedPointer = &ManagedExports.Callback;
         // Check actual code addresses in this build with method folding disabled.
         if (NativeGetPointer() != (nint)addPointer || (nint)addPointer == (nint)subtractPointer)
             return 6;
@@ -493,22 +514,56 @@ internal static unsafe class LlvmLtoTests
             if (NativeCompose(x) != (unchecked(x + 2) ^ unchecked(x - 3))) return 104;
             if (NativeThroughManagedPointer(x) != unchecked(x + 1)) return 105;
             if (NativeKnownCalli(x) != unchecked(x + 1)) return 106;
+            if (NativeQuotedPointer(x) != unchecked(x + 1)) return 110;
             if (NativePointerSelect(x) != ((x & 1) == 0 ? unchecked(x + 1) : unchecked(x - 1))) return 107;
 
-            delegate*<int, int, int> selectedPointer = (x & 1) == 0 ? addPointer : subtractPointer;
+            delegate* unmanaged[Cdecl]<int, int, int> selectedPointer = (x & 1) == 0 ? addPointer : subtractPointer;
             int expectedIndirect = (x & 1) == 0 ? unchecked(x + 1) : unchecked(x - 1);
             if (NativeKnownPointer(x) != (unchecked(x + 1) ^ 0x1234) ||
                 NativeRuntimePointer((nint)selectedPointer, x, 1) != expectedIndirect ||
-                RejectedExports.Indirect(selectedPointer, x, 1) != expectedIndirect ||
+                NativeRejectedIndirect((nint)selectedPointer, x, 1) != expectedIndirect ||
                 NativeCallbackPointer((nint)unmanagedPointer, x) != unchecked(x + 9))
                 return 7;
         }
-        return NativeVoid() == 37 ? 100 : 17;
+        if (NativeVoid() != 37)
+            return 17;
+        return TestGcTransitions();
+    }
+
+    private static int TestGcTransitions()
+    {
+        using var started = new ManualResetEventSlim();
+        bool done = false;
+        var collector = new Thread(() =>
+        {
+            started.Set();
+            while (!Volatile.Read(ref done))
+                GC.Collect(2, GCCollectionMode.Forced, blocking: true, compacting: true);
+        });
+        byte[] root = new byte[1024];
+        root[0] = 42;
+        collector.Start();
+        started.Wait();
+        try
+        {
+            const int count = 50000;
+            if (NativeTransitionStress(count) != count * (count + 1L) / 2)
+                return 301;
+            if (NativeForeignThread(123, 456) != 579 || root[0] != 42)
+                return 302;
+            GC.KeepAlive(root);
+        }
+        finally
+        {
+            Volatile.Write(ref done, true);
+            collector.Join();
+        }
+        return 100;
     }
 
     private static int TestPreinitialization()
     {
-        if (TypeWithConstructor.Leaf(1) != 2 || TypeWithConstructor.Field != 23)
+        if (NativeClassConstructor(1) != 2 || TypeWithConstructor.Field != 23)
             return 5;
 
         long expected = 0;
@@ -536,34 +591,54 @@ internal static unsafe class LlvmLtoTests
             "Phi", "Switch", "Narrow", "SmallArguments", "Enum", "NativeInt", "FloatArithmetic", "DoubleArithmetic", "FloatCompare",
             "UIntToDouble", "DoubleToInt", "DoubleToUInt", "DoubleToLong", "DoubleToULong", "DoubleToByte", "DoubleToSByte",
             "LocalAddress", "LocalBitcast", "Compose", "PointerGetter", "PointerSelect", "KnownCalli", "SafeDivide", "SafeRemainder",
-            "Void", "Math", "MathF" ];
+            "Void", "Math", "MathF", "Callback", "Quoted%arg0", "QuotedPointerGetter" ];
 
         foreach (string name in exports)
-            if (FindBody(managed, "Managed" + name) == null)
-                throw new Exception("Missing LLVM export: Managed" + name);
+        {
+            string body = FindBody(managed, "Managed" + name) ?? throw new Exception("Missing LLVM export: Managed" + name);
+            if (!body.Contains("@\"RhpReversePInvoke\"(") ||
+                Regex.Matches(body, @"\bret\b").Count != Regex.Matches(body, "@\"RhpReversePInvokeReturn\"\\(").Count)
+                throw new Exception("An unmanaged export lost its entry or exit transition: " + name);
+            if (Regex.IsMatch(body, @"\b(call|invoke)\b(?![^\r\n]*@(?:llvm\.|""?(?:RhpReversePInvoke|__llvm_lto_inline_)))"))
+                throw new Exception("A native frame could call the original managed body: " + name);
+        }
+
+        MatchCollection inlineBodies = Regex.Matches(managed, @"(?m)^define [^\r\n]*@""?__llvm_lto_inline_[^\r\n]*");
+        if (inlineBodies.Count == 0)
+            throw new Exception("Missing inline-only managed callees.");
+        foreach (Match body in inlineBodies)
+            if (!body.Value.Contains("available_externally") || !body.Value.Contains(" alwaysinline "))
+                throw new Exception("A native callee could acquire an out-of-line implementation.");
+        if (Regex.IsMatch(optimized, @"\b(call|invoke)\b[^\r\n]*@""?__llvm_lto_inline_"))
+            throw new Exception("A required managed inline survived LLVM optimization.");
 
         if (Regex.IsMatch(managed, @"(?m)^define [^\r\n]*(Rejected|TypeWithConstructor)"))
             throw new Exception("An unsupported method was exported to LLVM.");
 
         // Inspect the linker's actual optimized IR instead of target-specific opcodes.
-        foreach (string name in new[] { "NativeFold", "NativeKnownPointer", "NativePhi", "NativeCompose", "NativeKnownCalli", "NativeVoid" })
+        foreach (string name in new[] { "NativeFold", "NativeKnownPointer", "NativePhi", "NativeCompose", "NativeKnownCalli", "NativeVoid", "NativeCallback", "NativeTransitionStress", "NativeThreadEntry" })
         {
             string body = FindBody(optimized, name) ?? throw new Exception("Missing native LTO body: " + name);
-            // LLVM may represent instructions such as integer max as intrinsic calls.
-            if (Regex.IsMatch(body, @"\b(call|invoke)\b(?![^\r\n]*@llvm\.)"))
+            // Scalar code is inlined, but required runtime transitions remain calls.
+            if (Regex.IsMatch(body, @"\b(call|invoke)\b(?![^\r\n]*@(?:llvm\.|RhpReversePInvoke))"))
                 throw new Exception("LLVM did not inline the managed body into " + name);
+            if (!body.Contains("@RhpReversePInvoke(") || !body.Contains("@RhpReversePInvokeReturn("))
+                throw new Exception("LLVM removed an unmanaged-entry transition in " + name);
         }
-        foreach (string name in new[] { "NativeNoInline", "NativeCallback", "NativeCallbackPointer", "NativeRuntimePointer" })
+        foreach (string name in new[] { "NativeNoInline", "NativeCallbackPointer", "NativeRuntimePointer", "NativeRejectedIndirect", "NativeClassConstructor" })
         {
             string body = FindBody(optimized, name) ?? throw new Exception("Missing native LTO body: " + name);
             if (!Regex.IsMatch(body, @"\bcall\b"))
                 throw new Exception("LLVM removed a required fallback call in " + name);
         }
         string indirect = FindBody(optimized, "NativeRuntimePointer");
-        if (!Regex.IsMatch(indirect, @"\bcall\b[^\r\n]*%[^\r\n]*\("))
+        if (!Regex.IsMatch(indirect, @"\bcall\b[^@\r\n]*%[^\r\n]*\("))
             throw new Exception("A runtime function pointer did not remain indirect.");
-        string resolved = FindBody(optimized, "NativeThroughManagedPointer") ?? throw new Exception("Missing managed pointer getter test.");
-        if (resolved.Contains("@ManagedPointerGetter(") || Regex.IsMatch(resolved, @"\bcall\b[^\r\n]*%[^\r\n]*\("))
-            throw new Exception("LLVM did not resolve the managed function pointer getter.");
+        foreach (string name in new[] { "NativeThroughManagedPointer", "NativeQuotedPointer" })
+        {
+            string resolved = FindBody(optimized, name) ?? throw new Exception("Missing managed pointer getter test: " + name);
+            if (Regex.IsMatch(resolved, @"@Managed(?:Quoted)?PointerGetter\(") || Regex.IsMatch(resolved, @"\bcall\b[^@\r\n]*%[^\r\n]*\("))
+                throw new Exception("LLVM did not resolve the managed function pointer getter: " + name);
+        }
     }
 }

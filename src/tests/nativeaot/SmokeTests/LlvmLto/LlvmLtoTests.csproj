@@ -50,6 +50,7 @@
     <ItemGroup>
       <NativeLibrary Include="$(_LlvmNativeLibrary);$(_LlvmManagedBitcode)" />
       <LinkerArg Include="-flto=full" Condition="'$(TargetOS)' != 'windows'" />
+      <LinkerArg Include="-pthread" Condition="'$(TargetOS)' != 'windows'" />
       <LinkerArg Include="/lldsavetemps" Condition="'$(TargetOS)' == 'windows'" />
       <LinkerArg Include="-Wl,--save-temps" Condition="'$(TargetOS)' != 'windows' and '$(TargetOS)' != 'osx'" />
       <LinkerArg Include="-Wl,-save-temps" Condition="'$(TargetOS)' == 'osx'" />
@@ -63,6 +64,7 @@
     <PropertyGroup>
       <!-- Unix target selection is finalized by SetupOSSpecificProps. -->
       <_LlvmTargetArg Condition="'$(TargetTriple)' != ''">--target=$(TargetTriple)</_LlvmTargetArg>
+      <_LlvmSysRootArg Condition="'$(SysRoot)' != ''">--sysroot=&quot;$(SysRoot)&quot;</_LlvmSysRootArg>
     </PropertyGroup>
     <GetFileHash Files="$(NativeObject)">
       <Output TaskParameter="Hash" PropertyName="_LlvmBaselineObjectHash" />
@@ -75,7 +77,7 @@
     <Error Condition="'$(_LlvmBaselineObjectHash)' != '$(_LlvmLtoObjectHash)'" Text="Enabling LLVM LTO changed the RyuJIT object." />
 
     <Exec Command="&quot;$(_LlvmClang)&quot; $(_LlvmTargetArg) -x ir -emit-llvm -c &quot;$(NativeObject).ll&quot; -o &quot;$(_LlvmManagedBitcode)&quot;" />
-    <Exec Command="&quot;$(_LlvmClang)&quot; $(_LlvmTargetArg) -c -O2 -flto=full -ffreestanding -fno-stack-protector -ffunction-sections -fdata-sections &quot;$(MSBuildProjectDirectory)/LlvmLtoTests.Native.c&quot; -o &quot;$(_LlvmNativeObject)&quot;" />
+    <Exec Command="&quot;$(_LlvmClang)&quot; $(_LlvmTargetArg) $(_LlvmSysRootArg) -c -O2 -flto=full -ffreestanding -fno-stack-protector -ffunction-sections -fdata-sections &quot;$(MSBuildProjectDirectory)/LlvmLtoTests.Native.c&quot; -o &quot;$(_LlvmNativeObject)&quot;" />
     <!-- Compile one source twice to retain a getter in a separate archive member. -->
     <Exec Command="&quot;$(_LlvmClang)&quot; $(_LlvmTargetArg) -c -O2 -flto=full -ffreestanding -fno-stack-protector -DLLVM_LTO_POINTER_GETTER &quot;$(MSBuildProjectDirectory)/LlvmLtoTests.Native.c&quot; -o &quot;$(_LlvmPointerObject)&quot;" />
     <Exec Command="&quot;$(_LlvmAr)&quot; rcs &quot;$(_LlvmNativeLibrary)&quot; &quot;$(_LlvmNativeObject)&quot; &quot;$(_LlvmPointerObject)&quot;" />

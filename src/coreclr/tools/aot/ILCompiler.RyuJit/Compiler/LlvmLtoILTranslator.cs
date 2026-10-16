@@ -8,6 +8,7 @@ using System.Linq;
 using System.Text;
 
 using Internal.IL;
+using Internal.JitInterface;
 using Internal.TypeSystem;
 using static ILCompiler.LlvmLtoWriter;
 
@@ -55,6 +56,8 @@ namespace ILCompiler
         private readonly MethodIL _il;
         private readonly ScalarType[] _locals;
         private readonly int _pointerBits;
+        private readonly bool _unmanagedEntry;
+        private readonly bool _nativeBody;
         private readonly SortedDictionary<int, Block> _blocks = new();
         // Null during analysis; allocated for the emission pass.
         private StringBuilder _body;
@@ -65,11 +68,13 @@ namespace ILCompiler
         internal HashSet<MethodDesc> References { get; } = new();
         internal HashSet<string> NativeMathHelpers { get; } = new(StringComparer.Ordinal);
 
-        internal LlvmLtoILTranslator(LlvmLtoWriter writer, MethodDesc method, MethodIL il)
+        internal LlvmLtoILTranslator(LlvmLtoWriter writer, MethodDesc method, MethodIL il, bool nativeBody = false)
         {
             _writer = writer;
             _il = il;
             _pointerBits = method.Context.Target.PointerSize * 8;
+            _unmanagedEntry = method.IsUnmanagedCallersOnly;
+            _nativeBody = nativeBody;
             ReturnType = ScalarType.From(method.Signature.ReturnType, allowVoid: true);
             Parameters = Enumerable.Range(0, method.Signature.Length).Select(i => ScalarType.From(method.Signature[i])).ToArray();
             _locals = il.GetLocals().Select(local => !local.IsPinned ? ScalarType.From(local.Type, allowByRef: true) : throw new UnsupportedException("Pinned local")).ToArray();
@@ -90,10 +95,15 @@ namespace ILCompiler
             _body = new StringBuilder();
             _nextValue = 0;
             _body.AppendLine("entry:");
+            if (_unmanagedEntry)
+            {
+                _body.AppendLine($"  %reversePInvokeFrame = alloca [{CorInfoImpl.ReversePInvokeTransitionFramePointerCount} x ptr], align {_pointerBits / 8}");
+                _body.AppendLine($"  call void {_writer.ReversePInvokeEnter}(ptr %reversePInvokeFrame)");
+            }
             for (int i = 0; i < Parameters.Length; i++)
             {
                 _body.AppendLine($"  %a{i} = alloca {Parameters[i].IR}");
-                Value argument = Convert(new(Parameters[i].AbiType, $"%arg{i}"), Parameters[i]);
+                Value argument = Convert(new(_unmanagedEntry ? Parameters[i] : Parameters[i].AbiType, $"%arg{i}"), Parameters[i]);
                 _body.AppendLine($"  store {Parameters[i].IR} {argument.Operand}, ptr %a{i}");
             }
             for (int i = 0; i < _locals.Length; i++)
@@ -381,15 +391,22 @@ namespace ILCompiler
             if (op == ILOpcode.ret)
             {
                 if (ReturnType.Kind == ScalarKind.Void)
+                {
+                    if (_unmanagedEntry)
+                        _body?.AppendLine($"  call void {_writer.ReversePInvokeExit}(ptr %reversePInvokeFrame)");
                     _body?.AppendLine("  ret void");
+                }
                 else
                 {
                     Value value = Pop(state);
                     if (value.AddressType != null)
                         throw new UnsupportedException("Local address escapes the method");
                     value = Convert(value, ReturnType);
-                    value = Convert(value, ReturnType.AbiType, !ReturnType.Unsigned);
-                    _body?.AppendLine($"  ret {ReturnType.AbiType.IR} {value.Operand}");
+                    ScalarType returnType = _unmanagedEntry ? ReturnType : ReturnType.AbiType;
+                    value = Convert(value, returnType, !ReturnType.Unsigned);
+                    if (_unmanagedEntry)
+                        _body?.AppendLine($"  call void {_writer.ReversePInvokeExit}(ptr %reversePInvokeFrame)");
+                    _body?.AppendLine($"  ret {returnType.IR} {value.Operand}");
                 }
                 if (state.Stack.Count != 0)
                     throw new UnsupportedException("Invalid return stack");
@@ -495,10 +512,10 @@ namespace ILCompiler
                     if (TryMathIntrinsic(target, state))
                         return false;
                 }
-                Export callee = _writer.GetCallee(target);
+                Export callee = _writer.GetCallee(target, _nativeBody);
                 if (signature.Length != callee.Parameters.Length || ScalarType.From(signature.ReturnType, allowVoid: true).IR != callee.ReturnType.IR)
                     throw new UnsupportedException("Indirect signature mismatch");
-                var arguments = new string[callee.Parameters.Length];
+                var arguments = new Value[callee.Parameters.Length];
                 for (int i = arguments.Length - 1; i >= 0; i--)
                 {
                     if (ScalarType.From(signature[i]).IR != callee.Parameters[i].IR)
@@ -508,10 +525,13 @@ namespace ILCompiler
                         throw new UnsupportedException("Local address passed to another method");
                     value = Convert(value, callee.Parameters[i]);
                     value = Convert(value, callee.Parameters[i].AbiType, !callee.Parameters[i].Unsigned);
-                    arguments[i] = $"{callee.Parameters[i].AbiType.IR} {value.Operand}";
+                    arguments[i] = value;
                 }
                 References.Add(target);
-                string call = $"call {callee.ReturnType.AbiType.IR} {Quote(callee.Symbol)}({string.Join(", ", arguments)})";
+                // RyuJIT may have inlined the callee and exposed its references here.
+                References.UnionWith(callee.References);
+                NativeMathHelpers.UnionWith(callee.NativeMathHelpers);
+                string call = $"call {callee.ReturnType.AbiType.IR} {Quote(callee.Symbol)}({string.Join(", ", arguments.Select(value => $"{value.Type.IR} {value.Operand}"))})";
                 if (callee.ReturnType.Kind == ScalarKind.Void)
                     _body?.AppendLine($"  {call}");
                 else
