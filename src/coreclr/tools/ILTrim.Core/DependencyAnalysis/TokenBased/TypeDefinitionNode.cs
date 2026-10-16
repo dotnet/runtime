@@ -75,20 +75,12 @@ namespace ILCompiler.DependencyAnalysis
                 dependencies.Add(factory.MethodDefinition(_module, cctor.Handle), "Static constructor");
             }
 
-            if (typeDef.Attributes.HasFlag(TypeAttributes.SequentialLayout) || typeDef.Attributes.HasFlag(TypeAttributes.ExplicitLayout))
+            var ecmaType = (EcmaType)_module.GetObject(_handle);
+            if (ecmaType.IsValueType && LayoutTypeNode.IsLayoutType(ecmaType))
             {
-                // TODO: Postpone marking instance fields on reference types until the type is allocated (i.e. until we have a ConstructedTypeNode for it in the system).
-                foreach (var fieldHandle in typeDef.GetFields())
-                {
-                    var fieldDef = _module.MetadataReader.GetFieldDefinition(fieldHandle);
-                    if (!fieldDef.Attributes.HasFlag(FieldAttributes.Static))
-                    {
-                        dependencies.Add(factory.FieldDefinition(_module, fieldHandle), "Instance field of a type with sequential or explicit layout");
-                    }
-                }
+                dependencies.Add(factory.LayoutType(ecmaType), "Instance fields of a value type with sequential or explicit layout");
             }
 
-            var ecmaType = (EcmaType)_module.GetObject(_handle);
             if (ecmaType.IsValueType)
             {
                 // It's difficult to track where a valuetype gets boxed so consider always constructed

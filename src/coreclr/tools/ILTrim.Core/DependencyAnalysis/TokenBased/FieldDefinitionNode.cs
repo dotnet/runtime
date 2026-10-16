@@ -36,6 +36,18 @@ namespace ILCompiler.DependencyAnalysis
 
             dependencies.Add(factory.TypeDefinition(_module, declaringType), "Field owning type");
 
+            EcmaType declaringTypeDefinition = (EcmaType)_module.GetObject(declaringType);
+            TypeDefinition declaringTypeMetadata = _module.MetadataReader.GetTypeDefinition(declaringType);
+            if ((fieldDef.Attributes & FieldAttributes.Static) == 0 &&
+                !declaringTypeDefinition.IsValueType &&
+                (declaringTypeMetadata.Attributes.HasFlag(TypeAttributes.SequentialLayout)
+                    || declaringTypeMetadata.Attributes.HasFlag(TypeAttributes.ExplicitLayout)))
+            {
+                dependencies.Add(
+                    factory.LayoutType(declaringTypeDefinition),
+                    "Accessed instance field on a type with sequential or explicit layout");
+            }
+
             if ((fieldDef.Attributes & FieldAttributes.Static) != 0 &&
                 (fieldDef.Attributes & FieldAttributes.Literal) == 0)
             {

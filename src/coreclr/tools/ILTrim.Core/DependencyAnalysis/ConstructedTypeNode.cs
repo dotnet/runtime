@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Reflection.Metadata;
 
 using ILCompiler.DependencyAnalysisFramework;
@@ -215,6 +216,23 @@ namespace ILCompiler.DependencyAnalysis
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
+            TypeDefinition typeDef = _type.Module.MetadataReader.GetTypeDefinition(_type.Handle);
+            if (factory.IsModuleTrimmed(_type.Module) &&
+                !_type.IsValueType &&
+                (typeDef.Attributes.HasFlag(TypeAttributes.SequentialLayout) || typeDef.Attributes.HasFlag(TypeAttributes.ExplicitLayout)))
+            {
+                foreach (var fieldHandle in typeDef.GetFields())
+                {
+                    var fieldDef = _type.Module.MetadataReader.GetFieldDefinition(fieldHandle);
+                    if (!fieldDef.Attributes.HasFlag(FieldAttributes.Static))
+                    {
+                        yield return new(
+                            factory.FieldDefinition(_type.Module, fieldHandle),
+                            "Instance field of a constructed type with sequential or explicit layout");
+                    }
+                }
+            }
+
             // Call GetTypeDefinition in case the base is an instantiated generic type.
             TypeDesc baseType = _type.BaseType?.GetTypeDefinition();
             if (baseType != null)
