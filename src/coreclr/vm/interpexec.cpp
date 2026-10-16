@@ -4981,7 +4981,6 @@ do                                                                      \
     catch (const ResumeAfterCatchException& ex)
     {
         ex.GetResumeContext(&resumeSP, &resumeIP);
-        goto RESUME_AFTER_CATCH;
     }
 
 RESUME_AFTER_CATCH:
@@ -5032,13 +5031,33 @@ RESUME_AFTER_CATCH:
         // uses that context to find out whether the thread can be aborted there.
         pInterpreterFrame->SetContextToInterpMethodContextFrame(GetThread()->m_OSContext);
 
-        if (COMPlusCheckForAbort(resumeIP) != NULL)
+        if (COMPlusCheckForAbort(resumeIP) == NULL)
         {
-            goto ABORT_AFTER_CATCH;
+            goto MAIN_LOOP;
         }
-
-        goto MAIN_LOOP;
     }
+
+    // Raise the abort again at the resume IP. It has a try block of its own: when a frame of this InterpExecMethod
+    // catches the abort, the ResumeAfterCatchException that resumes that frame is caught here.
+    try
+    {
+        INSTALL_MANAGED_EXCEPTION_DISPATCHER;
+        INSTALL_UNWIND_AND_CONTINUE_HANDLER;
+        // Look up the handlers at the resume IP itself, as INTOP_THROW does, rather than at the instruction before
+        // it, as for a return address. After a catch, the resume IP is the catch leave island, which is covered by the
+        // try regions that enclose the catch's try region and not by the catch's own try region.
+        pInterpreterFrame->SetIsFaulting(true);
+        DispatchManagedException(kThreadAbortException);
+        UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
+        UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
+    }
+    catch (const ResumeAfterCatchException& ex)
+    {
+        ex.GetResumeContext(&resumeSP, &resumeIP);
+        goto RESUME_AFTER_CATCH;
+    }
+
+    UNREACHABLE();
 
 EXIT_FRAME:
     // Exit the current frame, MAKE CERTAIN not to trigger any GC between here and the return, since the interpreter
@@ -5065,29 +5084,6 @@ EXIT_FRAME:
 RETHROW_RESUME_AFTER_CATCH:
     // Rethrow the exception to let it propagate to the correct resume frame
     ThrowResumeAfterCatchException(resumeSP, resumeIP);
-
-ABORT_AFTER_CATCH:
-    // Raise the abort again at the resume IP. It has a try block of its own: when a frame of this InterpExecMethod
-    // catches the abort, the ResumeAfterCatchException that resumes that frame is caught here.
-    try
-    {
-        INSTALL_MANAGED_EXCEPTION_DISPATCHER;
-        INSTALL_UNWIND_AND_CONTINUE_HANDLER;
-        // Look up the handlers at the resume IP itself, as INTOP_THROW does, rather than at the instruction before
-        // it, as for a return address. After a catch, the resume IP is the catch leave island, which is covered by the
-        // try regions that enclose the catch's try region and not by the catch's own try region.
-        pInterpreterFrame->SetIsFaulting(true);
-        DispatchManagedException(kThreadAbortException);
-        UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
-        UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
-    }
-    catch (const ResumeAfterCatchException& ex)
-    {
-        ex.GetResumeContext(&resumeSP, &resumeIP);
-        goto RESUME_AFTER_CATCH;
-    }
-
-    UNREACHABLE();
 }
 
 #endif // FEATURE_INTERPRETER
