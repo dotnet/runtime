@@ -6,41 +6,117 @@ This doc outlines a design for a logical ReadyToRun (R2R) module which is distri
 
 Loading the primary module makes the logical R2R module functional and usable. Methods whose compiled code has not yet arrived remain callable through R2R-to-interpreter thunks. Auxiliary modules can arrive later.
 
-The way these auxiliary modules and the methods they hold code for ("aux methods") begin with unoptimized, interpreted code, and later are updated with more optimized code is analogous to code tiering. Therefore, the existing tiering, code versioning, and call counting code will be utilized (with some modifications) for the delayed arrival of R2R code.
-
 Auxiliary modules will hold the wasm method bodies for their aux methods, as well as their fixup data, GC info, and EH info.
 
-Auxiliary modules export a function, `ActivateModule()`, which copies all its data into the shared memory, and fills in its allotted range in the global function table. Once the module is activated, the tiering system can run fixups and enable calling the R2R code.
+Auxiliary modules export a function, `ActivateModule()`, which copies all its data into the shared memory, and fills in its allotted range in the global function table. Once the module is activated, the runtime can run fixups and enable executing R2R code for the methods in the auxiliary module.
+
+The mapping for which methods have code in the auxiliary modules is in a separate module called the Auxiliary EntryPoints Module. This contains a second set of `MethodDefEntryPoints` and `InstanceMethodEntryPoints` sections. Until that module is downloaded, it's not possible to know which methods may have R2R code and which will always be interpreted.
+
+Metadata and activation info about auxiliary modules is stored in the AuxiliaryModuleMetadata section in the primary module.
 
 This design currently supports single-threaded hosting only. Auxiliary-module installation and method activation run on the runtime's single execution thread. Multithreaded hosting is outside the scope of this design.
 
 ## Flow
 
-During the first interpreter execution / compilation of bytecode of any method (not just aux methods), the interpreter will insert code at the beginning of the method to decrement its call counter and, if it has reached 0, call the `CallCountingStub.TargetForThresholdReached` method with the required arguments. `TargetForThresholdReached` will queue the method for "tiering". Tiering means resolving and activating its R2R code once its aux module is available (if it's an aux method), or removing the call-counting bytecode (if it's not an aux method).
+When a new method is discovered to be executed, the runtime will attempt to resolve R2R code for the method, first in the primary module, then in the auxiliary modules, if the Auxiliary EntryPoints Module information is available. If the method is determined to be in an auxiliary module, the runtime will check if the module has been activated, and activate the method if it is. Otherwise, flags on the PEP will track what is holding activation of the method: the Auxiliary EntryPoints Module, or the auxiliary module containing the code. Subsequent calls to the interpreted method will check activation status and attempt activation of the R2R code.
 
 Auxiliary modules are downloaded eagerly unless it is determined better to wait and download on demand.
 
-To reduce cold download size, the mapping of method to auxiliary module resides in a separate module that is downloaded eagerly.
+To reduce cold download size, the mapping of method to auxiliary module resides in a separate module, the Auxiliary EntryPoints Module, that is downloaded eagerly.
 
-Once the mapping is available, the runtime can begin to drain the queue of methods that need tiering. Methods in the queue that are not aux methods may have their callcounting bytecode removed (or not), and are removed from the queue. Aux methods will be added to a separate, module-specific queue to be drained again once the aux module is downloaded and activated.
+Once an auxiliary module is downloaded (we may also require the module to be "requested"), the host calls the exported `ActivateModule()` function, which copies over all data required for methods to be activated and executed, fills the global function table (table 0) with funcrefs, and marks itself as activated via a well-known location in the primary module's data. Once the module is activated, its methods can be activated.
 
-Once the auxiliary module is downloaded and marked as pending activation (via a flag in a well known location, or its module-specific aux method queue being non-empty), the host calls the exported `ActivateModule` function, which copies over all data required for methods to be activated and executed, fills the global function table (table 0) with funcrefs, and marks itself as activated via a well-known location in the primary module's data. Once the module is activated, its methods can be activated/tiered up.
+### Pseudocode
 
-Tiering currently assumes a background worker thread can be created to compile the optimized versions of methods. However, WASM is single-threaded and cannot follow that same pattern. Instead, the queue of methods to tier up will be drained incrementally by the host.
+The following code describes the interpreter flow for activation of aux methods. 2 new PEP flags and a field in the interpreter data are introduced to track activation status and cache lookups: `kPendingAuxiliaryEntryPoints`, `kPendingAuxiliaryModule`, and `InterpreterData.pAuxActivationFlag`.
 
-For each module-specific queue of aux methods, the host will check if the module has been downloaded and activated, and tier up methods in the queue by running fixups, setting the PEP to point to the method's entry in the global function table, and clearing `kPrefersInterpreterEntryPoint`.
+The helper names below are illustrative only. Entry-point lookup only reads the method's entry-point record; it does not run fixups or publish a callable target. Status addresses refer to cells in shared memory. `EnsureInterpreterFallback` ensures interpreter bytecode and data exist and leaves `kPrefersInterpreterEntryPoint` set.
+
+```csharp
+InterpOrR2R DiscoverMethod(PEP pep)
+{
+    var primary = pep.GetModule();
+    EntryPoint entry = LookupEntryPoint(
+        primary.MethodDefEntryPoints, primary.InstanceMethodEntryPoints, pep.MethodDesc);
+    if (entry is not null)
+    {
+        return ActivateOrFallBackToInterpreter(pep, entry);
+    }
+
+    if (!IsActivated(primary.AuxiliaryModuleMetadataHeader.EntryPointsModuleActivationStatus))
+    {
+        EnsureInterpreterFallback(pep);
+        pep.InterpreterData.pAuxActivationFlag = &primary.AuxiliaryModuleMetadataHeader.EntryPointsModuleActivationStatus;
+        pep.SetFlag(kPendingAuxiliaryEntryPoints);
+        return InterpOrR2R.Interp;
+    }
+
+    return ResolveAuxiliaryMethod(pep);
+}
+
+InterpOrR2R ResolveAuxiliaryMethod(PEP pep)
+{
+    // Only called after the auxiliary entry-point tables are activated.
+    pep.ClearFlag(kPendingAuxiliaryEntryPoints);
+    pep.ClearFlag(kPendingAuxiliaryModule);
+
+    AuxiliaryModuleMetadataHeader metadata = pep.GetModule().AuxiliaryModuleMetadataHeader;
+    EntryPoint entry = LookupEntryPoint(
+        metadata.MethodDefEntryPointsRVA, metadata.InstanceMethodEntryPointsRVA, pep.MethodDesc);
+    if (entry is null)
+    {
+        EnsureInterpreterFallback(pep);
+        return InterpOrR2R.Interp;
+    }
+
+    AuxiliaryModuleMetadataEntry auxModuleMetadata = FindAuxiliaryModuleMetadataForRuntimeIndex(entry.RuntimeFunctionIndex);
+    if (!IsActivated(auxModuleMetadata.ActivationStatus))
+    {
+        EnsureInterpreterFallback(pep);
+        pep.InterpreterData.pAuxActivationFlag = &auxModuleMetadata.ActivationStatus;
+        pep.SetFlag(kPendingAuxiliaryModule);
+        return InterpOrR2R.Interp;
+    }
+
+    return ActivateOrFallBackToInterpreter(pep, entry);
+}
+```
+
+On subsequent invocations (but not continuation resumption), the interpreter checks the pending flags and their cached status flag address before executing the method body:
+
+```csharp
+InterpOrR2R ReenterDiscoveredMethod(PEP pep)
+{
+    if (!pep.HasFlag(kPrefersInterpreterEntryPoint))
+    {
+        return InterpOrR2R.R2R;
+    }
+
+    if (!pep.HasFlag(kPendingAuxiliaryEntryPoints) && !pep.HasFlag(kPendingAuxiliaryModule))
+    {
+        return InterpOrR2R.Interp;
+    }
+
+    if (!IsActivated(pep.InterpreterData.pAuxActivationFlag))
+    {
+        return InterpOrR2R.Interp;
+    }
+
+    return ResolveAuxiliaryMethod(pep);
+}
+```
 
 ## Partitioned Data
 
 ### RuntimeFunctions
 
-A single logical `RuntimeFunctions` section exists, spread across the primary module and auxiliary modules. The primary module contains contiguous entries for the methods it contains, as well as the last entry (and the unwind data it points to), and zeroed memory for auxiliary modules to fill in during activation. The last entry in the section allows the runtime to determine the total VirtualIP allocation required for the virtual module. When a module is activated, it fills in its allotted range in the RuntimeFunctions table for activation/tiering of its methods.
+A single logical `RuntimeFunctions` section exists, spread across the primary module and auxiliary modules. The primary module contains contiguous entries for the methods it contains, as well as the last entry for the last function in the last aux module (and the unwind data it points to), and zeroed memory for auxiliary modules to fill in during activation. The last entry in the section allows the runtime to determine the total VirtualIP allocation required for the virtual module. When a module is activated, it fills in its allotted range in the RuntimeFunctions table for activation of its methods.
 
 VirtualIP lookup must use a range-aware binary search that only searches the ranges of activated modules, using the AuxiliaryModuleMetadata activation info to determine active ranges.
 
 ### MethodDefEntryPoints and InstanceMethodEntryPoints
 
-Two `MethodDefEntryPoints` and `InstanceMethodEntryPoints` exist, one in the primary module and the Auxiliary EntryPoint Module. Fixup lists for the entries in the Auxiliary EntryPoint Module exist in the auxiliary modules. The runtime must check both sections when the Auxiliary EntryPoint Module is downloaded. The primary module will allocate space for each section at the RVA designated in the Auxiliary Module Metadata. The entries for each method and their RuntimeFunctions index are present in the Auxiliary EntryPoints Module, but the fixup lists are placed in the auxiliary modules and copied during activation.
+Two `MethodDefEntryPoints` and `InstanceMethodEntryPoints` exist, one in the primary module and the Auxiliary EntryPoints Module. Fixup lists for the entries in the Auxiliary EntryPoints Module exist in the auxiliary modules. The runtime must check both sections when the Auxiliary EntryPoints Module is downloaded. The primary module will allocate space for each section at the RVA designated in the Auxiliary Module Metadata. The entries for each method and their RuntimeFunctions index are present in the Auxiliary EntryPoints Module, but the fixup lists are placed in the auxiliary modules and copied during activation.
 
 ### ImportSection
 
@@ -85,13 +161,13 @@ It imports:
 
 It exports:
 
-- `ActivateModule()`, a method which copies the module's data into its allotted range in the primary module's memory, installs funcrefs to all of the module's compiled methods and funclets into its allotted range of table 0, and marks itself as loaded via a well-known flag in the primary module's memory. Note that installing a funcref does not mean the method is activated and ready to be executed.
+- `ActivateModule()`, a method which copies the module's data into its allotted range in the primary module's memory, installs funcrefs to all of the module's compiled methods and funclets into its allotted range of table 0, and marks itself as activated via a well-known flag in the primary module's memory. Note that installing a funcref does not mean the method is activated and ready to be executed.
 
 ## Auxiliary EntryPoints Module
 
 The auxiliary entrypoints module contains the `MethodDefEntryPoints` and `InstanceMethodEntryPoints` for the aux methods, excluding the fixup cell info. These sections tell which index in the `RuntimeFunctions` table to find information for the method, as well as which fixups to resolve. A single logical `RuntimeFunctions` is spread across the primary and auxiliary modules. Using the length of the primary module's `RuntimeFunctions` range, and the `MethodCount` field in each Auxiliary module metadata entry (see below), the owning auxiliary module can be determined.
 
-The EntryPoints sections will leave zeroed space for the fixup lists that will be filled in by the auxiliary module during activation. Fixups for methods from the auxiliary module cannot be run until the module is activated and these indices are filled in. This enables the EntryPoints Module to be smaller, and allow "tiering" of non-R2R method to occur sooner.
+The EntryPoints sections will leave zeroed space for the fixup lists that will be filled in by the auxiliary module during activation. Fixups for methods from the auxiliary module cannot be run until the module is activated and these indices are filled in. This enables the EntryPoints Module to be smaller, and allow methods without R2R code to be identified as interpreter-only sooner.
 
 The `MethodDefEntryPoints` sparse array will use backwards-distance encoding to point to each entry's fixup list. Each auxiliary module will be allocated space for all its encoded fixup lists in a blob before the array. This enables the auxiliary module's `ActivateModule()` function to simply copy a data element to a known location.
 
@@ -112,7 +188,7 @@ Lower addresses
 Higher addresses
 ```
 
-Similarly, the `InstanceMethodEntryPoints` hashtable will allocate contiguous memory to hold the EntryPoints records for all instance methods in an auxiliary module. The auxiliry module can then copy a data element to the correct offset to fill in the list of fixups.
+Similarly, the `InstanceMethodEntryPoints` hashtable will allocate contiguous memory to hold the EntryPoints records for all instance methods in an auxiliary module. The auxiliary module can then copy a data element to the correct offset to fill in the list of fixups.
 
 ```
 Hash index                         Method-record storage
@@ -142,8 +218,13 @@ Bucket 1 ─── entry for A1 ──────────┐   │         
 Metadata for each auxiliary module resides at a well-defined location in the primary module. This metadata enables the runtime to activate the module.
 
 Header:
+
+| Field | Meaning |
+|---|---|
 | `InstanceMethodEntryPointsRVA` | RVA of the auxiliary modules' InstanceMethodEntryPoints section |
 | `MethodDefEntryPointsRVA` | RVA of the auxiliary modules' MethodDefEntryPoints section |
+| `EntryPointsModuleActivationStatus` | Flag indicating whether the Auxiliary EntryPoints Module has completed activation and the auxiliary `InstanceMethodEntryPoints` and `MethodDefEntryPoints` tables are valid for reading. This also could be a flag on the ModuleDesc. |
+| `PrimaryModuleMethodCount` | The count of functions (including funclets) that have code and a `RuntimeFunctions` entry in the primary module. This doesn't include the final `RuntimeFunctions` entry used for VirtualIP calculations. |
 | `AuxiliaryModuleCount` | Count of auxiliary modules |
 
 The Auxiliary Module Metadata table is a count-prefixed array of entries with the following fields:
@@ -152,41 +233,20 @@ The Auxiliary Module Metadata table is a count-prefixed array of entries with th
 |---|---|
 | `FilenameRVA` | RVA of the string naming the auxiliary module. |
 | `RelativeTableBase` | Primary-module-relative table index of the first slot assigned to the auxiliary module. |
-| `MethodCount` | Number of runtime-function slots assigned to the auxiliary module, **including funclet slots**. Defines the number of entries in its `RuntimeFunctions` table and the length of its contiguous function-table range. |
-| `INITIALIZED_FLAG` | Initialization state, described below. |
-
-### Module Initialization states
-
-| `INITIALIZED_FLAG` | State |
-|---|---|
-| `0` | Auxiliary module has not been loaded. |
-| `1` | Auxiliary module is activated. Data has been copied and the function table range it is allotted has been filled. Methods still exist in the tiering queue. |
-| `2` | Auxiliary module is activated, and its tiering queue has been drained. R2R code should be resolved synchronously on first call instead of setting up call counting adding to the queue. |
-
+| `MethodCount` | Number of method slots assigned to the auxiliary module, including funclets. Defines the number of entries in its `RuntimeFunctions` table and the length of its contiguous function-table range. |
+| `ActivationStatus` | Flag indicating whether the auxiliary module has completed activation and its methods can be activated and the R2R code executed. This also could be a flag on the ModuleDesc. |
 
 ### Index relationships
 
 Each auxiliary module's allotted range in the function table is contiguous and has a one-to-one correspondence with its local `RuntimeFunctions` entries, including funclets.
 
-A method's logical `RuntimeFunctions` index is equal to the sum of the count of entries in the primary module's and preceding `RuntimeFunctions` tables, plus its local index within that range.
+A method's logical `RuntimeFunctions` index is equal to the sum of `PrimaryModuleMethodCount` and preceding auxiliary modules' `MethodCount`, plus its local index within that range.
 
 A method's index in the global function table (table 0) is the `__table_base` of the primary module plus the method's logical-module-relative `RuntimeFunctions` index. That is, `<index in table 0> = __table_base + <resolved RuntimeFunctions index>` where the resolved RuntimeFunctions index is the index resolved in the MethodDefEntryPoints or InstanceMethodEntryPoints table.
 
 The count of entries in the auxiliary module's `RuntimeFunctions` table must be equal to the `AuxiliaryModuleMetadata`'s `MethodCount` field for that module.
 
 This relationship between `RuntimeFunctions` index and function table index (relative to __table_base) must also hold for the primary module.
-
-### Direct-call dependency sets
-
-Activating method A must also complete the required fixups for any method B that A calls directly, even if B was not independently requested. All the methods that are direct-called by A or direct called by any of those methods, recursively, are considered the direct-call dependency set for root method A. Activation of all methods in a dependency set must succeed for the root method to be sucessfully activated. Subsets of the dependency set of A may succeed even if other subsets fail - they are not necessary all-or-none.
-
-An aux method's may be **unvisited** (it has no interpreter bytecode or R2R code), **interpreted** (`kPrefersInterpreterEntryPoint` is set), **activation-in-progress** (currently being tiered up, and present in a visited set during recursive activation of direct-called methods), or **activated** (`kPrefersInterpreterEntryPoint` not set). Encountering an activation-in-progress dependency must record the dependency rather than infinitely recursiving and restarting its activation.
-
-`READYTORUN_FIXUP_MethodEntry_ReadyToRun` already requests target-method fixup processing. These are implemented as Eager imports which run at module load. This does not work for aux methods whose data and fixups are not present in the primary module. These fixups for aux modules must run either during auxiliary module activation, or be modified to be run as pre-code fixups for methods that have direct calls (which requires handling cycles of these fixups - e.g. M1 direct calls M2 which direct calls M1).
-
-Direct calls within an auxiliary module are permitted subject to this activation requirement. Direct calls from the primary module to an auxiliary module are not supported.
-
-Direct calls from one auxiliary module to another are not supported.
 
 ## Compiler Changes
 
@@ -238,38 +298,21 @@ The compiler must also:
 
 ### Multiple runtime-function tables
 
-A logical R2R module can have two `MethodDefEntryPoints`, and `InstanceMethodEntryPoints`. The runtime must attempt to resolve R2R code using the Auxiliary EntryPoints tables when present.
+A logical R2R module can have two `MethodDefEntryPoints` and `InstanceMethodEntryPoints`. The runtime must attempt to resolve R2R code using the Auxiliary EntryPoints tables when present.
 
 A module's `RuntimeFunctions` table may be only partially filled. VirtualIP lookup must use a range-aware binary search that only searches the ranges of activated modules, using the AuxiliaryModuleMetadata activation info to determine active ranges.
 
-The runtime also must export methods to the host to enable draining the tiering queue.
+### Interpreter changes
 
-```C
-// Runs once the Auxiliary EntryPoints Module is activated
-// Removes MethodDescs that don't have R2R code in auxiliary modules
-// Moves MethodDescs that do have R2R code to their Module-specific queue.
-// Returns how many methods are left in queue
-int TierUpMethods(int methodsToProcess);
-```
-
-```C
-// Activates methods whose owning modules are activated
-// Returns how many methods are in the queue
-int ActivateMethods(int methodsToProcess);
-```
-
-The `methodsToProcess` argument is a heuristic budget of root methods to process, not a bound on time. Activating one method can also activate its direct-call dependency closure, so a batch can exceed the budget.
-
-Deferred methods belonging to modules that have not loaded are excluded from this count. A return value of `0` means there is no remaining activation work for currently loaded modules; it does not mean that all auxiliary modules have arrived or that every method in them has been activated.
+The interpreter must implement the tracking and activation flow defined above.
 
 ## JavaScript Hosting Changes
 
 The JavaScript host must:
 
-1. Trigger auxiliary-module downloads, either in response to tiering requests or through a more proactive download policy.
+1. Trigger auxiliary-module downloads, either eagerly or in response to method activation requests.
 2. Instantiate each auxiliary module with the required imports.
 3. Call that module's `ActivateModule` export.
-4. Drain the module-specific queue of methods that need to be tiered up.
 
 ## Implementation phases
 
@@ -284,6 +327,26 @@ Leave all other R2R metadata (fixups, EH and GC info, etc) in the primary module
 ### 3. Move metadata for aux methods into the auxiliary module.
 
 Move the `RuntimeFunctions` table entries and fixups to the auxiliary module, and have method activation resolve this info using the Auxiliary Module Metadata entries.
+
+## Appendix
+
+### Direct-call dependency sets
+
+Direct calls within an auxiliary module will not be implemented in V1, and this section is irrelevant until they are implemented. It is left for completeness.
+
+Activating method A must also complete the required fixups for any method B that A calls directly, even if B was not independently requested. All the methods that are direct-called by A or direct called by any of those methods, recursively, are considered the direct-call dependency set for root method A. Activation of all methods in a dependency set must succeed for the root method to be successfully activated. Subsets of the dependency set of A may succeed even if other subsets fail - they are not necessary all-or-none.
+
+An aux method may be **unvisited** (it has no interpreter bytecode or R2R code), **interpreted** (`kPrefersInterpreterEntryPoint` is set), **activation-in-progress** (currently being activated, and present in a visited set during recursive activation of direct-called methods), or **activated** (`kPrefersInterpreterEntryPoint` not set). Encountering an activation-in-progress dependency must record the dependency rather than infinitely recursing and restarting its activation.
+
+`READYTORUN_FIXUP_MethodEntry_ReadyToRun` already requests target-method fixup processing. These are implemented as Eager imports which run at module load. This does not work for aux methods whose data and fixups are not present in the primary module. These fixups for aux modules must run either during auxiliary module activation, or be modified to be run as pre-code fixups for methods that have direct calls (which requires handling cycles of these fixups - e.g. M1 direct calls M2 which direct calls M1).
+
+Direct calls within an auxiliary module are not supported in V1. They can be implemented later, subject to this activation requirement.
+
+Direct calls from the primary module to an auxiliary module are not supported.
+
+Direct calls from one auxiliary module to another are not supported.
+
+Direct calls from an auxiliary module to the primary module are possible through complex collaboration between the host, exported methods in the primary module, and required imports in the auxiliary module. The required complexity of an implementation is not justified for V1, and is not supported.
 
 > [!NOTE]
 > This document was written and edited with assistance from GitHub Copilot.
