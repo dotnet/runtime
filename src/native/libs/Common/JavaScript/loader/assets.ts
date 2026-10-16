@@ -3,12 +3,13 @@
 
 import type { JsModuleExports, JsAsset, AssemblyAsset, WasmAsset, IcuAsset, EmscriptenModuleInternal, WebAssemblyBootResourceType, AssetEntryInternal, PromiseCompletionSource, LoadBootResourceCallback, InstantiateWasmSuccessCallback, SymbolsAsset, AssetBehaviors, VfsAsset } from "./types";
 
-import { dotnetAssert, dotnetLogger, dotnetInternals, dotnetBrowserHostExports, dotnetUpdateInternals, Module, dotnetDiagnosticsExports, dotnetNativeBrowserExports, dotnetApi } from "./cross-module";
+import { dotnetAssert, dotnetLogger, dotnetInternals, dotnetBrowserHostExports, dotnetUpdateInternals, dotnetDiagnosticsExports, dotnetNativeBrowserExports, dotnetApi } from "./cross-module";
 import { ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_WEB, browserVirtualAppBase } from "./per-module";
 import { createPromiseCompletionSource, delay } from "./promise-completion-source";
 import { locateFile, makeURLAbsoluteWithApplicationBase } from "./bootstrap";
 import { fetchLike, responseLike } from "./polyfills";
 import { loaderConfig } from "./config";
+import { loaderCallbacks } from "./callbacks";
 
 let throttlingPCS: PromiseCompletionSource<void> | undefined;
 let currentParallelDownloads = 0;
@@ -551,9 +552,7 @@ function onDownloadedAsset(asset: AssetEntryInternal): void {
         finishThrottling(asset);
     }
     ++downloadedAssetsCount;
-    if (Module.onDownloadResourceProgress) {
-        Module.onDownloadResourceProgress(downloadedAssetsCount, totalAssetsToDownload);
-    }
+    loaderCallbacks.downloadResourceProgress?.(downloadedAssetsCount, totalAssetsToDownload);
     // release memory
     asset.buffer = null!;
     asset.pendingDownload = undefined;

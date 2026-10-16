@@ -74,12 +74,17 @@ namespace System.Net.Security
         public TlsOperationStatus DrainPendingOutput(Span<byte> destination, out int bytesWritten)
             => DrainPendingOutputCore(destination, out bytesWritten);
 
-        /// <summary>Server-side only. Sends a <c>CertificateRequest</c> to the peer as part of TLS 1.3 post-handshake authentication.</summary>
-        /// <param name="destination">Buffer to receive the <c>CertificateRequest</c> record.</param>
+        /// <summary>Server-side only. Requests a client certificate from the peer: a <c>CertificateRequest</c> for TLS 1.3 post-handshake authentication, or a renegotiation on TLS 1.2.</summary>
+        /// <param name="destination">Buffer to receive the request record.</param>
         /// <param name="bytesWritten">The number of bytes written to <paramref name="destination"/>.</param>
         /// <returns>The outcome of the operation.</returns>
+        /// <remarks>
+        /// If the TLS 1.3 client did not offer post-handshake authentication, no request is sent: the method returns
+        /// <see cref="TlsOperationStatus.Complete"/> with <paramref name="bytesWritten"/> set to 0, the handshake stays
+        /// complete, no client certificate is received, and the session remains usable.
+        /// </remarks>
         /// <exception cref="ObjectDisposedException">The session has been disposed.</exception>
-        /// <exception cref="InvalidOperationException">The session is client-side, the handshake has not yet completed, or the current session is not TLS 1.3.</exception>
+        /// <exception cref="InvalidOperationException">The session is client-side, or the handshake has not yet completed.</exception>
         /// <exception cref="PlatformNotSupportedException">The current platform does not support post-handshake authentication.</exception>
         public TlsOperationStatus RequestClientCertificate(Span<byte> destination, out int bytesWritten)
             => RequestClientCertificateBufferedCore(destination, out bytesWritten);

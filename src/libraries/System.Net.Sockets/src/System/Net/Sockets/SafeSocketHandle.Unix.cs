@@ -147,10 +147,10 @@ namespace System.Net.Sockets
         internal bool IsUnderlyingHandleBlocking => !AsyncContext.IsHandleNonBlocking;
 
         /// <summary>
-        /// Sets the underlying socket to blocking mode.
+        /// Attempts to set the underlying socket to blocking mode.
         /// Only sets blocking if the user hasn't explicitly set Blocking = false (i.e., IsNonBlocking is false).
         /// This is only safe to call when the socket is guaranteed by construction to not be used concurrently
-        /// with any other operation, such as at the completion of ConnectAsync.
+        /// with any other I/O operation, such as at the completion of ConnectAsync. Concurrent disposal is allowed.
         /// </summary>
         internal void SetBlocking()
         {

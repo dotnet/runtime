@@ -9591,12 +9591,6 @@ JITDBGAPI void __cdecl cTreeFlags(Compiler* comp, GenTree* tree)
                 {
                     chars += printf("[VAR_EXPLICIT_INIT]");
                 }
-#if defined(DEBUG)
-                if (tree->gtDebugFlags & GTF_DEBUG_VAR_CSE_REF)
-                {
-                    chars += printf("[VAR_CSE_REF]");
-                }
-#endif
                 break;
 
             case GT_NO_OP:
@@ -9699,11 +9693,6 @@ JITDBGAPI void __cdecl cTreeFlags(Compiler* comp, GenTree* tree)
                 break;
 
             case GT_BOX:
-
-                if (tree->gtFlags & GTF_BOX_VALUE)
-                {
-                    chars += printf("[BOX_VALUE]");
-                }
 
                 if (tree->gtFlags & GTF_BOX_CLONED)
                 {

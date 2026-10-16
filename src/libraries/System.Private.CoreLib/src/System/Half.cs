@@ -581,10 +581,7 @@ namespace System
         /// <summary>Explicitly converts a <see cref="decimal" /> value to its nearest representable half-precision floating-point value.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to its nearest representable half-precision floating-point value.</returns>
-        // Round through double, not float: decimal -> double is correctly rounded and double (53-bit significand)
-        // -> Half is an innocuous double rounding (53 >= 2 * 11 + 2), so the result is correctly rounded. Going
-        // through float (24-bit significand) is not, because 24 only meets the 2 * 11 + 2 bound with no margin.
-        public static explicit operator Half(decimal value) => (Half)(double)value;
+        public static explicit operator Half(decimal value) => decimal.VarHalfFromDec(in value);
 
         /// <summary>Explicitly converts a <see cref="double" /> value to its nearest representable half-precision floating-point value.</summary>
         /// <param name="value">The value to convert.</param>
@@ -2423,7 +2420,7 @@ namespace System
         static int IBinaryFloatParseAndFormatInfo<Half>.MinFastFloatDecimalExponent => -26;
         static int IBinaryFloatParseAndFormatInfo<Half>.MaxFastFloatDecimalExponent => 4;
 
-        static int IBinaryFloatParseAndFormatInfo<Half>.MinExponentRoundToEven => -21;
+        static int IBinaryFloatParseAndFormatInfo<Half>.MinExponentRoundToEven => -22;
         static int IBinaryFloatParseAndFormatInfo<Half>.MaxExponentRoundToEven => 5;
 
         static int IBinaryFloatParseAndFormatInfo<Half>.MaxExponentFastPath => 4;
