@@ -19,6 +19,155 @@ namespace Microsoft.NET.Build.Tasks.Tests;
 
 public class InvocationCacheTests
 {
+    private const string EnabledEnvironmentVariable = "INVOCATION_CACHE_TEST_ENABLED";
+    private const string PathEnvironmentVariable = "INVOCATION_CACHE_TEST_PATH";
+
+    [Theory]
+    [InlineData(null, false, false)]
+    [InlineData("", false, false)]
+    [InlineData("false", false, false)]
+    [InlineData("FALSE", false, false)]
+    [InlineData("true", true, false)]
+    [InlineData("TrUe", true, false)]
+    [InlineData("1", false, true)]
+    [InlineData("invalid", false, true)]
+    public void CacheEnvironmentConfiguration(string? setting, bool enabled, bool invalid)
+    {
+        RemoteExecutor.Invoke(static (value, expectedEnabled, expectedInvalid) =>
+        {
+            Environment.SetEnvironmentVariable(EnabledEnvironmentVariable, value == "<unset>" ? null : value);
+            string directory = Path.Combine(Path.GetTempPath(), "invocation-cache-" + Guid.NewGuid().ToString("N"));
+            Environment.SetEnvironmentVariable(PathEnvironmentVariable, directory);
+            var buildEngine = new CacheBuildEngine();
+            var task = new CacheTask { BuildEngine = buildEngine };
+            InvocationCache? cache = InvocationCache.TryCreateFromEnvironment(task.Log, "Test",
+                EnabledEnvironmentVariable, PathEnvironmentVariable, "test-tool");
+
+            Assert.Equal(bool.Parse(expectedEnabled), cache is not null);
+            if (cache is not null)
+                Assert.Equal(directory, cache.CacheDirectory);
+            if (bool.Parse(expectedInvalid))
+            {
+                BuildMessageEventArgs message = Assert.Single(buildEngine.Messages);
+                Assert.Equal($"Test caching is disabled because {EnabledEnvironmentVariable} must be 'true' or 'false'.", message.Message);
+                Assert.Equal(MessageImportance.Low, message.Importance);
+            }
+            else
+            {
+                Assert.Empty(buildEngine.Messages);
+            }
+            Assert.False(Directory.Exists(directory));
+        }, setting ?? "<unset>", enabled.ToString(), invalid.ToString()).Dispose();
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("true")]
+    [InlineData("false")]
+    [InlineData("cache directory")]
+    public void CacheEnvironmentDirectory(string? directory)
+    {
+        RemoteExecutor.Invoke(static value =>
+        {
+            string? path = value == "<unset>" ? null : value;
+            Environment.SetEnvironmentVariable(EnabledEnvironmentVariable, "true");
+            Environment.SetEnvironmentVariable(PathEnvironmentVariable, path);
+            var task = new CacheTask { BuildEngine = new CacheBuildEngine() };
+
+            InvocationCache? cache = InvocationCache.TryCreateFromEnvironment(task.Log, "Test",
+                EnabledEnvironmentVariable, PathEnvironmentVariable, "test-tool");
+
+            Assert.NotNull(cache);
+            Assert.Equal(InvocationCache.TryCreate(path, task.Log, "Test", "test-tool")!.CacheDirectory, cache.CacheDirectory);
+        }, directory ?? "<unset>").Dispose();
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    public void CacheUsesPlatformDefaultDirectory(string? cacheDirectory)
+    {
+        var task = new CacheTask { BuildEngine = new CacheBuildEngine() };
+        string expectedDirectory;
+        if (OperatingSystem.IsWindows())
+        {
+            expectedDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "test-tool");
+        }
+        else if (OperatingSystem.IsMacOS())
+        {
+            expectedDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Library", "Caches", "test-tool");
+        }
+        else
+        {
+            string? cacheHome = Environment.GetEnvironmentVariable("XDG_CACHE_HOME");
+            expectedDirectory = !string.IsNullOrEmpty(cacheHome) && Path.IsPathRooted(cacheHome)
+                ? Path.Combine(cacheHome, "test-tool")
+                : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".cache", "test-tool");
+        }
+
+        InvocationCache? cache = InvocationCache.TryCreate(cacheDirectory, task.Log, "Test", "test-tool");
+
+        Assert.NotNull(cache);
+        Assert.Equal(Path.GetFullPath(expectedDirectory), cache.CacheDirectory);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void CacheDirectoryOverrideDoesNotCreateDirectory(bool absolutePath)
+    {
+        string directoryName = "invocation-cache-" + Guid.NewGuid().ToString("N");
+        string cacheDirectory = absolutePath ? Path.Combine(Path.GetTempPath(), directoryName) : directoryName;
+        var task = new CacheTask { BuildEngine = new CacheBuildEngine() };
+
+        InvocationCache? cache = InvocationCache.TryCreate(cacheDirectory, task.Log, "Test", "test-tool");
+
+        Assert.NotNull(cache);
+        Assert.Equal(Path.GetFullPath(cacheDirectory), cache.CacheDirectory);
+        Assert.False(Directory.Exists(cache.CacheDirectory));
+    }
+
+    [Fact]
+    public void InvalidCacheDirectoryBypassesCaching()
+    {
+        var buildEngine = new CacheBuildEngine();
+        var task = new CacheTask { BuildEngine = buildEngine };
+
+        Assert.Null(InvocationCache.TryCreate("invalid\0path", task.Log, "Test", "test-tool"));
+        BuildMessageEventArgs message = Assert.Single(buildEngine.Messages);
+        Assert.StartsWith("Test caching is disabled because the cache directory 'invalid\0path' could not be resolved:", message.Message);
+        Assert.Equal(MessageImportance.Low, message.Importance);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("relative")]
+    [InlineData("absolute")]
+    public void CacheDefaultDirectoryHonorsPlatformAndXdgHome(string? setting)
+    {
+        RemoteExecutor.Invoke(static value =>
+        {
+            string? cacheHome = value == "<unset>" ? null
+                : value == "absolute" ? Path.Combine(Path.GetTempPath(), "invocation-cache-" + Guid.NewGuid().ToString("N"))
+                : value;
+            Environment.SetEnvironmentVariable("XDG_CACHE_HOME", cacheHome);
+            var task = new CacheTask { BuildEngine = new CacheBuildEngine() };
+            string home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            string expectedDirectory = OperatingSystem.IsWindows()
+                ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "test-tool")
+                : OperatingSystem.IsMacOS()
+                    ? Path.Combine(home, "Library", "Caches", "test-tool")
+                    : Path.Combine(value == "absolute" ? cacheHome! : Path.Combine(home, ".cache"), "test-tool");
+
+            InvocationCache? cache = InvocationCache.TryCreate(null, task.Log, "Test", "test-tool");
+
+            Assert.NotNull(cache);
+            Assert.Equal(Path.GetFullPath(expectedDirectory), cache.CacheDirectory);
+        }, setting ?? "<unset>").Dispose();
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
