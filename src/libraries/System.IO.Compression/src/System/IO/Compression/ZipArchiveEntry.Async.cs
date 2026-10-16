@@ -370,8 +370,11 @@ public partial class ZipArchiveEntry
             {
                 try
                 {
-                    await using Stream decompressor = await OpenInReadModeAsync(checkOpenable: false, default, cancellationToken).ConfigureAwait(false);
-                    await decompressor.CopyToAsync(uncompressedData, cancellationToken).ConfigureAwait(false);
+                    Stream decompressor = await OpenInReadModeAsync(checkOpenable: false, default, cancellationToken).ConfigureAwait(false);
+                    await using (decompressor.ConfigureAwait(false))
+                    {
+                        await decompressor.CopyToAsync(uncompressedData, cancellationToken).ConfigureAwait(false);
+                    }
                 }
                 catch
                 {
