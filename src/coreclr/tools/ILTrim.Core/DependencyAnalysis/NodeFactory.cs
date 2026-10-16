@@ -6,6 +6,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
 
 using Internal.IL;
 using Internal.TypeSystem;
@@ -186,6 +187,9 @@ namespace ILCompiler.DependencyAnalysis
         NodeCache<HandleKey<ParameterHandle>, ParameterNode> _parameters
            = new NodeCache<HandleKey<ParameterHandle>, ParameterNode>(key
                => new ParameterNode(key.Module, key.Handle));
+
+        private readonly ConcurrentDictionary<HandleKey<MethodDefinitionHandle>, byte> _reflectedMethods = new();
+        private readonly ConcurrentDictionary<EcmaModule, Dictionary<ParameterHandle, MethodDefinitionHandle>> _parameterOwners = new();
         public ParameterNode Parameter(EcmaModule module, ParameterHandle handle)
         {
             return _parameters.GetOrAdd(new HandleKey<ParameterHandle>(module, handle));
@@ -328,11 +332,32 @@ namespace ILCompiler.DependencyAnalysis
         {
             // TODO: this should be a separate node with more logic
             var definition = (EcmaMethod)method.GetTypicalMethodDefinition();
+            _reflectedMethods.TryAdd(new HandleKey<MethodDefinitionHandle>(definition.Module, definition.Handle), 0);
 
             if (!IsModuleTrimmed(definition.Module))
                 return NullDependencyNode.Instance;
 
             return MethodDefinition(definition.Module, definition.Handle);
+        }
+
+        internal bool ShouldPreserveParameterName(EcmaModule module, ParameterHandle parameter)
+        {
+            if (!_parameterOwners.TryGetValue(module, out Dictionary<ParameterHandle, MethodDefinitionHandle>? owners))
+            {
+                owners = new Dictionary<ParameterHandle, MethodDefinitionHandle>();
+                MetadataReader reader = module.MetadataReader;
+                for (int row = 1; row <= reader.GetTableRowCount(TableIndex.MethodDef); row++)
+                {
+                    MethodDefinitionHandle candidateMethod = MetadataTokens.MethodDefinitionHandle(row);
+                    foreach (ParameterHandle candidate in reader.GetMethodDefinition(candidateMethod).GetParameters())
+                        owners[candidate] = candidateMethod;
+                }
+
+                owners = _parameterOwners.GetOrAdd(module, owners);
+            }
+
+            return !owners.TryGetValue(parameter, out MethodDefinitionHandle method)
+                || _reflectedMethods.ContainsKey(new HandleKey<MethodDefinitionHandle>(module, method));
         }
 
         public DependencyNode ReflectedField(FieldDesc field)

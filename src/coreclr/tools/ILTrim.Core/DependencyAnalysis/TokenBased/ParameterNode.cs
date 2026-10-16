@@ -6,6 +6,8 @@ using System.Reflection.Metadata;
 
 using Internal.TypeSystem.Ecma;
 
+using Mono.Linker;
+
 namespace ILCompiler.DependencyAnalysis
 {
     /// <summary>
@@ -42,9 +44,14 @@ namespace ILCompiler.DependencyAnalysis
             Parameter parameter = reader.GetParameter(Handle);
 
             var builder = writeContext.MetadataBuilder;
+            StringHandle name = (writeContext.Factory.Settings.MetadataTrimming & MetadataTrimming.ParameterName) != 0
+                && !writeContext.Factory.ShouldPreserveParameterName(_module, Handle)
+                ? default
+                : builder.GetOrAddString(reader.GetString(parameter.Name));
+
             return builder.AddParameter(
                 parameter.Attributes,
-                builder.GetOrAddString(reader.GetString(parameter.Name)),
+                name,
                 parameter.SequenceNumber);
         }
     }
