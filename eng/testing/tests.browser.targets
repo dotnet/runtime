@@ -93,45 +93,6 @@
     </ItemGroup>
   </Target>
 
-  <!-- CoreCLR-only, test-infra-only. Library tests crossgen inside the nested publish and then serve the BUILD
-       output from bin/, so the build staging reads obj/R2R. That stages the composite component stubs, but the
-       composite owner is not an assembly: the SDK defines it only as a publish asset, so it never reaches bin/
-       or the build boot config. Define it as a build asset with the same trait so the boot config lists it as a
-       composite image. This cannot live in the WebAssembly SDK: in a real publish the build phase runs before
-       crossgen, so the owner may be missing or stale. -->
-  <Target Name="_WasmCoreClrAddCompositeR2RBuildAsset"
-          Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(PublishReadyToRun)' == 'true' and '$(PublishReadyToRunComposite)' == 'true' and '$(WasmBuildingForNestedPublish)' != 'true'"
-          DependsOnTargets="_WasmCoreClrSelectR2RDirectories"
-          AfterTargets="_ResolveWasmOutputs">
-    <ItemGroup>
-      <!-- _WasmCoreClrPruneStalePerAppR2R leaves only the current owner (<main assembly>.r2r.wasm) in obj/R2R. -->
-      <_WasmCompositeBuildCandidate Include="$(_WasmPublishR2RDir)*.r2r.wasm" />
-      <_WasmCompositeBuildCandidate Update="@(_WasmCompositeBuildCandidate)"
-                                    ContentRoot="%(RootDir)%(Directory)"
-                                    RelativePath="_framework/%(FileName)%(Extension)" />
-      <_WasmCompositeBuildFingerprintPattern Include="WasmFiles" Pattern="*.wasm" Expression="#[.{fingerprint}]!" />
-    </ItemGroup>
-    <Error Condition="'@(_WasmCompositeBuildCandidate->Count())' != '1'"
-           Text="Expected exactly one composite ReadyToRun image in '$(_WasmPublishR2RDir)', found @(_WasmCompositeBuildCandidate->Count()): @(_WasmCompositeBuildCandidate->'%(FileName)%(Extension)', ', ')." />
-
-    <DefineStaticWebAssets
-      CandidateAssets="@(_WasmCompositeBuildCandidate)"
-      SourceId="$(PackageId)"
-      SourceType="Computed"
-      BasePath="$(StaticWebAssetBasePath)"
-      AssetKind="Build"
-      AssetMode="All"
-      AssetRole="Primary"
-      AssetTraitName="WasmResource"
-      AssetTraitValue="readyToRunComposite"
-      CopyToOutputDirectory="$(_WasmFrameworkCopyToOutputDirectory)"
-      CopyToPublishDirectory="Never"
-      FingerprintCandidates="$(_WasmFingerprintAssets)"
-      FingerprintPatterns="@(_WasmCompositeBuildFingerprintPattern)">
-      <Output TaskParameter="Assets" ItemName="WasmStaticWebAsset" />
-    </DefineStaticWebAssets>
-  </Target>
-
   <PropertyGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR'">
     <WasmTestSupport>true</WasmTestSupport>
     <WasmTestExitOnUnhandledError>true</WasmTestExitOnUnhandledError>
