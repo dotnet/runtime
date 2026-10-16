@@ -316,9 +316,11 @@ ep_rt_init_finish (void)
 
 #if defined(TARGET_WASI) && defined(PERFTRACING_DISABLE_THREADS)
 // WASI has no host event loop, so jobs are kept on a native list that the managed
-// WASI event loop drains (see eventpipeinternal.cpp).
+// WASI event loop drains (see ep-rt-coreclr.cpp).
 bool ep_rt_coreclr_wasi_queue_job (size_t (*cb)(void *data), void *data);
-void ep_rt_coreclr_wasi_run_jobs (void);
+
+// Runs the queued jobs once; returns true if any job is still queued.
+bool ep_rt_coreclr_wasi_run_jobs (void);
 #endif
 
 static
