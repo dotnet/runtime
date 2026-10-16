@@ -226,6 +226,11 @@ struct READYTORUN_IMPORT_SECTION
 | ReadyToRunImportSectionFlags::PCode    | 0x0004  | Section contains pointers to code
 
 
+Module-eager fixups in `System.Private.CoreLib`, including composite images containing
+`System.Private.CoreLib`, may refer to any type, method, or field in CoreLib and may trigger
+loading of CoreLib types needed to resolve those references. In other modules, module-eager
+fixups must not trigger type loading; the required types must already be loaded.
+
 ### READYTORUN_IMPORT_SECTIONS::Type
 
 | ReadyToRunImportSectionType                 | Value  | Description
