@@ -59,12 +59,12 @@ static bool IsValidMemoryProtection(DWORD nativeProtection)
     return nativeProtection != 0 && (nativeProtection & (nativeProtection - 1)) == 0 &&
         (nativeProtection & allowedProtections) != 0;
 }
-#endif // !NDEBUG
 
 static bool IsValidMemoryRange(void* address, size_t size)
 {
     return size != 0 && size <= UINTPTR_MAX - reinterpret_cast<uintptr_t>(address);
 }
+#endif // !NDEBUG
 
 VMToOSInterface::MemoryMapHandle VMToOSInterface::CreateMemoryMapping(MemoryMapHandle fileHandle, uint64_t size, MemoryProtection protection)
 {
@@ -82,11 +82,7 @@ bool VMToOSInterface::CloseMemoryMapping(MemoryMapHandle mapping)
 
 void* VMToOSInterface::MapAnonymousMemory(size_t size, MemoryProtection protection, bool executableBacking)
 {
-    if (size == 0)
-    {
-        SetLastError(ERROR_INVALID_PARAMETER);
-        return nullptr;
-    }
+    assert(size != 0);
 
     MemoryMapHandle mapping = CreateMemoryMapping(INVALID_HANDLE_VALUE, size,
         executableBacking ? MemoryProtection::ExecuteReadWrite : protection);
@@ -143,11 +139,8 @@ void* VMToOSInterface::MapMemory(MemoryMapHandle mapping, uint64_t offset, void*
     DWORD nativeProtection = static_cast<DWORD>(protection);
     assert(IsValidMemoryProtection(nativeProtection));
 
-    if (size > UINT64_MAX - offset || (address != nullptr && !IsValidMemoryRange(address, size)))
-    {
-        SetLastError(ERROR_INVALID_PARAMETER);
-        return nullptr;
-    }
+    assert(size <= UINT64_MAX - offset);
+    assert(address == nullptr || IsValidMemoryRange(address, size));
 
     if (address != nullptr)
     {
@@ -205,11 +198,7 @@ void* VMToOSInterface::ReserveMemoryPlaceholder(void* address, size_t size)
 {
     assert(SupportsPlaceholderMapping());
 
-    if (!IsValidMemoryRange(address, size))
-    {
-        SetLastError(ERROR_INVALID_PARAMETER);
-        return nullptr;
-    }
+    assert(IsValidMemoryRange(address, size));
 
     return s_virtualAlloc2(GetCurrentProcess(), address, size,
         MEM_RESERVE | MEM_RESERVE_PLACEHOLDER, PAGE_NOACCESS, nullptr, 0);
@@ -219,11 +208,7 @@ bool VMToOSInterface::SplitMemoryPlaceholder(void* address, size_t size)
 {
     assert(SupportsPlaceholderMapping());
 
-    if (address == nullptr || !IsValidMemoryRange(address, size))
-    {
-        SetLastError(ERROR_INVALID_PARAMETER);
-        return false;
-    }
+    assert(address != nullptr && IsValidMemoryRange(address, size));
 
     return VirtualFree(address, size, MEM_RELEASE | MEM_PRESERVE_PLACEHOLDER) != FALSE;
 }
@@ -235,11 +220,7 @@ void* VMToOSInterface::CommitMemoryPlaceholder(void* address, size_t size, Memor
     DWORD nativeProtection = static_cast<DWORD>(protection);
     assert(IsValidMemoryProtection(nativeProtection));
 
-    if (address == nullptr || !IsValidMemoryRange(address, size))
-    {
-        SetLastError(ERROR_INVALID_PARAMETER);
-        return nullptr;
-    }
+    assert(address != nullptr && IsValidMemoryRange(address, size));
 
     return s_virtualAlloc2(GetCurrentProcess(), address, size,
         MEM_COMMIT | MEM_RESERVE | MEM_REPLACE_PLACEHOLDER, nativeProtection, nullptr, 0);
@@ -247,33 +228,21 @@ void* VMToOSInterface::CommitMemoryPlaceholder(void* address, size_t size, Memor
 
 bool VMToOSInterface::ReleaseMemoryReservation(void* address, size_t)
 {
-    if (address == nullptr)
-    {
-        SetLastError(ERROR_INVALID_PARAMETER);
-        return false;
-    }
+    assert(address != nullptr);
 
     return VirtualFree(address, 0, MEM_RELEASE) != FALSE;
 }
 
 void* VMToOSInterface::ReserveMemoryWithinRange(void* rangeStart, void* rangeEnd, size_t size)
 {
-    if (size == 0)
-    {
-        SetLastError(ERROR_INVALID_PARAMETER);
-        return nullptr;
-    }
+    assert(size != 0);
 
     if (rangeStart == nullptr && rangeEnd == nullptr)
     {
         return VirtualAlloc(nullptr, size, MEM_RESERVE, PAGE_NOACCESS);
     }
 
-    if (rangeEnd <= rangeStart)
-    {
-        SetLastError(ERROR_INVALID_PARAMETER);
-        return nullptr;
-    }
+    assert(rangeEnd > rangeStart);
 
     constexpr uintptr_t granularity = 64 * 1024;
     uintptr_t tryAddress = reinterpret_cast<uintptr_t>(rangeStart) & ~(granularity - 1);
@@ -312,11 +281,7 @@ void* VMToOSInterface::ReserveMemoryWithinRange(void* rangeStart, void* rangeEnd
 
 bool VMToOSInterface::DecommitMemory(void* address, size_t size)
 {
-    if (address == nullptr || !IsValidMemoryRange(address, size))
-    {
-        SetLastError(ERROR_INVALID_PARAMETER);
-        return false;
-    }
+    assert(address != nullptr && IsValidMemoryRange(address, size));
 
     return VirtualFree(address, size, MEM_DECOMMIT) != FALSE;
 }
@@ -326,11 +291,7 @@ void* VMToOSInterface::CommitReservedMemory(void* address, size_t size, MemoryPr
     DWORD nativeProtection = static_cast<DWORD>(protection);
     assert(IsValidMemoryProtection(nativeProtection));
 
-    if (address == nullptr || !IsValidMemoryRange(address, size))
-    {
-        SetLastError(ERROR_INVALID_PARAMETER);
-        return nullptr;
-    }
+    assert(address != nullptr && IsValidMemoryRange(address, size));
 
     return VirtualAlloc(address, size, MEM_COMMIT, nativeProtection);
 }
@@ -340,11 +301,7 @@ bool VMToOSInterface::ProtectMemory(void* address, size_t size, MemoryProtection
     DWORD nativeProtection = static_cast<DWORD>(protection);
     assert(IsValidMemoryProtection(nativeProtection));
 
-    if (address == nullptr || !IsValidMemoryRange(address, size))
-    {
-        SetLastError(ERROR_INVALID_PARAMETER);
-        return false;
-    }
+    assert(address != nullptr && IsValidMemoryRange(address, size));
 
     DWORD oldProtection;
     return VirtualProtect(address, size, nativeProtection, &oldProtection) != FALSE;
@@ -354,12 +311,9 @@ bool VMToOSInterface::PopulateMemoryPlaceholder(void* address, size_t allocation
 {
     assert(IsValidMemoryProtection(static_cast<DWORD>(finalProtection)));
 
-    if (address == nullptr || !IsValidMemoryRange(address, allocationSize) || copySize > allocationSize ||
-        (copySize != 0 && (source == nullptr || copySize > UINTPTR_MAX - reinterpret_cast<uintptr_t>(source))))
-    {
-        SetLastError(ERROR_INVALID_PARAMETER);
-        return false;
-    }
+    assert(address != nullptr && IsValidMemoryRange(address, allocationSize));
+    assert(copySize <= allocationSize);
+    assert(copySize == 0 || (source != nullptr && copySize <= UINTPTR_MAX - reinterpret_cast<uintptr_t>(source)));
 
     if (CommitMemoryPlaceholder(address, allocationSize, MemoryProtection::ReadWrite) == nullptr)
     {

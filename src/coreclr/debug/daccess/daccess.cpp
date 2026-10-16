@@ -1569,6 +1569,17 @@ DacInstanceManager::Alloc(TADDR addr, ULONG32 size, DAC_USAGE_TYPE usage)
         {
             blockSize = DAC_INSTANCE_BLOCK_ALLOCATION;
         }
+        else
+        {
+            // AllocateMemory requires a multiple of the system page size.
+            ULONG32 pageSize = minipal_getpagesize();
+            ULONG32 roundedSize = (blockSize + (pageSize - 1)) & ~(pageSize - 1);
+            if (roundedSize < blockSize)
+            {
+                return NULL;
+            }
+            blockSize = roundedSize;
+        }
 
         // If we have a saved block and it's large enough, use it.
         block = m_unusedBlock;

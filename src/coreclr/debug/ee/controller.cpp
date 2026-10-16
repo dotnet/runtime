@@ -1456,11 +1456,8 @@ bool DebuggerController::BindPatch(DebuggerControllerPatch *patch,
 //        placed into the code-stream, false otherwise
 
 #ifdef TARGET_UNIX
-// The PAL's VirtualProtect on Unix never returned a real previous protection value (it always
-// reported a dummy PAGE_EXECUTE_READWRITE), so the "restore to oldProt" half of the Windows
-// make-writable/patch/restore sequence below was historically a no-op on Unix: it just
-// reapplied PAGE_EXECUTE_READWRITE. We preserve that exact effective behavior here by making
-// the patched range RWX and leaving it that way; there is no meaningful "oldProt" to restore to.
+// There is no easy way to get the previous protection of a range on Unix, so the patched
+// range is made RWX and left unprotected.
 static bool MakePatchMemoryWritable(void* address, size_t size)
 {
     return VMToOSInterface::ProtectMemory(address, size, VMToOSInterface::MemoryProtection::ExecuteReadWrite);

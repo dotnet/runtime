@@ -428,7 +428,7 @@ again:
     }
 
     // Need to commit some more pages in reserved region.
-    // If we run out of pages in the reserved region, ClrVirtualAlloc some more pages
+    // If we run out of pages in the reserved region, reserve some more pages
     if (GetMoreCommittedPages(dwSize))
         goto again;
 

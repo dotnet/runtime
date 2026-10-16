@@ -345,7 +345,7 @@ HRESULT FakeCoCreateInstanceEx(REFCLSID       rclsid,
 
 #ifndef TARGET_WASM
 // Reserves free memory within the range [pMinAddr..pMaxAddr] using
-// ClrVirtualQuery to find free memory and ClrVirtualAlloc to reserve it.
+// VirtualQuery to find free memory and VirtualAlloc to reserve it.
 //
 // This method only supports the flAllocationType of MEM_RESERVE, and expects that the memory
 // is being reserved for the purpose of eventually storing executable code.
@@ -430,7 +430,6 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
     //
     BYTE *   tryAddr            = (BYTE *)ALIGN_UP((BYTE *)pMinAddr, VIRTUAL_ALLOC_RESERVE_GRANULARITY);
     bool     virtualQueryFailed = false;
-    unsigned virtualQueryCount  = 0;
 
     // Now scan memory and try to find a free block of the size requested.
     while ((tryAddr + dwSize) <= (BYTE *) pMaxAddr)
@@ -439,8 +438,7 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
 
         // Use VirtualQuery to find out if this address is MEM_FREE
         //
-        virtualQueryCount++;
-        if (!ClrVirtualQuery((LPCVOID)tryAddr, &mbInfo, sizeof(mbInfo)))
+        if (!VirtualQuery((LPCVOID)tryAddr, &mbInfo, sizeof(mbInfo)))
         {
             // Exit and return nullptr if the VirtualQuery call fails.
             virtualQueryFailed = true;
@@ -452,7 +450,7 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
             (mbInfo.RegionSize >= (SIZE_T) dwSize))
         {
             // Try reserving the memory using VirtualAlloc now
-            pResult = (BYTE*)ClrVirtualAlloc(tryAddr, dwSize, flAllocationType, flProtect);
+            pResult = (BYTE*)VirtualAlloc(tryAddr, dwSize, flAllocationType, flProtect);
 
             // Normally this will be successful
             //
@@ -473,10 +471,10 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
         }
     }
 
-    STRESS_LOG7(LF_JIT, LL_INFO100,
-                "ClrVirtualAllocWithinRange request #%u for %08x bytes in [ %p .. %p ], query count was %u - returned %s: %p\n",
+    STRESS_LOG6(LF_JIT, LL_INFO100,
+                "ClrVirtualAllocWithinRange request #%u for %08x bytes in [ %p .. %p ] - returned %s: %p\n",
                 countOfCalls, (DWORD)dwSize, pMinAddr, pMaxAddr,
-                virtualQueryCount, (pResult != nullptr) ? "success" : "failure", pResult);
+                (pResult != nullptr) ? "success" : "failure", pResult);
 
     // If we failed this call the process will typically be terminated
     // so we log any additional reason for failing this call.

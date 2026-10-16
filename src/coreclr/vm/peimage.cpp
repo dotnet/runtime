@@ -812,6 +812,7 @@ HRESULT PEImage::TryOpenFile(bool takeLock)
     StackSString filePath(GetPathToLoad());
     const char* path = filePath.GetUTF8();
     const char* separator = strrchr(path, '/');
+    // Check if a '/' exists and that it is anything other than the very first character.
     if (separator == nullptr || separator != path)
     {
         StackSString directory;

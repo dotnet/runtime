@@ -654,6 +654,13 @@ void EEStartupHelper()
 
         PendingTypeLoadTable::Init();
 
+#if defined(TARGET_UNIX) && !defined(TARGET_WASM)
+        if (!VMToOSInterface::InitializeExecutableMemoryAllocator())
+        {
+            IfFailGo(E_OUTOFMEMORY);
+        }
+#endif // TARGET_UNIX && !TARGET_WASM
+
         IfFailGo(ExecutableAllocator::StaticInitialize(FatalErrorHandler));
 
         if (g_pConfig != NULL)

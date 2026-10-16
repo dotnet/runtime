@@ -314,15 +314,6 @@ int coreclr_initialize(
     {
         return hr;
     }
-
-#ifndef TARGET_WASM
-    // Repeated hosting initialization must not reset the allocator's pool.
-    static const bool executableMemoryAllocatorInitialized = VMToOSInterface::InitializeExecutableMemoryAllocator();
-    if (!executableMemoryAllocatorInitialized)
-    {
-        return E_OUTOFMEMORY;
-    }
-#endif // !TARGET_WASM
 #endif
 
     if (hostContract != nullptr)

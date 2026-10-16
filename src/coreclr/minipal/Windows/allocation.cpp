@@ -4,9 +4,7 @@
 #include <windows.h>
 #include "minipal.h"
 
-extern void* ClrVirtualAlloc(void* address, SIZE_T size, DWORD allocationType, DWORD protection);
-
 void* VMToOSInterface::AllocateMemory(void* address, size_t size, MemoryProtection protection)
 {
-    return ClrVirtualAlloc(address, size, MEM_RESERVE | MEM_COMMIT, static_cast<DWORD>(protection));
+    return VirtualAlloc(address, size, MEM_RESERVE | MEM_COMMIT, static_cast<DWORD>(protection));
 }

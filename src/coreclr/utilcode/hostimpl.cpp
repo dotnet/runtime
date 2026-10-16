@@ -39,28 +39,6 @@ void ClrLeaveCriticalSection(CRITSEC_COOKIE cookie) noexcept
     minipal_mutex_leave((minipal_mutex*)cookie);
 }
 
-#ifdef HOST_WINDOWS
-LPVOID ClrVirtualAlloc(LPVOID lpAddress, SIZE_T dwSize, DWORD flAllocationType, DWORD flProtect)
-{
-    return VirtualAlloc(lpAddress, dwSize, flAllocationType, flProtect);
-}
-
-BOOL ClrVirtualFree(LPVOID lpAddress, SIZE_T dwSize, DWORD dwFreeType)
-{
-    return VirtualFree(lpAddress, dwSize, dwFreeType);
-}
-
-SIZE_T ClrVirtualQuery(LPCVOID lpAddress, PMEMORY_BASIC_INFORMATION lpBuffer, SIZE_T dwLength)
-{
-    return VirtualQuery(lpAddress, lpBuffer, dwLength);
-}
-
-BOOL ClrVirtualProtect(LPVOID lpAddress, SIZE_T dwSize, DWORD flNewProtect, PDWORD lpflOldProtect)
-{
-    return VirtualProtect(lpAddress, dwSize, flNewProtect, lpflOldProtect);
-}
-#endif // HOST_WINDOWS
-
 //------------------------------------------------------------------------------
 // Helper function to get an exception from outside the exception.  In
 //  the CLR, it may be from the Thread object.  Non-CLR users have no thread object,

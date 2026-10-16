@@ -14,9 +14,10 @@
 // Interface between the runtime and platform specific functionality
 class VMToOSInterface
 {
-private:
-    ~VMToOSInterface() {}
 public:
+    VMToOSInterface() = delete;
+    ~VMToOSInterface() = delete;
+
 #ifdef TARGET_WINDOWS
     using MemoryMapHandle = HANDLE;
     static inline const MemoryMapHandle InvalidFileHandle = INVALID_HANDLE_VALUE;
