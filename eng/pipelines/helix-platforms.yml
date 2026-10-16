@@ -117,9 +117,9 @@ variables:
     value: (Debian.13.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-13-helix-amd64
 
   # Fedora x64
-  # Latest: 44
+  # Latest: 45
   - name: helix_linux_x64_fedora_latest
-    value: (Fedora.44.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-44-helix-amd64
+    value: (Fedora.45.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-45-helix-amd64
 
   # Oldest: 43
   - name: helix_linux_x64_fedora_oldest
