@@ -109,7 +109,7 @@ namespace System.Net.Http.Functional.Tests
             return data;
         }
 
-        public static X509Certificate2 CreateServerSelfSignedCertificate(string name = "localhost")
+        public static X509Certificate2 CreateServerSelfSignedCertificate(string name = "localhost", bool expired = false)
         {
             using (RSA root = RSA.Create())
             {
@@ -136,13 +136,16 @@ namespace System.Net.Http.Functional.Tests
                 builder.AddIpAddress(IPAddress.IPv6Loopback);
                 req.CertificateExtensions.Add(builder.Build());
 
-                DateTimeOffset start = DateTimeOffset.UtcNow.AddMinutes(-5);
+                DateTimeOffset start = expired ? DateTimeOffset.UtcNow.AddMonths(-2) : DateTimeOffset.UtcNow.AddMinutes(-5);
                 DateTimeOffset end = start.AddMonths(1);
 
                 X509Certificate2 cert = req.CreateSelfSigned(start, end);
                 if (PlatformDetection.IsWindows)
                 {
-                    cert = X509CertificateLoader.LoadPkcs12(cert.Export(X509ContentType.Pfx), (string?)null);
+                    using (cert)
+                    {
+                        return X509CertificateLoader.LoadPkcs12(cert.Export(X509ContentType.Pfx), (string?)null);
+                    }
                 }
 
                 return cert;

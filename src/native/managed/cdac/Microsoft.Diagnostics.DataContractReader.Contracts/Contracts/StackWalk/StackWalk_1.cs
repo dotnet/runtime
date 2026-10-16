@@ -9,7 +9,7 @@ using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Runtime.InteropServices;
 using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
-using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers.Wasm;
+using Microsoft.Diagnostics.DataContractReader.ExecutionManagerHelpers;
 using Microsoft.Diagnostics.DataContractReader.Data;
 using System.Linq;
 
@@ -1118,20 +1118,21 @@ internal partial class StackWalk_1 : IStackWalk
             throw new PlatformNotSupportedException("WASM function identity is only available on WASM targets.");
 
         StackDataFrameHandle handle = AssertCorrectHandle(stackDataFrameHandle);
-        // Native markers and interpreter frames can hold bytes that resemble an R2R frame record,
-        // so reject them before reading the stack.
-        if (handle.State != StackWalkState.Frameless ||
-            _eman.GetCodeKind(handle.Context.InstructionPointer) != CodeKind.ReadyToRun)
+        if (handle.State != StackWalkState.Frameless)
+            throw new InvalidOperationException("WASM function identity is only available for frameless frames.");
+
+        // The virtual IP selects the function's own RUNTIME_FUNCTION, including a funclet's.
+        // Interpreter code has no unwind info, so it is rejected here.
+        if (!_eman.TryGetUnwindInfo(handle.Context.InstructionPointer, out TargetPointer runtimeFunction, out _) ||
+            !new WasmFunctionTableIndexLookup(_target).TryGetFunctionIdentity(
+                runtimeFunction,
+                out TargetPointer module,
+                out uint runtimeFunctionIndex,
+                out uint functionTableIndex,
+                out bool isFunclet))
         {
-            throw new InvalidOperationException("WASM function identity is only available for ReadyToRun frameless frames.");
+            throw new InvalidOperationException("The instruction pointer does not belong to a registered WASM R2R image.");
         }
-
-        WasmR2RInfo r2rInfo = new(_target);
-        if (!new WasmUnwinder(_target, r2rInfo).TryGetFunctionIndex(handle.Context.StackPointer, out uint functionTableIndex))
-            throw new InvalidOperationException("The stack frame does not contain a WASM R2R function-table index.");
-
-        if (!r2rInfo.TryGetFunctionIdentity(functionTableIndex, out TargetPointer module, out uint runtimeFunctionIndex, out bool isFunclet))
-            return new WasmFunctionIdentity { FunctionTableIndex = functionTableIndex };
 
         return new WasmFunctionIdentity
         {

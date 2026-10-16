@@ -85,27 +85,27 @@ public record struct DebuggerEvalData(
     TargetPointer AssemblyPtr);
 
 /// <summary>
-/// Identifies the WebAssembly function represented by a ReadyToRun stack frame.
+/// Identifies the WebAssembly function that contains the instruction pointer of a ReadyToRun stack frame.
 /// </summary>
 /// <remarks>
-/// <see cref="FunctionTableIndex"/> is the raw runtime-global function-table index stored in the
-/// frame. A WebAssembly engine's function index is module-local, so consumers must use
-/// <see cref="Module"/> and <see cref="RuntimeFunctionIndex"/> with the image's element section to
-/// find the engine function; the raw index is not an engine function index.
+/// A WebAssembly engine's function index is module-local, so a consumer uses <see cref="Module"/>
+/// and <see cref="RuntimeFunctionIndex"/> with the image's element section to find the engine
+/// function. <see cref="FunctionTableIndex"/> is the runtime-global index of the same function.
+/// A funclet is a function of its own, distinct from its method's root function.
 /// </remarks>
 public readonly struct WasmFunctionIdentity
 {
-    /// <summary>The raw runtime-global function-table index stored in the frame.</summary>
+    /// <summary>The runtime-global function-table index of the function.</summary>
     public uint FunctionTableIndex { get; init; }
     /// <summary>
-    /// The module that registered the R2R image containing the function, or null when the index is
-    /// not registered. For a composite image this is the module that loaded the image.
+    /// The module that registered the R2R image containing the function. For a composite image this
+    /// is the module that loaded the image, not necessarily the method's own module.
     /// </summary>
-    public TargetPointer? Module { get; init; }
-    /// <summary>The RUNTIME_FUNCTION index within the image, or null when unresolved.</summary>
-    public uint? RuntimeFunctionIndex { get; init; }
-    /// <summary>Whether the function is a funclet, or null when unresolved.</summary>
-    public bool? IsFunclet { get; init; }
+    public TargetPointer Module { get; init; }
+    /// <summary>The RUNTIME_FUNCTION index of the function within its image.</summary>
+    public uint RuntimeFunctionIndex { get; init; }
+    /// <summary>Whether the function is a funclet rather than a method's root function.</summary>
+    public bool IsFunclet { get; init; }
 }
 
 public interface IStackWalk : IContract

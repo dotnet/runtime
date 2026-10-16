@@ -235,6 +235,24 @@
         unaligned. 4
         ldind.i4
         stloc.1
+        ldloc.0
+        unaligned. 1
+        ldind.i4
+        stloc.1
+        ldloc.0
+        unaligned. 2
+        ldind.i4
+        stloc.1
+        ret
+    }
+
+    .method static public hidebysig void Prefix.InvalidUnalignedAlignment_Invalid_UnalignedAlignment() cil managed
+    {
+        .locals init (int32& V_0, int32 V_1)
+        ldloc.0
+        unaligned. 3
+        ldind.i4
+        stloc.1
         ret
     }
 
