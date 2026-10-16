@@ -2414,31 +2414,31 @@ inline bool treeIsNonExceptGCSafePoint(GenTree* tree, Compiler* comp)
         return !tree->IsHelperCall() || !comp->s_helperCallProperties.IsNoGC(tree->AsCall()->GetHelperNum());
     }
 
-    // All operations which may throw are considered potential GC safepoints, as a GC could occur during exception
-    // handling before a catch. This includes null checks, divide by zero, and array bounds checks.
     return tree->OperIs(GT_GCPOLL);
 }
-
 
 //------------------------------------------------------------------------
 // fgWasmFindGCRefCandidates: Identify GC ref locals which are candidates to live in Wasm locals by determining if they
 // are GC-safe (unexposed to GC).
 //
 // Notes:
-//    This is a dataflow analysis which uses existing liveness information to identify JIT locals which may be placed in Wasm locals at regalloc time. 
-//    We limit these to locals which do not require a gc-visible home. For Wasm, a gc-visible home is on the shadow stack. 
-//    We mark a gc-ref local as a candidate for a Wasm local if the analysis determines there is no liveness across a GC safepoint for the local definition itself. 
-//    A GC safepoint is an operation whose codegen instructions may trigger a GC. We split safepoints into exceptional and non-exceptional safepoints. 
-//    Non exceptional safepoints are:
+//    This is a dataflow analysis which uses existing liveness information to identify JIT locals which may be placed in
+//    Wasm locals at regalloc time. We limit these to locals which do not require a gc-visible home. For Wasm, a
+//    gc-visible home is on the shadow stack. We mark a gc-ref local as a candidate for a Wasm local if the analysis
+//    determines there is no liveness across a GC safepoint for the local definition itself. A GC safepoint is an
+//    operation whose codegen instructions may trigger a GC. We split safepoints into exceptional and non-exceptional
+//    safepoints. Non exceptional safepoints are:
 //      - Any explicit GC_POLL
 //      - All calls, except helpers marked as NO_GC
 //      - Invocations of a finally funclet (the only safepoint not explicitly expressed as an LIR node)
-//    Exceptional safepoints are: 
-//       - Any node NOT otherwise in the first category which may throw. In these cases the only possible GC collecting path is the throwing path.
-//         Exceptional safepoint nodes are treated differently, because locals live into them are only meaningfully exposed to GC if they are also live into
-//         a reachable handler block.
-//    IMPORTANT: A tree temporary that is the result of a LCL_VAR may still be live across a safepoint even if the local is dead at that safepoint from a liveness perspective. 
-//    fgWasmSpillRefs handles these cases by checking the list of candidates generated from this pass and giving a temporary a gc-visible home if necessary.
+//    Exceptional safepoints are:
+//       - Any node NOT otherwise in the first category which may throw. In these cases the only possible GC collecting
+//       path is the throwing path.
+//         Exceptional safepoint nodes are treated differently, because locals live into them are only meaningfully
+//         exposed to GC if they are also live into a reachable handler block.
+//    IMPORTANT: A tree temporary that is the result of a LCL_VAR may still be live across a safepoint even if the local
+//    is dead at that safepoint from a liveness perspective. fgWasmSpillRefs handles these cases by checking the list of
+//    candidates generated from this pass and giving a temporary a gc-visible home if necessary.
 PhaseStatus Compiler::fgWasmFindGCRefCandidates()
 {
 #define DISP_SAFEPOINT(msg, block, tree, liveInto)                                                                     \
@@ -2474,7 +2474,7 @@ PhaseStatus Compiler::fgWasmFindGCRefCandidates()
         VarSetOps::Assign(this, compCurLife, block->bbLiveIn);
         for (GenTree* tree : LIR::AsRange(block))
         {
-            // compCurLife should reflect livness into this tree;
+            // compCurLife should reflect liveness into this tree;
             VarSetOps::Assign(this, liveInto, compCurLife);
 
             if (treeIsNonExceptGCSafePoint(tree, this))
@@ -2484,6 +2484,10 @@ PhaseStatus Compiler::fgWasmFindGCRefCandidates()
             }
             else if (tree->OperMayThrow(this))
             {
+                // All operations which may throw are considered potential GC on safepoints on the exceptional path, as
+                // a GC could occur during exception handling before a catch. This includes null checks, divide by zero,
+                // and array bounds checks. Only locals still live into the exceptional path need to be considered for
+                // EH-only GC safepoints.
                 VarSetOps::IntersectionD(this, liveInto, ehLive);
                 VarSetOps::UnionD(this, liveAcrossGC, liveInto);
                 DISP_SAFEPOINT("EH-Only GC safepoint in " FMT_BB ":\n", block, tree, liveInto);
@@ -2703,7 +2707,8 @@ PhaseStatus Compiler::fgWasmSpillRefs()
                 // If a value is just a GT_LCL_VAR that isn't address-exposed, by construction we ensure that
                 // it won't be mutated between its def (here) and its use (the call that would produce a spill).
                 // If the local is NOT a gc ref wasm local candidate, then it will be assigned a pinned stack home
-                // by RA already. Otherwise, temporary reads of candidates that are live across a call still need to be spilled.
+                // by RA already. Otherwise, temporary reads of candidates that are live across a call still need to be
+                // spilled.
                 if (!dsc->IsAddressExposed() && !isRefLocalCandidate)
                 {
                     continue;

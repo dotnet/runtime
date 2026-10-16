@@ -6,33 +6,12 @@ using System.Runtime.CompilerServices;
 using Xunit;
 
 // These portable correctness tests target Wasm GC-reference home selection.
-// Passing alone does not prove that Wasm-local allocation was exercised: inspect
-// optimized Wasm JIT dumps for the named methods and their post-lowering locals.
-// MixedHomes retains a short-lived reference local for home-selection inspection.
-// DeadBeforeCall, BornAfterCall, and AcrossWriteBarrier exercise related negative
-// cases, but their source locals may disappear during optimization. Do not add
-// KeepAlive calls: they alter the liveness being measured. Non-inlined factories
-// keep object creation outside the analyzed method and prevent scalar replacement
-// of the test objects.
-//
-// Build this project with src/tests/build.sh -Test
-// JIT/Directed/WasmGcLiveness/WasmGcLiveness.csproj -priority1, adding the target
-// OS, architecture, and configuration arguments. Run with the matching Core_Root.
-// For JIT-based runs, DOTNET_TieredCompilation=0 requests optimized compilation;
-// DOTNET_JitDump="WasmGcLiveness:*" selects these methods in a checked JIT.
-// For Wasm crossgen runs, request the dump from the compiler, not just the host.
-//
-// Forced compacting collections do not guarantee movement. GC stress, where
-// supported, strengthens coverage of allocation and throw helpers. A collection
-// in a filter occurs during exception processing, not necessarily inside the
-// original throw helper. Inspect AcrossFinally for BBJ_CALLFINALLY: a LIR-only
-// scan of GT_CALL nodes must not overlook this collecting block terminator.
-// EH-live locals may correctly remain stack-homed under the existing EH policy.
-//
-// Unmanaged transitions with collecting callbacks require an interop harness.
-// Returning codegen-introduced collecting helpers and GC polls need concrete
-// target-specific paths; these tests do not claim coverage of those cases.
-public class WasmGcLiveness
+// Tests a variety of scenarios with locals live and dead across different GC safepoints,
+// including in exceptional throwing paths.
+
+// Forced compacting collections DO NOT guarantee movement. GC stress, where
+// supported, would strengthen coverage of allocation and throw helpers.
+public class WasmGCLiveness
 {
     private sealed class Box
     {
