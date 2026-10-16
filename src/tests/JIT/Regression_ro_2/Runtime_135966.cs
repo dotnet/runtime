@@ -5,9 +5,8 @@ using System;
 using System.Runtime.CompilerServices;
 using Xunit;
 
-// Victim's GC ref local is first stored after a null check that throws. The garbage
-// left on the stack by DirtyStack must not be reported for it when a GC happens
-// while the exception is dispatched.
+// Victim's null check throws before its GC ref local is stored, so a GC while the
+// exception is dispatched must not see DirtyStack's garbage in that local.
 public class Runtime_135966
 {
     private class Holder
