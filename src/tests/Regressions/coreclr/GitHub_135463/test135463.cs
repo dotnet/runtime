@@ -147,7 +147,8 @@ public class Runtime_135463
         Assert.False(s_reachedAfterCatch);
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
+    // ControlledExecution is supported on CoreCLR only
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR), nameof(PlatformDetection.IsMultithreadingSupported))]
     public static void TestEntryPoint()
     {
         RunAndAbort(nameof(CatchAbort), CatchAbort, "catch ");
