@@ -12,6 +12,7 @@ using System.Reflection.PortableExecutable;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 using Microsoft.DotNet.RemoteExecutor;
+using Microsoft.NET.Build.Tasks;
 using Mono.Linker;
 using Xunit;
 
@@ -1444,7 +1445,7 @@ namespace ILLink.Tasks.Tests
 
                 Assert.True(task.Execute());
                 Assert.Contains(test.BuildEngine.Messages, message => message.Message.StartsWith("ILLink cache stored:"));
-                string entry = Assert.Single(Directory.GetDirectories(Path.Combine(cacheDirectory, "v1")));
+                string entry = Assert.Single(Directory.GetDirectories(Path.Combine(cacheDirectory, InvocationCacheEntry.VersionDirectory)));
                 string stale = Path.Combine(test.Output, "stale.txt");
                 File.WriteAllText(stale, "not part of the cached directory");
                 File.Delete(Path.Combine(test.Output, "Input.dll"));
@@ -1476,7 +1477,7 @@ namespace ILLink.Tasks.Tests
                     message.Message.StartsWith(corruptEntry ? "ILLink cache restore failed" : "ILLink cache miss:"));
                 Assert.False(File.Exists(stale));
                 Assert.Equal(File.ReadAllBytes(input), File.ReadAllBytes(Path.Combine(test.Output, "Input.dll")));
-                Assert.Equal(corruptEntry ? 1 : 2, Directory.GetDirectories(Path.Combine(cacheDirectory, "v1")).Length);
+                Assert.Equal(corruptEntry ? 1 : 2, Directory.GetDirectories(Path.Combine(cacheDirectory, InvocationCacheEntry.VersionDirectory)).Length);
             }, corruptEntry.ToString()).Dispose();
         }
 

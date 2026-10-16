@@ -430,12 +430,12 @@ public class Crossgen2CacheTests
         File.WriteAllText(fixture.Map, "stale map");
         if (value == "corruption")
         {
-            string entry = Directory.GetDirectories(Path.Combine(fixture.Cache, "v2")).Single();
+            string entry = Directory.GetDirectories(Path.Combine(fixture.Cache, InvocationCacheEntry.VersionDirectory)).Single();
             File.WriteAllText(Path.Combine(entry, "outputs", "0"), "corrupt");
         }
         if (value == "manifest-corruption")
         {
-            string entry = Directory.GetDirectories(Path.Combine(fixture.Cache, "v2")).Single();
+            string entry = Directory.GetDirectories(Path.Combine(fixture.Cache, InvocationCacheEntry.VersionDirectory)).Single();
             File.WriteAllText(Path.Combine(entry, "manifest"), "corrupt");
         }
         if (value == "partial-restore")
@@ -507,7 +507,7 @@ public class Crossgen2CacheTests
         File.WriteAllText(symbols, "stale symbols");
         if (value == "corruption")
         {
-            string entry = Directory.GetDirectories(Path.Combine(fixture.Cache, "v2")).Single();
+            string entry = Directory.GetDirectories(Path.Combine(fixture.Cache, InvocationCacheEntry.VersionDirectory)).Single();
             File.WriteAllText(Path.Combine(entry, "outputs", "1"), "corrupt");
         }
         if (value == "directory-change")
@@ -563,7 +563,7 @@ public class Crossgen2CacheTests
         InvocationCacheOutputs outputs = cache.DeclareOutputs(new[] { fixture.Output, fixture.Map });
         Parallel.For(0, 8, _ => cache.Store(key, outputs, new()));
         Assert.True(cache.TryRestore(key, outputs, DateTime.UtcNow, out _));
-        Assert.Empty(Directory.GetDirectories(Path.Combine(fixture.Cache, "v2"), "*.tmp"));
+        Assert.Empty(Directory.GetDirectories(Path.Combine(fixture.Cache, InvocationCacheEntry.VersionDirectory), "*.tmp"));
     }).Dispose();
 
     [CachePlatformFact]
@@ -573,7 +573,7 @@ public class Crossgen2CacheTests
         Environment.SetEnvironmentVariable("CROSSGEN2_EXPERIMENTAL_CACHE_PATH", null);
         Environment.SetEnvironmentVariable("XDG_CACHE_HOME", fixture.Cache);
         Assert.True(fixture.Create().Execute());
-        Assert.True(Directory.Exists(Path.Combine(fixture.Cache, "crossgen2", "v2")));
+        Assert.True(Directory.Exists(Path.Combine(fixture.Cache, "crossgen2", InvocationCacheEntry.VersionDirectory)));
     }).Dispose();
 
     [WindowsCacheTheory]

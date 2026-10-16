@@ -183,13 +183,18 @@ claim that the compiler ran; timing text, if any, describes the original run.
 External tool side effects are not replayed. Cache diagnostics are additional
 normal-importance messages. Tool failures retain normal exit/error reporting.
 
-Entries live under `<cache>/v2/<lowercase-SHA-256>/` with indexed files in `outputs/`,
-a binary manifest containing output hashes and diagnostics, and a manifest checksum.
+Entries live under `<cache>/v1/<lowercase-SHA-256>/` with indexed files in `outputs/`,
+a binary manifest containing the format version, output-contract kind, file count,
+storage names, presence flags, output lengths and hashes, and optional tool metadata
+(crossgen2 diagnostics). A manifest checksum protects this entire record.
 The shared storage implementation under `src/tasks/Common/InvocationCache` is
 compiled into the task assembly; it captures and restores the declared file set,
 including optional-file absence. ILLink uses the same storage sources with an
-owned-directory contract. Its existing v1 directory format is unchanged; old
-crossgen2 v1 entries are not read or migrated.
+owned-directory contract and the same manifest encoding and checksum. The shared
+implementation selects the storage version, not each tool. Compatibility is not
+guaranteed within this experimental version. The keyed task assembly changes with
+the embedded storage implementation, invalidating entries without changing the
+namespace.
 Writers copy into unique cache-local staging directories and publish complete
 immutable entries with one directory rename. Nonblocking per-entry writer mutexes
 avoid duplicate publication work. Racing publishers never overwrite

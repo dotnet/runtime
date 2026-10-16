@@ -13,9 +13,9 @@ namespace Microsoft.NET.Build.Tasks.Tests;
 public class InvocationCachePurgeTests
 {
     [Theory]
-    [InlineData("v1", -1, true)]
-    [InlineData("v1", 0, false)]
-    [InlineData("v1", 1, false)]
+    [InlineData(InvocationCacheEntry.VersionDirectory, -1, true)]
+    [InlineData(InvocationCacheEntry.VersionDirectory, 0, false)]
+    [InlineData(InvocationCacheEntry.VersionDirectory, 1, false)]
     [InlineData("v2", -1, true)]
     [InlineData("v2", 0, false)]
     [InlineData("v2", 1, false)]
@@ -34,8 +34,8 @@ public class InvocationCachePurgeTests
     }
 
     [Theory]
-    [InlineData("v1", "v2")]
-    [InlineData("v2", "v1")]
+    [InlineData(InvocationCacheEntry.VersionDirectory, "v2")]
+    [InlineData("v2", InvocationCacheEntry.VersionDirectory)]
     [InlineData("other-layout", "v1")]
     public void PurgeOnlyVisitsPublishedEntriesInSelectedLayout(string versionDirectory, string otherVersionDirectory)
     {

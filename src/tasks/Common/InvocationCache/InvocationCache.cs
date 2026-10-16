@@ -19,23 +19,19 @@ namespace Microsoft.NET.Build.Tasks;
 
 internal sealed partial class InvocationCache
 {
-    private const int FormatVersion = 1;
-    private const int FileSetFormatVersion = 2;
     private readonly TaskLoggingHelper _log;
     private readonly string _toolName;
     private readonly MessageImportance _importance;
-    private readonly string _versionDirectory;
 
     internal string CacheDirectory { get; }
 
     internal InvocationCache(string cacheDirectory, TaskLoggingHelper log, string toolName,
-        MessageImportance importance = MessageImportance.Low, string versionDirectory = InvocationCacheEntry.VersionDirectory)
+        MessageImportance importance = MessageImportance.Low)
     {
         CacheDirectory = cacheDirectory;
         _log = log;
         _toolName = toolName;
         _importance = importance;
-        _versionDirectory = versionDirectory;
     }
 
     internal bool TryRestore(string inputHash, InvocationCacheOutputs outputs, DateTime outputTimestampUtc,
@@ -129,7 +125,8 @@ internal sealed partial class InvocationCache
 
                 using (var manifest = new BinaryWriter(File.Create(Path.Combine(stagingDirectory, "manifest"))))
                 {
-                    manifest.Write(fileSet ? FileSetFormatVersion : FormatVersion);
+                    manifest.Write(InvocationCacheEntry.FormatVersion);
+                    manifest.Write(fileSet);
                     manifest.Write(files.Count);
                     for (int i = 0; i < files.Count; i++)
                     {
@@ -146,8 +143,7 @@ internal sealed partial class InvocationCache
                             present = false;
                         }
                         manifest.Write(relativePath);
-                        if (fileSet)
-                            manifest.Write(present);
+                        manifest.Write(present);
                         if (present)
                         {
                             manifest.Write(new FileInfo(cachedFile).Length);
@@ -156,8 +152,7 @@ internal sealed partial class InvocationCache
                     }
                     writeMetadata?.Invoke(manifest);
                 }
-                if (fileSet)
-                    File.WriteAllBytes(Path.Combine(stagingDirectory, "manifest.sha256"), HashFile(Path.Combine(stagingDirectory, "manifest")));
+                File.WriteAllBytes(Path.Combine(stagingDirectory, "manifest.sha256"), HashFile(Path.Combine(stagingDirectory, "manifest")));
 
                 InvocationCacheEntry.WriteLastUsed(Path.Combine(stagingDirectory, InvocationCacheEntry.LastUsedFileName));
                 Directory.Move(stagingDirectory, entryDirectory);
@@ -207,7 +202,7 @@ internal sealed partial class InvocationCache
         if (!InvocationCacheEntry.IsEntryName(inputHash))
             throw new ArgumentException("The input hash must be a lowercase SHA-256 hex string.", nameof(inputHash));
 
-        return Path.Combine(CacheDirectory, _versionDirectory, inputHash);
+        return Path.Combine(CacheDirectory, InvocationCacheEntry.VersionDirectory, inputHash);
     }
 
     private string GetWriterMutexName(string inputHash)
@@ -235,12 +230,14 @@ internal sealed partial class InvocationCache
     private List<(string Name, bool Present)> ReadManifest(string entryDirectory, InvocationCacheOutputs outputs, Action<BinaryReader>? readMetadata)
     {
         bool fileSet = outputs.DirectoryPath is null;
-        if (fileSet && !File.ReadAllBytes(Path.Combine(entryDirectory, "manifest.sha256")).SequenceEqual(HashFile(Path.Combine(entryDirectory, "manifest"))))
+        if (!File.ReadAllBytes(Path.Combine(entryDirectory, "manifest.sha256")).SequenceEqual(HashFile(Path.Combine(entryDirectory, "manifest"))))
             throw new InvalidDataException("Cached manifest checksum mismatch.");
 
         using var manifest = new BinaryReader(File.OpenRead(Path.Combine(entryDirectory, "manifest")));
-        if (manifest.ReadInt32() != (fileSet ? FileSetFormatVersion : FormatVersion))
+        if (manifest.ReadInt32() != InvocationCacheEntry.FormatVersion)
             throw new InvalidDataException($"Unsupported {_toolName} cache format.");
+        if (manifest.ReadBoolean() != fileSet)
+            throw new InvalidDataException($"Cached {_toolName} output contract does not match the invocation.");
 
         int fileCount = manifest.ReadInt32();
         if (fileCount < 0 || fileCount > manifest.BaseStream.Length - manifest.BaseStream.Position)
@@ -258,7 +255,7 @@ internal sealed partial class InvocationCache
             if (!paths.Add(relativePath) || (fileSet && relativePath != i.ToString(CultureInfo.InvariantCulture)))
                 throw new InvalidDataException($"Invalid {_toolName} cache output inventory.");
 
-            bool present = !fileSet || manifest.ReadBoolean();
+            bool present = manifest.ReadBoolean();
             if (!present && outputs.IsRequired(i))
                 throw new InvalidDataException($"Required {_toolName} cache output is missing.");
             if (present)

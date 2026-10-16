@@ -10,6 +10,7 @@ using System.Globalization;
 using System.IO;
 using System.Reflection;
 using System.Runtime.ExceptionServices;
+using System.Security.Cryptography;
 using System.Threading;
 using Microsoft.Build.Framework;
 using Microsoft.DotNet.RemoteExecutor;
@@ -358,12 +359,15 @@ public class InvocationCacheTests
             case "escaping-path":
                 using (var writer = new BinaryWriter(File.Create(manifest)))
                 {
-                    writer.Write(1);
+                    writer.Write(InvocationCacheEntry.FormatVersion);
+                    writer.Write(false);
                     writer.Write(1);
                     writer.Write("../escaped.dll");
                 }
                 break;
         }
+        if (File.Exists(manifest))
+            File.WriteAllBytes(Path.Combine(test.Entry, "manifest.sha256"), SHA256.HashData(File.ReadAllBytes(manifest)));
 
         Directory.CreateDirectory(test.Output);
         string existingOutput = Path.Combine(test.Output, "a.dll");
@@ -626,6 +630,93 @@ public class InvocationCacheTests
         else
             Assert.True(cache.TryRestore(CacheTestDirectory.Key, outputs, CacheTestDirectory.Timestamp));
         Assert.Empty(Directory.GetDirectories(Path.Combine(cache.CacheDirectory, InvocationCacheEntry.VersionDirectory), "*.tmp"));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void SharedCacheUsesOneManifestFormat(bool ownedDirectory)
+    {
+        using var test = new CacheTestDirectory();
+        test.WriteSource("image.dll", "image");
+        InvocationCacheOutputs source = ownedDirectory ? test.SourceOutputs
+            : InvocationCacheOutputs.FromFiles(new InvocationCacheFile(Path.Combine(test.Source, "image.dll")));
+        test.Cache.Store(CacheTestDirectory.Key, source, writer => writer.Write(123));
+
+        Assert.Equal("v1", InvocationCacheEntry.VersionDirectory);
+        byte[] manifestBytes = File.ReadAllBytes(Path.Combine(test.Entry, "manifest"));
+        Assert.Equal(SHA256.HashData(manifestBytes), File.ReadAllBytes(Path.Combine(test.Entry, "manifest.sha256")));
+        using var manifest = new BinaryReader(new MemoryStream(manifestBytes));
+        Assert.Equal(1, manifest.ReadInt32());
+        Assert.Equal(!ownedDirectory, manifest.ReadBoolean());
+        Assert.Equal(1, manifest.ReadInt32());
+        Assert.Equal(ownedDirectory ? "image.dll" : "0", manifest.ReadString());
+        Assert.True(manifest.ReadBoolean());
+        byte[] image = File.ReadAllBytes(Path.Combine(test.Source, "image.dll"));
+        Assert.Equal(image.Length, manifest.ReadInt64());
+        Assert.Equal(SHA256.HashData(image), manifest.ReadBytes(32));
+        Assert.Equal(123, manifest.ReadInt32());
+        Assert.Equal(manifest.BaseStream.Length, manifest.BaseStream.Position);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void SharedCacheRejectsDifferentOutputContract(bool ownedDirectory)
+    {
+        using var test = new CacheTestDirectory();
+        test.WriteSource("0", "cached");
+        InvocationCacheOutputs source = ownedDirectory ? test.SourceOutputs
+            : InvocationCacheOutputs.FromFiles(new InvocationCacheFile(Path.Combine(test.Source, "0")));
+        test.Cache.Store(CacheTestDirectory.Key, source);
+        Directory.CreateDirectory(test.Output);
+        string image = Path.Combine(test.Output, "0");
+        File.WriteAllText(image, "untouched");
+        InvocationCacheOutputs destination = ownedDirectory
+            ? InvocationCacheOutputs.FromFiles(new InvocationCacheFile(image))
+            : test.OutputOutputs;
+
+        Assert.False(test.Cache.TryRestore(CacheTestDirectory.Key, destination, CacheTestDirectory.Timestamp));
+
+        Assert.Equal("untouched", File.ReadAllText(image));
+    }
+
+    [Theory]
+    [InlineData(false, "missing-checksum")]
+    [InlineData(false, "corrupt-checksum")]
+    [InlineData(false, "corrupt-manifest")]
+    [InlineData(true, "missing-checksum")]
+    [InlineData(true, "corrupt-checksum")]
+    [InlineData(true, "corrupt-manifest")]
+    public void SharedCacheValidatesManifestIntegrityBeforeModifyingOutputs(bool ownedDirectory, string damage)
+    {
+        using var test = new CacheTestDirectory();
+        test.WriteSource("image.dll", "cached");
+        InvocationCacheOutputs source = ownedDirectory ? test.SourceOutputs
+            : InvocationCacheOutputs.FromFiles(new InvocationCacheFile(Path.Combine(test.Source, "image.dll")));
+        test.Cache.Store(CacheTestDirectory.Key, source);
+        string checksum = Path.Combine(test.Entry, "manifest.sha256");
+        switch (damage)
+        {
+            case "missing-checksum":
+                File.Delete(checksum);
+                break;
+            case "corrupt-checksum":
+                File.WriteAllBytes(checksum, new byte[32]);
+                break;
+            case "corrupt-manifest":
+                File.WriteAllText(Path.Combine(test.Entry, "manifest"), "corrupt");
+                break;
+        }
+        Directory.CreateDirectory(test.Output);
+        string image = Path.Combine(test.Output, "image.dll");
+        File.WriteAllText(image, "untouched");
+        InvocationCacheOutputs destination = ownedDirectory ? test.OutputOutputs
+            : InvocationCacheOutputs.FromFiles(new InvocationCacheFile(image));
+
+        Assert.False(test.Cache.TryRestore(CacheTestDirectory.Key, destination, CacheTestDirectory.Timestamp));
+
+        Assert.Equal("untouched", File.ReadAllText(image));
     }
 
     [Theory]

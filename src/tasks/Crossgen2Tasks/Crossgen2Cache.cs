@@ -37,7 +37,7 @@ internal sealed class Crossgen2Cache
     {
         _root = root;
         _log = log;
-        _storage = new InvocationCache(root, log, "Crossgen2", MessageImportance.Normal, versionDirectory: "v2");
+        _storage = new InvocationCache(root, log, "Crossgen2", MessageImportance.Normal);
     }
 
     internal static Crossgen2Cache? FromEnvironment(TaskLoggingHelper log)

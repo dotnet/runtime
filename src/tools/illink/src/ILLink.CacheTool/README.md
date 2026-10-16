@@ -17,6 +17,9 @@ creation time instead; this fallback is reported on stderr but does not count as
 **No build may use the cache during purging.** The tool does not coordinate with active
 readers or writers. Staging directories and unrelated directories are left alone.
 There is no migration of entries created before usage markers were introduced.
+The tool maintains only the shared `v1` directory. It does not read manifests, so
+obsolete or incompatible entries within `v1` can be purged using the same cutoff.
+Other version directories are left untouched.
 
 ## Building locally
 

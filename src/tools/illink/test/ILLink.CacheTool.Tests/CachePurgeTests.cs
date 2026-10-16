@@ -3,6 +3,8 @@
 
 using System;
 using System.IO;
+using System.Security.Cryptography;
+using Microsoft.NET.Build.Tasks;
 using Xunit;
 using TestCache = Microsoft.NET.Build.Tasks.Tests.InvocationCachePurgeTests.TestCache;
 
@@ -21,6 +23,51 @@ public class CachePurgeTests
         string entry = cache.AddEntry('a', TestCache.Cutoff.AddTicks(-1));
 
         Assert.Equal(0, Program.Run(new[] { "purge", "--cache-directory", cache.Root, "--before", cutoff }, cache.Output, cache.Error));
+
+        Assert.False(Directory.Exists(entry));
+        Assert.Equal($"ILLink cache purge: Deleted: 1, Kept: 0, Errors: 0{Environment.NewLine}", cache.Output.ToString());
+        Assert.Empty(cache.Error.ToString());
+    }
+
+    [Theory]
+    [InlineData("v2")]
+    [InlineData("other-layout")]
+    public void CommandOnlyPurgesCurrentLayout(string otherVersion)
+    {
+        using var cache = new TestCache();
+        string entry = cache.AddEntry('a', TestCache.Cutoff.AddTicks(-1));
+        string otherEntry = Path.Combine(cache.Root, otherVersion, new string('b', 64));
+        Directory.CreateDirectory(otherEntry);
+        File.WriteAllText(Path.Combine(otherEntry, InvocationCacheEntry.LastUsedFileName),
+            "2020-01-01T00:00:00.0000000+00:00");
+
+        Assert.Equal(0, Program.Run(new[] { "purge", "--cache-directory", cache.Root,
+            "--before", "2025-01-02T03:04:05Z" }, cache.Output, cache.Error));
+
+        Assert.False(Directory.Exists(entry));
+        Assert.True(Directory.Exists(otherEntry));
+        Assert.Equal($"ILLink cache purge: Deleted: 1, Kept: 0, Errors: 0{Environment.NewLine}", cache.Output.ToString());
+        Assert.Empty(cache.Error.ToString());
+    }
+
+    [Fact]
+    public void CommandPurgesLegacyV1Entries()
+    {
+        using var cache = new TestCache("v1");
+        string entry = cache.AddEntry('a', TestCache.Cutoff.AddTicks(-1));
+        byte[] image = File.ReadAllBytes(Path.Combine(entry, "outputs", "app.dll"));
+        using (var manifest = new BinaryWriter(File.Create(Path.Combine(entry, "manifest"))))
+        {
+            manifest.Write(1);
+            manifest.Write(1);
+            manifest.Write("app.dll");
+            manifest.Write((long)image.Length);
+            manifest.Write(SHA256.HashData(image));
+        }
+        Assert.False(File.Exists(Path.Combine(entry, "manifest.sha256")));
+
+        Assert.Equal(0, Program.Run(new[] { "purge", "--cache-directory", cache.Root,
+            "--before", "2025-01-02T03:04:05Z" }, cache.Output, cache.Error));
 
         Assert.False(Directory.Exists(entry));
         Assert.Equal($"ILLink cache purge: Deleted: 1, Kept: 0, Errors: 0{Environment.NewLine}", cache.Output.ToString());
