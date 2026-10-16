@@ -682,7 +682,7 @@ IniKey1=IniValue2");
                 Path.Combine(_fileSystem.RootPath, FileName));
 
             await WaitForChange(() => failingProvider != null, "File change did not raise OnLoadException event in time.");
-            await WaitForChange(() => reloadToken.HasChanged, "Token fired.");
+            await WaitForChange(() => reloadToken.HasChanged, "Reload token did not fire in time.");
 
             Assert.IsType<InvalidDataException>(failureException);
 
