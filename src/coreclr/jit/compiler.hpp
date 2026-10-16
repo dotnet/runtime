@@ -3269,7 +3269,9 @@ inline bool Compiler::IsEntireAccess(unsigned lclNum, unsigned offset, ValueSize
 // IsWideAccess: Is the access to a local wide?
 //
 // An access is wide when the access overflows the end of the local. If the
-// access size is unknown, the access is assumed wide if it is not entire.
+// access size or local size is unknown, the access is assumed wide if it is not entire.
+//
+// If the access size is known, it must also fit inside a uint16_t.
 //
 // Arguments:
 //    lclNum - The local's number
@@ -3282,7 +3284,7 @@ inline bool Compiler::IsEntireAccess(unsigned lclNum, unsigned offset, ValueSize
 inline bool Compiler::IsWideAccess(unsigned lclNum, unsigned offset, ValueSize accessSize)
 {
     assert(!accessSize.IsNull());
-    if (accessSize.IsExact())
+    if (accessSize.IsExact() && lvaLclValueSize(lclNum).IsExact())
     {
         ClrSafeInt<uint32_t> extent = ClrSafeInt<uint32_t>(offset) + ClrSafeInt<uint32_t>(accessSize.GetExact());
         // The access is wide if:
