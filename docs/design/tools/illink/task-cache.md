@@ -86,6 +86,7 @@ internal sealed partial class InvocationCache
 ## Cache lifetime
 
 - No automatic eviction or size policy during linking. Users may manually wipe the cache directory or explicitly run the experimental `dotnet-illink-cache purge` tool.
+- Purge enumeration, marker parsing, cutoff comparison, deletion, and reporting are source-shared in `InvocationCachePurge`. The ILLink CLI supplies the `v1` layout and ILLink diagnostic label; command parsing and packaging remain tool-specific.
 - Do not repair or replace corrupt published entries. Restoration falls back to linking, but storage still skips an existing entry until the user removes it.
 - No `created` bookkeeping marker. The `last-used` marker records usage for explicit post-build maintenance.
 - Purge requires an explicit cache root and UTC cutoff. Only published SHA-256 entry directories in `v1` are considered; delete entries whose last-used time is strictly older than the cutoff and retain equality. Leave staging directories and other layouts alone. Report per-entry maintenance errors and continue, then return nonzero if maintenance failed.

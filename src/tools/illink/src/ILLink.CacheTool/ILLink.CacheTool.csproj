@@ -15,6 +15,7 @@
 
   <ItemGroup>
     <Compile Include="$(RepoRoot)src\tasks\Common\InvocationCache\InvocationCacheEntry.cs" Link="InvocationCacheEntry.cs" />
+    <Compile Include="$(RepoRoot)src\tasks\Common\InvocationCache\InvocationCachePurge.cs" Link="InvocationCachePurge.cs" />
     <InternalsVisibleTo Include="ILLink.CacheTool.Tests" />
     <None Include="README.md" Pack="true" PackagePath="/" />
     <PackageReference Include="System.CommandLine" Version="$(SystemCommandLineVersion)" />
