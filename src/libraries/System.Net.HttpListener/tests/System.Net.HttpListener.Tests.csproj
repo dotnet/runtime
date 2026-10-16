@@ -15,6 +15,7 @@
     <Compile Include="HttpListenerFactory.cs" />
     <Compile Include="HttpListenerAuthenticationTests.cs" />
     <Compile Include="HttpListenerContextTests.cs" />
+    <Compile Include="HttpListenerIPv6Tests.cs" />
     <Compile Include="HttpListenerPrefixCollectionTests.cs" />
     <Compile Include="HttpListenerResponseTests.cs" />
     <Compile Include="HttpListenerResponseTests.Cookies.cs" />
