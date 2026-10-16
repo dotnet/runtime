@@ -2763,7 +2763,6 @@ public:
     void ClearThreadCurrNotification();
 
 private:
-    friend class EEPolicy;
     void SetLastThrownObjectHandle(OBJECTHANDLE h);
 
     ThreadExceptionState  m_ExceptionState;

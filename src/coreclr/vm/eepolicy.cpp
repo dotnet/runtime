@@ -507,7 +507,7 @@ BOOL g_fFatalErrorOccurredOnGCThread = FALSE;
 // Log an error to the event log if possible, then throw up a dialog box.
 //
 
-void EEPolicy::LogFatalError(UINT exitCode, UINT_PTR address, LPCWSTR pszMessage, PEXCEPTION_POINTERS pExceptionInfo, LPCWSTR errorSource, LPCWSTR argExceptionString, bool allowGCModeTransition)
+void EEPolicy::LogFatalError(UINT exitCode, UINT_PTR address, LPCWSTR pszMessage, PEXCEPTION_POINTERS pExceptionInfo, LPCWSTR errorSource, LPCWSTR argExceptionString)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_TRIGGERS;
@@ -628,6 +628,8 @@ void EEPolicy::LogFatalError(UINT exitCode, UINT_PTR address, LPCWSTR pszMessage
 
         if (pThread && !g_fFatalErrorOccurredOnGCThread)
         {
+            GCX_COOP();
+
             OBJECTHANDLE ohException = NULL;
 
             if (exitCode == (UINT)COR_E_STACKOVERFLOW)
@@ -647,28 +649,17 @@ void EEPolicy::LogFatalError(UINT exitCode, UINT_PTR address, LPCWSTR pszMessage
             // (in SystemDomain::Init) finished.  See Dev10 Bug 677432 for the detail.
             if (ohException != NULL)
             {
-                if (allowGCModeTransition || pThread->PreemptiveGCDisabled())
-                {
-                    GCX_COOP();
+                // for fail-fast, if there's a LTO available then use that as the inner exception object
+                // for the FEEE we'll be reporting.  this can help the Watson back-end to generate better
+                // buckets for apps that call Environment.FailFast() and supply an exception object.
+                OBJECTREF lto = pThread->LastThrownObject();
 
-                    // for fail-fast, if there's a LTO available then use that as the inner exception object
-                    // for the FEEE we'll be reporting.  this can help the Watson back-end to generate better
-                    // buckets for apps that call Environment.FailFast() and supply an exception object.
-                    OBJECTREF lto = pThread->LastThrownObject();
-
-                    if (exitCode == static_cast<UINT>(COR_E_FAILFAST) && lto != NULL)
-                    {
-                        EXCEPTIONREF curEx = (EXCEPTIONREF)ObjectFromHandle(ohException);
-                        curEx->SetInnerException(lto);
-                    }
-                    pThread->SetLastThrownObject(ObjectFromHandle(ohException), TRUE);
-                }
-                else
+                if (exitCode == static_cast<UINT>(COR_E_FAILFAST) && lto != NULL)
                 {
-                    // Preserve the managed debugger experience without changing GC mode.
-                    pThread->SetLastThrownObjectHandle(ohException);
-                    pThread->MarkLastThrownObjectUnhandled();
+                    EXCEPTIONREF curEx = (EXCEPTIONREF)ObjectFromHandle(ohException);
+                    curEx->SetInnerException(lto);
                 }
+                pThread->SetLastThrownObject(ObjectFromHandle(ohException), TRUE);
             }
 
             // If a managed debugger is already attached, and if that debugger is thinking it might be inclined to
@@ -893,7 +884,7 @@ int NOINLINE WrapperClrCaptureContext(CONTEXT* context)
 // This method must return a value to avoid getting non-actionable dumps on x86.
 // If this method were a DECLSPEC_NORETURN then dumps would not provide the necessary
 // context at the point of the failure
-int NOINLINE EEPolicy::HandleFatalError(UINT exitCode, UINT_PTR address, LPCWSTR pszMessage /* = NULL */, PEXCEPTION_POINTERS pExceptionInfo /* = NULL */, LPCWSTR errorSource /* = NULL */, LPCWSTR argExceptionString /* = NULL */, bool allowGCModeTransition /* = true */)
+int NOINLINE EEPolicy::HandleFatalError(UINT exitCode, UINT_PTR address, LPCWSTR pszMessage /* = NULL */, PEXCEPTION_POINTERS pExceptionInfo /* = NULL */, LPCWSTR errorSource /* = NULL */, LPCWSTR argExceptionString /* = NULL */)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -951,7 +942,7 @@ int NOINLINE EEPolicy::HandleFatalError(UINT exitCode, UINT_PTR address, LPCWSTR
         g_fFastExitProcess = 2;
 
         STRESS_LOG0(LF_CORDB,LL_INFO100, "D::HFE: About to call LogFatalError\n");
-        LogFatalError(exitCode, address, pszMessage, pExceptionInfo, errorSource, argExceptionString, allowGCModeTransition);
+        LogFatalError(exitCode, address, pszMessage, pExceptionInfo, errorSource, argExceptionString);
         SafeExitProcess(exitCode, SCA_TerminateProcessWhenShutdownComplete);
     }
 

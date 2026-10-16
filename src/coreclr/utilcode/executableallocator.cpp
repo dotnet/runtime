@@ -120,6 +120,55 @@ void ExecutableAllocator::DumpHolderUsage()
 
 #endif // LOG_EXECUTABLE_ALLOCATOR_STATISTICS
 
+#if defined(_DEBUG) && defined(HOST_WINDOWS)
+static DWORD GetExecutableAllocatorTestThreadId(const char* variableName)
+{
+    char value[32];
+    DWORD length = GetEnvironmentVariableA(variableName, value, ARRAY_SIZE(value));
+    return length > 0 && length < ARRAY_SIZE(value) ? strtoul(value, nullptr, 10) : 0;
+}
+
+static void SignalExecutableAllocatorTestEvent(const char* variableName)
+{
+    char eventName[128];
+    DWORD length = GetEnvironmentVariableA(variableName, eventName, ARRAY_SIZE(eventName));
+    if (length == 0 || length >= ARRAY_SIZE(eventName))
+    {
+        return;
+    }
+
+    HANDLE event = OpenEventA(EVENT_MODIFY_STATE, FALSE, eventName);
+    _ASSERTE(event != nullptr);
+    if (event != nullptr)
+    {
+        SetEvent(event);
+        CloseHandle(event);
+    }
+}
+
+static bool WaitForExecutableAllocatorTestEvent(const char* variableName)
+{
+    char eventName[128];
+    DWORD length = GetEnvironmentVariableA(variableName, eventName, ARRAY_SIZE(eventName));
+    _ASSERTE(length > 0 && length < ARRAY_SIZE(eventName));
+    if (length == 0 || length >= ARRAY_SIZE(eventName))
+    {
+        return false;
+    }
+
+    HANDLE event = OpenEventA(SYNCHRONIZE, FALSE, eventName);
+    _ASSERTE(event != nullptr);
+    if (event == nullptr)
+    {
+        return false;
+    }
+
+    WaitForSingleObject(event, INFINITE);
+    CloseHandle(event);
+    return true;
+}
+#endif // defined(_DEBUG) && defined(HOST_WINDOWS)
+
 bool ExecutableAllocator::IsDoubleMappingEnabled()
 {
     LIMITED_METHOD_CONTRACT;
@@ -398,7 +447,6 @@ bool ExecutableAllocator::AddRWBlock(void* baseRW, void* baseRX, size_t size, Ca
     BlockRW* pBlockRW = new (nothrow) BlockRW();
     if (pBlockRW == NULL)
     {
-        g_fatalErrorHandler(COR_E_EXECUTIONENGINE, W("The RW block metadata cannot be allocated"));
         return false;
     }
 
@@ -873,7 +921,31 @@ void* ExecutableAllocator::MapRW(void* pRX, size_t size, CacheableMapping cacheM
     StopWatch swAll(&g_mapTimeWithLockSum);
 #endif
 
+#if defined(_DEBUG) && defined(HOST_WINDOWS)
+    DWORD currentThreadId = GetCurrentThreadId();
+    if (currentThreadId == GetExecutableAllocatorTestThreadId("DOTNET_ExecutableAllocatorGCThreadId"))
+    {
+        SignalExecutableAllocatorTestEvent("DOTNET_ExecutableAllocatorMapRWAttemptEvent");
+    }
+#endif // defined(_DEBUG) && defined(HOST_WINDOWS)
+
     CRITSEC_Holder csh(m_CriticalSection);
+
+#if defined(_DEBUG) && defined(HOST_WINDOWS)
+    if (currentThreadId == GetExecutableAllocatorTestThreadId("DOTNET_ExecutableAllocatorFatalErrorThreadId"))
+    {
+        // Establish both sides of the deadlock cycle before injecting the fatal error.
+        SignalExecutableAllocatorTestEvent("DOTNET_ExecutableAllocatorStartGCEvent");
+        if (!WaitForExecutableAllocatorTestEvent("DOTNET_ExecutableAllocatorMapRWAttemptEvent"))
+        {
+            return nullptr;
+        }
+        csh.Release();
+        g_fatalErrorHandler(COR_E_EXECUTIONENGINE, W("Injected executable allocator fatal error"));
+        return nullptr;
+    }
+#endif // defined(_DEBUG) && defined(HOST_WINDOWS)
+
 #ifdef LOG_EXECUTABLE_ALLOCATOR_STATISTICS
     ExecutableAllocator::g_MapRW_Calls++;
 #endif
@@ -921,26 +993,38 @@ void* ExecutableAllocator::MapRW(void* pRX, size_t size, CacheableMapping cacheM
 
             if (pRW == NULL)
             {
+                csh.Release();
                 g_fatalErrorHandler(COR_E_EXECUTIONENGINE, W("Failed to create RW mapping for RX memory. This can be caused by insufficient memory or hitting the limit of memory mappings on Linux (vm.map_max_count)."));
+                return nullptr;
             }
 
-            AddRWBlock(pRW, (BYTE*)pBlock->baseRX + mapOffset, mapSize, cacheMapping);
+            if (!AddRWBlock(pRW, (BYTE*)pBlock->baseRX + mapOffset, mapSize, cacheMapping))
+            {
+                csh.Release();
+                g_fatalErrorHandler(COR_E_EXECUTIONENGINE, W("The RW block metadata cannot be allocated"));
+                return nullptr;
+            }
 
             return (void*)((size_t)pRW + (offset - mapOffset));
         }
         else if (pRX >= pBlock->baseRX && pRX < (void*)((size_t)pBlock->baseRX + pBlock->size))
         {
+            csh.Release();
             g_fatalErrorHandler(COR_E_EXECUTIONENGINE, W("Attempting to RW map a block that crosses the end of the allocated RX range"));
+            return nullptr;
         }
         else if (pRX < pBlock->baseRX && (void*)((size_t)pRX + size) > pBlock->baseRX)
         {
+            csh.Release();
             g_fatalErrorHandler(COR_E_EXECUTIONENGINE, W("Attempting to map a block that crosses the beginning of the allocated range"));
+            return nullptr;
         }
     }
 
     // The executable memory block was not found, so we cannot provide the writeable mapping.
+    csh.Release();
     g_fatalErrorHandler(COR_E_EXECUTIONENGINE, W("The RX block to map as RW was not found"));
-    return NULL;
+    return nullptr;
 }
 
 // Unmap writeable mapping at the specified address. The address must be an address
