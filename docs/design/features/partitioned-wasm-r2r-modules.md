@@ -14,11 +14,9 @@ The mapping for which methods have code in the auxiliary modules is in a separat
 
 Metadata and activation info about auxiliary modules is stored in the AuxiliaryModuleMetadata section in the primary module.
 
-This design currently supports single-threaded hosting only. Auxiliary-module installation and method activation run on the runtime's single execution thread. Multithreaded hosting is outside the scope of this design.
-
 ## Flow
 
-When a new method is discovered to be executed, the runtime will attempt to resolve R2R code for the method, first in the primary module, then in the auxiliary modules, if the Auxiliary EntryPoints Module information is available. If the method is determined to be in an auxiliary module, the runtime will check if the module has been activated, and activate the method if it is. Otherwise, flags on the PEP will track what is holding activation of the method: the Auxiliary EntryPoints Module, or the auxiliary module containing the code. Subsequent calls to the interpreted method will check activation status and attempt activation of the R2R code.
+When a new method is discovered to be executed, the runtime will attempt to resolve R2R code for the method, first in the primary module, then in the auxiliary modules, if the Auxiliary EntryPoints Module information is available. If the method is determined to be in an auxiliary module, the runtime will check if the module has been activated, and activate the method if it is. Otherwise, flags on the PEP will track what is holding activation of the method: the Auxiliary EntryPoints Module, or the auxiliary module containing the code. Subsequent calls to the interpreted method will check activation status and attempt activation of the R2R code. Checking for activation of the EntryPoints module and the auxiliary module should be as cheap as possible. In this design, it is a simple flag check in the WASM memory.
 
 Auxiliary modules are downloaded eagerly unless it is determined better to wait and download on demand.
 
@@ -43,7 +41,7 @@ InterpOrR2R DiscoverMethod(PEP pep)
         return ActivateOrFallBackToInterpreter(pep, entry);
     }
 
-    if (!IsActivated(primary.AuxiliaryModuleMetadataHeader.EntryPointsModuleActivationStatus))
+    if (primary.AuxiliaryModuleMetadataHeader.EntryPointsModuleActivationStatus == 0)
     {
         EnsureInterpreterFallback(pep);
         pep.InterpreterData.pAuxActivationFlag = &primary.AuxiliaryModuleMetadataHeader.EntryPointsModuleActivationStatus;
@@ -62,7 +60,7 @@ InterpOrR2R ResolveAuxiliaryMethod(PEP pep)
 
     AuxiliaryModuleMetadataHeader metadata = pep.GetModule().AuxiliaryModuleMetadataHeader;
     EntryPoint entry = LookupEntryPoint(
-        metadata.MethodDefEntryPointsRVA, metadata.InstanceMethodEntryPointsRVA, pep.MethodDesc);
+        metadata.MethodDefEntryPointsInfoRVA, metadata.InstanceMethodEntryPointsRVA, pep.MethodDesc);
     if (entry is null)
     {
         EnsureInterpreterFallback(pep);
@@ -70,7 +68,7 @@ InterpOrR2R ResolveAuxiliaryMethod(PEP pep)
     }
 
     AuxiliaryModuleMetadataEntry auxModuleMetadata = FindAuxiliaryModuleMetadataForRuntimeIndex(entry.RuntimeFunctionIndex);
-    if (!IsActivated(auxModuleMetadata.ActivationStatus))
+    if (auxModuleMetadata.ActivationStatus == 0)
     {
         EnsureInterpreterFallback(pep);
         pep.InterpreterData.pAuxActivationFlag = &auxModuleMetadata.ActivationStatus;
@@ -116,7 +114,7 @@ VirtualIP lookup must use a range-aware binary search that only searches the ran
 
 ### MethodDefEntryPoints and InstanceMethodEntryPoints
 
-Two `MethodDefEntryPoints` and `InstanceMethodEntryPoints` exist, one in the primary module and the Auxiliary EntryPoints Module. Fixup lists for the entries in the Auxiliary EntryPoints Module exist in the auxiliary modules. The runtime must check both sections when the Auxiliary EntryPoints Module is downloaded. The primary module will allocate space for each section at the RVA designated in the Auxiliary Module Metadata. The entries for each method and their RuntimeFunctions index are present in the Auxiliary EntryPoints Module, but the fixup lists are placed in the auxiliary modules and copied during activation.
+Each `MethodDefEntryPoints` section (one for each assembly in the R2R image), as well as the image-wide `InstanceMethodEntryPoints` section will have a partial entry in each  (shared by all assemblies in the R2R image), one in the primary module and the Auxiliary EntryPoints Module. Fixup lists for the entries in the Auxiliary EntryPoints Module exist in the auxiliary modules. The runtime must check both sections when the Auxiliary EntryPoints Module is downloaded. The primary module will allocate space for each section at the RVA designated in the Auxiliary Module Metadata. The entries for each method and their RuntimeFunctions index are present in the Auxiliary EntryPoints Module, but the fixup lists are placed in the auxiliary modules and copied during activation.
 
 ### ImportSection
 
@@ -167,28 +165,9 @@ It exports:
 
 The auxiliary entrypoints module contains the `MethodDefEntryPoints` and `InstanceMethodEntryPoints` for the aux methods, excluding the fixup cell info. These sections tell which index in the `RuntimeFunctions` table to find information for the method, as well as which fixups to resolve. A single logical `RuntimeFunctions` is spread across the primary and auxiliary modules. Using the length of the primary module's `RuntimeFunctions` range, and the `MethodCount` field in each Auxiliary module metadata entry (see below), the owning auxiliary module can be determined.
 
-The EntryPoints sections will leave zeroed space for the fixup lists that will be filled in by the auxiliary module during activation. Fixups for methods from the auxiliary module cannot be run until the module is activated and these indices are filled in. This enables the EntryPoints Module to be smaller, and allow methods without R2R code to be identified as interpreter-only sooner.
+The EntryPoints sections in the Auxiliary EntryPoints Module will leave space for the fixup lists that will be filled in by the auxiliary module during activation. To enable auxiliary modules to activate before the Auxiliary EntryPoints Module, this space should not be written overwritten during activation of the Auxiliary EntryPoints Module. Fixups for methods from the auxiliary module cannot be run until the module is activated and these indices are filled in. This enables the EntryPoints Module to be smaller, and allow methods without R2R code to be identified as interpreter-only sooner.
 
-The `MethodDefEntryPoints` sparse array will use backwards-distance encoding to point to each entry's fixup list. Each auxiliary module will be allocated space for all its encoded fixup lists in a blob before the array. This enables the auxiliary module's `ActivateModule()` function to simply copy a data element to a known location.
-
-```
-Lower addresses
-┌───────────────────────────────────┐
-│ Aux A fixup lists                 │ ◄── installed by Aux A
-├───────────────────────────────────┤
-│ Aux B fixup lists                 │ ◄── installed by Aux B
-├───────────────────────────────────┤
-│ Sparse-array header               │ ◄── R2R directory points HERE
-│ Block-index array                 │
-│ Tree nodes and entrypoint records │
-│   [method index + flags][distance]│
-└───────────────────────────┬───────┘
-                            │
-             backward reference to the relevant list
-Higher addresses
-```
-
-Similarly, the `InstanceMethodEntryPoints` hashtable will allocate contiguous memory to hold the EntryPoints records for all instance methods in an auxiliary module. The auxiliary module can then copy a data element to the correct offset to fill in the list of fixups.
+The `InstanceMethodEntryPoints` hashtable will allocate contiguous memory to hold the data for all instance methods in an auxiliary module. The auxiliary module can then copy a data element to the correct offset to fill in the list of fixups.
 
 ```
 Hash index                         Method-record storage
@@ -215,19 +194,19 @@ Bucket 1 ─── entry for A1 ──────────┐   │         
 
 ## Auxiliary Module Metadata
 
-Metadata for each auxiliary module resides at a well-defined location in the primary module. This metadata enables the runtime to activate the module.
+Metadata for each auxiliary module resides at a well-defined location in the primary module, probably in a new section. This metadata enables the runtime to activate the module.
 
 Header:
 
 | Field | Meaning |
 |---|---|
 | `InstanceMethodEntryPointsRVA` | RVA of the auxiliary modules' InstanceMethodEntryPoints section |
-| `MethodDefEntryPointsRVA` | RVA of the auxiliary modules' MethodDefEntryPoints section |
+| `MethodDefEntryPointsInfoRVA` | RVA of an array of (IMAGE_DATA_DIRECTORY `CorHeader`, IMAGE_DATA_DIRECTORY `MethodDefEntryPointsRVA`) tuples that allow the runtime to resolve an assembly's auxiliary MethodDefEntryPoints section |
 | `EntryPointsModuleActivationStatus` | Flag indicating whether the Auxiliary EntryPoints Module has completed activation and the auxiliary `InstanceMethodEntryPoints` and `MethodDefEntryPoints` tables are valid for reading. This also could be a flag on the ModuleDesc. |
 | `PrimaryModuleMethodCount` | The count of functions (including funclets) that have code and a `RuntimeFunctions` entry in the primary module. This doesn't include the final `RuntimeFunctions` entry used for VirtualIP calculations. |
 | `AuxiliaryModuleCount` | Count of auxiliary modules |
 
-The Auxiliary Module Metadata table is a count-prefixed array of entries with the following fields:
+Following the header is the Auxiliary Module Metadata table. The table is an array of entries with the following fields:
 
 | Field | Meaning |
 |---|---|
@@ -235,6 +214,12 @@ The Auxiliary Module Metadata table is a count-prefixed array of entries with th
 | `RelativeTableBase` | Primary-module-relative table index of the first slot assigned to the auxiliary module. |
 | `MethodCount` | Number of method slots assigned to the auxiliary module, including funclets. Defines the number of entries in its `RuntimeFunctions` table and the length of its contiguous function-table range. |
 | `ActivationStatus` | Flag indicating whether the auxiliary module has completed activation and its methods can be activated and the R2R code executed. This also could be a flag on the ModuleDesc. |
+
+The `MethodDefEntryPointsInfoRVA` points to data identical to the format of the `ComponentAssemblies` section. Once filled in by the Auxiliary EntryPoints Module, the `CorHeader` will point to the same location in the assembly as the entry in the `ComponentAssemblies` section (right now crossgen2 emits these as zeros and relies on correlated order with the `ManifestMetadata` assembly names - this ordering must be preserved). The `MethodDefEntryPointsRVA` will point to the auxiliary `MethodDefEntryPoints` section for that assembly. All this data would reside within the Auxiliary Module Metadata section.
+
+### Alternative data format
+
+Instead of putting bookkeeping for the Auxiliary EntryPoints Module inside the Auxiliary Module Metadata section, new sections could be created for the image-wide `AuxiliaryInstanceMethodEntryPoints` section and per-assembly auxiliary `AuxiliaryMethodDefEntryPoints` sections. The AuxiliaryModuleMetadata header could remove the `InstanceMethodEntryPointsRVA` and `MethodDefEntryPointsInfoRVA` fields.
 
 ### Index relationships
 
@@ -298,7 +283,7 @@ The compiler must also:
 
 ### Multiple runtime-function tables
 
-A logical R2R module can have two `MethodDefEntryPoints` and `InstanceMethodEntryPoints`. The runtime must attempt to resolve R2R code using the Auxiliary EntryPoints tables when present.
+A logical R2R module can have two `MethodDefEntryPoints` per assembly and two `InstanceMethodEntryPoints` per image. The runtime must attempt to resolve R2R code using the Auxiliary EntryPoints Module data once it has been activated.
 
 A module's `RuntimeFunctions` table may be only partially filled. VirtualIP lookup must use a range-aware binary search that only searches the ranges of activated modules, using the AuxiliaryModuleMetadata activation info to determine active ranges.
 
@@ -310,21 +295,27 @@ The interpreter must implement the tracking and activation flow defined above.
 
 The JavaScript host must:
 
-1. Trigger auxiliary-module downloads, either eagerly or in response to method activation requests.
+1. Trigger auxiliary-module downloads (including the Auxiliary EntryPoints Module), either eagerly or in response to method activation requests.
 2. Instantiate each auxiliary module with the required imports.
 3. Call that module's `ActivateModule` export.
 
 ## Implementation phases
 
+V1 will focus on single-threaded, composite mode support. The designs shouldn't make multithreaded WASM or non-composite mode incompatible, but it will disabled for those configurations in the initial implementation.
+
 ### 1. Support delayed resolution of R2R code within the same module.
 
 Using either call-counting in the interpreter or a timer in the host JavaScript code, force methods to be interpreted (even if R2R code exists for them in the primary module) before installing R2R code. This doesn't require any changes to crossgen2 or the webcil format.
 
-### 2. Split some wasm function bodies into the cold module.
+### 2. Split InstanceMethodEntryPoints and MethodDefEntryPoints sections out
+
+Move entries of the `InstanceMethodEntryPoints` and `MethodDefEntryPoints` sections into the Auxiliary EntryPoints Module during object emission in crossgen2. Implement activation of the Auxiliary EntryPoints Module in the host. Update the runtime to check both once the Auxiliary EntryPoints Module is activated. All other data is left in the primary module and activation of the Auxiliary EntryPoints Module will also mark auxiliary modules as activated so that activation of those methods can complete.
+
+### 3. Split some wasm function bodies into the cold module.
 
 Leave all other R2R metadata (fixups, EH and GC info, etc) in the primary module, but move some cold wasm method bodies to a cold module. `ActivateModule` only has to update the global function table. Requires changes from crossgen2, the host, and the runtime.
 
-### 3. Move metadata for aux methods into the auxiliary module.
+### 4. Move metadata for aux methods into the auxiliary module.
 
 Move the `RuntimeFunctions` table entries and fixups to the auxiliary module, and have method activation resolve this info using the Auxiliary Module Metadata entries.
 
