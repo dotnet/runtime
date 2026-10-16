@@ -81,10 +81,10 @@ namespace System.Security.Cryptography
                 // Find the next hyphen.  If it's not the start of a PostEB, then it's not our
                 // PostEB, so we're not a PreEB, so resume searching there.
                 //
-                // There's no chance that the PreEB suffix is the start of a different PreEB,
-                // because IsValidLabel would have returned false if the label ended with whitespace,
-                // and it's a requirement that the PreEB prefix be preceded by whitespace (or be
-                // at index 0).
+                // For a non-empty label, the PreEB suffix cannot start another PreEB because
+                // IsValidLabel would have returned false if the label ended with whitespace, and
+                // a PreEB must be preceded by whitespace (or be at index 0). An empty label can
+                // overlap another PreEB; that case is handled below when choosing the next offset.
                 int nextHyphen = pemData.IndexOfByOffset(hyphen, contentStartIndex);
 
                 // No hyphen at all? No PostEB, so we're done.
@@ -96,7 +96,8 @@ namespace System.Security.Cryptography
 
                 if (!pemData.Slice(nextHyphen).StartsWith(PostEBPrefix))
                 {
-                    preebEndIndex = nextHyphen;
+                    // An empty label's ending can overlap the start of another PreEB.
+                    preebEndIndex = label.IsEmpty ? labelStartIndex : nextHyphen;
                     goto NextAfterLabel;
                 }
 
@@ -118,12 +119,13 @@ namespace System.Security.Cryptography
                 // base64
                 // -----END OTHERLABEL-----
                 //
-                // We know none of the purported base64 has any other hyphens, so no other PreEB
-                // could be there.  Resume searching at postebEndIndex in case it says
-                // "-----END SOMELABEL\n-----BEGIN "
+                // For a non-empty label, none of the purported base64 has any other hyphens, so
+                // no other PreEB could be there. Resume searching at postebEndIndex in case it
+                // says "-----END SOMELABEL\n-----BEGIN ". An empty label can overlap another
+                // PreEB, so resume at labelStartIndex instead.
                 if (!postLabel.SequenceEqual(label))
                 {
-                    preebEndIndex = postebEndIndex;
+                    preebEndIndex = label.IsEmpty ? labelStartIndex : postebEndIndex;
                     goto NextAfterLabel;
                 }
 

@@ -900,12 +900,7 @@ public unsafe class LoaderTests
             assembly.IsLoaded = isLoaded;
             moduleAddress = module.Address;
             appDomain = loader.AddAppDomain(module);
-            targetBuilder.AddTypes(new Dictionary<DataType, Target.TypeInfo>
-            {
-                [DataType.AppDomain] = TargetTestHelpers.CreateTypeInfo(loader.AppDomainLayout),
-                [DataType.ArrayListBase] = TargetTestHelpers.CreateTypeInfo(loader.ArrayListBaseLayout),
-                [DataType.ArrayListBlock] = TargetTestHelpers.CreateTypeInfo(loader.ArrayListBlockLayout),
-            });
+            targetBuilder.AddTypes(CreateAppDomainTypes(loader));
         });
 
         List<TargetPointer> modules = [];
@@ -917,6 +912,41 @@ public unsafe class LoaderTests
         TargetPointer[] expectedModules = expected ? [moduleAddress] : [];
         Assert.Equal(expectedModules, modules);
     }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetModuleHandles_SkipsEmptySlots(MockTarget.Architecture arch)
+    {
+        TargetPointer appDomain = default;
+        TargetPointer[] expectedModules = [];
+
+        (ILoader contract, _) = CreateLoaderContractWithTarget(arch, (loader, targetBuilder) =>
+        {
+            MockLoaderModule first = loader.AddModule();
+            MockLoaderModule second = loader.AddModule();
+            loader.GetAssembly(first).IsLoaded = true;
+            loader.GetAssembly(second).IsLoaded = true;
+            expectedModules = [first.Address, second.Address];
+            appDomain = loader.AddAppDomain(null, first, null, second, null);
+            targetBuilder.AddTypes(CreateAppDomainTypes(loader));
+        });
+
+        List<TargetPointer> modules = [];
+        foreach (Contracts.ModuleHandle handle in contract.GetModuleHandles(appDomain, AssemblyIterationFlags.IncludeLoaded | AssemblyIterationFlags.IncludeExecution))
+        {
+            modules.Add(handle.Address);
+        }
+
+        Assert.Equal(expectedModules, modules);
+    }
+
+    private static Dictionary<DataType, Target.TypeInfo> CreateAppDomainTypes(MockLoaderBuilder loader)
+        => new()
+        {
+            [DataType.AppDomain] = TargetTestHelpers.CreateTypeInfo(loader.AppDomainLayout),
+            [DataType.ArrayListBase] = TargetTestHelpers.CreateTypeInfo(loader.ArrayListBaseLayout),
+            [DataType.ArrayListBlock] = TargetTestHelpers.CreateTypeInfo(loader.ArrayListBlockLayout),
+        };
 
     public static IEnumerable<object[]> IsModuleMappedData()
     {

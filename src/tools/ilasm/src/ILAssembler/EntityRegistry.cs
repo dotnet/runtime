@@ -2280,7 +2280,37 @@ namespace ILAssembler
             /// PDB is built.
             /// </summary>
             public StandaloneSignatureHandle LocalSignature { get; set; }
+
+            /// <summary>
+            /// Gets the lexical scopes of the method body, in the order they closed: each <c>{ }</c> block, then the
+            /// root scope, which spans the whole body and holds the method-level <c>.locals</c>. The PDB gets a
+            /// LocalScope row for each scope that is not empty and declares a named local. Recorded only when a PDB
+            /// is requested; otherwise empty.
+            /// </summary>
+            public List<LocalScopeRecord> LocalScopes { get; } = new();
         }
+
+        /// <summary>
+        /// A closed lexical scope of a method body: the root scope or a <c>{ }</c> block, including the bodies of
+        /// <c>.try</c>, <c>catch</c>, <c>filter</c>, <c>finally</c> and <c>fault</c>.
+        /// </summary>
+        /// <param name="StartOffset">The IL offset at which the scope starts: 0 for the root scope, the offset at <c>{</c> for a block.</param>
+        /// <param name="EndOffset">The IL offset at which the scope ends: the body's size for the root scope, the offset at <c>}</c> for a block.</param>
+        /// <param name="Order">
+        /// The position of the scope in source order, counting the root scope as 0 and each block as it opens, so an
+        /// enclosing scope comes before the scopes it contains.
+        /// </param>
+        /// <param name="Variables">The named locals declared directly in the scope, in declaration order.</param>
+        public sealed record LocalScopeRecord(int StartOffset, int EndOffset, int Order, ImmutableArray<LocalVariableRecord> Variables)
+        {
+            /// <summary>Gets the length of the scope in bytes of IL.</summary>
+            public int Length => EndOffset - StartOffset;
+        }
+
+        /// <summary>A named local declared in a lexical scope.</summary>
+        /// <param name="Name">The name of the local.</param>
+        /// <param name="Slot">Its slot in the method's local signature.</param>
+        public readonly record struct LocalVariableRecord(string Name, int Slot);
 
         /// <summary>
         /// A deferred exception region entry. Stored during parsing and applied to the
