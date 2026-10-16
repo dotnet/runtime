@@ -63,7 +63,7 @@ namespace Mono.Linker.Tests.Cases.Generics
         [Kept]
         interface IInner
         {
-            [Kept]
+            [Kept(By = Tool.Trimmer)] // NativeAOT removes interface methods that no constructed type implements
             void InnerMethod();
         }
 
@@ -71,7 +71,7 @@ namespace Mono.Linker.Tests.Cases.Generics
         [KeptInterface(typeof(IInner))]
         interface IOuter<T> : IInner
         {
-            [Kept]
+            [Kept(By = Tool.Trimmer)]
             void OuterMethod();
         }
 
@@ -79,15 +79,15 @@ namespace Mono.Linker.Tests.Cases.Generics
         {
         }
 
-        [Kept]
-        [KeptInterface(typeof(IOuter<>), "T")]
-        [KeptInterface(typeof(IInner))]
+        [Kept(By = Tool.Trimmer)] // NativeAOT does not need the metadata of an unconstructed base type
+        [KeptInterface(typeof(IOuter<>), "T", By = Tool.Trimmer)]
+        [KeptInterface(typeof(IInner), By = Tool.Trimmer)]
         abstract class UninstantiatedBaseWithInterfaces<T> : IOuter<T>
         {
-            [Kept]
+            [Kept(By = Tool.Trimmer)]
             public void OuterMethod() { }
 
-            [Kept]
+            [Kept(By = Tool.Trimmer)]
             void IInner.InnerMethod() { }
         }
 
