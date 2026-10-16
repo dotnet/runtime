@@ -3320,9 +3320,9 @@ inline bool Compiler::IsPotentialGCSafePoint(GenTree* tree) const
     }
 
 #ifdef TARGET_WASM
-    // On wasm a tree that may throw calls a throw helper (see StackLevelSetter::MayUseThrowHelperBlock),
-    // and every GC slot on the frame is reported for the whole method, including while the exception
-    // is dispatched.
+    // On wasm, GC locals on the frame are reported as untracked slots, including for aborted frames,
+    // and a tree that may throw can call a throw helper (see StackLevelSetter::MayUseThrowHelperBlock)
+    // before a local's first store.
     if ((tree->gtFlags & GTF_EXCEPT) != 0)
     {
         return true;
