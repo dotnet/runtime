@@ -3304,8 +3304,9 @@ HRESULT CordbReJitILCode::Init(DacSharedReJitInfo* pSharedReJitInfo)
     m_cbLocalIL = ilCodeSize;
     IfFailRet(GetProcess()->SafeReadBuffer(m_codeRegionInfo, m_pLocalIL, FALSE /*throwOnError*/));
 
-    // Check if this il code has exception clauses
-    if ((pMethodTinyHeader->Flags_CodeSize & CorILMethod_MoreSects) == 0)
+    // Check if this il code has exception clauses. A tiny header has no flags for extra sections:
+    // its upper bits are the code size, so CorILMethod_MoreSects only applies to a fat header.
+    if (isTinyHeader || (pMethodTinyHeader->Flags_CodeSize & CorILMethod_MoreSects) == 0)
     {
         return S_OK; // no EH, done initing
     }
