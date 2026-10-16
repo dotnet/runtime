@@ -164,12 +164,8 @@ class RegMeta :
     friend class MDInternalRO;
     friend HRESULT TranslateSigHelper(
             IMDInternalImport*      pImport,
-            IMDInternalImport*      pAssemImport,
-            const void*             pbHashValue,
-            ULONG                   cbHashValue,
             PCCOR_SIGNATURE         pbSigBlob,
             ULONG                   cbSigBlob,
-            IMDInternalEmit*        pAssemEmit,
             IMDInternalEmit*        emit,
             CQuickBytes*            pqkSigEmit,
             ULONG*                  pcbSig);

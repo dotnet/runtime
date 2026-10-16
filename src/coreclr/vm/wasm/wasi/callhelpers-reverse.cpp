@@ -989,19 +989,6 @@ static void Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContex
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_StartAssemblyLoad_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_StartAssemblyLoad_I32_I32_I32_RetVoid);
 }
 
-static MethodDesc* MD_System_Private_CoreLib_System_Threading_Thread_StartCallback_I32_RetVoid = nullptr;
-static void Call_System_Private_CoreLib_System_Threading_Thread_StartCallback_I32_RetVoid(void * arg0)
-{
-    // Lazy lookup of MethodDesc for the function export scenario.
-    if (!MD_System_Private_CoreLib_System_Threading_Thread_StartCallback_I32_RetVoid)
-    {
-        LookupUnmanagedCallersOnlyMethodByName("System.Threading.Thread, System.Private.CoreLib", "StartCallback", &MD_System_Private_CoreLib_System_Threading_Thread_StartCallback_I32_RetVoid);
-    }
-
-    int64_t args[1] = { (int64_t)arg0 };
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Threading_Thread_StartCallback_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Threading_Thread_StartCallback_I32_RetVoid);
-}
-
 static MethodDesc* MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_StopAssemblyLoad_I32_I32_RetVoid = nullptr;
 static void Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_StopAssemblyLoad_I32_I32_RetVoid(void * arg0, void * arg1)
 {
@@ -1090,7 +1077,6 @@ const ReverseThunkMapEntry g_ReverseThunks[] =
     { 4273572779, "RunFinalizers#0:System.Private.CoreLib:System:GC", { &MD_System_Private_CoreLib_System_GC_RunFinalizers_Void_RetI32, (void*)&Call_System_Private_CoreLib_System_GC_RunFinalizers_Void_RetI32 } },
     { 1963568864, "Setup#4:System.Private.CoreLib:System:AppContext", { &MD_System_Private_CoreLib_System_AppContext_Setup_I32_I32_I32_I32_RetVoid, (void*)&Call_System_Private_CoreLib_System_AppContext_Setup_I32_I32_I32_I32_RetVoid } },
     { 1343309100, "StartAssemblyLoad#3:System.Private.CoreLib:System.Runtime.Loader:AssemblyLoadContext", { &MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_StartAssemblyLoad_I32_I32_I32_RetVoid, (void*)&Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_StartAssemblyLoad_I32_I32_I32_RetVoid } },
-    { 3372184251, "StartCallback#1:System.Private.CoreLib:System.Threading:Thread", { &MD_System_Private_CoreLib_System_Threading_Thread_StartCallback_I32_RetVoid, (void*)&Call_System_Private_CoreLib_System_Threading_Thread_StartCallback_I32_RetVoid } },
     { 3495913109, "StopAssemblyLoad#2:System.Private.CoreLib:System.Runtime.Loader:AssemblyLoadContext", { &MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_StopAssemblyLoad_I32_I32_RetVoid, (void*)&Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_StopAssemblyLoad_I32_I32_RetVoid } }
 };
 

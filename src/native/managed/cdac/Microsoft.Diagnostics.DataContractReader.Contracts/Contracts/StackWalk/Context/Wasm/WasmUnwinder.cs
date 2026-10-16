@@ -14,25 +14,16 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers.Wa
 internal interface IWasmR2RInfo
 {
     /// <summary>
-    /// Returns the base virtual IP for an R2R function table entry
-    /// (<c>ExecutionManager::GetWasmVirtualIPFromFunctionTableIndex</c>). Returns false, or a
-    /// base of 0, when the index does not map to a known R2R function.
+    /// Returns the base virtual IP represented by a frame identity. Returns false, or a base of 0,
+    /// when the identity does not map to a known R2R function.
     /// </summary>
-    bool TryGetVirtualIPBase(uint functionTableIndex, out ulong baseVirtualIP);
+    bool TryGetVirtualIPBase(uint frameIdentity, out ulong baseVirtualIP);
 
     /// <summary>
-    /// Returns the address of the WASM unwind blob for an R2R function table entry
-    /// (<c>RUNTIME_FUNCTION.UnwindData + ImageBase</c>). The blob begins with a ULEB128 fixed
-    /// frame size. Returns false when the index does not map to a known R2R function.
+    /// Returns the address of the WASM unwind blob for the function containing
+    /// <paramref name="controlPC"/>. The blob begins with a ULEB128 fixed frame size.
     /// </summary>
-    bool TryGetUnwindData(uint functionTableIndex, out TargetPointer unwindDataAddress);
-
-    /// <summary>
-    /// Reports whether an R2R function table entry is a funclet rather than a method's root
-    /// function (<c>ExecutionManager::IsFuncletFunctionIndex</c>). Returns false when the index
-    /// does not map to a known R2R function.
-    /// </summary>
-    bool TryIsFunclet(uint functionTableIndex, out bool isFunclet);
+    bool TryGetUnwindData(TargetCodePointer controlPC, out TargetPointer unwindDataAddress);
 }
 
 /// <summary>
@@ -42,8 +33,8 @@ internal interface IWasmR2RInfo
 /// convention is documented in <c>docs/design/coreclr/botr/clr-abi.md</c>.
 /// </summary>
 /// <remarks>
-/// Each R2R frame base stores its R2R function table entry index at offset 0 and its
-/// function-local virtual IP (divided by 2) at offset 4. A frame whose first word is
+/// Each R2R frame base stores its frame identity at offset 0 and its function-local virtual IP
+/// (divided by 2) at offset 4. A frame whose first word is
 /// <see cref="StackWalkIndirectToFramePointer"/> is a <c>localloc</c> frame whose real base
 /// pointer is stored one pointer-sized slot later. A frame whose first word is
 /// <see cref="TerminateR2RStackWalk"/> is not R2R code (an interpreter transition or the stack
@@ -55,8 +46,8 @@ internal sealed class WasmUnwinder
     // Sp values at or below the lowest linear-memory page carry nothing meaningful.
     private const ulong LinearStackFloor = 0x1000;
 
-    // WASM_STACKFRAME_FUNCTION_INDEX_OFFSET: R2R function table entry index (32-bit).
-    private const ulong FunctionIndexOffset = 0;
+    // WASM_STACKFRAME_FUNCTION_INDEX_OFFSET: tagged frame identity (32-bit).
+    private const ulong FrameIdentityOffset = 0;
 
     // WASM_STACKFRAME_VIRTUALIP_OFFSET: function-local virtual IP / 2 (always 32-bit).
     private const ulong VirtualIpOffset = 4;
@@ -67,6 +58,10 @@ internal sealed class WasmUnwinder
 
     // TERMINATE_R2R_STACK_WALK: this frame is not R2R-generated managed code.
     private const uint TerminateR2RStackWalk = 1;
+
+    private const uint FrameIdentityTagMask = 3;
+    private const uint EstablishingFrameTag = 2;
+    private const int MaxEstablishingFrameDepth = 4096;
 
     private readonly Target _target;
     private readonly IWasmR2RInfo _r2rInfo;
@@ -92,7 +87,7 @@ internal sealed class WasmUnwinder
             return false;
 
         ulong current = sp.Value;
-        if (_target.Read<uint>(current + FunctionIndexOffset) == StackWalkIndirectToFramePointer)
+        if (_target.Read<uint>(current + FrameIdentityOffset) == StackWalkIndirectToFramePointer)
         {
             current = _target.ReadPointer(current + _pointerSize).Value;
             // Re-apply the linear-stack floor after following the localloc indirection: a null or
@@ -101,7 +96,7 @@ internal sealed class WasmUnwinder
                 return false;
         }
 
-        if (_target.Read<uint>(current + FunctionIndexOffset) == TerminateR2RStackWalk)
+        if (_target.Read<uint>(current + FrameIdentityOffset) == TerminateR2RStackWalk)
             return false;
 
         frameBase = new TargetPointer(current);
@@ -109,13 +104,30 @@ internal sealed class WasmUnwinder
     }
 
     /// <summary>
-    /// Recovers the establishing (method) frame pointer stored beside a
-    /// <see cref="TerminateR2RStackWalk"/> marker by <c>CallFuncletWith[out]Throwable</c>,
-    /// mirroring <c>GetWasmEstablishingFramePointerFromTerminator</c>. <paramref name="sp"/> must
-    /// point at such a synthetic terminator frame.
+    /// Resolves any establishing-frame identity tags to the root method frame.
     /// </summary>
-    public TargetPointer GetEstablishingFramePointerFromTerminator(TargetPointer sp)
-        => _target.ReadPointer(sp.Value + _pointerSize);
+    private bool TryGetEstablishingFramePointer(TargetPointer frameBase, out TargetPointer establishingFrame)
+    {
+        establishingFrame = frameBase;
+        for (int i = 0; i < MaxEstablishingFrameDepth; i++)
+        {
+            uint identity = _target.Read<uint>(establishingFrame.Value + FrameIdentityOffset);
+            if ((identity & FrameIdentityTagMask) != EstablishingFrameTag)
+                return true;
+
+            ulong next = identity - EstablishingFrameTag;
+            if (next <= establishingFrame.Value)
+            {
+                establishingFrame = TargetPointer.Null;
+                return false;
+            }
+
+            establishingFrame = new TargetPointer(next);
+        }
+
+        establishingFrame = TargetPointer.Null;
+        return false;
+    }
 
     /// <summary>
     /// Computes the current R2R virtual IP for a stack pointer, mirroring
@@ -127,12 +139,15 @@ internal sealed class WasmUnwinder
         if (!TryGetFramePointer(sp, out TargetPointer frameBase))
             return TargetCodePointer.Null;
 
-        uint functionIndex = _target.Read<uint>(frameBase.Value + FunctionIndexOffset);
+        if (!TryGetEstablishingFramePointer(frameBase, out TargetPointer establishingFrame))
+            return TargetCodePointer.Null;
+
+        uint frameIdentity = _target.Read<uint>(establishingFrame.Value + FrameIdentityOffset);
         // Virtual IPs are stored divided by 2; the low bit distinguishes virtual IPs from
         // interpreter addresses / portable entrypoints.
         uint functionLocalVirtualIP = _target.Read<uint>(frameBase.Value + VirtualIpOffset) * 2;
 
-        if (!_r2rInfo.TryGetVirtualIPBase(functionIndex, out ulong baseVirtualIP) || baseVirtualIP == 0)
+        if (!_r2rInfo.TryGetVirtualIPBase(frameIdentity, out ulong baseVirtualIP) || baseVirtualIP == 0)
             return TargetCodePointer.Null;
 
         return new TargetCodePointer(baseVirtualIP + functionLocalVirtualIP);
@@ -146,17 +161,8 @@ internal sealed class WasmUnwinder
     /// <paramref name="sp"/> is the caller's stack pointer, and <paramref name="ip"/> is null when
     /// the caller is not ReadyToRun code.
     /// </summary>
-    /// <param name="controlPC">
-    /// The virtual IP of the frame at <paramref name="sp"/>, used to detect a reverse P/Invoke
-    /// frame as native <c>RtlVirtualUnwind</c> does.
-    /// </param>
-    /// <exception cref="InvalidOperationException"><paramref name="controlPC"/> is null.</exception>
     public bool TryUnwindOneFrame(ref TargetPointer sp, TargetCodePointer controlPC, out TargetCodePointer ip)
     {
-        // Native RtlVirtualUnwind asserts that the control PC is an R2R virtual IP.
-        if (controlPC == TargetCodePointer.Null)
-            throw new InvalidOperationException($"Cannot unwind the WASM R2R frame at SP 0x{sp.Value:X} without its virtual IP.");
-
         ip = TargetCodePointer.Null;
         if (!TryGetFramePointer(sp, out TargetPointer frameBase))
         {
@@ -164,13 +170,13 @@ internal sealed class WasmUnwinder
             return false;
         }
 
-        uint functionIndex = _target.Read<uint>(frameBase.Value + FunctionIndexOffset);
-        if (!_r2rInfo.TryGetUnwindData(functionIndex, out TargetPointer unwindData))
+        if (!_r2rInfo.TryGetUnwindData(controlPC, out TargetPointer unwindData))
         {
             sp = TargetPointer.Null;
             return false;
         }
 
+        uint frameIdentity = _target.Read<uint>(frameBase.Value + FrameIdentityOffset);
         uint frameSize = DecodeULEB128(unwindData.Value);
         if (frameSize == 0)
         {
@@ -180,76 +186,18 @@ internal sealed class WasmUnwinder
         }
 
         sp = new TargetPointer(frameBase.Value + frameSize);
-        // A reverse P/Invoke frame's caller is native code, so its stack bytes must not be read as
-        // an R2R frame. Funclets share their parent's GC info and are never entered from native code.
-        if (!IsReversePInvokeFrame(functionIndex, controlPC))
-            ip = GetVirtualIP(sp);
-
-        return true;
-    }
-
-    /// <summary>
-    /// Unwinds <paramref name="context"/> by one R2R frame, mirroring native <c>RtlVirtualUnwind</c>.
-    /// When the caller is not R2R code (an interpreter transition, native code above a reverse
-    /// P/Invoke, or the stack top), SP is the caller's SP, IP and FP are null, and the walker
-    /// continues through the explicit Frame chain. If no R2R frame can be unwound, SP, IP and FP
-    /// are all null.
-    /// </summary>
-    public void Unwind(ref WasmContext context)
-    {
-        TargetPointer sp = context.StackPointer;
-        if (!TryUnwindOneFrame(ref sp, context.InstructionPointer, out TargetCodePointer ip))
+        if ((frameIdentity & 1) != 0 && (int)frameIdentity > 0)
         {
-            context.StackPointer = TargetPointer.Null;
-            context.InstructionPointer = TargetCodePointer.Null;
-            context.FramePointer = TargetPointer.Null;
-            return;
+            // Positive odd identities are reverse P/Invoke roots. Their caller is native, so
+            // preserve the caller SP for the Frame-chain walk but do not interpret it as an R2R
+            // shadow frame.
+            return true;
         }
 
-        context.StackPointer = sp;
-        context.InstructionPointer = ip;
-        // Native recomputes the caller's FP only for an R2R caller; funclets report the
-        // establishing method's frame (GetWasmFramePointerFromStackPointer).
-        context.FramePointer = ip != TargetCodePointer.Null && TryGetLogicalFramePointer(sp, out TargetPointer fp)
-            ? fp
-            : TargetPointer.Null;
-    }
+        // A null IP means the caller is not R2R code (an interpreter transition or the stack top).
+        // Like native, keep the caller's SP so the walk continues through the Frame chain.
+        ip = GetVirtualIP(sp);
 
-    private bool IsReversePInvokeFrame(uint functionIndex, TargetCodePointer controlPC)
-    {
-        if (!_r2rInfo.TryIsFunclet(functionIndex, out bool isFunclet) ||
-            isFunclet ||
-            _target.Contracts.ExecutionManager.GetCodeBlockHandle(controlPC) is not CodeBlockHandle codeBlock)
-        {
-            return false;
-        }
-
-        _target.Contracts.ExecutionManager.GetGCInfo(codeBlock, out TargetPointer gcInfoAddress, out uint gcVersion);
-        IGCInfoHandle gcInfo = _target.Contracts.GCInfo.DecodePlatformSpecificGCInfo(gcInfoAddress, gcVersion);
-        return _target.Contracts.GCInfo.GetHeader(gcInfo).HasReversePInvokeFrame;
-    }
-
-    /// <summary>
-    /// Advances <paramref name="sp"/> by one R2R frame and returns the caller's stack pointer,
-    /// without requiring the caller to be R2R-generated code. This is the frame-size half of
-    /// <c>WasmUnwindStackFrameCore</c>, which <see cref="TryGetLogicalFramePointer"/> needs in
-    /// order to inspect a synthetic <see cref="TerminateR2RStackWalk"/> frame.
-    /// </summary>
-    private bool TryUnwindToCallerStackPointer(TargetPointer sp, out TargetPointer callerSp)
-    {
-        callerSp = TargetPointer.Null;
-        if (!TryGetFramePointer(sp, out TargetPointer frameBase))
-            return false;
-
-        uint functionIndex = _target.Read<uint>(frameBase.Value + FunctionIndexOffset);
-        if (!_r2rInfo.TryGetUnwindData(functionIndex, out TargetPointer unwindData))
-            return false;
-
-        uint frameSize = DecodeULEB128(unwindData.Value);
-        if (frameSize == 0)
-            return false;
-
-        callerSp = new TargetPointer(frameBase.Value + frameSize);
         return true;
     }
 
@@ -259,55 +207,15 @@ internal sealed class WasmUnwinder
     /// <c>src/coreclr/vm/wasm/helpers.cpp</c>.
     /// </summary>
     /// <remarks>
-    /// For a method's root function this is its own frame base. For a funclet it is the frame
-    /// base of the establishing method: the funclet's FP local is the FP its caller passed in
-    /// (<c>WasmRegAlloc::AllocateFramePointer</c>, <c>CodeGen::genCallFinally</c>), so reaching it
-    /// means unwinding out of the funclet, either to its containing method or funclet, or to the
-    /// synthetic <see cref="TerminateR2RStackWalk"/> frame that
-    /// <c>CallFuncletWith[out]Throwable</c> pushes, which carries the establishing frame pointer
-    /// beside the marker.
+    /// For a method's root function this is its own frame base. A funclet stores its establishing
+    /// frame pointer tagged with <see cref="EstablishingFrameTag"/>.
     /// </remarks>
     public bool TryGetLogicalFramePointer(TargetPointer sp, out TargetPointer framePointer)
     {
         framePointer = TargetPointer.Null;
 
-        // Native recurses until it reaches a non-funclet frame or a CallFunclet terminator. The
-        // cDAC reads untrusted memory, so require each step to move toward the caller; the step
-        // count is only a backstop.
-        const int MaxUnwindSteps = 4096;
-        TargetPointer current = sp;
-
-        for (int i = 0; i < MaxUnwindSteps; i++)
-        {
-            if (!TryGetFramePointer(current, out TargetPointer frameBase))
-                return false;
-
-            uint functionIndex = _target.Read<uint>(frameBase.Value + FunctionIndexOffset);
-            // Native treats an unknown index as a root function; report no frame pointer instead.
-            if (!_r2rInfo.TryIsFunclet(functionIndex, out bool isFunclet))
-                return false;
-
-            if (!isFunclet)
-            {
-                framePointer = frameBase;
-                return true;
-            }
-
-            if (!TryUnwindToCallerStackPointer(current, out TargetPointer callerSp) || callerSp.Value <= current.Value)
-                return false;
-
-            if (_target.Read<uint>(callerSp.Value + FunctionIndexOffset) == TerminateR2RStackWalk)
-            {
-                // Invoked by the VM through CallFuncletWith[out]Throwable.
-                framePointer = GetEstablishingFramePointerFromTerminator(callerSp);
-                return true;
-            }
-
-            // Called by its containing method or funclet; keep walking out.
-            current = callerSp;
-        }
-
-        return false;
+        return TryGetFramePointer(sp, out TargetPointer frameBase)
+            && TryGetEstablishingFramePointer(frameBase, out framePointer);
     }
 
     // Standard little-endian base-128 varint, matching the native DecodeULEB128AsU32. A ULEB128

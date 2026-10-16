@@ -8,9 +8,14 @@
         <FeaturePerfTracing>true</FeaturePerfTracing>
         <FeaturePortableEntryPoints>false</FeaturePortableEntryPoints>
         <FeaturePortableHelpers>false</FeaturePortableHelpers>
-        <ProfilingSupportedBuild>true</ProfilingSupportedBuild>
+        <FeatureCorProfiler>true</FeatureCorProfiler>
         <FeaturePortableThreadPool>true</FeaturePortableThreadPool>
         <FeaturePortableTimer>true</FeaturePortableTimer>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(TargetsWasm)' == 'true'">
+        <!--  OR '$(TargetsMobile)' == 'true' OR '$(TargetsLinuxBionic)' == 'true' -->
+        <FeatureCorProfiler>false</FeatureCorProfiler>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(TargetsAndroid)' == 'true' OR '$(Configuration)' == 'debug' OR '$(Configuration)' == 'checked'">
@@ -25,7 +30,6 @@
         <!-- single thread -->
         <FeaturePortableTimer Condition="'$(WasmEnableThreads)' != 'true'">false</FeaturePortableTimer>
         <FeaturePortableThreadPool Condition="'$(WasmEnableThreads)' != 'true'">false</FeaturePortableThreadPool>
-        <ProfilingSupportedBuild>false</ProfilingSupportedBuild>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(TargetsWasi)' == 'true'">
@@ -90,6 +94,6 @@
         <DefineConstants Condition="'$(FeatureCachedInterfaceDispatch)' == 'true'">$(DefineConstants);FEATURE_CACHED_INTERFACE_DISPATCH</DefineConstants>
         <DefineConstants Condition="'$(FeaturePortableEntryPoints)' == 'true'">$(DefineConstants);FEATURE_PORTABLE_ENTRYPOINTS</DefineConstants>
         <DefineConstants Condition="'$(FeaturePortableHelpers)' == 'true'">$(DefineConstants);FEATURE_PORTABLE_HELPERS</DefineConstants>
-        <DefineConstants Condition="'$(ProfilingSupportedBuild)' == 'true'">$(DefineConstants);PROFILING_SUPPORTED</DefineConstants>
+        <DefineConstants Condition="'$(FeatureCorProfiler)' == 'true'">$(DefineConstants);PROFILING_SUPPORTED</DefineConstants>
     </PropertyGroup>
 </Project>

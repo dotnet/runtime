@@ -1024,8 +1024,7 @@ public record X86GCInfo : IGCInfoDecoder
             GSCookieValidRangeEnd: gsCookie.HasValue ? MethodSize : 0,
             PSPSym: null,
             GenericsInstContext: null,
-            GenericsInstContextKind: genericsKind,
-            HasReversePInvokeFrame: Header.RevPInvokeOffset != InfoHdr.INVALID_REV_PINVOKE_OFFSET);
+            GenericsInstContextKind: genericsKind);
     }
 
     IReadOnlyList<uint> IGCInfoDecoder.GetSafePoints()

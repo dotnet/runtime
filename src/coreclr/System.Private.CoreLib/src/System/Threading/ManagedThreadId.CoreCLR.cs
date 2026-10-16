@@ -7,6 +7,7 @@ namespace System.Threading
 {
     internal static class ManagedThreadId
     {
+#if FEATURE_MULTITHREADING
         // This will be initialized by the runtime.
         [ThreadStatic]
         private static int t_currentManagedThreadId;
@@ -21,5 +22,11 @@ namespace System.Threading
                 return t_currentManagedThreadId;
             }
         }
+#else
+        // The runtime always assigns ID 1 to the only thread.
+        internal static int CurrentManagedThreadIdUnchecked => 1;
+
+        public static int Current => 1;
+#endif // FEATURE_MULTITHREADING
     }
 }

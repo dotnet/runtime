@@ -80,7 +80,33 @@ internal struct WasmContext : IPlatformContext
     public void Unwind(Target target)
     {
         Wasm.WasmUnwinder unwinder = new(target, new Wasm.WasmR2RInfo(target));
-        unwinder.Unwind(ref this);
+        Unwind(unwinder);
+    }
+
+    internal void Unwind(Wasm.WasmUnwinder unwinder)
+    {
+        // Advance one ReadyToRun frame over the managed linear stack. When the caller is not R2R
+        // code (an interpreter transition, native code above a reverse P/Invoke, or the stack top),
+        // StackPointer is the caller's SP and the IP and FP are null; the walker continues through
+        // the explicit Frame chain / interpreter frame chain.
+        TargetPointer sp = StackPointer;
+        if (unwinder.TryUnwindOneFrame(ref sp, InstructionPointer, out TargetCodePointer ip))
+        {
+            StackPointer = sp;
+            InstructionPointer = ip;
+            // Native WasmUnwindStackFrame recomputes the caller's frame pointer from its stack pointer;
+            // funclets report the establishing method's frame base (GetWasmFramePointerFromStackPointer).
+            FramePointer = ip != TargetCodePointer.Null
+                && unwinder.TryGetLogicalFramePointer(sp, out TargetPointer fp)
+                    ? fp
+                    : TargetPointer.Null;
+        }
+        else
+        {
+            StackPointer = TargetPointer.Null;
+            InstructionPointer = TargetCodePointer.Null;
+            FramePointer = TargetPointer.Null;
+        }
     }
 
     // WASM has no hardware single-step flag; like other architectures without one (ARM, LoongArch64,
