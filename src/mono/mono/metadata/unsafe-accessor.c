@@ -12,6 +12,7 @@
 #include "mono/metadata/metadata-internals.h"
 #include "mono/metadata/class-init.h"
 #include "mono/metadata/class-internals.h"
+#include "mono/metadata/object-internals.h"
 #include "mono/utils/mono-error-internals.h"
 #include "mono/metadata/unsafe-accessor.h"
 #include <mono/metadata/debug-helpers.h>
@@ -187,6 +188,128 @@ find_method_in_class_unsafe_accessor (MonoClass *klass, const char *name, const 
 
 	g_free (result);
 	return NULL;
+}
+
+static gboolean
+generic_argument_satisfies_constraints (MonoGenericParamInfo *target_info, MonoType *candidate_type, MonoGenericContext *context, MonoError *error)
+{
+	MonoClass *candidate_class = mono_class_from_mono_type_internal (candidate_type);
+	guint16 target_flags = target_info->flags;
+
+	if (candidate_type->type == MONO_TYPE_VAR || candidate_type->type == MONO_TYPE_MVAR) {
+		MonoGenericParam *candidate_param = m_type_data_get_generic_param_unchecked (candidate_type);
+		MonoGenericParamInfo *candidate_info = mono_generic_param_info (candidate_param);
+		guint16 candidate_flags = candidate_info->flags;
+		gboolean class_constraint_satisfied = (candidate_flags & GENERIC_PARAMETER_ATTRIBUTE_REFERENCE_TYPE_CONSTRAINT) != 0;
+		gboolean valuetype_constraint_satisfied = (candidate_flags & GENERIC_PARAMETER_ATTRIBUTE_VALUE_TYPE_CONSTRAINT) != 0;
+
+		if ((candidate_flags & GENERIC_PARAMETER_ATTRIBUTE_ALLOW_BYREFLIKE_CONSTRAINTS) &&
+			!(target_flags & GENERIC_PARAMETER_ATTRIBUTE_ALLOW_BYREFLIKE_CONSTRAINTS))
+			return FALSE;
+
+		if (candidate_info->constraints) {
+			for (MonoClass **constraint = candidate_info->constraints; *constraint; ++constraint) {
+				MonoClass *constraint_class = *constraint;
+				MonoType *constraint_type = m_class_get_byval_arg (constraint_class);
+				if (!MONO_CLASS_IS_INTERFACE_INTERNAL (constraint_class)) {
+					if (mono_type_is_reference (constraint_type))
+						class_constraint_satisfied = TRUE;
+					else if (constraint_type->type != MONO_TYPE_VAR && constraint_type->type != MONO_TYPE_MVAR)
+						valuetype_constraint_satisfied = TRUE;
+				}
+			}
+		}
+
+		if ((target_flags & GENERIC_PARAMETER_ATTRIBUTE_REFERENCE_TYPE_CONSTRAINT) && !class_constraint_satisfied)
+			return FALSE;
+		if ((target_flags & GENERIC_PARAMETER_ATTRIBUTE_VALUE_TYPE_CONSTRAINT) && !valuetype_constraint_satisfied)
+			return FALSE;
+		if ((target_flags & GENERIC_PARAMETER_ATTRIBUTE_CONSTRUCTOR_CONSTRAINT) &&
+			!(candidate_flags & GENERIC_PARAMETER_ATTRIBUTE_CONSTRUCTOR_CONSTRAINT) && !valuetype_constraint_satisfied)
+			return FALSE;
+	} else {
+		if (m_class_is_byreflike (candidate_class) && !(target_flags & GENERIC_PARAMETER_ATTRIBUTE_ALLOW_BYREFLIKE_CONSTRAINTS))
+			return FALSE;
+		if ((target_flags & GENERIC_PARAMETER_ATTRIBUTE_VALUE_TYPE_CONSTRAINT) &&
+			(!m_class_is_valuetype (candidate_class) || mono_class_is_nullable (candidate_class)))
+			return FALSE;
+		if ((target_flags & GENERIC_PARAMETER_ATTRIBUTE_REFERENCE_TYPE_CONSTRAINT) && m_class_is_valuetype (candidate_class))
+			return FALSE;
+		if ((target_flags & GENERIC_PARAMETER_ATTRIBUTE_CONSTRUCTOR_CONSTRAINT) && !m_class_is_valuetype (candidate_class) &&
+			(!mono_class_has_default_constructor (candidate_class, TRUE) || mono_class_is_abstract (candidate_class)))
+			return FALSE;
+	}
+
+	if (target_info->constraints) {
+		for (MonoClass **constraint = target_info->constraints; *constraint; ++constraint) {
+			MonoType *inflated = mono_class_inflate_generic_type_checked (m_class_get_byval_arg (*constraint), context, error);
+			if (!is_ok (error))
+				return FALSE;
+
+			MonoClass *inflated_class = mono_class_from_mono_type_internal (inflated);
+			gboolean satisfied = mono_class_is_assignable_from_internal (inflated_class, candidate_class);
+			mono_metadata_free_type (inflated);
+			if (!satisfied)
+				return FALSE;
+		}
+	}
+
+	return TRUE;
+}
+
+static gboolean
+verify_generic_container_constraints (MonoGenericContainer *target_container, MonoGenericInst *candidate_inst,
+	MonoGenericContext *context, const char *message, MonoError *error)
+{
+	if (!target_container)
+		return TRUE;
+
+	if (!candidate_inst || target_container->type_argc != candidate_inst->type_argc) {
+		mono_error_set_generic_error (error, "System", "InvalidProgramException", "%s", message);
+		return FALSE;
+	}
+
+	for (int i = 0; i < target_container->type_argc; ++i) {
+		MonoGenericParamInfo *target_info = mono_generic_container_get_param_info (target_container, i);
+		if (!generic_argument_satisfies_constraints (target_info, candidate_inst->type_argv [i], context, error)) {
+			if (is_ok (error))
+				mono_error_set_generic_error (error, "System", "InvalidProgramException", "%s", message);
+			return FALSE;
+		}
+	}
+
+	return TRUE;
+}
+
+gboolean
+mono_unsafe_accessor_verify_constraints (MonoMethod *accessor_method, MonoClass *target_class, MonoMethod *target_method, MonoError *error)
+{
+	error_init (error);
+
+	MonoGenericContext context = { NULL, NULL };
+	MonoGenericContainer *target_class_container = NULL;
+	MonoGenericInst *class_inst = NULL;
+	if (mono_class_is_ginst (target_class)) {
+		MonoGenericClass *generic_class = mono_class_get_generic_class (target_class);
+		target_class_container = mono_class_get_generic_container (generic_class->container_class);
+		class_inst = generic_class->context.class_inst;
+		context.class_inst = class_inst;
+	}
+
+	MonoGenericContainer *accessor_method_container = mono_method_get_generic_container (accessor_method);
+	MonoGenericInst *method_inst = accessor_method_container ? accessor_method_container->context.method_inst : NULL;
+	context.method_inst = method_inst;
+
+	if (!verify_generic_container_constraints (target_class_container, class_inst, &context,
+		"Generic type constraints of the UnsafeAccessor declaration do not match the target.", error))
+		return FALSE;
+
+	MonoGenericContainer *target_method_container = mono_method_get_generic_container (target_method);
+	if (!verify_generic_container_constraints (target_method_container, method_inst, &context,
+		"Generic method constraints of the UnsafeAccessor declaration do not match the target.", error))
+		return FALSE;
+
+	return TRUE;
 }
 
 MonoMethod*
