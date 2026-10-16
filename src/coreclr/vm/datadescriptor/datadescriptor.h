@@ -22,6 +22,7 @@
 #include "threads.h"
 #include "vars.hpp"
 #include "exinfo.h"
+#include "externalmemoryhandle.h"
 
 #include "configure.h"
 

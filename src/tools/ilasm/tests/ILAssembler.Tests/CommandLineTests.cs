@@ -2,12 +2,33 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.CommandLine;
 using Xunit;
 
 namespace ILAssembler.Tests;
 
 public class CommandLineTests
 {
+    [Fact]
+    public void Pseudoattributes_ModernOptionIsOptIn()
+    {
+        IlasmRootCommand command = new();
+        Assert.False(command.Parse(["input.il"]).GetValue(command.PseudoAttributes));
+        Assert.True(command.Parse(NativeCommandLine.Normalize(["--pseudoattributes", "input.il"]))
+            .GetValue(command.PseudoAttributes));
+        Assert.Empty(command.PseudoAttributes.Aliases);
+    }
+
+    [Theory]
+    [InlineData("-pseudoattributes", false)]
+    [InlineData("-PSE", false)]
+    [InlineData("/pseudoattributes", true)]
+    [InlineData("/PSE", true)]
+    public void Pseudoattributes_LegacyOptionIsRejected(string argument, bool allowSlashOptions)
+    {
+        Assert.Throws<ArgumentException>(() => NativeCommandLine.Normalize([argument], allowSlashOptions));
+    }
+
     public static TheoryData<string, string> NativeBooleanOptions { get; } = new()
     {
         { "32B", "--32bitpreferred" },
@@ -59,24 +80,35 @@ public class CommandLineTests
         "SUB",
     };
 
-    public static TheoryData<string> ModernValueOptions { get; } = new()
+    public static TheoryData<string> ModernValueOptions
     {
-        "--alignment",
-        "--aname",
-        "--base",
-        "--debug-mode",
-        "--flags",
-        "--include",
-        "--key",
-        "--mdv",
-        "--output",
-        "--ssver",
-        "--stack",
-        "--subsystem",
-        "-I",
-        "-k",
-        "-o",
-    };
+        get
+        {
+            TheoryData<string> options = new();
+            foreach (Option option in new IlasmRootCommand().Options)
+            {
+                if (option.Arity.MinimumNumberOfValues == 0)
+                {
+                    continue;
+                }
+
+                if (option.Name.StartsWith("-", StringComparison.Ordinal))
+                {
+                    options.Add(option.Name);
+                }
+
+                foreach (string alias in option.Aliases)
+                {
+                    if (alias.StartsWith("-", StringComparison.Ordinal))
+                    {
+                        options.Add(alias);
+                    }
+                }
+            }
+
+            return options;
+        }
+    }
 
     [Theory]
     [MemberData(nameof(NativeValueOptions))]
@@ -247,11 +279,9 @@ public class CommandLineTests
     }
 
     [Theory]
-    [InlineData("-ARM", "--arm")]
     [InlineData("-arm64", "--arm64")]
     [InlineData("-ARM64Anything", "--arm64")]
     [InlineData("-ARM64=value", "--arm64")]
-    [InlineData("/arm", "--arm")]
     [InlineData("/ARM64Anything:value", "--arm64")]
     public void ArmOptions_UseNativeDisambiguation(string argument, string expectedOption)
     {
@@ -261,13 +291,15 @@ public class CommandLineTests
     }
 
     [Theory]
+    [InlineData("-ARM")]
+    [InlineData("/arm")]
     [InlineData("-ARMAnything")]
     [InlineData("-ARM:value")]
     [InlineData("-ARM6")]
-    public void InvalidArmOption_Throws(string argument)
+    public void UnsupportedOrInvalidArmOption_Throws(string argument)
     {
         Assert.Throws<ArgumentException>(
-            () => NativeCommandLine.Normalize([argument], allowSlashOptions: false));
+            () => NativeCommandLine.Normalize([argument], allowSlashOptions: argument[0] == '/'));
     }
 
     [Theory]
@@ -308,6 +340,14 @@ public class CommandLineTests
             NativeCommandLine.Normalize([option, "-DLL", "input.il"], allowSlashOptions: false));
     }
 
+    [Fact]
+    public void BareOptionName_DoesNotPreserveNextArgument()
+    {
+        Assert.Equal(
+            ["output", "--dll", "input.il"],
+            NativeCommandLine.Normalize(["output", "-DLL", "input.il"], allowSlashOptions: false));
+    }
+
     [Theory]
     [InlineData("-I:include")]
     [InlineData("-k:key.snk")]
@@ -328,6 +368,15 @@ public class CommandLineTests
         Assert.Equal(
             [argument],
             NativeCommandLine.Normalize([argument], allowSlashOptions: false));
+    }
+
+    [Fact]
+    public void ModernShortBooleanOption_WithZeroArityAndBooleanValueIsPreserved()
+    {
+        IlasmRootCommand command = new();
+        command.Optimize.Arity = new ArgumentArity(0, 0);
+
+        Assert.Equal(["-O:false"], NativeCommandLine.Normalize(["-O:false"], command));
     }
 
     [Theory]
@@ -355,6 +404,7 @@ public class CommandLineTests
     [InlineData("-unknown", false)]
     [InlineData("-x", false)]
     [InlineData("-i", false)]
+    [InlineData("-PATHMAP=/src=/_", false)]
     [InlineData("/unknown", true)]
     public void UnrecognizedNativeOption_Throws(string argument, bool allowSlashOptions)
     {

@@ -6,6 +6,10 @@
 
 #include <signal.h>
 
+#ifdef TARGET_WASI
+struct siginfo_t;
+#endif // TARGET_WASI
+
 #ifdef SIGRTMIN
 #define INJECT_ACTIVATION_SIGNAL SIGRTMIN
 #else

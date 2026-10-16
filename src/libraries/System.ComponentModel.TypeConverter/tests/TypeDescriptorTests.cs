@@ -1297,7 +1297,7 @@ namespace System.ComponentModel.Tests
             }
         }
 
-        [SkipOnPlatform(TestPlatforms.Browser, "Thread.Start is not supported on browsers.")]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi, "Thread.Start is not supported on browsers and WASI.")]
         [Fact]
         public void ConcurrentGetProperties_ReturnsExpected()
         {
@@ -1334,7 +1334,7 @@ namespace System.ComponentModel.Tests
             }
         }
 
-        [SkipOnPlatform(TestPlatforms.Browser, "Thread.Start is not supported on browsers.")]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi, "Thread.Start is not supported on browsers and WASI.")]
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static void ConcurrentAddProviderAndGetProvider()
         {

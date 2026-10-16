@@ -1911,6 +1911,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(leaf, GetUnionValue(deserialized!));
         }
 
+#if false // ActiveIssue https://github.com/dotnet/roslyn/issues/85762
         // The self-referential case is nullable, which makes it the union's null case as well:
         // the generated null arm reports typeof(NullableNat?) while the non-null arm matches
         // the unwrapped NullableNat payload.
@@ -1949,6 +1950,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.NotNull(deserialized);
             Assert.Null(GetUnionValue(deserialized!));
         }
+#endif
 
         #endregion
 

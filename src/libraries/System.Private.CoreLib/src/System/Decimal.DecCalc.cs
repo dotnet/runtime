@@ -863,7 +863,6 @@ PosRem:
                     goto HaveScale;
                 }
 
-                PowerOvfl[] powerOvfl = PowerOvflValues;
                 if (scale > DEC_SCALE_MAX - 9)
                 {
                     // We can't scale by 10^9 without exceeding the max scale factor.
@@ -871,7 +870,7 @@ PosRem:
                     // standard search for scale factor.
                     //
                     curScale = DEC_SCALE_MAX - scale;
-                    if (resHi < powerOvfl[curScale - 1].Hi)
+                    if (resHi < PowerOvflHi[curScale - 1])
                         goto HaveScale;
                 }
                 else if (resHi < OVFL_MAX_9_HI || resHi == OVFL_MAX_9_HI && resMidLo <= OVFL_MAX_9_MIDLO)
@@ -915,7 +914,7 @@ PosRem:
                 // we can't use this power, the one below it is correct for all cases
                 // unless it's 10^1 -- we might have to go to 10^0 (no scaling).
                 //
-                if (resHi == powerOvfl[curScale - 1].Hi && resMidLo > powerOvfl[curScale - 1].MidLo)
+                if (resHi == PowerOvflHi[curScale - 1] && resMidLo > PowerOvflMidLo[curScale - 1])
                     curScale--;
 
                 HaveScale:
@@ -1720,6 +1719,18 @@ ReturnZero:
                 return decimal.IsNegative(value) ? -dbl : dbl;
             }
 
+            internal static Half VarHalfFromDec(in decimal value)
+            {
+                Half result = DecimalToFloatingPoint<Half>(value.Low64, value.High, value.Scale);
+                return decimal.IsNegative(value) ? -result : result;
+            }
+
+            internal static BFloat16 VarBFloat16FromDec(in decimal value)
+            {
+                BFloat16 result = DecimalToFloatingPoint<BFloat16>(value.Low64, value.High, value.Scale);
+                return decimal.IsNegative(value) ? -result : result;
+            }
+
             /// <summary>
             /// Correctly round the magnitude of a Decimal (mantissa is (<paramref name="high"/>,
             /// <paramref name="low64"/>) and the value is <c>mantissa / 10^<paramref name="scale"/></c>) to the
@@ -1752,48 +1763,100 @@ ReturnZero:
 
                     // Eisel-Lemire: a division-free correctly-rounded approximation that succeeds for all but a
                     // rare set of inputs, which it signals with a non-positive exponent so they fall through to
-                    // the exact path below.
-                    (int Exponent, ulong Mantissa) am = Number.ComputeFloat<TFloat>(-scale, low64);
-                    if (am.Exponent > 0)
+                    // the exact path below. Its tie-to-even correction only covers exponents down to
+                    // MinExponentRoundToEven.
+                    if (-scale >= TFloat.MinExponentRoundToEven)
                     {
-                        ulong bits = am.Mantissa | ((ulong)(uint)am.Exponent << TFloat.DenormalMantissaBits);
-                        return TFloat.BitsToFloat(bits);
+                        (int Exponent, ulong Mantissa) am = Number.ComputeFloat<TFloat>(-scale, low64);
+                        if (am.Exponent > 0)
+                        {
+                            ulong bits = am.Mantissa | ((ulong)(uint)am.Exponent << TFloat.DenormalMantissaBits);
+                            return TFloat.BitsToFloat(bits);
+                        }
                     }
                 }
 
-                // DenormalMantissaBits + 1 is the significand width (53 for double, 24 for float). The exact
-                // result carries at most that many significand bits, so narrowing back to TFloat is lossless.
-                return TFloat.CreateSaturating(DecimalToFloatingPointExact(low64, high, scale, TFloat.DenormalMantissaBits + 1));
+                // Round directly to the target precision. The resulting value is exactly representable as a double,
+                // so converting it to TFloat does not introduce another rounding step.
+                return TFloat.CreateSaturating(
+                    DecimalToFloatingPointExact(low64, high, scale, TFloat.MinBinaryExponent, TFloat.DenormalMantissaBits));
             }
 
             /// <summary>
-            /// Correctly round the magnitude of a Decimal (<paramref name="low64"/>, <paramref name="high"/>
-            /// and <paramref name="scale"/>) to a binary floating-point value with the requested number of
-            /// significand bits (53 for double, 24 for float).
+            /// Correctly round a Decimal magnitude to a binary floating-point value with the specified format.
             /// </summary>
             /// <remarks>
-            /// The value is <c>mantissa / 10^scale = round(mantissa / 5^scale) * 2^-scale</c>. The
-            /// <c>* 2^-scale</c> factor only adjusts the binary exponent and is always exact for the Decimal
-            /// range, so the only rounding is that of <c>mantissa / 5^scale</c>. That ratio is correctly rounded
-            /// using a single 128-bit division; the target shift is chosen so the quotient always has one guard
-            /// and one round bit, with the division remainder providing the sticky bit for round-to-nearest-even.
-            /// The old implementation combined <c>(double)Low64 + (double)High * 2^64</c> and then divided by
-            /// <c>10^scale</c>, which rounded several times and lost precision (e.g. it turned
-            /// <c>10000000000000.099609375m</c> into <c>10000000000000.09765625</c>).
+            /// Subnormal values are rounded to the format's fixed subnormal spacing. Normal values are rounded to
+            /// its significand precision. The value is <c>mantissa / 10^scale = round(mantissa / 5^scale) * 2^-scale</c>;
+            /// the power of two is exact for the Decimal range, so a single 128-bit division can provide the rounding
+            /// bits and sticky bit needed for round-to-nearest-even.
             /// </remarks>
-            private static double DecimalToFloatingPointExact(ulong low64, uint high, int scale, int significandBits)
+            private static double DecimalToFloatingPointExact(ulong low64, uint high, int scale, int minBinaryExponent, int denormalMantissaBits)
             {
                 UInt128 mantissa = new UInt128(high, low64);
-                if (mantissa == UInt128.Zero)
-                    return 0.0;
+                Debug.Assert(mantissa != UInt128.Zero);
 
-                UInt128 divisor = Pow5(scale); // 5^scale
+                UInt128 divisor = Pow5(scale);
 
                 int mantissaBits = 128 - (int)UInt128.LeadingZeroCount(mantissa);
                 int divisorBits = 128 - (int)UInt128.LeadingZeroCount(divisor);
+                int minNormalShift = scale + minBinaryExponent;
 
-                // Scale the operands so the quotient occupies (significandBits + 2) bits, giving us a guard bit and
-                // a round bit on top of the significand. The shifted operands are provably within 128 bits.
+                // Compare against the minimum normal value without shifting beyond UInt128.
+                bool isSubnormal;
+                if (minNormalShift >= 0)
+                {
+                    int minNormalBits = divisorBits + minNormalShift;
+                    isSubnormal = minNormalBits > mantissaBits;
+                    if (minNormalBits == mantissaBits)
+                    {
+                        isSubnormal = mantissa < (divisor << minNormalShift);
+                    }
+                }
+                else
+                {
+                    int scaledMantissaBits = mantissaBits - minNormalShift;
+                    isSubnormal = scaledMantissaBits < divisorBits;
+                    if (scaledMantissaBits == divisorBits)
+                    {
+                        isSubnormal = (mantissa << -minNormalShift) < divisor;
+                    }
+                }
+
+                if (isSubnormal)
+                {
+                    // Subnormals are integer multiples of 2^(minBinaryExponent - denormalMantissaBits).
+                    int subnormalExponent = minBinaryExponent - denormalMantissaBits;
+                    int subnormalShift = -scale - subnormalExponent;
+
+                    UInt128 subnormalNumerator, subnormalDenominator;
+                    if (subnormalShift >= 0)
+                    {
+                        Debug.Assert(mantissaBits + subnormalShift <= 128);
+                        subnormalNumerator = mantissa << subnormalShift;
+                        subnormalDenominator = divisor;
+                    }
+                    else
+                    {
+                        Debug.Assert(divisorBits - subnormalShift <= 128);
+                        subnormalNumerator = mantissa;
+                        subnormalDenominator = divisor << -subnormalShift;
+                    }
+
+                    (UInt128 subnormalQuotient, UInt128 subnormalRemainder) = UInt128.DivRem(subnormalNumerator, subnormalDenominator);
+                    UInt128 twiceSubnormalRemainder = subnormalRemainder << 1;
+                    if ((twiceSubnormalRemainder > subnormalDenominator) ||
+                        ((twiceSubnormalRemainder == subnormalDenominator) && ((subnormalQuotient & UInt128.One) != UInt128.Zero)))
+                    {
+                        subnormalQuotient++;
+                    }
+
+                    return Math.ScaleB((double)(ulong)subnormalQuotient, subnormalExponent);
+                }
+
+                // Scale the operands so the quotient has two extra bits for rounding, on top of the significand.
+                // The shifted operands are provably within 128 bits.
+                int significandBits = denormalMantissaBits + 1;
                 int shift = (significandBits + 1) - (mantissaBits - divisorBits);
 
                 UInt128 numerator, denominator;
@@ -2519,34 +2582,35 @@ done:
                 return (uint)num - div * TenToPowerNine;
             }
 
-            private readonly struct PowerOvfl
-            {
-                public readonly uint Hi;
-                public readonly ulong MidLo;
-
-                public PowerOvfl(uint hi, uint mid, uint lo)
-                {
-                    Hi = hi;
-                    MidLo = ((ulong)mid << 32) + lo;
-                }
-            }
-
-            private static readonly PowerOvfl[] PowerOvflValues =
+            // This is a table of the largest values that can be in the upper two
+            // uints of a 96-bit number that will not overflow when multiplied
+            // by a given power.  For the upper word, this is a table of
+            // 2^32 / 10^n for 1 <= n <= 8.  For the lower word, this is the
+            // remaining fraction part * 2^32.  2^32 = 4294967296.
+            //
+            private static ReadOnlySpan<uint> PowerOvflHi =>
             [
-                // This is a table of the largest values that can be in the upper two
-                // uints of a 96-bit number that will not overflow when multiplied
-                // by a given power.  For the upper word, this is a table of
-                // 2^32 / 10^n for 1 <= n <= 8.  For the lower word, this is the
-                // remaining fraction part * 2^32.  2^32 = 4294967296.
-                //
-                new PowerOvfl(429496729, 2576980377, 2576980377),  // 10^1 remainder 0.6
-                new PowerOvfl(42949672,  4123168604, 687194767),   // 10^2 remainder 0.16
-                new PowerOvfl(4294967,   1271310319, 2645699854),  // 10^3 remainder 0.616
-                new PowerOvfl(429496,    3133608139, 694066715),   // 10^4 remainder 0.1616
-                new PowerOvfl(42949,     2890341191, 2216890319),  // 10^5 remainder 0.51616
-                new PowerOvfl(4294,      4154504685, 2369172679),  // 10^6 remainder 0.551616
-                new PowerOvfl(429,       2133437386, 4102387834),  // 10^7 remainder 0.9551616
-                new PowerOvfl(42,        4078814305, 410238783),   // 10^8 remainder 0.09991616
+                429496729,  // 10^1 remainder 0.6
+                42949672,   // 10^2 remainder 0.16
+                4294967,    // 10^3 remainder 0.616
+                429496,     // 10^4 remainder 0.1616
+                42949,      // 10^5 remainder 0.51616
+                4294,       // 10^6 remainder 0.551616
+                429,        // 10^7 remainder 0.9551616
+                42,         // 10^8 remainder 0.09991616
+            ];
+
+            // ((ulong)mid << 32) + lo for each entry of PowerOvflHi
+            private static ReadOnlySpan<ulong> PowerOvflMidLo =>
+            [
+                (2576980377UL << 32) + 2576980377,
+                (4123168604UL << 32) + 687194767,
+                (1271310319UL << 32) + 2645699854,
+                (3133608139UL << 32) + 694066715,
+                (2890341191UL << 32) + 2216890319,
+                (4154504685UL << 32) + 2369172679,
+                (2133437386UL << 32) + 4102387834,
+                (4078814305UL << 32) + 410238783,
             ];
 
             [StructLayout(LayoutKind.Explicit, Pack = sizeof(uint))]

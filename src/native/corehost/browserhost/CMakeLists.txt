@@ -117,6 +117,10 @@ if (UPPERCASE_CMAKE_BUILD_TYPE STREQUAL DEBUG)
         -sASSERTIONS=1
         -sLLD_REPORT_UNDEFINED
         -sERROR_ON_UNDEFINED_SYMBOLS=1
+        # Emscripten's default INCOMING_MODULE_JS_API, kept explicit so a Module property we don't declare
+        # aborts the build early. This is only meaningful with ASSERTIONS=1, so it is Debug-only. The value
+        # comes from GenerateEmccExports in eng/native.wasm.targets.
+        -sINCOMING_MODULE_JS_API=${CMAKE_EMCC_INCOMING_MODULE_JS_API}
     )
 endif ()
 

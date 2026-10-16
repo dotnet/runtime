@@ -235,12 +235,12 @@ namespace System.Reflection
             }
             else if (argCount > MaxStackAllocArgCount)
             {
-                ret = ref InvokeWithManyArguments(methodToCall, ref thisArg, ref ret,
+                return InvokeWithManyArguments(methodToCall, ref thisArg, ref ret, ref returnObject,
                     parameters, binderBundle, wrapInTargetInvocationException);
             }
             else
             {
-                ret = ref InvokeWithFewArguments(methodToCall, ref thisArg, ref ret,
+                return InvokeWithFewArguments(methodToCall, ref thisArg, ref ret, ref returnObject,
                     parameters, binderBundle, wrapInTargetInvocationException);
             }
 
@@ -296,11 +296,11 @@ namespace System.Reflection
             }
             else if (argCount > MaxStackAllocArgCount)
             {
-                ret = ref InvokeWithManyArguments(methodToCall, ref thisArg, ref ret, parameters);
+                return InvokeWithManyArguments(methodToCall, ref thisArg, ref ret, ref returnObject, parameters);
             }
             else
             {
-                ret = ref InvokeWithFewArguments(methodToCall, ref thisArg, ref ret, parameters);
+                return InvokeWithFewArguments(methodToCall, ref thisArg, ref ret, ref returnObject, parameters);
             }
 
             return ((_returnTransform & (Transform.Nullable | Transform.Pointer | Transform.FunctionPointer | Transform.ByRef)) != 0) ?
@@ -375,7 +375,7 @@ namespace System.Reflection
             }
             else
             {
-                ret = ref InvokeDirectWithFewArguments(methodToCall, ref thisArg, ref ret, parameters);
+                return InvokeDirectWithFewArguments(methodToCall, ref thisArg, ref ret, ref returnObject, parameters);
             }
 
             return ((_returnTransform & (Transform.Nullable | Transform.Pointer | Transform.FunctionPointer | Transform.ByRef)) != 0) ?
@@ -395,8 +395,8 @@ namespace System.Reflection
             throw new TargetParameterCountException(SR.Arg_ParmCnt);
         }
 
-        private unsafe ref byte InvokeWithManyArguments(
-            IntPtr methodToCall, ref byte thisArg, ref byte ret,
+        private unsafe object? InvokeWithManyArguments(
+            IntPtr methodToCall, ref byte thisArg, ref byte ret, ref object? returnObject,
             object?[] parameters, BinderBundle binderBundle, bool wrapInTargetInvocationException)
         {
             int argCount = _argumentCount;
@@ -433,20 +433,21 @@ namespace System.Reflection
 
                 if (needsCopyBack)
                     CopyBackToArray(ref Unsafe.As<IntPtr, object?>(ref *pStorage), parameters, shouldCopyBack);
+
+                return ((_returnTransform & (Transform.Nullable | Transform.Pointer | Transform.FunctionPointer | Transform.ByRef)) != 0) ?
+                    ReturnTransform(ref ret, wrapInTargetInvocationException) : returnObject;
             }
             finally
             {
                 RuntimeImports.RhUnregisterForGCReporting(&regByRefStorage);
                 RuntimeImports.RhUnregisterForGCReporting(&regArgStorage);
             }
-
-            return ref ret;
         }
 
         // This method is equivalent to the one above except that it takes 'Span<object>' instead of 'object[]'
         // for the parameters and does not require re-throw capability.
-        private unsafe ref byte InvokeWithManyArguments(
-            IntPtr methodToCall, ref byte thisArg, ref byte ret, Span<object?> parameters)
+        private unsafe object? InvokeWithManyArguments(
+            IntPtr methodToCall, ref byte thisArg, ref byte ret, ref object? returnObject, Span<object?> parameters)
         {
             int argCount = _argumentCount;
 
@@ -475,19 +476,20 @@ namespace System.Reflection
 
                 if (needsCopyBack)
                     CopyBackToSpan(copyOfParameters, parameters, shouldCopyBack);
+
+                return ((_returnTransform & (Transform.Nullable | Transform.Pointer | Transform.FunctionPointer | Transform.ByRef)) != 0) ?
+                    ReturnTransform(ref ret, wrapInTargetInvocationException: false) : returnObject;
             }
             finally
             {
                 RuntimeImports.RhUnregisterForGCReporting(&regByRefStorage);
                 RuntimeImports.RhUnregisterForGCReporting(&regArgStorage);
             }
-
-            return ref ret;
         }
 
         // This is a separate method to localize the overhead of stack allocs for 'StackAllocatedByRefs' and 'StackAllocatedByRefs'.
-        private unsafe ref byte InvokeWithFewArguments(
-            IntPtr methodToCall, ref byte thisArg, ref byte ret,
+        private unsafe object? InvokeWithFewArguments(
+            IntPtr methodToCall, ref byte thisArg, ref byte ret, ref object? returnObject,
             object?[] parameters, BinderBundle? binderBundle, bool wrapInTargetInvocationException)
         {
             Debug.Assert(_argumentCount <= MaxStackAllocArgCount);
@@ -514,13 +516,14 @@ namespace System.Reflection
             if (needsCopyBack)
                 CopyBackToArray(ref copyOfParameters[0], parameters, shouldCopyBack);
 
-            return ref ret;
+            return ((_returnTransform & (Transform.Nullable | Transform.Pointer | Transform.FunctionPointer | Transform.ByRef)) != 0) ?
+                ReturnTransform(ref ret, wrapInTargetInvocationException) : returnObject;
         }
 
         // This method is equivalent to the one above except that it takes 'Span<object>' instead of 'object[]'
         // for the parameters and does not require 'BinderBundle' or re-throw capability.
-        private unsafe ref byte InvokeWithFewArguments(
-            IntPtr methodToCall, ref byte thisArg, ref byte ret, Span<object?> parameters)
+        private unsafe object? InvokeWithFewArguments(
+            IntPtr methodToCall, ref byte thisArg, ref byte ret, ref object? returnObject, Span<object?> parameters)
         {
             Debug.Assert(_argumentCount <= MaxStackAllocArgCount);
 
@@ -539,12 +542,13 @@ namespace System.Reflection
             if (needsCopyBack)
                 CopyBackToSpan(copyOfParameters, parameters, shouldCopyBack);
 
-            return ref ret;
+            return ((_returnTransform & (Transform.Nullable | Transform.Pointer | Transform.FunctionPointer | Transform.ByRef)) != 0) ?
+                ReturnTransform(ref ret, wrapInTargetInvocationException: false) : returnObject;
         }
 
         // This method is equivalent to the one above except that it does not require a copy of the args or CopyBack.
-        private unsafe ref byte InvokeDirectWithFewArguments(
-            IntPtr methodToCall, ref byte thisArg, ref byte ret, Span<object?> parameters)
+        private unsafe object? InvokeDirectWithFewArguments(
+            IntPtr methodToCall, ref byte thisArg, ref byte ret, ref object? returnObject, Span<object?> parameters)
         {
             Debug.Assert(_argumentCount <= MaxStackAllocArgCount);
 
@@ -559,7 +563,8 @@ namespace System.Reflection
 
             // No need to call CopyBack here since no copy of the arguments was made.
 
-            return ref ret;
+            return ((_returnTransform & (Transform.Nullable | Transform.Pointer | Transform.FunctionPointer | Transform.ByRef)) != 0) ?
+                ReturnTransform(ref ret, wrapInTargetInvocationException: false) : returnObject;
         }
 
         private unsafe object? GetCoercedDefaultValue(int index, in ArgumentInfo argumentInfo)

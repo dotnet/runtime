@@ -67,6 +67,14 @@ namespace System.Security.Cryptography
 
             X25519WindowsHelpers.ReducePublicKey(otherPartyPublicKey, reducedPublicKey);
 
+            // Older versions of Windows 10 incorrectly produce a shared secret when the peer's public key is zero that
+            // is itself not a zero shared secret. To be consistent with later versions of Windows and other platforms,
+            // reject a peer public key that reduces to all-zero during agreement.
+            if (reducedPublicKey.IndexOfAnyExcept((byte)0) < 0)
+            {
+                throw new CryptographicException();
+            }
+
             // CNG does not permit cross-provider key agreements. Import the public key in to the same provider
             // as the current key.
             CngProvider provider = _key.Provider ?? CngProvider.MicrosoftSoftwareKeyStorageProvider;

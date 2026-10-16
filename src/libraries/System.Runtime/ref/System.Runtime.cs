@@ -528,6 +528,7 @@ namespace System
         public static void Copy(System.Array sourceArray, long sourceIndex, System.Array destinationArray, long destinationIndex, long length) { }
         public void CopyTo(System.Array array, int index) { }
         public void CopyTo(System.Array array, long index) { }
+        public static T[] CreateFilled<T>(int length, T value) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("The code for an array of the specified type might not be available.")]
         public static System.Array CreateInstance(System.Type elementType, int length) { throw null; }
         public static System.Array CreateInstance(System.Type elementType, int length1, int length2) { throw null; }
@@ -568,6 +569,7 @@ namespace System
         public object? GetValue(long index1, long index2) { throw null; }
         public object? GetValue(long index1, long index2, long index3) { throw null; }
         public object? GetValue(params long[] indices) { throw null; }
+        public object? GetValue(params System.ReadOnlySpan<int> indices) { throw null; }
         public static int IndexOf(System.Array array, object? value) { throw null; }
         public static int IndexOf(System.Array array, object? value, int startIndex) { throw null; }
         public static int IndexOf(System.Array array, object? value, int startIndex, int count) { throw null; }
@@ -594,6 +596,7 @@ namespace System
         public void SetValue(object? value, long index1, long index2) { }
         public void SetValue(object? value, long index1, long index2, long index3) { }
         public void SetValue(object? value, params long[] indices) { }
+        public void SetValue(object? value, params System.ReadOnlySpan<int> indices) { }
         public static void Sort(System.Array array) { }
         public static void Sort(System.Array keys, System.Array? items) { }
         public static void Sort(System.Array keys, System.Array? items, System.Collections.IComparer? comparer) { }
@@ -14176,10 +14179,12 @@ namespace System.Reflection
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicNestedTypes | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicNestedTypes)]
         public override System.Type[] GetNestedTypes(System.Reflection.BindingFlags bindingAttr) { throw null; }
         public override System.Type? GetNullableUnderlyingType() { throw null; }
+        public override System.Type[] GetOptionalCustomModifiers() { throw null; }
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicProperties | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)]
         public override System.Reflection.PropertyInfo[] GetProperties(System.Reflection.BindingFlags bindingAttr) { throw null; }
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicProperties | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)]
         protected override System.Reflection.PropertyInfo? GetPropertyImpl(string name, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, System.Type? returnType, System.Type[]? types, System.Reflection.ParameterModifier[]? modifiers) { throw null; }
+        public override System.Type[] GetRequiredCustomModifiers() { throw null; }
         protected override bool HasElementTypeImpl() { throw null; }
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicMethods | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicProperties | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)]
         public override object? InvokeMember(string name, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder? binder, object? target, object?[]? args, System.Reflection.ParameterModifier[]? modifiers, System.Globalization.CultureInfo? culture, string[]? namedParameters) { throw null; }
@@ -15476,6 +15481,7 @@ namespace System.Runtime.ExceptionServices
     }
     public static partial class ExceptionHandling
     {
+        public static System.Exception? GetCurrentException() { throw null; }
         public static void SetUnhandledExceptionHandler(System.Func<System.Exception,bool> handler) { }
         public static void RaiseAppDomainUnhandledExceptionEvent(object exception) { }
     }

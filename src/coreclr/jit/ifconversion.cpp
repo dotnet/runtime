@@ -213,7 +213,7 @@ bool OptIfConversionDsc::IfConvertCheckStmts(BasicBlock* block, IfConvertOperati
             GenTree* op1 = tree->gtGetOp1();
 
             // Ensure it won't cause any additional side effects.
-            if ((op1->gtFlags & (GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF)) != 0)
+            if ((op1->gtFlags & GTF_OBS_EFFECT) != 0)
             {
                 return false;
             }

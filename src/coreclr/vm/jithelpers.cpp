@@ -24,6 +24,7 @@
 #include "eeprofinterfaces.h"
 #include "dynamicinterfacecastable.h"
 #include "comsynchronizable.h"
+#include "comutilnative.h"
 
 #ifndef TARGET_UNIX
 // Included for referencing __report_gsfailure
@@ -41,7 +42,9 @@
 #include "array.h"
 #include "debuginfostore.h"
 #include "safemath.h"
+#ifdef FEATURE_MULTITHREADING
 #include "threadstatics.h"
+#endif // FEATURE_MULTITHREADING
 
 #ifdef HAVE_GCCOVER
 #include "gccover.h"
@@ -312,6 +315,7 @@ HCIMPLEND
 //
 //========================================================================
 
+#ifdef FEATURE_MULTITHREADING
 // Using compiler specific thread local storage directives due to linkage issues.
 #ifdef _MSC_VER
 __declspec(selectany)
@@ -384,6 +388,7 @@ HCIMPL0(void*, JIT_GetDirectOnThreadLocalDataNonGCThreadStaticBase)
     return (void*)((uint8_t*)&(((ThreadLocalData*)&t_ThreadStatics)->pThread) - OFFSETOF__CORINFO_Array__data);
 }
 HCIMPLEND
+#endif // FEATURE_MULTITHREADING
 
 #include <optdefault.h>
 
@@ -1558,7 +1563,7 @@ static PCODE PatchpointRequiredPolicy(TransitionBlock* pTransitionBlock, int* co
             if ((oldFlags & PerPatchpointInfo::patchpoint_triggered) == PerPatchpointInfo::patchpoint_triggered)
             {
                 LOG((LF_TIEREDCOMPILATION, LL_INFO1000, "PatchpointRequiredPolicy: AWAITING OSR method for patchpoint [%d] (0x%p)\n", ppId, (void*)ip));
-                __SwitchToThread(0, backoffs++);
+                minipal_switch_to_thread(backoffs++);
                 continue;
             }
 
@@ -1570,7 +1575,7 @@ static PCODE PatchpointRequiredPolicy(TransitionBlock* pTransitionBlock, int* co
             if (!triggerTransition)
             {
                 LOG((LF_TIEREDCOMPILATION, LL_INFO1000, "PatchpointRequiredPolicy: (lost race) AWAITING OSR method for patchpoint [%d] (0x%p)\n", ppId, (void*)ip));
-                __SwitchToThread(0, backoffs++);
+                minipal_switch_to_thread(backoffs++);
                 continue;
             }
 

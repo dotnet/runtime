@@ -42,6 +42,12 @@ public struct JitManagerInfo
     public TargetPointer HeapListAddress;
 }
 
+public enum JitManagerKind
+{
+    EE,
+    Interpreter,
+}
+
 public enum CodeKind : uint
 {
     Unknown = 0,
@@ -104,8 +110,14 @@ public interface IExecutionManager : IContract
     TargetPointer GetFuncletStartAddress(CodeBlockHandle codeInfoHandle) => throw new NotImplementedException();
     void GetMethodRegionInfo(CodeBlockHandle codeInfoHandle, out uint hotSize, out TargetPointer coldStart, out uint coldSize) => throw new NotImplementedException();
     TargetPointer NonVirtualEntry2MethodDesc(TargetCodePointer entrypoint) => throw new NotImplementedException();
+    // Map a method entry point to the code start that diagnostics report and that resolves through
+    // GetCodeBlockHandle: interpreter bytecode for interpreter precodes and interpreted portable entry
+    // points, or the synthetic virtual IP for Wasm ReadyToRun portable entry points. Other addresses
+    // are returned unchanged. Mirrors GetDiagnosticCodeStartFromEntryPoint in native code (precode.cpp).
+    TargetCodePointer GetDiagnosticCodeStartFromEntryPoint(TargetCodePointer entryPoint) => throw new NotImplementedException();
     bool IsFunclet(CodeBlockHandle codeInfoHandle) => throw new NotImplementedException();
     bool IsFilterFunclet(CodeBlockHandle codeInfoHandle) => throw new NotImplementedException();
+    bool TryGetUnwindInfo(TargetCodePointer controlPC, out TargetPointer runtimeFunction, out TargetPointer unwindInfoBaseAddress) => throw new NotImplementedException();
     TargetPointer GetUnwindInfo(CodeBlockHandle codeInfoHandle) => throw new NotImplementedException();
     TargetPointer GetUnwindInfoBaseAddress(CodeBlockHandle codeInfoHandle) => throw new NotImplementedException();
     TargetPointer GetDebugInfo(CodeBlockHandle codeInfoHandle, out bool hasFlagByte) => throw new NotImplementedException();
@@ -114,8 +126,8 @@ public interface IExecutionManager : IContract
     bool IsGcSafe(TargetCodePointer instructionPointer) => throw new NotImplementedException();
     List<ExceptionClauseInfo> GetExceptionClauses(CodeBlockHandle codeInfoHandle) => throw new NotImplementedException();
     uint GetStackParameterSize(CodeBlockHandle codeInfoHandle) => throw new NotImplementedException();
-    JitManagerInfo GetEEJitManagerInfo() => throw new NotImplementedException();
-    IEnumerable<ICodeHeapInfo> GetCodeHeapInfos() => throw new NotImplementedException();
+    JitManagerInfo? GetJitManagerInfo(JitManagerKind kind) => throw new NotImplementedException();
+    IEnumerable<ICodeHeapInfo> GetCodeHeapInfos(JitManagerKind kind) => throw new NotImplementedException();
     IReadOnlyList<TargetPointer> GetDynamicFunctionTableEntries(TargetPointer tableAddress) => throw new NotImplementedException();
     // Classify a code address as a known stub kind (precode, jump stub, VSD stub, etc.)
     // or as managed code. Returns Unknown if the address is not recognized.
