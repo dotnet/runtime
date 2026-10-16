@@ -113,6 +113,27 @@ public class R2RTestSuites
         }
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void GenericParameterNamesDoNotCollide(bool composite)
+    {
+        var assembly = new CompiledAssembly
+        {
+            AssemblyName = nameof(GenericParameterNamesDoNotCollide),
+            SourceResourceNames = ["VirtualMethodGenerics/GenericParameterNames.cs"],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(GenericParameterNamesDoNotCollide),
+            [
+                new(nameof(GenericParameterNamesDoNotCollide), [new CrossgenAssembly(assembly)])
+                {
+                    Options = composite ? [Crossgen2Option.Composite] : [],
+                },
+            ]));
+    }
+
     [Fact]
     public void GenericTypeConstraintsAllowVariantParameters()
     {
