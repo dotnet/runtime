@@ -55,8 +55,8 @@ endif()
 
 if (MSVC)
   #zlib-ng sets /utf-8 which clashes with /source-charset:utf-8 that we set centrally
-  get_directory_property(dirCompileOptions COMPILE_OPTIONS)
-  string(REPLACE "/source-charset:utf-8" "" dirCompileOptions "${dirCompileOptions}")
+  get_directory_property(zlibngOriginalCompileOptions COMPILE_OPTIONS)
+  string(REPLACE "/source-charset:utf-8" "" dirCompileOptions "${zlibngOriginalCompileOptions}")
   set_directory_properties(PROPERTIES COMPILE_OPTIONS "${dirCompileOptions}")
 endif()
 
@@ -64,6 +64,11 @@ set(BUILD_SHARED_LIBS OFF) # Shared libraries aren't supported in wasm
 set(SKIP_INSTALL_ALL ON)
 FetchContent_MakeAvailable(fetchzlibng)
 set(SKIP_INSTALL_ALL OFF)
+
+if (MSVC)
+  set_directory_properties(PROPERTIES COMPILE_OPTIONS "${zlibngOriginalCompileOptions}")
+  unset(zlibngOriginalCompileOptions)
+endif()
 
 set_property(DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/zlib-ng PROPERTY MSVC_WARNING_LEVEL 3) # Set the MSVC warning level for all zlib-ng targets to 3.
 target_compile_options(zlib PRIVATE $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>:-Wno-unused-command-line-argument>) # Make sure MacOS respects ignoring unused CLI arguments
