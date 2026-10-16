@@ -16,8 +16,9 @@
     <_graphProjectsToBuild Include="@(Project->WithMetadataValue('PackageTargetRuntime', ''))"
                            Condition="'$(BuildIdentityPackage)' == 'true'" />
     <_graphProjectsToBuild Include="@(Project->WithMetadataValue('PackageTargetRuntime', '$(NETCoreSdkRuntimeIdentifier)'))"
-                           Condition="'$(BuildHostILTools)' == 'true' and '$(IsILToolPackage)' == 'true'"
-                           AdditionalProperties="%(Project.AdditionalProperties);PackCrossComponent=true" />
+                           Condition="'$(BuildHostILTools)' == 'true' and '$(IsILToolPackage)' == 'true'">
+      <AdditionalProperties>%(AdditionalProperties);PackCrossComponent=true</AdditionalProperties>
+    </_graphProjectsToBuild>
     <ProjectReference Include="@(_graphProjectsToBuild)" Targets="Build;Pack" />
     <ProjectReferenceTargets Include="Pack" Targets="Build;Pack" />
   </ItemGroup>

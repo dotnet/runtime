@@ -14,13 +14,22 @@
 
   <ItemGroup Condition="'$(IsGraphBuild)' == 'true' and '$(Restore)' != 'true' and '$(PackageTargetRuntime)' != ''">
     <ProjectReference Include="$(CoreClrProjectRoot)runtime.proj"
+                      Condition="'$(PackCrossComponent)' != 'true'"
                       ReferenceOutputAssembly="false"
                       Private="false"
                       SkipGetTargetFrameworkProperties="true"
                       Targets="Build"
                       StaticGraphBuildOrderOnly="true"
                       AdditionalProperties="$(ClrRuntimeBuildSubsets);$(TargetCxxLibraryProperties)"
-                      GlobalPropertiesToRemove="PackageTargetRuntime;Platform" />
+                      GlobalPropertiesToRemove="PackageTargetRuntime;Platform;PackCrossComponent" />
+    <ProjectReference Include="@(ProjectToBuild->WithMetadataValue('CoreClrNativeBuild', 'CrossComponents'))"
+                      Condition="'$(PackCrossComponent)' == 'true'"
+                      ReferenceOutputAssembly="false"
+                      Private="false"
+                      SkipGetTargetFrameworkProperties="true"
+                      Targets="Build"
+                      StaticGraphBuildOrderOnly="true"
+                      GlobalPropertiesToRemove="PackageTargetRuntime;Platform;PackCrossComponent" />
     <ProjectReferenceTargets Include="Build" Targets="Build" />
     <ProjectReferenceTargets Include="Pack" Targets="Build" />
   </ItemGroup>
