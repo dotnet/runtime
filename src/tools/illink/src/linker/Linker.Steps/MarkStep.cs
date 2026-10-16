@@ -2031,11 +2031,6 @@ namespace Mono.Linker.Steps
             _typeMapHandler.ProcessType(type);
             Annotations.MarkRelevantToVariantCasting(type);
 
-            // The interfaces of a type include those implemented by its base types, so base types
-            // are relevant to variant casting too. Without this, the interface implementations (and the
-            // explicit implementation methods) of an uninstantiated base type could be removed
-            // while the derived type keeps implementing the same interfaces.
-            // If a base type is already marked, so are all of its base types.
             TypeDefinition? baseType = Context.TryResolve(type.BaseType);
             while (baseType is not null && !Annotations.IsRelevantToVariantCasting(baseType))
             {
