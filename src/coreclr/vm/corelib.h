@@ -850,16 +850,6 @@ DEFINE_FIELD_U(depHnd,              ConditionalWeakTableContainerObject::Entry, 
 DEFINE_FIELD_U(HashCode,            ConditionalWeakTableContainerObject::Entry, HashCode)
 DEFINE_FIELD_U(Next,                ConditionalWeakTableContainerObject::Entry, Next)
 
-DEFINE_CLASS(RAW_DATA,              CompilerServices,       RawData)
-DEFINE_FIELD(RAW_DATA,              DATA,                   Data)
-
-DEFINE_CLASS(RAW_ARRAY_DATA,        CompilerServices,       RawArrayData)
-DEFINE_FIELD(RAW_ARRAY_DATA,        LENGTH,                 Length)
-#ifdef TARGET_64BIT
-DEFINE_FIELD(RAW_ARRAY_DATA,        PADDING,                Padding)
-#endif
-DEFINE_FIELD(RAW_ARRAY_DATA,        DATA,                   Data)
-
 DEFINE_CLASS(PORTABLE_TAIL_CALL_FRAME, CompilerServices,              PortableTailCallFrame)
 DEFINE_FIELD(PORTABLE_TAIL_CALL_FRAME, TAILCALL_AWARE_RETURN_ADDRESS, TailCallAwareReturnAddress)
 DEFINE_FIELD(PORTABLE_TAIL_CALL_FRAME, NEXT_CALL,                     NextCall)

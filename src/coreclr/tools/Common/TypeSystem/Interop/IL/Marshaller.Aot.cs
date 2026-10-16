@@ -744,12 +744,12 @@ namespace Internal.TypeSystem.Interop
             LoadManagedValue(codeStream);
             codeStream.EmitStLoc(vPinnedObject);
 
-            FieldDesc rawDataField = Context.SystemModule
-                .GetKnownType("System.Runtime.CompilerServices"u8, "RawData"u8)
-                .GetKnownField("Data"u8);
+            MethodDesc rawDataMethod = Context.SystemModule
+                .GetKnownType("System.Runtime.CompilerServices"u8, "RuntimeHelpers"u8)
+                .GetKnownMethod("GetRawData"u8, null);
 
             codeStream.EmitLdLoc(vPinnedObject);
-            codeStream.Emit(ILOpcode.ldflda, emitter.NewToken(rawDataField));
+            codeStream.Emit(ILOpcode.call, emitter.NewToken(rawDataMethod));
             codeStream.Emit(ILOpcode.conv_i);
             StoreNativeValue(codeStream);
 

@@ -100,7 +100,7 @@ namespace Internal.IL.Stubs
             var owningType = (MetadataType)_owningType.InstantiateAsOpen();
 
             ILToken rawDataToken = owningType.IsValueType ? default :
-                emitter.NewToken(Context.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "RawData"u8).GetKnownField("Data"u8));
+                emitter.NewToken(Context.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "RuntimeHelpers"u8).GetKnownMethod("GetRawData"u8, null));
 
             var switchStream = emitter.NewCodeStream();
             var getFieldStream = emitter.NewCodeStream();
@@ -151,7 +151,7 @@ namespace Internal.IL.Stubs
 
                 // If this is a reference type, we subtract from the first field. Otherwise subtract from `ref this`.
                 if (!owningType.IsValueType)
-                    getFieldStream.Emit(ILOpcode.ldflda, rawDataToken);
+                    getFieldStream.Emit(ILOpcode.call, rawDataToken);
 
                 getFieldStream.Emit(ILOpcode.sub);
 
