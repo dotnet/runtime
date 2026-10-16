@@ -496,7 +496,7 @@ void GCCoverageInfo::SprinkleBreakpoints(
     {
         DWORD oldProtect;
         if (!ClrVirtualProtect(codeStart, codeSize, PAGE_EXECUTE_READWRITE, &oldProtect))
-            ThrowLastError();
+            EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("Failed to change code protection for GC stress"));
         writeableOffset = 0;
     }
     else
@@ -1110,12 +1110,12 @@ void GCCoverageInfo::SprinkleBreakpoints(
     {
         DWORD oldProtect;
         if (!ClrVirtualProtect((BYTE*)methodRegion.hotStartAddress, methodRegion.hotSize, PAGE_EXECUTE_READWRITE, &oldProtect))
-            ThrowLastError();
+            EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("Failed to change code protection for GC stress"));
 
         if (methodRegion.coldSize > 0)
         {
             if (!ClrVirtualProtect((BYTE*)methodRegion.coldStartAddress, methodRegion.coldSize, PAGE_EXECUTE_READWRITE, &oldProtect))
-                ThrowLastError();
+                EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("Failed to change code protection for GC stress"));
         }
     }
 
