@@ -1,4 +1,5 @@
-﻿using System.Reflection;
+﻿using System;
+using System.Reflection;
 
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
@@ -59,11 +60,61 @@ namespace Mono.Linker.Tests.Cases.Generics
             public Boring() { }
         }
 
+        [Kept]
+        interface IInner
+        {
+            [Kept]
+            void InnerMethod();
+        }
+
+        [Kept]
+        [KeptInterface(typeof(IInner))]
+        interface IOuter<T> : IInner
+        {
+            [Kept]
+            void OuterMethod();
+        }
+
+        interface IUnused<T> : IOuter<T>
+        {
+        }
+
+        [Kept]
+        [KeptInterface(typeof(IOuter<>), "T")]
+        [KeptInterface(typeof(IInner))]
+        abstract class UninstantiatedBaseWithInterfaces<T> : IOuter<T>
+        {
+            [Kept]
+            public void OuterMethod() { }
+
+            [Kept]
+            void IInner.InnerMethod() { }
+        }
+
+        // Only reachable through typeof. The interfaces of the base type must be kept together with the ones on this type.
+        [Kept]
+        [KeptBaseType(typeof(UninstantiatedBaseWithInterfaces<>), "T")]
+        [KeptInterface(typeof(IOuter<>), "T")]
+        [KeptInterface(typeof(IInner))]
+        class UninstantiatedDerivedWithInterfaces<T> : UninstantiatedBaseWithInterfaces<T>, IUnused<T>
+        {
+        }
+
+        [Kept]
+        static void UseInterfaceMethods(IOuter<int> outer)
+        {
+            outer.OuterMethod();
+            ((IInner)outer).InnerMethod();
+        }
+
         public static void Main()
         {
             // These casts need to succeed after trimming
             IVariant<IFoo> foos = (IVariant<IFoo>)(object)new Boring<Foo>();
             IVariant<Base> bases = (IVariant<Base>)(object)new Boring<Derived>();
+
+            Type type = typeof(UninstantiatedDerivedWithInterfaces<>);
+            UseInterfaceMethods(null);
         }
     }
 }
