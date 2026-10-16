@@ -592,14 +592,6 @@ void Lowering::ContainCheckIndir(GenTreeIndir* indirNode)
     {
         MakeSrcContained(indirNode, addr);
     }
-    else if (m_compiler->IsNativeAot() && indirNode->OperIs(GT_STOREIND) && varTypeIsArithmetic(indirNode->TypeGet()) &&
-             addr->IsIconHandle() && !isNativeFunctionAddress &&
-             addr->AsIntConCommon()->ImmedValNeedsReloc(m_compiler) &&
-             ((addr->gtLIRFlags & LIR::Flags::MultiplyUsed) == LIR::Flags::None))
-    {
-        // Keep the address node to push zero before the value; the store supplies the relocated memarg.
-        addr->gtLIRFlags |= LIR::Flags::FoldedAddr;
-    }
 }
 
 //------------------------------------------------------------------------

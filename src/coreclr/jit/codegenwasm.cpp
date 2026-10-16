@@ -2179,15 +2179,7 @@ void CodeGen::genCodeForConstant(GenTree* treeNode)
             // Handles need linker relocations for NativeAOT or image-relative relocations for R2R.
             // A handle only reaches here without needing a reloc under a cross-VM SuperPMI replay.
             assert(icon->ImmedValNeedsReloc(m_compiler) || m_compiler->RunningSuperPmiReplay());
-            if ((treeNode->gtLIRFlags & LIR::Flags::FoldedAddr) != LIR::Flags::None)
-            {
-                assert(m_compiler->IsNativeAot());
-                GetEmitter()->emitIns_I(INS_i32_const, EA_PTRSIZE, 0);
-            }
-            else
-            {
-                GetEmitter()->emitAddressConstant((void*)icon->IntegralValue());
-            }
+            GetEmitter()->emitAddressConstant((void*)icon->IntegralValue());
             WasmProduceReg(treeNode);
             return;
         }
@@ -3233,11 +3225,6 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
         else if (type == TYP_SIMD12)
         {
             genStoreIndTypeSimd12(tree);
-        }
-        else if (addr->IsIconHandle() && ((addr->gtLIRFlags & LIR::Flags::FoldedAddr) != LIR::Flags::None))
-        {
-            GetEmitter()->emitIns_MemargAddress(ins_Store(type), emitActualTypeSize(type),
-                                                (void*)addr->AsIntConCommon()->IntegralValue());
         }
         else
         {
