@@ -317,8 +317,6 @@ public partial class ZipArchiveEntry
             await ThrowIfNotOpenableAsync(needToUncompress: true, needToLoadIntoMemory: true, cancellationToken).ConfigureAwait(false);
         }
 
-        _currentlyOpenForWrite = true;
-
         if (loadExistingContent)
         {
             _storedUncompressedData = await GetUncompressedDataAsync(cancellationToken).ConfigureAwait(false);
@@ -330,6 +328,7 @@ public partial class ZipArchiveEntry
             MarkAsModified();
         }
 
+        _currentlyOpenForWrite = true;
         _storedUncompressedData.Seek(0, SeekOrigin.Begin);
 
         return new WrappedStream(_storedUncompressedData, this,
@@ -362,35 +361,29 @@ public partial class ZipArchiveEntry
             // Validate up front before attempting the (int) cast.
             if ((ulong)_uncompressedSize > (ulong)Array.MaxLength)
             {
-                _currentlyOpenForWrite = false;
                 throw new InvalidDataException(SR.EntryUncompressedSizeTooLargeForUpdateMode);
             }
 
-
-            _storedUncompressedData = new MemoryStream((int)_uncompressedSize);
+            MemoryStream uncompressedData = new MemoryStream((int)_uncompressedSize);
 
             if (_originallyInArchive)
             {
-                Stream decompressor = await OpenInReadModeAsync(checkOpenable: false, default, cancellationToken).ConfigureAwait(false);
-
-                await using (decompressor)
+                try
                 {
-                    try
+                    Stream decompressor = await OpenInReadModeAsync(checkOpenable: false, default, cancellationToken).ConfigureAwait(false);
+                    await using (decompressor.ConfigureAwait(false))
                     {
-                        await decompressor.CopyToAsync(_storedUncompressedData, cancellationToken).ConfigureAwait(false);
-                    }
-                    catch (InvalidDataException)
-                    {
-                        await _storedUncompressedData.DisposeAsync().ConfigureAwait(false);
-                        _storedUncompressedData = null;
-                        _currentlyOpenForWrite = false;
-                        _everOpenedForWrite = false;
-                        _derivedZipCryptoKeyMaterial = null;
-                        _derivedAesKeyMaterial = null;
-                        throw;
+                        await decompressor.CopyToAsync(uncompressedData, cancellationToken).ConfigureAwait(false);
                     }
                 }
+                catch
+                {
+                    await uncompressedData.DisposeAsync().ConfigureAwait(false);
+                    throw;
+                }
             }
+
+            _storedUncompressedData = uncompressedData;
         }
 
         return _storedUncompressedData;
@@ -527,13 +520,7 @@ public partial class ZipArchiveEntry
             throw new ArgumentException(SR.PasswordRequired, nameof(password));
         }
 
-        // Derive re-encryption key material while the password span is still valid.
-        if (IsEncrypted)
-        {
-            SetupEncryptionKeyMaterial(password);
-        }
-
-        if (loadExistingContent && IsEncrypted)
+        if (loadExistingContent && IsEncrypted && _storedUncompressedData is null && _originallyInArchive)
         {
             if (IsAesEncrypted)
             {
@@ -548,18 +535,26 @@ public partial class ZipArchiveEntry
                 }
 
                 int keySizeBits = GetAesKeySizeBits(Encryption);
-                WinZipAesKeyMaterial aesKeys = WinZipAesStream.CreateKey(password, _aesSalt, keySizeBits);
-                return DecryptAndStoreForUpdateWithAesAsync(aesKeys, cancellationToken);
+                WinZipAesKeyMaterial decryptAesKeys = WinZipAesStream.CreateKey(password, _aesSalt, keySizeBits);
+                WinZipAesKeyMaterial reencryptAesKeys = WinZipAesStream.CreateKey(password, salt: null, keySizeBits);
+                return DecryptAndStoreForUpdateWithAesAsync(decryptAesKeys, reencryptAesKeys, cancellationToken);
             }
 
             if (IsZipCryptoEncrypted)
             {
+                SetupEncryptionKeyMaterial(password);
                 byte checkByte = CalculateZipCryptoCheckByte();
                 ZipCryptoKeys keys = ZipCryptoStream.CreateKey(password);
                 return DecryptAndStoreForUpdateWithZipCryptoAsync(keys, checkByte, cancellationToken);
             }
 
             throw new NotSupportedException(SR.UnsupportedEncryptionMethod);
+        }
+
+        // Derive re-encryption key material while the password span is still valid.
+        if (IsEncrypted)
+        {
+            SetupEncryptionKeyMaterial(password);
         }
 
         return CastToStreamAsync(OpenInUpdateModeAsync(loadExistingContent, cancellationToken));
@@ -579,7 +574,7 @@ public partial class ZipArchiveEntry
         return await StoreDecryptedDataForUpdateAsync(decrypted, cancellationToken).ConfigureAwait(false);
     }
 
-    private async Task<Stream> DecryptAndStoreForUpdateWithAesAsync(WinZipAesKeyMaterial aesKeys, CancellationToken cancellationToken)
+    private async Task<Stream> DecryptAndStoreForUpdateWithAesAsync(WinZipAesKeyMaterial decryptAesKeys, WinZipAesKeyMaterial reencryptAesKeys, CancellationToken cancellationToken)
     {
         if (OperatingSystem.IsBrowser() || OperatingSystem.IsWasi())
         {
@@ -593,12 +588,14 @@ public partial class ZipArchiveEntry
 
         Stream decrypted = await WinZipAesStream.CreateAsync(
             baseStream: compressedStream,
-            keyMaterial: aesKeys,
+            keyMaterial: decryptAesKeys,
             totalStreamSize: _compressedSize,
             encrypting: false,
             cancellationToken: cancellationToken).ConfigureAwait(false);
 
-        return await StoreDecryptedDataForUpdateAsync(decrypted, cancellationToken).ConfigureAwait(false);
+        Stream result = await StoreDecryptedDataForUpdateAsync(decrypted, cancellationToken).ConfigureAwait(false);
+        _derivedAesKeyMaterial = reencryptAesKeys;
+        return result;
     }
 
     /// <summary>
@@ -606,14 +603,13 @@ public partial class ZipArchiveEntry
     /// </summary>
     private async Task<Stream> StoreDecryptedDataForUpdateAsync(Stream decryptedStream, CancellationToken cancellationToken)
     {
-        _currentlyOpenForWrite = true;
-
         if (_uncompressedSize > Array.MaxLength)
         {
+            await decryptedStream.DisposeAsync().ConfigureAwait(false);
             throw new InvalidDataException(SR.EntryTooLarge);
         }
 
-        _storedUncompressedData = new MemoryStream((int)_uncompressedSize);
+        MemoryStream uncompressedData = new MemoryStream((int)_uncompressedSize);
 
         Stream decompressed = BuildDecompressionPipeline(decryptedStream);
 
@@ -621,21 +617,18 @@ public partial class ZipArchiveEntry
         {
             try
             {
-                await decompressed.CopyToAsync(_storedUncompressedData, cancellationToken).ConfigureAwait(false);
+                await decompressed.CopyToAsync(uncompressedData, cancellationToken).ConfigureAwait(false);
             }
-            catch (InvalidDataException)
+            catch
             {
-                await _storedUncompressedData.DisposeAsync().ConfigureAwait(false);
-                _storedUncompressedData = null;
-                _currentlyOpenForWrite = false;
-                _everOpenedForWrite = false;
-                _derivedZipCryptoKeyMaterial = null;
-                _derivedAesKeyMaterial = null;
+                await uncompressedData.DisposeAsync().ConfigureAwait(false);
                 throw;
             }
         }
 
+        _storedUncompressedData = uncompressedData;
         _storedUncompressedData.Seek(0, SeekOrigin.Begin);
+        _currentlyOpenForWrite = true;
 
         return new WrappedStream(_storedUncompressedData, this,
             onClosed: thisRef => thisRef!._currentlyOpenForWrite = false,

@@ -222,7 +222,7 @@ namespace System.IO.Compression
             }
             catch (EndOfStreamException)
             {
-                throw new InvalidDataException(SR.TruncatedZipCryptoHeader);
+                throw new InvalidDataException(SR.TruncatedEncryptionHeader);
             }
 
             // Decrypt header and update keys

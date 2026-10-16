@@ -678,41 +678,29 @@ namespace System.IO.Compression
                 // Validate up front before attempting the (int) cast.
                 if ((ulong)_uncompressedSize > (ulong)Array.MaxLength)
                 {
-                    _currentlyOpenForWrite = false;
                     throw new InvalidDataException(SR.EntryUncompressedSizeTooLargeForUpdateMode);
                 }
 
-                _storedUncompressedData = new MemoryStream((int)_uncompressedSize);
+                MemoryStream uncompressedData = new MemoryStream((int)_uncompressedSize);
 
                 if (_originallyInArchive)
                 {
-                    Stream decompressor = !password.IsEmpty
-                        ? OpenInReadMode(checkOpenable: false, password)
-                        : OpenInReadMode(checkOpenable: false);
-
-                    using (decompressor)
+                    try
                     {
-                        try
-                        {
-                            decompressor.CopyTo(_storedUncompressedData);
-                        }
-                        catch (InvalidDataException)
-                        {
-                            // this is the case where the archive say the entry is deflate, but deflateStream
-                            // throws an InvalidDataException. This property should only be getting accessed in
-                            // Update mode, so we want to make sure _storedUncompressedData stays null so
-                            // that later when we dispose the archive, this entry loads the compressedBytes, and
-                            // copies them straight over
-                            _storedUncompressedData.Dispose();
-                            _storedUncompressedData = null;
-                            _currentlyOpenForWrite = false;
-                            _everOpenedForWrite = false;
-                            _derivedZipCryptoKeyMaterial = null;
-                            _derivedAesKeyMaterial = null;
-                            throw;
-                        }
+                        using Stream decompressor = !password.IsEmpty
+                            ? OpenInReadMode(checkOpenable: false, password)
+                            : OpenInReadMode(checkOpenable: false);
+                        decompressor.CopyTo(uncompressedData);
+                    }
+                    catch
+                    {
+                        // Keep the original compressed bytes when loading the entry fails in Update mode.
+                        uncompressedData.Dispose();
+                        throw;
                     }
                 }
+
+                _storedUncompressedData = uncompressedData;
 
                 // NOTE: CompressionMethod normalization is deferred to MarkAsModified() to avoid
                 // corrupting entries that are opened in Update mode but not actually written to.
@@ -1288,14 +1276,6 @@ namespace System.IO.Compression
                 ThrowIfNotOpenable(needToUncompress: true, needToLoadIntoMemory: true);
             }
 
-            _currentlyOpenForWrite = true;
-
-            // Set up re-encryption key material so that the rewritten entry has valid encryption headers.
-            if (IsEncrypted)
-            {
-                SetupEncryptionKeyMaterial(password);
-            }
-
             if (loadExistingContent)
             {
                 _storedUncompressedData = GetUncompressedData(password);
@@ -1308,6 +1288,13 @@ namespace System.IO.Compression
                 MarkAsModified();
             }
 
+            // Set up re-encryption key material so that the rewritten entry has valid encryption headers.
+            if (IsEncrypted)
+            {
+                SetupEncryptionKeyMaterial(password);
+            }
+
+            _currentlyOpenForWrite = true;
             _storedUncompressedData.Seek(0, SeekOrigin.Begin);
 
             return new WrappedStream(_storedUncompressedData, this,

@@ -1,9 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.IO.Compression.Tests.Utilities;
 using System.IO.Tests;
 using System.Reflection;
 using System.Runtime.Versioning;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -40,7 +42,9 @@ namespace System.IO.Compression.Tests
 
         private delegate object CreateKeyDelegate(ReadOnlySpan<char> password, byte[]? salt, int keySizeBits);
         private static readonly CreateKeyDelegate s_createKey;
+        private static readonly MethodInfo s_createAsyncMethod;
         private static readonly MethodInfo s_createMethod;
+        private static readonly FieldInfo s_hmacField;
 
         protected abstract int KeySizeBits { get; }
         protected int SaltSize => KeySizeBits / 16;
@@ -80,6 +84,14 @@ namespace System.IO.Compression.Tests
                 null,
                 new[] { typeof(Stream), winZipAesKeyMaterialType, typeof(long), typeof(bool), typeof(bool) },
                 null)!;
+
+            s_createAsyncMethod = winZipAesStreamType.GetMethod("CreateAsync",
+                BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static,
+                null,
+                new[] { typeof(Stream), winZipAesKeyMaterialType, typeof(long), typeof(bool), typeof(bool), typeof(CancellationToken) },
+                null)!;
+
+            s_hmacField = winZipAesStreamType.GetField("_hmac", BindingFlags.NonPublic | BindingFlags.Instance)!;
         }
 
         protected override bool CanSeek => false;
@@ -108,26 +120,7 @@ namespace System.IO.Compression.Tests
         protected override Task<Stream?> CreateReadOnlyStreamCore(byte[]? initialData)
         {
             byte[] plaintext = initialData ?? Array.Empty<byte>();
-
-            // Create key material for encryption (generates random salt)
-            object encryptKeyMaterial = s_createKey(TestPassword, null, KeySizeBits);
-
-            // Encrypt data first
-            using var encryptedMs = new MemoryStream();
-            using (var encryptStream = (Stream)s_createMethod.Invoke(null, new object[]
-            {
-                encryptedMs, encryptKeyMaterial, -1L, true, true
-            })!)
-            {
-                encryptStream.Write(plaintext);
-            }
-
-            // Extract salt from encrypted data to create matching key material for decryption
-            byte[] encryptedData = encryptedMs.ToArray();
-            byte[] salt = new byte[SaltSize];
-            Array.Copy(encryptedData, 0, salt, 0, SaltSize);
-
-            object decryptKeyMaterial = s_createKey(TestPassword, salt, KeySizeBits);
+            (byte[] encryptedData, object decryptKeyMaterial) = CreateEncryptedData(plaintext);
 
             // Create decryption stream over the encrypted data
             var ms = new MemoryStream(encryptedData);
@@ -137,6 +130,116 @@ namespace System.IO.Compression.Tests
             })!;
 
             return Task.FromResult<Stream?>(decryptStream);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task DecryptingStream_VerifiesAndRewindsBeforeReading(bool async)
+        {
+            const int PasswordVerifierSize = 2;
+            const int AuthenticationCodeSize = 10;
+
+            byte[] plaintext = new byte[4097];
+            new Random(42).NextBytes(plaintext);
+            (byte[] encryptedData, object decryptKeyMaterial) = CreateEncryptedData(plaintext);
+
+            using var encryptedDataStream = new MemoryStream(encryptedData);
+            using var encryptedStream = new ClampedReadStream(encryptedDataStream, readSizeLimit: 1);
+            using Stream decryptStream = await CreateDecryptingStream(encryptedStream, decryptKeyMaterial, encryptedData.Length, async);
+
+            Assert.Equal(SaltSize + PasswordVerifierSize, encryptedStream.Position);
+            Assert.Null(s_hmacField.GetValue(decryptStream));
+
+            using var decryptedStream = new MemoryStream();
+            if (async)
+            {
+                await decryptStream.CopyToAsync(decryptedStream);
+            }
+            else
+            {
+                decryptStream.CopyTo(decryptedStream);
+            }
+
+            Assert.Equal(encryptedData.Length - AuthenticationCodeSize, encryptedStream.Position);
+            Assert.Equal(plaintext, decryptedStream.ToArray());
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task DecryptingStream_InvalidSizeOrTruncatedStream_ThrowsInvalidDataException(bool async)
+        {
+            const int PasswordVerifierSize = 2;
+            const int AuthenticationCodeSize = 10;
+            int headerSize = SaltSize + PasswordVerifierSize;
+
+            (byte[] encryptedData, object decryptKeyMaterial) = CreateEncryptedData("payload"u8.ToArray());
+
+            // Declared totalStreamSize smaller than header + auth code
+            await AssertCreateThrowsInvalidDataException(encryptedData, decryptKeyMaterial, headerSize + AuthenticationCodeSize - 1, async);
+
+            // Stream truncated inside the salt/verifier header (while totalStreamSize claims to be valid)
+            await AssertCreateThrowsInvalidDataException(encryptedData[..(headerSize - 1)], decryptKeyMaterial, encryptedData.Length, async);
+
+            // Stream truncated inside the trailing 10-byte authentication code
+            await AssertCreateThrowsInvalidDataException(encryptedData[..^1], decryptKeyMaterial, encryptedData.Length, async);
+        }
+
+        private static async Task AssertCreateThrowsInvalidDataException(byte[] streamBytes, object keyMaterial, int declaredTotalStreamSize, bool async)
+        {
+            using var encryptedStream = new MemoryStream(streamBytes);
+            if (async)
+            {
+                await Assert.ThrowsAsync<InvalidDataException>(() => CreateDecryptingStream(encryptedStream, keyMaterial, declaredTotalStreamSize, async: true));
+            }
+            else
+            {
+                TargetInvocationException ex = Assert.Throws<TargetInvocationException>(() => CreateDecryptingStream(encryptedStream, keyMaterial, declaredTotalStreamSize, async: false).GetAwaiter().GetResult());
+                Assert.IsType<InvalidDataException>(ex.InnerException);
+            }
+        }
+
+        private static async Task<Stream> CreateDecryptingStream(Stream encryptedStream, object keyMaterial, int encryptedDataLength, bool async)
+        {
+            object[] arguments =
+            {
+                encryptedStream, keyMaterial, (long)encryptedDataLength, false, true
+            };
+
+            if (!async)
+            {
+                return (Stream)s_createMethod.Invoke(null, arguments)!;
+            }
+
+            object[] asyncArguments =
+            {
+                encryptedStream, keyMaterial, (long)encryptedDataLength, false, true, CancellationToken.None
+            };
+            var createTask = (Task)s_createAsyncMethod.Invoke(null, asyncArguments)!;
+            await createTask;
+
+            return (Stream)createTask.GetType().GetProperty(nameof(Task<object>.Result))!.GetValue(createTask)!;
+        }
+
+        private (byte[] EncryptedData, object DecryptKeyMaterial) CreateEncryptedData(byte[] plaintext)
+        {
+            object encryptKeyMaterial = s_createKey(TestPassword, null, KeySizeBits);
+
+            using var encryptedStream = new MemoryStream();
+            using (var encryptStream = (Stream)s_createMethod.Invoke(null, new object[]
+            {
+                encryptedStream, encryptKeyMaterial, -1L, true, true
+            })!)
+            {
+                encryptStream.Write(plaintext);
+            }
+
+            byte[] encryptedData = encryptedStream.ToArray();
+            byte[] salt = encryptedData.AsSpan(0, SaltSize).ToArray();
+            object decryptKeyMaterial = s_createKey(TestPassword, salt, KeySizeBits);
+
+            return (encryptedData, decryptKeyMaterial);
         }
     }
 }

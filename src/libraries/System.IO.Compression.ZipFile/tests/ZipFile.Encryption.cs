@@ -336,6 +336,98 @@ namespace System.IO.Compression.Tests
             }
         }
 
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        [SkipOnPlatform(TestPlatforms.Browser, "WinZip AES encryption is not supported on Browser")]
+        public async Task AesAuthenticationFailure_ThrowsWhenEntryIsOpened(bool tamperAuthenticationCode, bool async)
+        {
+            string archivePath = GetTempArchivePath();
+            string password = "PLACEHOLDER";
+            var entries = new[]
+            {
+                ("test.txt", "Content that spans the authenticated encrypted payload.", (string?)password, (ZipEncryptionMethod?)ZipEncryptionMethod.Aes256)
+            };
+            await CreateArchiveWithEntries(archivePath, entries, async);
+
+            TamperAesPayload(archivePath, tamperAuthenticationCode);
+
+            using ZipArchive archive = await CallZipFileOpenRead(async, archivePath);
+            ZipArchiveEntry entry = archive.GetEntry("test.txt");
+            Assert.NotNull(entry);
+
+            if (async)
+            {
+                await Assert.ThrowsAsync<InvalidDataException>(() => entry.OpenAsync(password));
+            }
+            else
+            {
+                Assert.Throws<InvalidDataException>(() => entry.Open(password));
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        [SkipOnPlatform(TestPlatforms.Browser, "WinZip AES encryption is not supported on Browser")]
+        public async Task AesAuthenticationFailure_EmptyEntryThrowsWhenOpened(bool async)
+        {
+            string archivePath = GetTempArchivePath();
+            string password = "PLACEHOLDER";
+            var entries = new[]
+            {
+                ("empty.txt", "", (string?)password, (ZipEncryptionMethod?)ZipEncryptionMethod.Aes256)
+            };
+            await CreateArchiveWithEntries(archivePath, entries, async);
+
+            TamperAesPayload(archivePath, tamperAuthenticationCode: true);
+
+            using ZipArchive archive = await CallZipFileOpenRead(async, archivePath);
+            ZipArchiveEntry entry = archive.GetEntry("empty.txt");
+            Assert.NotNull(entry);
+
+            if (async)
+            {
+                await Assert.ThrowsAsync<InvalidDataException>(() => entry.OpenAsync(password));
+            }
+            else
+            {
+                Assert.Throws<InvalidDataException>(() => entry.Open(password));
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        [SkipOnPlatform(TestPlatforms.Browser, "WinZip AES encryption is not supported on Browser")]
+        public async Task AesAuthenticationFailure_UpdateModeEntryCanBeReopened(bool async)
+        {
+            string archivePath = GetTempArchivePath();
+            string password = "PLACEHOLDER";
+            var entries = new[]
+            {
+                ("test.txt", "Authenticated content.", (string?)password, (ZipEncryptionMethod?)ZipEncryptionMethod.Aes256)
+            };
+            await CreateArchiveWithEntries(archivePath, entries, async);
+
+            TamperAesPayload(archivePath, tamperAuthenticationCode: true);
+
+            using ZipArchive archive = await CallZipFileOpen(async, archivePath, ZipArchiveMode.Update);
+            ZipArchiveEntry entry = archive.GetEntry("test.txt");
+            Assert.NotNull(entry);
+
+            if (async)
+            {
+                await Assert.ThrowsAsync<InvalidDataException>(() => entry.OpenAsync(FileAccess.ReadWrite, password));
+                await Assert.ThrowsAsync<InvalidDataException>(() => entry.OpenAsync(FileAccess.ReadWrite, password));
+            }
+            else
+            {
+                Assert.Throws<InvalidDataException>(() => entry.Open(FileAccess.ReadWrite, password));
+                Assert.Throws<InvalidDataException>(() => entry.Open(FileAccess.ReadWrite, password));
+            }
+        }
+
         [Fact]
         public void MissingPassword_Throws_InvalidDataException()
         {
@@ -400,6 +492,29 @@ namespace System.IO.Compression.Tests
         }
 
         private string GetTempArchivePath() => GetTestFilePath();
+
+        private static void TamperAesPayload(string archivePath, bool tamperAuthenticationCode)
+        {
+            const int LocalFileHeaderSize = 30;
+            const int CompressedSizeOffset = 18;
+            const int FileNameLengthOffset = 26;
+            const int ExtraFieldLengthOffset = 28;
+            const int Aes256SaltSize = 16;
+            const int PasswordVerifierSize = 2;
+
+            byte[] archiveBytes = File.ReadAllBytes(archivePath);
+            ReadOnlySpan<byte> localHeader = archiveBytes.AsSpan(0, LocalFileHeaderSize);
+            int compressedSize = checked((int)BinaryPrimitives.ReadUInt32LittleEndian(localHeader.Slice(CompressedSizeOffset)));
+            int fileNameLength = BinaryPrimitives.ReadUInt16LittleEndian(localHeader.Slice(FileNameLengthOffset));
+            int extraFieldLength = BinaryPrimitives.ReadUInt16LittleEndian(localHeader.Slice(ExtraFieldLengthOffset));
+            int encryptedDataOffset = checked(LocalFileHeaderSize + fileNameLength + extraFieldLength);
+            int byteToTamper = tamperAuthenticationCode
+                ? checked(encryptedDataOffset + compressedSize - 1)
+                : encryptedDataOffset + Aes256SaltSize + PasswordVerifierSize;
+
+            archiveBytes[byteToTamper] ^= 0xFF;
+            File.WriteAllBytes(archivePath, archiveBytes);
+        }
 
         private static void AssertFirstLocalHeaderHasDataDescriptor(MemoryStream memoryStream)
         {
