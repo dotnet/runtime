@@ -5,6 +5,7 @@ using System;
 using System.CommandLine;
 using System.Globalization;
 using System.IO;
+using Microsoft.NET.Build.Tasks;
 
 namespace ILLink.CacheTool;
 
@@ -43,7 +44,8 @@ internal static class Program
         var purge = new Command("purge", "Delete unused entries from an idle ILLink task cache.");
         purge.Options.Add(directory);
         purge.Options.Add(before);
-        purge.SetAction(result => CachePurge.Run(result.GetValue(directory)!.FullName, result.GetValue(before), output, error));
+        purge.SetAction(result => InvocationCachePurge.Run(result.GetValue(directory)!.FullName,
+            InvocationCacheEntry.VersionDirectory, "ILLink", result.GetValue(before), output, error));
         command.Subcommands.Add(purge);
         return command.Parse(args).Invoke(new()
         {
