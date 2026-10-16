@@ -842,33 +842,30 @@ namespace System.Security.Cryptography.X509Certificates
                     nameof(issuerCertificate));
             }
 
-            DateTime notBeforeLocal = notBefore.LocalDateTime;
-            if (notBeforeLocal < issuerCertificate.NotBefore)
+            if (notBefore < issuerCertificate.GetNotBeforeUtc())
             {
                 throw new ArgumentException(
                     SR.Format(
                         SR.Cryptography_CertReq_NotBeforeNotNested,
-                        notBeforeLocal,
+                        notBefore.LocalDateTime,
                         issuerCertificate.NotBefore),
                     nameof(notBefore));
             }
 
-            DateTime notAfterLocal = notAfter.LocalDateTime;
-
             // Round down to the second, since that's the cert accuracy.
             // This makes one method which uses the same DateTimeOffset for chained notAfters
             // not need to do the rounding locally.
-            long notAfterLocalTicks = notAfterLocal.Ticks;
-            long fractionalSeconds = notAfterLocalTicks % TimeSpan.TicksPerSecond;
-            notAfterLocalTicks -= fractionalSeconds;
-            notAfterLocal = new DateTime(notAfterLocalTicks, notAfterLocal.Kind);
+            long notAfterTicks = notAfter.Ticks;
+            long fractionalSeconds = notAfterTicks % TimeSpan.TicksPerSecond;
+            notAfterTicks -= fractionalSeconds;
+            notAfter = new DateTimeOffset(notAfterTicks, notAfter.Offset);
 
-            if (notAfterLocal > issuerCertificate.NotAfter)
+            if (notAfter > issuerCertificate.GetNotAfterUtc())
             {
                 throw new ArgumentException(
                     SR.Format(
                         SR.Cryptography_CertReq_NotAfterNotNested,
-                        notAfterLocal,
+                        notAfter.LocalDateTime,
                         issuerCertificate.NotAfter),
                     nameof(notAfter));
             }

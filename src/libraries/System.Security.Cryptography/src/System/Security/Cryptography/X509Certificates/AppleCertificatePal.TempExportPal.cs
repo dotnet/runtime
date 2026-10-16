@@ -37,8 +37,8 @@ namespace System.Security.Cryptography.X509Certificates
             public byte[] PublicKeyValue => _realPal.PublicKeyValue;
             public byte[] SerialNumber => _realPal.SerialNumber;
             public string SignatureAlgorithm => _realPal.SignatureAlgorithm;
-            public DateTime NotAfter => _realPal.NotAfter;
-            public DateTime NotBefore => _realPal.NotBefore;
+            public DateTimeOffset NotAfter => _realPal.NotAfter;
+            public DateTimeOffset NotBefore => _realPal.NotBefore;
             public byte[] RawData => _realPal.RawData;
             public byte[] Export(X509ContentType contentType, SafePasswordHandle password) =>
                 _realPal.Export(contentType, password);
