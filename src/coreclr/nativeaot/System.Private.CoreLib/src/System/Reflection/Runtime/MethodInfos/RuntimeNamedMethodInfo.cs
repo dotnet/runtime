@@ -289,11 +289,32 @@ namespace System.Reflection.Runtime.MethodInfos
 
         internal sealed override MethodBaseInvoker GetUncachedMethodInvoker(RuntimeTypeInfo[] methodArguments, MemberInfo exceptionPertainant)
         {
+            // A static abstract interface method has no implementation to call. An open generic one is left to
+            // OpenMethodInvoker's InvalidOperationException, as on CoreCLR.
+            if (IsStatic && IsAbstract && !IsOpenGeneric(_common.DeclaringType, methodArguments))
+                return new StaticAbstractMethodInvoker(this);
+
             MethodBaseInvoker invoker = _common.GetUncachedMethodInvoker(methodArguments, exceptionPertainant, out Exception exception);
+
             if (invoker == null)
                 throw exception;
 
             return invoker;
+        }
+
+        // The same open checks as ExecutionEnvironment.GetMethodInvoker, which returns OpenMethodInvoker for them
+        private static bool IsOpenGeneric(RuntimeTypeInfo declaringType, RuntimeTypeInfo[] methodArguments)
+        {
+            if (declaringType.ContainsGenericParameters)
+                return true;
+
+            for (int i = 0; i < methodArguments.Length; i++)
+            {
+                if (methodArguments[i].ContainsGenericParameters)
+                    return true;
+            }
+
+            return false;
         }
 
         protected sealed override MethodBaseInvoker UncachedMethodInvoker

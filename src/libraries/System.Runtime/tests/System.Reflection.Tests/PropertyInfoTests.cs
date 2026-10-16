@@ -160,6 +160,28 @@ namespace System.Reflection.Tests
             Assert.Throws(exceptionType, () => PropertyInfo.SetValue(obj, value, index));
         }
 
+        private interface IStaticAbstractProperty
+        {
+            static abstract int Value { get; set; }
+        }
+
+        // Mono's GetValue calls the getter through a delegate of its own
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime))]
+        public void GetValue_StaticAbstract_ThrowsMemberAccessException()
+        {
+            PropertyInfo propertyInfo = GetProperty(typeof(IStaticAbstractProperty), nameof(IStaticAbstractProperty.Value));
+            MemberAccessException ex = Assert.Throws<MemberAccessException>(() => propertyInfo.GetValue(null));
+            Assert.Contains($"{nameof(IStaticAbstractProperty)}.get_{nameof(IStaticAbstractProperty.Value)}", ex.Message);
+        }
+
+        [Fact]
+        public void SetValue_StaticAbstract_ThrowsMemberAccessException()
+        {
+            PropertyInfo propertyInfo = GetProperty(typeof(IStaticAbstractProperty), nameof(IStaticAbstractProperty.Value));
+            MemberAccessException ex = Assert.Throws<MemberAccessException>(() => propertyInfo.SetValue(null, 1));
+            Assert.Contains($"{nameof(IStaticAbstractProperty)}.set_{nameof(IStaticAbstractProperty.Value)}", ex.Message);
+        }
+
         [Theory]
         [InlineData(nameof(PropertyInfoMembers.PublicGetIntProperty))]
         [InlineData(nameof(PropertyInfoMembers.PublicGetPublicSetStringProperty))]

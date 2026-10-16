@@ -100,10 +100,11 @@ namespace System
             // The name matching was case insensitive (no idea why this is
             // different from the constructor above) and we preserve that as
             // well.
-            BindToMethodName(null, rtTarget, method,
-                             DelegateBindingFlags.StaticMethodOnly |
-                             DelegateBindingFlags.OpenDelegateOnly |
-                             DelegateBindingFlags.CaselessMatching);
+            if (!BindToMethodName(null, rtTarget, method,
+                                  DelegateBindingFlags.StaticMethodOnly |
+                                  DelegateBindingFlags.OpenDelegateOnly |
+                                  DelegateBindingFlags.CaselessMatching))
+                throw new ArgumentException(SR.Arg_DlgtTargMeth);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
