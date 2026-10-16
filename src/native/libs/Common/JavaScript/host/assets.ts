@@ -11,7 +11,7 @@ const loadedAssemblies: Map<string, { ptr: number, length: number }> = new Map()
 // Self-installing wrapper version; keep in sync with WebcilConstants.WASM_WRAPPER_VERSION_SELF_INSTALLING.
 const webcilWrapperVersion = 2;
 
-export function registerPdbBytes(bytes: Uint8Array, virtualPath: string, shortName?: string) {
+export function registerPdbBytes(bytes: Uint8Array, virtualPath: string, shortName: string) {
     const sp = _ems_.stackSave();
     try {
         const ptrPtr = _ems_.stackAlloc(sizeOfPtr);
@@ -21,12 +21,6 @@ export function registerPdbBytes(bytes: Uint8Array, virtualPath: string, shortNa
 
         const ptr = _ems_.HEAPU32[ptrPtr as any >>> 2];
         _ems_.HEAPU8.set(bytes, ptr >>> 0);
-
-        if (!shortName) {
-            shortName = virtualPath.startsWith(browserVirtualAppBase)
-                ? virtualPath.substring(browserVirtualAppBase.length)
-                : virtualPath.substring(virtualPath.lastIndexOf("/") + 1);
-        }
 
         _ems_.dotnetLogger.debug(`Registered PDB '${virtualPath}' (shortName: '${shortName}') at ${ptr.toString(16)} length ${bytes.length}`);
         loadedAssemblies.set(virtualPath, { ptr, length: bytes.length });
