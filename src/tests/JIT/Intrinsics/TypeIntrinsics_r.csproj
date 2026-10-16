@@ -2,7 +2,6 @@
   <PropertyGroup>
     <DebugType>None</DebugType>
     <Optimize />
-    <DefineConstants>$(DefineConstants);TYPE_INTRINSICS_R</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="TypeIntrinsicsEnums.ilproj" />

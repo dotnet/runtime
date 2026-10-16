@@ -16,9 +16,7 @@ public partial class Program
 
     [ActiveIssue("https://github.com/dotnet/runtime/issues/54867", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoInterpreter))]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/90427", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoMINIFULLAOT))]
-#if TYPE_INTRINSICS_R
     [ActiveIssue("https://github.com/dotnet/runtime/issues/135966", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmReadyToRun))]
-#endif
     [Fact]
     public static int TestEntryPoint()
     {
