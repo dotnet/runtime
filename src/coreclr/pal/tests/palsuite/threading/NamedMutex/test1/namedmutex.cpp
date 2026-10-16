@@ -19,6 +19,7 @@ const char *const ParentEventNamePrefix1 = "paltest_namedmutex_test1_pe1_";
 const char *const ChildEventNamePrefix0 = "paltest_namedmutex_test1_ce0_";
 const char *const ChildEventNamePrefix1 = "paltest_namedmutex_test1_ce1_";
 const char *const ChildRunningEventNamePrefix = "paltest_namedmutex_test1_cr_";
+const char *const UserScopeNamePrefix = "paltest_namedmutex_test1_userscope_";
 
 const char *const GlobalShmFilePathPrefix = "/tmp/.dotnet/shm/global/";
 
@@ -41,12 +42,18 @@ extern int (*test_sscanf)(const char *str, const char *format, ...);
 extern int(*test_close)(int fd);
 extern int (*test_unlink)(const char *pathname);
 extern unsigned int test_getpid();
+extern unsigned int test_geteuid();
 extern int test_kill(unsigned int pid);
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Test helpers
 
 extern bool TestFileExists(const char *path);
+extern bool TestPathExists(const char *path);
+extern bool TestCreateDirectory(const char *path);
+extern void TestRemoveDirectory(const char *path);
+extern bool TestPathStatus(const char *path, unsigned int expectedMode, unsigned int expectedUid);
+extern bool TestChangeMode(const char *path, unsigned int mode);
 extern bool WriteHeaderInfo(const char *path, char sharedMemoryType, char version, int *fdRef);
 
 #define TestAssert(expression) \
@@ -182,6 +189,22 @@ void TestCreateMutex(AutoCloseMutexHandle &m, const char *name, bool initiallyOw
 HANDLE TestOpenMutex(const char *name)
 {
     return OpenMutexA(SYNCHRONIZE, false, name);
+}
+
+void TestCreateUserScopedMutex(AutoCloseMutexHandle &m, const char *name)
+{
+    m.Close();
+    LPWSTR nameW = convert(name);
+    m = PAL_CreateMutexW(false, nameW, true, nullptr, 0);
+    free(nameW);
+}
+
+HANDLE TestOpenUserScopedMutex(const char *name)
+{
+    LPWSTR nameW = convert(name);
+    HANDLE handle = PAL_OpenMutexW(nameW, true, nullptr, 0);
+    free(nameW);
+    return handle;
 }
 
 bool StartProcess(const char *funcName)
@@ -387,6 +410,133 @@ bool YieldToParent(AutoCloseMutexHandle parentEvents[2], AutoCloseMutexHandle ch
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Tests
+
+bool ScopeTests()
+{
+#if defined(__linux__)
+    const char *testName = "ScopeTests";
+    char homeDirectory[MaxPathSize];
+    test_snprintf(homeDirectory, MaxPathSize, "paltest_namedmutex_userscope_home_%u", g_parentPid);
+    TestRemoveDirectory(homeDirectory);
+    TestAssert(TestCreateDirectory(homeDirectory));
+    TestAssert(SetEnvironmentVariableA("XDG_RUNTIME_DIR", ""));
+    TestAssert(SetEnvironmentVariableA("HOME", homeDirectory));
+
+    char persistedDotnetDirectory[MaxPathSize];
+    char persistedCorefxDirectory[MaxPathSize];
+    char persistedRuntimeDirectory[MaxPathSize];
+    char basePath[MaxPathSize];
+    char runtimeRoot[MaxPathSize];
+    char sharedMemoryDirectory[MaxPathSize];
+    char sessionDirectory[MaxPathSize];
+    test_snprintf(persistedDotnetDirectory, MaxPathSize, "%s/.dotnet", homeDirectory);
+    test_snprintf(persistedCorefxDirectory, MaxPathSize, "%s/corefx", persistedDotnetDirectory);
+    test_snprintf(persistedRuntimeDirectory, MaxPathSize, "%s/Runtime", persistedCorefxDirectory);
+    test_snprintf(basePath, MaxPathSize, "%s/SharedMemory", persistedRuntimeDirectory);
+    test_snprintf(runtimeRoot, MaxPathSize, "%s/.dotnet", basePath);
+    test_snprintf(sharedMemoryDirectory, MaxPathSize, "%s/shm", runtimeRoot);
+    test_snprintf(sessionDirectory, MaxPathSize, "%s/global", sharedMemoryDirectory);
+    TestAssert(!TestPathExists(persistedDotnetDirectory));
+
+    char fileName[MaxPathSize];
+    BuildName(testName, fileName, UserScopeNamePrefix);
+    char name[MaxPathSize];
+    test_snprintf(name, MaxPathSize, "%s%s", GlobalPrefix, fileName);
+
+    AutoCloseMutexHandle userMutex;
+    TestCreateUserScopedMutex(userMutex, name);
+    TestAssert(userMutex != nullptr);
+    TestAssert(GetLastError() != ERROR_ALREADY_EXISTS);
+    TestAssert(AutoCloseMutexHandle(TestOpenUserScopedMutex(name)) != nullptr);
+    TestAssert(AutoCloseMutexHandle(TestOpenMutex(name)) == nullptr);
+
+    AutoCloseMutexHandle globalMutex;
+    TestCreateMutex(globalMutex, name);
+    TestAssert(globalMutex != nullptr);
+    TestAssert(GetLastError() != ERROR_ALREADY_EXISTS);
+    TestAssert(AutoCloseMutexHandle(TestOpenMutex(name)) != nullptr);
+
+    AutoCloseMutexHandle duplicateUserMutex;
+    TestCreateUserScopedMutex(duplicateUserMutex, name);
+    TestAssert(duplicateUserMutex != nullptr);
+    TestAssert(GetLastError() == ERROR_ALREADY_EXISTS);
+
+    char filePath[MaxPathSize];
+    test_snprintf(
+        filePath,
+        MaxPathSize,
+        "%s/%s",
+        sessionDirectory,
+        fileName);
+
+    unsigned int uid = test_geteuid();
+    TestAssert(TestPathStatus(persistedDotnetDirectory, 0700, uid));
+    TestAssert(TestPathStatus(persistedCorefxDirectory, 0700, uid));
+    TestAssert(TestPathStatus(persistedRuntimeDirectory, 0700, uid));
+    TestAssert(TestPathStatus(basePath, 0700, uid));
+    TestAssert(TestPathStatus(runtimeRoot, 0700, uid));
+    TestAssert(TestPathStatus(sharedMemoryDirectory, 0700, uid));
+    TestAssert(TestPathStatus(sessionDirectory, 0700, uid));
+    TestAssert(TestPathStatus(filePath, 0600, uid));
+
+    char invalidFileName[MaxPathSize];
+    test_snprintf(invalidFileName, MaxPathSize, "%s_invalid_%u", UserScopeNamePrefix, g_parentPid);
+    char invalidName[MaxPathSize];
+    test_snprintf(invalidName, MaxPathSize, "%s%s", GlobalPrefix, invalidFileName);
+    char invalidFilePath[MaxPathSize];
+    test_snprintf(invalidFilePath, MaxPathSize, "%s/%s", sessionDirectory, invalidFileName);
+    int invalidFileDescriptor;
+    TestAssert(WriteHeaderInfo(invalidFilePath, 0, 1, &invalidFileDescriptor));
+    TestAssert(TestChangeMode(invalidFilePath, 0666));
+    TestAssert(AutoCloseMutexHandle(TestOpenUserScopedMutex(invalidName)) == nullptr);
+    TestAssert(test_close(invalidFileDescriptor) == 0);
+    TestAssert(test_unlink(invalidFilePath) == 0);
+
+    char alternateBasePath[MaxPathSize];
+    test_snprintf(alternateBasePath, MaxPathSize, "paltest_namedmutex_userscope_alternate_%u", g_parentPid);
+    TestRemoveDirectory(alternateBasePath);
+    TestAssert(TestCreateDirectory(alternateBasePath));
+    TestAssert(SetEnvironmentVariableA("XDG_RUNTIME_DIR", alternateBasePath));
+
+    char cachedFileName[MaxPathSize];
+    test_snprintf(cachedFileName, MaxPathSize, "%s_cached_%u", UserScopeNamePrefix, g_parentPid);
+    char cachedName[MaxPathSize];
+    test_snprintf(cachedName, MaxPathSize, "%s%s", GlobalPrefix, cachedFileName);
+    AutoCloseMutexHandle cachedBaseUserMutex;
+    TestCreateUserScopedMutex(cachedBaseUserMutex, cachedName);
+    TestAssert(cachedBaseUserMutex != nullptr);
+    TestAssert(GetLastError() != ERROR_ALREADY_EXISTS);
+
+    char cachedFilePath[MaxPathSize];
+    test_snprintf(cachedFilePath, MaxPathSize, "%s/%s", sessionDirectory, cachedFileName);
+    TestAssert(TestFileExists(cachedFilePath));
+    char alternateRuntimeRoot[MaxPathSize];
+    test_snprintf(alternateRuntimeRoot, MaxPathSize, "%s/.dotnet", alternateBasePath);
+    TestAssert(!TestPathExists(alternateRuntimeRoot));
+
+    cachedBaseUserMutex.Close();
+    duplicateUserMutex.Close();
+    userMutex.Close();
+    globalMutex.Close();
+
+    char lockFilesDirectory[MaxPathSize];
+    char lockFilesSessionDirectory[MaxPathSize];
+    test_snprintf(lockFilesDirectory, MaxPathSize, "%s/lockfiles", runtimeRoot);
+    test_snprintf(lockFilesSessionDirectory, MaxPathSize, "%s/global", lockFilesDirectory);
+    TestRemoveDirectory(lockFilesSessionDirectory);
+    TestRemoveDirectory(lockFilesDirectory);
+    TestRemoveDirectory(sessionDirectory);
+    TestRemoveDirectory(sharedMemoryDirectory);
+    TestRemoveDirectory(runtimeRoot);
+    TestRemoveDirectory(basePath);
+    TestRemoveDirectory(persistedRuntimeDirectory);
+    TestRemoveDirectory(persistedCorefxDirectory);
+    TestRemoveDirectory(persistedDotnetDirectory);
+    TestRemoveDirectory(homeDirectory);
+    TestRemoveDirectory(alternateBasePath);
+#endif
+    return true;
+}
 
 bool NameTests()
 {
@@ -1100,6 +1250,7 @@ bool LockAndCloseWithoutThreadExitTests()
 
 bool (*const TestList[])() =
 {
+    ScopeTests,
     NameTests,
     HeaderMismatchTests,
     MutualExclusionTests,

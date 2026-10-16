@@ -471,6 +471,41 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             Assert.Equal(expectedVersion, ecms.Version);
         }
 
+        [Fact]
+        public static void DecodeDoesNotMergeAttributes()
+        {
+            // This payload has two unprotected attribute sets, both the exact same signing time.
+            // If the implementation merges them via CryptographicAttributeObjectCollection.Add,
+            // then we'd notice two things:
+            // 1) cms.UnprotectedAttributes.Count would be 1 instead of 2
+            // 2) The document won't load, since CAOC.Add blocks multiple signing times.
+            //
+            // Both elements get tested here to make sure we don't just add a merge allowing duplicate signing times.
+            byte[] encoded = (
+                "308201D706092A864886F70D010703A08201C8308201C4020102318201413082013D0201003025301" +
+                "8311630140603550403130D706F632D726563697069656E74020900E67536515F29D64B300D06092A" +
+                "864886F70D010101050004820100B8CC481FF8BED28B411370842708D4551C2422E3F8A0C7E1C9835" +
+                "534E5B6E7E657765A5DFDAE2CEAF7D036ED0B7919D04FCE43CB88ECCCD995587DB30D6C7A33DC0275" +
+                "F1BFE615AA522826A3D4C1471A2C4A0504F0637C90F12BF811ACE90DC966D7F8E449E9712E86C22F8" +
+                "B959D5730FB0CA23EC0DE1814EC65433681B3095D7B30C08FF1E5804C9E725A033359E7BD6A36C598" +
+                "17C659E1663DF68902A35208DD1C93BF3489A02949F52CF82FF8D911A2AEB68D38E1BBA0A3BACB463" +
+                "FA77C24B7896FC6C9D2EBD4AE80891C8CB9973C1778B697ED68803380B8FD240C9D1450F22CA3A54A" +
+                "1861B65DA8E2BEDADF6AD9D8BFA66CDB2E9B58EA2C3ECB61D15581303C06092A864886F70D0107013" +
+                "01D060960864801650304012A0410D21007E2DFD902CBE983CAA85375891B80103B5BEA9B220BFD2C" +
+                "85D9AB7B153299A1A13C301C06092A864886F70D010905310F170D3236303832303139353530395A3" +
+                "01C06092A864886F70D010905310F170D3236303832303139353530395A").HexToByteArray();
+
+            EnvelopedCms ecms = new EnvelopedCms();
+            ecms.Decode(encoded);
+
+            CryptographicAttributeObjectCollection attrs = ecms.UnprotectedAttributes;
+            Assert.Equal(2, attrs.Count);
+            Assert.Equal(1, attrs[0].Values.Count);
+            Assert.Equal(1, attrs[1].Values.Count);
+            Assert.IsType<Pkcs9SigningTime>(attrs[0].Values[0]);
+            Assert.IsType<Pkcs9SigningTime>(attrs[1].Values[0]);
+        }
+
         private static void AssertIsDocumentationDescription(this AsnEncodedData attribute, string expectedDocumentDescription)
         {
             Assert.Equal(Oids.DocumentDescription, attribute.Oid.Value);

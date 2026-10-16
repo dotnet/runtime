@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <!-- 
     Microsoft ResX Schema 
@@ -182,6 +182,12 @@
   </data>
   <data name="Cryptography_Xml_LoadKeyFailed" xml:space="preserve">
     <value>Signing key is not loaded.</value>
+  </data>
+  <data name="Cryptography_Xml_MaxCanonicalizationAttributesExceeded" xml:space="preserve">
+    <value>The XML element has exceeded the maximum number of attributes or namespace declarations allowed for canonicalization.</value>
+  </data>
+  <data name="Cryptography_Xml_MaxDecryptionCountExceeded" xml:space="preserve">
+    <value>The XML document has exceeded the maximum number of elements allowed for decryption.</value>
   </data>
   <data name="Cryptography_Xml_MaxDepthExceeded" xml:space="preserve">
     <value>The XML element has exceeded the maximum nesting depth allowed for decryption.</value>
