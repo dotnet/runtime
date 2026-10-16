@@ -568,6 +568,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+tools.illink+'))">
+    <ProjectToBuild Include="$(ToolsProjectRoot)illink\src\ILLink.CacheTool\ILLink.CacheTool.csproj" Category="tools" />
     <ProjectToBuild Include="$(ToolsProjectRoot)illink\src\linker\Mono.Linker.csproj" Category="tools" />
     <ProjectToBuild Include="$(ToolsProjectRoot)illink\src\ILLink.Tasks\ILLink.Tasks.csproj" Category="tools" />
     <ProjectToBuild Include="$(ToolsProjectRoot)illink\src\ILLink.RoslynAnalyzer\ILLink.RoslynAnalyzer.csproj" Category="tools" />
@@ -576,6 +577,8 @@
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+tools.illinktests+'))">
+    <ProjectToBuild Include="$(ToolsProjectRoot)illink\test\ILLink.CacheTool.Tests\ILLink.CacheTool.Tests.csproj"
+      Test="true" Category="tools"/>
     <ProjectToBuild Include="$(ToolsProjectRoot)illink\test\Mono.Linker.Tests\Mono.Linker.Tests.csproj"
       Test="true" Category="tools"/>
     <ProjectToBuild Include="$(ToolsProjectRoot)illink\test\Mono.Linker.Tests.Cases\Mono.Linker.Tests.Cases.csproj"
@@ -605,6 +608,10 @@
 
   <ItemGroup Condition="$(_subset.Contains('+clr.nativeaotlibs+')) and '$(NativeAotSupported)' == 'true'">
     <ProjectToBuild Include="$(CoreClrProjectRoot)nativeaot\**\src\*.csproj" Category="clr" />
+  </ItemGroup>
+  <ItemGroup Condition="$(_subset.Contains('+clr.nativeaotlibs+')) and '$(TargetsWasm)' == 'true'">
+    <!-- Test.CoreLib fails to build with the stubbed out nativeaot corelib -->
+    <ProjectToBuild Remove="$(CoreClrProjectRoot)nativeaot\Test.CoreLib\src\Test.CoreLib.csproj" />
   </ItemGroup>
 
   <!-- Mono sets -->

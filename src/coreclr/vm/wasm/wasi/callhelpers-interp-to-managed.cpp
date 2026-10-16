@@ -516,13 +516,6 @@ namespace
         (*fptr)(ARG_IND(0), ARG_I32(1), ARG_I32(2), ARG_I32(3), ARG_I32(4), ARG_I32(5), ARG_I32(6), ARG_I32(7), ARG_I32(8), ARG_I32(9), ARG_I32(10));
     }
 
-    NOINLINE static void CallFunc_This_RetVoid_PE(PCODE pPortableEntryPoint, int8_t* pArgs, int8_t* pRet)
-    {
-        alignas(16) int framePointer = TERMINATE_R2R_STACK_WALK;
-        void (*fptr)(int*, int32_t, PCODE) = *(void (**)(int*, int32_t, PCODE))(pPortableEntryPoint);
-        (*fptr)(&framePointer, ARG_I32(0), pPortableEntryPoint);
-    }
-
     NOINLINE static void CallFunc_F64_I32_I32_RetVoid_PE(PCODE pPortableEntryPoint, int8_t* pArgs, int8_t* pRet)
     {
         alignas(16) int framePointer = TERMINATE_R2R_STACK_WALK;
@@ -730,7 +723,6 @@ const StringToPortableSigThunk g_portableCallHelperThunks[] = {
     { "MvS8iiiiii", (void*)&CallFunc_S8_I32_I32_I32_I32_I32_I32_RetVoid },
     { "MvS8iiiiiii", (void*)&CallFunc_S8_I32_I32_I32_I32_I32_I32_I32_RetVoid },
     { "MvS8iiiiiiiiii", (void*)&CallFunc_S8_I32_I32_I32_I32_I32_I32_I32_I32_I32_I32_RetVoid },
-    { "MvTp", (void*)&CallFunc_This_RetVoid_PE },
     { "Mvdiip", (void*)&CallFunc_F64_I32_I32_RetVoid_PE },
     { "Mvfiip", (void*)&CallFunc_F32_I32_I32_RetVoid_PE },
     { "Mvi", (void*)&CallFunc_I32_RetVoid },

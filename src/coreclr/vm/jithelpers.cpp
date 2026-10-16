@@ -42,7 +42,9 @@
 #include "array.h"
 #include "debuginfostore.h"
 #include "safemath.h"
+#ifdef FEATURE_MULTITHREADING
 #include "threadstatics.h"
+#endif // FEATURE_MULTITHREADING
 
 #ifdef HAVE_GCCOVER
 #include "gccover.h"
@@ -313,6 +315,7 @@ HCIMPLEND
 //
 //========================================================================
 
+#ifdef FEATURE_MULTITHREADING
 // Using compiler specific thread local storage directives due to linkage issues.
 #ifdef _MSC_VER
 __declspec(selectany)
@@ -385,6 +388,7 @@ HCIMPL0(void*, JIT_GetDirectOnThreadLocalDataNonGCThreadStaticBase)
     return (void*)((uint8_t*)&(((ThreadLocalData*)&t_ThreadStatics)->pThread) - OFFSETOF__CORINFO_Array__data);
 }
 HCIMPLEND
+#endif // FEATURE_MULTITHREADING
 
 #include <optdefault.h>
 

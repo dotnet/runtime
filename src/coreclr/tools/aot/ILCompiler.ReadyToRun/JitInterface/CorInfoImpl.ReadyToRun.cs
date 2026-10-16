@@ -1789,6 +1789,9 @@ namespace Internal.JitInterface
             return CorInfoHelpFunc.CORINFO_HELP_NEWARR_1_DIRECT;
         }
 
+        private static bool IsThreadStaticForTarget(FieldDesc field)
+            => ((ReadyToRunCompilerContext)field.Context).IsThreadStaticForTarget(field);
+
         private bool IsClassPreInited(TypeDesc type)
         {
             if (type.IsGenericDefinition)
@@ -1837,7 +1840,7 @@ namespace Internal.JitInterface
                         return true; // Dynamic statics
 
                     if (!field.HasRva &&
-                        !field.IsThreadStatic &&
+                        !IsThreadStaticForTarget(field) &&
                         field.FieldType.IsValueType &&
                         !field.FieldType.UnderlyingType.IsPrimitive)
                     {
@@ -1927,7 +1930,7 @@ namespace Internal.JitInterface
                 {
                     // The JIT wants to know how to access a static field on a generic type. We need a runtime lookup.
                     fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_STATIC_GENERICS_STATIC_HELPER;
-                    if (field.IsThreadStatic)
+                    if (IsThreadStaticForTarget(field))
                     {
                         pResult->helper = (field.HasGCStaticBase ?
                             CorInfoHelpFunc.CORINFO_HELP_GET_GCTHREADSTATIC_BASE :
@@ -1959,7 +1962,7 @@ namespace Internal.JitInterface
                     {
                         fieldAccessor = intrinsicAccessor;
                     }
-                    else if (field.IsThreadStatic)
+                    else if (IsThreadStaticForTarget(field))
                     {
                         if (field.HasGCStaticBase)
                         {
@@ -3481,6 +3484,17 @@ namespace Internal.JitInterface
         {
             if (!_compilation.NodeFactory.Target.IsWasm)
                 return;
+
+            if (fRelocType == CorInfoReloc.WASM_METHOD_FRAME_IDENTITY_SLEB)
+            {
+                Debug.Assert(locationBlock == BlockType.Code);
+                MethodDesc targetMethod = HandleToObject((CORINFO_METHOD_STRUCT_*)target);
+                MethodWithGCInfo method = _compilation.NodeFactory.CompiledMethodNode(targetMethod);
+                relocTarget = _compilation.NodeFactory.WasmMethodFrameIdentity(method);
+                relocType = RelocType.WASM_METHOD_FRAME_IDENTITY_SLEB;
+                handled = true;
+                return;
+            }
 
             if (fRelocType != CorInfoReloc.WASM_METHOD_RELATIVE_VIRTUAL_IP_I32)
                 return;
