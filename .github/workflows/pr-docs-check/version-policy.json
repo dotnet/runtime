@@ -1,0 +1,24 @@
+{
+  "_comment": "Source-owned policy for resolving the .NET runtime version represented by a merged pull request. The docs repository remains independent and always receives pull requests against main.",
+  "schemaVersion": 1,
+  "mainVersion": {
+    "value": "12.0",
+    "description": "Runtime main develops .NET 12: eng/Versions.props declares ProductVersion 12.0.0, MajorVersion 12, MinorVersion 0, and PreReleaseVersionLabel alpha. Corroborated by upstream release/11.0. Update this policy once per yearly main-branch rollover."
+  },
+  "releaseBranchPattern": {
+    "value": "^release/(?P<version>[0-9]+\\.0)$",
+    "description": "Recognizes supported source release branches and extracts their .NET runtime version."
+  },
+  "milestoneVersionPattern": {
+    "value": "^(?P<version>[0-9]+\\.0)(?:\\b|[- ].*)",
+    "description": "Extracts a corroborating .NET runtime version from milestone titles such as 12.0 or 12.0-preview1."
+  },
+  "docsMonikerPrefix": {
+    "value": "net-",
+    "description": "Builds .NET monikers such as net-12.0; use moniker blocks only where the existing dotnet/docs article supports them."
+  },
+  "docsBaseBranch": {
+    "value": "main",
+    "description": "docs has no release branches; every generated documentation pull request targets main."
+  }
+}
