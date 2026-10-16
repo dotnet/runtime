@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers.Wasm;
 using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
@@ -18,35 +19,52 @@ public class WasmUnwinderTests
     private const ulong FramesBase = 0x10000;
     private const ulong BlobsBase = 0x20000;
     private const ulong VirtualIpBase = 0x50000;
+    private const ulong LeafControlPc = VirtualIpBase + 6;
 
-    // Function table indices 0 and 1 are reserved for the STACK_WALK_INDIRECT_TO_FRAMEPOINTER
-    // and TERMINATE_R2R_STACK_WALK sentinels, so real indices start at 2.
-    private const uint FuncIndexLeaf = 10;
-    private const uint FuncIndexCaller = 11;
+    // Aligned values model ordinary methods' portable-entrypoint identities.
+    private const uint FuncIndexLeaf = 0x30000;
+    private const uint FuncIndexCaller = 0x30100;
 
     private sealed class FakeWasmR2RInfo : IWasmR2RInfo
     {
         public Dictionary<uint, ulong> VirtualIpBases { get; } = new();
-        public Dictionary<uint, ulong> UnwindData { get; } = new();
-        public HashSet<uint> Funclets { get; } = new();
+        public Dictionary<ulong, ulong> UnwindData { get; } = new();
 
-        public bool TryIsFunclet(uint functionTableIndex, out bool isFunclet)
+        public bool TryGetVirtualIPBase(uint frameIdentity, out ulong baseVirtualIP)
+            => VirtualIpBases.TryGetValue(frameIdentity, out baseVirtualIP);
+
+        public bool TryGetUnwindData(TargetCodePointer controlPC, out TargetPointer unwindDataAddress)
         {
-            isFunclet = Funclets.Contains(functionTableIndex);
-            return VirtualIpBases.ContainsKey(functionTableIndex) || UnwindData.ContainsKey(functionTableIndex) || isFunclet;
-        }
-
-        public bool TryGetVirtualIPBase(uint functionTableIndex, out ulong baseVirtualIP)
-            => VirtualIpBases.TryGetValue(functionTableIndex, out baseVirtualIP);
-
-        public bool TryGetUnwindData(uint functionTableIndex, out TargetPointer unwindDataAddress)
-        {
-            if (UnwindData.TryGetValue(functionTableIndex, out ulong addr))
+            if (UnwindData.TryGetValue(controlPC.Value, out ulong addr))
             {
                 unwindDataAddress = new TargetPointer(addr);
                 return true;
             }
             unwindDataAddress = TargetPointer.Null;
+            return false;
+        }
+    }
+
+    private sealed class FakeExecutionManager : IExecutionManager
+    {
+        public Dictionary<ulong, (TargetPointer RuntimeFunction, TargetPointer BaseAddress)> UnwindInfo { get; } = new();
+
+        public bool TryGetUnwindInfo(
+            TargetCodePointer controlPC,
+            out TargetPointer runtimeFunction,
+            out TargetPointer unwindInfoBaseAddress)
+        {
+            if (UnwindInfo.TryGetValue(
+                controlPC.Value,
+                out (TargetPointer RuntimeFunction, TargetPointer BaseAddress) info))
+            {
+                runtimeFunction = info.RuntimeFunction;
+                unwindInfoBaseAddress = info.BaseAddress;
+                return true;
+            }
+
+            runtimeFunction = TargetPointer.Null;
+            unwindInfoBaseAddress = TargetPointer.Null;
             return false;
         }
     }
@@ -59,12 +77,12 @@ public class WasmUnwinderTests
         return builder.Build();
     }
 
-    // Builds an R2R frame: [0] = function index, [4] = function-local virtual IP / 2.
-    private static MockMemorySpace.HeapFragment Frame(ulong address, uint functionIndex, uint localVirtualIPHalf, string name)
+    // Builds an R2R frame: [0] = frame identity, [4] = function-local virtual IP / 2.
+    private static MockMemorySpace.HeapFragment Frame(ulong address, uint frameIdentity, uint localVirtualIPHalf, string name)
     {
         TargetTestHelpers helpers = new(WasmArch);
         byte[] data = new byte[16];
-        helpers.Write(data.AsSpan(0, sizeof(uint)), functionIndex);
+        helpers.Write(data.AsSpan(0, sizeof(uint)), frameIdentity);
         helpers.Write(data.AsSpan(4, sizeof(uint)), localVirtualIPHalf);
         return new MockMemorySpace.HeapFragment { Address = address, Data = data, Name = name };
     }
@@ -126,21 +144,49 @@ public class WasmUnwinderTests
     }
 
     [Fact]
-    public void GetEstablishingFramePointerFromTerminator_ReturnsStoredFramePointer()
+    public void TryGetLogicalFramePointer_TaggedEstablishingFrame_ReturnsRootFrame()
     {
-        TargetTestHelpers helpers = new(WasmArch);
-        ulong terminatorSp = FramesBase;
         ulong establishingFp = FramesBase + 0x200;
 
-        byte[] terminator = new byte[16];
-        helpers.Write(terminator.AsSpan(0, sizeof(uint)), 1u); // TERMINATE_R2R_STACK_WALK
-        helpers.WritePointer(terminator.AsSpan((int)helpers.PointerSize, helpers.PointerSize), establishingFp);
-
         TestPlaceholderTarget target = CreateTarget(
-            [new MockMemorySpace.HeapFragment { Address = terminatorSp, Data = terminator, Name = "terminator" }]);
+        [
+            Frame(FramesBase, checked((uint)establishingFp + 2), 3, "funclet"),
+            Frame(establishingFp, FuncIndexLeaf, 0, "establishingFrame"),
+        ]);
         WasmUnwinder unwinder = new(target, new FakeWasmR2RInfo());
 
-        Assert.Equal(establishingFp, unwinder.GetEstablishingFramePointerFromTerminator(new TargetPointer(terminatorSp)).Value);
+        Assert.True(unwinder.TryGetLogicalFramePointer(new TargetPointer(FramesBase), out TargetPointer framePointer));
+        Assert.Equal(establishingFp, framePointer.Value);
+    }
+
+    [Fact]
+    public void TryGetLogicalFramePointer_NestedTaggedEstablishingFrames_ReturnsRootFrame()
+    {
+        ulong intermediateFp = FramesBase + 0x100;
+        ulong establishingFp = FramesBase + 0x200;
+
+        TestPlaceholderTarget target = CreateTarget(
+        [
+            Frame(FramesBase, checked((uint)intermediateFp + 2), 3, "innerFunclet"),
+            Frame(intermediateFp, checked((uint)establishingFp + 2), 0, "outerFunclet"),
+            Frame(establishingFp, FuncIndexLeaf, 0, "establishingFrame"),
+        ]);
+        WasmUnwinder unwinder = new(target, new FakeWasmR2RInfo());
+
+        Assert.True(unwinder.TryGetLogicalFramePointer(new TargetPointer(FramesBase), out TargetPointer framePointer));
+        Assert.Equal(establishingFp, framePointer.Value);
+    }
+
+    [Fact]
+    public void TryGetLogicalFramePointer_NonProgressingEstablishingFrame_ReturnsFalse()
+    {
+        TestPlaceholderTarget target = CreateTarget(
+        [
+            Frame(FramesBase, checked((uint)FramesBase + 2), 3, "invalidFunclet"),
+        ]);
+        WasmUnwinder unwinder = new(target, new FakeWasmR2RInfo());
+
+        Assert.False(unwinder.TryGetLogicalFramePointer(new TargetPointer(FramesBase), out _));
     }
 
     [Fact]
@@ -165,7 +211,7 @@ public class WasmUnwinderTests
         FakeWasmR2RInfo info = new();
         info.VirtualIpBases[FuncIndexLeaf] = VirtualIpBase;
         info.VirtualIpBases[FuncIndexCaller] = VirtualIpBase;
-        info.UnwindData[FuncIndexLeaf] = BlobsBase;
+        info.UnwindData[LeafControlPc] = BlobsBase;
 
         TestPlaceholderTarget target = CreateTarget(
         [
@@ -176,7 +222,7 @@ public class WasmUnwinderTests
         WasmUnwinder unwinder = new(target, info);
 
         TargetPointer sp = new(FramesBase);
-        Assert.True(unwinder.TryUnwindOneFrame(ref sp, out TargetCodePointer ip));
+        Assert.True(unwinder.TryUnwindOneFrame(ref sp, new TargetCodePointer(LeafControlPc), out TargetCodePointer ip));
         Assert.Equal(callerBase, sp.Value);
         Assert.Equal(VirtualIpBase + 14, ip.Value); // caller local VIP 7*2
     }
@@ -190,7 +236,7 @@ public class WasmUnwinderTests
         FakeWasmR2RInfo info = new();
         info.VirtualIpBases[FuncIndexLeaf] = VirtualIpBase;
         info.VirtualIpBases[FuncIndexCaller] = VirtualIpBase;
-        info.UnwindData[FuncIndexLeaf] = BlobsBase;
+        info.UnwindData[LeafControlPc] = BlobsBase;
 
         TestPlaceholderTarget target = CreateTarget(
         [
@@ -201,8 +247,61 @@ public class WasmUnwinderTests
         WasmUnwinder unwinder = new(target, info);
 
         TargetPointer sp = new(FramesBase);
-        Assert.True(unwinder.TryUnwindOneFrame(ref sp, out _));
+        Assert.True(unwinder.TryUnwindOneFrame(ref sp, new TargetCodePointer(LeafControlPc), out _));
         Assert.Equal(callerBase, sp.Value);
+    }
+
+    [Fact]
+    public void TryUnwindOneFrame_ReversePInvokeRoot_PreservesNativeCallerStackPointer()
+    {
+        const uint leafFrameSize = 0x20;
+        ulong callerSp = FramesBase + leafFrameSize;
+        uint reversePInvokeIdentity = TableFrameIdentity(10);
+
+        FakeWasmR2RInfo info = new();
+        info.UnwindData[LeafControlPc] = BlobsBase;
+
+        TestPlaceholderTarget target = CreateTarget(
+        [
+            Frame(FramesBase, reversePInvokeIdentity, 3, "reversePInvoke"),
+            Blob(BlobsBase, [(byte)leafFrameSize], "leafUnwind"),
+        ]);
+        WasmUnwinder unwinder = new(target, info);
+
+        TargetPointer sp = new(FramesBase);
+        Assert.True(unwinder.TryUnwindOneFrame(ref sp, new TargetCodePointer(LeafControlPc), out TargetCodePointer ip));
+        Assert.Equal(callerSp, sp.Value);
+        Assert.Equal(TargetCodePointer.Null, ip);
+    }
+
+    [Fact]
+    public void WasmContext_UnwindReversePInvokeRoot_PreservesStackPointerAndClearsIPAndFP()
+    {
+        const uint leafFrameSize = 0x20;
+        ulong callerSp = FramesBase + leafFrameSize;
+        uint reversePInvokeIdentity = TableFrameIdentity(10);
+
+        FakeWasmR2RInfo info = new();
+        info.UnwindData[LeafControlPc] = BlobsBase;
+
+        TestPlaceholderTarget target = CreateTarget(
+        [
+            Frame(FramesBase, reversePInvokeIdentity, 3, "reversePInvoke"),
+            Blob(BlobsBase, [(byte)leafFrameSize], "leafUnwind"),
+        ]);
+        WasmUnwinder unwinder = new(target, info);
+        WasmContext context = new()
+        {
+            StackPointer = new TargetPointer(FramesBase),
+            InstructionPointer = new TargetCodePointer(LeafControlPc),
+            FramePointer = new TargetPointer(FramesBase),
+        };
+
+        context.Unwind(unwinder);
+
+        Assert.Equal(callerSp, context.StackPointer.Value);
+        Assert.Equal(TargetCodePointer.Null, context.InstructionPointer);
+        Assert.Equal(TargetPointer.Null, context.FramePointer);
     }
 
     [Fact]
@@ -212,7 +311,7 @@ public class WasmUnwinderTests
         WasmUnwinder unwinder = new(target, new FakeWasmR2RInfo());
 
         TargetPointer sp = new(FramesBase);
-        Assert.False(unwinder.TryUnwindOneFrame(ref sp, out _));
+        Assert.False(unwinder.TryUnwindOneFrame(ref sp, new TargetCodePointer(LeafControlPc), out _));
         Assert.Equal(TargetPointer.Null, sp);
     }
 
@@ -239,7 +338,7 @@ public class WasmUnwinderTests
     {
         FakeWasmR2RInfo info = new();
         info.VirtualIpBases[FuncIndexLeaf] = VirtualIpBase;
-        info.UnwindData[FuncIndexLeaf] = BlobsBase;
+        info.UnwindData[LeafControlPc] = BlobsBase;
 
         TestPlaceholderTarget target = CreateTarget(
         [
@@ -249,7 +348,7 @@ public class WasmUnwinderTests
         WasmUnwinder unwinder = new(target, info);
 
         TargetPointer sp = new(FramesBase);
-        Assert.False(unwinder.TryUnwindOneFrame(ref sp, out _));
+        Assert.False(unwinder.TryUnwindOneFrame(ref sp, new TargetCodePointer(LeafControlPc), out _));
         Assert.Equal(TargetPointer.Null, sp);
     }
 
@@ -257,7 +356,7 @@ public class WasmUnwinderTests
     public void TryUnwindOneFrame_MalformedUleb128_Throws()
     {
         FakeWasmR2RInfo info = new();
-        info.UnwindData[FuncIndexLeaf] = BlobsBase;
+        info.UnwindData[LeafControlPc] = BlobsBase;
 
         TestPlaceholderTarget target = CreateTarget(
         [
@@ -268,7 +367,8 @@ public class WasmUnwinderTests
         WasmUnwinder unwinder = new(target, info);
 
         TargetPointer sp = new(FramesBase);
-        Assert.Throws<InvalidOperationException>(() => unwinder.TryUnwindOneFrame(ref sp, out _));
+        Assert.Throws<InvalidOperationException>(() =>
+            unwinder.TryUnwindOneFrame(ref sp, new TargetCodePointer(LeafControlPc), out _));
     }
 
     private const uint StackWalkSentinelIndirect = 0;
@@ -277,7 +377,8 @@ public class WasmUnwinderTests
     // Funclet stack walks over linear-stack layouts that mirror what the producers emit:
     //  * RyuJIT funclet prolog (genFuncletProlog, src/coreclr/jit/codegenwasm.cpp): an unwindable
     //    funclet moves its own $sp down by AlignUp(2 * pointer, STACK_ALIGN) (16 on wasm32), stores
-    //    its own function table index at $sp[0], and its unwind blob encodes that 16-byte frame.
+    //    the establishing frame pointer tagged with +2 at $sp[0], and its unwind blob encodes that
+    //    16-byte frame.
     //  * fgWasmVirtualIP (src/coreclr/jit/fgwasm.cpp): a funclet stores its virtual IP at $sp[4] of
     //    its own frame; virtual IPs are relative to the controlling method, so the funclet's table
     //    index resolves to the parent's base virtual IP.
@@ -286,9 +387,8 @@ public class WasmUnwinderTests
     //    funclet's FP local that parent FP.
     //  * genLclHeap (codegenwasm.cpp): after localloc, $sp[0] == STACK_WALK_INDIRECT_TO_FRAMEPOINTER
     //    and $sp[pointer] == FP.
-    //  * CallFuncletWith[out]Throwable (src/coreclr/vm/wasm/helpers.cpp): the VM pushes a 16-byte
-    //    frame holding TERMINATE_R2R_STACK_WALK at +0 and the establishing FP at
-    //    TERMINATE_R2R_STACK_WALK_FP_OFFSET (one pointer), then calls the funclet with that $sp.
+    //  * CallFuncletWith[out]Throwable (src/coreclr/vm/wasm/helpers.cpp): the VM pushes a frame
+    //    holding TERMINATE_R2R_STACK_WALK at +0, then calls the funclet with that $sp.
     // Expected frame pointers follow native GetWasmFramePointerFromStackPointer, which reports a
     // funclet's logical FP: the frame base of the establishing method.
     // ---------------------------------------------------------------------------------------
@@ -304,6 +404,8 @@ public class WasmUnwinderTests
     private const uint OuterFuncletIndex = 101;
     private const uint InnerFuncletIndex = 102;
     private const uint CalleeIndex = 103;
+    private const uint ParentFrameIdentity = 0x0030_0000;
+    private const uint CalleeFrameIdentity = 0x0030_0100;
 
     private const uint ParentBegin = 0x100;
     private const uint CalleeBegin = 0x200;
@@ -333,16 +435,15 @@ public class WasmUnwinderTests
 
         private Span<byte> At(ulong address, int length) => Data.AsSpan((int)(address - LinearStackBase), length);
 
-        public void Record(ulong address, uint functionIndex, uint vipHalf)
+        public void Record(ulong address, uint frameIdentity, uint vipHalf)
         {
-            _helpers.Write(At(address, sizeof(uint)), functionIndex);
+            _helpers.Write(At(address, sizeof(uint)), frameIdentity);
             _helpers.Write(At(address + 4, sizeof(uint)), vipHalf);
         }
 
-        public void Terminator(ulong address, ulong establishingFp = 0)
+        public void Terminator(ulong address)
         {
             _helpers.Write(At(address, sizeof(uint)), 1u);
-            _helpers.WritePointer(At(address + (ulong)_helpers.PointerSize, _helpers.PointerSize), establishingFp);
         }
 
         public void LocallocSlot(ulong address, ulong framePointer)
@@ -350,7 +451,14 @@ public class WasmUnwinderTests
             _helpers.Write(At(address, sizeof(uint)), 0u);
             _helpers.WritePointer(At(address + (ulong)_helpers.PointerSize, _helpers.PointerSize), framePointer);
         }
+
     }
+
+    private static uint TableFrameIdentity(uint functionTableIndex)
+        => checked(functionTableIndex * 2 + 1);
+
+    private static uint EstablishingFrameIdentity(ulong establishingFrame)
+        => checked((uint)establishingFrame + 2);
 
     // Parent root method, the two funclets it owns, and an unrelated callee root method, in one
     // R2R module, registered through FunctionTableIndexRangeList exactly as the runtime does.
@@ -381,8 +489,14 @@ public class WasmUnwinderTests
             new(nameof(Data.FunctionTableIndexRangeSection.R2RModule), DataType.pointer),
             new(nameof(Data.FunctionTableIndexRangeSection.Next), DataType.pointer),
         ]);
+        TargetTestHelpers.LayoutResult portableEntryPointLayout = helpers.LayoutFields([
+            new(nameof(Data.PortableEntryPoint.ActualCode), DataType.pointer),
+            new(nameof(Data.PortableEntryPoint.MethodDesc), DataType.pointer),
+            new(nameof(Data.PortableEntryPoint.Flags), DataType.int32),
+        ]);
 
         MockMemorySpace.HeapFragment runtimeFunctions = allocator.Allocate(runtimeFunctionLayout.Stride * (ulong)functions.Length, "RuntimeFunctions");
+        FakeExecutionManager executionManager = new();
         for (int i = 0; i < functions.Length; i++)
         {
             // Unwind data is the ULEB128 fixed frame size, addressed as LoadedImageBase (0) + UnwindData.
@@ -412,7 +526,32 @@ public class WasmUnwinderTests
         MockMemorySpace.HeapFragment listSlot = allocator.Allocate((ulong)helpers.PointerSize, "FunctionTableIndexRangeListSlot");
         helpers.WritePointer(listSlot.Data.AsSpan(), section.Address);
 
+        static MockMemorySpace.HeapFragment PortableEntryPoint(
+            TargetTestHelpers helpers,
+            TargetTestHelpers.LayoutResult layout,
+            ulong address,
+            uint functionTableIndex,
+            string name)
+        {
+            byte[] data = new byte[layout.Stride];
+            helpers.WritePointer(
+                data.AsSpan(layout.Fields[nameof(Data.PortableEntryPoint.ActualCode)].Offset, helpers.PointerSize),
+                functionTableIndex);
+            return new MockMemorySpace.HeapFragment { Address = address, Data = data, Name = name };
+        }
+
         targetBuilder.MemoryBuilder.AddHeapFragment(new MockMemorySpace.HeapFragment { Address = LinearStackBase, Data = stack.Data, Name = "LinearStack" });
+        targetBuilder.MemoryBuilder.AddHeapFragment(
+            PortableEntryPoint(helpers, portableEntryPointLayout, ParentFrameIdentity, ParentIndex, "ParentPEP"));
+        targetBuilder.MemoryBuilder.AddHeapFragment(
+            PortableEntryPoint(helpers, portableEntryPointLayout, CalleeFrameIdentity, CalleeIndex, "CalleePEP"));
+        executionManager.UnwindInfo[ParentIp] = (runtimeFunctions.Address, TargetPointer.Null);
+        executionManager.UnwindInfo[OuterFuncletIp] =
+            (runtimeFunctions.Address + runtimeFunctionLayout.Stride, TargetPointer.Null);
+        executionManager.UnwindInfo[InnerFuncletIp] =
+            (runtimeFunctions.Address + (2 * runtimeFunctionLayout.Stride), TargetPointer.Null);
+        executionManager.UnwindInfo[CalleeIp] =
+            (runtimeFunctions.Address + (3 * runtimeFunctionLayout.Stride), TargetPointer.Null);
         targetBuilder
             .AddTypes(new Dictionary<DataType, Target.TypeInfo>
             {
@@ -420,8 +559,10 @@ public class WasmUnwinderTests
                 [DataType.ReadyToRunInfo] = TargetTestHelpers.CreateTypeInfo(r2rInfoLayout),
                 [DataType.Module] = TargetTestHelpers.CreateTypeInfo(moduleLayout),
                 [DataType.FunctionTableIndexRangeSection] = new() { Fields = rangeSectionLayout.Fields, Size = rangeSectionLayout.Stride },
+                [DataType.PortableEntryPoint] = new() { Fields = portableEntryPointLayout.Fields, Size = portableEntryPointLayout.Stride },
             })
-            .AddGlobals((Constants.Globals.FunctionTableIndexRangeList, listSlot.Address));
+            .AddGlobals((Constants.Globals.FunctionTableIndexRangeList, listSlot.Address))
+            .AddMockContract<IExecutionManager>(executionManager);
         return targetBuilder.Build();
     }
 
@@ -462,11 +603,11 @@ public class WasmUnwinderTests
 
         LinearStack stack = new();
         stack.Terminator(ParentFp + ParentFrameSize);
-        stack.Record(ParentFp, ParentIndex, ParentVipHalf);
+        stack.Record(ParentFp, ParentFrameIdentity, ParentVipHalf);
         if (parentUsedLocalloc)
             stack.LocallocSlot(parentSp, ParentFp);
-        stack.Record(funcletSp, OuterFuncletIndex, OuterFuncletVipHalf);
-        stack.Record(calleeSp, CalleeIndex, CalleeVipHalf);
+        stack.Record(funcletSp, EstablishingFrameIdentity(ParentFp), OuterFuncletVipHalf);
+        stack.Record(calleeSp, CalleeFrameIdentity, CalleeVipHalf);
         Target target = CreateProducerLayoutTarget(stack);
 
         WasmContext context = CalleeContext(calleeSp);
@@ -484,8 +625,8 @@ public class WasmUnwinderTests
     /// <summary>
     /// Catch, finally, fault or filter invoked by the VM (EECodeManager::CallFunclet ->
     /// CallFuncletWith[out]Throwable). The funclet's frame sits directly below the synthetic
-    /// TERMINATE_R2R_STACK_WALK frame, which carries the establishing FP; the establishing frame
-    /// itself is far above, past native VM frames. A filter runs during the first pass, so the
+    /// TERMINATE_R2R_STACK_WALK frame. The establishing frame itself is far above, past native VM
+    /// frames, and the funclet identity points to it directly. A filter runs during the first pass, so the
     /// R2R frames of the try body that threw are still live between the establishing frame and
     /// the terminator (<paramref name="throwingFramesStillLive"/>); they must not be visited.
     /// </summary>
@@ -500,12 +641,12 @@ public class WasmUnwinderTests
 
         LinearStack stack = new();
         stack.Terminator(ParentFp + ParentFrameSize);
-        stack.Record(ParentFp, ParentIndex, ParentVipHalf);
+        stack.Record(ParentFp, ParentFrameIdentity, ParentVipHalf);
         if (throwingFramesStillLive)
-            stack.Record(ParentFp - CalleeFrameSize, CalleeIndex, CalleeVipHalf);
-        stack.Terminator(terminatorSp, ParentFp);
-        stack.Record(funcletSp, OuterFuncletIndex, OuterFuncletVipHalf);
-        stack.Record(calleeSp, CalleeIndex, CalleeVipHalf);
+            stack.Record(ParentFp - CalleeFrameSize, CalleeFrameIdentity, CalleeVipHalf);
+        stack.Terminator(terminatorSp);
+        stack.Record(funcletSp, EstablishingFrameIdentity(ParentFp), OuterFuncletVipHalf);
+        stack.Record(calleeSp, CalleeFrameIdentity, CalleeVipHalf);
         Target target = CreateProducerLayoutTarget(stack);
 
         WasmContext context = CalleeContext(calleeSp);
@@ -535,12 +676,12 @@ public class WasmUnwinderTests
 
         LinearStack stack = new();
         stack.Terminator(ParentFp + ParentFrameSize);
-        stack.Record(ParentFp, ParentIndex, ParentVipHalf);
+        stack.Record(ParentFp, ParentFrameIdentity, ParentVipHalf);
         if (outerInvokedByVM)
-            stack.Terminator(outerCallerSp, ParentFp);
-        stack.Record(outerSp, OuterFuncletIndex, OuterFuncletVipHalf);
-        stack.Record(innerSp, InnerFuncletIndex, InnerFuncletVipHalf);
-        stack.Record(calleeSp, CalleeIndex, CalleeVipHalf);
+            stack.Terminator(outerCallerSp);
+        stack.Record(outerSp, EstablishingFrameIdentity(ParentFp), OuterFuncletVipHalf);
+        stack.Record(innerSp, EstablishingFrameIdentity(ParentFp), InnerFuncletVipHalf);
+        stack.Record(calleeSp, CalleeFrameIdentity, CalleeVipHalf);
         Target target = CreateProducerLayoutTarget(stack);
 
         WasmContext context = CalleeContext(calleeSp);

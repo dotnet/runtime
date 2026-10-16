@@ -968,7 +968,7 @@ private:
     void Widen(BasicBlock* block, GenTree* tree, Range* pRange);
 
     // Is the binary operation increasing the value.
-    bool IsBinOpMonotonicallyIncreasing(GenTreeOp* binop);
+    bool IsBinOpMonotonicallyIncreasing(GenTreeOp* binop, bool rejectNegativeConst);
 
     // Given an expression trace its value to check if it is monotonically increasing.
     bool IsMonotonicallyIncreasing(GenTree* tree, bool rejectNegativeConst);

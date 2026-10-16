@@ -429,6 +429,9 @@
   <data name="Unaligned" xml:space="preserve">
     <value>Missing ldind, stind, ldfld, stfld, ldobj, stobj, initblk, cpblk.</value>
   </data>
+  <data name="UnalignedAlignment" xml:space="preserve">
+    <value>Alignment specified for 'unaligned.' must be 1, 2, or 4.</value>
+  </data>
   <data name="UninitStack" xml:space="preserve">
     <value>Uninitialized item on stack.</value>
   </data>
