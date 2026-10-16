@@ -149,6 +149,8 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
 #ifdef TARGET_ARM64
             case GT_STORE_LCL_FLD:
             case GT_STORE_LCL_VAR:
+            case GT_ADD_HI:
+            case GT_SUB_HI:
                 if (immVal == 0)
                     return true;
                 break;
@@ -620,6 +622,41 @@ GenTree* Lowering::LowerMul(GenTreeOp* mul)
     ContainCheckMul(mul);
 
     return mul->gtNext;
+}
+
+//------------------------------------------------------------------------
+// TryGetCarryOp: Get the add/subtract with carry that computes "x + (cond + k)" or "x - (cond + k)"
+//    after a compare that sets the borrow iff "cond" (or iff "!cond").
+//
+// Arguments:
+//    isAdd        - true for "x + (cond + k)", false for "x - (cond + k)"
+//    borrowIsCond - true if the borrow is set iff "cond", false if it is set iff "!cond"
+//    k            - the constant added to "cond"
+//    carryOper    - [out] GT_ADD_HI or GT_SUB_HI
+//    imm          - [out] the second operand of the carry op
+//
+// Return Value:
+//    True if the target has such an instruction.
+//
+bool Lowering::TryGetCarryOp(bool isAdd, bool borrowIsCond, ssize_t k, genTreeOps* carryOper, ssize_t* imm)
+{
+    // adc adds the carry, which is the inverse of the borrow, and sbc subtracts the borrow.
+    if (isAdd == borrowIsCond)
+    {
+        return false;
+    }
+
+#ifdef TARGET_ARM64
+    // adc/sbc have no immediate form.
+    if (k != 0)
+    {
+        return false;
+    }
+#endif
+
+    *carryOper = isAdd ? GT_ADD_HI : GT_SUB_HI;
+    *imm       = k;
+    return true;
 }
 
 //------------------------------------------------------------------------
@@ -1216,9 +1253,7 @@ bool Lowering::TryMakeIndirAndStoreAdjacent(GenTreeIndir* prevIndir, GenTreeLclV
         {
             // 'cur' is part of data flow of 'store', so we will be moving the
             // currently recorded effects past 'cur'.
-            // MarkTree does not track implicit flags dependencies.
-            if (cur->OperConsumesFlags() || cur->gtSetFlags() ||
-                m_scratchSideEffects.InterferesWith(m_compiler, cur, true))
+            if (m_scratchSideEffects.InterferesWith(m_compiler, cur, true))
             {
                 JITDUMP("Giving up due to interference with [%06u]\n", Compiler::dspTreeID(cur));
                 return false;
@@ -3406,6 +3441,70 @@ void Lowering::TryLowerCselToCSOp(GenTreeOp* select, GenTree* cond)
 }
 
 //----------------------------------------------------------------------------------------------
+// TryLowerAddOfCompareToCinc: Lower ADD(x, cond) and ADD(x, ADD(cond, k)), where "cond" is a compare,
+//    to a conditional increment:
+//
+//      x + cond        =>  cmp a, b; cinc x, x, cond
+//      x + (cond + k)  =>  add t, x, #k; cmp a, b; cinc t, t, cond
+//
+// Arguments:
+//    node - GT_ADD node
+//
+// Return Value:
+//    The SELECT_INCCC node if the transformation was done, otherwise nullptr.
+//
+GenTree* Lowering::TryLowerAddOfCompareToCinc(GenTreeOp* node)
+{
+    assert(node->OperIs(GT_ADD));
+
+    GenTree* other;
+    GenTree* condOp;
+    GenTree* addCns;
+    GenTree* relop = FindAddSubCompareOperand(node, &other, &condOp, &addCns);
+
+    GenCondition cond;
+    if ((relop == nullptr) || !TryLowerConditionToFlagsNode(node, relop, &cond, /* allowMultipleFlagsChecks */ false))
+    {
+        return nullptr;
+    }
+
+    // A constant is materialized with "mov", which does not change the flags.
+    GenTree* incSrc = other;
+    if (other->IsCnsIntOrI())
+    {
+        other->ClearContained();
+    }
+
+    if (addCns != nullptr)
+    {
+        // Reuse ADD(cond, k) to compute "other + k" right before the compare.
+        condOp->AsOp()->gtOp1 = other;
+        condOp->AsOp()->gtOp2 = addCns;
+        addCns->ClearContained();
+        BlockRange().Remove(condOp);
+        BlockRange().InsertBefore(relop, condOp);
+        ContainCheckBinary(condOp->AsOp());
+        incSrc = condOp;
+    }
+    else if (condOp != relop)
+    {
+        BlockRange().Remove(condOp);
+    }
+
+    node->ChangeOper(GT_SELECT_INCCC);
+    GenTreeOpCC* inc = node->AsOpCC();
+    inc->gtCondition = cond;
+    inc->gtOp1       = incSrc;
+    inc->gtOp2       = nullptr;
+
+    JITDUMP("Lowered ADD of a compare to SELECT_INCCC:\n");
+    DISPTREERANGE(BlockRange(), node);
+    JITDUMP("\n");
+
+    return node;
+}
+
+//----------------------------------------------------------------------------------------------
 // TryLowerCnsIntCselToCinc: Try converting SELECT/SELECTCC to SELECT_INC/SELECT_INCCC.
 // Conversion is possible if both the trueVal and falseVal are integer constants and abs(trueVal - falseVal) = 1,
 // or if one of trueVal/falseVal is 1 greater than the value being compared against
@@ -3444,11 +3543,6 @@ void Lowering::TryLowerCnsIntCselToCinc(GenTreeOp* select, GenTree* cond)
                     GenTree* revCond = m_compiler->gtReverseCond(cond);
                     assert(cond == revCond); // Ensure `gtReverseCond` did not create a new node.
                 }
-                else
-                {
-                    std::swap(select->gtOp1, select->gtOp2);
-                }
-
                 BlockRange().Remove(select->gtOp2, true);
                 select->gtOp2 = nullptr;
                 select->SetOper(GT_SELECT_INC);

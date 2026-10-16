@@ -7527,6 +7527,61 @@ genTreeOps ValueNumStore::VNRelopToGenTreeOp(VNFunc vnf, bool* isUnsigned)
 }
 
 //------------------------------------------------------------------------
+// IsVNZeroOrOne: Check if a value number is known to be 0 or 1, e.g. a compare.
+//
+// Notes:
+//    Values read from memory, parameters and call results may hold any value,
+//    even when they are typed as bool.
+//
+bool ValueNumStore::IsVNZeroOrOne(ValueNum vn, int budget)
+{
+    if (budget <= 0)
+    {
+        return false;
+    }
+
+    auto isZeroOrOne = [this, budget](ValueNum reachingVN) {
+        reachingVN = VNNormalValue(reachingVN);
+
+        int64_t value;
+        if (IsVNIntegralConstant(reachingVN, &value))
+        {
+            return (value == 0) || (value == 1);
+        }
+
+        VNFuncApp funcApp;
+        if (!GetVNFunc(reachingVN, &funcApp))
+        {
+            return false;
+        }
+
+        if (VNFuncIsComparison(funcApp.m_func))
+        {
+            return true;
+        }
+
+        switch (funcApp.m_func)
+        {
+            case VNFunc(GT_AND):
+                return IsVNZeroOrOne(funcApp.m_args[0], budget - 1) || IsVNZeroOrOne(funcApp.m_args[1], budget - 1);
+
+            case VNFunc(GT_OR):
+            case VNFunc(GT_XOR):
+                return IsVNZeroOrOne(funcApp.m_args[0], budget - 1) && IsVNZeroOrOne(funcApp.m_args[1], budget - 1);
+
+            case VNF_Cast:
+                return IsVNZeroOrOne(funcApp.m_args[0], budget - 1);
+
+            default:
+                return false;
+        }
+    };
+
+    return VNVisitReachingVNs(vn, [&isZeroOrOne](ValueNum reachingVN) {
+        return isZeroOrOne(reachingVN) ? VNVisit::Continue : VNVisit::Abort;
+    }) == VNVisit::Continue;
+}
+//------------------------------------------------------------------------
 // GetRelatedRelop: return value number for reversed/swapped comparison
 //
 // Arguments:
