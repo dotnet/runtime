@@ -5167,25 +5167,6 @@ void PromoteCarefully(promote_func   fn,
 
 class ByRefPointerOffsetsReporter
 {
-    struct ValueClassByRefSearchContext : ScanContext
-    {
-        TADDR address;
-        bool found;
-
-        explicit ValueClassByRefSearchContext(TADDR address)
-            : address(address), found(false)
-        {
-            LIMITED_METHOD_CONTRACT;
-        }
-
-        static void Match(PTR_PTR_Object fieldRef, ScanContext* sc, uint32_t)
-        {
-            LIMITED_METHOD_CONTRACT;
-            ValueClassByRefSearchContext* context = static_cast<ValueClassByRefSearchContext*>(sc);
-            context->found |= dac_cast<TADDR>(fieldRef) == context->address;
-        }
-    };
-
     struct OverlappingFields
     {
         PTR_MethodTable methodTable;
@@ -5198,10 +5179,19 @@ class ByRefPointerOffsetsReporter
     ScanContext* _sc;
     PTR_VOID _src;
     OverlappingFields* _overlappingFields;
+    SIZE_T _targetOffset;
+    bool _checkingOverlap;
+    bool _foundOverlap;
 
     void Report(SIZE_T pointerOffset)
     {
         WRAPPER_NO_CONTRACT;
+
+        if (_checkingOverlap)
+        {
+            _foundOverlap |= pointerOffset == _targetOffset;
+            return;
+        }
 
         // Explicit layout can declare the same physical byref more than once.
         // Earlier fields have already reported any byrefs in their ranges.
@@ -5216,10 +5206,12 @@ class ByRefPointerOffsetsReporter
                 SIZE_T offset = overlap->baseOffset + field->GetOffset();
                 if (pointerOffset >= offset && pointerOffset - offset < field->GetSize(nullptr))
                 {
-                    ValueClassByRefSearchContext context(dac_cast<TADDR>(PTR_BYTE(_src) + pointerOffset));
-                    ByRefPointerOffsetsReporter reporter(ValueClassByRefSearchContext::Match, &context, _src);
-                    reporter.Find(field, overlap->baseOffset);
-                    if (context.found)
+                    _targetOffset = pointerOffset;
+                    _foundOverlap = false;
+                    _checkingOverlap = true;
+                    Find(field, overlap->baseOffset);
+                    _checkingOverlap = false;
+                    if (_foundOverlap)
                     {
                         return;
                     }
@@ -5237,6 +5229,9 @@ public:
         , _sc{sc}
         , _src{pSrc}
         , _overlappingFields{nullptr}
+        , _targetOffset{0}
+        , _checkingOverlap{false}
+        , _foundOverlap{false}
     {
         WRAPPER_NO_CONTRACT;
     }
@@ -5267,7 +5262,7 @@ public:
 
         bool isValArray = pMT->GetClass()->IsInlineArray();
         OverlappingFields overlappingFields{pMT, nullptr, baseOffset, _overlappingFields};
-        if (pMT->GetClass()->HasOverlaidField())
+        if (!_checkingOverlap && pMT->GetClass()->HasOverlaidField())
         {
             _overlappingFields = &overlappingFields;
         }
