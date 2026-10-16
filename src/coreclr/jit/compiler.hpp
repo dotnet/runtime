@@ -3319,16 +3319,6 @@ inline bool Compiler::IsPotentialGCSafePoint(GenTree* tree) const
         }
     }
 
-#ifdef TARGET_WASM
-    // On wasm, GC locals on the frame are reported as untracked slots, including for aborted frames,
-    // and a tree that may throw can call a throw helper (see StackLevelSetter::MayUseThrowHelperBlock)
-    // before a local's first store.
-    if ((tree->gtFlags & GTF_EXCEPT) != 0)
-    {
-        return true;
-    }
-#endif // TARGET_WASM
-
     // TYP_STRUCT-typed stores might be converted into calls (with gc safe points) in Lower.
     // This is quite a conservative fix as it's hard to prove Lower won't do it at this point.
     if (tree->OperIsLocalStore())

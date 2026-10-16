@@ -5,8 +5,8 @@ using System;
 using System.Runtime.CompilerServices;
 using Xunit;
 
-// Victim's null check throws before its GC ref local is stored, so a GC while the
-// exception is dispatched must not see DirtyStack's garbage in that local.
+// Each victim throws before its GC ref local is first stored, so a GC while the throw
+// helper runs or the exception is dispatched must not see DirtyStack's garbage in it.
 public class Runtime_135966
 {
     private class Holder
@@ -23,6 +23,8 @@ public class Runtime_135966
     [Fact]
     public static void TestEntryPoint()
     {
+        int[] array = new int[1];
+
         for (int i = 0; i < 10; i++)
         {
             DirtyStack();
@@ -30,9 +32,23 @@ public class Runtime_135966
             bool caught = false;
             try
             {
-                Victim(null);
+                NullCheckVictim(null);
             }
             catch (NullReferenceException) when (Collect())
+            {
+                caught = true;
+            }
+
+            Assert.True(caught);
+
+            DirtyStack();
+
+            caught = false;
+            try
+            {
+                BoundsCheckVictim(array, 5);
+            }
+            catch (IndexOutOfRangeException) when (Collect())
             {
                 caught = true;
             }
@@ -56,15 +72,30 @@ public class Runtime_135966
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static object Victim(Holder holder)
+    private static object NullCheckVictim(Holder holder)
     {
         object value = holder.Value;
         KeepAlive(value);
         return value;
     }
 
+    // The local is address-exposed, so it is an untracked GC slot on every target.
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static object BoundsCheckVictim(int[] array, int index)
+    {
+        int element = array[index];
+        object value = array;
+        KeepAlive(ref value);
+        return element == 0 ? value : null;
+    }
+
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void KeepAlive(object value)
+    {
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void KeepAlive(ref object value)
     {
     }
 

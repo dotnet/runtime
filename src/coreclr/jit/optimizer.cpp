@@ -5696,6 +5696,8 @@ typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, unsigned> Lc
 //            the store is to a local (and not a field),
 //            the local is not lvLiveInOutOfHndlr or no exceptions can be thrown between the prolog and the store,
 //            either the local has no gc pointers or there are no gc-safe points between the prolog and the store,
+//            and, if the local is reported as an untracked gc slot, no exceptions can be thrown between the prolog
+//            and the store,
 //         then the local is marked with lvHasExplicitInit which tells the codegen not to insert zero initialization
 //         for this local in the prolog.
 //
@@ -5714,6 +5716,7 @@ void Compiler::optRemoveRedundantZeroInits()
     BitVec          zeroInitLocals         = BitVecOps::MakeEmpty(&bitVecTraits);
     bool            hasGCSafePoint         = false;
     bool            hasImplicitControlFlow = false;
+    bool            mayThrow               = false;
 
     assert(fgNodeThreading == NodeThreading::AllTrees);
 
@@ -5764,7 +5767,9 @@ void Compiler::optRemoveRedundantZeroInits()
             Statement* next = stmt->GetNextStmt();
             for (GenTree* const tree : stmt->TreeList())
             {
-                hasImplicitControlFlow |= hasEHSuccs && ((tree->gtFlags & GTF_EXCEPT) != 0);
+                const bool treeMayThrow = (tree->gtFlags & GTF_EXCEPT) != 0;
+                hasImplicitControlFlow |= hasEHSuccs && treeMayThrow;
+                mayThrow |= treeMayThrow;
                 hasGCSafePoint |= IsPotentialGCSafePoint(tree);
 
                 switch (tree->gtOper)
@@ -5922,7 +5927,16 @@ void Compiler::optRemoveRedundantZeroInits()
                             // insert a call to CORINFO_HELP_INIT_PINVOKE_FRAME but that is not a gc-safe point.
                             assert(s_helperCallProperties.IsNoGC(CORINFO_HELP_INIT_PINVOKE_FRAME));
 
-                            if (!lclDsc->HasGCPtr() || (!GetInterruptible() && !hasGCSafePoint))
+#ifdef TARGET_WASM
+                            // Wasm reports all gc locals on the frame as untracked slots.
+                            const bool reportedAsUntracked = true;
+#else
+                            const bool reportedAsUntracked = !lclDsc->lvTracked;
+#endif
+                            // An untracked gc slot is reported whenever its frame is, including from
+                            // a throw helper that a tree before this store may call.
+                            if (!lclDsc->HasGCPtr() ||
+                                (!GetInterruptible() && !hasGCSafePoint && !(mayThrow && reportedAsUntracked)))
                             {
                                 // The local hasn't been used and won't be reported to the gc between
                                 // the prolog and this explicit initialization. Therefore, it doesn't
