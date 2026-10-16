@@ -2440,7 +2440,7 @@ namespace Internal.IL
 
             var targetType = StackValue.CreateFromType(type);
 
-            Check(!IsByRefLike(targetType) || (type.IsByRefLike && IsByRefLikeBoxPattern()), VerifierError.BoxByRef, targetType);
+            Check(!IsByRefLike(targetType), VerifierError.BoxByRef, targetType);
 
             Check(type.IsPrimitive || targetType.Kind == StackValueKind.ObjRef ||
                 type.IsGenericParameter || type.IsValueType, VerifierError.ExpectedValClassObjRefVariable);
@@ -2456,19 +2456,6 @@ namespace Internal.IL
 
             // even if type is a value type we want the ref
             Push(StackValue.CreateObjRef(typeForBox));
-        }
-
-        // Boxing a byref-like type is only allowed before brtrue/brfalse or unbox.any, optionally after isinst.
-        bool IsByRefLikeBoxPattern()
-        {
-            int offset = _currentOffset;
-            if (offset < _ilBytes.Length && GetOpcodeAt(offset) == ILOpcode.isinst)
-                offset += 5;
-
-            if (offset >= _ilBytes.Length)
-                return false;
-
-            return GetOpcodeAt(offset) is ILOpcode.brtrue or ILOpcode.brtrue_s or ILOpcode.brfalse or ILOpcode.brfalse_s or ILOpcode.unbox_any;
         }
 
         static bool IsOffsetContained(int offset, int start, int length)

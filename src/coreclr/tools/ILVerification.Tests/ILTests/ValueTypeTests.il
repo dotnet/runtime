@@ -58,7 +58,7 @@
         ret
     }
 
-    .method public static void ByRefLike.BoxBrtrue_Valid(valuetype ByRefLikeType v) cil managed
+    .method public static void ByRefLike.BoxBrtrue_Invalid_BoxByRef(valuetype ByRefLikeType v) cil managed
     {
         ldarg.0
         box        ByRefLikeType
@@ -67,7 +67,7 @@
         ret
     }
 
-    .method public static void ByRefLike.BoxIsinstBrfalse_Valid(valuetype ByRefLikeType v) cil managed
+    .method public static void ByRefLike.BoxIsinstBrfalse_Invalid_BoxByRef(valuetype ByRefLikeType v) cil managed
     {
         ldarg.0
         box        ByRefLikeType
@@ -77,7 +77,7 @@
         ret
     }
 
-    .method public static void ByRefLike.BoxUnboxAny_Valid(valuetype ByRefLikeType v) cil managed
+    .method public static void ByRefLike.BoxUnboxAny_Invalid_BoxByRef(valuetype ByRefLikeType v) cil managed
     {
         ldarg.0
         box        ByRefLikeType
