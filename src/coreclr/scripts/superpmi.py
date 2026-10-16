@@ -1231,6 +1231,7 @@ class SuperPMICollect:
                         stdout_file_handle, stdout_filepath = tempfile.mkstemp(suffix=".stdout", prefix=root_output_filename, dir=self.temp_location)
                         stderr_file_handle, stderr_filepath = tempfile.mkstemp(suffix=".stderr", prefix=root_output_filename, dir=self.temp_location)
 
+                        # Avoid shell splitting when the crossgen2 or response-file path contains spaces.
                         proc = await asyncio.create_subprocess_exec(
                             *command,
                             stdout=stdout_file_handle,
