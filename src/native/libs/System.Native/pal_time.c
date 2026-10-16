@@ -65,7 +65,7 @@ int32_t SystemNative_FUTimens(intptr_t fd, TimeSpec* times)
 
     while (CheckInterrupted(result = futimens(ToFileDescriptor(fd), updatedTimes)));
 #else
-    // Fallback on unsupported platforms (e.g. iOS, tvOS, watchOS)
+    // Fallback on unsupported platforms (e.g. iOS, tvOS)
     // to futimes (lower precision)
     struct timeval updatedTimes[2];
     updatedTimes[0].tv_sec = (long)times[0].tv_sec;
