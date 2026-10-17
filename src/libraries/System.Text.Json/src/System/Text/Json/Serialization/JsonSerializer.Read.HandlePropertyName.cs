@@ -163,7 +163,7 @@ namespace System.Text.Json
                             extensionData = new Dictionary<string, object>();
                         }
                         Debug.Assert(jsonPropertyInfo.Set is not null);
-                        jsonPropertyInfo.Set(obj, extensionData);
+                        jsonPropertyInfo.SetValueAsObject(obj, extensionData);
                         return;
                     }
                     else if (jsonPropertyInfo.PropertyType == typeof(IReadOnlyDictionary<string, JsonElement>))
@@ -183,7 +183,7 @@ namespace System.Text.Json
                             extensionData = new Dictionary<string, JsonElement>();
                         }
                         Debug.Assert(jsonPropertyInfo.Set is not null);
-                        jsonPropertyInfo.Set(obj, extensionData);
+                        jsonPropertyInfo.SetValueAsObject(obj, extensionData);
                         return;
                     }
                     else
@@ -194,7 +194,7 @@ namespace System.Text.Json
 
                 extensionData = createObjectForExtensionDataProp();
                 Debug.Assert(jsonPropertyInfo.Set is not null);
-                jsonPropertyInfo.Set(obj, extensionData);
+                jsonPropertyInfo.SetValueAsObject(obj, extensionData);
             }
 
             // We don't add the value to the dictionary here because we need to support the read-ahead functionality for Streams.

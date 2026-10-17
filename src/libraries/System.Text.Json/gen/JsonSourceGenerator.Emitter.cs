@@ -25,7 +25,7 @@ namespace System.Text.Json.SourceGeneration
             private const string InvalidOperationExceptionTypeRef = "global::System.InvalidOperationException";
             private const string JsonExceptionTypeRef = "global::System.Text.Json.JsonException";
             private const string TypeTypeRef = "global::System.Type";
-            private const string UnsafeTypeRef = "global::System.Runtime.CompilerServices.Unsafe";
+            private const string StrongBoxTypeRef = "global::System.Runtime.CompilerServices.StrongBox";
             private const string EqualityComparerTypeRef = "global::System.Collections.Generic.EqualityComparer";
             private const string KeyValuePairTypeRef = "global::System.Collections.Generic.KeyValuePair";
             private const string UnsafeAccessorAttributeTypeRef = "global::System.Runtime.CompilerServices.UnsafeAccessorAttribute";
@@ -643,7 +643,7 @@ namespace System.Text.Json.SourceGeneration
                 if (propInitMethodName != null)
                 {
                     writer.WriteLine();
-                    GeneratePropMetadataInitFunc(writer, contextSpec, propInitMethodName, typeMetadata);
+                    GeneratePropMetadataInitFunc(writer, propInitMethodName, typeMetadata);
                 }
 
                 if (serializeMethodName != null)
@@ -826,7 +826,7 @@ namespace System.Text.Json.SourceGeneration
                     : $"({fqn}?)";
             }
 
-            private void GeneratePropMetadataInitFunc(SourceWriter writer, ContextGenerationSpec contextSpec, string propInitMethodName, TypeGenerationSpec typeGenerationSpec)
+            private void GeneratePropMetadataInitFunc(SourceWriter writer, string propInitMethodName, TypeGenerationSpec typeGenerationSpec)
             {
                 ImmutableEquatableArray<PropertyGenerationSpec> properties = typeGenerationSpec.PropertyGenSpecs;
                 HashSet<string> duplicateMemberNames = GetDuplicateMemberNames(properties);
@@ -855,8 +855,8 @@ namespace System.Text.Json.SourceGeneration
 
                     string propertyTypeFQN = isIgnoredPropertyOfUnusedType ? "object" : property.PropertyType.FullyQualifiedName;
 
-                    string getterValue = GetPropertyGetterValue(contextSpec, property, typeGenerationSpec, propertyName, declaringTypeFQN, i, duplicateMemberNames.Contains(property.MemberName));
-                    string setterValue = GetPropertySetterValue(contextSpec, property, typeGenerationSpec, propertyName, declaringTypeFQN, i, duplicateMemberNames.Contains(property.MemberName));
+                    string getterValue = GetPropertyGetterValue(property, typeGenerationSpec, propertyName, declaringTypeFQN, i, duplicateMemberNames.Contains(property.MemberName));
+                    string setterValue = GetPropertySetterValue(property, typeGenerationSpec, propertyName, declaringTypeFQN, i, duplicateMemberNames.Contains(property.MemberName));
 
                     string ignoreConditionNamedArg = property.DefaultIgnoreCondition.HasValue
                         ? $"{JsonIgnoreConditionTypeRef}.{property.DefaultIgnoreCondition.Value}"
@@ -969,14 +969,7 @@ namespace System.Text.Json.SourceGeneration
                 return false;
             }
 
-            private static string GetUnboxExpression(ContextGenerationSpec contextSpec, string declaringTypeFQN)
-            {
-                string expression = $"{UnsafeTypeRef}.Unbox<{declaringTypeFQN}>(obj)";
-                return contextSpec.UseUpdatedMemorySafetyRules ? $"unsafe({expression})" : expression;
-            }
-
             private static string GetPropertyGetterValue(
-                ContextGenerationSpec contextSpec,
                 PropertyGenerationSpec property,
                 TypeGenerationSpec typeGenerationSpec,
                 string propertyName,
@@ -991,7 +984,11 @@ namespace System.Text.Json.SourceGeneration
 
                 if (property.CanUseGetter)
                 {
-                    return $"static obj => (({declaringTypeFQN})obj).{propertyName}";
+                    // For value types, the getter may receive a StrongBox<T> during deserialization (e.g. for populated properties or callbacks)
+                    // or a boxed T during serialization.
+                    return typeGenerationSpec.TypeRef.IsValueType
+                        ? $"static obj => (obj is {StrongBoxTypeRef}<{declaringTypeFQN}> box ? box.Value : ({declaringTypeFQN})obj).{propertyName}"
+                        : $"static obj => (({declaringTypeFQN})obj).{propertyName}";
                 }
 
                 if (NeedsAccessorForGetter(property))
@@ -1000,33 +997,39 @@ namespace System.Text.Json.SourceGeneration
 
                     if (property.CanUseUnsafeAccessors)
                     {
-                        // UnsafeAccessor externs for value types take 'ref T'.
-                        string castExpr = typeGenerationSpec.TypeRef.IsValueType
-                            ? $"ref {GetUnboxExpression(contextSpec, declaringTypeFQN)}"
-                            : $"({declaringTypeFQN})obj";
-
                         string accessorName = property.IsProperty
                             ? GetQualifiedAccessorName(property, typeFriendlyName, "get", property.MemberName, propertyIndex, needsDisambiguation)
                             : GetQualifiedAccessorName(property, typeFriendlyName, "field", property.MemberName, propertyIndex, needsDisambiguation);
 
-                        return $"static obj => {accessorName}({castExpr})";
+                        // Value types pass ref StrongBox<T>.Value during deserialization or ref temp during serialization.
+                        if (typeGenerationSpec.TypeRef.IsValueType)
+                        {
+                            return $"static obj => {{ if (obj is {StrongBoxTypeRef}<{declaringTypeFQN}> box) return {accessorName}(ref box.Value); var temp = ({declaringTypeFQN})obj; return {accessorName}(ref temp); }}";
+                        }
+
+                        return $"static obj => {accessorName}(({declaringTypeFQN})obj)";
                     }
 
                     string getterName = GetAccessorName(typeFriendlyName, "get", property.MemberName, propertyIndex, needsDisambiguation);
                     if (!property.IsProperty)
                     {
-                        return $"static obj => {getterName}(obj)";
+                        // Value types can be passed as StrongBox<T> during deserialization or boxed T during serialization.
+                        return typeGenerationSpec.TypeRef.IsValueType
+                            ? $"static obj => {getterName}(obj is {StrongBoxTypeRef}<{declaringTypeFQN}> box ? box.Value : obj)"
+                            : $"static obj => {getterName}(obj)";
                     }
 
                     // Reflection fallback property wrappers are strongly typed; cast in the delegate.
-                    return $"static obj => {getterName}(({declaringTypeFQN})obj)";
+                    // Value types can be passed as StrongBox<T> during deserialization or boxed T during serialization.
+                    return typeGenerationSpec.TypeRef.IsValueType
+                        ? $"static obj => {getterName}(obj is {StrongBoxTypeRef}<{declaringTypeFQN}> box ? box.Value : ({declaringTypeFQN})obj)"
+                        : $"static obj => {getterName}(({declaringTypeFQN})obj)";
                 }
 
                 return "null";
             }
 
             private static string GetPropertySetterValue(
-                ContextGenerationSpec contextSpec,
                 PropertyGenerationSpec property,
                 TypeGenerationSpec typeGenerationSpec,
                 string propertyName,
@@ -1041,19 +1044,19 @@ namespace System.Text.Json.SourceGeneration
 
                 if (property is { CanUseSetter: true, IsInitOnlySetter: true })
                 {
-                    return GetAccessorBasedSetterDelegate(contextSpec, property, typeGenerationSpec, declaringTypeFQN, propertyIndex, needsDisambiguation);
+                    return GetAccessorBasedSetterDelegate(property, typeGenerationSpec, declaringTypeFQN, propertyIndex, needsDisambiguation);
                 }
 
                 if (property.CanUseSetter)
                 {
                     return typeGenerationSpec.TypeRef.IsValueType
-                        ? $"""static (obj, value) => {GetUnboxExpression(contextSpec, declaringTypeFQN)}.{propertyName} = value!"""
+                        ? $"""static (obj, value) => (({StrongBoxTypeRef}<{declaringTypeFQN}>)obj).Value.{propertyName} = value!"""
                         : $"""static (obj, value) => (({declaringTypeFQN})obj).{propertyName} = value!""";
                 }
 
                 if (NeedsAccessorForSetter(property))
                 {
-                    return GetAccessorBasedSetterDelegate(contextSpec, property, typeGenerationSpec, declaringTypeFQN, propertyIndex, needsDisambiguation);
+                    return GetAccessorBasedSetterDelegate(property, typeGenerationSpec, declaringTypeFQN, propertyIndex, needsDisambiguation);
                 }
 
                 return "null";
@@ -1064,7 +1067,6 @@ namespace System.Text.Json.SourceGeneration
             /// or the strongly typed reflection wrapper.
             /// </summary>
             private static string GetAccessorBasedSetterDelegate(
-                ContextGenerationSpec contextSpec,
                 PropertyGenerationSpec property,
                 TypeGenerationSpec typeGenerationSpec,
                 string declaringTypeFQN,
@@ -1076,7 +1078,7 @@ namespace System.Text.Json.SourceGeneration
                 if (property.CanUseUnsafeAccessors)
                 {
                     string castExpr = typeGenerationSpec.TypeRef.IsValueType
-                        ? $"ref {GetUnboxExpression(contextSpec, declaringTypeFQN)}"
+                        ? $"ref (({StrongBoxTypeRef}<{declaringTypeFQN}>)obj).Value"
                         : $"({declaringTypeFQN})obj";
 
                     if (property.IsProperty)
@@ -1097,7 +1099,7 @@ namespace System.Text.Json.SourceGeneration
 
                 // Reflection fallback property wrappers are strongly typed; cast in the delegate like UnsafeAccessor.
                 string setterCastExpr = typeGenerationSpec.TypeRef.IsValueType
-                    ? $"ref {GetUnboxExpression(contextSpec, declaringTypeFQN)}"
+                    ? $"ref (({StrongBoxTypeRef}<{declaringTypeFQN}>)obj).Value"
                     : $"({declaringTypeFQN})obj";
 
                 return $"static (obj, value) => {setterName}({setterCastExpr}, value!)";
@@ -1239,13 +1241,48 @@ namespace System.Text.Json.SourceGeneration
                         if (needsGetterAccessor)
                         {
                             string wrapperName = GetAccessorName(typeFriendlyName, "get", property.MemberName, i, disambiguate);
-                            writer.WriteLine($"private static {propertyTypeFQN} {wrapperName}(object obj) => ({propertyTypeFQN})({fieldCacheName} ??= {fieldExpr}).GetValue(obj)!;");
+                            if (typeGenerationSpec.TypeRef.IsValueType)
+                            {
+                                // Value types can be passed as StrongBox<T> during deserialization or boxed T during serialization.
+                                writer.WriteLine($"private static {propertyTypeFQN} {wrapperName}(object obj) => ({propertyTypeFQN})({fieldCacheName} ??= {fieldExpr}).GetValue(obj is {StrongBoxTypeRef}<{declaringTypeFQN}> box ? box.Value : obj)!;");
+                            }
+                            else
+                            {
+                                writer.WriteLine($"private static {propertyTypeFQN} {wrapperName}(object obj) => ({propertyTypeFQN})({fieldCacheName} ??= {fieldExpr}).GetValue(obj)!;");
+                            }
                         }
 
                         if (needsSetterAccessor)
                         {
                             string wrapperName = GetAccessorName(typeFriendlyName, "set", property.MemberName, i, disambiguate);
-                            writer.WriteLine($"private static void {wrapperName}(object obj, {propertyTypeFQN} value) => ({fieldCacheName} ??= {fieldExpr}).SetValue(obj, value);");
+                            if (typeGenerationSpec.TypeRef.IsValueType)
+                            {
+                                writer.WriteLine($"private static void {wrapperName}(object obj, {propertyTypeFQN} value)");
+                                writer.WriteLine('{');
+                                writer.Indentation++;
+                                // Value types are wrapped in StrongBox<T> during deserialization so mutating box.Value persists.
+                                // If called on an unboxed or directly boxed struct instance, set directly on obj.
+                                writer.WriteLine($"if (obj is {StrongBoxTypeRef}<{declaringTypeFQN}> box)");
+                                writer.WriteLine('{');
+                                writer.Indentation++;
+                                writer.WriteLine("object boxed = box.Value;");
+                                writer.WriteLine($"({fieldCacheName} ??= {fieldExpr}).SetValue(boxed, value);");
+                                writer.WriteLine($"box.Value = ({declaringTypeFQN})boxed;");
+                                writer.Indentation--;
+                                writer.WriteLine('}');
+                                writer.WriteLine("else");
+                                writer.WriteLine('{');
+                                writer.Indentation++;
+                                writer.WriteLine($"({fieldCacheName} ??= {fieldExpr}).SetValue(obj, value);");
+                                writer.Indentation--;
+                                writer.WriteLine('}');
+                                writer.Indentation--;
+                                writer.WriteLine('}');
+                            }
+                            else
+                            {
+                                writer.WriteLine($"private static void {wrapperName}(object obj, {propertyTypeFQN} value) => ({fieldCacheName} ??= {fieldExpr}).SetValue(obj, value);");
+                            }
                         }
                     }
                 }
