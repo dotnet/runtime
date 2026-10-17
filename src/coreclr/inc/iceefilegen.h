@@ -170,6 +170,13 @@ class ICeeFileGen {
                                                      ULONG *pNumSections);
 
     virtual HRESULT SetVTableEntry64(HCEEFILE ceeFile, ULONG size, void* ptr);
+
+    // Fix up the image and hash it as GenerateCeeFile would write it now. The caller may then
+    // change bytes it owns (such as the MVID) and the file header timestamp before GenerateCeeFile,
+    // but must not add section data or relocations, which would no longer be applied.
+    virtual HRESULT ComputeImageHash(HCEEFILE ceeFile,
+                                     HRESULT (*computeHash)(BYTE* pSrc, DWORD srcSize, BYTE* pDst, DWORD dstSize),
+                                     BYTE* pHash, DWORD hashSize);
 };
 
 #endif

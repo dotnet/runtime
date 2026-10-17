@@ -79,6 +79,8 @@ public:
     HRESULT link();     // Layout the sections and assign their starting addresses
     HRESULT fixup();    // Apply relocations to any pointer data. Also generate PE base relocs
     HRESULT generateImage(void **ppImage);
+    HRESULT computeImageHash(HRESULT (*computeHash)(BYTE* pSrc, DWORD srcSize, BYTE* pDst, DWORD dstSize),
+                             BYTE* pHash, DWORD hashSize);
 
     HRESULT setImageBase(size_t imageBase);
     HRESULT setImageBase64(ULONGLONG imageBase);
