@@ -371,7 +371,8 @@ inline size_t CheckIfPgoSchemaIsCompatibleAndSetOffsets(const uint8_t *pByte, si
     return nMatched;
 }
 
-inline bool ReadInstrumentationSchemaWithLayoutIntoSArray(const uint8_t *pByte, size_t cbDataMax, size_t initialOffset, SArray<ICorJitInfo::PgoInstrumentationSchema>* pSchemas)
+template<class SchemaArray>
+inline bool ReadInstrumentationSchemaWithLayoutIntoSArray(const uint8_t *pByte, size_t cbDataMax, size_t initialOffset, SchemaArray* pSchemas)
 {
     auto lambda = [pSchemas](const ICorJitInfo::PgoInstrumentationSchema &schema)
     {
@@ -380,6 +381,55 @@ inline bool ReadInstrumentationSchemaWithLayoutIntoSArray(const uint8_t *pByte, 
     };
 
     return ReadInstrumentationSchemaWithLayout(pByte, cbDataMax, initialOffset, lambda);
+}
+
+template<class SchemaArray>
+bool SnapshotPgoInstrumentationData(const uint8_t* pData,
+                                    size_t countsOffset,
+                                    SchemaArray* pSchemas,
+                                    uint8_t** pAllocatedData,
+                                    ICorJitInfo::PgoInstrumentationSchema** ppSchema,
+                                    uint32_t* pCountSchemaItems,
+                                    uint8_t** pInstrumentationData)
+{
+    *pAllocatedData = nullptr;
+    *ppSchema = nullptr;
+    *pCountSchemaItems = 0;
+    *pInstrumentationData = nullptr;
+
+    // Retain the allocator's data-relative offsets: starting layout at zero changes
+    // the padding for 8-byte entries when countsOffset is only 4-byte aligned.
+    if (!ReadInstrumentationSchemaWithLayoutIntoSArray(pData, countsOffset, countsOffset, pSchemas))
+    {
+        return false;
+    }
+
+    size_t schemaSize = pSchemas->GetCount() * sizeof(ICorJitInfo::PgoInstrumentationSchema);
+    size_t schemaDataSize = AlignUp(schemaSize, sizeof(size_t));
+    size_t instrumentationDataSize = 0;
+    if (pSchemas->GetCount() > 0)
+    {
+        const ICorJitInfo::PgoInstrumentationSchema& lastSchema = (*pSchemas)[pSchemas->GetCount() - 1];
+        instrumentationDataSize = AlignUp(lastSchema.Offset + lastSchema.Count * InstrumentationKindToSize(lastSchema.InstrumentationKind), sizeof(size_t));
+    }
+
+    *pAllocatedData = new uint8_t[schemaDataSize + instrumentationDataSize];
+    *ppSchema = reinterpret_cast<ICorJitInfo::PgoInstrumentationSchema*>(*pAllocatedData);
+    *pCountSchemaItems = static_cast<uint32_t>(pSchemas->GetCount());
+    memcpy(*ppSchema, pSchemas->GetElements(), schemaSize);
+
+    // Copy the schema prefix along with the counters so the offsets index directly
+    // into this snapshot. Volatile native-word reads preserve pointer-sized entries.
+    size_t* pDst = reinterpret_cast<size_t*>(*pAllocatedData + schemaDataSize);
+    size_t* pDstEnd = reinterpret_cast<size_t*>(*pAllocatedData + schemaDataSize + instrumentationDataSize);
+    *pInstrumentationData = reinterpret_cast<uint8_t*>(pDst);
+    const volatile size_t* pSrc = reinterpret_cast<const volatile size_t*>(pData);
+    for (; pDst < pDstEnd; pDst++, pSrc++)
+    {
+        *pDst = *pSrc;
+    }
+
+    return true;
 }
 
 #define SIGN_MASK_ONEBYTE_64BIT  0xffffffffffffffc0LL
@@ -398,7 +448,7 @@ bool WriteCompressedIntToBytes(int64_t value, ByteWriter& byteWriter)
 
     if ((value & SIGN_MASK_ONEBYTE_64BIT) == 0 || (value & SIGN_MASK_ONEBYTE_64BIT) == SIGN_MASK_ONEBYTE_64BIT)
     {
-        return byteWriter((uint8_t)((value & ~SIGN_MASK_ONEBYTE) << 1 | isSigned));
+        return byteWriter((uint8_t)((value & ~SIGN_MASK_ONEBYTE_64BIT) << 1 | isSigned));
     }
     else if ((value & SIGN_MASK_TWOBYTE_64BIT) == 0 || (value & SIGN_MASK_TWOBYTE_64BIT) == SIGN_MASK_TWOBYTE_64BIT)
     {
