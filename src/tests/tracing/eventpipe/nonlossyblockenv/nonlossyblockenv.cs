@@ -214,7 +214,7 @@ namespace Tracing.Tests.NonLossyBlockEnv
             process.BeginOutputReadLine();
             process.BeginErrorReadLine();
 
-            if (!process.WaitForExit(TraceeExitTimeoutMs))
+            if (!process.TryWaitForExitStatus(TimeSpan.FromMilliseconds(TraceeExitTimeoutMs), out _))
             {
                 Console.WriteLine($"Tracee did not exit within {TraceeExitTimeoutMs}ms; killing it.");
                 process.Kill(entireProcessTree: true);

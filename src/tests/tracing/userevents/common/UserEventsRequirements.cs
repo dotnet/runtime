@@ -56,9 +56,9 @@ namespace Tracing.UserEvents.Tests.Common
             }
 
             // A process can close its std handles but keep running.
-            process.WaitForExit();
+            ProcessExitStatus exitStatus = process.WaitForExitStatus();
 
-            if (process.ExitCode == 0)
+            if (exitStatus.ExitCode == 0)
             {
                 return true;
             }
@@ -95,9 +95,9 @@ namespace Tracing.UserEvents.Tests.Common
             }
 
             // A process can close its std handles but keep running.
-            process.WaitForExit();
+            ProcessExitStatus exitStatus = process.WaitForExitStatus();
 
-            if (process.ExitCode == 0)
+            if (exitStatus.ExitCode == 0)
             {
                 return true;
             }

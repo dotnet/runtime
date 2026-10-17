@@ -58,7 +58,7 @@ namespace TestStackOverflow
             }
 
             // A process can close its std handles but keep running.
-            testProcess.WaitForExit();
+            ProcessExitStatus exitStatus = testProcess.WaitForExitStatus();
 
             stderrLines = lines;
 
@@ -72,7 +72,7 @@ namespace TestStackOverflow
                 expectedExitCodes = new int[] { unchecked((int)0xC00000FD), unchecked((int)0x800703E9) };
             }
 
-            if (!Array.Exists(expectedExitCodes, code => testProcess.ExitCode == code))
+            if (!Array.Exists(expectedExitCodes, code => exitStatus.ExitCode == code))
             {
                 string separator = string.Empty;
                 StringBuilder expectedListBuilder = new StringBuilder();
@@ -80,7 +80,7 @@ namespace TestStackOverflow
                     expectedListBuilder.Append($"{separator}0x{code:X8}");
                     separator = " or ";
                 });
-                throw new Exception($"Exit code: 0x{testProcess.ExitCode:X8}, expected {expectedListBuilder.ToString()}");
+                throw new Exception($"Exit code: 0x{exitStatus.ExitCode:X8}, expected {expectedListBuilder.ToString()}");
             }
 
             if (lines[0] != "Stack overflow.")

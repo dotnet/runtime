@@ -21,15 +21,12 @@ public class InterpreterTester
         string coreRoot = Environment.GetEnvironmentVariable("CORE_ROOT");
         string interpreterApp = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "Interpreter.dll");
 
-        var startInfo = new ProcessStartInfo(Path.Combine(coreRoot, "corerun"), interpreterApp);
+        var startInfo = new ProcessStartInfo(Path.Combine(coreRoot, "corerun"), new[] { interpreterApp });
         startInfo.EnvironmentVariables["DOTNET_Interpreter"] = "RunInterpreterTests";
 
-        using (Process p = Process.Start(startInfo))
-        {
-            p.WaitForExit();
-            Console.WriteLine ("Interpreted App returned {0}", p.ExitCode);
-            if (p.ExitCode != 100)
-                throw new Exception("Interpreted App failed execution");
-        }
+        ProcessExitStatus exitStatus = Process.Run(startInfo);
+        Console.WriteLine("Interpreted App returned {0}", exitStatus.ExitCode);
+        if (exitStatus.ExitCode != 100)
+            throw new Exception("Interpreted App failed execution");
     }
 }

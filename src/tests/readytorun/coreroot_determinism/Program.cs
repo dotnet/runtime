@@ -95,14 +95,30 @@ public class Program
             Directory.Delete(outDir, true);
         }
         Directory.CreateDirectory(outDir);
-        ProcessStartInfo processStartInfo = new ProcessStartInfo(coreRunPath, $"{superIlcPath} compile-directory -cr {coreRootPath} -in {compilationInputFolder} --nojit --noexe --large-bubble --release --nocleanup -ct 30 -out {outDir}");
-        var process = Process.Start(processStartInfo);
-        process.WaitForExit();
-        if (process.ExitCode != 0)
+        ProcessStartInfo processStartInfo = new(coreRunPath, new[]
         {
-            Console.WriteLine($"Compilation failed. {processStartInfo.FileName} {processStartInfo.Arguments} failed with exit code {process.ExitCode}");
+            superIlcPath,
+            "compile-directory",
+            "-cr",
+            coreRootPath,
+            "-in",
+            compilationInputFolder,
+            "--nojit",
+            "--noexe",
+            "--large-bubble",
+            "--release",
+            "--nocleanup",
+            "-ct",
+            "30",
+            "-out",
+            outDir
+        });
+        ProcessExitStatus exitStatus = Process.Run(processStartInfo);
+        if (exitStatus.ExitCode != 0)
+        {
+            Console.WriteLine($"Compilation failed. {processStartInfo.FileName} {string.Join(" ", processStartInfo.ArgumentList)} failed with exit code {exitStatus.ExitCode}");
         }
-        return 0 == process.ExitCode;
+        return exitStatus.ExitCode == 0;
     }
 
     [ActiveIssue("These tests are not supposed to be run with mono.", TestRuntimes.Mono)]

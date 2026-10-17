@@ -7,13 +7,13 @@
 // and a set of multithreaded tasks, that has been known to cause the runtime to crash when this is handled incorrectly.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Runtime.Loader;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -53,7 +53,7 @@ namespace TestTLSWithLoadedDlls
             if (OperatingSystem.IsWindows()) // Windows does not have a really long command line length limit, and doesn't have a problem with many TLS using images used
                 CountOfLibTlsToLoad = 10;
 
-            StringBuilder arguments = new();
+            List<string> arguments = new();
 
             (string prefix, string suffix) = GetSharedLibraryPrefixSuffix();
 
@@ -74,25 +74,22 @@ namespace TestTLSWithLoadedDlls
                         finalUseTlsPath);
                 }
 
-                arguments.Append(" -l ");
-                arguments.Append(finalUseTlsPath);
+                arguments.Add("-l");
+                arguments.Add(finalUseTlsPath);
             }
 
-            arguments.Append(' ');
-            arguments.Append(System.Reflection.Assembly.GetExecutingAssembly().Location);
-            arguments.Append(" RunLotsOfTasks");
+            arguments.Add(System.Reflection.Assembly.GetExecutingAssembly().Location);
+            arguments.Add("RunLotsOfTasks");
 
-            Process process = new Process();
-            process.StartInfo.FileName = GetCorerunPath();
-            process.StartInfo.Arguments = arguments.ToString();
-            process.StartInfo.UseShellExecute = false;
-            process.StartInfo.EnvironmentVariables["DOTNET_AssertNotStaticTlsResolver"] = "1";
+            ProcessStartInfo startInfo = new(GetCorerunPath(), arguments)
+            {
+                UseShellExecute = false
+            };
+            startInfo.EnvironmentVariables["DOTNET_AssertNotStaticTlsResolver"] = "1";
 
-            Console.WriteLine($"Launching {process.StartInfo.FileName} {process.StartInfo.Arguments}");
+            Console.WriteLine($"Launching {startInfo.FileName} {string.Join(" ", startInfo.ArgumentList)}");
 
-            process.Start();
-            process.WaitForExit();
-            return process.ExitCode;
+            return Process.Run(startInfo).ExitCode;
         }
 
         private static string GetCorerunPath()

@@ -26,28 +26,22 @@ public class Program
         }
 
         Console.WriteLine("Running llvm-dwarfdump");
-        var proc = Process.Start(llvmDwarfDumpPath, "--version");
-
-        if (proc is null)
-        {
-            Console.WriteLine("llvm-dwarfdump could not run");
-            return 2;
-        }
-
-        proc.WaitForExit();
-        if (proc.ExitCode != 0)
+        ProcessExitStatus versionExitStatus = Process.Run(llvmDwarfDumpPath, new[] { "--version" });
+        if (versionExitStatus.ExitCode != 0)
         {
             return 3;
         }
 
-        ProcessTextOutput result = Process.RunAndCaptureText(new ProcessStartInfo
+        ProcessStartInfo verifyStartInfo = new(llvmDwarfDumpPath)
         {
-            FileName = llvmDwarfDumpPath,
-            Arguments = $"--verify {Environment.ProcessPath}",
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             UseShellExecute = false
-        });
+        };
+        verifyStartInfo.ArgumentList.Add("--verify");
+        verifyStartInfo.ArgumentList.Add(Environment.ProcessPath);
+
+        ProcessTextOutput result = Process.RunAndCaptureText(verifyStartInfo);
 
         // Just count the number of warnings and errors. There are so many right now that it's not worth enumerating the list
         const int MinWarnings = 15;

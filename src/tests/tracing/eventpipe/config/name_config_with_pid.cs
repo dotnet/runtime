@@ -46,10 +46,12 @@ class NameConfigWithPid
             string outputPathBaseName = $"eventPipeStream{Thread.CurrentThread.ManagedThreadId}_{(ulong)Stopwatch.GetTimestamp()}";
             string outputPathPattern = Path.Combine(tempDir, outputPathBaseName + "_{pid}_{pid}.nettrace");
 
-            process.StartInfo.FileName = Process.GetCurrentProcess().MainModule.FileName;
-            process.StartInfo.Arguments = TestLibrary.Utilities.IsNativeAot
-                ? WaitForInput
-                : $"{typeof(NameConfigWithPid).Assembly.Location} {WaitForInput}";
+            process.StartInfo.FileName = Environment.ProcessPath;
+            if (!TestLibrary.Utilities.IsNativeAot)
+            {
+                process.StartInfo.ArgumentList.Add(typeof(NameConfigWithPid).Assembly.Location);
+            }
+            process.StartInfo.ArgumentList.Add(WaitForInput);
             process.StartInfo.UseShellExecute = false;
             process.StartInfo.RedirectStandardInput = true;
             process.StartInfo.RedirectStandardError = true;
@@ -59,7 +61,7 @@ class NameConfigWithPid
             process.StartInfo.Environment.Add("DOTNET_EventPipeOutputPath", outputPathPattern);
             process.StartInfo.Environment.Add("CORE_ROOT", coreRoot);
 
-            Console.WriteLine($"Starting process '{process.StartInfo.FileName}' '{process.StartInfo.Arguments}'");
+            Console.WriteLine($"Starting process '{process.StartInfo.FileName}' '{string.Join(" ", process.StartInfo.ArgumentList)}'");
             Console.Out.Flush();
             process.Start();
 
@@ -78,7 +80,8 @@ class NameConfigWithPid
 
             process.StandardInput.WriteLine("input");
             process.StandardInput.Flush();
-            process.WaitForExit();
+            ProcessExitStatus exitStatus = process.WaitForExitStatus();
+            Console.WriteLine($"Child process exited with code {exitStatus.ExitCode}.");
 
             Console.WriteLine($"StdErr ReadToEnd from child process '{process.StandardError.ReadToEnd()}'");
             if (!File.Exists(expectedPath))

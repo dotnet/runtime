@@ -72,13 +72,17 @@ namespace Tracing.Tests.Common
                 process.StartInfo.Environment.Add("DOTNET_LogLevel",    "10");   // Log everything
                 foreach ((string key, string value) in environment)
                     process.StartInfo.Environment.Add(key, value);
-                process.StartInfo.FileName = Process.GetCurrentProcess().MainModule.FileName;
-                process.StartInfo.Arguments = TestLibrary.Utilities.IsNativeAot ? "0" : $"{new Uri(currentAssembly.Location).LocalPath} 0";
+                process.StartInfo.FileName = Environment.ProcessPath;
+                if (!TestLibrary.Utilities.IsNativeAot)
+                {
+                    process.StartInfo.ArgumentList.Add(new Uri(currentAssembly.Location).LocalPath);
+                }
+                process.StartInfo.ArgumentList.Add("0");
                 process.StartInfo.RedirectStandardOutput = true;
                 process.StartInfo.RedirectStandardInput = true;
                 process.StartInfo.RedirectStandardError = true;
 
-                Logger.logger.Log($"running sub-process: {process.StartInfo.FileName} {process.StartInfo.Arguments}");
+                Logger.logger.Log($"running sub-process: {process.StartInfo.FileName} {string.Join(" ", process.StartInfo.ArgumentList)}");
                 DateTime startTime = DateTime.Now;
                 process.OutputDataReceived += new DataReceivedEventHandler((s,e) =>
                 {
@@ -132,12 +136,13 @@ namespace Tracing.Tests.Common
                     Logger.logger.Log($"Sending 'exit' to subprocess stdin");
                     subprocessStdIn.WriteLine("exit");
                     subprocessStdIn.Close();
-                    while (!process.WaitForExit(5000))
+                    ProcessExitStatus? exitStatus;
+                    while (!process.TryWaitForExitStatus(TimeSpan.FromSeconds(5), out exitStatus))
                     {
                         Logger.logger.Log("Subprocess didn't exit in 5 seconds!");
                     }
-                    Logger.logger.Log($"SubProcess exited - Exit code: {process.ExitCode}");
-                    fSuccess &= process.ExitCode == 0;
+                    Logger.logger.Log($"SubProcess exited - Exit code: {exitStatus.ExitCode}");
+                    fSuccess &= exitStatus.ExitCode == 0;
                 }
                 catch (Exception e)
                 {

@@ -10,8 +10,6 @@ namespace IlasmPortablePdbTests
 {
     public static class IlasmPortablePdbTesterCommon
     {
-        public const string CommonIlasmArguments = "-nologo -dll -debug";
-
         public static string GetIlasmFullPath(string coreRootVar, string ilasmFile)
         {
             Assert.True(!string.IsNullOrWhiteSpace(coreRootVar));
@@ -33,19 +31,20 @@ namespace IlasmPortablePdbTests
             var dllFullPath = Path.Combine(currentDirectory, testDir, dllFileName);
             var pdbFullPath = Path.Combine(currentDirectory, testDir, pdbFileName);
 
-            var ilasmArgs = $"{CommonIlasmArguments} -output={dllFullPath} {ilSrcFullPath}";
-            var ilasmPsi = new ProcessStartInfo
+            var ilasmPsi = new ProcessStartInfo(ilasmFullPath, new[]
+            {
+                "-nologo",
+                "-dll",
+                "-debug",
+                $"-output={dllFullPath}",
+                ilSrcFullPath
+            })
             {
                 UseShellExecute = false,
-                WorkingDirectory = currentDirectory,
-                FileName = ilasmFullPath,
-                Arguments = ilasmArgs
+                WorkingDirectory = currentDirectory
             };
 
-            Process ilasmProcess = Process.Start(ilasmPsi);
-            ilasmProcess.WaitForExit();
-
-            Assert.Equal(0, ilasmProcess.ExitCode);
+            Assert.Equal(0, Process.Run(ilasmPsi).ExitCode);
             Assert.True(File.Exists(dllFullPath));
             Assert.True(File.Exists(pdbFullPath));
 

@@ -645,10 +645,9 @@ namespace TestLibrary
                 Task copyOutput = process.StandardOutput.BaseStream.CopyToAsync(outputStream, 4096, cts.Token);
                 Task copyError = process.StandardError.BaseStream.CopyToAsync(errorStream, 4096, cts.Token);
 
-                if (process.WaitForExit(timeout))
+                if (process.TryWaitForExitStatus(TimeSpan.FromMilliseconds(timeout), out ProcessExitStatus? exitStatus))
                 {
-                    // Process completed. Check process.ExitCode here.
-                    exitCode = process.ExitCode;
+                    exitCode = exitStatus.ExitCode;
                     Task.WaitAll(copyOutput, copyError);
                 }
                 else

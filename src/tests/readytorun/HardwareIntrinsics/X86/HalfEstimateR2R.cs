@@ -54,6 +54,7 @@ public static class HalfEstimateR2R
         ProcessStartInfo startInfo = new(testDotNet is null ? "dotnet" : testDotNet)
         {
             RedirectStandardOutput = true,
+            RedirectStandardError = true,
             UseShellExecute = false,
         };
         startInfo.ArgumentList.Add("exec");
@@ -66,12 +67,10 @@ public static class HalfEstimateR2R
         startInfo.ArgumentList.Add("--rp");
         startInfo.ArgumentList.Add(coreRoot);
 
-        using Process process = Process.Start(startInfo)
-            ?? throw new InvalidOperationException("Could not start R2RDump.");
-        string output = process.StandardOutput.ReadToEnd();
-        process.WaitForExit();
+        ProcessTextOutput result = Process.RunAndCaptureText(startInfo);
+        string output = result.StandardOutput;
 
-        Assert.True(process.ExitCode == 0, output);
+        Assert.True(result.ExitStatus.ExitCode == 0, output + result.StandardError);
         Assert.Contains($"1 result(s) for \"{methodName}\"", output);
         return output;
     }

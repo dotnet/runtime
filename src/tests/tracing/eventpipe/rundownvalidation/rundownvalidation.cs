@@ -433,17 +433,17 @@ namespace Tracing.Tests.RundownValidation
             string tracePath = outputPathPattern.Replace("{pid}", process.Id.ToString());
             try
             {
-                if (!process.WaitForExit(5 * 60 * 1000))
+                if (!process.TryWaitForExitStatus(TimeSpan.FromMinutes(5), out ProcessExitStatus? exitStatus))
                 {
                     process.Kill();
-                    process.WaitForExit();
+                    process.WaitForExitStatus();
                     Logger.logger.Log("LCG jump-stub child process timed out.");
                     return -1;
                 }
 
-                if (process.ExitCode != 100 || !File.Exists(tracePath))
+                if (exitStatus.ExitCode != 100 || !File.Exists(tracePath))
                 {
-                    Logger.logger.Log($"LCG jump-stub child exited with {process.ExitCode}; trace exists: {File.Exists(tracePath)}.");
+                    Logger.logger.Log($"LCG jump-stub child exited with {exitStatus.ExitCode}; trace exists: {File.Exists(tracePath)}.");
                     return -1;
                 }
 

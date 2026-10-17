@@ -218,9 +218,9 @@ namespace Tracing.UserEvents.Tests.Common
             Console.WriteLine("Waiting for record-trace to signal 'Recording started'...");
             if (!recordingStarted.Wait(RecordTraceSetupTimeoutMs))
             {
-                if (recordTraceProcess.HasExited)
+                if (recordTraceProcess.TryWaitForExitStatus(TimeSpan.Zero, out ProcessExitStatus? exitStatus))
                 {
-                    Console.Error.WriteLine($"record-trace exited prematurely with code {recordTraceProcess.ExitCode}.");
+                    Console.Error.WriteLine($"record-trace exited prematurely with code {exitStatus.ExitCode}.");
                 }
                 else
                 {
@@ -254,21 +254,22 @@ namespace Tracing.UserEvents.Tests.Common
             traceeProcess.BeginErrorReadLine();
 
             Console.WriteLine($"Waiting for tracee process to exit...");
-            if (!traceeProcess.HasExited && !traceeProcess.WaitForExit(traceeExitTimeout))
+            if (!traceeProcess.TryWaitForExitStatus(TimeSpan.FromMilliseconds(traceeExitTimeout), out _))
             {
                 Console.WriteLine($"Tracee process did not exit within the {traceeExitTimeout}ms timeout, killing it.");
                 traceeProcess.Kill();
             }
             traceeProcess.WaitForExit(); // flush async output
-            Console.WriteLine($"Tracee process exited with code {traceeProcess.ExitCode}.");
+            ProcessExitStatus traceeExitStatus = traceeProcess.WaitForExitStatus();
+            Console.WriteLine($"Tracee process exited with code {traceeExitStatus.ExitCode}.");
 
-            if (!recordTraceProcess.HasExited)
+            if (!recordTraceProcess.TryWaitForExitStatus(TimeSpan.Zero, out ProcessExitStatus? recordTraceExitStatus))
             {
                 // Until record-trace supports duration, the only way to stop it is to send SIGINT (ctrl+c)
                 Console.WriteLine($"Stopping record-trace with SIGINT.");
                 Kill(recordTraceProcess.Id, SIGINT);
                 Console.WriteLine($"Waiting for record-trace to exit...");
-                if (!recordTraceProcess.WaitForExit(recordTraceExitTimeout))
+                if (!recordTraceProcess.TryWaitForExitStatus(TimeSpan.FromMilliseconds(recordTraceExitTimeout), out _))
                 {
                     // record-trace needs to stop gracefully to generate the trace file
                     Console.WriteLine($"record-trace did not exit within the {recordTraceExitTimeout}ms timeout, killing it.");
@@ -277,7 +278,7 @@ namespace Tracing.UserEvents.Tests.Common
             }
             else
             {
-                Console.WriteLine($"record-trace unexpectedly exited without SIGINT with code {recordTraceProcess.ExitCode}.");
+                Console.WriteLine($"record-trace unexpectedly exited without SIGINT with code {recordTraceExitStatus.ExitCode}.");
             }
             recordTraceProcess.WaitForExit(); // flush async output
 

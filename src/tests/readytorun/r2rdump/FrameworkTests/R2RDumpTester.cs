@@ -55,17 +55,21 @@ namespace R2RDumpTests
             Environment.SetEnvironmentVariable("DOTNET_GCName", String.Empty);
             string DotNetAbsolutePath = string.IsNullOrEmpty(TestDotNetCmdVar) ? FindExePath("dotnet") : TestDotNetCmdVar;
 
-            ProcessStartInfo processStartInfo = new ProcessStartInfo
+            ProcessStartInfo processStartInfo = new ProcessStartInfo(DotNetAbsolutePath, new[]
             {
-                UseShellExecute = false,
-                FileName = DotNetAbsolutePath,
-                // TODO, what flags do we like to test?
-                Arguments = string.Join(" ", new string[]{"exec", R2RDumpAbsolutePath, "--in", CoreLibAbsolutePath, "--out", OutputFile, "--val"})
+                "exec",
+                R2RDumpAbsolutePath,
+                "--in",
+                CoreLibAbsolutePath,
+                "--out",
+                OutputFile,
+                "--val"
+            })
+            {
+                UseShellExecute = false
             };
 
-            Process process = Process.Start(processStartInfo);
-            process.WaitForExit();
-            int exitCode = process.ExitCode;
+            int exitCode = Process.Run(processStartInfo).ExitCode;
             string outputContent = File.ReadAllText(OutputFile);
             File.Delete(OutputFile);
             // TODO, here is a point where we can add more validation to outputs

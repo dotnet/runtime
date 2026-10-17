@@ -2,12 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime;
-using System.Text;
 
 using Xunit;
 using TestLibrary;
@@ -37,39 +37,37 @@ public class TestConfigTester
                 continue;
             }
 
-            using Process process = new();
-
-            StringBuilder arguments = new();
+            List<string> arguments = new();
 
             foreach (Attribute cp in configProperties)
             {
                 TestConfig.ConfigPropertyAttribute configProp = (TestConfig.ConfigPropertyAttribute)cp;
-                arguments.Append($"-p {configProp.Name}={configProp.Value} ");
+                arguments.Add("-p");
+                arguments.Add($"{configProp.Name}={configProp.Value}");
             }
 
-            arguments.Append($"\"{testConfigApp}\" {mi.Name}");
+            arguments.Add(testConfigApp);
+            arguments.Add(mi.Name);
 
-            process.StartInfo.FileName = corerunPath;
-            process.StartInfo.Arguments = arguments.ToString();
+            ProcessStartInfo startInfo = new(corerunPath, arguments);
 
             foreach (string key in Environment.GetEnvironmentVariables().Keys)
             {
-                process.StartInfo.EnvironmentVariables[key] = Environment.GetEnvironmentVariable(key);
+                startInfo.EnvironmentVariables[key] = Environment.GetEnvironmentVariable(key);
             }
 
-            Console.WriteLine($"Running: {process.StartInfo.Arguments}");
+            Console.WriteLine($"Running: {startInfo.FileName} {string.Join(" ", startInfo.ArgumentList)}");
             foreach (Attribute ev in envVariables)
             {
                 TestConfig.EnvVarAttribute envVar = (TestConfig.EnvVarAttribute)ev;
-                process.StartInfo.EnvironmentVariables[envVar.Name] = envVar.Value;
+                startInfo.EnvironmentVariables[envVar.Name] = envVar.Value;
                 Console.WriteLine($"    set {envVar.Name}={envVar.Value}");
             }
 
-            process.Start();
-            process.WaitForExit();
-            if (process.ExitCode != TestConfig.Success)
+            ProcessExitStatus exitStatus = Process.Run(startInfo);
+            if (exitStatus.ExitCode != TestConfig.Success)
             {
-                throw new Exception($"Failed: {mi.Name}: exit code = {process.ExitCode}");
+                throw new Exception($"Failed: {mi.Name}: exit code = {exitStatus.ExitCode}");
             }
         }
     }
