@@ -404,6 +404,7 @@ public class CommandLineTests
     [InlineData("-unknown", false)]
     [InlineData("-x", false)]
     [InlineData("-i", false)]
+    [InlineData("-PATHMAP=/src=/_", false)]
     [InlineData("/unknown", true)]
     public void UnrecognizedNativeOption_Throws(string argument, bool allowSlashOptions)
     {

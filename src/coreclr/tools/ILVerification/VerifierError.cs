@@ -10,44 +10,10 @@ namespace ILVerify
     {
         /// <summary>No error code; <see cref="VerificationResult.Message"/> describes the failure.</summary>
         None = 0,
-        //E_HRESULT           "[HRESULT 0x%08X]"
-        //E_OFFSET            "[offset 0x%08X]"
-        //E_OPCODE            "[opcode %s]"
-        //E_OPERAND           "[operand 0x%08X]"
-        //E_TOKEN             "[token  0x%08X]"
-        //E_EXCEPT            "[exception #0x%08X]"
-        //E_STACK_SLOT        "[stack slot 0x%08X]"
-        //E_LOC               "[local variable #0x%08X]"
-        //E_LOC_BYNAME        "[local variable '%s']"
-        //E_ARG               "[argument #0x%08x]"
-        //E_FOUND             "[found %s]"
-        //E_EXPECTED          "[expected %s]"
-
         /// <summary>The IL contains an opcode that is not defined.</summary>
         UnknownOpcode,         // Unknown opcode.
-        //E_SIG_CALLCONV      "Unknown calling convention [0x%08X]."
-        //E_SIG_ELEMTYPE      "Unknown ELEMENT_TYPE [0x%08x]."
-
-        //E_RET_SIG           "[return sig]"
-        //E_FIELD_SIG         "[field sig]"
-
-        //E_INTERNAL           "Internal error."
-        //E_STACK_TOO_LARGE    "Stack is too large."
-        //E_ARRAY_NAME_LONG    "Array name is too long."
-
         /// <summary>Execution can run past the end of the method without returning.</summary>
         MethodFallthrough,              // Fall through end of the method without returning.
-        //E_TRY_GTEQ_END                "try start >= try end."
-        //E_HND_GTEQ_END                "handler start >= handler end."
-        //E_TRY_START                   "Try starts in the middle of an instruction."
-        //E_HND_START                   "Handler starts in the middle of an instruction."
-        //E_TRY_OVERLAP                 "Try block overlap with another block."
-        //E_TRY_EQ_HND_FIL              "Try and filter/handler blocks are equivalent."
-        //E_TRY_SHARE_FIN_FAL           "Shared try has finally or fault handler."
-        //E_HND_EQ                      "Handler block is the same as another block."
-        //E_FIL_CONT_TRY                "Filter contains try."
-        //E_FIL_CONT_HND                "Filter contains handler."
-        //E_FIL_CONT_FIL                "Nested filters."
         /// <summary>
         /// An exception handling clause extends outside the IL of the method, or a filter does not
         /// start before its handler.
@@ -105,7 +71,6 @@ namespace ILVerify
         PathStackUnexpected,            // Non-compatible types on stack depending on path.
         /// <summary>The stack depth differs at a point that is reached by more than one path.</summary>
         PathStackDepth,                 // Stack depth differs depending on path.
-        //E_THIS_UNINIT_EXCEP           "Uninitialized this on entering a try block."
         /// <summary>
         /// A constructor stores to <c>this</c>, or takes its address, before <c>this</c> is initialized.
         /// </summary>
@@ -114,7 +79,6 @@ namespace ILVerify
         ThisUninitReturn,               // Return from .ctor when this is uninitialized.
         /// <summary>An ldftn or ldvirtftn instruction refers to a constructor.</summary>
         LdftnCtor,                      // ldftn/ldvirtftn not allowed on .ctor.
-        //StackNotEq,                   // Non-compatible types on the stack.
         /// <summary>
         /// A value on the stack has a type that the instruction does not accept, or an async method returns a type
         /// other than Task, ValueTask or their generic forms.
@@ -148,7 +112,6 @@ namespace ILVerify
         ExpectedTypeToken,              // Expected type token.
         /// <summary>A token or metadata reference cannot be resolved.</summary>
         TokenResolve,                   // Unable to resolve token.
-        //E_TOKEN_TYPE                  "Unable to resolve type of the token."
         /// <summary>The token of an instruction does not refer to a method.</summary>
         ExpectedMethodToken,            // Expected memberRef, memberDef or methodSpec token.
         /// <summary>The token of an instruction does not refer to a field.</summary>
@@ -172,11 +135,8 @@ namespace ILVerify
         ReturnEmpty,                    // Stack must contain only the return value.
         /// <summary>An instruction expects a single-dimensional, zero-based array on the stack.</summary>
         ExpectedArray,                  // Expected single-dimension zero-based array.
-        //E_ARRAY_SD_PTR                "Expected single dimension array of pointer types."
-        //E_ARGLIST                     "Allowed only in vararg methods."
         /// <summary>The type operand of an unbox instruction is not a value type.</summary>
         ValueTypeExpected,              // Value type expected.
-        //E_OPEN_DLGT_PROT_ACC          "Protected method access through an open instance delegate is not verifiable."
         /// <summary>The method refers to a type that it cannot access.</summary>
         TypeAccess,                     // Type is not visible.
         /// <summary>The method refers to a method that it cannot access.</summary>
@@ -191,14 +151,12 @@ namespace ILVerify
         /// through an object other than <c>this</c>.
         /// </summary>
         InitOnly,                       // Cannot change initonly field outside its .ctor.
-        //E_WRITE_RVA_STATIC            "Cannot modify an imaged based (RVA) static"
         /// <summary>A callvirt instruction calls a method of a value type.</summary>
         CallVirtOnValueType,            // Callvirt on a value type method.
         /// <summary>A newobj instruction refers to a method that is not a constructor.</summary>
         CtorExpected,                   // .ctor expected.
         /// <summary>A newobj instruction refers to a static or abstract method.</summary>
         CtorSig,                        // newobj on static or abstract method.
-        //E_SIG_ARRAY                   "Cannot resolve Array type."
         /// <summary>An array is created with a ByRef element type.</summary>
         ArrayByRef,                     // Array of ELEMENT_TYPE_BYREF or ELEMENT_TYPE_TYPEDBYREF.
         /// <summary>An instruction takes the address of a local variable or argument that is already a ByRef.</summary>
@@ -221,12 +179,10 @@ namespace ILVerify
         MethodEnd,                      // Method ends in the middle of an instruction.
         /// <summary>A branch targets a location outside the IL of the method.</summary>
         BadBranch,                      // Branch out of the method.
-        //E_LEXICAL_NESTING             "Lexical nesting."
         /// <summary>A volatile. prefix is not followed by an instruction that accepts it.</summary>
         Volatile,                       // Missing ldsfld, stsfld, ldind, stind, ldfld, stfld, ldobj, stobj, initblk, or cpblk.
         /// <summary>An unaligned. prefix is not followed by an instruction that accepts it.</summary>
         Unaligned,                      // Missing ldind, stind, ldfld, stfld, ldobj, stobj, initblk, cpblk.
-        //E_INNERMOST_FIRST             "Innermost exception blocks should be declared first."
         /// <summary>A call or ldftn instruction refers to an abstract method.</summary>
         CallAbstract,                   // Call not allowed on abstract methods.
         /// <summary>The stack is not empty on entry to a try block.</summary>
@@ -245,19 +201,14 @@ namespace ILVerify
         /// ldftn or the sequence dup, ldvirtftn.
         /// </summary>
         DelegatePattern,                // Dup, ldvirtftn, newobj delegate::.ctor() pattern expected (in the same basic block).
-        //E_SIG_C_VC                    "ELEMENT_TYPE_CLASS ValueClass in signature."
-        //E_SIG_VC_C                    "ELEMENT_TYPE_VALUETYPE non-ValueClass in signature."
-        //E_BOX_PTR_TO_STACK            "Box operation on TypedReference, ArgHandle, or ArgIterator."
         /// <summary>The type operand of a box instruction is a ByRef type.</summary>
         BoxByRef,                       // Cannot box byref.
-        //E_SIG_BYREF_TB_AH             "ByRef of TypedReference, ArgHandle, or ArgIterator."
         /// <summary>The stack holds more than the filter result at endfilter.</summary>
         EndfilterStack,                 // Stack not empty when leaving an exception filter.
         /// <summary>The method pointer parameter of a delegate constructor is not a native int.</summary>
         DelegateCtorSigI,               // Unrecognized delegate .ctor signature; expected Native Int.
         /// <summary>The target object passed to a delegate constructor is not an object reference.</summary>
         DelegateCtorSigO,               // Unrecognized delegate .ctor signature; expected Object.
-        //E_RA_PTR_TO_STACK             "Mkrefany on TypedReference, ArgHandle, or ArgIterator."
         /// <summary>The type of a catch clause is a ByRef type.</summary>
         CatchByRef,                     // ByRef not allowed as catch type.
         /// <summary>
@@ -287,9 +238,6 @@ namespace ILVerify
         /// <summary>A constrained. prefix is not followed by an instruction that accepts it.</summary>
         Constrained,                    // Missing callvirt following constrained prefix.
 
-        //E_CIRCULAR_VAR_CONSTRAINTS    "Method parent has circular class type parameter constraints."
-        //E_CIRCULAR_MVAR_CONSTRAINTS   "Method has circular method type parameter constraints."
-
         /// <summary>
         /// The type arguments of a referenced generic method do not satisfy the method's constraints.
         /// </summary>
@@ -308,18 +256,14 @@ namespace ILVerify
         UnsatisfiedBoxOperand,                // Type operand of box instruction has unsatisfied class type parameter constraints.
         /// <summary>The <c>this</c> argument of a constrained call is not a ByRef.</summary>
         ConstrainedCallWithNonByRefThis,      // The 'this' argument to a constrained call must have ByRef type.
-        //E_CONSTRAINED_OF_NON_VARIABLE_TYPE "The operand to a constrained prefix instruction must be a type parameter."
         /// <summary>A readonly. prefix is applied to a call that is not to an array method returning a ByRef.</summary>
         ReadonlyUnexpectedCallee,             // The readonly prefix may only be applied to calls to array methods returning ByRefs.
         /// <summary>An instruction writes through a readonly ByRef.</summary>
         ReadOnlyIllegalWrite,                 // Illegal write to readonly ByRef.
-        //E_READONLY_IN_MKREFANY              "A readonly ByRef cannot be used with mkrefany."
-        //E_UNALIGNED_ALIGNMENT               "Alignment specified for 'unaligned' prefix must be 1, 2, or 4."
         /// <summary>A tail. prefix is inside a try block, filter or exception handler.</summary>
         TailCallInsideER,                     // The tail.call (or calli or callvirt) instruction cannot be used to transfer control out of a try, filter, catch, or finally block.
         /// <summary>The stack is not empty at the start of a block that is reached only by backward branches.</summary>
         BackwardBranch,                       // Stack height at all points must be determinable in a single forward scan of IL.
-        //E_CALL_TO_VTYPE_BASE                "Call to base type of valuetype."
         /// <summary>A newobj instruction creates an instance of an abstract class.</summary>
         NewobjAbstractClass,                  // Cannot construct an instance of abstract class.
         /// <summary>An instruction loads a local variable or argument of an unmanaged pointer type.</summary>
@@ -330,7 +274,6 @@ namespace ILVerify
         /// or taking its address anywhere in the method counts as modifying it.
         /// </summary>
         LdftnNonFinalVirtual,                 // Cannot LDFTN a non-final virtual method for delegate creation if target object is potentially not the same type as the method class.
-        //E_FIELD_OVERLAP                     "Accessing type with overlapping fields."
         /// <summary>
         /// A non-virtual call to a non-final virtual method of an unsealed type passes an object that is neither a
         /// boxed value type nor the unmodified <c>this</c> argument. For this check, assigning to <c>this</c> or taking
@@ -338,17 +281,6 @@ namespace ILVerify
         /// </summary>
         ThisMismatch,                         // The 'this' parameter to the call must be the calling method's 'this' parameter.
 
-        //E_BAD_PE             "Unverifiable PE Header/native stub."
-        //E_BAD_MD             "Unrecognized metadata, unable to verify IL."
-        //E_BAD_APPDOMAIN      "Unrecognized appdomain pointer."
-
-        //E_TYPELOAD           "Type load failed."
-        //E_PE_LOAD            "Module load failed."
-
-        //IDS_E_FORMATTING     "Error formatting message."
-        //IDS_E_ILERROR        "[IL]: Error: "
-        //IDS_E_GLOBAL         "<GlobalFunction>"
-        //IDS_E_MDTOKEN        "[mdToken=0x%x]"
         /// <summary>A type lists the same interface implementation more than once.</summary>
         InterfaceImplHasDuplicate,            // InterfaceImpl has a duplicate
         /// <summary>
@@ -390,5 +322,6 @@ namespace ILVerify
         EHClauseOrder, // An exception handling clause nested in a try must precede that try's clause.
         /// <summary>A filter does not end with endfilter, or contains more than one endfilter.</summary>
         EHClauseFilterEnd, // A filter must have exactly one endfilter as its last instruction.
+        UnalignedAlignment, // Alignment specified for 'unaligned.' must be 1, 2, or 4.
     }
 }

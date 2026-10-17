@@ -544,16 +544,50 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         return jitManager?.GetUnwindInfo(range, codeInfoHandle.Address.Value) ?? TargetPointer.Null;
     }
 
+    bool IExecutionManager.TryGetUnwindInfo(
+        TargetCodePointer controlPC,
+        out TargetPointer runtimeFunction,
+        out TargetPointer unwindInfoBaseAddress)
+    {
+        runtimeFunction = TargetPointer.Null;
+        unwindInfoBaseAddress = TargetPointer.Null;
+
+        RangeSection range = RangeSection.Find(
+            _target,
+            _topRangeSectionMapAddress,
+            _rangeSectionMapLookup,
+            _virtualIPRangeListAddress,
+            controlPC);
+        if (range.Data is null)
+            return false;
+
+        JitManager? jitManager = GetJitManager(range);
+        if (jitManager is null)
+            return false;
+
+        runtimeFunction = jitManager.GetUnwindInfo(range, controlPC);
+        if (runtimeFunction == TargetPointer.Null)
+            return false;
+
+        unwindInfoBaseAddress = GetUnwindInfoBaseAddress(range);
+        return true;
+    }
+
     TargetPointer IExecutionManager.GetUnwindInfoBaseAddress(CodeBlockHandle codeInfoHandle)
     {
         RangeSection range = RangeSectionFromCodeBlockHandle(codeInfoHandle);
         if (range.Data == null)
             throw new InvalidOperationException($"{nameof(RangeSection)} not found for {codeInfoHandle.Address}");
 
-        if (!range.IsVirtualIP)
-            return range.Data.RangeBegin;
+        return GetUnwindInfoBaseAddress(range);
+    }
 
-        Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(range.Data.R2RModule);
+    private TargetPointer GetUnwindInfoBaseAddress(RangeSection range)
+    {
+        if (!range.IsVirtualIP)
+            return range.Data!.RangeBegin;
+
+        Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(range.Data!.R2RModule);
         Data.ReadyToRunInfo r2rInfo = _target.ProcessedData.GetOrAdd<Data.ReadyToRunInfo>(module.ReadyToRunInfo);
         return r2rInfo.LoadedImageBase;
     }
