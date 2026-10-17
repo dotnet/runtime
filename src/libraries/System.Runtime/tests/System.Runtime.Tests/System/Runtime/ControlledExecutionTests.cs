@@ -74,7 +74,7 @@ namespace System.Runtime.Tests
 
         // Tests that an infinite loop may be aborted, that the ThreadAbortException is automatically rethrown,
         // and that it is eventually translated to an OperationCanceledException.
-//        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime), nameof(PlatformDetection.IsNotNativeAot))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime), nameof(PlatformDetection.IsNotNativeAot))]
         public void CancelInTryAndExitCatchNormally()
         {
             var cts = new CancellationTokenSource();
