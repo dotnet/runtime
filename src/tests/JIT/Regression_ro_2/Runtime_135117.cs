@@ -22,6 +22,16 @@ public class Runtime_135117
         public float Value;
     }
 
+    public struct SO
+    {
+        public object Value;
+    }
+
+    private sealed class Box
+    {
+        public int Value;
+    }
+
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static S1 MakeS1(byte value) => new S1 { Value = value };
 
@@ -35,6 +45,9 @@ public class Runtime_135117
     private static SF MakeSF(float value) => new SF { Value = value };
 
     [MethodImpl(MethodImplOptions.NoInlining)]
+    private static SO MakeSO(object value) => new SO { Value = value };
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private static void StoreS1(ref S1 destination, byte value) => destination = MakeS1(value);
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -45,6 +58,18 @@ public class Runtime_135117
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void StoreSF(ref SF destination, float value) => destination = MakeSF(value);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void StoreSO(ref SO destination, object value) => destination = MakeSO(value);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void StoreNewBoxes(SO[] array)
+    {
+        for (int i = 0; i < array.Length; i++)
+        {
+            StoreSO(ref array[i], new Box { Value = i });
+        }
+    }
 
     [Fact]
     public static void TestEntryPoint()
@@ -85,5 +110,21 @@ public class Runtime_135117
         Assert.Equal(-1f, sf[0].Value);
         Assert.Equal(2.5f, sf[1].Value);
         Assert.Equal(-1f, sf[2].Value);
+
+        // The store of a struct wrapping a reference needs a write barrier so that a gen0 GC
+        // sees the young object referenced from an older array.
+        SO[] so = new SO[16];
+        GC.Collect();
+        GC.Collect();
+        StoreNewBoxes(so);
+        for (int i = 0; i < 4; i++)
+        {
+            GC.Collect(0);
+            _ = new byte[1024];
+        }
+        for (int i = 0; i < so.Length; i++)
+        {
+            Assert.Equal(i, Assert.IsType<Box>(so[i].Value).Value);
+        }
     }
 }
