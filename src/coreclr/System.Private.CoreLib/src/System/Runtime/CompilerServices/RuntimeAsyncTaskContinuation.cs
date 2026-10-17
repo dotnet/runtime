@@ -95,7 +95,9 @@ namespace System.Runtime.CompilerServices
                 Debug.Assert(continuationContext is TaskScheduler { });
                 TaskScheduler sched = (TaskScheduler)continuationContext;
 
-                TaskSchedulerAwaitTaskContinuation.RunOrScheduleAction((Action)RuntimeAsyncTask.m_action!, sched, capturedContext: null, allowInlining: canInline);
+                Debug.Assert(RuntimeAsyncTask is IRuntimeAsyncTask);
+                Action action = Unsafe.As<IRuntimeAsyncTask>(RuntimeAsyncTask).GetContinuationAction();
+                TaskSchedulerAwaitTaskContinuation.RunOrScheduleAction(action, sched, capturedContext: null, allowInlining: canInline);
 
                 return true;
             }
