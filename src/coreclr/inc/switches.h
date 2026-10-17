@@ -40,7 +40,7 @@
 #define GC_STATS
 #endif
 
-#if defined(TARGET_X86) || defined(TARGET_ARM) || defined(TARGET_WASM)
+#if defined(TARGET_X86) || defined(TARGET_ARM) || defined(TARGET_WASM) || (defined(TARGET_INTERP) && !defined(TARGET_64BIT))
     #define USE_LAZY_PREFERRED_RANGE       0
 
 #elif defined(TARGET_64BIT)

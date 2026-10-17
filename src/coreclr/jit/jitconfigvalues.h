@@ -922,6 +922,11 @@ CONFIG_STRING(JitR2RUnsupportedRange, "JitR2RUnsupportedRange")
 RELEASE_CONFIG_INTEGER(JitWasmFunclets, "JitWasmFunclets", 1)
 #endif // defined(TARGET_WASM)
 
+#if defined(TARGET_INTERP)
+// Methods to compile to interpreter bytecode. This is the same opt-in list the interpreter library reads.
+RELEASE_CONFIG_METHODSET(Interpreter, "Interpreter")
+#endif // defined(TARGET_INTERP)
+
 // Allow to enregister locals with struct type.
 RELEASE_CONFIG_INTEGER(JitEnregStructLocals, "JitEnregStructLocals", 1)
 
