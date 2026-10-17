@@ -2284,8 +2284,9 @@ namespace ILAssembler
             /// <summary>
             /// Gets the lexical scopes of the method body, in the order they closed: each <c>{ }</c> block, then the
             /// root scope, which spans the whole body and holds the method-level <c>.locals</c>. The PDB gets a
-            /// LocalScope row for each scope that is not empty and declares a named local. Recorded only when a PDB
-            /// is requested; otherwise empty.
+            /// LocalScope row for each scope that declares a named local, as declared, and an empty scope or a
+            /// repeated name or slot is reported (<c>AddLocalScopes</c>). Recorded only when a PDB is requested;
+            /// otherwise empty, so none of this is checked without a PDB.
             /// </summary>
             public List<LocalScopeRecord> LocalScopes { get; } = new();
         }
@@ -2310,7 +2311,8 @@ namespace ILAssembler
         /// <summary>A named local declared in a lexical scope.</summary>
         /// <param name="Name">The name of the local.</param>
         /// <param name="Slot">Its slot in the method's local signature.</param>
-        public readonly record struct LocalVariableRecord(string Name, int Slot);
+        /// <param name="Location">Where the local is declared: its name in the <c>.locals</c> directive.</param>
+        public readonly record struct LocalVariableRecord(string Name, int Slot, Location Location);
 
         /// <summary>
         /// A deferred exception region entry. Stored during parsing and applied to the

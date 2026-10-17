@@ -12,15 +12,18 @@ namespace ILAssembler.Tests.GeneratedCases
 {
     /// <summary>
     /// A generated method with nested <c>{ }</c> blocks that declare locals, and what the assembler must produce for
-    /// it: the type of each local slot, the slot each <c>ldloc name</c> refers to, in instruction order, and the
-    /// LocalScope rows of the method in table order, formatted as <c>start-end: name=index ...</c>.
+    /// it: the type of each local slot, the slot each <c>ldloc name</c> refers to, in instruction order, the
+    /// LocalScope rows of the method in table order, formatted as <c>start-end: name=index ...</c>, and the errors
+    /// that a PDB build reports for those rows, in the order they are reported, each formatted as <c>id name</c>
+    /// with the name of the local it is reported at.
     /// </summary>
     public sealed record GeneratedLocalsMethod(
         string Name,
         string Body,
         ImmutableArray<string> SlotTypes,
         ImmutableArray<int> ReferencedSlots,
-        ImmutableArray<string> Scopes);
+        ImmutableArray<string> Scopes,
+        ImmutableArray<string> Errors);
 
     /// <summary>
     /// A generated program: one class with one or more <see cref="GeneratedLocalsMethod"/>s, and how many of each
@@ -63,25 +66,29 @@ namespace ILAssembler.Tests.GeneratedCases
     /// slot is the next free one, written with or without <c>[n]</c>; a slot past the end, which pads the slot
     /// table; or, written as <c>[n]</c>, a slot that no open scope holds, reused with the type it already has.
     /// Padding slots that no later declaration types are declared at the end of the root scope, so every method
-    /// assembles without diagnostics. Between blocks, a scope has a few <c>nop</c>s and loads some of the names
-    /// visible there with <c>ldloc name</c>.
+    /// assembles without diagnostics when no PDB is requested. Between blocks, a scope has a few <c>nop</c>s and
+    /// loads some of the names visible there with <c>ldloc name</c>.
     /// </para>
     /// <para>
-    /// The model follows native ilasm: a local without <c>[n]</c> takes the slot after the highest one declared so
+    /// In the model, a local without <c>[n]</c> takes the slot after the highest one declared so
     /// far, a slot holds the type of its declarations, and a name refers to the first declaration of that name in
     /// the innermost open scope that declares it. Instructions are written in their long forms, so the model knows
     /// every IL offset: <c>nop</c>, <c>pop</c> and <c>ret</c> are one byte and <c>ldloc</c> is four.
     /// </para>
     /// <para>
-    /// A scope has a LocalScope row when it has at least one instruction and declares a named local. The row spans
-    /// the scope's offsets (the whole body for the root scope) and lists the first declaration of each name, in
-    /// declaration order, with its slot. Rows are ordered by start offset, then longest first, then enclosing
-    /// scope first. A block with no instructions, which the generator sometimes writes, has no row.
+    /// A scope has a LocalScope row when it declares a named local. The row spans the scope's offsets (the whole
+    /// body for the root scope) and lists every named local of the scope, in declaration order, with its slot.
+    /// Rows are ordered by start offset, then longest first, then enclosing scope first. With a PDB, a scope with
+    /// no instructions, which the generator sometimes writes, is reported at its first named local, and a named
+    /// local whose name an earlier named local of its scope has is reported at its declaration; the errors are in
+    /// row order, and within a scope in declaration order. So some cases assemble only with error tolerance, and
+    /// the others assemble without diagnostics.
     /// </para>
     /// <para>
     /// The generator reuses only slots that are not in use, so a scope never declares one slot twice, and the
-    /// rule for a scope that declares both a name and a slot twice is not exercised here; the unit tests in
-    /// <see cref="LocalScopeTests"/> cover it.
+    /// error for a slot that two named locals of a scope share is not exercised here; the unit tests in
+    /// <see cref="LocalScopeTests"/> cover it. The programs, and so the seed's random sequence, are the same as when
+    /// the model dropped the rows that are now reported.
     /// </para>
     /// </remarks>
     public static class LocalScopeCaseGenerator
@@ -151,7 +158,7 @@ namespace ILAssembler.Tests.GeneratedCases
             private readonly List<bool> _slotInScope = new();
             private readonly List<OpenScope> _openScopes = new();
             private readonly List<int> _referencedSlots = new();
-            private readonly List<(int Start, int End, int Order, string Row)> _scopes = new();
+            private readonly List<(int Start, int End, int Order, string Row, ImmutableArray<string> Errors)> _scopes = new();
             private int _offset;
             private int _nextOrder;
 
@@ -164,17 +171,18 @@ namespace ILAssembler.Tests.GeneratedCases
             public GeneratedLocalsMethod Generate(string name)
             {
                 Block(depth: 0, indent: "        ");
+                var ordered = _scopes
+                    .OrderBy(scope => scope.Start)
+                    .ThenByDescending(scope => scope.End - scope.Start)
+                    .ThenBy(scope => scope.Order)
+                    .ToList();
                 return new GeneratedLocalsMethod(
                     name,
                     _body.ToString(),
                     _slotTypes.Select(type => type!).ToImmutableArray(),
                     _referencedSlots.ToImmutableArray(),
-                    _scopes
-                        .OrderBy(scope => scope.Start)
-                        .ThenByDescending(scope => scope.End - scope.Start)
-                        .ThenBy(scope => scope.Order)
-                        .Select(scope => scope.Row)
-                        .ToImmutableArray());
+                    ordered.Select(scope => scope.Row).ToImmutableArray(),
+                    ordered.SelectMany(scope => scope.Errors).ToImmutableArray());
             }
 
             private void Count(string key, int increment = 1) => _stats[key] = _stats.GetValueOrDefault(key) + increment;
@@ -221,14 +229,36 @@ namespace ILAssembler.Tests.GeneratedCases
                     Line(indent, "}");
                 }
 
-                if (scope.Named.Count > 0 && _offset == scope.Start)
+                if (scope.Named.Count > 0)
                 {
-                    Count("namedScopeWithoutInstructions");
-                }
+                    var errors = ImmutableArray.CreateBuilder<string>();
+                    if (_offset == scope.Start)
+                    {
+                        Count("namedScopeWithoutInstructions");
+                        errors.Add($"{DiagnosticIds.LocalScopeWithoutInstructions} {scope.Named[0].Name}");
+                    }
 
-                if (scope.Named.Count > 0 && _offset > scope.Start)
-                {
-                    _scopes.Add((scope.Start, _offset, scope.Order, $"{scope.Start}-{_offset}: " + string.Join(" ", scope.Named.Select(local => $"{local.Name}={local.Slot}"))));
+                    var names = new HashSet<string>(StringComparer.Ordinal);
+                    var slots = new HashSet<int>();
+                    foreach ((string localName, int slot) in scope.Named)
+                    {
+                        if (!names.Add(localName))
+                        {
+                            errors.Add($"{DiagnosticIds.LocalNameDeclaredTwiceInScope} {localName}");
+                        }
+
+                        if (!slots.Add(slot))
+                        {
+                            errors.Add($"{DiagnosticIds.LocalSlotNamedTwiceInScope} {localName}");
+                        }
+                    }
+
+                    _scopes.Add((
+                        scope.Start,
+                        _offset,
+                        scope.Order,
+                        $"{scope.Start}-{_offset}: " + string.Join(" ", scope.Named.Select(local => $"{local.Name}={local.Slot}")),
+                        errors.ToImmutable()));
                 }
             }
 
@@ -300,8 +330,9 @@ namespace ILAssembler.Tests.GeneratedCases
                             }
 
                             scope.Names.Add(name, slot);
-                            scope.Named.Add((name, slot));
                         }
+
+                        scope.Named.Add((name, slot));
                     }
 
                     declarations.Add((explicitSlot is int n ? $"[{n}] " : string.Empty) + type + (name is null ? string.Empty : " " + name));
@@ -382,9 +413,10 @@ namespace ILAssembler.Tests.GeneratedCases
 
                 public int Order { get; }
 
-                /// <summary>The first declaration of each name in the scope, in declaration order.</summary>
+                /// <summary>Every named local of the scope, in declaration order: one LocalVariable row each.</summary>
                 public List<(string Name, int Slot)> Named { get; } = new();
 
+                /// <summary>The slot of the first declaration of each name in the scope, which the name refers to.</summary>
                 public Dictionary<string, int> Names { get; } = new(StringComparer.Ordinal);
 
                 public List<int> DeclaredSlots { get; } = new();

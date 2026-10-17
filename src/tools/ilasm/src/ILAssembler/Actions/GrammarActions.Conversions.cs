@@ -131,6 +131,9 @@ namespace ILAssembler
                 Location.From(token, _documents)));
         }
 
+        private void ReportError(string id, string message, Location location)
+            => _diagnostics.Add(new Diagnostic(id, DiagnosticSeverity.Error, message, location));
+
         private void ReportWarning(string id, string message, Antlr4.Runtime.ParserRuleContext context)
             => ReportDiagnostic(DiagnosticSeverity.Warning, id, message, context);
 
