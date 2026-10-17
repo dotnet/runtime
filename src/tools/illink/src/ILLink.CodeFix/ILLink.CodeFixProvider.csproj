@@ -25,4 +25,21 @@
     <EmbeddedResource Include="Resources.resx" GenerateSource="true" />
   </ItemGroup>
 
+  <!-- The unsafe-context fixer migrates the framework to the updated memory-safety rules. It is built in the Debug and
+       Checked configurations only and does not ship. -->
+  <ItemGroup Condition="'$(Configuration)' == 'Release'">
+    <Compile Remove="UnsafeContext\**" />
+  </ItemGroup>
+
+  <!-- Index and Range support for netstandard2.0. -->
+  <PropertyGroup Condition="'$(Configuration)' != 'Release'">
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(Configuration)' != 'Release'">
+    <Compile Include="$(CoreLibSharedDir)System\Index.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Range.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Numerics\Hashing\HashHelpers.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\NullableAttributes.cs" />
+  </ItemGroup>
+
 </Project>
