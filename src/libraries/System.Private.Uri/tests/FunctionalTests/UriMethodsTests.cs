@@ -337,6 +337,11 @@ namespace System.PrivateUri.Tests
             yield return new object[] { new Uri("http://www.domain.com:100/path?name#fragment"), new Uri("http://www.domain.com:800/path?name#fragment"), false }; // Different port
             yield return new object[] { new Uri("http://www.domain.com:100/path?name#fragment"), new Uri("http://www.domain.com:80/path?name#fragment"), false }; // Different port
 
+            yield return new object[] { new Uri("http://[fe80::1%1]/"), new Uri("http://[fe80::1%2]/"), false };
+            yield return new object[] { new Uri("http://[fe80::1]/"), new Uri("http://[fe80::1%0]/"), false };
+            yield return new object[] { new Uri("http://[fe80::1%1]/"), new Uri("HTTP://[FE80:0:0:0:0:0:0:1%1]:80/"), true };
+            yield return new object[] { new Uri("mailto:user@[fe80::1%1]"), new Uri("mailto:user@[fe80::1%2]"), false };
+
             // File paths
             yield return new object[] { new Uri("file://C:/path1/path2/file"), new Uri("file://C:/path1/path2/file"), true };
             yield return new object[] { new Uri("file://C:/path1/path2/file"), new Uri("file://C:/path1/Path2/File"), true };
@@ -346,6 +351,8 @@ namespace System.PrivateUri.Tests
             yield return new object[] { new Uri("file://C:/path1/path2/file"), new Uri("file://C:/path1/path2/file!"), false };
             yield return new object[] { new Uri("file://C:/path1/path2/file"), new Uri("http://domain.com"), false };
             yield return new object[] { new Uri("file://C:/path1/path2/file"), new Uri(@"\\server\path1\path2\file"), false };
+            yield return new object[] { new Uri("file://[fe80::1%eth0]/path"), new Uri("file://[fe80::1%ETH0]/path"), false };
+            yield return new object[] { new Uri("file://[fe80::1%eth0]/PATH"), new Uri("file://[FE80::1%eth0]/path"), true };
 
             // UNC paths that normalize to the same value as a regular file: URI
             yield return new object[] { new Uri("\\\\\u202a"), new Uri("file:///"), true };
