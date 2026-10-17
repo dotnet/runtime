@@ -616,15 +616,6 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (includeHandleValue)
                 str += string.Format("({0})", Handle.ToString());
 
-            if (this.ParentScopeOrNamespace != null)
-            {
-                var pns = this.ParentScopeOrNamespace as NamespaceDefinition;
-                if (pns != null)
-                {
-                    if (!string.IsNullOrEmpty(pns.ToString(false)))
-                        str = pns.ToString(false) + '.' + str;
-                }
-            }
             return str;
         }
     }
@@ -651,19 +642,6 @@ namespace Internal.Metadata.NativeFormat.Writer
             if (includeHandleValue)
                 str += string.Format("({0})", Handle.ToString());
 
-            if (this.ParentScopeOrNamespace != null)
-            {
-                var pns = this.ParentScopeOrNamespace as NamespaceReference;
-                if (pns != null)
-                {
-                    if (!string.IsNullOrEmpty(pns.ToString(false)))
-                        str = pns.ToString(false) + '.' + str;
-                }
-                else
-                {
-                    //str = ParentScopeOrNamespace.ToString() + " : " + str;
-                }
-            }
             return str;
         }
     }
@@ -722,7 +700,7 @@ namespace Internal.Metadata.NativeFormat.Writer
     {
         public override string ToString()
         {
-            return this.Name.Value + " -> " + this.Scope.Name.Value;
+            return this.Name.Value + " -> " + this.Namespace.Scope.Name.Value;
         }
     }
 

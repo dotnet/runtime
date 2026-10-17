@@ -786,6 +786,15 @@ namespace Internal.Metadata.NativeFormat
             return offset;
         } // Read
 
+        public static uint Read(this NativeReader reader, uint offset, out TypeDefinitionGroupHandle handle)
+        {
+            uint value;
+            offset = reader.DecodeUnsigned(offset, out value);
+            handle = new TypeDefinitionGroupHandle((int)value);
+            handle._Validate();
+            return offset;
+        } // Read
+
         public static uint Read(this NativeReader reader, uint offset, out TypeForwarderHandle handle)
         {
             uint value;
@@ -903,30 +912,6 @@ namespace Internal.Metadata.NativeFormat
             return offset;
         } // Read
 
-        public static uint Read(this NativeReader reader, uint offset, out TypeForwarderHandleCollection values)
-        {
-            values = new TypeForwarderHandleCollection(reader, offset);
-            uint count;
-            offset = reader.DecodeUnsigned(offset, out count);
-            for (uint i = 0; i < count; ++i)
-            {
-                offset = reader.SkipInteger(offset);
-            }
-            return offset;
-        } // Read
-
-        public static uint Read(this NativeReader reader, uint offset, out NamespaceDefinitionHandleCollection values)
-        {
-            values = new NamespaceDefinitionHandleCollection(reader, offset);
-            uint count;
-            offset = reader.DecodeUnsigned(offset, out count);
-            for (uint i = 0; i < count; ++i)
-            {
-                offset = reader.SkipInteger(offset);
-            }
-            return offset;
-        } // Read
-
         public static uint Read(this NativeReader reader, uint offset, out MethodHandleCollection values)
         {
             values = new MethodHandleCollection(reader, offset);
@@ -966,6 +951,18 @@ namespace Internal.Metadata.NativeFormat
         public static uint Read(this NativeReader reader, uint offset, out EventHandleCollection values)
         {
             values = new EventHandleCollection(reader, offset);
+            uint count;
+            offset = reader.DecodeUnsigned(offset, out count);
+            for (uint i = 0; i < count; ++i)
+            {
+                offset = reader.SkipInteger(offset);
+            }
+            return offset;
+        } // Read
+
+        public static uint Read(this NativeReader reader, uint offset, out TypeForwarderHandleCollection values)
+        {
+            values = new TypeForwarderHandleCollection(reader, offset);
             uint count;
             offset = reader.DecodeUnsigned(offset, out count);
             for (uint i = 0; i < count; ++i)
