@@ -89,6 +89,16 @@
 
 #include "MiscNativeHelpers.h"
 
+#ifdef TARGET_BROWSER
+// Older emscripten libc copies overlapping buffers with a scalar loop.
+// Compiling this wrapper with -mbulk-memory lowers the builtin to memory.copy.
+// TODO: Remove once emsdk includes emscripten-core/emscripten#27654.
+static void* QCall_memmove(void* dest, const void* src, size_t len)
+{
+    return __builtin_memmove(dest, src, len);
+}
+#endif // TARGET_BROWSER
+
 static const Entry s_QCall[] =
 {
 #ifdef FEATURE_VARARGS
@@ -335,7 +345,11 @@ static const Entry s_QCall[] =
 #else // TARGET_SUNOS
     DllImportEntry(memset)
 #endif // TARGET_SUNOS
+#ifdef TARGET_BROWSER
+    {"memmove", (void*)&QCall_memmove},
+#else
     DllImportEntry(memmove)
+#endif // TARGET_BROWSER
     DllImportEntry(DependentHandle_InternalAllocWithGCTransition)
     DllImportEntry(DependentHandle_InternalFreeWithGCTransition)
     DllImportEntry(GCInterface_GetTotalAllocatedBytesPrecise)
