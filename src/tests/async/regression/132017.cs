@@ -15,16 +15,16 @@ public class Runtime_132017
     // that the test can wait for it deterministically.
     private static Task s_pending;
 
-    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
-    public static void TestEntryPoint()
+    [Fact]
+    public static async Task TestEntryPoint()
     {
         s_log.Clear();
         s_pending = null;
 
         var test = new Runtime_132017();
-        test.M(false).GetAwaiter().GetResult();
-        test.M(true).GetAwaiter().GetResult();
-        s_pending.GetAwaiter().GetResult();
+        await test.M(false);
+        await test.M(true);
+        await s_pending;
 
         Assert.Equal(new[] { "filter", "filter", "outer", "filter", "outer" }, s_log);
     }

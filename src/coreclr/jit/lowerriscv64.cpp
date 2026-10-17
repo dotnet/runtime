@@ -1105,7 +1105,8 @@ void Lowering::ContainCheckStoreLoc(GenTreeLclVarCommon* storeLoc) const
     assert(storeLoc->OperIsLocalStore());
     GenTree* op1 = storeLoc->gtGetOp1();
 
-    if (op1->OperIs(GT_BITCAST))
+    // A small store implicitly truncates its source, so it cannot store directly from the other type.
+    if (op1->OperIs(GT_BITCAST) && !varTypeIsSmall(storeLoc))
     {
         // If we know that the source of the bitcast will be in a register, then we can make
         // the bitcast itself contained. This will allow us to store directly from the other

@@ -14,7 +14,6 @@ using Xunit;
 //
 // These tests pin down that the caller still observes its own context after a suspension
 // that happened inside such an inlined frame.
-[ConditionalClass(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
 public class Async2AsyncVersionInline
 {
     private sealed class NamedContext : SynchronizationContext
@@ -94,11 +93,11 @@ public class Async2AsyncVersionInline
     }
 
     [Fact]
-    public static void ContextRestoredAfterInlinedAsyncVersionSuspends()
+    public static async Task ContextRestoredAfterInlinedAsyncVersionSuspends()
     {
         s_contextAfterAwait = "";
         s_suspensions = 0;
-        RunOn(s_syncContext1, CallerAwaitsVersion);
+        await RunOn(s_syncContext1, CallerAwaitsVersion);
         Assert.Equal(1, s_suspensions);
         Assert.Equal("ctx1", s_contextAfterAwait);
     }
@@ -126,12 +125,12 @@ public class Async2AsyncVersionInline
     }
 
     [Fact]
-    public static void ContextsRestoredThroughInlinedAsyncVersion()
+    public static async Task ContextsRestoredThroughInlinedAsyncVersion()
     {
         s_outerContextAfterAwait = "";
         s_innerContextAfterAwait = "";
         s_suspensions = 0;
-        RunOn(s_syncContext1, OuterAwaitsVersion);
+        await RunOn(s_syncContext1, OuterAwaitsVersion);
         Assert.Equal(1, s_suspensions);
         Assert.Equal("ctx2", s_innerContextAfterAwait);
         Assert.Equal("ctx1", s_outerContextAfterAwait);
@@ -147,28 +146,20 @@ public class Async2AsyncVersionInline
     }
 
     [Fact]
-    public static void ContextRestoredWhenVersionAwaitedInNonTailPosition()
+    public static async Task ContextRestoredWhenVersionAwaitedInNonTailPosition()
     {
         s_contextAfterAwait = "";
         s_suspensions = 0;
         int result = 0;
-        RunOn(s_syncContext1, async () => { result = await CallerWithWorkAfter(); });
+        await RunOn(s_syncContext1, async () => { result = await CallerWithWorkAfter(); });
         Assert.Equal(1, s_suspensions);
         Assert.Equal(42, result);
         Assert.Equal("ctx1", s_contextAfterAwait);
     }
 
-    private static void RunOn(SynchronizationContext ctx, Func<Task> body)
+    private static async Task RunOn(SynchronizationContext ctx, Func<Task> body)
     {
-        SynchronizationContext original = SynchronizationContext.Current;
         SynchronizationContext.SetSynchronizationContext(ctx);
-        try
-        {
-            body().GetAwaiter().GetResult();
-        }
-        finally
-        {
-            SynchronizationContext.SetSynchronizationContext(original);
-        }
+        await body();
     }
 }

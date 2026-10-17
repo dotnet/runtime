@@ -100,7 +100,7 @@ namespace System.Data.OleDb
             int index = IndexOf(parameterName);
             if (index < 0)
             {
-                throw ADP.ParametersSourceIndex(parameterName, this, s_itemType);
+                throw ADP.ParametersSourceIndex(parameterName, this, typeof(OleDbParameter));
             }
             return index;
         }
@@ -146,7 +146,7 @@ namespace System.Data.OleDb
             int index = IndexOf(parameterName);
             if (index < 0)
             {
-                throw ADP.ParametersSourceIndex(parameterName, this, s_itemType);
+                throw ADP.ParametersSourceIndex(parameterName, this, typeof(OleDbParameter));
             }
             return InnerList[index];
         }
@@ -235,7 +235,7 @@ namespace System.Data.OleDb
             }
             else if (this != ((OleDbParameter)value).CompareExchangeParent(null, this))
             {
-                throw ADP.CollectionRemoveInvalidObject(s_itemType, this);
+                throw ADP.CollectionRemoveInvalidObject(typeof(OleDbParameter), this);
             }
         }
 
@@ -286,7 +286,7 @@ namespace System.Data.OleDb
             int index = IndexOf(parameterName);
             if (index < 0)
             {
-                throw ADP.ParametersSourceIndex(parameterName, this, s_itemType);
+                throw ADP.ParametersSourceIndex(parameterName, this, typeof(OleDbParameter));
             }
             Replace(index, value);
         }
@@ -295,7 +295,7 @@ namespace System.Data.OleDb
         {
             if (null == value)
             {
-                throw ADP.ParameterNull(nameof(value), this, s_itemType);
+                throw ADP.ParameterNull(nameof(value), this, typeof(OleDbParameter));
             }
 
             object? parent = ((OleDbParameter)value).CompareExchangeParent(this, null);
@@ -303,11 +303,11 @@ namespace System.Data.OleDb
             {
                 if (this != parent)
                 {
-                    throw ADP.ParametersIsNotParent(s_itemType, this);
+                    throw ADP.ParametersIsNotParent(typeof(OleDbParameter), this);
                 }
                 if (index != IndexOf(value))
                 {
-                    throw ADP.ParametersIsParent(s_itemType, this);
+                    throw ADP.ParametersIsParent(typeof(OleDbParameter), this);
                 }
             }
 
@@ -328,11 +328,11 @@ namespace System.Data.OleDb
         {
             if (null == value)
             {
-                throw ADP.ParameterNull(nameof(value), this, s_itemType);
+                throw ADP.ParameterNull(nameof(value), this, typeof(OleDbParameter));
             }
-            else if (!s_itemType.IsInstanceOfType(value))
+            else if (!typeof(OleDbParameter).IsInstanceOfType(value))
             {
-                throw ADP.InvalidParameterType(this, s_itemType, value);
+                throw ADP.InvalidParameterType(this, typeof(OleDbParameter), value);
             }
         }
     };

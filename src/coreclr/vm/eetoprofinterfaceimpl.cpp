@@ -418,16 +418,12 @@ BOOL EEToProfInterfaceImpl::CHashTableImpl::Cmp(SIZE_T k1, const HASHENTRY * pc2
 
 
 //---------------------------------------------------------------------------------------
-// Private maintenance functions for initialization, cleanup, etc.
-
-EEToProfInterfaceImpl::AllocByClassData *EEToProfInterfaceImpl::m_pSavedAllocDataBlock = NULL;
-
-//---------------------------------------------------------------------------------------
 //
 // EEToProfInterfaceImpl ctor just sets initial values
 //
 
 EEToProfInterfaceImpl::EEToProfInterfaceImpl() :
+    m_pSavedAllocDataBlock(NULL),
     m_pCallback2(NULL),
     m_pCallback3(NULL),
     m_pCallback4(NULL),
@@ -467,8 +463,6 @@ EEToProfInterfaceImpl::EEToProfInterfaceImpl() :
     m_dwConcurrentGCWaitTimeoutInMs(INFINITE),
     m_bHasTimedOutWaitingForConcurrentGC(FALSE)
 {
-    // Also NULL out this static.  (Note: consider making this a member variable.)
-    m_pSavedAllocDataBlock = NULL;
     LIMITED_METHOD_CONTRACT;
 }
 
@@ -1012,6 +1006,7 @@ EEToProfInterfaceImpl::~EEToProfInterfaceImpl()
             delete [] m_pSavedAllocDataBlock->arrHash;
         }
 
+        delete m_pSavedAllocDataBlock;
         m_pSavedAllocDataBlock = NULL;
     }
 

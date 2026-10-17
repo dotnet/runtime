@@ -27,27 +27,22 @@ public class RuntimeAsyncNonExceptionThrows
     // WrapNonExceptionThrows = true (this assembly): the non-Exception is observed
     // as a RuntimeWrappedException by the awaiting caller for both async forms.
 
-    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
-    public static void CatchAfterYield_Async2()
-        => AssertNonExceptionWrapped(ThrowAfterYieldAsync2);
-
-    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
-    public static void CatchAfterYield_Async1()
-        => AssertNonExceptionWrapped(ThrowAfterYieldAsync1);
+    [Fact]
+    public static Task CatchAfterYield_Async2() => AssertNonExceptionWrapped(ThrowAfterYieldAsync2);
 
     [Fact]
-    public static void CatchBeforeYield_Async2()
-        => AssertNonExceptionWrapped(ThrowBeforeYieldAsync2);
+    public static Task CatchAfterYield_Async1() => AssertNonExceptionWrapped(ThrowAfterYieldAsync1);
 
     [Fact]
-    public static void CatchBeforeYield_Async1()
-        => AssertNonExceptionWrapped(ThrowBeforeYieldAsync1);
+    public static Task CatchBeforeYield_Async2() => AssertNonExceptionWrapped(ThrowBeforeYieldAsync2);
+
+    [Fact]
+    public static Task CatchBeforeYield_Async1() => AssertNonExceptionWrapped(ThrowBeforeYieldAsync1);
 
     // WrapNonExceptionThrows = false (NoWrapThrowers assembly).
 
-    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
-    public static void CatchAfterYield_NoWrap_Async2()
-        => AssertNonExceptionWrapped(NoWrapThrowers.ThrowAfterYieldAsync2);
+    [Fact]
+    public static Task CatchAfterYield_NoWrap_Async2() => AssertNonExceptionWrapped(NoWrapThrowers.ThrowAfterYieldAsync2);
 
     // async2 and async1 behave differently for a non-Exception thrown after a
     // suspension point in a WrapNonExceptionThrows = false assembly:
@@ -63,16 +58,14 @@ public class RuntimeAsyncNonExceptionThrows
     //     => AssertNonExceptionWrapped(NoWrapThrowers.ThrowAfterYieldAsync1);
 
     [Fact]
-    public static void CatchBeforeYield_NoWrap_Async2()
-        => AssertNonExceptionWrapped(NoWrapThrowers.ThrowBeforeYieldAsync2);
+    public static Task CatchBeforeYield_NoWrap_Async2() => AssertNonExceptionWrapped(NoWrapThrowers.ThrowBeforeYieldAsync2);
 
     [Fact]
-    public static void CatchBeforeYield_NoWrap_Async1()
-        => AssertNonExceptionWrapped(NoWrapThrowers.ThrowBeforeYieldAsync1);
+    public static Task CatchBeforeYield_NoWrap_Async1() => AssertNonExceptionWrapped(NoWrapThrowers.ThrowBeforeYieldAsync1);
 
-    private static void AssertNonExceptionWrapped(Func<Task> thrower)
+    private static async Task AssertNonExceptionWrapped(Func<Task> thrower)
     {
-        object wrapped = ObserveNonException(thrower).GetAwaiter().GetResult();
+        object wrapped = await ObserveNonException(thrower);
         Assert.Equal(ThrownObject, wrapped);
     }
 

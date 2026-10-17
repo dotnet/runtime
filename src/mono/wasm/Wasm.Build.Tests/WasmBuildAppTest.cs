@@ -128,7 +128,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [MemberData(nameof(MainMethodTestData), parameters: new object[] { /*aot*/ false })]
-        [TestCategory("native"), TestCategory("mono")]
+        [TestCategory("native")]
         public async Task Bug49588_RegressionTest_NativeRelinking(Configuration config, bool aot)
             => await TestMain("bug49588_native_relinking", s_bug49588_ProgramCS, config, aot,
                         extraArgs: "-p:WasmBuildNative=true",

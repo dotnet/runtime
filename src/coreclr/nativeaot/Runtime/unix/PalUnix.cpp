@@ -185,6 +185,7 @@ void PalGetPDBInfo(HANDLE hOsHandle, GUID * pGuidSignature, _Out_ uint32_t * pdw
 #endif
 }
 
+#ifdef FEATURE_HIJACK
 static void UnmaskActivationSignal()
 {
     sigset_t signal_set;
@@ -194,6 +195,7 @@ static void UnmaskActivationSignal()
     int sigmaskRet = pthread_sigmask(SIG_UNBLOCK, &signal_set, NULL);
     _ASSERTE(sigmaskRet == 0);
 }
+#endif // FEATURE_HIJACK
 
 // This functions configures behavior of the signals that are not
 // related to hardware exception handling.
@@ -289,9 +291,9 @@ void InitializeCurrentProcessCpuCount()
     g_RhNumberOfProcessors = count;
 }
 
-#if defined(TARGET_LINUX)
+#if defined(FEATURE_MULTITHREADING) && defined(TARGET_LINUX)
 static pthread_key_t key;
-#endif
+#endif // FEATURE_MULTITHREADING && TARGET_LINUX
 
 #ifdef FEATURE_HIJACK
 bool InitializeSignalHandling();
@@ -333,17 +335,17 @@ bool PalInit()
     }
 #endif
 
-#if defined(TARGET_LINUX)
+#if defined(FEATURE_MULTITHREADING) && defined(TARGET_LINUX)
     if (pthread_key_create(&key, RuntimeThreadShutdown) != 0)
     {
         return false;
     }
-#endif
+#endif // FEATURE_MULTITHREADING && TARGET_LINUX
 
     return true;
 }
 
-#if !defined(TARGET_LINUX)
+#if defined(FEATURE_MULTITHREADING) && !defined(TARGET_LINUX)
 struct TlsDestructionMonitor
 {
     void* m_thread = nullptr;
@@ -365,23 +367,7 @@ struct TlsDestructionMonitor
 // This thread local object is used to detect thread shutdown. Its destructor
 // is called when a thread is being shut down.
 thread_local TlsDestructionMonitor tls_destructionMonitor;
-#endif
-
-// This thread local variable is used for delegate marshalling
-PLATFORM_THREAD_LOCAL intptr_t tls_thunkData;
-
-#ifdef FEATURE_EMULATED_TLS
-EXTERN_C intptr_t* RhpGetThunkData()
-{
-    return &tls_thunkData;
-}
-#endif //FEATURE_EMULATED_TLS
-
-FCIMPL0(intptr_t, RhGetCurrentThunkContext)
-{
-    return tls_thunkData;
-}
-FCIMPLEND
+#endif // FEATURE_MULTITHREADING && !TARGET_LINUX
 
 // Register the thread with OS to be notified when thread is about to be destroyed
 // It fails fast if a different thread was already registered.
@@ -389,6 +375,7 @@ FCIMPLEND
 //  thread        - thread to attach
 void PalAttachThread(void* thread)
 {
+#ifdef FEATURE_MULTITHREADING
 #if defined(TARGET_LINUX)
     if (pthread_setspecific(key, thread) != 0)
     {
@@ -398,8 +385,11 @@ void PalAttachThread(void* thread)
 #else
     tls_destructionMonitor.SetThread(thread);
 #endif
+#endif // FEATURE_MULTITHREADING
 
+#ifdef FEATURE_HIJACK
     UnmaskActivationSignal();
+#endif // FEATURE_HIJACK
 }
 
 #if !defined(FEATURE_PORTABLE_HELPERS) && !defined(FEATURE_RX_THUNKS)
@@ -719,7 +709,7 @@ void PalFlushInstructionCache(_In_ void* pAddress, size_t size)
     }
 #elif (defined(HOST_MACCATALYST) || defined(HOST_IOS) || defined(HOST_TVOS)) && defined(HOST_ARM64)
     sys_icache_invalidate (pAddress, size);
-#else
+#elif !defined(HOST_WASM)
     __builtin___clear_cache((char *)pAddress, (char *)pAddress + size);
 #endif
 }

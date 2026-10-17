@@ -404,46 +404,8 @@ namespace System.Text.Json
         {
             Debug.Assert(jsonTypeInfo.IsConfigured);
 
-            JsonWriterOptions writerOptions = jsonTypeInfo.Options.GetWriterOptionsForJsonLines();
-
-            var bufferWriter = new PooledByteBufferWriter(jsonTypeInfo.Options.DefaultBufferSize, utf8Json);
-            var writer = new Utf8JsonWriter(bufferWriter, writerOptions);
-
-            try
-            {
-                bool first = true;
-                await foreach (TValue item in value.WithCancellation(cancellationToken).ConfigureAwait(false))
-                {
-                    if (!first)
-                    {
-                        writer.Reset();
-                    }
-
-                    first = false;
-                    jsonTypeInfo.Serialize(writer, item);
-
-                    // The JSON Lines spec mandates a single line-feed character as the line separator,
-                    // independently of any platform-specific or user-configured newline preference.
-                    Span<byte> dest = bufferWriter.GetSpan(1);
-                    dest[0] = (byte)'\n';
-                    bufferWriter.Advance(1);
-
-                    // Each line is a self-contained value that consumers may want to observe in real time,
-                    // so flush it out (PooledByteBufferWriter.FlushAsync also flushes the destination stream).
-                    await bufferWriter.FlushAsync(cancellationToken).ConfigureAwait(false);
-                }
-            }
-            catch
-            {
-                // Reset the writer in exception cases so writer.Dispose() doesn't flush a partially-written value.
-                writer.Reset();
-                throw;
-            }
-            finally
-            {
-                writer.Dispose();
-                bufferWriter.Dispose();
-            }
+            using var bufferWriter = new PooledByteBufferWriter(jsonTypeInfo.Options.DefaultBufferSize, utf8Json);
+            await SerializeAsyncEnumerableAsJsonLines(bufferWriter, value, jsonTypeInfo, cancellationToken).ConfigureAwait(false);
         }
     }
 }

@@ -83,7 +83,6 @@ nativeStringResourceTable_mscorrc
 #GetStdHandle
 #GetSystemInfo
 #GetTempPathA
-#GetTempPathW
 #LoadLibraryExA
 #LoadLibraryExW
 #MapViewOfFile

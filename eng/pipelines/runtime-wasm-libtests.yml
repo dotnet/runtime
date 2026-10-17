@@ -1,3 +1,7 @@
+# Manually run all WebAssembly library-test jobs, including the full trimmed
+# CoreCLR ReadyToRun lane, on a PR with:
+#   /azp run runtime-wasm-libtests
+
 trigger: none
 
 variables:
@@ -31,3 +35,4 @@ extends:
           useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
           excludeNonLibTests: true
           excludeLibTests: false
+          runFullR2RLibraryTests: true

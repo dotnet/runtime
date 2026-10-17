@@ -172,7 +172,7 @@ namespace System.Reflection.Runtime.General
         {
             TypeReference typeReference = typeReferenceHandle.GetTypeReference(reader);
             string name = typeReference.TypeName.GetString(reader);
-            Handle parent = typeReference.ParentNamespaceOrType;
+            Handle parent = typeReference.NamespaceOrEnclosingType;
             HandleType parentType = parent.HandleType;
             RuntimeTypeInfo? outerTypeInfo = null;
 
