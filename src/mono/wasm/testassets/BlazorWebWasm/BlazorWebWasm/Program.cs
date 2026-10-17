@@ -12,15 +12,48 @@ var app = builder.Build();
 
 var requestLogs = new List<BlazorWebWasmRequestLog>();
 var requestLogsLock = new Lock();
+var poisonClientAssemblyValue = Environment.GetEnvironmentVariable("BLAZOR_WEB_WASM_POISON_CLIENT_ASSEMBLY");
+var remainingClientAssemblyPoisons = int.TryParse(poisonClientAssemblyValue, out var poisonCount)
+    ? poisonCount
+    : string.Equals(poisonClientAssemblyValue, "true", StringComparison.OrdinalIgnoreCase) ? 1 : 0;
+var poisonClientAssemblyLock = new Lock();
 
 app.Use(async (context, next) =>
 {
-    await next.Invoke();
+    var wasPoisoned = false;
+    if (HttpMethods.IsGet(context.Request.Method) &&
+        context.Request.Path.Value is { } path &&
+        path.Contains("BlazorWebWasm.Client", StringComparison.OrdinalIgnoreCase) &&
+        path.EndsWith(".wasm", StringComparison.OrdinalIgnoreCase))
+    {
+        lock (poisonClientAssemblyLock)
+        {
+            if (remainingClientAssemblyPoisons > 0)
+            {
+                remainingClientAssemblyPoisons--;
+                wasPoisoned = true;
+            }
+        }
+    }
+
+    if (wasPoisoned)
+    {
+        context.Response.StatusCode = StatusCodes.Status200OK;
+        context.Response.ContentType = "application/wasm";
+        context.Response.ContentLength = 0;
+        context.Response.Headers.CacheControl = "public,max-age=3600";
+    }
+    else
+    {
+        await next.Invoke();
+    }
+
     var logEntry = new BlazorWebWasmRequestLog(
         DateTime.UtcNow,
         context.Request.Method,
         context.Request.Path,
-        context.Response.StatusCode
+        context.Response.StatusCode,
+        wasPoisoned
     );
     lock (requestLogsLock)
     {

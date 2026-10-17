@@ -2,9 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Playwright;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -14,9 +16,132 @@ namespace Wasm.Build.Tests.Blazor;
 
 public class AssetCachingTests : BlazorWasmTestBase
 {
+    private const string PoisonClientAssemblyEnvironmentVariable = "BLAZOR_WEB_WASM_POISON_CLIENT_ASSEMBLY";
+
     public AssetCachingTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
         : base(output, buildContext)
     {
+    }
+
+    [Fact, TestCategory("no-workload")]
+    public async Task BlazorApp_RecoversFromCachedEmptyFingerprintAsset()
+    {
+        var project = CopyTestAsset(
+            Configuration.Release,
+            aot: false,
+            TestAsset.BlazorWebWasm,
+            "CachedEmptyFingerprintAssetTest",
+            appendUnicodeToPath: false
+        );
+
+        var publishOptions = new PublishOptions(
+            AssertAppBundle: false,
+            ExtraBuildEnvironmentVariables: new Dictionary<string, string>
+            {
+                ["WasmFingerprintAssets"] = "true",
+            });
+        (string projectDir, _) = BlazorPublish(project, Configuration.Release, publishOptions);
+
+        var counterLoaded = new TaskCompletionSource();
+        var runOptions = new BlazorRunOptions(Configuration.Release)
+        {
+            BrowserPath = "counter",
+            OnConsoleMessage = (type, msg) =>
+            {
+                if (msg.Contains("Counter.OnAfterRender"))
+                    counterLoaded.TrySetResult();
+            },
+            Test = async (page) =>
+            {
+                await counterLoaded.Task.WaitAsync(TimeSpan.FromSeconds(30));
+
+                using var requestLogClient = new BlazorWebWasmLogClient(page.Url);
+                var requestLogs = await requestLogClient.GetRequestLogsAsync();
+                var poisonedRequest = Assert.Single(requestLogs.Where(log => log.WasPoisoned));
+                var clientAssemblyRequests = requestLogs
+                    .Where(log => string.Equals(log.Path, poisonedRequest.Path, StringComparison.Ordinal))
+                    .ToArray();
+
+                Assert.Equal(2, clientAssemblyRequests.Length);
+                Assert.All(clientAssemblyRequests, log => Assert.Equal(200, log.StatusCode));
+                Assert.True(clientAssemblyRequests[0].WasPoisoned);
+                Assert.False(clientAssemblyRequests[1].WasPoisoned);
+
+                await page.EvaluateAsync("console.log('WASM EXIT 0');");
+            }
+        };
+
+        var buildPaths = GetBuildPaths(Configuration.Release, forPublish: true, projectDir: projectDir);
+        var publishedAppPath = Path.Combine(buildPaths.BinDir, "publish");
+        var publishedAppDllFileName = $"{project.ProjectName}.dll";
+        using ToolCommand cmd = new DotNetCommand(s_buildEnv, _testOutput)
+            .WithWorkingDirectory(publishedAppPath)
+            .WithEnvironmentVariable(PoisonClientAssemblyEnvironmentVariable, "true");
+        await BrowserRun(cmd, $"exec {publishedAppDllFileName}", runOptions);
+    }
+
+    [Theory, TestCategory("no-workload")]
+    [InlineData(true, 2)]
+    [InlineData(false, 1)]
+    public async Task BlazorApp_DoesNotRetryAfterRecoveryOrForNonForceCache(bool fingerprintAssets, int poisonCount)
+    {
+        var project = CopyTestAsset(
+            Configuration.Release,
+            aot: false,
+            TestAsset.BlazorWebWasm,
+            $"CacheRecoveryLimitTest_{fingerprintAssets}",
+            appendUnicodeToPath: false
+        );
+
+        var publishOptions = new PublishOptions(
+            AssertAppBundle: false,
+            ExtraBuildEnvironmentVariables: new Dictionary<string, string>
+            {
+                ["WasmFingerprintAssets"] = fingerprintAssets.ToString(),
+            });
+        (string projectDir, _) = BlazorPublish(project, Configuration.Release, publishOptions);
+
+        var counterLoaded = new TaskCompletionSource();
+        var runOptions = new BlazorRunOptions(Configuration.Release)
+        {
+            BrowserPath = "counter",
+            OnConsoleMessage = (type, msg) =>
+            {
+                if (msg.Contains("Counter.OnAfterRender"))
+                    counterLoaded.TrySetResult();
+            },
+            Test = async (page) =>
+            {
+                await page.WaitForLoadStateAsync(LoadState.NetworkIdle, new() { Timeout = 30_000 });
+
+                using var requestLogClient = new BlazorWebWasmLogClient(page.Url);
+                var requestLogs = await requestLogClient.GetRequestLogsAsync();
+                var poisonedRequests = requestLogs.Where(log => log.WasPoisoned).ToArray();
+                Assert.Equal(poisonCount, poisonedRequests.Length);
+                var poisonedRequest = poisonedRequests[0];
+                var clientAssemblyRequests = requestLogs
+                    .Where(log => string.Equals(log.Path, poisonedRequest.Path, StringComparison.Ordinal))
+                    .ToArray();
+
+                Assert.Equal(poisonCount, clientAssemblyRequests.Length);
+                Assert.All(clientAssemblyRequests, log =>
+                {
+                    Assert.Equal(200, log.StatusCode);
+                    Assert.True(log.WasPoisoned);
+                });
+                Assert.False(counterLoaded.Task.IsCompleted);
+
+                await page.EvaluateAsync("console.log('WASM EXIT 0');");
+            }
+        };
+
+        var buildPaths = GetBuildPaths(Configuration.Release, forPublish: true, projectDir: projectDir);
+        var publishedAppPath = Path.Combine(buildPaths.BinDir, "publish");
+        var publishedAppDllFileName = $"{project.ProjectName}.dll";
+        using ToolCommand cmd = new DotNetCommand(s_buildEnv, _testOutput)
+            .WithWorkingDirectory(publishedAppPath)
+            .WithEnvironmentVariable(PoisonClientAssemblyEnvironmentVariable, poisonCount.ToString());
+        await BrowserRun(cmd, $"exec {publishedAppDllFileName}", runOptions);
     }
 
     [Fact, TestCategory("no-fingerprinting")]

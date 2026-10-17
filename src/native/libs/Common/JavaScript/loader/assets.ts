@@ -544,6 +544,23 @@ async function loadResourceFetch(asset: AssetEntryInternal): Promise<Response> {
     }
 
     dotnetLogger.debug(`Attempting to download '${sanitizeUrl(asset.resolvedUrl!)}'`);
+    return fetchResourceWithCacheRecovery(asset, fetchOptions, expectedContentType);
+}
+
+async function fetchResourceWithCacheRecovery(asset: AssetEntryInternal, fetchOptions: RequestInit, expectedContentType: string): Promise<Response> {
+    try {
+        const response = await fetchLike(asset.resolvedUrl!, fetchOptions, expectedContentType);
+        if (fetchOptions.cache !== "force-cache" || (response.ok && response.headers.get("Content-Length") !== "0")) {
+            return response;
+        }
+    } catch (err) {
+        if (fetchOptions.cache !== "force-cache") {
+            throw err;
+        }
+    }
+
+    dotnetLogger.debug(`Retrying download '${asset.name}' with cache reload`);
+    asset.cache = fetchOptions.cache = "reload";
     return fetchLike(asset.resolvedUrl!, fetchOptions, expectedContentType);
 }
 
