@@ -17,9 +17,20 @@
 #define THROW_FAIL_IF_FALSE(exp) { if (!(exp)) { ::printf("FALSE: %s\n", #exp); throw E_FAIL; } }
 
 #include <string>
+#include <atomic>
+#include <chrono>
+#include <functional>
+#include <future>
+#include <thread>
 
 namespace
 {
+    struct __declspec(uuid("C2CF7A31-FA94-48E2-AB89-64E6B4378EF5")) IEventRemovalTesting : IUnknown
+    {
+        virtual HRESULT STDMETHODCALLTYPE ConfigureRemoval(BOOL throwOnce, TestingEvents* callback) = 0;
+        virtual HRESULT STDMETHODCALLTYPE GetRemoveCount(int* count) = 0;
+    };
+
     class DispIDToStringMap
     {
         struct Pair
@@ -85,8 +96,14 @@ namespace
     class EventSink : public UnknownImpl, public TestingEvents
     {
         DispIDToStringMap _firedEvents;
+        std::function<HRESULT()> _onRemove;
 
     public:
+        void SetRemoveCallback(std::function<HRESULT()> callback)
+        {
+            _onRemove = std::move(callback);
+        }
+
         void ResetFiredState(_In_ DISPID id)
         {
             _firedEvents.Erase(id);
@@ -163,6 +180,9 @@ namespace
     private:
         HRESULT OnFireEventHandler(_In_ DISPID dispId, _In_ DISPPARAMS* dispParams)
         {
+            if (_onRemove)
+                return _onRemove();
+
             if (dispParams == nullptr)
                 return E_POINTER;
 
@@ -275,6 +295,191 @@ namespace
         THROW_IF_FAILED(hr);
         THROW_FAIL_IF_FALSE(foundEventInterface);
     }
+
+    void VerifyRemovalClaim(bool concurrent)
+    {
+        HRESULT hr;
+        ComSmartPtr<IEventTesting> et;
+        THROW_IF_FAILED(::CoCreateInstance(CLSID_EventTesting, nullptr, CLSCTX_INPROC, IID_IEventTesting, (void**)&et));
+        ComSmartPtr<IEventRemovalTesting> control;
+        THROW_IF_FAILED(et->QueryInterface(__uuidof(IEventRemovalTesting), (void**)&control));
+        ComSmartPtr<IConnectionPointContainer> cpc;
+        THROW_IF_FAILED(et->QueryInterface(&cpc));
+        ComSmartPtr<IConnectionPoint> cp;
+        THROW_IF_FAILED(cpc->FindConnectionPoint(IID_TestingEvents, &cp));
+        ComSmartPtr<EventSink> sink;
+        sink.Attach(new EventSink());
+        DWORD cookie;
+        THROW_IF_FAILED(cp->Advise(static_cast<TestingEvents*>(sink.p), &cookie));
+
+        THROW_IF_FAILED(control->ConfigureRemoval(TRUE, nullptr));
+        THROW_FAIL_IF_FALSE(cp->Unadvise(cookie) == E_FAIL);
+        ComSmartPtr<IEnumConnections> connections;
+        THROW_IF_FAILED(cp->EnumConnections(&connections));
+        CONNECTDATA data{};
+        ULONG fetched;
+        THROW_FAIL_IF_FALSE(connections->Next(1, &data, &fetched) == S_OK);
+        ComSmartPtr<IUnknown> enumerated;
+        enumerated.Attach(data.pUnk);
+        THROW_FAIL_IF_FALSE(fetched == 1 && data.dwCookie == cookie);
+
+        ComSmartPtr<EventSink> callback;
+        callback.Attach(new EventSink());
+        HRESULT competingResult = E_UNEXPECTED;
+        if (concurrent)
+        {
+            std::promise<void> entered;
+            std::future<void> enteredFuture = entered.get_future();
+            std::promise<void> resume;
+            std::shared_future<void> resumeFuture = resume.get_future().share();
+            std::atomic<int> calls{0};
+            callback->SetRemoveCallback([&]()
+            {
+                if (calls.fetch_add(1) == 0)
+                    entered.set_value();
+                return resumeFuture.wait_for(std::chrono::seconds(30)) == std::future_status::ready ? S_OK : E_FAIL;
+            });
+            THROW_IF_FAILED(control->ConfigureRemoval(FALSE, static_cast<TestingEvents*>(callback.p)));
+            HRESULT workerResult = E_UNEXPECTED;
+            std::thread worker([&]()
+            {
+                HRESULT init = ::CoInitializeEx(nullptr, COINIT_MULTITHREADED);
+                workerResult = FAILED(init) ? init : cp->Unadvise(cookie);
+                if (SUCCEEDED(init))
+                    ::CoUninitialize();
+            });
+            bool ready = enteredFuture.wait_for(std::chrono::seconds(30)) == std::future_status::ready;
+            bool visibleDuringRemoval = false;
+            if (ready)
+            {
+                if (connections->Reset() == S_OK && connections->Next(1, &data, &fetched) == S_OK)
+                {
+                    enumerated.Attach(data.pUnk);
+                    visibleDuringRemoval = fetched == 1 && data.dwCookie == cookie;
+                }
+                competingResult = cp->Unadvise(cookie);
+            }
+            resume.set_value();
+            worker.join();
+            THROW_FAIL_IF_FALSE(ready && visibleDuringRemoval && workerResult == S_OK && calls.load() == 1);
+        }
+        else
+        {
+            bool entered = false;
+            callback->SetRemoveCallback([&]()
+            {
+                if (!entered)
+                {
+                    entered = true;
+                    competingResult = cp->Unadvise(cookie);
+                }
+                return S_OK;
+            });
+            THROW_IF_FAILED(control->ConfigureRemoval(FALSE, static_cast<TestingEvents*>(callback.p)));
+            THROW_IF_FAILED(cp->Unadvise(cookie));
+        }
+        THROW_FAIL_IF_FALSE(competingResult == CONNECT_E_NOCONNECTION);
+        int removeCount;
+        THROW_IF_FAILED(control->GetRemoveCount(&removeCount));
+        THROW_FAIL_IF_FALSE(removeCount == 2);
+        THROW_FAIL_IF_FALSE(cp->Unadvise(cookie) == CONNECT_E_NOCONNECTION);
+
+        THROW_IF_FAILED(connections->Reset());
+        THROW_FAIL_IF_FALSE(connections->Next(1, &data, &fetched) == S_FALSE && fetched == 0);
+        // Insertion after rollback and removal exercises the last-inserted bookkeeping.
+        THROW_IF_FAILED(control->ConfigureRemoval(FALSE, nullptr));
+        THROW_IF_FAILED(cp->Advise(static_cast<TestingEvents*>(sink.p), &cookie));
+        THROW_IF_FAILED(cp->Unadvise(cookie));
+    }
+
+    void VerifyEnumConnectionsWithRemoval()
+    {
+        HRESULT hr;
+        ComSmartPtr<IEventTesting> et;
+        THROW_IF_FAILED(::CoCreateInstance(CLSID_EventTesting, nullptr, CLSCTX_INPROC, IID_IEventTesting, (void**)&et));
+        ComSmartPtr<IConnectionPointContainer> cpc;
+        THROW_IF_FAILED(et->QueryInterface(&cpc));
+        ComSmartPtr<IConnectionPoint> cp;
+        THROW_IF_FAILED(cpc->FindConnectionPoint(IID_TestingEvents, &cp));
+        ComSmartPtr<EventSink> sink;
+        sink.Attach(new EventSink());
+        DWORD cookies[3];
+        for (DWORD& cookie : cookies)
+            THROW_IF_FAILED(cp->Advise(static_cast<TestingEvents*>(sink.p), &cookie));
+
+        ComSmartPtr<IEnumConnections> connections;
+        THROW_IF_FAILED(cp->EnumConnections(&connections));
+
+        for (ULONG batchSize : {1u, 3u})
+        {
+            THROW_IF_FAILED(connections->Reset());
+            for (ULONG i = 0; i < 3; i += batchSize)
+            {
+                CONNECTDATA data[3]{};
+                ULONG fetched;
+                THROW_FAIL_IF_FALSE(connections->Next(batchSize, data, &fetched) == S_OK);
+                THROW_FAIL_IF_FALSE(fetched == batchSize);
+                for (ULONG j = 0; j < fetched; j++)
+                {
+                    ComSmartPtr<IUnknown> enumerated;
+                    enumerated.Attach(data[j].pUnk);
+                    THROW_FAIL_IF_FALSE(data[j].dwCookie == cookies[i + j]);
+                }
+            }
+        }
+
+        THROW_IF_FAILED(connections->Reset());
+        THROW_FAIL_IF_FALSE(connections->Skip(2) == S_OK);
+        ComSmartPtr<IEnumConnections> stableClone;
+        THROW_IF_FAILED(connections->Clone(&stableClone));
+        for (IEnumConnections* current : {connections.p, stableClone.p})
+        {
+            CONNECTDATA data{};
+            ULONG fetched;
+            THROW_FAIL_IF_FALSE(current->Next(1, &data, &fetched) == S_OK);
+            ComSmartPtr<IUnknown> enumerated;
+            enumerated.Attach(data.pUnk);
+            THROW_FAIL_IF_FALSE(fetched == 1 && data.dwCookie == cookies[2]);
+        }
+
+        THROW_IF_FAILED(connections->Reset());
+        THROW_IF_FAILED(cp->Unadvise(cookies[0]));
+        THROW_FAIL_IF_FALSE(connections->Skip(1) == S_OK);
+        THROW_IF_FAILED(cp->Unadvise(cookies[2]));
+        ComSmartPtr<IEnumConnections> clone;
+        THROW_IF_FAILED(connections->Clone(&clone));
+        DWORD inserted;
+        THROW_IF_FAILED(cp->Advise(static_cast<TestingEvents*>(sink.p), &inserted));
+        THROW_FAIL_IF_FALSE(inserted == cookies[2]);
+
+        for (IEnumConnections* current : {connections.p, clone.p})
+        {
+            CONNECTDATA data{};
+            ULONG fetched;
+            THROW_FAIL_IF_FALSE(current->Next(1, &data, &fetched) == S_OK);
+            ComSmartPtr<IUnknown> enumerated;
+            enumerated.Attach(data.pUnk);
+            THROW_FAIL_IF_FALSE(fetched == 1 && data.dwCookie == inserted);
+            THROW_FAIL_IF_FALSE(current->Next(1, &data, &fetched) == S_FALSE && fetched == 0);
+            THROW_FAIL_IF_FALSE(current->Skip(1) == S_FALSE);
+            THROW_FAIL_IF_FALSE(current->Skip(0) == S_OK);
+        }
+
+        THROW_IF_FAILED(connections->Reset());
+        THROW_IF_FAILED(cp->Unadvise(cookies[1]));
+        THROW_FAIL_IF_FALSE(connections->Skip(1) == S_OK);
+        THROW_IF_FAILED(cp->Unadvise(inserted));
+        THROW_IF_FAILED(cp->Advise(static_cast<TestingEvents*>(sink.p), &inserted));
+        CONNECTDATA data{};
+        ULONG fetched;
+        THROW_FAIL_IF_FALSE(connections->Next(1, &data, &fetched) == S_FALSE && fetched == 0);
+        THROW_IF_FAILED(connections->Reset());
+        THROW_FAIL_IF_FALSE(connections->Next(1, &data, &fetched) == S_OK);
+        ComSmartPtr<IUnknown> enumerated;
+        enumerated.Attach(data.pUnk);
+        THROW_FAIL_IF_FALSE(fetched == 1 && data.dwCookie == inserted);
+        THROW_IF_FAILED(cp->Unadvise(inserted));
+    }
 }
 
 template<COINIT TM>
@@ -312,6 +517,9 @@ int __cdecl main()
 
         VerifyAdviseUnadviseFromEvent();
         VerifyEnumConnectionPoints();
+        VerifyRemovalClaim(false);
+        VerifyRemovalClaim(true);
+        VerifyEnumConnectionsWithRemoval();
     }
     catch (HRESULT hr)
     {
