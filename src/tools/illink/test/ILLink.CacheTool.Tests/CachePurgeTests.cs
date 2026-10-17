@@ -4,7 +4,7 @@
 using System;
 using System.Globalization;
 using System.IO;
-using ILLink.Tasks;
+using Microsoft.NET.Build.Tasks;
 using Xunit;
 
 namespace ILLink.CacheTool.Tests;
@@ -19,7 +19,7 @@ public class CachePurgeTests
     {
         using var cache = new TestCache();
         string entry = cache.AddEntry('a', TestCache.Cutoff.AddTicks(ticks));
-        File.SetLastWriteTimeUtc(Path.Combine(entry, ILLinkCacheEntry.LastUsedFileName), DateTime.UtcNow);
+        File.SetLastWriteTimeUtc(Path.Combine(entry, InvocationCacheEntry.LastUsedFileName), DateTime.UtcNow);
 
         Assert.Equal(0, cache.Run());
 
@@ -69,7 +69,7 @@ public class CachePurgeTests
         using var cache = new TestCache();
         string damagedEntry = cache.AddEntry('a', TestCache.Cutoff.AddDays(-1));
         string validEntry = cache.AddEntry('b', TestCache.Cutoff.AddDays(-1));
-        string marker = Path.Combine(damagedEntry, ILLinkCacheEntry.LastUsedFileName);
+        string marker = Path.Combine(damagedEntry, InvocationCacheEntry.LastUsedFileName);
         switch (damage)
         {
             case "missing":
@@ -218,7 +218,7 @@ public class CachePurgeTests
     {
         internal static readonly DateTimeOffset Cutoff = new(2025, 1, 2, 3, 4, 5, TimeSpan.Zero);
         internal string Root { get; } = Path.Combine(Path.GetTempPath(), "illink-purge-tests-" + Guid.NewGuid().ToString("N"));
-        internal string Entries => Path.Combine(Root, ILLinkCacheEntry.VersionDirectory);
+        internal string Entries => Path.Combine(Root, InvocationCacheEntry.VersionDirectory);
         internal StringWriter Output { get; } = new();
         internal StringWriter Error { get; } = new();
 
@@ -229,7 +229,7 @@ public class CachePurgeTests
             string entry = Path.Combine(Entries, new string(key, 64));
             Directory.CreateDirectory(Path.Combine(entry, "outputs"));
             File.WriteAllText(Path.Combine(entry, "outputs", "app.dll"), "cached output");
-            File.WriteAllText(Path.Combine(entry, ILLinkCacheEntry.LastUsedFileName), lastUsed.ToString("O", CultureInfo.InvariantCulture));
+            File.WriteAllText(Path.Combine(entry, InvocationCacheEntry.LastUsedFileName), lastUsed.ToString("O", CultureInfo.InvariantCulture));
             return entry;
         }
 

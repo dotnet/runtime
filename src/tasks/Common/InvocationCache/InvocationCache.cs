@@ -1,5 +1,5 @@
-// Copyright (c) .NET Foundation and contributors. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 
 #nullable enable
 
@@ -14,86 +14,24 @@ using System.Threading;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 
-namespace ILLink.Tasks;
+namespace Microsoft.NET.Build.Tasks;
 
-internal sealed class ILLinkCache
+internal sealed partial class InvocationCache
 {
     private const int FormatVersion = 1;
     private readonly TaskLoggingHelper _log;
+    private readonly string _toolName;
     private static readonly StringComparison s_pathComparison = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
         ? StringComparison.OrdinalIgnoreCase
         : StringComparison.Ordinal;
 
     internal string CacheDirectory { get; }
 
-    private ILLinkCache(string cacheDirectory, TaskLoggingHelper log)
+    internal InvocationCache(string cacheDirectory, TaskLoggingHelper log, string toolName)
     {
         CacheDirectory = cacheDirectory;
         _log = log;
-    }
-
-    internal static ILLinkCache? TryCreateFromEnvironment(TaskLoggingHelper log)
-    {
-        string? setting = Environment.GetEnvironmentVariable("ILLINK_EXPERIMENTAL_CACHE");
-        if (string.IsNullOrEmpty(setting))
-            return null;
-
-        if (!bool.TryParse(setting, out bool enabled))
-        {
-            log.LogMessage(MessageImportance.Low, "ILLink caching is disabled because ILLINK_EXPERIMENTAL_CACHE must be 'true' or 'false'.");
-            return null;
-        }
-
-        return enabled ? TryCreate(Environment.GetEnvironmentVariable("ILLINK_EXPERIMENTAL_CACHE_PATH"), log) : null;
-    }
-
-    internal static ILLinkCache? TryCreate(string? cacheDirectory, TaskLoggingHelper log)
-    {
-        if (string.IsNullOrEmpty(cacheDirectory))
-            cacheDirectory = GetDefaultCacheDirectory();
-
-        if (cacheDirectory is null)
-        {
-            log.LogMessage(MessageImportance.Low, "ILLink caching is disabled because no default cache directory is available.");
-            return null;
-        }
-
-        try
-        {
-            return new ILLinkCache(Path.GetFullPath(cacheDirectory), log);
-        }
-        catch (Exception ex) when (ex is ArgumentException or NotSupportedException or IOException or UnauthorizedAccessException)
-        {
-            log.LogMessage(MessageImportance.Low, $"ILLink caching is disabled because the cache directory '{cacheDirectory}' could not be resolved: {ex.Message}");
-            return null;
-        }
-    }
-
-    private static string? GetDefaultCacheDirectory()
-    {
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-        {
-            string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData, Environment.SpecialFolderOption.DoNotVerify);
-            return string.IsNullOrEmpty(localAppData) || !Path.IsPathRooted(localAppData)
-                ? null
-                : Path.Combine(localAppData, "illink");
-        }
-
-        bool isMacOS = RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
-        if (!isMacOS)
-        {
-            string? cacheHome = Environment.GetEnvironmentVariable("XDG_CACHE_HOME");
-            if (!string.IsNullOrEmpty(cacheHome) && Path.IsPathRooted(cacheHome))
-                return Path.Combine(cacheHome, "illink");
-        }
-
-        string home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile, Environment.SpecialFolderOption.DoNotVerify);
-        if (string.IsNullOrEmpty(home) || !Path.IsPathRooted(home))
-            return null;
-
-        return isMacOS
-            ? Path.Combine(home, "Library", "Caches", "illink")
-            : Path.Combine(home, ".cache", "illink");
+        _toolName = toolName;
     }
 
     internal bool TryRestore(string inputHash, string outputDirectory, DateTime outputTimestampUtc)
@@ -105,7 +43,7 @@ internal sealed class ILLinkCache
 
         if (!Directory.Exists(entryDirectory))
         {
-            _log.LogMessage(MessageImportance.Low, $"ILLink cache miss: {inputHash}");
+            _log.LogMessage(MessageImportance.Low, $"{_toolName} cache miss: {inputHash}");
             return false;
         }
 
@@ -127,12 +65,12 @@ internal sealed class ILLinkCache
             }
 
             UpdateLastUsed(entryDirectory);
-            _log.LogMessage(MessageImportance.Low, $"ILLink cache hit: {inputHash}");
+            _log.LogMessage(MessageImportance.Low, $"{_toolName} cache hit: {inputHash}");
             return true;
         }
         catch (Exception ex) when (IsCacheFailure(ex))
         {
-            _log.LogMessage(MessageImportance.Low, $"ILLink cache restore failed for '{inputHash}'; running ILLink normally: {ex.Message}");
+            _log.LogMessage(MessageImportance.Low, $"{_toolName} cache restore failed for '{inputHash}'; running {_toolName} normally: {ex.Message}");
             return false;
         }
     }
@@ -154,12 +92,12 @@ internal sealed class ILLinkCache
             catch (AbandonedMutexException)
             {
                 acquired = true;
-                _log.LogMessage(MessageImportance.Low, $"ILLink cache writer lock was abandoned: {inputHash}");
+                _log.LogMessage(MessageImportance.Low, $"{_toolName} cache writer lock was abandoned: {inputHash}");
             }
 
             if (!acquired)
             {
-                _log.LogMessage(MessageImportance.Low, $"ILLink cache store skipped; another writer owns '{inputHash}'.");
+                _log.LogMessage(MessageImportance.Low, $"{_toolName} cache store skipped; another writer owns '{inputHash}'.");
                 return;
             }
 
@@ -167,7 +105,7 @@ internal sealed class ILLinkCache
             {
                 if (Directory.Exists(entryDirectory))
                 {
-                    _log.LogMessage(MessageImportance.Low, $"ILLink cache store skipped; entry '{inputHash}' already exists.");
+                    _log.LogMessage(MessageImportance.Low, $"{_toolName} cache store skipped; entry '{inputHash}' already exists.");
                     return;
                 }
 
@@ -195,10 +133,10 @@ internal sealed class ILLinkCache
                     }
                 }
 
-                ILLinkCacheEntry.WriteLastUsed(Path.Combine(stagingDirectory, ILLinkCacheEntry.LastUsedFileName));
+                InvocationCacheEntry.WriteLastUsed(Path.Combine(stagingDirectory, InvocationCacheEntry.LastUsedFileName));
                 Directory.Move(stagingDirectory, entryDirectory);
                 stagingDirectory = null;
-                _log.LogMessage(MessageImportance.Low, $"ILLink cache stored: {inputHash}");
+                _log.LogMessage(MessageImportance.Low, $"{_toolName} cache stored: {inputHash}");
             }
             finally
             {
@@ -207,7 +145,7 @@ internal sealed class ILLinkCache
         }
         catch (Exception ex) when (IsCacheFailure(ex))
         {
-            _log.LogMessage(MessageImportance.Low, $"ILLink cache store failed for '{inputHash}': {ex.Message}");
+            _log.LogMessage(MessageImportance.Low, $"{_toolName} cache store failed for '{inputHash}': {ex.Message}");
         }
         finally
         {
@@ -220,7 +158,7 @@ internal sealed class ILLinkCache
                 }
                 catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
                 {
-                    _log.LogMessage(MessageImportance.Low, $"ILLink cache staging cleanup failed for '{stagingDirectory}': {ex.Message}");
+                    _log.LogMessage(MessageImportance.Low, $"{_toolName} cache staging cleanup failed for '{stagingDirectory}': {ex.Message}");
                 }
             }
         }
@@ -230,20 +168,20 @@ internal sealed class ILLinkCache
     {
         try
         {
-            ILLinkCacheEntry.WriteLastUsed(Path.Combine(entryDirectory, ILLinkCacheEntry.LastUsedFileName));
+            InvocationCacheEntry.WriteLastUsed(Path.Combine(entryDirectory, InvocationCacheEntry.LastUsedFileName));
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            _log.LogMessage(MessageImportance.Low, $"ILLink cache last-used update failed for '{entryDirectory}': {ex.Message}");
+            _log.LogMessage(MessageImportance.Low, $"{_toolName} cache last-used update failed for '{entryDirectory}': {ex.Message}");
         }
     }
 
     private string GetEntryDirectory(string inputHash)
     {
-        if (!ILLinkCacheEntry.IsEntryName(inputHash))
+        if (!InvocationCacheEntry.IsEntryName(inputHash))
             throw new ArgumentException("The input hash must be a lowercase SHA-256 hex string.", nameof(inputHash));
 
-        return Path.Combine(CacheDirectory, ILLinkCacheEntry.VersionDirectory, inputHash);
+        return Path.Combine(CacheDirectory, InvocationCacheEntry.VersionDirectory, inputHash);
     }
 
     private string GetWriterMutexName(string inputHash)
@@ -254,11 +192,11 @@ internal sealed class ILLinkCache
 
 #if NET
         byte[] hash = SHA256.HashData(Encoding.UTF8.GetBytes(directory + "\n" + inputHash));
-        return @"Global\ILLinkCache-" + Convert.ToHexString(hash);
+        return @"Global\" + _toolName + "Cache-" + Convert.ToHexString(hash);
 #else
         using var sha256 = SHA256.Create();
         byte[] hash = sha256.ComputeHash(Encoding.UTF8.GetBytes(directory + "\n" + inputHash));
-        return @"Global\ILLinkCache-" + BitConverter.ToString(hash).Replace("-", "");
+        return @"Global\" + _toolName + "Cache-" + BitConverter.ToString(hash).Replace("-", "");
 #endif
     }
 
@@ -285,15 +223,15 @@ internal sealed class ILLinkCache
         }
     }
 
-    private static List<string> ReadManifest(string entryDirectory)
+    private List<string> ReadManifest(string entryDirectory)
     {
         using var manifest = new BinaryReader(File.OpenRead(Path.Combine(entryDirectory, "manifest")));
         if (manifest.ReadInt32() != FormatVersion)
-            throw new InvalidDataException("Unsupported ILLink cache format.");
+            throw new InvalidDataException($"Unsupported {_toolName} cache format.");
 
         int fileCount = manifest.ReadInt32();
         if (fileCount < 0 || fileCount > manifest.BaseStream.Length - manifest.BaseStream.Position)
-            throw new InvalidDataException("Invalid ILLink cache file count.");
+            throw new InvalidDataException($"Invalid {_toolName} cache file count.");
 
         var files = new List<string>();
         var paths = new HashSet<string>(RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
@@ -303,7 +241,7 @@ internal sealed class ILLinkCache
             string relativePath = manifest.ReadString();
             ValidateRelativePath(relativePath);
             if (!paths.Add(relativePath))
-                throw new InvalidDataException("Invalid ILLink cache output inventory.");
+                throw new InvalidDataException($"Invalid {_toolName} cache output inventory.");
 
             long length = manifest.ReadInt64();
             byte[] expectedHash = manifest.ReadBytes(32);
@@ -311,27 +249,27 @@ internal sealed class ILLinkCache
 
             if (expectedHash.Length != 32 || new FileInfo(cachedFile).Length != length ||
                 !expectedHash.SequenceEqual(HashFile(cachedFile)))
-                throw new InvalidDataException($"Invalid ILLink cache output: '{relativePath}'.");
+                throw new InvalidDataException($"Invalid {_toolName} cache output: '{relativePath}'.");
 
             files.Add(relativePath);
         }
 
         if (manifest.BaseStream.Position != manifest.BaseStream.Length)
-            throw new InvalidDataException("Unexpected data in ILLink cache manifest.");
+            throw new InvalidDataException($"Unexpected data in {_toolName} cache manifest.");
 
         return files;
     }
 
-    private static void ValidateRelativePath(string path)
+    private void ValidateRelativePath(string path)
     {
         if (string.IsNullOrEmpty(path) || Path.IsPathRooted(path))
-            throw new InvalidDataException("Invalid ILLink cache output path.");
+            throw new InvalidDataException($"Invalid {_toolName} cache output path.");
 
         foreach (string component in path.Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar))
         {
             if (component is "" or "." or ".." || component.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0 ||
                 (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && component[component.Length - 1] is '.' or ' '))
-                throw new InvalidDataException("Invalid ILLink cache output path.");
+                throw new InvalidDataException($"Invalid {_toolName} cache output path.");
         }
     }
 

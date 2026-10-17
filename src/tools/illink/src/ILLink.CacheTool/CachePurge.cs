@@ -4,7 +4,7 @@
 using System;
 using System.Globalization;
 using System.IO;
-using ILLink.Tasks;
+using Microsoft.NET.Build.Tasks;
 
 namespace ILLink.CacheTool;
 
@@ -15,12 +15,12 @@ internal static class CachePurge
         int deleted = 0;
         int kept = 0;
         int errors = 0;
-        string entriesDirectory = Path.Combine(cacheDirectory, ILLinkCacheEntry.VersionDirectory);
+        string entriesDirectory = Path.Combine(cacheDirectory, InvocationCacheEntry.VersionDirectory);
         try
         {
             foreach (string entry in Directory.EnumerateDirectories(entriesDirectory))
             {
-                if (!ILLinkCacheEntry.IsEntryName(Path.GetFileName(entry)))
+                if (!InvocationCacheEntry.IsEntryName(Path.GetFileName(entry)))
                     continue;
 
                 try
@@ -55,7 +55,7 @@ internal static class CachePurge
 
     private static DateTimeOffset GetLastUsed(string entry, TextWriter error)
     {
-        string marker = Path.Combine(entry, ILLinkCacheEntry.LastUsedFileName);
+        string marker = Path.Combine(entry, InvocationCacheEntry.LastUsedFileName);
         string reason = "missing or invalid";
         try
         {
