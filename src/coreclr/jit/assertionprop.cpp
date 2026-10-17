@@ -5165,48 +5165,20 @@ bool Compiler::optAssertionIsNonNull(GenTree* op, ASSERT_VALARG_TP assertions)
         return false;
     }
 
-    // Follow live copy equalities in either direction; the bounded set also breaks cycles.
-    const unsigned maxRelatedLocals                = 10;
-    unsigned       relatedLocals[maxRelatedLocals] = {op->AsLclVarCommon()->GetLclNum()};
-    unsigned       numRelatedLocals                = 1;
-    for (unsigned localIndex = 0; localIndex < numRelatedLocals; localIndex++)
+    unsigned const  lclNum      = op->AsLclVarCommon()->GetLclNum();
+    ASSERT_TP       apDependent = BitVecOps::Intersection(apTraits, GetAssertionDep(lclNum), assertions);
+    BitVecOps::Iter iter(apTraits, apDependent);
+    unsigned        index = 0;
+    while (iter.NextElem(&index))
     {
-        unsigned const  lclNum      = relatedLocals[localIndex];
-        ASSERT_TP       apDependent = BitVecOps::Intersection(apTraits, GetAssertionDep(lclNum), assertions);
-        BitVecOps::Iter iter(apTraits, apDependent);
-        unsigned        index = 0;
-        while (iter.NextElem(&index))
+        AssertionIndex      assertionIndex = GetAssertionIndex(index);
+        const AssertionDsc& curAssertion   = optGetAssertion(assertionIndex);
+
+        if (curAssertion.KindIs(OAK_NOT_EQUAL) && curAssertion.GetOp1().KindIs(O1K_LCLVAR) &&
+            curAssertion.GetOp2().KindIs(O2K_CONST_INT) && (curAssertion.GetOp1().GetLclNum() == lclNum) &&
+            (curAssertion.GetOp2().GetIntConstant() == 0))
         {
-            AssertionIndex      assertionIndex = GetAssertionIndex(index);
-            const AssertionDsc& curAssertion   = optGetAssertion(assertionIndex);
-
-            if (curAssertion.KindIs(OAK_NOT_EQUAL) && curAssertion.GetOp1().KindIs(O1K_LCLVAR) &&
-                curAssertion.GetOp2().KindIs(O2K_CONST_INT) && (curAssertion.GetOp1().GetLclNum() == lclNum) &&
-                (curAssertion.GetOp2().GetIntConstant() == 0))
-            {
-                return true;
-            }
-
-            if (op->TypeIs(TYP_REF) && curAssertion.IsCopyAssertion() && (numRelatedLocals < maxRelatedLocals))
-            {
-                unsigned first  = curAssertion.GetOp1().GetLclNum();
-                unsigned second = curAssertion.GetOp2().GetLclNum();
-                if ((first != lclNum) && (second != lclNum))
-                {
-                    continue;
-                }
-
-                unsigned other     = (first == lclNum) ? second : first;
-                unsigned seenIndex = 0;
-                while ((seenIndex < numRelatedLocals) && (relatedLocals[seenIndex] != other))
-                {
-                    seenIndex++;
-                }
-                if (seenIndex == numRelatedLocals)
-                {
-                    relatedLocals[numRelatedLocals++] = other;
-                }
-            }
+            return true;
         }
     }
     return false;
@@ -5220,15 +5192,11 @@ bool Compiler::optAssertionIsNonNull(GenTree* op, ASSERT_VALARG_TP assertions)
 //   vn         - VN to check
 //   assertions - set of live assertions
 //   budget     - limits the depth of recursion when chasing assertions across VNs.
-//   activePhis - reference PHIs whose incoming values are currently being proved
 //
 // Return Value:
 //   True if the VN could be proven non-null.
 //
-bool Compiler::optAssertionVNIsNonNull(ValueNum                   vn,
-                                       ASSERT_VALARG_TP           assertions,
-                                       int                        budget,
-                                       const NonNullAssertionPhi* activePhis)
+bool Compiler::optAssertionVNIsNonNull(ValueNum vn, ASSERT_VALARG_TP assertions, int budget)
 {
     if ((vn == ValueNumStore::NoVN) || !varTypeIsI(vnStore->TypeOfVN(vn)))
     {
@@ -5306,49 +5274,17 @@ bool Compiler::optAssertionVNIsNonNull(ValueNum                   vn,
         return false;
     }
 
-    // Bound repeated visits through diamonds as well as recursion depth.
-    unsigned  remainingPhiVisits = 100;
-    unsigned* remainingVisits    = (activePhis == nullptr) ? &remainingPhiVisits : activePhis->remainingVisits;
-    auto      visitPhi           = [this, vn, budget, activePhis, remainingVisits](ValueNum phiVN) {
-        if (!vnStore->IsPhiDef(phiVN) || (*remainingVisits == 0))
-        {
-            return false;
-        }
-        --*remainingVisits;
-
-        // Do not carry cycle assumptions through offset arithmetic or non-reference values.
-        const bool          referencePhi = (vn == phiVN) && (vnStore->TypeOfVN(phiVN) == TYP_REF);
-        NonNullAssertionPhi currentPhi{phiVN, referencePhi ? activePhis : nullptr, remainingVisits};
-        bool                hasAnchor = false;
-        auto visitor = [this, budget, &currentPhi, &hasAnchor](ValueNum reachingVN, ASSERT_TP reachingAssertions) {
-            // Only active argument walks may close cycles; edge-local successes are not reusable proofs.
-            if ((reachingVN != ValueNumStore::NoVN) && (vnStore->TypeOfVN(reachingVN) == TYP_REF))
-            {
-                for (const NonNullAssertionPhi* phi = &currentPhi; phi != nullptr; phi = phi->parent)
-                {
-                    if (phi->vn == reachingVN)
-                    {
-                        // A zero-depth query may anchor this edge, but cannot recurse through PHI assertions.
-                        hasAnchor |= optAssertionVNIsNonNull(reachingVN, reachingAssertions, 0);
-                        return AssertVisit::Continue;
-                    }
-                }
-            }
-
-            bool nonNull = optAssertionVNIsNonNull(reachingVN, reachingAssertions, budget - 1, &currentPhi);
-            hasAnchor |= nonNull;
-            return nonNull ? AssertVisit::Continue : AssertVisit::Abort;
-        };
-        // At least one input needs a non-cyclic proof; backedges alone are circular.
-        return (optVisitReachingAssertions(phiVN, visitor) == AssertVisit::Continue) && hasAnchor;
+    auto visitor = [this, budget](ValueNum reachingVN, ASSERT_TP reachingAssertions) {
+        return optAssertionVNIsNonNull(reachingVN, reachingAssertions, budget - 1) ? AssertVisit::Continue
+                                                                                   : AssertVisit::Abort;
     };
 
-    if (visitPhi(vn))
+    if (optVisitReachingAssertions(vn, visitor) == AssertVisit::Continue)
     {
         return true;
     }
 
-    if ((vnBase != vn) && visitPhi(vnBase))
+    if ((vnBase != vn) && (optVisitReachingAssertions(vnBase, visitor) == AssertVisit::Continue))
     {
         return true;
     }
