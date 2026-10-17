@@ -8,6 +8,36 @@ namespace Webcil;
 
 public static class WasmWebcilModule
 {
+    public sealed class LdtokenType
+    {
+    }
+
+    public sealed class LdtokenHolder<T>
+    {
+    }
+
+    public sealed class OtherLdtokenType
+    {
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static bool FoldTypeTokenEquality() => typeof(LdtokenType) == typeof(LdtokenType);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static bool FoldTypeTokenInequality() => typeof(LdtokenType) == typeof(OtherLdtokenType);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static Type ReadTypeToken() => typeof(LdtokenType);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static RuntimeTypeHandle ReadTypeTokenHandle() => typeof(LdtokenType).TypeHandle;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static Type ReadConstructedTypeToken() => typeof(LdtokenHolder<LdtokenType[]>);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static Type ReadGenericTypeToken<T>() => typeof(T);
+
     private static readonly int[] s_primes = new int[] { 3, 5, 7, 11, 13 };
     private static int s_counter;
 
