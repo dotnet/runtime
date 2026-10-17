@@ -145,6 +145,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Text\Base64Decoder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Text\Base64Url\Base64UrlDecoder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Text\Base64Url\Base64UrlEncoder.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Text\Base64Url\Base64UrlEncoder.Padding.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Text\Base64Url\Base64UrlFormattingOptions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Text\Base64Url\Base64UrlValidator.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Text\Base64Validator.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Text\FormattingHelpers.CountDigits.cs" />
