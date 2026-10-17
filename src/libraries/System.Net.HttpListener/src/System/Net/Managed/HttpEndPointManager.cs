@@ -78,9 +78,11 @@ namespace System.Net
         private static void AddPrefixInternal(string p, HttpListener listener)
         {
             int start = p.IndexOf(':') + 3;
-            int colon = p.IndexOf(':', start);
+            int colon = ListenerPrefix.IndexOfPortSeparator(p.AsSpan(start));
             if (colon != -1)
             {
+                colon += start;
+
                 // root can't be -1 here, since we've already checked for ending '/' in ListenerPrefix.
                 int root = p.IndexOf('/', colon, p.Length - colon);
                 ReadOnlySpan<char> portString = p.AsSpan(colon + 1, root - colon - 1);
@@ -94,6 +96,10 @@ namespace System.Net
 
             ListenerPrefix lp = new ListenerPrefix(p);
             if (lp.Host != "*" && lp.Host != "+" && Uri.CheckHostName(lp.Host) == UriHostNameType.Unknown)
+                throw new HttpListenerException((int)HttpStatusCode.BadRequest, SR.net_listener_host);
+
+            // IPv6 literals with a scope ID ("[fe80::1%25eth0]") are not supported.
+            if (lp.Host!.Contains('%'))
                 throw new HttpListenerException((int)HttpStatusCode.BadRequest, SR.net_listener_host);
 
             if (lp.Path!.Contains('%'))
