@@ -84,15 +84,46 @@ namespace System.Security.Cryptography.Tests
 
                 foreach (HpkeKem kem in kems)
                 {
-                    if (Hpke.IsSupported(new HpkeSuite(kem, HpkeKdf.HKDF_SHA256, HpkeAead.AES_128_GCM)))
+                    HpkeSuite suite = new(kem, HpkeKdf.HKDF_SHA256, HpkeAead.AES_128_GCM);
+
+                    if (Hpke.IsSupported(suite))
                     {
                         byte[] prefixes = kem == HpkeKem.DHKEM_X25519_HKDF_SHA256 ? [0, 1] : [0, 4];
 
                         foreach (byte prefix in prefixes)
                         {
-                            yield return [kem, prefix];
+                            byte[] enc = new byte[suite.EncapsulatedSecretSizeInBytes];
+                            enc[0] = prefix;
+                            yield return [kem, enc];
                         }
                     }
+                }
+
+                foreach ((HpkeKem Kem, int TraditionalKeySize) hybrid in new[]
+                {
+                    (HpkeKem.MLKEM768_P256, 65),
+                    (HpkeKem.MLKEM1024_P384, 97),
+                })
+                {
+                    HpkeSuite suite = new(hybrid.Kem, HpkeKdf.HKDF_SHA256, HpkeAead.AES_128_GCM);
+
+                    if (!Hpke.IsSupported(suite))
+                    {
+                        continue;
+                    }
+
+                    int traditionalOffset = suite.EncapsulatedSecretSizeInBytes - hybrid.TraditionalKeySize;
+                    byte[] invalidPrefix = new byte[suite.EncapsulatedSecretSizeInBytes];
+                    yield return [hybrid.Kem, invalidPrefix];
+
+                    byte[] zeroPoint = new byte[suite.EncapsulatedSecretSizeInBytes];
+                    zeroPoint[traditionalOffset] = 0x04;
+                    yield return [hybrid.Kem, zeroPoint];
+
+                    byte[] outOfRangePoint = new byte[suite.EncapsulatedSecretSizeInBytes];
+                    outOfRangePoint.AsSpan(traditionalOffset).Fill(0xFF);
+                    outOfRangePoint[traditionalOffset] = 0x04;
+                    yield return [hybrid.Kem, outOfRangePoint];
                 }
             }
         }
@@ -426,11 +457,9 @@ namespace System.Security.Cryptography.Tests
 
         [Theory]
         [MemberData(nameof(InvalidEncapsulatedSecrets))]
-        public static void InvalidEncapsulation_Rejected(HpkeKem kem, byte prefix)
+        public static void InvalidEncapsulation_Rejected(HpkeKem kem, byte[] enc)
         {
             HpkeSuite suite = new(kem, HpkeKdf.HKDF_SHA256, HpkeAead.AES_128_GCM);
-            byte[] enc = new byte[suite.EncapsulatedSecretSizeInBytes];
-            enc[0] = prefix;
             byte[] ciphertext = new byte[suite.AeadTagSizeInBytes];
             byte[] psk = new byte[32];
             byte[] pskId = [1];
