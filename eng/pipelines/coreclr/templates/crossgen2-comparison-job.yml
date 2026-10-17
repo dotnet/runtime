@@ -111,7 +111,12 @@ jobs:
         HelixSource: $(_HelixSource)
         HelixType: 'test/crossgen-comparison/'
         ${{ if eq(variables['System.TeamProject'], 'internal') }}:
-          HelixAccessToken: $(HelixApiAccessToken)
+          ${{ if eq(variables['helixUseEntraAuthentication'], true) }}:
+            HelixUseEntraAuthentication: true
+            HelixAzureSubscription: ${{ variables.helixAzureSubscription }}
+            HelixBaseUri: ${{ variables.helixBaseUri }}
+          ${{ else }}:
+            HelixAccessToken: $(HelixApiAccessToken)
         HelixTargetQueues: ${{ join(' ', parameters.helixQueues) }}
         ${{ if ne(variables['System.TeamProject'], 'internal') }}:
           Creator: $(Creator)
