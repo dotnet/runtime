@@ -232,8 +232,19 @@ VOID DECLSPEC_NORETURN RethrowResumeAfterCatchException(const ResumeAfterCatchEx
 #define INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_CONTEXT(pContext, ssp) \
         CONTEXT *__pResumeAfterCatchContext = pContext;                \
         TADDR __pResumeAfterCatchSSP = ssp;                            \
+        bool __resumeAfterCatchContextIsInterrupted = false;           \
         TADDR __resumeSP = 0, __resumeIP = 0;                          \
         try                                                            \
+        {
+
+// The same for a context where the thread was interrupted and redirected rather than one at a call site.
+// The ssp is the SSP register value at that context.
+#define INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_INTERRUPTED_CONTEXT(pContext, ssp) \
+        CONTEXT *__pResumeAfterCatchContext = pContext;                            \
+        TADDR __pResumeAfterCatchSSP = ssp;                                        \
+        bool __resumeAfterCatchContextIsInterrupted = true;                        \
+        TADDR __resumeSP = 0, __resumeIP = 0;                                      \
+        try                                                                        \
         {
 
 #define INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(pFrame) \
@@ -254,7 +265,8 @@ VOID DECLSPEC_NORETURN RethrowResumeAfterCatchException(const ResumeAfterCatchEx
         if (__resumeSP != 0)                                                                                           \
         {                                                                                                              \
             ResumeAfterCatchException ex(__resumeSP, __resumeIP);                                                      \
-            RethrowResumeAfterCatchExceptionSkipManagedFrames(ex, __pResumeAfterCatchContext, __pResumeAfterCatchSSP); \
+            RethrowResumeAfterCatchExceptionSkipManagedFrames(ex, __pResumeAfterCatchContext, __pResumeAfterCatchSSP,  \
+                                                              __resumeAfterCatchContextIsInterrupted);                 \
         }
 
 
@@ -275,6 +287,7 @@ VOID DECLSPEC_NORETURN RethrowResumeAfterCatchException(const ResumeAfterCatchEx
 #else // FEATURE_INTERPRETER && !HOST_WASM
 #define INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(pFrame)
 #define INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_CONTEXT(pContext, ssp)
+#define INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_INTERRUPTED_CONTEXT(pContext, ssp)
 #define UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME
 #define UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_CONTEXT
 #endif // FEATURE_INTERPRETER && !HOST_WASM
