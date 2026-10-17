@@ -6231,18 +6231,12 @@ void Lowering::LowerStoreSingleRegCallStruct(GenTreeBlk* store)
 
     if (regType != TYP_UNDEF)
     {
-#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_WASM)
         if (varTypeIsFloating(call->TypeGet()))
         {
             regType = call->TypeGet();
         }
 #endif
-
-#if defined(TARGET_WASM)
-        CorInfoWasmType wasmAbiType = m_compiler->info.compCompHnd->getWasmLowering(call->gtRetClsHnd);
-        assert(wasmAbiType != CORINFO_WASM_TYPE_VOID);
-        regType = WasmClassifier::ToJitType(wasmAbiType);
-#endif // TARGET_WASM
 
         store->ChangeType(regType);
         store->SetOper(GT_STOREIND);
