@@ -18,6 +18,7 @@
 #include <minipal/time.h>
 
 #include "exinfo.h"
+#include "gccover.h"
 
 #define HIJACK_NONINTERRUPTIBLE_THREADS
 
@@ -3449,7 +3450,7 @@ void Thread::CommitGCStressInstructionUpdate()
         assert(pbDestCode != NULL);
         assert(pbSrcCode != NULL);
 
-        ExecutableWriterHolder<BYTE> destCodeWriterHolder(pbDestCode, sizeof(DWORD));
+        GCStressCodeWriter destCodeWriterHolder(pbDestCode, sizeof(DWORD));
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
 
