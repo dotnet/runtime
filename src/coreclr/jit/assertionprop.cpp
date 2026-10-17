@@ -5148,10 +5148,10 @@ bool Compiler::optAssertionIsNonNull(GenTree* op, ASSERT_VALARG_TP assertions)
         op = op->AsOp()->gtGetOp1();
     }
 
-    if (!optLocalAssertionProp)
+    // Fast path when we have a VN
+    if (!optLocalAssertionProp && vnStore->IsKnownNonNull(op->gtVNPair.GetConservative()))
     {
-        // Query the normal value even when exceptions or a nonlocal tree hide the reference.
-        return optAssertionVNIsNonNull(optConservativeNormalVN(op), assertions);
+        return true;
     }
 
     op = op->gtEffectiveVal();
@@ -5160,25 +5160,40 @@ bool Compiler::optAssertionIsNonNull(GenTree* op, ASSERT_VALARG_TP assertions)
         return false;
     }
 
-    if (BitVecOps::MayBeUninit(assertions))
+    // If local assertion prop use lcl comparison, else use VN comparison.
+    if (!optLocalAssertionProp)
     {
-        return false;
+        ValueNum vn = vnStore->VNConservativeNormalValue(op->gtVNPair);
+        return optAssertionVNIsNonNull(vn, assertions);
     }
-
-    unsigned const  lclNum      = op->AsLclVarCommon()->GetLclNum();
-    ASSERT_TP       apDependent = BitVecOps::Intersection(apTraits, GetAssertionDep(lclNum), assertions);
-    BitVecOps::Iter iter(apTraits, apDependent);
-    unsigned        index = 0;
-    while (iter.NextElem(&index))
+    else
     {
-        AssertionIndex      assertionIndex = GetAssertionIndex(index);
-        const AssertionDsc& curAssertion   = optGetAssertion(assertionIndex);
-
-        if (curAssertion.KindIs(OAK_NOT_EQUAL) && curAssertion.GetOp1().KindIs(O1K_LCLVAR) &&
-            curAssertion.GetOp2().KindIs(O2K_CONST_INT) && (curAssertion.GetOp1().GetLclNum() == lclNum) &&
-            (curAssertion.GetOp2().GetIntConstant() == 0))
+        if (BitVecOps::MayBeUninit(assertions))
         {
-            return true;
+            return false;
+        }
+
+        // Find live assertions related to lclNum
+        //
+        unsigned const lclNum      = op->AsLclVarCommon()->GetLclNum();
+        ASSERT_TP      apDependent = BitVecOps::Intersection(apTraits, GetAssertionDep(lclNum), assertions);
+
+        // Scan those looking for a suitable assertion
+        //
+        BitVecOps::Iter iter(apTraits, apDependent);
+        unsigned        index = 0;
+        while (iter.NextElem(&index))
+        {
+            AssertionIndex      assertionIndex = GetAssertionIndex(index);
+            const AssertionDsc& curAssertion   = optGetAssertion(assertionIndex);
+
+            if (curAssertion.KindIs(OAK_NOT_EQUAL) &&          // kind
+                curAssertion.GetOp1().KindIs(O1K_LCLVAR) &&    // op1
+                curAssertion.GetOp2().KindIs(O2K_CONST_INT) && // op2
+                (curAssertion.GetOp1().GetLclNum() == lclNum) && (curAssertion.GetOp2().GetIntConstant() == 0))
+            {
+                return true;
+            }
         }
     }
     return false;
@@ -5232,39 +5247,10 @@ bool Compiler::optAssertionVNIsNonNull(ValueNum vn, ASSERT_VALARG_TP assertions,
             AssertionIndex      assertionIndex = GetAssertionIndex(index);
             const AssertionDsc& curAssertion   = optGetAssertion(assertionIndex);
             // Successful type-test assertions exclude null; a successful castclass alone does not.
-            const bool isNonNull =
-                curAssertion.CanPropNonNull() ||
-                (curAssertion.KindIs(OAK_EQUAL) && curAssertion.GetOp1().KindIs(O1K_SUBTYPE, O1K_EXACT_TYPE));
-            if (isNonNull)
+            if (curAssertion.CanPropNonNull() &&
+                ((curAssertion.GetOp1().GetVN() == vn) || (curAssertion.GetOp1().GetVN() == vnBase)))
             {
-                ValueNum assertedVN = curAssertion.GetOp1().GetVN();
-                if ((assertedVN == vn) || (assertedVN == vnBase))
-                {
-                    return true;
-                }
-
-                // A non-null isinst result must be the original, non-null input.
-                VNFuncApp funcApp;
-                if (vnStore->GetVNFunc(assertedVN, &funcApp) &&
-                    funcApp.FuncIs(VNF_IsInstanceOf, VNF_ReadyToRunIsInstanceOf) &&
-                    ((funcApp.GetArg(1) == vn) || (funcApp.GetArg(1) == vnBase)))
-                {
-                    return true;
-                }
-            }
-            else if (curAssertion.CanPropEqualOrNotEqual() && curAssertion.GetOp1().KindIs(O1K_VN) &&
-                     curAssertion.GetOp2().KindIs(O2K_CONST_INT) && (curAssertion.GetOp2().GetIntConstant() == 0) &&
-                     (vnStore->TypeOfVN(curAssertion.GetOp2().GetVN()) == TYP_INT))
-            {
-                // (x != null) != 0 and (x == null) == 0 both establish x != null.
-                VNFuncApp funcApp;
-                if (vnStore->GetVNFunc(curAssertion.GetOp1().GetVN(), &funcApp) && funcApp.FuncIs(VNF_EQ, VNF_NE) &&
-                    (curAssertion.KindIs(OAK_EQUAL) == funcApp.FuncIs(VNF_EQ)) &&
-                    (funcApp.GetArg(1) == ValueNumStore::VNForNull()) &&
-                    ((funcApp.GetArg(0) == vn) || (funcApp.GetArg(0) == vnBase)))
-                {
-                    return true;
-                }
+                return true;
             }
         }
     }
