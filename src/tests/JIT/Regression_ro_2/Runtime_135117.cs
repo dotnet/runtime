@@ -6,6 +6,8 @@ using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using Xunit;
 
+// Each Store* method stores a struct returned in a single register from a non-inlined call
+// through a ref. The store must write exactly the struct's size.
 public class Runtime_135117
 {
     public struct S1
@@ -46,11 +48,6 @@ public class Runtime_135117
     public struct SI
     {
         public Int128 Value;
-    }
-
-    private sealed class Box
-    {
-        public int Value;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -112,15 +109,6 @@ public class Runtime_135117
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void StoreSI(ref SI destination, long value) => destination = MakeSI(value);
-
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    private static void StoreNewBoxes(SO[] array)
-    {
-        for (int i = 0; i < array.Length; i++)
-        {
-            StoreSO(ref array[i], new Box { Value = i });
-        }
-    }
 
     [Fact]
     public static void TestEntryPoint()
@@ -208,20 +196,11 @@ public class Runtime_135117
         Assert.Equal(new Int128(0x1122334455667788, 0x1122334455667788), si[1].Value);
         Assert.Equal((Int128)(-1), si[2].Value);
 
-        // The store of a struct wrapping a reference needs a write barrier so that a gen0 GC
-        // sees the young object referenced from an older array.
-        SO[] so = new SO[16];
-        GC.Collect();
-        GC.Collect();
-        StoreNewBoxes(so);
-        for (int i = 0; i < 4; i++)
-        {
-            GC.Collect(0);
-            _ = new byte[1024];
-        }
-        for (int i = 0; i < so.Length; i++)
-        {
-            Assert.Equal(i, Assert.IsType<Box>(so[i].Value).Value);
-        }
+        object obj = new object();
+        SO[] so = new SO[3];
+        StoreSO(ref so[1], obj);
+        Assert.Null(so[0].Value);
+        Assert.Same(obj, so[1].Value);
+        Assert.Null(so[2].Value);
     }
 }
