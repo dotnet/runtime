@@ -5699,7 +5699,8 @@ typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, unsigned> Lc
 //      2. If the following conditions are true:
 //            the store is to a local (and not a field),
 //            the local is not lvLiveInOutOfHndlr or no exceptions can be thrown between the prolog and the store,
-//            either the local has no gc pointers or there are no gc-safe points between the prolog and the store,
+//            either the local has no gc pointers or it is not reported as an untracked gc slot and there are no
+//            gc-safe points between the prolog and the store,
 //         then the local is marked with lvHasExplicitInit which tells the codegen not to insert zero initialization
 //         for this local in the prolog.
 //
@@ -5926,7 +5927,14 @@ void Compiler::optRemoveRedundantZeroInits()
                             // insert a call to CORINFO_HELP_INIT_PINVOKE_FRAME but that is not a gc-safe point.
                             assert(s_helperCallProperties.IsNoGC(CORINFO_HELP_INIT_PINVOKE_FRAME));
 
-                            if (!lclDsc->HasGCPtr() || (!GetInterruptible() && !hasGCSafePoint))
+                            // An untracked gc slot is reported whenever its frame is, and this phase can't
+                            // rule out every gc-safe point before the store, so it keeps its prolog zeroing.
+                            // Wasm reports all gc locals on the frame as untracked slots.
+#ifdef TARGET_WASM
+                            if (!lclDsc->HasGCPtr())
+#else
+                            if (!lclDsc->HasGCPtr() || (lclDsc->lvTracked && !GetInterruptible() && !hasGCSafePoint))
+#endif
                             {
                                 // The local hasn't been used and won't be reported to the gc between
                                 // the prolog and this explicit initialization. Therefore, it doesn't
