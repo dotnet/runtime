@@ -58,6 +58,16 @@ public partial class ManualResetEventSlim
         ObjectDisposedException.ThrowIf(IsDisposed, this);
         cancellationToken.ThrowIfCancellationRequested();
         ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeout, -1);
+
+        if (IsSet)
+        {
+            return true;
+        }
+        if (millisecondsTimeout == 0)
+        {
+            return false;
+        }
+
         throw new PlatformNotSupportedException();
     }
 

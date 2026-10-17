@@ -11,6 +11,6 @@ public static partial class Monitor
     public static bool Wait(object obj, int millisecondsTimeout)
     {
         ArgumentNullException.ThrowIfNull(obj);
-        throw new PlatformNotSupportedException();
+        return GetLockObject(obj).Wait(millisecondsTimeout, obj);
     }
 }

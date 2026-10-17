@@ -117,6 +117,11 @@ public sealed partial class Lock
             throw new SynchronizationLockException();
         }
 
+        if (millisecondsTimeout != 0)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
         uint recursionCount = ExitAll();
         try
         {

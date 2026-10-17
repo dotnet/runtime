@@ -43,11 +43,24 @@ namespace System.Threading.Tests
         [InlineData(true, 0)]
         [InlineData(false, 1)]
         [InlineData(true, 1)]
-        public static void SingleThreadedWaitRemainsUnsupported(bool initialState, int millisecondsTimeout)
+        public static void SingleThreadedWaitOnlyRejectsBlocking(bool initialState, int millisecondsTimeout)
         {
             using ManualResetEventSlim ev = new(initialState);
-            Assert.Throws<PlatformNotSupportedException>(() => ev.Wait(millisecondsTimeout));
-            Assert.Throws<PlatformNotSupportedException>(() => ev.Wait(TimeSpan.FromMilliseconds(millisecondsTimeout)));
+            if (initialState)
+            {
+                Assert.True(ev.Wait(millisecondsTimeout));
+                Assert.True(ev.Wait(TimeSpan.FromMilliseconds(millisecondsTimeout)));
+            }
+            else if (millisecondsTimeout == 0)
+            {
+                Assert.False(ev.Wait(millisecondsTimeout));
+                Assert.False(ev.Wait(TimeSpan.FromMilliseconds(millisecondsTimeout)));
+            }
+            else
+            {
+                Assert.Throws<PlatformNotSupportedException>(() => ev.Wait(millisecondsTimeout));
+                Assert.Throws<PlatformNotSupportedException>(() => ev.Wait(TimeSpan.FromMilliseconds(millisecondsTimeout)));
+            }
             Assert.Equal(initialState, ev.IsSet);
         }
 
@@ -59,7 +72,9 @@ namespace System.Threading.Tests
             using ManualResetEventSlim ev = new(true);
             Assert.Throws<OperationCanceledException>(() => ev.Wait(-2, cancellation.Token));
             Assert.Throws<ArgumentOutOfRangeException>(() => ev.Wait(-2, CancellationToken.None));
-            Assert.Throws<PlatformNotSupportedException>(() => ev.Wait(0, CancellationToken.None));
+            Assert.True(ev.Wait(0, CancellationToken.None));
+            ev.Reset();
+            Assert.False(ev.Wait(0, CancellationToken.None));
             ev.Dispose();
             Assert.Throws<ObjectDisposedException>(() => ev.Wait(-2, cancellation.Token));
         }

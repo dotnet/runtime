@@ -15,6 +15,10 @@ public partial class Task
         {
             return true;
         }
+        if (millisecondsTimeout == 0)
+        {
+            return false;
+        }
 
         throw new PlatformNotSupportedException();
     }
@@ -72,6 +76,11 @@ public partial class Task
 
         if (hasIncompleteTask)
         {
+            if (millisecondsTimeout == 0)
+            {
+                return false;
+            }
+
             throw new PlatformNotSupportedException();
         }
 
@@ -106,5 +115,5 @@ public partial class Task
     }
 
     private static int WaitAnyBlockingCore(Task[] tasks, int millisecondsTimeout, CancellationToken cancellationToken) =>
-        throw new PlatformNotSupportedException();
+        millisecondsTimeout == 0 ? -1 : throw new PlatformNotSupportedException();
 }

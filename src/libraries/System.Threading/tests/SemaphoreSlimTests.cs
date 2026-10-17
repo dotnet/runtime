@@ -109,10 +109,21 @@ namespace System.Threading.Tests
         [InlineData(1, 1)]
         [InlineData(0, -1)]
         [InlineData(1, -1)]
-        public static void SingleThreadedSynchronousWaitRestrictions(int count, int millisecondsTimeout)
+        public static void SingleThreadedSynchronousWaitHonorsAvailableCount(int count, int millisecondsTimeout)
         {
             using SemaphoreSlim semaphore = new(count, 1);
-            if (count == 0 && millisecondsTimeout == 0)
+            WaitHandle handle = semaphore.AvailableWaitHandle;
+            if (count != 0)
+            {
+                Assert.True(semaphore.Wait(millisecondsTimeout));
+                Assert.Equal(0, semaphore.CurrentCount);
+                Assert.False(handle.WaitOne(0));
+                semaphore.Release();
+                Assert.True(handle.WaitOne(0));
+                Assert.True(semaphore.Wait(TimeSpan.FromMilliseconds(millisecondsTimeout)));
+                Assert.False(handle.WaitOne(0));
+            }
+            else if (millisecondsTimeout == 0)
             {
                 Assert.False(semaphore.Wait(millisecondsTimeout));
                 Assert.False(semaphore.Wait(TimeSpan.FromMilliseconds(millisecondsTimeout)));
@@ -122,7 +133,7 @@ namespace System.Threading.Tests
                 Assert.Throws<PlatformNotSupportedException>(() => semaphore.Wait(millisecondsTimeout));
                 Assert.Throws<PlatformNotSupportedException>(() => semaphore.Wait(TimeSpan.FromMilliseconds(millisecondsTimeout)));
             }
-            Assert.Equal(count, semaphore.CurrentCount);
+            Assert.Equal(0, semaphore.CurrentCount);
         }
 
         /// <summary>

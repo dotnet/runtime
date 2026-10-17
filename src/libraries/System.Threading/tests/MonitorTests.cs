@@ -94,16 +94,40 @@ namespace System.Threading.Tests
         [InlineData(-1)]
         [InlineData(0)]
         [InlineData(1)]
-        public static void SingleThreadedWaitRemainsUnsupported(int millisecondsTimeout)
+        public static void SingleThreadedWaitValidatesBeforeBlocking(int millisecondsTimeout)
         {
             object obj = new();
             Assert.Throws<ArgumentNullException>(() => Monitor.Wait(null, millisecondsTimeout));
-            Assert.Throws<PlatformNotSupportedException>(() => Monitor.Wait(obj, millisecondsTimeout));
+            if (millisecondsTimeout < Timeout.Infinite)
+            {
+                Assert.Throws<ArgumentOutOfRangeException>(() => Monitor.Wait(obj, millisecondsTimeout));
+            }
+            else
+            {
+                Assert.Throws<SynchronizationLockException>(() => Monitor.Wait(obj, millisecondsTimeout));
+            }
+
             lock (obj)
             {
-                Assert.Throws<PlatformNotSupportedException>(() => Monitor.Wait(obj, millisecondsTimeout));
+                if (millisecondsTimeout < Timeout.Infinite)
+                {
+                    Assert.Throws<ArgumentOutOfRangeException>(() => Monitor.Wait(obj, millisecondsTimeout));
+                }
+                else if (millisecondsTimeout == 0)
+                {
+                    lock (obj)
+                    {
+                        Assert.False(Monitor.Wait(obj, millisecondsTimeout));
+                        Assert.True(Monitor.IsEntered(obj));
+                    }
+                }
+                else
+                {
+                    Assert.Throws<PlatformNotSupportedException>(() => Monitor.Wait(obj, millisecondsTimeout));
+                }
                 Assert.True(Monitor.IsEntered(obj));
             }
+            Assert.False(Monitor.IsEntered(obj));
         }
 
         // Attempts a single recursive acquisition/release cycle of a newly-created lock.

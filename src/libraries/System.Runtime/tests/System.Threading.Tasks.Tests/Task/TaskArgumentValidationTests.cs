@@ -31,15 +31,24 @@ namespace System.Threading.Tasks.Tests
         [InlineData(-1)]
         [InlineData(0)]
         [InlineData(1)]
-        public void IncompleteTaskWaitsWithoutThreadsThrow(int millisecondsTimeout)
+        public void IncompleteTaskWaitsWithoutThreadsHonorZeroTimeout(int millisecondsTimeout)
         {
             var source = new TaskCompletionSource<int>();
             Task pending = source.Task;
 
-            Assert.Throws<PlatformNotSupportedException>(() => pending.Wait(millisecondsTimeout));
+            if (millisecondsTimeout == 0)
+            {
+                Assert.False(pending.Wait(millisecondsTimeout));
+                Assert.False(Task.WaitAll([pending, Task.CompletedTask], millisecondsTimeout));
+                Assert.Equal(-1, Task.WaitAny([pending], millisecondsTimeout));
+            }
+            else
+            {
+                Assert.Throws<PlatformNotSupportedException>(() => pending.Wait(millisecondsTimeout));
+                Assert.Throws<PlatformNotSupportedException>(() => Task.WaitAll([pending, Task.CompletedTask], millisecondsTimeout));
+                Assert.Throws<PlatformNotSupportedException>(() => Task.WaitAny([pending], millisecondsTimeout));
+            }
             Assert.Throws<PlatformNotSupportedException>(() => pending.GetAwaiter().GetResult());
-            Assert.Throws<PlatformNotSupportedException>(() => Task.WaitAll([pending, Task.CompletedTask], millisecondsTimeout));
-            Assert.Throws<PlatformNotSupportedException>(() => Task.WaitAny([pending], millisecondsTimeout));
             Assert.Equal(1, Task.WaitAny([pending, Task.CompletedTask], millisecondsTimeout));
 
             Assert.Throws<ArgumentException>("tasks", () => Task.WaitAll([null, Task.CompletedTask, pending], millisecondsTimeout));
@@ -47,7 +56,14 @@ namespace System.Threading.Tasks.Tests
 
             using var cancellation = new CancellationTokenSource();
             cancellation.Cancel();
-            Assert.Throws<PlatformNotSupportedException>(() => pending.Wait(millisecondsTimeout, cancellation.Token));
+            if (millisecondsTimeout == 0)
+            {
+                Assert.False(pending.Wait(millisecondsTimeout, cancellation.Token));
+            }
+            else
+            {
+                Assert.Throws<PlatformNotSupportedException>(() => pending.Wait(millisecondsTimeout, cancellation.Token));
+            }
             Assert.Throws<OperationCanceledException>(() =>
                 pending.Wait(TimeSpan.FromMilliseconds(millisecondsTimeout), cancellation.Token));
             Assert.Throws<OperationCanceledException>(() => Task.WaitAll([pending], millisecondsTimeout, cancellation.Token));

@@ -50,7 +50,19 @@ public partial class SemaphoreSlim
     {
         CheckDispose();
         cancellationToken.ThrowIfCancellationRequested();
-        if (millisecondsTimeout == 0 && m_currentCount == 0)
+
+        if (m_currentCount > 0)
+        {
+            Debug.Assert(m_asyncHead is null);
+            m_currentCount--;
+            if (m_waitHandle is not null && m_currentCount == 0)
+            {
+                m_waitHandle.Reset();
+            }
+
+            return true;
+        }
+        if (millisecondsTimeout == 0)
         {
             return false;
         }

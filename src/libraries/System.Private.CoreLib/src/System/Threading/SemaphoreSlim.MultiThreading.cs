@@ -95,10 +95,6 @@ namespace System.Threading
                 return false;
             }
 
-#if !FEATURE_MULTITHREADING || FEATURE_WASM_MANAGED_THREADS
-            RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
-#endif
-
             long startTime = 0;
             if (millisecondsTimeout != Timeout.Infinite && millisecondsTimeout > 0)
             {
@@ -144,6 +140,10 @@ namespace System.Threading
                 // then block on (once we've released the lock).
                 if (m_asyncHead is not null)
                 {
+#if !FEATURE_MULTITHREADING || FEATURE_WASM_MANAGED_THREADS
+                    RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
+#endif
+
                     Debug.Assert(m_asyncTail is not null, "tail should not be null if head isn't");
                     asyncWaitTask = WaitAsyncCore(millisecondsTimeout, cancellationToken);
                 }
@@ -228,10 +228,6 @@ namespace System.Threading
         [UnsupportedOSPlatform("browser")]
         private bool WaitUntilCountOrTimeout(long millisecondsTimeout, long startTime, CancellationToken cancellationToken)
         {
-#if !FEATURE_MULTITHREADING || FEATURE_WASM_MANAGED_THREADS
-            RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
-#endif
-
             int monitorWaitMilliseconds = Timeout.Infinite;
 
             // Wait on the monitor as long as the count is zero
