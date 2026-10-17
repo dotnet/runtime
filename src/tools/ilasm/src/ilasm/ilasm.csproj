@@ -22,4 +22,8 @@
     <ProjectReference Include="..\ILAssembler\ILAssembler.csproj" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(IsGraphBuild)' == 'true'">
+    <ProjectReferenceTargets Include="PublishItemsOutputGroup" Targets="GetCopyToOutputDirectoryItems" />
+  </ItemGroup>
+
 </Project>
