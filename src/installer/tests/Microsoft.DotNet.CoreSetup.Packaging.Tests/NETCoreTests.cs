@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Xml.Linq;
 using Microsoft.DotNet.CoreSetup.Test;
 using Xunit;
 
@@ -53,6 +54,16 @@ namespace Microsoft.DotNet.CoreSetup.Packaging.Tests
                 $"Microsoft.NETCore.App.Runtime.{HostTestContext.BuildRID}"))
             {
                 tester.IsRuntimePack();
+
+                XElement coreLib = Assert.Single(
+                    tester.ReadEntryXDocument("data/RuntimeList.xml").Root.Elements("File"),
+                    file => (string)file.Attribute("AssemblyName") == "System.Private.CoreLib");
+                bool isCoreCLR = HostTestContext.RuntimeFlavor == "CoreCLR";
+                string coreLibDirectory = isCoreCLR ? $"lib/{HostTestContext.Tfm}" : "native";
+                Assert.Equal(isCoreCLR ? "Managed" : "Native", (string)coreLib.Attribute("Type"));
+                Assert.Equal(
+                    $"runtimes/{HostTestContext.BuildRID}/{coreLibDirectory}/System.Private.CoreLib.dll",
+                    (string)coreLib.Attribute("Path"));
             }
         }
     }

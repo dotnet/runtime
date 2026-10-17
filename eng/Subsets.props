@@ -648,6 +648,7 @@
 
   <ItemGroup Condition="$(_subset.Contains('+libs.sfx+'))">
     <ProjectToBuild Include="$(LibrariesProjectRoot)sfx.proj"
+                    AdditionalProperties="RuntimeFlavor=$(RuntimeFlavor)"
                     Category="libs"
                     Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' or
                                '$(BuildTargetFramework)' == '' or
@@ -655,7 +656,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+libs.oob+'))">
-    <ProjectToBuild Include="$(LibrariesProjectRoot)oob.proj" Category="libs" />
+    <ProjectToBuild Include="$(LibrariesProjectRoot)oob.proj" AdditionalProperties="RuntimeFlavor=$(RuntimeFlavor)" Category="libs" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+mono.wasmruntime+'))">

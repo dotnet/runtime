@@ -57,6 +57,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PublishReadyToRunExclude Include="System.Private.CoreLib.dll" />
     <ProjectReference Include="$(CoreClrProjectRoot)crossgen-corelib.proj"
                       GlobalPropertiesToRemove="LibrariesRuntimeFlavor;RuntimeFlavor;RuntimeIdentifier;TargetFramework"
                       OutputItemType="_RuntimeCoreLibFile"
@@ -78,8 +79,7 @@
           BeforeTargets="AddRuntimeFilesToPackage"
           DependsOnTargets="ResolveProjectReferences">
     <ItemGroup>
-      <RuntimeFiles Include="@(_RuntimeCoreLibFile)"
-                    IsNative="true" />
+      <RuntimeFiles Include="@(_RuntimeCoreLibFile)" />
     </ItemGroup>
   </Target>
 
@@ -130,7 +130,6 @@
       <_WasmFrameworkR2RExclude Include="@(_WasmFrameworkR2RReference)"
                                 Exclude="@(_WasmFrameworkR2RInput)" />
       <PublishReadyToRunExclude Include="@(_WasmFrameworkR2RExclude->'%(FileName)%(Extension)')" />
-      <PublishReadyToRunExclude Include="System.Private.CoreLib.dll" />
     </ItemGroup>
     <PropertyGroup>
       <_WasmCrossgen2Exe>$([MSBuild]::NormalizePath('$(Crossgen2InBuildDir)', 'crossgen2$(ExeSuffix)'))</_WasmCrossgen2Exe>

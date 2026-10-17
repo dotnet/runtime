@@ -14,13 +14,13 @@
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)sfx-src.proj"
                       AdditionalProperties="RuntimeFlavor=$(_NetCoreAppLibrariesRuntimeFlavor)"
-                      GlobalPropertiesToRemove="RuntimeIdentifier;TargetFramework"
+                      GlobalPropertiesToRemove="LibrariesRuntimeFlavor;RuntimeIdentifier;TargetFramework"
                       ReferenceOutputAssembly="false"
                       SetConfiguration="Configuration=$(LibrariesConfiguration)"
                       SkipGetTargetFrameworkProperties="true"
                       OutputItemType="_NetCoreAppLibrarySourceAssembly" />
     <ProjectReference Include="@(NetCoreAppLibraryGeneratorProject)"
-                      GlobalPropertiesToRemove="RuntimeIdentifier"
+                      GlobalPropertiesToRemove="LibrariesRuntimeFlavor;RuntimeFlavor;RuntimeIdentifier"
                       OutputItemType="_NetCoreAppRefPackGeneratorFile"
                       ReferenceOutputAssembly="false"
                       SetConfiguration="Configuration=$(LibrariesConfiguration)"

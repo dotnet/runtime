@@ -10,7 +10,9 @@
   <Import Project="NetCoreAppLibraryProjectReferences.props" />
 
   <ItemGroup>
-    <ProjectReference Include="@(NetCoreAppLibraryGeneratorProject)" />
+    <ProjectReference Include="@(NetCoreAppLibraryGeneratorProject)"
+                      GlobalPropertiesToRemove="LibrariesRuntimeFlavor;RuntimeFlavor"
+                      SetTargetFramework="TargetFramework=netstandard2.0" />
   </ItemGroup>
 
 </Project>
