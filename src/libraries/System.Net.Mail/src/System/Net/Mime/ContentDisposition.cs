@@ -79,6 +79,13 @@ namespace System.Net.Mime
             {
                 ArgumentException.ThrowIfNullOrEmpty(value);
 
+                // RFC allows IANA registered token or X- extension token. We do not validate extensively.
+                // For backward compatibility we restrict only chars which can interfere with other part of syntax.
+                if (!MimeBasePart.IsAscii(value, false) || value.AsSpan().ContainsAny(';', '"'))
+                {
+                    throw new ArgumentException(SR.DispositionTypeInvalid, nameof(value));
+                }
+
                 _isChanged = true;
                 _dispositionType = value;
             }
