@@ -137,7 +137,7 @@ internal sealed partial class GrammarActions
     /// Declares the locals of a <c>.locals</c> directive in the innermost open lexical scope, in order.
     /// </summary>
     /// <remarks>
-    /// This follows native ilasm's <c>EmitLocals</c>. A local without an explicit slot takes the next slot after
+    /// A local without an explicit slot takes the next slot after
     /// the highest one declared so far in the method. A local with slot <c>n</c> takes slot <c>n</c>; when
     /// <c>n</c> is past the end of the slot table, the slots before it are added without a type, to be typed by a
     /// later declaration. Declaring a slot that already exists is allowed: if the slot is in use
@@ -146,8 +146,8 @@ internal sealed partial class GrammarActions
     /// declared again with the same type without a diagnostic; that is how a method can have fewer slots than
     /// local declarations. A local that would take the next slot when that is past
     /// <see cref="MaximumLocalSlot"/> (a slot after 65535) is reported and not declared: no local instruction
-    /// could name it, and the PDB could not record it. A <c>...</c> sentinel in the list is not a local: as in
-    /// native ilasm, it takes no slot. That is only a <c>...</c> standing alone as an argument; in
+    /// could name it, and the PDB could not record it. A <c>...</c> sentinel in the list is not a local: it
+    /// takes no slot. That is only a <c>...</c> standing alone as an argument; in
     /// <c>... int32 a</c> the sentinel is part of the type, and the argument is a local like any other.
     /// A named local is added to the scope's names unless the scope already has a local with that name, so the
     /// first declaration of a name in a scope is the one that name refers to.
@@ -261,7 +261,7 @@ internal sealed partial class GrammarActions
 
     /// <summary>
     /// Sets the method body's local signature from the slot table: one entry per slot, in slot order. A slot that
-    /// no declaration typed is reported, as native ilasm does, and written as <c>int32</c> so the signature stays
+    /// no declaration typed is reported and written as <c>int32</c> so the signature stays
     /// well-formed for error-tolerant output.
     /// </summary>
     private void EmitLocalSignature(CurrentMethodContext method)
@@ -315,8 +315,8 @@ internal sealed partial class GrammarActions
         public BlobBuilder? Type { get; set; }
 
         /// <summary>
-        /// Gets or sets whether the slot is in use, which makes declaring it again a warning. As in native ilasm,
-        /// which keeps one such flag per slot, every declaration of the slot sets it and the closing of any scope
+        /// Gets or sets whether the slot is in use, which makes declaring it again a warning. There is one such
+        /// flag per slot: every declaration of the slot sets it and the closing of any scope
         /// that declared the slot clears it. So when a block declares a slot that an enclosing scope also declared
         /// and then closes, the slot is no longer in use, although the enclosing scope is still open.
         /// </summary>

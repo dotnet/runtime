@@ -89,7 +89,7 @@ namespace ILAssembler.Tests.GeneratedCases
 
     /// <summary>
     /// A <c>.line</c> directive of a generated program, written in the full form
-    /// <c>.line start,end : startColumn,endColumn ['file']</c>, which native ilasm also accepts.
+    /// <c>.line start,end : startColumn,endColumn ['file']</c>.
     /// <see cref="FileName"/> is <see langword="null"/> for a directive without a file name, empty for <c>''</c>,
     /// and otherwise the file the directive names. A hidden directive is <c>.line 16707566,16707566 : 0,0</c>.
     /// </summary>
