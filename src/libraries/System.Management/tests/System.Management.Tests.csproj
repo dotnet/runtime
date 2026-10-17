@@ -29,4 +29,12 @@
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <Reference Include="System.Management" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETFramework'">
+    <!-- The shared framework's BinaryFormatter always throws, so reference the `NetCoreAppMinimum` build which
+         still has a functional implementation. Private="true" is required because eng/references.targets defaults
+         shared framework project references to Private="false", which would keep it out of the output directory. -->
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.Serialization.Formatters\src\System.Runtime.Serialization.Formatters.csproj"
+                      Private="true"
+                      SetTargetFramework="TargetFramework=$(NetCoreAppMinimum)" />
+  </ItemGroup>
 </Project>
