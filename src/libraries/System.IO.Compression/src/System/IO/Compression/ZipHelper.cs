@@ -4,6 +4,8 @@
 using System.Buffers;
 using System.Diagnostics;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.IO.Compression;
 
@@ -90,7 +92,22 @@ internal static partial class ZipHelper
     // assumes maxBytesToRead is positive, ensures to not read beyond the provided max number of bytes,
     // if the signature is found then returns true and positions stream at first byte of signature
     // if the signature is not found, returns false
-    internal static bool SeekBackwardsToSignature(Stream stream, ReadOnlySpan<byte> signatureToFind, int maxBytesToRead)
+    internal static bool SeekBackwardsToSignature(Stream stream, ReadOnlyMemory<byte> signatureToFind, int maxBytesToRead)
+    {
+        ValueTask<bool> vt = SeekBackwardsToSignatureCoreAsync<SyncReadWriteAdapter>(stream, signatureToFind, maxBytesToRead, CancellationToken.None);
+        Debug.Assert(vt.IsCompleted, "Synchronous SeekBackwardsToSignature completed asynchronously.");
+        return vt.GetAwaiter().GetResult();
+    }
+
+    // Asynchronously assumes all bytes of signatureToFind are non zero, looks backwards from current position in stream,
+    // assumes maxBytesToRead is positive, ensures to not read beyond the provided max number of bytes,
+    // if the signature is found then returns true and positions stream at first byte of signature
+    // if the signature is not found, returns false
+    internal static ValueTask<bool> SeekBackwardsToSignatureAsync(Stream stream, ReadOnlyMemory<byte> signatureToFind, int maxBytesToRead, CancellationToken cancellationToken) =>
+        SeekBackwardsToSignatureCoreAsync<AsyncReadWriteAdapter>(stream, signatureToFind, maxBytesToRead, cancellationToken);
+
+    internal static async ValueTask<bool> SeekBackwardsToSignatureCoreAsync<TAdapter>(Stream stream, ReadOnlyMemory<byte> signatureToFind, int maxBytesToRead, CancellationToken cancellationToken)
+        where TAdapter : IReadWriteAdapter
     {
         Debug.Assert(signatureToFind.Length != 0);
         Debug.Assert(maxBytesToRead > 0);
@@ -103,7 +120,7 @@ internal static partial class ZipHelper
         // split between two consecutive blocks, at the cost of reading [signatureToFind.Length] duplicate bytes in each iteration.
         int bufferPointer = 0;
         byte[] buffer = ArrayPool<byte>.Shared.Rent(BackwardsSeekingBufferSize);
-        Span<byte> bufferSpan = buffer.AsSpan(0, BackwardsSeekingBufferSize);
+        Memory<byte> bufferMemory = buffer.AsMemory(0, BackwardsSeekingBufferSize);
 
         try
         {
@@ -116,22 +133,22 @@ internal static partial class ZipHelper
             {
                 int overlap = totalBytesRead == 0 ? 0 : signatureToFind.Length;
 
-                if (maxBytesToRead - totalBytesRead + overlap < bufferSpan.Length)
+                if (maxBytesToRead - totalBytesRead + overlap < bufferMemory.Length)
                 {
                     // If we have less than a full buffer left to read, we adjust the buffer size.
-                    bufferSpan = bufferSpan.Slice(0, maxBytesToRead - totalBytesRead + overlap);
+                    bufferMemory = bufferMemory.Slice(0, maxBytesToRead - totalBytesRead + overlap);
                 }
 
-                int bytesRead = SeekBackwardsAndRead(stream, bufferSpan, overlap);
+                int bytesRead = await SeekBackwardsAndReadCoreAsync<TAdapter>(stream, bufferMemory, overlap, cancellationToken).ConfigureAwait(false);
 
-                outOfBytes = bytesRead < bufferSpan.Length;
-                if (bytesRead < bufferSpan.Length)
+                outOfBytes = bytesRead < bufferMemory.Length;
+                if (bytesRead < bufferMemory.Length)
                 {
-                    bufferSpan = bufferSpan.Slice(0, bytesRead);
+                    bufferMemory = bufferMemory.Slice(0, bytesRead);
                 }
 
-                bufferPointer = bufferSpan.LastIndexOf(signatureToFind);
-                Debug.Assert(bufferPointer < bufferSpan.Length);
+                bufferPointer = bufferMemory.Span.LastIndexOf(signatureToFind.Span);
+                Debug.Assert(bufferPointer < bufferMemory.Length);
 
                 totalBytesRead += bytesRead - overlap;
 
@@ -162,7 +179,8 @@ internal static partial class ZipHelper
     // Allows successive buffers to overlap by a number of bytes. This handles cases where
     // the value being searched for straddles buffers (i.e. where the first buffer ends with the
     // first X bytes being searched for, and the second buffer begins with the remaining bytes.)
-    private static int SeekBackwardsAndRead(Stream stream, Span<byte> buffer, int overlap)
+    private static async ValueTask<int> SeekBackwardsAndReadCoreAsync<TAdapter>(Stream stream, Memory<byte> buffer, int overlap, CancellationToken cancellationToken)
+        where TAdapter : IReadWriteAdapter
     {
         int bytesRead;
 
@@ -170,19 +188,20 @@ internal static partial class ZipHelper
         {
             Debug.Assert(overlap <= buffer.Length);
             stream.Seek(-(buffer.Length - overlap), SeekOrigin.Current);
-            bytesRead = stream.ReadAtLeast(buffer, buffer.Length, throwOnEndOfStream: true);
+            bytesRead = await TAdapter.ReadAtLeastAsync(stream, buffer, buffer.Length, throwOnEndOfStream: true, cancellationToken).ConfigureAwait(false);
             stream.Seek(-buffer.Length, SeekOrigin.Current);
         }
         else
         {
             int bytesToRead = (int)stream.Position;
             stream.Seek(0, SeekOrigin.Begin);
-            bytesRead = stream.ReadAtLeast(buffer, bytesToRead, throwOnEndOfStream: true);
+            bytesRead = await TAdapter.ReadAtLeastAsync(stream, buffer, bytesToRead, throwOnEndOfStream: true, cancellationToken).ConfigureAwait(false);
             stream.Seek(0, SeekOrigin.Begin);
         }
 
         return bytesRead;
     }
+
     // Converts the specified string into bytes using the optional specified encoding.
     // If the encoding null, then the encoding is calculated from the string itself.
     // If maxBytes is greater than zero, the returned string will be truncated to a total
