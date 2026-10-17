@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using System.Runtime.Intrinsics;
 using Xunit;
 
 public class Runtime_135117
@@ -27,6 +28,26 @@ public class Runtime_135117
         public object Value;
     }
 
+    public struct SL
+    {
+        public long Value;
+    }
+
+    public struct SD
+    {
+        public double Value;
+    }
+
+    public struct SV
+    {
+        public Vector128<int> Value;
+    }
+
+    public struct SI
+    {
+        public Int128 Value;
+    }
+
     private sealed class Box
     {
         public int Value;
@@ -48,6 +69,21 @@ public class Runtime_135117
     private static SO MakeSO(object value) => new SO { Value = value };
 
     [MethodImpl(MethodImplOptions.NoInlining)]
+    private static SL MakeSL(long value) => new SL { Value = value };
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static SD MakeSD(double value) => new SD { Value = value };
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static SV MakeSV(int value) => new SV { Value = Vector128.Create(value) };
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Int128 MakeInt128(long value) => new Int128((ulong)value, (ulong)value);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static SI MakeSI(long value) => new SI { Value = new Int128((ulong)value, (ulong)value) };
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private static void StoreS1(ref S1 destination, byte value) => destination = MakeS1(value);
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -61,6 +97,21 @@ public class Runtime_135117
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void StoreSO(ref SO destination, object value) => destination = MakeSO(value);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void StoreSL(ref SL destination, long value) => destination = MakeSL(value);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void StoreSD(ref SD destination, double value) => destination = MakeSD(value);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void StoreSV(ref SV destination, int value) => destination = MakeSV(value);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void StoreInt128(ref Int128 destination, long value) => destination = MakeInt128(value);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void StoreSI(ref SI destination, long value) => destination = MakeSI(value);
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void StoreNewBoxes(SO[] array)
@@ -110,6 +161,52 @@ public class Runtime_135117
         Assert.Equal(-1f, sf[0].Value);
         Assert.Equal(2.5f, sf[1].Value);
         Assert.Equal(-1f, sf[2].Value);
+
+        SL[] sl = new SL[3];
+        for (int i = 0; i < sl.Length; i++)
+        {
+            sl[i].Value = -1;
+        }
+        StoreSL(ref sl[1], 0x1122334455667788);
+        Assert.Equal(-1, sl[0].Value);
+        Assert.Equal(0x1122334455667788, sl[1].Value);
+        Assert.Equal(-1, sl[2].Value);
+
+        SD[] sd = new SD[3];
+        for (int i = 0; i < sd.Length; i++)
+        {
+            sd[i].Value = -1.0;
+        }
+        StoreSD(ref sd[1], 2.5);
+        Assert.Equal(-1.0, sd[0].Value);
+        Assert.Equal(2.5, sd[1].Value);
+        Assert.Equal(-1.0, sd[2].Value);
+
+        SV[] sv = new SV[3];
+        for (int i = 0; i < sv.Length; i++)
+        {
+            sv[i].Value = Vector128.Create(-1);
+        }
+        StoreSV(ref sv[1], 7);
+        Assert.Equal(Vector128.Create(-1), sv[0].Value);
+        Assert.Equal(Vector128.Create(7), sv[1].Value);
+        Assert.Equal(Vector128.Create(-1), sv[2].Value);
+
+        Int128[] i128 = { -1, -1, -1 };
+        StoreInt128(ref i128[1], 0x1122334455667788);
+        Assert.Equal((Int128)(-1), i128[0]);
+        Assert.Equal(new Int128(0x1122334455667788, 0x1122334455667788), i128[1]);
+        Assert.Equal((Int128)(-1), i128[2]);
+
+        SI[] si = new SI[3];
+        for (int i = 0; i < si.Length; i++)
+        {
+            si[i].Value = -1;
+        }
+        StoreSI(ref si[1], 0x1122334455667788);
+        Assert.Equal((Int128)(-1), si[0].Value);
+        Assert.Equal(new Int128(0x1122334455667788, 0x1122334455667788), si[1].Value);
+        Assert.Equal((Int128)(-1), si[2].Value);
 
         // The store of a struct wrapping a reference needs a write barrier so that a gen0 GC
         // sees the young object referenced from an older array.
