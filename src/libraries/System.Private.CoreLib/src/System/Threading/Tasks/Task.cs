@@ -3162,8 +3162,6 @@ namespace System.Threading.Tasks
             }
             else
             {
-                RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
-
                 returnValue = SpinThenBlockingWait(millisecondsTimeout, cancellationToken);
             }
 

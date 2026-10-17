@@ -1607,7 +1607,7 @@ namespace Internal.IL
 
             if (opcode == ILOpcode.callvirt)
             {
-                Check(methodType != null, VerifierError.CallVirtOnStatic);
+                FatalCheck(methodType != null, VerifierError.CallVirtOnStatic);
                 Check(!methodType.IsValueType, VerifierError.CallVirtOnValueType);
             }
             else if (opcode != ILOpcode.newobj)
@@ -2779,6 +2779,7 @@ namespace Internal.IL
 
         void ImportUnalignedPrefix(byte alignment)
         {
+            Check(alignment is 1 or 2 or 4, VerifierError.UnalignedAlignment);
             CheckPendingPrefix(_pendingPrefix & ~Prefix.Volatile);
             _pendingPrefix |= Prefix.Unaligned;
         }
@@ -2860,11 +2861,14 @@ namespace Internal.IL
         void ReportInvalidBranchTarget(int targetOffset)
         {
             VerificationError(VerifierError.BadBranch);
+            // The later passes index the basic block array with the branch target.
+            AbortMethodVerification();
         }
 
         void ReportFallthroughAtEndOfMethod()
         {
             VerificationError(VerifierError.MethodFallthrough);
+            AbortMethodVerification();
         }
 
         void ReportMethodEndInsideInstruction()
