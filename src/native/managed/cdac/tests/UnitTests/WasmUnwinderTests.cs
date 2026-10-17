@@ -228,6 +228,59 @@ public class WasmUnwinderTests
     }
 
     [Fact]
+    public void TryUnwindOneFrame_CallerWithoutVirtualIp_PreservesCallerStackPointer()
+    {
+        const uint leafFrameSize = 0x20;
+        ulong callerBase = FramesBase + leafFrameSize;
+
+        FakeWasmR2RInfo info = new();
+        info.UnwindData[LeafControlPc] = BlobsBase;
+
+        TestPlaceholderTarget target = CreateTarget(
+        [
+            Frame(FramesBase, FuncIndexLeaf, 3, "leaf"),
+            Frame(callerBase, FuncIndexCaller, 7, "nonR2RCaller"),
+            Blob(BlobsBase, [(byte)leafFrameSize], "leafUnwind"),
+        ]);
+        WasmUnwinder unwinder = new(target, info);
+
+        TargetPointer sp = new(FramesBase);
+        Assert.True(unwinder.TryUnwindOneFrame(ref sp, new TargetCodePointer(LeafControlPc), out TargetCodePointer ip));
+        Assert.Equal(callerBase, sp.Value);
+        Assert.Equal(TargetCodePointer.Null, ip);
+    }
+
+    [Fact]
+    public void WasmContext_UnwindCallerWithoutVirtualIp_PreservesStackPointerAndClearsIPAndFP()
+    {
+        const uint leafFrameSize = 0x20;
+        ulong callerBase = FramesBase + leafFrameSize;
+
+        FakeWasmR2RInfo info = new();
+        info.UnwindData[LeafControlPc] = BlobsBase;
+
+        TestPlaceholderTarget target = CreateTarget(
+        [
+            Frame(FramesBase, FuncIndexLeaf, 3, "leaf"),
+            Frame(callerBase, FuncIndexCaller, 7, "nonR2RCaller"),
+            Blob(BlobsBase, [(byte)leafFrameSize], "leafUnwind"),
+        ]);
+        WasmUnwinder unwinder = new(target, info);
+        WasmContext context = new()
+        {
+            StackPointer = new TargetPointer(FramesBase),
+            InstructionPointer = new TargetCodePointer(LeafControlPc),
+            FramePointer = new TargetPointer(FramesBase),
+        };
+
+        context.Unwind(unwinder);
+
+        Assert.Equal(callerBase, context.StackPointer.Value);
+        Assert.Equal(TargetCodePointer.Null, context.InstructionPointer);
+        Assert.Equal(TargetPointer.Null, context.FramePointer);
+    }
+
+    [Fact]
     public void TryUnwindOneFrame_DecodesMultiByteFrameSize()
     {
         const uint leafFrameSize = 200; // ULEB128: 0xC8 0x01

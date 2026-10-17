@@ -18,7 +18,8 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 /// pointer) into the three synthetic <see cref="WasmContext"/> slots, which is the common
 /// P/Invoke-boundary seeding path; an inlined P/Invoke from R2R code instead stores a marker and is
 /// resolved from its R2R shadow frame. The software/faulting exception frame handlers likewise read a
-/// serialized <see cref="WasmContext"/> blob from the frame's <c>TargetContext</c>.
+/// serialized <see cref="WasmContext"/> blob from the frame's <c>TargetContext</c>, restoring
+/// IP, SP and the frame pointer.
 ///
 /// Hijack frames are a debugger / GC-suspension concept that is not yet supported on WASM.
 /// </remarks>
@@ -33,6 +34,11 @@ internal sealed class WasmFrameHandler(Target target, ContextHolder<WasmContext>
 
     public override void HandleInlinedCallFrame(InlinedCallFrame inlinedCallFrame)
     {
+        // Native InlinedCallFrame::UpdateRegDisplay_Impl returns before any update, including the
+        // interpreter-frame stash below, when the frame has no active call.
+        if (inlinedCallFrame.CallerReturnAddress == TargetCodePointer.Null)
+            return;
+
         if (inlinedCallFrame.CallerReturnAddress.Value == InlinedPInvokeFromR2R)
         {
             // Mirrors InlinedCallFrame::UpdateRegDisplay_Impl in src/coreclr/vm/wasm/helpers.cpp.
@@ -62,6 +68,20 @@ internal sealed class WasmFrameHandler(Target target, ContextHolder<WasmContext>
             if (!_holder.Context.TrySetRegister(WasmContext.InterpreterWalkFramePointerRegister, new TargetNUInt(next.Address.Value)))
                 throw new InvalidOperationException($"Failed to set WASM interpreter frame-pointer register '{WasmContext.InterpreterWalkFramePointerRegister}'.");
         }
+    }
+
+    // Mirrors SoftwareExceptionFrame::UpdateRegDisplay_Impl: on WASM the callee-saved register set
+    // is InterpreterFP (ENUM_CALLEE_SAVED_REGISTERS in src/coreclr/vm/wasm/cgencpu.h), so FP is
+    // restored from the saved context along with IP and SP. The CalleeSavedRegisters data
+    // descriptor is empty on WASM, so the base handler would leave FP stale.
+    public override void HandleSoftwareExceptionFrame(SoftwareExceptionFrame softwareExceptionFrame)
+    {
+        ContextHolder<WasmContext> saved = new();
+        saved.ReadFromAddress(_target, softwareExceptionFrame.TargetContext);
+
+        _holder.Context.InstructionPointer = saved.Context.InstructionPointer;
+        _holder.Context.StackPointer = saved.Context.StackPointer;
+        _holder.Context.FramePointer = saved.Context.FramePointer;
     }
 
     // Mirrors TransitionFrame::UpdateRegDisplay_Impl in src/coreclr/vm/wasm/helpers.cpp. With a recorded
