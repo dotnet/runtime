@@ -278,16 +278,13 @@ namespace ILLink.Tasks
             if (cache is not null && !TryComputeCacheKey(pathToTool, commandLineCommands, responseFileCommands, out inputHash))
                 cache = null;
 
-            if (cache is not null && cache.TryRestore(inputHash, OutputDirectory.ItemSpec, outputTimestampUtc))
+            InvocationCacheOutputs outputs = InvocationCacheOutputs.FromDirectory(OutputDirectory.ItemSpec);
+            if (cache is not null && cache.TryRestore(inputHash, outputs, outputTimestampUtc))
                 return 0;
 
             try
             {
-                string outputDirectory = Path.GetFullPath(OutputDirectory.ItemSpec);
-                if (Directory.Exists(outputDirectory))
-                    Directory.Delete(outputDirectory, recursive: true);
-
-                Directory.CreateDirectory(outputDirectory);
+                outputs.Clean();
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
@@ -297,7 +294,7 @@ namespace ILLink.Tasks
 
             int exitCode = base.ExecuteTool(pathToTool, responseFileCommands, commandLineCommands);
             if (exitCode == 0 && !Log.HasLoggedErrors && cache is not null)
-                cache.Store(inputHash, OutputDirectory.ItemSpec);
+                cache.Store(inputHash, outputs);
 
             return exitCode;
         }

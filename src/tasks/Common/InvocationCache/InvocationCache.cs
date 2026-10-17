@@ -5,6 +5,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -19,66 +20,75 @@ namespace Microsoft.NET.Build.Tasks;
 internal sealed partial class InvocationCache
 {
     private const int FormatVersion = 1;
+    private const int FileSetFormatVersion = 2;
     private readonly TaskLoggingHelper _log;
     private readonly string _toolName;
-    private static readonly StringComparison s_pathComparison = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
-        ? StringComparison.OrdinalIgnoreCase
-        : StringComparison.Ordinal;
+    private readonly MessageImportance _importance;
+    private readonly string _versionDirectory;
 
     internal string CacheDirectory { get; }
 
-    internal InvocationCache(string cacheDirectory, TaskLoggingHelper log, string toolName)
+    internal InvocationCache(string cacheDirectory, TaskLoggingHelper log, string toolName,
+        MessageImportance importance = MessageImportance.Low, string versionDirectory = InvocationCacheEntry.VersionDirectory)
     {
         CacheDirectory = cacheDirectory;
         _log = log;
         _toolName = toolName;
+        _importance = importance;
+        _versionDirectory = versionDirectory;
     }
 
-    internal bool TryRestore(string inputHash, string outputDirectory, DateTime outputTimestampUtc)
+    internal bool TryRestore(string inputHash, InvocationCacheOutputs outputs, DateTime outputTimestampUtc,
+        Action<BinaryReader>? readMetadata = null)
     {
         string entryDirectory = GetEntryDirectory(inputHash);
-        outputDirectory = ValidateOutputDirectory(outputDirectory);
+        outputs.Validate(CacheDirectory);
         if (outputTimestampUtc.Kind != DateTimeKind.Utc)
             throw new ArgumentException("The output timestamp must be UTC.", nameof(outputTimestampUtc));
 
         if (!Directory.Exists(entryDirectory))
         {
-            _log.LogMessage(MessageImportance.Low, $"{_toolName} cache miss: {inputHash}");
+            _log.LogMessage(_importance, $"{_toolName} cache miss: {inputHash}");
             return false;
         }
 
         try
         {
-            List<string> files = ReadManifest(entryDirectory);
+            List<(string Name, bool Present)> files = ReadManifest(entryDirectory, outputs, readMetadata);
 
             // Check the entire entry before modifying outputs. Copies can still fail if the cache is wiped concurrently.
-            if (Directory.Exists(outputDirectory))
-                Directory.Delete(outputDirectory, recursive: true);
-
-            Directory.CreateDirectory(outputDirectory);
-            foreach (string relativePath in files)
+            if (outputs.DirectoryPath is not null)
+                outputs.Clean();
+            for (int i = 0; i < files.Count; i++)
             {
-                string destination = Path.Combine(outputDirectory, relativePath);
-                Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
-                File.Copy(Path.Combine(entryDirectory, "outputs", relativePath), destination, overwrite: true);
-                File.SetLastWriteTimeUtc(destination, outputTimestampUtc);
+                string destination = outputs.GetPath(files[i].Name, i);
+                if (files[i].Present)
+                {
+                    Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
+                    File.Copy(Path.Combine(entryDirectory, "outputs", files[i].Name), destination, overwrite: true);
+                    File.SetLastWriteTimeUtc(destination, outputTimestampUtc);
+                }
+                else
+                {
+                    InvocationCacheOutputs.DeleteFile(destination);
+                }
             }
 
             UpdateLastUsed(entryDirectory);
-            _log.LogMessage(MessageImportance.Low, $"{_toolName} cache hit: {inputHash}");
+            _log.LogMessage(_importance, $"{_toolName} cache hit: {inputHash}");
             return true;
         }
         catch (Exception ex) when (IsCacheFailure(ex))
         {
-            _log.LogMessage(MessageImportance.Low, $"{_toolName} cache restore failed for '{inputHash}'; running {_toolName} normally: {ex.Message}");
+            _log.LogMessage(_importance, $"{_toolName} cache restore failed for '{inputHash}'; running {_toolName} normally: {ex.Message}");
             return false;
         }
     }
 
-    internal void Store(string inputHash, string outputDirectory)
+    internal void Store(string inputHash, InvocationCacheOutputs outputs, Action<BinaryWriter>? writeMetadata = null)
     {
         string entryDirectory = GetEntryDirectory(inputHash);
-        outputDirectory = ValidateOutputDirectory(outputDirectory);
+        outputs.Validate(CacheDirectory);
         string? stagingDirectory = null;
 
         try
@@ -92,12 +102,12 @@ internal sealed partial class InvocationCache
             catch (AbandonedMutexException)
             {
                 acquired = true;
-                _log.LogMessage(MessageImportance.Low, $"{_toolName} cache writer lock was abandoned: {inputHash}");
+                _log.LogMessage(_importance, $"{_toolName} cache writer lock was abandoned: {inputHash}");
             }
 
             if (!acquired)
             {
-                _log.LogMessage(MessageImportance.Low, $"{_toolName} cache store skipped; another writer owns '{inputHash}'.");
+                _log.LogMessage(_importance, $"{_toolName} cache store skipped; another writer owns '{inputHash}'.");
                 return;
             }
 
@@ -105,13 +115,12 @@ internal sealed partial class InvocationCache
             {
                 if (Directory.Exists(entryDirectory))
                 {
-                    _log.LogMessage(MessageImportance.Low, $"{_toolName} cache store skipped; entry '{inputHash}' already exists.");
+                    _log.LogMessage(_importance, $"{_toolName} cache store skipped; entry '{inputHash}' already exists.");
                     return;
                 }
 
-                var files = new List<string>();
-                CollectOutputFiles(outputDirectory, "", files);
-                files.Sort(StringComparer.Ordinal);
+                List<string> files = outputs.GetFileNames();
+                bool fileSet = outputs.DirectoryPath is null;
 
                 string parentDirectory = Path.GetDirectoryName(entryDirectory)!;
                 Directory.CreateDirectory(parentDirectory);
@@ -120,23 +129,40 @@ internal sealed partial class InvocationCache
 
                 using (var manifest = new BinaryWriter(File.Create(Path.Combine(stagingDirectory, "manifest"))))
                 {
-                    manifest.Write(FormatVersion);
+                    manifest.Write(fileSet ? FileSetFormatVersion : FormatVersion);
                     manifest.Write(files.Count);
-                    foreach (string relativePath in files)
+                    for (int i = 0; i < files.Count; i++)
                     {
+                        string relativePath = files[i];
                         string cachedFile = Path.Combine(stagingDirectory, "outputs", relativePath);
                         Directory.CreateDirectory(Path.GetDirectoryName(cachedFile)!);
-                        File.Copy(Path.Combine(outputDirectory, relativePath), cachedFile);
+                        bool present = true;
+                        try
+                        {
+                            File.Copy(outputs.GetPath(relativePath, i), cachedFile);
+                        }
+                        catch (Exception ex) when (!outputs.IsRequired(i) && ex is FileNotFoundException or DirectoryNotFoundException)
+                        {
+                            present = false;
+                        }
                         manifest.Write(relativePath);
-                        manifest.Write(new FileInfo(cachedFile).Length);
-                        manifest.Write(HashFile(cachedFile));
+                        if (fileSet)
+                            manifest.Write(present);
+                        if (present)
+                        {
+                            manifest.Write(new FileInfo(cachedFile).Length);
+                            manifest.Write(HashFile(cachedFile));
+                        }
                     }
+                    writeMetadata?.Invoke(manifest);
                 }
+                if (fileSet)
+                    File.WriteAllBytes(Path.Combine(stagingDirectory, "manifest.sha256"), HashFile(Path.Combine(stagingDirectory, "manifest")));
 
                 InvocationCacheEntry.WriteLastUsed(Path.Combine(stagingDirectory, InvocationCacheEntry.LastUsedFileName));
                 Directory.Move(stagingDirectory, entryDirectory);
                 stagingDirectory = null;
-                _log.LogMessage(MessageImportance.Low, $"{_toolName} cache stored: {inputHash}");
+                _log.LogMessage(_importance, $"{_toolName} cache stored: {inputHash}");
             }
             finally
             {
@@ -145,7 +171,7 @@ internal sealed partial class InvocationCache
         }
         catch (Exception ex) when (IsCacheFailure(ex))
         {
-            _log.LogMessage(MessageImportance.Low, $"{_toolName} cache store failed for '{inputHash}': {ex.Message}");
+            _log.LogMessage(_importance, $"{_toolName} cache store failed for '{inputHash}': {ex.Message}");
         }
         finally
         {
@@ -158,7 +184,7 @@ internal sealed partial class InvocationCache
                 }
                 catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
                 {
-                    _log.LogMessage(MessageImportance.Low, $"{_toolName} cache staging cleanup failed for '{stagingDirectory}': {ex.Message}");
+                    _log.LogMessage(_importance, $"{_toolName} cache staging cleanup failed for '{stagingDirectory}': {ex.Message}");
                 }
             }
         }
@@ -172,7 +198,7 @@ internal sealed partial class InvocationCache
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            _log.LogMessage(MessageImportance.Low, $"{_toolName} cache last-used update failed for '{entryDirectory}': {ex.Message}");
+            _log.LogMessage(_importance, $"{_toolName} cache last-used update failed for '{entryDirectory}': {ex.Message}");
         }
     }
 
@@ -181,7 +207,7 @@ internal sealed partial class InvocationCache
         if (!InvocationCacheEntry.IsEntryName(inputHash))
             throw new ArgumentException("The input hash must be a lowercase SHA-256 hex string.", nameof(inputHash));
 
-        return Path.Combine(CacheDirectory, InvocationCacheEntry.VersionDirectory, inputHash);
+        return Path.Combine(CacheDirectory, _versionDirectory, inputHash);
     }
 
     private string GetWriterMutexName(string inputHash)
@@ -200,60 +226,54 @@ internal sealed partial class InvocationCache
 #endif
     }
 
-    private string ValidateOutputDirectory(string outputDirectory)
+    internal void CleanOutputs(InvocationCacheOutputs outputs)
     {
-        string outputPath = Path.GetFullPath(outputDirectory);
-        string cachePrefix = CacheDirectory.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar;
-        string outputPrefix = outputPath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar;
-        if (cachePrefix.StartsWith(outputPrefix, s_pathComparison) || outputPrefix.StartsWith(cachePrefix, s_pathComparison))
-            throw new ArgumentException("The cache and output directories must not contain each other.", nameof(outputDirectory));
-
-        return outputPath;
+        outputs.Validate(CacheDirectory);
+        outputs.Clean();
     }
 
-    private static void CollectOutputFiles(string directory, string relativeDirectory, List<string> files)
+    private List<(string Name, bool Present)> ReadManifest(string entryDirectory, InvocationCacheOutputs outputs, Action<BinaryReader>? readMetadata)
     {
-        foreach (string path in Directory.EnumerateFileSystemEntries(directory))
-        {
-            string relativePath = Path.Combine(relativeDirectory, Path.GetFileName(path));
-            if (Directory.Exists(path))
-                CollectOutputFiles(path, relativePath, files);
-            else
-                files.Add(relativePath);
-        }
-    }
+        bool fileSet = outputs.DirectoryPath is null;
+        if (fileSet && !File.ReadAllBytes(Path.Combine(entryDirectory, "manifest.sha256")).SequenceEqual(HashFile(Path.Combine(entryDirectory, "manifest"))))
+            throw new InvalidDataException("Cached manifest checksum mismatch.");
 
-    private List<string> ReadManifest(string entryDirectory)
-    {
         using var manifest = new BinaryReader(File.OpenRead(Path.Combine(entryDirectory, "manifest")));
-        if (manifest.ReadInt32() != FormatVersion)
+        if (manifest.ReadInt32() != (fileSet ? FileSetFormatVersion : FormatVersion))
             throw new InvalidDataException($"Unsupported {_toolName} cache format.");
 
         int fileCount = manifest.ReadInt32();
         if (fileCount < 0 || fileCount > manifest.BaseStream.Length - manifest.BaseStream.Position)
             throw new InvalidDataException($"Invalid {_toolName} cache file count.");
+        if (fileSet && fileCount != outputs.FileCount)
+            throw new InvalidDataException($"Invalid {_toolName} cache output inventory.");
 
-        var files = new List<string>();
+        var files = new List<(string Name, bool Present)>();
         var paths = new HashSet<string>(RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
         string outputsDirectory = Path.Combine(entryDirectory, "outputs");
         for (int i = 0; i < fileCount; i++)
         {
             string relativePath = manifest.ReadString();
             ValidateRelativePath(relativePath);
-            if (!paths.Add(relativePath))
+            if (!paths.Add(relativePath) || (fileSet && relativePath != i.ToString(CultureInfo.InvariantCulture)))
                 throw new InvalidDataException($"Invalid {_toolName} cache output inventory.");
 
-            long length = manifest.ReadInt64();
-            byte[] expectedHash = manifest.ReadBytes(32);
-            string cachedFile = Path.Combine(outputsDirectory, relativePath);
-
-            if (expectedHash.Length != 32 || new FileInfo(cachedFile).Length != length ||
-                !expectedHash.SequenceEqual(HashFile(cachedFile)))
-                throw new InvalidDataException($"Invalid {_toolName} cache output: '{relativePath}'.");
-
-            files.Add(relativePath);
+            bool present = !fileSet || manifest.ReadBoolean();
+            if (!present && outputs.IsRequired(i))
+                throw new InvalidDataException($"Required {_toolName} cache output is missing.");
+            if (present)
+            {
+                long length = manifest.ReadInt64();
+                byte[] expectedHash = manifest.ReadBytes(32);
+                string cachedFile = Path.Combine(outputsDirectory, relativePath);
+                if (expectedHash.Length != 32 || new FileInfo(cachedFile).Length != length ||
+                    !expectedHash.SequenceEqual(HashFile(cachedFile)))
+                    throw new InvalidDataException($"Invalid {_toolName} cache output: '{relativePath}'.");
+            }
+            files.Add((relativePath, present));
         }
 
+        readMetadata?.Invoke(manifest);
         if (manifest.BaseStream.Position != manifest.BaseStream.Length)
             throw new InvalidDataException($"Unexpected data in {_toolName} cache manifest.");
 

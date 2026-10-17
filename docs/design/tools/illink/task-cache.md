@@ -23,6 +23,8 @@ sources under `src/tasks/Common/InvocationCache`, compiled into the task assembl
 The task supplies ILLink's environment-variable names, cache-directory name, and
 diagnostic label, and retains input identity and invocation eligibility. The extraction preserves
 the v1 entry format, writer mutex names, diagnostics, and purge behavior.
+The task declares one owned-directory `InvocationCacheOutputs` contract and reuses
+it for restoration, normal-execution cleanup, and storage.
 
 ```csharp
 internal sealed partial class InvocationCache
@@ -31,8 +33,8 @@ internal sealed partial class InvocationCache
         string enabledEnvironmentVariable, string pathEnvironmentVariable, string cacheDirectoryName);
     internal static InvocationCache? TryCreate(string? cacheDirectory, TaskLoggingHelper log,
         string toolName, string cacheDirectoryName);
-    internal bool TryRestore(string inputHash, string outputDirectory, DateTime outputTimestampUtc);
-    internal void Store(string inputHash, string outputDirectory);
+    internal bool TryRestore(string inputHash, InvocationCacheOutputs outputs, DateTime outputTimestampUtc);
+    internal void Store(string inputHash, InvocationCacheOutputs outputs);
 }
 ```
 

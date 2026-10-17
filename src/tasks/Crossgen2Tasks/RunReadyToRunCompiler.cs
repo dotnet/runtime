@@ -39,6 +39,7 @@ namespace Microsoft.NET.Build.Tasks
         private string _outputPDBImage;
         private string _createPDBCommand;
         private bool _createCompositeImage;
+        private List<Crossgen2Cache.Diagnostic> _cacheDiagnostics;
 
         private bool IsPdbCompilation => !string.IsNullOrEmpty(_createPDBCommand);
         private bool ActuallyUseCrossgen2 => UseCrossgen2 && !IsPdbCompilation;
@@ -416,11 +417,142 @@ namespace Microsoft.NET.Build.Tasks
 
             WarningsDetected = false;
 
-            return base.ExecuteTool(pathToTool, responseFileCommands, commandLineCommands);
+            DateTime timestamp = DateTime.UtcNow;
+            Crossgen2Cache cache = Crossgen2Cache.FromEnvironment(Log);
+            string key = null;
+            InvocationCacheOutputs outputs = null;
+            if (cache is not null)
+            {
+                try
+                {
+                    if (!ActuallyUseCrossgen2 || Crossgen2IsVersion5 || _createCompositeImage ||
+                        !string.IsNullOrEmpty(DotNetHostPath) || UseCommandProcessor ||
+                        EnvironmentVariables?.Length > 0 ||
+                        !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("LD_LIBRARY_PATH")) ||
+                        !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("LD_PRELOAD")) ||
+                        !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("LD_AUDIT")) ||
+                        (!string.IsNullOrEmpty(Crossgen2ContainerFormat) && Crossgen2ContainerFormat != "pe") ||
+                        HasUnsafeExtraArguments(Crossgen2ExtraCommandLineArgs) ||
+                        HasUnsafeExtraArguments(Crossgen2CompositeExtraCommandLineArgs) ||
+                        !Crossgen2CacheInvocation.SupportsTarget(Crossgen2Tool) ||
+                        !Crossgen2Cache.PathComparer.Equals(Crossgen2Cache.InputPath(pathToTool), Crossgen2Cache.InputPath(Crossgen2Tool.ItemSpec)))
+                    {
+                        cache.Report("bypass: unsupported invocation (requires directly executed Linux-x64 or Windows-x64 crossgen2 targeting its host, with non-composite PE output and without unrecognized extra arguments or environment overrides)");
+                    }
+                    else
+                    {
+                        Crossgen2CacheInvocation invocation = Crossgen2CacheInvocation.Create(pathToTool,
+                            Crossgen2Tool.GetMetadata(MetadataKeys.JitPath), _outputR2RImage, _outputPDBImage,
+                            _emitSymbols, Crossgen2Tool.GetMetadata(MetadataKeys.PerfmapFormatVersion));
+                        outputs = cache.DeclareOutputs(invocation.Outputs);
+                        key = Crossgen2Cache.ComputeKey(invocation.CompilerDependencies,
+                            _inputAssembly, ImplementationAssemblyReferences, Crossgen2PgoFiles,
+                            invocation.Outputs, responseFileCommands, commandLineCommands,
+                            string.Join("\n", ShowCompilerWarnings, LogStandardErrorAsError, StandardOutputImportance, StandardErrorImportance),
+                            GetWorkingDirectory() ?? Directory.GetCurrentDirectory());
+                    }
+                }
+                catch (Exception ex) when (Crossgen2Cache.IsCacheFailure(ex))
+                {
+                    cache.Report($"bypass: {ex.Message}");
+                }
+            }
+
+            if (key is null)
+            {
+                return ExecuteCompiler(pathToTool, responseFileCommands, commandLineCommands);
+            }
+
+            if (cache.TryRestore(key, outputs, timestamp, out List<Crossgen2Cache.Diagnostic> diagnostics))
+            {
+                foreach (Crossgen2Cache.Diagnostic diagnostic in diagnostics)
+                {
+                    LogEventsFromTextOutput(diagnostic.Text, diagnostic.Importance);
+                }
+                return 0;
+            }
+
+            // Remove only the declared outputs, including any partially restored files.
+            // A cleanup failure must fail the task rather than reuse stale optional outputs.
+            cache.CleanOutputs(outputs);
+
+            _cacheDiagnostics = new List<Crossgen2Cache.Diagnostic>();
+            int exitCode;
+            try
+            {
+                exitCode = ExecuteCompiler(pathToTool, responseFileCommands, commandLineCommands);
+                if (exitCode == 0 && !Log.HasLoggedErrors)
+                {
+                    cache.Store(key, outputs, _cacheDiagnostics);
+                }
+            }
+            finally
+            {
+                _cacheDiagnostics = null;
+            }
+            return exitCode;
+        }
+
+        internal virtual int ExecuteCompiler(string pathToTool, string responseFileCommands, string commandLineCommands)
+            => base.ExecuteTool(pathToTool, responseFileCommands, commandLineCommands);
+
+        // Extra arguments can name hidden input files or override the modeled output paths, which the cache
+        // cannot fingerprint from the argument string alone. These are the real-world (in-repo) extra arguments
+        // known to be plain, pathless boolean switches, so they are safe to allow through unchanged: the full
+        // argument text still participates in the cache key, so a different value still produces a different entry.
+        private static readonly string[] s_safeExtraArgumentNames =
+        {
+            "--target-allows-runtime-code-generation",
+            "--embed-pgo-data",
+            "--verify-type-and-field-layout",
+            "--enable-cached-interface-dispatch-support",
+        };
+
+        private static bool HasUnsafeExtraArguments(string arguments)
+        {
+            if (string.IsNullOrEmpty(arguments))
+            {
+                return false;
+            }
+
+            foreach (string argument in arguments.Split(';', StringSplitOptions.RemoveEmptyEntries))
+            {
+                string trimmed = argument.Trim();
+                if (trimmed.Length == 0)
+                {
+                    continue;
+                }
+
+                int colon = trimmed.IndexOf(':');
+                string name = colon < 0 ? trimmed : trimmed.Substring(0, colon);
+                string value = colon < 0 ? null : trimmed.Substring(colon + 1);
+
+                if (Array.IndexOf(s_safeExtraArgumentNames, name) < 0)
+                {
+                    return true;
+                }
+
+                // These are boolean-only switches: anything other than a bare flag or an explicit
+                // true/false value is an unrecognized shape, so bypass rather than risk caching it.
+                if (value is not null && value != "true" && value != "false")
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         protected override void LogEventsFromTextOutput(string singleLine, MessageImportance messageImportance)
         {
+            if (_cacheDiagnostics is not null)
+            {
+                lock (_cacheDiagnostics)
+                {
+                    _cacheDiagnostics.Add(new Crossgen2Cache.Diagnostic(singleLine, messageImportance));
+                }
+            }
+
             if (!ShowCompilerWarnings && singleLine.Contains("warning:", StringComparison.OrdinalIgnoreCase))
             {
                 Log.LogMessage(MessageImportance.Normal, singleLine);
