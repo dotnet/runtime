@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using ILCompiler.DependencyAnalysis;
 
 using Internal.IL.Stubs;
+using Internal.JitInterface;
 using Internal.TypeSystem;
 
 namespace ILCompiler
@@ -154,6 +155,11 @@ namespace ILCompiler
 
                 if (_genericsOnly
                     && a.Method.Method.GetTypicalMethodDefinition() != b.Method.Method.GetTypicalMethodDefinition())
+                    return false;
+
+                // Identical WASM bodies can still have different types when some parameters are unused.
+                if (_factory.Target.IsWasm
+                    && !WasmLowering.GetSignature(a.Method.Method).FuncType.Equals(WasmLowering.GetSignature(b.Method.Method).FuncType))
                     return false;
 
                 ObjectNode.ObjectData o1data = ((ObjectNode)a.Method).GetData(_factory, relocsOnly: false);
