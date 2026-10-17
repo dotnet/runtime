@@ -1689,11 +1689,13 @@ void HelperCallProperties::init()
             case CORINFO_HELP_CHECKED_ASSIGN_REF_EDI:
 #endif
             // GC Write barrier support
-            // TODO-ARM64-Bug?: Can these throw or not?
             case CORINFO_HELP_ASSIGN_REF:
             case CORINFO_HELP_CHECKED_ASSIGN_REF:
-                isNoGC = true;
-                FALLTHROUGH;
+            case CORINFO_HELP_BULK_WRITEBARRIER_SMALL:
+                isNoGC      = true;
+                mutatesHeap = true;
+                break;
+
             case CORINFO_HELP_BULK_WRITEBARRIER:
                 mutatesHeap = true;
                 break;
@@ -1743,6 +1745,7 @@ void HelperCallProperties::init()
             case CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT:
             case CORINFO_HELP_JIT_PINVOKE_BEGIN:
             case CORINFO_HELP_JIT_PINVOKE_END:
+            case CORINFO_HELP_JIT_RESUME_AFTER_CATCH:
                 exceptions = ExceptionSetFlags::None;
                 break;
 
@@ -2366,21 +2369,6 @@ double FloatingPointUtils::infinite_double()
 }
 
 //------------------------------------------------------------------------
-// infinite_float: return an infinite float value
-//
-// Returns:
-//    Infinite float value.
-//
-// Notes:
-//    This is the predefined constant HUGE_VALF on many platforms.
-//
-float FloatingPointUtils::infinite_float()
-{
-    int32_t bits = 0x7F800000;
-    return *reinterpret_cast<float*>(&bits);
-}
-
-//------------------------------------------------------------------------
 // hasPreciseReciprocal: check double for precise reciprocal. E.g. 2.0 <--> 0.5
 //
 // Arguments:
@@ -2616,70 +2604,6 @@ double FloatingPointUtils::maximum(double val1, double val2)
 }
 
 //------------------------------------------------------------------------
-// maximumMagnitude: This matches the IEEE 754:2019 `maximumMagnitude` function
-//
-// It propagates NaN inputs back to the caller and
-// otherwise returns the input with a greater magnitude.
-// It treats +0 as greater than -0 as per the specification.
-//
-// Arguments:
-//    x - left operand
-//    y - right operand
-//
-// Return Value:
-//    Either x or y
-//
-double FloatingPointUtils::maximumMagnitude(double x, double y)
-{
-    double ax = fabs(x);
-    double ay = fabs(y);
-
-    if ((ax > ay) || isNaN(ax))
-    {
-        return x;
-    }
-
-    if (ax == ay)
-    {
-        return isNegative(x) ? y : x;
-    }
-
-    return y;
-}
-
-//------------------------------------------------------------------------
-// maximumMagnitudeNumber: // This matches the IEEE 754:2019 `maximumMagnitudeNumber` function
-//
-// It does not propagate NaN inputs back to the caller and
-// otherwise returns the input with a larger magnitude.
-// It treats +0 as larger than -0 as per the specification.
-//
-// Arguments:
-//    x - left operand
-//    y - right operand
-//
-// Return Value:
-//    Either x or y
-//
-double FloatingPointUtils::maximumMagnitudeNumber(double x, double y)
-{
-    double ax = fabs(x);
-    double ay = fabs(y);
-
-    if ((ax > ay) || isNaN(ay))
-    {
-        return x;
-    }
-
-    if (ax == ay)
-    {
-        return isNegative(x) ? y : x;
-    }
-
-    return y;
-}
-
-//------------------------------------------------------------------------
 // maximumNumber: This matches the IEEE 754:2019 `maximumNumber` function
 //
 // It does not propagate NaN inputs back to the caller and
@@ -2735,70 +2659,6 @@ float FloatingPointUtils::maximum(float val1, float val2)
     }
 
     return isNegative(val2) ? val1 : val2;
-}
-
-//------------------------------------------------------------------------
-// maximumMagnitude: This matches the IEEE 754:2019 `maximumMagnitude` function
-//
-// It propagates NaN inputs back to the caller and
-// otherwise returns the input with a greater magnitude.
-// It treats +0 as greater than -0 as per the specification.
-//
-// Arguments:
-//    x - left operand
-//    y - right operand
-//
-// Return Value:
-//    Either x or y
-//
-float FloatingPointUtils::maximumMagnitude(float x, float y)
-{
-    float ax = fabsf(x);
-    float ay = fabsf(y);
-
-    if ((ax > ay) || isNaN(ax))
-    {
-        return x;
-    }
-
-    if (ax == ay)
-    {
-        return isNegative(x) ? y : x;
-    }
-
-    return y;
-}
-
-//------------------------------------------------------------------------
-// maximumMagnitudeNumber: This matches the IEEE 754:2019 `maximumMagnitudeNumber` function
-//
-// It does not propagate NaN inputs back to the caller and
-// otherwise returns the input with a larger magnitude.
-// It treats +0 as larger than -0 as per the specification.
-//
-// Arguments:
-//    x - left operand
-//    y - right operand
-//
-// Return Value:
-//    Either x or y
-//
-float FloatingPointUtils::maximumMagnitudeNumber(float x, float y)
-{
-    float ax = fabsf(x);
-    float ay = fabsf(y);
-
-    if ((ax > ay) || isNaN(ay))
-    {
-        return x;
-    }
-
-    if (ax == ay)
-    {
-        return isNegative(x) ? y : x;
-    }
-
-    return y;
 }
 
 //------------------------------------------------------------------------
@@ -2860,70 +2720,6 @@ double FloatingPointUtils::minimum(double val1, double val2)
 }
 
 //------------------------------------------------------------------------
-// minimumMagnitude: This matches the IEEE 754:2019 `minimumMagnitude` function
-//
-// It propagates NaN inputs back to the caller and
-// otherwise returns the input with a lesser magnitude.
-// It treats +0 as greater than -0 as per the specification.
-//
-// Arguments:
-//    x - left operand
-//    y - right operand
-//
-// Return Value:
-//    Either x or y
-//
-double FloatingPointUtils::minimumMagnitude(double x, double y)
-{
-    double ax = fabs(x);
-    double ay = fabs(y);
-
-    if ((ax < ay) || isNaN(ax))
-    {
-        return x;
-    }
-
-    if (ax == ay)
-    {
-        return isNegative(x) ? x : y;
-    }
-
-    return y;
-}
-
-//------------------------------------------------------------------------
-// minimumMagnitudeNumber: This matches the IEEE 754:2019 `minimumMagnitudeNumber` function
-//
-// It does not propagate NaN inputs back to the caller and
-// otherwise returns the input with a larger magnitude.
-// It treats +0 as larger than -0 as per the specification.
-//
-// Arguments:
-//    x - left operand
-//    y - right operand
-//
-// Return Value:
-//    Either x or y
-//
-double FloatingPointUtils::minimumMagnitudeNumber(double x, double y)
-{
-    double ax = fabs(x);
-    double ay = fabs(y);
-
-    if ((ax < ay) || isNaN(ay))
-    {
-        return x;
-    }
-
-    if (ax == ay)
-    {
-        return isNegative(x) ? x : y;
-    }
-
-    return y;
-}
-
-//------------------------------------------------------------------------
 // minimumNumber: This matches the IEEE 754:2019 `minimumNumber` function
 //
 // It does not propagate NaN inputs back to the caller and
@@ -2979,70 +2775,6 @@ float FloatingPointUtils::minimum(float val1, float val2)
     }
 
     return isNegative(val1) ? val1 : val2;
-}
-
-//------------------------------------------------------------------------
-// minimumMagnitude: This matches the IEEE 754:2019 `minimumMagnitude` function
-//
-// It propagates NaN inputs back to the caller and
-// otherwise returns the input with a lesser magnitude.
-// It treats +0 as greater than -0 as per the specification.
-//
-// Arguments:
-//    x - left operand
-//    y - right operand
-//
-// Return Value:
-//    Either x or y
-//
-float FloatingPointUtils::minimumMagnitude(float x, float y)
-{
-    float ax = fabsf(x);
-    float ay = fabsf(y);
-
-    if ((ax < ay) || isNaN(ax))
-    {
-        return x;
-    }
-
-    if (ax == ay)
-    {
-        return isNegative(x) ? x : y;
-    }
-
-    return y;
-}
-
-//------------------------------------------------------------------------
-// minimumMagnitudeNumber: This matches the IEEE 754:2019 `minimumMagnitudeNumber` function
-//
-// It does not propagate NaN inputs back to the caller and
-// otherwise returns the input with a larger magnitude.
-// It treats +0 as larger than -0 as per the specification.
-//
-// Arguments:
-//    x - left operand
-//    y - right operand
-//
-// Return Value:
-//    Either x or y
-//
-float FloatingPointUtils::minimumMagnitudeNumber(float x, float y)
-{
-    float ax = fabsf(x);
-    float ay = fabsf(y);
-
-    if ((ax < ay) || isNaN(ay))
-    {
-        return x;
-    }
-
-    if (ax == ay)
-    {
-        return isNegative(x) ? x : y;
-    }
-
-    return y;
 }
 
 //------------------------------------------------------------------------

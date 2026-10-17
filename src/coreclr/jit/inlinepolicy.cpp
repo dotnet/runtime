@@ -28,7 +28,7 @@ InlinePolicy* InlinePolicy::GetPolicy(Compiler* compiler, bool isPrejitRoot)
 #if defined(DEBUG)
 
     // Optionally install the AsyncStressPolicy.
-    if (JitConfig.JitStressAsyncInlining() != 0)
+    if (compiler->compAsyncInliningStress())
     {
         return new (compiler, CMK_Inlining) AsyncStressPolicy(compiler, isPrejitRoot);
     }
@@ -3507,7 +3507,7 @@ void AsyncStressPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
     const double pct         = (double)JitConfig.JitStressAsyncInliningPct() / 100.0;
     const double probability = pow(pct, (double)(m_CallsiteDepth + (unsigned)m_AsyncStressIndex));
 
-    CLRRandom* const random = m_RootCompiler->m_inlineStrategy->GetRandom(JitConfig.JitStressAsyncInlining());
+    CLRRandom* const random = m_RootCompiler->m_inlineStrategy->GetRandom(Compiler::compAsyncInliningStressSeed());
 
     if (random->NextDouble() < probability)
     {

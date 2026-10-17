@@ -1,15 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //*****************************************************************************
 // LoaderHeap.h
 //
-
-//
 // Utility functions for managing memory allocations that typically do not
 // need releasing.
-//
 //*****************************************************************************
-
 
 #ifndef __LoaderHeap_h__
 #define __LoaderHeap_h__
@@ -263,8 +260,6 @@ public:
         return m_dwDebugWastedBytes + GetBytesAvailCommittedRegion();
     }
 
-    void DumpFreeList();
-
 // Extra CallTracing support
     void UnlockedClearEvents();     //Discard saved events
     void UnlockedCompactEvents();   //Discard matching alloc/free events
@@ -460,9 +455,6 @@ public:
 
     size_t AllocMem_TotalSize(size_t dwRequestedSize);
 public:
-#ifdef _DEBUG
-    void DumpFreeList();
-#endif
 private:
     static void ValidateFreeList(UnlockedLoaderHeap *pHeap);
     static void WeGotAFaultNowWhat(UnlockedLoaderHeap *pHeap);

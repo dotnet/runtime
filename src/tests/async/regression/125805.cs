@@ -9,12 +9,7 @@ using Xunit;
 public class Runtime_125805
 {
     [Fact]
-    public static void TestEntryPoint()
-    {
-        ExceptionReuse().GetAwaiter().GetResult();
-    }
-
-    private static async Task ExceptionReuse()
+    public static async Task ExceptionReuse()
     {
         try
         {
@@ -48,4 +43,3 @@ public class Runtime_125805
         await Task.Yield();
     }
 }
-

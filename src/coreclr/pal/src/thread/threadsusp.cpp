@@ -245,7 +245,7 @@ CThreadSuspensionInfo::InternalResumeThreadFromData(
     // Check target thread's state to ensure it hasn't died.
     // Setting a thread's state to TS_DONE is protected by the
     // target's suspension mutex.
-    if (pthrTarget->synchronizationInfo.GetThreadState() == TS_DONE)
+    if (pthrTarget->GetThreadState() == TS_DONE)
     {
         palError = ERROR_INVALID_HANDLE;
         ReleaseSuspensionLocks(pthrResumer, pthrTarget);
@@ -431,30 +431,6 @@ CThreadSuspensionInfo::AcquireSuspensionLocks(
         }
     } while (fReacquire);
 
-    // Whenever the native implementation for the wait subsystem's thread
-    // blocking requires a lock as protection (as pthread conditions do with
-    // the associated mutex), we need to grab that lock to prevent the target
-    // thread from being suspended while holding the lock.
-    // Failing to do so can lead to a multiple threads deadlocking such as the
-    // one described in VSW 363793.
-    // In general, in similar scenarios, we need to grab the protecting lock
-    // every time suspension safety/unsafety is unbalanced on the two sides
-    // using the same condition (or any other native blocking support which
-    // needs an associated native lock), i.e. when either the signaling
-    // thread(s) is(are) signaling from an unsafe area and the waiting
-    // thread(s) is(are) waiting from a safe one, or vice versa (the scenario
-    // described in VSW 363793 is a good example of the first type of
-    // unbalanced suspension safety/unsafety).
-    // Instead, whenever signaling and waiting sides are both marked safe or
-    // unsafe, the deadlock cannot take place since either the suspending
-    // thread will suspend them anyway (regardless of the native lock), or it
-    // won't suspend any of them, since they are both marked unsafe.
-    // Such a balanced scenario applies, for instance, to critical sections
-    // where depending on whether the target CS is internal or not, both the
-    // signaling and the waiting side will access the mutex/condition from
-    // respectively an unsafe or safe region.
-
-    pthrTarget->AcquireNativeWaitLock();
 }
 
 /*++
@@ -472,9 +448,6 @@ CThreadSuspensionInfo::ReleaseSuspensionLocks(
     CPalThread *pthrTarget
     )
 {
-    // See comment in AcquireSuspensionLocks
-    pthrTarget->ReleaseNativeWaitLock();
-
     ReleaseSuspensionLock(pthrTarget);
     ReleaseSuspensionLock(pthrSuspender);
 }

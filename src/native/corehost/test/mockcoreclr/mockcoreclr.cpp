@@ -3,8 +3,10 @@
 
 #include "mockcoreclr.h"
 #include <chrono>
+#include <cstdlib>
 #include <iostream>
 #include <thread>
+#include <host_runtime_contract.h>
 #include "trace.h"
 
 #define MockLog(string)\
@@ -47,6 +49,19 @@ SHARED_API pal::hresult_t STDMETHODCALLTYPE coreclr_initialize(
     for (int i = 0; i < propertyCount; ++i)
     {
         MockLogEntry("property", propertyKeys[i], propertyValues[i]);
+        if (::strcmp(propertyKeys[i], HOST_PROPERTY_RUNTIME_CONTRACT) == 0)
+        {
+            host_runtime_contract* contract = reinterpret_cast<host_runtime_contract*>(strtoull(propertyValues[i], nullptr, 0));
+            size_t requiredSize = offsetof(host_runtime_contract, get_assembly_names) + sizeof(contract->get_assembly_names);
+            size_t assemblyNameCount = 0;
+            if (contract->size >= requiredSize && contract->get_assembly_names != nullptr)
+            {
+                const char* const* names;
+                if (!contract->get_assembly_names(&names, &assemblyNameCount, contract->context))
+                    assemblyNameCount = 0;
+            }
+            MockLogEntry("host_runtime_contract", "get_assembly_names", assemblyNameCount);
+        }
     }
 
     if (hostHandle != nullptr)

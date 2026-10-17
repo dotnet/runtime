@@ -130,6 +130,7 @@ namespace System
                 valueTypeSize = valueTypeSizeTemp;
             }
 
+            [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
             [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ReflectionInvocation_GetBoxInfo")]
             private static partial void GetBoxInfo(
                 QCallTypeHandle type,

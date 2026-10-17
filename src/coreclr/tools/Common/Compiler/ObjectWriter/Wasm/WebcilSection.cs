@@ -1,8 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Diagnostics;
 using System.IO;
+using System.Numerics;
 using Internal.Text;
+using Internal.TypeSystem;
 using Microsoft.NET.WebAssembly.Webcil;
 
 namespace ILCompiler.ObjectWriter
@@ -13,8 +17,7 @@ namespace ILCompiler.ObjectWriter
     internal class WebcilSection : SectionDataEmitter
     {
         public WebcilSectionHeader Header;
-        private PaddingHelper _paddingHelper;
-        public int MinAlignment = 1;
+        public int Alignment { get; private set; } = WebCilObjectWriter.WebcilSectionAlignment;
 
         public uint Padding => Header.SizeOfRawData - (uint)ContentReadStream.Length;
 
@@ -22,7 +25,12 @@ namespace ILCompiler.ObjectWriter
             : base(stream, name, sectionIndex)
         {
             Header = header;
-            _paddingHelper = new PaddingHelper(WebCilObjectWriter.WebcilSectionAlignment);
+        }
+
+        public void UpdateAlignment(int alignment)
+        {
+            Debug.Assert(BitOperations.IsPow2(alignment));
+            Alignment = Math.Max(Alignment, alignment);
         }
 
         public override int EncodeSize()
@@ -35,7 +43,7 @@ namespace ILCompiler.ObjectWriter
             // Emit the raw contents of this Webcil section followed by any required padding.
             ContentReadStream.Position = 0;
             ContentReadStream.CopyTo(outputFileStream);
-            _paddingHelper.PadStream(outputFileStream, (int)Padding);
+            WasmDataSegmentEncoding.EmitPadding(outputFileStream, (int)Padding);
 
             return (int)ContentReadStream.Length + (int)Padding;
         }

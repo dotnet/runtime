@@ -17,6 +17,10 @@ public:
         FunctionID functionId, BOOL fIsSafeToBlock) override;
     HRESULT STDMETHODCALLTYPE JITCompilationFinished(
         FunctionID functionId, HRESULT hrStatus, BOOL fIsSafeToBlock) override;
+    HRESULT STDMETHODCALLTYPE JITCachedFunctionSearchStarted(
+        FunctionID functionId, BOOL* pbUseCachedFunction) override;
+    HRESULT STDMETHODCALLTYPE JITCachedFunctionSearchFinished(
+        FunctionID functionId, COR_PRF_JIT_CACHE result) override;
     HRESULT STDMETHODCALLTYPE ExceptionThrown(ObjectID thrownObjectId) override;
     HRESULT STDMETHODCALLTYPE ExceptionSearchFunctionEnter(FunctionID functionId) override;
     HRESULT STDMETHODCALLTYPE ExceptionUnwindFunctionEnter(FunctionID functionId) override;
@@ -24,12 +28,15 @@ public:
 
 private:
     bool IsTarget(FunctionID functionId);
+    void ValidateTargetCode(FunctionID functionId);
     ModuleID GetModuleId(FunctionID functionId);
 
     std::atomic<int> _failures;
     std::atomic<FunctionID> _target;
     std::atomic<int> _jitStarts;
     std::atomic<int> _jitFinishes;
+    std::atomic<int> _cacheVetoes;
+    std::atomic<int> _unexpectedCachedFunctions;
     std::atomic<int> _ipRoundTrips;
     std::atomic<int> _ilMappings;
     std::atomic<int> _exceptionsThrown;

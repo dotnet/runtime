@@ -8,7 +8,8 @@ namespace System.Runtime.InteropServices
     [ComVisible(true)]
     public class StandardOleMarshalObject : MarshalByRefObject, IMarshal
     {
-        private static readonly Guid CLSID_StdMarshal = new Guid("00000017-0000-0000-c000-000000000046");
+        // {00000017-0000-0000-c000-000000000046}
+        private static Guid CLSID_StdMarshal => new Guid(0x00000017, 0x0000, 0x0000, 0xc0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46);
 
         protected StandardOleMarshalObject()
         {

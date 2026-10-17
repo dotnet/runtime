@@ -13,6 +13,35 @@ namespace System.Tests
 {
     public class Decimal32Tests
     {
+        [Theory]
+        [InlineData("-219.1358", "6.76911e-96")]
+        [InlineData("-219.6328", "4.11801e-96")]
+        public static void ExpSubnormalRoundingTest(string input, string expected)
+        {
+            Assert.Equal(Decimal32.Parse(expected, CultureInfo.InvariantCulture),
+                Decimal32.Exp(Decimal32.Parse(input, CultureInfo.InvariantCulture)));
+        }
+
+        [Theory]
+        [InlineData(-102, 0)]
+        [InlineData(-101, 1)]
+        [InlineData(-100, 10)]
+        public static void Exp10SubnormalAccuracyTest(int input, int expectedUnits)
+        {
+            Assert.Equal(Decimal32.Epsilon * (Decimal32)expectedUnits, Decimal32.Exp10((Decimal32)input));
+        }
+
+        [Theory]
+        [InlineData("0.9999999", "0.000447213599226738", "-1.00000005e-7", "3.14159265358974e-7")]
+        public static void TranscendentalBoundaryAccuracyTest(string input, string acos, string log, string sinPi)
+        {
+            Decimal32 x = Decimal32.Parse(input, CultureInfo.InvariantCulture);
+            Assert.Equal(Decimal32.Parse(acos, CultureInfo.InvariantCulture), Decimal32.Acos(x));
+            Assert.Equal(Decimal32.Parse(log, CultureInfo.InvariantCulture), Decimal32.Log(x));
+            Assert.Equal(Decimal32.Parse(sinPi, CultureInfo.InvariantCulture), Decimal32.SinPi(x));
+            Assert.Equal(Decimal32.SinPi(x), Decimal32.SinCosPi(x).SinPi);
+        }
+
         public static IEnumerable<object[]> Parse_Valid_TestData()
         {
             NumberStyles defaultStyle = NumberStyles.Number;
@@ -2008,20 +2037,25 @@ namespace System.Tests
         [InlineData(0x7C000000U, 0x32800002U, 0x7C000000U)] // log(NaN, 2) = NaN
         [InlineData(0x32800002U, 0x7C000000U, 0x7C000000U)] // log(2, NaN) = NaN
         [InlineData(0x32800002U, 0x32800001U, 0x7C000000U)] // log(2, 1) = NaN (base 1)
+        [InlineData(0x310003E8U, 0x32000005U, 0xB2800000U)] // log(1.000, 0.5) = -0
         public static void LogNewBaseTest(uint value, uint newBase, uint expected)
         {
             Assert.Equal(expected, Unsafe.BitCast<Decimal32, uint>(Decimal32.Log(Unsafe.BitCast<uint, Decimal32>(value), Unsafe.BitCast<uint, Decimal32>(newBase))));
         }
 
         [Theory]
-        [InlineData(8.0, 2.0)]
-        [InlineData(100.0, 10.0)]
-        [InlineData(2.5, 3.0)]
-        public static void LogNewBaseAccuracyTest(double input, double newBase)
+        [InlineData("8", "2", "3.000000")]
+        [InlineData("100", "10", "2.000000")]
+        [InlineData("2.5", "3", "0.8340437671464697300975132933358795420083467265341692611822354509568071")]
+        [InlineData("1.000001", "0.9999999", "-9.99999450000357499733708545573573529")]
+        public static void LogNewBaseAccuracyTest(string input, string newBase, string oracle)
         {
-            double expected = double.Log(input, newBase);
-            double actual = (double)Decimal32.Log((Decimal32)input, (Decimal32)newBase);
-            Assert.True(double.Abs(actual - expected) <= 5e-7 * double.Abs(double.MaxMagnitude(expected, 1.0)), $"log({input}, {newBase}): expected {expected}, got {actual}");
+            Decimal32 actual = Decimal32.Log(Decimal32.Parse(input, CultureInfo.InvariantCulture),
+                Decimal32.Parse(newBase, CultureInfo.InvariantCulture));
+            Decimal32 expected = Decimal32.Parse(oracle, CultureInfo.InvariantCulture);
+            DecimalIeee754IntelTestData.AssertResultWithinUlp(
+                Unsafe.BitCast<Decimal32, uint>(actual),
+                Unsafe.BitCast<Decimal32, uint>(expected), recordedUlp: 0, limit: 1);
         }
 
         [Theory]
@@ -2309,6 +2343,9 @@ namespace System.Tests
         [InlineData(0x32800000U, -5, 0x78000000U)] // rootn(+0, n < 0) = +Infinity
         [InlineData(0xB2800000U, -5, 0xF8000000U)] // rootn(-0, odd < 0) = -Infinity
         [InlineData(0xB2800004U, 2, 0x7C000000U)] // rootn(-4, even) = NaN
+        [InlineData(0x30801B58U, 1, 0x2F6ACFC0U)] // rootn(0.7000, 1) uses the full-precision cohort
+        [InlineData(0xB0801B58U, 1, 0xAF6ACFC0U)] // rootn(-0.7000, 1) uses the full-precision cohort
+        [InlineData(0x02800001U, 1, 0x000186A0U)] // subnormal padding stops at the minimum quantum
         public static void RootNTest(uint value, int n, uint expected)
         {
             Assert.Equal(expected, Unsafe.BitCast<Decimal32, uint>(Decimal32.RootN(Unsafe.BitCast<uint, Decimal32>(value), n)));

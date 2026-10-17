@@ -8,6 +8,8 @@
 #define real4 dword
 #define real8 qword
 
+#ifdef PROFILING_SUPPORTED
+
 # On linux arguments can be passed in non-sequential registers. Integer arguments are
 # passed in sequential integer registers and floating point registers are passed in
 # sequential floating point registers. This presents a problem when we go to pass the
@@ -278,6 +280,8 @@ NESTED_ENTRY ProfileTailcallNaked, _TEXT, NoHandler
 
   ret
 NESTED_END ProfileTailcallNaked, _TEXT
+
+#endif // PROFILING_SUPPORTED
 
 #ifdef TARGET_APPLE
 # EXTERN_C void* GetThreadVarsAddress()

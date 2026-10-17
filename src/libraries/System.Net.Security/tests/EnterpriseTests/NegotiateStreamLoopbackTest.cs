@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Net.Test.Common;
 using System.Security.Authentication;
+using System.Security.Claims;
 using System.Security.Principal;
 using System.Text;
 using System.Threading.Tasks;
@@ -56,6 +57,120 @@ namespace System.Net.Security.Enterprise.Tests
 
                 string remoteName = creds.UserName + "@" + EnterpriseTestConfiguration.Realm;
                 VerifyStreamProperties(server, isServer: true, remoteName);
+            }
+        }
+
+        public static bool PacTestsEnabled =>
+            EnterpriseTestConfiguration.Enabled && PlatformDetection.IsLinux &&
+            !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("DOTNET_RUNTIME_ENTERPRISETESTS_PAC_ENABLED"));
+
+        public static bool MitKdcTestsEnabled => EnterpriseTestConfiguration.Enabled && PlatformDetection.IsLinux;
+
+        [ConditionalTheory(nameof(PacTestsEnabled))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task RemoteIdentity_RealKdcWithPac_HasSidClaims(bool useNegotiateStream)
+        {
+            string user = GetPacConfiguration("USER");
+            string password = GetPacConfiguration("PASSWORD");
+            string target = GetPacConfiguration("TARGET");
+            string expectedName = GetPacConfiguration("NAME");
+            string expectedUserSid = GetPacConfiguration("USER_SID");
+            string expectedPrimaryGroupSid = GetPacConfiguration("PRIMARY_GROUP_SID");
+            string[] expectedGroupSids = GetPacConfiguration("GROUP_SIDS").Split(';');
+            Assert.All(expectedGroupSids, sid => Assert.False(string.IsNullOrWhiteSpace(sid)));
+
+            await AuthenticateAndVerifyIdentity(
+                useNegotiateStream, new NetworkCredential(user, password), target, expectedName, identity =>
+                {
+                    Assert.Equal(expectedUserSid, Assert.Single(identity.FindAll(ClaimTypes.PrimarySid)).Value);
+                    Assert.Equal(expectedPrimaryGroupSid, Assert.Single(identity.FindAll(ClaimTypes.PrimaryGroupSid)).Value);
+                    Assert.Equal(
+                        expectedGroupSids.OrderBy(sid => sid, StringComparer.Ordinal),
+                        identity.FindAll(ClaimTypes.GroupSid).Select(claim => claim.Value).OrderBy(sid => sid, StringComparer.Ordinal));
+                });
+        }
+
+        [ConditionalTheory(nameof(MitKdcTestsEnabled))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task RemoteIdentity_RealMitKdcWithoutPac_HasNoSidClaims(bool useNegotiateStream)
+        {
+            NetworkCredential credential = EnterpriseTestConfiguration.ValidNetworkCredentials;
+            await AuthenticateAndVerifyIdentity(
+                useNegotiateStream, credential, TargetName,
+                credential.UserName + "@" + EnterpriseTestConfiguration.Realm, identity =>
+                {
+                    Assert.Empty(identity.FindAll(ClaimTypes.PrimarySid));
+                    Assert.Empty(identity.FindAll(ClaimTypes.PrimaryGroupSid));
+                    Assert.Empty(identity.FindAll(ClaimTypes.GroupSid));
+                });
+        }
+
+        private static string GetPacConfiguration(string suffix)
+        {
+            string variable = "DOTNET_RUNTIME_ENTERPRISETESTS_PAC_" + suffix;
+            string? value = Environment.GetEnvironmentVariable(variable);
+            Assert.False(string.IsNullOrWhiteSpace(value), $"Set {variable} when enabling PAC enterprise tests.");
+            return value!;
+        }
+
+        private static async Task AuthenticateAndVerifyIdentity(
+            bool useNegotiateStream, NetworkCredential credential, string target, string expectedName,
+            Action<ClaimsIdentity> verifyClaims)
+        {
+            if (useNegotiateStream)
+            {
+                (Stream clientStream, Stream serverStream) = ConnectedStreams.CreateBidirectional();
+                using var client = new NegotiateStream(clientStream);
+                using var server = new NegotiateStream(serverStream);
+                await WhenAllOrAnyFailedWithTimeout(
+                    client.AuthenticateAsClientAsync(credential, target),
+                    server.AuthenticateAsServerAsync());
+
+                VerifyIdentity(server.RemoteIdentity);
+            }
+            else
+            {
+                using var client = new NegotiateAuthentication(new NegotiateAuthenticationClientOptions
+                {
+                    Package = "Kerberos",
+                    Credential = credential,
+                    TargetName = target
+                });
+                using var server = new NegotiateAuthentication(new NegotiateAuthenticationServerOptions
+                {
+                    Package = "Kerberos"
+                });
+                byte[]? serverBlob = null;
+                for (int step = 0; step < 10 && (!client.IsAuthenticated || !server.IsAuthenticated); step++)
+                {
+                    byte[]? clientBlob = client.GetOutgoingBlob(serverBlob, out NegotiateAuthenticationStatusCode clientStatus);
+                    Assert.True(clientStatus is NegotiateAuthenticationStatusCode.Completed or NegotiateAuthenticationStatusCode.ContinueNeeded,
+                        $"Client authentication failed: {clientStatus}");
+                    if (clientBlob is not null)
+                    {
+                        serverBlob = server.GetOutgoingBlob(clientBlob, out NegotiateAuthenticationStatusCode serverStatus);
+                        Assert.True(serverStatus is NegotiateAuthenticationStatusCode.Completed or NegotiateAuthenticationStatusCode.ContinueNeeded,
+                            $"Server authentication failed: {serverStatus}");
+                    }
+                }
+
+                Assert.True(client.IsAuthenticated);
+                Assert.True(server.IsAuthenticated);
+                VerifyIdentity(server.RemoteIdentity);
+            }
+
+            void VerifyIdentity(IIdentity remoteIdentity)
+            {
+                using (remoteIdentity as IDisposable)
+                {
+                    ClaimsIdentity identity = Assert.IsAssignableFrom<ClaimsIdentity>(remoteIdentity);
+                    Assert.True(identity.IsAuthenticated);
+                    Assert.Equal("Kerberos", identity.AuthenticationType);
+                    Assert.Equal(expectedName, identity.Name);
+                    verifyClaims(identity);
+                }
             }
         }
 
