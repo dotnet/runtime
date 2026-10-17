@@ -573,7 +573,10 @@ namespace System.Net.Http
 
         internal long? GetComputedOrBufferLength()
         {
-            CheckDisposed();
+            if (_disposed)
+            {
+                return null;
+            }
 
             if (IsBuffered)
             {
