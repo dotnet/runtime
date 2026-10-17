@@ -4,16 +4,22 @@
 #ifndef LOADERHEAP_SHARED
 #define LOADERHEAP_SHARED
 
-void ReleaseReservedMemory(BYTE* value) noexcept;
+void ReleaseReservedMemory(BYTE* value, size_t size) noexcept;
+
+struct ReservedMemoryBlock
+{
+    BYTE* pAddress = NULL;
+    size_t dwSize = 0;
+};
 
 struct ReservedMemoryTraits final
 {
-    using Type = BYTE*;
-    static constexpr Type Default() { return NULL; }
+    using Type = ReservedMemoryBlock;
+    static constexpr Type Default() { return ReservedMemoryBlock{}; }
     static void Free(Type value) noexcept
     {
         STATIC_CONTRACT_WRAPPER;
-        ReleaseReservedMemory(value);
+        ReleaseReservedMemory(value.pAddress, value.dwSize);
     }
 };
 using ReservedMemoryHolder = LifetimeHolder<ReservedMemoryTraits>;

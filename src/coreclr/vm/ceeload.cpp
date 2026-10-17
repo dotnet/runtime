@@ -3038,6 +3038,7 @@ mdToken GetTokenForVTableEntry(HINSTANCE hInst, BYTE **ppVTEntry)
 }
 
 //=================================================================================
+#ifdef FEATURE_IJW
 void SetTargetForVTableEntry(HINSTANCE hInst, BYTE **ppVTEntry, BYTE *pTarget)
 {
     STANDARD_VM_CONTRACT;
@@ -3059,6 +3060,7 @@ void SetTargetForVTableEntry(HINSTANCE hInst, BYTE **ppVTEntry, BYTE *pTarget)
         _ASSERTE(!"SetTargetForVTableEntry(): VirtualProtect() changing IJW thunk vtable back to RO failed.\n");
     }
 }
+#endif // FEATURE_IJW
 
 //=================================================================================
 BYTE * GetTargetForVTableEntry(HINSTANCE hInst, BYTE **ppVTEntry)

@@ -124,7 +124,7 @@ bool ExecutableAllocator::IsDoubleMappingEnabled()
 {
     LIMITED_METHOD_CONTRACT;
 
-#if defined(HOST_APPLE) && defined(HOST_ARM64) || defined(HOST_WASM)
+#if defined(HOST_APPLE) && defined(HOST_ARM64)
     return false;
 #else
     return g_isWXorXEnabled;
@@ -201,7 +201,7 @@ void ExecutableAllocator::InitPreferredRange()
 {
 #ifdef TARGET_UNIX
     void *start, *end;
-    PAL_GetExecutableMemoryAllocatorPreferredRange(&start, &end);
+    VMToOSInterface::GetExecutableMemoryAllocatorPreferredRange(&start, &end);
     g_preferredRangeMin = (BYTE *)start;
     g_preferredRangeMax = (BYTE *)end;
 #endif
@@ -495,20 +495,22 @@ void* ExecutableAllocator::Commit(void* pStart, size_t size, bool isExecutable)
     }
     else
     {
+        VMToOSInterface::MemoryProtection protection;
 #if !defined(FEATURE_DYNAMIC_CODE_COMPILED)
-        return ClrVirtualAlloc(pStart, size, MEM_COMMIT, PAGE_READWRITE);
+        protection = VMToOSInterface::MemoryProtection::ReadWrite;
 #else
-        return ClrVirtualAlloc(pStart, size, MEM_COMMIT, isExecutable ? PAGE_EXECUTE_READWRITE : PAGE_READWRITE);
+        protection = isExecutable ? VMToOSInterface::MemoryProtection::ExecuteReadWrite : VMToOSInterface::MemoryProtection::ReadWrite;
 #endif
+        return VMToOSInterface::CommitReservedMemory(pStart, size, protection);
     }
 }
 
-void ExecutableAllocator::Release(void* pRX) noexcept
+void ExecutableAllocator::Release(void* pRX, size_t size) noexcept
 {
-    ReleaseWorker(pRX, false /* this is the standard Release of normally allocated memory */);
+    ReleaseWorker(pRX, size, false /* this is the standard Release of normally allocated memory */);
 }
 
-void ExecutableAllocator::ReleaseWorker(void* pRX, bool releaseTemplate) noexcept
+void ExecutableAllocator::ReleaseWorker(void* pRX, size_t size, bool releaseTemplate) noexcept
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -583,7 +585,7 @@ void ExecutableAllocator::ReleaseWorker(void* pRX, bool releaseTemplate) noexcep
     }
     else
     {
-        ClrVirtualFree(pRX, 0, MEM_RELEASE);
+        VMToOSInterface::ReleaseMemoryReservation(pRX, size);
     }
 }
 
@@ -800,14 +802,7 @@ void* ExecutableAllocator::Reserve(size_t size)
         }
         else
         {
-            DWORD allocationType = MEM_RESERVE;
-#if defined(HOST_UNIX) && defined(FEATURE_DYNAMIC_CODE_COMPILED)
-            // Tell PAL to use the executable memory allocator to satisfy this request for virtual memory.
-            // This will allow us to place JIT'ed code close to the coreclr library
-            // and thus improve performance by avoiding jump stubs in managed code.
-            allocationType |= MEM_RESERVE_EXECUTABLE;
-#endif
-            result = (BYTE*)ClrVirtualAlloc(NULL, size, allocationType, PAGE_NOACCESS);
+            result = (BYTE*)VMToOSInterface::ReserveMemoryWithinRange(nullptr, nullptr, size);
         }
     }
 
@@ -966,7 +961,7 @@ void* ExecutableAllocator::AllocateThunksFromTemplate(void *pTemplate, size_t te
 
         if (pTemplateAddressAllocated == NULL)
         {
-            ReleaseWorker(block->baseRX, false);
+            ReleaseWorker(block->baseRX, 0, false);
         }
 
         return pTemplateAddressAllocated;
@@ -981,7 +976,7 @@ void ExecutableAllocator::FreeThunksFromTemplate(void *pThunks, size_t templateS
 {
     if (IsDoubleMappingEnabled() && VMToOSInterface::AllocateThunksFromTemplateRespectsStartAddress())
     {
-        ReleaseWorker(pThunks, true /* This is a release of template allocated memory */);
+        ReleaseWorker(pThunks, 0, true /* This is a release of template allocated memory */);
     }
     else
     {

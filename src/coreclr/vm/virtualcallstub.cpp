@@ -547,6 +547,7 @@ void VirtualCallStubManager::Init(LoaderAllocator *pLoaderAllocator)
         initReservedMem = (BYTE*)ExecutableAllocator::Instance()->Reserve(dwTotalReserveMemSize);
 
         m_initialReservedMemForHeaps = (BYTE *) initReservedMem;
+        m_initialReservedMemForHeapsSize = dwTotalReserveMemSize;
 
         if (initReservedMem == NULL)
             COMPlusThrowOM();
@@ -749,7 +750,7 @@ VirtualCallStubManager::~VirtualCallStubManager()
     // This was the block reserved by Init for the heaps.
     // For the collectible case, the VSD logic does not allocate the memory.
     if (m_initialReservedMemForHeaps && !m_loaderAllocator->IsCollectible())
-        ClrVirtualFree (m_initialReservedMemForHeaps, 0, MEM_RELEASE);
+        ExecutableAllocator::Instance()->Release(m_initialReservedMemForHeaps, m_initialReservedMemForHeapsSize);
 
     // Free critical section
     m_indCellLock.Destroy();

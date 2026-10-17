@@ -9,6 +9,8 @@
 #include "corhost.h"
 #include "threads.h"
 
+#ifdef HOST_WINDOWS
+
 LPVOID ClrVirtualAlloc(LPVOID lpAddress, SIZE_T dwSize, DWORD flAllocationType, DWORD flProtect) {
     CONTRACTL
     {
@@ -70,7 +72,6 @@ LPVOID ClrVirtualAlloc(LPVOID lpAddress, SIZE_T dwSize, DWORD flAllocationType, 
 
         return p;
     }
-
 }
 
 BOOL ClrVirtualFree(LPVOID lpAddress, SIZE_T dwSize, DWORD dwFreeType)
@@ -85,11 +86,11 @@ SIZE_T ClrVirtualQuery(LPCVOID lpAddress, PMEMORY_BASIC_INFORMATION lpBuffer, SI
     return ::VirtualQuery(lpAddress, lpBuffer, dwLength);
 }
 
-#if defined(_DEBUG) && !defined(TARGET_UNIX)
+#ifdef _DEBUG
 static VolatilePtr<BYTE> s_pStartOfUEFSection = NULL;
 static VolatilePtr<BYTE> s_pEndOfUEFSectionBoundary = NULL;
 static Volatile<DWORD> s_dwProtection = 0;
-#endif // _DEBUG && !TARGET_UNIX
+#endif // _DEBUG
 
 BOOL ClrVirtualProtect(LPVOID lpAddress, SIZE_T dwSize, DWORD flNewProtect, PDWORD lpflOldProtect)
 {
@@ -134,7 +135,7 @@ BOOL ClrVirtualProtect(LPVOID lpAddress, SIZE_T dwSize, DWORD flNewProtect, PDWO
     //
     // We assert if either of the two conditions above are true.
 
-#if defined(_DEBUG) && !defined(TARGET_UNIX)
+#ifdef _DEBUG
    // We do this check in debug/checked builds only
 
     // Do we have the UEF details?
@@ -206,10 +207,12 @@ BOOL ClrVirtualProtect(LPVOID lpAddress, SIZE_T dwSize, DWORD flNewProtect, PDWO
                 "Do not virtual protect the section in which UEF lives!");
         }
     }
-#endif // _DEBUG && !TARGET_UNIX
+#endif // _DEBUG
 
     return ::VirtualProtect(lpAddress, dwSize, flNewProtect, lpflOldProtect);
 }
+
+#endif // HOST_WINDOWS
 
 // Locking routines supplied by the EE to the other DLLs of the CLR.  In a _DEBUG
 // build of the EE, we poison the Crst as a poor man's attempt to do some argument

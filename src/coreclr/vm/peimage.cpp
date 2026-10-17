@@ -16,6 +16,14 @@
 #include "eventtrace.h"
 #include "peimagelayout.inl"
 
+#ifdef TARGET_UNIX
+#include <errno.h>
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include "dn-stdio.h"
+#endif // TARGET_UNIX
+
 #ifndef DACCESS_COMPILE
 
 CrstStatic  PEImage::s_hashLock;
@@ -97,8 +105,15 @@ PEImage::~PEImage()
 
     if (m_pLayoutLock)
         delete m_pLayoutLock;
-    if(m_hFile!=INVALID_HANDLE_VALUE)
+    if (m_hFile != VMToOSInterface::InvalidFileHandle)
+    {
+#ifdef TARGET_UNIX
+        if (close(m_hFile) != 0)
+            LOG((LF_LOADER, LL_INFO100, "PEImage: Could not close file descriptor (%d)\n", errno));
+#else
         CloseHandle(m_hFile);
+#endif // TARGET_UNIX
+    }
 
     for (unsigned int i=0;i<ARRAY_SIZE(m_pLayouts);i++)
     {
@@ -551,7 +566,7 @@ PEImage::PEImage(const WCHAR* path):
     m_refCount(1),
     m_bInHashMap(FALSE),
     m_probeExtensionResult(),
-    m_hFile(INVALID_HANDLE_VALUE),
+    m_hFile(VMToOSInterface::InvalidFileHandle),
     m_dwPEKind(0),
     m_dwMachine(0),
     m_pMDImport(NULL)
@@ -762,7 +777,7 @@ PTR_PEImage PEImage::CreateFromHMODULE(HMODULE hMod)
 }
 #endif // !TARGET_UNIX
 
-HANDLE PEImage::GetFileHandle()
+VMToOSInterface::MemoryMapHandle PEImage::GetFileHandle()
 {
     CONTRACTL
     {
@@ -771,14 +786,11 @@ HANDLE PEImage::GetFileHandle()
     }
     CONTRACTL_END;
 
-    if (m_hFile!=INVALID_HANDLE_VALUE)
-        return m_hFile;
-
-    HRESULT hr = TryOpenFile(/*takeLock*/ false);
-
-    if (m_hFile == INVALID_HANDLE_VALUE)
+    if (m_hFile == VMToOSInterface::InvalidFileHandle)
     {
-        EEFileLoadException::Throw(GetPathToLoad(), hr);
+        HRESULT hr = TryOpenFile(/* takeLock */ false);
+        if (FAILED(hr))
+            EEFileLoadException::Throw(GetPathToLoad(), hr);
     }
 
     return m_hFile;
@@ -792,23 +804,77 @@ HRESULT PEImage::TryOpenFile(bool takeLock)
 
     SimpleWriteLockHolder lock(m_pLayoutLock, takeLock);
 
-    if (m_hFile != INVALID_HANDLE_VALUE)
+    if (m_hFile != VMToOSInterface::InvalidFileHandle)
         return S_OK;
 
+#ifdef TARGET_UNIX
+    // Encoding conversion mutates SString storage; keep the shared image-cache key unchanged.
+    StackSString filePath(GetPathToLoad());
+    const char* path = filePath.GetUTF8();
+    const char* separator = strrchr(path, '/');
+    if (separator == nullptr || separator != path)
+    {
+        StackSString directory;
+        if (separator == nullptr)
+            directory.SetUTF8(".");
+        else
+            directory.SetUTF8(path, static_cast<COUNT_T>(separator - path));
+        Holder<void*, DoNothing, free> canonicalDirectory(realpath(directory.GetUTF8(), nullptr));
+        if (canonicalDirectory.IsNull())
+        {
+            int error = errno;
+            LOG((LF_LOADER, LL_INFO100, "PEImage: Could not resolve file directory (%d)\n", error));
+            return HRESULTFromErr(error);
+        }
+
+        StackSString normalizedPath(SString::Utf8, static_cast<const char*>(canonicalDirectory.GetValue()));
+        normalizedPath.AppendUTF8("/");
+        normalizedPath.AppendUTF8(separator == nullptr ? path : separator + 1);
+        filePath.Set(normalizedPath);
+        path = filePath.GetUTF8();
+    }
+    int descriptor;
+    do
+    {
+        descriptor = open(path, O_RDONLY | O_CLOEXEC);
+    } while (descriptor < 0 && errno == EINTR);
+
+    if (descriptor < 0)
+    {
+        int error = errno;
+        LOG((LF_LOADER, LL_INFO100, "PEImage: Could not open file (%d)\n", error));
+        return HRESULTFromErr(error);
+    }
+
+    struct stat fileInfo;
+    int result;
+    do
+    {
+        result = fstat(descriptor, &fileInfo);
+    } while (result != 0 && errno == EINTR);
+
+    if (result != 0 || S_ISDIR(fileInfo.st_mode))
+    {
+        int error = result != 0 ? errno : EISDIR;
+        if (close(descriptor) != 0)
+            LOG((LF_LOADER, LL_INFO100, "PEImage: Could not close file descriptor (%d)\n", errno));
+        LOG((LF_LOADER, LL_INFO100, "PEImage: Could not inspect file (%d)\n", error));
+        return HRESULTFromErr(error);
+    }
+
+    m_hFile = descriptor;
+    return S_OK;
+#else
     ErrorModeHolder mode{};
     m_hFile = WszCreateFile((LPCWSTR)GetPathToLoad(),
-                          GENERIC_READ
-#if TARGET_WINDOWS
                           // the file may have native code sections, make sure we are allowed to execute the file
-                          | GENERIC_EXECUTE
-#endif
-                          ,
+                          GENERIC_READ | GENERIC_EXECUTE,
                           FILE_SHARE_READ|FILE_SHARE_DELETE,
                           NULL,
                           OPEN_EXISTING,
                           FILE_ATTRIBUTE_NORMAL,
                           NULL);
-    if (m_hFile != INVALID_HANDLE_VALUE)
+    if (m_hFile != VMToOSInterface::InvalidFileHandle)
             return S_OK;
 
     DWORD dwLastError = GetLastError();
@@ -816,6 +882,7 @@ HRESULT PEImage::TryOpenFile(bool takeLock)
         return HRESULT_FROM_WIN32(dwLastError);
 
     return HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND);
+#endif // TARGET_UNIX
 }
 
 #endif // !DACCESS_COMPILE

@@ -147,7 +147,6 @@ extern bool g_arm64_atomics_present;
 
 #define PAL_INITIALIZE_NONE                         0x00
 #define PAL_INITIALIZE_SYNC_THREAD                  0x01
-#define PAL_INITIALIZE_EXEC_ALLOCATOR               0x02
 #define PAL_INITIALIZE_STD_HANDLES                  0x04
 #define PAL_INITIALIZE_REGISTER_SIGTERM_HANDLER     0x08
 #define PAL_INITIALIZE_DEBUGGER_EXCEPTIONS          0x10
@@ -165,7 +164,6 @@ extern bool g_arm64_atomics_present;
 
 // PAL_InitializeCoreCLR() flags
 #define PAL_INITIALIZE_CORECLR         (PAL_INITIALIZE | \
-                                        PAL_INITIALIZE_EXEC_ALLOCATOR | \
                                         PAL_INITIALIZE_REGISTER_SIGTERM_HANDLER | \
                                         PAL_INITIALIZE_DEBUGGER_EXCEPTIONS | \
                                         PAL_INITIALIZE_ENSURE_STACK_SIZE | \
@@ -2213,60 +2211,6 @@ PAL_GetProcAddressDirect(
         IN NATIVE_LIBRARY_HANDLE dl_handle,
         IN LPCSTR lpProcName);
 
-/*++
-Function:
-  PAL_LOADLoadPEFile
-
-Abstract
-  Loads a PE file into memory.  Properly maps all of the sections in the PE file.  Returns a pointer to the
-  loaded base.
-
-Parameters:
-    IN hFile    - The file to load
-    IN offset - offset within hFile where the PE "file" is located
-
-Return value:
-    A valid base address if successful.
-    0 if failure
---*/
-PALIMPORT
-PVOID
-PALAPI
-PAL_LOADLoadPEFile(HANDLE hFile, size_t offset);
-
-/*++
-    PAL_LOADUnloadPEFile
-
-    Unload a PE file that was loaded by PAL_LOADLoadPEFile().
-
-Parameters:
-    IN ptr - the file pointer returned by PAL_LOADLoadPEFile()
-
-Return value:
-    TRUE - success
-    FALSE - failure (incorrect ptr, etc.)
---*/
-PALIMPORT
-BOOL
-PALAPI
-PAL_LOADUnloadPEFile(PVOID ptr);
-
-/*++
-    PAL_LOADMarkSectionAsNotNeeded
-
-    Mark a section as NotNeeded that was loaded by PAL_LOADLoadPEFile().
-
-Parameters:
-    IN ptr - the section address mapped by PAL_LOADLoadPEFile()
-
-Return value:
-    TRUE - success
-    FALSE - failure (incorrect ptr, etc.)
---*/
-BOOL
-PALAPI
-PAL_LOADMarkSectionAsNotNeeded(void * ptr);
-
 PALIMPORT
 FARPROC
 PALAPI
@@ -2316,64 +2260,6 @@ LPCSTR
 PALAPI
 PAL_GetLoadLibraryError();
 
-PALIMPORT
-LPVOID
-PALAPI
-PAL_VirtualReserveFromExecutableMemoryAllocatorWithinRange(
-    IN LPCVOID lpBeginAddress,
-    IN LPCVOID lpEndAddress,
-    IN SIZE_T dwSize,
-    IN BOOL storeAllocationInfo);
-
-PALIMPORT
-void
-PALAPI
-PAL_GetExecutableMemoryAllocatorPreferredRange(
-    OUT PVOID *start,
-    OUT PVOID *end);
-
-PALIMPORT
-LPVOID
-PALAPI
-VirtualAlloc(
-         IN LPVOID lpAddress,
-         IN SIZE_T dwSize,
-         IN DWORD flAllocationType,
-         IN DWORD flProtect);
-
-PALIMPORT
-BOOL
-PALAPI
-VirtualFree(
-        IN LPVOID lpAddress,
-        IN SIZE_T dwSize,
-        IN DWORD dwFreeType);
-
-
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-
-PALIMPORT
-VOID
-PALAPI
-PAL_JitWriteProtect(bool writeEnable);
-
-#elif defined(HOST_IOS) || defined(HOST_TVOS) || defined(HOST_MACCATALYST)
-
-// Define empty macro for platforms that don't allow JIT write protection
-#define PAL_JitWriteProtect(writeEnable) do { } while(0)
-
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
-
-
-PALIMPORT
-BOOL
-PALAPI
-VirtualProtect(
-           IN LPVOID lpAddress,
-           IN SIZE_T dwSize,
-           IN DWORD flNewProtect,
-           OUT PDWORD lpflOldProtect);
-
 typedef struct _MEMORY_BASIC_INFORMATION {
     PVOID BaseAddress;
     PVOID AllocationBase_PAL_Undefined;
@@ -2383,14 +2269,6 @@ typedef struct _MEMORY_BASIC_INFORMATION {
     DWORD Protect;
     DWORD Type;
 } MEMORY_BASIC_INFORMATION, *PMEMORY_BASIC_INFORMATION;
-
-PALIMPORT
-SIZE_T
-PALAPI
-VirtualQuery(
-         IN LPCVOID lpAddress,
-         OUT PMEMORY_BASIC_INFORMATION lpBuffer,
-         IN SIZE_T dwLength);
 
 #define MoveMemory memmove
 #define CopyMemory memcpy

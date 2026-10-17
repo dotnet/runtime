@@ -1,7 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 //
+#ifndef CORECLR_MINIPAL_H
+#define CORECLR_MINIPAL_H
+
 #include <stddef.h>
+#include <stdint.h>
+
+#if !defined(TARGET_WINDOWS)
+#include <sys/mman.h>
+#endif // !TARGET_WINDOWS
 
 // Interface between the runtime and platform specific functionality
 class VMToOSInterface
@@ -9,6 +17,208 @@ class VMToOSInterface
 private:
     ~VMToOSInterface() {}
 public:
+#ifdef TARGET_WINDOWS
+    using MemoryMapHandle = HANDLE;
+    static inline const MemoryMapHandle InvalidFileHandle = INVALID_HANDLE_VALUE;
+    static constexpr MemoryMapHandle InvalidMemoryMapHandle = nullptr;
+    static constexpr bool MappingFailureAllowsCopyFallback = false;
+#else
+    using MemoryMapHandle = int;
+    static constexpr MemoryMapHandle InvalidFileHandle = -1;
+    static constexpr MemoryMapHandle InvalidMemoryMapHandle = -1;
+    static constexpr bool MappingFailureAllowsCopyFallback = true;
+#endif // TARGET_WINDOWS
+
+    enum class MemoryProtection
+    {
+#ifdef TARGET_WINDOWS
+        NoAccess = PAGE_NOACCESS,
+        ReadOnly = PAGE_READONLY,
+        ReadWrite = PAGE_READWRITE,
+        WriteCopy = PAGE_WRITECOPY,
+        Execute = PAGE_EXECUTE,
+        ExecuteRead = PAGE_EXECUTE_READ,
+        ExecuteReadWrite = PAGE_EXECUTE_READWRITE
+#else
+        NoAccess = PROT_NONE,
+        ReadOnly = PROT_READ,
+        ReadWrite = PROT_READ | PROT_WRITE,
+        // The PAL never offered true copy-on-write page protection outside of file mappings;
+        // treat write-copy the same as ordinary read-write on Unix.
+        WriteCopy = PROT_READ | PROT_WRITE,
+        Execute = PROT_EXEC,
+        ExecuteRead = PROT_READ | PROT_EXEC,
+        ExecuteReadWrite = PROT_READ | PROT_WRITE | PROT_EXEC
+#endif // TARGET_WINDOWS
+    };
+
+#ifndef TARGET_WASM
+    // Unix mappings borrow the supplied descriptor without duplicating or closing it.
+    // The caller must keep it open until all required views have been mapped.
+    static MemoryMapHandle CreateMemoryMapping(MemoryMapHandle fileHandle, uint64_t size, MemoryProtection protection);
+    static bool CloseMemoryMapping(MemoryMapHandle mapping);
+
+    // The caller retains ownership of the mapping handle or file descriptor.
+    // Non-null addresses replace Windows placeholders or caller-owned Unix reservations.
+    // Unix handle -1 requests anonymous private memory at offset zero.
+    // Private writable file views use copy-on-write protection.
+    // Failures return nullptr or -1 and set GetLastError() on Windows or errno on Unix.
+    static void* MapMemory(MemoryMapHandle mapping, uint64_t offset, void* address, size_t size, MemoryProtection protection, bool shared);
+    static int UnmapMemory(void* address, size_t size);
+
+    // Windows executable backing allows later executable views without making this view executable.
+    static void* MapAnonymousMemory(size_t size, MemoryProtection protection, bool executableBacking = false);
+    static int32_t GetLastMemoryMappingError();
+#endif // !TARGET_WASM
+
+    // Allocate zero-initialized, page-aligned memory.
+    // The size must be a nonzero multiple of the system page size.
+    // Release the allocation with ReleaseMemoryReservation and its original size.
+    // WASM uses aligned heap storage and supports only ReadWrite and NoAccess;
+    // NoAccess denotes a logical reservation, not inaccessible pages.
+    static void* AllocateMemory(void* address, size_t size, MemoryProtection protection);
+
+    // Allocate a page-aligned, nonzero-sized reservation whose starting address lies
+    // within [rangeStart, rangeEnd), when a range is specified. Passing both rangeStart
+    // and rangeEnd as nullptr requests an allocation anywhere in the address space, and
+    // is equivalent to calling ReserveMemoryPlaceholder(nullptr, size).
+    // Release the allocation with ReleaseMemoryReservation and its original size.
+    static void* ReserveMemoryWithinRange(void* rangeStart, void* rangeEnd, size_t size);
+
+    // Commit a page-aligned, nonzero-sized range previously returned by
+    // ReserveMemoryWithinRange. Unlike CommitMemoryPlaceholder, the reservation does not
+    // need placeholder support and is not split or replaced; the existing address range
+    // simply becomes accessible with the requested protection.
+    // WASM reservations are already accessible; committing ReadWrite preserves their contents.
+    static void* CommitReservedMemory(void* address, size_t size, MemoryProtection protection);
+
+    // Decommit (but do not release) a page-aligned, nonzero-sized range previously
+    // committed via AllocateMemory, CommitMemoryPlaceholder, CommitReservedMemory, or
+    // PopulateMemoryPlaceholder. Decommitted memory still belongs to the caller's
+    // reservation; it is zero-filled on a later recommit and no longer occupies
+    // physical/backing storage in the meantime.
+    // WASM zeroes the range without reclaiming or protecting its linear memory.
+    static bool DecommitMemory(void* address, size_t size);
+    static bool ReleaseMemoryReservation(void* address, size_t size);
+
+#ifndef TARGET_WASM
+    // Use placeholders to map file-backed sections at fixed offsets within one contiguous address range.
+    // Replacing parts of the reservation preserves ownership of those addresses, avoiding races with other
+    // allocations and allowing unmodified file-backed pages to stay shared instead of copying the image.
+    static bool SupportsPlaceholderMapping();
+    static void* ReserveMemoryPlaceholder(void* address, size_t size);
+    static bool SplitMemoryPlaceholder(void* address, size_t size);
+    static void* CommitMemoryPlaceholder(void* address, size_t size, MemoryProtection protection);
+    static bool ProtectMemory(void* address, size_t size, MemoryProtection protection);
+    static bool PopulateMemoryPlaceholder(void* address, size_t allocationSize, const void* source,
+        size_t copySize, MemoryProtection protection);
+    static bool UseSharedReadOnlyMapping(size_t sectionAlignment);
+
+    class MemoryMappingHolder
+    {
+        MemoryMapHandle m_mapping = InvalidMemoryMapHandle;
+
+    public:
+        MemoryMappingHolder() = default;
+        ~MemoryMappingHolder()
+        {
+#ifndef DACCESS_COMPILE
+            Reset();
+#endif // !DACCESS_COMPILE
+        }
+
+        MemoryMappingHolder(const MemoryMappingHolder&) = delete;
+        MemoryMappingHolder& operator=(const MemoryMappingHolder&) = delete;
+
+        void Assign(MemoryMapHandle mapping);
+        void Reset();
+        MemoryMapHandle GetValue() const { return m_mapping; }
+    };
+
+    class MemoryMappedViewHolder
+    {
+        void* m_address = nullptr;
+        size_t m_size = 0;
+
+    public:
+        MemoryMappedViewHolder() = default;
+        ~MemoryMappedViewHolder()
+        {
+#ifndef DACCESS_COMPILE
+            Reset();
+#endif // !DACCESS_COMPILE
+        }
+
+        MemoryMappedViewHolder(const MemoryMappedViewHolder&) = delete;
+        MemoryMappedViewHolder& operator=(const MemoryMappedViewHolder&) = delete;
+
+        void Assign(void* address, size_t size);
+        void Swap(MemoryMappedViewHolder& other);
+        void Reset();
+        void* GetValue() const { return m_address; }
+    };
+
+    class MemoryReservationHolder
+    {
+        void* m_address = nullptr;
+        size_t m_size = 0;
+
+    public:
+        MemoryReservationHolder() = default;
+        ~MemoryReservationHolder()
+        {
+#ifndef DACCESS_COMPILE
+            Reset();
+#endif // !DACCESS_COMPILE
+        }
+
+        MemoryReservationHolder(const MemoryReservationHolder&) = delete;
+        MemoryReservationHolder& operator=(const MemoryReservationHolder&) = delete;
+
+        void Assign(void* address, size_t size);
+        void Reset();
+        void* ExtractPrefix(size_t size);
+        void* GetValue() const { return m_address; }
+        size_t GetSize() const { return m_size; }
+    };
+#endif // !TARGET_WASM
+
+#if defined(TARGET_UNIX) && !defined(TARGET_WASM)
+    // Returns an error number directly, without discarding modified private pages.
+    static int MarkMemoryAsNotNeeded(void* address, size_t size);
+
+    // Opportunistically reserves a pool of virtual memory located close to this library (within a 2 GB
+    // range), for later use by ReserveMemoryFromExecutableAllocatorWithinRange. Should be called once,
+    // early during process startup while the address space is still mostly empty.
+    // Returns false if synchronization could not be initialized.
+    static bool InitializeExecutableMemoryAllocator();
+
+    // Reserves (but does not commit) size bytes from the executable memory allocator's pool if the
+    // entire reservation fits within [rangeStart, rangeEnd), returning its address. Returns nullptr
+    // if the request cannot be satisfied, including if the allocator was never initialized or has run
+    // out of reserved memory; the caller should then fall back to reserving memory through other means.
+    // The size is rounded up to 64 KB. The caller owns that entire reservation and must release
+    // or trim it using the rounded size.
+    static void* ReserveMemoryFromExecutableAllocatorWithinRange(const void* rangeStart, const void* rangeEnd, size_t size);
+
+    // Gets the address range that ReserveMemoryFromExecutableAllocatorWithinRange prefers to allocate
+    // from, which may include this library's own loaded range if that range is nearby.
+    static void GetExecutableMemoryAllocatorPreferredRange(void** start, void** end);
+#endif // TARGET_UNIX && !TARGET_WASM
+
+#ifdef TARGET_APPLE
+    static bool IsMapJitFlagNeeded();
+#endif // TARGET_APPLE
+
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+    // Nested scopes enable JIT writes on this thread until the outermost scope exits.
+    static void JitWriteProtect(bool writeEnable);
+#elif defined(HOST_IOS) || defined(HOST_TVOS) || defined(HOST_MACCATALYST)
+    // These platforms do not allow JIT write protection changes.
+    static void JitWriteProtect(bool) {}
+#endif // HOST_OSX && HOST_ARM64
+
+#ifndef TARGET_WASM
     // Create double mapped memory mapper
     // Parameters:
     //  pHandle                - receives handle of the double mapped memory mapper
@@ -111,6 +321,7 @@ public:
     // Return:
     //  true if it succeeded, false if it failed
     static bool FreeThunksFromTemplate(void* thunks, size_t templateSize);
+#endif // !TARGET_WASM
 
     // Allocate aligned memory block
     // Parameters:
@@ -139,3 +350,5 @@ FORCEINLINE uint8_t PalInterlockedCompareExchange128(_Inout_ int64_t volatile *p
     return _InterlockedCompareExchange128(pDst, iValueHigh, iValueLow, pComparandAndResult);
 }
 #endif // defined(HOST_64BIT) && defined(FEATURE_CACHED_INTERFACE_DISPATCH)
+
+#endif // CORECLR_MINIPAL_H

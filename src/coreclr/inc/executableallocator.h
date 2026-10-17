@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// Allocator and holders for double mapped executable memory
+// Allocator and holders for runtime method and loader-heap storage.
 
 #pragma once
 
@@ -14,7 +14,7 @@
 
 //#define LOG_EXECUTABLE_ALLOCATOR_STATISTICS
 
-// This class is responsible for allocation of all the executable memory in the runtime.
+// Native targets allocate executable memory; WASM uses read-write storage for loader and interpreter data.
 class ExecutableAllocator
 {
 public:
@@ -27,6 +27,15 @@ public:
 
 private:
 
+    typedef void (*FatalErrorHandler)(UINT errorCode, LPCWSTR pszMessage);
+
+    // Instance of the allocator
+    static ExecutableAllocator* g_instance;
+
+    // Callback to the runtime to report fatal errors
+    static FatalErrorHandler g_fatalErrorHandler;
+
+#ifndef TARGET_WASM
     // RX address range block descriptor
     struct BlockRX
     {
@@ -57,7 +66,6 @@ private:
         size_t refCount;
     };
 
-    typedef void (*FatalErrorHandler)(UINT errorCode, LPCWSTR pszMessage);
 #ifdef LOG_EXECUTABLE_ALLOCATOR_STATISTICS
     static int64_t g_mapTimeSum;
     static int64_t g_mapTimeWithLockSum;
@@ -74,19 +82,13 @@ private:
     static int64_t g_MapRW_LinkedListWalkDepth;
     static int64_t g_LinkedListTotalDepth;
 #endif
-    // Instance of the allocator
-    static ExecutableAllocator* g_instance;
-
-    // Callback to the runtime to report fatal errors
-    static FatalErrorHandler g_fatalErrorHandler;
-
 #if USE_LAZY_PREFERRED_RANGE
     static BYTE* g_lazyPreferredRangeStart;
     // Next address to try to allocate for code in the lazy preferred region.
     static BYTE* g_lazyPreferredRangeHint;
 #endif // USE_LAZY_PREFERRED_RANGE
 
-    // For PAL, this region represents the area that is eagerly reserved on
+    // For Unix, this region represents the area that is eagerly reserved on
     // startup where executable memory and static fields are preferrably kept.
     // For Windows, this is the region that we lazily reserve from.
     static BYTE* g_preferredRangeMin;
@@ -180,7 +182,7 @@ private:
     static bool IsDoubleMappingEnabled();
 
     // Release memory allocated via DoubleMapping for either templates or normal double mapped data
-    void ReleaseWorker(void* pRX, bool releaseTemplate) noexcept;
+    void ReleaseWorker(void* pRX, size_t size, bool releaseTemplate) noexcept;
 
     // Initialize the allocator instance
     bool Initialize();
@@ -199,10 +201,11 @@ private:
     static LogEntry s_usageLog[256];
     static int s_logMaxIndex;
 #endif
+#endif // !TARGET_WASM
 
 public:
 
-#ifdef LOG_EXECUTABLE_ALLOCATOR_STATISTICS
+#if defined(LOG_EXECUTABLE_ALLOCATOR_STATISTICS) && !defined(TARGET_WASM)
     static void LogUsage(const char* source, int line, const char* function);
     static void DumpHolderUsage();
 #endif
@@ -228,7 +231,7 @@ public:
     static void ResetLazyPreferredRangeHint();
 
     // Use this function to initialize the preferred range of executable memory
-    // from PAL.
+    // from minipal.
     static void InitPreferredRange();
 
     // Returns TRUE if p is located in near clr.dll that allows us
@@ -241,24 +244,28 @@ public:
     // Reserve the specified amount of virtual address space for executable mapping.
     // The reserved range must be within the loAddress and hiAddress. If it is not
     // possible to reserve memory in such range, the method returns NULL.
+    // WASM ignores the address bounds and allocates read-write storage anywhere.
     void* ReserveWithinRange(size_t size, const void* loAddress, const void* hiAddress);
 
     // Commit the specified range of memory. The memory can be committed as executable (RX)
     // or non-executable (RW) based on the passed in isExecutable flag. The non-executable
     // allocations are used to allocate data structures that need to be close to the
     // executable code due to memory addressing performance related reasons.
+    // WASM storage is already accessible, so Commit returns pStart without changing it.
     void* Commit(void* pStart, size_t size, bool isExecutable);
 
     // Release the executable memory block starting at the passed in address that was allocated
-    // by one of the ReserveXXX methods.
-    void Release(void* pRX) noexcept;
+    // by one of the ReserveXXX methods. The size must be the size originally requested from
+    // that reserve call.
+    void Release(void* pRX, size_t size) noexcept;
 
-    // Map the specified block of executable memory as RW
+    // Map the specified block of executable memory as RW. WASM returns the original pointer.
     void* MapRW(void* pRX, size_t size, CacheableMapping cacheMapping);
 
-    // Unmap the RW mapping at the specified address
+    // Unmap the RW mapping at the specified address. This is a no-op on WASM.
     void UnmapRW(void* pRW) noexcept;
 
+#ifndef TARGET_WASM
     // Allocate thunks from a template. pTemplate is the return value from CreateTemplate
     void* AllocateThunksFromTemplate(void *pTemplate, size_t templateSize, void (*dataPageGenerator)(uint8_t* pageBase, size_t size));
 
@@ -270,6 +277,7 @@ public:
     // Some OS/Architectures may/may not be able to work with this, so this api is permitted to return NULL, and callers should have an alternate approach using
     // the codePageGenerator directly.
     void* CreateTemplate(void* templateInImage, size_t templateSize, void (*codePageGenerator)(uint8_t* pageBase, uint8_t* pageBaseRX, size_t size));
+#endif // !TARGET_WASM
 };
 
 #define ExecutableWriterHolder ExecutableWriterHolderNoLog
@@ -296,7 +304,7 @@ class ExecutableWriterHolder
 #if defined(HOST_APPLE) && defined(HOST_ARM64) && !defined(DACCESS_COMPILE)
         if (m_addressRX != NULL)
         {
-            PAL_JitWriteProtect(false);
+            VMToOSInterface::JitWriteProtect(false);
         }
 #else
         if (m_addressRX != m_addressRW)
@@ -331,7 +339,7 @@ public:
         m_addressRX = addressRX;
 #if defined(HOST_APPLE) && defined(HOST_ARM64)
         m_addressRW = addressRX;
-        PAL_JitWriteProtect(true);
+        VMToOSInterface::JitWriteProtect(true);
 #else
         m_addressRW = (T *)ExecutableAllocator::Instance()->MapRW((void*)addressRX, size, cacheMapping);
 #endif
@@ -354,7 +362,7 @@ public:
     }
 };
 
-#ifdef LOG_EXECUTABLE_ALLOCATOR_STATISTICS
+#if defined(LOG_EXECUTABLE_ALLOCATOR_STATISTICS) && !defined(TARGET_WASM)
 #undef ExecutableWriterHolder
 #ifdef HOST_UNIX
 #define ExecutableWriterHolder ExecutableAllocator::LogUsage(__FILE__, __LINE__, __PRETTY_FUNCTION__); ExecutableWriterHolderNoLog

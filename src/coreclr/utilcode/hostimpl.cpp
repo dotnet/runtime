@@ -4,6 +4,7 @@
 #include "stdafx.h"
 
 #include <minipal/mutex.h>
+#include <minipal.h>
 
 #include "mscoree.h"
 #include "clrinternal.h"
@@ -38,6 +39,7 @@ void ClrLeaveCriticalSection(CRITSEC_COOKIE cookie) noexcept
     minipal_mutex_leave((minipal_mutex*)cookie);
 }
 
+#ifdef HOST_WINDOWS
 LPVOID ClrVirtualAlloc(LPVOID lpAddress, SIZE_T dwSize, DWORD flAllocationType, DWORD flProtect)
 {
     return VirtualAlloc(lpAddress, dwSize, flAllocationType, flProtect);
@@ -57,6 +59,7 @@ BOOL ClrVirtualProtect(LPVOID lpAddress, SIZE_T dwSize, DWORD flNewProtect, PDWO
 {
     return VirtualProtect(lpAddress, dwSize, flNewProtect, lpflOldProtect);
 }
+#endif // HOST_WINDOWS
 
 //------------------------------------------------------------------------------
 // Helper function to get an exception from outside the exception.  In

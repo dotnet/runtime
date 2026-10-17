@@ -10,6 +10,7 @@
 #include "stdafx.h"
 #include "CLREventBase.h"
 #include <minipal/time.h>
+#include <minipal.h>
 #include "debugdebugger.h"
 #include "../inc/common.h"
 #include "eeconfig.h" // This is here even for retail & free builds...
@@ -15061,7 +15062,11 @@ DebuggerHeapExecutableMemoryAllocator::~DebuggerHeapExecutableMemoryAllocator()
         DebuggerHeapExecutableMemoryPage *temp = m_pages->GetNextPage();
 
         // Free this page
+#ifdef HOST_WINDOWS
         INDEBUG(BOOL ret =) VirtualFree(m_pages, 0, MEM_RELEASE);
+#else
+        INDEBUG(BOOL ret =) VMToOSInterface::ReleaseMemoryReservation(m_pages, DEBUGGERHEAP_PAGESIZE) ? TRUE : FALSE;
+#endif
         ASSERT(ret == TRUE);
 
         m_pages = temp;
@@ -15138,7 +15143,11 @@ void DebuggerHeapExecutableMemoryAllocator::Free(void* addr)
 
 DebuggerHeapExecutableMemoryPage* DebuggerHeapExecutableMemoryAllocator::AddNewPage()
 {
+#ifdef HOST_WINDOWS
     void* newPageAddr = VirtualAlloc(NULL, sizeof(DebuggerHeapExecutableMemoryPage), MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
+#else
+    void* newPageAddr = VMToOSInterface::AllocateMemory(NULL, sizeof(DebuggerHeapExecutableMemoryPage), VMToOSInterface::MemoryProtection::ExecuteReadWrite);
+#endif
 
     DebuggerHeapExecutableMemoryPage *newPage = new (newPageAddr) DebuggerHeapExecutableMemoryPage;
     CrstHolder execMemAllocCrstHolder(&m_execMemAllocMutex);

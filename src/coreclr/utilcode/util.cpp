@@ -343,6 +343,7 @@ HRESULT FakeCoCreateInstanceEx(REFCLSID       rclsid,
     return hr;
 }
 
+#ifndef TARGET_WASM
 // Reserves free memory within the range [pMinAddr..pMaxAddr] using
 // ClrVirtualQuery to find free memory and ClrVirtualAlloc to reserve it.
 //
@@ -378,11 +379,6 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
     }
     CONTRACTL_END;
 
-    BYTE *pResult = nullptr;  // our return value;
-
-    static unsigned countOfCalls = 0;  // We log the number of tims we call this method
-    countOfCalls++;                    // increment the call counter
-
     if (dwSize == 0)
     {
         return nullptr;
@@ -410,19 +406,23 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
     }
 
     // If pMinAddr is BOT_MEMORY and pMaxAddr is TOP_MEMORY
-    // then we can call ClrVirtualAlloc instead
+    // then we can call VMToOSInterface::ReserveMemoryWithinRange instead
     if ((pMinAddr == (BYTE *) BOT_MEMORY) && (pMaxAddr == (BYTE *) TOP_MEMORY))
     {
-        return (BYTE*) ClrVirtualAlloc(nullptr, dwSize, flAllocationType, flProtect);
+        return (BYTE*)VMToOSInterface::ReserveMemoryWithinRange(nullptr, nullptr, dwSize);
     }
 
 #ifdef HOST_UNIX
-    pResult = (BYTE *)PAL_VirtualReserveFromExecutableMemoryAllocatorWithinRange(pMinAddr, pMaxAddr, dwSize, TRUE /* fStoreAllocationInfo */);
-    if (pResult != nullptr)
-    {
-        return pResult;
-    }
-#endif // HOST_UNIX
+    // Unix has no native VirtualQuery-based scan available (the old PAL stub always
+    // reported RegionSize == 0), so range reservation is delegated to minipal, which
+    // tries the near-code executable allocator first and then falls back to a
+    // non-destructive mmap-and-verify-address scan.
+    return (BYTE*)VMToOSInterface::ReserveMemoryWithinRange((void*)pMinAddr, (void*)pMaxAddr, dwSize);
+#else // HOST_UNIX
+    BYTE *pResult = nullptr;  // our return value;
+
+    static unsigned countOfCalls = 0;  // We log the number of tims we call this method
+    countOfCalls++;                    // increment the call counter
 
     // We will do one scan from [pMinAddr .. pMaxAddr]
     // First align the tryAddr up to next 64k base address.
@@ -448,9 +448,8 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
         }
 
         // Is there enough memory free from this start location?
-        // Note that for most versions of UNIX the mbInfo.RegionSize returned will always be 0
         if ((mbInfo.State == MEM_FREE) &&
-            (mbInfo.RegionSize >= (SIZE_T) dwSize || mbInfo.RegionSize == 0))
+            (mbInfo.RegionSize >= (SIZE_T) dwSize))
         {
             // Try reserving the memory using VirtualAlloc now
             pResult = (BYTE*)ClrVirtualAlloc(tryAddr, dwSize, flAllocationType, flProtect);
@@ -462,10 +461,6 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
                 // return pResult
                 break;
             }
-
-            // On UNIX we can also fail if our request size 'dwSize' is larger than 64K and
-            // and our tryAddr is pointing at a small MEM_FREE region (smaller than 'dwSize')
-            // However we can't distinguish between this and the race case.
 
             // We might fail in a race.  So just move on to next region and continue trying
             tryAddr = tryAddr + VIRTUAL_ALLOC_RESERVE_GRANULARITY;
@@ -501,7 +496,9 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
     }
 
     return pResult;
+#endif // HOST_UNIX
 }
+#endif // !TARGET_WASM
 
 #ifdef HOST_WINDOWS
 //******************************************************************************
