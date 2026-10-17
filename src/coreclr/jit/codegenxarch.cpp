@@ -1041,10 +1041,8 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
     // we can convert it into reg1 = reg1 op reg2 and emit
     // the same code as above. Or we need both operands to
     // be the same local.
-    else if (op2reg == targetReg)
+    else if ((op2reg == targetReg) && (GenTree::OperIsCommutative(oper) || genIsSameLocalVar(op1, op2)))
     {
-        assert(GenTree::OperIsCommutative(oper) || genIsSameLocalVar(op1, op2));
-
         dst = op2;
         src = op1;
     }
@@ -1073,10 +1071,14 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
     else
     {
         // when reg3 != reg1 && reg3 != reg2, and NDD is available, we can use APX-EVEX.ND to optimize the codegen.
-        eligibleForNDD = emit->DoJitUseApxNDD(ins);
+        // LSRA also allows reg3 == reg2 for a non-commutative op, but only when it is emitted as NDD.
+        eligibleForNDD = emit->DoJitUseApxNDD(ins, op2);
         if (!eligibleForNDD)
         {
             var_types op1Type = op1->TypeGet();
+            // The mov must not clobber op2: its register, or a base/index register of a contained op2.
+            noway_assert(op2reg != targetReg);
+            assert((op2->gtGetContainedRegMask() & genRegMask(targetReg)) == 0);
             inst_Mov(op1Type, targetReg, op1reg, /* canSkip */ false);
             regSet.verifyRegUsed(targetReg);
             gcInfo.gcMarkRegPtrVal(targetReg, op1Type);
@@ -1116,8 +1118,7 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
         // operands should be already formatted above
         assert(dst->isUsedFromReg());
         assert(op1reg != targetReg);
-        assert(op2reg != targetReg);
-        r = emit->emitIns_BASE_R_R_RM(ins, emitTypeSize(treeNode), targetReg, treeNode, dst, src);
+        r = emit->emitIns_BASE_R_R_RM(ins, emitTypeSize(treeNode), targetReg, treeNode, dst, src, eligibleForNDD);
     }
     else
     {
@@ -1276,7 +1277,7 @@ void CodeGen::genCodeForMul(GenTreeOp* treeNode)
         }
         assert(regOp->isUsedFromReg());
 
-        emit->emitIns_BASE_R_R_RM(ins, size, mulTargetReg, treeNode, regOp, rmOp);
+        emit->emitIns_BASE_R_R_RM(ins, size, mulTargetReg, treeNode, regOp, rmOp, emit->DoJitUseApxNDD(ins, rmOp));
 
         // Move the result to the desired register, if necessary
         if (ins == INS_mulEAX)
