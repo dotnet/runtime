@@ -7,8 +7,6 @@ using ILCompiler.DependencyAnalysisFramework;
 
 using Internal.TypeSystem;
 
-using Debug = System.Diagnostics.Debug;
-
 namespace ILCompiler.DependencyAnalysis
 {
     public class GenericMethodsHashtableEntryNode : DependencyNodeCore<NodeFactory>
@@ -25,7 +23,6 @@ namespace ILCompiler.DependencyAnalysis
         public override void AddStaticDependencies(DependencySink sink, NodeFactory factory)
         {
             GenericMethodsHashtableNode.GetGenericMethodsHashtableDependenciesForMethod(sink, factory, _method);
-            Debug.Assert(sink != null);
         }
         protected override string GetName(NodeFactory factory)
         {

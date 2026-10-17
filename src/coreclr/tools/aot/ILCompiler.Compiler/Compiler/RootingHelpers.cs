@@ -382,8 +382,7 @@ namespace ILCompiler
             }
             else
             {
-                Debug.Assert(conditionalDependencies is not null);
-                conditionalDependencies.AddConditional(dependency, otherReasonNode, reason);
+                conditionalDependencies!.AddConditional(dependency, otherReasonNode, reason);
             }
         }
     }

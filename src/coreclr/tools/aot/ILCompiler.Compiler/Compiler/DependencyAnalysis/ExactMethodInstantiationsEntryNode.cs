@@ -28,7 +28,6 @@ namespace ILCompiler.DependencyAnalysis
         public override void AddStaticDependencies(DependencySink sink, NodeFactory factory)
         {
             ExactMethodInstantiationsNode.GetExactMethodInstantiationDependenciesForMethod(sink, factory, _method);
-            Debug.Assert(sink != null);
         }
         protected override string GetName(NodeFactory factory)
         {
