@@ -84,6 +84,30 @@ public record struct DebuggerEvalData(
     uint MethodToken,
     TargetPointer AssemblyPtr);
 
+/// <summary>
+/// Identifies the WebAssembly function that contains the instruction pointer of a ReadyToRun stack frame.
+/// </summary>
+/// <remarks>
+/// A WebAssembly engine's function index is module-local, so a consumer uses <see cref="Module"/>
+/// and <see cref="RuntimeFunctionIndex"/> with the image's element section to find the engine
+/// function. <see cref="FunctionTableIndex"/> is the runtime-global index of the same function.
+/// A funclet is a function of its own, distinct from its method's root function.
+/// </remarks>
+public readonly struct WasmFunctionIdentity
+{
+    /// <summary>The runtime-global function-table index of the function.</summary>
+    public uint FunctionTableIndex { get; init; }
+    /// <summary>
+    /// The module that registered the R2R image containing the function. For a composite image this
+    /// is the module that loaded the image, not necessarily the method's own module.
+    /// </summary>
+    public TargetPointer Module { get; init; }
+    /// <summary>The RUNTIME_FUNCTION index of the function within its image.</summary>
+    public uint RuntimeFunctionIndex { get; init; }
+    /// <summary>Whether the function is a funclet rather than a method's root function.</summary>
+    public bool IsFunclet { get; init; }
+}
+
 public interface IStackWalk : IContract
 {
     static string IContract.Name => nameof(StackWalk);
@@ -106,6 +130,7 @@ public interface IStackWalk : IContract
     byte[] GetContext(ThreadData threadData, ThreadContextSource contextSource, uint contextFlags) => throw new NotImplementedException();
     TargetPointer GetFuncletRootId(IStackDataFrameHandle stackDataFrameHandle, out uint parentNativeOffset) => throw new NotImplementedException();
     TargetPointer GetExactGenericArgsToken(IStackDataFrameHandle stackDataFrameHandle) => throw new NotImplementedException();
+    WasmFunctionIdentity GetWasmFunctionIdentity(IStackDataFrameHandle stackDataFrameHandle) => throw new NotImplementedException();
 }
 
 public struct StackWalk : IStackWalk

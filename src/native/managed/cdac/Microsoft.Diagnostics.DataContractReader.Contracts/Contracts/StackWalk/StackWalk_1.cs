@@ -9,6 +9,7 @@ using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Runtime.InteropServices;
 using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
+using Microsoft.Diagnostics.DataContractReader.ExecutionManagerHelpers;
 using Microsoft.Diagnostics.DataContractReader.Data;
 using System.Linq;
 
@@ -1109,6 +1110,37 @@ internal partial class StackWalk_1 : IStackWalk
     {
         StackDataFrameHandle handle = AssertCorrectHandle(stackDataFrameHandle);
         return handle.Context.FramePointer;
+    }
+
+    WasmFunctionIdentity IStackWalk.GetWasmFunctionIdentity(IStackDataFrameHandle stackDataFrameHandle)
+    {
+        if (_target.Contracts.RuntimeInfo.GetTargetArchitecture() != RuntimeInfoArchitecture.Wasm)
+            throw new PlatformNotSupportedException("WASM function identity is only available on WASM targets.");
+
+        StackDataFrameHandle handle = AssertCorrectHandle(stackDataFrameHandle);
+        if (handle.State != StackWalkState.Frameless)
+            throw new InvalidOperationException("WASM function identity is only available for frameless frames.");
+
+        // The virtual IP selects the function's own RUNTIME_FUNCTION, including a funclet's.
+        // Interpreter code has no unwind info, so it is rejected here.
+        if (!_eman.TryGetUnwindInfo(handle.Context.InstructionPointer, out TargetPointer runtimeFunction, out _) ||
+            !new WasmFunctionTableIndexLookup(_target).TryGetFunctionIdentity(
+                runtimeFunction,
+                out TargetPointer module,
+                out uint runtimeFunctionIndex,
+                out uint functionTableIndex,
+                out bool isFunclet))
+        {
+            throw new InvalidOperationException("The instruction pointer does not belong to a registered WASM R2R image.");
+        }
+
+        return new WasmFunctionIdentity
+        {
+            FunctionTableIndex = functionTableIndex,
+            Module = module,
+            RuntimeFunctionIndex = runtimeFunctionIndex,
+            IsFunclet = isFunclet,
+        };
     }
 
     TargetPointer IStackWalk.GetStackPointer(IStackDataFrameHandle stackDataFrameHandle)

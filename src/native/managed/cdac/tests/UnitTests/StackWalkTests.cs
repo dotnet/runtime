@@ -1546,20 +1546,136 @@ public unsafe class StackWalkTests
         Assert.True(walked.Length <= 7, $"Walk did not terminate: {walked.Length} frames");
     }
 
+    // GetWasmFunctionIdentity resolves the function containing each ReadyToRun frame's instruction
+    // pointer, including a funclet's own function, whichever form the root frame identity takes. It
+    // rejects interpreter frames.
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void GetWasmFunctionIdentity_WalkedFrames_ResolveModuleRuntimeFunctionAndFunclet(bool reversePInvokeRoot)
+    {
+        MockTarget.Architecture wasmArch = new() { IsLittleEndian = true, Is64Bit = false };
+        const ulong InterpIp = 0x0005_1000;
+        const uint ParentIndex = 5;
+        const ulong MinVirtualIP = 0x8001_0000;
+        const uint ParentBegin = 0x100;
+        const uint FuncletVipHalf = 0x21;
+        const uint ParentVipHalf = 0x05;
+        const byte ParentFrameSize = 0x30;
+        const byte FuncletFrameSize = 16;
+        const uint RuntimeFunctionSize = 8;
+        const ulong FuncletIp = MinVirtualIP + ParentBegin + FuncletVipHalf * 2;
+        const ulong ParentIp = MinVirtualIP + ParentBegin + ParentVipHalf * 2;
+
+        MockThread? thread = null;
+        MockFrameBuilder? frames = null;
+        ulong imcf = 0;
+        ulong runtimeFunctions = 0;
+        // The last slot is filled with the Frame handle's IP once it is known, so that only the
+        // frame-state check rejects that handle.
+        ulong[] managedIps = [FuncletIp, ParentIp, 0];
+        TestPlaceholderTarget target = CreateTarget(
+            wasmArch,
+            threadBuilder => thread = threadBuilder.AddThread(1, 1234),
+            frameBuilder =>
+            {
+                frames = frameBuilder;
+                imcf = frameBuilder.AddInterpMethodContextFrame(parentPtr: 0, ip: InterpIp, stack: 0x0006_1000).Address;
+            },
+            runtimeArchitecture: RuntimeInfoArchitecture.Wasm,
+            configureTarget: targetBuilder =>
+            {
+                TargetTestHelpers helpers = targetBuilder.MemoryBuilder.TargetTestHelpers;
+                int pointerSize = helpers.PointerSize;
+                MockMemorySpace.BumpAllocator allocator = targetBuilder.MemoryBuilder.CreateAllocator(0x0020_0000, 0x0020_4000);
+                runtimeFunctions = AddWasmR2RFunctions(targetBuilder, allocator, ParentIndex, MinVirtualIP,
+                    [(ParentBegin, ParentFrameSize), (0x8000_0000 | (ParentBegin + 0x40), FuncletFrameSize)]).Value;
+                uint parentIdentity = reversePInvokeRoot
+                    ? (ParentIndex << 1) | 1
+                    : AddWasmPortableEntryPoint(targetBuilder, allocator, ParentIndex);
+                AddWasmNullDebugger(targetBuilder, allocator);
+
+                // A finally funclet called by its parent: the funclet record carries its establishing
+                // frame (the parent) tagged with 2, then the parent record, then a terminator.
+                MockMemorySpace.HeapFragment stack = allocator.Allocate(FuncletFrameSize + ParentFrameSize + 4, "R2RLinearStack");
+                helpers.Write(stack.Data.AsSpan(0, sizeof(uint)), checked((uint)stack.Address + FuncletFrameSize + 2));
+                helpers.Write(stack.Data.AsSpan(4, sizeof(uint)), FuncletVipHalf);
+                helpers.Write(stack.Data.AsSpan(FuncletFrameSize, sizeof(uint)), parentIdentity);
+                helpers.Write(stack.Data.AsSpan(FuncletFrameSize + 4, sizeof(uint)), ParentVipHalf);
+                helpers.Write(stack.Data.AsSpan(FuncletFrameSize + ParentFrameSize, sizeof(uint)), 1u);
+
+                ulong transitionBlock = AddWasmTransitionBlock(helpers, allocator, returnAddress: 0, stackPointer: stack.Address);
+
+                Layout<MockFramedMethodFrame> fmfLayout = frames!.FramedMethodFrameLayout;
+                int topOffset = fmfLayout.Size;
+                int isFaultingOffset = topOffset + pointerSize;
+                Dictionary<string, Target.FieldInfo> interpreterFrameFields = new(TargetTestHelpers.CreateTypeInfo(fmfLayout).Fields)
+                {
+                    [nameof(Data.InterpreterFrame.TopInterpMethodContextFrame)] = new() { Offset = topOffset },
+                    [nameof(Data.InterpreterFrame.IsFaulting)] = new() { Offset = isFaultingOffset },
+                };
+                MockMemorySpace.HeapFragment interpreterFrame = allocator.Allocate((ulong)(isFaultingOffset + pointerSize), "InterpreterFrame");
+                MockFramedMethodFrame fmf = fmfLayout.Create(interpreterFrame);
+                fmf.Identifier = MockFrameBuilder.InterpreterFrameIdentifierValue;
+                fmf.Next = uint.MaxValue;
+                helpers.WritePointer(interpreterFrame.Data.AsSpan(fmfLayout.Fields.Single(f => f.Name == nameof(Data.FramedMethodFrame.TransitionBlockPtr)).Offset, pointerSize), transitionBlock);
+                helpers.WritePointer(interpreterFrame.Data.AsSpan(topOffset, pointerSize), imcf);
+                thread!.Frame = interpreterFrame.Address;
+
+                targetBuilder
+                    .AddTypes(CreateWasmTransitionBlockTypes(pointerSize))
+                    .AddTypes(new Dictionary<DataType, Target.TypeInfo>
+                    {
+                        [DataType.InterpreterFrame] = new() { Fields = interpreterFrameFields, Size = (uint)(isFaultingOffset + pointerSize) },
+                    });
+            },
+            executionManager: CreateInterpreterExecutionManager(
+                [InterpIp],
+                managedIps: managedIps,
+                runtimeFunctionForIp: ip => new TargetPointer(runtimeFunctions + (ip == FuncletIp ? RuntimeFunctionSize : 0))));
+
+        IStackWalk stackWalk = target.Contracts.StackWalk;
+        ThreadData threadData = target.Contracts.Thread.GetThreadData(new TargetPointer(thread!.Address));
+        IStackDataFrameHandle[] walked = stackWalk.CreateStackWalk(threadData).Take(16).ToArray();
+        IStackDataFrameHandle[] frameless = walked.Where(f => f.State == StackWalkState.Frameless).ToArray();
+        Assert.Equal([InterpIp, FuncletIp, ParentIp], frameless.Select(f => stackWalk.GetInstructionPointer(f).Value));
+
+        // An interpreter frame has no unwind info, and a Frame is not a frameless frame.
+        Assert.Throws<InvalidOperationException>(() => stackWalk.GetWasmFunctionIdentity(frameless[0]));
+        IStackDataFrameHandle frameHandle = walked.First(f => f.State != StackWalkState.Frameless);
+        managedIps[2] = stackWalk.GetInstructionPointer(frameHandle).Value;
+        Assert.Throws<InvalidOperationException>(() => stackWalk.GetWasmFunctionIdentity(frameHandle));
+
+        WasmFunctionIdentity funclet = stackWalk.GetWasmFunctionIdentity(frameless[1]);
+        WasmFunctionIdentity parent = stackWalk.GetWasmFunctionIdentity(frameless[2]);
+
+        Assert.Equal(ParentIndex + 1, funclet.FunctionTableIndex);
+        Assert.Equal(1u, funclet.RuntimeFunctionIndex);
+        Assert.True(funclet.IsFunclet);
+        Assert.Equal(ParentIndex, parent.FunctionTableIndex);
+        Assert.Equal(0u, parent.RuntimeFunctionIndex);
+        Assert.False(parent.IsFunclet);
+        Assert.NotEqual(TargetPointer.Null, funclet.Module);
+        Assert.Equal(funclet.Module, parent.Module);
+    }
+
     private sealed class InterpreterExecutionManager : IExecutionManager
     {
         private readonly ulong[] _interpreterIps;
         private readonly ulong[]? _managedIps;
         private readonly Func<(TargetPointer RuntimeFunction, TargetPointer BaseAddress)>? _unwindInfo;
+        private readonly Func<ulong, TargetPointer>? _runtimeFunctionForIp;
 
         public InterpreterExecutionManager(
             ulong[] interpreterIps,
             ulong[]? managedIps,
-            Func<(TargetPointer RuntimeFunction, TargetPointer BaseAddress)>? unwindInfo)
+            Func<(TargetPointer RuntimeFunction, TargetPointer BaseAddress)>? unwindInfo,
+            Func<ulong, TargetPointer>? runtimeFunctionForIp = null)
         {
             _interpreterIps = interpreterIps;
             _managedIps = managedIps;
             _unwindInfo = unwindInfo;
+            _runtimeFunctionForIp = runtimeFunctionForIp;
         }
 
         public CodeBlockHandle? GetCodeBlockHandle(TargetCodePointer ip)
@@ -1575,6 +1691,13 @@ public unsafe class StackWalkTests
             out TargetPointer runtimeFunction,
             out TargetPointer unwindInfoBaseAddress)
         {
+            if ((_managedIps?.Contains(controlPC.Value) ?? false) && _runtimeFunctionForIp is not null)
+            {
+                runtimeFunction = _runtimeFunctionForIp(controlPC.Value);
+                unwindInfoBaseAddress = TargetPointer.Null;
+                return runtimeFunction != TargetPointer.Null;
+            }
+
             if ((_managedIps?.Contains(controlPC.Value) ?? false) && _unwindInfo is not null)
             {
                 (runtimeFunction, unwindInfoBaseAddress) = _unwindInfo();
@@ -1590,8 +1713,9 @@ public unsafe class StackWalkTests
     private static IExecutionManager CreateInterpreterExecutionManager(
         ulong[] interpreterIps,
         ulong[]? managedIps = null,
-        Func<(TargetPointer RuntimeFunction, TargetPointer BaseAddress)>? unwindInfo = null)
-        => new InterpreterExecutionManager(interpreterIps, managedIps, unwindInfo);
+        Func<(TargetPointer RuntimeFunction, TargetPointer BaseAddress)>? unwindInfo = null,
+        Func<ulong, TargetPointer>? runtimeFunctionForIp = null)
+        => new InterpreterExecutionManager(interpreterIps, managedIps, unwindInfo, runtimeFunctionForIp);
 
     // WASM TransitionBlock: m_ReturnAddress, then m_StackPointer. Matches the browser-wasm data
     // descriptor, where ArgumentRegisters and FirstGCRefMapSlot are sizeof(TransitionBlock).

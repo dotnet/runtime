@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers.Wasm;
+using Microsoft.Diagnostics.DataContractReader.ExecutionManagerHelpers;
 using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 using Xunit;
 
@@ -14,6 +15,7 @@ public class WasmR2RInfoTests
 {
     // WASM is a 32-bit little-endian target.
     private static readonly MockTarget.Architecture WasmArch = new() { IsLittleEndian = true, Is64Bit = false };
+    private const uint RuntimeFunctionSize = 8;
 
     private const uint MinFunctionTableIndex = 5;
     private const uint FunctionTableIndex = 5; // localIndex 0
@@ -198,6 +200,128 @@ public class WasmR2RInfoTests
 
         Assert.False(info.TryGetVirtualIPBase(TableFrameIdentity(FunctionTableIndex), out _));
         Assert.False(info.TryGetUnwindData(new TargetCodePointer(MinVirtualIP + FunctionBeginAddress), out _));
+    }
+
+    /// <summary>
+    /// A RUNTIME_FUNCTION address maps to the image that contains it. Function-table indices are
+    /// runtime-global but RUNTIME_FUNCTION indices are image-relative, so two registered images with
+    /// distinct index ranges must each resolve to their own module, local index and global index.
+    /// </summary>
+    [Theory]
+    [InlineData(0, 0u, 10u, false)]
+    [InlineData(0, 2u, 12u, true)]
+    [InlineData(1, 0u, 20u, false)]
+    [InlineData(1, 1u, 21u, true)]
+    public void TryGetFunctionIdentity_ResolvesOwningImageAndIndices(
+        int image, uint localIndex, uint expectedFunctionTableIndex, bool expectedFunclet)
+    {
+        (TestPlaceholderTarget target, ulong[] modules, ulong[] runtimeFunctions) = CreateTwoImageTarget(
+            (10, [0x100, 0x200, 0x8000_0240]),
+            (20, [0x100, 0x8000_0180]));
+        WasmFunctionTableIndexLookup lookup = new(target);
+
+        Assert.True(lookup.TryGetFunctionIdentity(
+            new TargetPointer(runtimeFunctions[image] + localIndex * RuntimeFunctionSize),
+            out TargetPointer module,
+            out uint runtimeFunctionIndex,
+            out uint functionTableIndex,
+            out bool isFunclet));
+        Assert.Equal(modules[image], module.Value);
+        Assert.Equal(localIndex, runtimeFunctionIndex);
+        Assert.Equal(expectedFunctionTableIndex, functionTableIndex);
+        Assert.Equal(expectedFunclet, isFunclet);
+    }
+
+    [Theory]
+    [InlineData(0, 3u, 0u)] // one past the end of the first image
+    [InlineData(0, 1u, 4u)] // inside an entry rather than at its start
+    [InlineData(1, 2u, 0u)] // one past the end of the second image
+    public void TryGetFunctionIdentity_AddressOutsideEveryImageEntry_ReturnsFalse(int image, uint localIndex, uint extraBytes)
+    {
+        (TestPlaceholderTarget target, _, ulong[] runtimeFunctions) = CreateTwoImageTarget(
+            (10, [0x100, 0x200, 0x8000_0240]),
+            (20, [0x100, 0x8000_0180]));
+        WasmFunctionTableIndexLookup lookup = new(target);
+
+        Assert.False(lookup.TryGetFunctionIdentity(
+            new TargetPointer(runtimeFunctions[image] + localIndex * RuntimeFunctionSize + extraBytes),
+            out TargetPointer module,
+            out _,
+            out _,
+            out _));
+        Assert.Equal(TargetPointer.Null, module);
+    }
+
+    private static (TestPlaceholderTarget Target, ulong[] Modules, ulong[] RuntimeFunctions) CreateTwoImageTarget(
+        params (uint MinFunctionTableIndex, uint[] BeginAddresses)[] images)
+    {
+        TargetTestHelpers helpers = new(WasmArch);
+        var targetBuilder = new TestPlaceholderTarget.Builder(WasmArch);
+        var allocator = targetBuilder.MemoryBuilder.CreateAllocator(0x0010_0000, 0x0080_0000);
+
+        int hashMapStride = MockHashMap.CreateLayout(WasmArch).Size;
+        var moduleLayout = MockLoaderModule.CreateLayout(WasmArch);
+        var r2rInfoLayout = MockReadyToRunInfo.CreateLayout(WasmArch, hashMapStride, isWasm: true);
+        var runtimeFunctionLayout = helpers.LayoutFields([
+            new("BeginAddress", DataType.uint32),
+            new("UnwindData", DataType.uint32),
+        ]);
+        var rangeSectionLayout = helpers.LayoutFields([
+            new("MinFunctionTableIndex", DataType.uint32),
+            new("NumRuntimeFunctions", DataType.uint32),
+            new("R2RModule", DataType.pointer),
+            new("Next", DataType.pointer),
+        ]);
+
+        ulong[] modules = new ulong[images.Length];
+        ulong[] runtimeFunctionTables = new ulong[images.Length];
+        ulong next = 0;
+        // Build in reverse so the list head is the first image.
+        for (int i = images.Length - 1; i >= 0; i--)
+        {
+            uint[] begins = images[i].BeginAddresses;
+            var runtimeFunctions = allocator.Allocate(runtimeFunctionLayout.Stride * (ulong)begins.Length, "RuntimeFunctions");
+            for (int f = 0; f < begins.Length; f++)
+            {
+                helpers.Write(
+                    runtimeFunctions.Data.AsSpan((int)(f * runtimeFunctionLayout.Stride) + runtimeFunctionLayout.Fields["BeginAddress"].Offset, sizeof(uint)),
+                    begins[f]);
+            }
+
+            runtimeFunctionTables[i] = runtimeFunctions.Address;
+            MockReadyToRunInfo r2rInfo = r2rInfoLayout.Create(allocator.Allocate((ulong)r2rInfoLayout.Size, "ReadyToRunInfo"));
+            r2rInfo.CompositeInfo = r2rInfo.Address;
+            r2rInfo.NumRuntimeFunctions = (uint)begins.Length;
+            r2rInfo.RuntimeFunctions = runtimeFunctions.Address;
+            r2rInfo.MinVirtualIP = MinVirtualIP;
+
+            MockLoaderModule module = moduleLayout.Create(allocator.Allocate((ulong)moduleLayout.Size, "Module"));
+            module.ReadyToRunInfo = r2rInfo.Address;
+            modules[i] = module.Address;
+
+            var section = allocator.Allocate(rangeSectionLayout.Stride, "FunctionTableIndexRangeSection");
+            var fields = rangeSectionLayout.Fields;
+            helpers.Write(section.Data.AsSpan(fields["MinFunctionTableIndex"].Offset, sizeof(uint)), images[i].MinFunctionTableIndex);
+            helpers.Write(section.Data.AsSpan(fields["NumRuntimeFunctions"].Offset, sizeof(uint)), (uint)begins.Length);
+            helpers.WritePointer(section.Data.AsSpan(fields["R2RModule"].Offset, helpers.PointerSize), module.Address);
+            helpers.WritePointer(section.Data.AsSpan(fields["Next"].Offset, helpers.PointerSize), next);
+            next = section.Address;
+        }
+
+        var slot = allocator.Allocate((uint)helpers.PointerSize, "FunctionTableIndexRangeListSlot");
+        helpers.WritePointer(slot.Data.AsSpan(0, helpers.PointerSize), next);
+
+        TestPlaceholderTarget target = targetBuilder
+            .AddTypes(new Dictionary<DataType, Target.TypeInfo>
+            {
+                [DataType.RuntimeFunction] = new() { Fields = runtimeFunctionLayout.Fields, Size = runtimeFunctionLayout.Stride },
+                [DataType.ReadyToRunInfo] = TargetTestHelpers.CreateTypeInfo(r2rInfoLayout),
+                [DataType.Module] = TargetTestHelpers.CreateTypeInfo(moduleLayout),
+                [DataType.FunctionTableIndexRangeSection] = new() { Fields = rangeSectionLayout.Fields, Size = rangeSectionLayout.Stride },
+            })
+            .AddGlobals(("FunctionTableIndexRangeList", slot.Address))
+            .Build();
+        return (target, modules, runtimeFunctionTables);
     }
 
     // Source: linked merged WASI corerun-composite.wasm (MD5 a978074b91cd722574b308f52c9ca994).
