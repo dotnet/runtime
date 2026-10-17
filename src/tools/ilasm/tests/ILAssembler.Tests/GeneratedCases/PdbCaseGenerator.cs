@@ -399,19 +399,19 @@ namespace ILAssembler.Tests.GeneratedCases
         }
 
         /// <summary>
-        /// Computes the expected documents and points, by these rules: each input file is defined
-        /// as a document when its parsing begins, and the <c>.language</c> state carries over from one input file to
-        /// the next. Each input file and each inclusion is a source with its own state. A directive with a non-empty
+        /// Computes the expected documents and points, by these rules: each input file is defined as a document
+        /// when its parsing begins, and the <c>.language</c> state carries over from one input file to the next.
+        /// Each input file and each inclusion is a source with its own state. A directive with a non-empty
         /// file name defines that file (once, with the language current then) and makes it the source's current
-        /// document; every directive becomes the source's directive in effect, wherever it is (method body, class
-        /// level, a method without a body, after the last instruction). Each instruction, when emitted, has a span:
-        /// the span of its source's directive in effect, or, with none, its own line of its source, columns 1 to 2;
-        /// and a document: its source's current document, which is the source itself until a directive in it names
-        /// another file. The instruction gets a point when its span and document differ from those of the last point
-        /// recorded, in any method or input file, or a directive has been applied since. An included file becomes a
-        /// document when a point first needs it, with the language current then. A reader resolves a
-        /// point's document from the blob, where a hidden point has no document-record and so is in the current
-        /// document of the encoding.
+        /// document; every directive becomes the source's directive in effect, wherever it is (method body,
+        /// class level, a method without a body, after the last instruction). Each instruction, when emitted,
+        /// has a span: the span of its source's directive in effect, or, with none, its own line of its source,
+        /// columns 1 to 2; and a document: its source's current document, which is the source itself until
+        /// a directive in it names another file. The instruction gets a point when its span and document differ
+        /// from those of the last point recorded, in any method or input file, or a directive has been applied
+        /// since. An included file becomes a document when a point first needs it, with the language current then.
+        /// A reader resolves a point's document from the blob, where a hidden point has no document-record and so is
+        /// in the current document of the encoding.
         /// </summary>
         private (ImmutableArray<(string Name, Guid Language)> Documents, ImmutableArray<ImmutableArray<ExpectedSequencePoint>> Points) Expect()
         {

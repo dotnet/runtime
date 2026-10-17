@@ -10,10 +10,10 @@ using Xunit;
 namespace ILAssembler.Tests
 {
     /// <summary>
-    /// The sequence points of method bodies, read back from the Portable PDB: each instruction is mapped when it is
-    /// emitted, to its own line of the <c>.il</c> source (columns 1 to 2) when no <c>.line</c> directive is in effect,
-    /// and to the coordinates of the directive in effect otherwise; consecutive instructions
-    /// with the same coordinates share a point.
+    /// The sequence points of method bodies, read back from the Portable PDB: each instruction is mapped when
+    /// it is emitted, to its own line of the <c>.il</c> source (columns 1 to 2) when no <c>.line</c> directive
+    /// is in effect, and to the coordinates of the directive in effect otherwise; consecutive instructions with
+    /// the same coordinates share a point.
     /// </summary>
     public class SequencePointTests
     {

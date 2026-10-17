@@ -229,10 +229,10 @@ public sealed class CommandLineSequencePointTests : IDisposable
 
     // An #include'd file's instructions have points on their lines of that file, in a document named by its full path,
     // and the including file's later instructions are back in the input's document. The command line tries an #include
-    // path as given, which is relative to the current directory, then relative to the directory of
-    // the first input file, then relative to -INCLUDE. The #include here gives a path relative to the current directory
-    // (read, never set: it is process-wide), which the first step resolves; no file is at that path relative to the
-    // input's directory, so the test does not depend on the later steps.
+    // path as given, which is relative to the current directory, then relative to the directory of the first input
+    // file, then relative to -INCLUDE. The #include here gives a path relative to the current directory (read,
+    // never set: it is process-wide), which the first step resolves; no file is at that path relative to the input's
+    // directory, so the test does not depend on the later steps.
     [Fact]
     public void IncludedInstructions_FromAPathRelativeToTheCurrentDirectory_AreInADocumentNamedByTheIncludedFilesFullPath()
     {

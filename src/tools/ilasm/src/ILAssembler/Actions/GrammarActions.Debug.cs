@@ -131,11 +131,11 @@ internal sealed partial class GrammarActions
     /// <param name="value">The directive.</param>
     /// <param name="directiveToken">The directive's <c>.line</c> or <c>#line</c> token, which identifies its source.</param>
     /// <remarks>
-    /// The directive stays in effect until the next directive or the end of its source (the input
-    /// file, or one inclusion of an <c>#include</c>d file), wherever it is and across methods, and the next
-    /// instruction always gets a point. An empty file name (<c>''</c> or <c>""</c>), which ildasm writes for "the
-    /// same file", and a missing one keep the source's current document: the source itself until a directive in it
-    /// names another file. A start line of <c>0xFEEFEE</c> makes the points hidden.
+    /// The directive stays in effect until the next directive or the end of its source (the input file, or one
+    /// inclusion of an <c>#include</c>d file), wherever it is and across methods, and the next instruction always
+    /// gets a point. An empty file name (<c>''</c> or <c>""</c>), which ildasm writes for "the same file", and
+    /// a missing one keep the source's current document: the source itself until a directive in it names another
+    /// file. A start line of <c>0xFEEFEE</c> makes the points hidden.
     /// </remarks>
     private void ApplySourceDirective(SourceDirectiveValue value, IToken directiveToken)
     {
@@ -165,17 +165,17 @@ internal sealed partial class GrammarActions
     /// <param name="opcodeToken">The instruction's opcode token, which identifies its source and its line.</param>
     /// <remarks>
     /// <para>
-    /// With no <c>.line</c> or <c>#line</c> directive in effect in the instruction's source, the point is on the
-    /// instruction's own line of that source (the input <c>.il</c> file or the <c>#include</c>d file), columns 1 to
-    /// 2; otherwise it has the coordinates of the directive in effect, in the source's
+    /// With no <c>.line</c> or <c>#line</c> directive in effect in the instruction's source, the point
+    /// is on the instruction's own line of that source (the input <c>.il</c> file or the <c>#include</c>d
+    /// file), columns 1 to 2; otherwise it has the coordinates of the directive in effect, in the source's
     /// current document (<see cref="ApplySourceDirective"/>).
     /// </para>
     /// <para>
-    /// The instruction gets a point only when its span differs from the last point's, in any
-    /// method, or a directive has been applied since. So a later method without a <c>.line</c> of its own gets no
-    /// point while an earlier directive's span is still current, which is the shape ildasm writes for a method that
-    /// had no sequence points, when it writes <c>.line</c> directives at all. The span includes the document, so
-    /// an instruction in another document gets a point even on the lines and columns of the last point.
+    /// The instruction gets a point only when its span differs from the last point's, in any method, or a directive
+    /// has been applied since. So a later method without a <c>.line</c> of its own gets no point while an earlier
+    /// directive's span is still current, which is the shape ildasm writes for a method that had no sequence
+    /// points, when it writes <c>.line</c> directives at all. The span includes the document, so an instruction in
+    /// another document gets a point even on the lines and columns of the last point.
     /// </para>
     /// </remarks>
     private void RecordSequencePoint(CurrentMethodContext method, IToken opcodeToken)
