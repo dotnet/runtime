@@ -15,7 +15,7 @@ namespace Microsoft.Interop
 
         public UnmanagedToManagedStubGenerator(
             ImmutableArray<TypePositionInfo> argTypes,
-            GeneratorDiagnosticsBag diagnosticsBag,
+            IGeneratorDiagnosticsBag diagnosticsBag,
             IMarshallingGeneratorResolver generatorResolver)
         {
             _marshallers = BoundGenerators.Create(argTypes, generatorResolver, StubCodeContext.DefaultNativeToManagedStub, new Forwarder(), out var bindingDiagnostics);

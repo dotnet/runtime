@@ -1,8 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.CodeAnalysis;
-
 namespace Microsoft.Interop
 {
     /// <summary>
@@ -28,60 +26,22 @@ namespace Microsoft.Interop
             DiagnosticFormattedName = original.DiagnosticFormattedName;
         }
 
-        public static ManagedTypeInfo CreateTypeInfoForTypeSymbol(ITypeSymbol type)
-        {
-            string typeName = type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-            string diagnosticFormattedName = type.ToDisplayString();
-            if (type.SpecialType != SpecialType.None)
-            {
-                return new SpecialTypeInfo(typeName, diagnosticFormattedName, type.SpecialType);
-            }
-            if (type.TypeKind == TypeKind.Enum)
-            {
-                return new EnumTypeInfo(typeName, diagnosticFormattedName, ((INamedTypeSymbol)type).EnumUnderlyingType!.SpecialType);
-            }
-            if (type.TypeKind == TypeKind.Pointer)
-            {
-                return new PointerTypeInfo(typeName, diagnosticFormattedName, IsFunctionPointer: false);
-            }
-            if (type.TypeKind == TypeKind.FunctionPointer)
-            {
-                return new PointerTypeInfo(typeName, diagnosticFormattedName, IsFunctionPointer: true);
-            }
-            if (type.TypeKind == TypeKind.Array && type is IArrayTypeSymbol { IsSZArray: true } arraySymbol)
-            {
-                return new SzArrayType(CreateTypeInfoForTypeSymbol(arraySymbol.ElementType));
-            }
-            if (type.TypeKind == TypeKind.Delegate)
-            {
-                return new DelegateTypeInfo(typeName, diagnosticFormattedName, type is INamedTypeSymbol { IsGenericType: true });
-            }
-            if (type.TypeKind == TypeKind.TypeParameter)
-            {
-                return new TypeParameterTypeInfo(typeName, diagnosticFormattedName);
-            }
-            if (type.IsValueType)
-            {
-                return new ValueTypeInfo(typeName, diagnosticFormattedName, type.IsRefLikeType);
-            }
-            return new ReferenceTypeInfo(typeName, diagnosticFormattedName);
-        }
     }
 
-    public sealed record SpecialTypeInfo(string FullTypeName, string DiagnosticFormattedName, SpecialType SpecialType) : ManagedTypeInfo(FullTypeName, DiagnosticFormattedName)
+    public sealed record WellKnownTypeInfo(string FullTypeName, string DiagnosticFormattedName, WellKnownType SpecialType) : ManagedTypeInfo(FullTypeName, DiagnosticFormattedName)
     {
-        public static readonly SpecialTypeInfo Byte = new("byte", "byte", SpecialType.System_Byte);
-        public static readonly SpecialTypeInfo SByte = new("sbyte", "sbyte", SpecialType.System_SByte);
-        public static readonly SpecialTypeInfo Int16 = new("short", "short", SpecialType.System_Int16);
-        public static readonly SpecialTypeInfo UInt16 = new("ushort", "ushort", SpecialType.System_UInt16);
-        public static readonly SpecialTypeInfo Int32 = new("int", "int", SpecialType.System_Int32);
-        public static readonly SpecialTypeInfo UInt32 = new("uint", "uint", SpecialType.System_UInt32);
-        public static readonly SpecialTypeInfo Void = new("void", "void", SpecialType.System_Void);
-        public static readonly SpecialTypeInfo String = new("string", "string", SpecialType.System_String);
-        public static readonly SpecialTypeInfo Boolean = new("bool", "bool", SpecialType.System_Boolean);
-        public static readonly SpecialTypeInfo IntPtr = new("nint", "nint", SpecialType.System_IntPtr);
+        public static readonly WellKnownTypeInfo Byte = new("byte", "byte", WellKnownType.System_Byte);
+        public static readonly WellKnownTypeInfo SByte = new("sbyte", "sbyte", WellKnownType.System_SByte);
+        public static readonly WellKnownTypeInfo Int16 = new("short", "short", WellKnownType.System_Int16);
+        public static readonly WellKnownTypeInfo UInt16 = new("ushort", "ushort", WellKnownType.System_UInt16);
+        public static readonly WellKnownTypeInfo Int32 = new("int", "int", WellKnownType.System_Int32);
+        public static readonly WellKnownTypeInfo UInt32 = new("uint", "uint", WellKnownType.System_UInt32);
+        public static readonly WellKnownTypeInfo Void = new("void", "void", WellKnownType.System_Void);
+        public static readonly WellKnownTypeInfo String = new("string", "string", WellKnownType.System_String);
+        public static readonly WellKnownTypeInfo Boolean = new("bool", "bool", WellKnownType.System_Boolean);
+        public static readonly WellKnownTypeInfo IntPtr = new("nint", "nint", WellKnownType.System_IntPtr);
 
-        public bool Equals(SpecialTypeInfo? other)
+        public bool Equals(WellKnownTypeInfo? other)
         {
             return other is not null && SpecialType == other.SpecialType;
         }
@@ -92,7 +52,7 @@ namespace Microsoft.Interop
         }
     }
 
-    public sealed record EnumTypeInfo(string FullTypeName, string DiagnosticFormattedName, SpecialType UnderlyingType) : ManagedTypeInfo(FullTypeName, DiagnosticFormattedName);
+    public sealed record EnumTypeInfo(string FullTypeName, string DiagnosticFormattedName, WellKnownType UnderlyingType) : ManagedTypeInfo(FullTypeName, DiagnosticFormattedName);
 
     public sealed record PointerTypeInfo(string FullTypeName, string DiagnosticFormattedName, bool IsFunctionPointer) : ManagedTypeInfo(FullTypeName, DiagnosticFormattedName);
 

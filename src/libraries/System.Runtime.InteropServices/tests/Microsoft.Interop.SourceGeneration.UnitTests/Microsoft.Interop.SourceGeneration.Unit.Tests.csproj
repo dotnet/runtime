@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="SourceGenerationTests.cs" />
+    <ProjectReference Include="..\..\gen\Microsoft.Interop.SourceGeneration\Microsoft.Interop.SourceGeneration.csproj" />
+  </ItemGroup>
+
+</Project>

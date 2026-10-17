@@ -4,7 +4,6 @@
 using System;
 using System.Globalization;
 using System.Linq;
-using Microsoft.CodeAnalysis;
 
 namespace Microsoft.Interop
 {
@@ -353,7 +352,7 @@ namespace Microsoft.Interop
         private static bool ShouldCleanUpAllElements(TypePositionInfo info, StubCodeContext context)
         {
             // Nested collections and native-produced values own every element in their native spans.
-            return context.ElementIndirectionLevel != 0 || info.ByValueContentsMarshalKind == ByValueContentsMarshalKind.Out || info.RefKind == RefKind.Out || info.IsNativeReturnPosition;
+            return context.ElementIndirectionLevel != 0 || info.ByValueContentsMarshalKind == ByValueContentsMarshalKind.Out || info.RefKind == ByRefMarshalKind.Out || info.IsNativeReturnPosition;
         }
 
         public override void GenerateSetupStatement(IndentedTextWriter writer, StubIdentifierContext context)

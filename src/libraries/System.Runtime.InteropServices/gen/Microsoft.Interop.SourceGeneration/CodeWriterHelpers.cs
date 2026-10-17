@@ -3,7 +3,8 @@
 
 using System;
 using System.Collections.Immutable;
-using Microsoft.CodeAnalysis.CSharp;
+using System.Globalization;
+using System.Text;
 
 namespace Microsoft.Interop;
 
@@ -13,17 +14,86 @@ public static class CodeWriterHelpers
     /// <summary>Formats a quoted C# string literal.</summary>
     /// <param name="value">The value of the literal.</param>
     /// <returns>The escaped, quoted literal.</returns>
-    public static string StringLiteral(string value) => Microsoft.CodeAnalysis.CSharp.SymbolDisplay.FormatLiteral(value, quote: true);
-
-    /// <summary>Escapes identifiers that coincide with C# keywords.</summary>
-    /// <param name="identifier">The identifier to escape.</param>
-    /// <returns>The identifier as C# source text.</returns>
-    public static string EscapeIdentifier(string identifier)
+    public static string StringLiteral(string value)
     {
-        return SyntaxFacts.GetKeywordKind(identifier) != SyntaxKind.None
-            || SyntaxFacts.GetContextualKeywordKind(identifier) != SyntaxKind.None
-            ? "@" + identifier
-            : identifier;
+        if (value is null)
+        {
+            throw new ArgumentNullException(nameof(value));
+        }
+
+        int firstEscape = 0;
+        while (firstEscape < value.Length && value[firstEscape] is >= ' ' and <= '~' and not ('"' or '\\'))
+        {
+            firstEscape++;
+        }
+        if (firstEscape == value.Length)
+        {
+            return "\"" + value + "\"";
+        }
+
+        var builder = new StringBuilder(checked(value.Length + 2));
+        builder.Append('"');
+        builder.Append(value, 0, firstEscape);
+        for (int i = firstEscape; i < value.Length; i++)
+        {
+            string? escape = value[i] switch
+            {
+                '\0' => "\\0",
+                '\a' => "\\a",
+                '\b' => "\\b",
+                '\f' => "\\f",
+                '\n' => "\\n",
+                '\r' => "\\r",
+                '\t' => "\\t",
+                '\v' => "\\v",
+                '"' => "\\\"",
+                '\\' => "\\\\",
+                _ => null
+            };
+            if (escape is not null)
+            {
+                builder.Append(escape);
+                continue;
+            }
+
+            int characterLength = char.IsSurrogatePair(value, i) ? 2 : 1;
+            // Classify complete surrogate pairs; format and private-use characters remain literal.
+            if (CharUnicodeInfo.GetUnicodeCategory(value, i) is UnicodeCategory.Control
+                or UnicodeCategory.Surrogate
+                or UnicodeCategory.OtherNotAssigned
+                or UnicodeCategory.LineSeparator
+                or UnicodeCategory.ParagraphSeparator)
+            {
+                if (characterLength == 2)
+                {
+                    builder.Append("\\U");
+                    builder.Append(char.ConvertToUtf32(value, i).ToString("x8", CultureInfo.InvariantCulture));
+                }
+                else
+                {
+                    builder.Append("\\u");
+                    builder.Append(((int)value[i]).ToString("x4", CultureInfo.InvariantCulture));
+                }
+            }
+            else
+            {
+                builder.Append(value, i, characterLength);
+            }
+
+            i += characterLength - 1;
+        }
+
+        builder.Append('"');
+        return builder.ToString();
+    }
+
+    /// <summary>Escapes an identifier using the caller's keyword classification.</summary>
+    /// <param name="identifier">The identifier to escape.</param>
+    /// <param name="isKeyword"><see langword="true"/> to escape the identifier; otherwise, <see langword="false"/>.</param>
+    /// <returns>The identifier as C# source text.</returns>
+    public static string EscapeIdentifier(string identifier, bool isKeyword)
+    {
+        return isKeyword ? "@" + identifier : identifier;
     }
 
     /// <summary>Adds a modifier before any trailing ref and partial keywords.</summary>

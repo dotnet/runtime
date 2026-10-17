@@ -7,7 +7,7 @@ namespace Microsoft.Interop
     {
         public ManagedTypeInfo AsNativeType(TypePositionInfo info)
         {
-            return SpecialTypeInfo.IntPtr;
+            return WellKnownTypeInfo.IntPtr;
         }
 
         public SignatureBehavior GetNativeSignatureBehavior(TypePositionInfo info)
