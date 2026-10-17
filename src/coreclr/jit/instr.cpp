@@ -2172,6 +2172,13 @@ instruction CodeGenInterface::ins_Load(var_types srcType, bool aligned /*=false*
         return ins;
     }
 
+#if defined(TARGET_ARM64) && defined(FEATURE_SIMD)
+    if (srcType == TYP_SIMD)
+    {
+        return INS_sve_ldr;
+    }
+#endif
+
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
     if (varTypeUsesMaskReg(srcType))
     {
@@ -2379,6 +2386,15 @@ instruction CodeGen::ins_Copy(regNumber srcReg, var_types dstType)
 #endif
     }
 
+#if defined(TARGET_ARM64) && defined(FEATURE_SIMD)
+    if (dstType == TYP_SIMD)
+    {
+        // Can only copy vector to other vector.
+        assert(genIsValidFloatReg(srcReg));
+        return INS_sve_mov;
+    }
+#endif
+
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
     if (varTypeUsesMaskReg(dstType))
     {
@@ -2531,6 +2547,13 @@ instruction CodeGenInterface::ins_Store(var_types dstType, bool aligned /*=false
         assert(ins != INS_invalid);
         return ins;
     }
+
+#if defined(TARGET_ARM64) && defined(FEATURE_SIMD)
+    if (dstType == TYP_SIMD)
+    {
+        return INS_sve_str;
+    }
+#endif
 
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
     if (varTypeUsesMaskReg(dstType))

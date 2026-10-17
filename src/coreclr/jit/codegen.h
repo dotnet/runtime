@@ -1679,6 +1679,13 @@ public:
                                           ssize_t   imm,
                                           insFlags flags = INS_FLAGS_DONT_CARE DEBUGARG(size_t targetHandle = 0)
                                               DEBUGARG(GenTreeFlags gtFlags = GTF_EMPTY));
+#ifdef TARGET_ARM64
+    template <bool scaleByVl>
+    void instGen_Set_Reg_To_Base_Plus_Imm_MulVlOrPl(emitAttr size, regNumber dstReg, regNumber baseReg, ssize_t imm);
+
+    void instGen_Set_Reg_To_Base_Plus_Imm_MulVl(emitAttr size, regNumber dstReg, regNumber baseReg, ssize_t imm);
+    void instGen_Set_Reg_To_Base_Plus_Imm_MulPl(emitAttr size, regNumber dstReg, regNumber baseReg, ssize_t imm);
+#endif
 
     void instGen_Set_Reg_To_Imm(emitAttr  size,
                                 regNumber reg,
