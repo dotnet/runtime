@@ -333,7 +333,7 @@ namespace System.Reflection.Emit
             Justification = "MakeGenericType is only called on a TypeBuilder which is not subject to trimming")]
         public static MethodInfo GetMethod(Type type, MethodInfo method)
         {
-            if (type is not TypeBuilder && type is not TypeBuilderInstantiation)
+            if (type is not (TypeBuilder or TypeBuilderInstantiation or SignatureType))
             {
                 throw new ArgumentException(SR.Argument_MustBeTypeBuilder, nameof(type));
             }
@@ -368,19 +368,14 @@ namespace System.Reflection.Emit
                 type = type.MakeGenericType(type.GetGenericArguments());
             }
 
-            if (type is not TypeBuilderInstantiation typeBuilderInstantiation)
-            {
-                throw new ArgumentException(SR.Argument_NeedNonGenericType, nameof(type));
-            }
-
-            return MethodOnTypeBuilderInstantiation.GetMethod(method, typeBuilderInstantiation);
+            return new MethodOnTypeBuilderInstantiation(method, type);
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2055:UnrecognizedReflectionPattern",
             Justification = "MakeGenericType is only called on a TypeBuilder which is not subject to trimming")]
         public static ConstructorInfo GetConstructor(Type type, ConstructorInfo constructor)
         {
-            if (type is not TypeBuilder && type is not TypeBuilderInstantiation)
+            if (type is not (TypeBuilder or TypeBuilderInstantiation or SignatureType))
             {
                 throw new ArgumentException(SR.Argument_MustBeTypeBuilder, nameof(type));
             }
@@ -401,19 +396,14 @@ namespace System.Reflection.Emit
                 type = type.MakeGenericType(type.GetGenericArguments());
             }
 
-            if (type is not TypeBuilderInstantiation typeBuilderInstantiation)
-            {
-                throw new ArgumentException(SR.Argument_NeedNonGenericType, nameof(type));
-            }
-
-            return ConstructorOnTypeBuilderInstantiation.GetConstructor(constructor, typeBuilderInstantiation);
+            return new ConstructorOnTypeBuilderInstantiation(constructor, type);
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2055:UnrecognizedReflectionPattern",
             Justification = "MakeGenericType is only called on a TypeBuilder which is not subject to trimming")]
         public static FieldInfo GetField(Type type, FieldInfo field)
         {
-            if (type is not TypeBuilder and not TypeBuilderInstantiation)
+            if (type is not (TypeBuilder or TypeBuilderInstantiation or SignatureType))
             {
                 throw new ArgumentException(SR.Argument_MustBeTypeBuilder, nameof(type));
             }
@@ -434,12 +424,7 @@ namespace System.Reflection.Emit
                 type = type.MakeGenericType(type.GetGenericArguments());
             }
 
-            if (type is not TypeBuilderInstantiation typeBuilderInstantiation)
-            {
-                throw new ArgumentException(SR.Argument_NeedNonGenericType, nameof(type));
-            }
-
-            return FieldOnTypeBuilderInstantiation.GetField(field, typeBuilderInstantiation);
+            return new FieldOnTypeBuilderInstantiation(field, type);
         }
         #endregion
     }
