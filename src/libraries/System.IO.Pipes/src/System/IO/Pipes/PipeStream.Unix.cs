@@ -7,7 +7,6 @@ using System.IO;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
-using System.Security;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
@@ -151,7 +150,7 @@ namespace System.IO.Pipes
                 return Task.CompletedTask;
             }
 
-            return WriteAsyncCore(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken);
+            return WriteAsyncCore(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken).AsTask();
         }
 
         public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default(CancellationToken))
@@ -173,7 +172,7 @@ namespace System.IO.Pipes
                 return default;
             }
 
-            return new ValueTask(WriteAsyncCore(buffer, cancellationToken));
+            return WriteAsyncCore(buffer, cancellationToken);
         }
 
         public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
@@ -232,7 +231,7 @@ namespace System.IO.Pipes
         internal void ValidateHandleIsPipe(SafePipeHandle safePipeHandle)
         {
             Interop.Sys.FileStatus status;
-            int result = CheckPipeCall(Interop.Sys.FStat(safePipeHandle, out status));
+            int result = Interop.CheckIo(Interop.Sys.FStat(safePipeHandle, out status));
             if (result == 0)
             {
                 if ((status.Mode & Interop.Sys.FileTypes.S_IFMT) != Interop.Sys.FileTypes.S_IFIFO &&
@@ -263,18 +262,7 @@ namespace System.IO.Pipes
                 return 0;
             }
 
-            // For a blocking socket, we could simply use the same Read syscall as is done
-            // for reading an anonymous pipe.  However, for a non-blocking socket, Read could
-            // end up returning EWOULDBLOCK rather than blocking waiting for data.  Such a case
-            // is already handled by Socket.Receive, so we use it here.
-            try
-            {
-                return _handle!.PipeSocket.Receive(buffer, SocketFlags.None);
-            }
-            catch (SocketException e)
-            {
-                throw GetIOExceptionForSocketException(e);
-            }
+            return _handle.Read(buffer, this);
         }
 
         private void WriteCore(ReadOnlySpan<byte> buffer)
@@ -282,60 +270,19 @@ namespace System.IO.Pipes
             Debug.Assert(_handle != null);
             DebugAssertHandleValid(_handle);
 
-            // For a blocking socket, we could simply use the same Write syscall as is done
-            // for writing to anonymous pipe.  However, for a non-blocking socket, Write could
-            // end up returning EWOULDBLOCK rather than blocking waiting for space available.
-            // Such a case is already handled by Socket.Send, so we use it here.
-            try
-            {
-                while (buffer.Length > 0)
-                {
-                    int bytesWritten = _handle!.PipeSocket.Send(buffer, SocketFlags.None);
-                    buffer = buffer.Slice(bytesWritten);
-                }
-            }
-            catch (SocketException e)
-            {
-                throw GetIOExceptionForSocketException(e);
-            }
+            _handle.Write(buffer, this);
         }
 
-        private async ValueTask<int> ReadAsyncCore(Memory<byte> destination, CancellationToken cancellationToken)
+        private ValueTask<int> ReadAsyncCore(Memory<byte> destination, CancellationToken cancellationToken)
         {
-            try
-            {
-                return await InternalHandle!.PipeSocket.ReceiveAsync(destination, SocketFlags.None, cancellationToken).ConfigureAwait(false);
-            }
-            catch (SocketException e)
-            {
-                throw GetIOExceptionForSocketException(e);
-            }
+            Debug.Assert(_handle != null);
+            return _handle.ReadAsync(destination, cancellationToken, this);
         }
 
-        private async Task WriteAsyncCore(ReadOnlyMemory<byte> source, CancellationToken cancellationToken)
+        private ValueTask WriteAsyncCore(ReadOnlyMemory<byte> source, CancellationToken cancellationToken)
         {
-            try
-            {
-                while (source.Length > 0)
-                {
-                    int bytesWritten = await _handle!.PipeSocket.SendAsync(source, SocketFlags.None, cancellationToken).ConfigureAwait(false);
-                    Debug.Assert(bytesWritten > 0 && bytesWritten <= source.Length);
-                    source = source.Slice(bytesWritten);
-                }
-            }
-            catch (SocketException e)
-            {
-                throw GetIOExceptionForSocketException(e);
-            }
-        }
-
-        private IOException GetIOExceptionForSocketException(SocketException e)
-        {
-            if (e.SocketErrorCode == SocketError.Shutdown) // EPIPE
-            {
-                State = PipeState.Broken;
-            }
-            return new IOException(e.Message, e);
+            Debug.Assert(_handle != null);
+            return _handle.WriteAsync(source, cancellationToken, this);
         }
 
         // Blocks until the other end of the pipe has read in all written buffer.
@@ -456,21 +403,6 @@ namespace System.IO.Pipes
             writer.SetHandle(new IntPtr(fds[Interop.Sys.WriteEndOfPipe]));
         }
 
-        private int CheckPipeCall(int result)
-        {
-            if (result == -1)
-            {
-                Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
-
-                if (errorInfo.Error == Interop.Error.EPIPE)
-                    State = PipeState.Broken;
-
-                throw Interop.GetExceptionForIoErrno(errorInfo);
-            }
-
-            return result;
-        }
-
         private int GetPipeBufferSize()
         {
             if (!Interop.Sys.Fcntl.CanGetSetPipeSz)
@@ -481,12 +413,12 @@ namespace System.IO.Pipes
             // If we have a handle, get the capacity of the pipe (there's no distinction between in/out direction).
             // If we don't, just return the buffer size that was passed to the constructor.
             return _handle != null ?
-                CheckPipeCall(Interop.Sys.Fcntl.GetPipeSz(_handle)) :
+                Interop.CheckIo(Interop.Sys.Fcntl.GetPipeSz(_handle)) :
                 (int)_outBufferSize;
         }
 
         internal static void ConfigureSocket(
-            Socket s, SafePipeHandle _,
+            Socket s,
             PipeDirection direction, int inBufferSize, int outBufferSize, HandleInheritability inheritability)
         {
             if (inBufferSize > 0)
