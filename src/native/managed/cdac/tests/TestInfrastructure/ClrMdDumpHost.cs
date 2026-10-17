@@ -5,7 +5,9 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection.PortableExecutable;
+using System.Runtime.InteropServices;
 using Microsoft.Diagnostics.Runtime;
+using Microsoft.Diagnostics.Runtime.DataReaders.Implementation;
 
 namespace Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 
@@ -190,6 +192,27 @@ public sealed class ClrMdDumpHost : IDisposable
 
     public void Dispose()
     {
-        _dataTarget.Dispose();
+        // For a Windows minidump, ClrMD reads the thread list on a background task that starts when the dump is
+        // loaded, and the ClrMD version used here does not wait for that task in DataTarget.Dispose. Disposing can
+        // then close the dump file while the read is still running, which can trip a FileStream assert and fail
+        // the test host fast on a Debug CoreLib (https://github.com/dotnet/runtime/issues/135559). Asking for the
+        // thread list waits for the read. ELF and Mach-O dumps have no such task, so they are left alone. Remove
+        // this once the ClrMD version used here includes https://github.com/microsoft/clrmd/pull/1514.
+        try
+        {
+            if (_dataTarget.DataReader.TargetPlatform == OSPlatform.Windows && _dataTarget.DataReader is IThreadReader threadReader)
+            {
+                foreach (uint _ in threadReader.EnumerateOSThreadIds())
+                    break;
+            }
+        }
+        catch (AggregateException)
+        {
+            // The thread read failed. Tests that need thread data report that; Dispose does not.
+        }
+        finally
+        {
+            _dataTarget.Dispose();
+        }
     }
 }
