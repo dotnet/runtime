@@ -253,13 +253,11 @@ FCFuncStart(gMathFFuncs)
 FCFuncEnd()
 
 FCFuncStart(gThreadFuncs)
+#ifdef FEATURE_MULTITHREADING
     FCFuncElement("InternalFinalize", ThreadNative::Finalize)
     FCFuncElement("CatchAtSafePoint", ThreadNative::CatchAtSafePoint)
     FCFuncElement("CurrentThreadIsFinalizerThread", ThreadNative::CurrentThreadIsFinalizerThread)
-    FCFuncElement("get_OptimalMaxSpinWaitsPerSpinIteration", ThreadNative::GetOptimalMaxSpinWaitsPerSpinIteration)
-#ifdef TARGET_WASM
-    FCFuncElement("GetThreadStaticsBaseNative", ThreadNative::GetThreadStaticsBaseNative)
-#endif
+#endif // FEATURE_MULTITHREADING
 FCFuncEnd()
 
 FCFuncStart(gObjectHeaderFuncs)

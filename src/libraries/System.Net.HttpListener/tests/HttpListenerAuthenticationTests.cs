@@ -267,10 +267,13 @@ namespace System.Net.Tests
             }
 
             NtlmHandshakeResult baselineResult = await TryCompleteNtlmOverSingleConnection(secondLegStrict: false);
-            Assert.Equal(NtlmHandshakeResult.Authenticated, baselineResult);
+            Assert.True(baselineResult.IsAuthenticated, $"Baseline NTLM authentication failed: {baselineResult}");
 
             NtlmHandshakeResult strictSecondLegResult = await TryCompleteNtlmOverSingleConnection(secondLegStrict: true);
-            Assert.Equal(NtlmHandshakeResult.Unauthorized, strictSecondLegResult);
+            Assert.False(strictSecondLegResult.IsAuthenticated, $"NTLM authentication unexpectedly succeeded: {strictSecondLegResult}");
+            Assert.True(
+                strictSecondLegResult.StatusCode == HttpStatusCode.Unauthorized,
+                $"Expected the changed policy to reject authentication with Unauthorized: {strictSecondLegResult}");
         }
 
         [Fact]
@@ -561,7 +564,10 @@ namespace System.Net.Tests
             byte[]? type1 = clientContext.GetOutgoingBlob(ReadOnlySpan<byte>.Empty, out NegotiateAuthenticationStatusCode type1Status);
             if (type1 is null || type1Status != NegotiateAuthenticationStatusCode.ContinueNeeded)
             {
-                return NtlmHandshakeResult.UnexpectedFailure;
+                return new NtlmHandshakeResult(
+                    IsAuthenticated: false,
+                    StatusCode: null,
+                    Failure: $"Creating the NTLM type 1 token returned {type1Status} with a {(type1 is null ? "null" : "non-null")} token.");
             }
 
             Task<ResponseHeaders> firstResponseTask = Task.Run(() =>
@@ -573,31 +579,46 @@ namespace System.Net.Tests
                 HttpListenerContext unexpectedContext = await serverContextTask;
                 unexpectedContext.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
                 unexpectedContext.Response.Close();
-                return NtlmHandshakeResult.UnexpectedFailure;
+                return new NtlmHandshakeResult(
+                    IsAuthenticated: false,
+                    StatusCode: HttpStatusCode.InternalServerError,
+                    Failure: "HttpListener produced a context before the NTLM challenge was returned.");
             }
 
             ResponseHeaders firstResponse = await firstResponseTask;
             if (firstResponse.StatusCode != HttpStatusCode.Unauthorized)
             {
-                return NtlmHandshakeResult.UnexpectedFailure;
+                return new NtlmHandshakeResult(
+                    IsAuthenticated: false,
+                    StatusCode: firstResponse.StatusCode,
+                    Failure: "The NTLM type 1 request did not produce an Unauthorized challenge.");
             }
 
             string? challenge = GetNtlmChallenge(firstResponse.Headers);
             if (challenge is null)
             {
-                return NtlmHandshakeResult.UnexpectedFailure;
+                return new NtlmHandshakeResult(
+                    IsAuthenticated: false,
+                    StatusCode: firstResponse.StatusCode,
+                    Failure: "The Unauthorized response did not contain an NTLM challenge.");
             }
 
             byte[]? type2 = Convert.FromBase64String(challenge);
             byte[]? type3 = clientContext.GetOutgoingBlob(type2, out NegotiateAuthenticationStatusCode type3Status);
             if (type3 is null)
             {
-                return NtlmHandshakeResult.UnexpectedFailure;
+                return new NtlmHandshakeResult(
+                    IsAuthenticated: false,
+                    StatusCode: null,
+                    Failure: $"Creating the NTLM type 3 token returned {type3Status} with a null token.");
             }
 
             if (type3Status != NegotiateAuthenticationStatusCode.Completed)
             {
-                return NtlmHandshakeResult.UnexpectedFailure;
+                return new NtlmHandshakeResult(
+                    IsAuthenticated: false,
+                    StatusCode: null,
+                    Failure: $"Creating the NTLM type 3 token returned {type3Status}.");
             }
 
             Task<ResponseHeaders> secondResponseTask = Task.Run(() =>
@@ -611,15 +632,19 @@ namespace System.Net.Tests
                 context.Response.Close();
 
                 ResponseHeaders successfulResponse = await secondResponseTask;
-                return successfulResponse.StatusCode == HttpStatusCode.NoContent
-                    ? NtlmHandshakeResult.Authenticated
-                    : NtlmHandshakeResult.UnexpectedFailure;
+                return new NtlmHandshakeResult(
+                    IsAuthenticated: successfulResponse.StatusCode == HttpStatusCode.NoContent,
+                    StatusCode: successfulResponse.StatusCode,
+                    Failure: successfulResponse.StatusCode == HttpStatusCode.NoContent
+                        ? null
+                        : "HttpListener produced an authenticated context, but the response was not NoContent.");
             }
 
             ResponseHeaders failedResponse = await secondResponseTask;
-            return failedResponse.StatusCode == HttpStatusCode.Unauthorized
-                ? NtlmHandshakeResult.Unauthorized
-                : NtlmHandshakeResult.UnexpectedFailure;
+            return new NtlmHandshakeResult(
+                IsAuthenticated: false,
+                StatusCode: failedResponse.StatusCode,
+                Failure: null);
         }
 
         private byte[] CreateNtlmRequest(string authBlob, bool strict)
@@ -723,12 +748,7 @@ namespace System.Net.Tests
             }
         }
 
-        private enum NtlmHandshakeResult
-        {
-            Authenticated,
-            Unauthorized,
-            UnexpectedFailure
-        }
+        private sealed record NtlmHandshakeResult(bool IsAuthenticated, HttpStatusCode? StatusCode, string? Failure);
 
         private sealed record ResponseHeaders(HttpStatusCode StatusCode, List<string> Headers);
 

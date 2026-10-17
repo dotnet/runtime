@@ -441,7 +441,7 @@ namespace ILCompiler.DependencyAnalysis
                 return new ExternFunctionSymbolNode(
                     KnownExternFunctions.GetName(id, TypeSystemContext.Target),
                     KnownExternFunctions.GetSignature(id, TypeSystemContext),
-                    isUnmanagedCallersOnly: true, isAsyncCall: false, hasGenericContextArg: false);
+                    isUnmanagedCallersOnly: false, isAsyncCall: false, hasGenericContextArg: false);
             });
 
             _readyToRunHelpers = new NodeCache<ReadyToRunHelperKey, ISymbolNode>(CreateReadyToRunHelperNode);

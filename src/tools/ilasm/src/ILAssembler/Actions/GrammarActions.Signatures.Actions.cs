@@ -100,9 +100,33 @@ internal sealed partial class GrammarActions
         context.ShouldAppend = true;
     }
 
+    /// <summary>
+    /// Applies a <c>[n]</c> attribute element. On a method parameter or any other signature argument, <c>[n]</c>
+    /// sets the raw parameter attributes to <c>n + 1</c>, replacing the elements before it. On an argument of a
+    /// <c>.locals</c> directive it is the slot index of the local instead: the value is recorded for
+    /// <see cref="EndLocalsDirective"/>, which stores it in <see cref="SignatureArgumentValue.Slot"/>, and the
+    /// argument's attributes are left unchanged.
+    /// </summary>
     internal void SetRawParameterAttributeElement(CILParser.ParamAttrElementContext context, IToken token)
     {
-        context.Value = ParseInt32(token) + 1;
+        int value = ParseInt32(token);
+        if (context.Parent is CILParser.ParamAttrContext
+            {
+                Parent: CILParser.SigArgContext
+                {
+                    Parent: CILParser.SigArgsContext { Parent: CILParser.LocalsDeclContext } arguments
+                }
+            })
+        {
+            // The parser builds no parse tree, so the argument is identified by its position: while an argument
+            // is being parsed, the list holds the arguments before it.
+            _explicitLocalSlots[arguments.Builder.Count] = (value, token);
+            context.Value = 0;
+            context.ShouldAppend = true;
+            return;
+        }
+
+        context.Value = value + 1;
         context.ShouldAppend = false;
     }
 

@@ -238,6 +238,12 @@ namespace System.Formats.Cbor
                     throw new CborContentException(SR.Cbor_Reader_InvalidCbor_UnexpectedEndOfBuffer);
                 }
 
+                if (_currentMajorType is null && _definiteLength is null && _isTagContext)
+                {
+                    // the sequence of root-level CBOR values ends with a tag that is not followed by a data item
+                    throw new CborContentException(SR.Cbor_Reader_InvalidCbor_TagNotFollowedByValue);
+                }
+
                 // check _itemsRead in addition to _offset since SlideData resets the offset to 0
                 if (_currentMajorType is null && _definiteLength is null && (_offset > 0 || _itemsRead > 0))
                 {

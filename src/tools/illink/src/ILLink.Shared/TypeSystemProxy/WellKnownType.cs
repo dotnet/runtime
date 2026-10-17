@@ -20,7 +20,9 @@ namespace ILLink.Shared.TypeSystemProxy
         System_Attribute,
         System_NotSupportedException,
         System_Runtime_CompilerServices_DisablePrivateReflectionAttribute,
-        System_Void
+        System_Void,
+        // Keep this last so callers can identify values outside the enum.
+        NextAvailable
     }
 
     public static partial class WellKnownTypeExtensions
