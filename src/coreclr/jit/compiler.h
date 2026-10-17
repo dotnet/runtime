@@ -9197,7 +9197,7 @@ public:
             return dsc;
         }
 
-        // Create an exact-type or sub-type assertion: objVN is (exactly of | subtype of) typeHndVN
+        // Create an exact-type or sub-type assertion about a non-null object.
         static AssertionDsc CreateSubtype(const Compiler* comp, ValueNum objVN, ValueNum typeHndVN, bool exact)
         {
             assert((objVN != ValueNumStore::NoVN) && comp->vnStore->IsVNTypeHandle(typeHndVN));
@@ -9368,7 +9368,17 @@ public:
     // Used for respective assertion propagations.
     AssertionIndex optAssertionIsSubrange(GenTree* tree, IntegralRange range, ASSERT_VALARG_TP assertions);
     bool optAssertionVNIsSubtype(ValueNum objVN, ValueNum castToVN, ASSERT_VALARG_TP assertions, int budget = 10);
-    bool optAssertionVNIsNonNull(ValueNum vn, ASSERT_VALARG_TP assertions, int budget = 10);
+    // Stack of active PHI proofs, sharing one work budget across branches.
+    struct NonNullAssertionPhi
+    {
+        ValueNum                   vn;
+        const NonNullAssertionPhi* parent;
+        unsigned*                  remainingVisits;
+    };
+    bool optAssertionVNIsNonNull(ValueNum                   vn,
+                                 ASSERT_VALARG_TP           assertions,
+                                 int                        budget     = 10,
+                                 const NonNullAssertionPhi* activePhis = nullptr);
     bool optAssertionIsNonNull(GenTree* op, ASSERT_VALARG_TP assertions);
 
     AssertionIndex optLocalAssertionIsEqualOrNotEqual(
