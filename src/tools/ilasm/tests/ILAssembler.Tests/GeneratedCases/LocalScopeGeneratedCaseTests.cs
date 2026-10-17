@@ -17,7 +17,7 @@ namespace ILAssembler.Tests.GeneratedCases
     /// <summary>
     /// Local slots, lexical name scopes and the errors for LocalScope and LocalVariable rows that the Portable PDB
     /// specification does not allow, checked over the seeded generated methods of
-    /// <see cref="LocalScopeCaseGenerator"/> against the generator's model of native ilasm.
+    /// <see cref="LocalScopeCaseGenerator"/> against the generator's model.
     /// </summary>
     public class LocalScopeGeneratedCaseTests
     {

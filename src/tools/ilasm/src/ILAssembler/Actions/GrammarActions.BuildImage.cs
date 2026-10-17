@@ -745,13 +745,13 @@ namespace ILAssembler
         /// <param name="scopes">The method's lexical scopes (<see cref="EntityRegistry.MethodDebugInfo.LocalScopes"/>).</param>
         /// <remarks>
         /// <para>
-        /// As in native ilasm, a scope gets a row only when it declares a named local, and an unnamed local gets no
+        /// A scope gets a row only when it declares a named local, and an unnamed local gets no
         /// row; so the root scope, which spans the whole body, has a row only when the method-level <c>.locals</c>
         /// name a local. Each variable's Index is its slot in the local signature, and its attributes are 0.
         /// Import scopes and local constants are not recorded.
         /// </para>
         /// <para>
-        /// As in native ilasm, the rows are written as declared: each scope that declares a named local gets a
+        /// The rows are written as declared: each scope that declares a named local gets a
         /// LocalScope row whatever its length, and each named local of the scope gets a LocalVariable row, in
         /// declaration order. Rows that the specification does not allow are reported as errors, so they are
         /// written only to error-tolerant output (<see cref="Options.ErrorTolerant"/>):

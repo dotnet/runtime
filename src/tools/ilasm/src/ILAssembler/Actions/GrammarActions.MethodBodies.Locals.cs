@@ -35,7 +35,7 @@ internal sealed partial class GrammarActions
 
     /// <summary>
     /// Returns the arguments of a <c>.locals</c> directive with <see cref="SignatureArgumentValue.Slot"/> set from
-    /// the recorded <c>[n]</c> elements. As in native ilasm, <c>[-1]</c> means "no explicit slot". Any other value
+    /// the recorded <c>[n]</c> elements. <c>[-1]</c> means "no explicit slot". Any other value
     /// outside [0, <see cref="MaximumLocalSlot"/>] is reported, naming the value as written in the source, and
     /// ignored, so the local takes the next free slot (which <see cref="DeclareLocals"/> checks in turn). The
     /// range is checked on the literal as written, so a literal too large for 32 bits is reported too rather than

@@ -70,7 +70,7 @@ namespace ILAssembler.Tests.GeneratedCases
     /// loads some of the names visible there with <c>ldloc name</c>.
     /// </para>
     /// <para>
-    /// The model follows native ilasm: a local without <c>[n]</c> takes the slot after the highest one declared so
+    /// In the model, a local without <c>[n]</c> takes the slot after the highest one declared so
     /// far, a slot holds the type of its declarations, and a name refers to the first declaration of that name in
     /// the innermost open scope that declares it. Instructions are written in their long forms, so the model knows
     /// every IL offset: <c>nop</c>, <c>pop</c> and <c>ret</c> are one byte and <c>ldloc</c> is four.

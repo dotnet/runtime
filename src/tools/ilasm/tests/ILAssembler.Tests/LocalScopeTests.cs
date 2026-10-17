@@ -533,7 +533,7 @@ namespace ILAssembler.Tests
             (ImmutableArray<Diagnostic> diagnostics, CompilationResult? result) =
                 DocumentCompilerTestHelpers.CompileWithDiagnostics(s_slotNamedTwice, new Options { Debug = true });
 
-            // The in-use warning is native ilasm's, and is reported with or without a PDB.
+            // The in-use warning is reported with or without a PDB.
             Assert.Equal([DiagnosticIds.LocalSlotInUse, DiagnosticIds.LocalSlotNamedTwiceInScope], diagnostics.Select(diagnostic => diagnostic.Id));
             Diagnostic error = diagnostics[1];
             Assert.Equal(DiagnosticSeverity.Error, error.Severity);
