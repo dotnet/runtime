@@ -200,7 +200,14 @@ namespace ILCompiler
         /// return dropping async thunks, and for special async intrinsics that don't return Task/ValueTask
         /// but use async calling convention.
         /// </summary>
-        public static bool IsAsyncCall(this MethodDesc method) => method.IsAsyncVariant() || method.IsReturnDroppingAsyncThunk() || (method.IsAsync && !method.Signature.ReturnsTaskOrValueTask());
+        /// <remarks>
+        /// The Task/ValueTask check is done on the generic method definition so that the answer is
+        /// instantiation-invariant, matching how the runtime computes the async method flags once on the
+        /// definition. Checking the instantiated signature would make e.g.
+        /// 'AsyncHelpers.TransparentAwait&lt;T&gt;(Task&lt;T&gt;)' an async call for T=int but not for
+        /// T=ValueTask, while the JIT always passes the async continuation argument to it.
+        /// </remarks>
+        public static bool IsAsyncCall(this MethodDesc method) => method.IsAsyncVariant() || method.IsReturnDroppingAsyncThunk() || (method.IsAsync && !method.GetTypicalMethodDefinition().Signature.ReturnsTaskOrValueTask());
 
         /// <summary>
         /// Check if this is an async method whose codegen supports passing it the IL of the original non-async method.
