@@ -375,6 +375,9 @@ namespace System.Net.Security
                 // populated with the same instance.
                 ok = SslStream.VerifyRemoteCertificateCore(
                     this,
+                    // The external certificate is being (re)validated after the handshake, so the
+                    // resumption shortcut in VerifyRemoteCertificateCore must not apply here.
+                    isInitialHandshake: false,
                     _options,
                     _securityContext,
                     ref _remoteCertificate,
@@ -384,6 +387,7 @@ namespace System.Net.Security
                     trust: null,
                     ref alertToken,
                     ref sslPolicyErrors,
+                    out _,
                     out _,
                     _externalRemoteCertificates,
                     cloneCertificateChainPolicy: true);
@@ -485,7 +489,7 @@ namespace System.Net.Security
                 // are drained to the caller first).
                 if (_isHandshakeComplete)
                 {
-                    _externalValidationFault = new AuthenticationException(SR.net_ssl_io_cert_validation);
+                    _externalValidationFault = new AuthenticationException(SR.Format(SR.net_ssl_io_cert_validation, errors));
                 }
                 else if (_resumeAfterCertValidation)
                 {
@@ -499,7 +503,7 @@ namespace System.Net.Security
                     // which checks _externalValidationFault. On OpenSSL 3.0+ retry-verify the
                     // fault will instead be set by the natural token-failed branch when
                     // SSL_do_handshake emits the fatal alert.
-                    _externalValidationFault = new AuthenticationException(SR.net_ssl_io_cert_validation);
+                    _externalValidationFault = new AuthenticationException(SR.Format(SR.net_ssl_io_cert_validation, errors));
                 }
 
                 // VerifyRemoteCertificateCore assigns _remoteCertificate to the candidate before it
@@ -1477,12 +1481,16 @@ namespace System.Net.Security
                 bool staged = false;
                 try
                 {
-                    if (token.Failed)
+                    // NoRenegotiation means no request can be made (e.g. a TLS 1.3 client that didn't offer
+                    // post-handshake authentication, or renegotiation disabled in the OpenSSL configuration),
+                    // not a failure: nothing is staged, so the session stays in its completed state below.
+                    bool noRenegotiation = token.Status.ErrorCode == SecurityStatusPalErrorCode.NoRenegotiation;
+                    if (token.Failed && !noRenegotiation)
                     {
                         throw new AuthenticationException(SR.net_auth_SSPI, token.GetException());
                     }
 
-                    if (token.Size > 0)
+                    if (token.Size > 0 && !noRenegotiation)
                     {
                         Debug.Assert(token.Payload != null);
                         AppendPending(new ReadOnlySpan<byte>(token.Payload, 0, token.Size));

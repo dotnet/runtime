@@ -1099,15 +1099,12 @@ class SuperPMICollect:
                         rsp_write_handle.write("--jitpath:" + os.path.join(self.core_root, self.collection_shim_name) + "\n")
                         # If we are cross-compiling (target != host), tell crossgen2 explicitly which
                         # OS/architecture to generate code for. For wasm targets, also pass the wasm
-                        # object format and the crossgen2 codegen option that's required by the wasm
-                        # cross-compiling JIT (mirroring src/coreclr/crossgen-corelib.proj).
+                        # object format.
                         if self.coreclr_args.target_arch != self.coreclr_args.arch or self.coreclr_args.target_os != self.coreclr_args.host_os:
                             rsp_write_handle.write("--targetarch:" + self.coreclr_args.target_arch + "\n")
                             rsp_write_handle.write("--targetos:" + self.coreclr_args.target_os + "\n")
                         if self.coreclr_args.target_arch == "wasm":
                             rsp_write_handle.write("--obj-format:wasm" + "\n")
-                            # FIXME: Remove JitWasmNyiToR2RUnsupported once wasm codegen covers all cases
-                            rsp_write_handle.write("--codegenopt:JitWasmNyiToR2RUnsupported=1" + "\n")
                         for var, value in dotnet_env.items():
                             rsp_write_handle.write("--codegenopt:" + var + "=" + value + "\n")
 
@@ -2311,17 +2308,6 @@ class SuperPMIReplayAsmDiffs:
                     # that both Release compilers can interpret). However, we rarely or never compare
                     # two Release compilers, so this is safest.
                     flags += [ "-ignoreStoredConfig" ]
-
-                    # `-ignoreStoredConfig` drops any codegenopt the collection recorded into the
-                    # MCH stored config. For wasm we need to re-supply
-                    # `JitWasmNyiToR2RUnsupported=1` (set by crossgen-corelib.proj during collection)
-                    # so that unimplemented opcodes turn into R2R-unsupported skips rather than
-                    # asserts. FIXME: remove once wasm codegen covers all cases.
-                    if self.coreclr_args.target_arch == "wasm":
-                        flags += [
-                            "-jitoption", "force", "JitWasmNyiToR2RUnsupported=1",
-                            "-jit2option", "force", "JitWasmNyiToR2RUnsupported=1"
-                        ]
 
                 # Change the working directory to the Core_Root we will call SuperPMI from.
                 # This is done to allow libcoredistools to be loaded correctly on unix

@@ -141,7 +141,6 @@ extern "C" {
     void * SystemNative_Realloc (void *, void *);
     int32_t SystemNative_Rename (void *, void *);
     int32_t SystemNative_RmDir (void *);
-    int32_t SystemNative_SchedGetCpu ();
     void SystemNative_SetErrNo (int32_t);
     void * SystemNative_ShmOpen (void *, int32_t, int32_t);
     int32_t SystemNative_ShmUnlink (void *);
@@ -287,7 +286,6 @@ static const Entry s_libSystem_Native [] = {
     DllImportEntry(SystemNative_Realloc) // System.Private.CoreLib
     DllImportEntry(SystemNative_Rename) // System.Private.CoreLib
     DllImportEntry(SystemNative_RmDir) // System.Private.CoreLib
-    DllImportEntry(SystemNative_SchedGetCpu) // System.Private.CoreLib
     DllImportEntry(SystemNative_SetErrNo) // System.Private.CoreLib
     DllImportEntry(SystemNative_ShmOpen) // System.IO.MemoryMappedFiles
     DllImportEntry(SystemNative_ShmUnlink) // System.IO.MemoryMappedFiles
@@ -325,7 +323,7 @@ typedef struct PInvokeTable {
 static PInvokeTable s_PInvokeTables[] = {
     {"libSystem.Globalization.Native", s_libSystem_Globalization_Native, 34},
     {"libSystem.IO.Compression.Native", s_libSystem_IO_Compression_Native, 9},
-    {"libSystem.Native", s_libSystem_Native, 94},
+    {"libSystem.Native", s_libSystem_Native, 93},
     {"libSystem.Native.Browser", s_libSystem_Native_Browser, 1},
     {"libSystem.Runtime.InteropServices.JavaScript.Native", s_libSystem_Runtime_InteropServices_JavaScript_Native, 6}
 };

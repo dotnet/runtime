@@ -20,6 +20,8 @@ static const instruction INS_I_store = INS_i64_store;
 static const instruction INS_I_const = INS_i64_const;
 static const instruction INS_I_add   = INS_i64_add;
 static const instruction INS_I_and   = INS_i64_and;
+static const instruction INS_I_or    = INS_i64_or;
+static const instruction INS_I_shl   = INS_i64_shl;
 static const instruction INS_I_eqz   = INS_i64_eqz;
 static const instruction INS_I_mul   = INS_i64_mul;
 static const instruction INS_I_sub   = INS_i64_sub;
@@ -32,6 +34,8 @@ static const instruction INS_I_store = INS_i32_store;
 static const instruction INS_I_const = INS_i32_const;
 static const instruction INS_I_add   = INS_i32_add;
 static const instruction INS_I_and   = INS_i32_and;
+static const instruction INS_I_or    = INS_i32_or;
+static const instruction INS_I_shl   = INS_i32_shl;
 static const instruction INS_I_eqz   = INS_i32_eqz;
 static const instruction INS_I_mul   = INS_i32_mul;
 static const instruction INS_I_sub   = INS_i32_sub;
@@ -183,9 +187,27 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
         assert(m_compiler->lvaWasmVirtualIP != BAD_VAR_NUM);
         assert(m_compiler->lvaWasmFunctionIndex != BAD_VAR_NUM);
 
-        // fp[0] == functionIndex
+        // Helpers may be called without a PEP, so their identity is independent of the caller.
         GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetFramePointerRegIndex());
-        GetEmitter()->emitFuncletAddressConstant(0 /* funcletId for main method */);
+        if (m_compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_WASM_MANAGED_HELPER))
+        {
+            GetEmitter()->emitIns_I(INS_i32_const_frameidentity, EA_PTRSIZE, 0);
+        }
+        else if (m_compiler->lvaWasmPortableEntryPointArg != BAD_VAR_NUM)
+        {
+            unsigned pepIndex = WasmRegToIndex(
+                m_compiler->lvaGetParameterABIInfo(m_compiler->lvaWasmPortableEntryPointArg).Segment(0).GetRegister());
+            GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, pepIndex);
+        }
+        else
+        {
+            // Reverse P/Invokes have no PEP argument. Positive odd identities retain their table index.
+            GetEmitter()->emitFuncletAddressConstant(0);
+            GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, 1);
+            GetEmitter()->emitIns(INS_I_shl);
+            GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, 1);
+            GetEmitter()->emitIns(INS_I_or);
+        }
         GetEmitter()->emitIns_S(ins_Store(TYP_I_IMPL), EA_PTRSIZE, m_compiler->lvaWasmFunctionIndex, 0);
 
         // Ensure the resume IP is initialized to a non-resuming value.
@@ -546,7 +568,7 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
     //
     if (func->needsUnwindableFrame)
     {
-        // We need two stack slots for the function index and for the funclet virtual IP.
+        // We need two stack slots for the frame identity and for the funclet virtual IP.
         // We also need to keep SP aligned.
         //
         size_t slotSize  = 2 * TARGET_POINTER_SIZE;
@@ -561,7 +583,9 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
         GetEmitter()->emitIns_I(INS_local_set, EA_PTRSIZE, GetStackPointerRegIndex());
 
         GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetStackPointerRegIndex());
-        GetEmitter()->emitFuncletAddressConstant((cnsval_ssize_t)funcletIndex);
+        GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetFramePointerRegIndex());
+        GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, 2);
+        GetEmitter()->emitIns(INS_I_add);
         GetEmitter()->emitIns_I(ins_Store(TYP_I_IMPL), EA_PTRSIZE, 0);
     }
 }
@@ -731,6 +755,12 @@ void CodeGen::genEmitStartBlock(BasicBlock* block)
             if (interval->IsLoop())
             {
                 GetEmitter()->emitIns_BlockTy(INS_loop);
+            }
+            else if (interval->IsTry() && m_compiler->IsNativeAot())
+            {
+                // TODO-NativeAOT-WASM: Preserve interval nesting without CoreCLR's catch-resumption tag during
+                // NativeAOT bringup.
+                GetEmitter()->emitIns_BlockTy(INS_block);
             }
             else if (interval->IsTry())
             {
@@ -1214,11 +1244,6 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
         default:
 #ifdef DEBUG
-            if (JitConfig.JitWasmNyiToR2RUnsupported())
-            {
-                NYI_WASM("Opcode not implemented");
-            }
-
             NYIRAW(GenTree::OpName(treeNode->OperGet()));
 #else
             NYI_WASM("Opcode not implemented");
@@ -3513,12 +3538,19 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
 
     if (helperUsesPep)
     {
-        // Push PEP onto the stack because we are calling a managed helper that expects it as the last parameter.
-        // The helper function address is the address of an indirection cell, so we load from the cell to get the PEP
-        // address to push.
-        assert(helperFunction.accessType == IAT_PVALUE);
-        GetEmitter()->emitAddressConstant(helperFunction.addr);
-        GetEmitter()->emitIns_I(INS_I_load, EA_PTRSIZE, 0);
+        if (helperFunction.accessType == IAT_VALUE)
+        {
+            // Direct same-image managed helpers do not need a portable entrypoint.
+            GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, 0);
+        }
+        else
+        {
+            // Push PEP onto the stack because we are calling a managed helper that expects it as the last parameter.
+            // The helper function address is the address of an indirection cell, so load the PEP address from the cell.
+            assert(helperFunction.accessType == IAT_PVALUE);
+            GetEmitter()->emitAddressConstant(helperFunction.addr);
+            GetEmitter()->emitIns_I(INS_I_load, EA_PTRSIZE, 0);
+        }
     }
 
     if (params.callType == EC_INDIR_R)
@@ -3566,10 +3598,45 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
 void CodeGen::genCompareInt(GenTreeOp* treeNode)
 {
     assert(treeNode->OperIsCmpCompare());
+
+    GenTree* const op1   = treeNode->gtGetOp1();
+    GenTree* const op2   = treeNode->gtGetOp2();
+    GenTree*       value = nullptr;
+
+    if (treeNode->OperIs(GT_EQ, GT_NE))
+    {
+        if (op1->isContained() && op1->IsIntegralConst(0))
+        {
+            value = op2;
+        }
+        else if (op2->isContained() && op2->IsIntegralConst(0))
+        {
+            value = op1;
+        }
+    }
+
     genConsumeOperands(treeNode);
 
+    if (value != nullptr)
+    {
+        const bool canUseValueDirectly = treeNode->OperIs(GT_NE) && ((treeNode->gtFlags & GTF_RELOP_JMP_USED) != 0) &&
+                                         (genActualType(value->TypeGet()) == TYP_INT);
+
+        if (!canUseValueDirectly)
+        {
+            GetEmitter()->emitIns(genActualType(value->TypeGet()) == TYP_LONG ? INS_i64_eqz : INS_i32_eqz);
+            if (treeNode->OperIs(GT_NE))
+            {
+                GetEmitter()->emitIns(INS_i32_eqz);
+            }
+        }
+
+        WasmProduceReg(treeNode);
+        return;
+    }
+
     instruction ins;
-    switch (PackOperAndType(treeNode->OperGet(), genActualType(treeNode->gtGetOp1()->TypeGet())))
+    switch (PackOperAndType(treeNode->OperGet(), genActualType(op1->TypeGet())))
     {
         case PackOperAndType(GT_EQ, TYP_INT):
             ins = INS_i32_eq;
@@ -4127,6 +4194,8 @@ void CodeGen::genCallFinally(BasicBlock* block)
     unsigned const funcletIndex = ehDsc->ebdFuncIndex;
 
     assert((funcletIndex >= 1) && (funcletIndex < m_compiler->compFuncCount()));
+
+    ensureCurrentFuncIsUnwindable();
 
     EmitCallParams params;
     params.callType = EmitCallType::EC_INDIR_R;

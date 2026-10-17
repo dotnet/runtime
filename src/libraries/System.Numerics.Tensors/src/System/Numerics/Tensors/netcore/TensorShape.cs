@@ -54,6 +54,8 @@ namespace System.Numerics.Tensors
         internal const int MaxInlineRank = 5;
         private const int InlineBufferCount = 2;
 
+        private static readonly TensorShape s_empty = new TensorShape(0, [0], [], TensorFlags.None);
+
         private readonly nint[]? _metadata;                         // 8 bytes
 
         private readonly nint _flattenedLength;                     // 8 bytes
@@ -97,15 +99,13 @@ namespace System.Numerics.Tensors
             // Copy the lengths over up front
             lengths.CopyTo(destinationLengths);
 
-            nint flattenedLength = 1;
+            // A zero dimension makes the product zero regardless of the order
+            // in which lengths are visited, including sorted explicit strides.
+            nint flattenedLength = lengths.Contains(0) ? 0 : 1;
             nint maximumLinearIndex = 0;
 
             if (strides.Length == 0)
             {
-                // Empty shapes have no reachable offsets, so zero strides avoid
-                // overflowing products before the zero-length dimension is visited.
-                flattenedLength = lengths.Contains(0) ? 0 : 1;
-
                 // When no strides are specified, we need to computing them simply
                 // by calculating the product of the lengths at each iteration.
 
@@ -646,63 +646,74 @@ namespace System.Numerics.Tensors
         // Answer the question: Can shape2 turn into shape1 or vice-versa if allowBidirectional?
         public static bool AreCompatible(in TensorShape shape1, in TensorShape shape2, bool allowBidirectional)
         {
+            shape1 = ref Normalize(shape1);
+            shape2 = ref Normalize(shape2);
+
             int rankDelta = shape1.Rank - shape2.Rank;
+            int sourceOffset = 0;
 
             if (rankDelta < 0)
             {
                 if (!allowBidirectional)
                 {
-                    return false;
+                    sourceOffset = -rankDelta;
+                    if (shape2.Lengths[..sourceOffset].ContainsAnyExcept((nint)1))
+                    {
+                        return false;
+                    }
+                    rankDelta = 0;
                 }
+                else
+                {
+                    ref readonly TensorShape tmpShape = ref shape1;
+                    shape1 = ref shape2;
+                    shape2 = ref tmpShape;
 
-                ref readonly TensorShape tmpShape = ref shape1;
-                shape1 = ref shape2;
-                shape2 = ref tmpShape;
-
-                rankDelta = -rankDelta;
-                Debug.Assert(rankDelta > 0);
-            }
-
-            if ((shape1.Rank == 0) || (shape2.Rank == 0))
-            {
-                return shape1.IsEmpty && shape2.IsEmpty;
+                    rankDelta = -rankDelta;
+                    Debug.Assert(rankDelta > 0);
+                }
             }
 
             // We need the lengths to be equal, length2 to be 1, or
             // length1 to be 1 and be doing a bidirectional check.
 
             ReadOnlySpan<nint> lengths1 = shape1.Lengths[rankDelta..];
-            ReadOnlySpan<nint> lengths2 = shape2.Lengths;
+            ReadOnlySpan<nint> lengths2 = shape2.Lengths[sourceOffset..];
 
-            for (int i = 0; i < lengths1.Length; i++)
+            if (!lengths1.SequenceEqual(lengths2))
             {
-                nint length1 = lengths1[i];
-                nint length2 = lengths2[i];
+                for (int i = 0; i < lengths1.Length; i++)
+                {
+                    nint length1 = lengths1[i];
+                    nint length2 = lengths2[i];
 
-                if (length1 == length2)
-                {
-                    continue;
-                }
-                else if ((length1 == 1) && allowBidirectional)
-                {
-                    continue;
-                }
-                else if (length2 == 1)
-                {
-                    continue;
-                }
+                    if (length1 == length2)
+                    {
+                        continue;
+                    }
+                    else if ((length1 == 1) && allowBidirectional)
+                    {
+                        continue;
+                    }
+                    else if (length2 == 1)
+                    {
+                        continue;
+                    }
 
-                return false;
+                    return false;
+                }
             }
 
-            if (!allowBidirectional && !shape1.IsEmpty)
+            if (!allowBidirectional && !shape1.IsEmpty && !shape1.IsDense)
             {
                 // When we aren't bidirectionally compatible, then we
                 // need to ensure that if stride1 is 0, then stride2
                 // is also zero; otherwise we cannot safely operate.
+                // Dense destinations only have zero strides on singleton axes,
+                // whose compatible source axes also have zero strides.
 
                 ReadOnlySpan<nint> strides1 = shape1.Strides[rankDelta..];
-                ReadOnlySpan<nint> strides2 = shape2.Strides;
+                ReadOnlySpan<nint> strides2 = shape2.Strides[sourceOffset..];
 
                 for (int i = 0; i < strides1.Length; i++)
                 {
@@ -721,27 +732,32 @@ namespace System.Numerics.Tensors
         // Answer the question: Can shape2 turn into shape1Lengths
         public static bool AreCompatible(in ReadOnlySpan<nint> shape1Lengths, in TensorShape shape2)
         {
-            int rankDelta = shape1Lengths.Length - shape2.Rank;
+            ReadOnlySpan<nint> lengths1 = shape1Lengths.IsEmpty ? s_empty.Lengths : shape1Lengths;
+            shape2 = ref Normalize(shape2);
+
+            int rankDelta = lengths1.Length - shape2.Rank;
+            int sourceOffset = 0;
 
             if (rankDelta < 0)
             {
-                return false;
-            }
-
-            if (shape1Lengths.IsEmpty)
-            {
-                return shape2.IsEmpty;
-            }
-            if (shape2.Rank == 0)
-            {
-                return false;
+                sourceOffset = -rankDelta;
+                if (shape2.Lengths[..sourceOffset].ContainsAnyExcept((nint)1))
+                {
+                    return false;
+                }
+                rankDelta = 0;
             }
 
             // We need the lengths to be equal, length2 to be 1, or
             // length1 to be 1 and be doing a bidirectional check.
 
-            ReadOnlySpan<nint> lengths1 = shape1Lengths[rankDelta..];
-            ReadOnlySpan<nint> lengths2 = shape2.Lengths;
+            lengths1 = lengths1[rankDelta..];
+            ReadOnlySpan<nint> lengths2 = shape2.Lengths[sourceOffset..];
+
+            if (lengths1.SequenceEqual(lengths2))
+            {
+                return true;
+            }
 
             for (int i = 0; i < lengths1.Length; i++)
             {
@@ -761,6 +777,117 @@ namespace System.Numerics.Tensors
             }
 
             return true;
+        }
+
+        // The default shape is an empty sentinel, not a scalar. For shape operations,
+        // it has the same effective shape as an empty vector without changing its metadata.
+        public static ref readonly TensorShape Normalize(in TensorShape shape)
+        {
+            return ref ((shape.Rank == 0) ? ref s_empty : ref shape);
+        }
+
+        internal static bool AreLengthsEquivalent(ReadOnlySpan<nint> lengths1, ReadOnlySpan<nint> lengths2)
+        {
+            if (lengths1.Length == lengths2.Length)
+            {
+                return lengths1.SequenceEqual(lengths2);
+            }
+
+            lengths1 = lengths1.IsEmpty ? s_empty.Lengths : lengths1;
+            lengths2 = lengths2.IsEmpty ? s_empty.Lengths : lengths2;
+
+            if (lengths1.Length < lengths2.Length)
+            {
+                ReadOnlySpan<nint> temporary = lengths1;
+                lengths1 = lengths2;
+                lengths2 = temporary;
+            }
+
+            int offset = lengths1.Length - lengths2.Length;
+            return !lengths1[..offset].ContainsAnyExcept((nint)1)
+                && lengths1[offset..].SequenceEqual(lengths2);
+        }
+
+        internal static bool AreLengthsEquivalentExceptDimension(ReadOnlySpan<nint> lengths, ReadOnlySpan<nint> otherLengths,
+            int dimension, out nint otherDimensionLength)
+        {
+            Debug.Assert((uint)dimension < (uint)lengths.Length);
+            otherDimensionLength = 1;
+            int rankDelta = lengths.Length - otherLengths.Length;
+            if (rankDelta < 0)
+            {
+                if (otherLengths[..-rankDelta].ContainsAnyExcept((nint)1))
+                {
+                    return false;
+                }
+                otherLengths = otherLengths[-rankDelta..];
+            }
+            else if (rankDelta > 0)
+            {
+                if (dimension < rankDelta)
+                {
+                    return !lengths[..dimension].ContainsAnyExcept((nint)1)
+                        && !lengths[(dimension + 1)..rankDelta].ContainsAnyExcept((nint)1)
+                        && lengths[rankDelta..].SequenceEqual(otherLengths);
+                }
+                if (lengths[..rankDelta].ContainsAnyExcept((nint)1))
+                {
+                    return false;
+                }
+                lengths = lengths[rankDelta..];
+                dimension -= rankDelta;
+            }
+
+            otherDimensionLength = otherLengths[dimension];
+            return lengths[..dimension].SequenceEqual(otherLengths[..dimension])
+                && lengths[(dimension + 1)..].SequenceEqual(otherLengths[(dimension + 1)..]);
+        }
+
+        // Callers validate that removed axes are singleton dimensions.
+        internal static TensorShape WithRank(in TensorShape shape, int rank)
+        {
+            shape = ref Normalize(shape);
+            Debug.Assert(rank >= 1);
+            int offset = shape.Rank - rank;
+
+            if (offset >= 0)
+            {
+                Debug.Assert(!shape.Lengths[..offset].ContainsAnyExcept((nint)1));
+                return offset == 0 ? shape : CreateForView(shape.LinearLength, shape.Lengths[offset..], shape.Strides[offset..], shape.IsPinned);
+            }
+
+            Span<nint> lengths = TensorOperation.RentedBuffer.CreateUninitialized(rank, out TensorOperation.RentedBuffer<nint> lengthsRentedBuffer);
+            Span<nint> strides = TensorOperation.RentedBuffer.CreateUninitialized(rank, out TensorOperation.RentedBuffer<nint> stridesRentedBuffer);
+            lengths.Fill(1);
+            strides.Clear();
+            shape.Lengths.CopyTo(lengths[-offset..]);
+            shape.Strides.CopyTo(strides[-offset..]);
+
+            TensorShape result = CreateForView(shape.LinearLength, lengths, strides, shape.IsPinned);
+            stridesRentedBuffer.Dispose();
+            lengthsRentedBuffer.Dispose();
+
+            return result;
+        }
+
+        // View references and storage lengths are already validated; empty views may retain a null reference.
+        public static TensorShape CreateForView(nint linearLength, scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides, bool pinned)
+        {
+            return new TensorShape(linearLength, lengths, strides, pinned ? TensorFlags.IsPinned : TensorFlags.None);
+        }
+
+        public static bool AreLayoutsTheSame(in TensorShape shape1, in TensorShape shape2)
+        {
+            ReadOnlySpan<nint> lengths1 = shape1.Lengths;
+            ReadOnlySpan<nint> lengths2 = shape2.Lengths;
+            int rank = Math.Min(lengths1.Length, lengths2.Length);
+            int offset1 = lengths1.Length - rank;
+            int offset2 = lengths2.Length - rank;
+
+            return !lengths1[..offset1].ContainsAnyExcept((nint)1)
+                && !lengths2[..offset2].ContainsAnyExcept((nint)1)
+                && lengths1[offset1..].SequenceEqual(lengths2[offset2..])
+                && shape1.Strides[offset1..].SequenceEqual(shape2.Strides[offset2..]);
         }
 
         public static bool AreLengthsTheSame(in TensorShape shape1, in TensorShape shape2)
@@ -896,7 +1023,13 @@ namespace System.Numerics.Tensors
 
                 if ((computedOffset < 0) || (computedOffset > linearLength))
                 {
-                    ThrowHelper.ThrowArgument_StartIndexOutOfBounds();
+                    if (!lengths.Contains(0))
+                    {
+                        ThrowHelper.ThrowArgument_StartIndexOutOfBounds();
+                    }
+                    // Several valid dimension endpoints need not linearize to a
+                    // storage address. An empty view can retain the array's origin.
+                    computedOffset = 0;
                 }
 
                 TensorShape result = new TensorShape(linearLength - computedOffset, lengths, strides, TensorFlags.None);
@@ -1119,6 +1252,10 @@ namespace System.Numerics.Tensors
             {
                 ThrowHelper.ThrowIndexOutOfRangeException();
             }
+            if (IsEmpty)
+            {
+                return 0;
+            }
 
             nint linearOffset = 0;
 
@@ -1212,7 +1349,7 @@ namespace System.Numerics.Tensors
             {
                 if (!state.IsEmpty)
                 {
-                    ThrowHelper.ThrowArgumentOutOfRangeException();
+                    return s_empty.Slice<TGetOffsetAndLength, T>(state, out linearOffset);
                 }
                 linearOffset = 0;
                 return this;
@@ -1347,7 +1484,9 @@ namespace System.Numerics.Tensors
             {
                 Debug.Assert(computedOffset == GetLinearOffset<TGetOffsetAndLength, T>(state));
             }
-            linearOffset = computedOffset;
+            // An empty view has no reachable element. Keep its origin in the
+            // source storage even when several ranges begin at their endpoints.
+            linearOffset = flattenedLength == 0 ? 0 : computedOffset;
 
             return result;
         }

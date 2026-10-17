@@ -470,6 +470,99 @@ namespace System.Net.Http.Functional.Tests
     public sealed class SocketsHttpHandler_HttpClientHandler_ServerCertificates_Test : HttpClientHandler_ServerCertificates_Test
     {
         public SocketsHttpHandler_HttpClientHandler_ServerCertificates_Test(ITestOutputHelper output) : base(output) { }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux | TestPlatforms.OSX)]
+        public void CreateHttpClientHandler_AllowTlsResume_ConfiguresSslOptions(bool allowTlsResume)
+        {
+            using HttpClientHandler defaultHandler = CreateHttpClientHandler();
+            Assert.True(GetUnderlyingSocketsHttpHandler(defaultHandler).SslOptions.AllowTlsResume);
+
+            using HttpClientHandler instanceHandler = CreateHttpClientHandler(allowTlsResume: allowTlsResume);
+            Assert.Equal(allowTlsResume, GetUnderlyingSocketsHttpHandler(instanceHandler).SslOptions.AllowTlsResume);
+            Assert.Null(instanceHandler.ServerCertificateCustomValidationCallback);
+
+            using HttpClientHandler versionHandler = CreateHttpClientHandler(UseVersion, allowAllCertificates: false, allowTlsResume: allowTlsResume);
+            Assert.Equal(allowTlsResume, GetUnderlyingSocketsHttpHandler(versionHandler).SslOptions.AllowTlsResume);
+            Assert.Null(versionHandler.ServerCertificateCustomValidationCallback);
+
+            using HttpClientHandler stringHandler = CreateHttpClientHandler(UseVersion.ToString(), allowTlsResume: allowTlsResume);
+            Assert.Equal(allowTlsResume, GetUnderlyingSocketsHttpHandler(stringHandler).SslOptions.AllowTlsResume);
+            Assert.NotNull(stringHandler.ServerCertificateCustomValidationCallback);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux | TestPlatforms.OSX)]
+        public async Task NoCallback_RevokedCertificate_RevocationChecking_MatchesExpected(bool checkRevocation)
+        {
+            using Configuration.Certificates.PkiHolder pkiHolder = Configuration.Certificates.GenerateCertificates(
+                "localhost", forceRsaCertificate: true);
+            pkiHolder.Intermediates[^1].Revoke(pkiHolder.EndEntity, pkiHolder.EndEntity.NotBefore);
+
+            using HttpClientHandler handler = CreateHttpClientHandler(allowTlsResume: false);
+            handler.CheckCertificateRevocationList = checkRevocation;
+            SocketsHttpHandler socketsHandler = GetUnderlyingSocketsHttpHandler(handler);
+
+            var policy = new X509ChainPolicy
+            {
+                TrustMode = X509ChainTrustMode.CustomRootTrust,
+                RevocationMode = socketsHandler.SslOptions.CertificateRevocationCheckMode,
+                RevocationFlag = X509RevocationFlag.EndCertificateOnly,
+                DisableCertificateDownloads = true,
+                CustomTrustStore = { pkiHolder.IssuerChain[^1] },
+            };
+            policy.ExtraStore.AddRange(pkiHolder.IssuerChain);
+            socketsHandler.SslOptions.CertificateChainPolicy = policy;
+
+            using HttpClient client = CreateHttpClient(handler);
+            await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
+            {
+                if (checkRevocation)
+                {
+                    HttpRequestException exception = await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(uri));
+                    Assert.Equal(HttpRequestError.SecureConnectionError, exception.HttpRequestError);
+                    Assert.IsType<AuthenticationException>(exception.InnerException);
+                }
+                else
+                {
+                    using HttpResponseMessage response = await client.GetAsync(uri);
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                }
+            }, async server =>
+            {
+                try
+                {
+                    if (checkRevocation)
+                    {
+                        await server.AcceptConnectionAsync(_ => Task.CompletedTask);
+                    }
+                    else
+                    {
+                        await server.HandleRequestAsync();
+                    }
+                }
+                catch (Exception e) when (checkRevocation && (e is AuthenticationException or IOException))
+                {
+                    _output.WriteLine($"Expected certificate validation failure: {e}");
+                }
+            },
+            options: new GenericLoopbackOptions
+            {
+                UseSsl = true,
+                Certificate = pkiHolder.EndEntity,
+                SslProtocols = SslProtocols.None,
+            });
+
+            using X509Chain chain = new X509Chain();
+            chain.ChainPolicy = policy;
+            Assert.Equal(!checkRevocation, chain.Build(pkiHolder.EndEntity));
+            Assert.Equal(checkRevocation ? X509ChainStatusFlags.Revoked : X509ChainStatusFlags.NoError,
+                chain.ChainStatus.Aggregate(X509ChainStatusFlags.NoError, (flags, status) => flags | status.Status));
+        }
     }
 
     [SkipOnPlatform(TestPlatforms.Browser, "ResponseDrainTimeout is not supported on Browser")]
@@ -807,6 +900,7 @@ namespace System.Net.Http.Functional.Tests
                 using SocketsHttpHandler handler = CreateSocketsHttpHandler(allowAllCertificates: true);
 
                 handler.Proxy = new UseSpecifiedUriWebProxy(uri, new NetworkCredential("abc", "password"));
+                handler.SslOptions.AllowTlsResume = false;
                 handler.SslOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, error) =>
                 {
                     validationCalled = true;
@@ -5483,7 +5577,10 @@ namespace System.Net.Http.Functional.Tests
 
         private static void ConfigureSniCallback(HttpClientHandler handler, List<string> sniValues)
         {
-            GetUnderlyingSocketsHttpHandler(handler).SslOptions.RemoteCertificateValidationCallback = (sender, _, _, _) =>
+            SslClientAuthenticationOptions sslOptions = GetUnderlyingSocketsHttpHandler(handler).SslOptions;
+            // Disable TLS session resumption so that cert validation callback fires for every handshake.
+            sslOptions.AllowTlsResume = false;
+            sslOptions.RemoteCertificateValidationCallback = (sender, _, _, _) =>
             {
                 string sni = sender switch
                 {
@@ -6229,7 +6326,7 @@ namespace System.Net.Http.Functional.Tests
 
                     policy.ExtraStore.AddRange(_certificateSetup.ServerChain);
                     policy.CustomTrustStore.Add(_certificateSetup.ServerChain[^1]);
-                    socketsHandler.SslOptions = new SslClientAuthenticationOptions() { CertificateChainPolicy = policy };
+                    socketsHandler.SslOptions = new SslClientAuthenticationOptions() { CertificateChainPolicy = policy, AllowTlsResume = false };
                     using HttpClient client = CreateHttpClient(handler);
                     client.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionExact;
                     HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, uri) { Version = UseVersion, VersionPolicy = HttpVersionPolicy.RequestVersionExact };
@@ -6262,7 +6359,7 @@ namespace System.Net.Http.Functional.Tests
 
                     policy.ExtraStore.AddRange(_certificateSetup.ServerChain);
                     policy.CustomTrustStore.Add(_certificateSetup.ServerChain[^1]);
-                    socketsHandler.SslOptions = new SslClientAuthenticationOptions() { CertificateChainPolicy = policy };
+                    socketsHandler.SslOptions = new SslClientAuthenticationOptions() { CertificateChainPolicy = policy, AllowTlsResume = false };
                     using HttpClient client = CreateHttpClient(handler);
                     client.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionExact;
                     HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, uri) { Version = UseVersion, VersionPolicy = HttpVersionPolicy.RequestVersionExact };
@@ -6301,7 +6398,7 @@ namespace System.Net.Http.Functional.Tests
 
                     policy.ExtraStore.AddRange(_certificateSetup.ServerChain);
                     policy.CustomTrustStore.Add(_certificateSetup.ServerChain[^1]);
-                    socketsHandler.SslOptions = new SslClientAuthenticationOptions() { CertificateChainPolicy = policy };
+                    socketsHandler.SslOptions = new SslClientAuthenticationOptions() { CertificateChainPolicy = policy, AllowTlsResume = false };
 
                     using HttpClient client = CreateHttpClient(handler);
                     client.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionExact;
@@ -6441,6 +6538,7 @@ namespace System.Net.Http.Functional.Tests
                 using HttpClient client = CreateHttpClient(handler);
                 GetUnderlyingSocketsHttpHandler(handler).SslOptions = new SslClientAuthenticationOptions()
                 {
+                    AllowTlsResume = false,
                     RemoteCertificateValidationCallback = delegate { return false; },
                 };
                 using HttpRequestMessage message = new(HttpMethod.Get, uri)

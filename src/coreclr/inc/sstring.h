@@ -1,10 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// ---------------------------------------------------------------------------
-// SString.h  (Safe String)
-//
-
-// ---------------------------------------------------------------------------
 
 // ------------------------------------------------------------------------------------------
 // SString is the "standard" string representation for the EE.  Its has two purposes.
@@ -37,7 +32,6 @@
 //
 // @todo: argument & overflow/underflow checking needs to be added
 // ------------------------------------------------------------------------------------------
-
 
 #ifndef _SSTRING_H_
 #define _SSTRING_H_
@@ -467,7 +461,6 @@ private:
     const WCHAR *GetUnicode(const CIterator &i) const;
 
     void LowerCase();
-    void UpperCase();
 
     // Helper function to convert string in-place to lower-case (no allocation overhead for SString instance)
     static void LowerCase(__inout_z LPWSTR wszString);
@@ -685,7 +678,6 @@ public:
 private:
     void ClearNormalized() const;
 
-    void EnsureWritable() const;
     void ConvertToFixed() const;
     void ConvertToIteratable() const;
 

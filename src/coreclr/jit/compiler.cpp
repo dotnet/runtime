@@ -7440,94 +7440,6 @@ VarScopeDsc* Compiler::compGetNextExitScope(unsigned offs, bool scan)
     return nullptr;
 }
 
-// The function will call the callback functions for scopes with boundaries
-// at instrs from the current status of the scope lists to 'offset',
-// ordered by instrs.
-
-void Compiler::compProcessScopesUntil(unsigned   offset,
-                                      VARSET_TP* inScope,
-                                      void (Compiler::*enterScopeFn)(VARSET_TP* inScope, VarScopeDsc*),
-                                      void (Compiler::*exitScopeFn)(VARSET_TP* inScope, VarScopeDsc*))
-{
-    assert(offset != BAD_IL_OFFSET);
-    assert(inScope != nullptr);
-
-    bool         foundExit = false, foundEnter = true;
-    VarScopeDsc* scope;
-    VarScopeDsc* nextExitScope  = nullptr;
-    VarScopeDsc* nextEnterScope = nullptr;
-    unsigned     offs = offset, curEnterOffs = 0;
-
-    goto START_FINDING_SCOPES;
-
-    // We need to determine the scopes which are open for the current block.
-    // This loop walks over the missing blocks between the current and the
-    // previous block, keeping the enter and exit offsets in lockstep.
-
-    do
-    {
-        foundExit = foundEnter = false;
-
-        if (nextExitScope)
-        {
-            (this->*exitScopeFn)(inScope, nextExitScope);
-            nextExitScope = nullptr;
-            foundExit     = true;
-        }
-
-        offs = nextEnterScope ? nextEnterScope->vsdLifeBeg : offset;
-
-        while ((scope = compGetNextExitScope(offs, true)) != nullptr)
-        {
-            foundExit = true;
-
-            if (!nextEnterScope || scope->vsdLifeEnd > nextEnterScope->vsdLifeBeg)
-            {
-                // We overshot the last found Enter scope. Save the scope for later
-                // and find an entering scope
-
-                nextExitScope = scope;
-                break;
-            }
-
-            (this->*exitScopeFn)(inScope, scope);
-        }
-
-        if (nextEnterScope)
-        {
-            (this->*enterScopeFn)(inScope, nextEnterScope);
-            curEnterOffs   = nextEnterScope->vsdLifeBeg;
-            nextEnterScope = nullptr;
-            foundEnter     = true;
-        }
-
-        offs = nextExitScope ? nextExitScope->vsdLifeEnd : offset;
-
-    START_FINDING_SCOPES:
-
-        while ((scope = compGetNextEnterScope(offs, true)) != nullptr)
-        {
-            foundEnter = true;
-
-            if ((nextExitScope && scope->vsdLifeBeg >= nextExitScope->vsdLifeEnd) || (scope->vsdLifeBeg > curEnterOffs))
-            {
-                // We overshot the last found exit scope. Save the scope for later
-                // and find an exiting scope
-
-                nextEnterScope = scope;
-                break;
-            }
-
-            (this->*enterScopeFn)(inScope, scope);
-
-            if (!nextExitScope)
-            {
-                curEnterOffs = scope->vsdLifeBeg;
-            }
-        }
-    } while (foundExit || foundEnter);
-}
-
 #if defined(DEBUG)
 
 void Compiler::compDispScopeLists()
@@ -9686,12 +9598,6 @@ JITDBGAPI void __cdecl cTreeFlags(Compiler* comp, GenTree* tree)
                 {
                     chars += printf("[VAR_EXPLICIT_INIT]");
                 }
-#if defined(DEBUG)
-                if (tree->gtDebugFlags & GTF_DEBUG_VAR_CSE_REF)
-                {
-                    chars += printf("[VAR_CSE_REF]");
-                }
-#endif
                 break;
 
             case GT_NO_OP:
@@ -9794,11 +9700,6 @@ JITDBGAPI void __cdecl cTreeFlags(Compiler* comp, GenTree* tree)
                 break;
 
             case GT_BOX:
-
-                if (tree->gtFlags & GTF_BOX_VALUE)
-                {
-                    chars += printf("[BOX_VALUE]");
-                }
 
                 if (tree->gtFlags & GTF_BOX_CLONED)
                 {

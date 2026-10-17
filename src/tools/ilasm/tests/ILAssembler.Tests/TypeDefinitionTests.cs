@@ -184,7 +184,7 @@ namespace ILAssembler.Tests
         [Fact]
         public void ExtendedLayout_SetsExtendedLayoutFlag()
         {
-            // Test the 'extended' class attribute (exercises MetadataExtensions.ExtendedLayout)
+            // Test the 'extended' class attribute.
             string source = """
                 .assembly extern mscorlib { }
                 .assembly test { }
@@ -506,6 +506,26 @@ namespace ILAssembler.Tests
             var typeDef = reader.GetTypeDefinition(MetadataTokens.TypeDefinitionHandle(2));
             Assert.Equal("MyType", reader.GetString(typeDef.Name));
             Assert.Equal("System.Tests", reader.GetString(typeDef.Namespace));
+        }
+
+        [Fact]
+        public void Namespace_DottedTypeName_ComposesWithSeparator()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly Test { }
+                .namespace Outer
+                {
+                    .class public auto ansi beforefieldinit Inner.Type extends [mscorlib]System.Object { }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            var typeDef = reader.GetTypeDefinition(MetadataTokens.TypeDefinitionHandle(2));
+            Assert.Equal("Type", reader.GetString(typeDef.Name));
+            Assert.Equal("Outer.Inner", reader.GetString(typeDef.Namespace));
         }
 
 

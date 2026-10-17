@@ -3407,8 +3407,8 @@ bool Compiler::impImportAndPushBoxForNullable(CORINFO_RESOLVED_TOKEN* pResolvedT
     var_types    valueType      = TypeHandleToVarType(corFldType, valueStructCls, &layout);
     GenTree*     valueOffset    = gtNewIconNode(cnsValueOffset, TYP_I_IMPL);
     GenTree*     valueAddr      = gtNewOperNode(GT_ADD, TYP_BYREF, nullableObjClone, valueOffset);
-    GenTree*     value          = gtNewLoadValueNode(valueType, layout, valueAddr);
-    GenTree*     hasValue       = gtNewLoadValueNode(TYP_UBYTE, nullptr, nullableObj);
+    GenTree*     value          = gtNewLoadValueNode(valueType, layout, valueAddr, indirFlags);
+    GenTree*     hasValue       = gtNewLoadValueNode(TYP_UBYTE, nullptr, nullableObj, indirFlags);
 
     // Create the allocation node for the box
     //
@@ -3764,16 +3764,12 @@ void Compiler::impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken)
         op1 = gtNewLclvNode(impBoxTemp, TYP_REF);
 
         // Record that this is a "box" node and keep track of the matching parts.
-        op1 = new (this, GT_BOX) GenTreeBox(TYP_REF, op1, allocBoxStmt, copyStmt);
-
-        // If it is a value class, mark the "box" node.  We can use this information
-        // to optimise several cases:
+        // We can use this information to optimise several cases:
         //    "box(x) == null" --> false
         //    "(box(x)).CallAnInterfaceMethod(...)" --> "(&x).CallAValueTypeMethod"
         //    "(box(x)).CallAnObjectMethod(...)" --> "(&x).CallAValueTypeMethod"
-
-        op1->gtFlags |= GTF_BOX_VALUE;
-        assert(op1->IsBoxedValue() && allocBoxStore->OperIs(GT_STORE_LCL_VAR));
+        op1 = new (this, GT_BOX) GenTreeBox(TYP_REF, op1, allocBoxStmt, copyStmt);
+        assert(allocBoxStore->OperIs(GT_STORE_LCL_VAR));
     }
     else
     {
@@ -4674,7 +4670,7 @@ GenTree* Compiler::impFixupStructReturnType(GenTree* op)
         JITDUMP("\nimpFixupStructReturnType: created a pseudo-return buffer\n");
         DISPTREE(op);
 
-        return op;
+        // The temp may still need to be marked as a multi-reg return below.
     }
 
     if (compMethodReturnsMultiRegRetType() || op->IsMultiRegNode())
@@ -7562,7 +7558,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 // The strict order of evaluation is 'array', 'index', 'value', range-check
                 // and then store. However, the tree we create does the range-check before
                 // evaluating 'value'. So to maintain strict ordering, we spill the stack.
-                if ((impStackTop().val->gtFlags & GTF_SIDE_EFFECT) != 0)
+                if ((impStackTop().val->gtFlags & GTF_OBS_EFFECT) != 0)
                 {
                     impSpillSideEffects(false,
                                         CHECK_SPILL_ALL DEBUGARG("Strict ordering of exceptions for Array store"));

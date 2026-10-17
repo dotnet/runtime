@@ -47,8 +47,6 @@ namespace ILCompiler.DependencyAnalysis
 
     public partial class ReadyToRunHelperNode : AssemblyStubNode
     {
-        private static readonly Utf8String s_RhpResolveInterfaceMethod = new Utf8String("RhpResolveInterfaceMethod"u8);
-
         private readonly ReadyToRunHelperId _id;
         private readonly object _target;
 

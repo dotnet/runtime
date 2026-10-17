@@ -32,6 +32,11 @@ public struct CodeBlockHandle
     // GetCodeBlockHandle. Other addresses are returned unchanged.
     TargetCodePointer GetDiagnosticCodeStartFromEntryPoint(TargetCodePointer entryPoint);
 
+    // Finds the unwind info for the function containing controlPC without resolving its method.
+    bool TryGetUnwindInfo(
+        TargetCodePointer controlPC,
+        out TargetPointer runtimeFunction,
+        out TargetPointer unwindInfoBaseAddress);
     // Gets the unwind info of the code block at the specified code pointer
     TargetPointer GetUnwindInfo(CodeBlockHandle codeInfoHandle);
     // Gets the base address the UnwindInfo of codeInfoHandle is relative to
@@ -556,6 +561,14 @@ bool TryGetWasmVirtualIPFromFunctionTableIndex(uint functionTableIndex, out ulon
     // R2RModule's ReadyToRunInfo, step back past funclet entries to the controlling function, then
     // virtualIP = ReadyToRunInfo.MinVirtualIP + RuntimeFunction.BeginAddress.
 }
+
+// Mirrors ExecutionManager::GetWasmVirtualIPFromCoreLibRuntimeFunctionIndex.
+bool TryGetWasmVirtualIPFromCoreLibRuntimeFunctionIndex(uint runtimeFunctionIndex, out ulong virtualIP)
+{
+    // Find the R2R module whose ReadyToRunInfo.MinVirtualIP is the reserved initial WebAssembly
+    // virtual IP, 0x80000001. Reject an out-of-range index or a funclet entry, then compute
+    // virtualIP = ReadyToRunInfo.MinVirtualIP + RuntimeFunctions[runtimeFunctionIndex].BeginAddress.
+}
 ```
 
 The `CodeBlock` encapsulates the `MethodDesc` data from the target runtime together with the start of the jitted method
@@ -602,7 +615,9 @@ The `GetMethodDesc`, `GetStartAddress`, and `GetRelativeOffset` APIs extract fie
     }
 ```
 
-`IExecutionManager.GetUnwindInfo` gets the Windows style unwind data in the form of `RUNTIME_FUNCTION` which has a platform dependent implementation. The ExecutionManager delegates to the JitManager implementations as the unwind infos (`RUNTIME_FUNCTION`) are stored differently on jitted and R2R code.
+`IExecutionManager.TryGetUnwindInfo` maps a control PC directly to its Windows-style unwind data in the form of a `RUNTIME_FUNCTION` pointer and the base address to which that entry's relative fields apply. It finds the owning range and delegates to the same per-JIT-manager unwind lookup used by `GetUnwindInfo`, but does not resolve a method or create a `CodeBlockHandle`. It returns false, with both outputs null, when the address has no owning managed range or its code kind has no native unwind information.
+
+`IExecutionManager.GetUnwindInfo` gets the same platform-dependent `RUNTIME_FUNCTION` for an existing `CodeBlockHandle`. The ExecutionManager delegates to the JitManager implementations as the unwind infos are stored differently on jitted and R2R code.
 
 * For jitted code (`EEJitManager`) a list of sorted `RUNTIME_FUNCTION` are stored on the `RealCodeHeader` which is accessed in the same was as `GetMethodInfo` described above. The correct `RUNTIME_FUNCTION` is found by binary searching the list based on IP.
 
@@ -617,7 +632,7 @@ Unwind info (`RUNTIME_FUNCTION`) uses relative addressing. For managed code, the
 
 * For Jitted code (`EEJitManager`) a pointer to the `DebugInfo` is stored on the `RealCodeHeader` which is accessed in the same way as `GetMethodInfo` described above. `hasFlagByte` is `true` if either the global `FeatureOnStackReplacement` is `true` or `StoreRichDebugInfo` is `true` on the `EEJitManager`.
 
-* For R2R code (`ReadyToRunJitManager`) the `DebugInfo` is stored as part of the R2R image. The relevant `ReadyToRunInfo` stores a pointer to the an `ImageDataDirectory` representing the `DebugInfo` directory. Read the `VirtualAddress` of this data directory as a `NativeArray` containing the `DebugInfos`. To find the specific `DebugInfo`, index into the array using the `index` of the beginning of the R2R function as found like in `GetMethodInfo` above. This yields an offset `offset` value relative to the image base. Read the first variable length uint at `imageBase + offset`, `lookBack`. If `lookBack != 0`, return `imageBase + offset - lookback`. Otherwise return `offset + size of reading lookback`.
+* For R2R code (`ReadyToRunJitManager`) the `DebugInfo` is stored as part of the R2R image. The relevant `ReadyToRunInfo` stores a pointer to the an `ImageDataDirectory` representing the `DebugInfo` directory. If this pointer is null (the image was compiled without debug info, e.g. with `--strip-debug-info`), return `TargetPointer.Null`. Otherwise, read the `VirtualAddress` of this data directory as a `NativeArray` containing the `DebugInfos`. To find the specific `DebugInfo`, index into the array using the `index` of the beginning of the R2R function as found like in `GetMethodInfo` above. This yields an offset `offset` value relative to the image base. Read the first variable length uint at `imageBase + offset`, `lookBack`. If `lookBack != 0`, return `imageBase + offset - lookback`. Otherwise return `offset + size of reading lookback`.
 For R2R images, `hasFlagByte` is always `false`.
 
 * For interpreted code (`InterpreterJitManager`), a pointer to the `DebugInfo` is stored on the `InterpreterRealCodeHeader` which is accessed in the same way as the EE JitManager's `GetMethodInfo` (nibble map lookup followed by code header read). `hasFlagByte` is always `false`.

@@ -30,6 +30,56 @@ public class R2RTestSuites
         _output = output;
     }
 
+    [ConditionalTheory(typeof(TestPaths), nameof(TestPaths.IsXArchTarget))]
+    [InlineData(1)]
+    [InlineData(2)]
+    public void ManagedHelperEagerRegistration(int parallelism)
+    {
+        var input = new CompiledAssembly
+        {
+            AssemblyName = nameof(ManagedHelperEagerRegistration),
+            SourceResourceNames = ["ManagedHelpers/HelperCalls.cs"],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(ManagedHelperEagerRegistration),
+            [
+                new(nameof(ManagedHelperEagerRegistration), [new CrossgenAssembly(input)])
+                {
+                    Options = [Crossgen2Option.Composite, Crossgen2Option.Optimize],
+                    AdditionalArgs =
+                    [
+                        "--unrooted-input-file-paths", TestPaths.SystemPrivateCoreLibPath,
+                        "--parallelism", parallelism.ToString(),
+                    ],
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            Assert.True(R2RAssert.HasCompiledMethod(reader, "System.Threading.Thread", "PollGC", out string diagnostic), diagnostic);
+            var formattingOptions = new SignatureFormattingOptions();
+            var eagerHelperSignatures = new List<string>();
+            foreach (ReadyToRunImportSection section in reader.ImportSections)
+            {
+                if ((section.Flags & ReadyToRunImportSectionFlags.Eager) == 0)
+                    continue;
+
+                foreach (ReadyToRunImportSection.ImportSectionEntry entry in section.Entries)
+                {
+                    if (entry.Signature?.FixupKind == ReadyToRunFixupKind.MethodEntry_ReadyToRun)
+                    {
+                        eagerHelperSignatures.Add(entry.Signature.ToString(formattingOptions));
+                    }
+                }
+            }
+
+            Assert.Contains(eagerHelperSignatures, signature =>
+                signature.Contains("System.Threading.Thread.PollGC()", StringComparison.Ordinal));
+        }
+    }
+
     [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsNotWasmTarget))]
     public void BasicCrossModuleInlining()
     {
@@ -95,6 +145,74 @@ public class R2RTestSuites
         }
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void CastFoldingRespectsVersionBubble(bool inputBubble)
+    {
+        var castFolding = new CompiledAssembly
+        {
+            AssemblyName = nameof(CastFoldingRespectsVersionBubble),
+            SourceResourceNames = ["CastFolding/CastFolding.cs"],
+        };
+
+        // With --input-bubble and no explicit bubble references, the framework is in the version bubble.
+        List<Crossgen2Option> options = inputBubble ? [Crossgen2Option.InputBubble, Crossgen2Option.Optimize] : [Crossgen2Option.Optimize];
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(CastFoldingRespectsVersionBubble),
+            [
+                new(nameof(CastFoldingRespectsVersionBubble), [new CrossgenAssembly(castFolding)])
+                {
+                    Options = options,
+                    Validate = Validate,
+                },
+            ]));
+
+        void Validate(ReadyToRunReader reader)
+        {
+            // Box and isinst reference their types through NEW_OBJECT/IS_INSTANCE_OF imports
+            // or TYPE_HANDLE fixups depending on the target, so look for the type in any import.
+            var formattingOptions = new SignatureFormattingOptions();
+            var importedTypes = new HashSet<string>();
+            foreach (ReadyToRunImportSection section in reader.ImportSections)
+            {
+                foreach (ReadyToRunImportSection.ImportSectionEntry entry in section.Entries)
+                {
+                    string? signature = entry.Signature?.ToString(formattingOptions);
+                    int kindStart = signature?.LastIndexOf(" (", StringComparison.Ordinal) ?? -1;
+                    if (kindStart > 0)
+                        importedTypes.Add(signature![..kindStart]);
+                }
+            }
+
+            string diagnostic = $"Imported types: [{string.Join(", ", importedTypes)}]";
+
+            // Value type casts to other non-interface types fold, along with their boxes.
+            Assert.False(importedTypes.Contains("char"), diagnostic);
+            Assert.False(importedTypes.Contains("byte"), diagnostic);
+            Assert.False(importedTypes.Contains("SourceStruct"), diagnostic);
+            Assert.False(importedTypes.Contains("TargetStruct"), diagnostic);
+
+            // Casts to interfaces fold only when every type in the hierarchy is in the version bubble,
+            // which includes System.Object and System.ValueType only with the framework in the bubble.
+            Assert.True(importedTypes.Contains("ControlStruct") != inputBubble, diagnostic);
+            Assert.True(importedTypes.Contains("INotImplemented") != inputBubble, diagnostic);
+            Assert.True(importedTypes.Contains("INotImplementedByClass") != inputBubble, diagnostic);
+
+            // Interfaces have no base type, so typeof(...) assignability checks between them fold whenever
+            // the target and every inherited interface are in the version bubble, including for shared
+            // generics. Per assembly, IsAssignableFrom stays only for the IComparable target and
+            // IsAssignableTo only for the interface that inherits IDisposable.
+            Assert.True(importedTypes.Any(s => s.Contains("System.Type.IsAssignableFrom(", StringComparison.Ordinal)) != inputBubble, diagnostic);
+            Assert.True(importedTypes.Any(s => s.Contains("System.Type.IsAssignableTo(", StringComparison.Ordinal)) != inputBubble, diagnostic);
+
+            // Variant and COM casts are never folded.
+            Assert.True(importedTypes.Contains("IVariant`1<SealedClass>"), diagnostic);
+            Assert.True(importedTypes.Contains("INotImplementedByCom"), diagnostic);
+        }
+    }
+
     [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsWasmTarget))]
     public void WasmWebcilModule()
     {
@@ -110,15 +228,35 @@ public class R2RTestSuites
                 new(nameof(WasmWebcilModule), [new CrossgenAssembly(wasmWebcilModule)])
                 {
                     OutputFileExtension = ".wasm",
-                    Validate = Validate,
+                    Validate = ValidateDefault,
+                },
+                new("WasmWebcilModuleNoDebugInfo", [new CrossgenAssembly(wasmWebcilModule)])
+                {
+                    OutputFileExtension = ".wasm",
+                    AdditionalArgs = ["--wasm-debug-info=none"],
+                    Validate = ValidateNone,
+                },
+                new("WasmWebcilModuleSymbolMap", [new CrossgenAssembly(wasmWebcilModule)])
+                {
+                    OutputFileExtension = ".wasm",
+                    AdditionalArgs = ["--wasm-debug-info=symbol-map"],
+                    Validate = ValidateSymbolMap,
+                },
+                new("WasmWebcilModuleAllDebugInfo", [new CrossgenAssembly(wasmWebcilModule)])
+                {
+                    OutputFileExtension = ".wasm",
+                    AdditionalArgs = ["--wasm-debug-info=name,symbol-map"],
+                    Validate = ValidateAll,
                 },
             ]));
 
-        static void Validate(ReadyToRunReader reader)
+        static void ValidateDefault(ReadyToRunReader reader)
         {
             var webcilReader = Assert.IsType<WebcilImageReader>(reader.CompositeReader);
+            WasmR2RAssert.AssertFrameIdentityPrologs(webcilReader);
             Assert.True(webcilReader.IsWasmWrapped);
             Assert.Equal(WasmMachine.Wasm32, reader.Machine);
+            Assert.False(File.Exists(Path.ChangeExtension(reader.Filename, ".symbols")));
 
             List<ReadyToRunMethod> methods = R2RAssert.GetAllMethods(reader);
             Assert.True(methods.Exists(method =>
@@ -135,6 +273,20 @@ public class R2RTestSuites
                 method.SignatureString.Contains("CatchException", StringComparison.Ordinal)));
 
             Assert.True(WasmR2RAssert.WasmIndexSpacesHaveExpectedEntries(webcilReader, out string indexDiagnostic), indexDiagnostic);
+            Assert.True(
+                WasmR2RAssert.MethodsShareFunctionDefinitionButRetainTableSlots(
+                    reader,
+                    "FoldableBodyOne",
+                    "FoldableBodyTwo",
+                    out string foldingDiagnostic),
+                foldingDiagnostic);
+            Assert.True(
+                WasmR2RAssert.MethodsRetainDistinctFunctionDefinitionsAndTableSlots(
+                    reader,
+                    "CatchExceptionOne",
+                    "CatchExceptionTwo",
+                    out string funcletDiagnostic),
+                funcletDiagnostic);
 
             // The wasm JIT references the ABI well-known globals via maximally padded WASM_GLOBAL_INDEX_LEB
             // relocations that the R2R object writer must self-resolve to the fixed global
@@ -151,6 +303,75 @@ public class R2RTestSuites
                 "Expected a 'global.get' of the wasm image-base well-known global in the emitted code.");
             Assert.True(WasmR2RAssert.WasmImageContainsWellKnownGlobalGet(webcilReader, TableBaseGlobal),
                 "Expected a 'global.get' of the wasm table-base well-known global in the emitted code.");
+        }
+
+        static void ValidateNone(ReadyToRunReader reader)
+        {
+            var webcilReader = Assert.IsType<WebcilImageReader>(reader.CompositeReader);
+            Assert.False(WasmR2RAssert.WasmImageHasFunctionNameSection(webcilReader));
+            Assert.False(File.Exists(Path.ChangeExtension(reader.Filename, ".symbols")));
+        }
+
+        static void ValidateSymbolMap(ReadyToRunReader reader)
+        {
+            var webcilReader = Assert.IsType<WebcilImageReader>(reader.CompositeReader);
+            Assert.False(WasmR2RAssert.WasmImageHasFunctionNameSection(webcilReader));
+            Assert.True(
+                WasmR2RAssert.WasmSymbolMapHasExpectedFunctionNames(reader, out string diagnostic),
+                diagnostic);
+        }
+
+        static void ValidateAll(ReadyToRunReader reader)
+        {
+            var webcilReader = Assert.IsType<WebcilImageReader>(reader.CompositeReader);
+            Assert.True(WasmR2RAssert.WasmImageHasFunctionNameSection(webcilReader));
+            Assert.True(
+                WasmR2RAssert.WasmSymbolMapHasExpectedFunctionNames(reader, out string diagnostic),
+                diagnostic);
+        }
+    }
+
+    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsWasmTarget))]
+    public void WasmDelegateConstructors()
+    {
+        var wasmDelegateConstructors = new CompiledAssembly
+        {
+            AssemblyName = nameof(WasmDelegateConstructors),
+            SourceResourceNames = ["Webcil/WasmDelegateConstructors.cs"],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(WasmDelegateConstructors),
+            [
+                new(nameof(WasmDelegateConstructors), [new CrossgenAssembly(wasmDelegateConstructors)])
+                {
+                    OutputFileExtension = ".wasm",
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            Assert.Equal(WasmMachine.Wasm32, reader.Machine);
+
+            var signatureFormattingOptions = new SignatureFormattingOptions();
+            List<ReadyToRunImportSection.ImportSectionEntry> importEntries = reader.ImportSections
+                .Where(section => section.Entries is not null)
+                .SelectMany(section => section.Entries)
+                .ToList();
+            List<string> importSignatures = importEntries
+                .Where(entry => entry.Signature is not null)
+                .Select(entry => entry.Signature!.ToString(signatureFormattingOptions))
+                .ToList();
+            string diagnostic = string.Join(Environment.NewLine, importSignatures);
+
+            Assert.DoesNotContain(importEntries, entry => entry.Signature?.FixupKind == ReadyToRunFixupKind.DelegateCtor);
+            Assert.True(
+                importSignatures.Any(signature => signature.Contains("System.Delegate.DelegateConstruct(", StringComparison.Ordinal)),
+                diagnostic);
+            Assert.True(
+                importSignatures.Any(signature => signature.Contains("System.Delegate.CtorClosed(", StringComparison.Ordinal)),
+                diagnostic);
         }
     }
 
@@ -2151,6 +2372,13 @@ public class R2RTestSuites
             Assert.True(R2RAssert.HasStringThunk(reader, "MS16Tp", out diag), diag);
             Assert.True(R2RAssert.HasStringThunk(reader, "IS16Tip", out diag), diag);
             Assert.True(R2RAssert.HasStringThunk(reader, "IS56Tip", out diag), diag);
+            Assert.True(
+                WasmR2RAssert.StringThunksShareFunctionDefinitionButRetainTableSlots(
+                    reader,
+                    "MS56Tp",
+                    "MS16Tp",
+                    out diag),
+                diag);
         }
     }
 

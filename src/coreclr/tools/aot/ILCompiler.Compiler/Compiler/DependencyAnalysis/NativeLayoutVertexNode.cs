@@ -811,11 +811,6 @@ namespace ILCompiler.DependencyAnalysis
             sink.Add(context.GenericDictionaryLayout(_method), "Dictionary layout");
         }
 
-        private static int CompareDictionaryEntries(KeyValuePair<int, NativeLayoutVertexNode> left, KeyValuePair<int, NativeLayoutVertexNode> right)
-        {
-            return left.Key - right.Key;
-        }
-
         public override Vertex WriteVertex(NodeFactory factory)
         {
             Debug.Assert(Marked, "WriteVertex should only happen for marked vertices");
@@ -969,11 +964,6 @@ namespace ILCompiler.DependencyAnalysis
         public override bool HasConditionalStaticDependencies => false;
         public override void AddConditionalDependencies(DependencySink sink, NodeFactory context) { }
 
-        private static int CompareDictionaryEntries(KeyValuePair<int, NativeLayoutVertexNode> left, KeyValuePair<int, NativeLayoutVertexNode> right)
-        {
-            return left.Key - right.Key;
-        }
-
         public override Vertex WriteVertex(NodeFactory factory)
         {
             Debug.Assert(Marked, "WriteVertex should only happen for marked vertices");
@@ -1028,7 +1018,6 @@ namespace ILCompiler.DependencyAnalysis
 
             if (closestCanonDefType.GCStaticFieldSize.AsInt != 0)
             {
-                layoutInfo.AppendUnsigned(BagElementKind.GcStaticDataSize, checked((uint)closestCanonDefType.GCStaticFieldSize.AsInt));
                 BagElementKind staticDescBagType;
                 ISymbolNode staticsDescSymbol = GetStaticsNode(factory, out staticDescBagType);
                 uint gcStaticsSymbolIndex = factory.MetadataManager.NativeLayoutInfo.StaticsReferences.GetIndex(staticsDescSymbol);
@@ -1037,7 +1026,6 @@ namespace ILCompiler.DependencyAnalysis
 
             if (closestCanonDefType.ThreadGcStaticFieldSize.AsInt != 0)
             {
-                layoutInfo.AppendUnsigned(BagElementKind.ThreadStaticDataSize, checked((uint)closestCanonDefType.ThreadGcStaticFieldSize.AsInt));
                 BagElementKind threadStaticDescBagType;
                 ISymbolNode threadStaticsDescSymbol = GetThreadStaticsNode(factory, out threadStaticDescBagType);
                 uint threadStaticsSymbolIndex = factory.MetadataManager.NativeLayoutInfo.StaticsReferences.GetIndex(threadStaticsDescSymbol);
