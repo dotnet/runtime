@@ -109,6 +109,15 @@ BYTE* GenerateDispatchStubCellEntrySlot(LoaderAllocator *pLoaderAllocator, TypeH
 
     VirtualCallStubManager * pMgr = pLoaderAllocator->GetVirtualCallStubManager();
 
+    // A declaration map can protect dictionary dispatch cells even without an import map.
+    MethodTable* pOwnerMT = ownerType.GetMethodTable();
+    MethodDesc* pMethod = pOwnerMT->GetMethodDescForSlot(methodSlot);
+    pMethod->PrepareForUseAsAVirtualCallTargetOfANativeImage();
+    PTR_BYTE declarationMap = pMethod->GetGCRefMap();
+    pMethod = MethodDesc::FindOrCreateAssociatedMethodDesc(
+        pMethod, pOwnerMT, FALSE, pMethod->GetMethodInstantiation(), TRUE);
+    pMethod->PrepareForUseAsAVirtualCallTargetOfANativeImage(declarationMap);
+
     DispatchToken token = VirtualCallStubManager::GetTokenFromOwnerAndSlot(ownerType, methodSlot);
 
     PCODE addr;
@@ -2474,6 +2483,26 @@ VirtualCallStubManager::Resolver(
             CONSISTENCY_CHECK((!implSlot.IsNull() || pMT->IsInterface()) && "Valid method implementation was not found.");
             COMPlusThrow(kEntryPointNotFoundException);
         }
+    }
+
+    // Typed tokens identify the call declaration without a hierarchy search. Its contextual
+    // receiver map also protects the implementation's method-entry transitions.
+    pMD = implSlot.GetMethodDesc();
+    if (pMD != nullptr)
+    {
+        PTR_BYTE declarationMap = nullptr;
+        if (token.IsTypedToken())
+        {
+            MethodTable* pDeclarationMT = GetTypeFromToken(token);
+            // A missing slot would make GetMethodDescForSlot_NoThrow enumerate definitions.
+            if (pDeclarationMT->GetCanonicalMethodTable()->GetSlot(token.GetSlotNumber()) != 0)
+            {
+                MethodDesc* pDeclaration = pDeclarationMT->GetMethodDescForSlot_NoThrow(token.GetSlotNumber());
+                if (pDeclaration != nullptr)
+                    declarationMap = pDeclaration->GetGCRefMap();
+            }
+        }
+        pMD->PrepareForUseAsAVirtualCallTargetOfANativeImage(declarationMap);
     }
 
     *ppTarget = implSlot.GetTarget();

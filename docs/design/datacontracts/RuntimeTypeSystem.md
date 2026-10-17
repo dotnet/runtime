@@ -615,6 +615,7 @@ static class RuntimeTypeSystem_1_Helpers
 | `MethodDescChunk` | `MethodTable` | `pointer` | The method table set of methods belongs to |
 | `MethodDescChunk` | `Next` | `pointer` | The next chunk of methods |
 | `MethodDescChunk` | `Size` | `uint8` | The size of this MethodDescChunk  following this MethodDescChunk header, minus 1. In multiples of MethodDescAlignment |
+| `MethodDescCodeData` | `GCRefMap` | `pointer` | Optional cached ReadyToRun method-entry GC reference map used by prestub and call-counting frames |
 | `MethodDescCodeData` | `OptimizationTier` | `uint32` | Optimization tier of the method's current native code |
 | `MethodDescCodeData` | `TemporaryEntryPoint` | `CodePointer` | Temporary code entry point used before the method has a stable entry point |
 | `MethodDescCodeData` | `VersioningState` | `pointer` | The IL versioning state associated with a method descriptor |
@@ -623,6 +624,7 @@ static class RuntimeTypeSystem_1_Helpers
 | `MethodTable` | `AuxiliaryData` | `pointer` | Pointer to the AuxiliaryData of a method table |
 | `MethodTable` | `BaseSize` | `uint32` | BaseSize of a MethodTable |
 | `MethodTable` | `EEClassOrCanonMT` | `pointer` | Path to both EEClass and canonical MethodTable of a MethodTable |
+| `MethodTable` | `InterfaceMap` | `pointer` | Optional pointer to the array of interface MethodTable pointers used for contextual virtual argument-map lookup |
 | `MethodTable` | `Module` | `pointer` | Module for MethodTable |
 | `MethodTable` | `MTFlags` | `uint32` | One of the flags fields on MethodTable |
 | `MethodTable` | `MTFlags2` | `uint32` | One of the flags fields on MethodTable |

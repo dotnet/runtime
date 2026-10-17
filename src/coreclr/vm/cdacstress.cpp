@@ -1429,6 +1429,7 @@ static const char* GCRefMapTokenName(int token)
         case GCREFMAP_METHOD_PARAM:  return "METHOD_PARAM";
         case GCREFMAP_TYPE_PARAM:    return "TYPE_PARAM";
         case GCREFMAP_VASIG_COOKIE:  return "VASIG_COOKIE";
+        case GCREFMAP_THIS:          return "THIS";
         default:                     return "?";
     }
 }

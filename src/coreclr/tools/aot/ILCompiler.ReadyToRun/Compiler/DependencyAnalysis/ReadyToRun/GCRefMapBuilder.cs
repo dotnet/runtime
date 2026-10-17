@@ -167,7 +167,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                 if (token != CORCOMPILE_GCREFMAP_TOKENS.GCREFMAP_SKIP)
                 {
-                    WriteToken(pos, (byte)token);
+                    WriteToken(pos, (byte)token,
+                        method.OwningType.IsValueType && !isUnboxingStub);
                 }
             }
 
@@ -201,9 +202,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             // If the function has a this pointer, add it to the mask
             if (argit.HasThis)
             {
-                bool interior = method.OwningType.IsValueType && !isUnboxingStub;
-
-                frame[_transitionBlock.ThisOffset] = (interior ? CORCOMPILE_GCREFMAP_TOKENS.GCREFMAP_INTERIOR : CORCOMPILE_GCREFMAP_TOKENS.GCREFMAP_REF);
+                frame[_transitionBlock.ThisOffset] = CORCOMPILE_GCREFMAP_TOKENS.GCREFMAP_THIS;
             }
 
             if (argit.IsVarArg)
@@ -392,7 +391,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
         }
 
-        public void WriteToken(uint pos, uint gcRefMapToken)
+        public void WriteToken(uint pos, uint gcRefMapToken, bool thisIsInterior = false)
         {
             uint posDelta = pos - _pos;
             _pos = pos + 1;
@@ -423,6 +422,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 AppendTwoBit(3);
                 AppendInt(((gcRefMapToken - 3) << 1) | 1);
+                if (gcRefMapToken == (uint)CORCOMPILE_GCREFMAP_TOKENS.GCREFMAP_THIS)
+                    AppendBit(thisIsInterior ? 1u : 0u);
             }
         }
 

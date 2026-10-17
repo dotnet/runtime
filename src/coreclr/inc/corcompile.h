@@ -97,6 +97,7 @@ enum CORCOMPILE_GCREFMAP_TOKENS
     GCREFMAP_METHOD_PARAM = 3,
     GCREFMAP_TYPE_PARAM = 4,
     GCREFMAP_VASIG_COOKIE = 5,
+    GCREFMAP_THIS = 6, // Followed by the original call site's interior-reference bit.
 };
 
 enum EncodeMethodSigFlags

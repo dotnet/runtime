@@ -1491,6 +1491,40 @@ void ProtectValueClassFrame::GcScanRoots_Impl(promote_func *fn, ScanContext *sc)
 //
 //
 
+PTR_BYTE TransitionFrame::GetGCRefMapFromMethodDesc()
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    FrameIdentifier frame = GetFrameIdentifier();
+    switch (frame)
+    {
+    case FrameIdentifier::PrestubMethodFrame:
+    case FrameIdentifier::CallCountingHelperFrame:
+    case FrameIdentifier::StubDispatchFrame:
+    {
+        MethodDesc* pMD = GetFunction();
+        if (pMD == nullptr)
+            return nullptr;
+        bool dispatch = frame == FrameIdentifier::StubDispatchFrame;
+        PTR_BYTE map = pMD->FindGCRefMap(nullptr, dispatch);
+        if (map != nullptr || pMD->IsStatic() || pMD->IsCtor() || pMD->HasMethodInstantiation() ||
+            (!dispatch && pMD->RequiresInstArg()))
+            return map;
+
+        MethodTable* pReceiverMT = pMD->GetMethodTable();
+        if (dispatch || !pReceiverMT->IsValueType() || pMD->IsUnboxingStub())
+        {
+            PTR_TADDR receiver = dac_cast<PTR_TADDR>(GetThisPtr());
+            if (*receiver != 0)
+                pReceiverMT = dac_cast<PTR_Object>(*receiver)->GetGCSafeMethodTable();
+        }
+        return pMD->FindGCRefMap(pReceiverMT, dispatch);
+    }
+    default:
+        return nullptr;
+    }
+}
+
 void TransitionFrame::PromoteCallerStack(promote_func* fn, ScanContext* sc)
 {
     WRAPPER_NO_CONTRACT;
@@ -1514,6 +1548,13 @@ void TransitionFrame::PromoteCallerStack(promote_func* fn, ScanContext* sc)
     pFunction = GetFunction();
     if (pFunction == NULL)
         return;
+
+    PTR_BYTE pGCRefMap = GetGCRefMapFromMethodDesc();
+    if (pGCRefMap != nullptr)
+    {
+        PromoteCallerStackUsingGCRefMap(fn, sc, pGCRefMap);
+        return;
+    }
 
     // Now get the signature...
     Signature callSignature = pFunction->GetSignature();
@@ -1656,6 +1697,23 @@ void TransitionFrame::PromoteCallerStackUsingGCRefMap(promote_func* fn, ScanCont
 
         switch (token)
         {
+        case GCREFMAP_THIS:
+        {
+            bool interior = decoder.ThisIsInterior();
+            FrameIdentifier frame = GetFrameIdentifier();
+            if (frame == FrameIdentifier::StubDispatchFrame)
+                interior = false;
+            else if (frame == FrameIdentifier::PrestubMethodFrame || frame == FrameIdentifier::CallCountingHelperFrame)
+            {
+                MethodDesc* pMD = GetFunction();
+                interior = pMD->GetMethodTable()->IsValueType() && !pMD->IsUnboxingStub();
+            }
+            if (interior)
+                PromoteCarefully(fn, dac_cast<PTR_PTR_Object>(ppObj), sc, GC_CALL_INTERIOR);
+            else
+                fn(dac_cast<PTR_PTR_Object>(ppObj), sc, CHECK_APP_DOMAIN);
+            break;
+        }
         case GCREFMAP_SKIP:
             break;
         case GCREFMAP_REF:
@@ -1966,6 +2024,10 @@ static void DumpGCRefMap(const char *name, BYTE *address)
                     buf.AppendUTF8("I(");
                     break;
 
+                case GCREFMAP_THIS:
+                    buf.AppendUTF8(decoder.ThisIsInterior() ? "THIS:I(" : "THIS:R(");
+                    break;
+
                 case GCREFMAP_METHOD_PARAM:
                     buf.AppendUTF8("M(");
                     break;
@@ -2028,11 +2090,16 @@ bool CheckGCRefMapEqual(PTR_BYTE pGCRefMap, MethodDesc* pMD, bool isDispatchCell
     while (!invalidGCRefMap && !(decoderNew.AtEnd() && decoderExisting.AtEnd()))
     {
         if (decoderNew.AtEnd() != decoderExisting.AtEnd() ||
-            decoderNew.CurrentPos() != decoderExisting.CurrentPos() ||
-            decoderNew.ReadToken() != decoderExisting.ReadToken())
+            decoderNew.CurrentPos() != decoderExisting.CurrentPos())
         {
             invalidGCRefMap = true;
+            break;
         }
+        int newToken = decoderNew.ReadToken();
+        int oldToken = decoderExisting.ReadToken();
+        if (oldToken == GCREFMAP_THIS)
+            oldToken = decoderExisting.ThisIsInterior() ? GCREFMAP_INTERIOR : GCREFMAP_REF;
+        invalidGCRefMap |= newToken != oldToken;
     }
     if (invalidGCRefMap)
     {
