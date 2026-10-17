@@ -1804,11 +1804,18 @@ void EECodeManager::ResumeAfterCatch(CONTEXT *pContext, size_t targetSSP, bool f
     Thread *pThread = GetThread();
     DWORD_PTR dwResumePC = GetIP(pContext);
     UINT_PTR uAbortAddr = 0;
+#ifndef TARGET_WASM
     if (!fIntercepted)
     {
         CopyOSContext(pThread->m_OSContext, pContext);
         uAbortAddr = (UINT_PTR)COMPlusCheckForAbort(dwResumePC);
     }
+#else // !TARGET_WASM
+    // On Wasm, the IP in pContext is not the address of the code that resumes: the frame being
+    // resumed selects its continuation itself, and RtlRestoreContext does not use the context. So a
+    // pending thread abort can neither be checked for with this context nor be redirected to. The
+    // resumed code raises it instead, from JIT_ResumeAfterCatch.
+#endif // !TARGET_WASM
 
     if (uAbortAddr)
     {
