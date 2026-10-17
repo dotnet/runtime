@@ -626,6 +626,126 @@ namespace System.Net.Security.Tests
             }
         }
 
+        public static TheoryData<SslProtocols, bool, bool, bool> NegotiateClientCertificateValidationData()
+        {
+            TheoryData<SslProtocols, bool, bool, bool> data = new();
+            foreach (SslProtocols protocol in SslProtocolSupport.EnumerateSupportedProtocols(SslProtocols.Tls12 | SslProtocols.Tls13))
+            {
+                data.Add(protocol, true, true, false);
+                data.Add(protocol, true, true, true);
+                data.Add(protocol, true, false, false);
+                data.Add(protocol, false, true, false);
+            }
+
+            return data;
+        }
+
+        [ConditionalTheory(typeof(SslStreamNetworkStreamTest), nameof(SupportsRenegotiation))]
+        [MemberData(nameof(NegotiateClientCertificateValidationData))]
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux)]
+        public async Task SslStream_NegotiateClientCertificateAsync_ValidatesCertificate(
+            SslProtocols protocol, bool sendClientCertificate, bool trustClientCertificate, bool rejectInCallback)
+        {
+            using CancellationTokenSource cts = new(TestConfiguration.PassingTestTimeout);
+            // The default generator can select signature algorithms that require TLS 1.3.
+            using Configuration.Certificates.PkiHolder clientPki = Configuration.Certificates.GenerateCertificates(
+                nameof(SslStream_NegotiateClientCertificateAsync_ValidatesCertificate), serverCertificate: false, forceRsaCertificate: true);
+
+            SslClientAuthenticationOptions clientOptions = new()
+            {
+                TargetHost = "localhost",
+                EnabledSslProtocols = protocol,
+                AllowTlsResume = false,
+                CertificateChainPolicy = new X509ChainPolicy
+                {
+                    RevocationMode = X509RevocationMode.NoCheck,
+                    TrustMode = X509ChainTrustMode.CustomRootTrust,
+                    CustomTrustStore = { _certificates.ServerChain[^1] }
+                },
+                // A selection callback also enables TLS 1.3 post-handshake authentication when it returns null.
+                LocalCertificateSelectionCallback = (sender, targetHost, localCertificates, remoteCertificate, acceptableIssuers) =>
+                    sendClientCertificate ? clientPki.EndEntity : null
+            };
+            SslServerAuthenticationOptions serverOptions = new()
+            {
+                ServerCertificateContext = _certificates.CreateSslStreamCertificateContext(),
+                EnabledSslProtocols = protocol,
+                AllowTlsResume = false,
+                ClientCertificateRequired = false,
+                CertificateChainPolicy = new X509ChainPolicy
+                {
+                    RevocationMode = X509RevocationMode.NoCheck,
+                    DisableCertificateDownloads = true,
+                    TrustMode = X509ChainTrustMode.CustomRootTrust,
+                    CustomTrustStore = { trustClientCertificate ? clientPki.IssuerChain[^1] : _certificates.ServerChain[^1] }
+                }
+            };
+            serverOptions.CertificateChainPolicy.ExtraStore.AddRange(clientPki.IssuerChain);
+
+            int validationCount = 0;
+            if (rejectInCallback)
+            {
+                serverOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) =>
+                {
+                    if (certificate is null)
+                    {
+                        Assert.Equal(SslPolicyErrors.RemoteCertificateNotAvailable, sslPolicyErrors);
+                        return true;
+                    }
+
+                    Assert.Equal(clientPki.EndEntity, certificate);
+                    Assert.Equal(SslPolicyErrors.None, sslPolicyErrors);
+                    Interlocked.Increment(ref validationCount);
+                    return false;
+                };
+            }
+
+            (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams();
+            using (client)
+            using (server)
+            {
+                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
+                    client.AuthenticateAsClientAsync(clientOptions, cts.Token),
+                    server.AuthenticateAsServerAsync(serverOptions, cts.Token));
+                await TestHelper.PingPong(client, server, cts.Token);
+                Assert.False(server.IsMutuallyAuthenticated);
+
+                byte[] buffer = new byte[TestHelper.s_ping.Length];
+                Task clientRead = client.ReadExactlyAsync(buffer, cts.Token).AsTask();
+                Task negotiation = server.NegotiateClientCertificateAsync(cts.Token);
+
+                if (sendClientCertificate && trustClientCertificate && !rejectInCallback)
+                {
+                    await negotiation.WaitAsync(cts.Token);
+                    using X509Certificate remoteCertificate = server.RemoteCertificate;
+                    Assert.Equal(clientPki.EndEntity, remoteCertificate);
+                    Assert.True(server.IsMutuallyAuthenticated);
+                    await server.WriteAsync(TestHelper.s_ping, cts.Token);
+                    await clientRead;
+                    Assert.Equal(TestHelper.s_ping, buffer);
+                    Assert.True(client.IsMutuallyAuthenticated);
+                    await TestHelper.PingPong(client, server, cts.Token);
+                    await TestHelper.PingPong(server, client, cts.Token);
+                }
+                else
+                {
+                    Exception exception = await Record.ExceptionAsync(() => negotiation.WaitAsync(cts.Token));
+                    Assert.Equal(rejectInCallback ? 1 : 0, validationCount);
+                    Assert.IsType<AuthenticationException>(exception);
+                    if (sendClientCertificate && !trustClientCertificate)
+                    {
+                        Assert.Contains(nameof(X509ChainStatusFlags.UntrustedRoot), exception.Message);
+                    }
+
+                    Assert.False(server.IsAuthenticated);
+                    Assert.False(server.IsMutuallyAuthenticated);
+                    await Assert.ThrowsAsync<AuthenticationException>(() => server.ReadAsync(buffer, cts.Token).AsTask());
+                    await Assert.ThrowsAsync<AuthenticationException>(() => server.WriteAsync(TestHelper.s_ping, cts.Token).AsTask());
+                    await Assert.ThrowsAsync<IOException>(() => clientRead.WaitAsync(cts.Token));
+                }
+            }
+        }
+
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
