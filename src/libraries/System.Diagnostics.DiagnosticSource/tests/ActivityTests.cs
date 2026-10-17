@@ -679,6 +679,28 @@ namespace System.Diagnostics.Tests
             Assert.Equal(idStr, id.ToString());
         }
 
+        [Theory]
+        [InlineData(0)]
+        [InlineData(15)]
+        [InlineData(17)]
+        public void ActivityTraceId_CopyTo_ThrowsForInvalidDestinationLength(int length)
+        {
+            ActivityTraceId id = ActivityTraceId.CreateRandom();
+            byte[] destination = new byte[length];
+            Assert.Throws<ArgumentOutOfRangeException>(() => id.CopyTo(destination));
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(7)]
+        [InlineData(9)]
+        public void ActivitySpanId_CopyTo_ThrowsForInvalidDestinationLength(int length)
+        {
+            ActivitySpanId id = ActivitySpanId.CreateRandom();
+            byte[] destination = new byte[length];
+            Assert.Throws<ArgumentOutOfRangeException>(() => id.CopyTo(destination));
+        }
+
         /****** WC3 Format tests *****/
 
         [Fact]

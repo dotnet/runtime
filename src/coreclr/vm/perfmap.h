@@ -37,32 +37,18 @@ public:
     // Log an interpreter IR bytecode range to the perfmap
     static void LogInterpreterMethod(MethodDesc * pMethod, PCODE irAddress, size_t irSize)
     {
-        CONTRACTL{
-            NOTHROW;
-            GC_NOTRIGGER;
-            MODE_PREEMPTIVE;
-        } CONTRACTL_END;
+        STANDARD_VM_CONTRACT;
     }
 #endif
 
     static void LogJITCompiledMethod(MethodDesc * pMethod, PCODE pCode, size_t codeSize, PrepareCodeConfig *pConfig)
     {
-        CONTRACTL
-        {
-            THROWS;
-            MODE_PREEMPTIVE;
-        }
-        CONTRACTL_END;
+        STANDARD_VM_CONTRACT;
     }
 
     static void LogPreCompiledMethod(MethodDesc * pMethod, PCODE pCode)
     {
-        CONTRACTL
-        {
-            THROWS;
-            MODE_PREEMPTIVE;
-        }
-        CONTRACTL_END;
+        STANDARD_VM_CONTRACT;
     }
 
     static void LogStubs(const char* stubType, const char* stubOwner, PCODE pCode, size_t codeSize, PerfMapStubType stubAllocationType, bool applyGranularityFilter = true)

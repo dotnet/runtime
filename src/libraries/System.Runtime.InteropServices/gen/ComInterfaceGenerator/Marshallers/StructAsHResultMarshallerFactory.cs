@@ -1,12 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Collections.Generic;
 using System.Runtime.InteropServices;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
-using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
-using static Microsoft.Interop.SyntaxFactoryExtensions;
 
 namespace Microsoft.Interop
 {
@@ -29,7 +24,7 @@ namespace Microsoft.Interop
         {
             public ManagedTypeInfo AsNativeType(TypePositionInfo info) => SpecialTypeInfo.Int32;
 
-            public IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubCodeContext codeContext, StubIdentifierContext context)
+            public void Generate(IndentedTextWriter writer, TypePositionInfo info, StubCodeContext codeContext, StubIdentifierContext context)
             {
                 var (managed, unmanaged) = context.GetIdentifiers(info);
 
@@ -38,37 +33,13 @@ namespace Microsoft.Interop
                     case StubIdentifierContext.Stage.Marshal:
                         if (MarshallerHelpers.GetMarshalDirection(info, codeContext) is MarshalDirection.ManagedToUnmanaged or MarshalDirection.Bidirectional)
                         {
-                            // unmanaged = Unsafe.BitCast<managedType, int>(managed);
-                            yield return AssignmentStatement(
-                                IdentifierName(unmanaged),
-                                MethodInvocation(
-                                    ParseTypeName(TypeNames.System_Runtime_CompilerServices_Unsafe),
-                                    GenericName(Identifier("BitCast"),
-                                        TypeArgumentList(
-                                            SeparatedList(new[]
-                                                {
-                                                    info.ManagedType.Syntax,
-                                                    AsNativeType(info).Syntax
-                                                }))),
-                                    Argument(IdentifierName(managed))));
+                            writer.WriteLine($"{unmanaged} = {TypeNames.GlobalAlias}{TypeNames.System_Runtime_CompilerServices_Unsafe}.BitCast<{info.ManagedType.FullTypeName}, {AsNativeType(info).FullTypeName}>({managed});");
                         }
                         break;
                     case StubIdentifierContext.Stage.Unmarshal:
                         if (MarshallerHelpers.GetMarshalDirection(info, codeContext) is MarshalDirection.UnmanagedToManaged or MarshalDirection.Bidirectional)
                         {
-                            // managed = Unsafe.BitCast<int, managedType>(unmanaged);
-                            yield return AssignmentStatement(
-                            IdentifierName(managed),
-                            MethodInvocation(
-                                ParseTypeName(TypeNames.System_Runtime_CompilerServices_Unsafe),
-                                GenericName(Identifier("BitCast"),
-                                    TypeArgumentList(
-                                        SeparatedList(new[]
-                                            {
-                                                AsNativeType(info).Syntax,
-                                                info.ManagedType.Syntax
-                                            }))),
-                                Argument(IdentifierName(unmanaged))));
+                            writer.WriteLine($"{managed} = {TypeNames.GlobalAlias}{TypeNames.System_Runtime_CompilerServices_Unsafe}.BitCast<{AsNativeType(info).FullTypeName}, {info.ManagedType.FullTypeName}>({unmanaged});");
                         }
                         break;
                     default:

@@ -235,11 +235,17 @@ void emitter::emitIns_MemargAddress(instruction ins, emitAttr attr, void* addres
 
 void emitter::emitFuncletAddressConstant(cnsval_ssize_t funcletId)
 {
-    // Load our table base, then load our funclet pointer offset, then sum them.
-    emitIns_I(INS_global_get, EA_HANDLE_CNS_RELOC,
-              (cnsval_ssize_t)(size_t)m_compiler->eeGetWasmWellKnownGlobals()->tableBase);
+    // NativeAOT uses absolute table indices; R2R adds the module's table base.
+    if (!m_compiler->IsNativeAot())
+    {
+        emitIns_I(INS_global_get, EA_HANDLE_CNS_RELOC,
+                  (cnsval_ssize_t)(size_t)m_compiler->eeGetWasmWellKnownGlobals()->tableBase);
+    }
     emitIns_I(INS_i32_const_funcletptr, EA_PTRSIZE, (cnsval_ssize_t)funcletId);
-    emitIns(INS_i32_add);
+    if (!m_compiler->IsNativeAot())
+    {
+        emitIns(INS_i32_add);
+    }
 }
 
 //------------------------------------------------------------------------
@@ -300,7 +306,7 @@ void emitter::emitIns_Call(const EmitCallParams& params)
     {
         case EC_FUNC_TOKEN:
             ins = params.isJump ? INS_return_call : INS_call;
-            id  = emitNewInstrSC(EA_HANDLE_CNS_RELOC, 0 /* FIXME-WASM: function index reloc */);
+            id  = emitNewInstrSC(EA_HANDLE_CNS_RELOC, (cnsval_ssize_t)params.addr);
             id->idIns(ins);
             id->idInsFmt(IF_FUNCIDX);
             break;
@@ -748,7 +754,8 @@ unsigned emitter::instrDesc::idCodeSize() const
             break;
         case IF_FUNCLETPTR:
         case IF_FUNCLETIDX:
-            size += PADDED_RELOC_SIZE; // funclet indices and pointers are always emitted as relocations
+        case IF_FRAMEIDENTITY:
+            size += PADDED_RELOC_SIZE; // These operands are always emitted as relocations.
             break;
         case IF_DATAOFFS:
             size += PADDED_RELOC_SIZE; // data-section offsets are always emitted as relocations
@@ -1015,6 +1022,13 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         {
             dst += emitOutputOpcode(dst, ins);
             dst += emitOutputConstantFunclet(dst, id, CorInfoReloc::WASM_TABLE_INDEX_SLEB);
+            break;
+        }
+        case IF_FRAMEIDENTITY:
+        {
+            dst += emitOutputOpcode(dst, ins);
+            emitRecordRelocation(dst, m_compiler->info.compMethodHnd, CorInfoReloc::WASM_METHOD_FRAME_IDENTITY_SLEB);
+            dst += emitOutputPaddedReloc(dst);
             break;
         }
         case IF_DATAOFFS:
@@ -1392,6 +1406,7 @@ void emitter::emitDispIns(
 
         case IF_FUNCLETPTR:
         case IF_FUNCLETIDX:
+        case IF_FRAMEIDENTITY:
         {
             cnsval_ssize_t imm = emitGetInsSC(id);
             printf("funclet %lli", static_cast<long long>(imm));

@@ -348,7 +348,10 @@ public:
                         else
                         {
                             JITDUMP("Multiple try entries in SCC %u entry set\n", m_num);
-                            NYI_WASM("SCC with multiple try entry headers");
+                            // Multiple try entries in an SCC is currently not supported. These cases appear to be
+                            // relatively rare, and it would potentially require some fairly complex additional handling
+                            // to support them.
+                            IMPL_LIMITATION("Wasm SCC with multiple try entry headers");
                         }
                     }
                 }
@@ -2019,6 +2022,61 @@ PhaseStatus Compiler::fgWasmControlFlow()
             }
         }
     }
+
+    // Verify that an adjacent forward edge that cannot fall through, because a Try or
+    // ExnRefWrapper interval ends at its target (see BasicBlock::CanRemoveJumpToTarget),
+    // has a plain Block interval enclosing the source and ending at the target, so the
+    // explicit branch codegen emits has a label to bind to. For example, a callfinally
+    // whose continuation follows the end of a try_table:
+    //
+    //   block                ;; Block interval ending at the continuation
+    //     try_table ...
+    //       ...
+    //       call_indirect    ;; call the finally
+    //       br 1             ;; branch to the continuation
+    //     end                ;; end of try_table
+    //     unreachable        ;; fall-through from the try_table would trap here
+    //   end
+    //   ...                  ;; continuation
+    //
+    for (unsigned cursor = 0; cursor < numBlocks; cursor++)
+    {
+        BasicBlock* const block = initialLayout[cursor];
+        BasicBlock* const next  = initialLayout[cursor + 1];
+
+        bool const fallsToNext = (block->KindIs(BBJ_ALWAYS, BBJ_CALLFINALLYRET) && block->TargetIs(next)) ||
+                                 (block->KindIs(BBJ_COND) && block->FalseTargetIs(next));
+        if (!fallsToNext)
+        {
+            continue;
+        }
+
+        bool endsTryOrWrapper = false;
+        bool hasBlockTarget   = false;
+        for (WasmInterval* const interval : *fgWasmIntervals)
+        {
+            if (interval->End() != (cursor + 1))
+            {
+                continue;
+            }
+
+            if (interval->IsTry() || interval->IsExnRefWrapper())
+            {
+                endsTryOrWrapper = true;
+            }
+            else if (!interval->IsLoop() && (interval->Start() <= cursor))
+            {
+                hasBlockTarget = true;
+            }
+        }
+
+        if (endsTryOrWrapper && !hasBlockTarget)
+        {
+            JITDUMP(FMT_BB "[%u] -> " FMT_BB "[%u] crosses a Try/ExnRefWrapper end without a Block target\n",
+                    block->bbNum, cursor, next->bbNum, cursor + 1);
+            assert(!"Wasm fall-through across a Try/ExnRefWrapper end needs a Block target");
+        }
+    }
 #endif
 
     // -----------------------------------------------
@@ -2355,6 +2413,39 @@ PhaseStatus Compiler::fgWasmSpillRefs()
     jitstd::vector<GenTree*> defs(getAllocator(CMK_WasmSpillRefs));
     jitstd::vector<unsigned> spillSlotsToZeroAtEndOfBlock(getAllocator(CMK_WasmSpillRefs));
 
+    // Helper to remove used nodes from the defs list when they're no longer meaningfully 'live'. A contained operand is
+    //  not itself on the operand stack, so look through it to the operands that are.
+    auto removeUses = [](GenTree* op, jitstd::vector<GenTree*>& defs, auto& recurse) -> void {
+        if (!op->IsValue())
+        {
+            return;
+        }
+
+        if (op->isContained())
+        {
+            op->VisitOperands([&recurse, &defs](GenTree* innerOp) {
+                recurse(innerOp, defs, recurse);
+                return GenTree::VisitResult::Continue;
+            });
+            return;
+        }
+
+        if (!op->TypeIs(TYP_REF, TYP_BYREF))
+        {
+            return;
+        }
+
+        for (size_t i = defs.size(); i > 0; i--)
+        {
+            if (op == defs[i - 1])
+            {
+                defs[i - 1] = defs[defs.size() - 1];
+                defs.pop_back();
+                break;
+            }
+        }
+    };
+
     for (BasicBlock* const block : Blocks())
     {
         // The defs list should already be empty because we walked all the nodes in the previous block,
@@ -2377,8 +2468,18 @@ PhaseStatus Compiler::fgWasmSpillRefs()
         {
             if (tree->IsCall())
             {
-                // For any ref/byref values live at the point of a call, spill them into pinned slots
-                //  on the stack where the GC can see them so it won't move them.
+                // If we have a call, consume the call's operands from the defs list BEFORE spilling
+                // any live refs. This is because a GC-ref node which is only live INTO (and not across) another call
+                // does not need extra GC protection. The callee is responsible for ensuring the GC safety of any
+                // incoming GC ref args.
+                tree->VisitOperands([&removeUses, &defs](GenTree* op) {
+                    removeUses(op, defs, removeUses);
+                    return GenTree::VisitResult::Continue;
+                });
+
+                // For any ref/byref values which are still live at the point of a call and not consumed by the current
+                // call, spill them into pinned slots on the stack where the GC can see them so it won't move them.
+                // These cases should only be for nested calls like F(x, G()) where x is a GC ref.
                 if (!defs.empty())
                 {
                     if (m_wasmSpillSlots == nullptr)
@@ -2451,49 +2552,21 @@ PhaseStatus Compiler::fgWasmSpillRefs()
                 }
             }
 
-            // FIXME: Should this happen before the spilling of the live defs list?
-            // I think the answer is no, because live defs being passed as arguments to the current call
-            //  are not guaranteed to ever end up in memory where the GC can see them unless we spill
-            //  them. If we can somehow guarantee that all callees will spill their ref parameters
-            //  immediately, we could do this before the block above.
-
-            // Remove used nodes from defs list, they're no longer meaningfully 'live'. A contained operand is
-            //  not itself on the operand stack, so look through it to the operands that are.
-            auto removeUses = [&defs](GenTree* op, auto& recurse) -> void {
-                if (!op->IsValue())
-                    return;
-                if (op->isContained())
-                {
-                    op->VisitOperands([&recurse](GenTree* innerOp) {
-                        recurse(innerOp, recurse);
-                        return GenTree::VisitResult::Continue;
-                    });
-                    return;
-                }
-                if (!op->TypeIs(TYP_REF, TYP_BYREF))
-                    return;
-
-                for (size_t i = defs.size(); i > 0; i--)
-                {
-                    if (op == defs[i - 1])
-                    {
-                        defs[i - 1] = defs[defs.size() - 1];
-                        defs.pop_back();
-                        break;
-                    }
-                }
-            };
-
-            // A contained node is part of its parent, so it is visited as part of the parent instead.
             if (tree->isContained())
             {
                 continue;
             }
 
-            tree->VisitOperands([&removeUses](GenTree* op) {
-                removeUses(op, removeUses);
-                return GenTree::VisitResult::Continue;
-            });
+            if (!tree->IsCall())
+            {
+                // If the tree isn't a call, then we haven't already removed the current tree's operands from the defs
+                // list. These operands are no longer meaningfully live so we should remove them now.
+                assert(!tree->IsCall() || tree->AsCall()->IsUnmanaged() || tree->AsCall()->IsHelperCall());
+                tree->VisitOperands([&removeUses, &defs](GenTree* op) {
+                    removeUses(op, defs, removeUses);
+                    return GenTree::VisitResult::Continue;
+                });
+            }
 
             // We only care about used values, and invariant nodes can't produce movable GC refs, so skip
             //  nodes appropriately
@@ -3261,6 +3334,8 @@ void Compiler::fgWasmEhTransformTry(ArrayStack<BasicBlock*>* catchRetBlocks,
     //
     BlockToBlockMap    resumePads(getAllocator(CMK_FlowEdge));
     BlockToFlowEdgeMap continuationEdges(getAllocator(CMK_FlowEdge));
+    bool const         verifyGCModeTransitions =
+        IsReadyToRun() && opts.jitFlags->IsSet(JitFlags::JIT_FLAG_VERIFY_GC_MODE_TRANSITIONS);
 
     for (BasicBlock* const catchRetBlock : catchRetBlocks->TopDownOrder())
     {
@@ -3309,6 +3384,16 @@ void Compiler::fgWasmEhTransformTry(ArrayStack<BasicBlock*>* catchRetBlocks,
             GenTree* const store = gtNewStoreLclVarNode(resumeIPLocalNum, zero);
             LIR::Range     range = LIR::SeqTree(this, store);
             LIR::AsRange(resumePad).InsertAtEnd(std::move(range));
+
+            if (verifyGCModeTransitions)
+            {
+                // Reaching this pad means this dispatcher accepted the resumption. A nonmatching
+                // inner dispatcher takes the rethrow edge and must leave transitions forbidden.
+                GenTree* resumeAfterCatch = gtNewHelperCallNode(CORINFO_HELP_JIT_RESUME_AFTER_CATCH, TYP_VOID);
+                resumeAfterCatch          = fgMorphCall(resumeAfterCatch->AsCall());
+                gtSetEvalOrder(resumeAfterCatch);
+                LIR::AsRange(resumePad).InsertAtEnd(LIR::SeqTree(this, resumeAfterCatch));
+            }
 
             resumePads.Set(continuation, resumePad);
 
@@ -3622,7 +3707,7 @@ PhaseStatus Compiler::fgWasmVirtualIP()
                 //
                 const unsigned filterIndex             = block->getHndIndex();
                 const unsigned clauseIndex             = compEHTabOrderToVMClauseOrder[filterIndex];
-                clauses[clauseIndex].clause.ClassToken = virtualIP;
+                clauses[clauseIndex].clause.ClassToken = vipFirstInFunc ? func->startVirtualIP : virtualIP;
             }
 
             // Record the required Virtual IP and store-site/entry flags for each block.

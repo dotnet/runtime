@@ -13,6 +13,7 @@ using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 using System.Text;
 using System.Threading.Tasks;
+using Antlr4.Runtime;
 using Internal.IL;
 using Xunit;
 using DocumentCompilerTestHelpers = ILAssembler.Tests.DocumentCompilerTestHelpers;
@@ -37,6 +38,25 @@ namespace ILAssembler.Tests
             Assert.Equal(expected, result);
         }
 
+        [Fact]
+        public void StringCharStream_SeekPastEnd_ClampsToEnd()
+        {
+            Type streamType = typeof(DocumentCompiler).Assembly.GetType(
+                "ILAssembler.StringCharStream",
+                throwOnError: true)!;
+            var stream = (ICharStream)Activator.CreateInstance(
+                streamType,
+                BindingFlags.Instance | BindingFlags.NonPublic,
+                binder: null,
+                args: ["abc", "test.il"],
+                culture: null)!;
+
+            stream.Seek(10);
+
+            Assert.Equal(stream.Size, stream.Index);
+            Assert.Equal(TokenConstants.EOF, stream.LA(1));
+        }
+
 
         [Fact]
         public void Diagnostic_LiteralOutOfRange()
@@ -53,6 +73,132 @@ namespace ILAssembler.Tests
             var error = Assert.Single(diagnostics);
             Assert.Equal(DiagnosticIds.LiteralOutOfRange, error.Id);
             Assert.Equal(DiagnosticSeverity.Error, error.Severity);
+        }
+
+        [Theory]
+        [InlineData("018")]
+        [InlineData("09")]
+        [InlineData("-018")]
+        public void InvalidOctalIntegerLiteral_ReportsDiagnostic(string literal)
+        {
+            string source = $$"""
+                .class public auto ansi beforefieldinit Test
+                {
+                    .pack {{literal}}
+                }
+                """;
+
+            var diagnostics = DocumentCompilerTestHelpers.CompileAndGetDiagnostics(source, new Options());
+
+            var error = Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticIds.InvalidOctalLiteral, error.Id);
+            Assert.Equal(DiagnosticSeverity.Error, error.Severity);
+            Assert.Equal($"The value '{literal}' is not a valid octal literal", error.Message);
+        }
+
+        [Fact]
+        public void OctalIntegerLiteral_ParsesValidDigits()
+        {
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(
+                """
+                .class public auto ansi beforefieldinit Test
+                {
+                    .pack 010
+                }
+                """,
+                new Options());
+
+            var reader = pe.GetMetadataReader();
+            var type = reader.GetTypeDefinition(MetadataTokens.TypeDefinitionHandle(2));
+
+            Assert.Equal(8, type.GetLayout().PackingSize);
+        }
+
+        [Theory]
+        [InlineData("not-a-number", double.MaxValue)]
+        [InlineData("-not-a-number", double.MinValue)]
+        public void InvalidFloatingLiteral_SaturatesWithOriginalSign(string text, double expected)
+        {
+            object actions = CreateGrammarActions();
+            Type grammarActionsType = actions.GetType();
+            MethodInfo parseFloatingLiteral = grammarActionsType.GetMethod(
+                "ParseFloatingLiteral",
+                BindingFlags.Instance | BindingFlags.NonPublic)!;
+            var token = new CommonToken(CILLexer.FLOAT64, text);
+
+            Assert.Equal(expected, (double)parseFloatingLiteral.Invoke(actions, [token])!);
+        }
+
+        [Theory]
+        [InlineData("ParseBoolean", 0)]
+        [InlineData("ParseFileAttribute", 1)]
+        [InlineData("ParseSecurityAction", 1)]
+        [InlineData("ParseVTableFixupAttribute", 0)]
+        [InlineData("ParseManifestResourceAttribute", 0)]
+        public void InvalidSingleTokenConversion_ReturnsSafeFallback(
+            string methodName,
+            int expected)
+        {
+            object actions = CreateGrammarActions();
+            MethodInfo conversion = actions.GetType().GetMethod(
+                methodName,
+                BindingFlags.Instance | BindingFlags.NonPublic)!;
+            var token = new CommonToken(CILLexer.ID, "invalid");
+
+            object result = conversion.Invoke(actions, [token])!;
+
+            Assert.Equal(expected, Convert.ToInt32(result));
+        }
+
+        [Fact]
+        public void InvalidContextSingleTokenConversions_ReturnSafeFallback()
+        {
+            object actions = CreateGrammarActions();
+            Type actionsType = actions.GetType();
+            var token = new CommonToken(CILLexer.ID, "invalid");
+            var parent = new ParserRuleContext();
+            var assemblyContext = new CILParser.AsmAttrAnyContext(parent, invokingState: 0)
+            {
+                Start = token,
+                Stop = token,
+            };
+            var exportedTypeContext = new CILParser.ExptAttrContext(parent, invokingState: 0)
+            {
+                Start = token,
+                Stop = token,
+            };
+
+            actionsType.GetMethod(
+                "SetAssemblyAttribute",
+                BindingFlags.Instance | BindingFlags.NonPublic)!
+                .Invoke(actions, [assemblyContext]);
+            actionsType.GetMethod(
+                "SetExportedTypeAttribute",
+                BindingFlags.Instance | BindingFlags.NonPublic)!
+                .Invoke(actions, [exportedTypeContext]);
+
+            Assert.Equal(0, (int)assemblyContext.Value);
+            Assert.Equal(0, (int)assemblyContext.Mask);
+            Assert.Equal(0, (int)exportedTypeContext.Value);
+            Assert.Equal(0, (int)exportedTypeContext.Mask);
+        }
+
+        [Fact]
+        public void SyntheticToken_SourceSpanIsClamped()
+        {
+            var token = new CommonToken(CILLexer.Eof)
+            {
+                StartIndex = -1,
+                StopIndex = -1,
+            };
+            MethodInfo getSourceSpan = typeof(Location).GetMethod(
+                "GetSourceSpan",
+                BindingFlags.Static | BindingFlags.NonPublic)!;
+
+            SourceSpan span = (SourceSpan)getSourceSpan.Invoke(obj: null, [token])!;
+
+            Assert.Equal(0, span.Start);
+            Assert.Equal(0, span.Length);
         }
 
 
@@ -190,6 +336,355 @@ namespace ILAssembler.Tests
             Assert.Empty(diagnostics);
         }
 
+
+        [Theory]
+        [InlineData("""
+            .assembly extern mscorlib { }
+            .assembly test { }
+            .class public auto ansi Test
+            {
+            """)]
+        [InlineData("""
+            .assembly extern mscorlib { }
+            .assembly test { }
+            .namespace NS
+            {
+                .class public auto ansi Test
+                {
+                    .method public static void M() cil managed
+                    {
+            """)]
+        [InlineData(".class public auto ansi")]
+        [InlineData(".method public static void")]
+        [InlineData("""
+            .assembly extern mscorlib { }
+            .assembly test { }
+            .class public auto ansi Test
+            {
+                .method public static void M() cil managed
+                {
+                    .try
+            """)]
+        [InlineData("""
+            .assembly extern mscorlib { }
+            .assembly test { }
+            .class public auto ansi Test
+            {
+                .method public static void M(int32 .method cil managed
+                {
+                    .maxstack 2
+                    ret
+                }
+            }
+            """)]
+        [InlineData("""
+            .assembly extern mscorlib { }
+            .assembly test { }
+            .class public auto ansi
+            {
+                .method public instance void M() cil managed
+                {
+                    .override [mscorlib]System.Object::ToString
+                    ret
+                }
+            }
+            """)]
+        public void TruncatedDocument_ReportsDiagnosticsInsteadOfThrowing(string source)
+        {
+            var diagnostics = DocumentCompilerTestHelpers.CompileAndGetDiagnostics(
+                source,
+                new Options { ErrorTolerant = true });
+
+            Assert.Contains(diagnostics, diagnostic => diagnostic.Severity == DiagnosticSeverity.Error);
+        }
+
+        [Theory]
+        [InlineData(".assembly extern { }")]
+        [InlineData(".mresource public { }")]
+        [InlineData(".class public auto ansi Test { .event { } }")]
+        [InlineData(".class public auto ansi Test { .property { } }")]
+        [InlineData("""
+            .class public auto ansi Test
+            {
+                .custom instance void [mscorlib]System.ObsoleteAttribute::.ctor(string) = { string( }
+            }
+            """)]
+        [InlineData("""
+            .class public auto ansi Test
+            {
+                .method public static void M(int32,) cil managed
+                {
+                    ret
+                }
+            }
+            """)]
+        [InlineData(".class public auto ansi Test { .field public }")]
+        [InlineData(".typedef")]
+        [InlineData(".custom")]
+        [InlineData(".class flags( public Test { }")]
+        [InlineData(".class public auto ansi Test<+> { }")]
+        [InlineData(".class public auto ansi Test { .field marshal( int32 F }")]
+        [InlineData(".class public auto ansi Test { .field public int32 F = bytearray( }")]
+        [InlineData("""
+            .class public auto ansi Test
+            {
+                .method pinvokeimpl( public static void M() cil managed
+                {
+                    ret
+                }
+            }
+            """)]
+        [InlineData("""
+            .class public auto ansi Test
+            {
+                .method public static void M(,) cil managed
+                {
+                    ret
+                }
+            }
+            """)]
+        [InlineData("""
+            .class public auto ansi Test
+            {
+                .method public static void M() cil managed
+                {
+                    .custom
+                    ret
+                }
+            }
+            """)]
+        [InlineData(".permission demand class X (Name = )")]
+        [InlineData(".class public auto ansi Test { .field public static literal bool F = bool(invalid true) }")]
+        [InlineData(".class extern { }")]
+        [InlineData(".class public auto ansi Test { .export public { } }")]
+        [InlineData(".assembly extern Name { .ver : }")]
+        public void MalformedTypedGrammarValues_ReportParserDiagnosticsInsteadOfThrowing(string source)
+        {
+            var diagnostics = DocumentCompilerTestHelpers.CompileAndGetDiagnostics(
+                source,
+                new Options { ErrorTolerant = true });
+
+            Assert.Contains(diagnostics, diagnostic => diagnostic.Id == "Parser");
+        }
+
+        private static object CreateGrammarActions()
+        {
+            Type grammarActionsType = typeof(DocumentCompiler).Assembly.GetType(
+                "ILAssembler.GrammarActions",
+                throwOnError: true)!;
+            return Activator.CreateInstance(
+                grammarActionsType,
+                BindingFlags.Instance | BindingFlags.NonPublic,
+                binder: null,
+                args:
+                [
+                    new Dictionary<string, SourceText>(),
+                    new Options(),
+                    (Func<string, byte[]?>)(_ => throw new InvalidOperationException("Unexpected resource")),
+                ],
+                culture: null)!;
+        }
+
+        [Theory]
+        [InlineData("[mscorlib]System.Object")]
+        [InlineData("[.module Other.netmodule]System.Object")]
+        [InlineData("System.Object")]
+        [InlineData("class [mscorlib]System.Object")]
+        [InlineData("class [.module Other.netmodule]System.Object")]
+        [InlineData("class [mscorlib]Generic`1<int32>")]
+        public void EmptyClasses_DoNotBufferFollowingDeclarations(string baseType)
+        {
+            var source = new StringBuilder(".assembly extern mscorlib { } .module extern Other.netmodule ");
+            for (int i = 0; i < 100; i++)
+            {
+                source.Append($".class public C{i} extends {baseType} {{ }} ");
+            }
+
+            var tokens = new MeasuringTokenStream(new CILLexer(new AntlrInputStream(source.ToString())));
+            CILParser parser = CreateParser(tokens);
+
+            parser.decls();
+
+            Assert.Equal(0, parser.NumberOfSyntaxErrors);
+            Assert.Equal(TokenConstants.EOF, tokens.LA(1));
+            Assert.InRange(tokens.MaximumBufferedTokens, 1, 64);
+        }
+
+        [Theory]
+        [InlineData("[Scope]", false)]
+        [InlineData("method void [Scope]::Target()", false)]
+        [InlineData("field int32 [Scope]::Value", false)]
+        [InlineData("[.module Scope]", true)]
+        [InlineData("method void [.module Scope]::Target()", true)]
+        [InlineData("field int32 [.module Scope]::Value", true)]
+        public void BareScopes_ArePreservedForOwners(string source, bool isModule)
+        {
+            var tokens = new UnbufferedTokenStream(new CILLexer(new AntlrInputStream(source)));
+            CILParser parser = CreateParser(tokens);
+
+            CILParser.OwnerTypeContext owner = parser.ownerType();
+
+            Assert.Equal(0, parser.NumberOfSyntaxErrors);
+            Assert.False(owner.HasSyntaxError);
+            Assert.Equal(TokenConstants.EOF, tokens.LA(1));
+            CILParser.TypeSpecificationValue? scope = owner.Value switch
+            {
+                CILParser.TypeOwnerValue type => type.Type,
+                CILParser.MemberOwnerValue
+                {
+                    Member: CILParser.MethodMemberReferenceValue
+                    {
+                        Method: CILParser.ParsedMethodReferenceValue method
+                    }
+                } => method.Owner,
+                CILParser.MemberOwnerValue
+                {
+                    Member: CILParser.FieldMemberReferenceValue
+                    {
+                        Field: CILParser.ParsedFieldReferenceValue field
+                    }
+                } => field.Owner,
+                _ => throw new InvalidOperationException($"Unexpected owner: {owner.Value}")
+            };
+            if (isModule)
+            {
+                Assert.Equal("Scope", Assert.IsType<CILParser.ModuleTypeSpecificationValue>(scope).ModuleName);
+            }
+            else
+            {
+                Assert.Equal("Scope", Assert.IsType<CILParser.AssemblyTypeSpecificationValue>(scope).AssemblyName);
+            }
+        }
+
+        private static CILParser CreateParser(ITokenStream tokens)
+        {
+            var parser = new CILParser(tokens) { BuildParseTree = false };
+            typeof(CILParser).GetProperty("Actions", BindingFlags.Instance | BindingFlags.NonPublic)!
+                .SetValue(parser, CreateGrammarActions());
+
+            return parser;
+        }
+
+        private sealed class MeasuringTokenStream(ITokenSource source) : UnbufferedTokenStream(source)
+        {
+            public int MaximumBufferedTokens { get; private set; }
+
+            public override void Release(int marker)
+            {
+                MaximumBufferedTokens = Math.Max(MaximumBufferedTokens, n);
+                base.Release(marker);
+            }
+        }
+
+        public static TheoryData<string, bool> TruncatedDirectiveMutations
+        {
+            get
+            {
+                string[] sources =
+                [
+                    ".assembly extern Dependency { .publickeytoken = (01 02 03 04) .ver 1:2:3:4 }",
+                    ".mresource public Resource { .assembly extern Dependency }",
+                    ".class extern public Exported { .assembly extern Dependency }",
+                    ".typedef method instance void [mscorlib]System.Object::.ctor() as Constructor",
+                    ".permission demand [mscorlib]System.Security.Permissions.SecurityPermissionAttribute = { }",
+                    """
+                    .class public auto ansi Test<T> extends [mscorlib]System.Object implements [mscorlib]System.IDisposable
+                    {
+                        .field public marshal(int32) int32 F = int32(1)
+                        .event specialname [mscorlib]System.EventHandler E { }
+                        .property specialname int32 P() { }
+                        .method public static void M(int32 'value') cil managed
+                        {
+                            .custom instance void [mscorlib]System.ObsoleteAttribute::.ctor() = (01 00 00 00)
+                            ret
+                        }
+                    }
+                    """
+                ];
+
+                HashSet<string> uniqueMutations = new(StringComparer.Ordinal);
+                TheoryData<string, bool> mutations = new();
+                foreach (string source in sources)
+                {
+                    for (int i = 1; i < source.Length; i++)
+                    {
+                        if (!char.IsWhiteSpace(source[i - 1]) &&
+                            char.IsWhiteSpace(source[i]))
+                        {
+                            string mutation = source.Substring(0, i);
+                            if (uniqueMutations.Add(mutation))
+                            {
+                                mutations.Add(mutation, false);
+                                mutations.Add(mutation, true);
+                            }
+                        }
+                    }
+                }
+
+                return mutations;
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(TruncatedDirectiveMutations))]
+        public void TruncatedDirectiveMutationCorpus_ReportsDiagnosticsInsteadOfThrowing(
+            string source,
+            bool errorTolerant)
+        {
+            ImmutableArray<Diagnostic> diagnostics =
+                DocumentCompilerTestHelpers.CompileAndGetDiagnostics(
+                    source,
+                    new Options { ErrorTolerant = errorTolerant });
+
+            Assert.Contains(
+                diagnostics,
+                diagnostic => diagnostic.Severity == DiagnosticSeverity.Error);
+        }
+
+        [Theory]
+        [InlineData("""
+            .assembly extern Dependency
+            {
+                .publicKey = (01 02 03 04)
+            }
+            .assembly test { }
+            """)]
+        [InlineData("""
+            .assembly test { }
+            .language "3f5162f8-07c6-11d3-9053-00c04fa302a1"
+            """)]
+        [InlineData("""
+            .assembly test { }
+            .class Test
+            {
+                .method static void M() cil managed
+                {
+                    .line 1, 1 : 1, 2 "test.cs"
+                    ret
+                }
+            }
+            """)]
+        [InlineData("""
+            .assembly test { }
+            .class Test
+            {
+                .method static void M(int32 value) cil managed
+                {
+                    ret
+                }
+            }
+            """)]
+        public void NativeIlasmUnsupportedSyntax_ReportsError(string source)
+        {
+            ImmutableArray<Diagnostic> diagnostics =
+                DocumentCompilerTestHelpers.CompileAndGetDiagnostics(
+                    source,
+                    new Options { ErrorTolerant = true });
+
+            Assert.Contains(
+                diagnostics,
+                diagnostic => diagnostic.Severity == DiagnosticSeverity.Error);
+        }
 
         [Fact]
         public void ParserErrorListener_ReportsSyntaxErrors()
