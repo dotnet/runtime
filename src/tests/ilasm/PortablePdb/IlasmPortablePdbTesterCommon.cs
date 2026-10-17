@@ -21,7 +21,7 @@ namespace IlasmPortablePdbTests
             return ilasmFullPath;
         }
 
-        public static void Assemble(string ilasmFullPath, string ilSrc, string testDir, out string dll, out string pdb)
+        public static void Assemble(string ilasmFullPath, string ilSrc, string testDir, out string dll, out string pdb, bool deterministic = false)
         {
             var currentDirectory = Environment.CurrentDirectory;
             var ilSrcFullPath = Path.Combine(currentDirectory, testDir, ilSrc);
@@ -33,7 +33,7 @@ namespace IlasmPortablePdbTests
             var dllFullPath = Path.Combine(currentDirectory, testDir, dllFileName);
             var pdbFullPath = Path.Combine(currentDirectory, testDir, pdbFileName);
 
-            var ilasmArgs = $"{CommonIlasmArguments} -output={dllFullPath} {ilSrcFullPath}";
+            var ilasmArgs = $"{CommonIlasmArguments}{(deterministic ? " -det" : string.Empty)} -output={dllFullPath} {ilSrcFullPath}";
             var ilasmPsi = new ProcessStartInfo
             {
                 UseShellExecute = false,
