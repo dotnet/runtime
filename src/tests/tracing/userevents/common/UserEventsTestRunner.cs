@@ -16,7 +16,6 @@ namespace Tracing.UserEvents.Tests.Common
 {
     public class UserEventsTestRunner
     {
-        private const int SIGINT = 2;
         private const int DefaultTraceeExitTimeoutMs = 5000;
         private const int DefaultRecordTraceExitTimeoutMs = 20000;
 
@@ -32,9 +31,6 @@ namespace Tracing.UserEvents.Tests.Common
         // 126 processes and 253ms at 534 processes on a 2-core x64 system, but took ~1845ms
         // on a 2-core ARM64 CI machine.
         private const int RecordTraceSetupTimeoutMs = 10000;
-
-        [DllImport("libc", EntryPoint = "kill", SetLastError = true)]
-        private static extern int Kill(int pid, int sig);
 
         public static int Run(
             string[] args,
@@ -151,12 +147,12 @@ namespace Tracing.UserEvents.Tests.Common
                 "one_collect::scripting=warn," +
                 "engine=warn");
             recordTraceStartInfo.WorkingDirectory = userEventsScenarioDir;
-            recordTraceStartInfo.UseShellExecute = false;
+            recordTraceStartInfo.InheritedHandles = [];
             recordTraceStartInfo.RedirectStandardOutput = true;
             recordTraceStartInfo.RedirectStandardError = true;
 
             Console.WriteLine($"Starting record-trace: {recordTraceStartInfo.FileName} {string.Join(" ", recordTraceStartInfo.ArgumentList)}");
-            using Process recordTraceProcess = Process.Start(recordTraceStartInfo);
+            using Process recordTraceProcess = Process.Start(recordTraceStartInfo)!;
             using var recordingStarted = new ManualResetEventSlim(false);
             recordTraceProcess.OutputDataReceived += (_, args) =>
             {
@@ -199,6 +195,7 @@ namespace Tracing.UserEvents.Tests.Common
             }
 
             traceeStartInfo.WorkingDirectory = userEventsScenarioDir;
+            traceeStartInfo.InheritedHandles = [];
             traceeStartInfo.RedirectStandardOutput = true;
             traceeStartInfo.RedirectStandardError = true;
 
@@ -233,7 +230,7 @@ namespace Tracing.UserEvents.Tests.Common
             }
 
             Console.WriteLine($"Starting tracee process: {traceeStartInfo.FileName} {string.Join(" ", traceeStartInfo.ArgumentList)}");
-            using Process traceeProcess = Process.Start(traceeStartInfo);
+            using Process traceeProcess = Process.Start(traceeStartInfo)!;
             int traceePid = traceeProcess.Id;
             Console.WriteLine($"Tracee process started with PID: {traceePid}");
             traceeProcess.OutputDataReceived += (_, args) =>
@@ -254,25 +251,25 @@ namespace Tracing.UserEvents.Tests.Common
             traceeProcess.BeginErrorReadLine();
 
             Console.WriteLine($"Waiting for tracee process to exit...");
-            if (!traceeProcess.HasExited && !traceeProcess.WaitForExit(traceeExitTimeout))
+            ProcessExitStatus traceeStatus = traceeProcess.SafeHandle.WaitForExitOrKillOnTimeout(TimeSpan.FromMilliseconds(traceeExitTimeout));
+            if (traceeStatus.Canceled)
             {
-                Console.WriteLine($"Tracee process did not exit within the {traceeExitTimeout}ms timeout, killing it.");
-                traceeProcess.Kill();
+                Console.WriteLine($"Tracee process did not exit within the {traceeExitTimeout}ms timeout and was killed.");
             }
             traceeProcess.WaitForExit(); // flush async output
-            Console.WriteLine($"Tracee process exited with code {traceeProcess.ExitCode}.");
+            Console.WriteLine($"Tracee process exited with code {traceeStatus.ExitCode}.");
 
             if (!recordTraceProcess.HasExited)
             {
                 // Until record-trace supports duration, the only way to stop it is to send SIGINT (ctrl+c)
                 Console.WriteLine($"Stopping record-trace with SIGINT.");
-                Kill(recordTraceProcess.Id, SIGINT);
+                recordTraceProcess.SafeHandle.Signal(PosixSignal.SIGINT);
                 Console.WriteLine($"Waiting for record-trace to exit...");
-                if (!recordTraceProcess.WaitForExit(recordTraceExitTimeout))
+                ProcessExitStatus recordTraceStatus = recordTraceProcess.SafeHandle.WaitForExitOrKillOnTimeout(TimeSpan.FromMilliseconds(recordTraceExitTimeout));
+                if (recordTraceStatus.Canceled)
                 {
                     // record-trace needs to stop gracefully to generate the trace file
-                    Console.WriteLine($"record-trace did not exit within the {recordTraceExitTimeout}ms timeout, killing it.");
-                    recordTraceProcess.Kill();
+                    Console.WriteLine($"record-trace did not exit within the {recordTraceExitTimeout}ms timeout and was killed.");
                 }
             }
             else

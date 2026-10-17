@@ -192,7 +192,7 @@ namespace Tracing.Tests.NonLossyBlockEnv
             }
             psi.ArgumentList.Add("tracee");
 
-            psi.UseShellExecute = false;
+            psi.InheritedHandles = [];
             psi.RedirectStandardOutput = true;
             psi.RedirectStandardError = true;
 
@@ -207,14 +207,13 @@ namespace Tracing.Tests.NonLossyBlockEnv
             Console.WriteLine($"Launching tracee: {psi.FileName} {string.Join(" ", psi.ArgumentList)}");
             Console.WriteLine($"  DOTNET_EventPipeBufferingMode={bufferingMode} DOTNET_EventPipeOutputStreaming={outputStreaming} DOTNET_EventPipeCircularMB={CircularMB}");
 
-            using Process process = Process.Start(psi)
-                ?? throw new InvalidOperationException("Failed to start tracee process.");
+            using Process process = Process.Start(psi)!;
             process.OutputDataReceived += (_, e) => { if (!string.IsNullOrEmpty(e.Data)) Console.WriteLine($"[tracee][stdout] {e.Data}"); };
             process.ErrorDataReceived += (_, e) => { if (!string.IsNullOrEmpty(e.Data)) Console.WriteLine($"[tracee][stderr] {e.Data}"); };
             process.BeginOutputReadLine();
             process.BeginErrorReadLine();
 
-            if (!process.WaitForExit(TraceeExitTimeoutMs))
+            if (!process.TryWaitForExitStatus(TimeSpan.FromMilliseconds(TraceeExitTimeoutMs), out ProcessExitStatus status))
             {
                 Console.WriteLine($"Tracee did not exit within {TraceeExitTimeoutMs}ms; killing it.");
                 process.Kill(entireProcessTree: true);
@@ -222,7 +221,7 @@ namespace Tracing.Tests.NonLossyBlockEnv
                 return -1;
             }
             process.WaitForExit(); // ensure async output is flushed
-            return process.ExitCode;
+            return status.ExitCode;
         }
 
         private static string CreateTraceDirectory()

@@ -57,7 +57,7 @@ public class XUnitLogChecker
 
     private static LogCheckerConfigParameters s_configuration;
 
-    public static int Main(string[] args)
+    public static async Task<int> Main(string[] args)
     {
         s_configuration = new LogCheckerConfigParameters();
 
@@ -81,12 +81,12 @@ public class XUnitLogChecker
         if (s_configuration.HasResultsPath() && s_configuration.HasTestWrapper())
         {
             WriteLineTimestamp("The full run will be done.");
-            exitCode = DoFullRun();
+            exitCode = await DoFullRunAsync();
         }
         else
         {
             WriteLineTimestamp("Only dumps checking will be done.");
-            DoDumpsCheck(string.Empty);
+            await DoDumpsCheckAsync(string.Empty);
             exitCode = SUCCESS;
         }
 
@@ -124,7 +124,7 @@ public class XUnitLogChecker
         }
     }
 
-    private static int DoFullRun()
+    private static async Task<int> DoFullRunAsync()
     {
         string tempLogName = $"{s_configuration.TestWrapperName}.tempLog.xml";
         string finalLogName = $"{s_configuration.TestWrapperName}.testResults.xml";
@@ -216,7 +216,7 @@ public class XUnitLogChecker
         PrintWorkItemSummary(numExpectedTests, workItemEndStatus);
 
         if (s_configuration.HasDumpsPath())
-            DoDumpsCheck(tempLogPath);
+            await DoDumpsCheckAsync(tempLogPath);
 
         // Rename the temp log to the final log, so that Helix can use it without
         // knowing what transpired here.
@@ -225,7 +225,7 @@ public class XUnitLogChecker
         return SUCCESS;
     }
 
-    private static void DoDumpsCheck(string testLogPath)
+    private static async Task DoDumpsCheckAsync(string testLogPath)
     {
         // If we received a dumps path, then search it accordingly. Otherwise,
         // just skip this function and return.
@@ -236,7 +236,7 @@ public class XUnitLogChecker
         if (s_configuration.HasDumpsPath()
             && Directory.Exists(s_configuration.DumpsPath))
         {
-            PrintStackTracesFromDumps(testLogPath);
+            await PrintStackTracesFromDumpsAsync(testLogPath);
         }
         else
         {
@@ -460,7 +460,7 @@ public class XUnitLogChecker
         return result;
     }
 
-    static void PrintStackTracesFromDumps(string testLogPath)
+    static async Task PrintStackTracesFromDumpsAsync(string testLogPath)
     {
         WriteLineTimestamp("Checking for dumps...");
         IEnumerable<string>? dumpsFound = null;
@@ -513,7 +513,7 @@ public class XUnitLogChecker
                 WriteLineTimestamp($"Reading crash dump '{dumpPath}'...");
                 WriteLineTimestamp("Stack Trace Found:\n");
 
-                TryPrintStackTraceFromWindowsDmp(dumpPath, Console.Out);
+                await TryPrintStackTraceFromWindowsDmpAsync(dumpPath, Console.Out);
             }
             else
             {
@@ -529,7 +529,7 @@ public class XUnitLogChecker
                 WriteLineTimestamp($"Reading crash report '{crashReportPath}'...");
                 WriteLineTimestamp("Stack Trace Found:\n");
 
-                TryPrintStackTraceFromCrashReport(crashReportPath, Console.Out);
+                await TryPrintStackTraceFromCrashReportAsync(crashReportPath, Console.Out);
             }
         }
     }
@@ -540,24 +540,31 @@ public class XUnitLogChecker
     private const string TO_BE_CONTINUE_TAG = "<TO_BE_CONTINUE>";
     private const string SKIP_LINE_TAG = "# <SKIP_LINE>";
 
-    static bool RunProcess(string fileName, string arguments, TextWriter outputWriter)
+    static async Task<bool> RunProcessAsync(string fileName, string arguments, TextWriter outputWriter)
     {
         ProcessStartInfo startInfo = new ProcessStartInfo()
         {
             FileName = fileName,
             Arguments = arguments,
-            UseShellExecute = false,
+            InheritedHandles = [],
             RedirectStandardOutput = true,
             RedirectStandardError = true,
         };
 
         outputWriter.WriteLine($"Invoking: {startInfo.FileName} {startInfo.Arguments}");
+        using CancellationTokenSource timeout = new(DEFAULT_TIMEOUT_MS);
         ProcessTextOutput result;
         try
         {
-            result = Process.RunAndCaptureText(startInfo, TimeSpan.FromMilliseconds(DEFAULT_TIMEOUT_MS));
+            result = await Process.RunAndCaptureTextAsync(startInfo, timeout.Token);
         }
-        catch (TimeoutException)
+        catch (OperationCanceledException) when (timeout.IsCancellationRequested)
+        {
+            outputWriter.WriteLine($"Timedout: '{fileName} {arguments}");
+            return false;
+        }
+
+        if (result.ExitStatus.Canceled)
         {
             outputWriter.WriteLine($"Timedout: '{fileName} {arguments}");
             return false;
@@ -583,11 +590,11 @@ public class XUnitLogChecker
     /// <param name="crashReportJsonFile">crash dump path</param>
     /// <param name="outputWriter">Stream for writing logs</param>
     /// <returns>true, if we can print the stack trace, otherwise false.</returns>
-    static bool TryPrintStackTraceFromCrashReport(string crashReportJsonFile, TextWriter outputWriter)
+    static async Task<bool> TryPrintStackTraceFromCrashReportAsync(string crashReportJsonFile, TextWriter outputWriter)
     {
         if (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS())
         {
-            if (!RunProcess("sudo", $"ls -l {crashReportJsonFile}", Console.Out))
+            if (!await RunProcessAsync("sudo", $"ls -l {crashReportJsonFile}", Console.Out))
             {
                 return false;
             }
@@ -599,24 +606,24 @@ public class XUnitLogChecker
                 userName = "helixbot";
             }
 
-            if (!RunProcess("sudo", $"chmod a+rw {crashReportJsonFile}", Console.Out))
+            if (!await RunProcessAsync("sudo", $"chmod a+rw {crashReportJsonFile}", Console.Out))
             {
                 return false;
             }
 
-            if (!RunProcess("sudo", $"chown {userName} {crashReportJsonFile}", Console.Out))
-            {
-                return false;
-            }
-
-            Console.WriteLine("=========================================");
-            if (!RunProcess("sudo", $"ls -l {crashReportJsonFile}", Console.Out))
+            if (!await RunProcessAsync("sudo", $"chown {userName} {crashReportJsonFile}", Console.Out))
             {
                 return false;
             }
 
             Console.WriteLine("=========================================");
-            if (!RunProcess("ls", $"-l {crashReportJsonFile}", Console.Out))
+            if (!await RunProcessAsync("sudo", $"ls -l {crashReportJsonFile}", Console.Out))
+            {
+                return false;
+            }
+
+            Console.WriteLine("=========================================");
+            if (!await RunProcessAsync("ls", $"-l {crashReportJsonFile}", Console.Out))
             {
                 return false;
             }
@@ -721,12 +728,12 @@ public class XUnitLogChecker
 
         string? symbolizerOutput = null;
 
-        Process llvmSymbolizer = new Process()
+        using Process llvmSymbolizer = new Process()
         {
             StartInfo = {
                 FileName = "llvm-symbolizer",
                 Arguments = $"--pretty-print",
-                UseShellExecute = false,
+                InheritedHandles = [],
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 RedirectStandardInput = true,
@@ -735,42 +742,21 @@ public class XUnitLogChecker
 
         outputWriter.WriteLine($"Invoking {llvmSymbolizer.StartInfo.FileName} {llvmSymbolizer.StartInfo.Arguments}");
 
+        using CancellationTokenSource timeout = new(DEFAULT_TIMEOUT_MS);
         try
         {
-            if (!llvmSymbolizer.Start())
-            {
-                outputWriter.WriteLine($"Unable to start {llvmSymbolizer.StartInfo.FileName}");
-            }
-
-            using (var symbolizerWriter = llvmSymbolizer.StandardInput)
-            {
-                symbolizerWriter.WriteLine(addrBuilder.ToString());
-            }
-
-            Task<string> stdout = llvmSymbolizer.StandardOutput.ReadToEndAsync();
-            Task<string> stderr = llvmSymbolizer.StandardError.ReadToEndAsync();
-            bool fSuccess = llvmSymbolizer.WaitForExit(DEFAULT_TIMEOUT_MS);
-
-            Task.WaitAll(stdout, stderr);
-
-            if (!fSuccess)
-            {
-                outputWriter.WriteLine("Errors while running llvm-symbolizer --pretty-print");
-                string output = stdout.Result;
-                string error = stderr.Result;
-
-                Console.WriteLine("llvm-symbolizer stdout:");
-                Console.WriteLine(output);
-                Console.WriteLine("llvm-symbolizer stderr:");
-                Console.WriteLine(error);
-
-                llvmSymbolizer.Kill(true);
-
-                return false;
-            }
-
-            symbolizerOutput = stdout.Result;
-
+            llvmSymbolizer.Start();
+            Task<(string StandardOutput, string StandardError)> output = llvmSymbolizer.ReadAllTextAsync(timeout.Token);
+            Task<ProcessExitStatus> exit = llvmSymbolizer.WaitForExitStatusAsync(timeout.Token);
+            await Task.WhenAll(WriteInputAsync(), output, exit);
+            symbolizerOutput = (await output).StandardOutput;
+        }
+        catch (OperationCanceledException) when (timeout.IsCancellationRequested)
+        {
+            llvmSymbolizer.Kill(entireProcessTree: true);
+            await llvmSymbolizer.WaitForExitStatusAsync();
+            outputWriter.WriteLine("Timed out while running llvm-symbolizer --pretty-print");
+            return false;
         }
         catch (Exception e)
         {
@@ -797,6 +783,14 @@ public class XUnitLogChecker
         outputWriter.WriteLine("Stack trace:");
         outputWriter.WriteLine(finalBuilder.ToString());
         return true;
+
+        async Task WriteInputAsync()
+        {
+            StreamWriter symbolizerWriter = llvmSymbolizer.StandardInput;
+            await symbolizerWriter.WriteLineAsync(addrBuilder.ToString().AsMemory(), timeout.Token);
+            await symbolizerWriter.FlushAsync(timeout.Token);
+            symbolizerWriter.Close();
+        }
     }
 
     static void AppendAddress(StringBuilder sb, string coreRoot, string nativeModuleName, string native_address, string module_address)
@@ -814,7 +808,7 @@ public class XUnitLogChecker
         }
     }
 
-    static bool TryPrintStackTraceFromWindowsDmp(string dmpFile, TextWriter outputWriter)
+    static async Task<bool> TryPrintStackTraceFromWindowsDmpAsync(string dmpFile, TextWriter outputWriter)
     {
         string? targetArchitecture = Environment.GetEnvironmentVariable(TEST_TARGET_ARCHITECTURE_ENVIRONMENT_VAR);
         if (string.IsNullOrEmpty(targetArchitecture))
@@ -849,7 +843,7 @@ public class XUnitLogChecker
             """);
 
         // cdb outputs the stacks directly, so we don't need to parse the output.
-        if (!RunProcess(cdbPath, $@"-c ""$<{cdbScriptPath}"" -z ""{dmpFile}""", outputWriter))
+        if (!await RunProcessAsync(cdbPath, $@"-c ""$<{cdbScriptPath}"" -z ""{dmpFile}""", outputWriter))
         {
             outputWriter.WriteLine("Unable to run cdb.exe");
             return false;
@@ -857,4 +851,3 @@ public class XUnitLogChecker
         return true;
     }
 }
-

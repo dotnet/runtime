@@ -16,7 +16,6 @@ using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
 
 namespace TestLibrary
@@ -216,6 +215,7 @@ namespace TestLibrary
                 // Some distros might not have the /proc/pid/task/tid/children entry enabled in the kernel
                 // attempt to use pgrep then
                 var pgrepInfo = new ProcessStartInfo("pgrep");
+                pgrepInfo.InheritedHandles = [];
                 pgrepInfo.RedirectStandardOutput = true;
                 pgrepInfo.RedirectStandardError = true;
                 pgrepInfo.Arguments = $"-P {process.Id}";
@@ -267,7 +267,6 @@ namespace TestLibrary
         public const int DEFAULT_TIMEOUT_MS = 1000 * 60 * 10;
 
         const int DiagnosticIpcTimeoutMs = 60_000;
-        const int OutputCopyTimeoutMs = 10_000;
 
         public const string COLLECT_DUMPS_ENVIRONMENT_VAR = "__CollectDumps";
         public const string CRASH_DUMP_FOLDER_ENVIRONMENT_VAR = "__CrashDumpFolder";
@@ -500,47 +499,6 @@ namespace TestLibrary
             return buffer;
         }
 
-        static void CompleteOutputCopies(
-            Process process,
-            CancellationTokenSource cancellation,
-            Task copyOutput,
-            Task copyError,
-            TextWriter diagnosticWriter)
-        {
-            Task[] copyTasks = [copyOutput, copyError];
-            if (WaitForOutputCopies(copyTasks, diagnosticWriter))
-            {
-                return;
-            }
-
-            diagnosticWriter.WriteLine("Timed out waiting for redirected test output to complete.");
-            cancellation.Cancel();
-            process.StandardOutput.Dispose();
-            process.StandardError.Dispose();
-
-            if (!WaitForOutputCopies(copyTasks, diagnosticWriter))
-            {
-                diagnosticWriter.WriteLine("Redirected test output did not complete after cancellation.");
-            }
-        }
-
-        static bool WaitForOutputCopies(Task[] copyTasks, TextWriter diagnosticWriter)
-        {
-            try
-            {
-                return Task.WaitAll(copyTasks, OutputCopyTimeoutMs);
-            }
-            catch (AggregateException ex) when (ex.Flatten().InnerExceptions.All(
-                static ex => ex is IOException or ObjectDisposedException or OperationCanceledException))
-            {
-                foreach (Exception copyException in ex.Flatten().InnerExceptions)
-                {
-                    diagnosticWriter.WriteLine($"Redirected test output ended with: {copyException.Message}");
-                }
-                return true;
-            }
-        }
-
         // Finds all children processes starting with a process named childName
         // The children are sorted in the order they should be dumped
         static unsafe IEnumerable<Process> FindChildProcessesByName(Process process, string childName)
@@ -632,8 +590,9 @@ namespace TestLibrary
                     process.StartInfo.Arguments = executable;
                 }
 
-                process.StartInfo.RedirectStandardOutput = true;
-                process.StartInfo.RedirectStandardError = true;
+                process.StartInfo.StandardOutputHandle = outputStream.SafeFileHandle;
+                process.StartInfo.StandardErrorHandle = errorStream.SafeFileHandle;
+                process.StartInfo.InheritedHandles = [];
                 process.StartInfo.EnvironmentVariables.Add("__Category", category);
                 process.StartInfo.EnvironmentVariables.Add("__TestBinaryBase", testBinaryBase);
                 process.StartInfo.EnvironmentVariables.Add("__OutputDir", outputDir);
@@ -641,15 +600,9 @@ namespace TestLibrary
                 DateTime startTime = DateTime.Now;
                 process.Start();
 
-                var cts = new CancellationTokenSource();
-                Task copyOutput = process.StandardOutput.BaseStream.CopyToAsync(outputStream, 4096, cts.Token);
-                Task copyError = process.StandardError.BaseStream.CopyToAsync(errorStream, 4096, cts.Token);
-
-                if (process.WaitForExit(timeout))
+                if (process.TryWaitForExitStatus(TimeSpan.FromMilliseconds(timeout), out ProcessExitStatus status))
                 {
-                    // Process completed. Check process.ExitCode here.
-                    exitCode = process.ExitCode;
-                    Task.WaitAll(copyOutput, copyError);
+                    exitCode = status.ExitCode;
                 }
                 else
                 {
@@ -695,7 +648,11 @@ namespace TestLibrary
 
                     // kill the timed out processes after we've collected dumps
                     process.Kill(entireProcessTree: true);
-                    CompleteOutputCopies(process, cts, copyOutput, copyError, diagnosticWriter);
+                    process.WaitForExitStatus();
+
+                    // Child writes bypass the FileStream's cached position.
+                    outputStream.Seek(0, SeekOrigin.End);
+                    errorStream.Seek(0, SeekOrigin.End);
 
                     string timeoutMessage = string.Format(
                         "\ncmdLine:{0} Timed Out (timeout in milliseconds: {1}{2}{3}, start: {4}, end: {5})",
@@ -715,6 +672,7 @@ namespace TestLibrary
                     }
                 }
 
+                outputStream.Seek(0, SeekOrigin.End);
                 outputWriter.WriteLine("Test Harness Exitcode is : " + exitCode.ToString());
                 outputWriter.Flush();
                 errorWriter.Flush();
@@ -728,19 +686,14 @@ namespace TestLibrary
             // The command to execute
             string command = "wmic process get Name, ProcessId, ParentProcessId";
 
-            // Start the process and capture the output
-            Process process = new Process();
-            process.StartInfo.FileName = "cmd.exe";
-            process.StartInfo.Arguments = $"/c {command}";
-            process.StartInfo.RedirectStandardOutput = true;
-            process.StartInfo.RedirectStandardError = true;
-            process.StartInfo.CreateNoWindow = true;
-
-            // Start the process and read the output
-            string output = Process.RunAndCaptureText(process.StartInfo).StandardOutput;
-
-            // Output the result
-            return output;
+            ProcessStartInfo startInfo = new("cmd.exe", $"/c {command}")
+            {
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true,
+                InheritedHandles = [],
+            };
+            return Process.RunAndCaptureText(startInfo).StandardOutput;
         }
     }
 }

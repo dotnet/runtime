@@ -33,11 +33,11 @@ namespace Tracing.UserEvents.Tests.Common
             ProcessStartInfo checkTracefsStartInfo = new();
             checkTracefsStartInfo.FileName = "sudo";
             checkTracefsStartInfo.Arguments = $"-n test -d {TracefsPath}";
-            checkTracefsStartInfo.UseShellExecute = false;
+            checkTracefsStartInfo.InheritedHandles = [];
             checkTracefsStartInfo.RedirectStandardOutput = true;
             checkTracefsStartInfo.RedirectStandardError = true;
 
-            using Process process = Process.Start(checkTracefsStartInfo);
+            using Process process = Process.Start(checkTracefsStartInfo)!;
             foreach (ProcessOutputLine line in process.ReadAllLines())
             {
                 if (string.IsNullOrEmpty(line.Content))
@@ -56,9 +56,9 @@ namespace Tracing.UserEvents.Tests.Common
             }
 
             // A process can close its std handles but keep running.
-            process.WaitForExit();
+            ProcessExitStatus status = process.WaitForExitStatus();
 
-            if (process.ExitCode == 0)
+            if (status.ExitCode == 0)
             {
                 return true;
             }
@@ -72,11 +72,11 @@ namespace Tracing.UserEvents.Tests.Common
             ProcessStartInfo checkUserEventsDataStartInfo = new();
             checkUserEventsDataStartInfo.FileName = "sudo";
             checkUserEventsDataStartInfo.Arguments = $"-n test -e {UserEventsDataPath}";
-            checkUserEventsDataStartInfo.UseShellExecute = false;
+            checkUserEventsDataStartInfo.InheritedHandles = [];
             checkUserEventsDataStartInfo.RedirectStandardOutput = true;
             checkUserEventsDataStartInfo.RedirectStandardError = true;
 
-            using Process process = Process.Start(checkUserEventsDataStartInfo);
+            using Process process = Process.Start(checkUserEventsDataStartInfo)!;
             foreach (ProcessOutputLine line in process.ReadAllLines())
             {
                 if (string.IsNullOrEmpty(line.Content))
@@ -95,9 +95,9 @@ namespace Tracing.UserEvents.Tests.Common
             }
 
             // A process can close its std handles but keep running.
-            process.WaitForExit();
+            ProcessExitStatus status = process.WaitForExitStatus();
 
-            if (process.ExitCode == 0)
+            if (status.ExitCode == 0)
             {
                 return true;
             }
@@ -111,7 +111,7 @@ namespace Tracing.UserEvents.Tests.Common
             ProcessStartInfo lddStartInfo = new();
             lddStartInfo.FileName = "ldd";
             lddStartInfo.Arguments = "--version";
-            lddStartInfo.UseShellExecute = false;
+            lddStartInfo.InheritedHandles = [];
             lddStartInfo.RedirectStandardOutput = true;
             lddStartInfo.RedirectStandardError = true;
 
