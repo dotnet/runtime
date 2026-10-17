@@ -196,10 +196,6 @@ set(SOURCES
   safecrt/wcsncat_s.cpp
   safecrt/wcsncpy_s.cpp
   safecrt/wmakepath_s.cpp
-  synchobj/event.cpp
-  synchmgr/synchcontrollers.cpp
-  synchmgr/synchmanager.cpp
-  synchmgr/wait.cpp
   thread/process.cpp
   thread/thread.cpp
   thread/threadsusp.cpp
@@ -256,7 +252,12 @@ else()
   if(NOT FEATURE_CROSSBITNESS AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
     add_library(coreclrpal_dac STATIC
       exception/remote-unwind.cpp
+      ${LIBUNWIND_OBJECTS}
     )
+
+    if(CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
+      target_link_libraries(coreclrpal_dac PUBLIC ${UNWIND_LIBS})
+    endif(CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
   endif(NOT FEATURE_CROSSBITNESS AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
 endif(CLR_CMAKE_TARGET_APPLE)
 
@@ -310,8 +311,8 @@ if(CLR_CMAKE_TARGET_HAIKU)
 endif(CLR_CMAKE_TARGET_HAIKU)
 
 if(CLR_CMAKE_TARGET_LINUX)
-  # On Android, we don't need to link with gcc_s, pthread and rt
-  if(NOT CLR_CMAKE_TARGET_ANDROID)
+  # On Android and OpenHarmony, we don't need to link with gcc_s, pthread and rt
+  if(NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_OPENHARMONY)
     target_link_libraries(coreclrpal
       PUBLIC
       gcc_s

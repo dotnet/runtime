@@ -77,7 +77,7 @@ public:
         GenTree* node = *use;
         if (node->OperIsAnyLocal())
         {
-            SequenceLocal(node->AsLclVarCommon());
+            SequenceLocal(node);
         }
 
         if (node->IsCall())
@@ -94,7 +94,7 @@ public:
     // Arguments:
     //     lcl - the local
     //
-    void SequenceLocal(GenTreeLclVarCommon* lcl)
+    void SequenceLocal(GenTree* lcl)
     {
         lcl->gtPrev        = m_prevNode;
         m_prevNode->gtNext = lcl;
@@ -118,7 +118,7 @@ public:
             return GenTree::VisitResult::Continue;
         };
 
-        call->VisitLocalDefNodes(m_compiler, moveToEnd);
+        call->VisitPhysicalLocalDefNodes(m_compiler, moveToEnd);
     }
 
     //-------------------------------------------------------------------
@@ -142,7 +142,7 @@ private:
     // Arguments:
     //     node - The node
     //
-    void MoveNodeToEnd(GenTreeLclVarCommon* node)
+    void MoveNodeToEnd(GenTree* node)
     {
         if ((m_prevNode == node) || (node->gtNext == nullptr))
         {
@@ -1091,7 +1091,7 @@ public:
                 EscapeValue(TopValue(0), node);
                 PopValue();
 
-                SequenceLocal(node->AsLclVarCommon());
+                SequenceLocal(node);
                 break;
             }
 
@@ -1101,18 +1101,18 @@ public:
                     HandleLocalAssertions(node->AsLclVarCommon(), TopValue(0));
                 }
 
-                SequenceLocal(node->AsLclVarCommon());
+                SequenceLocal(node);
                 break;
 
             case GT_LCL_FLD:
-                SequenceLocal(node->AsLclVarCommon());
+                SequenceLocal(node);
                 break;
 
             case GT_LCL_ADDR:
                 assert(TopValue(0).Node() == node);
 
                 TopValue(0).Address(node->AsLclFld());
-                SequenceLocal(node->AsLclVarCommon());
+                SequenceLocal(node);
                 break;
 
             case GT_ADD:
@@ -1991,6 +1991,12 @@ private:
 #ifdef FEATURE_HW_INTRINSICS
             if (varTypeIsSIMD(varDsc))
             {
+                // Preserve RHS side effects before reading the vector for a partial store.
+                if (isDef && ((indir->Data()->gtFlags & GTF_OBS_EFFECT) != 0))
+                {
+                    return IndirTransform::LclFld;
+                }
+
                 // We have three cases we want to handle:
                 // 1. Vector2/3/4 and Quaternion where we have 2-4x float fields
                 // 2. Plane where we have 1x Vector3 and 1x float field
@@ -2347,7 +2353,7 @@ private:
         return (user == nullptr) || (user->OperIs(GT_COMMA) && (user->AsOp()->gtGetOp1() == node));
     }
 
-    void SequenceLocal(GenTreeLclVarCommon* lcl)
+    void SequenceLocal(GenTree* lcl)
     {
         if (m_sequencer != nullptr)
         {
@@ -2484,11 +2490,11 @@ PhaseStatus Compiler::fgUnpinNonMovableLocals()
         {
             for (Statement* const stmt : block->Statements())
             {
-                for (GenTreeLclVarCommon* const lcl : stmt->LocalsTreeList())
-                {
+                stmt->VisitLogicalLocalOccurrencesViaLocalsTreeList([&](const auto& occurrence) {
+                    GenTree* lcl = occurrence.GetNode();
                     if (lcl->OperIs(GT_STORE_LCL_VAR))
                     {
-                        unsigned const   dstLclNum = lcl->GetLclNum();
+                        unsigned const   dstLclNum = occurrence.GetLclNum();
                         LclVarDsc* const dstDsc    = lvaGetDesc(dstLclNum);
                         GenTree* const   value     = lcl->Data();
 
@@ -2550,12 +2556,12 @@ PhaseStatus Compiler::fgUnpinNonMovableLocals()
                                 changed = true;
                             }
 
-                            continue;
+                            return GenTree::VisitResult::Continue;
                         }
 
                         if (!BitVecOps::IsMember(&traits, hasNoGcValue, dstLclNum))
                         {
-                            continue;
+                            return GenTree::VisitResult::Continue;
                         }
 
                         bool isNoGc = value->IsNotGcDef();
@@ -2571,16 +2577,16 @@ PhaseStatus Compiler::fgUnpinNonMovableLocals()
                             changed = true;
                         }
 
-                        continue;
+                        return GenTree::VisitResult::Continue;
                     }
 
                     // Any other def we do not analyze (GT_STORE_LCL_FLD,
                     // retbuf GT_LCL_ADDR, etc.): mark the destination as
                     // has-GC, plus all fields if it is a promoted parent.
                     //
-                    if ((lcl->gtFlags & GTF_VAR_DEF) != 0)
+                    if ((occurrence.GetFlags() & GTF_VAR_DEF) != 0)
                     {
-                        unsigned const   dstLclNum = lcl->GetLclNum();
+                        unsigned const   dstLclNum = occurrence.GetLclNum();
                         LclVarDsc* const dstDsc    = lvaGetDesc(dstLclNum);
 
                         if (BitVecOps::IsMember(&traits, hasNoGcValue, dstLclNum))
@@ -2602,7 +2608,8 @@ PhaseStatus Compiler::fgUnpinNonMovableLocals()
                             }
                         }
                     }
-                }
+                    return GenTree::VisitResult::Continue;
+                });
             }
         }
     }
@@ -2652,8 +2659,9 @@ bool Compiler::fgExposeUnpropagatedLocals(bool propagatedAny, LocalEqualsLocalAd
 
     struct Store
     {
-        struct Statement*    Statement;
-        GenTreeLclVarCommon* Tree;
+        struct Statement* Statement;
+        GenTree**         DataUse;
+        unsigned          LclNum;
     };
 
     ArrayStack<Store> stores(getAllocator(CMK_LocalAddressVisitor));
@@ -2664,25 +2672,28 @@ bool Compiler::fgExposeUnpropagatedLocals(bool propagatedAny, LocalEqualsLocalAd
 
         for (Statement* stmt : block->Statements())
         {
-            for (GenTreeLclVarCommon* lcl : stmt->LocalsTreeList())
-            {
-                if (!BitVecOps::IsMember(&localsTraits, unreadLocals, lcl->GetLclNum()))
+            stmt->VisitLogicalLocalOccurrencesViaLocalsTreeList([&](const auto& occurrence) {
+                GenTree* lcl = occurrence.GetNode();
+                if (!BitVecOps::IsMember(&localsTraits, unreadLocals, occurrence.GetLclNum()))
                 {
-                    continue;
+                    return GenTree::VisitResult::Continue;
                 }
 
-                if (lcl->OperIs(GT_STORE_LCL_VAR, GT_STORE_LCL_FLD))
+                if (((occurrence.GetFlags() & GTF_VAR_DEF) != 0) && !lcl->OperIs(GT_LCL_ADDR))
                 {
-                    if (lcl->TypeIs(TYP_I_IMPL, TYP_BYREF) && ((lcl->Data()->gtFlags & GTF_SIDE_EFFECT) == 0))
+                    var_types accessType = occurrence.GetAccessType(this);
+                    if (((accessType == TYP_I_IMPL) || (accessType == TYP_BYREF)) &&
+                        ((lcl->Data()->gtFlags & GTF_SIDE_EFFECT) == 0))
                     {
-                        stores.Push({stmt, lcl});
+                        stores.Push({stmt, &lcl->Data(), occurrence.GetLclNum()});
                     }
                 }
                 else
                 {
-                    BitVecOps::RemoveElemD(&localsTraits, unreadLocals, lcl->GetLclNum());
+                    BitVecOps::RemoveElemD(&localsTraits, unreadLocals, occurrence.GetLclNum());
                 }
-            }
+                return GenTree::VisitResult::Continue;
+            });
         }
     }
 
@@ -2696,18 +2707,17 @@ bool Compiler::fgExposeUnpropagatedLocals(bool propagatedAny, LocalEqualsLocalAd
     bool changed = false;
     for (const Store& store : stores.BottomUpOrder())
     {
-        assert(store.Tree->TypeIs(TYP_I_IMPL, TYP_BYREF));
-
-        if (BitVecOps::IsMember(&localsTraits, unreadLocals, store.Tree->GetLclNum()))
+        if (BitVecOps::IsMember(&localsTraits, unreadLocals, store.LclNum))
         {
-            JITDUMP("V%02u is unread; removing store data of [%06u]\n", store.Tree->GetLclNum(), dspTreeID(store.Tree));
-            DISPTREE(store.Tree);
+            JITDUMP("V%02u is unread; removing store data in " FMT_STMT "\n", store.LclNum, store.Statement->GetID());
+            DISPSTMT(store.Statement);
 
-            store.Tree->Data()->BashToConst(0, store.Tree->Data()->TypeGet());
+            GenTree* data = *store.DataUse;
+            data->BashToConst(0, data->TypeGet());
             fgSequenceLocals(store.Statement);
 
             JITDUMP("\nResult:\n");
-            DISPTREE(store.Tree);
+            DISPSTMT(store.Statement);
             JITDUMP("\n");
             changed = true;
         }
@@ -2724,17 +2734,18 @@ bool Compiler::fgExposeUnpropagatedLocals(bool propagatedAny, LocalEqualsLocalAd
 
             for (Statement* stmt : block->Statements())
             {
-                for (GenTreeLclVarCommon* lcl : stmt->LocalsTreeList())
-                {
+                stmt->VisitLogicalLocalOccurrencesViaLocalsTreeList([&](const auto& occurrence) {
+                    GenTree* lcl = occurrence.GetNode();
                     if (!lcl->OperIs(GT_LCL_ADDR))
                     {
-                        continue;
+                        return GenTree::VisitResult::Continue;
                     }
 
-                    LclVarDsc* lclDsc        = lvaGetDesc(lcl);
-                    unsigned   exposedLclNum = lclDsc->lvIsStructField ? lclDsc->lvParentLcl : lcl->GetLclNum();
+                    LclVarDsc* lclDsc        = lvaGetDesc(occurrence.GetLclNum());
+                    unsigned   exposedLclNum = lclDsc->lvIsStructField ? lclDsc->lvParentLcl : occurrence.GetLclNum();
                     BitVecOps::AddElemD(&localsTraits, exposedLocals, exposedLclNum);
-                }
+                    return GenTree::VisitResult::Continue;
+                });
             }
         }
 

@@ -157,6 +157,7 @@ public partial class Program
         IsTrue(typeof(IntPtr).IsPrimitive);
         IsTrue(typeof(UIntPtr).IsPrimitive);
 
+        IsFalse(typeof(void).IsPrimitive);
         IsFalse(typeof(Enum).IsPrimitive);
         IsFalse(typeof(ValueType).IsPrimitive);
         IsFalse(typeof(SimpleEnum).IsPrimitive);

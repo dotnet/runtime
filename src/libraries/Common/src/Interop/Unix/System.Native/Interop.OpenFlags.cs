@@ -22,6 +22,7 @@ internal static partial class Interop
             O_TRUNC    = 0x0080,
             O_SYNC     = 0x0100,
             O_NOFOLLOW = 0x0200,
+            O_DIRECTORY = 0x1000,
         }
     }
 }

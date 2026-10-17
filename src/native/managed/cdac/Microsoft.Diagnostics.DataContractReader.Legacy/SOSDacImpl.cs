@@ -896,11 +896,11 @@ public sealed unsafe partial class SOSDacImpl
 
             IExecutionManager em = _target.Contracts.ExecutionManager;
 #if DEBUG
-            Contracts.JitManagerInfo jitManagerInfo = em.GetEEJitManagerInfo();
+            Contracts.JitManagerInfo jitManagerInfo = em.GetJitManagerInfo(JitManagerKind.EE)!.Value;
             Debug.Assert(jitManager.ToTargetPointer(_target) == jitManagerInfo.ManagerAddress);
 #endif
 
-            List<ICodeHeapInfo> heapInfos = em.GetCodeHeapInfos().ToList();
+            List<ICodeHeapInfo> heapInfos = em.GetCodeHeapInfos(JitManagerKind.EE).ToList();
             int i = 0;
             if (codeHeaps is not null)
             {
@@ -2235,7 +2235,7 @@ public sealed unsafe partial class SOSDacImpl
                 if (count >= 1)
                 {
                     *managers = default;
-                    Contracts.JitManagerInfo jitManagerInfo = _target.Contracts.ExecutionManager.GetEEJitManagerInfo();
+                    Contracts.JitManagerInfo jitManagerInfo = _target.Contracts.ExecutionManager.GetJitManagerInfo(JitManagerKind.EE)!.Value;
                     managers->managerAddr = jitManagerInfo.ManagerAddress.ToClrDataAddress(_target);
                     managers->codeType = jitManagerInfo.CodeType;
                     managers->ptrHeapList = jitManagerInfo.HeapListAddress.ToClrDataAddress(_target);
@@ -2280,17 +2280,28 @@ public sealed unsafe partial class SOSDacImpl
         return hr;
     }
 
-    private bool IsJumpRel64(TargetPointer pThunk)
+    private bool IsJumpAbs64(TargetPointer pThunk)
+        => 0xD5 == _target.Read<byte>(pThunk) &&
+           0x00 == _target.Read<byte>(pThunk + 1) &&
+           0xA1 == _target.Read<byte>(pThunk + 2);
+
+    private bool IsJumpMovRax64(TargetPointer pThunk)
         => 0x48 == _target.Read<byte>(pThunk) &&
            0xB8 == _target.Read<byte>(pThunk + 1) &&
            0xFF == _target.Read<byte>(pThunk + 10) &&
            0xE0 == _target.Read<byte>(pThunk + 11);
 
+    private bool IsJumpRel64(TargetPointer pThunk)
+        => IsJumpAbs64(pThunk) || IsJumpMovRax64(pThunk);
+
     private TargetPointer DecodeJump64(TargetPointer pThunk)
     {
         Debug.Assert(IsJumpRel64(pThunk), "Expected a jump thunk");
 
-        return _target.ReadPointer(pThunk + 2);
+        // The immediate follows the 3-byte jmpabs opcode or the 2-byte mov rax opcode.
+        return IsJumpAbs64(pThunk)
+            ? _target.ReadPointer(pThunk + 3)
+            : _target.ReadPointer(pThunk + 2);
     }
 
     int ISOSDacInterface.GetJumpThunkTarget(void* ctx, ClrDataAddress* targetIP, ClrDataAddress* targetMD)
@@ -2397,7 +2408,7 @@ public sealed unsafe partial class SOSDacImpl
             if (nativeCodeAddr != TargetCodePointer.Null)
             {
                 data->bHasNativeCode = 1;
-                data->NativeCodeAddr = _target.Contracts.PrecodeStubs.GetInterpreterCodeFromInterpreterPrecodeIfPresent(nativeCodeAddr).ToAddress(_target).ToClrDataAddress(_target);
+                data->NativeCodeAddr = _target.Contracts.ExecutionManager.GetDiagnosticCodeStartFromEntryPoint(nativeCodeAddr).ToAddress(_target).ToClrDataAddress(_target);
             }
             else
             {
@@ -2609,7 +2620,7 @@ public sealed unsafe partial class SOSDacImpl
         ILCodeVersionHandle ilCodeVersion = cv.GetILCodeVersion(nativeCodeVersion);
 
         TargetCodePointer nativeCode = cv.GetNativeCode(nativeCodeVersion);
-        pReJitData->NativeCodeAddr = _target.Contracts.PrecodeStubs.GetInterpreterCodeFromInterpreterPrecodeIfPresent(nativeCode).Value;
+        pReJitData->NativeCodeAddr = _target.Contracts.ExecutionManager.GetDiagnosticCodeStartFromEntryPoint(nativeCode).Value;
         if (cv.GetSource(ilCodeVersion) != CodeVersionSource.ReJIT)
         {
             pReJitData->rejitID = 0;
@@ -2636,6 +2647,8 @@ public sealed unsafe partial class SOSDacImpl
                 // kStateActive
                 case RejitState.Active:
                     flags = DacpReJitData.Flags.kActive;
+                    break;
+                case RejitState.Unknown:
                     break;
                 default:
                     Debug.Fail("Unknown RejitState. cDAC should be updated to understand this new state.");
@@ -5485,7 +5498,7 @@ public sealed unsafe partial class SOSDacImpl
             int count = 0;
             foreach (NativeCodeVersionHandle nativeCodeVersionHandle in codeVersions.GetNativeCodeVersions(methodDescPtr, ilCodeVersionHandle))
             {
-                TargetCodePointer nativeCode = _target.Contracts.PrecodeStubs.GetInterpreterCodeFromInterpreterPrecodeIfPresent(codeVersions.GetNativeCode(nativeCodeVersionHandle));
+                TargetCodePointer nativeCode = _target.Contracts.ExecutionManager.GetDiagnosticCodeStartFromEntryPoint(codeVersions.GetNativeCode(nativeCodeVersionHandle));
                 TargetPointer nativeCodeAddr = nativeCode.ToAddress(_target);
                 nativeCodeAddrs[count].nativeCodeAddr = nativeCodeAddr.ToClrDataAddress(_target);
                 nativeCodeAddrs[count].nativeCodeVersionNodePtr = nativeCodeVersionHandle.CodeVersionNodeAddress.ToClrDataAddress(_target);
@@ -5695,8 +5708,11 @@ public sealed unsafe partial class SOSDacImpl
                     case RejitState.Active:
                         pRejitData->flags = DacpReJitData2.Flags.kActive;
                         break;
+                    case RejitState.Unknown:
+                        pRejitData->flags = DacpReJitData2.Flags.kUnknown;
+                        break;
                     default:
-                        Debug.Assert(true, "Unknown SharedRejitInfo state.  cDAC should be updated to understand this new state.");
+                        Debug.Fail("Unknown SharedRejitInfo state.  cDAC should be updated to understand this new state.");
                         pRejitData->flags = DacpReJitData2.Flags.kUnknown;
                         break;
                 }

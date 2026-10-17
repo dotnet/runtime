@@ -39,6 +39,12 @@ JIT/interpreter/AOT to drop the multi-threaded implementation in the single-thre
 
 The implementation should not use `[UnsupportedOSPlatform("browser")]`
 
+Synchronous wait APIs that are unsupported without multithreading should call
+`ThrowIfMultithreadingIsNotSupported()` only when they would actually block. They can succeed when
+a semaphore count, task completion, or set state is already available, and a zero-timeout wait
+should return its normal result. The public APIs remain annotated as unsupported because whether a
+wait blocks depends on runtime state.
+
 ## Native runtime preprocessor defines ##
 
 In `src/mono/mono` and `src/mono/wasm` `DISABLE_THREADS` is defined for single-threaded builds (same
