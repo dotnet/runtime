@@ -616,7 +616,7 @@ namespace ILAssembler.Tests
         {
             // The spec's nil blob for a method without sequence points: there is no blob, so no LocalSignature,
             // even though the body has a local signature. M2 has no points because M1's .line is still in effect
-            // and M2's instructions share the coordinates of M1's last point, as in native ilasm.
+            // and M2's instructions share the coordinates of M1's last point.
             using var pdb = PortablePdbTestReader.Compile(Program(
                 MethodWithLocals("M1", "int32 x") +
                 Method("M2", """

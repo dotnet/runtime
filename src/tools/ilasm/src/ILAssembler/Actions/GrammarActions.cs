@@ -16,7 +16,7 @@ internal sealed partial class GrammarActions
     /// The same <see cref="GrammarActions"/> instance compiles every document of a compilation so
     /// that they share an entity registry. Every rule that introduces namespace, type, method or
     /// scope state releases it from its own <c>finally</c> block, so this is only a safety net for
-    /// release builds. The <c>.language</c> state carries over from the previous input file, as in native ilasm.
+    /// release builds. The <c>.language</c> state carries over from the previous input file.
     /// The <c>.line</c> state does not: the new input file starts without an active <c>.line</c> directive, and its
     /// current document is the file itself (<see cref="SourceLineState"/>).
     /// </remarks>

@@ -597,7 +597,7 @@ namespace ILAssembler
         {
             portablePdb = null;
 
-            // As in native ilasm, only /DEBUG (any mode) or /PDB produces a PDB. Without them, .line
+            // Only /DEBUG (any mode) or /PDB produces a PDB. Without them, .line
             // directives are still parsed and validated, and no sequence points are recorded.
             if (!GeneratesPdb)
             {

@@ -131,7 +131,7 @@ internal sealed partial class GrammarActions
     /// <param name="value">The directive.</param>
     /// <param name="directiveToken">The directive's <c>.line</c> or <c>#line</c> token, which identifies its source.</param>
     /// <remarks>
-    /// As in native ilasm, the directive stays in effect until the next directive or the end of its source (the input
+    /// The directive stays in effect until the next directive or the end of its source (the input
     /// file, or one inclusion of an <c>#include</c>d file), wherever it is and across methods, and the next
     /// instruction always gets a point. An empty file name (<c>''</c> or <c>""</c>), which ildasm writes for "the
     /// same file", and a missing one keep the source's current document: the source itself until a directive in it
@@ -167,15 +167,15 @@ internal sealed partial class GrammarActions
     /// <para>
     /// With no <c>.line</c> or <c>#line</c> directive in effect in the instruction's source, the point is on the
     /// instruction's own line of that source (the input <c>.il</c> file or the <c>#include</c>d file), columns 1 to
-    /// 2, as native ilasm records it; otherwise it has the coordinates of the directive in effect, in the source's
+    /// 2; otherwise it has the coordinates of the directive in effect, in the source's
     /// current document (<see cref="ApplySourceDirective"/>).
     /// </para>
     /// <para>
-    /// As in native ilasm, the instruction gets a point only when its span differs from the last point's, in any
+    /// The instruction gets a point only when its span differs from the last point's, in any
     /// method, or a directive has been applied since. So a later method without a <c>.line</c> of its own gets no
     /// point while an earlier directive's span is still current, which is the shape ildasm writes for a method that
-    /// had no sequence points, when it writes <c>.line</c> directives at all. Unlike native ilasm, which compares
-    /// only lines and columns, the span includes the document.
+    /// had no sequence points, when it writes <c>.line</c> directives at all. The span includes the document, so
+    /// an instruction in another document gets a point even on the lines and columns of the last point.
     /// </para>
     /// </remarks>
     private void RecordSequencePoint(CurrentMethodContext method, IToken opcodeToken)
@@ -227,9 +227,8 @@ internal sealed partial class GrammarActions
 
     /// <summary>
     /// The <c>.line</c> state of one source of the input file being parsed: the input file itself, or one inclusion
-    /// of an <c>#include</c>d file. As in native ilasm, which parses each input file and each inclusion in its own
-    /// environment, a directive applies only to the rest of its source: an included file starts without one, and
-    /// does not change the state of the source that includes it.
+    /// of an <c>#include</c>d file. A directive applies only to the rest of its source: an included file starts
+    /// without one, and does not change the state of the source that includes it.
     /// </summary>
     /// <param name="sourceName">The source's <see cref="SourceText.Path"/>.</param>
     private sealed class SourceLineState(string sourceName)

@@ -193,7 +193,7 @@ internal sealed class Program
             string? includePath = Get(_command.IncludePath);
             string baseDir = Path.GetDirectoryName(Path.GetFullPath(inputFiles[0])) ?? ".";
 
-            // An included file is named by its full path, as native ilasm names it: its instructions' sequence
+            // An included file is named by its full path: its instructions' sequence
             // points are in a PDB document of that name.
             SourceText LoadIncludedDocument(string path)
             {

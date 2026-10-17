@@ -195,9 +195,8 @@ namespace ILAssembler.Tests.GeneratedCases
     /// A generated program whose instructions are on lines of the <c>.il</c> source and whose <c>.line</c> directives
     /// move between a few documents, in one input file or split across two, with methods or runs of instructions in
     /// <c>#include</c>d files; and the PDB documents and sequence points it is expected to produce, computed
-    /// from the source the program writes. The model follows native ilasm's rules with this assembler's declared
-    /// differences (see <see cref="Expect"/>); it mirrors the rules the assembler implements, so it checks them
-    /// against the layout of generated sources, not against native ilasm.
+    /// from the source the program writes. The model mirrors the rules the assembler implements (see
+    /// <see cref="Expect"/>), so it checks them against the layout of generated sources.
     /// </summary>
     /// <param name="Methods">The methods, named <c>M0</c>, <c>M1</c>, ... in order.</param>
     /// <param name="SecondInputStart">
@@ -400,8 +399,7 @@ namespace ILAssembler.Tests.GeneratedCases
         }
 
         /// <summary>
-        /// Computes the expected documents and points. The rules are native ilasm's, except where marked (the
-        /// differences listed in MANAGED-ILASM-FIXES.md): each input file is defined
+        /// Computes the expected documents and points, by these rules: each input file is defined
         /// as a document when its parsing begins, and the <c>.language</c> state carries over from one input file to
         /// the next. Each input file and each inclusion is a source with its own state. A directive with a non-empty
         /// file name defines that file (once, with the language current then) and makes it the source's current
@@ -409,10 +407,9 @@ namespace ILAssembler.Tests.GeneratedCases
         /// level, a method without a body, after the last instruction). Each instruction, when emitted, has a span:
         /// the span of its source's directive in effect, or, with none, its own line of its source, columns 1 to 2;
         /// and a document: its source's current document, which is the source itself until a directive in it names
-        /// another file (native: after an include, the including file again). The instruction gets a point when its
-        /// span and document (native: span only) differ from those of the last point recorded, in any method or input
-        /// file, or a directive has been applied since. An included file becomes a document when a point first needs
-        /// it, with the language current then (native: at the include, with the IL language). A reader resolves a
+        /// another file. The instruction gets a point when its span and document differ from those of the last point
+        /// recorded, in any method or input file, or a directive has been applied since. An included file becomes a
+        /// document when a point first needs it, with the language current then. A reader resolves a
         /// point's document from the blob, where a hidden point has no document-record and so is in the current
         /// document of the encoding.
         /// </summary>

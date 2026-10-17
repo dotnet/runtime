@@ -12,7 +12,7 @@ namespace ILAssembler.Tests
     /// <summary>
     /// The sequence points of method bodies, read back from the Portable PDB: each instruction is mapped when it is
     /// emitted, to its own line of the <c>.il</c> source (columns 1 to 2) when no <c>.line</c> directive is in effect,
-    /// as native ilasm does, and to the coordinates of the directive in effect otherwise; consecutive instructions
+    /// and to the coordinates of the directive in effect otherwise; consecutive instructions
     /// with the same coordinates share a point.
     /// </summary>
     public class SequencePointTests
@@ -48,7 +48,7 @@ namespace ILAssembler.Tests
                 .Select(point => (point.Offset, point.StartLine, point.StartColumn, point.EndLine, point.EndColumn, pdb.GetDocumentName(point.Document)))
                 .ToArray();
 
-        /// <summary>The point native ilasm gives an instruction on <paramref name="line"/> of <paramref name="document"/> with no <c>.line</c> in effect.</summary>
+        /// <summary>The point an instruction on <paramref name="line"/> of <paramref name="document"/> gets with no <c>.line</c> in effect.</summary>
         private static (int, int, int, int, int, string) OnLine(int offset, int line, string document = "test.il")
             => (offset, line, 1, line, 2, document);
 
@@ -216,9 +216,9 @@ namespace ILAssembler.Tests
         }
 
         [Fact]
-        public void LaterMethodWithoutALineDirective_SharesTheLastPoint_AsInNativeIlasm()
+        public void LaterMethodWithoutALineDirective_SharesTheLastPoint()
         {
-            // Native ilasm compares each instruction's coordinates with the last point it recorded, in any method,
+            // Each instruction's coordinates are compared with those of the last point recorded, in any method,
             // and only a directive resets that. B, after A's .line and without one of its own, maps to the same
             // coordinates and so gets no point; ildasm writes this shape for a method that had no sequence points,
             // when it writes .line directives at all.
@@ -388,7 +388,8 @@ namespace ILAssembler.Tests
         [Fact]
         public void InstructionOnTheLineOfTheLastPointButInAnotherInputFile_GetsAPoint()
         {
-            // Native ilasm compares only lines and columns, so it would give B's first instruction no point.
+            // An instruction's span includes its document, so B's first instruction, on the line of A's last
+            // point but in another input file, gets a point.
             string first = Program(Method("A", """
                     nop
                     ret // a-last
