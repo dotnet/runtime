@@ -10,6 +10,7 @@
 #include "callingconvention.h"
 #include "cgensys.h"
 #include "readytorun.h"
+#include "debugdebugger.h"
 
 #define WASM_STRINGIFY_HELPER(value) #value
 #define WASM_STRINGIFY(value) WASM_STRINGIFY_HELPER(value)
@@ -114,6 +115,72 @@ void FuncEvalFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloa
 {
     PORTABILITY_ASSERT("FuncEvalFrame::UpdateRegDisplay_Impl is not implemented on wasm");
 }
+
+#ifdef DEBUGGING_SUPPORTED
+// The debugger EE is not built for WASM yet.
+extern "C" void QCALLTYPE DebugDebugger_GetFuncEvalMethod(
+    DebuggerFuncEvalContext* pContext,
+    QCall::ObjectHandleOnStack declaringType, QCall::ObjectHandleOnStack methodOwner,
+    QCallExceptionStatus* qcallError)
+{
+    QCALL_CONTRACT;
+    PORTABILITY_ASSERT("DebugDebugger_GetFuncEvalMethod is not implemented on wasm");
+}
+
+extern "C" void QCALLTYPE DebugDebugger_PrepareFuncEvalResult(
+    DebuggerFuncEvalContext* pContext, QCallExceptionStatus* qcallError)
+{
+    QCALL_CONTRACT;
+    PORTABILITY_ASSERT("DebugDebugger_PrepareFuncEvalResult is not implemented on wasm");
+}
+
+extern "C" void QCALLTYPE DebugDebugger_GetFuncEvalArgument(
+    DebuggerFuncEvalContext* pContext, UINT32 index, DebuggerFuncEvalArgument* pArgument)
+{
+    QCALL_CONTRACT_NO_GC_TRANSITION;
+    PORTABILITY_ASSERT("DebugDebugger_GetFuncEvalArgument is not implemented on wasm");
+}
+
+extern "C" void QCALLTYPE DebugDebugger_GetFuncEvalArgumentType(
+    DebuggerFuncEvalContext* pContext, UINT32 index, QCall::ObjectHandleOnStack type,
+    QCallExceptionStatus* qcallError)
+{
+    QCALL_CONTRACT;
+    PORTABILITY_ASSERT("DebugDebugger_GetFuncEvalArgumentType is not implemented on wasm");
+}
+
+extern "C" HRESULT QCALLTYPE DebugDebugger_GetFuncEvalObject(
+    DebuggerFuncEvalContext* pContext, UINT32 index, BOOL interior, QCall::ObjectHandleOnStack value)
+{
+    QCALL_CONTRACT_NO_GC_TRANSITION;
+    PORTABILITY_ASSERT("DebugDebugger_GetFuncEvalObject is not implemented on wasm");
+    return E_NOTIMPL;
+}
+
+extern "C" BOOL QCALLTYPE DebugDebugger_ReadFuncEvalPrimitiveRegister(
+    DebuggerFuncEvalContext* pContext, UINT32 index, UINT64* pValue)
+{
+    QCALL_CONTRACT_NO_GC_TRANSITION;
+    PORTABILITY_ASSERT("DebugDebugger_ReadFuncEvalPrimitiveRegister is not implemented on wasm");
+    return FALSE;
+}
+
+extern "C" void QCALLTYPE DebugDebugger_WriteFuncEvalObjectRegister(
+    DebuggerFuncEvalContext* pContext, UINT32 index, QCall::ObjectHandleOnStack value,
+    QCallExceptionStatus* qcallError)
+{
+    QCALL_CONTRACT;
+    PORTABILITY_ASSERT("DebugDebugger_WriteFuncEvalObjectRegister is not implemented on wasm");
+}
+
+extern "C" void QCALLTYPE DebugDebugger_WriteFuncEvalRegister(
+    DebuggerFuncEvalContext* pContext, UINT32 index, void* pValue, UINT32 size,
+    QCallExceptionStatus* qcallError)
+{
+    QCALL_CONTRACT;
+    PORTABILITY_ASSERT("DebugDebugger_WriteFuncEvalRegister is not implemented on wasm");
+}
+#endif // DEBUGGING_SUPPORTED
 
 void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {

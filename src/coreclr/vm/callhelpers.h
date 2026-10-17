@@ -269,6 +269,8 @@ public:
         // These require writable copies outside the GC heap, since the callee
         // may modify them without write barriers. ProtectValueClassFrame can be
         // used to report the GC references in these copies.
+        // Protecting an interior pointer to temporary native
+        // storage does not protect references contained in that storage.
         //
         // Not all usages of MethodDesc::CallXXX have been ported to the new convention. The end goal is to port them all and get
         //      rid of the non-portable BYTE* version.

@@ -540,6 +540,18 @@ HRESULT CordbStackWalk::GetFrameWorker(ICorDebugFrame ** ppFrame)
         // on the stack.
         Debugger_JITFuncData * pJITFuncData = &(frameData.v.jitFuncData);
 
+        if (frameData.v.fNoMetadata)
+        {
+            IDacDbiInterface::DynamicMethodType methodType;
+            IfFailThrow(pDAC->IsDiagnosticsHiddenOrLCGMethod(
+                pJITFuncData->vmNativeCodeMethodDescToken, &methodType));
+            if (methodType == IDacDbiInterface::kDiagnosticHiddenLCGMethod)
+            {
+                // Preserve interop stitching frames; suppress only explicitly hidden LCG methods.
+                return S_FALSE;
+            }
+        }
+
         // Lookup the appdomain that the thread was in when it was executing code for this frame. We pass this
         // to the frame when we create it so we can properly resolve locals in that frame later.
         CordbAppDomain * pCurrentAppDomain = GetProcess()->GetAppDomain();
@@ -808,7 +820,8 @@ HRESULT CordbAsyncStackWalk::PopulateFrame()
 
         IDacDbiInterface::DynamicMethodType dynMethodType;
         IfFailThrow(pDac->IsDiagnosticsHiddenOrLCGMethod(codeData.vmNativeCodeMethodDescToken, &dynMethodType));
-        if (dynMethodType == IDacDbiInterface::kDiagnosticHidden)
+        if (dynMethodType == IDacDbiInterface::kDiagnosticHidden ||
+            dynMethodType == IDacDbiInterface::kDiagnosticHiddenLCGMethod)
         {
             // Skipping async frame creation for async thunks. These can not be converted to a CordbAsyncFrame as they lack DebugInfo
             // Async Thunks appear on the continuation chain when runtime async calls library async code through a thunk.

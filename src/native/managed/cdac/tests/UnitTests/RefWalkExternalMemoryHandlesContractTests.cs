@@ -42,9 +42,8 @@ public class RefWalkExternalMemoryHandlesContractTests
                     Fields = new Dictionary<string, Target.FieldInfo>
                     {
                         { nameof(Data.ExternalMemoryHandle.Next), new() { Offset = 0, TypeName = DataType.pointer.ToString() } },
-                        { nameof(Data.ExternalMemoryHandle.MethodTable), new() { Offset = ptrSize, TypeName = DataType.pointer.ToString() } },
+                        { nameof(Data.ExternalMemoryHandle.TypeHandle), new() { Offset = ptrSize, TypeName = DataType.pointer.ToString() } },
                         { nameof(Data.ExternalMemoryHandle.Memory), new() { Offset = 2 * ptrSize, TypeName = DataType.pointer.ToString() } },
-                        { nameof(Data.ExternalMemoryHandle.GCFlags), new() { Offset = 3 * ptrSize, TypeName = DataType.uint32.ToString() } },
                     }
                 },
                 // GCInteriorPointerResolver (constructed unconditionally by RefWalk) reads these
@@ -66,8 +65,7 @@ public class RefWalkExternalMemoryHandlesContractTests
         // ExternalMemoryHandles global slot -> a single handle
         targetBuilder.MemoryBuilder.AddHeapFragment(PointerFragment(helpers, ExternalMemoryHandlesHeadSlotAddr, HandleAddr));
 
-        // Handle: Next -> null, MethodTable, Memory, GCFlags=0 (ordinary reference-type root)
-        targetBuilder.MemoryBuilder.AddHeapFragment(ExternalMemoryHandleFragment(helpers, HandleAddr, 0, MethodTableAddr, MemoryAddr, 0));
+        targetBuilder.MemoryBuilder.AddHeapFragment(ExternalMemoryHandleFragment(helpers, HandleAddr, 0, MethodTableAddr, MemoryAddr));
 
         return targetBuilder.Build();
     }
@@ -79,14 +77,13 @@ public class RefWalkExternalMemoryHandlesContractTests
         return new MockMemorySpace.HeapFragment { Address = address, Data = data, Name = "Pointer" };
     }
 
-    private static MockMemorySpace.HeapFragment ExternalMemoryHandleFragment(TargetTestHelpers helpers, ulong address, ulong next, ulong methodTable, ulong memory, uint gcFlags)
+    private static MockMemorySpace.HeapFragment ExternalMemoryHandleFragment(TargetTestHelpers helpers, ulong address, ulong next, ulong typeHandle, ulong memory)
     {
         int ptrSize = helpers.PointerSize;
-        byte[] data = new byte[3 * ptrSize + sizeof(uint)];
+        byte[] data = new byte[3 * ptrSize];
         helpers.WritePointer(data.AsSpan(0, ptrSize), next);
-        helpers.WritePointer(data.AsSpan(ptrSize, ptrSize), methodTable);
+        helpers.WritePointer(data.AsSpan(ptrSize, ptrSize), typeHandle);
         helpers.WritePointer(data.AsSpan(2 * ptrSize, ptrSize), memory);
-        helpers.Write(data.AsSpan(3 * ptrSize, sizeof(uint)), gcFlags);
         return new MockMemorySpace.HeapFragment { Address = address, Data = data, Name = "ExternalMemoryHandle" };
     }
 
@@ -105,6 +102,7 @@ public class RefWalkExternalMemoryHandlesContractTests
         var rts = new Mock<IRuntimeTypeSystem>(MockBehavior.Strict);
         ITypeHandle typeHandle = new TargetTypeHandle(new TargetPointer(MethodTableAddr));
         rts.Setup(r => r.GetTypeHandle(new TargetPointer(MethodTableAddr))).Returns(typeHandle);
+        rts.Setup(r => r.GetSignatureCorElementType(typeHandle)).Returns(CorElementType.Class);
         rts.Setup(r => r.IsValueType(typeHandle)).Returns(false);
 
         TestPlaceholderTarget target = CreateTarget(rts);
