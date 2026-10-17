@@ -634,7 +634,7 @@ namespace ILAssembler
                 ?? throw new InvalidOperationException("The Portable PDB was serialized without calling its id provider.");
 
             // Reference the PDB file from the image: CodeView, then PdbChecksum, then (deterministic only)
-            // Reproducible, as native ilasm and the C# compiler do.
+            // Reproducible, as the C# compiler does.
             var debugDirectoryBuilder = new DebugDirectoryBuilder();
             debugDirectoryBuilder.AddCodeViewEntry(
                 GetPdbFilePath(),
@@ -840,7 +840,7 @@ namespace ILAssembler
         /// the body has none, followed, when the points span several documents, by the InitialDocument: the
         /// document of the first point. A document-record precedes each non-hidden point whose document differs
         /// from the current one. A hidden point has no document-record of its own and belongs to the current
-        /// document. This is the encoding native ilasm writes.
+        /// document.
         /// </remarks>
         private static BlobBuilder EncodeSequencePoints(
             List<EntityRegistry.SequencePoint> sequencePoints,
