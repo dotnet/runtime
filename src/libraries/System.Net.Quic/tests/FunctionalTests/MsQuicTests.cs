@@ -60,6 +60,7 @@ namespace System.Net.Quic.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime))]
+        [SkipOnCoreClr("Object lifetime assertions are unreliable under JIT stress", RuntimeTestModes.JitStress | RuntimeTestModes.JitStressRegs)]
         public async Task QuicRootedObjectGetReleased()
         {
             async Task<(WeakReference<QuicListener>, WeakReference<QuicConnection>, WeakReference<QuicConnection>, WeakReference<QuicStream>, WeakReference<QuicStream>)> GetWeakReferencesAsync()
