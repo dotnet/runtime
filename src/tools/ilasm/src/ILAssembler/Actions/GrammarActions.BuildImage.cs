@@ -836,11 +836,11 @@ namespace ILAssembler
         /// MethodDebugInformation row then names.
         /// </param>
         /// <remarks>
-        /// The header is the LocalSignature, the StandAloneSig row number of the body's local signature or 0 when
-        /// the body has none, followed, when the points span several documents, by the InitialDocument: the
-        /// document of the first point. A document-record precedes each non-hidden point whose document differs
-        /// from the current one. A hidden point has no document-record of its own and belongs to the current
-        /// document.
+        /// The header is the LocalSignature, the StandAloneSig row number of the body's local signature or 0
+        /// when the body has none, followed, when the points span several documents, by the InitialDocument:
+        /// the document of the first point. A document-record precedes each non-hidden point whose
+        /// document differs from the current one. A hidden point has no document-record of its own and
+        /// belongs to the current document.
         /// </remarks>
         private static BlobBuilder EncodeSequencePoints(
             List<EntityRegistry.SequencePoint> sequencePoints,

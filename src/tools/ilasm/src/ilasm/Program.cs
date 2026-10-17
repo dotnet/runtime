@@ -77,9 +77,9 @@ internal sealed class Program
         int exitCode = 0;
         try
         {
-            // The PDB is <output without extension>.pdb beside the output, and without
-            // --deterministic the image's CodeView entry records the PDB's full path. With --deterministic it
-            // records only the PDB's file name and extension, so that a deterministic image does not depend on
+            // The PDB is <output without extension>.pdb beside the output, and without --deterministic
+            // the image's CodeView entry records the PDB's full path. With --deterministic it records
+            // only the PDB's file name and extension, so that a deterministic image does not depend on
             // the directory it is written to, which is the native linker's /PDBALTPATH:%_PDB% convention.
             string pdbPath = OutputFileWriter.GetPdbPath(outputPath);
 

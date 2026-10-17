@@ -134,8 +134,7 @@ namespace ILAssembler
 
         /// <summary>
         /// Debug mode (<c>/DEBUG=IMPL</c> or <c>/DEBUG=OPT</c> on the command line): selects the modes of
-        /// the <c>DebuggableAttribute</c>.
-        /// When null with Debug=true, uses default (DisableOptimizations).
+        /// the <c>DebuggableAttribute</c>. When null with Debug=true, uses default (DisableOptimizations).
         /// </summary>
         /// <remarks>
         /// A non-null value implies <see cref="Debug"/>: it produces a Portable PDB and adds a

@@ -11,11 +11,11 @@ namespace ILAssembler;
 /// </summary>
 /// <remarks>
 /// <para>
-/// A document is defined when the assembler first meets its name: each input file when its
-/// parsing begins, and each file named by a <c>.line</c> or <c>#line</c> directive when the directive is applied,
+/// A document is defined when the assembler first meets its name: each input file when its parsing
+/// begins, and each file named by a <c>.line</c> or <c>#line</c> directive when the directive is applied,
 /// whether or not a sequence point ever refers to it. A document is identified by its name alone, after
-/// <see cref="Options.PathMap"/>; defining it again returns the existing document, which keeps the language it was
-/// first defined with.
+/// <see cref="Options.PathMap"/>; defining it again returns the existing document, which keeps the language
+/// it was first defined with.
 /// </para>
 /// <para>
 /// Sequence points refer to a document by its index in this table
