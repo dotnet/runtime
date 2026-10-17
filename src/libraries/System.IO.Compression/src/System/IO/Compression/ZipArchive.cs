@@ -900,11 +900,24 @@ namespace System.IO.Compression
             }
         }
 
+        private void ThrowIfZipCryptoLastWriteTimeChangedWithoutReencrypting()
+        {
+            if (_mode == ZipArchiveMode.Update)
+            {
+                foreach (ZipArchiveEntry entry in _entries)
+                {
+                    entry.ThrowIfZipCryptoLastWriteTimeChangedWithoutReencrypting();
+                }
+            }
+        }
+
         private void WriteFile()
         {
             // if we are in create mode, we always set readEntries to true in Init
             // if we are in update mode, we call EnsureCentralDirectoryRead, which sets readEntries to true
             Debug.Assert(_readEntries);
+
+            ThrowIfZipCryptoLastWriteTimeChangedWithoutReencrypting();
 
             // Entries starting after this offset have had a dynamically-sized change. Everything on or after this point must be rewritten.
             long completeRewriteStartingOffset = 0;
