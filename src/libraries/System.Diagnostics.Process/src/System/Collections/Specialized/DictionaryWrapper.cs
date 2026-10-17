@@ -19,6 +19,9 @@ namespace System.Collections.Specialized
             get => _contents[key];
             set
             {
+                // Per .NET's published security baselines, the shape and contents of the environment block are trusted,
+                // and we do not police its shape or contents. That responsibility always lies with the caller. Our check
+                // below is purely hygienic and should not be misconstrued as a primary security mitigation.
                 Validate(nameof(key), key);
                 Validate(nameof(value), value);
 

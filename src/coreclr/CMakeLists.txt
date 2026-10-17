@@ -39,10 +39,6 @@ if(CLR_CMAKE_TARGET_WASI)
   add_compile_definitions(_WASI_EMULATED_PROCESS_CLOCKS)
   add_compile_definitions(_WASI_EMULATED_MMAN)
   add_compile_definitions(_WASI_EMULATED_GETPID)
-  # EventPipe / diag-server PAL require sockets we have not validated
-  # for the WASI bring-up; revisit once corerun.wasm runs.
-  set(FEATURE_EVENT_TRACE 0)
-  set(FEATURE_PERFTRACING 0)
   include_directories(BEFORE SYSTEM ${CMAKE_CURRENT_SOURCE_DIR}/pal/src/include/pal/wasi)
   # Cross-compile try_run() answers — wasm32 binaries cannot execute on
   # the build host, so pre-seed the cache.
@@ -53,6 +49,14 @@ if(CLR_CMAKE_TARGET_WASI)
 endif()
 
 OPTION(CLR_CMAKE_ENABLE_CODE_COVERAGE "Enable code coverage" OFF)
+
+# WebAssembly targets are single-threaded unless threads are explicitly enabled.
+if(NOT DEFINED FEATURE_MULTITHREADING AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
+  set(FEATURE_MULTITHREADING 1)
+endif()
+if(FEATURE_MULTITHREADING)
+  add_compile_definitions(FEATURE_MULTITHREADING)
+endif()
 
 #----------------------------------------------------
 # Cross target Component build specific configuration
@@ -177,9 +181,7 @@ if ((NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_WASI) OR CLR_CROSS_CO
 endif ()
 
 if(NOT CLR_CROSS_COMPONENTS_BUILD)
-  if(NOT CLR_CMAKE_HOST_ARCH_WASM)
-    add_subdirectory(nativeaot)
-  endif()
+  add_subdirectory(nativeaot)
 endif(NOT CLR_CROSS_COMPONENTS_BUILD)
 
 # Above projects do not build with these compile options

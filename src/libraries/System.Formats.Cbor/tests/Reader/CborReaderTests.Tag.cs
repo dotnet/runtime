@@ -298,6 +298,8 @@ namespace System.Formats.Cbor.Tests
         [InlineData("1970-01-01T00:00:00Z", "c100")]
         [InlineData("1969-12-31T23:59:59Z", "c120")]
         [InlineData("1960-01-01T00:00:00Z", "c13a12cff77f")]
+        [InlineData("0001-01-01T00:00:00Z", "c13b0000000e7791f6ff")]
+        [InlineData("9999-12-31T23:59:59Z", "c11b0000003afff4417f")]
         public static void ReadUnixTimeSeconds_SingleValue_HappyPath(string expectedValueString, string hexEncoding)
         {
             DateTimeOffset expectedValue = DateTimeOffset.Parse(expectedValueString);
@@ -332,6 +334,74 @@ namespace System.Formats.Cbor.Tests
 
             Assert.Throws<CborContentException>(() => reader.ReadUnixTimeSeconds());
             Assert.Equal(encoding.Length, reader.BytesRemaining);
+        }
+
+        [Theory]
+        [InlineData("c11b7fffffffffffffff")] // long.MaxValue
+        [InlineData("c13b7fffffffffffffff")] // long.MinValue
+        [InlineData("c13b0000000e7791f700")] // one second before DateTimeOffset.MinValue
+        [InlineData("c11b0000003afff44180")] // one second after DateTimeOffset.MaxValue
+        [InlineData("c1fb425d1a94a2000000")] // 5e11 seconds, within TimeSpan's range
+        [InlineData("c1fbc2374876e8000000")] // -1e11 seconds, within TimeSpan's range
+        public static void ReadUnixTimeSeconds_OutOfDateTimeRange_ShouldThrowInvalidOperationException(string hexEncoding)
+        {
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding);
+
+            InvalidOperationException exception = Assert.Throws<InvalidOperationException>(() => reader.ReadUnixTimeSeconds());
+            Assert.IsType<ArgumentOutOfRangeException>(exception.InnerException);
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
+            Assert.Equal(0, reader.CurrentDepth);
+            Assert.Equal(CborReaderState.Tag, reader.PeekState());
+
+            reader.SkipValue();
+            Assert.Equal(CborReaderState.Finished, reader.PeekState());
+        }
+
+        [Theory]
+        [InlineData("c11bffffffffffffffff")] // ulong.MaxValue
+        [InlineData("c13bffffffffffffffff")] // -1 - ulong.MaxValue
+        [InlineData("c1fb7e37e43c8800759c")] // 1e300 seconds
+        [InlineData("c1fbfe37e43c8800759c")] // -1e300 seconds
+        [InlineData("c1fa7f7fffff")] // float.MaxValue seconds
+        [InlineData("c1faff7fffff")] // -float.MaxValue seconds
+        public static void ReadUnixTimeSeconds_OutOfNumericRange_ShouldThrowInvalidOperationException(string hexEncoding)
+        {
+            byte[] encoding = hexEncoding.HexToByteArray();
+            var reader = new CborReader(encoding);
+
+            InvalidOperationException exception = Assert.Throws<InvalidOperationException>(() => reader.ReadUnixTimeSeconds());
+            Assert.IsType<OverflowException>(exception.InnerException);
+            Assert.Equal(encoding.Length, reader.BytesRemaining);
+            Assert.Equal(0, reader.CurrentDepth);
+            Assert.Equal(CborReaderState.Tag, reader.PeekState());
+
+            reader.SkipValue();
+            Assert.Equal(CborReaderState.Finished, reader.PeekState());
+        }
+
+        [Theory]
+        [InlineData("c11b7fffffffffffffff")]
+        [InlineData("c1fb425d1a94a2000000")]
+        [InlineData("c11bffffffffffffffff")]
+        public static void ReadUnixTimeSeconds_OutOfRangeMapKey_ShouldPreserveReaderState(string hexEncoding)
+        {
+            byte[] encoding = $"a20101{hexEncoding}02".HexToByteArray();
+            var reader = new CborReader(encoding, CborConformanceMode.Strict);
+            reader.ReadStartMap();
+            Assert.Equal(1, reader.ReadInt32());
+            Assert.Equal(1, reader.ReadInt32());
+            int bytesRemaining = reader.BytesRemaining;
+
+            Assert.Throws<InvalidOperationException>(() => reader.ReadUnixTimeSeconds());
+            Assert.Equal(bytesRemaining, reader.BytesRemaining);
+            Assert.Equal(1, reader.CurrentDepth);
+            Assert.Equal(CborReaderState.Tag, reader.PeekState());
+
+            reader.SkipValue();
+            Assert.Equal(2, reader.ReadInt32());
+            reader.ReadEndMap();
+            Assert.Equal(CborReaderState.Finished, reader.PeekState());
         }
 
         [Theory]
@@ -456,6 +526,9 @@ namespace System.Formats.Cbor.Tests
         [Theory]
         [InlineData("c482181d02")] // 2 * 10^29
         [InlineData("c482381c02")] // 2 * 10^-29
+        [InlineData("c4821903e801")] // 1 * 10^1000
+        [InlineData("c4821bffffffffffffffff01")] // exponent exceeds long.MaxValue
+        [InlineData("c4823bffffffffffffffff01")] // exponent is less than long.MinValue
         [InlineData("c48201c24cffffffffffffffffffffffff")] // decimal.MaxValue * 10^1
         [InlineData("c48200c24d01000000000000000000000000")] // (decimal.MaxValue + 1) * 10^0
         [InlineData("c48200c34cffffffffffffffffffffffff")] // (decimal.MinValue - 1) * 10^0
@@ -465,6 +538,11 @@ namespace System.Formats.Cbor.Tests
             var reader = new CborReader(encoding);
             Assert.Throws<OverflowException>(() => reader.ReadDecimal());
             Assert.Equal(encoding.Length, reader.BytesRemaining);
+            Assert.Equal(0, reader.CurrentDepth);
+            Assert.Equal(CborReaderState.Tag, reader.PeekState());
+
+            reader.SkipValue();
+            Assert.Equal(CborReaderState.Finished, reader.PeekState());
         }
 
         [Theory]

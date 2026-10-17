@@ -2,6 +2,8 @@
 
 This contract is for reading debugger state from the target process, including initialization status, metadata update state, and JIT attach state.
 
+On WebAssembly the in-process debugger is not built, so `g_pDebugger` is always null and `CLRJitAttachState` is always 0. The contract is still advertised there, and Version 1 reports what it reports before a debugger initializes: no debugger data, no hijacks, and no JIT attach state.
+
 ## APIs of contract
 
 ```csharp

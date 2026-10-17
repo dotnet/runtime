@@ -29,7 +29,9 @@ namespace ILCompiler
 
             if (_profileGuidedCompileRestriction != null)
             {
-                if (!_profileGuidedCompileRestriction.IsMethodInInputProfileData(method))
+                if (!_profileGuidedCompileRestriction.IsMethodInInputProfileData(method) &&
+                    (((ReadyToRunCompilerContext)method.Context).TargetAllowsRuntimeCodeGeneration ||
+                     !HardwareIntrinsicHelpers.IsHardwareIntrinsic(method)))
                     return false;
             }
 
