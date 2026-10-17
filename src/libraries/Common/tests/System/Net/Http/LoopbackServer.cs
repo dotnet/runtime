@@ -857,7 +857,6 @@ namespace System.Net.Test.Common
                 else if (_contentLength < 0)
                 {
                     // Chunked Encoding
-                    const int ArrayMaxLength = 0X7FFFFFC7; // same as Array.MaxLength
                     int length = 0;
                     while (true)
                     {
@@ -873,21 +872,15 @@ namespace System.Net.Test.Common
                         byte[] chunk = new byte[chunkLength];
                         await ReadBlockAsync(chunk, 0, chunkLength).ConfigureAwait(false);
                         await ReadLineAsync().ConfigureAwait(false);
-                        int newLength = checked(length + chunkLength);
                         if (buffer is null)
                         {
                             buffer = chunk;
+                            length = chunkLength;
                         }
                         else
                         {
-                            if (newLength > buffer.Length)
-                            {
-                                Array.Resize(ref buffer, Math.Max(newLength, (int)Math.Min((long)buffer.Length * 2, ArrayMaxLength)));
-                            }
-
-                            chunk.CopyTo(buffer, length);
+                            length = GenericLoopbackConnection.AppendToBuffer(ref buffer, length, chunk);
                         }
-                        length = newLength;
                     }
 
                     if (buffer is not null)

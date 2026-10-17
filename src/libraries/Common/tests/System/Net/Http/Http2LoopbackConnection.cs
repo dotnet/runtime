@@ -634,7 +634,6 @@ namespace System.Net.Test.Common
 
         public async Task<byte[]> ReadBodyAsync(bool expectEndOfStream = false)
         {
-            const int ArrayMaxLength = 0X7FFFFFC7; // same as Array.MaxLength
             byte[] body = null;
             int bodyLength = 0;
             Frame frame;
@@ -659,22 +658,16 @@ namespace System.Net.Test.Common
                 if (frame.Length > 1)
                 {
                     DataFrame dataFrame = (DataFrame)frame;
-                    int newLength = checked(bodyLength + dataFrame.Data.Length);
 
                     if (body is null)
                     {
                         body = dataFrame.Data.ToArray();
+                        bodyLength = body.Length;
                     }
                     else
                     {
-                        if (newLength > body.Length)
-                        {
-                            Array.Resize(ref body, Math.Max(newLength, (int)Math.Min((long)body.Length * 2, ArrayMaxLength)));
-                        }
-
-                        dataFrame.Data.Span.CopyTo(body.AsSpan(bodyLength));
+                        bodyLength = GenericLoopbackConnection.AppendToBuffer(ref body, bodyLength, dataFrame.Data.Span);
                     }
-                    bodyLength = newLength;
                 }
             }
             while ((frame.Flags & FrameFlags.EndStream) == 0);
