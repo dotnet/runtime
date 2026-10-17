@@ -34,6 +34,11 @@ namespace CdacStressPolicy
 
 #if defined(CDAC_STRESS) && !defined(DACCESS_COMPILE)
 
+namespace CdacStressPolicy
+{
+    bool IsStackRefCollectionCallback(promote_func* callback);
+}
+
 // Per-trigger class template. The primary template is intentionally empty --
 // only the explicit specializations below are usable.
 template <cdac_trigger_points tp>

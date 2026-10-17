@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\NotYetLoadedArgType\Lib\NotYetLoadedArgLib.csproj" Private="false" />
+  </ItemGroup>
+
+  <Target Name="StageLazyDep" AfterTargets="Build">
+    <MSBuild Projects="..\NotYetLoadedArgType\Lib\NotYetLoadedArgLib.csproj"
+             Targets="GetTargetPath"
+             Properties="Configuration=$(Configuration)">
+      <Output TaskParameter="TargetOutputs" ItemName="_LazyDep" />
+    </MSBuild>
+    <Copy SourceFiles="@(_LazyDep)"
+          DestinationFolder="$(OutDir)lazydep"
+          SkipUnchangedFiles="true" />
+  </Target>
+</Project>

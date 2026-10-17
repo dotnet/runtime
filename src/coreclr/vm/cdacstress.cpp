@@ -788,6 +788,12 @@ static void CollectRuntimeRefsPromoteFunc(PTR_PTR_Object ppObj, ScanContext* sc,
     EX_END_CATCH
 }
 
+bool CdacStressPolicy::IsStackRefCollectionCallback(promote_func* callback)
+{
+    LIMITED_METHOD_CONTRACT;
+    return callback == CollectRuntimeRefsPromoteFunc;
+}
+
 // Runs the runtime's own ScanStackRoots-equivalent walk and Appends the
 // resulting refs into the caller's SArray. Returns S_OK on a clean walk,
 // or S_FALSE if any Append failed (OOM); the SArray will be non-empty but
@@ -921,30 +927,6 @@ static HRESULT CollectRuntimeStackRefs(Thread* pThread, PCONTEXT regs, SArray<St
     }
 
     return collectCtx.overflow ? S_FALSE : S_OK;
-}
-
-//-----------------------------------------------------------------------------
-// Filter cDAC refs to match runtime PromoteCarefully behavior.
-// The runtime's PromoteCarefully (siginfo.cpp) skips interior pointers whose
-// object value is a stack address. The cDAC reports all GcInfo slots without
-// this filter, so we apply it here before comparing against runtime refs.
-//-----------------------------------------------------------------------------
-
-static int FilterInteriorStackRefs(StackRef* refs, int count, Thread* pThread, uintptr_t stackLimit)
-{
-    int writeIdx = 0;
-    for (int i = 0; i < count; i++)
-    {
-        bool isInterior = (refs[i].Flags & SOSRefInterior) != 0;
-        if (isInterior &&
-            pThread->IsAddressInStack((void*)(size_t)refs[i].Object) &&
-            (size_t)refs[i].Object >= stackLimit)
-        {
-            continue;
-        }
-        refs[writeIdx++] = refs[i];
-    }
-    return writeIdx;
 }
 
 //-----------------------------------------------------------------------------
@@ -1860,21 +1842,7 @@ static void VerifyGcRefsAtStressPoint(Thread* pThread, PCONTEXT regs, DWORD osTh
         return;
     }
 
-    // Phase B: Normalize the cDAC side so it can compare directly with RT.
-
-    // B.1: Live-stack upper bound. PromoteCarefully (siginfo.cpp) drops
-    // interior pointers whose value lies in the live stack [topStack, ...).
-    // We mirror that filter on the cDAC side in B.3.
-    Frame* pTopFrame = pThread->GetFrame();
-    Object** topStack = (Object**)pTopFrame;
-    if (InlinedCallFrame::FrameHasActiveCall(pTopFrame))
-    {
-        InlinedCallFrame* pInlinedFrame = dac_cast<PTR_InlinedCallFrame>(pTopFrame);
-        topStack = (Object**)pInlinedFrame->GetCallSiteSP();
-    }
-    uintptr_t stackLimit = (uintptr_t)topStack;
-
-    // B.2: Extract CDAC_DEFERRED_FRAME sentinels from the cDAC ref set.
+    // Phase B: Extract CDAC_DEFERRED_FRAME sentinels from the cDAC ref set.
     // These are markers (not real refs) emitted when the cDAC intentionally
     // skips a Frame whose scan path is not implemented yet. Their Source
     // addresses are used in Phase C to re-classify diffs as known issues.
@@ -1887,15 +1855,6 @@ static void VerifyGcRefsAtStressPoint(Thread* pThread, PCONTEXT regs, DWORD osTh
         cdacCount = ExtractDeferredFrames(
             buf, cdacCount,
             deferredFrames, &deferredFrameCount, MAX_DEFERRED_FRAMES);
-        cdacRefs.CloseRawBuffer();
-    }
-
-    // B.3: Mirror PromoteCarefully's interior-into-stack filter on the cDAC
-    // side. The cDAC reports raw GcInfo slots without this filter.
-    if (cdacCount > 0)
-    {
-        StackRef* buf = cdacRefs.OpenRawBuffer();
-        cdacCount = FilterInteriorStackRefs(buf, cdacCount, pThread, stackLimit);
         cdacRefs.CloseRawBuffer();
     }
 
