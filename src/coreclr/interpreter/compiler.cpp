@@ -3004,6 +3004,16 @@ void InterpCompiler::EmitBranchToBB(InterpOpcode opcode, InterpBasicBlock *pTarg
     m_pLastNewIns->info.pTargetBB = pTargetBB;
 }
 
+// Emits the safepoint, and the sampling point that goes with it, for an instruction that closes a loop
+void InterpCompiler::EmitLoopSafepoint()
+{
+    AddIns(INTOP_SAFEPOINT);
+#ifdef PERFTRACING_DISABLE_THREADS
+    if (m_emitSamplingProfiler)
+        AddIns(INTOP_PROF_SAMPLEPOINT);
+#endif // PERFTRACING_DISABLE_THREADS
+}
+
 // ilOffset represents relative branch offset
 void InterpCompiler::EmitBranch(InterpOpcode opcode, int32_t ilOffset)
 {
@@ -3011,21 +3021,15 @@ void InterpCompiler::EmitBranch(InterpOpcode opcode, int32_t ilOffset)
     if (target < 0 || target >= m_ILCodeSize)
         BADCODE("code jumps to outer space");
 
-    // Backwards branch, emit safepoint
-    if (ilOffset < 0)
-    {
-        AddIns(INTOP_SAFEPOINT);
-#ifdef PERFTRACING_DISABLE_THREADS
-        if (m_emitSamplingProfiler)
-            AddIns(INTOP_PROF_SAMPLEPOINT);
-#endif // PERFTRACING_DISABLE_THREADS
-    }
+    // Backwards branch, emit safepoint. A branch to itself (an empty infinite loop) is one too: its offset is 0.
+    if (ilOffset <= 0)
+        EmitLoopSafepoint();
 
     InterpBasicBlock *pTargetBB = m_ppOffsetToBB[target];
     if (pTargetBB == NULL)
         BADCODE("code jumps to invalid offset");
 
-    if (ilOffset < 0)
+    if (ilOffset <= 0)
         pTargetBB->isBackwardBranchTarget = true;
 
     EmitBranchToBB(opcode, pTargetBB);
@@ -3192,8 +3196,12 @@ void InterpCompiler::EmitLeave(int32_t ilOffset, int32_t target)
 
     // Mark a backward leave target as a loop head here, while pTargetBB is still the real IL block: below it
     // may be redirected to a finally call island, which shares its IL offset with another block.
-    if (target < ilOffset && pTargetBB != NULL)
+    if (target <= ilOffset && pTargetBB != NULL)
         pTargetBB->isBackwardBranchTarget = true;
+
+    // A backward leave closes a loop like a backward branch does, so it needs a safepoint too
+    if (target <= ilOffset)
+        EmitLoopSafepoint();
 
     m_pStackPointer = m_pStackBase;
 
@@ -10338,6 +10346,7 @@ retry_emit:
 
                 InterpBasicBlock **targetBBTable = getAllocator(IMK_SwitchTable).allocate<InterpBasicBlock*>(n);
                 uint32_t *targetOffsets = getAllocator(IMK_SwitchTable).allocate<uint32_t>(n);
+                bool hasBackwardTarget = false;
 
                 for (uint32_t i = 0; i < n; i++)
                 {
@@ -10348,7 +10357,10 @@ retry_emit:
                     // Offsets are relative to the instruction after the switch, so a negative one is a
                     // backward branch, i.e. a loop head.
                     if (offset < 0)
+                    {
                         targetBB->isBackwardBranchTarget = true;
+                        hasBackwardTarget = true;
+                    }
                     targetOffsets[i] = target;
                     targetBBTable[i] = targetBB;
                     m_ip += 4;
@@ -10375,6 +10387,10 @@ retry_emit:
                         LinkBBs(m_pCBB, targetBB);
                     }
                 }
+
+                // A backward target closes a loop like a backward branch does, so the switch needs a safepoint too
+                if (hasBackwardTarget)
+                    EmitLoopSafepoint();
 
 #ifdef TARGET_64BIT
                 if (m_pStackPointer->GetStackType() == StackTypeI)
