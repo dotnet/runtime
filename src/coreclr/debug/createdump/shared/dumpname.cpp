@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#include "createdump.h"
+#include "createdumpcore.h"
 #include <time.h>
 #ifdef HOST_WINDOWS
 #include <winsock.h>
@@ -31,9 +31,33 @@
 //  %s  Number of signal causing dump.
 //  %u  Numeric real UID of dumped process.
 //
-bool
-FormatDumpName(std::string& name, const char* pattern, const char* exename, int pid)
+
+static bool AppendFormat(
+    char** output,
+    size_t* remaining,
+    const char* format,
+    ...)
 {
+    va_list args;
+    va_start(args, format);
+    int written = vsnprintf(*output, *remaining, format, args);
+    va_end(args);
+
+    if (written < 0 || (size_t)written >= *remaining)
+    {
+        return false;
+    }
+
+    *output += written;
+    *remaining -= written;
+    return true;
+}
+
+bool
+FormatDumpName(char* name, size_t nameSize, const char* pattern, const char* exeName, int pid)
+{
+    assert(name != nullptr && nameSize >= MAX_LONGPATH && pattern != nullptr && exeName != nullptr);
+
     const char* p = pattern;
     if (*p == '|')
     {
@@ -46,11 +70,17 @@ FormatDumpName(std::string& name, const char* pattern, const char* exename, int 
     int wsaerr = WSAStartup(1, &wsadata);
 #endif
 
+    char *output = name;
+    size_t remaining = nameSize;
+    name[0] = '\0';
     while (*p)
     {
         if (*p != '%')
         {
-            name.append(1, *p);
+            if (!AppendFormat(&output, &remaining, "%c", *p))
+            {
+                goto too_long;
+            }
         }
         else
         {
@@ -60,26 +90,35 @@ FormatDumpName(std::string& name, const char* pattern, const char* exename, int 
                     return true;
 
                 case '%':
-                    name.append(1, '%');
+                    if (!AppendFormat(&output, &remaining, "%%"))
+                    {
+                        goto too_long;
+                    }
                     break;
 
                 // process Id
                 case 'd':
                 case 'p':
-                    name.append(std::to_string(pid));
+                    if (!AppendFormat(&output, &remaining, "%d", pid))
+                    {
+                        goto too_long;
+                    }
                     break;
 
                 // time of dump
                 case 't':
                     time_t dumptime;
                     time(&dumptime);
-                    name.append(std::to_string(dumptime));
+                    if (!AppendFormat(&output, &remaining, "%" PRId64, (int64_t)dumptime))
+                    {
+                        goto too_long;
+                    }
                     break;
 
                 // hostname
                 case 'h': {
-                    AStringHolder buffer = new char[MAX_LONGPATH + 1];
-                    if (gethostname(buffer, MAX_LONGPATH) != 0)
+                    char hostName[MAX_LONGPATH + 1];
+                    if (gethostname(hostName, sizeof(hostName)) != 0)
                     {
                         printf_error("Could not get the host name for dump name: %d\n",
 #ifdef HOST_WINDOWS
@@ -89,13 +128,21 @@ FormatDumpName(std::string& name, const char* pattern, const char* exename, int 
 #endif
                         return false;
                     }
-                    name.append(buffer);
+
+                    hostName[sizeof(hostName) - 1] = '\0';
+                    if (!AppendFormat(&output, &remaining, "%s", hostName))
+                    {
+                        goto too_long;
+                    }
                     break;
                 }
 
                 // executable file name
                 case 'e':
-                    name.append(exename);
+                    if (!AppendFormat(&output, &remaining, "%s", exeName))
+                    {
+                        goto too_long;
+                    }
                     break;
 
                 // executable file path with / replaced with !
@@ -121,4 +168,8 @@ FormatDumpName(std::string& name, const char* pattern, const char* exename, int 
         ++p;
     }
     return true;
+
+too_long:
+    printf_error("The formatted dump path is too long\n");
+    return false;
 }
