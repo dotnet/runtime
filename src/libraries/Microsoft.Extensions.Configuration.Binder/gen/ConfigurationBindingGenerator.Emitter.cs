@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
+using System.Globalization;
 using Microsoft.CodeAnalysis;
 using SourceGenerators;
 
@@ -13,6 +15,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             private readonly InterceptorInfo _interceptorInfo;
             private readonly BindingHelperInfo _bindingHelperInfo;
             private readonly TypeIndex _typeIndex;
+            private readonly Dictionary<TypeConverterSpec, string> _converterIds = new();
+            private readonly Dictionary<InitOnlySetterSpec, string> _initOnlySetterIds = new();
+            private readonly Dictionary<ConstructorAccessorSpec, string> _constructorAccessorIds = new();
             private readonly bool _emitEnumParseMethod;
             private readonly bool _emitGenericParseEnum;
             private readonly bool _emitNotNullIfNotNull;
@@ -24,6 +29,18 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 _interceptorInfo = sourceGenSpec.InterceptorInfo;
                 _bindingHelperInfo = sourceGenSpec.BindingHelperInfo;
+                foreach (TypeConverterSpec converter in _bindingHelperInfo.PropertyConverters)
+                {
+                    _converterIds.Add(converter, _converterIds.Count.ToString(CultureInfo.InvariantCulture));
+                }
+                foreach (InitOnlySetterSpec setter in _bindingHelperInfo.InitOnlySetters)
+                {
+                    _initOnlySetterIds.Add(setter, _initOnlySetterIds.Count.ToString(CultureInfo.InvariantCulture));
+                }
+                foreach (ConstructorAccessorSpec accessor in _bindingHelperInfo.ConstructorAccessors)
+                {
+                    _constructorAccessorIds.Add(accessor, _constructorAccessorIds.Count.ToString(CultureInfo.InvariantCulture));
+                }
                 _typeIndex = new TypeIndex(sourceGenSpec.ConfigTypes);
                 _emitEnumParseMethod = sourceGenSpec.EmitEnumParseMethod;
                 _emitGenericParseEnum = sourceGenSpec.EmitGenericParseEnum;
