@@ -224,13 +224,31 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(false, true)]
         public async Task NoCallback_BadCertificate_ThrowsException(bool expired, bool wrongHostName)
         {
-            using X509Certificate2 certificate = TestHelper.CreateServerSelfSignedCertificate(
-                name: wrongHostName ? "not-localhost" : "localhost", expired: expired);
+            string name = wrongHostName ? "not-localhost" : "localhost";
+            X509Certificate2? rootCertificate = null;
+            X509Certificate2 certificate;
+            if (expired && !IsWinHttpHandler)
+            {
+                // The expired end entity must not also be its custom trust anchor.
+                (certificate, rootCertificate) = TestHelper.CreateExpiredServerCertificate(name);
+            }
+            else
+            {
+                certificate = TestHelper.CreateServerSelfSignedCertificate(name, expired);
+            }
 
+            using (certificate)
+            using (rootCertificate)
             using (HttpClientHandler handler = CreateHttpClientHandler(allowTlsResume: false))
             using (HttpClient client = CreateHttpClient(handler))
             {
-                bool customChainPolicy = ConfigureCertificateChainPolicy(handler, certificate, trustCertificate: expired || wrongHostName);
+                if (expired)
+                {
+                    Assert.True(certificate.NotAfter.ToUniversalTime() < DateTime.UtcNow);
+                }
+
+                X509Certificate2? customTrustRoot = rootCertificate ?? (expired || wrongHostName ? certificate : null);
+                bool customChainPolicy = ConfigureCertificateChainPolicy(handler, customTrustRoot);
 
                 await LoopbackServer.CreateClientAndServerAsync(async uri =>
                 {
@@ -331,21 +349,45 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(false, true, SslPolicyErrors.RemoteCertificateNameMismatch)]
         public async Task UseCallback_BadCertificate_ExpectedPolicyErrors(bool expired, bool wrongHostName, SslPolicyErrors expectedErrors)
         {
-            using X509Certificate2 certificate = TestHelper.CreateServerSelfSignedCertificate(
-                name: wrongHostName ? "not-localhost" : "localhost", expired: expired);
+            string name = wrongHostName ? "not-localhost" : "localhost";
+            X509Certificate2? rootCertificate = null;
+            X509Certificate2 certificate;
+            if (expired && !IsWinHttpHandler)
+            {
+                // The expired end entity must not also be its custom trust anchor.
+                (certificate, rootCertificate) = TestHelper.CreateExpiredServerCertificate(name);
+            }
+            else
+            {
+                certificate = TestHelper.CreateServerSelfSignedCertificate(name, expired);
+            }
 
+            using (certificate)
+            using (rootCertificate)
             using (HttpClientHandler handler = CreateHttpClientHandler(allowTlsResume: false))
             using (HttpClient client = CreateHttpClient(handler))
             {
-                bool customChainPolicy = ConfigureCertificateChainPolicy(handler, certificate, trustCertificate: expired || wrongHostName);
+                if (expired)
+                {
+                    Assert.True(certificate.NotAfter.ToUniversalTime() < DateTime.UtcNow);
+                }
+
+                X509Certificate2? customTrustRoot = rootCertificate ?? (expired || wrongHostName ? certificate : null);
+                bool customChainPolicy = ConfigureCertificateChainPolicy(handler, customTrustRoot);
                 X509ChainStatusFlags expectedChainStatus = expired ? X509ChainStatusFlags.NotTimeValid :
                     wrongHostName ? X509ChainStatusFlags.NoError : X509ChainStatusFlags.UntrustedRoot;
 
                 if (!customChainPolicy)
                 {
-                    // Native handlers cannot trust the generated root without changing the OS certificate store.
                     expectedErrors |= SslPolicyErrors.RemoteCertificateChainErrors;
-                    expectedChainStatus |= X509ChainStatusFlags.UntrustedRoot;
+                    if (PlatformDetection.IsAndroid)
+                    {
+                        expectedChainStatus = X509ChainStatusFlags.PartialChain;
+                    }
+                    else
+                    {
+                        expectedChainStatus |= X509ChainStatusFlags.UntrustedRoot;
+                    }
                 }
 
                 string expectedThumbprint = certificate.Thumbprint;
@@ -359,8 +401,19 @@ namespace System.Net.Http.Functional.Tests
                     Assert.NotNull(chain);
                     Assert.Equal(expectedThumbprint, cert.Thumbprint);
                     Assert.Equal(expectedErrors, errors);
-                    Assert.Equal(expectedChainStatus, chain.ChainStatus.Aggregate(
-                        X509ChainStatusFlags.NoError, (flags, status) => flags | status.Status));
+                    X509ChainStatusFlags actualChainStatus = chain.ChainStatus.Aggregate(
+                        X509ChainStatusFlags.NoError, (flags, status) => flags | status.Status);
+                    if (PlatformDetection.IsAndroid && expired && customChainPolicy)
+                    {
+                        // Android can stop path construction at an invalid certificate and only report PartialChain.
+                        Assert.True(
+                            (actualChainStatus & (X509ChainStatusFlags.NotTimeValid | X509ChainStatusFlags.PartialChain)) != 0,
+                            $"Expected an invalid chain status for the expired certificate but got {actualChainStatus}.");
+                    }
+                    else
+                    {
+                        Assert.Equal(expectedChainStatus, actualChainStatus);
+                    }
                     return true;
                 };
 
@@ -380,9 +433,15 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        private static bool ConfigureCertificateChainPolicy(HttpClientHandler handler, X509Certificate2 certificate, bool trustCertificate)
+        private static bool ConfigureCertificateChainPolicy(HttpClientHandler handler, X509Certificate2? customTrustRoot)
         {
 #if !WINHTTPHANDLER_TEST
+            if (PlatformDetection.IsAndroid && customTrustRoot is null)
+            {
+                // Android does not support an empty custom root trust store.
+                return false;
+            }
+
             if (GetUnderlyingSocketsHttpHandler(handler) is SocketsHttpHandler socketsHandler)
             {
                 var policy = new X509ChainPolicy
@@ -392,9 +451,9 @@ namespace System.Net.Http.Functional.Tests
                     DisableCertificateDownloads = true,
                 };
 
-                if (trustCertificate)
+                if (customTrustRoot is not null)
                 {
-                    policy.CustomTrustStore.Add(certificate);
+                    policy.CustomTrustStore.Add(customTrustRoot);
                 }
 
                 socketsHandler.SslOptions.CertificateChainPolicy = policy;
