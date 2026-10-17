@@ -220,6 +220,17 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void CreateServerCertificate_IsEndEntity(bool selfSigned)
+        {
+            using X509Certificate2 rootCertificate = CreateCertificateAuthority();
+            using X509Certificate2 certificate = TestHelper.CreateServerCertificate(selfSigned ? null : rootCertificate);
+
+            Assert.False(Assert.Single(certificate.Extensions.OfType<X509BasicConstraintsExtension>()).CertificateAuthority);
+        }
+
+        [Theory]
         [InlineData(true, false)]
         [InlineData(false, false)]
         [InlineData(false, true)]

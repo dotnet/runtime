@@ -122,7 +122,7 @@ namespace System.Net.Http.Functional.Tests
                     HashAlgorithmName.SHA256,
                     RSASignaturePadding.Pkcs1);
 
-                req.CertificateExtensions.Add(new X509BasicConstraintsExtension(issuerCertificate is null, false, 0, true));
+                req.CertificateExtensions.Add(new X509BasicConstraintsExtension(false, false, 0, true));
                 req.CertificateExtensions.Add(new X509SubjectKeyIdentifierExtension(req.PublicKey, false));
                 req.CertificateExtensions.Add(new X509KeyUsageExtension(X509KeyUsageFlags.DigitalSignature | X509KeyUsageFlags.KeyEncipherment | X509KeyUsageFlags.DataEncipherment, false));
                 req.CertificateExtensions.Add(
