@@ -10,6 +10,7 @@ using System.Runtime.CompilerServices;
 using System.Text.Encodings.Web;
 using System.Text.Json.Nodes;
 using System.Text.Json.Schema;
+using System.Text.RegularExpressions;
 
 namespace System.Text.Json.Serialization.Converters
 {
@@ -495,8 +496,30 @@ namespace System.Text.Json.Serialization.Converters
 
                 if (s_isFlagsEnum)
                 {
-                    // Do not report enum values in case of flags.
-                    return new() { Type = JsonSchemaType.String };
+                    string? pattern = null;
+
+                    if (_enumFieldInfo.Length > 0)
+                    {
+                        using ValueStringBuilder sb = new(stackalloc char[JsonConstants.StackallocCharThreshold]);
+                        sb.Append("^(");
+                        sb.Append(Regex.Escape(_enumFieldInfo[0].JsonName));
+                        for (int i = 1; i < _enumFieldInfo.Length; i++)
+                        {
+                            sb.Append('|');
+                            sb.Append(Regex.Escape(_enumFieldInfo[i].JsonName));
+                        }
+                        sb.Append(")(\\w*,\\w*(");
+                        sb.Append(Regex.Escape(_enumFieldInfo[0].JsonName));
+                        for (int i = 1; i < _enumFieldInfo.Length; i++)
+                        {
+                            sb.Append('|');
+                            sb.Append(Regex.Escape(_enumFieldInfo[i].JsonName));
+                        }
+                        sb.Append("))*$");
+                        pattern = sb.ToString();
+                    }
+
+                    return new() { Type = JsonSchemaType.String, Pattern = pattern };
                 }
 
                 JsonArray enumValues = [];
