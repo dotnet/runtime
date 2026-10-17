@@ -3723,7 +3723,8 @@ void Compiler::fgFindBasicBlocks()
             filtBB->SetCatchType(BBCT_FILTER);
             hndBegBB->SetCatchType(BBCT_FILTER_HANDLER);
 
-            // Mark all BBs that belong to the filter with the XTnum of the corresponding handler
+            // Find the end of the filter. The filter's blocks get their handler index after the EH table is
+            // sorted, below: fgSortEHTable may move this clause, and XTnum is only its pre-sort index.
             for (block = filtBB; /**/; block = block->Next())
             {
                 if (block == nullptr)
@@ -3731,9 +3732,6 @@ void Compiler::fgFindBasicBlocks()
                     BADCODE3("Missing endfilter for filter", " at offset %04X", filtBB->bbCodeOffs);
                     return;
                 }
-
-                // Still inside the filter
-                block->setHndIndex(XTnum);
 
                 if (block->KindIs(BBJ_EHFILTERRET))
                 {
@@ -3870,6 +3868,17 @@ void Compiler::fgFindBasicBlocks()
             if ((block != hndBegBB) && !hndBegBB->CatchTypeIs(BBCT_FINALLY))
             {
                 block->bbSetRunRarely();
+            }
+        }
+
+        // Mark all blocks in the filter, if there is one. The filter ends immediately before hndBegBB (checked
+        // above). Valid filters cannot contain nested EH regions, so assign each block this clause's sorted index.
+
+        if (HBtab->HasFilter())
+        {
+            for (block = HBtab->ebdFilter; block != hndBegBB; block = block->Next())
+            {
+                block->setHndIndex(XTnum);
             }
         }
 
