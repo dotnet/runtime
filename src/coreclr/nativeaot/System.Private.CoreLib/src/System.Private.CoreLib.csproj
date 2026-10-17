@@ -301,7 +301,8 @@
     <Compile Include="System\Threading\ThreadPoolCallbackWrapper.NativeAot.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)'=='true' or '$(TargetsWasm)'=='true'">
-    <Compile Include="Internal\Runtime\FrozenObjectHeapManager.Unix.cs" />
+    <Compile Include="Internal\Runtime\FrozenObjectHeapManager.Unix.cs" Condition="'$(TargetsWasm)' != 'true'" />
+    <Compile Include="Internal\Runtime\FrozenObjectHeapManager.Wasm.cs" Condition="'$(TargetsWasm)' == 'true'" />
     <Compile Include="System\Environment.NativeAot.Unix.cs" />
     <Compile Include="System\Runtime\InteropServices\PInvokeMarshal.Unix.cs" />
     <Compile Include="System\Threading\Thread.NativeAot.Unix.cs" />
