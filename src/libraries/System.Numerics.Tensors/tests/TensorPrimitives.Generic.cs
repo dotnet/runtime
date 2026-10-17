@@ -314,7 +314,54 @@ namespace System.Numerics.Tensors.Tests
     // The tests for some types have been marked as OuterLoop simply to decrease inner loop testing time.
 
     public class DoubleGenericTensorPrimitives : GenericFloatingPointNumberTensorPrimitivesTests<double> { }
-    public class SingleGenericTensorPrimitives : GenericFloatingPointNumberTensorPrimitivesTests<float> { }
+    public class SingleGenericTensorPrimitives : GenericFloatingPointNumberTensorPrimitivesTests<float>
+    {
+        public static IEnumerable<object[]> ExpFunctions_NearOverflowThreshold_Data()
+        {
+            foreach (int length in new[] { 1, 4, 8, 15, 16, 17, 33 })
+            {
+                yield return new object[] { length };
+            }
+        }
+
+        // https://github.com/dotnet/runtime/issues/135718: the vectorized Exp10 returned infinity for 38.531837f,
+        // whose result is finite, because x * ln(10) was rounded to float before calling Exp.
+        [Theory]
+        [MemberData(nameof(ExpFunctions_NearOverflowThreshold_Data))]
+        public void ExpFunctions_NearOverflowThreshold(int length)
+        {
+            (SpanDestinationDelegate Method, Func<float, float> Expected, float Threshold)[] functions =
+            [
+                (TensorPrimitives.Exp10, float.Exp10, float.Log10(float.MaxValue)),
+                (TensorPrimitives.Exp10M1, float.Exp10M1, float.Log10(float.MaxValue)),
+                (TensorPrimitives.Exp2, float.Exp2, float.Log2(float.MaxValue)),
+                (TensorPrimitives.Exp2M1, float.Exp2M1, float.Log2(float.MaxValue)),
+            ];
+
+            float[] x = new float[length];
+            float[] destination = new float[length];
+
+            foreach ((SpanDestinationDelegate method, Func<float, float> expected, float threshold) in functions)
+            {
+                float value = threshold;
+                for (int i = 0; i < 32; i++)
+                {
+                    value = float.BitDecrement(value);
+                }
+
+                for (int i = 0; i < 64; i++, value = float.BitIncrement(value))
+                {
+                    x.AsSpan().Fill(value);
+                    method(x, destination);
+
+                    foreach (float actual in destination)
+                    {
+                        AssertEqualTolerance(expected(value), actual, 1e-5f);
+                    }
+                }
+            }
+        }
+    }
     public class HalfGenericTensorPrimitives : GenericFloatingPointNumberTensorPrimitivesTests<Half>
     {
         protected override void AssertEqualTolerance(Half expected, Half actual, Half? tolerance = null) =>

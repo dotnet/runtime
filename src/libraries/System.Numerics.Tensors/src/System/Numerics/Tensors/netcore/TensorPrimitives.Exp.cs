@@ -84,6 +84,45 @@ namespace System.Numerics.Tensors
                     return Vector512.Exp(x.AsSingle()).As<float, T>();
                 }
             }
+
+            // T.Exp(x * scale). For float, x is widened and the product is computed in double.
+            // Rounding the product to float introduces tens of ulps of error in the result and, just below the
+            // overflow threshold, can turn a finite result into infinity.
+            public static Vector128<T> InvokeScaled(Vector128<T> x, double scale)
+            {
+                if (typeof(T) == typeof(float))
+                {
+                    (Vector128<double> lower, Vector128<double> upper) = Vector128.Widen(x.AsSingle());
+                    Vector128<double> s = Vector128.Create(scale);
+                    return Vector128.Narrow(Vector128.Exp(lower * s), Vector128.Exp(upper * s)).As<float, T>();
+                }
+
+                return Invoke(x * Vector128.Create(T.CreateTruncating(scale)));
+            }
+
+            public static Vector256<T> InvokeScaled(Vector256<T> x, double scale)
+            {
+                if (typeof(T) == typeof(float))
+                {
+                    (Vector256<double> lower, Vector256<double> upper) = Vector256.Widen(x.AsSingle());
+                    Vector256<double> s = Vector256.Create(scale);
+                    return Vector256.Narrow(Vector256.Exp(lower * s), Vector256.Exp(upper * s)).As<float, T>();
+                }
+
+                return Invoke(x * Vector256.Create(T.CreateTruncating(scale)));
+            }
+
+            public static Vector512<T> InvokeScaled(Vector512<T> x, double scale)
+            {
+                if (typeof(T) == typeof(float))
+                {
+                    (Vector512<double> lower, Vector512<double> upper) = Vector512.Widen(x.AsSingle());
+                    Vector512<double> s = Vector512.Create(scale);
+                    return Vector512.Narrow(Vector512.Exp(lower * s), Vector512.Exp(upper * s)).As<float, T>();
+                }
+
+                return Invoke(x * Vector512.Create(T.CreateTruncating(scale)));
+            }
         }
     }
 }
