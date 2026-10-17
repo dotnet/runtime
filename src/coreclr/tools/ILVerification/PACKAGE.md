@@ -2,9 +2,79 @@
 
 Provides a library for verifying .NET intermediate language (IL) against the ECMA-335 specification. For a command-line interface, use the [dotnet-ilverify](https://www.nuget.org/packages/dotnet-ilverify/) tool.
 
-## Thread safety, reader lifetime and resolver requirements
+## Key Features
 
-- A `Verifier` is not thread-safe. Do not call its methods, or enumerate sequences it returned, on more than one thread at the same time. Calls that do not overlap may come from different threads.
-- `Verify` returns a lazily evaluated sequence. Verification, including the `IResolver` calls it needs, happens while the sequence is enumerated. `SetSystemModuleName` calls the `IResolver` immediately.
-- A `Verifier` creates a module for each `PEReader` it uses, whether passed to `Verify` or returned by `IResolver`. It may keep reading from that reader after the enumeration that first used it has completed. Keep those readers undisposed, and the memory they read alive and unchanged, until you no longer use the `Verifier` or the sequences it returned. The `Verifier` does not dispose them.
-- `IResolver` must return the same `PEReader` instance each time it is asked for the same assembly or module. The verifier identifies modules by `PEReader` instance. A second instance for the same assembly becomes a second module with distinct types, which can produce wrong verification results. That includes the assembly being verified: if the verifier also asks for it by name, return the instance that is passed to `Verify`. For example, when `System.Private.CoreLib` is both the system module and the assembly being verified, `SetSystemModuleName` asks for it by name before verification starts.
+* Reports IL in method bodies that is not verifiable under ECMA-335, such as stack underflow, type mismatches and invalid branch targets.
+* Checks types: base types, interface implementations and method implementations.
+* Reads assemblies through `System.Reflection.Metadata`, so they are never loaded or run.
+
+## How to Use
+
+Implement `IResolver` to supply a `PEReader` for each assembly the verifier needs. Set the system module (the assembly that defines core types such as `System.Object`), then enumerate the results of `Verify`. This example verifies every method body of an assembly, resolving references from that assembly's directory and the directory of the current .NET runtime:
+
+```cs
+using System.Reflection.Metadata;
+using System.Reflection.PortableExecutable;
+using ILVerify;
+
+string path = args[0];
+var resolver = new DirectoryResolver(Path.GetDirectoryName(Path.GetFullPath(path))!, Path.GetDirectoryName(typeof(object).Assembly.Location)!);
+var verifier = new Verifier(resolver, new VerifierOptions { IncludeMetadataTokensInErrorMessages = true });
+verifier.SetSystemModuleName(new AssemblyNameInfo("System.Private.CoreLib"));
+
+PEReader reader = resolver.ResolveAssembly(new AssemblyNameInfo(Path.GetFileNameWithoutExtension(path)))!;
+foreach (VerificationResult result in verifier.Verify(reader))
+{
+    Console.WriteLine($"{result.Code}: {result.Message}");
+}
+
+// Returns the same PEReader each time the same file is requested.
+class DirectoryResolver(params string[] directories) : IResolver
+{
+    private readonly Dictionary<string, PEReader> _readers = new(StringComparer.OrdinalIgnoreCase);
+
+    public PEReader? ResolveAssembly(AssemblyNameInfo assemblyName) => Open(assemblyName.Name + ".dll");
+
+    public PEReader? ResolveModule(AssemblyNameInfo referencingAssembly, string fileName) => Open(fileName);
+
+    private PEReader? Open(string fileName)
+    {
+        if (_readers.TryGetValue(fileName, out PEReader? reader))
+        {
+            return reader;
+        }
+
+        foreach (string directory in directories)
+        {
+            string candidate = Path.Combine(directory, fileName);
+            if (File.Exists(candidate))
+            {
+                reader = new PEReader(File.OpenRead(candidate));
+                _readers.Add(fileName, reader);
+                return reader;
+            }
+        }
+
+        return null;
+    }
+}
+```
+
+## Main Types
+
+The main types provided by this library are:
+
+* `ILVerify.Verifier`
+* `ILVerify.IResolver`
+* `ILVerify.VerifierOptions`
+* `ILVerify.VerificationResult`
+* `ILVerify.VerifierError`
+
+## Additional Documentation
+
+* [ILVerify source and documentation](https://github.com/dotnet/runtime/tree/main/src/coreclr/tools/ILVerify)
+* [ECMA-335 - Common Language Infrastructure (CLI)](https://www.ecma-international.org/publications-and-standards/standards/ecma-335)
+
+## Feedback & Contributing
+
+Microsoft.ILVerification is released as open source under the [MIT license](https://licenses.nuget.org/MIT). Bug reports and contributions are welcome at [the GitHub repository](https://github.com/dotnet/runtime).
