@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Reflection;
+using System.Text.Json.Serialization.Metadata;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -45,16 +47,19 @@ namespace System.Text.Json.Serialization.Tests
 
             string exStr = ex.ToString();
             Assert.Contains("System.Text.Json.Serialization.Tests.Point_Without_Members", exStr);
+            Assert.Contains("Could not find a matching property or field for constructor parameter 'x' of type 'System.Int32'.", exStr);
 
             ex = await Assert.ThrowsAsync<InvalidOperationException>(
                 () => Serializer.DeserializeWrapper<Point_With_MismatchedMembers>("{}"));
             exStr = ex.ToString();
             Assert.Contains("System.Text.Json.Serialization.Tests.Point_With_MismatchedMembers", exStr);
+            Assert.Contains("Parameter 'y' of type 'System.Int32' could not be bound to property or field 'Y' of type 'System.Single'.", exStr);
 
             ex = await Assert.ThrowsAsync<InvalidOperationException>(
                 () => Serializer.DeserializeWrapper<WrapperFor_Point_With_MismatchedMembers>("""{"MyInt":1,"MyPoint":{}}"""));
             exStr = ex.ToString();
             Assert.Contains("System.Text.Json.Serialization.Tests.Point_With_MismatchedMembers", exStr);
+            Assert.Contains("Parameter 'y' of type 'System.Int32' could not be bound to property or field 'Y' of type 'System.Single'.", exStr);
         }
 
         [Fact]
@@ -376,5 +381,124 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         public record ParameterizedRecord_WithStringProperty(string Text);
+
+        [Fact]
+        public async Task ConstructorParameterIncompleteBinding_AccurateErrorMessage()
+        {
+            // Case 1: First unbound parameter in declaration order has no matching member.
+            InvalidOperationException ex = await Assert.ThrowsAsync<InvalidOperationException>(
+                () => Serializer.DeserializeWrapper<FirstMissingSecondTypeMismatch>("{}"));
+            Assert.Contains("Could not find a matching property or field for constructor parameter 'y' of type 'System.String'.", ex.Message);
+
+            // Case 2: First unbound parameter in declaration order has matching name but type mismatch.
+            ex = await Assert.ThrowsAsync<InvalidOperationException>(
+                () => Serializer.DeserializeWrapper<FirstTypeMismatchSecondMissing>("{}"));
+            Assert.Contains("Parameter 'z' of type 'System.Double' could not be bound to property or field 'Z' of type 'System.String'.", ex.Message);
+
+            // Case 3: When IncludeFields is disabled (default), field is not considered, so reported as missing property or field.
+            ex = await Assert.ThrowsAsync<InvalidOperationException>(
+                () => Serializer.DeserializeWrapper<ClassWithPropertyAndFieldMismatch>("{}"));
+            Assert.Contains("Could not find a matching property or field for constructor parameter 'y' of type 'System.Int32'.", ex.Message);
+
+            // Case 4: Field with [JsonInclude] is considered and detected as a type mismatch across both reflection and source generation.
+            ex = await Assert.ThrowsAsync<InvalidOperationException>(
+                () => Serializer.DeserializeWrapper<ClassWithJsonIncludeFieldMismatch>("{}"));
+            Assert.Contains("Parameter 'y' of type 'System.Int32' could not be bound to property or field 'Y' of type 'System.Single'.", ex.Message);
+
+            // Case 5: When IncludeFields is enabled dynamically via runtime options (reflection).
+            if (!Serializer.IsSourceGeneratedSerializer)
+            {
+                var options = new JsonSerializerOptions { IncludeFields = true };
+                ex = await Assert.ThrowsAsync<InvalidOperationException>(
+                    () => Serializer.DeserializeWrapper<ClassWithPropertyAndFieldMismatch>("{}", options));
+                Assert.Contains("Parameter 'y' of type 'System.Int32' could not be bound to property or field 'Y' of type 'System.Single'.", ex.Message);
+            }
+        }
+
+        [Fact]
+        public async Task ConstructorParameterIncompleteBinding_CaseInsensitiveDuplicateParameter_ReportsUnboundParameter()
+        {
+            InvalidOperationException ex = await Assert.ThrowsAsync<InvalidOperationException>(
+                () => Serializer.DeserializeWrapper<CaseInsensitiveDuplicateParameterClass>("{}"));
+
+            Assert.Contains("Parameter 'A' of type 'System.Int32' could not be bound because property or field 'A' is already bound to constructor parameter 'a'.", ex.Message);
+        }
+
+        [Fact]
+        public async Task ConstructorParameterIncompleteBinding_CaseInsensitiveDuplicateParameter_MemberOrderDoesNotAffectDiagnostic()
+        {
+            InvalidOperationException ex1 = await Assert.ThrowsAsync<InvalidOperationException>(
+                () => Serializer.DeserializeWrapper<CaseInsensitiveDuplicateParameterBoundFirstClass>("{}"));
+            Assert.Contains("Parameter 'A' of type 'System.Int32' could not be bound because property or field 'A' is already bound to constructor parameter 'a'.", ex1.Message);
+
+            InvalidOperationException ex2 = await Assert.ThrowsAsync<InvalidOperationException>(
+                () => Serializer.DeserializeWrapper<CaseInsensitiveDuplicateParameterMismatchFirstClass>("{}"));
+            Assert.Contains("Parameter 'A' of type 'System.Int32' could not be bound because property or field 'A' is already bound to constructor parameter 'a'.", ex2.Message);
+        }
+
+        [Fact]
+        public void ConstructorParameterIncompleteBinding_PropertyRenamedAfterAssociation()
+        {
+            DefaultJsonTypeInfoResolver resolver = new();
+            resolver.Modifiers.Add(info =>
+            {
+                if (info.Type == typeof(ClassWithTwoConstructorParameters))
+                {
+                    info.Properties.Clear();
+                    JsonPropertyInfo prop = info.CreateJsonPropertyInfo(typeof(int), "x");
+                    info.Properties.Add(prop);
+                    prop.Name = "y";
+                }
+            });
+
+            JsonSerializerOptions options = new() { TypeInfoResolver = resolver };
+            InvalidOperationException ex = Assert.Throws<InvalidOperationException>(
+                () => JsonSerializer.Deserialize<ClassWithTwoConstructorParameters>("{}", options));
+
+            Assert.Contains("Parameter 'y' of type 'System.Int32' could not be bound because property or field 'y' is already bound to constructor parameter 'x'.", ex.Message);
+        }
+
+        [Fact]
+        public void ConstructorParameterIncompleteBinding_UnassociatedMatchingProperty_ReportsAccurateMessage()
+        {
+            DefaultJsonTypeInfoResolver resolver = new();
+            resolver.Modifiers.Add(info =>
+            {
+                if (info.Type == typeof(ClassWithOneConstructorParameter))
+                {
+                    info.Properties.Clear();
+                    JsonPropertyInfo prop = info.CreateJsonPropertyInfo(typeof(int), "z");
+                    info.Properties.Add(prop);
+                    prop.Name = "y";
+                }
+            });
+
+            JsonSerializerOptions options = new() { TypeInfoResolver = resolver };
+            InvalidOperationException ex = Assert.Throws<InvalidOperationException>(
+                () => JsonSerializer.Deserialize<ClassWithOneConstructorParameter>("{}", options));
+
+            Assert.Contains("Parameter 'y' of type 'System.Int32' could not be bound to matching property or field 'y'.", ex.Message);
+        }
+
+        [Fact]
+        public void SetCreateObject_ClearsRetainedParameterInfoValues()
+        {
+            DefaultJsonTypeInfoResolver resolver = new();
+            resolver.Modifiers.Add(info =>
+            {
+                if (info.Type == typeof(Point_Without_Members))
+                {
+                    info.CreateObject = () => new Point_Without_Members(1, 2);
+                }
+            });
+
+            JsonSerializerOptions options = new() { TypeInfoResolver = resolver };
+            Point_Without_Members result = JsonSerializer.Deserialize<Point_Without_Members>("{}", options);
+            Assert.NotNull(result);
+
+            JsonTypeInfo info = options.GetTypeInfo(typeof(Point_Without_Members));
+            FieldInfo field = typeof(JsonTypeInfo).GetField("_parameterInfoValues", BindingFlags.Instance | BindingFlags.NonPublic)!;
+            Assert.Null(field.GetValue(info));
+        }
     }
 }
