@@ -157,7 +157,7 @@ namespace ILVerify
         CtorExpected,                   // .ctor expected.
         /// <summary>A newobj instruction refers to a static or abstract method.</summary>
         CtorSig,                        // newobj on static or abstract method.
-        /// <summary>An array is created with a ByRef element type.</summary>
+        /// <summary>An array is created with a ByRef or ByRef-like element type.</summary>
         ArrayByRef,                     // Array of ELEMENT_TYPE_BYREF or ELEMENT_TYPE_TYPEDBYREF.
         /// <summary>An instruction takes the address of a local variable or argument that is already a ByRef.</summary>
         ByrefOfByref,                   // ByRef of ByRef.
@@ -165,7 +165,7 @@ namespace ILVerify
         CodeSizeZero,                   // Code size is zero.
         /// <summary>A tail. prefix is not followed by an instruction that accepts it.</summary>
         TailCall,                       // Missing call/callvirt/calli.
-        /// <summary>A tail call passes a ByRef argument, or is a constrained call.</summary>
+        /// <summary>A tail call passes a ByRef or ByRef-like argument, or is a constrained call.</summary>
         TailByRef,                      // Cannot pass ByRef to a tail call.
         /// <summary>A tail call is not followed by ret.</summary>
         TailRet,                        // tail.call may only be followed by ret.
@@ -201,7 +201,7 @@ namespace ILVerify
         /// ldftn or the sequence dup, ldvirtftn.
         /// </summary>
         DelegatePattern,                // Dup, ldvirtftn, newobj delegate::.ctor() pattern expected (in the same basic block).
-        /// <summary>The type operand of a box instruction is a ByRef type.</summary>
+        /// <summary>The type operand of a box instruction is a ByRef or ByRef-like type.</summary>
         BoxByRef,                       // Cannot box byref.
         /// <summary>The stack holds more than the filter result at endfilter.</summary>
         EndfilterStack,                 // Stack not empty when leaving an exception filter.
@@ -322,6 +322,7 @@ namespace ILVerify
         EHClauseOrder, // An exception handling clause nested in a try must precede that try's clause.
         /// <summary>A filter does not end with endfilter, or contains more than one endfilter.</summary>
         EHClauseFilterEnd, // A filter must have exactly one endfilter as its last instruction.
+        /// <summary>The alignment of an unaligned. prefix is not 1, 2 or 4.</summary>
         UnalignedAlignment, // Alignment specified for 'unaligned.' must be 1, 2, or 4.
     }
 }
