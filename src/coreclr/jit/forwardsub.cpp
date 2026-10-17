@@ -367,19 +367,6 @@ bool Compiler::fgForwardSubCond(BasicBlock* block, Statement* stmt)
         return false;
     }
 
-#ifdef TARGET_ARM64
-    // ARM64's cbz/cbnz already combines the boolean test and branch, unlike
-    // XARCH's test + jcc. Forwarding a general compare can then cost more once
-    // the edge store and possible jump are included. Require a local zero test
-    // so the forwarded comparison itself can use cbz/cbnz; XARCH can also
-    // eliminate the separate boolean test and does not need this restriction.
-    if (!compare->OperIs(GT_EQ, GT_NE) || !compare->gtGetOp1()->OperIs(GT_LCL_VAR) ||
-        !compare->gtGetOp2()->IsIntegralConst(0))
-    {
-        return false;
-    }
-#endif
-
     unsigned const   lclNum = def->AsLclVar()->GetLclNum();
     LclVarDsc* const varDsc = lvaGetDesc(lclNum);
     if (!varDsc->lvTracked || varDsc->IsAddressExposed() || varDsc->lvPinned || varDsc->lvIsStructField ||
