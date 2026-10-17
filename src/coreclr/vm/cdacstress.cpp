@@ -832,9 +832,9 @@ static HRESULT CollectRuntimeStackRefs(Thread* pThread, PCONTEXT regs, SArray<St
 
     // Use a callback that matches DAC behavior (DacStackReferenceWalker::Callback):
     // Only call EnumGcRefs for frameless frames and GcScanRoots for explicit frames.
-    // Deliberately skip the post-scan logic (LCG resolver promotion,
-    // GcReportLoaderAllocator, generic param context) that GcStackCrawlCallBack
-    // includes — the DAC's callback has that logic disabled (#if 0).
+    // Deliberately skip LCG resolver and loader allocator promotion, including generic
+    // contexts, by leaving GcRootScan unset and omitting GcStackCrawlCallBack's post-scan
+    // logic. The DAC's callback has that logic disabled (#if 0).
     struct DiagContext { GCCONTEXT* gcctx; RuntimeRefCollectionContext* collectCtx; };
     DiagContext diagCtx = { &gcctx, &collectCtx };
 

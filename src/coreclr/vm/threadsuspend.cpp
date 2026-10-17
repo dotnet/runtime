@@ -827,6 +827,7 @@ BOOL Thread::IsSafeToInjectThreadAbort(PTR_CONTEXT pContextToCheck)
 
     EECodeInfo codeInfo(GetIP(pContextToCheck));
     _ASSERTE(codeInfo.IsValid());
+    _ASSERTE(codeInfo.GetCodeManager()->IsGcSafe(&codeInfo, codeInfo.GetRelOffset()));
 
     // Check if the method uses a frame register. If it does not, then RSP will be used by the OS as the frame register
     // and returned as the EstablisherFrame. This is fine at any instruction in the method (including epilog) since there is always a
@@ -3691,7 +3692,7 @@ ThrowControlForThread(
 
 #if defined(FEATURE_HIJACK) && !defined(TARGET_UNIX)
 // This function is called by UserAbort.
-// It forces a thread to abort if allowed and the thread is running managed code.
+// It forces a thread to abort if allowed and the thread is at a GC-safe point in managed code.
 BOOL Thread::HandleJITCaseForAbort()
 {
     CONTRACTL {
@@ -3722,10 +3723,9 @@ BOOL Thread::HandleJITCaseForAbort()
 
     if (success)
     {
-        PCODE curIP = GetIP(&ctx);
-
-        // check if this is code managed by the code manager (ie. in the code heap)
-        if (ExecutionManager::IsManagedCode(curIP))
+        EECodeInfo codeInfo(GetIP(&ctx));
+        if (codeInfo.IsValid() &&
+            codeInfo.GetCodeManager()->IsGcSafe(&codeInfo, codeInfo.GetRelOffset()))
         {
             return ResumeUnderControl(&ctx);
         }
@@ -4680,9 +4680,8 @@ StackWalkAction SWCB_GetExecutionState(CrawlFrame *pCF, VOID *pData)
                 }
                 else
                 {
-                        // We already have the caller context available at this point
-                    _ASSERTE(pRDT->IsCallerContextValid);
 #if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+                    T_KNONVOLATILE_CONTEXT_POINTERS * pCallerContextPointers = pCF->GetCallerContextPointers();
 
                     // Why do we use CallerContextPointers below?
                     //
@@ -4702,9 +4701,9 @@ StackWalkAction SWCB_GetExecutionState(CrawlFrame *pCF, VOID *pData)
                     // work for them. See comment in code:Compiler::genPushCalleeSavedRegisters.
 
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-                    if (pRDT->pCallerContextPointers->Ra == &pRDT->pContext->Ra)
+                    if (pCallerContextPointers->Ra == &pRDT->pContext->Ra)
 #else
-                    if(pRDT->pCallerContextPointers->Lr == &pRDT->pContext->Lr)
+                    if(pCallerContextPointers->Lr == &pRDT->pContext->Lr)
 #endif
                     {
                         // This is the case when we are either:
@@ -4741,11 +4740,11 @@ StackWalkAction SWCB_GetExecutionState(CrawlFrame *pCF, VOID *pData)
                         // pushed on the stack. We get it to determine the return address
                         // in the caller of the current non-interruptible frame.
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-                        pES->m_ppvRetAddrPtr = (void **) pRDT->pCallerContextPointers->Ra;
+                        pES->m_ppvRetAddrPtr = (void **) pCallerContextPointers->Ra;
 #else
-                        pES->m_ppvRetAddrPtr = (void **) pRDT->pCallerContextPointers->Lr;
+                        pES->m_ppvRetAddrPtr = (void **) pCallerContextPointers->Lr;
 #if defined(TARGET_ARM64)
-                        pES->m_pSpForPacSign = (void *)pRDT->CallerContextSpForPacSign;
+                        pES->m_pSpForPacSign = (void *)pCF->GetCallerContextSpForPacSign();
 #endif // TARGET_ARM64
 #endif
                     }
@@ -4754,7 +4753,7 @@ StackWalkAction SWCB_GetExecutionState(CrawlFrame *pCF, VOID *pData)
                     pES->m_FirstPass = FALSE;
                     action = SWA_CONTINUE;
 #elif defined(TARGET_AMD64)
-                    pES->m_ppvRetAddrPtr = (void **) (EECodeManager::GetCallerSp(pRDT) - sizeof(void*));
+                    pES->m_ppvRetAddrPtr = (void **) (pCF->GetCallerSp() - sizeof(void*));
 #else // TARGET_X86 || TARGET_AMD64
                     PORTABILITY_ASSERT("Platform NYI");
 #endif // _TARGET_???_
