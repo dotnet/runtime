@@ -133,14 +133,14 @@ internal static partial class WaitSubsystem
             Thread.CurrentThread.ThrowIfPendingInterrupt();
         }
 
-        return TryWait(waitableObject, timeoutMilliseconds);
+        return TryWait(waitableObject, timeoutMilliseconds, interruptible);
     }
 
-    private static int TryWait(WaitableObject waitableObject, int timeoutMilliseconds)
+    private static int TryWait(WaitableObject waitableObject, int timeoutMilliseconds, bool interruptible)
     {
         if (!waitableObject.CanAcquire)
         {
-            return UnsatisfiedWait(timeoutMilliseconds);
+            return UnsatisfiedWait(timeoutMilliseconds, interruptible);
         }
 
         waitableObject.AcceptSignal();
@@ -188,7 +188,7 @@ internal static partial class WaitSubsystem
             {
                 if (!FromHandle(handle).CanAcquire)
                 {
-                    return UnsatisfiedWait(timeoutMilliseconds);
+                    return UnsatisfiedWait(timeoutMilliseconds, interruptible: true);
                 }
             }
             foreach (IntPtr handle in waitHandles)
@@ -199,13 +199,30 @@ internal static partial class WaitSubsystem
             return WaitHandle.WaitSuccess;
         }
 
-        return UnsatisfiedWait(timeoutMilliseconds);
+        return UnsatisfiedWait(timeoutMilliseconds, interruptible: true);
     }
 
-    private static int UnsatisfiedWait(int timeoutMilliseconds)
+    private static int UnsatisfiedWait(int timeoutMilliseconds, bool interruptible)
     {
         Debug.Assert(timeoutMilliseconds >= Timeout.Infinite);
-        return timeoutMilliseconds == 0 ? WaitHandle.WaitTimeout : throw new PlatformNotSupportedException();
+        if (timeoutMilliseconds == Timeout.Infinite)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        if (timeoutMilliseconds != 0)
+        {
+            if (interruptible)
+            {
+                Thread.Sleep(timeoutMilliseconds);
+            }
+            else
+            {
+                Sleep(timeoutMilliseconds, interruptible: false);
+            }
+        }
+
+        return WaitHandle.WaitTimeout;
     }
 
     public static int SignalAndWait(IntPtr handleToSignal, IntPtr handleToWaitOn, int timeoutMilliseconds)
@@ -223,7 +240,7 @@ internal static partial class WaitSubsystem
             throw new InvalidOperationException(SR.Threading_WaitHandleTooManyPosts, ex);
         }
 
-        return TryWait(target, timeoutMilliseconds);
+        return TryWait(target, timeoutMilliseconds, interruptible: true);
     }
 
     public static void Sleep(int timeoutMilliseconds, bool interruptible = true)

@@ -150,11 +150,6 @@ namespace System.Threading
                 return _waitedObjects;
             }
 
-            public void ReturnWaitedObjectArray(WaitableObject?[] waitableObjects, int count)
-            {
-                Array.Clear(waitableObjects, 0, count);
-            }
-
             private WaitedListNode[] GetWaitedListNodeArray(int requiredCapacity)
             {
                 Debug.Assert(_thread == Thread.CurrentThread);

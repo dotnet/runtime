@@ -56,8 +56,10 @@ namespace System.Threading.Tests
             Assert.True(invalidTaken);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR), nameof(PlatformDetection.IsMultithreadingSupported))]
-        public static void AnonymousSelfContentionHonorsFiniteTimeout()
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void AnonymousSelfContentionHonorsFiniteTimeout(bool useTimeSpan)
         {
             SpinLock spinLock = new(enableThreadOwnerTracking: false);
             bool taken = false;
@@ -66,7 +68,14 @@ namespace System.Threading.Tests
             {
                 bool secondTaken = false;
                 Stopwatch stopwatch = Stopwatch.StartNew();
-                spinLock.TryEnter(10, ref secondTaken);
+                if (useTimeSpan)
+                {
+                    spinLock.TryEnter(TimeSpan.FromMilliseconds(10), ref secondTaken);
+                }
+                else
+                {
+                    spinLock.TryEnter(10, ref secondTaken);
+                }
                 Assert.False(secondTaken);
                 Assert.True(spinLock.IsHeld);
                 Assert.InRange(stopwatch.Elapsed.TotalMilliseconds, 9, double.MaxValue);
@@ -77,15 +86,13 @@ namespace System.Threading.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR), nameof(PlatformDetection.IsNotMultithreadingSupported))]
-        [InlineData(-1)]
-        [InlineData(1)]
-        [InlineData(10)]
-        public static void AnonymousSelfContentionWithoutThreadsThrows(int millisecondsTimeout)
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR), nameof(PlatformDetection.IsNotMultithreadingSupported))]
+        public static void AnonymousSelfContentionWithoutThreadsRejectsInfiniteWaits()
         {
+            const int MillisecondsTimeout = Timeout.Infinite;
             SpinLock spinLock = new(enableThreadOwnerTracking: false);
             bool taken = false;
-            spinLock.TryEnter(millisecondsTimeout, ref taken);
+            spinLock.TryEnter(MillisecondsTimeout, ref taken);
             Assert.True(taken);
 
             try
@@ -94,9 +101,9 @@ namespace System.Threading.Tests
                 spinLock.TryEnter(ref secondTaken);
                 Assert.False(secondTaken);
 
-                Assert.Throws<PlatformNotSupportedException>(() => spinLock.TryEnter(millisecondsTimeout, ref secondTaken));
+                Assert.Throws<PlatformNotSupportedException>(() => spinLock.TryEnter(MillisecondsTimeout, ref secondTaken));
                 Assert.False(secondTaken);
-                Assert.Throws<PlatformNotSupportedException>(() => spinLock.TryEnter(TimeSpan.FromMilliseconds(millisecondsTimeout), ref secondTaken));
+                Assert.Throws<PlatformNotSupportedException>(() => spinLock.TryEnter(TimeSpan.FromMilliseconds(MillisecondsTimeout), ref secondTaken));
                 Assert.False(secondTaken);
                 Assert.Throws<PlatformNotSupportedException>(() => spinLock.Enter(ref secondTaken));
                 Assert.False(secondTaken);
@@ -108,7 +115,7 @@ namespace System.Threading.Tests
             }
 
             taken = false;
-            spinLock.TryEnter(millisecondsTimeout, ref taken);
+            spinLock.TryEnter(MillisecondsTimeout, ref taken);
             Assert.True(taken);
             spinLock.Exit();
         }

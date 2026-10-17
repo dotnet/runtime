@@ -429,14 +429,14 @@ namespace System.Threading
             {
                 if (!success)
                 {
-                    waitInfo.ReturnWaitedObjectArray(waitableObjects, waitHandles.Length);
+                    Array.Clear(waitableObjects, 0, waitHandles.Length);
                 }
             }
 
             if (waitHandles.Length == 1)
             {
                 WaitableObject waitableObject = waitableObjects[0]!;
-                waitInfo.ReturnWaitedObjectArray(waitableObjects, 1);
+                Array.Clear(waitableObjects, 0, 1);
                 return
                     waitableObject.Wait(waitInfo, timeoutMilliseconds, interruptible: true);
             }

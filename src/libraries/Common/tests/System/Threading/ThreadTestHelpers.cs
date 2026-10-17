@@ -18,30 +18,6 @@ namespace System.Threading.Tests
         public static readonly int UnexpectedThreadTimeoutMilliseconds =
             UnexpectedTimeoutMilliseconds + RemoteExecutor.FailWaitTimeoutMilliseconds;
 
-        public static void AssertWaitTimeout(Func<bool> wait)
-        {
-            if (PlatformDetection.IsCoreCLR && PlatformDetection.IsNotMultithreadingSupported)
-            {
-                Assert.Throws<PlatformNotSupportedException>(() => wait());
-            }
-            else
-            {
-                Assert.False(wait());
-            }
-        }
-
-        public static void AssertWaitTimeout(Func<int> wait)
-        {
-            if (PlatformDetection.IsCoreCLR && PlatformDetection.IsNotMultithreadingSupported)
-            {
-                Assert.Throws<PlatformNotSupportedException>(() => wait());
-            }
-            else
-            {
-                Assert.Equal(WaitHandle.WaitTimeout, wait());
-            }
-        }
-
         public static Thread CreateGuardedThread(out Action waitForThread, Action start)
         {
             Action checkForThreadErrors;

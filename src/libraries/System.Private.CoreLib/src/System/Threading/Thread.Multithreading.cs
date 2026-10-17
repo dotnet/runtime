@@ -179,7 +179,7 @@ namespace System.Threading
 
         private void Start(object? parameter, bool captureContext)
         {
-#if FEATURE_WASM_MANAGED_THREADS
+#if !FEATURE_MULTITHREADING || FEATURE_WASM_MANAGED_THREADS
             RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
 #endif
 
@@ -204,7 +204,7 @@ namespace System.Threading
 
         private void Start(bool captureContext)
         {
-#if FEATURE_WASM_MANAGED_THREADS
+#if !FEATURE_MULTITHREADING || FEATURE_WASM_MANAGED_THREADS
             RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
 #endif
             StartHelper? startHelper = _startHelper;

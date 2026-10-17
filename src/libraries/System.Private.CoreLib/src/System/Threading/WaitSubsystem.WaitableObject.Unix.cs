@@ -446,7 +446,7 @@ namespace System.Threading
 
                     if (waitableObjects != null)
                     {
-                        waitInfo.ReturnWaitedObjectArray(waitableObjects, count);
+                        Array.Clear(waitableObjects, 0, count);
                     }
                 }
             }

@@ -41,12 +41,17 @@ public partial struct SpinLock
         }
         else
         {
-            if (millisecondsTimeout == 0)
+            if (millisecondsTimeout == Timeout.Infinite)
             {
-                return;
+                throw new PlatformNotSupportedException();
             }
 
-            throw new PlatformNotSupportedException();
+            if (millisecondsTimeout != 0)
+            {
+                Thread.Sleep(millisecondsTimeout);
+            }
+
+            return;
         }
 
         lockTaken = true;

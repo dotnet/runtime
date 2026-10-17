@@ -10,9 +10,11 @@ namespace System.Threading.Tests
     public static partial class WaitHandleTests
     {
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR), nameof(PlatformDetection.IsNotMultithreadingSupported))]
-        [InlineData(-1)]
+        [InlineData(Timeout.Infinite)]
+        [InlineData(0)]
         [InlineData(1)]
-        public static void SingleThreadedUnsatisfiedWaitsThrow(int millisecondsTimeout)
+        [InlineData(20)]
+        public static void SingleThreadedUnsatisfiedWaits(int millisecondsTimeout)
         {
             using AutoResetEvent first = new(true);
             using ManualResetEvent second = new(false);
@@ -20,14 +22,14 @@ namespace System.Threading.Tests
             using Mutex mutex = new(initiallyOwned: true);
             WaitHandle[] handles = [first, second];
 
-            Assert.Throws<PlatformNotSupportedException>(() => second.WaitOne(millisecondsTimeout));
-            Assert.Throws<PlatformNotSupportedException>(() => WaitHandle.WaitAll(handles, millisecondsTimeout));
+            AssertUnsatisfiedWait(() => second.WaitOne(millisecondsTimeout));
+            AssertUnsatisfiedWait(() => WaitHandle.WaitAll(handles, millisecondsTimeout));
             Assert.True(first.WaitOne(0));
-            Assert.Throws<PlatformNotSupportedException>(() => WaitHandle.WaitAll([mutex, second], millisecondsTimeout));
+            AssertUnsatisfiedWait(() => WaitHandle.WaitAll([mutex, second], millisecondsTimeout));
             mutex.ReleaseMutex();
             Assert.Throws<ApplicationException>(() => mutex.ReleaseMutex());
-            Assert.Throws<PlatformNotSupportedException>(() => WaitHandle.WaitAny(handles, millisecondsTimeout));
-            Assert.Throws<PlatformNotSupportedException>(() => WaitHandle.SignalAndWait(signal, second, millisecondsTimeout, exitContext: false));
+            AssertUnsatisfiedWait(() => WaitHandle.WaitAny(handles, millisecondsTimeout) != WaitHandle.WaitTimeout);
+            AssertUnsatisfiedWait(() => WaitHandle.SignalAndWait(signal, second, millisecondsTimeout, exitContext: false));
             Assert.True(signal.WaitOne(0));
             Assert.False(signal.WaitOne(0));
 
@@ -36,6 +38,18 @@ namespace System.Threading.Tests
             Assert.True(WaitHandle.WaitAll(handles, millisecondsTimeout));
             Assert.True(second.WaitOne(millisecondsTimeout));
             Assert.Equal(1, WaitHandle.WaitAny(handles, millisecondsTimeout));
+
+            void AssertUnsatisfiedWait(Func<bool> wait)
+            {
+                if (millisecondsTimeout == Timeout.Infinite)
+                {
+                    Assert.Throws<PlatformNotSupportedException>(() => wait());
+                }
+                else
+                {
+                    Assert.False(wait());
+                }
+            }
         }
 
         [Fact]
@@ -176,8 +190,8 @@ namespace System.Threading.Tests
 
             h.Reset();
 
-            ThreadTestHelpers.AssertWaitTimeout(() => h.WaitOne(1));
-            ThreadTestHelpers.AssertWaitTimeout(() => h.WaitOne(TimeSpan.FromMilliseconds(1)));
+            Assert.False(h.WaitOne(1));
+            Assert.False(h.WaitOne(TimeSpan.FromMilliseconds(1)));
         }
 
         [Fact]
@@ -195,8 +209,8 @@ namespace System.Threading.Tests
 
             handles[2].Reset();
 
-            ThreadTestHelpers.AssertWaitTimeout(() => WaitHandle.WaitAny(handles, 1));
-            ThreadTestHelpers.AssertWaitTimeout(() => WaitHandle.WaitAny(handles, TimeSpan.FromMilliseconds(1)));
+            Assert.Equal(WaitHandle.WaitTimeout, WaitHandle.WaitAny(handles, 1));
+            Assert.Equal(WaitHandle.WaitTimeout, WaitHandle.WaitAny(handles, TimeSpan.FromMilliseconds(1)));
         }
 
         [Fact]
@@ -274,8 +288,8 @@ namespace System.Threading.Tests
 
             handles[2].Reset();
 
-            ThreadTestHelpers.AssertWaitTimeout(() => WaitHandle.WaitAll(handles, 1));
-            ThreadTestHelpers.AssertWaitTimeout(() => WaitHandle.WaitAll(handles, TimeSpan.FromMilliseconds(1)));
+            Assert.False(WaitHandle.WaitAll(handles, 1));
+            Assert.False(WaitHandle.WaitAll(handles, TimeSpan.FromMilliseconds(1)));
         }
 
         [Fact]
