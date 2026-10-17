@@ -17,6 +17,11 @@ public class Runtime_135117
         public ushort Value;
     }
 
+    public struct SF
+    {
+        public float Value;
+    }
+
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static S1 MakeS1(byte value) => new S1 { Value = value };
 
@@ -27,6 +32,9 @@ public class Runtime_135117
     private static Half MakeHalf(float value) => (Half)value;
 
     [MethodImpl(MethodImplOptions.NoInlining)]
+    private static SF MakeSF(float value) => new SF { Value = value };
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private static void StoreS1(ref S1 destination, byte value) => destination = MakeS1(value);
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -34,6 +42,9 @@ public class Runtime_135117
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void StoreHalf(ref Half destination, float value) => destination = MakeHalf(value);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void StoreSF(ref SF destination, float value) => destination = MakeSF(value);
 
     [Fact]
     public static void TestEntryPoint()
@@ -64,5 +75,15 @@ public class Runtime_135117
         Assert.Equal((Half)4f, halves[0]);
         Assert.Equal((Half)2f, halves[1]);
         Assert.Equal((Half)3f, halves[2]);
+
+        SF[] sf = new SF[3];
+        for (int i = 0; i < sf.Length; i++)
+        {
+            sf[i].Value = -1f;
+        }
+        StoreSF(ref sf[1], 2.5f);
+        Assert.Equal(-1f, sf[0].Value);
+        Assert.Equal(2.5f, sf[1].Value);
+        Assert.Equal(-1f, sf[2].Value);
     }
 }

@@ -6245,13 +6245,13 @@ void Lowering::LowerStoreSingleRegCallStruct(GenTreeBlk* store)
 
         // Structs smaller than 4 bytes are returned as i32. Keep the narrow layout type
         // for the store so that we do not write past the end of the destination.
-        if (genTypeSize(abiType) <= layout->GetSize())
+        if (genTypeSize(abiType) == layout->GetSize())
         {
             regType = abiType;
         }
         else
         {
-            assert(varTypeIsIntegral(abiType) && varTypeIsSmall(regType));
+            assert((abiType == TYP_INT) && varTypeIsSmall(regType) && (genTypeSize(regType) == layout->GetSize()));
         }
 #endif // TARGET_WASM
 
