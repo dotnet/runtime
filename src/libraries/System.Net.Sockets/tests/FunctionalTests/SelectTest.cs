@@ -321,6 +321,98 @@ namespace System.Net.Sockets.Tests
             }
         }
 
+        [Theory]
+        [InlineData(false, -1)]
+        [InlineData(false, FailTimeoutMicroseconds)]
+        [InlineData(true, -1)]
+        [InlineData(true, FailTimeoutMicroseconds)]
+        public void Poll_ErrorReady_OutOfBandData(bool sendDataFirst, int microsecondsTimeout)
+        {
+            KeyValuePair<Socket, Socket> pair = CreateConnectedSockets();
+            try
+            {
+                Assert.Equal(0, (int)pair.Key.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.OutOfBandInline));
+
+                if (sendDataFirst)
+                {
+                    pair.Value.Send(new byte[1] { 41 });
+                    Assert.True(pair.Key.Poll(FailTimeoutMicroseconds, SelectMode.SelectRead));
+                    Assert.False(pair.Key.Poll(SmallTimeoutMicroseconds, SelectMode.SelectError));
+                }
+
+                Task.Delay(1).ContinueWith(_ => pair.Value.Send(new byte[1] { 42 }, SocketFlags.OutOfBand),
+                    CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+
+                // Bounded, so that missing out-of-band data fails the test instead of blocking it.
+                Task<bool> poll = Task.Run(() => pair.Key.Poll(microsecondsTimeout, SelectMode.SelectError));
+                Assert.True(poll.Wait(TestSettings.PassingTestTimeout), "Poll(SelectError) did not return");
+                Assert.True(poll.Result);
+                Assert.True(pair.Key.Poll(0, SelectMode.SelectError));
+            }
+            finally
+            {
+                pair.Key.Dispose();
+                pair.Value.Dispose();
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)] // Linux reports out-of-band data even with OutOfBandInline set.
+        public void Poll_ErrorNotReady_OutOfBandInline()
+        {
+            KeyValuePair<Socket, Socket> pair = CreateConnectedSockets();
+            try
+            {
+                pair.Key.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.OutOfBandInline, true);
+                pair.Value.Send(new byte[1] { 42 }, SocketFlags.OutOfBand);
+
+                Assert.True(pair.Key.Poll(FailTimeoutMicroseconds, SelectMode.SelectRead));
+                Assert.False(pair.Key.Poll(SmallTimeoutMicroseconds, SelectMode.SelectError));
+            }
+            finally
+            {
+                pair.Key.Dispose();
+                pair.Value.Dispose();
+            }
+        }
+
+        [Fact]
+        public void Poll_ErrorNotReady_PendingConnection()
+        {
+            using (Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            using (Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+                listener.Listen(1);
+                client.Connect(listener.LocalEndPoint);
+
+                Assert.True(listener.Poll(FailTimeoutMicroseconds, SelectMode.SelectRead));
+                Assert.False(listener.Poll(SmallTimeoutMicroseconds, SelectMode.SelectError));
+            }
+        }
+
+        [Theory]
+        [InlineData(-2000)]
+        [InlineData(int.MinValue)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)] // Windows doesn't reject a negative timeout; it waits.
+        public void Poll_ErrorInvalidTimeout_Throws(int microsecondsTimeout)
+        {
+            KeyValuePair<Socket, Socket> pair = CreateConnectedSockets();
+            try
+            {
+                // Bounded, so that a timeout that isn't rejected fails the test instead of blocking it.
+                Task<SocketException> poll = Task.Run(() =>
+                    Assert.Throws<SocketException>(() => pair.Key.Poll(microsecondsTimeout, SelectMode.SelectError)));
+                Assert.True(poll.Wait(TestSettings.PassingTestTimeout), "Poll(SelectError) did not return");
+                Assert.Equal(SocketError.InvalidArgument, poll.Result.SocketErrorCode);
+            }
+            finally
+            {
+                pair.Key.Dispose();
+                pair.Value.Dispose();
+            }
+        }
+
         internal static KeyValuePair<Socket, Socket> CreateConnectedSockets()
         {
             using (Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
