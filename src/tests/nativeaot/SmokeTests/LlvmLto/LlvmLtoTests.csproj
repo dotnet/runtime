@@ -14,6 +14,8 @@
     <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
     <CLRTestTargetUnsupported Condition="'$(TestBuildMode)' != 'nativeaot' or '$(IlcMultiModule)' == 'true'">true</CLRTestTargetUnsupported>
     <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' != 'x64' and '$(TargetArchitecture)' != 'arm64'">true</CLRTestTargetUnsupported>
+    <!-- The standard macOS test toolchain does not provide the required Mach-O LLD (ld64.lld). -->
+    <CLRTestTargetUnsupported Condition="'$(TargetOS)' == 'osx'">true</CLRTestTargetUnsupported>
     <!-- The test reads the linker's saved IR from disk. -->
     <CLRTestTargetUnsupported Condition="'$(TargetsAppleMobile)' == 'true' or '$(TargetsAndroid)' == 'true'">true</CLRTestTargetUnsupported>
     <LinkerFlavor>lld</LinkerFlavor>
