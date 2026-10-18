@@ -3381,8 +3381,7 @@ bool Compiler::impImportAndPushBoxForNullable(CORINFO_RESOLVED_TOKEN* pResolvedT
 
     if (eeIsSharedInst(nullableCls))
     {
-        // TODO-CQ: Enable the optimization for shared generics. The current machinery requires
-        // a ResolvedToken (basically, 'newobj underlyingType') that we don't have.
+        // TODO-CQ: Enable for shared generics; the underlying type would need a runtime lookup.
         return false;
     }
 
@@ -3392,9 +3391,7 @@ bool Compiler::impImportAndPushBoxForNullable(CORINFO_RESOLVED_TOKEN* pResolvedT
     GenTreeAllocObj*     allocObj;
     if (IsReadyToRun())
     {
-        // R2R can't embed an arbitrary class handle (embedClassHandle requires the type to version
-        // with the compilation), so allocate via a token instead. Only the class matters for a
-        // non-shared allocation, and the underlying type is reachable from the Nullable<T> token's scope.
+        // embedClassHandle is limited to types within the version bubble, so allocate via a token like 'box T'.
         CORINFO_RESOLVED_TOKEN boxedToken = *pResolvedToken;
         boxedToken.hClass                 = typeToBox;
         boxedToken.hMethod                = NO_METHOD_HANDLE;
