@@ -768,6 +768,73 @@
         ret
     }
 
+    .method public static void Rethrow.InCatch_Valid() cil managed
+    {
+        .maxstack 1
+
+        .try
+        {
+            leave MethodEnd
+        }
+        catch [System.Runtime]System.Exception
+        {
+            pop
+            rethrow
+        }
+    MethodEnd:
+        ret
+    }
+
+    .method public static void Rethrow.InFinally_Invalid_Rethrow() cil managed
+    {
+        .maxstack 1
+
+        .try
+        {
+            leave MethodEnd
+        }
+        finally
+        {
+            rethrow
+        }
+    MethodEnd:
+        ret
+    }
+
+    .method public static void Catch.EndsWithEndfinally_Invalid_Endfinally() cil managed
+    {
+        .maxstack 1
+
+        .try
+        {
+            leave MethodEnd
+        }
+        catch [System.Runtime]System.Exception
+        {
+            pop
+            endfinally
+        }
+    MethodEnd:
+        ret
+    }
+
+    .method public static void Catch.BranchOut_Invalid_BranchOutOfHandler() cil managed
+    {
+        .maxstack 1
+
+        .try
+        {
+            leave MethodEnd
+        }
+        catch [System.Runtime]System.Exception
+        {
+            pop
+            br MethodEnd
+        }
+    MethodEnd:
+        ret
+    }
+
     .method public hidebysig instance void TryOffset.ExceedsCodeSize_Invalid_EHClauseOutOfRange() cil managed
     {
         .maxstack 1
@@ -1698,6 +1765,51 @@
                 pop
                 leave MethodEnd
             }
+        }
+    MethodEnd:
+        ret
+    }
+
+    .method public static void Filter.HandlerEndsWithEndfilter_Invalid_Endfilter() cil managed
+    {
+        .maxstack 1
+
+        .try
+        {
+            leave MethodEnd
+        }
+        filter
+        {
+            pop
+            ldc.i4.1
+            endfilter
+        }
+        {
+            // The handler of a filter clause is not part of the filter.
+            pop
+            ldc.i4.0
+            endfilter
+        }
+    MethodEnd:
+        ret
+    }
+
+    .method public static void Filter.ExceptionLeftOnStack_Invalid_EndfilterStack() cil managed
+    {
+        .maxstack 2
+
+        .try
+        {
+            leave MethodEnd
+        }
+        filter
+        {
+            ldc.i4.1
+            endfilter
+        }
+        {
+            pop
+            leave MethodEnd
         }
     MethodEnd:
         ret

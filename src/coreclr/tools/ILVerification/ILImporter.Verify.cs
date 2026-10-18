@@ -2265,8 +2265,7 @@ namespace Internal.IL
                 isPermanentHome = true;
                 instance = null;
 
-                if (field.IsInitOnly)
-                    Check(_method.IsStaticConstructor && field.OwningType == _method.OwningType, VerifierError.InitOnly);
+                // TODO: verification of readonly references https://github.com/dotnet/runtime/issues/57444
             }
             else
             {
@@ -2779,6 +2778,7 @@ namespace Internal.IL
 
         void ImportUnalignedPrefix(byte alignment)
         {
+            Check(alignment is 1 or 2 or 4, VerifierError.UnalignedAlignment);
             CheckPendingPrefix(_pendingPrefix & ~Prefix.Volatile);
             _pendingPrefix |= Prefix.Unaligned;
         }

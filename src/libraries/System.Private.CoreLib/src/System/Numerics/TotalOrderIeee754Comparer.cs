@@ -137,7 +137,7 @@ namespace System.Numerics
 
                     ReadOnlySpan<byte> extra = longer[..(longer.Length - shorter.Length)];
 
-                    if (extra.IndexOfAnyExcept(fill) >= 0)
+                    if (extra.ContainsAnyExcept(fill))
                     {
                         // A mismatch means the longer span has a byte that isn't fill in a position more
                         // significant than every remaining byte. Since fill is already the extreme byte
