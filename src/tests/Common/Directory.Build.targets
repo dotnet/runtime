@@ -32,8 +32,12 @@
 
   <Import Project="$(MSBuildThisFileDirectory)CoreRootArtifacts.targets" />
 
+  <Target Name="_ResolveRuntimeFilesForCoreRoot"
+    DependsOnTargets="ResolveRuntimeFilesFromLocalBuild"
+    Condition="'$(TestBuildMode)' != 'nativeaot'" />
+
   <Target Name="CopyDependencyToCoreRoot"
-    DependsOnTargets="_ComputeCoreRootArtifactSources;ResolveAssemblyReferences;ResolveRuntimeFilesFromLocalBuild">
+    DependsOnTargets="_ComputeCoreRootArtifactSources;ResolveAssemblyReferences;_ResolveRuntimeFilesForCoreRoot">
 
     <!-- NuGet-resolved items (libraries runtime files, targeting pack, xunit) -->
     <ItemGroup>
@@ -48,7 +52,7 @@
       <RunTimeDependencyCopyLocal Include="@(_CoreRootArtifactSource)" />
     </ItemGroup>
 
-    <ItemGroup Condition="'$(TargetArchitecture)' == 'wasm'">
+    <ItemGroup Condition="'$(TargetArchitecture)' == 'wasm' and '$(TestBuildMode)' != 'nativeaot'">
         <RunTimeDependencyCopyLocal
           Include="@(RuntimeFiles)"
           TargetDir="runtimepack/native/"/>
@@ -99,7 +103,7 @@
           TargetDir="build/"/>
     </ItemGroup>
 
-    <ItemGroup Condition="'$(TargetOS)' == 'wasi' and '$(RuntimeFlavor)' == 'coreclr'">
+    <ItemGroup Condition="'$(TargetOS)' == 'wasi' and '$(RuntimeFlavor)' == 'coreclr' and '$(TestBuildMode)' != 'nativeaot'">
       <!-- Wasm App Builder builds as part of tasks, using the corresponding TasksConfiguration -->
       <RunTimeDependencyCopyLocal
         Include="$(WasmAppBuilderDir)*"
@@ -108,7 +112,7 @@
         Include="$(MSBuildThisFileDirectory)WasiR2RComposer.proj"
         TargetDir="wasi-r2r/" />
     </ItemGroup>
-    <Error Condition="'$(TargetOS)' == 'wasi' and '$(RuntimeFlavor)' == 'coreclr' and !Exists('$(WasmAppBuilderTasksAssemblyPath)')"
+    <Error Condition="'$(TargetOS)' == 'wasi' and '$(RuntimeFlavor)' == 'coreclr' and '$(TestBuildMode)' != 'nativeaot' and !Exists('$(WasmAppBuilderTasksAssemblyPath)')"
            Text="WasmAppBuilder was not found at '$(WasmAppBuilderTasksAssemblyPath)'. It is required to compose WASI ReadyToRun tests." />
 
     <ItemGroup>
