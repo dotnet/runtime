@@ -154,7 +154,7 @@ namespace ILAssembler.Tests
         [Fact]
         public void HiddenPoint_HasNoDocumentRecordAndBelongsToTheCurrentDocument()
         {
-            // As in native ilasm, a hidden point in another file makes the method span documents, but the hidden
+            // A hidden point in another file makes the method span documents, but the hidden
             // point is encoded without a document-record and so is read in the current document.
             using var pdb = PortablePdbTestReader.Compile(Program(Method("M", """
                     .line 1,1 : 1,2 'a.cs'
@@ -187,7 +187,7 @@ namespace ILAssembler.Tests
         [Fact]
         public void HiddenPointInAnotherFile_MakesTheMethodSpanDocuments()
         {
-            // Native ilasm counts the document of every point, hidden or not, when it decides whether a method
+            // The document of every point, hidden or not, counts when deciding whether a method
             // spans several documents.
             using var pdb = PortablePdbTestReader.Compile(Program(Method("M", """
                     .line 1,1 : 1,2 'a.cs'
@@ -218,8 +218,7 @@ namespace ILAssembler.Tests
         [Fact]
         public void MethodWithoutSequencePoints_HasNilDocumentAndNoBlob()
         {
-            // The spec says Document is nil when a method has no sequence points. Native ilasm names the current
-            // document there instead; this deliberately follows the spec.
+            // The spec says Document is nil when a method has no sequence points.
             using var pdb = PortablePdbTestReader.Compile(Program(
                 Method("M1", """
                     .line 1,1 : 1,2 'a.cs'
@@ -251,8 +250,8 @@ namespace ILAssembler.Tests
         [Fact]
         public void AbstractMethodWithALineDirective_HasNilDocumentAndNoBlob()
         {
-            // A method without an IL body has no instructions for its .line directive to map; native ilasm records
-            // sequence points as it emits instructions, so it records none.
+            // A method without an IL body has no instructions for its .line directive to map, so the PDB
+            // records no sequence points for it.
             using var pdb = PortablePdbTestReader.Compile(ProgramWithBodylessMethod("""
                 .method public hidebysig newslot abstract virtual instance void Abs() cil managed
                 {
@@ -465,7 +464,7 @@ namespace ILAssembler.Tests
         [Fact]
         public void FileNamesDifferingOnlyInCase_AreDifferentDocuments()
         {
-            // Native ilasm compares document names with strcmp.
+            // Document names are compared ordinally.
             using var pdb = PortablePdbTestReader.Compile(Program(Method("M", """
                     .line 1,1 : 1,2 'a.cs'
                     nop
