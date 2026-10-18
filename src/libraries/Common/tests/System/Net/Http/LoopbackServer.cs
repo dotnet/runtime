@@ -866,6 +866,7 @@ namespace System.Net.Test.Common
                 else if (_contentLength < 0)
                 {
                     // Chunked Encoding
+                    int length = 0;
                     while (true)
                     {
                         string chunkHeader = await ReadLineAsync().ConfigureAwait(false);
@@ -880,18 +881,20 @@ namespace System.Net.Test.Common
                         byte[] chunk = new byte[chunkLength];
                         await ReadBlockAsync(chunk, 0, chunkLength).ConfigureAwait(false);
                         await ReadLineAsync().ConfigureAwait(false);
-                        if (buffer == null)
+                        if (buffer is null)
                         {
                             buffer = chunk;
+                            length = chunkLength;
                         }
                         else
                         {
-                            byte[] newBuffer = new byte[buffer.Length + chunkLength];
-
-                            buffer.CopyTo(newBuffer, 0);
-                            chunk.CopyTo(newBuffer, buffer.Length);
-                            buffer = newBuffer;
+                            length = GenericLoopbackConnection.AppendToBuffer(ref buffer, length, chunk);
                         }
+                    }
+
+                    if (buffer is not null)
+                    {
+                        Array.Resize(ref buffer, length);
                     }
                 }
 

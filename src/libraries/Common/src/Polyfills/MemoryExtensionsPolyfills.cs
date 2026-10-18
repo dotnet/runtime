@@ -11,11 +11,11 @@ namespace System
         public static bool Contains<T>(this ReadOnlySpan<T> span, T value) where T : IEquatable<T> =>
             span.IndexOf(value) >= 0;
 
-        public static bool ContainsAnyExcept(this ReadOnlySpan<char> span, char value)
+        public static bool ContainsAnyExcept<T>(this ReadOnlySpan<T> span, T value) where T : IEquatable<T>?
         {
             for (int i = 0; i < span.Length; i++)
             {
-                if (span[i] != value)
+                if (!EqualityComparer<T>.Default.Equals(span[i], value))
                 {
                     return true;
                 }
