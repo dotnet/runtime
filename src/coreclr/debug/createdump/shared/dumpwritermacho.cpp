@@ -172,6 +172,18 @@ DumpWriter::BuildSegmentLoadCommands()
 void
 DumpWriter::BuildThreadLoadCommands()
 {
+#if defined(__x86_64__)
+    static_assert(x86_THREAD_STATE64_COUNT == sizeof(x86_thread_state64_t) / sizeof(uint32_t));
+    static_assert(x86_FLOAT_STATE64_COUNT == sizeof(x86_float_state64_t) / sizeof(uint32_t));
+    static_assert(sizeof(ThreadCommand) ==
+        sizeof(thread_command) + (5 * sizeof(uint32_t)) + sizeof(x86_thread_state64_t) + sizeof(x86_float_state64_t));
+#elif defined(__aarch64__)
+    static_assert(ARM_THREAD_STATE64_COUNT == sizeof(arm_thread_state64_t) / sizeof(uint32_t));
+    static_assert(ARM_NEON_STATE64_COUNT == sizeof(arm_neon_state64_t) / sizeof(uint32_t));
+    static_assert(sizeof(ThreadCommand) ==
+        sizeof(thread_command) + (4 * sizeof(uint32_t)) + sizeof(arm_thread_state64_t) + sizeof(arm_neon_state64_t));
+#endif
+
     for (const ThreadInfo* thread : m_crashInfo.Threads())
     {
         ThreadCommand threadCommand = {
@@ -182,19 +194,15 @@ DumpWriter::BuildThreadLoadCommands()
         threadCommand.gpcount = x86_THREAD_STATE64_COUNT;
         threadCommand.fpflavor = x86_FLOAT_STATE64;
         threadCommand.fpcount = x86_FLOAT_STATE64_COUNT;
-        assert(x86_THREAD_STATE64_COUNT == sizeof(x86_thread_state64_t) / sizeof(uint32_t));
-        assert(x86_FLOAT_STATE64_COUNT == sizeof(x86_float_state64_t) / sizeof(uint32_t));
-        memcpy(&threadCommand.gpregisters, thread->GPRegisters(), sizeof(x86_thread_state64_t));
-        memcpy(&threadCommand.fpregisters, thread->FPRegisters(), sizeof(x86_float_state64_t));
+        memcpy(threadCommand.gpregisters, thread->GPRegisters(), sizeof(x86_thread_state64_t));
+        memcpy(threadCommand.fpregisters, thread->FPRegisters(), sizeof(x86_float_state64_t));
 #elif defined(__aarch64__)
         threadCommand.gpflavor = ARM_THREAD_STATE64;
         threadCommand.gpcount = ARM_THREAD_STATE64_COUNT;
         threadCommand.fpflavor = ARM_NEON_STATE64;
         threadCommand.fpcount = ARM_NEON_STATE64_COUNT;
-        assert(ARM_THREAD_STATE64_COUNT == sizeof(arm_thread_state64_t) / sizeof(uint32_t));
-        assert(ARM_NEON_STATE64_COUNT == sizeof(arm_neon_state64_t) / sizeof(uint32_t));
-        memcpy(&threadCommand.gpregisters, thread->GPRegisters(), sizeof(arm_thread_state64_t));
-        memcpy(&threadCommand.fpregisters, thread->FPRegisters(), sizeof(arm_neon_state64_t));
+        memcpy(threadCommand.gpregisters, thread->GPRegisters(), sizeof(arm_thread_state64_t));
+        memcpy(threadCommand.fpregisters, thread->FPRegisters(), sizeof(arm_neon_state64_t));
 #endif
         m_threadLoadCommands.push_back(threadCommand);
     }
