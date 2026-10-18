@@ -205,7 +205,7 @@ namespace ILAssembler.Tests
             """);
 
         [Fact]
-        public void BlockWithoutInstructions_IsReportedAtItsFirstNamedLocalAndGivesNoImage()
+        public void BlockWithoutInstructions_IsReportedAtItsFirstNamedLocal()
         {
             (ImmutableArray<Diagnostic> diagnostics, CompilationResult? result) =
                 DocumentCompilerTestHelpers.CompileWithDiagnostics(s_blockWithoutInstructions, new Options { Debug = true });
@@ -498,7 +498,7 @@ namespace ILAssembler.Tests
             """);
 
         [Fact]
-        public void NameDeclaredTwiceInOneScope_IsReportedAtTheSecondDeclarationAndGivesNoImage()
+        public void NameDeclaredTwiceInOneScope_IsReportedAtTheSecondDeclaration()
         {
             (ImmutableArray<Diagnostic> diagnostics, CompilationResult? result) =
                 DocumentCompilerTestHelpers.CompileWithDiagnostics(s_nameDeclaredTwice, new Options { Debug = true });
@@ -528,7 +528,7 @@ namespace ILAssembler.Tests
             """);
 
         [Fact]
-        public void SlotNamedTwiceInOneScope_IsReportedAtTheSecondDeclarationAndGivesNoImage()
+        public void SlotNamedTwiceInOneScope_IsReportedAtTheSecondDeclaration()
         {
             (ImmutableArray<Diagnostic> diagnostics, CompilationResult? result) =
                 DocumentCompilerTestHelpers.CompileWithDiagnostics(s_slotNamedTwice, new Options { Debug = true });
@@ -720,7 +720,7 @@ namespace ILAssembler.Tests
             """);
 
         [Fact]
-        public void MethodWithoutInstructions_IsReportedAtItsFirstNamedLocalAndGivesNoImage()
+        public void MethodWithoutInstructions_IsReportedAtItsFirstNamedLocal()
         {
             // The root scope of an empty body has length 0, which the specification does not allow.
             (ImmutableArray<Diagnostic> diagnostics, CompilationResult? result) =
