@@ -97,16 +97,8 @@ namespace System.Collections.Immutable
             if (sequence is ICollection<T> collection)
             {
 #if !NET
-                // .NET Framework has no guarded devirtualization, so call List<T>.CopyTo directly
-                // to avoid the interface dispatch for the most common collection type.
-                if (collection is List<T> list)
-                {
-                    list.CopyTo(array, arrayIndex);
-                    return true;
-                }
-
-                // On .NET Framework, if 'sequence' is actually a covariant array (for example, a string[] assigned to object[] and passed as ICollection<object>),
-                // the array's ICollection<T>.CopyTo implementation may call Array.Copy and throw an ArrayTypeMismatchException when copying into a T[].
+                // On .NET Framework, an array's ICollection<T>.CopyTo calls Array.Copy, which throws ArrayTypeMismatchException for some arrays whose element type is not T
+                // (for example, a uint[] passed as IEnumerable<int>), so conservatively fall back to enumeration for any array that is not exactly a T[].
                 // See https://github.com/dotnet/runtime/issues/14794 for more info.
                 if (collection.GetType() != typeof(T[]) && collection is Array)
                 {
