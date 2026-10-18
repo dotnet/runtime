@@ -3379,12 +3379,45 @@ bool Compiler::impImportAndPushBoxForNullable(CORINFO_RESOLVED_TOKEN* pResolvedT
         return false;
     }
 
-    if (eeIsSharedInst(nullableCls) || IsReadyToRun())
+    if (eeIsSharedInst(nullableCls))
     {
-        // TODO-CQ: Enable the optimization for shared generics and R2R scenarios.
-        // The current machinery requires a ResolvedToken (basically, 'newobj underlyingType'
-        // that we don't have).
+        // TODO-CQ: Enable the optimization for shared generics. The current machinery requires
+        // a ResolvedToken (basically, 'newobj underlyingType') that we don't have.
         return false;
+    }
+
+    // Create the allocation node for the box
+    //
+    CORINFO_CLASS_HANDLE typeToBox = info.compCompHnd->getTypeForBox(nullableCls);
+    GenTreeAllocObj*     allocObj;
+    if (IsReadyToRun())
+    {
+        // R2R can't embed an arbitrary class handle (embedClassHandle requires the type to version
+        // with the compilation), so allocate via a token instead. Only the class matters for a
+        // non-shared allocation, and the underlying type is reachable from the Nullable<T> token's scope.
+        CORINFO_RESOLVED_TOKEN boxedToken = *pResolvedToken;
+        boxedToken.hClass                 = typeToBox;
+        boxedToken.hMethod                = NO_METHOD_HANDLE;
+        boxedToken.hField                 = NO_FIELD_HANDLE;
+        boxedToken.pTypeSpec              = nullptr;
+        boxedToken.cbTypeSpec             = 0;
+        boxedToken.pMethodSpec            = nullptr;
+        boxedToken.cbMethodSpec           = 0;
+
+        allocObj = gtNewAllocObjNode(&boxedToken, info.compMethodHnd, /* useParent */ false);
+        if (allocObj == nullptr)
+        {
+            assert(compDonotInline());
+            return false;
+        }
+    }
+    else
+    {
+        bool            hasSideEffects;
+        CorInfoHelpFunc helperTemp   = info.compCompHnd->getNewHelper(typeToBox, &hasSideEffects);
+        GenTree*        typeToBoxHnd = gtNewIconEmbClsHndNode(typeToBox);
+
+        allocObj = gtNewAllocObjNode(helperTemp, hasSideEffects, typeToBox, TYP_REF, typeToBoxHnd);
     }
 
     GenTree* nullableObj = impPopStack().val;
@@ -3409,14 +3442,6 @@ bool Compiler::impImportAndPushBoxForNullable(CORINFO_RESOLVED_TOKEN* pResolvedT
     GenTree*     valueAddr      = gtNewOperNode(GT_ADD, TYP_BYREF, nullableObjClone, valueOffset);
     GenTree*     value          = gtNewLoadValueNode(valueType, layout, valueAddr, indirFlags);
     GenTree*     hasValue       = gtNewLoadValueNode(TYP_UBYTE, nullptr, nullableObj, indirFlags);
-
-    // Create the allocation node for the box
-    //
-    CORINFO_CLASS_HANDLE typeToBox = info.compCompHnd->getTypeForBox(nullableCls);
-    bool                 hasSideEffects;
-    CorInfoHelpFunc      helperTemp   = info.compCompHnd->getNewHelper(typeToBox, &hasSideEffects);
-    GenTree*             typeToBoxHnd = gtNewIconEmbClsHndNode(typeToBox);
-    GenTreeAllocObj*     allocObj     = gtNewAllocObjNode(helperTemp, hasSideEffects, typeToBox, TYP_REF, typeToBoxHnd);
 
     // Now we need to copy value into the allocated box
     //
