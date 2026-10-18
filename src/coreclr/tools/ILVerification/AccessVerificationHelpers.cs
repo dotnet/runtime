@@ -44,7 +44,8 @@ namespace ILVerify
                 if ((targetTypeDef.Attributes & TypeAttributes.Public) != 0)
                     return true;
                 else
-                    return currentTypeDef.Module == targetTypeDef.Module || targetTypeDef.Module.GrantsFriendAccessTo(currentTypeDef.Module);
+                    return currentTypeDef.Module == targetTypeDef.Module || targetTypeDef.Module.GrantsFriendAccessTo(currentTypeDef.Module)
+                        || currentTypeDef.Module.IgnoresAccessChecksTo(targetTypeDef.Module);
             }
 
             // Target class is nested
@@ -107,6 +108,13 @@ namespace ILVerify
 
             var targetTypeDef = (MetadataType)targetType.GetTypeDefinition();
 
+            // Like the runtime, IgnoresAccessChecksTo is the last thing checked
+            return CanAccessMemberWithVisibility(currentType, targetTypeDef, memberVisibility, instance)
+                || currentType.Module.IgnoresAccessChecksTo(targetTypeDef.Module);
+        }
+
+        private static bool CanAccessMemberWithVisibility(MetadataType currentType, MetadataType targetTypeDef, MethodAttributes memberVisibility, TypeDesc instance)
+        {
             if (memberVisibility == MethodAttributes.Public)
                 return true;
 
@@ -256,22 +264,44 @@ namespace ILVerify
                     // Comparing PublicKeyToken for simplicity
                     if (GetPublicKeyToken(friendAttributeName).SequenceEqual(GetPublicKeyToken(friendName)))
                         return true;
-
-                    static ReadOnlySpan<byte> GetPublicKeyToken(AssemblyNameInfo assemblyName)
-                    {
-                        ImmutableArray<byte> publicKeyOrToken = assemblyName.PublicKeyOrToken;
-                        if ((assemblyName.Flags & AssemblyNameFlags.PublicKey) != 0)
-                        {
-                            // Use AssemblyName to convert PublicKey to PublicKeyToken to avoid calling crypto APIs directly
-                            AssemblyName an = new();
-                            an.SetPublicKey(ImmutableCollectionsMarshal.AsArray<byte>(publicKeyOrToken));
-                            publicKeyOrToken = ImmutableCollectionsMarshal.AsImmutableArray<byte>(an.GetPublicKeyToken());
-                        }
-                        return publicKeyOrToken.AsSpan();
-                    }
                 }
             }
             return false;
+        }
+
+        private static bool IgnoresAccessChecksTo(this ModuleDesc module, ModuleDesc targetModule)
+        {
+            var assembly = module.ToEcmaAssembly();
+            var targetAssembly = targetModule.ToEcmaAssembly();
+            if (assembly == null || targetAssembly == null)
+                return false;
+
+            var targetName = targetAssembly.GetName();
+
+            foreach (var attribute in assembly.GetDecodedCustomAttributes("System.Runtime.CompilerServices", "IgnoresAccessChecksToAttribute"))
+            {
+                AssemblyNameInfo ignoredName = AssemblyNameInfo.Parse(((string)attribute.FixedArguments[0].Value).AsSpan());
+                if (!targetName.Name.Equals(ignoredName.Name, StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                // Like the runtime, the public key only has to match when the attribute names one
+                if (ignoredName.PublicKeyOrToken.IsDefaultOrEmpty || GetPublicKeyToken(ignoredName).SequenceEqual(GetPublicKeyToken(targetName)))
+                    return true;
+            }
+            return false;
+        }
+
+        private static ReadOnlySpan<byte> GetPublicKeyToken(AssemblyNameInfo assemblyName)
+        {
+            ImmutableArray<byte> publicKeyOrToken = assemblyName.PublicKeyOrToken;
+            if ((assemblyName.Flags & AssemblyNameFlags.PublicKey) != 0)
+            {
+                // Use AssemblyName to convert PublicKey to PublicKeyToken to avoid calling crypto APIs directly
+                AssemblyName an = new();
+                an.SetPublicKey(ImmutableCollectionsMarshal.AsArray<byte>(publicKeyOrToken));
+                publicKeyOrToken = ImmutableCollectionsMarshal.AsImmutableArray<byte>(an.GetPublicKeyToken());
+            }
+            return publicKeyOrToken.AsSpan();
         }
 
         private static MethodAttributes NestedToMethodAccessAttribute(TypeAttributes nestedVisibility)
