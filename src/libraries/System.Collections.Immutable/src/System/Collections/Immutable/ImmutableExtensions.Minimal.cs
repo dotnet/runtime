@@ -80,7 +80,7 @@ namespace System.Collections.Immutable
 
         /// <summary>
         /// Tries to copy the elements in the sequence to the specified array,
-        /// if the sequence is a well-known collection type. Otherwise, does
+        /// if the sequence implements <see cref="ICollection{T}"/>. Otherwise, does
         /// nothing and returns <c>false</c>.
         /// </summary>
         /// <typeparam name="T">The type of element in the sequence.</typeparam>
@@ -88,50 +88,27 @@ namespace System.Collections.Immutable
         /// <param name="array">The array to copy the elements to.</param>
         /// <param name="arrayIndex">The index in the array to start copying.</param>
         /// <returns><c>true</c> if the elements were successfully copied; <c>false</c> otherwise.</returns>
-        /// <remarks>
-        /// <para>
-        /// The reason we don't copy anything other than for well-known types is that a malicious interface
-        /// implementation of <see cref="ICollection{T}"/> could hold on to the array when its <see cref="ICollection{T}.CopyTo"/>
-        /// method is called. If the array it holds onto underlies an <see cref="ImmutableArray{T}"/>, it could violate
-        /// immutability by modifying the array.
-        /// </para>
-        /// </remarks>
         internal static bool TryCopyTo<T>(this IEnumerable<T> sequence, T[] array, int arrayIndex)
         {
             Debug.Assert(sequence != null);
             Debug.Assert(array != null);
             Debug.Assert(arrayIndex >= 0 && arrayIndex <= array.Length);
 
-            // Optimized paths for well-known types, all other ICollection<T> implementations use the generic CopyTo fallback.
             if (sequence is ICollection<T> collection)
             {
+#if !NET
+                // .NET Framework has no guarded devirtualization, so call List<T>.CopyTo directly
+                // to avoid the interface dispatch for the most common collection type.
                 if (collection is List<T> list)
                 {
                     list.CopyTo(array, arrayIndex);
                     return true;
                 }
 
-                // Array.Copy can throw an ArrayTypeMismatchException if the underlying type of
-                // the destination array is not typeof(T[]), but is assignment-compatible with T[].
-                // See https://github.com/dotnet/runtime/issues/14794 for more info.
-                if (collection.GetType() == typeof(T[]))
-                {
-                    var sourceArray = (T[])collection;
-                    Array.Copy(sourceArray, 0, array, arrayIndex, sourceArray.Length);
-                    return true;
-                }
-
-                if (collection is ImmutableArray<T> immutable)
-                {
-                    Array.Copy(immutable.array!, 0, array, arrayIndex, immutable.Length);
-                    return true;
-                }
-
-#if !NET
                 // On .NET Framework, if 'sequence' is actually a covariant array (for example, a string[] assigned to object[] and passed as ICollection<object>),
-                // sequence.GetType() won't match typeof(T[]), so the fast path above is skipped.
-                // The array's ICollection<T>.CopyTo implementation may call Array.Copy and throw an ArrayTypeMismatchException when copying into a T[].
-                if (collection is Array)
+                // the array's ICollection<T>.CopyTo implementation may call Array.Copy and throw an ArrayTypeMismatchException when copying into a T[].
+                // See https://github.com/dotnet/runtime/issues/14794 for more info.
+                if (collection.GetType() != typeof(T[]) && collection is Array)
                 {
                     return false;
                 }
