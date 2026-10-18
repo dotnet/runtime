@@ -2265,8 +2265,7 @@ namespace Internal.IL
                 isPermanentHome = true;
                 instance = null;
 
-                if (field.IsInitOnly)
-                    Check(_method.IsStaticConstructor && field.OwningType == _method.OwningType, VerifierError.InitOnly);
+                // TODO: verification of readonly references https://github.com/dotnet/runtime/issues/57444
             }
             else
             {

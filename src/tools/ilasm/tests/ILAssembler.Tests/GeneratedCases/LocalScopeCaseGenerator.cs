@@ -141,7 +141,7 @@ namespace ILAssembler.Tests.GeneratedCases
             return cases.MoveToImmutable();
         }
 
-        /// <summary>Generates one method, keeping native ilasm's slot table and scope chain as it writes the body.</summary>
+        /// <summary>Generates one method, keeping the model's slot table and scope chain as it writes the body.</summary>
         private sealed class MethodGenerator
         {
             private readonly Random _random;
