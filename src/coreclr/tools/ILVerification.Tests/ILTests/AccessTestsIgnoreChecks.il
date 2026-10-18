@@ -20,13 +20,22 @@
         01 00 0b 41 63 63 65 73 73 54 65 73 74 73 00 00
     )
 
-    // IgnoresAccessChecksTo("AccessTestsFriend, PublicKeyToken=0123456789abcdef")
+    // IgnoresAccessChecksTo("AccessTestsFriend, PublicKey=00000000000000000400000000000000")
     //                                           ^ AccessTestsFriend has no public key
     .custom instance void System.Runtime.CompilerServices.IgnoresAccessChecksToAttribute::.ctor(string) = (
-        01 00 32 41 63 63 65 73 73 54 65 73 74 73 46 72
-        69 65 6e 64 2c 20 50 75 62 6c 69 63 4b 65 79 54
-        6f 6b 65 6e 3d 30 31 32 33 34 35 36 37 38 39 61
-        62 63 64 65 66 00 00
+        01 00 3d 41 63 63 65 73 73 54 65 73 74 73 46 72
+        69 65 6e 64 2c 20 50 75 62 6c 69 63 4b 65 79 3d
+        30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30
+        30 34 30 30 30 30 30 30 30 30 30 30 30 30 30 30
+        00 00
+    )
+
+    // IgnoresAccessChecksTo("AccessTestsFriend, Version=1.0.0.0")
+    //                                           ^ the runtime rejects a name that gives a version
+    .custom instance void System.Runtime.CompilerServices.IgnoresAccessChecksToAttribute::.ctor(string) = (
+        01 00 22 41 63 63 65 73 73 54 65 73 74 73 46 72
+        69 65 6e 64 2c 20 56 65 72 73 69 6f 6e 3d 31 2e
+        30 2e 30 2e 30 00 00
     )
 }
 
@@ -71,7 +80,7 @@
         ret
     }
 
-    .method public hidebysig instance void Load.PrivateFieldWrongPublicKey_Invalid_FieldAccess() cil managed
+    .method public hidebysig instance void Load.PrivateFieldWrongKeyOrBadName_Invalid_FieldAccess() cil managed
     {
         ldsfld      int32 [AccessTestsFriend]AccessTestsFriendType::privateField
         pop

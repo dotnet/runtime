@@ -33,6 +33,7 @@ namespace ILVerify
         {
             _typeSystemContext = context;
             _verifierOptions = verifierOptions ?? new VerifierOptions();
+            _typeSystemContext.AllowIgnoresAccessChecksTo = _verifierOptions.AllowIgnoresAccessChecksTo;
         }
 
         public void SetSystemModuleName(AssemblyNameInfo name)
@@ -589,5 +590,10 @@ namespace ILVerify
     {
         public bool IncludeMetadataTokensInErrorMessages { get; set; }
         public bool SanityChecks { get; set; }
+
+        /// <summary>
+        /// Respect IgnoresAccessChecksToAttribute. Off by default, since code that relies on it is not verifiable.
+        /// </summary>
+        public bool AllowIgnoresAccessChecksTo { get; set; }
     }
 }

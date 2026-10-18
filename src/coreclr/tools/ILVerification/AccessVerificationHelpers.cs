@@ -271,6 +271,9 @@ namespace ILVerify
 
         private static bool IgnoresAccessChecksTo(this ModuleDesc module, ModuleDesc targetModule)
         {
+            if (module.Context is not ILVerifyTypeSystemContext { AllowIgnoresAccessChecksTo: true })
+                return false;
+
             var assembly = module.ToEcmaAssembly();
             var targetAssembly = targetModule.ToEcmaAssembly();
             if (assembly == null || targetAssembly == null)
@@ -281,7 +284,7 @@ namespace ILVerify
             foreach (var attribute in assembly.GetDecodedCustomAttributes("System.Runtime.CompilerServices", "IgnoresAccessChecksToAttribute"))
             {
                 AssemblyNameInfo ignoredName = AssemblyNameInfo.Parse(((string)attribute.FixedArguments[0].Value).AsSpan());
-                if (!targetName.Name.Equals(ignoredName.Name, StringComparison.OrdinalIgnoreCase))
+                if (!IsValidFriendName(ignoredName) || !targetName.Name.Equals(ignoredName.Name, StringComparison.OrdinalIgnoreCase))
                     continue;
 
                 // Like the runtime, the public key only has to match when the attribute names one
@@ -290,6 +293,13 @@ namespace ILVerify
             }
             return false;
         }
+
+        // Like the runtime (AssemblySpec::CheckFriendAssemblyName), the name may not give a version,
+        // culture, processor architecture or public key token
+        private static bool IsValidFriendName(AssemblyNameInfo name)
+            => name.Version == null && name.CultureName == null
+                && (((int)name.Flags >> 4) & 0x7) == 0
+                && (name.PublicKeyOrToken.IsDefaultOrEmpty || (name.Flags & AssemblyNameFlags.PublicKey) != 0);
 
         private static ReadOnlySpan<byte> GetPublicKeyToken(AssemblyNameInfo assemblyName)
         {
