@@ -1,14 +1,14 @@
 <Project>
   <PropertyGroup>
-    <linux_ChromeVersion>154.0.8037.97</linux_ChromeVersion>
-    <linux_ChromeRevision>1689415</linux_ChromeRevision>
-    <linux_ChromeBaseSnapshotUrl>https://storage.googleapis.com/chromium-browser-snapshots/Linux_x64/1689417</linux_ChromeBaseSnapshotUrl>
-    <linux_V8Version>15.4.80</linux_V8Version>
-    <macos_ChromeVersion>155.0.8059.12</macos_ChromeVersion>
+    <linux_ChromeVersion>155.0.8059.84</linux_ChromeVersion>
+    <linux_ChromeRevision>1697595</linux_ChromeRevision>
+    <linux_ChromeBaseSnapshotUrl>https://storage.googleapis.com/chromium-browser-snapshots/Linux_x64/1697601</linux_ChromeBaseSnapshotUrl>
+    <linux_V8Version>15.5.35</linux_V8Version>
+    <macos_ChromeVersion>155.0.8059.85</macos_ChromeVersion>
     <macos_ChromeRevision>1697595</macos_ChromeRevision>
     <macos_ChromeBaseSnapshotUrl>https://storage.googleapis.com/chromium-browser-snapshots/Mac_Arm/1697602</macos_ChromeBaseSnapshotUrl>
     <macos_V8Version>15.5.35</macos_V8Version>
-    <win_ChromeVersion>155.0.8059.12</win_ChromeVersion>
+    <win_ChromeVersion>155.0.8059.85</win_ChromeVersion>
     <win_ChromeRevision>1697595</win_ChromeRevision>
     <win_ChromeBaseSnapshotUrl>https://storage.googleapis.com/chromium-browser-snapshots/Win_x64/1697619</win_ChromeBaseSnapshotUrl>
     <win_V8Version>15.5.35</win_V8Version>
