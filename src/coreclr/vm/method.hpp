@@ -1004,24 +1004,6 @@ public:
         return pModule->GetCustomAttribute(GetMemberDef(), attribute, ppData, pcbData);
     }
 
-#ifndef DACCESS_COMPILE
-    IMetaDataEmit* GetEmitter()
-    {
-        WRAPPER_NO_CONTRACT;
-        Module *pModule = GetModule();
-        _ASSERTE(pModule != NULL);
-        return pModule->GetEmitter();
-    }
-
-    IMetaDataImport* GetRWImporter()
-    {
-        WRAPPER_NO_CONTRACT;
-        Module *pModule = GetModule();
-        _ASSERTE(pModule != NULL);
-        return pModule->GetRWImporter();
-    }
-#endif // !DACCESS_COMPILE
-
 #ifdef FEATURE_COMINTEROP
     WORD GetComSlot();
     LONG GetComDispid();
@@ -1963,6 +1945,7 @@ protected:
     WORD m_wFlags; // See MethodDescFlags
     PTR_MethodDescCodeData m_codeData;
 #ifdef FEATURE_INTERPRETER
+// [cDAC] [ExecutionManager]: Contract depends on the value of INTERPRETER_CODE_POISON.
 #define INTERPRETER_CODE_POISON 1
     PTR_InterpByteCodeStart m_interpreterCode;
 public:
@@ -2356,6 +2339,9 @@ public:
 public:
     PCODE PrepareInitialCode(CallerGCMode callerGCMode = CallerGCMode::Unknown);
     PCODE PrepareCode(PrepareCodeConfig* pConfig);
+#ifdef FEATURE_READYTORUN
+    PCODE PublishPrecompiledCode(PrepareCodeConfig* pConfig, PCODE pCode, bool shouldTier);
+#endif // FEATURE_READYTORUN
 
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
     // Probe for precompiled R2R native code for an UnmanagedCallersOnly method and, if present,
@@ -2408,6 +2394,9 @@ template<> struct cdac_data<MethodDesc>
     static constexpr size_t Flags3AndTokenRemainder = offsetof(MethodDesc, m_wFlags3AndTokenRemainder);
     static constexpr size_t EntryPointFlags = offsetof(MethodDesc, m_bFlags4);
     static constexpr size_t CodeData = offsetof(MethodDesc, m_codeData);
+#ifdef FEATURE_INTERPRETER
+    static constexpr size_t InterpreterCode = offsetof(MethodDesc, m_interpreterCode);
+#endif // FEATURE_INTERPRETER
 };
 
 #ifndef DACCESS_COMPILE
@@ -2568,21 +2557,6 @@ public:
     bool FinalizeOptimizationTierForTier0LoadOrJit();
 #endif
 
-public:
-    PrepareCodeConfig *GetNextInSameThread() const
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_nextInSameThread;
-    }
-
-    void SetNextInSameThread(PrepareCodeConfig *config)
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(config == nullptr || m_nextInSameThread == nullptr);
-
-        m_nextInSameThread = config;
-    }
-
 protected:
     MethodDesc* m_pMethodDesc;
     NativeCodeVersion m_nativeCodeVersion;
@@ -2613,7 +2587,6 @@ private:
 #ifdef FEATURE_TIERED_COMPILATION
     bool m_jitSwitchedToOptimized; // when a different tier was requested
 #endif
-    PrepareCodeConfig *m_nextInSameThread;
 };
 
 #ifdef FEATURE_CODE_VERSIONING

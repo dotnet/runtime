@@ -10,6 +10,7 @@
 //
 
 #include "common.h"
+#include "CLREventBase.h"
 #include "vars.hpp"
 #include "eeconfig.h"
 #include "dllimport.h"
@@ -1058,7 +1059,7 @@ HRESULT MulticoreJitRecorder::StartProfile(const WCHAR * pRoot, const WCHAR * pF
                 {
                     MulticoreJitTrace(("Delay main thread %d ms", g_MulticoreJitDelay));
 
-                    ClrSleepEx(g_MulticoreJitDelay, FALSE);
+                    minipal_sleep(g_MulticoreJitDelay);
                 }
 
                 player.SuppressRelease();
@@ -1319,13 +1320,7 @@ LONG g_nMulticoreAutoStart = 0;
 // Threading: calls into StartProfile
 void MulticoreJitManager::AutoStartProfile(AppDomain * pDomain)
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     CLRConfigStringHolder wszProfile(CLRConfig::GetConfigValue(CLRConfig::INTERNAL_MultiCoreJitProfile));
 
@@ -1348,11 +1343,7 @@ void MulticoreJitManager::AutoStartProfile(AppDomain * pDomain)
 
 MulticoreJitManager::MulticoreJitManager()
 {
-    CONTRACTL
-    {
-        THROWS;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     m_pMulticoreJitRecorder = NULL;
     m_fSetProfileRootCalled = 0;

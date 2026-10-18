@@ -1168,7 +1168,15 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pRD,
         // Filters are the only funclet that run during the 1st pass, and must have
         // both the leaf and the parent frame reported.  In order to avoid double
         // reporting of the untracked variables, do not report them for the filter.
-        flags |= NoReportUntracked;
+        // Wasm R2R does not have fully interruptible reporting, so the aborted
+        // parent frame cannot report its roots. Report the always-live untracked
+        // slots from the filter instead.
+#ifdef TARGET_WASM
+        if (!ExecutionManager::IsVirtualIP(pCodeInfo->GetCodeAddress()))
+#endif // TARGET_WASM
+        {
+            flags |= NoReportUntracked;
+        }
     }
 
     bool reportScratchSlots;
@@ -2303,7 +2311,9 @@ OBJECTREF InterpreterCodeManager::GetInstance(PREGDISPLAY     pContext,
 {
     PTR_InterpMethodContextFrame frame = dac_cast<PTR_InterpMethodContextFrame>(GetSP(pContext->pCurrentContext));
     TADDR baseStackSlot = dac_cast<TADDR>((uintptr_t)frame->pStack);
-    return *dac_cast<PTR_OBJECTREF>(baseStackSlot);
+    // Read the slot as a raw pointer: interpreter stack slots are not viewed through checked
+    // OBJECTREFs (see LOCAL_VAR_OBJREF in interpexec.cpp).
+    return ObjectToOBJECTREF(*dac_cast<PTR_PTR_Object>(baseStackSlot));
 }
 
 PTR_VOID InterpreterCodeManager::GetParamTypeArg(PREGDISPLAY     pContext,

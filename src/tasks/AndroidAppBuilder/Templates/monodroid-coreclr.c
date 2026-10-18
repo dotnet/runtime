@@ -277,27 +277,26 @@ Java_net_dot_MonoRunner_execEntryPoint (JNIEnv* env, jobject thiz, jstring j_ent
     }
 
     int args_len = (*env)->GetArrayLength (env, j_args);
-    int managed_argc = args_len + 1;
-    const char** managed_argv = (const char**)malloc (managed_argc * sizeof(char*));
+    // Managed Main receives only the app arguments, not the bundle path.
+    const char** managed_argv = (const char**)malloc ((args_len > 0 ? args_len : 1) * sizeof(char*));
     if (managed_argv == NULL)
     {
         LOG_ERROR("Failed to allocate memory for managed_argv");
         return -1;
     }
 
-    managed_argv[0] = g_bundle_path;
     for (int i = 0; i < args_len; ++i)
     {
         jstring j_arg = (*env)->GetObjectArrayElement(env, j_args, i);
-        managed_argv[i + 1] = (char*)((*env)->GetStringUTFChars(env, j_arg, NULL));
+        managed_argv[i] = (char*)((*env)->GetStringUTFChars(env, j_arg, NULL));
     }
 
-    int rv = mono_droid_execute_assembly (g_executable_path, g_coreclr_handle, g_coreclr_domainId, managed_argc, managed_argv);
+    int rv = mono_droid_execute_assembly (g_executable_path, g_coreclr_handle, g_coreclr_domainId, args_len, managed_argv);
 
     for (int i = 0; i < args_len; ++i)
     {
         jstring j_arg = (*env)->GetObjectArrayElement(env, j_args, i);
-        (*env)->ReleaseStringUTFChars(env, j_arg, managed_argv[i + 1]);
+        (*env)->ReleaseStringUTFChars(env, j_arg, managed_argv[i]);
     }
 
     free(managed_argv);

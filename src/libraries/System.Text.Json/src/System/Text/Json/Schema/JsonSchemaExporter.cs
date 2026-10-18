@@ -181,7 +181,7 @@ namespace System.Text.Json.Schema
             if (effectiveConverter.NullableElementConverter is { } elementConverter)
             {
                 JsonTypeInfo elementTypeInfo = typeInfo.Options.GetTypeInfo(elementConverter.Type!);
-                schema = MapJsonSchemaCore(ref state, elementTypeInfo, customConverter: elementConverter, cacheResult: false);
+                schema = MapJsonSchemaCore(ref state, elementTypeInfo, customConverter: elementConverter, customNumberHandling: customNumberHandling ?? typeInfo.NumberHandling, cacheResult: false);
 
                 if (elementConverter.IsIeeeFloatingPointConverter &&
                     (effectiveNumberHandling & JsonNumberHandling.AllowNamedFloatingPointLiterals) != 0)
@@ -219,8 +219,7 @@ namespace System.Text.Json.Schema
                     List<string>? required = null;
                     JsonSchema? additionalProperties = null;
 
-                    JsonUnmappedMemberHandling effectiveUnmappedMemberHandling = typeInfo.UnmappedMemberHandling ?? typeInfo.Options.UnmappedMemberHandling;
-                    if (effectiveUnmappedMemberHandling is JsonUnmappedMemberHandling.Disallow)
+                    if (typeInfo.EffectiveUnmappedMemberHandling is JsonUnmappedMemberHandling.Disallow)
                     {
                         additionalProperties = JsonSchema.CreateFalseSchema();
                     }
@@ -371,7 +370,7 @@ namespace System.Text.Json.Schema
                             JsonTypeInfo caseTypeInfo = typeInfo.Options.GetTypeInfoInternal(caseInfo.CaseType);
 
                             state.PushSchemaNode(unionAnyOf.Count.ToString(CultureInfo.InvariantCulture));
-                            JsonSchema caseSchema = MapJsonSchemaCore(ref state, caseTypeInfo, cacheResult: false);
+                            JsonSchema caseSchema = MapJsonSchemaCore(ref state, caseTypeInfo, customNumberHandling: typeInfo.NumberHandling, cacheResult: false);
                             state.PopSchemaNode();
 
                             if (caseInfo.IsNullable)

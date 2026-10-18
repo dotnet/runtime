@@ -146,4 +146,18 @@
         call        void SimpleClass::InObjectMethod(object&)
         ret
     }
+
+    .method public hidebysig instance void Callvirt.StaticMethod_Invalid_CallVirtOnStatic() cil managed
+    {
+        .locals init (
+            [0] object
+        )
+
+        // callvirt void SimpleClass::InObjectMethod(object&)
+        // ilasm adds 'instance' to the signature of a callvirt target, so the static
+        // MethodDef is referenced by token (it is the third method in this file).
+        ldloca.s    0
+        callvirt    mdtoken(0x06000003)
+        ret
+    }
 }

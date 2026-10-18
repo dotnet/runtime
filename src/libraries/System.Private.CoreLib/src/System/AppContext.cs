@@ -49,11 +49,10 @@ namespace System
                     return data;
             }
 
-#if !MONO && !NATIVEAOT
+#if !NATIVEAOT
             if (IsKnownHostProperty(name))
             {
-                string? value = null;
-                if (TryGetHostPropertyValue(name, new StringHandleOnStack(ref value)))
+                if (TryGetHostPropertyValue(name, out string? value))
                 {
                     lock (s_dataStore)
                     {
@@ -231,6 +230,12 @@ namespace System
         }
 
 #if MONO
+        private static bool IsKnownHostProperty(string name)
+            => name == "TRUSTED_PLATFORM_ASSEMBLIES";
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern bool TryGetHostPropertyValue(string name, out string? value);
+
         internal static unsafe void Setup(char** pNames, uint* pNameLengths, char** pValues, uint* pValueLengths, int count)
         {
             Debug.Assert(s_dataStore == null, "s_dataStore is not expected to be inited before Setup is called");

@@ -8,7 +8,23 @@ namespace System
     /// </summary>
     public struct UriCreationOptions
     {
-        private bool _disablePathAndQueryCanonicalization;
+        internal Uri.Flags _flags;
+
+        /// <summary>
+        /// Gets or sets a value that indicates whether absolute file paths in the input are recognized as file URIs.
+        /// </summary>
+        /// <value><see langword="true"/> to allow implicit file paths; otherwise, <see langword="false"/>. The default is <see langword="true"/>.</value>
+        /// <remarks>
+        /// DOS and UNC paths are recognized on all operating systems. Unix paths are recognized only on Unix-like operating systems.
+        /// When this option is <see langword="false"/>, implicit file paths are rejected when an absolute URI is required.
+        /// </remarks>
+        public bool AllowImplicitFilePaths
+        {
+            readonly get => (_flags & Uri.Flags.DisableImplicitFilePaths) == 0;
+            set => _flags = value
+                ? _flags & ~Uri.Flags.DisableImplicitFilePaths
+                : _flags | Uri.Flags.DisableImplicitFilePaths;
+        }
 
         /// <summary>
         /// Disables validation and normalization of the Path and Query.
@@ -21,8 +37,10 @@ namespace System
         /// </summary>
         public bool DangerousDisablePathAndQueryCanonicalization
         {
-            readonly get => _disablePathAndQueryCanonicalization;
-            set => _disablePathAndQueryCanonicalization = value;
+            readonly get => (_flags & Uri.Flags.DisablePathAndQueryCanonicalization) != 0;
+            set => _flags = value
+                ? _flags | Uri.Flags.DisablePathAndQueryCanonicalization
+                : _flags & ~Uri.Flags.DisablePathAndQueryCanonicalization;
         }
     }
 }

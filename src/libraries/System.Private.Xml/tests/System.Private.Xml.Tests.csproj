@@ -335,6 +335,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="XmlReader\Tests\AsyncReaderLateInitTests.cs" />
+    <Compile Include="XmlReader\Tests\AttributeBufferInvalidationTests.cs" />
     <Compile Include="XmlReader\Tests\DisposeTests.cs" />
     <Compile Include="XmlReader\Tests\BaseUriTests.cs" />
     <Compile Include="XmlReader\Tests\ReadCharsTests.cs" />

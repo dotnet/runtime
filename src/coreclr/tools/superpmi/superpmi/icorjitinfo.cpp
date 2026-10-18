@@ -1576,10 +1576,10 @@ bool MyICJI::convertPInvokeCalliToCall(CORINFO_RESOLVED_TOKEN* pResolvedToken, b
     return jitInstance->mc->repConvertPInvokeCalliToCall(pResolvedToken, fMustConvert);
 }
 
-bool MyICJI::notifyInstructionSetUsage(CORINFO_InstructionSet instructionSet, bool supported)
+bool MyICJI::notifyInstructionSetUsage(CORINFO_InstructionSet instructionSet, bool supported, bool preserveNegativeDependency)
 {
     jitInstance->mc->cr->AddCall("notifyInstructionSetUsage");
-    return jitInstance->mc->repNotifyInstructionSetUsage(instructionSet, supported);
+    return jitInstance->mc->repNotifyInstructionSetUsage(instructionSet, supported, preserveNegativeDependency);
 }
 
 void MyICJI::updateEntryPointForTailCall(CORINFO_CONST_LOOKUP* entryPoint)
