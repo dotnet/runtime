@@ -89,6 +89,21 @@
 
 #include "MiscNativeHelpers.h"
 
+#ifdef TARGET_BROWSER
+// emscripten libc before 6.0.10 implements overlapping memmove and memset with scalar loops.
+// Compiling these wrappers with -mbulk-memory lowers the builtins to memory.copy and memory.fill.
+// TODO: Remove once emsdk is 6.0.10 or later (https://github.com/dotnet/runtime/issues/136012).
+static void* QCall_memmove(void* dest, const void* src, size_t len)
+{
+    return __builtin_memmove(dest, src, len);
+}
+
+static void* QCall_memset(void* dest, int value, size_t len)
+{
+    return __builtin_memset(dest, value, len);
+}
+#endif // TARGET_BROWSER
+
 static const Entry s_QCall[] =
 {
 #ifdef FEATURE_VARARGS
@@ -332,10 +347,16 @@ static const Entry s_QCall[] =
 #ifdef TARGET_SUNOS
     // Work around illumos.org/issues/17832
     {"memset", (void*)&std::memset},
+#elif defined(TARGET_BROWSER)
+    {"memset", (void*)&QCall_memset},
 #else // TARGET_SUNOS
     DllImportEntry(memset)
 #endif // TARGET_SUNOS
+#ifdef TARGET_BROWSER
+    {"memmove", (void*)&QCall_memmove},
+#else
     DllImportEntry(memmove)
+#endif // TARGET_BROWSER
     DllImportEntry(DependentHandle_InternalAllocWithGCTransition)
     DllImportEntry(DependentHandle_InternalFreeWithGCTransition)
     DllImportEntry(GCInterface_GetTotalAllocatedBytesPrecise)
