@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using Debug = System.Diagnostics.Debug;
 using System.Runtime.InteropServices.ObjectiveC;
 using Internal.TypeSystem.Ecma;
@@ -10,6 +11,33 @@ namespace Internal.TypeSystem.Interop
 {
     public static partial class MarshalHelpers
     {
+        public static IEnumerable<string> GetPInvokeModuleNameVariations(TargetDetails target, string name)
+        {
+            yield return name;
+
+            if (target.IsWindows)
+            {
+                const string Suffix = ".dll";
+
+                if (name.EndsWith(Suffix, StringComparison.OrdinalIgnoreCase))
+                    yield return name.Substring(0, name.Length - Suffix.Length);
+            }
+            else
+            {
+                string suffix = target.IsApplePlatform ? ".dylib" : ".so";
+                bool hasSharedLibraryExtension = name.EndsWith(suffix, StringComparison.Ordinal);
+                const string LibPrefix = "lib";
+                bool hasLibPrefix = name.StartsWith(LibPrefix, StringComparison.Ordinal);
+
+                if (hasSharedLibraryExtension)
+                    yield return name.Substring(0, name.Length - suffix.Length);
+                if (hasLibPrefix)
+                    yield return name.Substring(LibPrefix.Length);
+                if (hasLibPrefix && hasSharedLibraryExtension)
+                    yield return name.Substring(LibPrefix.Length, name.Length - suffix.Length - LibPrefix.Length);
+            }
+        }
+
         internal static TypeDesc GetNativeTypeFromMarshallerKind(TypeDesc type,
                 MarshallerKind kind,
                 MarshallerKind elementMarshallerKind,

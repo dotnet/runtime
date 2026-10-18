@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using Internal.Cryptography;
 
 namespace System.Security.Cryptography.X509Certificates
 {
@@ -11,22 +10,58 @@ namespace System.Security.Cryptography.X509Certificates
     {
         public static bool Verify(X509ChainElement[] chainElements, X509VerificationFlags flags)
         {
-            bool isEndEntity = true;
+            int rootIndex = HasPartialChain(chainElements) ? -1 : chainElements.Length - 1;
 
-            foreach (X509ChainElement element in chainElements)
+            for (int i = 0; i < chainElements.Length; i++)
             {
-                if (HasUnsuppressedError(flags, element, isEndEntity))
+                // Element 0 is the end-entity.
+                // If the chain is complete, then match the last element under "root".
+                // Otherwise, the element must be part of the middle of a chain.
+                //
+                // Two fuzzy pieces in this logic:
+                // 1. Non-self-issued trust anchors.  We generally don't support them,
+                //    but they're possible on macOS because of system trust rules.
+                //    This logic will treat them as roots, which is more correct than not.
+                //    (As the trust anchor, you're not expecting someone to say it was revoked,
+                //    but instead you remove it from anchor status.)
+                //
+                // 2. Black-box testing suggests Windows has some special considerations for a
+                //    CA cert that was self-issued by the root (but with a different key and not
+                //    self-signed).  This sort of re-keying is exceptionally rare, so it's not a
+                //    high-priority research effort.  Until then, calling the signed re-key an
+                //    intermediate is more accurate than calling it a root, as it will be checked
+                //    for revocation under the ExcludeRoot policy.
+                X509VerificationFlags suppressionFlag =
+                    i == 0 ? X509VerificationFlags.IgnoreEndRevocationUnknown :
+                    i == rootIndex ? X509VerificationFlags.IgnoreRootRevocationUnknown :
+                    X509VerificationFlags.IgnoreCertificateAuthorityRevocationUnknown;
+
+                if (HasUnsuppressedError(flags, chainElements[i], suppressionFlag))
                 {
                     return false;
                 }
-
-                isEndEntity = false;
             }
 
             return true;
+
+            static bool HasPartialChain(X509ChainElement[] chainElements)
+            {
+                foreach (X509ChainElement element in chainElements)
+                {
+                    foreach (X509ChainStatus status in element.ChainElementStatus)
+                    {
+                        if (status.Status == X509ChainStatusFlags.PartialChain)
+                        {
+                            return true;
+                        }
+                    }
+                }
+
+                return false;
+            }
         }
 
-        private static bool HasUnsuppressedError(X509VerificationFlags flags, X509ChainElement element, bool isEndEntity)
+        private static bool HasUnsuppressedError(X509VerificationFlags flags, X509ChainElement element, X509VerificationFlags revocationSuppressionFlag)
         {
             foreach (X509ChainStatus status in element.ChainElementStatus)
             {
@@ -47,18 +82,7 @@ namespace System.Security.Cryptography.X509Certificates
 
                 if (status.Status == X509ChainStatusFlags.RevocationStatusUnknown)
                 {
-                    if (isEndEntity)
-                    {
-                        suppressionFlag = X509VerificationFlags.IgnoreEndRevocationUnknown;
-                    }
-                    else if (IsSelfSigned(element.Certificate))
-                    {
-                        suppressionFlag = X509VerificationFlags.IgnoreRootRevocationUnknown;
-                    }
-                    else
-                    {
-                        suppressionFlag = X509VerificationFlags.IgnoreCertificateAuthorityRevocationUnknown;
-                    }
+                    suppressionFlag = revocationSuppressionFlag;
                 }
                 else if (status.Status == X509ChainStatusFlags.OfflineRevocation)
                 {
@@ -81,11 +105,6 @@ namespace System.Security.Cryptography.X509Certificates
             }
 
             return false;
-        }
-
-        private static bool IsSelfSigned(X509Certificate2 cert)
-        {
-            return cert.SubjectName.RawData.ContentsEqual(cert.IssuerName.RawData);
         }
 
         private static X509VerificationFlags? GetSuppressionFlag(X509ChainStatusFlags status)

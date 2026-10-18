@@ -1,11 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-//
-//
 // Currently represents a logical and physical CLR thread. Later, these concepts will be separated.
-//
-
 //
 // #SuspendingTheRuntime
 //
@@ -103,7 +99,6 @@
 // 'cooperates' to ensure that GCs can happen in a timely fashion.
 //
 // If you need to switch the GC mode of the current thread, look for the GCX_COOP() and GCX_PREEMP() macros.
-//
 
 #ifndef __threads_h__
 #define __threads_h__
@@ -134,7 +129,6 @@ class     EECodeInfo;
 class     DebuggerPatchSkip;
 class     FaultingExceptionFrame;
 enum      BinderMethodID : int;
-class     PrepareCodeConfig;
 class     NativeCodeVersion;
 struct    InterpThreadContext;
 
@@ -152,7 +146,9 @@ typedef void(*ADCallBackFcnType)(LPVOID);
 #include "eventpipeadaptertypes.h"
 #endif // FEATURE_PERFTRACING
 
+#ifdef FEATURE_MULTITHREADING
 #include "threadstatics.h"
+#endif // FEATURE_MULTITHREADING
 
 class Module;
 
@@ -309,8 +305,10 @@ enum SetupUnstartedThreadFlags
     // The default flags for the majority of threads.
     SUTF_Default = SUTF_None,
 };
+#ifdef FEATURE_MULTITHREADING
 Thread* SetupUnstartedThread(SetupUnstartedThreadFlags flags = SUTF_Default);
 void    DestroyThread(Thread *th);
+#endif // FEATURE_MULTITHREADING
 
 DWORD GetRuntimeId();
 
@@ -923,7 +921,7 @@ public:
     DWORD                m_ThreadId;
 
 #ifndef DACCESS_COMPILE
-    Frame* NotifyFrameChainOfExceptionUnwind(Frame* pStartFrame, LPVOID pvLimitSP);
+    Frame* NotifyFrameChainOfExceptionUnwind(Frame* pStartFrame, LPVOID pvLimitSP) noexcept;
 #endif // DACCESS_COMPILE
 
     // Lock thread is trying to acquire
@@ -1108,6 +1106,7 @@ public:
     void InitThread();
     BOOL AllocHandles();
 
+#ifdef FEATURE_MULTITHREADING
     //--------------------------------------------------------------
     // If the thread was setup through SetupUnstartedThread, rather
     // than SetupThread, complete the setup here when the thread is
@@ -1120,6 +1119,7 @@ public:
     // you must ::ResumeThread to kick it off.  It is guaranteed to create the
     // thread, or throw.
     BOOL CreateNewThread(SIZE_T stackSize, LPTHREAD_START_ROUTINE start, void *args, LPCWSTR pName=NULL);
+#endif // FEATURE_MULTITHREADING
 
     // Functions used to perform initialization and cleanup on a managed thread
     // that would normally occur if the thread was stated when the runtime was
@@ -1128,6 +1128,7 @@ public:
     static void InitializationForManagedThreadInNative(_In_ Thread* pThread);
     static void CleanUpForManagedThreadInNative(_In_ Thread* pThread);
 
+#ifdef FEATURE_MULTITHREADING
     enum StackSizeBucket
     {
         StackSize_Small,
@@ -1140,6 +1141,7 @@ public:
     // StackSizeBucket determines how large the stack should be.
     //
     static HANDLE CreateUtilityThread(StackSizeBucket stackSizeBucket, LPTHREAD_START_ROUTINE start, void *args, LPCWSTR pName, DWORD flags = 0, DWORD* pThreadId = NULL);
+#endif // FEATURE_MULTITHREADING
 
     //--------------------------------------------------------------
     // Destructor
@@ -1224,7 +1226,7 @@ public:
     //--------------------------------------------------------------
     // Enter cooperative GC mode. NOT NESTABLE.
     //--------------------------------------------------------------
-    FORCEINLINE_NONDEBUG void DisablePreemptiveGC()
+    FORCEINLINE_NONDEBUG void DisablePreemptiveGC() noexcept
     {
 #ifndef DACCESS_COMPILE
         WRAPPER_NO_CONTRACT;
@@ -1274,7 +1276,7 @@ public:
 #endif
     }
 
-    NOINLINE void RareDisablePreemptiveGC();
+    NOINLINE void RareDisablePreemptiveGC() noexcept;
 
     void HandleThreadAbort();
 
@@ -1287,7 +1289,7 @@ public:
     //--------------------------------------------------------------
     // Leave cooperative GC mode. NOT NESTABLE.
     //--------------------------------------------------------------
-    FORCEINLINE_NONDEBUG void EnablePreemptiveGC()
+    FORCEINLINE_NONDEBUG void EnablePreemptiveGC() noexcept
     {
         LIMITED_METHOD_CONTRACT;
 
@@ -1321,7 +1323,7 @@ public:
     //--------------------------------------------------------------
     // Query mode
     //--------------------------------------------------------------
-    BOOL PreemptiveGCDisabled()
+    BOOL PreemptiveGCDisabled() noexcept
     {
         WRAPPER_NO_CONTRACT;
         _ASSERTE(this == GetThread());
@@ -1624,9 +1626,11 @@ public:
         return (ObjectFromHandle(m_ExposedObject) != NULL) ;
     }
 
+#ifdef FEATURE_MULTITHREADING
     // When we create a managed thread, the thread is suspended.  We call StartThread to get
     // the thread start.
     DWORD StartThread();
+#endif // FEATURE_MULTITHREADING
 
     // The result of attempting to OS-suspend an EE thread.
     enum SuspendThreadResult
@@ -1691,10 +1695,12 @@ public:
 
 #endif  // DISABLE_THREADSUSPEND
 
+#ifdef FEATURE_MULTITHREADING
     int GetThreadPriority();
     BOOL SetThreadPriority(
         int nPriority   // thread priority level
     );
+#endif // FEATURE_MULTITHREADING
 
     BOOL GetThreadContext(
         LPCONTEXT lpContext   // context structure
@@ -2661,7 +2667,9 @@ private:
     HANDLE          m_ThreadHandleForResume;
     SIZE_T          m_OSThreadId;
 
+#ifdef FEATURE_MULTITHREADING
     BOOL CreateNewOSThread(SIZE_T stackSize, LPTHREAD_START_ROUTINE start, void *args);
+#endif // FEATURE_MULTITHREADING
 
     OBJECTHANDLE    m_ExposedObject;
     OBJECTHANDLE    m_StrongHndToExposedObject;
@@ -2764,8 +2772,6 @@ public:
     void ClearThreadCurrNotification();
 
 private:
-    void SetLastThrownObjectHandle(OBJECTHANDLE h);
-
     ThreadExceptionState  m_ExceptionState;
 
 private:
@@ -2820,7 +2826,6 @@ private:
 
 private:
 #ifndef DACCESS_COMPILE
-private:
     static UINT32 *GetThreadLocalCountRef(Thread *pThread, SIZE_T threadLocalCountOffset)
     {
         WRAPPER_NO_CONTRACT;
@@ -2865,8 +2870,6 @@ private:
         }
         return InterlockedCompareExchange64((LONGLONG *)overflowCount, 0, 0); // prevent tearing
     }
-
-    static UINT64 GetTotalCount(SIZE_T threadLocalCountOffset, UINT64 *overflowCount);
 #endif // !DACCESS_COMPILE
 
 public:
@@ -3007,8 +3010,10 @@ public:
 #endif // FEATURE_HIJACK
     }
 
+#ifdef FEATURE_MULTITHREADING
     static LPVOID GetStaticFieldAddress(FieldDesc *pFD);
     TADDR GetStaticFieldAddrNoCreate(FieldDesc *pFD);
+#endif // FEATURE_MULTITHREADING
 
 private:
     // Don't allow a thread to be asynchronously stopped or interrupted (e.g. because
@@ -3190,11 +3195,13 @@ public:
     }
 #endif //DACCESS_COMPILE
 
+#ifdef FEATURE_MULTITHREADING
     PTR_ThreadLocalData m_ThreadLocalDataPtr;
     int32_t cLoaderHandles = 0;
     PTR_LOADERHANDLE pLoaderHandles = 0;
     SpinLock m_TlsSpinLock;
     PTR_ThreadLocalData GetThreadLocalDataPtr() { LIMITED_METHOD_DAC_CONTRACT; return m_ThreadLocalDataPtr; }
+#endif // FEATURE_MULTITHREADING
 
 private:
     TailCallTls m_tailCallTls;
@@ -3251,10 +3258,6 @@ public:
     void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
     void EnumMemoryRegionsWorker(CLRDataEnumMemoryFlags flags);
 #endif
-
-public:
-    // Is the current thread currently executing within a constrained execution region?
-    static BOOL IsExecutingWithinCer();
 
 #ifdef _DEBUG
 // when the thread is doing a stressing GC, some Crst violation could be ignored, by a non-elegant solution.
@@ -3373,6 +3376,7 @@ public:
     }
 #endif // _DEBUG
 
+#ifdef FEATURE_MULTITHREADING
 private:
     // If HasStarted fails, we cache the exception here, and rethrow on the thread which
     // calls Thread.Start.
@@ -3380,6 +3384,7 @@ private:
 
 public:
     OBJECTREF GetExceptionDuringStartup();
+#endif // FEATURE_MULTITHREADING
 
 #ifdef HAVE_GCCOVER
 private:
@@ -3702,32 +3707,6 @@ public:
 
 #ifndef DACCESS_COMPILE
 public:
-    class CurrentPrepareCodeConfigHolder
-    {
-    private:
-        Thread *const m_thread;
-#ifdef _DEBUG
-        PrepareCodeConfig *const m_config;
-#endif
-
-    public:
-        CurrentPrepareCodeConfigHolder(Thread *thread, PrepareCodeConfig *config);
-        ~CurrentPrepareCodeConfigHolder();
-    };
-
-public:
-    PrepareCodeConfig *GetCurrentPrepareCodeConfig() const
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_currentPrepareCodeConfig;
-    }
-#endif // !DACCESS_COMPILE
-
-private:
-    PrepareCodeConfig *m_currentPrepareCodeConfig;
-
-#ifndef DACCESS_COMPILE
-public:
     bool IsInForbidSuspendForDebuggerRegion() const
     {
         LIMITED_METHOD_CONTRACT;
@@ -3831,7 +3810,9 @@ struct cdac_data<Thread>
     static constexpr size_t LastThrownObject = offsetof(Thread, m_LastThrownObjectHandle);
     static constexpr size_t LastThrownObjectIsUnhandled = offsetof(Thread, m_ltoIsUnhandled);
     static constexpr size_t Link = offsetof(Thread, m_pNext);
+#ifdef FEATURE_MULTITHREADING
     static constexpr size_t ThreadLocalDataPtr = offsetof(Thread, m_ThreadLocalDataPtr);
+#endif // FEATURE_MULTITHREADING
     static constexpr size_t CurrentCustomDebuggerNotification = offsetof(Thread, m_hCurrNotification);
 
     static_assert(std::is_same<decltype(std::declval<Thread>().m_ExceptionState), ThreadExceptionState>::value,
@@ -3891,7 +3872,7 @@ public:
 
     static void InitThreadStore();
     static void LockThreadStore();
-    static void UnlockThreadStore();
+    static void UnlockThreadStore() noexcept;
 
     // Add a Thread to the ThreadStore
     static void AddThread(Thread *newThread);
@@ -3905,6 +3886,7 @@ public:
     // Before using the thread list, be sure to take the critical section.  Otherwise
     // it can change underneath you, perhaps leading to an exception after Remove.
     // Prev==NULL to get the first entry in the list.
+    static Thread *GetAllThreadList(Thread *Prev);
     static Thread *GetAllThreadList(Thread *Prev, ULONG mask, ULONG bits);
     static Thread *GetThreadList(Thread *Prev);
 
@@ -3945,16 +3927,19 @@ private:
     // Enter and leave the critical section around the thread store.  Clients should
     // use LockThreadStore and UnlockThreadStore.
     void Enter();
-    void Leave();
+    void Leave() noexcept;
 
     // Critical section for adding and removing threads to the store
     Crst        m_Crst;
 
-    // List of all the threads known to the ThreadStore (started & unstarted).
+    // Native threads known to the ThreadStore.
+#ifdef FEATURE_MULTITHREADING
     ThreadList  m_ThreadList;
+#else
+    PTR_Thread  m_pThread;
+#endif // FEATURE_MULTITHREADING
 
-    // m_ThreadCount is the count of all threads in m_ThreadList.  This includes
-    // background threads / unstarted threads / whatever.
+    // m_ThreadCount includes background and unstarted native threads in multithreaded builds.
     //
     // m_UnstartedThreadCount is the subset of m_ThreadCount that have not yet been
     // started.
@@ -4106,7 +4091,11 @@ public:
 template<>
 struct cdac_data<ThreadStore>
 {
+#ifdef FEATURE_MULTITHREADING
     static constexpr size_t FirstThreadLink = offsetof(ThreadStore, m_ThreadList) + offsetof(ThreadList, m_pHead);
+#else
+    static constexpr size_t FirstThreadLink = offsetof(ThreadStore, m_pThread);
+#endif // FEATURE_MULTITHREADING
     static constexpr size_t ThreadCount = offsetof(ThreadStore, m_ThreadCount);
     static constexpr size_t UnstartedCount = offsetof(ThreadStore, m_UnstartedThreadCount);
     static constexpr size_t BackgroundCount = offsetof(ThreadStore, m_BackgroundThreadCount);
@@ -5287,6 +5276,46 @@ struct ManagedThreadBase
 
 class DeadlockAwareLock
 {
+#if !defined(FEATURE_MULTITHREADING) && !defined(_DEBUG)
+private:
+    // A held lock can only belong to this thread. Reentry must still fail, including
+    // indirect cycles through other entries, without disturbing the outer holder.
+    bool m_isHeld;
+
+public:
+    DeadlockAwareLock(const char *description = nullptr) : m_isHeld(false)
+    {
+        LIMITED_METHOD_CONTRACT;
+    }
+
+    BOOL CanEnterLock()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return !m_isHeld;
+    }
+
+    BOOL TryBeginEnterLock()
+    {
+        WRAPPER_NO_CONTRACT;
+        return CanEnterLock();
+    }
+
+    void BeginEnterLock() { LIMITED_METHOD_CONTRACT; }
+
+    void EndEnterLock()
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_isHeld = true;
+    }
+
+    void LeaveLock()
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_isHeld = false;
+    }
+
+    typedef StateHolder<DoNothing, DoNothing> BlockingLockHolder;
+#else
  private:
     VolatilePtr<Thread> m_pHoldingThread;
 #ifdef _DEBUG
@@ -5322,6 +5351,7 @@ class DeadlockAwareLock
     }
 public:
     typedef StateHolder<DoNothing,DeadlockAwareLock::ReleaseBlockingLock> BlockingLockHolder;
+#endif // !FEATURE_MULTITHREADING && !_DEBUG
 };
 
 inline void SetTypeHandleOnThreadForAlloc(TypeHandle th)

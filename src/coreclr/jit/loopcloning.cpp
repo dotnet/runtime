@@ -1520,10 +1520,12 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
                                               iterInfo->LimitOffset);
         }
 
-        // arr.Length is non-negative, but arr.Length + offset can be < 0 when
-        // offset < 0 and the array is short. Guard the fast clone against
-        // out-of-bounds access on the low side.
-        if (iterInfo->LimitOffset < 0)
+        // arr.Length is non-negative, but arr.Length + offset can be < 0 when a negative offset exceeds the array
+        // length or a positive offset overflows. Array lengths are at most CORINFO_Array_MaxLength, so small positive
+        // offsets cannot overflow.
+        const bool positiveOffsetCanOverflow =
+            iterInfo->LimitOffset > (INT32_MAX - static_cast<int>(CORINFO_Array_MaxLength));
+        if ((iterInfo->LimitOffset < 0) || positiveOffsetCanOverflow)
         {
             LC_Ident arrLenIdent =
                 LC_Ident::CreateArrAccess(LC_Array(LC_Array::Jagged, limitArrIndex, LC_Array::ArrLen),

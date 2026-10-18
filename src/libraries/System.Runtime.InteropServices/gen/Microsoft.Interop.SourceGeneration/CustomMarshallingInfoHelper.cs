@@ -51,9 +51,11 @@ namespace Microsoft.Interop
                         return NoMarshallingInfo.Instance;
                     }
 
+                    // Preserve the unmanaged slot as a type parameter, rather than the error symbol
+                    // exposed in the type arguments of an unbound generic type.
                     entryPointType = entryPointType.ConstructedFrom.Construct(
                         arrayManagedType.ElementType,
-                        entryPointType.TypeArguments.Last());
+                        entryPointType.IsUnboundGenericType ? entryPointType.TypeParameters.Last() : entryPointType.TypeArguments.Last());
                 }
                 else if (type is INamedTypeSymbol namedManagedCollectionType && entryPointType.IsUnboundGenericType)
                 {
@@ -81,8 +83,7 @@ namespace Microsoft.Interop
                     return new NativeLinearCollectionMarshallingInfo(
                         entryPointTypeInfo,
                         collectionMarshallers.Value,
-                        parsedCountInfo,
-                        ManagedTypeInfo.CreateTypeInfoForTypeSymbol(entryPointType.TypeParameters.Last()));
+                        parsedCountInfo);
                 }
                 return NoMarshallingInfo.Instance;
             }

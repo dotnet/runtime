@@ -594,6 +594,14 @@ ep_rt_notify_profiler_provider_created (EventPipeProvider *provider)
     // Following mono's path of no-op
 }
 
+static
+inline
+void
+ep_rt_session_stopping (void)
+{
+    // Following mono's path of no-op
+}
+
 /*
  * Arrays.
  */
@@ -1628,7 +1636,12 @@ ep_rt_thread_set_activity_id (
 }
 
 #undef EP_YIELD_WHILE
-#define EP_YIELD_WHILE(condition) {}//YIELD_WHILE(condition)
+#define EP_YIELD_WHILE(condition) do { \
+    uint32_t switch_count = 0; \
+    while (condition) { \
+        minipal_switch_to_thread (++switch_count); \
+    } \
+} while (0)
 
 /*
  * Volatile.

@@ -23,6 +23,8 @@ static bool g_SeLockMemoryPrivilegeAcquired = false;
 // The cached total number of CPUs that can be used in the OS.
 uint32_t g_totalCpuCount = 0;
 
+static uint32_t g_maxProcessorCount = 0;
+
 static AffinitySet g_processAffinitySet;
 
 namespace {
@@ -504,6 +506,14 @@ void GetGroupForProcessor(uint16_t processor_number, uint16_t* group_number, uin
 //  true if it has succeeded, false if it has failed
 bool GCToOSInterface::Initialize()
 {
+    uint16_t maximumProcessorGroupCount = GetMaximumProcessorGroupCount();
+    if (maximumProcessorGroupCount == 0)
+    {
+        return false;
+    }
+
+    g_maxProcessorCount = static_cast<uint32_t>(maximumProcessorGroupCount) * 64;
+
     SYSTEM_INFO systemInfo;
     GetSystemInfo(&systemInfo);
 
@@ -516,7 +526,7 @@ bool GCToOSInterface::Initialize()
     InitNumaNodeInfo();
     InitCPUGroupInfo();
 
-    if (!g_processAffinitySet.Initialize(GCToOSInterface::GetTotalProcessorCount()))
+    if (!g_processAffinitySet.Initialize(GCToOSInterface::GetMaxProcessorCount()))
     {
         return false;
     }
@@ -660,8 +670,7 @@ void GCToOSInterface::DebugBreak()
 //  sleepMSec   - time to sleep before switching to another thread
 void GCToOSInterface::Sleep(uint32_t sleepMSec)
 {
-    // TODO(segilles) CLR implementation of __SwitchToThread spins for short sleep durations
-    // to avoid context switches - is that interesting or useful here?
+    // TODO: Consider spinning for short sleep durations to avoid context switches.
     if (sleepMSec > 0)
     {
         minipal_sleep(sleepMSec);
@@ -1088,7 +1097,8 @@ uint32_t GCToOSInterface::GetTotalProcessorCount()
 
 uint32_t GCToOSInterface::GetMaxProcessorCount()
 {
-    return (uint32_t)g_processAffinitySet.MaxCpuCount();
+    assert(g_maxProcessorCount != 0);
+    return g_maxProcessorCount;
 }
 
 bool GCToOSInterface::CanEnableGCNumaAware()

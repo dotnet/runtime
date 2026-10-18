@@ -1,7 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Buffers.Binary;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.RegularExpressions;
 using Xunit;
 using Xunit.Abstractions;
@@ -245,6 +251,275 @@ namespace Wasm.Build.Tests
             }
 
             return (output, line);
+        }
+    }
+
+    internal sealed class NativeWasmSymbolMapInfo
+    {
+        public required int ImportedFunctionCount { get; init; }
+        public required int DefinedFunctionCount { get; init; }
+        public required int CodeFunctionCount { get; init; }
+        public required IReadOnlyDictionary<int, string> Symbols { get; init; }
+        public required IReadOnlyDictionary<string, int> FunctionExports { get; init; }
+    }
+
+    internal static class NativeWasmSymbolMapValidator
+    {
+        private const byte FunctionExternalKind = 0;
+        private const byte TableExternalKind = 1;
+        private const byte MemoryExternalKind = 2;
+        private const byte GlobalExternalKind = 3;
+        private const byte TagExternalKind = 4;
+
+        public static NativeWasmSymbolMapInfo Validate(
+            string wasmPath,
+            string symbolsPath,
+            string? expectedWasmIntegrity = null,
+            string? expectedSymbolsIntegrity = null)
+            => Validate(
+                File.ReadAllBytes(wasmPath),
+                File.ReadAllBytes(symbolsPath),
+                expectedWasmIntegrity,
+                expectedSymbolsIntegrity);
+
+        public static NativeWasmSymbolMapInfo Validate(
+            byte[] wasmBytes,
+            byte[] symbolsBytes,
+            string? expectedWasmIntegrity = null,
+            string? expectedSymbolsIntegrity = null)
+        {
+            ValidateIntegrity(wasmBytes, expectedWasmIntegrity, "Wasm");
+            ValidateIntegrity(symbolsBytes, expectedSymbolsIntegrity, "symbol map");
+
+            NativeWasmSymbolMapInfo module = ReadModule(wasmBytes);
+            Dictionary<int, string> symbols = ReadSymbols(symbolsBytes);
+            int expectedFunctionCount = checked(module.ImportedFunctionCount + module.DefinedFunctionCount);
+
+            if (module.CodeFunctionCount != module.DefinedFunctionCount)
+            {
+                throw new InvalidDataException(
+                    $"Wasm function section contains {module.DefinedFunctionCount} entries, " +
+                    $"but its code section contains {module.CodeFunctionCount}.");
+            }
+
+            if (symbols.Count != expectedFunctionCount)
+            {
+                throw new InvalidDataException(
+                    $"Symbol map contains {symbols.Count} entries for {module.ImportedFunctionCount} imported and " +
+                    $"{module.DefinedFunctionCount} defined functions.");
+            }
+
+            for (int expectedIndex = 0; expectedIndex < expectedFunctionCount; expectedIndex++)
+            {
+                if (!symbols.ContainsKey(expectedIndex))
+                {
+                    throw new InvalidDataException(
+                        $"Symbol map expected absolute function index {expectedIndex}, " +
+                        $"including {module.ImportedFunctionCount} function imports.");
+                }
+            }
+
+            return new NativeWasmSymbolMapInfo
+            {
+                ImportedFunctionCount = module.ImportedFunctionCount,
+                DefinedFunctionCount = module.DefinedFunctionCount,
+                CodeFunctionCount = module.CodeFunctionCount,
+                Symbols = symbols,
+                FunctionExports = module.FunctionExports
+            };
+        }
+
+        public static string ComputeIntegrity(byte[] bytes)
+            => $"sha256-{Convert.ToBase64String(SHA256.HashData(bytes))}";
+
+        private static void ValidateIntegrity(byte[] bytes, string? expectedIntegrity, string artifactName)
+        {
+            if (expectedIntegrity is null)
+                return;
+
+            string actualIntegrity = ComputeIntegrity(bytes);
+            if (!string.Equals(actualIntegrity, expectedIntegrity, StringComparison.Ordinal))
+            {
+                throw new InvalidDataException(
+                    $"{artifactName} SHA-256 mismatch. Expected '{expectedIntegrity}', actual '{actualIntegrity}'.");
+            }
+        }
+
+        private static NativeWasmSymbolMapInfo ReadModule(byte[] wasmBytes)
+        {
+            ReadOnlySpan<byte> image = wasmBytes;
+            if (image.Length < 8 ||
+                BinaryPrimitives.ReadUInt32LittleEndian(image) != 0x6D736100 ||
+                BinaryPrimitives.ReadUInt32LittleEndian(image.Slice(4)) != 1)
+            {
+                throw new InvalidDataException("Invalid WebAssembly module header.");
+            }
+
+            int importedFunctionCount = 0;
+            int definedFunctionCount = -1;
+            int codeFunctionCount = -1;
+            Dictionary<string, int> functionExports = new(StringComparer.Ordinal);
+            int offset = 8;
+
+            while (offset < image.Length)
+            {
+                byte sectionId = ReadByte(image, ref offset, image.Length);
+                uint sectionSize = ReadUleb32(image, ref offset, image.Length);
+                int sectionEnd = checked(offset + (int)sectionSize);
+                if (sectionEnd > image.Length)
+                    throw new InvalidDataException($"WebAssembly section {sectionId} extends past the end of the module.");
+
+                switch (sectionId)
+                {
+                    case 2:
+                        importedFunctionCount = ReadFunctionImports(image, ref offset, sectionEnd);
+                        break;
+                    case 3:
+                        definedFunctionCount = checked((int)ReadUleb32(image, ref offset, sectionEnd));
+                        break;
+                    case 7:
+                        functionExports = ReadFunctionExports(image, ref offset, sectionEnd);
+                        break;
+                    case 10:
+                        codeFunctionCount = checked((int)ReadUleb32(image, ref offset, sectionEnd));
+                        break;
+                }
+
+                offset = sectionEnd;
+            }
+
+            if (definedFunctionCount < 0 || codeFunctionCount < 0)
+                throw new InvalidDataException("WebAssembly module is missing its function or code section.");
+
+            return new NativeWasmSymbolMapInfo
+            {
+                ImportedFunctionCount = importedFunctionCount,
+                DefinedFunctionCount = definedFunctionCount,
+                CodeFunctionCount = codeFunctionCount,
+                Symbols = new Dictionary<int, string>(),
+                FunctionExports = functionExports
+            };
+        }
+
+        private static int ReadFunctionImports(ReadOnlySpan<byte> image, ref int offset, int end)
+        {
+            uint importCount = ReadUleb32(image, ref offset, end);
+            int functionCount = 0;
+            for (uint i = 0; i < importCount; i++)
+            {
+                ReadName(image, ref offset, end);
+                ReadName(image, ref offset, end);
+                byte kind = ReadByte(image, ref offset, end);
+                switch (kind)
+                {
+                    case FunctionExternalKind:
+                        ReadUleb32(image, ref offset, end);
+                        functionCount++;
+                        break;
+                    case TableExternalKind:
+                        ReadByte(image, ref offset, end);
+                        SkipLimits(image, ref offset, end);
+                        break;
+                    case MemoryExternalKind:
+                        SkipLimits(image, ref offset, end);
+                        break;
+                    case GlobalExternalKind:
+                        ReadByte(image, ref offset, end);
+                        ReadByte(image, ref offset, end);
+                        break;
+                    case TagExternalKind:
+                        ReadByte(image, ref offset, end);
+                        ReadUleb32(image, ref offset, end);
+                        break;
+                    default:
+                        throw new InvalidDataException($"Unknown WebAssembly import kind {kind}.");
+                }
+            }
+
+            return functionCount;
+        }
+
+        private static Dictionary<string, int> ReadFunctionExports(
+            ReadOnlySpan<byte> image,
+            ref int offset,
+            int end)
+        {
+            uint exportCount = ReadUleb32(image, ref offset, end);
+            Dictionary<string, int> functionExports = new(StringComparer.Ordinal);
+            for (uint i = 0; i < exportCount; i++)
+            {
+                string name = ReadName(image, ref offset, end);
+                byte kind = ReadByte(image, ref offset, end);
+                int index = checked((int)ReadUleb32(image, ref offset, end));
+                if (kind == FunctionExternalKind)
+                    functionExports.Add(name, index);
+            }
+
+            return functionExports;
+        }
+
+        private static Dictionary<int, string> ReadSymbols(byte[] symbolsBytes)
+        {
+            Dictionary<int, string> symbols = new();
+            string[] lines = Encoding.UTF8.GetString(symbolsBytes)
+                .Split('\n', StringSplitOptions.RemoveEmptyEntries);
+
+            foreach (string rawLine in lines)
+            {
+                string line = rawLine.TrimEnd('\r');
+                int separator = line.IndexOf(':');
+                if (separator <= 0 || !int.TryParse(line.AsSpan(0, separator), out int index))
+                    throw new InvalidDataException($"Invalid Emscripten symbol map entry '{line}'.");
+
+                if (!symbols.TryAdd(index, line[(separator + 1)..]))
+                    throw new InvalidDataException($"Duplicate function index {index} in the Emscripten symbol map.");
+            }
+
+            return symbols;
+        }
+
+        private static void SkipLimits(ReadOnlySpan<byte> image, ref int offset, int end)
+        {
+            uint flags = ReadUleb32(image, ref offset, end);
+            ReadUleb32(image, ref offset, end);
+            if ((flags & 1) != 0)
+                ReadUleb32(image, ref offset, end);
+        }
+
+        private static string ReadName(ReadOnlySpan<byte> image, ref int offset, int end)
+        {
+            int length = checked((int)ReadUleb32(image, ref offset, end));
+            if (length > end - offset)
+                throw new InvalidDataException("WebAssembly name extends past the end of its section.");
+
+            string value = Encoding.UTF8.GetString(image.Slice(offset, length));
+            offset += length;
+            return value;
+        }
+
+        private static uint ReadUleb32(ReadOnlySpan<byte> image, ref int offset, int end)
+        {
+            uint value = 0;
+            int shift = 0;
+            while (shift < 35)
+            {
+                byte current = ReadByte(image, ref offset, end);
+                value |= (uint)(current & 0x7F) << shift;
+                if ((current & 0x80) == 0)
+                    return value;
+
+                shift += 7;
+            }
+
+            throw new InvalidDataException("Invalid WebAssembly ULEB128 value.");
+        }
+
+        private static byte ReadByte(ReadOnlySpan<byte> image, ref int offset, int end)
+        {
+            if ((uint)offset >= (uint)end)
+                throw new InvalidDataException("Unexpected end of WebAssembly section.");
+
+            return image[offset++];
         }
     }
 }
