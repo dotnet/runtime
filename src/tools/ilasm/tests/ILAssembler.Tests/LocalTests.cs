@@ -594,7 +594,7 @@ namespace ILAssembler.Tests
         [Fact]
         public void ExplicitSlot_ReusedWithADifferentType_TheSlotTakesTheNewType()
         {
-            // As in native ilasm, the conflicting declaration still types the slot.
+            // The conflicting declaration still types the slot.
             string source = OneMethod("""
                 {
                     .locals init ([0] int32 x)
@@ -656,7 +656,7 @@ namespace ILAssembler.Tests
         [Fact]
         public void ExplicitSlot_ClosingABlockThatRedeclaredAnEnclosingSlot_LeavesTheSlotNotInUse()
         {
-            // Native ilasm keeps one in-use flag per slot, cleared when any scope that declared the slot closes.
+            // There is one in-use flag per slot, cleared when any scope that declared the slot closes.
             // So after the block closes, slot 0 is not in use although a's scope is still open, and c's
             // declaration gets no warning; only b's does.
             string source = OneMethod("""
@@ -794,7 +794,7 @@ namespace ILAssembler.Tests
         [Fact]
         public void LocalNames_AreCaseSensitive()
         {
-            // As in native ilasm, which compares local names with strcmp.
+            // Local names are compared ordinally.
             string source = OneMethod("""
                 .locals init (int32 a, string A)
                 ldnull
@@ -834,7 +834,7 @@ namespace ILAssembler.Tests
         [Fact]
         public void ExplicitSlot_MinusOne_TakesTheNextSlot()
         {
-            // As in native ilasm, [-1] is the encoding of "no explicit slot".
+            // [-1] is the encoding of "no explicit slot".
             string source = OneMethod("""
                 .locals init (string a, [-1] int32 b)
                 ldloc b
@@ -851,7 +851,7 @@ namespace ILAssembler.Tests
         [Fact]
         public void Sentinel_TakesNoSlot()
         {
-            // As in native ilasm, a ... sentinel in a .locals list is not a local.
+            // A ... sentinel in a .locals list is not a local.
             string source = OneMethod("""
                 .locals init (int32 a, ..., int32 b)
                 ldloc b
@@ -872,7 +872,7 @@ namespace ILAssembler.Tests
         public void SentinelPrefixedType_IsALocal()
         {
             // In "... int32 a" the sentinel is part of the type: the argument is a typed local, not the
-            // standalone sentinel that takes no slot. As in native ilasm, its type is written as given.
+            // standalone sentinel that takes no slot. Its type is written as given.
             string source = OneMethod("""
                 .locals init ([0] ... int32 a)
                 ldloc a
