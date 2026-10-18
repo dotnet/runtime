@@ -2254,7 +2254,7 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
     {
         std::swap(op1, op2);
     }
-    // Leave helper calls below so isinst can generate the stronger subtype assertion.
+    // Leave calls below so isinst helpers can generate the stronger subtype assertion.
     if (!optLocalAssertionProp && op1->TypeIs(TYP_REF) && !op1->OperIs(GT_CALL) && op2->IsIntegralConst(0) &&
         op2->TypeIs(TYP_REF))
     {
@@ -5246,7 +5246,6 @@ bool Compiler::optAssertionVNIsNonNull(ValueNum vn, ASSERT_VALARG_TP assertions,
         {
             AssertionIndex      assertionIndex = GetAssertionIndex(index);
             const AssertionDsc& curAssertion   = optGetAssertion(assertionIndex);
-            // Successful type-test assertions exclude null; a successful castclass alone does not.
             if (curAssertion.CanPropNonNull() &&
                 ((curAssertion.GetOp1().GetVN() == vn) || (curAssertion.GetOp1().GetVN() == vnBase)))
             {

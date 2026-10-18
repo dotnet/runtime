@@ -5985,7 +5985,18 @@ Compiler::AssertVisit Compiler::optVisitReachingAssertions(ValueNum vn, TAssertV
     //
     BitVecTraits traits(fgBBNumMax + 1, this);
     BitVec       visitedBlocks = BitVecOps::MakeEmpty(&traits);
-    bool         visitedPhiArg = false;
+    BitVec       actualPreds   = BitVecOps::MakeEmpty(&traits);
+
+    // Given an ssaDef and its block, we must consider two edge cases:
+    //  1) ssaDef->GetBlock()->PredBlocks() contains blocks that do not exist in AsPhi()->Uses()
+    //  2) AsPhi()->Uses() contains blocks that do not exist in ssaDef->GetBlock()->PredBlocks()
+    //
+    // We conservatively terminate the walk if either mismatch occurs.
+    //
+    for (BasicBlock* const pred : ssaDef->GetBlock()->PredBlocks())
+    {
+        BitVecOps::AddElemD(&traits, actualPreds, pred->bbNum);
+    }
 
     // Fast opportunistic check: a block is considered unreachable if it has no normal
     // preds and isn't the entry block. Note that bbPreds excludes EH flow, so
@@ -6000,16 +6011,6 @@ Compiler::AssertVisit Compiler::optVisitReachingAssertions(ValueNum vn, TAssertV
     {
         GenTreePhiArg* phiArg = use.GetNode()->AsPhiArg();
 
-        // RBO can leave stale inputs after deleting normal edges.
-        // EH inputs also lack normal edges; skipping them here remains an unresolved correctness concern.
-        if (fgGetPredForBlock(ssaDef->GetBlock(), phiArg->gtPredBB) == nullptr)
-        {
-            JITDUMP("... optVisitReachingAssertions in " FMT_BB ": phi-pred " FMT_BB
-                    " is no longer a block pred, ignoring\n",
-                    ssaDef->GetBlock()->bbNum, phiArg->gtPredBB->bbNum);
-            continue;
-        }
-
         // Ignore phi-args coming from unreachable blocks.
         if (isUnreachableBlock(phiArg->gtPredBB))
         {
@@ -6020,6 +6021,17 @@ Compiler::AssertVisit Compiler::optVisitReachingAssertions(ValueNum vn, TAssertV
             // still listed in ssaDef's pred list.
             BitVecOps::AddElemD(&traits, visitedBlocks, phiArg->gtPredBB->bbNum);
             continue;
+        }
+
+        if (!BitVecOps::IsMember(&traits, actualPreds, phiArg->gtPredBB->bbNum))
+        {
+            JITDUMP("... optVisitReachingAssertions in " FMT_BB ": phi-pred " FMT_BB " not a block pred\n",
+                    ssaDef->GetBlock()->bbNum, phiArg->gtPredBB->bbNum);
+
+            // We probably can just ignore this phi-pred if we know for sure phiArg->gtPredBB never reaches
+            // the ssaDef's block. For now, conservatively fail the phi inference in this case.
+            // Alternatively, we can request optRepeat here.
+            return AssertVisit::Abort;
         }
 
         // fgValueNumberPhiDef may leave gtVNPair as NoVN when it refuses to back-patch
@@ -6034,12 +6046,13 @@ Compiler::AssertVisit Compiler::optVisitReachingAssertions(ValueNum vn, TAssertV
             // The visitor wants to abort the walk.
             return AssertVisit::Abort;
         }
-        visitedPhiArg = true;
         BitVecOps::AddElemD(&traits, visitedBlocks, phiArg->gtPredBB->bbNum);
     }
 
     // Verify the set of phi-preds covers the set of block preds
     //
+    // We can just do BitVecOps::Equal(&traits, visitedBlocks, actualPreds), but
+    // re-iterating the preds is cheaper.
     for (BasicBlock* const pred : ssaDef->GetBlock()->PredBlocks())
     {
         if (!BitVecOps::IsMember(&traits, visitedBlocks, pred->bbNum))
@@ -6052,8 +6065,7 @@ Compiler::AssertVisit Compiler::optVisitReachingAssertions(ValueNum vn, TAssertV
             return AssertVisit::Abort;
         }
     }
-    // Do not accept an empty proof after skipping every input.
-    return visitedPhiArg ? AssertVisit::Continue : AssertVisit::Abort;
+    return AssertVisit::Continue;
 }
 
 /*****************************************************************************/
