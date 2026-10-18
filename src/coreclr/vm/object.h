@@ -1,13 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
+
 // OBJECT.H
 //
 // Definitions of a CLR Object
-//
 
 // See code:EEStartup#TableOfContents for overview
-
 
 #ifndef _OBJECT_H_
 #define _OBJECT_H_
@@ -414,9 +412,6 @@ inline void InitValueClass(void *dest, MethodTable *pMT)
     WRAPPER_NO_CONTRACT;
     ZeroMemoryInGCHeap(dest, pMT->GetNumInstanceFieldBytes());
 }
-
-// Initialize value class argument
-void InitValueClassArg(ArgDestination *argDest, MethodTable *pMT);
 
 #define SetObjectReference(_d,_r)        SetObjectReferenceUnchecked(_d, _r)
 #define CopyValueClass(_d,_s,_m)         CopyValueClassUnchecked(_d,_s,_m)
@@ -1175,10 +1170,14 @@ private:
     OBJECTREF     m_ExecutionContext;
     OBJECTREF     m_SynchronizationContext;
     STRINGREF     m_Name;
+#ifdef FEATURE_MULTITHREADING
     OBJECTREF     m_StartHelper;
+#endif // FEATURE_MULTITHREADING
 #ifdef TARGET_UNIX
     OBJECTREF     m_WaitInfo;
+#ifdef FEATURE_MULTITHREADING
     OBJECTREF     m_joinEvent;
+#endif // FEATURE_MULTITHREADING
 #endif // TARGET_UNIX
 
     // The next field (m_InternalThread) is declared as IntPtr in the managed
@@ -1234,11 +1233,13 @@ public:
 
     void      InitExisting();
 
+#ifdef FEATURE_MULTITHREADING
     void ResetStartHelper()
     {
         LIMITED_METHOD_CONTRACT
         m_StartHelper = NULL;
     }
+#endif // FEATURE_MULTITHREADING
 
     void SetPriority(INT32 priority)
     {

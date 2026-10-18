@@ -42,12 +42,18 @@ bool IntegralRange::Contains(int64_t value) const
 //   block      - the BasicBlock in which "tree" is being evaluated.
 //   assertions - the set of assertions to consider when computing the range. Can be null.
 //   fast       - fast is when we only use VN and assertions. slow is when we perform an SSA walk to compute the range.
+//   preferredBoundVN - (slow only) the bound VN to prefer for symbolic limits.
 //
 // Return Value:
 //    Range of possible values for "tree" based on the given assertions and block context.
 //    An unknown range if the range cannot be determined, or if the computation exceeds the visit budget.
 //
-static Range GetRange(Compiler* comp, GenTree* tree, BasicBlock* block, ASSERT_VALARG_TP assertions, bool fast = true)
+static Range GetRange(Compiler*        comp,
+                      GenTree*         tree,
+                      BasicBlock*      block,
+                      ASSERT_VALARG_TP assertions,
+                      bool             fast             = true,
+                      ValueNum         preferredBoundVN = ValueNumStore::NoVN)
 {
     assert(block != nullptr);
     assert(tree != nullptr);
@@ -73,9 +79,59 @@ static Range GetRange(Compiler* comp, GenTree* tree, BasicBlock* block, ASSERT_V
     }
 
     Range range = Limit(Limit::keUndef);
-    if (comp->GetRangeCheck(budget)->TryGetRange(block, tree, &range))
+    if (comp->GetRangeCheck(budget)->TryGetRange(block, tree, &range, preferredBoundVN))
     {
         return range;
+    }
+    return Limit(Limit::keUnknown);
+}
+
+//------------------------------------------------------------------------
+// GetBoundMinusXRange: Compute the range of "Bnd - X" (e.g. "span.Length - i") from
+//    the range of X computed relative to "Bnd".
+//
+// Arguments:
+//   comp  - the Compiler object.
+//   tree  - either the SUB node or a local defined by it.
+//   block - the BasicBlock in which "tree" is being evaluated.
+//   bndVN - the never negative checked bound.
+//
+// Return Value:
+//    Range of "tree", or an unknown range.
+//
+static Range GetBoundMinusXRange(Compiler* comp, GenTree* tree, BasicBlock* block, ValueNum bndVN)
+{
+    // Walk through local copies, e.g. CSE uses "tmp = cse" and defs "tmp = COMMA(STORE(cse, Bnd - X), cse)".
+    // SSA copy chains are acyclic (they end at a PHI or a non-local value), so this terminates.
+    tree = tree->gtEffectiveVal();
+    while (tree->OperIs(GT_LCL_VAR) && tree->AsLclVar()->HasSsaName())
+    {
+        LclVarDsc*           varDsc   = comp->lvaGetDesc(tree->AsLclVar());
+        LclSsaVarDsc*        ssaDef   = varDsc->GetPerSsaData(tree->AsLclVar()->GetSsaNum());
+        GenTreeLclVarCommon* defStore = ssaDef->GetDefNode();
+        if (!varDsc->TypeIs(TYP_INT) || (defStore == nullptr) || !defStore->OperIs(GT_STORE_LCL_VAR))
+        {
+            return Limit(Limit::keUnknown);
+        }
+        tree  = defStore->Data()->gtEffectiveVal();
+        block = ssaDef->GetBlock();
+    }
+
+    if (!tree->OperIs(GT_SUB) || !tree->TypeIs(TYP_INT) || (comp->optConservativeNormalVN(tree->gtGetOp1()) != bndVN))
+    {
+        return Limit(Limit::keUnknown);
+    }
+
+    // X in [lo, Bnd + k] with lo >= 0 and k <= 0 means that "Bnd - X" can't overflow and is in [-k, Bnd - lo].
+    // k == INT32_MIN is excluded since "-k" would overflow.
+    Range        xRange = GetRange(comp, tree->gtGetOp2(), block, BitVecOps::UninitVal(), /*fast*/ false, bndVN);
+    const Limit& xLo    = xRange.LowerLimit();
+    const Limit& xHi    = xRange.UpperLimit();
+    if (xLo.IsConstant() && (xLo.GetConstant() >= 0) && xHi.IsBinOpArray() && (xHi.vn == bndVN) &&
+        (xHi.GetConstant() <= 0) && (xHi.GetConstant() > INT32_MIN))
+    {
+        return Range(Limit(Limit::keConstant, -xHi.GetConstant()),
+                     Limit(Limit::keBinOpArray, bndVN, -xLo.GetConstant()));
     }
     return Limit(Limit::keUnknown);
 }
@@ -350,6 +406,11 @@ static void optAssertionProp_HWIntrinsic(Compiler* comp, GenTreeHWIntrinsic* tre
         case GT_CNS_INT:
         case GT_CNS_LNG:
         {
+            if (node->AsIntConCommon()->ImmedValNeedsReloc(compiler))
+            {
+                break;
+            }
+
             if (node->IsIntegralConst(0) || node->IsIntegralConst(1))
             {
                 return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::One};
@@ -2641,7 +2702,7 @@ bool Compiler::optAssertionVNIsSubtype(ValueNum objVN, ValueNum castToVN, ASSERT
 }
 
 //------------------------------------------------------------------------------
-// optVNBasedFoldExpr_Call_Memcmp: Folds NI_System_SpanHelpers_SequenceEqual for immutable data.
+// optVNBasedFoldExpr_Call_Memcmp: Folds NI_System_SpanHelpers_SequenceEqual for equal addresses or immutable data.
 //
 // Arguments:
 //    call - NI_System_SpanHelpers_SequenceEqual call to fold
@@ -2658,28 +2719,48 @@ GenTree* Compiler::optVNBasedFoldExpr_Call_Memcmp(GenTreeCall* call)
     CallArg* arg2   = call->gtArgs.GetUserArgByIndex(1);
     CallArg* lenArg = call->gtArgs.GetUserArgByIndex(2);
 
+    ValueNum lenVN             = optConservativeNormalVN(lenArg->GetNode());
+    size_t   len               = 0;
+    bool     hasConstantLength = vnStore->IsVNIntegralConstant(lenVN, &len);
+
+    // SequenceEqual(..., len == 0) => true, and does not dereference pointers
+    if (hasConstantLength && (len == 0))
+    {
+        JITDUMP("...length is 0 -> optimize to constant true.\n");
+        return gtWrapWithSideEffects(gtNewIconNode(1), call, GTF_ALL_EFFECT, true);
+    }
+
     // See if arguments are the same - in that case we can optimize to constant true
     ValueNum arg1VN = optConservativeNormalVN(arg1->GetNode());
     ValueNum arg2VN = optConservativeNormalVN(arg2->GetNode());
     if ((arg1VN != ValueNumStore::NoVN) && (arg1VN == arg2VN))
     {
+        bool couldBeNull = !vnStore->IsKnownNonNull(arg1VN) && fgAddrCouldBeNull(arg1->GetNode()) &&
+                           fgAddrCouldBeNull(arg2->GetNode());
+        if (couldBeNull && !hasConstantLength)
+        {
+            JITDUMP("...equal arguments may be null and length is not a constant - bail out.\n");
+            return nullptr;
+        }
+
+        GenTree* result = gtNewIconNode(1);
+        // Short nonempty sequences are dereferenced before checking whether the addresses are equal.
+        if (couldBeNull && (len < TARGET_POINTER_SIZE))
+        {
+            GenTree* first  = fgMakeMultiUse(&arg1->NodeRef());
+            GenTree* second = fgMakeMultiUse(&arg2->NodeRef());
+            result          = gtNewOperNode(GT_COMMA, TYP_INT, gtNewNullCheck(second), result);
+            result          = gtNewOperNode(GT_COMMA, TYP_INT, gtNewNullCheck(first), result);
+        }
+
         JITDUMP("...both arguments have the same VN -> optimize to constant true.\n");
-        return gtWrapWithSideEffects(gtNewIconNode(1), call, GTF_ALL_EFFECT, true);
+        return gtWrapWithSideEffects(result, call, GTF_ALL_EFFECT, true);
     }
 
-    ValueNum lenVN = optConservativeNormalVN(lenArg->GetNode());
-    size_t   len;
-    if (!vnStore->IsVNIntegralConstant(lenVN, &len))
+    if (!hasConstantLength)
     {
         JITDUMP("...length is not a constant - bail out.\n");
         return nullptr;
-    }
-
-    // SequenceEqual(..., len == 0) => true, and does not dereference pointers
-    if (len == 0)
-    {
-        JITDUMP("...length is 0 -> optimize to constant true.\n");
-        return gtWrapWithSideEffects(gtNewIconNode(1), call, GTF_ALL_EFFECT, true);
     }
 
     constexpr size_t maxLen = 65536; // Arbitrary threshold to avoid large buffer allocations
@@ -4446,6 +4527,59 @@ GenTree* Compiler::optAssertionProp_RelOp(ASSERT_VALARG_TP assertions,
 }
 
 //------------------------------------------------------------------------
+// optIsNeverNegativeCheckedBound: Check whether "vn" is a checked bound known to be never negative,
+//    which is required to express symbolic range limits with it.
+//
+// Arguments:
+//   vn         - the value number to check
+//   assertions - set of live assertions
+//
+// Returns:
+//   true if "vn" is a never negative checked bound.
+//
+bool Compiler::optIsNeverNegativeCheckedBound(ValueNum vn, ASSERT_VALARG_TP assertions)
+{
+    if (!vnStore->IsVNCheckedBound(vn))
+    {
+        return false;
+    }
+    Range rng = RangeCheck::GetRangeFromAssertions(this, vn, assertions);
+    return rng.LowerLimit().IsConstant() && (rng.LowerLimit().GetConstant() >= 0);
+}
+
+//------------------------------------------------------------------------
+// optGetPreferredBoundForRange: Pick a checked bound to express symbolic range limits of "vn" with.
+//
+// Arguments:
+//   vn         - the value number to compute the range for
+//   assertions - set of live assertions
+//
+// Returns:
+//   "Bnd" when there is a "vn relop (Bnd + cns)" assertion, NoVN otherwise.
+//
+ValueNum Compiler::optGetPreferredBoundForRange(ValueNum vn, ASSERT_VALARG_TP assertions)
+{
+    if (BitVecOps::MayBeUninit(assertions) || !optAssertionHasAssertionsForVN(vn))
+    {
+        return ValueNumStore::NoVN;
+    }
+
+    BitVecOps::Iter iter(apTraits, assertions);
+    unsigned        index = 0;
+    while (iter.NextElem(&index))
+    {
+        const AssertionDsc& curAssertion = optGetAssertion(GetAssertionIndex(index));
+        if (curAssertion.IsRelop() && (curAssertion.GetOp1().GetVN() == vn) &&
+            curAssertion.GetOp2().KindIs(O2K_VN_ADD_CNS) &&
+            optIsNeverNegativeCheckedBound(curAssertion.GetOp2().GetVN(), assertions))
+        {
+            return curAssertion.GetOp2().GetVN();
+        }
+    }
+    return ValueNumStore::NoVN;
+}
+
+//------------------------------------------------------------------------
 // optAssertionProp: try and optimize a relop via assertion propagation
 //
 // Arguments:
@@ -4589,14 +4723,38 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
             }
 
             // Perform a slow, SSA-based range check analysis.
-            if (!relopRange.IsSingleValueConstant(&relopResult) &&
-                // The few checks below ensure this analysis
-                // is only performed when beneficial according to SPMI, keeping the TP impact low.
-                op1->TypeIs(TYP_INT) && op2->IsIntCnsFitsInI32() && tree->OperIs(GT_LE, GT_LT, GT_GE, GT_GT))
+            // The few checks below ensure this analysis is only performed when beneficial
+            // according to SPMI, keeping the TP impact low.
+            if (!relopRange.IsSingleValueConstant(&relopResult) && op1->TypeIs(TYP_INT) &&
+                tree->OperIs(GT_LE, GT_LT, GT_GE, GT_GT))
             {
-                Range op1Rng = GetRange(this, op1, block, assertions, /*fast*/ false);
-                Range op2Rng = GetRange(this, op2, block, assertions, /*fast*/ false);
-                relopRange   = RangeOps::EvalRelop(tree->OperGet(), tree->IsUnsigned(), op1Rng, op2Rng);
+                if (op2->IsIntCnsFitsInI32())
+                {
+                    Range    op1Rng = Limit(Limit::keUnknown);
+                    ValueNum bndVN;
+                    if (vnStore->IsVNBinFunc(op1VN, VNF_SUB, &bndVN) &&
+                        optIsNeverNegativeCheckedBound(bndVN, assertions))
+                    {
+                        op1Rng = GetBoundMinusXRange(this, op1, block, bndVN);
+                    }
+
+                    if (op1Rng.LowerLimit().IsUnknown())
+                    {
+                        op1Rng = GetRange(this, op1, block, assertions, /*fast*/ false,
+                                          optGetPreferredBoundForRange(op1VN, assertions));
+                    }
+                    Range op2Rng = GetRange(this, op2, block, assertions, /*fast*/ false);
+                    relopRange   = RangeOps::EvalRelop(tree->OperGet(), tree->IsUnsigned(), op1Rng, op2Rng);
+                }
+                else if (tree->OperIs(GT_GT, GT_LE) && tree->IsUnsigned() && op2->TypeIs(TYP_INT) &&
+                         optIsNeverNegativeCheckedBound(op2VN, assertions))
+                {
+                    // "(uint)X > (uint)Bnd", e.g. "(uint)start > (uint)_length" in Span.Slice.
+                    // LT/GE forms are mostly loop conditions that aren't worth the TP.
+                    Range op1Rng = GetRange(this, op1, block, assertions, /*fast*/ false, op2VN);
+                    relopRange   = RangeOps::EvalRelop(tree->OperGet(), /*isUnsigned*/ true, op1Rng,
+                                                       Range(Limit(Limit::keBinOpArray, op2VN, 0)));
+                }
             }
 
             if (relopRange.IsSingleValueConstant(&relopResult))

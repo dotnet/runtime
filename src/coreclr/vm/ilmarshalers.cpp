@@ -14,7 +14,6 @@
 #ifdef FEATURE_COMINTEROP
 #include "olevariant.h"
 #endif // FEATURE_COMINTEROP
-#include "comdatetime.h"
 #include "fieldmarshaler.h"
 
 LocalDesc ILReflectionObjectMarshaler::GetManagedType()
@@ -1058,9 +1057,7 @@ namespace
     {
         CONTRACTL
         {
-            THROWS;
-            GC_TRIGGERS;
-            MODE_PREEMPTIVE;
+            STANDARD_VM_CHECK;
             PRECONDITION(CheckPointer(pMT));
         }
         CONTRACTL_END;

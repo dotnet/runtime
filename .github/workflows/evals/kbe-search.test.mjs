@@ -133,11 +133,12 @@ for (const workflowId of ["ci-failure-scan", "ci-failure-scan-feedback"]) {
 
         const compiled = await readFile(new URL(`../${workflowId}.lock.yml`, import.meta.url), "utf8");
         const executionSteps = [...compiled.matchAll(
-            /^      - name: Execute GitHub Copilot CLI\r?\n([\s\S]*?)(?=^      - )/gm
+            /^      - name: [^\r\n]+\r?\n        id: (agentic_execution|detection_agentic_execution)\r?\n([\s\S]*?)(?=^      - |^  \S|(?![\s\S]))/gm
         )];
-        assert.equal(executionSteps.length, 2, "expected agent and detection Copilot execution steps");
-        for (const [, step] of executionSteps) {
-            assert.match(step, /^          COPILOT_PROVIDER_WIRE_API: responses\r?$/m);
+        for (const stepId of ["agentic_execution", "detection_agentic_execution"]) {
+            const steps = executionSteps.filter(([, id]) => id === stepId);
+            assert.equal(steps.length, 1, `expected one ${stepId} execution step`);
+            assert.match(steps[0][2], /^          COPILOT_PROVIDER_WIRE_API: responses\r?$/m);
         }
     });
 }

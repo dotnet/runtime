@@ -11,6 +11,7 @@ using System.Security.Authentication;
 using System.Security.Authentication.ExtendedProtection;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace System.Net.Security
@@ -20,6 +21,8 @@ namespace System.Net.Security
 
 
         private SafeFreeCredentials? _credentialsHandle;
+        // Keeps a cache hit alive until SSPI has retained its own credential reference.
+        private SafeFreeCredentials? _cachedCredentialsHandle;
 
 #if TARGET_APPLE
         // on OSX, we have two implementations of SafeDeleteContext, so store a reference to the base class
@@ -145,9 +148,13 @@ namespace System.Net.Security
 
             _securityContext?.Dispose();
             _credentialsHandle?.Dispose();
+            ReleaseCachedCredentials();
 
             _sslAuthenticationOptions.Dispose();
         }
+
+        private void ReleaseCachedCredentials() =>
+            Interlocked.Exchange(ref _cachedCredentialsHandle, null)?.DangerousRelease();
 
         //
         // SECURITY: we open a private key container on behalf of the caller
@@ -544,6 +551,8 @@ namespace System.Net.Security
 
         internal bool AcquireClientCredentials(ref byte[]? thumbPrint, bool newCredentialsRequested = false)
         {
+            ReleaseCachedCredentials();
+
             // Acquire possible Client Certificate information and set it on the handle.
             bool cachedCred = false;                   // this is a return result from this method.
 
@@ -578,6 +587,7 @@ namespace System.Net.Security
                     sendTrustList: false,
                     _sslAuthenticationOptions.AllowRsaPssPadding,
                     _sslAuthenticationOptions.AllowRsaPkcs1Padding);
+                Volatile.Write(ref _cachedCredentialsHandle, cachedCredentialHandle);
 
                 // We can probably do some optimization here. If the selectedCert is returned by the delegate
                 // we can always go ahead and use the certificate to create our credential
@@ -650,6 +660,8 @@ namespace System.Net.Security
         //
         private bool AcquireServerCredentials(ref byte[]? thumbPrint)
         {
+            ReleaseCachedCredentials();
+
             X509Certificate? localCertificate = null;
             X509Certificate2? selectedCert = null;
             bool cachedCred = false;
@@ -731,6 +743,7 @@ namespace System.Net.Security
                                                                 sendTrustedList,
                                                                 _sslAuthenticationOptions.AllowRsaPssPadding,
                                                                 _sslAuthenticationOptions.AllowRsaPkcs1Padding);
+            Volatile.Write(ref _cachedCredentialsHandle, cachedCredentialHandle);
             if (cachedCredentialHandle != null)
             {
                 _credentialsHandle = cachedCredentialHandle;
@@ -845,10 +858,6 @@ namespace System.Net.Security
             // _credentialsHandle may be always null on some platforms but
             // _securityContext will be allocated on first call.
             bool refreshCredentialNeeded = _securityContext == null;
-            //
-            // Looping through ASC or ISC with potentially cached credential that could have been
-            // already disposed from a different thread before ISC or ASC dir increment a cred ref count.
-            //
             try
             {
                 do
@@ -929,6 +938,7 @@ namespace System.Net.Security
             }
             finally
             {
+                ReleaseCachedCredentials();
                 if (refreshCredentialNeeded)
                 {
                     //

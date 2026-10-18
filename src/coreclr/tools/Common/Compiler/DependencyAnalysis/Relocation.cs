@@ -65,6 +65,7 @@ namespace ILCompiler.DependencyAnalysis
         WASM_CLR_RESTORE_CONTEXT_EXCEPTION_TAG_LEB = 0x20B, // Wasm: an exception tag index encoded as a 5-byte varuint32. Used to refer to the CoreCLR restore context exception tag.
         WASM_METHOD_RELATIVE_VIRTUAL_IP_I32 = 0x20C, // Wasm: a method virtual IP relative to the image virtual IP base, stored as a 4-byte uint32.
         WASM_ASYNC_RESUME_INFO_DELTA_ULEB = 0x20D, // Wasm: an image-relative delta to an async resume info fixup chunk, encoded as ULEB128.
+        WASM_METHOD_FRAME_IDENTITY_SLEB = 0x20E, // Wasm: negative odd CoreLib runtime-function identity, encoded as SLEB128.
 
         //
         // Relocation operators related to TLS access
@@ -681,6 +682,7 @@ namespace ILCompiler.DependencyAnalysis
                     return;
 
                 case RelocType.WASM_TABLE_INDEX_SLEB:
+                case RelocType.WASM_METHOD_FRAME_IDENTITY_SLEB:
                 case RelocType.WASM_MEMORY_ADDR_SLEB:
                 case RelocType.WASM_MEMORY_ADDR_REL_SLEB:
                     DwarfHelper.WritePaddedSLEB128(new Span<byte>((byte*)location, WASM_PADDED_RELOC_SIZE_32), value);
@@ -716,6 +718,7 @@ namespace ILCompiler.DependencyAnalysis
                     return (int)DwarfHelper.SizeOfULEB128((ulong)value);
 
                 case RelocType.WASM_TABLE_INDEX_SLEB:
+                case RelocType.WASM_METHOD_FRAME_IDENTITY_SLEB:
                 case RelocType.WASM_MEMORY_ADDR_SLEB:
                 case RelocType.WASM_MEMORY_ADDR_REL_SLEB:
                     DwarfHelper.WriteSLEB128(new Span<byte>((byte*)location, WASM_PADDED_RELOC_SIZE_32), value);
@@ -757,6 +760,7 @@ namespace ILCompiler.DependencyAnalysis
 
                 RelocType.WASM_FUNCTION_INDEX_LEB => WASM_PADDED_RELOC_SIZE_32,
                 RelocType.WASM_TABLE_INDEX_SLEB => WASM_PADDED_RELOC_SIZE_32,
+                RelocType.WASM_METHOD_FRAME_IDENTITY_SLEB => WASM_PADDED_RELOC_SIZE_32,
                 RelocType.WASM_TYPE_INDEX_LEB => WASM_PADDED_RELOC_SIZE_32,
                 RelocType.WASM_GLOBAL_INDEX_LEB => WASM_PADDED_RELOC_SIZE_32,
                 RelocType.WASM_MEMORY_ADDR_LEB => WASM_PADDED_RELOC_SIZE_32,
@@ -780,6 +784,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 RelocType.WASM_FUNCTION_INDEX_LEB or
                 RelocType.WASM_TABLE_INDEX_SLEB or
+                RelocType.WASM_METHOD_FRAME_IDENTITY_SLEB or
                 RelocType.WASM_TYPE_INDEX_LEB or
                 RelocType.WASM_GLOBAL_INDEX_LEB or
                 RelocType.WASM_MEMORY_ADDR_LEB or
@@ -806,6 +811,7 @@ namespace ILCompiler.DependencyAnalysis
                 case RelocType.WASM_ASYNC_RESUME_INFO_DELTA_ULEB:
                     return (int)DwarfHelper.SizeOfULEB128((ulong)resolvedValue);
                 case RelocType.WASM_TABLE_INDEX_SLEB:
+                case RelocType.WASM_METHOD_FRAME_IDENTITY_SLEB:
                 case RelocType.WASM_MEMORY_ADDR_SLEB:
                 case RelocType.WASM_MEMORY_ADDR_REL_SLEB:
                     return (int)DwarfHelper.SizeOfSLEB128(resolvedValue);
@@ -882,6 +888,7 @@ namespace ILCompiler.DependencyAnalysis
                 case RelocType.WASM_ASYNC_RESUME_INFO_DELTA_ULEB:
                     return checked((long)DwarfHelper.ReadULEB128(new ReadOnlySpan<byte>(location, WASM_PADDED_RELOC_SIZE_32)));
                 case RelocType.WASM_TABLE_INDEX_SLEB:
+                case RelocType.WASM_METHOD_FRAME_IDENTITY_SLEB:
                 case RelocType.WASM_MEMORY_ADDR_SLEB:
                 case RelocType.WASM_MEMORY_ADDR_REL_SLEB:
                     return DwarfHelper.ReadSLEB128(new ReadOnlySpan<byte>(location, WASM_PADDED_RELOC_SIZE_32));
