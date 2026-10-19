@@ -57,7 +57,7 @@ public static class HalfEstimateR2R
             UseShellExecute = false,
         };
         startInfo.ArgumentList.Add("exec");
-        startInfo.ArgumentList.Add(Path.Combine(coreRoot, "r2rdump", "r2rdump.dll"));
+        startInfo.ArgumentList.Add(Path.Combine(coreRoot, "R2RDump", "R2RDump.dll"));
         startInfo.ArgumentList.Add("--in");
         startInfo.ArgumentList.Add(imagePath);
         startInfo.ArgumentList.Add("--query");

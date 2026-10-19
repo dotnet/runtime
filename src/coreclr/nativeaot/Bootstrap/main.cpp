@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include <stdlib.h>
 #include <minipal/descriptorlimit.h>
 
 #if defined(DEBUG) && defined(_WIN32)
@@ -150,16 +151,22 @@ MANAGED_RUNTIME_EXPORT(ObjectiveCMarshalGetUnhandledExceptionPropagationHandler)
 
 typedef void (MANAGED_RUNTIME_EXPORT_CALLCONV *pfn)();
 
+#ifdef FEATURE_MULTITHREADING
 #if defined(_WIN32)
 extern "C" int ThreadEntryPoint(void* pContext);
 #else
 extern "C" size_t ThreadEntryPoint(void* pContext);
 #endif
+#endif // FEATURE_MULTITHREADING
 
 static const pfn c_classlibFunctions[] = {
     &MANAGED_RUNTIME_EXPORT_NAME(GetRuntimeException),
     &MANAGED_RUNTIME_EXPORT_NAME(RuntimeFailFast),
+#ifdef FEATURE_MULTITHREADING
     (pfn)&ThreadEntryPoint,
+#else
+    nullptr,
+#endif
     &MANAGED_RUNTIME_EXPORT_NAME(AppendExceptionStackFrame),
     &MANAGED_RUNTIME_EXPORT_NAME(ResolveDispatch),
     &MANAGED_RUNTIME_EXPORT_NAME(GetSystemArrayEEType),
@@ -254,6 +261,9 @@ int main(int argc, char* argv[])
     int exitCode = __managed__Main(argc, argv);
     _cexit();
     ExitProcess(exitCode);
+#elif defined(TARGET_WASI)
+    // Returning from WASI Preview 2 main reduces the exit code to a boolean result.
+    exit(__managed__Main(argc, argv));
 #else
     return __managed__Main(argc, argv);
 #endif

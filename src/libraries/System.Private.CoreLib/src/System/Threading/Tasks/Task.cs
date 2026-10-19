@@ -3157,8 +3157,6 @@ namespace System.Threading.Tasks
             }
             else
             {
-                RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
-
                 returnValue = SpinThenBlockingWait(millisecondsTimeout, cancellationToken);
             }
 
@@ -3209,13 +3207,24 @@ namespace System.Threading.Tasks
         /// <returns>true if the task is completed; otherwise, false.</returns>
         private bool SpinThenBlockingWait(int millisecondsTimeout, CancellationToken cancellationToken)
         {
+            if (!RuntimeFeature.IsMultithreadingSupported)
+            {
+                if (IsCompleted)
+                {
+                    return true;
+                }
+                if (millisecondsTimeout == 0)
+                {
+                    return false;
+                }
+                RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
+            }
+
             bool infiniteWait = millisecondsTimeout == Timeout.Infinite;
             uint startTimeTicks = infiniteWait ? 0 : (uint)Environment.TickCount;
             bool returnValue = SpinWait(millisecondsTimeout);
             if (!returnValue)
             {
-                RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
-
                 // We're about to block waiting for the task to complete, which is expensive, and if
                 // the task being waited on depends on some other work to run, this thread could end up
                 // waiting for some other thread to do work. If the two threads are part of the same scheduler,
@@ -3294,10 +3303,7 @@ namespace System.Threading.Tasks
         {
             if (IsCompleted) return true;
 
-            if (!RuntimeFeature.IsMultithreadingSupported)
-            {
-                return false;
-            }
+            Debug.Assert(RuntimeFeature.IsMultithreadingSupported);
 
             if (millisecondsTimeout == 0)
             {
@@ -5135,8 +5141,6 @@ namespace System.Threading.Tasks
             // If any of the waited-upon tasks end as Faulted or Canceled, set these to true.
             bool exceptionSeen = false, cancellationSeen = false;
 
-            bool returnValue = true;
-
             // Collects incomplete tasks in "waitedOnTaskList"
             for (int i = tasks.Length - 1; i >= 0; i--)
             {
@@ -5175,29 +5179,35 @@ namespace System.Threading.Tasks
 
             if (waitedOnTaskList != null)
             {
-                RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
+                if (!RuntimeFeature.IsMultithreadingSupported)
+                {
+                    if (millisecondsTimeout != 0)
+                        RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
+
+                    return false;
+                }
 
                 // Block waiting for the tasks to complete.
-                returnValue = WaitAllBlockingCore(waitedOnTaskList, millisecondsTimeout, cancellationToken);
-
-                // If the wait didn't time out, ensure exceptions are propagated, and if a debugger is
-                // attached and one of these tasks requires it, that we notify the debugger of a wait completion.
-                if (returnValue)
+                if (!WaitAllBlockingCore(waitedOnTaskList, millisecondsTimeout, cancellationToken))
                 {
-                    // Add any exceptions for this task to the collection, and if it's wait
-                    // notification bit is set, store it to operate on at the end.
-                    foreach (Task task in waitedOnTaskList)
-                    {
-                        if (task.IsFaulted) exceptionSeen = true;
-                        else if (task.IsCanceled) cancellationSeen = true;
-                        if (task.IsWaitNotificationEnabled) AddToList(task, ref notificationTasks, initSize: 1);
-                    }
+                    return false;
+                }
+
+                // The wait didn't time out, so ensure exceptions are propagated, and if a debugger is
+                // attached and one of these tasks requires it, that we notify the debugger of a wait completion.
+                // Add any exceptions for this task to the collection, and if it's wait
+                // notification bit is set, store it to operate on at the end.
+                foreach (Task task in waitedOnTaskList)
+                {
+                    if (task.IsFaulted) exceptionSeen = true;
+                    else if (task.IsCanceled) cancellationSeen = true;
+                    if (task.IsWaitNotificationEnabled) AddToList(task, ref notificationTasks, initSize: 1);
                 }
             }
 
-            // Now that we're done and about to exit, if the wait completed and if we have
+            // Now that we're done and about to exit, if we have
             // any tasks with a notification bit set, signal the debugger if any requires it.
-            if (returnValue && notificationTasks != null)
+            if (notificationTasks != null)
             {
                 // Loop through each task tha that had its bit set, and notify the debugger
                 // about the first one that requires it.  The debugger will reset the bit
@@ -5210,7 +5220,7 @@ namespace System.Threading.Tasks
             }
 
             // If one or more threw exceptions, aggregate and throw them.
-            if (returnValue && (exceptionSeen || cancellationSeen))
+            if (exceptionSeen || cancellationSeen)
             {
                 // If the WaitAll was canceled and tasks were canceled but not faulted,
                 // prioritize throwing an OCE for canceling the WaitAll over throwing an
@@ -5225,7 +5235,7 @@ namespace System.Threading.Tasks
                 ThrowHelper.ThrowAggregateException(exceptions);
             }
 
-            return returnValue;
+            return true;
         }
 
         /// <summary>Adds an element to the list, initializing the list if it's null.</summary>
@@ -5249,8 +5259,7 @@ namespace System.Threading.Tasks
         {
             Debug.Assert(tasks != null, "Expected a non-null list of tasks");
             Debug.Assert(tasks.Count > 0, "Expected at least one task");
-
-            RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
+            Debug.Assert(RuntimeFeature.IsMultithreadingSupported);
 
             bool waitCompleted = false;
             var mres = new SetOnCountdownMres(tasks.Count);
@@ -5517,7 +5526,13 @@ namespace System.Threading.Tasks
 
             if (signaledTaskIndex == -1 && tasks.Length != 0)
             {
-                RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
+                if (!RuntimeFeature.IsMultithreadingSupported)
+                {
+                    if (millisecondsTimeout != 0)
+                        RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
+
+                    return -1;
+                }
 
                 Task<Task> firstCompleted = TaskFactory.CommonCWAnyLogic(tasks, isSyncBlocking: true);
                 bool waitCompleted = firstCompleted.Wait(millisecondsTimeout, cancellationToken);

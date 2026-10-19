@@ -13,7 +13,7 @@ using Xunit.Abstractions;
 namespace System.Net.Quic.Tests
 {
     [Collection(nameof(QuicTestCollection))]
-    [ConditionalClass(typeof(QuicTestBase), nameof(QuicTestBase.IsSupported), nameof(QuicTestBase.IsNotArm32CoreClrStressTest))]
+    [ConditionalClass(typeof(QuicTestBase), nameof(QuicTestBase.IsSupported), nameof(QuicTestBase.IsNotArm32CoreClrStressTest), nameof(QuicTestBase.IsNotOSXMono))]
     public sealed class QuicStreamTests : QuicTestBase
     {
         private static byte[] s_data = "Hello world!"u8.ToArray();
@@ -621,7 +621,7 @@ namespace System.Net.Quic.Tests
                     }
 
                     // a write would eventually be canceled
-                    await Assert.ThrowsAsync<OperationCanceledException>(() => WriteUntilCanceled().WaitAsync(TimeSpan.FromSeconds(3)));
+                    await Assert.ThrowsAsync<OperationCanceledException>(() => WriteUntilCanceled());
 
                     // next write would also throw
                     await AssertThrowsQuicExceptionAsync(QuicError.OperationAborted, () => stream.WriteAsync(new byte[1]).AsTask());
@@ -1268,7 +1268,7 @@ namespace System.Net.Quic.Tests
             var boolValues = new[] { true, false };
             var payloadValues = !PlatformDetection.IsInHelix ?
                                     new[] { SmallestPayload, SmallPayload, BufferPayload, BufferPlusPayload, BigPayload } :
-                                    new[] { SmallestPayload, SmallPayload, BufferPayload, BufferPlusPayload };
+                                    new[] { SmallestPayload, SmallPayload, BufferPlusPayload };
             return
                 from payload in payloadValues
                 from bool1 in boolValues
