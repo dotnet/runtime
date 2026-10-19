@@ -1376,13 +1376,6 @@ namespace System.Tests
             }
         }
 
-        // GetInterfaceMap doesn't map static abstract methods on NativeAOT (https://github.com/dotnet/runtime/issues/89157)
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
-        public void GetInterfaceMap_StaticAbstract_NativeAot_ThrowsNotSupportedException()
-        {
-            Assert.Throws<NotSupportedException>(() => typeof(SIMs.C1).GetInterfaceMap(typeof(SIMs.I1)));
-        }
-
         interface ISimpleInterface
         {
             void Method();

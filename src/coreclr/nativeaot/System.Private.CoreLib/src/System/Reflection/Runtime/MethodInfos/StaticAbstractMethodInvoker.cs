@@ -63,7 +63,7 @@ namespace System.Reflection.Runtime.MethodInfos
 
         public sealed override Delegate CreateDelegate(RuntimeTypeHandle delegateType, object target, bool isStatic, bool isVirtual, bool isOpen)
         {
-            throw CreateException();
+            throw new MemberAccessException(SR.Acc_BindStaticAbstract);
         }
 
         public sealed override IntPtr LdFtnResult

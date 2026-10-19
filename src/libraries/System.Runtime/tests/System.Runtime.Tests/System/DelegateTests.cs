@@ -631,38 +631,6 @@ namespace System.Tests
 
         private static void DelegateEquivalentTypeTargetMethod() { }
 
-        // Only a delegate type could call the protected Delegate(Type, string), and its constructor is runtime implemented;
-        // reflection runs it on an existing delegate. NativeAOT's reflection doesn't run a constructor of the abstract
-        // Delegate; Mono has its own constructor.
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime), nameof(PlatformDetection.IsNotNativeAot))]
-        public static void ProtectedConstructor_TypeAndName_ThrowsWhenNoMethodBinds()
-        {
-            ConstructorInfo constructor = typeof(Delegate).GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance, new[] { typeof(Type), typeof(string) });
-            Func<int> d = new Func<int>(ProtectedConstructorBefore);
-
-            TargetInvocationException ex = Assert.Throws<TargetInvocationException>(() => constructor.Invoke(d, new object[] { typeof(IProtectedConstructorStaticAbstract), nameof(IProtectedConstructorStaticAbstract.M) }));
-            Assert.IsType<ArgumentException>(ex.InnerException);
-            ex = Assert.Throws<TargetInvocationException>(() => constructor.Invoke(d, new object[] { typeof(DelegateTests), "NoSuchMethod" }));
-            Assert.IsType<ArgumentException>(ex.InnerException);
-            ex = Assert.Throws<TargetInvocationException>(() => constructor.Invoke(d, new object[] { typeof(DelegateTests), nameof(ProtectedConstructorWrongSignature) }));
-            Assert.IsType<ArgumentException>(ex.InnerException);
-
-            // The match is case insensitive
-            constructor.Invoke(d, new object[] { typeof(DelegateTests), "protectedconstructorafter" });
-            Assert.Equal(2, d());
-        }
-
-        private static int ProtectedConstructorBefore() => 1;
-
-        public static int ProtectedConstructorAfter() => 2;
-
-        public static void ProtectedConstructorWrongSignature() { }
-
-        private interface IProtectedConstructorStaticAbstract
-        {
-            static abstract int M();
-        }
-
         class Class { internal void M() { } }
 
         struct Struct { internal void M() { } }

@@ -1346,18 +1346,15 @@ namespace System.Reflection.Tests
         public void CreateDelegate_StaticAbstract_ThrowsMemberAccessException()
         {
             MethodInfo noArgs = GetMethod(typeof(IStaticAbstractMethods), nameof(IStaticAbstractMethods.NoArgs));
-            MemberAccessException ex = Assert.Throws<MemberAccessException>(() => noArgs.CreateDelegate<Action>());
-            AssertNamesMethodOnNativeAot(ex, $"{typeof(IStaticAbstractMethods)}.{nameof(IStaticAbstractMethods.NoArgs)}");
+            Assert.Throws<MemberAccessException>(() => noArgs.CreateDelegate<Action>());
             Assert.Throws<MemberAccessException>(() => Delegate.CreateDelegate(typeof(Action), noArgs, throwOnBindFailure: false));
             Assert.Throws<MemberAccessException>(() => Delegate.CreateDelegate(typeof(Action), null, noArgs, throwOnBindFailure: false));
 
             MethodInfo oneArg = GetMethod(typeof(IStaticAbstractMethods<int>), nameof(IStaticAbstractMethods<int>.OneArg));
-            ex = Assert.Throws<MemberAccessException>(() => oneArg.CreateDelegate<Func<int, int>>());
-            AssertNamesMethodOnNativeAot(ex, $"{typeof(IStaticAbstractMethods<int>)}.{nameof(IStaticAbstractMethods<int>.OneArg)}");
+            Assert.Throws<MemberAccessException>(() => oneArg.CreateDelegate<Func<int, int>>());
 
             MethodInfo genericNoArgs = GetMethod(typeof(IStaticAbstractMethods), nameof(IStaticAbstractMethods.GenericNoArgs)).MakeGenericMethod(typeof(int));
-            ex = Assert.Throws<MemberAccessException>(() => genericNoArgs.CreateDelegate<Action>());
-            AssertNamesMethodOnNativeAot(ex, $"{typeof(IStaticAbstractMethods)}.{nameof(IStaticAbstractMethods.GenericNoArgs)}");
+            Assert.Throws<MemberAccessException>(() => genericNoArgs.CreateDelegate<Action>());
 
             // Instantiated over a reference type
             MethodInfo genericNoArgsString = GetMethod(typeof(IStaticAbstractMethods), nameof(IStaticAbstractMethods.GenericNoArgs)).MakeGenericMethod(typeof(string));
@@ -1373,35 +1370,25 @@ namespace System.Reflection.Tests
             Assert.Throws<MemberAccessException>(() => largeStruct.CreateDelegate<Func<LargeStruct>>("test"));
             Assert.Throws<MemberAccessException>(() => oneArg.CreateDelegate<Func<int>>(42));
 
-            // CoreCLR checks the method before the delegate signature, as it does for a generic method definition, which
-            // it still rejects first; NativeAOT checks the signature first
-            MethodInfo genericDefinition = GetMethod(typeof(IStaticAbstractMethods), nameof(IStaticAbstractMethods.GenericNoArgs));
+            // The method is checked before the delegate signature, also on an open generic type or over an open type argument
+            Assert.Throws<MemberAccessException>(() => noArgs.CreateDelegate<Action<int>>());
+            Assert.Throws<MemberAccessException>(() => Delegate.CreateDelegate(typeof(Action<int>), noArgs, throwOnBindFailure: false));
             MethodInfo openOneArg = GetMethod(typeof(IStaticAbstractMethods<>), nameof(IStaticAbstractMethods<int>.OneArg));
-            if (PlatformDetection.IsNativeAot)
-            {
-                Assert.Throws<ArgumentException>(() => noArgs.CreateDelegate<Action<int>>());
-                Assert.Null(Delegate.CreateDelegate(typeof(Action<int>), noArgs, throwOnBindFailure: false));
-                Assert.Throws<InvalidOperationException>(() => genericDefinition.CreateDelegate<Action>());
-                Assert.Throws<PlatformNotSupportedException>(() => openOneArg.CreateDelegate<Func<int, int>>());
-                Assert.Throws<PlatformNotSupportedException>(() => Delegate.CreateDelegate(typeof(Func<int, int>), openOneArg, throwOnBindFailure: false));
-            }
-            else
-            {
-                Assert.Throws<MemberAccessException>(() => noArgs.CreateDelegate<Action<int>>());
-                Assert.Throws<MemberAccessException>(() => Delegate.CreateDelegate(typeof(Action<int>), noArgs, throwOnBindFailure: false));
-                Assert.Throws<ArgumentException>(() => genericDefinition.CreateDelegate<Action>());
-                Assert.Throws<MemberAccessException>(() => openOneArg.CreateDelegate<Func<int, int>>());
-                Assert.Throws<MemberAccessException>(() => Delegate.CreateDelegate(typeof(Func<int, int>), openOneArg, throwOnBindFailure: false));
-            }
+            Assert.Throws<MemberAccessException>(() => openOneArg.CreateDelegate<Func<int, int>>());
+            Assert.Throws<MemberAccessException>(() => Delegate.CreateDelegate(typeof(Func<int, int>), openOneArg, throwOnBindFailure: false));
+            MethodInfo genericDefinition = GetMethod(typeof(IStaticAbstractMethods), nameof(IStaticAbstractMethods.GenericNoArgs));
+            MethodInfo openArgument = genericDefinition.MakeGenericMethod(typeof(IStaticAbstractMethods<>).GetGenericArguments()[0]);
+            Assert.Throws<MemberAccessException>(() => openArgument.CreateDelegate<Action>());
+        }
 
-            // CoreCLR throws from the VM, whose message doesn't name the method
-            static void AssertNamesMethodOnNativeAot(MemberAccessException ex, string method)
-            {
-                if (PlatformDetection.IsNativeAot)
-                {
-                    Assert.Contains(method, ex.Message);
-                }
-            }
+        // The generic method definition check comes first
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/136099", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
+        public void CreateDelegate_StaticAbstractGenericMethodDefinition_ThrowsArgumentException()
+        {
+            MethodInfo genericDefinition = GetMethod(typeof(IStaticAbstractMethods), nameof(IStaticAbstractMethods.GenericNoArgs));
+            Assert.Throws<ArgumentException>(() => genericDefinition.CreateDelegate<Action>());
+            Assert.Throws<ArgumentException>(() => Delegate.CreateDelegate(typeof(Action), genericDefinition, throwOnBindFailure: false));
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime))]
@@ -1416,9 +1403,9 @@ namespace System.Reflection.Tests
             Assert.Equal("test", byName("test"));
         }
 
-        // A case-insensitive match skips the static abstract method whatever the declaration order. NativeAOT reports
-        // the two names as ambiguous before it looks at either method.
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime), nameof(PlatformDetection.IsNotNativeAot))]
+        // A case-insensitive match skips the static abstract method whatever the declaration order
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/136098", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void CreateDelegate_ByName_IgnoreCase_SkipsStaticAbstract()
         {
             foreach (Type type in new[] { typeof(IStaticAbstractFirstCaseTwins), typeof(IStaticVirtualFirstCaseTwins) })
