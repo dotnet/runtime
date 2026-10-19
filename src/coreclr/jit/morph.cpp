@@ -9096,7 +9096,7 @@ GenTree* Compiler::fgOptimizeRelationalComparisonWithFullRangeConst(GenTreeOp* c
 {
     assert(cmp->OperIsCmpCompare());
 
-    if (gtTreeHasSideEffects(cmp, GTF_SIDE_EFFECT))
+    if (gtTreeHasSideEffects(cmp, GTF_OBS_EFFECT))
     {
         return cmp;
     }
