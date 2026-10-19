@@ -78,6 +78,9 @@ namespace ILCompiler
                 var hashCode = default(HashCode);
                 hashCode.AddBytes(data.Data);
 
+                if (factory.Target.IsWasm)
+                    hashCode.Add(WasmLowering.GetSignature(node.Method).FuncType);
+
                 // Hash relocations consistently with MethodInternComparer.AreSame so that bodies that only differ
                 // in their relocation targets (e.g. instantiations over different struct state machines)
                 // don't all end up in the same bucket.
