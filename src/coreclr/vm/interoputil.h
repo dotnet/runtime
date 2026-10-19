@@ -264,7 +264,7 @@ ULONG GetStringizedClassItfDef(TypeHandle InterfaceType, CQuickArray<BYTE> &rDef
 
 //--------------------------------------------------------------------------------
 // Helper to get the GUID of a class interface.
-void GenerateClassItfGuid(TypeHandle InterfaceType, GUID *pGuid);
+GUID GenerateClassItfGuid(TypeHandle InterfaceType);
 
 // Try/Catch wrapped version of the method.
 HRESULT TryGenerateClassItfGuid(TypeHandle InterfaceType, GUID *pGuid);
