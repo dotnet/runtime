@@ -34,8 +34,7 @@ namespace System.Reflection.Runtime.Assemblies.NativeFormat
             get
             {
                 MetadataReader reader = Scope.Reader;
-                TypeDefinitionGroup typeDefinitionGroup = Scope.ScopeDefinition.TypeDefinitionGroup.GetTypeDefinitionGroup(reader);
-                IEnumerable<TypeDefinitionHandle> allTopLevelTypes = typeDefinitionGroup.TypeDefinitions.AsEnumerable();
+                IEnumerable<TypeDefinitionHandle> allTopLevelTypes = Scope.ScopeDefinition.TypeDefinitions.AsEnumerable();
                 IEnumerable<TypeDefinitionHandle> allTypes = reader.GetTransitiveTypes(allTopLevelTypes, publicOnly: false);
                 foreach (TypeDefinitionHandle typeDefinitionHandle in allTypes)
                     yield return (TypeInfo)typeDefinitionHandle.GetNamedType(reader).ToType();
@@ -48,8 +47,7 @@ namespace System.Reflection.Runtime.Assemblies.NativeFormat
             get
             {
                 MetadataReader reader = Scope.Reader;
-                TypeDefinitionGroup typeDefinitionGroup = Scope.ScopeDefinition.TypeDefinitionGroup.GetTypeDefinitionGroup(reader);
-                IEnumerable<TypeDefinitionHandle> allTopLevelTypes = typeDefinitionGroup.TypeDefinitions.AsEnumerable();
+                IEnumerable<TypeDefinitionHandle> allTopLevelTypes = Scope.ScopeDefinition.TypeDefinitions.AsEnumerable();
                 IEnumerable<TypeDefinitionHandle> allTypes = reader.GetTransitiveTypes(allTopLevelTypes, publicOnly: true);
                 foreach (TypeDefinitionHandle typeDefinitionHandle in allTypes)
                     yield return typeDefinitionHandle.ResolveTypeDefinition(reader).ToType();
@@ -81,8 +79,7 @@ namespace System.Reflection.Runtime.Assemblies.NativeFormat
             get
             {
                 MetadataReader reader = Scope.Reader;
-                TypeDefinitionGroup typeDefinitionGroup = Scope.ScopeDefinition.TypeDefinitionGroup.GetTypeDefinitionGroup(reader);
-                foreach (TypeForwarderHandle typeForwarderHandle in typeDefinitionGroup.TypeForwarders)
+                foreach (TypeForwarderHandle typeForwarderHandle in Scope.ScopeDefinition.TypeForwarders)
                 {
                     TypeForwarder typeForwarder = typeForwarderHandle.GetTypeForwarder(reader);
                     NamespaceReference namespaceReference = typeForwarder.Namespace.GetNamespaceReference(reader);

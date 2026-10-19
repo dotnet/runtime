@@ -145,11 +145,10 @@ namespace Internal.Metadata.NativeFormat
         ScopeDefinition = 0x38,
         ScopeReference = 0x39,
         TypeDefinition = 0x3a,
-        TypeDefinitionGroup = 0x3b,
-        TypeForwarder = 0x3c,
-        TypeInstantiationSignature = 0x3d,
-        TypeReference = 0x3e,
-        TypeSpecification = 0x3f,
-        TypeVariableSignature = 0x40,
+        TypeForwarder = 0x3b,
+        TypeInstantiationSignature = 0x3c,
+        TypeReference = 0x3d,
+        TypeSpecification = 0x3e,
+        TypeVariableSignature = 0x3f,
     } // HandleType
 } // Internal.Metadata.NativeFormat

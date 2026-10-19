@@ -353,6 +353,11 @@ namespace Internal.Metadata.NativeFormat.Writer
                 section.Place(rec);
             }
 
+            foreach (var rec in records)
+            {
+                rec.PlaceHashtables(section);
+            }
+
             writer.Save(stream);
 
             if (LogWriter != null)
@@ -534,6 +539,10 @@ namespace Internal.Metadata.NativeFormat.Writer
 
         internal abstract void Visit(IRecordVisitor visitor);
 
+        internal virtual void PlaceHashtables(Section section)
+        {
+        }
+
         public override string ToString()
         {
             return "[@TODO:" + this.GetType().ToString() + "]";
@@ -648,6 +657,15 @@ namespace Internal.Metadata.NativeFormat.Writer
 
     public partial class TypeDefinition
     {
+        internal int GetLookupHashCode()
+        {
+            Debug.Assert(NamespaceOrEnclosingType is NamespaceDefinition);
+            NamespaceDefinition namespaceDefinition = (NamespaceDefinition)NamespaceOrEnclosingType;
+            return VersionResilientHashCode.NameHashCode(
+                VersionResilientHashCode.NameHashCode((namespaceDefinition.Name?.Value).AsSpan()),
+                VersionResilientHashCode.NameHashCode(Name.Value.AsSpan()));
+        }
+
         public override string ToString()
         {
             return ToString(false);
@@ -698,6 +716,13 @@ namespace Internal.Metadata.NativeFormat.Writer
 
     public partial class TypeForwarder
     {
+        internal int GetLookupHashCode()
+        {
+            return VersionResilientHashCode.NameHashCode(
+                VersionResilientHashCode.NameHashCode((Namespace.Name?.Value).AsSpan()),
+                VersionResilientHashCode.NameHashCode(Name.Value.AsSpan()));
+        }
+
         public override string ToString()
         {
             return this.Name.Value + " -> " + this.Namespace.Scope.Name.Value;

@@ -31,8 +31,6 @@ namespace ILCompiler.Metadata
 
         private void InitializeScopeDefinition(Cts.ModuleDesc module, ScopeDefinition scopeDefinition)
         {
-            scopeDefinition.TypeDefinitionGroup = new TypeDefinitionGroup();
-
             var assemblyDesc = module as Cts.IAssemblyDesc;
             if (assemblyDesc != null)
             {

@@ -229,6 +229,12 @@ namespace System.Reflection.Runtime.General
                 yield return handle;
         }
 
+        public static IEnumerable<TypeDefinitionHandle> AsEnumerable(this TypeDefinitionHandleHashtable hashtable)
+        {
+            foreach (TypeDefinitionHandle handle in hashtable)
+                yield return handle;
+        }
+
         public static byte[] ToArray(this ByteCollection collection)
         {
             int count = collection.Count;

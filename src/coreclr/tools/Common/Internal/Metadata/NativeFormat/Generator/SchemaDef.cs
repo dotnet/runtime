@@ -44,6 +44,7 @@ public enum MemberDefFlags
     EnumerateForHashCode = 0x0100, // Indicates that the collection is safe to be enumerated in GetHashCode
                                    // without causing reentrancy
     CustomCompare = 0x0200, // Indicates that this member uses a custom comparer
+    HashTable = 0x0400, // Persists a typed record map as a hashtable instead of a linear collection.
 }
 
 public enum MemberTypeKind
@@ -102,7 +103,7 @@ public class MemberDef
                     return $"{typeName}[]";
             }
 
-            return $"{typeName}Collection";
+            return (Flags & MemberDefFlags.HashTable) != 0 ? $"{typeName}Hashtable" : $"{typeName}Collection";
         }
         return typeName;
     }
@@ -174,6 +175,26 @@ public class PrimitiveType
 /// </summary>
 internal sealed class SchemaDef
 {
+    static SchemaDef()
+    {
+        foreach (RecordDef record in RecordSchema)
+        {
+            foreach (MemberDef member in record.Members)
+            {
+                if ((member.Flags & MemberDefFlags.HashTable) == 0)
+                    continue;
+
+                const MemberDefFlags RequiredFlags = MemberDefFlags.Map | MemberDefFlags.RecordRef;
+                if ((member.Flags & RequiredFlags) != RequiredFlags ||
+                    (member.Flags & (MemberDefFlags.Sequence | MemberDefFlags.NotPersisted)) != 0 ||
+                    member.TypeName is not string typeName || !HandleSchema.Contains(typeName))
+                {
+                    throw new InvalidOperationException($"Hashtable member {record.Name}.{member.Name} must be a persisted map of typed record references.");
+                }
+            }
+        }
+    }
+
     public static readonly EnumType[] EnumTypes = new EnumType[]
     {
         new EnumType("AssemblyFlags", "uint"),
@@ -501,20 +522,14 @@ internal sealed class SchemaDef
                 new MemberDef("RevisionNumber", "ushort", MemberDefFlags.Compare),
                 new MemberDef("PublicKey", "Byte", MemberDefFlags.Array | MemberDefFlags.Compare),
                 new MemberDef("Culture", "ConstantStringValue", MemberDefFlags.RecordRef | MemberDefFlags.Child | MemberDefFlags.Compare),
-                new MemberDef("TypeDefinitionGroup", "TypeDefinitionGroup", MemberDefFlags.RecordRef | MemberDefFlags.Child),
+                new MemberDef("TypeDefinitions", "TypeDefinition", MemberDefFlags.Map | MemberDefFlags.RecordRef | MemberDefFlags.Child | MemberDefFlags.HashTable),
+                new MemberDef("TypeForwarders", "TypeForwarder", MemberDefFlags.Map | MemberDefFlags.RecordRef | MemberDefFlags.Child | MemberDefFlags.HashTable),
                 new MemberDef("EntryPoint", "QualifiedMethod", MemberDefFlags.RecordRef),
                 new MemberDef("GlobalModuleType", "TypeDefinition", MemberDefFlags.RecordRef),
                 new MemberDef("CustomAttributes", "CustomAttribute", MemberDefFlags.List | MemberDefFlags.RecordRef | MemberDefFlags.Child),
                 new MemberDef("ModuleName", "ConstantStringValue", MemberDefFlags.RecordRef | MemberDefFlags.Child | MemberDefFlags.Compare),
                 new MemberDef("Mvid", "Byte", MemberDefFlags.Array | MemberDefFlags.Compare),
                 new MemberDef("ModuleCustomAttributes", "CustomAttribute", MemberDefFlags.List | MemberDefFlags.RecordRef | MemberDefFlags.Child),
-            }
-        ),
-        new RecordDef(
-            name: "TypeDefinitionGroup",
-            members: new MemberDef[] {
-                new MemberDef("TypeDefinitions", "TypeDefinition", MemberDefFlags.Map | MemberDefFlags.RecordRef | MemberDefFlags.Child | MemberDefFlags.EnumerateForHashCode),
-                new MemberDef("TypeForwarders", "TypeForwarder", MemberDefFlags.Map | MemberDefFlags.RecordRef | MemberDefFlags.Child | MemberDefFlags.EnumerateForHashCode),
             }
         ),
         new RecordDef(
@@ -786,7 +801,16 @@ internal sealed class SchemaDef
             let memberTypeName = member.TypeName as string
             where memberTypeName != null &&
                 (member.Flags & MemberDefFlags.Collection) != 0 &&
+                (member.Flags & MemberDefFlags.HashTable) == 0 &&
                 !PrimitiveTypes.Any(pt => pt.TypeName == memberTypeName)
             select memberTypeName
         ).Concat(new[] { "ScopeDefinition" }).Distinct().ToArray();
+
+    public static readonly string[] TypeNamesWithHashtableTypes =
+        RecordSchema.SelectMany(r =>
+            from member in r.Members
+            let memberTypeName = member.TypeName as string
+            where memberTypeName is not null && (member.Flags & MemberDefFlags.HashTable) != 0
+            select memberTypeName
+        ).Distinct().ToArray();
 }

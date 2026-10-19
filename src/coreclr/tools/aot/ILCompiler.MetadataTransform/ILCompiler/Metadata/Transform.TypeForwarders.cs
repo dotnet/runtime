@@ -61,7 +61,7 @@ namespace ILCompiler.Metadata
                         Cts.ModuleDesc targetModule = (Cts.ModuleDesc)module.GetObject(exportedType.Implementation);
                         record.Namespace = HandleNamespaceReference(targetModule, ns);
 
-                        HandleScopeDefinition(module).TypeDefinitionGroup.TypeForwarders.Add(record);
+                        HandleScopeDefinition(module).TypeForwarders.Add(record);
                     }
                     break;
 

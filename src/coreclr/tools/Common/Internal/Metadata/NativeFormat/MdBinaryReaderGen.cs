@@ -786,15 +786,6 @@ namespace Internal.Metadata.NativeFormat
             return offset;
         } // Read
 
-        public static uint Read(this NativeReader reader, uint offset, out TypeDefinitionGroupHandle handle)
-        {
-            uint value;
-            offset = reader.DecodeUnsigned(offset, out value);
-            handle = new TypeDefinitionGroupHandle((int)value);
-            handle._Validate();
-            return offset;
-        } // Read
-
         public static uint Read(this NativeReader reader, uint offset, out TypeForwarderHandle handle)
         {
             uint value;
@@ -982,6 +973,20 @@ namespace Internal.Metadata.NativeFormat
                 offset = reader.SkipInteger(offset);
             }
             return offset;
+        } // Read
+
+        public static uint Read(this NativeReader reader, uint offset, out TypeDefinitionHandleHashtable values)
+        {
+            NativeParser parser = new NativeParser(reader, offset);
+            values = new TypeDefinitionHandleHashtable(new NativeHashtable(parser.GetParserFromRelativeOffset()));
+            return parser.Offset;
+        } // Read
+
+        public static uint Read(this NativeReader reader, uint offset, out TypeForwarderHandleHashtable values)
+        {
+            NativeParser parser = new NativeParser(reader, offset);
+            values = new TypeForwarderHandleHashtable(new NativeHashtable(parser.GetParserFromRelativeOffset()));
+            return parser.Offset;
         } // Read
     } // MdBinaryReader
 } // Internal.Metadata.NativeFormat

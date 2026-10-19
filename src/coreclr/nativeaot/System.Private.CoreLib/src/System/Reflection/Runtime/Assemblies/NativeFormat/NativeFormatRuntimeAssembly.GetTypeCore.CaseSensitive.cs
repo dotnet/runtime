@@ -5,6 +5,7 @@ using System.Reflection;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.TypeInfos;
 
+using Internal;
 using Internal.Metadata.NativeFormat;
 using Internal.Reflection.Core;
 
@@ -17,11 +18,14 @@ namespace System.Reflection.Runtime.Assemblies.NativeFormat
             int separator = fullName.LastIndexOf('.');
             string? namespaceName = separator < 0 ? null : fullName.Substring(0, separator);
             string name = fullName.Substring(separator + 1);
+            int hashCode = VersionResilientHashCode.NameHashCode(
+                VersionResilientHashCode.NameHashCode(namespaceName.AsSpan()),
+                VersionResilientHashCode.NameHashCode(name.AsSpan()));
 
             MetadataReader reader = Scope.Reader;
-            TypeDefinitionGroup typeDefinitionGroup = Scope.ScopeDefinition.TypeDefinitionGroup.GetTypeDefinitionGroup(reader);
+            ScopeDefinition scopeDefinition = Scope.ScopeDefinition;
 
-            foreach (TypeDefinitionHandle candidateType in typeDefinitionGroup.TypeDefinitions)
+            foreach (TypeDefinitionHandle candidateType in scopeDefinition.TypeDefinitions.Lookup(hashCode))
             {
                 TypeDefinition typeDefinition = candidateType.GetTypeDefinition(reader);
                 if (typeDefinition.Name.StringEquals(name, reader))
@@ -33,7 +37,7 @@ namespace System.Reflection.Runtime.Assemblies.NativeFormat
             }
 
             // No match found in this assembly - see if there's a matching type forwarder.
-            foreach (TypeForwarderHandle typeForwarderHandle in typeDefinitionGroup.TypeForwarders)
+            foreach (TypeForwarderHandle typeForwarderHandle in scopeDefinition.TypeForwarders.Lookup(hashCode))
             {
                 TypeForwarder typeForwarder = typeForwarderHandle.GetTypeForwarder(reader);
                 if (typeForwarder.Name.StringEquals(name, reader))

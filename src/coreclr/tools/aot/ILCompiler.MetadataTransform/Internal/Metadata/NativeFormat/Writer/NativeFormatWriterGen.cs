@@ -4137,7 +4137,8 @@ namespace Internal.Metadata.NativeFormat.Writer
         {
             Name = visitor.Visit(this, Name);
             Culture = visitor.Visit(this, Culture);
-            TypeDefinitionGroup = visitor.Visit(this, TypeDefinitionGroup);
+            TypeDefinitions = visitor.Visit(this, TypeDefinitions);
+            TypeForwarders = visitor.Visit(this, TypeForwarders);
             EntryPoint = visitor.Visit(this, EntryPoint);
             GlobalModuleType = visitor.Visit(this, GlobalModuleType);
             CustomAttributes = visitor.Visit(this, CustomAttributes);
@@ -4192,6 +4193,26 @@ namespace Internal.Metadata.NativeFormat.Writer
             return _hash;
         } // GetHashCode
 
+        internal override void PlaceHashtables(Section section)
+        {
+            Debug.Assert(_typeDefinitionsHashtable is null);
+            _typeDefinitionsHashtable = new VertexHashtable();
+
+            foreach (TypeDefinition record in TypeDefinitions)
+            {
+                _typeDefinitionsHashtable.Append((uint)record.GetLookupHashCode(), record);
+            }
+            section.Place(_typeDefinitionsHashtable);
+            Debug.Assert(_typeForwardersHashtable is null);
+            _typeForwardersHashtable = new VertexHashtable();
+
+            foreach (TypeForwarder record in TypeForwarders)
+            {
+                _typeForwardersHashtable.Append((uint)record.GetLookupHashCode(), record);
+            }
+            section.Place(_typeForwardersHashtable);
+        } // PlaceHashtables
+
         internal override void Save(NativeWriter writer)
         {
             writer.Write(Flags);
@@ -4203,7 +4224,8 @@ namespace Internal.Metadata.NativeFormat.Writer
             writer.Write(RevisionNumber);
             writer.Write(PublicKey);
             writer.Write(Culture);
-            writer.Write(TypeDefinitionGroup);
+            writer.WriteRelativeOffset(_typeDefinitionsHashtable);
+            writer.WriteRelativeOffset(_typeForwardersHashtable);
             writer.Write(EntryPoint);
             writer.Write(GlobalModuleType);
             writer.Write(CustomAttributes);
@@ -4241,7 +4263,10 @@ namespace Internal.Metadata.NativeFormat.Writer
         public ushort RevisionNumber;
         public Byte[] PublicKey;
         public ConstantStringValue Culture;
-        public TypeDefinitionGroup TypeDefinitionGroup;
+        public List<TypeDefinition> TypeDefinitions = new List<TypeDefinition>();
+        private VertexHashtable _typeDefinitionsHashtable;
+        public List<TypeForwarder> TypeForwarders = new List<TypeForwarder>();
+        private VertexHashtable _typeForwardersHashtable;
         public QualifiedMethod EntryPoint;
         public TypeDefinition GlobalModuleType;
         public List<CustomAttribute> CustomAttributes = new List<CustomAttribute>();
@@ -4458,81 +4483,6 @@ namespace Internal.Metadata.NativeFormat.Writer
         public List<MetadataRecord> Interfaces = new List<MetadataRecord>();
         public List<CustomAttribute> CustomAttributes = new List<CustomAttribute>();
     } // TypeDefinition
-
-    public partial class TypeDefinitionGroup : MetadataRecord
-    {
-        public override HandleType HandleType
-        {
-            get
-            {
-                return HandleType.TypeDefinitionGroup;
-            }
-        } // HandleType
-
-        internal override void Visit(IRecordVisitor visitor)
-        {
-            TypeDefinitions = visitor.Visit(this, TypeDefinitions);
-            TypeForwarders = visitor.Visit(this, TypeForwarders);
-        } // Visit
-
-        public override sealed bool Equals(Object obj)
-        {
-            if (Object.ReferenceEquals(this, obj)) return true;
-            var other = obj as TypeDefinitionGroup;
-            if (other == null) return false;
-            if (!Object.Equals(TypeDefinitions, other.TypeDefinitions)) return false;
-            if (!Object.Equals(TypeForwarders, other.TypeForwarders)) return false;
-            return true;
-        } // Equals
-
-        public override sealed int GetHashCode()
-        {
-            if (_hash != 0)
-                return _hash;
-            EnterGetHashCode();
-            int hash = -1408533269;
-            for (int i = 0; i < TypeDefinitions.Count; i++)
-            {
-                hash = ((hash << 13) - (hash >> 19)) ^ (TypeDefinitions[i] == null ? 0 : TypeDefinitions[i].GetHashCode());
-            }
-            for (int i = 0; i < TypeForwarders.Count; i++)
-            {
-                hash = ((hash << 13) - (hash >> 19)) ^ (TypeForwarders[i] == null ? 0 : TypeForwarders[i].GetHashCode());
-            }
-            LeaveGetHashCode();
-            _hash = hash;
-            return _hash;
-        } // GetHashCode
-
-        internal override void Save(NativeWriter writer)
-        {
-            writer.Write(TypeDefinitions);
-            writer.Write(TypeForwarders);
-        } // Save
-
-        internal static TypeDefinitionGroupHandle AsHandle(TypeDefinitionGroup record)
-        {
-            if (record == null)
-            {
-                return new TypeDefinitionGroupHandle(0);
-            }
-            else
-            {
-                return record.Handle;
-            }
-        } // AsHandle
-
-        internal new TypeDefinitionGroupHandle Handle
-        {
-            get
-            {
-                return new TypeDefinitionGroupHandle(HandleOffset);
-            }
-        } // Handle
-
-        public List<TypeDefinition> TypeDefinitions = new List<TypeDefinition>();
-        public List<TypeForwarder> TypeForwarders = new List<TypeForwarder>();
-    } // TypeDefinitionGroup
 
     public partial class TypeForwarder : MetadataRecord
     {

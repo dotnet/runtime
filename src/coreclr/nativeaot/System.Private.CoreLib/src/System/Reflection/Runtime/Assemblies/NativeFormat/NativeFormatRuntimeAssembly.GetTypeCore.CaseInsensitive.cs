@@ -73,8 +73,8 @@ namespace System.Reflection.Runtime.Assemblies.NativeFormat
             LowLevelDictionary<string, QHandle> dict = new LowLevelDictionary<string, QHandle>();
 
             MetadataReader reader = Scope.Reader;
-            TypeDefinitionGroup typeDefinitionGroup = Scope.ScopeDefinition.TypeDefinitionGroup.GetTypeDefinitionGroup(reader);
-            foreach (TypeDefinitionHandle typeDefinitionHandle in typeDefinitionGroup.TypeDefinitions)
+            ScopeDefinition scopeDefinition = Scope.ScopeDefinition;
+            foreach (TypeDefinitionHandle typeDefinitionHandle in scopeDefinition.TypeDefinitions)
             {
                 TypeDefinition typeDefinition = typeDefinitionHandle.GetTypeDefinition(reader);
                 NamespaceDefinitionHandle namespaceHandle = typeDefinition.NamespaceOrEnclosingType.ToNamespaceDefinitionHandle(reader);
@@ -88,7 +88,7 @@ namespace System.Reflection.Runtime.Assemblies.NativeFormat
                 }
             }
 
-            foreach (TypeForwarderHandle typeForwarderHandle in typeDefinitionGroup.TypeForwarders)
+            foreach (TypeForwarderHandle typeForwarderHandle in scopeDefinition.TypeForwarders)
             {
                 TypeForwarder typeForwarder = typeForwarderHandle.GetTypeForwarder(reader);
                 string fullName = typeForwarder.Namespace.ToFullyQualifiedTypeName(typeForwarder.Name.GetString(reader), reader).ToLowerInvariant();
