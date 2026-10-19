@@ -13,6 +13,6 @@
     <Compile Include="Object-Pin.il" />
   </ItemGroup>
   <ItemGroup>
-    <CMakeProjectReference Include="CMakelists.txt" />
+    <CMakeProjectReference Include="CMakeLists.txt" />
   </ItemGroup>
 </Project>
