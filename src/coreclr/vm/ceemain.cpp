@@ -484,6 +484,10 @@ void InitGSCookie()
     {
         ThrowLastError();
     }
+
+    // The GSCookie cannot be in a writeable page
+    assert(((oldProtection & (PAGE_READWRITE|PAGE_WRITECOPY|PAGE_EXECUTE_READWRITE|
+                              PAGE_EXECUTE_WRITECOPY|PAGE_WRITECOMBINE)) == 0));
 #else // TARGET_WINDOWS
     if (!VMToOSInterface::ProtectMemory((LPVOID)pGSCookiePtr, sizeof(GSCookie), VMToOSInterface::MemoryProtection::ReadWrite))
     {
@@ -492,22 +496,16 @@ void InitGSCookie()
 #endif // TARGET_WINDOWS
 #endif // FEATURE_READONLY_GS_COOKIE
 
-#if defined(TARGET_WINDOWS) && defined(FEATURE_READONLY_GS_COOKIE)
-    // The GSCookie cannot be in a writeable page
-    assert(((oldProtection & (PAGE_READWRITE|PAGE_WRITECOPY|PAGE_EXECUTE_READWRITE|
-                              PAGE_EXECUTE_WRITECOPY|PAGE_WRITECOMBINE)) == 0));
-#endif // TARGET_WINDOWS && FEATURE_READONLY_GS_COOKIE
-
-#ifndef TARGET_UNIX
+#ifdef TARGET_WINDOWS
     // Forces VC cookie to be initialized.
     void * pf = &__security_check_cookie;
     pf = NULL;
 
     GSCookie val = (GSCookie)(__security_cookie ^ minipal_hires_ticks());
-#else // !TARGET_UNIX
+#else // TARGET_WINDOWS
     GSCookie val;
     minipal_get_non_cryptographically_secure_random_bytes((uint8_t*)&val, sizeof(val));
-#endif // !TARGET_UNIX
+#endif // TARGET_WINDOWS
 
 #ifdef _DEBUG
     // In _DEBUG, always use the same value to make it easier to search for the cookie
