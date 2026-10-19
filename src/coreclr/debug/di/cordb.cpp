@@ -18,13 +18,6 @@
 #include "dbgtransportmanager.h"
 #endif // FEATURE_DBGIPC_TRANSPORT_DI
 
-#if defined(TARGET_UNIX) || defined(__ANDROID__)
-// Local (in-process) debugging is not supported for UNIX and Android.
-#define SUPPORT_LOCAL_DEBUGGING 0
-#else
-#define SUPPORT_LOCAL_DEBUGGING 1
-#endif
-
 //-----------------------------------------------------------------------------
 // SxS Versioning story for Mscordbi (ICorDebug + friends)
 //-----------------------------------------------------------------------------
@@ -463,79 +456,3 @@ STDAPI GetRequestedRuntimeInfo(LPCWSTR pExe,
     _ASSERTE(!"GetRequestedRuntimeInfo not impl");
     return E_NOTIMPL;
 }
-
-#ifdef TARGET_ARM
-BOOL
-DbiGetThreadContext(HANDLE hThread,
-    DT_CONTEXT *lpContext)
-{
-    // if we aren't local debugging this isn't going to work
-#if !defined(HOST_ARM) || defined(FEATURE_DBGIPC_TRANSPORT_DI) || !SUPPORT_LOCAL_DEBUGGING
-    _ASSERTE(!"Can't use local GetThreadContext remotely, this needed to go to datatarget");
-    return FALSE;
-#else
-    BOOL res = FALSE;
-    if (((ULONG)lpContext) & ~0x10)
-    {
-        CONTEXT *ctx = (CONTEXT*)_aligned_malloc(sizeof(CONTEXT), 16);
-        if (ctx)
-        {
-            ctx->ContextFlags = lpContext->ContextFlags;
-            if (::GetThreadContext(hThread, ctx))
-            {
-                *lpContext = *(DT_CONTEXT*)ctx;
-                res = TRUE;
-            }
-
-            _aligned_free(ctx);
-        }
-        else
-        {
-            // malloc does not set the last error, but the caller of GetThreadContext
-            // will expect it to be set on failure.
-            SetLastError(ERROR_OUTOFMEMORY);
-        }
-    }
-    else
-    {
-        res = ::GetThreadContext(hThread, (CONTEXT*)lpContext);
-    }
-
-    return res;
-#endif
-}
-
-BOOL
-DbiSetThreadContext(HANDLE hThread,
-    const DT_CONTEXT *lpContext)
-{
-#if !defined(HOST_ARM) || defined(FEATURE_DBGIPC_TRANSPORT_DI) || !SUPPORT_LOCAL_DEBUGGING
-    _ASSERTE(!"Can't use local GetThreadContext remotely, this needed to go to datatarget");
-    return FALSE;
-#else
-    BOOL res = FALSE;
-    if (((ULONG)lpContext) & ~0x10)
-    {
-        CONTEXT *ctx = (CONTEXT*)_aligned_malloc(sizeof(CONTEXT), 16);
-        if (ctx)
-        {
-            *ctx = *(CONTEXT*)lpContext;
-            res = ::SetThreadContext(hThread, ctx);
-            _aligned_free(ctx);
-        }
-        else
-        {
-            // malloc does not set the last error, but the caller of SetThreadContext
-            // will expect it to be set on failure.
-            SetLastError(ERROR_OUTOFMEMORY);
-        }
-    }
-    else
-    {
-        res = ::SetThreadContext(hThread, (CONTEXT*)lpContext);
-    }
-
-    return res;
-#endif
-}
-#endif

@@ -3179,8 +3179,8 @@ namespace Internal.JitInterface
             // In R2R it is a breaking change for a previously positive
             // cast to become negative, but not for a previously negative
             // cast to become positive. So in R2R a negative result is
-            // always reported back as May.
-            if (result == TypeCompareState.MustNot)
+            // reported back as May, unless it can't change across versions.
+            if (result == TypeCompareState.MustNot && !IsNegativeCastResultVersionResilient(fromType, toType))
             {
                 result = TypeCompareState.May;
             }
@@ -4978,6 +4978,10 @@ namespace Internal.JitInterface
             if (this.MethodBeingCompiled.Context.Target.Architecture == TargetArchitecture.Wasm32)
             {
                 flags.Set(CorJitFlag.CORJIT_FLAG_PORTABLE_ENTRY_POINTS);
+                if (_methodCodeNode.IsJitHelper)
+                {
+                    flags.Set(CorJitFlag.CORJIT_FLAG_WASM_MANAGED_HELPER);
+                }
             }
 #endif
 

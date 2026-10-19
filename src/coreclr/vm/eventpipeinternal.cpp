@@ -296,4 +296,21 @@ extern "C" BOOL QCALLTYPE EventPipeInternal_WaitForSessionSignal(UINT64 sessionI
     return result;
 }
 
+#if defined(TARGET_WASI) && defined(PERFTRACING_DISABLE_THREADS)
+// Runs the queued EventPipe jobs and returns whether any are still queued, so the caller knows to run again.
+extern "C" CLR_BOOL QCALLTYPE EventPipeInternal_WasiRunJobs(QCallExceptionStatus* qcallError)
+{
+    QCALL_CONTRACT;
+
+    bool pending = false;
+
+    BEGIN_QCALL;
+
+    pending = EventPipeAdapter::RunWasiJobs();
+
+    END_QCALL;
+    return pending ? TRUE : FALSE;
+}
+#endif // TARGET_WASI && PERFTRACING_DISABLE_THREADS
+
 #endif // FEATURE_PERFTRACING
