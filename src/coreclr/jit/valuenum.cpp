@@ -15699,10 +15699,9 @@ bool Compiler::fgValueNumberHelperCall(GenTreeCall* call)
 
             if (mayRunCctor)
             {
-                if ((call->gtFlags & GTF_CALL_HOISTABLE) == 0)
-                {
-                    modHeap = true;
-                }
+                // The class constructor may run here and modify the heap. GTF_CALL_HOISTABLE only
+                // allows running it earlier (beforefieldinit), so it does not make the call heap-neutral.
+                modHeap = true;
             }
 
             if (isAlloc && (call->gtArgs.FindWellKnownArg(WellKnownArg::StackArrayLocal) != nullptr))

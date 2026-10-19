@@ -4659,7 +4659,7 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop* loop,
 
                 // If it's a call, it must be a helper call, and be pure.
                 // Further, if it may run a cctor, it must be labeled as "Hoistable"
-                // (meaning it won't run a cctor because the class is not precise-init).
+                // (meaning the class is not precise-init, so the cctor may run earlier).
                 if (treeIsHoistable && tree->IsCall())
                 {
                     GenTreeCall* call = tree->AsCall();
@@ -4740,7 +4740,7 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop* loop,
                 {
                     // If it's a call, it must be a helper call that does not mutate the heap.
                     // Further, if it may run a cctor, it must be labeled as "Hoistable"
-                    // (meaning it won't run a cctor because the class is not precise-init).
+                    // (meaning the class is not precise-init, so the cctor may run earlier).
                     GenTreeCall* call = tree->AsCall();
                     if (!call->IsHelperCall())
                     {
@@ -5448,20 +5448,12 @@ void Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk, FlowGraphNatura
                     if (call->IsHelperCall())
                     {
                         CorInfoHelpFunc helpFunc = call->GetHelperNum();
-                        if (s_helperCallProperties.MutatesHeap(helpFunc))
+                        // A call that may run a class constructor can have arbitrary side effects,
+                        // even when it is labeled "Hoistable": that only means the cctor may run earlier.
+                        if (s_helperCallProperties.MutatesHeap(helpFunc) ||
+                            s_helperCallProperties.MayRunCctor(helpFunc))
                         {
                             memoryHavoc |= memoryKindSet(GcHeap, ByrefExposed);
-                        }
-                        else if (s_helperCallProperties.MayRunCctor(helpFunc))
-                        {
-                            // If the call is labeled as "Hoistable", then we've checked the
-                            // class that would be constructed, and it is not precise-init, so
-                            // the cctor will not be run by this call.  Otherwise, it might be,
-                            // and might have arbitrary side effects.
-                            if ((tree->gtFlags & GTF_CALL_HOISTABLE) == 0)
-                            {
-                                memoryHavoc |= memoryKindSet(GcHeap, ByrefExposed);
-                            }
                         }
                     }
                     else
