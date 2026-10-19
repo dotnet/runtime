@@ -313,7 +313,85 @@ namespace System.Numerics.Tensors.Tests
 
     // The tests for some types have been marked as OuterLoop simply to decrease inner loop testing time.
 
-    public class DoubleGenericTensorPrimitives : GenericFloatingPointNumberTensorPrimitivesTests<double> { }
+    public class DoubleGenericTensorPrimitives : GenericFloatingPointNumberTensorPrimitivesTests<double>
+    {
+        // Each element is compared with the scalar method in ulps, because a relative tolerance cannot judge subnormal
+        // results.
+        [Theory]
+        [InlineData(10)]
+        [InlineData(2)]
+        public void Exp10AndExp2_WholeRange_WithinUlpsOfScalar(int numberBase)
+        {
+            const long MaxUlps = 4;
+
+            // The input range extends below the threshold for rounding to zero and above the overflow threshold.
+            double lowest = numberBase == 10 ? -324.0 : -1076.0;
+            double highest = numberBase == 10 ? 309.0 : 1025.0;
+            var random = new Random(98861);
+            var inputs = new List<double>();
+            for (int i = 0; i < (1 << 16); i++)
+            {
+                inputs.Add(lowest + (random.NextDouble() * (highest - lowest)));
+            }
+
+            // The 64 inputs around each threshold: overflow, the transition to subnormal results, and rounding to zero.
+            double scale = numberBase == 10 ? double.Log10(2) : 1;
+            foreach (int exponent in new[] { 1024, -1022, -1074, -1075 })
+            {
+                double value = exponent * scale;
+                for (int i = 0; i < 32; i++)
+                {
+                    value = double.BitDecrement(value);
+                }
+
+                for (int i = 0; i < 64; i++, value = double.BitIncrement(value))
+                {
+                    inputs.Add(value);
+                }
+            }
+
+            // Integers, where Exp2 is exact, and special values.
+            for (int k = -1080; k <= 1030; k++)
+            {
+                inputs.Add(k);
+            }
+
+            inputs.AddRange([0.0, -0.0, double.NaN, double.PositiveInfinity, double.NegativeInfinity, double.MaxValue, double.MinValue, double.Epsilon, -double.Epsilon]);
+
+            double[] x = inputs.ToArray();
+            double[] destination = new double[x.Length];
+            if (numberBase == 10)
+            {
+                TensorPrimitives.Exp10<double>(x, destination);
+            }
+            else
+            {
+                TensorPrimitives.Exp2<double>(x, destination);
+            }
+
+            for (int i = 0; i < x.Length; i++)
+            {
+                double expected = numberBase == 10 ? double.Exp10(x[i]) : double.Exp2(x[i]);
+                double actual = destination[i];
+                string message = $"{(numberBase == 10 ? "Exp10" : "Exp2")}({x[i]:R}): expected {expected:R}, actual {actual:R}";
+
+                if (double.IsNaN(expected) || double.IsNaN(actual) || double.IsInfinity(expected) || double.IsInfinity(actual))
+                {
+                    Assert.True(expected.Equals(actual), message);
+                    continue;
+                }
+
+                Assert.True(Math.Abs(OrderedBits(expected) - OrderedBits(actual)) <= MaxUlps, message);
+            }
+
+            // Maps doubles to integers in the same order, so that a difference of k means k ulps apart.
+            static long OrderedBits(double value)
+            {
+                long bits = BitConverter.DoubleToInt64Bits(value);
+                return bits < 0 ? long.MinValue - bits : bits;
+            }
+        }
+    }
     public class SingleGenericTensorPrimitives : GenericFloatingPointNumberTensorPrimitivesTests<float> { }
     public class HalfGenericTensorPrimitives : GenericFloatingPointNumberTensorPrimitivesTests<Half>
     {
