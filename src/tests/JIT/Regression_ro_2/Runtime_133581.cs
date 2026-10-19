@@ -27,6 +27,7 @@ public class Runtime_133581
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/133910", TestRuntimes.Mono)]
     public static void TestEntryPoint()
     {
         Holder holder = new Holder();

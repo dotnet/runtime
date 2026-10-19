@@ -274,6 +274,13 @@ namespace ILCompiler.DependencyAnalysis
 
                 for (int i = 0; i < _sealedVTableEntries.Count; i++)
                 {
+                    // TODO: shared IDynamicInterfaceCastable methods are problematic on WASM
+                    if (factory.Target.IsWasm && isSharedDynamicInterfaceCastableImpl)
+                    {
+                        objData.EmitZeroPointer();
+                        continue;
+                    }
+
                     IMethodNode relocTarget = _sealedVTableEntries[i].Target;
 
                     int delta = isSharedDynamicInterfaceCastableImpl ? DispatchMapCodePointerFlags.RequiresInstantiatingThunkFlag : 0;

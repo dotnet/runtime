@@ -398,7 +398,8 @@ namespace ILAssembler.Tests
             using var pdbProvider = DocumentCompilerTestHelpers.GetPortablePdbReaderProvider(result);
             var pdbReader = pdbProvider.GetMetadataReader();
 
-            Assert.Empty(pdbReader.Documents);
+            // Without .line directives the only document is the input file.
+            Assert.Equal("test.il", pdbReader.GetString(pdbReader.GetDocument(Assert.Single(pdbReader.Documents)).Name));
             Assert.NotEmpty(pdbReader.MethodDebugInformation);
         }
 
@@ -424,7 +425,7 @@ namespace ILAssembler.Tests
             using var pe = new PEReader(DocumentCompilerTestHelpers.Serialize(result));
             DirectoryEntry debugTable = pe.PEHeaders.PEHeader!.DebugTableDirectory;
 
-            // As in native ilasm: no debug directory at all, not even the Reproducible entry that
+            // No debug directory at all, not even the Reproducible entry that
             // ManagedPEBuilder adds by default to a deterministic image.
             Assert.Equal((0, 0), (debugTable.RelativeVirtualAddress, debugTable.Size));
         }
@@ -528,6 +529,23 @@ namespace ILAssembler.Tests
             DebugDirectoryEntry codeViewEntry = Assert.Single(pe.ReadDebugDirectory(), entry => entry.Type == DebugDirectoryEntryType.CodeView);
 
             Assert.Equal(pdbFilePath, pe.ReadCodeViewDebugDirectoryData(codeViewEntry).Path);
+        }
+
+        [Fact]
+        public void PortablePdb_CodeViewEntry_NamesPdbFilePathAfterPathMap()
+        {
+            string directory = Path.Combine(Path.GetTempPath(), "tree");
+            CompilationResult result = DocumentCompilerTestHelpers.CompileAndGetResult(PortablePdbSource, new Options
+            {
+                Debug = true,
+                OutputFileName = "Output.dll",
+                PdbFilePath = Path.Combine(directory, "out", "Output.pdb"),
+                PathMap = PathMapTests.Parse($"{directory}=/_/"),
+            });
+            using var pe = new PEReader(DocumentCompilerTestHelpers.Serialize(result));
+            DebugDirectoryEntry codeViewEntry = Assert.Single(pe.ReadDebugDirectory(), entry => entry.Type == DebugDirectoryEntryType.CodeView);
+
+            Assert.Equal("/_/out/Output.pdb", pe.ReadCodeViewDebugDirectoryData(codeViewEntry).Path);
         }
 
         [Theory]
