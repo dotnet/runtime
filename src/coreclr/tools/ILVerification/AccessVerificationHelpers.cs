@@ -56,7 +56,7 @@ namespace ILVerify
         }
 
         /// <summary>
-        /// Returns whether the class '<paramref name="currentClass"/>' can access the method '<paramref name="targetMethod"/>' through
+        /// Returns whether the class '<paramref name="currentType"/>' can access the method '<paramref name="targetMethod"/>' through
         /// the instance '<paramref name="instance"/>'. The instance can be null, if the method to be accessed is static.
         /// </summary>
         internal static bool CanAccess(this TypeDesc currentType, MethodDesc targetMethod, TypeDesc instance = null)
@@ -78,7 +78,7 @@ namespace ILVerify
         }
 
         /// <summary>
-        /// Returns whether the class '<paramref name="currentClass"/>' can access the field '<paramref name="targetField"/>' through
+        /// Returns whether the class '<paramref name="currentType"/>' can access the field '<paramref name="targetField"/>' through
         /// the instance '<paramref name="instance"/>'. The instance can be null, if the field to be accessed is static.
         /// </summary>
         internal static bool CanAccess(this TypeDesc currentType, FieldDesc targetField, TypeDesc instance = null)

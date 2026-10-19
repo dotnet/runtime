@@ -1184,7 +1184,7 @@ Namespace Microsoft.VisualBasic.FileIO
 
                     ' Make sure delimiter is legal
                     If m_HasFieldsEnclosedInQuotes Then
-                        If m_Delimiters(i).IndexOf(""""c) > -1 Then
+                        If m_Delimiters(i).Contains(""""c) Then
                             Throw GetInvalidOperationException(SR.TextFieldParser_IllegalDelimiter)
                         End If
                     End If
@@ -1414,7 +1414,7 @@ Namespace Microsoft.VisualBasic.FileIO
             Debug.Assert(m_Delimiters IsNot Nothing, "No delimiters set!")
 
             For Each delimiter As String In m_Delimiters
-                If delimiter.IndexOf(testCharacter) > -1 Then
+                If delimiter.Contains(testCharacter) Then
                     Return True
                 End If
             Next
@@ -1652,7 +1652,7 @@ Namespace Microsoft.VisualBasic.FileIO
                     End If
 
                     For i As Integer = m_Index + 1 To Limit
-                        If m_SpaceChars.IndexOf(Line(i)) < 0 Then
+                        If Not m_SpaceChars.Contains(Line(i)) Then
                             m_MalformedLine = True
                             Return
                         End If

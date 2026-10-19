@@ -42,7 +42,7 @@ class CrashInfo : public ICLRDataEnumMemoryRegionsCallback, public ICLRDataLoggi
 #ifdef __APPLE__
     public MachOReader
 #else
-    public ElfReader
+    public HostElfReader
 #endif
 {
 private:
