@@ -1118,6 +1118,10 @@ void SystemDomain::LoadBaseSystemClasses()
         g_pGetGCStaticBase = CoreLibBinder::GetMethod(METHOD__STATICSHELPERS__GET_GC_STATIC)->GetMultiCallableAddrOfCode();
         g_pGetNonGCStaticBase = CoreLibBinder::GetMethod(METHOD__STATICSHELPERS__GET_NONGC_STATIC)->GetMultiCallableAddrOfCode();
         g_pPollGC = CoreLibBinder::GetMethod(METHOD__THREAD__POLLGC)->GetMultiCallableAddrOfCode();
+#ifdef FEATURE_PERFTRACING
+        // Bind before managed execution; stack walks cannot load methods.
+        CoreLibBinder::GetMethod(METHOD__THREAD__POLLGC_WORKER);
+#endif // FEATURE_PERFTRACING
 #if defined(TARGET_X86) && defined(TARGET_WINDOWS)
         g_pThrowOverflowException = CoreLibBinder::GetMethod(METHOD__THROWHELPERS__THROWOVERFLOWEXCEPTION)->GetMultiCallableAddrOfCode();
         g_pThrowDivideByZeroException = CoreLibBinder::GetMethod(METHOD__THROWHELPERS__THROWDIVIDEBYZEROEXCEPTION)->GetMultiCallableAddrOfCode();
