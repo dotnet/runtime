@@ -1137,6 +1137,9 @@ typedef JitHashTable<BasicBlock*, JitPtrKeyFuncs<BasicBlock>, unsigned> WasmBloc
 //   a protected block that is not an EH region entry. Unprotect such blocks so they
 //   are removed.
 //
+//   Unreachable try entries are still kept here; fgRemoveUnreachableTry is expected
+//   to have already removed their EH regions.
+//
 PhaseStatus Compiler::fgWasmRemoveUnreachableBlocks()
 {
     fgInvalidateDfsTree();
