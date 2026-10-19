@@ -275,39 +275,40 @@ namespace Microsoft.Extensions.Configuration
         [RequiresUnreferencedCode(PropertyTrimmingWarningMessage)]
         private static void ResetPropertyValue(PropertyInfo property, object instance, BinderOptions options)
         {
-            MethodInfo? getMethod = GetEffectiveAccessor(property, getter: true);
-            MethodInfo? setMethod = GetEffectiveAccessor(property, getter: false);
+            PropertyInfo? getProperty = GetEffectiveProperty(property, getter: true);
+            PropertyInfo? setProperty = GetEffectiveProperty(property, getter: false);
 
             // We don't support set only, non public, or indexer properties
-            if (getMethod is null ||
-                setMethod is null ||
+            if (getProperty?.GetMethod is not MethodInfo getMethod ||
+                setProperty?.SetMethod is not MethodInfo setMethod ||
                 (!options.BindNonPublicProperties && (!getMethod.IsPublic || !setMethod.IsPublic)) ||
                 getMethod.GetParameters().Length > 0)
             {
                 return;
             }
 
-            setMethod.Invoke(instance, new object?[] { getMethod.Invoke(instance, null) });
+            setProperty.SetValue(instance, getProperty.GetValue(instance));
         }
 
         [RequiresDynamicCode(DynamicCodeWarningMessage)]
         [RequiresUnreferencedCode(PropertyTrimmingWarningMessage)]
         private static void BindProperty(PropertyInfo property, object instance, IConfiguration config, BinderOptions options)
         {
-            MethodInfo? getMethod = GetEffectiveAccessor(property, getter: true);
+            PropertyInfo? getProperty = GetEffectiveProperty(property, getter: true);
 
             // We don't support set only, non public, or indexer properties
-            if (getMethod is null ||
+            if (getProperty?.GetMethod is not MethodInfo getMethod ||
                 (!options.BindNonPublicProperties && !getMethod.IsPublic) ||
                 getMethod.GetParameters().Length > 0)
             {
                 return;
             }
 
-            MethodInfo? setMethod = GetEffectiveAccessor(property, getter: false);
+            PropertyInfo? setProperty = GetEffectiveProperty(property, getter: false);
+            MethodInfo? setMethod = setProperty?.SetMethod;
 
             var propertyBindingPoint = new BindingPoint(
-                initialValueProvider: () => getMethod.Invoke(instance, null),
+                initialValueProvider: () => getProperty.GetValue(instance),
                 isReadOnly: setMethod is null || (!setMethod.IsPublic && !options.BindNonPublicProperties));
 
             BindInstance(
@@ -323,7 +324,8 @@ namespace Microsoft.Extensions.Configuration
             // Otherwise, if the HasNewValue set to true, it means that the property setter should be called anyway as encountering a new value.
             if (!propertyBindingPoint.IsReadOnly && (propertyBindingPoint.Value is not null || propertyBindingPoint.HasNewValue))
             {
-                setMethod!.Invoke(instance, new object?[] { propertyBindingPoint.Value });
+                Debug.Assert(setProperty is not null);
+                setProperty.SetValue(instance, propertyBindingPoint.Value);
             }
         }
 
@@ -628,6 +630,7 @@ namespace Microsoft.Extensions.Configuration
             return instance ?? throw new InvalidOperationException(SR.Format(SR.Error_FailedToActivate, type));
         }
 
+        [RequiresUnreferencedCode(PropertyTrimmingWarningMessage)]
         private static bool DoAllParametersHaveEquivalentProperties(ParameterInfo[] parameters,
             List<PropertyInfo> properties, out string missing)
         {
@@ -1113,6 +1116,7 @@ namespace Microsoft.Extensions.Configuration
             return null;
         }
 
+        [RequiresUnreferencedCode(PropertyTrimmingWarningMessage)]
         private static List<PropertyInfo> GetAllProperties(
 #if NET
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.AllProperties)]
@@ -1135,8 +1139,13 @@ namespace Microsoft.Extensions.Configuration
 
                 foreach (PropertyInfo property in properties)
                 {
-                    MethodInfo? getBaseDefinition = property.GetMethod?.IsVirtual == true ? property.GetMethod.GetBaseDefinition() : null;
-                    MethodInfo? setBaseDefinition = property.SetMethod?.IsVirtual == true ? property.SetMethod.GetBaseDefinition() : null;
+                    // Indexers are not bindable properties.
+                    if (property.GetIndexParameters().Length > 0)
+                    {
+                        continue;
+                    }
+
+                    GetVirtualAccessorBaseDefinitions(property, out MethodInfo? getBaseDefinition, out MethodInfo? setBaseDefinition);
 
                     if (getBaseDefinition is null && setBaseDefinition is null)
                     {
@@ -1156,7 +1165,7 @@ namespace Microsoft.Extensions.Configuration
                         // [ConfigurationKeyName] or [ConfigurationIgnore] attribute) takes precedence.
                         // Any accessor missing from this declaration (e.g. a get-only override of a
                         // read-write virtual property) is resolved from a less-derived declaration at
-                        // bind time; see GetEffectiveAccessor.
+                        // bind time; see GetEffectiveProperty.
                         allProperties.Add(property);
                     }
 
@@ -1178,20 +1187,18 @@ namespace Microsoft.Extensions.Configuration
         }
 
         /// <summary>
-        /// Returns the accessor of the requested kind (getter or setter) that applies to
+        /// Returns the property declaration that supplies the requested accessor (getter or setter) for
         /// <paramref name="property"/>. If <paramref name="property"/> doesn't declare that accessor
-        /// itself (e.g. because it's an override that only re-declares the other accessor), the
-        /// accessor is looked up on the nearest less-derived declaration of the same virtual property.
-        /// Because the accessor is virtual, invoking it on any instance still dispatches to the actual
-        /// most-derived override at run time.
+        /// itself, the override chain of its other accessor is followed until a declaration containing
+        /// the requested accessor is found.
         /// </summary>
         [RequiresUnreferencedCode(PropertyTrimmingWarningMessage)]
-        private static MethodInfo? GetEffectiveAccessor(PropertyInfo property, bool getter)
+        private static PropertyInfo? GetEffectiveProperty(PropertyInfo property, bool getter)
         {
             MethodInfo? accessor = getter ? property.GetMethod : property.SetMethod;
             if (accessor is not null)
             {
-                return accessor;
+                return property;
             }
 
             MethodInfo? declaredAccessor = getter ? property.SetMethod : property.GetMethod;
@@ -1204,24 +1211,83 @@ namespace Microsoft.Extensions.Configuration
 
             for (Type? baseType = property.DeclaringType.BaseType; baseType is not null && baseType != typeof(object); baseType = baseType.BaseType)
             {
-                PropertyInfo? candidate = baseType.GetProperty(property.Name, DeclaredOnlyLookup);
-                if (candidate is null)
+                foreach (PropertyInfo candidate in baseType.GetProperties(DeclaredOnlyLookup))
                 {
-                    continue;
-                }
+                    MethodInfo? candidateDeclaredAccessor = getter ? candidate.SetMethod : candidate.GetMethod;
+                    if (candidateDeclaredAccessor?.GetBaseDefinition() != declaredAccessorBaseDefinition)
+                    {
+                        continue;
+                    }
 
-                MethodInfo? candidateDeclaredAccessor = getter ? candidate.SetMethod : candidate.GetMethod;
-                if (candidateDeclaredAccessor is null || candidateDeclaredAccessor.GetBaseDefinition() != declaredAccessorBaseDefinition)
-                {
-                    // `candidate` isn't part of the same virtual override chain (e.g. it's shadowed
-                    // via `new`); stop looking.
-                    return null;
-                }
+                    if ((getter ? candidate.GetMethod : candidate.SetMethod) is not null)
+                    {
+                        return candidate;
+                    }
 
-                MethodInfo? candidateAccessor = getter ? candidate.GetMethod : candidate.SetMethod;
-                if (candidateAccessor is not null)
+                    break;
+                }
+            }
+
+            return null;
+        }
+
+        [RequiresUnreferencedCode(PropertyTrimmingWarningMessage)]
+        private static void GetVirtualAccessorBaseDefinitions(
+            PropertyInfo property,
+            out MethodInfo? getBaseDefinition,
+            out MethodInfo? setBaseDefinition)
+        {
+            PropertyInfo? getProperty = GetEffectiveProperty(property, getter: true);
+            PropertyInfo? setProperty = GetEffectiveProperty(property, getter: false);
+            MethodInfo? getMethod = getProperty?.GetMethod;
+            MethodInfo? setMethod = setProperty?.SetMethod;
+            getBaseDefinition = getMethod?.IsVirtual == true ? getMethod.GetBaseDefinition() : null;
+            setBaseDefinition = setMethod?.IsVirtual == true ? setMethod.GetBaseDefinition() : null;
+        }
+
+        // Property attribute inheritance follows a single accessor chain. Match both virtual
+        // accessor slots so metadata on a partial override is not skipped.
+        [RequiresUnreferencedCode(PropertyTrimmingWarningMessage)]
+        private static T? GetPropertyAttribute<T>(PropertyInfo property) where T : Attribute
+        {
+            T? attribute = property.GetCustomAttribute<T>(inherit: false);
+            if (attribute is not null)
+            {
+                return attribute;
+            }
+
+            GetVirtualAccessorBaseDefinitions(property, out MethodInfo? getBaseDefinition, out MethodInfo? setBaseDefinition);
+
+            if ((getBaseDefinition is null && setBaseDefinition is null) || property.DeclaringType is null)
+            {
+                return null;
+            }
+
+            for (Type? baseType = property.DeclaringType.BaseType; baseType is not null && baseType != typeof(object); baseType = baseType.BaseType)
+            {
+                foreach (PropertyInfo candidate in baseType.GetProperties(DeclaredOnlyLookup))
                 {
-                    return candidateAccessor;
+                    MethodInfo? candidateGetMethod = candidate.GetMethod;
+                    MethodInfo? candidateSetMethod = candidate.SetMethod;
+                    bool matchesGetter = getBaseDefinition is not null &&
+                        candidateGetMethod?.IsVirtual == true &&
+                        candidateGetMethod.GetBaseDefinition() == getBaseDefinition;
+                    bool matchesSetter = setBaseDefinition is not null &&
+                        candidateSetMethod?.IsVirtual == true &&
+                        candidateSetMethod.GetBaseDefinition() == setBaseDefinition;
+
+                    if (!matchesGetter && !matchesSetter)
+                    {
+                        continue;
+                    }
+
+                    attribute = candidate.GetCustomAttribute<T>(inherit: false);
+                    if (attribute is not null)
+                    {
+                        return attribute;
+                    }
+
+                    break;
                 }
             }
 
@@ -1265,15 +1331,16 @@ namespace Microsoft.Extensions.Configuration
             return propertyBindingPoint.Value;
         }
 
+        [RequiresUnreferencedCode(PropertyTrimmingWarningMessage)]
         private static bool IsIgnoredProperty(PropertyInfo property) =>
-            Attribute.IsDefined(property, typeof(ConfigurationIgnoreAttribute), inherit: true);
+            GetPropertyAttribute<ConfigurationIgnoreAttribute>(property) is not null;
 
+        [RequiresUnreferencedCode(PropertyTrimmingWarningMessage)]
         private static string GetPropertyName(PropertyInfo property)
         {
             ArgumentNullException.ThrowIfNull(property);
 
-            string? name = (Attribute.GetCustomAttribute(property, typeof(ConfigurationKeyNameAttribute), inherit: true)
-                as ConfigurationKeyNameAttribute)?.Name;
+            string? name = GetPropertyAttribute<ConfigurationKeyNameAttribute>(property)?.Name;
             return !string.IsNullOrWhiteSpace(name) ? name : property.Name;
         }
     }
