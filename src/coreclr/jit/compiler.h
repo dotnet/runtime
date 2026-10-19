@@ -7020,7 +7020,6 @@ public:
 
 #ifdef TARGET_WASM
     PhaseStatus fgWasmEhFlow();
-    PhaseStatus fgWasmRemoveUnreachableBlocks();
     void fgWasmEhTransformTry(ArrayStack<BasicBlock*>* catchRetBlocks, unsigned regionIndex, unsigned catchRetIndexLocalNum);
     PhaseStatus fgWasmControlFlow();
     PhaseStatus fgWasmTransformSccs();

@@ -1124,41 +1124,6 @@ struct WasmTryEntryDispatch
 typedef JitHashTable<BasicBlock*, JitPtrKeyFuncs<BasicBlock>, unsigned> WasmBlockToIndexMap;
 
 //-----------------------------------------------------------------------------
-// fgWasmRemoveUnreachableBlocks: remove all blocks not reachable in the flow graph.
-//
-// Returns:
-//   suitable phase status
-//
-// Notes:
-//   Wasm control flow lowering lays out only the blocks in its DFS, so it requires
-//   every block in the list to be reachable. fgRemoveBlocksOutsideDfsTree keeps
-//   unreachable BBF_DONT_REMOVE blocks (as empty throws), but that flag can be stale:
-//   fgSplitBlockAtEnd copies it to the new block, so splitting a handler entry leaves
-//   a protected block that is not an EH region entry. Unprotect such blocks so they
-//   are removed.
-//
-//   Unreachable try entries are still kept here; fgRemoveUnreachableTry is expected
-//   to have already removed their EH regions.
-//
-PhaseStatus Compiler::fgWasmRemoveUnreachableBlocks()
-{
-    fgInvalidateDfsTree();
-    m_dfsTree = fgComputeDfs();
-
-    for (BasicBlock* const block : Blocks())
-    {
-        if (block->HasFlag(BBF_DONT_REMOVE) && !m_dfsTree->Contains(block) &&
-            !block->KindIs(BBJ_CALLFINALLY, BBJ_CALLFINALLYRET) && !bbIsTryBeg(block) && !bbIsHandlerBeg(block))
-        {
-            JITDUMP("Unprotecting unreachable " FMT_BB ", which is not an EH region entry\n", block->bbNum);
-            block->RemoveFlags(BBF_DONT_REMOVE);
-        }
-    }
-
-    return fgRemoveBlocksOutsideDfsTree() ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
-}
-
-//-----------------------------------------------------------------------------
 // fgWasmRepairTryEntries: reshape try regions so that each is entered only via
 //   its ebdTryBeg.
 //
