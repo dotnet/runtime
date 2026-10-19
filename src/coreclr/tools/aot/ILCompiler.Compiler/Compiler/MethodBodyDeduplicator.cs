@@ -8,6 +8,7 @@ using System.Runtime.CompilerServices;
 using ILCompiler.DependencyAnalysis;
 
 using Internal.IL.Stubs;
+using Internal.JitInterface;
 using Internal.TypeSystem;
 
 namespace ILCompiler
@@ -76,6 +77,9 @@ namespace ILCompiler
 
                 var hashCode = default(HashCode);
                 hashCode.AddBytes(data.Data);
+
+                if (factory.Target.IsWasm)
+                    hashCode.Add(WasmLowering.GetSignature(node.Method).FuncType);
 
                 // Hash relocations consistently with MethodInternComparer.AreSame so that bodies that only differ
                 // in their relocation targets (e.g. instantiations over different struct state machines)
@@ -181,6 +185,11 @@ namespace ILCompiler
 
                 if (_genericsOnly
                     && a.Method.Method.GetTypicalMethodDefinition() != b.Method.Method.GetTypicalMethodDefinition())
+                    return false;
+
+                // Identical WASM bodies can still have different types when some parameters are unused.
+                if (_factory.Target.IsWasm
+                    && !WasmLowering.GetSignature(a.Method.Method).FuncType.Equals(WasmLowering.GetSignature(b.Method.Method).FuncType))
                     return false;
 
                 ObjectNode.ObjectData o1data = ((ObjectNode)a.Method).GetData(_factory, relocsOnly: false);
