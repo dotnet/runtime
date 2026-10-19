@@ -4459,18 +4459,6 @@
   <data name="IO_SharedMemory_PathExistsButNotDirectory" xml:space="preserve">
     <value>The path '{0}' exists but is not a directory.</value>
   </data>
-  <data name="IO_SharedMemory_DirectoryPermissionsIncorrect" xml:space="preserve">
-    <value>The directory '{0}' does not have the expected owner or permissions for system scope: {1}, {2}.</value>
-  </data>
-  <data name="IO_SharedMemory_DirectoryNotOwnedByUid" xml:space="preserve">
-    <value>The directory '{0}' is not owned by the current user with UID {1}.</value>
-  </data>
-  <data name="IO_SharedMemory_DirectoryPermissionsIncorrectUserScope" xml:space="preserve">
-    <value>The directory '{0}' does not have the expected permissions for user scope: {1}.</value>
-  </data>
-  <data name="IO_SharedMemory_DirectoryOwnerPermissionsIncorrect" xml:space="preserve">
-    <value>The directory '{0}' does not have the expected owner permissions: {1}.</value>
-  </data>
   <data name="Argument_MustBeFunctionPointer" xml:space="preserve">
     <value>Argument must represent a function pointer type.</value>
   </data>

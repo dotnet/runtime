@@ -391,6 +391,10 @@ void SetThread(Thread* t)
         {
             EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("Failed to insert thread into signal-safe map due to out of memory."));
         }
+
+        // Native threads may enter with the GC activation signal blocked.
+        // Unmask it on CLR attachment so GC can interrupt managed execution.
+        PAL_UnmaskActivationSignal();
 #endif // TARGET_UNIX && !TARGET_WASM
     }
     else

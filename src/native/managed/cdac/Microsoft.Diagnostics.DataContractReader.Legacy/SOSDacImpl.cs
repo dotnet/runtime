@@ -2648,6 +2648,8 @@ public sealed unsafe partial class SOSDacImpl
                 case RejitState.Active:
                     flags = DacpReJitData.Flags.kActive;
                     break;
+                case RejitState.Unknown:
+                    break;
                 default:
                     Debug.Fail("Unknown RejitState. cDAC should be updated to understand this new state.");
                     break;
@@ -5706,8 +5708,11 @@ public sealed unsafe partial class SOSDacImpl
                     case RejitState.Active:
                         pRejitData->flags = DacpReJitData2.Flags.kActive;
                         break;
+                    case RejitState.Unknown:
+                        pRejitData->flags = DacpReJitData2.Flags.kUnknown;
+                        break;
                     default:
-                        Debug.Assert(true, "Unknown SharedRejitInfo state.  cDAC should be updated to understand this new state.");
+                        Debug.Fail("Unknown SharedRejitInfo state.  cDAC should be updated to understand this new state.");
                         pRejitData->flags = DacpReJitData2.Flags.kUnknown;
                         break;
                 }
