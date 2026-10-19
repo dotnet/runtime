@@ -478,14 +478,25 @@ void InitGSCookie()
     volatile GSCookie * pGSCookiePtr = GetProcessGSCookiePtr();
 
 #ifdef FEATURE_READONLY_GS_COOKIE
-    // The GS cookie is stored in a read only data segment. There is no reliable way to query the
-    // previous protection for arbitrary read-only data pages across platforms, so we know the page
-    // is read-only and can restore it to that directly below without querying for it.
+#ifdef TARGET_WINDOWS
+    DWORD oldProtection;
+    if (!VirtualProtect((LPVOID)pGSCookiePtr, sizeof(GSCookie), PAGE_READWRITE, &oldProtection))
+    {
+        ThrowLastError();
+    }
+#else // TARGET_WINDOWS
     if (!VMToOSInterface::ProtectMemory((LPVOID)pGSCookiePtr, sizeof(GSCookie), VMToOSInterface::MemoryProtection::ReadWrite))
     {
         ThrowLastError();
     }
+#endif // TARGET_WINDOWS
 #endif // FEATURE_READONLY_GS_COOKIE
+
+#if defined(TARGET_WINDOWS) && defined(FEATURE_READONLY_GS_COOKIE)
+    // The GSCookie cannot be in a writeable page
+    assert(((oldProtection & (PAGE_READWRITE|PAGE_WRITECOPY|PAGE_EXECUTE_READWRITE|
+                              PAGE_EXECUTE_WRITECOPY|PAGE_WRITECOMBINE)) == 0));
+#endif // TARGET_WINDOWS && FEATURE_READONLY_GS_COOKIE
 
 #ifndef TARGET_UNIX
     // Forces VC cookie to be initialized.
@@ -509,10 +520,18 @@ void InitGSCookie()
     *pGSCookiePtr = val;
 
 #ifdef FEATURE_READONLY_GS_COOKIE
+#ifdef TARGET_WINDOWS
+    DWORD currentProtection;
+    if (!VirtualProtect((LPVOID)pGSCookiePtr, sizeof(GSCookie), oldProtection, &currentProtection))
+    {
+        ThrowLastError();
+    }
+#else // TARGET_WINDOWS
     if (!VMToOSInterface::ProtectMemory((LPVOID)pGSCookiePtr, sizeof(GSCookie), VMToOSInterface::MemoryProtection::ReadOnly))
     {
         ThrowLastError();
     }
+#endif // TARGET_WINDOWS
 #endif // FEATURE_READONLY_GS_COOKIE
 }
 
