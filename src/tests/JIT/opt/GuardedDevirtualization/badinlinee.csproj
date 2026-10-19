@@ -5,8 +5,9 @@
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <!-- GC stress allocates synthetic objects on the current thread, invalidating the zero-allocation assertion. -->
     <GCStressIncompatible>true</GCStressIncompatible>
-    <!-- ActiveIssue https://github.com/dotnet/runtime/issues/134169 -->
-    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetOS)' == 'browser'">true</CLRTestTargetUnsupported>
+    <!-- WebAssembly has no JIT, so tiered compilation cannot rejit the test method with guarded
+         devirtualization (https://github.com/dotnet/runtime/issues/134169). -->
+    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetArchitecture)' == 'wasm'">true</CLRTestTargetUnsupported>
     <!-- Tiered compilation is disabled in interpreter mode. -->
     <InterpreterIncompatible>true</InterpreterIncompatible>
   </PropertyGroup>
