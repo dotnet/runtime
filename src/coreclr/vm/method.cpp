@@ -351,6 +351,8 @@ LPCUTF8 MethodDesc::GetNameThrowing()
     CONTRACTL
     {
         THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
     }
     CONTRACTL_END;
 
@@ -2016,9 +2018,7 @@ MethodDesc* MethodDesc::ResolveGenericVirtualMethod(OBJECTREF *orThis, MethodTab
 {
     CONTRACTL
     {
-        MODE_PREEMPTIVE;
-        THROWS;
-        GC_TRIGGERS;
+        STANDARD_VM_CHECK;
 
         PRECONDITION(IsVtableMethod());
         PRECONDITION(HasMethodInstantiation());
@@ -2083,11 +2083,9 @@ PCODE MethodDesc::GetSingleCallableAddrOfCodeForUnmanagedCallersOnly()
 {
     CONTRACTL
     {
-        THROWS;
+        STANDARD_VM_CHECK;
         // On portable entrypoint platforms resolving the entrypoint may need to run the prestub
         // (e.g. to publish R2R native code for the method), which can trigger a GC.
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
         PRECONDITION(HasUnmanagedCallersOnlyAttribute());
     }
     CONTRACTL_END;
@@ -2108,13 +2106,8 @@ PCODE MethodDesc::GetSingleCallableAddrOfCodeForUnmanagedCallersOnly()
 //*******************************************************************************
 PCODE MethodDesc::GetSingleCallableAddrOfVirtualizedCode(OBJECTREF *orThis, MethodTable* pMTOfThis, TypeHandle staticTH)
 {
-    CONTRACTL
-    {
-        THROWS;                 // Resolving a generic virtual method can throw
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
+    // Resolving a generic virtual method can throw.
+    STANDARD_VM_CONTRACT;
 
     PRECONDITION(IsVtableMethod());
 
@@ -2140,9 +2133,7 @@ MethodDesc* MethodDesc::GetMethodDescOfVirtualizedCode(OBJECTREF *orThis, Method
 {
     CONTRACTL
     {
-        MODE_PREEMPTIVE;
-        THROWS;
-        GC_TRIGGERS;
+        STANDARD_VM_CHECK;
 
         PRECONDITION(IsVtableMethod());
         PRECONDITION(!staticTH.IsNull() || !IsInterface()); // If this is a non-interface method, staticTH may be null
@@ -2174,13 +2165,7 @@ MethodDesc* MethodDesc::GetMethodDescOfVirtualizedCode(OBJECTREF *orThis, Method
 // handling of context proxies and other thunking layers.
 PCODE MethodDesc::GetMultiCallableAddrOfVirtualizedCode(OBJECTREF *orThis, MethodTable* pMTOfThis, TypeHandle staticTH)
 {
-    CONTRACTL
-    {
-        MODE_PREEMPTIVE;
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     MethodDesc *pTargetMD = GetMethodDescOfVirtualizedCode(orThis, pMTOfThis, staticTH);
     return pTargetMD->GetMultiCallableAddrOfCode();
@@ -3852,6 +3837,7 @@ BOOL MethodDesc::ShouldSuppressGCTransition()
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
     }
     CONTRACTL_END;
 
@@ -4108,12 +4094,15 @@ MethodDescChunk::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 //*******************************************************************************
 MethodDesc *MethodDesc::GetInterfaceMD()
 {
-    CONTRACTL {
+    CONTRACTL
+    {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
         INSTANCE_CHECK;
         PRECONDITION(!IsInterface());
-    } CONTRACTL_END;
+    }
+    CONTRACTL_END;
     MethodTable *pMT = GetMethodTable();
     return pMT->ReverseInterfaceMDLookup(GetSlot());
 }
@@ -4167,6 +4156,7 @@ void MethodDesc::WalkValueTypeParameters(MethodTable *pMT, WalkValueTypeParamete
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
     }
     CONTRACTL_END;
 
@@ -4257,16 +4247,21 @@ PrecodeType MethodDesc::GetPrecodeType()
 #ifndef DACCESS_COMPILE
 void MethodDesc::PrepareForUseAsADependencyOfANativeImageWorker()
 {
-    STANDARD_VM_CONTRACT;
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
 
     // This function ensures that a method is ready for use as a dependency of a native image
     // The current requirement is only that valuetypes can be resolved to their type defs as much
     // as is possible. (If the method is actually called, then this will not throw, but there
     // are cases where we call this method and we are unaware if this method will actually be called
-    // or accessed as a native image dependency. This explains the contract (STANDARD_VM_CONTRACT)
-    //  - This method should be callable only when general purpose VM code can be called
-    // , as well as the TRY/CATCH.
-    //  - This function should not introduce failures
+    // or accessed as a native image dependency.) Resolving valuetypes may throw and trigger GC,
+    // so this method requires general purpose VM execution, but accepts either GC mode (MODE_ANY).
+    // Nonterminal exceptions are swallowed to avoid introducing failures.
 
     EX_TRY
     {
@@ -4278,12 +4273,7 @@ void MethodDesc::PrepareForUseAsADependencyOfANativeImageWorker()
 
 static void CheckForEquivalenceAndLoadType(Module *pModule, mdToken token, Module *pDefModule, mdToken defToken, const SigParser *ptr, SigTypeContext *pTypeContext, void *pData)
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     BOOL *pHasEquivalentParam = (BOOL *)pData;
 

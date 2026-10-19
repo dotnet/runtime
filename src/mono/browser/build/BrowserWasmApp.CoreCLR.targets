@@ -247,6 +247,9 @@
       <WasmNativeAsset Remove="@(WasmNativeAsset)" />
       <WasmNativeAsset Include="@(_WasmNestedPublishAppResultItems)" Condition="'%(_WasmNestedPublishAppResultItems.OriginalItemName)' == 'WasmNativeAsset'" />
 
+      <_WasmNestedPublishCompositeR2RImage Remove="@(_WasmNestedPublishCompositeR2RImage)" />
+      <_WasmNestedPublishCompositeR2RImage Include="@(_WasmNestedPublishAppResultItems)" Condition="'%(_WasmNestedPublishAppResultItems.OriginalItemName)' == '_WasmNestedPublishCompositeR2RImage'" />
+
       <FileWrites Include="@(_WasmNestedPublishAppResultItems)" Condition="'%(_WasmNestedPublishAppResultItems.OriginalItemName)' == 'FileWrites'" />
     </ItemGroup>
   </Target>
@@ -255,10 +258,14 @@
   <Target Name="WasmNestedPublishApp"
           Condition="'$(WasmBuildingForNestedPublish)' == 'true'"
           DependsOnTargets="ResolveRuntimePackAssets;$(_WasmNestedPublishAppPreTarget);$(WasmNestedPublishAppDependsOn);_CoreCLRSetWasmBuildNativeDefaults;_CoreCLRWasmBuildAppCore"
-          Returns="@(WasmNativeAsset);@(WasmAssembliesFinal);@(FileWrites)">
+          Returns="@(WasmNativeAsset);@(WasmAssembliesFinal);@(_WasmNestedPublishCompositeR2RImage);@(FileWrites)">
     <ItemGroup>
       <WasmNativeAsset OriginalItemName="WasmNativeAsset" />
       <WasmAssembliesFinal OriginalItemName="WasmAssembliesFinal" />
+      <!-- The composite ReadyToRun image is not an assembly, so it is returned separately. -->
+      <_WasmNestedPublishCompositeR2RImage Include="@(_ReadyToRunCompileList->WithMetadataValue('CreateCompositeImage', 'true')->'%(OutputR2RImage)')"
+                                           KeepMetadata="OutputR2RImage" />
+      <_WasmNestedPublishCompositeR2RImage OriginalItemName="_WasmNestedPublishCompositeR2RImage" />
       <FileWrites OriginalItemName="FileWrites" />
     </ItemGroup>
   </Target>
