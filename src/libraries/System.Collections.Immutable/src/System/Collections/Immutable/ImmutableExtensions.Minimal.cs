@@ -100,7 +100,7 @@ namespace System.Collections.Immutable
                 // On .NET Framework, an array's ICollection<T>.CopyTo calls Array.Copy, which throws ArrayTypeMismatchException for some arrays whose element type is not T
                 // (for example, a uint[] passed as IEnumerable<int>), so conservatively fall back to enumeration for any array that is not exactly a T[].
                 // See https://github.com/dotnet/runtime/issues/14794 for more info.
-                if (collection.GetType() != typeof(T[]) && collection is Array)
+                if (collection is Array && collection.GetType() != typeof(T[]))
                 {
                     return false;
                 }
