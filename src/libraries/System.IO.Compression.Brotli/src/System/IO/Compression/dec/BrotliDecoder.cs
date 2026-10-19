@@ -15,12 +15,6 @@ namespace System.IO.Compression
         private bool _disposed;
         private int _maxWindowLog2;
         private bool _windowValidated;
-        /// <summary>
-        /// Gets the maximum window size accepted by this decoder. A zero-initialized <see cref="BrotliDecoder" /> has no explicitly
-        /// configured value and defaults to the maximum defined by RFC 7932.
-        /// </summary>
-        private readonly int EffectiveMaxWindowLog2 => _maxWindowLog2 == 0 ? BrotliUtils.WindowBits_Max : _maxWindowLog2;
-
 
         /// <summary>Initializes a new instance of the <see cref="BrotliDecoder" /> structure using the specified decompression options.</summary>
         /// <param name="decompressionOptions">The Brotli options for fine tuning the decompression.</param>
@@ -47,7 +41,7 @@ namespace System.IO.Compression
 
             // The native decoder only distinguishes between the RFC 7932 window range and the "Large Window Brotli" range; any
             // finer limit is enforced against the window declared by the stream header once decompression starts.
-            if (EffectiveMaxWindowLog2 > BrotliUtils.WindowBits_Max &&
+            if (_maxWindowLog2 > BrotliUtils.WindowBits_Max &&
                 Interop.Brotli.BrotliDecoderSetParameter(_state, BrotliDecoderParameter.LargeWindow, 1) == Interop.BOOL.FALSE)
             {
                 throw new InvalidOperationException(SR.Format(SR.BrotliDecoder_InvalidSetParameter, nameof(BrotliDecoderParameter.LargeWindow)));
@@ -98,7 +92,7 @@ namespace System.IO.Compression
             // for a stream with a different window size and bypassing the check entirely.
             if (_maxWindowLog2 != 0 && !_windowValidated && !destination.IsEmpty)
             {
-                switch (BrotliUtils.TryGetWindowBits(source, out int windowBits, EffectiveMaxWindowLog2 > BrotliUtils.WindowBits_Max))
+                switch (BrotliUtils.TryGetWindowBits(source, out int windowBits, _maxWindowLog2 > BrotliUtils.WindowBits_Max))
                 {
                     case OperationStatus.NeedMoreData:
                         return OperationStatus.NeedMoreData;
