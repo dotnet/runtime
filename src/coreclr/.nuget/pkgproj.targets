@@ -12,14 +12,14 @@
 
   <Import Project="$(NuGetPackageRoot)\microsoft.dotnet.build.tasks.packaging\$(MicrosoftDotNetBuildTasksPackagingVersion)\build\Microsoft.DotNet.Build.Tasks.Packaging.targets" />
 
-  <ItemGroup Condition="'$(IsGraphBuild)' == 'true' and '$(Restore)' != 'true' and '$(PackageTargetRuntime)' != ''">
+  <ItemGroup Condition="'$(Restore)' != 'true' and '$(PackageTargetRuntime)' != '' and '$(IsLineupPackage)' != 'true'">
     <ProjectReference Include="$(CoreClrProjectRoot)runtime.proj"
-                      Condition="'$(PackCrossComponent)' != 'true'"
+                      Condition="'$(PackCrossComponent)' != 'true' and '$(ClrRuntimeBuildSubsets)' != ''"
                       ReferenceOutputAssembly="false"
                       Private="false"
                       SkipGetTargetFrameworkProperties="true"
                       Targets="Build"
-                      StaticGraphBuildOrderOnly="true"
+                      BuildOrderOnly="true"
                       AdditionalProperties="$(ClrRuntimeBuildSubsets);$(TargetCxxLibraryProperties)"
                       GlobalPropertiesToRemove="PackageTargetRuntime;Platform;PackCrossComponent" />
     <ProjectReference Include="@(ProjectToBuild->WithMetadataValue('CoreClrNativeBuild', 'CrossComponents'))"
@@ -28,18 +28,32 @@
                       Private="false"
                       SkipGetTargetFrameworkProperties="true"
                       Targets="Build"
-                      StaticGraphBuildOrderOnly="true"
+                      BuildOrderOnly="true"
                       GlobalPropertiesToRemove="PackageTargetRuntime;Platform;PackCrossComponent" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <BuildDependsOn>BuildNativeProjectReferences;$(BuildDependsOn)</BuildDependsOn>
+  </PropertyGroup>
+
+  <Target Name="BuildNativeProjectReferences"
+          Condition="'$(BuildPackageLibraryReferences)' == 'true' and '$(DesignTimeBuild)' != 'true'">
+    <MSBuild Projects="@(ProjectReference->WithMetadataValue('BuildOrderOnly', 'true'))"
+             Targets="Build"
+             BuildInParallel="$(BuildInParallel)"
+             RemoveProperties="%(ProjectReference.GlobalPropertiesToRemove);%(ProjectReference.UndefineProperties)" />
+  </Target>
+
+  <ItemGroup Condition="'$(IsGraphBuild)' == 'true' and '$(BuildPackageLibraryReferences)' == 'true'">
     <ProjectReferenceTargets Include="Build" Targets="Build" />
     <ProjectReferenceTargets Include="Pack" Targets="Build" />
   </ItemGroup>
 
   <!-- A native producer orders the graph but is not a NuGet package dependency. -->
-  <Target Name="RemoveStaticGraphBuildOrderOnlyProjectReferences"
-          BeforeTargets="_GetProjectClosure;SplitProjectReferences;ExpandProjectReferences;GetPkgProjPackageDependencies;AssignPkgProjPackageDependenciesTargetFramework;GetPackageDependencies;GenerateRuntimeDependencies;GetFilesToPackage;GetPackageFiles;Pack"
-          Condition="'$(IsGraphBuild)' == 'true'">
+  <Target Name="RemoveBuildOrderOnlyPackageDependencies"
+          AfterTargets="_GetProjectClosure">
     <ItemGroup>
-      <ProjectReference Remove="@(ProjectReference)" Condition="'%(ProjectReference.StaticGraphBuildOrderOnly)' == 'true'" />
+      <_ProjectReferenceClosure Remove="@(_ProjectReferenceClosure)" Condition="'%(_ProjectReferenceClosure.BuildOrderOnly)' == 'true'" />
     </ItemGroup>
   </Target>
 

@@ -1,16 +1,7 @@
 <Project>
-  <!-- Update the project references with additional properties calculated during the execution phase.
-       _InitializeAssemblyVersion is provided by Arcade. It sets the AssemblyVersion and FileVersion properties.
-       We depend on this private Arcade target instead of the SDK-defined GetAssemblyVersion since the packaging
-       build does not use the .NET SDK -->
-  <Target Name="UpdateAdditionalProperties"
-          BeforeTargets="Build;Pack"
-          Condition="'$(IsGraphBuild)' != 'true'"
-          DependsOnTargets="_InitializeAssemblyVersion">
-    <ItemGroup>
-      <!-- Pass the FileVersion calculated by _InitializeAssemblyVersion to referenced projects -->
-      <ProjectReference Update="@(ProjectReference)"
-                        AdditionalProperties="%(ProjectReference.AdditionalProperties);FileVersion=$(FileVersion)" />
-    </ItemGroup>
-  </Target>
+  <!-- Packaging projects do not use the .NET SDK's version initialization.
+       Initialize locally so project-reference identities do not depend on target execution. -->
+  <Target Name="InitializePackageFileVersion"
+          BeforeTargets="Build;Pack;GenerateNuSpec;GetPackageIdentity"
+          DependsOnTargets="_InitializeAssemblyVersion" />
 </Project>

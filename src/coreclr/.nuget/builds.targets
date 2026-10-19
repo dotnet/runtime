@@ -10,36 +10,22 @@
     <AddTransitiveProjectReferencesInStaticGraph>false</AddTransitiveProjectReferencesInStaticGraph>
   </PropertyGroup>
 
-  <!-- Graph construction cannot see the references added by FilterProjects during execution. -->
-  <ItemGroup Condition="'$(IsGraphBuild)' == 'true'">
-    <_graphProjectsToBuild Include="@(Project->WithMetadataValue('PackageTargetRuntime', '$(TargetRid)'))" />
-    <_graphProjectsToBuild Include="@(Project->WithMetadataValue('PackageTargetRuntime', ''))"
-                           Condition="'$(BuildIdentityPackage)' == 'true'" />
-    <_graphProjectsToBuild Include="@(Project->WithMetadataValue('PackageTargetRuntime', '$(NETCoreSdkRuntimeIdentifier)'))"
-                           Condition="'$(BuildHostILTools)' == 'true' and '$(IsILToolPackage)' == 'true'">
+  <ItemGroup>
+    <_projectsToBuild Include="@(Project->WithMetadataValue('PackageTargetRuntime', '$(TargetRid)'))" />
+    <_projectsToBuild Include="@(Project->WithMetadataValue('PackageTargetRuntime', ''))"
+                      Condition="'$(BuildIdentityPackage)' == 'true'" />
+    <_projectsToBuild Include="@(Project->WithMetadataValue('PackageTargetRuntime', '$(NETCoreSdkRuntimeIdentifier)'))"
+                      Condition="'$(BuildHostILTools)' == 'true' and '$(IsILToolPackage)' == 'true'">
       <AdditionalProperties>%(AdditionalProperties);PackCrossComponent=true</AdditionalProperties>
-    </_graphProjectsToBuild>
-    <ProjectReference Include="@(_graphProjectsToBuild)" Targets="Build;Pack" />
+    </_projectsToBuild>
+    <ProjectReference Include="@(_projectsToBuild)" Targets="Build;Pack" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(IsGraphBuild)' == 'true'">
     <ProjectReferenceTargets Include="Pack" Targets="Build;Pack" />
   </ItemGroup>
 
-  <Target Name="FilterProjects" BeforeTargets="Build;Pack">
+  <Target Name="ValidatePackageTargetRid" BeforeTargets="Build;Pack">
     <Error Condition="'$(TargetRid)' == ''" Text="'TargetRid' property must be specified."/>
-
-    <!-- Only build packages for current RID or non-RID-specific -->
-    <ItemGroup>
-      <_projectsToBuild Include="@(Project)" Condition="'%(Project.PackageTargetRuntime)' == '$(TargetRid)'" />
-    </ItemGroup>
-
-    <ItemGroup Condition="'$(BuildIdentityPackage)' == 'true'">
-      <_projectsToBuild Include="@(Project)" Condition="'%(Project.PackageTargetRuntime)' == ''" />
-    </ItemGroup>
-    <ItemGroup Condition="'$(BuildHostILTools)' == 'true' and '$(IsILToolPackage)' == 'true'">
-      <_projectsToBuild Include="@(Project)" Condition="'%(Project.PackageTargetRuntime)' == '$(NETCoreSdkRuntimeIdentifier)'" AdditionalProperties="%(Project.AdditionalProperties);PackCrossComponent=true" />
-    </ItemGroup>
-
-    <ItemGroup Condition="'$(IsGraphBuild)' != 'true'">
-      <ProjectReference Include="@(_projectsToBuild)" />
-    </ItemGroup>
   </Target>
 </Project>

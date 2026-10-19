@@ -410,7 +410,7 @@
     <_CrossToolSubset Condition="'$(BuildHostILTools)' == 'true'" Include="ClrILToolsSubset=true" />
   </ItemGroup>
 
-  <!-- Graph consumers reuse this item's metadata to select the same native producer instance. -->
+  <!-- Consumers reuse this item's metadata to select the same native producer instance. -->
   <ItemGroup Condition="'$(_BuildAnyCrossArch)' == 'true' and '@(_CrossToolSubset)' != ''">
     <ProjectToBuild
       Include="$(CoreClrProjectRoot)runtime.proj"

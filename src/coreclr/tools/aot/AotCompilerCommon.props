@@ -34,14 +34,6 @@
       Condition="'$(TargetsWasm)' != 'true' or '$(CrossHostArch)' != ''"
       />
 
-    <Content Include="$(CoreCLRArtifactsPath)/$(CrossHostArch)/$(_LibPrefix)clrjit_*_$(TargetArchitectureForSharedLibraries)$(_LibSuffix)"
-      CopyToOutputDirectory="PreserveNewest"
-      CopyToPublishDirectory="PreserveNewest"
-      ExcludeFromSingleFile="$(PublishSingleFile)"
-      Link="%(FileName)%(Extension)"
-      Condition="'$(CopyAllJitLibrariesToAotCompilerOutput)' == 'true' and '$(IsGraphBuild)' != 'true'"
-      />
-
     <Content Include="$(CoreCLRArtifactsPath)/$(CrossHostArch)/$(SingleJitLibrarySourceName)"
       CopyToOutputDirectory="PreserveNewest"
       CopyToPublishDirectory="PreserveNewest"
@@ -51,9 +43,9 @@
       />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(IsGraphBuild)' == 'true' and '$(Restore)' != 'true'">
+  <ItemGroup Condition="'$(Restore)' != 'true'">
     <ProjectReference Include="$(CoreClrProjectRoot)runtime.proj"
-                      Condition="'$(CrossHostArch)' == ''"
+                      Condition="'$(CrossHostArch)' == '' and '$(ClrRuntimeBuildSubsets)' != ''"
                       ReferenceOutputAssembly="false"
                       Private="false"
                       SkipGetTargetFrameworkProperties="true"
@@ -65,24 +57,25 @@
                       Private="false"
                       SkipGetTargetFrameworkProperties="true"
                       Targets="Build" />
-    <ProjectReferenceTargets Include="GetTargetPath" Targets="Build" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(IsGraphBuild)' == 'true'">
+    <ProjectReferenceTargets Include="GetTargetPath" Targets="Build" />
     <ProjectReferenceTargets Include="PublishItemsOutputGroup" Targets="GetCopyToOutputDirectoryItems" />
   </ItemGroup>
 
   <!-- Expand the wildcard after the native producer runs, not during graph construction. -->
-  <Target Name="IncludeGraphAotCompilerJitLibraries"
+  <Target Name="IncludeAotCompilerJitLibraries"
           BeforeTargets="AssignTargetPaths"
-          Condition="'$(IsGraphBuild)' == 'true' and '$(CopyAllJitLibrariesToAotCompilerOutput)' == 'true'">
+          DependsOnTargets="ResolveProjectReferences"
+          Condition="'$(CopyAllJitLibrariesToAotCompilerOutput)' == 'true'">
     <ItemGroup>
-      <_GraphAotCompilerJitLibrary Include="$(CoreCLRArtifactsPath)/$(CrossHostArch)/$(_LibPrefix)clrjit_*_$(TargetArchitectureForSharedLibraries)$(_LibSuffix)" />
-      <Content Include="@(_GraphAotCompilerJitLibrary)"
+      <_AotCompilerJitLibrary Include="$(CoreCLRArtifactsPath)/$(CrossHostArch)/$(_LibPrefix)clrjit_*_$(TargetArchitectureForSharedLibraries)$(_LibSuffix)" />
+      <Content Include="@(_AotCompilerJitLibrary)"
                CopyToOutputDirectory="PreserveNewest"
                CopyToPublishDirectory="PreserveNewest"
                ExcludeFromSingleFile="$(PublishSingleFile)"
-               Link="%(_GraphAotCompilerJitLibrary.FileName)%(_GraphAotCompilerJitLibrary.Extension)" />
+               Link="%(_AotCompilerJitLibrary.FileName)%(_AotCompilerJitLibrary.Extension)" />
     </ItemGroup>
   </Target>
 </Project>
