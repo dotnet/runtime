@@ -5488,6 +5488,8 @@ protected:
                                           CORINFO_SIG_INFO*     sig,
                                           bool                  mustExpand);
 
+    GenTree* impExpandSmallMemmove(GenTree* destination, GenTree* source, ssize_t length);
+
     GenTree* impSRCSUnsafeIntrinsic(NamedIntrinsic        intrinsic,
                                     CORINFO_CLASS_HANDLE  clsHnd,
                                     CORINFO_METHOD_HANDLE method,

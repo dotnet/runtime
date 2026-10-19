@@ -3708,6 +3708,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
             case NI_System_RuntimeType_get_TypeHandle:
             case NI_System_RuntimeTypeHandle_ToIntPtr:
             case NI_System_Buffer_Memmove:
+            case NI_System_SpanHelpers_Memmove:
 
             // This one is not simple, but it will help us
             // to avoid some unnecessary boxing
@@ -3731,7 +3732,6 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 betterToExpand = true;
                 break;
 
-            case NI_System_SpanHelpers_Memmove:
             case NI_System_SpanHelpers_SequenceEqual:
                 // We're going to instrument these
                 betterToExpand = opts.IsInstrumented();
@@ -5580,6 +5580,15 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                         gtFoldExpr(gtNewOperNode(GT_MUL, TYP_I_IMPL, length, gtNewIconNode(elementSize, TYP_I_IMPL)));
                 }
 
+                if (length->IsCnsIntOrI())
+                {
+                    retNode = impExpandSmallMemmove(destination, source, length->AsIntCon()->IconValue());
+                    if (retNode != nullptr)
+                    {
+                        break;
+                    }
+                }
+
                 // Keep the byte-length probe at this call site, rather than inside the generic wrapper.
                 GenTreeCall* memmove = gtNewUserCallNode(memmoveHnd, TYP_VOID, impCurStmtDI);
                 memmove->gtArgs.PushBack(this, NewCallArg::Primitive(destination));
@@ -5591,10 +5600,27 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 break;
             }
 
+            case NI_System_SpanHelpers_Memmove:
+            {
+                assert(sig->sigInst.methInstCount == 0);
+                assert(sig->numArgs == 3);
+                if (impStackTop().val->IsCnsIntOrI())
+                {
+                    ssize_t length = impStackTop().val->AsIntCon()->IconValue();
+                    retNode        = impExpandSmallMemmove(impStackTop(2).val, impStackTop(1).val, length);
+                    if (retNode != nullptr)
+                    {
+                        impPopStack(3);
+                        break;
+                    }
+                }
+                isSpecial = true;
+                break;
+            }
+
             case NI_System_Text_UTF8Encoding_UTF8EncodingSealed_ReadUtf8:
             case NI_System_SpanHelpers_SequenceEqual:
             case NI_System_SpanHelpers_ClearWithoutReferences:
-            case NI_System_SpanHelpers_Memmove:
             {
                 if (sig->sigInst.methInstCount == 0)
                 {
@@ -5989,6 +6015,36 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
     }
 
     return retNode;
+}
+
+//------------------------------------------------------------------------
+// impExpandSmallMemmove: Fold a constant byte length to one exact-width copy.
+//
+// Arguments:
+//    destination - Tree producing the destination address.
+//    source      - Tree producing the source address.
+//    length      - Constant byte count.
+//
+// Return Value:
+//    Expanded copy tree, or nullptr if the copy cannot be folded.
+//
+GenTree* Compiler::impExpandSmallMemmove(GenTree* destination, GenTree* source, ssize_t length)
+{
+    if (!opts.Tier0OptimizationEnabled() || (length <= 0) || (length > INT_MAX))
+    {
+        return nullptr;
+    }
+
+    unsigned  size = static_cast<unsigned>(length);
+    var_types type = roundDownMaxType(size);
+    if (genTypeSize(type) != size)
+    {
+        return nullptr;
+    }
+
+    compFloatingPointUsed |= varTypeUsesFloatReg(type);
+    GenTree* value = gtNewIndir(type, source, GTF_IND_UNALIGNED);
+    return gtNewStoreIndNode(type, destination, value, GTF_IND_UNALIGNED);
 }
 
 GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic          intrinsic,
