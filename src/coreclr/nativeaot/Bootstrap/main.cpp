@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include <stdlib.h>
 #include <minipal/descriptorlimit.h>
 
 #if defined(DEBUG) && defined(_WIN32)
@@ -260,6 +261,9 @@ int main(int argc, char* argv[])
     int exitCode = __managed__Main(argc, argv);
     _cexit();
     ExitProcess(exitCode);
+#elif defined(TARGET_WASI)
+    // Returning from WASI Preview 2 main reduces the exit code to a boolean result.
+    exit(__managed__Main(argc, argv));
 #else
     return __managed__Main(argc, argv);
 #endif
