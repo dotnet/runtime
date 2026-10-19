@@ -100,16 +100,7 @@ namespace Internal.Runtime
 
                 Debug.Assert(m_Size >= FOH_SEGMENT_DEFAULT_SIZE);
 
-                try
-                {
-                    m_pStart = (byte*)NativeMemory.AllocZeroed(m_Size);
-                }
-                catch (OutOfMemoryException) when (m_Size > FOH_SEGMENT_DEFAULT_SIZE)
-                {
-                    // Retry with the default size if allocating a larger segment fails.
-                    m_Size = FOH_SEGMENT_DEFAULT_SIZE;
-                    m_pStart = (byte*)NativeMemory.AllocZeroed(m_Size);
-                }
+                m_pStart = (byte*)NativeMemory.AllocZeroed(m_Size);
 
                 m_pCurrent = m_pStart + sizeof(ObjHeader);
 
