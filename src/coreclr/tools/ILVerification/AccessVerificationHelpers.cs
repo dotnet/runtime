@@ -253,18 +253,7 @@ namespace ILVerify
                 {
                     return true;
                 }
-                var friendName = friendAssembly.GetName();
-
-                foreach (var attribute in assembly.GetDecodedCustomAttributes("System.Runtime.CompilerServices", "InternalsVisibleToAttribute"))
-                {
-                    AssemblyNameInfo friendAttributeName = AssemblyNameInfo.Parse(((string)attribute.FixedArguments[0].Value).AsSpan());
-                    if (!friendName.Name.Equals(friendAttributeName.Name, StringComparison.OrdinalIgnoreCase))
-                        continue;
-
-                    // Comparing PublicKeyToken for simplicity
-                    if (GetPublicKeyToken(friendAttributeName).SequenceEqual(GetPublicKeyToken(friendName)))
-                        return true;
-                }
+                return assembly.NamesAssembly("InternalsVisibleToAttribute", friendAssembly.GetName());
             }
             return false;
         }
@@ -279,27 +268,23 @@ namespace ILVerify
             if (assembly == null || targetAssembly == null)
                 return false;
 
-            var targetName = targetAssembly.GetName();
+            return assembly.NamesAssembly("IgnoresAccessChecksToAttribute", targetAssembly.GetName());
+        }
 
-            foreach (var attribute in assembly.GetDecodedCustomAttributes("System.Runtime.CompilerServices", "IgnoresAccessChecksToAttribute"))
+        private static bool NamesAssembly(this EcmaAssembly assembly, string attributeName, AssemblyNameInfo name)
+        {
+            foreach (var attribute in assembly.GetDecodedCustomAttributes("System.Runtime.CompilerServices", attributeName))
             {
-                AssemblyNameInfo ignoredName = AssemblyNameInfo.Parse(((string)attribute.FixedArguments[0].Value).AsSpan());
-                if (!IsValidFriendName(ignoredName) || !targetName.Name.Equals(ignoredName.Name, StringComparison.OrdinalIgnoreCase))
+                AssemblyNameInfo attributeAssemblyName = AssemblyNameInfo.Parse(((string)attribute.FixedArguments[0].Value).AsSpan());
+                if (!name.Name.Equals(attributeAssemblyName.Name, StringComparison.OrdinalIgnoreCase))
                     continue;
 
-                // Like the runtime, the public key only has to match when the attribute names one
-                if (ignoredName.PublicKeyOrToken.IsDefaultOrEmpty || GetPublicKeyToken(ignoredName).SequenceEqual(GetPublicKeyToken(targetName)))
+                // Comparing PublicKeyToken for simplicity
+                if (GetPublicKeyToken(attributeAssemblyName).SequenceEqual(GetPublicKeyToken(name)))
                     return true;
             }
             return false;
         }
-
-        // Like the runtime (AssemblySpec::CheckFriendAssemblyName), the name may not give a version,
-        // culture, processor architecture or public key token
-        private static bool IsValidFriendName(AssemblyNameInfo name)
-            => name.Version == null && name.CultureName == null
-                && (((int)name.Flags >> 4) & 0x7) == 0
-                && (name.PublicKeyOrToken.IsDefaultOrEmpty || (name.Flags & AssemblyNameFlags.PublicKey) != 0);
 
         private static ReadOnlySpan<byte> GetPublicKeyToken(AssemblyNameInfo assemblyName)
         {

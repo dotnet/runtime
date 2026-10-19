@@ -29,14 +29,6 @@
         30 34 30 30 30 30 30 30 30 30 30 30 30 30 30 30
         00 00
     )
-
-    // IgnoresAccessChecksTo("AccessTestsFriend, Version=1.0.0.0")
-    //                                           ^ the runtime rejects a name that gives a version
-    .custom instance void System.Runtime.CompilerServices.IgnoresAccessChecksToAttribute::.ctor(string) = (
-        01 00 22 41 63 63 65 73 73 54 65 73 74 73 46 72
-        69 65 6e 64 2c 20 56 65 72 73 69 6f 6e 3d 31 2e
-        30 2e 30 2e 30 00 00
-    )
 }
 
 .class private auto ansi beforefieldinit System.Runtime.CompilerServices.IgnoresAccessChecksToAttribute
@@ -80,7 +72,7 @@
         ret
     }
 
-    .method public hidebysig instance void Load.PrivateFieldWrongKeyOrBadName_Invalid_FieldAccess() cil managed
+    .method public hidebysig instance void Load.PrivateFieldWrongPublicKey_Invalid_FieldAccess() cil managed
     {
         ldsfld      int32 [AccessTestsFriend]AccessTestsFriendType::privateField
         pop
