@@ -46,7 +46,7 @@ namespace ILAssembler
         private readonly PdbDocumentTable _pdbDocuments;
         // The .line state of each source of the input file being parsed: the input file and each inclusion of an
         // #include'd file, keyed by the token source (lexer) that reads it. See SourceLineState.
-        private readonly Dictionary<object, SourceLineState> _sourceLineStates = new();
+        private readonly Dictionary<ITokenSource, SourceLineState> _sourceLineStates = new();
         // The span of the last sequence point recorded, across methods and input files, or null when a .line or
         // #line directive has been applied since. An instruction gets a point only when its span differs.
         private SequencePointSpan? _lastSequencePointSpan;

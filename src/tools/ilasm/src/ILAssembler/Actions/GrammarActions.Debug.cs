@@ -215,7 +215,10 @@ internal sealed partial class GrammarActions
     /// <summary>Gets the <c>.line</c> state of the source a token was read from, creating it on first use.</summary>
     private SourceLineState GetSourceLineState(IToken token)
     {
-        object source = (object?)token.TokenSource ?? Location.GetSourceName(token);
+        // Every token the parser reads comes from a lexer: the input file's, an inclusion's, or, for the tokens of
+        // a #define macro, the lexer of the token the macro replaces (PreprocessedTokenSource).
+        ITokenSource source = token.TokenSource;
+        Debug.Assert(source is not null, "Parsed tokens come from a lexer.");
         if (!_sourceLineStates.TryGetValue(source, out SourceLineState? state))
         {
             state = new SourceLineState(Location.GetSourceName(token));
