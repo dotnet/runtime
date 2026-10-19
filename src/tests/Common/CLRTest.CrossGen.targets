@@ -88,7 +88,7 @@ fi
 if [ ! -z ${RunCrossGen2+x} ]%3B then
   export TEST_READY_TO_RUN_MODE=1
   if [ "$(TargetOS)" == "wasi" ]; then
-    # WASI loads R2R code from a single composite spliced into the host.
+    # WASI loads R2R code from the test composite (plus Core_Root's R2R CoreLib) spliced into the host.
     export CompositeBuildMode=1
   fi
   compilationDoneFlagFile="$crossgen2OutputDirectory/done"

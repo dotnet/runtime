@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 
 namespace Microsoft.NET.WebAssembly.Webcil;
@@ -793,6 +794,198 @@ internal static class WasmConstantGlobalFolder
     }
 }
 
+internal static class WasmImportRenamer
+{
+    private const byte ImportSectionId = 2;
+    private const byte ExportSectionId = 7;
+
+    public static void Rename(
+        string inputPath,
+        string outputPath,
+        IReadOnlyDictionary<(string Module, string Field), (string Module, string Field)> renames,
+        IReadOnlyDictionary<string, string> exportRenames)
+    {
+        byte[] module = File.ReadAllBytes(inputPath);
+        if (module.Length < 8 ||
+            module[0] != 0 || module[1] != 0x61 || module[2] != 0x73 || module[3] != 0x6d ||
+            module[4] != 1 || module[5] != 0 || module[6] != 0 || module[7] != 0)
+            throw new BadImageFormatException($"{inputPath} is not a WebAssembly core module.");
+
+        HashSet<(string, string)> pending = new(renames.Keys);
+        HashSet<string> pendingExports = new(exportRenames.Keys, StringComparer.Ordinal);
+        using FileStream output = File.Create(outputPath);
+        output.Write(module, 0, 8);
+        int position = 8;
+        while (position < module.Length)
+        {
+            int sectionStart = position;
+            byte sectionId = module[position++];
+            uint sectionSize = ReadULEB128(module, ref position);
+            int payloadStart = position;
+            int sectionEnd = checked(payloadStart + (int)sectionSize);
+            if (sectionEnd > module.Length)
+                throw new BadImageFormatException("WebAssembly section extends past the end of the file.");
+
+            if (sectionId == ExportSectionId)
+            {
+                using var exports = new MemoryStream();
+                uint exportCount = ReadULEB128(module, ref position);
+                WriteULEB128(exports, exportCount);
+                for (uint i = 0; i < exportCount; i++)
+                {
+                    string name = ReadName(module, ref position);
+                    if (exportRenames.TryGetValue(name, out string? renamedExport))
+                    {
+                        pendingExports.Remove(name);
+                        name = renamedExport;
+                    }
+                    WriteName(exports, name);
+                    int descStart = position;
+                    position++;
+                    ReadULEB128(module, ref position);
+                    exports.Write(module, descStart, position - descStart);
+                }
+                if (position != sectionEnd)
+                    throw new BadImageFormatException("WebAssembly export section has trailing bytes.");
+
+                output.WriteByte(sectionId);
+                WriteULEB128(output, checked((uint)exports.Length));
+                exports.Position = 0;
+                exports.CopyTo(output);
+                continue;
+            }
+
+            if (sectionId != ImportSectionId)
+            {
+                output.Write(module, sectionStart, sectionEnd - sectionStart);
+                position = sectionEnd;
+                continue;
+            }
+
+            using var section = new MemoryStream();
+            uint count = ReadULEB128(module, ref position);
+            WriteULEB128(section, count);
+            for (uint i = 0; i < count; i++)
+            {
+                string moduleName = ReadName(module, ref position);
+                string fieldName = ReadName(module, ref position);
+                if (renames.TryGetValue((moduleName, fieldName), out (string Module, string Field) renamed))
+                {
+                    pending.Remove((moduleName, fieldName));
+                    moduleName = renamed.Module;
+                    fieldName = renamed.Field;
+                }
+                WriteName(section, moduleName);
+                WriteName(section, fieldName);
+                int descStart = position;
+                SkipImportDescriptor(module, ref position);
+                section.Write(module, descStart, position - descStart);
+            }
+            if (position != sectionEnd)
+                throw new BadImageFormatException("WebAssembly import section has trailing bytes.");
+
+            output.WriteByte(sectionId);
+            WriteULEB128(output, checked((uint)section.Length));
+            section.Position = 0;
+            section.CopyTo(output);
+            position = sectionEnd;
+        }
+
+        if (pending.Count > 0)
+            throw new BadImageFormatException(
+                $"{inputPath} does not import {string.Join(", ", pending.Select(p => $"{p.Item1}.{p.Item2}"))}.");
+        if (pendingExports.Count > 0)
+            throw new BadImageFormatException($"{inputPath} does not export {string.Join(", ", pendingExports)}.");
+    }
+
+    private static void SkipImportDescriptor(byte[] module, ref int position)
+    {
+        byte kind = module[position++];
+        switch (kind)
+        {
+            case 0: // func
+                ReadULEB128(module, ref position);
+                break;
+            case 1: // table
+                SkipValueType(module, ref position);
+                SkipLimits(module, ref position);
+                break;
+            case 2: // memory
+                SkipLimits(module, ref position);
+                break;
+            case 3: // global
+                SkipValueType(module, ref position);
+                position++;
+                break;
+            case 4: // tag
+                position++;
+                ReadULEB128(module, ref position);
+                break;
+            default:
+                throw new BadImageFormatException($"Unsupported WebAssembly import kind {kind}.");
+        }
+    }
+
+    private static void SkipValueType(byte[] module, ref int position)
+    {
+        byte type = module[position++];
+        if (type == 0x63 || type == 0x64)
+            ReadULEB128(module, ref position);
+    }
+
+    private static void SkipLimits(byte[] module, ref int position)
+    {
+        byte flags = module[position++];
+        ReadULEB128(module, ref position);
+        if ((flags & 1) != 0)
+            ReadULEB128(module, ref position);
+    }
+
+    private static string ReadName(byte[] module, ref int position)
+    {
+        int length = checked((int)ReadULEB128(module, ref position));
+        string name = Encoding.UTF8.GetString(module, position, length);
+        position = checked(position + length);
+        return name;
+    }
+
+    private static void WriteName(Stream stream, string name)
+    {
+        byte[] bytes = Encoding.UTF8.GetBytes(name);
+        WriteULEB128(stream, checked((uint)bytes.Length));
+        stream.Write(bytes, 0, bytes.Length);
+    }
+
+    private static uint ReadULEB128(byte[] data, ref int offset)
+    {
+        uint value = 0;
+        int shift = 0;
+        while (offset < data.Length)
+        {
+            byte current = data[offset++];
+            value |= (uint)(current & 0x7f) << shift;
+            if ((current & 0x80) == 0)
+                return value;
+            shift += 7;
+            if (shift >= 35)
+                throw new OverflowException();
+        }
+        throw new EndOfStreamException();
+    }
+
+    private static void WriteULEB128(Stream stream, uint value)
+    {
+        do
+        {
+            byte current = (byte)(value & 0x7f);
+            value >>= 7;
+            if (value != 0)
+                current |= 0x80;
+            stream.WriteByte(current);
+        } while (value != 0);
+    }
+}
+
 public static class WasiR2RComposition
 {
     // Every self-installing image defines getWebcilSize and patchWebcilHeader; a component forwarding
@@ -832,15 +1025,17 @@ public static class WasiR2RComposition
         out int imageCapacity,
         out int tableBase,
         out int reservedTableStart,
-        out int compositeNameBase,
-        out int compositeNameCapacity)
+        out int registryBase,
+        out int registryCapacity,
+        out int registryEntrySize)
     {
         WasmModuleInfo module = ReadModule(path);
         imageBase = GetRequiredI32Export(module, "wasi_r2r_image_base");
         imageCapacity = GetRequiredI32Export(module, "wasi_r2r_image_cap");
         tableBase = GetRequiredI32Export(module, "wasi_r2r_table_base");
-        compositeNameBase = GetRequiredI32Export(module, "wasi_r2r_composite_name_base");
-        compositeNameCapacity = GetRequiredI32Export(module, "wasi_r2r_composite_name_cap");
+        registryBase = GetRequiredI32Export(module, "wasi_r2r_registry_base");
+        registryCapacity = GetRequiredI32Export(module, "wasi_r2r_registry_cap");
+        registryEntrySize = GetRequiredI32Export(module, "wasi_r2r_registry_entry_size");
         reservedTableStart = int.MaxValue;
         foreach (WasmElementSegmentInfo segment in module.ElementSegments)
         {
@@ -871,6 +1066,19 @@ public static class WasiR2RComposition
 
     public static void ReplaceFirstCoreModule(string componentPath, string modulePath, string outputPath) =>
         WasmComponentFile.ReplaceFirstCoreModule(componentPath, modulePath, outputPath);
+
+    /// <summary>
+    /// Rewrites the names of selected imports and exports, leaving every other byte of the module unchanged.
+    /// Every self-installing image imports webcil.__memory_base/__table_base and exports patchWebcilHeader;
+    /// wasm-merge resolves by name and (under --skip-export-conflicts) keeps only the first export of a name,
+    /// so images merged into one host need distinct import and export names.
+    /// </summary>
+    public static void RenameImportsAndExports(
+        string inputPath,
+        string outputPath,
+        IReadOnlyDictionary<(string Module, string Field), (string Module, string Field)> importRenames,
+        IReadOnlyDictionary<string, string> exportRenames) =>
+        WasmImportRenamer.Rename(inputPath, outputPath, importRenames, exportRenames);
 
     /// <summary>
     /// Rewrites constant expressions that read an immutable, constant-initialized i32 global defined in the

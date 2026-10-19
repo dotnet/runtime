@@ -36,7 +36,7 @@ namespace wasi_r2r
 extern "C" uint8_t g_wasi_r2r_image[];
 extern "C" uint32_t g_wasi_r2r_image_cap;
 
-// The table index at which the composite's functions are installed. Under the reservation model the
+// The table index at which the first merged image's functions are installed; later images follow it. Under the reservation model the
 // host is linked with `-Wl,--table-base=<N+1>`, which moves the host's own address-taken functions up
 // to start at N+1 and leaves slots 1..N free, so the composite always sits at base 1 regardless of
 // its size. This MUST match the `__table_base` global supplied to the merge (see docs/design/mono/webcil.md);
@@ -48,22 +48,43 @@ extern "C" uint32_t g_wasi_r2r_image_cap;
 #define WEBCIL_SECTION_HEADER_SIZE  (16u)
 #define WEBCIL_VERSION_MAJOR_OFFSET (4u)
 
-// The composite native image's file name (the ownerCompositeExecutable recorded in each per-assembly
-// stub). The runtime asks for this via NativeImage::Open -> external_assembly_probe. crossgen2's output
-// name is the single authority: the composer writes that NUL-terminated name here with an active data
-// segment, alongside the payload, so a host that was never composed matches no name at all.
-#ifndef WASI_R2R_COMPOSITE_NAME_CAP
-#define WASI_R2R_COMPOSITE_NAME_CAP (256u)
+// Registry of the R2R images merged into the host. Each entry names one image the runtime may request
+// through external_assembly_probe -- a composite's file name (the ownerCompositeExecutable recorded in each
+// per-assembly stub), or an assembly file name such as "System.Private.CoreLib.dll" for a non-composite
+// image -- and gives where its payload sits inside g_wasi_r2r_image. The composer lays the images out back
+// to back and writes the entries with an active data segment, so a host that was never composed matches
+// no name at all. The layout (name[NAME_CAP], base u32, size u32) is validated by the composer against the
+// exported entry size.
+#ifndef WASI_R2R_NAME_CAP
+#define WASI_R2R_NAME_CAP (256u)
 #endif
+#ifndef WASI_R2R_MAX_IMAGES
+#define WASI_R2R_MAX_IMAGES (8u)
+#endif
+struct WasiR2RImageEntry
+{
+    char name[WASI_R2R_NAME_CAP];
+    uint32_t base;
+    uint32_t size;
+};
+static_assert(sizeof(WasiR2RImageEntry) == WASI_R2R_NAME_CAP + 8, "registry entry layout is shared with the composer");
+
 extern "C"
 {
-    char g_wasi_r2r_composite_name[WASI_R2R_COMPOSITE_NAME_CAP] = {};
+    WasiR2RImageEntry g_wasi_r2r_images[WASI_R2R_MAX_IMAGES] = {};
 }
 
-static bool WasiIsCompositeName(const char* name)
+static const WasiR2RImageEntry* WasiFindImage(const char* name)
 {
-    return g_wasi_r2r_composite_name[0] != '\0'
-        && strncmp(name, g_wasi_r2r_composite_name, WASI_R2R_COMPOSITE_NAME_CAP) == 0;
+    for (uint32_t i = 0; i < WASI_R2R_MAX_IMAGES; i++)
+    {
+        const WasiR2RImageEntry& entry = g_wasi_r2r_images[i];
+        if (entry.name[0] == '\0')
+            break;
+        if (strncmp(name, entry.name, WASI_R2R_NAME_CAP) == 0)
+            return &entry;
+    }
+    return nullptr;
 }
 
 static bool WasiIsWebcilV1(const uint8_t* p, size_t len)
@@ -150,19 +171,25 @@ static bool WasiMapStubPayload(const char* webcilPath, void** data_start, int64_
 // the caller fall back to its normal assembly load.
 static bool WasiStaticR2RProbe(const char* name, const char* const* dirs, size_t ndirs, void** data_start, int64_t* size)
 {
-    // The composite native image itself: return the merged composite payload at imageBase. Its size is
-    // read from the self-describing WbIL header (no baked constant), and validated against the buffer cap.
-    if (WasiIsCompositeName(name))
+    // A merged image (a composite, or a non-composite image such as CoreLib): return its payload from the
+    // buffer. Its size is read from the self-describing WbIL header and must agree with the registry and lie
+    // within the buffer.
+    if (const WasiR2RImageEntry* entry = WasiFindImage(name))
     {
-        int64_t payloadSize = WasiWebcilPayloadSize(&g_wasi_r2r_image[0], g_wasi_r2r_image_cap);
-        if (payloadSize <= 0 || static_cast<size_t>(payloadSize) > g_wasi_r2r_image_cap)
-            return false; // buffer not populated, or composite payload exceeds the cap
+        uint32_t cap = g_wasi_r2r_image_cap;
+        uintptr_t bufferStart = (uintptr_t)&g_wasi_r2r_image[0];
+        uintptr_t imageStart = (uintptr_t)entry->base;
+        if (imageStart < bufferStart || imageStart - bufferStart > cap || entry->size > cap - (imageStart - bufferStart))
+            return false;
 
-        // NOTE: the cap test above cannot protect this buffer -- the engine installs the segment before any
-        // host code runs, so an over-cap payload has already overwritten whatever follows by the time we look.
-        // The enforceable check is at build time; the C# composer compares the payload size against the cap.
+        uint8_t* image = reinterpret_cast<uint8_t*>(imageStart);
+        int64_t payloadSize = WasiWebcilPayloadSize(image, entry->size);
+        if (payloadSize <= 0 || payloadSize != (int64_t)entry->size)
+            return false;
 
-        *data_start = &g_wasi_r2r_image[0];
+        // NOTE: these checks cannot protect the buffer -- the engine installs the segments before any host
+        // code runs. The enforceable check is at build time; the C# composer validates the layout against the cap.
+        *data_start = image;
         *size = payloadSize;
         return true;
     }
@@ -223,17 +250,21 @@ extern "C" __attribute__((export_name("wasi_r2r_table_base"))) uint32_t wasi_r2r
     return (uint32_t)WASI_R2R_TABLE_BASE;
 }
 
-// The composite name buffer's address and capacity, so the composer can write the composite's file name
-// into it without a host rebuild. This is what lets one prebuilt host serve whatever name crossgen2 gave
-// the composite.
-extern "C" __attribute__((export_name("wasi_r2r_composite_name_base"))) uint32_t wasi_r2r_composite_name_base(void)
+// The image registry's address, entry count, and entry size, so the composer can describe the merged
+// images without a host rebuild.
+extern "C" __attribute__((export_name("wasi_r2r_registry_base"))) uint32_t wasi_r2r_registry_base(void)
 {
-    return (uint32_t)(uintptr_t)&wasi_r2r::g_wasi_r2r_composite_name[0];
+    return (uint32_t)(uintptr_t)&wasi_r2r::g_wasi_r2r_images[0];
 }
 
-extern "C" __attribute__((export_name("wasi_r2r_composite_name_cap"))) uint32_t wasi_r2r_composite_name_cap(void)
+extern "C" __attribute__((export_name("wasi_r2r_registry_cap"))) uint32_t wasi_r2r_registry_cap(void)
 {
-    return (uint32_t)WASI_R2R_COMPOSITE_NAME_CAP;
+    return (uint32_t)WASI_R2R_MAX_IMAGES;
+}
+
+extern "C" __attribute__((export_name("wasi_r2r_registry_entry_size"))) uint32_t wasi_r2r_registry_entry_size(void)
+{
+    return (uint32_t)sizeof(wasi_r2r::WasiR2RImageEntry);
 }
 
 #endif // TARGET_WASI

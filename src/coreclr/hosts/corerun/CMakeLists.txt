@@ -6,7 +6,7 @@ set(CORERUN_IN_BROWSER 0)
 
 # Reserve the composite's function-table slots in the standalone WASI test host.
 option(CORERUN_WASI_COMPOSITE_R2R "Reserve table slots for a spliced WASI R2R composite" ON)
-set(CORERUN_WASI_R2R_TABLE_BASE "65537" CACHE STRING "First table slot for corerun functions")
+set(CORERUN_WASI_R2R_TABLE_BASE "131073" CACHE STRING "First table slot for corerun functions")
 
 if(CLR_CMAKE_HOST_WIN32)
     add_definitions(-DFX_VER_INTERNALNAME_STR=corerun.exe)

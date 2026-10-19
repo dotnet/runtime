@@ -55,7 +55,9 @@ RunCrossGen2=1 bash artifacts/tests/coreclr/wasi.wasm.Checked/JIT/CodeGenBringUp
 ```
 
 The wrapper compiles the runner and referenced test assemblies into a composite, then invokes the
-same composition task through `CORE_ROOT/wasi-r2r/WasiR2RComposer.proj`. It launches
+same composition task through `CORE_ROOT/wasi-r2r/WasiR2RComposer.proj`, which also merges Core_Root's
+prebuilt R2R `System.Private.CoreLib.wasm` so CoreLib runs ReadyToRun code too (set
+`WasiR2RIncludeCoreLib=0` to compose only the test assemblies). It launches
 `IL-CG2/wasi-r2r/corerun-composite.wasm` with
 `APP_ASSEMBLIES=EXTERNAL` and `CORE_LIBRARIES=/IL-CG2/wasi-r2r` so the guest probes the private
 `comp/` stubs. `TEST_READY_TO_RUN_MODE=1` enables R2R-specific test conditions.
@@ -79,6 +81,6 @@ is not required. The host supplies the image and table bases, and the C# compose
 undersized buffer, overlapping table reservation, or a non-self-installing composite.
 
 A valid composed module and passing tests alone do not prove R2R was used. Enable the guest's
-`DOTNET_ReadyToRunLogFile` and look for `Ready to Run initialized successfully` for the test
-assemblies. This confirms image loading; proving a particular method executes compiled code
+`DOTNET_ReadyToRunLogFile` (the runtime appends `.<pid>` to the file name) and look for
+`Ready to Run initialized successfully` for `System.Private.CoreLib` and the test assemblies. This confirms image loading; proving a particular method executes compiled code
 requires a breakpoint or trace in that method's wasm body.

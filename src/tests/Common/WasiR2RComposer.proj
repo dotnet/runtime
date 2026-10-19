@@ -11,6 +11,9 @@
     <!-- A test that links its own native code keeps its own host (corerun.wasm) beside the stubs. -->
     <_ComponentStub Include="$(ComponentStubsDirectory)/*.wasm"
                     Exclude="$(CompositePath);$(ComponentPath)" />
+    <!-- Prototype: merge Core_Root's prebuilt R2R CoreLib alongside the test composite so CoreLib runs R2R. -->
+    <_AdditionalR2RImage Include="$(CoreLibR2RImagePath)"
+                         Condition="'$(CoreLibR2RImagePath)' != '' and Exists('$(CoreLibR2RImagePath)')" />
   </ItemGroup>
 
   <Target Name="Compose">
@@ -22,6 +25,7 @@
                            WasmMergePath="$(WasmMergePath)"
                            WasmOptPath="$(WasmOptPath)"
                            ComponentStubs="@(_ComponentStub)"
+                           AdditionalImages="@(_AdditionalR2RImage)"
                            StubOutputDirectory="$(StubOutputDirectory)" />
   </Target>
 </Project>
