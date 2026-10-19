@@ -157,10 +157,9 @@ internal sealed class WasmFunctionTableIndexLookup
     }
 
     /// <summary>
-    /// Maps a <c>RUNTIME_FUNCTION</c> address to the registered R2R image that contains it. Returns
-    /// the module that registered the image (for a composite image, the module that loaded it, not
-    /// necessarily the method's own module), the entry's index within the image, its runtime-global
-    /// function-table index, and whether the entry is a funclet.
+    /// Maps a <c>RUNTIME_FUNCTION</c> address to the registered image that contains it, returning
+    /// the registering module, the entry's index within the image, its function-table index, and
+    /// whether it is a funclet.
     /// </summary>
     public bool TryGetFunctionIdentity(
         TargetPointer runtimeFunctionAddress,
@@ -185,22 +184,17 @@ internal sealed class WasmFunctionTableIndexLookup
                 return false;
 
             Data.FunctionTableIndexRangeSection section = _target.ProcessedData.GetOrAdd<Data.FunctionTableIndexRangeSection>(current);
-            Data.Module sectionModule = _target.ProcessedData.GetOrAdd<Data.Module>(section.R2RModule);
-            // A range is published before its module is fully set up; it cannot contain the entry.
-            if (sectionModule.ReadyToRunInfo != TargetPointer.Null)
+            Data.ReadyToRunInfo r2rInfo = GetReadyToRunInfo(section);
+            if (runtimeFunctionAddress >= r2rInfo.RuntimeFunctions)
             {
-                Data.ReadyToRunInfo r2rInfo = _target.ProcessedData.GetOrAdd<Data.ReadyToRunInfo>(sectionModule.ReadyToRunInfo);
-                if (r2rInfo.NumRuntimeFunctions > 0 && runtimeFunctionAddress >= r2rInfo.RuntimeFunctions)
+                ulong offset = runtimeFunctionAddress.Value - r2rInfo.RuntimeFunctions.Value;
+                if (offset % entrySize == 0 && offset / entrySize < r2rInfo.NumRuntimeFunctions)
                 {
-                    ulong offset = runtimeFunctionAddress.Value - r2rInfo.RuntimeFunctions.Value;
-                    if (offset % entrySize == 0 && offset / entrySize < r2rInfo.NumRuntimeFunctions)
-                    {
-                        runtimeFunctionIndex = (uint)(offset / entrySize);
-                        functionTableIndex = section.MinFunctionTableIndex + runtimeFunctionIndex;
-                        module = section.R2RModule;
-                        isFunclet = _runtimeFunctions.IsFunclet(GetRuntimeFunction(r2rInfo, runtimeFunctionIndex));
-                        return true;
-                    }
+                    runtimeFunctionIndex = (uint)(offset / entrySize);
+                    functionTableIndex = section.MinFunctionTableIndex + runtimeFunctionIndex;
+                    module = section.R2RModule;
+                    isFunclet = _runtimeFunctions.IsFunclet(GetRuntimeFunction(r2rInfo, runtimeFunctionIndex));
+                    return true;
                 }
             }
 
