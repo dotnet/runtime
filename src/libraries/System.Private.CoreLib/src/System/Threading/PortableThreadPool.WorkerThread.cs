@@ -192,8 +192,8 @@ namespace System.Threading
                 // which can introduce another burst after the queues drain. For work produced entirely by
                 // workers, park empty dispatches promptly instead of competing with the productive workers.
                 return spurious && (numProcessingWork > SpuriousDispatchNoSpinThreshold ||
-                        (uint)(Environment.TickCount - Volatile.Read(ref threadPoolInstance._separated.lastExternalWorkItemTimeMs))
-                            > ThreadPoolWorkQueue.DispatchQuantumMs);
+                        (Environment.TickCount - Volatile.Read(ref threadPoolInstance._separated.lastExternalWorkItemTimeMs))
+                            > (int)ThreadPoolWorkQueue.DispatchQuantumMs);
             }
 
             // returns true if the worker is shutting down
