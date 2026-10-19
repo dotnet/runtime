@@ -7,10 +7,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#if !defined(TARGET_WINDOWS)
-#include <sys/mman.h>
-#endif // !TARGET_WINDOWS
-
 // Interface between the runtime and platform specific functionality
 class VMToOSInterface
 {
@@ -32,44 +28,32 @@ public:
 
     enum class MemoryProtection
     {
-#ifdef TARGET_WINDOWS
-        NoAccess = PAGE_NOACCESS,
-        ReadOnly = PAGE_READONLY,
-        ReadWrite = PAGE_READWRITE,
-        WriteCopy = PAGE_WRITECOPY,
-        Execute = PAGE_EXECUTE,
-        ExecuteRead = PAGE_EXECUTE_READ,
-        ExecuteReadWrite = PAGE_EXECUTE_READWRITE
-#else
-        NoAccess = PROT_NONE,
-        ReadOnly = PROT_READ,
-        ReadWrite = PROT_READ | PROT_WRITE,
-        // The PAL never offered true copy-on-write page protection outside of file mappings;
-        // treat write-copy the same as ordinary read-write on Unix.
-        WriteCopy = PROT_READ | PROT_WRITE,
-        Execute = PROT_EXEC,
-        ExecuteRead = PROT_READ | PROT_EXEC,
-        ExecuteReadWrite = PROT_READ | PROT_WRITE | PROT_EXEC
-#endif // TARGET_WINDOWS
+        NoAccess,
+        ReadOnly,
+        ReadWrite,
+        WriteCopy,
+        Execute,
+        ExecuteRead,
+        ExecuteReadWrite
     };
 
+    static MemoryMapHandle OpenFile(const char16_t* path);
+    static bool CloseFile(MemoryMapHandle fileHandle);
+    static bool GetFileSize(MemoryMapHandle fileHandle, uint64_t* size);
+    static int32_t GetLastMemoryMappingError();
+#ifdef TARGET_WASM
+    static bool ReadFile(MemoryMapHandle fileHandle, uint64_t offset, void* buffer, size_t size);
+#endif // TARGET_WASM
+
 #ifndef TARGET_WASM
-    // Unix mappings borrow the supplied descriptor without duplicating or closing it.
-    // The caller must keep it open until all required views have been mapped.
     static MemoryMapHandle CreateMemoryMapping(MemoryMapHandle fileHandle, uint64_t size, MemoryProtection protection);
     static bool CloseMemoryMapping(MemoryMapHandle mapping);
 
-    // The caller retains ownership of the mapping handle or file descriptor.
-    // Non-null addresses replace Windows placeholders or caller-owned Unix reservations.
-    // Unix handle -1 requests anonymous private memory at offset zero.
-    // Private writable file views use copy-on-write protection.
-    // Failures return nullptr or -1 and set GetLastError() on Windows or errno on Unix.
     static void* MapMemory(MemoryMapHandle mapping, uint64_t offset, void* address, size_t size, MemoryProtection protection, bool shared);
     static int UnmapMemory(void* address, size_t size);
 
     // Windows executable backing allows later executable views without making this view executable.
     static void* MapAnonymousMemory(size_t size, MemoryProtection protection, bool executableBacking = false);
-    static int32_t GetLastMemoryMappingError();
 #endif // !TARGET_WASM
 
     // Allocate zero-initialized, page-aligned memory.
@@ -152,9 +136,10 @@ public:
 
         MemoryMappedViewHolder(const MemoryMappedViewHolder&) = delete;
         MemoryMappedViewHolder& operator=(const MemoryMappedViewHolder&) = delete;
+        MemoryMappedViewHolder(MemoryMappedViewHolder&& other) noexcept;
+        MemoryMappedViewHolder& operator=(MemoryMappedViewHolder&& other) noexcept;
 
         void Assign(void* address, size_t size);
-        void Swap(MemoryMappedViewHolder& other);
         void Reset();
         void* GetValue() const { return m_address; }
     };
@@ -192,7 +177,7 @@ public:
     // range), for later use by ReserveMemoryFromExecutableAllocatorWithinRange. Should be called once,
     // early during process startup while the address space is still mostly empty.
     // Returns false if synchronization could not be initialized.
-    static bool InitializeExecutableMemoryAllocator();
+    static bool InitializeExecutableMemoryAllocator(uint32_t initialExecMemoryPercent);
 
     // Reserves (but does not commit) size bytes from the executable memory allocator's pool if the
     // entire reservation fits within [rangeStart, rangeEnd), returning its address. Returns nullptr

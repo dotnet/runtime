@@ -4,8 +4,120 @@
 //
 
 #include <inttypes.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <sys/stat.h>
+#include <unistd.h>
 #include "minipal.h"
+
+typedef char16_t WCHAR;
+typedef int32_t HRESULT;
+
+#include "dn-stdio.h"
+
+int32_t VMToOSInterface::GetLastMemoryMappingError()
+{
+    return HRESULTFromErr(errno);
+}
+
+VMToOSInterface::MemoryMapHandle VMToOSInterface::OpenFile(const char16_t* path)
+{
+    FILE* stream;
+    int error = u16_fopen_s(&stream, path, u"rb");
+    if (error != 0)
+    {
+        errno = error;
+        return InvalidFileHandle;
+    }
+
+    int descriptor = fcntl(fileno(stream), F_DUPFD_CLOEXEC, 0);
+    error = descriptor < 0 ? errno : 0;
+    if (fclose(stream) != 0 && error == 0)
+    {
+        error = errno;
+    }
+
+    if (descriptor < 0)
+    {
+        errno = error;
+        return InvalidFileHandle;
+    }
+
+    struct stat fileInfo;
+    int result;
+    do
+    {
+        result = fstat(descriptor, &fileInfo);
+    } while (result != 0 && errno == EINTR);
+
+    if (result != 0 || S_ISDIR(fileInfo.st_mode))
+    {
+        error = result != 0 ? errno : EISDIR;
+        close(descriptor);
+        errno = error;
+        return InvalidFileHandle;
+    }
+
+    return descriptor;
+}
+
+bool VMToOSInterface::CloseFile(MemoryMapHandle fileHandle)
+{
+    return close(fileHandle) == 0;
+}
+
+bool VMToOSInterface::GetFileSize(MemoryMapHandle fileHandle, uint64_t* size)
+{
+    struct stat fileInfo;
+    int result;
+    do
+    {
+        result = fstat(fileHandle, &fileInfo);
+    } while (result != 0 && errno == EINTR);
+
+    if (result != 0 || fileInfo.st_size < 0)
+    {
+        return false;
+    }
+
+    *size = static_cast<uint64_t>(fileInfo.st_size);
+    return true;
+}
+
+#ifdef TARGET_WASM
+bool VMToOSInterface::ReadFile(MemoryMapHandle fileHandle, uint64_t offset, void* buffer, size_t size)
+{
+    uint8_t* destination = static_cast<uint8_t*>(buffer);
+    size_t bytesRead = 0;
+    while (bytesRead < size)
+    {
+        constexpr size_t MaxReadSize = 64 * 1024;
+        size_t remaining = size - bytesRead;
+        size_t readSize = remaining < MaxReadSize ? remaining : MaxReadSize;
+        ssize_t result;
+        do
+        {
+            result = pread(fileHandle, destination + bytesRead, readSize,
+                static_cast<off_t>(offset + bytesRead));
+        } while (result < 0 && errno == EINTR);
+
+        if (result <= 0)
+        {
+            if (result == 0)
+            {
+                errno = EIO;
+            }
+            return false;
+        }
+
+        bytesRead += static_cast<size_t>(result);
+    }
+
+    return true;
+}
+#endif // TARGET_WASM
 
 #if defined(HOST_OSX) && defined(HOST_ARM64)
 #include <assert.h>

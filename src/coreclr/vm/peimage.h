@@ -141,6 +141,7 @@ public:
 
 #ifndef DACCESS_COMPILE
     VMToOSInterface::MemoryMapHandle GetFileHandle();
+    // Callers already holding m_pLayoutLock pass false; external callers use the locking default.
     HRESULT TryOpenFile(bool takeLock = false);
 #endif
 

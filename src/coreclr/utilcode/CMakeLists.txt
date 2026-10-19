@@ -72,11 +72,7 @@ set(UTILCODE_SOURCES
   allocmemtracker.cpp
 )
 
-if(CLR_CMAKE_TARGET_ARCH_WASM)
-  list(APPEND UTILCODE_SOURCES executableallocator.wasm.cpp)
-else()
-  list(APPEND UTILCODE_SOURCES executableallocator.cpp)
-endif()
+list(APPEND UTILCODE_SOURCES executableallocator.cpp)
 
 set(UTILCODE_DAC_SOURCES
   ${UTILCODE_COMMON_SOURCES}

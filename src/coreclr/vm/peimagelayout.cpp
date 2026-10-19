@@ -8,14 +8,6 @@
 #include "peimagelayout.h"
 #include "peimagelayout.inl"
 
-#ifdef TARGET_UNIX
-#include <errno.h>
-#include <stdlib.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#include "dn-stdio.h"
-#endif // TARGET_UNIX
-
 #if defined(TARGET_WINDOWS)
 #include "amsi.h"
 #endif
@@ -135,8 +127,6 @@ PEImageLayout* PEImageLayout::Load(PEImage* pOwner, HRESULT* loadFailure)
 {
     STANDARD_VM_CONTRACT;
 
-    bool disableMapping = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_PELoader_DisableMapping);
-
 #ifdef TARGET_WINDOWS
     if (pOwner->IsFile() && !pOwner->IsInBundle())
     {
@@ -151,6 +141,7 @@ PEImageLayout* PEImageLayout::Load(PEImage* pOwner, HRESULT* loadFailure)
     }
 #endif // TARGET_WINDOWS
 
+    bool disableMapping = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_PELoader_DisableMapping);
     return PEImageLayout::LoadConverted(pOwner, disableMapping);
 }
 
@@ -178,9 +169,9 @@ PEImageLayout *PEImageLayout::LoadNative(LPCWSTR fullPath)
 #endif // TARGET_WINDOWS
 }
 
-// Translate section characteristics into the matching VMToOSInterface::MemoryProtection value.
-static VMToOSInterface::MemoryProtection SectionCharacteristicsToMemoryProtection(UINT characteristics)
+static VMToOSInterface::MemoryProtection GetSectionMemoryProtection(const IMAGE_SECTION_HEADER& section)
 {
+    UINT characteristics = VAL32(section.Characteristics);
     _ASSERTE((characteristics & VAL32(IMAGE_SCN_MEM_READ)) != 0);
 
     if ((characteristics & VAL32(IMAGE_SCN_MEM_WRITE)) != 0)
@@ -414,7 +405,7 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
                 if (!VMToOSInterface::ProtectMemory(pWriteableRegion, cbWriteableRegion, newProtection))
                     ThrowLastError();
 #endif // __APPLE__ && HOST_ARM64
-                oldProtection = SectionCharacteristicsToMemoryProtection(pSection->Characteristics);
+                oldProtection = GetSectionMemoryProtection(*pSection);
                 hasOldProtection = true;
             }
         }
@@ -499,6 +490,7 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
     }
 #endif // !TARGET_WASM
 #if defined(TARGET_UNIX) && !defined(TARGET_WASM)
+    // Relocations are not needed after they have been applied.
     if (dirSize != 0)
     {
         TADDR discardStart = ALIGN_DOWN(dir, minipal_getpagesize());
@@ -515,58 +507,41 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
     }
 }
 
-static SIZE_T AllocatedPart(PVOID part)
-{
-    return (SIZE_T)part + 1;
-}
-
-static SIZE_T MappedPart(PVOID part)
-{
-    return (SIZE_T)part;
-}
-
-static PVOID PtrFromPart(SIZE_T part)
-{
-    return (PVOID)(part & ~1);
-}
-
-static SIZE_T IsAllocatedPart(SIZE_T part)
-{
-    return part & 1;
-}
-
 void ConvertedImageLayout::FreeImageParts()
 {
     LIMITED_METHOD_CONTRACT;
     for (int i = 0; i < ConvertedImageLayout::MAX_PARTS; i++)
     {
-        SIZE_T imagePart = this->m_imageParts[i];
-        if (imagePart == 0)
+        PEImagePart imagePart = m_imageParts[i];
+        if (imagePart.IsEmpty())
             break;
 
-        SIZE_T nextPart = i + 1 < ConvertedImageLayout::MAX_PARTS ? this->m_imageParts[i + 1] : 0;
-        this->m_imageParts[i] = 0;
+        PEImagePart nextPart = i + 1 < ConvertedImageLayout::MAX_PARTS ? m_imageParts[i + 1] : PEImagePart{};
+        m_imageParts[i].Clear();
         // A final untagged pointer marks the end of the reservation, not a mapped view.
-        if (nextPart == 0)
+        if (nextPart.IsEmpty())
         {
-            _ASSERTE(!IsAllocatedPart(imagePart));
+            _ASSERTE(!imagePart.IsAllocated());
             break;
         }
 
+        SIZE_T partSize = reinterpret_cast<SIZE_T>(nextPart.GetAddress()) -
+            reinterpret_cast<SIZE_T>(imagePart.GetAddress());
 #ifdef TARGET_WASM
-        _ASSERTE(IsAllocatedPart(imagePart));
-        free(PtrFromPart(imagePart));
+        _ASSERTE(imagePart.IsAllocated());
+        if (!VMToOSInterface::ReleaseMemoryReservation(imagePart.GetAddress(), partSize))
+            LOG((LF_LOADER, LL_INFO100, "PEImage: Could not release image reservation (0x%08x)\n",
+                static_cast<unsigned>(VMToOSInterface::GetLastMemoryMappingError())));
 #else
-        SIZE_T partSize = reinterpret_cast<SIZE_T>(PtrFromPart(nextPart)) - reinterpret_cast<SIZE_T>(PtrFromPart(imagePart));
-        if (IsAllocatedPart(imagePart))
+        if (imagePart.IsAllocated())
         {
-            if (!VMToOSInterface::ReleaseMemoryReservation(PtrFromPart(imagePart), partSize))
+            if (!VMToOSInterface::ReleaseMemoryReservation(imagePart.GetAddress(), partSize))
                 LOG((LF_LOADER, LL_INFO100, "PEImage: Could not release image reservation (0x%08x)\n",
                     static_cast<unsigned>(VMToOSInterface::GetLastMemoryMappingError())));
         }
         else
         {
-            if (VMToOSInterface::UnmapMemory(PtrFromPart(imagePart), partSize) != 0)
+            if (VMToOSInterface::UnmapMemory(imagePart.GetAddress(), partSize) != 0)
                 LOG((LF_LOADER, LL_INFO100, "PEImage: Could not unmap image part (0x%08x)\n",
                     static_cast<unsigned>(VMToOSInterface::GetLastMemoryMappingError())));
         }
@@ -755,33 +730,15 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner)
     VMToOSInterface::MemoryMapHandle hFile = pOwner->GetFileHandle();
     INT64 offset = pOwner->GetOffset();
     INT64 size = pOwner->GetSize();
-
-#ifdef TARGET_UNIX
-    struct stat fileInfo;
-    int result;
-    do
-    {
-        result = fstat(hFile, &fileInfo);
-    } while (result != 0 && errno == EINTR);
-    if (result != 0)
-        ThrowHR(HRESULTFromErr(errno));
-    if (offset < 0 || size < 0 || fileInfo.st_size < offset)
+    uint64_t fileSize;
+    if (!VMToOSInterface::GetFileSize(hFile, &fileSize))
+        ThrowHR(VMToOSInterface::GetLastMemoryMappingError());
+    if (offset < 0 || size < 0 || fileSize < static_cast<UINT64>(offset))
         EEFileLoadException::Throw(pOwner->GetPathForErrorMessages(), COR_E_BADIMAGEFORMAT);
     if (size == 0)
-        size = fileInfo.st_size - offset;
-    if (size > fileInfo.st_size - offset || static_cast<UINT64>(size) > COUNT_T_MAX)
+        size = static_cast<INT64>(fileSize - offset);
+    if (static_cast<UINT64>(size) > fileSize - offset || static_cast<UINT64>(size) > COUNT_T_MAX)
         EEFileLoadException::Throw(pOwner->GetPathForErrorMessages(), COR_E_BADIMAGEFORMAT);
-#else
-    // If a size is not specified, load the whole file
-    if (size == 0)
-    {
-        size = SafeGetFileSize(hFile, NULL);
-        if (size == 0xffffffff && GetLastError() != NOERROR)
-        {
-            ThrowLastError();
-        }
-    }
-#endif // TARGET_UNIX
 
     LPVOID addr = 0;
 
@@ -793,22 +750,9 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner)
 
 #ifdef TARGET_WASM
         m_wasmData = new BYTE[static_cast<COUNT_T>(size)];
-        COUNT_T bytesRead = 0;
-        while (bytesRead < static_cast<COUNT_T>(size))
-        {
-            ssize_t read;
-            do
-            {
-                read = pread(hFile, m_wasmData.GetValue() + bytesRead,
-                    min(static_cast<COUNT_T>(size) - bytesRead, static_cast<COUNT_T>(64 * 1024)),
-                    static_cast<off_t>(offset + bytesRead));
-            } while (read < 0 && errno == EINTR);
-            if (read < 0)
-                ThrowHR(HRESULTFromErr(errno));
-            if (read == 0)
-                EEFileLoadException::Throw(pOwner->GetPathForErrorMessages(), COR_E_BADIMAGEFORMAT);
-            bytesRead += static_cast<COUNT_T>(read);
-        }
+        if (!VMToOSInterface::ReadFile(hFile, static_cast<uint64_t>(offset), m_wasmData.GetValue(),
+                static_cast<size_t>(size)))
+            ThrowHR(VMToOSInterface::GetLastMemoryMappingError());
         addr = m_wasmData.GetValue();
 #else
         VMToOSInterface::MemoryProtection mapProtection = isCompressed
@@ -887,7 +831,7 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner)
 #ifdef TARGET_WASM
             m_wasmData = anonView.Extract();
 #else
-            m_fileView.Swap(anonView);
+            m_fileView = std::move(anonView);
             m_fileMapping.Reset();
 #endif // TARGET_WASM
             size = uncompressedSize;
@@ -942,7 +886,7 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner, const BYTE* array, COUNT_T siz
     }
 }
 
-void* FlatImageLayout::LoadImageByCopyingParts(SIZE_T* m_imageParts) const
+void* FlatImageLayout::LoadImageByCopyingParts(PEImagePart* imageParts) const
 {
     CONTRACTL
     {
@@ -957,16 +901,6 @@ void* FlatImageLayout::LoadImageByCopyingParts(SIZE_T* m_imageParts) const
     if (allocSize.IsOverflow())
         ThrowOutOfMemory();
 
-#ifdef TARGET_WASM
-    void* base = nullptr;
-    int error = posix_memalign(&base, g_SystemInfo.dwAllocationGranularity, allocSize.Value());
-    if (error == ENOMEM)
-        ThrowOutOfMemory();
-    if (error != 0)
-        ThrowHR(HRESULTFromErr(error));
-
-    memset(base, 0, allocSize.Value());
-#else
     void* preferredBase = NULL;
 #ifdef FEATURE_ENABLE_NO_ADDRESS_SPACE_RANDOMIZATION
     if (g_useDefaultBaseAddr)
@@ -993,11 +927,10 @@ void* FlatImageLayout::LoadImageByCopyingParts(SIZE_T* m_imageParts) const
 
     if (base == NULL)
         ThrowHR(VMToOSInterface::GetLastMemoryMappingError());
-#endif // TARGET_WASM
 
     // when loading by copying we have only one part to free.
-    m_imageParts[0] = AllocatedPart(base);
-    m_imageParts[1] = MappedPart(static_cast<BYTE*>(base) + allocSize.Value());
+    imageParts[0] = PEImagePart::Allocated(base);
+    imageParts[1] = PEImagePart::Mapped(static_cast<BYTE*>(base) + allocSize.Value());
 
     IMAGE_SECTION_HEADER* sectionStart = IMAGE_FIRST_SECTION(FindNTHeaders());
     IMAGE_SECTION_HEADER* sectionEnd = sectionStart + VAL16(FindNTHeaders()->FileHeader.NumberOfSections);
@@ -1102,7 +1035,7 @@ void* FlatImageLayout::LoadImageByCopyingParts(SIZE_T* m_imageParts) const
 
 #ifndef TARGET_WASM
 
-void* FlatImageLayout::LoadImageByMappingParts(SIZE_T* imageParts) const
+void* FlatImageLayout::LoadImageByMappingParts(PEImagePart* imageParts) const
 {
     CONTRACTL
     {
@@ -1191,8 +1124,8 @@ void* FlatImageLayout::LoadImageByMappingParts(SIZE_T* imageParts) const
         if (part == nullptr)
             ThrowHR(VMToOSInterface::GetLastMemoryMappingError());
         _ASSERTE(imagePartIndex + 1 < ConvertedImageLayout::MAX_PARTS);
-        imageParts[imagePartIndex++] = AllocatedPart(part);
-        imageParts[imagePartIndex] = MappedPart(static_cast<BYTE*>(part) + partSize);
+        imageParts[imagePartIndex++] = PEImagePart::Allocated(part);
+        imageParts[imagePartIndex] = PEImagePart::Mapped(static_cast<BYTE*>(part) + partSize);
         return part;
     };
     auto mapPart = [&](UINT64 fileOffset, SIZE_T partSize, VMToOSInterface::MemoryProtection protection, bool shared) -> bool
@@ -1206,7 +1139,7 @@ void* FlatImageLayout::LoadImageByMappingParts(SIZE_T* imageParts) const
             LOG((LF_LOADER, LL_INFO100, "PEImage: Mapping failed (0x%08x), loading by copying\n", static_cast<unsigned>(error)));
             return false;
         }
-        imageParts[imagePartIndex - 1] = MappedPart(part);
+        imageParts[imagePartIndex - 1] = PEImagePart::Mapped(part);
         return true;
     };
 

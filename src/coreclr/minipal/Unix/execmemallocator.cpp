@@ -115,36 +115,9 @@ namespace
         return result;
     }
 
-    // Reads the DOTNET_InitialExecMemoryPercent / COMPlus_InitialExecMemoryPercent environment variable
-    // (as hexadecimal), returning true and setting *result if it is set to a valid value.
-    bool TryGetInitialExecMemoryPercent(uint32_t* result)
-    {
-        const char* value = getenv("DOTNET_InitialExecMemoryPercent");
-        if (value == nullptr)
-        {
-            value = getenv("COMPlus_InitialExecMemoryPercent");
-        }
-
-        if (value == nullptr)
-        {
-            return false;
-        }
-
-        errno = 0;
-        char* endPtr;
-        unsigned long rawResult = strtoul(value, &endPtr, 16);
-        if (rawResult > UINT32_MAX || errno == ERANGE || endPtr == value)
-        {
-            return false;
-        }
-
-        *result = static_cast<uint32_t>(rawResult);
-        return true;
-    }
-
     // This function is called during initialization. It opportunistically tries to reserve a large
     // chunk of virtual memory that can later be used to store JIT-generated code.
-    void TryReserveInitialMemory()
+    void TryReserveInitialMemory(uint32_t initialExecMemoryPercent)
     {
         int32_t sizeOfAllocation = MaxExecutableMemorySizeNearCoreClr;
         int32_t initialReserveLimit = -1;
@@ -162,10 +135,7 @@ namespace
         if ((getrlimit(addressSpace, &addressSpaceLimit) == 0) && (addressSpaceLimit.rlim_cur != RLIM_INFINITY))
         {
             // By default, reserve at most 20% of the available virtual address space.
-            uint32_t initialExecMemoryPerc = 20;
-            TryGetInitialExecMemoryPercent(&initialExecMemoryPerc);
-
-            initialReserveLimit = (int32_t)(addressSpaceLimit.rlim_cur * initialExecMemoryPerc / 100);
+            initialReserveLimit = (int32_t)(addressSpaceLimit.rlim_cur * initialExecMemoryPercent / 100);
             if (initialReserveLimit < sizeOfAllocation)
             {
                 sizeOfAllocation = initialReserveLimit;
@@ -284,7 +254,7 @@ namespace
     }
 }
 
-bool VMToOSInterface::InitializeExecutableMemoryAllocator()
+bool VMToOSInterface::InitializeExecutableMemoryAllocator(uint32_t initialExecMemoryPercent)
 {
     // Enabled on 64-bit hosts only; 32-bit hosts have limited virtual address space, and reserving a
     // large near-library chunk there would be counterproductive.
@@ -294,7 +264,7 @@ bool VMToOSInterface::InitializeExecutableMemoryAllocator()
         return false;
     }
 
-    TryReserveInitialMemory();
+    TryReserveInitialMemory(initialExecMemoryPercent);
 #endif // HOST_64BIT
 
     return true;

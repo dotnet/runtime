@@ -21,14 +21,6 @@ typedef int32_t HRESULT;
 #define MAP_ANON MAP_ANONYMOUS
 #endif
 
-#ifndef NDEBUG
-static bool IsValidMemoryProtection(int nativeProtection)
-{
-    return (nativeProtection & ~(PROT_READ | PROT_WRITE | PROT_EXEC)) == 0 &&
-        ((nativeProtection & PROT_WRITE) == 0 || (nativeProtection & PROT_READ) != 0);
-}
-#endif // !NDEBUG
-
 static bool IsValidMemoryRange(void* address, size_t size, size_t pageSize)
 {
     uintptr_t start = reinterpret_cast<uintptr_t>(address);
@@ -72,7 +64,33 @@ static bool IsJitMappingRequired()
 
 static int GetNativeProtection(VMToOSInterface::MemoryProtection protection)
 {
-    int nativeProtection = static_cast<int>(protection);
+    int nativeProtection;
+    switch (protection)
+    {
+        case VMToOSInterface::MemoryProtection::NoAccess:
+            nativeProtection = PROT_NONE;
+            break;
+        case VMToOSInterface::MemoryProtection::ReadOnly:
+            nativeProtection = PROT_READ;
+            break;
+        case VMToOSInterface::MemoryProtection::ReadWrite:
+        case VMToOSInterface::MemoryProtection::WriteCopy:
+            nativeProtection = PROT_READ | PROT_WRITE;
+            break;
+        case VMToOSInterface::MemoryProtection::Execute:
+            nativeProtection = PROT_EXEC;
+            break;
+        case VMToOSInterface::MemoryProtection::ExecuteRead:
+            nativeProtection = PROT_READ | PROT_EXEC;
+            break;
+        case VMToOSInterface::MemoryProtection::ExecuteReadWrite:
+            nativeProtection = PROT_READ | PROT_WRITE | PROT_EXEC;
+            break;
+        default:
+            assert(!"Unknown memory protection");
+            nativeProtection = PROT_NONE;
+            break;
+    }
 #if defined(TARGET_APPLE) && defined(HOST_ARM64)
     // Apple Silicon JIT mappings keep RWX page protection and enforce W^X per thread.
     if ((nativeProtection & PROT_EXEC) != 0)
@@ -134,15 +152,8 @@ void* VMToOSInterface::MapAnonymousMemory(size_t size, MemoryProtection protecti
     return MapMemory(InvalidMemoryMapHandle, 0, nullptr, size, protection, false);
 }
 
-int32_t VMToOSInterface::GetLastMemoryMappingError()
-{
-    return HRESULTFromErr(errno);
-}
-
 void* VMToOSInterface::AllocateMemory(void* address, size_t size, MemoryProtection protection)
 {
-    assert(IsValidMemoryProtection(static_cast<int>(protection)));
-
     size_t pageSize = minipal_getpagesize();
     if (size % pageSize != 0 || !IsValidMemoryRange(address, size, pageSize))
     {
@@ -227,8 +238,7 @@ void* VMToOSInterface::MapMemory(MemoryMapHandle fd, uint64_t offset, void* addr
         return nullptr;
     }
 
-    int nativeProtection = static_cast<int>(protection);
-    assert(IsValidMemoryProtection(nativeProtection));
+    int nativeProtection = GetNativeProtection(protection);
 
     size_t pageSize = minipal_getpagesize();
     if (!IsValidMemoryRange(address, size, pageSize) || offset % pageSize != 0 ||
@@ -339,8 +349,6 @@ bool VMToOSInterface::SplitMemoryPlaceholder(void* address, size_t size)
 
 void* VMToOSInterface::CommitMemoryPlaceholder(void* address, size_t size, MemoryProtection protection)
 {
-    assert(IsValidMemoryProtection(static_cast<int>(protection)));
-
     if (!IsValidPlaceholderRange(address, size))
     {
         return nullptr;
@@ -435,8 +443,6 @@ void* VMToOSInterface::ReserveMemoryWithinRange(void* rangeStart, void* rangeEnd
 
 void* VMToOSInterface::CommitReservedMemory(void* address, size_t size, MemoryProtection protection)
 {
-    assert(IsValidMemoryProtection(static_cast<int>(protection)));
-
     if (!IsValidPlaceholderRange(address, size))
     {
         return nullptr;
@@ -465,8 +471,6 @@ bool VMToOSInterface::DecommitMemory(void* address, size_t size)
 
 bool VMToOSInterface::ProtectMemory(void* address, size_t size, MemoryProtection protection)
 {
-    assert(IsValidMemoryProtection(static_cast<int>(protection)));
-
     uintptr_t start = reinterpret_cast<uintptr_t>(address);
     size_t pageSize = minipal_getpagesize();
     uintptr_t pageStart = start & ~(pageSize - 1);
@@ -483,8 +487,6 @@ bool VMToOSInterface::ProtectMemory(void* address, size_t size, MemoryProtection
 
 bool VMToOSInterface::PopulateMemoryPlaceholder(void* address, size_t allocationSize, const void* source, size_t copySize, MemoryProtection finalProtection)
 {
-    assert(IsValidMemoryProtection(static_cast<int>(finalProtection)));
-
     if (!IsValidPlaceholderRange(address, allocationSize))
     {
         return false;
@@ -497,7 +499,7 @@ bool VMToOSInterface::PopulateMemoryPlaceholder(void* address, size_t allocation
         return false;
     }
 
-    bool executable = (static_cast<int>(finalProtection) & PROT_EXEC) != 0;
+    bool executable = (GetNativeProtection(finalProtection) & PROT_EXEC) != 0;
     MemoryProtection initialProtection = MemoryProtection::ReadWrite;
 #ifdef TARGET_APPLE
     if (executable && IsJitMappingRequired())

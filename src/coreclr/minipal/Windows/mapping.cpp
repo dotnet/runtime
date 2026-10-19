@@ -33,7 +33,7 @@ static MapViewOfFile3Fn s_mapViewOfFile3 = nullptr;
 
 static BOOL CALLBACK InitializePlaceholderMapping(PINIT_ONCE, void*, void**)
 {
-    HMODULE module = LoadLibraryExW(L"kernelbase.dll", nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32);
+    HMODULE module = LoadLibraryExW(L"api-ms-win-core-memory-l1-1-6.dll", nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32);
     if (module != nullptr)
     {
         s_virtualAlloc2 = reinterpret_cast<VirtualAlloc2Fn>(GetProcAddress(module, "VirtualAlloc2"));
@@ -51,15 +51,31 @@ bool VMToOSInterface::SupportsPlaceholderMapping()
         s_virtualAlloc2 != nullptr && s_mapViewOfFile3 != nullptr;
 }
 
-#ifndef NDEBUG
-static bool IsValidMemoryProtection(DWORD nativeProtection)
+static DWORD GetNativeProtection(VMToOSInterface::MemoryProtection protection)
 {
-    constexpr DWORD allowedProtections = PAGE_NOACCESS | PAGE_READONLY | PAGE_READWRITE |
-        PAGE_WRITECOPY | PAGE_EXECUTE | PAGE_EXECUTE_READ | PAGE_EXECUTE_READWRITE;
-    return nativeProtection != 0 && (nativeProtection & (nativeProtection - 1)) == 0 &&
-        (nativeProtection & allowedProtections) != 0;
+    switch (protection)
+    {
+        case VMToOSInterface::MemoryProtection::NoAccess:
+            return PAGE_NOACCESS;
+        case VMToOSInterface::MemoryProtection::ReadOnly:
+            return PAGE_READONLY;
+        case VMToOSInterface::MemoryProtection::ReadWrite:
+            return PAGE_READWRITE;
+        case VMToOSInterface::MemoryProtection::WriteCopy:
+            return PAGE_WRITECOPY;
+        case VMToOSInterface::MemoryProtection::Execute:
+            return PAGE_EXECUTE;
+        case VMToOSInterface::MemoryProtection::ExecuteRead:
+            return PAGE_EXECUTE_READ;
+        case VMToOSInterface::MemoryProtection::ExecuteReadWrite:
+            return PAGE_EXECUTE_READWRITE;
+        default:
+            assert(!"Unknown memory protection");
+            return PAGE_NOACCESS;
+    }
 }
 
+#ifndef NDEBUG
 static bool IsValidMemoryRange(void* address, size_t size)
 {
     return size != 0 && size <= UINTPTR_MAX - reinterpret_cast<uintptr_t>(address);
@@ -68,8 +84,7 @@ static bool IsValidMemoryRange(void* address, size_t size)
 
 VMToOSInterface::MemoryMapHandle VMToOSInterface::CreateMemoryMapping(MemoryMapHandle fileHandle, uint64_t size, MemoryProtection protection)
 {
-    DWORD nativeProtection = static_cast<DWORD>(protection);
-    assert(IsValidMemoryProtection(nativeProtection));
+    DWORD nativeProtection = GetNativeProtection(protection);
 
     return CreateFileMappingW(fileHandle, nullptr, nativeProtection,
         static_cast<DWORD>(size >> 32), static_cast<DWORD>(size), nullptr);
@@ -136,8 +151,7 @@ void* VMToOSInterface::MapMemory(MemoryMapHandle mapping, uint64_t offset, void*
         assert(SupportsPlaceholderMapping());
     }
 
-    DWORD nativeProtection = static_cast<DWORD>(protection);
-    assert(IsValidMemoryProtection(nativeProtection));
+    DWORD nativeProtection = GetNativeProtection(protection);
 
     assert(size <= UINT64_MAX - offset);
     assert(address == nullptr || IsValidMemoryRange(address, size));
@@ -217,8 +231,7 @@ void* VMToOSInterface::CommitMemoryPlaceholder(void* address, size_t size, Memor
 {
     assert(SupportsPlaceholderMapping());
 
-    DWORD nativeProtection = static_cast<DWORD>(protection);
-    assert(IsValidMemoryProtection(nativeProtection));
+    DWORD nativeProtection = GetNativeProtection(protection);
 
     assert(address != nullptr && IsValidMemoryRange(address, size));
 
@@ -288,8 +301,7 @@ bool VMToOSInterface::DecommitMemory(void* address, size_t size)
 
 void* VMToOSInterface::CommitReservedMemory(void* address, size_t size, MemoryProtection protection)
 {
-    DWORD nativeProtection = static_cast<DWORD>(protection);
-    assert(IsValidMemoryProtection(nativeProtection));
+    DWORD nativeProtection = GetNativeProtection(protection);
 
     assert(address != nullptr && IsValidMemoryRange(address, size));
 
@@ -298,8 +310,7 @@ void* VMToOSInterface::CommitReservedMemory(void* address, size_t size, MemoryPr
 
 bool VMToOSInterface::ProtectMemory(void* address, size_t size, MemoryProtection protection)
 {
-    DWORD nativeProtection = static_cast<DWORD>(protection);
-    assert(IsValidMemoryProtection(nativeProtection));
+    DWORD nativeProtection = GetNativeProtection(protection);
 
     assert(address != nullptr && IsValidMemoryRange(address, size));
 
@@ -309,8 +320,6 @@ bool VMToOSInterface::ProtectMemory(void* address, size_t size, MemoryProtection
 
 bool VMToOSInterface::PopulateMemoryPlaceholder(void* address, size_t allocationSize, const void* source, size_t copySize, MemoryProtection finalProtection)
 {
-    assert(IsValidMemoryProtection(static_cast<DWORD>(finalProtection)));
-
     assert(address != nullptr && IsValidMemoryRange(address, allocationSize));
     assert(copySize <= allocationSize);
     assert(copySize == 0 || (source != nullptr && copySize <= UINTPTR_MAX - reinterpret_cast<uintptr_t>(source)));

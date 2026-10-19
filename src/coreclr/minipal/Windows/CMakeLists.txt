@@ -5,7 +5,7 @@ set(SOURCES
     dn-u16.cpp
     dn-stdio.cpp
     mapping.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/../mapping.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../mappingholders.cpp
     memory.cpp
 )
 add_library(coreclrminipal

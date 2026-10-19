@@ -10,7 +10,7 @@ if(NOT CLR_CMAKE_TARGET_ARCH_WASM)
         doublemapping.cpp
         execmemallocator.cpp
         mapping.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/../mapping.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/../mappingholders.cpp
     )
 endif()
 

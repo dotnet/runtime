@@ -34,7 +34,7 @@ void VMToOSInterface::MemoryMappingHolder::Reset()
 
 void VMToOSInterface::MemoryMappedViewHolder::Assign(void* address, size_t size)
 {
-    assert((address == nullptr) == (size == 0));
+    assert(address != nullptr ? size != 0 : size == 0);
 
     if (m_address != address)
     {
@@ -45,10 +45,23 @@ void VMToOSInterface::MemoryMappedViewHolder::Assign(void* address, size_t size)
     m_size = size;
 }
 
-void VMToOSInterface::MemoryMappedViewHolder::Swap(MemoryMappedViewHolder& other)
+VMToOSInterface::MemoryMappedViewHolder::MemoryMappedViewHolder(MemoryMappedViewHolder&& other) noexcept
 {
-    std::swap(m_address, other.m_address);
-    std::swap(m_size, other.m_size);
+    m_address = std::exchange(other.m_address, nullptr);
+    m_size = std::exchange(other.m_size, 0);
+}
+
+VMToOSInterface::MemoryMappedViewHolder&
+VMToOSInterface::MemoryMappedViewHolder::operator=(MemoryMappedViewHolder&& other) noexcept
+{
+    if (this != &other)
+    {
+        Reset();
+        m_address = std::exchange(other.m_address, nullptr);
+        m_size = std::exchange(other.m_size, 0);
+    }
+
+    return *this;
 }
 
 void VMToOSInterface::MemoryMappedViewHolder::Reset()
@@ -67,7 +80,7 @@ void VMToOSInterface::MemoryMappedViewHolder::Reset()
 
 void VMToOSInterface::MemoryReservationHolder::Assign(void* address, size_t size)
 {
-    assert((address == nullptr) == (size == 0));
+    assert(address != nullptr ? size != 0 : size == 0);
     Reset();
     m_address = address;
     m_size = size;

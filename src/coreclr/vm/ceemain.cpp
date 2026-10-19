@@ -655,7 +655,8 @@ void EEStartupHelper()
         PendingTypeLoadTable::Init();
 
 #if defined(TARGET_UNIX) && !defined(TARGET_WASM)
-        if (!VMToOSInterface::InitializeExecutableMemoryAllocator())
+        if (!VMToOSInterface::InitializeExecutableMemoryAllocator(
+                CLRConfig::GetConfigValue(CLRConfig::INTERNAL_InitialExecMemoryPercent)))
         {
             IfFailGo(E_OUTOFMEMORY);
         }

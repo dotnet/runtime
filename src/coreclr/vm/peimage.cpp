@@ -16,14 +16,6 @@
 #include "eventtrace.h"
 #include "peimagelayout.inl"
 
-#ifdef TARGET_UNIX
-#include <errno.h>
-#include <fcntl.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#include "dn-stdio.h"
-#endif // TARGET_UNIX
-
 #ifndef DACCESS_COMPILE
 
 CrstStatic  PEImage::s_hashLock;
@@ -54,10 +46,6 @@ void PEImage::Startup()
     LockOwner ijwLock = { &s_ijwHashLock, IsOwnerOfCrst };
     s_ijwFixupDataHash = ::new PtrHashMap;
     s_ijwFixupDataHash->Init(CompareIJWDataBase, FALSE, &ijwLock);
-
-#ifdef TARGET_WASM
-    PEImageLayout::Startup();
-#endif // TARGET_WASM
 
 #ifdef TARGET_WASM
     PEImageLayout::Startup();
@@ -107,12 +95,9 @@ PEImage::~PEImage()
         delete m_pLayoutLock;
     if (m_hFile != VMToOSInterface::InvalidFileHandle)
     {
-#ifdef TARGET_UNIX
-        if (close(m_hFile) != 0)
-            LOG((LF_LOADER, LL_INFO100, "PEImage: Could not close file descriptor (%d)\n", errno));
-#else
-        CloseHandle(m_hFile);
-#endif // TARGET_UNIX
+        if (!VMToOSInterface::CloseFile(m_hFile))
+            LOG((LF_LOADER, LL_INFO100, "PEImage: Could not close file (0x%08x)\n",
+                static_cast<unsigned>(VMToOSInterface::GetLastMemoryMappingError())));
     }
 
     for (unsigned int i=0;i<ARRAY_SIZE(m_pLayouts);i++)
@@ -807,83 +792,14 @@ HRESULT PEImage::TryOpenFile(bool takeLock)
     if (m_hFile != VMToOSInterface::InvalidFileHandle)
         return S_OK;
 
-#ifdef TARGET_UNIX
-    // Encoding conversion mutates SString storage; keep the shared image-cache key unchanged.
-    StackSString filePath(GetPathToLoad());
-    const char* path = filePath.GetUTF8();
-    const char* separator = strrchr(path, '/');
-    // Check if a '/' exists and that it is anything other than the very first character.
-    if (separator == nullptr || separator != path)
-    {
-        StackSString directory;
-        if (separator == nullptr)
-            directory.SetUTF8(".");
-        else
-            directory.SetUTF8(path, static_cast<COUNT_T>(separator - path));
-        Holder<void*, DoNothing, free> canonicalDirectory(realpath(directory.GetUTF8(), nullptr));
-        if (canonicalDirectory.IsNull())
-        {
-            int error = errno;
-            LOG((LF_LOADER, LL_INFO100, "PEImage: Could not resolve file directory (%d)\n", error));
-            return HRESULTFromErr(error);
-        }
-
-        StackSString normalizedPath(SString::Utf8, static_cast<const char*>(canonicalDirectory.GetValue()));
-        normalizedPath.AppendUTF8("/");
-        normalizedPath.AppendUTF8(separator == nullptr ? path : separator + 1);
-        filePath.Set(normalizedPath);
-        path = filePath.GetUTF8();
-    }
-    int descriptor;
-    do
-    {
-        descriptor = open(path, O_RDONLY | O_CLOEXEC);
-    } while (descriptor < 0 && errno == EINTR);
-
-    if (descriptor < 0)
-    {
-        int error = errno;
-        LOG((LF_LOADER, LL_INFO100, "PEImage: Could not open file (%d)\n", error));
-        return HRESULTFromErr(error);
-    }
-
-    struct stat fileInfo;
-    int result;
-    do
-    {
-        result = fstat(descriptor, &fileInfo);
-    } while (result != 0 && errno == EINTR);
-
-    if (result != 0 || S_ISDIR(fileInfo.st_mode))
-    {
-        int error = result != 0 ? errno : EISDIR;
-        if (close(descriptor) != 0)
-            LOG((LF_LOADER, LL_INFO100, "PEImage: Could not close file descriptor (%d)\n", errno));
-        LOG((LF_LOADER, LL_INFO100, "PEImage: Could not inspect file (%d)\n", error));
-        return HRESULTFromErr(error);
-    }
-
-    m_hFile = descriptor;
-    return S_OK;
-#else
     ErrorModeHolder mode{};
-    m_hFile = WszCreateFile((LPCWSTR)GetPathToLoad(),
-                          // the file may have native code sections, make sure we are allowed to execute the file
-                          GENERIC_READ | GENERIC_EXECUTE,
-                          FILE_SHARE_READ|FILE_SHARE_DELETE,
-                          NULL,
-                          OPEN_EXISTING,
-                          FILE_ATTRIBUTE_NORMAL,
-                          NULL);
+    m_hFile = VMToOSInterface::OpenFile(
+        reinterpret_cast<const char16_t*>(static_cast<LPCWSTR>(GetPathToLoad())));
     if (m_hFile != VMToOSInterface::InvalidFileHandle)
-            return S_OK;
+        return S_OK;
 
-    DWORD dwLastError = GetLastError();
-    if (dwLastError != 0)
-        return HRESULT_FROM_WIN32(dwLastError);
-
-    return HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND);
-#endif // TARGET_UNIX
+    HRESULT error = VMToOSInterface::GetLastMemoryMappingError();
+    return error != S_OK ? error : HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND);
 }
 
 #endif // !DACCESS_COMPILE
