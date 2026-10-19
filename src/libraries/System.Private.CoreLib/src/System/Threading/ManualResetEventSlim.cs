@@ -513,8 +513,6 @@ namespace System.Threading
 
             ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeout, -1);
 
-            RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
-
             if (!IsSet)
             {
                 if (millisecondsTimeout == 0)
@@ -523,6 +521,7 @@ namespace System.Threading
                     return false;
                 }
 
+                RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
 
                 // We spin briefly before falling back to allocating and/or waiting on a true event.
                 long startTime = 0;
