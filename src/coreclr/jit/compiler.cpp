@@ -5009,7 +5009,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     // Clean up unreachable blocks.
     //
-    DoPhase(this, PHASE_DFS_BLOCKS_WASM, &Compiler::fgDfsBlocksAndRemove);
+    DoPhase(this, PHASE_DFS_BLOCKS_WASM, &Compiler::fgWasmRemoveUnreachableBlocks);
 
     // Repair any multiple-entry try regions back to single entry.
     //
