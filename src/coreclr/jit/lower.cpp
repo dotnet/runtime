@@ -5237,7 +5237,7 @@ static bool IsFloatPairFieldListRegister(GenTreeFieldList::Use* use,
                                          unsigned               regEnd,
                                          var_types              regType)
 {
-    if ((regType != TYP_DOUBLE) || (use == nullptr) || (use->GetType() != TYP_FLOAT) || (use->GetOffset() != regStart))
+    if ((regType != TYP_DOUBLE) || (use->GetType() != TYP_FLOAT) || (use->GetOffset() != regStart))
     {
         return false;
     }
