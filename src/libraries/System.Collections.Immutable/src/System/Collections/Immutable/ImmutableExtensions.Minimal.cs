@@ -126,6 +126,12 @@ namespace System.Collections.Immutable
                     Array.Copy(immutable.array!, 0, array, arrayIndex, immutable.Length);
                     return true;
                 }
+
+                if (sequence is ImmutableArray<T>.Builder builder)
+                {
+                    builder.CopyTo(array, arrayIndex);
+                    return true;
+                }
             }
 
             return false;

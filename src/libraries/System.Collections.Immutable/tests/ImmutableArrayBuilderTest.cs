@@ -332,6 +332,35 @@ namespace System.Collections.Immutable.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => builder.InsertRange(100, new ImmutableArray<int>()));
         }
 
+        [Theory]
+        [InlineData(0, 0, 0)]
+        [InlineData(0, 0, 8)]
+        [InlineData(1, 0, 1)]
+        [InlineData(1, 0, 2)]
+        [InlineData(1, 1, 1)]
+        [InlineData(1, 1, 2)]
+        [InlineData(3, 0, 3)]
+        [InlineData(3, 0, 6)]
+        [InlineData(3, 1, 3)]
+        [InlineData(3, 1, 6)]
+        [InlineData(3, 2, 3)]
+        [InlineData(3, 2, 6)]
+        [InlineData(3, 3, 3)]
+        [InlineData(3, 3, 6)]
+        public void InsertRange_Self(int count, int index, int capacity)
+        {
+            List<int> expected = Enumerable.Range(1, count).ToList();
+            ImmutableArray<int>.Builder builder = ImmutableArray.CreateBuilder<int>(capacity);
+            builder.AddRange(expected);
+
+            expected.InsertRange(index, expected);
+            builder.InsertRange(index, builder);
+
+            Assert.Equal(count * 2, builder.Count);
+            Assert.Equal(expected, builder);
+            Assert.Equal(expected, builder.ToImmutable());
+        }
+
         [Fact]
         public void Remove()
         {
