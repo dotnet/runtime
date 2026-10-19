@@ -16,6 +16,12 @@ namespace System.Formats.Tar
     /// </summary>
     public static class TarFile
     {
+        // Batch small archive writes. In warm paired runs, 32 KiB cut tiny-file async creation
+        // time by ~11% on Windows and ~5% on Linux versus 4 KiB. 64 KiB added ~2% for Windows SDK
+        // async creation and ~1-2% for tiny files on Windows, with no clear tiny-file gain on Linux.
+        // Prefer smaller per-archive allocations and avoid the large object heap costs of buffers >= 128 KiB.
+        private const int ArchiveBufferSize = 32 * 1024;
+
         /// <inheritdoc cref="CreateFromDirectory(string, Stream, bool, TarEntryFormat)" />
         public static void CreateFromDirectory(string sourceDirectoryName, Stream destination, bool includeBaseDirectory)
             => CreateFromDirectory(sourceDirectoryName, destination, includeBaseDirectory, TarEntryFormat.Pax);
@@ -194,7 +200,7 @@ namespace System.Formats.Tar
             }
 
             // Throws if the destination file exists
-            using FileStream fs = new(destinationFileName, FileMode.CreateNew, FileAccess.Write);
+            using FileStream fs = new(destinationFileName, FileMode.CreateNew, FileAccess.Write, FileShare.Read, ArchiveBufferSize);
 
             CreateFromDirectoryInternal(sourceDirectoryName, fs, includeBaseDirectory, leaveOpen: false, options);
         }
@@ -538,6 +544,7 @@ namespace System.Formats.Tar
             {
                 Access = FileAccess.Write,
                 Mode = FileMode.CreateNew,
+                BufferSize = ArchiveBufferSize,
                 Options = FileOptions.Asynchronous,
             };
             // Throws if the destination file exists
