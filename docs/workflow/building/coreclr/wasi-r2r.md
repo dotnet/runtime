@@ -56,11 +56,18 @@ RunCrossGen2=1 bash artifacts/tests/coreclr/wasi.wasm.Checked/JIT/CodeGenBringUp
 
 The wrapper compiles the runner and referenced test assemblies into a composite, then invokes the
 same composition task through `CORE_ROOT/wasi-r2r/WasiR2RComposer.proj`, which also merges Core_Root's
-prebuilt R2R `System.Private.CoreLib.wasm` so CoreLib runs ReadyToRun code too (set
-`WasiR2RIncludeCoreLib=0` to compose only the test assemblies). It launches
+prebuilt R2R `System.Private.CoreLib.wasm`. R2R code outside CoreLib requires an R2R CoreLib, so the
+image is always merged and composition fails if it is missing. It launches
 `IL-CG2/wasi-r2r/corerun-composite.wasm` with
 `APP_ASSEMBLIES=EXTERNAL` and `CORE_LIBRARIES=/IL-CG2/wasi-r2r` so the guest probes the private
 `comp/` stubs. `TEST_READY_TO_RUN_MODE=1` enables R2R-specific test conditions.
+
+The shared corerun reserves 32 MiB of linear memory and 131,072 function-table slots for the merged
+images (CMake cache variables `CORERUN_WASI_R2R_IMAGE_CAP` and `CORERUN_WASI_R2R_TABLE_BASE`). CoreLib
+alone uses about 14.6 MB and 64K slots; the composer logs the usage and rejects images that do not fit.
+Merging CoreLib makes each test's composed host about 30 MB larger, adds about 1.3 seconds to
+composition, and raises an uncached wasmtime start to about 1.4 seconds and 1.5 GB peak memory, most of
+it compiling CoreLib's code.
 
 Without `RunCrossGen2`, the wrapper uses the original host and does not probe those stubs.
 Composition failures fail the test rather than silently falling back to interpretation.
@@ -77,8 +84,9 @@ that host.
 ## Composer diagnostics
 
 The build targets generate Crossgen2 response files; a hand-maintained response-file template
-is not required. The host supplies the image and table bases, and the C# composer rejects an
-undersized buffer, overlapping table reservation, or a non-self-installing composite.
+is not required. The host supplies the image and table bases and the registry layout, and the C# composer rejects an
+undersized buffer, overlapping table reservation, too many images, duplicate or oversized image names,
+or a non-self-installing image.
 
 A valid composed module and passing tests alone do not prove R2R was used. Enable the guest's
 `DOTNET_ReadyToRunLogFile` (the runtime appends `.<pid>` to the file name) and look for

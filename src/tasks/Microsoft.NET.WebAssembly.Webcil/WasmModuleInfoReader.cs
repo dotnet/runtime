@@ -986,6 +986,45 @@ internal static class WasmImportRenamer
     }
 }
 
+/// <summary>An R2R image to merge into a WASI host: the name the runtime requests it by and its sizes.</summary>
+public readonly struct WasiR2RImage(string registryName, int tableSlots, int payloadSize)
+{
+    public string RegistryName { get; } = registryName;
+    public int TableSlots { get; } = tableSlots;
+    public int PayloadSize { get; } = payloadSize;
+}
+
+/// <summary>Where an R2R image lands in the host's staging buffer and function table.</summary>
+public readonly struct WasiR2RImagePlacement(WasiR2RImage image, int memoryBase, int tableBase)
+{
+    public WasiR2RImage Image { get; } = image;
+    public int MemoryBase { get; } = memoryBase;
+    public int TableBase { get; } = tableBase;
+}
+
+/// <summary>The reservations a WASI host exports for merged R2R images.</summary>
+public readonly struct WasiR2RHostReservations(
+    int imageBase,
+    int imageCapacity,
+    int tableBase,
+    int reservedTableStart,
+    int registryCapacity,
+    int registryEntrySize)
+{
+    public int ImageBase { get; } = imageBase;
+    public int ImageCapacity { get; } = imageCapacity;
+    public int TableBase { get; } = tableBase;
+    public int ReservedTableStart { get; } = reservedTableStart;
+    public int RegistryCapacity { get; } = registryCapacity;
+    public int RegistryEntrySize { get; } = registryEntrySize;
+
+    // Each registry entry is a NUL-terminated name followed by the image's base and payload size (u32 each).
+    public int RegistryNameCapacity => RegistryEntrySize - 8;
+}
+
+/// <summary>A set of R2R images does not fit the host's reservations.</summary>
+public sealed class WasiR2RLayoutException(string message) : Exception(message);
+
 public static class WasiR2RComposition
 {
     // Every self-installing image defines getWebcilSize and patchWebcilHeader; a component forwarding
@@ -1062,6 +1101,85 @@ public static class WasiR2RComposition
         input.Position = segment.PayloadOffset;
         using FileStream output = File.Create(outputPath);
         CopyExactly(input, output, segment.Size);
+    }
+
+    // Images share the host's staging buffer, whose definition is 16-byte aligned; keeping each payload on the
+    // same alignment preserves the alignment the WebCIL format requires.
+    private const int ImageAlignment = 16;
+
+    /// <summary>
+    /// Lays the images out back to back in the host's staging buffer and reserved function-table range, in
+    /// order, and validates the result against the host's reservations. This must happen before merging:
+    /// active segments install at instantiation, so the host cannot detect an overrun at runtime.
+    /// </summary>
+    public static IReadOnlyList<WasiR2RImagePlacement> LayOutImages(WasiR2RHostReservations host, IReadOnlyList<WasiR2RImage> images)
+    {
+        if (images.Count == 0)
+            throw new WasiR2RLayoutException("No R2R images were supplied.");
+        if (host.RegistryNameCapacity <= 0)
+            throw new WasiR2RLayoutException($"The host reports an invalid R2R registry entry size {host.RegistryEntrySize}.");
+        if (images.Count > host.RegistryCapacity)
+            throw new WasiR2RLayoutException(
+                $"{images.Count} R2R images were supplied, but the host registry holds at most {host.RegistryCapacity}.");
+
+        HashSet<string> names = new(StringComparer.Ordinal);
+        List<WasiR2RImagePlacement> placements = new(images.Count);
+        long memoryBase = host.ImageBase;
+        long tableBase = host.TableBase;
+        foreach (WasiR2RImage image in images)
+        {
+            byte[] nameBytes = Encoding.UTF8.GetBytes(image.RegistryName ?? string.Empty);
+            if (nameBytes.Length == 0 || Array.IndexOf(nameBytes, (byte)0) >= 0)
+                throw new WasiR2RLayoutException($"The R2R image name '{image.RegistryName}' cannot be recorded in the host.");
+            if (nameBytes.Length >= host.RegistryNameCapacity)
+                throw new WasiR2RLayoutException(
+                    $"The R2R image name '{image.RegistryName}' is {nameBytes.Length} UTF-8 bytes, but the host records at most {host.RegistryNameCapacity - 1}.");
+            if (!names.Add(image.RegistryName!))
+                throw new WasiR2RLayoutException($"More than one R2R image is named '{image.RegistryName}'.");
+            if (image.PayloadSize <= 0 || image.TableSlots < 0)
+                throw new WasiR2RLayoutException($"The R2R image '{image.RegistryName}' has an invalid payload or table size.");
+
+            long payloadEnd = memoryBase + image.PayloadSize;
+            if (payloadEnd - host.ImageBase > host.ImageCapacity)
+                throw new WasiR2RLayoutException(
+                    $"The R2R image payloads need at least {payloadEnd - host.ImageBase} bytes, but the host staging buffer is only {host.ImageCapacity} bytes.");
+            long tableEnd = tableBase + image.TableSlots;
+            if (tableEnd > host.ReservedTableStart)
+                throw new WasiR2RLayoutException(
+                    $"The R2R images need table slots {host.TableBase}..{tableEnd - 1}, but the host's functions begin at {host.ReservedTableStart}.");
+
+            placements.Add(new WasiR2RImagePlacement(image, checked((int)memoryBase), checked((int)tableBase)));
+            memoryBase = (payloadEnd + ImageAlignment - 1) & ~(long)(ImageAlignment - 1);
+            tableBase = tableEnd;
+        }
+        return placements;
+    }
+
+    /// <summary>
+    /// Encodes the host's image registry for the given placements: one entry per image holding its
+    /// NUL-padded name, then its base address and payload size as little-endian u32s.
+    /// </summary>
+    public static byte[] CreateRegistry(WasiR2RHostReservations host, IReadOnlyList<WasiR2RImagePlacement> placements)
+    {
+        byte[] registry = new byte[checked(host.RegistryEntrySize * placements.Count)];
+        for (int i = 0; i < placements.Count; i++)
+        {
+            WasiR2RImagePlacement placement = placements[i];
+            int entry = i * host.RegistryEntrySize;
+            byte[] name = Encoding.UTF8.GetBytes(placement.Image.RegistryName);
+            Buffer.BlockCopy(name, 0, registry, entry, name.Length);
+            WriteUInt32LittleEndian(registry, entry + host.RegistryNameCapacity, (uint)placement.MemoryBase);
+            WriteUInt32LittleEndian(registry, entry + host.RegistryNameCapacity + 4, (uint)placement.Image.PayloadSize);
+        }
+        return registry;
+    }
+
+    private static void WriteUInt32LittleEndian(byte[] buffer, int offset, uint value)
+    {
+        buffer[offset] = (byte)value;
+        buffer[offset + 1] = (byte)(value >> 8);
+        buffer[offset + 2] = (byte)(value >> 16);
+        buffer[offset + 3] = (byte)(value >> 24);
     }
 
     public static void ReplaceFirstCoreModule(string componentPath, string modulePath, string outputPath) =>

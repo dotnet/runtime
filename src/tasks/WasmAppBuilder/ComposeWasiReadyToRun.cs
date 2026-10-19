@@ -91,70 +91,68 @@ public sealed class ComposeWasiReadyToRun : Task
                 out int registryBase,
                 out int registryCapacity,
                 out int registryEntrySize);
-            int nameCapacity = registryEntrySize - 8;
-            if (nameCapacity <= 0)
-                throw new LogAsErrorException($"The host reports an invalid R2R registry entry size {registryEntrySize}.");
-
-            List<ImageLayout> images = LayOutImages(imageBase, tableBase, nameCapacity);
-            if (images.Count > registryCapacity)
-                throw new LogAsErrorException(
-                    $"{images.Count} R2R images were supplied, but the host registry holds at most {registryCapacity}.");
-            ImageLayout last = images[images.Count - 1];
-            int tableEnd = checked(last.TableBase + last.TableSlots);
-            if (tableEnd > reservedTableStart)
-                throw new LogAsErrorException(
-                    $"The R2R images need table slots {tableBase}..{tableEnd - 1}, " +
-                    $"but the host's functions begin at {reservedTableStart}.");
-            long imageEnd = (long)last.MemoryBase + last.PayloadSize - imageBase;
-            if (imageEnd > imageCapacity)
-                throw new LogAsErrorException(
-                    $"The R2R image payloads need {imageEnd} bytes but the host staging buffer is only {imageCapacity} bytes.");
-
-            foreach (ImageLayout image in images)
+            WasiR2RHostReservations host = new(
+                imageBase, imageCapacity, tableBase, reservedTableStart, registryCapacity, registryEntrySize);
+            List<(string Path, WasiR2RImage Image)> inputs = CollectImages();
+            IReadOnlyList<WasiR2RImagePlacement> placements;
+            try
             {
-                Log.LogMessage(MessageImportance.High,
-                    $"WASI R2R composition: image{image.Index} '{image.RegistryName}' memoryBase={image.MemoryBase} " +
-                    $"tableBase={image.TableBase} tableSlots={image.TableSlots} payload={image.PayloadSize}");
+                placements = WasiR2RComposition.LayOutImages(host, inputs.Select(input => input.Image).ToList());
             }
+            catch (WasiR2RLayoutException ex)
+            {
+                throw new LogAsErrorException(ex.Message);
+            }
+
+            for (int i = 0; i < placements.Count; i++)
+            {
+                WasiR2RImagePlacement placement = placements[i];
+                Log.LogMessage(MessageImportance.High,
+                    $"WASI R2R composition: image{i} '{placement.Image.RegistryName}' memoryBase={placement.MemoryBase} " +
+                    $"tableBase={placement.TableBase} tableSlots={placement.Image.TableSlots} payload={placement.Image.PayloadSize}");
+            }
+            WasiR2RImagePlacement last = placements[placements.Count - 1];
             Log.LogMessage(MessageImportance.High,
-                $"WASI R2R composition: images={images.Count} bufferUsed={imageEnd}/{imageCapacity} " +
-                $"tableUsed={tableEnd - tableBase}/{reservedTableStart - tableBase}");
+                $"WASI R2R composition: images={placements.Count} " +
+                $"bufferUsed={last.MemoryBase + last.Image.PayloadSize - imageBase}/{imageCapacity} " +
+                $"tableUsed={last.TableBase + last.Image.TableSlots - tableBase}/{reservedTableStart - tableBase}");
 
             // Every self-installing image imports webcil.__memory_base/__table_base and exports
             // patchWebcilHeader. Give each image uniquely named base imports and patch export: wasm-merge
             // resolves by name and, under --skip-export-conflicts, keeps only the first export of a name, so
             // shared names would leave the later images' imports unresolved.
             StringBuilder mergeArgs = new($"-g --all-features --enable-gc --skip-export-conflicts {Quote(hostModule)} webcil");
-            foreach (ImageLayout image in images)
+            for (int index = 0; index < placements.Count; index++)
             {
-                string basesWatPath = Path.Combine(OutputDirectory!, $"bases{image.Index}.wat");
-                string basesPath = Path.Combine(OutputDirectory!, $"bases{image.Index}.wasm");
+                WasiR2RImagePlacement placement = placements[index];
+                string basesWatPath = Path.Combine(OutputDirectory!, $"bases{index}.wat");
+                string basesPath = Path.Combine(OutputDirectory!, $"bases{index}.wasm");
                 File.WriteAllText(basesWatPath, FormattableString.Invariant($"""
                     (module
-                      (global (export "memory_base_{image.Index}") i32 (i32.const {image.MemoryBase}))
-                      (global (export "table_base_{image.Index}") i32 (i32.const {image.TableBase})))
+                      (global (export "memory_base_{index}") i32 (i32.const {placement.MemoryBase}))
+                      (global (export "table_base_{index}") i32 (i32.const {placement.TableBase})))
                     """));
                 Run(WasmToolsPath!, $"parse {Quote(basesWatPath)} -o {Quote(basesPath)}");
 
-                string renamedPath = Path.Combine(OutputDirectory!, $"image{image.Index}.wasm");
+                string renamedPath = Path.Combine(OutputDirectory!, $"image{index}.wasm");
                 WasiR2RComposition.RenameImportsAndExports(
-                    image.Path,
+                    inputs[index].Path,
                     renamedPath,
                     new Dictionary<(string Module, string Field), (string Module, string Field)>
                     {
-                        [("webcil", "__memory_base")] = ($"bases{image.Index}", $"memory_base_{image.Index}"),
-                        [("webcil", "__table_base")] = ($"bases{image.Index}", $"table_base_{image.Index}"),
+                        [("webcil", "__memory_base")] = ($"bases{index}", $"memory_base_{index}"),
+                        [("webcil", "__table_base")] = ($"bases{index}", $"table_base_{index}"),
                     },
                     new Dictionary<string, string>(StringComparer.Ordinal)
                     {
-                        ["patchWebcilHeader"] = $"patchWebcilHeader_{image.Index}",
+                        ["patchWebcilHeader"] = $"patchWebcilHeader_{index}",
                     });
-                mergeArgs.Append(FormattableString.Invariant($" {Quote(basesPath)} bases{image.Index} {Quote(renamedPath)} image{image.Index}"));
+                mergeArgs.Append(FormattableString.Invariant($" {Quote(basesPath)} bases{index} {Quote(renamedPath)} image{index}"));
             }
 
             string startWatPath = Path.Combine(OutputDirectory!, "start.wat");
             string startPath = Path.Combine(OutputDirectory!, "start.wasm");
-            File.WriteAllText(startWatPath, CreateStartWat(images, registryBase, registryEntrySize, nameCapacity));
+            File.WriteAllText(startWatPath, CreateStartWat(placements, registryBase, WasiR2RComposition.CreateRegistry(host, placements)));
             Run(WasmToolsPath!, $"parse {Quote(startWatPath)} -o {Quote(startPath)}");
             Run(WasmToolsPath!, $"validate --features all {Quote(startPath)}");
             mergeArgs.Append($" {Quote(startPath)} start");
@@ -253,17 +251,13 @@ public sealed class ComposeWasiReadyToRun : Task
             File.Delete(path);
     }
 
-    private sealed record ImageLayout(int Index, string Path, string RegistryName, int MemoryBase, int TableBase, int TableSlots, int PayloadSize);
-
-    // Lays the images out back to back: payloads in the host staging buffer (16-byte aligned, matching the
-    // buffer's own alignment) and functions in the reserved table range.
-    private List<ImageLayout> LayOutImages(int imageBase, int tableBase, int nameCapacity)
+    private List<(string Path, WasiR2RImage Image)> CollectImages()
     {
-        List<(string Path, string RegistryName, int TableSlots, int PayloadSize)> inputs = new()
+        // Component stubs name their owner by the file name crossgen2 wrote, so the composite's own file name is
+        // the one the host must answer to.
+        List<(string Path, WasiR2RImage Image)> images = new()
         {
-            // Component stubs name their owner by the file name crossgen2 wrote, so the composite's own file
-            // name is the one the host must answer to.
-            (CompositePath, Path.GetFileName(CompositePath), TableSlotCount, PayloadSize),
+            (CompositePath, new WasiR2RImage(Path.GetFileName(CompositePath), TableSlotCount, PayloadSize)),
         };
         foreach (ITaskItem item in AdditionalImages)
         {
@@ -272,60 +266,33 @@ public sealed class ComposeWasiReadyToRun : Task
             string registryName = item.GetMetadata("RegistryName");
             if (string.IsNullOrEmpty(registryName))
                 registryName = Path.GetFileNameWithoutExtension(path) + ".dll";
-            WasiR2RComposition.InspectComposite(path, out _, out int slots, out int payload);
-            inputs.Add((path, registryName, slots, payload));
-        }
-
-        HashSet<string> names = new(StringComparer.Ordinal);
-        List<ImageLayout> images = new();
-        long memoryBase = imageBase;
-        long nextTableBase = tableBase;
-        foreach ((string path, string registryName, int slots, int payload) in inputs)
-        {
-            byte[] nameBytes = Encoding.UTF8.GetBytes(registryName);
-            if (nameBytes.Length == 0 || Array.IndexOf(nameBytes, (byte)0) >= 0)
-                throw new LogAsErrorException($"The R2R image name '{registryName}' cannot be recorded in the host.");
-            if (nameBytes.Length >= nameCapacity)
-                throw new LogAsErrorException(
-                    $"The R2R image name '{registryName}' is {nameBytes.Length} UTF-8 bytes, but the host records at most {nameCapacity - 1}.");
-            if (!names.Add(registryName))
-                throw new LogAsErrorException($"More than one R2R image is named '{registryName}'.");
-
-            images.Add(new ImageLayout(images.Count, path, registryName, checked((int)memoryBase), checked((int)nextTableBase), slots, payload));
-            memoryBase = (memoryBase + payload + 15) & ~15L;
-            nextTableBase += slots;
+            WasiR2RComposition.InspectComposite(path, out _, out int tableSlots, out int payloadSize);
+            images.Add((path, new WasiR2RImage(registryName, tableSlots, payloadSize)));
         }
         return images;
     }
 
     // The start module imports the host's memory (the merge names the host "webcil") so its active segment
     // fills the host's image registry, and calls each image's patchWebcilHeader to record where it landed.
-    private static string CreateStartWat(List<ImageLayout> images, int registryBase, int registryEntrySize, int nameCapacity)
+    private static string CreateStartWat(IReadOnlyList<WasiR2RImagePlacement> placements, int registryBase, byte[] registry)
     {
         StringBuilder wat = new();
         wat.AppendLine("(module");
         wat.AppendLine("  (import \"webcil\" \"memory\" (memory 0))");
-        foreach (ImageLayout image in images)
-            wat.AppendLine(FormattableString.Invariant($"  (import \"image{image.Index}\" \"patchWebcilHeader_{image.Index}\" (func $patch{image.Index} (param i32 i32)))"));
+        for (int i = 0; i < placements.Count; i++)
+            wat.AppendLine(FormattableString.Invariant($"  (import \"image{i}\" \"patchWebcilHeader_{i}\" (func $patch{i} (param i32 i32)))"));
 
-        StringBuilder registry = new();
-        foreach (ImageLayout image in images)
-        {
-            byte[] entry = new byte[registryEntrySize];
-            Encoding.UTF8.GetBytes(image.RegistryName, 0, image.RegistryName.Length, entry, 0);
-            BitConverter.GetBytes(image.MemoryBase).CopyTo(entry, nameCapacity);
-            BitConverter.GetBytes(image.PayloadSize).CopyTo(entry, nameCapacity + 4);
-            foreach (byte b in entry)
-                registry.Append('\\').Append(b.ToString("x2", CultureInfo.InvariantCulture));
-        }
-        wat.AppendLine(FormattableString.Invariant($"  (data (i32.const {registryBase}) \"{registry}\")"));
+        StringBuilder escapedRegistry = new();
+        foreach (byte b in registry)
+            escapedRegistry.Append('\\').Append(b.ToString("x2", CultureInfo.InvariantCulture));
+        wat.AppendLine(FormattableString.Invariant($"  (data (i32.const {registryBase}) \"{escapedRegistry}\")"));
 
         wat.AppendLine("  (func $start");
-        foreach (ImageLayout image in images)
+        for (int i = 0; i < placements.Count; i++)
         {
-            wat.AppendLine(FormattableString.Invariant($"    i32.const {image.MemoryBase}"));
-            wat.AppendLine(FormattableString.Invariant($"    i32.const {image.PayloadSize}"));
-            wat.AppendLine(FormattableString.Invariant($"    call $patch{image.Index}"));
+            wat.AppendLine(FormattableString.Invariant($"    i32.const {placements[i].MemoryBase}"));
+            wat.AppendLine(FormattableString.Invariant($"    i32.const {placements[i].Image.PayloadSize}"));
+            wat.AppendLine(FormattableString.Invariant($"    call $patch{i}"));
         }
         wat.AppendLine("  )");
         wat.AppendLine("  (start $start))");

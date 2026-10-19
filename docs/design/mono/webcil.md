@@ -245,9 +245,10 @@ serves no image.
 The composer extracts those payloads from their self-installing Wasm wrappers at build time.
 Placing a composite on disk without composing it into the host does not satisfy this contract.
 
-Publishing sizes the host reservations from the generated app/framework composite. Runtime tests
-instead use the shared corerun's fixed reservations and compose their test assemblies together with
-Core_Root's prebuilt R2R CoreLib, so CoreLib runs ReadyToRun code as well.
+Publishing compiles the app and framework, including CoreLib, into a single composite and sizes the
+host reservations exactly to it. Runtime tests instead use the shared corerun's fixed reservations and
+merge each test composite together with Core_Root's prebuilt, non-composite R2R CoreLib: R2R code
+outside CoreLib is supported only when CoreLib is also R2R.
 See [the WASI R2R workflow](../../workflow/building/coreclr/wasi-r2r.md) for usage and diagnostics.
 
 ### Webcil payload

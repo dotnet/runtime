@@ -3,10 +3,10 @@
 
 // Statically-composed WASI R2R external-assembly probe for the per-app-linked wasihost corehost
 // (libWasiHost.a). The probe is a host_runtime_contract::external_assembly_probe callback: the runtime
-// calls out to it to obtain the composite R2R webcil image and the per-assembly stubs.
+// calls out to it to obtain the merged R2R webcil images and the per-assembly stubs.
 //
-// The in-tree WASI R2R composer populates the image when publishing. The host must be linked with the
-// flags that supply a composite's imports -- see WasiEnableCompositeR2R in WasiApp.CoreCLR.targets.
+// The in-tree WASI R2R composer populates the images. The host must be linked with the flags that
+// supply the images' imports -- see WasiEnableCompositeR2R in WasiApp.CoreCLR.targets.
 // Without them this probe compiles but can never be satisfied.
 //
 // Requires corerun.hpp to be included first (for pal::try_map_file_readonly). Include exactly once per
@@ -25,22 +25,23 @@
 
 namespace wasi_r2r
 {
-// A crossgen2-produced R2R webcil image is merged into the host module post-link (its native
-// functions land in the shared indirect function table and its webcil payload/metadata is written
-// into g_wasi_r2r_image by the offline merge's active data segment at this buffer's address == the
-// composite image's imageBase). The runtime then finds the R2R webcil via this probe, exactly the way
-// the browser host does via BrowserHost_ExternalAssemblyProbe.
+// Crossgen2-produced R2R webcil images are merged into the host module post-link: their native
+// functions land in the shared indirect function table, and the offline merge's active data segments
+// write their webcil payloads back to back into g_wasi_r2r_image (each at its own imageBase). The
+// runtime then finds the R2R webcil via this probe, exactly the way the browser host does via
+// BrowserHost_ExternalAssemblyProbe.
 //
 // The buffer is defined outside this header: a ReadyToRun publish builds a strong definition sized
-// exactly to the composite, while the host archive carries a 64-byte weak fallback for non-R2R apps.
+// exactly to its composite, corerun reserves a fixed capacity for its test images, and the host archive
+// carries a 64-byte weak fallback for non-R2R apps.
 extern "C" uint8_t g_wasi_r2r_image[];
 extern "C" uint32_t g_wasi_r2r_image_cap;
 
-// The table index at which the first merged image's functions are installed; later images follow it. Under the reservation model the
-// host is linked with `-Wl,--table-base=<N+1>`, which moves the host's own address-taken functions up
-// to start at N+1 and leaves slots 1..N free, so the composite always sits at base 1 regardless of
-// its size. This MUST match the `__table_base` global supplied to the merge (see docs/design/mono/webcil.md);
-// the two are a coupled constant, which the composer validates against the host's exported value.
+// The table index at which the first merged image's functions are installed; later images follow it.
+// Under the reservation model the host is linked with `-Wl,--table-base=<N+1>`, which moves the host's
+// own address-taken functions up to start at N+1 and leaves slots 1..N free for the images. This MUST
+// match the first image's `__table_base` supplied to the merge (see docs/design/mono/webcil.md); the
+// composer reads the host's exported value and lays the images out from it.
 #ifndef WASI_R2R_TABLE_BASE
 #define WASI_R2R_TABLE_BASE (1u)
 #endif
@@ -165,7 +166,7 @@ static bool WasiMapStubPayload(const char* webcilPath, void** data_start, int64_
     return true;
 }
 
-// The external-assembly R2R probe: serves the composite webcil from the baked buffer and each managed
+// The external-assembly R2R probe: serves registered images from the baked buffer and each managed
 // assembly's per-assembly stub from "<dir>/comp/<base>.dll" on disk, searching the supplied dirs (each
 // expected to carry a trailing path delimiter). Returns false for anything it does not provide, letting
 // the caller fall back to its normal assembly load.
@@ -232,9 +233,9 @@ extern "C" __attribute__((export_name("wasi_r2r_image_base"))) uint32_t wasi_r2r
     return (uint32_t)(uintptr_t)&wasi_r2r::g_wasi_r2r_image[0];
 }
 
-// The staging buffer's capacity and the table slot the composite installs at, exported for the same
+// The staging buffer's capacity and the table slot the first image installs at, exported for the same
 // reason as the base: the composition must not carry its own copy of either. The host owns these
-// values; the WASI R2R composer reads them out of the linked binary and validates the composite
+// values; the WASI R2R composer reads them out of the linked binary and validates the images
 // against them, so a mismatch is a build-time error instead of a wrong-function dispatch at runtime.
 // The capacity accessor is weak because a ReadyToRun publish supplies a strong definition alongside
 // the sized buffer.
