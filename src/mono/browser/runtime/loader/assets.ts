@@ -436,6 +436,9 @@ export async function start_asset_download (asset: AssetEntryInternal): Promise<
             // we will not re-try if disabled
             throw err;
         }
+        if (asset.cacheReloadAttempted) {
+            throw err;
+        }
         if (ENVIRONMENT_IS_SHELL || ENVIRONMENT_IS_NODE) {
             // we will not re-try on shell
             throw err;
@@ -552,6 +555,9 @@ async function start_asset_download_sources (asset: AssetEntryInternal): Promise
             asset.pendingDownloadInternal = loadingResource;
             response = await loadingResource.response;
             if (!response || !response.ok) {
+                if (asset.cacheReloadAttempted) {
+                    break;
+                }
                 continue;// next source
             }
             return response;
@@ -563,6 +569,9 @@ async function start_asset_download_sources (asset: AssetEntryInternal): Promise
                     status: 0,
                     statusText: "" + err,
                 } as any;
+            }
+            if (asset.cacheReloadAttempted) {
+                break;
             }
             continue; //next source
         }
@@ -691,17 +700,20 @@ function fetchResource (asset: AssetEntryInternal): Promise<Response> {
 async function fetchResourceWithCacheRecovery (asset: AssetEntryInternal, url: string, fetchOptions: RequestInit): Promise<Response> {
     try {
         const response = await loaderHelpers.fetch_like(url, fetchOptions);
-        if (fetchOptions.cache !== "force-cache" || (response.ok && response.headers.get("Content-Length") !== "0")) {
+        if (fetchOptions.cache !== "force-cache" ||
+            asset.cacheReloadAttempted ||
+            (response.ok && response.headers.get("Content-Length") !== "0")) {
             return response;
         }
     } catch (err) {
-        if (fetchOptions.cache !== "force-cache") {
+        if (fetchOptions.cache !== "force-cache" || asset.cacheReloadAttempted) {
             throw err;
         }
     }
 
     mono_log_debug(() => `Retrying download '${asset.name}' with cache reload`);
-    asset.cache = fetchOptions.cache = "reload";
+    asset.cacheReloadAttempted = true;
+    fetchOptions.cache = "reload";
     return loaderHelpers.fetch_like(url, fetchOptions);
 }
 

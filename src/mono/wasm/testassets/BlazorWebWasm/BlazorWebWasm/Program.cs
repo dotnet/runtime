@@ -12,36 +12,53 @@ var app = builder.Build();
 
 var requestLogs = new List<BlazorWebWasmRequestLog>();
 var requestLogsLock = new Lock();
-var poisonClientAssemblyValue = Environment.GetEnvironmentVariable("BLAZOR_WEB_WASM_POISON_CLIENT_ASSEMBLY");
-var remainingClientAssemblyPoisons = int.TryParse(poisonClientAssemblyValue, out var poisonCount)
-    ? poisonCount
-    : string.Equals(poisonClientAssemblyValue, "true", StringComparison.OrdinalIgnoreCase) ? 1 : 0;
-var poisonClientAssemblyLock = new Lock();
+var injectClientAssemblyFailureValue = Environment.GetEnvironmentVariable("BLAZOR_WEB_WASM_INJECT_CLIENT_ASSEMBLY_FAILURE");
+var remainingClientAssemblyFailures = int.TryParse(injectClientAssemblyFailureValue, out var failureCount)
+    ? failureCount
+    : string.Equals(injectClientAssemblyFailureValue, "true", StringComparison.OrdinalIgnoreCase) ? 1 : 0;
+var clientAssemblyFailureMode = Environment.GetEnvironmentVariable("BLAZOR_WEB_WASM_CLIENT_ASSEMBLY_FAILURE_MODE") ?? "empty";
+var clientAssemblyFailureLock = new Lock();
 
 app.Use(async (context, next) =>
 {
-    var wasPoisoned = false;
+    var wasFailureInjected = false;
     if (HttpMethods.IsGet(context.Request.Method) &&
         context.Request.Path.Value is { } path &&
         path.Contains("BlazorWebWasm.Client", StringComparison.OrdinalIgnoreCase) &&
         path.EndsWith(".wasm", StringComparison.OrdinalIgnoreCase))
     {
-        lock (poisonClientAssemblyLock)
+        lock (clientAssemblyFailureLock)
         {
-            if (remainingClientAssemblyPoisons > 0)
+            if (remainingClientAssemblyFailures > 0)
             {
-                remainingClientAssemblyPoisons--;
-                wasPoisoned = true;
+                remainingClientAssemblyFailures--;
+                wasFailureInjected = true;
             }
         }
     }
 
-    if (wasPoisoned)
+    if (wasFailureInjected)
     {
-        context.Response.StatusCode = StatusCodes.Status200OK;
         context.Response.ContentType = "application/wasm";
-        context.Response.ContentLength = 0;
         context.Response.Headers.CacheControl = "public,max-age=3600";
+        switch (clientAssemblyFailureMode)
+        {
+            case "empty":
+                context.Response.StatusCode = StatusCodes.Status200OK;
+                context.Response.ContentLength = 0;
+                break;
+            case "error":
+                context.Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
+                context.Response.ContentLength = 0;
+                break;
+            case "integrity":
+                context.Response.StatusCode = StatusCodes.Status200OK;
+                context.Response.ContentLength = 1;
+                await context.Response.Body.WriteAsync(new byte[] { 0 });
+                break;
+            default:
+                throw new InvalidOperationException($"Unknown client assembly failure mode '{clientAssemblyFailureMode}'.");
+        }
     }
     else
     {
@@ -53,7 +70,7 @@ app.Use(async (context, next) =>
         context.Request.Method,
         context.Request.Path,
         context.Response.StatusCode,
-        wasPoisoned
+        wasFailureInjected
     );
     lock (requestLogsLock)
     {
@@ -96,5 +113,26 @@ app.MapDelete("/request-logs", () =>
         requestLogs.Clear();
     }
 });
+app.MapGet("/cache-seed", () => Results.Content(
+    """
+    <!DOCTYPE html>
+    <html>
+    <body>
+    <main class="page">Seeding cache...</main>
+    <script>
+    (async () => {
+        const assemblyName = new URLSearchParams(location.search).get('asset');
+        if (!assemblyName) {
+            throw new Error('The client assembly was not specified.');
+        }
+
+        await fetch(`/_framework/${assemblyName}`);
+        document.title = 'cache-seeded';
+    })();
+    </script>
+    </body>
+    </html>
+    """,
+    "text/html"));
 
 app.Run();

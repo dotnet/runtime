@@ -12,5 +12,5 @@ public record BlazorWebWasmRequestLog(
     string Method,
     string Path,
     int StatusCode,
-    bool WasPoisoned
+    bool WasFailureInjected
 );

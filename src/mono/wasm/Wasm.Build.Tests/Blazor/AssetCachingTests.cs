@@ -16,7 +16,8 @@ namespace Wasm.Build.Tests.Blazor;
 
 public class AssetCachingTests : BlazorWasmTestBase
 {
-    private const string PoisonClientAssemblyEnvironmentVariable = "BLAZOR_WEB_WASM_POISON_CLIENT_ASSEMBLY";
+    private const string InjectClientAssemblyFailureEnvironmentVariable = "BLAZOR_WEB_WASM_INJECT_CLIENT_ASSEMBLY_FAILURE";
+    private const string ClientAssemblyFailureModeEnvironmentVariable = "BLAZOR_WEB_WASM_CLIENT_ASSEMBLY_FAILURE_MODE";
 
     public AssetCachingTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
         : base(output, buildContext)
@@ -42,10 +43,16 @@ public class AssetCachingTests : BlazorWasmTestBase
             });
         (string projectDir, _) = BlazorPublish(project, Configuration.Release, publishOptions);
 
-        var counterLoaded = new TaskCompletionSource();
+        var buildPaths = GetBuildPaths(Configuration.Release, forPublish: true, projectDir: projectDir);
+        var publishedAppPath = Path.Combine(buildPaths.BinDir, "publish");
+        var frameworkPath = Path.Combine(publishedAppPath, "wwwroot", "_framework");
+        var clientAssemblyName = Path.GetFileName(Assert.Single(
+            Directory.EnumerateFiles(frameworkPath, "BlazorWebWasm.Client*.wasm")));
+
+        var counterLoaded = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var runOptions = new BlazorRunOptions(Configuration.Release)
         {
-            BrowserPath = "counter",
+            BrowserPath = $"cache-seed?asset={Uri.EscapeDataString(clientAssemblyName)}",
             OnConsoleMessage = (type, msg) =>
             {
                 if (msg.Contains("Counter.OnAfterRender"))
@@ -53,43 +60,75 @@ public class AssetCachingTests : BlazorWasmTestBase
             },
             Test = async (page) =>
             {
+                await page.WaitForFunctionAsync("document.title === 'cache-seeded'");
+
+                var baseUrl = new Uri(page.Url).GetLeftPart(UriPartial.Authority);
+                using var requestLogClient = new BlazorWebWasmLogClient(baseUrl);
+                var seedLogs = await requestLogClient.GetRequestLogsAsync();
+                var failedRequest = Assert.Single(seedLogs.Where(log => log.WasFailureInjected));
+
+                await page.GotoAsync($"{baseUrl}/counter");
                 await counterLoaded.Task.WaitAsync(TimeSpan.FromSeconds(30));
 
-                using var requestLogClient = new BlazorWebWasmLogClient(page.Url);
                 var requestLogs = await requestLogClient.GetRequestLogsAsync();
-                var poisonedRequest = Assert.Single(requestLogs.Where(log => log.WasPoisoned));
                 var clientAssemblyRequests = requestLogs
-                    .Where(log => string.Equals(log.Path, poisonedRequest.Path, StringComparison.Ordinal))
+                    .Where(log => string.Equals(log.Path, failedRequest.Path, StringComparison.Ordinal))
                     .ToArray();
 
                 Assert.Equal(2, clientAssemblyRequests.Length);
                 Assert.All(clientAssemblyRequests, log => Assert.Equal(200, log.StatusCode));
-                Assert.True(clientAssemblyRequests[0].WasPoisoned);
-                Assert.False(clientAssemblyRequests[1].WasPoisoned);
+                Assert.True(clientAssemblyRequests[0].WasFailureInjected);
+                Assert.False(clientAssemblyRequests[1].WasFailureInjected);
+
+                await requestLogClient.ClearRequestLogsAsync();
+                counterLoaded = new(TaskCreationOptions.RunContinuationsAsynchronously);
+                await page.ReloadAsync();
+                await counterLoaded.Task.WaitAsync(TimeSpan.FromSeconds(30));
+
+                requestLogs = await requestLogClient.GetRequestLogsAsync();
+                Assert.DoesNotContain(requestLogs, log => string.Equals(log.Path, failedRequest.Path, StringComparison.Ordinal));
 
                 await page.EvaluateAsync("console.log('WASM EXIT 0');");
             }
         };
 
-        var buildPaths = GetBuildPaths(Configuration.Release, forPublish: true, projectDir: projectDir);
-        var publishedAppPath = Path.Combine(buildPaths.BinDir, "publish");
         var publishedAppDllFileName = $"{project.ProjectName}.dll";
         using ToolCommand cmd = new DotNetCommand(s_buildEnv, _testOutput)
             .WithWorkingDirectory(publishedAppPath)
-            .WithEnvironmentVariable(PoisonClientAssemblyEnvironmentVariable, "true");
+            .WithEnvironmentVariable(InjectClientAssemblyFailureEnvironmentVariable, "true");
         await BrowserRun(cmd, $"exec {publishedAppDllFileName}", runOptions);
     }
 
     [Theory, TestCategory("no-workload")]
-    [InlineData(true, 2)]
-    [InlineData(false, 1)]
-    public async Task BlazorApp_DoesNotRetryAfterRecoveryOrForNonForceCache(bool fingerprintAssets, int poisonCount)
+    [InlineData("empty", 200)]
+    [InlineData("error", 503)]
+    [InlineData("integrity", 200)]
+    public Task BlazorApp_DoesNotRetryAfterFailedCacheRecovery(string failureMode, int expectedStatusCode)
+        => RunFailedCacheRecoveryTest(
+            fingerprintAssets: true,
+            failureMode: failureMode,
+            expectedStatusCode: expectedStatusCode,
+            expectedRequestCount: 2);
+
+    [Fact, TestCategory("no-workload")]
+    public Task BlazorApp_DoesNotUseCacheRecoveryForNonForceCache()
+        => RunFailedCacheRecoveryTest(
+            fingerprintAssets: false,
+            failureMode: "empty",
+            expectedStatusCode: 200,
+            expectedRequestCount: 1);
+
+    private async Task RunFailedCacheRecoveryTest(
+        bool fingerprintAssets,
+        string failureMode,
+        int expectedStatusCode,
+        int expectedRequestCount)
     {
         var project = CopyTestAsset(
             Configuration.Release,
             aot: false,
             TestAsset.BlazorWebWasm,
-            $"CacheRecoveryLimitTest_{fingerprintAssets}",
+            $"CacheRecoveryLimitTest_{fingerprintAssets}_{failureMode}",
             appendUnicodeToPath: false
         );
 
@@ -101,7 +140,8 @@ public class AssetCachingTests : BlazorWasmTestBase
             });
         (string projectDir, _) = BlazorPublish(project, Configuration.Release, publishOptions);
 
-        var counterLoaded = new TaskCompletionSource();
+        var counterLoaded = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var startupFailed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var runOptions = new BlazorRunOptions(Configuration.Release)
         {
             BrowserPath = "counter",
@@ -109,25 +149,31 @@ public class AssetCachingTests : BlazorWasmTestBase
             {
                 if (msg.Contains("Counter.OnAfterRender"))
                     counterLoaded.TrySetResult();
+                if (type == "error" &&
+                    msg.Contains("Error in mono_download_assets:", StringComparison.Ordinal) &&
+                    msg.Contains("BlazorWebWasm.Client", StringComparison.OrdinalIgnoreCase))
+                {
+                    startupFailed.TrySetResult();
+                }
             },
             Test = async (page) =>
             {
-                await page.WaitForLoadStateAsync(LoadState.NetworkIdle, new() { Timeout = 30_000 });
+                await startupFailed.Task.WaitAsync(TimeSpan.FromSeconds(30));
 
                 using var requestLogClient = new BlazorWebWasmLogClient(page.Url);
                 var requestLogs = await requestLogClient.GetRequestLogsAsync();
-                var poisonedRequests = requestLogs.Where(log => log.WasPoisoned).ToArray();
-                Assert.Equal(poisonCount, poisonedRequests.Length);
-                var poisonedRequest = poisonedRequests[0];
+                var failedRequests = requestLogs.Where(log => log.WasFailureInjected).ToArray();
+                Assert.Equal(expectedRequestCount, failedRequests.Length);
+                var failedRequest = failedRequests[0];
                 var clientAssemblyRequests = requestLogs
-                    .Where(log => string.Equals(log.Path, poisonedRequest.Path, StringComparison.Ordinal))
+                    .Where(log => string.Equals(log.Path, failedRequest.Path, StringComparison.Ordinal))
                     .ToArray();
 
-                Assert.Equal(poisonCount, clientAssemblyRequests.Length);
+                Assert.Equal(expectedRequestCount, clientAssemblyRequests.Length);
                 Assert.All(clientAssemblyRequests, log =>
                 {
-                    Assert.Equal(200, log.StatusCode);
-                    Assert.True(log.WasPoisoned);
+                    Assert.Equal(expectedStatusCode, log.StatusCode);
+                    Assert.True(log.WasFailureInjected);
                 });
                 Assert.False(counterLoaded.Task.IsCompleted);
 
@@ -140,7 +186,8 @@ public class AssetCachingTests : BlazorWasmTestBase
         var publishedAppDllFileName = $"{project.ProjectName}.dll";
         using ToolCommand cmd = new DotNetCommand(s_buildEnv, _testOutput)
             .WithWorkingDirectory(publishedAppPath)
-            .WithEnvironmentVariable(PoisonClientAssemblyEnvironmentVariable, poisonCount.ToString());
+            .WithEnvironmentVariable(InjectClientAssemblyFailureEnvironmentVariable, expectedRequestCount.ToString())
+            .WithEnvironmentVariable(ClientAssemblyFailureModeEnvironmentVariable, failureMode);
         await BrowserRun(cmd, $"exec {publishedAppDllFileName}", runOptions);
     }
 
