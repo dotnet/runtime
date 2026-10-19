@@ -13,9 +13,7 @@ namespace System.Threading.Tasks
         [UnsupportedOSPlatform("browser")]
         private static IEnumerable<T> ToBlockingEnumerableCore<T>(IAsyncEnumerable<T> source, CancellationToken cancellationToken)
         {
-#if !FEATURE_MULTITHREADING || FEATURE_WASM_MANAGED_THREADS
             RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
-#endif
             IAsyncEnumerator<T> enumerator = source.GetAsyncEnumerator(cancellationToken);
             // A ManualResetEventSlim variant that lets us reuse the same
             // awaiter callback allocation across the entire enumeration.
@@ -69,9 +67,7 @@ namespace System.Threading.Tasks
             [UnsupportedOSPlatform("browser")]
             public void Wait<TAwaiter>(TAwaiter awaiter) where TAwaiter : ICriticalNotifyCompletion
             {
-#if !FEATURE_MULTITHREADING || FEATURE_WASM_MANAGED_THREADS
                 RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
-#endif
                 awaiter.UnsafeOnCompleted(_onCompleted);
                 Wait();
                 Reset();

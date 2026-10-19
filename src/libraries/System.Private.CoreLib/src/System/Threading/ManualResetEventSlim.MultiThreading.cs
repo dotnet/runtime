@@ -253,9 +253,7 @@ namespace System.Threading
                     return false;
                 }
 
-#if !FEATURE_MULTITHREADING || FEATURE_WASM_MANAGED_THREADS
                 RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
-#endif
 
                 // We spin briefly before falling back to allocating and/or waiting on a true event.
                 long startTime = 0;

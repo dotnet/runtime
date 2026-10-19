@@ -7,7 +7,9 @@ namespace System.Threading;
 
 public static partial class Monitor
 {
+#if !FEATURE_WASM_MANAGED_THREADS
     [UnsupportedOSPlatform("browser")]
+#endif
     public static bool Wait(object obj, int millisecondsTimeout)
     {
         ArgumentNullException.ThrowIfNull(obj);

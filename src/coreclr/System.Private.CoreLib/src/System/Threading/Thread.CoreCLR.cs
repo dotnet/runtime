@@ -36,7 +36,7 @@ namespace System.Threading
         private StartHelper? _startHelper;
 #endif
 
-#if FEATURE_MULTITHREADING && (TARGET_UNIX || TARGET_BROWSER || TARGET_WASI)
+#if FEATURE_MULTITHREADING && !TARGET_WINDOWS
         internal WaitSubsystem.ThreadWaitInfo? _waitInfo;
         private volatile ManualResetEvent? _joinEvent;
 #endif
@@ -189,7 +189,7 @@ namespace System.Threading
             // The unmanaged thread is still alive, but will die soon, after cleaning up some state.
             // Mark the thread as stopped before notifying any waiters that it has exited.
             _isDead = true;
-#if FEATURE_MULTITHREADING && (TARGET_UNIX || TARGET_BROWSER || TARGET_WASI)
+#if FEATURE_MULTITHREADING && !TARGET_WINDOWS
             // Inform the wait subsystem that the thread is exiting. For instance, this would abandon any mutexes locked by
             // the thread.
             _waitInfo?.OnThreadExiting();

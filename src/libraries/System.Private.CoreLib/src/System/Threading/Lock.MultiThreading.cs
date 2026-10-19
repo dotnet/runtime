@@ -310,9 +310,7 @@ namespace System.Threading
                 goto Locked;
             }
 
-#if !FEATURE_MULTITHREADING || FEATURE_WASM_MANAGED_THREADS
             RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
-#endif
 
             // Lock was not acquired and a waiter was registered. All following paths need to unregister the waiter, including
             // exceptional paths.

@@ -45,9 +45,7 @@ public partial class TaskFactory<TResult>
         }
         else
         {
-#if !FEATURE_MULTITHREADING || FEATURE_WASM_MANAGED_THREADS
             RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
-#endif
 #pragma warning disable CA1416 // Validate platform compatibility, issue: https://github.com/dotnet/runtime/issues/44544
             ThreadPool.RegisterWaitForSingleObject(
                 asyncResult.AsyncWaitHandle,

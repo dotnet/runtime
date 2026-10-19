@@ -10,7 +10,7 @@ namespace System.Threading
 {
     public sealed partial class Thread
     {
-#if TARGET_UNIX
+#if !TARGET_WINDOWS
         internal WaitSubsystem.ThreadWaitInfo WaitInfo
         {
             get

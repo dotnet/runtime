@@ -101,9 +101,7 @@ namespace System.Threading
                 }
             }
 
-#if !FEATURE_MULTITHREADING || FEATURE_WASM_MANAGED_THREADS
             RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
-#endif
 
             return WaitSlow(timeoutMs);
         }
