@@ -489,7 +489,13 @@ PTR_BYTE MethodDesc::FindGCRefMap(MethodTable* pReceiverMT, bool isDispatch)
 #ifndef DACCESS_COMPILE
 void MethodDesc::SetGCRefMap(PTR_BYTE pGCRefMap)
 {
-    STANDARD_VM_CONTRACT;
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
     _ASSERTE(pGCRefMap != nullptr);
 
     // The map belongs to a non-collectible ReadyToRun image and outlives this MethodDesc.
@@ -4464,7 +4470,13 @@ static void LoadNativeImageSignatureType(const SigPointer& signature, Module* pM
 
 void MethodDesc::PrepareForUseAsACallTargetOfANativeImage(PTR_BYTE pGCRefMap)
 {
-    STANDARD_VM_CONTRACT;
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
 
     if (HaveNativeImageDependenciesBeenPrepared())
         return;
@@ -4500,7 +4512,13 @@ void MethodDesc::PrepareForUseAsACallTargetOfANativeImage(PTR_BYTE pGCRefMap)
 
 void MethodDesc::PrepareForUseAsAVirtualCallTargetOfANativeImage(PTR_BYTE pGCRefMap)
 {
-    STANDARD_VM_CONTRACT;
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
 
     if (HaveNativeImageDependenciesBeenPrepared())
         return;
