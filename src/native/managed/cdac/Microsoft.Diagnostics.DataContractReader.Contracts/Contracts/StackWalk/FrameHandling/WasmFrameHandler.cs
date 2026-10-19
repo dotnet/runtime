@@ -70,10 +70,8 @@ internal sealed class WasmFrameHandler(Target target, ContextHolder<WasmContext>
         }
     }
 
-    // Mirrors SoftwareExceptionFrame::UpdateRegDisplay_Impl: on WASM the callee-saved register set
-    // is InterpreterFP (ENUM_CALLEE_SAVED_REGISTERS in src/coreclr/vm/wasm/cgencpu.h), so FP is
-    // restored from the saved context along with IP and SP. The CalleeSavedRegisters data
-    // descriptor is empty on WASM, so the base handler would leave FP stale.
+    // Native restores FP with IP and SP, but the CalleeSavedRegisters descriptor is empty on WASM,
+    // so the base handler would leave FP stale.
     public override void HandleSoftwareExceptionFrame(SoftwareExceptionFrame softwareExceptionFrame)
     {
         ContextHolder<WasmContext> saved = new();

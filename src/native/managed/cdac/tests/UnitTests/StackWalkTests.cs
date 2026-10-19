@@ -1546,13 +1546,8 @@ public unsafe class StackWalkTests
         Assert.True(walked.Length <= 7, $"Walk did not terminate: {walked.Length} frames");
     }
 
-    // An R2R method with an active inlined P/Invoke, entered from code that is not R2R (an
-    // interpreter transition or native code). Its InlinedCallFrame lives inside the method's own
-    // linear-stack frame. Like native RtlVirtualUnwind, unwinding the method keeps the caller's SP
-    // even though the caller has no R2R virtual IP, so the walk passes the InlinedCallFrame
-    // (frame address below the caller SP) and reports the method exactly once. With the caller SP
-    // lost, the InlinedCallFrame would be re-applied after every unwind and the method reported
-    // again.
+    // Unwinding keeps the caller's SP when the caller is not R2R, so the walk passes the
+    // InlinedCallFrame in the method's own frame and reports the method once.
     [Fact]
     public void CreateStackWalk_WasmR2RMethodWithNonR2RCaller_PassesInlinedCallFrameInItsFrame()
     {
