@@ -1343,38 +1343,6 @@ static DWORD MAPConvertProtectToAccess( DWORD flProtect )
 
 /*++
 Function :
-    MAPConvertAccessToProtect
-
-    Converts the FILE_MAP_READ type flags to PAGE_READONLY flags.
-    Currently, this function only deals with the access flags recognized as valid
-    by MAPContainsInvalidFlags().
-
---*/
-static DWORD MAPConvertAccessToProtect(DWORD flAccess)
-{
-    if (flAccess == FILE_MAP_ALL_ACCESS)
-    {
-        return PAGE_READWRITE;
-    }
-    else if ((flAccess == FILE_MAP_COPY) || (flAccess == FILE_MAP_WRITE))
-    {
-        return PAGE_WRITECOPY;
-    }
-    else if (flAccess == FILE_MAP_READ)
-    {
-        return PAGE_READONLY;
-    }
-    else if (flAccess == 0)
-    {
-        return PAGE_NOACCESS;
-    }
-
-    ASSERT("Unknown flag for flAccess.\n");
-    return (DWORD) -1;
-}
-
-/*++
-Function :
     MAPFileMapToMmapFlags
 
     Converts the mapping flags to unix protection flags.
@@ -1602,58 +1570,6 @@ static BOOL MAPIsRequestPermissible( DWORD flProtect, CFileProcessLocalData * pF
         /* Action is permissible */
         return TRUE;
     }
-}
-
-// returns TRUE if we have information about the specified address
-BOOL MAPGetRegionInfo(LPVOID lpAddress,
-                      PMEMORY_BASIC_INFORMATION lpBuffer)
-{
-    BOOL fFound = FALSE;
-
-    minipal_mutex_enter(&mapping_critsec);
-
-    for(LIST_ENTRY *pLink = MappedViewList.Flink;
-        pLink != &MappedViewList;
-        pLink = pLink->Flink)
-    {
-        UINT MappedSize;
-        VOID * real_map_addr;
-        SIZE_T real_map_sz;
-        PMAPPED_VIEW_LIST pView = CONTAINING_RECORD(pLink, MAPPED_VIEW_LIST, Link);
-
-#if ONE_SHARED_MAPPING_PER_FILEREGION_PER_PROCESS
-        real_map_addr = pView->pNMHolder->address;
-        real_map_sz = pView->pNMHolder->size;
-#else
-        real_map_addr = pView->lpAddress;
-        real_map_sz = pView->NumberOfBytesToMap;
-#endif
-
-        MappedSize = ALIGN_UP(real_map_sz, minipal_getpagesize());
-        if ( real_map_addr <= lpAddress &&
-             (VOID *)((UINT_PTR)real_map_addr+MappedSize) > lpAddress )
-        {
-            if (lpBuffer)
-            {
-                SIZE_T regionSize = MappedSize + (UINT_PTR) real_map_addr -
-                       ALIGN_DOWN((UINT_PTR)lpAddress, minipal_getpagesize());
-
-                lpBuffer->BaseAddress = lpAddress;
-                lpBuffer->AllocationProtect = 0;
-                lpBuffer->RegionSize = regionSize;
-                lpBuffer->State = MEM_COMMIT;
-                lpBuffer->Protect = MAPConvertAccessToProtect(pView->dwDesiredAccess);
-                lpBuffer->Type = MEM_MAPPED;
-            }
-
-            fFound = TRUE;
-            break;
-        }
-    }
-
-    minipal_mutex_leave(&mapping_critsec);
-
-    return fFound;
 }
 
 #if ONE_SHARED_MAPPING_PER_FILEREGION_PER_PROCESS

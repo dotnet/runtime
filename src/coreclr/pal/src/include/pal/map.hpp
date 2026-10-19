@@ -51,24 +51,6 @@ extern "C"
     --*/
     void MAPCleanup( void );
 
-    /*++
-    Function :
-        MAPGetRegionInfo
-
-        Parameters:
-        lpAddress: pointer to the starting memory location, not necessary
-                   to be rounded to the page location
-
-        lpBuffer: if this function finds information about the specified address,
-                  the information is stored in this struct
-
-        Note: This function is to be used in virtual.c
-
-        Returns TRUE if this function finds information about the specified address
-    --*/
-
-    BOOL MAPGetRegionInfo(LPVOID lpAddress, PMEMORY_BASIC_INFORMATION lpBuffer);
-
 }
 
 namespace CorUnix
