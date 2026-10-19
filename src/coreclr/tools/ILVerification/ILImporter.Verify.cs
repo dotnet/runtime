@@ -2474,13 +2474,43 @@ namespace Internal.IL
 
         void ImportEndFinally()
         {
+            // ECMA-335 I.12.4.2.8.2.6: the innermost enclosing protected block, filter or handler
+            // shall be a finally or fault handler.
             if (Check(_currentBasicBlock.HandlerIndex.HasValue, VerifierError.Endfinally))
             {
                 Check(_exceptionRegions[_currentBasicBlock.HandlerIndex.Value].ILRegion.Kind
-                    is ILExceptionRegionKind.Finally or ILExceptionRegionKind.Fault, VerifierError.Endfinally);
+                    is ILExceptionRegionKind.Finally or ILExceptionRegionKind.Fault &&
+                    !IsInTryOrFilterNestedInHandler(_currentBasicBlock), VerifierError.Endfinally);
             }
 
             EmptyTheStack();
+        }
+
+        /// <summary>
+        /// Checks whether the innermost try block or filter enclosing <paramref name="block"/> lies
+        /// inside the innermost handler enclosing it, so that the handler is not the innermost
+        /// enclosing exception-handling block.
+        /// </summary>
+        bool IsInTryOrFilterNestedInHandler(BasicBlock block)
+        {
+            ref var handler = ref _exceptionRegions[block.HandlerIndex.Value].ILRegion;
+            int handlerEnd = handler.HandlerOffset + handler.HandlerLength;
+
+            if (block.TryIndex.HasValue)
+            {
+                ref var tryRegion = ref _exceptionRegions[block.TryIndex.Value].ILRegion;
+                if (handler.HandlerOffset <= tryRegion.TryOffset && tryRegion.TryOffset + tryRegion.TryLength <= handlerEnd)
+                    return true;
+            }
+
+            if (block.FilterIndex.HasValue)
+            {
+                ref var filterRegion = ref _exceptionRegions[block.FilterIndex.Value].ILRegion;
+                if (handler.HandlerOffset <= filterRegion.FilterOffset && filterRegion.HandlerOffset <= handlerEnd)
+                    return true;
+            }
+
+            return false;
         }
 
         void ImportNewArray(int token)
