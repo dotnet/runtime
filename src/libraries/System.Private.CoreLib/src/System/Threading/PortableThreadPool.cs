@@ -122,6 +122,11 @@ namespace System.Threading
             /// <safety>This int occupies its own offset in the explicit layout and overlaps no other field, so accessing it cannot forge a managed reference or read out of bounds.</safety>
             [FieldOffset(Internal.PaddingHelpers.CACHE_LINE_SIZE * 4 + sizeof(int))]
             public safe int gateThreadRunningState;
+
+            // Last worker request from outside the work-queue dispatcher, including coalesced requests.
+            /// <safety>This int occupies its own cache-line offset and overlaps no other field, so accessing it cannot forge a managed reference or read out of bounds.</safety>
+            [FieldOffset(Internal.PaddingHelpers.CACHE_LINE_SIZE * 5)]
+            public safe int lastExternalWorkItemTimeMs;
         }
 
         private long _currentSampleStartTime;
@@ -486,6 +491,17 @@ namespace System.Threading
 
         internal void EnsureWorkerRequested()
         {
+            if (ThreadPoolWorkQueueThreadLocals.threadLocals == null)
+            {
+                // Record external producers even when another request is already outstanding.
+                // Avoid publishing the same timestamp repeatedly within a clock tick.
+                int currentTimeMs = Environment.TickCount;
+                if (Volatile.Read(ref _separated.lastExternalWorkItemTimeMs) != currentTimeMs)
+                {
+                    Volatile.Write(ref _separated.lastExternalWorkItemTimeMs, currentTimeMs);
+                }
+            }
+
             // Only one worker is requested at a time to mitigate Thundering Herd problem.
             if (_separated._hasOutstandingThreadRequest == 0 &&
                 Interlocked.Exchange(ref _separated._hasOutstandingThreadRequest, 1) == 0)

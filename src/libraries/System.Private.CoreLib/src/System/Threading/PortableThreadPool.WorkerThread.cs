@@ -44,9 +44,9 @@ namespace System.Threading
                 // At more than this working threads we start parking threads after a spurious dispatch.
                 short DefaultSpuriousDispatchNoSpinThreshold = (short)(Environment.ProcessorCount * 2 / 3);
 
-                // When a worker is invited to dispatch work items but finds none, it may park without spinning first.
-                // That is only preferable while more than this number of workers are still processing work and can take
-                // the next request. Set to 0 to park without spinning when at least one other worker is still processing work.
+                // After a recent external thread request, park an empty dispatch without spinning when more than
+                // this number of workers are still processing work. Set to 0 to park when at least one other worker
+                // is processing work. Without a recent external request, empty dispatches park at any worker count.
                 short threshold =
                     AppContextConfigHelper.GetInt16Config(
                         "System.Threading.ThreadPool.SpuriousDispatchNoSpinThreshold",
@@ -187,10 +187,13 @@ namespace System.Threading
                     // See `TryIncrementProcessingWork` for details about Saturated state.
                 } while (!TryRemoveWorkingWorker(threadPoolInstance, out numProcessingWork));
 
-                // Parking right away after a spurious dispatch is only worthwhile while other workers remain
-                // processing work and can take the next request. When few workers are left, the next request is
-                // likely to come to this thread, so it is cheaper to spin and stay available.
-                return spurious && numProcessingWork > SpuriousDispatchNoSpinThreshold;
+                // Spinners have already left NumProcessingWork, so a low processing count alone does not
+                // imply that another poller is useful. Preserve polling capacity for recent external producers,
+                // which can introduce another burst after the queues drain. For work produced entirely by
+                // workers, park empty dispatches promptly instead of competing with the productive workers.
+                return spurious && (numProcessingWork > SpuriousDispatchNoSpinThreshold ||
+                        (uint)(Environment.TickCount - Volatile.Read(ref threadPoolInstance._separated.lastExternalWorkItemTimeMs))
+                            > ThreadPoolWorkQueue.DispatchQuantumMs);
             }
 
             // returns true if the worker is shutting down
