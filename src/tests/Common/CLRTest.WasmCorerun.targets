@@ -44,6 +44,11 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
   <Import Project="$(MonoProjectRoot)browser\build\EmSdkRepo.Defaults.props"
           Condition="'$(TargetOS)' == 'browser' and '$(EMSDK_PATH)' != '' and '$(EmscriptenSdkToolsPath)' == ''" />
 
+  <!-- Resolves the same WASI SDK the runtime build links with: $(WASI_SDK_PATH) only when it is the
+       expected version, otherwise the shared tool cache, provisioning it if needed. -->
+  <Import Project="$(RepositoryEngineeringDir)AcquireWasiSdk.targets"
+          Condition="'$(TargetOS)' == 'wasi'" />
+
   <PropertyGroup>
     <!--
       Engage implicitly for any WebAssembly CoreCLR test that brings its own native code. BuildOnly
@@ -60,6 +65,7 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
     <WasmBuildTestCorerun Condition="'$(WasmBuildTestCorerun)' == ''">false</WasmBuildTestCorerun>
 
     <_WasmCorerunScriptExt Condition="$([MSBuild]::IsOSPlatform('windows'))">.bat</_WasmCorerunScriptExt>
+    <_WasmCorerunToolchainTargets Condition="'$(TargetOS)' == 'wasi'">AcquireWasiSdkUnconditional</_WasmCorerunToolchainTargets>
   </PropertyGroup>
 
   <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.FilterManagedAssemblies"
@@ -105,7 +111,8 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
 
   <!-- ======================== Resolve inputs ======================== -->
 
-  <Target Name="_WasmResolveTestCorerunInputs">
+  <Target Name="_WasmResolveTestCorerunInputs"
+          DependsOnTargets="$(_WasmCorerunToolchainTargets)">
     <PropertyGroup>
       <!-- Produced by src/coreclr/hosts/corerun/wasm/testkit.cmake during the 'clr.hosts' build.
            Resolved here rather than during evaluation because eng/liveBuilds.targets, which
@@ -191,14 +198,13 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
     <!-- The kit is relocatable, so the wasi-sdk target, sysroot and component linker, which are
          host paths, are supplied here rather than in its response files. -->
     <PropertyGroup Condition="'$(_WasmCorerunSkip)' != 'true' and '$(TargetOS)' == 'wasi'">
-      <_WasmCorerunWasiSdk Condition="'$(WASI_SDK_PATH)' != ''">$([MSBuild]::EnsureTrailingSlash('$(WASI_SDK_PATH)'))</_WasmCorerunWasiSdk>
-      <_WasmCorerunWasiSdk Condition="'$(_WasmCorerunWasiSdk)' == '' and Exists('$(WasiSdkStampFile)')">$(WasiSdkCacheDir)</_WasmCorerunWasiSdk>
+      <_WasmCorerunWasiSdk>$(RuntimeBuildWasiSdkPath)</_WasmCorerunWasiSdk>
       <_WasmCorerunWasiExeExt Condition="$([MSBuild]::IsOSPlatform('windows'))">.exe</_WasmCorerunWasiExeExt>
       <_WasmCorerunCc Condition="'$(_WasmCorerunWasiSdk)' != ''">$(_WasmCorerunWasiSdk)bin/clang$(_WasmCorerunWasiExeExt)</_WasmCorerunCc>
       <_WasmCorerunCxx Condition="'$(_WasmCorerunWasiSdk)' != ''">$(_WasmCorerunWasiSdk)bin/clang++$(_WasmCorerunWasiExeExt)</_WasmCorerunCxx>
       <_WasmCorerunToolArgs>--target=wasm32-wasip2 --sysroot=&quot;$(_WasmCorerunWasiSdk.Replace('\','/'))share/wasi-sysroot&quot;</_WasmCorerunToolArgs>
       <_WasmCorerunLinkToolArgs>-fuse-ld=&quot;$(_WasmCorerunWasiSdk.Replace('\','/'))bin/wasm-component-ld$(_WasmCorerunWasiExeExt)&quot;</_WasmCorerunLinkToolArgs>
-      <_WasmCorerunToolchainMissing>Set %24(WASI_SDK_PATH), or build the wasi-wasm runtime first so that the WASI SDK is provisioned into '$(WasiSdkCacheDir)'.</_WasmCorerunToolchainMissing>
+      <_WasmCorerunToolchainMissing>The WASI SDK $(WasiSdkVersion) was not found at '$(_WasmCorerunWasiSdk)'.</_WasmCorerunToolchainMissing>
     </PropertyGroup>
 
     <Error Condition="'$(_WasmCorerunSkip)' != 'true' and
