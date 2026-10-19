@@ -464,6 +464,69 @@ namespace System.Collections.Immutable.Tests
             AssertExtensions.Throws<ArgumentNullException>("match", () => builder.RemoveAll(match: null));
         }
 
+        [Theory]
+        [InlineData(4, 0, 0)]
+        [InlineData(4, 4, 0)]
+        [InlineData(4, 0, 1)]
+        [InlineData(4, 1, 2)]
+        [InlineData(4, 3, 1)]
+        [InlineData(4, 0, 4)]
+        [InlineData(70, 0, 65)]
+        [InlineData(70, 1, 65)]
+        [InlineData(70, 5, 65)]
+        public void RemoveRange_ClearsElements(int count, int index, int length)
+        {
+            Verify(Enumerable.Range(1, count).ToArray());
+            Verify(Enumerable.Range(1, count).Select(i => i.ToString()).ToArray());
+            Verify(Enumerable.Range(1, count).Select(i => new KeyValuePair<int, string>(i, i.ToString())).ToArray());
+
+            void Verify<T>(T[] items)
+            {
+                T[] expected = items.Take(index).Concat(items.Skip(index + length)).ToArray();
+                AssertRemovedElementsCleared(items, expected, builder => builder.RemoveRange(index, length));
+            }
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(4)]
+        [InlineData(70)]
+        public void RemoveAllAndEnumerableRemoveRange_ClearsElements(int count)
+        {
+            Verify(Enumerable.Range(1, count).ToArray());
+            Verify(Enumerable.Range(1, count).Select(i => i.ToString()).ToArray());
+            Verify(Enumerable.Range(1, count).Select(i => new KeyValuePair<int, string>(i, i.ToString())).ToArray());
+
+            void Verify<T>(T[] items)
+            {
+                foreach (T[] removed in new[] { Array.Empty<T>(), items, items.Where((_, i) => i % 2 == 0).ToArray() })
+                {
+                    T[] expected = items.Where(item => !removed.Contains(item)).ToArray();
+                    AssertRemovedElementsCleared(items, expected, builder => builder.RemoveRange(removed));
+                    AssertRemovedElementsCleared(items, expected, builder => builder.RemoveRange(removed, EqualityComparer<T>.Default));
+                    AssertRemovedElementsCleared(items, expected, builder => builder.RemoveAll(item => removed.Contains(item)));
+                }
+            }
+        }
+
+        private static void AssertRemovedElementsCleared<T>(T[] items, T[] expected, Action<ImmutableArray<T>.Builder> remove)
+        {
+            foreach (int capacity in new[] { items.Length, items.Length + 8 })
+            {
+                ImmutableArray<T>.Builder builder = ImmutableArray.CreateBuilder<T>(capacity);
+                builder.AddRange(items);
+
+                remove(builder);
+                Assert.Equal(expected, builder);
+
+                builder.Count = items.Length;
+                var expanded = new T[items.Length];
+                Array.Copy(expected, expanded, expected.Length);
+                Assert.Equal(expanded, builder);
+            }
+        }
+
         [Fact]
         public void ReverseContents()
         {
