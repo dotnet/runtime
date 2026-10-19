@@ -2258,8 +2258,11 @@ namespace ILAssembler
             public int EndLine { get; }
             public int EndColumn { get; }
 
-            /// <summary>Gets whether the point is hidden: its start line is <c>0xFEEFEE</c>, and its columns are not written.</summary>
-            public bool IsHidden => StartLine == 0xFEEFEE;
+            /// <summary>
+            /// Gets whether the point is hidden: its start line is <c>0xFEEFEE</c>
+            /// (<see cref="System.Reflection.Metadata.SequencePoint.HiddenLine"/>), and its columns are not written.
+            /// </summary>
+            public bool IsHidden => StartLine == System.Reflection.Metadata.SequencePoint.HiddenLine;
         }
 
         /// <summary>

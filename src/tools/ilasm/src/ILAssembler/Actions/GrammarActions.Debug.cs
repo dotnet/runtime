@@ -135,7 +135,8 @@ internal sealed partial class GrammarActions
     /// inclusion of an <c>#include</c>d file), wherever it is and across methods, and the next instruction always
     /// gets a point. An empty file name (<c>''</c> or <c>""</c>), which ildasm writes for "the same file", and
     /// a missing one keep the source's current document: the source itself until a directive in it names another
-    /// file. A start line of <c>0xFEEFEE</c> makes the points hidden.
+    /// file. A start line of <c>0xFEEFEE</c> makes the points hidden
+    /// (<see cref="EntityRegistry.SequencePoint.IsHidden"/>).
     /// </remarks>
     private void ApplySourceDirective(SourceDirectiveValue value, IToken directiveToken)
     {
@@ -151,8 +152,6 @@ internal sealed partial class GrammarActions
             endColumn++;
         }
 
-        // A start line of 0xFEEFEE makes the points hidden (EntityRegistry.SequencePoint.IsHidden); their
-        // columns are not written.
         state.DirectiveCoordinates = (value.StartLine, value.StartColumn, value.EndLine, endColumn);
         _lastSequencePointSpan = null;
     }
