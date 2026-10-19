@@ -56,6 +56,31 @@ Most metadata for packages is controlled centrally in the repository and individ
 
 Package content can be defined using any of the publicly defined Pack inputs: https://learn.microsoft.com/nuget/reference/msbuild-targets
 
+### Retiring the legacy System.Runtime.Loader package
+
+The legacy [System.Runtime.Loader NuGet package](https://www.nuget.org/packages/System.Runtime.Loader) should be deprecated and unlisted for all versions, including prereleases, as proposed in [dotnet/runtime#38503](https://github.com/dotnet/runtime/issues/38503). This retirement applies only to the standalone package, not to the `System.Runtime.Loader` assembly or the `AssemblyLoadContext` API in the .NET shared framework.
+
+The package exposes `AssemblyLoadContext` to .NET Standard libraries at compile time without providing an implementation for all .NET Standard platforms. A successful restore or compilation therefore does not establish runtime support on .NET Framework or Xamarin.
+
+Migration guidance:
+
+- .NET Core and .NET consumers should remove the package reference and use the assembly provided by the shared framework.
+- .NET Standard libraries that require `AssemblyLoadContext` should retarget to a supported .NET version. Libraries that retain a .NET Standard target should keep uses of `AssemblyLoadContext` in a separate .NET-specific target or implementation.
+- Test libraries on each concrete runtime they support; targeting .NET Standard alone does not validate runtime availability.
+
+Deprecation and unlisting are separate NuGet.org package-owner operations. Editing this repository does not change the status of already published packages. A package owner must:
+
+1. Follow the [NuGet.org deprecation workflow](https://learn.microsoft.com/nuget/nuget-org/deprecate-packages), select **all versions**, and choose **Legacy** as the reason. Do not specify a replacement package; the replacement is the shared framework. Use this custom message:
+
+   > System.Runtime.Loader is a legacy package. .NET Core and .NET applications should remove this package reference and use the shared framework. .NET Standard libraries requiring AssemblyLoadContext should retarget to a supported .NET version; this package does not provide AssemblyLoadContext support on .NET Framework or Xamarin.
+
+2. [Unlist each published version](https://learn.microsoft.com/nuget/nuget-org/policies/deleting-packages#unlisting-a-package) by clearing **List in search results**. Deprecation alone does not unlist a package.
+3. Verify that every version is marked deprecated and unlisted on NuGet.org.
+
+Unlisting preserves downloads and restores by exact version, so existing dependencies are not deleted. Deprecation does not rewrite transitive dependencies; consumers may need an updated version of the library that introduces the dependency.
+
+Evaluate other legacy packages individually for the same mismatch between reference APIs and runtime implementations before proposing deprecation and unlisting.
+
 ### Package Readme
 
 Packages can include a Markdown Readme file with a short usage documentation. To include a package Readme, create a `PACKAGE.md` file in the library `src` directory. The file will be automatically included in the package and used as a Readme if its name matches this convention.
