@@ -3,6 +3,7 @@
 
 using System.IO;
 using Microsoft.Win32.SafeHandles;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace System.Threading
@@ -15,10 +16,26 @@ namespace System.Threading
         private const uint AccessRights =
             (uint)Interop.Kernel32.MAXIMUM_ALLOWED | Interop.Kernel32.SYNCHRONIZE | Interop.Kernel32.MUTEX_MODIFY_STATE;
 
+#if TARGET_UNIX
+        private static bool UnsafeDefaultMutexScopeGlobal { get; } =
+            AppContext.TryGetSwitch("System.Threading.Mutex.UnsafeDefaultMutexScopeGlobal", out bool enabled) ? enabled : false;
+#endif
+
         private void CreateMutexCore(bool initiallyOwned, string? name, out bool createdNew)
         {
             uint mutexFlags = initiallyOwned ? Interop.Kernel32.CREATE_MUTEX_INITIAL_OWNER : 0;
+#if TARGET_UNIX
+            SafeWaitHandle mutexHandle = !string.IsNullOrEmpty(name)
+                ? CreateMutexExForScope(
+                    IntPtr.Zero,
+                    name,
+                    mutexFlags,
+                    AccessRights,
+                    isUserScope: !UnsafeDefaultMutexScopeGlobal)
+                : Interop.Kernel32.CreateMutexEx(IntPtr.Zero, name, mutexFlags, AccessRights);
+#else
             SafeWaitHandle mutexHandle = Interop.Kernel32.CreateMutexEx(IntPtr.Zero, name, mutexFlags, AccessRights);
+#endif
             int errorCode = Marshal.GetLastPInvokeError();
 
             if (mutexHandle.IsInvalid)
@@ -48,7 +65,12 @@ namespace System.Threading
             // with parameters to allow us to view & edit the ACL.  This will
             // fail if we don't have permission to view or edit the ACL's.
             // If that happens, ask for less permissions.
+#if TARGET_UNIX
+            SafeWaitHandle myHandle =
+                OpenMutexForScope(AccessRights, false, name, isUserScope: !UnsafeDefaultMutexScopeGlobal);
+#else
             SafeWaitHandle myHandle = Interop.Kernel32.OpenMutex(AccessRights, false, name);
+#endif
 
             if (myHandle.IsInvalid)
             {
@@ -87,5 +109,22 @@ namespace System.Threading
                 throw new ApplicationException(SR.Arg_SynchronizationLockException);
             }
         }
+
+#if TARGET_UNIX
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "CreateMutexExWForScope", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+        private static partial SafeWaitHandle CreateMutexExForScope(
+            IntPtr mutexAttributes,
+            string name,
+            uint flags,
+            uint desiredAccess,
+            [MarshalAs(UnmanagedType.Bool)] bool isUserScope);
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "OpenMutexWForScope", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+        private static partial SafeWaitHandle OpenMutexForScope(
+            uint desiredAccess,
+            [MarshalAs(UnmanagedType.Bool)] bool inheritHandle,
+            string name,
+            [MarshalAs(UnmanagedType.Bool)] bool isUserScope);
+#endif
     }
 }
