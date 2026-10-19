@@ -225,17 +225,8 @@ namespace System.Net.Http.Functional.Tests
         public async Task NoCallback_BadCertificate_ThrowsException(bool expired, bool wrongHostName)
         {
             string name = wrongHostName ? "not-localhost" : "localhost";
-            X509Certificate2? rootCertificate = null;
-            X509Certificate2 certificate;
-            if (expired && !IsWinHttpHandler)
-            {
-                // The expired end entity must not also be its custom trust anchor.
-                (certificate, rootCertificate) = TestHelper.CreateExpiredServerCertificate(name);
-            }
-            else
-            {
-                certificate = TestHelper.CreateServerSelfSignedCertificate(name, expired);
-            }
+            (X509Certificate2 certificate, X509Certificate2? rootCertificate) =
+                CreateServerCertificateForTest(name, expired: expired);
 
             using (certificate)
             using (rootCertificate)
@@ -247,8 +238,23 @@ namespace System.Net.Http.Functional.Tests
                     Assert.True(certificate.NotAfter.ToUniversalTime() < DateTime.UtcNow);
                 }
 
-                X509Certificate2? customTrustRoot = rootCertificate ?? (expired || wrongHostName ? certificate : null);
+                X509Certificate2? customTrustRoot = (expired || wrongHostName) ? rootCertificate ?? certificate : null;
                 bool customChainPolicy = ConfigureCertificateChainPolicy(handler, customTrustRoot);
+
+                var options = new LoopbackServer.Options
+                {
+                    UseSsl = true,
+                    Certificate = certificate,
+                    SslProtocols = SslProtocols.None,
+                };
+#if !NETSTANDARD2_0 && !NETFRAMEWORK
+                if (rootCertificate is not null)
+                {
+                    options.CertificateContext = SslStreamCertificateContext.Create(
+                        certificate,
+                        new X509Certificate2Collection { rootCertificate });
+                }
+#endif
 
                 await LoopbackServer.CreateClientAndServerAsync(async uri =>
                 {
@@ -282,13 +288,7 @@ namespace System.Net.Http.Functional.Tests
                     {
                         _output.WriteLine($"Expected certificate validation failure: {e}");
                     }
-                },
-                options: new LoopbackServer.Options
-                {
-                    UseSsl = true,
-                    Certificate = certificate,
-                    SslProtocols = SslProtocols.None,
-                });
+                }, options);
             }
         }
 
@@ -350,17 +350,8 @@ namespace System.Net.Http.Functional.Tests
         public async Task UseCallback_BadCertificate_ExpectedPolicyErrors(bool expired, bool wrongHostName, SslPolicyErrors expectedErrors)
         {
             string name = wrongHostName ? "not-localhost" : "localhost";
-            X509Certificate2? rootCertificate = null;
-            X509Certificate2 certificate;
-            if (expired && !IsWinHttpHandler)
-            {
-                // The expired end entity must not also be its custom trust anchor.
-                (certificate, rootCertificate) = TestHelper.CreateExpiredServerCertificate(name);
-            }
-            else
-            {
-                certificate = TestHelper.CreateServerSelfSignedCertificate(name, expired);
-            }
+            (X509Certificate2 certificate, X509Certificate2? rootCertificate) =
+                CreateServerCertificateForTest(name, expired: expired);
 
             using (certificate)
             using (rootCertificate)
@@ -372,7 +363,7 @@ namespace System.Net.Http.Functional.Tests
                     Assert.True(certificate.NotAfter.ToUniversalTime() < DateTime.UtcNow);
                 }
 
-                X509Certificate2? customTrustRoot = rootCertificate ?? (expired || wrongHostName ? certificate : null);
+                X509Certificate2? customTrustRoot = (expired || wrongHostName) ? rootCertificate ?? certificate : null;
                 bool customChainPolicy = ConfigureCertificateChainPolicy(handler, customTrustRoot);
                 X509ChainStatusFlags expectedChainStatus = expired ? X509ChainStatusFlags.NotTimeValid :
                     wrongHostName ? X509ChainStatusFlags.NoError : X509ChainStatusFlags.UntrustedRoot;
@@ -417,20 +408,40 @@ namespace System.Net.Http.Functional.Tests
                     return true;
                 };
 
+                var options = new GenericLoopbackOptions
+                {
+                    UseSsl = true,
+                    Certificate = certificate,
+                    SslProtocols = SslProtocols.None,
+                };
+#if !NETSTANDARD2_0 && !NETFRAMEWORK
+                if (rootCertificate is not null)
+                {
+                    options.CertificateContext = SslStreamCertificateContext.Create(
+                        certificate,
+                        new X509Certificate2Collection { rootCertificate });
+                }
+#endif
+
                 await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
                 {
                     using HttpResponseMessage response = await client.GetAsync(new UriBuilder(uri) { Host = "localhost" }.Uri);
                     Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                 }, server => server.HandleRequestAsync(),
-                options: new GenericLoopbackOptions
-                {
-                    UseSsl = true,
-                    Certificate = certificate,
-                    SslProtocols = SslProtocols.None,
-                });
+                options: options);
 
                 Assert.True(callbackCalled);
             }
+        }
+
+        private static (X509Certificate2 Certificate, X509Certificate2? RootCertificate) CreateServerCertificateForTest(string name, bool expired)
+        {
+#if NETFRAMEWORK
+            // The .NET Framework loopback server cannot present the issuer certificate.
+            return (TestHelper.CreateServerSelfSignedCertificate(name, expired: expired), null);
+#else
+            return TestHelper.CreateServerCertificate(name, expired: expired);
+#endif
         }
 
         private static bool ConfigureCertificateChainPolicy(HttpClientHandler handler, X509Certificate2? customTrustRoot)

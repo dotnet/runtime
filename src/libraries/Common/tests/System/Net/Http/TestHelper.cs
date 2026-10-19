@@ -152,9 +152,11 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        public static (X509Certificate2 Certificate, X509Certificate2 RootCertificate) CreateExpiredServerCertificate(string name)
+        public static (X509Certificate2 Certificate, X509Certificate2 RootCertificate) CreateServerCertificate(string name, bool expired)
         {
             DateTimeOffset now = DateTimeOffset.UtcNow;
+            DateTimeOffset serverNotBefore = expired ? now.AddMonths(-2) : now.AddMinutes(-5);
+            DateTimeOffset serverNotAfter = expired ? now.AddMonths(-1) : now.AddMonths(1);
 
             using RSA rootKey = RSA.Create();
             var rootRequest = new CertificateRequest(
@@ -199,8 +201,8 @@ namespace System.Net.Http.Functional.Tests
 
             using X509Certificate2 serverWithoutPrivateKey = serverRequest.Create(
                 rootWithPrivateKey,
-                now.AddMonths(-2),
-                now.AddMonths(-1),
+                serverNotBefore,
+                serverNotAfter,
                 serialNumber);
 
             X509Certificate2 certificateWithPrivateKey = serverWithoutPrivateKey.CopyWithPrivateKey(serverKey);
