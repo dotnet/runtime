@@ -8,6 +8,12 @@
     <type fullname="System.Runtime.CompilerServices.EagerStaticClassConstructionAttribute">
       <attribute internal="RemoveAttributeInstances" />
     </type>
+    <type fullname="System.Runtime.CompilerServices.CompExactlyDependsOnAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+    <type fullname="System.Runtime.CompilerServices.CompHasFallbackAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
   </assembly>
 
   <assembly fullname="*">
