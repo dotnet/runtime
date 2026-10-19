@@ -414,6 +414,39 @@ public class R2RTestSuites
         }
     }
 
+    [ConditionalTheory(typeof(TestPaths), nameof(TestPaths.IsWasmTarget))]
+    [InlineData("SelfMethodOne", "SelfMethodTwo")]
+    [InlineData("WasmSelfForwarder.BeforeEvent", "WasmSelfForwarder.AfterEvent")]
+    public void WasmSelfImportsAreNotFolded(string firstMethodName, string secondMethodName)
+    {
+        var module = new CompiledAssembly
+        {
+            AssemblyName = nameof(WasmSelfImportsAreNotFolded),
+            SourceResourceNames = ["Webcil/WasmWebcilModule.cs"],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(WasmSelfImportsAreNotFolded),
+            [
+                new(nameof(WasmSelfImportsAreNotFolded), [new CrossgenAssembly(module)])
+                {
+                    Options = [Crossgen2Option.Optimize],
+                    OutputFileExtension = ".wasm",
+                    Validate = reader =>
+                    {
+                        Assert.True(
+                            WasmR2RAssert.MethodsShareFunctionDefinitionButRetainTableSlots(
+                                reader, "FoldableBodyOne", "FoldableBodyTwo", out string foldingDiagnostic),
+                            foldingDiagnostic);
+                        Assert.True(
+                            WasmR2RAssert.MethodsRetainDistinctFunctionDefinitionsAndTableSlots(
+                                reader, firstMethodName, secondMethodName, out string selfImportDiagnostic),
+                            selfImportDiagnostic);
+                    },
+                },
+            ]));
+    }
+
     [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsWasmTarget))]
     public void WasmDelegateConstructors()
     {
