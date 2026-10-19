@@ -294,9 +294,8 @@ target_link_libraries(
     ${NATIVE_LIBS}
 )
 
-# Force the whole runtimeinfo archive into the link; the WHOLE_ARCHIVE generator
-# expression is not usable with the OpenHarmony NDK toolchain, so use the raw
-# --whole-archive flags around the target (which keeps the relink dependency).
+# Workaround for missing OpenHarmony WHOLE_ARCHIVE support in CMake. Remove once
+# the minimum required CMake version is 4.5.
 if(CLR_CMAKE_TARGET_OPENHARMONY)
     target_link_libraries(singlefilehost PRIVATE "-Wl,--whole-archive" runtimeinfo "-Wl,--no-whole-archive")
 else()
