@@ -295,9 +295,10 @@ target_link_libraries(
 )
 
 # Force the whole runtimeinfo archive into the link; the WHOLE_ARCHIVE generator
-# expression is not usable with the OpenHarmony NDK toolchain, so use --whole-archive.
+# expression is not usable with the OpenHarmony NDK toolchain, so use the raw
+# --whole-archive flags around the target (which keeps the relink dependency).
 if(CLR_CMAKE_TARGET_OPENHARMONY)
-    target_link_options(singlefilehost PRIVATE "-Wl,--whole-archive,$<TARGET_FILE:runtimeinfo>;-Wl,--no-whole-archive")
+    target_link_libraries(singlefilehost PRIVATE "-Wl,--whole-archive" runtimeinfo "-Wl,--no-whole-archive")
 else()
     target_link_libraries(singlefilehost PRIVATE $<LINK_LIBRARY:WHOLE_ARCHIVE,runtimeinfo>)
 endif()
