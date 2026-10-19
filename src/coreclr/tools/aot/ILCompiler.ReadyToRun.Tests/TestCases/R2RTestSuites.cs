@@ -171,7 +171,14 @@ public class R2RTestSuites
         static void Validate(ReadyToRunReader reader)
         {
             List<ReadyToRunMethod> methods = R2RAssert.GetAllMethods(reader);
-            foreach (string suffix in new[] { "IntPtrZero", "UIntPtrZero", "StringEmpty", "IsLittleEndian" })
+            SignatureFormattingOptions formatting = new();
+            foreach ((string suffix, string declaringType) in new[]
+            {
+                ("IntPtrZero", "IntPtr"),
+                ("UIntPtrZero", "UIntPtr"),
+                ("StringEmpty", "string"),
+                ("IsLittleEndian", "System.BitConverter"),
+            })
             {
                 ReadyToRunMethod read = Assert.Single(methods,
                     method => method.SignatureString.Contains($".Read{suffix}(", StringComparison.Ordinal));
@@ -184,8 +191,15 @@ public class R2RTestSuites
                     method => method.SignatureString.Contains($".Address{suffix}(", StringComparison.Ordinal));
                 if (TestPaths.IsWasmTarget)
                 {
-                    Assert.Contains(address.Fixups ?? Array.Empty<FixupCell>(),
-                        fixup => fixup.Signature.FixupKind == ReadyToRunFixupKind.TypeHandle);
+                    IEnumerable<ReadyToRunSignature?> signatures =
+                        (address.Fixups ?? Array.Empty<FixupCell>()).Select(fixup => fixup.Signature)
+                        .Concat(reader.ImportSections
+                            .Where(section => (section.Flags & ReadyToRunImportSectionFlags.Eager) != 0)
+                            .SelectMany(section => section.Entries)
+                            .Select(entry => entry.Signature));
+                    Assert.Contains(signatures, signature =>
+                        signature?.FixupKind == ReadyToRunFixupKind.TypeHandle &&
+                        signature.ToString(formatting) == $"{declaringType} (TYPE_HANDLE)");
                 }
             }
         }
