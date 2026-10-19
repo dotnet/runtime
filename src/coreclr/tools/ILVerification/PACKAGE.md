@@ -4,9 +4,9 @@ Provides a library for verifying .NET intermediate language (IL) against the ECM
 
 ## Key Features
 
-* Reports IL in method bodies that is not verifiable under ECMA-335, such as stack underflow, type mismatches and invalid branch targets.
-* Checks types: base types, interface implementations and method implementations.
-* Reads assemblies through `System.Reflection.Metadata`, so they are never loaded or run.
+* Reports invalid or non-verifiable IL in method bodies, such as stack underflow, type mismatches and invalid branch targets.
+* Reports invalid type metadata, such as missing interface method implementations.
+* Reads assemblies through `System.Reflection.Metadata` without executing them.
 
 ## How to Use
 
