@@ -1,3 +1,9 @@
+parameters:
+- name: helixCacheShadow
+  displayName: Validate Linux Helix result caching (shadow mode)
+  type: boolean
+  default: false
+
 # Setting batch to true, triggers one build at a time.
 # if there is a push while a build in progress, it will wait,
 # until the running build finishes, and produce a build with all the changes
@@ -385,6 +391,9 @@ extends:
                         eq(variables['archType'], 'arm64'),
                         eq(variables['coreclrContainsChange'], true)),
                       eq(variables['isRollingBuild'], true))
+              - template: /eng/pipelines/libraries/helix-cache-shadow.yml
+                parameters:
+                  enabled: ${{ parameters.helixCacheShadow }}
             condition: >-
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),

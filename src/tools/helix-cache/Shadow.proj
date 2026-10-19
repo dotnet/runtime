@@ -1,0 +1,47 @@
+<Project Sdk="Microsoft.DotNet.Helix.Sdk" DefaultTargets="Validate">
+  <Import Project="$(HelixCacheShadowDirectory)/submission.props" />
+
+  <PropertyGroup>
+    <HelixTargetQueue>$(ShadowQueue)</HelixTargetQueue>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ShadowCorrelationPayload Include="$(ShadowRuntime)" AsArchive="true" />
+    <ShadowWorkItem Include="$(ShadowName)">
+      <PayloadArchive>$(ShadowPayload)</PayloadArchive>
+      <Command>$(ShadowCommand)</Command>
+      <PostCommands>$(ShadowPostCommand)</PostCommands>
+      <Timeout>$(ShadowTimeout)</Timeout>
+    </ShadowWorkItem>
+  </ItemGroup>
+
+  <Target Name="Validate">
+    <Error Condition="'$(ShadowQueue)' == '' or '$(ShadowName)' != 'System.Memory.Data.Tests'"
+           Text="Expected a prepared System.Memory.Data.Tests shadow submission." />
+    <Error Condition="!Exists('$(ShadowPayload)') or !Exists('$(ShadowRuntime)')"
+           Text="Frozen shadow payload archives are missing." />
+  </Target>
+
+  <Target Name="Submit" DependsOnTargets="Validate">
+    <!-- Invoke the SDK task directly so it cannot inject unrecorded reporters or commands. -->
+    <SendHelixJob Type="test/functional/helix-cache-shadow/"
+                  TargetQueue="$(ShadowQueue)"
+                  Creator="$(ShadowCreator)"
+                  IsPosixShell="true"
+                  MaxRetryCount="0"
+                  WorkItems="@(ShadowWorkItem)"
+                  CorrelationPayloads="@(ShadowCorrelationPayload)">
+      <Output TaskParameter="JobCorrelationId" PropertyName="ShadowJobId" />
+      <Output TaskParameter="JobCancellationToken" PropertyName="ShadowCancellationToken" />
+    </SendHelixJob>
+    <WriteLinesToFile File="$(HelixCacheShadowDirectory)/job-id.txt"
+                      Lines="$(ShadowJobId)" Overwrite="true" />
+    <ItemGroup>
+      <ShadowSentJob Include="$(ShadowJobId)">
+        <WorkItemCount>1</WorkItemCount>
+        <HelixJobCancellationToken>$(ShadowCancellationToken)</HelixJobCancellationToken>
+      </ShadowSentJob>
+    </ItemGroup>
+    <WaitForHelixJobCompletion Jobs="@(ShadowSentJob)" CancelHelixJobsOnTaskCancellation="true" />
+  </Target>
+</Project>
