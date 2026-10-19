@@ -145,6 +145,37 @@ public class R2RTestSuites
         }
     }
 
+    [Fact]
+    public void StructConstrainedPrimitiveInstantiations()
+    {
+        var structConstrainedGenerics = new CompiledAssembly
+        {
+            AssemblyName = nameof(StructConstrainedPrimitiveInstantiations),
+            SourceResourceNames = ["PrimitiveInstantiations/StructConstrainedGenerics.cs"],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(StructConstrainedPrimitiveInstantiations),
+            [
+                new(nameof(StructConstrainedPrimitiveInstantiations), [new CrossgenAssembly(structConstrainedGenerics)])
+                {
+                    Options = [Crossgen2Option.Optimize],
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            string diag;
+
+            Assert.True(R2RAssert.HasCompiledMethod(reader, "StructConstrainedGenerics", "StructConstrained", out diag, ["int"]), diag);
+            Assert.True(R2RAssert.HasCompiledMethod(reader, "StructConstrainedGenerics", "UnmanagedConstrained", out diag, ["int"]), diag);
+            Assert.True(R2RAssert.HasCompiledMethod(reader, "StructConstrainedBox`1<int>", "GetValueHashCode", out diag), diag);
+            Assert.True(R2RAssert.HasInlinedMethod(reader, "CallInlineableStructConstrained", "InlineableStructConstrained", out diag), diag);
+            Assert.True(R2RAssert.HasInlinedMethod(reader, "CallInlineableUnmanagedConstrained", "InlineableUnmanagedConstrained", out diag), diag);
+        }
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
