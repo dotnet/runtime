@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 
 namespace Webcil;
@@ -26,6 +27,13 @@ public static class WasmWebcilModule
     public static void FoldableBodyTwo()
     {
     }
+
+    // Explicit construction avoids distinct compiler-generated delegate cache fields.
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static MethodInfo SelfMethodOne() => new Func<MethodInfo>(SelfMethodOne).Method;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static MethodInfo SelfMethodTwo() => new Func<MethodInfo>(SelfMethodTwo).Method;
 
     // Reads static data, which forces the JIT to materialize the imageBase address via a
     // 'global.get' of the wasm imageBase well-known global.
@@ -83,4 +91,20 @@ public static class WasmWebcilModule
             return -1;
         }
     }
+}
+
+public class WasmSelfForwarder
+{
+    private readonly WasmSelfForwarder _target;
+
+    public WasmSelfForwarder(WasmSelfForwarder? target = null)
+    {
+        _target = target ?? this;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public virtual int BeforeEvent(int value) => _target.BeforeEvent(value);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public virtual int AfterEvent(int value) => _target.AfterEvent(value);
 }
