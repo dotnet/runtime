@@ -112,6 +112,27 @@ A single logical `RuntimeFunctions` section exists, spread across the primary mo
 
 VirtualIP lookup must use a range-aware binary search that only searches the ranges of activated modules, using the AuxiliaryModuleMetadata activation info to determine active ranges.
 
+```text
+AuxiliaryModuleMetadata                         RuntimeFunctions table
+                                                Index  Owning module
+                                               ┌─────┬───────────────┐
+Header:                                      ┌─┤  0  │ Primary       │
+  PrimaryModuleMethodCount = 3 ─────────────►┤ │  1  │ Primary       │
+  AuxiliaryModuleCount = 2                   └─┤  2  │ Primary       │
+                                               ├─────┼───────────────┤
+Entries:                                     ┌─┤  3  │ Aux A         │
+  Aux A                                      │ │  4  │ Aux A         │
+    MethodCount = 4 ────────────────────────►┤ │  5  │ Aux A         │
+    RelativeTableBase = 3                    └─┤  6  │ Aux A         │
+                                               ├─────┼───────────────┤
+  Aux B                                      ┌─┤  7  │ Aux B         │
+    MethodCount = 3 ────────────────────────►┤ │  8  │ Aux B         │
+    RelativeTableBase = 7                    └─┤  9  │ Aux B         │
+                                               └─────┴───────────────┘
+```
+
+The entire table is allocated space in the primary module. Slots 0-2 are populated, slots 3-8 zeroed, and slot 9 (plus its unwind data) is populated for VirtualIP sizing. The method in slot 9 is still "owned" by Auxiliary module B, and is included in its MethodCount.
+
 ### MethodDefEntryPoints and InstanceMethodEntryPoints
 
 Each `MethodDefEntryPoints` section (one for each assembly in the R2R image), as well as the image-wide `InstanceMethodEntryPoints` section will have a partial entry in each  (shared by all assemblies in the R2R image), one in the primary module and the Auxiliary EntryPoints Module. Fixup lists for the entries in the Auxiliary EntryPoints Module exist in the auxiliary modules. The runtime must check both sections when the Auxiliary EntryPoints Module is downloaded. The primary module will allocate space for each section at the RVA designated in the Auxiliary Module Metadata. The entries for each method and their RuntimeFunctions index are present in the Auxiliary EntryPoints Module, but the fixup lists are placed in the auxiliary modules and copied during activation.
@@ -139,7 +160,7 @@ The primary module contains:
 
 ### Method activation behavior
 
-If activation is unsuccessful because fixup resolution fails, the `kPrefersInterpreterEntryPoint` flag is left set. Method activation should not be retried after a failure, and the runtime should treat the method as any other interpreter-only method.
+If activation is unsuccessful because fixup resolution fails, the `kPrefersInterpreterEntryPoint` flag is left set. Method activation should not be retried after a failure. After failed activation, the runtime should treat the method as any other interpreter-only method.
 
 ## Auxiliary Modules
 
@@ -163,33 +184,61 @@ It exports:
 
 ## Auxiliary EntryPoints Module
 
-The auxiliary entrypoints module contains the `MethodDefEntryPoints` and `InstanceMethodEntryPoints` for the aux methods, excluding the fixup cell info. These sections tell which index in the `RuntimeFunctions` table to find information for the method, as well as which fixups to resolve. A single logical `RuntimeFunctions` is spread across the primary and auxiliary modules. Using the length of the primary module's `RuntimeFunctions` range, and the `MethodCount` field in each Auxiliary module metadata entry (see below), the owning auxiliary module can be determined.
+The auxiliary entrypoints holds information about what methods have code in any auxiliary module. There is one AuxiliaryEntryPointsModule per logical R2R module. It contains one or more `MethodDefEntryPoints` sections (one for each assembly in the R2R image), and one `InstanceMethodEntryPoints` (for the entire image). Together, these hold a mappings from method to `RuntimeFunctions` index. Each section for the aux methods, excluding the fixup cell info. These sections tell which index in the `RuntimeFunctions` table to find information for the method, as well as which fixups to resolve. A single logical `RuntimeFunctions` is spread across the primary and auxiliary modules. Using the length of the primary module's `RuntimeFunctions` range, and the `MethodCount` field in each Auxiliary module metadata entry (see below), the owning auxiliary module can be determined.
 
 The EntryPoints sections in the Auxiliary EntryPoints Module will leave space for the fixup lists that will be filled in by the auxiliary module during activation. To enable auxiliary modules to activate before the Auxiliary EntryPoints Module, this space should not be written overwritten during activation of the Auxiliary EntryPoints Module. Fixups for methods from the auxiliary module cannot be run until the module is activated and these indices are filled in. This enables the EntryPoints Module to be smaller, and allow methods without R2R code to be identified as interpreter-only sooner.
 
-The `InstanceMethodEntryPoints` hashtable will allocate contiguous memory to hold the data for all instance methods in an auxiliary module. The auxiliary module can then copy a data element to the correct offset to fill in the list of fixups.
+### Auxiliary MethodDefEntryPoints format
+
+The auxiliary `MethodDefEntryPoints` section for each assembly may have code spread across multiple auxiliary modules. The AuxiliaryEntryPointsModule will hold the sparse array metadata (header and block-index array), as well as the `RuntimeFunctions` index and flags for each entry, and backwards-distance-encoded offset to the method's fixup list. The actual fixup list will be owned by the Auxiliary Module that holds the code for that method. Each auxiliary module will be allocated contiguous space for all its encoded fixup lists in a blob before the array. This enables the auxiliary module's `ActivateModule()` function to simply copy a data element to a known location.
 
 ```
-Hash index                         Method-record storage
+Lower addresses
+┌───────────────────────────────────┐
+│ Aux A fixup lists                 │ ◄── installed by Aux A
+├───────────────────────────────────┤
+│ Aux B fixup lists                 │ ◄── installed by Aux B
+├───────────────────────────────────┤
+│ Sparse-array header               │ ◄── R2R directory points HERE
+│ Block-index array                 │
+│ Tree nodes and entrypoint records │
+│   [method index + flags][distance]│
+└───────────────────────────┬───────┘
+                            │
+             backward reference to the relevant list
+Higher addresses
+```
 
-Bucket 0 ─── entry for A2 ──────────────┐
-         └── entry for B1 ────────────────────────┐
-                                        │         │
-Bucket 1 ─── entry for A1 ──────────┐   │         │
-                                    │   │         │
-                                    ▼   │         │
-                              ┌────────────────┐  │
-                              │ A1 record      │  │
-                              │ A2 record ◄────┼──┘
-                              │ A3 record      │  │
-                              └────────────────┘  │
-                              Aux A's records     │
-                                                  │
-                              ┌────────────────┐  │
-                              │ B1 record ◄────┼──┘
-                              │ B2 record      │
-                              └────────────────┘
-                              Aux B's records
+### Auxiliary InstanceMethodEntryPoints format
+
+The AuxiliaryEntryPointsModule contains the `InstanceMethodEntryPoints` hash table metadata and the method records it points to. Each record contains the method signature, the encoded `RuntimeFunctions` index and flags, and, when fixups are required, a backward distance to its fixup list. Each auxiliary module has a contiguous reserved region before its method records for its encoded fixup lists. The auxiliary module copies only those lists into the reserved region during activation; the signatures, indices, flags, and distances are supplied by the AuxiliaryEntryPointsModule.
+
+```
+Hash index (supplied by AuxiliaryEntryPointsModule)
+
+Bucket 0 ─── [low hash][relative offset] ────┐
+         └── [low hash][relative offset] ────┼───────────────────────────────────────────────┐
+Bucket 1 ─── [low hash][relative offset] ─┐  │                                               │
+                                          │  │  Aux A storage                                │   Aux B storage
+                                          │  │  Lower addresses                              │   Lower addresses
+                                          │  │  ┌───────────────────────────────────┐        │   ┌───────────────────────────────────┐
+                                          │  │  │ Reserved fixup-list space         │◄─┐     │   │ Reserved fixup-list space         │◄─┐
+                                          │  │  │ (filled by Aux A)                 │  │     │   │ (filled by Aux B)                 │  │
+                                          │  │  ├───────────────────────────────────┤  │     │   ├───────────────────────────────────┤  │
+                                          └──┼─►│ A1 signature                      │  │     └──►│ B1 signature                      │  │
+                                             │  │ RuntimeFunctions index + flags    │  │         │ RuntimeFunctions index + flags    │  │
+                                             │  │ backward distance                 │──┤         │ backward distance                 │──┤
+                                             │  ├───────────────────────────────────┤  │         ├───────────────────────────────────┤  │
+                                             └─►│ A2 signature                      │  │         │ B2 signature                      │  │
+                                                │ RuntimeFunctions index + flags    │  │         │ RuntimeFunctions index + flags    │  │
+                                                │ backward distance                 │──┘         │ backward distance                 │──┘
+                                                └───────────────────────────────────┘            └───────────────────────────────────┘
+                                                Higher addresses                                 Higher addresses
+
+Method records are supplied by AuxiliaryEntryPointsModule.
+Each backward distance identifies that record's list within the reserved space.
+The illustrated records have fixups; their index-and-flags field is encoded as
+(RuntimeFunctions index << 2) | 3. Records without fixups omit the distance.
 ```
 
 ## Auxiliary Module Metadata
