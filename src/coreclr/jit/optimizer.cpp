@@ -5448,8 +5448,7 @@ void Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk, FlowGraphNatura
                     if (call->IsHelperCall())
                     {
                         CorInfoHelpFunc helpFunc = call->GetHelperNum();
-                        // A call that may run a class constructor can have arbitrary side effects,
-                        // even when it is labeled "Hoistable": that only means the cctor may run earlier.
+                        // A class constructor run by the helper may modify the heap.
                         if (s_helperCallProperties.MutatesHeap(helpFunc) ||
                             s_helperCallProperties.MayRunCctor(helpFunc))
                         {

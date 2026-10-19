@@ -15546,8 +15546,8 @@ bool Compiler::fgValueNumberHelperCall(GenTreeCall* call)
 
     bool pure        = s_helperCallProperties.IsPure(helpFunc);
     bool isAlloc     = s_helperCallProperties.IsAllocator(helpFunc);
-    bool modHeap     = s_helperCallProperties.MutatesHeap(helpFunc);
     bool mayRunCctor = s_helperCallProperties.MayRunCctor(helpFunc);
+    bool modHeap     = s_helperCallProperties.MutatesHeap(helpFunc) || mayRunCctor; // a cctor may modify the heap
     bool noThrow     = s_helperCallProperties.NoThrow(helpFunc);
 
     ValueNumPair vnpExc = ValueNumStore::VNPForEmptyExcSet();
@@ -15696,13 +15696,6 @@ bool Compiler::fgValueNumberHelperCall(GenTreeCall* call)
         if (pure || isAlloc)
         {
             VNFunc vnf = fgValueNumberJitHelperMethodVNFunc(helpFunc);
-
-            if (mayRunCctor)
-            {
-                // The class constructor may run here and modify the heap. GTF_CALL_HOISTABLE only
-                // allows running it earlier (beforefieldinit), so it does not make the call heap-neutral.
-                modHeap = true;
-            }
 
             if (isAlloc && (call->gtArgs.FindWellKnownArg(WellKnownArg::StackArrayLocal) != nullptr))
             {

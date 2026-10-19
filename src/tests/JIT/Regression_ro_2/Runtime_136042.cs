@@ -15,6 +15,11 @@ public static class Runtime_136042
     {
         public static int Counter;
         public class G { public static int Value = ++Counter; }
+    }
+
+    static class StraightGen
+    {
+        public static int Counter;
         public class G<T> { public static int Value = ++Counter; }
     }
 
@@ -22,6 +27,11 @@ public static class Runtime_136042
     {
         public static int Counter;
         public class G { public static int Value = ++Counter; }
+    }
+
+    static class StraightOptGen
+    {
+        public static int Counter;
         public class G<T> { public static int Value = ++Counter; }
     }
 
@@ -29,6 +39,11 @@ public static class Runtime_136042
     {
         public static int Counter;
         public class G { public static int Value = ++Counter; }
+    }
+
+    static class LoopGen
+    {
+        public static int Counter;
         public class G<T> { public static int Value = ++Counter; }
     }
 
@@ -36,6 +51,11 @@ public static class Runtime_136042
     {
         public static int Counter;
         public class G { public static int Value = ++Counter; }
+    }
+
+    static class LoopOptGen
+    {
+        public static int Counter;
         public class G<T> { public static int Value = ++Counter; }
     }
 
@@ -50,9 +70,9 @@ public static class Runtime_136042
     [MethodImpl(MethodImplOptions.NoInlining)]
     static (int, int, int) StraightGeneric<T>()
     {
-        int before = Straight.Counter;
-        int value = Straight.G<T>.Value;
-        return (before, value, Straight.Counter);
+        int before = StraightGen.Counter;
+        int value = StraightGen.G<T>.Value;
+        return (before, value, StraightGen.Counter);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
@@ -66,9 +86,9 @@ public static class Runtime_136042
     [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
     static (int, int, int) StraightOptGeneric<T>()
     {
-        int before = StraightOpt.Counter;
-        int value = StraightOpt.G<T>.Value;
-        return (before, value, StraightOpt.Counter);
+        int before = StraightOptGen.Counter;
+        int value = StraightOptGen.G<T>.Value;
+        return (before, value, StraightOptGen.Counter);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -91,8 +111,8 @@ public static class Runtime_136042
         int sum = 0;
         for (int i = 0; i < n; i++)
         {
-            seen = seen * 10 + Loop.Counter;
-            sum += Loop.G<T>.Value;
+            seen = seen * 10 + LoopGen.Counter;
+            sum += LoopGen.G<T>.Value;
         }
         return seen * 100 + sum;
     }
@@ -117,8 +137,8 @@ public static class Runtime_136042
         int sum = 0;
         for (int i = 0; i < n; i++)
         {
-            seen = seen * 10 + LoopOpt.Counter;
-            sum += LoopOpt.G<T>.Value;
+            seen = seen * 10 + LoopOptGen.Counter;
+            sum += LoopOptGen.G<T>.Value;
         }
         return seen * 100 + sum;
     }
@@ -144,12 +164,12 @@ public static class Runtime_136042
     public static void TestEntryPoint()
     {
         CheckStraight(StraightNonGeneric(), 1);
-        CheckStraight(StraightGeneric<object>(), 2);
+        CheckStraight(StraightGeneric<object>(), 1);
         CheckStraight(StraightOptNonGeneric(), 1);
-        CheckStraight(StraightOptGeneric<object>(), 2);
+        CheckStraight(StraightOptGeneric<object>(), 1);
         CheckLoop(LoopNonGeneric(2), 1);
-        CheckLoop(LoopGeneric<object>(2), 2);
+        CheckLoop(LoopGeneric<object>(2), 1);
         CheckLoop(LoopOptNonGeneric(2), 1);
-        CheckLoop(LoopOptGeneric<object>(2), 2);
+        CheckLoop(LoopOptGeneric<object>(2), 1);
     }
 }
