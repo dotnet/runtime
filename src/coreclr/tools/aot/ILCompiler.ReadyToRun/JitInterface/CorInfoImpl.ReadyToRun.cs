@@ -1095,25 +1095,6 @@ namespace Internal.JitInterface
                 "Eager ReadyToRun method entry");
         }
 
-        private void AddWasmManagedHelperInterpreterThunkDependency(CorInfoHelpFunc ftnNum)
-        {
-            if (!_compilation.NodeFactory.Target.IsWasm)
-                return;
-
-            // The runtime may back this helper with a managed method whose body is not in this image. That
-            // method then runs in the interpreter, and the helper's import cell can only call it once a loaded
-            // image provides an R2R-to-interpreter thunk for the helper's signature.
-            MethodDesc managedHelper = ReadyToRunJitHelperRootProvider.GetManagedHelper(
-                _compilation.TypeSystemContext,
-                ftnNum);
-            if (managedHelper is null)
-                return;
-
-            AddAdditionalDependency(
-                _compilation.NodeFactory.WasmR2RToInterpreterThunk(WasmLowering.GetSignature(managedHelper)),
-                "R2R-to-interpreter thunk for managed helper");
-        }
-
         private ISymbolNode GetHelperFtnUncached(CorInfoHelpFunc ftnNum, out MethodDesc helperMethod)
         {
             MethodDesc managedHelper = ReadyToRunJitHelperRootProvider.GetManagedHelper(

@@ -4153,10 +4153,6 @@ namespace Internal.JitInterface
             {
                 AddManagedHelperDependency(helper.Method);
             }
-            else
-            {
-                AddWasmManagedHelperInterpreterThunkDependency(ftnNum);
-            }
 #endif
 
             if (pNativeEntrypoint != null)
