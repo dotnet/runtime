@@ -47,36 +47,25 @@ extends:
     - stage: Build
       jobs:
 
-      - template: /eng/pipelines/common/platform-matrix.yml
+      - template: /eng/pipelines/coreclr/templates/runtime-test-jobs.yml
         parameters:
-          jobTemplate: /eng/pipelines/common/global-build-job.yml
-          buildConfig: checked
           platforms: ${{ parameters.platforms }}
-          helixQueueGroup: ci
-          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          testGroup: ${{ parameters.testGroup }}
+          useHelixMonitor: false
+          # TODO: update these numbers as they were determined long ago
+          ${{ if in(parameters.testGroup, 'innerloop', 'outerloop', 'jit-cfg') }}:
+            timeoutInMinutes: 600
+          ${{ if in(parameters.testGroup, 'jitstress', 'jitstress-random', 'jitstress-isas-arm', 'jitstressregs-x86', 'jitstressregs', 'jitstress2-jitstressregs', 'gcstress0x3-gcstress0xc', 'ilasm') }}:
+            timeoutInMinutes: 720
+          ${{ if in(parameters.testGroup, 'gcstress-extra', 'r2r-extra', 'pgo', 'pgostress', 'jit-experimental') }}:
+            timeoutInMinutes: 840
+          ${{ if in(parameters.testGroup, 'jitstress-isas-x86', 'jitstress-isas-avx512') }}:
+            timeoutInMinutes: 1260
           jobParameters:
-            buildArgs: -s clr+libs -c $(_BuildConfig) -lc Release
-            testGroup: ${{ parameters.testGroup }}
             ${{ if in(parameters.testGroup, 'jitstress-isas-arm', 'jitstress-isas-avx512', 'jitstress-isas-x86') }}:
               jitIsaStressScenarios: ${{ parameters.isaScenarios[parameters.testGroup] }}
-            liveLibrariesBuildConfig: Release
-            # TODO: update these numbers as they were determined long ago
-            ${{ if in(parameters.testGroup, 'innerloop', 'outerloop', 'jit-cfg') }}:
-              timeoutInMinutes: 600
-            ${{ if in(parameters.testGroup, 'jitstress', 'jitstress-random', 'jitstress-isas-arm', 'jitstressregs-x86', 'jitstressregs', 'jitstress2-jitstressregs', 'gcstress0x3-gcstress0xc', 'ilasm') }}:
-              timeoutInMinutes: 720
-            ${{ if in(parameters.testGroup, 'gcstress-extra', 'r2r-extra', 'pgo', 'pgostress', 'jit-experimental') }}:
-              timeoutInMinutes: 840
-            ${{ if in(parameters.testGroup, 'jitstress-isas-x86', 'jitstress-isas-avx512') }}:
-              timeoutInMinutes: 1260
-            postBuildSteps:
-              - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
-                forwardedParameters: [testGroup]
-                parameters:
-                  displayNameArgs: JitOuterloopTests
-            extraVariablesTemplates:
-              - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
-                forwardedParameters: [testGroup, liveLibrariesBuildConfig]
+          testRuns:
+          - displayNameArgs: JitOuterloopTests
     - ${{ if in(parameters.testGroup, 'jitstress-isas-arm', 'jitstress-isas-avx512', 'jitstress-isas-x86') }}:
       - template: /eng/pipelines/coreclr/templates/jit-isas-libraries.yml
         parameters:

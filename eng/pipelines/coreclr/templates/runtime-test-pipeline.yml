@@ -1,0 +1,22 @@
+parameters:
+  - name: jobs
+    type: jobList
+  - name: monitorTimeoutInMinutes
+    type: number
+    default: 960
+
+extends:
+  template: /eng/pipelines/common/templates/pipeline-with-resources.yml
+  parameters:
+    stages:
+    - stage: Build
+      jobs:
+      - ${{ if eq(variables['enableHelixJobMonitor'], true) }}:
+        - template: /eng/common/core-templates/job/helix-job-monitor.yml
+          parameters:
+            helixAccessToken: $(HelixApiAccessToken)
+            timeoutInMinutes: ${{ parameters.monitorTimeoutInMinutes }}
+            allowNoHelixJobs: true
+
+      - ${{ each job in parameters.jobs }}:
+        - ${{ job }}
