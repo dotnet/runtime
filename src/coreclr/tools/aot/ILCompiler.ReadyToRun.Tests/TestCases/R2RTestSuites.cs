@@ -376,6 +376,43 @@ public class R2RTestSuites
     }
 
     [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsWasmTarget))]
+    public void WasmManagedHelperThunks()
+    {
+        var wasmManagedHelperThunks = new CompiledAssembly
+        {
+            AssemblyName = nameof(WasmManagedHelperThunks),
+            SourceResourceNames = ["Webcil/WasmManagedHelperThunks.cs"],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(WasmManagedHelperThunks),
+            [
+                new(nameof(WasmManagedHelperThunks), [new CrossgenAssembly(wasmManagedHelperThunks)])
+                {
+                    OutputFileExtension = ".wasm",
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            Assert.Equal(WasmMachine.Wasm32, reader.Machine);
+
+            var signatureFormattingOptions = new SignatureFormattingOptions();
+            string diagnostic = string.Join(Environment.NewLine, reader.ImportSections
+                .Where(section => section.Entries is not null)
+                .SelectMany(section => section.Entries)
+                .Where(entry => entry.Signature is not null)
+                .Select(entry => entry.Signature!.ToString(signatureFormattingOptions)));
+            Assert.Contains("GET_RUNTIME_TYPE_HANDLE", diagnostic, StringComparison.Ordinal);
+
+            // CoreLib is not in this image, so the helper's managed implementation runs in the interpreter and
+            // R2R code can only reach it through an R2R-to-interpreter thunk of its signature.
+            Assert.True(R2RAssert.HasStringThunk(reader, "Iiip", out string thunkDiagnostic), thunkDiagnostic);
+        }
+    }
+
+    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsWasmTarget))]
     public void WasmVirtualDispatch()
     {
         var wasmVirtualDispatch = new CompiledAssembly

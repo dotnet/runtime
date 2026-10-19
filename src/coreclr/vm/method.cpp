@@ -2265,7 +2265,10 @@ PCODE MethodDesc::TryGetMultiCallableAddrOfCode(CORINFO_ACCESS_FLAGS accessFlags
 #endif // _DEBUG
 
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
-    PCODE entryPoint = GetPortableEntryPoint();
+    // A MethodImpl can redirect this method's slot to another method in the same type; hand out that
+    // method's entrypoint (as FuncPtrStubs::GetFuncPtrStub does).
+    MethodDesc* pTargetMD = IsVtableSlot() ? MethodTable::MapMethodDeclToMethodImpl(this) : this;
+    PCODE entryPoint = pTargetMD->GetPortableEntryPoint();
     if (accessFlags & CORINFO_ACCESS_UNMANAGED_CALLER_MAYBE
         && PortableEntryPoint::ToPortableEntryPoint(entryPoint)->EnsureCodeForUnmanagedCallersOnly())
     {

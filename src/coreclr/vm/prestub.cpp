@@ -3210,12 +3210,14 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
             // Portable entrypoints are stable, so prepare the method before patching the import cell.
             // This publishes an existing R2R body instead of leaving the cell on an interpreter thunk.
-            if (pMD->ShouldCallPrestub())
+            // A MethodImpl can redirect pMD's slot to another method in the same type; prepare and call that method.
+            MethodDesc* pTargetMD = pMD->IsVtableSlot() ? MethodTable::MapMethodDeclToMethodImpl(pMD) : pMD;
+            if (pTargetMD->ShouldCallPrestub())
             {
-                (void)pMD->DoPrestub(NULL);
+                (void)pTargetMD->DoPrestub(NULL);
             }
 
-            PCODE pEntryPoint = pMD->GetMethodEntryPoint();
+            PCODE pEntryPoint = pTargetMD->GetMethodEntryPoint();
             MethodDesc::EnsurePortableEntryPointIsCallableFromR2R(pEntryPoint);
             pCode = PatchNonVirtualExternalMethod(pMD, pEntryPoint, pIndirection);
 #else // !FEATURE_PORTABLE_ENTRYPOINTS
