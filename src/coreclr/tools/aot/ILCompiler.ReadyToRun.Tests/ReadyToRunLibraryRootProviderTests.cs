@@ -5,6 +5,7 @@ extern alias crossgen2;
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
 
 using crossgen2::ILCompiler;
@@ -104,17 +105,192 @@ public class ReadyToRunLibraryRootProviderTests
         return typesChecked;
     }
 
-    private static ReadyToRunCompilerContext CreateContext()
+    [Theory]
+    [InlineData("none", false)]
+    [InlineData("none", true)]
+    [InlineData("outer", false)]
+    [InlineData("outer", true)]
+    [InlineData("middle", false)]
+    [InlineData("middle", true)]
+    [InlineData("type", false)]
+    [InlineData("type", true)]
+    [InlineData("method", false)]
+    [InlineData("method", true)]
+    [InlineData("base", false)]
+    [InlineData("base", true)]
+    [InlineData("interface", false)]
+    [InlineData("interface", true)]
+    public void SuppressCanonicalRooting(string attributeLocation, bool genericType)
+    {
+        string source = $$"""
+            namespace Tests
+            {
+                {{AttributeFor("base")}}
+                public class Base { }
+
+                {{AttributeFor("interface")}}
+                public interface IOperations<T>
+                {
+                    static virtual void Ordinary() { }
+                    static virtual void Generic<TMethod>() { }
+                }
+
+                {{AttributeFor("outer")}}
+                public class Outer
+                {
+                    public static void Ordinary() { }
+
+                    {{AttributeFor("middle")}}
+                    public class Middle
+                    {
+                        {{AttributeFor("type")}}
+                        public class Leaf{{(genericType ? "<T>" : "")}} : Base
+                        {
+                            {{AttributeFor("method")}}
+                            public Leaf() { }
+
+                            {{AttributeFor("method")}}
+                            public static void Generic<TMethod>() { }
+
+                            {{AttributeFor("method")}}
+                            public static void Ordinary() { }
+
+                            public static void Control() { }
+                        }
+
+                        public class Sibling<T>
+                        {
+                            public static void Generic<TMethod>() { }
+                        }
+                    }
+                }
+            }
+            """;
+
+        string workingDirectory = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+        Directory.CreateDirectory(workingDirectory);
+        try
+        {
+            string assemblyPath = Path.Combine(workingDirectory, "Rooting.dll");
+            R2RTestCaseCompiler compiler = new([TestPaths.SystemPrivateCoreLibPath]);
+            compiler.CompileAssembly("Rooting",
+                [source, R2RTestCaseCompiler.ReadEmbeddedSource("SuppressReadyToRunCanonicalRootingAttribute.cs")],
+                assemblyPath);
+
+            ReadyToRunCompilerContext context = CreateContext(assemblyPath);
+            EcmaModule module = (EcmaModule)context.GetModuleForSimpleName("Rooting");
+            context.SetCompilationGroup(new ReadyToRunSingleAssemblyCompilationModuleGroup(new ReadyToRunCompilationModuleGroupConfig
+            {
+                Context = context,
+                IsInputBubble = true,
+                CompilationModuleSet = [module],
+                VersionBubbleModuleSet = [context.SystemModule, module],
+                CrossModuleInlineable = [],
+                InstructionSetSupport = context.InstructionSetSupport,
+            }));
+
+            MetadataType outer = module.GetType("Tests"u8, "Outer"u8);
+            MetadataType middle = outer.GetNestedType("Middle"u8);
+            MetadataType leaf = middle.GetNestedType(genericType ? "Leaf`1"u8 : "Leaf"u8);
+            MetadataType sibling = middle.GetNestedType("Sibling`1"u8);
+            MetadataType operations = module.GetType("Tests"u8, "IOperations`1"u8);
+            bool typeSuppressed = attributeLocation is "outer" or "middle" or "type";
+            using MemoryStream descriptor = new(Encoding.UTF8.GetBytes(
+                """<linker><assembly fullname="Rooting" preserve="all" /></linker>"""));
+            using MemoryStream methodDescriptor = new(Encoding.UTF8.GetBytes($$"""
+                <linker>
+                  <assembly fullname="Rooting">
+                    <type fullname="Tests.Outer">
+                      <method name="Ordinary" />
+                    </type>
+                    <type fullname="Tests.Outer/Middle/{{(genericType ? "Leaf`1" : "Leaf")}}">
+                      <method name=".ctor" />
+                      <method name="Generic" />
+                      <method name="Ordinary" />
+                      <method name="Control" />
+                    </type>
+                    <type fullname="Tests.Outer/Middle/Sibling`1">
+                      <method name="Generic" />
+                    </type>
+                    <type fullname="Tests.IOperations`1">
+                      <method name="Ordinary" />
+                      <method name="Generic" />
+                    </type>
+                  </assembly>
+                </linker>
+                """));
+            ICompilationRootProvider[] providers =
+            [
+                new ReadyToRunLibraryRootProvider(module),
+                new ReadyToRunVisibilityRootProvider(module),
+                new ReadyToRunXmlRootProvider(descriptor, default, module, "Rooting.xml"),
+                new ReadyToRunXmlRootProvider(methodDescriptor, default, module, "RootingMethods.xml"),
+            ];
+            foreach (ICompilationRootProvider provider in providers)
+            {
+                RecordingRootingServiceProvider roots = new();
+                provider.AddCompilationRoots(roots);
+
+                Assert.Equal(!typeSuppressed && attributeLocation != "method",
+                    roots.Methods.Contains(leaf.GetMethod("Generic"u8, null)));
+                Assert.Equal(!genericType || (!typeSuppressed && attributeLocation != "method"),
+                    roots.Methods.Contains(leaf.GetMethod("Ordinary"u8, null)));
+                Assert.Equal(!genericType || (!typeSuppressed && attributeLocation != "method"),
+                    roots.Methods.Contains(leaf.GetMethod(".ctor"u8, null)));
+                Assert.Equal(!genericType || !typeSuppressed,
+                    roots.Methods.Contains(leaf.GetMethod("Control"u8, null)));
+                Assert.Equal(attributeLocation is not ("outer" or "middle"),
+                    roots.Methods.Contains(sibling.GetMethod("Generic"u8, null)));
+                Assert.Contains(outer.GetMethod("Ordinary"u8, null), roots.Methods);
+                Assert.Equal(attributeLocation != "interface",
+                    roots.Methods.Contains(operations.GetMethod("Ordinary"u8, null)));
+                Assert.Equal(attributeLocation != "interface",
+                    roots.Methods.Contains(operations.GetMethod("Generic"u8, null)));
+            }
+
+            MetadataType concrete = genericType
+                ? leaf.MakeInstantiatedType(context.GetWellKnownType(WellKnownType.Int32))
+                : leaf;
+            MethodDesc concreteMethod = concrete.GetMethod("Generic"u8, null)
+                .MakeInstantiatedMethod(context.GetWellKnownType(WellKnownType.Int32));
+            Assert.Same(context.GetWellKnownType(WellKnownType.Int32), concreteMethod.Instantiation[0]);
+        }
+        finally
+        {
+            Directory.Delete(workingDirectory, recursive: true);
+        }
+
+        string AttributeFor(string location) => attributeLocation == location
+            ? "[System.Runtime.SuppressReadyToRunCanonicalRooting]"
+            : "";
+    }
+
+    private sealed class RecordingRootingServiceProvider : IRootingServiceProvider
+    {
+        public HashSet<MethodDesc> Methods { get; } = new();
+
+        public void AddCompilationRoot(MethodDesc method, bool rootMinimalDependencies, string reason, bool isJitHelper = false)
+        {
+            Methods.Add(method.GetTypicalMethodDefinition());
+        }
+    }
+
+    private static ReadyToRunCompilerContext CreateContext(string? assemblyPath = null)
     {
         InstructionSetSupport instructionSetSupport = new(default, default, TargetArchitecture.X64);
         TargetDetails target = new(TargetArchitecture.X64, TargetOS.Linux, TargetAbi.NativeAot);
-        ReadyToRunCompilerContext context = new(target, SharedGenericsMode.CanonicalReferenceTypes,
-            bubbleIncludesCoreModule: true, targetAllowsRuntimeCodeGeneration: true, instructionSetSupport, oldTypeSystemContext: null)
+        Dictionary<string, string> inputFilePaths = new(StringComparer.OrdinalIgnoreCase)
         {
-            InputFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-            {
-                ["System.Private.CoreLib"] = TestPaths.SystemPrivateCoreLibPath,
-            },
+            ["System.Private.CoreLib"] = TestPaths.SystemPrivateCoreLibPath,
+        };
+        if (assemblyPath is not null)
+            inputFilePaths.Add(Path.GetFileNameWithoutExtension(assemblyPath), assemblyPath);
+
+        ReadyToRunCompilerContext context = new(target, SharedGenericsMode.CanonicalReferenceTypes,
+            bubbleIncludesCoreModule: true, targetAllowsRuntimeCodeGeneration: true, targetIsSingleThreaded: false,
+            instructionSetSupport, oldTypeSystemContext: null)
+        {
+            InputFilePaths = inputFilePaths,
             ReferenceFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase),
         };
         context.SetSystemModule((EcmaModule)context.GetModuleForSimpleName("System.Private.CoreLib"));

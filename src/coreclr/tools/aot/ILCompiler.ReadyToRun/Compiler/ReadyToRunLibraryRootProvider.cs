@@ -15,6 +15,8 @@ namespace ILCompiler
     /// </summary>
     public class ReadyToRunLibraryRootProvider : ICompilationRootProvider
     {
+        private const string SuppressCanonicalRootingAttributeName = "SuppressReadyToRunCanonicalRootingAttribute";
+
         private EcmaModule _module;
         private InstructionSetSupport _instructionSetSupport;
 
@@ -28,20 +30,25 @@ namespace ILCompiler
         {
             foreach (MetadataType type in _module.GetAllTypes())
             {
+                bool skipCanonicalInstantiation = SkipCanonicalInstantiation(type);
                 MetadataType typeWithMethods = type;
                 if (type.HasInstantiation)
                 {
-                    typeWithMethods = InstantiateIfPossible(type);
+                    if (skipCanonicalInstantiation)
+                        continue;
+
+                    typeWithMethods = InstantiateTypeIfPossible(type);
                     if (typeWithMethods == null)
                         continue;
                 }
 
-                RootMethods(typeWithMethods, "Library module method", rootProvider);
+                RootMethods(typeWithMethods, skipCanonicalInstantiation, "Library module method", rootProvider);
             }
         }
 
-        private void RootMethods(MetadataType type, string reason, IRootingServiceProvider rootProvider)
+        private void RootMethods(MetadataType type, bool skipCanonicalInstantiation, string reason, IRootingServiceProvider rootProvider)
         {
+            bool typeHasInstantiation = type.HasInstantiation;
             foreach (MethodDesc method in type.GetAllMethods())
             {
                 // Skip methods with no IL
@@ -51,10 +58,15 @@ namespace ILCompiler
                 if (method.IsInternalCall)
                     continue;
 
+                bool methodHasInstantiation = method.HasInstantiation;
+                if ((typeHasInstantiation || methodHasInstantiation)
+                    && SkipCanonicalInstantiation(method, skipCanonicalInstantiation))
+                    continue;
+
                 MethodDesc methodToRoot = method;
-                if (method.HasInstantiation)
+                if (methodHasInstantiation)
                 {
-                    methodToRoot = InstantiateIfPossible(method);
+                    methodToRoot = InstantiateMethodIfPossible(method);
 
                     if (methodToRoot == null)
                         continue;
@@ -148,6 +160,11 @@ namespace ILCompiler
             if (SkipCanonicalInstantiation(type))
                 return null;
 
+            return InstantiateTypeIfPossible(type);
+        }
+
+        internal static InstantiatedType InstantiateTypeIfPossible(MetadataType type)
+        {
             Instantiation inst = GetInstantiationThatMeetsConstraints(type.Instantiation);
             if (inst.IsNull)
             {
@@ -159,9 +176,14 @@ namespace ILCompiler
 
         public static MethodDesc InstantiateIfPossible(MethodDesc method)
         {
-            if (method.OwningType is MetadataType type && SkipCanonicalInstantiation(type))
+            if (SkipCanonicalInstantiation(method, method.OwningType is MetadataType type && SkipCanonicalInstantiation(type)))
                 return null;
 
+            return InstantiateMethodIfPossible(method);
+        }
+
+        internal static MethodDesc InstantiateMethodIfPossible(MethodDesc method)
+        {
             Instantiation inst = GetInstantiationThatMeetsConstraints(method.Instantiation);
             if (inst.IsNull)
             {
@@ -171,27 +193,19 @@ namespace ILCompiler
             return method.MakeInstantiatedMethod(inst);
         }
 
-        private static bool SkipCanonicalInstantiation(MetadataType type)
+        internal static bool SkipCanonicalInstantiation(MethodDesc method, bool skipCanonicalInstantiation)
         {
-            if (type.Module != type.Context.SystemModule)
-                return false;
+            return skipCanonicalInstantiation || method.HasCustomAttribute("System.Runtime", SuppressCanonicalRootingAttributeName);
+        }
 
-            // Extension members also have compiler-generated nested generic types.
-            while (type.ContainingType is MetadataType containingType)
-                type = containingType;
-
-            // SIMD operations only support numeric value types; canonical reference instantiations
-            // mostly produce throwing bodies. Leave their compilation to actual dependencies.
-            if (type.Namespace == "System.Numerics"u8)
-                return type.Name == "Vector"u8 || type.Name == "Vector`1"u8;
-
-            if (type.Namespace == "System.Runtime.Intrinsics"u8)
+        internal static bool SkipCanonicalInstantiation(MetadataType type)
+        {
+            while (type is not null)
             {
-                return type.Name == "Scalar`1"u8
-                    || type.Name == "Vector64"u8 || type.Name == "Vector64`1"u8
-                    || type.Name == "Vector128"u8 || type.Name == "Vector128`1"u8
-                    || type.Name == "Vector256"u8 || type.Name == "Vector256`1"u8
-                    || type.Name == "Vector512"u8 || type.Name == "Vector512`1"u8;
+                if (type.HasCustomAttribute("System.Runtime", SuppressCanonicalRootingAttributeName))
+                    return true;
+
+                type = type.ContainingType as MetadataType;
             }
 
             return false;
