@@ -109,17 +109,20 @@ namespace System.Net.Http.Functional.Tests
             return data;
         }
 
-        public static X509Certificate2 CreateServerSelfSignedCertificate(string name = "localhost")
+        public static X509Certificate2 CreateServerSelfSignedCertificate(string name = "localhost", bool expired = false)
+            => CreateServerCertificate(null, name, expired);
+
+        public static X509Certificate2 CreateServerCertificate(X509Certificate2 issuerCertificate, string name = "localhost", bool expired = false)
         {
-            using (RSA root = RSA.Create())
+            using (RSA key = RSA.Create())
             {
                 CertificateRequest req = new CertificateRequest(
                     $"CN={name}",
-                    root,
+                    key,
                     HashAlgorithmName.SHA256,
                     RSASignaturePadding.Pkcs1);
 
-                req.CertificateExtensions.Add(new X509BasicConstraintsExtension(true, false, 0, true));
+                req.CertificateExtensions.Add(new X509BasicConstraintsExtension(false, false, 0, true));
                 req.CertificateExtensions.Add(new X509SubjectKeyIdentifierExtension(req.PublicKey, false));
                 req.CertificateExtensions.Add(new X509KeyUsageExtension(X509KeyUsageFlags.DigitalSignature | X509KeyUsageFlags.KeyEncipherment | X509KeyUsageFlags.DataEncipherment, false));
                 req.CertificateExtensions.Add(
@@ -136,13 +139,26 @@ namespace System.Net.Http.Functional.Tests
                 builder.AddIpAddress(IPAddress.IPv6Loopback);
                 req.CertificateExtensions.Add(builder.Build());
 
-                DateTimeOffset start = DateTimeOffset.UtcNow.AddMinutes(-5);
+                DateTimeOffset start = expired ? DateTimeOffset.UtcNow.AddMonths(-2) : DateTimeOffset.UtcNow.AddMinutes(-5);
                 DateTimeOffset end = start.AddMonths(1);
 
-                X509Certificate2 cert = req.CreateSelfSigned(start, end);
+                X509Certificate2 cert;
+                if (issuerCertificate is null)
+                {
+                    cert = req.CreateSelfSigned(start, end);
+                }
+                else
+                {
+                    using X509Certificate2 publicCertificate = req.Create(issuerCertificate, start, end, Guid.NewGuid().ToByteArray());
+                    cert = publicCertificate.CopyWithPrivateKey(key);
+                }
+
                 if (PlatformDetection.IsWindows)
                 {
-                    cert = X509CertificateLoader.LoadPkcs12(cert.Export(X509ContentType.Pfx), (string?)null);
+                    using (cert)
+                    {
+                        return X509CertificateLoader.LoadPkcs12(cert.Export(X509ContentType.Pfx), (string?)null);
+                    }
                 }
 
                 return cert;

@@ -207,6 +207,12 @@ ep_get_session (EventPipeSessionID session_id);
 bool
 ep_is_session_enabled (EventPipeSessionID session_id);
 
+// Returns whether ep_event would be written by the current thread. If the thread is scoped to a single
+// session (e.g. during rundown or an end-of-session flush), only that session's mask is consulted, so the
+// caller emits exactly what routes to that session; otherwise falls back to global enablement.
+bool
+ep_event_is_enabled_for_current_thread (EventPipeEvent *ep_event);
+
 void
 ep_start_session (EventPipeSessionID session_id);
 

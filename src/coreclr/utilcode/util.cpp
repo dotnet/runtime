@@ -1,13 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //*****************************************************************************
 //  util.cpp
 //
-
-//
 //  This contains a bunch of C++ utility classes.
-//
 //*****************************************************************************
+
 #include "stdafx.h"                     // Precompiled header key.
 #include "utilcode.h"
 #include "metadata.h"
@@ -1056,29 +1055,6 @@ int GetCurrentProcessCpuCount()
 
     return count;
 }
-
-#ifdef HOST_WINDOWS
-DWORD_PTR GetCurrentProcessCpuMask()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        CANNOT_TAKE_LOCK;
-    }
-    CONTRACTL_END;
-
-#ifdef HOST_WINDOWS
-    DWORD_PTR pmask, smask;
-
-    if (!GetProcessAffinityMask(GetCurrentProcess(), &pmask, &smask))
-        return 1;
-
-    return pmask;
-#else
-    return 0;
-#endif
-}
-#endif // HOST_WINDOWS
 
 //=============================================================================
 // AssemblyNamesList
@@ -2171,8 +2147,8 @@ INT64 GetLoongArch64JIR(UINT32 * pCode)
 {
     UINT32 pcInstr = *pCode;
 
-    // first get the high 20 bits,
-    INT64 imm = ((INT64)((pcInstr >> 5) & 0xFFFFF) << 18);
+    // first get and sign-extend the high 20 bits,
+    INT64 imm = ((INT32)(pcInstr << 7) >> 12) * 0x40000LL;
 
     // then get the low 18 bits
     pcInstr = *(pCode + 1);

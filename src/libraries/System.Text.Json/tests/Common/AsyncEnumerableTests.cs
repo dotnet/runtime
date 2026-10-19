@@ -719,6 +719,38 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(count, i);
         }
 
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task SerializeAsyncEnumerable_TopLevelValues_ElementsCanBeAsyncEnumerables(bool usePipe)
+        {
+            using MemoryStream stream = new();
+
+            await SerializeJsonLines(
+                stream,
+                GetSequences(),
+                ResolveJsonTypeInfo<IAsyncEnumerable<int>>(),
+                usePipe);
+
+            Assert.Equal("[1,2]\n[3,4,5]\n", Encoding.UTF8.GetString(stream.ToArray()));
+
+            static async IAsyncEnumerable<IAsyncEnumerable<int>> GetSequences()
+            {
+                yield return GetValues(1, 2);
+                await Task.Yield();
+                yield return GetValues(3, 4, 5);
+            }
+
+            static async IAsyncEnumerable<int> GetValues(params int[] values)
+            {
+                foreach (int value in values)
+                {
+                    await Task.Yield();
+                    yield return value;
+                }
+            }
+        }
+
         public static IEnumerable<object[]> FlushPointsData()
         {
             // topLevelValues, expected stream contents at each flush, expected final output.
@@ -1371,6 +1403,718 @@ namespace System.Text.Json.Serialization.Tests
                 yield return new PolymorphicDerivedB { B = "hi" };
                 await Task.CompletedTask;
             }
+        }
+
+        public static IEnumerable<object[]> LargeRecordSerializationOptions()
+        {
+            foreach (bool topLevelValues in new[] { false, true })
+            foreach (bool useTypeInfo in new[] { false, true })
+            foreach (bool useSourceGeneration in new[] { false, true })
+            {
+                yield return new object[] { topLevelValues, useTypeInfo, useSourceGeneration };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(LargeRecordSerializationOptions))]
+        public async Task SerializeAsyncEnumerable_LargeRecord_PipeBackpressure(
+            bool topLevelValues, bool useTypeInfo, bool useSourceGeneration)
+        {
+            List<long> bufferedSizes = new();
+            foreach (int cellCount in new[] { 1024, 2048 })
+            {
+                int visitedCells = 0;
+                StreamingRecord record = CreateStreamingRecord(cellCount, () => visitedCells++);
+                JsonTypeInfo<StreamingRecord> typeInfo = CreateStreamingTypeInfo<StreamingRecord>(useSourceGeneration);
+                Pipe pipe = new(new PipeOptions(pauseWriterThreshold: 32 * 1024, resumeWriterThreshold: 16 * 1024, minimumSegmentSize: 4096));
+                using CancellationTokenSource cts = new(TimeSpan.FromSeconds(30));
+                using MemoryStream output = new();
+
+                Task writeTask = useTypeInfo
+                    ? JsonSerializer.SerializeAsyncEnumerable(pipe.Writer, RepeatAsync(record, 2), typeInfo, topLevelValues, cts.Token)
+                    : JsonSerializer.SerializeAsyncEnumerable(pipe.Writer, RepeatAsync(record, 2), topLevelValues, typeInfo.Options, cts.Token);
+                Task drainTask = Task.CompletedTask;
+
+                try
+                {
+                    ReadResult result = await pipe.Reader.ReadAsync(cts.Token);
+                    Assert.False(writeTask.IsCompleted);
+                    Assert.InRange(result.Buffer.Length, 32 * 1024, 128 * 1024 - 1);
+                    Assert.InRange(visitedCells, 1, cellCount - 1);
+                    bufferedSizes.Add(result.Buffer.Length);
+                    pipe.Reader.AdvanceTo(result.Buffer.Start, result.Buffer.Start);
+
+                    drainTask = pipe.Reader.AsStream(leaveOpen: true).CopyToAsync(output, 81920, cts.Token);
+                    await writeTask;
+                    await pipe.Writer.CompleteAsync();
+                    await drainTask;
+
+                    Assert.Equal(2 * cellCount, visitedCells);
+                    Assert.Equal(ExpectedStreamingRecords(cellCount, topLevelValues), Encoding.UTF8.GetString(output.ToArray()));
+                }
+                finally
+                {
+                    await pipe.Reader.CompleteAsync();
+                    try
+                    {
+                        await writeTask;
+                    }
+                    finally
+                    {
+                        await pipe.Writer.CompleteAsync();
+                        await drainTask;
+                    }
+                }
+            }
+
+            Assert.InRange(bufferedSizes[1], bufferedSizes[0] / 2, bufferedSizes[0] + 16 * 1024);
+        }
+
+        [Theory]
+        [MemberData(nameof(LargeRecordSerializationOptions))]
+        public async Task SerializeAsyncEnumerable_LargeRecord_StreamBackpressure(
+            bool topLevelValues, bool useTypeInfo, bool useSourceGeneration)
+        {
+            foreach (int cellCount in new[] { 1024, 2048 })
+            {
+                int visitedCells = 0;
+                StreamingRecord record = CreateStreamingRecord(cellCount, () => visitedCells++);
+                JsonTypeInfo<StreamingRecord> typeInfo = CreateStreamingTypeInfo<StreamingRecord>(useSourceGeneration);
+                using GatedWriteStream stream = new();
+                using CancellationTokenSource cts = new(TimeSpan.FromSeconds(30));
+
+                Task writeTask = useTypeInfo
+                    ? JsonSerializer.SerializeAsyncEnumerable(stream, RepeatAsync(record, 2), typeInfo, topLevelValues, cts.Token)
+                    : JsonSerializer.SerializeAsyncEnumerable(stream, RepeatAsync(record, 2), topLevelValues, typeInfo.Options, cts.Token);
+
+                try
+                {
+                    await Task.WhenAny(stream.FirstWrite.Task, writeTask);
+                    Assert.False(writeTask.IsCompleted);
+                    Assert.InRange(stream.MaxWriteSize, 1, 128 * 1024 - 1);
+                    Assert.InRange(visitedCells, 1, cellCount - 1);
+                }
+                finally
+                {
+                    stream.Release.TrySetResult(true);
+                    await writeTask;
+                }
+
+                Assert.True(stream.CanWrite);
+                Assert.InRange(stream.MaxWriteSize, 1, 128 * 1024 - 1);
+                Assert.Equal(2 * cellCount, visitedCells);
+                Assert.Equal(ExpectedStreamingRecords(cellCount, topLevelValues), Encoding.UTF8.GetString(stream.ToArray()));
+            }
+        }
+
+        private static StreamingRecord CreateStreamingRecord(int cellCount, Action onSerialize)
+        {
+            string value = new('a', 1000);
+            return new StreamingRecord
+            {
+                Cells = Enumerable.Range(0, cellCount)
+                    .Select(_ => new StreamingCell { Value = value, OnSerialize = onSerialize })
+                    .ToList()
+            };
+        }
+
+        private static JsonTypeInfo<T> CreateStreamingTypeInfo<T>(bool useSourceGeneration, JsonSerializerOptions? options = null)
+        {
+            options ??= new();
+            options.TypeInfoResolver = useSourceGeneration ? new StreamingRecordContext() : new DefaultJsonTypeInfoResolver();
+            return ResolveJsonTypeInfo<T>(options);
+        }
+
+        private static string ExpectedStreamingRecords(int cellCount, bool topLevelValues)
+        {
+            string cell = "{\"Value\":\"" + new string('a', 1000) + "\"}";
+            string record = "{\"Cells\":[" + string.Join(",", Enumerable.Repeat(cell, cellCount)) + "]}";
+            return topLevelValues ? record + "\n" + record + "\n" : "[" + record + "," + record + "]";
+        }
+
+        private static async IAsyncEnumerable<T> RepeatAsync<T>(T value, int count)
+        {
+            for (int i = 0; i < count; i++)
+            {
+                yield return value;
+            }
+
+            await Task.CompletedTask;
+        }
+
+        public class StreamingRecord
+        {
+            public List<StreamingCell> Cells { get; set; } = new();
+        }
+
+        public class StreamingEnumerableRecord
+        {
+            public IEnumerable<StreamingCell> Cells { get; set; }
+        }
+
+        public class StreamingCell
+        {
+            private string _value = "";
+
+            public string Value
+            {
+                get
+                {
+                    OnSerialize?.Invoke();
+                    return _value;
+                }
+                set => _value = value;
+            }
+
+            [JsonIgnore]
+            public Action? OnSerialize { get; set; }
+        }
+
+        [JsonSerializable(typeof(StreamingRecord))]
+        [JsonSerializable(typeof(StreamingEnumerableRecord))]
+        [JsonSerializable(typeof(object))]
+        private partial class StreamingRecordContext : JsonSerializerContext
+        {
+        }
+
+        [JsonSourceGenerationOptions(GenerationMode = JsonSourceGenerationMode.Serialization)]
+        [JsonSerializable(typeof(StreamingRecord))]
+        [JsonSerializable(typeof(List<StreamingRecord>))]
+        private partial class StreamingRecordSerializationContext : JsonSerializerContext
+        {
+        }
+
+        private sealed class GatedWriteStream : MemoryStream
+        {
+            public TaskCompletionSource<bool> FirstWrite { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            public TaskCompletionSource<bool> Release { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            public int MaxWriteSize { get; private set; }
+
+            public override async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+            {
+                await BeforeWriteAsync(count, cancellationToken);
+                await base.WriteAsync(buffer, offset, count, cancellationToken);
+            }
+
+#if NET
+            public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+            {
+                await BeforeWriteAsync(buffer.Length, cancellationToken);
+                await base.WriteAsync(buffer, cancellationToken);
+            }
+#endif
+
+            private async Task BeforeWriteAsync(int count, CancellationToken cancellationToken)
+            {
+                MaxWriteSize = Math.Max(MaxWriteSize, count);
+                if (FirstWrite.TrySetResult(true))
+                {
+                    using CancellationTokenRegistration registration = cancellationToken.Register(() => Release.TrySetCanceled(cancellationToken));
+                    await Release.Task;
+                }
+            }
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task SerializeAsyncEnumerable_LargeRecord_StreamCancellation_DisposesEnumerators(bool useSourceGeneration)
+        {
+            int visitedCells = 0;
+            int disposedCells = 0;
+            int disposedRecords = 0;
+            StreamingRecord record = CreateStreamingRecord(1024, () => visitedCells++);
+            StreamingEnumerableRecord value = new() { Cells = Cells() };
+            using GatedWriteStream stream = new();
+            using CancellationTokenSource cts = new(TimeSpan.FromSeconds(30));
+            Task writeTask = JsonSerializer.SerializeAsyncEnumerable(
+                stream, Records(), CreateStreamingTypeInfo<StreamingEnumerableRecord>(useSourceGeneration),
+                topLevelValues: true, cts.Token);
+
+            try
+            {
+                await Task.WhenAny(stream.FirstWrite.Task, writeTask);
+                Assert.False(writeTask.IsCompleted);
+                Assert.InRange(visitedCells, 1, 1023);
+                cts.Cancel();
+                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => writeTask);
+                Assert.Equal(1, disposedCells);
+                Assert.Equal(1, disposedRecords);
+                Assert.Equal(0, stream.Length);
+                Assert.True(stream.CanWrite);
+            }
+            finally
+            {
+                cts.Cancel();
+                stream.Release.TrySetResult(true);
+                try
+                {
+                    await writeTask;
+                }
+                catch (OperationCanceledException) when (cts.IsCancellationRequested)
+                {
+                }
+            }
+
+            IEnumerable<StreamingCell> Cells()
+            {
+                try
+                {
+                    foreach (StreamingCell cell in record.Cells)
+                    {
+                        yield return cell;
+                    }
+                }
+                finally
+                {
+                    disposedCells++;
+                }
+            }
+
+            async IAsyncEnumerable<StreamingEnumerableRecord> Records()
+            {
+                try
+                {
+                    yield return value;
+                    Assert.Fail("The next record should not be requested.");
+                    await Task.CompletedTask;
+                }
+                finally
+                {
+                    disposedRecords++;
+                }
+            }
+        }
+
+        [Theory]
+        [InlineData(1)]
+        [InlineData(2)]
+        public async Task SerializeAsyncEnumerable_LargeRecord_PipeInterruption_DisposesEnumerators(int interruption)
+        {
+            int visitedCells = 0;
+            int disposedCells = 0;
+            int disposedRecords = 0;
+            StreamingRecord record = CreateStreamingRecord(1024, () => visitedCells++);
+            StreamingEnumerableRecord value = new() { Cells = Cells() };
+            Pipe pipe = new(new PipeOptions(pauseWriterThreshold: 32 * 1024, resumeWriterThreshold: 16 * 1024));
+            using CancellationTokenSource cts = new(TimeSpan.FromSeconds(30));
+            Task writeTask = JsonSerializer.SerializeAsyncEnumerable(
+                pipe.Writer, Records(), ResolveJsonTypeInfo<StreamingEnumerableRecord>(), topLevelValues: true, cts.Token);
+
+            try
+            {
+                ReadResult result = await pipe.Reader.ReadAsync(cts.Token);
+                Assert.False(writeTask.IsCompleted);
+                Assert.InRange(visitedCells, 1, 1023);
+                Assert.InRange(result.Buffer.Length, 32 * 1024, 128 * 1024 - 1);
+                foreach (ReadOnlyMemory<byte> segment in result.Buffer)
+                {
+                    Assert.DoesNotContain((byte)'\n', segment.ToArray());
+                }
+
+                switch (interruption)
+                {
+                    case 1:
+                        cts.Cancel();
+                        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => writeTask);
+                        break;
+                    case 2:
+                        pipe.Writer.CancelPendingFlush();
+                        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => writeTask);
+                        break;
+                }
+
+                Assert.Equal(1, disposedCells);
+                Assert.Equal(1, disposedRecords);
+            }
+            finally
+            {
+                await pipe.Reader.CompleteAsync();
+                try
+                {
+                    await writeTask;
+                }
+                catch (OperationCanceledException)
+                {
+                }
+                finally
+                {
+                    await pipe.Writer.CompleteAsync();
+                }
+            }
+
+            IEnumerable<StreamingCell> Cells()
+            {
+                try
+                {
+                    foreach (StreamingCell cell in record.Cells)
+                    {
+                        yield return cell;
+                    }
+                }
+                finally
+                {
+                    disposedCells++;
+                }
+            }
+
+            async IAsyncEnumerable<StreamingEnumerableRecord> Records()
+            {
+                try
+                {
+                    yield return value;
+                    Assert.Fail("The next record should not be requested.");
+                    await Task.CompletedTask;
+                }
+                finally
+                {
+                    disposedRecords++;
+                }
+            }
+        }
+
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public async Task SerializeAsyncEnumerable_LargeRecord_Failure_PreservesCompletedLines(bool usePipe, bool failOnFlush)
+        {
+            int visitedCells = 0;
+            int disposedCells = 0;
+            int disposedRecords = 0;
+            IOException expectedException = new("Serialization interrupted.");
+            StreamingRecord record = CreateStreamingRecord(1024, () =>
+            {
+                if (++visitedCells == 80 && !failOnFlush)
+                {
+                    throw expectedException;
+                }
+            });
+
+            using FlushTrackingStream stream = new();
+            int flushCount = 0;
+            stream.OnFlush = () =>
+            {
+                if (++flushCount == 3 && failOnFlush)
+                {
+                    throw expectedException;
+                }
+            };
+
+            IOException exception = await Assert.ThrowsAsync<IOException>(() =>
+                SerializeJsonLines(stream, Records(), ResolveJsonTypeInfo<StreamingEnumerableRecord>(), usePipe));
+
+            Assert.Same(expectedException, exception);
+            Assert.Equal(1, disposedCells);
+            Assert.Equal(1, disposedRecords);
+            Assert.InRange(visitedCells, 1, 1023);
+            string json = Encoding.UTF8.GetString(stream.ToArray());
+            Assert.StartsWith("{\"Cells\":[]}\n{\"Cells\":[", json);
+            Assert.Equal(1, json.Count(c => c == '\n'));
+            Assert.True(stream.CanWrite);
+
+            IEnumerable<StreamingCell> Cells()
+            {
+                try
+                {
+                    foreach (StreamingCell cell in record.Cells)
+                    {
+                        yield return cell;
+                    }
+                }
+                finally
+                {
+                    disposedCells++;
+                }
+            }
+
+            async IAsyncEnumerable<StreamingEnumerableRecord> Records()
+            {
+                try
+                {
+                    yield return new StreamingEnumerableRecord { Cells = Array.Empty<StreamingCell>() };
+                    yield return new StreamingEnumerableRecord { Cells = Cells() };
+                    Assert.Fail("The next record should not be requested.");
+                    await Task.CompletedTask;
+                }
+                finally
+                {
+                    disposedRecords++;
+                }
+            }
+        }
+
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public async Task SerializeAsyncEnumerable_LargeRecord_PreservesOptionsAndReferences(bool usePipe, bool useSourceGeneration)
+        {
+            StreamingRecord record = CreateStreamingRecord(256, () => { });
+            record.Cells[0].Value = "<tag>\r\n";
+            record.Cells.Add(record.Cells[0]);
+            JsonSerializerOptions options = new()
+            {
+                DefaultBufferSize = 128,
+                WriteIndented = true,
+                NewLine = "\r\n",
+                Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+                ReferenceHandler = ReferenceHandler.Preserve
+            };
+
+            JsonTypeInfo<object> typeInfo = CreateStreamingTypeInfo<object>(useSourceGeneration, options);
+            string expectedLine = JsonSerializer.Serialize<object>(record, new JsonSerializerOptions(options) { WriteIndented = false });
+            using MemoryStream stream = new();
+            await SerializeJsonLines(stream, RepeatAsync<object>(record, 2), typeInfo, usePipe);
+
+            Assert.Equal(expectedLine + "\n" + expectedLine + "\n", Encoding.UTF8.GetString(stream.ToArray()));
+            Assert.True(options.WriteIndented);
+            Assert.Equal("\r\n", options.NewLine);
+            Assert.True(stream.CanWrite);
+        }
+
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public async Task SerializeAsyncEnumerable_TopLevelValues_SerializationOnlyMetadata_MatchesSerializeAsync(bool usePipe, bool collection)
+        {
+            StreamingRecord record = CreateStreamingRecord(2, () => { });
+            if (collection)
+            {
+                List<StreamingRecord> value = new() { record };
+                await Test(value, StreamingRecordSerializationContext.Default.ListStreamingRecord);
+            }
+            else
+            {
+                await Test(record, StreamingRecordSerializationContext.Default.StreamingRecord);
+            }
+
+            async Task Test<T>(T value, JsonTypeInfo<T> typeInfo)
+            {
+                using MemoryStream control = new();
+                InvalidOperationException expected;
+                if (usePipe)
+                {
+                    PipeWriter writer = PipeWriter.Create(control, new StreamPipeWriterOptions(leaveOpen: true));
+                    try
+                    {
+                        expected = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+                            JsonSerializer.SerializeAsync(writer, value, typeInfo));
+                    }
+                    finally
+                    {
+                        await writer.CompleteAsync();
+                    }
+                }
+                else
+                {
+                    expected = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+                        JsonSerializer.SerializeAsync(control, value, typeInfo));
+                }
+
+                using MemoryStream stream = new();
+                InvalidOperationException actual = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+                    SerializeJsonLines(stream, RepeatAsync(value, 2), typeInfo, usePipe));
+
+                Assert.Equal(expected.Message, actual.Message);
+                Assert.Equal(0, stream.Length);
+                Assert.True(stream.CanWrite);
+            }
+        }
+
+        private static async Task SerializeJsonLines<T>(
+            Stream stream, IAsyncEnumerable<T> values, JsonTypeInfo<T> typeInfo, bool usePipe)
+        {
+            if (usePipe)
+            {
+                PipeWriter writer = PipeWriter.Create(stream, new StreamPipeWriterOptions(leaveOpen: true));
+                try
+                {
+                    await JsonSerializer.SerializeAsyncEnumerable(writer, values, typeInfo, topLevelValues: true);
+                }
+                finally
+                {
+                    await writer.CompleteAsync();
+                }
+            }
+            else
+            {
+                await JsonSerializer.SerializeAsyncEnumerable(stream, values, typeInfo, topLevelValues: true);
+            }
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task SerializeAsyncEnumerable_PipeWriterWithoutUnflushedBytes_MatchesSerializeAsync(bool useTypeInfo)
+        {
+            bool disposed = false;
+            StreamingRecord record = new();
+            JsonTypeInfo<StreamingRecord> typeInfo = CreateStreamingTypeInfo<StreamingRecord>(false);
+            using MemoryStream stream = new();
+            PipeWriter innerWriter = PipeWriter.Create(stream, new StreamPipeWriterOptions(leaveOpen: true));
+            NonReportingPipeWriter writer = new(innerWriter);
+
+            try
+            {
+                InvalidOperationException expected = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+                    JsonSerializer.SerializeAsync(writer, record, typeInfo));
+                InvalidOperationException actual = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+                    useTypeInfo
+                        ? JsonSerializer.SerializeAsyncEnumerable(writer, Values(), typeInfo, topLevelValues: true)
+                        : JsonSerializer.SerializeAsyncEnumerable(writer, Values(), topLevelValues: true, typeInfo.Options));
+
+                Assert.Equal(expected.Message, actual.Message);
+                Assert.True(disposed);
+                Assert.False(writer.Completed);
+                Assert.Equal(0, stream.Length);
+            }
+            finally
+            {
+                await innerWriter.CompleteAsync();
+            }
+
+            async IAsyncEnumerable<StreamingRecord> Values()
+            {
+                try
+                {
+                    yield return record;
+                    Assert.Fail("The next record should not be requested.");
+                    await Task.CompletedTask;
+                }
+                finally
+                {
+                    disposed = true;
+                }
+            }
+        }
+
+        private sealed class NonReportingPipeWriter(PipeWriter writer) : PipeWriter
+        {
+            public bool Completed { get; private set; }
+            public override void Advance(int bytes) => writer.Advance(bytes);
+            public override Memory<byte> GetMemory(int sizeHint = 0) => writer.GetMemory(sizeHint);
+            public override Span<byte> GetSpan(int sizeHint = 0) => writer.GetSpan(sizeHint);
+            public override void CancelPendingFlush() => writer.CancelPendingFlush();
+            public override ValueTask<FlushResult> FlushAsync(CancellationToken cancellationToken = default) => writer.FlushAsync(cancellationToken);
+            public override void Complete(Exception? exception = null)
+            {
+                Completed = true;
+                writer.Complete(exception);
+            }
+        }
+
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public async Task SerializeAsyncEnumerable_TopLevelValues_SourceGeneratedSmallRecords(bool usePipe, bool asObject)
+        {
+            StreamingRecord record = new();
+            using MemoryStream stream = new();
+            if (asObject)
+            {
+                await SerializeJsonLines(stream, RepeatAsync<object>(record, 20), CreateStreamingTypeInfo<object>(true), usePipe);
+            }
+            else
+            {
+                await SerializeJsonLines(stream, RepeatAsync(record, 20), CreateStreamingTypeInfo<StreamingRecord>(true), usePipe);
+            }
+
+            Assert.Equal(string.Concat(Enumerable.Repeat("{\"Cells\":[]}\n", 20)), Encoding.UTF8.GetString(stream.ToArray()));
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task SerializeAsyncEnumerable_TopLevelValues_SourceGeneratedFailure_PreservesCompletedLines(bool usePipe)
+        {
+            StreamingRecord record = CreateStreamingRecord(1, () => { });
+            JsonTypeInfo<StreamingRecord> typeInfo = CreateStreamingTypeInfo<StreamingRecord>(true);
+            string expectedLine = JsonSerializer.Serialize(record, typeInfo) + "\n";
+            for (int i = 0; i < 10; i++)
+            {
+                await JsonSerializer.SerializeAsync(Stream.Null, record, typeInfo);
+            }
+
+            int visitedCells = 0;
+            IOException expectedException = new("Serialization interrupted.");
+            record.Cells[0].OnSerialize = () =>
+            {
+                if (++visitedCells == 2)
+                {
+                    throw expectedException;
+                }
+            };
+
+            using MemoryStream stream = new();
+            IOException exception = await Assert.ThrowsAsync<IOException>(() =>
+                SerializeJsonLines(stream, RepeatAsync(record, 3), typeInfo, usePipe));
+
+            Assert.Same(expectedException, exception);
+            Assert.Equal(2, visitedCells);
+            Assert.Equal(expectedLine, Encoding.UTF8.GetString(stream.ToArray()));
+            Assert.True(stream.CanWrite);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task SerializeAsyncEnumerable_TopLevelValues_SourceGeneratedRecords_StopsWhenReaderCompletes(bool asObject)
+        {
+            StreamingRecord record = new();
+            if (asObject)
+            {
+                await Test<object>(record, CreateStreamingTypeInfo<object>(true));
+            }
+            else
+            {
+                await Test(record, CreateStreamingTypeInfo<StreamingRecord>(true));
+            }
+
+            static async Task Test<T>(T value, JsonTypeInfo<T> typeInfo)
+            {
+                for (int i = 0; i < 10; i++)
+                {
+                    await JsonSerializer.SerializeAsync(Stream.Null, value, typeInfo);
+                }
+
+                int yielded = 0;
+                CompletingPipeWriter writer = new(completeAfterFlushes: 2);
+                await JsonSerializer.SerializeAsyncEnumerable(writer, Values(), typeInfo, topLevelValues: true);
+                Assert.Equal(2, yielded);
+                Assert.Equal(2, writer.FlushCount);
+
+                async IAsyncEnumerable<T> Values()
+                {
+                    for (int i = 0; i < 20; i++)
+                    {
+                        yielded++;
+                        yield return value;
+                    }
+
+                    await Task.CompletedTask;
+                }
+            }
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task SerializeAsyncEnumerable_TopLevelValues_MaxDepth_IsRespected(bool usePipe)
+        {
+            StreamingRecord record = CreateStreamingRecord(1, () => { });
+            JsonTypeInfo<StreamingRecord> typeInfo = CreateStreamingTypeInfo<StreamingRecord>(
+                useSourceGeneration: true, new JsonSerializerOptions { MaxDepth = 2 });
+            using MemoryStream stream = new();
+
+            await Assert.ThrowsAsync<JsonException>(() => SerializeJsonLines(stream, RepeatAsync(record, 1), typeInfo, usePipe));
+            Assert.DoesNotContain("\n", Encoding.UTF8.GetString(stream.ToArray()));
         }
 
         [Fact]

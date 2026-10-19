@@ -9,7 +9,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.X509Certificates.Tests
 {
-    [SkipOnPlatform(TestPlatforms.Browser, "Browser doesn't support X.509 certificates")]
+    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi, "Browser doesn't support X.509 certificates")]
     public class X509CertificateLoaderPkcs12CollectionTests_FromByteArray : X509CertificateLoaderPkcs12CollectionTests
     {
         protected override void NullInputAssert(Action action) =>
@@ -54,7 +54,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
     }
 
-    [SkipOnPlatform(TestPlatforms.Browser, "Browser doesn't support X.509 certificates")]
+    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi, "Browser doesn't support X.509 certificates")]
     public class X509CertificateLoaderPkcs12CollectionTests_FromByteSpan : X509CertificateLoaderPkcs12CollectionTests
     {
         protected override void NullInputAssert(Action action) =>
@@ -117,7 +117,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
     }
 
-    [SkipOnPlatform(TestPlatforms.Browser, "Browser doesn't support X.509 certificates")]
+    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi, "Browser doesn't support X.509 certificates")]
     public class X509CertificateLoaderPkcs12CollectionTests_FromFile : X509CertificateLoaderPkcs12CollectionTests
     {
         protected override void NullInputAssert(Action action) =>

@@ -9,7 +9,6 @@
 
 // Putting code & #includes, #defines, etc, before the stdafx.h will
 // cause the code,etc, to be silently ignored
-//
 
 #include "stdafx.h"
 #include "openum.h"
@@ -925,26 +924,6 @@ DebuggerControllerPatch *DebuggerPatchTable::GetNextPatch(DebuggerControllerPatc
     return NULL;
 }
 
-#ifdef _DEBUG
-void DebuggerPatchTable::CheckPatchTable()
-{
-    if ((TADDR)NULL != m_pcEntries)
-    {
-        LOG((LF_CORDB,LL_INFO1000, "DPT:CPT: %u\n", m_iEntries));
-        DebuggerControllerPatch *dcp;
-        ULONG i = 0;
-        while (i++ < m_iEntries)
-        {
-            dcp = (DebuggerControllerPatch*)&(((DebuggerControllerPatch *)m_pcEntries)[i]);
-            if (dcp->opcode != 0 )
-            {
-                dcp->LogInstance();
-            }
-        }
-    }
-}
-#endif // _DEBUG
-
 // Count how many patches are in the table.
 // Use for asserts
 int DebuggerPatchTable::GetNumberOfPatches()
@@ -1840,7 +1819,7 @@ BOOL DebuggerController::CheckGetPatchedOpcode(CORDB_ADDRESS_TYPE *address,
     return res;
 }
 
-// void DebuggerController::ActivatePatch()  Place a breakpoint
+// bool DebuggerController::ActivatePatch()  Place a breakpoint
 // so that threads will trip over this patch.
 // If there any patches at the address already, then copy
 // their opcode into this one & return.  Otherwise,
@@ -1848,7 +1827,7 @@ BOOL DebuggerController::CheckGetPatchedOpcode(CORDB_ADDRESS_TYPE *address,
 // address by virtue of the fact that we can iterate through all the
 // patches in the patch with the same address.
 // DebuggerControllerPatch *patch:  The patch to activate
-/* static */ void DebuggerController::ActivatePatch(DebuggerControllerPatch *patch)
+/* static */ bool DebuggerController::ActivatePatch(DebuggerControllerPatch *patch)
 {
     _ASSERTE(g_patches != NULL);
     _ASSERTE(patch != NULL);
@@ -1857,6 +1836,16 @@ BOOL DebuggerController::CheckGetPatchedOpcode(CORDB_ADDRESS_TYPE *address,
 
     LOG((LF_CORDB|LF_ENC,LL_INFO1000,"DC::ActivatePatch: patchId:0x%zx\n", patch->patchId));
     patch->LogInstance();
+
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+    if (ExecutionManager::IsReadyToRunCode(dac_cast<PCODE>(patch->address)))
+    {
+        LOG((LF_CORDB, LL_INFO10000,
+            "DC::ActivatePatch: R2R patch at %p is not supported when dynamic code compilation is disabled\n",
+            patch->address));
+        return false;
+    }
+#endif
 
     bool fApply = true;
     //
@@ -1889,6 +1878,7 @@ BOOL DebuggerController::CheckGetPatchedOpcode(CORDB_ADDRESS_TYPE *address,
     }
 
     _ASSERTE(patch->IsActivated());
+    return true;
 }
 
 // void DebuggerController::DeactivatePatch()  Make sure that a
@@ -2021,6 +2011,15 @@ BOOL DebuggerController::AddBindAndActivateILReplicaPatch(DebuggerControllerPatc
     BOOL result = FALSE;
     MethodDesc* pMD = dji->m_nativeCodeVersion.GetMethodDesc();
 
+#ifdef _DEBUG
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+    bool isReadyToRunPatchUnsupported =
+        ExecutionManager::IsReadyToRunCode(dac_cast<PCODE>(dji->m_addrOfCode));
+#else
+    constexpr bool isReadyToRunPatchUnsupported = false;
+#endif
+#endif
+
     if (primary->offsetIsIL == 0)
     {
         // Zero is the only native offset that we allow to bind across different jitted
@@ -2042,12 +2041,11 @@ BOOL DebuggerController::AddBindAndActivateILReplicaPatch(DebuggerControllerPatc
         }
 #endif // FEATURE_INTERPRETER
 
-        INDEBUG(BOOL fOk = )
-            AddBindAndActivatePatchForMethodDesc(pMD, dji,
-                nativeOffset, PATCH_KIND_IL_REPLICA,
-                LEAF_MOST_FRAME, m_pAppDomain);
-        _ASSERTE(fOk);
-        result = TRUE;
+        BOOL fOk = AddBindAndActivatePatchForMethodDesc(pMD, dji,
+            nativeOffset, PATCH_KIND_IL_REPLICA,
+            LEAF_MOST_FRAME, m_pAppDomain);
+        _ASSERTE(fOk || isReadyToRunPatchUnsupported);
+        result = fOk;
     }
     else // bind by IL offset
     {
@@ -2074,13 +2072,11 @@ BOOL DebuggerController::AddBindAndActivateILReplicaPatch(DebuggerControllerPatc
                 continue;
             }
 
-            result = TRUE;
-
-            INDEBUG(BOOL fOk = )
-                AddBindAndActivatePatchForMethodDesc(pMD, dji,
-                    offsetNative, PATCH_KIND_IL_REPLICA,
-                    LEAF_MOST_FRAME, m_pAppDomain);
-            _ASSERTE(fOk);
+            BOOL fOk = AddBindAndActivatePatchForMethodDesc(pMD, dji,
+                offsetNative, PATCH_KIND_IL_REPLICA,
+                LEAF_MOST_FRAME, m_pAppDomain);
+            _ASSERTE(fOk || isReadyToRunPatchUnsupported);
+            result = fOk || result;
         }
     }
 
@@ -2208,7 +2204,7 @@ BOOL DebuggerController::AddILPatch(AppDomain * pAppDomain, Module *module,
 // This is used by step-in.
 // Calls to new methods always go to the latest version, so EnC is not an issue here.
 // The method may be not yet jitted. Or it may be prejitted.
-void DebuggerController::AddPatchToStartOfLatestMethod(MethodDesc * fd)
+BOOL DebuggerController::AddPatchToStartOfLatestMethod(MethodDesc * fd)
 {
     CONTRACTL
     {
@@ -2225,7 +2221,7 @@ void DebuggerController::AddPatchToStartOfLatestMethod(MethodDesc * fd)
     Module* pModule = fd->GetModule();
     mdToken defToken = fd->GetMemberDef();
     DebuggerMethodInfo* pDMI = g_pDebugger->GetOrCreateMethodInfo(pModule, defToken);
-    DebuggerController::AddILPatch(GetAppDomain(), pModule, defToken, fd, pDMI->GetCurrentEnCVersion(), 0, FALSE);
+    return DebuggerController::AddILPatch(GetAppDomain(), pModule, defToken, fd, pDMI->GetCurrentEnCVersion(), 0, FALSE);
 }
 
 
@@ -2273,7 +2269,6 @@ BOOL DebuggerController::AddBindAndActivatePatchForMethodDesc(MethodDesc *fd,
     }
     CONTRACTL_END;
 
-    BOOL ok = FALSE;
     ControllerLockHolder ch;
 
     LOG((LF_CORDB|LF_ENC,LL_INFO10000,"DC::ABAAPFMD: Add to %s::%s, at offs 0x%zx kind:%d fp:%p AD:%p\n",
@@ -2292,13 +2287,18 @@ BOOL DebuggerController::AddBindAndActivatePatchForMethodDesc(MethodDesc *fd,
                             0,
                             dji);
 
-    if (DebuggerController::BindPatch(patch, fd, NULL))
+    if (!DebuggerController::BindPatch(patch, fd, NULL))
     {
-        DebuggerController::ActivatePatch(patch);
-        ok = TRUE;
+        return patch->IsActivated();
     }
 
-    return ok;
+    if (!DebuggerController::ActivatePatch(patch))
+    {
+        g_patches->RemovePatch(patch);
+        return FALSE;
+    }
+
+    return TRUE;
 }
 
 
@@ -2334,7 +2334,11 @@ DebuggerControllerPatch *DebuggerController::AddAndActivateNativePatchForAddress
                             DebuggerPatchTable::DCP_PATCHID_INVALID,
                             traceType);
 
-    ActivatePatch(patch);
+    if (!ActivatePatch(patch))
+    {
+        g_patches->RemovePatch(patch);
+        return NULL;
+    }
 
     return patch;
 }
@@ -2526,11 +2530,10 @@ bool DebuggerController::PatchTrace(TraceDestination *trace,
 
         if (fStopInUnmanaged && !_AddrIsJITHelper(trace->GetAddress()))
         {
-            AddAndActivateNativePatchForAddress((CORDB_ADDRESS_TYPE *)trace->GetAddress(),
-                     fp,
-                     FALSE,
-                     trace->GetTraceType());
-            return true;
+            return AddAndActivateNativePatchForAddress((CORDB_ADDRESS_TYPE *)trace->GetAddress(),
+                       fp,
+                       FALSE,
+                       trace->GetTraceType()) != NULL;
         }
         else
         {
@@ -2542,6 +2545,15 @@ bool DebuggerController::PatchTrace(TraceDestination *trace,
     case TRACE_MANAGED:
         LOG((LF_CORDB, LL_INFO10000,
              "Setting managed trace patch at 0x%p(%p)\n", (void*)trace->GetAddress(), fp.GetSPValue()));
+
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+        // Resolving debug information can recursively bind pending patches. Reject
+        // unpatchable R2R code before entering that path.
+        if (ExecutionManager::IsReadyToRunCode(trace->GetAddress()))
+        {
+            return false;
+        }
+#endif
 
         MethodDesc *fd;
         fd = g_pEEInterface->GetNativeCodeMethodDesc(trace->GetAddress());
@@ -2562,15 +2574,10 @@ bool DebuggerController::PatchTrace(TraceDestination *trace,
         // out of that jitted code.
         if (nativeOffset == 0)
         {
-            AddPatchToStartOfLatestMethod(fd);
-        }
-        else
-        {
-            AddBindAndActivateNativeManagedPatch(fd, dji, nativeOffset, fp, NULL);
+            return AddPatchToStartOfLatestMethod(fd);
         }
 
-
-        return true;
+        return AddBindAndActivateNativeManagedPatch(fd, dji, nativeOffset, fp, NULL);
 
     case TRACE_UNJITTED_METHOD:
         // trace->address is actually a MethodDesc* of the method that we'll
@@ -2580,18 +2587,16 @@ bool DebuggerController::PatchTrace(TraceDestination *trace,
 
         // Note: we have to make sure to bind here. If this function is prejitted, this may be our only chance to get a
         // DebuggerJITInfo and thereby cause a JITComplete callback.
-        AddPatchToStartOfLatestMethod(trace->GetMethodDesc());
-        return true;
+        return AddPatchToStartOfLatestMethod(trace->GetMethodDesc());
 
     case TRACE_FRAME_PUSH:
         LOG((LF_CORDB, LL_INFO10000,
              "Setting frame patch at %p(%p)\n", (void*)trace->GetAddress(), fp.GetSPValue()));
 
-        AddAndActivateNativePatchForAddress((CORDB_ADDRESS_TYPE *)trace->GetAddress(),
-                 fp,
-                 TRUE,
-                 TRACE_FRAME_PUSH);
-        return true;
+        return AddAndActivateNativePatchForAddress((CORDB_ADDRESS_TYPE *)trace->GetAddress(),
+                     fp,
+                     TRUE,
+                     TRACE_FRAME_PUSH) != NULL;
 
     case TRACE_MGR_PUSH:
         LOG((LF_CORDB, LL_INFO10000,
@@ -2601,6 +2606,11 @@ bool DebuggerController::PatchTrace(TraceDestination *trace,
                     LEAF_MOST_FRAME, // But Mgr_push can't have fp affinity!
                     TRUE,
                     DPT_DEFAULT_TRACE_TYPE); // TRACE_OTHER
+        if (dcp == NULL)
+        {
+            return false;
+        }
+
         // Now copy over the trace field since TriggerPatch will expect this
         // to be set for this case.
         if (dcp != NULL)
@@ -3862,32 +3872,6 @@ struct PatchTargetVisitorData
     DebuggerController* controller;
     FramePointer maxFrame;
 };
-
-VOID DebuggerController::PatchTargetVisitor(TADDR pVirtualTraceCallTarget, VOID* pUserData)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    DebuggerController* controller = ((PatchTargetVisitorData*) pUserData)->controller;
-    FramePointer maxFrame = ((PatchTargetVisitorData*) pUserData)->maxFrame;
-
-    EX_TRY
-    {
-        CONTRACT_VIOLATION(GCViolation);    // PatchTrace throws, which implies GC-triggers
-        TraceDestination trace;
-        trace.InitForUnmanagedStub(pVirtualTraceCallTarget);
-        controller->PatchTrace(&trace, maxFrame, true);
-    }
-    EX_CATCH
-    {
-        // not much we can do here
-    }
-    EX_END_CATCH
-}
 
 //
 // DisableTraceCall disables call events on the controller

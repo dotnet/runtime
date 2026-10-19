@@ -7,6 +7,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
+using Kerberos.NET.Entities;
 using Kerberos.NET.Server;
 
 namespace System.Net.Security.Kerberos;
@@ -22,8 +23,42 @@ class FakeKdcServer
     public FakeKdcServer(KdcServerOptions serverOptions)
     {
         _kdcServer = new KdcServer(serverOptions);
+        // Active Directory includes a PAC even when the client does not ask for one with
+        // PA-PAC-REQUEST, which MIT Kerberos never sends. Force the same behavior here so that
+        // principals configured with a PAC actually get one; principals without one are
+        // unaffected because their IKerberosPrincipal.GeneratePac returns null.
+        _kdcServer.RegisterMessageHandler(MessageType.KRB_AS_REQ, (message, options) => new PacAsReqMessageHandler(message, options));
+        _kdcServer.RegisterMessageHandler(MessageType.KRB_TGS_REQ, (message, options) => new PacTgsReqMessageHandler(message, options));
         _tcpListener = new TcpListener(System.Net.IPAddress.Loopback, 0);
         _runningLock = new object();
+    }
+
+    private sealed class PacAsReqMessageHandler : KdcAsReqMessageHandler
+    {
+        public PacAsReqMessageHandler(ReadOnlyMemory<byte> message, KdcServerOptions options)
+            : base(message, options)
+        {
+        }
+
+        public override void ExecutePreValidate(PreAuthenticationContext context)
+        {
+            context.IncludePac ??= true;
+            base.ExecutePreValidate(context);
+        }
+    }
+
+    private sealed class PacTgsReqMessageHandler : KdcTgsReqMessageHandler
+    {
+        public PacTgsReqMessageHandler(ReadOnlyMemory<byte> message, KdcServerOptions options)
+            : base(message, options)
+        {
+        }
+
+        public override void ExecutePreValidate(PreAuthenticationContext context)
+        {
+            context.IncludePac ??= true;
+            base.ExecutePreValidate(context);
+        }
     }
 
     public Task<IPEndPoint> Start()

@@ -126,8 +126,16 @@ namespace System.Diagnostics
             finally
             {
                 // Kill all stopped processes even if StopTree threw partway through.
-                foreach (Process process in stoppedProcesses)
+                // stoppedProcesses is in depth-first pre-order, so walking it backwards kills
+                // descendants before their ancestors. Killing a parent first would reparent its
+                // still-stopped children. When a reparented process exits, macOS can orphan the
+                // process group without correctly accounting for the reparenting. If the group
+                // still has stopped members, the kernel then sends SIGHUP and SIGCONT to every
+                // process in it, including unrelated processes that share the group (such as the
+                // caller and its ancestors).
+                for (int i = stoppedProcesses.Count - 1; i >= 0; i--)
                 {
+                    Process process = stoppedProcesses[i];
                     int killResult = Interop.Sys.Kill(process._processId, Interop.Sys.GetPlatformSignalNumber(PosixSignal.SIGKILL));
                     if (killResult != 0)
                     {

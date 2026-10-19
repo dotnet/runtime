@@ -1,6 +1,6 @@
 <!--
   Shared cache for externally acquired WebAssembly build and test tools
-  (emscripten, wasi-sdk, wasmtime, chrome, chromedriver, firefox, geckodriver, v8).
+  (emscripten, wasi-sdk, wasmtime, binaryen, wasm-tools, chrome, chromedriver, firefox, geckodriver, v8).
 
   Layout:
     $(WasmToolCacheDir)<tool>/<version>-<host rid>/           the tool itself
@@ -48,7 +48,7 @@
     <WasmToolDownloadDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsObjDir)', 'wasm-tool-downloads'))</WasmToolDownloadDir>
   </PropertyGroup>
 
-  <!-- Tool versions. The version text files are the source of truth: they are also read by the
+  <!-- SDK and wasmtime version text files are the source of truth: they are also read by the
        native build (eng/native/configurecompiler.cmake) and by the native build scripts
        (eng/native/gen-buildsys.*), none of which can evaluate MSBuild properties. -->
   <PropertyGroup>
@@ -59,6 +59,12 @@
     <EmscriptenVersion Condition="'$(EmscriptenVersion)' == '' and Exists('$(_EmscriptenVersionFile)')">$([System.IO.File]::ReadAllText('$(_EmscriptenVersionFile)').Trim())</EmscriptenVersion>
     <WasmtimeVersion Condition="'$(WasmtimeVersion)' == '' and Exists('$(_WasmtimeVersionFile)')">$([System.IO.File]::ReadAllText('$(_WasmtimeVersionFile)').Trim())</WasmtimeVersion>
     <WasiSdkVersion Condition="'$(WasiSdkVersion)' == '' and Exists('$(_WasiSdkVersionFile)')">$([System.IO.File]::ReadAllText('$(_WasiSdkVersionFile)').Trim())</WasiSdkVersion>
+  </PropertyGroup>
+
+  <!-- Host tools for the WASI composite-R2R splice pipeline. -->
+  <PropertyGroup>
+    <BinaryenVersion Condition="'$(BinaryenVersion)' == ''">130</BinaryenVersion>
+    <WasmToolsVersion Condition="'$(WasmToolsVersion)' == ''">1.253.0</WasmToolsVersion>
   </PropertyGroup>
 
   <!-- Cache entries for the tools whose versions are known this early. Browser and JS engine
@@ -73,5 +79,11 @@
 
     <WasmtimeCacheDir>$([MSBuild]::NormalizeDirectory('$(WasmToolCacheDir)', 'wasmtime', '$(WasmtimeVersion)-$(WasmToolHostRid)'))</WasmtimeCacheDir>
     <WasmtimeStampFile>$([MSBuild]::NormalizePath('$(WasmToolCacheDir)', 'wasmtime', '$(WasmtimeVersion)-$(WasmToolHostRid).complete'))</WasmtimeStampFile>
+
+    <BinaryenCacheDir>$([MSBuild]::NormalizeDirectory('$(WasmToolCacheDir)', 'binaryen', '$(BinaryenVersion)-$(WasmToolHostRid)'))</BinaryenCacheDir>
+    <BinaryenStampFile>$([MSBuild]::NormalizePath('$(WasmToolCacheDir)', 'binaryen', '$(BinaryenVersion)-$(WasmToolHostRid).complete'))</BinaryenStampFile>
+
+    <WasmToolsCacheDir>$([MSBuild]::NormalizeDirectory('$(WasmToolCacheDir)', 'wasm-tools', '$(WasmToolsVersion)-$(WasmToolHostRid)'))</WasmToolsCacheDir>
+    <WasmToolsStampFile>$([MSBuild]::NormalizePath('$(WasmToolCacheDir)', 'wasm-tools', '$(WasmToolsVersion)-$(WasmToolHostRid).complete'))</WasmToolsStampFile>
   </PropertyGroup>
 </Project>
