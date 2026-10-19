@@ -191,20 +191,73 @@ namespace ILAssembler.Tests
             Assert.Equal(["1-2: b=0"], Scopes(pdb));
         }
 
+        /// <summary>
+        /// A block that declares <c>z</c> and <c>y</c> and has no instructions. Its LocalScope row would have length 0,
+        /// and a row's Length is in (0..0x80000000).
+        /// </summary>
+        private static readonly string s_blockWithoutInstructions = LocalTests.OneMethod("""
+            .locals init (int32 a)
+            nop
+            {
+                .locals init (int32 z, int32 y)
+            }
+            ret
+            """);
+
         [Fact]
-        public void BlockWithoutInstructions_HasNoScopeRow()
+        public void BlockWithoutInstructions_IsReportedAtItsFirstNamedLocal()
         {
-            // A scope's length must be positive.
-            using var pdb = Compile("""
-                .locals init (int32 a)
+            (ImmutableArray<Diagnostic> diagnostics, CompilationResult? result) =
+                DocumentCompilerTestHelpers.CompileWithDiagnostics(s_blockWithoutInstructions, new Options { Debug = true });
+
+            Diagnostic error = Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticIds.LocalScopeWithoutInstructions, error.Id);
+            Assert.Equal(DiagnosticSeverity.Error, error.Severity);
+            AssertAtLocalName(error, s_blockWithoutInstructions, "int32 z", "z");
+            Assert.Null(result);
+        }
+
+        [Fact]
+        public void BlockWithoutInstructions_WithErrorTolerance_HasARowOfLengthZero()
+        {
+            (ImmutableArray<Diagnostic> diagnostics, CompilationResult? result) = DocumentCompilerTestHelpers.CompileWithDiagnostics(
+                s_blockWithoutInstructions,
+                new Options { Debug = true, ErrorTolerant = true });
+            Assert.Equal(DiagnosticIds.LocalScopeWithoutInstructions, Assert.Single(diagnostics).Id);
+            using var pdb = new PortablePdbTestReader(result!);
+
+            Assert.Equal(["0-2: a=0", "1-1: z=1 y=2"], Scopes(pdb));
+        }
+
+        [Fact]
+        public void ScopesWithoutInstructionsAndRepeatedNamesAndSlots_WithoutAPdb_AreNotReported()
+        {
+            // Scopes are recorded only for a PDB, so without one none of this is checked and the image is written.
+            // Only the slot's in-use warning, which does not depend on a PDB, is reported.
+            string source = LocalTests.OneMethod("""
+                .locals init (int32 a, string a)
                 nop
                 {
-                    .locals init (int32 z)
+                    .locals init (int32 z, [2] int32 y)
                 }
                 ret
                 """);
 
-            Assert.Equal(["0-2: a=0"], Scopes(pdb));
+            (ImmutableArray<Diagnostic> diagnostics, CompilationResult? result) =
+                DocumentCompilerTestHelpers.CompileWithDiagnostics(source, new Options());
+
+            Assert.Equal(DiagnosticIds.LocalSlotInUse, Assert.Single(diagnostics).Id);
+            Assert.NotNull(result);
+
+            (diagnostics, _) = DocumentCompilerTestHelpers.CompileWithDiagnostics(source, new Options { Debug = true });
+            Assert.Equal(
+                [
+                    DiagnosticIds.LocalSlotInUse,
+                    DiagnosticIds.LocalNameDeclaredTwiceInScope,
+                    DiagnosticIds.LocalScopeWithoutInstructions,
+                    DiagnosticIds.LocalSlotNamedTwiceInScope,
+                ],
+                diagnostics.Select(diagnostic => diagnostic.Id));
         }
 
         [Fact]
@@ -426,107 +479,169 @@ namespace ILAssembler.Tests
             Assert.Equal(2, pdb.Pdb.LocalVariables.Count);
         }
 
-        [Fact]
-        public void NameDeclaredTwiceInOneScope_HasOneVariableRowForTheFirstDeclaration()
+        /// <summary>
+        /// Asserts that a diagnostic is at a local's name: the last <paramref name="name"/>.Length characters of the
+        /// only occurrence of <paramref name="declaration"/> in <paramref name="source"/>.
+        /// </summary>
+        internal static void AssertAtLocalName(Diagnostic diagnostic, string source, string declaration, string name)
         {
-            using var pdb = Compile("""
-                .locals init (int32 a, string a)
-                ret
-                """);
+            int start = source.IndexOf(declaration, System.StringComparison.Ordinal);
+            Assert.True(start >= 0, $"'{declaration}' is not in the source");
+            Assert.True(source.IndexOf(declaration, start + 1, System.StringComparison.Ordinal) < 0, $"'{declaration}' is in the source more than once");
+            Assert.EndsWith(name, declaration, System.StringComparison.Ordinal);
+            Assert.Equal(new SourceSpan(start + declaration.Length - name.Length, name.Length), diagnostic.Location.Span);
+        }
 
-            Assert.Equal(["0-1: a=0"], Scopes(pdb));
+        private static readonly string s_nameDeclaredTwice = LocalTests.OneMethod("""
+            .locals init (int32 a, string a)
+            ret
+            """);
+
+        [Fact]
+        public void NameDeclaredTwiceInOneScope_IsReportedAtTheSecondDeclaration()
+        {
+            (ImmutableArray<Diagnostic> diagnostics, CompilationResult? result) =
+                DocumentCompilerTestHelpers.CompileWithDiagnostics(s_nameDeclaredTwice, new Options { Debug = true });
+
+            Diagnostic error = Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticIds.LocalNameDeclaredTwiceInScope, error.Id);
+            Assert.Equal(DiagnosticSeverity.Error, error.Severity);
+            AssertAtLocalName(error, s_nameDeclaredTwice, "string a", "a");
+            Assert.Null(result);
         }
 
         [Fact]
-        public void SlotDeclaredTwiceInOneScope_HasOneVariableRowForTheFirstDeclaration()
+        public void NameDeclaredTwiceInOneScope_WithErrorTolerance_HasARowForEachDeclaration()
         {
             (ImmutableArray<Diagnostic> diagnostics, CompilationResult? result) = DocumentCompilerTestHelpers.CompileWithDiagnostics(
-                LocalTests.OneMethod("""
-                    .locals init ([0] int32 a, [0] int32 b)
-                    ret
-                    """),
-                new Options { Debug = true });
-            Assert.Equal(DiagnosticIds.LocalSlotInUse, Assert.Single(diagnostics).Id);
+                s_nameDeclaredTwice,
+                new Options { Debug = true, ErrorTolerant = true });
+            Assert.Equal(DiagnosticIds.LocalNameDeclaredTwiceInScope, Assert.Single(diagnostics).Id);
             using var pdb = new PortablePdbTestReader(result!);
 
-            Assert.Equal(["0-1: a=0"], Scopes(pdb));
+            Assert.Equal(["0-1: a=0 a=1"], Scopes(pdb));
+        }
+
+        private static readonly string s_slotNamedTwice = LocalTests.OneMethod("""
+            .locals init ([0] int32 a, [0] int32 b)
+            ret
+            """);
+
+        [Fact]
+        public void SlotNamedTwiceInOneScope_IsReportedAtTheSecondDeclaration()
+        {
+            (ImmutableArray<Diagnostic> diagnostics, CompilationResult? result) =
+                DocumentCompilerTestHelpers.CompileWithDiagnostics(s_slotNamedTwice, new Options { Debug = true });
+
+            // The in-use warning is reported with or without a PDB.
+            Assert.Equal([DiagnosticIds.LocalSlotInUse, DiagnosticIds.LocalSlotNamedTwiceInScope], diagnostics.Select(diagnostic => diagnostic.Id));
+            Diagnostic error = diagnostics[1];
+            Assert.Equal(DiagnosticSeverity.Error, error.Severity);
+            Assert.Equal("Local var 'b': slot 0 is already named 'a' in this scope", error.Message);
+            AssertAtLocalName(error, s_slotNamedTwice, "[0] int32 b", "b");
+            Assert.Null(result);
+        }
+
+        [Fact]
+        public void SlotNamedTwiceInOneScope_WithErrorTolerance_HasARowForEachDeclaration()
+        {
+            (ImmutableArray<Diagnostic> diagnostics, CompilationResult? result) = DocumentCompilerTestHelpers.CompileWithDiagnostics(
+                s_slotNamedTwice,
+                new Options { Debug = true, ErrorTolerant = true });
+            Assert.Equal([DiagnosticIds.LocalSlotInUse, DiagnosticIds.LocalSlotNamedTwiceInScope], diagnostics.Select(diagnostic => diagnostic.Id));
+            using var pdb = new PortablePdbTestReader(result!);
+
+            Assert.Equal(["0-1: a=0 b=0"], Scopes(pdb));
         }
 
         /// <summary>
-        /// A scope where the first <c>b</c> shares slot 0 with <c>a</c> and a second <c>b</c> has slot 1. The name
-        /// <c>b</c> refers to slot 0 (<see cref="NameAndSlotEachDeclaredTwice_TheNameRefersToTheFirstDeclaration"/>).
+        /// A scope where <c>b</c> shares slot 0 with <c>a</c>, a second <c>b</c> has slot 1, and <c>c</c> shares slot
+        /// 1 with the second <c>b</c>. The name <c>b</c> refers to slot 0, its first declaration.
         /// </summary>
-        private const string NameAndSlotEachDeclaredTwice = """
-            .locals init ([0] int32 a, [0] int32 b, [1] string b)
+        private static readonly string s_namesAndSlotsDeclaredTwice = LocalTests.OneMethod("""
+            .locals init ([0] int32 a, [0] int32 b, [1] string b, [1] string c)
+            ldloc c
+            pop
             ldloc b
             pop
             ret
-            """;
+            """);
 
         [Fact]
-        public void NameAndSlotEachDeclaredTwice_ANameWhoseSlotAlreadyHasARowHasNone()
+        public void NamesAndSlotsDeclaredTwice_EachRepeatIsReportedAtItsDeclaration()
         {
-            // b refers to its first declaration, slot 0, which a's row describes, so b gets no row. The second b
-            // is not the local that b refers to; a row "b=1" would describe the string in slot 1 as b.
-            (ImmutableArray<Diagnostic> diagnostics, CompilationResult? result) = DocumentCompilerTestHelpers.CompileWithDiagnostics(
-                LocalTests.OneMethod(NameAndSlotEachDeclaredTwice),
-                new Options { Debug = true });
-            Assert.Equal(DiagnosticIds.LocalSlotInUse, Assert.Single(diagnostics).Id);
+            (ImmutableArray<Diagnostic> diagnostics, CompilationResult? result) =
+                DocumentCompilerTestHelpers.CompileWithDiagnostics(s_namesAndSlotsDeclaredTwice, new Options { Debug = true });
+
+            // The in-use warnings come from the declarations; the errors from the PDB rows, in declaration order.
+            Assert.Equal(
+                [
+                    DiagnosticIds.LocalSlotInUse,
+                    DiagnosticIds.LocalSlotInUse,
+                    DiagnosticIds.LocalSlotNamedTwiceInScope,
+                    DiagnosticIds.LocalNameDeclaredTwiceInScope,
+                    DiagnosticIds.LocalSlotNamedTwiceInScope,
+                ],
+                diagnostics.Select(diagnostic => diagnostic.Id));
+            AssertAtLocalName(diagnostics[2], s_namesAndSlotsDeclaredTwice, "[0] int32 b", "b");
+            AssertAtLocalName(diagnostics[3], s_namesAndSlotsDeclaredTwice, "[1] string b", "b");
+            AssertAtLocalName(diagnostics[4], s_namesAndSlotsDeclaredTwice, "[1] string c", "c");
+            Assert.Equal("Local var 'c': slot 1 is already named 'b' in this scope", diagnostics[4].Message);
+            Assert.Null(result);
+        }
+
+        [Fact]
+        public void NamesAndSlotsDeclaredTwice_WithErrorTolerance_HaveARowForEachDeclarationAndTheNameRefersToTheFirst()
+        {
+            var options = new Options { Debug = true, ErrorTolerant = true };
+            (_, CompilationResult? result) = DocumentCompilerTestHelpers.CompileWithDiagnostics(s_namesAndSlotsDeclaredTwice, options);
             using var pdb = new PortablePdbTestReader(result!);
 
-            Assert.Equal(["0-6: a=0"], Scopes(pdb));
+            Assert.Equal(["0-11: a=0 b=0 b=1 c=1"], Scopes(pdb));
+            Assert.Equal(["ldloc 1", "ldloc 0"], CompileAndGetLocalOperands(s_namesAndSlotsDeclaredTwice, options));
         }
 
         [Fact]
-        public void NameAndSlotEachDeclaredTwice_TheNameRefersToTheFirstDeclaration()
+        public void OneDeclarationRepeatingANameAndASlot_IsReportedForBoth()
         {
-            (_, CompilationResult? result) = DocumentCompilerTestHelpers.CompileWithDiagnostics(
-                LocalTests.OneMethod(NameAndSlotEachDeclaredTwice),
-                new Options { Debug = true });
-            using var pe = new PEReader(DocumentCompilerTestHelpers.Serialize(result!));
-
-            Assert.Equal(["ldloc 0"], LocalTests.GetLocalOperands(pe));
-        }
-
-        [Fact]
-        public void SlotOfALaterDeclarationOfAName_DoesNotKeepAnotherNameOut()
-        {
-            // c refers to slot 1. The second b also has slot 1, but b refers to slot 0, so the second b claims
-            // nothing and c gets its row; b gets none because a's row describes slot 0.
+            // The second a is declared by another .locals of the same scope, at the slot of the first.
             string source = LocalTests.OneMethod("""
-                .locals init ([0] int32 a, [0] int32 b, [1] string b, [1] string c)
-                ldloc c
-                pop
-                ldloc b
-                pop
+                .locals init (int32 a)
+                .locals init ([0] int32 a)
                 ret
                 """);
+
             (ImmutableArray<Diagnostic> diagnostics, CompilationResult? result) =
                 DocumentCompilerTestHelpers.CompileWithDiagnostics(source, new Options { Debug = true });
-            Assert.Equal([DiagnosticIds.LocalSlotInUse, DiagnosticIds.LocalSlotInUse], diagnostics.Select(diagnostic => diagnostic.Id));
-            using var pdb = new PortablePdbTestReader(result!);
 
-            Assert.Equal(["0-11: a=0 c=1"], Scopes(pdb));
-            Assert.Equal(["ldloc 1", "ldloc 0"], CompileAndGetLocalOperands(source, new Options { Debug = true }));
+            Assert.Equal(
+                [DiagnosticIds.LocalSlotInUse, DiagnosticIds.LocalNameDeclaredTwiceInScope, DiagnosticIds.LocalSlotNamedTwiceInScope],
+                diagnostics.Select(diagnostic => diagnostic.Id));
+            AssertAtLocalName(diagnostics[1], source, "[0] int32 a", "a");
+            AssertAtLocalName(diagnostics[2], source, "[0] int32 a", "a");
+            Assert.Null(result);
         }
 
         [Fact]
-        public void SecondDeclarationOfAName_DoesNotClaimItsSlot()
+        public void DistinctNamesAndSlotsInEachScope_AreNotReported()
         {
-            // a refers to slot 0. The second a, at slot 1, takes no part, so b, which refers to slot 1, gets a row.
-            string source = LocalTests.OneMethod("""
-                .locals init ([0] int32 a, [1] string a, [1] string b)
-                ldloc b
-                pop
+            // A name or a slot may appear again in another scope: a shadows the root's a, and d reuses slot 2 after
+            // the block that declared it closed.
+            using var pdb = Compile("""
+                .locals init (int32 a, string b)
+                nop
+                {
+                    .locals init (int32 a, object c)
+                    nop
+                }
+                {
+                    .locals init ([2] int32 d)
+                    nop
+                }
                 ret
                 """);
-            (ImmutableArray<Diagnostic> diagnostics, CompilationResult? result) =
-                DocumentCompilerTestHelpers.CompileWithDiagnostics(source, new Options { Debug = true });
-            Assert.Equal(DiagnosticIds.LocalSlotInUse, Assert.Single(diagnostics).Id);
-            using var pdb = new PortablePdbTestReader(result!);
 
-            Assert.Equal(["0-6: a=0 b=1"], Scopes(pdb));
-            Assert.Equal(["ldloc 1"], CompileAndGetLocalOperands(source, new Options { Debug = true }));
+            Assert.Equal(["0-4: a=0 b=1", "1-2: a=2 c=3", "2-3: d=2"], Scopes(pdb));
         }
 
         [Fact]
@@ -600,16 +715,35 @@ namespace ILAssembler.Tests
             Assert.Equal(["0-2: a=0 A=1"], Scopes(pdb));
         }
 
+        private static readonly string s_methodWithoutInstructions = LocalTests.OneMethod("""
+            .locals init (int32 a, int32 b)
+            """);
+
         [Fact]
-        public void MethodWithoutInstructions_HasNoScopeRow()
+        public void MethodWithoutInstructions_IsReportedAtItsFirstNamedLocal()
         {
             // The root scope of an empty body has length 0, which the specification does not allow.
-            using var pdb = Compile("""
-                .locals init (int32 a)
-                """);
+            (ImmutableArray<Diagnostic> diagnostics, CompilationResult? result) =
+                DocumentCompilerTestHelpers.CompileWithDiagnostics(s_methodWithoutInstructions, new Options { Debug = true });
 
-            Assert.Empty(Scopes(pdb));
-            Assert.Equal(0, pdb.Pdb.GetTableRowCount(TableIndex.LocalScope));
+            Diagnostic error = Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticIds.LocalScopeWithoutInstructions, error.Id);
+            Assert.Equal("Local var 'a' is declared in a scope that has no instructions; a PDB local scope must not be empty", error.Message);
+            AssertAtLocalName(error, s_methodWithoutInstructions, "int32 a", "a");
+            Assert.Null(result);
+        }
+
+        [Fact]
+        public void MethodWithoutInstructions_WithErrorTolerance_HasARowOfLengthZero()
+        {
+            (ImmutableArray<Diagnostic> diagnostics, CompilationResult? result) = DocumentCompilerTestHelpers.CompileWithDiagnostics(
+                s_methodWithoutInstructions,
+                new Options { Debug = true, ErrorTolerant = true });
+            Assert.Equal(DiagnosticIds.LocalScopeWithoutInstructions, Assert.Single(diagnostics).Id);
+            using var pdb = new PortablePdbTestReader(result!);
+
+            Assert.Equal(["0-0: a=0 b=1"], Scopes(pdb));
+            Assert.Equal(1, pdb.Pdb.GetTableRowCount(TableIndex.LocalScope));
         }
 
         [Fact]
