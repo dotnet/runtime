@@ -19,7 +19,7 @@ namespace ILVerify
         LeaveOutOfFinally,              // Leave out of finally block.
         LeaveOutOfFault,                // Leave out of fault block.
         Rethrow,                        // Rethrow from outside a catch handler.
-        Endfinally,                     // Endfinally from outside a finally handler.
+        Endfinally,                     // Endfinally/endfault from outside a finally or fault handler.
         Endfilter,                      // Endfilter from outside an exception filter block.
         BranchIntoTry,                  // Branch into try block.
         BranchIntoHandler,              // Branch into exception handler block.
