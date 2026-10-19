@@ -178,6 +178,12 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
             AddOutputDirectory(sandbox, compilationResult, builder);
 
+            foreach (var argument in caseDefinedOptions.AdditionalArguments)
+            {
+                if (argument.Key == "--output-typemaps" && argument.Value is [string fileName])
+                    argument.Value[0] = sandbox.OutputDirectory.Combine(fileName).ToString();
+            }
+
             foreach (var rspFile in sandbox.ResponseFiles)
                 builder.AddResponseFile(rspFile);
 

@@ -191,6 +191,12 @@ namespace ILLink.RoslynAnalyzer.Tests
         }
 
         [Fact]
+        public Task TypeMapOutput()
+        {
+            return RunTest();
+        }
+
+        [Fact]
         public Task TypeBaseTypeUseViaReflection()
         {
             return RunTest();
