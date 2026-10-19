@@ -394,6 +394,7 @@ namespace System.Threading.Tests
             string name = Guid.NewGuid().ToString("N");
             string prefixedName = namePrefix + name;
             bool currentSessionOnly = namePrefix != @"Global\";
+            bool currentUserOnly = !PlatformDetection.IsWindows;
 
             using (var m = new Mutex(initiallyOwned: false, prefixedName, out bool createdNew))
             {
@@ -402,18 +403,18 @@ namespace System.Threading.Tests
                 new Mutex(
                     initiallyOwned: false,
                     name,
-                    new() { CurrentUserOnly = false, CurrentSessionOnly = currentSessionOnly },
+                    new() { CurrentUserOnly = currentUserOnly, CurrentSessionOnly = currentSessionOnly },
                     out createdNew).Dispose();
                 Assert.False(createdNew);
 
                 Mutex.OpenExisting(
                     name,
-                    new() { CurrentUserOnly = false, CurrentSessionOnly = currentSessionOnly }).Dispose();
+                    new() { CurrentUserOnly = currentUserOnly, CurrentSessionOnly = currentSessionOnly }).Dispose();
 
                 Assert.True(
                     Mutex.TryOpenExisting(
                         name,
-                        new() { CurrentUserOnly = false, CurrentSessionOnly = currentSessionOnly },
+                        new() { CurrentUserOnly = currentUserOnly, CurrentSessionOnly = currentSessionOnly },
                         out Mutex m2));
                 m2.Dispose();
             }
@@ -422,7 +423,7 @@ namespace System.Threading.Tests
                 new Mutex(
                     initiallyOwned: false,
                     name,
-                    new() { CurrentUserOnly = false, CurrentSessionOnly = currentSessionOnly },
+                    new() { CurrentUserOnly = currentUserOnly, CurrentSessionOnly = currentSessionOnly },
                     out bool createdNew))
             {
                 Assert.True(createdNew);
@@ -1099,6 +1100,53 @@ namespace System.Threading.Tests
             UnixFileMode.UserRead
             | UnixFileMode.UserWrite
             | UnixFileMode.UserExecute;
+
+        [ConditionalTheory(nameof(IsRemoteExecutorAndCrossProcessNamedMutexSupported))]
+        [InlineData(OwnerUserRwx)]
+        [InlineData(AllUsersRwx)]
+        [PlatformSpecific(TestPlatforms.Linux)]
+        [UnsupportedOSPlatform("windows")]
+        public void NamedMutex_ExistingSharedMemoryDirectories_PermissionsAreUnchanged(UnixFileMode directoryMode)
+        {
+            string userRuntimeDirectory = GetTestFilePath();
+            Directory.CreateDirectory(userRuntimeDirectory);
+
+            RemoteInvokeOptions remoteInvokeOptions = new();
+            remoteInvokeOptions.StartInfo.EnvironmentVariables["XDG_RUNTIME_DIR"] = userRuntimeDirectory;
+
+            RemoteExecutor.Invoke(
+                (userRuntimeDirectory, mode) =>
+                {
+                    UnixFileMode directoryMode = Enum.Parse<UnixFileMode>(mode);
+                    string[] directories =
+                    {
+                        userRuntimeDirectory,
+                        Path.Combine(userRuntimeDirectory, ".dotnet"),
+                        Path.Combine(userRuntimeDirectory, ".dotnet", "shm"),
+                        Path.Combine(userRuntimeDirectory, ".dotnet", "shm", "global")
+                    };
+                    foreach (string directory in directories)
+                    {
+                        Directory.CreateDirectory(directory);
+                        File.SetUnixFileMode(directory, directoryMode);
+                    }
+
+                    string name = $"Global\\{Guid.NewGuid():N}";
+                    using Mutex mutex = new(false, name, out bool createdNew);
+                    Assert.True(createdNew);
+                    using Mutex openedMutex = Mutex.OpenExisting(name);
+                    Assert.True(Mutex.TryOpenExisting(name, out Mutex existingMutex));
+                    existingMutex.Dispose();
+
+                    foreach (string directory in directories)
+                    {
+                        Assert.Equal(directoryMode, File.GetUnixFileMode(directory));
+                    }
+                },
+                userRuntimeDirectory,
+                directoryMode.ToString(),
+                remoteInvokeOptions).Dispose();
+        }
 
         [ConditionalTheory(nameof(IsRemoteExecutorAndCrossProcessNamedMutexSupported))]
         [InlineData(null)]

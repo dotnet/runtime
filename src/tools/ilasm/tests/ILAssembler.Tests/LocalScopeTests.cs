@@ -178,7 +178,7 @@ namespace ILAssembler.Tests
         [Fact]
         public void MethodWithoutNamedLocalsAtTheTop_HasOnlyTheBlockScope()
         {
-            // As in native ilasm: the root scope gets a row only when the method-level .locals name a local.
+            // The root scope gets a row only when the method-level .locals name a local.
             using var pdb = Compile("""
                 nop
                 {
@@ -303,11 +303,11 @@ namespace ILAssembler.Tests
         }
 
         [Fact]
-        public void SlotGapReusedSlotAndShadowedNameInTryAndCatchBodies_GiveTheRowsOfNativeIlasm()
+        public void SlotGapReusedSlotAndShadowedNameInTryAndCatchBodies_GiveARowForEachScope()
         {
-            // Native ilasm writes these rows for this program. Slot 1 is left open at the top, then declared by the
-            // .try body and again by the catch body; the unnamed local takes slot 3 and gets no row; the catch
-            // body's LOCAL_0 is a new local, at slot 4, and its row is in the catch scope.
+            // Slot 1 is left open at the top, then declared by the .try body and again by the catch body;
+            // the unnamed local takes slot 3 and gets no row; the catch body's LOCAL_0 is a new local, at
+            // slot 4, and its row is in the catch scope.
             string program = """
                 .assembly extern System.Runtime { }
                 .assembly test { }
