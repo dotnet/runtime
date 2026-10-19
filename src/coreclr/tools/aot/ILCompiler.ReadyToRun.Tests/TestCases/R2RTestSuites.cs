@@ -441,10 +441,12 @@ public class R2RTestSuites
         }
     }
 
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void VectorLayoutChecksRespectTargetAndVersionBubble(bool composite)
+    [ConditionalTheory(typeof(TestPaths), nameof(TestPaths.SupportsVectorT))]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public void VectorLayoutChecksRespectTargetAndVersionBubble(bool composite, bool targetAllowsRuntimeCodeGeneration)
     {
         CompiledAssembly input = new()
         {
@@ -458,7 +460,11 @@ public class R2RTestSuites
                 new(nameof(VectorLayoutChecksRespectTargetAndVersionBubble), [new CrossgenAssembly(input)])
                 {
                     Options = composite ? [Crossgen2Option.Composite, Crossgen2Option.Optimize] : [Crossgen2Option.Optimize],
-                    AdditionalArgs = composite ? ["--unrooted-input-file-paths", TestPaths.SystemPrivateCoreLibPath] : [],
+                    AdditionalArgs =
+                    [
+                        "--target-allows-runtime-code-generation", targetAllowsRuntimeCodeGeneration ? "true" : "false",
+                        .. composite ? new[] { "--unrooted-input-file-paths", TestPaths.SystemPrivateCoreLibPath } : [],
+                    ],
                     OutputFileExtension = TestPaths.IsWasmTarget ? ".wasm" : ".dll",
                     Validate = reader =>
                     {
@@ -472,7 +478,7 @@ public class R2RTestSuites
                             ReadyToRunMethod method = Assert.Single(methods,
                                 method => method.SignatureString.Contains($".{name}(", StringComparison.Ordinal));
                             IReadOnlyList<FixupCell> fixups = method.Fixups ?? Array.Empty<FixupCell>();
-                            bool needsCheck = !TestPaths.IsWasmTarget ||
+                            bool needsCheck = targetAllowsRuntimeCodeGeneration ||
                                 (!composite && name is "EchoVectorPair" or "EchoVectorTriple");
                             if (needsCheck)
                             {
