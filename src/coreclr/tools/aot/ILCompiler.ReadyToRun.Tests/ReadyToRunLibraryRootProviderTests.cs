@@ -29,6 +29,24 @@ public class ReadyToRunLibraryRootProviderTests
     [InlineData("System.Runtime.Intrinsics", "Vector256`1", false)]
     [InlineData("System.Runtime.Intrinsics", "Vector512`1", false)]
     [InlineData("System.Runtime.Intrinsics", "Scalar`1", false)]
+    [InlineData("System.Runtime.Intrinsics", "ISimdVector`2", false)]
+    [InlineData("System.Numerics", "IAdditionOperators`3", false)]
+    [InlineData("System.Numerics", "IBinaryInteger`1", false)]
+    [InlineData("System.Numerics", "IBinaryNumber`1", false)]
+    [InlineData("System.Numerics", "IDecrementOperators`1", false)]
+    [InlineData("System.Numerics", "IDivisionOperators`3", false)]
+    [InlineData("System.Numerics", "IExponentialFunctions`1", false)]
+    [InlineData("System.Numerics", "IFloatingPoint`1", false)]
+    [InlineData("System.Numerics", "IFloatingPointIeee754`1", false)]
+    [InlineData("System.Numerics", "IIncrementOperators`1", false)]
+    [InlineData("System.Numerics", "ILogarithmicFunctions`1", false)]
+    [InlineData("System.Numerics", "IMultiplyOperators`3", false)]
+    [InlineData("System.Numerics", "INumber`1", false)]
+    [InlineData("System.Numerics", "INumberBase`1", false)]
+    [InlineData("System.Numerics", "ISubtractionOperators`3", false)]
+    [InlineData("System.Numerics", "ITrigonometricFunctions`1", false)]
+    [InlineData("System.Numerics", "IUnaryNegationOperators`2", false)]
+    [InlineData("System.Numerics", "TotalOrderIeee754Comparer`1", false)]
     [InlineData("System.Collections.Generic", "List`1", true)]
     [InlineData("System", "Span`1", true)]
     public void AutomaticTypeInstantiation(string namespaceName, string typeName, bool expected)
@@ -43,7 +61,9 @@ public class ReadyToRunLibraryRootProviderTests
             Assert.Same(context.CanonType, instantiated.Instantiation[0]);
         }
 
-        InstantiatedType concrete = type.MakeInstantiatedType(context.GetWellKnownType(WellKnownType.Int32));
+        TypeDesc[] concreteArguments = new TypeDesc[type.Instantiation.Length];
+        Array.Fill(concreteArguments, context.GetWellKnownType(WellKnownType.Int32));
+        InstantiatedType concrete = type.MakeInstantiatedType(concreteArguments);
         Assert.Same(context.GetWellKnownType(WellKnownType.Int32), concrete.Instantiation[0]);
     }
 
@@ -86,6 +106,53 @@ public class ReadyToRunLibraryRootProviderTests
         {
             Assert.True(CheckNestedTypes(type) > 0);
         }
+    }
+
+    [Theory]
+    [InlineData("System", "Byte")]
+    [InlineData("System", "Char")]
+    [InlineData("System", "Decimal")]
+    [InlineData("System", "Double")]
+    [InlineData("System", "Half")]
+    [InlineData("System", "Int16")]
+    [InlineData("System", "Int32")]
+    [InlineData("System", "Int64")]
+    [InlineData("System", "Int128")]
+    [InlineData("System", "IntPtr")]
+    [InlineData("System", "SByte")]
+    [InlineData("System", "Single")]
+    [InlineData("System", "UInt16")]
+    [InlineData("System", "UInt32")]
+    [InlineData("System", "UInt64")]
+    [InlineData("System", "UInt128")]
+    [InlineData("System", "UIntPtr")]
+    [InlineData("System.Numerics", "BFloat16")]
+    [InlineData("System.Numerics", "Decimal32")]
+    [InlineData("System.Numerics", "Decimal64")]
+    [InlineData("System.Numerics", "Decimal128")]
+    [InlineData("System.Runtime.InteropServices", "NFloat")]
+    public void ScalarConversionsAreNotAutomaticallyInstantiated(string namespaceName, string typeName)
+    {
+        ReadyToRunCompilerContext context = CreateContext();
+        MetadataType type = context.SystemModule.GetType(Encoding.UTF8.GetBytes(namespaceName), Encoding.UTF8.GetBytes(typeName));
+        int methodsChecked = 0;
+        foreach (MethodDesc method in type.GetMethods())
+        {
+            if (!method.HasInstantiation)
+                continue;
+
+            string methodName = method.Name.ToString();
+            methodName = methodName[(methodName.LastIndexOf('.') + 1)..];
+            if (methodName is not ("CreateChecked" or "CreateSaturating" or "CreateTruncating"
+                or "ConvertToInteger" or "ConvertToIntegerNative")
+                && !methodName.StartsWith("TryConvert", StringComparison.Ordinal))
+                continue;
+
+            Assert.Null(ReadyToRunLibraryRootProvider.InstantiateIfPossible(method));
+            methodsChecked++;
+        }
+
+        Assert.True(methodsChecked > 0);
     }
 
     private static int CheckNestedTypes(MetadataType type)
