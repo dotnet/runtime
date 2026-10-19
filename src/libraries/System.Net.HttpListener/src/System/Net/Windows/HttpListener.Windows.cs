@@ -889,6 +889,7 @@ namespace System.Net
                             {
                                 if (sessionContext is not null)
                                 {
+                                    bool policyChangedDuringHandshake = !sessionContext.IsAuthenticated && contextPackage == package;
                                     if (disconnectResult is not null)
                                     {
                                         disconnectResult.Session = null;
@@ -897,6 +898,13 @@ namespace System.Net
                                     }
 
                                     sessionContext.Dispose();
+                                    if (policyChangedDuringHandshake)
+                                    {
+                                        // The peer's response belongs to the challenge issued under the old policy.
+                                        sessionContext = null;
+                                        httpError = HttpStatusCode.Unauthorized;
+                                        break;
+                                    }
                                 }
 
                                 binding = GetChannelBinding(session, connectionId, isSecureConnection, extendedProtectionPolicy);
