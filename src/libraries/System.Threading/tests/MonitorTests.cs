@@ -413,6 +413,19 @@ namespace System.Threading.Tests
                 () => Monitor.Wait(obj, TimeSpan.FromMilliseconds((double)int.MaxValue + 1)));
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMultithreadingSupported))]
+        public static void Wait_SingleThreaded()
+        {
+            object obj = new();
+            lock (obj)
+            {
+                Assert.False(Monitor.Wait(obj, 0));
+                Assert.False(Monitor.Wait(obj, TimeSpan.Zero));
+                Assert.Throws<PlatformNotSupportedException>(() => Monitor.Wait(obj, 1));
+                Assert.Throws<PlatformNotSupportedException>(() => Monitor.Wait(obj));
+            }
+        }
+
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void WaitTest()
         {

@@ -147,6 +147,28 @@ public unsafe class FunctionTableAccessTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
+    public void QueryInterfaceFromIXCLRDataProcess_ForMemoryRegionEnumeration_ReturnsNoInterface(MockTarget.Architecture arch)
+    {
+        TestPlaceholderTarget target = new TestPlaceholderTarget.Builder(arch).Build();
+        SOSDacImpl impl = new(target, legacyObj: null, new());
+        void* process = ComInterfaceMarshaller<IXCLRDataProcess>.ConvertToUnmanaged(impl);
+
+        try
+        {
+            Guid iid = typeof(ICLRDataEnumMemoryRegions).GUID;
+            int hr = Marshal.QueryInterface((nint)process, in iid, out nint memoryRegions);
+
+            Assert.Equal(HResults.COR_E_INVALIDCAST, hr);
+            Assert.Equal(nint.Zero, memoryRegions);
+        }
+        finally
+        {
+            ComInterfaceMarshaller<IXCLRDataProcess>.Free(process);
+        }
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
     public void GetFunctionTable_NullOutParameters_ReturnsEPointer(MockTarget.Architecture arch)
     {
         TestPlaceholderTarget target = new TestPlaceholderTarget.Builder(arch).Build();

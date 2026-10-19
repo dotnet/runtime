@@ -2704,7 +2704,7 @@ void CodeGen::genCodeForBinary(GenTreeOp* tree)
     if (op2->OperIs(GT_MUL) && op2->isContained())
     {
         // In the future, we might consider enabling this for floating-point "unsafe" math.
-        assert(varTypeIsIntegral(tree));
+        assert(varTypeIsIntegral(tree) || tree->TypeIs(TYP_BYREF));
 
         // These operations cannot set flags
         assert((tree->gtFlags & GTF_SET_FLAGS) == 0);
@@ -2742,7 +2742,7 @@ void CodeGen::genCodeForBinary(GenTreeOp* tree)
     }
     else if (op2->OperIs(GT_LSH, GT_RSH, GT_RSZ) && op2->isContained())
     {
-        assert(varTypeIsIntegral(tree));
+        assert(varTypeIsIntegral(tree) || tree->TypeIs(TYP_BYREF));
 
         GenTree* a = op1;
         GenTree* b = op2->gtGetOp1();
@@ -2801,6 +2801,7 @@ void CodeGen::genCodeForBinary(GenTreeOp* tree)
     }
     else if (op2->OperIs(GT_ROR) && op2->isContained())
     {
+        // ROR is only contained under AND/OR/XOR parents, which are never TYP_BYREF.
         assert(varTypeIsIntegral(tree));
 
         GenTree* a = op1;
@@ -2843,7 +2844,7 @@ void CodeGen::genCodeForBinary(GenTreeOp* tree)
     }
     else if (op2->OperIs(GT_CAST) && op2->isContained())
     {
-        assert(varTypeIsIntegral(tree));
+        assert(varTypeIsIntegral(tree) || tree->TypeIs(TYP_BYREF));
 
         GenTree* a = op1;
         GenTree* b = op2->AsCast()->CastOp();
@@ -3432,7 +3433,7 @@ void CodeGen::genLclHeap(GenTree* tree)
         // illegal pages at any time during the tickling process.
         //
         //       subs  regCnt, SP, regCnt      // regCnt now holds ultimate SP
-        //       bvc   Loop                    // result is smaller than original SP (no wrap around)
+        //       bhs   Loop                    // result is smaller than original SP (no wrap around)
         //       mov   regCnt, #0              // Overflow, pick lowest possible value
         //
         //  Loop:
@@ -3456,7 +3457,7 @@ void CodeGen::genLclHeap(GenTree* tree)
         //       subs  regCnt, SP, regCnt      // regCnt now holds ultimate SP
         GetEmitter()->emitIns_R_R_R(INS_subs, EA_PTRSIZE, regCnt, REG_SPBASE, regCnt);
 
-        inst_JMP(EJ_vc, loop); // branch if the V flag is not set
+        inst_JMP(EJ_hs, loop); // branch if the subtraction didn't borrow (C flag set)
 
         // Overflow, set regCnt to lowest possible value
         instGen_Set_Reg_To_Zero(EA_PTRSIZE, regCnt);
@@ -4270,7 +4271,7 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
         // 'data' goes into x15 (REG_WRITE_BARRIER_SRC)
         genCopyRegIfNeeded(data, REG_WRITE_BARRIER_SRC);
 
-        genGCWriteBarrier(tree, writeBarrierForm);
+        genGCWriteBarrier(writeBarrierForm);
     }
     else // A normal store, not a WriteBarrier store
     {
@@ -4884,7 +4885,7 @@ void CodeGen::genCodeForSelect(GenTreeOp* tree)
         ins = (op2 == nullptr) ? INS_cinc : INS_csinc;
     }
 
-    if (tree->OperIs(GT_SELECT, GT_SELECT_INV, GT_SELECT_NEG))
+    if (tree->OperIs(GT_SELECT, GT_SELECT_INC, GT_SELECT_INV, GT_SELECT_NEG))
     {
         opcond = tree->AsConditional()->gtCond;
         genConsumeRegs(opcond);
@@ -5807,7 +5808,7 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
     // but we don't alter SP.
     target_size_t lastTouchDelta = 0;
 
-    assert(!m_compiler->info.compPublishStubParam || (REG_SECRET_STUB_PARAM != initReg));
+    assert(!m_compiler->compHasSecretStubArgument() || (REG_SECRET_STUB_PARAM != initReg));
 
     if (frameSize < pageSize)
     {

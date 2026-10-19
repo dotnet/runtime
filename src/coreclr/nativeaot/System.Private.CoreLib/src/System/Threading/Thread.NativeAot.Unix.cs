@@ -57,6 +57,7 @@ namespace System.Threading
             }
         }
 
+#if FEATURE_MULTITHREADING
         private unsafe bool CreateThread(GCHandle<Thread> thisThreadHandle)
         {
             // Create the Stop event before starting the thread to make sure
@@ -91,6 +92,7 @@ namespace System.Threading
             StartThread(parameter);
             return IntPtr.Zero;
         }
+#endif
 
         public ApartmentState GetApartmentState()
         {

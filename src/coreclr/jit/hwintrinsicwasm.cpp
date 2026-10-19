@@ -95,8 +95,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
     if (isa == InstructionSet_Vector)
     {
-        return impXplatIntrinsic(intrinsic, clsHnd, method, sig R2RARG(entryPoint), simdBaseType, retType, simdSize,
-                                 mustExpand);
+        return impXplatIntrinsic(intrinsic, clsHnd, method, sig R2RARG(entryPoint), simdBaseType, retType, simdSize);
     }
 
     assert(varTypeIsArithmetic(simdBaseType));

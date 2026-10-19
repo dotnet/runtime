@@ -27,7 +27,7 @@ namespace MonoTests.System.Runtime.Caching
     public class CountersTest
     {
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser, "Wasm is single-threaded, which makes TestEventListener ineffective.")]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi, "Wasm is single-threaded, which makes TestEventListener ineffective.")]
         public async Task Basic_Counters()
         {
             string cacheName = "Basic_Counters_Test";

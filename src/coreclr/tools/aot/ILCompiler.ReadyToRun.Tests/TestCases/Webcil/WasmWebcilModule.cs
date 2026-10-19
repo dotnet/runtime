@@ -8,6 +8,30 @@ namespace Webcil;
 
 public static class WasmWebcilModule
 {
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static nint ReadIntPtrZero() => IntPtr.Zero;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static nuint ReadUIntPtrZero() => UIntPtr.Zero;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static string ReadStringEmpty() => string.Empty;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static bool ReadIsLittleEndian() => BitConverter.IsLittleEndian;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static ref readonly nint AddressIntPtrZero() => ref IntPtr.Zero;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static ref readonly nuint AddressUIntPtrZero() => ref UIntPtr.Zero;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static ref readonly string AddressStringEmpty() => ref string.Empty;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static ref readonly bool AddressIsLittleEndian() => ref BitConverter.IsLittleEndian;
+
     private static readonly int[] s_primes = new int[] { 3, 5, 7, 11, 13 };
     private static int s_counter;
 
@@ -15,6 +39,16 @@ public static class WasmWebcilModule
     public static int AddIntegers(int left, int right)
     {
         return left + right;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void FoldableBodyOne()
+    {
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void FoldableBodyTwo()
+    {
     }
 
     // Reads static data, which forces the JIT to materialize the imageBase address via a
@@ -49,7 +83,20 @@ public static class WasmWebcilModule
     }
 
     [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
-    public static int CatchException(int value)
+    public static int CatchExceptionOne(int value)
+    {
+        try
+        {
+            return 100 / value;
+        }
+        catch (DivideByZeroException)
+        {
+            return -1;
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
+    public static int CatchExceptionTwo(int value)
     {
         try
         {

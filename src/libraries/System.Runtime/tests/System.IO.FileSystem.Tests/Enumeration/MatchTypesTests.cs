@@ -580,8 +580,12 @@ namespace System.IO.Tests.Enumeration
 
             // Test that bar* does NOT match foo files (no false positives)
             win32Paths = GetPaths(testDirectory.FullName, "bar*", new EnumerationOptions { MatchType = MatchType.Win32 });
-            Assert.Equal(4, win32Paths.Length); // bar, bar.b, bar.ba, bar.baz
-            Assert.DoesNotContain(win32Paths, p => p.Contains("foo"));
+            FSAssert.EqualWhenOrdered(new string[] {
+                Path.Combine(testDirectory.FullName, "bar"),
+                Path.Combine(testDirectory.FullName, "bar.b"),
+                Path.Combine(testDirectory.FullName, "bar.ba"),
+                Path.Combine(testDirectory.FullName, "bar.baz")
+            }, win32Paths);
         }
 
         [Fact]
@@ -790,14 +794,13 @@ namespace System.IO.Tests.Enumeration
 
             // The exact results depend on whether 8.3 name generation is enabled on the volume
             // If enabled, should match longName1 and longName2; if disabled, might match nothing
-            // We verify that we don't get false positives
-            Assert.DoesNotContain(shortName.FullName, paths);
-            Assert.DoesNotContain(exactEight.FullName, paths);
 
             // If short names are enabled, we should get matches
             if (paths.Length > 0)
             {
-                Assert.True(paths.All(p => p.Contains("LongFileName")));
+                FSAssert.EqualWhenOrdered(
+                    new string[] { longName1.FullName, longName2.FullName },
+                    paths);
             }
 
             // Long* should match long file names by their actual name

@@ -337,7 +337,7 @@ FUNCTIONS
     CORINFO_CLASS_HANDLE getContinuationType(size_t dataSize, bool* objRefs, size_t objRefsSize);
     CORINFO_METHOD_HANDLE getAsyncResumptionStub(void **entryPoint);
     bool convertPInvokeCalliToCall(CORINFO_RESOLVED_TOKEN * pResolvedToken, bool mustConvert);
-    bool notifyInstructionSetUsage(CORINFO_InstructionSet instructionSet,bool supportEnabled);
+    bool notifyInstructionSetUsage(CORINFO_InstructionSet instructionSet, bool supportEnabled, bool preserveNegativeDependency);
     void updateEntryPointForTailCall(REF_CORINFO_CONST_LOOKUP entryPoint);
     void allocMem(AllocMemArgs* pArgs);
     void reserveUnwindInfo(bool isFunclet, bool isColdCode, uint32_t unwindSize)

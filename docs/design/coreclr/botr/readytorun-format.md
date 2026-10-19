@@ -139,6 +139,7 @@ struct READYTORUN_CORE_HEADER
 | READYTORUN_FLAG_MULTIMODULE_VERSION_BUBBLE | 0x00000040 | This R2R module has multiple modules within its version bubble (For versions before version 6.3, all modules are assumed to possibly have this characteristic)
 | READYTORUN_FLAG_UNRELATED_R2R_CODE         | 0x00000080 | This R2R module has code in it that would not be naturally encoded into this module
 | READYTORUN_FLAG_PLATFORM_NATIVE_IMAGE      | 0x00000100 | The owning composite executable is in the platform native format
+| READYTORUN_FLAG_SINGLE_THREADED            | 0x00002000 | The image targets a single-threaded runtime (built without `FEATURE_MULTITHREADING`) and lays out `[ThreadStatic]` fields as regular statics. The runtime rejects the image if its threading model doesn't match.
 
 ## READYTORUN_SECTION
 
@@ -336,7 +337,7 @@ ECMA 335 does not have a natural encoding for describing an overridden method. T
 
 #### IL Body signatures
 
-ECMA 335 does not define a format that can represent the exact implementation of a method by itself. This signature holds all of the IL of the method, the EH table, the locals table, and each token (other than type references) in those tables is replaced with an index into a local stream of signatures. Those signatures are simply verbatim copies of the needed metadata to describe MemberRefs, TypeSpecs, MethodSpecs, StandaloneSignatures and strings. All of that is bundled into a large byte array. In addition, a series of TypeSignatures follows which allow the type references to be resolved, as well as a methodreference to the uninstantiated method. Assuming all of this matches with the data that is present at runtime, the fixup is considered to be satisfied. See ReadyToRunStandaloneMetadata.cs for the exact details of the format.
+ECMA 335 does not define a format that can represent the exact implementation of a method by itself. This signature holds all of the IL of the method, the EH table, the locals table, and each token (other than type references) in those tables is replaced with an index into a local stream of signatures. Those signatures are simply verbatim copies of the needed metadata to describe MemberRefs, TypeSpecs, MethodSpecs, StandaloneSignatures and strings. All of that is bundled into a large byte array. The byte that describes the locals table also records the method implementation flags that change how the same IL executes: `0x04` is set for `miAsync` (runtime-async) methods and `0x08` for `miSynchronized` methods. In addition, a series of TypeSignatures follows which allow the type references to be resolved, as well as a methodreference to the uninstantiated method. Assuming all of this matches with the data that is present at runtime, the fixup is considered to be satisfied. See ReadyToRunStandaloneMethodMetadata.cs for the exact details of the format.
 
 #### InjectStringThunks signatures
 
@@ -592,6 +593,8 @@ will proceed to every module which specified `READYTORUN_FLAG_UNRELATED_R2R_CODE
 
 **TODO**: document inlining info encoding
 
+CoreCLR no longer consumes this legacy section. R2R inspection tools retain support for reading it.
+
 ## ReadyToRunSectionType.ProfileDataInfo (v2.2+)
 
 **TODO**: document profile data encoding
@@ -644,6 +647,7 @@ section pointed to by the `READYTORUN_SECTION_ASSEMBLIES_ENTRY` core header stru
 ## ReadyToRunSectionType.InliningInfo2 (v4.1+)
 
 The inlining information section captures what methods got inlined into other methods. It consists of a single _Native Format Hashtable_ (described below).
+CoreCLR loads this section only in builds that support profiling, ReJIT, or code versioning.
 
 The entries in the hashtable are lists of inliners for each inlinee. One entry in the hashtable corresponds to one inlinee. The hashtable is hashed by hashcode of the module name XORed with inlinee RID.
 
@@ -704,6 +708,7 @@ manifest metadata representing the versioning bubble.
 
 ## ReadyToRunSectionType.CrossModuleInlineInfo (v6.3+)
 The inlining information section captures what methods got inlined into other methods. It consists of a single _Native Format Hashtable_ (described below).
+CoreCLR loads this section only in builds that support profiling, ReJIT, or code versioning.
 
 The entries in the hashtable are lists of inliners for each inlinee. One entry in the hashtable corresponds to one inlinee. The hashtable is hashed with the version resilient hashcode of the uninstantiated methoddef inlinee.
 
@@ -1128,9 +1133,9 @@ enum ReadyToRunHelper
 
 # Wasm Signature String Encoding
 
-Every managed method signature is encoded as a compact string that uniquely identifies its
-lowered Wasm calling convention. This encoding is used in R2R thunk lookup tables and is
-shared across three codebases:
+Every managed method signature is encoded as a compact string that records the semantic
+details needed by interpreter transition and delay-load thunks. This encoding is shared
+across three codebases:
 
 - **crossgen2** (`WasmLowering.GetSignature`): reference implementation, produces the string
   during R2R compilation.
@@ -1147,6 +1152,21 @@ The string format is:
 
 Some string-discoverable Wasm stubs use a structural encoding that contains only the lowered
 Wasm result and parameter types.
+
+Virtual dispatch (`V`) thunk lookup uses a separate canonical form based only on the
+lowered Wasm function type:
+
+```
+V<wasm-return><wasm-params...>
+```
+
+The return is `v` for no Wasm result; otherwise each result and parameter is encoded as
+`i` (`i32`), `l` (`i64`), `f` (`f32`), `d` (`f64`), or `V` (`v128`). The parameter list
+includes the stack pointer, hidden parameters, indirect return or argument pointers, and
+the portable entrypoint parameter exactly as they appear in the Wasm function type. This
+allows one virtual dispatch thunk to serve managed signatures whose semantic encodings
+differ but whose Wasm calling conventions are identical, such as an indirect structure
+argument and an `i32` argument on Wasm32.
 
 **Return type** (first character):
 
@@ -1172,7 +1192,9 @@ for parameters because their placement in the transition block depends on it.
 **Hidden parameters** (inserted between `this` and explicit parameters, in order):
 
 1. **Generic context** (`i`): present when the method requires an inst method desc or
-   method table argument.
+   method table argument. It is encoded like a pointer argument: without an async
+   continuation it occupies the same slot as a leading pointer argument, and callers such as
+   `InitHelpers.CallClassConstructor` pass it as one.
 2. **Async continuation** (`a`): present for async calls.
 
 Note: the hidden return buffer pointer is **not** encoded in the signature string. Its
@@ -1245,6 +1267,26 @@ thunk categories:
 | `U` | Unboxing stub whose target does not require a generic context argument |
 | `UG` | Unboxing stub that passes the boxed object's MethodTable as the generic context argument |
 | `UM` | Unboxing stub that passes a target MethodDesc as the generic context argument |
+| `V` | Virtual dispatch thunk |
+
+A `V` thunk receives a dynamically allocated virtual-dispatch portable entrypoint as its final
+argument. The first call uses the signature-specific external-method thunk. When the runtime
+resolves a class virtual call, it dynamically looks up the corresponding `V` thunk and publishes
+a new portable entrypoint containing that thunk, the two packed vtable offsets, and the original
+portable entrypoint. Subsequent calls load the target method's portable entrypoint from the
+receiver's method table and forward the call using the same lowered Wasm signature. If that
+portable entrypoint does not yet have an actual code target, the `V` thunk redispatches through
+the original portable entrypoint so the runtime can resolve the receiver and prepare its target
+portable entrypoint for calls from R2R code.
+
+The 12-byte virtual-dispatch portable entrypoint has this layout:
+
+| Offset | Size | Field |
+|---:|---:|---|
+| 0 | 4 | `V` thunk table index |
+| 4 | 2 | Offset from the method table to the vtable indirection |
+| 6 | 2 | Offset from that indirection to the target slot |
+| 8 | 4 | Pointer to the original import portable entrypoint |
 
 Unboxing stub keys use only structural Wasm result and parameter types:
 

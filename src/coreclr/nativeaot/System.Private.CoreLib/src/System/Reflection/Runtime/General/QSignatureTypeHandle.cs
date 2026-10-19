@@ -61,9 +61,11 @@ namespace System.Reflection.Runtime.General
 #endif
         }
 
-        internal Type GetModifiedType(TypeContext typeContext)
+        internal Type GetModifiedType(Type unmodifiedType)
         {
-            return ModifiedType.Create(Resolve(typeContext).ToType(), (global::Internal.Metadata.NativeFormat.MetadataReader)Reader, _handle);
+            return Reader is null
+                ? ModifiedType.Create(unmodifiedType)
+                : ModifiedType.Create(unmodifiedType, (global::Internal.Metadata.NativeFormat.MetadataReader)Reader, _handle);
         }
     }
 }

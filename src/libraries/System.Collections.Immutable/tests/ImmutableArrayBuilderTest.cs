@@ -95,6 +95,19 @@ namespace System.Collections.Immutable.Tests
         }
 
         [Fact]
+        public void AddRangeICollectionUsesCopyTo()
+        {
+            var builder = ImmutableArray.CreateBuilder<int>(1);
+            builder.Add(1);
+
+            var items = new CopyToTrackingCollection<int>(2, 3);
+            builder.AddRange(items); // exceeds capacity
+
+            Assert.Equal(1, items.CopyToCallCount);
+            Assert.Equal(new[] { 1, 2, 3 }, builder);
+        }
+
+        [Fact]
         public void Add()
         {
             ImmutableArray<int>.Builder builder = ImmutableArray.CreateBuilder<int>(0);
@@ -330,6 +343,22 @@ namespace System.Collections.Immutable.Tests
 
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => builder.InsertRange(-1, new ImmutableArray<int>()));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => builder.InsertRange(100, new ImmutableArray<int>()));
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        public void InsertRangeICollectionUsesCopyTo(int index)
+        {
+            var builder = ImmutableArray.CreateBuilder<int>();
+            builder.AddRange(1, 2);
+
+            var items = new CopyToTrackingCollection<int>(5, 6);
+            builder.InsertRange(index, items);
+
+            Assert.Equal(1, items.CopyToCallCount);
+            Assert.Equal(new[] { 1, 2 }.Take(index).Concat(new[] { 5, 6 }).Concat(new[] { 1, 2 }.Skip(index)), builder);
         }
 
         [Fact]

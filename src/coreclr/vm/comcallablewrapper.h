@@ -449,7 +449,7 @@ struct ComMethodTable
     BOOL IsLayoutComplete()
     {
         LIMITED_METHOD_CONTRACT;
-        return (m_Flags & enum_LayoutComplete) != 0;
+        return (VolatileLoad(&m_Flags) & enum_LayoutComplete) != 0;
     }
 
     BOOL IsComVisible()
@@ -558,38 +558,6 @@ struct ComMethodTable
         return (ComCallMethodDesc *)pCMD;
     }
 
-    BOOL OwnedbyThisMT(unsigned slotIndex)
-    {
-        CONTRACTL
-        {
-            WRAPPER(THROWS);
-            WRAPPER(GC_TRIGGERS);
-            MODE_ANY;
-        }
-        CONTRACTL_END;
-
-        if (!IsIClassXOrBasicItf())
-            return TRUE;
-
-        if (m_pMDescr != NULL)
-        {
-            // These are the methods from the default interfaces such as IUnknown.
-            unsigned cbExtraSlots = GetNumExtraSlots(GetInterfaceType());
-
-            // Refer to ComMethodTable::LayOutClassMethodTable().
-            ULONG cbSize     = *(ULONG *)m_pMDescr;
-            ULONG cbNewSlots = cbSize / sizeof(ComCallMethodDesc);
-            _ASSERTE( (cbSize % sizeof(ComCallMethodDesc)) == 0);
-
-            // m_cbSlots is the total number of methods in addition to the ones from the
-            // default interfaces.  cbNewSlots is the total number of methods introduced
-            // by this class (== m_cbSlots - <slots from parent MT>).
-            return slotIndex >= (cbExtraSlots + m_cbSlots - cbNewSlots);
-        }
-
-        return FALSE;
-    }
-
     ComMethodTable *GetParentClassComMT();
 
     static inline PTR_ComMethodTable ComMethodTableFromIP(PTR_IUnknown pUnk)
@@ -639,10 +607,9 @@ struct ComMethodTable
         CONTRACTL_END;
 
         // Generate the IClassX IID if it hasn't been generated yet.
-        if (!(m_Flags & enum_GuidGenerated))
+        if (!(VolatileLoad(&m_Flags) & enum_GuidGenerated))
         {
-            GenerateClassItfGuid(TypeHandle(m_pMT), &m_IID);
-            m_Flags |= enum_GuidGenerated;
+            GenerateIID();
         }
 
         return m_IID;
@@ -657,12 +624,29 @@ struct ComMethodTable
     }
 
 private:
+#ifndef DACCESS_COMPILE
+    void GenerateIID();
+
+    void SetFlags(size_t flags)
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        static_assert(offsetof(ComMethodTable, m_Flags) % alignof(size_t) == 0);
+
+        // Preserve other flags while publishing the payload initialized before this update.
+#ifdef HOST_64BIT
+        InterlockedOr64(reinterpret_cast<LONG64*>(&m_Flags), static_cast<LONG64>(flags));
+#else
+        InterlockedOr(reinterpret_cast<LONG*>(&m_Flags), static_cast<LONG>(flags));
+#endif // HOST_64BIT
+    }
+#endif // DACCESS_COMPILE
+
     SLOT             m_ptReserved; //= (SLOT) 0xDEADC0FF;  reserved
     PTR_MethodTable  m_pMT; // pointer to the VMs method table
     ULONG            m_cbSlots; // number of slots in the interface (excluding IUnk/IDisp)
     LONG             m_cbRefCount; // ref-count the vtable as it is being shared
     size_t           m_Flags; // make sure this is initialized to zero
-    LPVOID           m_pMDescr; // pointer to methoddescr.s owned by this MT
     ITypeInfo*       m_pITypeInfo; // cached pointer to ITypeInfo
     DispatchInfo*    m_pDispatchInfo; // The dispatch info used to expose IDispatch to COM.
     IID              m_IID; // The IID of the interface.
@@ -671,7 +655,7 @@ private:
     // SLOT              m_slots[]; // vtable entries (m_cbSlots of them, plus the 3 or 7 from IUnk/IDisp)
     // For interface COM method tables, an inline ComCallMethodDesc m_comCallMethodDesc[] array (m_cbSlots entries)
     // may follow the slots. For class-interface layouts, the ComCallMethodDesc[] block is allocated separately and
-    // referenced via m_pMDescr. Basic COM method tables may have no ComCallMethodDesc descriptors at all.
+    // referenced by the entry thunks. Basic COM method tables may have no ComCallMethodDesc descriptors at all.
 
     friend struct ::cdac_data<ComMethodTable>;
 };
