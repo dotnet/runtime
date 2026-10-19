@@ -276,6 +276,10 @@ jobs:
 
     # Some post-build steps compile additional tests. Purge only after those
     # steps have completed, before Cache@2 saves its post-job snapshot.
+    - template: /eng/pipelines/coreclr/templates/prune-roslyn-cache.yml
+      parameters:
+        osGroup: ${{ parameters.osGroup }}
+
     - template: /eng/pipelines/coreclr/templates/purge-illink-cache.yml
       parameters:
         osGroup: ${{ parameters.osGroup }}

@@ -8,6 +8,7 @@ using System.Runtime.InteropServices;
 #if NET
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.Wasm;
 using System.Runtime.Intrinsics.X86;
 #endif
 using static System.Buffers.Text.Base64Helper;
@@ -375,6 +376,7 @@ namespace System.Buffers.Text
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
             [CompExactlyDependsOn(typeof(Ssse3))]
+            [CompExactlyDependsOn(typeof(PackedSimd))]
             public bool TryDecode128Core(
                 Vector128<byte> str,
                 Vector128<byte> hiNibbles,
@@ -519,6 +521,7 @@ namespace System.Buffers.Text
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
             [CompExactlyDependsOn(typeof(Ssse3))]
+            [CompExactlyDependsOn(typeof(PackedSimd))]
             public bool TryDecode128Core(Vector128<byte> str, Vector128<byte> hiNibbles, Vector128<byte> maskSlashOrUnderscore, Vector128<byte> mask8F,
                 Vector128<byte> lutLow, Vector128<byte> lutHigh, Vector128<sbyte> lutShift, Vector128<byte> shiftForUnderscore, out Vector128<byte> result) =>
                 default(Base64UrlDecoderByte).TryDecode128Core(str, hiNibbles, maskSlashOrUnderscore, mask8F, lutLow, lutHigh, lutShift, shiftForUnderscore, out result);

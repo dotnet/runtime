@@ -151,6 +151,94 @@ namespace System.Security.Cryptography.Xml.Tests
             AssertExtensions.Throws<ArgumentException>("type", () => transform.GetOutput(doc.GetType()));
         }
 
+#if NET
+        [Fact]
+        public void C14N_AttributeLimit_DefaultBoundary_RendersUpToLimitThenThrows()
+        {
+            TestHelpers.ExecuteTransform(BuildElementWithAttributes(512), new XmlDsigC14NTransform());
+
+            Assert.Throws<CryptographicException>(
+                () => TestHelpers.ExecuteTransform(BuildElementWithAttributes(513), new XmlDsigC14NTransform()));
+        }
+
+        [Fact]
+        public void C14N_NamespaceLimit_DefaultBoundary_RendersUpToLimitThenThrows()
+        {
+            TestHelpers.ExecuteTransform(BuildElementWithNamespaces(512), new XmlDsigC14NTransform());
+
+            Assert.Throws<CryptographicException>(
+                () => TestHelpers.ExecuteTransform(BuildElementWithNamespaces(513), new XmlDsigC14NTransform()));
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(0)]    // 0 means no limit
+        [InlineData(300)]  // explicit limit above the element width
+        public void C14N_AttributeLimit_RaisedOrUnlimited_AllowsWiderElements(int maxAttributes)
+        {
+            RemoteExecutor.Invoke(static (string maxAttributesStr) =>
+            {
+                AppContext.SetData(
+                    "System.Security.Cryptography.Xml.DangerousMaxCanonicalizationAttributesPerElement",
+                    int.Parse(maxAttributesStr));
+
+                TestHelpers.ExecuteTransform(BuildElementWithAttributes(200), new XmlDsigC14NTransform());
+                TestHelpers.ExecuteTransform(BuildElementWithNamespaces(200), new XmlDsigC14NTransform());
+            }, maxAttributes.ToString()).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void C14N_AttributeLimit_LoweredLimit_IsEnforced()
+        {
+            RemoteExecutor.Invoke(static () =>
+            {
+                AppContext.SetData("System.Security.Cryptography.Xml.DangerousMaxCanonicalizationAttributesPerElement", 10);
+
+                TestHelpers.ExecuteTransform(BuildElementWithAttributes(10), new XmlDsigC14NTransform());
+
+                Assert.Throws<CryptographicException>(
+                    () => TestHelpers.ExecuteTransform(BuildElementWithAttributes(11), new XmlDsigC14NTransform()));
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void C14N_AttributeLimit_NegativeFallsBackToDefault()
+        {
+            // Negative values are rejected by GetInt32Config (allowNegative: false), leaving the
+            // default of 512 in force.
+            RemoteExecutor.Invoke(static () =>
+            {
+                AppContext.SetData("System.Security.Cryptography.Xml.DangerousMaxCanonicalizationAttributesPerElement", -1);
+
+                TestHelpers.ExecuteTransform(BuildElementWithAttributes(512), new XmlDsigC14NTransform());
+
+                Assert.Throws<CryptographicException>(
+                    () => TestHelpers.ExecuteTransform(BuildElementWithAttributes(513), new XmlDsigC14NTransform()));
+            }).Dispose();
+        }
+
+        private static string BuildElementWithAttributes(int count)
+        {
+            StringBuilder element = new StringBuilder("<doc");
+            for (int i = 0; i < count; i++)
+            {
+                element.Append(FormattableString.Invariant($" a{i:D4}=\"{i}\""));
+            }
+
+            return element.Append("></doc>").ToString();
+        }
+
+        private static string BuildElementWithNamespaces(int count)
+        {
+            StringBuilder element = new StringBuilder("<doc");
+            for (int i = 0; i < count; i++)
+            {
+                element.Append(FormattableString.Invariant($" xmlns:p{i:D4}=\"urn:{i}\""));
+            }
+
+            return element.Append("></doc>").ToString();
+        }
+#endif
+
         [Fact]
         public void C14NSpecExample1()
         {
@@ -485,6 +573,66 @@ namespace System.Security.Cryptography.Xml.Tests
             doc.PreserveWhitespace = true;
             doc.Load(ms);
             return doc;
+        }
+
+        private const int DeepInputDepth = 100000;
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static void DeepStreamInput_LoadInput_Throws()
+        {
+            RemoteExecutor.Invoke(static () =>
+            {
+                byte[] payload = Encoding.UTF8.GetBytes(BuildDeepXml(DeepInputDepth));
+                Assert.Throws<CryptographicException>(() =>
+                {
+                    using MemoryStream ms = new MemoryStream(payload);
+                    XmlDsigC14NTransform transform = new XmlDsigC14NTransform();
+                    transform.LoadInput(ms);
+                    transform.GetOutput();
+                });
+            }).Dispose();
+        }
+
+        private static string BuildDeepXml(int depth)
+        {
+            StringBuilder sb = new StringBuilder(depth * 7 + 1);
+            for (int i = 0; i < depth; i++)
+                sb.Append("<a>");
+            sb.Append('x');
+            for (int i = 0; i < depth; i++)
+                sb.Append("</a>");
+            return sb.ToString();
+        }
+
+        private const string DtdPayload = "<!DOCTYPE r []><r>x</r>";
+        private const string CryptoXmlAllowDtdProcessingAppContextSwitch = "System.Security.Cryptography.Xml.CryptoXmlAllowDtdProcessing";
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static void DtdStreamInput_LoadInput_Throws()
+        {
+            RemoteExecutor.Invoke(static () =>
+            {
+                Assert.Throws<XmlException>(() =>
+                {
+                    using MemoryStream ms = new MemoryStream(Encoding.UTF8.GetBytes(DtdPayload));
+                    XmlDsigC14NTransform transform = new XmlDsigC14NTransform();
+                    transform.LoadInput(ms);
+                    transform.GetOutput();
+                });
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static void DtdStreamInput_LoadInput_WithOptIn_Succeeds()
+        {
+            RemoteExecutor.Invoke(static () =>
+            {
+                AppContext.SetSwitch(CryptoXmlAllowDtdProcessingAppContextSwitch, true);
+                using MemoryStream ms = new MemoryStream(Encoding.UTF8.GetBytes(DtdPayload));
+                XmlDsigC14NTransform transform = new XmlDsigC14NTransform();
+                transform.LoadInput(ms);
+                Assert.NotNull(transform.GetOutput());
+            }).Dispose();
         }
 #endif
     }

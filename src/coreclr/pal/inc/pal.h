@@ -3142,6 +3142,12 @@ PAL_SetActivationFunction(
     IN PAL_ActivationFunction pActivationFunction,
     IN PAL_SafeActivationCheckFunction pSafeActivationCheckFunction);
 
+// Unblock the runtime activation signal for the current thread.
+PALIMPORT
+VOID
+PALAPI
+PAL_UnmaskActivationSignal(VOID);
+
 PALIMPORT
 BOOL
 PALAPI
