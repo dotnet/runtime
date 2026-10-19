@@ -184,13 +184,19 @@ namespace System.Formats.Tar.Tests
 
             foreach ((int segmentCount, long firstOffset, long firstLength, int mapLength) in layouts)
             {
-                foreach (object[] booleans in GetDataAndBooleanData(GetTwoBooleansData()))
+                foreach (bool copyData in new[] { false, true })
                 {
-                    yield return new object[]
+                    foreach (bool seekableSource in new[] { false, true })
                     {
-                        segmentCount, firstOffset, firstLength, mapLength,
-                        (bool)booleans[0], (bool)booleans[1], (bool)booleans[2],
-                    };
+                        foreach (bool useAsync in new[] { false, true })
+                        {
+                            yield return new object[]
+                            {
+                                segmentCount, firstOffset, firstLength, mapLength,
+                                copyData, seekableSource, useAsync,
+                            };
+                        }
+                    }
                 }
             }
         }
