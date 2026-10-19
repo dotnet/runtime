@@ -2217,6 +2217,11 @@ void ExecuteInterpretedMethodWithArgs_PortableEntryPoint_Complex(PCODE portableE
     // The method to run; differs from pMethod when a MethodImpl in the same type redirects pMethod's slot.
     MethodDesc* pTargetMethod = pMethod;
     InterpByteCodeStart* targetIp = pMethod->GetInterpreterCode();
+    if (targetIp != NULL && pMethod->IsVtableSlot() && targetIp->Method->methodHnd != pMethod)
+    {
+        // PrepareInterpreterCode stored the MethodImpl target's code on the declaration; run as that method.
+        pTargetMethod = targetIp->Method->methodHnd;
+    }
     if (targetIp == NULL)
     {
         MAKE_CURRENT_THREAD_AVAILABLE_EX(GetThread());
