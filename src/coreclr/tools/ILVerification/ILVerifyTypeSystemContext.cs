@@ -17,8 +17,6 @@ namespace ILVerify
     {
         internal readonly IResolver _resolver;
 
-        internal bool AllowIgnoresAccessChecksTo;
-
         private RuntimeInterfacesAlgorithm _arrayOfTRuntimeInterfacesAlgorithm;
         private MetadataRuntimeInterfacesAlgorithm _metadataRuntimeInterfacesAlgorithm = new MetadataRuntimeInterfacesAlgorithm();
         private MetadataVirtualMethodAlgorithm _metadataVirtualMethodAlgorithm = new MetadataVirtualMethodAlgorithm();
@@ -29,6 +27,8 @@ namespace ILVerify
         {
             _resolver = resolver;
         }
+
+        public bool AllowIgnoresAccessChecksTo { get; init; }
 
         public override ModuleDesc ResolveAssembly(AssemblyNameInfo name, bool throwIfNotFound = true)
         {

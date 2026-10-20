@@ -27,13 +27,13 @@ namespace ILVerify
 
         public Verifier(IResolver resolver) : this(resolver, null){ }
 
-        public Verifier(IResolver resolver, VerifierOptions verifierOptions) : this(new ILVerifyTypeSystemContext(resolver), verifierOptions) { }
+        public Verifier(IResolver resolver, VerifierOptions verifierOptions)
+            : this(new ILVerifyTypeSystemContext(resolver) { AllowIgnoresAccessChecksTo = verifierOptions?.AllowIgnoresAccessChecksTo == true }, verifierOptions) { }
 
         internal Verifier(ILVerifyTypeSystemContext context, VerifierOptions verifierOptions)
         {
             _typeSystemContext = context;
             _verifierOptions = verifierOptions ?? new VerifierOptions();
-            _typeSystemContext.AllowIgnoresAccessChecksTo = _verifierOptions.AllowIgnoresAccessChecksTo;
         }
 
         public void SetSystemModuleName(AssemblyNameInfo name)

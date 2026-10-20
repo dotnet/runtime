@@ -56,14 +56,13 @@ namespace ILVerification.Tests
 
         private static IEnumerable<VerificationResult> Verify(TestCase testCase)
         {
-            EcmaModule module = TestDataLoader.GetModuleForTestAssembly(testCase.ModuleName);
+            EcmaModule module = TestDataLoader.GetModuleForTestAssembly(testCase.ModuleName, allowIgnoresAccessChecksTo: true);
             var methodHandle = (MethodDefinitionHandle) MetadataTokens.EntityHandle(testCase.MetadataToken);
             var method = module.GetMethod(methodHandle);
             var verifier = new Verifier((ILVerifyTypeSystemContext)method.Context, new VerifierOptions
             {
                 IncludeMetadataTokensInErrorMessages = true,
-                SanityChecks = true,
-                AllowIgnoresAccessChecksTo = true
+                SanityChecks = true
             });
 
             return verifier.Verify(module.PEReader, methodHandle);
