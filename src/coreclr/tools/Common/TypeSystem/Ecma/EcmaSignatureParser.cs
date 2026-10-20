@@ -340,6 +340,16 @@ namespace Internal.TypeSystem.Ecma
         public TypeDesc ParseTypeSpec(TypeSpecificationHandle typeSpecHandle)
         {
             SignatureTypeCode typeCode = _reader.ReadSignatureTypeCode();
+
+            // Like any Type, a TypeSpec can start with custom modifiers (Ecma-335-Augments.md, "Custom modifiers
+            // can go in more places than specified"). C# encodes the 'unmanaged' constraint this way:
+            // modreq(System.Runtime.InteropServices.UnmanagedType) class System.ValueType.
+            bool hasCustomModifiers = typeCode is SignatureTypeCode.RequiredModifier or SignatureTypeCode.OptionalModifier;
+            if (hasCustomModifiers)
+            {
+                typeCode = ParseTypeCodeImpl(typeCode, skipPinned: false);
+            }
+
             switch (typeCode)
             {
                 case SignatureTypeCode.Pointer:
@@ -349,6 +359,8 @@ namespace Internal.TypeSystem.Ecma
                 case SignatureTypeCode.GenericTypeInstance:
                 case SignatureTypeCode.GenericTypeParameter:
                 case SignatureTypeCode.GenericMethodParameter:
+                // A class or value type with custom modifiers cannot be encoded as a TypeDefOrRef token.
+                case SignatureTypeCode.TypeHandle when hasCustomModifiers:
                     return ParseType(ParseTypeCodeImpl(typeCode));
             }
             ReportInvalidTypeSpecEncoding(typeSpecHandle);
