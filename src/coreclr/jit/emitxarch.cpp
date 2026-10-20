@@ -13130,6 +13130,7 @@ void emitter::emitDispIns(
                     break;
                 }
 
+                case INS_TT_QUARTER:
                 case INS_TT_QUARTER_MEM:
                 {
                     unsigned maskElemSize = XMM_REGSIZE_BYTES / CodeGenInterface::instKMaskBaseSize(ins);
@@ -17945,7 +17946,7 @@ bool emitter::TryEvexCompressDisp8Byte(instrDesc* id, ssize_t dsp, ssize_t* comp
 
         case INS_TT_HALF:
         {
-            assert(inputSize == 4);
+            assert((inputSize == 2) || (inputSize == 4));
             if (isEmbBroadcast)
             {
                 // N = input size in bytes
@@ -17955,6 +17956,21 @@ bool emitter::TryEvexCompressDisp8Byte(instrDesc* id, ssize_t dsp, ssize_t* comp
             {
                 // N = vector length in bytes
                 disp8Compression = vectorLength / 2;
+            }
+            break;
+        }
+
+        case INS_TT_QUARTER:
+        {
+            if (isEmbBroadcast)
+            {
+                // N = input size in bytes
+                disp8Compression = inputSize;
+            }
+            else
+            {
+                // N = vector length in bytes
+                disp8Compression = vectorLength / 4;
             }
             break;
         }
