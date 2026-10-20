@@ -39,7 +39,6 @@ set(HEADERS
     ../../fxr_resolver.h
 )
 
-# TODO: https://github.com/dotnet/runtime/issues/111523
 if (NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_OPENHARMONY)
     add_compile_definitions(NATIVE_LIBS_EMBEDDED)
 endif()
