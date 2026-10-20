@@ -142,12 +142,14 @@ pinned Helix SDK without injecting extra reporters. Its default target only
 validates inputs; submission requires **`-t:Submit`**, which waits for completion
 and cancels the submitted job on task cancellation.
 
-`collect` checks the public Helix API's job, host queue, work-item identity, terminal state,
-infrastructure errors, failure reason and exit code, then downloads the uploaded
+`collect` checks the public Helix API's job, submitted queue alias (or queue ID
+when no alias is reported), work-item identity, terminal state, infrastructure
+errors, failure reason and exit code, then downloads the uploaded
 xUnit XML and console log. It constructs the receipt from that completion,
 passes the report through native admission, and compares any hit with the fresh
 test identities/outcomes/skip reasons. Ordering, worker directory prefixes and
-execution timings are ignored. The original cached job provenance is retained.
+execution timings are ignored. The resolved physical queue ID and submitted
+alias are preserved in provenance alongside the original cached job.
 Every hit still executes on Helix; no cached result is published as a new run.
 
 Evidence is included in the existing build-log artifact under

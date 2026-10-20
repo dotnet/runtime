@@ -126,9 +126,10 @@ def collect(args):
     job_id = str(uuid.UUID((output / "job-id.txt").read_text().strip()))
     summary = {"key": execution["key"], "lookup": lookup["status"], "jobId": job_id, "mode": "shadow"}
     write_json(output / "summary.json", summary)
-    job = get_json(f"{API}/jobs/{job_id}")
+    job = get_json(f"{API}/jobs/{job_id}/details")
     expected_queue = execution["inputs"]["environmentFingerprint"]["QueueId"]
-    if job["Name"] != job_id or job["QueueId"].casefold() != expected_queue.casefold():
+    submitted_queue = job.get("QueueAlias") or job["QueueId"]
+    if job["Name"] != job_id or submitted_queue.casefold() != expected_queue.casefold():
         raise ValueError("Helix returned a different job or target queue.")
     item = completed_work_item(job_id, execution["inputs"]["name"], args.wait_seconds)
     write_json(output / "work-item.json", item)
@@ -159,6 +160,8 @@ def collect(args):
     write_json(results / "provenance.json", {
         "kind": "helix-execution",
         "jobId": job_id,
+        "queueAlias": job.get("QueueAlias"),
+        "resolvedQueueId": job["QueueId"],
         "machineName": item["MachineName"],
         "state": item["State"],
     })

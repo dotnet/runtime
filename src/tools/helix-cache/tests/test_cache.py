@@ -346,8 +346,13 @@ class CacheTests(unittest.TestCase):
             files = [{"Name": "testResults.xml", "Link": "https://example.invalid/report"}]
         job = {"Name": job_id, "QueueId": self.queues[0]["QueueId"]}
         job.update(job_changes or {})
+        responses = {
+            f"{shadow.API}/jobs/{job_id}": {"Name": job["Name"], "QueueId": job["QueueId"]},
+            f"{shadow.API}/jobs/{job_id}/details": job,
+            f"{shadow.API}/jobs/{job_id}/workitems/{shadow.WORK_ITEM}/files?latestOnly=true": files,
+        }
         with (patch.object(shadow, "completed_work_item", return_value=item),
-              patch.object(shadow, "get_json", side_effect=lambda url: job if url == f"{shadow.API}/jobs/{job_id}" else files),
+              patch.object(shadow, "get_json", side_effect=responses.__getitem__),
               patch.object(shadow, "download", side_effect=lambda url, path: path.write_text(report)),
               redirect_stdout(io.StringIO())):
             shadow.collect(args)
@@ -406,6 +411,39 @@ class CacheTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "target queue"):
             self.collect_shadow(args, "00000000-0000-0000-0000-000000000001", job_changes={"QueueId": "other"})
         self.assertEqual([], list((self.cache / "entries").rglob("entry.json")))
+
+    def test_shadow_queue_alias_validation_and_provenance(self):
+        expected = self.queues[0]["QueueId"]
+        cases = [
+            ({"QueueId": expected + ".rt", "QueueAlias": expected.upper()}, True),
+            ({"QueueId": expected}, True),
+            ({"QueueId": expected, "QueueAlias": None}, True),
+            ({"QueueId": expected, "QueueAlias": ""}, True),
+            ({"QueueId": expected, "QueueAlias": "other"}, False),
+            ({"QueueId": "other", "QueueAlias": "other"}, False),
+            ({"QueueId": "other"}, False),
+            ({"Name": "other", "QueueId": expected + ".rt", "QueueAlias": expected}, False),
+        ]
+        for index, (job, accepted) in enumerate(cases):
+            with self.subTest(job=job):
+                self.cache = self.root / f"cache-{index}"
+                args = self.prepare_shadow(f"shadow-{index}")
+                if accepted:
+                    self.collect_shadow(args, "00000000-0000-0000-0000-000000000001", job_changes=job)
+                    provenance = shadow.read_json(args.output / "results/provenance.json")
+                    self.assertEqual(job["QueueId"], provenance["resolvedQueueId"])
+                    self.assertEqual(job.get("QueueAlias"), provenance["queueAlias"])
+                    entry, = shadow.read_json(args.output / "lookup.json")["entries"]
+                    receipt = shadow.read_json(
+                        self.cache / "entries/v1" / entry["execution"]["key"][:2]
+                        / entry["execution"]["key"] / "results/result.json"
+                    )
+                    self.assertEqual(expected, receipt["targetQueue"])
+                else:
+                    with self.assertRaisesRegex(ValueError, "job or target queue"):
+                        self.collect_shadow(args, "00000000-0000-0000-0000-000000000001", job_changes=job)
+                    self.assertFalse((args.output / "results").exists())
+                    self.assertEqual([], list((self.cache / "entries").rglob("entry.json")))
 
     def test_shadow_requires_one_uploaded_report_and_native_report_validation(self):
         args = self.prepare_shadow()
