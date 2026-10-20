@@ -168,6 +168,9 @@
   <data name="CallVirtOnValueType" xml:space="preserve">
     <value>Callvirt on a value type method.</value>
   </data>
+  <data name="CalliSignatureMismatch" xml:space="preserve">
+    <value>Method pointer signature does not match the calli call-site signature.</value>
+  </data>
   <data name="CatchByRef" xml:space="preserve">
     <value>ByRef not allowed as catch type.</value>
   </data>
@@ -230,6 +233,9 @@
   </data>
   <data name="ExpectedNumericType" xml:space="preserve">
     <value>Expected numeric type on the stack.</value>
+  </data>
+  <data name="ExpectedSignatureToken" xml:space="preserve">
+    <value>Expected signature token.</value>
   </data>
   <data name="ExpectedStaticField" xml:space="preserve">
     <value>Expected static field.</value>
@@ -335,6 +341,9 @@
   </data>
   <data name="ReadOnlyIllegalWrite" xml:space="preserve">
     <value>Illegal write to readonly ByRef.</value>
+  </data>
+  <data name="ReadOnlyInMkrefany" xml:space="preserve">
+    <value>A readonly ByRef cannot be used with mkrefany.</value>
   </data>
   <data name="ReadonlyUnexpectedCallee" xml:space="preserve">
     <value>The readonly prefix may only be applied to calls to array methods returning ByRefs.</value>
