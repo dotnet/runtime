@@ -130,6 +130,11 @@ namespace System.Reflection
         [DebuggerGuidedStepThrough]
         public object? Invoke(object? obj, Span<object?> arguments)
         {
+            if (_parameterCount != arguments.Length)
+            {
+                ThrowForArgCountMismatch();
+            }
+
             object? result = _methodBaseInvoker.Invoke(obj, arguments);
             DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
             return result;
