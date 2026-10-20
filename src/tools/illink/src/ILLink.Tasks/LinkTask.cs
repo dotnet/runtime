@@ -274,29 +274,24 @@ namespace ILLink.Tasks
             DateTime outputTimestampUtc = DateTime.UtcNow;
             InvocationCache cache = InvocationCache.TryCreateFromEnvironment(Log, "ILLink",
                 "ILLINK_EXPERIMENTAL_CACHE", "ILLINK_EXPERIMENTAL_CACHE_PATH", "illink");
-            string inputHash = null;
-            if (cache is not null && !TryComputeCacheKey(pathToTool, commandLineCommands, responseFileCommands, out inputHash))
-                cache = null;
-
             InvocationCacheOutputs outputs = InvocationCacheOutputs.FromDirectory(OutputDirectory.ItemSpec);
-            if (cache is not null && cache.TryRestore(inputHash, outputs, outputTimestampUtc))
-                return 0;
+            return InvocationCache.Execute(cache, outputTimestampUtc,
+                () => TryComputeCacheKey(pathToTool, commandLineCommands, responseFileCommands, out string inputHash)
+                    ? new InvocationCacheRequest(inputHash, outputs) : null,
+                _ =>
+                {
+                    try
+                    {
+                        outputs.Clean();
+                    }
+                    catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                    {
+                        Log.LogError($"Could not prepare ILLink output directory '{OutputDirectory.ItemSpec}': {ex.Message}");
+                        return -1;
+                    }
 
-            try
-            {
-                outputs.Clean();
-            }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-            {
-                Log.LogError($"Could not prepare ILLink output directory '{OutputDirectory.ItemSpec}': {ex.Message}");
-                return -1;
-            }
-
-            int exitCode = base.ExecuteTool(pathToTool, responseFileCommands, commandLineCommands);
-            if (exitCode == 0 && !Log.HasLoggedErrors && cache is not null)
-                cache.Store(inputHash, outputs);
-
-            return exitCode;
+                    return base.ExecuteTool(pathToTool, responseFileCommands, commandLineCommands);
+                });
         }
 
         private bool TryComputeCacheKey(string pathToTool, string commandLineCommands, string responseFileCommands, out string inputHash)

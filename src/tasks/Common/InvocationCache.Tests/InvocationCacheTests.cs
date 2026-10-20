@@ -13,6 +13,7 @@ using System.Runtime.ExceptionServices;
 using System.Security.Cryptography;
 using System.Threading;
 using Microsoft.Build.Framework;
+using Microsoft.Build.Utilities;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
@@ -745,6 +746,214 @@ public class InvocationCacheTests
         Assert.False(Directory.Exists(cache.CacheDirectory));
     }
 
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    public void SharedExecutionBypassesWithoutSkippingTaskPreparation(bool configured, bool eligible)
+    {
+        using var test = new CacheTestDirectory();
+        Directory.CreateDirectory(test.Output);
+        string stale = Path.Combine(test.Output, "stale.dll");
+        File.WriteAllText(stale, "stale");
+        int keyComputations = 0;
+        int executions = 0;
+
+        int exitCode = InvocationCache.Execute(configured ? test.Cache : null, CacheTestDirectory.Timestamp,
+            () =>
+            {
+                keyComputations++;
+                return eligible ? new InvocationCacheRequest(CacheTestDirectory.Key, test.OutputOutputs) : null;
+            },
+            outputs =>
+            {
+                Assert.Null(outputs);
+                executions++;
+                test.OutputOutputs.Clean();
+                return 42;
+            },
+            _ => Assert.Fail("Bypass must not read cache metadata."),
+            _ => Assert.Fail("Bypass must not write cache metadata."),
+            () => Assert.Fail("Bypass must not report a hit."));
+
+        Assert.Equal(42, exitCode);
+        Assert.Equal(configured ? 1 : 0, keyComputations);
+        Assert.Equal(1, executions);
+        Assert.False(File.Exists(stale));
+        Assert.False(Directory.Exists(test.Cache.CacheDirectory));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void SharedExecutionStoresSuccessfulResultsAndRestoresWithoutExecuting(bool ownedDirectory)
+    {
+        using var test = new CacheTestDirectory();
+        string image = Path.Combine(test.Output, "image.dll");
+        string symbols = Path.Combine(test.Output, "image.pdb");
+        InvocationCacheOutputs outputs = ownedDirectory ? test.OutputOutputs
+            : InvocationCacheOutputs.FromFiles(new InvocationCacheFile(image), new InvocationCacheFile(symbols, required: false));
+        var events = new List<string>();
+
+        int Run() => InvocationCache.Execute(test.Cache, CacheTestDirectory.Timestamp,
+            () =>
+            {
+                events.Add("key");
+                return new InvocationCacheRequest(CacheTestDirectory.Key, outputs);
+            },
+            activeOutputs =>
+            {
+                Assert.Same(outputs, activeOutputs);
+                events.Add("execute");
+                outputs.Clean();
+                Directory.CreateDirectory(test.Output);
+                File.WriteAllText(image, "computed");
+                return 0;
+            },
+            reader =>
+            {
+                events.Add("read");
+                Assert.Equal(123, reader.ReadInt32());
+            },
+            writer =>
+            {
+                events.Add("write");
+                writer.Write(123);
+            },
+            () =>
+            {
+                events.Add("restored");
+                Assert.Equal("computed", File.ReadAllText(image));
+                Assert.False(File.Exists(symbols));
+            });
+
+        Assert.Equal(0, Run());
+        Assert.Equal(new[] { "key", "execute", "write" }, events);
+        Assert.True(Directory.Exists(test.Entry));
+        events.Clear();
+        File.WriteAllText(image, "outdated");
+        File.WriteAllText(symbols, "stale symbols");
+        string neighbor = Path.Combine(test.Output, "unrelated.txt");
+        File.WriteAllText(neighbor, "neighbor");
+
+        Assert.Equal(0, Run());
+
+        Assert.Equal(new[] { "key", "read", "restored" }, events);
+        Assert.Equal(!ownedDirectory, File.Exists(neighbor));
+    }
+
+    [Theory]
+    [InlineData(0, true)]
+    [InlineData(1, false)]
+    [InlineData(-1, false)]
+    [InlineData(1, true)]
+    public void SharedExecutionDoesNotStoreFailedOrErrorLoggedResults(int exitCode, bool logError)
+    {
+        using var test = new CacheTestDirectory();
+        int executions = 0;
+        int result = InvocationCache.Execute(test.Cache, CacheTestDirectory.Timestamp,
+            () => new InvocationCacheRequest(CacheTestDirectory.Key, test.OutputOutputs),
+            outputs =>
+            {
+                Assert.Same(test.OutputOutputs, outputs);
+                executions++;
+                test.OutputOutputs.Clean();
+                File.WriteAllText(Path.Combine(test.Output, "image.dll"), "produced");
+                if (logError)
+                    test.Log.LogError("Expected compiler error.");
+                return exitCode;
+            },
+            writeMetadata: _ => Assert.Fail("Failed execution must not publish metadata."));
+
+        Assert.Equal(exitCode, result);
+        Assert.Equal(1, executions);
+        Assert.False(Directory.Exists(test.Entry));
+    }
+
+    [Theory]
+    [InlineData("key")]
+    [InlineData("execute")]
+    [InlineData("restored")]
+    public void SharedExecutionPropagatesTaskExceptions(string phase)
+    {
+        using var test = new CacheTestDirectory();
+        if (phase == "restored")
+        {
+            test.WriteSource("image.dll", "cached");
+            test.Cache.Store(CacheTestDirectory.Key, test.SourceOutputs);
+        }
+
+        InvalidOperationException exception = Assert.Throws<InvalidOperationException>(() =>
+            InvocationCache.Execute(test.Cache, CacheTestDirectory.Timestamp,
+                () => phase == "key" ? throw new InvalidOperationException("key") : new InvocationCacheRequest(CacheTestDirectory.Key, test.OutputOutputs),
+                _ => throw new InvalidOperationException("execute"),
+                writeMetadata: _ => Assert.Fail("Task exceptions must not publish results."),
+                onRestored: () => throw new InvalidOperationException("restored")));
+
+        Assert.Equal(phase, exception.Message);
+        Assert.Equal(phase == "restored", Directory.Exists(test.Entry));
+    }
+
+    [Fact]
+    public void SharedExecutionFallsBackAfterRestoreFailure()
+    {
+        using var test = new CacheTestDirectory();
+        test.WriteSource("image.dll", "cached");
+        test.Cache.Store(CacheTestDirectory.Key, test.SourceOutputs);
+        File.WriteAllText(Path.Combine(test.Entry, "outputs", "image.dll"), "corrupt");
+        Directory.CreateDirectory(test.Output);
+        string stale = Path.Combine(test.Output, "stale.dll");
+        File.WriteAllText(stale, "stale");
+        int executions = 0;
+
+        Assert.Equal(0, InvocationCache.Execute(test.Cache, CacheTestDirectory.Timestamp,
+            () => new InvocationCacheRequest(CacheTestDirectory.Key, test.OutputOutputs),
+            outputs =>
+            {
+                Assert.Same(test.OutputOutputs, outputs);
+                executions++;
+                test.OutputOutputs.Clean();
+                File.WriteAllText(Path.Combine(test.Output, "image.dll"), "recomputed");
+                return 0;
+            },
+            onRestored: () => Assert.Fail("Failed restoration must not report a hit.")));
+
+        Assert.Equal(1, executions);
+        Assert.False(File.Exists(stale));
+        Assert.Equal("recomputed", File.ReadAllText(Path.Combine(test.Output, "image.dll")));
+        Assert.Contains(test.BuildEngine.Messages, message => message.Message?.Contains("restore failed") is true);
+    }
+
+    [Fact]
+    public void SharedExecutionFallsBackAfterMetadataFailure()
+    {
+        using var test = new CacheTestDirectory();
+        test.WriteSource("image.dll", "cached");
+        test.Cache.Store(CacheTestDirectory.Key, test.SourceOutputs, writer => writer.Write(123));
+        Directory.CreateDirectory(test.Output);
+        string stale = Path.Combine(test.Output, "stale.dll");
+        File.WriteAllText(stale, "stale");
+        int executions = 0;
+
+        Assert.Equal(0, InvocationCache.Execute(test.Cache, CacheTestDirectory.Timestamp,
+            () => new InvocationCacheRequest(CacheTestDirectory.Key, test.OutputOutputs),
+            outputs =>
+            {
+                Assert.Same(test.OutputOutputs, outputs);
+                executions++;
+                test.OutputOutputs.Clean();
+                File.WriteAllText(Path.Combine(test.Output, "image.dll"), "recomputed");
+                return 0;
+            },
+            _ => throw new InvalidDataException("Invalid tool metadata."),
+            onRestored: () => Assert.Fail("Invalid metadata must not be replayed.")));
+
+        Assert.Equal(1, executions);
+        Assert.False(File.Exists(stale));
+        Assert.Equal("recomputed", File.ReadAllText(Path.Combine(test.Output, "image.dll")));
+        Assert.Contains(test.BuildEngine.Messages, message => message.Message?.Contains("restore failed") is true);
+    }
+
     private static void RunOnOtherThread(Action action)
     {
         ExceptionDispatchInfo? exception = null;
@@ -776,6 +985,7 @@ public class InvocationCacheTests
         internal string Entries => Path.Combine(Cache.CacheDirectory, InvocationCacheEntry.VersionDirectory);
         internal string Entry => Path.Combine(Entries, Key);
         internal CacheBuildEngine BuildEngine { get; } = new();
+        internal TaskLoggingHelper Log { get; }
         internal InvocationCache Cache { get; }
         internal string MutexName => Assert.IsType<string>(
             typeof(InvocationCache).GetMethod("GetWriterMutexName", BindingFlags.NonPublic | BindingFlags.Instance)!.Invoke(Cache, new object[] { Key }));
@@ -784,7 +994,8 @@ public class InvocationCacheTests
         {
             Directory.CreateDirectory(Source);
             var task = new CacheTask { BuildEngine = BuildEngine };
-            Cache = new InvocationCache(Path.Combine(Root, "cache"), task.Log, "Test");
+            Log = task.Log;
+            Cache = new InvocationCache(Path.Combine(Root, "cache"), Log, "Test");
             SourceOutputs = InvocationCacheOutputs.FromDirectory(Source);
             OutputOutputs = InvocationCacheOutputs.FromDirectory(Output);
         }

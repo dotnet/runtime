@@ -17,6 +17,18 @@ using Microsoft.Build.Utilities;
 
 namespace Microsoft.NET.Build.Tasks;
 
+internal readonly struct InvocationCacheRequest
+{
+    internal string Key { get; }
+    internal InvocationCacheOutputs Outputs { get; }
+
+    internal InvocationCacheRequest(string key, InvocationCacheOutputs outputs)
+    {
+        Key = key;
+        Outputs = outputs;
+    }
+}
+
 internal sealed partial class InvocationCache
 {
     private readonly TaskLoggingHelper _log;
@@ -32,6 +44,31 @@ internal sealed partial class InvocationCache
         _log = log;
         _toolName = toolName;
         _importance = importance;
+    }
+
+    internal static int Execute(InvocationCache? cache, DateTime outputTimestampUtc,
+        Func<InvocationCacheRequest?> getInvocation,
+        Func<InvocationCacheOutputs?, int> execute,
+        Action<BinaryReader>? readMetadata = null, Action<BinaryWriter>? writeMetadata = null,
+        Action? onRestored = null)
+    {
+        InvocationCacheRequest? invocation = cache is null ? null : getInvocation();
+        if (cache is null || invocation is null)
+            return execute(null);
+
+        string key = invocation.Value.Key;
+        InvocationCacheOutputs outputs = invocation.Value.Outputs;
+        if (cache.TryRestore(key, outputs, outputTimestampUtc, readMetadata))
+        {
+            onRestored?.Invoke();
+            return 0;
+        }
+
+        int exitCode = execute(outputs);
+        if (exitCode == 0 && !cache._log.HasLoggedErrors)
+            cache.Store(key, outputs, writeMetadata);
+
+        return exitCode;
     }
 
     internal bool TryRestore(string inputHash, InvocationCacheOutputs outputs, DateTime outputTimestampUtc,
