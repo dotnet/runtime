@@ -930,9 +930,12 @@ maps for explicit-context shared bodies are not eligible for declaration-map bor
 
 ### Loaded virtual declaration lookup
 
-Reject methods with a method instantiation and, for non-dispatch bodies, methods whose
-generic context is an explicit method-descriptor or method-table argument. First try the
-method's own cached map. For an instance method,
+First try the method's own cached map. Non-dispatch method-entry frames can use an exact
+map even for instantiated generic methods and bodies with an explicit method-descriptor
+or method-table argument. Dispatch frames suppress hidden instantiation arguments, so their
+own-map lookup requires the same eligibility as declaration-map borrowing below.
+If no compatible own map exists, reject methods with a method instantiation and, for
+non-dispatch bodies, methods whose generic context is an explicit argument. For an instance method,
 enumerate the owning type's method definitions for the same slot, excluding unboxing stubs.
 Try every matching definition until a shareable map is found, then search ancestors in
 nearest-to-farthest order while the slot remains virtual in each type. An interface searches

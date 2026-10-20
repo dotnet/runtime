@@ -1885,7 +1885,8 @@ public:
     void WalkValueTypeParameters(MethodTable *pMT, WalkValueTypeParameterFnPtr function, void *pData);
 
     PTR_BYTE GetGCRefMap();
-    // Borrow only ABI-compatible maps; receiver-specific slot relationships are immutable
+    // Exact entry frames can use their own map, including explicit generic-context arguments.
+    // Dispatch and borrowing use only ABI-compatible maps; slot relationships are immutable
     // DispatchMap data. Memoize hits only when code data already exists; never allocate here.
     PTR_BYTE FindGCRefMap(MethodTable* pReceiverMT = nullptr, bool isDispatch = false);
     void SetGCRefMap(PTR_BYTE pGCRefMap);
@@ -1896,7 +1897,7 @@ public:
     void PrepareForUseAsAVirtualCallTargetOfANativeImage(PTR_BYTE pGCRefMap = nullptr);
 
     // Load closed value-type signature layouts for signature-scanning frames and ABI lowering.
-    // Required for interpreter ABI lowering, explicit-context shared bodies, GVMs, and map misses.
+    // Required for interpreter ABI lowering, argument-transforming stubs, and map misses.
     // A GCRefMap hit alone never promises layout readiness.
     void PrepareForUseAsADependencyOfANativeImage()
     {
@@ -1906,8 +1907,8 @@ public:
     }
 
     // Prepare an exact method entrypoint, not a virtual-dispatch stub or an interpreter ABI.
-    // Non-wrapper, non-GVM targets without an explicit context argument can use supplied or
-    // cached GCRefMaps instead of loading layouts. nullptr permits reuse, not forced loading.
+    // Non-wrapper targets, including explicit-context generic bodies, can use supplied or
+    // cached exact GCRefMaps instead of loading layouts. nullptr permits reuse, not forced loading.
     // Callers requiring signature layouts must use PrepareForUseAsADependencyOfANativeImage.
     void PrepareForUseAsACallTargetOfANativeImage(PTR_BYTE pGCRefMap = nullptr);
 

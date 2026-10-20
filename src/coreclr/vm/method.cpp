@@ -395,12 +395,13 @@ PTR_BYTE MethodDesc::FindGCRefMap(MethodTable* pReceiverMT, bool isDispatch)
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    if (HasMethodInstantiation() || (!isDispatch && RequiresInstArg()))
-        return nullptr;
-
-    PTR_BYTE map = GetGCRefMap();
+    // Dispatch suppresses hidden instantiation arguments; exact method-entry frames do not.
+    PTR_BYTE map = isDispatch ? GetShareableGCRefMap(this) : GetGCRefMap();
     if (map != nullptr)
         return map;
+
+    if (HasMethodInstantiation() || (!isDispatch && RequiresInstArg()))
+        return nullptr;
 
     if (IsStatic())
         return nullptr;
@@ -4481,7 +4482,7 @@ void MethodDesc::PrepareForUseAsACallTargetOfANativeImage(PTR_BYTE pGCRefMap)
     if (HaveNativeImageDependenciesBeenPrepared())
         return;
 
-    if (!IsWrapperStub() && !RequiresInstArg() && !HasMethodInstantiation())
+    if (!IsWrapperStub())
     {
         if (pGCRefMap != nullptr)
         {
@@ -4491,7 +4492,10 @@ void MethodDesc::PrepareForUseAsACallTargetOfANativeImage(PTR_BYTE pGCRefMap)
 
         if (GetGCRefMap() != nullptr)
             return;
+    }
 
+    if (!IsWrapperStub() && !RequiresInstArg() && !HasMethodInstantiation())
+    {
         if (!IsVersionable())
         {
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
@@ -4506,7 +4510,7 @@ void MethodDesc::PrepareForUseAsACallTargetOfANativeImage(PTR_BYTE pGCRefMap)
         }
     }
 
-    // Explicit-context bodies and wrappers can have a different incoming argument layout.
+    // A wrapper's incoming argument layout need not match the wrapped method's entrypoint.
     PrepareForUseAsADependencyOfANativeImageWorker();
 }
 

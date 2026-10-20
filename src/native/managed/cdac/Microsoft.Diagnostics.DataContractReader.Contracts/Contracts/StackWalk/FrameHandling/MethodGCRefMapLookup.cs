@@ -48,13 +48,14 @@ internal sealed class MethodGCRefMapLookup(Target target, FrameHelpers frames)
 
     internal TargetPointer Find(MethodDescHandle method, TargetPointer receiver, bool dispatch, bool newFormat)
     {
+        TargetPointer map = dispatch ? GetShareableGCRefMap(method.Address) : frames.GetGCRefMapFromMethodDesc(method.Address);
+        if (map != TargetPointer.Null)
+            return map;
+
         if (_rts.GetGenericMethodInstantiation(method).Length != 0 ||
             (!dispatch && _rts.GetGenericContextLoc(method) is GenericContextLoc.InstArgMethodDesc or GenericContextLoc.InstArgMethodTable))
             return TargetPointer.Null;
 
-        TargetPointer map = frames.GetGCRefMapFromMethodDesc(method.Address);
-        if (map != TargetPointer.Null)
-            return map;
         Data.MethodDesc data = target.ProcessedData.GetOrAdd<Data.MethodDesc>(method.Address);
         if (((MethodDescFlags_1.MethodDescFlags)data.Flags & MethodDescFlags_1.MethodDescFlags.Static) != 0)
             return TargetPointer.Null;

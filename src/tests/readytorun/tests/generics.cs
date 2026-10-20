@@ -235,6 +235,17 @@ public class Program
             return value;
         }
 
+        private static class GenericTarget<T>
+        {
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            internal static NestedValue<T> RoundTrip(NestedValue<T> value)
+            {
+                GC.Collect(2, GCCollectionMode.Forced, true, true);
+                Assert.AreEqual(typeof(T), typeof(string));
+                return value;
+            }
+        }
+
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static T InvokeInterface<T>(ITransform<T> target, T value)
         {
@@ -329,6 +340,17 @@ public class Program
             Assert.AreEqual(0, RoundTripGeneric<int>(default).Value);
 
             Marker marker = CreateMarker();
+            NestedValue<string> genericValue = new NestedValue<string>
+            {
+                Reference = new ReferenceValue { Reference = marker },
+                Value = "generic context"
+            };
+            NestedValue<string> genericResult = GenericTarget<string>.RoundTrip(genericValue);
+            Assert.AreEqual(marker, genericResult.Reference.Reference);
+            Assert.AreEqual("generic context", genericResult.Value);
+            genericResult = RoundTripGeneric(genericValue);
+            Assert.AreEqual(marker, genericResult.Reference.Reference);
+            Assert.AreEqual("generic context", genericResult.Value);
             ReferenceValue value = new ReferenceValue { Reference = marker };
             Assert.AreEqual(marker, RoundTrip(value).Reference);
 

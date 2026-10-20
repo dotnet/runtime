@@ -286,6 +286,45 @@ public unsafe class StackWalkTests
     }
 
     [Theory]
+    [InlineData(false, false, GenericContextLoc.None, true)]
+    [InlineData(false, false, GenericContextLoc.InstArgMethodDesc, true)]
+    [InlineData(false, false, GenericContextLoc.InstArgMethodTable, true)]
+    [InlineData(false, true, GenericContextLoc.None, true)]
+    [InlineData(false, true, GenericContextLoc.InstArgMethodDesc, true)]
+    [InlineData(false, true, GenericContextLoc.InstArgMethodTable, true)]
+    [InlineData(true, false, GenericContextLoc.None, true)]
+    [InlineData(true, false, GenericContextLoc.InstArgMethodDesc, false)]
+    [InlineData(true, false, GenericContextLoc.InstArgMethodTable, false)]
+    [InlineData(true, true, GenericContextLoc.None, false)]
+    [InlineData(true, true, GenericContextLoc.InstArgMethodDesc, false)]
+    [InlineData(true, true, GenericContextLoc.InstArgMethodTable, false)]
+    public void MethodGCRefMapLookup_UsesExactEntryMapOnlyForCompatibleFrames(
+        bool dispatch, bool genericMethod, GenericContextLoc context, bool expected)
+    {
+        (TestPlaceholderTarget target, VirtualMapTypeSystem rts) = CreateVirtualMapTarget("declaration", ownMap: true);
+        rts.Introduced.Clear();
+        if (genericMethod)
+            rts.GenericMethods.Add(0x6000);
+        rts.MethodContexts[0x6000] = context;
+        TargetPointer result = new MethodGCRefMapLookup(target, new FrameHelpers(target)).Find(
+            rts.GetMethodDescHandle(new TargetPointer(0x6000)), TargetPointer.Null, dispatch, newFormat: true);
+        Assert.Equal(expected ? 0xa000UL : 0UL, result.Value);
+    }
+
+    [Theory]
+    [InlineData(GenericContextLoc.InstArgMethodDesc)]
+    [InlineData(GenericContextLoc.InstArgMethodTable)]
+    public void MethodGCRefMapLookup_DispatchBorrowsInsteadOfUsingExactContextBodyMap(GenericContextLoc context)
+    {
+        (TestPlaceholderTarget target, VirtualMapTypeSystem rts) =
+            CreateVirtualMapTarget("overriding-fallback", ownMap: true, overrideMap: [0xfd, 0x04]);
+        rts.MethodContexts[0x6000] = context;
+        TargetPointer result = new MethodGCRefMapLookup(target, new FrameHelpers(target)).Find(
+            rts.GetMethodDescHandle(new TargetPointer(0x6000)), TargetPointer.Null, dispatch: true, newFormat: true);
+        Assert.Equal(0xb200UL, result.Value);
+    }
+
+    [Theory]
     [InlineData(false, GenericContextLoc.None, true)]
     [InlineData(false, GenericContextLoc.InstArgMethodDesc, false)]
     [InlineData(false, GenericContextLoc.InstArgMethodTable, false)]
