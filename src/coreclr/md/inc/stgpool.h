@@ -1,16 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //*****************************************************************************
 // StgPool.h
-//
-
 //
 // Pools are used to reduce the amount of data actually required in the database.
 // This allows for duplicate string and binary values to be folded into one
 // copy shared by the rest of the database.  Strings are tracked in a hash
 // table when insert/changing data to find duplicates quickly.  The strings
 // are then persisted consecutively in a stream in the database format.
-//
 //*****************************************************************************
 
 #ifndef __StgPool_h__
@@ -162,7 +160,7 @@ public:
 //*****************************************************************************
 // Prepare to shut down or reinitialize.
 //*****************************************************************************
-    virtual    void Uninit();
+    virtual    void Uninit() noexcept;
 
 //*****************************************************************************
 // Return the size of the pool.
@@ -258,15 +256,6 @@ public:
 
         return hr;
     }
-
-//*****************************************************************************
-// Convert a string to UNICODE into the caller's buffer.
-//*****************************************************************************
-    __checkReturn
-    virtual HRESULT GetStringW(                         // Return code.
-        ULONG                          iOffset,         // Offset of string in pool.
-        _Out_writes_(cchBuffer) LPWSTR szOut,           // Output buffer for string.
-        int                            cchBuffer);      // Size of output buffer.
 
 //*****************************************************************************
 // Copy a GUID into the caller's buffer.
@@ -472,7 +461,7 @@ public:
 //*****************************************************************************
 // Clear out this pool.  Cannot use until you call InitNew.
 //*****************************************************************************
-    virtual void Uninit();
+    virtual void Uninit() noexcept;
 
 //*****************************************************************************
 // Called to copy the pool to writable memory, reset the r/o bit.
@@ -507,6 +496,7 @@ public:
 //*****************************************************************************
     void Trim();                            //
 
+#ifdef FEATURE_METADATA_PERSISTENCE
 //*****************************************************************************
 // Return the size in bytes of the persistent version of this pool.  If
 // PersistToStream were the next call, the amount of bytes written to pIStream
@@ -601,6 +591,7 @@ public:
         LIMITED_METHOD_CONTRACT;
         return 0;
     }
+#endif
 
 //*****************************************************************************
 // Return the size of the pool.
@@ -787,7 +778,7 @@ public:
 //*****************************************************************************
 // Clears the hash table then calls the base class.
 //*****************************************************************************
-    void Uninit();
+    void Uninit() noexcept;
 
 //*****************************************************************************
 // Turn hashing off or on.  If you turn hashing on, then any existing data is
@@ -853,6 +844,7 @@ public:
         return (GetNextOffset() <= 1);
     }
 
+#ifdef FEATURE_METADATA_PERSISTENCE
 //*****************************************************************************
 // Return the size in bytes of the persistent version of this pool.  If
 // PersistToStream were the next call, the amount of bytes written to pIStream
@@ -890,6 +882,7 @@ public:
         LIMITED_METHOD_CONTRACT;
         return ULONG( strlen( reinterpret_cast< LPCSTR >( data ) ) + 1 ); // using strlen since the string is UTF8
     }
+#endif
 
 private:
     __checkReturn
@@ -943,7 +936,7 @@ public:
 //*****************************************************************************
 // Clears the hash table then calls the base class.
 //*****************************************************************************
-    void Uninit();
+    void Uninit() noexcept;
 
 //*****************************************************************************
 // Add a segment to the chain of segments.
@@ -971,6 +964,7 @@ public:
         const GUID *pGuid,          // The Guid to add to pool.
         UINT32     *pnIndex);       // Return index of Guid here.
 
+#ifdef FEATURE_METADATA_PERSISTENCE
 //*****************************************************************************
 // Get the size of the GUID obtained from the pool.
 // Needed for generic persisting of data blocks.
@@ -980,6 +974,7 @@ public:
         LIMITED_METHOD_CONTRACT;
         return sizeof( GUID );
     }
+#endif
 
 //*****************************************************************************
 // How many objects are there in the pool?  If the count is 0, you don't need
@@ -1015,6 +1010,7 @@ public:
     ULONG GetNextIndex()
     { LIMITED_METHOD_CONTRACT; return (GetNextOffset() / sizeof(GUID)); }
 
+#ifdef FEATURE_METADATA_PERSISTENCE
 //*****************************************************************************
 // Return the size in bytes of the persistent version of this pool.  If
 // PersistToStream were the next call, the amount of bytes written to pIStream
@@ -1035,6 +1031,7 @@ public:
         _ASSERTE(*pcbSaveSize == ALIGN4BYTE(*pcbSaveSize));
         return S_OK;
     }
+#endif
 
 private:
 
@@ -1096,7 +1093,7 @@ public:
 //*****************************************************************************
 // Clears the hash table then calls the base class.
 //*****************************************************************************
-    void Uninit();
+    void Uninit() noexcept;
 
 //*****************************************************************************
 // The blob will be added to the pool.  The offset of the blob in the pool
@@ -1129,6 +1126,7 @@ public:
     __checkReturn
     virtual HRESULT SetHash(int bHash);
 
+#ifdef FEATURE_METADATA_PERSISTENCE
 //*****************************************************************************
 // Get the size of the blob obtained from the pool.
 // Needed for generic persisting of data blocks.
@@ -1141,6 +1139,7 @@ public:
         ULONG blobsize = CPackedLen::GetLength( data, & blobdata ); // the size is encoded at the beginning of the block
         return blobsize + static_cast< ULONG >( reinterpret_cast< BYTE const * >( blobdata ) - reinterpret_cast< BYTE const * >( data ) );
     }
+#endif
 
 //*****************************************************************************
 // How many objects are there in the pool?  If the count is 0, you don't need
@@ -1160,6 +1159,7 @@ public:
         return (GetNextOffset() <= 1);
     }
 
+#ifdef FEATURE_METADATA_PERSISTENCE
 //*****************************************************************************
 // Return the size in bytes of the persistent version of this pool.  If
 // PersistToStream were the next call, the amount of bytes written to pIStream
@@ -1173,6 +1173,7 @@ public:
 
         return StgPool::GetSaveSize(pcbSaveSize);
     }
+#endif
 
 protected:
 

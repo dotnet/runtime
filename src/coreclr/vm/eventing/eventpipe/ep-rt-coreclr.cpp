@@ -6,9 +6,14 @@
 #ifdef ENABLE_PERFTRACING
 #include <eventpipe/ep-types.h>
 #include <eventpipe/ep.h>
+#include <eventpipe/ep-event.h>
+#include <eventpipe/ep-session.h>
 #include <eventpipe/ep-stack-contents.h>
 #include <eventpipe/ep-rt.h>
 #include "threadsuspend.h"
+#ifdef FEATURE_PGO
+#include "pgo.h"
+#endif
 
 ep_rt_lock_handle_t _ep_rt_coreclr_config_lock_handle;
 CrstStatic _ep_rt_coreclr_config_lock;
@@ -71,8 +76,18 @@ stack_walk_callback (
 
 	EP_ASSERT (control_pc != 0);
 
+	MethodDesc *method = frame->GetFunction ();
+#ifdef FEATURE_MULTITHREADING
+	if (ep_stack_contents_is_empty (stack_contents) &&
+		(method == CoreLibBinder::GetExistingMethod (METHOD__THREAD__POLLGC) ||
+		 method == CoreLibBinder::GetExistingMethod (METHOD__THREAD__POLLGC_WORKER))) {
+		// Omit leading polling transitions, preserving the caller and the event.
+		return SWA_CONTINUE;
+	}
+#endif // FEATURE_MULTITHREADING
+
 	// Add the IP to the captured stack.
-	ep_stack_contents_append (stack_contents, control_pc, frame->GetFunction ());
+	ep_stack_contents_append (stack_contents, control_pc, method);
 
 	// Continue the stack walk.
 	return SWA_CONTINUE;
@@ -168,5 +183,87 @@ ep_rt_coreclr_sample_profiler_write_sampling_event_for_threads (
 
 	return;
 }
+
+void
+ep_rt_coreclr_session_stopping (void)
+{
+	STATIC_CONTRACT_NOTHROW;
+#if defined(FEATURE_PGO) && defined(PERFTRACING_DISABLE_THREADS)
+	// The EventPipe session_stopping helper has bound this thread to the stopping session as its rundown
+	// session, so ep_event_is_enabled_for_current_thread tests that session's mask and the events emitted by
+	// the flush route only to it (dotnet-pgo drops a method once data arrives after its final chunk, so a
+	// single destination is required).
+	extern EventPipeEvent *EventPipeEventJitInstrumentationDataVerbose;
+	if (EventPipeEventJitInstrumentationDataVerbose != NULL &&
+		ep_event_is_enabled_for_current_thread (EventPipeEventJitInstrumentationDataVerbose))
+	{
+		EX_TRY
+		{
+			PgoManager::LogInstrumentationData ();
+		}
+		EX_CATCH { }
+		EX_END_CATCH
+	}
+#endif // FEATURE_PGO && PERFTRACING_DISABLE_THREADS
+}
+
+#if defined(TARGET_WASI) && defined(PERFTRACING_DISABLE_THREADS)
+// WASI has no host event loop to schedule EventPipe jobs (session streaming, diagnostic server) on,
+// so they are kept on this list and run by the managed WasiEventLoop (WasiEventPipeJobs.cs).
+// A job returns non-zero when it is done; otherwise it stays queued and runs again on the next pump.
+// Single-threaded by construction, so no locking.
+struct WasiEventPipeJob
+{
+	size_t (*Callback)(void *data);
+	void *Data;
+	WasiEventPipeJob *Next;
+};
+
+static WasiEventPipeJob *s_wasiJobsHead = nullptr;
+static WasiEventPipeJob *s_wasiJobsTail = nullptr;
+
+static void WasiAppendJob(WasiEventPipeJob *job)
+{
+	job->Next = nullptr;
+	if (s_wasiJobsTail != nullptr)
+		s_wasiJobsTail->Next = job;
+	else
+		s_wasiJobsHead = job;
+	s_wasiJobsTail = job;
+}
+
+bool ep_rt_coreclr_wasi_queue_job (size_t (*cb)(void *data), void *data)
+{
+	_ASSERTE (cb != nullptr);
+	WasiEventPipeJob *job = new (nothrow) WasiEventPipeJob();
+	if (job == nullptr)
+		return false;
+
+	job->Callback = cb;
+	job->Data = data;
+	WasiAppendJob (job);
+	return true;
+}
+
+bool ep_rt_coreclr_wasi_run_jobs (void)
+{
+	// Detach the current list so jobs queued while running are picked up on the next pump.
+	WasiEventPipeJob *job = s_wasiJobsHead;
+	s_wasiJobsHead = nullptr;
+	s_wasiJobsTail = nullptr;
+
+	while (job != nullptr)
+	{
+		WasiEventPipeJob *next = job->Next;
+		if (job->Callback (job->Data) != 0)
+			delete job;
+		else
+			WasiAppendJob (job);
+		job = next;
+	}
+
+	return s_wasiJobsHead != nullptr;
+}
+#endif // TARGET_WASI && PERFTRACING_DISABLE_THREADS
 
 #endif /* ENABLE_PERFTRACING */

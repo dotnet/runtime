@@ -139,6 +139,8 @@ NESTED_ENTRY OnHijackTripThread, _TEXT
 NESTED_END OnHijackTripThread, _TEXT
 
 
+ifdef PROFILING_SUPPORTED
+
 ;
 ;    typedef struct _PROFILE_PLATFORM_SPECIFIC_DATA
 ;    {
@@ -349,6 +351,8 @@ NESTED_ENTRY ProfileTailcallNaked, _TEXT
         pop                     rax
         ret
 NESTED_END ProfileTailcallNaked, _TEXT
+
+endif ; PROFILING_SUPPORTED
 
 ifdef FEATURE_TIERED_COMPILATION
 

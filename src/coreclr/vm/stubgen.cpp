@@ -1,11 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
-// File: StubGen.cpp
-//
-
-//
-
 
 #include "common.h"
 #include <limits>
@@ -393,26 +387,6 @@ lShortForm:
     return instr;
 }
 
-void ILStubLinker::PatchInstructionArgument(ILCodeLabel* pLabel, UINT_PTR uNewArg
-    DEBUG_ARG(UINT16 uExpectedInstruction))
-{
-    LIMITED_METHOD_CONTRACT;
-
-    UINT            idx                 = pLabel->m_idxLabeledInstruction;
-    ILCodeStream*   pLabelCodeStream    = pLabel->m_pCodeStreamOfLabel;
-    ILInstruction*  pLabelInstrBuffer   = (ILInstruction*)pLabelCodeStream->m_pqbILInstructions->Ptr();
-
-    CONSISTENCY_CHECK(pLabelInstrBuffer[idx].uInstruction == ILCodeStream::CEE_CODE_LABEL);
-    CONSISTENCY_CHECK(pLabelInstrBuffer[idx].iStackDelta == 0);
-
-    idx++;
-
-    CONSISTENCY_CHECK(idx < pLabelCodeStream->m_uCurInstrIdx);
-    CONSISTENCY_CHECK(pLabelInstrBuffer[idx].uInstruction == uExpectedInstruction);
-
-    pLabelInstrBuffer[idx].uArg = uNewArg;
-}
-
 ILCodeLabel::ILCodeLabel()
 {
     m_pNext                 = NULL;
@@ -655,7 +629,6 @@ static void LogJitFlags(DWORD facility, DWORD level, CORJIT_FLAGS jitFlags)
 
     // these are all we care about at the moment
     LOG_FLAG(CORJIT_FLAGS::CORJIT_FLAG_IL_STUB);
-    LOG_FLAG(CORJIT_FLAGS::CORJIT_FLAG_PUBLISH_SECRET_PARAM);
 
 #undef LOG_FLAGS
 
@@ -718,6 +691,12 @@ bool ILStubLinker::FirstPassLink(ILInstruction* pInstrBuffer, UINT numInstr, siz
     {
         ILCodeStream::ILInstrEnum instr = (ILCodeStream::ILInstrEnum)pInstrBuffer[i].uInstruction;
         CONSISTENCY_CHECK(ILCodeStream::IsSupportedInstruction(instr));
+
+        if ((instr == ILCodeStream::CEE_LDARG) && (pInstrBuffer[i].uArg == SECRET_STUB_ARGUMENT))
+        {
+            CONSISTENCY_CHECK(m_uSecretStubArgumentIndex != static_cast<DWORD>(-1));
+            pInstrBuffer[i].uArg = m_uSecretStubArgumentIndex + (m_fHasThis ? 1 : 0);
+        }
 
         //
         // down-size instructions
@@ -1468,6 +1447,11 @@ void ILCodeStream::EmitLDARG   (unsigned uArgIdx)
         uArgIdx++;
     }
     Emit(CEE_LDARG, 1, uArgIdx);
+}
+void ILCodeStream::EmitLoadSecretStubArgument()
+{
+    WRAPPER_NO_CONTRACT;
+    Emit(CEE_LDARG, 1, ILStubLinker::SECRET_STUB_ARGUMENT);
 }
 void ILCodeStream::EmitLDARGA  (unsigned uArgIdx)
 {
@@ -2504,6 +2488,7 @@ ILStubLinker::ILStubLinker(Module* pStubSigModule, const Signature &signature, S
     m_iTargetStackDelta(0),
     m_cbCurrentCompressedSigLen(1),
     m_nLocals(0),
+    m_uSecretStubArgumentIndex(static_cast<DWORD>(-1)),
     m_fHasThis(false),
     m_pMD(pMD),
     m_pBuildingEHClauseStack(NULL),
@@ -2917,6 +2902,14 @@ DWORD ILStubLinker::SetStubTargetArgType(CorElementType typ, bool fConsumeStubAr
 
     LocalDesc locDesc(typ);
     return SetStubTargetArgType(&locDesc, fConsumeStubArg);
+}
+
+void ILStubLinker::SetSecretStubArgumentIndex(DWORD uArgIdx)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    _ASSERTE(m_uSecretStubArgumentIndex == static_cast<DWORD>(-1));
+    m_uSecretStubArgumentIndex = uArgIdx;
 }
 
 void ILStubLinker::SetStubTargetCallingConv(CorCallingConvention uNativeCallingConv)

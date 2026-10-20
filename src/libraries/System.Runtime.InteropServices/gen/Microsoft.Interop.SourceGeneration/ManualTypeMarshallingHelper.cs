@@ -7,6 +7,7 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Text;
 using Microsoft.CodeAnalysis;
 
 namespace Microsoft.Interop
@@ -19,7 +20,31 @@ namespace Microsoft.Interop
         bool IsStrictlyBlittable,
         ManagedTypeInfo? BufferElementType,
         ManagedTypeInfo? CollectionElementType,
-        MarshallingInfo? CollectionElementMarshallingInfo);
+        MarshallingInfo? CollectionElementMarshallingInfo)
+    {
+        internal string? MarshallerTypeTemplate { get; init; }
+        internal string? NativeTypeTemplate { get; init; }
+        internal string? BufferElementTypeTemplate { get; init; }
+
+        /// <summary>Specializes the symbol-identified unmanaged element parameter in collection marshaller types.</summary>
+        /// <param name="unmanagedElementType">The generic-compatible unmanaged element type name.</param>
+        /// <returns>The specialized marshaller data.</returns>
+        public CustomTypeMarshallerData WithUnmanagedElementType(string unmanagedElementType)
+        {
+            return this with
+            {
+                MarshallerType = Specialize(MarshallerType, MarshallerTypeTemplate),
+                NativeType = Specialize(NativeType, NativeTypeTemplate),
+                BufferElementType = BufferElementType is null ? null : Specialize(BufferElementType, BufferElementTypeTemplate)
+            };
+
+            ManagedTypeInfo Specialize(ManagedTypeInfo type, string? template)
+            {
+                string name = template is null ? type.FullTypeName : template.Replace("\0", unmanagedElementType);
+                return type with { FullTypeName = name, DiagnosticFormattedName = name };
+            }
+        }
+    }
 
     public readonly record struct CustomTypeMarshallers(
         ImmutableDictionary<MarshalMode, CustomTypeMarshallerData> Modes,
@@ -199,6 +224,9 @@ namespace Microsoft.Interop
             if (isLinearCollectionMarshalling && getMarshallingInfoForElement is null)
                 return false;
 
+            ITypeParameterSymbol? unmanagedElementTypeParameter = isLinearCollectionMarshalling
+                ? entryPointType.TypeArguments.LastOrDefault() as ITypeParameterSymbol
+                : null;
             Dictionary<MarshalMode, CustomTypeMarshallerData> modes = new();
 
             foreach (AttributeData attr in attrs)
@@ -254,7 +282,14 @@ namespace Microsoft.Interop
 
                 // TODO: Report invalid shape for mode
                 //       Skip checking for bidirectional support for Default mode - always take / store marshaller data
-                CustomTypeMarshallerData? data = GetMarshallerDataForType(marshallerType, marshalMode, managedType, isLinearCollectionMarshalling, compilation, getMarshallingInfoForElement);
+                CustomTypeMarshallerData? data = GetMarshallerDataForType(
+                    marshallerType,
+                    marshalMode,
+                    managedType,
+                    isLinearCollectionMarshalling,
+                    compilation,
+                    getMarshallingInfoForElement,
+                    unmanagedElementTypeParameter);
 
                 // TODO: Should we fire a diagnostic for duplicated modes or just take the last one?
                 if (data is null
@@ -446,15 +481,16 @@ namespace Microsoft.Interop
             ITypeSymbol managedType,
             bool isLinearCollectionMarshaller,
             Compilation compilation,
-            Func<ITypeSymbol, MarshallingInfo> getMarshallingInfo)
+            Func<ITypeSymbol, MarshallingInfo> getMarshallingInfo,
+            ITypeParameterSymbol? unmanagedElementTypeParameter)
         {
             if (marshallerType is { IsStatic: true, TypeKind: TypeKind.Class })
             {
-                return GetStatelessMarshallerDataForType(marshallerType, mode, managedType, isLinearCollectionMarshaller, compilation, getMarshallingInfo);
+                return GetStatelessMarshallerDataForType(marshallerType, mode, managedType, isLinearCollectionMarshaller, compilation, getMarshallingInfo, unmanagedElementTypeParameter);
             }
             if (marshallerType.IsValueType)
             {
-                return GetStatefulMarshallerDataForType(marshallerType, mode, managedType, isLinearCollectionMarshaller, compilation, getMarshallingInfo);
+                return GetStatefulMarshallerDataForType(marshallerType, mode, managedType, isLinearCollectionMarshaller, compilation, getMarshallingInfo, unmanagedElementTypeParameter);
             }
             return null;
         }
@@ -489,7 +525,7 @@ namespace Microsoft.Interop
                 or MarshalMode.ElementRef
                 or MarshalMode.ElementOut;
 
-        private static CustomTypeMarshallerData? GetStatelessMarshallerDataForType(ITypeSymbol marshallerType, MarshalMode mode, ITypeSymbol managedType, bool isLinearCollectionMarshaller, Compilation compilation, Func<ITypeSymbol, MarshallingInfo>? getMarshallingInfo)
+        private static CustomTypeMarshallerData? GetStatelessMarshallerDataForType(ITypeSymbol marshallerType, MarshalMode mode, ITypeSymbol managedType, bool isLinearCollectionMarshaller, Compilation compilation, Func<ITypeSymbol, MarshallingInfo>? getMarshallingInfo, ITypeParameterSymbol? unmanagedElementTypeParameter)
         {
             (MarshallerShape shape, StatelessMarshallerShapeHelper.MarshallerMethods methods) = StatelessMarshallerShapeHelper.GetShapeForType(marshallerType, managedType, isLinearCollectionMarshaller, compilation);
 
@@ -559,9 +595,11 @@ namespace Microsoft.Interop
                 return null;
 
             ManagedTypeInfo bufferElementType = null;
+            ITypeSymbol? bufferElementTypeSymbol = null;
             if (methods.ToUnmanagedWithBuffer is not null)
             {
-                bufferElementType = ManagedTypeInfo.CreateTypeInfoForTypeSymbol(((INamedTypeSymbol)methods.ToUnmanagedWithBuffer.Parameters[1].Type).TypeArguments[0]);
+                bufferElementTypeSymbol = ((INamedTypeSymbol)methods.ToUnmanagedWithBuffer.Parameters[1].Type).TypeArguments[0];
+                bufferElementType = ManagedTypeInfo.CreateTypeInfoForTypeSymbol(bufferElementTypeSymbol);
             }
 
             ManagedTypeInfo? collectionElementTypeInfo = null;
@@ -580,7 +618,12 @@ namespace Microsoft.Interop
                 nativeType.IsStrictlyBlittableInContext(compilation),
                 bufferElementType,
                 collectionElementTypeInfo,
-                collectionElementMarshallingInfo);
+                collectionElementMarshallingInfo)
+            {
+                MarshallerTypeTemplate = GetTypeNameTemplate(marshallerType, unmanagedElementTypeParameter),
+                NativeTypeTemplate = GetTypeNameTemplate(nativeType, unmanagedElementTypeParameter),
+                BufferElementTypeTemplate = bufferElementTypeSymbol is null ? null : GetTypeNameTemplate(bufferElementTypeSymbol, unmanagedElementTypeParameter)
+            };
         }
 
         private static CustomTypeMarshallerData? GetStatefulMarshallerDataForType(
@@ -589,7 +632,8 @@ namespace Microsoft.Interop
             ITypeSymbol managedType,
             bool isLinearCollectionMarshaller,
             Compilation compilation,
-            Func<ITypeSymbol, MarshallingInfo>? getMarshallingInfo)
+            Func<ITypeSymbol, MarshallingInfo>? getMarshallingInfo,
+            ITypeParameterSymbol? unmanagedElementTypeParameter)
         {
             (MarshallerShape shape, StatefulMarshallerShapeHelper.MarshallerMethods methods) = StatefulMarshallerShapeHelper.GetShapeForType(marshallerType, managedType, isLinearCollectionMarshaller, compilation);
 
@@ -639,9 +683,11 @@ namespace Microsoft.Interop
                 return null;
 
             ManagedTypeInfo bufferElementType = null;
+            ITypeSymbol? bufferElementTypeSymbol = null;
             if (methods.FromManagedWithBuffer is not null)
             {
-                bufferElementType = ManagedTypeInfo.CreateTypeInfoForTypeSymbol(((INamedTypeSymbol)methods.FromManagedWithBuffer.Parameters[1].Type).TypeArguments[0]);
+                bufferElementTypeSymbol = ((INamedTypeSymbol)methods.FromManagedWithBuffer.Parameters[1].Type).TypeArguments[0];
+                bufferElementType = ManagedTypeInfo.CreateTypeInfoForTypeSymbol(bufferElementTypeSymbol);
             }
 
             ManagedTypeInfo? collectionElementTypeInfo = null;
@@ -660,7 +706,41 @@ namespace Microsoft.Interop
                 nativeType.IsStrictlyBlittableInContext(compilation),
                 bufferElementType,
                 CollectionElementType: collectionElementTypeInfo,
-                CollectionElementMarshallingInfo: collectionElementMarshallingInfo);
+                CollectionElementMarshallingInfo: collectionElementMarshallingInfo)
+            {
+                MarshallerTypeTemplate = GetTypeNameTemplate(marshallerType, unmanagedElementTypeParameter),
+                NativeTypeTemplate = GetTypeNameTemplate(nativeType, unmanagedElementTypeParameter),
+                BufferElementTypeTemplate = bufferElementTypeSymbol is null ? null : GetTypeNameTemplate(bufferElementTypeSymbol, unmanagedElementTypeParameter)
+            };
+        }
+
+        private static string? GetTypeNameTemplate(ITypeSymbol type, ITypeParameterSymbol? unmanagedElementTypeParameter)
+        {
+            if (unmanagedElementTypeParameter is null)
+            {
+                return null;
+            }
+
+            ImmutableArray<SymbolDisplayPart> parts = type.ToDisplayParts(SymbolDisplayFormat.FullyQualifiedFormat);
+            if (!parts.Any(IsPlaceholder))
+            {
+                return null;
+            }
+
+            var template = new StringBuilder();
+            foreach (SymbolDisplayPart part in parts)
+            {
+                // A null character cannot appear in a C# identifier. Record only the actual type
+                // parameter, never a namespace or nested type that happens to have the same name.
+                template.Append(IsPlaceholder(part) ? "\0" : part.ToString());
+            }
+            return template.ToString();
+
+            bool IsPlaceholder(SymbolDisplayPart part)
+            {
+                return part.Kind == SymbolDisplayPartKind.TypeParameterName
+                    && SymbolEqualityComparer.Default.Equals(part.Symbol, unmanagedElementTypeParameter);
+            }
         }
     }
 }

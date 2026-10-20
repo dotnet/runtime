@@ -166,10 +166,10 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
             get
             {
                 RuntimeTypeInfo? declaringType = null;
-                TypeDefinitionHandle enclosingTypeDefHandle = _typeDefinition.EnclosingType;
-                if (!enclosingTypeDefHandle.IsNil)
+                Handle namespaceOrEnclosingType = _typeDefinition.NamespaceOrEnclosingType;
+                if (namespaceOrEnclosingType.HandleType == HandleType.TypeDefinition)
                 {
-                    declaringType = enclosingTypeDefHandle.ResolveTypeDefinition(_reader);
+                    declaringType = namespaceOrEnclosingType.ToTypeDefinitionHandle(_reader).ResolveTypeDefinition(_reader);
                 }
                 return declaringType;
             }
@@ -373,7 +373,20 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
         {
             get
             {
-                return _lazyNamespaceChain ??= new NamespaceChain(_reader, _typeDefinition.NamespaceDefinition);
+                NamespaceChain? namespaceChain = _lazyNamespaceChain;
+                if (namespaceChain is null)
+                {
+                    Handle namespaceOrEnclosingType = _typeDefinition.NamespaceOrEnclosingType;
+                    while (namespaceOrEnclosingType.HandleType == HandleType.TypeDefinition)
+                    {
+                        TypeDefinition typeDefinition = namespaceOrEnclosingType.ToTypeDefinitionHandle(_reader).GetTypeDefinition(_reader);
+                        namespaceOrEnclosingType = typeDefinition.NamespaceOrEnclosingType;
+                    }
+
+                    namespaceChain = _lazyNamespaceChain ??= new NamespaceChain(_reader, namespaceOrEnclosingType.ToNamespaceDefinitionHandle(_reader));
+                }
+
+                return namespaceChain;
             }
         }
 

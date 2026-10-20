@@ -1318,6 +1318,40 @@ extern "C" void * QCALLTYPE RuntimeMethodHandle_GetFunctionPointer(MethodDesc * 
     return funcPtr;
 }
 
+extern "C" void* QCALLTYPE RuntimeMethodHandle_GetVirtualFunctionPointer(
+    MethodDesc* pMethod, QCall::TypeHandle declaringType, QCall::ObjectHandleOnStack target, QCallExceptionStatus* qcallError)
+{
+    QCALL_CONTRACT;
+
+    void* result = nullptr;
+    BEGIN_QCALL;
+
+    GCX_COOP();
+    OBJECTREF receiver = nullptr;
+    GCPROTECT_BEGIN(receiver);
+    receiver = target.Get();
+    _ASSERTE(receiver != nullptr);
+    MethodTable* pReceiverMT = receiver->GetMethodTable();
+    {
+        GCX_PREEMP();
+        MethodDesc* pTargetMethod = pMethod->IsVtableMethod()
+            ? pMethod->GetMethodDescOfVirtualizedCode(&receiver, pReceiverMT, declaringType.AsTypeHandle())
+            : pMethod;
+        pTargetMethod->EnsureActive();
+        pTargetMethod->PrepareForUseAsAFunctionPointer();
+        PCODE callTarget = pTargetMethod->GetSingleCallableAddrOfCode();
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+        // Virtual dispatch can return an entrypoint whose R2R-to-interpreter thunk is not prepared yet.
+        MethodDesc::EnsurePortableEntryPointIsCallableFromR2R(callTarget);
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
+        result = reinterpret_cast<void*>(callTarget);
+    }
+    GCPROTECT_END();
+
+    END_QCALL;
+    return result;
+}
+
 FCIMPL1(LPCUTF8, RuntimeMethodHandle::GetUtf8Name, MethodDesc* pMethod)
 {
     CONTRACTL
@@ -2006,7 +2040,10 @@ FCIMPL2(MethodDesc*, RuntimeMethodHandle::GetMethodFromCanonical, MethodDesc *pM
 }
 FCIMPLEND
 
-extern "C" PCODE QCALLTYPE RuntimeMethodHandle_GetNativeCode(MethodDesc* pMethod, QCallExceptionStatus* qcallError)
+// Returns the code start address that diagnostic tools (e.g. profiler events) use to identify
+// the method. The result is only meaningful for diagnostic reporting and is not guaranteed to be
+// callable (e.g. on Wasm it may be interpreter bytecode or a synthetic virtual IP).
+extern "C" PCODE QCALLTYPE RuntimeMethodHandle_GetDiagnosticCodeStart(MethodDesc* pMethod, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -2026,7 +2063,11 @@ extern "C" PCODE QCALLTYPE RuntimeMethodHandle_GetNativeCode(MethodDesc* pMethod
         pMethod = pWrapped;
     }
 
-    result = GetInterpreterCodeFromEntryPointIfPresent(pMethod->GetNativeCodeAnyVersion());
+    PCODE entryPoint = pMethod->GetNativeCodeAnyVersion();
+    if (entryPoint != (PCODE)NULL)
+    {
+        result = GetDiagnosticCodeStartFromEntryPoint(pMethod, entryPoint);
+    }
 
     END_QCALL;
 

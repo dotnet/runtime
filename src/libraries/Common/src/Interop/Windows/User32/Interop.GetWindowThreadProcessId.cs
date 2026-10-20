@@ -10,6 +10,6 @@ internal static partial class Interop
     {
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.User32)]
-        public static unsafe partial int GetWindowThreadProcessId(IntPtr handle, int* processId);
+        public static unsafe partial uint GetWindowThreadProcessId(IntPtr handle, int* processId);
     }
 }

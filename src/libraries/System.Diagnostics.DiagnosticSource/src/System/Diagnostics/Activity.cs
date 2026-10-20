@@ -1197,7 +1197,10 @@ namespace System.Diagnostics
             activity.IdFormat = idFormat;
             activity._traceState = traceState;
 
-            if (links != null)
+            // Links and creation tags are unnecessary for activities sampled as PropagationData, so skip copying them.
+            bool copyData = request is ActivitySamplingResult.AllData or ActivitySamplingResult.AllDataAndRecorded;
+
+            if (copyData && links != null)
             {
                 using (IEnumerator<ActivityLink> enumerator = links.GetEnumerator())
                 {
@@ -1208,7 +1211,7 @@ namespace System.Diagnostics
                 }
             }
 
-            if (tags != null)
+            if (copyData && tags != null)
             {
                 using (IEnumerator<KeyValuePair<string, object?>> enumerator = tags.GetEnumerator())
                 {
@@ -1751,6 +1754,19 @@ namespace System.Diagnostics
                 while (e.MoveNext())
                 {
                     _last.Next = new DiagNode<KeyValuePair<string, object?>>(e.Current);
+                    _last = _last.Next;
+                }
+            }
+
+            public TagsLinkedList(ReadOnlySpan<KeyValuePair<string, object?>> tags)
+            {
+                Debug.Assert(tags.Length > 0);
+
+                _last = _first = new DiagNode<KeyValuePair<string, object?>>(tags[0]);
+
+                for (int i = 1; i < tags.Length; i++)
+                {
+                    _last.Next = new DiagNode<KeyValuePair<string, object?>>(tags[i]);
                     _last = _last.Next;
                 }
             }

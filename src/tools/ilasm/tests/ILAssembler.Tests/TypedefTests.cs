@@ -95,6 +95,27 @@ namespace ILAssembler.Tests
             Assert.Equal(DiagnosticSeverity.Error, error.Severity);
         }
 
+        [Fact]
+        public void Typedef_CustomAttributeAliasNotFound_ReportsError()
+        {
+            string source = """
+                .assembly test { }
+                .class public auto ansi Test
+                {
+                    MissingAttributeAlias
+                }
+                """;
+
+            Diagnostic error = Assert.Single(
+                DocumentCompilerTestHelpers.CompileAndGetDiagnostics(source, new Options()));
+
+            Assert.Equal(DiagnosticIds.TypedefNotFound, error.Id);
+            Assert.Equal("Typedef 'MissingAttributeAlias' not found", error.Message);
+            Assert.Equal(
+                source.IndexOf("MissingAttributeAlias", StringComparison.Ordinal),
+                error.Location.Span.Start);
+        }
+
 
         [Fact]
         public void Typedef_ResolvedInTypeContext()
@@ -141,6 +162,106 @@ namespace ILAssembler.Tests
             var diagnostics = DocumentCompilerTestHelpers.CompileAndGetDiagnostics(source, new Options());
             // Typedef type blob resolution should compile
             Assert.Empty(diagnostics);
+        }
+
+        [Fact]
+        public void Typedef_TypeBlob_ResolvesAsNativeMarshalType()
+        {
+            string source = """
+                .assembly test { }
+                .typedef int32 as NativeTypeBlob
+                .class public auto ansi Test
+                {
+                    .field public marshal(NativeTypeBlob) int32 Value
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var type = reader.GetTypeDefinition(MetadataTokens.TypeDefinitionHandle(2));
+            var field = reader.GetFieldDefinition(Assert.Single(type.GetFields()));
+
+            Assert.Equal([0x08], reader.GetBlobBytes(field.GetMarshallingDescriptor()));
+        }
+
+        [Fact]
+        public void Typedef_FieldAndCustomAttributeForms_EmitResolvableMetadata()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .typedef field int32 Test::Value as ValueAlias
+                .typedef .custom instance void [mscorlib]System.ObsoleteAttribute::.ctor() = (01 00 00 00) as AttributeAlias
+                .typedef .custom (Test) instance void [mscorlib]System.CLSCompliantAttribute::.ctor(bool) = (01 00 01 00 00) as OwnedAttributeAlias
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .field public static int32 Value
+                    AttributeAlias
+                    OwnedAttributeAlias
+                    .method public static int32 Read() cil managed
+                    {
+                        ldsfld ValueAlias
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var testTypeHandle = reader.TypeDefinitions
+                .Single(handle => reader.GetString(reader.GetTypeDefinition(handle).Name) == "Test");
+            var testType = reader.GetTypeDefinition(testTypeHandle);
+            var fieldHandle = Assert.Single(testType.GetFields());
+            int fieldToken =
+                DocumentCompilerTestHelpers.GetFirstTokenOperand(pe, reader, "Read", ILOpcode.ldsfld);
+
+            Assert.Equal(MetadataTokens.GetToken(fieldHandle), fieldToken);
+
+            var fieldAttributes = reader.GetCustomAttributes(fieldHandle)
+                .Select(reader.GetCustomAttribute)
+                .Select(attribute => attribute.DecodeValue(DocumentCompilerTestHelpers.Decoder))
+                .ToArray();
+            CustomAttributeValue<string> fieldAttribute = Assert.Single(fieldAttributes);
+            Assert.Empty(fieldAttribute.FixedArguments);
+
+            var typeAttributes = reader.GetCustomAttributes(testTypeHandle)
+                .Select(reader.GetCustomAttribute)
+                .Select(attribute => attribute.DecodeValue(DocumentCompilerTestHelpers.Decoder))
+                .ToArray();
+            CustomAttributeValue<string> typeAttribute = Assert.Single(typeAttributes);
+            CustomAttributeTypedArgument<string> argument =
+                Assert.Single(typeAttribute.FixedArguments);
+            Assert.Equal("bool", argument.Type);
+            Assert.Equal(true, argument.Value);
+            Assert.Equal(2, reader.CustomAttributes.Count);
+        }
+
+        [Fact]
+        public void Typedef_CustomAttributeWithOwner_AssemblyUsePreservesOwner()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .typedef .custom (Test) instance void [mscorlib]System.CLSCompliantAttribute::.ctor(bool) = (01 00 01 00 00) as OwnedAttributeAlias
+                .assembly test
+                {
+                    OwnedAttributeAlias
+                }
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            TypeDefinitionHandle testType = reader.TypeDefinitions
+                .Single(handle => reader.GetString(reader.GetTypeDefinition(handle).Name) == "Test");
+
+            CustomAttributeValue<string> typeAttribute = reader
+                .GetCustomAttribute(Assert.Single(reader.GetCustomAttributes(testType)))
+                .DecodeValue(DocumentCompilerTestHelpers.Decoder);
+            Assert.Equal(true, Assert.Single(typeAttribute.FixedArguments).Value);
+            Assert.Empty(reader.GetAssemblyDefinition().GetCustomAttributes());
+            Assert.Single(reader.CustomAttributes);
         }
 
     }

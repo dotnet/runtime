@@ -759,7 +759,16 @@ handle_branch (TransformData *td, int long_op, int offset)
 	if (offset < 0 && td->sp == td->stack && !td->inlined_method) {
 		// Backwards branch inside unoptimized method where the IL stack is empty
 		// This is candidate for a patchpoint
-		target_bb->patchpoint_bb = TRUE;
+		if (!target_bb->patchpoint_bb) {
+			target_bb->patchpoint_bb = TRUE;
+			// Nested handler patchpoints also affect enclosing finally continuations.
+			for (guint i = 0; i < td->header->num_clauses; i++) {
+				MonoExceptionClause *clause = &td->header->clauses [i];
+				if (clause->flags == MONO_EXCEPTION_CLAUSE_FINALLY &&
+						MONO_OFFSET_IN_HANDLER (clause, GINT_TO_UINT32 (target_bb->il_offset)))
+					td->clause_has_patchpoint [i] = TRUE;
+			}
+		}
 		if (mono_interp_tiering_enabled () && !target_bb->patchpoint_data && td->optimized) {
 			// The optimized imethod will store mapping from bb index to native offset so it
 			// can resume execution in the optimized method, once we tier up in patchpoint
@@ -4794,6 +4803,7 @@ interp_method_compute_offsets (TransformData *td, InterpMethod *imethod, MonoMet
 
 	imethod->clause_data_offsets = (guint32*)imethod_alloc0 (td, header->num_clauses * sizeof (guint32));
 	td->clause_vars = (int*)mono_mempool_alloc (td->mempool, sizeof (int) * header->num_clauses);
+	td->clause_has_patchpoint = (gboolean*)mono_mempool_alloc0 (td->mempool, sizeof (gboolean) * header->num_clauses);
 	for (guint i = 0; i < header->num_clauses; i++) {
 		int var = interp_create_var (td, mono_get_object_type ());
 		td->vars [var].global = TRUE;

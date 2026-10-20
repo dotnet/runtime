@@ -29,7 +29,7 @@ namespace ILLink.Shared.TypeSystemProxy
                 builder.Add(new GenericParameterProxy((GenericParameterDesc)genericParameter));
             }
 
-            return builder.ToImmutableArray();
+            return builder.MoveToImmutable();
         }
 
         public TypeDesc Type { get; }
