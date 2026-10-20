@@ -1854,6 +1854,7 @@ namespace System.Net.Security.Tests
                 ? TlsContext.CreateServer(new SslServerAuthenticationOptions
                 {
                     ServerCertificateContext = certificateContext,
+                    ClientCertificateRequired = true,
                     EnabledSslProtocols = SslProtocols.Tls12,
                     AllowTlsResume = false,
                     CertificateChainPolicy = chainPolicy,
@@ -1886,7 +1887,6 @@ namespace System.Net.Security.Tests
                     : peer.AuthenticateAsServerAsync(new SslServerAuthenticationOptions
                     {
                         ServerCertificateContext = peerCertificateContext,
-                        ClientCertificateRequired = true,
                         EnabledSslProtocols = SslProtocols.Tls12,
                         AllowTlsResume = false,
                     });
