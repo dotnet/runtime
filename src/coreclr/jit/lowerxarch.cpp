@@ -7838,12 +7838,14 @@ void Lowering::ContainCheckStoreIndir(GenTreeStoreInd* node)
                     switch (tupleType)
                     {
                         case INS_TT_HALF_MEM:
+                        case INS_TT_HALF:
                         {
                             memSize = simdSize / 2;
                             break;
                         }
 
                         case INS_TT_QUARTER_MEM:
+                        case INS_TT_QUARTER:
                         {
                             memSize = simdSize / 4;
                             break;
@@ -8963,6 +8965,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                             break;
                         }
 
+                        case INS_TT_QUARTER:
                         case INS_TT_QUARTER_MEM:
                         {
                             expectedSize /= 4;
