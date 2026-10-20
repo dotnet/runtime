@@ -17,7 +17,7 @@ internal sealed class Crossgen2Cache
     private static readonly SearchValues<char> s_unsupportedPathCharacters = SearchValues.Create("\"\r\n*?");
     private readonly string _root;
     private readonly TaskLoggingHelper _log;
-    private readonly InvocationCache _storage;
+    internal InvocationCache Storage { get; }
 
     internal static StringComparer PathComparer { get; } = OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
 
@@ -37,7 +37,7 @@ internal sealed class Crossgen2Cache
     {
         _root = root;
         _log = log;
-        _storage = new InvocationCache(root, log, "Crossgen2", MessageImportance.Normal);
+        Storage = new InvocationCache(root, log, "Crossgen2", MessageImportance.Normal);
     }
 
     internal static Crossgen2Cache? FromEnvironment(TaskLoggingHelper log)
@@ -235,48 +235,33 @@ internal sealed class Crossgen2Cache
         }
     }
 
-    internal bool TryRestore(string key, InvocationCacheOutputs outputs, DateTime timestamp, out List<Diagnostic> diagnostics)
+    internal static void ReadDiagnostics(BinaryReader reader, List<Diagnostic> diagnostics)
     {
-        var restoredDiagnostics = new List<Diagnostic>();
-        bool restored = _storage.TryRestore(key, outputs, timestamp, reader =>
+        int count = reader.ReadInt32();
+        if (count < 0 || count > reader.BaseStream.Length - reader.BaseStream.Position)
         {
-            int count = reader.ReadInt32();
-            if (count < 0 || count > reader.BaseStream.Length - reader.BaseStream.Position)
-            {
-                throw new InvalidDataException("Invalid diagnostic count.");
-            }
-            for (int i = 0; i < count; i++)
-            {
-                var importance = (MessageImportance)reader.ReadInt32();
-                if (importance is not (MessageImportance.High or MessageImportance.Normal or MessageImportance.Low))
-                {
-                    throw new InvalidDataException("Invalid diagnostic importance.");
-                }
-                restoredDiagnostics.Add(new Diagnostic(reader.ReadString(), importance));
-            }
-        });
-        if (!restored)
-        {
-            restoredDiagnostics.Clear();
+            throw new InvalidDataException("Invalid diagnostic count.");
         }
-        diagnostics = restoredDiagnostics;
-        return restored;
-    }
-
-    internal void Store(string key, InvocationCacheOutputs outputs, List<Diagnostic> diagnostics)
-    {
-        _storage.Store(key, outputs, writer =>
+        for (int i = 0; i < count; i++)
         {
-            writer.Write(diagnostics.Count);
-            foreach (Diagnostic diagnostic in diagnostics)
+            var importance = (MessageImportance)reader.ReadInt32();
+            if (importance is not (MessageImportance.High or MessageImportance.Normal or MessageImportance.Low))
             {
-                writer.Write((int)diagnostic.Importance);
-                writer.Write(diagnostic.Text);
+                throw new InvalidDataException("Invalid diagnostic importance.");
             }
-        });
+            diagnostics.Add(new Diagnostic(reader.ReadString(), importance));
+        }
     }
 
-    internal void CleanOutputs(InvocationCacheOutputs outputs) => _storage.CleanOutputs(outputs);
+    internal static void WriteDiagnostics(BinaryWriter writer, List<Diagnostic> diagnostics)
+    {
+        writer.Write(diagnostics.Count);
+        foreach (Diagnostic diagnostic in diagnostics)
+        {
+            writer.Write((int)diagnostic.Importance);
+            writer.Write(diagnostic.Text);
+        }
+    }
 
     internal InvocationCacheOutputs DeclareOutputs(string[] paths)
     {

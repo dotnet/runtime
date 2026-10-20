@@ -419,78 +419,77 @@ namespace Microsoft.NET.Build.Tasks
 
             DateTime timestamp = DateTime.UtcNow;
             Crossgen2Cache cache = Crossgen2Cache.FromEnvironment(Log);
-            string key = null;
-            InvocationCacheOutputs outputs = null;
-            if (cache is not null)
-            {
-                try
+            var diagnostics = new List<Crossgen2Cache.Diagnostic>();
+            return InvocationCache.Execute(cache?.Storage, timestamp,
+                () => PrepareCacheInvocation(cache, pathToTool, responseFileCommands, commandLineCommands),
+                outputs =>
                 {
-                    if (!ActuallyUseCrossgen2 || Crossgen2IsVersion5 || _createCompositeImage ||
-                        !string.IsNullOrEmpty(DotNetHostPath) || UseCommandProcessor ||
-                        EnvironmentVariables?.Length > 0 ||
-                        !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("LD_LIBRARY_PATH")) ||
-                        !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("LD_PRELOAD")) ||
-                        !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("LD_AUDIT")) ||
-                        (!string.IsNullOrEmpty(Crossgen2ContainerFormat) && Crossgen2ContainerFormat != "pe") ||
-                        HasUnsafeExtraArguments(Crossgen2ExtraCommandLineArgs) ||
-                        HasUnsafeExtraArguments(Crossgen2CompositeExtraCommandLineArgs) ||
-                        !Crossgen2CacheInvocation.SupportsTarget(Crossgen2Tool) ||
-                        !Crossgen2Cache.PathComparer.Equals(Crossgen2Cache.InputPath(pathToTool), Crossgen2Cache.InputPath(Crossgen2Tool.ItemSpec)))
+                    if (outputs is null)
                     {
-                        cache.Report("bypass: unsupported invocation (requires directly executed Linux-x64 or Windows-x64 crossgen2 targeting its host, with non-composite PE output and without unrecognized extra arguments or environment overrides)");
+                        return ExecuteCompiler(pathToTool, responseFileCommands, commandLineCommands);
                     }
-                    else
+
+                    // Discard any partially read metadata before capturing the fallback execution.
+                    diagnostics.Clear();
+                    cache.Storage.CleanOutputs(outputs);
+                    _cacheDiagnostics = diagnostics;
+                    try
                     {
-                        Crossgen2CacheInvocation invocation = Crossgen2CacheInvocation.Create(pathToTool,
-                            Crossgen2Tool.GetMetadata(MetadataKeys.JitPath), _outputR2RImage, _outputPDBImage,
-                            _emitSymbols, Crossgen2Tool.GetMetadata(MetadataKeys.PerfmapFormatVersion));
-                        outputs = cache.DeclareOutputs(invocation.Outputs);
-                        key = Crossgen2Cache.ComputeKey(invocation.CompilerDependencies,
-                            _inputAssembly, ImplementationAssemblyReferences, Crossgen2PgoFiles,
-                            invocation.Outputs, responseFileCommands, commandLineCommands,
-                            string.Join("\n", ShowCompilerWarnings, LogStandardErrorAsError, StandardOutputImportance, StandardErrorImportance),
-                            GetWorkingDirectory() ?? Directory.GetCurrentDirectory());
+                        return ExecuteCompiler(pathToTool, responseFileCommands, commandLineCommands);
                     }
-                }
-                catch (Exception ex) when (Crossgen2Cache.IsCacheFailure(ex))
+                    finally
+                    {
+                        _cacheDiagnostics = null;
+                    }
+                },
+                reader => Crossgen2Cache.ReadDiagnostics(reader, diagnostics),
+                writer => Crossgen2Cache.WriteDiagnostics(writer, diagnostics),
+                () =>
                 {
-                    cache.Report($"bypass: {ex.Message}");
-                }
-            }
+                    foreach (Crossgen2Cache.Diagnostic diagnostic in diagnostics)
+                    {
+                        LogEventsFromTextOutput(diagnostic.Text, diagnostic.Importance);
+                    }
+                });
+        }
 
-            if (key is null)
-            {
-                return ExecuteCompiler(pathToTool, responseFileCommands, commandLineCommands);
-            }
-
-            if (cache.TryRestore(key, outputs, timestamp, out List<Crossgen2Cache.Diagnostic> diagnostics))
-            {
-                foreach (Crossgen2Cache.Diagnostic diagnostic in diagnostics)
-                {
-                    LogEventsFromTextOutput(diagnostic.Text, diagnostic.Importance);
-                }
-                return 0;
-            }
-
-            // Remove only the declared outputs, including any partially restored files.
-            // A cleanup failure must fail the task rather than reuse stale optional outputs.
-            cache.CleanOutputs(outputs);
-
-            _cacheDiagnostics = new List<Crossgen2Cache.Diagnostic>();
-            int exitCode;
+        private InvocationCacheRequest? PrepareCacheInvocation(Crossgen2Cache cache,
+            string pathToTool, string responseFileCommands, string commandLineCommands)
+        {
             try
             {
-                exitCode = ExecuteCompiler(pathToTool, responseFileCommands, commandLineCommands);
-                if (exitCode == 0 && !Log.HasLoggedErrors)
+                if (!ActuallyUseCrossgen2 || Crossgen2IsVersion5 || _createCompositeImage ||
+                    !string.IsNullOrEmpty(DotNetHostPath) || UseCommandProcessor ||
+                    EnvironmentVariables?.Length > 0 ||
+                    !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("LD_LIBRARY_PATH")) ||
+                    !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("LD_PRELOAD")) ||
+                    !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("LD_AUDIT")) ||
+                    (!string.IsNullOrEmpty(Crossgen2ContainerFormat) && Crossgen2ContainerFormat != "pe") ||
+                    HasUnsafeExtraArguments(Crossgen2ExtraCommandLineArgs) ||
+                    HasUnsafeExtraArguments(Crossgen2CompositeExtraCommandLineArgs) ||
+                    !Crossgen2CacheInvocation.SupportsTarget(Crossgen2Tool) ||
+                    !Crossgen2Cache.PathComparer.Equals(Crossgen2Cache.InputPath(pathToTool), Crossgen2Cache.InputPath(Crossgen2Tool.ItemSpec)))
                 {
-                    cache.Store(key, outputs, _cacheDiagnostics);
+                    cache.Report("bypass: unsupported invocation (requires directly executed Linux-x64 or Windows-x64 crossgen2 targeting its host, with non-composite PE output and without unrecognized extra arguments or environment overrides)");
+                    return null;
                 }
+
+                Crossgen2CacheInvocation invocation = Crossgen2CacheInvocation.Create(pathToTool,
+                    Crossgen2Tool.GetMetadata(MetadataKeys.JitPath), _outputR2RImage, _outputPDBImage,
+                    _emitSymbols, Crossgen2Tool.GetMetadata(MetadataKeys.PerfmapFormatVersion));
+                InvocationCacheOutputs outputs = cache.DeclareOutputs(invocation.Outputs);
+                string key = Crossgen2Cache.ComputeKey(invocation.CompilerDependencies,
+                    _inputAssembly, ImplementationAssemblyReferences, Crossgen2PgoFiles,
+                    invocation.Outputs, responseFileCommands, commandLineCommands,
+                    string.Join("\n", ShowCompilerWarnings, LogStandardErrorAsError, StandardOutputImportance, StandardErrorImportance),
+                    GetWorkingDirectory() ?? Directory.GetCurrentDirectory());
+                return new InvocationCacheRequest(key, outputs);
             }
-            finally
+            catch (Exception ex) when (Crossgen2Cache.IsCacheFailure(ex))
             {
-                _cacheDiagnostics = null;
+                cache.Report($"bypass: {ex.Message}");
+                return null;
             }
-            return exitCode;
         }
 
         internal virtual int ExecuteCompiler(string pathToTool, string responseFileCommands, string commandLineCommands)

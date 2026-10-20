@@ -190,8 +190,13 @@ storage names, presence flags, output lengths and hashes, and optional tool meta
 The shared storage implementation under `src/tasks/Common/InvocationCache` is
 compiled into the task assembly; it captures and restores the declared file set,
 including optional-file absence. ILLink uses the same storage sources with an
-owned-directory contract and the same manifest encoding and checksum. The shared
-implementation selects the storage version, not each tool. Compatibility is not
+owned-directory contract and the same manifest encoding and checksum.
+The shared `InvocationCache.Execute` helper also handles restore-or-execute decisions and
+stores only successful executions without logged errors. The task retains
+eligibility and key computation, declared-file cleanup, and diagnostic capture/replay.
+Unlike ILLink's owned-directory preparation, declared-file cleanup remains limited
+to cache-eligible executions.
+The shared implementation selects the storage version, not each tool. Compatibility is not
 guaranteed within this experimental version. The keyed task assembly changes with
 the embedded storage implementation, invalidating entries without changing the
 namespace.

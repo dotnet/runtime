@@ -9,6 +9,7 @@ using System.Linq;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using System.Threading.Tasks;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
@@ -95,6 +96,64 @@ public class Crossgen2CacheTests
         Assert.InRange(File.GetLastWriteTimeUtc(fixture.Output), before.AddSeconds(-1), DateTime.UtcNow.AddSeconds(1));
         Assert.Equal("do not delete", File.ReadAllText(neighbor));
     }, showWarnings.ToString()).Dispose();
+
+    [CachePlatformTheory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void InvalidDiagnosticsAreDiscardedBeforeFallbackExecution(bool truncated) => RemoteExecutor.Invoke(value =>
+    {
+        using var fixture = new Fixture();
+        MockCompiler miss = fixture.Create();
+        miss.EmitWarning = true;
+        Assert.True(miss.Execute());
+        string entry = Directory.GetDirectories(Path.Combine(fixture.Cache, InvocationCacheEntry.VersionDirectory)).Single();
+        string manifestPath = Path.Combine(entry, "manifest");
+        long metadataPosition;
+        using (var reader = new BinaryReader(File.OpenRead(manifestPath)))
+        {
+            Assert.Equal(InvocationCacheEntry.FormatVersion, reader.ReadInt32());
+            Assert.True(reader.ReadBoolean());
+            int count = reader.ReadInt32();
+            for (int i = 0; i < count; i++)
+            {
+                reader.ReadString();
+                if (reader.ReadBoolean())
+                {
+                    reader.ReadInt64();
+                    reader.ReadBytes(32);
+                }
+            }
+            metadataPosition = reader.BaseStream.Position;
+        }
+        using (var writer = new BinaryWriter(File.OpenWrite(manifestPath)))
+        {
+            writer.BaseStream.Position = metadataPosition;
+            writer.Write(2);
+            writer.Write((int)MessageImportance.Normal);
+            writer.Write("warning: stale cached diagnostic");
+            if (!bool.Parse(value))
+            {
+                writer.Write(-1);
+                writer.Write("invalid importance");
+            }
+            writer.BaseStream.SetLength(writer.BaseStream.Position);
+        }
+        File.WriteAllBytes(Path.Combine(entry, "manifest.sha256"), SHA256.HashData(File.ReadAllBytes(manifestPath)));
+
+        MockCompiler fallback = fixture.Create();
+        fallback.EmitWarning = true;
+        fallback.BeforeExecute = () => Directory.Delete(entry, recursive: true);
+        Assert.True(fallback.Execute());
+        Assert.Equal(1, fallback.Executions);
+        Assert.Contains(fallback.Engine.Messages, message => message.Contains("restore failed", StringComparison.Ordinal));
+
+        MockCompiler warm = fixture.Create();
+        Assert.True(warm.Execute());
+        Assert.Equal(0, warm.Executions);
+        Assert.Equal(fallback.Engine.Warnings, warm.Engine.Warnings);
+        Assert.Equal(fallback.Engine.Messages.Where(message => message.Contains("warning:", StringComparison.Ordinal)),
+            warm.Engine.Messages.Where(message => message.Contains("warning:", StringComparison.Ordinal)));
+    }, truncated.ToString()).Dispose();
 
     [CachePlatformTheory]
     [InlineData("input")]
@@ -561,8 +620,12 @@ public class Crossgen2CacheTests
         File.WriteAllText(fixture.Output, "image");
         string key = new string('a', 64);
         InvocationCacheOutputs outputs = cache.DeclareOutputs(new[] { fixture.Output, fixture.Map });
-        Parallel.For(0, 8, _ => cache.Store(key, outputs, new()));
-        Assert.True(cache.TryRestore(key, outputs, DateTime.UtcNow, out _));
+        Parallel.For(0, 8, _ => cache.Storage.Store(key, outputs,
+            writer => Crossgen2Cache.WriteDiagnostics(writer, new())));
+        var diagnostics = new List<Crossgen2Cache.Diagnostic>();
+        Assert.True(cache.Storage.TryRestore(key, outputs, DateTime.UtcNow,
+            reader => Crossgen2Cache.ReadDiagnostics(reader, diagnostics)));
+        Assert.Empty(diagnostics);
         Assert.Empty(Directory.GetDirectories(Path.Combine(fixture.Cache, InvocationCacheEntry.VersionDirectory), "*.tmp"));
     }).Dispose();
 
@@ -903,10 +966,12 @@ public class Crossgen2CacheTests
         internal bool EmitError { get; set; }
         internal bool ProduceMap { get; set; } = true;
         internal bool RealTool { get; set; }
+        internal Action? BeforeExecute { get; set; }
 
         internal override int ExecuteCompiler(string pathToTool, string responseFileCommands, string commandLineCommands)
         {
             Executions++;
+            BeforeExecute?.Invoke();
             if (RealTool)
             {
                 return base.ExecuteCompiler(pathToTool, responseFileCommands, commandLineCommands);
