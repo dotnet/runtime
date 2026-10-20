@@ -5,6 +5,7 @@
 #define __RUNTIME_CONFIG_H__
 
 #include <list>
+#include <optional>
 
 #include "pal.h"
 #include "fx_reference.h"
@@ -13,22 +14,11 @@
 class runtime_config_t
 {
 public:
-    struct settings_t
-    {
-        settings_t();
-
-        bool has_apply_patches;
-        bool apply_patches;
-        void set_apply_patches(bool value) { has_apply_patches = true; apply_patches = value; }
-
-        bool has_roll_forward;
-        roll_forward_option roll_forward;
-        void set_roll_forward(roll_forward_option value) { has_roll_forward = true; roll_forward = value; }
-    };
-
-public:
     runtime_config_t();
-    void parse(const pal::string_t& path, const pal::string_t& dev_path, const settings_t& override_settings);
+    void parse(
+        const pal::string_t& path,
+        const pal::string_t& dev_path,
+        const std::optional<roll_forward_option>& override_roll_forward);
     bool is_valid() const { return m_valid; }
     const pal::string_t& get_path() const { return m_path; }
     const pal::string_t& get_dev_path() const { return m_dev_path; }
@@ -42,27 +32,17 @@ public:
     void set_fx_version(pal::string_t version);
 
 private:
-    bool ensure_parsed(); //todo: const runtime_config_t* defaults
+    bool ensure_parsed();
     bool ensure_dev_config_parsed();
 
     std::unordered_map<pal::string_t, pal::string_t> m_properties;
     fx_reference_vector_t m_frameworks;
     fx_reference_vector_t m_included_frameworks;
-    settings_t m_default_settings;   // the default settings (Steps #0 and #1)
-    settings_t m_override_settings;  // the settings that can't be changed (Step #5)
+    std::optional<roll_forward_option> m_runtime_options_roll_forward;  // 3) The current "runtimeOptions" section
+    std::optional<roll_forward_option> m_override_roll_forward;         // 0) Overrides or 1) the environment setting
     std::list<pal::string_t> m_probe_paths;
 
     pal::string_t m_tfm;
-
-    // This is used to detect cases where rollForward is used together with the obsoleted
-    // rollForwardOnNoCandidateFx/applyPatches.
-    // Flags
-    enum specified_setting
-    {
-        none = 0x0,
-        specified_roll_forward = 0x1,
-        specified_roll_forward_on_no_candidate_fx_or_apply_patched = 0x2
-    } m_specified_settings;
 
     pal::string_t m_dev_path;
     pal::string_t m_path;
@@ -75,7 +55,5 @@ private:
 
     bool parse_framework(const json_parser_t::value_t& fx_obj, bool name_and_version_only, fx_reference_t& fx_out);
     bool read_framework_array(const json_parser_t::value_t& frameworks, bool name_and_version_only, fx_reference_vector_t& frameworks_out);
-
-    bool mark_specified_setting(specified_setting setting);
 };
 #endif // __RUNTIME_CONFIG_H__

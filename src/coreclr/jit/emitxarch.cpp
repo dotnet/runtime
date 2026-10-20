@@ -1919,11 +1919,8 @@ void emitter::emitHandleGCrefRegs(BYTE* dst, instrDesc* id)
 
         case IF_RRW_RRW:
         {
-            // This must be "xchg reg1, reg2"
+            // This must be "xchg reg1, reg2", swap the GC-ness of the registers if it differs.
             assert(id->idIns() == INS_xchg);
-
-            // If we got here, the GC-ness of the registers doesn't match, so we have to "swap" them in the GC
-            // register pointer mask.
 
             GCtype gc1, gc2;
 
@@ -9030,7 +9027,7 @@ void emitter::emitIns_C_R(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE f
     noway_assert(emitVerifyEncodable(ins, size, reg));
 
     instrDesc* id  = emitNewInstrDsp(attr, offs);
-    insFormat  fmt = (ins == INS_xchg) ? IF_MRW_RRW : emitInsModeFormat(ins, IF_MRD_RRD);
+    insFormat  fmt = (ins == INS_xchg) || (ins == INS_xadd) ? IF_MRW_RRW : emitInsModeFormat(ins, IF_MRD_RRD);
 
     id->idIns(ins);
     id->idInsFmt(fmt);
@@ -9468,12 +9465,25 @@ void emitter::emitIns_R_ARX(
     assert(!CodeGen::instIsFP(ins) && (EA_SIZE(attr) <= EA_64BYTE) && (reg != REG_NA));
     noway_assert(emitVerifyEncodable(ins, EA_SIZE(attr), reg));
 
-    if ((ins == INS_lea) && (reg == base) && (index == REG_NA) && (disp == 0))
+    if ((ins == INS_lea) && (index == REG_NA) && (disp == 0))
     {
-        // Maybe the emitter is not the common place for this optimization, but it's a better choke point
-        // for all the emitIns(ins, tree), we would have to be analyzing at each call site
-        //
-        return;
+        if (reg == base)
+        {
+            return;
+        }
+
+        if (base != REG_NA)
+        {
+#if defined(TARGET_AMD64)
+            if ((reg != REG_SPBASE) || (base != REG_FPBASE))
+#endif
+            {
+                // AMD64 epilogs require LEA to restore RSP from RBP.
+                // A zero-offset, base-only LEA is otherwise just a register move.
+                emitIns_Mov(INS_mov, attr, reg, base, /* canSkip */ true);
+                return;
+            }
+        }
     }
 
     UNATIVE_OFFSET sz;
@@ -9516,7 +9526,7 @@ void emitter::emitIns_ARX_R(instruction    ins,
     }
     else
     {
-        fmt = (ins == INS_xchg) ? IF_ARW_RRW : emitInsModeFormat(ins, IF_ARD_RRD);
+        fmt = (ins == INS_xchg) || (ins == INS_xadd) ? IF_ARW_RRW : emitInsModeFormat(ins, IF_ARD_RRD);
 
         noway_assert(emitVerifyEncodable(ins, EA_SIZE(attr), reg));
         assert(!CodeGen::instIsFP(ins) && (EA_SIZE(attr) <= EA_64BYTE));
@@ -10571,9 +10581,55 @@ bool emitter::IsRedundantStackMov(instruction ins, insFormat fmt, emitAttr size,
     return false;
 }
 
+//------------------------------------------------------------------------
+// TryEmitLclAddrAsMov: Emit `lea reg, [lclVar]` as `mov reg, base` when the resolved frame
+//                      offset is zero.
+//
+// Arguments:
+//    attr - The emit attribute
+//    ireg - The destination register
+//    varx - The variable index used for the memory address
+//    offs - The offset added to the memory address from varx
+//
+// Return Value:
+//    true if a mov was emitted in place of the lea; otherwise, false.
+//
+// Notes:
+//    The mov is a byte shorter -- rbp/r13 as base force a disp8 and rsp forces a SIB -- and
+//    is a candidate for move elimination, where-as lea always occupies an execution port.
+//
+bool emitter::TryEmitLclAddrAsMov(emitAttr attr, regNumber ireg, int varx, int offs)
+{
+    if (m_compiler->lvaDoneFrameLayout != Compiler::FINAL_FRAME_LAYOUT)
+    {
+        // The frame address is still an estimate.
+        return false;
+    }
+
+    bool fpBased;
+    int  adr = m_compiler->lvaFrameAddress(varx, &fpBased);
+
+#if !FEATURE_FIXED_OUT_ARGS
+    if (!fpBased)
+    {
+        // An SP relative displacement is adjusted by emitCurStackLvl when the instruction is
+        // issued, so a zero here is not a zero in the encoding.
+        return false;
+    }
+#endif
+
+    if ((adr + offs) != 0)
+    {
+        return false;
+    }
+
+    emitIns_Mov(INS_mov, attr, ireg, fpBased ? REG_FPBASE : REG_SPBASE, /* canSkip */ false);
+    return true;
+}
+
 void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber ireg, int varx, int offs, insOpts instOptions)
 {
-    insFormat fmt = (ins == INS_xchg) ? IF_SRW_RRW : emitInsModeFormat(ins, IF_SRD_RRD);
+    insFormat fmt = (ins == INS_xchg) || (ins == INS_xadd) ? IF_SRW_RRW : emitInsModeFormat(ins, IF_SRD_RRD);
     if (IsMovInstruction(ins) && IsRedundantStackMov(ins, fmt, attr, ireg, varx, offs))
     {
         return;
@@ -10613,6 +10669,11 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber ireg, int va
     insFormat fmt = emitInsModeFormat(ins, IF_RRD_SRD);
 
     if (IsMovInstruction(ins) && IsRedundantStackMov(ins, fmt, attr, ireg, varx, offs))
+    {
+        return;
+    }
+
+    if ((ins == INS_lea) && TryEmitLclAddrAsMov(attr, ireg, varx, offs))
     {
         return;
     }
@@ -15545,8 +15606,14 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
             {
                 case IF_RWR_SRD: // Register Write, Stack Read
                 case IF_RRW_SRD: // Register Read/Write, Stack Read
+                case IF_RWR_SRD_CNS:
+                case IF_RRW_SRD_CNS:
+                case IF_RWR_SRD_RRD:
+                case IF_RRW_SRD_RRD:
                 case IF_RWR_RRD_SRD:
                 case IF_RRW_RRD_SRD:
+                case IF_RWR_RRD_SRD_CNS:
+                case IF_RWR_RRD_SRD_RRD:
                 {
                     emitGCregDeadUpd(id->idReg1(), dst);
                     break;
@@ -16026,8 +16093,15 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
             {
                 case IF_RWR_MRD:
                 case IF_RRW_MRD:
+                case IF_RWR_MRD_CNS:
+                case IF_RRW_MRD_CNS:
+                case IF_RWR_MRD_RRD:
+                case IF_RRW_MRD_RRD:
                 case IF_RWR_RRD_MRD:
                 case IF_RRW_RRD_MRD:
+                case IF_RWR_RRD_MRD_CNS:
+                case IF_RWR_RRD_MRD_RRD:
+                case IF_RWR_MRD_OFF:
                 {
                     emitGCregDeadUpd(id->idReg1(), dst);
                     break;
@@ -16708,8 +16782,9 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
         dst += emitOutputByte(dst, (0xC0 | regCode));
     }
 
-    // Does this instruction operate on a GC ref value?
-    if (id->idGCref())
+    // Does this instruction operate on a GC ref value? "xchg reg1, reg2" always swaps
+    // the GC-ness of its registers, regardless of the attribute it was emitted with.
+    if (id->idGCref() || (id->idInsFmt() == IF_RRW_RRW))
     {
         emitHandleGCrefRegs(dst, id);
     }

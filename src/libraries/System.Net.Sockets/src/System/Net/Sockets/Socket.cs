@@ -151,6 +151,11 @@ namespace System.Net.Sockets
 
                     Debug.Assert(bufferLength <= buffer.Length);
 
+                    if (_addressFamily == AddressFamily.Unknown)
+                    {
+                        _addressFamily = SocketAddressPal.GetAddressFamily(buffer.Slice(0, bufferLength));
+                    }
+
                     // Try to get the local end point.  That will in turn enable the remote
                     // end point to be retrieved on-demand when the property is accessed.
                     switch (_addressFamily)

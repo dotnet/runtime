@@ -29,6 +29,7 @@
     <Compile Include="..\src\Validation\Requires.cs" Link="Validation\Requires.cs" />
     <Compile Include="BadHasher.cs" />
     <Compile Include="BinaryTreeProxy.cs" />
+    <Compile Include="CopyToTrackingCollection.cs" />
     <Compile Include="EverythingEqual.cs" />
     <Compile Include="Frozen\FrozenFromKnownValuesTests.cs" />
     <Compile Include="Frozen\KeyAnalyzerTests.cs" />

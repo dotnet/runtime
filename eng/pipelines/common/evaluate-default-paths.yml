@@ -291,6 +291,22 @@ jobs:
       - ${{ parameters._const_paths._always_exclude }}
       - ${{ parameters._const_paths._perf_pipeline_specific_only }}
 
+    # The checked-in CoreCLR wasm call helpers (src/coreclr/vm/wasm/{browser,wasi}/callhelpers-*.cpp)
+    # are generated from the framework's [UnmanagedCallersOnly] methods, P/Invokes and QCalls, so any
+    # change to that managed code can make them stale. Triggers the wasm CoreCLR build legs that run
+    # wasm-coreclr-callhelpers-check.yml.
+    - subset: wasm_coreclr_callhelpers
+      combined: true
+      include:
+      - src/libraries/*/src/*
+      - src/coreclr/System.Private.CoreLib/*
+      - src/coreclr/tools/aot/ILCompiler.ReadyToRun/*
+      - src/coreclr/tools/Common/*
+      - src/coreclr/vm/wasm/*
+      - eng/wasm/WasmPInvokeModules.props
+      exclude:
+      - ${{ parameters._const_paths._always_exclude }}
+
     # wasm/runtimetests coreCLR need to be run
     - subset: wasm_coreclr_runtimetests
       combined: true

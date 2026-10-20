@@ -4967,6 +4967,10 @@ PhaseStatus Compiler::fgDfsBlocksAndRemove()
 // Returns:
 //    True if any block was removed.
 //
+// Notes:
+//    This may recompute the DFS tree, in which case the annotations derived
+//    from the old tree are invalidated (see fgInvalidateDfsTree).
+//
 bool Compiler::fgRemoveBlocksOutsideDfsTree()
 {
     if (m_dfsTree->GetPostOrderCount() == fgBBcount)
@@ -5012,6 +5016,13 @@ bool Compiler::fgRemoveBlocksOutsideDfsTree()
             break;
         }
 
+        // The old DFS tree is about to be replaced, so drop the annotations
+        // derived from it. Callers can have some of them live here: lowering
+        // computes loops for the store-to-load forwarding check before calling
+        // us, and would otherwise be left with a FlowGraphNaturalLoops built
+        // over the old tree.
+        //
+        fgInvalidateDfsTree();
         m_dfsTree = fgComputeDfs();
     }
 
