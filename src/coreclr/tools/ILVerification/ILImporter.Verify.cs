@@ -132,6 +132,17 @@ namespace Internal.IL
             {
                 ErrorCount++;
             }
+
+            // Errors that make the IL unverifiable but not invalid leave a valid stack for the successors.
+            public int UnverifiableErrorCount
+            {
+                get;
+                private set;
+            }
+            public void IncrementUnverifiableErrorCount()
+            {
+                UnverifiableErrorCount++;
+            }
         };
 
         void EmptyTheStack() => _stackTop = 0;
@@ -598,33 +609,42 @@ namespace Internal.IL
         void UnverifiableError(VerifierError error)
         {
             if (!ValidationOnly)
+            {
                 VerificationError(error);
+                _currentBasicBlock?.IncrementUnverifiableErrorCount();
+            }
         }
 
         void UnverifiableError(VerifierError error, object found)
         {
             if (!ValidationOnly)
+            {
                 VerificationError(error, found);
+                _currentBasicBlock?.IncrementUnverifiableErrorCount();
+            }
         }
 
         void UnverifiableError(VerifierError error, object found, object expected)
         {
             if (!ValidationOnly)
+            {
                 VerificationError(error, found, expected);
+                _currentBasicBlock?.IncrementUnverifiableErrorCount();
+            }
         }
 
         // Like Check, for a rule that only verifiable IL must follow; validation-only mode reports nothing.
         bool CheckVerifiable(bool cond, VerifierError error)
         {
-            if (!cond && !ValidationOnly)
-                VerificationError(error);
+            if (!cond)
+                UnverifiableError(error);
             return cond;
         }
 
         bool CheckVerifiable(bool cond, VerifierError error, StackValue found)
         {
-            if (!cond && !ValidationOnly)
-                VerificationError(error, found);
+            if (!cond)
+                UnverifiableError(error, found);
             return cond;
         }
 
@@ -1162,7 +1182,9 @@ namespace Internal.IL
             if (!IsAssignable(type, GetWellKnownType(WellKnownType.Object), false))
             {
                 // TODO: Better error message
-                UnverifiableError(VerifierError.StackUnexpected, TypeToStringForIsAssignable(type));
+                // Not UnverifiableError: ldind.ref and ldelem.ref then push this type, so the block must not pass its stack on.
+                if (!ValidationOnly)
+                    VerificationError(VerifierError.StackUnexpected, TypeToStringForIsAssignable(type));
                 return false;
             }
             return true;
@@ -2239,7 +2261,8 @@ namespace Internal.IL
 
         void PropagateControlFlow(BasicBlock next, bool isFallthrough)
         {
-            if (!IsValidBranchTarget(_currentBasicBlock, next, isFallthrough) || _currentBasicBlock.ErrorCount > 0)
+            if (!IsValidBranchTarget(_currentBasicBlock, next, isFallthrough) ||
+                _currentBasicBlock.ErrorCount > _currentBasicBlock.UnverifiableErrorCount)
                 return;
 
             PropagateThisState(_currentBasicBlock, next);

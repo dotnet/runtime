@@ -1078,4 +1078,109 @@
         pop
         ret
     }
+
+    // A block whose only errors make the IL unverifiable still passes its stack on, so ret in the next block is checked.
+
+    .method static public hidebysig int32 Propagate.AfterLocalloc_Invalid_Unverifiable.ReturnMissing_Validation_ReturnMissing() cil managed
+    {
+        ldc.i4.8
+        localloc
+        pop
+        br.s        Next
+
+    Next:
+        ret
+    }
+
+    .method static public hidebysig int32 Propagate.AfterCalli_Invalid_Unverifiable.ReturnMissing_Validation_ReturnMissing(method void *() f) cil managed
+    {
+        ldarg.0
+        calli       void()
+        br.s        Next
+
+    Next:
+        ret
+    }
+
+    .method static public hidebysig int32 Propagate.AfterInitLocals_Invalid_InitLocals.ReturnMissing_Validation_ReturnMissing() cil managed
+    {
+        .locals (int32 V_0)
+        ldloc.0
+        pop
+        br.s        Next
+
+    Next:
+        ret
+    }
+
+    .method static public hidebysig int32 Propagate.AfterElementAddressType_Invalid_StackUnexpectedArrayType.ReturnMissing_Validation_ReturnMissing(int32[] a) cil managed
+    {
+        ldarg.0
+        ldc.i4.0
+        ldelema     [System.Runtime]System.Int64
+        pop
+        br.s        Next
+
+    Next:
+        ret
+    }
+
+    .method static public hidebysig int32 Propagate.AfterPointeeType_Invalid_StackUnexpected.ReturnMissing_Validation_ReturnMissing(int64& p) cil managed
+    {
+        ldarg.0
+        ldind.i4
+        pop
+        br.s        Next
+
+    Next:
+        ret
+    }
+
+    // ldind.ref and ldelem.ref through a non-reference type push that type, so the next block is not checked.
+
+    .method static public hidebysig object Propagate.StopAfterLoadIndirectRef_Invalid_StackUnexpected_Validation_Valid(int32& p) cil managed
+    {
+        ldarg.0
+        ldind.ref
+        br.s        Next
+
+    Next:
+        ret
+    }
+
+    .method static public hidebysig object Propagate.StopAfterLoadElementRef_Invalid_StackUnexpected_Validation_Valid(int32[] a) cil managed
+    {
+        ldarg.0
+        ldc.i4.0
+        ldelem.ref
+        br.s        Next
+
+    Next:
+        ret
+    }
+
+    .method static public hidebysig int32 Propagate.StopAfterInvalid_Invalid_StackUnexpected() cil managed
+    {
+        .locals init (int32 V_0)
+        ldnull
+        stloc.0
+        br.s        Next
+
+    Next:
+        ret
+    }
+
+    .method static public hidebysig int32 Propagate.StopAfterUnverifiableAndInvalid_Invalid_Unverifiable.StackUnexpected_Validation_StackUnexpected() cil managed
+    {
+        .locals init (int32 V_0)
+        ldc.i4.8
+        localloc
+        pop
+        ldnull
+        stloc.0
+        br.s        Next
+
+    Next:
+        ret
+    }
 }
