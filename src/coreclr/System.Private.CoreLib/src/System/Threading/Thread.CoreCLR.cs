@@ -558,10 +558,12 @@ namespace System.Threading
             {
                 PollGCWorker();
             }
-
-            [MethodImpl(MethodImplOptions.NoInlining)]
-            static void PollGCWorker() => PollGCInternal();
         }
+
+        // The EventPipe stack walker recognizes this helper through the CoreLib binder
+        // so leading polling frames do not obscure the managed caller.
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void PollGCWorker() => PollGCInternal();
 
 #if TARGET_UNIX || TARGET_BROWSER || TARGET_WASI
         internal WaitSubsystem.ThreadWaitInfo WaitInfo
