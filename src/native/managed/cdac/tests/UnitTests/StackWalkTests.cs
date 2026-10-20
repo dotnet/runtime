@@ -139,13 +139,11 @@ public unsafe class StackWalkTests
     [InlineData("interface-owner")]
     [InlineData("interface-owner-implementation")]
     [InlineData("interface-owner-ancestor")]
-    [InlineData("legacy-interface")]
     public void MethodGCRefMapLookup_FindsVirtualDeclaration(string scenario)
     {
         (TestPlaceholderTarget target, VirtualMapTypeSystem rts) = CreateVirtualMapTarget(scenario);
         TargetPointer map = new MethodGCRefMapLookup(target, new FrameHelpers(target)).Find(
-            rts.GetMethodDescHandle(new TargetPointer(0x6000)), new TargetPointer(0x7200), dispatch: false,
-            newFormat: scenario != "legacy-interface");
+            rts.GetMethodDescHandle(new TargetPointer(0x6000)), new TargetPointer(0x7200), dispatch: false);
         Assert.Equal(0xa000UL, map.Value);
     }
 
@@ -162,7 +160,7 @@ public unsafe class StackWalkTests
             rts.GenericMethods.Add(0x6200);
         rts.MethodContexts[0x6200] = context;
         Assert.Equal(expectedMap, new MethodGCRefMapLookup(target, new FrameHelpers(target)).Find(
-            rts.GetMethodDescHandle(new TargetPointer(0x6000)), new TargetPointer(0x7200), dispatch: false, newFormat: true).Value);
+            rts.GetMethodDescHandle(new TargetPointer(0x6000)), new TargetPointer(0x7200), dispatch: false).Value);
     }
 
     [Theory]
@@ -175,7 +173,7 @@ public unsafe class StackWalkTests
         if (unboxing)
             rts.UnboxingStubs.Add(0x6200);
         Assert.Equal(expectedMap, new MethodGCRefMapLookup(target, new FrameHelpers(target)).Find(
-            rts.GetMethodDescHandle(new TargetPointer(0x6000)), new TargetPointer(0x7200), dispatch: false, newFormat: true).Value);
+            rts.GetMethodDescHandle(new TargetPointer(0x6000)), new TargetPointer(0x7200), dispatch: false).Value);
     }
 
     [Theory]
@@ -186,7 +184,7 @@ public unsafe class StackWalkTests
     {
         (TestPlaceholderTarget target, VirtualMapTypeSystem rts) = CreateVirtualMapTarget(scenario);
         Assert.Equal(TargetPointer.Null, new MethodGCRefMapLookup(target, new FrameHelpers(target)).Find(
-            rts.GetMethodDescHandle(new TargetPointer(0x6000)), new TargetPointer(0x7200), dispatch: false, newFormat: true));
+            rts.GetMethodDescHandle(new TargetPointer(0x6000)), new TargetPointer(0x7200), dispatch: false));
     }
 
     [Theory]
@@ -196,7 +194,7 @@ public unsafe class StackWalkTests
     {
         (TestPlaceholderTarget target, VirtualMapTypeSystem rts) = CreateVirtualMapTarget(scenario);
         Assert.Equal(TargetPointer.Null, new MethodGCRefMapLookup(target, new FrameHelpers(target)).Find(
-            rts.GetMethodDescHandle(new TargetPointer(0x6000)), new TargetPointer(0x7200), dispatch: false, newFormat: true));
+            rts.GetMethodDescHandle(new TargetPointer(0x6000)), new TargetPointer(0x7200), dispatch: false));
     }
 
     [Theory]
@@ -229,7 +227,7 @@ public unsafe class StackWalkTests
             _ => AsyncMethodFlags.None,
         };
         Assert.Equal(matches ? 0xa000UL : 0UL, new MethodGCRefMapLookup(target, new FrameHelpers(target)).Find(
-            rts.GetMethodDescHandle(new TargetPointer(0x6000)), new TargetPointer(0x7200), dispatch: false, newFormat: true).Value);
+            rts.GetMethodDescHandle(new TargetPointer(0x6000)), new TargetPointer(0x7200), dispatch: false).Value);
     }
 
     [Theory]
@@ -254,7 +252,7 @@ public unsafe class StackWalkTests
         (TestPlaceholderTarget target, VirtualMapTypeSystem rts) =
             CreateVirtualMapTarget("canonical-interface", auxiliarySize: auxiliarySize);
         Assert.Equal(0xa000UL, new MethodGCRefMapLookup(target, new FrameHelpers(target)).Find(
-            rts.GetMethodDescHandle(new TargetPointer(0x6000)), new TargetPointer(0x7200), dispatch: false, newFormat: true).Value);
+            rts.GetMethodDescHandle(new TargetPointer(0x6000)), new TargetPointer(0x7200), dispatch: false).Value);
     }
 
     [Theory]
@@ -269,7 +267,7 @@ public unsafe class StackWalkTests
             rts.GenericMethods.Add(0x6100);
         rts.MethodContexts[0x6100] = context;
         Assert.Equal(expected ? 0xa000UL : 0UL, new MethodGCRefMapLookup(target, new FrameHelpers(target)).Find(
-            rts.GetMethodDescHandle(new TargetPointer(0x6000)), new TargetPointer(0x7200), dispatch: false, newFormat: true).Value);
+            rts.GetMethodDescHandle(new TargetPointer(0x6000)), new TargetPointer(0x7200), dispatch: false).Value);
     }
 
     [Theory]
@@ -282,7 +280,7 @@ public unsafe class StackWalkTests
         (TestPlaceholderTarget target, VirtualMapTypeSystem rts) =
             CreateVirtualMapTarget(scenario, map: [0xfd], overrideMap: [0xfd]);
         Assert.Equal(expectedMap, new MethodGCRefMapLookup(target, new FrameHelpers(target)).Find(
-            rts.GetMethodDescHandle(new TargetPointer(0x6000)), new TargetPointer(0x7200), dispatch: false, newFormat: true).Value);
+            rts.GetMethodDescHandle(new TargetPointer(0x6000)), new TargetPointer(0x7200), dispatch: false).Value);
     }
 
     [Theory]
@@ -307,7 +305,7 @@ public unsafe class StackWalkTests
             rts.GenericMethods.Add(0x6000);
         rts.MethodContexts[0x6000] = context;
         TargetPointer result = new MethodGCRefMapLookup(target, new FrameHelpers(target)).Find(
-            rts.GetMethodDescHandle(new TargetPointer(0x6000)), TargetPointer.Null, dispatch, newFormat: true);
+            rts.GetMethodDescHandle(new TargetPointer(0x6000)), TargetPointer.Null, dispatch);
         Assert.Equal(expected ? 0xa000UL : 0UL, result.Value);
     }
 
@@ -320,7 +318,7 @@ public unsafe class StackWalkTests
             CreateVirtualMapTarget("overriding-fallback", ownMap: true, overrideMap: [0xfd, 0x04]);
         rts.MethodContexts[0x6000] = context;
         TargetPointer result = new MethodGCRefMapLookup(target, new FrameHelpers(target)).Find(
-            rts.GetMethodDescHandle(new TargetPointer(0x6000)), TargetPointer.Null, dispatch: true, newFormat: true);
+            rts.GetMethodDescHandle(new TargetPointer(0x6000)), TargetPointer.Null, dispatch: true);
         Assert.Equal(0xb200UL, result.Value);
     }
 
@@ -334,11 +332,11 @@ public unsafe class StackWalkTests
         (TestPlaceholderTarget target, VirtualMapTypeSystem rts) = CreateVirtualMapTarget("declaration");
         rts.MethodContexts[0x6000] = context;
         MethodGCRefMapLookup lookup = new(target, new FrameHelpers(target));
-        TargetPointer result = lookup.Find(rts.GetMethodDescHandle(new TargetPointer(0x6000)), new TargetPointer(0x7200), dispatch, newFormat: true);
+        TargetPointer result = lookup.Find(rts.GetMethodDescHandle(new TargetPointer(0x6000)), new TargetPointer(0x7200), dispatch);
         Assert.Equal(expected ? 0xa000UL : 0UL, result.Value);
         rts.GenericMethods.Add(0x6000);
         Assert.Equal(TargetPointer.Null, lookup.Find(
-            rts.GetMethodDescHandle(new TargetPointer(0x6000)), new TargetPointer(0x7200), dispatch, newFormat: true));
+            rts.GetMethodDescHandle(new TargetPointer(0x6000)), new TargetPointer(0x7200), dispatch));
     }
 
     [Theory]
@@ -394,8 +392,7 @@ public unsafe class StackWalkTests
 
     [Theory]
     [InlineData("c1", false)]
-    [InlineData("c2", false)]
-    [InlineData("c3", true)]
+    [InlineData("c2", true)]
     public void TransitionFrame_VirtualLookupUsesContractVersion(string version, bool virtualLookup)
     {
         (TestPlaceholderTarget target, _) = CreateVirtualMapTarget("declaration", unreadableThis: true);
@@ -406,12 +403,11 @@ public unsafe class StackWalkTests
 
     [Theory]
     [InlineData("c1", false)]
-    [InlineData("c2", false)]
-    [InlineData("c3", true)]
-    public void StubDispatchFrame_CachedMethodMapRequiresVersion3(string version, bool methodMap)
+    [InlineData("c2", true)]
+    public void StubDispatchFrame_CachedMethodMapUsesContractVersion(string version, bool methodMap)
     {
         (TestPlaceholderTarget target, _) = CreateVirtualMapTarget(
-            "interface", map: version == "c3" ? [0xfd, 0x04] : [0x05],
+            "interface", map: [0xfd, 0x04],
             frameType: nameof(FrameType.StubDispatchFrame), unreadableThis: true, ownMap: true);
         ((TestPlaceholderTarget.TestContractRegistry)target.Contracts).SetVersion<IStackWalk>(version);
         Assert.Equal(methodMap ? 0xa000UL : 0UL,
@@ -426,7 +422,7 @@ public unsafe class StackWalkTests
         (TestPlaceholderTarget target, VirtualMapTypeSystem rts) = CreateVirtualMapTarget(scenario);
         rts.Vtable.Clear();
         Assert.Equal(TargetPointer.Null, new MethodGCRefMapLookup(target, new FrameHelpers(target)).Find(
-            rts.GetMethodDescHandle(new TargetPointer(0x6000)), new TargetPointer(0x7200), dispatch: false, newFormat: true));
+            rts.GetMethodDescHandle(new TargetPointer(0x6000)), new TargetPointer(0x7200), dispatch: false));
     }
 
     [Fact]
@@ -590,7 +586,6 @@ public unsafe class StackWalkTests
             "nonvirtual-alias-collision" => [1, 1, 0, 2],
             "interface" or "canonical-interface" or "interface-parent" => [2, 1, 1, 0, 0, 1],
             "nonvirtual-interface-collision" or "interface-owner-implementation" or "interface-owner-ancestor" => [2, 1, 1, 0, 0, 2],
-            "legacy-interface" => [1, 1, 1, 0, 0, 1],
             "interface-negative" => [2, 1, 2, 1, 0, 3, 0, 6],
             "interface-owner" => [4, 1, 1, 0, 0, 2, 0, 1, 0, 0, 1],
             _ => null,

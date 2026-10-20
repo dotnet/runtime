@@ -881,35 +881,16 @@ Currently there isn't great documentation on the algorithm, beyond inspecting th
 
 ## Version 2
 
-Version 2 supports `MethodDescCodeData.GCRefMap` for `PrestubMethodFrame` and
-`CallCountingHelperFrame`. The cached method-entry map supplies argument roots and, on x86,
-the stack-pop count without resolving the method signature. A missing code-data pointer or
-null map retains the signature-based path. Dispatch frames do not use this cached map because
-their hidden-instantiation-argument convention can differ.
+Version 2 supports cached method-entry and virtual declaration-map lookup for
+`PrestubMethodFrame`, `CallCountingHelperFrame`, and `StubDispatchFrame`. Compatible maps
+supply argument roots and, on x86, the stack-pop count without resolving the method signature.
+If no compatible map is available, the signature-based path is retained. Both GC root
+enumeration and x86 frame unwinding use the same lookup. Import maps on `ExternalMethodFrame`
+and `StubDispatchFrame` take precedence over method-entry maps.
 
 The runtime publishes Version 2 when ReadyToRun imports can leave signature layouts unloaded.
 An older reader must not apply Version 1's signature-only algorithm to such a target.
 The API surface and all other stack-walking algorithms are unchanged.
-
-<!-- BEGIN GENERATED: usage contract=StackWalk version=c2 diff-from=c1 -->
-### Data descriptor changes from `c1`
-
-_No changes._
-
-### Global variable changes from `c1`
-
-_No changes._
-
-### Contract dependency changes from `c1`
-
-_No changes._
-<!-- END GENERATED: usage contract=StackWalk version=c2 diff-from=c1 -->
-
-## Version 3
-
-Version 3 adds virtual method-entry map lookup to the Version 2 algorithms. Both GC root
-enumeration and x86 frame unwinding use the same lookup. Import maps on `ExternalMethodFrame`
-and `StubDispatchFrame` take precedence over method-entry maps.
 
 ### Contextual receiver token
 
@@ -949,7 +930,7 @@ ineligible maps and continue searching same-slot definitions and eligible ancest
 Publication attaches an import map directly to the already-resolved call declaration,
 without traversing the hierarchy, decoding maps, or checking an image-format flag during
 preparation. The runtime rejects images predating the contextual-receiver format; legacy
-concrete import-map rejection is not part of Version 3 lookup.
+concrete import-map rejection is not part of Version 2 lookup.
 If lookup in the method's owning type fails, obtain the actual receiver type from the saved
 `this` object for reference types, boxed wrappers, and dispatch frames. Do not dereference
 `this` for constructors, static methods, excluded generic bodies, or unboxed value-type bodies.
@@ -996,28 +977,28 @@ Dispatch integers are MSB-first: count leading ones before a zero, at most five.
 `(1 << ones) - 1` payload bits and add the corresponding base from
 `[0, 1, 3, 11, 139, 32907]`. Invalid prefixes are rejected.
 
-The Version 3 header is `(numberOfInterfaceTypes << 1) | hasClassAliases`. When the low bit
+The Version 2 header is `(numberOfInterfaceTypes << 1) | hasClassAliases`. When the low bit
 is set, read an alias count and that many absolute `(sourceSlot, targetSlot)` pairs.
 The interface portion is unchanged: each type group encodes a type-ID delta plus one,
 entry count, and a `hasNegatives` bit. Type IDs start at -1. Source and target slots start
 at -1 within each group and use deltas plus one. If negative target deltas are enabled,
-decode `0 -> 0, 1 -> +1, 2 -> -1, 3 -> +2, ...`. Older dispatch maps have an unshifted
-interface-type count with no alias prefix.
+decode `0 -> 0, 1 -> +1, 2 -> -1, 3 -> +2, ...`. Version 1 does not perform virtual
+declaration-map lookup.
 
-### Data descriptor and dependency changes from `c2`
+### Data descriptor and dependency changes from `c1`
 
-<!-- BEGIN GENERATED: usage contract=StackWalk version=c3 diff-from=c2 -->
-### Data descriptor changes from `c2`
+<!-- BEGIN GENERATED: usage contract=StackWalk version=c2 diff-from=c1 -->
+### Data descriptor changes from `c1`
 
 | Change | Data Descriptor | Field | Type | Meaning |
 | --- | --- | --- | --- | --- |
 | Added | `MethodTableAuxiliaryData` | *(type size)* | `uint32` | Size of the auxiliary data before the inline encoded dispatch map |
 
-### Global variable changes from `c2`
+### Global variable changes from `c1`
 
 _No changes._
 
-### Contract dependency changes from `c2`
+### Contract dependency changes from `c1`
 
 _No changes._
-<!-- END GENERATED: usage contract=StackWalk version=c3 diff-from=c2 -->
+<!-- END GENERATED: usage contract=StackWalk version=c2 diff-from=c1 -->

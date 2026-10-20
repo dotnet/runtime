@@ -46,7 +46,7 @@ internal sealed class MethodGCRefMapLookup(Target target, FrameHelpers frames)
     private const uint HasDispatchMapSlot = 0x4;
     private readonly IRuntimeTypeSystem _rts = target.Contracts.RuntimeTypeSystem;
 
-    internal TargetPointer Find(MethodDescHandle method, TargetPointer receiver, bool dispatch, bool newFormat)
+    internal TargetPointer Find(MethodDescHandle method, TargetPointer receiver, bool dispatch)
     {
         TargetPointer map = dispatch ? GetShareableGCRefMap(method.Address) : frames.GetGCRefMapFromMethodDesc(method.Address);
         if (map != TargetPointer.Null)
@@ -72,7 +72,7 @@ internal sealed class MethodGCRefMapLookup(Target target, FrameHelpers frames)
         MethodDescHandle implementation = method;
         if (IsInterface(GetMethodTable(owner)))
         {
-            TargetPointer resolved = ResolveInterfaceTarget(owner, slot, receiver, newFormat);
+            TargetPointer resolved = ResolveInterfaceTarget(owner, slot, receiver);
             if (resolved == TargetPointer.Null)
                 return TargetPointer.Null;
             implementation = _rts.GetMethodDescHandle(resolved);
@@ -90,7 +90,7 @@ internal sealed class MethodGCRefMapLookup(Target target, FrameHelpers frames)
 
             DispatchMapDecoder decoder = new(target, dispatchMap);
             uint header = decoder.Read();
-            if (newFormat && (header & 1) != 0)
+            if ((header & 1) != 0)
             {
                 uint count = decoder.Read();
                 for (uint i = 0; i < count; i++)
@@ -107,7 +107,7 @@ internal sealed class MethodGCRefMapLookup(Target target, FrameHelpers frames)
                 }
             }
 
-            foreach ((uint typeID, ushort source, ushort destination) in GetInterfaceEntries(mt, newFormat))
+            foreach ((uint typeID, ushort source, ushort destination) in GetInterfaceEntries(mt))
             {
                 if (!Matches(receiver, destination, implementation))
                     continue;
@@ -126,12 +126,12 @@ internal sealed class MethodGCRefMapLookup(Target target, FrameHelpers frames)
         return target.ReadPointer(interfaceMap + checked((ulong)(typeID - 1) * (ulong)target.PointerSize));
     }
 
-    private TargetPointer ResolveInterfaceTarget(TargetPointer owner, ushort slot, TargetPointer receiver, bool newFormat)
+    private TargetPointer ResolveInterfaceTarget(TargetPointer owner, ushort slot, TargetPointer receiver)
     {
         for (TargetPointer current = receiver; current != TargetPointer.Null; current = GetMethodTable(current).ParentMethodTable)
         {
             Data.MethodTable mt = GetMethodTable(current);
-            foreach ((uint typeID, ushort source, ushort destination) in GetInterfaceEntries(mt, newFormat))
+            foreach ((uint typeID, ushort source, ushort destination) in GetInterfaceEntries(mt))
             {
                 if (source != slot || GetInterface(mt, typeID) != owner)
                     continue;
@@ -143,15 +143,15 @@ internal sealed class MethodGCRefMapLookup(Target target, FrameHelpers frames)
         return TargetPointer.Null;
     }
 
-    private IEnumerable<(uint TypeID, ushort Source, ushort Target)> GetInterfaceEntries(Data.MethodTable mt, bool newFormat)
+    private IEnumerable<(uint TypeID, ushort Source, ushort Target)> GetInterfaceEntries(Data.MethodTable mt)
     {
         TargetPointer map = GetDispatchMap(mt);
         if (map == TargetPointer.Null)
             yield break;
         DispatchMapDecoder decoder = new(target, map);
         uint header = decoder.Read();
-        uint numTypes = newFormat ? header >> 1 : header;
-        if (newFormat && (header & 1) != 0)
+        uint numTypes = header >> 1;
+        if ((header & 1) != 0)
         {
             uint aliases = decoder.Read();
             for (uint i = 0; i < aliases; i++)

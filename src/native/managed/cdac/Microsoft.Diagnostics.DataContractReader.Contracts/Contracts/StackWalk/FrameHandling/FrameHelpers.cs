@@ -190,19 +190,19 @@ internal sealed class FrameHelpers
         if (!_target.TryGetTypeInfo(nameof(DataType.MethodDesc), out _))
             return TargetPointer.Null;
 
-        bool newFormat = !_target.Contracts.TryGetContract<IStackWalk>(out IStackWalk? stackWalk) ||
-            stackWalk is not StackWalk_1 implementation || implementation.Version >= 3;
-        if (!newFormat && kind is FrameType.StubDispatchFrame)
+        bool supportsVirtualMaps = !_target.Contracts.TryGetContract<IStackWalk>(out IStackWalk? stackWalk) ||
+            stackWalk is not StackWalk_1 implementation || implementation.Version >= 2;
+        if (!supportsVirtualMaps && kind is FrameType.StubDispatchFrame)
             return TargetPointer.Null;
         TargetPointer cached = GetGCRefMapFromMethodDesc(method);
-        if (!newFormat || !_target.TryGetTypeInfo(nameof(DataType.MethodTable), out _))
+        if (!supportsVirtualMaps || !_target.TryGetTypeInfo(nameof(DataType.MethodTable), out _))
             return cached;
 
         IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
         MethodDescHandle md = rts.GetMethodDescHandle(method);
         MethodGCRefMapLookup lookup = new(_target, this);
         bool dispatch = kind is FrameType.StubDispatchFrame;
-        TargetPointer map = lookup.Find(md, TargetPointer.Null, dispatch, newFormat);
+        TargetPointer map = lookup.Find(md, TargetPointer.Null, dispatch);
         if (map != TargetPointer.Null)
             return map;
         if (rts.GetGenericMethodInstantiation(md).Length != 0 ||
@@ -224,7 +224,7 @@ internal sealed class FrameHelpers
         if (thisObject == TargetPointer.Null)
             return TargetPointer.Null;
         TargetPointer receiver = _target.Contracts.Object.GetMethodTableAddress(thisObject);
-        return lookup.Find(md, receiver, dispatch, newFormat);
+        return lookup.Find(md, receiver, dispatch);
     }
 
     private bool CanReadReceiver(MethodDescHandle method, TargetPointer owner)

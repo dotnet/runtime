@@ -5,7 +5,7 @@
       "type.Table": "pointer",
       "type.TableSize": "uint32"
     },
-    "StackWalk@c3": {
+    "StackWalk@c2": {
       "MethodTableAuxiliaryData.<type size>": "uint32"
     }
   }
