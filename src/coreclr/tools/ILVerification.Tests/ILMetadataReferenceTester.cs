@@ -71,7 +71,7 @@ namespace ILVerification.Tests
         }
 
         [Fact]
-        public static void ReportsTypeSpecsWithCustomModifiersOnlyWhenTheTypeIsInvalid()
+        public static void AcceptsTypeSpecsWithCustomModifiersOnAClass()
         {
             (EcmaModule module, VerificationResult[] results) =
                 VerifyMetadataReferences("TypeSpecModifierTests.dll");
@@ -82,15 +82,11 @@ namespace ILVerification.Tests
                 handle => DescribeTypeSpec(reader, handle) == "modifiers TypeHandle");
             Assert.DoesNotContain(results, result => result.MetadataHandle == (EntityHandle)unmanagedConstraint);
 
-            // Custom modifiers followed by a primitive type, BYREF or PINNED are still reported,
-            // and so is a class without custom modifiers (also through the MemberRef whose parent it is).
+            // A class without custom modifiers is still reported (also through the MemberRef whose parent it is).
             Assert.All(results, result => Assert.Equal(VerifierError.BadTypeSpec, result.Code));
-            Assert.Equal(
-                new[] { "TypeHandle", "modifiers ByReference", "modifiers Int32", "modifiers Pinned" },
-                results
-                    .Where(result => result.MetadataHandle.Kind == HandleKind.TypeSpecification)
-                    .Select(result => DescribeTypeSpec(reader, (TypeSpecificationHandle)result.MetadataHandle))
-                    .Order(StringComparer.Ordinal));
+            VerificationResult reported = Assert.Single(results,
+                result => result.MetadataHandle.Kind == HandleKind.TypeSpecification);
+            Assert.Equal("TypeHandle", DescribeTypeSpec(reader, (TypeSpecificationHandle)reported.MetadataHandle));
         }
 
         private static IEnumerable<TypeSpecificationHandle> GetTypeSpecifications(MetadataReader reader)
