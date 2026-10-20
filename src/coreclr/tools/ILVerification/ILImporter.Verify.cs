@@ -3038,6 +3038,7 @@ namespace Internal.IL
             var ptr = Pop();
 
             // ECMA-335 III.4.19: verification requires a managed pointer to an instance of the class.
+            // The class may be byref-like: the ECMA-335 augments allow a managed pointer to a byref-like type.
             if (Check(ptr.Kind == StackValueKind.ByRef, VerifierError.StackByRef, ptr))
             {
                 // III.1.8.1.2.2: a controlled-mutability managed pointer cannot be used with mkrefany.
@@ -3047,7 +3048,6 @@ namespace Internal.IL
                     VerificationError(VerifierError.StackUnexpected, ptr, StackValue.CreateByRef(type));
             }
 
-            // A byref-like class is allowed: the ECMA-335 augments allow a managed pointer to a byref-like type.
             Check(_method.OwningType.CanAccess(type), VerifierError.TypeAccess);
 
             Push(StackValue.CreateValueType(GetWellKnownType(WellKnownType.TypedReference)));
