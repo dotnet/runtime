@@ -529,8 +529,7 @@ namespace System.Reflection
             Debug.Assert(_argumentCount <= MaxStackAllocArgCount);
 
             ArgumentData<object?> argStorage = default;
-            Span<object?> copyOfParameters = argStorage;
-            copyOfParameters = copyOfParameters[.._argumentCount];
+            Span<object?> copyOfParameters = ((Span<object?>)argStorage).Slice(0, _argumentCount);
             StackAllocatedByRefs byrefStorage = default;
             void* pByRefStorage = (ByReference*)&byrefStorage;
             ArgumentData<bool> copyBackStorage = default;
