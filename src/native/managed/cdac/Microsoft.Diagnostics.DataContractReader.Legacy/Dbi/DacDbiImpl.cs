@@ -6623,7 +6623,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 #if DEBUG
         if (_legacy is not null)
         {
-            TargetInfo targetInfoLocal;
+            TargetInfo targetInfoLocal = default;
             int hrLocal = _legacy.GetTargetInfo(pTargetInfo == null ? null : &targetInfoLocal);
             Debug.ValidateHResult(hr, hrLocal);
             if (hr == HResults.S_OK)
