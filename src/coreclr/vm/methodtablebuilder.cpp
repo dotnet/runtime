@@ -12472,6 +12472,7 @@ INT32 __stdcall IsDefined(Module *pModule, mdToken token, TypeHandle attributeCl
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
     }
     CONTRACTL_END;
 

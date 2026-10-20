@@ -512,6 +512,10 @@ void CordbModule::RefreshMetaData()
 
         _ASSERTE(event.type == DB_IPCE_RESOLVE_UPDATE_METADATA_1_RESULT);
 
+        // The runtime reports a serialization failure in the reply's hr, with no buffer,
+        // so check it before using the buffer or arming the cleanup.
+        IfFailThrow(event.hr);
+
         //
         // Update it on the RS
         //
@@ -3482,7 +3486,7 @@ HRESULT CordbReJitILCode::GetInstrumentedILMap(ULONG32 cMap, ULONG32 *pcMap, COR
 {
     PUBLIC_API_ENTRY(this);
     FAIL_IF_NEUTERED(this);
-    VALIDATE_POINTER_TO_OBJECT_OR_NULL(pcClauses, ULONG32 *);
+    VALIDATE_POINTER_TO_OBJECT_OR_NULL(pcMap, ULONG32 *);
     VALIDATE_POINTER_TO_OBJECT_ARRAY_OR_NULL(map, COR_IL_MAP *, cMap, true, true);
     ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
 

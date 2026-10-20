@@ -323,6 +323,7 @@ typedef struct
 #endif
 	int *clause_indexes;
 	int *clause_vars;
+	gboolean *clause_has_patchpoint;
 	gboolean gen_seq_points;
 	gboolean gen_sdb_seq_points;
 	GPtrArray *seq_points;
