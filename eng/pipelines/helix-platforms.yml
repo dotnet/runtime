@@ -139,9 +139,9 @@ variables:
   - name: helix_linux_x64_centos_latest
     value: (Centos.10.Amd64.Open)AzureLinux.4.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:centos-stream-10-helix-amd64
 
-  # Oldest: 9
+  # Oldest: 10
   - name: helix_linux_x64_centos_oldest
-    value: (Centos.9.Amd64.Open)AzureLinux.4.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:centos-stream-9-helix-amd64
+    value: (Centos.10.Amd64.Open)AzureLinux.4.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:centos-stream-10-helix-amd64
 
   # Linux ARM32
   # Latest: Debian 13
