@@ -2,6 +2,8 @@
 
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)-$(TargetOS)</TargetFramework>
+    <!-- No -openharmony TFM: compile in the linux group (LibrariesOpenHarmonySfxTfm). -->
+    <TargetFramework Condition="'$(TargetsOpenHarmony)' == 'true'">$(LibrariesOpenHarmonySfxTfm)</TargetFramework>
     <NoDefaultSlnGenSolutionFolder>true</NoDefaultSlnGenSolutionFolder>
   </PropertyGroup>
 

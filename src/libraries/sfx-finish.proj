@@ -4,6 +4,8 @@
 
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)-$(TargetOS)</TargetFramework>
+    <!-- No -openharmony TFM: compile in the linux group (LibrariesOpenHarmonySfxTfm). -->
+    <TargetFramework Condition="'$(TargetsOpenHarmony)' == 'true'">$(LibrariesOpenHarmonySfxTfm)</TargetFramework>
     <NoDefaultSlnGenSolutionFolder>true</NoDefaultSlnGenSolutionFolder>
     <FrameworkListOutputPath>$(MicrosoftNetCoreAppRefPackDataDir)FrameworkList.xml</FrameworkListOutputPath>
     <!-- Import the illink file which contains some of the logic required to illink the shared framework assemblies. -->

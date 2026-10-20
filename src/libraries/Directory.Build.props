@@ -20,6 +20,12 @@
   <Import Project="$(Crossgen2SdkOverridePropsPath)"
           Condition="'$(TestWasmReadyToRun)' == 'true' and '$(TargetOS)' == 'wasi' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(Crossgen2SdkOverridePropsPath)' != '' and Exists('$(Crossgen2SdkOverridePropsPath)')" />
 
+  <!-- OpenHarmony has no -openharmony TFM yet; compile managed libraries in the linux
+       group, and the shims in the same group so sfx-src keeps them in the layout. -->
+  <PropertyGroup>
+    <LibrariesOpenHarmonySfxTfm Condition="'$(TargetsOpenHarmony)' == 'true'">$(NetCoreAppCurrent)-linux</LibrariesOpenHarmonySfxTfm>
+  </PropertyGroup>
+
   <PropertyGroup Condition="'$(UseBootstrap)' == 'true' and ('$(IsTestProject)' == 'true' or '$(IsTestSupportProject)' == 'true' or '$(IsTrimmingTestProject)' == 'true')">
     <UseBootstrapLayout>true</UseBootstrapLayout>
   </PropertyGroup>
