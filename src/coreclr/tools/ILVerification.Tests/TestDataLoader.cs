@@ -56,23 +56,22 @@ namespace ILVerification.Tests
         /// <returns></returns>
         public static IEnumerable<object[]> GetTypesWithInvalidType()
         {
-            return GetTestTypeFromDll(SelectTypeWithInvalidType);
-        }
-
-        internal static TestCase SelectTypeWithInvalidType(string[] mparams, TypeDefinitionHandle typeDefinitionHandle)
-        {
-            if (mparams[1] == "InvalidType")
+            var typeSelector = new Func<string[], TypeDefinitionHandle, TestCase>((mparams, typeDefinitionHandle) =>
             {
-                var verificationErrors = new List<VerifierError>();
-                foreach (var expectedError in mparams[2].Split('@'))
+                if (mparams[1] == "InvalidType")
                 {
-                    verificationErrors.Add(ParseExpectedError(expectedError, mparams[0]));
+                    var verificationErrors = new List<VerifierError>();
+                    foreach (var expectedError in mparams[2].Split('@'))
+                    {
+                        verificationErrors.Add(ParseExpectedError(expectedError, mparams[0]));
+                    }
+                    var newItem = new InvalidTypeTestCase { MetadataToken = MetadataTokens.GetToken(typeDefinitionHandle) };
+                    newItem.ExpectedVerifierErrors = verificationErrors;
+                    return newItem;
                 }
-                var newItem = new InvalidTypeTestCase { MetadataToken = MetadataTokens.GetToken(typeDefinitionHandle) };
-                newItem.ExpectedVerifierErrors = verificationErrors;
-                return newItem;
-            }
-            return null;
+                return null;
+            });
+            return GetTestTypeFromDll(typeSelector);
         }
 
         private static List<TestCase[]> GetTestTypeFromDll(Func<string[], TypeDefinitionHandle, TestCase> typeSelector)
@@ -135,31 +134,30 @@ namespace ILVerification.Tests
         /// </summary>
         public static IEnumerable<object[]> GetMethodsWithInvalidIL()
         {
-            return GetTestMethodsFromDll(SelectMethodWithInvalidIL);
-        }
-
-        internal static TestCase SelectMethodWithInvalidIL(string[] mparams, MethodDefinitionHandle methodHandle)
-        {
-            if (mparams.Length == 3 && mparams[1] == "Invalid")
+            var methodSelector = new Func<string[], MethodDefinitionHandle, TestCase>((mparams, methodHandle) =>
             {
-                var expectedErrors = mparams[2].Split('.');
-                var verificationErrors = new List<VerifierError>();
-
-                foreach (var item in expectedErrors)
+                if (mparams.Length == 3 && mparams[1] == "Invalid")
                 {
-                    verificationErrors.Add(ParseExpectedError(item, mparams[0]));
+                    var expectedErrors = mparams[2].Split('.');
+                    var verificationErrors = new List<VerifierError>();
+
+                    foreach (var item in expectedErrors)
+                    {
+                        verificationErrors.Add(ParseExpectedError(item, mparams[0]));
+                    }
+
+                    var newItem = new InvalidILTestCase { MetadataToken = MetadataTokens.GetToken(methodHandle) };
+
+                    if (expectedErrors.Length > 0)
+                    {
+                        newItem.ExpectedVerifierErrors = verificationErrors;
+                    }
+
+                    return newItem;
                 }
-
-                var newItem = new InvalidILTestCase { MetadataToken = MetadataTokens.GetToken(methodHandle) };
-
-                if (expectedErrors.Length > 0)
-                {
-                    newItem.ExpectedVerifierErrors = verificationErrors;
-                }
-
-                return newItem;
-            }
-            return null;
+                return null;
+            });
+            return GetTestMethodsFromDll(methodSelector);
         }
 
         /// <summary>

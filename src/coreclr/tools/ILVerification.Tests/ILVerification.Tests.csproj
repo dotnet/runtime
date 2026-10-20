@@ -10,7 +10,6 @@
     <Compile Include="ILMetadataReferenceTester.cs" />
     <Compile Include="ILTypeVerificationTester.cs" />
     <Compile Include="TestDataLoader.cs" />
-    <Compile Include="TestDataLoaderTests.cs" />
     <Compile Include="JsonContext.cs" />
     <Compile Include="VerificationResultTests.cs" />
   </ItemGroup>
