@@ -316,10 +316,19 @@ namespace System.Text.Json.Nodes
                     list = new();
                 }
 
-                // Ensure _jsonElement is written to after _list
-                _list = list;
-                Interlocked.MemoryBarrier();
-                _jsonElement = null;
+                // Ensure only one list instance is published using CompareExchange
+                List<JsonNode?>? exchangedList = Interlocked.CompareExchange(ref _list, list, null);
+                if (exchangedList is null)
+                {
+                    // We won the race and published our list
+                    // Ensure _jsonElement is written to after _list
+                    _jsonElement = null;
+                }
+                else
+                {
+                    // Another thread published a list first
+                    list = exchangedList;
+                }
             }
 
             return list;
