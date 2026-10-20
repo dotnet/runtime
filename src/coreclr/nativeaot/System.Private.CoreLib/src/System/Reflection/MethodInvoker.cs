@@ -3,10 +3,9 @@
 
 using System.Diagnostics;
 using System.Reflection.Runtime.MethodInfos;
+using System.Runtime.CompilerServices;
 
 using Internal.Reflection.Core.Execution;
-
-using static System.Reflection.DynamicInvokeInfo;
 
 namespace System.Reflection
 {
@@ -54,7 +53,7 @@ namespace System.Reflection
         [DebuggerGuidedStepThrough]
         public object? Invoke(object? obj, object? arg1)
         {
-            object? result = _methodBaseInvoker.InvokeDirectWithFewArgs(obj, new Span<object?>(ref arg1, 1));
+            object? result = _methodBaseInvoker.InvokeDirectWithFewArgs(obj, new Span<object?>(ref arg1));
             DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
             return result;
         }
@@ -62,11 +61,11 @@ namespace System.Reflection
         [DebuggerGuidedStepThrough]
         public object? Invoke(object? obj, object? arg1, object? arg2)
         {
-            StackAllocatedArguments argStorage = default;
-            argStorage._args[0] = arg1;
-            argStorage._args[1] = arg2;
+            InlineArray2<object?> argStorage = default;
+            argStorage[0] = arg1;
+            argStorage[1] = arg2;
 
-            object? result = _methodBaseInvoker.InvokeDirectWithFewArgs(obj, ((Span<object?>)argStorage._args).Slice(0, 2));
+            object? result = _methodBaseInvoker.InvokeDirectWithFewArgs(obj, argStorage);
             DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
             return result;
         }
@@ -74,12 +73,12 @@ namespace System.Reflection
         [DebuggerGuidedStepThrough]
         public object? Invoke(object? obj, object? arg1, object? arg2, object? arg3)
         {
-            StackAllocatedArguments argStorage = default;
-            argStorage._args[0] = arg1;
-            argStorage._args[1] = arg2;
-            argStorage._args[2] = arg3;
+            InlineArray3<object?> argStorage = default;
+            argStorage[0] = arg1;
+            argStorage[1] = arg2;
+            argStorage[2] = arg3;
 
-            object? result = _methodBaseInvoker.InvokeDirectWithFewArgs(obj, ((Span<object?>)argStorage._args).Slice(0, 3));
+            object? result = _methodBaseInvoker.InvokeDirectWithFewArgs(obj, argStorage);
             DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
             return result;
         }
@@ -87,13 +86,13 @@ namespace System.Reflection
         [DebuggerGuidedStepThrough]
         public object? Invoke(object? obj, object? arg1, object? arg2, object? arg3, object? arg4)
         {
-            StackAllocatedArguments argStorage = default;
-            argStorage._args[0] = arg1;
-            argStorage._args[1] = arg2;
-            argStorage._args[2] = arg3;
-            argStorage._args[3] = arg4;
+            InlineArray4<object?> argStorage = default;
+            argStorage[0] = arg1;
+            argStorage[1] = arg2;
+            argStorage[2] = arg3;
+            argStorage[3] = arg4;
 
-            object? result = _methodBaseInvoker.InvokeDirectWithFewArgs(obj, ((Span<object?>)argStorage._args).Slice(0, 4));
+            object? result = _methodBaseInvoker.InvokeDirectWithFewArgs(obj, argStorage);
             DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
             return result;
         }
