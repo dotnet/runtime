@@ -13596,6 +13596,11 @@ void Compiler::impFixPredLists()
                 bool profileConsistent = true;
                 for (BasicBlock* const callFinally : finallyBegBlock->PredBlocks())
                 {
+                    if (!callFinally->KindIs(BBJ_CALLFINALLY))
+                    {
+                        continue;
+                    }
+
                     BasicBlock* const callFinallyRet = callFinally->Next();
                     callFinallyRet->setBBProfileWeight(callFinallyRet->computeIncomingWeight());
                     profileConsistent &=
