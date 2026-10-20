@@ -48,6 +48,18 @@ public enum DebugVarLocKind
     DoubleStack,
     FloatingPointStack,
     FixedVarArg,
+    /// <summary>
+    /// The variable lives in a WebAssembly local. WASM locals are engine-private frame state:
+    /// they are not in linear memory and cannot be read through the data target. Consumers with
+    /// access to the WASM engine (for example a debugger attached over the Chrome DevTools
+    /// Protocol) can fetch the value using <see cref="DebugVarInfo.WasmLocal"/>.
+    /// </summary>
+    WasmLocal,
+    /// <summary>
+    /// The variable spans two WebAssembly locals, described by
+    /// <see cref="DebugVarInfo.WasmLocal"/> and <see cref="DebugVarInfo.WasmLocal2"/>.
+    /// </summary>
+    WasmLocalPair,
 }
 
 /// <summary>
@@ -84,6 +96,20 @@ public readonly struct DebugVarInfo
     /// the call site whose return value this entry describes. Zero for all other entries.
     /// </summary>
     public uint CallReturnValueILOffset { get; init; }
+
+    /// <summary>
+    /// On WASM, <see cref="Register"/> decoded into the WASM local index that <c>local.get</c> /
+    /// <c>local.set</c> use, without the <c>ICorDebugInfo::WASM_LOCAL_REGNUM_BASE</c> bias. Local
+    /// index spaces are per WASM function and a method's funclets are separate functions from its
+    /// root, so a consumer must know which function the virtual IP belongs to before using it.
+    /// Null on every other architecture.
+    /// </summary>
+    public uint? WasmLocal { get; init; }
+    /// <summary>
+    /// On WASM, <see cref="Register2"/> decoded as <see cref="WasmLocal"/> is.
+    /// Null on every other architecture.
+    /// </summary>
+    public uint? WasmLocal2 { get; init; }
 }
 
 /// <summary>

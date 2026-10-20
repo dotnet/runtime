@@ -540,6 +540,7 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
                     AddressOrValue = locations[0].AddressOrValue,
                     Size = (ulong)typeSize,
                     IsRegisterValue = locations[0].IsRegisterValue,
+                    HasReadFailure = locations[0].HasReadFailure,
                 },
             ];
         }
@@ -943,12 +944,15 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
     /// Resolves a DebugVarInfo entry to physical NativeVarLocation(s)
     /// using the given CPU context. Mirrors the native NativeVarLocations() from util.cpp.
     /// </summary>
-    private static NativeVarLocation[] ResolveVarLocation(
+    internal static NativeVarLocation[] ResolveVarLocation(
         DebugVarInfo varInfo,
         IPlatformAgnosticContext context,
         Target target)
     {
         int pointerSize = target.PointerSize;
+
+        if (target.Contracts.RuntimeInfo.GetTargetArchitecture() == RuntimeInfoArchitecture.Wasm)
+            return ResolveWasmVarLocation(varInfo, context, target, pointerSize);
 
         return (varInfo.Kind, varInfo.IsByRef) switch
         {
@@ -987,6 +991,72 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
 
             _ => [],
         };
+    }
+
+    /// <summary>
+    /// Resolves a variable location on WASM.
+    /// </summary>
+    /// <remarks>
+    /// WASM has no register file — <see cref="WasmContext"/>.<c>TryReadRegister(int)</c> always
+    /// fails — and a WASM "register" in debug info is not a register at all but a biased
+    /// local index naming a WASM local. WASM locals are engine-private frame
+    /// state: they are not in linear memory and cannot be read through the data target, so they
+    /// are reported as having no location rather than resolved. Routing them through
+    /// <see cref="ReadRegister"/> would instead silently report the value 0 for every variable.
+    /// Stack slots, by contrast, live in linear memory and are resolved here against the frame's
+    /// logical frame pointer.
+    /// </remarks>
+    private static NativeVarLocation[] ResolveWasmVarLocation(
+        DebugVarInfo varInfo,
+        IPlatformAgnosticContext context,
+        Target target,
+        int pointerSize)
+    {
+        // The only base register of a WASM stack record: the logical frame pointer. See
+        // "WebAssembly Stack Base Encoding" in DebugInfo.md.
+        const uint WasmFrameBaseRegister = 2;
+        switch (varInfo.Kind)
+        {
+            case DebugVarLocKind.Stack:
+            case DebugVarLocKind.DoubleStack:
+                break;
+            default:
+                // WasmLocal, WasmLocalPair, and the mixed register/stack kinds all have at least
+                // part of their storage in a WASM local, which is unreadable from here.
+                return [];
+        }
+
+        if (varInfo.BaseRegister != WasmFrameBaseRegister)
+            return [];
+
+        TargetPointer framePointer = context.FramePointer;
+        if (framePointer == TargetPointer.Null)
+            return [];
+
+        ulong address = (ulong)((long)framePointer.Value + varInfo.StackOffset);
+        ulong size = varInfo.Kind == DebugVarLocKind.DoubleStack ? 2 * (ulong)pointerSize : (ulong)pointerSize;
+
+        if (varInfo.IsByRef)
+        {
+            // Native DereferenceByRefVar reports a failed indirection as address 0, which is unmapped
+            // natively. WASM linear address 0 is readable, so mark the location as unreadable instead.
+            if (!target.TryReadPointer(address, out TargetPointer byRefAddress) ||
+                byRefAddress == TargetPointer.Null)
+            {
+                return
+                [
+                    new NativeVarLocation
+                    {
+                        AddressOrValue = 0,
+                        Size = (ulong)pointerSize,
+                        HasReadFailure = true,
+                    },
+                ];
+            }
+            address = byRefAddress.Value;
+        }
+
+        return [new NativeVarLocation { AddressOrValue = address, Size = size, IsRegisterValue = false }];
     }
 
     private static NativeVarLocation[] ResolveRegByRef(IPlatformAgnosticContext context, Target target, uint register, int pointerSize)
