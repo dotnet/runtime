@@ -6217,8 +6217,12 @@ void Lowering::LowerCallStruct(GenTreeCall* call)
 //     store - The store node to lower.
 //
 // Notes:
-//    - the function is only for calls that return one register;
-//    - it spills the call's result if it can be retyped as a primitive type;
+//    The call returns its value in a single register. If the layout has a primitive register
+//    type, the store becomes a STOREIND of that type, so it writes exactly the struct's size
+//    and keeps the GC type of a lone GC field. On LoongArch64, RISC-V64 and Wasm, a struct
+//    whose only field is floating-point is returned in a floating-point register, so the
+//    store uses the call's floating type instead. Otherwise the result is spilled to a temp
+//    and copied with a block store.
 //
 void Lowering::LowerStoreSingleRegCallStruct(GenTreeBlk* store)
 {
@@ -6231,18 +6235,12 @@ void Lowering::LowerStoreSingleRegCallStruct(GenTreeBlk* store)
 
     if (regType != TYP_UNDEF)
     {
-#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_WASM)
         if (varTypeIsFloating(call->TypeGet()))
         {
             regType = call->TypeGet();
         }
 #endif
-
-#if defined(TARGET_WASM)
-        CorInfoWasmType wasmAbiType = m_compiler->info.compCompHnd->getWasmLowering(call->gtRetClsHnd);
-        assert(wasmAbiType != CORINFO_WASM_TYPE_VOID);
-        regType = WasmClassifier::ToJitType(wasmAbiType);
-#endif // TARGET_WASM
 
         store->ChangeType(regType);
         store->SetOper(GT_STOREIND);

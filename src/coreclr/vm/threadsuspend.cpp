@@ -655,7 +655,13 @@ static StackWalkAction TAStackCrawlCallBackWorker(CrawlFrame* pCf, StackCrawlCon
         // we can't use it to directly compare against the EH ranges because we
         // may be in an cloned finally which has a call as the last instruction.
 
-        offs--;
+#ifdef TARGET_WASM
+        // On Wasm, R2R code with virtual ips should not have its ip adjusted
+        if (!ExecutionManager::IsVirtualIP(GetControlPC(pCf->GetRegisterSet())))
+#endif
+        {
+            offs--;
+        }
     }
 
     if (pData->fWriteToStressLog)
@@ -1110,6 +1116,7 @@ Thread::UserAbort(EEPolicy::ThreadAbortTypes abortType, DWORD timeout)
     {
         THROWS;
         GC_TRIGGERS; // For GetXxxException
+        MODE_ANY;
     }
     CONTRACTL_END;
 
@@ -4810,9 +4817,11 @@ HijackFrame::HijackFrame(LPVOID returnAddress, Thread *thread, HijackArgs *args 
 
 void STDCALL OnHijackWorker(HijackArgs * pArgs)
 {
-    CONTRACTL{
+    CONTRACTL
+    {
         THROWS;
         GC_TRIGGERS;
+        MODE_COOPERATIVE;
     }
     CONTRACTL_END;
 

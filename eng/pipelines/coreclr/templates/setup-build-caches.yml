@@ -30,11 +30,10 @@ steps:
       displayName: Roslyn compiler cache
       continueOnError: true
       inputs:
-        key: roslyn | v2 | ${{ parameters.osGroup }}${{ parameters.osSubgroup }} | ${{ parameters.archType }} | ${{ parameters.nameSuffix }} | "$(buildConfigUpper)" | "$(Build.BuildId)"
+        key: roslyn | v3 | ${{ parameters.osGroup }}${{ parameters.osSubgroup }} | ${{ parameters.archType }} | ${{ parameters.nameSuffix }} | "$(buildConfigUpper)" | "$(Build.BuildId)"
         path: $(Pipeline.Workspace)/.roslyn-cache
         restoreKeys: |
-          roslyn | v2 | ${{ parameters.osGroup }}${{ parameters.osSubgroup }} | ${{ parameters.archType }} | ${{ parameters.nameSuffix }} | "$(buildConfigUpper)"
-          roslyn | v1 | ${{ parameters.osGroup }}${{ parameters.osSubgroup }} | ${{ parameters.archType }} | ${{ parameters.nameSuffix }}
+          roslyn | v3 | ${{ parameters.osGroup }}${{ parameters.osSubgroup }} | ${{ parameters.archType }} | ${{ parameters.nameSuffix }} | "$(buildConfigUpper)"
 
     - ${{ if ne(parameters.osGroup, 'windows') }}:
       - script: |

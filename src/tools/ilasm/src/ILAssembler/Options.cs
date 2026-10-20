@@ -133,9 +133,8 @@ namespace ILAssembler
         public bool Pdb { get; set; }
 
         /// <summary>
-        /// Debug mode, as native ilasm's <c>/DEBUG=IMPL</c> and <c>/DEBUG=OPT</c>: selects the modes of the
-        /// <c>DebuggableAttribute</c>.
-        /// When null with Debug=true, uses default (DisableOptimizations).
+        /// Debug mode (<c>/DEBUG=IMPL</c> or <c>/DEBUG=OPT</c> on the command line): selects the modes of
+        /// the <c>DebuggableAttribute</c>. When null with Debug=true, uses default (DisableOptimizations).
         /// </summary>
         /// <remarks>
         /// A non-null value implies <see cref="Debug"/>: it produces a Portable PDB and adds a
@@ -159,6 +158,18 @@ namespace ILAssembler
         /// when no output file name is set.
         /// </remarks>
         public string? PdbFilePath { get; set; }
+
+        /// <summary>
+        /// The path prefixes to replace in the paths that the debug information records, as the C# compiler's
+        /// <c>-pathmap</c> option does: the name of every Portable PDB document (each input document, and each file
+        /// named by a <c>.line</c> or <c>#line</c> directive), and <see cref="PdbFilePath"/> where the image's CodeView
+        /// entry records it.
+        /// </summary>
+        /// <remarks>
+        /// It does not change which files are read or written, and it does not change the paths in diagnostics.
+        /// The default is <see cref="ILAssembler.PathMap.Empty"/>, which records every path as it is.
+        /// </remarks>
+        public PathMap PathMap { get; set; } = PathMap.Empty;
 
         /// <summary>
         /// Override the name of the compiled assembly.

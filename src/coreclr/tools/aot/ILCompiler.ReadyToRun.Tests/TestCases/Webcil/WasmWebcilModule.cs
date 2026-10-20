@@ -2,12 +2,101 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 
 namespace Webcil;
 
 public static class WasmWebcilModule
 {
+    public sealed class LdtokenType
+    {
+    }
+
+    public sealed class LdtokenHolder<T>
+    {
+    }
+
+    public struct GenericTokenValue
+    {
+        public int Value;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static Type ReadIntrinsicTypeToken(int index) => index switch
+    {
+        0 => typeof(void),
+        1 => typeof(bool),
+        2 => typeof(char),
+        3 => typeof(sbyte),
+        4 => typeof(byte),
+        5 => typeof(short),
+        6 => typeof(ushort),
+        7 => typeof(int),
+        8 => typeof(uint),
+        9 => typeof(long),
+        10 => typeof(ulong),
+        11 => typeof(float),
+        12 => typeof(double),
+        13 => typeof(nint),
+        14 => typeof(nuint),
+        15 => typeof(string),
+        16 => typeof(object),
+        _ => typeof(TypedReference),
+    };
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static Type ReadIntrinsicArrayTypeToken(int index) => index switch
+    {
+        0 => typeof(bool[]),
+        1 => typeof(int[,]),
+        2 => typeof(int[][]),
+        3 => typeof(string[]),
+        4 => typeof(object[,,]),
+        5 => typeof(int[,][]),
+        6 => typeof(int[]),
+        7 => typeof(int[][,]),
+        _ => typeof(nuint[]),
+    };
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static Type ReadTokenDependentTypeToken(int index) => index switch
+    {
+        0 => typeof(GenericTokenValue),
+        1 => typeof(LdtokenType),
+        2 => typeof(DayOfWeek),
+        3 => typeof(decimal),
+        4 => typeof(Half),
+        5 => typeof(int?),
+        6 => typeof(LdtokenHolder<int>),
+        7 => typeof(LdtokenType[]),
+        _ => typeof(GenericTokenValue[,][]),
+    };
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static nint ReadIntPtrZero() => IntPtr.Zero;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static nuint ReadUIntPtrZero() => UIntPtr.Zero;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static string ReadStringEmpty() => string.Empty;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static bool ReadIsLittleEndian() => BitConverter.IsLittleEndian;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static ref readonly nint AddressIntPtrZero() => ref IntPtr.Zero;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static ref readonly nuint AddressUIntPtrZero() => ref UIntPtr.Zero;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static ref readonly string AddressStringEmpty() => ref string.Empty;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static ref readonly bool AddressIsLittleEndian() => ref BitConverter.IsLittleEndian;
+
     private static readonly int[] s_primes = new int[] { 3, 5, 7, 11, 13 };
     private static int s_counter;
 
@@ -26,6 +115,13 @@ public static class WasmWebcilModule
     public static void FoldableBodyTwo()
     {
     }
+
+    // Explicit construction avoids distinct compiler-generated delegate cache fields.
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static MethodInfo SelfMethodOne() => new Func<MethodInfo>(SelfMethodOne).Method;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static MethodInfo SelfMethodTwo() => new Func<MethodInfo>(SelfMethodTwo).Method;
 
     // Reads static data, which forces the JIT to materialize the imageBase address via a
     // 'global.get' of the wasm imageBase well-known global.
@@ -83,4 +179,20 @@ public static class WasmWebcilModule
             return -1;
         }
     }
+}
+
+public class WasmSelfForwarder
+{
+    private readonly WasmSelfForwarder _target;
+
+    public WasmSelfForwarder(WasmSelfForwarder? target = null)
+    {
+        _target = target ?? this;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public virtual int BeforeEvent(int value) => _target.BeforeEvent(value);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public virtual int AfterEvent(int value) => _target.AfterEvent(value);
 }

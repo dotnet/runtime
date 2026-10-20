@@ -55,6 +55,20 @@ internal sealed class Program
             }
         }
 
+        // Each --pathmap is one comma-separated list; the entries of all of them apply, in the order given. An invalid
+        // one fails the run before any file is read or written.
+        PathMap pathMap = PathMap.Empty;
+        foreach (string text in _result.GetValue(_command.PathMap) ?? [])
+        {
+            if (!PathMap.TryParse(text, out PathMap? parsed, out string? error))
+            {
+                Console.Error.WriteLine($"Error: {error}");
+                return 1;
+            }
+
+            pathMap = pathMap.Concat(parsed);
+        }
+
         // Determine output file (based on first input file)
         bool isDll = Get(_command.BuildDll);
         string? outputPath = Get(_command.OutputFilePath) ??
@@ -63,11 +77,10 @@ internal sealed class Program
         int exitCode = 0;
         try
         {
-            // As in native ilasm, the PDB is <output without extension>.pdb beside the output, and without
-            // --deterministic the image's CodeView entry records the PDB's full path. With --deterministic it
-            // records only the PDB's file name and extension, so that a deterministic image does not depend on
-            // the directory it is written to. Native ilasm records the full path in both modes; this follows
-            // the native linker's /PDBALTPATH:%_PDB% convention instead.
+            // The PDB is <output without extension>.pdb beside the output, and without --deterministic
+            // the image's CodeView entry records the PDB's full path. With --deterministic it records
+            // only the PDB's file name and extension, so that a deterministic image does not depend on
+            // the directory it is written to, which is the native linker's /PDBALTPATH:%_PDB% convention.
             string pdbPath = OutputFileWriter.GetPdbPath(outputPath);
 
             // Report each file being assembled
@@ -79,11 +92,12 @@ internal sealed class Program
                 }
             }
 
-            // Build individual SourceText for each input file
+            // Build individual SourceText for each input file. Its path is the full path, which the PDB records
+            // as the input file's document name.
             var documents = ImmutableArray.CreateBuilder<SourceText>(inputFiles.Length);
             foreach (string file in inputFiles)
             {
-                documents.Add(new SourceText(File.ReadAllText(file), file));
+                documents.Add(new SourceText(File.ReadAllText(file), Path.GetFullPath(file)));
             }
 
             // Build options
@@ -155,6 +169,10 @@ internal sealed class Program
             // Deterministic and metadata version
             options.Deterministic = Get(_command.Deterministic);
             options.MetadataVersion = Get(_command.MetadataVersion);
+
+            // Paths recorded in the PDB and the image's CodeView entry; files are still read and written at their
+            // real paths.
+            options.PathMap = pathMap;
 
             // Debug options
             options.Debug = Get(_command.Debug);
