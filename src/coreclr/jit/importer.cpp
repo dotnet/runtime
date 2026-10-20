@@ -3379,11 +3379,9 @@ bool Compiler::impImportAndPushBoxForNullable(CORINFO_RESOLVED_TOKEN* pResolvedT
         return false;
     }
 
-    if (eeIsSharedInst(nullableCls) || IsReadyToRun())
+    if (eeIsSharedInst(nullableCls))
     {
-        // TODO-CQ: Enable the optimization for shared generics and R2R scenarios.
-        // The current machinery requires a ResolvedToken (basically, 'newobj underlyingType'
-        // that we don't have).
+        // TODO-CQ: Enable the optimization for shared generics.
         return false;
     }
 
@@ -3407,16 +3405,27 @@ bool Compiler::impImportAndPushBoxForNullable(CORINFO_RESOLVED_TOKEN* pResolvedT
     var_types    valueType      = TypeHandleToVarType(corFldType, valueStructCls, &layout);
     GenTree*     valueOffset    = gtNewIconNode(cnsValueOffset, TYP_I_IMPL);
     GenTree*     valueAddr      = gtNewOperNode(GT_ADD, TYP_BYREF, nullableObjClone, valueOffset);
-    GenTree*     value          = gtNewLoadValueNode(valueType, layout, valueAddr);
-    GenTree*     hasValue       = gtNewLoadValueNode(TYP_UBYTE, nullptr, nullableObj);
+    GenTree*     value          = gtNewLoadValueNode(valueType, layout, valueAddr, indirFlags);
+    GenTree*     hasValue       = gtNewLoadValueNode(TYP_UBYTE, nullptr, nullableObj, indirFlags);
 
     // Create the allocation node for the box
     //
     CORINFO_CLASS_HANDLE typeToBox = info.compCompHnd->getTypeForBox(nullableCls);
-    bool                 hasSideEffects;
-    CorInfoHelpFunc      helperTemp   = info.compCompHnd->getNewHelper(typeToBox, &hasSideEffects);
-    GenTree*             typeToBoxHnd = gtNewIconEmbClsHndNode(typeToBox);
-    GenTreeAllocObj*     allocObj     = gtNewAllocObjNode(helperTemp, hasSideEffects, typeToBox, TYP_REF, typeToBoxHnd);
+    GenTreeAllocObj*     allocObj;
+    if (IsReadyToRun())
+    {
+        // R2R can't embed arbitrary class handles; allocate via a token for the underlying type instead.
+        CORINFO_RESOLVED_TOKEN boxedToken = *pResolvedToken;
+        boxedToken.hClass                 = typeToBox;
+        allocObj                          = gtNewAllocObjNode(&boxedToken, info.compMethodHnd, /* useParent */ false);
+    }
+    else
+    {
+        bool            hasSideEffects;
+        CorInfoHelpFunc helperTemp   = info.compCompHnd->getNewHelper(typeToBox, &hasSideEffects);
+        GenTree*        typeToBoxHnd = gtNewIconEmbClsHndNode(typeToBox);
+        allocObj                     = gtNewAllocObjNode(helperTemp, hasSideEffects, typeToBox, TYP_REF, typeToBoxHnd);
+    }
 
     // Now we need to copy value into the allocated box
     //
@@ -4670,7 +4679,7 @@ GenTree* Compiler::impFixupStructReturnType(GenTree* op)
         JITDUMP("\nimpFixupStructReturnType: created a pseudo-return buffer\n");
         DISPTREE(op);
 
-        return op;
+        // The temp may still need to be marked as a multi-reg return below.
     }
 
     if (compMethodReturnsMultiRegRetType() || op->IsMultiRegNode())
@@ -7558,7 +7567,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 // The strict order of evaluation is 'array', 'index', 'value', range-check
                 // and then store. However, the tree we create does the range-check before
                 // evaluating 'value'. So to maintain strict ordering, we spill the stack.
-                if ((impStackTop().val->gtFlags & GTF_SIDE_EFFECT) != 0)
+                if ((impStackTop().val->gtFlags & GTF_OBS_EFFECT) != 0)
                 {
                     impSpillSideEffects(false,
                                         CHECK_SPILL_ALL DEBUGARG("Strict ordering of exceptions for Array store"));

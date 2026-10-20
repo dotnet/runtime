@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#if !defined(HOST_WASM) && (defined(HOST_WINDOWS) || defined(HOST_OSX) || defined(__linux__))
+
 #include <windows.h>
 #include <clrdata.h>
 #include <cor.h>
@@ -8,20 +10,6 @@
 #include <inttypes.h>
 #include <holder.h>
 #include "machoreader.h"
-
-#if TARGET_64BIT
-#define PRIx PRIx64
-#define PRIu PRIu64
-#define PRId PRId64
-#define PRIA "016"
-#define PRIxA PRIA PRIx
-#else
-#define PRIx PRIx32
-#define PRIu PRIu32
-#define PRId PRId32
-#define PRIA "08"
-#define PRIxA PRIA PRIx
-#endif
 
 class MachOReaderExport : public MachOReader
 {
@@ -41,18 +29,15 @@ public:
     }
 
 private:
-    virtual bool ReadMemory(void* address, void* buffer, size_t size)
+    bool ReadMemory(void* address, void* buffer, size_t size) override
     {
         uint32_t read = 0;
         return SUCCEEDED(m_dataTarget->ReadVirtual(reinterpret_cast<CLRDATA_ADDRESS>(address), reinterpret_cast<PBYTE>(buffer), (uint32_t)size, &read));
     }
 };
 
-//
-// Main entry point to get an export symbol
-//
-extern "C" bool
-TryGetSymbol(ICorDebugDataTarget* dataTarget, uint64_t baseAddress, const char* symbolName, uint64_t* symbolAddress)
+bool
+TryGetMachOSymbol(ICorDebugDataTarget* dataTarget, uint64_t baseAddress, const char* symbolName, uint64_t* symbolAddress)
 {
     MachOReaderExport reader(dataTarget);
     MachOModule module(reader, baseAddress);
@@ -178,7 +163,7 @@ MachOModule::EnumerateSegments()
 
         const section_64* section = (section_64*)((uint64_t)segment + sizeof(segment_command_64));
 
-        for (int s = 0; s < segment->nsects; s++, section++)
+        for (uint32_t s = 0; s < segment->nsects; s++, section++)
         {
             m_reader.VisitSection(*this, *section);
         }
@@ -206,7 +191,7 @@ MachOModule::ReadLoadCommands()
         }
         load_command* command = m_commands;
 
-        for (int i = 0; i < m_header.ncmds; i++)
+        for (uint32_t i = 0; i < m_header.ncmds; i++)
         {
             m_reader.TraceVerbose("CMD: load command cmd %02x (%d) size %d\n", command->cmd, command->cmd, command->cmdsize);
 
@@ -247,7 +232,7 @@ MachOModule::ReadLoadCommands()
                     segment->segname);
 
                 section_64* section = (section_64*)((uint64_t)segment + sizeof(segment_command_64));
-                for (int s = 0; s < segment->nsects; s++, section++)
+                for (uint32_t s = 0; s < segment->nsects; s++, section++)
                 {
                     m_reader.TraceVerbose("     addr %016llx size %016llx off %08x align %02x flags %02x %s\n",
                         section->addr,
@@ -358,6 +343,7 @@ MachOReader::MachOReader()
 {
 }
 
+#ifdef HOST_APPLE
 bool
 MachOReader::EnumerateModules(mach_vm_address_t dyldInfoAddress)
 {
@@ -427,6 +413,8 @@ MachOReader::TryRegisterModule(const struct mach_header* imageAddress, const cha
     return true;
 }
 
+#endif
+
 bool
 MachOReader::ReadString(const char* address, std::string& str)
 {
@@ -446,3 +434,5 @@ MachOReader::ReadString(const char* address, std::string& str)
     }
     return true;
 }
+
+#endif
