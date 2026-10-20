@@ -2214,8 +2214,15 @@ void ExecuteInterpretedMethodWithArgs_PortableEntryPoint_Complex(PCODE portableE
 {
     int8_t* args = (int8_t*)(block + 1);
     MethodDesc* pMethod = PortableEntryPoint::GetMethodDesc(portableEntrypoint);
+    // The method to run; differs from pMethod when a MethodImpl in the same type redirects pMethod's slot.
+    MethodDesc* pTargetMethod = pMethod;
     InterpByteCodeStart* targetIp = pMethod->GetInterpreterCode();
-    if (targetIp == NULL)
+    if (targetIp != NULL)
+    {
+        // PrepareInterpreterCode may have stored the MethodImpl target's code on the declaration; run as that method.
+        pTargetMethod = targetIp->Method->methodHnd;
+    }
+    else
     {
         MAKE_CURRENT_THREAD_AVAILABLE_EX(GetThread());
 
@@ -2233,15 +2240,20 @@ void ExecuteInterpretedMethodWithArgs_PortableEntryPoint_Complex(PCODE portableE
 
             {
                 GCX_PREEMP_REGION_BEGIN();
-                (void)pMethod->DoPrestub(NULL /* MethodTable */, CallerGCMode::Coop);
-                targetIp = pMethod->GetInterpreterCode();
+                // Match the interpreter's PrepareInterpreterCode: run the method that pMethod's slot resolves to.
+                if (pMethod->IsVtableSlot())
+                {
+                    pTargetMethod = MethodTable::MapMethodDeclToMethodImpl(pMethod);
+                }
+                (void)pTargetMethod->DoPrestub(NULL /* MethodTable */, CallerGCMode::Coop);
+                targetIp = pTargetMethod->GetInterpreterCode();
                 GCX_PREEMP_REGION_END();
             }
 
             finishedPrestubPortion = true;
             if (targetIp == NULL)
             {
-                _ASSERTE(!PortableEntryPoint::PrefersInterpreterEntryPoint(portableEntrypoint));
+                _ASSERTE(!PortableEntryPoint::PrefersInterpreterEntryPoint(pTargetMethod->GetPortableEntryPoint()));
                 // Keep the transition and argument roots, but do not report an additional
                 // managed activation that would be absent on subsequent calls.
                 pPFrame->MarkPrestubComplete();
@@ -2250,12 +2262,12 @@ void ExecuteInterpretedMethodWithArgs_PortableEntryPoint_Complex(PCODE portableE
 #ifdef TARGET_WASM
                 // Gate on IsAsyncMethod to match InvokeManagedMethod/InvokeCalliStub; don't preload
                 // the global, InvokeCalliStub publishes the callee's continuation into continuationRet.
-                if (pMethod->IsAsyncMethod())
+                if (pTargetMethod->IsAsyncMethod())
                 {
                     pContinuationRet = &continuationRet;
                 }
 #endif // TARGET_WASM
-                InvokeManagedMethod(pMethod, args, retBuff, (PCODE)targetIp, pContinuationRet);
+                InvokeManagedMethod(pTargetMethod, args, retBuff, (PCODE)targetIp, pContinuationRet);
 #ifdef TARGET_WASM
                 if (pContinuationRet != nullptr)
                 {
@@ -2288,7 +2300,7 @@ void ExecuteInterpretedMethodWithArgs_PortableEntryPoint_Complex(PCODE portableE
             return; // We found R2R code during the Prestub, so there's no interpreter code to execute, and the R2R code has already been invoked, so we're done.
     }
 
-    _ASSERTE((PCODE)targetIp == (PCODE)PortableEntryPoint::GetInterpreterData(portableEntrypoint));
+    _ASSERTE((PCODE)targetIp == (PCODE)PortableEntryPoint::GetInterpreterData(pTargetMethod->GetPortableEntryPoint()));
 
     // Copy arguments to the stack
     if (argsSize > 0)
@@ -3210,12 +3222,15 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
             // Portable entrypoints are stable, so prepare the method before patching the import cell.
             // This publishes an existing R2R body instead of leaving the cell on an interpreter thunk.
-            if (pMD->ShouldCallPrestub())
+            // Like the non-portable path below, call through pMD's slot: a MethodImpl in the same type can
+            // redirect it to another method, so prepare the method that owns the slot's entry point.
+            PCODE pEntryPoint = pMD->GetMethodEntryPoint();
+            MethodDesc* pTargetMD = PortableEntryPoint::GetMethodDesc(pEntryPoint);
+            if (pTargetMD->ShouldCallPrestub())
             {
-                (void)pMD->DoPrestub(NULL);
+                (void)pTargetMD->DoPrestub(NULL);
             }
 
-            PCODE pEntryPoint = pMD->GetMethodEntryPoint();
             MethodDesc::EnsurePortableEntryPointIsCallableFromR2R(pEntryPoint);
             pCode = PatchNonVirtualExternalMethod(pMD, pEntryPoint, pIndirection);
 #else // !FEATURE_PORTABLE_ENTRYPOINTS

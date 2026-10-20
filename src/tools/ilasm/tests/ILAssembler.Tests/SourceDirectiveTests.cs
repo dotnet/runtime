@@ -275,7 +275,7 @@ namespace ILAssembler.Tests
             CompilationResult result = DocumentCompilerTestHelpers.CompileAndGetResult(source, new Options());
             using var pe = new PEReader(DocumentCompilerTestHelpers.Serialize(result));
 
-            // As in native ilasm, .line alone produces no PDB: only /DEBUG or /PDB does.
+            // .line alone produces no PDB: only /DEBUG or /PDB does.
             Assert.Null(result.PortablePdb);
             Assert.Empty(pe.ReadDebugDirectory());
         }
