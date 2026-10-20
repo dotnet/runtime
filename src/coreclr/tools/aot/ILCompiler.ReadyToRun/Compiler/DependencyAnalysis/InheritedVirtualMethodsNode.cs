@@ -95,8 +95,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                     foreach (MethodDesc interfaceMethod in interfaceType.EnumAllVirtualSlots())
                     {
-                        // GVMs handled in GVMDependenciesNode. SVMs handled at call site.
-                        if (interfaceMethod.HasInstantiation || interfaceMethod.Signature.IsStatic)
+                        // GVMs are handled in GVMDependenciesNode.
+                        if (interfaceMethod.HasInstantiation)
                             continue;
 
                         MethodDesc interfaceMethodDefinition = interfaceMethod;
@@ -105,7 +105,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                                 interfaceMethodDefinition.GetTypicalMethodDefinition(),
                                 (InstantiatedType)definitionInterfaceType);
 
-                        MethodDesc implMethod = defTypeDefinition.InstantiateAsOpen().ResolveInterfaceMethodTarget(interfaceMethodDefinition);
+                        MethodDesc implMethod = interfaceMethod.Signature.IsStatic
+                            ? defTypeDefinition.InstantiateAsOpen().ResolveInterfaceMethodToStaticVirtualMethodOnType(interfaceMethodDefinition)
+                            : defTypeDefinition.InstantiateAsOpen().ResolveInterfaceMethodTarget(interfaceMethodDefinition);
                         if (implMethod is null)
                         {
                             // The method might be implemented through a default interface method
@@ -126,7 +128,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                                 result.Add(new CombinedDependencyListEntry(factory.UnboxingStub(implMethod), factory.VirtualMethodUse(interfaceMethod), "Unbox for interface method on VT"));
                             }
 
-                            if (implMethod.IsVirtual && !implMethod.IsFinal && !implMethod.OwningType.IsInterface)
+                            if (!implMethod.Signature.IsStatic && implMethod.IsVirtual && !implMethod.IsFinal && !implMethod.OwningType.IsInterface)
                             {
                                 // The interface resolves to a virtual method that can be overridden.
                                 // Mark the class virtual slot as used so the class path compiles the
@@ -166,12 +168,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 currentType = currentType.BaseType;
             }
 
-            // Look for generic DIMs from implemented interfaces
+            // Generic static abstract methods also need implementing types for dictionary dispatch.
             foreach (DefType interfaceType in type.RuntimeInterfaces)
             {
                 foreach (MethodDesc interfaceMethod in interfaceType.GetVirtualMethods())
                 {
-                    if (interfaceMethod.HasInstantiation && !interfaceMethod.IsAbstract)
+                    if (interfaceMethod.HasInstantiation && (!interfaceMethod.IsAbstract || interfaceMethod.Signature.IsStatic))
                         return true;
                 }
             }
