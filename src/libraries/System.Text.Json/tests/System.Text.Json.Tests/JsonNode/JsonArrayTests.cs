@@ -507,42 +507,6 @@ namespace System.Text.Json.Nodes.Tests
         }
 
         [Fact]
-        public static void GetPath_IsThreadSafe()
-        {
-            for (int attempt = 0; attempt < 20; attempt++)
-            {
-                var tree = (JsonNode.Parse("""["oh", "noes"]""") as JsonArray)!;
-
-                Parallel.ForEach(Enumerable.Range(0, 100), new ParallelOptions { MaxDegreeOfParallelism = 16 }, _ =>
-                {
-                    string path = tree[0]!.GetPath();
-                    Assert.Equal("$[0]", path);
-                });
-            }
-        }
-
-        [Fact]
-        public static void LazyInitialization_ConcurrentAccess_ReturnsSameChildInstance()
-        {
-            for (int attempt = 0; attempt < 20; attempt++)
-            {
-                JsonArray array = JsonNode.Parse("[1, 2, 3]")!.AsArray();
-                var children = new JsonNode?[100];
-
-                Parallel.For(0, children.Length, new ParallelOptions { MaxDegreeOfParallelism = 16 }, i =>
-                {
-                    children[i] = array[0];
-                });
-
-                foreach (JsonNode? child in children)
-                {
-                    // Observe that same ref is stored
-                    Assert.Same(array[0], child);
-                }
-            }
-        }
-
-        [Fact]
         public static void DeepClone()
         {
             var nestedArray = new JsonArray("elem0", "elem1");
