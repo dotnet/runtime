@@ -36,7 +36,9 @@ private:
     bool ReadMemory(void* address, void* buffer, size_t size) override
     {
         uint32_t read = 0;
-        return SUCCEEDED(m_dataTarget->ReadVirtual(reinterpret_cast<CLRDATA_ADDRESS>(address), reinterpret_cast<PBYTE>(buffer), (uint32_t)size, &read));
+        return size <= UINT32_MAX &&
+            SUCCEEDED(m_dataTarget->ReadVirtual(reinterpret_cast<CLRDATA_ADDRESS>(address), reinterpret_cast<PBYTE>(buffer), (uint32_t)size, &read)) &&
+            read == size;
     }
 };
 
@@ -45,7 +47,8 @@ bool TryGetElfSymbol(ICorDebugDataTarget* dataTarget, uint64_t baseAddress, cons
 {
     ElfReaderExport<Types> reader(dataTarget);
     uint64_t symbolOffset = 0;
-    if (!reader.PopulateForSymbolLookup(baseAddress) || !reader.TryLookupSymbol(symbolName, &symbolOffset))
+    if (!reader.PopulateForSymbolLookup(baseAddress) || !reader.TryLookupSymbol(symbolName, &symbolOffset) ||
+        symbolOffset > UINT64_MAX - baseAddress)
     {
         return false;
     }
@@ -58,7 +61,8 @@ TryGetElfSymbol(ICorDebugDataTarget* dataTarget, uint64_t baseAddress, const cha
 {
     BYTE elfClass = 0;
     ULONG32 read = 0;
-    if (FAILED(dataTarget->ReadVirtual(baseAddress + EI_CLASS, &elfClass, sizeof(elfClass), &read)) ||
+    if (baseAddress > UINT64_MAX - EI_CLASS ||
+        FAILED(dataTarget->ReadVirtual(baseAddress + EI_CLASS, &elfClass, sizeof(elfClass), &read)) ||
         read != sizeof(elfClass))
     {
         return false;
@@ -108,13 +112,20 @@ ElfReader<Types>::PopulateForSymbolLookup(uint64_t baseAddress)
 {
     Trace("PopulateForSymbolLookup: base %016" PRIx64 "\n", baseAddress);
     Elf_Dyn* dynamicAddr = nullptr;
+    uint64_t dynamicSize = 0;
     uint64_t loadbias = 0;
+    bool needsLoadBias;
+    if (!NeedsLoadBias(baseAddress, &needsLoadBias)) {
+        Trace("ERROR: load bias detection FAILED\n");
+        return false;
+    }
 
     // Enumerate program headers searching for the PT_DYNAMIC header, etc.
     if (!EnumerateProgramHeaders(
         baseAddress,
-        NeedsLoadBias(baseAddress) ? &loadbias : nullptr,
-        &dynamicAddr))
+        needsLoadBias ? &loadbias : nullptr,
+        &dynamicAddr,
+        &dynamicSize))
     {
         return false;
     }
@@ -124,7 +135,8 @@ ElfReader<Types>::PopulateForSymbolLookup(uint64_t baseAddress)
     }
 
     // Search for dynamic entries
-    for (;;)
+    bool terminated = false;
+    for (; dynamicSize >= sizeof(Elf_Dyn); dynamicAddr++, dynamicSize -= sizeof(Elf_Dyn))
     {
         Elf_Dyn dyn;
         if (!ReadMemory(dynamicAddr, &dyn, sizeof(dyn))) {
@@ -134,7 +146,13 @@ ElfReader<Types>::PopulateForSymbolLookup(uint64_t baseAddress)
         Trace("DSO: dyn %p tag %" PRId64 " (%" PRIx64 ") d_ptr %016" PRIx64 "\n",
             dynamicAddr, (int64_t)dyn.d_tag, (uint64_t)dyn.d_tag, (uint64_t)dyn.d_un.d_ptr);
         if (dyn.d_tag == DT_NULL) {
+            terminated = true;
             break;
+        }
+        if ((dyn.d_tag == DT_GNU_HASH || dyn.d_tag == DT_STRTAB || dyn.d_tag == DT_SYMTAB) &&
+            dyn.d_un.d_ptr > UINT64_MAX - loadbias) {
+            Trace("ERROR: dynamic pointer plus load bias overflows\n");
+            return false;
         }
         else if (dyn.d_tag == DT_GNU_HASH) {
             m_gnuHashTableAddr = (void*)(dyn.d_un.d_ptr + loadbias);
@@ -143,14 +161,17 @@ ElfReader<Types>::PopulateForSymbolLookup(uint64_t baseAddress)
             m_stringTableAddr = (void*)(dyn.d_un.d_ptr + loadbias);
         }
         else if (dyn.d_tag == DT_STRSZ) {
-            m_stringTableSize = (int)dyn.d_un.d_ptr;
+            m_stringTableSize = dyn.d_un.d_val;
         }
         else if (dyn.d_tag == DT_SYMTAB) {
             m_symbolTableAddr = (void*)(dyn.d_un.d_ptr + loadbias);
         }
-        dynamicAddr++;
     }
 
+    if (!terminated) {
+        Trace("ERROR: dynamic table is not terminated within PT_DYNAMIC\n");
+        return false;
+    }
     if (m_gnuHashTableAddr == nullptr || m_stringTableAddr == nullptr || m_symbolTableAddr == nullptr) {
         Trace("ERROR: hash, string or symbol table address not found\n");
         return false;
@@ -166,22 +187,32 @@ ElfReader<Types>::PopulateForSymbolLookup(uint64_t baseAddress)
 
 template <typename Types>
 bool
-ElfReader<Types>::NeedsLoadBias(uint64_t baseAddress)
+ElfReader<Types>::NeedsLoadBias(uint64_t baseAddress, bool* needsLoadBias)
 {
+    *needsLoadBias = false;
     Elf_Ehdr header;
     if (!ReadMemory((void*)baseAddress, &header, sizeof(header))) {
         return false;
     }
     if (header.e_machine == EM_RISCV) {
+        *needsLoadBias = true;
         return true;
     }
 
     uint64_t loadbias = 0;
     Elf_Dyn* dynamicAddr = nullptr;
-    if (!EnumerateProgramHeaders(baseAddress, &loadbias, &dynamicAddr) || loadbias == 0 || dynamicAddr == nullptr) {
+    uint64_t dynamicSize = 0;
+    if (!EnumerateProgramHeaders(baseAddress, &loadbias, &dynamicAddr, &dynamicSize)) {
         return false;
     }
+    if (loadbias == 0 || dynamicAddr == nullptr) {
+        return true;
+    }
 
+    if (header.e_phoff > UINT64_MAX - baseAddress ||
+        (uint64_t)header.e_phnum * sizeof(Elf_Phdr) > UINT64_MAX - (baseAddress + header.e_phoff)) {
+        return false;
+    }
     Elf_Phdr* phdrAddr = (Elf_Phdr*)(baseAddress + header.e_phoff);
     for (int i = 0; i < header.e_phnum; i++)
     {
@@ -189,17 +220,26 @@ ElfReader<Types>::NeedsLoadBias(uint64_t baseAddress)
         if (!ReadMemory(phdrAddr + i, &ph, sizeof(ph))) {
             return false;
         }
-        if (ph.p_type == PT_NOTE && HasAndroidNote(loadbias, ph)) {
-            return true;
+        if (ph.p_type == PT_NOTE)
+        {
+            bool hasAndroidNote;
+            if (!HasAndroidNote(loadbias, ph, &hasAndroidNote)) {
+                return false;
+            }
+            if (hasAndroidNote) {
+                *needsLoadBias = true;
+                return true;
+            }
         }
     }
-    return HasMuslDependency(loadbias, dynamicAddr, phdrAddr, header.e_phnum);
+    return HasMuslDependency(loadbias, dynamicAddr, dynamicSize, phdrAddr, header.e_phnum, needsLoadBias);
 }
 
 template <typename Types>
 bool
-ElfReader<Types>::HasAndroidNote(uint64_t loadbias, const Elf_Phdr& header)
+ElfReader<Types>::HasAndroidNote(uint64_t loadbias, const Elf_Phdr& header, bool* hasAndroidNote)
 {
+    *hasAndroidNote = false;
     struct NoteHeader
     {
         uint32_t nameSize;
@@ -234,26 +274,30 @@ ElfReader<Types>::HasAndroidNote(uint64_t loadbias, const Elf_Phdr& header)
                 return false;
             }
             if (memcmp(name, AndroidName, sizeof(name)) == 0) {
+                *hasAndroidNote = true;
                 return true;
             }
         }
         address += noteSize;
         remaining -= noteSize;
     }
-    return false;
+    return true;
 }
 
 template <typename Types>
 bool
-ElfReader<Types>::HasMuslDependency(uint64_t loadbias, Elf_Dyn* dynamicAddr, Elf_Phdr* phdrAddr, int phnum)
+ElfReader<Types>::HasMuslDependency(uint64_t loadbias, Elf_Dyn* dynamicAddr, uint64_t dynamicSize, Elf_Phdr* phdrAddr, int phnum, bool* hasMuslDependency)
 {
+    *hasMuslDependency = false;
     uint64_t stringAddress = 0;
     uint64_t stringSize = 0;
-    std::vector<uint64_t> neededOffsets;
-    for (Elf_Dyn* address = dynamicAddr;; address++)
+    bool hasDependencies = false;
+    uint64_t dynamicCount = dynamicSize / sizeof(Elf_Dyn);
+    uint64_t count = 0;
+    for (; count < dynamicCount; count++)
     {
         Elf_Dyn dyn;
-        if (!ReadMemory(address, &dyn, sizeof(dyn))) {
+        if (!ReadMemory(dynamicAddr + count, &dyn, sizeof(dyn))) {
             return false;
         }
         if (dyn.d_tag == DT_NULL) {
@@ -266,10 +310,16 @@ ElfReader<Types>::HasMuslDependency(uint64_t loadbias, Elf_Dyn* dynamicAddr, Elf
             stringSize = dyn.d_un.d_val;
         }
         else if (dyn.d_tag == DT_NEEDED) {
-            neededOffsets.push_back(dyn.d_un.d_val);
+            hasDependencies = true;
         }
     }
-    if (neededOffsets.empty() || stringSize == 0 || stringAddress > UINT64_MAX - loadbias) {
+    if (count == dynamicCount) {
+        return false;
+    }
+    if (!hasDependencies) {
+        return true;
+    }
+    if (stringSize == 0 || stringAddress > UINT64_MAX - loadbias) {
         return false;
     }
     stringAddress += loadbias;
@@ -282,8 +332,11 @@ ElfReader<Types>::HasMuslDependency(uint64_t loadbias, Elf_Dyn* dynamicAddr, Elf
         if (!ReadMemory(phdrAddr + i, &ph, sizeof(ph))) {
             return false;
         }
-        if (ph.p_type != PT_LOAD || ph.p_vaddr > UINT64_MAX - loadbias) {
+        if (ph.p_type != PT_LOAD) {
             continue;
+        }
+        if (ph.p_vaddr > UINT64_MAX - loadbias) {
+            return false;
         }
         uint64_t segmentAddress = loadbias + ph.p_vaddr;
         if (stringAddress >= segmentAddress && stringAddress - segmentAddress <= ph.p_memsz &&
@@ -294,33 +347,48 @@ ElfReader<Types>::HasMuslDependency(uint64_t loadbias, Elf_Dyn* dynamicAddr, Elf
         }
     }
     if (!inLoadSegment) {
-        return false;
+        return true;
     }
 
     const char MuslPrefix[] = "libc.musl-";
     const char MuslSuffix[] = ".so.1";
-    for (uint64_t offset : neededOffsets)
+    for (uint64_t i = 0; i < count; i++)
     {
+        Elf_Dyn dyn;
+        if (!ReadMemory(dynamicAddr + i, &dyn, sizeof(dyn))) {
+            return false;
+        }
+        if (dyn.d_tag != DT_NEEDED) {
+            continue;
+        }
+        uint64_t offset = dyn.d_un.d_val;
+        if (offset >= stringSize) {
+            return false;
+        }
         std::string name;
         for (; offset < stringSize; offset++)
         {
             char ch;
             if (!ReadMemory((void*)(stringAddress + offset), &ch, sizeof(ch))) {
-                break;
+                return false;
             }
             if (ch == '\0')
             {
                 if (name.size() > sizeof(MuslPrefix) + sizeof(MuslSuffix) - 2 &&
                     name.compare(0, sizeof(MuslPrefix) - 1, MuslPrefix) == 0 &&
                     name.compare(name.size() - (sizeof(MuslSuffix) - 1), sizeof(MuslSuffix) - 1, MuslSuffix) == 0) {
+                    *hasMuslDependency = true;
                     return true;
                 }
                 break;
             }
             name.append(1, ch);
         }
+        if (offset == stringSize) {
+            return false;
+        }
     }
-    return false;
+    return true;
 }
 
 //
@@ -360,8 +428,12 @@ template <typename Types>
 bool
 ElfReader<Types>::GetSymbol(int32_t index, Elf_Sym* symbol)
 {
-    int symSize = sizeof(Elf_Sym);
-    if (!ReadMemory((char*)m_symbolTableAddr + (index * symSize), symbol, symSize)) {
+    if (index < 0) {
+        return false;
+    }
+    uint64_t offset = (uint64_t)index * sizeof(Elf_Sym);
+    if (offset > UINT64_MAX - (uint64_t)m_symbolTableAddr ||
+        !ReadMemory((void*)((uint64_t)m_symbolTableAddr + offset), symbol, sizeof(Elf_Sym))) {
         return false;
     }
     return true;
@@ -379,20 +451,27 @@ ElfReader<Types>::InitializeGnuHashTable()
         Trace("ERROR: InitializeGnuHashTable hashtable ReadMemory(%p) FAILED\n", m_gnuHashTableAddr);
         return false;
     }
-    if (m_hashTable.BucketCount <= 0 || m_hashTable.SymbolOffset == 0) {
-        Trace("ERROR: InitializeGnuHashTable invalid BucketCount or SymbolOffset\n");
+    if (m_hashTable.BucketCount <= 0 || m_hashTable.SymbolOffset <= 0 || m_hashTable.BloomSize <= 0) {
+        Trace("ERROR: InitializeGnuHashTable invalid BucketCount, SymbolOffset or BloomSize\n");
         return false;
     }
-    m_buckets = (int32_t*)malloc(m_hashTable.BucketCount * sizeof(int32_t));
+    uint64_t bucketsOffset = sizeof(GnuHashTable) + ((uint64_t)m_hashTable.BloomSize * sizeof(Elf_Word));
+    uint64_t bucketsSize = (uint64_t)m_hashTable.BucketCount * sizeof(int32_t);
+    if (bucketsOffset > UINT64_MAX - (uint64_t)m_gnuHashTableAddr ||
+        bucketsSize > UINT64_MAX - ((uint64_t)m_gnuHashTableAddr + bucketsOffset) ||
+        bucketsSize > SIZE_MAX || bucketsSize > UINT32_MAX) {
+        return false;
+    }
+    m_buckets = (int32_t*)malloc((size_t)bucketsSize);
     if (m_buckets == nullptr) {
         return false;
     }
-    void* bucketsAddress = (char*)m_gnuHashTableAddr + sizeof(GnuHashTable) + (m_hashTable.BloomSize * sizeof(Elf_Word));
-    if (!ReadMemory(bucketsAddress, m_buckets, m_hashTable.BucketCount * sizeof(int32_t))) {
+    void* bucketsAddress = (void*)((uint64_t)m_gnuHashTableAddr + bucketsOffset);
+    if (!ReadMemory(bucketsAddress, m_buckets, (size_t)bucketsSize)) {
         Trace("ERROR: InitializeGnuHashTable buckets ReadMemory(%p) FAILED\n", bucketsAddress);
         return false;
     }
-    m_chainsAddress = (char*)bucketsAddress + (m_hashTable.BucketCount * sizeof(int32_t));
+    m_chainsAddress = (void*)((uint64_t)bucketsAddress + bucketsSize);
     return true;
 }
 
@@ -401,10 +480,17 @@ bool
 ElfReader<Types>::GetPossibleSymbolIndex(const std::string& symbolName, std::vector<int32_t>& symbolIndexes)
 {
     uint32_t hash = Hash(symbolName);
-    int i = m_buckets[hash % m_hashTable.BucketCount] - m_hashTable.SymbolOffset;
+    int32_t bucket = m_buckets[hash % m_hashTable.BucketCount];
+    if (bucket < m_hashTable.SymbolOffset) {
+        return false;
+    }
+    int i = bucket - m_hashTable.SymbolOffset;
     Trace("GetPossibleSymbolIndex hash %08x index: %d BucketCount %d SymbolOffset %08x\n", hash, i, m_hashTable.BucketCount, m_hashTable.SymbolOffset);
     for (;; i++)
     {
+        if (i > INT32_MAX - m_hashTable.SymbolOffset) {
+            return false;
+        }
         int32_t chainVal;
         if (!GetChain(i, &chainVal)) {
             Trace("ERROR: GetPossibleSymbolIndex GetChain FAILED\n");
@@ -438,7 +524,12 @@ template <typename Types>
 bool
 ElfReader<Types>::GetChain(int index, int32_t* chain)
 {
-    return ReadMemory((char*)m_chainsAddress + (index * sizeof(int32_t)), chain, sizeof(int32_t));
+    if (index < 0) {
+        return false;
+    }
+    uint64_t offset = (uint64_t)index * sizeof(int32_t);
+    return offset <= UINT64_MAX - (uint64_t)m_chainsAddress &&
+        ReadMemory((void*)((uint64_t)m_chainsAddress + offset), chain, sizeof(int32_t));
 }
 
 //
@@ -447,16 +538,16 @@ ElfReader<Types>::GetChain(int index, int32_t* chain)
 
 template <typename Types>
 bool
-ElfReader<Types>::GetStringAtIndex(int index, std::string& result)
+ElfReader<Types>::GetStringAtIndex(uint64_t index, std::string& result)
 {
     while(true)
     {
-        if (index > m_stringTableSize) {
-            Trace("ERROR: GetStringAtIndex index %d > string table size\n", index);
+        if (index >= m_stringTableSize || index > UINT64_MAX - (uint64_t)m_stringTableAddr) {
+            Trace("ERROR: GetStringAtIndex invalid index %" PRIu64 "\n", index);
             return false;
         }
         char ch;
-        void* address = (char*)m_stringTableAddr + index;
+        void* address = (void*)((uint64_t)m_stringTableAddr + index);
         if (!ReadMemory(address, &ch, sizeof(ch))) {
             Trace("ERROR: GetStringAtIndex ReadMemory(%p) FAILED\n", address);
             return false;
@@ -482,17 +573,18 @@ ElfReader<Types>::EnumerateElfInfo(Elf_Phdr* phdrAddr, int phnum)
 {
     Trace("EnumerateElfInfo: phdr %p phnum %d\n", phdrAddr, phnum);
 
-    if (phdrAddr == nullptr || phnum <= 0) {
+    if ((uint64_t)phdrAddr < sizeof(Elf_Ehdr) || phnum <= 0) {
         return false;
     }
     uint64_t baseAddress = (uint64_t)phdrAddr - sizeof(Elf_Ehdr);
     Elf_Dyn* dynamicAddr = nullptr;
+    uint64_t dynamicSize = 0;
 
     // Enumerate program headers searching for the PT_DYNAMIC header, etc.
-    if (!EnumerateProgramHeaders(phdrAddr, phnum, baseAddress, nullptr, &dynamicAddr)) {
+    if (!EnumerateProgramHeaders(phdrAddr, phnum, baseAddress, nullptr, &dynamicAddr, &dynamicSize)) {
         return false;
     }
-    return EnumerateLinkMapEntries(dynamicAddr);
+    return EnumerateLinkMapEntries(dynamicAddr, dynamicSize);
 }
 
 //
@@ -500,7 +592,7 @@ ElfReader<Types>::EnumerateElfInfo(Elf_Phdr* phdrAddr, int phnum)
 //
 template <typename Types>
 bool
-ElfReader<Types>::EnumerateLinkMapEntries(Elf_Dyn* dynamicAddr)
+ElfReader<Types>::EnumerateLinkMapEntries(Elf_Dyn* dynamicAddr, uint64_t dynamicSize)
 {
     if (dynamicAddr == nullptr) {
         return false;
@@ -508,7 +600,8 @@ ElfReader<Types>::EnumerateLinkMapEntries(Elf_Dyn* dynamicAddr)
 
     // Search dynamic entries for DT_DEBUG (r_debug entry)
     struct r_debug* rdebugAddr = nullptr;
-    for (;;)
+    bool terminated = false;
+    for (; dynamicSize >= sizeof(Elf_Dyn); dynamicAddr++, dynamicSize -= sizeof(Elf_Dyn))
     {
         Elf_Dyn dyn;
         if (!ReadMemory(dynamicAddr, &dyn, sizeof(dyn))) {
@@ -518,16 +611,16 @@ ElfReader<Types>::EnumerateLinkMapEntries(Elf_Dyn* dynamicAddr)
         Trace("DSO: dyn %p tag %" PRId64 " (%" PRIx64 ") d_ptr %016" PRIx64 "\n",
             dynamicAddr, (int64_t)dyn.d_tag, (uint64_t)dyn.d_tag, (uint64_t)dyn.d_un.d_ptr);
         if (dyn.d_tag == DT_NULL) {
+            terminated = true;
             break;
         }
         else if (dyn.d_tag == DT_DEBUG) {
             rdebugAddr = reinterpret_cast<struct r_debug*>((uintptr_t)dyn.d_un.d_ptr);
         }
-        dynamicAddr++;
     }
 
     Trace("DSO: rdebugAddr %p\n", rdebugAddr);
-    if (rdebugAddr == nullptr) {
+    if (!terminated || rdebugAddr == nullptr) {
         return false;
     }
 
@@ -595,7 +688,7 @@ ElfReader<Types>::EnumerateLinkMapEntries(Elf_Dyn* dynamicAddr)
 
 template <typename Types>
 bool
-ElfReader<Types>::EnumerateProgramHeaders(uint64_t baseAddress, uint64_t* ploadbias, Elf_Dyn** pdynamicAddr)
+ElfReader<Types>::EnumerateProgramHeaders(uint64_t baseAddress, uint64_t* ploadbias, Elf_Dyn** pdynamicAddr, uint64_t* pdynamicSize)
 {
     Elf_Ehdr ehdr;
     if (!ReadMemory((void*)baseAddress, &ehdr, sizeof(ehdr))) {
@@ -606,21 +699,24 @@ ElfReader<Types>::EnumerateProgramHeaders(uint64_t baseAddress, uint64_t* ploadb
         Trace("ERROR: EnumerateProgramHeaders Invalid elf header signature\n");
         return false;
     }
-    _ASSERTE(ehdr.e_phentsize == sizeof(Elf_Phdr));
-    _ASSERTE(ehdr.e_ident[EI_CLASS] == Types::Class);
-    _ASSERTE(ehdr.e_ident[EI_DATA] == ELFDATA2LSB);
+    if (ehdr.e_phentsize != sizeof(Elf_Phdr) || ehdr.e_ident[EI_CLASS] != Types::Class ||
+        ehdr.e_ident[EI_DATA] != ELFDATA2LSB) {
+        return false;
+    }
     int phnum = ehdr.e_phnum;
 #ifdef PN_XNUM
-     _ASSERTE(phnum != PN_XNUM);
+    if (phnum == PN_XNUM) {
+        return false;
+    }
 #endif
-    if (ehdr.e_phoff == 0 || phnum <= 0) {
+    if (ehdr.e_phoff == 0 || phnum <= 0 || ehdr.e_phoff > UINT64_MAX - baseAddress) {
         return false;
     }
     Trace("ELF: type %d mach 0x%x ver %d flags 0x%x phnum %d phoff %016" PRIx64 " phentsize 0x%02x shnum %d shoff %016" PRIx64 " shentsize 0x%02x shstrndx %d\n",
         ehdr.e_type, ehdr.e_machine, ehdr.e_version, ehdr.e_flags, phnum, (uint64_t)ehdr.e_phoff, ehdr.e_phentsize, ehdr.e_shnum, (uint64_t)ehdr.e_shoff, ehdr.e_shentsize, ehdr.e_shstrndx);
 
     Elf_Phdr* phdrAddr = reinterpret_cast<Elf_Phdr*>(baseAddress + ehdr.e_phoff);
-    return EnumerateProgramHeaders(phdrAddr, phnum, baseAddress, ploadbias, pdynamicAddr);
+    return EnumerateProgramHeaders(phdrAddr, phnum, baseAddress, ploadbias, pdynamicAddr, pdynamicSize);
 }
 
 //
@@ -628,8 +724,11 @@ ElfReader<Types>::EnumerateProgramHeaders(uint64_t baseAddress, uint64_t* ploadb
 //
 template <typename Types>
 bool
-ElfReader<Types>::EnumerateProgramHeaders(Elf_Phdr* phdrAddr, int phnum, uint64_t baseAddress, uint64_t* ploadbias, Elf_Dyn** pdynamicAddr)
+ElfReader<Types>::EnumerateProgramHeaders(Elf_Phdr* phdrAddr, int phnum, uint64_t baseAddress, uint64_t* ploadbias, Elf_Dyn** pdynamicAddr, uint64_t* pdynamicSize)
 {
+    if (phnum <= 0 || (uint64_t)phnum * sizeof(Elf_Phdr) > UINT64_MAX - (uint64_t)phdrAddr) {
+        return false;
+    }
     uint64_t loadbias = baseAddress;
 
     // Calculate the load bias from the PT_LOAD program headers
@@ -641,6 +740,9 @@ ElfReader<Types>::EnumerateProgramHeaders(Elf_Phdr* phdrAddr, int phnum, uint64_
             return false;
         }
         if (ph.p_type == PT_LOAD && ph.p_offset == 0) {
+            if (ph.p_vaddr > loadbias) {
+                return false;
+            }
             loadbias -= ph.p_vaddr;
             Trace("PHDR: loadbias %016" PRIx64 "\n", loadbias);
             break;
@@ -665,8 +767,14 @@ ElfReader<Types>::EnumerateProgramHeaders(Elf_Phdr* phdrAddr, int phnum, uint64_
         switch (ph.p_type)
         {
         case PT_DYNAMIC:
+            if (ph.p_vaddr > UINT64_MAX - loadbias || ph.p_memsz > UINT64_MAX - (loadbias + ph.p_vaddr)) {
+                return false;
+            }
             if (pdynamicAddr != nullptr) {
                 *pdynamicAddr = reinterpret_cast<Elf_Dyn*>(loadbias + ph.p_vaddr);
+            }
+            if (pdynamicSize != nullptr) {
+                *pdynamicSize = ph.p_memsz;
             }
             break;
         }
