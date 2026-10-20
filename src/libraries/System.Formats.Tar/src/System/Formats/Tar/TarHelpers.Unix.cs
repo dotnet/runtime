@@ -7,6 +7,22 @@ using System.IO;
 
 namespace System.Formats.Tar
 {
+    internal struct FileId : IEquatable<FileId>
+    {
+        internal long Dev;
+        internal long Ino;
+
+        internal FileId(long dev, long ino)
+        {
+            Dev = dev;
+            Ino = ino;
+        }
+
+        public bool Equals(FileId other) => Dev == other.Dev && Ino == other.Ino;
+        public override bool Equals(object? obj) => obj is FileId other && Equals(other);
+        public override int GetHashCode() => HashCode.Combine(Dev, Ino);
+    }
+
     internal static partial class TarHelpers
     {
         private static readonly Lazy<UnixFileMode> s_umask = new Lazy<UnixFileMode>(DetermineUMask);
@@ -113,6 +129,31 @@ namespace System.Formats.Tar
             {
                 File.SetUnixFileMode(dir.Key, dir.Value & ~umask);
             }
+        }
+
+        internal static FileId GetFileId(string filePath)
+        {
+            Interop.CheckIo(Interop.Sys.Stat(filePath, out Interop.Sys.FileStatus status), filePath);
+            return new FileId(status.Dev, status.Ino);
+        }
+
+        internal static bool TryGetPathInfo(string path, out FileId fileId, out bool isSymlink)
+        {
+            int rv = Interop.Sys.LStat(path, out Interop.Sys.FileStatus status);
+            if (rv != 0)
+            {
+                Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
+                if (errorInfo.Error == Interop.Error.ENOENT || errorInfo.Error == Interop.Error.ENOTDIR)
+                {
+                    fileId = default;
+                    isSymlink = false;
+                    return false;
+                }
+                throw Interop.GetExceptionForIoErrno(errorInfo, path);
+            }
+            fileId = new FileId(status.Dev, status.Ino);
+            isSymlink = (status.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFLNK;
+            return true;
         }
     }
 }

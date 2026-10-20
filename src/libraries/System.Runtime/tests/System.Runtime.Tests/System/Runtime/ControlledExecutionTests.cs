@@ -10,7 +10,6 @@ using Xunit;
 
 namespace System.Runtime.Tests
 {
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class ControlledExecutionTests
     {
         private volatile bool _readyForCancellation;
@@ -54,7 +53,7 @@ namespace System.Runtime.Tests
 
         // Tests that an infinite loop may be aborted and that the ThreadAbortException is translated
         // to an OperationCanceledException.
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime), nameof(PlatformDetection.IsNotNativeAot))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime), nameof(PlatformDetection.IsNotNativeAot), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void CancelOutsideOfTryCatchFinally()
         {
             var cts = new CancellationTokenSource();
@@ -74,7 +73,7 @@ namespace System.Runtime.Tests
 
         // Tests that an infinite loop may be aborted, that the ThreadAbortException is automatically rethrown,
         // and that it is eventually translated to an OperationCanceledException.
-//        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime), nameof(PlatformDetection.IsNotNativeAot))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime), nameof(PlatformDetection.IsNotNativeAot))]
         public void CancelInTryAndExitCatchNormally()
         {
             var cts = new CancellationTokenSource();
@@ -103,7 +102,7 @@ namespace System.Runtime.Tests
         }
 
         // Tests that catch blocks are not aborted. The catch block swallows the ThreadAbortException and throws a different exception.
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime), nameof(PlatformDetection.IsNotNativeAot))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime), nameof(PlatformDetection.IsNotNativeAot), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void CancelInTryAndThrowFromCatch()
         {
             var cts = new CancellationTokenSource();
@@ -131,7 +130,7 @@ namespace System.Runtime.Tests
         }
 
         // Tests that finally blocks are not aborted. The finally block exits normally.
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime), nameof(PlatformDetection.IsNotNativeAot))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime), nameof(PlatformDetection.IsNotNativeAot), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void CancelInFinallyThatSleeps()
         {
             var cts = new CancellationTokenSource();
@@ -160,7 +159,7 @@ namespace System.Runtime.Tests
         }
 
         // Tests that finally blocks are not aborted. The finally block throws an exception.
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime), nameof(PlatformDetection.IsNotNativeAot))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime), nameof(PlatformDetection.IsNotNativeAot), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void CancelInFinallyThatSleepsAndThrows()
         {
             var cts = new CancellationTokenSource();

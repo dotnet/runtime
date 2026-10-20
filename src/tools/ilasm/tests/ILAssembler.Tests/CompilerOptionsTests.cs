@@ -425,7 +425,7 @@ namespace ILAssembler.Tests
             using var pe = new PEReader(DocumentCompilerTestHelpers.Serialize(result));
             DirectoryEntry debugTable = pe.PEHeaders.PEHeader!.DebugTableDirectory;
 
-            // As in native ilasm: no debug directory at all, not even the Reproducible entry that
+            // No debug directory at all, not even the Reproducible entry that
             // ManagedPEBuilder adds by default to a deterministic image.
             Assert.Equal((0, 0), (debugTable.RelativeVirtualAddress, debugTable.Size));
         }

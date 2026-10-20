@@ -92,6 +92,8 @@ namespace ILCompiler.ObjectWriter
                     RelocType.WASM_TABLE_INDEX_I64 or
                     RelocType.WASM_TABLE_INDEX_REL_I32 or
                     RelocType.WASM_METHOD_FRAME_IDENTITY_SLEB or
+                    // Import cell RVAs can select method-specific helpers, not just code addresses.
+                    RelocType.WASM_MEMORY_ADDR_REL_LEB or
                     RelocType.WASM_MEMORY_ADDR_REL_SLEB => true,
 
                     RelocType.IMAGE_REL_BASED_ABSOLUTE or
@@ -118,7 +120,6 @@ namespace ILCompiler.ObjectWriter
                     RelocType.WASM_MEMORY_ADDR_SLEB or
                     RelocType.WASM_TYPE_INDEX_LEB or
                     RelocType.WASM_GLOBAL_INDEX_LEB or
-                    RelocType.WASM_MEMORY_ADDR_REL_LEB or
                     RelocType.WASM_CLR_RESTORE_CONTEXT_EXCEPTION_TAG_LEB or
                     RelocType.WASM_METHOD_RELATIVE_VIRTUAL_IP_I32 or
                     RelocType.WASM_ASYNC_RESUME_INFO_DELTA_ULEB or
