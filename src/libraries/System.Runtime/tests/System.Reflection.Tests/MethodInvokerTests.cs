@@ -395,6 +395,8 @@ namespace System.Reflection.Tests
             Assert.Throws<TargetParameterCountException>(() => invoker.Invoke(null));
             Assert.Throws<InvalidOperationException>(() => invoker.Invoke(null, 1));
             Assert.Throws<TargetParameterCountException>(() => invoker.Invoke(null, 1, 2));
+            Assert.Throws<TargetParameterCountException>(() => invoker.Invoke(null, 1, 2, 3));
+            Assert.Throws<TargetParameterCountException>(() => invoker.Invoke(null, 1, 2, 3, 4));
         }
 
         [Fact]
