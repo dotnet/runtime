@@ -446,7 +446,7 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
       <_WasmCorerunLinkInputs>@(_WasmCorerunGeneratedSource->'&quot;%(ObjectFile)&quot;', ' ') @(_WasmCorerunNativeSource->'&quot;%(ObjectFile)&quot;', ' ') @(_WasmCorerunTestLib->'&quot;%(FullPath)&quot;', ' ') @(_WasmCorerunCommonLib->'&quot;%(FullPath)&quot;', ' ')</_WasmCorerunLinkInputs>
     </PropertyGroup>
 
-    <Exec Command="&quot;$(_WasmCorerunCxx)&quot; $(_WasmCorerunToolArgs) $(_WasmCorerunLinkToolArgs) $(_WasmCorerunLinkInputs) &quot;@$(_WasmCorerunLinkRsp)&quot; -o &quot;$(_WasmCorerunLinkOutput)&quot;"
+    <Exec Command="&quot;$(_WasmCorerunCxx)&quot; $(_WasmCorerunToolArgs) $(_WasmCorerunLinkInputs) &quot;@$(_WasmCorerunLinkRsp)&quot; $(_WasmCorerunLinkToolArgs) -o &quot;$(_WasmCorerunLinkOutput)&quot;"
           WorkingDirectory="$(WasmCorerunKitDir)"
           EnvironmentVariables="@(_WasmCorerunToolEnv)" />
 

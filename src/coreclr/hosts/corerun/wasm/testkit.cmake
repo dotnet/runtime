@@ -223,6 +223,11 @@ function(corerun_kit_export)
 
     set(linkResponse "")
     foreach(option IN LISTS configuredLinkerFlags inheritedLinkOptions KIT_LINK_OPTIONS)
+        # The consumer chooses the linker: init-compiler.sh adds -fuse-ld=lld to LDFLAGS on Linux,
+        # which would replace the WASI component linker the consumer passes before this file.
+        if(option MATCHES "^-fuse-ld=")
+            continue()
+        endif()
         string(APPEND linkResponse "${option}\n")
     endforeach()
     foreach(jsLibrary IN LISTS KIT_JS_LIBRARIES)
