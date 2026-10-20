@@ -585,7 +585,11 @@ namespace System.Management
                         //A malformed enumerator can report success without returning any objects; treat this as a failure
                         //rather than silently proceeding with an empty cache.
                         if (cachedCount == 0)
+                        {
+                            // Keep a retry from treating the empty cache as an item.
+                            cacheIndex = -1;
                             ManagementException.ThrowWithExtendedInfo(ManagementStatus.Failed);
+                        }
                     }
 
                     cacheIndex = 0;

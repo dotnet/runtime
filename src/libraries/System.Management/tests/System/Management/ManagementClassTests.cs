@@ -150,9 +150,13 @@ namespace System.Management.Tests
                 enumerator = collection.GetEnumerator();
                 ManagementException exception = Assert.Throws<ManagementException>(() => enumerator.MoveNext());
                 Assert.Equal(ManagementStatus.Failed, exception.ErrorCode);
+
+                ManagementException retryException = Assert.Throws<ManagementException>(() => enumerator.MoveNext());
+                Assert.Equal(ManagementStatus.Failed, retryException.ErrorCode);
             }
             finally
             {
+                // The managed proxy is not a COM RCW, so its owners must not call ReleaseComObject in their finalizers.
                 if (enumerator is not null)
                     GC.SuppressFinalize(enumerator);
 
@@ -187,17 +191,18 @@ namespace System.Management.Tests
         private static ManagementObjectCollection CreateManagementObjectCollection(object enumWbem)
         {
             Type enumWbemType = typeof(ManagementObjectCollection).Assembly.GetType("System.Management.IEnumWbemClassObject", throwOnError: true);
-            ConstructorInfo constructor = typeof(ManagementObjectCollection).GetConstructor(
-                BindingFlags.Instance | BindingFlags.NonPublic,
-                binder: null,
-                new Type[] { typeof(ManagementScope), typeof(EnumerationOptions), enumWbemType },
-                modifiers: null);
+            ConstructorInfo constructor = Assert.IsAssignableFrom<ConstructorInfo>(
+                typeof(ManagementObjectCollection).GetConstructor(
+                    BindingFlags.Instance | BindingFlags.NonPublic,
+                    binder: null,
+                    new Type[] { typeof(ManagementScope), typeof(EnumerationOptions), enumWbemType },
+                    modifiers: null));
 
             return (ManagementObjectCollection)constructor.Invoke(new object[] { null, new EnumerationOptions { Rewindable = false }, enumWbem });
         }
 
         [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "The test uses DispatchProxy only to create a fake internal WMI enumerator for this reflection-based regression test.")]
-        private sealed class EmptySuccessfulWbemEnumeratorProxy : DispatchProxy
+        private class EmptySuccessfulWbemEnumeratorProxy : DispatchProxy
         {
             public static object Create()
             {
