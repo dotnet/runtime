@@ -29,7 +29,7 @@ namespace TestLibrary
 
         public static bool IsSimulator => RuntimeInformation.RuntimeIdentifier.StartsWith("iossimulator") || RuntimeInformation.RuntimeIdentifier.StartsWith("tvossimulator");
 
-        public static bool IsBuiltInComEnabled => IsWindows && !Utilities.IsCoreClrInterpreter
+        public static bool IsBuiltInComEnabled => IsWindows && IsCoreCLR && !Utilities.IsCoreClrInterpreter
                                             && (AppContext.TryGetSwitch("System.Runtime.InteropServices.BuiltInComInterop.IsSupported", out bool isEnabled)
                                                 ? isEnabled
                                                 : true);

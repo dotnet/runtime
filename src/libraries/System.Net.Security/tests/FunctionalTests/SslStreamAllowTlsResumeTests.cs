@@ -306,7 +306,6 @@ namespace System.Net.Security.Tests
                     EnabledSslProtocols = sslProtocol,
                     CertificateRevocationCheckMode = X509RevocationMode.NoCheck,
                     RemoteCertificateValidationCallback = (sender, cert, chain, errors) => true,
-                    ClientCertificateContext = SslStreamCertificateContext.Create(Configuration.Certificates.GetClientCertificate(), null, false)
                 };
 
             return TestNoResumeAfterChange(serverOptions, clientOptions,

@@ -796,9 +796,8 @@ namespace System
                     vlb.AppendSpan(precision).Fill(TChar.CastFrom('0'));
                 }
 
-                // Exponent sign is always emitted ('+' or '-'), consistent with the 'E' format.
                 vlb.Append(TChar.CastFrom(fmt == 'X' ? 'P' : 'p'));
-                vlb.Append(TChar.CastFrom('+'));
+                vlb.Append(info.PositiveSignTChar<TChar>());
                 vlb.Append(TChar.CastFrom('0'));
 
                 return;
@@ -946,22 +945,18 @@ namespace System
                 }
             }
 
-            // Emit exponent: p+NNN or p-NNN
-            // The exponent sign is always ASCII '+'/'-' per IEEE 754 §5.12.3,
-            // independent of NumberFormatInfo (which only governs the leading value sign).
             vlb.Append(TChar.CastFrom(fmt == 'X' ? 'P' : 'p'));
 
             if (actualExponent >= 0)
             {
-                vlb.Append(TChar.CastFrom('+'));
+                vlb.Append(info.PositiveSignTChar<TChar>());
             }
             else
             {
-                vlb.Append(TChar.CastFrom('-'));
+                vlb.Append(info.NegativeSignTChar<TChar>());
                 actualExponent = -actualExponent;
             }
 
-            // Write exponent digits
             Debug.Assert(actualExponent >= 0);
             int digitCount = FormattingHelpers.CountDigits((uint)actualExponent);
             TChar* pExponent = stackalloc TChar[digitCount];
