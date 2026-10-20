@@ -321,61 +321,26 @@ StackWalkAction GcStackCrawlCallBack(CrawlFrame* pCF, VOID* pData)
                 GcReportLoaderAllocator(gcctx->f, gcctx->sc, pMD->GetLoaderAllocator());
             }
 
-            if (fReportGCReferences
-#ifdef USE_GC_INFO_DECODER
-                && !pCF->IsFrameless()
-#endif
-                )
+            if (fReportGCReferences && !pCF->IsFrameless())
             {
                 GenericParamContextType paramContextType = GENERIC_PARAM_CONTEXT_NONE;
                 PTR_VOID paramTypeArg = NULL;
 
-#ifndef USE_GC_INFO_DECODER
-                if (pCF->IsFrameless())
+                if (pMD->RequiresInstMethodDescArg())
+                    paramContextType = GENERIC_PARAM_CONTEXT_METHODDESC;
+                else if (pMD->RequiresInstMethodTableArg())
+                    paramContextType = GENERIC_PARAM_CONTEXT_METHODTABLE;
+
+                if (paramContextType != GENERIC_PARAM_CONTEXT_NONE)
                 {
-                    if (pMD->RequiresInstMethodTableArg() ||
-                        pMD->RequiresInstMethodDescArg())
+                    if (pCF->GetFrame()->GetFrameIdentifier() == FrameIdentifier::StubDispatchFrame &&
+                        (dac_cast<PTR_StubDispatchFrame>(pCF->GetFrame()))->SuppressParamTypeArg())
                     {
-                        // We need to grab the Context Type here because there are cases where the MethodDesc
-                        // is shared, and thus indicates there should be an instantion argument, but the JIT
-                        // was still allowed to optimize it away and we won't grab it below because we're not
-                        // reporting any references from this frame.
-                        paramContextType = pCF->GetCodeManager()->GetParamContextType(
-                            pCF->GetRegisterSet(),
-                            pCF->GetCodeInfo(),
-                            &paramTypeArg);
-                    }
-#ifdef _DEBUG
-                    else if (pMD->AcquiresInstMethodTableFromThis())
-                    {
-                        GenericParamContextType debugContextType = pCF->GetCodeManager()->GetParamContextType(pCF->GetRegisterSet(), pCF->GetCodeInfo());
-                        _ASSERTE(debugContextType == GENERIC_PARAM_CONTEXT_NONE || debugContextType == GENERIC_PARAM_CONTEXT_THIS);
+                        paramContextType = GENERIC_PARAM_CONTEXT_NONE;
                     }
                     else
                     {
-                        _ASSERTE(pCF->GetCodeManager()->GetParamContextType(pCF->GetRegisterSet(), pCF->GetCodeInfo()) == GENERIC_PARAM_CONTEXT_NONE);
-                    }
-#endif // _DEBUG
-                }
-                else
-#endif // !USE_GC_INFO_DECODER
-                {
-                    if (pMD->RequiresInstMethodDescArg())
-                        paramContextType = GENERIC_PARAM_CONTEXT_METHODDESC;
-                    else if (pMD->RequiresInstMethodTableArg())
-                        paramContextType = GENERIC_PARAM_CONTEXT_METHODTABLE;
-
-                    if (paramContextType != GENERIC_PARAM_CONTEXT_NONE)
-                    {
-                        if (pCF->GetFrame()->GetFrameIdentifier() == FrameIdentifier::StubDispatchFrame &&
-                            (dac_cast<PTR_StubDispatchFrame>(pCF->GetFrame()))->SuppressParamTypeArg())
-                        {
-                            paramContextType = GENERIC_PARAM_CONTEXT_NONE;
-                        }
-                        else
-                        {
-                            paramTypeArg = pCF->GetParamTypeArg();
-                        }
+                        paramTypeArg = pCF->GetParamTypeArg();
                     }
                 }
 
@@ -388,7 +353,6 @@ StackWalkAction GcStackCrawlCallBack(CrawlFrame* pCF, VOID* pData)
                         MethodDesc *pMDReal = dac_cast<PTR_MethodDesc>(paramTypeArg);
                         // Async methods may be in a state when the context is not yet restored from continuation.
                         // We will allow that. The context is reachable via continuation in such case.
-                        _ASSERTE((pMDReal != NULL) || !pCF->IsFrameless() || pMD->IsAsyncMethod());
                         if (pMDReal != NULL)
                         {
                             GcReportLoaderAllocator(gcctx->f, gcctx->sc, pMDReal->GetLoaderAllocator());
@@ -399,7 +363,6 @@ StackWalkAction GcStackCrawlCallBack(CrawlFrame* pCF, VOID* pData)
                         MethodTable *pMTReal = dac_cast<PTR_MethodTable>(paramTypeArg);
                         // Async methods may be in a state when the context is not yet restored from continuation.
                         // We will allow that. The context is reachable via continuation in such case.
-                        _ASSERTE((pMTReal != NULL) || !pCF->IsFrameless() || pMD->IsAsyncMethod());
                         if (pMTReal != NULL)
                         {
                             GcReportLoaderAllocator(gcctx->f, gcctx->sc, pMTReal->GetLoaderAllocator());
