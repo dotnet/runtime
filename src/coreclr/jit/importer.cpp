@@ -9715,8 +9715,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     case CORINFO_FIELD_STATIC_SHARED_STATIC_HELPER:
                     case CORINFO_FIELD_STATIC_ADDRESS:
                     case CORINFO_FIELD_STATIC_RELOCATABLE:
-                        // Replace static read-only fields with constant if possible
-                        if ((aflags & CORINFO_ACCESS_GET) && (fieldInfo.fieldFlags & CORINFO_FLG_FIELD_FINAL))
+                        // Volatile reads must retain their acquire semantics even when the value is constant.
+                        if ((aflags & CORINFO_ACCESS_GET) && (fieldInfo.fieldFlags & CORINFO_FLG_FIELD_FINAL) &&
+                            ((indirFlags & GTF_IND_VOLATILE) == 0))
                         {
                             GenTree* newTree = impImportStaticReadOnlyField(resolvedToken.hField, resolvedToken.hClass);
 
