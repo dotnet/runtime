@@ -5,10 +5,6 @@
 {
 }
 
-.assembly extern System.Runtime.InteropServices
-{
-}
-
 .assembly CalliTests
 {
 }
@@ -34,36 +30,8 @@
         ret
     }
 
-    .method private hidebysig static string ReturnsString() cil managed
-    {
-        ldnull
-        ret
-    }
-
-    .method private hidebysig static object ReturnsObject() cil managed
-    {
-        ldnull
-        ret
-    }
-
-    .method private hidebysig static void TakesString(string s) cil managed
-    {
-        ret
-    }
-
-    .method private hidebysig static void TakesObject(object o) cil managed
-    {
-        ret
-    }
-
     .method private hidebysig instance void InstanceTarget(int32 x) cil managed
     {
-        ret
-    }
-
-    .method private hidebysig static void UnmanagedTarget() cil managed
-    {
-        .custom instance void [System.Runtime.InteropServices]System.Runtime.InteropServices.UnmanagedCallersOnlyAttribute::.ctor() = ( 01 00 00 00 )
         ret
     }
 
@@ -124,132 +92,12 @@
         ret
     }
 
-    .method public hidebysig instance void Calli.ImplicitThisFromLdftn_Invalid_Unverifiable() cil managed
-    {
-        ldarg.0
-        ldc.i4.1
-        ldftn instance void CalliTests::InstanceTarget(int32)
-        calli instance void(int32)
-        ret
-    }
-
-    .method public hidebysig static void Calli.ImplicitThisMismatch_Invalid_Unverifiable.StackUnexpected() cil managed
-    {
-        ldstr "this"
-        ldc.i4.1
-        ldftn instance void CalliTests::InstanceTarget(int32)
-        calli instance void(int32)
-        ret
-    }
-
-    // The 'this' of a value type's instance method is a managed pointer.
-    .method public hidebysig static void Calli.ValueTypeThisFromLdftn_Invalid_Unverifiable() cil managed
-    {
-        .locals init (valuetype CalliStruct V_0)
-        ldloca.s V_0
-        ldftn instance void CalliStruct::InstanceTarget()
-        calli instance void()
-        ret
-    }
-
     .method public hidebysig instance void Calli.ExplicitThis_Invalid_Unverifiable() cil managed
     {
         ldarg.0
         ldc.i4.1
         ldftn instance void CalliTests::InstanceTarget(int32)
         calli instance explicit void(class CalliTests, int32)
-        ret
-    }
-
-    .method public hidebysig instance void Calli.StaticSiteForInstanceTarget_Invalid_Unverifiable() cil managed
-    {
-        ldarg.0
-        ldc.i4.1
-        ldftn instance void CalliTests::InstanceTarget(int32)
-        calli void(class CalliTests, int32)
-        ret
-    }
-
-    .method public hidebysig static void Calli.TargetParameterMismatch_Invalid_Unverifiable.CalliSignatureMismatch() cil managed
-    {
-        ldc.i4.1
-        ldftn void CalliTests::TakesString(string)
-        calli void(int32)
-        ret
-    }
-
-    .method public hidebysig static void Calli.TargetParameterContravariant_Invalid_Unverifiable() cil managed
-    {
-        ldstr "argument"
-        ldftn void CalliTests::TakesObject(object)
-        calli void(string)
-        ret
-    }
-
-    .method public hidebysig static void Calli.TargetParameterCovariant_Invalid_Unverifiable.CalliSignatureMismatch() cil managed
-    {
-        ldnull
-        ldftn void CalliTests::TakesString(string)
-        calli void(object)
-        ret
-    }
-
-    .method public hidebysig static void Calli.TargetReturnMismatch_Invalid_Unverifiable.CalliSignatureMismatch() cil managed
-    {
-        ldftn int32 CalliTests::ReturnsInt32()
-        calli void()
-        ret
-    }
-
-    .method public hidebysig static void Calli.TargetReturnCovariant_Invalid_Unverifiable() cil managed
-    {
-        ldftn string CalliTests::ReturnsString()
-        calli object()
-        pop
-        ret
-    }
-
-    .method public hidebysig static void Calli.TargetReturnContravariant_Invalid_Unverifiable.CalliSignatureMismatch() cil managed
-    {
-        ldftn object CalliTests::ReturnsObject()
-        calli string()
-        pop
-        ret
-    }
-
-    .method public hidebysig static void Calli.TargetArgumentCountMismatch_Invalid_Unverifiable.CalliSignatureMismatch() cil managed
-    {
-        ldftn void CalliTests::StaticTarget(int32)
-        calli void()
-        ret
-    }
-
-    .method public hidebysig static void Calli.TargetCallingConventionMismatch_Invalid_Unverifiable.CalliSignatureMismatch() cil managed
-    {
-        ldftn void CalliTests::ManagedTarget()
-        calli unmanaged cdecl void()
-        ret
-    }
-
-    .method public hidebysig static void Calli.UnmanagedCallersOnly_Invalid_Unverifiable() cil managed
-    {
-        ldftn void CalliTests::UnmanagedTarget()
-        calli unmanaged cdecl void()
-        ret
-    }
-
-    .method public hidebysig static void Calli.UnmanagedCallersOnlyManagedSite_Invalid_Unverifiable.CalliSignatureMismatch() cil managed
-    {
-        ldftn void CalliTests::UnmanagedTarget()
-        calli void()
-        ret
-    }
-
-    // An UnmanagedCallersOnly method cannot be called through a managed vararg call site either.
-    .method public hidebysig static void Calli.UnmanagedCallersOnlyVarargSite_Invalid_Unverifiable.CalliSignatureMismatch() cil managed
-    {
-        ldftn void CalliTests::UnmanagedTarget()
-        calli vararg void()
         ret
     }
 
@@ -327,17 +175,6 @@
     {
         ldarg.0
         call instance void [System.Runtime]System.Object::.ctor()
-        ret
-    }
-}
-
-.class public sequential ansi sealed beforefieldinit CalliStruct
-        extends [System.Runtime]System.ValueType
-{
-    .field public int32 Value
-
-    .method public hidebysig instance void InstanceTarget() cil managed
-    {
         ret
     }
 }

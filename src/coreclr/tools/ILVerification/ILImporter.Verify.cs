@@ -1868,10 +1868,6 @@ namespace Internal.IL
             if (implicitThis && tailCall)
                 Check(!IsByRefLike(args[0]), VerifierError.TailByRef, args[0]);
 
-            // A method pointer pushed by ldftn or ldvirtftn carries its method, so the call site can be checked against it.
-            if (ftn.IsMethod)
-                CheckCalliTarget(ftn.Method, sig, args);
-
             if (tailCall)
                 CheckTailCallReturn(sig.ReturnType);
 
@@ -1883,51 +1879,6 @@ namespace Internal.IL
                     returnValue.SetIsPermanentHome();
 
                 Push(returnValue);
-            }
-        }
-
-        /// <summary>
-        /// Checks the call site of a calli against the method that the method pointer was loaded from.
-        /// ECMA-335 III.3.20 (Correctness) requires the method's signature to be method-signature compatible-with
-        /// the call site's, ignoring HASTHIS and EXPLICITTHIS, so 'this' is compared as a first parameter
-        /// (I.8.7.1). Parameter and return types are compared in the same direction as in IsDelegateAssignable.
-        /// </summary>
-        void CheckCalliTarget(MethodDesc target, MethodSignature site, StackValue[] args)
-        {
-            MethodSignature targetSig = target.Signature;
-            int firstTargetParameter = (targetSig.IsStatic || targetSig.IsExplicitThis) ? 0 : 1;
-            int firstSiteParameter = args.Length - site.Length;
-
-            // Metadata gives an UnmanagedCallersOnly method a managed signature, but it is called through an unmanaged
-            // call site. Only managed vs unmanaged is compared; the attribute's CallConvs are not.
-            var callingConvention = site.Flags & MethodSignatureFlags.UnmanagedCallingConventionMask;
-            bool callingConventionMatches = target.IsUnmanagedCallersOnly ?
-                callingConvention is not (MethodSignatureFlags.None or MethodSignatureFlags.CallingConventionVarargs) :
-                callingConvention == (targetSig.Flags & MethodSignatureFlags.UnmanagedCallingConventionMask);
-
-            if (!callingConventionMatches ||
-                targetSig.Length + firstTargetParameter != args.Length ||
-                !IsAssignable(targetSig.ReturnType, site.ReturnType))
-            {
-                VerificationError(VerifierError.CalliSignatureMismatch);
-                return;
-            }
-
-            for (int i = 0; i < args.Length; i++)
-            {
-                TypeDesc targetType = i < firstTargetParameter ?
-                    (target.OwningType.IsValueType ? target.OwningType.MakeByRefType() : target.OwningType) :
-                    targetSig[i - firstTargetParameter];
-
-                if (i < firstSiteParameter)
-                {
-                    // The call site does not give the type of 'this', so check the argument itself.
-                    CheckIsAssignable(args[i], StackValue.CreateFromType(targetType));
-                }
-                else if (!IsAssignable(site[i - firstSiteParameter], targetType))
-                {
-                    VerificationError(VerifierError.CalliSignatureMismatch);
-                }
             }
         }
 

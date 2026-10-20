@@ -143,7 +143,6 @@ namespace ILVerify
         EHClauseFilterEnd, // A filter must have exactly one endfilter as its last instruction.
         UnalignedAlignment, // Alignment specified for 'unaligned.' must be 1, 2, or 4.
         ExpectedSignatureToken, // Expected signature token.
-        CalliSignatureMismatch, // Method pointer signature does not match the calli call-site signature.
         ReadOnlyInMkrefany, // A readonly ByRef cannot be used with mkrefany.
     }
 }

@@ -168,9 +168,6 @@
   <data name="CallVirtOnValueType" xml:space="preserve">
     <value>Callvirt on a value type method.</value>
   </data>
-  <data name="CalliSignatureMismatch" xml:space="preserve">
-    <value>Method pointer signature does not match the calli call-site signature.</value>
-  </data>
   <data name="CatchByRef" xml:space="preserve">
     <value>ByRef not allowed as catch type.</value>
   </data>
