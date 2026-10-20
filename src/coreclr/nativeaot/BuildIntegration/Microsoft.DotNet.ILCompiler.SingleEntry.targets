@@ -39,6 +39,9 @@
     <_linuxToken>linux-</_linuxToken>
     <_linuxLibcFlavor Condition="$(_targetOS.StartsWith($(_linuxToken)))">$(_targetOS.SubString($(_linuxToken.Length)))</_linuxLibcFlavor>
     <_linuxLibcFlavor Condition="'$(_targetOS)' == 'android'">bionic</_linuxLibcFlavor>
+    <!-- openharmony is a standalone RID but uses musl libc; the target OS name is accepted
+         through the shared CommandLineHelpers mapping. -->
+    <_linuxLibcFlavor Condition="'$(_targetOS)' == 'openharmony'">musl</_linuxLibcFlavor>
     <_targetOS Condition="$(_targetOS.StartsWith($(_linuxToken)))">linux</_targetOS>
 
     <!-- linux-bionic on ARM uses armel (softfp) ABI -->
