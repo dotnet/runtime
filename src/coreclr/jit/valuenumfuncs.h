@@ -158,6 +158,7 @@ ValueNumFuncDef(GetStaticAddrTLS, 1, false, true)
 
 ValueNumFuncDef(VirtualFuncPtr, 3, false, true)
 ValueNumFuncDef(GVMLookupForSlot, 2, false, true)
+ValueNumFuncDef(InterfaceLookupForSlot, 2, false, true)
 ValueNumFuncDef(ReadyToRunVirtualFuncPtr, 2, false, true)
 
 ValueNumFuncDef(JitNew, 2, false, true)
