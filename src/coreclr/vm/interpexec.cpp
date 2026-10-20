@@ -594,7 +594,12 @@ void InvokeCalliStub(PCODE ftn, InterpreterCalliCookie cookie, int8_t *pArgs, in
         pContinuationRet = &continuationUnused;
     }
 
-    pHeader->Invoke(pHeader->Routines, pArgs, pRet, pHeader->TotalStackSize, pContinuationRet);
+    // The target may still be a prestub, whose compilation can raise a managed SEH exception.
+    CallWithSEHWrapper(
+        [&]() {
+            pHeader->Invoke(pHeader->Routines, pArgs, pRet, pHeader->TotalStackSize, pContinuationRet);
+            return 0;
+        });
 }
 
 InterpreterCalliCookie GetCookieForCalliSig(MetaSig metaSig, MethodDesc *pContextMD)
