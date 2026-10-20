@@ -1854,7 +1854,6 @@ namespace System.Net.Security.Tests
                 ? TlsContext.CreateServer(new SslServerAuthenticationOptions
                 {
                     ServerCertificateContext = certificateContext,
-                    ClientCertificateRequired = true,
                     EnabledSslProtocols = SslProtocols.Tls12,
                     AllowTlsResume = false,
                     CertificateChainPolicy = chainPolicy,
