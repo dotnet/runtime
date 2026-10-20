@@ -9369,6 +9369,41 @@ public:
     // Used for respective assertion propagations.
     AssertionIndex optAssertionIsSubrange(GenTree* tree, IntegralRange range, ASSERT_VALARG_TP assertions);
     bool optAssertionVNIsSubtype(ValueNum objVN, ValueNum castToVN, ASSERT_VALARG_TP assertions, int budget = 10);
+
+private:
+    // Memo for the PHI walk in optAssertionVNIsSubtype. The walk reads each edge's own
+    // assertion set rather than the caller's, so its answer depends only on the value and
+    // the claim; that pair is the key. `memo` itself lives on the top-level frame, which
+    // is what scopes it to one query.
+    struct SubtypeKey
+    {
+        ValueNum value;
+        ValueNum claim;
+    };
+
+    struct SubtypeKeyFuncs
+    {
+        static bool Equals(const SubtypeKey& x, const SubtypeKey& y)
+        {
+            return (x.value == y.value) && (x.claim == y.claim);
+        }
+
+        static unsigned GetHashCode(const SubtypeKey& x)
+        {
+            unsigned hash = static_cast<unsigned>(x.value);
+            hash ^= static_cast<unsigned>(x.claim) + 0x9e3779b9 + (hash << 19) + (hash >> 13);
+            return hash;
+        }
+    };
+
+    typedef JitHashTable<SubtypeKey, SubtypeKeyFuncs, bool> SubtypeMemoMap;
+
+    // The body, without memoisation. Callers must go through optAssertionVNIsSubtype.
+    // `memo` is allocated on the first proof and belongs to the top-level query.
+    bool optAssertionVNIsSubtypeWorker(
+        ValueNum objVN, ValueNum castToVN, ASSERT_VALARG_TP assertions, int budget, SubtypeMemoMap*& memo);
+
+public:
     bool optAssertionVNIsNonNull(ValueNum vn, ASSERT_VALARG_TP assertions, int budget = 10);
     bool optAssertionIsNonNull(GenTree* op, ASSERT_VALARG_TP assertions);
 
