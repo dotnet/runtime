@@ -124,6 +124,25 @@ test("scanner eval and production use the same GitHub backend toolsets", async (
     );
 });
 
+for (const workflowId of ["ci-failure-scan", "ci-failure-scan-feedback"]) {
+    test(`${workflowId} uses the Responses API in the firewall's offline provider mode`, async () => {
+        const workflow = await readFile(new URL(`../${workflowId}.md`, import.meta.url), "utf8");
+        const engine = workflow.match(/^engine:\r?\n((?:^ .*(?:\r?\n|$))+)/m);
+        assert.ok(engine, "production engine configuration was not found");
+        assert.match(engine[1], /^    COPILOT_PROVIDER_WIRE_API: responses\r?$/m);
+
+        const compiled = await readFile(new URL(`../${workflowId}.lock.yml`, import.meta.url), "utf8");
+        const executionSteps = [...compiled.matchAll(
+            /^      - name: [^\r\n]+\r?\n        id: (agentic_execution|detection_agentic_execution)\r?\n([\s\S]*?)(?=^      - |^  \S|(?![\s\S]))/gm
+        )];
+        for (const stepId of ["agentic_execution", "detection_agentic_execution"]) {
+            const steps = executionSteps.filter(([, id]) => id === stepId);
+            assert.equal(steps.length, 1, `expected one ${stepId} execution step`);
+            assert.match(steps[0][2], /^          COPILOT_PROVIDER_WIRE_API: responses\r?$/m);
+        }
+    });
+}
+
 test("production wrapper rejects incomplete results", async () => {
     await assert.rejects(
         runProductionSearch({ ...validResult(), incomplete_results: true }),

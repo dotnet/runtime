@@ -1,0 +1,59 @@
+parameters:
+  osGroup: 'linux'
+
+steps:
+  - ${{ if ne(parameters.osGroup, 'windows') }}:
+    - script: |
+        set -euo pipefail
+
+        dotnet="$(Build.SourcesDirectory)/.dotnet/dotnet"
+        sdkVersion="$("$dotnet" --version)"
+        compilerServer="$(Build.SourcesDirectory)/.dotnet/sdk/$sdkVersion/Roslyn/bincore/VBCSCompiler.dll"
+
+        echo "Roslyn compiler cache before pruning:"
+        du -sh "$ROSLYN_CACHE_PATH"
+
+        purgeOutput="$("$dotnet" "$compilerServer" \
+          "-purgecache:${ROSLYN_CACHE_BUILD_START}" \
+          "-cachepath:${ROSLYN_CACHE_PATH}")"
+        echo "$purgeOutput"
+        if ! grep -Eq 'Errors: 0$' <<< "$purgeOutput"; then
+            echo "Roslyn compiler cache pruning reported errors." >&2
+            exit 1
+        fi
+
+        echo "Roslyn compiler cache after pruning:"
+        du -sh "$ROSLYN_CACHE_PATH"
+        df -h "$ROSLYN_CACHE_PATH"
+      displayName: Prune Roslyn compiler cache
+      continueOnError: true
+      condition: and(succeeded(), ne(variables['ROSLYN_CACHE_PATH'], ''))
+
+  - ${{ if eq(parameters.osGroup, 'windows') }}:
+    - pwsh: |
+        $ErrorActionPreference = 'Stop'
+        $dotnet = Join-Path "$(Build.SourcesDirectory)" ".dotnet\dotnet.exe"
+        $sdkVersion = (& $dotnet --version).Trim()
+        if ($LASTEXITCODE -ne 0) {
+          throw "Failed to determine the .NET SDK version."
+        }
+        $compilerServer = Join-Path "$(Build.SourcesDirectory)" ".dotnet\sdk\$sdkVersion\Roslyn\bincore\VBCSCompiler.dll"
+
+        [long]$cacheSize = (Get-ChildItem -LiteralPath $env:ROSLYN_CACHE_PATH -Recurse -File | Measure-Object -Property Length -Sum).Sum
+        Write-Host "Roslyn compiler cache before pruning: $cacheSize bytes"
+
+        $purgeOutput = & $dotnet $compilerServer `
+          "-purgecache:$env:ROSLYN_CACHE_BUILD_START" `
+          "-cachepath:$env:ROSLYN_CACHE_PATH"
+        Write-Host ($purgeOutput -join [Environment]::NewLine)
+        if ($LASTEXITCODE -ne 0 -or ($purgeOutput -join [Environment]::NewLine) -notmatch 'Errors: 0$') {
+          throw "Roslyn compiler cache pruning failed or reported errors."
+        }
+
+        [long]$cacheSize = (Get-ChildItem -LiteralPath $env:ROSLYN_CACHE_PATH -Recurse -File | Measure-Object -Property Length -Sum).Sum
+        Write-Host "Roslyn compiler cache after pruning: $cacheSize bytes"
+        $drive = [System.IO.DriveInfo]::new([System.IO.Path]::GetPathRoot($env:ROSLYN_CACHE_PATH))
+        Write-Host "Available disk space: $($drive.AvailableFreeSpace) bytes"
+      displayName: Prune Roslyn compiler cache
+      continueOnError: true
+      condition: and(succeeded(), ne(variables['ROSLYN_CACHE_PATH'], ''))

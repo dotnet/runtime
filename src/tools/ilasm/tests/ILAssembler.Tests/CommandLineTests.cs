@@ -9,6 +9,26 @@ namespace ILAssembler.Tests;
 
 public class CommandLineTests
 {
+    [Fact]
+    public void Pseudoattributes_ModernOptionIsOptIn()
+    {
+        IlasmRootCommand command = new();
+        Assert.False(command.Parse(["input.il"]).GetValue(command.PseudoAttributes));
+        Assert.True(command.Parse(NativeCommandLine.Normalize(["--pseudoattributes", "input.il"]))
+            .GetValue(command.PseudoAttributes));
+        Assert.Empty(command.PseudoAttributes.Aliases);
+    }
+
+    [Theory]
+    [InlineData("-pseudoattributes", false)]
+    [InlineData("-PSE", false)]
+    [InlineData("/pseudoattributes", true)]
+    [InlineData("/PSE", true)]
+    public void Pseudoattributes_LegacyOptionIsRejected(string argument, bool allowSlashOptions)
+    {
+        Assert.Throws<ArgumentException>(() => NativeCommandLine.Normalize([argument], allowSlashOptions));
+    }
+
     public static TheoryData<string, string> NativeBooleanOptions { get; } = new()
     {
         { "32B", "--32bitpreferred" },
@@ -384,6 +404,7 @@ public class CommandLineTests
     [InlineData("-unknown", false)]
     [InlineData("-x", false)]
     [InlineData("-i", false)]
+    [InlineData("-PATHMAP=/src=/_", false)]
     [InlineData("/unknown", true)]
     public void UnrecognizedNativeOption_Throws(string argument, bool allowSlashOptions)
     {

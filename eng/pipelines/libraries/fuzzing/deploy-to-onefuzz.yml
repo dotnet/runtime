@@ -132,6 +132,14 @@ extends:
           inputs:
             onefuzzOSes: 'Windows'
           env:
+            onefuzzDropDirectory: $(fuzzerProject)/deployment/KerberosPacLogonInfoFuzzer
+            SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+          displayName: Send KerberosPacLogonInfoFuzzer to OneFuzz
+
+        - task: onefuzz-task@0
+          inputs:
+            onefuzzOSes: 'Windows'
+          env:
             onefuzzDropDirectory: $(fuzzerProject)/deployment/NrbfDecoderFuzzer
             SYSTEM_ACCESSTOKEN: $(System.AccessToken)
           displayName: Send NrbfDecoderFuzzer to OneFuzz

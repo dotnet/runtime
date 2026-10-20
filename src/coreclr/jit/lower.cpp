@@ -6217,8 +6217,12 @@ void Lowering::LowerCallStruct(GenTreeCall* call)
 //     store - The store node to lower.
 //
 // Notes:
-//    - the function is only for calls that return one register;
-//    - it spills the call's result if it can be retyped as a primitive type;
+//    The call returns its value in a single register. If the layout has a primitive register
+//    type, the store becomes a STOREIND of that type, so it writes exactly the struct's size
+//    and keeps the GC type of a lone GC field. On LoongArch64, RISC-V64 and Wasm, a struct
+//    whose only field is floating-point is returned in a floating-point register, so the
+//    store uses the call's floating type instead. Otherwise the result is spilled to a temp
+//    and copied with a block store.
 //
 void Lowering::LowerStoreSingleRegCallStruct(GenTreeBlk* store)
 {
@@ -6231,18 +6235,12 @@ void Lowering::LowerStoreSingleRegCallStruct(GenTreeBlk* store)
 
     if (regType != TYP_UNDEF)
     {
-#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_WASM)
         if (varTypeIsFloating(call->TypeGet()))
         {
             regType = call->TypeGet();
         }
 #endif
-
-#if defined(TARGET_WASM)
-        CorInfoWasmType wasmAbiType = m_compiler->info.compCompHnd->getWasmLowering(call->gtRetClsHnd);
-        assert(wasmAbiType != CORINFO_WASM_TYPE_VOID);
-        regType = WasmClassifier::ToJitType(wasmAbiType);
-#endif // TARGET_WASM
 
         store->ChangeType(regType);
         store->SetOper(GT_STOREIND);
@@ -11630,7 +11628,9 @@ bool Lowering::TryMakeIndirsAdjacent(GenTreeIndir* prevIndir, GenTreeIndir* indi
         {
             // 'cur' is part of data flow of 'indir', so we will be moving the
             // currently recorded effects past 'cur'.
-            if (m_scratchSideEffects.InterferesWith(m_compiler, cur, true))
+            // MarkTree does not track implicit flags dependencies.
+            if (cur->OperConsumesFlags() || cur->gtSetFlags() ||
+                m_scratchSideEffects.InterferesWith(m_compiler, cur, true))
             {
                 JITDUMP("Giving up due to interference with [%06u]\n", Compiler::dspTreeID(cur));
                 return false;
@@ -12289,18 +12289,35 @@ bool Lowering::TryDecomposeBlockStoreAsIndirs(GenTreeBlk* blkNode)
     var_types       srcAddrType   = TYP_UNDEF;
     unsigned        srcLclNum     = BAD_VAR_NUM;
     unsigned        srcLclOffs    = 0;
+    GenTreeFlags    srcIndFlags   = GTF_EMPTY;
 
     if (src->OperIs(GT_IND))
     {
         LIR::Use srcAddrUse(BlockRange(), &src->AsIndir()->Addr(), src);
         srcAddrType   = src->AsIndir()->Addr()->TypeGet();
         srcAddrLclNum = srcAddrUse.ReplaceWithLclVar(m_compiler);
+        srcIndFlags   = src->gtFlags & GTF_IND_FLAGS;
     }
     else
     {
         srcLclNum  = src->AsLclVarCommon()->GetLclNum();
         srcLclOffs = src->AsLclVarCommon()->GetLclOffs();
         m_compiler->lvaSetVarDoNotEnregister(srcLclNum DEBUGARG(DoNotEnregisterReason::BlockOp));
+
+        // Fields that cannot be encoded as LCL_FLDs are loaded through the local's address instead.
+        if (!m_compiler->IsValidLclAddr(srcLclNum, srcLclOffs + layout->GetSize() - 1))
+        {
+            src->ChangeOper(GT_LCL_ADDR);
+            src->ChangeType(TYP_I_IMPL);
+            src->AsLclFld()->SetLclOffs(srcLclOffs);
+            src->ClearContained();
+
+            LIR::Use srcAddrUse(BlockRange(), &blkNode->Data(), blkNode);
+            srcAddrType   = TYP_I_IMPL;
+            srcAddrLclNum = srcAddrUse.ReplaceWithLclVar(m_compiler);
+            srcIndFlags   = GTF_IND_NONFAULTING;
+            src           = blkNode->Data();
+        }
     }
 
     auto offsetAddr = [&](unsigned lclNum, var_types lclType, unsigned offset) -> GenTree* {
@@ -12314,13 +12331,12 @@ bool Lowering::TryDecomposeBlockStoreAsIndirs(GenTreeBlk* blkNode)
     };
 
     const GenTreeFlags dstIndFlags = blkNode->gtFlags & GTF_IND_FLAGS;
-    const GenTreeFlags srcIndFlags = src->OperIs(GT_IND) ? (src->gtFlags & GTF_IND_FLAGS) : GTF_EMPTY;
 
     auto emitStore = [&](unsigned offset, var_types scalarType, ClassLayout* runLayout) {
         const var_types valType = (runLayout != nullptr) ? TYP_STRUCT : scalarType;
 
         GenTree* srcVal;
-        if (src->OperIs(GT_IND))
+        if (srcAddrLclNum != BAD_VAR_NUM)
         {
             srcVal = m_compiler->gtNewLoadValueNode(valType, runLayout, offsetAddr(srcAddrLclNum, srcAddrType, offset),
                                                     srcIndFlags);

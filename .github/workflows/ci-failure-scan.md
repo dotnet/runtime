@@ -31,23 +31,16 @@ environment: copilot-pat-pool
 
 engine:
   id: copilot
+  harness:
+    # Log fetches can be quiet while the scan continues after its first issue output.
+    watchdog-timeout: 600
   env:
+    # GPT-6.1 requires Responses in the firewall's offline/BYOK mode.
+    COPILOT_PROVIDER_WIRE_API: responses
     COPILOT_GITHUB_TOKEN: ${{ case(needs.pat_pool.outputs.pat_number == '0', secrets.COPILOT_PAT_0, needs.pat_pool.outputs.pat_number == '1', secrets.COPILOT_PAT_1, needs.pat_pool.outputs.pat_number == '2', secrets.COPILOT_PAT_2, needs.pat_pool.outputs.pat_number == '3', secrets.COPILOT_PAT_3, needs.pat_pool.outputs.pat_number == '4', secrets.COPILOT_PAT_4, needs.pat_pool.outputs.pat_number == '5', secrets.COPILOT_PAT_5, needs.pat_pool.outputs.pat_number == '6', secrets.COPILOT_PAT_6, needs.pat_pool.outputs.pat_number == '7', secrets.COPILOT_PAT_7, needs.pat_pool.outputs.pat_number == '8', secrets.COPILOT_PAT_8, needs.pat_pool.outputs.pat_number == '9', secrets.COPILOT_PAT_9, 'NO COPILOT PAT AVAILABLE') }}
 
 model: gpt-6.1-sol
 max-ai-credits: 2500
-
-# gpt-6.1-sol is not yet in the built-in gh-aw v0.86.2 pricing table.
-models:
-  providers:
-    github-copilot:
-      models:
-        gpt-6.1-sol:
-          cost:
-            input: "2e-06"
-            output: "1e-05"
-            cache_read: "1e-07"
-            cache_write: "2.5e-06"
 
 concurrency:
   group: "ci-failure-scan"
@@ -63,7 +56,8 @@ tools:
     allowed-repos: [dotnet/runtime]
     min-integrity: approved
   edit:
-  bash: ["dotnet", "git", "find", "ls", "cat", "grep", "head", "tail", "wc", "curl", "jq", "tee", "sed", "awk", "tr", "cut", "sort", "uniq", "xargs", "echo", "date", "mkdir", "test", "env", "basename", "dirname", "bash", "sh", "chmod"]
+  # read consumes lines in loops; : is Bash's no-op for an empty loop body.
+  bash: ["dotnet", "git", "find", "ls", "cat", "grep", "head", "tail", "wc", "curl", "jq", "tee", "sed", "awk", "tr", "cut", "sort", "uniq", "xargs", "echo", "date", "mkdir", "test", "env", "basename", "dirname", "bash", "sh", "chmod", "read", ":"]
 
 mcp-scripts:
   search-kbe-issues:

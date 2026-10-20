@@ -787,11 +787,17 @@ For a main R2R method, the fixed frame begins at `$fp`. If the method does not u
 
 | Offset from `$fp` | Contents |
 |---:|---|
-| `0` | R2R function table entry index for the main method body |
+| `0` | Frame identity |
 | `TARGET_POINTER_SIZE` | Function-local virtual IP divided by 2 |
 | `2 * TARGET_POINTER_SIZE` and above | Other frame locals and spills |
 
-The main method prolog stores the function table entry index at `$fp[0]`. The JIT updates the virtual IP slot at block boundaries that can be observed by GC or EH. For the main method this update is a store to the special virtual-IP local, which is allocated at `$fp + TARGET_POINTER_SIZE`.
+An ordinary managed method stores its incoming portable entrypoint (PEP) at `$fp[0]`. Managed JIT helper methods instead store a constant negative odd identity, `-(2 * runtimeFunctionIndex + 1)`, because helper callers can pass zero for the PEP argument. The index is the helper's entry in the runtime-functions table of the first R2R image, which must represent CoreLib (including a composite image containing CoreLib). The object writer resolves this constant after runtime-function layout and encodes it using minimal signed LEB128.
+
+Reverse-P/Invoke methods have no PEP argument. They store a positive odd identity, `2 * functionTableIndex + 1`, using their runtime function-table index. Registered function-table indices must be nonzero and below `2^30`, so these identities remain positive and do not overlap the negative helper identities or the sentinel `1`.
+
+PEPs are pointer-aligned. Funclets store their pointer-aligned establishing frame pointer plus `2`, reserving low bits `10`. This distinguishes them from PEPs (low bits `00`) and odd index identities without constraining the linear-memory address range. Stack processing recognizes the exact sentinel values `0` and `1` before decoding identities.
+
+The JIT updates the virtual IP slot at block boundaries that can be observed by GC or EH. For the main method this update is a store to the special virtual-IP local, which is allocated at `$fp + TARGET_POINTER_SIZE`.
 
 Frames with `localloc` use the same fixed-frame unwind data. When a nonzero `localloc` moves `$sp` below `$fp`, the JIT reserves one aligned slot below the allocation and writes `0` at `$sp[0]` and the fixed frame pointer at `$sp + TARGET_POINTER_SIZE`.
 
@@ -800,7 +806,7 @@ Frames with `localloc` use the same fixed-frame unwind data. When a nonzero `loc
 | caller frame | caller's frame |
 | `$fp + 2 * TARGET_POINTER_SIZE` and above | other fixed frame locals and spills |
 | `$fp + TARGET_POINTER_SIZE` | function-local virtual IP divided by 2 |
-| `$fp` | R2R function table entry index |
+| `$fp` | Frame identity |
 | below `$fp` | dynamic `localloc` allocation |
 | `$sp + TARGET_POINTER_SIZE` | saved `$fp` |
 | `$sp` | `0` marker |
@@ -809,10 +815,12 @@ Funclets are separate Wasm functions. A funclet is called with the current manag
 
 | Offset from funclet `$sp` after prolog | Contents |
 |---:|---|
-| `0` | R2R function table entry index for the funclet |
+| `0` | Establishing frame pointer plus `2` |
 | `TARGET_POINTER_SIZE` | Function-local virtual IP divided by 2 |
 
-The funclet updates its virtual IP slot by storing through its current `$sp`, not through the parent `$fp`. The stored virtual IP value is still relative to the controlling main method's virtual-IP base; when the frame's function table index names a funclet, the runtime uses the controlling main method's runtime-function entry as the virtual-IP base before adding the stored offset. A frame whose first word is `0` means the current `$sp` is not the R2R frame base, and the next word holds the saved `$fp`. A frame whose first word is `TERMINATE_R2R_STACK_WALK` terminates R2R stack walking.
+The funclet updates its virtual IP slot by storing through its current `$sp`, not through the parent `$fp`. The stored virtual IP value is still relative to the controlling main method's virtual-IP base. Stack processing follows the tagged establishing frame pointer and resolves that frame's identity before adding the physical funclet frame's local offset. It also recovers the logical method frame pointer directly from this tag, without unwinding through the funclet's callers. The funclet prolog does not load the establishing frame's identity or receive an additional PEP parameter.
+
+A frame whose first word is `0` means the current `$sp` is not the R2R frame base, and the next word holds the saved `$fp`. A frame whose first word is `TERMINATE_R2R_STACK_WALK` terminates R2R stack walking.
 
 One step of R2R stack walking is:
 
@@ -840,13 +848,22 @@ bool WalkOneR2RFrame(uint32_t currentSp, out uint32_t nextSp, out uint32_t curre
     if (frameBase == 0)
         return false;
 
-    uint32_t functionIndex = read32(frameBase);
+    uint32_t identity = read32(frameBase);
     uint32_t localVirtualIP = 2 * read32(frameBase + TARGET_POINTER_SIZE);
 
-    RuntimeFunction function = RuntimeFunctionFor(functionIndex);
-    RuntimeFunction baseFunction = function.IsFunclet ? ControllingMainFunction(function) : function;
-    currentVirtualIP = baseFunction.VirtualIPBase + localVirtualIP;
+    while ((identity & 3) == 2)
+        identity = read32(identity - 2);
 
+    uint32_t methodVirtualIP;
+    if ((identity & 1) == 0)
+        methodVirtualIP = VirtualIPForFunctionTableIndex(ActualCodeForPEP(identity));
+    else if ((int32_t)identity < 0)
+        methodVirtualIP = CoreLibRuntimeFunction((~identity) >> 1).VirtualIPBase;
+    else
+        methodVirtualIP = VirtualIPForFunctionTableIndex(identity >> 1);
+
+    currentVirtualIP = methodVirtualIP + localVirtualIP;
+    RuntimeFunction function = RuntimeFunctionForVirtualIP(currentVirtualIP);
     uint32_t frameSize = ReadFrameSizeFromWasmUnwindBlob(function);
     nextSp = frameBase + frameSize;
     return true;

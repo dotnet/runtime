@@ -219,3 +219,25 @@ bool comhost_test::typelib(const pal::string_t &comhost_path, int count)
     }
     return true;
 }
+
+bool comhost_test::load_context(const std::vector<pal::string_t> &comhost_paths, const std::vector<pal::string_t> &clsid_strings)
+{
+    if (comhost_paths.size() != clsid_strings.size())
+        return false;
+
+    for (size_t i = 0; i < comhost_paths.size(); ++i)
+    {
+        CLSID clsid;
+        std::vector<char> clsidVect;
+        if (!get_clsid(clsid_strings[i], &clsid, clsidVect))
+            return false;
+
+        comhost_exports comhost(comhost_paths[i]);
+        HRESULT hr = activate_class(comhost, clsid);
+        log_activation(clsidVect.data(), static_cast<int>(i + 1), static_cast<int>(comhost_paths.size()), hr, std::cout);
+        if (FAILED(hr))
+            return false;
+    }
+
+    return true;
+}

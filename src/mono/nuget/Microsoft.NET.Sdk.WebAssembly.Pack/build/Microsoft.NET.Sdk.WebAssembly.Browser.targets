@@ -585,6 +585,33 @@ Copyright (c) .NET Foundation. All rights reserved.
       <WasmStaticWebAsset Include="@(_WasmMaterializedFrameworkAssets)" />
     </ItemGroup>
 
+    <!-- A nested publish that ran during this build (e.g. library tests) returns its composite ReadyToRun image.
+         It is not an assembly, so define it directly; the readyToRunComposite trait routes it to coreAssembly
+         with isCompositeImage set in the boot config. A regular publish defines it in ProcessPublishFilesForWasm. -->
+    <ItemGroup Condition="'@(_WasmNestedPublishCompositeR2RImage)' != ''">
+      <_WasmCompositeBuildCandidate Include="@(_WasmNestedPublishCompositeR2RImage)" KeepMetadata="OutputR2RImage" />
+      <_WasmCompositeBuildCandidate Update="@(_WasmCompositeBuildCandidate)"
+                                    ContentRoot="%(RootDir)%(Directory)"
+                                    RelativePath="_framework/%(FileName)%(Extension)" />
+    </ItemGroup>
+    <DefineStaticWebAssets Condition="'@(_WasmCompositeBuildCandidate)' != ''"
+      CandidateAssets="@(_WasmCompositeBuildCandidate)"
+      SourceId="$(PackageId)"
+      SourceType="Computed"
+      AssetKind="Build"
+      AssetMode="All"
+      AssetRole="Primary"
+      AssetTraitName="WasmResource"
+      AssetTraitValue="readyToRunComposite"
+      CopyToOutputDirectory="$(_WasmFrameworkCopyToOutputDirectory)"
+      CopyToPublishDirectory="Never"
+      FingerprintCandidates="$(_WasmFingerprintAssets)"
+      FingerprintPatterns="@(FingerprintPatterns);@(_WasmFingerprintPatterns)"
+      BasePath="$(StaticWebAssetBasePath)"
+    >
+      <Output TaskParameter="Assets" ItemName="WasmStaticWebAsset" />
+    </DefineStaticWebAssets>
+
     <DefineStaticWebAssets
       CandidateAssets="@(_WasmDiscoveredFileCandidates)"
       AssetTraitName="WasmResource"

@@ -167,20 +167,6 @@ void FILECanonicalizePath(LPSTR lpUnixPath);
 
 /*++
 Function:
-  FILEGetDirectoryFromFullPathA
-
-Parse the given path. If it contains a directory part and a file part,
-put the directory part into the supplied buffer, and return the number of
-characters written to the buffer. If the buffer is not large enough,
-return the required size of the buffer including the NULL character. If
-there is no directory part in the path, return 0.
---*/
-DWORD FILEGetDirectoryFromFullPathA( LPCSTR lpFullPath,
-                     DWORD  nBufferLength,
-                     LPSTR  lpBuffer );
-
-/*++
-Function:
   FILEGetLastErrorFromErrno
 
 Convert errno into the appropriate win32 error and return it.
@@ -215,4 +201,3 @@ void FILEGetProperNotFoundError( LPCSTR lpPath, LPDWORD lpErrorCode );
 }
 
 #endif /* _PAL_FILE_HPP_ */
-
