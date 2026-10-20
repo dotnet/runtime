@@ -628,8 +628,11 @@ namespace Internal.IL
 
         void CheckIsArray(StackValue value)
         {
-            Check((value.Kind == StackValueKind.ObjRef) && ((value.Type == null) || value.Type.IsSzArray),
-                VerifierError.ExpectedArray /* , value */);
+            if (!Check((value.Kind == StackValueKind.ObjRef) && ((value.Type == null) || value.Type.IsSzArray),
+                VerifierError.ExpectedArray /* , value */))
+            {
+                AbortBasicBlockVerification();
+            }
         }
 
         void CheckIsAssignable(StackValue src, StackValue dst, VerifierError error = VerifierError.StackUnexpected)
@@ -2552,7 +2555,8 @@ namespace Internal.IL
                 }
             }
 
-            Push(StackValue.CreateFromType(elementType));
+            // ldelem.ref on a null array has no element type; the result is a null reference
+            Push(elementType != null ? StackValue.CreateFromType(elementType) : StackValue.CreateObjRef(null));
         }
 
         void ImportStoreElement(int token)
