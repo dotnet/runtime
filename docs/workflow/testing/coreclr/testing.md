@@ -103,12 +103,6 @@ The override selects managed ilasm only for IL test compilation; ildasm continue
 use the original directory. It also applies to individual `.ilproj` builds and to
 the existing source-build configurations that set `ILAsmToolPath` automatically.
 
-The IL tools CI pipeline (`eng/pipelines/coreclr/ilasm.yml`) builds the shared AnyOS
-test assemblies with live managed ilasm. Its `ilasm` test group first builds
-`clr+libs` in Release for the build host, then sets `ILAsmToolPath` to that host's
-CoreCLR output directory for test compilation. Other test groups keep using the
-packaged native assembler.
-
 ### Building an Individual Test
 
 To build an individual test, you have to pass the `-test` flag along with the path to the test's `csproj` file to the build script. You can select more than one by repeating the `-test` flag. For example, let's try building a couple JIT tests:
