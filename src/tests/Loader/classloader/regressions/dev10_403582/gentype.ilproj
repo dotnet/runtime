@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk.IL">
   <PropertyGroup>
-    <ManagedIlasmRoundTripIncompatible>true</ManagedIlasmRoundTripIncompatible>
+    <!-- Generates invalid metadata, so managed ilasm emits an error when round-tripping, as expected. -->
+    <IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>
     <OutputType>Library</OutputType>
   </PropertyGroup>
   <ItemGroup>
