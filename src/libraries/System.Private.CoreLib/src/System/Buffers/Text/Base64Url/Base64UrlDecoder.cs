@@ -8,6 +8,7 @@ using System.Runtime.InteropServices;
 #if NET
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.Wasm;
 using System.Runtime.Intrinsics.X86;
 #endif
 using static System.Buffers.Text.Base64Helper;
@@ -22,7 +23,7 @@ namespace System.Buffers.Text
         private const int MaxStackallocThreshold = 256;
 
         /// <summary>
-        /// Returns the maximum length (in bytes) of the result if you were to decode base 64 encoded text from a span of size <paramref name="base64Length"/>.
+        /// Returns the maximum length (in bytes) of the result if you were to decode Base64Url-encoded text from a span of size <paramref name="base64Length"/>.
         /// </summary>
         /// <exception cref="ArgumentOutOfRangeException">The specified <paramref name="base64Length"/> is less than 0.
         /// </exception>
@@ -53,7 +54,7 @@ namespace System.Buffers.Text
         /// <param name="destination">The output span which contains the result of the operation, i.e. the decoded binary data.</param>
         /// <param name="bytesConsumed">When this method returns, contains the number of input bytes consumed during the operation. This can be used to slice the input for subsequent calls, if necessary. This parameter is treated as uninitialized.</param>
         /// <param name="bytesWritten">When this method returns, contains the number of bytes written into the output span. This can be used to slice the output for subsequent calls, if necessary. This parameter is treated as uninitialized.</param>
-        /// <param name="isFinalBlock"><see langword="true"/> when the input span contains the entirety of data to encode; <see langword="false"/> when more data may follow,
+        /// <param name="isFinalBlock"><see langword="true"/> when the input span contains the entirety of data to decode; <see langword="false"/> when more data may follow,
         /// such as when calling in a loop. Calls with <see langword="false"/> should be followed up with another call where this parameter is <see langword="true"/> call. The default is <see langword="true" />.</param>
         /// <returns>One of the enumeration values that indicates the success or failure of the operation.</returns>
         /// <remarks>
@@ -70,7 +71,7 @@ namespace System.Buffers.Text
         /// Decodes the span of UTF-8 encoded text in Base64Url into binary data, in-place.
         /// The decoded binary output is smaller than the text data contained in the input (the operation deflates the data).
         /// </summary>
-        /// <param name="buffer">The input span which contains the base 64 text data that needs to be decoded.</param>
+        /// <param name="buffer">The input span which contains the Base64Url text data that needs to be decoded.</param>
         /// <returns>The number of bytes written into <paramref name="buffer"/>. This can be used to slice the output for subsequent calls, if necessary.</returns>
         /// <exception cref="FormatException"><paramref name="buffer"/> contains an invalid Base64Url character,
         /// more than two padding characters, or a non white space character among the padding characters.</exception>
@@ -102,7 +103,7 @@ namespace System.Buffers.Text
         /// <param name="source">The input span which contains UTF-8 encoded text in Base64Url that needs to be decoded.</param>
         /// <param name="destination">The output span which contains the result of the operation, i.e. the decoded binary data.</param>
         /// <returns>The number of bytes written into <paramref name="destination"/>. This can be used to slice the output for subsequent calls, if necessary.</returns>
-        /// <exception cref="ArgumentException">The buffer in <paramref name="destination"/> is too small to hold the encoded output.</exception>
+        /// <exception cref="ArgumentException">The buffer in <paramref name="destination"/> is too small to hold the decoded output.</exception>
         /// <exception cref="FormatException"><paramref name="source"/> contains an invalid Base64Url character,
         /// more than two padding characters, or a non white space character among the padding characters.</exception>
         /// <remarks>
@@ -156,7 +157,7 @@ namespace System.Buffers.Text
         /// Decodes the span of UTF-8 encoded text represented as Base64Url into binary data.
         /// </summary>
         /// <param name="source">The input span which contains UTF-8 encoded text in Base64Url that needs to be decoded.</param>
-        /// <returns>>A byte array which contains the result of the decoding operation.</returns>
+        /// <returns>A byte array which contains the result of the decoding operation.</returns>
         /// <exception cref="FormatException"><paramref name="source"/> contains an invalid Base64Url character,
         /// more than two padding characters, or a non white space character among the padding characters.</exception>
         public static unsafe byte[] DecodeFromUtf8(ReadOnlySpan<byte> source)
@@ -187,7 +188,7 @@ namespace System.Buffers.Text
         /// <param name="destination">The output span which contains the result of the operation, i.e. the decoded binary data.</param>
         /// <param name="charsConsumed">When this method returns, contains the number of input chars consumed during the operation. This can be used to slice the input for subsequent calls, if necessary. This parameter is treated as uninitialized.</param>
         /// <param name="bytesWritten">When this method returns, contains the number of bytes written into the output span. This can be used to slice the output for subsequent calls, if necessary. This parameter is treated as uninitialized.</param>
-        /// <param name="isFinalBlock"><see langword="true"/> when the input span contains the entirety of data to encode; <see langword="false"/> when more data may follow,
+        /// <param name="isFinalBlock"><see langword="true"/> when the input span contains the entirety of data to decode; <see langword="false"/> when more data may follow,
         /// such as when calling in a loop. Calls with <see langword="false"/> should be followed up with another call where this parameter is <see langword="true"/> call. The default is <see langword="true" />.</param>
         /// <returns>One of the enumeration values that indicates the success or failure of the operation.</returns>
         /// <remarks>
@@ -208,7 +209,7 @@ namespace System.Buffers.Text
         /// <param name="source">The input span which contains ASCII chars in Base64Url that needs to be decoded.</param>
         /// <param name="destination">The output span which contains the result of the operation, i.e. the decoded binary data.</param>
         /// <returns>The number of bytes written into the output span. This can be used to slice the output for subsequent calls, if necessary.</returns>
-        /// <exception cref="ArgumentException">The buffer in <paramref name="destination"/> is too small to hold the encoded output.</exception>
+        /// <exception cref="ArgumentException">The buffer in <paramref name="destination"/> is too small to hold the decoded output.</exception>
         /// <exception cref="FormatException"><paramref name="source"/> contains a invalid Base64Url character,
         /// more than two padding characters, or a non white space character among the padding characters.</exception>
         public static int DecodeFromChars(ReadOnlySpan<char> source, Span<byte> destination)
@@ -375,6 +376,7 @@ namespace System.Buffers.Text
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
             [CompExactlyDependsOn(typeof(Ssse3))]
+            [CompExactlyDependsOn(typeof(PackedSimd))]
             public bool TryDecode128Core(
                 Vector128<byte> str,
                 Vector128<byte> hiNibbles,
@@ -519,6 +521,7 @@ namespace System.Buffers.Text
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
             [CompExactlyDependsOn(typeof(Ssse3))]
+            [CompExactlyDependsOn(typeof(PackedSimd))]
             public bool TryDecode128Core(Vector128<byte> str, Vector128<byte> hiNibbles, Vector128<byte> maskSlashOrUnderscore, Vector128<byte> mask8F,
                 Vector128<byte> lutLow, Vector128<byte> lutHigh, Vector128<sbyte> lutShift, Vector128<byte> shiftForUnderscore, out Vector128<byte> result) =>
                 default(Base64UrlDecoderByte).TryDecode128Core(str, hiNibbles, maskSlashOrUnderscore, mask8F, lutLow, lutHigh, lutShift, shiftForUnderscore, out result);

@@ -57,6 +57,12 @@ ABIPassingInformation Arm32Classifier::Classify(Compiler*    comp,
                                                 ClassLayout* structLayout,
                                                 WellKnownArg wellKnownParam)
 {
+    if (wellKnownParam == WellKnownArg::SecretStubParam)
+    {
+        return ABIPassingInformation::FromSegmentByValue(comp, ABIPassingSegment::InRegister(REG_SECRET_STUB_PARAM, 0,
+                                                                                             TARGET_POINTER_SIZE));
+    }
+
     if (!comp->opts.compUseSoftFP)
     {
         if (varTypeIsStruct(type))

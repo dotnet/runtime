@@ -538,8 +538,23 @@ namespace System.StubHelpers
             ConvertToNative(ObjectHandleOnStack.Create(ref objSrc), pDstVariant);
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ObjectMarshaler_ConvertToNative")]
         private static partial void ConvertToNative(ObjectHandleOnStack objSrc, IntPtr pDstVariant);
+
+        internal static void ConvertToNativeVariantArrayElement(object objSrc, IntPtr pDstVariant)
+        {
+            // The destination must already hold a previously-marshaled VARIANT (this
+            // overload only replaces an existing array element in place); objSrc itself
+            // has no narrower type assumption than ConvertToNative since a VT_VARIANT
+            // array element can hold any VARIANT-compatible managed type.
+            Debug.Assert(pDstVariant != IntPtr.Zero);
+            ConvertToNativeVariantArrayElement(ObjectHandleOnStack.Create(ref objSrc), pDstVariant);
+        }
+
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ObjectMarshaler_ConvertToNativeVariantArrayElement")]
+        private static partial void ConvertToNativeVariantArrayElement(ObjectHandleOnStack objSrc, IntPtr pDstVariant);
 
         internal static object ConvertToManaged(IntPtr pSrcVariant)
         {
@@ -548,6 +563,7 @@ namespace System.StubHelpers
             return retObject!;
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ObjectMarshaler_ConvertToManaged")]
         private static partial void ConvertToManaged(IntPtr pSrcVariant, ObjectHandleOnStack retObject);
 
@@ -631,6 +647,7 @@ namespace System.StubHelpers
             return ConvertToNative(ObjectHandleOnStack.Create(ref objSrc), itfMT, classMT, flags);
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "InterfaceMarshaler_ConvertToNative")]
         private static partial IntPtr ConvertToNative(ObjectHandleOnStack objSrc, IntPtr itfMT, IntPtr classMT, int flag);
 
@@ -644,6 +661,7 @@ namespace System.StubHelpers
             return retObject;
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "InterfaceMarshaler_ConvertToManaged")]
         private static partial void ConvertToManaged(ref IntPtr ppUnk, IntPtr itfMT, IntPtr classMT, int flags, ObjectHandleOnStack retObject);
 
@@ -662,9 +680,11 @@ namespace System.StubHelpers
             return retObject!;
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "InterfaceMarshaler_GetObjectForComCallableWrapperIUnknown")]
         private static partial void GetObjectForComCallableWrapperIUnknown(IntPtr unk, ObjectHandleOnStack retObject);
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "InterfaceMarshaler_ValidateComVisibilityForIUnknown")]
         internal static partial void ValidateComVisibilityForIUnknown(IntPtr unk);
     }  // class InterfaceMarshaler
@@ -684,6 +704,7 @@ namespace System.StubHelpers
             ConvertSpaceToNative(pMarshalState, ObjectHandleOnStack.Create(ref managedHome), pNativeHome);
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MngdSafeArrayMarshaler_ConvertSpaceToNative")]
         private static partial void ConvertSpaceToNative(IntPtr pMarshalState, ObjectHandleOnStack pManagedHome, IntPtr pNativeHome);
 
@@ -694,6 +715,7 @@ namespace System.StubHelpers
             ConvertContentsToNative(pMarshalState, ObjectHandleOnStack.Create(ref managedHome), pNativeHome, ObjectHandleOnStack.Create(ref originalManagedObject));
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MngdSafeArrayMarshaler_ConvertContentsToNative")]
         private static partial void ConvertContentsToNative(IntPtr pMarshalState, ObjectHandleOnStack pManagedHome, IntPtr pNativeHome, ObjectHandleOnStack pOriginalManagedObject);
 
@@ -704,6 +726,7 @@ namespace System.StubHelpers
             pManagedHome = managedHome;
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MngdSafeArrayMarshaler_ConvertSpaceToManaged")]
         private static partial void ConvertSpaceToManaged(IntPtr pMarshalState, ObjectHandleOnStack pManagedHome, IntPtr pNativeHome);
 
@@ -713,6 +736,7 @@ namespace System.StubHelpers
             ConvertContentsToManaged(pMarshalState, ObjectHandleOnStack.Create(ref managedHome), pNativeHome);
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MngdSafeArrayMarshaler_ConvertContentsToManaged")]
         private static partial void ConvertContentsToManaged(IntPtr pMarshalState, ObjectHandleOnStack pManagedHome, IntPtr pNativeHome);
 
@@ -723,6 +747,7 @@ namespace System.StubHelpers
         }
 #pragma warning restore IDE0060 // Remove unused parameter
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MngdSafeArrayMarshaler_ClearNative")]
         private static partial void ClearNative(IntPtr pMarshalState, IntPtr pNativeHome);
     }  // class MngdSafeArrayMarshaler
@@ -1137,10 +1162,10 @@ namespace System.StubHelpers
         {
             return (IsBestFit(dwFlags), IsThrowOn(dwFlags)) switch
             {
-                (true, true) => new ArrayImplementation<char, AnsiCharArrayMarshaler<IMarshalerOption.EnabledOption, IMarshalerOption.EnabledOption>>(isOut),
-                (true, false) => new ArrayImplementation<char, AnsiCharArrayMarshaler<IMarshalerOption.EnabledOption, IMarshalerOption.DisabledOption>>(isOut),
-                (false, true) => new ArrayImplementation<char, AnsiCharArrayMarshaler<IMarshalerOption.DisabledOption, IMarshalerOption.EnabledOption>>(isOut),
-                (false, false) => new ArrayImplementation<char, AnsiCharArrayMarshaler<IMarshalerOption.DisabledOption, IMarshalerOption.DisabledOption>>(isOut),
+                (true, true) => new ArrayImplementation<char, AnsiCharArrayMarshaler<IMarshalerOption.EnabledOption, IMarshalerOption.EnabledOption, IMarshalerOption.DisabledOption>>(isOut),
+                (true, false) => new ArrayImplementation<char, AnsiCharArrayMarshaler<IMarshalerOption.EnabledOption, IMarshalerOption.DisabledOption, IMarshalerOption.DisabledOption>>(isOut),
+                (false, true) => new ArrayImplementation<char, AnsiCharArrayMarshaler<IMarshalerOption.DisabledOption, IMarshalerOption.EnabledOption, IMarshalerOption.DisabledOption>>(isOut),
+                (false, false) => new ArrayImplementation<char, AnsiCharArrayMarshaler<IMarshalerOption.DisabledOption, IMarshalerOption.DisabledOption, IMarshalerOption.DisabledOption>>(isOut),
             };
         }
 
@@ -1375,7 +1400,9 @@ namespace System.StubHelpers
 
         private static class SizeHolder
         {
-            public static readonly int UnmanagedSize = typeof(T).IsEnum ? Marshal.SizeOf(Enum.GetUnderlyingType(typeof(T))) : Marshal.SizeOf<T>();
+            public static readonly int UnmanagedSize = typeof(T).IsEnum
+                ? Marshal.SizeOf(Enum.GetUnderlyingType(typeof(T)))
+                : Marshal.SizeOfHelper((RuntimeType)typeof(T), throwIfNotMarshalable: true);
         }
 
         private static int UnmanagedSize
@@ -1769,12 +1796,14 @@ namespace System.StubHelpers
         static unsafe nuint IArrayElementMarshaler<string?, LPWSTRMarshaler>.UnmanagedSize => (nuint)sizeof(IntPtr);
     }
 
-    internal sealed class AnsiCharArrayMarshaler<TBestFit, TThrowOnUnmappable> : IArrayMarshaler<char, AnsiCharArrayMarshaler<TBestFit, TThrowOnUnmappable>>
+    internal sealed class AnsiCharArrayMarshaler<TBestFit, TThrowOnUnmappable, TFixedBuffer> : IArrayMarshaler<char, AnsiCharArrayMarshaler<TBestFit, TThrowOnUnmappable, TFixedBuffer>>
         where TBestFit : IMarshalerOption
         where TThrowOnUnmappable : IMarshalerOption
+        where TFixedBuffer : IMarshalerOption
     {
         public static unsafe void ConvertContentsToUnmanaged(Array managedArray, byte* unmanaged, int length)
         {
+            int byteCapacity = GetNativeBufferSize(length);
             fixed (byte* pCharBytes = &MemoryMarshal.GetArrayDataReference(managedArray))
             {
                 char* pChars = (char*)pCharBytes;
@@ -1787,7 +1816,7 @@ namespace System.StubHelpers
                     pChars,
                     length,
                     unmanaged,
-                    length,
+                    byteCapacity,
                     null,
                     TThrowOnUnmappable.Enabled ? &defaultCharUsed : null);
 
@@ -1801,7 +1830,7 @@ namespace System.StubHelpers
                     throw new ArgumentException(SR.Interop_Marshal_Unmappable_Char);
                 }
 #else
-                Encoding.UTF8.GetBytes(pChars, length, unmanaged, length);
+                Encoding.UTF8.GetBytes(pChars, length, unmanaged, byteCapacity);
 #endif
             }
 
@@ -1809,6 +1838,7 @@ namespace System.StubHelpers
 
         public static unsafe void ConvertContentsToManaged(Array managedArray, byte* unmanaged, int length)
         {
+            // The native byte count is independent of the maximum allocation size used for multibyte expansion.
             fixed (byte* pCharBytes = &MemoryMarshal.GetArrayDataReference(managedArray))
             {
                 char* pChars = (char*)pCharBytes;
@@ -1842,8 +1872,7 @@ namespace System.StubHelpers
                 return null;
             }
 
-            // Native layout for ANSI char arrays uses 1 byte per element.
-            int allocSize = managedArray.Length;
+            int allocSize = GetNativeBufferSize(managedArray.Length);
             byte* pNative = (byte*)Marshal.AllocCoTaskMem(allocSize);
             NativeMemory.Clear(pNative, (nuint)allocSize);
             return pNative;
@@ -1858,6 +1887,9 @@ namespace System.StubHelpers
 
             return new char[length];
         }
+
+        private static int GetNativeBufferSize(int length)
+            => TFixedBuffer.Enabled ? length : checked(length * Marshal.SystemMaxDBCSCharSize);
     }
 
     internal sealed class LPSTRArrayElementMarshaler<TBestFit, TThrowOnUnmappable> : IArrayElementMarshaler<string?, LPSTRArrayElementMarshaler<TBestFit, TThrowOnUnmappable>>
@@ -2018,9 +2050,11 @@ namespace System.StubHelpers
     }
 
     [SupportedOSPlatform("windows")]
-    internal sealed class HeterogeneousInterfaceArrayElementMarshaler : IArrayElementMarshaler<object?, HeterogeneousInterfaceArrayElementMarshaler>
+    internal sealed class TypedClassInterfaceArrayElementMarshaler<TArrayElement, TInterface> : IArrayElementMarshaler<TArrayElement?, TypedClassInterfaceArrayElementMarshaler<TArrayElement, TInterface>>
+        where TArrayElement : class
+        where TInterface : class
     {
-        public static unsafe void ConvertToUnmanaged(ref object? managed, byte* unmanaged)
+        public static unsafe void ConvertToUnmanaged(ref TArrayElement? managed, byte* unmanaged)
         {
             if (managed is null)
             {
@@ -2028,14 +2062,11 @@ namespace System.StubHelpers
             }
             else
             {
-                // Resolve the default COM interface for each element based on its runtime type.
-                // This matches the heterogeneous path in MarshalInterfaceArrayComToOleHelper
-                // where GetDefaultInterfaceMTForClass is called per-element.
-                *(IntPtr*)unmanaged = Marshal.GetComInterfaceForObject(managed, managed.GetType());
+                *(IntPtr*)unmanaged = Marshal.GetComInterfaceForObject(managed, typeof(TInterface));
             }
         }
 
-        public static unsafe void ConvertToManaged(ref object? managed, byte* unmanaged)
+        public static unsafe void ConvertToManaged(ref TArrayElement? managed, byte* unmanaged)
         {
             IntPtr pUnk = *(IntPtr*)unmanaged;
             if (pUnk == IntPtr.Zero)
@@ -2044,7 +2075,7 @@ namespace System.StubHelpers
             }
             else
             {
-                managed = Marshal.GetObjectForIUnknown(pUnk);
+                managed = (TArrayElement)Marshal.GetObjectForIUnknown(pUnk);
             }
         }
 
@@ -2057,7 +2088,53 @@ namespace System.StubHelpers
             }
         }
 
-        static unsafe nuint IArrayElementMarshaler<object?, HeterogeneousInterfaceArrayElementMarshaler>.UnmanagedSize => (nuint)sizeof(IntPtr);
+        static unsafe nuint IArrayElementMarshaler<TArrayElement?, TypedClassInterfaceArrayElementMarshaler<TArrayElement, TInterface>>.UnmanagedSize => (nuint)sizeof(IntPtr);
+    }
+
+    [SupportedOSPlatform("windows")]
+    internal sealed class TypedClassArrayElementMarshaler<TArrayElement, TIsDispatch> : IArrayElementMarshaler<TArrayElement?, TypedClassArrayElementMarshaler<TArrayElement, TIsDispatch>>
+        where TArrayElement : class
+        where TIsDispatch : IMarshalerOption
+    {
+        public static unsafe void ConvertToUnmanaged(ref TArrayElement? managed, byte* unmanaged)
+        {
+            if (managed is null)
+            {
+                *(IntPtr*)unmanaged = IntPtr.Zero;
+            }
+            else if (TIsDispatch.Enabled)
+            {
+                *(IntPtr*)unmanaged = Marshal.GetIDispatchForObject(managed);
+            }
+            else
+            {
+                *(IntPtr*)unmanaged = Marshal.GetIUnknownForObject(managed);
+            }
+        }
+
+        public static unsafe void ConvertToManaged(ref TArrayElement? managed, byte* unmanaged)
+        {
+            IntPtr pUnk = *(IntPtr*)unmanaged;
+            if (pUnk == IntPtr.Zero)
+            {
+                managed = null;
+            }
+            else
+            {
+                managed = (TArrayElement)Marshal.GetObjectForIUnknown(pUnk);
+            }
+        }
+
+        public static unsafe void Free(byte* unmanaged)
+        {
+            IntPtr pUnk = *(IntPtr*)unmanaged;
+            if (pUnk != IntPtr.Zero)
+            {
+                Marshal.Release(pUnk);
+            }
+        }
+
+        static unsafe nuint IArrayElementMarshaler<TArrayElement?, TypedClassArrayElementMarshaler<TArrayElement, TIsDispatch>>.UnmanagedSize => (nuint)sizeof(IntPtr);
     }
 
     internal sealed class VariantArrayElementMarshaler<TNativeDataValid> : IArrayElementMarshaler<object?, VariantArrayElementMarshaler<TNativeDataValid>>
@@ -2070,11 +2147,12 @@ namespace System.StubHelpers
                 // Native buffer is uninitialized — zero it so ConvertToNative
                 // doesn't see garbage VT_BYREF bits.
                 *(ComVariant*)unmanaged = default;
+                ObjectMarshaler.ConvertToNative(managed!, (IntPtr)unmanaged);
             }
-            // When TNativeDataValid is enabled, the existing VARIANT may have
-            // VT_BYREF set. ConvertToNative checks vt & VT_BYREF and calls
-            // MarshalOleRefVariantForObject to write through the byref pointer.
-            ObjectMarshaler.ConvertToNative(managed!, (IntPtr)unmanaged);
+            else
+            {
+                ObjectMarshaler.ConvertToNativeVariantArrayElement(managed!, (IntPtr)unmanaged);
+            }
         }
 
         public static unsafe void ConvertToManaged(ref object? managed, byte* unmanaged)
@@ -2176,8 +2254,13 @@ namespace System.StubHelpers
         internal static extern safe void SetLastError();
 
         /// <safety>QCall that throws an interop parameter exception selected by integer resource and parameter indices; it accesses no caller-supplied memory.</safety>
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "StubHelpers_ThrowInteropParamException")]
         internal static safe partial void ThrowInteropParamException(int resID, int paramIdx);
+
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "StubHelpers_ThrowInteropException")]
+        internal static partial void ThrowInteropException(int exceptionKind, int resID);
 
         internal static IntPtr AddToCleanupList(ref CleanupWorkListElement? pCleanupWorkList, SafeHandle handle)
         {
@@ -2203,18 +2286,13 @@ namespace System.StubHelpers
         }
 
 #if FEATURE_COMINTEROP
-        internal static unsafe Exception GetCOMHRExceptionObject(int hr, IntPtr pCPCMD, IntPtr pUnk)
+        internal static Exception GetCOMHRExceptionObject(int hr, RuntimeTypeHandle interfaceTypeHandle, IntPtr pUnk)
         {
-            Debug.Assert(pCPCMD != IntPtr.Zero);
-            MethodTable* interfaceType = GetComInterfaceFromMethodDesc(pCPCMD);
-            RuntimeType declaringType = RuntimeTypeHandle.GetRuntimeType(interfaceType);
-            Exception ex = Marshal.GetExceptionForHR(hr, declaringType.GUID, pUnk)!;
+            RuntimeType interfaceType = interfaceTypeHandle.GetRuntimeTypeChecked();
+            Exception ex = Marshal.GetExceptionForHR(hr, interfaceType.GUID, pUnk)!;
             ex.InternalPreserveStackTrace();
             return ex;
         }
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern unsafe MethodTable* GetComInterfaceFromMethodDesc(IntPtr pCPCMD);
 #endif // FEATURE_COMINTEROP
 
         [ThreadStatic]
@@ -2237,6 +2315,7 @@ namespace System.StubHelpers
             s_pendingExceptionObject = exception;
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "StubHelpers_CreateCustomMarshaler")]
         internal static partial void CreateCustomMarshaler(IntPtr pMD, int paramToken, IntPtr hndManagedType, ObjectHandleOnStack customMarshaler);
 
@@ -2342,14 +2421,15 @@ namespace System.StubHelpers
 
 #if FEATURE_COMINTEROP
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern IntPtr GetCOMIPFromRCW(object objSrc, IntPtr pCPCMD, out IntPtr ppTarget);
+        private static extern IntPtr GetCOMIPFromRCW(object objSrc, IntPtr pInterfaceMT, int comSlot, out IntPtr ppTarget);
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "StubHelpers_GetCOMIPFromRCWSlow")]
-        private static partial IntPtr GetCOMIPFromRCWSlow(ObjectHandleOnStack objSrc, IntPtr pCPCMD, out IntPtr ppTarget, [MarshalAs(UnmanagedType.Bool)] out bool pfNeedsRelease);
+        private static partial IntPtr GetCOMIPFromRCWSlow(ObjectHandleOnStack objSrc, IntPtr pInterfaceMT, int comSlot, out IntPtr ppTarget, [MarshalAs(UnmanagedType.Bool)] out bool pfNeedsRelease);
 
-        internal static IntPtr GetCOMIPFromRCW(object objSrc, IntPtr pCPCMD, out IntPtr ppTarget, out bool pfNeedsRelease)
+        internal static IntPtr GetCOMIPFromRCW(object objSrc, IntPtr pInterfaceMT, int comSlot, out IntPtr ppTarget, out bool pfNeedsRelease)
         {
-            IntPtr rcw = GetCOMIPFromRCW(objSrc, pCPCMD, out ppTarget);
+            IntPtr rcw = GetCOMIPFromRCW(objSrc, pInterfaceMT, comSlot, out ppTarget);
             if (rcw != IntPtr.Zero)
             {
                 pfNeedsRelease = false;
@@ -2358,11 +2438,11 @@ namespace System.StubHelpers
 
             // The slow path may create OLE TLS and then still resolve the interface via the RCW cache.
             // Let the slow path tell us whether it returned an owned pointer that requires cleanup.
-            return GetCOMIPFromRCWWorker(objSrc, pCPCMD, out ppTarget, out pfNeedsRelease);
+            return GetCOMIPFromRCWWorker(objSrc, pInterfaceMT, comSlot, out ppTarget, out pfNeedsRelease);
 
             [MethodImpl(MethodImplOptions.NoInlining)]
-            static IntPtr GetCOMIPFromRCWWorker(object objSrc, IntPtr pCPCMD, out IntPtr ppTarget, out bool pfNeedsRelease)
-                => GetCOMIPFromRCWSlow(ObjectHandleOnStack.Create(ref objSrc), pCPCMD, out ppTarget, out pfNeedsRelease);
+            static IntPtr GetCOMIPFromRCWWorker(object objSrc, IntPtr pInterfaceMT, int comSlot, out IntPtr ppTarget, out bool pfNeedsRelease)
+                => GetCOMIPFromRCWSlow(ObjectHandleOnStack.Create(ref objSrc), pInterfaceMT, comSlot, out ppTarget, out pfNeedsRelease);
         }
 #endif // FEATURE_COMINTEROP
 
@@ -2370,9 +2450,11 @@ namespace System.StubHelpers
         //-------------------------------------------------------
         // Profiler helpers
         //-------------------------------------------------------
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "StubHelpers_ProfilerBeginTransitionCallback")]
         internal static unsafe partial void* ProfilerBeginTransitionCallback(void* pTargetMD);
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "StubHelpers_ProfilerEndTransitionCallback")]
         internal static unsafe partial void ProfilerEndTransitionCallback(void* pTargetMD);
 #endif // PROFILING_SUPPORTED
@@ -2393,6 +2475,7 @@ namespace System.StubHelpers
             }
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "StubHelpers_CreateLayoutClassMarshalStubs")]
         internal static unsafe partial void CreateLayoutClassMarshalStubs(QCallTypeHandle th, out delegate*<ref byte, byte*, ref CleanupWorkListElement?, void> pConvertToUnmanaged, out delegate*<ref byte, byte*, ref CleanupWorkListElement?, void> pConvertToManaged, out delegate*<ref byte, byte*, ref CleanupWorkListElement?, void> pFree);
 
@@ -2438,21 +2521,29 @@ namespace System.StubHelpers
             }
         }
 
+        [Conditional("DEBUG")]
+        private static void ValidateArrayElementType<T>(Array managed)
+        {
+            Debug.Assert(managed is not null);
+            Type elementType = managed.GetType().GetElementType()!;
+            // Pointer and function pointer types cannot be generic arguments, so their marshalers use nint
+            // even though their arrays are not assignable to nint[].
+            Debug.Assert((typeof(T) == typeof(nint) && (elementType.IsPointer || elementType.IsFunctionPointer))
+                || elementType.MakeArrayType().IsAssignableTo(typeof(T[])),
+                $"Managed array type {managed.GetType()} is not compatible with expected element type {typeof(T)}");
+        }
+
         public static unsafe void ConvertArrayContentsToUnmanaged<T, TMarshaler>(Array managed, byte* pNative, int numElements)
             where TMarshaler : IArrayMarshaler<T, TMarshaler>
         {
-            // Assert that the array is actually an array of compatible type.
-            Debug.Assert(managed is not null);
-            Debug.Assert(managed.GetType().GetElementType()!.MakeArrayType().IsAssignableTo(typeof(T[])), $"Managed array type {managed.GetType()} is not compatible with expected element type {typeof(T)}");
+            ValidateArrayElementType<T>(managed);
             TMarshaler.ConvertContentsToUnmanaged(managed, pNative, numElements);
         }
 
         public static unsafe void ConvertArrayContentsToManaged<T, TMarshaler>(Array managed, byte* pNative, int numElements)
             where TMarshaler : IArrayMarshaler<T, TMarshaler>
         {
-            // Assert that the array is actually an array of compatible type.
-            Debug.Assert(managed is not null);
-            Debug.Assert(managed.GetType().GetElementType()!.MakeArrayType().IsAssignableTo(typeof(T[])), $"Managed array type {managed.GetType()} is not compatible with expected element type {typeof(T)}");
+            ValidateArrayElementType<T>(managed);
             TMarshaler.ConvertContentsToManaged(managed, pNative, numElements);
         }
 
@@ -2506,29 +2597,32 @@ namespace System.StubHelpers
             throw new ArgumentException(SR.Argument_WrongSizeArrayInNativeStruct);
         }
 
+#if FEATURE_VARARGS
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint="StubHelpers_MarshalToManagedVaList")]
         internal static partial void MarshalToManagedVaList(IntPtr va_list, IntPtr pArgIterator);
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint="StubHelpers_MarshalToUnmanagedVaList")]
         internal static partial void MarshalToUnmanagedVaList(IntPtr va_list, uint vaListSize, IntPtr pArgIterator);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern uint CalcVaListSize(IntPtr va_list);
+#endif // FEATURE_VARARGS
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern void LogPinnedArgument(IntPtr localDesc, IntPtr nativeArg);
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint="StubHelpers_ValidateObject")]
         private static partial void ValidateObject(ObjectHandleOnStack obj, IntPtr pMD);
 
         internal static void ValidateObject(object obj, IntPtr pMD)
             => ValidateObject(ObjectHandleOnStack.Create(ref obj), pMD);
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint="StubHelpers_ValidateByref")]
         internal static partial void ValidateByref(IntPtr byref, IntPtr pMD); // the byref is pinned so we can safely "cast" it to IntPtr
-
-        [Intrinsic]
-        internal static IntPtr GetStubContext() => throw new UnreachableException(); // Unconditionally expanded intrinsic
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         internal static void MulticastDebuggerTraceHelper(object o, int count)
@@ -2536,6 +2630,7 @@ namespace System.StubHelpers
             MulticastDebuggerTraceHelperQCall(ObjectHandleOnStack.Create(ref o), count);
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint="StubHelpers_MulticastDebuggerTraceHelper")]
         private static partial void MulticastDebuggerTraceHelperQCall(ObjectHandleOnStack obj, int count);
 

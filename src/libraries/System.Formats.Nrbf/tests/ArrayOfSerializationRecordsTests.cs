@@ -512,5 +512,6 @@ namespace System.Formats.Nrbf.Tests
                 }
             }
         }
+
     }
 }

@@ -413,6 +413,19 @@ namespace System.Threading.Tests
                 () => Monitor.Wait(obj, TimeSpan.FromMilliseconds((double)int.MaxValue + 1)));
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMultithreadingSupported))]
+        public static void Wait_SingleThreaded()
+        {
+            object obj = new();
+            lock (obj)
+            {
+                Assert.False(Monitor.Wait(obj, 0));
+                Assert.False(Monitor.Wait(obj, TimeSpan.Zero));
+                Assert.Throws<PlatformNotSupportedException>(() => Monitor.Wait(obj, 1));
+                Assert.Throws<PlatformNotSupportedException>(() => Monitor.Wait(obj));
+            }
+        }
+
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void WaitTest()
         {
@@ -513,8 +526,9 @@ namespace System.Threading.Tests
 
         // Validates that reentrant Monitor.Wait calls from a SynchronizationContext
         // message pump do not steal each other's pulse signals.
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/126138", TestRuntimes.Mono)]
+        // The test is not applicable to Mono. Monitor.Wait is implemented natively and doesn't end up
+        // forwarding to SynchronizationContext.Wait, the reentrancy this test covers cannot occur.
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported), nameof(PlatformDetection.IsNotMonoRuntime))]
         public static void ReentrantWaitFromSyncContextTest()
         {
             // Since we set the SynchronizationContext for the current thread, we run

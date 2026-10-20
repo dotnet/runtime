@@ -28,7 +28,6 @@ struct FakeHeapList
     DWORD_PTR           mapBase;        // changed from PBYTE
     DWORD_PTR           pHdrMap;        // changed from DWORD*
     size_t              maxCodeHeapSize;
-    size_t              reserveForJumpStubs;
     DWORD_PTR           pLoaderAllocator;
 #if defined(TARGET_64BIT)
     DWORD_PTR           CLRPersonalityRoutine;

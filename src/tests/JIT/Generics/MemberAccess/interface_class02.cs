@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+namespace JitTest_Generics_MemberAccess_interface_class02;
+
 using System;
 using Xunit;
 
@@ -96,6 +98,7 @@ class GenString : IGen<string>
 
 public class Test_interface_class02
 {
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

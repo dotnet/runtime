@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
+using System.Runtime.CompilerServices;
 
 namespace System.Threading
 {
@@ -136,6 +137,9 @@ namespace System.Threading
 
             if (!_lock.IsHeldByCurrentThread)
                 throw new SynchronizationLockException();
+
+            if (millisecondsTimeout != 0)
+                RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
 
             using ThreadBlockingInfo.Scope threadBlockingScope = new(this, millisecondsTimeout);
 

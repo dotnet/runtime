@@ -75,6 +75,18 @@ namespace System.Buffers.ArrayPool.Tests
 
         private static bool IsStressModeEnabledAndRemoteExecutorSupported => TestEnvironment.IsStressModeEnabled && RemoteExecutor.IsSupported;
 
+        private MethodInfo? PressureMethod =>
+            Type.GetType("System.Buffers.Utilities, System.Private.CoreLib", throwOnError: true)
+                .GetMethod("GetMemoryPressure", BindingFlags.Static | BindingFlags.NonPublic, Type.EmptyTypes);
+
+        // ThreadLocalIsCollectedUnderHighPressure only runs under DOTNET_TEST_STRESS=1, so without
+        // this, the private API it reflects on could change without anyone noticing.
+        [Fact]
+        public void MemoryPressureHelperIsAvailable()
+        {
+            Assert.NotNull(PressureMethod);
+        }
+
         // This test can cause problems for other tests run in parallel (from other assemblies) as
         // it pushes the physical memory usage above 80% temporarily.
         [ConditionalFact(typeof(CollectionTests), nameof(IsStressModeEnabledAndRemoteExecutorSupported))]
@@ -93,9 +105,10 @@ namespace System.Buffers.ArrayPool.Tests
 
                 const int AllocSize = 1024 * 1024 * 64;
                 int PageSize = Environment.SystemPageSize;
-#pragma warning disable IL2075 // This private reflection is broken since .NET 6: https://github.com/dotnet/runtime/issues/128431
-                var pressureMethod = ArrayPool<byte>.Shared.GetType().GetMethod("GetMemoryPressure", BindingFlags.Static | BindingFlags.NonPublic);
-#pragma warning restore IL2075
+
+                MethodInfo pressureMethod = PressureMethod;
+                object highPressure = Enum.Parse(pressureMethod.ReturnType, "High");
+
                 do
                 {
                     Span<byte> native = new Span<byte>(Marshal.AllocHGlobal(AllocSize).ToPointer(), AllocSize);
@@ -107,7 +120,7 @@ namespace System.Buffers.ArrayPool.Tests
                     }
 
                     GC.Collect(2);
-                } while ((int)pressureMethod.Invoke(null, null) != 2);
+                } while (!highPressure.Equals(pressureMethod.Invoke(null, null)));
 
                 GC.WaitForPendingFinalizers();
 

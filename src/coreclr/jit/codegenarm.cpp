@@ -542,7 +542,7 @@ void CodeGen::genLclHeap(GenTree* tree)
         // illegal pages at any time during the tickling process
         //
         //       subs  regCnt, SP, regCnt      // regCnt now holds ultimate SP
-        //       bvc   Loop                    // result is smaller than original SP (no wrap around)
+        //       bhs   Loop                    // result is smaller than original SP (no wrap around)
         //       mov   regCnt, #0              // Overflow, pick lowest possible value
         //
         //  Loop:
@@ -563,7 +563,7 @@ void CodeGen::genLclHeap(GenTree* tree)
         //       subs  regCnt, SP, regCnt      // regCnt now holds ultimate SP
         GetEmitter()->emitIns_R_R_R(INS_sub, EA_PTRSIZE, regCnt, REG_SPBASE, regCnt, INS_FLAGS_SET);
 
-        inst_JMP(EJ_vc, loop); // branch if the V flag is not set
+        inst_JMP(EJ_hs, loop); // branch if the subtraction didn't borrow (C flag set)
 
         // Overflow, set regCnt to lowest possible value
         instGen_Set_Reg_To_Zero(EA_PTRSIZE, regCnt);
@@ -1313,7 +1313,7 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
         // data goes in REG_ARG_1
         inst_Mov(data->TypeGet(), REG_ARG_1, data->GetRegNum(), /* canSkip */ true);
 
-        genGCWriteBarrier(tree, writeBarrierForm);
+        genGCWriteBarrier(writeBarrierForm);
     }
     else // A normal store, not a WriteBarrier store
     {
@@ -1845,7 +1845,7 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
 
     const target_size_t pageSize = m_compiler->eeGetPageSize();
 
-    assert(!m_compiler->info.compPublishStubParam || (REG_SECRET_STUB_PARAM != initReg));
+    assert(!m_compiler->compHasSecretStubArgument() || (REG_SECRET_STUB_PARAM != initReg));
 
     if (frameSize < pageSize)
     {

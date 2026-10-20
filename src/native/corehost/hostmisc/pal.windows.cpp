@@ -448,31 +448,6 @@ bool pal::get_dotnet_self_registered_dir_for_arch(pal::architecture arch, pal::s
     return true;
 }
 
-bool pal::get_global_dotnet_dirs(std::vector<pal::string_t>* dirs)
-{
-    pal::string_t default_dir;
-    pal::string_t custom_dir;
-    bool dir_found = false;
-    if (pal::get_dotnet_self_registered_dir(&custom_dir))
-    {
-        remove_trailing_dir_separator(&custom_dir);
-        dirs->push_back(custom_dir);
-        dir_found = true;
-    }
-    if (get_default_installation_dir(&default_dir))
-    {
-        remove_trailing_dir_separator(&default_dir);
-
-        // Avoid duplicate global dirs.
-        if (!dir_found || !are_paths_equal_with_normalized_casing(custom_dir, default_dir))
-        {
-            dirs->push_back(default_dir);
-            dir_found = true;
-        }
-    }
-    return dir_found;
-}
-
 // To determine the OS version, we are going to use RtlGetVersion API
 // since GetVersion call can be shimmed on Win8.1+.
 typedef LONG (WINAPI *pFuncRtlGetVersion)(RTL_OSVERSIONINFOW *);
@@ -712,6 +687,23 @@ bool pal::pal_utf8string(const pal::string_t& str, std::vector<char>* out)
     }
     out->resize(size, '\0');
     return ::WideCharToMultiByte(CP_UTF8, 0, str.c_str(), -1, out->data(), static_cast<uint32_t>(out->size()), nullptr, nullptr) != 0;
+}
+
+std::string pal::pal_utf8string(const pal::char_t* str, size_t length)
+{
+    if (length == 0)
+        return {};
+
+    int input_length = static_cast<int>(length);
+    int size = ::WideCharToMultiByte(CP_UTF8, 0, str, input_length, nullptr, 0, nullptr, nullptr);
+    if (size == 0)
+        return {};
+
+    std::string out(static_cast<size_t>(size), '\0');
+    if (::WideCharToMultiByte(CP_UTF8, 0, str, input_length, out.data(), size, nullptr, nullptr) == 0)
+        return {};
+
+    return out;
 }
 
 bool pal::pal_clrstring(const pal::string_t& str, std::vector<char>* out)

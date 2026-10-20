@@ -510,18 +510,18 @@ PhaseStatus Compiler::fgOptimizeMaskConversions()
         for (Statement* const stmt : block->Statements())
         {
             // Only check statements where there is a local of type TYP_SIMD/TYP_MASK.
-            for (GenTreeLclVarCommon* lcl : stmt->LocalsTreeList())
-            {
-                if (varTypeIsSIMDOrMask(lvaGetDesc(lcl)))
+            stmt->VisitLogicalLocalOccurrencesViaLocalsTreeList([&](const auto& occurrence) {
+                if (varTypeIsSIMDOrMask(lvaGetDesc(occurrence.GetLclNum())))
                 {
                     // Parse the entire statement.
                     MaskConversionsCheckVisitor ev(this, block->getBBWeight(this), &weightsTable);
                     GenTree*                    root = stmt->GetRootNode();
                     ev.WalkTree(&root, nullptr);
                     foundConversion |= ev.foundConversions;
-                    break;
+                    return GenTree::VisitResult::Abort;
                 }
-            }
+                return GenTree::VisitResult::Continue;
+            });
         }
     }
 
@@ -538,9 +538,8 @@ PhaseStatus Compiler::fgOptimizeMaskConversions()
         for (Statement* const stmt : block->Statements())
         {
             // Only check statements where there is a local of type TYP_SIMD/TYP_MASK.
-            for (GenTreeLclVarCommon* lcl : stmt->LocalsTreeList())
-            {
-                if (varTypeIsSIMDOrMask(lcl))
+            stmt->VisitLogicalLocalOccurrencesViaLocalsTreeList([&](const auto& occurrence) {
+                if (!occurrence.GetNode()->OperIs(GT_LCL_ADDR) && varTypeIsSIMDOrMask(occurrence.GetAccessType(this)))
                 {
                     // Parse the entire statement.
                     MaskConversionsUpdateVisitor ev(this, stmt, &weightsTable);
@@ -550,9 +549,10 @@ PhaseStatus Compiler::fgOptimizeMaskConversions()
                     {
                         fgSequenceLocals(stmt);
                     }
-                    break;
+                    return GenTree::VisitResult::Abort;
                 }
-            }
+                return GenTree::VisitResult::Continue;
+            });
         }
     }
 

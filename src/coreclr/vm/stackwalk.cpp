@@ -2039,6 +2039,13 @@ ProcessFuncletsForGCReporting:
             case SFITER_SKIPPED_FRAME_FUNCTION:
                 if (!fSkippingFunclet)
                 {
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+                    if ((m_flags & FUNCTIONSONLY) &&
+                        (m_crawl.pFrame->GetFrameAttribs() & Frame::FRAME_ATTR_NO_MANAGED_ACTIVATION))
+                    {
+                        break;
+                    }
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
                     if (m_flags & GC_FUNCLET_REFERENCE_REPORTING)
                     {
                         // If we are enumerating frames for GC reporting and we determined that
@@ -2530,7 +2537,7 @@ void StackFrameIterator::ProcessCurrentFrame(void)
             // Cache values which may be updated by CheckForSkippedFrames()
             m_cachedCodeInfo = m_crawl.codeInfo;
 
-            // On non-X86, we want to process the skipped explicit frames before the managed stack frame
+            // We want to process the skipped explicit frames before the managed stack frame
             // containing them.
             if (CheckForSkippedFrames())
             {
@@ -2566,10 +2573,8 @@ void StackFrameIterator::ProcessCurrentFrame(void)
 //    Returns true if there are skipped frames.
 //
 // Notes:
-//    x86 wants to stop at the skipped stack frames after the containing managed stack frame, but
-//    WIN64 wants to stop before.  I don't think x86 actually has any good reason for this, except
-//    because it doesn't unwind one frame ahead of time like WIN64 does.  This means that we don't
-//    have the caller SP on x86.
+//    Skipped frames are reported before the containing managed stack frame. On x86 this includes
+//    the InlinedCallFrame, which stays linked for the whole method.
 //
 
 BOOL StackFrameIterator::CheckForSkippedFrames(void)
@@ -2615,16 +2620,15 @@ BOOL StackFrameIterator::CheckForSkippedFrames(void)
         {
             m_crawl.isFrameless     = false;
 
-            // If we see InlinedCallFrame in certain IL stubs, we should report the MD that
-            // was passed to the stub as its secret argument. This is the true interop MD.
-            // Note that code:InlinedCallFrame.GetFunction may return NULL in this case because
-            // the call is made using the CALLI instruction.
+#ifdef FEATURE_VARARGS
+            // A vararg P/Invoke stub receives the true interop MethodDesc as its secret argument.
+            // Report that MethodDesc instead of the IL stub.
             bool fReportInteropMD =
                 m_crawl.pFrame != FRAME_TOP
                 && m_crawl.pFrame->GetFrameIdentifier() == FrameIdentifier::InlinedCallFrame
                 && m_crawl.pFunc != NULL
                 && m_crawl.pFunc->IsILStub()
-                && m_crawl.pFunc->AsDynamicMethodDesc()->HasMDContextArg();
+                && m_crawl.pFunc->AsDynamicMethodDesc()->IsPInvokeVarArgStub();
             if (fReportInteropMD)
             {
                 m_crawl.pFunc = ((PTR_InlinedCallFrame)m_crawl.pFrame)->GetActualInteropMethodDesc();
@@ -2632,6 +2636,7 @@ BOOL StackFrameIterator::CheckForSkippedFrames(void)
                 _ASSERTE(m_crawl.pFunc->SanityCheck());
             }
             else
+#endif // FEATURE_VARARGS
             {
                 m_crawl.pFunc = m_crawl.pFrame->GetFunction();
             }

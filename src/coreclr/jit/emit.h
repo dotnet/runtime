@@ -3630,6 +3630,7 @@ public:
 
         dataSection*   dsNext;
         UNATIVE_OFFSET dsAlignment;
+        UNATIVE_OFFSET dsOffset;
         UNATIVE_OFFSET dsSize;
         sectionType    dsType;
         var_types      dsDataType;
@@ -4379,6 +4380,18 @@ emitAttr emitter::emitGetMemOpSize(instrDesc* id, bool ignoreEmbeddedBroadcast) 
         else
         {
             memSize = defaultSize / 2;
+        }
+    }
+    else if (tupleType == INS_TT_QUARTER)
+    {
+        // Embedded broadcast supported, so either loading scalar or quarter vector
+        if (!ignoreEmbeddedBroadcast && HasEmbeddedBroadcast(id))
+        {
+            memSize = GetInputSizeInBytes(id);
+        }
+        else
+        {
+            memSize = defaultSize / 4;
         }
     }
     else if (tupleType == INS_TT_FULL_MEM)

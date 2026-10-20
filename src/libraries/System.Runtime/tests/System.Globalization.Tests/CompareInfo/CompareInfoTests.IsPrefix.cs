@@ -87,8 +87,7 @@ namespace System.Globalization.Tests
             else
             {
                 yield return new object[] { s_hungarianCompare, "dzsdzsfoobar", "ddzsf", CompareOptions.None, false, 0 };
-                // Bug in ICU (non-Apple) implementation, correct result should be true (https://github.com/dotnet/runtime/issues/118521)
-                yield return new object[] { s_invariantCompare, "''Tests", "Tests", CompareOptions.IgnoreSymbols, PlatformDetection.IsHybridGlobalizationOnApplePlatform ? true : false, 0 };
+                yield return new object[] { s_invariantCompare, "''Tests", "Tests", CompareOptions.IgnoreSymbols, true, 7 };
                 yield return new object[] { s_frenchCompare, "\u0153", "oe", CompareOptions.None, false, 0 };
                 if (PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
                 {

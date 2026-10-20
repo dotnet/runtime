@@ -1,14 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
+
+// ======================================================================================
 // FILE: ProfToEEInterfaceImpl.cpp
 //
 // This module implements the ICorProfilerInfo* interfaces, which allow the
 // Profiler to communicate with the EE.  This allows the Profiler DLL to get
 // access to private EE data structures and other things that should never be
 // exported outside of the EE.
-//
-
 //
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 // NOTE! NOTE! NOTE! NOTE! NOTE! NOTE! NOTE! NOTE! NOTE! NOTE! NOTE! NOTE!
@@ -56,7 +55,6 @@
 // NOTE! NOTE! NOTE! NOTE! NOTE! NOTE! NOTE! NOTE! NOTE! NOTE! NOTE! NOTE!
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 //
-//
 // #P2CLRRestrictionsOverview
 //
 // The public ICorProfilerInfo(N) functions below have different restrictions on when
@@ -100,10 +98,6 @@
 //             * normally immutable or disallowed after attach, AND
 //             * that the test plans to set after startup and / or by an attaching
 //                 profiler.
-//
-//
-
-//
 // ======================================================================================
 
 #include "common.h"
@@ -118,7 +112,6 @@
 #include "corprof.h"
 #include "class.h"
 #include "object.h"
-#include "ceegen.h"
 #include "eeconfig.h"
 #include "generics.h"
 #include "gcinfo.h"
@@ -957,12 +950,12 @@ void __stdcall UpdateGenerationBounds()
         s_currentGenerationTable->Refresh();
     }
 #endif // PROFILING_SUPPORTED
-#ifdef ENABLE_CONTRACTS_IMPL
+#if defined(PROFILING_SUPPORTED) && defined(ENABLE_CONTRACTS_IMPL)
     {
         LONG result = InterlockedDecrement(&s_generationTableWriterCount);
         _ASSERTE(result == 0);
     }
-#endif
+#endif // PROFILING_SUPPORTED && ENABLE_CONTRACTS_IMPL
 }
 
 void __stdcall ProfilerAddNewRegion(int generation, uint8_t* rangeStart, uint8_t* rangeEnd, uint8_t* rangeEndReserved)
@@ -1336,7 +1329,6 @@ void ScanRootsHelper(Object* pObj, Object ** ppRoot, ScanContext *pSC, uint32_t 
     // On the other hand, this only means profiling information will be incomplete,
     // so it's ok to swallow E_OUTOFMEMORY.
     //
-    FAULT_NOT_FATAL();
 
     ProfilingScanContext *pPSC = (ProfilingScanContext *)pSC;
 
@@ -2644,24 +2636,6 @@ HRESULT ProfToEEInterfaceImpl::GetEventMask2(DWORD *pdwEventsLow, DWORD *pdwEven
 }
 
 // static
-void ProfToEEInterfaceImpl::MethodTableCallback(void* context, void* objectUNSAFE)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    // each callback identifies the address of a method table within the frozen object segment
-    // that pointer is an object ID by definition -- object references point to the method table
-    CDynArray< ObjectID >* objects = reinterpret_cast< CDynArray< ObjectID >* >(context);
-
-    *objects->Append() = reinterpret_cast< ObjectID >(objectUNSAFE);
-}
-
-// static
 void ProfToEEInterfaceImpl::ObjectRefCallback(void* context, void* objectUNSAFE)
 {
     // we don't care about embedded object references, ignore them
@@ -3401,6 +3375,7 @@ HRESULT ProfToEEInterfaceImpl::GetThreadStaticAddress2(ClassID classId,
         return E_INVALIDARG;
     }
 
+#ifdef FEATURE_MULTITHREADING
     //
     // Verify this field is of the right type
     //
@@ -3435,6 +3410,10 @@ HRESULT ProfToEEInterfaceImpl::GetThreadStaticAddress2(ClassID classId,
     *ppAddress = pAddress;
 
     return S_OK;
+#else
+    // Without multithreading there are no thread statics; [ThreadStatic] fields are regular statics.
+    return E_INVALIDARG;
+#endif // FEATURE_MULTITHREADING
 }
 
 /*
@@ -5206,15 +5185,6 @@ HRESULT ProfToEEInterfaceImpl::GetClassFromTokenAndTypeArgs(ModuleID moduleID,
             // a type in unsupported ways (e.g. from a non-EE thread).  It doesn't
             // impact retail builds, in which contracts are not available.
             ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE();
-
-            // ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE also defines FAULT_FORBID, which
-            // causes Scanruntime to flag a fault violation in AssemblySpec::InitializeSpec,
-            // which is defined as FAULTS.   It only happens in a type-loading path, which
-            // is not supported on a non-EE thread.  Suppressing a contract violation in an
-            // unsupported execution path is more preferable than causing AV when calling
-            // GetClassFromTokenAndTypeArgs on a non-EE thread in a check build.  See Dev10
-            // 682526 for more details.
-            FAULT_NOT_FATAL();
 
             th = ClassLoader::LoadGenericInstantiationThrowing(pModule,
                                                                typeDef,
@@ -7657,7 +7627,8 @@ HRESULT ProfToEEInterfaceImpl::EnumerateGCHeapObjects(ObjectCallback callback, v
     }
 
     bool ownEESuspension = false;
-    bool suspendedByThisThread = (ThreadSuspend::GetSuspensionThread() == GetThreadNULLOk());
+    Thread* pCurrentThread = GetThreadNULLOk();
+    bool suspendedByThisThread = pCurrentThread != nullptr && ThreadSuspend::GetSuspensionThread() == pCurrentThread;
     if (suspendedByThisThread && !g_profControlBlock.fProfilerRequestedRuntimeSuspend)
     {
         // This thread is responsible for suspending the runtime so we can't block
@@ -9807,7 +9778,6 @@ HRESULT ProfilingGetFunctionEnter3Info(FunctionID functionId,                   
 
     {
         // Can handle E_OUTOFMEMORY from ProfileArgIterator.
-        FAULT_NOT_FATAL();
 
         pProfileArgIterator = new (nothrow) ProfileArgIterator(&metaSig, pELTInfo->platformSpecificHandle);
 
@@ -10006,7 +9976,6 @@ HRESULT ProfilingGetFunctionLeave3Info(FunctionID functionId,                   
 
     {
         // Can handle E_OUTOFMEMORY from ProfileArgIterator.
-        FAULT_NOT_FATAL();
 
         pProfileArgIterator = new (nothrow) ProfileArgIterator(&metaSig, pELTInfo->platformSpecificHandle);
 
@@ -10168,7 +10137,6 @@ HRESULT ProfilingGetFunctionTailcall3Info(FunctionID functionId,                
 
     {
         // Can handle E_OUTOFMEMORY from ProfileArgIterator.
-        FAULT_NOT_FATAL();
 
         pProfileArgIterator = new (nothrow) ProfileArgIterator(&metaSig, pELTInfo->platformSpecificHandle);
 
@@ -10812,7 +10780,6 @@ HCIMPL2(EXTERN_C void, ProfileEnter, UINT_PTR clientData, void * platformSpecifi
 
             {
                 // Can handle E_OUTOFMEMORY from ProfileArgIterator.
-                FAULT_NOT_FATAL();
 
                 pProfileArgIterator = new (nothrow) ProfileArgIterator(&metaSig, platformSpecificHandle);
 
@@ -10959,7 +10926,10 @@ HCIMPL2(EXTERN_C void, ProfileLeave, UINT_PTR clientData, void * platformSpecifi
         // Whidbey Slow-Path ELT
         //
         COR_PRF_FRAME_INFO frameInfo = 0;
-        COR_PRF_FUNCTION_ARGUMENT_RANGE argumentRange;
+        // Zero-initialized: the query leaves the range untouched when it returns early with an error, and
+        // when COR_PRF_ENABLE_FUNCTION_RETVAL is off (this path is also taken for FRAME_INFO or
+        // STACK_SNAPSHOT alone). The hook then receives an empty range instead of indeterminate values.
+        COR_PRF_FUNCTION_ARGUMENT_RANGE argumentRange = {};
 
         HRESULT hr = ProfilingGetFunctionLeave3Info(functionId, (COR_PRF_ELT_INFO)&eltInfo, &frameInfo, &argumentRange);
         _ASSERTE(hr == S_OK);

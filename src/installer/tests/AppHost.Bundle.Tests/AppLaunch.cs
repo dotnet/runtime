@@ -146,7 +146,6 @@ namespace AppHost.Bundle.Tests
                 .CaptureStdErr()
                 .CaptureStdOut()
                 .DotNetRoot(HostTestContext.BuiltDotNet.BinPath, HostTestContext.BuildArchitecture)
-                .MultilevelLookup(false)
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World")

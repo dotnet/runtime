@@ -60,14 +60,16 @@ namespace ILCompiler
             SharedGenericsMode genericsMode,
             bool bubbleIncludesCoreModule,
             bool targetAllowsRuntimeCodeGeneration,
+            bool targetIsSingleThreaded,
             InstructionSetSupport instructionSetSupport,
             CompilerTypeSystemContext oldTypeSystemContext)
             : base(details, genericsMode)
         {
             BubbleIncludesCoreModule = bubbleIncludesCoreModule;
             TargetAllowsRuntimeCodeGeneration = targetAllowsRuntimeCodeGeneration;
+            TargetIsSingleThreaded = targetIsSingleThreaded;
             InstructionSetSupport = instructionSetSupport;
-            _r2rFieldLayoutAlgorithm = new ReadyToRunMetadataFieldLayoutAlgorithm();
+            _r2rFieldLayoutAlgorithm = new ReadyToRunMetadataFieldLayoutAlgorithm(targetIsSingleThreaded);
             _systemObjectFieldLayoutAlgorithm = new SystemObjectFieldLayoutAlgorithm(_r2rFieldLayoutAlgorithm);
 
             // There are a few types which require special layout algorithms and which could change based on hardware
@@ -104,6 +106,16 @@ namespace ILCompiler
         public InstructionSetSupport InstructionSetSupport { get; }
 
         public bool TargetAllowsRuntimeCodeGeneration { get; }
+
+        /// <summary>
+        /// When true, the target runtime has only one thread and lays out [ThreadStatic] fields as regular statics.
+        /// </summary>
+        public bool TargetIsSingleThreaded { get; }
+
+        /// <summary>
+        /// Returns whether the target runtime treats the field as thread-static.
+        /// </summary>
+        public bool IsThreadStaticForTarget(FieldDesc field) => field.IsThreadStatic && !TargetIsSingleThreaded;
 
         public override FieldLayoutAlgorithm GetLayoutAlgorithmForType(DefType type)
         {

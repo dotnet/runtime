@@ -253,13 +253,11 @@ FCFuncStart(gMathFFuncs)
 FCFuncEnd()
 
 FCFuncStart(gThreadFuncs)
+#ifdef FEATURE_MULTITHREADING
     FCFuncElement("InternalFinalize", ThreadNative::Finalize)
     FCFuncElement("CatchAtSafePoint", ThreadNative::CatchAtSafePoint)
     FCFuncElement("CurrentThreadIsFinalizerThread", ThreadNative::CurrentThreadIsFinalizerThread)
-    FCFuncElement("get_OptimalMaxSpinWaitsPerSpinIteration", ThreadNative::GetOptimalMaxSpinWaitsPerSpinIteration)
-#ifdef TARGET_WASM
-    FCFuncElement("GetThreadStaticsBaseNative", ThreadNative::GetThreadStaticsBaseNative)
-#endif
+#endif // FEATURE_MULTITHREADING
 FCFuncEnd()
 
 FCFuncStart(gObjectHeaderFuncs)
@@ -347,7 +345,6 @@ FCFuncStart(gMethodTableFuncs)
     FCFuncElement("GetNumInstanceFieldBytes", MethodTableNative::GetNumInstanceFieldBytes)
     FCFuncElement("GetPrimitiveCorElementType", MethodTableNative::GetPrimitiveCorElementType)
     FCFuncElement("GetMethodTableMatchingParentClass", MethodTableNative::GetMethodTableMatchingParentClass)
-    FCFuncElement("InstantiationArg0", MethodTableNative::InstantiationArg0)
     FCFuncElement("GetLoaderAllocatorHandle", MethodTableNative::GetLoaderAllocatorHandle)
 FCFuncEnd()
 
@@ -355,10 +352,11 @@ FCFuncStart(gStubHelperFuncs)
     FCFuncElement("SetLastError", StubHelpers::SetLastError)
     FCFuncElement("ClearLastError", StubHelpers::ClearLastError)
 #ifdef FEATURE_COMINTEROP
-    FCFuncElement("GetComInterfaceFromMethodDesc", StubHelpers::GetComInterfaceFromMethodDesc)
     FCFuncElement("GetCOMIPFromRCW", StubHelpers::GetCOMIPFromRCW)
 #endif // FEATURE_COMINTEROP
+#ifdef FEATURE_VARARGS
     FCFuncElement("CalcVaListSize", StubHelpers::CalcVaListSize)
+#endif // FEATURE_VARARGS
     FCFuncElement("LogPinnedArgument", StubHelpers::LogPinnedArgument)
 FCFuncEnd()
 

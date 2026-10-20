@@ -247,13 +247,17 @@ namespace ILVerification.Tests
             }
         }
 
-        public static EcmaModule GetModuleForTestAssembly(string assemblyName)
+        public static EcmaModule GetModuleForTestAssembly(string assemblyName, bool allowIgnoresAccessChecksTo = false)
         {
             var simpleNameToPathMap = new Dictionary<string, string>();
 
-            foreach (var fileName in GetAllTestDlls())
+            foreach (var fileName in Directory.GetFiles(TestAssemblyPath))
             {
-                simpleNameToPathMap.Add(Path.GetFileNameWithoutExtension(fileName), Path.Combine(TestAssemblyPath, fileName));
+                string name = fileName.ToLower();
+                if (name.EndsWith(".dll") || name.EndsWith(".netmodule"))
+                {
+                    simpleNameToPathMap.Add(Path.GetFileNameWithoutExtension(fileName), fileName);
+                }
             }
 
             Assembly coreAssembly = typeof(object).GetTypeInfo().Assembly;
@@ -263,7 +267,7 @@ namespace ILVerification.Tests
             simpleNameToPathMap.Add(systemRuntime.GetName().Name, systemRuntime.Location);
 
             var resolver = new TestResolver(simpleNameToPathMap);
-            var typeSystemContext = new ILVerifyTypeSystemContext(resolver);
+            var typeSystemContext = new ILVerifyTypeSystemContext(resolver) { AllowIgnoresAccessChecksTo = allowIgnoresAccessChecksTo };
             typeSystemContext.SetSystemModule(typeSystemContext.GetModule(resolver.Resolve(coreAssembly.GetName().Name)));
 
             return typeSystemContext.GetModule(resolver.Resolve(new AssemblyName(Path.GetFileNameWithoutExtension(assemblyName)).Name));

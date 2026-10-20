@@ -171,62 +171,6 @@ void* EEDbgInterfaceImpl::GetObjectFromHandle(OBJECTHANDLE handle)
     return OBJECTREFToObject(ObjectFromHandle(handle));
 }
 
-OBJECTHANDLE EEDbgInterfaceImpl::GetHandleFromObject(void *obj,
-                                              bool fStrongNewRef,
-                                              AppDomain *pAppDomain)
-{
-    CONTRACTL
-    {
-        THROWS;  // From CreateHandle
-        GC_NOTRIGGER;
-        PRECONDITION(CheckPointer(pAppDomain));
-    }
-    CONTRACTL_END;
-
-    OBJECTHANDLE oh;
-
-    if (fStrongNewRef)
-    {
-        oh = pAppDomain->CreateStrongHandle(ObjectToOBJECTREF((Object *)obj));
-
-        LOG((LF_CORDB, LL_INFO1000, "EEI::GHFO: Given objectref %p,"
-            "created strong handle %p!\n", obj, oh));
-    }
-    else
-    {
-        oh = pAppDomain->CreateLongWeakHandle( ObjectToOBJECTREF((Object *)obj));
-
-        LOG((LF_CORDB, LL_INFO1000, "EEI::GHFO: Given objectref %p,"
-            "created long weak handle %p!\n", obj, oh));
-    }
-
-    return oh;
-}
-
-void EEDbgInterfaceImpl::DbgDestroyHandle(OBJECTHANDLE oh,
-                                          bool fStrongNewRef)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    LOG((LF_CORDB, LL_INFO1000, "EEI::GHFO: Destroyed given handle %p,"
-        "fStrong: 0x%x!\n", oh, fStrongNewRef));
-
-    if (fStrongNewRef)
-    {
-        DestroyStrongHandle(oh);
-    }
-    else
-    {
-        DestroyLongWeakHandle(oh);
-    }
-}
-
-
 OBJECTHANDLE EEDbgInterfaceImpl::GetThreadException(Thread *pThread)
 {
     CONTRACTL
@@ -386,6 +330,12 @@ BOOL EEDbgInterfaceImpl::IsManagedNativeCode(const BYTE *address)
 {
     WRAPPER_NO_CONTRACT;
     return ExecutionManager::IsManagedCode((PCODE)address);
+}
+
+BOOL EEDbgInterfaceImpl::IsIPInModule(PTR_VOID pModuleBaseAddress, PCODE ip)
+{
+    WRAPPER_NO_CONTRACT;
+    return ::IsIPInModule(pModuleBaseAddress, ip);
 }
 
 PCODE EEDbgInterfaceImpl::GetNativeCodeStartAddress(PCODE address)
@@ -707,6 +657,7 @@ MethodDesc *EEDbgInterfaceImpl::LoadMethodDef(Module* pModule,
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
         PRECONDITION(CheckPointer(pModule));
     }
     CONTRACTL_END;
@@ -805,11 +756,6 @@ TypeHandle EEDbgInterfaceImpl::FindLoadedInstantiation(Module *pModule,
     // Lookup operations run the class loader in non-load mode.
     ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE();
 
-
-    // scan violation:  asserts that this can be suppressed since there is currently
-    // work on dac-izing all this code and as a result the issue will become moot.
-    CONTRACT_VIOLATION(FaultViolation);
-
     return ClassLoader::LoadGenericInstantiationThrowing(pModule, typeDef, Instantiation(inst, ntypars),
                                                         ClassLoader::DontLoadTypes);
 }
@@ -879,6 +825,7 @@ TypeHandle EEDbgInterfaceImpl::LoadClass(Module *pModule,
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
         PRECONDITION(CheckPointer(pModule));
     }
     CONTRACTL_END;
@@ -898,6 +845,7 @@ TypeHandle EEDbgInterfaceImpl::LoadInstantiation(Module *pModule,
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
         PRECONDITION(CheckPointer(pModule));
     }
     CONTRACTL_END;
@@ -913,6 +861,7 @@ TypeHandle EEDbgInterfaceImpl::LoadArrayType(CorElementType et,
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
     }
     CONTRACTL_END;
 
@@ -929,6 +878,7 @@ TypeHandle EEDbgInterfaceImpl::LoadPointerOrByrefType(CorElementType et,
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
     }
     CONTRACTL_END;
 
@@ -942,6 +892,7 @@ TypeHandle EEDbgInterfaceImpl::LoadFnptrType(TypeHandle *inst,
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
     }
     CONTRACTL_END;
 
@@ -955,6 +906,7 @@ TypeHandle EEDbgInterfaceImpl::LoadElementType(CorElementType et)
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
     }
     CONTRACTL_END;
 
@@ -1165,7 +1117,6 @@ bool EEDbgInterfaceImpl::TraceFrame(Thread *thread,
     if (fResult)
     {
         SUPPRESS_ALLOCATION_ASSERTS_IN_THIS_SCOPE;
-        FAULT_NOT_FATAL();
         SString buffer;
         StubManager::DbgWriteLog("  td=%s\n", trace->DbgToString(buffer));
     }
@@ -1211,7 +1162,6 @@ bool EEDbgInterfaceImpl::TraceManager(Thread *thread,
     if (fResult)
     {
         // Should never be on helper thread
-        FAULT_NOT_FATAL();
         SString buffer;
         StubManager::DbgWriteLog("  td=%s\n", trace->DbgToString(buffer));
     }
@@ -1306,6 +1256,7 @@ HRESULT EEDbgInterfaceImpl::SetIPFromSrcToDst(Thread *pThread,
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
     }
     CONTRACTL_END;
 

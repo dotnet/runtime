@@ -148,6 +148,12 @@ namespace System.Net.Http
             set => throw new PlatformNotSupportedException();
         }
 
+        public int InitialHttp2MaxConcurrentStreams
+        {
+            get => throw new PlatformNotSupportedException();
+            set => throw new PlatformNotSupportedException();
+        }
+
         public TimeSpan KeepAlivePingDelay
         {
             get => throw new PlatformNotSupportedException();

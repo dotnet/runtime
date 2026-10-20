@@ -34,9 +34,39 @@ namespace Common.Tests
         [Theory]
         [InlineData("/sys/fs/cgroup/cpu/my_cgroup", "/docker/1234", "/sys/fs/cgroup/cpu", "/docker/1234/my_cgroup")]
         [InlineData("/sys/fs/cgroup/cpu/my_cgroup", "/", "/sys/fs/cgroup/cpu", "/my_cgroup")]
+        [InlineData("/sys/fs/cgroup", "/some/container", "/sys/fs/cgroup", "/some/container")]
         public void ValidateFindCGroupPath(string expectedResult, string hierarchyRoot, string hierarchyMount, string cgroupPathRelativeToMount)
         {
             Assert.Equal(expectedResult, Interop.cgroups.FindCGroupPath(hierarchyRoot, hierarchyMount, cgroupPathRelativeToMount));
+        }
+
+        [Fact]
+        public void ValidateTryGetMemoryLimitV2AtHierarchyMount()
+        {
+            string testRoot = GetTestFilePath();
+            string hierarchyMount = Path.Combine(testRoot, "mount");
+            Directory.CreateDirectory(hierarchyMount);
+            File.WriteAllText(Path.Combine(hierarchyMount, "memory.max"), "1");
+
+            Assert.True(Interop.cgroups.TryGetMemoryLimitV2(hierarchyMount, hierarchyMount, out ulong limit));
+            Assert.Equal(1UL, limit);
+        }
+
+        [Fact]
+        public void ValidateTryGetMemoryLimitV2StopsAtHierarchyMount()
+        {
+            string testRoot = GetTestFilePath();
+            string hierarchyMount = Path.Combine(testRoot, "mount");
+            string parentCGroup = Path.Combine(hierarchyMount, "a");
+            string currentCGroup = Path.Combine(parentCGroup, "b");
+            Directory.CreateDirectory(currentCGroup);
+            File.WriteAllText(Path.Combine(hierarchyMount, "memory.max"), "20");
+            File.WriteAllText(Path.Combine(parentCGroup, "memory.max"), "20");
+            File.WriteAllText(Path.Combine(currentCGroup, "memory.max"), "10");
+            File.WriteAllText(Path.Combine(testRoot, "memory.max"), "2");
+
+            Assert.True(Interop.cgroups.TryGetMemoryLimitV2(currentCGroup, hierarchyMount, out ulong limit));
+            Assert.Equal(10UL, limit);
         }
 
         [Theory]

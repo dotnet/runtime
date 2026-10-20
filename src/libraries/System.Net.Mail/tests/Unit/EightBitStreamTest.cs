@@ -65,6 +65,34 @@ namespace System.Net.Mime.Tests
         }
 
         [Theory]
+        // A bare LF is canonicalized to CRLF, and a leading dot on the following line is
+        // padded when padLeadingDots is enabled.
+        [InlineData(new[] { "Hello\n.World" }, true, "Hello\r\n..World")]
+        // The bare "\n.\n" sequence that some SMTP servers might misinterpret as the
+        // "CRLF.CRLF" end-of-data marker is canonicalized and dot-stuffed.
+        [InlineData(new[] { "a\n.\nb" }, true, "a\r\n..\r\nb")]
+        // A bare LF split across two writes still resets the line state, so the leading
+        // dot on the following line is padded.
+        [InlineData(new[] { "Hello\n", ".World" }, true, "Hello\r\n..World")]
+        // When padLeadingDots is disabled this stream is not responsible for dot-stuffing,
+        // so the bytes (including bare LFs) pass through verbatim.
+        [InlineData(new[] { "Hello\n.World" }, false, "Hello\n.World")]
+        [InlineData(new[] { "a\n.\nb" }, false, "a\n.\nb")]
+        public static void TestEncodeStream_BareLineFeedCanonicalizedToCrlf(string[] chunks, bool padLeadingDots, string expectedOutput)
+        {
+            var outputStream = new MemoryStream();
+            var testStream = new EightBitStream(outputStream, padLeadingDots);
+
+            foreach (string chunk in chunks)
+            {
+                byte[] bytesToWrite = Encoding.ASCII.GetBytes(chunk);
+                testStream.Write(bytesToWrite, 0, bytesToWrite.Length);
+            }
+
+            Assert.Equal(expectedOutput, Encoding.ASCII.GetString(outputStream.ToArray()));
+        }
+
+        [Theory]
         [InlineData(false)]
         [InlineData(true)]
         public static async Task TestEncodeStream_TrailingCarriageReturnEmittedOnDispose(bool useAsyncDispose)

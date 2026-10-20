@@ -265,8 +265,8 @@ GCInfo::WriteBarrierForm GCInfo::gcIsWriteBarrierCandidate(GenTreeStoreInd* stor
 // gcWriteBarrierFormFromTargetAddress: Get the write barrier form from address.
 //
 // This method deconstructs "tgtAddr" to find out if it is "based on" a TYP_REF
-// address, allowing an unchecked barrier to be used, or an address of a local,
-// in which case no barrier is needed.
+// address, allowing an unchecked barrier to be used, or a non-heap address (e.g.
+// a local or an implicit byref), in which case no barrier is needed.
 //
 // Arguments:
 //    tgtAddr - The target address of the store
@@ -276,9 +276,9 @@ GCInfo::WriteBarrierForm GCInfo::gcIsWriteBarrierCandidate(GenTreeStoreInd* stor
 //
 GCInfo::WriteBarrierForm GCInfo::gcWriteBarrierFormFromTargetAddress(GenTree* tgtAddr)
 {
-    if (tgtAddr->OperIs(GT_LCL_ADDR))
+    if (!m_compiler->fgAddrCouldBeHeap(tgtAddr->gtSkipReloadOrCopy()))
     {
-        // No need for a GC barrier when writing to a local variable.
+        // No need for a GC barrier when writing to a local variable or other non-heap storage.
         return GCInfo::WBF_NoBarrier;
     }
 

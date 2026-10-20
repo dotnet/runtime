@@ -202,6 +202,7 @@ void ScanThreadStaticRoots(Thread* pThread, promote_func* fn, ScanContext* sc)
 
     // Report non-collectible object array
     fn(&pThreadLocalData->pNonCollectibleTlsArrayData, sc, 0);
+
 }
 #endif // DACCESS_COMPILE
 
@@ -299,13 +300,7 @@ bool TLSIndexToMethodTableMap::FindClearedIndex(TLSIndex* pIndex)
 
 void InitializeThreadStaticData()
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     g_pThreadStaticCollectibleTypeIndices = new TLSIndexToMethodTableMap(TLSIndexType::Collectible);
     g_pThreadStaticNonCollectibleTypeIndices = new TLSIndexToMethodTableMap(TLSIndexType::NonCollectible);
@@ -332,7 +327,6 @@ void AllocateThreadStaticBoxes(MethodTable *pMT, PTRARRAYREF *ppRef)
         GC_TRIGGERS;
         MODE_COOPERATIVE;
         PRECONDITION(pMT->HasBoxedThreadStatics());
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -751,8 +745,8 @@ void GetTLSIndexForThreadStatic(MethodTable* pMT, bool gcStatic, TLSIndex* pInde
                 {
                     g_directThreadLocalTLSBytesAvailable = newBytesAvailable - alignmentAdjust;
                     newTLSIndex = TLSIndex(TLSIndexType::DirectOnThreadLocalData, actualIndexOffset);
+                    usedDirectOnThreadLocalDataPath = true;
                 }
-                usedDirectOnThreadLocalDataPath = true;
             }
             if (usedDirectOnThreadLocalDataPath)
                 VolatileStore(&g_pMethodTablesForDirectThreadLocalData[IndexOffsetToDirectThreadLocalIndex(newTLSIndex.GetIndexOffset())], pMT);

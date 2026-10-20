@@ -44,7 +44,7 @@ from jitutil import run_command, copy_directory, copy_files, set_pipeline_variab
 parser = argparse.ArgumentParser(description="description")
 
 parser.add_argument("-collection_type", required=True, help="Type of the SPMI collection to be done (nativeaot, crossgen2, pmi, run, run_tiered, run_pgo, run_pgo_optrepeat)")
-parser.add_argument("-collection_name", required=True, help="Name of the SPMI collection to be done (e.g., libraries, libraries_tests, coreclr_tests, benchmarks, aspnet2, corelib)")
+parser.add_argument("-collection_name", required=True, help="Name of the SPMI collection to be done (e.g., libraries, libraries_tests, coreclr_tests, benchmarks, aspnet2, aspire, corelib)")
 parser.add_argument("-payload_directory", required=True, help="Path to payload directory to create: subdirectories are created for the correlation payload as well as the per-partition work items")
 parser.add_argument("-source_directory", required=True, help="Path to source directory")
 parser.add_argument("-core_root_directory", required=True, help="Path to Core_Root directory")
@@ -542,8 +542,8 @@ def main(main_args):
     if coreclr_args.collection_name == "benchmarks" or coreclr_args.collection_name == "realworld":
         # Setup benchmarks
         setup_benchmark(workitem_payload_directory, arch)
-    elif coreclr_args.collection_name == "aspnet2":
-        # Nothing to prepare for aspnet2, its script is fully self-contained.
+    elif coreclr_args.collection_name == "aspnet2" or coreclr_args.collection_name == "aspire":
+        # Nothing to prepare for aspnet2/aspire, their scripts are fully self-contained.
         # Just make sure workitem_payload_directory folder exists:
         os.makedirs(workitem_payload_directory, exist_ok=True)
     else:

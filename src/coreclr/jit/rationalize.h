@@ -13,6 +13,26 @@ private:
     BasicBlock* m_block;
     Statement*  m_statement;
 
+    struct ParameterUse
+    {
+        GenTreeLclVarCommon* Node;
+        BasicBlock*          Block;
+    };
+
+    struct ParameterUses
+    {
+        ArrayStack<ParameterUse> Uses;
+        bool                     HasKills = false;
+        bool                     HasReads = false;
+
+        ParameterUses(CompAllocator allocator)
+            : Uses(allocator)
+        {
+        }
+    };
+
+    ParameterUses** m_parameterUses = nullptr;
+
 public:
     Rationalizer(Compiler* comp);
 
@@ -30,6 +50,39 @@ public:
     virtual PhaseStatus DoPhase() override;
 
 private:
+    class RationalizeVisitor final : public GenTreeVisitor<RationalizeVisitor>
+    {
+        Rationalizer& m_rationalizer;
+
+    public:
+        enum
+        {
+            ComputeStack      = true,
+            DoPreOrder        = true,
+            DoPostOrder       = true,
+            UseExecutionOrder = true,
+        };
+
+        RationalizeVisitor(Rationalizer& rationalizer)
+            : GenTreeVisitor<RationalizeVisitor>(rationalizer.m_compiler)
+            , m_rationalizer(rationalizer)
+        {
+        }
+
+        fgWalkResult PreOrderVisit(GenTree** use, GenTree* user);
+        fgWalkResult PostOrderVisit(GenTree** use, GenTree* user);
+    };
+
+    // Root visitor
+    Compiler::fgWalkResult RewriteNode(GenTree** useEdge, Compiler::GenTreeStack& parents);
+
+private:
+    bool ShouldRecordParameterUse(GenTree* node);
+    void RecordParameterUse(GenTree* node);
+    void ForgetParameterUses(const LIR::ReadOnlyRange& range);
+    void RewriteParameterUses();
+    void RewriteParameterField(BasicBlock* block, GenTreeLclFld* field);
+
     inline LIR::Range& BlockRange() const
     {
         return LIR::AsRange(m_block);
@@ -50,7 +103,7 @@ private:
     void RewriteIntrinsicAsUserCall(GenTree** use, Compiler::GenTreeStack& parents);
 #if defined(FEATURE_HW_INTRINSICS)
     // pre-order rewriting
-    void RewriteHWIntrinsicAsUserCall(GenTree** use, Compiler::GenTreeStack& parents);
+    void RewriteHWIntrinsicAsUserCall(GenTree** use, Compiler::GenTreeStack& parents, RationalizeVisitor* revisitor);
 
     // post-order rewriting
     void RewriteHWIntrinsic(GenTree** use, Compiler::GenTreeStack& parents);
@@ -76,33 +129,6 @@ private:
 #ifdef TARGET_ARM64
     void RewriteSubLshDiv(GenTree** use);
 #endif
-
-    // Root visitor
-    Compiler::fgWalkResult RewriteNode(GenTree** useEdge, Compiler::GenTreeStack& parents);
-
-private:
-    class RationalizeVisitor final : public GenTreeVisitor<RationalizeVisitor>
-    {
-        Rationalizer& m_rationalizer;
-
-    public:
-        enum
-        {
-            ComputeStack      = true,
-            DoPreOrder        = true,
-            DoPostOrder       = true,
-            UseExecutionOrder = true,
-        };
-
-        RationalizeVisitor(Rationalizer& rationalizer)
-            : GenTreeVisitor<RationalizeVisitor>(rationalizer.m_compiler)
-            , m_rationalizer(rationalizer)
-        {
-        }
-
-        fgWalkResult PreOrderVisit(GenTree** use, GenTree* user);
-        fgWalkResult PostOrderVisit(GenTree** use, GenTree* user);
-    };
 };
 
 inline Rationalizer::Rationalizer(Compiler* _comp)

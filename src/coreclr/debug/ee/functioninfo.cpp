@@ -1806,7 +1806,6 @@ void DebuggerMethodInfo::DJIIterator::Next(BOOL fFirst /*=FALSE*/)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
         MODE_ANY;
         CANNOT_TAKE_LOCK;
     }

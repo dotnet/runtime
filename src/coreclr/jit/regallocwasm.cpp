@@ -189,7 +189,6 @@ void WasmRegAlloc::IdentifyCandidates()
             m_compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::WasmGCVisibility));
             varIsRegCandidate = false;
         }
-
         if (varIsRegCandidate)
         {
             JITDUMP("RA candidate: V%02u\n", lclNum);
@@ -579,16 +578,12 @@ void WasmRegAlloc::CollectReferencesForCall(GenTreeCall* callNode)
 
     // For a fast tail call, wrap the SP arg with ADD(SP, FRAME_SIZE) so codegen
     // undoes the prolog's SP adjustment and the callee sees the incoming SP.
-    // The arg has been rewritten to GT_PHYSREG above (args are visited before the call).
     if (callNode->IsFastTailCall())
     {
         CallArg* const spArg = callNode->gtArgs.FindWellKnownArg(WellKnownArg::WasmShadowStackPointer);
         if (spArg != nullptr)
         {
             GenTree* const physReg = spArg->GetNode();
-            assert(physReg != nullptr);
-            assert(physReg->OperIs(GT_PHYSREG));
-            assert(physReg->AsPhysReg()->gtSrcReg == m_perFuncletData[m_currentFunclet]->m_spReg);
             // Fast tail calls from funclets are not supported.
             assert(m_currentFunclet == ROOT_FUNC_IDX);
 
@@ -1123,7 +1118,11 @@ void WasmRegAlloc::ResolveReferences()
                     unsigned                     lclNum  = m_compiler->lvaGetLclNum(varDsc);
                     const ABIPassingInformation& abiInfo = m_compiler->lvaGetParameterABIInfo(lclNum);
                     assert(abiInfo.HasExactlyOneRegisterSegment());
-                    physReg = abiInfo.Segment(0).GetRegister();
+                    regNumber abiReg = abiInfo.Segment(0).GetRegister();
+                    if (WasmRegToType(virtReg) == WasmRegToType(abiReg))
+                    {
+                        physReg = abiReg;
+                    }
                 }
                 else if ((varDsc != nullptr) && varDsc->lvIsParamRegTarget)
                 {
@@ -1131,7 +1130,11 @@ void WasmRegAlloc::ResolveReferences()
                     const ParameterRegisterLocalMapping* mapping =
                         m_compiler->FindParameterRegisterLocalMappingByLocal(lclNum, 0);
                     assert(mapping != nullptr);
-                    physReg = mapping->RegisterSegment->GetRegister();
+                    regNumber abiReg = mapping->RegisterSegment->GetRegister();
+                    if (WasmRegToType(virtReg) == WasmRegToType(abiReg))
+                    {
+                        physReg = abiReg;
+                    }
                 }
             }
             else

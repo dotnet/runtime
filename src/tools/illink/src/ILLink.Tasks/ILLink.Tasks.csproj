@@ -21,9 +21,9 @@
     <!-- Don't use the TFM but a short form of it without the version to simulate the package layout. -->
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <OutputPath Condition="'$(TargetFramework)' == '$(NetCoreAppToolCurrent)'">$(OutputPath)net\</OutputPath>
-    <OutputPath Condition="'$(TargetFramework)' == '$(NetFrameworkToolCurrent)'">$(OutputPath)netframework\</OutputPath>
+    <OutputPath Condition="'$(NetFrameworkToolCurrent)' != '' and '$(TargetFramework)' == '$(NetFrameworkToolCurrent)'">$(OutputPath)netframework\</OutputPath>
     <IntermediateOutputPath Condition="'$(TargetFramework)' == '$(NetCoreAppToolCurrent)'">$(IntermediateOutputPath)net\</IntermediateOutputPath>
-    <IntermediateOutputPath Condition="'$(TargetFramework)' == '$(NetFrameworkToolCurrent)'">$(IntermediateOutputPath)netframework\</IntermediateOutputPath>
+    <IntermediateOutputPath Condition="'$(NetFrameworkToolCurrent)' != '' and '$(TargetFramework)' == '$(NetFrameworkToolCurrent)'">$(IntermediateOutputPath)netframework\</IntermediateOutputPath>
   </PropertyGroup>
 
   <!-- Include the illink.runtimeconfig.pack.json file (which depends on the runtimeversion being built)
@@ -50,6 +50,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="ILLink.Tasks.Tests" />
+
     <ProjectReference Include="..\ILLink.CodeFix\ILLink.CodeFixProvider.csproj" ReferenceOutputAssembly="false" PackAsAnalyzer="true" />
     <ProjectReference Include="..\ILLink.RoslynAnalyzer\ILLink.RoslynAnalyzer.csproj" ReferenceOutputAssembly="false" PackAsAnalyzer="true" />
     <ProjectReference Include="..\linker\Mono.Linker.csproj" Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
@@ -63,6 +65,7 @@
   </ItemGroup>
 
   <Import Project="$(RepositoryEngineeringDir)PackageDownloadAndReference.targets" />
+  <Import Project="$(RepositoryEngineeringDir)DiaSymReaderNative.targets" Condition="'$(TargetOS)' == 'windows'" />
 
   <ItemGroup>
     <!--

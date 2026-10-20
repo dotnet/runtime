@@ -63,7 +63,6 @@ TypeHandle ClassLoader::CanonicalizeGenericArg(TypeHandle thGenericArg)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
     }
     CONTRACTL_END
 
@@ -81,7 +80,6 @@ TypeHandle ClassLoader::CanonicalizeGenericArg(TypeHandle thGenericArg)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
     }
     CONTRACTL_END
 
@@ -99,7 +97,6 @@ TypeHandle ClassLoader::CanonicalizeGenericArg(TypeHandle thGenericArg)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
     }
     CONTRACTL_END
 
