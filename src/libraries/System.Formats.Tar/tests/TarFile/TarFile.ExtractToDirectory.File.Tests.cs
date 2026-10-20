@@ -1117,6 +1117,7 @@ namespace System.Formats.Tar.Tests
             {
                 using MemoryStream data = new MemoryStream([1, 2, 3]);
                 writer.WriteEntry(new PaxTarEntry(TarEntryType.RegularFile, "directory/target.txt") { DataStream = data });
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.HardLink, "seed-link.txt") { LinkName = "directory/target.txt" });
                 changePosition = archive.Position;
                 writer.WriteEntry(new PaxTarEntry(TarEntryType.HardLink, "alias.txt") { LinkName = "directory/target.txt" });
             }
@@ -1130,6 +1131,7 @@ namespace System.Formats.Tar.Tests
             await Assert.ThrowsAsync<IOException>(() => ExtractToDirectory(source, destination, overwriteFiles: false, async));
 
             Assert.False(Path.Exists(Path.Join(destination, "alias.txt")));
+            Assert.Equal(new byte[] { 1, 2, 3 }, File.ReadAllBytes(Path.Join(destination, "seed-link.txt")));
             Assert.Equal("outside", File.ReadAllText(Path.Join(outside, "target.txt")));
             Assert.Equal(new byte[] { 1, 2, 3 }, File.ReadAllBytes(Path.Join(destination, "saved", "target.txt")));
         }
