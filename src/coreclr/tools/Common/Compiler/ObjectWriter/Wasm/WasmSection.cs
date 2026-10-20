@@ -58,7 +58,7 @@ namespace ILCompiler.ObjectWriter
     {
         public WasmSectionType Type { get; }
 
-        protected virtual int ContentPrefixSize => 0;
+        internal virtual int ContentPrefixSize => 0;
 
         protected virtual int EncodeContentPrefix(Span<byte> destination) => 0;
 
@@ -128,7 +128,7 @@ namespace ILCompiler.ObjectWriter
             Debug.Assert(!customSectionName.IsNull);
         }
 
-        protected sealed override int ContentPrefixSize => checked(
+        internal sealed override int ContentPrefixSize => checked(
             (int)DwarfHelper.SizeOfULEB128((ulong)SectionName.Length) +
             SectionName.Length +
             CustomPayloadPrefixSize);
@@ -237,7 +237,7 @@ namespace ILCompiler.ObjectWriter
     {
         public int EntryCount { get; protected set; }
 
-        protected override int ContentPrefixSize => (int)DwarfHelper.SizeOfULEB128((ulong)EntryCount);
+        internal override int ContentPrefixSize => (int)DwarfHelper.SizeOfULEB128((ulong)EntryCount);
 
         protected override int EncodeContentPrefix(Span<byte> destination) =>
             DwarfHelper.WriteULEB128(destination, (ulong)EntryCount);

@@ -156,7 +156,9 @@ namespace System.Net.Security
                 }
                 if (rc < 0)
                 {
-                    throw new IOException(SR.net_ssl_read_bio_failed_error);
+                    // EOF, a recv() error, a record larger than the peek buffer, bad arguments or
+                    // allocation failure. None of these pushes an OpenSSL error, so there is none to report.
+                    throw new IOException(SR.net_ssl_read_client_hello_failed);
                 }
 
                 ReadOnlySpan<byte> frame = new ReadOnlySpan<byte>(framePtr, frameLen);

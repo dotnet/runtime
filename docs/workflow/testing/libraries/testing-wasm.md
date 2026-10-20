@@ -194,6 +194,21 @@ stale staged assets can otherwise cause assembly-loading failures before tests s
 The `LibraryTestsCoreCLR_R2R` CI jobs use the same configuration and archive the published
 tests for execution on Helix. The existing interpreter jobs remain separate.
 
+To run a library suite with a single composite ReadyToRun image instead of per-assembly
+images, add `PublishReadyToRunComposite=true`:
+
+```bash
+XHARNESS_COMMAND=test-browser ./build.sh libs.tests -test -os browser -c Release \
+  --projects $PWD/src/libraries/System.Memory/tests/System.Memory.Tests.csproj \
+  /p:RuntimeFlavor=CoreCLR /p:TestWasmReadyToRun=true /p:PublishReadyToRunComposite=true \
+  /p:EnableAggressiveTrimming=true /p:Scenario=WasmTestOnChrome /p:InstallChromeForTests=true
+```
+
+The composite image (`<test assembly>.r2r.wasm`) is staged into `wwwroot/_framework` beside
+the component WebCIL stubs and listed in the boot config. As with other mode switches, clean
+the project-specific `bin` and `obj` outputs when switching between composite and per-assembly
+images.
+
 For CoreCLR browser applications, set `PublishReadyToRun=true` and
 `PublishReadyToRunComposite=true` to publish a single composite ReadyToRun image and
 component WebCIL stubs instead of per-assembly images. Publishing requires a wasm-capable

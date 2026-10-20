@@ -7570,10 +7570,11 @@ void Lowering::ContainCheckIndir(GenTreeIndir* node)
         // The address of an indirection that requires its address in a reg.
         // Skip any further processing that might otherwise make it contained.
     }
-    else if (addr->OperIs(GT_LCL_ADDR) && IsContainableLclAddr(addr->AsLclFld(), node->Size()))
+    else if (addr->OperIs(GT_LCL_ADDR) && !node->IsVolatile() && IsContainableLclAddr(addr->AsLclFld(), node->Size()))
     {
         // These nodes go into an addr mode:
         // - GT_LCL_ADDR is a stack addr mode.
+        // Volatile accesses are not contained so that the emitter's stack move peephole cannot remove them.
         MakeSrcContained(node, addr);
     }
     else if (addr->IsCnsIntOrI())
@@ -7837,12 +7838,14 @@ void Lowering::ContainCheckStoreIndir(GenTreeStoreInd* node)
                     switch (tupleType)
                     {
                         case INS_TT_HALF_MEM:
+                        case INS_TT_HALF:
                         {
                             memSize = simdSize / 2;
                             break;
                         }
 
                         case INS_TT_QUARTER_MEM:
+                        case INS_TT_QUARTER:
                         {
                             memSize = simdSize / 4;
                             break;
@@ -8962,6 +8965,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                             break;
                         }
 
+                        case INS_TT_QUARTER:
                         case INS_TT_QUARTER_MEM:
                         {
                             expectedSize /= 4;

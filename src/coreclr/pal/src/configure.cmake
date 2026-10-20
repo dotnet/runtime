@@ -105,7 +105,6 @@ if (PTHREAD_LIBRARY)
   check_library_exists(${PTHREAD_LIBRARY} pthread_attr_get_np "" HAVE_PTHREAD_ATTR_GET_NP)
   check_library_exists(${PTHREAD_LIBRARY} pthread_getattr_np "" HAVE_PTHREAD_GETATTR_NP)
   check_library_exists(${PTHREAD_LIBRARY} pthread_getcpuclockid "" HAVE_PTHREAD_GETCPUCLOCKID)
-  check_library_exists(${PTHREAD_LIBRARY} pthread_getaffinity_np "" HAVE_PTHREAD_GETAFFINITY_NP)
 endif()
 
 check_function_exists(fsync HAVE_FSYNC)
@@ -119,7 +118,6 @@ endif()
 check_function_exists(sysconf HAVE_SYSCONF)
 check_function_exists(gmtime_r HAVE_GMTIME_R)
 check_function_exists(poll HAVE_POLL)
-check_function_exists(statvfs HAVE_STATVFS)
 check_function_exists(thread_self HAVE_THREAD_SELF)
 check_function_exists(_lwp_self HAVE__LWP_SELF)
 check_function_exists(pthread_mach_thread_np HAVE_MACH_THREADS)
@@ -139,8 +137,6 @@ int main(int argc, char **argv) {
 }" HAVE_SIGALTSTACK)
 check_function_exists(vm_allocate HAVE_VM_ALLOCATE)
 check_function_exists(vm_read HAVE_VM_READ)
-check_function_exists(semget HAS_SYSV_SEMAPHORES)
-check_function_exists(pthread_mutex_init HAS_PTHREAD_MUTEXES)
 check_function_exists(ttrace HAVE_TTRACE)
 
 cmake_push_check_state()
@@ -174,15 +170,8 @@ else()
 endif()
 check_type_size(ucontext_t UCONTEXT_T)
 set(CMAKE_EXTRA_INCLUDE_FILES)
-set(CMAKE_EXTRA_INCLUDE_FILES pthread.h)
-check_type_size(pthread_rwlock_t PTHREAD_RWLOCK_T)
-set(CMAKE_EXTRA_INCLUDE_FILES)
-set(CMAKE_EXTRA_INCLUDE_FILE procfs.h)
-check_type_size(prwatch_t PRWATCH_T)
-set(CMAKE_EXTRA_INCLUDE_FILE)
 check_type_size(off_t SIZEOF_OFF_T)
 
-check_cxx_symbol_exists(SYS_yield sys/syscall.h HAVE_YIELD_SYSCALL)
 check_cxx_symbol_exists(INFTIM poll.h HAVE_INFTIM)
 check_cxx_symbol_exists(_DEBUG sys/user.h USER_H_DEFINES_DEBUG)
 check_cxx_symbol_exists(_SC_PHYS_PAGES unistd.h HAVE__SC_PHYS_PAGES)
@@ -207,117 +196,6 @@ int main(void) {
   }
   exit(0);
 }" REALPATH_SUPPORTS_NONEXISTENT_FILES)
-check_cxx_source_runs("
-#include <stdio.h>
-#include <stdlib.h>
-#include <fcntl.h>
-#include <string.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <sys/time.h>
-#include <unistd.h>
-
-int main(void) {
-    int fd, numFDs;
-    fd_set readFDs, writeFDs, exceptFDs;
-    struct timeval time = { 0 };
-    char * filename = NULL;
-
-    filename = (char *)malloc(L_tmpnam * sizeof(char)); /* ok to leak this at exit */
-    if (NULL == filename) {
-      exit(0);
-    }
-
-    /* On some platforms (e.g. HP-UX) the multithreading c-runtime does not
-       support the tmpnam(NULL) semantics, and it returns NULL. Therefore
-       we need to use the tmpnam(pbuffer) version.
-    */
-    if (NULL == tmpnam(filename)) {
-      exit(0);
-    }
-    if (mkfifo(filename, S_IRWXU) != 0) {
-      if (unlink(filename) != 0) {
-        exit(0);
-      }
-      if (mkfifo(filename, S_IRWXU) != 0) {
-        exit(0);
-      }
-    }
-    fd = open(filename, O_RDWR | O_NONBLOCK);
-    if (fd == -1) {
-      exit(0);
-    }
-
-    FD_ZERO(&readFDs);
-    FD_ZERO(&writeFDs);
-    FD_ZERO(&exceptFDs);
-    FD_SET(fd, &readFDs);
-    numFDs = select(fd + 1, &readFDs, &writeFDs, &exceptFDs, &time);
-
-    close(fd);
-    unlink(filename);
-
-    /* numFDs is zero if select() works correctly */
-    exit(numFD==0);
-}" HAVE_BROKEN_FIFO_SELECT)
-check_cxx_source_runs("
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <string.h>
-#include <errno.h>
-#include <sys/types.h>
-#include <sys/event.h>
-#include <sys/time.h>
-#include <sys/stat.h>
-
-int main(void)
-{
-  int ikq;
-  int iRet;
-  int fd;
-  struct kevent ke, keChangeList;
-  struct timespec ts = { 0, 0 };
-
-  char * filename = NULL;
-
-  filename = (char *)malloc(L_tmpnam * sizeof(char)); /* ok to leak this at exit */
-  if (NULL == filename)
-  {
-    exit(1);
-  }
-
-  /* On some platforms (e.g. HP-UX) the multithreading c-runtime does not
-     support the tmpnam(NULL) semantics, and it returns NULL. Therefore
-     we need to use the tmpnam(pbuffer) version.
-  */
-  if (NULL == tmpnam(filename)) {
-    exit(0);
-  }
-  if (mkfifo(filename, S_IRWXU) != 0) {
-    if (unlink(filename) != 0) {
-      exit(0);
-    }
-    if (mkfifo(filename, S_IRWXU) != 0) {
-      exit(0);
-    }
-  }
-  fd = open(filename, O_RDWR | O_NONBLOCK);
-  if (fd == -1) {
-    exit(0);
-  }
-
-  EV_SET(&keChangeList, fd, EVFILT_READ, EV_ADD | EV_CLEAR, 0, 0, NULL);
-  ikq = kqueue();
-  iRet = kevent(ikq, &keChangeList, 1, &ke, 1, &ts);
-
-  close(fd);
-  unlink(filename);
-
-  /* iRet is zero is kevent() works correctly */
-  return(iRet==0);
-}" HAVE_BROKEN_FIFO_KEVENT)
 set(CMAKE_REQUIRED_LIBRARIES pthread)
 check_cxx_source_runs("
 #include <stdio.h>
@@ -342,34 +220,6 @@ int main(void)
 
   exit(-1 == max_priority || -1 == min_priority);
 }" HAVE_SCHED_GET_PRIORITY)
-check_cxx_source_runs("
-#include <stdlib.h>
-#include <time.h>
-#include <sys/time.h>
-
-int main()
-{
-  int ret;
-  struct timeval tv;
-  ret = gettimeofday(&tv, NULL);
-
-  exit(ret);
-}" HAVE_WORKING_GETTIMEOFDAY)
-
-set(CMAKE_REQUIRED_LIBRARIES ${CMAKE_RT_LIBS})
-check_cxx_source_runs("
-#include <stdlib.h>
-#include <time.h>
-#include <sys/time.h>
-
-int main()
-{
-  int ret;
-  struct timespec ts;
-  ret = clock_gettime(CLOCK_REALTIME, &ts);
-
-  exit(ret);
-}" HAVE_WORKING_CLOCK_GETTIME)
 set(CMAKE_REQUIRED_LIBRARIES)
 
 
@@ -538,9 +388,6 @@ int main(void) {
   exit(0);
 }" HAVE_PROCFS_STAT)
 set(CMAKE_REQUIRED_LIBRARIES)
-
-set(SYNCHMGR_SUSPENSION_SAFE_CONDITION_SIGNALING 1)
-set(ERROR_FUNC_FOR_GLOB_HAS_FIXED_PARAMS 1)
 
 if(NOT CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
   list(INSERT CMAKE_REQUIRED_INCLUDES 0 ${CLR_SRC_NATIVE_DIR}/external/libunwind/include ${CLR_ARTIFACTS_OBJ_DIR}/external/libunwind/include)
