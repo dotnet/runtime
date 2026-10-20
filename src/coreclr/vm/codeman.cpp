@@ -3618,8 +3618,7 @@ TypeHandle InterpreterJitManager::ResolveEHClause(EE_ILEXCEPTION_CLAUSE* pEHClau
         MethodDesc *pMD = pCf->GetFunction();
         TypeHandle declaringType = (TypeHandle)pMD->GetMethodTable();
 
-        // Handle the case where the method is a static shared generic method and we need to keep the type
-        // of the generic parameters alive
+        // Shared generic code needs the frame's exact generic context to resolve the exception type.
         if (paramContextType == GENERIC_PARAM_CONTEXT_METHODDESC)
         {
             pMD = dac_cast<PTR_MethodDesc>(genericsToken);
