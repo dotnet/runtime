@@ -1755,7 +1755,7 @@ namespace ILLink.Shared.TrimAnalysis
             {
                 builder.Add(_annotations.GetGenericParameterValue(genericParameter));
             }
-            return builder.ToImmutableArray();
+            return builder.MoveToImmutable();
         }
 
         private void ProcessCreateInstanceByName(MethodProxy calledMethod, IReadOnlyList<MultiValue> argumentValues)

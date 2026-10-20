@@ -29,26 +29,46 @@ namespace System.IO.Compression
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="compressionLevel"/> is not a valid <see cref="CompressionLevel"/> value.</exception>
         public ZstandardStream(Stream stream, CompressionLevel compressionLevel, bool leaveOpen)
         {
+            int quality = ZstandardUtils.GetQualityFromCompressionLevel(compressionLevel);
+
             Init(stream, CompressionMode.Compress);
             _mode = CompressionMode.Compress;
             _leaveOpen = leaveOpen;
 
-            _encoder = new ZstandardEncoder(ZstandardUtils.GetQualityFromCompressionLevel(compressionLevel));
+            try
+            {
+                _encoder = new ZstandardEncoder(quality);
+            }
+            catch
+            {
+                _buffer.Dispose();
+                throw;
+            }
         }
 
         /// <summary>Initializes a new instance of the <see cref="ZstandardStream" /> class by using the specified stream, options, and optionally leaves the stream open.</summary>
         /// <param name="stream">The stream to which compressed data is written or from which data to decompress is read.</param>
         /// <param name="compressionOptions">The options to use for Zstandard compression or decompression.</param>
         /// <param name="leaveOpen"><see langword="true" /> to leave the stream open after the <see cref="ZstandardStream" /> object is disposed; otherwise, <see langword="false" />.</param>
-        /// <exception cref="ArgumentNullException"><paramref name="stream"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="stream"/> or <paramref name="compressionOptions"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentException"><paramref name="stream"/> does not support writing.</exception>
         public ZstandardStream(Stream stream, ZstandardCompressionOptions compressionOptions, bool leaveOpen = false)
         {
+            ArgumentNullException.ThrowIfNull(compressionOptions);
+
             Init(stream, CompressionMode.Compress);
             _mode = CompressionMode.Compress;
             _leaveOpen = leaveOpen;
 
-            _encoder = new ZstandardEncoder(compressionOptions);
+            try
+            {
+                _encoder = new ZstandardEncoder(compressionOptions);
+            }
+            catch
+            {
+                _buffer.Dispose();
+                throw;
+            }
         }
 
         /// <summary>Initializes a new instance of the <see cref="ZstandardStream" /> class by using the specified stream and encoder instance.</summary>

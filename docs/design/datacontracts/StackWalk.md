@@ -187,6 +187,7 @@ Unwinding call frames on the stack usually requires an OS specific implementatio
 | `Module` | `ReadyToRunInfo` | `pointer` | Pointer to the module's ReadyToRun information |
 | `Object` | `m_pMethTab` | `pointer` | Method table for the object |
 | `PInvokeCalliFrame` | `VASigCookiePtr` | `pointer` | Pointer to the varargs signature cookie for the unmanaged call |
+| `PortableEntryPoint` | `ActualCode` | `pointer` | Native code for the entrypoint; on WebAssembly R2R code this is a function-table index (only defined if `FeaturePortableEntrypoints` is enabled) |
 | `ReadyToRunInfo` | `ImportSections` | `pointer` | Pointer to the array of ReadyToRun import sections |
 | `ReadyToRunInfo` | `LoadedImageBase` | `pointer` | Base address of the loaded R2R image |
 | `ReadyToRunInfo` | `MinVirtualIP` | `pointer` | Base virtual IP assigned to the ReadyToRun module on WebAssembly |
@@ -212,6 +213,7 @@ Unwinding call frames on the stack usually requires an OS specific implementatio
 | `TransitionBlock` | `CalleeSavedRegisters` | `pointer` | Platform specific CalleeSavedRegisters struct associated with the TransitionBlock |
 | `TransitionBlock` | `FirstGCRefMapSlot` | `pointer` | Byte offset where GCRefMap slot enumeration begins. ARM64: RetBuffArgReg offset; others: ArgumentRegisters offset |
 | `TransitionBlock` | `ReturnAddress` | `CodePointer` | Return address associated with the TransitionBlock |
+| `TransitionBlock` | `StackPointer` | `pointer` | WASM only: R2R linear-stack pointer of the caller, saved by the transition helper |
 | `VASigCookie` | `SizeOfArgs` | `uint32` | Total size in bytes of the varargs argument area; used on x86 to locate the argument base |
 
 ### Global variables used
@@ -451,7 +453,7 @@ Most of the handlers are implemented in `BaseFrameHandler`. Platform specific co
 InlinedCallFrames store and update only the IP, SP, and FP of a given context. If the stored IP (CallerReturnAddress) is 0 then the InlinedCallFrame does not have an active call and should not update the context.
 
 * On ARM, the InlinedCallFrame stores the value of the SP after the prolog (`SPAfterProlog`) to allow unwinding for functions with stackalloc. When a function uses stackalloc, the CallSiteSP can already have been adjusted. This value should be placed in R9.
-* On WASM, a `CallerReturnAddress` of `INLINED_PINVOKE_FROM_R2R` (`1`) marks an active inlined P/Invoke from ReadyToRun code rather than an address. SP is taken from `CallSiteSP`, IP is the R2R virtual IP of the shadow frame at `CallSiteSP`, and FP is that shadow frame's base. If no virtual IP can be recovered, IP is set to null.
+* On WASM, a `CallerReturnAddress` of `INLINED_PINVOKE_FROM_R2R` (`1`) marks an active inlined P/Invoke from ReadyToRun code rather than an address. SP is taken from `CallSiteSP`, IP is the R2R virtual IP of the shadow frame at `CallSiteSP`, and FP is the WASM logical frame pointer at `CallSiteSP` (see below). If no virtual IP can be recovered, IP is set to null.
 
 An active InlinedCallFrame stays the current Frame after its context update so the skipped-Frame check can step past it once the walk reaches the managed caller. If the updated IP is not managed code (for example, no WASM R2R virtual IP could be recovered), the walk fails, matching native `StackFrameIterator::NextRaw`; otherwise it would never advance past the Frame.
 
@@ -472,8 +474,23 @@ When updating the context from a TransitionFrame, the IP, SP, and all ABI specif
 * On ARM, the additional register values stored in `ArgumentRegisters` are copied over. The `TransitionBlock` holds a pointer to the `ArgumentRegister` struct containing these values.
 * On x86, the caller SP also skips callee-popped stack arguments. For `ExternalMethodFrame` and `StubDispatchFrame`, the argument size comes from the frame's GCRefMap, including when its MethodDesc is null. `ReadStackPop()` gives the number of pointer-sized slots to add to the SP. If no GCRefMap is available, MethodDesc-backed frames use the argument map computed from their signature. `PInvokeCalliFrame` instead uses `VASigCookie.SizeOfArgs`.
 * For an x86 `StubDispatchFrame` without a GCRefMap, resolve its method from the stored MethodDesc or its representative MethodTable and slot. If no method is available, the SP stays at the end of the transition block and the IP is adjusted to the call instruction by subtracting five bytes from the saved return address.
+* On WASM, a transition helper called from R2R code records the caller's R2R linear-stack pointer in `TransitionBlock.StackPointer`, and may leave `ReturnAddress` 0. When `ReturnAddress` is 0 and `StackPointer` is set, the return address is the R2R virtual IP of the frame at `StackPointer` (native `FramedMethodFrame::GetTransitionBlock_Impl`). When `StackPointer` is set and a return address is known, the caller's SP is `StackPointer` and its FP is the WASM logical frame pointer at `StackPointer` (native `TransitionFrame::GetSP`); otherwise the SP is the end of the TransitionBlock and the FP is null. This also applies when the interpreted chain under an `InterpreterFrame` is exhausted and the walker applies the `InterpreterFrame`'s transition.
 
-**Return Address**: Read from `TransitionBlock.ReturnAddress`. For an x86 `StubDispatchFrame` with neither a method nor a GCRefMap, subtract five bytes to return the adjusted call address, matching the context update.
+**WASM R2R frame records.** An unwindable R2R frame records a 32-bit frame identity at offset 0 and half of its function-local virtual IP at offset 4. Stack pointers at or below the first linear-memory page do not identify an R2R frame. Identity `0` (`STACK_WALK_INDIRECT_TO_FRAMEPOINTER`) identifies a localloc slot; the actual frame pointer is stored one pointer-sized slot later. Identity `1` (`TERMINATE_R2R_STACK_WALK`) terminates the R2R walk.
+
+Root-method frame identities have three forms:
+
+* An aligned identity is a `PortableEntryPoint`; its `ActualCode` is the method's function-table index.
+* A negative odd identity identifies a directly called CoreLib managed helper. The CoreLib runtime-function index is `(~identity) >> 1` and is resolved against the CoreLib R2R image whose `MinVirtualIP` is `0x80000001`.
+* A positive odd identity identifies a reverse-P/Invoke root. Its function-table index is `identity >> 1`. Because only reverse-P/Invoke roots are emitted without a portable-entrypoint argument, this identity also records that the caller is native.
+
+A funclet instead stores its establishing-frame pointer plus two, giving the identity low bits `10`. These tags are followed until the root-method frame is reached. The physical funclet frame supplies the function-local virtual IP, while the root frame supplies the identity used to find the controlling method's base virtual IP. cDAC requires each establishing-frame link to move toward the caller and bounds the traversal so corrupt target memory cannot create an unbounded walk.
+
+**WASM R2R unwinding.** The virtual IP is the identity-derived method base plus twice the physical frame's stored function-local value. `WasmContext.Unwind` passes its current virtual IP as the control PC to `IExecutionManager.TryGetUnwindInfo`, reads the fixed frame size as a uint32 ULEB128 value from `unwindInfoBaseAddress + RuntimeFunction.UnwindData`, and adds that size to the physical frame base. A zero frame size terminates the R2R walk because it would make no progress; malformed uint32 ULEB128 data is invalid.
+
+For a managed caller, the resulting stack pointer identifies the caller's R2R frame record; its virtual IP and logical frame pointer are resolved as above. When the current frame has a positive odd reverse-P/Invoke identity, unwinding still preserves the advanced caller SP for the explicit `Frame` chain, but leaves IP and FP null because the caller is native. At a terminator or another non-R2R caller, the R2R context is cleared and walking continues through the explicit `Frame` or interpreter frame chain.
+
+**Return Address**: Read from `TransitionBlock.ReturnAddress`. On WASM, it is derived from `TransitionBlock.StackPointer` when it is 0, as above. For an x86 `StubDispatchFrame` with neither a method nor a GCRefMap, subtract five bytes to return the adjusted call address, matching the context update.
 
 The following Frame types also use this mechanism:
 * FramedMethodFrame

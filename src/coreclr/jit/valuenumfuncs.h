@@ -35,10 +35,10 @@ ValueNumFuncDef(CastClass, 2, false, false)          // Args: 0: Handle of class
 ValueNumFuncDef(IsInstanceOf, 2, false, false)       // Args: 0: Handle of class being queried, 1: object being queried.
 ValueNumFuncDef(ReadyToRunCastClass, 2, false, false)          // Args: 0: Helper stub address, 1: object being cast.
 ValueNumFuncDef(ReadyToRunIsInstanceOf, 2, false, false)       // Args: 0: Helper stub address, 1: object being queried.
-ValueNumFuncDef(TypeHandleToRuntimeType, 1, false, false)      // Args: 0: TypeHandle to translate
+ValueNumFuncDef(TypeHandleToRuntimeType, 1, false, true)       // Args: 0: TypeHandle to translate
 ValueNumFuncDef(TypeHandleToRuntimeTypeHandle, 1, false, false)      // Args: 0: TypeHandle to translate
 
-ValueNumFuncDef(LdElemA, 3, false, false)            // Args: 0: array value; 1: index value; 2: type handle of element.
+ValueNumFuncDef(LdElemA, 3, false, true)             // Args: 0: array value; 1: index value; 2: type handle of element.
 
 ValueNumFuncDef(ByrefExposedLoad, 3, false, false)      // Args: 0: type handle/id, 1: pointer value; 2: ByrefExposed heap value
 ValueNumFuncDef(ByrefExposedLocalLoad, 4, false, false) // Args: 0: type handle/id, 1: local's number, 2: offset; 3: ByrefExposed heap value

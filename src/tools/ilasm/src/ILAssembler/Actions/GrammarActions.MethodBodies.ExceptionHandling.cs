@@ -5,8 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
-using System.Reflection.Metadata;
-using System.Reflection.Metadata.Ecma335;
 using Antlr4.Runtime;
 using LabelHandle = ILAssembler.MethodBodyWriter.Label;
 
@@ -30,21 +28,9 @@ internal sealed partial class GrammarActions
         _methodOwner = null;
         if (_currentMethod is not null)
         {
-            if (_currentMethod.AllLocals.Count > 0)
-            {
-                BlobBuilder localsSignature = new();
-                BlobEncoder encoder = new(localsSignature);
-                LocalVariablesEncoder localsEncoder =
-                    encoder.LocalVariableSignature(_currentMethod.AllLocals.Count);
-                foreach (SignatureArg local in _currentMethod.AllLocals)
-                {
-                    local.SignatureBlob.WriteContentTo(localsEncoder.AddVariable().Builder);
-                }
-
-                _currentMethod.Definition.LocalsSignature =
-                    _entityRegistry.GetOrCreateStandaloneSignature(localsSignature);
-            }
-
+            // Close the root scope, and any block left open by a syntax error, at the end of the body.
+            CloseLexicalScopes(_currentMethod, 0);
+            EmitLocalSignature(_currentMethod);
             ValidateLabelReferences();
             _currentMethod = null;
         }
@@ -59,15 +45,24 @@ internal sealed partial class GrammarActions
         _scopeStack.Clear();
     }
 
+    /// <summary>
+    /// Opens a <c>{ }</c> block of the current method body: records its start offset for exception ranges and
+    /// opens a lexical scope for the locals it declares.
+    /// </summary>
     internal void BeginScope(CILParser.ScopeBlockContext context)
     {
         if (_currentMethod is not null)
         {
             _scopeStack.Push(
-                new ScopeFrame(context, CurrentMethodBodyOffset, _currentMethod.LocalsScopes.Count));
+                new ScopeFrame(context, CurrentMethodBodyOffset, _currentMethod.OpenScopes.Count));
+            OpenLexicalScope(_currentMethod);
         }
     }
 
+    /// <summary>
+    /// Closes a <c>{ }</c> block of the current method body: records its range for exception ranges and closes
+    /// its lexical scope, so the names it declared no longer resolve and its slots are no longer in use.
+    /// </summary>
     internal void EndScope(CILParser.ScopeBlockContext context)
     {
         if (_scopeStack.Count == 0 || !ReferenceEquals(_scopeStack.Peek().Context, context))
@@ -76,11 +71,9 @@ internal sealed partial class GrammarActions
         }
 
         ScopeFrame frame = _scopeStack.Pop();
-        if (_currentMethod is not null && frame.LocalsScopeCount < _currentMethod.LocalsScopes.Count)
+        if (_currentMethod is not null)
         {
-            _currentMethod.LocalsScopes.RemoveRange(
-                frame.LocalsScopeCount,
-                _currentMethod.LocalsScopes.Count - frame.LocalsScopeCount);
+            CloseLexicalScopes(_currentMethod, frame.OpenScopeCount);
         }
 
         _scopeRanges[context] = (frame.Start, CurrentMethodBodyOffset);
@@ -276,6 +269,6 @@ internal sealed partial class GrammarActions
     private readonly record struct ScopeFrame(
         CILParser.ScopeBlockContext Context,
         int Start,
-        int LocalsScopeCount);
+        int OpenScopeCount);
 }
 #pragma warning restore CA1822
