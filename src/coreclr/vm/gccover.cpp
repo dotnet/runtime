@@ -382,7 +382,7 @@ static PBYTE getTargetOfCall(PBYTE instrPtr, PCONTEXT regs, PBYTE* nextInstr) {
 
 // There is a call target instruction, try to find the MethodDesc for where target points to.
 // Returns nullptr if it can't find it.
-static MethodDesc* getTargetMethodDesc(PCODE target)
+static MethodDesc* getTargetMethodDesc(PCODE target, PCONTEXT regs)
 {
     MethodDesc* targetMD = ExecutionManager::GetCodeMethodDesc(target);
     if (targetMD != nullptr)
@@ -404,6 +404,19 @@ static MethodDesc* getTargetMethodDesc(PCODE target)
             // It is a VSD stub manager.
             DispatchToken token(VirtualCallStubManager::GetTokenFromStubQuick(pVSDStubManager, target, stubKind));
             _ASSERTE(token.IsValid());
+            if (token.IsThisToken())
+            {
+                // Class tokens encode only a slot. The receiver is available in ECX at the call,
+                // but not while sprinkling breakpoints, and null receivers must fault in the stub.
+                if (regs == nullptr || regs->Ecx == 0)
+                {
+                    return nullptr;
+                }
+
+                Object* receiver = reinterpret_cast<Object*>(regs->Ecx);
+                return VirtualCallStubManager::GetRepresentativeMethodDescFromToken(token, receiver->GetMethodTable());
+            }
+
             return VirtualCallStubManager::GetInterfaceMethodDescFromToken(token);
         }
     }
@@ -569,7 +582,7 @@ void GCCoverageInfo::SprinkleBreakpoints(
 
                 if (target != 0)
                 {
-                    targetMD = getTargetMethodDesc((PCODE)target);
+                    targetMD = getTargetMethodDesc((PCODE)target, nullptr);
                 }
             }
             break;
@@ -832,7 +845,7 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
             }
             else
             {
-                MethodDesc* targetMD = getTargetMethodDesc((PCODE)target);
+                MethodDesc* targetMD = getTargetMethodDesc((PCODE)target, regs);
 
                 if (targetMD != 0)
                 {

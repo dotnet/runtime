@@ -28,6 +28,79 @@ public class GCStress
         }
     }
 
+    public enum DispatchKind
+    {
+        Class,
+        Interface,
+        OpenDelegate
+    }
+
+    [Theory]
+    [InlineData(DispatchKind.Class)]
+    [InlineData(DispatchKind.Interface)]
+    [InlineData(DispatchKind.OpenDelegate)]
+    public static void TestVirtualCalls(DispatchKind kind)
+    {
+        VirtualCallTarget target = new DerivedVirtualCallTarget();
+        Func<VirtualCallTarget, int[]> callback = typeof(VirtualCallTarget)
+            .GetMethod(nameof(VirtualCallTarget.GetValue))
+            .CreateDelegate<Func<VirtualCallTarget, int[]>>();
+        WarmupVirtualCalls(target, target, callback);
+
+        for (int i = 0; i < 10; i++)
+        {
+            int[] result = R2RGCStressVirtualCall(target, target, callback, kind);
+            Assert.Equal(42, result[0]);
+        }
+
+        Assert.Throws<NullReferenceException>(() => R2RGCStressVirtualCall(null, null, callback, kind));
+        Console.WriteLine($"R2R GC stress virtual calls ({kind}): passed");
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void WarmupVirtualCalls(
+        VirtualCallTarget target, IVirtualCallTarget interfaceTarget, Func<VirtualCallTarget, int[]> callback)
+    {
+        // Resolve the shared R2R imports before the stressed caller consumes its call breakpoints.
+        target.GetValue();
+        interfaceTarget.GetValue();
+        callback(target);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int[] R2RGCStressVirtualCall(
+        VirtualCallTarget target, IVirtualCallTarget interfaceTarget,
+        Func<VirtualCallTarget, int[]> callback, DispatchKind kind)
+    {
+        int[] result = kind switch
+        {
+            DispatchKind.Class => target.GetValue(),
+            DispatchKind.Interface => interfaceTarget.GetValue(),
+            DispatchKind.OpenDelegate => callback(target),
+            _ => throw new ArgumentOutOfRangeException(nameof(kind))
+        };
+
+        Poll();
+        return result;
+    }
+
+    private interface IVirtualCallTarget
+    {
+        int[] GetValue();
+    }
+
+    private class VirtualCallTarget : IVirtualCallTarget
+    {
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public virtual int[] GetValue() => new[] { -1 };
+    }
+
+    private class DerivedVirtualCallTarget : VirtualCallTarget
+    {
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public override int[] GetValue() => new[] { 42 };
+    }
+
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static object R2RGCStress(object value, out int collections)
     {
