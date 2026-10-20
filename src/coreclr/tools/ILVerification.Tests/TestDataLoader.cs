@@ -247,7 +247,7 @@ namespace ILVerification.Tests
             }
         }
 
-        public static EcmaModule GetModuleForTestAssembly(string assemblyName)
+        public static EcmaModule GetModuleForTestAssembly(string assemblyName, bool allowIgnoresAccessChecksTo = false)
         {
             var simpleNameToPathMap = new Dictionary<string, string>();
 
@@ -267,7 +267,7 @@ namespace ILVerification.Tests
             simpleNameToPathMap.Add(systemRuntime.GetName().Name, systemRuntime.Location);
 
             var resolver = new TestResolver(simpleNameToPathMap);
-            var typeSystemContext = new ILVerifyTypeSystemContext(resolver);
+            var typeSystemContext = new ILVerifyTypeSystemContext(resolver) { AllowIgnoresAccessChecksTo = allowIgnoresAccessChecksTo };
             typeSystemContext.SetSystemModule(typeSystemContext.GetModule(resolver.Resolve(coreAssembly.GetName().Name)));
 
             return typeSystemContext.GetModule(resolver.Resolve(new AssemblyName(Path.GetFileNameWithoutExtension(assemblyName)).Name));

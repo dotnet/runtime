@@ -3,8 +3,16 @@
 
 namespace ILVerify
 {
+    /// <summary>
+    /// Identifies a problem that a <see cref="Verifier"/> found in IL or metadata.
+    /// </summary>
+    /// <remarks>
+    /// A result's <see cref="VerificationResult.Message"/> describes the error that its
+    /// <see cref="VerificationResult.Code"/> identifies.
+    /// </remarks>
     public enum VerifierError
     {
+        /// <summary>No error code; <see cref="VerificationResult.Message"/> describes the failure.</summary>
         None = 0,
         UnknownOpcode,         // Unknown opcode.
         MethodFallthrough,              // Fall through end of the method without returning.

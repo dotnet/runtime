@@ -233,11 +233,6 @@ check_symbol_exists(
     HAVE_STRLCPY)
 
 check_symbol_exists(
-    strlcat
-    string.h
-    HAVE_STRLCAT)
-
-check_symbol_exists(
     posix_fadvise
     fcntl.h
     HAVE_POSIX_ADVISE)
@@ -366,16 +361,12 @@ check_struct_has_member(
     "sys/statvfs.h"
     HAVE_STATVFS_BASETYPE)
 
-set(CMAKE_EXTRA_INCLUDE_FILES dirent.h)
-
 # statfs: Find whether this struct exists
 if (HAVE_STATFS_FSTYPENAME OR HAVE_STATVFS_FSTYPENAME)
     set (STATFS_INCLUDES sys/mount.h)
 else ()
     set (STATFS_INCLUDES sys/statfs.h)
 endif ()
-
-set(CMAKE_EXTRA_INCLUDE_FILES sys/types.h ${STATFS_INCLUDES})
 
 check_symbol_exists(
     "statfs"
@@ -386,17 +377,6 @@ check_symbol_exists(
     "getrlimit"
     "sys/resource.h"
     HAVE_GETRLIMIT)
-
-check_symbol_exists(
-    "setrlimit"
-    "sys/resource.h"
-    HAVE_SETRLIMIT)
-
-check_type_size(
-    "struct statfs"
-    STATFS_SIZE
-    BUILTIN_TYPES_ONLY)
-set(CMAKE_EXTRA_INCLUDE_FILES) # reset CMAKE_EXTRA_INCLUDE_FILES
 # /statfs
 
 check_c_source_compiles(
