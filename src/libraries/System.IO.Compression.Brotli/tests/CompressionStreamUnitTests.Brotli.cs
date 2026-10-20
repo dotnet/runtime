@@ -570,6 +570,7 @@ namespace System.IO.Compression
         [Fact]
         public void BrotliDecoder_LargeWindowHeaderSplitAcrossCalls_ReportsNeedMoreData()
         {
+            byte[] testData = s_largeWindowPayload;
             byte[] compressed = CreateLargeWindowCompressed(30);
 
             using BrotliDecoder decoder = new(new BrotliDecompressionOptions { MaxWindowLog2 = 30 });
@@ -578,6 +579,27 @@ namespace System.IO.Compression
             Assert.Equal(OperationStatus.NeedMoreData, decoder.Decompress(compressed.AsSpan(0, 1), new byte[64], out int bytesConsumed, out int bytesWritten));
             Assert.Equal(0, bytesConsumed);
             Assert.Equal(0, bytesWritten);
+
+            // Resubmitting the unconsumed header alongside the rest of the stream, through a small nonempty destination
+            // that forces repeated DestinationTooSmall calls, must still complete and retain the validated window.
+            byte[] decompressed = new byte[testData.Length];
+            int totalConsumed = 0, totalWritten = 0;
+            ReadOnlySpan<byte> remaining = compressed;
+            OperationStatus status;
+
+            do
+            {
+                int chunkSize = Math.Min(4, decompressed.Length - totalWritten);
+                status = decoder.Decompress(remaining, decompressed.AsSpan(totalWritten, chunkSize), out bytesConsumed, out bytesWritten);
+                remaining = remaining.Slice(bytesConsumed);
+                totalConsumed += bytesConsumed;
+                totalWritten += bytesWritten;
+            } while (status == OperationStatus.DestinationTooSmall);
+
+            Assert.Equal(OperationStatus.Done, status);
+            Assert.Equal(compressed.Length, totalConsumed);
+            Assert.Equal(testData.Length, totalWritten);
+            Assert.Equal<byte>(testData, decompressed);
         }
 
         [Fact]
