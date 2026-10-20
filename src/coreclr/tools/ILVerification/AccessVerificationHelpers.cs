@@ -44,7 +44,8 @@ namespace ILVerify
                 if ((targetTypeDef.Attributes & TypeAttributes.Public) != 0)
                     return true;
                 else
-                    return currentTypeDef.Module == targetTypeDef.Module || targetTypeDef.Module.GrantsFriendAccessTo(currentTypeDef.Module);
+                    return currentTypeDef.Module == targetTypeDef.Module || targetTypeDef.Module.GrantsFriendAccessTo(currentTypeDef.Module)
+                        || currentTypeDef.Module.IgnoresAccessChecksTo(targetTypeDef.Module);
             }
 
             // Target class is nested
@@ -107,6 +108,13 @@ namespace ILVerify
 
             var targetTypeDef = (MetadataType)targetType.GetTypeDefinition();
 
+            // Like the runtime, IgnoresAccessChecksTo is the last thing checked
+            return CanAccessMemberWithVisibility(currentType, targetTypeDef, memberVisibility, instance)
+                || currentType.Module.IgnoresAccessChecksTo(targetTypeDef.Module);
+        }
+
+        private static bool CanAccessMemberWithVisibility(MetadataType currentType, MetadataType targetTypeDef, MethodAttributes memberVisibility, TypeDesc instance)
+        {
             if (memberVisibility == MethodAttributes.Public)
                 return true;
 
@@ -245,30 +253,45 @@ namespace ILVerify
                 {
                     return true;
                 }
-                var friendName = friendAssembly.GetName();
+                return assembly.NamesAssembly("InternalsVisibleToAttribute", friendAssembly.GetName());
+            }
+            return false;
+        }
 
-                foreach (var attribute in assembly.GetDecodedCustomAttributes("System.Runtime.CompilerServices", "InternalsVisibleToAttribute"))
+        private static bool IgnoresAccessChecksTo(this ModuleDesc module, ModuleDesc targetModule)
+        {
+            var assembly = module.ToEcmaAssembly();
+            if (assembly != null && module.Context is ILVerifyTypeSystemContext { AllowIgnoresAccessChecksTo: true })
+            {
+                var targetAssembly = targetModule.ToEcmaAssembly();
+                return assembly.NamesAssembly("IgnoresAccessChecksToAttribute", targetAssembly.GetName());
+            }
+            return false;
+        }
+
+        private static bool NamesAssembly(this EcmaAssembly assembly, string attributeName, AssemblyNameInfo name)
+        {
+            foreach (var attribute in assembly.GetDecodedCustomAttributes("System.Runtime.CompilerServices", attributeName))
+            {
+                AssemblyNameInfo attributeAssemblyName = AssemblyNameInfo.Parse(((string)attribute.FixedArguments[0].Value).AsSpan());
+                if (!name.Name.Equals(attributeAssemblyName.Name, StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                // Comparing PublicKeyToken for simplicity
+                if (GetPublicKeyToken(attributeAssemblyName).SequenceEqual(GetPublicKeyToken(name)))
+                    return true;
+
+                static ReadOnlySpan<byte> GetPublicKeyToken(AssemblyNameInfo assemblyName)
                 {
-                    AssemblyNameInfo friendAttributeName = AssemblyNameInfo.Parse(((string)attribute.FixedArguments[0].Value).AsSpan());
-                    if (!friendName.Name.Equals(friendAttributeName.Name, StringComparison.OrdinalIgnoreCase))
-                        continue;
-
-                    // Comparing PublicKeyToken for simplicity
-                    if (GetPublicKeyToken(friendAttributeName).SequenceEqual(GetPublicKeyToken(friendName)))
-                        return true;
-
-                    static ReadOnlySpan<byte> GetPublicKeyToken(AssemblyNameInfo assemblyName)
+                    ImmutableArray<byte> publicKeyOrToken = assemblyName.PublicKeyOrToken;
+                    if ((assemblyName.Flags & AssemblyNameFlags.PublicKey) != 0)
                     {
-                        ImmutableArray<byte> publicKeyOrToken = assemblyName.PublicKeyOrToken;
-                        if ((assemblyName.Flags & AssemblyNameFlags.PublicKey) != 0)
-                        {
-                            // Use AssemblyName to convert PublicKey to PublicKeyToken to avoid calling crypto APIs directly
-                            AssemblyName an = new();
-                            an.SetPublicKey(ImmutableCollectionsMarshal.AsArray<byte>(publicKeyOrToken));
-                            publicKeyOrToken = ImmutableCollectionsMarshal.AsImmutableArray<byte>(an.GetPublicKeyToken());
-                        }
-                        return publicKeyOrToken.AsSpan();
+                        // Use AssemblyName to convert PublicKey to PublicKeyToken to avoid calling crypto APIs directly
+                        AssemblyName an = new();
+                        an.SetPublicKey(ImmutableCollectionsMarshal.AsArray<byte>(publicKeyOrToken));
+                        publicKeyOrToken = ImmutableCollectionsMarshal.AsImmutableArray<byte>(an.GetPublicKeyToken());
                     }
+                    return publicKeyOrToken.AsSpan();
                 }
             }
             return false;

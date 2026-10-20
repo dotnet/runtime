@@ -2142,6 +2142,11 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
     // block will be the new preheader.
     BasicBlock* const newPreheader = fgSplitBlockAtEnd(preheader);
 
+    // 'preheader' stays the entry of any EH region it begins, so the new block does not
+    // need the BBF_DONT_REMOVE it inherited; keeping it would leave an unremovable block
+    // behind if the loop later becomes unreachable.
+    newPreheader->RemoveFlags(BBF_DONT_REMOVE);
+
     // Make sure exit stays canonical
     BasicBlock* nonEnterBlock = fgSplitBlockAtBeginning(exit);
 

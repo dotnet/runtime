@@ -75,6 +75,9 @@ public static class DiagnosticIds
     public const string LocalSlotTypeConflict = "ILA0055";
     public const string UndefinedLocalSlotType = "ILA0056";
     public const string LocalSlotOutOfRange = "ILA0057";
+    public const string LocalScopeWithoutInstructions = "ILA0058";
+    public const string LocalNameDeclaredTwiceInScope = "ILA0059";
+    public const string LocalSlotNamedTwiceInScope = "ILA0060";
 }
 
 internal static class DiagnosticMessageTemplates
@@ -137,4 +140,7 @@ internal static class DiagnosticMessageTemplates
     public const string LocalSlotTypeConflict = "Local var slot {0}: type conflict";
     public const string UndefinedLocalSlotType = "Undefined type of local var slot {0} in method {1}";
     public const string LocalSlotOutOfRange = "Local var slot {0} is out of range; a slot index must be between 0 and {1}";
+    public const string LocalScopeWithoutInstructions = "Local var '{0}' is declared in a scope that has no instructions; a PDB local scope must not be empty";
+    public const string LocalNameDeclaredTwiceInScope = "Local var '{0}' is already declared in this scope";
+    public const string LocalSlotNamedTwiceInScope = "Local var '{0}': slot {1} is already named '{2}' in this scope";
 }

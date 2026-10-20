@@ -745,20 +745,34 @@ namespace ILAssembler
         /// <param name="scopes">The method's lexical scopes (<see cref="EntityRegistry.MethodDebugInfo.LocalScopes"/>).</param>
         /// <remarks>
         /// <para>
-        /// As in native ilasm, a scope gets a row only when it declares a named local, and an unnamed local gets no
+        /// A scope gets a row only when it declares a named local, and an unnamed local gets no
         /// row; so the root scope, which spans the whole body, has a row only when the method-level <c>.locals</c>
         /// name a local. Each variable's Index is its slot in the local signature, and its attributes are 0.
         /// Import scopes and local constants are not recorded.
         /// </para>
         /// <para>
-        /// Two rules keep the rows valid where native ilasm writes rows the specification does not allow: a scope
-        /// without IL (a block with no instructions, or any scope of a method without a body) gets no row, because
-        /// a scope's length must be positive; and because a scope may not have two variables with the same name
-        /// or index, within a scope each name gets a LocalVariable row at the slot its first declaration has,
-        /// unless an earlier row of the scope already describes that slot. A name refers to its first declaration
-        /// in the scope, so a row never describes a local that its name does not refer to. Later declarations of
-        /// a name take no part, and neither do unnamed locals, which have no name to record: neither keeps a name
-        /// out of the rows.
+        /// The rows are written as declared: each scope that declares a named local gets a
+        /// LocalScope row whatever its length, and each named local of the scope gets a LocalVariable row, in
+        /// declaration order. Rows that the specification does not allow are reported as errors, so they are
+        /// written only to error-tolerant output (<see cref="Options.ErrorTolerant"/>):
+        /// </para>
+        /// <list type="bullet">
+        /// <item><description>
+        /// A scope without IL (a block with no instructions, or the root scope of a method without instructions)
+        /// has length 0, but a LocalScope row's Length is in "(0..0x80000000)". It is reported at the scope's first
+        /// named local (<see cref="DiagnosticIds.LocalScopeWithoutInstructions"/>).
+        /// </description></item>
+        /// <item><description>
+        /// "There shall be no duplicate rows in the LocalVariable table, based upon owner and _Name_", and none
+        /// "based upon owner and _Index_". A named local whose name an earlier named local of the scope has is
+        /// reported at its declaration (<see cref="DiagnosticIds.LocalNameDeclaredTwiceInScope"/>), and so is one
+        /// whose slot an earlier named local of the scope has
+        /// (<see cref="DiagnosticIds.LocalSlotNamedTwiceInScope"/>); a local that repeats both is reported twice.
+        /// Unnamed locals have no row, so they take no part.
+        /// </description></item>
+        /// </list>
+        /// <para>
+        /// The scopes are recorded only when a PDB is requested, so neither is checked without one.
         /// </para>
         /// <para>
         /// The rows are sorted by start offset, then by length with the longest first, as the table requires;
@@ -776,32 +790,21 @@ namespace ILAssembler
             }
 
             IEnumerable<EntityRegistry.LocalScopeRecord> ordered = scopes
-                .Where(scope => scope.Length > 0)
+                .Where(scope => !scope.Variables.IsEmpty)
                 .OrderBy(scope => scope.StartOffset)
                 .ThenByDescending(scope => scope.Length)
                 .ThenBy(scope => scope.Order);
             var names = new HashSet<string>(StringComparer.Ordinal);
-            var slots = new HashSet<int>();
-            var variables = new List<EntityRegistry.LocalVariableRecord>();
+            var slotNames = new Dictionary<int, string>();
             foreach (EntityRegistry.LocalScopeRecord scope in ordered)
             {
-                names.Clear();
-                slots.Clear();
-                variables.Clear();
-                foreach (EntityRegistry.LocalVariableRecord variable in scope.Variables)
+                if (scope.Length == 0)
                 {
-                    // Only the first declaration of a name takes part: it is the local the name refers to. A later
-                    // declaration of the name claims nothing, so it cannot keep another name's row out. The slot
-                    // is claimed only by a row that is written.
-                    if (names.Add(variable.Name) && slots.Add(variable.Slot))
-                    {
-                        variables.Add(variable);
-                    }
-                }
-
-                if (variables.Count == 0)
-                {
-                    continue;
+                    EntityRegistry.LocalVariableRecord first = scope.Variables[0];
+                    ReportError(
+                        DiagnosticIds.LocalScopeWithoutInstructions,
+                        string.Format(DiagnosticMessageTemplates.LocalScopeWithoutInstructions, first.Name),
+                        first.Location);
                 }
 
                 _pdbBuilder.AddLocalScope(
@@ -811,8 +814,30 @@ namespace ILAssembler
                     constantList: default,
                     scope.StartOffset,
                     scope.Length);
-                foreach (EntityRegistry.LocalVariableRecord variable in variables)
+                names.Clear();
+                slotNames.Clear();
+                foreach (EntityRegistry.LocalVariableRecord variable in scope.Variables)
                 {
+                    if (!names.Add(variable.Name))
+                    {
+                        ReportError(
+                            DiagnosticIds.LocalNameDeclaredTwiceInScope,
+                            string.Format(DiagnosticMessageTemplates.LocalNameDeclaredTwiceInScope, variable.Name),
+                            variable.Location);
+                    }
+
+                    if (!slotNames.TryAdd(variable.Slot, variable.Name))
+                    {
+                        ReportError(
+                            DiagnosticIds.LocalSlotNamedTwiceInScope,
+                            string.Format(
+                                DiagnosticMessageTemplates.LocalSlotNamedTwiceInScope,
+                                variable.Name,
+                                variable.Slot,
+                                slotNames[variable.Slot]),
+                            variable.Location);
+                    }
+
                     _pdbBuilder.AddLocalVariable(
                         LocalVariableAttributes.None,
                         variable.Slot,

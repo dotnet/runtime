@@ -226,6 +226,11 @@ struct READYTORUN_IMPORT_SECTION
 | ReadyToRunImportSectionFlags::PCode    | 0x0004  | Section contains pointers to code
 
 
+Module-eager fixups in `System.Private.CoreLib`, including composite images containing
+`System.Private.CoreLib`, may refer to any type, method, or field in CoreLib and may trigger
+loading of CoreLib types needed to resolve those references. In other modules, module-eager
+fixups must not trigger type loading; the required types must already be loaded.
+
 ### READYTORUN_IMPORT_SECTIONS::Type
 
 | ReadyToRunImportSectionType                 | Value  | Description
@@ -238,6 +243,11 @@ struct READYTORUN_IMPORT_SECTION
 *Future*: The section type can be used to group slots of the same type together. For example, all virtual
 stub dispatch slots may be grouped together to simplify resetting of virtual stub dispatch cells into their
 initial state.
+
+When `Vector<T>` support is non-optimistic, its SIMD width is fixed at compile time and does
+not require a type-layout check. This includes Wasm, where `Vector<T>` has a fixed 16-byte
+layout. Types containing vectors also have fixed layout when their remaining layout is fixed
+within the version bubble. Optimistic `Vector<T>` support retains runtime-dependent layout checks.
 
 ### READYTORUN_IMPORT_SECTIONS::Signatures
 

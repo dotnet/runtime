@@ -284,11 +284,12 @@ namespace ILAssembler.Tests
         [Fact]
         public void BodyWithDirectivesButNoInstructions_HasNilDocumentAndNoBlob()
         {
-            // .maxstack, .locals and a label emit no IL, so the method is written without a body (RVA 0), as in
-            // native ilasm, and its .line directive has nothing to map.
+            // .maxstack, .locals and a label emit no IL, so the method is written without a body (RVA 0), and its
+            // .line directive has nothing to map. The local is unnamed: a named local would
+            // need a LocalScope row, which a method without instructions cannot have (LocalScopeTests).
             using var pdb = PortablePdbTestReader.Compile(Program(Method("Empty", """
                     .maxstack 1
-                    .locals init (int32 x)
+                    .locals init (int32)
                     .line 1,1 : 1,2 'a.cs'
                     HERE:
             """)));

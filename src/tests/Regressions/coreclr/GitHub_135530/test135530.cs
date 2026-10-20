@@ -62,7 +62,6 @@ public class Runtime_135530
         }
     }
 
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/135463", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public static void TestEntryPoint()
     {
