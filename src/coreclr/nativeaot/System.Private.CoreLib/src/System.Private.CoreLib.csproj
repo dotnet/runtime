@@ -267,7 +267,6 @@
       <Link>Common\Interop\Windows\Kernel32\Interop.ExitProcess.cs</Link>
     </Compile>
     <Compile Include="System\EventReporter.cs" />
-    <Compile Include="Internal\Runtime\FrozenObjectHeapManager.Windows.cs" />
     <Compile Include="System\Runtime\InteropServices\PInvokeMarshal.Windows.cs" />
     <Compile Include="$(CommonPath)\System\Runtime\InteropServices\BuiltInVariantExtensions.cs">
       <Link>System\Runtime\InteropServices\BuiltInVariantExtensions.cs</Link>
@@ -301,7 +300,6 @@
     <Compile Include="System\Threading\ThreadPoolCallbackWrapper.NativeAot.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)'=='true' or '$(TargetsWasm)'=='true'">
-    <Compile Include="Internal\Runtime\FrozenObjectHeapManager.Unix.cs" />
     <Compile Include="System\Environment.NativeAot.Unix.cs" />
     <Compile Include="System\Runtime\InteropServices\PInvokeMarshal.Unix.cs" />
     <Compile Include="System\Threading\Thread.NativeAot.Unix.cs" />
@@ -310,9 +308,6 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Exit.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.Exit.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MProtect.cs">
-      <Link>Common\Interop\Unix\System.Native\Interop.MProtect.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>
