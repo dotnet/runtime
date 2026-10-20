@@ -226,6 +226,8 @@ namespace System.Threading
         [UnsupportedOSPlatform("browser")]
         private bool WaitUntilCountOrTimeout(long millisecondsTimeout, long startTime, CancellationToken cancellationToken)
         {
+            RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
+
             int monitorWaitMilliseconds = Timeout.Infinite;
 
             // Wait on the monitor as long as the count is zero

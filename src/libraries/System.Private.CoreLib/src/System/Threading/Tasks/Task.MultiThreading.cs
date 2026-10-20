@@ -37,19 +37,6 @@ namespace System.Threading.Tasks
         /// <returns>true if the task is completed; otherwise, false.</returns>
         private bool SpinThenBlockingWait(int millisecondsTimeout, CancellationToken cancellationToken)
         {
-            if (!RuntimeFeature.IsMultithreadingSupported)
-            {
-                if (IsCompleted)
-                {
-                    return true;
-                }
-                if (millisecondsTimeout == 0)
-                {
-                    return false;
-                }
-                RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
-            }
-
             bool infiniteWait = millisecondsTimeout == Timeout.Infinite;
             uint startTimeTicks = infiniteWait ? 0 : (uint)Environment.TickCount;
             bool returnValue = SpinWait(millisecondsTimeout);
@@ -219,14 +206,6 @@ namespace System.Threading.Tasks
 
             if (waitedOnTaskList != null)
             {
-                if (!RuntimeFeature.IsMultithreadingSupported)
-                {
-                    if (millisecondsTimeout != 0)
-                        RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
-
-                    return false;
-                }
-
                 // Block waiting for the tasks to complete.
                 if (!WaitAllBlockingCore(waitedOnTaskList, millisecondsTimeout, cancellationToken))
                 {
@@ -349,14 +328,6 @@ namespace System.Threading.Tasks
 
         private static int WaitAnyBlockingCore(Task[] tasks, int millisecondsTimeout, CancellationToken cancellationToken)
         {
-            if (!RuntimeFeature.IsMultithreadingSupported)
-            {
-                if (millisecondsTimeout != 0)
-                    RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
-
-                return -1;
-            }
-
             Task<Task> firstCompleted = TaskFactory.CommonCWAnyLogic(tasks, isSyncBlocking: true);
             bool waitCompleted = firstCompleted.Wait(millisecondsTimeout, cancellationToken);
             int signaledTaskIndex = -1;

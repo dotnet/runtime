@@ -27,7 +27,7 @@ namespace System.Threading.Tasks.Tests
             Assert.Equal(0, Task.WaitAny([faulted], millisecondsTimeout));
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR), nameof(PlatformDetection.IsNotMultithreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMultithreadingSupported))]
         [InlineData(-1)]
         [InlineData(0)]
         [InlineData(1)]
@@ -90,7 +90,7 @@ namespace System.Threading.Tasks.Tests
             Assert.Equal(2, executions);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR), nameof(PlatformDetection.IsNotMultithreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMultithreadingSupported))]
         public void RunSynchronouslyWithoutInliningRetainsQueuedTask()
         {
             var scheduler = new InlineWaitTaskScheduler(canInline: false);

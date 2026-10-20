@@ -1363,8 +1363,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Tasks\Sources\IValueTaskSource.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Tasks\Sources\ManualResetValueTaskSourceCore.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Tasks\Task.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Tasks\Task.MultiThreading.cs" Condition="'$(FeatureMultithreading)' == 'true' or '$(FeatureMono)' == 'true'" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Tasks\Task.SingleThreading.cs" Condition="'$(FeatureMultithreading)' != 'true' and '$(FeatureMono)' != 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Tasks\Task.MultiThreading.cs" Condition="'$(FeatureMultithreading)' == 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Tasks\Task.SingleThreading.cs" Condition="'$(FeatureMultithreading)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Tasks\TaskAsyncEnumerableExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Tasks\TaskAsyncEnumerableExtensions.ToBlockingEnumerable.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Tasks\TaskAsyncEnumerableExtensions.ToBlockingEnumerable.MultiThreading.cs" Condition="'$(FeatureMultithreading)' == 'true' or '$(FeatureMono)' == 'true'" />
