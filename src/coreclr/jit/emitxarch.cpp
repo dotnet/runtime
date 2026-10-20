@@ -9474,12 +9474,13 @@ void emitter::emitIns_R_ARX(
 
         if (base != REG_NA)
         {
-#if defined(TARGET_AMD64)
+            // Epilogs require LEA to restore the stack pointer from the frame pointer. On AMD64 the
+            // epilog is constrained by the OS unwinder; on x86 the runtime's GC info epilog decoder
+            // (UnwindEbpDoubleAlignFrameEpilog in gc_unwind_x86.inl) matches the instruction bytes and
+            // expects "lea esp, [ebp-N]" even when N is zero (localloc with no callee-saved registers).
+            // A zero-offset, base-only LEA is otherwise just a register move.
             if ((reg != REG_SPBASE) || (base != REG_FPBASE))
-#endif
             {
-                // AMD64 epilogs require LEA to restore RSP from RBP.
-                // A zero-offset, base-only LEA is otherwise just a register move.
                 emitIns_Mov(INS_mov, attr, reg, base, /* canSkip */ true);
                 return;
             }
