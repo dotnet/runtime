@@ -609,7 +609,10 @@ def is_managed_assembly(filename):
                 return False
 
             file_handle.seek(0x3C)
-            pe_header_offset = int.from_bytes(file_handle.read(4), "little")
+            pe_header_offset_bytes = file_handle.read(4)
+            if len(pe_header_offset_bytes) != 4:
+                return False
+            pe_header_offset = int.from_bytes(pe_header_offset_bytes, "little")
 
             file_handle.seek(pe_header_offset)
             if file_handle.read(4) != b"PE\0\0":
@@ -618,7 +621,10 @@ def is_managed_assembly(filename):
             # Skip the COFF header (20 bytes) to reach the optional header.
             optional_header_offset = pe_header_offset + 4 + 20
             file_handle.seek(optional_header_offset)
-            magic = int.from_bytes(file_handle.read(2), "little")
+            magic_bytes = file_handle.read(2)
+            if len(magic_bytes) != 2:
+                return False
+            magic = int.from_bytes(magic_bytes, "little")
             if magic == 0x10B:      # PE32
                 data_directory_offset = optional_header_offset + 96
             elif magic == 0x20B:    # PE32+
@@ -628,9 +634,25 @@ def is_managed_assembly(filename):
 
             # The CLI header is data directory entry 14; each entry is 8 bytes.
             file_handle.seek(data_directory_offset + 14 * 8)
-            return int.from_bytes(file_handle.read(4), "little") != 0
+            cli_header_entry = file_handle.read(8)
+            # Require a complete entry with a nonzero CLI header RVA (first 4 bytes) and size (last 4 bytes).
+            return len(cli_header_entry) == 8 and \
+                int.from_bytes(cli_header_entry[:4], "little") != 0 and \
+                int.from_bytes(cli_header_entry[4:], "little") != 0
     except OSError:
         return False
+
+
+def get_crossgen2_reference_assemblies(reference_directory):
+    """ Get managed composite inputs, filtering out native binaries and rejecting an empty result. """
+
+    candidates = []
+    for extension in [".dll", ".exe"]:
+        candidates += glob.glob(os.path.join(reference_directory, "*" + extension))
+    assemblies = [path for path in sorted(candidates) if is_managed_assembly(path)]
+    if not assemblies:
+        raise RuntimeError("No managed assemblies found in crossgen2 reference directory: " + reference_directory)
+    return assemblies
 
 
 class AsyncSubprocessHelper:
@@ -1168,6 +1190,7 @@ class SuperPMICollect:
                     # 3. corerun in Core_Root
 
                     reference_directory = self.coreclr_args.crossgen2_reference_directory or self.core_root
+                    reference_assemblies = get_crossgen2_reference_assemblies(reference_directory) if is_composite else []
 
                     rsp_file_handle, rsp_filepath = tempfile.mkstemp(suffix=".rsp", prefix=root_output_filename, dir=self.temp_location)
                     with open(rsp_file_handle, "w") as rsp_write_handle:
@@ -1187,17 +1210,10 @@ class SuperPMICollect:
                             # reference `Foo.dll` are the same module to it, and loading both
                             # is a hard failure rather than a skip.
                             rooted = set(get_assembly_simple_name(a) for a in input_assemblies)
-                            unrooted_candidates = []
-                            for extension in [".dll", ".exe"]:
-                                unrooted_candidates += glob.glob(os.path.join(reference_directory, "*" + extension))
-                            for unrooted_assembly in sorted(unrooted_candidates):
-                                if get_assembly_simple_name(unrooted_assembly) in rooted:
+                            for reference_assembly in reference_assemblies:
+                                if get_assembly_simple_name(reference_assembly) in rooted:
                                     continue
-                                # crossgen2 hard-fails on a native binary passed as an input,
-                                # and reference directories such as Core_Root contain plenty.
-                                if not is_managed_assembly(unrooted_assembly):
-                                    continue
-                                rsp_write_handle.write('-u:"' + unrooted_assembly + '"\n')
+                                rsp_write_handle.write('-u:"' + reference_assembly + '"\n')
                         rsp_write_handle.write("-r:" + os.path.join(reference_directory, "System.*.dll") + "\n")
                         rsp_write_handle.write("-r:" + os.path.join(reference_directory, "Microsoft.*.dll") + "\n")
                         rsp_write_handle.write("-r:" + os.path.join(reference_directory, "mscorlib.dll") + "\n")
