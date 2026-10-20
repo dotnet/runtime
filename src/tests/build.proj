@@ -231,6 +231,7 @@
       <GroupBuildCmd>$(GroupBuildCmd) "/p:TargetOS=$(TargetOS)"</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) "/p:ToolsOS=$(ToolsOS)"</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) "/p:PackageOS=$(PackageOS)"</GroupBuildCmd>
+      <GroupBuildCmd Condition="'$(ILAsmToolPath)' != ''">$(GroupBuildCmd) "/p:ILAsmToolPath=$(ILAsmToolPath.TrimEnd('\/'))"</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) "/p:RuntimeFlavor=$(RuntimeFlavor)"</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) "/p:RuntimeVariant=$(RuntimeVariant)"</GroupBuildCmd>
       <GroupBuildCmd Condition="'$(UseBootstrap)' == 'true'">$(GroupBuildCmd) "/p:UseBootstrap=true"</GroupBuildCmd>
