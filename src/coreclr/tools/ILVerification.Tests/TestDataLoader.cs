@@ -166,12 +166,12 @@ namespace ILVerification.Tests
         /// </summary>
         private static VerifierError ParseExpectedError(string name, string testName)
         {
-            if (!Enum.IsDefined(typeof(VerifierError), name))
+            if (!Enum.TryParse(name, out VerifierError error))
             {
                 throw new ArgumentException($"Test '{testName}' expects '{name}', which is not a {nameof(VerifierError)}.");
             }
 
-            return Enum.Parse<VerifierError>(name);
+            return error;
         }
 
         private static List<TestCase[]> GetTestMethodsFromDll(Func<string[], MethodDefinitionHandle, TestCase> methodSelector)
