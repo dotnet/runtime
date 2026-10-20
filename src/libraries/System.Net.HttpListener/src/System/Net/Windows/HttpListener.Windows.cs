@@ -889,6 +889,8 @@ namespace System.Net
                             {
                                 if (sessionContext is not null)
                                 {
+                                    // The enclosing condition requires a new context. If authentication is still in progress
+                                    // and the package is unchanged, the only remaining reason is a policy mismatch.
                                     bool policyChangedDuringHandshake = !sessionContext.IsAuthenticated && contextPackage == package;
                                     if (disconnectResult is not null)
                                     {
