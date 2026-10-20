@@ -355,7 +355,7 @@ HRESULT CorHost2::ExecuteAssembly(DWORD dwAppDomainId,
     UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
     UNINSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP;
 
-#if defined(LOG_EXECUTABLE_ALLOCATOR_STATISTICS) && !defined(TARGET_WASM)
+#if defined(LOG_EXECUTABLE_ALLOCATOR_STATISTICS) && defined(FEATURE_DYNAMIC_CODE_COMPILED)
     ExecutableAllocator::DumpHolderUsage();
     ExecutionManager::DumpExecutionManagerUsage();
 #endif

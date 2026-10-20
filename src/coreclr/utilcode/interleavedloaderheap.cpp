@@ -73,13 +73,13 @@ UnlockedInterleavedLoaderHeap::~UnlockedInterleavedLoaderHeap()
         pVirtualAddress = pSearch->pVirtualAddress;
         pNext = pSearch->pNext;
 
-#ifndef TARGET_WASM
+#ifdef FEATURE_DYNAMIC_CODE_COMPILED
         if (m_pConfig->Template != NULL)
         {
             ExecutableAllocator::Instance()->FreeThunksFromTemplate(pVirtualAddress, GetStubCodePageSize());
         }
         else
-#endif // !TARGET_WASM
+#endif // FEATURE_DYNAMIC_CODE_COMPILED
         {
             ExecutableAllocator::Instance()->Release(pVirtualAddress, pSearch->dwVirtualSize);
         }
@@ -238,7 +238,7 @@ BOOL UnlockedInterleavedLoaderHeap::UnlockedReservePages(size_t dwSizeToCommit)
     return TRUE;
 }
 
-#ifndef TARGET_WASM
+#ifdef FEATURE_DYNAMIC_CODE_COMPILED
 struct ThunkMemoryTraits final
 {
     using Type = BYTE*;
@@ -253,7 +253,7 @@ struct ThunkMemoryTraits final
     }
 };
 using ThunkMemoryHolder = LifetimeHolder<ThunkMemoryTraits>;
-#endif // !TARGET_WASM
+#endif // FEATURE_DYNAMIC_CODE_COMPILED
 
 // Get some more committed pages - either commit some more in the current reserved region, or, if it
 // has run out, reserve another set of pages.
@@ -270,7 +270,7 @@ BOOL UnlockedInterleavedLoaderHeap::GetMoreCommittedPages(size_t dwMinSize)
     }
     CONTRACTL_END;
 
-#ifndef TARGET_WASM
+#ifdef FEATURE_DYNAMIC_CODE_COMPILED
     if (m_pConfig->Template != NULL)
     {
         BYTE* newAllocatedThunks = (BYTE*)ExecutableAllocator::Instance()->AllocateThunksFromTemplate(m_pConfig->Template, GetStubCodePageSize(), m_pConfig->DataPageGenerator);
@@ -322,7 +322,7 @@ BOOL UnlockedInterleavedLoaderHeap::GetMoreCommittedPages(size_t dwMinSize)
 
         return TRUE;
     }
-#endif // !TARGET_WASM
+#endif // FEATURE_DYNAMIC_CODE_COMPILED
 
     // From here, all work is only for the dynamically allocated InterleavedLoaderHeap path
 
@@ -532,11 +532,11 @@ void *UnlockedInterleavedLoaderHeap::UnlockedAllocStub(
 void InitializeLoaderHeapConfig(InterleavedLoaderHeapConfig *pConfig, size_t stubSize, void* templateInImage, void (*codePageGenerator)(uint8_t* pageBase, uint8_t* pageBaseRX, size_t size), void (*dataPageGenerator)(uint8_t* pageBase, size_t size))
 {
     pConfig->StubSize = (uint32_t)stubSize;
-#ifdef TARGET_WASM
-    pConfig->Template = nullptr;
-#else // TARGET_WASM
+#ifdef FEATURE_DYNAMIC_CODE_COMPILED
     pConfig->Template = ExecutableAllocator::Instance()->CreateTemplate(templateInImage, GetStubCodePageSize(), codePageGenerator);
-#endif // TARGET_WASM
+#else // FEATURE_DYNAMIC_CODE_COMPILED
+    pConfig->Template = nullptr;
+#endif // FEATURE_DYNAMIC_CODE_COMPILED
     pConfig->CodePageGenerator = codePageGenerator;
     pConfig->DataPageGenerator = dataPageGenerator;
 }

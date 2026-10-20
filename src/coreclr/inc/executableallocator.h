@@ -14,7 +14,8 @@
 
 //#define LOG_EXECUTABLE_ALLOCATOR_STATISTICS
 
-// Native targets allocate executable memory; WASM uses read-write storage for loader and interpreter data.
+// Targets with dynamic code support allocate executable memory. Other targets use read-write storage
+// for loader and interpreter data.
 class ExecutableAllocator
 {
 public:
@@ -35,7 +36,7 @@ private:
     // Callback to the runtime to report fatal errors
     static FatalErrorHandler g_fatalErrorHandler;
 
-#ifndef TARGET_WASM
+#ifdef FEATURE_DYNAMIC_CODE_COMPILED
     // RX address range block descriptor
     struct BlockRX
     {
@@ -201,11 +202,11 @@ private:
     static LogEntry s_usageLog[256];
     static int s_logMaxIndex;
 #endif
-#endif // !TARGET_WASM
+#endif // FEATURE_DYNAMIC_CODE_COMPILED
 
 public:
 
-#if defined(LOG_EXECUTABLE_ALLOCATOR_STATISTICS) && !defined(TARGET_WASM)
+#if defined(LOG_EXECUTABLE_ALLOCATOR_STATISTICS) && defined(FEATURE_DYNAMIC_CODE_COMPILED)
     static void LogUsage(const char* source, int line, const char* function);
     static void DumpHolderUsage();
 #endif
@@ -244,14 +245,16 @@ public:
     // Reserve the specified amount of virtual address space for executable mapping.
     // The reserved range must be within the loAddress and hiAddress. If it is not
     // possible to reserve memory in such range, the method returns NULL.
-    // WASM ignores the address bounds and allocates read-write storage anywhere.
+    // Targets without dynamic code support ignore the address bounds and allocate read-write
+    // storage anywhere.
     void* ReserveWithinRange(size_t size, const void* loAddress, const void* hiAddress);
 
     // Commit the specified range of memory. The memory can be committed as executable (RX)
     // or non-executable (RW) based on the passed in isExecutable flag. The non-executable
     // allocations are used to allocate data structures that need to be close to the
     // executable code due to memory addressing performance related reasons.
-    // WASM storage is already accessible, so Commit returns pStart without changing it.
+    // On targets without dynamic code support, storage is already accessible, so Commit returns
+    // pStart unchanged.
     void* Commit(void* pStart, size_t size, bool isExecutable);
 
     // Release the executable memory block starting at the passed in address that was allocated
@@ -259,13 +262,15 @@ public:
     // that reserve call.
     void Release(void* pRX, size_t size) noexcept;
 
-    // Map the specified block of executable memory as RW. WASM returns the original pointer.
+    // Map the specified block of executable memory as RW. Targets without dynamic code support
+    // return the original pointer.
     void* MapRW(void* pRX, size_t size, CacheableMapping cacheMapping);
 
-    // Unmap the RW mapping at the specified address. This is a no-op on WASM.
+    // Unmap the RW mapping at the specified address. This is a no-op on targets without dynamic
+    // code support.
     void UnmapRW(void* pRW) noexcept;
 
-#ifndef TARGET_WASM
+#ifdef FEATURE_DYNAMIC_CODE_COMPILED
     // Allocate thunks from a template. pTemplate is the return value from CreateTemplate
     void* AllocateThunksFromTemplate(void *pTemplate, size_t templateSize, void (*dataPageGenerator)(uint8_t* pageBase, size_t size));
 
@@ -277,7 +282,7 @@ public:
     // Some OS/Architectures may/may not be able to work with this, so this api is permitted to return NULL, and callers should have an alternate approach using
     // the codePageGenerator directly.
     void* CreateTemplate(void* templateInImage, size_t templateSize, void (*codePageGenerator)(uint8_t* pageBase, uint8_t* pageBaseRX, size_t size));
-#endif // !TARGET_WASM
+#endif // FEATURE_DYNAMIC_CODE_COMPILED
 };
 
 #define ExecutableWriterHolder ExecutableWriterHolderNoLog
@@ -362,7 +367,7 @@ public:
     }
 };
 
-#if defined(LOG_EXECUTABLE_ALLOCATOR_STATISTICS) && !defined(TARGET_WASM)
+#if defined(LOG_EXECUTABLE_ALLOCATOR_STATISTICS) && defined(FEATURE_DYNAMIC_CODE_COMPILED)
 #undef ExecutableWriterHolder
 #ifdef HOST_UNIX
 #define ExecutableWriterHolder ExecutableAllocator::LogUsage(__FILE__, __LINE__, __PRETTY_FUNCTION__); ExecutableWriterHolderNoLog

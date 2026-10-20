@@ -671,13 +671,13 @@ void EEStartupHelper()
 
         PendingTypeLoadTable::Init();
 
-#if defined(TARGET_UNIX) && !defined(TARGET_WASM)
+#if defined(TARGET_UNIX) && defined(FEATURE_DYNAMIC_CODE_COMPILED)
         if (!VMToOSInterface::InitializeExecutableMemoryAllocator(
                 CLRConfig::GetConfigValue(CLRConfig::INTERNAL_InitialExecMemoryPercent)))
         {
             IfFailGo(E_OUTOFMEMORY);
         }
-#endif // TARGET_UNIX && !TARGET_WASM
+#endif // TARGET_UNIX && FEATURE_DYNAMIC_CODE_COMPILED
 
         IfFailGo(ExecutableAllocator::StaticInitialize(FatalErrorHandler));
 

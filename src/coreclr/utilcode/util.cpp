@@ -343,7 +343,7 @@ HRESULT FakeCoCreateInstanceEx(REFCLSID       rclsid,
     return hr;
 }
 
-#ifndef TARGET_WASM
+#ifdef FEATURE_DYNAMIC_CODE_COMPILED
 // Reserves free memory within the range [pMinAddr..pMaxAddr] using
 // VirtualQuery to find free memory and VirtualAlloc to reserve it.
 //
@@ -496,7 +496,7 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
     return pResult;
 #endif // HOST_UNIX
 }
-#endif // !TARGET_WASM
+#endif // FEATURE_DYNAMIC_CODE_COMPILED
 
 #ifdef HOST_WINDOWS
 //******************************************************************************

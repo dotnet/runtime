@@ -475,7 +475,7 @@ inline BOOL RunningInWow64()
 BOOL RunningInWow64();
 #endif
 
-#ifndef TARGET_WASM
+#ifdef FEATURE_DYNAMIC_CODE_COMPILED
 //
 // Allocate free memory within the range [pMinAddr..pMaxAddr] using
 // VirtualQuery to find free memory and VirtualAlloc to allocate it.
@@ -485,7 +485,7 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
                                    SIZE_T dwSize,
                                    DWORD flAllocationType,
                                    DWORD flProtect);
-#endif // !TARGET_WASM
+#endif // FEATURE_DYNAMIC_CODE_COMPILED
 
 #ifdef HOST_WINDOWS
 
