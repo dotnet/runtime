@@ -12,6 +12,11 @@ namespace System.IO.Compression
         public const int WindowBits_Max = 24;
         /// <summary>The maximum window size supported by the "Large Window Brotli" extension (BROTLI_LARGE_MAX_WINDOW_BITS).</summary>
         public const int WindowBits_MaxLarge = 30;
+        /// <summary>
+        /// The default value of <see cref="BrotliDecompressionOptions.MaxWindowLog2"/>: the RFC 7932 ceiling, so decompression
+        /// behaves as it did before "Large Window Brotli" support was added unless a caller opts into a higher value.
+        /// </summary>
+        public const int WindowBits_DefaultLarge = WindowBits_Max;
         public const int Quality_Min = 0;
         public const int Quality_Default = 4;
         public const int Quality_Max = 11;

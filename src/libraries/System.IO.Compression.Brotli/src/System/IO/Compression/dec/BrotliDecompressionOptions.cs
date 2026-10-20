@@ -8,7 +8,7 @@ namespace System.IO.Compression
     /// </summary>
     public sealed class BrotliDecompressionOptions
     {
-        private int _maxWindowLog2 = BrotliUtils.WindowBits_Max;
+        private int _maxWindowLog2 = BrotliUtils.WindowBits_DefaultLarge;
 
         /// <summary>
         /// Gets or sets the maximum base-2 logarithm of the window size accepted when decompressing.
