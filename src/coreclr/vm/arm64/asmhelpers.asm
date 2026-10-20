@@ -2238,7 +2238,7 @@ CopyLoop
     ; X1 - interpreter stack args location
     ; X3 - stack arguments size (properly aligned)
     ; X4 - address of continuation return value
-    NESTED_ENTRY CallJittedMethodRetVoid
+    NESTED_ENTRY CallJittedMethodRetVoid,,CallDescrWorkerUnwindFrameChainHandler
         PROLOG_SAVE_REG_PAIR fp, lr, #-32!
         str x4, [fp, #16]
         sub sp, sp, x3
@@ -2258,7 +2258,7 @@ CopyLoop
     ; X2 - interpreter stack return value location
     ; X3 - stack arguments size (properly aligned)
     ; X4 - address of continuation return value
-    NESTED_ENTRY CallJittedMethodRetBuff
+    NESTED_ENTRY CallJittedMethodRetBuff,,CallDescrWorkerUnwindFrameChainHandler
         PROLOG_SAVE_REG_PAIR fp, lr, #-32!
         str x4, [fp, #16]
         sub sp, sp, x3
@@ -2279,7 +2279,7 @@ CopyLoop
     ; X2 - interpreter stack return value location
     ; X3 - stack arguments size (properly aligned)
     ; X4 - address of continuation return value
-    NESTED_ENTRY CallJittedMethodRetBuffX1
+    NESTED_ENTRY CallJittedMethodRetBuffX1,,CallDescrWorkerUnwindFrameChainHandler
         PROLOG_SAVE_REG_PAIR fp, lr, #-32!
         str x4, [fp, #16]
         sub sp, sp, x3
@@ -2300,7 +2300,7 @@ CopyLoop
     ; X2 - interpreter stack return value location
     ; X3 - stack arguments size (properly aligned)
     ; X4 - address of continuation return value
-    NESTED_ENTRY CallJittedMethodRetI1
+    NESTED_ENTRY CallJittedMethodRetI1,,CallDescrWorkerUnwindFrameChainHandler
         PROLOG_SAVE_REG_PAIR fp, lr, #-32!
         stp x2, x4, [fp, #16]
         sub sp, sp, x3
@@ -2323,7 +2323,7 @@ CopyLoop
     ; X2 - interpreter stack return value location
     ; X3 - stack arguments size (properly aligned)
     ; X4 - address of continuation return value
-    NESTED_ENTRY CallJittedMethodRetI2
+    NESTED_ENTRY CallJittedMethodRetI2,,CallDescrWorkerUnwindFrameChainHandler
         PROLOG_SAVE_REG_PAIR fp, lr, #-32!
         stp x2, x4, [fp, #16]
         sub sp, sp, x3
@@ -2346,7 +2346,7 @@ CopyLoop
     ; X2 - interpreter stack return value location
     ; X3 - stack arguments size (properly aligned)
     ; X4 - address of continuation return value
-    NESTED_ENTRY CallJittedMethodRetI8
+    NESTED_ENTRY CallJittedMethodRetI8,,CallDescrWorkerUnwindFrameChainHandler
         PROLOG_SAVE_REG_PAIR fp, lr, #-32!
         stp x2, x4, [fp, #16]
         sub sp, sp, x3
@@ -2368,7 +2368,7 @@ CopyLoop
     ; X2 - interpreter stack return value location
     ; X3 - stack arguments size (properly aligned)
     ; X4 - address of continuation return value
-    NESTED_ENTRY CallJittedMethodRetU1
+    NESTED_ENTRY CallJittedMethodRetU1,,CallDescrWorkerUnwindFrameChainHandler
         PROLOG_SAVE_REG_PAIR fp, lr, #-32!
         stp x2, x4, [fp, #16]
         sub sp, sp, x3
@@ -2391,7 +2391,7 @@ CopyLoop
     ; X2 - interpreter stack return value location
     ; X3 - stack arguments size (properly aligned)
     ; X4 - address of continuation return value
-    NESTED_ENTRY CallJittedMethodRetU2
+    NESTED_ENTRY CallJittedMethodRetU2,,CallDescrWorkerUnwindFrameChainHandler
         PROLOG_SAVE_REG_PAIR fp, lr, #-32!
         stp x2, x4, [fp, #16]
         sub sp, sp, x3
@@ -2414,7 +2414,7 @@ CopyLoop
     ; X2 - interpreter stack return value location
     ; X3 - stack arguments size (properly aligned)
     ; X4 - address of continuation return value
-    NESTED_ENTRY CallJittedMethodRet2I8
+    NESTED_ENTRY CallJittedMethodRet2I8,,CallDescrWorkerUnwindFrameChainHandler
         PROLOG_SAVE_REG_PAIR fp, lr, #-32!
         stp x2, x4, [fp, #16]
         sub sp, sp, x3
@@ -2436,7 +2436,7 @@ CopyLoop
     ; X2 - interpreter stack return value location
     ; X3 - stack arguments size (properly aligned)
     ; X4 - address of continuation return value
-    NESTED_ENTRY CallJittedMethodRetDouble
+    NESTED_ENTRY CallJittedMethodRetDouble,,CallDescrWorkerUnwindFrameChainHandler
         PROLOG_SAVE_REG_PAIR fp, lr, #-32!
         stp x2, x4, [fp, #16]
         sub sp, sp, x3
@@ -2458,7 +2458,7 @@ CopyLoop
     ; X2 - interpreter stack return value location
     ; X3 - stack arguments size (properly aligned)
     ; X4 - address of continuation return value
-    NESTED_ENTRY CallJittedMethodRet2Double
+    NESTED_ENTRY CallJittedMethodRet2Double,,CallDescrWorkerUnwindFrameChainHandler
         PROLOG_SAVE_REG_PAIR fp, lr, #-32!
         stp x2, x4, [fp, #16]
         sub sp, sp, x3
@@ -2480,7 +2480,7 @@ CopyLoop
     ; X2 - interpreter stack return value location
     ; X3 - stack arguments size (properly aligned)
     ; X4 - address of continuation return value
-    NESTED_ENTRY CallJittedMethodRet3Double
+    NESTED_ENTRY CallJittedMethodRet3Double,,CallDescrWorkerUnwindFrameChainHandler
         PROLOG_SAVE_REG_PAIR fp, lr, #-32!
         stp x2, x4, [fp, #16]
         sub sp, sp, x3
@@ -2503,7 +2503,7 @@ CopyLoop
     ; X2 - interpreter stack return value location
     ; X3 - stack arguments size (properly aligned)
     ; X4 - address of continuation return value
-    NESTED_ENTRY CallJittedMethodRet4Double
+    NESTED_ENTRY CallJittedMethodRet4Double,,CallDescrWorkerUnwindFrameChainHandler
         PROLOG_SAVE_REG_PAIR fp, lr, #-32!
         stp x2, x4, [fp, #16]
         sub sp, sp, x3
@@ -2526,7 +2526,7 @@ CopyLoop
     ; X2 - interpreter stack return value location
     ; X3 - stack arguments size (properly aligned)
     ; X4 - address of continuation return value
-    NESTED_ENTRY CallJittedMethodRetFloat
+    NESTED_ENTRY CallJittedMethodRetFloat,,CallDescrWorkerUnwindFrameChainHandler
         PROLOG_SAVE_REG_PAIR fp, lr, #-32!
         stp x2, x4, [fp, #16]
         sub sp, sp, x3
@@ -2548,7 +2548,7 @@ CopyLoop
     ; X2 - interpreter stack return value location
     ; X3 - stack arguments size (properly aligned)
     ; X4 - address of continuation return value
-    NESTED_ENTRY CallJittedMethodRet2Float
+    NESTED_ENTRY CallJittedMethodRet2Float,,CallDescrWorkerUnwindFrameChainHandler
         PROLOG_SAVE_REG_PAIR fp, lr, #-32!
         stp x2, x4, [fp, #16]
         sub sp, sp, x3
@@ -2570,7 +2570,7 @@ CopyLoop
     ; X2 - interpreter stack return value location
     ; X3 - stack arguments size (properly aligned)
     ; X4 - address of continuation return value
-    NESTED_ENTRY CallJittedMethodRet3Float
+    NESTED_ENTRY CallJittedMethodRet3Float,,CallDescrWorkerUnwindFrameChainHandler
         PROLOG_SAVE_REG_PAIR fp, lr, #-32!
         stp x2, x4, [fp, #16]
         sub sp, sp, x3
@@ -2593,7 +2593,7 @@ CopyLoop
     ; X2 - interpreter stack return value location
     ; X3 - stack arguments size (properly aligned)
     ; X4 - address of continuation return value
-    NESTED_ENTRY CallJittedMethodRet4Float
+    NESTED_ENTRY CallJittedMethodRet4Float,,CallDescrWorkerUnwindFrameChainHandler
         PROLOG_SAVE_REG_PAIR fp, lr, #-32!
         stp x2, x4, [fp, #16]
         sub sp, sp, x3
@@ -2616,7 +2616,7 @@ CopyLoop
     ; X2 - interpreter stack return value location
     ; X3 - stack arguments size (properly aligned)
     ; X4 - address of continuation return value
-    NESTED_ENTRY CallJittedMethodRetVector64
+    NESTED_ENTRY CallJittedMethodRetVector64,,CallDescrWorkerUnwindFrameChainHandler
         PROLOG_SAVE_REG_PAIR fp, lr, #-32!
         stp x2, x4, [fp, #16]
         sub sp, sp, x3
@@ -2638,7 +2638,7 @@ CopyLoop
     ; X2 - interpreter stack return value location
     ; X3 - stack arguments size (properly aligned)
     ; X4 - address of continuation return value
-    NESTED_ENTRY CallJittedMethodRet2Vector64
+    NESTED_ENTRY CallJittedMethodRet2Vector64,,CallDescrWorkerUnwindFrameChainHandler
         PROLOG_SAVE_REG_PAIR fp, lr, #-32!
         stp x2, x4, [fp, #16]
         sub sp, sp, x3
@@ -2661,7 +2661,7 @@ CopyLoop
     ; X2 - interpreter stack return value location
     ; X3 - stack arguments size (properly aligned)
     ; X4 - address of continuation return value
-    NESTED_ENTRY CallJittedMethodRet3Vector64
+    NESTED_ENTRY CallJittedMethodRet3Vector64,,CallDescrWorkerUnwindFrameChainHandler
         PROLOG_SAVE_REG_PAIR fp, lr, #-32!
         stp x2, x4, [fp, #16]
         sub sp, sp, x3
@@ -2685,7 +2685,7 @@ CopyLoop
     ; X2 - interpreter stack return value location
     ; X3 - stack arguments size (properly aligned)
     ; X4 - address of continuation return value
-    NESTED_ENTRY CallJittedMethodRet4Vector64
+    NESTED_ENTRY CallJittedMethodRet4Vector64,,CallDescrWorkerUnwindFrameChainHandler
         PROLOG_SAVE_REG_PAIR fp, lr, #-32!
         stp x2, x4, [fp, #16]
         sub sp, sp, x3
@@ -2710,7 +2710,7 @@ CopyLoop
     ; X2 - interpreter stack return value location
     ; X3 - stack arguments size (properly aligned)
     ; X4 - address of continuation return value
-    NESTED_ENTRY CallJittedMethodRetVector128
+    NESTED_ENTRY CallJittedMethodRetVector128,,CallDescrWorkerUnwindFrameChainHandler
         PROLOG_SAVE_REG_PAIR fp, lr, #-32!
         stp x2, x4, [fp, #16]
         sub sp, sp, x3
@@ -2732,7 +2732,7 @@ CopyLoop
     ; X2 - interpreter stack return value location
     ; X3 - stack arguments size (properly aligned)
     ; X4 - address of continuation return value
-    NESTED_ENTRY CallJittedMethodRet2Vector128
+    NESTED_ENTRY CallJittedMethodRet2Vector128,,CallDescrWorkerUnwindFrameChainHandler
         PROLOG_SAVE_REG_PAIR fp, lr, #-32!
         stp x2, x4, [fp, #16]
         sub sp, sp, x3
@@ -2755,7 +2755,7 @@ CopyLoop
     ; X2 - interpreter stack return value location
     ; X3 - stack arguments size (properly aligned)
     ; X4 - address of continuation return value
-    NESTED_ENTRY CallJittedMethodRet3Vector128
+    NESTED_ENTRY CallJittedMethodRet3Vector128,,CallDescrWorkerUnwindFrameChainHandler
         PROLOG_SAVE_REG_PAIR fp, lr, #-32!
         stp x2, x4, [fp, #16]
         sub sp, sp, x3
@@ -2779,7 +2779,7 @@ CopyLoop
     ; X2 - interpreter stack return value location
     ; X3 - stack arguments size (properly aligned)
     ; X4 - address of continuation return value
-    NESTED_ENTRY CallJittedMethodRet4Vector128
+    NESTED_ENTRY CallJittedMethodRet4Vector128,,CallDescrWorkerUnwindFrameChainHandler
         PROLOG_SAVE_REG_PAIR fp, lr, #-32!
         stp x2, x4, [fp, #16]
         sub sp, sp, x3
