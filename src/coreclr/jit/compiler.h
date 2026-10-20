@@ -9198,7 +9198,7 @@ public:
             return dsc;
         }
 
-        // Create an exact-type or sub-type assertion: objVN is (exactly of | subtype of) typeHndVN
+        // Create an exact-type or sub-type assertion about a non-null object.
         static AssertionDsc CreateSubtype(const Compiler* comp, ValueNum objVN, ValueNum typeHndVN, bool exact)
         {
             assert((objVN != ValueNumStore::NoVN) && comp->vnStore->IsVNTypeHandle(typeHndVN));

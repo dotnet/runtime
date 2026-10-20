@@ -347,9 +347,17 @@ namespace System.Net.Security
         /// validation logic.
         /// </summary>
         /// <remarks>
+        /// <para>
         /// Must be called only after <see cref="TlsBufferSession.Handshake"/> returned
         /// <see cref="TlsOperationStatus.NeedsCertificateValidation"/> and before
         /// <see cref="SetRemoteCertificateValidationResult"/> is called.
+        /// </para>
+        /// <para>
+        /// Any <see cref="SslCertificateTrust"/> associated with the session's certificate
+        /// context is used for chain validation unless a custom chain policy is specified by
+        /// <see cref="SslClientAuthenticationOptions.CertificateChainPolicy"/> or
+        /// <see cref="SslServerAuthenticationOptions.CertificateChainPolicy"/>.
+        /// </para>
         /// </remarks>
         public SslPolicyErrors AcceptWithDefaultValidation()
         {
@@ -384,7 +392,7 @@ namespace System.Net.Security
                     ref _connectionInfo,
                     _externalPendingCert,
                     chain,
-                    trust: null,
+                    trust: SessionCertificateContext?.Trust,
                     ref alertToken,
                     ref sslPolicyErrors,
                     out _,

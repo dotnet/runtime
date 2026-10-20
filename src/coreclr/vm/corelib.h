@@ -1004,6 +1004,9 @@ DEFINE_CLASS(THREAD,                Threading,              Thread)
 #ifdef FEATURE_MULTITHREADING
 DEFINE_METHOD(THREAD,               START_CALLBACK,                          StartCallback,                        SM_PtrThread_RetVoid)
 DEFINE_METHOD(THREAD,               POLLGC,                                  PollGC,                               NoSig)
+#ifdef FEATURE_PERFTRACING
+DEFINE_METHOD(THREAD,               POLLGC_WORKER,                           PollGCWorker,                         SM_RetVoid)
+#endif // FEATURE_PERFTRACING
 #else
 DEFINE_FIELD(THREAD,                CURRENT_THREAD,                          s_currentThread)
 #endif // FEATURE_MULTITHREADING
