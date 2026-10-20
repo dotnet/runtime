@@ -12,6 +12,7 @@ using System.Reflection;
 using System.Runtime.ExceptionServices;
 using System.Threading;
 using Microsoft.Build.Framework;
+using Microsoft.Build.Utilities;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
@@ -545,6 +546,162 @@ public class InvocationCacheTests
         Assert.False(Directory.Exists(test.Cache.CacheDirectory));
     }
 
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    public void SharedExecutionBypassesWithoutSkippingTaskPreparation(bool configured, bool eligible)
+    {
+        using var test = new CacheTestDirectory();
+        Directory.CreateDirectory(test.Output);
+        string stale = Path.Combine(test.Output, "stale.dll");
+        File.WriteAllText(stale, "stale");
+        int keyComputations = 0;
+        int executions = 0;
+
+        int exitCode = InvocationCache.Execute(configured ? test.Cache : null, CacheTestDirectory.Timestamp,
+            () =>
+            {
+                keyComputations++;
+                return eligible ? new InvocationCacheRequest(CacheTestDirectory.Key, test.Output) : null;
+            },
+            outputDirectory =>
+            {
+                Assert.Null(outputDirectory);
+                executions++;
+                test.CleanOutput();
+                return 42;
+            },
+            onRestored: () => Assert.Fail("Bypass must not report a hit."));
+
+        Assert.Equal(42, exitCode);
+        Assert.Equal(configured ? 1 : 0, keyComputations);
+        Assert.Equal(1, executions);
+        Assert.False(File.Exists(stale));
+        Assert.False(Directory.Exists(test.Cache.CacheDirectory));
+    }
+
+    [Fact]
+    public void SharedExecutionStoresSuccessfulResultsAndRestoresWithoutExecuting()
+    {
+        using var test = new CacheTestDirectory();
+        string image = Path.Combine(test.Output, "image.dll");
+        var events = new List<string>();
+
+        Assert.Equal(0, Run());
+        Assert.Equal(new[] { "key", "execute" }, events);
+        Assert.True(Directory.Exists(test.Entry));
+        events.Clear();
+        File.WriteAllText(image, "outdated");
+        string stale = Path.Combine(test.Output, "stale.dll");
+        File.WriteAllText(stale, "stale");
+
+        Assert.Equal(0, Run());
+
+        Assert.Equal(new[] { "key", "restored" }, events);
+        Assert.False(File.Exists(stale));
+
+        int Run() => InvocationCache.Execute(test.Cache, CacheTestDirectory.Timestamp,
+            () =>
+            {
+                events.Add("key");
+                return new InvocationCacheRequest(CacheTestDirectory.Key, test.Output);
+            },
+            outputDirectory =>
+            {
+                Assert.Equal(test.Output, outputDirectory);
+                events.Add("execute");
+                test.CleanOutput();
+                File.WriteAllText(image, "computed");
+                return 0;
+            },
+            onRestored: () =>
+            {
+                events.Add("restored");
+                Assert.Equal("computed", File.ReadAllText(image));
+            });
+    }
+
+    [Theory]
+    [InlineData(0, true)]
+    [InlineData(1, false)]
+    [InlineData(-1, false)]
+    [InlineData(1, true)]
+    public void SharedExecutionDoesNotStoreFailedOrErrorLoggedResults(int exitCode, bool logError)
+    {
+        using var test = new CacheTestDirectory();
+        int executions = 0;
+        int result = InvocationCache.Execute(test.Cache, CacheTestDirectory.Timestamp,
+            () => new InvocationCacheRequest(CacheTestDirectory.Key, test.Output),
+            outputDirectory =>
+            {
+                Assert.Equal(test.Output, outputDirectory);
+                executions++;
+                test.CleanOutput();
+                File.WriteAllText(Path.Combine(test.Output, "image.dll"), "produced");
+                if (logError)
+                    test.Log.LogError("Expected compiler error.");
+                return exitCode;
+            });
+
+        Assert.Equal(exitCode, result);
+        Assert.Equal(1, executions);
+        Assert.False(Directory.Exists(test.Entry));
+    }
+
+    [Theory]
+    [InlineData("key")]
+    [InlineData("execute")]
+    [InlineData("restored")]
+    public void SharedExecutionPropagatesTaskExceptions(string phase)
+    {
+        using var test = new CacheTestDirectory();
+        if (phase == "restored")
+        {
+            test.WriteSource("image.dll", "cached");
+            test.Cache.Store(CacheTestDirectory.Key, test.Source);
+        }
+
+        InvalidOperationException exception = Assert.Throws<InvalidOperationException>(() =>
+            InvocationCache.Execute(test.Cache, CacheTestDirectory.Timestamp,
+                () => phase == "key" ? throw new InvalidOperationException("key") : new InvocationCacheRequest(CacheTestDirectory.Key, test.Output),
+                _ => throw new InvalidOperationException("execute"),
+                onRestored: () => throw new InvalidOperationException("restored")));
+
+        Assert.Equal(phase, exception.Message);
+        Assert.Equal(phase == "restored", Directory.Exists(test.Entry));
+    }
+
+    [Fact]
+    public void SharedExecutionFallsBackAfterRestoreFailure()
+    {
+        using var test = new CacheTestDirectory();
+        test.WriteSource("image.dll", "cached");
+        test.Cache.Store(CacheTestDirectory.Key, test.Source);
+        File.WriteAllText(Path.Combine(test.Entry, "outputs", "image.dll"), "corrupt");
+        Directory.CreateDirectory(test.Output);
+        string stale = Path.Combine(test.Output, "stale.dll");
+        File.WriteAllText(stale, "stale");
+        int executions = 0;
+
+        Assert.Equal(0, InvocationCache.Execute(test.Cache, CacheTestDirectory.Timestamp,
+            () => new InvocationCacheRequest(CacheTestDirectory.Key, test.Output),
+            outputDirectory =>
+            {
+                Assert.Equal(test.Output, outputDirectory);
+                executions++;
+                test.CleanOutput();
+                File.WriteAllText(Path.Combine(test.Output, "image.dll"), "recomputed");
+                return 0;
+            },
+            onRestored: () => Assert.Fail("Failed restoration must not report a hit.")));
+
+        Assert.Equal(1, executions);
+        Assert.False(File.Exists(stale));
+        Assert.Equal("recomputed", File.ReadAllText(Path.Combine(test.Output, "image.dll")));
+        Assert.Contains(test.BuildEngine.Messages, message => message.Message?.Contains("restore failed") is true);
+    }
+
     private static void RunOnOtherThread(Action action)
     {
         ExceptionDispatchInfo? exception = null;
@@ -574,6 +731,7 @@ public class InvocationCacheTests
         internal string Entries => Path.Combine(Cache.CacheDirectory, InvocationCacheEntry.VersionDirectory);
         internal string Entry => Path.Combine(Entries, Key);
         internal CacheBuildEngine BuildEngine { get; } = new();
+        internal TaskLoggingHelper Log { get; }
         internal InvocationCache Cache { get; }
         internal string MutexName => Assert.IsType<string>(typeof(InvocationCache).GetMethod("GetWriterMutexName", BindingFlags.NonPublic | BindingFlags.Instance)!.Invoke(Cache, new object[] { Key }));
 
@@ -581,7 +739,8 @@ public class InvocationCacheTests
         {
             Directory.CreateDirectory(Source);
             var task = new CacheTask { BuildEngine = BuildEngine };
-            Cache = new InvocationCache(Path.Combine(Root, "cache"), task.Log, "Test");
+            Log = task.Log;
+            Cache = new InvocationCache(Path.Combine(Root, "cache"), Log, "Test");
         }
 
         internal void WriteSource(string relativePath, string contents)
@@ -589,6 +748,13 @@ public class InvocationCacheTests
             string path = Path.Combine(Source, relativePath);
             Directory.CreateDirectory(Path.GetDirectoryName(path)!);
             File.WriteAllText(path, contents);
+        }
+
+        internal void CleanOutput()
+        {
+            if (Directory.Exists(Output))
+                Directory.Delete(Output, recursive: true);
+            Directory.CreateDirectory(Output);
         }
 
         public void Dispose() => Directory.Delete(Root, recursive: true);

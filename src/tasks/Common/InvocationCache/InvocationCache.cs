@@ -16,6 +16,18 @@ using Microsoft.Build.Utilities;
 
 namespace Microsoft.NET.Build.Tasks;
 
+internal readonly struct InvocationCacheRequest
+{
+    internal string Key { get; }
+    internal string OutputDirectory { get; }
+
+    internal InvocationCacheRequest(string key, string outputDirectory)
+    {
+        Key = key;
+        OutputDirectory = outputDirectory;
+    }
+}
+
 internal sealed partial class InvocationCache
 {
     private const int FormatVersion = 1;
@@ -32,6 +44,29 @@ internal sealed partial class InvocationCache
         CacheDirectory = cacheDirectory;
         _log = log;
         _toolName = toolName;
+    }
+
+    internal static int Execute(InvocationCache? cache, DateTime outputTimestampUtc,
+        Func<InvocationCacheRequest?> getInvocation, Func<string?, int> execute,
+        Action? onRestored = null)
+    {
+        InvocationCacheRequest? invocation = cache is null ? null : getInvocation();
+        if (cache is null || invocation is null)
+            return execute(null);
+
+        string key = invocation.Value.Key;
+        string outputDirectory = invocation.Value.OutputDirectory;
+        if (cache.TryRestore(key, outputDirectory, outputTimestampUtc))
+        {
+            onRestored?.Invoke();
+            return 0;
+        }
+
+        int exitCode = execute(outputDirectory);
+        if (exitCode == 0 && !cache._log.HasLoggedErrors)
+            cache.Store(key, outputDirectory);
+
+        return exitCode;
     }
 
     internal bool TryRestore(string inputHash, string outputDirectory, DateTime outputTimestampUtc)

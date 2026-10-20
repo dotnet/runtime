@@ -274,32 +274,27 @@ namespace ILLink.Tasks
             DateTime outputTimestampUtc = DateTime.UtcNow;
             InvocationCache cache = InvocationCache.TryCreateFromEnvironment(Log, "ILLink",
                 "ILLINK_EXPERIMENTAL_CACHE", "ILLINK_EXPERIMENTAL_CACHE_PATH", "illink");
-            string inputHash = null;
-            if (cache is not null && !TryComputeCacheKey(pathToTool, commandLineCommands, responseFileCommands, out inputHash))
-                cache = null;
+            return InvocationCache.Execute(cache, outputTimestampUtc,
+                () => TryComputeCacheKey(pathToTool, commandLineCommands, responseFileCommands, out string inputHash)
+                    ? new InvocationCacheRequest(inputHash, OutputDirectory.ItemSpec) : null,
+                _ =>
+                {
+                    try
+                    {
+                        string outputDirectory = Path.GetFullPath(OutputDirectory.ItemSpec);
+                        if (Directory.Exists(outputDirectory))
+                            Directory.Delete(outputDirectory, recursive: true);
 
-            if (cache is not null && cache.TryRestore(inputHash, OutputDirectory.ItemSpec, outputTimestampUtc))
-                return 0;
+                        Directory.CreateDirectory(outputDirectory);
+                    }
+                    catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                    {
+                        Log.LogError($"Could not prepare ILLink output directory '{OutputDirectory.ItemSpec}': {ex.Message}");
+                        return -1;
+                    }
 
-            try
-            {
-                string outputDirectory = Path.GetFullPath(OutputDirectory.ItemSpec);
-                if (Directory.Exists(outputDirectory))
-                    Directory.Delete(outputDirectory, recursive: true);
-
-                Directory.CreateDirectory(outputDirectory);
-            }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-            {
-                Log.LogError($"Could not prepare ILLink output directory '{OutputDirectory.ItemSpec}': {ex.Message}");
-                return -1;
-            }
-
-            int exitCode = base.ExecuteTool(pathToTool, responseFileCommands, commandLineCommands);
-            if (exitCode == 0 && !Log.HasLoggedErrors && cache is not null)
-                cache.Store(inputHash, OutputDirectory.ItemSpec);
-
-            return exitCode;
+                    return base.ExecuteTool(pathToTool, responseFileCommands, commandLineCommands);
+                });
         }
 
         private bool TryComputeCacheKey(string pathToTool, string commandLineCommands, string responseFileCommands, out string inputHash)

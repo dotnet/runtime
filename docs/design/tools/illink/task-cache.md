@@ -18,7 +18,7 @@ The feature is experimental. Its configuration and behavior may change or be rem
 
 ## API shape
 
-Configuration, storage, manifest validation, publication, and directory restoration are shared
+Configuration, cache execution flow, storage, manifest validation, publication, and directory restoration are shared
 sources under `src/tasks/Common/InvocationCache`, compiled into the task assembly.
 The task supplies ILLink's environment-variable names, cache-directory name, and
 diagnostic label, and retains input identity and invocation eligibility. The extraction preserves
@@ -31,12 +31,16 @@ internal sealed partial class InvocationCache
         string enabledEnvironmentVariable, string pathEnvironmentVariable, string cacheDirectoryName);
     internal static InvocationCache? TryCreate(string? cacheDirectory, TaskLoggingHelper log,
         string toolName, string cacheDirectoryName);
+    internal static int Execute(InvocationCache? cache, DateTime outputTimestampUtc,
+        Func<InvocationCacheRequest?> getInvocation, Func<string?, int> execute,
+        Action? onRestored = null);
     internal bool TryRestore(string inputHash, string outputDirectory, DateTime outputTimestampUtc);
     internal void Store(string inputHash, string outputDirectory);
 }
 ```
 
 - The task owns input identity and execution. Its private `TryComputeCacheKey` combines command-line and response-file arguments with input-content and toolchain identity; inability to compute a key bypasses caching with a diagnostic.
+- `InvocationCache.Execute` shares the cache lifecycle: ask the task for an `InvocationCacheRequest` (key and output directory) only when configured, try restoration, otherwise execute normally, and store only after exit code zero with no logged errors. Task callbacks retain eligibility, key construction, and output preparation. Bypassing caching still invokes the task's normal execution callback with a null directory; an eligible miss passes the declared directory.
 - `TryCreate` resolves the cache directory and returns null with a diagnostic if initialization cannot proceed.
 - `TryRestore` combines lookup and restoration. True means complete restoration. Missing entries and expected I/O, access, or invalid-cache-data failures return false with appropriate logging and fall back to normal linking. Copies overwrite existing files and are not rolled back if a later copy fails. Unexpected exceptions propagate.
 - `Store` is best-effort. Lock contention and existing entries are normal skips; expected cache I/O failures are logged without failing a successful link. Unexpected exceptions propagate.
