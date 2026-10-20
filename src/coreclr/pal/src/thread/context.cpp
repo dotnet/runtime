@@ -712,6 +712,11 @@ Parameters :
 Return value :
     None
 
+Notes:
+    On ARM64, if lpContext->ContextFlags has CONTEXT_XSTATE, and
+    lpContext->XStateFeaturesMask has XSTATE_MASK_ARM64_SVE, the caller
+    is responsible for ensuring the native_context_t has enough space
+    allocated to store the relevant SVE header and register data.
 --*/
 void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native)
 {
@@ -910,7 +915,7 @@ void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native)
         {
             const CONTEXT_SVE_STATE_HEADER *sveStateHeader = GetArm64SveStateHeader(lpContext);
 
-            // The native signal frame should have SVE state space.
+            // The native signal frame should have space allocated for SVE state, provided by the caller.
             _ASSERTE(sve && sve->head.size >= SVE_SIG_CONTEXT_SIZE(sve_vq_from_vl(sve->vl)));
             // The VL should have been initialized in the SVE header matching the signal frame.
             _ASSERTE((sveStateHeader != nullptr) && (sveStateHeader->VectorLengthInBytes == sve->vl));

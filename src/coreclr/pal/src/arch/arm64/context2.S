@@ -25,13 +25,7 @@ LEAF_ENTRY CONTEXT_CaptureContext, _TEXT
     str x1, [sp, 24]
 
     ldr w1, [x0, CONTEXT_ContextFlags]
-    // clangs assembler doesn't seem to support the mov Wx, imm32 yet
-    movz w2, #0x40, lsl #16
-    movk w2, #0x1
-    mov w3, w2
-    and w2, w1, w2
-    cmp w2, w3
-    b.ne LOCAL_LABEL(Done_CONTEXT_CONTROL)
+    tbz w1, #CONTEXT_CONTROL_BIT, LOCAL_LABEL(Done_CONTEXT_CONTROL)
 
     // save the cpsr
     ldr x2, [sp, 24]
@@ -41,15 +35,7 @@ LEAF_ENTRY CONTEXT_CaptureContext, _TEXT
     stp x2, lr, [x0, CONTEXT_Sp]
 
 LOCAL_LABEL(Done_CONTEXT_CONTROL):
-    // we dont clobber x1 in the CONTEXT_CONTROL case
-    // ldr w1, [x0, CONTEXT_ContextFlags]
-    // clangs assembler doesn't seem to support the mov Wx, imm32 yet
-    movz w2, #0x40, lsl #16
-    movk w2, #0x2
-    mov w3, w2
-    and w2, w1, w2
-    cmp w2, w3
-    b.ne LOCAL_LABEL(Done_CONTEXT_INTEGER)
+    tbz w1, #CONTEXT_INTEGER_BIT, LOCAL_LABEL(Done_CONTEXT_INTEGER)
 
     ldp x1, x2,   [sp]
     ldr x3,       [sp, 16]
@@ -72,13 +58,7 @@ LOCAL_LABEL(Done_CONTEXT_CONTROL):
 
 LOCAL_LABEL(Done_CONTEXT_INTEGER):
     ldr w1, [x0, CONTEXT_ContextFlags]
-    // clangs assembler doesn't seem to support the mov Wx, imm32 yet
-    movz w2, #0x40, lsl #16
-    movk w2, #0x4
-    mov w3, w2
-    and w2, w1, w2
-    cmp w2, w3
-    b.ne LOCAL_LABEL(Done_CONTEXT_FLOATING_POINT)
+    tbz w1, #CONTEXT_FLOATING_POINT_BIT, LOCAL_LABEL(Done_CONTEXT_FLOATING_POINT)
 
     add x0, x0,   CONTEXT_NEON_OFFSET
     stp q0, q1,   [x0, CONTEXT_V0]
@@ -105,13 +85,7 @@ LOCAL_LABEL(Done_CONTEXT_INTEGER):
 
 LOCAL_LABEL(Done_CONTEXT_FLOATING_POINT):
     ldr w1, [x0, CONTEXT_ContextFlags]
-    // clangs assembler doesn't seem to support the mov Wx, imm32 yet
-    movz w2, #0x40, lsl #16
-    movk w2, #0x40
-    mov w3, w2
-    and w2, w1, w2
-    cmp w2, w3
-    b.ne LOCAL_LABEL(Done_CONTEXT_SVE)
+    tbz w1, #CONTEXT_XSTATE_BIT, LOCAL_LABEL(Done_CONTEXT_SVE)
 
     ldr x1, [x0, CONTEXT_XSTATEFEATURESMASK_OFFSET]
     tbz x1, #XSTATE_ARM64_SVE_BIT, LOCAL_LABEL(Done_CONTEXT_SVE)
