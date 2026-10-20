@@ -341,8 +341,8 @@ namespace Internal.TypeSystem.Ecma
         {
             SignatureTypeCode typeCode = _reader.ReadSignatureTypeCode();
 
-            // Like any Type, a TypeSpec can start with custom modifiers (Ecma-335-Augments.md, "Custom modifiers
-            // can go in more places than specified"). C# encodes the 'unmanaged' constraint this way:
+            // The augments permit leading custom modifiers on signature Types, including those encoded in a
+            // TypeSpec. C# encodes the 'unmanaged' constraint this way:
             // modreq(System.Runtime.InteropServices.UnmanagedType) class System.ValueType.
             bool hasCustomModifiers = typeCode is SignatureTypeCode.RequiredModifier or SignatureTypeCode.OptionalModifier;
             if (hasCustomModifiers)
