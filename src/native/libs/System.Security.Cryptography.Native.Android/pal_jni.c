@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "pal_jni.h"
+#include "pal_key_manager.h"
 #include "pal_trust_manager.h"
 #include <pthread.h>
 
@@ -498,7 +499,8 @@ jmethodID g_DotnetProxyTrustManagerCtor;
 
 // net/dot/android/crypto/DotnetX509KeyManager
 jclass    g_DotnetX509KeyManager;
-jmethodID g_DotnetX509KeyManagerCtor;
+jmethodID g_DotnetX509KeyManagerPrivateKeyEntryCtor;
+jmethodID g_DotnetX509KeyManagerProxyCtor;
 
 // net/dot/android/crypto/PalPbkdf2
 jclass    g_PalPbkdf2;
@@ -1105,8 +1107,15 @@ jint AndroidCryptoNative_InitLibraryOnLoad (JavaVM *vm, void *reserved)
     jint registerResult = (*env)->RegisterNatives(env, g_DotnetProxyTrustManager, trustManagerMethods, 1);
     abort_unless(registerResult == JNI_OK, "RegisterNatives for DotnetProxyTrustManager.verifyRemoteCertificate failed (error: %d)", registerResult);
 
-    g_DotnetX509KeyManager =     GetClassGRef(env, "net/dot/android/crypto/DotnetX509KeyManager");
-    g_DotnetX509KeyManagerCtor = GetMethod(env, false, g_DotnetX509KeyManager, "<init>", "(Ljava/security/KeyStore$PrivateKeyEntry;)V");
+    g_DotnetX509KeyManager =                    GetClassGRef(env, "net/dot/android/crypto/DotnetX509KeyManager");
+    g_DotnetX509KeyManagerPrivateKeyEntryCtor = GetMethod(env, false, g_DotnetX509KeyManager, "<init>", "(Ljava/security/KeyStore$PrivateKeyEntry;)V");
+    g_DotnetX509KeyManagerProxyCtor =           GetMethod(env, false, g_DotnetX509KeyManager, "<init>", "(J)V");
+
+    JNINativeMethod keyManagerMethods[] = {
+        { "selectClientCertificate", "(J[Ljava/lang/String;)[Ljavax/net/ssl/KeyManager;", (void*)Java_net_dot_android_crypto_DotnetX509KeyManager_selectClientCertificate },
+    };
+    registerResult = (*env)->RegisterNatives(env, g_DotnetX509KeyManager, keyManagerMethods, 1);
+    abort_unless(registerResult == JNI_OK, "RegisterNatives for DotnetX509KeyManager.selectClientCertificate failed (error: %d)", registerResult);
 
     g_PalPbkdf2              = GetClassGRef(env, "net/dot/android/crypto/PalPbkdf2");
     g_PalPbkdf2Pbkdf2OneShot = GetMethod(env, true, g_PalPbkdf2, "pbkdf2OneShot", "(Ljava/lang/String;[BLjava/nio/ByteBuffer;ILjava/nio/ByteBuffer;)I");
