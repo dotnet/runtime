@@ -189,7 +189,7 @@ else()
     include(${CLR_SRC_NATIVE_DIR}/libs/System.IO.Compression.Native/extra_libs.cmake)
     append_extra_compression_libs(NATIVE_LIBS)
 
-    if (NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_BROWSER) # no gssapi on tvOS, see https://developer.apple.com/documentation/gss
+    if (NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_OPENHARMONY) # no gssapi on tvOS and OpenHarmony, see https://developer.apple.com/documentation/gss
         # Additional requirements for System.Net.Security.Native
         include(${CLR_SRC_NATIVE_DIR}/libs/System.Net.Security.Native/extra_libs.cmake)
         append_extra_security_libs(NATIVE_LIBS)
