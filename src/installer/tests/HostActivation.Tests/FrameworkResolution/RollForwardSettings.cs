@@ -194,6 +194,22 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
                 .ShouldHaveResolvedFramework(MicrosoftNETCoreApp, "5.1.3");
         }
 
+        [Theory]
+        [InlineData(SettingLocation.RuntimeOptions, SettingLocation.FrameworkReference)]
+        [InlineData(SettingLocation.FrameworkReference, SettingLocation.Environment)]
+        [InlineData(SettingLocation.Environment, SettingLocation.CommandLine)]
+        public void Precedence(SettingLocation lowerPriorityLocation, SettingLocation higherPriorityLocation)
+        {
+            string requestedVersion = "5.0.0";
+            RunTest(
+                new TestSettings()
+                    .WithRuntimeConfigCustomizer(runtimeConfig => runtimeConfig
+                        .WithFramework(MicrosoftNETCoreApp, requestedVersion))
+                    .With(RollForwardSetting(lowerPriorityLocation, Constants.RollForwardSetting.Major))
+                    .With(RollForwardSetting(higherPriorityLocation, Constants.RollForwardSetting.Disable)))
+                .ShouldFailToFindCompatibleFrameworkVersion(MicrosoftNETCoreApp, requestedVersion);
+        }
+
         private CommandResult RunTest(TestSettings testSettings, [CallerMemberName] string caller = "") =>
             RunTest(SharedState.DotNetWithFrameworks, SharedState.FrameworkReferenceApp, testSettings, caller: caller);
 

@@ -549,6 +549,7 @@ void gc_heap::descr_generations (const char* msg)
             (double)elapsed_time_so_far / (double)1000000 / (double)60,
             total_new_gen0_regions_in_plns, total_new_regions_in_prr, total_new_regions_in_threading));
 
+#if defined(BGC_SERVO_TUNING) && defined(SIMPLE_DPRINTF)
         size_t total_gen_size_mb[loh_generation + 1] = { 0, 0, 0, 0 };
         size_t total_gen_fragmentation_mb[loh_generation + 1] = { 0, 0, 0, 0 };
         for (int i = 0; i < (loh_generation + 1); i++)
@@ -558,14 +559,13 @@ void gc_heap::descr_generations (const char* msg)
         }
 
         int bgcs = VolatileLoadWithoutBarrier (&current_bgc_state);
-#ifdef SIMPLE_DPRINTF
         dprintf (REGIONS_LOG, ("[%s] GC#%zd (bgcs: %d, %s) g0: %zdmb (f: %zdmb %d%%), g1: %zdmb (f: %zdmb %d%%), g2: %zdmb (f: %zdmb %d%%), g3: %zdmb (f: %zdmb %d%%)",
             msg, idx, bgcs, str_bgc_state[bgcs],
             total_gen_size_mb[0], total_gen_fragmentation_mb[0], (total_gen_size_mb[0] ? (int)((double)total_gen_fragmentation_mb[0] * 100.0 / (double)total_gen_size_mb[0]) : 0),
             total_gen_size_mb[1], total_gen_fragmentation_mb[1], (total_gen_size_mb[1] ? (int)((double)total_gen_fragmentation_mb[1] * 100.0 / (double)total_gen_size_mb[1]) : 0),
             total_gen_size_mb[2], total_gen_fragmentation_mb[2], (total_gen_size_mb[2] ? (int)((double)total_gen_fragmentation_mb[2] * 100.0 / (double)total_gen_size_mb[2]) : 0),
             total_gen_size_mb[3], total_gen_fragmentation_mb[3], (total_gen_size_mb[3] ? (int)((double)total_gen_fragmentation_mb[3] * 100.0 / (double)total_gen_size_mb[3]) : 0)));
-#endif //SIMPLE_DPRINTF
+#endif //BGC_SERVO_TUNING && SIMPLE_DPRINTF
         // print every 20 GCs so it's easy to see if we are making progress.
         if ((idx % 20) == 0)
         {

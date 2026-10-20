@@ -117,6 +117,7 @@ public interface IExecutionManager : IContract
     TargetCodePointer GetDiagnosticCodeStartFromEntryPoint(TargetCodePointer entryPoint) => throw new NotImplementedException();
     bool IsFunclet(CodeBlockHandle codeInfoHandle) => throw new NotImplementedException();
     bool IsFilterFunclet(CodeBlockHandle codeInfoHandle) => throw new NotImplementedException();
+    bool TryGetUnwindInfo(TargetCodePointer controlPC, out TargetPointer runtimeFunction, out TargetPointer unwindInfoBaseAddress) => throw new NotImplementedException();
     TargetPointer GetUnwindInfo(CodeBlockHandle codeInfoHandle) => throw new NotImplementedException();
     TargetPointer GetUnwindInfoBaseAddress(CodeBlockHandle codeInfoHandle) => throw new NotImplementedException();
     TargetPointer GetDebugInfo(CodeBlockHandle codeInfoHandle, out bool hasFlagByte) => throw new NotImplementedException();

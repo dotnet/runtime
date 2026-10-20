@@ -808,7 +808,12 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
     GCX_COOP_REGION_BEGIN();
 
     OBJECTREF throwable = ExInfo::CreateThrowable(ex.GetExceptionRecord(), FALSE);
-    DispatchManagedException(throwable, ex.GetContextRecord());
+    ExInfo exInfo(GetThread(), ex.GetExceptionRecord(), ex.GetContextRecord(), ExKind::Throw);
+    if (!ex.RecordsOnStack)
+    {
+        exInfo.TakeExceptionPointersOwnership(&ex);
+    }
+    DispatchManagedException(throwable, &exInfo);
 
     GCX_COOP_REGION_END();
 
@@ -1588,8 +1593,6 @@ VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable, CONTEXT* pE
 
     GCPROTECT_BEGIN(throwable);
 
-   _ASSERTE(IsException(throwable->GetMethodTable()));
-
     Thread *pThread = GetThread();
 
     ULONG_PTR hr = GetHRFromThrowable(throwable);
@@ -1628,6 +1631,25 @@ VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable, CONTEXT* pE
     }
 #endif // HOST_WINDOWS
 
+    DispatchManagedException(throwable, &exInfo);
+
+    GCPROTECT_END();
+
+    UNREACHABLE();
+}
+
+VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable, ExInfo* pExInfo)
+{
+    STATIC_CONTRACT_THROWS;
+    STATIC_CONTRACT_GC_TRIGGERS;
+    STATIC_CONTRACT_MODE_COOPERATIVE;
+
+    GCPROTECT_BEGIN(throwable);
+
+    _ASSERTE(IsException(throwable->GetMethodTable()));
+
+    Thread *pThread = GetThread();
+
     if (pThread->IsAbortInitiated () && IsExceptionOfType(kThreadAbortException,&throwable))
     {
         pThread->ResetPreparingAbort();
@@ -1646,10 +1668,10 @@ VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable, CONTEXT* pE
 
     pThread->IncPreventAbort();
 
-    //Ex.RhThrowEx(throwable, &exInfo)
-    throwEx.InvokeDirect(&throwable, &exInfo);
+    //Ex.RhThrowEx(throwable, pExInfo)
+    throwEx.InvokeDirect(&throwable, pExInfo);
 
-    DispatchExSecondPass(&exInfo);
+    DispatchExSecondPass(pExInfo);
 
     GCPROTECT_END();
 
@@ -3072,8 +3094,12 @@ void CallCatchFunclet(BYTE* pHandlerIP, REGDISPLAY* pvRegDisplay, ExInfo* exInfo
     // But don't check in case the target is in the interpreter loop, because the ControlPC doesn't match the shadow stack entry
     // in that case. The shadow stack contains the return address of the DispatchManagedException call, but the ControlPC is the
     // value captured to the exception context before the DispatchManagedException call.
+    // And don't check for a frame that faulted, such as the one a thread abort is raised in after the thread was redirected
+    // to ThrowControlForThread. That frame was interrupted rather than stopped at a call, so the slot below its SSP need not
+    // contain its ControlPC. The SSP recorded for it points at its return address, which is the right value to resume it with.
     _ASSERTE(targetSSP == 0 ||
         (pHandlerIP != NULL) && (exInfo->m_frameIter.m_crawl.GetCodeManager() == ExecutionManager::GetInterpreterCodeManager()) ||
+        (pHandlerIP != NULL) && exInfo->m_frameIter.m_crawl.HasFaulted() ||
         (*(size_t*)(targetSSP-8) == exInfo->m_frameIter.m_crawl.GetRegisterSet()->ControlPC));
 #else
     size_t targetSSP = 0;
@@ -3397,6 +3423,13 @@ struct ExtendedEHClauseEnumerator : EH_CLAUSE_ENUMERATOR
     StackFrameIterator *pFrameIter;
     unsigned EHCount;
 };
+
+extern "C" ExInfo* QCALLTYPE GetCurrentExInfo()
+{
+    QCALL_CONTRACT_NO_GC_TRANSITION;
+
+    return (ExInfo*)GetThread()->GetExceptionState()->GetCurrentExceptionTracker();
+}
 
 extern "C" CLR_BOOL QCALLTYPE EHEnumInitFromStackFrameIterator(StackFrameIterator *pFrameIter, IJitManager::MethodRegionInfo* pMethodRegionInfo, EH_CLAUSE_ENUMERATOR * pEHEnum)
 {
