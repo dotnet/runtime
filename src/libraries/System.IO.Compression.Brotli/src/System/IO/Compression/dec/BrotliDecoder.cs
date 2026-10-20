@@ -44,7 +44,7 @@ namespace System.IO.Compression
             if (_maxWindowLog2 > BrotliUtils.WindowBits_Max &&
                 Interop.Brotli.BrotliDecoderSetParameter(_state, BrotliDecoderParameter.LargeWindow, 1) == Interop.BOOL.FALSE)
             {
-                throw new InvalidOperationException(SR.Format(SR.BrotliDecoder_InvalidSetParameter, nameof(BrotliDecoderParameter.LargeWindow)));
+                throw new IOException(SR.Format(SR.BrotliDecoder_InvalidSetParameter, nameof(BrotliDecoderParameter.LargeWindow)));
             }
         }
 
