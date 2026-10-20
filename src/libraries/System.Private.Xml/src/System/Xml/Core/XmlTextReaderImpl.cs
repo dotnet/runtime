@@ -163,6 +163,7 @@ namespace System.Xml
         // attributes info
         private int _curAttrIndex = -1;
         private int _attrCount;
+        private int _attrBufferInvalidationIndex;
         private int _attrHashtable;
         private int _attrDuplWalkCount;
         private bool _attrNeedNamespaceLookup;
@@ -3362,10 +3363,25 @@ namespace System.Xml
                 // the character buffer is full -> allocate a new one
                 if (_ps.charsUsed == _ps.chars.Length - 1)
                 {
-                    // invalidate node values kept in buffer - applies to attribute values only
-                    for (int i = 0; i < _attrCount; i++)
+                    if (LocalAppContextSwitches.DisableOptimizedXmlTextReaderAttributeBufferInvalidation)
                     {
-                        _nodes[_index + i + 1].OnBufferInvalidated();
+                        for (int i = 0; i < _attrCount; i++)
+                        {
+                            _nodes[_index + i + 1].OnBufferInvalidated();
+                        }
+                    }
+                    else
+                    {
+                        // invalidate node values kept in buffer - applies to attribute values only.
+                        // Attribute values below _attrBufferInvalidationIndex have already been materialized
+                        // into strings and no longer reference the buffer. The last attribute may still be in
+                        // the middle of being re-parsed and can have its buffer-backed value assigned after this
+                        // point, so it is intentionally left to be re-checked on the next buffer reload.
+                        for (int i = _attrBufferInvalidationIndex; i < _attrCount; i++)
+                        {
+                            _nodes[_index + i + 1].OnBufferInvalidated();
+                        }
+                        _attrBufferInvalidationIndex = Math.Max(_attrCount - 1, 0);
                     }
 
                     char[] newChars = new char[_ps.chars.Length * 2];
@@ -3399,10 +3415,25 @@ namespace System.Xml
                 int charsLen = _ps.chars.Length;
                 if (charsLen - _ps.charsUsed <= charsLen / 2)
                 {
-                    // invalidate node values kept in buffer - applies to attribute values only
-                    for (int i = 0; i < _attrCount; i++)
+                    if (LocalAppContextSwitches.DisableOptimizedXmlTextReaderAttributeBufferInvalidation)
                     {
-                        _nodes[_index + i + 1].OnBufferInvalidated();
+                        for (int i = 0; i < _attrCount; i++)
+                        {
+                            _nodes[_index + i + 1].OnBufferInvalidated();
+                        }
+                    }
+                    else
+                    {
+                        // invalidate node values kept in buffer - applies to attribute values only.
+                        // Attribute values below _attrBufferInvalidationIndex have already been materialized
+                        // into strings and no longer reference the buffer. The last attribute may still be in
+                        // the middle of being re-parsed and can have its buffer-backed value assigned after this
+                        // point, so it is intentionally left to be re-checked on the next buffer reload.
+                        for (int i = _attrBufferInvalidationIndex; i < _attrCount; i++)
+                        {
+                            _nodes[_index + i + 1].OnBufferInvalidated();
+                        }
+                        _attrBufferInvalidationIndex = Math.Max(_attrCount - 1, 0);
                     }
 
                     // move unparsed characters to front, unless the whole buffer contains unparsed characters
@@ -7834,6 +7865,7 @@ namespace System.Xml
 
             _curAttrIndex = -1;
             _attrCount = 0;
+            _attrBufferInvalidationIndex = 0;
             _attrHashtable = 0;
             _attrDuplWalkCount = 0;
         }

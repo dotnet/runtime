@@ -169,7 +169,6 @@ extern "C" {
     int32_t SystemNative_ReceiveMessage (void *, void *, int32_t, void *);
     int32_t SystemNative_Rename (void *, void *);
     int32_t SystemNative_RmDir (void *);
-    int32_t SystemNative_SchedGetCpu ();
     int32_t SystemNative_Select (void *, int32_t, void *, int32_t, void *, int32_t, int32_t, int32_t, void *);
     int32_t SystemNative_Send (void *, void *, int32_t, int32_t, void *);
     int32_t SystemNative_SendFile (void *, void *, int64_t, int64_t, void *);
@@ -341,10 +340,10 @@ static const Entry s_libSystem_Native [] = {
     DllImportEntry(SystemNative_GetBytesAvailable) // System.Net.Sockets
     DllImportEntry(SystemNative_GetControlMessageBufferSize) // System.Net.Sockets
     DllImportEntry(SystemNative_GetCpuUtilization) // System.Private.CoreLib
-    DllImportEntry(SystemNative_GetCryptographicallySecureRandomBytes) // System.IO.Compression
+    DllImportEntry(SystemNative_GetCryptographicallySecureRandomBytes) // System.IO.Compression, System.Security.Cryptography
     DllImportEntry(SystemNative_GetCwd) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetDefaultSearchOrderPseudoHandle) // System.Private.CoreLib
-    DllImportEntry(SystemNative_GetErrNo) // System.Net.NameResolution, System.Private.CoreLib
+    DllImportEntry(SystemNative_GetErrNo) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetHostEntryForName) // System.Net.NameResolution
     DllImportEntry(SystemNative_GetHostName) // System.Net.NameResolution
     DllImportEntry(SystemNative_GetIPv4Address) // System.Net.Primitives, System.Net.Sockets
@@ -369,7 +368,7 @@ static const Entry s_libSystem_Native [] = {
     DllImportEntry(SystemNative_GetSystemTimeAsTicks) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetTimeZoneData) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetTimestamp) // System.Private.CoreLib
-    DllImportEntry(SystemNative_GetWasiSocketDescriptor) // System.Net.Sockets
+    DllImportEntry(SystemNative_GetWasiSocketDescriptor) // System.Private.CoreLib
     DllImportEntry(SystemNative_IsMemfdSupported) // System.IO.MemoryMappedFiles
     DllImportEntry(SystemNative_LChflags) // System.Private.CoreLib
     DllImportEntry(SystemNative_LChflagsCanSetHiddenFlag) // System.Private.CoreLib
@@ -417,7 +416,6 @@ static const Entry s_libSystem_Native [] = {
     DllImportEntry(SystemNative_ReceiveMessage) // System.Net.Sockets
     DllImportEntry(SystemNative_Rename) // System.Private.CoreLib
     DllImportEntry(SystemNative_RmDir) // System.Private.CoreLib
-    DllImportEntry(SystemNative_SchedGetCpu) // System.Private.CoreLib
     DllImportEntry(SystemNative_Select) // System.Net.Sockets
     DllImportEntry(SystemNative_Send) // System.Net.Sockets
     DllImportEntry(SystemNative_SendFile) // System.Net.Sockets
@@ -446,7 +444,7 @@ static const Entry s_libSystem_Native [] = {
     DllImportEntry(SystemNative_TryGetIPPacketInformation) // System.Net.Sockets
     DllImportEntry(SystemNative_UTimensat) // System.Private.CoreLib
     DllImportEntry(SystemNative_Unlink) // System.IO.MemoryMappedFiles, System.Private.CoreLib
-    DllImportEntry(SystemNative_WasiSubscribeSocketPollable) // System.Net.Sockets
+    DllImportEntry(SystemNative_WasiSubscribeSocketPollable) // System.Private.CoreLib
     DllImportEntry(SystemNative_Write) // System.Console, System.Net.Sockets, System.Private.CoreLib
     DllImportEntry(SystemNative_WriteToNonblocking) // System.Private.CoreLib
     DllImportEntry(SystemNative_WriteV) // System.Private.CoreLib
@@ -521,7 +519,7 @@ typedef struct PInvokeTable {
 static PInvokeTable s_PInvokeTables[] = {
     {"libSystem.Globalization.Native", s_libSystem_Globalization_Native, 34},
     {"libSystem.IO.Compression.Native", s_libSystem_IO_Compression_Native, 9},
-    {"libSystem.Native", s_libSystem_Native, 148},
+    {"libSystem.Native", s_libSystem_Native, 147},
     {"wasi:clocks/monotonic-clock@0.2.8", s_wasi_3A_clocks_2F_monotonic_clock_40_0_2_8, 4},
     {"wasi:http/outgoing-handler@0.2.8", s_wasi_3A_http_2F_outgoing_handler_40_0_2_8, 1},
     {"wasi:http/types@0.2.8", s_wasi_3A_http_2F_types_40_0_2_8, 26},

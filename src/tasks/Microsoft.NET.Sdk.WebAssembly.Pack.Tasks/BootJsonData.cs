@@ -415,6 +415,14 @@ public class WebcilAsset : GeneralAsset
     /// </summary>
     [DataMember(EmitDefaultValue = false)]
     public int? payloadSize { get; set; }
+
+    /// <summary>
+    /// Set on the composite ReadyToRun owner image. It holds native code for its component assemblies
+    /// but is not itself a managed assembly: the loader keeps its <c>.wasm</c> virtual path (component
+    /// stubs probe for it by that name) and excludes it from the trusted platform assemblies.
+    /// </summary>
+    [DataMember(EmitDefaultValue = false)]
+    public bool? isCompositeImage { get; set; }
 }
 
 [DataContract]

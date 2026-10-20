@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
 
 namespace System.Collections.Immutable
 {
@@ -591,17 +590,10 @@ namespace System.Collections.Immutable
 
                 if (index + length < this._count)
                 {
-
-#if NET
-                    if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
-                    {
-                        Array.Clear(_elements, index, length); // Clear the elements so that the gc can reclaim the references.
-                    }
-#endif
                     Array.Copy(_elements, index + length, _elements, index, this.Count - index - length);
                 }
 
-                this._count -= length;
+                this.Count -= length;
             }
 
             /// <summary>
@@ -1095,7 +1087,7 @@ namespace System.Collections.Immutable
 
                 Array.Copy(_elements, copied + removed, _elements, copied, _elements.Length - (copied + removed));
 
-                _count -= indicesToRemove.Count;
+                this.Count -= indicesToRemove.Count;
             }
 
             /// <summary>Gets a <see cref="Memory{T}"/> for the filled portion of the backing array.</summary>

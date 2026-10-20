@@ -874,8 +874,11 @@ void Compiler::fgSetPreferredInitCctor()
 GenTreeCall* Compiler::fgGetSharedCCtor(CORINFO_CLASS_HANDLE cls)
 {
 #if defined(TARGET_WASM)
-    // Wasm does not support dynamically created helpers
-    return fgGetStaticsCCtorHelper(cls, CORINFO_HELP_INITCLASS);
+    // CoreCLR Wasm does not support dynamically created helpers.
+    if (!IsNativeAot())
+    {
+        return fgGetStaticsCCtorHelper(cls, CORINFO_HELP_INITCLASS);
+    }
 #endif
 
 #ifdef FEATURE_READYTORUN
@@ -1011,6 +1014,9 @@ bool Compiler::fgAddrCouldBeHeap(GenTree* addr)
     target_ssize_t offset;
     gtPeelOffsets(&op, &offset);
 
+    // After LSRA the base of a contained address mode may be wrapped in a COPY/RELOAD
+    op = op->gtSkipReloadOrCopy();
+
     // Ignore the offset for locals
 
     if (op->OperIs(GT_LCL_ADDR))
@@ -1131,7 +1137,13 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
     }
 
 #ifdef FEATURE_READYTORUN
+#ifdef TARGET_WASM
+    // Wasm can't use the dynamically composed ReadyToRun delegate constructor helpers,
+    // so ReadyToRun uses GetDelegateCtor below, like the JIT.
+    if (IsAot() && IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+#else
     if (IsAot())
+#endif
     {
         if (IsTargetAbi(CORINFO_NATIVEAOT_ABI))
         {
@@ -1179,9 +1191,7 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
             }
         }
         // ReadyToRun has this optimization for a non-virtual function pointers only for now.
-#ifndef TARGET_WASM // TODO-WASM: Wasm doesn't use the dynamically composed helpers yet. When we do, we probably will
-                    // need to use a different set of arguments to construct the right helper call to avoid dynamically
-                    // composing a helper
+#ifndef TARGET_WASM
         else if ((oper == GT_FTN_ADDR) && (ldftnToken != nullptr))
         {
             JITDUMP("optimized\n");
@@ -1222,6 +1232,16 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
             *ExactContextHnd = nullptr;
 
             call->gtCallMethHnd = alternateCtor;
+
+#ifdef FEATURE_READYTORUN
+            if (IsAot())
+            {
+                // The importer computed the entry point for the original constructor.
+                CORINFO_CONST_LOOKUP entryPoint;
+                info.compCompHnd->getFunctionEntryPoint(alternateCtor, &entryPoint);
+                call->setEntryPoint(entryPoint);
+            }
+#endif
 
             CallArg* lastArg = nullptr;
             if (ctorData.pArg3 != nullptr)
@@ -5822,18 +5842,8 @@ bool FlowGraphNaturalLoop::MatchLimit(unsigned iterVar, GenTree* test, NaturalLo
 
     Compiler* comp = m_dfsTree->GetCompiler();
 
-    // Obtain the relop from the "test" tree.
-    GenTree* relop;
-    if (test->OperIs(GT_JTRUE))
-    {
-        relop = test->gtGetOp1();
-    }
-    else
-    {
-        assert(test->OperIs(GT_STORE_LCL_VAR));
-        relop = test->AsLclVar()->Data();
-    }
-
+    assert(test->OperIs(GT_JTRUE));
+    GenTree* relop = test->gtGetOp1();
     noway_assert(relop->OperIsCompare());
 
     GenTree* opr1 = relop->AsOp()->gtOp1;

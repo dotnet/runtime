@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include <stdlib.h>
 #include <minipal/descriptorlimit.h>
 
 #if defined(DEBUG) && defined(_WIN32)
@@ -18,6 +19,13 @@
 // It defines sentinel symbols that are used to get the addresses of the start and end of global data
 // at runtime. The section names are platform-specific to match platform-specific linker conventions.
 //
+#ifdef TARGET_WASM
+
+// Wasm currently supports a single compilation unit.
+extern "C" void* __Module;
+
+#else // TARGET_WASM
+
 #if defined(_MSC_VER)
 
 #pragma section(".modules$A", read)
@@ -100,6 +108,8 @@ static char& __unbox_z = __stop___unbox;
 
 #endif // _MSC_VER
 
+#endif // TARGET_WASM
+
 extern "C" bool RhInitialize(bool isDll);
 extern "C" void RhSetRuntimeInitializationCallback(int (*fPtr)());
 
@@ -141,16 +151,22 @@ MANAGED_RUNTIME_EXPORT(ObjectiveCMarshalGetUnhandledExceptionPropagationHandler)
 
 typedef void (MANAGED_RUNTIME_EXPORT_CALLCONV *pfn)();
 
+#ifdef FEATURE_MULTITHREADING
 #if defined(_WIN32)
 extern "C" int ThreadEntryPoint(void* pContext);
 #else
 extern "C" size_t ThreadEntryPoint(void* pContext);
 #endif
+#endif // FEATURE_MULTITHREADING
 
 static const pfn c_classlibFunctions[] = {
     &MANAGED_RUNTIME_EXPORT_NAME(GetRuntimeException),
     &MANAGED_RUNTIME_EXPORT_NAME(RuntimeFailFast),
+#ifdef FEATURE_MULTITHREADING
     (pfn)&ThreadEntryPoint,
+#else
+    nullptr,
+#endif
     &MANAGED_RUNTIME_EXPORT_NAME(AppendExceptionStackFrame),
     &MANAGED_RUNTIME_EXPORT_NAME(ResolveDispatch),
     &MANAGED_RUNTIME_EXPORT_NAME(GetSystemArrayEEType),
@@ -200,6 +216,7 @@ static int InitializeRuntime()
 
     void * osModule = PalGetModuleHandleFromPointer((void*)&NATIVEAOT_ENTRYPOINT);
 
+#ifndef TARGET_WASM
     // TODO: pass struct with parameters instead of the large signature of RhRegisterOSModule
     if (!RhRegisterOSModule(
         osModule,
@@ -209,8 +226,13 @@ static int InitializeRuntime()
     {
         return -1;
     }
+#endif // !TARGET_WASM
 
+#ifdef TARGET_WASM
+    InitializeModules(osModule, &__Module, 1, (void **)&c_classlibFunctions, _countof(c_classlibFunctions));
+#else
     InitializeModules(osModule, __modules_a, (int)((__modules_z - __modules_a)), (void **)&c_classlibFunctions, _countof(c_classlibFunctions));
+#endif
 
 #ifdef NATIVEAOT_DLL
     // Run startup method immediately for a native library
@@ -239,6 +261,9 @@ int main(int argc, char* argv[])
     int exitCode = __managed__Main(argc, argv);
     _cexit();
     ExitProcess(exitCode);
+#elif defined(TARGET_WASI)
+    // Returning from WASI Preview 2 main reduces the exit code to a boolean result.
+    exit(__managed__Main(argc, argv));
 #else
     return __managed__Main(argc, argv);
 #endif

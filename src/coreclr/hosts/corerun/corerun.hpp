@@ -13,7 +13,6 @@
 #include <string>
 #include <sstream>
 #include <vector>
-#include <set>
 #include <functional>
 #include <memory>
 #include <minipal/utils.h>
