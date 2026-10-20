@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Runtime.MethodInfos;
 
 using Internal.Reflection.Core.Execution;
@@ -14,12 +13,10 @@ namespace System.Reflection
     public sealed class ConstructorInvoker
     {
         private readonly MethodBaseInvoker _methodBaseInvoker;
-        private readonly int _parameterCount;
 
         internal ConstructorInvoker(RuntimeConstructorInfo constructor)
         {
             _methodBaseInvoker = constructor.MethodInvoker;
-            _parameterCount = constructor.GetParametersAsSpan().Length;
         }
 
         public static ConstructorInvoker Create(ConstructorInfo constructor)
@@ -35,11 +32,6 @@ namespace System.Reflection
         [DebuggerGuidedStepThrough]
         public object Invoke()
         {
-            if (_parameterCount != 0)
-            {
-                ThrowForArgCountMismatch();
-            }
-
             object result = _methodBaseInvoker.CreateInstanceWithFewArgs(default);
             DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
             return result;
@@ -48,11 +40,6 @@ namespace System.Reflection
         [DebuggerGuidedStepThrough]
         public object Invoke(object? arg1)
         {
-            if (_parameterCount != 1)
-            {
-                ThrowForArgCountMismatch();
-            }
-
             object result = _methodBaseInvoker.CreateInstanceWithFewArgs(new Span<object?>(ref arg1));
             DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
             return result;
@@ -61,11 +48,6 @@ namespace System.Reflection
         [DebuggerGuidedStepThrough]
         public object Invoke(object? arg1, object? arg2)
         {
-            if (_parameterCount != 2)
-            {
-                ThrowForArgCountMismatch();
-            }
-
             StackAllocatedArguments argStorage = default;
             argStorage._args[0] = arg1;
             argStorage._args[1] = arg2;
@@ -77,11 +59,6 @@ namespace System.Reflection
         [DebuggerGuidedStepThrough]
         public object Invoke(object? arg1, object? arg2, object? arg3)
         {
-            if (_parameterCount != 3)
-            {
-                ThrowForArgCountMismatch();
-            }
-
             StackAllocatedArguments argStorage = default;
             argStorage._args[0] = arg1;
             argStorage._args[1] = arg2;
@@ -94,11 +71,6 @@ namespace System.Reflection
         [DebuggerGuidedStepThrough]
         public object Invoke(object? arg1, object? arg2, object? arg3, object? arg4)
         {
-            if (_parameterCount != 4)
-            {
-                ThrowForArgCountMismatch();
-            }
-
             StackAllocatedArguments argStorage = default;
             argStorage._args[0] = arg1;
             argStorage._args[1] = arg2;
@@ -115,12 +87,6 @@ namespace System.Reflection
             object result = _methodBaseInvoker.CreateInstance(arguments);
             DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
             return result;
-        }
-
-        [DoesNotReturn]
-        private static void ThrowForArgCountMismatch()
-        {
-            throw new TargetParameterCountException(SR.Arg_ParmCnt);
         }
     }
 }
