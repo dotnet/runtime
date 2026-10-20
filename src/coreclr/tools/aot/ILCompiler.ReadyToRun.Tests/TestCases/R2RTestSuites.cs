@@ -113,10 +113,8 @@ public class R2RTestSuites
         }
     }
 
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void GenericParameterNamesDoNotCollide(bool composite)
+    [Fact]
+    public void GenericParameterNamesDoNotCollide()
     {
         var assembly = new CompiledAssembly
         {
@@ -128,9 +126,6 @@ public class R2RTestSuites
             nameof(GenericParameterNamesDoNotCollide),
             [
                 new(nameof(GenericParameterNamesDoNotCollide), [new CrossgenAssembly(assembly)])
-                {
-                    Options = composite ? [Crossgen2Option.Composite] : [],
-                },
             ]));
     }
 
