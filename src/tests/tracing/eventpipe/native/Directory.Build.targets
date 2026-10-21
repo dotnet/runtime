@@ -1,0 +1,4 @@
+<Project>
+  <!-- Native component tests do not need the parent EventPipe targets' managed logging dependencies. -->
+  <Import Project="$(MSBuildThisFileDirectory)..\..\..\Directory.Build.targets" />
+</Project>

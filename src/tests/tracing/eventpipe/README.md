@@ -5,7 +5,7 @@ tests use the shared `IpcTraceTest` infrastructure located in `common/`.
 
 ## How the tests work
 
-Each test is a self-contained managed application that:
+The managed tracing tests are self-contained applications that:
 
 1. Creates a `DiagnosticsClient` connected to its own process.
 2. Starts an EventPipe session with one or more providers.
@@ -114,6 +114,7 @@ return IpcTraceTest.RunAndValidateEventCounts(
 | Directory | Contents |
 |-----------|----------|
 | `common/` | Shared infrastructure (`IpcTraceTest`, `DiagnosticsClient`, helpers) |
+| `native/` | Native container unit tests and shared native-test runner |
 | `eventsvalidation/` | Tests that validate specific event types and payloads |
 | `providervalidation/` | Tests that validate provider registration and event counts |
 | `rundownvalidation/` | Tests for rundown event correctness |
