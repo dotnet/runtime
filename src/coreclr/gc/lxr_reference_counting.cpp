@@ -137,7 +137,7 @@ private:
         return std::chrono::duration_cast<std::chrono::nanoseconds>(
             std::chrono::steady_clock::now().time_since_epoch()).count();
 #else
-        return GCToOSInterface::QueryPerformanceCounter();
+        return minipal_hires_ticks();
 #endif // LXR_SIDE_METADATA_TEST_PLATFORM
     }
 
@@ -152,7 +152,7 @@ int64_t LxrPauseTimers::Now()
     return std::chrono::duration_cast<std::chrono::nanoseconds>(
         std::chrono::steady_clock::now().time_since_epoch()).count();
 #else
-    return GCToOSInterface::QueryPerformanceCounter();
+    return minipal_hires_ticks();
 #endif // LXR_SIDE_METADATA_TEST_PLATFORM
 }
 
@@ -161,7 +161,7 @@ int64_t LxrPauseTimers::Frequency()
 #ifdef LXR_SIDE_METADATA_TEST_PLATFORM
     return 1000000000;
 #else
-    return GCToOSInterface::QueryPerformanceFrequency();
+    return minipal_hires_tick_frequency();
 #endif // LXR_SIDE_METADATA_TEST_PLATFORM
 }
 

@@ -117,6 +117,11 @@ public:
     void ControlEvents(GCEventKeyword keyword, GCEventLevel level) override;
     void ControlPrivateEvents(GCEventKeyword keyword, GCEventLevel level) override;
     void NullBridgeObjectsWeakRefs(size_t count, void* handles) override;
+    uintptr_t* GetPendingBridgeHandles(size_t* count) override;
+    void GetFastGCFunctions(FastGCFunctions* functions) override;
+    GCHeapType GetGCHeapType() override;
+    uint64_t GetTotalAllocatedBytesPrecise() override;
+    void GetAssignRefFunctions(void** assignRef, size_t* assignRefSize, void** assignRefChecked, size_t* assignRefCheckedSize, uintptr_t** avLocationsList, GCWriteBarrierPatchableValue** patchableValues) override;
 
     AllocationNotificationParameters* GetAllocationNotificationParameters() override;
     ObjectReferenceEnumerationParameters* GetObjectReferenceEnumerationParameters() override;

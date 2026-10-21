@@ -167,7 +167,7 @@ struct LxrGcHeap::ScanCostScope
         if (heap->m_storage_diagnostics_enabled.load(std::memory_order_relaxed))
         {
             cpu = CpuNanoseconds(heap);
-            start = GCToOSInterface::QueryPerformanceCounter();
+            start = minipal_hires_ticks();
         }
     }
 
@@ -176,7 +176,7 @@ struct LxrGcHeap::ScanCostScope
         if (start != 0)
         {
             heap->m_scan_metrics[metric].fetch_add(
-                GCToOSInterface::QueryPerformanceCounter() - start, std::memory_order_relaxed);
+                minipal_hires_ticks() - start, std::memory_order_relaxed);
             heap->m_scan_cpu_nanoseconds[metric].fetch_add(
                 CpuNanoseconds(heap) - cpu, std::memory_order_relaxed);
         }
@@ -494,7 +494,7 @@ HRESULT LxrGcHeap::Initialize()
         m_engine.Shutdown();
         return E_OUTOFMEMORY;
     }
-    m_start_time = GCToOSInterface::GetLowPrecisionTimeStamp();
+    m_start_time = minipal_lowres_ticks();
     GCScan::GcRuntimeStructuresValid(TRUE);
     if (!GCToEEInterface::CreateThread(ScanOnGcThread, this, false, "LXR root/lifetime scan"))
     {
@@ -1058,7 +1058,7 @@ void LxrGcHeap::Suspend(void* context)
     LxrPhaseScope suspend(heap->m_engine.GetPauseTimers(), LxrPauseTimers::SuspendRuntime);
     heap->m_in_gc.store(true, std::memory_order_release);
     heap->m_gc_done.Reset();
-    heap->m_pause_start = GCToOSInterface::QueryPerformanceCounter();
+    heap->m_pause_start = minipal_hires_ticks();
     {
         LxrPhaseScope suspendEE(heap->m_engine.GetPauseTimers(), LxrPauseTimers::SuspendEE);
         GCToEEInterface::SuspendEE(SUSPEND_FOR_GC);
@@ -1109,9 +1109,9 @@ void LxrGcHeap::Resume(bool finished, void* context)
         GCToEEInterface::RestartEE(finished);
     }
     heap->m_in_gc.store(false, std::memory_order_release);
-    int64_t elapsed = GCToOSInterface::QueryPerformanceCounter() - heap->m_pause_start;
+    int64_t elapsed = minipal_hires_ticks() - heap->m_pause_start;
     timers.Add(LxrPauseTimers::StwPause, elapsed);
-    int64_t frequency = GCToOSInterface::QueryPerformanceFrequency();
+    int64_t frequency = minipal_hires_tick_frequency();
     int64_t ticks = elapsed / frequency * 10000000 + elapsed % frequency * 10000000 / frequency;
     heap->m_last_pause_ticks.store(ticks);
     heap->m_total_pause_ticks.fetch_add(ticks);
@@ -1269,7 +1269,7 @@ void LxrGcHeap::ExecuteScan(uint8_t kind)
     if (kind == 0)
     {
         bool timed = heap->m_storage_diagnostics_enabled.load(std::memory_order_relaxed);
-        int64_t start = timed ? GCToOSInterface::QueryPerformanceCounter() : 0;
+        int64_t start = timed ? minipal_hires_ticks() : 0;
         measure(31, LxrPauseTimers::ScanBeforeRoots, [&]() { GCToEEInterface::BeforeGcScanRoots(2, false, false); });
         LxrRcResult result = LxrRcResult::Success;
         measure(14, LxrPauseTimers::ScanLeaseFinalizers, [&]() { heap->CaptureFinalizers(); });
@@ -1292,7 +1292,7 @@ void LxrGcHeap::ExecuteScan(uint8_t kind)
         if (timed)
         {
             heap->m_root_capture_ticks.fetch_add(
-                static_cast<uint64_t>(GCToOSInterface::QueryPerformanceCounter() - start),
+                static_cast<uint64_t>(minipal_hires_ticks() - start),
                 std::memory_order_relaxed);
         }
     }
@@ -1817,7 +1817,7 @@ size_t LxrGcHeap::GetLastGCGenerationSize(int generation)
 
 size_t LxrGcHeap::GetLastGCStartTime(int) { return m_last_gc_start.load(); }
 size_t LxrGcHeap::GetLastGCDuration(int) { return m_last_gc_duration.load(); }
-size_t LxrGcHeap::GetNow() { return static_cast<size_t>(GCToOSInterface::GetLowPrecisionTimeStamp()); }
+size_t LxrGcHeap::GetNow() { return static_cast<size_t>(minipal_lowres_ticks()); }
 int64_t LxrGcHeap::GetTotalPauseDuration() { return m_total_pause_ticks.load(); }
 uint64_t LxrGcHeap::GetGenerationBudget(int) { return m_policy_configuration.youngLimitBytes; }
 size_t LxrGcHeap::GetLOHThreshold() { return LxrLargeObjectSpace::MinimumObjectBytes; }
@@ -2305,6 +2305,32 @@ void LxrGcHeap::NullBridgeObjectsWeakRefs(size_t, void*)
     Fatal("LXR prototype does not implement cross-runtime Java bridge reclamation.");
 }
 
+uintptr_t* LxrGcHeap::GetPendingBridgeHandles(size_t* count)
+{
+    *count = 0;
+    return nullptr;
+}
+
+// LXR is a standalone collector that keeps the stock heap type and the runtime's own barrier code.
+void LxrGcHeap::GetFastGCFunctions(FastGCFunctions* functions)
+{
+    *functions = {};
+}
+
+GCHeapType LxrGcHeap::GetGCHeapType() { return GC_HEAP_WKS; }
+
+uint64_t LxrGcHeap::GetTotalAllocatedBytesPrecise() { return GetTotalAllocatedBytes(); }
+
+void LxrGcHeap::GetAssignRefFunctions(void** assignRef, size_t* assignRefSize, void** assignRefChecked, size_t* assignRefCheckedSize, uintptr_t** avLocationsList, GCWriteBarrierPatchableValue** patchableValues)
+{
+    *assignRef = nullptr;
+    *assignRefSize = 0;
+    *assignRefChecked = nullptr;
+    *assignRefCheckedSize = 0;
+    *avLocationsList = nullptr;
+    *patchableValues = nullptr;
+}
+
 AllocationNotificationParameters* LxrGcHeap::GetAllocationNotificationParameters() { return &m_notification; }
 ObjectReferenceEnumerationParameters* LxrGcHeap::GetObjectReferenceEnumerationParameters() { return &m_enumeration; }
 ObjectHeaderBitsParameters* LxrGcHeap::GetObjectHeaderBitsParameters() { return &m_header_bits; }
@@ -2524,7 +2550,7 @@ uint64_t LxrGcHeap::GetPrototypeMetric(uint32_t metric) const
         case 101: return mature.retiredSourceBytes;
         case 102: return mature.releasedBlocks;
         case 103: return mature.invalidSlots;
-        case 114: return GCToOSInterface::QueryPerformanceFrequency();
+        case 114: return minipal_hires_tick_frequency();
         case 115: return m_storage_diagnostics_enabled.load(std::memory_order_acquire)
             ? m_root_capture_ticks.load(std::memory_order_acquire) : UINT64_MAX;
         case 116: return mature.pauseCopiedBytes;
