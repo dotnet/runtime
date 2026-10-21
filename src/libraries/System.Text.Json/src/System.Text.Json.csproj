@@ -400,6 +400,7 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <Compile Include="$(CommonPath)Polyfills\StringPolyfills.cs" Link="Common\Polyfills\StringPolyfills.cs" />
     <Compile Include="$(CommonPath)Polyfills\TypePolyfills.cs" Link="Common\Polyfills\TypePolyfills.cs" />
     <Compile Include="$(CommonPath)Polyfills\UInt64Polyfills.cs" Link="Common\Polyfills\UInt64Polyfills.cs" />
+    <Compile Include="$(CommonPath)Polyfills\VolatilePolyfills.cs" Link="Common\Polyfills\VolatilePolyfills.cs" />
     <Compile Include="$(CommonPath)System\Buffers\SpanAction.cs" Link="Common\System\Buffers\SpanAction.cs" />
   </ItemGroup>
 
