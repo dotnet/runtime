@@ -53,7 +53,7 @@ Therefore the managed portion of each test **must not contain**:
     * `<JitOptimizationSensitive>true</JitOptimizationSensitive>`
 * Exclude test from NativeAOT runs runs by adding the following to the csproj:
     * `<NativeAotIncompatible>true</NativeAotIncompatible>`
-* Exclude the test from all ilasm round-trip testing (including managed ilasm) by adding the following to the csproj:
+* Exclude the test from all ilasm round-trip testing by adding the following to the csproj:
     * `<IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>`
 * Exclude the test for unloadability (collectible assemblies) testing
     * `<UnloadabilityIncompatible>true</UnloadabilityIncompatible>`

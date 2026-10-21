@@ -58,10 +58,10 @@ The test is skipped during SuperPMI collection runs. The skip check is per-proce
 
 ### 9. Project sets `<IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>`
 
-`IlasmRoundTripIncompatible` skips the test during all IL round-trip validation runs,
-including those using managed ilasm. Runnable tests need process isolation because their
-skip checks are per-process. Shared-library projects do not need process isolation;
-merged runners skip their marked assemblies individually.
+`IlasmRoundTripIncompatible` skips the test during IL round-trip validation runs. Runnable
+tests need process isolation because their skip checks are per-process. Shared-library
+projects do not need process isolation; merged runners skip their marked assemblies
+individually.
 
 ### 10. Project sets `<UnloadabilityIncompatible>true</UnloadabilityIncompatible>`
 
