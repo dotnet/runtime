@@ -286,16 +286,7 @@ namespace System.Net.Sockets
             }
 
             _ = SocketPal.SendPacketsAsync(socket, SendPacketsFlags, elements, fileHandles, cancellationToken, (bytesTransferred, error) =>
-            {
-                if (error == SocketError.Success)
-                {
-                    FinishOperationAsyncSuccess((int)bytesTransferred, SocketFlags.None);
-                }
-                else
-                {
-                    FinishOperationAsyncFailure(error, (int)bytesTransferred, SocketFlags.None);
-                }
-            });
+                CompletionCallback((int)bytesTransferred, SocketFlags.None, error));
 
             return SocketError.IOPending;
         }

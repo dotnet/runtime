@@ -7,6 +7,7 @@ using System.Net.Test.Common;
 using System.Threading;
 
 using Microsoft.DotNet.XUnitExtensions;
+using Microsoft.Win32.SafeHandles;
 
 using Xunit;
 using Xunit.Abstractions;
@@ -548,6 +549,54 @@ namespace System.Net.Sockets.Tests
             using (var stream = new FileStream(TestFileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, 4096, FileOptions.Asynchronous | FileOptions.SequentialScan)) {
                 var element = new SendPacketsElement(stream, 0, s_testFileSize);
                 SendPackets(element, s_testFileSize, GetExpectedContent(element));
+            }
+        }
+
+        [Theory]
+        [InlineData(true, SocketError.OperationAborted)]
+        [InlineData(false, SocketError.SocketError)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)] // Windows reads the FileStream's handle before the operation starts.
+        public void SendPacketsElement_FileStreamHandleThrows_OperationAbortedOnlyAfterDispose(bool disposeSocket, SocketError expectedError)
+        {
+            using (SocketTestServer.SocketTestServerFactory(SocketImplementationType.Async, _serverAddress, out int port))
+            using (Socket sock = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp))
+            {
+                sock.Connect(new IPEndPoint(_serverAddress, port));
+
+                // The element fails while the operation runs, after the socket was disposed or not.
+                using (var stream = new ThrowingHandleFileStream(TestFileName, disposeSocket ? sock.Dispose : () => { }))
+                using (var completed = new ManualResetEventSlim())
+                using (var args = new SocketAsyncEventArgs())
+                {
+                    args.Completed += (_, _) => completed.Set();
+                    args.SendPacketsElements = new[] { new SendPacketsElement(stream, 0, s_testFileSize) };
+
+                    if (sock.SendPacketsAsync(args))
+                    {
+                        Assert.True(completed.Wait(TestSettings.PassingTestTimeout), "Timed out");
+                    }
+                    Assert.Equal(expectedError, args.SocketError);
+                }
+            }
+        }
+
+        private sealed class ThrowingHandleFileStream : FileStream
+        {
+            private readonly Action _beforeThrowing;
+
+            public ThrowingHandleFileStream(string path, Action beforeThrowing)
+                : base(path, FileMode.Open, FileAccess.Read, FileShare.Read)
+            {
+                _beforeThrowing = beforeThrowing;
+            }
+
+            public override SafeFileHandle SafeFileHandle
+            {
+                get
+                {
+                    _beforeThrowing();
+                    throw new IOException();
+                }
             }
         }
 
