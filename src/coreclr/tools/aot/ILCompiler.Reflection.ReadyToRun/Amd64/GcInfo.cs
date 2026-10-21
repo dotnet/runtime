@@ -64,6 +64,8 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
         private Machine _machine;
         private GcInfoTypes _gcInfoTypes;
 
+        private bool UsesCompactWasmHeader => _machine == WasmMachine.Wasm32 && Version >= 6;
+
         public int Version { get; set; }
         public ReturnKinds ReturnKind { get; set; }
         public uint ValidRangeStart { get; set; }
@@ -92,7 +94,7 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
             Offset = offset;
             Version = version;
             bool denormalizeCodeOffsets = Version > MIN_GCINFO_VERSION_WITH_NORMALIZED_CODE_OFFSETS;
-            _gcInfoTypes = new GcInfoTypes(machine, denormalizeCodeOffsets);
+            _gcInfoTypes = new GcInfoTypes(machine, denormalizeCodeOffsets, version);
             _machine = machine;
 
             SecurityObjectStackSlot = -1;
@@ -118,7 +120,8 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
 
             if (_hasGSCookie)
             {
-                uint normPrologSize = imageReader.DecodeVarLengthUnsigned(_gcInfoTypes.NORM_PROLOG_SIZE_ENCBASE, ref bitOffset) + 1;
+                uint normPrologSize = UsesCompactWasmHeader ? 1 :
+                    imageReader.DecodeVarLengthUnsigned(_gcInfoTypes.NORM_PROLOG_SIZE_ENCBASE, ref bitOffset) + 1;
                 uint normEpilogSize = imageReader.DecodeVarLengthUnsigned(_gcInfoTypes.NORM_EPILOG_SIZE_ENCBASE, ref bitOffset);
 
                 ValidRangeStart = _gcInfoTypes.DenormalizeCodeOffset(normPrologSize);
@@ -126,7 +129,8 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
             }
             else if (_hasSecurityObject || _hasGenericsInstContext)
             {
-                uint normValidRangeStart = imageReader.DecodeVarLengthUnsigned(_gcInfoTypes.NORM_PROLOG_SIZE_ENCBASE, ref bitOffset) + 1;
+                uint normValidRangeStart = UsesCompactWasmHeader ? 1 :
+                    imageReader.DecodeVarLengthUnsigned(_gcInfoTypes.NORM_PROLOG_SIZE_ENCBASE, ref bitOffset) + 1;
                 ValidRangeStart = _gcInfoTypes.DenormalizeCodeOffset(normValidRangeStart);
                 ValidRangeEnd = ValidRangeStart + 1;
             }
@@ -153,7 +157,7 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
 
             if (_hasStackBaseRegister)
             {
-                uint normalizedRegister = _slimHeader
+                uint normalizedRegister = _slimHeader || UsesCompactWasmHeader
                     ? 0
                     : imageReader.DecodeVarLengthUnsigned(_gcInfoTypes.STACK_BASE_REGISTER_ENCBASE, ref bitOffset);
                 StackBaseRegister = _gcInfoTypes.DenormalizeStackBaseRegister(normalizedRegister);
@@ -175,7 +179,8 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
             }
 
             // PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED (this macro is always defined in _gcInfoTypes.h)
-            NumSafePoints = imageReader.DecodeVarLengthUnsigned(_gcInfoTypes.NUM_SAFE_POINTS_ENCBASE, ref bitOffset);
+            NumSafePoints = UsesCompactWasmHeader && _slimHeader ? 0 :
+                imageReader.DecodeVarLengthUnsigned(_gcInfoTypes.NUM_SAFE_POINTS_ENCBASE, ref bitOffset);
 
             if (!_slimHeader && _gcInfoTypes.HAS_INTERRUPTIBLE_RANGES)
             {
@@ -187,7 +192,7 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
 
             InterruptibleRanges = EnumerateInterruptibleRanges(imageReader, _gcInfoTypes.INTERRUPTIBLE_RANGE_DELTA1_ENCBASE, _gcInfoTypes.INTERRUPTIBLE_RANGE_DELTA2_ENCBASE, ref bitOffset);
 
-            SlotTable = new GcSlotTable(imageReader, machine, _gcInfoTypes, ref bitOffset);
+            SlotTable = new GcSlotTable(imageReader, machine, _gcInfoTypes, ref bitOffset, Version);
 
             if (SlotTable.NumSlots > 0)
             {
@@ -334,12 +339,22 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
             _slimHeader = (imageReader.ReadBits(1, ref bitOffset) == 0);
             if (_slimHeader)
             {
-                headerFlags = imageReader.ReadBits(1, ref bitOffset) == 1 ? GcInfoHeaderFlags.GC_INFO_HAS_STACK_BASE_REGISTER : 0;
+                headerFlags = UsesCompactWasmHeader || imageReader.ReadBits(1, ref bitOffset) == 1
+                    ? GcInfoHeaderFlags.GC_INFO_HAS_STACK_BASE_REGISTER : 0;
             }
             else
             {
                 int numFlagBits = (int)((Version == 1) ? GcInfoHeaderFlags.GC_INFO_FLAGS_BIT_SIZE_VERSION_1 : GcInfoHeaderFlags.GC_INFO_FLAGS_BIT_SIZE);
-                headerFlags = (GcInfoHeaderFlags)imageReader.ReadBits(numFlagBits, ref bitOffset);
+                if (UsesCompactWasmHeader)
+                {
+                    int flags = imageReader.ReadBits(numFlagBits - 1, ref bitOffset);
+                    headerFlags = (GcInfoHeaderFlags)((flags & 0x3F) | ((flags & 0x1C0) << 1)) |
+                        GcInfoHeaderFlags.GC_INFO_HAS_STACK_BASE_REGISTER;
+                }
+                else
+                {
+                    headerFlags = (GcInfoHeaderFlags)imageReader.ReadBits(numFlagBits, ref bitOffset);
+                }
             }
 
             _hasSecurityObject = (headerFlags & GcInfoHeaderFlags.GC_INFO_HAS_SECURITY_OBJECT) != 0;

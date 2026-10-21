@@ -112,6 +112,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         internal int NUM_UNTRACKED_SLOTS_ENCBASE { get; } = 1;
         internal int REGISTER_ENCBASE { get; } = 3;
         internal int REGISTER_DELTA_ENCBASE { get; } = 2;
+        internal int REGISTER_BITS { get; } = 5;
         internal int STACK_SLOT_ENCBASE { get; } = 6;
         internal int STACK_SLOT_DELTA_ENCBASE { get; } = 4;
         internal int POINTER_SIZE_ENCBASE { get; } = 3;
@@ -122,7 +123,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         internal bool HAS_FIXED_STACK_PARAMETER_SCRATCH_AREA { get; } = true;
         internal bool HAS_INTERRUPTIBLE_RANGES { get; } = true;
 
-        internal GcInfoTypes(Machine machine, bool denormalizeCodeOffsets)
+        internal GcInfoTypes(Machine machine, bool denormalizeCodeOffsets, int version)
         {
             _target = machine;
             _denormalizeCodeOffsets = denormalizeCodeOffsets;
@@ -134,6 +135,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                     NUM_SAFE_POINTS_ENCBASE = 2;
                     break;
                 case Machine.ArmThumb2:
+                    REGISTER_BITS = 4;
                     CODE_LENGTH_ENCBASE = 7;
                     SECURITY_OBJECT_STACK_SLOT_ENCBASE = 5;
                     GS_COOKIE_STACK_SLOT_ENCBASE = 5;
@@ -159,14 +161,14 @@ namespace ILCompiler.Reflection.ReadyToRun
                     GENERICS_INST_CONTEXT_STACK_SLOT_ENCBASE = 6;
                     SECURITY_OBJECT_STACK_SLOT_ENCBASE = 6;
                     GS_COOKIE_STACK_SLOT_ENCBASE = 6;
-                    CODE_LENGTH_ENCBASE = 6;
+                    CODE_LENGTH_ENCBASE = version >= 6 ? 5 : 6;
                     STACK_BASE_REGISTER_ENCBASE = 3;
                     SIZE_OF_STACK_AREA_ENCBASE = 6;
                     SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA_ENCBASE = 3;
-                    REVERSE_PINVOKE_FRAME_ENCBASE = 6;
+                    REVERSE_PINVOKE_FRAME_ENCBASE = version >= 6 ? 4 : 6;
                     NUM_REGISTERS_ENCBASE = 3;
                     NUM_STACK_SLOTS_ENCBASE = 5;
-                    NUM_UNTRACKED_SLOTS_ENCBASE = 5;
+                    NUM_UNTRACKED_SLOTS_ENCBASE = version >= 6 ? 7 : 5;
                     NORM_PROLOG_SIZE_ENCBASE = 4;
                     NORM_EPILOG_SIZE_ENCBASE = 3;
                     INTERRUPTIBLE_RANGE_DELTA1_ENCBASE = 5;
@@ -175,7 +177,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                     REGISTER_DELTA_ENCBASE = REGISTER_ENCBASE;
                     STACK_SLOT_ENCBASE = 3;
                     STACK_SLOT_DELTA_ENCBASE = 3;
-                    NUM_SAFE_POINTS_ENCBASE = 4;
+                    NUM_SAFE_POINTS_ENCBASE = version >= 6 ? 3 : 4;
                     NUM_INTERRUPTIBLE_RANGES_ENCBASE = 1;
                     POINTER_SIZE_ENCBASE = 3;
                     LIVESTATE_RLE_RUN_ENCBASE = 2;
@@ -185,6 +187,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                     break;
 
                 case Machine.I386:
+                    REGISTER_BITS = 3;
                     CODE_LENGTH_ENCBASE = 6;
                     NORM_PROLOG_SIZE_ENCBASE = 4;
                     SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA_ENCBASE = 3;

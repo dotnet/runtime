@@ -103,6 +103,8 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
     private readonly NativeReader _reader;
     private readonly RuntimeInfoArchitecture _arch;
     private readonly bool PartiallyInterruptibleGCSupported = true;
+    private bool UsesCompactWasmHeader => TTraits.USES_COMPACT_WASM_HEADER && _gcVersion >= 6;
+    private bool UsesLegacyWasmEncoding => TTraits.USES_COMPACT_WASM_HEADER && _gcVersion < 6;
 
     /* Decode State */
     private int _bitOffset;
@@ -189,9 +191,30 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
         yield return DecodePoints.SlotTable;
     }
 
+    private uint ReadRegisterValue(int encodingBase)
+    {
+        uint chunk = (uint)_reader.ReadBits(encodingBase + 1, ref _bitOffset);
+        uint value = chunk & ((1u << encodingBase) - 1);
+        if ((chunk & (1u << encodingBase)) != 0)
+        {
+            if (TTraits.REGISTER_BITS <= encodingBase)
+                throw new InvalidOperationException("GC register encoding exceeds the target register width.");
+            value |= (uint)_reader.ReadBits(TTraits.REGISTER_BITS - encodingBase, ref _bitOffset) << encodingBase;
+        }
+
+        return value;
+    }
+
+    private GcSlotFlags ReadSlotFlags(GcSlotFlags previousFlags, bool first)
+    {
+        return first || previousFlags != 0
+            ? (GcSlotFlags)_reader.ReadBits(first || (previousFlags & GcSlotFlags.GC_SLOT_PINNED) != 0 ? 2 : 1, ref _bitOffset)
+            : 0;
+    }
+
     private IEnumerable<DecodePoints> DecodeSlotTable()
     {
-        if (_reader.ReadBits(1, ref _bitOffset) != 0)
+        if (TTraits.HAS_REGISTER_SLOTS && _reader.ReadBits(1, ref _bitOffset) != 0)
         {
             _numRegisters = _reader.DecodeVarLengthUnsigned(TTraits.NUM_REGISTERS_ENCBASE, ref _bitOffset);
         }
@@ -200,7 +223,8 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
         if (_reader.ReadBits(1, ref _bitOffset) != 0)
         {
             numStackSlots = _reader.DecodeVarLengthUnsigned(TTraits.NUM_STACK_SLOTS_ENCBASE, ref _bitOffset);
-            _numUntrackedSlots = _reader.DecodeVarLengthUnsigned(TTraits.NUM_UNTRACKED_SLOTS_ENCBASE, ref _bitOffset);
+            _numUntrackedSlots = _reader.DecodeVarLengthUnsigned(
+                UsesLegacyWasmEncoding ? 5 : TTraits.NUM_UNTRACKED_SLOTS_ENCBASE, ref _bitOffset);
         }
 
         _numSlots = _numRegisters + numStackSlots + _numUntrackedSlots;
@@ -209,25 +233,34 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
         // Decode register slots
         if (_numRegisters > 0)
         {
-            uint regNum = _reader.DecodeVarLengthUnsigned(TTraits.REGISTER_ENCBASE, ref _bitOffset);
-            GcSlotFlags flags = (GcSlotFlags)_reader.ReadBits(2, ref _bitOffset);
-
-            _slots.Add(GcSlotDesc.CreateRegisterSlot(regNum, flags));
-
-            for (int i = 1; i < _numRegisters; i++)
+            uint regNum = 0;
+            GcSlotFlags flags = 0;
+            for (int i = 0; i < _numRegisters; i++)
             {
-                if (flags != 0)
+                bool absolute = i == 0 || flags != 0;
+                if (_gcVersion >= 6)
                 {
-                    regNum = _reader.DecodeVarLengthUnsigned(TTraits.REGISTER_ENCBASE, ref _bitOffset);
+                    GcSlotFlags previousFlags = flags;
+                    flags = ReadSlotFlags(previousFlags, i == 0);
+                    absolute = i == 0 || flags != previousFlags;
+                }
+                int encodingBase = absolute ? TTraits.REGISTER_ENCBASE : TTraits.REGISTER_DELTA_ENCBASE;
+                uint value = _gcVersion >= 6
+                    ? ReadRegisterValue(encodingBase)
+                    : _reader.DecodeVarLengthUnsigned(encodingBase, ref _bitOffset);
+                regNum = absolute ? value : regNum + value + 1;
+                if (_gcVersion < 6 && absolute)
                     flags = (GcSlotFlags)_reader.ReadBits(2, ref _bitOffset);
-                }
-                else
-                {
-                    regNum += _reader.DecodeVarLengthUnsigned(TTraits.REGISTER_DELTA_ENCBASE, ref _bitOffset) + 1;
-                }
 
                 _slots.Add(GcSlotDesc.CreateRegisterSlot(regNum, flags));
             }
+        }
+
+        if (_gcVersion >= 6)
+        {
+            DecodeStackSlots(numStackSlots, isUntracked: false);
+            DecodeStackSlots(_numUntrackedSlots, isUntracked: true);
+            yield break;
         }
 
         // Decode stack slots
@@ -297,6 +330,26 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
         yield break;
     }
 
+    private void DecodeStackSlots(uint count, bool isUntracked)
+    {
+        GcSlotFlags flags = 0;
+        GcStackSlotBase previousBase = GcStackSlotBase.GC_SP_REL;
+        int offset = 0;
+        for (uint i = 0; i < count; i++)
+        {
+            GcSlotFlags previousFlags = flags;
+            flags = ReadSlotFlags(previousFlags, i == 0);
+            GcStackSlotBase slotBase = TTraits.HAS_STACK_SLOT_BASE && _reader.ReadBits(1, ref _bitOffset) == 0
+                ? GcStackSlotBase.GC_SP_REL : GcStackSlotBase.GC_FRAMEREG_REL;
+            offset = i == 0 || flags != previousFlags || slotBase != previousBase
+                ? _reader.DecodeVarLengthSigned(TTraits.STACK_SLOT_ENCBASE, ref _bitOffset)
+                : offset + (int)_reader.DecodeVarLengthUnsigned(TTraits.STACK_SLOT_DELTA_ENCBASE, ref _bitOffset);
+            GcSlotFlags slotFlags = isUntracked ? flags | GcSlotFlags.GC_SLOT_UNTRACKED : flags;
+            _slots.Add(GcSlotDesc.CreateStackSlot(TTraits.DenormalizeStackSlot(offset), slotBase, slotFlags));
+            previousBase = slotBase;
+        }
+    }
+
     private IEnumerable<DecodePoints> DecodeInterruptibleRanges()
     {
         if (_numInterruptibleRanges == 0)
@@ -360,7 +413,7 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
 
     private IEnumerable<DecodePoints> DecodeSlimHeader()
     {
-        if (_reader.ReadBits(1, ref _bitOffset) != 0)
+        if (UsesCompactWasmHeader || _reader.ReadBits(1, ref _bitOffset) != 0)
         {
             _headerFlags = GcInfoHeaderFlags.GC_INFO_HAS_STACK_BASE_REGISTER;
             _stackBaseRegister = TTraits.DenormalizeStackBaseRegister(0);
@@ -373,7 +426,8 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
         yield return DecodePoints.ReturnKind;
         yield return DecodePoints.VarArg;
 
-        _codeLength = TTraits.DenormalizeCodeLength(_reader.DecodeVarLengthUnsigned(TTraits.CODE_LENGTH_ENCBASE, ref _bitOffset));
+        _codeLength = TTraits.DenormalizeCodeLength(_reader.DecodeVarLengthUnsigned(
+            UsesLegacyWasmEncoding ? 6 : TTraits.CODE_LENGTH_ENCBASE, ref _bitOffset));
 
         // predecoding the rest of slim header does not require any reading.
         _validRangeStart = 0;
@@ -396,9 +450,10 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
         yield return DecodePoints.EditAndContinue;
         yield return DecodePoints.ReversePInvoke;
 
-        if (PartiallyInterruptibleGCSupported)
+        if (PartiallyInterruptibleGCSupported && !UsesCompactWasmHeader)
         {
-            _numSafePoints = _reader.DecodeVarLengthUnsigned(TTraits.NUM_SAFE_POINTS_ENCBASE, ref _bitOffset);
+            _numSafePoints = _reader.DecodeVarLengthUnsigned(
+                UsesLegacyWasmEncoding ? 4 : TTraits.NUM_SAFE_POINTS_ENCBASE, ref _bitOffset);
         }
 
         _numInterruptibleRanges = 0;
@@ -406,11 +461,21 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
 
     private IEnumerable<DecodePoints> DecodeFatHeader()
     {
-        _headerFlags = (GcInfoHeaderFlags)_reader.ReadBits((int)GcInfoHeaderFlags.GC_INFO_FLAGS_BIT_SIZE, ref _bitOffset);
+        if (UsesCompactWasmHeader)
+        {
+            uint flags = (uint)_reader.ReadBits((int)GcInfoHeaderFlags.GC_INFO_FLAGS_BIT_SIZE - 1, ref _bitOffset);
+            _headerFlags = (GcInfoHeaderFlags)((flags & 0x3F) | ((flags & 0x1C0) << 1)) |
+                GcInfoHeaderFlags.GC_INFO_HAS_STACK_BASE_REGISTER;
+        }
+        else
+        {
+            _headerFlags = (GcInfoHeaderFlags)_reader.ReadBits((int)GcInfoHeaderFlags.GC_INFO_FLAGS_BIT_SIZE, ref _bitOffset);
+        }
         yield return DecodePoints.ReturnKind;
         yield return DecodePoints.VarArg;
 
-        _codeLength = TTraits.DenormalizeCodeLength(_reader.DecodeVarLengthUnsigned(TTraits.CODE_LENGTH_ENCBASE, ref _bitOffset));
+        _codeLength = TTraits.DenormalizeCodeLength(_reader.DecodeVarLengthUnsigned(
+            UsesLegacyWasmEncoding ? 6 : TTraits.CODE_LENGTH_ENCBASE, ref _bitOffset));
         yield return DecodePoints.CodeLength;
 
         if (_headerFlags.HasFlag(GcInfoHeaderFlags.GC_INFO_HAS_GS_COOKIE))
@@ -420,7 +485,8 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
             uint normCodeLength = TTraits.NormalizeCodeLength(_codeLength);
 
             // Decode prolog/epilog information
-            uint normPrologSize = _reader.DecodeVarLengthUnsigned(TTraits.NORM_PROLOG_SIZE_ENCBASE, ref _bitOffset) + 1;
+            uint normPrologSize = UsesCompactWasmHeader ? 1 :
+                _reader.DecodeVarLengthUnsigned(TTraits.NORM_PROLOG_SIZE_ENCBASE, ref _bitOffset) + 1;
             uint normEpilogSize = _reader.DecodeVarLengthUnsigned(TTraits.NORM_EPILOG_SIZE_ENCBASE, ref _bitOffset);
 
             _validRangeStart = TTraits.DenormalizeCodeOffset(normPrologSize);
@@ -430,7 +496,8 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
         else if ((_headerFlags & GcInfoHeaderFlags.GC_INFO_HAS_GENERICS_INST_CONTEXT_MASK) != GcInfoHeaderFlags.GC_INFO_HAS_GENERICS_INST_CONTEXT_NONE)
         {
             // Decode prolog information
-            uint normPrologSize = _reader.DecodeVarLengthUnsigned(TTraits.NORM_PROLOG_SIZE_ENCBASE, ref _bitOffset) + 1;
+            uint normPrologSize = UsesCompactWasmHeader ? 1 :
+                _reader.DecodeVarLengthUnsigned(TTraits.NORM_PROLOG_SIZE_ENCBASE, ref _bitOffset) + 1;
             _validRangeStart = TTraits.DenormalizeCodeOffset(normPrologSize);
             // satisfy asserts that assume m_GSCookieValidRangeStart != 0 ==> m_GSCookieValidRangeStart < m_GSCookieValidRangeEnd
             _validRangeEnd = _validRangeStart + 1;
@@ -456,7 +523,8 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
         yield return DecodePoints.GenericInstContext;
 
         _stackBaseRegister = _headerFlags.HasFlag(GcInfoHeaderFlags.GC_INFO_HAS_STACK_BASE_REGISTER) ?
-            TTraits.DenormalizeStackBaseRegister(_reader.DecodeVarLengthUnsigned(TTraits.STACK_BASE_REGISTER_ENCBASE, ref _bitOffset)) :
+            TTraits.DenormalizeStackBaseRegister(UsesCompactWasmHeader ? 0 :
+                _reader.DecodeVarLengthUnsigned(TTraits.STACK_BASE_REGISTER_ENCBASE, ref _bitOffset)) :
             TTraits.NO_STACK_BASE_REGISTER;
 
         if (_headerFlags.HasFlag(GcInfoHeaderFlags.GC_INFO_HAS_EDIT_AND_CONTINUE_INFO))
@@ -478,7 +546,8 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
         yield return DecodePoints.EditAndContinue;
 
         _reversePInvokeFrameStackSlot = _headerFlags.HasFlag(GcInfoHeaderFlags.GC_INFO_REVERSE_PINVOKE_FRAME) ?
-            TTraits.DenormalizeStackSlot(_reader.DecodeVarLengthSigned(TTraits.REVERSE_PINVOKE_FRAME_ENCBASE, ref _bitOffset)) :
+            TTraits.DenormalizeStackSlot(_reader.DecodeVarLengthSigned(
+                UsesLegacyWasmEncoding ? 6 : TTraits.REVERSE_PINVOKE_FRAME_ENCBASE, ref _bitOffset)) :
             TTraits.NO_REVERSE_PINVOKE_FRAME;
         yield return DecodePoints.ReversePInvoke;
 
@@ -490,7 +559,8 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
 
         if (PartiallyInterruptibleGCSupported)
         {
-            _numSafePoints = _reader.DecodeVarLengthUnsigned(TTraits.NUM_SAFE_POINTS_ENCBASE, ref _bitOffset);
+            _numSafePoints = _reader.DecodeVarLengthUnsigned(
+                UsesLegacyWasmEncoding ? 4 : TTraits.NUM_SAFE_POINTS_ENCBASE, ref _bitOffset);
         }
 
         _numInterruptibleRanges = TTraits.HAS_INTERRUPTIBLE_RANGES

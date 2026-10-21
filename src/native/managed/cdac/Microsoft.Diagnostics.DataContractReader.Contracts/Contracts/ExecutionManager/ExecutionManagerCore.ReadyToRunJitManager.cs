@@ -199,6 +199,7 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
             // see readytorun.h for the versioning details
             return header.MajorVersion switch
             {
+                >= 33 => 6,
                 >= 21 => 5,
                 >= 11 => 4,
                  < 11 => 3,

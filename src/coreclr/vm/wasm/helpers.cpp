@@ -631,8 +631,9 @@ RtlpGetFunctionEndAddress (
     )
 {
     PTR_BYTE pUnwindData = dac_cast<PTR_BYTE>(FunctionEntry->UnwindData + ImageBase);
-    DecodeULEB128AsU32(&pUnwindData); // Skip the count of bytes to unwind
-    uint32_t logicalVirtualIPLength = DecodeULEB128AsU32(&pUnwindData) * 2; // Read the function length in virtual IP units, then multiply by 2 to report them as even numbers.
+    UINT32 frameSize;
+    UINT32 logicalVirtualIPLength;
+    DecodeWasmUnwindInfo(DecodeULEB128AsU64(&pUnwindData), frameSize, logicalVirtualIPLength);
     return logicalVirtualIPLength + RUNTIME_FUNCTION__BeginAddress(FunctionEntry);
 }
 
@@ -1886,7 +1887,10 @@ static void WasmUnwindStackFrameCore(TADDR* pSP, TADDR* pIP, UINT_PTR ImageBase,
     else
     {
         PTR_BYTE pUnwindData = dac_cast<PTR_BYTE>(FunctionEntry->UnwindData + ImageBase);
-        *pSP = fp + DecodeULEB128AsU32(&pUnwindData) * 16; // Unwind the frame pointer to the callers stack pointer
+        UINT32 frameSize;
+        UINT32 virtualIPCount;
+        DecodeWasmUnwindInfo(DecodeULEB128AsU64(&pUnwindData), frameSize, virtualIPCount);
+        *pSP = fp + frameSize;
         // A reverse-pinvoke frame's caller is native, not an R2R shadow frame; leave the IP unset so the walk
         // continues via the Frame chain instead of reading the native caller SP as a shadow frame.
         *pIP = callerIsNative ? 0 : GetWasmVirtualIPFromStackPointer(*pSP);

@@ -60,6 +60,8 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
                         return ((x86.Registers)registerNumber).ToString();
 
                     case Machine.Amd64:
+                        if (registerNumber is >= 16 and <= 31)
+                            return $"R{registerNumber}";
                         return ((Amd64.Registers)registerNumber).ToString();
 
                     case Machine.ArmThumb2:
@@ -106,7 +108,7 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
         /// <summary>
         /// based on <a href="https://github.com/dotnet/runtime/blob/main/src/coreclr/vm/gcinfodecoder.cpp">GcSlotDecoder::DecodeSlotTable</a>
         /// </summary>
-        public GcSlotTable(NativeReader imageReader, Machine machine, GcInfoTypes gcInfoTypes, ref int bitOffset)
+        public GcSlotTable(NativeReader imageReader, Machine machine, GcInfoTypes gcInfoTypes, ref int bitOffset, int version)
         {
             _machine = machine;
 
@@ -124,15 +126,15 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
             GcSlots = new List<GcSlot>();
             if (NumRegisters > 0)
             {
-                DecodeRegisters(imageReader, gcInfoTypes, ref bitOffset);
+                DecodeRegisters(imageReader, gcInfoTypes, ref bitOffset, version);
             }
             if (NumStackSlots > 0)
             {
-                DecodeStackSlots(imageReader, machine, gcInfoTypes, NumStackSlots, false, ref bitOffset);
+                DecodeStackSlots(imageReader, machine, gcInfoTypes, NumStackSlots, false, ref bitOffset, version);
             }
             if (NumUntracked > 0)
             {
-                DecodeStackSlots(imageReader, machine, gcInfoTypes, NumUntracked, true, ref bitOffset);
+                DecodeStackSlots(imageReader, machine, gcInfoTypes, NumUntracked, true, ref bitOffset, version);
             }
         }
 
@@ -152,46 +154,70 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
             return sb.ToString();
         }
 
-        private void DecodeRegisters(NativeReader imageReader, GcInfoTypes gcInfoTypes, ref int bitOffset)
+        private static uint ReadRegisterValue(NativeReader imageReader, int encodingBase, int registerBits, ref int bitOffset)
         {
-            // We certainly predecode the first register
-            uint regNum = imageReader.DecodeVarLengthUnsigned(gcInfoTypes.REGISTER_ENCBASE, ref bitOffset);
-            GcSlotFlags flags = (GcSlotFlags)imageReader.ReadBits(2, ref bitOffset);
-            GcSlots.Add(new GcSlot(GcSlots.Count, (int)regNum, null, flags));
-
-            for (int i = 1; i < NumRegisters; i++)
+            uint chunk = (uint)imageReader.ReadBits(encodingBase + 1, ref bitOffset);
+            uint value = chunk & ((1u << encodingBase) - 1);
+            if ((chunk & (1u << encodingBase)) != 0)
             {
-                if ((uint)flags != 0)
+                if (registerBits <= encodingBase)
+                    throw new BadImageFormatException("GC register encoding exceeds the target register width.");
+                value |= (uint)imageReader.ReadBits(registerBits - encodingBase, ref bitOffset) << encodingBase;
+            }
+
+            return value;
+        }
+
+        private static GcSlotFlags ReadSlotFlags(NativeReader imageReader, GcSlotFlags previousFlags, bool first, ref int bitOffset)
+        {
+            return first || previousFlags != 0
+                ? (GcSlotFlags)imageReader.ReadBits(first || (previousFlags & GcSlotFlags.GC_SLOT_PINNED) != 0 ? 2 : 1, ref bitOffset)
+                : 0;
+        }
+
+        private void DecodeRegisters(NativeReader imageReader, GcInfoTypes gcInfoTypes, ref int bitOffset, int version)
+        {
+            uint regNum = 0;
+            GcSlotFlags flags = 0;
+            for (int i = 0; i < NumRegisters; i++)
+            {
+                bool absolute = i == 0 || flags != 0;
+                if (version >= 6)
                 {
-                    regNum = imageReader.DecodeVarLengthUnsigned(gcInfoTypes.REGISTER_ENCBASE, ref bitOffset);
+                    GcSlotFlags previousFlags = flags;
+                    flags = ReadSlotFlags(imageReader, previousFlags, i == 0, ref bitOffset);
+                    absolute = i == 0 || flags != previousFlags;
+                }
+                int encodingBase = absolute ? gcInfoTypes.REGISTER_ENCBASE : gcInfoTypes.REGISTER_DELTA_ENCBASE;
+                uint value = version >= 6
+                    ? ReadRegisterValue(imageReader, encodingBase, gcInfoTypes.REGISTER_BITS, ref bitOffset)
+                    : imageReader.DecodeVarLengthUnsigned(encodingBase, ref bitOffset);
+                regNum = absolute ? value : regNum + value + 1;
+                if (version < 6 && absolute)
                     flags = (GcSlotFlags)imageReader.ReadBits(2, ref bitOffset);
-                }
-                else
-                {
-                    uint regDelta = imageReader.DecodeVarLengthUnsigned(gcInfoTypes.REGISTER_DELTA_ENCBASE, ref bitOffset) + 1;
-                    regNum += regDelta;
-                }
                 GcSlots.Add(new GcSlot(GcSlots.Count, (int)regNum, null, flags));
             }
         }
 
-        private void DecodeStackSlots(NativeReader imageReader, Machine machine, GcInfoTypes gcInfoTypes, uint nSlots, bool isUntracked, ref int bitOffset)
+        private void DecodeStackSlots(NativeReader imageReader, Machine machine, GcInfoTypes gcInfoTypes, uint nSlots, bool isUntracked, ref int bitOffset, int version)
         {
-            if (machine == WasmMachine.Wasm32)
+            if (version >= 6)
             {
-                GcSlotFlags previousFlags = (GcSlotFlags)7;
+                GcSlotFlags slotFlags = 0;
+                GcStackSlotBase previousBase = GcStackSlotBase.GC_SP_REL;
                 int offset = 0;
-                for (int i = 0; i < nSlots; i++)
+                for (uint i = 0; i < nSlots; i++)
                 {
-                    GcSlotFlags slotFlags = previousFlags == GcSlotFlags.GC_SLOT_BASE
-                        ? GcSlotFlags.GC_SLOT_BASE
-                        : (GcSlotFlags)imageReader.ReadBits(2, ref bitOffset);
-                    offset = slotFlags != previousFlags
+                    GcSlotFlags previousFlags = slotFlags;
+                    slotFlags = ReadSlotFlags(imageReader, previousFlags, i == 0, ref bitOffset);
+                    GcStackSlotBase slotBase = machine != WasmMachine.Wasm32 && imageReader.ReadBits(1, ref bitOffset) == 0
+                        ? GcStackSlotBase.GC_SP_REL : GcStackSlotBase.GC_FRAMEREG_REL;
+                    offset = i == 0 || slotFlags != previousFlags || slotBase != previousBase
                         ? imageReader.DecodeVarLengthSigned(gcInfoTypes.STACK_SLOT_ENCBASE, ref bitOffset)
                         : offset + (int)imageReader.DecodeVarLengthUnsigned(gcInfoTypes.STACK_SLOT_DELTA_ENCBASE, ref bitOffset);
                     int byteOffset = gcInfoTypes.DenormalizeStackSlot(offset);
-                    GcSlots.Add(new GcSlot(GcSlots.Count, -1, new GcStackSlot(byteOffset, GcStackSlotBase.GC_FRAMEREG_REL), slotFlags, isUntracked));
-                    previousFlags = slotFlags;
+                    GcSlots.Add(new GcSlot(GcSlots.Count, -1, new GcStackSlot(byteOffset, slotBase), slotFlags, isUntracked));
+                    previousBase = slotBase;
                 }
                 return;
             }

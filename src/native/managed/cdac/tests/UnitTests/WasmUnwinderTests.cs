@@ -217,7 +217,7 @@ public class WasmUnwinderTests
         [
             Frame(FramesBase, FuncIndexLeaf, 3, "leaf"),
             Frame(callerBase, FuncIndexCaller, 7, "caller"),
-            Blob(BlobsBase, [(byte)leafFrameSize], "leafUnwind"), // ULEB128 0x20 == 32
+            Blob(BlobsBase, [(byte)(leafFrameSize / 16)], "leafUnwind"),
         ]);
         WasmUnwinder unwinder = new(target, info);
 
@@ -240,7 +240,7 @@ public class WasmUnwinderTests
         [
             Frame(FramesBase, FuncIndexLeaf, 3, "leaf"),
             Frame(callerBase, FuncIndexCaller, 7, "nonR2RCaller"),
-            Blob(BlobsBase, [(byte)leafFrameSize], "leafUnwind"),
+            Blob(BlobsBase, [(byte)(leafFrameSize / 16)], "leafUnwind"),
         ]);
         WasmUnwinder unwinder = new(target, info);
         WasmContext context = new()
@@ -257,10 +257,13 @@ public class WasmUnwinderTests
         Assert.Equal(TargetPointer.Null, context.FramePointer);
     }
 
-    [Fact]
-    public void TryUnwindOneFrame_DecodesMultiByteFrameSize()
+    [Theory]
+    [InlineData(new byte[] { 0x80, 0x02 }, 256u)]
+    [InlineData(new byte[] { 0x80, 0x80, 0x84, 0x80, 0x10 }, 4096u)]
+    [InlineData(new byte[] { 0x81, 0x80, 0x80, 0x80, 0x10 }, 16u)]
+    [InlineData(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x3F }, 0xFFFFFF0u)]
+    public void TryUnwindOneFrame_DecodesInterleavedFrameSize(byte[] encoded, uint leafFrameSize)
     {
-        const uint leafFrameSize = 200; // ULEB128: 0xC8 0x01
         ulong callerBase = FramesBase + leafFrameSize;
 
         FakeWasmR2RInfo info = new();
@@ -272,7 +275,7 @@ public class WasmUnwinderTests
         [
             Frame(FramesBase, FuncIndexLeaf, 0, "leaf"),
             Frame(callerBase, FuncIndexCaller, 1, "caller"),
-            Blob(BlobsBase, [0xC8, 0x01], "leafUnwind"),
+            Blob(BlobsBase, encoded, "leafUnwind"),
         ]);
         WasmUnwinder unwinder = new(target, info);
 
@@ -294,7 +297,7 @@ public class WasmUnwinderTests
         TestPlaceholderTarget target = CreateTarget(
         [
             Frame(FramesBase, reversePInvokeIdentity, 3, "reversePInvoke"),
-            Blob(BlobsBase, [(byte)leafFrameSize], "leafUnwind"),
+            Blob(BlobsBase, [(byte)(leafFrameSize / 16)], "leafUnwind"),
         ]);
         WasmUnwinder unwinder = new(target, info);
 
@@ -317,7 +320,7 @@ public class WasmUnwinderTests
         TestPlaceholderTarget target = CreateTarget(
         [
             Frame(FramesBase, reversePInvokeIdentity, 3, "reversePInvoke"),
-            Blob(BlobsBase, [(byte)leafFrameSize], "leafUnwind"),
+            Blob(BlobsBase, [(byte)(leafFrameSize / 16)], "leafUnwind"),
         ]);
         WasmUnwinder unwinder = new(target, info);
         WasmContext context = new()
@@ -363,8 +366,10 @@ public class WasmUnwinderTests
         Assert.False(unwinder.TryGetFramePointer(new TargetPointer(indirectSp), out _));
     }
 
-    [Fact]
-    public void TryUnwindOneFrame_ZeroFrameSize_TerminatesCleanly()
+    [Theory]
+    [InlineData(0x00)]
+    [InlineData(0x10)]
+    public void TryUnwindOneFrame_ZeroFrameSize_TerminatesCleanly(byte encoded)
     {
         FakeWasmR2RInfo info = new();
         info.VirtualIpBases[FuncIndexLeaf] = VirtualIpBase;
@@ -373,7 +378,7 @@ public class WasmUnwinderTests
         TestPlaceholderTarget target = CreateTarget(
         [
             Frame(FramesBase, FuncIndexLeaf, 3, "leaf"),
-            Blob(BlobsBase, [0x00], "zeroFrameSize"), // ULEB128 0 -> no progress
+            Blob(BlobsBase, [encoded], "zeroFrameSize"),
         ]);
         WasmUnwinder unwinder = new(target, info);
 
@@ -382,8 +387,10 @@ public class WasmUnwinderTests
         Assert.Equal(TargetPointer.Null, sp);
     }
 
-    [Fact]
-    public void TryUnwindOneFrame_MalformedUleb128_Throws()
+    [Theory]
+    [InlineData(0x80)]
+    [InlineData(0x02)]
+    public void TryUnwindOneFrame_MalformedUleb128_Throws(byte lastByte)
     {
         FakeWasmR2RInfo info = new();
         info.UnwindData[LeafControlPc] = BlobsBase;
@@ -391,8 +398,7 @@ public class WasmUnwinderTests
         TestPlaceholderTarget target = CreateTarget(
         [
             Frame(FramesBase, FuncIndexLeaf, 3, "leaf"),
-            // 5 continuation bytes with no terminator -> exceeds the 5-byte uint32 ULEB128 limit.
-            Blob(BlobsBase, [0x80, 0x80, 0x80, 0x80, 0x80], "malformed"),
+            Blob(BlobsBase, [0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, lastByte], "malformed"),
         ]);
         WasmUnwinder unwinder = new(target, info);
 
@@ -529,10 +535,9 @@ public class WasmUnwinderTests
         FakeExecutionManager executionManager = new();
         for (int i = 0; i < functions.Length; i++)
         {
-            // Unwind data is the ULEB128 fixed frame size, addressed as LoadedImageBase (0) + UnwindData.
-            Assert.True(functions[i].FrameSize < 0x80);
+            Assert.True(functions[i].FrameSize / 16 < 0x10);
             MockMemorySpace.HeapFragment unwindData = allocator.Allocate(1, "UnwindData");
-            unwindData.Data[0] = (byte)functions[i].FrameSize;
+            unwindData.Data[0] = (byte)(functions[i].FrameSize / 16);
 
             Span<byte> entry = runtimeFunctions.Data.AsSpan(i * (int)runtimeFunctionLayout.Stride, (int)runtimeFunctionLayout.Stride);
             helpers.Write(entry.Slice(runtimeFunctionLayout.Fields[nameof(Data.RuntimeFunction.BeginAddress)].Offset, sizeof(uint)), functions[i].BeginAddress);

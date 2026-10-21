@@ -45,9 +45,23 @@
     - NumCallSites (#ifdef PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED)
     - NumInterruptibleRanges (fat header only; omitted if !HAS_INTERRUPTIBLE_RANGES)
 
+    Wasm headers omit the stack-base presence bit and register value, and imply frame register zero
+    after normalization. Their prolog size is implicitly one. Wasm slim headers also omit NumCallSites
+    and imply zero; nonzero call-site counts require fat headers.
+
  2. Call sites offsets (#ifdef PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED)
  3. Fully-interruptible ranges
  4. Slot table
+    Register flags precede the register number while the previous flags are non-normal.
+    After the first unpinned register, only the interior flag bit is present.
+    The first register of each flag group is absolute; later registers use gap-minus-one deltas.
+    Register integers have an ENCBASE-sized payload and continuation bit, optionally followed
+    by the remaining target register bits without another continuation bit.
+    Tracked and untracked stack slots use the same shrinking flag bits as registers.
+    Slots are sorted by descending flags, then SP before Frame, then ascending offset.
+    Each non-Wasm slot has one base bit: 0 for SP, 1 for Frame. Wasm is implicitly Frame-relative.
+    The first slot of each flags/base combination has a signed absolute offset; later offsets
+    in that group are unsigned deltas. State resets at the tracked/untracked boundary.
  5. GC state at call sites (#ifdef PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED)
  6. GC state at try clauses (#ifdef PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED)
  7. Chunk pointers
@@ -227,6 +241,7 @@ public:
     // If it doesn't fit, set bit #base to 1 and use base+1 more bits
     //--------------------------------------------------------
     int EncodeVarLengthUnsigned( size_t n, UINT32 base );
+    void EncodeRegister(UINT32 value, UINT32 base, UINT32 registerBits);
 
     //--------------------------------------------------------
     // Signed quantities are encoded the same as unsigned
@@ -363,7 +378,7 @@ public:
     //  It's up to the JIT to do the right thing. We don't enforce this.
 
     GcSlotId GetRegisterSlotId( UINT32 regNum, GcSlotFlags flags );
-    GcSlotId GetStackSlotId( INT32 spOffset, GcSlotFlags flags, GcStackSlotBase spBase = GC_CALLER_SP_REL );
+    GcSlotId GetStackSlotId( INT32 spOffset, GcSlotFlags flags, GcStackSlotBase spBase );
 
     //
     // After a FinalizeSlotIds is called, no more slot definitions can be made.

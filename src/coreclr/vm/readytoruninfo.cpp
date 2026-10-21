@@ -2845,21 +2845,19 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
 #endif // FEATURE_STUBPRECODE_DYNAMIC_HELPERS
 
 #ifdef TARGET_WASM
-// Decode a ULEB128-encoded value that must fit in a UINT32.
-// Advances *ppData past the encoded bytes. Asserts if the value overflows 32 bits.
-UINT32 DecodeULEB128AsU32(PTR_BYTE* ppData)
+UINT64 DecodeULEB128AsU64(PTR_BYTE* ppData)
 {
-    UINT32 result = 0;
-    int shift = 0;
-    BYTE b;
-    do
+    UINT64 result = 0;
+    for (int shift = 0; shift < 64; shift += 7)
     {
-        b = *(*ppData)++;
-        _ASSERTE(shift < 35); // A valid u32 ULEB128 is at most 5 bytes
-        result |= (UINT32)(b & 0x7F) << shift;
-        shift += 7;
-    } while (b & 0x80);
-    return result;
+        BYTE b = *(*ppData)++;
+        if (shift == 63 && b > 1)
+            COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+        result |= static_cast<UINT64>(b & 0x7F) << shift;
+        if ((b & 0x80) == 0)
+            return result;
+    }
+    COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
 }
 
 static bool TryDecodeULEB128AsU32(PTR_BYTE* ppData, PTR_BYTE pEnd, UINT32* pValue)
@@ -2971,11 +2969,10 @@ void ReadyToRunInfo::RegisterVirtualIPRange(Module* pModule)
         T_RUNTIME_FUNCTION* pLastEntry = &m_pRuntimeFunctions[m_nRuntimeFunctions - 1];
         UINT32 lastEntryVirtualIPIndex = RUNTIME_FUNCTION__BeginAddress(pLastEntry);
 
-        // Decode the virtual IP count from the last entry's unwind data.
-        // Unwind format: ULEB128(frameSize) ULEB128(virtualIPCount)
         PTR_BYTE pUnwindData = dac_cast<PTR_BYTE>(imageBase + pLastEntry->UnwindData);
-        DecodeULEB128AsU32(&pUnwindData); // skip frame size
-        UINT32 lastEntryVIPCount = DecodeULEB128AsU32(&pUnwindData) * 2; // Multiply by 2 to force all virtual IPs to be an even number.
+        UINT32 frameSize;
+        UINT32 lastEntryVIPCount;
+        DecodeWasmUnwindInfo(DecodeULEB128AsU64(&pUnwindData), frameSize, lastEntryVIPCount);
 
         UINT32 totalVirtualIPs = lastEntryVirtualIPIndex + lastEntryVIPCount;
 

@@ -553,6 +553,7 @@ template <typename GcInfoEncoding> GcSlotId TGcInfoEncoder<GcInfoEncoding>::GetR
 
 template <typename GcInfoEncoding> GcSlotId TGcInfoEncoder<GcInfoEncoding>::GetStackSlotId( INT32 spOffset, GcSlotFlags flags, GcStackSlotBase spBase )
 {
+    _ASSERTE(spBase == GC_SP_REL || spBase == GC_FRAMEREG_REL);
     _ASSERTE(GcInfoEncoding::HAS_STACK_SLOT_BASE || spBase == GC_FRAMEREG_REL);
     // We could lookup an existing identical slot in the slot table (via some hashtable mechanism).
     // We just create duplicates for now.
@@ -807,12 +808,11 @@ struct CompareSlotDescAndIdBySlotDesc
         else
         {
             _ASSERTE( !pSecond->IsRegister() );
-            if( pFirst->Slot.Stack.SpOffset != pSecond->Slot.Stack.SpOffset )
-                return pFirst->Slot.Stack.SpOffset < pSecond->Slot.Stack.SpOffset;
-
-            // This is arbitrary, but we want to make sure they are considered separate slots
             if( pFirst->Slot.Stack.Base != pSecond->Slot.Stack.Base )
                 return pFirst->Slot.Stack.Base < pSecond->Slot.Stack.Base;
+
+            if( pFirst->Slot.Stack.SpOffset != pSecond->Slot.Stack.SpOffset )
+                return pFirst->Slot.Stack.SpOffset < pSecond->Slot.Stack.SpOffset;
         }
 
         // If we get here, the slots are identical
@@ -943,7 +943,17 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
     UINT32 hasContextParamType = (m_GenericsInstContextStackSlot != NO_GENERICS_INST_CONTEXT);
     UINT32 hasReversePInvokeFrame = (m_ReversePInvokeFrameSlot != NO_REVERSE_PINVOKE_FRAME);
 
-    BOOL slimHeader = (!m_IsVarArg && !hasGSCookie &&
+    if constexpr (GcInfoEncoding::USES_COMPACT_WASM_HEADER)
+    {
+        _ASSERTE(m_StackBaseRegister != NO_STACK_BASE_REGISTER);
+        _ASSERTE(GcInfoEncoding::NORMALIZE_STACK_BASE_REGISTER(m_StackBaseRegister) == 0);
+    }
+
+    BOOL slimHeader =
+#ifdef PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
+        (!GcInfoEncoding::USES_COMPACT_WASM_HEADER || (m_NumCallSites == 0)) &&
+#endif
+        (!m_IsVarArg && !hasGSCookie &&
         !hasContextParamType && (m_InterruptibleRanges.Count() == 0) && !hasReversePInvokeFrame &&
         ((m_StackBaseRegister == NO_STACK_BASE_REGISTER) || (GcInfoEncoding::NORMALIZE_STACK_BASE_REGISTER(m_StackBaseRegister) == 0))) &&
 #ifdef TARGET_AMD64
@@ -959,7 +969,10 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
     {
         // Slim encoding means nothing special, partially interruptible, maybe a default frame register
         GCINFO_WRITE(m_Info1, 0, 1, FlagsSize); // Slim encoding
-        GCINFO_WRITE(m_Info1, (m_StackBaseRegister == NO_STACK_BASE_REGISTER) ? 0 : 1, 1, FlagsSize);
+        if constexpr (!GcInfoEncoding::USES_COMPACT_WASM_HEADER)
+        {
+            GCINFO_WRITE(m_Info1, (m_StackBaseRegister == NO_STACK_BASE_REGISTER) ? 0 : 1, 1, FlagsSize);
+        }
     }
     else
     {
@@ -969,7 +982,10 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
         GCINFO_WRITE(m_Info1, (hasGSCookie ? 1 : 0), 1, FlagsSize);
         GCINFO_WRITE(m_Info1, 0 /* unused - was hasPSPSymStackSlot */, 1, FlagsSize);
         GCINFO_WRITE(m_Info1, m_contextParamType, 2, FlagsSize);
-        GCINFO_WRITE(m_Info1, ((m_StackBaseRegister != NO_STACK_BASE_REGISTER) ? 1 : 0), 1, FlagsSize);
+        if constexpr (!GcInfoEncoding::USES_COMPACT_WASM_HEADER)
+        {
+            GCINFO_WRITE(m_Info1, ((m_StackBaseRegister != NO_STACK_BASE_REGISTER) ? 1 : 0), 1, FlagsSize);
+        }
 #ifdef TARGET_AMD64
         GCINFO_WRITE(m_Info1, (m_WantsReportOnlyLeaf ? 1 : 0), 1, FlagsSize);
 #elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
@@ -981,7 +997,7 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
         GCINFO_WRITE(m_Info1, (hasReversePInvokeFrame ? 1 : 0), 1, FlagsSize);
 
         // See definition of GC_INFO_FLAGS_BIT_SIZE
-        _ASSERTE(m_Info1.GetBitCount() == (10 + 1)); // +1 for the initial slim/fat encoding bit
+        _ASSERTE(m_Info1.GetBitCount() == (GcInfoEncoding::USES_COMPACT_WASM_HEADER ? 9 : 10) + 1);
     }
 
     _ASSERTE( m_CodeLength > 0 );
@@ -1005,7 +1021,14 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
         _ASSERTE(normPrologSize > 0 && normPrologSize < m_CodeLength);
         _ASSERTE(normEpilogSize < m_CodeLength);
 
-        GCINFO_WRITE_VARL_U(m_Info1, normPrologSize-1, GcInfoEncoding::NORM_PROLOG_SIZE_ENCBASE, ProEpilogSize);
+        if constexpr (GcInfoEncoding::USES_COMPACT_WASM_HEADER)
+        {
+            _ASSERTE(normPrologSize == 1);
+        }
+        else
+        {
+            GCINFO_WRITE_VARL_U(m_Info1, normPrologSize-1, GcInfoEncoding::NORM_PROLOG_SIZE_ENCBASE, ProEpilogSize);
+        }
         GCINFO_WRITE_VARL_U(m_Info1, normEpilogSize, GcInfoEncoding::NORM_EPILOG_SIZE_ENCBASE, ProEpilogSize);
     }
     else if (hasContextParamType)
@@ -1017,7 +1040,14 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
         UINT32 normPrologSize = GcInfoEncoding::NORMALIZE_CODE_OFFSET(m_GSCookieValidRangeStart);
         _ASSERTE(normPrologSize > 0 && normPrologSize < m_CodeLength);
 
-        GCINFO_WRITE_VARL_U(m_Info1, normPrologSize-1, GcInfoEncoding::NORM_PROLOG_SIZE_ENCBASE, ProEpilogSize);
+        if constexpr (GcInfoEncoding::USES_COMPACT_WASM_HEADER)
+        {
+            _ASSERTE(normPrologSize == 1);
+        }
+        else
+        {
+            GCINFO_WRITE_VARL_U(m_Info1, normPrologSize-1, GcInfoEncoding::NORM_PROLOG_SIZE_ENCBASE, ProEpilogSize);
+        }
     }
 
     // Encode the offset to the GS cookie.
@@ -1046,7 +1076,7 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
         GCINFO_WRITE_VARL_S(m_Info1, GcInfoEncoding::NORMALIZE_STACK_SLOT(m_GenericsInstContextStackSlot), GcInfoEncoding::GENERICS_INST_CONTEXT_STACK_SLOT_ENCBASE, GenericsCtxSize);
     }
 
-    if(!slimHeader && (m_StackBaseRegister != NO_STACK_BASE_REGISTER))
+    if(!GcInfoEncoding::USES_COMPACT_WASM_HEADER && !slimHeader && (m_StackBaseRegister != NO_STACK_BASE_REGISTER))
     {
         GCINFO_WRITE_VARL_U(m_Info1, GcInfoEncoding::NORMALIZE_STACK_BASE_REGISTER(m_StackBaseRegister), GcInfoEncoding::STACK_BASE_REGISTER_ENCBASE, StackBaseSize);
     }
@@ -1108,7 +1138,10 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
         m_pCallSites[numCallSites++] = normOffset;
     }
 
-    GCINFO_WRITE_VARL_U(m_Info1, numCallSites, GcInfoEncoding::NUM_SAFE_POINTS_ENCBASE, NumCallSitesSize);
+    if (!GcInfoEncoding::USES_COMPACT_WASM_HEADER || !slimHeader)
+    {
+        GCINFO_WRITE_VARL_U(m_Info1, numCallSites, GcInfoEncoding::NUM_SAFE_POINTS_ENCBASE, NumCallSitesSize);
+    }
     m_NumCallSites = numCallSites;
 #endif // PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
 
@@ -1456,6 +1489,9 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
 
     if(GcInfoEncoding::HAS_REGISTER_SLOTS && numRegisters > 0)
     {
+#ifdef MEASURE_GCINFO
+        size_t startBitCount = m_Info1.GetBitCount();
+#endif
         GcSlotDesc *pSlotDesc;
         do
         {
@@ -1467,8 +1503,8 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
 
         // Encode slot identification
         UINT32 currentNormRegNum = pSlotDesc->Slot.RegisterNumber;
-        GCINFO_WRITE_VARL_U(m_Info1, currentNormRegNum, GcInfoEncoding::REGISTER_ENCBASE, RegSlotSize);
-        GCINFO_WRITE(m_Info1, pSlotDesc->Flags, 2, RegSlotSize);
+        m_Info1.Write(pSlotDesc->Flags, 2);
+        m_Info1.EncodeRegister(currentNormRegNum, GcInfoEncoding::REGISTER_ENCBASE, GcInfoEncoding::REGISTER_BITS);
 
         for(UINT32 j = 1; j < numRegisters; j++)
         {
@@ -1487,187 +1523,83 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::Build()
 
             if(lastFlags != GC_SLOT_IS_REGISTER)
             {
-                GCINFO_WRITE_VARL_U(m_Info1, currentNormRegNum, GcInfoEncoding::REGISTER_ENCBASE, RegSlotSize);
-                GCINFO_WRITE(m_Info1, pSlotDesc->Flags, 2, RegSlotSize);
+                m_Info1.Write(pSlotDesc->Flags, (lastFlags & GC_SLOT_PINNED) != 0 ? 2 : 1);
+            }
+
+            if(pSlotDesc->Flags != lastFlags)
+            {
+                m_Info1.EncodeRegister(currentNormRegNum, GcInfoEncoding::REGISTER_ENCBASE, GcInfoEncoding::REGISTER_BITS);
             }
             else
             {
-                _ASSERTE(pSlotDesc->Flags == GC_SLOT_IS_REGISTER);
-                GCINFO_WRITE_VARL_U(m_Info1, currentNormRegNum - lastNormRegNum - 1, GcInfoEncoding::REGISTER_DELTA_ENCBASE, RegSlotSize);
+                _ASSERTE(currentNormRegNum > lastNormRegNum);
+                m_Info1.EncodeRegister(currentNormRegNum - lastNormRegNum - 1,
+                                      GcInfoEncoding::REGISTER_DELTA_ENCBASE, GcInfoEncoding::REGISTER_BITS);
             }
         }
+#ifdef MEASURE_GCINFO
+        size_t bitCount = m_Info1.GetBitCount() - startBitCount;
+        m_CurrentMethodSize.RegSlotSize += bitCount;
+        m_CurrentMethodSize.TotalSize += bitCount;
+#endif
     }
 
-    if(numStackSlots > 0)
+    for (UINT32 section = 0; section < 2; section++)
     {
-        _ASSERTE(GcInfoEncoding::HAS_TRACKED_SLOTS);
-        GcSlotDesc *pSlotDesc;
-        do
+        UINT32 numSectionSlots = section == 0 ? numStackSlots : numUntrackedSlots;
+        _ASSERTE(section != 0 || GcInfoEncoding::HAS_TRACKED_SLOTS || numSectionSlots == 0);
+#ifdef MEASURE_GCINFO
+        size_t startBitCount = m_Info1.GetBitCount();
+#endif
+        GcSlotFlags previousFlags = GC_SLOT_BASE;
+        GcStackSlotBase previousBase = GC_SP_REL;
+        INT32 previousOffset = 0;
+        for (UINT32 i = 0; i < numSectionSlots; i++)
         {
-            _ASSERTE(currentSlot < m_NumSlots);
-            pSlotDesc = &m_SlotTable[currentSlot++];
-        }
-        while(pSlotDesc->IsDeleted());
-        _ASSERTE(!pSlotDesc->IsRegister());
-        _ASSERTE(!pSlotDesc->IsUntracked());
-
-        // Encode slot identification
-        _ASSERTE((pSlotDesc->Slot.Stack.Base & ~3) == 0);
-        if constexpr (GcInfoEncoding::HAS_STACK_SLOT_BASE)
-        {
-            GCINFO_WRITE(m_Info1, pSlotDesc->Slot.Stack.Base, 2, StackSlotSize);
-        }
-        INT32 currentNormStackSlot = GcInfoEncoding::NORMALIZE_STACK_SLOT(pSlotDesc->Slot.Stack.SpOffset);
-        if constexpr (GcInfoEncoding::STACK_SLOT_FLAGS_FIRST)
-        {
-            GCINFO_WRITE(m_Info1, pSlotDesc->Flags, 2, StackSlotSize);
-        }
-        GCINFO_WRITE_VARL_S(m_Info1, currentNormStackSlot, GcInfoEncoding::STACK_SLOT_ENCBASE, StackSlotSize);
-
-        if constexpr (!GcInfoEncoding::STACK_SLOT_FLAGS_FIRST)
-        {
-            GCINFO_WRITE(m_Info1, pSlotDesc->Flags, 2, StackSlotSize);
-        }
-
-        for(UINT32 j = 1; j < numStackSlots; j++)
-        {
-            INT32 lastNormStackSlot = currentNormStackSlot;
-            GcSlotFlags lastFlags = pSlotDesc->Flags;
-
-            do
+            while (m_SlotTable[currentSlot].IsDeleted())
             {
+                currentSlot++;
                 _ASSERTE(currentSlot < m_NumSlots);
-                pSlotDesc = &m_SlotTable[currentSlot++];
             }
-            while(pSlotDesc->IsDeleted());
-            _ASSERTE(!pSlotDesc->IsRegister());
-            _ASSERTE(!pSlotDesc->IsUntracked());
+            const GcSlotDesc& slot = m_SlotTable[currentSlot++];
+            _ASSERTE(!slot.IsRegister());
+            _ASSERTE((slot.IsUntracked() != FALSE) == (section != 0));
 
-            currentNormStackSlot = GcInfoEncoding::NORMALIZE_STACK_SLOT(pSlotDesc->Slot.Stack.SpOffset);
-
-            _ASSERTE((pSlotDesc->Slot.Stack.Base & ~3) == 0);
+            GcSlotFlags flags = static_cast<GcSlotFlags>(slot.Flags & (GC_SLOT_INTERIOR | GC_SLOT_PINNED));
+            if (i == 0 || previousFlags != GC_SLOT_BASE)
+            {
+                m_Info1.Write(flags, i == 0 || (previousFlags & GC_SLOT_PINNED) != 0 ? 2 : 1);
+            }
+            GcStackSlotBase base = slot.Slot.Stack.Base;
             if constexpr (GcInfoEncoding::HAS_STACK_SLOT_BASE)
             {
-                GCINFO_WRITE(m_Info1, pSlotDesc->Slot.Stack.Base, 2, StackSlotSize);
+                m_Info1.Write(base == GC_FRAMEREG_REL, 1);
             }
 
-            if constexpr (GcInfoEncoding::STACK_SLOT_FLAGS_FIRST)
+            INT32 offset = GcInfoEncoding::NORMALIZE_STACK_SLOT(slot.Slot.Stack.SpOffset);
+            if (i == 0 || flags != previousFlags || base != previousBase)
             {
-                if (lastFlags != GC_SLOT_BASE)
-                {
-                    GCINFO_WRITE(m_Info1, pSlotDesc->Flags, 2, StackSlotSize);
-                }
-                else
-                {
-                    _ASSERTE(pSlotDesc->Flags == GC_SLOT_BASE);
-                }
-
-                if (pSlotDesc->Flags != lastFlags)
-                {
-                    GCINFO_WRITE_VARL_S(m_Info1, currentNormStackSlot, GcInfoEncoding::STACK_SLOT_ENCBASE, StackSlotSize);
-                }
-                else
-                {
-                    GCINFO_WRITE_VARL_U(m_Info1, currentNormStackSlot - lastNormStackSlot, GcInfoEncoding::STACK_SLOT_DELTA_ENCBASE, StackSlotSize);
-                }
-            }
-            else if(lastFlags != GC_SLOT_BASE)
-            {
-                GCINFO_WRITE_VARL_S(m_Info1, currentNormStackSlot, GcInfoEncoding::STACK_SLOT_ENCBASE, StackSlotSize);
-                GCINFO_WRITE(m_Info1, pSlotDesc->Flags, 2, StackSlotSize);
+                m_Info1.EncodeVarLengthSigned(offset, GcInfoEncoding::STACK_SLOT_ENCBASE);
             }
             else
             {
-                _ASSERTE(pSlotDesc->Flags == GC_SLOT_BASE);
-                GCINFO_WRITE_VARL_U(m_Info1, currentNormStackSlot - lastNormStackSlot, GcInfoEncoding::STACK_SLOT_DELTA_ENCBASE, StackSlotSize);
+                _ASSERTE(offset >= previousOffset);
+                m_Info1.EncodeVarLengthUnsigned(offset - previousOffset, GcInfoEncoding::STACK_SLOT_DELTA_ENCBASE);
             }
+            previousFlags = flags;
+            previousBase = base;
+            previousOffset = offset;
         }
+#ifdef MEASURE_GCINFO
+        size_t bitCount = m_Info1.GetBitCount() - startBitCount;
+        if (section == 0)
+            m_CurrentMethodSize.StackSlotSize += bitCount;
+        else
+            m_CurrentMethodSize.UntrackedSlotSize += bitCount;
+        m_CurrentMethodSize.TotalSize += bitCount;
+#endif
     }
 
-    if(numUntrackedSlots > 0)
-    {
-        GcSlotDesc *pSlotDesc;
-        do
-        {
-            _ASSERTE(currentSlot < m_NumSlots);
-            pSlotDesc = &m_SlotTable[currentSlot++];
-        }
-        while(pSlotDesc->IsDeleted());
-        _ASSERTE(!pSlotDesc->IsRegister());
-        _ASSERTE(pSlotDesc->IsUntracked());
-
-        // Encode slot identification
-        _ASSERTE((pSlotDesc->Slot.Stack.Base & ~3) == 0);
-        if constexpr (GcInfoEncoding::HAS_STACK_SLOT_BASE)
-        {
-            GCINFO_WRITE(m_Info1, pSlotDesc->Slot.Stack.Base, 2, UntrackedSlotSize);
-        }
-        INT32 currentNormStackSlot = GcInfoEncoding::NORMALIZE_STACK_SLOT(pSlotDesc->Slot.Stack.SpOffset);
-        if constexpr (GcInfoEncoding::STACK_SLOT_FLAGS_FIRST)
-        {
-            GCINFO_WRITE(m_Info1, pSlotDesc->Flags, 2, UntrackedSlotSize);
-        }
-        GCINFO_WRITE_VARL_S(m_Info1, currentNormStackSlot, GcInfoEncoding::STACK_SLOT_ENCBASE, UntrackedSlotSize);
-
-        if constexpr (!GcInfoEncoding::STACK_SLOT_FLAGS_FIRST)
-        {
-            GCINFO_WRITE(m_Info1, pSlotDesc->Flags, 2, UntrackedSlotSize);
-        }
-
-        for(UINT32 j = 1; j < numUntrackedSlots; j++)
-        {
-            INT32 lastNormStackSlot = currentNormStackSlot;
-            GcSlotFlags lastFlags = pSlotDesc->Flags;
-
-            do
-            {
-                _ASSERTE(currentSlot < m_NumSlots);
-                pSlotDesc = &m_SlotTable[currentSlot++];
-            }
-            while(pSlotDesc->IsDeleted());
-            _ASSERTE(!pSlotDesc->IsRegister());
-            _ASSERTE(pSlotDesc->IsUntracked());
-
-            currentNormStackSlot = GcInfoEncoding::NORMALIZE_STACK_SLOT(pSlotDesc->Slot.Stack.SpOffset);
-
-            _ASSERTE((pSlotDesc->Slot.Stack.Base & ~3) == 0);
-            if constexpr (GcInfoEncoding::HAS_STACK_SLOT_BASE)
-            {
-                GCINFO_WRITE(m_Info1, pSlotDesc->Slot.Stack.Base, 2, UntrackedSlotSize);
-            }
-
-            if constexpr (GcInfoEncoding::STACK_SLOT_FLAGS_FIRST)
-            {
-                if (lastFlags != GC_SLOT_UNTRACKED)
-                {
-                    GCINFO_WRITE(m_Info1, pSlotDesc->Flags, 2, UntrackedSlotSize);
-                }
-                else
-                {
-                    _ASSERTE(pSlotDesc->Flags == GC_SLOT_UNTRACKED);
-                }
-
-                if (pSlotDesc->Flags != lastFlags)
-                {
-                    GCINFO_WRITE_VARL_S(m_Info1, currentNormStackSlot, GcInfoEncoding::STACK_SLOT_ENCBASE, UntrackedSlotSize);
-                }
-                else
-                {
-                    GCINFO_WRITE_VARL_U(m_Info1, currentNormStackSlot - lastNormStackSlot, GcInfoEncoding::STACK_SLOT_DELTA_ENCBASE, UntrackedSlotSize);
-                }
-            }
-            else if(lastFlags != GC_SLOT_UNTRACKED)
-            {
-                GCINFO_WRITE_VARL_S(m_Info1, currentNormStackSlot, GcInfoEncoding::STACK_SLOT_ENCBASE, UntrackedSlotSize);
-                GCINFO_WRITE(m_Info1, pSlotDesc->Flags, 2, UntrackedSlotSize);
-            }
-            else
-            {
-                _ASSERTE(pSlotDesc->Flags == GC_SLOT_UNTRACKED);
-                GCINFO_WRITE_VARL_U(m_Info1, currentNormStackSlot - lastNormStackSlot, GcInfoEncoding::STACK_SLOT_DELTA_ENCBASE, UntrackedSlotSize);
-            }
-        }
-    }
 
 
 #ifdef PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
@@ -2639,6 +2571,18 @@ int BitStreamWriter::SizeofVarLengthUnsigned( size_t n, UINT32 base)
         }
     }
     return bitsUsed;
+}
+
+void BitStreamWriter::EncodeRegister(UINT32 value, UINT32 base, UINT32 registerBits)
+{
+    _ASSERTE(base <= registerBits && registerBits < 32);
+    _ASSERTE(value < (1u << registerBits));
+    UINT32 extension = value >> base;
+    Write((value & ((1u << base) - 1)) | (extension != 0 ? 1u << base : 0), base + 1);
+    if (extension != 0)
+    {
+        Write(extension, registerBits - base);
+    }
 }
 
 int BitStreamWriter::EncodeVarLengthUnsigned( size_t n, UINT32 base)

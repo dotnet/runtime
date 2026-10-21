@@ -1303,8 +1303,7 @@ PTR_VOID GetUnwindDataBlob(TADDR moduleBase, PTR_RUNTIME_FUNCTION pRuntimeFuncti
 #elif defined(TARGET_WASM)
     PTR_BYTE pUnwindInfo(dac_cast<PTR_BYTE>(moduleBase + pRuntimeFunction->UnwindData));
     PTR_BYTE pUnwindData = pUnwindInfo;
-    DecodeULEB128AsU32(&pUnwindData); // Skip the count of bytes to unwind
-    DecodeULEB128AsU32(&pUnwindData); // Read the function length in virtual IP units
+    DecodeULEB128AsU64(&pUnwindData);
     *pSize = static_cast<SIZE_T>(pUnwindData - pUnwindInfo);
     return pUnwindInfo;
 #else

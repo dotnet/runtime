@@ -83,7 +83,8 @@
 // method's ReadyToRun entry point and fixups.
 // R2R Version 31.1 adds READYTORUN_FLAG_SINGLE_THREADED, which records that the image lays out [ThreadStatic] fields as regular statics
 // for a runtime built without FEATURE_MULTITHREADING.
-// R2R Version 33 compacts Wasm GC slot tables and encodes unwind frame sizes in 16-byte units.
+// R2R Version 33 uses GCInfo v6, with shrinking slot flag bits and offsets relative within flags/base groups.
+//     Wasm also compacts stack slot offsets and packs scaled unwind frame sizes and virtual IP counts into one ULEB128.
 //     Wasm images from earlier versions must be regenerated.
 
 struct READYTORUN_CORE_HEADER
