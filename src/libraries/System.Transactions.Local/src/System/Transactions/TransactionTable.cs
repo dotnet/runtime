@@ -31,9 +31,13 @@ namespace System.Transactions
         {
             get
             {
+                var newEvent = new ManualResetEvent(true);
                 if (_writerFinishedEvent == null)
                 {
-                    Interlocked.CompareExchange(ref _writerFinishedEvent, new ManualResetEvent(true), null);
+                    if (Interlocked.CompareExchange(ref _writerFinishedEvent, newEvent, null) is not null)
+                    {
+                        newEvent.Dispose();
+                    }
                 }
                 return _writerFinishedEvent;
             }
