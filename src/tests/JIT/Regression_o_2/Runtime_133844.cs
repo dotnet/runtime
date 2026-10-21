@@ -28,6 +28,17 @@ public class Runtime_133844
         Assert.Throws<OverflowException>(new Runtime_133844().Overflow);
     }
 
+    [Theory]
+    [InlineData(-1)]
+    [InlineData(1)]
+    [InlineData(2)]
+    public static void DivisionWithConstantOperands(int value)
+    {
+        Vector<int> vector = Vector.Create(value);
+        Assert.Equal(Vector<int>.Zero, ConstantDivisor(vector));
+        Assert.Equal(Vector.Create(42 / value), ConstantDividend(vector));
+    }
+
     [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
     private void DivideByZero()
     {
@@ -38,5 +49,17 @@ public class Runtime_133844
     private void Overflow()
     {
         _sink = (_value ^ _value) * (Vector.Create(_minValue) / Vector.Create(_negativeOne));
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    private static Vector<int> ConstantDivisor(Vector<int> dividend)
+    {
+        return (dividend ^ dividend) * (dividend / Vector.Create(2));
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    private static Vector<int> ConstantDividend(Vector<int> divisor)
+    {
+        return Vector.Create(42) / divisor;
     }
 }
