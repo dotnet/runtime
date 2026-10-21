@@ -16,11 +16,11 @@ namespace System.Reflection.Runtime.Assemblies.NativeFormat
         internal sealed override RuntimeTypeInfo UncachedGetTypeCoreCaseSensitive(string fullName)
         {
             int separator = fullName.LastIndexOf('.');
-            string? namespaceName = separator < 0 ? null : fullName.Substring(0, separator);
-            string name = fullName.Substring(separator + 1);
+            ReadOnlySpan<char> namespaceName = separator < 0 ? default : fullName.AsSpan(0, separator);
+            ReadOnlySpan<char> name = fullName.AsSpan(separator + 1);
             int hashCode = VersionResilientHashCode.NameHashCode(
-                VersionResilientHashCode.NameHashCode(namespaceName.AsSpan()),
-                VersionResilientHashCode.NameHashCode(name.AsSpan()));
+                VersionResilientHashCode.NameHashCode(namespaceName),
+                VersionResilientHashCode.NameHashCode(name));
 
             MetadataReader reader = Scope.Reader;
             ScopeDefinition scopeDefinition = Scope.ScopeDefinition;
@@ -31,7 +31,9 @@ namespace System.Reflection.Runtime.Assemblies.NativeFormat
                 if (typeDefinition.Name.StringEquals(name, reader))
                 {
                     NamespaceDefinition namespaceDefinition = typeDefinition.NamespaceOrEnclosingType.ToNamespaceDefinitionHandle(reader).GetNamespaceDefinition(reader);
-                    if (namespaceDefinition.Name.StringOrNullEquals(namespaceName, reader))
+                    if (namespaceDefinition.Name.IsNil != (separator < 0))
+                        continue;
+                    if (separator < 0 || namespaceDefinition.Name.StringEquals(namespaceName, reader))
                         return candidateType.ResolveTypeDefinition(reader);
                 }
             }
@@ -43,7 +45,9 @@ namespace System.Reflection.Runtime.Assemblies.NativeFormat
                 if (typeForwarder.Name.StringEquals(name, reader))
                 {
                     NamespaceReference namespaceReference = typeForwarder.Namespace.GetNamespaceReference(reader);
-                    if (!namespaceReference.Name.StringOrNullEquals(namespaceName, reader))
+                    if (namespaceReference.Name.IsNil != (separator < 0))
+                        continue;
+                    if (separator >= 0 && !namespaceReference.Name.StringEquals(namespaceName, reader))
                         continue;
 
                     RuntimeAssemblyName redirectedAssemblyName = namespaceReference.Scope.ToRuntimeAssemblyName(reader);
