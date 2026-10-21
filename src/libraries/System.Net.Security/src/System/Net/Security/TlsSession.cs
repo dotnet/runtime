@@ -1697,7 +1697,6 @@ namespace System.Net.Security
         // deferred-options path; does not mutate session state.
         private static SslClientHelloInfo? TryParseClientHello(ReadOnlySpan<byte> input, out int frameLength)
         {
-            frameLength = 0;
             TlsFrameHelper.TlsFrameInfo frameInfo = default;
             if (!TlsFrameHelper.TryGetFrameInfo(input, ref frameInfo, out frameLength,
                 TlsFrameHelper.ProcessingOptions.ServerName | TlsFrameHelper.ProcessingOptions.Versions))

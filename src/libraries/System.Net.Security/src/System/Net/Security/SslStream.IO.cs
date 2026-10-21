@@ -489,7 +489,8 @@ namespace System.Net.Security
                         throw new IOException(SR.net_ssl_io_frame);
                     }
 
-                    if (!_isRenego && !_isReAuthentication &&
+                    // Later TLS 1.2 handshake records can already contain ciphertext.
+                    if (_securityContext is null && !_isRenego && !_isReAuthentication &&
                         _buffer.EncryptedReadOnlySpan[handshakeTypeOffset] == (byte)TlsHandshakeType.ClientHello &&
                         _sslAuthenticationOptions!.IsServer) // guard against malicious endpoints. We should not see ClientHello on client.
                     {

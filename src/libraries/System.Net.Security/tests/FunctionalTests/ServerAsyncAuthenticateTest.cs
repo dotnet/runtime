@@ -264,6 +264,45 @@ namespace System.Net.Security.Tests
             Assert.Equal(record.Length, await receiveTask);
         }
 
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task ReceiveHandshakeFrame_EncryptedHandshake_DoesNotParseClientHello(bool isReauthentication)
+        {
+            (Stream clientTransport, Stream serverTransport) = TestHelper.GetConnectedStreams();
+            using var client = new SslStream(clientTransport);
+            using var server = new SslStream(serverTransport);
+            await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
+                client.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
+                {
+                    TargetHost = "localhost",
+                    EnabledSslProtocols = SslProtocols.Tls12,
+                    AllowTlsResume = false,
+                    RemoteCertificateValidationCallback = TestHelper.AllowAnyServerCertificate
+                }),
+                server.AuthenticateAsServerAsync(new SslServerAuthenticationOptions
+                {
+                    ServerCertificate = _serverCertificate,
+                    EnabledSslProtocols = SslProtocols.Tls12,
+                    AllowTlsResume = false
+                }));
+
+            const BindingFlags InstanceFlags = BindingFlags.Instance | BindingFlags.NonPublic;
+            Type streamType = typeof(SslStream);
+            Assert.NotNull(streamType.GetField("_securityContext", InstanceFlags)!.GetValue(server));
+            streamType.GetField("_handshakeCompleted", InstanceFlags)!.SetValue(server, false);
+            streamType.GetField("_isReAuthentication", InstanceFlags)!.SetValue(server, isReauthentication);
+
+            // A TLS 1.2 Finished record is encrypted even before authentication completes.
+            byte[] record = [22, 3, 3, 0, 4, 1, 0xFF, 0xFF, 0xFF];
+            await clientTransport.WriteAsync(record);
+            Type adapter = streamType.Assembly.GetType("System.AsyncReadWriteAdapter", throwOnError: true)!;
+            MethodInfo receive = streamType.GetMethod("ReceiveHandshakeFrameAsync", InstanceFlags)!.MakeGenericMethod(adapter);
+            ValueTask<int> receiveTask = Assert.IsType<ValueTask<int>>(receive.Invoke(server, [CancellationToken.None]));
+
+            Assert.Equal(record.Length, await receiveTask);
+        }
+
         public static IEnumerable<object[]> FragmentedClientHelloData()
         {
             foreach (SslProtocols protocol in SslProtocolSupport.EnumerateSupportedProtocols(SslProtocols.Tls12 | SslProtocols.Tls13, true))
