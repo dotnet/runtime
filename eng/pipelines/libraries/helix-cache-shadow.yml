@@ -13,7 +13,7 @@ parameters:
   shouldContinueOnError: false
 
 steps:
-- ${{ if and(parameters.enabled, eq(parameters.platform, 'linux_x64'), eq(variables['System.TeamProject'], 'public')) }}:
+- ${{ if and(eq(parameters.enabled, 'true'), eq(parameters.platform, 'linux_x64'), eq(variables['System.TeamProject'], 'public')) }}:
   # Persist completed entries only. Input snapshots are recreated in each job.
   - task: Cache@2
     displayName: Helix shadow result cache
@@ -32,10 +32,10 @@ steps:
       cache="$(Pipeline.Workspace)/.helix-cache"
       mkdir -p "$cache/entries"
 
-      "$dotnet" publish "$project/HelixCache.csproj" -c Release -r linux-x64 \
+      "$dotnet" publish "$project/src/HelixCache.csproj" -c Release -r linux-x64 \
         -o "$(Build.SourcesDirectory)/artifacts/tools/helix-cache"
       executable="$(Build.SourcesDirectory)/artifacts/tools/helix-cache/helix-cache"
-      python3 "$project/tests/test_cache.py" "$executable"
+      "$dotnet" test "$project/tests/HelixCache.Tests.csproj" -c Release
 
       "$dotnet" msbuild "$(Build.SourcesDirectory)/src/libraries/sendtohelix.proj" \
         -t:PrepareCorrelationPayloadDirectory -p:Configuration=$(_BuildConfig) -p:RuntimeFlavor=CoreCLR
@@ -43,17 +43,15 @@ steps:
         -nologo -p:Configuration=$(_BuildConfig) -getProperty:NetCoreAppCurrentBuildSettings)"
       archives="$("$dotnet" msbuild "$(Build.SourcesDirectory)/src/libraries/System.Memory.Data/tests/System.Memory.Data.Tests.csproj" \
         -nologo -p:Configuration=$(_BuildConfig) -getProperty:TestArchiveTestsDir)"
-      python3 "$project/shadow.py" prepare \
-        --executable "$executable" --cache "$cache" --output "$output" \
+      "$executable" prepare --cache "$cache" --output "$output" \
         --payload "$archives/System.Memory.Data.Tests.zip" \
         --runtime "$(Build.SourcesDirectory)/artifacts/helix/runtime/test-runtime-$settings.zip" \
         --queue AzureLinux.3.Amd64.Open
 
       # A cache hit never bypasses this submission.
-      "$dotnet" msbuild "$project/Shadow.proj" -t:Submit \
+      "$dotnet" msbuild "$(Build.SourcesDirectory)/eng/testing/helix-cache-shadow.proj" -t:Submit \
         -p:HelixCacheShadowDirectory="$output" -p:ShadowCreator=dotnet-bot
-      python3 "$project/shadow.py" collect \
-        --executable "$executable" --cache "$cache" --output "$output"
+      "$executable" collect --cache "$cache" --output "$output"
     displayName: Validate Helix cache in shadow mode (always execute)
     continueOnError: true
     timeoutInMinutes: 75

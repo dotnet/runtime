@@ -9,14 +9,37 @@ submission and collection without replacing any test executions or results.
 From the repository root, using its configured SDK and NuGet feeds:
 
 ```sh
-dotnet publish src/tools/helix-cache/HelixCache.csproj -c Release -r linux-x64
-python3 src/tools/helix-cache/tests/test_cache.py \
-  artifacts/bin/HelixCache/Release/net11.0/linux-x64/publish/helix-cache
+dotnet publish src/tools/helix-cache/src/HelixCache.csproj -c Release -r linux-x64 \
+  -o artifacts/tools/helix-cache
+dotnet test src/tools/helix-cache/tests/HelixCache.Tests.csproj -c Release
 ```
 
 NativeAOT publishing requires a supported native compiler/linker and development
 libraries. For managed development, build with `-p:PublishAot=false` and run the
 generated apphost with the SDK runtime available.
+
+## Structure
+
+`src/` contains the executable project; `tests/` is a sibling xUnit project.
+Tests exercise the published NativeAOT executable and inject HTTP responses for
+Helix collection. Neither project needs source-glob exclusions.
+
+The command pipeline is:
+
+1. `CommandLine` parses and validates arguments into command-specific records before any I/O.
+2. `Submission` validates work items and payload declarations; `LinuxEnvironment` resolves the declared queue environment.
+3. `Cache.Lookup` freezes shared inputs once per lookup, constructs execution identities, and checks completed entries.
+4. `HelixClient` handles typed HTTP responses, completion polling, and result downloads.
+5. `Results.Read` validates receipts and reports and produces a `TestRun` containing counts and comparable outcomes.
+6. `ShadowValidation` compares a fresh run with any cached run before `Cache.Store` publishes a passing entry atomically.
+
+JSON contracts use source-generated System.Text.Json serialization.
+`HelixJsonContext` uses the service's PascalCase names for transport models.
+`CacheJsonContext` uses camelCase for local models, including environment
+fingerprints. Image/provisioning descriptions remain opaque JSON because their
+open-ended fields must all participate in the key. Canonical key encoding is
+separate from deserialization and domain validation. Prototype formats and keys
+may change during development; existing entries are disposable.
 
 ## Lookup
 
@@ -105,7 +128,7 @@ result collector from Helix's completed-work-item status:
 cancellations or timeouts. Submission success is not completion. This tool does
 not independently authenticate the receipt with Helix.
 
-V1 accepts xUnit XML (`assemblies` / `assembly` / `test`) only. Each assembly must
+The prototype accepts xUnit XML (`assemblies` / `assembly` / `test`) only. Each assembly must
 contain tests whose results agree with its total/passed/failed/skipped counts;
 failures, errors, empty or incomplete reports are rejected. Skips are retained.
 All files in the results directory are copied and checksummed. The execution key
@@ -133,11 +156,10 @@ The cache task's build ID is **not** part of an execution digest. Only completed
 entries are persisted; frozen input snapshots are recreated in each job.
 Existing Azure Pipelines branch/PR cache scoping applies.
 
-`shadow.py` is a thin Python standard-library orchestration/transport layer; all
-input capture, digest computation, cache validation and admission use the C#
-NativeAOT executable. Its `prepare` command records the full command, upload
-post-command, timeout and queue, runs native lookup, and exports frozen paths
-to `submission.props`. `Shadow.proj` submits those exact archives through the
+All orchestration runs in the C# NativeAOT executable. Its `prepare` command
+records the full command, upload post-command, timeout and queue, runs native
+lookup, and exports frozen paths to `submission.props`.
+`eng/testing/helix-cache-shadow.proj` submits those exact archives through the
 pinned Helix SDK without injecting extra reporters. Its default target only
 validates inputs; submission requires **`-t:Submit`**, which waits for completion
 and cancels the submitted job on task cancellation.
@@ -150,7 +172,8 @@ passes the report through native admission, and compares any hit with the fresh
 test identities/outcomes/skip reasons. Ordering, worker directory prefixes and
 execution timings are ignored. The resolved physical queue ID and submitted
 alias are preserved in provenance alongside the original cached job.
-Every hit still executes on Helix; no cached result is published as a new run.
+On a hit, mismatched outcomes fail validation before store. Every hit still
+executes on Helix; no cached result is published as a new run.
 
 Evidence is included in the existing build-log artifact under
 `artifacts/log/<Configuration>/helix-cache-shadow/`, including `lookup.json`,
@@ -162,14 +185,13 @@ by this first shadow lane.
 For local preparation without submitting, after building the archives:
 
 ```sh
-python3 src/tools/helix-cache/shadow.py prepare \
-  --executable artifacts/bin/HelixCache/Release/net11.0/linux-x64/publish/helix-cache \
+artifacts/tools/helix-cache/helix-cache prepare \
   --cache artifacts/tmp/helix-cache \
   --output artifacts/log/Release/helix-cache-shadow \
   --payload artifacts/helix/tests/linux.AnyCPU.Release/System.Memory.Data.Tests.zip \
   --runtime artifacts/helix/runtime/test-runtime-net11.0-linux-Release-x64.zip \
   --queue AzureLinux.3.Amd64.Open
-dotnet msbuild src/tools/helix-cache/Shadow.proj -t:Validate \
+dotnet msbuild eng/testing/helix-cache-shadow.proj -t:Validate \
   -p:HelixCacheShadowDirectory="$PWD/artifacts/log/Release/helix-cache-shadow"
 ```
 

@@ -9,4 +9,7 @@
     <JsonSerializerIsReflectionEnabledByDefault>false</JsonSerializerIsReflectionEnabledByDefault>
     <PublishAot Condition="'$(PublishAot)' == ''">true</PublishAot>
   </PropertyGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="HelixCache.Tests" />
+  </ItemGroup>
 </Project>

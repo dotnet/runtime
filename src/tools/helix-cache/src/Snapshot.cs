@@ -15,7 +15,7 @@ internal sealed class Snapshot
 
     internal required string Path { get; init; }
     internal required string Digest { get; init; }
-    internal required string Kind { get; init; }
+    internal required PayloadKind Kind { get; init; }
 
     internal static Snapshot Capture(string source, string cache)
     {
@@ -25,7 +25,7 @@ internal sealed class Snapshot
         bool directory = (attributes & FileAttributes.Directory) != 0;
         if (!directory && !source.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
         {
-            throw new InvalidDataException(SR.Get("Payload", source));
+            throw new InvalidDataException($"Payload '{source}' must be a directory or a ZIP archive.");
         }
 
         using TemporaryDirectory temporary = new(System.IO.Path.Combine(cache, "tmp"));
@@ -46,11 +46,11 @@ internal sealed class Snapshot
             string existing = System.IO.Path.Combine(final, name);
             if (Hash(existing) != digest)
             {
-                throw new InvalidDataException(SR.Get("Corrupt", existing));
+                throw new InvalidDataException($"Snapshot failed validation: {existing}.");
             }
         }
 
-        return new Snapshot { Path = System.IO.Path.Combine(final, name), Digest = digest, Kind = directory ? "directory" : "archive" };
+        return new Snapshot { Path = System.IO.Path.Combine(final, name), Digest = digest, Kind = directory ? PayloadKind.Directory : PayloadKind.Archive };
     }
 
     internal static void EnsureOutside(string source, string destination)
@@ -58,7 +58,16 @@ internal sealed class Snapshot
         if (Directory.Exists(source) &&
             (destination == source || destination.StartsWith(System.IO.Path.TrimEndingDirectorySeparator(source) + "/", StringComparison.Ordinal)))
         {
-            throw new InvalidDataException(SR.Get("NestedCache", destination, source));
+            throw new InvalidDataException($"Cache or staging directory '{destination}' must not be inside input directory '{source}'.");
+        }
+    }
+
+    internal static void ValidateRelativePath(string path, bool allowEmpty = false)
+    {
+        if ((!allowEmpty && string.IsNullOrWhiteSpace(path)) || System.IO.Path.IsPathRooted(path) ||
+            path.Split('/').Any(p => p is "." or "..") || path.Contains('\\'))
+        {
+            throw new InvalidDataException($"Expected a relative path without traversal: {path}.");
         }
     }
 
@@ -129,7 +138,7 @@ internal sealed class Snapshot
     {
         if ((attributes & FileAttributes.ReparsePoint) != 0)
         {
-            throw new InvalidDataException(SR.Get("Symlink", path));
+            throw new InvalidDataException($"Symbolic links are not supported in directory payloads or results: {path}. Use an archive for payloads containing links.");
         }
     }
 }
