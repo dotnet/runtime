@@ -643,203 +643,403 @@ namespace System.Runtime
         internal static extern object InterlockedExchange([NotNullIfNotNull(nameof(value))] ref object? location1, object? value);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
+#if TARGET_X86 || TARGET_WASM
+        [RuntimeImport(RuntimeLibrary, "RhpAcos")]
+#else
         [RuntimeImport(RuntimeLibrary, "acos")]
+#endif
         internal static extern double acos(double x);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
+#if TARGET_X86 || TARGET_WASM
+        [RuntimeImport(RuntimeLibrary, "RhpAcosf")]
+#else
         [RuntimeImport(RuntimeLibrary, "acosf")]
+#endif
         internal static extern float acosf(float x);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
+#if TARGET_X86 || TARGET_WASM
+        [RuntimeImport(RuntimeLibrary, "RhpAcosh")]
+#else
         [RuntimeImport(RuntimeLibrary, "acosh")]
+#endif
         internal static extern double acosh(double x);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
+#if TARGET_X86 || TARGET_WASM
+        [RuntimeImport(RuntimeLibrary, "RhpAcoshf")]
+#else
         [RuntimeImport(RuntimeLibrary, "acoshf")]
+#endif
         internal static extern float acoshf(float x);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
+#if TARGET_X86 || TARGET_WASM
+        [RuntimeImport(RuntimeLibrary, "RhpAsin")]
+#else
         [RuntimeImport(RuntimeLibrary, "asin")]
+#endif
         internal static extern double asin(double x);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
+#if TARGET_X86 || TARGET_WASM
+        [RuntimeImport(RuntimeLibrary, "RhpAsinf")]
+#else
         [RuntimeImport(RuntimeLibrary, "asinf")]
+#endif
         internal static extern float asinf(float x);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
+#if TARGET_X86 || TARGET_WASM
+        [RuntimeImport(RuntimeLibrary, "RhpAsinh")]
+#else
         [RuntimeImport(RuntimeLibrary, "asinh")]
+#endif
         internal static extern double asinh(double x);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
+#if TARGET_X86 || TARGET_WASM
+        [RuntimeImport(RuntimeLibrary, "RhpAsinhf")]
+#else
         [RuntimeImport(RuntimeLibrary, "asinhf")]
+#endif
         internal static extern float asinhf(float x);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
+#if TARGET_X86 || TARGET_WASM
+        [RuntimeImport(RuntimeLibrary, "RhpAtan")]
+#else
         [RuntimeImport(RuntimeLibrary, "atan")]
+#endif
         internal static extern double atan(double x);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
+#if TARGET_X86 || TARGET_WASM
+        [RuntimeImport(RuntimeLibrary, "RhpAtanf")]
+#else
         [RuntimeImport(RuntimeLibrary, "atanf")]
+#endif
         internal static extern float atanf(float x);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
+#if TARGET_X86 || TARGET_WASM
+        [RuntimeImport(RuntimeLibrary, "RhpAtan2")]
+#else
         [RuntimeImport(RuntimeLibrary, "atan2")]
+#endif
         internal static extern double atan2(double y, double x);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
+#if TARGET_X86 || TARGET_WASM
+        [RuntimeImport(RuntimeLibrary, "RhpAtan2f")]
+#else
         [RuntimeImport(RuntimeLibrary, "atan2f")]
+#endif
         internal static extern float atan2f(float y, float x);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
+#if TARGET_X86 || TARGET_WASM
+        [RuntimeImport(RuntimeLibrary, "RhpAtanh")]
+#else
         [RuntimeImport(RuntimeLibrary, "atanh")]
+#endif
         internal static extern double atanh(double x);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
+#if TARGET_X86 || TARGET_WASM
+        [RuntimeImport(RuntimeLibrary, "RhpAtanhf")]
+#else
         [RuntimeImport(RuntimeLibrary, "atanhf")]
+#endif
         internal static extern float atanhf(float x);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
+#if TARGET_X86 || TARGET_WASM
+        [RuntimeImport(RuntimeLibrary, "RhpCbrt")]
+#else
         [RuntimeImport(RuntimeLibrary, "cbrt")]
+#endif
         internal static extern double cbrt(double x);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
+#if TARGET_X86 || TARGET_WASM
+        [RuntimeImport(RuntimeLibrary, "RhpCbrtf")]
+#else
         [RuntimeImport(RuntimeLibrary, "cbrtf")]
+#endif
         internal static extern float cbrtf(float x);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
+#if TARGET_X86 || TARGET_WASM
+        [RuntimeImport(RuntimeLibrary, "RhpCeil")]
+#else
         [RuntimeImport(RuntimeLibrary, "ceil")]
+#endif
         internal static extern double ceil(double x);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
+#if TARGET_X86 || TARGET_WASM
+        [RuntimeImport(RuntimeLibrary, "RhpCeilf")]
+#else
         [RuntimeImport(RuntimeLibrary, "ceilf")]
+#endif
         internal static extern float ceilf(float x);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
+#if TARGET_X86 || TARGET_WASM
+        [RuntimeImport(RuntimeLibrary, "RhpCos")]
+#else
         [RuntimeImport(RuntimeLibrary, "cos")]
+#endif
         internal static extern double cos(double x);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
+#if TARGET_X86 || TARGET_WASM
+        [RuntimeImport(RuntimeLibrary, "RhpCosf")]
+#else
         [RuntimeImport(RuntimeLibrary, "cosf")]
+#endif
         internal static extern float cosf(float x);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
+#if TARGET_X86 || TARGET_WASM
+        [RuntimeImport(RuntimeLibrary, "RhpCosh")]
+#else
         [RuntimeImport(RuntimeLibrary, "cosh")]
+#endif
         internal static extern double cosh(double x);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
+#if TARGET_X86 || TARGET_WASM
+        [RuntimeImport(RuntimeLibrary, "RhpCoshf")]
+#else
         [RuntimeImport(RuntimeLibrary, "coshf")]
+#endif
         internal static extern float coshf(float x);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
+#if TARGET_X86 || TARGET_WASM
+        [RuntimeImport(RuntimeLibrary, "RhpExp")]
+#else
         [RuntimeImport(RuntimeLibrary, "exp")]
+#endif
         internal static extern double exp(double x);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
+#if TARGET_X86 || TARGET_WASM
+        [RuntimeImport(RuntimeLibrary, "RhpExpf")]
+#else
         [RuntimeImport(RuntimeLibrary, "expf")]
+#endif
         internal static extern float expf(float x);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
+#if TARGET_X86 || TARGET_WASM
+        [RuntimeImport(RuntimeLibrary, "RhpFloor")]
+#else
         [RuntimeImport(RuntimeLibrary, "floor")]
+#endif
         internal static extern double floor(double x);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
+#if TARGET_X86 || TARGET_WASM
+        [RuntimeImport(RuntimeLibrary, "RhpFloorf")]
+#else
         [RuntimeImport(RuntimeLibrary, "floorf")]
+#endif
         internal static extern float floorf(float x);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
+#if TARGET_X86 || TARGET_WASM
+        [RuntimeImport(RuntimeLibrary, "RhpLog")]
+#else
         [RuntimeImport(RuntimeLibrary, "log")]
+#endif
         internal static extern double log(double x);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
+#if TARGET_X86 || TARGET_WASM
+        [RuntimeImport(RuntimeLibrary, "RhpLogf")]
+#else
         [RuntimeImport(RuntimeLibrary, "logf")]
+#endif
         internal static extern float logf(float x);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
+#if TARGET_X86 || TARGET_WASM
+        [RuntimeImport(RuntimeLibrary, "RhpLog2")]
+#else
         [RuntimeImport(RuntimeLibrary, "log2")]
+#endif
         internal static extern double log2(double x);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
+#if TARGET_X86 || TARGET_WASM
+        [RuntimeImport(RuntimeLibrary, "RhpLog2f")]
+#else
         [RuntimeImport(RuntimeLibrary, "log2f")]
+#endif
         internal static extern float log2f(float x);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
+#if TARGET_X86 || TARGET_WASM
+        [RuntimeImport(RuntimeLibrary, "RhpLog10")]
+#else
         [RuntimeImport(RuntimeLibrary, "log10")]
+#endif
         internal static extern double log10(double x);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
+#if TARGET_X86 || TARGET_WASM
+        [RuntimeImport(RuntimeLibrary, "RhpLog10f")]
+#else
         [RuntimeImport(RuntimeLibrary, "log10f")]
+#endif
         internal static extern float log10f(float x);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
+#if TARGET_X86 || TARGET_WASM
+        [RuntimeImport(RuntimeLibrary, "RhpPow")]
+#else
         [RuntimeImport(RuntimeLibrary, "pow")]
+#endif
         internal static extern double pow(double x, double y);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
+#if TARGET_X86 || TARGET_WASM
+        [RuntimeImport(RuntimeLibrary, "RhpPowf")]
+#else
         [RuntimeImport(RuntimeLibrary, "powf")]
+#endif
         internal static extern float powf(float x, float y);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
+#if TARGET_X86 || TARGET_WASM
+        [RuntimeImport(RuntimeLibrary, "RhpSin")]
+#else
         [RuntimeImport(RuntimeLibrary, "sin")]
+#endif
         internal static extern double sin(double x);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
+#if TARGET_X86 || TARGET_WASM
+        [RuntimeImport(RuntimeLibrary, "RhpSinf")]
+#else
         [RuntimeImport(RuntimeLibrary, "sinf")]
+#endif
         internal static extern float sinf(float x);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
+#if TARGET_X86 || TARGET_WASM
+        [RuntimeImport(RuntimeLibrary, "RhpSinh")]
+#else
         [RuntimeImport(RuntimeLibrary, "sinh")]
+#endif
         internal static extern double sinh(double x);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
+#if TARGET_X86 || TARGET_WASM
+        [RuntimeImport(RuntimeLibrary, "RhpSinhf")]
+#else
         [RuntimeImport(RuntimeLibrary, "sinhf")]
+#endif
         internal static extern float sinhf(float x);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
+#if TARGET_X86 || TARGET_WASM
+        [RuntimeImport(RuntimeLibrary, "RhpSqrt")]
+#else
         [RuntimeImport(RuntimeLibrary, "sqrt")]
+#endif
         internal static extern double sqrt(double x);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
+#if TARGET_X86 || TARGET_WASM
+        [RuntimeImport(RuntimeLibrary, "RhpSqrtf")]
+#else
         [RuntimeImport(RuntimeLibrary, "sqrtf")]
+#endif
         internal static extern float sqrtf(float x);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
+#if TARGET_X86 || TARGET_WASM
+        [RuntimeImport(RuntimeLibrary, "RhpTan")]
+#else
         [RuntimeImport(RuntimeLibrary, "tan")]
+#endif
         internal static extern double tan(double x);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
+#if TARGET_X86 || TARGET_WASM
+        [RuntimeImport(RuntimeLibrary, "RhpTanf")]
+#else
         [RuntimeImport(RuntimeLibrary, "tanf")]
+#endif
         internal static extern float tanf(float x);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
+#if TARGET_X86 || TARGET_WASM
+        [RuntimeImport(RuntimeLibrary, "RhpTanh")]
+#else
         [RuntimeImport(RuntimeLibrary, "tanh")]
+#endif
         internal static extern double tanh(double x);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
+#if TARGET_X86 || TARGET_WASM
+        [RuntimeImport(RuntimeLibrary, "RhpTanhf")]
+#else
         [RuntimeImport(RuntimeLibrary, "tanhf")]
+#endif
         internal static extern float tanhf(float x);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
+#if TARGET_X86 || TARGET_WASM
+        [RuntimeImport(RuntimeLibrary, "RhpFmod")]
+#else
         [RuntimeImport(RuntimeLibrary, "fmod")]
+#endif
         internal static extern double fmod(double x, double y);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
+#if TARGET_X86 || TARGET_WASM
+        [RuntimeImport(RuntimeLibrary, "RhpFmodf")]
+#else
         [RuntimeImport(RuntimeLibrary, "fmodf")]
+#endif
         internal static extern float fmodf(float x, float y);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
+#if TARGET_X86 || TARGET_WASM
+        [RuntimeImport(RuntimeLibrary, "RhpFma")]
+#else
         [RuntimeImport(RuntimeLibrary, "fma")]
+#endif
         internal static extern double fma(double x, double y, double z);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
+#if TARGET_X86 || TARGET_WASM
+        [RuntimeImport(RuntimeLibrary, "RhpFmaf")]
+#else
         [RuntimeImport(RuntimeLibrary, "fmaf")]
+#endif
         internal static extern float fmaf(float x, float y, float z);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
+#if TARGET_X86 || TARGET_WASM
+        [RuntimeImport(RuntimeLibrary, "RhpModf")]
+#else
         [RuntimeImport(RuntimeLibrary, "modf")]
+#endif
         internal static extern unsafe double modf(double x, double* intptr);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
+#if TARGET_X86 || TARGET_WASM
+        [RuntimeImport(RuntimeLibrary, "RhpModff")]
+#else
         [RuntimeImport(RuntimeLibrary, "modff")]
+#endif
         internal static extern unsafe float modff(float x, float* intptr);
 
 #if TARGET_WINDOWS
