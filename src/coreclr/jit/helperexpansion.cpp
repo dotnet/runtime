@@ -2237,52 +2237,42 @@ static int PickCandidatesForTypeCheck(Compiler*              comp,
 
     if (likelyClassCount > 0)
     {
-        // TODO-InlineCast: support multiple candidates, for now always pick the first one
-        // It's already supported, but it requires some careful performance testing to enable.
-        //
-        likelihoods[0] = likelyLikelihoods[0];
-        candidates[0]  = likelyClasses[0];
+        int numCandidates = 0;
+        for (int i = 0; i < likelyClassCount; i++)
+        {
+            CORINFO_CLASS_HANDLE candidate = likelyClasses[i];
+            if ((candidate == NO_CLASS_HANDLE) ||
+                ((comp->info.compCompHnd->getClassAttribs(candidate) & isAbstractFlags) != 0))
+            {
+                continue;
+            }
 
-        // Protect from stale static PGO data if a candidate becomes abstract/interface
-        if ((likelyClasses[0] == NO_CLASS_HANDLE) ||
-            (comp->info.compCompHnd->getClassAttribs(likelyClasses[0]) & isAbstractFlags) != 0)
-        {
-            return 0;
-        }
+            const TypeCompareState castResult = comp->info.compCompHnd->compareTypesForCast(candidate, castToCls);
+            if ((castResult == TypeCompareState::May) || (isCastClass && (castResult == TypeCompareState::MustNot)))
+            {
+                continue;
+            }
 
-        // We don't fully trust PGO data, so let's check it via compareTypesForCast
-        const TypeCompareState castResult = comp->info.compCompHnd->compareTypesForCast(candidates[0], castToCls);
-        if (castResult == TypeCompareState::May)
-        {
-            // TODO-InlineCast: do we need to check for May here? Conservatively assume that we do.
-            JITDUMP("compareTypesForCast returned May for this candidate\n");
-            return 0;
-        }
-        if (castResult == TypeCompareState::Must)
-        {
-            // The specialized helper skips null and exact-type checks. A failed guard against
-            // a subclass would not rule out the target class itself.
-            if ((helper == CORINFO_HELP_CHKCASTCLASS) && (candidates[0] == castToCls))
+            const TypeCheckPassedAction passedAction = castResult == TypeCompareState::Must
+                                                           ? TypeCheckPassedAction::ReturnObj
+                                                           : TypeCheckPassedAction::ReturnNull;
+            // All guards share one success block, so they must agree on its result.
+            if ((numCandidates != 0) && (*typeCheckPassed != passedAction))
+            {
+                continue;
+            }
+
+            candidates[numCandidates]  = candidate;
+            likelihoods[numCandidates] = likelyLikelihoods[i];
+            *typeCheckPassed           = passedAction;
+            numCandidates++;
+
+            if ((helper == CORINFO_HELP_CHKCASTCLASS) && (candidate == castToCls))
             {
                 *typeCheckFailed = TypeCheckFailedAction::CallHelper_Specialized;
             }
-
-            // return actual object on successful type check
-            *typeCheckPassed = TypeCheckPassedAction::ReturnObj;
-            return 1;
         }
-        if (castResult == TypeCompareState::MustNot)
-        {
-            // Our likely candidate never passes the type check (may happen with PGO-driven expansion),
-            if (!isCastClass)
-            {
-                // return null on successful type check
-                *typeCheckPassed = TypeCheckPassedAction::ReturnNull;
-                return 1;
-            }
-            // give up on castclass - it's going to throw InvalidCastException anyway
-            return 0;
-        }
+        return numCandidates;
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -2454,6 +2444,8 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
 
     BasicBlock* typeChecksBbs[MAX_GDV_TYPE_CHECKS] = {};
     BasicBlock* lastTypeCheckBb                    = nullcheckBb;
+    GenTree*    methodTable                        = gtNewMethodTableLookup(gtCloneExpr(tmpNode));
+    GenTree*    methodTableReuse                   = numOfCandidates > 1 ? fgMakeMultiUse(&methodTable) : nullptr;
     for (int candidateId = 0; candidateId < numOfCandidates; candidateId++)
     {
         const CORINFO_CLASS_HANDLE expectedCls = expectedExactClasses[candidateId];
@@ -2477,7 +2469,8 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
             }
         }
 
-        GenTree* mtCheck = gtNewOperNode(GT_EQ, TYP_INT, gtNewMethodTableLookup(gtCloneExpr(tmpNode)), expectedClsNode);
+        GenTree* mtValue = candidateId == 0 ? methodTable : gtCloneExpr(methodTableReuse);
+        GenTree* mtCheck = gtNewOperNode(GT_EQ, TYP_INT, mtValue, expectedClsNode);
         mtCheck->gtFlags |= GTF_RELOP_JMP_USED;
         GenTree* jtrue             = gtNewOperNode(GT_JTRUE, TYP_VOID, mtCheck);
         typeChecksBbs[candidateId] = fgNewBBFromTreeAfter(BBJ_COND, lastTypeCheckBb, jtrue, debugInfo, true);
