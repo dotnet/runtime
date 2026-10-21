@@ -131,6 +131,14 @@ namespace System
             ArgumentNullException.ThrowIfNull(platform);
 
             return platform.Equals(OSPlatformName, StringComparison.OrdinalIgnoreCase)
+#if TARGET_OPENHARMONY
+            // OpenHarmony uses the Linux ABI (musl). Accept LINUX as an alias so
+            // callers that probe for Linux - e.g. MSBuild's
+            // IsOSPlatform(OSPlatform.Linux), which selects sh vs Windows-style
+            // Exec scripts - behave as on Linux, while OPENHARMONY stays the
+            // canonical name.
+            || platform.Equals("LINUX", StringComparison.OrdinalIgnoreCase)
+#endif
 #if TARGET_OSX
             || platform.Equals("MACOS", StringComparison.OrdinalIgnoreCase)
 #elif TARGET_MACCATALYST
