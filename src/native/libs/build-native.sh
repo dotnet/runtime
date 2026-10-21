@@ -65,9 +65,10 @@ else
     # fail closed). -linkstaticopenssl links the OpenSSL libraries found by
     # find_package(OpenSSL) instead; the archives must be built with -fPIC.
     # The static archive keeps the dlopen shim for NativeAOT, so the
-    # FEATURE_DISTRO_AGNOSTIC_SSL_STATIC object set stays enabled.
+    # FEATURE_DISTRO_AGNOSTIC_SSL_STATIC object set stays enabled there.
+    # Only OpenHarmony's static archive needs that separate object set.
     __FeatureDistroAgnosticSsl=$__PortableBuild
-    __FeatureDistroAgnosticSslStatic=$__FeatureDistroAgnosticSsl
+    __FeatureDistroAgnosticSslStatic=0
     if [[ "$__TargetOS" == openharmony && "$__LinkStaticOpenSsl" == 1 ]]; then
         __FeatureDistroAgnosticSsl=0
         __FeatureDistroAgnosticSslStatic=1
