@@ -2797,6 +2797,11 @@ namespace System.Net.Http.Functional.Tests
                 return; // HTTP/3 (QUIC) cannot be tunneled through an HTTP CONNECT proxy.
             }
 
+            if (!PlatformDetection.IsTlsSupported)
+            {
+                return;
+            }
+
             if (UseVersion == HttpVersion.Version20 && !PlatformDetection.SupportsAlpn)
             {
                 return; // HTTP/2 over TLS requires ALPN to negotiate.

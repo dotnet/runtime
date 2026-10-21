@@ -33,7 +33,7 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task ConnectTimeout_TimesOutSSLAuth_Throws()
         {
-            if (UseVersion == HttpVersion.Version30)
+            if (UseVersion == HttpVersion.Version30 || !PlatformDetection.IsTlsSupported)
             {
                 return;
             }
@@ -63,6 +63,11 @@ namespace System.Net.Http.Functional.Tests
             if (UseVersion == HttpVersion.Version30)
             {
                 // HTTP3 does not support ConnectCallback
+                return;
+            }
+
+            if (useSsl && !PlatformDetection.IsTlsSupported)
+            {
                 return;
             }
 
@@ -116,6 +121,11 @@ namespace System.Net.Http.Functional.Tests
             if (UseVersion == HttpVersion.Version30)
             {
                 // HTTP3 does not support ConnectCallback
+                return;
+            }
+
+            if (useSsl && !PlatformDetection.IsTlsSupported)
+            {
                 return;
             }
 
