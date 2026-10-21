@@ -701,7 +701,6 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/107981", TestPlatforms.Wasi)]
         public async Task Receive0ByteReturns_WhenPeerDisconnects()
         {
             using (Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))

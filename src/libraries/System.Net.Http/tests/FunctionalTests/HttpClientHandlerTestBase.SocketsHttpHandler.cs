@@ -15,7 +15,10 @@ namespace System.Net.Http.Functional.Tests
     {
         protected static async Task<Stream> DefaultConnectCallback(EndPoint endPoint, CancellationToken cancellationToken)
         {
-            Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp) { NoDelay = true };
+            // WASI doesn't support dual-mode sockets, so match the endpoint's address family there.
+            Socket socket = PlatformDetection.IsWasi && endPoint is IPEndPoint ipEndPoint ?
+                new Socket(ipEndPoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp) { NoDelay = true } :
+                new Socket(SocketType.Stream, ProtocolType.Tcp) { NoDelay = true };
             try
             {
                 await socket.ConnectAsync(endPoint, cancellationToken);
