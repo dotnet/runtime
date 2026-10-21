@@ -161,6 +161,8 @@ Unwinding call frames on the stack usually requires an OS specific implementatio
 | `ExternalMethodFrame` | `Indirection` | `pointer` | Import slot pointer for GCRefMap resolution via FindReadyToRunModule |
 | `FaultingExceptionFrame` | `TargetContext` | `pointer` | Frame's Target Context |
 | `Frame` | `Next` | `pointer` | Pointer to next from on linked list |
+| `FramedMethodFrame` | `CachedGCRefMap` | `pointer` | Saved method-entry or declaration-map lookup result |
+| `FramedMethodFrame` | `GCRefMapLookupDone` | `uint8` | Whether the saved lookup is complete, including a null result |
 | `FramedMethodFrame` | `MethodDescPtr` | `pointer` | Pointer to Frame's method desc |
 | `FramedMethodFrame` | `TransitionBlockPtr` | `pointer` | Pointer to Frame's TransitionBlock |
 | `FuncEvalFrame` | `DebuggerEvalPtr` | `pointer` | Pointer to the Frame's DebuggerEval object |
@@ -907,7 +909,8 @@ Version 2 supports cached method-entry and virtual declaration-map lookup for
 `PrestubMethodFrame`, `CallCountingHelperFrame`, and `StubDispatchFrame`. Compatible maps
 supply argument roots and, on x86, the stack-pop count without resolving the method signature.
 If no compatible map is available, the signature-based path is retained. GC root enumeration
-and x86 frame unwinding first use the same metadata-only lookup. Import maps on
+and x86 frame unwinding first use the frame's saved lookup result, if complete.
+Otherwise they use the same metadata-only lookup. Import maps on
 `ExternalMethodFrame` and `StubDispatchFrame` take precedence over method-entry maps.
 
 The runtime publishes Version 2 when ReadyToRun imports can leave signature layouts unloaded.
@@ -956,11 +959,21 @@ concrete import-map rejection is not part of Version 2 lookup.
 If lookup in the method's owning type fails during root enumeration, obtain the actual receiver
 type from the saved `this` object for reference types, boxed wrappers, and dispatch frames. Do not dereference
 `this` for constructors, static methods, excluded generic bodies, or unboxed value-type bodies.
-Native root scanning permits this additional lookup only during promotion. Relocation can
-update a root to its future address before the object has moved, so neither relocation nor
-x86 unwinding may dereference the receiver. These paths use only metadata-based lookup and
-fall back to the signature on a miss. Target preparation does not depend on receiver-based
-lookup, so a metadata-only miss retains the prepared signature path.
+The live runtime saves successful lookups and completed misses on the frame before
+reporting argument roots. Changing the frame's method or representative dispatch slot
+invalidates the saved result.
+Both root scanning and native x86 unwinding complete the lookup on the first walk.
+The marking walk precedes relocation, so subsequent walks reuse the saved result even if
+the receiver root now contains its future address.
+An uninitialized lookup during native relocation violates this ordering invariant and
+asserts in checked builds; retail builds still restrict such a lookup to method metadata.
+Relocation can update a root before the object has moved, so it must not repeat receiver
+lookup. Diagnostic readers never write this cache. They consume a completed saved result,
+including null, before looking for another map. If the lookup is uninitialized, a
+diagnostic unwind may perform the same metadata and receiver lookup as the first live
+walk: relocation that needed this lookup would already have completed it during marking.
+This lets x86 unwind before the first GC without requiring signature layouts that
+map-based preparation deliberately left unloaded. A completed miss retains signature fallback.
 Reading method metadata to recognize `.ctor` does not load signature value-type layouts.
 When metadata is unavailable, do not dereference a potentially synthetic constructor receiver;
 retain the signature fallback, which can defer frames whose layouts are unavailable.

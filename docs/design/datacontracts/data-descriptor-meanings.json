@@ -199,6 +199,8 @@
     "FnPtrTypeDesc.NumArgs": "Number of arguments to the function described by the TypeDesc",
     "FnPtrTypeDesc.RetAndArgTypes": "Pointer to an array of TypeHandle addresses. This length of this is 1 more than NumArgs",
     "Frame.Next": "Pointer to next from on linked list",
+    "FramedMethodFrame.CachedGCRefMap": "Saved method-entry or declaration-map lookup result",
+    "FramedMethodFrame.GCRefMapLookupDone": "Whether the saved lookup is complete, including a null result",
     "FramedMethodFrame.MethodDescPtr": "Pointer to Frame's method desc",
     "FramedMethodFrame.TransitionBlockPtr": "Pointer to Frame's TransitionBlock",
     "FuncEvalFrame.DebuggerEvalPtr": "Pointer to the Frame's DebuggerEval object",

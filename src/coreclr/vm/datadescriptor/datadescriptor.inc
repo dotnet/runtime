@@ -1304,6 +1304,8 @@ CDAC_TYPE_BEGIN(FramedMethodFrame)
 CDAC_TYPE_SIZE(sizeof(FramedMethodFrame))
 CDAC_TYPE_FIELD(FramedMethodFrame, T_POINTER, TransitionBlockPtr, cdac_data<FramedMethodFrame>::TransitionBlockPtr)
 CDAC_TYPE_FIELD(FramedMethodFrame, T_POINTER, MethodDescPtr, cdac_data<FramedMethodFrame>::MethodDescPtr)
+CDAC_TYPE_FIELD(FramedMethodFrame, T_POINTER, CachedGCRefMap, cdac_data<FramedMethodFrame>::CachedGCRefMap)
+CDAC_TYPE_FIELD(FramedMethodFrame, T_UINT8, GCRefMapLookupDone, cdac_data<FramedMethodFrame>::GCRefMapLookupDone)
 CDAC_TYPE_END(FramedMethodFrame)
 
 #ifdef FEATURE_INTERPRETER

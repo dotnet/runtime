@@ -79,8 +79,8 @@ void TransitionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFl
     MethodDesc * pFunc = GetFunction();
     _ASSERTE(pFunc != NULL);
 
-    // Unwinding can follow root relocation, when the receiver's future address is not readable.
-    PTR_BYTE pGCRefMap = GetGCRefMapFromMethodDesc(false /* allowReceiverLookup */);
+    // The first GC walk caches the lookup before any relocation walk can see an updated receiver.
+    PTR_BYTE pGCRefMap = GetGCRefMapFromMethodDesc(nullptr);
     UpdateRegDisplayHelper(pRD, pGCRefMap != nullptr ? CbStackPopUsingGCRefMap(pGCRefMap) : pFunc->CbStackPop());
 
     LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    TransitionFrame::UpdateRegDisplay_Impl(ip:%p, sp:%p)\n", (void*)(size_t)pRD->ControlPC, (void*)(size_t)pRD->SP));

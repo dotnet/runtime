@@ -41,7 +41,7 @@ internal class X86FrameHandler(Target target, ContextHolder<X86Context> contextH
         {
             case FrameType.PrestubMethodFrame:
             case FrameType.CallCountingHelperFrame:
-                TargetPointer gcRefMap = _frameHelpers.GetGCRefMapForFrame(framedMethodFrame.Address, allowReceiverLookup: false);
+                TargetPointer gcRefMap = _frameHelpers.GetGCRefMapForFrame(framedMethodFrame.Address);
                 if (gcRefMap != TargetPointer.Null)
                 {
                     decoder = new(_target, gcRefMap);
@@ -72,7 +72,7 @@ internal class X86FrameHandler(Target target, ContextHolder<X86Context> contextH
                     }
                     else
                     {
-                        TargetPointer dispatchMap = _frameHelpers.GetGCRefMapForFrame(framedMethodFrame.Address, allowReceiverLookup: false);
+                        TargetPointer dispatchMap = _frameHelpers.GetGCRefMapForFrame(framedMethodFrame.Address);
                         if (dispatchMap != TargetPointer.Null)
                         {
                             decoder = new(_target, dispatchMap);

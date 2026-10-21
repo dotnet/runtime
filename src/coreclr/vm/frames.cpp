@@ -1491,7 +1491,7 @@ void ProtectValueClassFrame::GcScanRoots_Impl(promote_func *fn, ScanContext *sc)
 //
 //
 
-PTR_BYTE TransitionFrame::GetGCRefMapFromMethodDesc(bool allowReceiverLookup)
+PTR_BYTE TransitionFrame::GetGCRefMapFromMethodDesc(ScanContext* sc)
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
@@ -1502,23 +1502,43 @@ PTR_BYTE TransitionFrame::GetGCRefMapFromMethodDesc(bool allowReceiverLookup)
     case FrameIdentifier::CallCountingHelperFrame:
     case FrameIdentifier::StubDispatchFrame:
     {
+        FramedMethodFrame* pFrame = static_cast<FramedMethodFrame*>(this);
+        // Relocation may update the receiver root before moving the object. Remember the
+        // first safe lookup, including misses, so later walks never retry receiver lookup.
+        // A completed null result means signature fallback, not an uninitialized cache.
+        // Diagnostic unwinding may perform a cold lookup: any relocation that needed
+        // this lookup would already have completed it during marking.
+        if (pFrame->m_gcRefMapLookupDone)
+            return pFrame->m_pCachedGCRefMap;
+
         MethodDesc* pMD = GetFunction();
         if (pMD == nullptr)
             return nullptr;
+#ifndef DACCESS_COMPILE
+        _ASSERTE(sc == nullptr || sc->promotion);
+#endif // DACCESS_COMPILE
         bool dispatch = frame == FrameIdentifier::StubDispatchFrame;
         PTR_BYTE map = pMD->FindGCRefMap(nullptr, dispatch);
-        if (map != nullptr || !allowReceiverLookup || pMD->IsStatic() || pMD->IsCtor() || pMD->HasMethodInstantiation() ||
-            (!dispatch && pMD->RequiresInstArg()))
+        // Never inspect an uncached receiver during relocation, even in retail builds.
+        if (sc != nullptr && !sc->promotion)
             return map;
-
-        MethodTable* pReceiverMT = pMD->GetMethodTable();
-        if (dispatch || !pReceiverMT->IsValueType() || pMD->IsUnboxingStub())
+        if (map == nullptr && !pMD->IsStatic() && !pMD->IsCtor() && !pMD->HasMethodInstantiation() &&
+            (dispatch || !pMD->RequiresInstArg()))
         {
-            PTR_TADDR receiver = dac_cast<PTR_TADDR>(GetThisPtr());
-            if (*receiver != 0)
-                pReceiverMT = dac_cast<PTR_Object>(*receiver)->GetGCSafeMethodTable();
+            MethodTable* pReceiverMT = pMD->GetMethodTable();
+            if (dispatch || !pReceiverMT->IsValueType() || pMD->IsUnboxingStub())
+            {
+                PTR_TADDR receiver = dac_cast<PTR_TADDR>(GetThisPtr());
+                if (*receiver != 0)
+                    pReceiverMT = dac_cast<PTR_Object>(*receiver)->GetGCSafeMethodTable();
+            }
+            map = pMD->FindGCRefMap(pReceiverMT, dispatch);
         }
-        return pMD->FindGCRefMap(pReceiverMT, dispatch);
+#ifndef DACCESS_COMPILE
+        pFrame->m_pCachedGCRefMap = map;
+        pFrame->m_gcRefMapLookupDone = true;
+#endif // DACCESS_COMPILE
+        return map;
     }
     default:
         return nullptr;
@@ -1549,8 +1569,8 @@ void TransitionFrame::PromoteCallerStack(promote_func* fn, ScanContext* sc)
     if (pFunction == NULL)
         return;
 
-    // Relocation updates roots before moving objects, so their MethodTables cannot be read.
-    PTR_BYTE pGCRefMap = GetGCRefMapFromMethodDesc(sc->promotion);
+    // The marking walk caches the lookup before relocation can update the receiver root.
+    PTR_BYTE pGCRefMap = GetGCRefMapFromMethodDesc(sc);
     if (pGCRefMap != nullptr)
     {
         PromoteCallerStackUsingGCRefMap(fn, sc, pGCRefMap);

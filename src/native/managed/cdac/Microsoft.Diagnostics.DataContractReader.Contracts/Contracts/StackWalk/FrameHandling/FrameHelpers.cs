@@ -179,7 +179,7 @@ internal sealed class FrameHelpers
             : TargetPointer.Null;
     }
 
-    public TargetPointer GetGCRefMapForFrame(TargetPointer frameAddress, bool allowReceiverLookup = true)
+    public TargetPointer GetGCRefMapForFrame(TargetPointer frameAddress)
     {
         FrameType kind = GetFrameType(_target.ProcessedData.GetOrAdd<Data.Frame>(frameAddress).Identifier);
         if (kind is not (FrameType.PrestubMethodFrame or FrameType.CallCountingHelperFrame or FrameType.StubDispatchFrame))
@@ -194,6 +194,11 @@ internal sealed class FrameHelpers
             stackWalk is not StackWalk_1 implementation || implementation.Version >= 2;
         if (!supportsVirtualMaps && kind is FrameType.StubDispatchFrame)
             return TargetPointer.Null;
+        Data.FramedMethodFrame frame = _target.ProcessedData.GetOrAdd<Data.FramedMethodFrame>(frameAddress);
+        // Marking saves hits and misses before relocating roots. A cold diagnostic walk
+        // can still inspect the receiver; a completed miss must never retry that lookup.
+        if (supportsVirtualMaps && frame.GCRefMapLookupDone is true)
+            return frame.CachedGCRefMap;
         TargetPointer cached = GetGCRefMapFromMethodDesc(method);
         if (!supportsVirtualMaps || !_target.TryGetTypeInfo(nameof(DataType.MethodTable), out _))
             return cached;
@@ -203,7 +208,7 @@ internal sealed class FrameHelpers
         MethodGCRefMapLookup lookup = new(_target, this);
         bool dispatch = kind is FrameType.StubDispatchFrame;
         TargetPointer map = lookup.Find(md, TargetPointer.Null, dispatch);
-        if (map != TargetPointer.Null || !allowReceiverLookup)
+        if (map != TargetPointer.Null)
             return map;
         if (rts.GetGenericMethodInstantiation(md).Length != 0 ||
             (!dispatch && rts.GetGenericContextLoc(md) is GenericContextLoc.InstArgMethodDesc or GenericContextLoc.InstArgMethodTable))
@@ -215,7 +220,6 @@ internal sealed class FrameHelpers
             !CanReadReceiver(md, owner) || (!dispatch && rts.IsValueType(rts.GetTypeHandle(owner)) && !rts.IsUnboxingStub(md)))
             return TargetPointer.Null;
 
-        Data.FramedMethodFrame frame = _target.ProcessedData.GetOrAdd<Data.FramedMethodFrame>(frameAddress);
         Data.TransitionBlock tb = _target.ProcessedData.GetOrAdd<Data.TransitionBlock>(frame.TransitionBlockPtr);
         TargetPointer thisSlot = tb.ArgumentRegisters;
         if (_target.Contracts.RuntimeInfo.GetTargetArchitecture() is RuntimeInfoArchitecture.X86)

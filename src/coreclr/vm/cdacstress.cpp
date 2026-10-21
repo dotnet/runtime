@@ -1384,8 +1384,7 @@ static const char* GetRuntimeArgLayoutFallback(CrawlFrame* pCF)
 
         case FrameIdentifier::PrestubMethodFrame:
         case FrameIdentifier::CallCountingHelperFrame:
-            // The map must also be usable during relocation, without inspecting receiver objects.
-            return static_cast<TransitionFrame*>(pFrame)->GetGCRefMapFromMethodDesc(false /* allowReceiverLookup */) != nullptr ?
+            return static_cast<TransitionFrame*>(pFrame)->GetGCRefMapFromMethodDesc(nullptr) != nullptr ?
                 "r2r-gcrefmap" : nullptr;
 
         default:
