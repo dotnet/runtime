@@ -666,6 +666,31 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
+        public async Task Receive_BoundUdpSocket_Success()
+        {
+            using (Socket receiver = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp))
+            using (Socket sender = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp))
+            {
+                receiver.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+                byte[] buffer = new byte[10];
+
+                for (int i = 0; i < 3; i++)
+                {
+                    // Receive issued before the datagram arrives.
+                    Task<int> receive = ReceiveAsync(receiver, buffer);
+                    await SendToAsync(sender, new byte[] { 42 }, receiver.LocalEndPoint!);
+                    Assert.Equal(1, await receive.WaitAsync(TestSettings.PassingTestTimeout));
+                    Assert.Equal(42, buffer[0]);
+
+                    // Receive issued after the datagram arrives.
+                    await SendToAsync(sender, new byte[] { 43 }, receiver.LocalEndPoint!);
+                    Assert.Equal(1, await ReceiveAsync(receiver, buffer).WaitAsync(TestSettings.PassingTestTimeout));
+                    Assert.Equal(43, buffer[0]);
+                }
+            }
+        }
+
+        [Fact]
         public async Task Send_0ByteSendTo_Success()
         {
             using (Socket server = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp))
