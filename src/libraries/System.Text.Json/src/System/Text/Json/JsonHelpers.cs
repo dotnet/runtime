@@ -336,11 +336,9 @@ namespace System.Text.Json
                 out ReadOnlySpan<byte> rightFractional,
                 out int rightExponent);
 
-            int nDigits;
             if (leftIsNegative != rightIsNegative ||
                 leftExponent != rightExponent ||
-                (nDigits = (leftIntegral.Length + leftFractional.Length)) !=
-                            rightIntegral.Length + rightFractional.Length)
+                leftIntegral.Length + leftFractional.Length != rightIntegral.Length + rightFractional.Length)
             {
                 return false;
             }
