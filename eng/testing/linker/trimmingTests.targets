@@ -47,7 +47,7 @@
       <TestConsoleApps Include="@(_AppSourceFiles->'%(ProjectFile)')">
         <ProjectCompileItems>%(FullPath)</ProjectCompileItems>
       </TestConsoleApps>
-      <TestConsoleApps AdditionalProperties="MSBuildEnableWorkloadResolver=$(MSBuildEnableWorkloadResolver)" Condition="'$(MSBuildEnableWorkloadResolver)' != ''" />
+      <TestConsoleApps AdditionalProperties="%(TestConsoleApps.AdditionalProperties);MSBuildEnableWorkloadResolver=$(MSBuildEnableWorkloadResolver)" Condition="'$(MSBuildEnableWorkloadResolver)' != ''" />
     </ItemGroup>
   </Target>
 
@@ -68,6 +68,16 @@
 
     <PropertyGroup>
       <_additionalProjectReferencesString>@(_additionalProjectReference, '%0a')</_additionalProjectReferencesString>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_testProjectReference Remove="@(_testProjectReference)" />
+      <_testProjectReference Include="%(TestConsoleApps.AdditionalProjectReferences)" />
+    </ItemGroup>
+
+    <PropertyGroup>
+      <_additionalProjectReferencesString>$(_additionalProjectReferencesString)
+        @(_testProjectReference->'&lt;ProjectReference Include=&quot;%(FullPath)&quot; SkipUseReferenceAssembly=&quot;true&quot; /&gt;', '%0a')</_additionalProjectReferencesString>
     </PropertyGroup>
 
     <ItemGroup>
@@ -143,8 +153,26 @@
           DependsOnTargets="GenerateProjects"
           Returns="@(TestConsoleApps)" />
 
-  <Target Name="PublishTrimmedProjects"
+  <Target Name="BuildTestProjectReferences"
           DependsOnTargets="GenerateProjects">
+
+    <ItemGroup>
+      <_testProjectToBuild Include="%(TestConsoleApps.AdditionalProjectReferences)" />
+    </ItemGroup>
+
+    <MSBuild Projects="@(_testProjectToBuild)"
+             Targets="Restore"
+             Condition="'@(_testProjectToBuild)' != '' and '$(SkipTrimmingProjectsRestore)' != 'true'"
+             Properties="Configuration=$(Configuration)" />
+
+    <MSBuild Projects="@(_testProjectToBuild)"
+             Targets="Build"
+             Condition="'@(_testProjectToBuild)' != ''"
+             Properties="Configuration=$(Configuration);BuildProjectReferences=false" />
+  </Target>
+
+  <Target Name="PublishTrimmedProjects"
+          DependsOnTargets="GenerateProjects;BuildTestProjectReferences">
 
     <MSBuild Projects="@(TestConsoleApps)"
              Targets="Restore"
