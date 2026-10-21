@@ -1413,6 +1413,36 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal("\"BITS01, BIT3\"", json2);
         }
 
+        [Theory]
+        [InlineData(EnumWithHighBits.None, "\"None\"")]
+        [InlineData(EnumWithHighBits.Low, "\"Low\"")]
+        [InlineData(EnumWithHighBits.High, "\"High\"")]
+        [InlineData(EnumWithHighBits.HighAndLow, "\"HighAndLow\"")]
+        [InlineData(EnumWithHighBits.High | EnumWithHighBits.Middle, "\"Middle, High\"")]
+        [InlineData(EnumWithHighBits.All, "\"All\"")]
+        public static void EnumWithHighBits_Roundtrips(EnumWithHighBits value, string expectedJson)
+        {
+            JsonSerializerOptions options = new() { Converters = { new JsonStringEnumConverter<EnumWithHighBits>() } };
+
+            string json = JsonSerializer.Serialize(value, options);
+
+            Assert.Equal(expectedJson, json);
+            Assert.Equal(value, JsonSerializer.Deserialize<EnumWithHighBits>(json, options));
+        }
+
+        [Flags]
+        public enum EnumWithHighBits : ulong
+        {
+            None = 0,
+            Low = 1,
+            Middle = 2,
+            Pair = Low | Middle,
+            High = 1UL << 63,
+            HighAndLow = High | Low,
+            HighAndPair = High | Pair,
+            All = ulong.MaxValue,
+        }
+
         [Flags]
         public enum EnumWithOverlappingBits
         {
