@@ -50,8 +50,6 @@
                              TargetingPackName="$(LocalFrameworkOverrideName).Ref"
                              TargetingPackVersion="$(ProductVersion)"
                              Condition="'$(UseLocalTargetingRuntimePack)' == 'true' and '@(KnownFrameworkReference->AnyHaveMetadataValue('TargetFramework', '$(NetCoreAppCurrent)'))' != 'true'" />
-    <!-- OpenHarmony is CoreCLR+NativeAOT only, so openharmony RIDs must not be listed on
-         the Mono-labelled runtime pack. -->
     <KnownRuntimePack Include="$(LocalFrameworkOverrideName)"
                       TargetFramework="$(NetCoreAppCurrent)"
                       RuntimeFrameworkName="$(LocalFrameworkOverrideName)"
