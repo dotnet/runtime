@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using ILVerify;
-using Internal.IL;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
@@ -61,7 +60,6 @@ namespace Internal.TypeVerifier
             }
             else
             {
-                CheckPrefixedTypeSpecIsGenericClass(baseType);
                 TypeDesc resolvedBaseType = _module.GetType(baseType);
 
                 if (resolvedBaseType.IsValueType ||
@@ -99,11 +97,6 @@ namespace Internal.TypeVerifier
         {
             TypeDefinition typeDefinition = _module.MetadataReader.GetTypeDefinition(_typeDefinitionHandle);
             EcmaType type = _module.GetType(_typeDefinitionHandle);
-
-            foreach (InterfaceImplementationHandle interfaceHandle in typeDefinition.GetInterfaceImplementations())
-            {
-                CheckPrefixedTypeSpecIsGenericClass(_module.MetadataReader.GetInterfaceImplementation(interfaceHandle).Interface);
-            }
 
             // Read the metadata bit directly to avoid resolving an invalid base type.
             if ((typeDefinition.Attributes & System.Reflection.TypeAttributes.Interface) != 0)
@@ -203,38 +196,6 @@ namespace Internal.TypeVerifier
 
             VerificationError(error, Format(body), Format(declaration));
             return false;
-        }
-
-        // As a base type or interface, the runtime skips custom modifiers and then requires an instantiated class
-        // (ClassLoader::LoadApproxTypeThrowing); ParseTypeSpec accepts more after leading custom modifiers or PINNED.
-        private void CheckPrefixedTypeSpecIsGenericClass(EntityHandle handle)
-        {
-            if (handle.Kind != HandleKind.TypeSpecification)
-            {
-                return;
-            }
-
-            MetadataReader reader = _module.MetadataReader;
-            BlobReader signature = reader.GetBlobReader(reader.GetTypeSpecification((TypeSpecificationHandle)handle).Signature);
-            SignatureTypeCode typeCode = signature.ReadSignatureTypeCode();
-            if (typeCode is not (SignatureTypeCode.RequiredModifier or SignatureTypeCode.OptionalModifier or SignatureTypeCode.Pinned))
-            {
-                return;
-            }
-
-            while (typeCode is SignatureTypeCode.RequiredModifier or SignatureTypeCode.OptionalModifier)
-            {
-                signature.ReadTypeHandle();
-                typeCode = signature.ReadSignatureTypeCode();
-            }
-
-            if (typeCode != SignatureTypeCode.GenericTypeInstance || signature.ReadByte() != (byte)SignatureTypeKind.Class)
-            {
-                throw new VerifierException(VerifierError.BadTypeSpec,
-                    "A base type or interface TypeSpec that starts with custom modifiers or PINNED " +
-                    "must be a generic class instantiation. " +
-                    $"([{_module}]0x{MetadataTokens.GetToken(handle):X8})");
-            }
         }
 
         private string Format(TypeDesc type)
