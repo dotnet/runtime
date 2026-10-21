@@ -671,7 +671,11 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 }
 
                 GenTree* fptr = impImportLdvirtftn(thisPtr, pResolvedToken, callInfo);
-                assert(fptr != nullptr);
+                if (fptr == nullptr)
+                {
+                    assert(compDonotInline());
+                    return TYP_UNDEF;
+                }
 
                 call->AsCall()
                     ->gtArgs.PushFront(this, NewCallArg::Primitive(thisPtrCopy).WellKnown(WellKnownArg::ThisPointer));
@@ -1822,12 +1826,12 @@ GenTree* Compiler::impThrowIfNull(GenTreeCall* call)
     // Case 1b: value-type (non-nullable) boxed via CORINFO_HELP_BOX helper.
     // In Tier0 (and other size-constrained modes) struct boxes are emitted as a
     // direct helper call rather than GT_BOX. The helper always returns non-null,
-    // so the ThrowIfNull is a no-op aside from the side effects of computing the
-    // helper's address argument and the valueName.
+    // so the ThrowIfNull is a no-op aside from argument evaluation and the null
+    // check performed when reading the boxed value.
     //
     //  ArgumentNullException_ThrowIfNull(CORINFO_HELP_BOX(clsHnd, addr), valueName)
     //    ->
-    //  NOP (with side-effects of addr and valueName preserved)
+    //  NOP (with argument side effects and the addr null check preserved)
     //
     if (value->IsHelperCall(CORINFO_HELP_BOX))
     {
@@ -1844,6 +1848,11 @@ GenTree* Compiler::impThrowIfNull(GenTreeCall* call)
         unsigned boxedAddrTmp    = lvaGrabTemp(true DEBUGARG("boxedAddr spilled"));
         unsigned boxedArgNameTmp = lvaGrabTemp(true DEBUGARG("boxedArg spilled"));
         impStoreToTemp(boxedAddrTmp, boxHelperAddrArg, CHECK_SPILL_ALL);
+        if (fgAddrCouldBeNull(boxHelperAddrArg))
+        {
+            GenTree* addr = gtNewLclvNode(boxedAddrTmp, boxHelperAddrArg->TypeGet());
+            impAppendTree(gtNewNullCheck(addr), CHECK_SPILL_ALL, impCurStmtDI);
+        }
         impStoreToTemp(boxedArgNameTmp, valueName, CHECK_SPILL_ALL);
         return gtNewNothingNode();
     }
@@ -4861,7 +4870,9 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
             case NI_System_Half_ReciprocalSqrtEstimate:
             {
 #if defined(TARGET_XARCH)
-                if (compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
+                // An estimate's result can depend on AVX10v1 support, so preserve its negative
+                // ISA dependency in ReadyToRun. Sqrt is precise and needs no such dependency.
+                if (compOpportunisticallyDependsOn(InstructionSet_AVX10v1, ni != NI_System_Half_Sqrt))
                 {
                     NamedIntrinsic opId = lookupHalfIntrinsic(ni);
                     assert(opId != NI_Illegal);
@@ -4876,7 +4887,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                     retNode      = impSimdToScalarHalf(retNode, sig->retTypeSigClass);
                 }
 #elif defined(TARGET_ARM64)
-                if (compOpportunisticallyDependsOn(InstructionSet_Fp16))
+                if (compOpportunisticallyDependsOn(InstructionSet_Fp16, ni != NI_System_Half_Sqrt))
                 {
                     NamedIntrinsic opId = lookupHalfIntrinsic(ni);
                     assert(opId != NI_Illegal);
@@ -6691,7 +6702,7 @@ GenTree* Compiler::impRotateHelper(var_types baseType, genTreeOps rotateOper)
             uint32_t cns1 = static_cast<uint32_t>(op1->AsIntConCommon()->IconValue());
             uint32_t res =
                 (rotateOper == GT_ROL) ? BitOperations::RotateLeft(cns1, cns2) : BitOperations::RotateRight(cns1, cns2);
-            return gtNewIconNode(res, baseType);
+            return gtNewIconNode(static_cast<int32_t>(res), baseType);
         }
     }
 
@@ -7171,7 +7182,7 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
 
                 GenTree* fallback =
                     new (this, GT_INTRINSIC) GenTreeIntrinsic(retType, op1Dup, intrinsic, method R2RARG(*entryPoint));
-                fallback->gtFlags |= GTF_CALL;
+                fallback->gtFlags |= GTF_CALL | GTF_EXCEPT;
                 GenTree*      cond  = gtNewOperNode(GT_LT, TYP_INT, op1, gtNewZeroConNode(isLong ? TYP_LONG : TYP_INT));
                 GenTreeColon* colon = gtNewColonNode(retType, fallback, result);
                 GenTreeQmark* qmark = gtNewQmarkNode(retType, cond, colon);
@@ -7180,7 +7191,7 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
                 qmark->SetThenNodeLikelihood(0);
 
                 unsigned tmp = lvaGrabTemp(true DEBUGARG("Grabbing temp for Log2 Qmark"));
-                impStoreToTemp(tmp, qmark, CHECK_SPILL_NONE);
+                impStoreToTemp(tmp, qmark, CHECK_SPILL_ALL);
                 result = gtNewLclvNode(tmp, retType);
             }
 #endif // FEATURE_HW_INTRINSICS
@@ -13691,7 +13702,7 @@ GenTree* Compiler::impArrayAccessIntrinsic(
     if (intrinsicName == NI_Array_Set)
     {
         // The array checks in the store's address must happen after the value is evaluated.
-        if ((impStackTop().val->gtFlags & GTF_SIDE_EFFECT) != 0)
+        if ((impStackTop().val->gtFlags & GTF_OBS_EFFECT) != 0)
         {
             impSpillSideEffects(false, CHECK_SPILL_ALL DEBUGARG("Strict ordering of exceptions for MD Array store"));
         }

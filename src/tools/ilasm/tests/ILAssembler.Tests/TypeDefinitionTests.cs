@@ -184,7 +184,7 @@ namespace ILAssembler.Tests
         [Fact]
         public void ExtendedLayout_SetsExtendedLayoutFlag()
         {
-            // Test the 'extended' class attribute (exercises MetadataExtensions.ExtendedLayout)
+            // Test the 'extended' class attribute.
             string source = """
                 .assembly extern mscorlib { }
                 .assembly test { }
