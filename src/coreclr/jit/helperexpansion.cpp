@@ -2105,10 +2105,10 @@ static int PickCandidatesForTypeCheck(Compiler*              comp,
     //  2) If VM can tell us the exact class for this class/interface via getExactClasses - use it
     //     e.g. NativeAOT can promise us that for e.g. "foo is IMyInterface" foo can only ever be
     //     MyImpl and no other implementation of IMyInterface can be loaded dynamically.
-    //  3) If we have PGO data and there is a dominating candidate - use it.
+    //  3) If we have PGO data and there are likely candidates - use them.
     //  4) Try to speculate and make optimistic guesses
     //
-    // NOTE: only 2) supports multiple candidates at the moment.
+    // NOTE: 2) and 3) support multiple candidates.
     //
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -2154,8 +2154,7 @@ static int PickCandidatesForTypeCheck(Compiler*              comp,
     //    Just make sure the class is truly exact.
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    // Let's re-use GDV's threshold on how many guesses we can make (can be 3 by default).
-    const int maxTypeChecks = min(comp->getGDVMaxTypeChecks(), MAX_GDV_TYPE_CHECKS);
+    const int maxTypeChecks = comp->getCastMaxTypeChecks();
 
     CORINFO_CLASS_HANDLE exactClasses[MAX_GDV_TYPE_CHECKS] = {};
     const int numExactClasses = comp->info.compCompHnd->getExactClasses(castToCls, maxTypeChecks, exactClasses);
@@ -2659,8 +2658,9 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
 
         // Fix likelihood of block's outgoing edges.
         //
-        weight_t likelihood    = (weight_t)likelihoods[candidateId] / 100;
-        weight_t relLikelihood = likelihood / (1.0 - sumOfPreviousLikelihood);
+        weight_t likelihood = (weight_t)likelihoods[candidateId] / 100;
+        // Rounding can make the final conditional probability slightly greater than one.
+        weight_t relLikelihood = min(1.0, likelihood / (1.0 - sumOfPreviousLikelihood));
 
         JITDUMP("Candidate %d: likelihood " FMT_WT " relative likelihood " FMT_WT "\n", candidateId, likelihood,
                 relLikelihood);
