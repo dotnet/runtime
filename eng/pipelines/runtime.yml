@@ -121,6 +121,10 @@ extends:
             nameSuffix: AllSubsets_OHOS
             buildArgs: -s clr.runtime+libs.native -c Release -cmakeargs "$(OHOS_CMAKE_ARGS)"
             timeoutInMinutes: 180
+            condition: >-
+              or(
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
+                eq(variables['isRollingBuild'], true))
             preBuildSteps:
             - script: eng/pipelines/ohos/setup-ohos-assets.sh
               displayName: Prepare the OpenHarmony SDK and assets

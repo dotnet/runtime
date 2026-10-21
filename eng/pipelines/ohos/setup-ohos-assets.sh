@@ -9,7 +9,9 @@ set -euo pipefail
 OHOS_SDK_URL="${OHOS_SDK_URL:-https://repo.huaweicloud.com/openharmony/os/6.0-Release/ohos-sdk-windows_linux-public.tar.gz}"
 OHOS_SDK_SHA="${OHOS_SDK_SHA:-a315834ac133625efc912bd078f3e2b2550868d04aef1b5aa4f9679c8b3c9d8e}"
 OPENSSL_VERSION="${OPENSSL_VERSION:-3.3.1}"
+OPENSSL_SHA256="${OPENSSL_SHA256:-777cd596284c883375a2a7a11bf5d2786fc5413255efab20c50d6ffe6d020b7e}"
 ICU_VERSION="${ICU_VERSION:-75.1}"
+ICU_SHA256="${ICU_SHA256:-cb968df3e4d2e87e8b11c49a5d01c787bd13b9545280fc6642f826527618caef}"
 
 ICU_TAG="${ICU_VERSION/./-}"
 ICU_FILE="${ICU_VERSION/./_}"
@@ -56,6 +58,7 @@ mk objdump "$NDK_BIN/llvm-objdump"
 echo "== OpenSSL $OPENSSL_VERSION =="
 curl -fsSL "https://github.com/openssl/openssl/releases/download/openssl-$OPENSSL_VERSION/openssl-$OPENSSL_VERSION.tar.gz" \
     -o "$WORK/openssl.tar.gz"
+echo "$OPENSSL_SHA256  $WORK/openssl.tar.gz" | sha256sum -c -
 tar -xzf "$WORK/openssl.tar.gz" -C "$WORK"
 cd "$WORK/openssl-$OPENSSL_VERSION"
 ./Configure linux-aarch64 \
@@ -68,6 +71,7 @@ make install_sw
 echo "== ICU $ICU_VERSION =="
 curl -fsSL "https://github.com/unicode-org/icu/releases/download/release-$ICU_TAG/icu4c-$ICU_FILE-src.tgz" \
     -o "$WORK/icu.tar.gz"
+echo "$ICU_SHA256  $WORK/icu.tar.gz" | sha256sum -c -
 tar -xzf "$WORK/icu.tar.gz" -C "$WORK"
 mkdir -p "$WORK/icu-host" "$WORK/icu-target"
 
