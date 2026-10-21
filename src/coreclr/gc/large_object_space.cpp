@@ -326,12 +326,19 @@ size_t LxrLargeObjectSpace::GetRequiredGrowthBytes(size_t objectBytes) const
 
 LxrLargeObjectResult LxrLargeObjectSpace::GetMatureCommittedBytes(size_t* bytes) const
 {
-    if (bytes == nullptr)
+    size_t slack;
+    return GetMatureStatistics(bytes, &slack);
+}
+
+LxrLargeObjectResult LxrLargeObjectSpace::GetMatureStatistics(size_t* bytes, size_t* slackBytes) const
+{
+    if (bytes == nullptr || slackBytes == nullptr)
     {
         return LxrLargeObjectResult::InvalidArgument;
     }
     LockScope lock(this);
     *bytes = 0;
+    *slackBytes = 0;
     for (Span* span = m_active_spans; span != nullptr; span = span->next)
     {
         uintptr_t state;
@@ -342,7 +349,9 @@ LxrLargeObjectResult LxrLargeObjectSpace::GetMatureCommittedBytes(size_t* bytes)
         }
         if ((state & NurseryBit) == 0)
         {
-            *bytes += span->page_count * PageBytes;
+            size_t pageBytes = span->page_count * PageBytes;
+            *bytes += pageBytes;
+            *slackBytes += pageBytes - span->object_bytes;
         }
     }
     return LxrLargeObjectResult::Success;

@@ -3801,33 +3801,28 @@ namespace
             "FindNextObject follows the counted objects in address order");
         if (walk->checkStatistics)
         {
-            size_t heap = 0;
-            size_t fragmentation = 0;
-            size_t block = SIZE_MAX;
-            size_t end = 0;
-            size_t used = 0;
-            for (Object* object : expected)
+            // The statistics come from block counters. A walk over the block states must give the same figures.
+            size_t nonFree = 0;
+            size_t freeLines = 0;
+            size_t blocks = engine->GetImmixCapacityBytes() / ImmixBlockGeometry::BlockBytes;
+            bool walked = true;
+            for (size_t block = 0; block < blocks; block++)
             {
-                size_t offset = StartOf(object) - engine->GetReservationStart();
-                size_t index = offset / ImmixBlockGeometry::BlockBytes;
-                if (index != block)
-                {
-                    heap += end;
-                    fragmentation += end - used;
-                    block = index;
-                    end = used = 0;
-                }
-                size_t limit = offset % ImmixBlockGeometry::BlockBytes + object->GetSize();
-                end = end > limit ? end : limit;
-                used += object->GetSize();
+                ImmixBlockState state = ImmixBlockState::Unallocated;
+                uint8_t unavailable = 0;
+                bool nursery = false;
+                walked = walked && engine->GetBlockStateForTest(block, &state, &unavailable, &nursery) ==
+                    LxrRcResult::Success;
+                nonFree += state != ImmixBlockState::Unallocated ? 1 : 0;
+                freeLines += state == ImmixBlockState::Reusable ? ImmixBlockGeometry::LinesPerBlock - unavailable : 0;
             }
-            heap += end;
-            fragmentation += end - used;
             size_t actualHeap = 0;
             size_t actualFragmentation = 0;
-            Check(engine->GetHeapStatistics(&actualHeap, &actualFragmentation) == LxrRcResult::Success &&
-                    actualHeap == heap && actualFragmentation == fragmentation,
-                "heap statistics equal the statistics computed from the oracle sizes");
+            Check(walked && engine->GetHeapStatistics(&actualHeap, &actualFragmentation) == LxrRcResult::Success &&
+                    actualHeap == nonFree * ImmixBlockGeometry::BlockBytes &&
+                    actualFragmentation == freeLines * ImmixBlockGeometry::LineBytes &&
+                    engine->BlockCountersMatchWalk(),
+                "heap statistics equal the figures that a walk over the block states gives");
         }
         walk->rounds++;
         return CaptureMoving(engine, walk->roots);
@@ -4159,10 +4154,356 @@ namespace
         ValidateValidObjectBookkeeping(true);
         ValidateCycleSweepGate();
     }
+
+    ImmixBlockState BlockStateOf(LxrReferenceCounting& engine, size_t block, uint8_t* unavailable = nullptr)
+    {
+        ImmixBlockState state = ImmixBlockState::Unallocated;
+        uint8_t lines = 0;
+        bool nursery = false;
+        Check(engine.GetBlockStateForTest(block, &state, &lines, &nursery) == LxrRcResult::Success,
+            "a block state is readable");
+        if (unavailable != nullptr)
+        {
+            *unavailable = lines;
+        }
+        return state;
+    }
+
+    size_t BlockOfObject(LxrReferenceCounting& engine, Object* object)
+    {
+        return (StartOf(object) - engine.GetReservationStart()) / ImmixBlockGeometry::BlockBytes;
+    }
+
+    bool WaitForSweepHold(LxrReferenceCounting& engine)
+    {
+        for (int attempt = 0; attempt < 5000 && !engine.IsSweepHeldForTest(); attempt++)
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        }
+        return Check(engine.IsSweepHeldForTest(), "the lazy sweep reaches its first flagged block");
+    }
+
+    // Three nursery blocks of small objects. The first object (block 0) and the last one (block 2) are roots, so the
+    // pause promotes those two blocks in place and no object in the middle block survives.
+    struct ThreeBlocks
+    {
+        std::vector<Object*> objects;
+        std::vector<Object*> roots;
+        size_t first = 0;
+        size_t middle = 0;
+        size_t last = 0;
+    };
+
+    bool FillThreeBlocks(LxrReferenceCounting& engine, LxrRcMutator* mutator, Type& leaf, ThreeBlocks* blocks)
+    {
+        for (size_t index = 0; index < 3500; index++)
+        {
+            Object* object = Allocate(engine, mutator, leaf);
+            if (object == nullptr)
+            {
+                return false;
+            }
+            blocks->objects.push_back(object);
+        }
+        blocks->roots = {blocks->objects.front(), blocks->objects.back()};
+        blocks->first = BlockOfObject(engine, blocks->objects.front());
+        blocks->middle = BlockOfObject(engine, blocks->objects[1750]);
+        blocks->last = BlockOfObject(engine, blocks->objects.back());
+        return Check(blocks->first != blocks->middle && blocks->middle != blocks->last &&
+                blocks->first != blocks->last && engine.GetCleanNurseryBlocks() == 3,
+            "the nursery fills three different blocks");
+    }
+
+    // The pause looks at the allocated blocks only. A nursery block without a promoted object goes back to the free
+    // pool in the pause. A block with a promoted object keeps its state, is not given to an allocator before the
+    // lazy sweep has counted its lines, and is Reusable after that sweep.
+    void ValidatePauseReleaseAndLazyReuse()
+    {
+        Type leaf(24, 0);
+        LxrReferenceCounting engine;
+        int identity;
+        LxrRcMutator* mutator;
+        if (!Initialize(engine, 8, &mutator, &identity))
+        {
+            return;
+        }
+        ThreeBlocks blocks;
+        if (!FillThreeBlocks(engine, mutator, leaf, &blocks))
+        {
+            return;
+        }
+        engine.HoldSweepForTest(true);
+        Roots roots{&blocks.roots};
+        if (!Check(engine.Collect(Capture, &roots, Timeout) == LxrRcResult::Success,
+                "the pause completes while the lazy sweep is held"))
+        {
+            engine.HoldSweepForTest(false);
+            return;
+        }
+        bool held = WaitForSweepHold(engine);
+        Check(engine.GetFreshBlocksReleasedInPauseForTest() == 1 && engine.GetMetrics().blocksReleased == 1,
+            "the pause released the nursery block that no object promoted, and only that block");
+        uint8_t lines = 0;
+        Check(BlockStateOf(engine, blocks.middle) == ImmixBlockState::Unallocated && engine.GetNonFreeBlocks() == 2,
+            "the released block is free and the counter holds the two promoted blocks");
+        Check(BlockStateOf(engine, blocks.first) == ImmixBlockState::Unmarked &&
+                BlockStateOf(engine, blocks.last) == ImmixBlockState::Unmarked,
+            "a block with a promoted object keeps its state; the pause does not count its lines");
+        // Allocation while the sweep is held must not use the unprocessed blocks.
+        bool unprocessedUsed = false;
+        for (size_t index = 0; index < 2800; index++)
+        {
+            Object* object = Allocate(engine, mutator, leaf);
+            if (object == nullptr)
+            {
+                break;
+            }
+            size_t block = BlockOfObject(engine, object);
+            unprocessedUsed = unprocessedUsed || block == blocks.first || block == blocks.last;
+        }
+        Check(!unprocessedUsed && BlockStateOf(engine, blocks.first) == ImmixBlockState::Unmarked &&
+                BlockStateOf(engine, blocks.last) == ImmixBlockState::Unmarked,
+            "no block is handed out before the lazy sweep has looked at it");
+        engine.HoldSweepForTest(false);
+        Check(held && engine.Drain(Timeout) == LxrRcResult::Success, "the lazy sweep finishes");
+        Check(BlockStateOf(engine, blocks.first, &lines) == ImmixBlockState::Reusable && lines >= 1 && lines <= 4 &&
+                BlockStateOf(engine, blocks.last, &lines) == ImmixBlockState::Reusable && lines >= 1 && lines <= 4,
+            "the lazy sweep makes a block with a promoted object Reusable with its free-line count");
+        size_t nonFree;
+        size_t freeLines;
+        Check(engine.BlockCountersMatchWalk(&nonFree, &freeLines) && nonFree == 2 && freeLines >= 2 * 124,
+            "the block counters equal a walk after the lazy sweep");
+        bool reused = false;
+        for (size_t index = 0; index < 3000; index++)
+        {
+            Object* object = Allocate(engine, mutator, leaf);
+            if (object == nullptr)
+            {
+                break;
+            }
+            size_t block = BlockOfObject(engine, object);
+            reused = reused || block == blocks.first || block == blocks.last;
+        }
+        Check(reused, "a block that the lazy sweep made Reusable is used for allocation in the same epoch");
+        Check(Epoch(engine, blocks.roots) && engine.BlockCountersMatchWalk(),
+            "the next pause keeps the counters and the promoted blocks");
+        Check(engine.DetachMutator(mutator) == LxrRcResult::Success, "S4 owner detaches");
+    }
+
+    struct PauseObservation
+    {
+        const std::vector<Object*>* roots;
+        size_t block;
+        bool swept;
+        bool held;
+        bool counters;
+    };
+
+    LxrRcResult CaptureObserving(LxrReferenceCounting* engine, void* context)
+    {
+        PauseObservation* observation = static_cast<PauseObservation*>(context);
+        observation->held = engine->IsSweepHeldForTest();
+        observation->swept = BlockStateOf(*engine, observation->block) == ImmixBlockState::Reusable;
+        observation->counters = engine->BlockCountersMatchWalk();
+        Roots roots{observation->roots};
+        return Capture(engine, &roots);
+    }
+
+    // A pause that is requested while the lazy sweep runs must wait for it. The sweep changes block states, and the
+    // pause flips the epoch, so the two must not overlap (the flip assertion of the Debug build checks this too).
+    void ValidatePauseWaitsForLazySweep()
+    {
+        Type leaf(24, 0);
+        LxrReferenceCounting engine;
+        int identity;
+        LxrRcMutator* mutator;
+        if (!Initialize(engine, 8, &mutator, &identity))
+        {
+            return;
+        }
+        ThreeBlocks blocks;
+        if (!FillThreeBlocks(engine, mutator, leaf, &blocks))
+        {
+            return;
+        }
+        engine.HoldSweepForTest(true);
+        Roots roots{&blocks.roots};
+        if (!Check(engine.Collect(Capture, &roots, Timeout) == LxrRcResult::Success, "the first pause completes") ||
+            !WaitForSweepHold(engine))
+        {
+            engine.HoldSweepForTest(false);
+            return;
+        }
+        uint64_t before = engine.GetMetrics().epochs;
+        PauseObservation observation{&blocks.roots, blocks.first, false, true, false};
+        std::atomic<bool> done{false};
+        LxrRcResult second = LxrRcResult::InvalidPhase;
+        std::thread requester([&]()
+        {
+            second = engine.Collect(CaptureObserving, &observation, Timeout);
+            done.store(true);
+        });
+        std::this_thread::sleep_for(std::chrono::milliseconds(300));
+        Check(!done.load() && engine.GetPhase() == LxrRcPhase::Mutator && engine.GetMetrics().epochs == before,
+            "a pause that is requested while the lazy sweep runs does not start");
+        engine.HoldSweepForTest(false);
+        requester.join();
+        Check(second == LxrRcResult::Success && engine.GetMetrics().epochs == before + 1,
+            "the pause runs after the lazy sweep has finished");
+        Check(!observation.held && observation.swept && observation.counters,
+            "when the pause started, the sweep had finished, the promoted block was Reusable and the counters held");
+        Check(engine.Drain(Timeout) == LxrRcResult::Success && engine.BlockCountersMatchWalk(),
+            "the counters hold after the second pause and its lazy sweep");
+        Check(engine.DetachMutator(mutator) == LxrRcResult::Success, "S4 waiting owner detaches");
+    }
+
+    struct CounterCapture
+    {
+        LxrReferenceCounting* engine;
+        MovingRoots* roots;
+        int rounds = 0;
+        int mismatches = 0;
+        int pageMismatches = 0;
+    };
+
+    LxrRcResult CaptureCounters(LxrReferenceCounting* engine, void* context)
+    {
+        CounterCapture* capture = static_cast<CounterCapture*>(context);
+        capture->rounds++;
+        capture->mismatches += engine->BlockCountersMatchWalk() ? 0 : 1;
+        return CaptureMoving(engine, capture->roots);
+    }
+
+    // The block counters (blocks in use, free lines of Reusable blocks) must equal a walk over all blocks after any
+    // sequence of allocation, death, promotion, copy and release. Kind 0 does not move objects, kind 1 copies the
+    // nursery, kind 2 also evacuates mature blocks.
+    void ValidateBlockCounters(int kind)
+    {
+        LxrReferenceCounting engine;
+        LxrRcMutator* mutator = nullptr;
+        MovingRoots roots;
+        int identity;
+        LxrRcConfiguration configuration{
+            24 * ImmixBlockGeometry::BlockBytes, 4 * LxrLargeObjectSpace::MinimumObjectBytes,
+            4, 4096, 4, 8,
+        };
+        configuration.evacuateNursery = kind == 1;
+        configuration.evacuateMature = kind == 2;
+        LxrPauseRuntimeAdapter adapter{Suspend, Resume, nullptr, false};
+        LxrRcObjectModel model{};
+        model.context = &roots;
+        if (kind != 0)
+        {
+            model.finishRelocation = RelocateMoving;
+        }
+        if (!Check(engine.Initialize(configuration, adapter, &model) == LxrRcResult::Success &&
+                engine.AttachMutator(&identity, &mutator) == LxrRcResult::Success,
+                "block counter engine initializes"))
+        {
+            return;
+        }
+        std::vector<Type*> types;
+        for (size_t index = 0; index < 48; index++)
+        {
+            types.push_back(new Type(static_cast<uint32_t>(24 + 24 * index), 0));
+        }
+        Type large(static_cast<uint32_t>(LxrLargeObjectSpace::MinimumObjectBytes + 64), 0);
+        uint64_t state = 0xD1B54A32D192ED03ull + static_cast<uint64_t>(kind);
+        auto next = [&state]()
+        {
+            state ^= state << 13;
+            state ^= state >> 7;
+            state ^= state << 17;
+            return state;
+        };
+        CounterCapture capture{&engine, &roots};
+        size_t pausesChecked = 0;
+        for (int round = 0; round < 45; round++)
+        {
+            size_t burst = 60 + next() % 200;
+            for (size_t index = 0; index < burst; index++)
+            {
+                Object* object = TryAllocateQuietly(engine, mutator, *types[next() % types.size()]);
+                if (object == nullptr)
+                {
+                    break;
+                }
+                if (next() % 100 < 15)
+                {
+                    roots.objects.push_back(object);
+                }
+            }
+            if (next() % 6 == 0)
+            {
+                Object* object = TryAllocateQuietly(engine, mutator, large);
+                if (object != nullptr && next() % 2 == 0)
+                {
+                    roots.objects.push_back(object);
+                }
+            }
+            for (size_t index = 0; index < roots.objects.size();)
+            {
+                if (next() % 100 < 25)
+                {
+                    roots.objects.erase(roots.objects.begin() + static_cast<std::ptrdiff_t>(index));
+                }
+                else
+                {
+                    index++;
+                }
+            }
+            while (roots.objects.size() > 250)
+            {
+                roots.objects.erase(roots.objects.begin());
+            }
+            bool full = kind == 2 ? round % 3 == 2 : round % 9 == 8;
+            LxrRcResult result = full ? engine.CollectFull(CaptureCounters, &capture, Timeout)
+                : engine.Collect(CaptureCounters, &capture, Timeout);
+            if (!Check(result == LxrRcResult::Success && engine.Drain(Timeout) == LxrRcResult::Success,
+                    "random pause of the block counter run completes"))
+            {
+                break;
+            }
+            size_t pages = 0;
+            size_t heap = 0;
+            size_t fragmentation = 0;
+            size_t nonFree = 0;
+            Check(engine.BlockCountersMatchWalk(&nonFree, nullptr) && engine.GetMaturePages(&pages) ==
+                    LxrRcResult::Success && engine.GetHeapStatistics(&heap, &fragmentation) == LxrRcResult::Success &&
+                    pages * LxrLargeObjectSpace::PageBytes == heap &&
+                    heap >= nonFree * ImmixBlockGeometry::BlockBytes,
+                "after the lazy sweep the counters equal a walk, and the page count equals the heap size");
+            pausesChecked++;
+        }
+        Check(capture.rounds == static_cast<int>(pausesChecked) && capture.mismatches == 0,
+            "at the start of every pause the block counters equal a walk over all blocks");
+        Check(engine.DetachMutator(mutator) == LxrRcResult::Success, "block counter owner detaches");
+        for (Type* type : types)
+        {
+            delete type;
+        }
+    }
+
+    void ValidateS4Sweep()
+    {
+        ValidatePauseReleaseAndLazyReuse();
+        ValidatePauseWaitsForLazySweep();
+        for (int kind = 0; kind < 3; kind++)
+        {
+            ValidateBlockCounters(kind);
+        }
+    }
 }
 
 int main(int argc, char** argv)
 {
+    if (argc == 2 && strcmp(argv[1], "--s4-sweep") == 0)
+    {
+        ValidateS4Sweep();
+        std::printf("%s: %d/%d S4 sweep checks\n",
+            Failures == 0 ? "PASS" : "FAIL", Checks - Failures, Checks);
+        return Failures == 0 ? 0 : 1;
+    }
     if (argc == 2 && strcmp(argv[1], "--s3-bookkeeping") == 0)
     {
         ValidateS3Bookkeeping();

@@ -324,6 +324,8 @@ SideMetadataResult ImmixBlockManager::Initialize(SideMetadataManager* metadata)
     m_global_phase_epoch.store(InitialPhaseEpoch, std::memory_order_seq_cst);
     m_active_operations.store(0, std::memory_order_seq_cst);
     m_phase_transition.store(false, std::memory_order_seq_cst);
+    m_non_free_blocks.store(0, std::memory_order_relaxed);
+    m_reusable_free_lines.store(0, std::memory_order_relaxed);
     return SideMetadataResult::Success;
 }
 
@@ -338,6 +340,8 @@ void ImmixBlockManager::Shutdown()
     m_global_phase_epoch.store(InitialPhaseEpoch, std::memory_order_seq_cst);
     m_active_operations.store(0, std::memory_order_seq_cst);
     m_phase_transition.store(false, std::memory_order_seq_cst);
+    m_non_free_blocks.store(0, std::memory_order_relaxed);
+    m_reusable_free_lines.store(0, std::memory_order_relaxed);
 }
 
 SideMetadataResult ImmixBlockManager::RegisterBlockRange(uintptr_t start, size_t size)
@@ -668,6 +672,10 @@ SideMetadataResult ImmixBlockManager::TryAcquire(
     {
         uint8_t rawState = EncodeState(ImmixBlockState::Unmarked, 0);
         result = StoreByte(LxrSideMetadataKind::BlockMark, block, rawState);
+        if (result == SideMetadataResult::Success)
+        {
+            NoteRawStateChange(EncodeState(state, unavailableLines), rawState);
+        }
     }
     if (result == SideMetadataResult::Success && fresh)
     {
@@ -786,6 +794,10 @@ SideMetadataResult ImmixBlockManager::TryRelease(
     if (result == SideMetadataResult::Success)
     {
         result = StoreByte(LxrSideMetadataKind::BlockMark, block, RawUnallocated);
+        if (result == SideMetadataResult::Success)
+        {
+            NoteRawStateChange(EncodeState(state, unavailableLines), RawUnallocated);
+        }
     }
     if (result == SideMetadataResult::Success)
     {
@@ -808,6 +820,91 @@ SideMetadataResult ImmixBlockManager::TryRelease(
     if (result == SideMetadataResult::Success)
     {
         *status = ImmixBlockOperationStatus::Updated;
+    }
+    return result;
+}
+
+SideMetadataResult ImmixBlockManager::TryReleaseNursery(
+    uintptr_t block,
+    ImmixBlockOperationStatus* status)
+{
+    if (status == nullptr)
+    {
+        return SideMetadataResult::InvalidArgument;
+    }
+    *status = ImmixBlockOperationStatus::Contended;
+    BlockOperationScope operation(this);
+    if ((GetGlobalPhaseEpoch() & 1) != 0)
+    {
+        *status = ImmixBlockOperationStatus::InvalidTransition;
+        return SideMetadataResult::Success;
+    }
+    bool acquired;
+    SideMetadataResult result = TryLock(block, &acquired);
+    if (result != SideMetadataResult::Success || !acquired)
+    {
+        return result;
+    }
+    uintptr_t owner = NoOwner;
+    ImmixBlockState state = ImmixBlockState::Unallocated;
+    uint8_t unavailable = 0;
+    bool nurseryOrReusing = false;
+    result = LoadOwner(block, &owner);
+    if (result == SideMetadataResult::Success)
+    {
+        result = GetState(block, &state, &unavailable);
+    }
+    if (result == SideMetadataResult::Success)
+    {
+        result = IsNurseryOrReusing(block, &nurseryOrReusing);
+    }
+    if (result != SideMetadataResult::Success)
+    {
+        Unlock(block);
+        return result;
+    }
+    if (owner != NoOwner || state != ImmixBlockState::Unallocated || !nurseryOrReusing)
+    {
+        *status = ImmixBlockOperationStatus::Unchanged;
+        Unlock(block);
+        return SideMetadataResult::Success;
+    }
+#ifdef _DEBUG
+    // A young object gets its first count in the pause, and the same step makes its block non-Unallocated. A block
+    // that is still Unallocated therefore has no count anywhere.
+    if (m_reference_count.IsValid())
+    {
+        _ASSERTE(m_reference_count.IsRangeZero(block, ImmixBlockGeometry::BlockBytes, MetadataOrder));
+    }
+#endif // _DEBUG
+    const LxrSideMetadataKind reset[] = {
+        LxrSideMetadataKind::ValidObject,
+        LxrSideMetadataKind::FieldUnlogged,
+        LxrSideMetadataKind::ReferenceCountStraddle,
+    };
+    for (LxrSideMetadataKind kind : reset)
+    {
+        if (result == SideMetadataResult::Success)
+        {
+            result = m_metadata->ResetRangeQuiescent(kind, block, ImmixBlockGeometry::BlockBytes, 0);
+        }
+    }
+    if (result == SideMetadataResult::Success)
+    {
+        result = StoreByte(LxrSideMetadataKind::NurseryPromotion, block, 0);
+    }
+    if (result == SideMetadataResult::Success)
+    {
+        result = StoreByte(LxrSideMetadataKind::BlockDefrag, block, 0);
+    }
+    SideMetadataResult unlocked = Unlock(block);
+    if (result == SideMetadataResult::Success)
+    {
+        result = unlocked;
+        if (result == SideMetadataResult::Success)
+        {
+            *status = ImmixBlockOperationStatus::Updated;
+        }
     }
     return result;
 }
@@ -895,6 +992,10 @@ SideMetadataResult ImmixBlockManager::TryReleaseIfRcDead(
     if (result == SideMetadataResult::Success)
     {
         result = StoreByte(LxrSideMetadataKind::BlockMark, block, RawUnallocated);
+        if (result == SideMetadataResult::Success)
+        {
+            NoteRawStateChange(EncodeState(state, unavailable), RawUnallocated);
+        }
     }
     if (result == SideMetadataResult::Success)
     {
@@ -914,6 +1015,68 @@ SideMetadataResult ImmixBlockManager::TryReleaseIfRcDead(
         }
     }
     return result;
+}
+
+SideMetadataResult ImmixBlockManager::TrySetReusableLazily(
+    uintptr_t block,
+    const LxrBlockReleaseGuard* guard,
+    uint8_t unavailableLines,
+    ImmixBlockOperationStatus* status)
+{
+    if (status == nullptr || guard == nullptr || !guard->IsValid() || unavailableLines == 0 ||
+        unavailableLines >= ImmixBlockGeometry::LinesPerBlock)
+    {
+        return SideMetadataResult::InvalidArgument;
+    }
+    *status = ImmixBlockOperationStatus::Contended;
+    BlockOperationScope operation(this);
+    if ((GetGlobalPhaseEpoch() & 1) == 0)
+    {
+        *status = ImmixBlockOperationStatus::InvalidTransition;
+        return SideMetadataResult::Success;
+    }
+    bool acquired;
+    SideMetadataResult result = TryLock(block, &acquired);
+    if (result != SideMetadataResult::Success || !acquired)
+    {
+        return result;
+    }
+    uintptr_t owner = NoOwner;
+    ImmixBlockState state = ImmixBlockState::Unallocated;
+    uint8_t unavailable = 0;
+    bool nurseryOrReusing = false;
+    result = LoadOwner(block, &owner);
+    if (result == SideMetadataResult::Success)
+    {
+        result = GetState(block, &state, &unavailable);
+    }
+    if (result == SideMetadataResult::Success)
+    {
+        result = IsNurseryOrReusing(block, &nurseryOrReusing);
+    }
+    if (result == SideMetadataResult::Success)
+    {
+        if (state == ImmixBlockState::Unallocated)
+        {
+            *status = ImmixBlockOperationStatus::InvalidTransition;
+        }
+        else if (owner != NoOwner)
+        {
+            // An allocator holds the block, so it is not known which lines are free.
+        }
+        else if (nurseryOrReusing)
+        {
+            // An allocator took the block in this epoch and put young objects in it. The pause counts them.
+            *status = ImmixBlockOperationStatus::Stale;
+        }
+        else
+        {
+            result = TransitionLocked(
+                block, state, unavailable, ImmixBlockState::Reusable, unavailableLines, status);
+        }
+    }
+    SideMetadataResult unlocked = Unlock(block);
+    return result == SideMetadataResult::Success ? unlocked : result;
 }
 #endif
 
@@ -1135,6 +1298,12 @@ SideMetadataResult ImmixBlockManager::TryPromoteInPlace(
     if (result == SideMetadataResult::Success)
     {
         result = StoreByte(LxrSideMetadataKind::BlockMark, block, RawUnmarked);
+#ifndef LXR_S4_COUNTER_CONTROL
+        if (result == SideMetadataResult::Success)
+        {
+            NoteRawStateChange(RawUnallocated, RawUnmarked);
+        }
+#endif // !LXR_S4_COUNTER_CONTROL
     }
     if (result == SideMetadataResult::Success)
     {
@@ -1495,8 +1664,44 @@ SideMetadataResult ImmixBlockManager::TransitionLocked(
         *status = exchanged
             ? ImmixBlockOperationStatus::Updated
             : ImmixBlockOperationStatus::Stale;
+        if (exchanged)
+        {
+            NoteRawStateChange(expectedRaw, desiredRaw);
+        }
     }
     return result;
+}
+
+void ImmixBlockManager::NoteRawStateChange(uint8_t oldRaw, uint8_t newRaw)
+{
+    ImmixBlockState oldState;
+    ImmixBlockState newState;
+    uint8_t oldUnavailable;
+    uint8_t newUnavailable;
+    DecodeState(oldRaw, &oldState, &oldUnavailable);
+    DecodeState(newRaw, &newState, &newUnavailable);
+    if (oldState == ImmixBlockState::Unallocated && newState != ImmixBlockState::Unallocated)
+    {
+        m_non_free_blocks.fetch_add(1, std::memory_order_acq_rel);
+    }
+    else if (oldState != ImmixBlockState::Unallocated && newState == ImmixBlockState::Unallocated)
+    {
+        m_non_free_blocks.fetch_sub(1, std::memory_order_acq_rel);
+    }
+    size_t oldFree = oldState == ImmixBlockState::Reusable ? ImmixBlockGeometry::LinesPerBlock - oldUnavailable : 0;
+    size_t newFree = newState == ImmixBlockState::Reusable ? ImmixBlockGeometry::LinesPerBlock - newUnavailable : 0;
+    if (newFree > oldFree)
+    {
+        m_reusable_free_lines.fetch_add(newFree - oldFree, std::memory_order_acq_rel);
+    }
+    else if (oldFree > newFree)
+    {
+        m_reusable_free_lines.fetch_sub(oldFree - newFree, std::memory_order_acq_rel);
+    }
+    if (newState == ImmixBlockState::Reusable)
+    {
+        m_reusable_serial.fetch_add(1, std::memory_order_acq_rel);
+    }
 }
 
 void ImmixBlockManager::BeginBlockOperation() const

@@ -108,6 +108,8 @@ public:
     size_t GetReservationBytes() const;
     size_t GetCommittedBytes() const;
     LxrLargeObjectResult GetMatureCommittedBytes(size_t* bytes) const;
+    // Page bytes of the large objects that are not nursery, and the part of those pages that no object byte uses.
+    LxrLargeObjectResult GetMatureStatistics(size_t* bytes, size_t* slackBytes) const;
 
 private:
     struct Span

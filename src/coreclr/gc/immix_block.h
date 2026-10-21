@@ -120,11 +120,26 @@ public:
     SideMetadataResult RegisterBlockRange(uintptr_t start, size_t size);
 
     uint8_t GetGlobalPhaseEpoch() const;
-    // Increases at every epoch flip and never wraps. Blocks become reusable only inside a pause, so equal
-    // tokens mean that no block can have become a candidate for recycled allocation in between.
+    // Increases at every epoch flip and at every block that is made Reusable, and never wraps. Equal tokens mean that
+    // no block can have become a candidate for recycled allocation in between.
     uint64_t GetStateToken() const
     {
+#ifdef LXR_S4_OLD_TOKEN_CONTROL
         return m_flip_serial.load(std::memory_order_acquire);
+#else
+        return m_flip_serial.load(std::memory_order_acquire) + m_reusable_serial.load(std::memory_order_acquire);
+#endif // LXR_S4_OLD_TOKEN_CONTROL
+    }
+    // Number of blocks whose state is not Unallocated (blocks that hold, or may hold, mature data). It changes only at
+    // block state transitions, so no pause has to walk the blocks to learn it.
+    size_t GetNonFreeBlocks() const
+    {
+        return m_non_free_blocks.load(std::memory_order_acquire);
+    }
+    // Free lines of all Reusable blocks, as counted when each block was last made Reusable.
+    size_t GetReusableFreeLines() const
+    {
+        return m_reusable_free_lines.load(std::memory_order_acquire);
     }
     SideMetadataResult StartGcPause(ImmixBlockOperationStatus* status);
     SideMetadataResult ReleaseGcPause(ImmixBlockOperationStatus* status);
@@ -203,6 +218,22 @@ public:
     SideMetadataResult TryReleaseIfRcDead(
         uintptr_t block,
         const LxrBlockReleaseGuard* guard,
+        ImmixBlockOperationStatus* status);
+#endif
+    // Pause only. Releases a block that a mutator took as a clean nursery block and that no object has promoted. No
+    // object in such a block has a reference count, so the block is empty by definition and the range is not read.
+    // Status Unchanged: the block is not such a block (it was promoted, it is a recycled block, or it is free).
+    SideMetadataResult TryReleaseNursery(
+        uintptr_t block,
+        ImmixBlockOperationStatus* status);
+#ifdef LXR_ENABLE_LAZY_COMPLETION_COUNTER
+    // Mutator phase, inside a lazy sweep. Makes a block Reusable with the given number of unavailable lines. A block
+    // that an allocator holds, or that an allocator took in this mutator epoch, has young objects without counts, so
+    // its lines are not known. Status Contended or Stale: the caller must look at the block again after the next pause.
+    SideMetadataResult TrySetReusableLazily(
+        uintptr_t block,
+        const LxrBlockReleaseGuard* guard,
+        uint8_t unavailableLines,
         ImmixBlockOperationStatus* status);
 #endif
     SideMetadataResult PrepareForTrace(
@@ -303,6 +334,8 @@ private:
         ImmixBlockState desired,
         uint8_t desiredUnavailableLines,
         ImmixBlockOperationStatus* status);
+    // Keeps the block counters in step with a change of the raw state byte of one block.
+    void NoteRawStateChange(uint8_t oldRaw, uint8_t newRaw);
     void BeginBlockOperation() const;
     void EndBlockOperation() const;
     bool BeginPhaseTransition();
@@ -314,6 +347,11 @@ private:
     std::atomic<uint8_t> m_global_phase_epoch;
     mutable std::atomic<uint32_t> m_active_operations;
     std::atomic<uint64_t> m_flip_serial{0};
+    // Block counters. They change at block state transitions only (about once per block and epoch).
+    std::atomic<size_t> m_non_free_blocks{0};
+    std::atomic<size_t> m_reusable_free_lines{0};
+    // Counts the blocks that were made Reusable. A failed search for a recycled block is valid until this changes.
+    std::atomic<uint64_t> m_reusable_serial{0};
 #ifdef _DEBUG
     mutable std::atomic<uint32_t> m_active_readers;
 #endif // _DEBUG

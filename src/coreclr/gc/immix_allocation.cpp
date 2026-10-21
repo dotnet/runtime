@@ -119,6 +119,7 @@ void ImmixAllocationManager::Shutdown()
     m_recycled_blocks_acquired.store(0, std::memory_order_relaxed);
     m_recycled_lines_consumed.store(0, std::memory_order_relaxed);
     m_blocks_in_use.store(0, std::memory_order_relaxed);
+    m_notes = AcquireNotes{};
 }
 
 SideMetadataResult ImmixAllocationManager::GrowQuiescent(size_t arenaSize)
@@ -255,6 +256,32 @@ SideMetadataResult ImmixAllocationManager::NotifyBlockReleased()
         }
     }
     return SideMetadataResult::InconsistentState;
+}
+
+void ImmixAllocationManager::SetAcquireNotes(const AcquireNotes& notes)
+{
+    m_notes = notes;
+}
+
+void ImmixAllocationManager::NoteAcquired(size_t index, bool fresh, bool mutator)
+{
+    if (m_notes.refresh_flags == nullptr)
+    {
+        return;
+    }
+    if (mutator)
+    {
+        // The flag makes the entry unique, so the list never needs more entries than there are blocks.
+        if (m_notes.allocated_flags[index].exchange(1, std::memory_order_acq_rel) == 0)
+        {
+            m_notes.allocated_list[m_notes.allocated_count->fetch_add(1, std::memory_order_acq_rel)] =
+                static_cast<uint32_t>(index);
+        }
+    }
+    if (!(fresh && mutator))
+    {
+        m_notes.refresh_flags[index].store(1, std::memory_order_release);
+    }
 }
 
 bool ImmixAllocationManager::IsCopySource(ImmixAllocationSource source)
@@ -451,6 +478,7 @@ SideMetadataResult ImmixAllocationManager::AcquireBlock(
                     1,
                     std::memory_order_relaxed);
             }
+            NoteAcquired(index, fresh, mutator);
             return SideMetadataResult::Success;
         }
         if (allocationStatus == ImmixAllocationStatus::InvalidPhase)

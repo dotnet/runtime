@@ -77,6 +77,21 @@ public:
     size_t GetBlocksInUse() const;
     SideMetadataResult NotifyBlockReleased();
 
+    // Storage that the owner of the manager provides, one byte per block unless noted. Every successful block
+    // acquisition is noted here, so that no pause has to walk all blocks to find the blocks that allocators touched.
+    //   allocated_flags / allocated_list / allocated_count: the blocks that mutators took since the last pause, each
+    //     once. The pause releases those that are clean nursery blocks and that no object promoted.
+    //   refresh_flags: a block that a mutator took as a recycled block, or that a collector thread took for copying.
+    //     Its free lines have to be counted again after the next pause.
+    struct AcquireNotes
+    {
+        std::atomic<uint8_t>* allocated_flags;
+        uint32_t* allocated_list;
+        std::atomic<size_t>* allocated_count;
+        std::atomic<uint8_t>* refresh_flags;
+    };
+    void SetAcquireNotes(const AcquireNotes& notes);
+
 private:
     friend class ImmixBumpAllocator;
 
@@ -118,6 +133,7 @@ private:
     SideMetadataResult IncrementLineReuseRange(
         uintptr_t start,
         size_t size);
+    void NoteAcquired(size_t index, bool fresh, bool mutator);
 
     SideMetadataManager* m_metadata;
     // Inline accessor for the reference-count plane (line scan).
@@ -131,9 +147,10 @@ private:
     std::atomic<size_t> m_next_fresh_block;
     std::atomic<size_t> m_next_recycled_block;
     // Block-state token at which a mutator search for recycled blocks scanned every block and found none.
-    // The token changes at every epoch flip, so the search is not repeated within one mutator epoch.
-    // (The epoch value itself wraps and cannot be used.)
+    // The token changes at every epoch flip and when a block is made Reusable, so the search is not repeated
+    // while no block can have become a candidate. (The epoch value itself wraps and cannot be used.)
     std::atomic<uint64_t> m_recycled_exhausted_token{UINT64_MAX};
+    AcquireNotes m_notes{};
     std::atomic<size_t> m_fresh_blocks_acquired;
     std::atomic<size_t> m_recycled_blocks_acquired;
     std::atomic<size_t> m_recycled_lines_consumed;

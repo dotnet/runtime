@@ -582,6 +582,19 @@ Object* LxrGcHeap::Alloc(gc_alloc_context* context, size_t size, uint32_t flags)
     LxrRcResult result = m_engine.Allocate(mutator, size, &object);
     if (result == LxrRcResult::AllocationFailure && !m_shutdown.load())
     {
+        // The lazy sweep after the last pause makes promoted blocks Reusable. A collection is needed only if the
+        // allocation still fails after it has finished.
+        bool cooperative = EnterCollectionLock();
+        LxrRcResult drained = UpdatePolicyHints();
+        LeaveCollectionLock(cooperative);
+        if (drained != LxrRcResult::Success)
+        {
+            Fatal("LXR lazy sweep did not finish before an allocation retry.");
+        }
+        result = m_engine.Allocate(mutator, size, &object);
+    }
+    if (result == LxrRcResult::AllocationFailure && !m_shutdown.load())
+    {
         if (CollectForPressure(false, false, true) != LxrRcResult::Success)
         {
             Fatal("LXR space-pressure collection failed before growth admission.");
@@ -993,7 +1006,16 @@ LxrRcResult LxrGcHeap::FinishLazy(LxrReferenceCounting* engine, void* context)
     {
         return LxrRcResult::InvariantViolation;
     }
-    return LxrRcResult::Success;
+    // The lazy sweep has counted the free lines of the blocks that the pause promoted, so the figures are complete now.
+    size_t heapBytes;
+    size_t fragmentation;
+    result = engine->GetHeapStatistics(&heapBytes, &fragmentation);
+    if (result == LxrRcResult::Success)
+    {
+        heap->m_last_heap_size.store(heapBytes);
+        heap->m_last_fragmentation.store(fragmentation);
+    }
+    return result;
 }
 
 LxrRcResult LxrGcHeap::CollectForPressure(bool emergency, bool user, bool heapFull)

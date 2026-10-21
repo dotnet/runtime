@@ -178,6 +178,9 @@ public:
         ScanQueueFinalizers, ScanTraceFinalizers, ScanDhRescan, ScanWeakPtr, ScanWeakPtrSingle,
         ScanRelocateRoots, ScanRelocateHandles, ScanPromotionsGranted, ScanHeapStatistics,
         ResumeRuntime, StwPause, PostDrain,
+        // Added in P17 S4: time from the end of the last pause packet (ReleaseEpoch) to the engine Resume callback, and
+        // the time that Resume spends in PublishTraceWork. Both are inside the stop-the-world time.
+        ResumeGap, PublishTrace,
         ScalarCount,
     };
 
@@ -287,7 +290,6 @@ private:
     void* decrements;
     uintptr_t publishedCursor;
     uintptr_t publishedLimit;
-    uintptr_t birthBlock;
     uintptr_t pendingFastStart;
     size_t pendingFastSize;
 };
@@ -416,7 +418,16 @@ public:
     size_t GetPauseSurvivorBytes() const;
     LxrRcResult GetMaturePages(size_t* pages) const;
     LxrRcResult DrainLazySweep(uint32_t timeout);
+    // Block counts and the estimate that the .NET memory APIs report. All of them are read from counters that block
+    // state transitions maintain, so the call neither walks the heap nor touches a block.
+    //   heapBytes: mature Immix blocks (state other than Unallocated) times the block size, plus the large-object
+    //     pages that are not nursery.
+    //   fragmentationBytes: free lines of Reusable blocks times the line size, plus the padding of large objects.
+    //     A block that the last pause promoted in place is counted after the lazy sweep has looked at it.
     LxrRcResult GetHeapStatistics(size_t* heapBytes, size_t* fragmentationBytes) const;
+    size_t GetNonFreeBlocks() const;
+    // Compares the block counters with a walk over every block. For tests and Debug builds only.
+    bool BlockCountersMatchWalk(size_t* walkedNonFree = nullptr, size_t* walkedFreeLines = nullptr) const;
     LxrRcResult StopWorkers();
     LxrRcResult WalkObjects(LxrRcWalkObject visit, void* context) const;
     // Visits every object start whose ValidObject bit is set, stale bits included, without reading the object.
@@ -429,6 +440,12 @@ public:
     LxrRcResult ValidateLogStorageForTest(uint8_t test);
     void HoldLogReaderForTest(bool hold);
     bool IsLogReaderHeldForTest() const;
+    // Holds the lazy block sweep after it has started, so that a test can start a pause while it runs.
+    void HoldSweepForTest(bool hold);
+    bool IsSweepHeldForTest() const;
+    LxrRcResult GetBlockStateForTest(
+        size_t block, ImmixBlockState* state, uint8_t* unavailableLines, bool* nursery) const;
+    size_t GetFreshBlocksReleasedInPauseForTest() const;
     LxrRcResult ArmPendingReader(Object* object);
     LxrRcResult ReleasePendingReader();
     uintptr_t GetPendingReaderValue() const;
@@ -517,13 +534,21 @@ private:
     LxrRcResult ScanIncrements(Object* object, bool trace, ReferenceBatch* children, size_t worker);
     LxrRcResult ProcessDecrements(Work* work, LxrWorkPacket* packet, size_t worker);
     LxrRcResult ScanDecrements(Object* object, ReferenceBatch* children, size_t worker);
-    LxrRcResult Sweep(const LxrBlockReleaseGuard* guard);
+    LxrRcResult Sweep(const LxrBlockReleaseGuard& guard);
+    LxrRcResult RefreshBlock(uintptr_t block, size_t index, const LxrBlockReleaseGuard& guard);
+    // Releases the block when no count is left in it. Updates the release counters and the evacuation flag.
+    // With a null guard it runs in a pause.
+    LxrRcResult ReleaseBlockIfDead(
+        uintptr_t block, size_t index, const LxrBlockReleaseGuard* guard, ImmixBlockOperationStatus* status);
     LxrRcResult ReleaseEpoch();
     // Per-object accounting after a death or a swept cycle (the lifetime probe and, in the test platform, the
     // oracle). The product keeps no per-object record, so this costs one load.
     LxrRcResult Reclaim(uintptr_t start);
     void NoteProbeReclaim(uintptr_t start);
-    LxrRcResult ClearAllocatedBlocks();
+    // The pause releases the clean blocks that mutators took since the last pause and that no object promoted.
+    // It looks at those blocks only.
+    LxrRcResult ReleaseNurseryBlocks();
+    LxrRcResult SweepLargeNursery();
 #ifdef LXR_SIDE_METADATA_TEST_PLATFORM
     LxrRcResult ReclaimLargeNursery();
 #endif // LXR_SIDE_METADATA_TEST_PLATFORM
@@ -599,10 +624,16 @@ private:
     LxrVirtualArray<std::atomic<uint8_t>> m_trace_lock_storage;
     LxrVirtualArray<TraceScan*> m_trace_scan_storage;
     LxrVirtualArray<std::atomic<uint8_t>> m_allocated_block_storage;
+    // The blocks that mutators took since the last pause (see ImmixAllocationManager::AcquireNotes).
+    uint32_t* m_allocated_list = nullptr;
+    std::atomic<size_t> m_allocated_count{0};
     std::atomic<size_t> m_immix_capacity{0};
 #ifdef LXR_SIDE_METADATA_TEST_PLATFORM
     std::atomic<bool> m_log_reader_hold{false};
     std::atomic<bool> m_log_reader_active{false};
+    std::atomic<bool> m_sweep_hold{false};
+    std::atomic<bool> m_sweep_holding{false};
+    std::atomic<size_t> m_pause_released_blocks{0};
 #endif // LXR_SIDE_METADATA_TEST_PLATFORM
     size_t m_initial_immix = 0;
     size_t m_initial_large = 0;
@@ -612,6 +643,7 @@ private:
     std::atomic<uint64_t> m_growth_count{0};
     std::atomic<size_t> m_epoch_fresh_blocks{0};
     std::atomic<size_t> m_epoch_recycled_lines{0};
+    std::atomic<int64_t> m_release_end_stamp{0};
 #ifdef LXR_SIDE_METADATA_TEST_PLATFORM
     std::atomic<size_t> m_live_bytes{0};
     std::atomic<uint64_t> m_reclaimed_bytes{0};
