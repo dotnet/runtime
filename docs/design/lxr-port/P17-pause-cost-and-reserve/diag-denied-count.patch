@@ -1,0 +1,23 @@
+diff --git a/src/coreclr/gc/immix_block.cpp b/src/coreclr/gc/immix_block.cpp
+index 410464d..8442e80 100644
+--- a/src/coreclr/gc/immix_block.cpp
++++ b/src/coreclr/gc/immix_block.cpp
+@@ -4,6 +4,7 @@
+ #include "common.h"
+ #include "gcenv.h"
+ #include "immix_block.h"
++#include "lxr_root_diag.h"
+ #ifdef LXR_ENABLE_LAZY_COMPLETION_COUNTER
+ #include "lxr_completion_counter.h"
+ #endif
+@@ -672,6 +673,10 @@ SideMetadataResult ImmixBlockManager::TryAcquire(
+     if ((!fresh && (reusing || (!mutator && gcReusing))) ||
+         (nurseryDenied && nursery))
+     {
++        if (kind == ImmixBlockAcquireKind::MutatorFresh && nursery)
++        {
++            LXR_DIAG_LOG('N', block, owner, static_cast<uint64_t>(kind));
++        }
+         *status = ImmixBlockOperationStatus::Stale;
+         Unlock(block);
+         return SideMetadataResult::Success;

@@ -1,0 +1,13 @@
+Root capture failure: other runs (same pin-heavy program, 8 parallel loops on 16 cores, nursery off, with pinned-object-heap arrays).
+
+Accepted build e8d2d23 (frame /root/lxr-batching-d2eccaea/after-Release-linux), 12 loops of 10 runs:
+  failures=5 of 120   (all five: "Fatal error. Error 2147500037 (0x80004005 (E_FAIL))")
+
+S7 tip with the diagnostic patch diag-root-capture.patch, 12 loops of 10 runs (the first run was 8 loops of 10):
+  run 1: failures=1 of 80
+  run 2: failures=6 of 120   (the dumps of three of them are in this folder)
+
+S7 tip with the fix and the diagnostic patches (diag-root-capture.patch and diag-denied-count.patch), 12 loops of 10 runs:
+  failures=0 of 120
+  runs that met the race (the fixed acquire answered "Stale" to a fresh mutator acquire of a nursery block): 8 of 120 runs
+  (each such run met it once; the count line is "LXRDIAG denied-fresh-acquires=<n>" at process exit)

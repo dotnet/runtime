@@ -387,8 +387,12 @@ The branch `kkokosa-lxr-s7-pin-list` holds the 22 commits of the integrated bran
 
 - The per-object tables `m_flags`, `m_trace_locks` and `m_trace_scans` are removed. Pinning uses a pin list per pause, one byte per Immix block, and pinned blocks for the pinned object heap.
 - **Measured** (heap 4x, two repetitions): native planes 212 to 160 MiB (binary trees) and 456 to 336 MiB (requests); peak RSS 185 to 136 MiB and 279 to 159 MiB; wall and GC time equal or lower; equal checksums.
-- A pin-heavy program fails now and then under CPU oversubscription. The integrated tip fails in the same way. It is not new and the cause is Open (P17 README, section "S7").
+- A pin-heavy program failed now and then under CPU oversubscription. The integrated tip failed in the same way, and so did the accepted build. The cause is found (a race of two threads that get one fresh block) and fixed on the branch `kkokosa-lxr-root-capture-fix` (see "Root capture fix addition" below).
 - The details, the controls and the open items are in the P17 README, section "S7". Build and test commands of this report are unchanged.
+
+### Root capture fix addition
+
+The branch `kkokosa-lxr-root-capture-fix` holds the S7 branch plus the commits of the root capture investigation (P17 README, section "The cause of the failure and its fix"). **Measured:** without the fix, 32 of 416 oversubscribed runs of the pin-heavy program failed; with the fix, 0 of 416. **Code:** the fix is one condition in `ImmixBlockManager::TryAcquire` (a fresh mutator acquire refuses a nursery block under the block lock). The accepted build `e8d2d23` has the same code and the same failure (5 of 120 runs). The runtime is not changed. **Inferred:** before the fix, the race could also corrupt memory without a crash.
 
 ## 12. Open items
 
@@ -408,21 +412,22 @@ I did not push, and I did not open a pull request. You decide.
 
 | File | Content |
 |---|---|
-| `kkokosa-lxr-s7-pin-list.bundle` | `git bundle` of `a485c819c17..kkokosa-lxr-s7-pin-list` (the integrated branch plus the S7 commits). The receiver needs `dotnet/runtime` at `a485c819c17` (fetch `upstream/main`). |
+| `kkokosa-lxr-root-capture-fix.bundle` | `git bundle` of `a485c819c17..kkokosa-lxr-root-capture-fix` (the integrated branch, the S7 commits and the root capture fix). The receiver needs `dotnet/runtime` at `a485c819c17` (fetch `upstream/main`). |
 | `patches\*.patch` | `git format-patch` series of the same range (one file per commit). |
 | `SHA256SUMS.txt` | Hashes of the files above. |
-| `previous\` | The bundle, the patch series and the hashes of the integrated branch before S7. |
+| `previous\kkokosa-lxr-s7-pin-list\` | The bundle, the patch series and the hashes of the S7 branch before the root capture fix. |
+| `previous\` | Also the bundle, the patch series and the hashes of the integrated branch before S7. |
 
 Use of the bundle:
 
 ```bash
 git clone https://github.com/dotnet/runtime.git && cd runtime
 git checkout a485c819c17
-git fetch ../kkokosa-lxr-s7-pin-list.bundle kkokosa-lxr-s7-pin-list:kkokosa-lxr-s7-pin-list
-git switch kkokosa-lxr-s7-pin-list
+git fetch ../kkokosa-lxr-root-capture-fix.bundle kkokosa-lxr-root-capture-fix:kkokosa-lxr-root-capture-fix
+git switch kkokosa-lxr-root-capture-fix
 ```
 
-To publish it later: `git push <remote> kkokosa-lxr-s7-pin-list`. I advise a branch name that tells people that it is an experiment, for example `lxr-experiment`. The PR commits keep the authorship of `janvorli`. Say in the description that they come from PR #3316 and that they are not yet in `dotnet/runtime`.
+To publish it later: `git push <remote> kkokosa-lxr-root-capture-fix`. I advise a branch name that tells people that it is an experiment, for example `lxr-experiment`. The PR commits keep the authorship of `janvorli`. Say in the description that they come from PR #3316 and that they are not yet in `dotnet/runtime`.
 
 ## 14. Not checked
 

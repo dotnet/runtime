@@ -1744,9 +1744,11 @@ When the machine is oversubscribed (eight parallel runs of the pin-heavy program
 | S7 tip | without them | 8 of 80 |
 | S7 tip | one run at a time, and two loops on pinned cores | 0 of 105 |
 
-**Inferred:** it is not caused by S7 and not by the pinned object heap (the integrated tip fails as often, and the failure stays without these arrays). It looks like a thread that holds an object that the runtime has allocated but has not yet reported to the collector, when another thread starts a pause. **Open:** I did not find the exact place. The fixed program of the benchmark runs on the same builds; the P3.1 test also shows the dependence on load.
+**Inferred:** it is not caused by S7 and not by the pinned object heap (the integrated tip fails as often, and the failure stays without these arrays). It looked like a thread that holds an object that the runtime has allocated but has not yet reported to the collector, when another thread starts a pause. **That guess was wrong.** The cause is a race in the block allocator, and it is fixed. See the section "The cause of the failure and its fix" below.
 
 ### Tests (S7)
+
+Note: the failure that this section describes has a cause and a fix. They are in the section "The cause of the failure and its fix" and are not part of these S7 tests.
 
 | Suite | Linux Release | Linux Debug | Windows Release |
 |---|---|---|---|
@@ -1786,11 +1788,94 @@ Files: `results/tests-native-release-s7.txt`, `tests-native-debug-s7.txt`, `test
 
 The user asked for lean evidence. Small benchmark (two repetitions, heap 4x, two modes, no perf profiles). I did not run the Windows managed suite, the managed suite with the Release collector, or the older suites on Windows and in Debug.
 
+### The cause of the failure and its fix
+
+Labels as above. This section replaces the guess in "A failure that is not new".
+
+**Short answers**
+
+1. **Cause (Measured).** Two threads receive the same fresh 32 KiB block in the same epoch. The second thread clears the block, and the clear erases the objects of the first thread. The root capture of the next pause then finds a root (a pinned handle or a pinned local) whose object has no ValidObject bit and a null method table. `AddRoot` returns `InvalidArgument`, the engine goes to the failed state, and the runtime prints the misleading message "epoch publication did not precede the runtime barrier reset".
+2. **It is not the allocation helpers (Measured).** My first idea was an object that the runtime returns before the collector publishes it. The dumps below show the opposite: the notification `AllocationComplete` of the failing object had finished before the pause. The object was erased later. The runtime is not the cause and I did not change it.
+3. **Fix (Code, Measured).** One condition in `ImmixBlockManager::TryAcquire` (`immix_block.cpp`): a fresh mutator acquire now refuses a nursery block under the block lock. The unlocked check in `AcquireBlock` already refused it. It was not enough alone.
+4. **Before and after (Measured).** Same machine, same program, same runtime, 8 parallel loops of 13 runs, two rounds, the two builds interleaved. Without the fix 32 of 416 runs failed (11 of 208 with pinned-object-heap arrays, 21 of 208 without). With the fix 0 of 416 failed. The accepted build `e8d2d23` fails too (5 of 120).
+5. **It is a memory corruption, not only a crash (Inferred).** The crash needs a root capture that touches an erased object. A program that holds an erased object in a field does not need one. I did not measure silent corruption. Both threads also allocate objects in the same memory in the interval before the pause (Code).
+6. **A hot path is not touched (Code).** The block acquire runs once for each 32 KiB block and the check is one more comparison under a lock that the call already holds. I ran no benchmark. The checksums of the pin-heavy program are equal on the fixed and the unfixed build (1472954008).
+
+**How the cause was found (Measured).** I built a diagnostic collector with a ring of 1 million events (`diag-root-capture.patch`, define `LXR_ROOT_DIAG`). The events are: slow allocation, publication of a span, retirement of a span, `AllocationComplete`, suspension, start of a scan, acquire of a block, return of a block, clear of a block. At the first failing `AddRoot` the collector prints the object, its flags, the slot, the 256 bytes around it and every ring event that touches the same block, then it aborts. I ran the oversubscribed loop (8 or 12 loops of 10 runs, 16 cores) until it failed. The failure rate with the diagnostic build was 1 of 80 and 6 of 120.
+
+All dumps have the same shape. The root has the kind "handle" (`rootkind=3`), the flags are 2 (pinned), and the 256 bytes around the object are zero. This is `diag-failure-3-unfixed.txt`, shortened. Times are before the failure. Block `…630000` is the block of the failing object.
+
+| Time | Thread | Event |
+|---|---|---|
+| −5.44 ms | A | acquires the block as a fresh block (owner 6) and clears it |
+| −5.43 ms | A | publishes a span and makes 5 fast allocations. Each ends with `AllocationComplete`. The last is the later failing object (`…630df0`, 0x490 bytes) |
+| −5.37 ms | A | returns the block (it is full) |
+| −0.39 ms | B | acquires **the same block** as a fresh block (owner 4) and clears the whole block |
+| −0.12 ms | A | starts a pause |
+| −0.09 ms | root scan | finds the pinned handle to `…630df0`: no ValidObject bit, method table null. `AddRoot` fails |
+
+There is no pause between the return by A and the acquire by B. The file `diag-failure-2-unfixed.txt` shows the same order: B acquires the block 0.6 ms after A returned it.
+
+**Why the allocator allows it (Code).**
+
+1. `ImmixAllocationManager::AcquireBlock` picks a candidate. It reads the block state and the nursery flag with no lock (`GetStateFast`, `IsNurseryFast`). A fresh block that a thread took in this epoch is `Unallocated` and a nursery block, so this check refuses it.
+2. `ImmixBlockManager::TryAcquire` then takes the block lock. It checked only that the state is `Unallocated` and that the block has no owner. The nursery check existed only for the kind `GcCopyFresh`.
+3. A thread that is slow between step 1 and step 2 (the machine is oversubscribed) loses the order. Thread A takes the block, fills it and returns it. A returned fresh block has no owner and stays `Unallocated` until the pause. The slow thread B now passes the checks of step 2. `PrepareFreshBlock` of B clears the memory of the block (`memset`) and resets the ValidObject bits of the range.
+4. The collector kinds are not open to this: a collector acquire changes the state to `Unmarked`, so a second acquire fails the state check. Recycled mutator blocks are checked under the lock (`reusing`). Only the fresh mutator kind had the gap.
+
+The code is the same in the accepted build `e8d2d23` (`git show lxr:src/coreclr/gc/immix_block.cpp`). **Measured:** the accepted build fails with the same fatal error in 5 of 120 runs (`results/root-capture/other-runs.txt`). I did not run the diagnostic build on the accepted code, so for that build the same cause is **Inferred**.
+
+**Fix (Measured).** `TryAcquire` refuses a fresh mutator acquire when the block is a nursery block of the current epoch, and answers `Stale`. `AcquireBlock` goes on to the next candidate, as it does for any other stale answer. In the next epoch the block is no longer a nursery block and can be taken again. The diagnostic build with the fix (`diag-denied-count.patch` counts the refusals) refused one acquire in each of 8 of 120 runs, and none of the 120 runs failed. So the race is real in this program: about 7% of the runs meet it.
+
+**Before and after (Measured).** `rcf-before-after.sh`; results in `results/root-capture/before-after-summary.txt`. Release builds of the collector from the same sources, with and without the fix. Loop: 8 parallel runs of the pin-heavy program (`pinheavy 64`, heap 64 MiB, natural collections, non-moving mode) on 16 cores. One round is 104 runs for each arm. Two rounds.
+
+| Arm | Round 1 | Round 2 | Total |
+|---|---|---|---|
+| Without the fix, with pinned-object-heap arrays | 7 of 104 | 4 of 104 | 11 of 208 |
+| With the fix, with pinned-object-heap arrays | 0 of 104 | 0 of 104 | 0 of 208 |
+| Without the fix, ordinary arrays (`PINHEAVY_NOPOH=1`) | 11 of 104 | 10 of 104 | 21 of 208 |
+| With the fix, ordinary arrays | 0 of 104 | 0 of 104 | 0 of 208 |
+
+Of the 32 failures without the fix, 30 end with "Fatal error. Error 2147500037 (0x80004005 (E_FAIL))". Two end with a core dump and no message. **Inferred:** the two have the same cause. I did not look at them. **Not shown:** that the fix removes every failure of this kind. Zero in 416 runs gives a rate below about 1% at 95% confidence, and the rate without the fix is about 8%.
+
+**Tests (Measured).**
+
+- Native selector `--fresh-block-race` (10 checks). It uses a test hook (`SetAfterPrecheckHookForTest`, only in the test platform) that runs between the unlocked check and the locked acquire. In that window the test plays thread A: it takes the candidate block, writes a pattern into all 32 KiB, and returns the block. Then the allocating thread B continues. The test checks that B does not get that block, that the pattern is intact, that a direct locked fresh acquire of the block answers `Stale`, and that after an epoch flip the block can be taken again. The test is deterministic.
+- **Control** `LXR_FRESH_NURSERY_RACE_CONTROL` (`controls-rcf.sh`, `results/root-capture/control-fresh-block-race.log`): the locked check is the old one. Result: `--fresh-block-race` fails (7 of 10 checks pass). B takes the block and erases the pattern.
+- The managed side has no new cell. The failure needs a pause at a bad moment and it shows in about 8% of the runs of a 4-thread program on an oversubscribed machine. A managed cell would not be reliable. The loop `rcf-stress.sh` is the managed check, and `rcf-before-after.sh` ran it.
+
+| Suite | Linux Release | Linux Debug | Windows Release |
+|---|---|---|---|
+| Native selectors (33, the 32 of S7 and `--fresh-block-race`) | pass 33 of 33 | pass 33 of 33 | pass 33 of 33 |
+| New selector `--fresh-block-race` | pass 10 | pass 10 | pass 10 |
+| Managed cells with the Debug collector (3 modes; 78 runs as in S7) | not run | pass 78 of 78 | not run |
+| Older suites P2.1 to P3.4 (9 scripts) | pass 9 of 9 (P2.2 after a test update, see below) | not run | not run |
+| Build of `clrlxrgc` | pass | pass | pass |
+
+Files: `results/tests-native-release-rcf.txt`, `tests-native-debug-rcf.txt`, `tests-native-windows-release-rcf.txt`, `tests-managed-rcf.txt`, `tests-legacy-rcf.txt`, `tests-legacy-rcf-first-run.txt`.
+
+**One older test changed (Measured).** The first run of the older suites failed in P2.2 (2205 of 2206 checks, "neighboring block updates all win"). The test acquires `DataStart` in an epoch, resets the owner of the block by hand, and acquires the block again in the same epoch. Since the fix, a fresh mutator acquire refuses a block that is a nursery block of the current epoch, and this block was one. The product cannot reach this state: the unlocked check in `AcquireBlock` refused such a block before the fix as well, and the pause releases nursery blocks in a later epoch. I changed the test to reset the epoch byte of the block too (one check added: 2207 of 2207). **Inferred:** no other code depends on the old behavior of `TryAcquire`, because the engine calls it only through `AcquireBlock`. The Windows build of this test (`MSVC`) and the P2.2 script on Windows were not run. The Windows `clrlxrgc` build is the Release module (`build-windows.ps1`). I did not run the Windows Debug build, the Windows managed suite, or the managed suite with the Release collector. The first compile of the Linux Release native program was killed by a hangup of the shell (a `clang` message, not a code error). The second compile passed.
+
+**Default collector unchanged (Code).** The fix is in `src/coreclr/gc/immix_block.cpp`. The test hook is in `immix_allocation.h` and `immix_allocation.cpp` under `LXR_SIDE_METADATA_TEST_PLATFORM`, so the product build does not contain it. I did not change the runtime (`src/coreclr/vm`, the JIT, CoreLib). So the machine-code hash of the stock helpers (`46cee8bd87fd6252f5265267148d0a34`) cannot change. I did not run `helperhash.py` again.
+
+**Open items (root capture).**
+
+| Item | Label |
+|---|---|
+| Silent corruption by the same race before the fix (an erased object that no root capture touches) | Inferred; not measured |
+| The two failures without a message (core dump) | Open; same cause Inferred |
+| The same cause in the accepted build `e8d2d23` | Inferred (same code, same failure signature and rate) |
+| The engine reports this as a generic fatal error with a message about epochs. A message that names the failing root would make the next failure easier to read | Open; not changed |
+| Other places where an unlocked check is the only guard of a block state | Open; I looked only at `AcquireBlock` and `TryAcquire` |
+| The kind `GcMatureEvacuationFresh` has no nursery check in `TryAcquire`. It is safe because its acquire changes the state to `Unmarked` | Code; not tested for this race |
+
+The files of this investigation are in the table "Files in this folder": `rcf-stress.sh`, `rcf-before-after.sh`, `controls-rcf.sh`, `diag-root-capture.patch`, `diag-denied-count.patch` and `results/root-capture/`.
+
 ### Not measured, open items (S7)
 
 | Item | Label |
 |---|---|
-| The failure of the pin-heavy program under CPU oversubscription: the place of the cause | Open (the integrated tip has it too) |
+| The failure of the pin-heavy program under CPU oversubscription: the place of the cause | Found and fixed (section "The cause of the failure and its fix") |
 | The shared pinned allocator and its lock with many threads that allocate pinned-object-heap arrays at the same time | Open (not measured) |
 | A part full pinned block for each pause when a program pins few long-lived small objects | Open (Inferred from the code; no program measured) |
 | The remaining native planes (160 MiB for a heap of 32 MiB): the share of the four log streams | Inferred, not split |
@@ -1881,4 +1966,6 @@ Notes:
 | `controls-s7.sh`, `controls-s7-managed.sh` | S7: the 12 native controls and the 4 managed controls (module built with a control define) |
 | `bench-s7.sh`, `bench-wall-s7.sh`, `bench-pinheavy-serial.sh`, `build-tracer-s7.sh`, `s7-tables.py` | S7: traced runs and wall matrix of the integrated tip and the S7 tip; serial runs of the pin-heavy program; the tracer build (workload `pinheavy` in `GcTrace.cs`); the tables |
 | `results/` (S7) | `matrix-s7-int-s7.jsonl`, `wall-table-s7.md`, `trace-tables-s7.md`, `trace-s7/`, `helper-hash-s7.txt`, `controls-s7-release.txt`, `controls-s7-managed.txt`, `tests-*-s7.txt`, `tests-managed-s7.csv` |
+| `rcf-stress.sh`, `rcf-before-after.sh`, `controls-rcf.sh`, `diag-root-capture.patch`, `diag-denied-count.patch` | Root capture failure: the oversubscribed pin-heavy loop (counts failures, keeps the output of each failed run); the interleaved before and after runs; the control for the native selector `--fresh-block-race`; the diagnostic ring (apply on the S7 tip, build with `-DLXR_ROOT_DIAG`; it aborts at the first failing `AddRoot` and prints the events of the block); the counter of refused acquires (apply on the fixed tree after the first patch) |
+| `results/root-capture/`, `results/tests-*-rcf.txt` | Root capture failure: `before-after-summary.txt`, `other-runs.txt`, three diagnostic dumps of failures without the fix, `control-fresh-block-race.log`, test results of the fix |
 | `results/` (S6) | `matrix-s6.jsonl`, `matrix-s6x.jsonl`, `wall-table-s6.md`, `wall-table-s6-vs-acc.md`, `trace-tables-s6.md`, `trace-s6/`, `perf-shares-s6.md`, `perf-s6/`, `lag-s6.jsonl`, `lag-table-s6.md`, `controls-s6-release.txt`, `controls-s6-managed.txt`, `s6-cells-table.txt`, `tests-*-s6.txt` |

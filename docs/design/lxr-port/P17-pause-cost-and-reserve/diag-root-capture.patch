@@ -1,0 +1,300 @@
+diff --git a/src/coreclr/gc/immix_allocation.cpp b/src/coreclr/gc/immix_allocation.cpp
+index 4911f187102..0272e4b0310 100644
+--- a/src/coreclr/gc/immix_allocation.cpp
++++ b/src/coreclr/gc/immix_allocation.cpp
+@@ -4,6 +4,7 @@
+ #include "common.h"
+ #include "gcenv.h"
+ #include "immix_allocation.h"
++#include "lxr_root_diag.h"
+ 
+ namespace
+ {
+@@ -594,6 +595,7 @@ SideMetadataResult ImmixAllocationManager::PrepareFreshBlock(
+ {
+     if (!IsCopySource(source))
+     {
++        LXR_DIAG_LOG('M', block, ImmixBlockGeometry::BlockBytes);
+         memset(
+             reinterpret_cast<void*>(block),
+             0,
+@@ -634,6 +636,7 @@ SideMetadataResult ImmixAllocationManager::PrepareRecycledHole(
+     size_t size = static_cast<size_t>(hole.end - hole.start);
+     if (!IsCopySource(source))
+     {
++        LXR_DIAG_LOG('H', hole.start, hole.end);
+         memset(reinterpret_cast<void*>(hole.start), 0, size);
+     }
+ 
+@@ -822,6 +825,7 @@ SideMetadataResult ImmixBumpAllocator::TryRefill(
+         m_block = block;
+         m_source = source;
+         m_next_search_line = 0;
++        LXR_DIAG_LOG('B', block, m_owner, static_cast<uint64_t>(source));
+         if (ImmixAllocationManager::IsFreshSource(source))
+         {
+             result = m_manager->PrepareFreshBlock(
+@@ -1016,6 +1020,7 @@ SideMetadataResult ImmixBumpAllocator::ReleaseAfterFailure(
+ SideMetadataResult ImmixBumpAllocator::ReturnCurrentBlock(
+     ImmixAllocationStatus* status)
+ {
++    LXR_DIAG_LOG('E', m_block, m_owner, m_cursor);
+     SideMetadataResult result = m_manager->ReturnBlock(
+         m_block,
+         m_owner,
+diff --git a/src/coreclr/gc/lxr_gc.cpp b/src/coreclr/gc/lxr_gc.cpp
+index 8acd73c44bc..495f816e4eb 100644
+--- a/src/coreclr/gc/lxr_gc.cpp
++++ b/src/coreclr/gc/lxr_gc.cpp
+@@ -8,6 +8,7 @@
+ #include "gcref.h"
+ #include "gceventstatus.h"
+ #include "objecthandle.h"
++#include "lxr_root_diag.h"
+ 
+ #include <algorithm>
+ #include <new>
+@@ -634,6 +635,7 @@ Object* LxrGcHeap::Alloc(gc_alloc_context* context, size_t size, uint32_t flags)
+         context->alloc_bytes += static_cast<int64_t>(size);
+     }
+     m_context_allocated_bytes.fetch_add(size, std::memory_order_relaxed);
++    LXR_DIAG_LOG('A', reinterpret_cast<uint64_t>(object), size, pinned ? 1 : 0);
+     if (m_fast_enabled && size < LxrLargeObjectSpace::MinimumObjectBytes &&
+         (flags & GC_ALLOC_USER_OLD_HEAP) == 0)
+     {
+@@ -645,6 +647,7 @@ Object* LxrGcHeap::Alloc(gc_alloc_context* context, size_t size, uint32_t flags)
+         }
+         if (cursor != 0)
+         {
++            LXR_DIAG_LOG('S', cursor, limit);
+             context->alloc_ptr = reinterpret_cast<uint8_t*>(cursor + sizeof(ObjHeader));
+             context->alloc_limit = reinterpret_cast<uint8_t*>(limit + sizeof(ObjHeader));
+             context->alloc_bytes += static_cast<int64_t>(limit - cursor);
+@@ -694,6 +697,7 @@ void LxrGcHeap::RetireAllocationSpan(gc_alloc_context* context, bool subtractUnu
+     {
+         return;
+     }
++    LXR_DIAG_LOG('R', reinterpret_cast<uint64_t>(context->alloc_ptr) - sizeof(ObjHeader), reinterpret_cast<uint64_t>(context->alloc_limit) - sizeof(ObjHeader));
+     LxrRcMutator* mutator = m_engine.FindCachedMutator(context->gc_reserved_1, context);
+     if (mutator == nullptr || context->alloc_limit < context->alloc_ptr ||
+         m_engine.RetireAllocationSpan(mutator,
+@@ -745,6 +749,7 @@ void LOCALGC_CALLCONV LxrGcHeap::AllocationComplete(
+             heap->Fatal("LXR could not register an object for finalization.");
+         }
+     }
++    LXR_DIAG_LOG('C', reinterpret_cast<uint64_t>(object), size, fast ? 1 : 0);
+     if (fast)
+     {
+         heap->m_fast_allocations.fetch_add(1, std::memory_order_relaxed);
+@@ -1011,6 +1016,7 @@ void LxrGcHeap::Suspend(void* context)
+         GCToEEInterface::SuspendEE(SUSPEND_FOR_GC);
+     }
+     GCToEEInterface::GcEnumAllocContexts(RetireAllocationContext, heap);
++    LXR_DIAG_LOG('P', 0);
+     heap->m_pause_young_bytes.store(heap->m_engine.GetYoungAllocationBytes(), std::memory_order_release);
+     {
+         size_t headroom = 0;
+@@ -1200,6 +1206,7 @@ void LxrGcHeap::ScanOnGcThread(void* context)
+ void LxrGcHeap::ExecuteScan(uint8_t kind)
+ {
+     LxrGcHeap* heap = this;
++    LXR_DIAG_LOG('X', kind);
+     ScanCostScope execution(heap, 10 + kind);
+     LxrPhaseScope scanTotal(heap->m_engine.GetPauseTimers(), LxrPauseTimers::Scan0 + kind);
+     auto measure = [heap](size_t metric, size_t phase, const auto& callback)
+@@ -1306,6 +1313,27 @@ void LxrGcHeap::ExecuteScan(uint8_t kind)
+     }
+ }
+ 
++#ifdef LXR_ROOT_DIAG
++static Object** s_diagSlot;
++static ScanContext* s_diagScan;
++static void LxrDiagReport(Object* object, uint32_t flags, LxrRcResult result)
++{
++    uintptr_t address = reinterpret_cast<uintptr_t>(object);
++    fprintf(stderr, "LXRDIAG AddRoot failed object=%p flags=%u result=%d slot=%p thread_under_crawl=%p rootkind=%d mt=%p tid=%ld\n",
++        object, flags, static_cast<int>(result), s_diagSlot, s_diagScan != nullptr ? (void*)s_diagScan->thread_under_crawl : nullptr,
++        s_diagScan != nullptr ? static_cast<int>(s_diagScan->dwEtwRootKind) : -1,
++        *reinterpret_cast<void**>(address), static_cast<long>(syscall(SYS_gettid)));
++    const uint64_t* words = reinterpret_cast<const uint64_t*>(address - 64);
++    for (int i = 0; i < 16; i++)
++    {
++        fprintf(stderr, "LXRDIAG mem %p: %016llx %016llx\n", (void*)(address - 64 + i * 16), (unsigned long long)words[i * 2], (unsigned long long)words[i * 2 + 1]);
++    }
++    LxrDiagDump(address);
++    fflush(stderr);
++    abort();
++}
++#endif // LXR_ROOT_DIAG
++
+ void LxrGcHeap::AddRoot(Object* object, uint32_t flags, bool trace)
+ {
+     if (object == nullptr)
+@@ -1346,12 +1374,19 @@ void LxrGcHeap::AddRoot(Object* object, uint32_t flags, bool trace)
+     LxrRcResult result = m_engine.AddRoot(object, false, trace);
+     if (result != LxrRcResult::Success)
+     {
++#ifdef LXR_ROOT_DIAG
++        LxrDiagReport(object, flags, result);
++#endif // LXR_ROOT_DIAG
+         m_scan_failure.store(result);
+     }
+ }
+ 
+-void LxrGcHeap::CopyRoot(Object** slot, ScanContext*, uint32_t flags)
++void LxrGcHeap::CopyRoot(Object** slot, ScanContext* sc, uint32_t flags)
+ {
++#ifdef LXR_ROOT_DIAG
++    s_diagSlot = slot;
++    s_diagScan = sc;
++#endif // LXR_ROOT_DIAG
+     s_heap->CountScanWork(36);
+     s_heap->AddRoot(*slot, flags, true);
+ }
+diff --git a/src/coreclr/gc/lxr_root_diag.h b/src/coreclr/gc/lxr_root_diag.h
+new file mode 100644
+index 00000000000..7e9c896153c
+--- /dev/null
++++ b/src/coreclr/gc/lxr_root_diag.h
+@@ -0,0 +1,141 @@
++// Research only (diagnostic define LXR_ROOT_DIAG). A ring of allocation and pause events that is searched when the
++// root capture fails. It is not part of the product.
++
++#pragma once
++
++#ifdef LXR_ROOT_DIAG
++
++#include <atomic>
++#include <stdint.h>
++#include <stdio.h>
++#include <unistd.h>
++#include <sys/syscall.h>
++#include <time.h>
++
++struct LxrDiagEntry
++{
++    uint64_t seq;
++    uint64_t ns;
++    uint32_t tid;
++    uint32_t kind;
++    uint64_t a;
++    uint64_t b;
++    uint64_t c;
++};
++
++constexpr size_t LxrDiagRingSize = size_t{1} << 20;
++
++inline LxrDiagEntry* LxrDiagRing()
++{
++    static LxrDiagEntry* ring = new LxrDiagEntry[LxrDiagRingSize]();
++    return ring;
++}
++
++inline std::atomic<uint64_t>& LxrDiagSeq()
++{
++    static std::atomic<uint64_t> seq{1};
++    return seq;
++}
++
++inline uint64_t LxrDiagNow()
++{
++    timespec ts;
++    clock_gettime(CLOCK_MONOTONIC, &ts);
++    return static_cast<uint64_t>(ts.tv_sec) * 1000000000ull + static_cast<uint64_t>(ts.tv_nsec);
++}
++
++inline void LxrDiagLog(char kind, uint64_t a, uint64_t b = 0, uint64_t c = 0)
++{
++    static struct DeniedPrinter
++    {
++        std::atomic<uint64_t> count{0};
++        ~DeniedPrinter()
++        {
++            fprintf(stderr, "LXRDIAG denied-fresh-acquires=%llu\n", (unsigned long long)count.load());
++        }
++    } denied;
++    if (kind == 'N')
++    {
++        denied.count.fetch_add(1, std::memory_order_relaxed);
++    }
++    LxrDiagEntry* ring = LxrDiagRing();
++    uint64_t seq = LxrDiagSeq().fetch_add(1, std::memory_order_relaxed);
++    LxrDiagEntry& entry = ring[seq % LxrDiagRingSize];
++    entry.seq = 0;
++    entry.ns = LxrDiagNow();
++    entry.tid = static_cast<uint32_t>(syscall(SYS_gettid));
++    entry.kind = static_cast<uint32_t>(kind);
++    entry.a = a;
++    entry.b = b;
++    entry.c = c;
++    std::atomic_thread_fence(std::memory_order_release);
++    entry.seq = seq;
++}
++
++inline uint64_t a_block_start(uint64_t a)
++{
++    return a;
++}
++
++// Prints every entry that mentions the address (an allocation or a span that covers it) and the pause markers.
++inline void LxrDiagDump(uintptr_t object)
++{
++    uint64_t newest = LxrDiagSeq().load(std::memory_order_relaxed);
++    uint64_t oldest = newest > LxrDiagRingSize ? newest - LxrDiagRingSize + 1 : 1;
++    LxrDiagEntry* ring = LxrDiagRing();
++    uint64_t nowNs = LxrDiagNow();
++    fprintf(stderr, "LXRDIAG ring newest=%llu object=%p\n", (unsigned long long)newest, (void*)object);
++    size_t shown = 0;
++    for (uint64_t seq = oldest; seq < newest; seq++)
++    {
++        const LxrDiagEntry& e = ring[seq % LxrDiagRingSize];
++        if (e.seq != seq)
++        {
++            continue;
++        }
++        bool relevant = false;
++        switch (static_cast<char>(e.kind))
++        {
++        case 'A': // slow allocation: a=object, b=size
++        case 'C': // allocation complete: a=object, b=size, c=fast
++            relevant = object + 128 >= e.a && object < e.a + e.b + 128;
++            break;
++        case 'S': // span published: a=cursor, b=limit
++        case 'R': // span retired: a=cursor, b=limit
++            relevant = object >= e.a && object < e.b;
++            break;
++        case 'B': // block acquired: a=block, b=owner, c=source
++        case 'E': // block returned: a=block, b=owner, c=cursor
++        case 'M': // block cleared: a=block
++            relevant = object >= a_block_start(e.a) && object < a_block_start(e.a) + 0x8000;
++            break;
++        case 'H': // hole cleared: a=start, b=end
++            relevant = object >= e.a && object < e.b;
++            break;
++        case 'P': // pause suspended
++        case 'X': // scan start
++        case 'Y': // scan end
++        case 'Z': // resume
++            relevant = nowNs - e.ns < 3000000000ull;
++            break;
++        default:
++            break;
++        }
++        if (relevant)
++        {
++            if (++shown > 400)
++            {
++                break;
++            }
++            fprintf(stderr, "LXRDIAG %9llu -%8.3fms tid=%u %c a=%llx b=%llx c=%llx\n", (unsigned long long)e.seq,
++                (double)(nowNs - e.ns) / 1e6, e.tid, (char)e.kind, (unsigned long long)e.a, (unsigned long long)e.b,
++                (unsigned long long)e.c);
++        }
++    }
++    fflush(stderr);
++}
++
++#define LXR_DIAG_LOG(kind, ...) LxrDiagLog(kind, __VA_ARGS__)
++#else
++#define LXR_DIAG_LOG(kind, ...) ((void)0)
++#endif // LXR_ROOT_DIAG

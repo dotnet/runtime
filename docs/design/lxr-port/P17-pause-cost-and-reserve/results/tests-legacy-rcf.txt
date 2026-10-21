@@ -1,0 +1,16 @@
+Older suites P2.1 to P3.4 on the tree with the fix. Linux Release (g++ -O2), WSL.
+The first run of the 9 scripts is in tests-legacy-rcf-first-run.txt: P2.2 failed with 2205 of 2206 checks
+("neighboring block updates all win"). The test took a block again after it had reset the owner of the block by hand, in
+the same epoch. A fresh mutator acquire now refuses such a block, so the test resets the epoch byte too (one check added).
+After the test update, P2.2 was run again alone (2207 of 2207, five runs of the binary). The other 8 scripts ran once
+on the same tree and passed.
+
+run-side-metadata-validation exit=0 :: PASS: Linux x64 side-metadata validation
+run-immix-block-validation exit=0 :: PASS: Linux x64 Immix block validation (2207/2207 immix block checks passed)
+run-reference-count-validation exit=0 :: PASS: Linux x64 reference-count validation
+run-immix-allocation-validation exit=0 :: PASS: Linux x64 Immix allocation validation
+run-large-object-space-validation exit=0 :: PASS: Linux x64 large object space validation
+run-lxr-work-packet-validation exit=0 :: PASS: 642/642 P3.1 validation checks
+run-lxr-pause-validation exit=0 :: PASS: 380/380 P3.2 pause checks
+run-lxr-deferred-bucket-validation exit=0 :: PASS: 357/357 P3.3 validation checks
+run-lxr-completion-counter-validation exit=0 :: PASS: 57/57 P3.4 validation checks
