@@ -20,9 +20,9 @@ namespace Microsoft.NET.Build.Tasks;
 internal readonly struct InvocationCacheRequest
 {
     internal string Key { get; }
-    internal InvocationCacheOutputs Outputs { get; }
+    internal InvocationOutputs Outputs { get; }
 
-    internal InvocationCacheRequest(string key, InvocationCacheOutputs outputs)
+    internal InvocationCacheRequest(string key, InvocationOutputs outputs)
     {
         Key = key;
         Outputs = outputs;
@@ -46,36 +46,70 @@ internal sealed partial class InvocationCache
         _importance = importance;
     }
 
-    internal static int Execute(InvocationCache? cache, DateTime outputTimestampUtc,
-        Func<InvocationCacheRequest?> getInvocation,
-        Func<InvocationCacheOutputs?, int> execute,
-        Action<BinaryReader>? readMetadata = null, Action<BinaryWriter>? writeMetadata = null,
-        Action? onRestored = null)
-    {
-        InvocationCacheRequest? invocation = cache is null ? null : getInvocation();
-        if (cache is null || invocation is null)
-            return execute(null);
+    internal static int ExecuteCached(TaskLoggingHelper log, InvocationCacheConfiguration configuration,
+        Func<InvocationDescription?> describeInvocation, Func<int> executeNormally,
+        Action<BinaryReader>? readMetadata = null, Action<BinaryWriter>? writeMetadata = null)
+        => TryExecuteCached(log, configuration, describeInvocation, executeNormally, out int exitCode, readMetadata, writeMetadata)
+            ? exitCode : executeNormally();
 
-        string key = invocation.Value.Key;
-        InvocationCacheOutputs outputs = invocation.Value.Outputs;
-        if (cache.TryRestore(key, outputs, outputTimestampUtc, readMetadata))
+    private static bool TryExecuteCached(TaskLoggingHelper log, InvocationCacheConfiguration configuration,
+        Func<InvocationDescription?> describeInvocation, Func<int> executeNormally, out int exitCode,
+        Action<BinaryReader>? readMetadata = null, Action<BinaryWriter>? writeMetadata = null)
+    {
+        exitCode = 0;
+        InvocationCache? cache = TryCreateFromEnvironment(log, configuration);
+        if (cache is null)
+            return false;
+
+        InvocationDescription? invocation = describeInvocation();
+        if (invocation is null)
+            return false;
+
+        try
         {
-            onRestored?.Invoke();
-            return 0;
+            cache.ValidateOutputs(invocation.Outputs);
+        }
+        catch (ArgumentException ex)
+        {
+            log.LogMessage(MessageImportance.Low, $"{configuration.ToolName} cache bypassed: invalid output declaration: {ex.Message}");
+            return false;
         }
 
-        int exitCode = execute(outputs);
+        DateTime outputTimestampUtc = DateTime.UtcNow;
+        if (!TryComputeKey(log, configuration.ToolName, invocation, out string key))
+            return false;
+
+        exitCode = ExecutePrepared(cache, outputTimestampUtc,
+            new InvocationCacheRequest(key, invocation.Outputs), executeNormally,
+            readMetadata, writeMetadata);
+        return true;
+    }
+
+    internal static int ExecutePrepared(InvocationCache? cache, DateTime outputTimestampUtc,
+        InvocationCacheRequest? request,
+        Func<int> execute,
+        Action<BinaryReader>? readMetadata = null, Action<BinaryWriter>? writeMetadata = null)
+    {
+        if (cache is null || request is null)
+            return execute();
+
+        string key = request.Value.Key;
+        InvocationOutputs outputs = request.Value.Outputs;
+        if (cache.TryRestore(key, outputs, outputTimestampUtc, readMetadata))
+            return 0;
+
+        int exitCode = execute();
         if (exitCode == 0 && !cache._log.HasLoggedErrors)
             cache.Store(key, outputs, writeMetadata);
 
         return exitCode;
     }
 
-    internal bool TryRestore(string inputHash, InvocationCacheOutputs outputs, DateTime outputTimestampUtc,
+    internal bool TryRestore(string inputHash, InvocationOutputs outputs, DateTime outputTimestampUtc,
         Action<BinaryReader>? readMetadata = null)
     {
         string entryDirectory = GetEntryDirectory(inputHash);
-        outputs.Validate(CacheDirectory);
+        ValidateOutputs(outputs);
         if (outputTimestampUtc.Kind != DateTimeKind.Utc)
             throw new ArgumentException("The output timestamp must be UTC.", nameof(outputTimestampUtc));
 
@@ -91,10 +125,14 @@ internal sealed partial class InvocationCache
 
             // Check the entire entry before modifying outputs. Copies can still fail if the cache is wiped concurrently.
             if (outputs.DirectoryPath is not null)
-                outputs.Clean();
+            {
+                if (Directory.Exists(outputs.DirectoryPath))
+                    Directory.Delete(outputs.DirectoryPath, recursive: true);
+                Directory.CreateDirectory(outputs.DirectoryPath);
+            }
             for (int i = 0; i < files.Count; i++)
             {
-                string destination = outputs.GetPath(files[i].Name, i);
+                string destination = GetOutputPath(outputs, files[i].Name, i);
                 if (files[i].Present)
                 {
                     Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
@@ -103,7 +141,7 @@ internal sealed partial class InvocationCache
                 }
                 else
                 {
-                    InvocationCacheOutputs.DeleteFile(destination);
+                    DeleteOutputFile(destination);
                 }
             }
 
@@ -118,10 +156,10 @@ internal sealed partial class InvocationCache
         }
     }
 
-    internal void Store(string inputHash, InvocationCacheOutputs outputs, Action<BinaryWriter>? writeMetadata = null)
+    internal void Store(string inputHash, InvocationOutputs outputs, Action<BinaryWriter>? writeMetadata = null)
     {
         string entryDirectory = GetEntryDirectory(inputHash);
-        outputs.Validate(CacheDirectory);
+        ValidateOutputs(outputs);
         string? stagingDirectory = null;
 
         try
@@ -152,7 +190,7 @@ internal sealed partial class InvocationCache
                     return;
                 }
 
-                List<string> files = outputs.GetFileNames();
+                List<string> files = GetFileNames(outputs);
                 bool fileSet = outputs.DirectoryPath is null;
 
                 string parentDirectory = Path.GetDirectoryName(entryDirectory)!;
@@ -173,9 +211,9 @@ internal sealed partial class InvocationCache
                         bool present = true;
                         try
                         {
-                            File.Copy(outputs.GetPath(relativePath, i), cachedFile);
+                            File.Copy(GetOutputPath(outputs, relativePath, i), cachedFile);
                         }
-                        catch (Exception ex) when (!outputs.IsRequired(i) && ex is FileNotFoundException or DirectoryNotFoundException)
+                        catch (Exception ex) when (fileSet && ex is FileNotFoundException or DirectoryNotFoundException)
                         {
                             present = false;
                         }
@@ -258,13 +296,7 @@ internal sealed partial class InvocationCache
 #endif
     }
 
-    internal void CleanOutputs(InvocationCacheOutputs outputs)
-    {
-        outputs.Validate(CacheDirectory);
-        outputs.Clean();
-    }
-
-    private List<(string Name, bool Present)> ReadManifest(string entryDirectory, InvocationCacheOutputs outputs, Action<BinaryReader>? readMetadata)
+    private List<(string Name, bool Present)> ReadManifest(string entryDirectory, InvocationOutputs outputs, Action<BinaryReader>? readMetadata)
     {
         bool fileSet = outputs.DirectoryPath is null;
         if (!File.ReadAllBytes(Path.Combine(entryDirectory, "manifest.sha256")).SequenceEqual(HashFile(Path.Combine(entryDirectory, "manifest"))))
@@ -279,7 +311,7 @@ internal sealed partial class InvocationCache
         int fileCount = manifest.ReadInt32();
         if (fileCount < 0 || fileCount > manifest.BaseStream.Length - manifest.BaseStream.Position)
             throw new InvalidDataException($"Invalid {_toolName} cache file count.");
-        if (fileSet && fileCount != outputs.FileCount)
+        if (fileSet && fileCount != outputs.Files.Length)
             throw new InvalidDataException($"Invalid {_toolName} cache output inventory.");
 
         var files = new List<(string Name, bool Present)>();
@@ -293,8 +325,8 @@ internal sealed partial class InvocationCache
                 throw new InvalidDataException($"Invalid {_toolName} cache output inventory.");
 
             bool present = manifest.ReadBoolean();
-            if (!present && outputs.IsRequired(i))
-                throw new InvalidDataException($"Required {_toolName} cache output is missing.");
+            if (!present && !fileSet)
+                throw new InvalidDataException($"Directory inventory contains an absent {_toolName} cache file.");
             if (present)
             {
                 long length = manifest.ReadInt64();

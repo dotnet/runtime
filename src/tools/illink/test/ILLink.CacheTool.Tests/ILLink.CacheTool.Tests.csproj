@@ -1,6 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk">
-  <ItemGroup>
-    <Compile Include="$(RepoRoot)src\tasks\Common\InvocationCache.Tests\InvocationCachePurgeTests.cs" Link="InvocationCachePurgeTests.cs" />
-    <ProjectReference Include="..\..\src\ILLink.CacheTool\ILLink.CacheTool.csproj" />
-  </ItemGroup>
-</Project>

@@ -3893,30 +3893,17 @@ namespace Internal.Metadata.NativeFormat
             _handle = handle;
             uint offset = (uint)handle.Offset;
             NativeReader streamReader = reader._streamReader;
-            offset = streamReader.Read(offset, out _parentScopeOrNamespace);
+            offset = streamReader.Read(offset, out _scope);
             offset = streamReader.Read(offset, out _name);
-            offset = streamReader.Read(offset, out _typeDefinitions);
-            offset = streamReader.Read(offset, out _typeForwarders);
-            offset = streamReader.Read(offset, out _namespaceDefinitions);
         }
 
         public NamespaceDefinitionHandle Handle => _handle;
 
-        /// One of: NamespaceDefinition, ScopeDefinition
-        public Handle ParentScopeOrNamespace => _parentScopeOrNamespace;
-        private readonly Handle _parentScopeOrNamespace;
+        public ScopeDefinitionHandle Scope => _scope;
+        private readonly ScopeDefinitionHandle _scope;
 
         public ConstantStringValueHandle Name => _name;
         private readonly ConstantStringValueHandle _name;
-
-        public TypeDefinitionHandleCollection TypeDefinitions => _typeDefinitions;
-        private readonly TypeDefinitionHandleCollection _typeDefinitions;
-
-        public TypeForwarderHandleCollection TypeForwarders => _typeForwarders;
-        private readonly TypeForwarderHandleCollection _typeForwarders;
-
-        public NamespaceDefinitionHandleCollection NamespaceDefinitions => _namespaceDefinitions;
-        private readonly NamespaceDefinitionHandleCollection _namespaceDefinitions;
     } // NamespaceDefinition
 
 #if SYSTEM_PRIVATE_CORELIB
@@ -3990,15 +3977,14 @@ namespace Internal.Metadata.NativeFormat
             _handle = handle;
             uint offset = (uint)handle.Offset;
             NativeReader streamReader = reader._streamReader;
-            offset = streamReader.Read(offset, out _parentScopeOrNamespace);
+            offset = streamReader.Read(offset, out _scope);
             offset = streamReader.Read(offset, out _name);
         }
 
         public NamespaceReferenceHandle Handle => _handle;
 
-        /// One of: NamespaceReference, ScopeReference
-        public Handle ParentScopeOrNamespace => _parentScopeOrNamespace;
-        private readonly Handle _parentScopeOrNamespace;
+        public ScopeReferenceHandle Scope => _scope;
+        private readonly ScopeReferenceHandle _scope;
 
         public ConstantStringValueHandle Name => _name;
         private readonly ConstantStringValueHandle _name;
@@ -4702,7 +4688,8 @@ namespace Internal.Metadata.NativeFormat
             offset = streamReader.Read(offset, out _revisionNumber);
             offset = streamReader.Read(offset, out _publicKey);
             offset = streamReader.Read(offset, out _culture);
-            offset = streamReader.Read(offset, out _rootNamespaceDefinition);
+            offset = streamReader.Read(offset, out _typeDefinitions);
+            offset = streamReader.Read(offset, out _typeForwarders);
             offset = streamReader.Read(offset, out _entryPoint);
             offset = streamReader.Read(offset, out _globalModuleType);
             offset = streamReader.Read(offset, out _customAttributes);
@@ -4740,8 +4727,11 @@ namespace Internal.Metadata.NativeFormat
         public ConstantStringValueHandle Culture => _culture;
         private readonly ConstantStringValueHandle _culture;
 
-        public NamespaceDefinitionHandle RootNamespaceDefinition => _rootNamespaceDefinition;
-        private readonly NamespaceDefinitionHandle _rootNamespaceDefinition;
+        public TypeDefinitionHandleHashtable TypeDefinitions => _typeDefinitions;
+        private readonly TypeDefinitionHandleHashtable _typeDefinitions;
+
+        public TypeForwarderHandleHashtable TypeForwarders => _typeForwarders;
+        private readonly TypeForwarderHandleHashtable _typeForwarders;
 
         public QualifiedMethodHandle EntryPoint => _entryPoint;
         private readonly QualifiedMethodHandle _entryPoint;
@@ -5076,15 +5066,15 @@ namespace Internal.Metadata.NativeFormat
             _handle = handle;
             uint offset = (uint)handle.Offset;
             NativeReader streamReader = reader._streamReader;
-            offset = streamReader.Read(offset, out _scope);
+            offset = streamReader.Read(offset, out _namespace);
             offset = streamReader.Read(offset, out _name);
             offset = streamReader.Read(offset, out _nestedTypes);
         }
 
         public TypeForwarderHandle Handle => _handle;
 
-        public ScopeReferenceHandle Scope => _scope;
-        private readonly ScopeReferenceHandle _scope;
+        public NamespaceReferenceHandle Namespace => _namespace;
+        private readonly NamespaceReferenceHandle _namespace;
 
         public ConstantStringValueHandle Name => _name;
         private readonly ConstantStringValueHandle _name;
@@ -5899,144 +5889,6 @@ namespace Internal.Metadata.NativeFormat
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
 #endif
-    public readonly partial struct TypeForwarderHandleCollection
-    {
-        private readonly NativeReader _reader;
-        private readonly uint _offset;
-
-        internal TypeForwarderHandleCollection(NativeReader reader, uint offset)
-        {
-            _offset = offset;
-            _reader = reader;
-        }
-
-        public int Count
-        {
-            get
-            {
-                uint count;
-                _reader.DecodeUnsigned(_offset, out count);
-                return (int)count;
-            }
-        } // Count
-
-        public Enumerator GetEnumerator()
-        {
-            return new Enumerator(_reader, _offset);
-        } // GetEnumerator
-
-#if SYSTEM_PRIVATE_CORELIB
-        [CLSCompliant(false)]
-#endif
-        public struct Enumerator
-        {
-            private readonly NativeReader _reader;
-            private uint _offset;
-            private uint _remaining;
-            private TypeForwarderHandle _current;
-
-            internal Enumerator(NativeReader reader, uint offset)
-            {
-                _reader = reader;
-                _offset = reader.DecodeUnsigned(offset, out _remaining);
-                _current = default(TypeForwarderHandle);
-            }
-
-            public TypeForwarderHandle Current
-            {
-                get
-                {
-                    return _current;
-                }
-            } // Current
-
-            public bool MoveNext()
-            {
-                if (_remaining == 0)
-                    return false;
-                _remaining--;
-                _offset = _reader.Read(_offset, out _current);
-                return true;
-            } // MoveNext
-
-            public void Dispose()
-            {
-            } // Dispose
-        } // Enumerator
-    } // TypeForwarderHandleCollection
-
-#if SYSTEM_PRIVATE_CORELIB
-    [CLSCompliant(false)]
-#endif
-    public readonly partial struct NamespaceDefinitionHandleCollection
-    {
-        private readonly NativeReader _reader;
-        private readonly uint _offset;
-
-        internal NamespaceDefinitionHandleCollection(NativeReader reader, uint offset)
-        {
-            _offset = offset;
-            _reader = reader;
-        }
-
-        public int Count
-        {
-            get
-            {
-                uint count;
-                _reader.DecodeUnsigned(_offset, out count);
-                return (int)count;
-            }
-        } // Count
-
-        public Enumerator GetEnumerator()
-        {
-            return new Enumerator(_reader, _offset);
-        } // GetEnumerator
-
-#if SYSTEM_PRIVATE_CORELIB
-        [CLSCompliant(false)]
-#endif
-        public struct Enumerator
-        {
-            private readonly NativeReader _reader;
-            private uint _offset;
-            private uint _remaining;
-            private NamespaceDefinitionHandle _current;
-
-            internal Enumerator(NativeReader reader, uint offset)
-            {
-                _reader = reader;
-                _offset = reader.DecodeUnsigned(offset, out _remaining);
-                _current = default(NamespaceDefinitionHandle);
-            }
-
-            public NamespaceDefinitionHandle Current
-            {
-                get
-                {
-                    return _current;
-                }
-            } // Current
-
-            public bool MoveNext()
-            {
-                if (_remaining == 0)
-                    return false;
-                _remaining--;
-                _offset = _reader.Read(_offset, out _current);
-                return true;
-            } // MoveNext
-
-            public void Dispose()
-            {
-            } // Dispose
-        } // Enumerator
-    } // NamespaceDefinitionHandleCollection
-
-#if SYSTEM_PRIVATE_CORELIB
-    [CLSCompliant(false)]
-#endif
     public readonly partial struct MethodHandleCollection
     {
         private readonly NativeReader _reader;
@@ -6313,6 +6165,75 @@ namespace Internal.Metadata.NativeFormat
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
 #endif
+    public readonly partial struct TypeForwarderHandleCollection
+    {
+        private readonly NativeReader _reader;
+        private readonly uint _offset;
+
+        internal TypeForwarderHandleCollection(NativeReader reader, uint offset)
+        {
+            _offset = offset;
+            _reader = reader;
+        }
+
+        public int Count
+        {
+            get
+            {
+                uint count;
+                _reader.DecodeUnsigned(_offset, out count);
+                return (int)count;
+            }
+        } // Count
+
+        public Enumerator GetEnumerator()
+        {
+            return new Enumerator(_reader, _offset);
+        } // GetEnumerator
+
+#if SYSTEM_PRIVATE_CORELIB
+        [CLSCompliant(false)]
+#endif
+        public struct Enumerator
+        {
+            private readonly NativeReader _reader;
+            private uint _offset;
+            private uint _remaining;
+            private TypeForwarderHandle _current;
+
+            internal Enumerator(NativeReader reader, uint offset)
+            {
+                _reader = reader;
+                _offset = reader.DecodeUnsigned(offset, out _remaining);
+                _current = default(TypeForwarderHandle);
+            }
+
+            public TypeForwarderHandle Current
+            {
+                get
+                {
+                    return _current;
+                }
+            } // Current
+
+            public bool MoveNext()
+            {
+                if (_remaining == 0)
+                    return false;
+                _remaining--;
+                _offset = _reader.Read(_offset, out _current);
+                return true;
+            } // MoveNext
+
+            public void Dispose()
+            {
+            } // Dispose
+        } // Enumerator
+    } // TypeForwarderHandleCollection
+
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
     public readonly partial struct ScopeDefinitionHandleCollection
     {
         private readonly NativeReader _reader;
@@ -6378,6 +6299,164 @@ namespace Internal.Metadata.NativeFormat
             } // Dispose
         } // Enumerator
     } // ScopeDefinitionHandleCollection
+
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
+    public readonly partial struct TypeDefinitionHandleHashtable
+    {
+        private readonly NativeHashtable _hashtable;
+
+        internal TypeDefinitionHandleHashtable(NativeHashtable hashtable)
+        {
+            _hashtable = hashtable;
+        }
+
+        public Enumerator GetEnumerator() => new Enumerator(_hashtable.EnumerateAllEntries());
+
+        public LookupEnumerator Lookup(int hashCode) => new LookupEnumerator(_hashtable.Lookup(hashCode));
+
+#if SYSTEM_PRIVATE_CORELIB
+        [CLSCompliant(false)]
+#endif
+        public struct Enumerator
+        {
+            private NativeHashtable.AllEntriesEnumerator _enumerator;
+            private TypeDefinitionHandle _current;
+
+            internal Enumerator(NativeHashtable.AllEntriesEnumerator enumerator)
+            {
+                _enumerator = enumerator;
+                _current = default;
+            }
+
+            public TypeDefinitionHandle Current => _current;
+
+            public bool MoveNext()
+            {
+                NativeParser parser = _enumerator.GetNext();
+                if (parser.IsNull)
+                    return false;
+                _current = new TypeDefinitionHandle((int)parser.Offset);
+                return true;
+            } // MoveNext
+
+            public void Dispose()
+            {
+            } // Dispose
+        } // Enumerator
+
+#if SYSTEM_PRIVATE_CORELIB
+        [CLSCompliant(false)]
+#endif
+        public struct LookupEnumerator
+        {
+            private NativeHashtable.Enumerator _enumerator;
+            private TypeDefinitionHandle _current;
+
+            internal LookupEnumerator(NativeHashtable.Enumerator enumerator)
+            {
+                _enumerator = enumerator;
+                _current = default;
+            }
+
+            public TypeDefinitionHandle Current => _current;
+
+            public LookupEnumerator GetEnumerator() => this;
+
+            public bool MoveNext()
+            {
+                NativeParser parser = _enumerator.GetNext();
+                if (parser.IsNull)
+                    return false;
+                _current = new TypeDefinitionHandle((int)parser.Offset);
+                return true;
+            } // MoveNext
+
+            public void Dispose()
+            {
+            } // Dispose
+        } // LookupEnumerator
+    } // TypeDefinitionHandleHashtable
+
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+#endif
+    public readonly partial struct TypeForwarderHandleHashtable
+    {
+        private readonly NativeHashtable _hashtable;
+
+        internal TypeForwarderHandleHashtable(NativeHashtable hashtable)
+        {
+            _hashtable = hashtable;
+        }
+
+        public Enumerator GetEnumerator() => new Enumerator(_hashtable.EnumerateAllEntries());
+
+        public LookupEnumerator Lookup(int hashCode) => new LookupEnumerator(_hashtable.Lookup(hashCode));
+
+#if SYSTEM_PRIVATE_CORELIB
+        [CLSCompliant(false)]
+#endif
+        public struct Enumerator
+        {
+            private NativeHashtable.AllEntriesEnumerator _enumerator;
+            private TypeForwarderHandle _current;
+
+            internal Enumerator(NativeHashtable.AllEntriesEnumerator enumerator)
+            {
+                _enumerator = enumerator;
+                _current = default;
+            }
+
+            public TypeForwarderHandle Current => _current;
+
+            public bool MoveNext()
+            {
+                NativeParser parser = _enumerator.GetNext();
+                if (parser.IsNull)
+                    return false;
+                _current = new TypeForwarderHandle((int)parser.Offset);
+                return true;
+            } // MoveNext
+
+            public void Dispose()
+            {
+            } // Dispose
+        } // Enumerator
+
+#if SYSTEM_PRIVATE_CORELIB
+        [CLSCompliant(false)]
+#endif
+        public struct LookupEnumerator
+        {
+            private NativeHashtable.Enumerator _enumerator;
+            private TypeForwarderHandle _current;
+
+            internal LookupEnumerator(NativeHashtable.Enumerator enumerator)
+            {
+                _enumerator = enumerator;
+                _current = default;
+            }
+
+            public TypeForwarderHandle Current => _current;
+
+            public LookupEnumerator GetEnumerator() => this;
+
+            public bool MoveNext()
+            {
+                NativeParser parser = _enumerator.GetNext();
+                if (parser.IsNull)
+                    return false;
+                _current = new TypeForwarderHandle((int)parser.Offset);
+                return true;
+            } // MoveNext
+
+            public void Dispose()
+            {
+            } // Dispose
+        } // LookupEnumerator
+    } // TypeForwarderHandleHashtable
 
 #if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]

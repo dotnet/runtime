@@ -363,7 +363,11 @@ namespace System.Reflection
                     isOpen = false;
                     if (!targetParameterEnumerator.MoveNext())
                         return null;
-                    if (target != null && !IsAssignableFrom(targetParameterEnumerator.Current.ParameterType, target.GetType()))
+                    Type firstParameterType = targetParameterEnumerator.Current.ParameterType;
+                    // The closed static thunk passes the captured object reference without unboxing.
+                    if (firstParameterType.IsValueType || firstParameterType.IsByRef || firstParameterType.IsPointer || firstParameterType.IsFunctionPointer)
+                        return null;
+                    if (target != null && !IsAssignableFrom(firstParameterType, target.GetType()))
                         return null;
                 }
             }

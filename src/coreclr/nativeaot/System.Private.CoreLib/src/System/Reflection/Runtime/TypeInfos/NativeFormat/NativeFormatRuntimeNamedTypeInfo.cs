@@ -30,7 +30,7 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
                 // not be the canonical scope representing the assembly. We need to look up the assembly
                 // by name to ensure we get the right one.
 
-                ScopeDefinitionHandle scopeDefinitionHandle = NamespaceChain.DefiningScope;
+                ScopeDefinitionHandle scopeDefinitionHandle = NamespaceDefinition.Scope;
                 RuntimeAssemblyName runtimeAssemblyName = scopeDefinitionHandle.ToRuntimeAssemblyName(_reader);
 
                 return RuntimeAssemblyInfo.GetRuntimeAssembly(runtimeAssemblyName);
@@ -49,7 +49,7 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
                 // Otherwise fall back to attributes
                 foreach (CustomAttributeHandle cah in _typeDefinition.CustomAttributes)
                 {
-                    if (cah.IsCustomAttributeOfType(_reader, ["System", "Runtime", "CompilerServices"], "IsByRefLikeAttribute"))
+                    if (cah.IsCustomAttributeOfType(_reader, "System.Runtime.CompilerServices", "IsByRefLikeAttribute"))
                         return true;
                 }
                 return false;
@@ -67,7 +67,7 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
                 // Following age-old CLR tradition, we search for the custom attribute using a name-based search. Since this makes it harder
                 // to be sure we won't run into custom attribute constructors that comply with the GuidAttribute(String) signature,
                 // we'll check that it does and silently skip the CA if it doesn't match the expected pattern.
-                if (cah.IsCustomAttributeOfType(_reader, ["System", "Runtime", "InteropServices"], "GuidAttribute"))
+                if (cah.IsCustomAttributeOfType(_reader, "System.Runtime.InteropServices", "GuidAttribute"))
                 {
                     CustomAttribute ca = cah.GetCustomAttribute(_reader);
                     HandleCollection.Enumerator fahEnumerator = ca.FixedArguments.GetEnumerator();
@@ -106,7 +106,13 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
         {
             get
             {
-                return NamespaceChain.NameSpace.EscapeTypeNameIdentifier();
+                string ns = _lazyNamespace;
+                if (ns is null)
+                {
+                    ns = NamespaceDefinition.Name.GetStringOrNull(_reader).EscapeTypeNameIdentifier() ?? string.Empty;
+                    _lazyNamespace = ns;
+                }
+                return ns.Length == 0 ? null : ns;
             }
         }
 
@@ -179,8 +185,7 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
         {
             get
             {
-                NamespaceChain namespaceChain = NamespaceChain;
-                ScopeDefinitionHandle scopeDefinitionHandle = namespaceChain.DefiningScope;
+                ScopeDefinitionHandle scopeDefinitionHandle = NamespaceDefinition.Scope;
                 return scopeDefinitionHandle.ToRuntimeAssemblyName(_reader).FullName;
             }
         }
@@ -249,7 +254,7 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
             isFlags = false;
             foreach (CustomAttributeHandle cah in _typeDefinition.CustomAttributes)
             {
-                if (cah.IsCustomAttributeOfType(_reader, ["System"], "FlagsAttribute"))
+                if (cah.IsCustomAttributeOfType(_reader, "System", "FlagsAttribute"))
                 {
                     isFlags = true;
                     break;
@@ -369,27 +374,21 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
         private readonly TypeDefinitionHandle _typeDefinitionHandle;
         private readonly TypeDefinition _typeDefinition;
 
-        private NamespaceChain NamespaceChain
+        private NamespaceDefinition NamespaceDefinition
         {
             get
             {
-                NamespaceChain? namespaceChain = _lazyNamespaceChain;
-                if (namespaceChain is null)
+                Handle namespaceOrEnclosingType = _typeDefinition.NamespaceOrEnclosingType;
+                while (namespaceOrEnclosingType.HandleType == HandleType.TypeDefinition)
                 {
-                    Handle namespaceOrEnclosingType = _typeDefinition.NamespaceOrEnclosingType;
-                    while (namespaceOrEnclosingType.HandleType == HandleType.TypeDefinition)
-                    {
-                        TypeDefinition typeDefinition = namespaceOrEnclosingType.ToTypeDefinitionHandle(_reader).GetTypeDefinition(_reader);
-                        namespaceOrEnclosingType = typeDefinition.NamespaceOrEnclosingType;
-                    }
-
-                    namespaceChain = _lazyNamespaceChain ??= new NamespaceChain(_reader, namespaceOrEnclosingType.ToNamespaceDefinitionHandle(_reader));
+                    TypeDefinition typeDefinition = namespaceOrEnclosingType.ToTypeDefinitionHandle(_reader).GetTypeDefinition(_reader);
+                    namespaceOrEnclosingType = typeDefinition.NamespaceOrEnclosingType;
                 }
 
-                return namespaceChain;
+                return namespaceOrEnclosingType.ToNamespaceDefinitionHandle(_reader).GetNamespaceDefinition(_reader);
             }
         }
 
-        private volatile NamespaceChain _lazyNamespaceChain;
+        private volatile string _lazyNamespace;
     }
 }

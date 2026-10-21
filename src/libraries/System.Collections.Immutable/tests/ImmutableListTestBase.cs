@@ -355,7 +355,7 @@ namespace System.Collections.Immutable.Tests
 
             for (int i = 0; i < list.Count; i++)
             {
-                for (int j = 0; j < list.Count - i; j++)
+                for (int j = 0; j <= list.Count - i; j++)
                 {
                     this.ReverseTestHelper(list, i, j);
                 }

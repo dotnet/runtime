@@ -13,6 +13,9 @@ namespace Microsoft.NET.Build.Tasks
 {
     public class RunReadyToRunCompiler : ToolTask
     {
+        private static readonly InvocationCacheConfiguration s_cacheConfiguration =
+            new("Crossgen2", "CROSSGEN2_EXPERIMENTAL_CACHE", "CROSSGEN2_EXPERIMENTAL_CACHE_PATH");
+
         public ITaskItem CrossgenTool { get; set; }
         public ITaskItem Crossgen2Tool { get; set; }
 
@@ -39,7 +42,6 @@ namespace Microsoft.NET.Build.Tasks
         private string _outputPDBImage;
         private string _createPDBCommand;
         private bool _createCompositeImage;
-        private List<Crossgen2Cache.Diagnostic> _cacheDiagnostics;
 
         private bool IsPdbCompilation => !string.IsNullOrEmpty(_createPDBCommand);
         private bool ActuallyUseCrossgen2 => UseCrossgen2 && !IsPdbCompilation;
@@ -410,51 +412,14 @@ namespace Microsoft.NET.Build.Tasks
         }
 
         protected override int ExecuteTool(string pathToTool, string responseFileCommands, string commandLineCommands)
-        {
-            // Ensure output sub-directories exists - Crossgen does not create directories for output files. Any relative path used with the
-            // '/out' parameter has to have an existing directory.
-            Directory.CreateDirectory(Path.GetDirectoryName(_outputR2RImage));
+            => InvocationCache.ExecuteCached(Log, s_cacheConfiguration,
+                describeInvocation: () => DescribeInvocation(pathToTool, responseFileCommands, commandLineCommands),
+                executeNormally: () => ExecuteNormally(pathToTool, responseFileCommands, commandLineCommands),
+                readMetadata: ReadCachedTaskOutputs,
+                writeMetadata: WriteCachedTaskOutputs);
 
-            WarningsDetected = false;
-
-            DateTime timestamp = DateTime.UtcNow;
-            Crossgen2Cache cache = Crossgen2Cache.FromEnvironment(Log);
-            var diagnostics = new List<Crossgen2Cache.Diagnostic>();
-            return InvocationCache.Execute(cache?.Storage, timestamp,
-                () => PrepareCacheInvocation(cache, pathToTool, responseFileCommands, commandLineCommands),
-                outputs =>
-                {
-                    if (outputs is null)
-                    {
-                        return ExecuteCompiler(pathToTool, responseFileCommands, commandLineCommands);
-                    }
-
-                    // Discard any partially read metadata before capturing the fallback execution.
-                    diagnostics.Clear();
-                    cache.Storage.CleanOutputs(outputs);
-                    _cacheDiagnostics = diagnostics;
-                    try
-                    {
-                        return ExecuteCompiler(pathToTool, responseFileCommands, commandLineCommands);
-                    }
-                    finally
-                    {
-                        _cacheDiagnostics = null;
-                    }
-                },
-                reader => Crossgen2Cache.ReadDiagnostics(reader, diagnostics),
-                writer => Crossgen2Cache.WriteDiagnostics(writer, diagnostics),
-                () =>
-                {
-                    foreach (Crossgen2Cache.Diagnostic diagnostic in diagnostics)
-                    {
-                        LogEventsFromTextOutput(diagnostic.Text, diagnostic.Importance);
-                    }
-                });
-        }
-
-        private InvocationCacheRequest? PrepareCacheInvocation(Crossgen2Cache cache,
-            string pathToTool, string responseFileCommands, string commandLineCommands)
+#nullable enable annotations
+        private InvocationDescription? DescribeInvocation(string pathToTool, string responseFileCommands, string commandLineCommands)
         {
             try
             {
@@ -470,27 +435,92 @@ namespace Microsoft.NET.Build.Tasks
                     !Crossgen2CacheInvocation.SupportsTarget(Crossgen2Tool) ||
                     !Crossgen2Cache.PathComparer.Equals(Crossgen2Cache.InputPath(pathToTool), Crossgen2Cache.InputPath(Crossgen2Tool.ItemSpec)))
                 {
-                    cache.Report("bypass: unsupported invocation (requires directly executed Linux-x64 or Windows-x64 crossgen2 targeting its host, with non-composite PE output and without unrecognized extra arguments or environment overrides)");
+                    Crossgen2Cache.Report(Log, "bypass: unsupported invocation (requires directly executed Linux-x64 or Windows-x64 crossgen2 targeting its host, with non-composite PE output and without unrecognized extra arguments or environment overrides)");
                     return null;
                 }
 
                 Crossgen2CacheInvocation invocation = Crossgen2CacheInvocation.Create(pathToTool,
                     Crossgen2Tool.GetMetadata(MetadataKeys.JitPath), _outputR2RImage, _outputPDBImage,
                     _emitSymbols, Crossgen2Tool.GetMetadata(MetadataKeys.PerfmapFormatVersion));
-                InvocationCacheOutputs outputs = cache.DeclareOutputs(invocation.Outputs);
-                string key = Crossgen2Cache.ComputeKey(invocation.CompilerDependencies,
+                return Crossgen2Cache.DescribeInvocation(invocation.CompilerDependencies,
                     _inputAssembly, ImplementationAssemblyReferences, Crossgen2PgoFiles,
                     invocation.Outputs, responseFileCommands, commandLineCommands,
                     string.Join("\n", ShowCompilerWarnings, LogStandardErrorAsError, StandardOutputImportance, StandardErrorImportance),
                     GetWorkingDirectory() ?? Directory.GetCurrentDirectory());
-                return new InvocationCacheRequest(key, outputs);
             }
             catch (Exception ex) when (Crossgen2Cache.IsCacheFailure(ex))
             {
-                cache.Report($"bypass: {ex.Message}");
+                Crossgen2Cache.Report(Log, $"bypass: {ex.Message}");
                 return null;
             }
         }
+
+#nullable disable annotations
+
+        private int ExecuteNormally(string pathToTool, string responseFileCommands, string commandLineCommands)
+        {
+            WarningsDetected = false;
+            try
+            {
+                if (!IsPdbCompilation)
+                {
+                    DeleteOutputFile(_outputR2RImage);
+                }
+
+                string symbolOutput = _outputPDBImage;
+                if (ActuallyUseCrossgen2 && !Crossgen2IsVersion5 &&
+                    (!_emitSymbols || Crossgen2Tool.GetMetadata(MetadataKeys.TargetOS) == "windows" ||
+                     Crossgen2Tool.GetMetadata(MetadataKeys.PerfmapFormatVersion) == "1"))
+                {
+                    symbolOutput = GetSymbolOutputPath(_outputR2RImage, _outputPDBImage,
+                        Crossgen2Tool.GetMetadata(MetadataKeys.TargetOS) == "windows");
+                }
+                if (!string.IsNullOrEmpty(symbolOutput))
+                {
+                    DeleteOutputFile(symbolOutput);
+                }
+
+                // Crossgen does not create parent directories for its output files.
+                Directory.CreateDirectory(Path.GetDirectoryName(_outputR2RImage));
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                Log.LogErrorFromException(ex);
+                return -1;
+            }
+
+            return ExecuteCompiler(pathToTool, responseFileCommands, commandLineCommands);
+        }
+
+        internal static string GetSymbolOutputPath(string image, string symbols, bool windows)
+        {
+            string extension = ".ni.r2rmap";
+            if (windows)
+            {
+                bool nativeImageName = image.EndsWith(".ni.dll", StringComparison.OrdinalIgnoreCase) ||
+                    image.EndsWith(".ni.exe", StringComparison.OrdinalIgnoreCase);
+                extension = nativeImageName ? ".pdb" : ".ni.pdb";
+            }
+            string output = Path.ChangeExtension(image, extension);
+            return string.IsNullOrEmpty(symbols)
+                ? output : Path.Combine(Path.GetDirectoryName(symbols), Path.GetFileName(output));
+        }
+
+        private static void DeleteOutputFile(string path)
+        {
+            try
+            {
+                File.Delete(path);
+            }
+            catch (DirectoryNotFoundException)
+            {
+                // A missing parent already guarantees the output is absent.
+            }
+        }
+
+        private void ReadCachedTaskOutputs(BinaryReader reader) => WarningsDetected = reader.ReadBoolean();
+
+        private void WriteCachedTaskOutputs(BinaryWriter writer) => writer.Write(WarningsDetected);
 
         internal virtual int ExecuteCompiler(string pathToTool, string responseFileCommands, string commandLineCommands)
             => base.ExecuteTool(pathToTool, responseFileCommands, commandLineCommands);
@@ -544,14 +574,6 @@ namespace Microsoft.NET.Build.Tasks
 
         protected override void LogEventsFromTextOutput(string singleLine, MessageImportance messageImportance)
         {
-            if (_cacheDiagnostics is not null)
-            {
-                lock (_cacheDiagnostics)
-                {
-                    _cacheDiagnostics.Add(new Crossgen2Cache.Diagnostic(singleLine, messageImportance));
-                }
-            }
-
             if (!ShowCompilerWarnings && singleLine.Contains("warning:", StringComparison.OrdinalIgnoreCase))
             {
                 Log.LogMessage(MessageImportance.Normal, singleLine);

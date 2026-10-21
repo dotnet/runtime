@@ -101,22 +101,15 @@ internal sealed class Crossgen2CacheInvocation
             string.IsNullOrEmpty(jit) ? Path.Combine(directory, windows ? "clrjit_win_x64_x64.dll" : "libclrjit_unix_x64_x64.so") : jit,
             Path.Combine(directory, windows ? "jitinterface_x64.dll" : "libjitinterface_x64.so")
         };
-        string symbolOutput = Path.ChangeExtension(image, ".ni.r2rmap");
-        if (windows)
+        if (windows && emitSymbols)
         {
-            bool nativeImageName = image.EndsWith(".ni.dll", StringComparison.OrdinalIgnoreCase) ||
-                image.EndsWith(".ni.exe", StringComparison.OrdinalIgnoreCase);
-            symbolOutput = Path.ChangeExtension(image, nativeImageName ? ".pdb" : ".ni.pdb");
-            if (emitSymbols)
-            {
-                dependencies.Add(Path.Combine(directory, "Microsoft.DiaSymReader.Native.dll"));
-            }
+            dependencies.Add(Path.Combine(directory, "Microsoft.DiaSymReader.Native.dll"));
         }
         if (!string.IsNullOrEmpty(symbols))
         {
             symbols = Crossgen2Cache.InputPath(symbols);
-            symbolOutput = Path.Combine(Path.GetDirectoryName(symbols)!, Path.GetFileName(symbolOutput));
         }
+        string symbolOutput = RunReadyToRunCompiler.GetSymbolOutputPath(image, symbols, windows);
         if (emitSymbols && ((!windows && perfmapFormatVersion != "1") ||
             !Crossgen2Cache.PathComparer.Equals(symbols, symbolOutput)))
         {

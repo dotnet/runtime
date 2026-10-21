@@ -13,10 +13,11 @@ export CROSSGEN2_EXPERIMENTAL_CACHE_PATH=/absolute/path/to/cache # optional
 ```
 
 The path alone does not enable caching. Unset, empty, or `false` disables it before
-any cache I/O or hashing. Invalid boolean settings and unsupported invocations
-log a normal-importance bypass message and execute normally. Without an override,
-the default on either supported platform is `$XDG_CACHE_HOME/crossgen2` (fully
-qualified XDG paths only), or `.cache/crossgen2` under the user's profile directory.
+any cache I/O or hashing. Invalid configuration logs a low-importance diagnostic;
+unsupported invocations log a normal-importance bypass message. Both execute
+normally. Without an override, the shared platform default is
+`$XDG_CACHE_HOME/crossgen2` on Linux (absolute XDG paths only), falling back to
+`$HOME/.cache/crossgen2`, and `LocalApplicationData/crossgen2` on Windows.
 On Windows, configure it with PowerShell:
 
 ```powershell
@@ -56,11 +57,14 @@ When symbols are enabled, `OutputPDBImage` must use that exact compiler-generate
 filename in the declared directory. When symbols are disabled, the cache still
 tracks that filename in the metadata's directory to remove stale symbols; without
 symbol-path metadata it tracks the filename beside the image.
-Before an eligible miss executes, it deletes these two files, including
-symbols left by a previous symbol-enabled compilation.
+Before tool execution, the task deletes these two files, including
+symbols left by a previous symbol-enabled compilation. Preparation belongs to
+normal tool execution, not the cache, so it also runs when caching is disabled
+or bypassed. This intentionally changes those paths to remove stale outputs.
 A hit restores their recorded presence/absence. Unrelated outputs and target-owned
-semaphores are untouched. Bypassed/disabled invocations retain existing behavior,
-including existing cleanup behavior.
+semaphores are untouched. PDB-only compilation preserves the native image it reads
+and cleans only its symbol output. When legacy symbols are requested, preparation
+uses the declared symbol path rather than the modern crossgen2 naming convention.
 
 Legacy crossgen, crossgen2 version 5, separate PDB-generation tasks, composites,
 legacy MVID-named maps, Mach-O/Wasm containers, unrecognized extra
@@ -93,8 +97,9 @@ Caching requires an on-disk task assembly. If it is embedded in a single-file
 MSBuild host and has no assembly location, the invocation visibly bypasses caching.
 
 `Crossgen2CacheInvocation` resolves platform-specific deployment dependencies and
-symbol-output conventions; the key computation, storage, restoration, and
-diagnostic replay remain shared.
+symbol-output conventions. Task-specific description code discovers assembly and
+PDB inputs and checks supported semantics; the shared layer hashes the resulting
+description and owns cache storage/restoration.
 
 The deployment must be the actual compiler executable or single-file bundle, not
 a wrapper. Linux requires an ELF executable; Windows requires an x64 PE executable
@@ -116,8 +121,9 @@ image on each compilation. A cache hit restores the original stored image/PDB
 pair byte-for-byte, rather than producing a new debug identity. Compiler-created
 temporary native-image copies are not replayed.
 
-**Inputs, tool deployment, and environment must remain stable from hashing through
-execution/restoration.** There is no input snapshot or persistent digest cache.
+**Inputs, tool deployment, and environment must remain stable from invocation
+description through hashing and execution/restoration.** There is no input snapshot
+or persistent digest cache.
 Cache/output paths must not alias inputs or each other through symbolic links,
 hard links, or filesystem aliases; use ordinary, trusted local directories.
 The cache is trusted build storage, not an authenticated artifact source.
@@ -175,27 +181,54 @@ remains supported in the meantime.
 
 ### Diagnostics, storage, and failures
 
-Only exit-code-zero results without task-logged errors are stored, and the native
-image must exist. Compiler text and message importance are stored and replayed
-through the same task diagnostic handler on a hit, preserving warnings and
-`WarningsDetected` rather than suppressing them. Replay is compiler output, not a
-claim that the compiler ran; timing text, if any, describes the original run.
-External tool side effects are not replayed. Cache diagnostics are additional
-normal-importance messages. Tool failures retain normal exit/error reporting.
+Only exit-code-zero results without task-logged errors are stored.
+Cache hits do not replay compiler warnings or other compiler
+text, matching the no-replay policy of the ILLink cache. `WarningsDetected` is
+stored and restored separately as a Boolean task output; it remains available
+to callers without replaying the warning messages. Normal execution resets this
+output before running the compiler, including after a failed restoration.
+External tool side effects are not replayed. Shared cache status/failure messages
+are low-importance diagnostics. Tool failures retain normal exit/error reporting.
 
 Entries live under `<cache>/v1/<lowercase-SHA-256>/` with indexed files in `outputs/`,
 a binary manifest containing the format version, output-contract kind, file count,
-storage names, presence flags, output lengths and hashes, and optional tool metadata
-(crossgen2 diagnostics). A manifest checksum protects this entire record.
+storage names, presence flags, output lengths and hashes, and optional task output
+metadata (crossgen2's `WarningsDetected`). A manifest checksum protects this entire record.
 The shared storage implementation under `src/tasks/Common/InvocationCache` is
 compiled into the task assembly; it captures and restores the declared file set,
-including optional-file absence. ILLink uses the same storage sources with an
+including absence. Files are not classified as required or optional: a successful
+execution's observed presence/content or absence is the result to reproduce.
+ILLink uses the same storage sources with an
 owned-directory contract and the same manifest encoding and checksum.
-The shared `InvocationCache.Execute` helper also handles restore-or-execute decisions and
+The shared `InvocationCache.ExecuteCached` helper also handles restore-or-execute decisions and
 stores only successful executions without logged errors. The task retains
-eligibility and key computation, declared-file cleanup, and diagnostic capture/replay.
-Unlike ILLink's owned-directory preparation, declared-file cleanup remains limited
-to cache-eligible executions.
+eligibility, invocation description, and task output serialization. Shared code
+computes the key; the task prepares outputs before actual compiler execution.
+Participating tasks use the same `ExecuteTool` convention: a single helper call
+passing an `InvocationCacheConfiguration` and parameterless callbacks that capture
+tool arguments and call the named `DescribeInvocation` and `ExecuteNormally`
+methods. The shared helper does not impose ToolTask's argument shape. `DescribeInvocation`
+returns an `InvocationDescription` with typed `InvocationInputs` and
+`InvocationOutputs` declarations plus argument/context strings. Both declarations
+use `FromFiles` for individual file paths; outputs also support `FromDirectory`
+for directory ownership. Neither declaration contains cache operations. The shared adapter
+returns directly to normal execution when no cache is available and calls
+`DescribeInvocation` only when caching is configured. A null description or other
+cache bypass also returns directly to normal execution. The timestamp is captured
+after description collection/validation, immediately before hashing. Cache creation is built
+in; the same platform-default and configuration-diagnostic policy applies to both
+tasks. The default directory name is the invariant-lowercase tool name, so the
+caller supplies `"Crossgen2"` only once in its static readonly configuration.
+That configuration contains environment-variable names, not resolved values;
+shared execution reads the current environment lazily. It is separate from the
+cache-independent invocation description.
+`ExecuteNormally` uses no cache types or helpers and does not branch on eligibility.
+Named cache-only callbacks read or write task output metadata. There is no
+task-specific cleanup callback, diagnostic capture/replay, invocation-start hook,
+or post-restore hook.
+Both ILLink's owned-directory preparation and crossgen's declared-file preparation
+belong to normal execution, regardless of cache configuration. Expected preparation
+I/O/access failures log an error and return failure without executing or storing.
 The shared implementation selects the storage version, not each tool. Compatibility is not
 guaranteed within this experimental version. The keyed task assembly changes with
 the embedded storage implementation, invalidating entries without changing the
@@ -215,8 +248,20 @@ before lookup, not the original cache timestamp, for downstream incremental chec
 Cache store failures are visible but do not fail a successful compilation.
 Corrupt existing entries are not repaired automatically. Cache operations are
 synchronous and do not add cancellation polling; tool execution retains ToolTask
-cancellation. There is no eviction, size limit, purge command, CI cache enablement, or stable
+cancellation. There is no automatic eviction, size limit, CI cache enablement, or stable
 on-disk format guarantee.
+
+Maintain an idle cache with the shared experimental tool:
+
+```sh
+dotnet build-cache purge --cache crossgen2 --before 2026-10-01T12:00:00Z
+```
+
+The named cache uses `CROSSGEN2_EXPERIMENTAL_CACHE_PATH` or the same platform
+default as the task, regardless of whether caching is enabled. Alternatively,
+use `--cache-directory /path/to/cache` on its own to select a directory directly.
+No build may use the selected cache while purging. See the
+[tool README](../../tools/BuildCache/README.md) for cutoff semantics and local usage.
 
 ### SDK coordination and local validation
 

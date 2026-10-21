@@ -3,14 +3,11 @@
 
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
-using System.Runtime.InteropServices;
-using System.Security.Cryptography;
 using System.Text;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
@@ -20,6 +17,9 @@ namespace ILLink.Tasks
 {
     public class ILLink : ToolTask
     {
+        private static readonly InvocationCacheConfiguration s_cacheConfiguration =
+            new("ILLink", "ILLINK_EXPERIMENTAL_CACHE", "ILLINK_EXPERIMENTAL_CACHE_PATH");
+
         /// <summary>
         ///   Paths to the assembly files that should be considered as
         ///   input to the ILLink.
@@ -270,49 +270,48 @@ namespace ILLink.Tasks
         protected override string GenerateFullPathToTool() => DotNetPath;
 
         protected override int ExecuteTool(string pathToTool, string responseFileCommands, string commandLineCommands)
-        {
-            DateTime outputTimestampUtc = DateTime.UtcNow;
-            InvocationCache cache = InvocationCache.TryCreateFromEnvironment(Log, "ILLink",
-                "ILLINK_EXPERIMENTAL_CACHE", "ILLINK_EXPERIMENTAL_CACHE_PATH", "illink");
-            InvocationCacheOutputs outputs = InvocationCacheOutputs.FromDirectory(OutputDirectory.ItemSpec);
-            return InvocationCache.Execute(cache, outputTimestampUtc,
-                () => TryComputeCacheKey(pathToTool, commandLineCommands, responseFileCommands, out string inputHash)
-                    ? new InvocationCacheRequest(inputHash, outputs) : null,
-                _ =>
-                {
-                    try
-                    {
-                        outputs.Clean();
-                    }
-                    catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-                    {
-                        Log.LogError($"Could not prepare ILLink output directory '{OutputDirectory.ItemSpec}': {ex.Message}");
-                        return -1;
-                    }
+            => InvocationCache.ExecuteCached(Log, s_cacheConfiguration,
+                () => DescribeInvocation(pathToTool, responseFileCommands, commandLineCommands),
+                () => ExecuteNormally(pathToTool, responseFileCommands, commandLineCommands));
 
-                    return base.ExecuteTool(pathToTool, responseFileCommands, commandLineCommands);
-                });
+        private int ExecuteNormally(string pathToTool, string responseFileCommands, string commandLineCommands)
+        {
+            try
+            {
+                string outputDirectory = Path.GetFullPath(OutputDirectory.ItemSpec);
+                if (Directory.Exists(outputDirectory))
+                    Directory.Delete(outputDirectory, recursive: true);
+                Directory.CreateDirectory(outputDirectory);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                Log.LogError($"Could not prepare ILLink output directory '{OutputDirectory.ItemSpec}': {ex.Message}");
+                return -1;
+            }
+
+            return base.ExecuteTool(pathToTool, responseFileCommands, commandLineCommands);
         }
 
-        private bool TryComputeCacheKey(string pathToTool, string commandLineCommands, string responseFileCommands, out string inputHash)
+#nullable enable annotations
+        private InvocationDescription? DescribeInvocation(string pathToTool, string responseFileCommands, string commandLineCommands)
         {
-            inputHash = string.Empty;
             if (CustomSteps?.Length > 0 || CustomData?.Length > 0 || DumpDependencies ||
                 !string.IsNullOrEmpty(DependenciesFileFormat) || EnvironmentVariables?.Length > 0)
             {
                 Log.LogMessage(MessageImportance.Low, "ILLink cache bypassed: custom steps/data, dependency dumps, and task environment overrides are not supported.");
-                return false;
-            }
-
-            if (!string.IsNullOrWhiteSpace(ExtraArgs))
-            {
-                Log.LogMessage(MessageImportance.Low, "ILLink cache bypassed: extra arguments are not supported.");
-                return false;
+                return null;
             }
 
             try
             {
                 var files = new SortedSet<string>(StringComparer.Ordinal);
+                var directories = new SortedSet<string>(StringComparer.Ordinal);
+                if (!TryAddCacheableExtraArgsInputs(files, directories))
+                {
+                    Log.LogMessage(MessageImportance.Low, "ILLink cache bypassed: extra arguments are not supported.");
+                    return null;
+                }
+
                 var assemblies = new HashSet<string>(StringComparer.Ordinal);
                 foreach (ITaskItem assembly in AssemblyPaths)
                     AddAssembly(assembly.ItemSpec);
@@ -321,40 +320,33 @@ namespace ILLink.Tasks
                 foreach (ITaskItem descriptor in RootDescriptorFiles ?? Array.Empty<ITaskItem>())
                     AddFile(descriptor.ItemSpec);
 
+                // Preserve AssemblyResolver's search behavior instead of replacing -d with
+                // explicit references. Include every candidate so additions and shadowing invalidate.
+                foreach (string directory in directories)
+                {
+                    foreach (string file in Directory.EnumerateFiles(directory))
+                    {
+                        string extension = Path.GetExtension(file);
+                        if (extension.Equals(".dll", StringComparison.OrdinalIgnoreCase) ||
+                            extension.Equals(".exe", StringComparison.OrdinalIgnoreCase) ||
+                            extension.Equals(".winmd", StringComparison.OrdinalIgnoreCase))
+                        {
+                            AddAssembly(file);
+                        }
+                    }
+                }
+
 #pragma warning disable IL3000 // MSBuild tasks are loaded from assemblies on disk.
                 AddFile(typeof(ILLink).Assembly.Location);
 #pragma warning restore IL3000
                 AddFile(pathToTool);
                 AddFile(ILLinkPath);
 
-                using var sha256 = SHA256.Create();
-                using var description = new MemoryStream();
-                using var writer = new BinaryWriter(description, Encoding.UTF8, leaveOpen: true);
-                writer.Write("ILLink task cache key v1");
-                writer.Write(commandLineCommands);
-                writer.Write(responseFileCommands);
-                writer.Write(Environment.CurrentDirectory);
-                writer.Write(Path.GetFullPath(OutputDirectory.ItemSpec));
-                writer.Write(RuntimeInformation.OSDescription);
-                writer.Write(RuntimeInformation.ProcessArchitecture.ToString());
-                writer.Write(CultureInfo.CurrentCulture.Name);
-                writer.Write(CultureInfo.CurrentUICulture.Name);
-                writer.Write(files.Count);
-                foreach (string file in files)
+                return new InvocationDescription(InvocationInputs.FromFiles(files.ToArray()), new[]
                 {
-                    writer.Write(file);
-                    using var input = File.OpenRead(file);
-                    writer.Write(sha256.ComputeHash(input));
-                }
-
-                writer.Flush();
-                description.Position = 0;
-#if NET
-                inputHash = Convert.ToHexStringLower(sha256.ComputeHash(description));
-#else
-                inputHash = BitConverter.ToString(sha256.ComputeHash(description)).Replace("-", "").ToLowerInvariant();
-#endif
-                return true;
+                    commandLineCommands,
+                    responseFileCommands
+                }, InvocationOutputs.FromDirectory(OutputDirectory.ItemSpec));
 
                 void AddFile(string path) => files.Add(Path.GetFullPath(path));
 
@@ -397,8 +389,89 @@ namespace ILLink.Tasks
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException or BadImageFormatException or InvalidDataException)
             {
-                Log.LogMessage(MessageImportance.Low, $"ILLink cache bypassed: input identity could not be computed: {ex.Message}");
+                Log.LogMessage(MessageImportance.Low, $"ILLink cache bypassed: invocation could not be described: {ex.Message}");
+                return null;
+            }
+        }
+
+#nullable restore annotations
+
+        private bool TryAddCacheableExtraArgsInputs(SortedSet<string> files, SortedSet<string> directories)
+        {
+            ReadOnlySpan<char> arguments = ExtraArgs.AsSpan().Trim();
+            if (arguments.IsEmpty)
+                return true;
+
+            // The runtime library builds pass this policy through ExtraArgs. Keep the
+            // supported shape narrow so arbitrary linker arguments continue to bypass caching.
+            if (!TryReadArgument(ref arguments, out string option) ||
+                option != "--ignore-link-attributes" ||
+                !TryReadArgument(ref arguments, out string value) ||
+                value != "true")
+            {
                 return false;
+            }
+
+            while (!arguments.TrimStart().IsEmpty)
+            {
+                if (!TryReadArgument(ref arguments, out option) ||
+                    option is not ("--link-attributes" or "--substitutions" or "-d") ||
+                    !TryReadArgument(ref arguments, out string path) ||
+                    string.IsNullOrEmpty(path))
+                {
+                    return false;
+                }
+
+                string fullPath = Path.GetFullPath(path);
+                if (option == "-d")
+                    directories.Add(fullPath);
+                else
+                {
+                    // Explicit XML arguments must be readable, not merely recorded as absent.
+                    using FileStream input = File.OpenRead(fullPath);
+                    files.Add(fullPath);
+                }
+            }
+
+            return true;
+
+            static bool TryReadArgument(ref ReadOnlySpan<char> arguments, out string argument)
+            {
+                arguments = arguments.TrimStart();
+                if (arguments.IsEmpty)
+                {
+                    argument = string.Empty;
+                    return false;
+                }
+
+                if (arguments[0] == '"')
+                {
+                    int closingQuote = arguments.Slice(1).IndexOf('"');
+                    if (closingQuote < 0)
+                    {
+                        argument = string.Empty;
+                        return false;
+                    }
+
+                    argument = arguments.Slice(1, closingQuote).ToString();
+                    arguments = arguments.Slice(closingQuote + 2);
+                    return arguments.IsEmpty || char.IsWhiteSpace(arguments[0]);
+                }
+
+                int end = 0;
+                while (end < arguments.Length && !char.IsWhiteSpace(arguments[end]))
+                    end++;
+
+                ReadOnlySpan<char> token = arguments.Slice(0, end);
+                if (token.IndexOf('"') >= 0)
+                {
+                    argument = string.Empty;
+                    return false;
+                }
+
+                argument = token.ToString();
+                arguments = arguments.Slice(end);
+                return true;
             }
         }
 
