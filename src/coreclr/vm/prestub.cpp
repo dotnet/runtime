@@ -2012,6 +2012,7 @@ extern "C" PCODE STDCALL PreStubWorker(TransitionBlock* pTransitionBlock, Method
             {
                 StackTraceInfo::AppendElement(ObjectFromHandle(ohThrowable), 0, (UINT_PTR)pTransitionBlock, pMD, NULL);
             }
+            pPFrame->Pop(CURRENT_THREAD);
             EX_RETHROW;
         }
         EX_END_CATCH

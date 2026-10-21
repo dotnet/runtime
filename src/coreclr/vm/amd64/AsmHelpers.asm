@@ -18,7 +18,6 @@ ifdef FEATURE_INTERPRETER
 extern ExecuteInterpretedMethod:proc
 extern GetInterpThreadContextWithPossiblyMissingThreadOrCallStub:proc
 extern CallInterpreterFuncletWorker:proc
-extern CallDescrWorkerUnwindFrameChainHandler:proc
 endif
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -633,12 +632,11 @@ LEAF_ENTRY Store_Stack, _TEXT
 LEAF_END Store_Stack, _TEXT
 
 LEAF_ENTRY Load_Stack_Ref, _TEXT
-        mov esi, dword ptr [r11 + 8]  ; SP offset
-        mov edi, dword ptr [r11 + 12] ; size of the value type
-        add rsi, 8; return address
-        add rsi, rsp
-        mov qword ptr [rsi], r10
-        add r10, rdi
+        mov eax, dword ptr [r11 + 8]  ; SP offset
+        lea rax, [rsp + rax + 8] ; return address
+        mov qword ptr [rax], r10
+        mov eax, dword ptr [r11 + 12] ; size of the value type
+        add r10, rax
         lea r10, [r10 + 7]
         and r10, 0fffffffffffffff8h
         add r11, 16
@@ -1070,7 +1068,7 @@ LEAF_ENTRY Load_XMM3, _TEXT
         jmp qword ptr [r11]
 LEAF_END Load_XMM3, _TEXT
 
-NESTED_ENTRY CallJittedMethodRetVoid, _TEXT, CallDescrWorkerUnwindFrameChainHandler
+NESTED_ENTRY CallJittedMethodRetVoid, _TEXT
         push_nonvol_reg rbp
         set_frame rbp, 0
 END_PROLOGUE
@@ -1086,7 +1084,7 @@ END_PROLOGUE
         ret
 NESTED_END CallJittedMethodRetVoid, _TEXT
 
-NESTED_ENTRY CallJittedMethodRetBuffRCX, _TEXT, CallDescrWorkerUnwindFrameChainHandler
+NESTED_ENTRY CallJittedMethodRetBuffRCX, _TEXT
         push_nonvol_reg rbp
         set_frame rbp, 0
 END_PROLOGUE
@@ -1103,7 +1101,7 @@ END_PROLOGUE
         ret
 NESTED_END CallJittedMethodRetBuffRCX, _TEXT
 
-NESTED_ENTRY CallJittedMethodRetBuffRDX, _TEXT, CallDescrWorkerUnwindFrameChainHandler
+NESTED_ENTRY CallJittedMethodRetBuffRDX, _TEXT
         push_nonvol_reg rbp
         set_frame rbp, 0
 END_PROLOGUE
@@ -1121,7 +1119,7 @@ END_PROLOGUE
 NESTED_END CallJittedMethodRetBuffRDX, _TEXT
 
 
-NESTED_ENTRY CallJittedMethodRetDouble, _TEXT, CallDescrWorkerUnwindFrameChainHandler
+NESTED_ENTRY CallJittedMethodRetDouble, _TEXT
         push_nonvol_reg rbp
         set_frame rbp, 0
         push_vol_reg r8
@@ -1141,7 +1139,7 @@ END_PROLOGUE
         ret
 NESTED_END CallJittedMethodRetDouble, _TEXT
 
-NESTED_ENTRY CallJittedMethodRetI1, _TEXT, CallDescrWorkerUnwindFrameChainHandler
+NESTED_ENTRY CallJittedMethodRetI1, _TEXT
         push_nonvol_reg rbp
         set_frame rbp, 0
         push_vol_reg r8
@@ -1162,7 +1160,7 @@ END_PROLOGUE
         ret
 NESTED_END CallJittedMethodRetI1, _TEXT
 
-NESTED_ENTRY CallJittedMethodRetI2, _TEXT, CallDescrWorkerUnwindFrameChainHandler
+NESTED_ENTRY CallJittedMethodRetI2, _TEXT
         push_nonvol_reg rbp
         set_frame rbp, 0
         push_vol_reg r8
@@ -1183,7 +1181,7 @@ END_PROLOGUE
         ret
 NESTED_END CallJittedMethodRetI2, _TEXT
 
-NESTED_ENTRY CallJittedMethodRetI8, _TEXT, CallDescrWorkerUnwindFrameChainHandler
+NESTED_ENTRY CallJittedMethodRetI8, _TEXT
         push_nonvol_reg rbp
         set_frame rbp, 0
         push_vol_reg r8
@@ -1203,7 +1201,7 @@ END_PROLOGUE
         ret
 NESTED_END CallJittedMethodRetI8, _TEXT
 
-NESTED_ENTRY CallJittedMethodRetU1, _TEXT, CallDescrWorkerUnwindFrameChainHandler
+NESTED_ENTRY CallJittedMethodRetU1, _TEXT
         push_nonvol_reg rbp
         set_frame rbp, 0
         push_vol_reg r8
@@ -1224,7 +1222,7 @@ END_PROLOGUE
         ret
 NESTED_END CallJittedMethodRetU1, _TEXT
 
-NESTED_ENTRY CallJittedMethodRetU2, _TEXT, CallDescrWorkerUnwindFrameChainHandler
+NESTED_ENTRY CallJittedMethodRetU2, _TEXT
         push_nonvol_reg rbp
         set_frame rbp, 0
         push_vol_reg r8
