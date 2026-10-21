@@ -246,7 +246,7 @@ bool VMToOSInterface::ReleaseMemoryReservation(void* address, size_t)
     return VirtualFree(address, 0, MEM_RELEASE) != FALSE;
 }
 
-void* VMToOSInterface::ReserveMemoryWithinRange(void* rangeStart, void* rangeEnd, size_t size)
+void* VMToOSInterface::ReserveMemoryWithinRange(const void* rangeStart, const void* rangeEnd, size_t size)
 {
     assert(size != 0);
 

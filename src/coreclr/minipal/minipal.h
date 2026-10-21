@@ -68,7 +68,7 @@ public:
     // and rangeEnd as nullptr requests an allocation anywhere in the address space, and
     // is equivalent to calling ReserveMemoryPlaceholder(nullptr, size).
     // Release the allocation with ReleaseMemoryReservation and its original size.
-    static void* ReserveMemoryWithinRange(void* rangeStart, void* rangeEnd, size_t size);
+    static void* ReserveMemoryWithinRange(const void* rangeStart, const void* rangeEnd, size_t size);
 
     // Commit a page-aligned, nonzero-sized range previously returned by
     // ReserveMemoryWithinRange. Unlike CommitMemoryPlaceholder, the reservation does not

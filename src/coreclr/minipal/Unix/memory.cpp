@@ -192,7 +192,7 @@ void* VMToOSInterface::AllocateMemory(void* address, size_t size, MemoryProtecti
     return memory;
 }
 
-void* VMToOSInterface::ReserveMemoryWithinRange(void* rangeStart, void* rangeEnd, size_t size)
+void* VMToOSInterface::ReserveMemoryWithinRange(const void* rangeStart, const void* rangeEnd, size_t size)
 {
     uintptr_t start = reinterpret_cast<uintptr_t>(rangeStart);
     uintptr_t end = reinterpret_cast<uintptr_t>(rangeEnd);

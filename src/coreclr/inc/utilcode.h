@@ -475,18 +475,6 @@ inline BOOL RunningInWow64()
 BOOL RunningInWow64();
 #endif
 
-#ifndef FEATURE_PORTABLE_ENTRYPOINTS
-//
-// Allocate free memory within the range [pMinAddr..pMaxAddr] using
-// VirtualQuery to find free memory and VirtualAlloc to allocate it.
-//
-BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
-                                   const BYTE *pMaxAddr,
-                                   SIZE_T dwSize,
-                                   DWORD flAllocationType,
-                                   DWORD flProtect);
-#endif // !FEATURE_PORTABLE_ENTRYPOINTS
-
 #ifdef HOST_WINDOWS
 
 struct CPU_Group_Info

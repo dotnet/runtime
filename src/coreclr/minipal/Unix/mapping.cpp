@@ -370,7 +370,7 @@ bool VMToOSInterface::ReleaseMemoryReservation(void* address, size_t size)
     return IsValidPlaceholderRange(address, size) && munmap(address, size) == 0;
 }
 
-void* VMToOSInterface::ReserveMemoryWithinRange(void* rangeStart, void* rangeEnd, size_t size)
+void* VMToOSInterface::ReserveMemoryWithinRange(const void* rangeStart, const void* rangeEnd, size_t size)
 {
     size_t pageSize = minipal_getpagesize();
     if (size == 0 || size % pageSize != 0)
