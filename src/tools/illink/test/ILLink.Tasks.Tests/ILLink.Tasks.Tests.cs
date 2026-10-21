@@ -1478,7 +1478,6 @@ namespace ILLink.Tasks.Tests
         [InlineData("invalid-assembly")]
         [InlineData("metadata-less-assembly")]
         [InlineData("metadata-less-reference")]
-        [InlineData("missing-linker")]
         public void CacheKeyBypassesUnsupportedInputs(string reason)
         {
             using var test = new OutputDirectoryTest();
@@ -1518,14 +1517,31 @@ namespace ILLink.Tasks.Tests
                 case "metadata-less-reference":
                     WriteMetadataLessPE(test.Task.ReferenceAssemblyPaths[0].ItemSpec);
                     break;
-                case "missing-linker":
-                    File.Delete(test.Task.ILLinkPath);
-                    break;
             }
 
             Assert.False(test.Task.TryGetCacheKey(host, out string key));
             Assert.Empty(key);
             Assert.Contains(test.BuildEngine.Messages, message => message.Message.StartsWith("ILLink cache bypassed:"));
+        }
+
+        [Theory]
+        [InlineData("linker")]
+        [InlineData("host")]
+        public void CacheKeyTracksToolFileAbsence(string tool)
+        {
+            using var test = new OutputDirectoryTest();
+            string host = PrepareCacheKeyTest(test);
+            string path = tool == "linker" ? test.Task.ILLinkPath : host;
+            byte[] contents = File.ReadAllBytes(path);
+            Assert.True(test.Task.TryGetCacheKey(host, out string original));
+
+            File.Delete(path);
+            Assert.True(test.Task.TryGetCacheKey(host, out string missing));
+            Assert.NotEqual(original, missing);
+
+            File.WriteAllBytes(path, contents);
+            Assert.True(test.Task.TryGetCacheKey(host, out string restored));
+            Assert.Equal(original, restored);
         }
 
         [Theory]

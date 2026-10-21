@@ -80,15 +80,17 @@ fall back to normal linking. See the
 
 ### Cache maintenance
 
-The experimental `dotnet-illink-cache` .NET tool can purge entries that were not used recently:
+The shared experimental `dotnet-build-cache` .NET tool can purge entries that were not used recently:
 
 ```sh
-dotnet illink-cache purge --cache-directory /path/to/cache --before 2026-10-01T12:00:00Z
+dotnet build-cache purge --cache illink --before 2026-10-01T12:00:00Z
 ```
 
-The directory and UTC cutoff are required; maintenance does not use the task's opt-in or
-directory environment variables. Use the tool built from the same revision as the task.
-See the [tool README](../../../src/tools/illink/src/ILLink.CacheTool/README.md) for local
+The UTC cutoff is required. `--cache illink` uses `ILLINK_EXPERIMENTAL_CACHE_PATH` or the
+task's platform default; `--cache-directory /path/to/cache` overrides that selection and
+can also be used without a named cache. Maintenance ignores the task's boolean opt-in and
+never creates missing directories. Use the tool built from the same revision as the task.
+See the [tool README](../../../src/tools/BuildCache/README.md) for local
 packaging and installation.
 
 Each entry has a `last-used` timestamp, initialized during publication and refreshed after
@@ -118,7 +120,7 @@ or created by that build:
 3. Run the build successfully and wait for all processes using the cache to finish.
 4. Run the maintenance tool from the same checkout, with maintenance failures reported but nonfatal:
    ```sh
-   if ! dotnet illink-cache purge \
+   if ! dotnet build-cache purge --cache illink \
        --cache-directory "$ILLINK_EXPERIMENTAL_CACHE_PATH" \
        --before "$ILLINK_CACHE_BUILD_START"; then
      echo "Warning: ILLink cache purge failed; see the tool diagnostics above." >&2
