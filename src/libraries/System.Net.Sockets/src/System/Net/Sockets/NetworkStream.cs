@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -226,7 +227,7 @@ namespace System.Net.Sockets
         //     Number of bytes we read, or 0 if the socket is closed.
         public override int Read(byte[] buffer, int offset, int count)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException();
+            if (!RuntimeFeature.IsMultithreadingSupported) throw new PlatformNotSupportedException();
 
             ValidateBufferArguments(buffer, offset, count);
             ThrowIfDisposed();
@@ -247,7 +248,7 @@ namespace System.Net.Sockets
 
         public override int Read(Span<byte> buffer)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException();
+            if (!RuntimeFeature.IsMultithreadingSupported) throw new PlatformNotSupportedException();
 
             if (GetType() != typeof(NetworkStream))
             {
@@ -272,7 +273,7 @@ namespace System.Net.Sockets
 
         public override unsafe int ReadByte()
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException();
+            if (!RuntimeFeature.IsMultithreadingSupported) throw new PlatformNotSupportedException();
 
             byte b;
             return Read(new Span<byte>(&b, 1)) == 0 ? -1 : b;
@@ -296,7 +297,7 @@ namespace System.Net.Sockets
         //     way to indicate an error.
         public override void Write(byte[] buffer, int offset, int count)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException();
+            if (!RuntimeFeature.IsMultithreadingSupported) throw new PlatformNotSupportedException();
 
             ValidateBufferArguments(buffer, offset, count);
             ThrowIfDisposed();
@@ -319,7 +320,7 @@ namespace System.Net.Sockets
 
         public override void Write(ReadOnlySpan<byte> buffer)
         {
-            if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException();
+            if (!RuntimeFeature.IsMultithreadingSupported) throw new PlatformNotSupportedException();
 
             if (GetType() != typeof(NetworkStream))
             {
