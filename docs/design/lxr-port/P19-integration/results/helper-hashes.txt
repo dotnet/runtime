@@ -1,0 +1,74 @@
+== upstream main a485c819c17
+JIT_WriteBarrier_PreGrow64                    bytes=98    insns=22   de967498179a98d5
+JIT_WriteBarrier_PostGrow64                   bytes=114   insns=26   917308c44c235c0e
+JIT_WriteBarrier_SVR64                        bytes=65    insns=16   cbec354f69d312af
+JIT_WriteBarrier_Byte_Region64                bytes=135   insns=35   0affbfe4d9ab46c8
+JIT_WriteBarrier_Bit_Region64                 bytes=147   insns=40   c1947c82a1436057
+JIT_WriteBarrier_WriteWatch_PreGrow64         bytes=114   insns=29   3cd7fca6edb5dc3d
+JIT_WriteBarrier_WriteWatch_PostGrow64        bytes=130   insns=34   ca3045d5a59024a1
+JIT_WriteBarrier_WriteWatch_SVR64             bytes=91    insns=23   565e5165e3015a22
+JIT_WriteBarrier_WriteWatch_Byte_Region64     bytes=167   insns=44   ccabaefdcf792d52
+JIT_WriteBarrier_WriteWatch_Bit_Region64      bytes=179   insns=49   949ddc53621f8acd
+JIT_WriteBarrier                              bytes=193   insns=56   e10f626a5511ad67
+JIT_CheckedWriteBarrier                       bytes=34    insns=9    90bacfa92ccf2f0e
+JIT_ByRefWriteBarrier                         MISSING
+RhpNewFast                                    bytes=64    insns=20   470a6b6a24398e1a
+RhpNewArrayFast                               bytes=118   insns=36   77658bd16bcd85d7
+RhpNewPtrArrayFast                            bytes=105   insns=31   27e487ecd85aa26e
+RhNewString                                   bytes=112   insns=34   a91599cff4f26956
+RhpNewFastAlign8                              MISSING
+JIT_NewS_MP_FastPortable                      MISSING
+JIT_NewArr1VC_MP_FastPortable                 MISSING
+JIT_NewArr1OBJ_MP_FastPortable                MISSING
+JIT_Patchpoint                                bytes=112   insns=33   c70b8298f441424d
+TOTAL 46cee8bd87fd6252f5265267148d0a34
+
+== main plus PR commits
+JIT_WriteBarrier_PreGrow64                    bytes=98    insns=22   de967498179a98d5
+JIT_WriteBarrier_PostGrow64                   bytes=114   insns=26   917308c44c235c0e
+JIT_WriteBarrier_SVR64                        bytes=65    insns=16   cbec354f69d312af
+JIT_WriteBarrier_Byte_Region64                bytes=135   insns=35   0affbfe4d9ab46c8
+JIT_WriteBarrier_Bit_Region64                 bytes=147   insns=40   c1947c82a1436057
+JIT_WriteBarrier_WriteWatch_PreGrow64         bytes=114   insns=29   3cd7fca6edb5dc3d
+JIT_WriteBarrier_WriteWatch_PostGrow64        bytes=130   insns=34   ca3045d5a59024a1
+JIT_WriteBarrier_WriteWatch_SVR64             bytes=91    insns=23   565e5165e3015a22
+JIT_WriteBarrier_WriteWatch_Byte_Region64     bytes=167   insns=44   ccabaefdcf792d52
+JIT_WriteBarrier_WriteWatch_Bit_Region64      bytes=179   insns=49   949ddc53621f8acd
+JIT_WriteBarrier                              bytes=193   insns=56   e10f626a5511ad67
+JIT_CheckedWriteBarrier                       bytes=34    insns=9    90bacfa92ccf2f0e
+JIT_ByRefWriteBarrier                         MISSING
+RhpNewFast                                    bytes=64    insns=20   470a6b6a24398e1a
+RhpNewArrayFast                               bytes=118   insns=36   77658bd16bcd85d7
+RhpNewPtrArrayFast                            bytes=105   insns=31   27e487ecd85aa26e
+RhNewString                                   bytes=112   insns=34   a91599cff4f26956
+RhpNewFastAlign8                              MISSING
+JIT_NewS_MP_FastPortable                      MISSING
+JIT_NewArr1VC_MP_FastPortable                 MISSING
+JIT_NewArr1OBJ_MP_FastPortable                MISSING
+JIT_Patchpoint                                bytes=112   insns=33   c70b8298f441424d
+TOTAL 46cee8bd87fd6252f5265267148d0a34
+
+== integrated tip
+JIT_WriteBarrier_PreGrow64                    bytes=98    insns=22   de967498179a98d5
+JIT_WriteBarrier_PostGrow64                   bytes=114   insns=26   917308c44c235c0e
+JIT_WriteBarrier_SVR64                        bytes=65    insns=16   cbec354f69d312af
+JIT_WriteBarrier_Byte_Region64                bytes=135   insns=35   0affbfe4d9ab46c8
+JIT_WriteBarrier_Bit_Region64                 bytes=147   insns=40   c1947c82a1436057
+JIT_WriteBarrier_WriteWatch_PreGrow64         bytes=114   insns=29   3cd7fca6edb5dc3d
+JIT_WriteBarrier_WriteWatch_PostGrow64        bytes=130   insns=34   ca3045d5a59024a1
+JIT_WriteBarrier_WriteWatch_SVR64             bytes=91    insns=23   565e5165e3015a22
+JIT_WriteBarrier_WriteWatch_Byte_Region64     bytes=167   insns=44   ccabaefdcf792d52
+JIT_WriteBarrier_WriteWatch_Bit_Region64      bytes=179   insns=49   949ddc53621f8acd
+JIT_WriteBarrier                              bytes=193   insns=56   e10f626a5511ad67
+JIT_CheckedWriteBarrier                       bytes=34    insns=9    90bacfa92ccf2f0e
+JIT_ByRefWriteBarrier                         MISSING
+RhpNewFast                                    bytes=64    insns=20   470a6b6a24398e1a
+RhpNewArrayFast                               bytes=118   insns=36   77658bd16bcd85d7
+RhpNewPtrArrayFast                            bytes=105   insns=31   27e487ecd85aa26e
+RhNewString                                   bytes=112   insns=34   a91599cff4f26956
+RhpNewFastAlign8                              MISSING
+JIT_NewS_MP_FastPortable                      MISSING
+JIT_NewArr1VC_MP_FastPortable                 MISSING
+JIT_NewArr1OBJ_MP_FastPortable                MISSING
+JIT_Patchpoint                                bytes=112   insns=33   c70b8298f441424d
+TOTAL 46cee8bd87fd6252f5265267148d0a34

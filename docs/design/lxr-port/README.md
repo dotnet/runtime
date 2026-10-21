@@ -106,6 +106,7 @@ mechanisms share one oracle. `lxr-x/simplified` is explicitly excluded.
 | [`P15-pauses-and-full-gcs/README.md`](P15-pauses-and-full-gcs/README.md) | Research only: why our pauses are 143 ms to 1.9 s and why our port runs so many full collections; measurements, code reading and the tracer scripts |
 | [`P16-remove-per-object-bookkeeping/README.md`](P16-remove-per-object-bookkeeping/README.md) | Design only: remove the per-object tables, sweep only the needed blocks in the background, finalizer list, pin list, remove the block gate, give the copy enough room |
 | [`P18-satori-abi-comparison/README.md`](P18-satori-abi-comparison/README.md) | Research only: the GC-to-runtime ABI and write barriers compared with PR dotnet/runtimelab#3316 (custom GC support with Satori); how our port did it, what the PR merged, what we must change |
+| [`P19-integration/README.md`](P19-integration/README.md) | The integrated branch: current dotnet/runtime main, the PR #3316 runtime changes as a patch series, and the whole LXR stack (up to P17 S6) in one linear series; how to build, run and test it; what is not there yet |
 | [`lxr-gc-explained.html`](lxr-gc-explained.html) | Standalone illustrated guide from RC, coalescing, SATB, and Immix fundamentals through the exact MMTk oracles and current CoreCLR port status |
 | [`scripts/`](scripts/) | The clone, build, sanity, benchmark and probe scripts actually used, plus `verify-ledger.sh` (the ledger's gate) and `verify-gate.sh` (the gate's own positive control) |
 

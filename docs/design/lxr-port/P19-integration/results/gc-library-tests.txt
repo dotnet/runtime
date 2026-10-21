@@ -1,0 +1,10 @@
+System.GC library tests with the integrated Release runtime, Linux x64, default collector.
+
+Run with the dotnet host of the test host (scripts/gc-library-tests.sh):
+     System.Runtime.Tests  Total: 38, Errors: 0, Failed: 0, Skipped: 0, Time: 1.131s
+  classes: System.Tests.GCTests and System.Tests.GCExtendedTests
+  test host libcoreclr.so SHA-256 starts with aa33391989e045297c52, the same as the frame.
+
+An earlier try used corerun as the host and failed 27 of 66 tests. All 27 failures are
+"Microsoft.DotNet.RemoteExecutor.RemoteExecutionException : Exit code was 134". RemoteExecutor starts a child
+process with "exec" and corerun is not a dotnet host. This is a test setup problem and not a collector failure.

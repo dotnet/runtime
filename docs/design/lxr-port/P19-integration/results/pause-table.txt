@@ -1,0 +1,22 @@
+| workload (heap x4) | mode | pause kind | acc: n, median, max ms | s6: n, median, max ms | int: n, median, max ms |
+|---|---|---|---|---|---|
+| binarytrees | non-moving | RefCount | 30, 98, 171 | 32, 5, 221 | 31, 4, 239 |
+| binarytrees | non-moving | InitialMark | 2, 316, 325 | 2, 219, 231 | 2, 233, 246 |
+| binarytrees | non-moving | FinalMark | 2, 162, 186 | 2, 50, 64 | 3, 20, 218 |
+| binarytrees | nursery copy | RefCount | 30, 115, 179 | 37, 5, 147 | 36, 6, 130 |
+| binarytrees | nursery copy | InitialMark | 2, 376, 377 | 1, 294, 294 | 1, 217, 217 |
+| binarytrees | nursery copy | FinalMark | 2, 239, 242 | 1, 17, 17 | 1, 57, 57 |
+| requests | non-moving | RefCount | 7, 106, 117 | 8, 6, 44 | 8, 6, 36 |
+| requests | non-moving | InitialMark | 3, 182, 194 | 1, 87, 87 | 1, 61, 61 |
+| requests | non-moving | FinalMark | 1, 182, 182 | 1, 94, 94 | 1, 104, 104 |
+| requests | non-moving | Full | 105, 359, 766 | 106, 203, 332 | 106, 202, 314 |
+| requests | nursery copy | RefCount | 6, 148, 185 | 126, 15, 75 | 127, 14, 79 |
+| requests | nursery copy | InitialMark | 4, 241, 316 | 6, 77, 97 | 6, 70, 97 |
+| requests | nursery copy | FinalMark | 2, 256, 265 | 6, 16, 31 | 6, 9, 32 |
+| requests | nursery copy | Full | 104, 452, 951 | - | - |
+| listsuffix | non-moving | RefCount | 103, 166, 599 | 115, 43, 463 | 109, 46, 596 |
+| listsuffix | non-moving | InitialMark | 4, 488, 830 | 2, 590, 603 | 2, 531, 573 |
+| listsuffix | non-moving | FinalMark | 2, 306, 362 | 3, 100, 201 | 2, 52, 80 |
+| listsuffix | nursery copy | RefCount | 128, 690, 1539 | 119, 428, 680 | 103, 63, 532 |
+| listsuffix | nursery copy | InitialMark | 4, 636, 1088 | 3, 645, 647 | 2, 549, 625 |
+| listsuffix | nursery copy | FinalMark | - | 3, 128, 240 | 3, 268, 289 |
