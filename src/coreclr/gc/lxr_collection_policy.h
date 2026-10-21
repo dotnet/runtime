@@ -40,6 +40,9 @@ struct LxrPolicyPressure
     size_t usedPages = 0;
     size_t admittedPages = SIZE_MAX;
     size_t collectionReservedPages = 0;
+    // Port-specific: pages the young pause may need as to-space, and free Immix pages that can hold it.
+    size_t copyReservePages = 0;
+    size_t immixFreePages = SIZE_MAX;
 };
 
 // Coupled HEAD oracle 304ce69d: plan/lxr/mod.rs and plan/lxr/global.rs.
@@ -56,6 +59,7 @@ public:
         }
         m_allocated = allocated;
         m_copied = 0;
+        m_survivors = 0;
         m_pause_pending = true;
         return true;
     }
@@ -70,11 +74,41 @@ public:
         return true;
     }
 
+    // Port-specific: bytes of young objects that were promoted in this pause, whether they were copied
+    // or kept in place. The Java LXR measures only copied bytes. Without copying (or when the to-space
+    // is full and copying stops) that value is zero, so it cannot size a to-space.
+    bool RecordSurvivors(size_t bytes)
+    {
+        if (!m_pause_pending || bytes > SIZE_MAX - m_survivors)
+        {
+            return false;
+        }
+        m_survivors += bytes;
+        return true;
+    }
+
     bool ReleasePause()
     {
         if (!m_pause_pending)
         {
             return false;
+        }
+        if (m_allocated != 0)
+        {
+            double measured = std::fmin(
+                static_cast<double>(m_survivors) / static_cast<double>(m_allocated), 1.0);
+            double reserve = m_reserve_survival.load(std::memory_order_relaxed);
+            if (!m_reserve_measured)
+            {
+                reserve = measured;
+                m_reserve_measured = true;
+            }
+            else
+            {
+                // Rise at once, fall slowly: an underestimate costs a failed copy, an overestimate only memory.
+                reserve = measured > reserve ? (3.0 * measured + reserve) / 4.0 : (measured + 3.0 * reserve) / 4.0;
+            }
+            m_reserve_survival.store(std::fmin(reserve, 1.0), std::memory_order_release);
         }
         if (m_allocated != 0)
         {
@@ -99,7 +133,7 @@ public:
             }
             m_survival.store(std::fmin(next, 1.0), std::memory_order_release);
         }
-        m_allocated = m_copied = 0;
+        m_allocated = m_copied = m_survivors = 0;
         m_pause_pending = false;
         return true;
     }
@@ -110,7 +144,8 @@ public:
         if (pressure.marking && pressure.traceDrained) { return LxrCollectionCause::FinalMark; }
 #endif
         if (pressure.heapFull || pressure.usedPages >= pressure.admittedPages ||
-            pressure.collectionReservedPages >= pressure.admittedPages - pressure.usedPages)
+            pressure.collectionReservedPages >= pressure.admittedPages - pressure.usedPages ||
+            (pressure.copyReservePages != 0 && pressure.copyReservePages >= pressure.immixFreePages))
         {
             return LxrCollectionCause::HeapFull;
         }
@@ -188,6 +223,36 @@ public:
         return (survival << 1) + defragHeadroomPages;
     }
     double MatureLivePages() const { return m_mature.load(std::memory_order_acquire); }
+
+    // Port-specific deviation from the Java LXR (CollectionReservedPages above). The Java formula adds
+    // a survival term in MiB as if it were pages, and relies on GC threads taking pages beyond the
+    // heap budget during a pause. The port can copy only into blocks that are already admitted, so the
+    // to-space must exist when the pause starts. This reserve is computed in bytes: the young bytes
+    // allocated since the last pause, times the measured survival ratio, times a safety factor.
+    // Before the first pause no ratio is known, so all young bytes are assumed to survive.
+    static constexpr size_t ReserveSafetyFactor = 2;
+    // The measured ratio can fall to zero in a quiet phase; a later burst would then find no to-space.
+    static constexpr double ReserveMinimumSurvival = 0.05;
+    double MeasuredSurvivalRatio() const { return m_reserve_survival.load(std::memory_order_acquire); }
+    double ReserveSurvivalRatio() const
+    {
+        return std::fmax(MeasuredSurvivalRatio(), ReserveMinimumSurvival);
+    }
+    size_t CollectionReservedBytes(size_t youngBytes) const
+    {
+        double bytes = static_cast<double>(youngBytes) * ReserveSurvivalRatio() *
+            static_cast<double>(ReserveSafetyFactor);
+        return bytes >= static_cast<double>(SIZE_MAX / 2) ? SIZE_MAX / 2 : static_cast<size_t>(std::ceil(bytes));
+    }
+    size_t CollectionReservedPagesForCopy(size_t youngBytes, size_t pageBytes) const
+    {
+#if defined(LXR_SIDE_METADATA_TEST_PLATFORM) && defined(LXR_RESERVE_UNITS_CONTROL)
+        return static_cast<size_t>(static_cast<double>(youngBytes >> 20) * ReserveSurvivalRatio()) * ReserveSafetyFactor;
+#else
+        size_t bytes = CollectionReservedBytes(youngBytes);
+        return bytes / pageBytes + (bytes % pageBytes != 0 ? 1 : 0);
+#endif
+    }
     bool CycleHint() const { return m_cycle.load(std::memory_order_acquire); }
     bool EmergencyHint() const { return m_emergency.load(std::memory_order_acquire); }
 
@@ -195,10 +260,13 @@ private:
     LxrPolicyConfiguration m_configuration{};
     std::atomic<double> m_survival{0.01};
     std::atomic<double> m_mature{0.0};
+    std::atomic<double> m_reserve_survival{1.0};
+    bool m_reserve_measured = false;
     std::atomic<bool> m_cycle{false};
     std::atomic<bool> m_emergency{false};
     size_t m_allocated = 0;
     size_t m_copied = 0;
+    size_t m_survivors = 0;
     bool m_pause_pending = false;
 };
 

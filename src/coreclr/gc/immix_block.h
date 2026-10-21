@@ -120,6 +120,12 @@ public:
     SideMetadataResult RegisterBlockRange(uintptr_t start, size_t size);
 
     uint8_t GetGlobalPhaseEpoch() const;
+    // Increases at every epoch flip and never wraps. Blocks become reusable only inside a pause, so equal
+    // tokens mean that no block can have become a candidate for recycled allocation in between.
+    uint64_t GetStateToken() const
+    {
+        return m_flip_serial.load(std::memory_order_acquire);
+    }
     SideMetadataResult StartGcPause(ImmixBlockOperationStatus* status);
     SideMetadataResult ReleaseGcPause(ImmixBlockOperationStatus* status);
 
@@ -228,6 +234,7 @@ private:
     SideMetadataManager* m_metadata;
     std::atomic<uint8_t> m_global_phase_epoch;
     mutable std::atomic<uint32_t> m_active_operations;
+    std::atomic<uint64_t> m_flip_serial{0};
     mutable std::atomic<bool> m_phase_transition;
 };
 

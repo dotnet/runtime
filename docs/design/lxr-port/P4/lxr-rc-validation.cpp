@@ -1945,6 +1945,49 @@ namespace
         reserved.collectionReservedPages = 63;
         Check(reserve.Trigger(reserved) == LxrCollectionCause::FinalMark,
             "a reserve below the admission boundary does not impersonate space exhaustion");
+        {
+            // The to-space is taken from free Immix pages. Free large-object pages cannot hold it.
+            LxrPolicyPressure copyPressure{false, false, false, 0, 0, 0, true, 0, 10, 1000, 0};
+            copyPressure.copyReservePages = 100;
+            copyPressure.immixFreePages = 100;
+            Check(reserve.Trigger(copyPressure) == LxrCollectionCause::HeapFull,
+                "a to-space reserve that does not fit in the free Immix pages starts a collection while other pages are free");
+            copyPressure.immixFreePages = 101;
+            Check(reserve.Trigger(copyPressure) == LxrCollectionCause::None,
+                "a to-space reserve below the free Immix pages does not start a collection");
+        }
+        {
+            // Port-specific byte-sized to-space reserve (not the Java LXR formula).
+            constexpr size_t Page = 4096;
+            LxrCollectionPolicy copying;
+            Check(copying.ReserveSurvivalRatio() == 1.0 &&
+                    copying.CollectionReservedPagesForCopy(size_t{64} << 20, Page) == 2 * (size_t{64} << 20) / Page,
+                "before any measurement every young byte is assumed to survive, in real pages");
+            Check(copying.BeginPause(size_t{100} << 20) && copying.RecordCopiedPromotion(0) &&
+                    copying.RecordSurvivors(size_t{25} << 20) && copying.ReleasePause() &&
+                    copying.MeasuredSurvivalRatio() == 0.25 &&
+                    std::abs(copying.SurvivalRatio() - 0.0025) < 1e-12,
+                "in-place survivors are measured when no byte was copied, and the first sample replaces the prior");
+            Check(copying.CollectionReservedPagesForCopy(size_t{64} << 20, Page) == size_t{8192} &&
+                    copying.CollectionReservedPagesForCopy(1, Page) == 1 &&
+                    copying.CollectionReservedPagesForCopy(0, Page) == 0,
+                "reserve is young bytes times ratio times two, rounded up to whole pages");
+            Check(copying.BeginPause(size_t{100} << 20) && copying.RecordSurvivors(size_t{50} << 20) &&
+                    copying.ReleasePause() && std::abs(copying.MeasuredSurvivalRatio() - 0.4375) < 1e-12,
+                "a rising measurement is weighted three to one");
+            Check(copying.BeginPause(size_t{100} << 20) && copying.ReleasePause() &&
+                    std::abs(copying.MeasuredSurvivalRatio() - 0.328125) < 1e-12,
+                "a falling measurement is weighted one to three");
+            Check(!copying.RecordSurvivors(1), "survivors outside a pause fail explicitly");
+            for (size_t index = 0; index < 200; index++)
+            {
+                copying.BeginPause(size_t{100} << 20);
+                copying.ReleasePause();
+            }
+            Check(copying.MeasuredSurvivalRatio() < 1e-9 && copying.ReserveSurvivalRatio() == 0.05 &&
+                    copying.CollectionReservedPagesForCopy(size_t{20} << 20, Page) == 512,
+                "a quiet phase keeps a minimum reserve");
+        }
         LxrCollectionPolicy policy;
         Check(policy.BeginPause(0) && policy.RecordCopiedPromotion(100) && policy.ReleasePause() &&
             policy.SurvivalRatio() == 0.01, "zero allocation preserves prediction and discards copied volume");

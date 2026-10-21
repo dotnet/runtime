@@ -943,11 +943,27 @@ LxrCollectionCause LxrGcHeap::GetCollectionCause(bool heapFull) const
         m_engine.GetYoungAllocationBytes(), m_engine.GetPendingIncrementEntries(),
         m_engine.GetCleanNurseryBlocks(), true, 0,
         used, m_engine.GetAdmittedBytes() / LxrLargeObjectSpace::PageBytes,
-        m_policy.CollectionReservedPages(
-            m_engine.GetCleanNurseryBlocks() * ImmixBlockGeometry::BlockBytes,
-            headroom / LxrLargeObjectSpace::PageBytes),
+        m_heap_configuration.evacuateNursery ? 0 : GetCollectionReservedPages(headroom),
     };
+    if (m_heap_configuration.evacuateNursery)
+    {
+        pressure.copyReservePages = GetCollectionReservedPages(headroom);
+        pressure.immixFreePages = m_engine.GetImmixFreePages();
+    }
     return m_policy.Trigger(pressure);
+}
+
+size_t LxrGcHeap::GetCollectionReservedPages(size_t headroomBytes) const
+{
+    if (m_heap_configuration.evacuateNursery)
+    {
+        // The young pause copies survivors into admitted free blocks, so they must exist when it starts.
+        return m_policy.CollectionReservedPagesForCopy(
+            m_engine.GetYoungAllocationBytes(), LxrLargeObjectSpace::PageBytes);
+    }
+    return m_policy.CollectionReservedPages(
+        m_engine.GetCleanNurseryBlocks() * ImmixBlockGeometry::BlockBytes,
+        headroomBytes / LxrLargeObjectSpace::PageBytes);
 }
 
 LxrRcResult LxrGcHeap::UpdatePolicyHints()
@@ -1004,6 +1020,15 @@ void LxrGcHeap::Suspend(void* context)
     }
     GCToEEInterface::GcEnumAllocContexts(RetireAllocationContext, heap);
     heap->m_pause_young_bytes.store(heap->m_engine.GetYoungAllocationBytes(), std::memory_order_release);
+    {
+        size_t headroom = 0;
+        if (heap->m_engine.GetDefragHeadroomBytes(&headroom) == LxrRcResult::Success)
+        {
+            heap->m_pause_free_pages.store(heap->m_engine.GetImmixFreePages(), std::memory_order_release);
+            heap->m_pause_reserve_pages.store(
+                heap->GetCollectionReservedPages(headroom), std::memory_order_release);
+        }
+    }
     if (!heap->m_policy.BeginPause(heap->m_pause_young_bytes.load(std::memory_order_acquire)))
     {
         heap->Fatal("LXR survival predictor allocation snapshot was not retired.");
@@ -1260,6 +1285,7 @@ void LxrGcHeap::ExecuteScan(uint8_t kind)
     else
     {
         if (!heap->m_policy.RecordCopiedPromotion(heap->m_engine.GetNurseryMetrics().pauseCopiedBytes) ||
+            !heap->m_policy.RecordSurvivors(heap->m_engine.GetPauseSurvivorBytes()) ||
             !heap->m_policy.ReleasePause())
         {
             heap->m_scan_failure.store(LxrRcResult::InvariantViolation);
@@ -2524,6 +2550,14 @@ uint64_t LxrGcHeap::GetPrototypeMetric(uint32_t metric) const
             if (metric == 244)
             {
                 return m_engine.GetPauseTimers().Enabled();
+            }
+            switch (metric)
+            {
+                case 245: return static_cast<uint64_t>(m_policy.MeasuredSurvivalRatio() * 1000000000.0);
+                case 246: return m_engine.GetPauseSurvivorBytes();
+                case 247: return m_pause_reserve_pages.load(std::memory_order_acquire);
+                case 248: return m_pause_free_pages.load(std::memory_order_acquire);
+                default: break;
             }
             if (metric >= 256 && metric < 256 + LxrPauseTimers::PublishedCount)
             {

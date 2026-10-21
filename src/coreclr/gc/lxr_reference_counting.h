@@ -383,6 +383,8 @@ public:
     size_t GetYoungAllocationBytes() const;
     size_t GetCleanNurseryBlocks() const;
     size_t GetPendingIncrementEntries() const;
+    size_t GetImmixFreePages() const;
+    size_t GetPauseSurvivorBytes() const;
     LxrRcResult GetMaturePages(size_t* pages) const;
     LxrRcResult DrainLazySweep(uint32_t timeout);
     LxrRcResult GetHeapStatistics(size_t* heapBytes, size_t* fragmentationBytes) const;
@@ -420,6 +422,7 @@ private:
     struct TraceBatch;
     struct TraceScan;
     struct RememberedChunk;
+    struct WorkerCounters;
     class CostScope;
     enum class WorkKind : uint8_t;
 
@@ -432,6 +435,8 @@ private:
     static SideMetadataResult Death(uintptr_t start, void* context);
 
     LxrRcResult Fail(LxrRcResult result);
+    void CountWorker(size_t worker, size_t counter, uint64_t amount);
+    uint64_t SumWorker(size_t counter) const;
     LxrRcResult InitializeBuffers(size_t slots);
     bool CommitPlanes(size_t first, size_t count);
     bool CommitTracePlanes();
@@ -565,6 +570,7 @@ private:
     bool m_cycle_sweep;
     LxrRcMutator* m_mutators;
     ImmixBumpAllocator* m_copy_allocators = nullptr;
+    WorkerCounters* m_worker_counters = nullptr;
     std::atomic<bool> m_copy_exhausted{false};
     std::atomic<bool> m_mature_copy_exhausted{false};
     mutable std::atomic<uint64_t> m_nursery_metrics[6]{};

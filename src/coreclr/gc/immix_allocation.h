@@ -127,6 +127,10 @@ private:
     size_t m_minimum_reuse_lines;
     std::atomic<size_t> m_next_fresh_block;
     std::atomic<size_t> m_next_recycled_block;
+    // Block-state token at which a mutator search for recycled blocks scanned every block and found none.
+    // The token changes at every epoch flip, so the search is not repeated within one mutator epoch.
+    // (The epoch value itself wraps and cannot be used.)
+    std::atomic<uint64_t> m_recycled_exhausted_token{UINT64_MAX};
     std::atomic<size_t> m_fresh_blocks_acquired;
     std::atomic<size_t> m_recycled_blocks_acquired;
     std::atomic<size_t> m_recycled_lines_consumed;

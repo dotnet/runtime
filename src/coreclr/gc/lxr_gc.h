@@ -223,6 +223,7 @@ private:
     LxrRcResult CollectForPressure(bool emergency, bool user, bool heapFull = false);
     LxrRcResult UpdatePolicyHints();
     LxrCollectionCause GetCollectionCause(bool heapFull) const;
+    size_t GetCollectionReservedPages(size_t headroomBytes) const;
 
     enum MemoryField : size_t
     {
@@ -297,6 +298,8 @@ private:
     std::atomic<uint64_t> m_unused_span_bytes{0};
     std::atomic<uint64_t> m_context_allocated_bytes{0};
     std::atomic<uint64_t> m_pause_young_bytes{0};
+    std::atomic<uint64_t> m_pause_reserve_pages{0};
+    std::atomic<uint64_t> m_pause_free_pages{0};
     std::atomic<bool> m_storage_diagnostics_enabled{false};
     std::atomic<uint64_t> m_root_capture_ticks{0};
     static constexpr size_t ScanMetricCount = 44;

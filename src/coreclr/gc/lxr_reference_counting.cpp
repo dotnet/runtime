@@ -557,6 +557,21 @@ struct LxrReferenceCounting::DeathContext
     ReferenceBatch* children;
 };
 
+// One cache line per worker, written only by that worker. The last entry is shared by callers that
+// are not workers and is updated with atomic additions.
+struct alignas(64) LxrReferenceCounting::WorkerCounters
+{
+    std::atomic<uint64_t> values[8]{};
+};
+
+namespace
+{
+    enum WorkerCounter : size_t
+    {
+        PromotedBytes,
+    };
+}
+
 LxrRcMutator::LxrRcMutator()
     : engine(nullptr), state(0), identity(0), owner(0), allocator(),
       increments(nullptr), decrements(nullptr), publishedCursor(0), publishedLimit(0), birthBlock(0),
@@ -639,6 +654,11 @@ LxrRcResult LxrReferenceCounting::Initialize(
         return LxrRcResult::InvalidArgument;
     }
     size_t slots = GetReservationBytes() / sizeof(uintptr_t);
+    m_worker_counters = new (std::nothrow) WorkerCounters[configuration.workers + 1];
+    if (m_worker_counters == nullptr)
+    {
+        return Fail(LxrRcResult::OutOfMemory);
+    }
     m_immix_capacity.store(m_initial_immix, std::memory_order_relaxed);
     m_object_model = objectModel == nullptr ? LxrRcObjectModel{} : *objectModel;
     m_runtime = runtime;
@@ -1001,6 +1021,7 @@ void LxrReferenceCounting::Shutdown()
     delete[] m_banks;
     delete[] m_mutators;
     delete[] m_copy_allocators;
+    delete[] m_worker_counters;
     delete[] m_evacuation_sources;
     delete[] m_mutator_chunks;
     m_extent_storage.Shutdown();
@@ -1015,6 +1036,7 @@ void LxrReferenceCounting::Shutdown()
     m_banks = nullptr;
     m_mutators = nullptr;
     m_copy_allocators = nullptr;
+    m_worker_counters = nullptr;
     m_evacuation_sources = nullptr;
     m_mutator_chunks = nullptr;
     m_extents = nullptr;
@@ -1038,6 +1060,37 @@ LxrRcResult LxrReferenceCounting::FromMetadata(SideMetadataResult result)
 {
     return result == SideMetadataResult::Success
         ? LxrRcResult::Success : Fail(LxrRcResult::MetadataFailure);
+}
+
+void LxrReferenceCounting::CountWorker(size_t worker, size_t counter, uint64_t amount)
+{
+    if (worker < m_configuration.workers)
+    {
+        std::atomic<uint64_t>& value = m_worker_counters[worker].values[counter];
+        value.store(value.load(std::memory_order_relaxed) + amount, std::memory_order_relaxed);
+    }
+    else
+    {
+        m_worker_counters[m_configuration.workers].values[counter].fetch_add(amount, std::memory_order_relaxed);
+    }
+}
+
+uint64_t LxrReferenceCounting::SumWorker(size_t counter) const
+{
+    uint64_t sum = 0;
+    if (m_worker_counters != nullptr)
+    {
+        for (size_t worker = 0; worker <= m_configuration.workers; worker++)
+        {
+            sum += m_worker_counters[worker].values[counter].load(std::memory_order_relaxed);
+        }
+    }
+    return sum;
+}
+
+size_t LxrReferenceCounting::GetPauseSurvivorBytes() const
+{
+    return static_cast<size_t>(SumWorker(PromotedBytes));
 }
 
 LxrRcResult LxrReferenceCounting::FromScheduler(LxrWorkSchedulerResult result)
@@ -2009,6 +2062,10 @@ void LxrReferenceCounting::Suspend(void* context)
     engine->m_mature_copy_exhausted.store(false, std::memory_order_relaxed);
     engine->m_pause_copied_bytes.store(0, std::memory_order_relaxed);
     engine->m_pause_mature_copied_bytes.store(0, std::memory_order_relaxed);
+    for (size_t worker = 0; worker <= engine->m_configuration.workers; worker++)
+    {
+        engine->m_worker_counters[worker].values[PromotedBytes].store(0, std::memory_order_relaxed);
+    }
     engine->RetireCompletedWork();
     if (engine->FlushMutators() != LxrRcResult::Success)
     {
@@ -3163,6 +3220,7 @@ LxrRcResult LxrReferenceCounting::ProcessIncrement(
     }
     if (IsImmix(start))
     {
+        CountWorker(worker, PromotedBytes, size);
         bool nursery;
         result = FromMetadata(m_blocks.IsNursery(start & ~ImmixBlockGeometry::BlockMask, &nursery));
         if (result != LxrRcResult::Success)
@@ -4611,6 +4669,13 @@ size_t LxrReferenceCounting::GetYoungAllocationBytes() const
         m_epoch_recycled_lines.load(std::memory_order_acquire);
     return GetCleanNurseryBlocks() * ImmixBlockGeometry::BlockBytes +
         (lines >> 4) * LxrLargeObjectSpace::PageBytes;
+}
+
+size_t LxrReferenceCounting::GetImmixFreePages() const
+{
+    size_t capacity = GetImmixCapacityBytes();
+    size_t used = m_allocation.GetBlocksInUse() * ImmixBlockGeometry::BlockBytes;
+    return used >= capacity ? 0 : (capacity - used) / LxrLargeObjectSpace::PageBytes;
 }
 
 size_t LxrReferenceCounting::GetPendingIncrementEntries() const

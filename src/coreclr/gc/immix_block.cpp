@@ -358,6 +358,7 @@ SideMetadataResult ImmixBlockManager::StartGcPause(ImmixBlockOperationStatus* st
     m_global_phase_epoch.store(
         static_cast<uint8_t>(oldEpoch + 1),
         std::memory_order_seq_cst);
+    m_flip_serial.fetch_add(1, std::memory_order_acq_rel);
     *status = ImmixBlockOperationStatus::Updated;
     EndPhaseTransition();
     return SideMetadataResult::Success;
@@ -401,6 +402,7 @@ SideMetadataResult ImmixBlockManager::ReleaseGcPause(ImmixBlockOperationStatus* 
         }
     }
 
+    m_flip_serial.fetch_add(1, std::memory_order_acq_rel);
     *status = ImmixBlockOperationStatus::Updated;
     EndPhaseTransition();
     return SideMetadataResult::Success;

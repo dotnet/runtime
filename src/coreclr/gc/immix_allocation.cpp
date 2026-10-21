@@ -346,6 +346,11 @@ SideMetadataResult ImmixAllocationManager::AcquireBlock(
         return SideMetadataResult::Success;
     }
 
+    uint64_t token = m_blocks->GetStateToken();
+    if (!fresh && mutator && m_recycled_exhausted_token.load(std::memory_order_acquire) == token)
+    {
+        return SideMetadataResult::Success;
+    }
     for (size_t attempt = 0; attempt < m_block_count; attempt++)
     {
         size_t index;
@@ -457,6 +462,10 @@ SideMetadataResult ImmixAllocationManager::AcquireBlock(
         }
     }
 
+    if (!fresh && mutator && *status == ImmixAllocationStatus::Exhausted)
+    {
+        m_recycled_exhausted_token.store(token, std::memory_order_release);
+    }
     return SideMetadataResult::Success;
 }
 
