@@ -784,6 +784,15 @@ namespace System.Net.Sockets
                 }
                 else if (buffer.Length == 0)
                 {
+                    if (OperatingSystem.IsWasi() && flags == SocketFlags.None)
+                    {
+                        // WASI sockets don't support MSG_PEEK. Report that the operation would block; the queued
+                        // zero-byte receive is completed without receiving once the socket becomes readable.
+                        bytesReceived = 0;
+                        errorCode = SocketError.Success;
+                        return false;
+                    }
+
                     // Special case a receive of 0 bytes into a single buffer.  A common pattern is to ReceiveAsync 0 bytes in order
                     // to be asynchronously notified when data is available, without needing to dedicate a buffer.  Some platforms (e.g. macOS),
                     // however complete a 0-byte read successfully when data isn't available, as the request can logically be satisfied
@@ -852,6 +861,16 @@ namespace System.Net.Sockets
                 }
                 else if (buffer.Length == 0)
                 {
+                    if (OperatingSystem.IsWasi() && flags == SocketFlags.None && socketAddress.Length == 0)
+                    {
+                        // See TryCompleteReceive.
+                        receivedSocketAddressLength = 0;
+                        bytesReceived = 0;
+                        receivedFlags = SocketFlags.None;
+                        errorCode = SocketError.Success;
+                        return false;
+                    }
+
                     // Special case a receive of 0 bytes into a single buffer.  A common pattern is to ReceiveAsync 0 bytes in order
                     // to be asynchronously notified when data is available, without needing to dedicate a buffer.  Some platforms (e.g. macOS),
                     // however complete a 0-byte read successfully when data isn't available, as the request can logically be satisfied
