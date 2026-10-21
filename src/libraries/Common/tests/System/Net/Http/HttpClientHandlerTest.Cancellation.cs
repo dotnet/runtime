@@ -36,6 +36,12 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
+            if (chunkedTransfer && IsWasiHttpHandler)
+            {
+                // wasi:http rejects the Transfer-Encoding request header.
+                return;
+            }
+
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
             {
                 return;
@@ -100,6 +106,12 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
+            if (connectionClose && IsWasiHttpHandler)
+            {
+                // wasi:http rejects the Connection request header.
+                return;
+            }
+
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
             {
                 return;
@@ -152,6 +164,12 @@ namespace System.Net.Http.Functional.Tests
             if (LoopbackServerFactory.Version >= HttpVersion20.Value && (chunkedTransfer || connectionClose))
             {
                 // There is no chunked encoding or connection header in HTTP/2 and later
+                return;
+            }
+
+            if (connectionClose && IsWasiHttpHandler)
+            {
+                // wasi:http rejects the Connection request header.
                 return;
             }
 
@@ -208,6 +226,12 @@ namespace System.Net.Http.Functional.Tests
             if (LoopbackServerFactory.Version >= HttpVersion20.Value && (chunkedTransfer || connectionClose))
             {
                 // There is no chunked encoding or connection header in HTTP/2 and later
+                return;
+            }
+
+            if (connectionClose && IsWasiHttpHandler)
+            {
+                // wasi:http rejects the Connection request header.
                 return;
             }
 
@@ -276,6 +300,12 @@ namespace System.Net.Http.Functional.Tests
         {
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
             {
+                return;
+            }
+
+            if (IsWasiHttpHandler)
+            {
+                // WasiHttpHandler's response stream doesn't support synchronous reads.
                 return;
             }
 
@@ -350,6 +380,12 @@ namespace System.Net.Http.Functional.Tests
             if (LoopbackServerFactory.Version >= HttpVersion20.Value)
             {
                 // HTTP/2 does not use connection limits.
+                return;
+            }
+
+            if (IsWasiHttpHandler)
+            {
+                // WasiHttpHandler doesn't support MaxConnectionsPerServer.
                 return;
             }
 
@@ -529,6 +565,12 @@ namespace System.Net.Http.Functional.Tests
         {
             if (IsWinHttpHandler)
             {
+                return;
+            }
+
+            if (IsWasiHttpHandler)
+            {
+                // WasiHttpHandler doesn't fail the request when sending the request content fails.
                 return;
             }
             // Skipping test for a sync scenario because DelegateStream drops the original cancellationToken when it calls Read/Write methods.
