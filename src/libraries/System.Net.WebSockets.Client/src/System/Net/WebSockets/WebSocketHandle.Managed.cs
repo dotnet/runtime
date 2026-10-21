@@ -281,7 +281,11 @@ namespace System.Net.WebSockets
                 handler.PooledConnectionLifetime = TimeSpan.Zero;
                 handler.CookieContainer = options.Cookies;
                 handler.UseCookies = options.Cookies != null;
-                handler.SslOptions.RemoteCertificateValidationCallback = options.RemoteCertificateValidationCallback;
+                // Only touch SslOptions when needed; System.Net.Security isn't supported on every platform (e.g. WASI).
+                if (options.RemoteCertificateValidationCallback is not null)
+                {
+                    handler.SslOptions.RemoteCertificateValidationCallback = options.RemoteCertificateValidationCallback;
+                }
 
                 handler.Credentials = options.UseDefaultCredentials ?
                     CredentialCache.DefaultCredentials :
