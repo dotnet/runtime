@@ -970,6 +970,36 @@ extends:
                 eq(variables['isRollingBuild'], true))
 
       #
+      # NativeAOT WASI smoke tests are build-only while execution is being brought up.
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: Checked
+          platforms:
+          - wasi_wasm
+          jobParameters:
+            testGroup: innerloop
+            timeoutInMinutes: 180
+            nameSuffix: NativeAOT_BuildOnly
+            buildArgs: -s clr.aot+libs.native+libs.sfx+tools.illink -rc $(_BuildConfig) -lc Release /p:RunAnalyzers=false /p:TestAssemblies=false
+            postBuildSteps:
+              - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests.yml
+                parameters:
+                  testBuildArgs: nativeaot tree nativeaot
+            extraVariablesTemplates:
+              - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
+                parameters:
+                  testGroup: innerloop
+                  liveLibrariesBuildConfig: Release
+            condition: >-
+              or(
+                eq(variables['wasmDarcDependenciesChanged'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+                eq(variables['isRollingBuild'], true))
+
+      #
       # CoreCLR NativeAOT release build and libraries tests
       # Only when CoreCLR or library is changed
       #
