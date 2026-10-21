@@ -107,6 +107,27 @@ extends:
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: release
+          platforms:
+          - openharmony_arm64
+          variables:
+          - name: OHOS_NDK_HOME
+            value: $(Agent.TempDirectory)/ohos-sdk/linux
+          - name: OHOS_ASSETS
+            value: $(Agent.TempDirectory)/ohos-assets
+          - name: OHOS_CMAKE_ARGS
+            value: '-DCMAKE_ICU_DIR=$(Agent.TempDirectory)/ohos-assets/icu -DOPENSSL_ROOT_DIR=$(Agent.TempDirectory)/ohos-assets/openssl -DOPENSSL_INCLUDE_DIR=$(Agent.TempDirectory)/ohos-assets/openssl/include -DOPENSSL_CRYPTO_LIBRARY=$(Agent.TempDirectory)/ohos-assets/openssl/lib/libcrypto.a -DOPENSSL_SSL_LIBRARY=$(Agent.TempDirectory)/ohos-assets/openssl/lib/libssl.a'
+          jobParameters:
+            nameSuffix: AllSubsets_OHOS
+            buildArgs: -s clr.runtime+libs.native -c Release -cmakeargs "$(OHOS_CMAKE_ARGS)"
+            timeoutInMinutes: 180
+            preBuildSteps:
+            - script: eng/pipelines/ohos/setup-ohos-assets.sh
+              displayName: Prepare the OpenHarmony SDK and assets
+
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
           platforms:
           - linux_arm64
