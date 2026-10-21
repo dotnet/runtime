@@ -1,5 +1,12 @@
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
+if(CLR_CMAKE_ENABLE_LXR_RC_VERTICAL)
+  add_compile_definitions(
+    FEATURE_LXR_RC_VERTICAL
+    FEATURE_WRITE_BARRIER_STANDARD_ABI_TEST
+    FEATURE_ALLOCATION_NOTIFICATION_TEST)
+endif()
+
 if(FEATURE_STANDALONE_GC)
   add_definitions(-DFEATURE_STANDALONE_GC)
   remove_definitions(-DSTRESS_HEAP)
@@ -15,6 +22,7 @@ set(GC_SOURCES
   handletablecore.cpp
   handletablescan.cpp
   objecthandle.cpp
+  side_metadata.cpp
   softwarewritewatch.cpp
   gchandletable.cpp
   gcload.cpp
@@ -74,6 +82,7 @@ if (CLR_CMAKE_TARGET_WIN32)
     handletable.inl
     handletablepriv.h
     objecthandle.h
+    side_metadata.h
     softwarewritewatch.h
   )
 endif(CLR_CMAKE_TARGET_WIN32)
@@ -126,6 +135,102 @@ set(GC_WKS_SVR_SOURCES
   plan_phase.cpp
   regions_segments.cpp)
 
+if(CLR_CMAKE_ENABLE_WRITE_BARRIER_STANDARD_ABI_TEST)
+  if(CLR_CMAKE_TARGET_WIN32)
+    set(WRITE_BARRIER_STANDARD_ABI_TEST_ASM amd64/standardwritebarriertest.asm)
+  else()
+    set(WRITE_BARRIER_STANDARD_ABI_TEST_ASM amd64/standardwritebarriertest.S)
+  endif()
+  list(APPEND GC_SOURCES
+    standardwritebarriertest.cpp
+    ${WRITE_BARRIER_STANDARD_ABI_TEST_ASM})
+endif()
+
+if(CLR_CMAKE_ENABLE_ALLOCATION_NOTIFICATION_TEST)
+  list(APPEND GC_SOURCES allocationnotificationtest.cpp)
+endif()
+
+if(CLR_CMAKE_ENABLE_OBJECT_REFERENCE_ENUMERATION_TEST)
+  list(APPEND GC_SOURCES objectreferenceenumerationtest.cpp)
+endif()
+
+if(CLR_CMAKE_ENABLE_IMMIX_BLOCK_STATE_TEST OR CLR_CMAKE_ENABLE_REFERENCE_COUNT_TEST OR
+   CLR_CMAKE_ENABLE_IMMIX_ALLOCATION_TEST OR CLR_CMAKE_ENABLE_LARGE_OBJECT_SPACE_TEST OR
+   CLR_CMAKE_ENABLE_LXR_RC_VERTICAL)
+  list(APPEND GC_SOURCES immix_block.cpp)
+endif()
+
+if(CLR_CMAKE_ENABLE_IMMIX_BLOCK_STATE_TEST)
+  list(APPEND GC_SOURCES immixblockstatetest.cpp)
+endif()
+
+if(CLR_CMAKE_ENABLE_REFERENCE_COUNT_TEST OR CLR_CMAKE_ENABLE_LXR_RC_VERTICAL)
+  list(APPEND GC_SOURCES
+    reference_count.cpp
+    reference_count.h)
+endif()
+
+if(CLR_CMAKE_ENABLE_REFERENCE_COUNT_TEST)
+  list(APPEND GC_SOURCES referencecounttest.cpp)
+endif()
+
+if(CLR_CMAKE_ENABLE_LXR_WORK_PACKET_SCHEDULER_TEST OR
+   CLR_CMAKE_ENABLE_LXR_DEFERRED_BUCKET_TEST OR
+   CLR_CMAKE_ENABLE_LXR_LAZY_COMPLETION_COUNTER_TEST OR
+   CLR_CMAKE_ENABLE_LXR_PAUSE_COORDINATOR_TEST OR CLR_CMAKE_ENABLE_LXR_RC_VERTICAL)
+  list(APPEND GC_SOURCES
+    lxr_work_packet.cpp
+    lxr_work_scheduler.cpp)
+endif()
+
+if(CLR_CMAKE_ENABLE_LXR_LAZY_COMPLETION_COUNTER_TEST OR CLR_CMAKE_ENABLE_LXR_RC_VERTICAL)
+  list(APPEND GC_SOURCES lxr_completion_counter.cpp)
+endif()
+
+if(CLR_CMAKE_ENABLE_LXR_LAZY_COMPLETION_COUNTER_TEST)
+  list(APPEND GC_SOURCES lxrcompletioncountertest.cpp)
+endif()
+
+if(CLR_CMAKE_ENABLE_LXR_WORK_PACKET_SCHEDULER_TEST)
+  list(APPEND GC_SOURCES lxrworkpacketschedulertest.cpp)
+endif()
+
+if(CLR_CMAKE_ENABLE_LXR_DEFERRED_BUCKET_TEST)
+  list(APPEND GC_SOURCES lxrdeferredbuckettest.cpp)
+endif()
+
+if(CLR_CMAKE_ENABLE_IMMIX_ALLOCATION_TEST OR CLR_CMAKE_ENABLE_LXR_RC_VERTICAL)
+  list(APPEND GC_SOURCES immix_allocation.cpp)
+endif()
+
+if(CLR_CMAKE_ENABLE_IMMIX_ALLOCATION_TEST)
+  list(APPEND GC_SOURCES immixallocationtest.cpp)
+endif()
+
+if(CLR_CMAKE_ENABLE_LARGE_OBJECT_SPACE_TEST OR CLR_CMAKE_ENABLE_LXR_RC_VERTICAL)
+  list(APPEND GC_SOURCES large_object_space.cpp)
+endif()
+
+if(CLR_CMAKE_ENABLE_LARGE_OBJECT_SPACE_TEST)
+  list(APPEND GC_SOURCES largeobjectspacetest.cpp)
+endif()
+
+if(CLR_CMAKE_ENABLE_LXR_PAUSE_COORDINATOR_TEST OR CLR_CMAKE_ENABLE_LXR_RC_VERTICAL)
+  list(APPEND GC_SOURCES
+    lxr_pause_coordinator.cpp
+    lxr_pause_schedule.cpp)
+endif()
+
+if(CLR_CMAKE_ENABLE_LXR_PAUSE_COORDINATOR_TEST)
+  list(APPEND GC_SOURCES lxrpausecoordinatortest.cpp)
+endif()
+
+if(CLR_CMAKE_ENABLE_LXR_RC_VERTICAL)
+  list(APPEND GC_SOURCES
+    lxr_reference_counting.cpp lxr_reference_counting.h
+    lxrrcverticaltest.cpp lxrrcverticaltest.h)
+endif()
+
 if(FEATURE_STANDALONE_GC)
   if (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
     set(BUILD_EXP_GC 1)
@@ -161,12 +266,36 @@ if(FEATURE_STANDALONE_GC)
 
   add_library_clr(clrgc_gc_wks OBJECT ${GC_WKS_SVR_SOURCES})
   add_dependencies(clrgc_gc_wks eventing_headers)
+  if(CLR_CMAKE_ENABLE_WRITE_BARRIER_STANDARD_ABI_TEST)
+    target_compile_definitions(clrgc_gc_wks PRIVATE FEATURE_WRITE_BARRIER_STANDARD_ABI_TEST)
+  endif()
+  if(CLR_CMAKE_ENABLE_ALLOCATION_NOTIFICATION_TEST)
+    target_compile_definitions(clrgc_gc_wks PRIVATE FEATURE_ALLOCATION_NOTIFICATION_TEST)
+  endif()
+  if(CLR_CMAKE_ENABLE_OBJECT_REFERENCE_ENUMERATION_TEST)
+    target_compile_definitions(clrgc_gc_wks PRIVATE FEATURE_OBJECT_REFERENCE_ENUMERATION_TEST)
+  endif()
+  if(CLR_CMAKE_ENABLE_OBJECT_HEADER_BITS_TEST)
+    target_compile_definitions(clrgc_gc_wks PRIVATE FEATURE_OBJECT_HEADER_BITS_TEST)
+  endif()
   set(CLRGC_OBJECTS
     $<TARGET_OBJECTS:clrgc_gc_wks>)
   if(FEATURE_SVR_GC)
     add_library_clr(clrgc_gc_svr OBJECT ${GC_WKS_SVR_SOURCES})
     add_dependencies(clrgc_gc_svr eventing_headers)
     target_compile_definitions(clrgc_gc_svr PRIVATE SERVER_GC)
+    if(CLR_CMAKE_ENABLE_WRITE_BARRIER_STANDARD_ABI_TEST)
+      target_compile_definitions(clrgc_gc_svr PRIVATE FEATURE_WRITE_BARRIER_STANDARD_ABI_TEST)
+    endif()
+    if(CLR_CMAKE_ENABLE_ALLOCATION_NOTIFICATION_TEST)
+      target_compile_definitions(clrgc_gc_svr PRIVATE FEATURE_ALLOCATION_NOTIFICATION_TEST)
+    endif()
+    if(CLR_CMAKE_ENABLE_OBJECT_REFERENCE_ENUMERATION_TEST)
+      target_compile_definitions(clrgc_gc_svr PRIVATE FEATURE_OBJECT_REFERENCE_ENUMERATION_TEST)
+    endif()
+    if(CLR_CMAKE_ENABLE_OBJECT_HEADER_BITS_TEST)
+      target_compile_definitions(clrgc_gc_svr PRIVATE FEATURE_OBJECT_HEADER_BITS_TEST)
+    endif()
     list(APPEND CLRGC_OBJECTS
       $<TARGET_OBJECTS:clrgc_gc_svr>)
   endif()
@@ -174,6 +303,18 @@ if(FEATURE_STANDALONE_GC)
   # clrgc is build with standalone+segments
   add_library_clr(clrgc SHARED ${GC_SOURCES} ${CLRGC_OBJECTS})
   add_dependencies(clrgc eventing_headers)
+  if(CLR_CMAKE_ENABLE_WRITE_BARRIER_STANDARD_ABI_TEST)
+    target_compile_definitions(clrgc PRIVATE FEATURE_WRITE_BARRIER_STANDARD_ABI_TEST)
+  endif()
+  if(CLR_CMAKE_ENABLE_ALLOCATION_NOTIFICATION_TEST)
+    target_compile_definitions(clrgc PRIVATE FEATURE_ALLOCATION_NOTIFICATION_TEST)
+  endif()
+  if(CLR_CMAKE_ENABLE_OBJECT_REFERENCE_ENUMERATION_TEST)
+    target_compile_definitions(clrgc PRIVATE FEATURE_OBJECT_REFERENCE_ENUMERATION_TEST)
+  endif()
+  if(CLR_CMAKE_ENABLE_OBJECT_HEADER_BITS_TEST)
+    target_compile_definitions(clrgc PRIVATE FEATURE_OBJECT_HEADER_BITS_TEST)
+  endif()
   target_link_libraries(clrgc PRIVATE ${GC_LINK_LIBRARIES})
   target_link_libraries(clrgc PRIVATE gc_dll_wks_descriptor)
   if(FEATURE_SVR_GC)
@@ -201,6 +342,19 @@ if(FEATURE_STANDALONE_GC)
   add_subdirectory(datadescriptor)
 
   install_clr(TARGETS clrgc DESTINATIONS . sharedFramework COMPONENT runtime)
+  if(CLR_CMAKE_ENABLE_LXR_GC)
+    add_library_clr(clrlxrgc SHARED
+      gceventstatus.cpp gcconfig.cpp gccommon.cpp gcscan.cpp
+      handletable.cpp handletablecore.cpp handletablescan.cpp handletablecache.cpp
+      objecthandle.cpp gchandletable.cpp gcbridge.cpp softwarewritewatch.cpp
+      side_metadata.cpp immix_block.cpp reference_count.cpp immix_allocation.cpp
+      large_object_space.cpp lxr_work_packet.cpp lxr_work_scheduler.cpp
+      lxr_completion_counter.cpp lxr_pause_schedule.cpp lxr_pause_coordinator.cpp
+      lxr_reference_counting.cpp lxr_gc.cpp lxr_gc.h lxr_gcload.cpp)
+    add_dependencies(clrlxrgc eventing_headers)
+    target_link_libraries(clrlxrgc PRIVATE ${GC_LINK_LIBRARIES})
+    install_clr(TARGETS clrlxrgc DESTINATIONS . sharedFramework COMPONENT runtime)
+  endif()
   if (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
     install_clr(TARGETS clrgcexp DESTINATIONS . sharedFramework COMPONENT runtime)
   endif (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)

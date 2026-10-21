@@ -47,8 +47,87 @@ if(CLR_CMAKE_TARGET_WASI)
 endif()
 
 OPTION(CLR_CMAKE_ENABLE_CODE_COVERAGE "Enable code coverage" OFF)
+OPTION(CLR_CMAKE_ENABLE_WRITE_BARRIER_STANDARD_ABI_TEST
+  "Enable the AMD64 write-barrier standard-ABI validation path" OFF)
+OPTION(CLR_CMAKE_ENABLE_ALLOCATION_NOTIFICATION_TEST
+  "Enable the allocation-complete notification validation callback" OFF)
+OPTION(CLR_CMAKE_ENABLE_OBJECT_REFERENCE_ENUMERATION_TEST
+  "Enable object-reference enumeration scan validation" OFF)
+OPTION(CLR_CMAKE_ENABLE_OBJECT_HEADER_BITS_TEST
+  "Enable GC object-header bit validation" OFF)
+OPTION(CLR_CMAKE_ENABLE_IMMIX_BLOCK_STATE_TEST
+  "Enable the Immix block-state validation exports" OFF)
+OPTION(CLR_CMAKE_ENABLE_LARGE_OBJECT_SPACE_TEST
+  "Enable the LXR large-object-space validation exports" OFF)
+OPTION(CLR_CMAKE_ENABLE_IMMIX_ALLOCATION_TEST
+  "Enable the Immix allocation validation exports" OFF)
+OPTION(CLR_CMAKE_ENABLE_REFERENCE_COUNT_TEST
+  "Enable the reference-count validation exports" OFF)
+OPTION(CLR_CMAKE_ENABLE_LXR_WORK_PACKET_SCHEDULER_TEST
+  "Enable the LXR work-packet scheduler validation export" OFF)
+OPTION(CLR_CMAKE_ENABLE_LXR_PAUSE_COORDINATOR_TEST
+  "Enable the LXR pause coordinator validation export" OFF)
+OPTION(CLR_CMAKE_ENABLE_LXR_DEFERRED_BUCKET_TEST
+  "Enable the LXR deferred concurrent bucket validation export" OFF)
+OPTION(CLR_CMAKE_ENABLE_LXR_LAZY_COMPLETION_COUNTER_TEST
+  "Enable the LXR lazy completion counter validation export" OFF)
+OPTION(CLR_CMAKE_ENABLE_LXR_RC_VERTICAL
+  "Enable the experimental integrated LXR reference-counting engine" OFF)
 OPTION(CLR_CMAKE_ENABLE_SATORI_GC
   "Build the Satori standalone collector (comparison build; AMD64 and ARM64 only)" OFF)
+OPTION(CLR_CMAKE_ENABLE_LXR_GC
+  "Build the experimental selectable LXR collector" OFF)
+
+if(CLR_CMAKE_ENABLE_LXR_GC)
+  if(NOT CLR_CMAKE_TARGET_ARCH_AMD64 OR
+     (NOT CLR_CMAKE_TARGET_WIN32 AND NOT CLR_CMAKE_TARGET_LINUX))
+    message(FATAL_ERROR "The selectable LXR prototype requires standalone Windows or Linux AMD64 CoreCLR")
+  endif()
+  add_compile_definitions(LXR_ENABLE_LAZY_COMPLETION_COUNTER)
+endif()
+
+if(CLR_CMAKE_ENABLE_LXR_RC_VERTICAL)
+  if(NOT CLR_CMAKE_TARGET_ARCH_AMD64 OR
+     (NOT CLR_CMAKE_TARGET_WIN32 AND NOT CLR_CMAKE_TARGET_LINUX))
+    message(FATAL_ERROR "The LXR RC prototype requires Windows or Linux AMD64")
+  endif()
+  set(CLR_CMAKE_ENABLE_WRITE_BARRIER_STANDARD_ABI_TEST ON)
+  set(CLR_CMAKE_ENABLE_ALLOCATION_NOTIFICATION_TEST ON)
+endif()
+
+if(CLR_CMAKE_ENABLE_LXR_LAZY_COMPLETION_COUNTER_TEST OR CLR_CMAKE_ENABLE_LXR_RC_VERTICAL)
+  add_compile_definitions(LXR_ENABLE_LAZY_COMPLETION_COUNTER)
+endif()
+
+if(CLR_CMAKE_ENABLE_WRITE_BARRIER_STANDARD_ABI_TEST)
+  if(NOT CLR_CMAKE_TARGET_ARCH_AMD64)
+    message(FATAL_ERROR "The write-barrier standard-ABI validation path requires AMD64")
+  endif()
+endif()
+
+if(CLR_CMAKE_ENABLE_IMMIX_BLOCK_STATE_TEST)
+  if(NOT CLR_CMAKE_TARGET_ARCH_AMD64)
+    message(FATAL_ERROR "The Immix block-state validation exports require AMD64")
+  endif()
+endif()
+
+if(CLR_CMAKE_ENABLE_REFERENCE_COUNT_TEST)
+  if(NOT CLR_CMAKE_TARGET_ARCH_AMD64)
+    message(FATAL_ERROR "The reference-count validation exports require AMD64")
+  endif()
+endif()
+
+if(CLR_CMAKE_ENABLE_IMMIX_ALLOCATION_TEST)
+  if(NOT CLR_CMAKE_TARGET_ARCH_AMD64)
+    message(FATAL_ERROR "The Immix allocation validation exports require AMD64")
+  endif()
+endif()
+
+if(CLR_CMAKE_ENABLE_OBJECT_REFERENCE_ENUMERATION_TEST)
+  if(NOT CLR_CMAKE_TARGET_WIN32 OR NOT CLR_CMAKE_TARGET_ARCH_AMD64)
+    message(FATAL_ERROR "The object-reference enumeration validation path requires Windows AMD64")
+  endif()
+endif()
 
 # WebAssembly targets are single-threaded unless threads are explicitly enabled.
 if(NOT DEFINED FEATURE_MULTITHREADING AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
@@ -197,6 +276,10 @@ endif(CLR_CMAKE_HOST_WIN32)
 #  - all clr specific feature variable should also be added in this file
 #----------------------------------
 include(clrdefinitions.cmake)
+
+if(CLR_CMAKE_ENABLE_LXR_GC AND NOT FEATURE_STANDALONE_GC)
+  message(FATAL_ERROR "The selectable LXR prototype requires standalone GC support")
+endif()
 
 #--------------------------------
 # Data descriptors mechanics
