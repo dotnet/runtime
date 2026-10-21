@@ -24,7 +24,7 @@ public sealed unsafe partial class SOSDacImpl : ICLRDataEnumMemoryRegions
         {
             // Like the native DAC, ignore the reserved clrFlags argument.
             DumpType dumpType = GetDumpType(miniDumpFlags);
-            MemoryRegionEmitter emitter = new((nint)callback, (uint)_target.PointerSize);
+            MemoryRegionEmitter emitter = new((nint)callback, (uint)_target.PointerSize, dumpType);
             return MemoryEnumerator.Enumerate(_target, emitter, dumpType);
         }
         catch (Exception ex)

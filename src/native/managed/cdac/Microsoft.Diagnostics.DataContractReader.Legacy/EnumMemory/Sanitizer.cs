@@ -3,6 +3,7 @@
 
 using System;
 using System.Buffers.Binary;
+using System.Text;
 
 namespace Microsoft.Diagnostics.DataContractReader.Legacy.EnumMemory;
 
@@ -60,6 +61,20 @@ internal static class Sanitizer
             if (!emitter.Update(pathAddress + written, buffer[..count]))
                 return;
             written += (uint)count;
+        }
+    }
+
+    internal static void StripArgumentsFromMethodName(StringBuilder name)
+    {
+        for (int i = 0; i < name.Length; i++)
+        {
+            if (name[i] != '(')
+                continue;
+
+            // Preserve "()" because !analyze expects an argument list, matching the native DAC.
+            name.Length = i + 1;
+            name.Append(')');
+            break;
         }
     }
 

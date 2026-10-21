@@ -22,24 +22,17 @@ internal sealed class MemoryEnumerator
     private const int MaxSyncBlocks = 1_000_000;
     private const int MaxThreads = 1_000_000;
 
-    private readonly Target _target;
-    private readonly DumpType _dumpType;
-    private readonly MemoryRegionEmitter _emitter;
+    private readonly CollectorTarget _collectorTarget;
     private readonly HashSet<TargetPointer> _loaderAllocators = [];
     private readonly MethodCollector _methods;
     private readonly ObjectCollector _objects;
     private readonly PEImageCollector _peImageCollector;
 
-    private MemoryEnumerator(
-        Target target,
-        DumpType dumpType,
-        MemoryRegionEmitter emitter)
+    private MemoryEnumerator(CollectorTarget target)
     {
-        _target = target;
-        _dumpType = dumpType;
-        _emitter = emitter;
-        _methods = new(target, emitter);
-        _objects = new(target, emitter, _methods, _dumpType);
+        _collectorTarget = target;
+        _methods = new(target);
+        _objects = new(target, _methods);
         _peImageCollector = new(target);
     }
 
@@ -57,7 +50,7 @@ internal sealed class MemoryEnumerator
         foreach (TargetSpan range in descriptorTarget.EnumerateDescriptorMemory())
             emitter.Add(range.Address.Value, range.Size);
 
-        new MemoryEnumerator(target, dumpType, emitter).EnumerateMemoryRegions();
+        new MemoryEnumerator(new(target, dumpType, emitter)).EnumerateMemoryRegions();
         return emitter.Result;
     }
 
@@ -67,9 +60,10 @@ internal sealed class MemoryEnumerator
         TryEnumerate(EnumerateStatics);
         TryEnumerate(EnumerateDebugger);
         TryEnumerate(EnumerateManagedModules);
+        TryEnumerate(EnumerateThreadExceptions);
         TryEnumerate(EnumerateThreads);
 
-        if (_dumpType == DumpType.Heap)
+        if (_collectorTarget.DumpType == DumpType.Heap)
         {
             TryEnumerate(EnumerateGC);
             TryEnumerate(EnumerateCodeAndLoaderHeaps);
@@ -78,13 +72,14 @@ internal sealed class MemoryEnumerator
             TryEnumerate(EnumerateStressLog);
         }
 
-        TryEnumerate(WriteMiniMetadata);
+        if (_collectorTarget.DumpType is DumpType.Mini or DumpType.Triage)
+            TryEnumerate(_collectorTarget.MiniMetadata.Write);
     }
 
     private void EnumerateNativeRuntimeModule()
     {
-        if (_target.TryGetRuntimeImageBase(out TargetPointer imageBase))
-            _peImageCollector.EnumerateMemoryRegions(imageBase, uint.MaxValue, isMapped: true, _emitter, _dumpType, includeExportsAndResources: true);
+        if (_collectorTarget.Target.TryGetRuntimeImageBase(out TargetPointer imageBase))
+            _peImageCollector.EnumerateMemoryRegions(imageBase, uint.MaxValue, isMapped: true, includeExportsAndResources: true);
     }
 
     private static void TryEnumerate(Action enumerate)
@@ -101,7 +96,7 @@ internal sealed class MemoryEnumerator
 
     private void EnumerateStatics()
     {
-        IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+        IRuntimeTypeSystem rts = _collectorTarget.Target.Contracts.RuntimeTypeSystem;
         rts.GetWellKnownMethodTable(WellKnownMethodTable.Array);
         rts.GetWellKnownMethodTable(WellKnownMethodTable.Canon);
         rts.GetWellKnownMethodTable(WellKnownMethodTable.Exception);
@@ -112,16 +107,16 @@ internal sealed class MemoryEnumerator
 
     private void EnumerateDebugger()
     {
-        IDebugger debugger = _target.Contracts.Debugger;
+        IDebugger debugger = _collectorTarget.Target.Contracts.Debugger;
         debugger.TryGetDebuggerData(out _);
         debugger.GetAttachStateFlags();
-        _target.Contracts.ReJIT.IsEnabled();
+        _collectorTarget.Target.Contracts.ReJIT.IsEnabled();
     }
 
     private void EnumerateManagedModules()
     {
-        ILoader loader = _target.Contracts.Loader;
-        IEcmaMetadata ecmaMetadata = _target.Contracts.EcmaMetadata;
+        ILoader loader = _collectorTarget.Target.Contracts.Loader;
+        IEcmaMetadata ecmaMetadata = _collectorTarget.Target.Contracts.EcmaMetadata;
 
         TargetPointer appDomain = loader.GetAppDomain();
         loader.GetRootAssembly();
@@ -136,7 +131,8 @@ internal sealed class MemoryEnumerator
             TargetPointer peAssembly = loader.GetPEAssembly(module);
             ModuleFlags flags = loader.GetFlags(module);
             loader.GetSimpleName(module);
-            loader.GetPath(module);
+            if (_collectorTarget.DumpType != DumpType.Triage)
+                loader.GetPath(module);
             loader.GetFileName(module);
             loader.GetILBase(module);
             loader.GetModuleLookupMapBase(module, ModuleLookupMapKind.FieldDefToDesc);
@@ -148,20 +144,20 @@ internal sealed class MemoryEnumerator
 
             if (loader.TryGetLoadedImageContents(module, out TargetPointer imageBase, out uint imageSize, out uint imageFlags))
             {
-                _emitter.RegisterMetadataRange(ecmaMetadata.GetReadOnlyMetadataAddress(module));
+                _collectorTarget.Emitter.RegisterMetadataRange(ecmaMetadata.GetReadOnlyMetadataAddress(module));
                 TryEnumerate(() =>
                 {
                     const uint ImageFlagMapped = 1;
-                    _peImageCollector.EnumerateMemoryRegions(imageBase, imageSize, (imageFlags & ImageFlagMapped) != 0, _emitter, _dumpType);
+                    _peImageCollector.EnumerateMemoryRegions(imageBase, imageSize, (imageFlags & ImageFlagMapped) != 0);
                 });
             }
 
             if (flags.HasFlag(ModuleFlags.ReflectionEmit))
-                _emitter.RegisterMetadataRange(ecmaMetadata.GetReadWriteSavedMetadataAddress(module));
+                _collectorTarget.Emitter.RegisterMetadataRange(ecmaMetadata.GetReadWriteSavedMetadataAddress(module));
 
             // Smaller dumps do not include in-memory symbols unless they are otherwise referenced.
-            if (loader.TryGetSymbolStream(module, out TargetPointer symbolBuffer, out uint symbolSize) && _dumpType == DumpType.Heap)
-                _emitter.Add(symbolBuffer.Value, symbolSize);
+            if (loader.TryGetSymbolStream(module, out TargetPointer symbolBuffer, out uint symbolSize) && _collectorTarget.DumpType == DumpType.Heap)
+                _collectorTarget.Emitter.Add(symbolBuffer.Value, symbolSize);
 
             if (peAssembly != TargetPointer.Null)
                 ecmaMetadata.HasReadWriteMetadata(peAssembly);
@@ -193,11 +189,10 @@ internal sealed class MemoryEnumerator
         }
     }
 
-    private void EnumerateThreads()
+    private IEnumerable<ThreadData> EnumerateThreadData()
     {
-        IThread thread = _target.Contracts.Thread;
+        IThread thread = _collectorTarget.Target.Contracts.Thread;
         ThreadStoreData threadStore = thread.GetThreadStoreData();
-        _ = thread.GetThreadCounts();
         HashSet<TargetPointer> visited = [];
         TargetPointer threadAddress = threadStore.FirstThread;
 
@@ -207,22 +202,40 @@ internal sealed class MemoryEnumerator
                 break;
 
             ThreadData threadData = thread.GetThreadData(threadAddress);
-            thread.GetThreadAllocContext(threadAddress, out _, out _);
-            EnumerateStack(threadData);
+            yield return threadData;
+            threadAddress = threadData.NextThread;
+        }
+    }
+
+    private void EnumerateThreadExceptions()
+    {
+        // Collect exceptions across all threads before ordinary stack walks so their type and saved-frame
+        // method names get priority in the bounded mini-metadata stream.
+        foreach (ThreadData threadData in EnumerateThreadData())
+        {
             if (threadData.LastThrownObjectHandle != TargetPointer.Null)
             {
                 TargetPointer exceptionObject =
-                    _target.ReadPointer(threadData.LastThrownObjectHandle.Value);
+                    _collectorTarget.Target.ReadPointer(threadData.LastThrownObjectHandle.Value);
                 _objects.EnumerateObject(exceptionObject);
             }
+        }
+    }
 
-            threadAddress = threadData.NextThread;
+    private void EnumerateThreads()
+    {
+        IThread thread = _collectorTarget.Target.Contracts.Thread;
+        _ = thread.GetThreadCounts();
+        foreach (ThreadData threadData in EnumerateThreadData())
+        {
+            thread.GetThreadAllocContext(threadData.ThreadAddress, out _, out _);
+            EnumerateStack(threadData);
         }
     }
 
     private void EnumerateStack(ThreadData threadData)
     {
-        IStackWalk stackWalk = _target.Contracts.StackWalk;
+        IStackWalk stackWalk = _collectorTarget.Target.Contracts.StackWalk;
         foreach (IStackDataFrameHandle frame in stackWalk.CreateStackWalk(threadData))
         {
             TargetCodePointer instructionPointer = stackWalk.GetInstructionPointer(frame);
@@ -231,18 +244,9 @@ internal sealed class MemoryEnumerator
         }
     }
 
-    private void WriteMiniMetadata()
-    {
-        Dictionary<TargetPointer, string> names = new(_methods.Names);
-        foreach ((TargetPointer address, string name) in _objects.Names)
-            names.TryAdd(address, name);
-
-        MiniMetadataWriter.Write(_target, _emitter, names);
-    }
-
     private void EnumerateGC()
     {
-        IGC gc = _target.Contracts.GC;
+        IGC gc = _collectorTarget.Target.Contracts.GC;
         if (!gc.GetGCStructuresValid())
             return;
 
@@ -272,7 +276,7 @@ internal sealed class MemoryEnumerator
         foreach ((GCHeapSegmentInfo segment, _) in gc.EnumerateAllSegments())
         {
             if (segment.End > segment.Start)
-                _emitter.Add(segment.Start.Value, segment.End.Value - segment.Start.Value);
+                _collectorTarget.Emitter.Add(segment.Start.Value, segment.End.Value - segment.Start.Value);
         }
 
         AddGCMemoryRegions(gc.GetHandleTableMemoryRegions());
@@ -283,12 +287,12 @@ internal sealed class MemoryEnumerator
     private void AddGCMemoryRegions(IReadOnlyList<GCMemoryRegionData> regions)
     {
         foreach (GCMemoryRegionData region in regions)
-            _emitter.Add(region.Start.Value, region.Size);
+            _collectorTarget.Emitter.Add(region.Start.Value, region.Size);
     }
 
     private void EnumerateCodeAndLoaderHeaps()
     {
-        IExecutionManager executionManager = _target.Contracts.ExecutionManager;
+        IExecutionManager executionManager = _collectorTarget.Target.Contracts.ExecutionManager;
         foreach (JitManagerKind kind in new[] { JitManagerKind.EE, JitManagerKind.Interpreter })
         {
             foreach (ICodeHeapInfo codeHeap in executionManager.GetCodeHeapInfos(kind))
@@ -296,7 +300,7 @@ internal sealed class MemoryEnumerator
                 switch (codeHeap)
                 {
                     case HostCodeHeapInfo host when host.CurrentAddress > host.BaseAddress:
-                        _emitter.Add(host.BaseAddress.Value, host.CurrentAddress.Value - host.BaseAddress.Value);
+                        _collectorTarget.Emitter.Add(host.BaseAddress.Value, host.CurrentAddress.Value - host.BaseAddress.Value);
                         break;
                     case LoaderCodeHeapInfo loader:
                         AddLoaderHeapBlocks(loader.LoaderHeapAddress);
@@ -305,7 +309,7 @@ internal sealed class MemoryEnumerator
             }
         }
 
-        ILoader loaderContract = _target.Contracts.Loader;
+        ILoader loaderContract = _collectorTarget.Target.Contracts.Loader;
         foreach (TargetPointer loaderAllocator in _loaderAllocators)
         {
             IReadOnlyDictionary<LoaderAllocatorHeapType, TargetPointer> heaps =
@@ -320,15 +324,15 @@ internal sealed class MemoryEnumerator
         if (loaderHeap == TargetPointer.Null)
             return;
 
-        ILoader loader = _target.Contracts.Loader;
+        ILoader loader = _collectorTarget.Target.Contracts.Loader;
         foreach (LoaderHeapBlock block in loader.EnumerateLoaderHeapBlocks(loaderHeap))
-            _emitter.Add(block.Address.Value, block.Size.Value);
+            _collectorTarget.Emitter.Add(block.Address.Value, block.Size.Value);
     }
 
     private void EnumerateSyncBlocks()
     {
-        ISyncBlock syncBlock = _target.Contracts.SyncBlock;
-        IThread thread = _target.Contracts.Thread;
+        ISyncBlock syncBlock = _collectorTarget.Target.Contracts.SyncBlock;
+        IThread thread = _collectorTarget.Target.Contracts.Thread;
         uint count = syncBlock.GetSyncBlockCount();
         for (uint i = 1; i <= count; i++)
         {
@@ -349,7 +353,7 @@ internal sealed class MemoryEnumerator
 
     private void EnumerateAuxiliarySymbols()
     {
-        foreach ((TargetCodePointer _, string _) in _target.Contracts.AuxiliarySymbols.EnumerateAuxiliarySymbols())
+        foreach ((TargetCodePointer _, string _) in _collectorTarget.Target.Contracts.AuxiliarySymbols.EnumerateAuxiliarySymbols())
         {
         }
     }
@@ -369,12 +373,12 @@ internal sealed class MemoryEnumerator
 
     private void EnumerateStressLog()
     {
-        IStressLog stressLog = _target.Contracts.StressLog;
+        IStressLog stressLog = _collectorTarget.Target.Contracts.StressLog;
         if (!stressLog.HasStressLog())
             return;
 
         StressLogData data = stressLog.GetStressLogData();
         foreach (StressLogMemoryRange range in stressLog.GetStressLogMemoryRanges(data))
-            _emitter.Add(range.Start.Value, range.Size);
+            _collectorTarget.Emitter.Add(range.Start.Value, range.Size);
     }
 }

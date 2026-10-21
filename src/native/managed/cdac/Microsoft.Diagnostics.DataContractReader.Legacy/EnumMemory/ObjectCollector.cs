@@ -13,26 +13,17 @@ using Microsoft.Diagnostics.DataContractReader.Legacy;
 
 namespace Microsoft.Diagnostics.DataContractReader.Legacy.EnumMemory;
 
-internal sealed class ObjectCollector(
-    Target target,
-    MemoryRegionEmitter emitter,
-    MethodCollector methods,
-    DumpType dumpType)
+internal sealed class ObjectCollector(CollectorTarget target, MethodCollector methods)
 {
     private const ulong MaxObjectSize = 64 * 1024 * 1024;
     private const int MaxInnerExceptionCount = 256;
     private const int MaxTypeTraversalDepth = 1_024;
 
-    private readonly Target _target = target;
-    private readonly DumpType _dumpType = dumpType;
-    private readonly MemoryRegionEmitter _emitter = emitter;
+    private readonly CollectorTarget _collectorTarget = target;
     private readonly MethodCollector _methods = methods;
-    private readonly Dictionary<TargetPointer, string> _names = [];
     private readonly Stack<TargetPointer> _pendingObjects = [];
     private readonly HashSet<TargetPointer> _visitedObjects = [];
     private int _remainingInnerExceptions;
-
-    public IReadOnlyDictionary<TargetPointer, string> Names => _names;
 
     public void EnumerateObject(TargetPointer objectAddress)
     {
@@ -58,13 +49,13 @@ internal sealed class ObjectCollector(
 
         try
         {
-            IObject objects = _target.Contracts.Object;
-            IRuntimeTypeSystem types = _target.Contracts.RuntimeTypeSystem;
+            IObject objects = _collectorTarget.Target.Contracts.Object;
+            IRuntimeTypeSystem types = _collectorTarget.Target.Contracts.RuntimeTypeSystem;
             ulong objectSize = objects.GetSize(objectAddress);
             if (objectSize == 0 || objectSize > MaxObjectSize)
                 return;
 
-            _emitter.Add(objectAddress.Value, objectSize);
+            _collectorTarget.Emitter.Add(objectAddress.Value, objectSize);
             objects.GetSyncBlockAddress(objectAddress);
 
             TargetPointer methodTable = objects.GetMethodTableAddress(objectAddress);
@@ -80,13 +71,14 @@ internal sealed class ObjectCollector(
                 EnumerateArray(objects, objectAddress, type);
             }
 
-            if (_target.Contracts.FeatureFlags.IsEnabled(RuntimeFeature.COMInterop))
+            if (_collectorTarget.Target.Contracts.FeatureFlags.IsEnabled(RuntimeFeature.COMInterop))
                 objects.GetBuiltInComData(objectAddress, out _, out _, out _);
 
             if (isException)
+            {
+                CacheMethodTableName(methodTable);
                 EnumerateExceptionData(objectAddress);
-
-            CacheMethodTableName(methodTable);
+            }
         }
         catch (System.Exception ex) when (ex.HResult != HResults.COR_E_OPERATIONCANCELED)
         {
@@ -95,7 +87,7 @@ internal sealed class ObjectCollector(
 
     private bool EnumerateTypeHierarchy(ITypeHandle type)
     {
-        IRuntimeTypeSystem types = _target.Contracts.RuntimeTypeSystem;
+        IRuntimeTypeSystem types = _collectorTarget.Target.Contracts.RuntimeTypeSystem;
         TargetPointer exceptionMethodTable =
             types.GetWellKnownMethodTable(WellKnownMethodTable.Exception);
         bool isException = false;
@@ -117,7 +109,7 @@ internal sealed class ObjectCollector(
 
     private void EnumerateMethodTableData(ITypeHandle type)
     {
-        IRuntimeTypeSystem types = _target.Contracts.RuntimeTypeSystem;
+        IRuntimeTypeSystem types = _collectorTarget.Target.Contracts.RuntimeTypeSystem;
         types.GetBaseSize(type);
         types.GetComponentSize(type);
         if (types.IsFreeObjectMethodTable(type))
@@ -136,7 +128,7 @@ internal sealed class ObjectCollector(
 
     private void EnumerateArray(IObject objects, TargetPointer objectAddress, ITypeHandle type)
     {
-        IRuntimeTypeSystem types = _target.Contracts.RuntimeTypeSystem;
+        IRuntimeTypeSystem types = _collectorTarget.Target.Contracts.RuntimeTypeSystem;
         objects.GetArrayData(objectAddress, out _, out _, out _, out _, out _);
         ITypeHandle elementType = types.GetTypeParam(type);
         types.GetSignatureCorElementType(elementType);
@@ -146,7 +138,7 @@ internal sealed class ObjectCollector(
 
     private void EnumerateExceptionData(TargetPointer exceptionObject)
     {
-        IException exceptions = _target.Contracts.Exception;
+        IException exceptions = _collectorTarget.Target.Contracts.Exception;
         ExceptionData data = exceptions.GetExceptionData(exceptionObject);
         if (data.InnerException != TargetPointer.Null && _remainingInnerExceptions > 0)
         {
@@ -155,13 +147,13 @@ internal sealed class ObjectCollector(
         }
         EnumerateStackTraceString(data.StackTraceString);
         if (data.RemoteStackTraceString != TargetPointer.Null &&
-            (_dumpType != DumpType.Triage || !ExceptionTypeOverridesStackTraceGetter(exceptionObject)))
+            (_collectorTarget.DumpType != DumpType.Triage || !ExceptionTypeOverridesStackTraceGetter(exceptionObject)))
         {
             EnumerateStackTraceString(data.RemoteStackTraceString);
         }
         _pendingObjects.Push(data.WatsonBuckets);
         _pendingObjects.Push(data.StackTrace);
-        if (_dumpType != DumpType.Triage)
+        if (_collectorTarget.DumpType != DumpType.Triage)
             _pendingObjects.Push(data.Message);
 
         foreach (ExceptionStackFrameInfo frame in exceptions.GetExceptionStackFrames(exceptionObject))
@@ -170,8 +162,8 @@ internal sealed class ObjectCollector(
 
     private bool ExceptionTypeOverridesStackTraceGetter(TargetPointer exceptionObject)
     {
-        IRuntimeTypeSystem types = _target.Contracts.RuntimeTypeSystem;
-        TargetPointer methodTable = _target.Contracts.Object.GetMethodTableAddress(exceptionObject);
+        IRuntimeTypeSystem types = _collectorTarget.Target.Contracts.RuntimeTypeSystem;
+        TargetPointer methodTable = _collectorTarget.Target.Contracts.Object.GetMethodTableAddress(exceptionObject);
         TargetPointer exceptionMethodTable = types.GetWellKnownMethodTable(WellKnownMethodTable.Exception);
         if (methodTable == exceptionMethodTable)
             return false;
@@ -179,8 +171,8 @@ internal sealed class ObjectCollector(
         ITypeHandle exceptionType = types.GetTypeHandle(exceptionMethodTable);
         ITypeHandle objectType = types.GetTypeHandle(types.GetWellKnownMethodTable(WellKnownMethodTable.Object));
         ITypeHandle derivedType = types.GetTypeHandle(methodTable);
-        Contracts.ModuleHandle module = _target.Contracts.Loader.GetModuleHandleFromModulePtr(types.GetModule(exceptionType));
-        MetadataReader metadata = _target.Contracts.EcmaMetadata.GetMetadata(module)
+        Contracts.ModuleHandle module = _collectorTarget.Target.Contracts.Loader.GetModuleHandleFromModulePtr(types.GetModule(exceptionType));
+        MetadataReader metadata = _collectorTarget.Target.Contracts.EcmaMetadata.GetMetadata(module)
             ?? throw new InvalidOperationException("Exception metadata is required to identify the StackTrace getter.");
 
         ushort numSlots = types.GetNumVtableSlots(exceptionType);
@@ -205,52 +197,52 @@ internal sealed class ObjectCollector(
             return;
 
         EnumerateObjectCore(address);
-        if (_dumpType != DumpType.Triage)
+        if (_collectorTarget.DumpType != DumpType.Triage)
             return;
 
-        IObject objects = _target.Contracts.Object;
+        IObject objects = _collectorTarget.Target.Contracts.Object;
         objects.GetStringData(address, out uint length, out uint offsetToFirstChar);
         if (length == 0 || length > MaxObjectSize / sizeof(char))
             return;
 
         char[] buffer = new char[checked((int)length)];
         Span<byte> bytes = MemoryMarshal.AsBytes(buffer.AsSpan());
-        _target.ReadBuffer(address + offsetToFirstChar, bytes);
-        if (_target.IsLittleEndian != BitConverter.IsLittleEndian)
+        _collectorTarget.Target.ReadBuffer(address + offsetToFirstChar, bytes);
+        if (_collectorTarget.Target.IsLittleEndian != BitConverter.IsLittleEndian)
         {
             for (int i = 0; i < buffer.Length; i++)
                 buffer[i] = (char)BinaryPrimitives.ReverseEndianness((ushort)buffer[i]);
         }
         Sanitizer.StripFileInfoFromStackTrace(buffer);
-        if (_target.IsLittleEndian != BitConverter.IsLittleEndian)
+        if (_collectorTarget.Target.IsLittleEndian != BitConverter.IsLittleEndian)
         {
             for (int i = 0; i < buffer.Length; i++)
                 buffer[i] = (char)BinaryPrimitives.ReverseEndianness((ushort)buffer[i]);
         }
         // Native DAC also uses the optional update callback, leaving the string length unchanged.
-        _emitter.Update(address.Value + offsetToFirstChar, bytes);
+        _collectorTarget.Emitter.Update(address.Value + offsetToFirstChar, bytes);
     }
 
     private void CacheMethodTableName(TargetPointer methodTable)
     {
-        if (methodTable == TargetPointer.Null || _names.ContainsKey(methodTable))
+        if (methodTable == TargetPointer.Null || _collectorTarget.MiniMetadata.Contains(methodTable))
             return;
 
         try
         {
-            IRuntimeTypeSystem types = _target.Contracts.RuntimeTypeSystem;
+            IRuntimeTypeSystem types = _collectorTarget.Target.Contracts.RuntimeTypeSystem;
             ITypeHandle type = types.GetTypeHandle(methodTable);
             if (types.IsFreeObjectMethodTable(type))
                 return;
 
             StringBuilder name = new();
             TypeNameBuilder.AppendType(
-                _target,
+                _collectorTarget,
                 name,
                 type,
                 TypeNameFormat.FormatNamespace | TypeNameFormat.FormatFullInst);
             if (name.Length != 0)
-                _names.Add(methodTable, name.ToString());
+                _collectorTarget.MiniMetadata.Add(methodTable, name.ToString());
         }
         catch (System.Exception ex) when (ex.HResult != HResults.COR_E_OPERATIONCANCELED)
         {

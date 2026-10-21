@@ -11,15 +11,11 @@ using ContractModuleHandle = Microsoft.Diagnostics.DataContractReader.Contracts.
 
 namespace Microsoft.Diagnostics.DataContractReader.Legacy.EnumMemory;
 
-internal sealed class MethodCollector(Target target, MemoryRegionEmitter emitter)
+internal sealed class MethodCollector(CollectorTarget target)
 {
-    private readonly Target _target = target;
-    private readonly MemoryRegionEmitter _emitter = emitter;
+    private readonly CollectorTarget _collectorTarget = target;
     private readonly HashSet<TargetPointer> _captured = [];
     private readonly HashSet<TargetPointer> _capturedCodeBlocks = [];
-    private readonly Dictionary<TargetPointer, string> _names = [];
-
-    public IReadOnlyDictionary<TargetPointer, string> Names => _names;
 
     public void CaptureMethod(TargetPointer methodDesc, TargetCodePointer instructionPointer)
     {
@@ -39,25 +35,25 @@ internal sealed class MethodCollector(Target target, MemoryRegionEmitter emitter
 
     private void EnumerateInstructionPointer(TargetCodePointer instructionPointer)
     {
-        ulong address = instructionPointer.ToAddress(_target).Value;
-        uint size = (uint)_target.PointerSize;
-        ulong maxAddress = _target.PointerSize == sizeof(uint) ? uint.MaxValue : ulong.MaxValue;
+        ulong address = instructionPointer.ToAddress(_collectorTarget).Value;
+        uint size = (uint)_collectorTarget.Target.PointerSize;
+        ulong maxAddress = _collectorTarget.Target.PointerSize == sizeof(uint) ? uint.MaxValue : ulong.MaxValue;
         if (address > maxAddress - size)
             return;
 
-        _emitter.Add(address, size);
+        _collectorTarget.Emitter.Add(address, size);
     }
 
     private void EnumerateCodeDependencies(TargetCodePointer instructionPointer)
     {
-        IExecutionManager executionManager = _target.Contracts.ExecutionManager;
+        IExecutionManager executionManager = _collectorTarget.Target.Contracts.ExecutionManager;
         if (executionManager.GetCodeBlockHandle(instructionPointer) is not CodeBlockHandle codeBlock
             || !_capturedCodeBlocks.Add(codeBlock.Address))
             return;
 
         executionManager.GetGCInfo(codeBlock, out _, out _);
 
-        IDebugInfo debugInfo = _target.Contracts.DebugInfo;
+        IDebugInfo debugInfo = _collectorTarget.Target.Contracts.DebugInfo;
         if (!debugInfo.HasDebugInfo(instructionPointer))
             return;
 
@@ -72,7 +68,7 @@ internal sealed class MethodCollector(Target target, MemoryRegionEmitter emitter
 
     private void EnumerateMethodDependencies(TargetPointer methodDesc)
     {
-        IRuntimeTypeSystem types = _target.Contracts.RuntimeTypeSystem;
+        IRuntimeTypeSystem types = _collectorTarget.Target.Contracts.RuntimeTypeSystem;
         MethodDescHandle method = types.GetMethodDescHandle(methodDesc);
         if (types.IsNoMetadataMethod(method, out _))
             return;
@@ -80,11 +76,12 @@ internal sealed class MethodCollector(Target target, MemoryRegionEmitter emitter
         uint token = types.GetMethodToken(method);
         TargetPointer methodTable = types.GetMethodTable(method);
         TargetPointer module = types.GetModule(types.GetTypeHandle(methodTable));
-        ILoader loader = _target.Contracts.Loader;
+        ILoader loader = _collectorTarget.Target.Contracts.Loader;
         ContractModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(module);
         loader.GetAssembly(moduleHandle);
         loader.GetFlags(moduleHandle);
-        loader.GetPath(moduleHandle);
+        if (_collectorTarget.DumpType != DumpType.Triage)
+            loader.GetPath(moduleHandle);
         loader.IsProbeExtensionResultValid(moduleHandle);
         loader.GetModuleLookupMapElement(moduleHandle, ModuleLookupMapKind.MethodDefToDesc, token, out _);
         loader.GetILHeader(moduleHandle, token);
@@ -92,9 +89,9 @@ internal sealed class MethodCollector(Target target, MemoryRegionEmitter emitter
 
     private void EnumerateMethodDescDataDependencies(TargetPointer methodDesc)
     {
-        IRuntimeTypeSystem types = _target.Contracts.RuntimeTypeSystem;
+        IRuntimeTypeSystem types = _collectorTarget.Target.Contracts.RuntimeTypeSystem;
         MethodDescHandle method = types.GetMethodDescHandle(methodDesc);
-        ICodeVersions codeVersions = _target.Contracts.CodeVersions;
+        ICodeVersions codeVersions = _collectorTarget.Target.Contracts.CodeVersions;
         NativeCodeVersionHandle codeVersion = codeVersions.GetActiveNativeCodeVersion(methodDesc);
 
         types.IsDynamicMethod(method);
@@ -103,7 +100,7 @@ internal sealed class MethodCollector(Target target, MemoryRegionEmitter emitter
         {
             TargetCodePointer nativeCode = codeVersions.GetNativeCode(codeVersion);
             if (nativeCode != TargetCodePointer.Null)
-                _target.Contracts.PrecodeStubs.GetInterpreterCodeFromInterpreterPrecodeIfPresent(nativeCode);
+                _collectorTarget.Target.Contracts.PrecodeStubs.GetInterpreterCodeFromInterpreterPrecodeIfPresent(nativeCode);
 
             codeVersions.GetGCStressCodeCopy(codeVersion);
         }
@@ -113,10 +110,10 @@ internal sealed class MethodCollector(Target target, MemoryRegionEmitter emitter
 
     private void CacheMethodName(TargetPointer methodDesc)
     {
-        if (_names.ContainsKey(methodDesc))
+        if (_collectorTarget.MiniMetadata.Contains(methodDesc))
             return;
 
-        IRuntimeTypeSystem types = _target.Contracts.RuntimeTypeSystem;
+        IRuntimeTypeSystem types = _collectorTarget.Target.Contracts.RuntimeTypeSystem;
         MethodDescHandle method = types.GetMethodDescHandle(methodDesc);
         if (types.IsNoMetadataMethod(method, out _) && !types.IsILStub(method))
             return;
@@ -125,14 +122,16 @@ internal sealed class MethodCollector(Target target, MemoryRegionEmitter emitter
         {
             StringBuilder name = new();
             TypeNameBuilder.AppendMethodInternal(
-                _target,
+                _collectorTarget,
                 name,
                 method,
                 TypeNameFormat.FormatSignature |
                 TypeNameFormat.FormatNamespace |
                 TypeNameFormat.FormatFullInst);
+            if (_collectorTarget.DumpType is DumpType.Mini or DumpType.Triage)
+                Sanitizer.StripArgumentsFromMethodName(name);
             if (name.Length != 0)
-                _names.Add(methodDesc, name.ToString());
+                _collectorTarget.MiniMetadata.Add(methodDesc, name.ToString());
         }
         catch (System.Exception ex) when (ex.HResult != HResults.COR_E_OPERATIONCANCELED)
         {

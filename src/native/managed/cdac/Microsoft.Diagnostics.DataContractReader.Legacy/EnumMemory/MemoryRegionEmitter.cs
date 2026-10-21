@@ -7,8 +7,9 @@ using System.Runtime.InteropServices;
 
 namespace Microsoft.Diagnostics.DataContractReader.Legacy.EnumMemory;
 
-internal sealed unsafe class MemoryRegionEmitter(nint callback, uint pointerSize)
+internal sealed unsafe class MemoryRegionEmitter(nint callback, uint pointerSize, DumpType dumpType = DumpType.Mini)
 {
+    private const uint MaxMiniDumpRegion = 4 * 1024 * 1024 - 3;
     private static readonly Guid s_ICLRDataEnumMemoryRegionsCallback2_Iid = new("3721A26F-8B91-4D98-A388-DB17B356FADB");
 
     private readonly delegate* unmanaged[MemberFunction]<nint, Guid*, nint*, int> _queryInterface =
@@ -26,6 +27,11 @@ internal sealed unsafe class MemoryRegionEmitter(nint callback, uint pointerSize
     {
         if (address == 0 || size == 0)
             return;
+
+        // Like the native DAC, treat unusually large mini/triage regions as likely target corruption
+        // and truncate them to keep dumps small. The distinctive 4 MiB minus 3 size identifies truncation.
+        if (dumpType is DumpType.Mini or DumpType.Triage)
+            size = Math.Min(size, MaxMiniDumpRegion);
 
         while (size != 0)
         {
