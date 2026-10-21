@@ -92,10 +92,10 @@ namespace System.Text.Json.Schema.Tests
             // Enum types
             yield return new TestData<IntEnum>(IntEnum.A, ExpectedJsonSchema: """{"type":"integer"}""");
             yield return new TestData<StringEnum>(StringEnum.A, ExpectedJsonSchema: """{"enum":["A","B","C"]}""");
-            yield return new TestData<FlagsStringEnum>(FlagsStringEnum.A, ExpectedJsonSchema: """{"type":"string","pattern":"^(A|B|C)(\\w*,\\w*(A|B|C))*$"}""");
+            yield return new TestData<FlagsStringEnum>(FlagsStringEnum.A, ExpectedJsonSchema: """{"type":"string","pattern":"^(A|B|C)(, (A|B|C))*$"}""");
             yield return new TestData<FlagsEnumWithNameAttributes>(
                 FlagsEnumWithNameAttributes.NormalFlag,
-                ExpectedJsonSchema: """{"type":"string","pattern":"^(A|\"\\.\\\\)(\\w*,\\w*(A|\"\\.\\\\))*$"}""");
+                ExpectedJsonSchema: """{"type":"string","pattern":"^(A|\"\\.\\\\)(, (A|\"\\.\\\\))*$"}""");
             yield return new TestData<EnumWithNameAttributes>(
                 EnumWithNameAttributes.Value1,
                 AdditionalValues: [EnumWithNameAttributes.Value2],

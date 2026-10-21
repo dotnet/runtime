@@ -508,7 +508,7 @@ namespace System.Text.Json.Serialization.Converters
                             sb.Append('|');
                             sb.Append(Regex.Escape(_enumFieldInfo[i].JsonName));
                         }
-                        sb.Append(")(\\w*,\\w*(");
+                        sb.Append(")(, (");
                         sb.Append(Regex.Escape(_enumFieldInfo[0].JsonName));
                         for (int i = 1; i < _enumFieldInfo.Length; i++)
                         {
