@@ -16,6 +16,7 @@ public class Program
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public static void TestEntryPoint()
     {
+        long initialBackgroundGcIndex = GC.GetGCMemoryInfo(GCKind.Background).Index;
         Stopwatch stopwatch = Stopwatch.StartNew();
         using var stop = new CancellationTokenSource(TestTimeout);
         using var ready = new ManualResetEventSlim();
@@ -90,6 +91,10 @@ public class Program
         }
 
         Assert.Null(workerError);
+        long finalBackgroundGcIndex = GC.GetGCMemoryInfo(GCKind.Background).Index;
+        Assert.True(
+            finalBackgroundGcIndex > initialBackgroundGcIndex,
+            $"No background GC completed. Initial index: {initialBackgroundGcIndex}, final index: {finalBackgroundGcIndex}.");
         Assert.Equal(0, nonzeroIntervals);
     }
 
