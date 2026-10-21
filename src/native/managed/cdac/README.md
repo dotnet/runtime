@@ -201,6 +201,13 @@ stage builds a Release runtime and the cDAC for each platform in `sosPlatforms` 
 x64, x86 and arm64, Linux x64 and arm64, macOS x64 and arm64), and SOS.Tests covers both
 the legacy DAC and the cDAC configurations.
 
+The internal `runtime.yml` PR build also publishes
+`CdacArtifacts_<os>_<arch>_Release` archives for Windows x64, x86 and arm64, Linux
+x64, arm and arm64, and macOS x64 and arm64. These build-only jobs use
+`clr.native+tools.cdac` to include the native runtime binaries, universal DAC and
+DBI, and their symbols. They do not select cDAC test subsets or submit tests to
+Helix; the diagnostics pipeline's test coverage is unchanged.
+
 > **Note:** The runtime and diagnostics repos must be on the same major version. CLRMD
 > validates the DAC binary version against the runtime, so a cross-major-version mismatch
 > (e.g., 11.0 runtime with 10.0 diagnostics repo) causes `CreateDacInstance` failures.
