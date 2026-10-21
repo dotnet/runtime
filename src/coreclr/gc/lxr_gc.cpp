@@ -304,6 +304,7 @@ HRESULT LxrGcHeap::Initialize()
     size_t nativePlaneLimitMB = 4096;
     bool noRecycling = false;
     bool noMutatorRecycling = false;
+    bool phaseTimers = true;
     bool immixReserveSpecified = false;
     bool largeReserveSpecified = false;
     if (!ReadBooleanSetting("LXRLegacyCapacity", &legacy) ||
@@ -334,10 +335,12 @@ HRESULT LxrGcHeap::Initialize()
         !ReadSetting("LXRChunkDefragPercent", &configuration.chunkDefragPercent, 10, 100) ||
         !ReadSetting("LXRMaxYoungEvacSize", &configuration.maximumYoungCopyBytes) ||
         !ReadBooleanSetting("LXRSurvivalPredictorWeighted", &m_policy_configuration.weighted) ||
-        !ReadBooleanSetting("LXRSurvivalPredictorHarmonicMean", &m_policy_configuration.harmonic))
+        !ReadBooleanSetting("LXRSurvivalPredictorHarmonicMean", &m_policy_configuration.harmonic) ||
+        !ReadBooleanSetting("LXRPhaseTimers", &phaseTimers))
     {
         return E_FAIL;
     }
+    m_engine.GetPauseTimers().Configure(phaseTimers);
     for (const char* unsupported : {
             "LXRMaxPauseMillis", "LXRTransparentHugepage",
             "GCHeapHardLimit", "GCHeapHardLimitPercent",
@@ -832,14 +835,18 @@ void LxrGcHeap::FixAllocContext(gc_alloc_context* context, void*, void*)
 
 bool LxrGcHeap::EnterCollectionLock()
 {
+    LxrPauseTimers& timers = m_engine.GetPauseTimers();
+    int64_t waitStart = timers.Enabled() ? timers.Stamp() : 0;
     bool cooperative = GCToEEInterface::EnablePreemptiveGC();
     m_collection_lock.Enter();
     GCToEEInterface::DisablePreemptiveGC();
+    timers.Begin(waitStart != 0 ? timers.Stamp() - waitStart : 0);
     return cooperative;
 }
 
 void LxrGcHeap::LeaveCollectionLock(bool cooperative)
 {
+    m_engine.GetPauseTimers().End();
     GCToEEInterface::EnablePreemptiveGC();
     m_collection_lock.Leave();
     if (cooperative)
@@ -879,6 +886,7 @@ LxrRcResult LxrGcHeap::CollectLocked(LxrPauseKind kind, bool forcedBlocking)
         m_concurrent_done.Reset();
     }
     LxrRcResult result;
+    m_engine.GetPauseTimers().MarkPause(static_cast<uint8_t>(kind));
     switch (kind)
     {
         case LxrPauseKind::InitialMark: result = m_engine.BeginTrace(CaptureRoots, this, Timeout); break;
@@ -888,6 +896,7 @@ LxrRcResult LxrGcHeap::CollectLocked(LxrPauseKind kind, bool forcedBlocking)
     }
     if (result == LxrRcResult::Success && kind != LxrPauseKind::InitialMark)
     {
+        LxrPhaseScope postDrain(m_engine.GetPauseTimers(), LxrPauseTimers::PostDrain);
         result = m_engine.GetTracePhase() == LxrTracePhase::Concurrent
             ? LxrRcResult::Success : m_engine.Drain(Timeout);
     }
@@ -943,6 +952,7 @@ LxrCollectionCause LxrGcHeap::GetCollectionCause(bool heapFull) const
 
 LxrRcResult LxrGcHeap::UpdatePolicyHints()
 {
+    LxrPhaseScope scope(m_engine.GetPauseTimers(), LxrPauseTimers::PolicyDrain);
     return m_engine.DrainLazySweep(Timeout);
 }
 
@@ -984,10 +994,14 @@ LxrRcResult LxrGcHeap::CollectForPressure(bool emergency, bool user, bool heapFu
 void LxrGcHeap::Suspend(void* context)
 {
     LxrGcHeap* heap = static_cast<LxrGcHeap*>(context);
+    LxrPhaseScope suspend(heap->m_engine.GetPauseTimers(), LxrPauseTimers::SuspendRuntime);
     heap->m_in_gc.store(true, std::memory_order_release);
     heap->m_gc_done.Reset();
     heap->m_pause_start = GCToOSInterface::QueryPerformanceCounter();
-    GCToEEInterface::SuspendEE(SUSPEND_FOR_GC);
+    {
+        LxrPhaseScope suspendEE(heap->m_engine.GetPauseTimers(), LxrPauseTimers::SuspendEE);
+        GCToEEInterface::SuspendEE(SUSPEND_FOR_GC);
+    }
     GCToEEInterface::GcEnumAllocContexts(RetireAllocationContext, heap);
     heap->m_pause_young_bytes.store(heap->m_engine.GetYoungAllocationBytes(), std::memory_order_release);
     if (!heap->m_policy.BeginPause(heap->m_pause_young_bytes.load(std::memory_order_acquire)))
@@ -1002,11 +1016,16 @@ void LxrGcHeap::Suspend(void* context)
 void LxrGcHeap::Resume(bool finished, void* context)
 {
     LxrGcHeap* heap = static_cast<LxrGcHeap*>(context);
-    GCToEEInterface::EnableFinalization(heap->m_pending_finalizers.load() != 0);
-    GCToEEInterface::GcDone(2);
-    GCToEEInterface::RestartEE(finished);
+    LxrPauseTimers& timers = heap->m_engine.GetPauseTimers();
+    {
+        LxrPhaseScope resume(timers, LxrPauseTimers::ResumeRuntime);
+        GCToEEInterface::EnableFinalization(heap->m_pending_finalizers.load() != 0);
+        GCToEEInterface::GcDone(2);
+        GCToEEInterface::RestartEE(finished);
+    }
     heap->m_in_gc.store(false, std::memory_order_release);
     int64_t elapsed = GCToOSInterface::QueryPerformanceCounter() - heap->m_pause_start;
+    timers.Add(LxrPauseTimers::StwPause, elapsed);
     int64_t frequency = GCToOSInterface::QueryPerformanceFrequency();
     int64_t ticks = elapsed / frequency * 10000000 + elapsed % frequency * 10000000 / frequency;
     heap->m_last_pause_ticks.store(ticks);
@@ -1151,9 +1170,11 @@ void LxrGcHeap::ExecuteScan(uint8_t kind)
 {
     LxrGcHeap* heap = this;
     ScanCostScope execution(heap, 10 + kind);
-    auto measure = [heap](size_t metric, const auto& callback)
+    LxrPhaseScope scanTotal(heap->m_engine.GetPauseTimers(), LxrPauseTimers::Scan0 + kind);
+    auto measure = [heap](size_t metric, size_t phase, const auto& callback)
     {
         ScanCostScope cost(heap, metric);
+        LxrPhaseScope timer(heap->m_engine.GetPauseTimers(), phase);
         callback();
     };
     ScanContext scan{};
@@ -1164,29 +1185,29 @@ void LxrGcHeap::ExecuteScan(uint8_t kind)
     {
         bool timed = heap->m_storage_diagnostics_enabled.load(std::memory_order_relaxed);
         int64_t start = timed ? GCToOSInterface::QueryPerformanceCounter() : 0;
-        measure(31, [&]() { GCToEEInterface::BeforeGcScanRoots(2, false, false); });
+        measure(31, LxrPauseTimers::ScanBeforeRoots, [&]() { GCToEEInterface::BeforeGcScanRoots(2, false, false); });
         LxrRcResult result = LxrRcResult::Success;
-        measure(14, [&]() { result = heap->m_engine.WalkObjects(LeaseFinalizer, heap); });
+        measure(14, LxrPauseTimers::ScanLeaseFinalizers, [&]() { result = heap->m_engine.WalkObjects(LeaseFinalizer, heap); });
         if (result != LxrRcResult::Success)
         {
             heap->m_scan_failure.store(result);
         }
-        measure(15, [&]() { GCScan::GcScanRoots(CopyRoot, 2, 2, &scan); });
-        measure(16, [&]() { GCScan::GcScanHandles(CopyRoot, 2, 2, &scan); });
-        measure(17, [&]() { GCScan::GcScanHandlesForProfilerAndETW(2, &scan, LeaseWeakHandle); });
-        measure(18, [&]()
+        measure(15, LxrPauseTimers::ScanRoots, [&]() { GCScan::GcScanRoots(CopyRoot, 2, 2, &scan); });
+        measure(16, LxrPauseTimers::ScanHandles, [&]() { GCScan::GcScanHandles(CopyRoot, 2, 2, &scan); });
+        measure(17, LxrPauseTimers::ScanProfilerHandles, [&]() { GCScan::GcScanHandlesForProfilerAndETW(2, &scan, LeaseWeakHandle); });
+        measure(18, LxrPauseTimers::ScanDependent, [&]()
         {
             // Profiler enumeration omits null-secondary primaries; the owning-slot visitor does not.
             scan.promotion = false;
             Ref_ScanDependentHandlesForRelocation(2, 2, &scan, LeaseDependentRoot);
             scan.promotion = true;
         });
-        measure(19, [&]()
+        measure(19, LxrPauseTimers::ScanSyncBlock, [&]()
         {
             GCToEEInterface::SyncBlockCacheWeakPtrScan(LeaseSyncBlock,
                 reinterpret_cast<uintptr_t>(&scan), reinterpret_cast<uintptr_t>(heap));
         });
-        measure(20, [&]() { heap->ScanFrozenRoots(); });
+        measure(20, LxrPauseTimers::ScanFrozen, [&]() { heap->ScanFrozenRoots(); });
         if (timed)
         {
             heap->m_root_capture_ticks.fetch_add(
@@ -1196,40 +1217,40 @@ void LxrGcHeap::ExecuteScan(uint8_t kind)
     }
     else if (kind == 1)
     {
-        measure(21, [&]()
+        measure(21, LxrPauseTimers::ScanDhInitial, [&]()
         {
             GCScan::GcDhInitialScan(TraceRoot, 2, 2, &scan);
             heap->CountScanWork(32);
             while (GCScan::GcDhReScan(&scan)) { heap->CountScanWork(32); }
         });
-        measure(22, [&]() { GCScan::GcShortWeakPtrScan(2, 2, &scan); });
+        measure(22, LxrPauseTimers::ScanShortWeak, [&]() { GCScan::GcShortWeakPtrScan(2, 2, &scan); });
         LxrRcResult result = LxrRcResult::Success;
-        measure(23, [&]() { result = heap->m_engine.WalkObjects(QueueFinalizer, heap); });
+        measure(23, LxrPauseTimers::ScanQueueFinalizers, [&]() { result = heap->m_engine.WalkObjects(QueueFinalizer, heap); });
         if (result == LxrRcResult::Success && heap->m_pending_finalizers.load() != 0)
         {
             // Discover every unreachable candidate before f-reachability can mark another candidate.
-            measure(24, [&]() { result = heap->m_engine.WalkObjects(TracePendingFinalizer, heap); });
+            measure(24, LxrPauseTimers::ScanTraceFinalizers, [&]() { result = heap->m_engine.WalkObjects(TracePendingFinalizer, heap); });
         }
         if (result != LxrRcResult::Success)
         {
             heap->m_scan_failure.store(result);
         }
-        measure(25, [&]()
+        measure(25, LxrPauseTimers::ScanDhRescan, [&]()
         {
             GCScan::GcDhInitialScan(TraceRoot, 2, 2, &scan);
             heap->CountScanWork(32);
             while (GCScan::GcDhReScan(&scan)) { heap->CountScanWork(32); }
         });
-        measure(26, [&]() { GCScan::GcWeakPtrScan(2, 2, &scan); });
-        measure(27, [&]() { GCScan::GcWeakPtrScanBySingleThread(2, 2, &scan); });
+        measure(26, LxrPauseTimers::ScanWeakPtr, [&]() { GCScan::GcWeakPtrScan(2, 2, &scan); });
+        measure(27, LxrPauseTimers::ScanWeakPtrSingle, [&]() { GCScan::GcWeakPtrScanBySingleThread(2, 2, &scan); });
     }
     else if (kind == 3)
     {
         if (heap->m_heap_configuration.evacuateNursery || heap->m_heap_configuration.evacuateMature)
         {
             scan.promotion = false;
-            measure(28, [&]() { GCScan::GcScanRoots(RelocateRoot, 2, 2, &scan); });
-            measure(29, [&]() { GCScan::GcScanHandles(RelocateRoot, 2, 2, &scan); });
+            measure(28, LxrPauseTimers::ScanRelocateRoots, [&]() { GCScan::GcScanRoots(RelocateRoot, 2, 2, &scan); });
+            measure(29, LxrPauseTimers::ScanRelocateHandles, [&]() { GCScan::GcScanHandles(RelocateRoot, 2, 2, &scan); });
             scan.promotion = true;
             GCToEEInterface::DiagWalkSurvivors(nullptr,
                 heap->m_engine.GetNurseryMetrics().pauseCopiedBytes != 0 ||
@@ -1243,7 +1264,7 @@ void LxrGcHeap::ExecuteScan(uint8_t kind)
         {
             heap->m_scan_failure.store(LxrRcResult::InvariantViolation);
         }
-        measure(31, [&]()
+        measure(31, LxrPauseTimers::ScanPromotionsGranted, [&]()
         {
             GCScan::GcPromotionsGranted(2, 2, &scan);
             GCToEEInterface::AfterGcScanRoots(2, 2, &scan);
@@ -1251,7 +1272,7 @@ void LxrGcHeap::ExecuteScan(uint8_t kind)
         size_t heapBytes = 0;
         size_t fragmentation = 0;
         LxrRcResult result = LxrRcResult::Success;
-        measure(30, [&]() { result = heap->m_engine.GetHeapStatistics(&heapBytes, &fragmentation); });
+        measure(30, LxrPauseTimers::ScanHeapStatistics, [&]() { result = heap->m_engine.GetHeapStatistics(&heapBytes, &fragmentation); });
         if (result == LxrRcResult::Success)
         {
             heap->m_last_heap_size.store(heapBytes);
@@ -2496,6 +2517,22 @@ uint64_t LxrGcHeap::GetPrototypeMetric(uint32_t metric) const
             ? m_root_capture_ticks.load(std::memory_order_acquire) : UINT64_MAX;
         case 116: return mature.pauseCopiedBytes;
         default:
+            if (metric >= 240 && metric < 240 + 4)
+            {
+                return m_engine.GetPauseTimers().GetMeta(metric - 240);
+            }
+            if (metric == 244)
+            {
+                return m_engine.GetPauseTimers().Enabled();
+            }
+            if (metric >= 256 && metric < 256 + LxrPauseTimers::PublishedCount)
+            {
+                return m_engine.GetPauseTimers().GetLast(metric - 256);
+            }
+            if (metric >= 340 && metric < 340 + LxrPauseTimers::PublishedCount)
+            {
+                return m_engine.GetPauseTimers().GetTotal(metric - 340);
+            }
             if (metric >= 232 && metric < 237)
             {
                 return m_engine.GetStorageMetric(metric - 180);

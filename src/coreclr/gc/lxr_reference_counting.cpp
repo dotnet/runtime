@@ -146,6 +146,180 @@ private:
     int64_t m_start;
 };
 
+int64_t LxrPauseTimers::Now()
+{
+#ifdef LXR_SIDE_METADATA_TEST_PLATFORM
+    return std::chrono::duration_cast<std::chrono::nanoseconds>(
+        std::chrono::steady_clock::now().time_since_epoch()).count();
+#else
+    return GCToOSInterface::QueryPerformanceCounter();
+#endif // LXR_SIDE_METADATA_TEST_PLATFORM
+}
+
+int64_t LxrPauseTimers::Frequency()
+{
+#ifdef LXR_SIDE_METADATA_TEST_PLATFORM
+    return 1000000000;
+#else
+    return GCToOSInterface::QueryPerformanceFrequency();
+#endif // LXR_SIDE_METADATA_TEST_PLATFORM
+}
+
+uint64_t LxrPauseTimers::ToNanoseconds(int64_t ticks)
+{
+    if (ticks <= 0)
+    {
+        return 0;
+    }
+    uint64_t frequency = static_cast<uint64_t>(Frequency());
+    uint64_t value = static_cast<uint64_t>(ticks);
+    return value / frequency * 1000000000 + value % frequency * 1000000000 / frequency;
+}
+
+LxrPauseTimers::LxrPauseTimers()
+    : m_scalar{}, m_last{}, m_total{}
+{
+}
+
+void LxrPauseTimers::Begin(int64_t waited)
+{
+    if (!Enabled())
+    {
+        return;
+    }
+    for (std::atomic<int64_t>& value : m_scalar)
+    {
+        value.store(0, std::memory_order_relaxed);
+    }
+    for (GroupState& group : m_groups)
+    {
+        group.busy.store(0, std::memory_order_relaxed);
+        group.first.store(INT64_MAX, std::memory_order_relaxed);
+        group.last.store(0, std::memory_order_relaxed);
+        group.packets.store(0, std::memory_order_relaxed);
+    }
+    m_scalar[LockWait].store(waited, std::memory_order_relaxed);
+    m_paused.store(false, std::memory_order_relaxed);
+    m_begin_timestamps = m_timestamps.load(std::memory_order_relaxed);
+    m_begin = Stamp();
+}
+
+void LxrPauseTimers::AddPacket(Group group, int64_t start, int64_t end)
+{
+    GroupState& state = m_groups[group];
+    state.busy.fetch_add(end - start, std::memory_order_relaxed);
+    state.packets.fetch_add(1, std::memory_order_relaxed);
+    int64_t seen = state.first.load(std::memory_order_relaxed);
+    while (start < seen && !state.first.compare_exchange_weak(seen, start, std::memory_order_relaxed))
+    {
+    }
+    seen = state.last.load(std::memory_order_relaxed);
+    while (end > seen && !state.last.compare_exchange_weak(seen, end, std::memory_order_relaxed))
+    {
+    }
+}
+
+void LxrPauseTimers::MarkPause(uint8_t kind)
+{
+    m_kind.store(kind, std::memory_order_relaxed);
+    m_paused.store(true, std::memory_order_relaxed);
+}
+
+void LxrPauseTimers::End()
+{
+    if (!Enabled() || !m_paused.load(std::memory_order_relaxed))
+    {
+        return;
+    }
+    m_scalar[Total].store(Stamp() - m_begin, std::memory_order_relaxed);
+    uint64_t values[PublishedCount];
+    for (size_t index = 0; index < ScalarCount; index++)
+    {
+        values[index] = ToNanoseconds(m_scalar[index].load(std::memory_order_relaxed));
+    }
+    for (size_t group = 0; group < GroupCount; group++)
+    {
+        uint64_t packets = m_groups[group].packets.load(std::memory_order_relaxed);
+        int64_t first = m_groups[group].first.load(std::memory_order_relaxed);
+        int64_t last = m_groups[group].last.load(std::memory_order_relaxed);
+        size_t slot = ScalarCount + 3 * group;
+        values[slot] = packets != 0 ? ToNanoseconds(last - first) : 0;
+        values[slot + 1] = ToNanoseconds(m_groups[group].busy.load(std::memory_order_relaxed));
+        values[slot + 2] = packets;
+    }
+    m_sequence.fetch_add(1, std::memory_order_acq_rel);
+    for (size_t index = 0; index < PublishedCount; index++)
+    {
+        m_last[index].store(values[index], std::memory_order_relaxed);
+        m_total[index].fetch_add(values[index], std::memory_order_relaxed);
+    }
+    m_published_timestamps.store(
+        m_timestamps.load(std::memory_order_relaxed) - m_begin_timestamps, std::memory_order_relaxed);
+    m_sequence.fetch_add(1, std::memory_order_release);
+}
+
+uint64_t LxrPauseTimers::GetMeta(size_t index) const
+{
+    switch (index)
+    {
+        case MetaSequence: return m_sequence.load(std::memory_order_acquire);
+        case MetaKind: return m_kind.load(std::memory_order_relaxed);
+        case MetaTimestamps: return m_published_timestamps.load(std::memory_order_relaxed);
+        case MetaCost:
+        {
+            // Mean cost of one timestamp, measured on demand and never inside a pause.
+            constexpr int Samples = 2000;
+            int64_t start = Now();
+            int64_t sink = 0;
+            for (int sample = 0; sample < Samples; sample++)
+            {
+                sink += Now();
+            }
+            int64_t end = Now();
+            return ToNanoseconds(end - start) / Samples + (sink == 0 ? 1 : 0);
+        }
+        default: return UINT64_MAX;
+    }
+}
+
+uint64_t LxrPauseTimers::GetLast(size_t index) const
+{
+    return index < PublishedCount ? m_last[index].load(std::memory_order_relaxed) : UINT64_MAX;
+}
+
+uint64_t LxrPauseTimers::GetTotal(size_t index) const
+{
+    return index < PublishedCount ? m_total[index].load(std::memory_order_relaxed) : UINT64_MAX;
+}
+
+namespace
+{
+    class PacketScope final
+    {
+    public:
+        PacketScope(LxrPauseTimers& timers, LxrPauseTimers::Group group, bool timed)
+            : m_timers(timers), m_group(group), m_start(timed && timers.Enabled() ? timers.Stamp() : 0)
+        {
+        }
+
+        ~PacketScope()
+        {
+            if (m_start != 0)
+            {
+                m_timers.AddPacket(m_group, m_start, m_timers.Stamp());
+            }
+        }
+
+        PacketScope(const PacketScope&) = delete;
+        PacketScope& operator=(const PacketScope&) = delete;
+
+    private:
+        LxrPauseTimers& m_timers;
+        LxrPauseTimers::Group m_group;
+        int64_t m_start;
+    };
+}
+
 struct LxrReferenceCounting::Work
 {
     LxrReferenceCounting* engine;
@@ -1829,6 +2003,7 @@ void LxrReferenceCounting::Suspend(void* context)
 {
     LxrReferenceCounting* engine = static_cast<LxrReferenceCounting*>(context);
     engine->m_runtime.suspend(engine->m_runtime.context);
+    int64_t prepareStart = engine->m_pause_timers.Enabled() ? engine->m_pause_timers.Stamp() : 0;
     engine->m_phase.store(LxrRcPhase::Suspended, std::memory_order_release);
     engine->m_copy_exhausted.store(false, std::memory_order_relaxed);
     engine->m_mature_copy_exhausted.store(false, std::memory_order_relaxed);
@@ -1888,6 +2063,12 @@ void LxrReferenceCounting::Suspend(void* context)
     }
     if (engine->m_capture != nullptr)
     {
+        if (prepareStart != 0)
+        {
+            engine->m_pause_timers.Add(
+                LxrPauseTimers::SuspendPrepare, engine->m_pause_timers.Stamp() - prepareStart);
+        }
+        LxrPhaseScope capture(engine->m_pause_timers, LxrPauseTimers::RootCapture);
         LxrRcResult result = engine->m_capture(engine, engine->m_capture_context);
         if (result != LxrRcResult::Success)
         {
@@ -1895,6 +2076,7 @@ void LxrReferenceCounting::Suspend(void* context)
             return;
         }
     }
+    LxrPhaseScope prepareWork(engine->m_pause_timers, LxrPauseTimers::PrepareWork);
     if (engine->m_configuration.evacuateMature &&
         (engine->m_pause_kind == LxrPauseKind::InitialMark || engine->m_pause_kind == LxrPauseKind::Full))
     {
@@ -1975,8 +2157,12 @@ LxrRcResult LxrReferenceCounting::RunPause(
     {
         return Fail(LxrRcResult::CapacityExceeded);
     }
-    LxrRcResult drained = GetTracePhase() == LxrTracePhase::Inactive
-        ? Drain(timeoutMilliseconds) : DrainEpoch(timeoutMilliseconds);
+    LxrRcResult drained;
+    {
+        LxrPhaseScope preDrain(m_pause_timers, LxrPauseTimers::PreDrain);
+        drained = GetTracePhase() == LxrTracePhase::Inactive
+            ? Drain(timeoutMilliseconds) : DrainEpoch(timeoutMilliseconds);
+    }
     if (drained != LxrRcResult::Success)
     {
         return drained;
@@ -3519,13 +3705,20 @@ LxrRcResult LxrReferenceCounting::RetireForwardedSources()
 
 LxrRcResult LxrReferenceCounting::ReleaseEpoch()
 {
-    LxrRcResult result = RetireForwardedSources();
+    LxrPhaseScope release(m_pause_timers, LxrPauseTimers::ReleaseEpoch);
+    LxrRcResult result;
+    {
+        LxrPhaseScope scope(m_pause_timers, LxrPauseTimers::RetireSources);
+        result = RetireForwardedSources();
+    }
     if (result == LxrRcResult::Success)
     {
+        LxrPhaseScope scope(m_pause_timers, LxrPauseTimers::ReclaimNursery);
         result = ReclaimNursery();
     }
     if (result == LxrRcResult::Success)
     {
+        LxrPhaseScope scope(m_pause_timers, LxrPauseTimers::SweepBlocks);
         result = Sweep(nullptr);
     }
     if (result == LxrRcResult::Success && m_configuration.evacuateMature &&
@@ -3553,11 +3746,14 @@ LxrRcResult LxrReferenceCounting::ReleaseEpoch()
     m_current_roots ^= 1;
     m_root_counts[m_current_roots] = 0;
     ImmixBlockOperationStatus status;
-    if (m_blocks.ReleaseGcPause(&status) != SideMetadataResult::Success ||
-        status != ImmixBlockOperationStatus::Updated ||
-        m_large.EndCollection() != LxrLargeObjectResult::Success)
     {
-        return Fail(LxrRcResult::InvalidPhase);
+        LxrPhaseScope flip(m_pause_timers, LxrPauseTimers::ReleaseFlip);
+        if (m_blocks.ReleaseGcPause(&status) != SideMetadataResult::Success ||
+            status != ImmixBlockOperationStatus::Updated ||
+            m_large.EndCollection() != LxrLargeObjectResult::Success)
+        {
+            return Fail(LxrRcResult::InvalidPhase);
+        }
     }
     size_t bank = m_producer_bank.load(std::memory_order_relaxed) ^ 1;
     result = ResetBank(m_banks[bank]);
@@ -3604,6 +3800,26 @@ void LxrReferenceCounting::Execute(LxrWorkPacket* packet, size_t worker, void* c
     {
         return;
     }
+    LxrPauseTimers::Group group = LxrPauseTimers::MatureSweep;
+    bool timed = true;
+    switch (work->kind)
+    {
+        case WorkKind::Slots:
+        case WorkKind::NurserySlots:
+        case WorkKind::Roots:
+        case WorkKind::Targets: group = LxrPauseTimers::Increments; break;
+        case WorkKind::Decrements:
+        case WorkKind::PreviousRoots: group = LxrPauseTimers::Decrements; break;
+        case WorkKind::Satb: group = LxrPauseTimers::Satb; break;
+        case WorkKind::TraceObjects:
+        case WorkKind::TraceScan: timed = false; break;
+        case WorkKind::PrepareTrace: group = LxrPauseTimers::PrepareTrace; break;
+        case WorkKind::WeakClosure: group = LxrPauseTimers::WeakClosure; break;
+        case WorkKind::EpochClosure: group = LxrPauseTimers::EpochClosure; break;
+        case WorkKind::NurserySweep: group = LxrPauseTimers::NurserySweep; break;
+        default: group = LxrPauseTimers::MatureSweep; break;
+    }
+    PacketScope packetTimer(engine->m_pause_timers, group, timed);
     switch (work->kind)
     {
         case WorkKind::Slots:

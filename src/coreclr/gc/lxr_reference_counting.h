@@ -164,6 +164,111 @@ struct LxrTraceMetrics
     uint64_t checkpointInterruptions;
 };
 
+// Wall-clock timers for the phases of one collection. They use a few timestamps at phase and
+// packet boundaries, never one per object. They only observe; no collector decision reads them.
+class LxrPauseTimers final
+{
+public:
+    enum Phase : size_t
+    {
+        Total, LockWait, PolicyDrain, PreDrain, SuspendRuntime, SuspendEE, SuspendPrepare,
+        RootCapture, PrepareWork, ReleaseEpoch, RetireSources, ReclaimNursery, SweepBlocks, ReleaseFlip,
+        Scan0, Scan1, Scan2, Scan3, ScanBeforeRoots, ScanLeaseFinalizers, ScanRoots, ScanHandles,
+        ScanProfilerHandles, ScanDependent, ScanSyncBlock, ScanFrozen, ScanDhInitial, ScanShortWeak,
+        ScanQueueFinalizers, ScanTraceFinalizers, ScanDhRescan, ScanWeakPtr, ScanWeakPtrSingle,
+        ScanRelocateRoots, ScanRelocateHandles, ScanPromotionsGranted, ScanHeapStatistics,
+        ResumeRuntime, StwPause, PostDrain,
+        ScalarCount,
+    };
+
+    // Each group publishes wall span (first packet start to last packet end), busy time and packet count.
+    // Trace packets are not timed: a trace cycle runs hundreds of thousands of them, and two timestamps per
+    // packet cost a measurable share of the run (see P17). Satb packets are the only trace-related group.
+    enum Group : size_t
+    {
+        Increments, Decrements, Satb, PrepareTrace, WeakClosure, EpochClosure, NurserySweep, MatureSweep,
+        GroupCount,
+    };
+
+    static constexpr size_t PublishedCount = ScalarCount + 3 * GroupCount;
+    static constexpr size_t MetaSequence = 0;
+    static constexpr size_t MetaKind = 1;
+    static constexpr size_t MetaTimestamps = 2;
+    static constexpr size_t MetaCost = 3;
+
+    static int64_t Now();
+    static int64_t Frequency();
+
+    LxrPauseTimers();
+    void Configure(bool enabled) { m_enabled.store(enabled, std::memory_order_relaxed); }
+    bool Enabled() const { return m_enabled.load(std::memory_order_relaxed); }
+    int64_t Stamp()
+    {
+        m_timestamps.fetch_add(1, std::memory_order_relaxed);
+        return Now();
+    }
+    void Begin(int64_t waited);
+    void Add(size_t phase, int64_t ticks)
+    {
+        m_scalar[phase].fetch_add(ticks, std::memory_order_relaxed);
+    }
+    void AddPacket(Group group, int64_t start, int64_t end);
+    void MarkPause(uint8_t kind);
+    void End();
+    uint64_t GetMeta(size_t index) const;
+    uint64_t GetLast(size_t index) const;
+    uint64_t GetTotal(size_t index) const;
+
+private:
+    struct GroupState
+    {
+        std::atomic<int64_t> busy{0};
+        std::atomic<int64_t> first{INT64_MAX};
+        std::atomic<int64_t> last{0};
+        std::atomic<uint64_t> packets{0};
+    };
+
+    static uint64_t ToNanoseconds(int64_t ticks);
+
+    std::atomic<bool> m_enabled{true};
+    std::atomic<int64_t> m_scalar[ScalarCount];
+    GroupState m_groups[GroupCount];
+    std::atomic<uint64_t> m_sequence{0};
+    std::atomic<uint64_t> m_kind{0};
+    std::atomic<bool> m_paused{false};
+    std::atomic<uint64_t> m_timestamps{0};
+    std::atomic<uint64_t> m_published_timestamps{0};
+    std::atomic<uint64_t> m_last[PublishedCount];
+    std::atomic<uint64_t> m_total[PublishedCount];
+    int64_t m_begin = 0;
+    uint64_t m_begin_timestamps = 0;
+};
+
+class LxrPhaseScope final
+{
+public:
+    LxrPhaseScope(LxrPauseTimers& timers, size_t phase)
+        : m_timers(timers), m_phase(phase), m_start(timers.Enabled() ? timers.Stamp() : 0)
+    {
+    }
+
+    ~LxrPhaseScope()
+    {
+        if (m_start != 0)
+        {
+            m_timers.Add(m_phase, m_timers.Stamp() - m_start);
+        }
+    }
+
+    LxrPhaseScope(const LxrPhaseScope&) = delete;
+    LxrPhaseScope& operator=(const LxrPhaseScope&) = delete;
+
+private:
+    LxrPauseTimers& m_timers;
+    size_t m_phase;
+    int64_t m_start;
+};
+
 class LxrRcMutator final
 {
 public:
@@ -232,6 +337,8 @@ public:
     LxrRcResult GetDefragHeadroomBytes(size_t* bytes) const;
     LxrRcResult GetUsedPages(size_t* pages) const;
     uint64_t GetCostMetric(size_t metric) const;
+    LxrPauseTimers& GetPauseTimers() { return m_pause_timers; }
+    const LxrPauseTimers& GetPauseTimers() const { return m_pause_timers; }
     bool IsMarked(Object* object) const;
     bool IsTraceExhausted() const;
     LxrTracePhase GetTracePhase() const;
@@ -466,6 +573,7 @@ private:
     std::atomic<RememberedChunk*> m_remembered_chunks{nullptr};
     std::atomic<uint64_t> m_mature_metrics[13]{};
     std::atomic<uint64_t> m_cost_ticks[9]{};
+    LxrPauseTimers m_pause_timers;
     std::atomic<size_t> m_pause_mature_copied_bytes{0};
     LogChunk* m_mutator_chunks;
     LogBank* m_banks;
