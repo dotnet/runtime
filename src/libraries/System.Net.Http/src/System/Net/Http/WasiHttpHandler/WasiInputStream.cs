@@ -24,7 +24,7 @@ namespace System.Net.Http
         private bool otherSideClosed;
         internal bool isClosed;
 
-        public override bool CanRead => true;
+        public override bool CanRead => !isClosed;
         public override bool CanWrite => false;
         public override bool CanSeek => false;
 
@@ -115,8 +115,7 @@ namespace System.Net.Http
                         }
                         else
                         {
-                            // TODO translate error ?
-                            throw;
+                            throw new HttpIOException(HttpRequestError.ResponseEnded, SR.net_http_invalid_response_premature_eof, e);
                         }
                     }
                 }

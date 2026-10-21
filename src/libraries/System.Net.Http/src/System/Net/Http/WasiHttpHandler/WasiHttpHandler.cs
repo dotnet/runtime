@@ -28,9 +28,14 @@ namespace System.Net.Http
 
         public async Task<HttpResponseMessage> SendRequestAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            if (request.RequestUri is null)
+            if (request.RequestUri is not { IsAbsoluteUri: true } requestUri)
             {
-                throw new ArgumentException();
+                throw new InvalidOperationException(SR.net_http_client_invalid_requesturi);
+            }
+
+            if (!string.Equals(requestUri.Scheme, Uri.UriSchemeHttp, StringComparison.OrdinalIgnoreCase) && !string.Equals(requestUri.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new NotSupportedException(SR.Format(SR.net_http_unsupported_requesturi_scheme, requestUri.Scheme));
             }
 
             try
