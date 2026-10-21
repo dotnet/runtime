@@ -3118,6 +3118,9 @@ GenTree* Compiler::fgMorphIndexAddr(GenTreeIndexAddr* indexAddr)
     {
         groupArrayRefWithIndex = false;
     }
+#elif defined(TARGET_WASM)
+    // Keep the constant offset outermost so it can fold into the memory instruction's memarg.
+    groupArrayRefWithIndex = varTypeIsGC(arrRef) && !varTypeIsStruct(elemTyp);
 #endif
 
     // Note the array reference may now be TYP_I_IMPL, TYP_BYREF, or TYP_REF
@@ -6550,6 +6553,21 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
                 }
             }
 
+            // Evaluate the value before the new array checks, but after the array and index.
+            if ((value->gtFlags & GTF_OBS_EFFECT) != 0)
+            {
+                GenTree** operands[] = {&arr, &index, &value};
+                for (GenTree** operand : operands)
+                {
+                    TempInfo temp = fgMakeTemp(*operand);
+                    *operand      = temp.load;
+                    // The operand is already morphed and may have generated assertions.
+                    fgMorphTreeDone(temp.store);
+                    argSetup =
+                        argSetup == nullptr ? temp.store : gtNewOperNode(GT_COMMA, TYP_VOID, argSetup, temp.store);
+                }
+            }
+
             GenTree* indexAddr = gtNewArrayIndexAddr(arr, index, TYP_REF, NO_CLASS_HANDLE);
             GenTree* store     = gtNewStoreIndNode(TYP_REF, indexAddr, value);
             GenTree* result    = fgMorphTree(store);
@@ -9081,7 +9099,7 @@ GenTree* Compiler::fgOptimizeRelationalComparisonWithFullRangeConst(GenTreeOp* c
 {
     assert(cmp->OperIsCmpCompare());
 
-    if (gtTreeHasSideEffects(cmp, GTF_SIDE_EFFECT))
+    if (gtTreeHasSideEffects(cmp, GTF_OBS_EFFECT))
     {
         return cmp;
     }

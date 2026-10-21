@@ -309,6 +309,12 @@ IEnumerable<ModuleHandle> GetModuleHandles(TargetPointer appDomain, AssemblyIter
 
     foreach (TargetPointer pAssembly in arrayList.Elements)
     {
+        if (pAssembly == TargetPointer.Null)
+        {
+            // an unloaded assembly leaves an empty slot in the list, skip
+            continue;
+        }
+
         Assembly assembly = // read Assembly object at pAssembly
 
         // The Assemblies map 1:1 to Modules, however we must filter them based on the iterationFlags before returning.
@@ -372,7 +378,7 @@ IEnumerable<ModuleHandle> GetModuleHandles(TargetPointer appDomain, AssemblyIter
             }
 
             Module module = // read Module at assembly.Module
-            if (((ModuleFlags)module.Flags).HasFlag(ModuleFlags.Tenured))
+            if (!((ModuleFlags)module.Flags).HasFlag(ModuleFlags.Tenured))
             {
                 // Un-tenured collectible assemblies should not be returned. (This can only happen in a brief
                 // window during collectible assembly creation.

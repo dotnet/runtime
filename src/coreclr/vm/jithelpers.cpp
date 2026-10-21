@@ -24,6 +24,7 @@
 #include "eeprofinterfaces.h"
 #include "dynamicinterfacecastable.h"
 #include "comsynchronizable.h"
+#include "comutilnative.h"
 
 #ifndef TARGET_UNIX
 // Included for referencing __report_gsfailure
@@ -41,7 +42,9 @@
 #include "array.h"
 #include "debuginfostore.h"
 #include "safemath.h"
+#ifdef FEATURE_MULTITHREADING
 #include "threadstatics.h"
+#endif // FEATURE_MULTITHREADING
 
 #ifdef HAVE_GCCOVER
 #include "gccover.h"
@@ -244,6 +247,23 @@ HCIMPLEND
 
 #include <optdefault.h>
 
+#ifdef FEATURE_IJW
+HCIMPL1(void*, JIT_GetStaticFieldAddr_Tls, FieldDesc* pField)
+{
+    FCALL_CONTRACT;
+
+    _ASSERTE(pField->IsStatic() && pField->IsRVA());
+
+    Module* pModule = pField->GetModule();
+    DWORD fieldRva = pField->GetOffset();
+    _ASSERTE(pModule->IsRvaFieldTls(fieldRva));
+
+    uint8_t** pTlsArray = static_cast<uint8_t**>(NtCurrentTeb()->ThreadLocalStoragePointer);
+    return pTlsArray[pModule->GetTlsIndex()] + pModule->GetFieldTlsOffset(fieldRva);
+}
+HCIMPLEND
+#endif // FEATURE_IJW
+
 // Helper for the managed InitClass implementations
 extern "C" void QCALLTYPE InitClassHelper(MethodTable* pMT, QCallExceptionStatus* qcallError)
 {
@@ -312,6 +332,7 @@ HCIMPLEND
 //
 //========================================================================
 
+#ifdef FEATURE_MULTITHREADING
 // Using compiler specific thread local storage directives due to linkage issues.
 #ifdef _MSC_VER
 __declspec(selectany)
@@ -384,6 +405,7 @@ HCIMPL0(void*, JIT_GetDirectOnThreadLocalDataNonGCThreadStaticBase)
     return (void*)((uint8_t*)&(((ThreadLocalData*)&t_ThreadStatics)->pThread) - OFFSETOF__CORINFO_Array__data);
 }
 HCIMPLEND
+#endif // FEATURE_MULTITHREADING
 
 #include <optdefault.h>
 

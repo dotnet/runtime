@@ -321,9 +321,7 @@ HRESULT STDMETHODCALLTYPE Dispatch_Invoke_Wrapper(IDispatch* pDisp, DISPID dispi
 
     CONTRACTL
     {
-        THROWS; // Dispatch_Invoke_CallBack can throw
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
+        STANDARD_VM_CHECK; // Dispatch_Invoke_CallBack can throw
         PRECONDITION(CheckPointer(pDisp));
         PRECONDITION(CheckPointer(pdispparams, NULL_OK));
         PRECONDITION(CheckPointer(pvarResult, NULL_OK));

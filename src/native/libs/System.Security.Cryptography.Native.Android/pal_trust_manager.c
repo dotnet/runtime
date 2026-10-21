@@ -1,4 +1,5 @@
 #include "pal_trust_manager.h"
+#include "pal_x509chain.h"
 #include <stdatomic.h>
 #include <stdio.h>
 
@@ -159,10 +160,23 @@ cleanup:
 // platformValidationError carries the platform's textual rejection reason, or NULL when
 // the platform trusts the chain.
 ARGS_NON_NULL(1, 2) JNIEXPORT jboolean JNICALL Java_net_dot_android_crypto_DotnetProxyTrustManager_verifyRemoteCertificate(
-    JNIEnv* env, jobject thisHandle, jlong sslStreamProxyHandle, jstring platformValidationError)
+    JNIEnv* env, jobject thisHandle, jlong sslStreamProxyHandle, jstring platformValidationError, jobject platformTrustAnchor)
 {
     RemoteCertificateValidationCallback verify = atomic_load(&verifyRemoteCertificate);
     abort_unless(verify, "verifyRemoteCertificate callback has not been registered");
+
+    if (platformTrustAnchor != NULL)
+    {
+        int32_t trusted = X509ChainIsSystemTrusted(env, platformTrustAnchor);
+        if (trusted < 0)
+        {
+            LOG_ERROR("Failed to look up optional platform trust anchor; continuing without the hint");
+        }
+        if (trusted <= 0)
+        {
+            platformTrustAnchor = NULL;
+        }
+    }
 
     jstring validationError = NULL;
     if (platformValidationError != NULL)
@@ -174,7 +188,16 @@ ARGS_NON_NULL(1, 2) JNIEXPORT jboolean JNICALL Java_net_dot_android_crypto_Dotne
         }
     }
 
-    jboolean result = verify((intptr_t)sslStreamProxyHandle, validationError);
+    // The callback borrows this global ref only for its synchronous invocation.
+    jobject trustAnchor = AddGRef(env, platformTrustAnchor);
+    if (platformTrustAnchor != NULL && trustAnchor == NULL)
+    {
+        ReleaseGRef(env, validationError);
+        return JNI_FALSE;
+    }
+
+    jboolean result = verify((intptr_t)sslStreamProxyHandle, validationError, trustAnchor);
+    ReleaseGRef(env, trustAnchor);
     ReleaseGRef(env, validationError);
     return result;
 }

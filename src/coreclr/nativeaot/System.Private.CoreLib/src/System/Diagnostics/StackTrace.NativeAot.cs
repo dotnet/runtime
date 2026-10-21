@@ -9,7 +9,6 @@ namespace System.Diagnostics
 {
     public partial class StackTrace
     {
-#if !TARGET_WASM
         /// <summary>
         /// Initialize the stack trace based on current thread and given initial frame index.
         /// </summary>
@@ -25,7 +24,6 @@ namespace System.Diagnostics
             Debug.Assert(trueFrameCount == frameCount);
             InitializeForIpAddressArray(stackTrace, skipFrames + SystemDiagnosticsStackDepth, frameCount, needFileInfo);
         }
-#endif
 
         /// <summary>
         /// Initialize the stack trace based on a given exception and initial frame index.
@@ -77,7 +75,6 @@ namespace System.Diagnostics
             _methodsToSkip = 0;
         }
 
-#if !TARGET_WASM
         internal void ToString(TraceFormat traceFormat, StringBuilder builder)
         {
             if (_stackFrames != null)
@@ -94,6 +91,5 @@ namespace System.Diagnostics
             if (traceFormat == TraceFormat.TrailingNewLine && builder.Length == 0)
                 builder.AppendLine();
         }
-#endif
     }
 }

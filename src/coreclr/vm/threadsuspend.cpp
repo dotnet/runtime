@@ -655,7 +655,13 @@ static StackWalkAction TAStackCrawlCallBackWorker(CrawlFrame* pCf, StackCrawlCon
         // we can't use it to directly compare against the EH ranges because we
         // may be in an cloned finally which has a call as the last instruction.
 
-        offs--;
+#ifdef TARGET_WASM
+        // On Wasm, R2R code with virtual ips should not have its ip adjusted
+        if (!ExecutionManager::IsVirtualIP(GetControlPC(pCf->GetRegisterSet())))
+#endif
+        {
+            offs--;
+        }
     }
 
     if (pData->fWriteToStressLog)
@@ -1110,6 +1116,7 @@ Thread::UserAbort(EEPolicy::ThreadAbortTypes abortType, DWORD timeout)
     {
         THROWS;
         GC_TRIGGERS; // For GetXxxException
+        MODE_ANY;
     }
     CONTRACTL_END;
 
@@ -4810,9 +4817,11 @@ HijackFrame::HijackFrame(LPVOID returnAddress, Thread *thread, HijackArgs *args 
 
 void STDCALL OnHijackWorker(HijackArgs * pArgs)
 {
-    CONTRACTL{
+    CONTRACTL
+    {
         THROWS;
         GC_TRIGGERS;
+        MODE_COOPERATIVE;
     }
     CONTRACTL_END;
 
@@ -5428,6 +5437,7 @@ void ThreadSuspend::RestartEE(BOOL SuspendSucceeded)
     }
 #endif // PROFILING_SUPPORTED
 
+#ifdef FEATURE_MULTITHREADING
     //
     // If we raised this thread's priority in SuspendRuntime, we restore it here.
     //
@@ -5439,6 +5449,7 @@ void ThreadSuspend::RestartEE(BOOL SuspendSucceeded)
             pCurThread->m_Priority = INVALID_THREAD_PRIORITY;
         }
     }
+#endif // FEATURE_MULTITHREADING
 
     FireEtwGCRestartEEEnd_V1(GetClrInstanceId());
 
@@ -5552,6 +5563,7 @@ retry_for_debugger:
     }
 #endif // PROFILING_SUPPORTED
 
+#ifdef FEATURE_MULTITHREADING
     //
     // If this thread is running at low priority, boost its priority.  We remember the old
     // priority so that we can restore it in ResumeEE.
@@ -5566,6 +5578,7 @@ retry_for_debugger:
             pCurThread->SetThreadPriority(THREAD_PRIORITY_NORMAL);
         }
     }
+#endif // FEATURE_MULTITHREADING
 
     //
     // Now that we've instructed all threads to please stop,

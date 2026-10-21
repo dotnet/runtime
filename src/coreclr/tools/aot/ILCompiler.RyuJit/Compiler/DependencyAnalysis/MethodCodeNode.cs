@@ -22,6 +22,7 @@ namespace ILCompiler.DependencyAnalysis
         private FrameInfo[] _frameInfos;
         private byte[] _gcInfo;
         private MethodExceptionHandlingInfoNode _ehInfo;
+        private FuncletKind[] _funcletKinds;
         private DebugLocInfo[] _debugLocInfos;
         private DebugVarInfo[] _debugVarInfos;
         private DebugEHClauseInfo[] _debugEHClauseInfos;
@@ -122,8 +123,13 @@ namespace ILCompiler.DependencyAnalysis
         public byte[] GCInfo => _gcInfo;
         public MethodExceptionHandlingInfoNode EHInfo => _ehInfo;
 
-        // TODO-WASM: Appropriately extract funclet kinds from eh clause info
-        public FuncletKind[] GetFuncletKinds() => _ehInfo == null ? [] : throw new NotImplementedException();
+        public FuncletKind[] GetFuncletKinds() => _funcletKinds ?? [];
+
+        public void InitializeFuncletKinds(FuncletKind[] funcletKinds)
+        {
+            Debug.Assert(_funcletKinds is null);
+            _funcletKinds = funcletKinds;
+        }
 
         public ISymbolNode GetAssociatedDataNode(NodeFactory factory)
         {
@@ -301,11 +307,22 @@ namespace ILCompiler.DependencyAnalysis
             int previousNativeOffset = -1;
             string previousDocument = null;
             int previousLineNumber = -1;
+            bool isWasm = _method.Context.Target.IsWasm;
+            int nextFuncletIndex = 1;
             // OffsetMapping is sorted in order of increasing native offset (but not necessarily by IL offset)
             foreach (var nativeMapping in _debugLocInfos)
             {
                 if (nativeMapping.NativeOffset == previousNativeOffset)
                     continue;
+
+                while (isWasm && nextFuncletIndex < _frameInfos.Length &&
+                    nativeMapping.NativeOffset >= _frameInfos[nextFuncletIndex].StartOffset)
+                {
+                    // Wasm funclets are separate functions and need their own initial source mapping.
+                    previousDocument = null;
+                    previousLineNumber = -1;
+                    nextFuncletIndex++;
+                }
 
                 var sequencePoint = sequencePoints[Math.Min(nativeMapping.ILOffset, sequencePoints.Length - 1)];
                 // Emit sequence point if its line number or document differ from the previous one.

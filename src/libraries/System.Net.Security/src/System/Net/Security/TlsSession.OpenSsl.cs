@@ -159,7 +159,9 @@ namespace System.Net.Security
                     }
                     if (rc < 0)
                     {
-                        throw new IOException(SR.net_ssl_read_bio_failed_error);
+                        // Prefix reads report transport, size-limit, and allocation failures
+                        // without pushing an OpenSSL error.
+                        throw new IOException(SR.net_ssl_read_client_hello_failed);
                     }
 
                     ReadOnlySpan<byte> frame = new ReadOnlySpan<byte>(framePtr, frameLen);

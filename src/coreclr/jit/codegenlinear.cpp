@@ -2579,7 +2579,7 @@ void CodeGen::genCodeForSetcc(GenTreeCC* setcc)
  * disassembler.
  *
  * Possible values for JitEmitUnitTestsSections:
- * Amd64: all, sse2
+ * Amd64: all, lea, sse2
  * Arm64: all, general, advsimd, sve
  * Wasm:  all, simd
  */
@@ -2621,6 +2621,10 @@ void CodeGen::genEmitterUnitTests()
     bool unitTestSectionAll = (strstr(unitTestSection, "all") != nullptr);
 
 #if defined(TARGET_AMD64)
+    if (unitTestSectionAll || (strstr(unitTestSection, "lea") != nullptr))
+    {
+        genAmd64EmitterUnitTestsLea();
+    }
     if (unitTestSectionAll || (strstr(unitTestSection, "sse2") != nullptr))
     {
         genAmd64EmitterUnitTestsSse2();
