@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Microsoft.DotNet.XUnitExtensions;
 using Microsoft.Win32.SafeHandles;
 using System.Collections.Generic;
 using System.IO.Pipes;
@@ -32,10 +33,21 @@ namespace System.IO.Tests
 
         protected override bool NopFlushCompletesSynchronously => OperatingSystem.IsWindows();
 
-        [Theory]
+        private static void SkipSyncApmOnWasi(ReadWriteMode mode)
+        {
+            if (OperatingSystem.IsWasi() && mode is ReadWriteMode.SyncAPM)
+            {
+                // EndRead/EndWrite would block on a pending operation, which needs multithreading.
+                throw new SkipTestException("SyncAPM is not supported on single-threaded WASI");
+            }
+        }
+
+        [ConditionalTheory]
         [MemberData(nameof(AllReadWriteModes))]
         public async Task FileOffsetIsPreservedWhenFileStreamIsCreatedFromSafeFileHandle_Reads(ReadWriteMode mode)
         {
+            SkipSyncApmOnWasi(mode);
+
             byte[] initialData = new byte[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
             using FileStream stream = (FileStream)await CreateReadOnlyStreamCore(initialData);
             byte[] buffer = new byte[5];
@@ -49,10 +61,12 @@ namespace System.IO.Tests
             Assert.Equal(stream.Position, createdFromHandle.Position); // but it should sync the offset with OS
         }
 
-        [Theory]
+        [ConditionalTheory]
         [MemberData(nameof(AllReadWriteModes))]
         public async Task FileOffsetIsPreservedWhenFileStreamIsCreatedFromSafeFileHandle_Writes(ReadWriteMode mode)
         {
+            SkipSyncApmOnWasi(mode);
+
             using FileStream stream = (FileStream)await CreateWriteOnlyStreamCore(Array.Empty<byte>());
             byte[] buffer = new byte[] { 0, 1, 2, 3, 4 };
             await WriteAsync(mode, stream, buffer, 0, buffer.Length);
@@ -65,10 +79,12 @@ namespace System.IO.Tests
             Assert.Equal(stream.Position, createdFromHandle.Position);
         }
 
-        [Theory]
+        [ConditionalTheory]
         [MemberData(nameof(AllReadWriteModes))]
         public async Task WriteAsyncStartsWherePreviousReadAsyncHasFinished(ReadWriteMode mode)
         {
+            SkipSyncApmOnWasi(mode);
+
             if (mode == ReadWriteMode.SyncByte)
             {
                 // it reads a single byte even if buffer.Length > 1
@@ -100,10 +116,12 @@ namespace System.IO.Tests
             Assert.Equal(initialData.Concat(writeBuffer), allBytes);
         }
 
-        [Theory]
+        [ConditionalTheory]
         [MemberData(nameof(AllReadWriteModes))]
         public async Task NoDataIsLostWhenWritingToFile(ReadWriteMode mode)
         {
+            SkipSyncApmOnWasi(mode);
+
             string filePath;
             List<byte> writtenBytes = new List<byte>();
 
