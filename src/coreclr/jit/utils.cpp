@@ -1770,6 +1770,7 @@ void HelperCallProperties::init()
 
             case CORINFO_HELP_VIRTUAL_FUNC_PTR:
             case CORINFO_HELP_GVMLOOKUP_FOR_SLOT:
+            case CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT:
             case CORINFO_HELP_READYTORUN_VIRTUAL_FUNC_PTR:
                 mutatesHeap = false;
                 isPure      = true;

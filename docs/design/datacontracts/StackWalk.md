@@ -450,7 +450,7 @@ Most of the handlers are implemented in `BaseFrameHandler`. Platform specific co
 
 #### InlinedCallFrame
 
-InlinedCallFrames store and update only the IP, SP, and FP of a given context. If the stored IP (CallerReturnAddress) is 0 then the InlinedCallFrame does not have an active call and should not update the context.
+InlinedCallFrames store and update only the IP, SP, and FP of a given context. If the stored IP (CallerReturnAddress) is 0 then the InlinedCallFrame does not have an active call and should not update the context. On WASM this includes recording the following `InterpreterFrame` for the interpreter unwind.
 
 * On ARM, the InlinedCallFrame stores the value of the SP after the prolog (`SPAfterProlog`) to allow unwinding for functions with stackalloc. When a function uses stackalloc, the CallSiteSP can already have been adjusted. This value should be placed in R9.
 * On WASM, a `CallerReturnAddress` of `INLINED_PINVOKE_FROM_R2R` (`1`) marks an active inlined P/Invoke from ReadyToRun code rather than an address. SP is taken from `CallSiteSP`, IP is the R2R virtual IP of the shadow frame at `CallSiteSP`, and FP is the WASM logical frame pointer at `CallSiteSP` (see below). If no virtual IP can be recovered, IP is set to null.
@@ -462,6 +462,8 @@ An active InlinedCallFrame stays the current Frame after its context update so t
 #### SoftwareExceptionFrame
 
 SoftwareExceptionFrames store a copy of the context struct. The IP, SP, and all ABI specified (platform specific) callee-saved registers are copied from the stored context to the working context.
+
+On WASM the only callee-saved register is the frame pointer (`InterpreterFP`), and the `CalleeSavedRegisters` data descriptor is empty, so the IP, SP and FP are copied explicitly from the stored context (native `SoftwareExceptionFrame::UpdateRegDisplay_Impl`).
 
 **Return Address**: Read from the `ReturnAddress` field on the frame.
 
@@ -486,9 +488,29 @@ Root-method frame identities have three forms:
 
 A funclet instead stores its establishing-frame pointer plus two, giving the identity low bits `10`. These tags are followed until the root-method frame is reached. The physical funclet frame supplies the function-local virtual IP, while the root frame supplies the identity used to find the controlling method's base virtual IP. cDAC requires each establishing-frame link to move toward the caller and bounds the traversal so corrupt target memory cannot create an unbounded walk.
 
-**WASM R2R unwinding.** The virtual IP is the identity-derived method base plus twice the physical frame's stored function-local value. `WasmContext.Unwind` passes its current virtual IP as the control PC to `IExecutionManager.TryGetUnwindInfo`, reads the fixed frame size as a uint32 ULEB128 value from `unwindInfoBaseAddress + RuntimeFunction.UnwindData`, and adds that size to the physical frame base. A zero frame size terminates the R2R walk because it would make no progress; malformed uint32 ULEB128 data is invalid.
+**WASM R2R unwinding.** The virtual IP is the identity-derived method base plus twice the physical frame's stored function-local value. `WasmContext.Unwind` resolves its current virtual IP through `IExecutionManager.GetCodeBlockHandle`, then uses `GetUnwindInfo` and `GetUnwindInfoBaseAddress` to locate the unwind data. It reads the fixed frame size as a uint32 ULEB128 value from `unwindInfoBaseAddress + RuntimeFunction.UnwindData` and adds that size to the physical frame base. A zero frame size terminates the R2R walk because it would make no progress; malformed uint32 ULEB128 data is invalid.
 
-For a managed caller, the resulting stack pointer identifies the caller's R2R frame record; its virtual IP and logical frame pointer are resolved as above. When the current frame has a positive odd reverse-P/Invoke identity, unwinding still preserves the advanced caller SP for the explicit `Frame` chain, but leaves IP and FP null because the caller is native. At a terminator or another non-R2R caller, the R2R context is cleared and walking continues through the explicit `Frame` or interpreter frame chain.
+For a managed caller, the resulting stack pointer identifies the caller's R2R frame record; its virtual IP and logical frame pointer are resolved as above. When the current frame has a positive odd reverse-P/Invoke identity, unwinding still preserves the advanced caller SP for the explicit `Frame` chain, but leaves IP and FP null because the caller is native. When the resulting stack pointer has no R2R frame record (a terminator, an interpreter transition or the stack top), the caller is not R2R code: the advanced SP is kept, IP and FP are null, and walking continues through the explicit `Frame` or interpreter frame chain. The R2R walk is cleared (SP, IP and FP all null) only when the current frame cannot be unwound at all: no R2R frame at SP, no unwind data, or a zero frame size.
+
+```csharp
+// WasmContext.Unwind: one R2R frame, mirroring native RtlVirtualUnwind / WasmUnwindStackFrameCore.
+void Unwind()
+{
+    TargetPointer frameBase = /* frame base of the R2R frame at SP */;
+    uint identity = target.Read<uint>(frameBase + FrameIdentityOffset);
+    uint frameSize = /* ULEB128 in the unwind data of the function containing IP */;
+    if (/* no frame at SP, no unwind data, or frameSize == 0 */)
+    {
+        SP = IP = FP = null;
+        return;
+    }
+
+    SP = frameBase + frameSize;
+    bool callerIsNative = identity is odd && (int)identity > 0;    // reverse P/Invoke root
+    IP = callerIsNative ? null : /* R2R virtual IP at SP, or null when SP has no R2R frame record */;
+    FP = IP != null ? /* WASM logical frame pointer at SP */ : null;
+}
+```
 
 **Return Address**: Read from `TransitionBlock.ReturnAddress`. On WASM, it is derived from `TransitionBlock.StackPointer` when it is 0, as above. For an x86 `StubDispatchFrame` with neither a method nor a GCRefMap, subtract five bytes to return the adjusted call address, matching the context update.
 
