@@ -1,0 +1,7 @@
+control IGNORE_PIN | nursery | pin-handles-churn :: Fatal error.
+control IGNORE_PIN | nursery | fixed-pressure :: timeout: the monitored command dumped core
+control NO_BLOCK_BYTE | nursery | pin-handles-churn :: Fatal error.
+control NO_BLOCK_BYTE | nursery | fixed-pressure :: Unhandled exception. System.InvalidOperationException: A `fixed` thread failed: A second `fixed` of a pinned buffer gave another address.
+control POH_NORMAL | nursery | poh-churn :: timeout: the monitored command dumped core
+control NO_RETAIN | mature | pin-concurrent-trace :: Fatal error.
+control NO_RETAIN | mature | pin-handles-churn :: PASS: 39004 lifecycle checks

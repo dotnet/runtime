@@ -2,7 +2,7 @@
 
 Status: implemented on a local branch. Nothing is pushed. The accepted port stays at `e8d2d23`.
 
-This page reports the first layer of the [P16](../P16-remove-per-object-bookkeeping/README.md) plan. It covers S0 (phase timers), S5a (to-space reserve in bytes) and S1 (block gate and shared counters). S2 (inline fast path for the hot side-metadata accesses) has its own section below ("S2"), and so has S3 (remove the per-object size table, live bitmap and counters; section "S3"), S4 (the pause does not touch every block; section "S4"), S5b (to-space beyond the admitted heap when no hard limit is set, with give-back; section "S5b") and S6 (the finalizer registry; no pause walks the heap; section "S6"). S7 is not started.
+This page reports the first layer of the [P16](../P16-remove-per-object-bookkeeping/README.md) plan. It covers S0 (phase timers), S5a (to-space reserve in bytes) and S1 (block gate and shared counters). S2 (inline fast path for the hot side-metadata accesses) has its own section below ("S2"), and so has S3 (remove the per-object size table, live bitmap and counters; section "S3"), S4 (the pause does not touch every block; section "S4"), S5b (to-space beyond the admitted heap when no hard limit is set, with give-back; section "S5b") and S6 (the finalizer registry; no pause walks the heap; section "S6") and S7 (the pin list; the last per-object tables are gone; section "S7").
 
 Labels: **Measured** (a run), **Code** (read in the source), **Inferred** (my conclusion; can be wrong), **Open** (not known yet). "The Java LXR" means the MMTk LXR collector used by OpenJDK.
 
@@ -27,6 +27,7 @@ Labels: **Measured** (a run), **Code** (read in the source), **Inferred** (my co
 | S4 | `d7f539de93d`, `ca896eae778`, `6bd5e3bc694`, `ba6f1f758ef`, `b8fc123586a` | P17 S4a to S4e (see section "S4") |
 | S5b | `7014e537207`, `805544a4934`, `aac2e8f16fa`, `795dea990a5`, `8090810baae` | P17 S5b-a to S5b-e (see section "S5b") |
 | S6 | `64baf08f849`, `834a1f743d5`, `6bfc69b4384`, `813dfc8807c`, `ca5496a4439`, `4271e3bc2ab`, `1eb1112e02d`, `9b06c3f9de1`, `9b52be8e383`, `f505dcd1450`, `c00a5e14465` and the report commit | P17 S6a to S6k (see section "S6") |
+| S7 | `55713457437`, `c41f6c5c6f5` and the S7c and S7d commits | P17 S7a to S7d (see section "S7") |
 
 Branch of S0, S5a, S1 and the follow-up: `kkokosa-lxr-pause-cost-s0-s5a-s1`, on top of `e8d2d23ef60`. I tested S0 and S5a as `1bf696c114f` and `0a57635daed`. I then only rewrote the commit messages; `git diff` between the tested and the final commits is empty (Measured).
 
@@ -1600,9 +1601,202 @@ The last three cells check behavior that must not change; they pass on the old b
 | `Pins` metric of `GetMemoryInfo` no longer counts the pinned object heap | Code; S7 |
 | The P3.3 intermittent failure under load | Open (not seen in the S6 runs) |
 
-## Tests
+## S7: the pin list (the last per-object tables are gone)
 
-Source trees: S0 and S5a are tested on their own commits in a second worktree; S1 on the final tree. "Pass" lists only what ran.
+Labels as above. The user asked for lean evidence: the benchmark is small (heap 4x, three workloads, two modes, two repetitions, the integrated tip against the S7 tip) and there are no perf profiles.
+
+### Short answers (S7)
+
+1. **No table with an entry for every 8 bytes of heap is left in the collector module (Code).** `m_flags` (4 bytes per 8 bytes of heap) is gone. The two trace tables are gone too: `m_trace_locks` (1 byte) and `m_trace_scans` (8 bytes). The side metadata planes of the engine are bit planes and the reference count plane; the log streams are per admitted slot (they are not per object tables, and they are the largest native cost that stays; see "Not measured, open items").
+2. **Native plane bytes and peak RSS fall (Measured).** Native planes (metric 38, maximum over the run): binary trees 212.0 to 160.0 MiB, requests 456.3 to 336.0 MiB. Peak RSS (matrix, mean of 2): binary trees non-moving 185 to 136 MiB, requests 279 to 159 MiB, list suffix non-moving 274 to 225 MiB. The checksums are equal in every cell.
+3. **Wall time and GC time do not get worse (Measured).** In the matrix, the S7 build is faster or equal in all six cells (requests non-moving 19.6 s to 15.2 s; GC time 9.8 s to 6.3 s). **Inferred:** the allocation path no longer writes a flag word for every object, and a pause no longer touches a flag table. I did not profile it.
+4. **Pinning uses a short list in the pause and one byte per block (Code).** Pins found in the root scan go into a list. The pause sets one bit in the byte of the block. The copy decision reads the byte first. Only a block with the bit looks in the list.
+5. **Objects of the pinned object heap lie in pinned blocks (Code).** Pinned blocks hold these objects only. No pause copies from them, and no other allocation uses them. Large ones lie in the large-object space (it never moves objects).
+6. **I found one failure that is not new, and one fact that the plan did not say (Measured).** (a) The pin-heavy program fails now and then when the machine is oversubscribed. It fails on the integrated tip too (section "A failure that is not new"). (b) A pause that reaches a pinned object promotes its block in place, so a neighbour in the same block that the pause reaches later stays. The plan said that the neighbour is copied; it is copied only when the pause reaches it first (section "What the pause does with a pin").
+7. **Everything that I ran is green on the final tree** (section "Tests (S7)"), except the Windows managed suite and the Linux Release collector in the managed suite, which I did not run.
+
+### Commits (S7)
+
+| Commit | Subject |
+|---|---|
+| `55713457437` | S7a: pin list, pinned blocks and scan index replace the per-object pin and trace tables |
+| `c41f6c5c6f5` | S7b: native selector `--s7-pins`, managed pinning cells and their controls |
+| S7c | native test fix (`small` renamed, MSVC macro), tracer workload `pinheavy`, benchmark and table scripts (the hash is in the handoff message) |
+| S7d | results and this report (the hash is in the handoff message) |
+
+The branch is `kkokosa-lxr-s7-pin-list`. It starts at `06d7cda94cb` (the integrated branch). I did not change the runtime (the VM, the JIT and the stock helpers); the hash check is below.
+
+### What the S6 code did (Code)
+
+| Item | Where | What it did |
+|---|---|---|
+| `Pinned` flag | `Alloc` and `AllocationComplete` | Set for every object of the pinned object heap. |
+| `ObservedPin` flag | `AddRoot` | Set for each pinned root; cleared from the touched list at the end of the pause. |
+| `CopiedThisPause` flag | `DidCopy` | Set for each copy; read only by the walk of `DiagWalkSurvivorsWithType`. |
+| `Born` and `Large` flags | `Alloc` and `AllocationComplete` | **Written and never read.** |
+| `IsPinned` callback | engine | Read the flags. Used by the nursery copy decision, by `RetainPinnedMatureBlocks` (a walk over every registered object of every candidate block) and by one metric in `ProcessIncrement`. |
+| `m_trace_locks`, `m_trace_scans` | trace | One lock byte and one pointer for every 8-byte slot (for large objects, every page). Committed when a trace starts, decommitted when it ends. |
+
+### The design that was built (Code)
+
+**The pin list** (`lxr_pin_list.h`). Each worker adds to its own shard. When the root capture returns, one call sorts the shards into one array and removes duplicates (`SealPins`). During the pause every thread reads the array without a lock. The end of the pause clears it (`ClearPins`, in `ReleaseEpoch`). The cost follows the number of pinned roots.
+
+**The block byte** (`m_block_flags`, one byte per Immix block). Bit 1 (`PinnedBlockFlag`) tells that the block is a pinned block. Bit 2 (`PausePinFlag`) tells that this pause found a pinned root in the block. `AddPinnedRoot` sets bit 2. `ClearPins` clears bit 2 for the blocks of the list.
+
+**The copy decision** (`IsPinnedObject`). Read the block byte. Byte 0: the object is not pinned. Bit 1: pinned. Bit 2 only: look the address up in the sorted array.
+
+**Mature evacuation.** `RetainPinnedMatureBlocks` goes through the pin list. For each entry in a candidate block that has a count, it marks the block "retained". It does not walk objects any more. A block that `SelectMatureCandidates` finds with `PinnedBlockFlag` is never a candidate.
+
+**Pinned blocks.** A new allocation source `MutatorPinnedFresh` takes a clean block and sets `PinnedBlockFlag`. Every other acquisition of the block clears the flag. A second source `MutatorPinnedRecycled` takes only Reusable blocks with the flag; every other recycled source skips them. One allocator for all threads (`m_pinned_allocator`, under a spin lock) serves the pinned object heap. The pause gives its block back like the allocator of a mutator.
+
+**The copy list.** The walk of `DiagWalkSurvivorsWithType` needs the objects that the pause copied. The engine already keeps a forwarding record for each copy (`WalkForwarded`), so the walk reads the destinations from it and sorts them. `DidCopy` and the flag are gone.
+
+**Trace locks and scans.** The lock protects the mark and the scan of one object (it lets a dying object finish its scan before its children are decremented). It is now one of 16384 spin locks, chosen by a hash of the object address (`TraceLockSlot`). The scan of a split object (a large array that is scanned in slices) is in a hash index with 4096 buckets (`FindTraceScan`, `LinkTraceScan`, `UnlinkTraceScan`, `MoveTraceScan`). A mature copy moves the entry to the new address with both bucket locks held. The fixed size is 16 KiB for the locks and 256 KiB for the index. Nothing is committed when a trace starts and nothing is decommitted when it ends.
+
+### What each flag became (Code)
+
+| Flag or table | Replacement |
+|---|---|
+| `Pinned` (pinned object heap) | Pinned block (bit 1 of the block byte) for small objects. The large-object space for large objects. |
+| `ObservedPin` | The pin list and the pause bit of the block. |
+| `CopiedThisPause` | The forwarding records of the engine, read by the survivor walk. |
+| `Born` | Removed. It was never read. |
+| `Large` | Removed. It was never read. `IsLargeObject` already tests the address range of the large-object space. |
+| `m_trace_locks` | 16384 spin locks chosen by hash. |
+| `m_trace_scans` | A hash index of the split scans. |
+| `isPinned` and `didCopy` callbacks | Removed from the object model. The engine owns the list (`AddPinnedRoot`). |
+
+### What the pause does with a pin (Code, Measured)
+
+- A pinned root in the stack, in a pinned handle or in `fixed` code reaches `AddRoot` with `GC_CALL_PINNED`. An interior pointer is turned into the containing object first, so the list holds object starts.
+- The increment of a pinned young object promotes its block in place. An object that the pause reaches later in the same block is **not** copied, because the block is not a clean nursery block any more. The old code did the same. The plan said "the unpinned neighbour is copied". It is copied only when the pause reaches it before the pin. The native test puts the pin last in the root order (Measured).
+- At the end of the pause the bit of each pinned block is cleared and the list is empty.
+
+### Check C4 and decision D4
+
+**C4 (weak handle scans need no flag): true, and nothing changed (Code).** **D4 (option 1): built.** Point (e), the Pins metric: it counts the different pinned roots that the last pause saw (stack, handles, and the large objects among them). Objects of the pinned object heap do not count. They did not count in S6 either. `GetMemoryInfo` reports this number as pinned objects.
+
+### Semantic differences (honest)
+
+| Behavior | Before S7 | S7 |
+|---|---|---|
+| Where a small pinned-object-heap object lies | Any block that has room | A pinned block. A pause is not allowed to copy from it. |
+| Cost of a pinned-object-heap allocation | The block allocator of the thread | One shared allocator under a spin lock. **Open:** not measured with many threads. |
+| Memory of a pinned block | Same as other blocks | A pause gives back the block that the pinned allocator holds. A pinned block that is part full is reused only by pinned allocation. **Open:** a program with few pinned objects per pause and long-lived objects keeps one block per pause until the objects die. |
+| Mature evacuation and objects with the header bit `BIT_SBLK_GC_RESERVE` | The block of such an object was retained | Not retained. No code in this collector sets that bit (only Satori does). The nursery copy decision still reads it. |
+| Metric `Pins` | S6: pinned roots, unique | Pinned roots, unique, the same. |
+| Trace lock of an object | Its own byte | A lock that two objects can share. A long scan of one array (the forced scan of a dying large array) can make another thread that needs the same lock wait. **Open:** not measured; the lock is held for one object scan only. |
+
+### Results: native plane bytes and peak RSS (Measured)
+
+Heap 4x, hard limit, two repetitions (matrix: `results/wall-table-s7.md`; traced runs: `results/trace-tables-s7.md`). `int` is the integrated tip (the S6 collector), `s7` is the S7 tip. Native planes are the maximum of metric 38 over the run. Both builds use the same runtime.
+
+| Program | Mode | Native planes int (MiB) | Native planes s7 (MiB) | Peak RSS int (MiB) | Peak RSS s7 (MiB) |
+|---|---|---|---|---|---|
+| binary trees | non-moving | 212.0 | 160.0 | 185 | 136 |
+| binary trees | nursery copy | 212.0 | 160.0 | 146 | 108 |
+| requests | non-moving | 456.3 | 336.0 | 279 | 159 |
+| requests | nursery copy | 456.3 | 336.0 | 280 | 159 |
+| list suffix | non-moving | 212.0 | 160.0 | 274 | 225 |
+| list suffix | nursery copy | 212.0 | 160.0 | 256 | 202 |
+| pin-heavy | non-moving | 284.0 | 256.0 | 204 | 115 |
+| pin-heavy | nursery copy | 284.0 | 256.0 | 160 | 115 |
+
+The saving of native planes for a heap of 40 MiB (binary trees) is 52 MiB. **Inferred:** the flag table is 0.5 byte per byte of heap and the two trace tables are 1.125 byte per byte of heap (trace only). The sum for the Immix space of that run is about 57 MiB; the saving that I measured is a little lower. The planes that stay are 160 MiB for a heap of 32 MiB committed. **Inferred:** about 128 MiB of them are the four log streams (they are committed but not touched). I did not split the planes.
+
+### Results: wall time and GC time (Measured; matrix, 2 repetitions, ms; mean and the two runs)
+
+| Program | Mode | Wall int | Wall s7 | GC time int | GC time s7 |
+|---|---|---|---|---|---|
+| binary trees | non-moving | 2100 (2110, 2091) | 1961 (2008, 1914) | 439 | 438 |
+| binary trees | nursery copy | 1950 (1751, 2149) | 1846 (1694, 1998) | 334 | 302 |
+| requests | non-moving | 19607 (19491, 19723) | 15236 (15261, 15211) | 9775 | 6271 |
+| requests | nursery copy | 7754 (7767, 7742) | 6620 (6566, 6675) | 1349 | 1078 |
+| list suffix | non-moving | 12628 (13151, 12106) | 10289 (10111, 10467) | 6536 | 4466 |
+| list suffix | nursery copy | 20714 (11934, 29494) | 14194 (17845, 10542) | 14752 | 8616 |
+
+List suffix nursery copy is noisy (the two runs of one build differ by a factor of 2.5). Do not read a gain from that cell. The traced runs (a second set of runs) show the same direction in every cell (`results/trace-tables-s7.md`). Checksums are equal for every workload.
+
+### Results: pauses (Measured; traced runs, 2 repetitions, stop-the-world time of the S0 timers)
+
+Median RefCount pause (ms): binary trees non-moving 4.5 to 4.0, nursery 5.0 to 4.8; requests non-moving 5.1 to 5.2, nursery 12.8 to 11.7; list suffix non-moving 34.6 to 34.4, nursery 53.6 to 51.0. The pause medians of the RefCount pauses are equal inside the noise. Median InitialMark pause: binary trees non-moving 237.6 to 196.5 ms, nursery 308.3 to 147.8 ms; requests non-moving 104.5 to 19.5 ms, nursery 83.5 to 20.9 ms. Median Full pause of requests non-moving: 177.2 to 115.5 ms. **Inferred:** the pauses with a trace were shorter because they no longer commit and touch the two trace tables when a trace starts. The binary trees non-moving cell of the S7 build has no FinalMark pause in the two runs (the run ended while the trace was concurrent); `results/trace-tables-s7.md` has the full table.
+
+### Results: the pin-heavy program (Measured)
+
+The program (`pinheavy` in `GcTrace.cs`): four threads. Each one replaces pinned handles, runs `fixed` blocks that allocate, replaces pinned-object-heap arrays and allocates garbage (2,000,000 operations in all, 64 slots per thread). Heap 64 MiB, hard limit, traced. Four runs per cell on each build (two in the parallel benchmark streams, two serial); one run of each build in non-moving mode ended abnormally (section "A failure that is not new") and is not in the numbers.
+
+| Mode | Wall int (ms) | Wall s7 (ms) | GC time int (ms) | GC time s7 (ms) | RefCount pause median int / s7 (ms) | Peak RSS int / s7 (MiB) | Pinned roots per pause s7 |
+|---|---|---|---|---|---|---|---|
+| non-moving | 4120 | 3932 | 610 | 551 | 2.2 / 2.2 | 204 / 115 | 249.9 |
+| nursery copy | 3629 | 3727 | 319 | 316 | 3.8 / 3.7 | 160 / 115 | 248.7 |
+
+The wall time of the nursery copy mode is 2.7% higher on s7. The four runs of each build overlap (3542 to 3726 and 3660 to 3800). I count it as noise. In the nursery copy mode both builds promoted about 107 and 109 MB of pinned objects in place. Checksums are equal.
+
+### A failure that is not new (Measured)
+
+When the machine is oversubscribed (eight parallel runs of the pin-heavy program on 16 cores), the program fails now and then with `LXR epoch publication did not precede the runtime barrier reset.` A debug build that stops at the first engine failure shows the cause: the root capture finds a root whose object has no ValidObject bit, no reference count and a null method table. The failure code is `InvalidArgument` from `AddRoot`. I saw the objects with root flags 0 and 2.
+
+| Build | Run | Failed runs |
+|---|---|---|
+| integrated tip | with pinned-object-heap arrays, 8 loops of 10 | 12 of 80 |
+| S7 tip | with pinned-object-heap arrays, 8 loops of 10 | 2 of 80 |
+| integrated tip | without them (`PINHEAVY_NOPOH=1`) | 4 of 80 |
+| S7 tip | without them | 8 of 80 |
+| S7 tip | one run at a time, and two loops on pinned cores | 0 of 105 |
+
+**Inferred:** it is not caused by S7 and not by the pinned object heap (the integrated tip fails as often, and the failure stays without these arrays). It looks like a thread that holds an object that the runtime has allocated but has not yet reported to the collector, when another thread starts a pause. **Open:** I did not find the exact place. The fixed program of the benchmark runs on the same builds; the P3.1 test also shows the dependence on load.
+
+### Tests (S7)
+
+| Suite | Linux Release | Linux Debug | Windows Release |
+|---|---|---|---|
+| Native selectors (33: the 32 of S6 and `--s7-pins`) | pass 33 of 33 | pass 33 of 33 | pass 33 of 33 |
+| New selector `--s7-pins` | pass 8120 | pass 8120 | pass 8120 |
+| Managed cells with the Debug collector (3 modes; 63 runs of the S6 suite and 15 runs of the 5 new cells) | not run | pass 78 of 78 | not run |
+| Older suites P2.1 to P3.4 (9 scripts) | pass 9 of 9 | not run | not run |
+| Build of `clr` and `libs` | pass (clr 3:23, libs 1:41, incremental) | pass (clr 5:55, libs 6:36) | pass (`build.cmd -s clr+libs`, 17:44) |
+| `clrlxrgc` module | pass | pass | pass |
+
+Files: `results/tests-native-release-s7.txt`, `tests-native-debug-s7.txt`, `tests-native-windows-release-s7.txt`, `tests-managed-s7.txt` (and `.csv`), `tests-legacy-s7.txt`. The older native selectors changed in two ways: the pin callback is now `AddPinnedRoot` in the capture, and the test that counts commit calls of a failed growth expects 23 and not 25 (two trace table commits are gone).
+
+**Default collector unchanged (Measured).** The machine-code hash of the stock write barrier and allocation helpers (`helperhash.py`, as in P19 section 5) is `46cee8bd87fd6252f5265267148d0a34` on the S7 tree. It is the same value as for `dotnet/runtime` main and for the integrated tip. I did not change the runtime, so I expected it (`results/helper-hash-s7.txt`).
+
+**New native checks (`--s7-pins`, 8120 checks).** Pin list: append, merge, duplicates, lookup and clear (`ValidateS7PinListUnit`); eight workers with 20000 adds each (`ValidateS7PinListConcurrent`). Nursery: a pinned object in a nursery block is not copied; the neighbours that the pause reaches first are copied; the block is promoted in place; inside the pause exactly one block has the bit and the list holds the pin; after the pause the bit is clear, the pause counted one pinned root; a pause without a pin sets no bit. Interior pointer into a pinned object. Four workers add the pins of 200 objects, each object twice, and 100 objects move. Pinned blocks: the pinned-object-heap objects lie only in pinned blocks and the others do not; a young pause and a full pause with mature evacuation do not move them; a block with no live object is released; an ordinary allocation that takes a released pinned block clears the flag; the holes of a part full pinned block go to pinned allocation only. Each of these checks runs for 2, 4 and 8 count bits. The mature tests of the older selectors cover "a mature block with a pin is retained, a block without a pin is evacuated" (`--mature`, `--mature-retained-owner`).
+
+**Controls.** Each control is a compile define that breaks one rule. Each must make a selector fail (`controls-s7.sh`, `results/controls-s7-release.txt`).
+
+| Control | What it breaks | Result |
+|---|---|---|
+| `LXR_S7_NO_DEDUPE_CONTROL` | the merge keeps duplicates | `--s7-pins` fails (8115 of 8120) |
+| `LXR_S7_NO_CLEAR_CONTROL` | clear leaves the list | `--s7-pins` fails (8115 of 8120) |
+| `LXR_S7_UNSAFE_ADD_CONTROL` | workers share a shard, no lock | `--s7-pins` ends with a segmentation fault |
+| `LXR_S7_IGNORE_PIN_CONTROL` | the pause never knows a pin | `--s7-pins` fails (8081 of 8117) |
+| `LXR_S7_NO_BLOCK_BYTE_CONTROL` | no pause bit is set | `--s7-pins` fails (8090 of 8117) |
+| `LXR_S7_NO_BLOCK_CLEAR_CONTROL` | the pause bit stays | `--s7-pins` fails (8111 of 8120) |
+| `LXR_S7_NO_RETAIN_CONTROL` | a pinned mature block is not retained | `--mature` fails (2085 of 2088), `--mature-retained-owner` fails (21 of 22) |
+| `LXR_S7_PIN_INTERIOR_CONTROL` | the interior address is listed, not its object | `--s7-pins` fails (8114 of 8120) |
+| `LXR_S7_POH_NORMAL_CONTROL` | pinned-object-heap allocation uses ordinary blocks | `--s7-pins` fails (8114 of 8126) |
+| `LXR_S7_POH_RECYCLE_CONTROL` | other allocation may use the holes of a pinned block | `--s7-pins` fails (8118 of 8120) |
+| `LXR_S7_SCAN_LINK_CONTROL` | the scan index is never filled | `--mature-reader` fails (46 of 48), `--mature-completed-scan` fails (7 of 8) |
+| `LXR_S7_SCAN_MOVE_CONTROL` | the index entry does not follow a mature copy | `--mature-reader` fails (47 of 48; the new check of the index) |
+
+**Managed cells** (`Pinning.cs`; run with a heap of 96 MiB initial and 128 MiB hard limit; natural collections only). `pin-handles-churn` (1500 pinned handles of many sizes replaced all the time; addresses and content checked), `fixed-pressure` (four threads, `fixed` pointers and interior pointers while garbage forces collections), `poh-churn` (300 long-lived and 120000 short-lived pinned-object-heap arrays; 1.2 GB through the pinned blocks under a hard limit of 128 MiB), `pin-finalizers-weak` (4000 finalizable owners of pinned buffers and weak references to the buffers) and `pin-concurrent-trace` (pins before and during a concurrent trace, then the final mark and a full collection). All five pass in the three modes. Managed controls (`controls-s7-managed.sh`, `results/controls-s7-managed.txt`; the module is built with the define): `IGNORE_PIN` (`pin-handles-churn` and `fixed-pressure` end with a fatal error), `NO_BLOCK_BYTE` (the same cells fail), `POH_NORMAL` (`poh-churn` ends with a fatal error) and `NO_RETAIN` (`pin-concurrent-trace` in mature mode ends with a fatal error). The other controls are detected only by the native selector: they change the pin list in a way that a managed program cannot see.
+
+### What was reduced
+
+The user asked for lean evidence. Small benchmark (two repetitions, heap 4x, two modes, no perf profiles). I did not run the Windows managed suite, the managed suite with the Release collector, or the older suites on Windows and in Debug.
+
+### Not measured, open items (S7)
+
+| Item | Label |
+|---|---|
+| The failure of the pin-heavy program under CPU oversubscription: the place of the cause | Open (the integrated tip has it too) |
+| The shared pinned allocator and its lock with many threads that allocate pinned-object-heap arrays at the same time | Open (not measured) |
+| A part full pinned block for each pause when a program pins few long-lived small objects | Open (Inferred from the code; no program measured) |
+| The remaining native planes (160 MiB for a heap of 32 MiB): the share of the four log streams | Inferred, not split |
+| The trace locks: two objects can share a lock. Cost of a wait behind a forced scan of a very large array | Open |
+| Windows performance and the Windows managed suite | Not measured |
+| The `BIT_SBLK_GC_RESERVE` bit is not honoured by mature retention any more (no code sets it) | Code | in a second worktree; S1 on the final tree. "Pass" lists only what ran.
 
 | Suite | S0 (tested as `1bf696c`) | S5a (tested as `0a57635`) | S1 (final tree) |
 |---|---|---|---|
@@ -1684,4 +1878,7 @@ Notes:
 | `trace-s6.sh`, `s6-tables.py`, `perf-s6.sh`, `perf-s6.py`, `extra-cells.sh` | S6: traced runs of the accepted build, the S5b tip and S6; pause and phase tables; perf recordings and shares; extra repetitions of noisy cells |
 | `cell1.sh`, `cells.sh`, `s6cells.sh`, `rep.sh`, `s6-cells-table.sh`, `tests6.sh` | S6: one managed cell on one build; the S6 cells with their heap; repeat a cell; the S6 cells on three builds; Release and Debug builds and all suites for one tree |
 | `controls-s6.sh`, `controls-s6-managed.sh` | S6: the native controls and the managed controls (module built with a control define) |
+| `controls-s7.sh`, `controls-s7-managed.sh` | S7: the 12 native controls and the 4 managed controls (module built with a control define) |
+| `bench-s7.sh`, `bench-wall-s7.sh`, `bench-pinheavy-serial.sh`, `build-tracer-s7.sh`, `s7-tables.py` | S7: traced runs and wall matrix of the integrated tip and the S7 tip; serial runs of the pin-heavy program; the tracer build (workload `pinheavy` in `GcTrace.cs`); the tables |
+| `results/` (S7) | `matrix-s7-int-s7.jsonl`, `wall-table-s7.md`, `trace-tables-s7.md`, `trace-s7/`, `helper-hash-s7.txt`, `controls-s7-release.txt`, `controls-s7-managed.txt`, `tests-*-s7.txt`, `tests-managed-s7.csv` |
 | `results/` (S6) | `matrix-s6.jsonl`, `matrix-s6x.jsonl`, `wall-table-s6.md`, `wall-table-s6-vs-acc.md`, `trace-tables-s6.md`, `trace-s6/`, `perf-shares-s6.md`, `perf-s6/`, `lag-s6.jsonl`, `lag-table-s6.md`, `controls-s6-release.txt`, `controls-s6-managed.txt`, `s6-cells-table.txt`, `tests-*-s6.txt` |

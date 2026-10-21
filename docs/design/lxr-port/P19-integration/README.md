@@ -41,7 +41,7 @@ The README of the shared branch must be honest about three things. They are not 
 
 - The barrier is still our **Standard-ABI** barrier. It is not the Specialized-ABI barrier of the PR.
 - Allocation still uses our **notifying helpers**. It does not use the stock bump-pointer helpers.
-- **S7** (the pin list) is not done.
+- **S7** (the pin list) is **not in the original integrated branch** (`kkokosa-lxr-integrated`, `06d7cda94cb`). It is on the branch `kkokosa-lxr-s7-pin-list`, which adds the S7 commits on top of it (see "S7 addition" at the end of section 11).
 
 Section 11 gives the details and the cost.
 
@@ -377,9 +377,18 @@ From P17, and I did not re-run them here:
 |---|---|---|
 | **Specialized-ABI barrier** (`GetAssignRefFunctions`, assembly barrier with patchable slots) | Not done. The branch keeps our Standard-ABI barrier. The PR mechanism is present and works for Satori. | The JIT contract flag stays. Every store site is larger. ReadyToRun must be off. NativeAOT is not supported for LXR. |
 | **Bump-pointer allocation** (stock helpers, GC learns about objects at buffer refill) | Not done. The branch keeps the notifying helpers. | **Measured, from P1.4, not re-run:** the notifying helpers cost 14 percent (Workstation) and 24 percent (Server) of throughput in the churn scenario. |
-| **S7** (the pin list) | Not done. | |
+| **S7** (the pin list) | Not in `kkokosa-lxr-integrated`. Done on the branch `kkokosa-lxr-s7-pin-list` (see below). | |
 | **R2R** | Off for LXR (`DOTNET_ReadyToRun=0`). | Startup is slower, and precompiled framework code is not used. |
 | ARM64 | No LXR barrier. The PR ARM64 files for Satori are in the tree and not built here. | |
+
+### S7 addition
+
+The branch `kkokosa-lxr-s7-pin-list` holds the 22 commits of the integrated branch and the S7 commits (P17 S7a to S7d). **Code.** The S7 commits change only the collector module, the native and managed tests, and the documents. They do not change the runtime. **Measured:** the machine-code hash of the stock helpers is still `46cee8bd87fd6252f5265267148d0a34`.
+
+- The per-object tables `m_flags`, `m_trace_locks` and `m_trace_scans` are removed. Pinning uses a pin list per pause, one byte per Immix block, and pinned blocks for the pinned object heap.
+- **Measured** (heap 4x, two repetitions): native planes 212 to 160 MiB (binary trees) and 456 to 336 MiB (requests); peak RSS 185 to 136 MiB and 279 to 159 MiB; wall and GC time equal or lower; equal checksums.
+- A pin-heavy program fails now and then under CPU oversubscription. The integrated tip fails in the same way. It is not new and the cause is Open (P17 README, section "S7").
+- The details, the controls and the open items are in the P17 README, section "S7". Build and test commands of this report are unchanged.
 
 ## 12. Open items
 
@@ -399,20 +408,21 @@ I did not push, and I did not open a pull request. You decide.
 
 | File | Content |
 |---|---|
-| `kkokosa-lxr-integrated.bundle` | `git bundle` of `a485c819c17..kkokosa-lxr-integrated`. The receiver needs `dotnet/runtime` at `a485c819c17` (fetch `upstream/main`). |
+| `kkokosa-lxr-s7-pin-list.bundle` | `git bundle` of `a485c819c17..kkokosa-lxr-s7-pin-list` (the integrated branch plus the S7 commits). The receiver needs `dotnet/runtime` at `a485c819c17` (fetch `upstream/main`). |
 | `patches\*.patch` | `git format-patch` series of the same range (one file per commit). |
 | `SHA256SUMS.txt` | Hashes of the files above. |
+| `previous\` | The bundle, the patch series and the hashes of the integrated branch before S7. |
 
 Use of the bundle:
 
 ```bash
 git clone https://github.com/dotnet/runtime.git && cd runtime
 git checkout a485c819c17
-git fetch ../kkokosa-lxr-integrated.bundle kkokosa-lxr-integrated:kkokosa-lxr-integrated
-git switch kkokosa-lxr-integrated
+git fetch ../kkokosa-lxr-s7-pin-list.bundle kkokosa-lxr-s7-pin-list:kkokosa-lxr-s7-pin-list
+git switch kkokosa-lxr-s7-pin-list
 ```
 
-To publish it later: `git push <remote> kkokosa-lxr-integrated`. I advise a branch name that tells people that it is an experiment, for example `lxr-experiment`. The PR commits keep the authorship of `janvorli`. Say in the description that they come from PR #3316 and that they are not yet in `dotnet/runtime`.
+To publish it later: `git push <remote> kkokosa-lxr-s7-pin-list`. I advise a branch name that tells people that it is an experiment, for example `lxr-experiment`. The PR commits keep the authorship of `janvorli`. Say in the description that they come from PR #3316 and that they are not yet in `dotnet/runtime`.
 
 ## 14. Not checked
 

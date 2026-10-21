@@ -1,0 +1,2 @@
+timeout: the monitored command dumped core
+/root/s7/tree/docs/design/lxr-port/P17-pause-cost-and-reserve/run-one.sh: line 17:  1498 Segmentation fault      env -i PATH=/usr/bin:/bin DOTNET_TieredCompilation=0 DOTNET_ReadyToRun=0 DOTNET_gcConcurrent=1 DOTNET_GCHeapCount=2 DOTNET_gcServer=0 DOTNET_GCPath=$FRAME/libclrlxrgc.so DOTNET_LXRLegacyCapacity=1 DOTNET_LXREvacuateNursery=$NUR DOTNET_LXREvacuateMature=$MAT DOTNET_LXRImmixInitialMB=$(( H - los )) DOTNET_LXRLOSInitialMB=$los DOTNET_LXRManagedHeapHardLimitMB=$H "$@" timeout 400 $FRAME/corerun $PROG $W $S $O run 2>&1

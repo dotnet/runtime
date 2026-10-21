@@ -1,0 +1,20 @@
+control LXR_S7_NO_DEDUPE_CONTROL --s7-pins exit=1 :: FAIL: 8115/8120 S7 pin checks
+control LXR_S7_NO_CLEAR_CONTROL --s7-pins exit=1 :: FAIL: 8115/8120 S7 pin checks
+/root/s7/tree/docs/design/lxr-port/P17-pause-cost-and-reserve/controls-s7.sh: line 44: 12816 Segmentation fault      timeout 900 "$exe" $sel > "$OUT/ctl-$c$sel.log" 2>&1
+control LXR_S7_UNSAFE_ADD_CONTROL --s7-pins exit=139 :: no result line (abnormal end)
+control LXR_S7_IGNORE_PIN_CONTROL --s7-pins exit=1 :: FAIL: 8081/8117 S7 pin checks
+control LXR_S7_IGNORE_PIN_CONTROL --mature exit=0 :: PASS: 3324/3324 mature movement checks
+control LXR_S7_NO_BLOCK_BYTE_CONTROL --s7-pins exit=1 :: FAIL: 8090/8117 S7 pin checks
+control LXR_S7_NO_BLOCK_CLEAR_CONTROL --s7-pins exit=1 :: FAIL: 8111/8120 S7 pin checks
+control LXR_S7_NO_RETAIN_CONTROL --mature exit=1 :: FAIL: 2085/2088 mature movement checks
+control LXR_S7_NO_RETAIN_CONTROL --mature-retained-owner exit=1 :: FAIL: 21/22 retained mature owner checks
+control LXR_S7_PIN_INTERIOR_CONTROL --s7-pins exit=1 :: FAIL: 8114/8120 S7 pin checks
+control LXR_S7_POH_NORMAL_CONTROL --s7-pins exit=1 :: FAIL: 8114/8126 S7 pin checks
+control LXR_S7_POH_RECYCLE_CONTROL --s7-pins exit=1 :: FAIL: 8118/8120 S7 pin checks
+control LXR_S7_SCAN_MOVE_CONTROL --mature-reader exit=1 :: FAIL: 47/48 mature reader checks
+control LXR_S7_SCAN_MOVE_CONTROL --mature-completed-scan exit=0 :: PASS: 45/45 completed mature descriptor checks
+control LXR_S7_SCAN_MOVE_CONTROL --trace exit=0 :: PASS: 8361/8361 trace engine checks
+control LXR_S7_SCAN_LINK_CONTROL --trace exit=0 :: PASS: 8361/8361 trace engine checks
+control LXR_S7_SCAN_LINK_CONTROL --mature-reader exit=1 :: FAIL: 46/48 mature reader checks
+control LXR_S7_SCAN_LINK_CONTROL --mature-completed-scan exit=1 :: FAIL: 7/8 completed mature descriptor checks
+control LXR_S7_SCAN_LINK_CONTROL --lazy-large-release exit=0 :: PASS: 14/14 lazy large-object release checks
