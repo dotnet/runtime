@@ -2,7 +2,7 @@ parameters:
 - name: helixCacheShadow
   displayName: Validate Linux Helix result caching (shadow mode)
   type: boolean
-  default: true
+  default: false
 
 # Setting batch to true, triggers one build at a time.
 # if there is a push while a build in progress, it will wait,
