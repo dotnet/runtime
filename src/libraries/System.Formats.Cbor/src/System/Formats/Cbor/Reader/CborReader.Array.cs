@@ -16,6 +16,7 @@ namespace System.Formats.Cbor
         public int? ReadStartArray()
         {
             CborInitialByte header = PeekInitialByte(expectedType: CborMajorType.Array);
+            EnsureMaxDepthNotExceeded();
 
             if (header.AdditionalInfo == CborAdditionalInfo.IndefiniteLength)
             {
