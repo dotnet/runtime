@@ -1057,6 +1057,13 @@ void SatoriGC::DiagWalkHeapWithACHandling(walk_fn fn, void *context, int gen_num
 {
 }
 
+// Satori does not implement the Java interop bridge.
+uintptr_t* SatoriGC::GetPendingBridgeHandles(size_t* count)
+{
+    *count = 0;
+    return nullptr;
+}
+
 void SatoriGC::NullBridgeObjectsWeakRefs(size_t length, void* unreachableObjectHandles)
 {
 #ifdef FEATURE_JAVAMARSHAL

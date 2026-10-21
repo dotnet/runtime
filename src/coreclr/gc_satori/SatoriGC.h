@@ -172,7 +172,9 @@ public:
     // Inherited via IGCHeapInternal
     virtual size_t GetLOHThreshold() override;
     virtual void DiagWalkHeapWithACHandling(walk_fn fn, void *context, int gen_number, bool walk_large_object_heap_p) override;
-    virtual void NullBridgeObjectsWeakRefs(size_t length, void* unreachableObjectHandles) override; 
+    virtual void NullBridgeObjectsWeakRefs(size_t length, void* unreachableObjectHandles) override;
+
+    virtual uintptr_t* GetPendingBridgeHandles(size_t* count) override; 
 
     virtual void GetFastGCFunctions(FastGCFunctions* functions) override;
 
