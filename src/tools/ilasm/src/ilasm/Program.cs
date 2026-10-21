@@ -250,15 +250,8 @@ internal sealed class Program
             bool hasErrors = false;
             foreach (var diagnostic in diagnostics)
             {
-                if (diagnostic.Severity == DiagnosticSeverity.Error)
-                {
-                    hasErrors = true;
-                    Console.Error.WriteLine($"Error: {diagnostic.Location}: {diagnostic.Message}");
-                }
-                else if (diagnostic.Severity == DiagnosticSeverity.Warning && !errorTolerant)
-                {
-                    Console.WriteLine($"Warning: {diagnostic.Location}: {diagnostic.Message}");
-                }
+                hasErrors |= diagnostic.Severity == DiagnosticSeverity.Error;
+                WriteDiagnostic(diagnostic, errorTolerant, Console.Out, Console.Error);
             }
 
             // In error-tolerant mode, continue even with errors
@@ -316,6 +309,21 @@ internal sealed class Program
         }
 
         return exitCode;
+    }
+
+    internal static void WriteDiagnostic(Diagnostic diagnostic, bool errorTolerant, TextWriter output, TextWriter error)
+    {
+        if (diagnostic.Severity == DiagnosticSeverity.Error)
+        {
+            // MSBuild treats error-prefixed output as a failure even when -ERR returns zero.
+            TextWriter writer = errorTolerant ? output : error;
+            string severity = errorTolerant ? "Warning" : "Error";
+            writer.WriteLine($"{severity}: {diagnostic.Location}: {diagnostic.Message}");
+        }
+        else if (diagnostic.Severity == DiagnosticSeverity.Warning && !errorTolerant)
+        {
+            output.WriteLine($"Warning: {diagnostic.Location}: {diagnostic.Message}");
+        }
     }
 
     private T Get<T>(Argument<T> argument) => _result.GetValue(argument)!;

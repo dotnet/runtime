@@ -18,6 +18,7 @@ public record Diagnostic(string Id, DiagnosticSeverity Severity, string Message,
 /// </summary>
 public static class DiagnosticIds
 {
+    public const string Parser = "ILA0000";
     public const string LiteralOutOfRange = "ILA0001";
     public const string UnsealedValueType = "ILA0002";
     public const string ThisOutsideClass = "ILA0003";
