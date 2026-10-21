@@ -166,7 +166,7 @@ bool VMToOSInterface::CreateDoubleMemoryMapper(void** pHandle, size_t *pMaxExecu
         }
         if (!canDoubleMap)
         {
-            minipal_log_print_error("The double mapping backing file cannot be made executable (errno %d); disabling double mapping.\n", probeErrno);
+            minipal_log_print_verbose("The double mapping backing file cannot be made executable (errno %d); disabling double mapping.\n", probeErrno);
             close(fd);
             return false;
         }
