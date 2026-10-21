@@ -1903,6 +1903,25 @@ internal static partial class Program
             case "pooled-reregister":
                 VerifyPooledReregistration(metric);
                 break;
+            case "pin-handles-churn":
+                VerifyPinnedHandleChurn();
+                break;
+            case "fixed-pressure":
+                VerifyFixedUnderPressure();
+                break;
+            case "poh-churn":
+                VerifyPinnedObjectHeapChurn();
+                break;
+            case "pin-finalizers-weak":
+                VerifyPinnedFinalizersAndWeak();
+                break;
+            case "pin-concurrent-trace":
+                if (collect is null)
+                {
+                    throw new InvalidOperationException("The pin trace scenario requires LXR collection controls.");
+                }
+                VerifyPinsDuringConcurrentTrace(collect);
+                break;
             default:
                 throw new ArgumentException("Unknown lifecycle scenario.", nameof(scenario));
         }

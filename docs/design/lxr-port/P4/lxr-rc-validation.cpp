@@ -133,6 +133,18 @@ namespace
         Object* pinCandidate = nullptr;
         bool pinFirst = false;
         Object* interior = nullptr;
+        // S7. Pins that the capture adds besides `pinned`; the interior root as a pin; several threads that add
+        // every object of pinThreadObjects twice (two different shards).
+        std::vector<Object*> extraPins;
+        bool pinInterior = false;
+        size_t pinThreads = 0;
+        std::vector<Object*> pinThreadObjects;
+        // S7. What the pause knows while it runs (the relocation callback runs inside the pause).
+        bool probe = false;
+        Object* probeNeighbour = nullptr;
+        size_t probeBlocks = SIZE_MAX;
+        bool probePinned = false;
+        bool probeNeighbourPinned = true;
     };
 
     LxrRcResult CaptureMoving(LxrReferenceCounting* engine, void* context)
@@ -164,17 +176,75 @@ namespace
                 return result;
             }
         }
+        // S7: the pin list replaces the pin callback. A pause pins the object that the test names, in every capture.
+        if (roots->pinned != nullptr)
+        {
+            LxrRcResult result = engine->AddPinnedRoot(roots->pinned);
+            if (result != LxrRcResult::Success)
+            {
+                return result;
+            }
+        }
+        for (Object* extra : roots->extraPins)
+        {
+            LxrRcResult result = engine->AddPinnedRoot(extra);
+            if (result != LxrRcResult::Success)
+            {
+                return result;
+            }
+        }
+        if (roots->pinThreads != 0)
+        {
+            std::atomic<int> failures{0};
+            std::vector<std::thread> threads;
+            for (size_t thread = 0; thread < roots->pinThreads; thread++)
+            {
+                threads.emplace_back([&, thread]()
+                {
+                    for (size_t index = 0; index < roots->pinThreadObjects.size(); index++)
+                    {
+                        // Each object is added by two threads, so the merge has to remove duplicates.
+                        if ((index + thread) % roots->pinThreads < 2)
+                        {
+                            if (engine->AddPinnedRoot(roots->pinThreadObjects[index], false, thread) !=
+                                LxrRcResult::Success)
+                            {
+                                failures++;
+                            }
+                        }
+                    }
+                });
+            }
+            for (std::thread& thread : threads)
+            {
+                thread.join();
+            }
+            if (failures.load() != 0)
+            {
+                return LxrRcResult::InvariantViolation;
+            }
+        }
+        if (roots->interior != nullptr && roots->pinInterior)
+        {
+            LxrRcResult result = engine->AddPinnedRoot(roots->interior, true);
+            if (result != LxrRcResult::Success)
+            {
+                return result;
+            }
+        }
         return roots->interior == nullptr ? LxrRcResult::Success : engine->AddRoot(roots->interior, true);
-    }
-
-    bool MovingPinned(Object* object, void* context)
-    {
-        return object == static_cast<MovingRoots*>(context)->pinned;
     }
 
     LxrRcResult RelocateMoving(LxrReferenceCounting* engine, void* context)
     {
         MovingRoots* roots = static_cast<MovingRoots*>(context);
+        if (roots->probe)
+        {
+            roots->probeBlocks = engine->CountPausePinnedBlocks();
+            roots->probePinned = roots->pinned != nullptr && engine->IsPinnedForPause(roots->pinned);
+            roots->probeNeighbourPinned = roots->probeNeighbour != nullptr &&
+                engine->IsPinnedForPause(roots->probeNeighbour);
+        }
         for (Object*& object : roots->objects)
         {
             LxrRcResult result = engine->RelocateRoot(&object, false, object == roots->pinned);
@@ -201,7 +271,6 @@ namespace
         LxrRcObjectModel model{};
         model.context = roots;
         model.finishRelocation = RelocateMoving;
-        model.isPinned = MovingPinned;
         return Check(engine.Initialize(configuration, adapter, &model) == LxrRcResult::Success,
             "moving engine initializes") &&
             Check(engine.AttachMutator(identity, mutator) == LxrRcResult::Success,
@@ -223,7 +292,6 @@ namespace
         LxrRcObjectModel model{};
         model.context = &roots;
         model.finishRelocation = RelocateMoving;
-        model.isPinned = MovingPinned;
         if (!Check(engine.Initialize(configuration, adapter, &model) == LxrRcResult::Success &&
                 engine.AttachMutator(&identity, &mutator) == LxrRcResult::Success,
                 "mature engine uses default mutator recycling"))
@@ -646,7 +714,6 @@ namespace
         LxrRcObjectModel model{};
         model.context = &roots;
         model.finishRelocation = RelocateMoving;
-        model.isPinned = MovingPinned;
         if (!Check(engine.Initialize(configuration, adapter, &model) == LxrRcResult::Success &&
                 engine.AttachMutator(&identity, &mutator) == LxrRcResult::Success,
                 "retained mature owner engine initializes"))
@@ -784,6 +851,8 @@ namespace
                 engine.GetMatureScanReceipt(2) == reinterpret_cast<uintptr_t>(movedFields) &&
                 engine.GetMatureScanReceipt(3) != 0,
                 "an actual user-owned resumable descriptor rebases its range before source reuse");
+        Check(engine.GetMatureScanReceipt(4) == 1 && engine.GetMatureScanReceipt(5) == 0,
+            "the index of split scans holds the scan under the address of the copy and no longer under the source");
         Check(engine.GetPendingReaderCompletions() == 1 &&
                 engine.GetObjectExtent(carrier) == 0 && engine.GetObjectExtent(source) == 0 &&
                 roots.interior == reinterpret_cast<Object*>(reinterpret_cast<uint8_t*>(moved) + 22000),
@@ -2122,8 +2191,9 @@ namespace
 
     void ValidateGrowthFailure()
     {
-        // Five object planes, four payload streams, fifteen metadata planes, then the managed heap.
-        constexpr int64_t CommitCalls = 25;
+        // Three object planes (S7 removed the two trace tables), four payload streams, fifteen metadata planes, then
+        // the managed heap.
+        constexpr int64_t CommitCalls = 23;
         for (int64_t after = 0; after <= CommitCalls; after++)
         {
             LxrReferenceCounting engine;
@@ -4526,7 +4596,6 @@ namespace
         LxrRcObjectModel model{};
         model.context = roots;
         model.finishRelocation = RelocateMoving;
-        model.isPinned = MovingPinned;
         model.canAdmitRange = OvershootCanAdmit;
         return Check(engine.Initialize(configuration, adapter, &model) == LxrRcResult::Success,
                 "overshoot engine initializes") &&
@@ -5727,10 +5796,401 @@ namespace
         ValidateS6Relocation();
         ValidateS6TouchedList();
     }
+
+    // ---- P17 S7: the pin list, the pause bit of a block and the pinned blocks. The collector keeps no pin flag
+    // for each object any more. ----
+
+    Object* AllocatePinnedObject(LxrReferenceCounting& engine, LxrRcMutator* mutator, Type& type)
+    {
+        Object* object = nullptr;
+        if (!Check(engine.Allocate(mutator, type.table->GetBaseSize(), &object, true) == LxrRcResult::Success,
+                "pinned-object-heap allocation succeeds"))
+        {
+            return nullptr;
+        }
+        object->RawSetMethodTable(type.table);
+        uint32_t flags = static_cast<uint32_t>(AllocationCompleteFlags::PinnedObjectHeap);
+        if (type.table->ContainsGCPointers())
+        {
+            flags |= static_cast<uint32_t>(AllocationCompleteFlags::ContainsReferences);
+        }
+        if (!Check(engine.CompleteAllocation(object, type.table->GetBaseSize(),
+                static_cast<AllocationCompleteFlags>(flags)) == LxrRcResult::Success,
+                "pinned-object-heap allocation completes"))
+        {
+            return nullptr;
+        }
+        return object;
+    }
+
+    void ValidateS7PinListUnit()
+    {
+        LxrPinList list;
+        Check(list.IsEmpty() && list.Seal() == 0 && list.Size() == 0 && !list.Contains(0x1000),
+            "an empty pin list seals to no entry");
+        list.Clear();
+        const uintptr_t values[] = {0x4000, 0x1000, 0x1000, 0x2008, 0x4000, 0x3010};
+        for (size_t index = 0; index < 6; index++)
+        {
+            list.Add(index % 3, values[index]);
+        }
+        Check(list.GetAdded() == 6 && !list.IsEmpty(), "every append is counted, duplicates included");
+        size_t unique = list.Seal();
+        Check(unique == 4 && list.Size() == 4 && list[0] == 0x1000 && list[1] == 0x2008 && list[2] == 0x3010 &&
+                list[3] == 0x4000 && list.IsSealed(),
+            "the merge of the shards is sorted and has no duplicate");
+        Check(list.Contains(0x2008) && list.Contains(0x1000) && !list.Contains(0x2000) && !list.Contains(0x5000),
+            "the lookup finds exactly the entries");
+        list.Clear();
+        Check(list.IsEmpty() && list.Size() == 0 && !list.Contains(0x1000) && !list.IsSealed() &&
+                list.GetAdded() == 0,
+            "clear empties the list at the end of the pause");
+        list.Add(2, 0x8000);
+        Check(list.Seal() == 1 && list.Contains(0x8000) && !list.Contains(0x1000),
+            "the list works again after clear and keeps nothing of the earlier pause");
+        list.Clear();
+    }
+
+    void ValidateS7PinListConcurrent()
+    {
+        constexpr size_t Threads = 8;
+        constexpr size_t PerThread = 20000;
+        LxrPinList list;
+        std::vector<std::thread> threads;
+        for (size_t thread = 0; thread < Threads; thread++)
+        {
+            threads.emplace_back([&, thread]()
+            {
+                for (size_t index = 0; index < PerThread; index++)
+                {
+                    list.Add(thread, (thread * PerThread + index + 1) * 8);
+                }
+                for (size_t index = 0; index < 100; index++)
+                {
+                    list.Add(thread, (index + 1) * 8);
+                }
+            });
+        }
+        for (std::thread& thread : threads)
+        {
+            thread.join();
+        }
+        size_t unique = list.Seal();
+        bool sorted = true;
+        for (size_t index = 1; index < list.Size(); index++)
+        {
+            sorted = sorted && list[index - 1] < list[index];
+        }
+        size_t missing = 0;
+        for (size_t value = 1; value <= Threads * PerThread; value += 7)
+        {
+            missing += list.Contains(value * 8) ? 0 : 1;
+        }
+        Check(list.GetAdded() == Threads * (PerThread + 100) && unique == Threads * PerThread && sorted && missing == 0,
+            "eight workers add at the same time with their own shards: no entry is lost, the merge has no duplicate");
+        list.Clear();
+    }
+
+    void ValidateS7NurseryPin(uint8_t bits)
+    {
+        LxrReferenceCounting engine;
+        LxrRcMutator* mutator = nullptr;
+        MovingRoots roots;
+        int identity;
+        if (!InitializeMoving(engine, &roots, 16, &mutator, &identity, bits))
+        {
+            return;
+        }
+        Type small(64, 0);
+        Object* pinned = Allocate(engine, mutator, small);
+        Object* neighbour = Allocate(engine, mutator, small);
+        Object* other = Allocate(engine, mutator, small);
+        if (pinned == nullptr || neighbour == nullptr || other == nullptr)
+        {
+            return;
+        }
+        size_t block = BlockOfObject(engine, pinned);
+        Check(BlockOfObject(engine, neighbour) == block && BlockOfObject(engine, other) == block,
+            "the pinned object and its neighbours lie in one nursery block");
+        // The pause promotes a block in place when it reaches a pinned object, and objects that it reaches later in
+        // that block stay. The root order puts the pinned object last, so the neighbours are reached first.
+        roots.objects = {neighbour, other, pinned};
+        roots.pinned = pinned;
+        roots.probe = true;
+        roots.probeNeighbour = neighbour;
+        Check(engine.CountPausePinnedBlocks() == 0, "no block has the pin bit before the pause");
+        Check(engine.Collect(CaptureMoving, &roots, Timeout) == LxrRcResult::Success &&
+                engine.Drain(Timeout) == LxrRcResult::Success,
+            "a pause with a pinned root completes");
+        Check(roots.probeBlocks == 1 && roots.probePinned && !roots.probeNeighbourPinned,
+            "inside the pause exactly one block has the pin bit; the list holds the pinned object and not its neighbour");
+        Check(roots.objects[2] == pinned, "the pinned object in a nursery block is not copied");
+        Check(roots.objects[0] != neighbour && roots.objects[1] != other,
+            "the unpinned neighbours in the block of the pin are copied");
+        LxrNurseryMetrics metrics = engine.GetNurseryMetrics();
+        Check(metrics.copiedObjects == 2 && metrics.inPlacePinnedBytes == 64,
+            "the pause counts the pinned object as in-place and the neighbours as copied");
+        Check(BlockStateOf(engine, block) != ImmixBlockState::Unallocated && engine.IsObjectStart(pinned),
+            "the block of the pin is promoted in place");
+        Check(engine.CountPausePinnedBlocks() == 0 && !engine.IsPinnedForPause(pinned) &&
+                engine.GetPinnedRootCount() == 1,
+            "the pin bit is clear at the end of the pause, and the pause counted one pinned root");
+        // A pause without a pin sets no bit and copies what is young.
+        Object* young = Allocate(engine, mutator, small);
+        roots.pinned = nullptr;
+        roots.probeNeighbour = nullptr;
+        roots.objects = {roots.objects[2], young};
+        Check(engine.Collect(CaptureMoving, &roots, Timeout) == LxrRcResult::Success &&
+                engine.Drain(Timeout) == LxrRcResult::Success && roots.probeBlocks == 0 && roots.objects[1] != young &&
+                engine.GetPinnedRootCount() == 0,
+            "a pause without a pinned root sets no pin bit and copies the young object");
+        Check(engine.DetachMutator(mutator) == LxrRcResult::Success, "S7 nursery mutator detaches");
+    }
+
+    void ValidateS7InteriorPin(uint8_t bits)
+    {
+        LxrReferenceCounting engine;
+        LxrRcMutator* mutator = nullptr;
+        MovingRoots roots;
+        int identity;
+        if (!InitializeMoving(engine, &roots, 16, &mutator, &identity, bits))
+        {
+            return;
+        }
+        Type body(512, 0);
+        Object* pinned = Allocate(engine, mutator, body);
+        Object* neighbour = Allocate(engine, mutator, body);
+        if (pinned == nullptr || neighbour == nullptr)
+        {
+            return;
+        }
+        roots.objects = {neighbour};
+        roots.interior = reinterpret_cast<Object*>(reinterpret_cast<uint8_t*>(pinned) + 200);
+        roots.pinInterior = true;
+        Object* interior = roots.interior;
+        Check(engine.Collect(CaptureMoving, &roots, Timeout) == LxrRcResult::Success &&
+                engine.Drain(Timeout) == LxrRcResult::Success,
+            "a pause with an interior pinned root completes");
+        Check(roots.interior == interior && engine.IsObjectStart(pinned),
+            "an interior pointer into a pinned object keeps the whole object where it is");
+        Check(roots.objects[0] != neighbour && engine.GetNurseryMetrics().inPlacePinnedBytes == 512,
+            "the object that the interior pointer names is the pinned one, and the neighbour is copied");
+        Check(engine.DetachMutator(mutator) == LxrRcResult::Success, "S7 interior mutator detaches");
+    }
+
+    void ValidateS7ConcurrentPins(uint8_t bits)
+    {
+        LxrReferenceCounting engine;
+        LxrRcMutator* mutator = nullptr;
+        MovingRoots roots;
+        int identity;
+        if (!InitializeMoving(engine, &roots, 32, &mutator, &identity, bits))
+        {
+            return;
+        }
+        Type body(1000, 0);
+        std::vector<Object*> before;
+        for (size_t index = 0; index < 300; index++)
+        {
+            Object* object = Allocate(engine, mutator, body);
+            if (object == nullptr)
+            {
+                return;
+            }
+            before.push_back(object);
+        }
+        // Movable objects first in the root order: a pinned object promotes its block in place, so objects that the
+        // pause reaches later in the same block stay.
+        roots.objects.assign(before.begin() + 200, before.end());
+        roots.objects.insert(roots.objects.end(), before.begin(), before.begin() + 200);
+        roots.pinThreadObjects.assign(before.begin(), before.begin() + 200);
+        roots.pinThreads = 4;
+        Check(engine.Collect(CaptureMoving, &roots, Timeout) == LxrRcResult::Success &&
+                engine.Drain(Timeout) == LxrRcResult::Success,
+            "a pause with pins from four workers completes");
+        size_t stayed = 0;
+        size_t moved = 0;
+        for (size_t index = 0; index < before.size(); index++)
+        {
+            moved += index < 100 && roots.objects[index] != before[200 + index];
+            stayed += index >= 100 && roots.objects[index] == before[index - 100];
+        }
+        Check(stayed == 200 && moved == 100,
+            "every object that a worker pinned stays, and every other object moves");
+        Check(engine.GetPinnedRootCount() == 200 && engine.CountPausePinnedBlocks() == 0,
+            "two workers added each pin, the list holds it once, and no bit is left");
+        Check(engine.DetachMutator(mutator) == LxrRcResult::Success, "S7 concurrent mutator detaches");
+    }
+
+    // Objects of the pinned object heap lie in pinned blocks only, and no pause moves them.
+    void ValidateS7PinnedBlocks(uint8_t bits)
+    {
+        LxrReferenceCounting engine;
+        LxrRcMutator* mutator = nullptr;
+        MovingRoots roots;
+        int identity;
+        LxrRcConfiguration configuration{
+            16 * ImmixBlockGeometry::BlockBytes, 2 * LxrLargeObjectSpace::MinimumObjectBytes, 4, 4096, 4, bits,
+        };
+        configuration.evacuateNursery = true;
+        configuration.evacuateMature = true;
+        LxrPauseRuntimeAdapter adapter{Suspend, Resume, nullptr, false};
+        LxrRcObjectModel model{};
+        model.context = &roots;
+        model.finishRelocation = RelocateMoving;
+        if (!Check(engine.Initialize(configuration, adapter, &model) == LxrRcResult::Success &&
+                engine.AttachMutator(&identity, &mutator) == LxrRcResult::Success,
+                "S7 pinned-block engine initializes"))
+        {
+            return;
+        }
+        Type body(1024, 0);
+        std::vector<Object*> pinnedObjects;
+        std::vector<Object*> normal;
+        for (size_t index = 0; index < 4; index++)
+        {
+            pinnedObjects.push_back(AllocatePinnedObject(engine, mutator, body));
+            normal.push_back(Allocate(engine, mutator, body));
+        }
+        for (Object* object : pinnedObjects)
+        {
+            if (object == nullptr)
+            {
+                return;
+            }
+        }
+        size_t pinnedInPinnedBlock = 0;
+        size_t normalInNormalBlock = 0;
+        size_t shared = 0;
+        for (size_t index = 0; index < 4; index++)
+        {
+            pinnedInPinnedBlock += engine.IsPinnedBlock(StartOf(pinnedObjects[index]));
+            normalInNormalBlock += !engine.IsPinnedBlock(StartOf(normal[index]));
+            shared += BlockOfObject(engine, pinnedObjects[index]) == BlockOfObject(engine, normal[index]);
+        }
+        Check(pinnedInPinnedBlock == 4 && normalInNormalBlock == 4 && shared == 0,
+            "pinned-object-heap objects lie in pinned blocks only, and no other object lies in a pinned block");
+        size_t pinnedBlock = BlockOfObject(engine, pinnedObjects[0]);
+        roots.objects = pinnedObjects;
+        roots.objects.insert(roots.objects.end(), normal.begin(), normal.end());
+        Check(engine.Collect(CaptureMoving, &roots, Timeout) == LxrRcResult::Success &&
+                engine.Drain(Timeout) == LxrRcResult::Success,
+            "a young pause completes");
+        size_t stayed = 0;
+        size_t moved = 0;
+        for (size_t index = 0; index < 4; index++)
+        {
+            stayed += roots.objects[index] == pinnedObjects[index];
+            moved += roots.objects[4 + index] != normal[index];
+        }
+        Check(stayed == 4 && moved == 4 && engine.GetNurseryMetrics().inPlacePinnedBytes == 4 * 1024,
+            "the young pause copies no pinned-object-heap object, and it copies the other young objects");
+        Check(engine.CollectFull(CaptureMoving, &roots, Timeout) == LxrRcResult::Success &&
+                engine.Drain(Timeout) == LxrRcResult::Success,
+            "a full pause with mature evacuation completes");
+        stayed = 0;
+        for (size_t index = 0; index < 4; index++)
+        {
+            stayed += roots.objects[index] == pinnedObjects[index];
+        }
+        Check(stayed == 4 && engine.IsPinnedBlock(StartOf(pinnedObjects[0])),
+            "the full pause does not evacuate a pinned block, although it is almost empty");
+        // The objects die. The pinned block is released like any block.
+        roots.objects.clear();
+        Check(Epoch(engine, roots.objects) && Epoch(engine, roots.objects) && Epoch(engine, roots.objects),
+            "the pauses after the last use complete");
+        Check(BlockStateOf(engine, pinnedBlock) == ImmixBlockState::Unallocated,
+            "a pinned block with no live object is released");
+        // A block that was pinned and is free again goes to ordinary allocation, and then it is an ordinary block.
+        Type page(20000, 0);
+        bool reused = false;
+        for (size_t index = 0; index < 64 && !reused; index++)
+        {
+            Object* object = Allocate(engine, mutator, page);
+            if (object == nullptr)
+            {
+                break;
+            }
+            if (BlockOfObject(engine, object) == pinnedBlock)
+            {
+                reused = true;
+                Check(!engine.IsPinnedBlock(StartOf(object)),
+                    "a released pinned block is an ordinary block when an ordinary allocation takes it");
+            }
+        }
+        Check(reused, "the released pinned block is taken again by ordinary allocation");
+        Check(engine.DetachMutator(mutator) == LxrRcResult::Success, "S7 pinned-block mutator detaches");
+    }
+
+    // The holes of a pinned block go to pinned allocation only.
+    void ValidateS7PinnedRecycling()
+    {
+        LxrReferenceCounting engine;
+        LxrRcMutator* mutator = nullptr;
+        int identity;
+        if (!Initialize(engine, 8, &mutator, &identity))
+        {
+            return;
+        }
+        Type body(2048, 0);
+        Object* first = AllocatePinnedObject(engine, mutator, body);
+        Object* second = AllocatePinnedObject(engine, mutator, body);
+        Object* third = AllocatePinnedObject(engine, mutator, body);
+        if (first == nullptr || second == nullptr || third == nullptr)
+        {
+            return;
+        }
+        size_t block = BlockOfObject(engine, first);
+        std::vector<Object*> roots{first, third};
+        Check(BlockOfObject(engine, second) == block && BlockOfObject(engine, third) == block,
+            "three pinned objects share one pinned block");
+        Check(Epoch(engine, roots), "the pause promotes the pinned block in place");
+        uint8_t lines = 0;
+        Check(BlockStateOf(engine, block, &lines) == ImmixBlockState::Reusable && lines < 64 &&
+                engine.IsPinnedBlock(StartOf(first)),
+            "the lazy sweep makes the pinned block Reusable and it stays pinned");
+        Type small(24, 0);
+        size_t inPinnedBlock = 0;
+        for (size_t index = 0; index < 3000; index++)
+        {
+            Object* object = Allocate(engine, mutator, small);
+            if (object == nullptr)
+            {
+                break;
+            }
+            inPinnedBlock += BlockOfObject(engine, object) == block;
+        }
+        Check(inPinnedBlock == 0, "ordinary allocation never takes the holes of a pinned block");
+        Object* again = AllocatePinnedObject(engine, mutator, body);
+        Check(again != nullptr && BlockOfObject(engine, again) == block,
+            "pinned allocation reuses the holes of a pinned block");
+        Check(engine.DetachMutator(mutator) == LxrRcResult::Success, "S7 recycling mutator detaches");
+    }
+
+    void ValidateS7Pins()
+    {
+        ValidateS7PinListUnit();
+        ValidateS7PinListConcurrent();
+        for (uint8_t bits : {uint8_t{2}, uint8_t{4}, uint8_t{8}})
+        {
+            ValidateS7NurseryPin(bits);
+            ValidateS7InteriorPin(bits);
+            ValidateS7ConcurrentPins(bits);
+            ValidateS7PinnedBlocks(bits);
+        }
+        ValidateS7PinnedRecycling();
+    }
 }
 
 int main(int argc, char** argv)
 {
+    if (argc == 2 && strcmp(argv[1], "--s7-pins") == 0)
+    {
+        ValidateS7Pins();
+        std::printf("%s: %d/%d S7 pin checks\n",
+            Failures == 0 ? "PASS" : "FAIL", Checks - Failures, Checks);
+        return Failures == 0 ? 0 : 1;
+    }
     if (argc == 2 && strcmp(argv[1], "--s6-registry") == 0)
     {
         ValidateS6Registry();
