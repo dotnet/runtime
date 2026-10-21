@@ -521,6 +521,16 @@ private:
     void* m_capture_context;
     LxrSideMetadataLayout m_layout;
     SideMetadataManager m_metadata;
+    // Inline fast-path accessors of the hot metadata kinds. They are built once after m_metadata is
+    // initialized. Use them only for addresses of objects, lines and blocks that the engine admitted
+    // (see SideMetadataAccessor); untrusted addresses go through m_metadata.
+    SideMetadataAccessor m_rc_metadata;
+    SideMetadataAccessor m_mark_metadata;
+    SideMetadataAccessor m_unlogged_metadata;
+    SideMetadataAccessor m_valid_metadata;
+    SideMetadataAccessor m_defrag_metadata;
+    SideMetadataAccessor m_line_reuse_metadata;
+    SideMetadataAccessor m_page_reuse_metadata;
     ImmixBlockManager m_blocks;
     ReferenceCountTable m_counts;
     ImmixAllocationManager m_allocation;

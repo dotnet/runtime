@@ -685,6 +685,13 @@ LxrRcResult LxrReferenceCounting::Initialize(
         m_blocks.Initialize(&m_metadata) != SideMetadataResult::Success ||
         m_blocks.RegisterBlockRange(arena, m_initial_immix) != SideMetadataResult::Success ||
         m_counts.Initialize(&m_metadata, &m_layout) != SideMetadataResult::Success ||
+        !(m_rc_metadata = m_metadata.GetAccessor(LxrSideMetadataKind::ReferenceCount)).IsValid() ||
+        !(m_mark_metadata = m_metadata.GetAccessor(LxrSideMetadataKind::ObjectMark)).IsValid() ||
+        !(m_unlogged_metadata = m_metadata.GetAccessor(LxrSideMetadataKind::FieldUnlogged)).IsValid() ||
+        !(m_valid_metadata = m_metadata.GetAccessor(LxrSideMetadataKind::ValidObject)).IsValid() ||
+        !(m_defrag_metadata = m_metadata.GetAccessor(LxrSideMetadataKind::BlockDefrag)).IsValid() ||
+        !(m_line_reuse_metadata = m_metadata.GetAccessor(LxrSideMetadataKind::LineReuse)).IsValid() ||
+        !(m_page_reuse_metadata = m_metadata.GetAccessor(LxrSideMetadataKind::LargeObjectPageReuse)).IsValid() ||
         m_allocation.Initialize(&m_metadata, &m_blocks, arena, m_initial_immix,
             configuration.minimumReuseLines) !=
             SideMetadataResult::Success ||
@@ -2488,14 +2495,7 @@ bool LxrReferenceCounting::IsMatureCandidate(uintptr_t address)
     {
         return false;
     }
-    uintptr_t defrag = 0;
-    if (m_metadata.Load(LxrSideMetadataKind::BlockDefrag, address,
-            SideMetadataMemoryOrder::SequentiallyConsistent, &defrag) != SideMetadataResult::Success)
-    {
-        Fail(LxrRcResult::MetadataFailure);
-        return false;
-    }
-    return defrag == UINT8_MAX;
+    return m_defrag_metadata.Load(address, SideMetadataMemoryOrder::SequentiallyConsistent) == UINT8_MAX;
 }
 
 LxrRcResult LxrReferenceCounting::SelectMatureCandidates()
@@ -2524,7 +2524,7 @@ LxrRcResult LxrReferenceCounting::SelectMatureCandidates()
         uintptr_t block = GetReservationStart() + index * ImmixBlockGeometry::BlockBytes;
         ImmixBlockState state;
         uint8_t unavailable;
-        result = FromMetadata(m_blocks.GetState(block, &state, &unavailable));
+        result = FromMetadata(m_blocks.GetStateFast(block, &state, &unavailable));
         if (result != LxrRcResult::Success)
         {
             break;
@@ -2532,7 +2532,7 @@ LxrRcResult LxrReferenceCounting::SelectMatureCandidates()
         if (state == ImmixBlockState::Unallocated)
         {
             bool nursery;
-            result = FromMetadata(m_blocks.IsNursery(block, &nursery));
+            result = FromMetadata(m_blocks.IsNurseryFast(block, &nursery));
             if (result != LxrRcResult::Success)
             {
                 break;
@@ -2688,14 +2688,8 @@ LxrRcResult LxrReferenceCounting::RememberMatureSlot(Object** slot, Object* targ
     {
         return Fail(LxrRcResult::UnsupportedLifetime);
     }
-    uintptr_t reuse;
-    LxrRcResult result = FromMetadata(m_metadata.Load(
-        IsImmix(address) ? LxrSideMetadataKind::LineReuse : LxrSideMetadataKind::LargeObjectPageReuse,
-        address, SideMetadataMemoryOrder::SequentiallyConsistent, &reuse));
-    if (result != LxrRcResult::Success)
-    {
-        return result;
-    }
+    uintptr_t reuse = (IsImmix(address) ? m_line_reuse_metadata : m_page_reuse_metadata).Load(
+        address, SideMetadataMemoryOrder::SequentiallyConsistent);
     for (;;)
     {
         RememberedChunk* head = m_remembered_chunks.load(std::memory_order_acquire);
@@ -2751,14 +2745,9 @@ LxrRcResult LxrReferenceCounting::ReplayMatureRememberedSlots()
             }
             RememberedChunk::Entry entry = chunk->entries[index];
             uintptr_t address = reinterpret_cast<uintptr_t>(entry.slot);
-            uintptr_t reuse;
-            LxrRcResult result = FromMetadata(m_metadata.Load(
-                IsImmix(address) ? LxrSideMetadataKind::LineReuse : LxrSideMetadataKind::LargeObjectPageReuse,
-                address, SideMetadataMemoryOrder::SequentiallyConsistent, &reuse));
-            if (result != LxrRcResult::Success)
-            {
-                return result;
-            }
+            uintptr_t reuse = (IsImmix(address) ? m_line_reuse_metadata : m_page_reuse_metadata).Load(
+                address, SideMetadataMemoryOrder::SequentiallyConsistent);
+            LxrRcResult result = LxrRcResult::Success;
             if (reuse != entry.reuse)
             {
 #if !defined(LXR_SIDE_METADATA_TEST_PLATFORM) || !defined(LXR_REMSET_STALE_CONTROL)
@@ -2770,7 +2759,7 @@ LxrRcResult LxrReferenceCounting::ReplayMatureRememberedSlots()
             {
                 ImmixBlockState state;
                 uint8_t unavailable;
-                result = FromMetadata(m_blocks.GetState(address & ~ImmixBlockGeometry::BlockMask,
+                result = FromMetadata(m_blocks.GetStateFast(address & ~ImmixBlockGeometry::BlockMask,
                     &state, &unavailable));
                 if (result != LxrRcResult::Success)
                 {
@@ -2799,11 +2788,10 @@ LxrRcResult LxrReferenceCounting::ReplayMatureRememberedSlots()
             }
             uintptr_t ownerCount = 0;
             uintptr_t ownerMark = 0;
-            result = FromMetadata(m_counts.Load(Start(owner), &ownerCount));
+            result = FromMetadata(m_counts.LoadFast(Start(owner), &ownerCount));
             if (result == LxrRcResult::Success)
             {
-                result = FromMetadata(m_metadata.Load(LxrSideMetadataKind::ObjectMark, Start(owner),
-                    SideMetadataMemoryOrder::SequentiallyConsistent, &ownerMark));
+                ownerMark = m_mark_metadata.Load(Start(owner), SideMetadataMemoryOrder::SequentiallyConsistent);
             }
             if (result != LxrRcResult::Success)
             {
@@ -2936,9 +2924,9 @@ LxrRcResult LxrReferenceCounting::TryCopyMature(Object** reference)
     {
         return LxrRcResult::Success;
     }
-    uintptr_t count;
-    LxrRcResult result = LoadCount(source, &count);
-    if (result != LxrRcResult::Success || count == 0)
+    uintptr_t count = m_rc_metadata.Load(Start(source), SideMetadataMemoryOrder::Relaxed);
+    LxrRcResult result = LxrRcResult::Success;
+    if (count == 0)
     {
         return result;
     }
@@ -3014,13 +3002,7 @@ LxrRcResult LxrReferenceCounting::TryCopyMature(Object** reference)
         TraceScanSlot(destinationIndex) = scan;
         TraceScanSlot(index) = nullptr;
     }
-    result = FromMetadata(m_metadata.Store(LxrSideMetadataKind::ObjectMark, copyStart,
-        0, SideMetadataMemoryOrder::SequentiallyConsistent));
-    if (result != LxrRcResult::Success)
-    {
-        header->SetGCReservedBits(m_configuration.forwardingMask, m_configuration.forwardingShift, 0);
-        return result;
-    }
+    m_mark_metadata.Store(copyStart, 0, SideMetadataMemoryOrder::SequentiallyConsistent);
     if (m_object_model.didCopy != nullptr)
     {
         m_object_model.didCopy(source, destination, m_object_model.context);
@@ -3050,7 +3032,7 @@ LxrRcResult LxrReferenceCounting::TryCopyNursery(
     *incrementedInPlace = false;
     uintptr_t start = Start(source);
     uintptr_t count;
-    LxrRcResult result = FromMetadata(m_counts.Load(start, &count));
+    LxrRcResult result = FromMetadata(m_counts.LoadFast(start, &count));
     if (result != LxrRcResult::Success || count != 0)
     {
         *destination = ResolveForwarded(source);
@@ -3065,14 +3047,14 @@ LxrRcResult LxrReferenceCounting::TryCopyNursery(
         return LxrRcResult::Success;
     }
     // A different worker may have retained this source block in place before the claim.
-    result = FromMetadata(m_counts.Load(start, &count));
+    result = FromMetadata(m_counts.LoadFast(start, &count));
     if (result != LxrRcResult::Success || count != 0)
     {
         header->SetGCReservedBits(m_configuration.forwardingMask, m_configuration.forwardingShift, 0);
         return result;
     }
     bool nursery = false;
-    result = FromMetadata(m_blocks.IsNursery(start & ~ImmixBlockGeometry::BlockMask, &nursery));
+    result = FromMetadata(m_blocks.IsNurseryFast(start & ~ImmixBlockGeometry::BlockMask, &nursery));
     if (result != LxrRcResult::Success)
     {
         header->SetGCReservedBits(m_configuration.forwardingMask, m_configuration.forwardingShift, 0);
@@ -3084,7 +3066,7 @@ LxrRcResult LxrReferenceCounting::TryCopyNursery(
         (m_object_model.isPinned != nullptr && m_object_model.isPinned(source, m_object_model.context)))
     {
         SideMetadataUpdateStatus updated;
-        result = FromMetadata(m_counts.Increment(start, previous, &updated));
+        result = FromMetadata(m_counts.IncrementFast(start, previous, &updated));
         *incrementedInPlace = result == LxrRcResult::Success;
         header->SetGCReservedBits(m_configuration.forwardingMask, m_configuration.forwardingShift, 0);
         return result;
@@ -3106,7 +3088,7 @@ LxrRcResult LxrReferenceCounting::TryCopyNursery(
         m_copy_exhausted.store(true, std::memory_order_relaxed);
         m_nursery_metrics[3].fetch_add(1, std::memory_order_relaxed);
         SideMetadataUpdateStatus updated;
-        result = FromMetadata(m_counts.Increment(start, previous, &updated));
+        result = FromMetadata(m_counts.IncrementFast(start, previous, &updated));
         *incrementedInPlace = result == LxrRcResult::Success;
         header->SetGCReservedBits(m_configuration.forwardingMask, m_configuration.forwardingShift, 0);
         return result;
@@ -3118,11 +3100,11 @@ LxrRcResult LxrReferenceCounting::TryCopyNursery(
         SideMetadataUpdateStatus updated;
         if (result == LxrRcResult::Success)
         {
-            result = FromMetadata(m_counts.Increment(copyStart, previous, &updated));
+            result = FromMetadata(m_counts.IncrementFast(copyStart, previous, &updated));
         }
         if (result == LxrRcResult::Success)
         {
-            result = FromMetadata(m_counts.MarkStraddleLinesQuiescent(copyStart, size));
+            result = FromMetadata(m_counts.MarkStraddleLinesFast(copyStart, size));
         }
         if (result != LxrRcResult::Success)
         {
@@ -3202,7 +3184,7 @@ LxrRcResult LxrReferenceCounting::ProcessIncrement(
     LxrRcResult result = LxrRcResult::Success;
     if (!copied && !incrementedInPlace)
     {
-        result = FromMetadata(m_counts.Increment(start, &previous, &status));
+        result = FromMetadata(m_counts.IncrementFast(start, &previous, &status));
     }
     if (result == LxrRcResult::Success && trace && GetTracePhase() != LxrTracePhase::Inactive)
     {
@@ -3222,7 +3204,7 @@ LxrRcResult LxrReferenceCounting::ProcessIncrement(
     if (IsImmix(start))
     {
         bool nursery;
-        result = FromMetadata(m_blocks.IsNursery(start & ~ImmixBlockGeometry::BlockMask, &nursery));
+        result = FromMetadata(m_blocks.IsNurseryFast(start & ~ImmixBlockGeometry::BlockMask, &nursery));
         if (result != LxrRcResult::Success)
         {
             return result;
@@ -3253,7 +3235,7 @@ LxrRcResult LxrReferenceCounting::ProcessIncrement(
         }
         if (!copied)
         {
-            result = FromMetadata(m_counts.MarkStraddleLinesQuiescent(start, size));
+            result = FromMetadata(m_counts.MarkStraddleLinesFast(start, size));
             if (result == LxrRcResult::Success)
             {
                 result = FromMetadata(m_metadata.ResetRangeQuiescent(
@@ -3389,7 +3371,7 @@ SideMetadataResult LxrReferenceCounting::Death(uintptr_t start, void* context)
         {
             return SideMetadataResult::InconsistentState;
         }
-        SideMetadataResult result = engine->m_counts.ClearStraddleLinesQuiescent(start, size);
+        SideMetadataResult result = engine->m_counts.ClearStraddleLinesFast(start, size);
         if (result == SideMetadataResult::Success)
         {
             if (engine->Reclaim(start) != LxrRcResult::Success)
@@ -3463,13 +3445,7 @@ LxrRcResult LxrReferenceCounting::ProcessDecrements(Work* work, LxrWorkPacket* p
             continue;
         }
         uintptr_t start = Start(object);
-        uintptr_t count;
-        LxrRcResult result = FromMetadata(m_metadata.Load(
-            LxrSideMetadataKind::ReferenceCount, start, SideMetadataMemoryOrder::Relaxed, &count));
-        if (result != LxrRcResult::Success)
-        {
-            return result;
-        }
+        uintptr_t count = m_rc_metadata.Load(start, SideMetadataMemoryOrder::Relaxed);
         CountWorker(worker, DecrementEntries, 1);
         if (work->kind == WorkKind::PreviousRoots)
         {
@@ -3481,7 +3457,7 @@ LxrRcResult LxrReferenceCounting::ProcessDecrements(Work* work, LxrWorkPacket* p
         }
         uintptr_t previous;
         SideMetadataUpdateStatus status;
-        result = FromMetadata(m_counts.DecrementWithDeath(
+        LxrRcResult result = FromMetadata(m_counts.DecrementWithDeathFast(
             start, Death, &death, &previous, &status));
         if (result != LxrRcResult::Success)
         {
@@ -3725,7 +3701,7 @@ LxrRcResult LxrReferenceCounting::RetireForwardedSources()
                 continue;
             }
             uintptr_t count;
-            LxrRcResult result = FromMetadata(m_counts.Load(start, &count));
+            LxrRcResult result = FromMetadata(m_counts.LoadFast(start, &count));
             bool mature = IsMatureCandidate(start);
             if (result != LxrRcResult::Success || (count != 0 && !mature))
             {
@@ -3733,11 +3709,10 @@ LxrRcResult LxrReferenceCounting::RetireForwardedSources()
             }
             if (mature)
             {
-                result = FromMetadata(m_counts.ClearStraddleLinesQuiescent(start, GetObjectExtent(object)));
+                result = FromMetadata(m_counts.ClearStraddleLinesFast(start, GetObjectExtent(object)));
                 if (result == LxrRcResult::Success)
                 {
-                    result = FromMetadata(m_metadata.Store(LxrSideMetadataKind::ReferenceCount,
-                        start, 0, SideMetadataMemoryOrder::SequentiallyConsistent));
+                    m_rc_metadata.Store(start, 0, SideMetadataMemoryOrder::SequentiallyConsistent);
                 }
                 if (result != LxrRcResult::Success)
                 {
@@ -3755,12 +3730,7 @@ LxrRcResult LxrReferenceCounting::RetireForwardedSources()
             {
                 m_nursery_metrics[5].fetch_add(size, std::memory_order_relaxed);
             }
-            result = FromMetadata(m_metadata.Store(
-                LxrSideMetadataKind::ValidObject, start, 0, SideMetadataMemoryOrder::SequentiallyConsistent));
-            if (result != LxrRcResult::Success)
-            {
-                return result;
-            }
+            m_valid_metadata.Store(start, 0, SideMetadataMemoryOrder::SequentiallyConsistent);
         }
     }
     return LxrRcResult::Success;
@@ -4047,12 +4017,10 @@ LxrRcResult LxrReferenceCounting::ProcessIncrementWork(Work* work, size_t worker
             Object** slot = reinterpret_cast<Object**>(work->GetReference(index));
             ownedSlot = slot;
             object = *slot;
-            if (work->kind == WorkKind::Slots &&
-                FromMetadata(m_metadata.Store(LxrSideMetadataKind::FieldUnlogged,
-                    reinterpret_cast<uintptr_t>(slot), 1, SideMetadataMemoryOrder::Relaxed)) !=
-                    LxrRcResult::Success)
+            if (work->kind == WorkKind::Slots)
             {
-                return GetFailure();
+                m_unlogged_metadata.Store(
+                    reinterpret_cast<uintptr_t>(slot), 1, SideMetadataMemoryOrder::Relaxed);
             }
             CountWorker(worker, IncrementEntries, 1);
         }
@@ -4167,13 +4135,8 @@ LxrRcResult LxrReferenceCounting::FindContainingObject(uintptr_t address, Object
     uintptr_t cursor = address & ~(sizeof(uintptr_t) - 1);
     while (cursor >= lower)
     {
-        uintptr_t valid;
-        if (m_metadata.Load(LxrSideMetadataKind::ValidObject, cursor,
-                SideMetadataMemoryOrder::Relaxed, &valid) != SideMetadataResult::Success)
-        {
-            return LxrRcResult::MetadataFailure;
-        }
-        if (valid != 0)
+        // The address is inside the admitted Immix space and the scan stays in its block.
+        if (m_valid_metadata.Load(cursor, SideMetadataMemoryOrder::Relaxed) != 0)
         {
             Object* candidate = Reference(cursor);
             size_t size = ExtentSlot((cursor - GetReservationStart()) / sizeof(uintptr_t)).load(
@@ -4450,7 +4413,7 @@ LxrRcResult LxrReferenceCounting::ReclaimNursery()
         {
             uintptr_t start = GetReservationStart() + index * sizeof(uintptr_t);
             uintptr_t references;
-            LxrRcResult result = FromMetadata(m_counts.Load(start, &references));
+            LxrRcResult result = FromMetadata(m_counts.LoadFast(start, &references));
             if (result != LxrRcResult::Success)
             {
                 return result;
@@ -4472,7 +4435,7 @@ LxrRcResult LxrReferenceCounting::ReclaimLargeNursery()
     {
         uintptr_t start = GetReservationStart() + index * sizeof(uintptr_t);
         uintptr_t references;
-        LxrRcResult result = FromMetadata(m_counts.Load(start, &references));
+        LxrRcResult result = FromMetadata(m_counts.LoadFast(start, &references));
         if (result != LxrRcResult::Success)
         {
             return result;
@@ -5327,16 +5290,10 @@ LxrRcResult LxrReferenceCounting::ProcessTraceObject(
     }
     size_t index = (start - GetReservationStart()) / sizeof(uintptr_t);
     EnterTraceLock(index);
-    uintptr_t count = 0;
-    uintptr_t mark = 0;
-    LxrRcResult result = FromMetadata(m_metadata.Load(LxrSideMetadataKind::ReferenceCount,
-        start, SideMetadataMemoryOrder::SequentiallyConsistent, &count));
-    if (result == LxrRcResult::Success)
-    {
-        result = FromMetadata(m_metadata.Load(LxrSideMetadataKind::ObjectMark,
-            start, SideMetadataMemoryOrder::SequentiallyConsistent, &mark));
-    }
-    if (result != LxrRcResult::Success || count == 0 || mark != 0 ||
+    uintptr_t count = m_rc_metadata.Load(start, SideMetadataMemoryOrder::SequentiallyConsistent);
+    uintptr_t mark = m_mark_metadata.Load(start, SideMetadataMemoryOrder::SequentiallyConsistent);
+    LxrRcResult result = LxrRcResult::Success;
+    if (count == 0 || mark != 0 ||
         ExtentSlot(index).load(std::memory_order_acquire) == 0)
     {
         ExitTraceLock(index);
@@ -5348,18 +5305,14 @@ LxrRcResult LxrReferenceCounting::ProcessTraceObject(
         : (loader == nullptr ? 0 : 1);
     if (maximumReferences <= *directBudget)
     {
-        result = FromMetadata(m_metadata.Store(LxrSideMetadataKind::ObjectMark,
-            start, 1, SideMetadataMemoryOrder::SequentiallyConsistent));
-        if (result == LxrRcResult::Success)
+        m_mark_metadata.Store(start, 1, SideMetadataMemoryOrder::SequentiallyConsistent);
+        m_trace_metrics[TracedObjects].fetch_add(1, std::memory_order_relaxed);
+        TraceScan local(object, loader);
+        result = ScanTraceLocked(&local, true, targets);
+        *directBudget -= maximumReferences;
+        if (GetPhase() == LxrRcPhase::Mutator && GetTracePhase() == LxrTracePhase::Concurrent)
         {
-            m_trace_metrics[TracedObjects].fetch_add(1, std::memory_order_relaxed);
-            TraceScan local(object, loader);
-            result = ScanTraceLocked(&local, true, targets);
-            *directBudget -= maximumReferences;
-            if (GetPhase() == LxrRcPhase::Mutator && GetTracePhase() == LxrTracePhase::Concurrent)
-            {
-                m_trace_metrics[ConcurrentSlices].fetch_add(1, std::memory_order_relaxed);
-            }
+            m_trace_metrics[ConcurrentSlices].fetch_add(1, std::memory_order_relaxed);
         }
         ExitTraceLock(index);
         return result;
@@ -5388,13 +5341,9 @@ LxrRcResult LxrReferenceCounting::ProcessTraceObject(
     } while (!m_scan_work.compare_exchange_weak(
         head, scan, std::memory_order_release, std::memory_order_relaxed));
     TraceScanSlot(index) = scan;
-    result = FromMetadata(m_metadata.Store(LxrSideMetadataKind::ObjectMark,
-        start, 1, SideMetadataMemoryOrder::SequentiallyConsistent));
-    if (result == LxrRcResult::Success)
-    {
-        m_trace_metrics[TracedObjects].fetch_add(1, std::memory_order_relaxed);
-        result = QueueTrace(nullptr, 0, scan);
-    }
+    m_mark_metadata.Store(start, 1, SideMetadataMemoryOrder::SequentiallyConsistent);
+    m_trace_metrics[TracedObjects].fetch_add(1, std::memory_order_relaxed);
+    result = QueueTrace(nullptr, 0, scan);
     ExitTraceLock(index);
     return result;
 }
@@ -5544,13 +5493,10 @@ LxrRcResult LxrReferenceCounting::FinishDyingTraceObject(Object* object)
     uintptr_t start = Start(object);
     size_t index = (start - GetReservationStart()) / sizeof(uintptr_t);
     EnterTraceLock(index);
-    uintptr_t mark;
-    LxrRcResult result = FromMetadata(m_metadata.Load(LxrSideMetadataKind::ObjectMark,
-        start, SideMetadataMemoryOrder::SequentiallyConsistent, &mark));
-    if (result == LxrRcResult::Success && mark == 0)
+    LxrRcResult result = LxrRcResult::Success;
+    if (m_mark_metadata.Load(start, SideMetadataMemoryOrder::SequentiallyConsistent) == 0)
     {
-        result = FromMetadata(m_metadata.Store(LxrSideMetadataKind::ObjectMark,
-            start, 1, SideMetadataMemoryOrder::SequentiallyConsistent));
+        m_mark_metadata.Store(start, 1, SideMetadataMemoryOrder::SequentiallyConsistent);
         m_trace_metrics[DeletionMarks].fetch_add(1, std::memory_order_relaxed);
     }
     TraceScan* scan = TraceScanSlot(index);
@@ -5645,11 +5591,8 @@ bool LxrReferenceCounting::IsMarked(Object* object) const
     {
         return false;
     }
-    uintptr_t mark;
     return GetObjectExtent(object) != 0 &&
-        m_metadata.Load(LxrSideMetadataKind::ObjectMark, Start(object),
-            SideMetadataMemoryOrder::SequentiallyConsistent, &mark) == SideMetadataResult::Success &&
-        mark != 0;
+        m_mark_metadata.Load(Start(object), SideMetadataMemoryOrder::SequentiallyConsistent) != 0;
 }
 
 LxrRcResult LxrReferenceCounting::SweepCycles()
@@ -5685,26 +5628,16 @@ LxrRcResult LxrReferenceCounting::SweepCycles()
         {
             continue;
         }
-        uintptr_t count = 0;
-        uintptr_t mark = 0;
-        LxrRcResult result = FromMetadata(m_metadata.Load(LxrSideMetadataKind::ReferenceCount,
-            start, SideMetadataMemoryOrder::SequentiallyConsistent, &count));
-        if (result == LxrRcResult::Success)
-        {
-            result = FromMetadata(m_metadata.Load(LxrSideMetadataKind::ObjectMark,
-                start, SideMetadataMemoryOrder::SequentiallyConsistent, &mark));
-        }
-        if (result != LxrRcResult::Success)
-        {
-            return result;
-        }
+        uintptr_t count = m_rc_metadata.Load(start, SideMetadataMemoryOrder::SequentiallyConsistent);
+        uintptr_t mark = m_mark_metadata.Load(start, SideMetadataMemoryOrder::SequentiallyConsistent);
+        LxrRcResult result;
         if (count == 0 || mark != 0)
         {
             continue;
         }
         if (IsImmix(start))
         {
-            result = FromMetadata(m_counts.ClearStraddleLinesQuiescent(start, size));
+            result = FromMetadata(m_counts.ClearStraddleLinesFast(start, size));
             if (result != LxrRcResult::Success)
             {
                 return result;
@@ -5726,12 +5659,7 @@ LxrRcResult LxrReferenceCounting::SweepCycles()
         {
             return result;
         }
-        result = FromMetadata(m_metadata.Store(LxrSideMetadataKind::ReferenceCount,
-            start, 0, SideMetadataMemoryOrder::SequentiallyConsistent));
-        if (result != LxrRcResult::Success)
-        {
-            return result;
-        }
+        m_rc_metadata.Store(start, 0, SideMetadataMemoryOrder::SequentiallyConsistent);
         m_trace_metrics[CycleObjects].fetch_add(1, std::memory_order_relaxed);
         m_trace_metrics[CycleBytes].fetch_add(size, std::memory_order_relaxed);
     }

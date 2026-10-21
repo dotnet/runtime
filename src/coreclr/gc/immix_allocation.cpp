@@ -84,6 +84,12 @@ SideMetadataResult ImmixAllocationManager::Initialize(
     }
 
     m_metadata = metadata;
+    m_reference_count = metadata->GetAccessor(LxrSideMetadataKind::ReferenceCount);
+    if (!m_reference_count.IsValid())
+    {
+        m_metadata = nullptr;
+        return SideMetadataResult::InvalidLayout;
+    }
     m_blocks = blocks;
     m_arena_start = arenaStart;
     m_arena_size = arenaSize;
@@ -101,6 +107,7 @@ SideMetadataResult ImmixAllocationManager::Initialize(
 void ImmixAllocationManager::Shutdown()
 {
     m_metadata = nullptr;
+    m_reference_count = SideMetadataAccessor();
     m_blocks = nullptr;
     m_arena_start = 0;
     m_arena_size = 0;
@@ -310,13 +317,10 @@ SideMetadataResult ImmixAllocationManager::IsLineDead(
         return SideMetadataResult::InvalidArgument;
     }
 
+    // TryFindNextHole has checked that the block lies in the arena, and the arena is an owned data range.
     uintptr_t line = block + (lineIndex * ImmixBlockGeometry::LineBytes);
-    return m_metadata->IsRangeZero(
-        LxrSideMetadataKind::ReferenceCount,
-        line,
-        ImmixBlockGeometry::LineBytes,
-        RcReadOrder,
-        dead);
+    *dead = m_reference_count.IsRangeZero(line, ImmixBlockGeometry::LineBytes, RcReadOrder);
+    return SideMetadataResult::Success;
 }
 
 SideMetadataResult ImmixAllocationManager::AcquireBlock(
@@ -372,7 +376,7 @@ SideMetadataResult ImmixAllocationManager::AcquireBlock(
         ImmixBlockState state;
         uint8_t unavailableLines;
         SideMetadataResult result =
-            m_blocks->GetState(candidate, &state, &unavailableLines);
+            m_blocks->GetStateFast(candidate, &state, &unavailableLines);
         if (result != SideMetadataResult::Success)
         {
             return result;
@@ -385,7 +389,7 @@ SideMetadataResult ImmixAllocationManager::AcquireBlock(
             }
 
             bool nursery;
-            result = m_blocks->IsNursery(candidate, &nursery);
+            result = m_blocks->IsNurseryFast(candidate, &nursery);
             if (result != SideMetadataResult::Success)
             {
                 return result;

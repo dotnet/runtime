@@ -120,6 +120,9 @@ private:
         size_t size);
 
     SideMetadataManager* m_metadata;
+    // Inline accessor for the reference-count plane (line scan).
+    // The arena that this manager serves is always inside a data range that the metadata manager owns.
+    SideMetadataAccessor m_reference_count;
     ImmixBlockManager* m_blocks;
     uintptr_t m_arena_start;
     size_t m_arena_size;

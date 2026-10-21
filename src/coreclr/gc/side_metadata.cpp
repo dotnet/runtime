@@ -1203,6 +1203,33 @@ uintptr_t SideMetadataManager::GetBiasedBase(LxrSideMetadataKind kind) const
     return ((spec != nullptr) && (spec->log_bits_per_value == 0)) ? spec->base_address : 0;
 }
 
+SideMetadataAccessor SideMetadataManager::GetAccessor(LxrSideMetadataKind kind) const
+{
+    SideMetadataAccessor accessor;
+    if ((m_layout == nullptr) || !IsSpecEnabled(kind))
+    {
+        return accessor;
+    }
+
+    const SideMetadataSpec* spec = m_layout->GetSpec(kind);
+    // The inline location formula needs the base address aligned to a word and values that fit in a word.
+    if ((spec == nullptr) ||
+        (spec->base_address == 0) ||
+        ((spec->base_address % sizeof(uintptr_t)) != 0) ||
+        (spec->log_bits_per_value > 6))
+    {
+        return accessor;
+    }
+
+    accessor.m_base = spec->base_address;
+    accessor.m_value_mask = LowBits(static_cast<uint32_t>(1) << spec->log_bits_per_value);
+    accessor.m_manager = this;
+    accessor.m_log_bytes_per_value = spec->log_bytes_per_value;
+    accessor.m_log_bits_per_value = spec->log_bits_per_value;
+    accessor.m_kind = kind;
+    return accessor;
+}
+
 SideMetadataResult SideMetadataManager::AddDataRange(uintptr_t start, uintptr_t end)
 {
     for (DataRange* range = m_data_ranges; range != nullptr; range = range->next)
@@ -1264,15 +1291,7 @@ uintptr_t SideMetadataManager::AtomicLoadWord(
     volatile uintptr_t* word,
     SideMetadataMemoryOrder order)
 {
-    if (order == SideMetadataMemoryOrder::Relaxed)
-    {
-        return VolatileLoadWithoutBarrier(word);
-    }
-
-    MemoryBarrier();
-    uintptr_t value = VolatileLoad(word);
-    MemoryBarrier();
-    return value;
+    return SideMetadataAccessor::LoadWord(word, order);
 }
 
 uintptr_t SideMetadataManager::CompareExchangeWord(
@@ -1280,11 +1299,7 @@ uintptr_t SideMetadataManager::CompareExchangeWord(
     uintptr_t value,
     uintptr_t comparand)
 {
-    return reinterpret_cast<uintptr_t>(
-        Interlocked::CompareExchangePointer(
-            reinterpret_cast<void* volatile*>(word),
-            reinterpret_cast<void*>(value),
-            reinterpret_cast<void*>(comparand)));
+    return SideMetadataAccessor::CompareExchangeWord(word, value, comparand);
 }
 
 uintptr_t SideMetadataManager::LowBits(uint32_t count)

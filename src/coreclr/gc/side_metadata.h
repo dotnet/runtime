@@ -137,6 +137,103 @@ typedef bool (*SideMetadataWordVisitor)(
     uintptr_t coverageMask,
     void* context);
 
+class SideMetadataManager;
+
+// Inline fast path for the hot side-metadata accesses.
+//
+// The layout is chosen at run time, so the base address, the shifts and the value mask of one
+// metadata kind are not compile-time constants. SideMetadataManager::GetAccessor computes them once
+// and the owner of the accessor keeps the copy. One access is then a shift, an add of the base and
+// one atomic word access, with the same memory orders as the checked SideMetadataManager functions.
+//
+// Invariant that makes the missing checks safe: the data address must belong to an object, a line or
+// a block that the engine has already admitted (SideMetadataManager::CommitDataRange has committed the
+// metadata of its range), and it must have the alignment that the object model guarantees. Callers
+// that handle untrusted addresses (tests of error paths, interior pointers, conservative probes) must
+// use the checked SideMetadataManager functions, which return an error code instead.
+//
+// Debug builds (_DEBUG) check every access against the checked path: the address must be owned, and
+// the location (word, mask, shift, bit count) must be the same. Loads also compare the value with a
+// checked load. A mismatch asserts. The value comparison repeats a few times because another thread
+// may change the value between the two loads; a real decoding fault does not go away.
+class SideMetadataAccessor final
+{
+public:
+    SideMetadataAccessor() = default;
+
+    bool IsValid() const
+    {
+        return m_base != 0;
+    }
+
+    LxrSideMetadataKind GetKind() const
+    {
+        return m_kind;
+    }
+
+    uintptr_t GetValueMask() const
+    {
+        return m_value_mask;
+    }
+
+    SideMetadataLocation Locate(uintptr_t dataAddress) const;
+
+    uintptr_t Load(uintptr_t dataAddress, SideMetadataMemoryOrder order) const;
+
+    void Store(uintptr_t dataAddress, uintptr_t value, SideMetadataMemoryOrder order) const;
+
+    // Returns true when the value was exchanged. The value that was seen is always returned in *observed.
+    bool CompareExchange(
+        uintptr_t dataAddress,
+        uintptr_t value,
+        uintptr_t comparand,
+        SideMetadataMemoryOrder order,
+        uintptr_t* observed) const;
+
+    // Returns the previous value.
+    uintptr_t FetchAddWrapping(
+        uintptr_t dataAddress,
+        uintptr_t value,
+        SideMetadataMemoryOrder order) const;
+
+    SideMetadataUpdateStatus IncrementSaturating(
+        uintptr_t dataAddress,
+        SideMetadataMemoryOrder order,
+        uintptr_t* previous) const;
+
+    SideMetadataUpdateStatus DecrementNonZeroNonSaturated(
+        uintptr_t dataAddress,
+        SideMetadataMemoryOrder order,
+        uintptr_t* previous) const;
+
+    // Same result as SideMetadataManager::IsRangeZero. The start and the size must be multiples of the
+    // data bytes that one entry covers, and the whole range must be admitted. A size of zero is zero.
+    bool IsRangeZero(uintptr_t dataStart, size_t dataSize, SideMetadataMemoryOrder order) const;
+
+    static uintptr_t LoadWord(volatile uintptr_t* word, SideMetadataMemoryOrder order);
+    static uintptr_t CompareExchangeWord(volatile uintptr_t* word, uintptr_t value, uintptr_t comparand);
+
+private:
+    friend class SideMetadataManager;
+
+    static bool AreWordsZero(
+        const SideMetadataLocation& first,
+        const SideMetadataLocation& last,
+        SideMetadataMemoryOrder order);
+
+#ifdef _DEBUG
+    void VerifyLocation(uintptr_t dataAddress, const SideMetadataLocation& location) const;
+    void VerifyLoad(uintptr_t dataAddress, const SideMetadataLocation& location, uintptr_t value) const;
+#endif // _DEBUG
+
+    uintptr_t m_base = 0;
+    uintptr_t m_value_mask = 0;
+    const SideMetadataManager* m_manager = nullptr;
+    uint8_t m_log_bytes_per_value = 0;
+    uint8_t m_log_bits_per_value = 0;
+    LxrSideMetadataKind m_kind = LxrSideMetadataKind::Count;
+};
+
 class SideMetadataManager final
 {
 public:
@@ -252,6 +349,10 @@ public:
     bool IsSpecEnabled(LxrSideMetadataKind kind) const;
     uintptr_t GetBiasedBase(LxrSideMetadataKind kind) const;
 
+    // Builds the inline accessor of one kind. The result is invalid when the manager is not
+    // initialized or the kind is not enabled. Call it once and keep the copy.
+    SideMetadataAccessor GetAccessor(LxrSideMetadataKind kind) const;
+
     static uint32_t ComputeWordShiftForByteOrder(
         size_t byteInWord,
         size_t valueBytes,
@@ -314,5 +415,332 @@ private:
     uint64_t m_enabled_spec_mask;
     bool m_commit_failed;
 };
+
+inline uintptr_t SideMetadataAccessor::LoadWord(volatile uintptr_t* word, SideMetadataMemoryOrder order)
+{
+    if (order == SideMetadataMemoryOrder::Relaxed)
+    {
+        return VolatileLoadWithoutBarrier(word);
+    }
+
+    MemoryBarrier();
+    uintptr_t value = VolatileLoad(word);
+    MemoryBarrier();
+    return value;
+}
+
+inline uintptr_t SideMetadataAccessor::CompareExchangeWord(
+    volatile uintptr_t* word,
+    uintptr_t value,
+    uintptr_t comparand)
+{
+    return reinterpret_cast<uintptr_t>(
+        Interlocked::CompareExchangePointer(
+            reinterpret_cast<void* volatile*>(word),
+            reinterpret_cast<void*>(value),
+            reinterpret_cast<void*>(comparand)));
+}
+
+inline SideMetadataLocation SideMetadataAccessor::Locate(uintptr_t dataAddress) const
+{
+    // Entries are numbered from the data address; each entry takes 1 << m_log_bits_per_value bits.
+    // The base address is aligned to a word, so the word offset and the shift follow from the bit position.
+    uintptr_t bitPosition = (dataAddress >> m_log_bytes_per_value) << m_log_bits_per_value;
+    uintptr_t wordAddress = m_base + ((bitPosition >> 6) << 3);
+#if BIGENDIAN
+    uint32_t bitCount = static_cast<uint32_t>(1) << m_log_bits_per_value;
+    uint32_t shift = SideMetadataManager::ComputeWordShiftForByteOrder(
+        static_cast<size_t>((bitPosition >> 3) & (sizeof(uintptr_t) - 1)),
+        bitCount >= 8 ? bitCount / 8 : 1,
+        static_cast<uint32_t>(bitPosition & 7),
+        true);
+#else
+    uint32_t shift = static_cast<uint32_t>(bitPosition & ((sizeof(uintptr_t) * 8) - 1));
+#endif
+    SideMetadataLocation location;
+    location.word = reinterpret_cast<volatile uintptr_t*>(wordAddress);
+    location.mask = m_value_mask << shift;
+    location.shift = static_cast<uint8_t>(shift);
+    location.bit_count = static_cast<uint8_t>(static_cast<uint32_t>(1) << m_log_bits_per_value);
+    return location;
+}
+
+#ifdef _DEBUG
+inline void SideMetadataAccessor::VerifyLocation(
+    uintptr_t dataAddress,
+    const SideMetadataLocation& location) const
+{
+    SideMetadataLocation checked;
+    SideMetadataResult result = m_manager->GetLocation(m_kind, dataAddress, &checked);
+    _ASSERTE(result == SideMetadataResult::Success);
+    _ASSERTE(checked.word == location.word);
+    _ASSERTE(checked.mask == location.mask);
+    _ASSERTE(checked.shift == location.shift);
+    _ASSERTE(checked.bit_count == location.bit_count);
+    (void)result;
+    (void)checked;
+}
+
+inline void SideMetadataAccessor::VerifyLoad(
+    uintptr_t dataAddress,
+    const SideMetadataLocation& location,
+    uintptr_t value) const
+{
+    VerifyLocation(dataAddress, location);
+    for (int attempt = 0; attempt < 16; attempt++)
+    {
+        uintptr_t checkedValue = 0;
+        SideMetadataResult result = m_manager->Load(
+            m_kind, dataAddress, SideMetadataMemoryOrder::Relaxed, &checkedValue);
+        _ASSERTE(result == SideMetadataResult::Success);
+        if ((result != SideMetadataResult::Success) || (checkedValue == value))
+        {
+            return;
+        }
+        value = (LoadWord(location.word, SideMetadataMemoryOrder::Relaxed) >> location.shift) & m_value_mask;
+    }
+    _ASSERTE(!"The inline side-metadata load and the checked load disagree.");
+}
+#endif // _DEBUG
+
+inline uintptr_t SideMetadataAccessor::Load(uintptr_t dataAddress, SideMetadataMemoryOrder order) const
+{
+    SideMetadataLocation location = Locate(dataAddress);
+    uintptr_t value = (LoadWord(location.word, order) >> location.shift) & m_value_mask;
+#ifdef _DEBUG
+    VerifyLoad(dataAddress, location, value);
+#endif // _DEBUG
+    return value;
+}
+
+inline void SideMetadataAccessor::Store(
+    uintptr_t dataAddress,
+    uintptr_t value,
+    SideMetadataMemoryOrder order) const
+{
+    SideMetadataLocation location = Locate(dataAddress);
+#ifdef _DEBUG
+    VerifyLocation(dataAddress, location);
+    _ASSERTE((value & ~m_value_mask) == 0);
+#endif // _DEBUG
+    uintptr_t oldWord = LoadWord(location.word, order);
+    while (true)
+    {
+        uintptr_t newWord = (oldWord & ~location.mask) | ((value << location.shift) & location.mask);
+        uintptr_t actual = CompareExchangeWord(location.word, newWord, oldWord);
+        if (actual == oldWord)
+        {
+            return;
+        }
+        oldWord = actual;
+    }
+}
+
+inline bool SideMetadataAccessor::CompareExchange(
+    uintptr_t dataAddress,
+    uintptr_t value,
+    uintptr_t comparand,
+    SideMetadataMemoryOrder order,
+    uintptr_t* observed) const
+{
+    SideMetadataLocation location = Locate(dataAddress);
+#ifdef _DEBUG
+    VerifyLocation(dataAddress, location);
+    _ASSERTE((value & ~m_value_mask) == 0);
+    _ASSERTE((comparand & ~m_value_mask) == 0);
+#endif // _DEBUG
+    uintptr_t oldWord = LoadWord(location.word, order);
+    while (true)
+    {
+        uintptr_t oldValue = (oldWord >> location.shift) & m_value_mask;
+        *observed = oldValue;
+        if (oldValue != comparand)
+        {
+            return false;
+        }
+
+        uintptr_t newWord = (oldWord & ~location.mask) | ((value << location.shift) & location.mask);
+        uintptr_t actual = CompareExchangeWord(location.word, newWord, oldWord);
+        if (actual == oldWord)
+        {
+            return true;
+        }
+        oldWord = actual;
+    }
+}
+
+inline uintptr_t SideMetadataAccessor::FetchAddWrapping(
+    uintptr_t dataAddress,
+    uintptr_t value,
+    SideMetadataMemoryOrder order) const
+{
+    SideMetadataLocation location = Locate(dataAddress);
+#ifdef _DEBUG
+    VerifyLocation(dataAddress, location);
+    _ASSERTE((value & ~m_value_mask) == 0);
+#endif // _DEBUG
+    uintptr_t oldWord = LoadWord(location.word, order);
+    while (true)
+    {
+        uintptr_t oldValue = (oldWord >> location.shift) & m_value_mask;
+        uintptr_t newValue = (oldValue + value) & m_value_mask;
+        uintptr_t newWord = (oldWord & ~location.mask) | ((newValue << location.shift) & location.mask);
+        uintptr_t actual = CompareExchangeWord(location.word, newWord, oldWord);
+        if (actual == oldWord)
+        {
+            return oldValue;
+        }
+        oldWord = actual;
+    }
+}
+
+inline SideMetadataUpdateStatus SideMetadataAccessor::IncrementSaturating(
+    uintptr_t dataAddress,
+    SideMetadataMemoryOrder order,
+    uintptr_t* previous) const
+{
+    SideMetadataLocation location = Locate(dataAddress);
+#ifdef _DEBUG
+    VerifyLocation(dataAddress, location);
+    _ASSERTE(m_kind == LxrSideMetadataKind::ReferenceCount);
+#endif // _DEBUG
+    uintptr_t oldWord = LoadWord(location.word, order);
+    while (true)
+    {
+        uintptr_t oldValue = (oldWord >> location.shift) & m_value_mask;
+        *previous = oldValue;
+        if (oldValue == m_value_mask)
+        {
+            return SideMetadataUpdateStatus::Saturated;
+        }
+
+        uintptr_t newWord =
+            (oldWord & ~location.mask) | (((oldValue + 1) << location.shift) & location.mask);
+        uintptr_t actual = CompareExchangeWord(location.word, newWord, oldWord);
+        if (actual == oldWord)
+        {
+            return SideMetadataUpdateStatus::Updated;
+        }
+        oldWord = actual;
+    }
+}
+
+inline SideMetadataUpdateStatus SideMetadataAccessor::DecrementNonZeroNonSaturated(
+    uintptr_t dataAddress,
+    SideMetadataMemoryOrder order,
+    uintptr_t* previous) const
+{
+    SideMetadataLocation location = Locate(dataAddress);
+#ifdef _DEBUG
+    VerifyLocation(dataAddress, location);
+    _ASSERTE(m_kind == LxrSideMetadataKind::ReferenceCount);
+#endif // _DEBUG
+    uintptr_t oldWord = LoadWord(location.word, order);
+    while (true)
+    {
+        uintptr_t oldValue = (oldWord >> location.shift) & m_value_mask;
+        *previous = oldValue;
+        if (oldValue == 0)
+        {
+            return SideMetadataUpdateStatus::Zero;
+        }
+        if (oldValue == m_value_mask)
+        {
+            return SideMetadataUpdateStatus::Saturated;
+        }
+
+        uintptr_t newWord =
+            (oldWord & ~location.mask) | (((oldValue - 1) << location.shift) & location.mask);
+        uintptr_t actual = CompareExchangeWord(location.word, newWord, oldWord);
+        if (actual == oldWord)
+        {
+            return SideMetadataUpdateStatus::Updated;
+        }
+        oldWord = actual;
+    }
+}
+
+inline bool SideMetadataAccessor::IsRangeZero(
+    uintptr_t dataStart,
+    size_t dataSize,
+    SideMetadataMemoryOrder order) const
+{
+    if (dataSize == 0)
+    {
+        return true;
+    }
+
+    uintptr_t granularity = static_cast<uintptr_t>(1) << m_log_bytes_per_value;
+#ifdef _DEBUG
+    _ASSERTE(((dataStart | dataSize) & (granularity - 1)) == 0);
+#endif // _DEBUG
+    SideMetadataLocation first = Locate(dataStart);
+    SideMetadataLocation last = Locate(dataStart + dataSize - granularity);
+#ifdef _DEBUG
+    VerifyLocation(dataStart, first);
+    VerifyLocation(dataStart + dataSize - granularity, last);
+    _ASSERTE(m_manager->IsDataRangeOwned(dataStart, dataSize));
+#endif // _DEBUG
+    bool zero = AreWordsZero(first, last, order);
+#ifdef _DEBUG
+    for (int attempt = 0; attempt < 16; attempt++)
+    {
+        bool checkedZero = false;
+        SideMetadataResult result = m_manager->IsRangeZero(
+            m_kind, dataStart, dataSize, SideMetadataMemoryOrder::Relaxed, &checkedZero);
+        _ASSERTE(result == SideMetadataResult::Success);
+        if ((result != SideMetadataResult::Success) || (checkedZero == zero))
+        {
+            return zero;
+        }
+        // Another thread may have changed the range between the two reads; look again.
+        zero = AreWordsZero(first, last, SideMetadataMemoryOrder::Relaxed);
+    }
+    _ASSERTE(!"The inline side-metadata range check and the checked range check disagree.");
+#endif // _DEBUG
+    return zero;
+}
+
+inline bool SideMetadataAccessor::AreWordsZero(
+    const SideMetadataLocation& first,
+    const SideMetadataLocation& last,
+    SideMetadataMemoryOrder order)
+{
+    uintptr_t firstWord = reinterpret_cast<uintptr_t>(first.word);
+    uintptr_t lastWord = reinterpret_cast<uintptr_t>(last.word);
+    for (uintptr_t wordAddress = firstWord; wordAddress <= lastWord; wordAddress += sizeof(uintptr_t))
+    {
+        uintptr_t coverage = UINTPTR_MAX;
+        if (wordAddress == firstWord)
+        {
+            coverage &= SideMetadataManager::ComputeFirstWordCoverageForByteOrder(
+                first,
+#if BIGENDIAN
+                true
+#else
+                false
+#endif
+            );
+        }
+        if (wordAddress == lastWord)
+        {
+            coverage &= SideMetadataManager::ComputeLastWordCoverageForByteOrder(
+                last,
+#if BIGENDIAN
+                true
+#else
+                false
+#endif
+            );
+        }
+
+        if ((LoadWord(reinterpret_cast<volatile uintptr_t*>(wordAddress), order) & coverage) != 0)
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
 
 #endif // SIDE_METADATA_H

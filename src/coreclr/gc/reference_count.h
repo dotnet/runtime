@@ -59,6 +59,60 @@ public:
         SideMetadataUpdateStatus* status);
     SideMetadataResult IsSticky(uintptr_t object, bool* sticky) const;
 
+    // Fast path for the pause loops and the allocation path. These functions never validate the
+    // address in Release builds. The caller must pass the start of an object that the engine has
+    // admitted and registered (and, for the straddle functions, the size of that object). Debug
+    // builds run the checked validation and assert that it succeeds, and the inline accessors assert
+    // that they give the same location and value as the checked metadata access. Memory orders are
+    // the same as in the checked functions.
+    SideMetadataResult LoadFast(uintptr_t object, uintptr_t* count) const
+    {
+#ifdef _DEBUG
+        _ASSERTE(ValidateAddress(object, true) == SideMetadataResult::Success);
+#endif // _DEBUG
+        *count = m_rc.Load(object, SideMetadataMemoryOrder::Relaxed);
+        return SideMetadataResult::Success;
+    }
+
+    SideMetadataResult IncrementFast(
+        uintptr_t object,
+        uintptr_t* previous,
+        SideMetadataUpdateStatus* status)
+    {
+#ifdef _DEBUG
+        _ASSERTE(ValidateAddress(object, true) == SideMetadataResult::Success);
+#endif // _DEBUG
+        *status = m_rc.IncrementSaturating(object, SideMetadataMemoryOrder::Relaxed, previous);
+        return SideMetadataResult::Success;
+    }
+
+    SideMetadataResult DecrementWithDeathFast(
+        uintptr_t object,
+        ReferenceCountDeathCallback death,
+        void* context,
+        uintptr_t* previous,
+        SideMetadataUpdateStatus* status);
+
+    SideMetadataResult MarkStraddleLinesFast(uintptr_t object, size_t size)
+    {
+#ifdef _DEBUG
+        DebugValidateStraddleRange(object, size, true);
+#endif // _DEBUG
+        return size <= ImmixBlockGeometry::LineBytes
+            ? SideMetadataResult::Success
+            : MarkStraddleLinesUnchecked(object, size);
+    }
+
+    SideMetadataResult ClearStraddleLinesFast(uintptr_t object, size_t size)
+    {
+#ifdef _DEBUG
+        DebugValidateStraddleRange(object, size, false);
+#endif // _DEBUG
+        return size <= ImmixBlockGeometry::LineBytes
+            ? SideMetadataResult::Success
+            : ClearStraddleLinesUnchecked(object, size);
+    }
+
     SideMetadataResult MarkStraddleLinesQuiescent(uintptr_t object, size_t size);
     SideMetadataResult ClearStraddleLinesQuiescent(uintptr_t object, size_t size);
     SideMetadataResult IsContinuationLine(uintptr_t line, bool* continuation) const;
@@ -81,6 +135,16 @@ private:
     SideMetadataResult SetValidObject(uintptr_t object, uintptr_t value);
     SideMetadataResult MarkStraddleLinesUnchecked(uintptr_t object, size_t size);
     SideMetadataResult ClearStraddleLinesUnchecked(uintptr_t object, size_t size);
+    template <bool Fast>
+    SideMetadataResult DecrementWithDeathCore(
+        uintptr_t object,
+        ReferenceCountDeathCallback death,
+        void* context,
+        uintptr_t* previous,
+        SideMetadataUpdateStatus* status);
+#ifdef _DEBUG
+    void DebugValidateStraddleRange(uintptr_t object, size_t size, bool requireEmpty) const;
+#endif // _DEBUG
     static void GetContinuationRange(
         uintptr_t object,
         size_t size,
@@ -88,6 +152,9 @@ private:
         uintptr_t* end);
 
     SideMetadataManager* m_metadata;
+    SideMetadataAccessor m_rc;
+    SideMetadataAccessor m_valid;
+    SideMetadataAccessor m_straddle;
     uint8_t m_log_reference_count_bits;
 };
 

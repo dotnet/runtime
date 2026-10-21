@@ -3287,10 +3287,264 @@ namespace
             "allocation-marked newborn cannot hide an unmarked reachable child");
         Check(engine.DetachMutator(mutator) == LxrRcResult::Success, "black-newborn owner detaches");
     }
+
+    // The inline accessors of the side-metadata fast path (P17 S2) must give the same location and value as
+    // the checked SideMetadataManager functions, for every kind, every memory order and every operation
+    // that the pause loops use. The test counts the mismatches of each operation and checks that the count is zero.
+    class InlineMetadataComparison final
+    {
+    public:
+        InlineMetadataComparison(SideMetadataManager& metadata, const LxrSideMetadataLayout& layout,
+            LxrSideMetadataKind kind, uintptr_t start, size_t size)
+            : m_metadata(metadata), m_kind(kind), m_start(start),
+              m_accessor(metadata.GetAccessor(kind)),
+              m_granularity(static_cast<size_t>(1) << layout.GetSpec(kind)->log_bytes_per_value),
+              m_bits(static_cast<uint32_t>(1) << layout.GetSpec(kind)->log_bits_per_value),
+              m_maximum(m_bits == 64 ? UINTPTR_MAX : (static_cast<uintptr_t>(1) << m_bits) - 1),
+              m_entries(size / m_granularity), m_shadow(m_entries), m_state(0x9E3779B97F4A7C15ull + static_cast<uint64_t>(kind))
+        {
+        }
+
+        void Run()
+        {
+            if (!Check(m_accessor.IsValid(), "inline accessor of the kind is valid"))
+            {
+                return;
+            }
+            size_t mismatches = 0;
+            for (size_t entry = 0; entry < m_entries; entry++)
+            {
+                SideMetadataLocation checked;
+                SideMetadataLocation inlined = m_accessor.Locate(Address(entry));
+                bool ok = m_metadata.GetLocation(m_kind, Address(entry), &checked) == SideMetadataResult::Success &&
+                    checked.word == inlined.word && checked.mask == inlined.mask &&
+                    checked.shift == inlined.shift && checked.bit_count == inlined.bit_count;
+                mismatches += ok ? 0 : 1;
+            }
+            Report(mismatches, "inline location equals the checked location");
+
+            mismatches = 0;
+            for (size_t entry = 0; entry < m_entries; entry++)
+            {
+                m_shadow[entry] = Next();
+                mismatches += m_metadata.Store(m_kind, Address(entry), m_shadow[entry], Order(entry)) ==
+                    SideMetadataResult::Success ? 0 : 1;
+            }
+            Report(mismatches, "checked stores fill the plane");
+            CompareAll("inline load equals the checked load");
+
+            mismatches = 0;
+            for (size_t entry = 0; entry < m_entries; entry++)
+            {
+                m_shadow[entry] = Next();
+                m_accessor.Store(Address(entry), m_shadow[entry], Order(entry + 1));
+            }
+            CompareAll("checked load sees the inline store, neighbors unchanged");
+
+            mismatches = 0;
+            for (size_t entry = 0; entry < m_entries; entry++)
+            {
+                uintptr_t replacement = Next();
+                uintptr_t observed = 0;
+                uintptr_t wrong = (m_shadow[entry] + 1) & m_maximum;
+                bool exchanged = m_accessor.CompareExchange(Address(entry), replacement, wrong, Order(entry), &observed);
+                mismatches += (exchanged || observed != m_shadow[entry]) ? 1 : 0;
+                exchanged = m_accessor.CompareExchange(Address(entry), replacement, m_shadow[entry], Order(entry), &observed);
+                mismatches += (!exchanged || observed != m_shadow[entry]) ? 1 : 0;
+                m_shadow[entry] = replacement;
+            }
+            Report(mismatches, "inline compare-exchange reports the checked values");
+            CompareAll("checked load sees the inline compare-exchange");
+
+            mismatches = 0;
+            for (size_t entry = 0; entry < m_entries; entry++)
+            {
+                uintptr_t addend = Next();
+                uintptr_t previous = m_accessor.FetchAddWrapping(Address(entry), addend, Order(entry));
+                mismatches += previous == m_shadow[entry] ? 0 : 1;
+                m_shadow[entry] = (m_shadow[entry] + addend) & m_maximum;
+            }
+            Report(mismatches, "inline fetch-add returns the previous value");
+            CompareAll("checked load sees the inline fetch-add");
+
+            if (m_kind == LxrSideMetadataKind::ReferenceCount)
+            {
+                RunCounts();
+            }
+            RunRanges();
+        }
+
+    private:
+        uintptr_t Address(size_t entry) const
+        {
+            return m_start + entry * m_granularity;
+        }
+
+        static SideMetadataMemoryOrder Order(size_t index)
+        {
+            return (index & 1) == 0 ? SideMetadataMemoryOrder::Relaxed : SideMetadataMemoryOrder::SequentiallyConsistent;
+        }
+
+        uintptr_t Next()
+        {
+            m_state ^= m_state << 13;
+            m_state ^= m_state >> 7;
+            m_state ^= m_state << 17;
+            // Favor the edges of the value range so that wrapping and saturation happen.
+            switch (m_state & 7)
+            {
+                case 0: return 0;
+                case 1: return m_maximum;
+                case 2: return (m_maximum - 1) & m_maximum;
+                default: return static_cast<uintptr_t>(m_state >> 8) & m_maximum;
+            }
+        }
+
+        void Report(size_t mismatches, const char* message) const
+        {
+            if (!Check(mismatches == 0, message))
+            {
+                std::fprintf(stderr, "  kind %u, %zu mismatches\n", static_cast<unsigned>(m_kind), mismatches);
+            }
+        }
+
+        void CompareAll(const char* message)
+        {
+            size_t mismatches = 0;
+            for (size_t entry = 0; entry < m_entries; entry++)
+            {
+                uintptr_t checked = 0;
+                bool ok = m_metadata.Load(m_kind, Address(entry), SideMetadataMemoryOrder::Relaxed, &checked) ==
+                    SideMetadataResult::Success && checked == m_shadow[entry] &&
+                    m_accessor.Load(Address(entry), Order(entry)) == m_shadow[entry];
+                mismatches += ok ? 0 : 1;
+            }
+            Report(mismatches, message);
+        }
+
+        void RunCounts()
+        {
+            size_t mismatches = 0;
+            for (size_t entry = 0; entry < m_entries; entry++)
+            {
+                uintptr_t previous = 0;
+                uintptr_t expected = m_shadow[entry];
+                SideMetadataUpdateStatus status = m_accessor.IncrementSaturating(Address(entry), Order(entry), &previous);
+                bool saturated = expected == m_maximum;
+                mismatches += (previous != expected ||
+                    status != (saturated ? SideMetadataUpdateStatus::Saturated : SideMetadataUpdateStatus::Updated)) ? 1 : 0;
+                m_shadow[entry] = saturated ? expected : expected + 1;
+            }
+            Report(mismatches, "inline increment matches the checked increment rules");
+            CompareAll("checked load sees the inline increment");
+
+            mismatches = 0;
+            for (size_t entry = 0; entry < m_entries; entry++)
+            {
+                uintptr_t previous = 0;
+                uintptr_t expected = m_shadow[entry];
+                SideMetadataUpdateStatus status = m_accessor.DecrementNonZeroNonSaturated(Address(entry), Order(entry), &previous);
+                SideMetadataUpdateStatus wanted = expected == 0 ? SideMetadataUpdateStatus::Zero :
+                    expected == m_maximum ? SideMetadataUpdateStatus::Saturated : SideMetadataUpdateStatus::Updated;
+                mismatches += (previous != expected || status != wanted) ? 1 : 0;
+                m_shadow[entry] = wanted == SideMetadataUpdateStatus::Updated ? expected - 1 : expected;
+            }
+            Report(mismatches, "inline decrement matches the checked decrement rules");
+            CompareAll("checked load sees the inline decrement");
+        }
+
+        void RunRanges()
+        {
+            size_t mismatches = 0;
+            if (m_metadata.ResetRangeQuiescent(m_kind, m_start, m_entries * m_granularity, 0) != SideMetadataResult::Success)
+            {
+                mismatches++;
+            }
+            std::fill(m_shadow.begin(), m_shadow.end(), 0);
+            // Ranges of 1, 2, 3, 5, 31, 32, 33 and 129 entries, from every 7th starting entry.
+            const size_t lengths[] = {1, 2, 3, 5, 31, 32, 33, 129};
+            for (int pass = 0; pass < 2; pass++)
+            {
+                for (size_t first = 0; first < m_entries; first += 7)
+                {
+                    for (size_t length : lengths)
+                    {
+                        if (first + length > m_entries)
+                        {
+                            continue;
+                        }
+                        bool checkedZero = false;
+                        bool ok = m_metadata.IsRangeZero(m_kind, Address(first), length * m_granularity,
+                            Order(first), &checkedZero) == SideMetadataResult::Success &&
+                            checkedZero == m_accessor.IsRangeZero(Address(first), length * m_granularity, Order(first));
+                        mismatches += ok ? 0 : 1;
+                    }
+                }
+                // Second pass: one set entry in the middle of the plane.
+                if (pass == 0)
+                {
+                    size_t middle = m_entries / 2;
+                    m_metadata.Store(m_kind, Address(middle), 1, SideMetadataMemoryOrder::Relaxed);
+                    m_shadow[middle] = 1;
+                }
+            }
+            Report(mismatches, "inline range check equals the checked range check");
+        }
+
+        SideMetadataManager& m_metadata;
+        LxrSideMetadataKind m_kind;
+        uintptr_t m_start;
+        SideMetadataAccessor m_accessor;
+        size_t m_granularity;
+        uint32_t m_bits;
+        uintptr_t m_maximum;
+        size_t m_entries;
+        std::vector<uintptr_t> m_shadow;
+        uint64_t m_state;
+    };
+
+    void ValidateInlineMetadataAccessors()
+    {
+        // The argument of the layout is the log2 of the reference-count width: 2, 4 and 8 bits.
+        for (uint8_t bits : {uint8_t{1}, uint8_t{2}, uint8_t{3}})
+        {
+            LxrSideMetadataLayout layout;
+            SideMetadataManager metadata;
+            // The data range does not need real memory: only the metadata planes are committed.
+            const uintptr_t start = UINT64_C(0x20000000000);
+            const size_t size = 2 * ImmixBlockGeometry::BlockBytes;
+            SideMetadataResult created = LxrSideMetadataLayout::Create(bits, &layout);
+            SideMetadataResult initialized = created == SideMetadataResult::Success
+                ? metadata.Initialize(&layout) : created;
+            SideMetadataResult committed = initialized == SideMetadataResult::Success
+                ? metadata.CommitDataRange(start, size) : initialized;
+            if (!Check(committed == SideMetadataResult::Success,
+                    "side metadata initializes for the inline comparison"))
+            {
+                std::fprintf(stderr, "  bits %u: create %u, initialize %u, commit %u\n", static_cast<unsigned>(bits),
+                    static_cast<unsigned>(created), static_cast<unsigned>(initialized), static_cast<unsigned>(committed));
+                continue;
+            }
+            for (size_t kind = 0; kind < LxrSideMetadataLayout::SpecCount; kind++)
+            {
+                InlineMetadataComparison comparison(
+                    metadata, layout, static_cast<LxrSideMetadataKind>(kind), start, size);
+                comparison.Run();
+            }
+            metadata.Shutdown();
+        }
+    }
 }
 
 int main(int argc, char** argv)
 {
+    if (argc == 2 && strcmp(argv[1], "--inline-metadata") == 0)
+    {
+        ValidateInlineMetadataAccessors();
+        std::printf("%s: %d/%d inline metadata accessor checks\n",
+            Failures == 0 ? "PASS" : "FAIL", Checks - Failures, Checks);
+        return Failures == 0 ? 0 : 1;
+    }
     if (argc == 2 && strcmp(argv[1], "--log-storage") == 0)
     {
         ValidateLogStorage();

@@ -141,7 +141,48 @@ public:
         ImmixBlockState* state,
         uint8_t* unavailableLines) const;
     SideMetadataResult GetBlockPhaseEpoch(uintptr_t block, uint8_t* epoch) const;
+
+    // Fast form of GetState; the same rules as IsNurseryFast apply.
+    SideMetadataResult GetStateFast(
+        uintptr_t block,
+        ImmixBlockState* state,
+        uint8_t* unavailableLines) const
+    {
+#ifdef _DEBUG
+        _ASSERTE(ValidateBlock(block) == SideMetadataResult::Success);
+#endif // _DEBUG
+        DecodeState(
+            static_cast<uint8_t>(Accessor(LxrSideMetadataKind::BlockMark).Load(
+                block, SideMetadataMemoryOrder::SequentiallyConsistent)),
+            state,
+            unavailableLines);
+        return SideMetadataResult::Success;
+    }
     SideMetadataResult IsNursery(uintptr_t block, bool* result) const;
+
+    // Fast form of IsNursery for the pause loops. It does the same two block-metadata loads and the
+    // same epoch load, with the same memory orders, but does not validate the block. The caller
+    // must pass the aligned start of a block that was registered with RegisterBlockRange (for
+    // example, the block of an object that the engine allocated). Debug builds assert that the block
+    // is valid and, in the accessors, that each load gives the same location and value as the checked
+    // load.
+    SideMetadataResult IsNurseryFast(uintptr_t block, bool* result) const
+    {
+#ifdef _DEBUG
+        ReaderScope reader(this);
+        _ASSERTE(ValidateBlock(block) == SideMetadataResult::Success);
+#endif // _DEBUG
+        uint8_t rawState = static_cast<uint8_t>(Accessor(LxrSideMetadataKind::BlockMark).Load(
+            block, SideMetadataMemoryOrder::SequentiallyConsistent));
+        uint8_t blockEpoch = static_cast<uint8_t>(Accessor(LxrSideMetadataKind::PhaseEpoch).Load(
+            block, SideMetadataMemoryOrder::SequentiallyConsistent));
+        uint8_t globalEpoch = GetGlobalPhaseEpoch();
+        bool nurseryOrReusing = (globalEpoch & 1) != 0
+            ? blockEpoch == globalEpoch
+            : blockEpoch == static_cast<uint8_t>(globalEpoch - 1);
+        *result = (rawState == RawUnallocated) && nurseryOrReusing;
+        return SideMetadataResult::Success;
+    }
     SideMetadataResult IsReusing(uintptr_t block, bool* result) const;
     SideMetadataResult IsGcReusing(uintptr_t block, bool* result) const;
 
@@ -229,6 +270,11 @@ private:
     static bool IsFreshAcquire(ImmixBlockAcquireKind kind);
     static bool IsMatureEvacuationAcquire(ImmixBlockAcquireKind kind);
 
+    const SideMetadataAccessor& Accessor(LxrSideMetadataKind kind) const
+    {
+        return m_accessors[static_cast<size_t>(kind)];
+    }
+
     SideMetadataResult ValidateBlock(uintptr_t block) const;
     SideMetadataResult LoadByte(
         LxrSideMetadataKind kind,
@@ -263,6 +309,8 @@ private:
     void EndPhaseTransition();
 
     SideMetadataManager* m_metadata;
+    SideMetadataAccessor m_accessors[LxrSideMetadataLayout::SpecCount];
+    SideMetadataAccessor m_reference_count;
     std::atomic<uint8_t> m_global_phase_epoch;
     mutable std::atomic<uint32_t> m_active_operations;
     std::atomic<uint64_t> m_flip_serial{0};

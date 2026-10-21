@@ -311,6 +311,16 @@ SideMetadataResult ImmixBlockManager::Initialize(SideMetadataManager* metadata)
     }
 
     m_metadata = metadata;
+    for (LxrSideMetadataKind kind : RequiredKinds)
+    {
+        m_accessors[static_cast<size_t>(kind)] = metadata->GetAccessor(kind);
+        if (!m_accessors[static_cast<size_t>(kind)].IsValid())
+        {
+            Shutdown();
+            return SideMetadataResult::InvalidLayout;
+        }
+    }
+    m_reference_count = metadata->GetAccessor(LxrSideMetadataKind::ReferenceCount);
     m_global_phase_epoch.store(InitialPhaseEpoch, std::memory_order_seq_cst);
     m_active_operations.store(0, std::memory_order_seq_cst);
     m_phase_transition.store(false, std::memory_order_seq_cst);
@@ -320,6 +330,11 @@ SideMetadataResult ImmixBlockManager::Initialize(SideMetadataManager* metadata)
 void ImmixBlockManager::Shutdown()
 {
     m_metadata = nullptr;
+    for (SideMetadataAccessor& accessor : m_accessors)
+    {
+        accessor = SideMetadataAccessor();
+    }
+    m_reference_count = SideMetadataAccessor();
     m_global_phase_epoch.store(InitialPhaseEpoch, std::memory_order_seq_cst);
     m_active_operations.store(0, std::memory_order_seq_cst);
     m_phase_transition.store(false, std::memory_order_seq_cst);
@@ -847,7 +862,12 @@ SideMetadataResult ImmixBlockManager::TryReleaseIfRcDead(
         return SideMetadataResult::Success;
     }
     bool dead = false;
-    if (result == SideMetadataResult::Success)
+    if (result == SideMetadataResult::Success && m_reference_count.IsValid())
+    {
+        // TryLock has validated the block, so the range of its reference-count words is committed.
+        dead = m_reference_count.IsRangeZero(block, ImmixBlockGeometry::BlockBytes, MetadataOrder);
+    }
+    else if (result == SideMetadataResult::Success)
     {
         result = m_metadata->IsRangeZero(
             LxrSideMetadataKind::ReferenceCount, block,
@@ -1260,6 +1280,14 @@ SideMetadataResult ImmixBlockManager::LoadByte(
         return result;
     }
 
+    const SideMetadataAccessor& accessor = Accessor(kind);
+    if (accessor.IsValid())
+    {
+        // ValidateBlock has shown that the block is aligned and owned.
+        *value = static_cast<uint8_t>(accessor.Load(block, MetadataOrder));
+        return SideMetadataResult::Success;
+    }
+
     uintptr_t loaded;
     result = m_metadata->Load(kind, block, MetadataOrder, &loaded);
     if (result == SideMetadataResult::Success)
@@ -1275,9 +1303,19 @@ SideMetadataResult ImmixBlockManager::StoreByte(
     uint8_t value)
 {
     SideMetadataResult result = ValidateBlock(block);
-    return result == SideMetadataResult::Success
-        ? m_metadata->Store(kind, block, value, MetadataOrder)
-        : result;
+    if (result != SideMetadataResult::Success)
+    {
+        return result;
+    }
+
+    const SideMetadataAccessor& accessor = Accessor(kind);
+    if (accessor.IsValid() && ((value & ~accessor.GetValueMask()) == 0))
+    {
+        accessor.Store(block, value, MetadataOrder);
+        return SideMetadataResult::Success;
+    }
+
+    return m_metadata->Store(kind, block, value, MetadataOrder);
 }
 
 SideMetadataResult ImmixBlockManager::CompareExchangeByte(
@@ -1302,6 +1340,16 @@ SideMetadataResult ImmixBlockManager::CompareExchangeByte(
     }
 
     uintptr_t rawObserved;
+    const SideMetadataAccessor& accessor = Accessor(kind);
+    if (accessor.IsValid() &&
+        ((value & ~accessor.GetValueMask()) == 0) &&
+        ((comparand & ~accessor.GetValueMask()) == 0))
+    {
+        *exchanged = accessor.CompareExchange(block, value, comparand, MetadataOrder, &rawObserved);
+        *observed = static_cast<uint8_t>(rawObserved);
+        return SideMetadataResult::Success;
+    }
+
     result = m_metadata->CompareExchange(
         kind,
         block,
@@ -1350,13 +1398,23 @@ SideMetadataResult ImmixBlockManager::LoadOwner(
 
     *owner = NoOwner;
     SideMetadataResult result = ValidateBlock(block);
-    return result == SideMetadataResult::Success
-        ? m_metadata->Load(
-            LxrSideMetadataKind::BlockOwner,
-            block,
-            MetadataOrder,
-            owner)
-        : result;
+    if (result != SideMetadataResult::Success)
+    {
+        return result;
+    }
+
+    const SideMetadataAccessor& accessor = Accessor(LxrSideMetadataKind::BlockOwner);
+    if (accessor.IsValid())
+    {
+        *owner = accessor.Load(block, MetadataOrder);
+        return SideMetadataResult::Success;
+    }
+
+    return m_metadata->Load(
+        LxrSideMetadataKind::BlockOwner,
+        block,
+        MetadataOrder,
+        owner);
 }
 
 SideMetadataResult ImmixBlockManager::StoreOwner(
@@ -1364,13 +1422,23 @@ SideMetadataResult ImmixBlockManager::StoreOwner(
     uintptr_t owner)
 {
     SideMetadataResult result = ValidateBlock(block);
-    return result == SideMetadataResult::Success
-        ? m_metadata->Store(
-            LxrSideMetadataKind::BlockOwner,
-            block,
-            owner,
-            MetadataOrder)
-        : result;
+    if (result != SideMetadataResult::Success)
+    {
+        return result;
+    }
+
+    const SideMetadataAccessor& accessor = Accessor(LxrSideMetadataKind::BlockOwner);
+    if (accessor.IsValid() && ((owner & ~accessor.GetValueMask()) == 0))
+    {
+        accessor.Store(block, owner, MetadataOrder);
+        return SideMetadataResult::Success;
+    }
+
+    return m_metadata->Store(
+        LxrSideMetadataKind::BlockOwner,
+        block,
+        owner,
+        MetadataOrder);
 }
 
 SideMetadataResult ImmixBlockManager::IsNurseryOrReusing(

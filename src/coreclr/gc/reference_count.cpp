@@ -35,12 +35,23 @@ SideMetadataResult ReferenceCountTable::Initialize(
 
     m_metadata = metadata;
     m_log_reference_count_bits = referenceCount->log_bits_per_value;
+    m_rc = metadata->GetAccessor(LxrSideMetadataKind::ReferenceCount);
+    m_valid = metadata->GetAccessor(LxrSideMetadataKind::ValidObject);
+    m_straddle = metadata->GetAccessor(LxrSideMetadataKind::ReferenceCountStraddle);
+    if (!m_rc.IsValid() || !m_valid.IsValid() || !m_straddle.IsValid())
+    {
+        Shutdown();
+        return SideMetadataResult::InvalidLayout;
+    }
     return SideMetadataResult::Success;
 }
 
 void ReferenceCountTable::Shutdown()
 {
     m_metadata = nullptr;
+    m_rc = SideMetadataAccessor();
+    m_valid = SideMetadataAccessor();
+    m_straddle = SideMetadataAccessor();
     m_log_reference_count_bits = 0;
 }
 
@@ -331,6 +342,27 @@ SideMetadataResult ReferenceCountTable::DecrementWithDeath(
     uintptr_t* previous,
     SideMetadataUpdateStatus* status)
 {
+    return DecrementWithDeathCore<false>(object, death, context, previous, status);
+}
+
+SideMetadataResult ReferenceCountTable::DecrementWithDeathFast(
+    uintptr_t object,
+    ReferenceCountDeathCallback death,
+    void* context,
+    uintptr_t* previous,
+    SideMetadataUpdateStatus* status)
+{
+    return DecrementWithDeathCore<true>(object, death, context, previous, status);
+}
+
+template <bool Fast>
+SideMetadataResult ReferenceCountTable::DecrementWithDeathCore(
+    uintptr_t object,
+    ReferenceCountDeathCallback death,
+    void* context,
+    uintptr_t* previous,
+    SideMetadataUpdateStatus* status)
+{
     if (death == nullptr || previous == nullptr || status == nullptr)
     {
         return SideMetadataResult::InvalidArgument;
@@ -338,7 +370,7 @@ SideMetadataResult ReferenceCountTable::DecrementWithDeath(
     *previous = 0;
     *status = SideMetadataUpdateStatus::Unchanged;
     uintptr_t count;
-    SideMetadataResult result = Load(object, &count);
+    SideMetadataResult result = Fast ? LoadFast(object, &count) : Load(object, &count);
     while (result == SideMetadataResult::Success)
     {
         *previous = count;
@@ -357,22 +389,37 @@ SideMetadataResult ReferenceCountTable::DecrementWithDeath(
                 return result;
             }
             // Invalidate the old start while RC still prevents allocation into its lines.
-            result = m_metadata->Store(
-                LxrSideMetadataKind::ValidObject, object, 0,
-                SideMetadataMemoryOrder::Relaxed);
-            if (result != SideMetadataResult::Success)
+            if (Fast)
             {
-                return result;
+                m_valid.Store(object, 0, SideMetadataMemoryOrder::Relaxed);
+            }
+            else
+            {
+                result = m_metadata->Store(
+                    LxrSideMetadataKind::ValidObject, object, 0,
+                    SideMetadataMemoryOrder::Relaxed);
+                if (result != SideMetadataResult::Success)
+                {
+                    return result;
+                }
             }
         }
         uintptr_t observed;
         bool exchanged;
-        result = m_metadata->CompareExchange(
-            LxrSideMetadataKind::ReferenceCount, object, count - 1, count,
-            SideMetadataMemoryOrder::Relaxed, &observed, &exchanged);
-        if (result != SideMetadataResult::Success)
+        if (Fast)
         {
-            return result;
+            exchanged = m_rc.CompareExchange(
+                object, count - 1, count, SideMetadataMemoryOrder::Relaxed, &observed);
+        }
+        else
+        {
+            result = m_metadata->CompareExchange(
+                LxrSideMetadataKind::ReferenceCount, object, count - 1, count,
+                SideMetadataMemoryOrder::Relaxed, &observed, &exchanged);
+            if (result != SideMetadataResult::Success)
+            {
+                return result;
+            }
         }
         if (exchanged)
         {
@@ -677,12 +724,26 @@ SideMetadataResult ReferenceCountTable::SetValidObject(
     uintptr_t object,
     uintptr_t value)
 {
-    return m_metadata->Store(
-        LxrSideMetadataKind::ValidObject,
-        object,
-        value,
-        SideMetadataMemoryOrder::SequentiallyConsistent);
+    // Every caller has validated the object address, or comes from the allocation path of the engine.
+    m_valid.Store(object, value, SideMetadataMemoryOrder::SequentiallyConsistent);
+    return SideMetadataResult::Success;
 }
+
+#ifdef _DEBUG
+void ReferenceCountTable::DebugValidateStraddleRange(
+    uintptr_t object,
+    size_t size,
+    bool requireEmpty) const
+{
+    SideMetadataResult result = ValidateObjectRange(object, size, true);
+    if ((result == SideMetadataResult::Success) && (size > ImmixBlockGeometry::LineBytes))
+    {
+        result = ValidateContinuationLines(object, size, requireEmpty);
+    }
+    _ASSERTE(result == SideMetadataResult::Success);
+    (void)result;
+}
+#endif // _DEBUG
 
 SideMetadataResult ReferenceCountTable::MarkStraddleLinesUnchecked(
     uintptr_t object,
@@ -693,23 +754,8 @@ SideMetadataResult ReferenceCountTable::MarkStraddleLinesUnchecked(
     GetContinuationRange(object, size, &first, &end);
     for (uintptr_t line = first; line < end; line += ImmixBlockGeometry::LineBytes)
     {
-        SideMetadataResult result = m_metadata->Store(
-            LxrSideMetadataKind::ReferenceCountStraddle,
-            line,
-            1,
-            SideMetadataMemoryOrder::Relaxed);
-        if (result == SideMetadataResult::Success)
-        {
-            result = m_metadata->Store(
-                LxrSideMetadataKind::ReferenceCount,
-                line,
-                1,
-                SideMetadataMemoryOrder::Relaxed);
-        }
-        if (result != SideMetadataResult::Success)
-        {
-            return result;
-        }
+        m_straddle.Store(line, 1, SideMetadataMemoryOrder::Relaxed);
+        m_rc.Store(line, 1, SideMetadataMemoryOrder::Relaxed);
     }
     return SideMetadataResult::Success;
 }
@@ -723,23 +769,8 @@ SideMetadataResult ReferenceCountTable::ClearStraddleLinesUnchecked(
     GetContinuationRange(object, size, &first, &end);
     for (uintptr_t line = first; line < end; line += ImmixBlockGeometry::LineBytes)
     {
-        SideMetadataResult result = m_metadata->Store(
-            LxrSideMetadataKind::ReferenceCountStraddle,
-            line,
-            0,
-            SideMetadataMemoryOrder::SequentiallyConsistent);
-        if (result == SideMetadataResult::Success)
-        {
-            result = m_metadata->Store(
-                LxrSideMetadataKind::ReferenceCount,
-                line,
-                0,
-                SideMetadataMemoryOrder::SequentiallyConsistent);
-        }
-        if (result != SideMetadataResult::Success)
-        {
-            return result;
-        }
+        m_straddle.Store(line, 0, SideMetadataMemoryOrder::SequentiallyConsistent);
+        m_rc.Store(line, 0, SideMetadataMemoryOrder::SequentiallyConsistent);
     }
     return SideMetadataResult::Success;
 }
