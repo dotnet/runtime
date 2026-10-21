@@ -9,6 +9,7 @@
 #include "gceventstatus.h"
 #include "objecthandle.h"
 
+#include <algorithm>
 #include <new>
 #ifndef TARGET_WINDOWS
 #include <time.h>
@@ -203,12 +204,12 @@ LxrGcHeap::LxrGcHeap()
       m_notification{AllocationNotificationRequestStatus::NotProcessed, AllocationComplete, this},
       m_enumeration{ObjectReferenceEnumerationRequestStatus::NotProcessed,
           ObjectReferenceEnumerationRequest::Enabled, nullptr},
-      m_flags(nullptr), m_frozen{}, m_frozen_readers(0), m_cards(nullptr), m_bundles(nullptr),
+      m_frozen{}, m_frozen_readers(0), m_cards(nullptr), m_bundles(nullptr),
       m_collection_lock(), m_gc_done(), m_trace_signal(), m_coordinator_done(), m_concurrent_done(),
       m_initialized(false), m_in_gc(false), m_shutdown(false), m_concurrent_enabled(true),
       m_collections(0), m_memory_info{}, m_memory_sequence{},
       m_current_pause_kind(LxrPauseKind::RefCount), m_heap_before(0), m_fragmentation_before(0),
-      m_trace_heap_before(0), m_trace_fragmentation_before(0), m_initial_pause_ticks(0), m_pinned_roots(0),
+      m_trace_heap_before(0), m_trace_fragmentation_before(0), m_initial_pause_ticks(0),
       m_scan_failure(LxrRcResult::Success), m_latency(1), m_loh_mode(1),
       m_total_pause_ticks(0), m_last_pause_ticks(0), m_pause_start(0), m_start_time(0),
       m_last_gc_start(0), m_last_gc_duration(0), m_last_heap_size(0), m_last_committed(0),
@@ -414,28 +415,15 @@ HRESULT LxrGcHeap::Initialize()
     LxrPauseRuntimeAdapter runtime{Suspend, Resume, this, true};
     LxrRcObjectModel model{
         m_enumeration.get_loader_allocator_object_slot, true, FinishTrace, this, IsImmortal, FinishEpoch,
-        AdmitRange, FinishLazy, CanAdmitRange,
-        IsPinned, DidCopy, FinishRelocation, ReleaseRange,
+        nullptr, FinishLazy, CanAdmitRange,
     };
+    model.finishRelocation = FinishRelocation;
     if (m_engine.Initialize(configuration, runtime, &model) != LxrRcResult::Success)
     {
         Unsupported("LXR could not reserve its owned heap, metadata or worker resources.");
         return E_OUTOFMEMORY;
     }
-    size_t slots = m_engine.GetObjectStorageSlots();
-    size_t largeStart = m_engine.GetImmixReservationBytes() / sizeof(uintptr_t);
-    size_t largeFirst = m_engine.GetObjectStorageIndex(largeStart);
-    if (!m_flag_storage.Reserve(slots) ||
-        !m_flag_storage.Commit(0, configuration.immixBytes / sizeof(uintptr_t)) ||
-        !m_flag_storage.Commit(largeFirst,
-            m_engine.GetObjectStorageIndex(largeStart + configuration.largeObjectBytes / sizeof(uintptr_t)) -
-                largeFirst))
-    {
-        m_engine.Shutdown();
-        return E_OUTOFMEMORY;
-    }
-    m_flags = m_flag_storage.Get();
-    if (m_engine.GetNativePlaneCommittedBytes() + m_flag_storage.GetCommittedBytes() > m_native_plane_limit)
+    if (m_engine.GetNativePlaneCommittedBytes() > m_native_plane_limit)
     {
         m_engine.Shutdown();
         Unsupported("LXR initial native planes exceed LXRNativePlaneLimitMB.");
@@ -443,7 +431,7 @@ HRESULT LxrGcHeap::Initialize()
     }
     m_cards = new (std::nothrow) uint8_t[m_engine.GetReservationBytes() / 2048 + 1]{};
     m_bundles = new (std::nothrow) uint8_t[m_engine.GetReservationBytes() / (2 * 1024 * 1024) + 1]{};
-    if (m_flags == nullptr || m_cards == nullptr || m_bundles == nullptr)
+    if (m_cards == nullptr || m_bundles == nullptr)
     {
         m_engine.Shutdown();
         return E_OUTOFMEMORY;
@@ -584,7 +572,10 @@ Object* LxrGcHeap::Alloc(gc_alloc_context* context, size_t size, uint32_t flags)
         return nullptr;
     }
     Object* object = nullptr;
-    LxrRcResult result = m_engine.Allocate(mutator, size, &object);
+    // A pinned-object-heap object of a small size goes into a pinned block. The engine keeps those blocks apart, so
+    // the pause needs no per-object flag to know that the object stays.
+    bool pinned = (flags & GC_ALLOC_PINNED_OBJECT_HEAP) != 0;
+    LxrRcResult result = m_engine.Allocate(mutator, size, &object, pinned);
     if (result == LxrRcResult::AllocationFailure && !m_shutdown.load())
     {
         // The lazy sweep after the last pause makes promoted blocks Reusable. A collection is needed only if the
@@ -596,7 +587,7 @@ Object* LxrGcHeap::Alloc(gc_alloc_context* context, size_t size, uint32_t flags)
         {
             Fatal("LXR lazy sweep did not finish before an allocation retry.");
         }
-        result = m_engine.Allocate(mutator, size, &object);
+        result = m_engine.Allocate(mutator, size, &object, pinned);
     }
     if (result == LxrRcResult::AllocationFailure && !m_shutdown.load())
     {
@@ -604,14 +595,14 @@ Object* LxrGcHeap::Alloc(gc_alloc_context* context, size_t size, uint32_t flags)
         {
             Fatal("LXR space-pressure collection failed before growth admission.");
         }
-        result = m_engine.Allocate(mutator, size, &object);
+        result = m_engine.Allocate(mutator, size, &object, pinned);
     }
     if (result == LxrRcResult::AllocationFailure && !m_shutdown.load())
     {
         LxrRcResult grown = TryGrow(size >= LxrLargeObjectSpace::MinimumObjectBytes, size);
         if (grown == LxrRcResult::Success)
         {
-            result = m_engine.Allocate(mutator, size, &object);
+            result = m_engine.Allocate(mutator, size, &object, pinned);
         }
         else if (grown != LxrRcResult::AllocationFailure && grown != LxrRcResult::OutOfMemory)
         {
@@ -624,7 +615,7 @@ Object* LxrGcHeap::Alloc(gc_alloc_context* context, size_t size, uint32_t flags)
         {
             Fatal("LXR emergency full collection failed.");
         }
-        result = m_engine.Allocate(mutator, size, &object);
+        result = m_engine.Allocate(mutator, size, &object, pinned);
     }
     if (result == LxrRcResult::AllocationFailure)
     {
@@ -634,16 +625,6 @@ Object* LxrGcHeap::Alloc(gc_alloc_context* context, size_t size, uint32_t flags)
     {
         Fatal("LXR owned allocator failed an allocation invariant.");
     }
-    uint32_t state = 0;
-    if ((flags & GC_ALLOC_PINNED_OBJECT_HEAP) != 0)
-    {
-        state |= Pinned;
-    }
-    if ((flags & GC_ALLOC_LARGE_OBJECT_HEAP) != 0 || size >= LxrLargeObjectSpace::MinimumObjectBytes)
-    {
-        state |= Large;
-    }
-    m_flags[ObjectIndex(object)].store(state, std::memory_order_release);
     if ((flags & GC_ALLOC_USER_OLD_HEAP) != 0)
     {
         context->alloc_bytes_uoh += static_cast<int64_t>(size);
@@ -674,33 +655,11 @@ Object* LxrGcHeap::Alloc(gc_alloc_context* context, size_t size, uint32_t flags)
     return object;
 }
 
-bool LxrGcHeap::AdmitRange(size_t firstSlot, size_t slotCount, bool initialize, void* heap)
+bool LxrGcHeap::CanAdmitRange(size_t, size_t, size_t nativeBytes, void* context)
 {
-    LxrGcHeap* owner = static_cast<LxrGcHeap*>(heap);
-    size_t first = owner->m_engine.GetObjectStorageIndex(firstSlot);
-    size_t count = owner->m_engine.GetObjectStorageIndex(firstSlot + slotCount) - first;
-    return owner->m_flag_storage.Commit(first, count, initialize);
-}
-
-bool LxrGcHeap::ReleaseRange(size_t firstSlot, size_t slotCount, bool tailIsLast, void* heap)
-{
-    LxrGcHeap* owner = static_cast<LxrGcHeap*>(heap);
-    size_t first = owner->m_engine.GetObjectStorageIndex(firstSlot);
-    size_t count = owner->m_engine.GetObjectStorageIndex(firstSlot + slotCount) - first;
-    return owner->m_flag_storage.Decommit(first, count, tailIsLast);
-}
-
-bool LxrGcHeap::CanAdmitRange(size_t firstSlot, size_t slotCount, size_t nativeBytes, void* context)
-{
+    // The engine reports all native planes. The collector keeps no per-object table of its own since P17 S7.
     LxrGcHeap* heap = static_cast<LxrGcHeap*>(context);
-    size_t first = heap->m_engine.GetObjectStorageIndex(firstSlot);
-    size_t count = heap->m_engine.GetObjectStorageIndex(firstSlot + slotCount) - first;
-    size_t flags = heap->m_flag_storage.ProjectedCommittedBytes(first, count);
-    if (flags > heap->m_native_plane_limit || nativeBytes > heap->m_native_plane_limit - flags)
-    {
-        return false;
-    }
-    return true;
+    return nativeBytes <= heap->m_native_plane_limit;
 }
 
 LxrRcResult LxrGcHeap::TryGrow(bool large, size_t size)
@@ -777,17 +736,6 @@ void LOCALGC_CALLCONV LxrGcHeap::AllocationComplete(
     {
         heap->Fatal("LXR allocation-complete metadata publication failed.");
     }
-    uint32_t state = Born;
-    uint32_t facts = static_cast<uint32_t>(flags);
-    if ((facts & static_cast<uint32_t>(AllocationCompleteFlags::PinnedObjectHeap)) != 0)
-    {
-        state |= Pinned;
-    }
-    if ((facts & static_cast<uint32_t>(AllocationCompleteFlags::LargeObjectHeap)) != 0 ||
-        size >= LxrLargeObjectSpace::MinimumObjectBytes)
-    {
-        state |= Large;
-    }
     if ((static_cast<uint32_t>(flags) & static_cast<uint32_t>(AllocationCompleteFlags::Finalizable)) != 0)
     {
         // Alloc does not register: the runtime reports every allocation here with its final type, so an object is
@@ -797,7 +745,6 @@ void LOCALGC_CALLCONV LxrGcHeap::AllocationComplete(
             heap->Fatal("LXR could not register an object for finalization.");
         }
     }
-    heap->m_flags[heap->ObjectIndex(object)].store(state, std::memory_order_release);
     if (fast)
     {
         heap->m_fast_allocations.fetch_add(1, std::memory_order_relaxed);
@@ -1086,7 +1033,6 @@ void LxrGcHeap::Suspend(void* context)
         heap->Fatal("LXR survival predictor allocation snapshot was not retired.");
     }
     heap->m_collections.fetch_add(1, std::memory_order_relaxed);
-    heap->m_pinned_roots.store(0);
     GCToEEInterface::GcStartWork(2, 2);
 }
 
@@ -1342,7 +1288,6 @@ void LxrGcHeap::ExecuteScan(uint8_t kind)
             GCScan::GcPromotionsGranted(2, 2, &scan);
             GCToEEInterface::AfterGcScanRoots(2, 2, &scan);
         });
-        heap->ClearTouchedObjects();
         size_t heapBytes = 0;
         size_t fragmentation = 0;
         LxrRcResult result = LxrRcResult::Success;
@@ -1359,13 +1304,6 @@ void LxrGcHeap::ExecuteScan(uint8_t kind)
             heap->m_scan_failure.store(result);
         }
     }
-}
-
-size_t LxrGcHeap::ObjectIndex(Object* object) const
-{
-    return m_engine.GetObjectStorageIndex(
-        (reinterpret_cast<uintptr_t>(object) - sizeof(ObjHeader) - m_engine.GetReservationStart()) /
-            sizeof(uintptr_t));
 }
 
 void LxrGcHeap::AddRoot(Object* object, uint32_t flags, bool trace)
@@ -1396,11 +1334,13 @@ void LxrGcHeap::AddRoot(Object* object, uint32_t flags, bool trace)
     }
     if ((flags & GC_CALL_PINNED) != 0)
     {
-        uint32_t previous = m_flags[ObjectIndex(object)].fetch_or(ObservedPin);
-        if ((previous & ObservedPin) == 0)
+        // The pin list keeps the object where it is for this pause. The list is not a table by address: its size
+        // follows the number of pinned roots.
+        LxrRcResult pinned = m_engine.AddPinnedRoot(object, false, 0);
+        if (pinned != LxrRcResult::Success)
         {
-            m_pinned_roots.fetch_add(1);
-            TouchObject(object);
+            m_scan_failure.store(pinned);
+            return;
         }
     }
     LxrRcResult result = m_engine.AddRoot(object, false, trace);
@@ -1425,21 +1365,6 @@ void LxrGcHeap::RelocateRoot(Object** slot, ScanContext*, uint32_t flags)
     {
         s_heap->m_scan_failure.store(result);
     }
-}
-
-bool LxrGcHeap::IsPinned(Object* object, void* context)
-{
-    LxrGcHeap* heap = static_cast<LxrGcHeap*>(context);
-    return (heap->m_flags[heap->ObjectIndex(object)].load(std::memory_order_acquire) &
-        (Pinned | ObservedPin)) != 0;
-}
-
-void LxrGcHeap::DidCopy(Object* source, Object* destination, void* context)
-{
-    LxrGcHeap* heap = static_cast<LxrGcHeap*>(context);
-    uint32_t flags = heap->m_flags[heap->ObjectIndex(source)].exchange(0, std::memory_order_acq_rel);
-    heap->m_flags[heap->ObjectIndex(destination)].store(flags | CopiedThisPause, std::memory_order_release);
-    heap->TouchObject(destination);
 }
 
 void LxrGcHeap::TraceRoot(Object** slot, ScanContext*, uint32_t flags)
@@ -1493,23 +1418,6 @@ void CALLBACK LxrGcHeap::LeaseSyncBlock(
 bool LxrGcHeap::IsFinalizationSuppressed(Object* object)
 {
     return (object->GetHeader()->GetBits() & BIT_SBLK_FINALIZER_RUN) != 0;
-}
-
-void LxrGcHeap::TouchObject(Object* object)
-{
-    if (!m_touched.Append(reinterpret_cast<uintptr_t>(object)))
-    {
-        Fatal("LXR could not record an object with a pin or copy flag.");
-    }
-}
-
-void LxrGcHeap::ClearTouchedObjects()
-{
-    size_t cleared = m_touched.Drain([this](uintptr_t value)
-    {
-        m_flags[ObjectIndex(reinterpret_cast<Object*>(value))].fetch_and(~(ObservedPin | CopiedThisPause));
-    });
-    m_touched_cleared.fetch_add(cleared, std::memory_order_relaxed);
 }
 
 void LxrGcHeap::CaptureFinalizers()
@@ -1839,7 +1747,7 @@ void LxrGcHeap::PublishMemoryInfo()
     uint64_t values[MemoryFields]{
         available, physical / 10 * 9, physical / 100 * m_last_memory_load.load(),
         m_last_heap_size.load(), m_last_fragmentation.load(), m_last_committed.load(),
-        m_engine.GetUsedBytesEstimate(), m_pinned_roots.load(), m_registry.GetPendingCount(),
+        m_engine.GetUsedBytesEstimate(), m_engine.GetPinnedRootCount(), m_registry.GetPendingCount(),
         m_collections.load(), 2, static_cast<uint64_t>(GetLastGCPercentTimeInGC()),
         concurrent ? 1u : 0u,
         m_engine.GetNurseryMetrics().pauseCopiedBytes != 0 ||
@@ -2181,7 +2089,9 @@ void LxrGcHeap::DiagWalkSurvivorsWithType(
         LxrGcHeap* heap;
         record_surv_fn callback;
         void* context;
-    } walk{this, callback, context};
+        LxrWordArray copies;
+        bool failed;
+    } walk{this, callback, context, {}, false};
     LxrRcResult forwarded = m_engine.WalkForwarded([](
         Object* source, Object* destination, size_t size, void* state)
     {
@@ -2192,17 +2102,21 @@ void LxrGcHeap::DiagWalkSurvivorsWithType(
         ptrdiff_t displacement = after >= before
             ? static_cast<ptrdiff_t>(after - before) : -static_cast<ptrdiff_t>(before - after);
         walk->callback(start, start + size, displacement, walk->context, true, false);
+        // The copies are known from the forwarding records. They are reported as moved, so the walk below skips them.
+        walk->failed |= !walk->copies.Push(after);
         return true;
     }, &walk);
-    if (forwarded != LxrRcResult::Success)
+    if (forwarded != LxrRcResult::Success || walk.failed)
     {
         Fatal("LXR moved survivor walk failed.");
     }
+    std::sort(walk.copies.Data(), walk.copies.Data() + walk.copies.Size());
     LxrRcResult result = m_engine.WalkObjects([](Object* object, size_t size, void* state)
     {
         SurvivorContext* walk = static_cast<SurvivorContext*>(state);
+        const uintptr_t* copies = walk->copies.Data();
         if (walk->heap->IsPromoted(object) &&
-            (walk->heap->m_flags[walk->heap->ObjectIndex(object)].load() & CopiedThisPause) == 0)
+            !std::binary_search(copies, copies + walk->copies.Size(), reinterpret_cast<uintptr_t>(object)))
         {
             uint8_t* start = reinterpret_cast<uint8_t*>(object);
             walk->callback(start, start + size, 0, walk->context, false, false);
@@ -2455,8 +2369,9 @@ LxrRcResult LxrGcHeap::GetPrototypeStorageRange(
     }
     if (component == 16)
     {
-        *start = reinterpret_cast<uintptr_t>(m_flag_storage.Get());
-        *bytes = m_flag_storage.GetReservedBytes();
+        // The per-object flag table was removed in P17 S7.
+        *start = 0;
+        *bytes = 0;
         return LxrRcResult::Success;
     }
     return m_engine.GetStorageRange(component, start, bytes);
@@ -2508,7 +2423,7 @@ uint64_t LxrGcHeap::GetPrototypeMetric(uint32_t metric) const
         case 35: return m_engine.GetReservationBytes();
         case 36: return m_engine.GetAdmittedBytes();
         case 37: return m_engine.GetGrowthCount();
-        case 38: return m_engine.GetNativePlaneCommittedBytes() + m_flag_storage.GetCommittedBytes();
+        case 38: return m_engine.GetNativePlaneCommittedBytes();
         case 39: return static_cast<uint64_t>(m_policy.SurvivalRatio() * 1000000000.0);
         case 40: return static_cast<uint64_t>(m_policy.MatureLivePages() * 1000.0);
         case 41: return m_policy.CycleHint();
@@ -2518,7 +2433,7 @@ uint64_t LxrGcHeap::GetPrototypeMetric(uint32_t metric) const
         case 45: return m_native_plane_limit;
         case 46: return m_engine.GetLifetimeProbeBirths();
         case 47: return m_engine.GetLifetimeProbeReclaims();
-        case 71: return m_flag_storage.GetCommittedBytes();
+        case 71: return 0; // The flag table of the collector (P17 S7 removed it).
         case 72: return m_engine.GetStorageMetric(23);
         case 73: return m_engine.GetStorageMetric(24);
         case 74: return m_engine.GetStorageMetric(25);
@@ -2584,7 +2499,7 @@ uint64_t LxrGcHeap::GetPrototypeMetric(uint32_t metric) const
                 case 456: return m_registry.GetTaken();
                 case 461: return m_registry.GetDuplicates();
                 case 457: return m_registry_counters.walked.load(std::memory_order_relaxed);
-                case 458: return m_touched_cleared.load(std::memory_order_relaxed);
+                case 458: return m_engine.GetPinnedRootCount();
                 case 459: return m_registry.GetCountedCapacity() * sizeof(uintptr_t);
                 case 460: return m_registry.GetPendingCount();
                 default: break;

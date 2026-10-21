@@ -10,6 +10,7 @@
 #include "lxr_pause_coordinator.h"
 #include "lxr_virtual_array.h"
 #include "lxr_finalizer_registry.h"
+#include "lxr_pin_list.h"
 
 class Object;
 class LxrReferenceCounting;
@@ -110,8 +111,8 @@ struct LxrRcObjectModel
     bool (*admitRange)(size_t firstSlot, size_t slotCount, bool initialize, void* context) = nullptr;
     LxrRcTraceClosure finishLazy = nullptr;
     bool (*canAdmitRange)(size_t firstSlot, size_t slotCount, size_t nativeBytes, void* context) = nullptr;
-    bool (*isPinned)(Object* object, void* context) = nullptr;
-    void (*didCopy)(Object* source, Object* destination, void* context) = nullptr;
+    // P17 S7: the pin callback and the copy callback are gone. The engine keeps the pin list of the pause itself
+    // (AddPinnedRoot), and a profiler walk reads the copies from the forwarding records (WalkForwarded).
     LxrRcTraceClosure finishRelocation = nullptr;
     // P17 S5b: releases the per-object storage of a range that the engine gives back (the reverse of admitRange).
     // tailIsLast: no admitted range follows the one that is given back in the storage, so a shared page may be released.
@@ -336,7 +337,10 @@ public:
     LxrRcResult GetAllocationSpan(LxrRcMutator* mutator, uintptr_t* cursor, uintptr_t* limit);
     LxrRcResult RetireAllocationSpan(LxrRcMutator* mutator, uintptr_t cursor);
     LxrRcResult RecordFastAllocation(LxrRcMutator* mutator, Object* object, size_t size, bool* fast);
-    LxrRcResult Allocate(LxrRcMutator* mutator, size_t completeSize, Object** object);
+    // pinned: the object belongs to the pinned object heap. A small one goes into a pinned block (a block that holds
+    // such objects only, and that no pause copies from). A large one goes into the large-object space, which never
+    // moves objects.
+    LxrRcResult Allocate(LxrRcMutator* mutator, size_t completeSize, Object** object, bool pinned = false);
     LxrRcResult CompleteAllocation(
         Object* object, size_t completeSize, AllocationCompleteFlags flags, LxrRcMutator* mutator = nullptr);
     LxrRcResult LogBeforeWrite(
@@ -351,6 +355,21 @@ public:
     // The number of such counts is not limited.
     LxrRcResult RetainRoot(Object* object);
     LxrRcResult ReleaseRoot(Object* object);
+    // P17 S7: tells the engine that the root capture found a pinned root. With interior set, the address may lie
+    // inside the object, and the engine pins the object that contains it. The call is for the root capture of a
+    // pause, and may run on several threads at once when each one uses its own shard number. The engine seals the
+    // list when the capture returns. The object must still be given to AddRoot: pinning keeps the object in place,
+    // it does not keep it alive.
+    LxrRcResult AddPinnedRoot(Object* object, bool interior = false, size_t shard = 0);
+    // Whether the pause that runs now must not move the object: it is in the pin list, or in a pinned block. Valid
+    // from the end of the root capture to the end of the pause.
+    bool IsPinnedForPause(Object* object) const;
+    // Number of different pinned roots of the last pause that ran its root capture.
+    uint64_t GetPinnedRootCount() const { return m_pause_pinned_roots.load(std::memory_order_acquire); }
+    // Whether the block of the address is a pinned block (it holds objects of the pinned object heap).
+    bool IsPinnedBlock(uintptr_t address) const;
+    // Number of blocks whose pause bit is set (0 outside a pause). For tests and Debug builds.
+    size_t CountPausePinnedBlocks() const;
     LxrRcResult TraceRoot(Object* object);
     // Like TraceRoot for many objects, with one drain at the end. The values are object addresses.
     LxrRcResult TraceRoots(const uintptr_t* objects, size_t count);
@@ -529,10 +548,8 @@ private:
     void CountWorker(size_t worker, size_t counter, uint64_t amount);
     uint64_t SumWorker(size_t counter) const;
     LxrRcResult InitializeBuffers(size_t slots);
-    bool CommitPlanes(size_t first, size_t count, bool commitTrace = true, bool initialize = true);
+    bool CommitPlanes(size_t first, size_t count, bool initialize = true);
     bool DecommitPlanes(size_t first, size_t count, bool tailIsLast);
-    bool CommitTracePlanes();
-    size_t GetTracePlaneBudget(size_t immixBytes, size_t largeBytes) const;
     LxrRcResult GrowSuspended();
     // Whether the native planes and the object storage can take the range [current, current + candidate) of the Immix
     // or the large-object space. With a larger candidate than fits, the increment is lowered to a number of
@@ -540,7 +557,7 @@ private:
     bool FitAdmission(bool large, size_t current, size_t minimum, size_t* increment);
     // Admits increment bytes after the current end of the space: commits the planes and the storage, the arena
     // memory and the log capacity, and raises the capacity.
-    LxrRcResult AdmitSuspended(bool large, size_t current, size_t increment, bool commitTrace, bool initialize);
+    LxrRcResult AdmitSuspended(bool large, size_t current, size_t increment, bool initialize);
     // P17 S5b. Pause only. Admit the Immix blocks that the copy may need beyond the free ones.
     LxrRcResult BorrowSuspended();
     // P17 S5b. Pause only, after the nursery blocks are released and before the epoch flips. Gives back the free tail
@@ -583,7 +600,14 @@ private:
     LxrRcResult AllocateCopy(size_t size, size_t worker, uintptr_t* start);
     LxrRcResult TryCopyMature(Object** object);
     LxrRcResult SelectMatureCandidates();
+    // P17 S7: marks the mature blocks that hold a pinned root as retained. It reads the pin list, so its cost follows
+    // the number of pinned roots and not the number of objects.
     LxrRcResult RetainPinnedMatureBlocks();
+    // The pause bit of a block and the pin list. SealPins runs once when the root capture returns; ClearPins runs at
+    // the end of the pause.
+    LxrRcResult SealPins();
+    void ClearPins();
+    bool IsPinnedObject(Object* object) const;
     bool IsMatureCandidate(uintptr_t address);
     LxrRcResult RememberMatureSlot(Object** slot, Object* target);
     LxrRcResult ReplayMatureRememberedSlots();
@@ -649,8 +673,14 @@ private:
     LxrRcResult OracleReclaimNursery(size_t block);
     size_t FindNextOracleSlot(size_t first) const;
 #endif // LXR_SIDE_METADATA_TEST_PLATFORM
+    // The per-object trace state is not a table any more (P17 S7). A fixed set of spin locks protects the trace of
+    // an object (the lock of an object is chosen by a hash of its address), and a fixed hash index holds the scans
+    // of the objects whose trace was split (only large arrays), keyed by the address of the object.
     std::atomic<uint8_t>& TraceLockSlot(size_t heapSlot) const;
-    TraceScan*& TraceScanSlot(size_t heapSlot) const;
+    TraceScan* FindTraceScan(size_t heapSlot) const;
+    void LinkTraceScan(size_t heapSlot, TraceScan* scan);
+    void UnlinkTraceScan(TraceScan* scan);
+    void MoveTraceScan(size_t fromSlot, size_t toSlot, TraceScan* scan);
 
     LxrRcConfiguration m_configuration;
     LxrRcObjectModel m_object_model;
@@ -685,8 +715,6 @@ private:
     LxrVirtualArray<std::atomic<uint64_t>> m_live_storage;
     std::atomic<uint64_t>* m_live_objects = nullptr;
 #endif // LXR_SIDE_METADATA_TEST_PLATFORM
-    LxrVirtualArray<std::atomic<uint8_t>> m_trace_lock_storage;
-    LxrVirtualArray<TraceScan*> m_trace_scan_storage;
     LxrVirtualArray<std::atomic<uint8_t>> m_allocated_block_storage;
     // The blocks that mutators took since the last pause (see ImmixAllocationManager::AcquireNotes).
     uint32_t* m_allocated_list = nullptr;
@@ -725,8 +753,24 @@ private:
     std::atomic<uint64_t> m_storage_metrics[9]{};
     std::atomic<uint64_t> m_trace_batch_metrics[5]{};
     std::atomic<bool> m_storage_diagnostics{false};
+    static constexpr size_t TraceLockCount = 16384;
+    static constexpr size_t TraceScanBucketCount = 4096;
+    struct alignas(64) TraceScanBucket
+    {
+        std::atomic_flag lock = ATOMIC_FLAG_INIT;
+        TraceScan* head = nullptr;
+    };
     std::atomic<uint8_t>* m_trace_locks;
-    TraceScan** m_trace_scans;
+    TraceScanBucket* m_scan_buckets;
+    std::atomic<size_t> m_scan_index_count{0};
+    // P17 S7. Pinning. m_block_flags has one byte per Immix block: ImmixAllocationManager::PinnedBlockFlag (the block
+    // holds pinned-object-heap objects) and PausePinFlag (the pause found a pinned root in the block).
+    static constexpr uint8_t PausePinFlag = 2;
+    LxrPinList m_pins;
+    std::atomic<uint8_t>* m_block_flags = nullptr;
+    ImmixBumpAllocator m_pinned_allocator;
+    std::atomic_flag m_pinned_lock = ATOMIC_FLAG_INIT;
+    std::atomic<uint64_t> m_pause_pinned_roots{0};
     std::atomic<TraceScan*> m_scan_work;
     std::atomic<LxrTracePhase> m_trace_phase;
     std::atomic<bool> m_marking;
@@ -781,7 +825,7 @@ private:
     std::atomic<uint64_t> m_reader_completions{0};
     std::atomic<uintptr_t> m_watched_remembered_slot{0};
     std::atomic<uint64_t> m_remembered_payload_reads{0};
-    std::atomic<uintptr_t> m_mature_scan_receipt[4]{};
+    std::atomic<uintptr_t> m_mature_scan_receipt[6]{};
 #endif // LXR_SIDE_METADATA_TEST_PLATFORM
 };
 

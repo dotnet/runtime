@@ -162,6 +162,7 @@ public:
 
     uintptr_t& operator[](size_t index) { return m_data[index]; }
     uintptr_t* Data() { return m_data; }
+    const uintptr_t* Data() const { return m_data; }
     uintptr_t operator[](size_t index) const { return m_data[index]; }
     size_t Size() const { return m_size; }
     void Truncate(size_t size) { m_size = size; }

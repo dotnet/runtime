@@ -150,15 +150,6 @@ private:
     static constexpr size_t MaximumFrozenSegments = 256;
     static constexpr uint32_t Timeout = 30000;
 
-    enum ObjectFlags : uint32_t
-    {
-        Born = 1,
-        Pinned = 32,
-        Large = 128,
-        ObservedPin = 256,
-        CopiedThisPause = 512,
-    };
-
     struct FrozenSegment
     {
         std::atomic<uint8_t> state{0};
@@ -175,8 +166,6 @@ private:
     static void Suspend(void* context);
     static void Resume(bool finished, void* context);
     static void RetireAllocationContext(gc_alloc_context* context, void* heap);
-    static bool AdmitRange(size_t firstSlot, size_t slotCount, bool initialize, void* heap);
-    static bool ReleaseRange(size_t firstSlot, size_t slotCount, bool tailIsLast, void* heap);
     static bool CanAdmitRange(size_t firstSlot, size_t slotCount, size_t nativeBytes, void* heap);
     static LxrRcResult CaptureRoots(LxrReferenceCounting* engine, void* context);
     static LxrRcResult FinishTrace(LxrReferenceCounting* engine, void* context);
@@ -188,8 +177,6 @@ private:
     static void CopyRoot(Object** slot, ScanContext* context, uint32_t flags);
     static void TraceRoot(Object** slot, ScanContext* context, uint32_t flags);
     static void RelocateRoot(Object** slot, ScanContext* context, uint32_t flags);
-    static bool IsPinned(Object* object, void* context);
-    static void DidCopy(Object* source, Object* destination, void* context);
     static void LeaseWeakHandle(Object** slot, Object* secondary, uint32_t flags, ScanContext* context, bool dependent);
     static void LeaseDependentRoot(Object** slot, ScanContext* context, uint32_t flags);
     static void CALLBACK LeaseSyncBlock(
@@ -215,14 +202,9 @@ private:
     void CaptureFinalizers();
     void DecideFinalization();
     void RelocateFinalizers();
-    // An object whose pin flag or copy flag was set in this pause is put on a list. The pause clears the flags from
-    // the list, so no walk over the heap is needed.
-    void TouchObject(Object* object);
-    void ClearTouchedObjects();
     void CountScanWork(size_t metric);
     bool FrozenContains(uintptr_t address, bool retired) const;
     void ScanFrozenRoots();
-    size_t ObjectIndex(Object* object) const;
     LxrRcResult CollectLocked(LxrPauseKind kind, bool forcedBlocking = false);
     bool EnterCollectionLock();
     void LeaveCollectionLock(bool cooperative);
@@ -253,8 +235,6 @@ private:
     AllocationNotificationParameters m_notification;
     ObjectReferenceEnumerationParameters m_enumeration;
     ObjectHeaderBitsParameters m_header_bits{};
-    std::atomic<uint32_t>* m_flags;
-    LxrVirtualArray<std::atomic<uint32_t>> m_flag_storage;
     FrozenSegment m_frozen[MaximumFrozenSegments];
     std::atomic<uint32_t> m_frozen_readers;
     uint8_t* m_cards;
@@ -278,8 +258,6 @@ private:
     std::atomic<unsigned> m_collections;
     LxrFinalizerRegistry m_registry;
     LxrFinalizerPauseCounters m_registry_counters;
-    LxrAppendList m_touched;
-    std::atomic<uint64_t> m_touched_cleared{0};
     // Set by Resume when it did not signal the finalizer thread because a cycle sweep was pending (see
     // GetNextFinalizable). FinishLazy sends the signal once the sweep has finished.
     std::atomic<bool> m_finalization_deferred{false};
@@ -292,7 +270,6 @@ private:
     uint64_t m_trace_heap_before;
     uint64_t m_trace_fragmentation_before;
     uint64_t m_initial_pause_ticks;
-    std::atomic<uint64_t> m_pinned_roots;
     std::atomic<LxrRcResult> m_scan_failure;
     std::atomic<int> m_latency;
     std::atomic<int> m_loh_mode;

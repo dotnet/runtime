@@ -14,6 +14,11 @@ enum class ImmixAllocationSource : uint8_t
     MutatorRecycled,
     GcCopyFresh,
     GcCopyRecycled,
+    // P17 S7: a mutator takes a clean block for pinned-object-heap objects. The block is marked "pinned" until it is
+    // acquired again for another purpose. A pinned object goes only into a pinned block, and no other allocation goes
+    // into one: MutatorPinnedRecycled takes a Reusable pinned block, and every other recycled source skips them.
+    MutatorPinnedFresh,
+    MutatorPinnedRecycled,
 };
 
 enum class ImmixMarkingContext : uint8_t
@@ -93,13 +98,18 @@ public:
     //     once. The pause releases those that are clean nursery blocks and that no object promoted.
     //   refresh_flags: a block that a mutator took as a recycled block, or that a collector thread took for copying.
     //     Its free lines have to be counted again after the next pause.
+    //   pinned_flags (P17 S7): the owner's byte for each block. The manager sets PinnedBlockFlag in it when a mutator
+    //     takes the block as a pinned block, and clears the flag when the block is taken for any other purpose. The
+    //     owner may keep other bits in the same byte.
     struct AcquireNotes
     {
         std::atomic<uint8_t>* allocated_flags;
         uint32_t* allocated_list;
         std::atomic<size_t>* allocated_count;
         std::atomic<uint8_t>* refresh_flags;
+        std::atomic<uint8_t>* pinned_flags = nullptr;
     };
+    static constexpr uint8_t PinnedBlockFlag = 1;
     void SetAcquireNotes(const AcquireNotes& notes);
 
 private:
@@ -163,6 +173,7 @@ private:
     // The token changes at every epoch flip and when a block is made Reusable, so the search is not repeated
     // while no block can have become a candidate. (The epoch value itself wraps and cannot be used.)
     std::atomic<uint64_t> m_recycled_exhausted_token{UINT64_MAX};
+    std::atomic<uint64_t> m_pinned_exhausted_token{UINT64_MAX};
     AcquireNotes m_notes{};
     std::atomic<size_t> m_fresh_blocks_acquired;
     std::atomic<size_t> m_recycled_blocks_acquired;

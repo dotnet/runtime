@@ -328,6 +328,7 @@ bool ImmixAllocationManager::IsCopySource(ImmixAllocationSource source)
 bool ImmixAllocationManager::IsFreshSource(ImmixAllocationSource source)
 {
     return (source == ImmixAllocationSource::MutatorFresh) ||
+        (source == ImmixAllocationSource::MutatorPinnedFresh) ||
         (source == ImmixAllocationSource::GcCopyFresh);
 }
 
@@ -339,6 +340,7 @@ ImmixBlockAcquireKind ImmixAllocationManager::GetAcquireKind(
         case ImmixAllocationSource::MutatorFresh:
             return ImmixBlockAcquireKind::MutatorFresh;
         case ImmixAllocationSource::MutatorRecycled:
+        case ImmixAllocationSource::MutatorPinnedRecycled:
             return ImmixBlockAcquireKind::MutatorReusable;
         case ImmixAllocationSource::GcCopyFresh:
             return ImmixBlockAcquireKind::GcCopyFresh;
@@ -394,7 +396,7 @@ SideMetadataResult ImmixAllocationManager::AcquireBlock(
     if ((block == nullptr) ||
         (status == nullptr) ||
         (owner == ImmixBlockManager::NoOwner) ||
-        (source > ImmixAllocationSource::GcCopyRecycled))
+        (source > ImmixAllocationSource::MutatorPinnedRecycled))
     {
         return SideMetadataResult::InvalidArgument;
     }
@@ -402,9 +404,13 @@ SideMetadataResult ImmixAllocationManager::AcquireBlock(
     *block = 0;
     *status = ImmixAllocationStatus::Exhausted;
     bool fresh = IsFreshSource(source);
+    bool pinnedSource =
+        (source == ImmixAllocationSource::MutatorPinnedFresh) ||
+        (source == ImmixAllocationSource::MutatorPinnedRecycled);
     bool mutator =
         (source == ImmixAllocationSource::MutatorFresh) ||
-        (source == ImmixAllocationSource::MutatorRecycled);
+        (source == ImmixAllocationSource::MutatorRecycled) ||
+        pinnedSource;
     uint8_t globalEpoch = m_blocks->GetGlobalPhaseEpoch();
     if (mutator ? ((globalEpoch & 1) == 0) : ((globalEpoch & 1) != 0))
     {
@@ -413,7 +419,8 @@ SideMetadataResult ImmixAllocationManager::AcquireBlock(
     }
 
     uint64_t token = m_blocks->GetStateToken();
-    if (!fresh && mutator && m_recycled_exhausted_token.load(std::memory_order_acquire) == token)
+    std::atomic<uint64_t>& exhaustedToken = pinnedSource ? m_pinned_exhausted_token : m_recycled_exhausted_token;
+    if (!fresh && mutator && exhaustedToken.load(std::memory_order_acquire) == token)
     {
         return SideMetadataResult::Success;
     }
@@ -472,6 +479,16 @@ SideMetadataResult ImmixAllocationManager::AcquireBlock(
             {
                 continue;
             }
+#if !defined(LXR_SIDE_METADATA_TEST_PLATFORM) || !defined(LXR_S7_POH_RECYCLE_CONTROL)
+            // A pinned block holds pinned-object-heap objects only: pinned recycling takes these blocks and no other
+            // recycling does.
+            bool pinnedBlock = m_notes.pinned_flags != nullptr &&
+                (m_notes.pinned_flags[index].load(std::memory_order_acquire) & PinnedBlockFlag) != 0;
+            if (pinnedBlock != pinnedSource)
+            {
+                continue;
+            }
+#endif // !LXR_SIDE_METADATA_TEST_PLATFORM || !LXR_S7_POH_RECYCLE_CONTROL
             if (unavailableLines > ImmixBlockGeometry::LinesPerBlock)
             {
                 continue;
@@ -516,6 +533,18 @@ SideMetadataResult ImmixAllocationManager::AcquireBlock(
                     std::memory_order_relaxed);
             }
             NoteAcquired(index, fresh, mutator);
+            if (m_notes.pinned_flags != nullptr)
+            {
+                if (pinnedSource)
+                {
+                    m_notes.pinned_flags[index].fetch_or(PinnedBlockFlag, std::memory_order_acq_rel);
+                }
+                else
+                {
+                    m_notes.pinned_flags[index].fetch_and(
+                        static_cast<uint8_t>(~PinnedBlockFlag), std::memory_order_acq_rel);
+                }
+            }
             return SideMetadataResult::Success;
         }
         if (allocationStatus == ImmixAllocationStatus::InvalidPhase)
@@ -533,7 +562,7 @@ SideMetadataResult ImmixAllocationManager::AcquireBlock(
 
     if (!fresh && mutator && *status == ImmixAllocationStatus::Exhausted)
     {
-        m_recycled_exhausted_token.store(token, std::memory_order_release);
+        exhaustedToken.store(token, std::memory_order_release);
     }
     return SideMetadataResult::Success;
 }
@@ -723,7 +752,7 @@ SideMetadataResult ImmixBumpAllocator::TryRefill(
 {
     if ((status == nullptr) ||
         (m_manager == nullptr) ||
-        (source > ImmixAllocationSource::GcCopyRecycled) ||
+        (source > ImmixAllocationSource::MutatorPinnedRecycled) ||
         (markingContext > ImmixMarkingContext::ConcurrentOrFinalMark))
     {
         return SideMetadataResult::InvalidArgument;

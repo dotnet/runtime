@@ -382,6 +382,9 @@ struct LxrReferenceCounting::TraceScan
     std::atomic<bool> complete;
     TraceScan* next;
     std::atomic<size_t> users{0};
+    // Key and chain of the index of split scans (see FindTraceScan). Changed only under the lock of the bucket.
+    size_t indexSlot = SIZE_MAX;
+    TraceScan* indexNext = nullptr;
 
     TraceScan(Object* target, Object* loader)
         : object(target), iterator(target), range{}, cursor(0),
@@ -609,7 +612,7 @@ LxrReferenceCounting::LxrReferenceCounting()
       m_capture(nullptr), m_capture_context(nullptr),
       m_layout{}, m_metadata(), m_blocks(), m_counts(), m_allocation(), m_large(),
       m_scheduler(), m_coordinator(), m_arena(nullptr),
-      m_trace_locks(nullptr), m_trace_scans(nullptr),
+      m_trace_locks(nullptr), m_scan_buckets(nullptr),
       m_scan_work(nullptr), m_trace_phase(LxrTracePhase::Inactive), m_marking(false),
       m_hold_trace(false), m_scan_checkpoint(0), m_scan_checkpoint_active(false),
       m_trace_pending(0), m_trace_metrics{},
@@ -744,13 +747,20 @@ LxrRcResult LxrReferenceCounting::Initialize(
         return Fail(LxrRcResult::SchedulerFailure);
     }
     m_allocation.SetAcquireNotes(
-        {m_allocated_block_storage.Get(), m_allocated_list, &m_allocated_count, m_mature_candidates});
+        {m_allocated_block_storage.Get(), m_allocated_list, &m_allocated_count, m_mature_candidates, m_block_flags});
     for (size_t index = 0; index < configuration.maximumMutators; index++)
     {
         if (m_mutators[index].allocator.Initialize(&m_allocation, index + 1) != SideMetadataResult::Success)
         {
             return Fail(LxrRcResult::AllocationFailure);
         }
+    }
+    // The pinned allocator takes the owner number after every mutator and every copy allocator.
+    if (m_pinned_allocator.Initialize(
+            &m_allocation, configuration.maximumMutators + 2 * configuration.workers + 1) !=
+        SideMetadataResult::Success)
+    {
+        return Fail(LxrRcResult::AllocationFailure);
     }
     if (configuration.evacuateNursery || configuration.evacuateMature)
     {
@@ -814,13 +824,13 @@ LxrRcResult LxrReferenceCounting::InitializeBuffers(size_t slots)
     m_banks = new (std::nothrow) LogBank[2];
     if (!m_observer)
     {
+#ifdef LXR_SIDE_METADATA_TEST_PLATFORM
         size_t objectSlots = GetObjectStorageSlots();
+#endif // LXR_SIDE_METADATA_TEST_PLATFORM
         if (
 #ifdef LXR_SIDE_METADATA_TEST_PLATFORM
             !m_extent_storage.Reserve(objectSlots) || !m_live_storage.Reserve(slots / 64) ||
 #endif // LXR_SIDE_METADATA_TEST_PLATFORM
-            !m_trace_lock_storage.Reserve(objectSlots) ||
-            !m_trace_scan_storage.Reserve(objectSlots) ||
             !m_allocated_block_storage.Reserve(m_configuration.immixBytes / ImmixBlockGeometry::BlockBytes) ||
             !CommitPlanes(0, m_initial_immix / sizeof(uintptr_t)) ||
             !CommitPlanes(m_configuration.immixBytes / sizeof(uintptr_t),
@@ -832,8 +842,8 @@ LxrRcResult LxrReferenceCounting::InitializeBuffers(size_t slots)
         m_extents = m_extent_storage.Get();
         m_live_objects = m_live_storage.Get();
 #endif // LXR_SIDE_METADATA_TEST_PLATFORM
-        m_trace_locks = m_trace_lock_storage.Get();
-        m_trace_scans = m_trace_scan_storage.Get();
+        m_trace_locks = new (std::nothrow) std::atomic<uint8_t>[TraceLockCount]{};
+        m_scan_buckets = new (std::nothrow) TraceScanBucket[TraceScanBucketCount];
     }
     m_roots[0] = new (std::nothrow) uintptr_t[m_configuration.maximumRoots]{};
     m_roots[1] = new (std::nothrow) uintptr_t[m_configuration.maximumRoots]{};
@@ -848,9 +858,11 @@ LxrRcResult LxrReferenceCounting::InitializeBuffers(size_t slots)
     {
         m_mature_candidates = new (std::nothrow) std::atomic<uint8_t>[
             m_configuration.immixBytes / ImmixBlockGeometry::BlockBytes]{};
+        m_block_flags = new (std::nothrow) std::atomic<uint8_t>[
+            m_configuration.immixBytes / ImmixBlockGeometry::BlockBytes]{};
         // Not initialized: the entries are written before they are read, and the pages stay untouched until used.
         m_allocated_list = new (std::nothrow) uint32_t[m_configuration.immixBytes / ImmixBlockGeometry::BlockBytes];
-        if (m_allocated_list == nullptr)
+        if (m_allocated_list == nullptr || m_block_flags == nullptr)
         {
             return Fail(LxrRcResult::OutOfMemory);
         }
@@ -866,7 +878,7 @@ LxrRcResult LxrReferenceCounting::InitializeBuffers(size_t slots)
     }
     if (m_mutators == nullptr || m_mutator_chunks == nullptr ||
         m_banks == nullptr || (!m_observer &&
-            (m_trace_locks == nullptr || m_trace_scans == nullptr)) ||
+            (m_trace_locks == nullptr || m_scan_buckets == nullptr)) ||
         m_roots[0] == nullptr ||
         m_roots[1] == nullptr || (m_configuration.largeObjectBytes != 0 && m_dead_large == nullptr) ||
         (m_configuration.immixBytes != 0 && m_mature_candidates == nullptr))
@@ -903,58 +915,38 @@ LxrRcResult LxrReferenceCounting::InitializeBuffers(size_t slots)
     return LxrRcResult::Success;
 }
 
-bool LxrReferenceCounting::CommitPlanes(size_t first, size_t count, bool commitTrace, bool initialize)
+bool LxrReferenceCounting::CommitPlanes(size_t first, size_t count, bool initialize)
 {
-    size_t objectFirst = GetObjectStorageIndex(first);
-    size_t objectCount = GetObjectStorageIndex(first + count) - objectFirst;
     size_t immixSlots = m_configuration.immixBytes / sizeof(uintptr_t);
     size_t blockSlots = ImmixBlockGeometry::BlockBytes / sizeof(uintptr_t);
-    return (first >= immixSlots ||
-            m_allocated_block_storage.Commit(first / blockSlots, count / blockSlots, initialize)) &&
 #ifdef LXR_SIDE_METADATA_TEST_PLATFORM
-        m_extent_storage.Commit(objectFirst, objectCount, initialize) &&
-        m_live_storage.Commit(first / 64, count / 64, initialize) &&
+    size_t objectFirst = GetObjectStorageIndex(first);
+    size_t objectCount = GetObjectStorageIndex(first + count) - objectFirst;
 #endif // LXR_SIDE_METADATA_TEST_PLATFORM
-        (!commitTrace ||
-            (m_trace_lock_storage.Commit(objectFirst, objectCount, initialize) &&
-             m_trace_scan_storage.Commit(objectFirst, objectCount, initialize)));
+    return (first >= immixSlots ||
+            m_allocated_block_storage.Commit(first / blockSlots, count / blockSlots, initialize))
+#ifdef LXR_SIDE_METADATA_TEST_PLATFORM
+        && m_extent_storage.Commit(objectFirst, objectCount, initialize) &&
+        m_live_storage.Commit(first / 64, count / 64, initialize)
+#endif // LXR_SIDE_METADATA_TEST_PLATFORM
+        ;
 }
 
 bool LxrReferenceCounting::DecommitPlanes(size_t first, size_t count, bool tailIsLast)
 {
-    size_t objectFirst = GetObjectStorageIndex(first);
-    size_t objectCount = GetObjectStorageIndex(first + count) - objectFirst;
     size_t immixSlots = m_configuration.immixBytes / sizeof(uintptr_t);
     size_t blockSlots = ImmixBlockGeometry::BlockBytes / sizeof(uintptr_t);
-    return (first >= immixSlots ||
-            m_allocated_block_storage.Decommit(first / blockSlots, count / blockSlots, tailIsLast)) &&
 #ifdef LXR_SIDE_METADATA_TEST_PLATFORM
-        m_extent_storage.Decommit(objectFirst, objectCount, tailIsLast) &&
-        m_live_storage.Decommit(first / 64, count / 64, tailIsLast) &&
+    size_t objectFirst = GetObjectStorageIndex(first);
+    size_t objectCount = GetObjectStorageIndex(first + count) - objectFirst;
 #endif // LXR_SIDE_METADATA_TEST_PLATFORM
-        m_trace_lock_storage.Decommit(objectFirst, objectCount, tailIsLast) &&
-        m_trace_scan_storage.Decommit(objectFirst, objectCount, tailIsLast);
-}
-
-bool LxrReferenceCounting::CommitTracePlanes()
-{
-    size_t immix = GetImmixCapacityBytes() / sizeof(uintptr_t);
-    size_t largeFirst = m_configuration.immixBytes / sizeof(uintptr_t);
-    size_t large = m_large.GetAdmittedBytes() / LxrLargeObjectSpace::PageBytes;
-    return m_trace_lock_storage.Commit(0, immix) && m_trace_scan_storage.Commit(0, immix) &&
-        m_trace_lock_storage.Commit(largeFirst, large) && m_trace_scan_storage.Commit(largeFirst, large);
-}
-
-size_t LxrReferenceCounting::GetTracePlaneBudget(size_t immixBytes, size_t largeBytes) const
-{
-    size_t page = GCToOSInterface::GetPageSize();
-    size_t immix = immixBytes / sizeof(uintptr_t);
-    size_t large = largeBytes / LxrLargeObjectSpace::PageBytes;
-    size_t lockBytes = ((immix * sizeof(std::atomic<uint8_t>) + page - 1) & ~(page - 1)) +
-        ((large * sizeof(std::atomic<uint8_t>) + page - 1) & ~(page - 1));
-    size_t scanBytes = ((immix * sizeof(TraceScan*) + page - 1) & ~(page - 1)) +
-        ((large * sizeof(TraceScan*) + page - 1) & ~(page - 1));
-    return lockBytes + scanBytes;
+    return (first >= immixSlots ||
+            m_allocated_block_storage.Decommit(first / blockSlots, count / blockSlots, tailIsLast))
+#ifdef LXR_SIDE_METADATA_TEST_PLATFORM
+        && m_extent_storage.Decommit(objectFirst, objectCount, tailIsLast) &&
+        m_live_storage.Decommit(first / 64, count / 64, tailIsLast)
+#endif // LXR_SIDE_METADATA_TEST_PLATFORM
+        ;
 }
 
 size_t LxrReferenceCounting::GetObjectStorageIndex(size_t heapSlot) const
@@ -979,12 +971,144 @@ std::atomic<size_t>& LxrReferenceCounting::ExtentSlot(size_t heapSlot) const
 
 std::atomic<uint8_t>& LxrReferenceCounting::TraceLockSlot(size_t heapSlot) const
 {
-    return m_trace_locks[GetObjectStorageIndex(heapSlot)];
+    // Fibonacci hashing spreads neighbouring objects over the locks.
+    size_t stripe = static_cast<size_t>(
+        (static_cast<uint64_t>(heapSlot) * UINT64_C(0x9E3779B97F4A7C15)) >> (64 - 14));
+    static_assert(TraceLockCount == (size_t{1} << 14), "The hash above yields 14 bits.");
+    return m_trace_locks[stripe];
 }
 
-LxrReferenceCounting::TraceScan*& LxrReferenceCounting::TraceScanSlot(size_t heapSlot) const
+namespace
 {
-    return m_trace_scans[GetObjectStorageIndex(heapSlot)];
+    template <typename Bucket>
+    void LockBucket(Bucket& bucket)
+    {
+        while (bucket.lock.test_and_set(std::memory_order_acquire))
+        {
+            YieldProcessor();
+        }
+    }
+}
+
+// The index of the scans of split objects. A bucket lock is a leaf lock: nothing is called while it is held.
+// scan->indexSlot is the key of an indexed scan and SIZE_MAX for a scan that is not in the index.
+LxrReferenceCounting::TraceScan* LxrReferenceCounting::FindTraceScan(size_t heapSlot) const
+{
+    if (m_scan_index_count.load(std::memory_order_acquire) == 0)
+    {
+        return nullptr;
+    }
+    TraceScanBucket& bucket = m_scan_buckets[
+        static_cast<size_t>((static_cast<uint64_t>(heapSlot) * UINT64_C(0x9E3779B97F4A7C15)) >> (64 - 12))];
+    static_assert(TraceScanBucketCount == (size_t{1} << 12), "The hash above yields 12 bits.");
+    LockBucket(bucket);
+    TraceScan* found = bucket.head;
+    while (found != nullptr && found->indexSlot != heapSlot)
+    {
+        found = found->indexNext;
+    }
+    bucket.lock.clear(std::memory_order_release);
+    return found;
+}
+
+void LxrReferenceCounting::LinkTraceScan(size_t heapSlot, TraceScan* scan)
+{
+    TraceScanBucket& bucket = m_scan_buckets[
+        static_cast<size_t>((static_cast<uint64_t>(heapSlot) * UINT64_C(0x9E3779B97F4A7C15)) >> (64 - 12))];
+    LockBucket(bucket);
+    // An entry for the same address that is still here belongs to a dead object whose scan has not been retired.
+    for (TraceScan** link = &bucket.head; *link != nullptr; link = &(*link)->indexNext)
+    {
+        if ((*link)->indexSlot == heapSlot)
+        {
+            TraceScan* stale = *link;
+            *link = stale->indexNext;
+            stale->indexNext = nullptr;
+            stale->indexSlot = SIZE_MAX;
+            m_scan_index_count.fetch_sub(1, std::memory_order_acq_rel);
+            break;
+        }
+    }
+    scan->indexSlot = heapSlot;
+    scan->indexNext = bucket.head;
+    bucket.head = scan;
+    m_scan_index_count.fetch_add(1, std::memory_order_acq_rel);
+    bucket.lock.clear(std::memory_order_release);
+}
+
+void LxrReferenceCounting::UnlinkTraceScan(TraceScan* scan)
+{
+    size_t heapSlot = scan->indexSlot;
+    if (heapSlot == SIZE_MAX)
+    {
+        return;
+    }
+    TraceScanBucket& bucket = m_scan_buckets[
+        static_cast<size_t>((static_cast<uint64_t>(heapSlot) * UINT64_C(0x9E3779B97F4A7C15)) >> (64 - 12))];
+    LockBucket(bucket);
+    if (scan->indexSlot == heapSlot)
+    {
+        for (TraceScan** link = &bucket.head; *link != nullptr; link = &(*link)->indexNext)
+        {
+            if (*link == scan)
+            {
+                *link = scan->indexNext;
+                scan->indexNext = nullptr;
+                scan->indexSlot = SIZE_MAX;
+                m_scan_index_count.fetch_sub(1, std::memory_order_acq_rel);
+                break;
+            }
+        }
+    }
+    bucket.lock.clear(std::memory_order_release);
+}
+
+void LxrReferenceCounting::MoveTraceScan(size_t fromSlot, size_t toSlot, TraceScan* scan)
+{
+    // Both buckets are locked in address order, so a reader finds the scan under the old or the new address, never
+    // under neither.
+    TraceScanBucket* from = &m_scan_buckets[
+        static_cast<size_t>((static_cast<uint64_t>(fromSlot) * UINT64_C(0x9E3779B97F4A7C15)) >> (64 - 12))];
+    TraceScanBucket* to = &m_scan_buckets[
+        static_cast<size_t>((static_cast<uint64_t>(toSlot) * UINT64_C(0x9E3779B97F4A7C15)) >> (64 - 12))];
+    TraceScanBucket* first = from < to ? from : to;
+    TraceScanBucket* second = from < to ? to : from;
+    LockBucket(*first);
+    if (second != first)
+    {
+        LockBucket(*second);
+    }
+    if (scan->indexSlot == fromSlot)
+    {
+        for (TraceScan** link = &from->head; *link != nullptr; link = &(*link)->indexNext)
+        {
+            if (*link == scan)
+            {
+                *link = scan->indexNext;
+                break;
+            }
+        }
+        for (TraceScan** link = &to->head; *link != nullptr; link = &(*link)->indexNext)
+        {
+            if ((*link)->indexSlot == toSlot)
+            {
+                TraceScan* stale = *link;
+                *link = stale->indexNext;
+                stale->indexNext = nullptr;
+                stale->indexSlot = SIZE_MAX;
+                m_scan_index_count.fetch_sub(1, std::memory_order_acq_rel);
+                break;
+            }
+        }
+        scan->indexSlot = toSlot;
+        scan->indexNext = to->head;
+        to->head = scan;
+    }
+    if (second != first)
+    {
+        second->lock.clear(std::memory_order_release);
+    }
+    first->lock.clear(std::memory_order_release);
 }
 
 LxrRcResult LxrReferenceCounting::InitializeObserver(size_t admittedSlots, size_t maximumMutators)
@@ -1118,14 +1242,15 @@ void LxrReferenceCounting::Shutdown()
     m_extent_storage.Shutdown();
     m_live_storage.Shutdown();
 #endif // LXR_SIDE_METADATA_TEST_PLATFORM
-    m_trace_lock_storage.Shutdown();
-    m_trace_scan_storage.Shutdown();
     m_allocated_block_storage.Shutdown();
     delete[] m_roots[0];
     delete[] m_roots[1];
     delete[] m_dead_large;
     delete[] m_mature_candidates;
+    delete[] m_block_flags;
     delete[] m_allocated_list;
+    delete[] m_trace_locks;
+    delete[] m_scan_buckets;
     m_banks = nullptr;
     m_mutators = nullptr;
     m_copy_allocators = nullptr;
@@ -1138,7 +1263,9 @@ void LxrReferenceCounting::Shutdown()
     m_live_objects = nullptr;
 #endif // LXR_SIDE_METADATA_TEST_PLATFORM
     m_trace_locks = nullptr;
-    m_trace_scans = nullptr;
+    m_scan_buckets = nullptr;
+    m_block_flags = nullptr;
+    m_pins.Clear();
     m_roots[0] = nullptr;
     m_roots[1] = nullptr;
     m_root_capacity[0] = 0;
@@ -1627,7 +1754,7 @@ bool LxrReferenceCounting::IsLarge(uintptr_t start) const
 }
 
 LxrRcResult LxrReferenceCounting::Allocate(
-    LxrRcMutator* mutator, size_t completeSize, Object** object)
+    LxrRcMutator* mutator, size_t completeSize, Object** object, bool pinned)
 {
     if (object == nullptr || mutator == nullptr || mutator->engine != this ||
         mutator->state.load(std::memory_order_acquire) != 2 ||
@@ -1647,6 +1774,47 @@ LxrRcResult LxrReferenceCounting::Allocate(
             return LxrRcResult::AllocationFailure;
         }
         start = allocation.object;
+    }
+    else if (pinned
+#if defined(LXR_S7_POH_NORMAL_CONTROL)
+        && false
+#endif // LXR_S7_POH_NORMAL_CONTROL
+        )
+    {
+        // One allocator serves every thread, so the call takes a lock. Pinned-object-heap allocations are rare.
+        while (m_pinned_lock.test_and_set(std::memory_order_acquire))
+        {
+            YieldProcessor();
+        }
+        ImmixAllocationRequest request{completeSize, sizeof(uintptr_t), 0};
+        ImmixAllocationStatus status;
+        SideMetadataResult result = m_pinned_allocator.TryAllocate(request, &start, &status);
+        bool recycled = m_configuration.lineRecycling;
+        for (size_t attempts = m_configuration.immixBytes / ImmixBlockGeometry::LineBytes +
+                 m_configuration.immixBytes / ImmixBlockGeometry::BlockBytes;
+             result == SideMetadataResult::Success && status != ImmixAllocationStatus::Allocated && attempts-- != 0;)
+        {
+            ImmixMarkingContext marking = m_marking.load(std::memory_order_acquire)
+                ? ImmixMarkingContext::ConcurrentOrFinalMark : ImmixMarkingContext::Inactive;
+            result = m_pinned_allocator.TryRefill(
+                recycled ? ImmixAllocationSource::MutatorPinnedRecycled : ImmixAllocationSource::MutatorPinnedFresh,
+                marking, &status);
+            if (result == SideMetadataResult::Success && status == ImmixAllocationStatus::Exhausted && recycled)
+            {
+                recycled = false;
+                result = m_pinned_allocator.TryRefill(ImmixAllocationSource::MutatorPinnedFresh, marking, &status);
+            }
+            if (result != SideMetadataResult::Success || status != ImmixAllocationStatus::Ready)
+            {
+                break;
+            }
+            result = m_pinned_allocator.TryAllocate(request, &start, &status);
+        }
+        m_pinned_lock.clear(std::memory_order_release);
+        if (result != SideMetadataResult::Success || status != ImmixAllocationStatus::Allocated)
+        {
+            return result == SideMetadataResult::Success ? LxrRcResult::AllocationFailure : FromMetadata(result);
+        }
     }
     else
     {
@@ -1906,8 +2074,7 @@ void LxrReferenceCounting::DeleteWork()
     while (scan != nullptr)
     {
         TraceScan* next = scan->next;
-        size_t index = (Start(scan->object) - GetReservationStart()) / sizeof(uintptr_t);
-        TraceScanSlot(index) = nullptr;
+        UnlinkTraceScan(scan);
         if (m_storage_diagnostics.load(std::memory_order_relaxed))
         {
             m_storage_metrics[5].fetch_sub(sizeof(TraceScan), std::memory_order_relaxed);
@@ -1956,11 +2123,7 @@ void LxrReferenceCounting::RetireCompletedWork()
         TraceScan* next = scan->next;
         if (scan->complete && scan->users.load(std::memory_order_acquire) == 0)
         {
-            size_t index = (Start(scan->object) - GetReservationStart()) / sizeof(uintptr_t);
-            if (TraceScanSlot(index) == scan)
-            {
-                TraceScanSlot(index) = nullptr;
-            }
+            UnlinkTraceScan(scan);
             if (m_storage_diagnostics.load(std::memory_order_relaxed))
             {
                 m_storage_metrics[5].fetch_sub(sizeof(TraceScan), std::memory_order_relaxed);
@@ -2044,6 +2207,16 @@ LxrRcResult LxrReferenceCounting::FlushMutators()
             {
                 mutator.state.store(0, std::memory_order_release);
             }
+        }
+    }
+    if (!m_observer)
+    {
+        // The pinned allocator belongs to no mutator. It gives its block back like a mutator allocator does.
+        ImmixAllocationStatus status;
+        if (m_pinned_allocator.Reset(&status) != SideMetadataResult::Success ||
+            status != ImmixAllocationStatus::Ready)
+        {
+            return Fail(LxrRcResult::AllocationFailure);
         }
     }
     if (m_storage_diagnostics.load(std::memory_order_relaxed))
@@ -2213,12 +2386,6 @@ void LxrReferenceCounting::Suspend(void* context)
             return;
         }
     }
-    if (engine->m_pause_kind != LxrPauseKind::RefCount &&
-        engine->GetTracePhase() == LxrTracePhase::Inactive && !engine->CommitTracePlanes())
-    {
-        engine->Fail(LxrRcResult::OutOfMemory);
-        return;
-    }
     if (engine->m_pause_kind == LxrPauseKind::InitialMark ||
         (engine->m_pause_kind == LxrPauseKind::Full &&
             engine->m_trace_phase.load(std::memory_order_acquire) == LxrTracePhase::Inactive))
@@ -2270,6 +2437,11 @@ void LxrReferenceCounting::Suspend(void* context)
             engine->Fail(result);
             return;
         }
+    }
+    // The root capture has found every pinned root. From here to the end of the pause the pin list does not change.
+    if (engine->SealPins() != LxrRcResult::Success)
+    {
+        return;
     }
     LxrPhaseScope prepareWork(engine->m_pause_timers, LxrPauseTimers::PrepareWork);
     if (engine->m_configuration.evacuateMature &&
@@ -2456,12 +2628,127 @@ LxrRcResult LxrReferenceCounting::Drain(uint32_t timeoutMilliseconds)
     if (result == LxrRcResult::Success && GetTracePhase() == LxrTracePhase::Inactive)
     {
         DeleteWork();
-        if (!m_trace_scan_storage.DecommitAll() || !m_trace_lock_storage.DecommitAll())
-        {
-            return Fail(LxrRcResult::AllocationFailure);
-        }
     }
     return result;
+}
+
+LxrRcResult LxrReferenceCounting::AddPinnedRoot(Object* object, bool interior, size_t shard)
+{
+    if (GetPhase() != LxrRcPhase::Suspended)
+    {
+        return LxrRcResult::InvalidPhase;
+    }
+    if (object == nullptr || m_block_flags == nullptr)
+    {
+        return LxrRcResult::Success;
+    }
+    if (interior)
+    {
+#if defined(LXR_SIDE_METADATA_TEST_PLATFORM) && defined(LXR_S7_PIN_INTERIOR_CONTROL)
+        // Control: the address itself goes on the list, not the object that contains it.
+#else
+        LxrRcResult found = FindContainingObject(reinterpret_cast<uintptr_t>(object), &object);
+        if (found != LxrRcResult::Success)
+        {
+            return found;
+        }
+#endif // LXR_SIDE_METADATA_TEST_PLATFORM && LXR_S7_PIN_INTERIOR_CONTROL
+    }
+    uintptr_t start = Start(object);
+    if (!m_pins.Add(shard, reinterpret_cast<uintptr_t>(object)))
+    {
+        return Fail(LxrRcResult::OutOfMemory);
+    }
+    if (IsImmix(start))
+    {
+        // Large objects never move, so only an Immix block needs the pause bit.
+#if !defined(LXR_S7_NO_BLOCK_BYTE_CONTROL)
+        m_block_flags[(start - GetReservationStart()) / ImmixBlockGeometry::BlockBytes].fetch_or(
+            PausePinFlag, std::memory_order_release);
+#endif // !LXR_S7_NO_BLOCK_BYTE_CONTROL
+    }
+    return LxrRcResult::Success;
+}
+
+LxrRcResult LxrReferenceCounting::SealPins()
+{
+    uint64_t count = m_pins.Seal();
+    if (m_pins.HasFailed())
+    {
+        return Fail(LxrRcResult::OutOfMemory);
+    }
+    m_pause_pinned_roots.store(count, std::memory_order_release);
+    return LxrRcResult::Success;
+}
+
+void LxrReferenceCounting::ClearPins()
+{
+    if (m_block_flags != nullptr)
+    {
+        for (size_t index = 0; index < m_pins.Size(); index++)
+        {
+            uintptr_t start = Start(reinterpret_cast<Object*>(m_pins[index]));
+            if (IsImmix(start))
+            {
+#if !defined(LXR_S7_NO_BLOCK_CLEAR_CONTROL)
+                m_block_flags[(start - GetReservationStart()) / ImmixBlockGeometry::BlockBytes].fetch_and(
+                    static_cast<uint8_t>(~PausePinFlag), std::memory_order_release);
+#endif // !LXR_S7_NO_BLOCK_CLEAR_CONTROL
+            }
+        }
+    }
+    m_pins.Clear();
+}
+
+bool LxrReferenceCounting::IsPinnedObject(Object* object) const
+{
+#if defined(LXR_S7_IGNORE_PIN_CONTROL)
+    // Control: the pause never knows a pin.
+    (void)object;
+    return false;
+#else
+    uintptr_t start = Start(object);
+    if (m_block_flags == nullptr || !IsImmix(start))
+    {
+        return false;
+    }
+    uint8_t flags = m_block_flags[(start - GetReservationStart()) / ImmixBlockGeometry::BlockBytes].load(
+        std::memory_order_acquire);
+    if (flags == 0)
+    {
+        return false;
+    }
+    if ((flags & ImmixAllocationManager::PinnedBlockFlag) != 0)
+    {
+        return true;
+    }
+    return (flags & PausePinFlag) != 0 && m_pins.Contains(reinterpret_cast<uintptr_t>(object));
+#endif // LXR_S7_IGNORE_PIN_CONTROL
+}
+
+bool LxrReferenceCounting::IsPinnedForPause(Object* object) const
+{
+    return object != nullptr && IsPinnedObject(object);
+}
+
+bool LxrReferenceCounting::IsPinnedBlock(uintptr_t address) const
+{
+    return m_block_flags != nullptr && IsImmix(address) &&
+        (m_block_flags[(address - GetReservationStart()) / ImmixBlockGeometry::BlockBytes].load(
+            std::memory_order_acquire) & ImmixAllocationManager::PinnedBlockFlag) != 0;
+}
+
+size_t LxrReferenceCounting::CountPausePinnedBlocks() const
+{
+    size_t count = 0;
+    if (m_block_flags != nullptr)
+    {
+        for (size_t block = 0; block < GetImmixCapacityBytes() / ImmixBlockGeometry::BlockBytes; block++)
+        {
+            count += (m_block_flags[block].load(std::memory_order_acquire) & PausePinFlag) != 0 ? 1 : 0;
+        }
+    }
+    return count;
 }
 
 LxrRcResult LxrReferenceCounting::AddRoot(Object* object, bool interior, bool trace)
@@ -2745,6 +3032,11 @@ LxrRcResult LxrReferenceCounting::SelectMatureCandidates()
             }
             continue;
         }
+        if (IsPinnedBlock(block))
+        {
+            // The objects of a pinned block never move, so it is never a source of the evacuation.
+            continue;
+        }
         size_t deadLines = 0;
         for (size_t line = 0; line < ImmixBlockGeometry::LinesPerBlock; line++)
         {
@@ -2854,44 +3146,42 @@ LxrRcResult LxrReferenceCounting::SelectMatureCandidates()
 
 LxrRcResult LxrReferenceCounting::RetainPinnedMatureBlocks()
 {
+#if defined(LXR_S7_NO_RETAIN_CONTROL)
+    // Control: a pinned mature block stays a candidate.
+    return LxrRcResult::Success;
+#endif // LXR_S7_NO_RETAIN_CONTROL
     if (!m_configuration.evacuateMature)
     {
         return LxrRcResult::Success;
     }
-    size_t blockSlots = ImmixBlockGeometry::BlockBytes / sizeof(uintptr_t);
-    size_t blocks = GetImmixCapacityBytes() / ImmixBlockGeometry::BlockBytes;
-    for (size_t block = 0; block < blocks; block++)
+    for (size_t index = 0; index < m_pins.Size(); index++)
     {
-        uintptr_t blockStart = GetReservationStart() + block * ImmixBlockGeometry::BlockBytes;
-        if (!IsMatureCandidate(blockStart) ||
-            (m_evacuation_sources[block].load(std::memory_order_acquire) & RetainedSource) != 0)
+        Object* object = reinterpret_cast<Object*>(m_pins[index]);
+        uintptr_t start = Start(object);
+        if (!IsMatureCandidate(start))
         {
             continue;
         }
-        for (size_t index = FindNextValidSlot(block * blockSlots); index < (block + 1) * blockSlots;
-             index = FindNextValidSlot(index + 1))
+        size_t block = (start - GetReservationStart()) / ImmixBlockGeometry::BlockBytes;
+        if ((m_evacuation_sources[block].load(std::memory_order_acquire) & RetainedSource) != 0)
         {
-            uintptr_t start = GetReservationStart() + index * sizeof(uintptr_t);
-            // A stale ValidObject bit belongs to a dead young object whose count is zero. A young object in a
-            // candidate block is promoted in place and never moves, so only counted objects need the check.
-            if (m_rc_metadata.Load(start, SideMetadataMemoryOrder::Relaxed) == 0)
-            {
-                continue;
-            }
-            Object* object = Reference(start);
-            if (ResolveForwarded(object) == object &&
-                ((object->GetHeader()->GetBits() & BIT_SBLK_GC_RESERVE) != 0 ||
-                 (m_object_model.isPinned != nullptr && m_object_model.isPinned(object, m_object_model.context))))
-            {
-                if ((m_evacuation_sources[block].fetch_or(RetainedSource, std::memory_order_acq_rel) &
-                        RetainedSource) == 0)
-                {
-                    m_mature_metrics[2].fetch_add(1, std::memory_order_relaxed);
-                }
-                break;
-            }
+            continue;
+        }
+        // A pinned young object has no count before the increments of the pause. It is promoted in place and never
+        // moves, so only a counted object keeps its block here; the call that follows the increments sees the rest.
+        if (m_rc_metadata.Load(start, SideMetadataMemoryOrder::Relaxed) == 0 ||
+            ResolveForwarded(object) != object)
+        {
+            continue;
+        }
+        if ((m_evacuation_sources[block].fetch_or(RetainedSource, std::memory_order_acq_rel) &
+                RetainedSource) == 0)
+        {
+            m_mature_metrics[2].fetch_add(1, std::memory_order_relaxed);
         }
     }
+    // The old walk also kept the block of an object whose header carries BIT_SBLK_GC_RESERVE. In this collector no
+    // code sets that bit (only Satori does), so no list is kept for it. The nursery copy decision still reads it.
     return LxrRcResult::Success;
 }
 
@@ -3203,7 +3493,7 @@ LxrRcResult LxrReferenceCounting::TryCopyMature(Object** reference)
 #ifdef LXR_SIDE_METADATA_TEST_PLATFORM
     OracleBirth(copyStart, size);
 #endif // LXR_SIDE_METADATA_TEST_PLATFORM
-    TraceScan* scan = TraceScanSlot(index);
+    TraceScan* scan = FindTraceScan(index);
     if (scan != nullptr)
     {
 #if !defined(LXR_SIDE_METADATA_TEST_PLATFORM) || !defined(LXR_MATURE_SCAN_REBASE_CONTROL)
@@ -3222,14 +3512,18 @@ LxrRcResult LxrReferenceCounting::TryCopyMature(Object** reference)
         m_mature_scan_receipt[3].store(scan->users.load(std::memory_order_acquire), std::memory_order_release);
 #endif // LXR_SIDE_METADATA_TEST_PLATFORM
         scan->object = destination;
-        TraceScanSlot(destinationIndex) = scan;
-        TraceScanSlot(index) = nullptr;
+#if !defined(LXR_S7_SCAN_MOVE_CONTROL)
+        MoveTraceScan(index, destinationIndex, scan);
+#else
+        (void)destinationIndex;
+#endif // !LXR_S7_SCAN_MOVE_CONTROL
+#ifdef LXR_SIDE_METADATA_TEST_PLATFORM
+        // Receipts 4 and 5: the index holds the scan under the new address and no longer under the old one.
+        m_mature_scan_receipt[4].store(FindTraceScan(destinationIndex) == scan ? 1 : 0, std::memory_order_release);
+        m_mature_scan_receipt[5].store(FindTraceScan(index) == scan ? 1 : 0, std::memory_order_release);
+#endif // LXR_SIDE_METADATA_TEST_PLATFORM
     }
     m_mark_metadata.Store(copyStart, 0, SideMetadataMemoryOrder::SequentiallyConsistent);
-    if (m_object_model.didCopy != nullptr)
-    {
-        m_object_model.didCopy(source, destination, m_object_model.context);
-    }
     uintptr_t watched = Start(source);
     m_probe_start.compare_exchange_strong(watched, copyStart, std::memory_order_acq_rel);
     CommitCopyRecord(m_configuration.workers, Start(source), size);
@@ -3287,7 +3581,7 @@ LxrRcResult LxrReferenceCounting::TryCopyNursery(
     size_t size = 0;
     bool copyable = nursery && !m_copy_exhausted.load(std::memory_order_relaxed) &&
         (source->GetHeader()->GetBits() & BIT_SBLK_GC_RESERVE) == 0 &&
-        !(m_object_model.isPinned != nullptr && m_object_model.isPinned(source, m_object_model.context));
+        !IsPinnedObject(source);
     if (copyable)
     {
         // The source is claimed and its first field is intact, so the size comes from the object.
@@ -3356,10 +3650,6 @@ LxrRcResult LxrReferenceCounting::TryCopyNursery(
 #ifdef LXR_SIDE_METADATA_TEST_PLATFORM
     OracleBirth(copyStart, size);
 #endif // LXR_SIDE_METADATA_TEST_PLATFORM
-    if (m_object_model.didCopy != nullptr)
-    {
-        m_object_model.didCopy(source, copy, m_object_model.context);
-    }
     uintptr_t watched = start;
     m_probe_start.compare_exchange_strong(watched, copyStart, std::memory_order_acq_rel);
     CommitCopyRecord(worker, start, size);
@@ -3506,8 +3796,7 @@ LxrRcResult LxrReferenceCounting::ProcessIncrement(
     }
     CountWorker(worker, Promotions, 1);
     if (!copied && m_configuration.evacuateNursery &&
-        ((object->GetHeader()->GetBits() & BIT_SBLK_GC_RESERVE) != 0 ||
-         (m_object_model.isPinned != nullptr && m_object_model.isPinned(object, m_object_model.context))))
+        ((object->GetHeader()->GetBits() & BIT_SBLK_GC_RESERVE) != 0 || IsPinnedObject(object)))
     {
         m_nursery_metrics[2].fetch_add(size, std::memory_order_relaxed);
     }
@@ -4184,6 +4473,7 @@ LxrRcResult LxrReferenceCounting::ReleaseEpoch()
     }
     m_current_roots ^= 1;
     m_root_counts[m_current_roots] = 0;
+    ClearPins();
     ImmixBlockOperationStatus status;
     {
         LxrPhaseScope flip(m_pause_timers, LxrPauseTimers::ReleaseFlip);
@@ -4783,8 +5073,8 @@ uint64_t LxrReferenceCounting::GetStorageMetric(size_t metric) const
 #else
         case 7: return 0;
 #endif // LXR_SIDE_METADATA_TEST_PLATFORM
-        case 8: return m_trace_lock_storage.GetCommittedBytes();
-        case 9: return m_trace_scan_storage.GetCommittedBytes();
+        case 8: return 0;
+        case 9: return 0;
 #ifdef LXR_SIDE_METADATA_TEST_PLATFORM
         case 10: return m_live_storage.GetCommittedBytes();
 #else
@@ -4830,12 +5120,8 @@ LxrRcResult LxrReferenceCounting::GetStorageRange(
 #endif // LXR_SIDE_METADATA_TEST_PLATFORM
             return LxrRcResult::Success;
         case 1:
-            *start = reinterpret_cast<uintptr_t>(m_trace_lock_storage.Get());
-            *bytes = m_trace_lock_storage.GetReservedBytes();
-            return LxrRcResult::Success;
         case 2:
-            *start = reinterpret_cast<uintptr_t>(m_trace_scan_storage.Get());
-            *bytes = m_trace_scan_storage.GetReservedBytes();
+            // The lock table and the scan table were removed in P17 S7. Nothing is indexed by heap address now.
             return LxrRcResult::Success;
         case 3:
 #ifdef LXR_SIDE_METADATA_TEST_PLATFORM
@@ -5146,9 +5432,7 @@ uint64_t LxrReferenceCounting::GetGrowthCount() const
 
 size_t LxrReferenceCounting::GetNativePlaneCommittedBytes() const
 {
-    size_t bytes = m_trace_lock_storage.GetCommittedBytes() +
-        m_trace_scan_storage.GetCommittedBytes() +
-        m_allocated_block_storage.GetCommittedBytes();
+    size_t bytes = m_allocated_block_storage.GetCommittedBytes();
     for (size_t bank = 0; bank < 2; bank++)
     {
         for (const LogStream* stream : {
@@ -5337,7 +5621,7 @@ LxrRcResult LxrReferenceCounting::GrowSuspended()
     {
         return LxrRcResult::OutOfMemory;
     }
-    LxrRcResult result = AdmitSuspended(m_grow_large, current, increment, true, true);
+    LxrRcResult result = AdmitSuspended(m_grow_large, current, increment, true);
     if (result == LxrRcResult::Success && !m_grow_large)
     {
         // A regular growth is permanent: the borrowed range below it stays with the heap.
@@ -5356,9 +5640,7 @@ bool LxrReferenceCounting::FitAdmission(bool large, size_t current, size_t minim
     auto fits = [&](size_t candidate)
     {
         size_t slots = candidate / sizeof(uintptr_t);
-        size_t nativeBytes = GetTracePlaneBudget(
-                large ? GetImmixCapacityBytes() : current + candidate,
-                large ? current + candidate : m_large.GetAdmittedBytes());
+        size_t nativeBytes = 0;
         size_t blockSlots = ImmixBlockGeometry::BlockBytes / sizeof(uintptr_t);
         nativeBytes += large ? m_allocated_block_storage.GetCommittedBytes() :
             m_allocated_block_storage.ProjectedCommittedBytes(first / blockSlots, slots / blockSlots);
@@ -5401,7 +5683,7 @@ bool LxrReferenceCounting::FitAdmission(bool large, size_t current, size_t minim
 }
 
 LxrRcResult LxrReferenceCounting::AdmitSuspended(
-    bool large, size_t current, size_t increment, bool commitTrace, bool initialize)
+    bool large, size_t current, size_t increment, bool initialize)
 {
     size_t next = current + increment;
     size_t offset = large ? m_configuration.immixBytes : 0;
@@ -5409,7 +5691,7 @@ LxrRcResult LxrReferenceCounting::AdmitSuspended(
     size_t previousLogCapacity = GetAdmittedBytes() / sizeof(uintptr_t);
     size_t count = increment / sizeof(uintptr_t);
     size_t logIncrement = count;
-    if (!CommitPlanes(first, count, commitTrace, initialize))
+    if (!CommitPlanes(first, count, initialize))
     {
         return LxrRcResult::OutOfMemory;
     }
@@ -5540,8 +5822,7 @@ LxrRcResult LxrReferenceCounting::BorrowSuspended()
     }
     // The planes of a borrowed range are zero from the operating system, and most of the range is never used, so the
     // storage is committed without writing to it.
-    LxrRcResult result = AdmitSuspended(
-        false, current, increment, GetTracePhase() != LxrTracePhase::Inactive, false);
+    LxrRcResult result = AdmitSuspended(false, current, increment, false);
     if (result != LxrRcResult::Success)
     {
         // A failed commit leaves the capacity as it was; the pause copies into what is free, as without overshoot.
@@ -5979,10 +6260,6 @@ LxrRcResult LxrReferenceCounting::ValidateTraceBatchForTest(Object* object, size
     {
         return LxrRcResult::InvalidPhase;
     }
-    if (!CommitTracePlanes())
-    {
-        return Fail(LxrRcResult::OutOfMemory);
-    }
     {
         TraceBatch targets(this);
         if (m_trace_pending.load() != 1)
@@ -6038,7 +6315,7 @@ uint64_t LxrReferenceCounting::GetRememberedPayloadReads() const
 
 uintptr_t LxrReferenceCounting::GetMatureScanReceipt(size_t field) const
 {
-    return field < 4 ? m_mature_scan_receipt[field].load(std::memory_order_acquire) : UINTPTR_MAX;
+    return field < 6 ? m_mature_scan_receipt[field].load(std::memory_order_acquire) : UINTPTR_MAX;
 }
 
 LxrRcResult LxrReferenceCounting::HoldTracePacketsForTest(bool hold)
@@ -6200,7 +6477,9 @@ LxrRcResult LxrReferenceCounting::ProcessTraceObject(
         scan->next = head;
     } while (!m_scan_work.compare_exchange_weak(
         head, scan, std::memory_order_release, std::memory_order_relaxed));
-    TraceScanSlot(index) = scan;
+#if !defined(LXR_S7_SCAN_LINK_CONTROL)
+    LinkTraceScan(index, scan);
+#endif // !LXR_S7_SCAN_LINK_CONTROL
     m_mark_metadata.Store(start, 1, SideMetadataMemoryOrder::SequentiallyConsistent);
     m_trace_metrics[TracedObjects].fetch_add(1, std::memory_order_relaxed);
     result = QueueTrace(nullptr, 0, scan);
@@ -6359,7 +6638,7 @@ LxrRcResult LxrReferenceCounting::FinishDyingTraceObject(Object* object)
         m_mark_metadata.Store(start, 1, SideMetadataMemoryOrder::SequentiallyConsistent);
         m_trace_metrics[DeletionMarks].fetch_add(1, std::memory_order_relaxed);
     }
-    TraceScan* scan = TraceScanSlot(index);
+    TraceScan* scan = FindTraceScan(index);
     if (result == LxrRcResult::Success && scan != nullptr && !scan->complete)
     {
         m_trace_metrics[ForcedScans].fetch_add(1, std::memory_order_relaxed);
