@@ -5424,7 +5424,8 @@ struct GenTreeCall final : public GenTree
     bool IsGenericVirtual(Compiler* compiler) const
     {
         return (gtCallType == CT_INDIRECT && (gtControlExpr->IsHelperCall(CORINFO_HELP_VIRTUAL_FUNC_PTR) ||
-                                              gtControlExpr->IsHelperCall(CORINFO_HELP_GVMLOOKUP_FOR_SLOT)
+                                              gtControlExpr->IsHelperCall(CORINFO_HELP_GVMLOOKUP_FOR_SLOT) ||
+                                              gtControlExpr->IsHelperCall(CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT)
 #ifdef FEATURE_READYTORUN
                                               || gtControlExpr->IsHelperCall(CORINFO_HELP_READYTORUN_VIRTUAL_FUNC_PTR)
 #endif
@@ -6935,15 +6936,18 @@ struct GenTreeVecCon : public GenTree
     static unsigned ElementCount(unsigned simdSize, var_types simdBaseType);
 
     template <typename simdTypename>
-    static bool IsHWIntrinsicCreateConstant(GenTreeHWIntrinsic* node, simdTypename& simdVal)
+    static bool IsHWIntrinsicCreateConstant(GenTreeHWIntrinsic* node,
+                                            simdTypename&       simdVal,
+                                            simdmask_t*         cnsMask = nullptr)
     {
         NamedIntrinsic intrinsic    = node->GetHWIntrinsicId();
         var_types      simdType     = node->TypeGet();
         var_types      simdBaseType = node->GetSimdBaseType();
         unsigned       simdSize     = node->GetSimdSize();
 
-        size_t argCnt    = node->GetOperandCount();
-        size_t cnsArgCnt = 0;
+        size_t     argCnt    = node->GetOperandCount();
+        size_t     cnsArgCnt = 0;
+        simdmask_t mask      = {};
 
         switch (intrinsic)
         {
@@ -6958,6 +6962,7 @@ struct GenTreeVecCon : public GenTree
                 if ((argCnt == 1) && HandleArgForHWIntrinsicCreate<simdTypename>(node->Op(1), 0, simdVal, simdBaseType))
                 {
                     // CreateScalar leaves the upper bits as zero
+                    mask.u64[0] |= 1;
 
                     if (intrinsic != NI_Vector_CreateScalar)
                     {
@@ -6965,6 +6970,7 @@ struct GenTreeVecCon : public GenTree
                         for (unsigned i = 1; i < ElementCount(simdSize, simdBaseType); i++)
                         {
                             HandleArgForHWIntrinsicCreate<simdTypename>(node->Op(1), i, simdVal, simdBaseType);
+                            mask.u64[0] |= (1ULL << i);
                         }
                     }
 
@@ -6976,17 +6982,27 @@ struct GenTreeVecCon : public GenTree
                     {
                         if (HandleArgForHWIntrinsicCreate<simdTypename>(node->Op(i), i - 1, simdVal, simdBaseType))
                         {
+                            mask.u64[0] |= (1ULL << (i - 1));
                             cnsArgCnt++;
                         }
                     }
                 }
 
                 assert((argCnt == 1) || (argCnt == ElementCount(simdSize, simdBaseType)));
+
+                if (cnsMask != nullptr)
+                {
+                    *cnsMask = mask;
+                }
                 return argCnt == cnsArgCnt;
             }
 
             default:
             {
+                if (cnsMask != nullptr)
+                {
+                    *cnsMask = mask;
+                }
                 return false;
             }
         }

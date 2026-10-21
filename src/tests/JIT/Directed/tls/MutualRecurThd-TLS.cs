@@ -7,7 +7,7 @@ using Xunit;
 
 public class MutualRecurThdTLS
 {
-    [SkipOnCoreClr("https://github.com/dotnet/runtime/issues/133538", RuntimeConfiguration.Checked)]
+    [PlatformSpecific(TestPlatforms.Windows)]
     [Fact]
     public static void TestEntryPoint()
     {

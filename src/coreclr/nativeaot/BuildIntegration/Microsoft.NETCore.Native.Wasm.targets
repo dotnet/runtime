@@ -1,0 +1,62 @@
+<!-- Licensed to the .NET Foundation under one or more agreements.
+     The .NET Foundation licenses this file to you under the MIT license. -->
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Target Name="SetupOSSpecificProps" DependsOnTargets="$(IlcDynamicBuildPropertyDependencies)">
+    <Error Condition="'$(_targetOS)' != 'wasi'" Text="NativeAOT WebAssembly linking is not supported for '$(_targetOS)'." />
+    <Error Condition="'$(NativeLib)' == 'Shared'" Text="NativeAOT WebAssembly shared libraries are not supported." />
+    <Error Condition="'$(IlcMultiModule)' == 'true'" Text="NativeAOT WebAssembly multi-module compilation is not supported." />
+    <Error Condition="'$(IlcDehydrate)' == 'true'" Text="NativeAOT WebAssembly data dehydration is not supported." />
+    <Error Condition="'$(StackTraceSupport)' == 'true'" Text="NativeAOT WebAssembly managed stack traces are not supported." />
+    <Error Condition="'$(WASI_SDK_PATH)' == ''" Text="Set WASI_SDK_PATH to the WASI SDK root to link NativeAOT WASI applications." />
+
+    <PropertyGroup>
+      <_WasiToolExeSuffix Condition="$([MSBuild]::IsOSPlatform('Windows'))">.exe</_WasiToolExeSuffix>
+      <CppCompilerAndLinker Condition="'$(CppCompilerAndLinker)' == ''">$(WASI_SDK_PATH)/bin/clang$(_WasiToolExeSuffix)</CppCompilerAndLinker>
+      <CppLinker>$(CppCompilerAndLinker)</CppLinker>
+      <CppLibCreator>$(WASI_SDK_PATH)/bin/llvm-ar$(_WasiToolExeSuffix)</CppLibCreator>
+      <IlcDefaultStackSize Condition="'$(IlcDefaultStackSize)' == ''">8388608</IlcDefaultStackSize>
+      <LinkStandardCPlusPlusLibrary Condition="'$(LinkStandardCPlusPlusLibrary)' == '' and '$(InvariantGlobalization)' != 'true'">true</LinkStandardCPlusPlusLibrary>
+    </PropertyGroup>
+
+    <Error Condition="!Exists('$(CppLinker)')" Text="The WASI compiler was not found at '$(CppLinker)'." />
+    <Error Condition="!Exists('$(CppLibCreator)')" Text="The WASI archive tool was not found at '$(CppLibCreator)'." />
+
+    <ItemGroup>
+      <NetCoreAppNativeLibrary Include="System.Native" />
+      <NetCoreAppNativeLibrary Include="System.Globalization.Native" Condition="'$(InvariantGlobalization)' != 'true'" />
+      <NetCoreAppNativeLibrary Include="System.IO.Compression.Native" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <DirectPInvoke Include="@(NetCoreAppNativeLibrary)" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <NativeLibrary Include="@(NetCoreAppNativeLibrary->'$(IlcFrameworkNativePath)lib%(Identity).a')" />
+      <NativeLibrary Include="$(IlcSdkPath)libbootstrapper.o" Condition="'$(NativeLib)' == '' and '$(CustomNativeMain)' != 'true'" />
+      <NativeLibrary Include="$(IlcSdkPath)libbootstrapperdll.o" Condition="'$(NativeLib)' != '' or '$(CustomNativeMain)' == 'true'" />
+      <NativeLibrary Include="$(IlcSdkPath)libPortableRuntime.a" />
+      <NativeLibrary Include="$(IlcSdkPath)libstandalonegc-disabled.a" />
+      <NativeLibrary Include="$(IlcSdkPath)libaotminipal.a" />
+      <NativeLibrary Include="$(IlcSdkPath)libstdc++compat.a" Condition="'$(LinkStandardCPlusPlusLibrary)' != 'true'" />
+      <NativeLibrary Include="$(IlcFrameworkNativePath)libSystem.Native.TimeZoneData.a" Condition="'$(InvariantTimezone)' != 'true'" />
+      <NativeLibrary Include="$(IlcFrameworkNativePath)libSystem.Native.TimeZoneData.Invariant.a" Condition="'$(InvariantTimezone)' == 'true'" />
+      <NativeLibrary Include="$(IlcFrameworkNativePath)libicui18n.a;$(IlcFrameworkNativePath)libicuuc.a;$(IlcFrameworkNativePath)libicudata.a" Condition="'$(InvariantGlobalization)' != 'true'" />
+      <NativeLibrary Include="$(IlcFrameworkNativePath)libz.a;$(IlcFrameworkNativePath)libzstd.a" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <LinkerArg Include="--target=wasm32-wasip2" />
+      <LinkerArg Include="--sysroot=&quot;$(WASI_SDK_PATH)/share/wasi-sysroot&quot;" />
+      <LinkerArg Include="@(NativeLibrary->'&quot;%(Identity)&quot;')" />
+      <LinkerArg Include="-Wl,-z,stack-size=$(IlcDefaultStackSize)" />
+      <LinkerArg Include="-lwasi-emulated-process-clocks;-lwasi-emulated-signal;-lwasi-emulated-mman" />
+      <LinkerArg Include="-lstdc++" Condition="'$(LinkStandardCPlusPlusLibrary)' == 'true'" />
+      <LinkerArg Include="-g" Condition="'$(NativeDebugSymbols)' == 'true'" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="CreateShimExes">
+    <Error Condition="'$(_AggregateExecutable)' == 'true'" Text="NativeAOT WebAssembly aggregate executables are not supported." />
+  </Target>
+</Project>
