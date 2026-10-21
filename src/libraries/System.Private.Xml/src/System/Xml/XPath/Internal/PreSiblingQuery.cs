@@ -25,57 +25,58 @@ namespace MS.Internal.Xml.XPath
         public PreSiblingQuery(Query qyInput, string name, string prefix, XPathNodeType typeTest) : base(qyInput, name, prefix, typeTest) { }
         private PreSiblingQuery(PreSiblingQuery other) : base(other) { }
 
-        private static bool NotVisited(XPathNavigator nav, List<XPathNavigator> parentStk)
-        {
-            XPathNavigator nav1 = nav.Clone();
-            nav1.MoveToParent();
-            for (int i = 0; i < parentStk.Count; i++)
-            {
-                if (nav1.IsSamePosition(parentStk[i]))
-                {
-                    return false;
-                }
-            }
-            parentStk.Add(nav1);
-            return true;
-        }
-
         public override object Evaluate(XPathNodeIterator context)
         {
             base.Evaluate(context);
 
             // Fill up base.outputBuffer
-            List<XPathNavigator> parentStk = new List<XPathNavigator>();
-            Stack<XPathNavigator> inputStk = new Stack<XPathNavigator>();
+            List<XPathNavigator> inputs = new List<XPathNavigator>();
             while ((currentNode = qyInput.Advance()) != null)
             {
-                inputStk.Push(currentNode.Clone());
+                inputs.Add(currentNode.Clone());
             }
-            while (inputStk.Count != 0)
+
+            // For each parent, only the last of its children in the input needs to be expanded,
+            // since its preceding siblings include those of the others.
+            SiblingInputParents inputParents = new SiblingInputParents(reverse: true);
+            List<XPathNavigator> lastInputs = new List<XPathNavigator>();
+            for (int i = inputs.Count - 1; i >= 0; i--)
             {
-                XPathNavigator input = inputStk.Pop();
+                XPathNavigator input = inputs[i];
                 if (input.NodeType == XPathNodeType.Attribute || input.NodeType == XPathNodeType.Namespace)
                 {
                     continue;
                 }
-                if (NotVisited(input, parentStk))
+                if (inputParents.TryAdd(input))
                 {
-                    XPathNavigator prev = input.Clone();
-                    if (prev.MoveToParent())
+                    lastInputs.Add(input);
+                }
+            }
+
+            // When the input is in document order, expanding it in document order as well lets Insert
+            // mostly append to the output buffer rather than search it.
+            if (inputParents.IsInputOrdered)
+            {
+                lastInputs.Reverse();
+            }
+
+            foreach (XPathNavigator input in lastInputs)
+            {
+                XPathNavigator prev = input.Clone();
+                if (prev.MoveToParent())
+                {
+                    bool test = prev.MoveToFirstChild();
+                    Debug.Assert(test, "We just moved to parent, how we can not have first child?");
+                    while (!prev.IsSamePosition(input))
                     {
-                        bool test = prev.MoveToFirstChild();
-                        Debug.Assert(test, "We just moved to parent, how we can not have first child?");
-                        while (!prev.IsSamePosition(input))
+                        if (matches(prev))
                         {
-                            if (matches(prev))
-                            {
-                                Insert(outputBuffer, prev);
-                            }
-                            if (!prev.MoveToNext())
-                            {
-                                Debug.Fail("We managed to miss sentinel node (input)");
-                                break;
-                            }
+                            Insert(outputBuffer, prev);
+                        }
+                        if (!prev.MoveToNext())
+                        {
+                            Debug.Fail("We managed to miss sentinel node (input)");
+                            break;
                         }
                     }
                 }
