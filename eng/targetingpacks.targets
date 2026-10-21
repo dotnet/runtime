@@ -32,6 +32,7 @@
   <PropertyGroup>
     <UseLocalAppHostPack Condition="'$(UseLocalAppHostPack)' == ''">$(UseLocalTargetingRuntimePack)</UseLocalAppHostPack>
     <EnableAppHostPackDownload Condition="'$(UseLocalAppHostPack)' == 'true'">false</EnableAppHostPackDownload>
+    <_LocalAppHostRuntimeIdentifiers>linux-arm;linux-arm64;linux-musl-arm64;linux-musl-x64;linux-x64;osx-x64;rhel.6-x64;tizen.4.0.0-armel;tizen.5.0.0-armel;win-arm64;win-x64;win-x86;linux-musl-arm;osx-arm64;linux-s390x;linux-bionic-arm;linux-bionic-arm64;linux-bionic-x64;linux-bionic-x86;freebsd-x64;freebsd-arm64;openbsd-x64;openbsd-arm64;illumos-x64;solaris-x64;haiku-x64;linux-ppc64le;linux-riscv64;linux-musl-riscv64;linux-loongarch64;linux-musl-loongarch64;openharmony-arm64;openharmony-x64</_LocalAppHostRuntimeIdentifiers>
 
     <UseLocalILCompilerPack Condition="'$(UseLocalILCompilerPack)' == ''">$(UseLocalTargetingRuntimePack)</UseLocalILCompilerPack>
     <UseLocalCrossgen2Pack Condition="'$(UseLocalCrossgen2Pack)' == ''">$(UseLocalTargetingRuntimePack)</UseLocalCrossgen2Pack>
@@ -85,15 +86,18 @@
                         Crossgen2PackVersion="$(ProductVersion)"
                         Crossgen2RuntimeIdentifiers="linux-musl-x64;linux-x64;win-x64;linux-arm;linux-arm64;linux-musl-arm;linux-musl-arm64;osx-arm64;osx-x64;win-arm64;win-x86;linux-riscv64;linux-musl-riscv64;linux-loongarch64;linux-musl-loongarch64"
                         Condition="'$(UseLocalCrossgen2Pack)' == 'true' and '@(KnownCrossgen2Pack->AnyHaveMetadataValue('TargetFramework', '$(NetCoreAppCurrent)'))' != 'true'" />
-    <!-- The SDK-shipped apphost pack lists only official RIDs; replace it with the local
-         list (official RIDs plus openharmony) so clean restores resolve openharmony. -->
-    <KnownAppHostPack Remove="$(LocalFrameworkOverrideName)"
-                      Condition="'$(UseLocalAppHostPack)' == 'true'" />
+    <!-- When the SDK already knows the apphost pack for this TFM, update that entry with the
+         local RIDs/version; otherwise add the local entry. -->
+    <KnownAppHostPack Update="$(LocalFrameworkOverrideName)"
+                      AppHostPackNamePattern="$(LocalFrameworkOverrideName).Host.**RID**"
+                      AppHostPackVersion="$(ProductVersion)"
+                      AppHostRuntimeIdentifiers="$(_LocalAppHostRuntimeIdentifiers)"
+                      Condition="'$(UseLocalAppHostPack)' == 'true' and '@(KnownAppHostPack->AnyHaveMetadataValue('TargetFramework', '$(NetCoreAppCurrent)'))' == 'true'" />
     <KnownAppHostPack Include="$(LocalFrameworkOverrideName)"
                       ExcludedRuntimeIdentifiers="android"
                       AppHostPackNamePattern="$(LocalFrameworkOverrideName).Host.**RID**"
                       AppHostPackVersion="$(ProductVersion)"
-                      AppHostRuntimeIdentifiers="linux-arm;linux-arm64;linux-musl-arm64;linux-musl-x64;linux-x64;osx-x64;rhel.6-x64;tizen.4.0.0-armel;tizen.5.0.0-armel;win-arm64;win-x64;win-x86;linux-musl-arm;osx-arm64;linux-s390x;linux-bionic-arm;linux-bionic-arm64;linux-bionic-x64;linux-bionic-x86;freebsd-x64;freebsd-arm64;openbsd-x64;openbsd-arm64;illumos-x64;solaris-x64;haiku-x64;linux-ppc64le;linux-riscv64;linux-musl-riscv64;linux-loongarch64;linux-musl-loongarch64;openharmony-arm64;openharmony-x64"
+                      AppHostRuntimeIdentifiers="$(_LocalAppHostRuntimeIdentifiers)"
                       TargetFramework="$(NetCoreAppCurrent)"
                       Condition="'$(UseLocalAppHostPack)' == 'true' and '@(KnownAppHostPack->AnyHaveMetadataValue('TargetFramework', '$(NetCoreAppCurrent)'))' != 'true'" />
   </ItemGroup>
@@ -119,13 +123,10 @@
                              NuGetPackageVersion="$(ProductVersion)"
                              PackageDirectory="$(LocalRefPackDir.TrimEnd('/\'))"
                              Condition="'%(ResolvedTargetingPack.RuntimeFrameworkName)' == '$(LocalFrameworkOverrideName)'" />
-      <!-- OpenHarmony only: scope the local runtime pack to the target RID; host tools
-           resolve their pack from NuGet (the OpenHarmony bootstrap lib dir does not exist on
-           clean hosts). -->
       <ResolvedRuntimePack PackageDirectory="$(LocalRuntimePackDir)"
                            Condition="'$(LocalRuntimePackDir)' != '' and
                                       '%(ResolvedRuntimePack.FrameworkName)' == '$(LocalFrameworkOverrideName)' and
-                                      ('$(TargetsOpenHarmony)' != 'true' or '%(ResolvedRuntimePack.RuntimeIdentifier)' == '$(TargetRid)')" />
+                                      '%(ResolvedRuntimePack.RuntimeIdentifier)' == '$(TargetRid)'" />
       <ResolvedFrameworkReference TargetingPackPath="$(LocalRefPackDir.TrimEnd('/\'))"
                                   TargetingPackVersion="$(ProductVersion)"
                                   Condition="'%(Identity)' == '$(LocalFrameworkOverrideName)'">
