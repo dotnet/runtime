@@ -3203,6 +3203,8 @@ public:
 
 #ifndef DACCESS_COMPILE
 
+    DebuggerMethodInfoTable() = default;
+
     HRESULT AddMethodInfo(Module *pModule,
                        mdMethodDef token,
                        DebuggerMethodInfo *mi);
