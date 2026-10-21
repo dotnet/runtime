@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.Tests
@@ -93,6 +94,18 @@ namespace System.Tests
 
         [Fact, PlatformSpecific(TestPlatforms.Linux)]
         public static void TestIsOSVersionAtLeast_Linux() => TestIsOSVersionAtLeast("Linux");
+
+        [Fact]
+        public static void TestIsOSPlatform_LinuxAliasOnOpenHarmony()
+        {
+            if (!OperatingSystem.IsOSPlatform("OPENHARMONY"))
+            {
+                return;
+            }
+
+            Assert.True(OperatingSystem.IsOSPlatform("LINUX"));
+            Assert.True(RuntimeInformation.IsOSPlatform(OSPlatform.Linux));
+        }
 
         [Fact, PlatformSpecific(TestPlatforms.FreeBSD)]
         public static void TestIsOSPlatform_FreeBSD() => TestIsOSPlatform("FreeBSD", OperatingSystem.IsFreeBSD);
