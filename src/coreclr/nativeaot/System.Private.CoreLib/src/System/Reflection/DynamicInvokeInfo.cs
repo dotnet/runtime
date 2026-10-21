@@ -494,8 +494,9 @@ namespace System.Reflection
         {
             Debug.Assert(_argumentCount <= MaxStackAllocArgCount);
 
-            StackAllocatedArguments argStorage = default;
-            Span<object?> copyOfParameters = ((Span<object?>)argStorage._args).Slice(0, _argumentCount);
+            ArgumentData<object?> argStorage = default;
+            Span<object?> copyOfParameters = argStorage;
+            copyOfParameters = copyOfParameters[.._argumentCount];
             StackAllocatedByRefs byrefStorage = default;
             void* pByRefStorage = (ByReference*)&byrefStorage;
             ArgumentData<bool> copyBackStorage = default;
@@ -527,8 +528,8 @@ namespace System.Reflection
         {
             Debug.Assert(_argumentCount <= MaxStackAllocArgCount);
 
-            StackAllocatedArguments argStorage = default;
-            Span<object?> copyOfParameters = ((Span<object?>)argStorage._args).Slice(0, _argumentCount);
+            ArgumentData<object?> argStorage = default;
+            Span<object?> copyOfParameters = ((Span<object?>)argStorage).Slice(0, _argumentCount);
             StackAllocatedByRefs byrefStorage = default;
             void* pByRefStorage = (ByReference*)&byrefStorage;
             ArgumentData<bool> copyBackStorage = default;
@@ -885,17 +886,6 @@ namespace System.Reflection
         internal struct ArgumentData<T>
         {
             private T _arg0;
-        }
-
-        // Helper struct to avoid intermediate object[] allocation in calls to the native reflection stack.
-        // When argument count <= MaxStackAllocArgCount, define a local of type default(StackAllocatedByRefs)
-        // and pass it to CheckArguments().
-        // For argument count > MaxStackAllocArgCount, do a stackalloc of void* pointers along with
-        // GCReportingRegistration to safely track references.
-        [StructLayout(LayoutKind.Sequential)]
-        internal ref struct StackAllocatedArguments
-        {
-            internal ArgumentData<object?> _args;
         }
 
         // Helper struct to avoid intermediate IntPtr[] allocation and RegisterForGCReporting in calls to the native reflection stack.
