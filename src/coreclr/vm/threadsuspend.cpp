@@ -3698,7 +3698,7 @@ ThrowControlForThread(
 
 #if defined(FEATURE_HIJACK) && !defined(TARGET_UNIX)
 // This function is called by UserAbort.
-// It forces a thread to abort if allowed and the thread is at a GC-safe point in managed code.
+// It forces a thread to abort if allowed and the thread is running managed code.
 BOOL Thread::HandleJITCaseForAbort()
 {
     CONTRACTL {
@@ -3730,9 +3730,18 @@ BOOL Thread::HandleJITCaseForAbort()
     if (success)
     {
         EECodeInfo codeInfo(GetIP(&ctx));
-        if (codeInfo.IsValid() &&
-            codeInfo.GetCodeManager()->IsGcSafe(&codeInfo, codeInfo.GetRelOffset()))
+        if (codeInfo.IsValid())
         {
+            // Legacy x86 supports aborted, partially interruptible frames without
+            // enumerating their ordinary GC slots. Its IsGcSafe predicate rejects
+            // such methods, so requiring it here could prevent abort indefinitely.
+#ifdef USE_GC_INFO_DECODER
+            if (!codeInfo.GetCodeManager()->IsGcSafe(&codeInfo, codeInfo.GetRelOffset()))
+            {
+                return FALSE;
+            }
+#endif // USE_GC_INFO_DECODER
+
             return ResumeUnderControl(&ctx);
         }
     }
