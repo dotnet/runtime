@@ -3221,12 +3221,16 @@ LxrRcResult LxrReferenceCounting::ProcessIncrement(
     }
     if (IsImmix(start))
     {
-        CountWorker(worker, PromotedBytes, size);
         bool nursery;
         result = FromMetadata(m_blocks.IsNursery(start & ~ImmixBlockGeometry::BlockMask, &nursery));
         if (result != LxrRcResult::Success)
         {
             return result;
+        }
+        if (copied || nursery)
+        {
+            // Only objects in clean nursery blocks can be evacuated, so only they size the to-space.
+            CountWorker(worker, PromotedBytes, size);
         }
         if (nursery)
         {

@@ -53,11 +53,19 @@ public:
 
     bool BeginPause(size_t allocated)
     {
+        return BeginPause(allocated, allocated);
+    }
+
+    // evacuable: the young bytes in clean nursery blocks. Only they can be copied, so the measured
+    // survival ratio of the to-space reserve is taken against them (RecordSurvivors counts the same bytes).
+    bool BeginPause(size_t allocated, size_t evacuable)
+    {
         if (m_pause_pending)
         {
             return false;
         }
         m_allocated = allocated;
+        m_evacuable = evacuable;
         m_copied = 0;
         m_survivors = 0;
         m_pause_pending = true;
@@ -74,9 +82,10 @@ public:
         return true;
     }
 
-    // Port-specific: bytes of young objects that were promoted in this pause, whether they were copied
-    // or kept in place. The Java LXR measures only copied bytes. Without copying (or when the to-space
-    // is full and copying stops) that value is zero, so it cannot size a to-space.
+    // Port-specific: bytes of evacuable young objects (in clean nursery blocks) that were promoted in this
+    // pause, whether they were copied or kept in place. The Java LXR measures only copied bytes. Without
+    // copying (or when the to-space is full and copying stops) that value is zero, so it cannot size a
+    // to-space. Young objects in recycled blocks are never copied and are not counted.
     bool RecordSurvivors(size_t bytes)
     {
         if (!m_pause_pending || bytes > SIZE_MAX - m_survivors)
@@ -93,10 +102,10 @@ public:
         {
             return false;
         }
-        if (m_allocated != 0)
+        if (m_evacuable != 0)
         {
             double measured = std::fmin(
-                static_cast<double>(m_survivors) / static_cast<double>(m_allocated), 1.0);
+                static_cast<double>(m_survivors) / static_cast<double>(m_evacuable), 1.0);
             double reserve = m_reserve_survival.load(std::memory_order_relaxed);
             if (!m_reserve_measured)
             {
@@ -133,7 +142,7 @@ public:
             }
             m_survival.store(std::fmin(next, 1.0), std::memory_order_release);
         }
-        m_allocated = m_copied = m_survivors = 0;
+        m_allocated = m_evacuable = m_copied = m_survivors = 0;
         m_pause_pending = false;
         return true;
     }
@@ -227,8 +236,10 @@ public:
     // Port-specific deviation from the Java LXR (CollectionReservedPages above). The Java formula adds
     // a survival term in MiB as if it were pages, and relies on GC threads taking pages beyond the
     // heap budget during a pause. The port can copy only into blocks that are already admitted, so the
-    // to-space must exist when the pause starts. This reserve is computed in bytes: the young bytes
-    // allocated since the last pause, times the measured survival ratio, times a safety factor.
+    // to-space must exist when the pause starts. This reserve is computed in bytes: the clean nursery bytes
+    // allocated since the last pause (the only young bytes a pause can copy), times the measured survival
+    // ratio of those bytes, times a safety factor. Young bytes in recycled blocks are promoted in place,
+    // need no to-space and add nothing, so the reserve is zero when the mutator has no clean block.
     // Before the first pause no ratio is known, so all young bytes are assumed to survive.
     static constexpr size_t ReserveSafetyFactor = 2;
     // The measured ratio can fall to zero in a quiet phase; a later burst would then find no to-space.
@@ -265,6 +276,7 @@ private:
     std::atomic<bool> m_cycle{false};
     std::atomic<bool> m_emergency{false};
     size_t m_allocated = 0;
+    size_t m_evacuable = 0;
     size_t m_copied = 0;
     size_t m_survivors = 0;
     bool m_pause_pending = false;

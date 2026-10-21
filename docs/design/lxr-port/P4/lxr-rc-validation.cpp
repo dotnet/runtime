@@ -1064,6 +1064,8 @@ namespace
             Check(copying.copiedObjects == 2 && copying.copiedBytes == 48 &&
                 copying.pauseCopiedBytes == 48 && copying.retiredSourceBytes == 48,
                 "only two physical copies feed actual survival and source retirement");
+            Check(engine.GetPauseSurvivorBytes() == 48,
+                "copied objects count as evacuable survivors, which size the next to-space reserve");
             uintptr_t count;
             Check(engine.LoadCount(moved, &count) == LxrRcResult::Success &&
                 count == (uintptr_t{1} << bits) - 1 &&
@@ -1151,6 +1153,8 @@ namespace
             Check(engine.GetNurseryMetrics().inPlacePinnedBytes == 24 &&
                 engine.GetNurseryMetrics().copiedBytes == 20480,
                 "pinned in-place promotion is separate from genuine copied volume");
+            Check(engine.GetPauseSurvivorBytes() == 20480 + 24,
+                "copied and in-place nursery survivors both size the to-space reserve");
         }
         {
             LxrReferenceCounting engine;
@@ -1997,6 +2001,20 @@ namespace
             Check(copying.MeasuredSurvivalRatio() < 1e-9 && copying.ReserveSurvivalRatio() == 0.05 &&
                     copying.CollectionReservedPagesForCopy(size_t{20} << 20, Page) == 512,
                 "a quiet phase keeps a minimum reserve");
+            {
+                // Young bytes in recycled blocks are promoted in place and never copied: they neither size the
+                // measured ratio nor need a to-space.
+                LxrCollectionPolicy evacuable;
+                Check(evacuable.BeginPause(size_t{100} << 20, size_t{20} << 20) &&
+                        evacuable.RecordSurvivors(size_t{10} << 20) && evacuable.ReleasePause() &&
+                        evacuable.MeasuredSurvivalRatio() == 0.5,
+                    "the measured ratio is taken against the evacuable young bytes");
+                Check(evacuable.BeginPause(size_t{100} << 20, 0) && evacuable.ReleasePause() &&
+                        evacuable.MeasuredSurvivalRatio() == 0.5,
+                    "a pause without evacuable bytes leaves the measured ratio unchanged");
+                Check(evacuable.CollectionReservedPagesForCopy(0, Page) == 0,
+                    "no clean nursery bytes need no to-space, whatever the ratio");
+            }
         }
         LxrCollectionPolicy policy;
         Check(policy.BeginPause(0) && policy.RecordCopiedPromotion(100) && policy.ReleasePause() &&

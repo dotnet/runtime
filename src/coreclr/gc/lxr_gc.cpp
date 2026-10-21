@@ -957,9 +957,10 @@ size_t LxrGcHeap::GetCollectionReservedPages(size_t headroomBytes) const
 {
     if (m_heap_configuration.evacuateNursery)
     {
-        // The young pause copies survivors into admitted free blocks, so they must exist when it starts.
+        // The young pause copies the survivors of clean nursery blocks into admitted free blocks, so they
+        // must exist when it starts. Young objects in recycled blocks are promoted in place and need none.
         return m_policy.CollectionReservedPagesForCopy(
-            m_engine.GetYoungAllocationBytes(), LxrLargeObjectSpace::PageBytes);
+            m_engine.GetCleanNurseryBlocks() * ImmixBlockGeometry::BlockBytes, LxrLargeObjectSpace::PageBytes);
     }
     return m_policy.CollectionReservedPages(
         m_engine.GetCleanNurseryBlocks() * ImmixBlockGeometry::BlockBytes,
@@ -1029,7 +1030,9 @@ void LxrGcHeap::Suspend(void* context)
                 heap->GetCollectionReservedPages(headroom), std::memory_order_release);
         }
     }
-    if (!heap->m_policy.BeginPause(heap->m_pause_young_bytes.load(std::memory_order_acquire)))
+    if (!heap->m_policy.BeginPause(
+            heap->m_pause_young_bytes.load(std::memory_order_acquire),
+            heap->m_engine.GetCleanNurseryBlocks() * ImmixBlockGeometry::BlockBytes))
     {
         heap->Fatal("LXR survival predictor allocation snapshot was not retired.");
     }
