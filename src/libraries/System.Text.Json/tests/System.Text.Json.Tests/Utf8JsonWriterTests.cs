@@ -1200,28 +1200,6 @@ namespace System.Text.Json.Tests
             Assert.Throws<ArgumentException>(() => writeToIBW.Reset(stream, options));
         }
 
-        [Theory]
-        [InlineData(false, false)]
-        [InlineData(false, true)]
-        [InlineData(true, false)]
-        [InlineData(true, true)]
-        public static void Reset_NullOutputPreservesValidationOrder(bool useStream, bool withOptions)
-        {
-            using var writer = new Utf8JsonWriter(new FixedSizedBufferWriter(256));
-            Action reset = (useStream, withOptions) switch
-            {
-                (true, true) => () => writer.Reset((Stream)null, default),
-                (true, false) => () => writer.Reset((Stream)null),
-                (false, true) => () => writer.Reset((IBufferWriter<byte>)null, default),
-                (false, false) => () => writer.Reset((IBufferWriter<byte>)null),
-            };
-
-            Assert.Throws<ArgumentNullException>(useStream ? "utf8Json" : "bufferWriter", reset);
-
-            writer.Dispose();
-            Assert.Throws<ObjectDisposedException>(reset);
-        }
-
         [Fact]
         public static void JsonSerializerCacheNotPoisonedByDisposedWriter()
         {

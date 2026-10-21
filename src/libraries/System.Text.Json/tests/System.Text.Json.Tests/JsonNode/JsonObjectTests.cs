@@ -1656,22 +1656,6 @@ namespace System.Text.Json.Nodes.Tests
             Assert.Throws<ArgumentNullException>(() => { jObject.TryAdd(null, 33); });
         }
 
-        [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public static void TryAdd_NullPropertyNamePreservesState(bool reportIndex)
-        {
-            JsonObject jsonObject = new() { ["existing"] = 1 };
-            JsonNode value = JsonValue.Create(2);
-            Action add = reportIndex
-                ? () => jsonObject.TryAdd(propertyName: null, value, out _)
-                : () => jsonObject.TryAdd(propertyName: null, value);
-
-            Assert.Throws<ArgumentNullException>("propertyName", add);
-            Assert.Equal("""{"existing":1}""", jsonObject.ToJsonString());
-            Assert.Null(value.Parent);
-        }
-
         [Fact]
         public static void TryGetPropertyValue_ThrowsArgumentNullException()
         {

@@ -187,7 +187,11 @@ namespace System.Diagnostics
         public string DisplayName
         {
             get => _displayName ?? OperationName;
-            set => _displayName = value ?? throw new ArgumentNullException(nameof(value));
+            set
+            {
+                ArgumentNullException.ThrowIfNull(value);
+                _displayName = value;
+            }
         }
 
         /// <summary>Get the ActivitySource object associated with this Activity.</summary>

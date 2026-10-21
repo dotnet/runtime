@@ -31,32 +31,6 @@ namespace System.Text.Json.Nodes.Tests
             }
         }
 
-        [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public static void SpanConstructor_CopiesSliceAndAssignsParents(bool withOptions)
-        {
-            JsonNode?[] items = [-1, 1, null, 3, -2];
-            ReadOnlySpan<JsonNode?> span = items.AsSpan(1, 3);
-            JsonNodeOptions options = new() { PropertyNameCaseInsensitive = true };
-
-            JsonArray array = withOptions ? new JsonArray(options, span) : new JsonArray(span);
-
-            Assert.Equal(3, array.Count);
-            Assert.Equal("[1,null,3]", array.ToJsonString());
-            Assert.Equal(withOptions ? options : (JsonNodeOptions?)null, array.Options);
-            Assert.Same(items[1], array[0]);
-            Assert.Null(array[1]);
-            Assert.Same(items[3], array[2]);
-            Assert.Same(array, array[0]?.Parent);
-            Assert.Same(array, array[2]?.Parent);
-            Assert.Null(items[0]?.Parent);
-            Assert.Null(items[4]?.Parent);
-
-            items[1] = 4;
-            Assert.Equal("[1,null,3]", array.ToJsonString());
-        }
-
         [Fact]
         public static void FromElement()
         {

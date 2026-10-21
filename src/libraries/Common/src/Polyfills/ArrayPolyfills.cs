@@ -10,6 +10,23 @@ internal static class ArrayPolyfills
     {
         public static int MaxLength => 0x7FFFFFC7;
 
+        public static void Reverse<T>(T[] array, int index, int length)
+        {
+            if (array is null)
+            {
+                throw new ArgumentNullException(nameof(array));
+            }
+
+            if (index < 0 || length < 0 || array.Length - index < length)
+            {
+                // Preserve the existing overload's argument validation.
+                Array.Reverse(array, index, length);
+                return;
+            }
+
+            array.AsSpan(index, length).Reverse();
+        }
+
         public static void Clear(Array array)
         {
             if (array is null)

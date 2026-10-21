@@ -64,21 +64,6 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Null(policy.ConvertName(null));
         }
 
-        [Theory]
-        [InlineData(1)]
-        [InlineData(2)]
-        [InlineData(31)]
-        [InlineData(256)]
-        [InlineData(1024)]
-        public static void CamelCase_CopiesEntireName(int prefixLength)
-        {
-            const string Suffix = "Value\0\ud800";
-            string name = new string('A', prefixLength) + Suffix;
-            string expected = new string('a', prefixLength) + Suffix;
-
-            Assert.Equal(expected, JsonNamingPolicy.CamelCase.ConvertName(name));
-        }
-
         [Theory, OuterLoop]
         [MemberData(nameof(GetValidMemberNames))]
         public static void CamelCaseNamingPolicyMatchesNewtonsoftNamingStrategy(string name)

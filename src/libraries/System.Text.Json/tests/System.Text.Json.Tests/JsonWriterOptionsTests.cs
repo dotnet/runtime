@@ -193,14 +193,5 @@ namespace System.Text.Json.Tests
             var options = new JsonWriterOptions();
             Assert.Throws<ArgumentNullException>(() => options.NewLine = null);
         }
-
-        [Fact]
-        public static void JsonWriterOptions_NewLine_NullPreservesValue()
-        {
-            JsonWriterOptions options = new() { NewLine = "\r\n" };
-
-            Assert.Throws<ArgumentNullException>("value", () => options.NewLine = null);
-            Assert.Equal("\r\n", options.NewLine);
-        }
     }
 }

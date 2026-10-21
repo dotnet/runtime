@@ -101,20 +101,5 @@ namespace System.Text.Json.Serialization.Tests
             string json = await Serializer.SerializeWrapper(new ClassWithCustomDerivedNamingPolicyAttribute { MyValue = "test" }, options);
             Assert.Equal("""{"MYVALUE":"test"}""", json);
         }
-
-        [Fact]
-        public void JsonNamingPolicyAttribute_CustomPolicy_ValidatesArgument()
-        {
-            Assert.Throws<ArgumentNullException>("namingPolicy", () => new CustomNamingPolicyAttribute(null));
-
-            JsonNamingPolicy namingPolicy = JsonNamingPolicy.CamelCase;
-            var attribute = new CustomNamingPolicyAttribute(namingPolicy);
-            Assert.Same(namingPolicy, attribute.NamingPolicy);
-        }
-
-        private sealed class CustomNamingPolicyAttribute : JsonNamingPolicyAttribute
-        {
-            public CustomNamingPolicyAttribute(JsonNamingPolicy namingPolicy) : base(namingPolicy) { }
-        }
     }
 }

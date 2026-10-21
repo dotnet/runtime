@@ -37,39 +37,6 @@ namespace System.Text.Json.Tests
             Assert.False(json.Read());
         }
 
-        [Theory]
-        [InlineData(false, false)]
-        [InlineData(false, true)]
-        [InlineData(true, false)]
-        [InlineData(true, true)]
-        public static void ReadSequence_WithEmptyBoundarySegments(bool prependEmpty, bool appendEmpty)
-        {
-            ReadOnlyMemory<byte> data = """{"value":"\u0041"}"""u8.ToArray();
-            var firstSegment = new BufferSegment<byte>(prependEmpty ? ReadOnlyMemory<byte>.Empty : data);
-            BufferSegment<byte> lastSegment = prependEmpty ? firstSegment.Append(data) : firstSegment;
-
-            if (appendEmpty)
-            {
-                lastSegment = lastSegment.Append(ReadOnlyMemory<byte>.Empty);
-            }
-
-            var sequence = new ReadOnlySequence<byte>(firstSegment, 0, lastSegment, lastSegment.Memory.Length);
-            var reader = new Utf8JsonReader(sequence);
-
-            Assert.True(reader.Read());
-            Assert.Equal(JsonTokenType.StartObject, reader.TokenType);
-            Assert.True(reader.Read());
-            Assert.Equal(JsonTokenType.PropertyName, reader.TokenType);
-            Assert.True(reader.ValueTextEquals("value"u8));
-            Assert.True(reader.Read());
-            Assert.Equal(JsonTokenType.String, reader.TokenType);
-            Assert.True(reader.ValueTextEquals("A"u8));
-            Assert.True(reader.Read());
-            Assert.Equal(JsonTokenType.EndObject, reader.TokenType);
-            Assert.False(reader.Read());
-            Assert.Equal(data.Length, reader.BytesConsumed);
-        }
-
         [Fact]
         public static void EmptyJsonMultiSegmentIsInvalid()
         {

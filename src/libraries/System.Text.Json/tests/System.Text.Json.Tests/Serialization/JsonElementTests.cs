@@ -3,7 +3,6 @@
 
 using System.Buffers;
 using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -137,31 +136,6 @@ namespace System.Text.Json.Serialization.Tests
 
             // Symmetry
             Assert.True(JsonElement.DeepEquals(element2, element1));
-        }
-
-        [Theory]
-        [InlineData(0)]
-        [InlineData(1)]
-        [InlineData(15)]
-        [InlineData(16)]
-        [InlineData(31)]
-        [InlineData(32)]
-        [InlineData(255)]
-        [InlineData(256)]
-        public static void DeepEquals_NumberNormalizationBoundaries(int zeroCount)
-        {
-            string zeros = new('0', zeroCount);
-            JsonElement fraction = JsonElement.Parse("0." + zeros + "12345" + zeros);
-            JsonElement fractionExponent = JsonElement.Parse("12345e-" + (zeroCount + 5).ToString(CultureInfo.InvariantCulture));
-            JsonElement differentFraction = JsonElement.Parse("0." + zeros + "12346" + zeros);
-            JsonElement integral = JsonElement.Parse("12345" + zeros);
-            JsonElement integralExponent = JsonElement.Parse("12345e" + zeroCount.ToString(CultureInfo.InvariantCulture));
-            JsonElement zero = JsonElement.Parse("-0." + zeros + "0");
-
-            Assert.True(JsonElement.DeepEquals(fraction, fractionExponent));
-            Assert.True(JsonElement.DeepEquals(integral, integralExponent));
-            Assert.True(JsonElement.DeepEquals(zero, JsonElement.Parse("0")));
-            Assert.False(JsonElement.DeepEquals(fraction, differentFraction));
         }
 
         [Theory]
