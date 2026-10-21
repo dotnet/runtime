@@ -108,13 +108,10 @@ void CordbAppDomain::Neuter()
     // Disconnect any active breakpoints
     //
     {
-        CordbBreakpoint* entry;
-        HASHFIND find;
-
-        for (entry =  m_breakpoints.FindFirst(&find);
-             entry != NULL;
-             entry =  m_breakpoints.FindNext(&find))
+        for (CordbHashTable::Iterator iterator = m_breakpoints.Begin(), end = m_breakpoints.End();
+             iterator != end; iterator++)
         {
+            CordbBreakpoint *entry = static_cast<CordbBreakpoint *>(*iterator);
             entry->Disconnect();
         }
     }
@@ -534,15 +531,11 @@ CordbModule * CordbAppDomain::GetModuleFromMetaDataInterface(IUnknown *pIMetaDat
     hr = pImport->GetScopeProps(NULL, 0, 0, &matchMVID);
     IfFailThrow(hr);
 
-    CordbModule* pModule;
-    HASHFIND findmodule;
-
     PrepopulateModules();
 
-    for (pModule =  m_modules.FindFirst(&findmodule);
-         pModule != NULL;
-         pModule =  m_modules.FindNext(&findmodule))
+    for (CordbHashTable::Iterator iterator = m_modules.Begin(), end = m_modules.End(); iterator != end; iterator++)
     {
+        CordbModule *pModule = static_cast<CordbModule *>(*iterator);
         IMetaDataImport * pImportCurrent = pModule->GetMetaDataImporter(); // throws
         _ASSERTE(pImportCurrent != NULL);
 
@@ -848,12 +841,9 @@ void CordbAppDomain::PrepopulateModules()
 
     PrepopulateAssembliesOrThrow();
 
-    HASHFIND hashfind;
-
-    for (CordbAssembly * pAssembly = m_assemblies.FindFirst(&hashfind);
-         pAssembly != NULL;
-         pAssembly = m_assemblies.FindNext(&hashfind))
+    for (CordbHashTable::Iterator iterator = m_assemblies.Begin(), end = m_assemblies.End(); iterator != end; iterator++)
     {
+        CordbAssembly *pAssembly = static_cast<CordbAssembly *>(*iterator);
         VMPTR_Assembly vmAssembly = pAssembly->GetAssemblyPtr();
         VMPTR_Module vmModule = VMPTR_Module::NullPtr();
         BOOL isModuleLoaded = FALSE;

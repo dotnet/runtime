@@ -1056,13 +1056,9 @@ HRESULT Cordb::Terminate()
     {
         RSLockHolder ch(&m_processListMutex);
 
-        HASHFIND hfDT;
-        CordbProcess * pProcess;
-
-        for (pProcess=  (CordbProcess*) m_processes.FindFirst(&hfDT);
-             pProcess != NULL;
-             pProcess = (CordbProcess*) m_processes.FindNext(&hfDT))
+        for (CordbHashTable::Iterator iterator = m_processes.Begin(), end = m_processes.End(); iterator != end; iterator++)
         {
+            CordbProcess *pProcess = static_cast<CordbProcess *>(*iterator);
             _ASSERTE(pProcess->IsSafeToSendEvents() || pProcess->m_unrecoverableError);
             if (pProcess->IsSafeToSendEvents() && !pProcess->m_unrecoverableError)
             {
@@ -1108,8 +1104,7 @@ HRESULT Cordb::Terminate()
 
 #ifdef _DEBUG
     {
-        HASHFIND find;
-        _ASSERTE(m_processes.FindFirst(&find) == NULL); // should be emptied by neuter
+        _ASSERTE(m_processes.GetCount() == 0); // should be emptied by neuter
     }
 #endif //_DEBUG
 

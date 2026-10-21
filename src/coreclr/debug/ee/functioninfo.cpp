@@ -2190,12 +2190,9 @@ void DebuggerMethodInfoTable::ClearMethodsOfModule(Module *pModule)
     LOG((LF_CORDB, LL_INFO1000000, "CMOM:mod:0x%p (%s)\n", pModule
         ,pModule->GetDebugName()));
 
-    HASHFIND info;
-
-    const DebuggerMethodInfoEntry *entry
-      = m_table.FindFirstEntry(&info);
-    while(entry != NULL)
+    for (Iterator iterator = m_table.Begin(), end = m_table.End(); iterator != end; iterator++)
     {
+        const DebuggerMethodInfoEntry *entry = &*iterator;
         Module *pMod = entry->key.pModule ;
         if (pMod == pModule)
         {
@@ -2230,8 +2227,6 @@ void DebuggerMethodInfoTable::ClearMethodsOfModule(Module *pModule)
                 dmi = dmi->m_prevMethodInfo;
             }
         }
-
-        entry = m_table.FindNextEntry(&info);
     }
 }
 
@@ -2312,54 +2307,32 @@ DebuggerMethodInfo *DebuggerMethodInfoTable::GetMethodInfo(Module *pModule, mdMe
 }
 
 
-DebuggerMethodInfo *DebuggerMethodInfoTable::GetFirstMethodInfo(HASHFIND *info)
+DebuggerMethodInfoTable::Iterator DebuggerMethodInfoTable::Begin()
 {
     CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
-
-        PRECONDITION(CheckPointer(info));
     }
     CONTRACTL_END;
 
     _ASSERTE(g_pDebugger->HasDebuggerDataLock());
 
-    const DebuggerMethodInfoEntry *entry = m_table.FindFirstEntry(info);
-    if (entry == NULL)
-        return NULL;
-
-    return entry->mi;
+    return m_table.Begin();
 }
 
-DebuggerMethodInfo *DebuggerMethodInfoTable::GetNextMethodInfo(HASHFIND *info)
+DebuggerMethodInfoTable::Iterator DebuggerMethodInfoTable::End()
 {
     CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
-
-        PRECONDITION(CheckPointer(info));
     }
     CONTRACTL_END;
 
     _ASSERTE(g_pDebugger->HasDebuggerDataLock());
 
-    const DebuggerMethodInfoEntry *entry = m_table.FindNextEntry(info);
-
-    // We may have incremented the version number
-    // for methods that never got JITted, so we should
-    // pretend like they don't exist here.
-    while (entry != NULL &&
-           entry->mi == NULL)
-    {
-        entry = m_table.FindNextEntry(info);
-    }
-
-    if (entry == NULL)
-        return NULL;
-
-    return entry->mi;
+    return m_table.End();
 }
 
 
@@ -2422,12 +2395,9 @@ void DebuggerMethodInfoTable::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     DAC_ENUM_VTHIS();
     m_table.EnumMemoryRegions();
 
-    HASHFIND find;
-    for (const DebuggerMethodInfoEntry *entry = m_table.FindFirstEntry(&find);
-         entry != nullptr;
-         entry = m_table.FindNextEntry(&find))
+    for (Iterator iterator = m_table.Begin(), end = m_table.End(); iterator != end; iterator++)
     {
-        entry->EnumMemoryRegions(flags);
+        iterator->EnumMemoryRegions(flags);
     }
 }
 #endif // #ifdef DACCESS_COMPILE

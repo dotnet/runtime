@@ -52,21 +52,6 @@ SHash<TRAITS>::~SHash()
     delete [] m_table;
 }
 
-template <typename TRAITS>
-const typename SHash<TRAITS>::element_t *SHash<TRAITS>::GetNext(count_t &index) const
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    Iterator iterator(this, FALSE);
-    iterator.m_index = index;
-    iterator.First();
-    if (iterator.m_index >= m_tableSize)
-        return nullptr;
-
-    index = iterator.m_index + 1;
-    return &*iterator;
-}
-
 #ifdef DACCESS_COMPILE
 template <typename TRAITS>
 void SHash<TRAITS>::EnumMemoryRegions()

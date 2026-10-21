@@ -3009,25 +3009,6 @@ inline COUNT_T DebuggerHashPointer(TADDR pointer)
     return hash;
 }
 
-template <typename TRAITS>
-class DebuggerSHash : public SHash<TRAITS>
-{
-public:
-    const typename TRAITS::element_t *FindFirstEntry(HASHFIND *find) const
-    {
-        find->iNext = 0;
-        return FindNextEntry(find);
-    }
-
-    const typename TRAITS::element_t *FindNextEntry(HASHFIND *find) const
-    {
-        typename TRAITS::count_t index = find->iNext;
-        const typename TRAITS::element_t *entry = this->GetNext(index);
-        find->iNext = index;
-        return entry;
-    }
-};
-
 class EMPTY_BASES DebuggerPendingFuncEvalTraits : public DefaultSHashTraits<DebuggerPendingFuncEval>
 {
 public:
@@ -3090,12 +3071,13 @@ public:
 
 class DebuggerModuleTable
 {
-    DebuggerSHash<DebuggerModuleTraits> m_table;
+    SHash<DebuggerModuleTraits> m_table;
 #ifdef _DEBUG
     bool ThreadHoldsLock();
 #endif
 
 public:
+    typedef SHash<DebuggerModuleTraits>::Iterator Iterator;
 
 #ifndef DACCESS_COMPILE
 
@@ -3111,9 +3093,8 @@ public:
 
     DebuggerModule *GetModule(Module* module);
 
-    // We should never look for a NULL Module *
-    DebuggerModule *GetFirstModule(HASHFIND *info);
-    DebuggerModule *GetNextModule(HASHFIND *info);
+    Iterator Begin();
+    Iterator End();
 };
 
 // struct DebuggerMethodInfoKey:   Key for each of the method info hash table entries.
@@ -3181,7 +3162,7 @@ class DebuggerMethodInfoTable
     virtual ~DebuggerMethodInfoTable() = default;
 
   private:
-    DebuggerSHash<DebuggerMethodInfoTraits> m_table;
+    SHash<DebuggerMethodInfoTraits> m_table;
 
 //#define _DEBUG_DMI_TABLE
 
@@ -3200,6 +3181,7 @@ public:
 #endif // _DEBUG_DMI_TABLE
 
   public:
+    typedef SHash<DebuggerMethodInfoTraits>::Iterator Iterator;
 
 #ifndef DACCESS_COMPILE
 
@@ -3225,8 +3207,8 @@ public:
 #endif // #ifndef DACCESS_COMPILE
 
     DebuggerMethodInfo *GetMethodInfo(Module *pModule, mdMethodDef token);
-    DebuggerMethodInfo *GetFirstMethodInfo(HASHFIND *info);
-    DebuggerMethodInfo *GetNextMethodInfo(HASHFIND *info);
+    Iterator Begin();
+    Iterator End();
 
 #ifdef DACCESS_COMPILE
     void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);

@@ -12,13 +12,6 @@
  * Hash Table class
  * ------------------------------------------------------------------------- */
 
-CordbHashTable::~CordbHashTable()
-{
-    for (SHash<CordbHashTraits>::Iterator iterator = m_table.Begin(), end = m_table.End();
-         iterator != end; iterator++)
-        (*iterator)->InternalRelease();
-}
-
 HRESULT CordbHashTable::UnsafeAddBase(CordbBase *pBase)
 {
     AssertIsProtected();
@@ -83,30 +76,16 @@ CordbBase *CordbHashTable::UnsafeRemoveBase(ULONG_PTR id)
     return base;
 }
 
-CordbBase *CordbHashTable::UnsafeFindFirst(HASHFIND *find)
+CordbHashTable::Iterator CordbHashTable::Begin()
 {
     AssertIsProtected();
-    return UnsafeUnlockedFindFirst(find);
+    return m_table.Begin();
 }
 
-CordbBase *CordbHashTable::UnsafeUnlockedFindFirst(HASHFIND *find)
-{
-    find->iNext = 0;
-    return UnsafeUnlockedFindNext(find);
-}
-
-CordbBase *CordbHashTable::UnsafeFindNext(HASHFIND *find)
+CordbHashTable::Iterator CordbHashTable::End()
 {
     AssertIsProtected();
-    return UnsafeUnlockedFindNext(find);
-}
-
-CordbBase *CordbHashTable::UnsafeUnlockedFindNext(HASHFIND *find)
-{
-    COUNT_T index = find->iNext;
-    CordbBase *const *entry = m_table.GetNext(index);
-    find->iNext = index;
-    return entry == nullptr ? nullptr : *entry;
+    return m_table.End();
 }
 
 /* ------------------------------------------------------------------------- *
@@ -156,13 +135,10 @@ void CordbHashTableEnum::BuildOrThrow(
     pHolder->Assign(pEnum);
 
     pEnum->m_items.AllocOrThrow(pTable->GetCount());
-    HASHFIND find;
     ULONG index = 0;
-    for (CordbBase *item = pTable->UnsafeFindFirst(&find);
-         item != nullptr;
-         item = pTable->UnsafeFindNext(&find))
+    for (CordbHashTable::Iterator iterator = pTable->Begin(), end = pTable->End(); iterator != end; iterator++)
     {
-        pEnum->m_items.Assign(index++, item);
+        pEnum->m_items.Assign(index++, *iterator);
     }
     _ASSERTE(index == pEnum->m_items.Length());
 

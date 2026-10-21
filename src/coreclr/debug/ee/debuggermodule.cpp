@@ -58,19 +58,12 @@ void DebuggerModuleTable::Clear()
 
     _ASSERTE(ThreadHoldsLock());
 
-    HASHFIND hf;
-    const DebuggerModuleEntry *pDME;
-
-    pDME = m_table.FindFirstEntry(&hf);
-
-    while (pDME)
+    for (Iterator iterator = m_table.Begin(), end = m_table.End(); iterator != end; iterator++)
     {
-        DebuggerModule *pDM = pDME->module;
-        TRACE_FREE(pDME->module);
+        DebuggerModule *pDM = iterator->module;
+        TRACE_FREE(pDM);
         m_table.Remove(pDM->GetRuntimeModule());
         DeleteInteropSafe(pDM);
-
-        pDME = m_table.FindNextEntry(&hf);
     }
 
     m_table.RemoveAll();
@@ -153,7 +146,7 @@ DebuggerModule *DebuggerModuleTable::GetModule(Module* module)
         return entry->module;
 }
 
-DebuggerModule *DebuggerModuleTable::GetFirstModule(HASHFIND *info)
+DebuggerModuleTable::Iterator DebuggerModuleTable::Begin()
 {
     CONTRACTL
     {
@@ -164,14 +157,10 @@ DebuggerModule *DebuggerModuleTable::GetFirstModule(HASHFIND *info)
 
     _ASSERTE(ThreadHoldsLock());
 
-    const DebuggerModuleEntry *entry = m_table.FindFirstEntry(info);
-    if (entry == NULL)
-        return NULL;
-    else
-        return entry->module;
+    return m_table.Begin();
 }
 
-DebuggerModule *DebuggerModuleTable::GetNextModule(HASHFIND *info)
+DebuggerModuleTable::Iterator DebuggerModuleTable::End()
 {
     CONTRACTL
     {
@@ -182,9 +171,5 @@ DebuggerModule *DebuggerModuleTable::GetNextModule(HASHFIND *info)
 
     _ASSERTE(ThreadHoldsLock());
 
-    const DebuggerModuleEntry *entry = m_table.FindNextEntry(info);
-    if (entry == NULL)
-        return NULL;
-    else
-        return entry->module;
+    return m_table.End();
 }

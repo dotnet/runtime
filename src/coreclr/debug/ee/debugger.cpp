@@ -1186,13 +1186,10 @@ ULONG DebuggerMethodInfoTable::CheckDmiTable(void)
 {
     LIMITED_METHOD_CONTRACT;
 
-    HASHFIND find;
     ULONG count = 0;
-    for (const DebuggerMethodInfoEntry *entry = m_table.FindFirstEntry(&find);
-         entry != nullptr;
-         entry = m_table.FindNextEntry(&find))
+    for (Iterator iterator = m_table.Begin(), end = m_table.End(); iterator != end; iterator++)
     {
-        _ASSERTE(entry->key.pModule != nullptr);
+        _ASSERTE(iterator->key.pModule != nullptr);
         count++;
     }
     _ASSERTE(count == m_table.GetCount());
@@ -5533,11 +5530,10 @@ void Debugger::UpdateAllModuleJMCFlag(bool fStatus)
     // and so there is nothing to update.
     if (m_pModules != NULL)
     {
-        HASHFIND f;
-        for (DebuggerModule * m = m_pModules->GetFirstModule(&f);
-             m != NULL;
-             m = m_pModules->GetNextModule(&f))
+        for (DebuggerModuleTable::Iterator iterator = m_pModules->Begin(), end = m_pModules->End();
+             iterator != end; iterator++)
         {
+            DebuggerModule *m = iterator->module;
             // the primary module may get called multiple times, but that's ok.
             UpdateModuleJMCFlag(m->GetRuntimeModule(), fStatus);
         } // end for all modules.
@@ -5604,13 +5600,11 @@ void Debugger::SetModuleDefaultJMCStatus(Module * pRuntimeModule, bool fStatus)
     if (pTable != NULL)
     {
         Debugger::DebuggerDataLockHolder debuggerDataLockHolder(g_pDebugger);
-        HASHFIND info;
-
-        for (DebuggerMethodInfo *dmi = pTable->GetFirstMethodInfo(&info);
-            dmi != NULL;
-            dmi = pTable->GetNextMethodInfo(&info))
+        for (DebuggerMethodInfoTable::Iterator iterator = pTable->Begin(), end = pTable->End();
+             iterator != end; iterator++)
         {
-            if (dmi->GetRuntimeModule() == pRuntimeModule)
+            DebuggerMethodInfo *dmi = iterator->mi;
+            if (dmi != nullptr && dmi->GetRuntimeModule() == pRuntimeModule)
             {
                 // This DMI is in this module, so update its status
                 dmi->SetJMCStatus(fStatus);
@@ -9420,13 +9414,11 @@ void Debugger::UnloadModule(Module* pRuntimeModule)
         DebuggerMethodInfoTable * pTable = GetMethodInfoTable();
         if (pTable != NULL)
         {
-            HASHFIND info;
-
-            for (DebuggerMethodInfo *dmi = pTable->GetFirstMethodInfo(&info);
-                dmi != NULL;
-                dmi = pTable->GetNextMethodInfo(&info))
+            for (DebuggerMethodInfoTable::Iterator iterator = pTable->Begin(), end = pTable->End();
+                 iterator != end; iterator++)
             {
-                if (dmi->m_module == pRuntimeModule)
+                DebuggerMethodInfo *dmi = iterator->mi;
+                if (dmi != nullptr && dmi->m_module == pRuntimeModule)
                 {
                     dmi->SetJMCStatus(false);
                 }
@@ -10675,14 +10667,14 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
 
             if (pMethodInfoTable != NULL)
             {
-                HASHFIND hashFind;
                 DebuggerDataLockHolder debuggerDataLockHolder(this);
 
-                for (DebuggerMethodInfo * pMethodInfo = pMethodInfoTable->GetFirstMethodInfo(&hashFind);
-                    pMethodInfo != NULL;
-                    pMethodInfo = pMethodInfoTable->GetNextMethodInfo(&hashFind))
+                for (DebuggerMethodInfoTable::Iterator iterator = pMethodInfoTable->Begin(), end = pMethodInfoTable->End();
+                     iterator != end; iterator++)
                 {
-                    pMethodInfo->SetJMCStatus(false);
+                    DebuggerMethodInfo *pMethodInfo = iterator->mi;
+                    if (pMethodInfo != nullptr)
+                        pMethodInfo->SetJMCStatus(false);
                 }
             }
             LOG((LF_CORDB, LL_EVERYTHING, "Done clearing JMC methods!\n"));

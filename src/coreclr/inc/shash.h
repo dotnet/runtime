@@ -248,10 +248,6 @@ class EMPTY_BASES SHash : public TRAITS
     Iterator Begin() const;
     Iterator End() const;
 
-    // Index-based traversal does not retain a pointer into reallocatable storage.
-    // The caller must exclude additions while enumerating.
-    const element_t *GetNext(count_t &index) const;
-
 #ifdef DACCESS_COMPILE
     void EnumMemoryRegions();
 #endif

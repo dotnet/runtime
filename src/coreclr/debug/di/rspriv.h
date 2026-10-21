@@ -1713,6 +1713,8 @@ class EMPTY_BASES CordbHashTraits : public NonDacAwareSHashTraits<DefaultSHashTr
 {
 public:
     typedef ULONG_PTR key_t;
+    static const bool s_DestructPerEntryCleanupAction = true;
+    static void OnDestructPerEntryCleanupAction(CordbBase *element) { element->InternalRelease(); }
     static key_t GetKey(CordbBase *const &element) { return element->m_id; }
     static BOOL Equals(key_t left, key_t right) { return left == right; }
     static count_t Hash(key_t key)
@@ -1731,6 +1733,8 @@ private:
     SHash<CordbHashTraits> m_table;
 
 public:
+    typedef SHash<CordbHashTraits>::Iterator Iterator;
+
     bool IsInitialized();
 
 #ifndef DACCESS_COMPILE
@@ -1740,7 +1744,7 @@ public:
     m_pDbgLock = NULL;
 #endif
     }
-    virtual ~CordbHashTable();
+    virtual ~CordbHashTable() = default;
 
 #ifdef _DEBUG
     // CordbHashTables may be protected by a lock. For debug-builds, we can associate
@@ -1775,13 +1779,8 @@ public:
     CordbBase *UnsafeGetBase(ULONG_PTR id, BOOL fFab = TRUE);
     CordbBase *UnsafeRemoveBase(ULONG_PTR id);
 
-    CordbBase *UnsafeFindFirst(HASHFIND *find);
-    CordbBase *UnsafeFindNext(HASHFIND *find);
-
-    // Unlocked versions don't assert that the lock us held.
-    CordbBase *UnsafeUnlockedFindFirst(HASHFIND *find);
-    CordbBase *UnsafeUnlockedFindNext(HASHFIND *find);
-
+    Iterator Begin();
+    Iterator End();
 };
 
 
@@ -1812,9 +1811,6 @@ public:
     T* GetBaseOrThrow(ULONG_PTR id, BOOL fFab = TRUE);
 
     T* RemoveBase(ULONG_PTR id) { return static_cast<T*>(UnsafeRemoveBase(id)); }
-
-    T* FindFirst(HASHFIND *find) { return static_cast<T*>(UnsafeFindFirst(find)); }
-    T* FindNext(HASHFIND *find)  { return static_cast<T*>(UnsafeFindNext(find)); }
 
     // Neuter all items and clear
     void NeuterAndClear(RSLock * pLock);
