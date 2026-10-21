@@ -51,7 +51,14 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
     public Task BlazorEventPipeTestWithCpuSamplesReadyToRun(Configuration config)
         => BlazorEventPipeTestWithCpuSamplesCore(config, aot: false, readyToRun: true);
 
-    private async Task BlazorEventPipeTestWithCpuSamplesCore(Configuration config, bool aot, bool readyToRun)
+    [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
+    [InlineData(Configuration.Debug)]
+    [InlineData(Configuration.Release)]
+    [TestCategory("no-workload")]
+    public Task BlazorEventPipeTestWithCpuSamplesReadyToRunRegressions(Configuration config)
+        => BlazorEventPipeTestWithCpuSamplesCore(config, aot: false, readyToRun: true, exerciseRegressions: true);
+
+    private async Task BlazorEventPipeTestWithCpuSamplesCore(Configuration config, bool aot, bool readyToRun, bool exerciseRegressions = false)
     {
         string extraProperties = $@"
                 <WasmPerformanceInstrumentation>all,interval=0</WasmPerformanceInstrumentation>
@@ -61,11 +68,16 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
                 <PublishTrimmed>false</PublishTrimmed>
                 <WBTDevServer>true</WBTDevServer>
             ";
+        if (exerciseRegressions)
+            extraProperties += "<AllowUnsafeBlocks>true</AllowUnsafeBlocks>";
 
         ProjectInfo info = CopyTestAsset(config, aot, TestAsset.BlazorBasicTestApp,
-            readyToRun ? "blazor_cpu_samples_r2r" : "blazor_cpu_samples_interp", extraProperties: extraProperties);
+            exerciseRegressions ? "blazor_cpu_samples_r2r_regressions" : readyToRun ? "blazor_cpu_samples_r2r" : "blazor_cpu_samples_interp",
+            extraProperties: extraProperties);
 
         UpdateCounterPage(useCpuSamplingTarget: true);
+        if (exerciseRegressions)
+            AddCpuSamplingRegressions();
 
         string extraBuildArgs = readyToRun
             ? $"{GetR2RBuildArgs(config)} -p:UsingBrowserRuntimeWorkload=false"
@@ -91,6 +103,7 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
 
         bool sampledMethodFound = false;
         bool readyToRunMethodFound = false;
+        bool reversePInvokeMethodFound = false;
         using (var source = TraceLog.OpenOrConvert(ConvertTrace(info, "cpuprofile.nettrace")))
         {
             sampledMethodFound = source.CallStacks.Any(stack => stack.CodeAddress.FullMethodName.StartsWith(
@@ -104,9 +117,16 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
             }
 
             readyToRunMethodFound = source.CodeAddresses.Any(address => address.FullMethodName.StartsWith("System.Buffer.Memmove(", StringComparison.Ordinal));
+            if (exerciseRegressions)
+            {
+                reversePInvokeMethodFound = source.CallStacks.Any(stack => stack.CodeAddress.FullMethodName.StartsWith(
+                    "BlazorBasicTestApp.CpuSamplingRegressions.ReversePInvokeTarget(", StringComparison.Ordinal));
+            }
         }
 
         Assert.True(sampledMethodFound, "The cpuprofile.nettrace should contain stack frames for the 'Counter.CpuSamplingTarget' method");
+        if (exerciseRegressions)
+            Assert.True(reversePInvokeMethodFound, "The cpuprofile.nettrace should contain stack frames for the reverse P/Invoke entry samplepoint");
         if (BuildTestBase.IsCoreClrRuntime && !readyToRun)
         {
             Assert.True(readyToRunMethodFound, "The cpuprofile.nettrace should contain rundown information for the ReadyToRun 'System.Buffer.Memmove' method");
@@ -418,6 +438,96 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
         }
 
         UpdateFile(Path.Combine("Pages", "Counter.razor"), replacements);
+    }
+
+    private void AddCpuSamplingRegressions()
+    {
+        UpdateFile(Path.Combine("Pages", "Counter.razor"), new Dictionary<string, string>
+        {
+            ["for (int i = 0; i < 100_000; i++)"] = """
+                BlazorBasicTestApp.CpuSamplingRegressions.Run(value);
+                for (int i = 0; i < 100_000; i++)
+                """
+        });
+        File.WriteAllText(Path.Combine(_projectDir, "CpuSamplingRegressions.cs"), """
+            using System;
+            using System.Runtime.CompilerServices;
+            using System.Runtime.InteropServices;
+
+            namespace BlazorBasicTestApp;
+
+            public static unsafe class CpuSamplingRegressions
+            {
+                private struct References
+                {
+                    public object First, Second, Third, Fourth;
+                }
+
+                private sealed class Holder
+                {
+                    public References Value;
+                }
+
+                public static void Run(int value)
+                {
+                    var marker = new object();
+                    var source = new Holder { Value = new References { First = marker, Second = marker, Third = marker, Fourth = marker } };
+                    var destination = new Holder();
+                    if (!ReferenceEquals(CopyReferences(destination, source, value != 0), marker) ||
+                        !ReferenceEquals(destination.Value.Second, marker) ||
+                        !ReferenceEquals(destination.Value.Third, marker))
+                        throw new Exception("NoGC reference copy failed");
+
+                    if (FinallyAndFilter() != 11)
+                        throw new Exception("Nested finally/filter failed");
+
+                    delegate* unmanaged<int, int> callback = &ReversePInvokeTarget;
+                    if (callback(value) != unchecked(value + 1))
+                        throw new Exception("Reverse P/Invoke callback failed");
+                }
+
+                [MethodImpl(MethodImplOptions.NoInlining)]
+                private static object CopyReferences(Holder destination, Holder source, bool first)
+                {
+                    destination.Value = source.Value;
+                    if (first)
+                        return destination.Value.First;
+                    return destination.Value.Fourth;
+                }
+
+                [MethodImpl(MethodImplOptions.NoInlining)]
+                private static int FinallyAndFilter()
+                {
+                    int state = 0;
+                    try
+                    {
+                        try
+                        {
+                            throw new InvalidOperationException();
+                        }
+                        finally
+                        {
+                            state++;
+                        }
+                    }
+                    catch (InvalidOperationException exception) when (Filter(exception, ref state))
+                    {
+                        return state;
+                    }
+                }
+
+                [MethodImpl(MethodImplOptions.NoInlining)]
+                private static bool Filter(Exception exception, ref int state)
+                {
+                    state += 10;
+                    return exception is InvalidOperationException;
+                }
+
+                [UnmanagedCallersOnly]
+                [MethodImpl(MethodImplOptions.NoInlining)]
+                private static int ReversePInvokeTarget(int value) => unchecked(value + 1);
+            }
+            """);
     }
 
     private async Task SetupCounterPage(IPage page, string fileName, string traceCommand, bool uploadTrace = true)

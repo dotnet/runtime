@@ -2466,7 +2466,7 @@ PhaseStatus Compiler::fgWasmSpillRefs()
 
         for (GenTree* tree : LIR::AsRange(block))
         {
-            if (tree->IsCall() && IsPotentialGCSafePoint(tree))
+            if (tree->IsCall())
             {
                 // If we have a call, consume the call's operands from the defs list BEFORE spilling
                 // any live refs. This is because a GC-ref node which is only live INTO (and not across) another call
@@ -2480,7 +2480,7 @@ PhaseStatus Compiler::fgWasmSpillRefs()
                 // For any ref/byref values which are still live at the point of a call and not consumed by the current
                 // call, spill them into pinned slots on the stack where the GC can see them so it won't move them.
                 // These cases should only be for nested calls like F(x, G()) where x is a GC ref.
-                if (!defs.empty())
+                if (!defs.empty() && IsPotentialGCSafePoint(tree))
                 {
                     if (m_wasmSpillSlots == nullptr)
                     {
@@ -3536,19 +3536,44 @@ PhaseStatus Compiler::fgWasmProfInstrument()
         GenTree* samplepoint = gtNewHelperCallNode(CORINFO_HELP_WASM_PROF_SAMPLEPOINT, TYP_VOID);
         samplepoint          = fgMorphCall(samplepoint->AsCall());
         gtSetEvalOrder(samplepoint);
-        LIR::AsRange(block).InsertAtBeginning(LIR::SeqTree(this, samplepoint));
+
+        LIR::Range& range = LIR::AsRange(block);
+        if ((block == fgFirstBB) && opts.IsReversePInvoke())
+        {
+            // Sampling must run in cooperative mode, after the reverse P/Invoke transition.
+            GenTree* insertAfter = nullptr;
+            for (GenTree* node : range)
+            {
+                if (node->IsHelperCall(CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER) ||
+                    node->IsHelperCall(CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER_TRACK_TRANSITIONS))
+                {
+                    insertAfter = node;
+                    break;
+                }
+            }
+
+            noway_assert(insertAfter != nullptr);
+            range.InsertAfter(insertAfter, LIR::SeqTree(this, samplepoint));
+        }
+        else
+        {
+            range.InsertBefore(range.FirstNonCatchArgNode(), LIR::SeqTree(this, samplepoint));
+        }
     };
 
     unsigned samplepointsAdded = 0;
 
-    // A DFS back edge identifies its ancestor target as a loop header. Sample at
-    // every unique loop header, including loops formed through EH flow.
+    // Use the Wasm graph: EH resumptions are explicit by this phase, while modeled
+    // two-pass EH edges can form cycles that are not executable loops.
     // Unlike fgHasCycleWithoutGCSafePoint we do NOT skip BBF_GC_SAFE_POINT blocks:
     // the framework is not instrumented, so a loop calling only BCL methods would
     // otherwise never sample.
-    FlowGraphDfsTree* const dfsTree = fgComputeDfs();
-    BitVecTraits            traits  = dfsTree->PostOrderTraits();
-    BitVec                  samplepointBlocks(BitVecOps::MakeEmpty(&traits));
+    FgWasm                  fgWasm(this);
+    bool                    hasBlocksOnlyReachableViaEH = false;
+    FlowGraphDfsTree* const dfsTree                     = fgWasm.WasmDfs(hasBlocksOnlyReachableViaEH);
+    assert(!hasBlocksOnlyReachableViaEH);
+    BitVecTraits traits = dfsTree->PostOrderTraits();
+    BitVec       samplepointBlocks(BitVecOps::MakeEmpty(&traits));
 
     // Method entry.
     BitVecOps::AddElemD(&traits, samplepointBlocks, fgFirstBB->bbPostorderNum);
@@ -3556,7 +3581,7 @@ PhaseStatus Compiler::fgWasmProfInstrument()
     for (unsigned i = 0; i < dfsTree->GetPostOrderCount(); i++)
     {
         BasicBlock* const source = dfsTree->GetPostOrder(i);
-        source->VisitAllSuccs(this, [&](BasicBlock* target) {
+        FgWasm::VisitWasmSuccs(this, source, [&](BasicBlock* target) {
             assert(dfsTree->Contains(target));
             if (dfsTree->IsAncestor(target, source))
             {
