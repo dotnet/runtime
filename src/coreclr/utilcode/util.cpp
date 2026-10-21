@@ -343,7 +343,7 @@ HRESULT FakeCoCreateInstanceEx(REFCLSID       rclsid,
     return hr;
 }
 
-#ifdef FEATURE_DYNAMIC_CODE_COMPILED
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
 // Reserves free memory within the range [pMinAddr..pMaxAddr] using
 // VirtualQuery to find free memory and VirtualAlloc to reserve it.
 //
@@ -496,7 +496,7 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
     return pResult;
 #endif // HOST_UNIX
 }
-#endif // FEATURE_DYNAMIC_CODE_COMPILED
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
 
 #ifdef HOST_WINDOWS
 //******************************************************************************

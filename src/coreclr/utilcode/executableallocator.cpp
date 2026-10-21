@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#if !defined(FEATURE_DYNAMIC_CODE_COMPILED)
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
 
 #include "executableallocator.h"
 
@@ -90,7 +90,7 @@ void ExecutableAllocator::UnmapRW(void*) noexcept
     LIMITED_METHOD_CONTRACT;
 }
 
-#else // !FEATURE_DYNAMIC_CODE_COMPILED
+#else // FEATURE_PORTABLE_ENTRYPOINTS
 
 #include "pedecoder.h"
 #include "executableallocator.h"
@@ -1080,4 +1080,4 @@ void* ExecutableAllocator::CreateTemplate(void* templateInImage, size_t template
     return VMToOSInterface::CreateTemplate(templateInImage, templateSize, codePageGenerator);
 }
 
-#endif // FEATURE_DYNAMIC_CODE_COMPILED
+#endif // FEATURE_PORTABLE_ENTRYPOINTS

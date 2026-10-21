@@ -14,8 +14,8 @@
 
 //#define LOG_EXECUTABLE_ALLOCATOR_STATISTICS
 
-// Targets with dynamic code support allocate executable memory. Other targets use read-write storage
-// for loader and interpreter data.
+// Most targets allocate executable memory or map executable templates. Targets with portable
+// entrypoints use read-write storage for loader and interpreter data.
 class ExecutableAllocator
 {
 public:
@@ -36,7 +36,7 @@ private:
     // Callback to the runtime to report fatal errors
     static FatalErrorHandler g_fatalErrorHandler;
 
-#ifdef FEATURE_DYNAMIC_CODE_COMPILED
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
     // RX address range block descriptor
     struct BlockRX
     {
@@ -202,11 +202,11 @@ private:
     static LogEntry s_usageLog[256];
     static int s_logMaxIndex;
 #endif
-#endif // FEATURE_DYNAMIC_CODE_COMPILED
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
 
 public:
 
-#if defined(LOG_EXECUTABLE_ALLOCATOR_STATISTICS) && defined(FEATURE_DYNAMIC_CODE_COMPILED)
+#if defined(LOG_EXECUTABLE_ALLOCATOR_STATISTICS) && !defined(FEATURE_PORTABLE_ENTRYPOINTS)
     static void LogUsage(const char* source, int line, const char* function);
     static void DumpHolderUsage();
 #endif
@@ -245,7 +245,7 @@ public:
     // Reserve the specified amount of virtual address space for executable mapping.
     // The reserved range must be within the loAddress and hiAddress. If it is not
     // possible to reserve memory in such range, the method returns NULL.
-    // Targets without dynamic code support ignore the address bounds and allocate read-write
+    // Targets with portable entrypoints ignore the address bounds and allocate read-write
     // storage anywhere.
     void* ReserveWithinRange(size_t size, const void* loAddress, const void* hiAddress);
 
@@ -253,7 +253,7 @@ public:
     // or non-executable (RW) based on the passed in isExecutable flag. The non-executable
     // allocations are used to allocate data structures that need to be close to the
     // executable code due to memory addressing performance related reasons.
-    // On targets without dynamic code support, storage is already accessible, so Commit returns
+    // On targets with portable entrypoints, storage is already accessible, so Commit returns
     // pStart unchanged.
     void* Commit(void* pStart, size_t size, bool isExecutable);
 
@@ -262,15 +262,15 @@ public:
     // that reserve call.
     void Release(void* pRX, size_t size) noexcept;
 
-    // Map the specified block of executable memory as RW. Targets without dynamic code support
+    // Map the specified block of executable memory as RW. Targets with portable entrypoints
     // return the original pointer.
     void* MapRW(void* pRX, size_t size, CacheableMapping cacheMapping);
 
-    // Unmap the RW mapping at the specified address. This is a no-op on targets without dynamic
-    // code support.
+    // Unmap the RW mapping at the specified address. This is a no-op on targets with portable
+    // entrypoints.
     void UnmapRW(void* pRW) noexcept;
 
-#ifdef FEATURE_DYNAMIC_CODE_COMPILED
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
     // Allocate thunks from a template. pTemplate is the return value from CreateTemplate
     void* AllocateThunksFromTemplate(void *pTemplate, size_t templateSize, void (*dataPageGenerator)(uint8_t* pageBase, size_t size));
 
@@ -282,7 +282,7 @@ public:
     // Some OS/Architectures may/may not be able to work with this, so this api is permitted to return NULL, and callers should have an alternate approach using
     // the codePageGenerator directly.
     void* CreateTemplate(void* templateInImage, size_t templateSize, void (*codePageGenerator)(uint8_t* pageBase, uint8_t* pageBaseRX, size_t size));
-#endif // FEATURE_DYNAMIC_CODE_COMPILED
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
 };
 
 #define ExecutableWriterHolder ExecutableWriterHolderNoLog
@@ -367,7 +367,7 @@ public:
     }
 };
 
-#if defined(LOG_EXECUTABLE_ALLOCATOR_STATISTICS) && defined(FEATURE_DYNAMIC_CODE_COMPILED)
+#if defined(LOG_EXECUTABLE_ALLOCATOR_STATISTICS) && !defined(FEATURE_PORTABLE_ENTRYPOINTS)
 #undef ExecutableWriterHolder
 #ifdef HOST_UNIX
 #define ExecutableWriterHolder ExecutableAllocator::LogUsage(__FILE__, __LINE__, __PRETTY_FUNCTION__); ExecutableWriterHolderNoLog

@@ -73,13 +73,13 @@ UnlockedInterleavedLoaderHeap::~UnlockedInterleavedLoaderHeap()
         pVirtualAddress = pSearch->pVirtualAddress;
         pNext = pSearch->pNext;
 
-#ifdef FEATURE_DYNAMIC_CODE_COMPILED
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
         if (m_pConfig->Template != NULL)
         {
             ExecutableAllocator::Instance()->FreeThunksFromTemplate(pVirtualAddress, GetStubCodePageSize());
         }
         else
-#endif // FEATURE_DYNAMIC_CODE_COMPILED
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
         {
             ExecutableAllocator::Instance()->Release(pVirtualAddress, pSearch->dwVirtualSize);
         }
@@ -238,7 +238,7 @@ BOOL UnlockedInterleavedLoaderHeap::UnlockedReservePages(size_t dwSizeToCommit)
     return TRUE;
 }
 
-#ifdef FEATURE_DYNAMIC_CODE_COMPILED
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
 struct ThunkMemoryTraits final
 {
     using Type = BYTE*;
@@ -253,7 +253,7 @@ struct ThunkMemoryTraits final
     }
 };
 using ThunkMemoryHolder = LifetimeHolder<ThunkMemoryTraits>;
-#endif // FEATURE_DYNAMIC_CODE_COMPILED
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
 
 // Get some more committed pages - either commit some more in the current reserved region, or, if it
 // has run out, reserve another set of pages.
@@ -270,7 +270,7 @@ BOOL UnlockedInterleavedLoaderHeap::GetMoreCommittedPages(size_t dwMinSize)
     }
     CONTRACTL_END;
 
-#ifdef FEATURE_DYNAMIC_CODE_COMPILED
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
     if (m_pConfig->Template != NULL)
     {
         BYTE* newAllocatedThunks = (BYTE*)ExecutableAllocator::Instance()->AllocateThunksFromTemplate(m_pConfig->Template, GetStubCodePageSize(), m_pConfig->DataPageGenerator);
@@ -322,7 +322,7 @@ BOOL UnlockedInterleavedLoaderHeap::GetMoreCommittedPages(size_t dwMinSize)
 
         return TRUE;
     }
-#endif // FEATURE_DYNAMIC_CODE_COMPILED
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
 
     // From here, all work is only for the dynamically allocated InterleavedLoaderHeap path
 
@@ -532,11 +532,11 @@ void *UnlockedInterleavedLoaderHeap::UnlockedAllocStub(
 void InitializeLoaderHeapConfig(InterleavedLoaderHeapConfig *pConfig, size_t stubSize, void* templateInImage, void (*codePageGenerator)(uint8_t* pageBase, uint8_t* pageBaseRX, size_t size), void (*dataPageGenerator)(uint8_t* pageBase, size_t size))
 {
     pConfig->StubSize = (uint32_t)stubSize;
-#ifdef FEATURE_DYNAMIC_CODE_COMPILED
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
     pConfig->Template = ExecutableAllocator::Instance()->CreateTemplate(templateInImage, GetStubCodePageSize(), codePageGenerator);
-#else // FEATURE_DYNAMIC_CODE_COMPILED
+#else // FEATURE_PORTABLE_ENTRYPOINTS
     pConfig->Template = nullptr;
-#endif // FEATURE_DYNAMIC_CODE_COMPILED
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
     pConfig->CodePageGenerator = codePageGenerator;
     pConfig->DataPageGenerator = dataPageGenerator;
 }
