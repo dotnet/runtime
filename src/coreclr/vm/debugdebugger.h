@@ -23,7 +23,22 @@ extern "C" BOOL QCALLTYPE DebugDebugger_IsManagedDebuggerAttached();
 #ifdef DEBUGGING_SUPPORTED
 class DebuggerEval;
 class DebuggerFuncEvalResult;
-class DebuggerExternalMemoryOwner;
+class ExternalMemoryHandle;
+
+void ValidateFuncEvalReturnType(bool isNewObject, MethodTable* pMT);
+HRESULT ValidateObject(Object* objPtr);
+
+struct DebuggerFuncEvalData
+{
+    Module* pModule;
+    MethodDesc** ppMethod;
+    TypeHandle* pOwnerType;
+    TypeHandle* pResultType;
+    ARG_SLOT* pResult;
+    mdMethodDef methodToken;
+    uint32_t genericArgsCount;
+    bool isNewObject;
+};
 
 struct DebuggerFuncEvalContext
 {
@@ -33,7 +48,7 @@ struct DebuggerFuncEvalContext
     void** pHomes;
     INT64* pCapturedArguments;
     DebuggerFuncEvalResult** ppResult;
-    DebuggerExternalMemoryOwner** ppTemporaryResult;
+    ExternalMemoryHandle** ppTemporaryResult;
     void** pResultByRefs;
     void* pResultData;
     void* resultHandle;
@@ -41,7 +56,10 @@ struct DebuggerFuncEvalContext
     UINT32 parameterCount;
     UINT32 flags;
     UINT32 returnElementType;
+    DebuggerFuncEvalData* pData;
 };
+
+void FreeFuncEvalTemporaryResult(DebuggerFuncEvalContext* pContext);
 
 enum DebuggerFuncEvalFlags
 {

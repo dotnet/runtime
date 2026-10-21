@@ -24,7 +24,7 @@ namespace System.Diagnostics
                 internal void** Homes;
                 internal ulong* CapturedArguments;
                 internal void** ResultOwner;
-                internal void** TemporaryResultOwner;
+                internal void** TemporaryResultHandle;
                 internal void** ResultByRefs;
                 internal void* ResultData;
                 internal void* ResultHandle;
@@ -32,6 +32,7 @@ namespace System.Diagnostics
                 internal uint ParameterCount;
                 internal EvaluationFlags Flags;
                 internal uint ReturnElementType;
+                internal void* Data;
             }
 
             [Flags]
