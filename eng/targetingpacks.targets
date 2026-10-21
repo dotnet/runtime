@@ -50,7 +50,7 @@
                              TargetFramework="$(NetCoreAppCurrent)"
                              TargetingPackName="$(LocalFrameworkOverrideName).Ref"
                              TargetingPackVersion="$(ProductVersion)"
-                             Condition="'$(UseLocalTargetingRuntimePack)' == 'true' and '@(KnownFrameworkReference->AnyHaveMetadataValue('TargetFramework', '$(NetCoreAppCurrent)'))' != 'true'" />
+                             Condition="'$(UseLocalTargetingRuntimePack)' == 'true' and '@(KnownFrameworkReference->WithMetadataValue('Identity', '$(LocalFrameworkOverrideName)')->AnyHaveMetadataValue('TargetFramework', '$(NetCoreAppCurrent)'))' != 'true'" />
     <!-- The Include above is skipped when the SDK has an entry; replace that entry's list
          with the local one so future RID additions are covered. -->
     <KnownFrameworkReference Update="@(KnownFrameworkReference->WithMetadataValue('Identity', '$(LocalFrameworkOverrideName)')->WithMetadataValue('TargetFramework', '$(NetCoreAppCurrent)'))"
@@ -97,7 +97,7 @@
                       AppHostPackVersion="$(ProductVersion)"
                       AppHostRuntimeIdentifiers="$(_LocalAppHostRuntimeIdentifiers)"
                       TargetFramework="$(NetCoreAppCurrent)"
-                      Condition="'$(UseLocalAppHostPack)' == 'true' and '@(KnownAppHostPack->AnyHaveMetadataValue('TargetFramework', '$(NetCoreAppCurrent)'))' != 'true'" />
+                      Condition="'$(UseLocalAppHostPack)' == 'true' and '@(KnownAppHostPack->WithMetadataValue('Identity', '$(LocalFrameworkOverrideName)')->AnyHaveMetadataValue('TargetFramework', '$(NetCoreAppCurrent)'))' != 'true'" />
   </ItemGroup>
 
   <!-- Use local targeting/runtime pack for NetCoreAppCurrent. -->
