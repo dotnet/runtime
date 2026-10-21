@@ -277,6 +277,7 @@ namespace System.Threading.Tests
         }
 
         [PlatformSpecific(TestPlatforms.Linux)]
+        [SkipOnMono("The Mono implementation does not use shared-memory backing files.")]
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void NamedMutex_UserScopedSharedMemoryPathAndPermissions()
         {
@@ -324,6 +325,7 @@ namespace System.Threading.Tests
         }
 
         [PlatformSpecific(TestPlatforms.Linux)]
+        [SkipOnMono("The Mono implementation does not use shared-memory backing files.")]
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void NamedMutex_SharedMemoryDirectoryReplacementDoesNotRedirectFileAccess()
         {
